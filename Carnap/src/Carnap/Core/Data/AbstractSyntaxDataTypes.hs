@@ -1,6 +1,6 @@
-{-#LANGUAGE UndecidableInstances, FlexibleInstances, MultiParamTypeClasses, IncoherentInstances, AllowAmbiguousTypes, GADTs, KindSignatures, DataKinds, PolyKinds, TypeOperators, ViewPatterns, PatternSynonyms, RankNTypes, FlexibleContexts #-}
+{-#LANGUAGE UndecidableInstances, FlexibleInstances, MultiParamTypeClasses, AllowAmbiguousTypes, GADTs, KindSignatures, DataKinds, PolyKinds, TypeOperators, ViewPatterns, PatternSynonyms, RankNTypes, FlexibleContexts #-}
 
-module Carnap.Core.Data.AbstractSyntaxDataTypes where 
+module Carnap.Core.Data.AbstractSyntaxDataTypes where
 
 --This module attempts to provide abstract syntax types that would cover
 --a wide variety of languages
@@ -13,19 +13,20 @@ module Carnap.Core.Data.AbstractSyntaxDataTypes where
 --a model or assignment of some sort.
 
 class LModelable m lang f where
-        lsatisfies :: m -> lang a (f b) -> b
+        lsatisfies :: m -> lang (f b) -> b
 
 class Modelable m f where
         satisfies :: m -> f a -> a
 
 class Evaluable f where
-        eval :: f a -> a 
+        eval :: f a -> a
 
 class LEvaluable lang f where
-        leval :: lang a (f b) -> b
+        leval :: lang (f b) -> b
 
-class PForm lang f where
-        mainC :: lang a (f b) -> c
+--I think mainC is unimplementable except with undefined
+--class PForm lang f where
+        --mainC :: lang a (f b) -> c
 
 --------------------------------------------------------
 --2. Abstract Types
@@ -52,7 +53,7 @@ data Form a
 
 --this is the type that describes how things are connected
 --Things are connected either by application or by
---a lambda abstraction. The 'lang' parameter gets fixed to 
+--a lambda abstraction. The 'lang' parameter gets fixed to
 --form a fully usable type
 data Copula lang t where
     (:$:) :: lang (t -> t') -> lang t -> Copula lang t'
@@ -60,11 +61,21 @@ data Copula lang t where
 
 --this is the type that glues everything together by fixing a parameter
 --of the functor. This allows types defined in separate systems to be
---marbled together into a single type as if by mutual recursion 
-data (:|:) :: ((k -> *) -> k -> *) -> ((k -> *) -> k -> *) -> (k -> *) -> k -> * where
-    Mix0 :: f0 ((f0 :|: f1) a) idx -> (f0 :|: f1) a idx
-    Mix1 :: f1 ((f0 :|: f1) a) idx -> (f0 :|: f1) a idx
-    Unmix :: a idx -> (f0 :|: f1) a idx
+--marbled together into a single type as if by mutual recursion
+--data (:|:) :: ((k -> *) -> k -> *) -> ((k -> *) -> k -> *) -> (k -> *) -> k -> * where
+    --Mix0 :: f0 ((f0 :|: f1) a) idx -> (f0 :|: f1) a idx
+    --Mix1 :: f1 ((f0 :|: f1) a) idx -> (f0 :|: f1) a idx
+    --Unmix :: a idx -> (f0 :|: f1) a idx
+
+--this is type acts a disjoint sum/union of two binary functors
+data (:|:) :: (k -> k' -> *) -> (k -> k' -> *) -> k -> k' -> * where
+    FLeft :: f x idx -> (f :|: g) x idx
+    FRight :: g x idx -> (f :|: g) x idx
+
+--This type fixes the first argument of a binary functor
+--note that only certian kinds of functors even have a kind
+--such that the first argument is fixable
+newtype Fix f idx = Fx (f (Fix f) idx)
 
 --this is just my best current guess. This is very open to discussion
 data Quantifiers :: (* -> *) -> (* -> *) -> * -> * where
@@ -82,7 +93,7 @@ data Arity :: * -> * -> Nat -> * -> * where
 
 data FArity :: (* -> *) -> * -> ( * -> *) -> * -> Nat -> * -> * -> * where
     FAZero :: FArity f arg g ret (Succ Zero) ret (g ret)
-    FASucc :: FArity f arg g ret n ret' fret' -> FArity f arg g ret (Succ n) (arg -> ret') (f arg -> fret') 
+    FASucc :: FArity f arg g ret n ret' fret' -> FArity f arg g ret (Succ n) (arg -> ret') (f arg -> fret')
 
 --all these "Functors" are very open to interpretation. I could be missing needed information here
 
@@ -105,21 +116,24 @@ data Subnective :: (* -> *) -> (* -> *) -> * -> * where
 class Schematizable f where
         schematize :: f a -> [String] -> String
 
-class LSchematizable lang where
-        lschematize :: lang a b -> [String] -> String
+--class LSchematizable lang where
+        --lschematize :: lang b -> [String] -> String
 
-instance (Schematizable (f0 ((f0 :|: f1) a)), 
-          Schematizable (f1 ((f0 :|: f1) a))) => Schematizable ((f0 :|: f1) a) where
-        schematize (Mix0 a) = schematize a
-        schematize (Mix1 a) = schematize a
-        schematize (Unmix a) = undefined 
-        --couldn't figure out how to assign this. The trouble is that a is
-        --polymorphic, at least in the toy languages constructed so far. If
-        --there's a way of making languages without that feature, then we
-        --could add Schematizable a as a constraint, and allow for Unmixing
+instance {-# OVERLAPPABLE #-} (Schematizable (f a), Schematizable (g a)) => Schematizable ((f :|: g) a) where
+        schematize (FLeft a) = schematize a
+        schematize (FRight a) = schematize a
 
-instance LSchematizable (Copula :|: lang) => Schematizable ((Copula :|: lang) a) where
-         schematize = lschematize
+--instance Schematizable a => Schematizable (Copula a) where
+        --schematize (f :$: x) = schematize f (schematize x)
+
+instance Schematizable (f (Fix f)) => Schematizable (Fix f) where
+    schematize (Fx a) = schematize a
+
+--instance {-# OVERLAPPING #-} LSchematizable (Copula :|: lang) => Schematizable ((Copula :|: lang) a) where
+         --schematize = lschematize
+
+--instance Schematizable (Copula a) where
+    --schematize (f :$: x) args = schematize f []
 
 --XXX: I have no clue how to do this right now
 --the issue is that we don't actully have the whole term/formula here
@@ -139,18 +153,18 @@ instance Schematizable func => Schematizable (Function func lang) where
 instance Schematizable sub => Schematizable (Subnective sub lang) where
         schematize (Subnective s _) = schematize s
 
-instance (Schematizable (f0 ((f0 :|: f1) a)), 
-          Schematizable (f1 ((f0 :|: f1) a))) => Show ((f0 :|: f1) a b) where
-        show (Mix0 a) = schematize a []
-        show (Mix1 a) = schematize a []
+instance {-# OVERLAPPABLE #-} (Schematizable (f a), Schematizable (g a)) => Show ((f :|: g) a b) where
+        show (FLeft a) = schematize a []
+        show (FRight a) = schematize a []
 
-instance (Show (Copula ((Copula :|: f1) a) b), 
-          Schematizable (f1 ((Copula :|: f1) a))) => Show ((Copula :|: f1) a b) where
-        show (Mix0 a) = show a
-        show (Mix1 a) = schematize a []
+instance Schematizable (f (Fix f)) => Show (Fix f idx) where
+        show (Fx a) = schematize a []
 
-instance LSchematizable (Copula :|: lang) => Show (Copula ((Copula :|: lang) a) b) where
-         show x = lschematize (Mix0 x) [] 
+instance {-# OVERLAPPING #-} Schematizable ((Copula :|: f1) a) => Show ((Copula :|: f1) a b) where
+        show a = schematize a []
+
+--instance LSchematizable (Copula :|: lang) => Show (Copula ((Copula :|: lang) a) b) where
+         --show x = lschematize (Mix0 x) []
 
 instance Schematizable quant => Show (Quantifiers quant lang a) where
         show x = schematize x []
@@ -167,16 +181,18 @@ instance Schematizable func => Show (Function func lang a) where
 instance Schematizable sub => Show (Subnective sub lang a) where
         show x = schematize x []
 
-instance (Schematizable (f0 ((f0 :|: f1) a)), 
-          Schematizable (f1 ((f0 :|: f1) a))) => Eq ((f0 :|: f1) a b) where
+instance {-# OVERLAPPABLE #-} (Schematizable (f a), Schematizable (g a)) => Eq ((f :|: g) a b) where
         x == y = show x == show y
 
-instance (Show (Copula ((Copula :|: f1) a) b), 
-          Schematizable (f1 ((Copula :|: f1) a))) => Eq ((Copula :|: f1) a b) where
+instance (Schematizable (f (Fix f))) => Eq (Fix f idx) where
         x == y = show x == show y
 
-instance LSchematizable (Copula :|: lang) => Eq (Copula ((Copula :|: lang) a) b) where
+instance {-# OVERLAPPING #-} Schematizable ((Copula :|: f1) a) => Eq ((Copula :|: f1) a b) where
         x == y = show x == show y
+
+--I don't *think* I need this, not really sure
+--instance LSchematizable (Copula :|: lang) => Eq (Copula ((Copula :|: lang) a) b) where
+        --x == y = show x == show y
 
 instance Schematizable quant => Eq (Quantifiers quant lang a) where
         x == y = show x == show y

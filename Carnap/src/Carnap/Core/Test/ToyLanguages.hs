@@ -1,6 +1,6 @@
-{-#LANGUAGE UndecidableInstances, FlexibleInstances, MultiParamTypeClasses, GADTs, DataKinds, PolyKinds, TypeOperators, ViewPatterns, PatternSynonyms, RankNTypes, FlexibleContexts #-}
+{-#LANGUAGE TypeSynonymInstances, UndecidableInstances, FlexibleInstances, MultiParamTypeClasses, GADTs, DataKinds, PolyKinds, TypeOperators, ViewPatterns, PatternSynonyms, RankNTypes, FlexibleContexts #-}
 
-module Carnap.Core.Test.ToyLanguages where 
+module Carnap.Core.Test.ToyLanguages where
 
 import Carnap.Core.Data.AbstractSyntaxDataTypes
 
@@ -24,13 +24,13 @@ import Carnap.Core.Data.AbstractSyntaxDataTypes
 --
 --Evaluation and satisfaction are computed for saturated linguistic items
 --by decomposing these into the different constructors for the semantic
---categories involved, evaluating those constructors, and applying them 
+--categories involved, evaluating those constructors, and applying them
 
 --------------------------------------------------------
 --1.1 Data Types
 --------------------------------------------------------
 
---A semantic category consisting of infinitely many simple true-or-false propositions. 
+--A semantic category consisting of infinitely many simple true-or-false propositions.
 data BasicProp a where
         Prop :: Int -> BasicProp Bool
 
@@ -50,7 +50,7 @@ data BasicConn a where
 
 instance Schematizable BasicConn where
         schematize And = \(x:y:_) -> "(" ++ x ++ " ∧ " ++ y ++ ")"
-        schematize Not = \(x:_) -> "¬" ++ x 
+        schematize Not = \(x:_) -> "¬" ++ x
 
 instance Evaluable BasicConn where
         eval And = (&&)
@@ -60,24 +60,27 @@ instance Modelable (Int -> Bool) BasicConn where
         satisfies f And = (&&)
         satisfies f Not = not
 
-type ToyLanguage lang a = ((Copula :|: (Predicate BasicProp :|: Connective BasicConn )) lang a)
+type ToyLanguage idx = Fix (Copula :|: (Predicate BasicProp :|: Connective BasicConn)) idx
 
-pattern ToyCon x arity = Mix1 (Mix1 (Connective x arity))
+pattern ToyCon x arity = Fx (FRight (FRight (Connective x arity)))
 
-pattern ToyPred x arity = Mix1 (Mix0 (Predicate x arity))
+pattern ToyPred x arity = Fx (FRight (FLeft (Predicate x arity)))
 
-pattern ToyLam x  = Mix0 (Lam x)
+pattern ToyLam x  = Fx (FLeft (Lam x))
 
-pattern x :!$: y = Mix0 (x :$: y)
-                            
-toyConjunction :: ToyLanguage a (Form Bool -> Form Bool -> Form Bool)
+pattern x :!$: y = Fx (FLeft (x :$: y))
+
+
+toyConjunction :: ToyLanguage (Form Bool -> Form Bool -> Form Bool)
 toyConjunction = ToyCon And (FASucc (FASucc FAZero))
 
-toyNegation :: ToyLanguage a (Form Bool -> Form Bool)
+
+toyNegation :: ToyLanguage (Form Bool -> Form Bool)
 toyNegation = ToyCon Not (FASucc FAZero)
 
-toyProp :: Int -> ToyLanguage a (Form Bool)
+toyProp :: Int -> ToyLanguage (Form Bool)
 toyProp n = ToyPred (Prop n) FAZero
+
 
 --------------------------------------------------------
 --1.2 Semantic Instances
@@ -86,23 +89,25 @@ toyProp n = ToyPred (Prop n) FAZero
 --semantic categories of the language, other than the fact that objects in
 --those categories are evaluable
 
-instance (Evaluable con, Evaluable pred) => 
-        LEvaluable (Copula :|: (Predicate pred :|: Connective con)) Form where
+
+instance (Evaluable con, Evaluable pred) =>
+        LEvaluable (Fix (Copula :|: (Predicate con :|: Connective pred))) Form where
         leval (ToyPred p FAZero) = eval p
         leval (ToyCon c (FASucc FAZero) :!$: t) = eval c $ leval t
         leval (ToyCon c (FASucc (FASucc FAZero)) :!$: t :!$: t') = eval c (leval t) (leval t')
         leval (ToyLam f :!$: t) = leval (f t)
 
-instance (Modelable (Int -> Bool) con, Modelable (Int -> Bool) pred) => 
-        LModelable (Int -> Bool) (Copula :|: (Predicate pred :|: Connective con)) Form where
+
+instance (Modelable (Int -> Bool) con, Modelable (Int -> Bool) pred) =>
+        LModelable (Int -> Bool) (Fix (Copula :|: (Predicate pred :|: Connective con))) Form where
         lsatisfies m (ToyPred p FAZero) = satisfies m p
         lsatisfies m (ToyCon c (FASucc FAZero) :!$: t) = satisfies m c $ lsatisfies m t
         lsatisfies m (ToyCon c (FASucc (FASucc FAZero)) :!$: t :!$: t') = satisfies m c (lsatisfies m t) (lsatisfies m t')
         lsatisfies m (ToyLam f :!$: t) = lsatisfies m (f t)
 
-instance (Schematizable con, Schematizable pred) =>
-        LSchematizable (Copula :|: (Predicate pred :|: Connective con)) where
-        lschematize (ToyPred p FAZero) = schematize p
-        lschematize (ToyCon c (FASucc FAZero) :!$: t) = \y -> schematize c [lschematize t y]
-        lschematize (ToyCon c (FASucc (FASucc FAZero)) :!$: t :!$: t') = \y -> schematize c [lschematize t y, lschematize t' y]
-        lschematize (ToyLam f :!$: t) = lschematize (f t)
+instance {-# OVERLAPPING #-} (Schematizable con, Schematizable pred) =>
+        Schematizable (Fix (Copula :|: (Predicate con :|: Connective pred))) where
+        schematize (ToyPred p FAZero) = schematize p
+        schematize (ToyCon c (FASucc FAZero) :!$: t) = \y -> schematize c [schematize t y]
+        schematize (ToyCon c (FASucc (FASucc FAZero)) :!$: t :!$: t') = \y -> schematize c [schematize t y, schematize t' y]
+        schematize (ToyLam f :!$: t) = schematize (f t)
