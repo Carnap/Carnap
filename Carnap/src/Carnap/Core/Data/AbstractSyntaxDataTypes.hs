@@ -157,11 +157,11 @@ instance {-# OVERLAPPABLE #-} (Schematizable (f a), Schematizable (g a)) => Show
         show (FLeft a) = schematize a []
         show (FRight a) = schematize a []
 
-instance Schematizable (f (Fix f)) => Show (Fix f idx) where
-        show (Fx a) = schematize a []
+instance Schematizable (Fix f) => Show (Fix f idx) where
+        show x = schematize x []
 
 instance {-# OVERLAPPING #-} Schematizable ((Copula :|: f1) a) => Show ((Copula :|: f1) a b) where
-        show a = schematize a []
+        show x = schematize x []
 
 --instance LSchematizable (Copula :|: lang) => Show (Copula ((Copula :|: lang) a) b) where
          --show x = lschematize (Mix0 x) []
