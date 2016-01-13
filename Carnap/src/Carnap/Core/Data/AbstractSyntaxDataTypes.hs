@@ -116,9 +116,6 @@ data Subnective :: (* -> *) -> (* -> *) -> * -> * where
 class Schematizable f where
         schematize :: f a -> [String] -> String
 
---class LSchematizable lang where
-        --lschematize :: lang b -> [String] -> String
-
 instance {-# OVERLAPPABLE #-} (Schematizable (f a), Schematizable (g a)) => Schematizable ((f :|: g) a) where
         schematize (FLeft a) = schematize a
         schematize (FRight a) = schematize a
@@ -163,9 +160,6 @@ instance Schematizable (Fix f) => Show (Fix f idx) where
 instance {-# OVERLAPPING #-} Schematizable ((Copula :|: f1) a) => Show ((Copula :|: f1) a b) where
         show x = schematize x []
 
---instance LSchematizable (Copula :|: lang) => Show (Copula ((Copula :|: lang) a) b) where
-         --show x = lschematize (Mix0 x) []
-
 instance Schematizable quant => Show (Quantifiers quant lang a) where
         show x = schematize x []
 
@@ -189,10 +183,6 @@ instance Schematizable (Fix f) => Eq (Fix f idx) where
 
 instance {-# OVERLAPPING #-} Schematizable ((Copula :|: f1) a) => Eq ((Copula :|: f1) a b) where
         x == y = show x == show y
-
---I don't *think* I need this, not really sure
---instance LSchematizable (Copula :|: lang) => Eq (Copula ((Copula :|: lang) a) b) where
-        --x == y = show x == show y
 
 instance Schematizable quant => Eq (Quantifiers quant lang a) where
         x == y = show x == show y

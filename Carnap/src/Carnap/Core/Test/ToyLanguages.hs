@@ -62,18 +62,20 @@ instance Modelable (Int -> Bool) BasicConn where
 
 type ToyLanguage idx = Fix (Copula :|: (Predicate BasicProp :|: Connective BasicConn)) idx
 
-pattern ToyCon x arity = Fx (FRight (FRight (Connective x arity)))
+pattern Pos0  x = Fx (FLeft x)
+pattern Pos10 x = Fx (FRight (FLeft x))
+pattern Pos11 x = Fx (FRight (FRight x))
 
-pattern ToyPred x arity = Fx (FRight (FLeft (Predicate x arity)))
+pattern ToyCon x arity = Pos11 (Connective x arity)
 
-pattern ToyLam x  = Fx (FLeft (Lam x))
+pattern ToyPred x arity = Pos10 (Predicate x arity)
 
-pattern x :!$: y = Fx (FLeft (x :$: y))
+pattern ToyLam x  = Pos0 (Lam x)
 
+pattern x :!$: y = Pos0 (x :$: y)
 
 toyConjunction :: ToyLanguage (Form Bool -> Form Bool -> Form Bool)
 toyConjunction = ToyCon And (FASucc (FASucc FAZero))
-
 
 toyNegation :: ToyLanguage (Form Bool -> Form Bool)
 toyNegation = ToyCon Not (FASucc FAZero)
@@ -96,7 +98,6 @@ instance (Evaluable con, Evaluable pred) =>
         leval (ToyCon c (FASucc FAZero) :!$: t) = eval c $ leval t
         leval (ToyCon c (FASucc (FASucc FAZero)) :!$: t :!$: t') = eval c (leval t) (leval t')
         leval (ToyLam f :!$: t) = leval (f t)
-
 
 instance (Modelable (Int -> Bool) con, Modelable (Int -> Bool) pred) =>
         LModelable (Int -> Bool) (Fix (Copula :|: (Predicate pred :|: Connective con))) Form where
