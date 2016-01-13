@@ -184,7 +184,7 @@ instance Schematizable sub => Show (Subnective sub lang a) where
 instance {-# OVERLAPPABLE #-} (Schematizable (f a), Schematizable (g a)) => Eq ((f :|: g) a b) where
         x == y = show x == show y
 
-instance (Schematizable (f (Fix f))) => Eq (Fix f idx) where
+instance Schematizable (Fix f) => Eq (Fix f idx) where
         x == y = show x == show y
 
 instance {-# OVERLAPPING #-} Schematizable ((Copula :|: f1) a) => Eq ((Copula :|: f1) a b) where
