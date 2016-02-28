@@ -60,15 +60,10 @@ instance Modelable (Int -> Bool) BasicConn where
         satisfies f And = (&&)
         satisfies f Not = not
 
-type ToyLanguage idx = Fix (Copula :|: (Predicate BasicProp :|: Connective BasicConn)) idx
+type ToyLanguage idx = FixLang (Predicate BasicProp :|: Connective BasicConn) idx
 
 pattern ToyCon x arity = Fx (FRight (FRight (Connective x arity)))
-
 pattern ToyPred x arity = Fx (FRight (FLeft (Predicate x arity)))
-
-pattern ToyLam x  = Fx (FLeft (Lam x))
-
-pattern x :!$: y = Fx (FLeft (x :$: y))
 
 
 toyConjunction :: ToyLanguage (Form Bool -> Form Bool -> Form Bool)
@@ -89,14 +84,13 @@ toyProp n = ToyPred (Prop n) FAZero
 --semantic categories of the language, other than the fact that objects in
 --those categories are evaluable
 
-
+{--
 instance (Evaluable con, Evaluable pred) =>
         LEvaluable (Fix (Copula :|: (Predicate con :|: Connective pred))) Form where
         leval (ToyPred p FAZero) = eval p
         leval (ToyCon c (FASucc FAZero) :!$: t) = eval c $ leval t
         leval (ToyCon c (FASucc (FASucc FAZero)) :!$: t :!$: t') = eval c (leval t) (leval t')
         leval (ToyLam f :!$: t) = leval (f t)
-
 
 instance (Modelable (Int -> Bool) con, Modelable (Int -> Bool) pred) =>
         LModelable (Int -> Bool) (Fix (Copula :|: (Predicate pred :|: Connective con))) Form where
@@ -105,9 +99,10 @@ instance (Modelable (Int -> Bool) con, Modelable (Int -> Bool) pred) =>
         lsatisfies m (ToyCon c (FASucc (FASucc FAZero)) :!$: t :!$: t') = satisfies m c (lsatisfies m t) (lsatisfies m t')
         lsatisfies m (ToyLam f :!$: t) = lsatisfies m (f t)
 
-instance {-# OVERLAPPING #-} (Schematizable con, Schematizable pred) =>
+instance -# OVERLAPPING #- (Schematizable con, Schematizable pred) =>
         Schematizable (Fix (Copula :|: (Predicate con :|: Connective pred))) where
         schematize (ToyPred p FAZero) = schematize p
         schematize (ToyCon c (FASucc FAZero) :!$: t) = \y -> schematize c [schematize t y]
         schematize (ToyCon c (FASucc (FASucc FAZero)) :!$: t :!$: t') = \y -> schematize c [schematize t y, schematize t' y]
         schematize (ToyLam f :!$: t) = schematize (f t)
+--}
