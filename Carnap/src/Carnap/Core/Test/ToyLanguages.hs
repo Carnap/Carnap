@@ -77,8 +77,14 @@ pattern (:!$:) f x = Fx (FLeft (f :$: x))
 
 (.&.) :: ToyLanguage (Form Bool) -> ToyLanguage (Form Bool) -> ToyLanguage (Form Bool)
 x .&. y = TAnd :!$: x :!$: y
+
+p0 :: ToyLanguage (Form Bool)
 p0 = TProp 0
+
+p1 :: ToyLanguage (Form Bool)
 p1 = TProp 1
+
+neg :: ToyLanguage (Form Bool) -> ToyLanguage (Form Bool)
 neg x = TNeg :!$: x
 
 --finally you need to tell us how things go togethor
