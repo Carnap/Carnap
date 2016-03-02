@@ -15,7 +15,7 @@ cabal-version:       >=1.10
 library
   hs-source-dirs:      src
   exposed-modules:     Carnap.Core.Data.AbstractSyntaxDataTypes
-  other-modules:       Carnap.Core.Util
+  other-modules:       Carnap.Core.Test.ToyLanguages
   build-depends:       base >= 4.7 && < 5
                      , pretty >= 1.1.3.2
                      , megaparsec >= 4.4.0

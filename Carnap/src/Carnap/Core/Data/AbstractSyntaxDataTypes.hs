@@ -1,13 +1,14 @@
 {-#LANGUAGE TypeFamilies, UndecidableInstances, FlexibleInstances, MultiParamTypeClasses, AllowAmbiguousTypes, GADTs, KindSignatures, DataKinds, PolyKinds, TypeOperators, ViewPatterns, PatternSynonyms, RankNTypes, FlexibleContexts #-}
 
 module Carnap.Core.Data.AbstractSyntaxDataTypes(
-  Modelable, Evaluable,
-  satisfies, eval, schematize,
+  Modelable, Evaluable, Term(Term), Form(Form), CopulaSchema,
+  satisfies, eval, schematize, lift, lift1, lift2,
+  appSchema, lamSchema, liftSchema,
   Copula((:$:), Lam), (:|:)(FLeft, FRight), Quantifiers(Bind),
   Nat(Zero, Succ), Fix(Fx), Vec(VNil, VCons), Arity(AZero, ASucc),
   Predicate(Predicate), Connective(Connective), Function(Function),
   Subnective(Subnective),
-  Schematizable, FixLang --, LLam, (:!$:)
+  Schematizable, FixLang --, LLam, (:!$:) -- we can't export patterns yet
 ) where
 
 import Carnap.Core.Util
@@ -32,9 +33,19 @@ class Modelable m f where
 class Evaluable f where
         eval :: f a -> a
 
-
 class Liftable f where
         lift :: a -> f a
+
+class CopulaSchema lang where
+    appSchema :: lang (t -> t') -> lang t -> [String] -> String
+    liftSchema :: Copula lang t -> [String] -> String
+    lamSchema :: (lang t -> lang t') -> [String] -> String
+
+lift1 :: (Evaluable f, Liftable f) => (a -> b) -> (f a -> f b)
+lift1 f = lift . f . eval
+
+lift2 :: (Evaluable f, Liftable f) => (a -> b -> c) -> (f a -> f b -> f c)
+lift2 f fa fb = lift (f (eval fa) (eval fb))
 
 --------------------------------------------------------
 --2. Abstract Types
@@ -84,6 +95,23 @@ type FixLang f = Fix (Copula :|: f)
 data Quantifiers :: (* -> *) -> (* -> *) -> * -> * where
     Bind :: quant ((t a -> f b) -> f b) -> Quantifiers quant lang ((t a -> f b) -> f b)
 
+data Term a = Term a
+    deriving(Eq, Ord, Show)
+data Form a = Form a
+    deriving(Eq, Ord, Show)
+
+instance Evaluable Term where
+    eval (Term x) = x
+
+instance Evaluable Form where
+    eval (Form x) = x
+
+instance Liftable Term where
+    lift = Term
+
+instance Liftable Form where
+    lift = Form
+
 -- | think of this as a type constraint. the lang type, model type, and number
 -- | must all match up for this type to be inhabited
 -- | this lets us do neat type safty things
@@ -103,6 +131,8 @@ data Function :: (* -> *) -> (* -> *) -> * -> * where
 data Subnective :: (* -> *) -> (* -> *) -> * -> * where
     Subnective :: sub t -> Arity a b n t -> Subnective sub lang t
 
+--data Quote :: (* -> *) -> * -> *
+    --Quote :: (lang )
 --------------------------------------------------------
 --3. Schematizable, Show, and Eq
 --------------------------------------------------------
@@ -111,16 +141,12 @@ data Subnective :: (* -> *) -> (* -> *) -> * -> * where
 class Schematizable f where
         schematize :: f a -> [String] -> String
 
-{--
-instance -# OVERLAPPABLE #- (Schematizable (f a), Schematizable (g a)) => Schematizable ((f :|: g) a) where
+instance (Schematizable (f a), Schematizable (g a)) => Schematizable ((f :|: g) a) where
         schematize (FLeft a) = schematize a
         schematize (FRight a) = schematize a
 
 instance Schematizable (f (Fix f)) => Schematizable (Fix f) where
     schematize (Fx a) = schematize a
-
-pattern LLam x  = Fx (FLeft (Lam x))
-pattern x :!$: y = Fx (FLeft (x :$: y))
 
 instance Schematizable quant => Schematizable (Quantifiers quant lang) where
         schematize (Bind q) arg = schematize q arg --here I assume 'q' stores the users varible name
@@ -137,15 +163,17 @@ instance Schematizable func => Schematizable (Function func lang) where
 instance Schematizable sub => Schematizable (Subnective sub lang) where
         schematize (Subnective s _) = schematize s
 
-instance -# OVERLAPPABLE #- (Schematizable (f a), Schematizable (g a)) => Show ((f :|: g) a b) where
+instance CopulaSchema lang => Schematizable (Copula lang) where
+        schematize (f :$: x) e = appSchema f x e
+        schematize (Lam f)   e = lamSchema f e
+        schematize x         e = liftSchema x e
+
+instance (Schematizable (f a), Schematizable (g a)) => Show ((f :|: g) a b) where
         show (FLeft a) = schematize a []
         show (FRight a) = schematize a []
 
 instance Schematizable (f (Fix f)) => Show (Fix f idx) where
         show (Fx a) = schematize a []
-
-instance -# OVERLAPPING #- Schematizable ((Copula :|: f1) a) => Show ((Copula :|: f1) a b) where
-        show a = schematize a []
 
 instance Schematizable quant => Show (Quantifiers quant lang a) where
         show x = schematize x []
@@ -162,17 +190,13 @@ instance Schematizable func => Show (Function func lang a) where
 instance Schematizable sub => Show (Subnective sub lang a) where
         show x = schematize x []
 
-instance -# OVERLAPPABLE #- (Schematizable (f a), Schematizable (g a)) => Eq ((f :|: g) a b) where
+instance (Schematizable (f a), Schematizable (g a)) => Eq ((f :|: g) a b) where
         x == y = show x == show y
 
 instance (Schematizable (f (Fix f))) => Eq (Fix f idx) where
         x == y = show x == show y
 
-instance -# OVERLAPPING #- Schematizable ((Copula :|: f1) a) => Eq ((Copula :|: f1) a b) where
-        x == y = show x == show y
-
---I don't *think* I need this, not really sure
---instance LSchematizable (Copula :|: lang) => Eq (Copula ((Copula :|: lang) a) b) where
+--instance -# OVERLAPPING #- Schematizable ((Copula :|: f1) a) => Eq ((Copula :|: f1) a b) where
         --x == y = show x == show y
 
 instance Schematizable quant => Eq (Quantifiers quant lang a) where
@@ -221,8 +245,8 @@ instance Liftable (Fix (Copula :|: a)) where
 
 instance (Liftable lang, Evaluable lang) => Evaluable (Copula lang) where
     eval (f :$: x) = eval f (eval x)
-    eval (Lam f) = \t -> eval $ f (lift t)
-    eval (Lift t) = t
+    eval (Lam f)   = \t -> eval $ f (lift t)
+    eval (Lift t)  = t
 
 instance Modelable m quant => Modelable m (Quantifiers quant lang) where
     satisfies m (Bind q) = satisfies m q

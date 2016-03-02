@@ -3,6 +3,7 @@
 module Carnap.Core.Test.ToyLanguages where
 
 import Carnap.Core.Data.AbstractSyntaxDataTypes
+import Data.Function
 
 --This module gives some toy language examples, with instances of
 --important typeclasses, and explanation of the guiding ideas behind them.
@@ -32,77 +33,57 @@ import Carnap.Core.Data.AbstractSyntaxDataTypes
 
 --A semantic category consisting of infinitely many simple true-or-false propositions.
 data BasicProp a where
-        Prop :: Int -> BasicProp Bool
+        Prop :: Int -> BasicProp (Form Bool)
 
 instance Schematizable BasicProp where
-        schematize (Prop n) = \_ -> "P_" ++ show n
+        schematize (Prop n) _ = "P_" ++ show n
 
 instance Evaluable BasicProp where
-        eval (Prop n) = even n
+        eval (Prop n) = Form $ even n
 
 instance Modelable (Int -> Bool) BasicProp where
-        satisfies f (Prop n) = f n
+        satisfies f (Prop n) = Form $ f n
 
 --A semantic category consisting of boolean conjunction and negation
 data BasicConn a where
-        And :: BasicConn (Bool -> Bool -> Bool)
-        Not :: BasicConn (Bool -> Bool)
+        And :: BasicConn (Form Bool -> Form Bool -> Form Bool)
+        Not :: BasicConn (Form Bool -> Form Bool)
 
 instance Schematizable BasicConn where
         schematize And = \(x:y:_) -> "(" ++ x ++ " ∧ " ++ y ++ ")"
         schematize Not = \(x:_) -> "¬" ++ x
 
 instance Evaluable BasicConn where
-        eval And = (&&)
-        eval Not = not
+        eval And = lift2 (&&)
+        eval Not = lift1 not
 
 instance Modelable (Int -> Bool) BasicConn where
-        satisfies f And = (&&)
-        satisfies f Not = not
+        satisfies f x = eval x
 
-type ToyLanguage idx = FixLang (Predicate BasicProp :|: Connective BasicConn) idx
+--mix in your parts using :|: and fix the language with FixLang
+--assign a name "ToyLanguage" to this type
+--this type can then be indexed with their semantic type
+type ToyLanguage = FixLang (Predicate BasicProp :|: Connective BasicConn)
 
+--this stuff is kinda boiler plate that I want for the sake of testing
+--the user would most likely not care about this stuff
 pattern ToyCon x arity = Fx (FRight (FRight (Connective x arity)))
 pattern ToyPred x arity = Fx (FRight (FLeft (Predicate x arity)))
+pattern TAnd = ToyCon And (ASucc (ASucc AZero))
+pattern TNeg = ToyCon Not (ASucc AZero)
+pattern TProp n = ToyPred (Prop n) AZero
+pattern TLam f = Fx (FLeft (Lam f))
+pattern (:!$:) f x = Fx (FLeft (f :$: x))
 
+(.&.) :: ToyLanguage (Form Bool) -> ToyLanguage (Form Bool) -> ToyLanguage (Form Bool)
+x .&. y = TAnd :!$: x :!$: y
+p0 = TProp 0
+p1 = TProp 1
+neg x = TNeg :!$: x
 
-toyConjunction :: ToyLanguage (Form Bool -> Form Bool -> Form Bool)
-toyConjunction = ToyCon And (FASucc (FASucc FAZero))
-
-
-toyNegation :: ToyLanguage (Form Bool -> Form Bool)
-toyNegation = ToyCon Not (FASucc FAZero)
-
-toyProp :: Int -> ToyLanguage (Form Bool)
-toyProp n = ToyPred (Prop n) FAZero
-
-
---------------------------------------------------------
---1.2 Semantic Instances
---------------------------------------------------------
---these can be written parametrically, without any information about the
---semantic categories of the language, other than the fact that objects in
---those categories are evaluable
-
-{--
-instance (Evaluable con, Evaluable pred) =>
-        LEvaluable (Fix (Copula :|: (Predicate con :|: Connective pred))) Form where
-        leval (ToyPred p FAZero) = eval p
-        leval (ToyCon c (FASucc FAZero) :!$: t) = eval c $ leval t
-        leval (ToyCon c (FASucc (FASucc FAZero)) :!$: t :!$: t') = eval c (leval t) (leval t')
-        leval (ToyLam f :!$: t) = leval (f t)
-
-instance (Modelable (Int -> Bool) con, Modelable (Int -> Bool) pred) =>
-        LModelable (Int -> Bool) (Fix (Copula :|: (Predicate pred :|: Connective con))) Form where
-        lsatisfies m (ToyPred p FAZero) = satisfies m p
-        lsatisfies m (ToyCon c (FASucc FAZero) :!$: t) = satisfies m c $ lsatisfies m t
-        lsatisfies m (ToyCon c (FASucc (FASucc FAZero)) :!$: t :!$: t') = satisfies m c (lsatisfies m t) (lsatisfies m t')
-        lsatisfies m (ToyLam f :!$: t) = lsatisfies m (f t)
-
-instance -# OVERLAPPING #- (Schematizable con, Schematizable pred) =>
-        Schematizable (Fix (Copula :|: (Predicate con :|: Connective pred))) where
-        schematize (ToyPred p FAZero) = schematize p
-        schematize (ToyCon c (FASucc FAZero) :!$: t) = \y -> schematize c [schematize t y]
-        schematize (ToyCon c (FASucc (FASucc FAZero)) :!$: t :!$: t') = \y -> schematize c [schematize t y, schematize t' y]
-        schematize (ToyLam f :!$: t) = schematize (f t)
---}
+--finally you need to tell us how things go togethor
+--it is perhaps possible that this will always be the way to do this
+instance CopulaSchema ToyLanguage where
+    appSchema x y e = schematize x (show y : e)
+    lamSchema = error "how did you even do this?"
+    liftSchema = error "should not print a lifted value"
