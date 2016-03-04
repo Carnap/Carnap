@@ -96,15 +96,20 @@ type ToyLanguage = FixLang (Predicate BasicProp
                        :|: Quantifiers BasicQuant
                        :|: Function BasicTerm)
 
+instance {-# OVERLAPPING #-} Eq (ToyLanguage (Form Bool)) where
+        f == f' = (show $ relabelVars f) == (show $ relabelVars f')
+
 --this stuff is kinda boiler plate that I want for the sake of testing
 --the user would most likely not care about this stuff
+pattern AOne = (ASucc AZero)
+pattern ATwo = (ASucc (ASucc AZero))
 pattern ToyCon x arity = Fx (FRight (FLeft (FLeft (FRight (Connective x arity)))))
 pattern ToyPred x arity = Fx (FRight (FLeft (FLeft (FLeft (Predicate x arity)))))
 pattern TQuant q = Fx (FRight (FLeft (FRight (Bind q))))
 pattern TFunc f arity = Fx (FRight (FRight (Function f arity)))
 pattern TVar s = TFunc (Var s) AZero
-pattern TAnd = ToyCon And (ASucc (ASucc AZero))
-pattern TNeg = ToyCon Not (ASucc AZero)
+pattern TAnd = ToyCon And ATwo
+pattern TNeg = ToyCon Not AOne
 pattern TProp n = ToyPred (Prop n) AZero
 pattern TLam f = Fx (FLeft (Lam f))
 --pattern TAll x =  TQuant (All x)
@@ -122,6 +127,18 @@ p1 = TProp 1
 
 neg :: ToyLanguage (Form Bool) -> ToyLanguage (Form Bool)
 neg x = TNeg :!$: x
+
+--we can always relabel the variables before we show to get a string that reflects
+--the actual binding structure of the formula
+relabelVars :: ToyLanguage (Form Bool) -> ToyLanguage (Form Bool)
+relabelVars = rvd 0
+    where rvd :: Int -> ToyLanguage (Form Bool) -> ToyLanguage (Form Bool)
+          rvd n it = case it of 
+               (TAnd :!$: x :!$: y) -> TAnd :!$: (rvd n x) :!$: (rvd n y)
+               (TNeg :!$: x) -> TNeg :!$: (rvd n x)
+               (TQuant (All _) :!$: TLam f) -> (TQuant (All $ "x_" ++ show n) :!$: TLam (rvd (n+1) . f))
+               _ -> it
+
 
 --finally you need to tell us how things go togethor
 --it is perhaps possible that this will always be the way to do this
