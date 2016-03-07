@@ -2,6 +2,8 @@
 
 module Carnap.Core.Util(Nat(Zero, Succ), Vec(VNil, VCons)) where
 
+import Control.Lens
+
 --define natural numbers for type lifting
 data Nat = Zero
          | Succ Nat
@@ -41,3 +43,9 @@ instance Num Nat where
 data Vec :: Nat -> * -> * where
     VNil :: Vec Zero arg
     VCons :: arg -> Vec n arg -> Vec (Succ n) arg
+
+class Plated a' => MultiPlated a a' where
+    multiplate :: Simple Traversal a a'
+
+instance Plated a => MultiPlated a a where
+    multiplate = id
