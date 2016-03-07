@@ -4,6 +4,8 @@ module Carnap.Core.Test.ToyLanguages where
 
 import Carnap.Core.Data.AbstractSyntaxDataTypes
 import Data.Function
+import Control.Lens
+import Control.Monad.State.Lazy
 
 --This module gives some toy language examples, with instances of
 --important typeclasses, and explanation of the guiding ideas behind them.
@@ -95,10 +97,7 @@ type ToyLanguage = FixLang (Predicate BasicProp
                        :|: Connective BasicConn
                        :|: Quantifiers BasicQuant
                        :|: Function BasicTerm)
-
-instance {-# OVERLAPPING #-} Eq (ToyLanguage (Form Bool)) where
-        f == f' = (show $ relabelVars f) == (show $ relabelVars f')
-
+                       --
 --this stuff is kinda boiler plate that I want for the sake of testing
 --the user would most likely not care about this stuff
 pattern AOne = (ASucc AZero)
@@ -109,37 +108,29 @@ pattern TQuant q = Fx (FRight (FLeft (FRight (Bind q))))
 pattern TFunc f arity = Fx (FRight (FRight (Function f arity)))
 pattern TVar s = TFunc (Var s) AZero
 pattern TAnd = ToyCon And ATwo
-pattern TNeg = ToyCon Not AOne
+pattern TNot = ToyCon Not AOne
 pattern TProp n = ToyPred (Prop n) AZero
 pattern TLam f = Fx (FLeft (Lam f))
---pattern TAll x =  TQuant (All x)
 pattern (:!$:) f x = Fx (FLeft (f :$: x))
+pattern Conj x y = TAnd :!$: x :!$: y
+pattern Neg x = TNot :!$: x
 pattern (:=:) x y = ToyPred EqProp (ASucc (ASucc AZero)) :!$: x :!$: y
+--XXX: Why don't these work?
+--pattern TAll x =  TQuant (All x) 
+--pattern Quantif v f = (TQuant (All v) :!$: TLam f)
 
-alle :: String -> (ToyLanguage (Term Int) -> ToyLanguage (Form Bool)) -> ToyLanguage (Form Bool)
-alle x f = TQuant (All x) :!$: TLam f
-(.&.) :: ToyLanguage (Form Bool) -> ToyLanguage (Form Bool) -> ToyLanguage (Form Bool)
-x .&. y = TAnd :!$: x :!$: y
-p0 :: ToyLanguage (Form Bool)
-p0 = TProp 0
-p1 :: ToyLanguage (Form Bool)
-p1 = TProp 1
-
-neg :: ToyLanguage (Form Bool) -> ToyLanguage (Form Bool)
-neg x = TNeg :!$: x
-
---we can always relabel the variables before we show to get a string that reflects
---the actual binding structure of the formula
-relabelVars :: ToyLanguage (Form Bool) -> ToyLanguage (Form Bool)
-relabelVars = rvd 0
-    where rvd :: Int -> ToyLanguage (Form Bool) -> ToyLanguage (Form Bool)
-          rvd n it = case it of 
-               (TAnd :!$: x :!$: y) -> TAnd :!$: (rvd n x) :!$: (rvd n y)
-               (TNeg :!$: x) -> TNeg :!$: (rvd n x)
-               (TQuant (All _) :!$: TLam f) -> (TQuant (All $ "x_" ++ show n) :!$: TLam (rvd (n+1) . f))
-               _ -> it
+instance {-# OVERLAPPING #-} Eq (ToyLanguage (Form Bool)) where
+        f == f' = (show $ relabelVars f) == (show $ relabelVars f')
 
 
+instance Plated (ToyLanguage (Form Bool)) where
+        plate f (Conj x y) = Conj <$> f x <*> f y
+        plate f (Neg x) = Neg <$> f x
+        plate f (TQuant (All s) :!$: TLam phi) = 
+            (\x -> TQuant (All s) :!$: x) <$> TLam . abstractVar (TVar s) 
+                                          <$> f (phi $ TVar s)
+        plate _ x = pure x
+        
 --finally you need to tell us how things go togethor
 --it is perhaps possible that this will always be the way to do this
 instance CopulaSchema ToyLanguage where
@@ -147,3 +138,49 @@ instance CopulaSchema ToyLanguage where
     appSchema x y e = schematize x (show y : e)
     lamSchema = error "how did you even do this?"
     liftSchema = error "should not print a lifted value"
+
+--------------------------------------------------------
+--1.2 Functions
+--------------------------------------------------------
+
+--------------------------------------------------------
+--1.2.1 Construction Helpers
+--------------------------------------------------------
+
+alle :: String -> (ToyLanguage (Term Int) -> ToyLanguage (Form Bool)) -> ToyLanguage (Form Bool)
+alle x f = TQuant (All x) :!$: TLam f
+
+(.&.) :: ToyLanguage (Form Bool) -> ToyLanguage (Form Bool) -> ToyLanguage (Form Bool)
+x .&. y = TAnd :!$: x :!$: y
+
+p0 :: ToyLanguage (Form Bool)
+
+p0 = TProp 0
+
+p1 :: ToyLanguage (Form Bool)
+p1 = TProp 1
+
+--------------------------------------------------------
+--1.2.2 Instance Helpers
+--------------------------------------------------------
+--Helper functions for defining instances
+
+
+--This function lets us base Eq on a canonical formula
+relabelVars :: ToyLanguage (Form Bool) -> ToyLanguage (Form Bool)
+relabelVars phi = evalState (transformM trans phi) 0
+    where trans :: ToyLanguage (Form Bool) -> State Int (ToyLanguage (Form Bool))
+          trans (TQuant (All s) :!$: TLam psi) = do n <- get
+                                                      put (n+1)
+                                                      return (TQuant (All ("x_" ++ show n)) :!$: TLam psi)
+          trans x = return x
+
+--This function vacuums a given variable out of a formula and returns the
+--corresponding function from terms to formulas
+abstractVar :: ToyLanguage (Term Int) -> ToyLanguage (Form Bool) -> (ToyLanguage (Term Int) -> ToyLanguage (Form Bool))
+abstractVar v@(TVar _) (Conj p p') = \x -> Conj (abstractVar v p x) (abstractVar v p' x)
+abstractVar v@(TVar _) (Neg p) = \x -> Neg (abstractVar v p x)
+abstractVar v@(TVar _) (TQuant (All s) :!$: TLam f) = \x -> (TQuant (All s) :!$: TLam ((\g -> g x) . abstractVar v . f))
+abstractVar (TVar v) (TVar v' :=: TVar v'') = \x -> (if v == v' then x else TVar v') :=: (if v == v'' then x else TVar v'')
+abstractVar _ p = const p
+
