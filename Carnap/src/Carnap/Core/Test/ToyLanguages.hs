@@ -171,8 +171,8 @@ relabelVars :: ToyLanguage (Form Bool) -> ToyLanguage (Form Bool)
 relabelVars phi = evalState (transformM trans phi) 0
     where trans :: ToyLanguage (Form Bool) -> State Int (ToyLanguage (Form Bool))
           trans (TQuant (All s) :!$: TLam psi) = do n <- get
-                                                      put (n+1)
-                                                      return (TQuant (All ("x_" ++ show n)) :!$: TLam psi)
+                                                    put (n+1)
+                                                    return (TQuant (All ("x_" ++ show n)) :!$: TLam psi)
           trans x = return x
 
 --This function vacuums a given variable out of a formula and returns the
