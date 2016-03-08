@@ -97,7 +97,10 @@ type ToyLanguage = FixLang (Predicate BasicProp
                        :|: Connective BasicConn
                        :|: Quantifiers BasicQuant
                        :|: Function BasicTerm)
-                       --
+
+type ToyTerm = ToyLanguage (Term Int)
+type ToyForm = ToyLanguage (Form Bool)
+                       
 --this stuff is kinda boiler plate that I want for the sake of testing
 --the user would most likely not care about this stuff
 pattern AOne = (ASucc AZero)
@@ -122,12 +125,11 @@ pattern (:=:) x y = ToyPred EqProp (ASucc (ASucc AZero)) :!$: x :!$: y
 instance {-# OVERLAPPING #-} Eq (ToyLanguage (Form Bool)) where
         f == f' = (show $ relabelVars f) == (show $ relabelVars f')
 
-
 instance Plated (ToyLanguage (Form Bool)) where
         plate f (Conj x y) = Conj <$> f x <*> f y
         plate f (Neg x) = Neg <$> f x
         plate f (TQuant (All s) :!$: TLam phi) = 
-            (\x -> TQuant (All s) :!$: x) <$> TLam . abstractVar (TVar s) 
+            (\x -> TQuant (All s) :!$: x) <$> TLam . abstractTerm (TVar s) 
                                           <$> f (phi $ TVar s)
         plate _ x = pure x
         
@@ -167,7 +169,7 @@ p1 = TProp 1
 
 
 --This function lets us base Eq on a canonical formula
-relabelVars :: ToyLanguage (Form Bool) -> ToyLanguage (Form Bool)
+relabelVars :: ToyForm -> ToyForm
 relabelVars phi = evalState (transformM trans phi) 0
     where trans :: ToyLanguage (Form Bool) -> State Int (ToyLanguage (Form Bool))
           trans (TQuant (All s) :!$: TLam psi) = do n <- get
@@ -175,12 +177,11 @@ relabelVars phi = evalState (transformM trans phi) 0
                                                     return (TQuant (All ("x_" ++ show n)) :!$: TLam psi)
           trans x = return x
 
---This function vacuums a given variable out of a formula and returns the
+--This function vacuums a given term out of a formula and returns the
 --corresponding function from terms to formulas
-abstractVar :: ToyLanguage (Term Int) -> ToyLanguage (Form Bool) -> (ToyLanguage (Term Int) -> ToyLanguage (Form Bool))
-abstractVar v@(TVar _) (Conj p p') = \x -> Conj (abstractVar v p x) (abstractVar v p' x)
-abstractVar v@(TVar _) (Neg p) = \x -> Neg (abstractVar v p x)
-abstractVar v@(TVar _) (TQuant (All s) :!$: TLam f) = \x -> (TQuant (All s) :!$: TLam ((\g -> g x) . abstractVar v . f))
-abstractVar (TVar v) (TVar v' :=: TVar v'') = \x -> (if v == v' then x else TVar v') :=: (if v == v'' then x else TVar v'')
-abstractVar _ p = const p
-
+abstractTerm :: ToyTerm -> ToyForm -> (ToyTerm -> ToyForm)
+abstractTerm v (Conj p p') = \x -> Conj (abstractTerm v p x) (abstractTerm v p' x)
+abstractTerm v (Neg p) = \x -> Neg (abstractTerm v p x)
+abstractTerm v (TQuant (All s) :!$: TLam f) = \x -> (TQuant (All s) :!$: TLam ((\g -> g x) . abstractTerm v . f))
+abstractTerm v (v' :=: v'') = \x -> (if v == v' then x else v') :=: (if v == v'' then x else v'')
+abstractTerm _ p = const p
