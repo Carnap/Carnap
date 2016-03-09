@@ -2,13 +2,13 @@
 
 module Carnap.Core.Data.AbstractSyntaxDataTypes(
   Modelable, Evaluable, Term(Term), Form(Form), CopulaSchema,
-  satisfies, eval, schematize, lift, lift1, lift2,
+  satisfies, eval, schematize, lift, lift1, lift2, canonical,
   appSchema, lamSchema, liftSchema,
   Copula((:$:), Lam), (:|:)(FLeft, FRight), Quantifiers(Bind),
   Nat(Zero, Succ), Fix(Fx), Vec(VNil, VCons), Arity(AZero, ASucc),
   Predicate(Predicate), Connective(Connective), Function(Function),
-  Subnective(Subnective),
-  Schematizable, FixLang --, LLam, (:!$:) -- we can't export patterns yet
+  Subnective(Subnective),CanonicalForm, Schematizable, FixLang 
+  --, LLam, (:!$:) -- we can't export patterns yet
 ) where
 
 import Carnap.Core.Util
@@ -25,21 +25,27 @@ import Carnap.Core.Util
 -- | a type is modelable if it can be modeled. these are generally parts from
 -- | which LModelable types are built up
 class Modelable m f where
-        satisfies :: m -> f a -> a
+    satisfies :: m -> f a -> a
 
 -- | Just like modelable but where a default model is picked for us
 -- | this is useful as a convience and when there is one cononical model
 -- | such as in the case of peano arithmetic
 class Evaluable f where
-        eval :: f a -> a
+    eval :: f a -> a
 
 class Liftable f where
-        lift :: a -> f a
+    lift :: a -> f a
+
+class Schematizable f where
+    schematize :: f a -> [String] -> String
 
 class CopulaSchema lang where
     appSchema :: lang (t -> t') -> lang t -> [String] -> String
     liftSchema :: Copula lang t -> [String] -> String
     lamSchema :: (lang t -> lang t') -> [String] -> String
+
+class CanonicalForm a where
+    canonical :: a -> a
 
 lift1 :: (Evaluable f, Liftable f) => (a -> b) -> (f a -> f b)
 lift1 f = lift . f . eval
@@ -137,10 +143,6 @@ data Subnective :: (* -> *) -> (* -> *) -> * -> * where
 --3. Schematizable, Show, and Eq
 --------------------------------------------------------
 
-
-class Schematizable f where
-        schematize :: f a -> [String] -> String
-
 instance (Schematizable (f a), Schematizable (g a)) => Schematizable ((f :|: g) a) where
         schematize (FLeft a) = schematize a
         schematize (FRight a) = schematize a
@@ -190,12 +192,6 @@ instance Schematizable func => Show (Function func lang a) where
 instance Schematizable sub => Show (Subnective sub lang a) where
         show x = schematize x []
 
-instance (Schematizable (f a), Schematizable (g a)) => Eq ((f :|: g) a b) where
-        x == y = show x == show y
-
-instance (Schematizable (f (Fix f))) => Eq (Fix f idx) where
-        x == y = show x == show y
-
 --instance -# OVERLAPPING #- Schematizable ((Copula :|: f1) a) => Eq ((Copula :|: f1) a b) where
         --x == y = show x == show y
 
@@ -213,6 +209,13 @@ instance Schematizable func => Eq (Function func lang a) where
 
 instance Schematizable sub => Eq (Subnective sub lang a) where
         x == y = show x == show y
+
+instance (Schematizable (f a), Schematizable (g a)) => Eq ((f :|: g) a b) where
+        x == y = show x == show y
+
+instance  (CanonicalForm (FixLang f a), Show (FixLang f a)) => Eq (FixLang f a) where
+        x == y = show (canonical x) == show (canonical y)
+
 --}
 --------------------------------------------------------
 --4. Evaluation and Modelable

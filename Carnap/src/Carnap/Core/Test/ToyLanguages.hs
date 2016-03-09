@@ -125,9 +125,6 @@ pattern TBind q f = (TQuant q :!$: TLam f)
 
 quantif v f =  (TAll v :!$: TLam f) 
 
-instance {-# OVERLAPPING #-} Eq (ToyLanguage (Form Bool)) where
-        f == f' = (show $ relabelVars f) == (show $ relabelVars f')
-
 instance Plated (ToyLanguage (Form Bool)) where
         plate f (Conj x y) = Conj <$> f x <*> f y
         plate f (Neg x) = Neg <$> f x
@@ -142,6 +139,12 @@ instance CopulaSchema ToyLanguage where
     appSchema x y e = schematize x (show y : e)
     lamSchema = error "how did you even do this?"
     liftSchema = error "should not print a lifted value"
+
+instance CanonicalForm ToyForm where
+        canonical = relabelVars
+
+instance CanonicalForm ToyTerm where
+        canonical = id
 
 --------------------------------------------------------
 --1.2 Functions
