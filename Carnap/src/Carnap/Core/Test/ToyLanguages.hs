@@ -118,9 +118,12 @@ pattern (:!$:) f x = Fx (FLeft (f :$: x))
 pattern Conj x y = TAnd :!$: x :!$: y
 pattern Neg x = TNot :!$: x
 pattern (:=:) x y = ToyPred EqProp (ASucc (ASucc AZero)) :!$: x :!$: y
---XXX: Why don't these work?
---pattern TAll x =  TQuant (All x) 
---pattern Quantif v f = (TQuant (All v) :!$: TLam f)
+pattern TAll :: String -> ToyLanguage ((Term Int -> Form Bool) -> Form Bool)
+pattern TAll x =  TQuant (All x) --This seems not to be able to pattern match properly
+pattern TBind q f = (TQuant q :!$: TLam f)
+--pattern Univ v f = TBind (All v) f --XXX:Why doesn't this work?
+
+quantif v f =  (TAll v :!$: TLam f) 
 
 instance {-# OVERLAPPING #-} Eq (ToyLanguage (Form Bool)) where
         f == f' = (show $ relabelVars f) == (show $ relabelVars f')
@@ -128,9 +131,8 @@ instance {-# OVERLAPPING #-} Eq (ToyLanguage (Form Bool)) where
 instance Plated (ToyLanguage (Form Bool)) where
         plate f (Conj x y) = Conj <$> f x <*> f y
         plate f (Neg x) = Neg <$> f x
-        plate f (TQuant (All s) :!$: TLam phi) = 
-            (\x -> TQuant (All s) :!$: x) <$> TLam . abstractTerm (TVar s) 
-                                          <$> f (phi $ TVar s)
+        plate f (TBind q@(All s) (phi)) = TBind q <$> abstractTerm (TVar s) 
+                                                  <$> f (phi $ TVar s)
         plate _ x = pure x
         
 --finally you need to tell us how things go togethor
@@ -156,7 +158,6 @@ alle x f = TQuant (All x) :!$: TLam f
 x .&. y = TAnd :!$: x :!$: y
 
 p0 :: ToyLanguage (Form Bool)
-
 p0 = TProp 0
 
 p1 :: ToyLanguage (Form Bool)
@@ -167,14 +168,13 @@ p1 = TProp 1
 --------------------------------------------------------
 --Helper functions for defining instances
 
-
 --This function lets us base Eq on a canonical formula
 relabelVars :: ToyForm -> ToyForm
 relabelVars phi = evalState (transformM trans phi) 0
     where trans :: ToyLanguage (Form Bool) -> State Int (ToyLanguage (Form Bool))
-          trans (TQuant (All s) :!$: TLam psi) = do n <- get
-                                                    put (n+1)
-                                                    return (TQuant (All ("x_" ++ show n)) :!$: TLam psi)
+          trans (TBind (All _) psi) = do n <- get
+                                         put (n+1)
+                                         return (TBind (All ("x_" ++ show n)) psi)
           trans x = return x
 
 --This function vacuums a given term out of a formula and returns the
@@ -182,6 +182,6 @@ relabelVars phi = evalState (transformM trans phi) 0
 abstractTerm :: ToyTerm -> ToyForm -> (ToyTerm -> ToyForm)
 abstractTerm v (Conj p p') = \x -> Conj (abstractTerm v p x) (abstractTerm v p' x)
 abstractTerm v (Neg p) = \x -> Neg (abstractTerm v p x)
-abstractTerm v (TQuant (All s) :!$: TLam f) = \x -> (TQuant (All s) :!$: TLam ((\g -> g x) . abstractTerm v . f))
+abstractTerm v (TBind q f) = \x -> TBind q ((\g -> g x) . abstractTerm v . f)
 abstractTerm v (v' :=: v'') = \x -> (if v == v' then x else v') :=: (if v == v'' then x else v'')
 abstractTerm _ p = const p
