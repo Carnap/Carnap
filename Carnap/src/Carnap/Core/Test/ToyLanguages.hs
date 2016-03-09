@@ -103,8 +103,8 @@ type ToyForm = ToyLanguage (Form Bool)
                        
 --this stuff is kinda boiler plate that I want for the sake of testing
 --the user would most likely not care about this stuff
-pattern AOne = (ASucc AZero)
-pattern ATwo = (ASucc (ASucc AZero))
+pattern (:!!$:) :: ToyLanguage (a -> b) -> ToyLanguage a -> ToyLanguage b
+pattern (:!!$:) f y = f :!$: y
 pattern ToyCon x arity = Fx (FRight (FLeft (FLeft (FRight (Connective x arity)))))
 pattern ToyPred x arity = Fx (FRight (FLeft (FLeft (FLeft (Predicate x arity)))))
 pattern TQuant q = Fx (FRight (FLeft (FRight (Bind q))))
@@ -113,29 +113,31 @@ pattern TVar s = TFunc (Var s) AZero
 pattern TAnd = ToyCon And ATwo
 pattern TNot = ToyCon Not AOne
 pattern TProp n = ToyPred (Prop n) AZero
-pattern TLam f = Fx (FLeft (Lam f))
-pattern (:!$:) f x = Fx (FLeft (f :$: x))
-pattern Conj x y = TAnd :!$: x :!$: y
+pattern TAll :: String -> ToyLanguage ((Term Int -> Form Bool) -> Form Bool)
+pattern TAll x = TQuant (All x) 
+--XXX: TAll appears not to always work in pattern matches
+pattern TBind q f = (TQuant q :!!$: LLam f)
+--XXX: TBind appears to require :!!$: to resolve some type ambiguities for,
+--e.g. show instances.
+pattern Conj x y  = TAnd :!$: x :!$: y
+pattern (:&:) x y = TAnd :!$: x :!$: y
 pattern Neg x = TNot :!$: x
 pattern (:=:) x y = ToyPred EqProp (ASucc (ASucc AZero)) :!$: x :!$: y
-pattern TAll :: String -> ToyLanguage ((Term Int -> Form Bool) -> Form Bool)
-pattern TAll x =  TQuant (All x) --This seems not to be able to pattern match properly
-pattern TBind q f = (TQuant q :!$: TLam f)
---pattern Univ v f = TBind (All v) f --XXX:Why doesn't this work?
+pattern Univ v f = TBind (All v) f
 
-quantif v f =  (TAll v :!$: TLam f) 
+quantif v f =  (TAll v :!$: LLam f) 
 
 instance Plated (ToyLanguage (Form Bool)) where
         plate f (Conj x y) = Conj <$> f x <*> f y
         plate f (Neg x) = Neg <$> f x
-        plate f (TBind q@(All s) (phi)) = TBind q <$> abstractTerm (TVar s) 
-                                                  <$> f (phi $ TVar s)
+        plate f (Univ v phi) = TBind (All v) <$> abstractTerm (TVar v) 
+                                             <$> f (phi $ TVar v)
         plate _ x = pure x
         
 --finally you need to tell us how things go togethor
 --it is perhaps possible that this will always be the way to do this
 instance CopulaSchema ToyLanguage where
-    appSchema (TQuant (All x)) (TLam f) e = schematize (All x) (show (f $ TVar x) : e)
+    appSchema (TQuant (All x)) (LLam f) e = schematize (All x) (show (f $ TVar x) : e)
     appSchema x y e = schematize x (show y : e)
     lamSchema = error "how did you even do this?"
     liftSchema = error "should not print a lifted value"
@@ -153,12 +155,6 @@ instance CanonicalForm ToyTerm where
 --------------------------------------------------------
 --1.2.1 Construction Helpers
 --------------------------------------------------------
-
-alle :: String -> (ToyLanguage (Term Int) -> ToyLanguage (Form Bool)) -> ToyLanguage (Form Bool)
-alle x f = TQuant (All x) :!$: TLam f
-
-(.&.) :: ToyLanguage (Form Bool) -> ToyLanguage (Form Bool) -> ToyLanguage (Form Bool)
-x .&. y = TAnd :!$: x :!$: y
 
 p0 :: ToyLanguage (Form Bool)
 p0 = TProp 0

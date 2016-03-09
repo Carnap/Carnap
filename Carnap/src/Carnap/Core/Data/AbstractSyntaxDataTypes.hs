@@ -7,8 +7,9 @@ module Carnap.Core.Data.AbstractSyntaxDataTypes(
   Copula((:$:), Lam), (:|:)(FLeft, FRight), Quantifiers(Bind),
   Nat(Zero, Succ), Fix(Fx), Vec(VNil, VCons), Arity(AZero, ASucc),
   Predicate(Predicate), Connective(Connective), Function(Function),
-  Subnective(Subnective),CanonicalForm, Schematizable, FixLang 
-  --, LLam, (:!$:) -- we can't export patterns yet
+  Subnective(Subnective),CanonicalForm, Schematizable, FixLang, 
+  pattern AOne, pattern ATwo , pattern LLam, pattern (:!$:) 
+  -- we can't export patterns yet
 ) where
 
 import Carnap.Core.Util
@@ -98,6 +99,9 @@ newtype Fix f idx = Fx (f (Fix f) idx)
 
 type FixLang f = Fix (Copula :|: f)
 
+pattern LLam f = Fx (FLeft (Lam f))
+pattern (:!$:) f x = Fx (FLeft (f :$: x))
+
 data Quantifiers :: (* -> *) -> (* -> *) -> * -> * where
     Bind :: quant ((t a -> f b) -> f b) -> Quantifiers quant lang ((t a -> f b) -> f b)
 
@@ -124,6 +128,9 @@ instance Liftable Form where
 data Arity :: * -> * -> Nat -> * -> * where
     AZero :: Arity arg ret Zero ret
     ASucc :: Arity arg ret n ret' -> Arity arg ret (Succ n) (arg -> ret')
+
+pattern AOne = (ASucc AZero)
+pattern ATwo = (ASucc (ASucc AZero))
 
 data Predicate :: (* -> *) -> (* -> *) -> * -> * where
     Predicate :: pred t -> Arity a b n t -> Predicate pred lang t
