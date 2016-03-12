@@ -37,7 +37,6 @@ instance Num Nat where
 
   negate = error "negation is not defined on naturals"
 
-
 -- | the standard hello world dependent types examples. a list where the size
 -- | are known at the type level
 data Vec :: Nat -> * -> * where

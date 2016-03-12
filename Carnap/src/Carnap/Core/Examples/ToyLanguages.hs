@@ -184,3 +184,31 @@ abstractTerm v (Neg p) = \x -> Neg (abstractTerm v p x)
 abstractTerm v (TBind q f) = \x -> TBind q ((\g -> g x) . abstractTerm v . f)
 abstractTerm v (v' :=: v'') = \x -> (if v == v' then x else v') :=: (if v == v'' then x else v'')
 abstractTerm _ p = const p
+
+--------------------------------------------------------
+--2. A Simply Typed Lambda Calculus
+--------------------------------------------------------
+--TODO: I think it'd be best to split this into a separate file to avoid
+--e.g. very crazy symbols for our specializations of :!$:
+
+data Application c where
+        App :: Application (Term (a -> b) -> Term a -> Term b)
+
+data IntObject a where
+        IntOb :: Int -> IntObject (Term Int)
+
+data Abstraction c where
+        Abs :: Abstraction ((Term a -> Term b) -> Term (a -> b))
+
+type SimpleLambda = FixLang (Abstractors Abstraction
+                          :|: Function IntObject
+                          :|: Applicators Application)
+
+pattern (:!$$:) :: SimpleLambda (a -> b) -> SimpleLambda a -> SimpleLambda b
+pattern (:!$$:) f y = f :!$: y
+pattern ObFunc f arity = Fx (FRight (FLeft (FRight (Function f arity))))
+pattern AppFunc f = Fx (FRight (FRight ((Apply f))))
+pattern SAbstract q = Fx (FRight (FLeft (FLeft (Abstract q))))
+pattern SimpAbs f = (SAbstract Abs) :!$$: LLam f
+pattern SimpInt n = ObFunc (IntOb n) AZero
+pattern SimpApp a b = (AppFunc App) :!$$: a :!$$: b

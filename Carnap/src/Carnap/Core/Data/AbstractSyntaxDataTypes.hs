@@ -4,12 +4,11 @@ module Carnap.Core.Data.AbstractSyntaxDataTypes(
   Modelable, Evaluable, Term(Term), Form(Form), CopulaSchema,
   satisfies, eval, schematize, lift, lift1, lift2, canonical,
   appSchema, lamSchema, liftSchema,
-  Copula((:$:), Lam), (:|:)(FLeft, FRight), Quantifiers(Bind),
+  Copula((:$:), Lam), (:|:)(FLeft, FRight), Quantifiers(Bind),Abstractors(Abstract),Applicators(Apply),
   Nat(Zero, Succ), Fix(Fx), Vec(VNil, VCons), Arity(AZero, ASucc),
   Predicate(Predicate), Connective(Connective), Function(Function),
   Subnective(Subnective),CanonicalForm, Schematizable, FixLang, 
-  pattern AOne, pattern ATwo , pattern LLam, pattern (:!$:) 
-  -- we can't export patterns yet
+  pattern AOne, pattern ATwo , pattern LLam, pattern (:!$:)
 ) where
 
 import Carnap.Core.Util
@@ -17,7 +16,7 @@ import Carnap.Core.Util
 --This module attempts to provide abstract syntax types that would cover
 --a wide variety of languages
 
---------------------------------------------------------
+
 --1. Abstract typeclasses
 --------------------------------------------------------
 
@@ -102,8 +101,15 @@ type FixLang f = Fix (Copula :|: f)
 pattern LLam f = Fx (FLeft (Lam f))
 pattern (:!$:) f x = Fx (FLeft (f :$: x))
 
+--XXX:Could Quantifiers and Abstractors be subsumed under a common type?
 data Quantifiers :: (* -> *) -> (* -> *) -> * -> * where
     Bind :: quant ((t a -> f b) -> f b) -> Quantifiers quant lang ((t a -> f b) -> f b)
+
+data Abstractors :: (* -> *) -> (* -> *) -> * -> * where
+    Abstract :: abs ((t a -> t b) -> t (a -> b)) -> Abstractors abs lang ((t a -> t b) -> t (a -> b))
+
+data Applicators :: (* -> *) -> (* -> *) -> * -> * where
+    Apply :: app (t (a -> b) -> t a -> t b) -> Applicators app lang (t (a -> b) -> t a -> t b)
 
 data Term a = Term a
     deriving(Eq, Ord, Show)
