@@ -194,21 +194,44 @@ abstractTerm _ p = const p
 data Application c where
         App :: Application (Term (a -> b) -> Term a -> Term b)
 
+instance Schematizable Application where
+    schematize App = \(x:y:_) -> "(" ++ x ++ " " ++ y ++ ")"
+
 data IntObject a where
         IntOb :: Int -> IntObject (Term Int)
 
-data Abstraction c where
-        Abs :: Abstraction ((Term a -> Term b) -> Term (a -> b))
+instance Schematizable IntObject where
+        schematize (IntOb n) _ = show n 
 
-type SimpleLambda = FixLang (Abstractors Abstraction
+data Abstraction c where
+        Abs :: String -> Abstraction ((Term a -> Term b) -> Term (a -> b))
+
+data SimpleTerm a where
+    Blank :: String ->  SimpleTerm (Term a)
+
+instance Schematizable SimpleTerm where 
+    schematize (Blank v) _ = v
+
+instance Schematizable Abstraction where
+    schematize (Abs v) = \(x:_) -> "λ" ++ v ++ "." ++ x
+
+type SimpleLambda = FixLang ( Applicators Application
+                          :|: Abstractors Abstraction
                           :|: Function IntObject
-                          :|: Applicators Application)
+                          :|: Function SimpleTerm)
 
 pattern (:!$$:) :: SimpleLambda (a -> b) -> SimpleLambda a -> SimpleLambda b
 pattern (:!$$:) f y = f :!$: y
+pattern AppFunc f = Fx (FRight (FLeft (FLeft (FLeft ((Apply f))))))
+pattern SAbstract q = Fx (FRight (FLeft (FLeft (FRight (Abstract q)))))
 pattern ObFunc f arity = Fx (FRight (FLeft (FRight (Function f arity))))
-pattern AppFunc f = Fx (FRight (FRight ((Apply f))))
-pattern SAbstract q = Fx (FRight (FLeft (FLeft (Abstract q))))
-pattern SimpAbs f = (SAbstract Abs) :!$$: LLam f
+pattern SimpAbs v f = (SAbstract (Abs v)) :!$$: LLam f
 pattern SimpInt n = ObFunc (IntOb n) AZero
 pattern SimpApp a b = (AppFunc App) :!$$: a :!$$: b
+pattern SBlank v = Fx (FRight (FRight (Function (Blank v) AZero)))
+
+instance CopulaSchema SimpleLambda where
+    appSchema (SAbstract (Abs v)) (LLam f) e = schematize (Abs v) (show (f $ SBlank v) : e)
+    appSchema x y e = schematize x (show y : e)
+    lamSchema = error "how did you even do this?"
+    liftSchema = error "should not print a lifted value"

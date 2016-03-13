@@ -165,6 +165,9 @@ instance Schematizable (f (Fix f)) => Schematizable (Fix f) where
 instance Schematizable quant => Schematizable (Quantifiers quant lang) where
         schematize (Bind q) arg = schematize q arg --here I assume 'q' stores the users varible name
 
+instance Schematizable abs => Schematizable (Abstractors abs lang) where
+        schematize (Abstract a) arg = schematize a arg --here I assume 'q' stores the users varible name
+
 instance Schematizable pred => Schematizable (Predicate pred lang) where
         schematize (Predicate p _) = schematize p
 
@@ -173,6 +176,9 @@ instance Schematizable con => Schematizable (Connective con lang) where
 
 instance Schematizable func => Schematizable (Function func lang) where
         schematize (Function f _) = schematize f
+
+instance Schematizable app => Schematizable (Applicators app lang) where
+        schematize (Apply f) = schematize f
 
 instance Schematizable sub => Schematizable (Subnective sub lang) where
         schematize (Subnective s _) = schematize s
@@ -236,6 +242,9 @@ instance  (CanonicalForm (FixLang f a), Show (FixLang f a)) => Eq (FixLang f a) 
 instance Evaluable quant => Evaluable (Quantifiers quant lang) where
     eval (Bind q) = eval q
 
+instance Evaluable abs => Evaluable (Abstractors abs lang) where
+    eval (Abstract a) = eval a
+
 instance Evaluable pred => Evaluable (Predicate pred lang) where
     eval (Predicate p a) = eval p
 
@@ -243,7 +252,10 @@ instance Evaluable con => Evaluable (Connective con lang) where
     eval (Connective p a) = eval p
 
 instance Evaluable func => Evaluable (Function func lang) where
-    eval (Function p a) = eval p
+    eval (Function p _) = eval p
+
+instance Evaluable app => Evaluable (Applicators app lang) where
+    eval (Apply f) = eval f
 
 instance Evaluable sub => Evaluable (Subnective sub lang) where
     eval (Subnective p a) = eval p
@@ -266,6 +278,9 @@ instance (Liftable lang, Evaluable lang) => Evaluable (Copula lang) where
 instance Modelable m quant => Modelable m (Quantifiers quant lang) where
     satisfies m (Bind q) = satisfies m q
 
+instance Modelable m abs => Modelable m (Abstractors abs lang) where
+    satisfies m (Abstract a) = satisfies m a
+
 instance Modelable m pred => Modelable  m (Predicate pred lang) where
     satisfies m (Predicate p a) = satisfies m p
 
@@ -273,7 +288,10 @@ instance Modelable m con => Modelable m (Connective con lang) where
     satisfies m (Connective p a) = satisfies m p
 
 instance Modelable m func => Modelable m (Function func lang) where
-    satisfies m (Function p a) = satisfies m p
+    satisfies m (Function p _) = satisfies m p
+
+instance Modelable m app => Modelable m (Applicators app lang) where
+    satisfies m (Apply p) = satisfies m p
 
 instance Modelable m sub => Modelable m (Subnective sub lang) where
     satisfies m (Subnective p a) = satisfies m p
