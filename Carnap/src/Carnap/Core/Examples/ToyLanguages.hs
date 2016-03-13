@@ -1,6 +1,6 @@
 {-#LANGUAGE TypeSynonymInstances, UndecidableInstances, FlexibleInstances, MultiParamTypeClasses, GADTs, DataKinds, PolyKinds, TypeOperators, ViewPatterns, PatternSynonyms, RankNTypes, FlexibleContexts #-}
 
-module Carnap.Core.Test.ToyLanguages where
+module Carnap.Core.Examples.ToyLanguages where
 
 import Carnap.Core.Data.AbstractSyntaxDataTypes
 import Data.Function

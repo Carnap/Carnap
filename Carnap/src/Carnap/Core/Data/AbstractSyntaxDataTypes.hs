@@ -101,7 +101,6 @@ type FixLang f = Fix (Copula :|: f)
 pattern LLam f = Fx (FLeft (Lam f))
 pattern (:!$:) f x = Fx (FLeft (f :$: x))
 
---XXX:Could Quantifiers and Abstractors be subsumed under a common type?
 data Quantifiers :: (* -> *) -> (* -> *) -> * -> * where
     Bind :: quant ((t a -> f b) -> f b) -> Quantifiers quant lang ((t a -> f b) -> f b)
 
