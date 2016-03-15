@@ -188,14 +188,17 @@ abstractTerm _ p = const p
 --------------------------------------------------------
 --2. A Simply Typed Lambda Calculus
 --------------------------------------------------------
---TODO: I think it'd be best to split this into a separate file to avoid
+--TODO: I think it'd be best to split this into a separate module to avoid
 --e.g. very crazy symbols for our specializations of :!$:
 
 data Application c where
         App :: Application (Term (a -> b) -> Term a -> Term b)
 
 instance Schematizable Application where
-    schematize App = \(x:y:_) -> "(" ++ x ++ " " ++ y ++ ")"
+        schematize App = \(x:y:_) -> "(" ++ x ++ " " ++ y ++ ")"
+
+instance Evaluable Application where
+        eval (App) = \(Term f) (Term x) -> Term (f x)
 
 data IntObject a where
         IntOb :: Int -> IntObject (Term Int)
@@ -203,8 +206,17 @@ data IntObject a where
 instance Schematizable IntObject where
         schematize (IntOb n) _ = show n 
 
+instance Evaluable IntObject where
+        eval (IntOb n) = Term n
+
 data Abstraction c where
         Abs :: String -> Abstraction ((Term a -> Term b) -> Term (a -> b))
+
+instance Schematizable Abstraction where
+        schematize (Abs v) = \(x:_) -> "λ" ++ v ++ "." ++ x
+
+instance Evaluable Abstraction where
+        eval (Abs n) = \f -> Term $ \x -> ((\(Term y) -> y) (f $ Term x))
 
 data SimpleTerm a where
     Blank :: String ->  SimpleTerm (Term a)
@@ -212,8 +224,8 @@ data SimpleTerm a where
 instance Schematizable SimpleTerm where 
     schematize (Blank v) _ = v
 
-instance Schematizable Abstraction where
-    schematize (Abs v) = \(x:_) -> "λ" ++ v ++ "." ++ x
+instance Evaluable SimpleTerm where
+    eval = error "only closed terms are evaluable"
 
 type SimpleLambda = FixLang ( Applicators Application
                           :|: Abstractors Abstraction
@@ -226,6 +238,7 @@ pattern AppFunc f = Fx (FRight (FLeft (FLeft (FLeft ((Apply f))))))
 pattern SAbstract q = Fx (FRight (FLeft (FLeft (FRight (Abstract q)))))
 pattern ObFunc f arity = Fx (FRight (FLeft (FRight (Function f arity))))
 pattern SimpAbs v f = (SAbstract (Abs v)) :!$$: LLam f
+pattern SimpInt :: Int -> SimpleLambda (Term Int)
 pattern SimpInt n = ObFunc (IntOb n) AZero
 pattern SimpApp a b = (AppFunc App) :!$$: a :!$$: b
 pattern SBlank v = Fx (FRight (FRight (Function (Blank v) AZero)))
