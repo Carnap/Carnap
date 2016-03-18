@@ -7,11 +7,13 @@ module Carnap.Core.Data.AbstractSyntaxDataTypes(
   Copula((:$:), Lam), (:|:)(FLeft, FRight), Quantifiers(Bind),Abstractors(Abstract),Applicators(Apply),
   Nat(Zero, Succ), Fix(Fx), Vec(VNil, VCons), Arity(AZero, ASucc),
   Predicate(Predicate), Connective(Connective), Function(Function),
-  Subnective(Subnective),CanonicalForm, Schematizable, FixLang, 
+  Subnective(Subnective),CanonicalForm, Schematizable, FixLang,
   pattern AOne, pattern ATwo , pattern LLam, pattern (:!$:)
 ) where
 
 import Carnap.Core.Util
+import Control.Lens
+import Control.Lens.Plated
 
 --This module attempts to provide abstract syntax types that would cover
 --a wide variety of languages
