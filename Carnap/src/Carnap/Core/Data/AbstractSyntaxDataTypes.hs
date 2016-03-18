@@ -99,9 +99,9 @@ infixr 5 :|:
 -- | such that the first argument is fixable
 newtype Fix f idx = Fx (f (Fix f) idx)
 
--- | This is an empty functor, which can be used to close off a series of
--- | applications of `:|:`, so that the right-most leaf doesn't need
--- | special treatment.
+-- | This is an empty abstract type, which can be used to close off
+-- | a series of applications of `:|:`, so that the right-most leaf 
+-- | doesn't need special treatment.
 data EndLang :: (* -> *) -> * -> * 
 
 type FixLang f = Fix (Copula :|: f)
@@ -119,6 +119,7 @@ pattern Fx8 x  = Fx (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRi
 pattern Fx9 x  = Fx (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FLeft x))))))))))
 pattern Fx10 x = Fx (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FLeft x)))))))))))
 pattern Fx11 x = Fx (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FLeft x))))))))))))
+pattern Fx12 x = Fx (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FLeft x)))))))))))))
 
 data Quantifiers :: (* -> *) -> (* -> *) -> * -> * where
     Bind :: quant ((t a -> f b) -> f b) -> Quantifiers quant lang ((t a -> f b) -> f b)
