@@ -96,7 +96,8 @@ instance Modelable ([Int], Int -> Bool) BasicTerm where
 type ToyLanguage = FixLang (Predicate BasicProp
                        :|: Connective BasicConn
                        :|: Quantifiers BasicQuant
-                       :|: Function BasicTerm)
+                       :|: Function BasicTerm
+                       :|: EndLang)
 
 type ToyTerm = ToyLanguage (Term Int)
 type ToyForm = ToyLanguage (Form Bool)
@@ -104,26 +105,26 @@ type ToyForm = ToyLanguage (Form Bool)
 --this stuff is kinda boiler plate that I want for the sake of testing
 --the user would most likely not care about this stuff
 pattern (:!!$:) :: ToyLanguage (a -> b) -> ToyLanguage a -> ToyLanguage b
-pattern (:!!$:) f y = f :!$: y
-pattern ToyCon x arity = Fx (FRight (FLeft (FLeft (FRight (Connective x arity)))))
-pattern ToyPred x arity = Fx (FRight (FLeft (FLeft (FLeft (Predicate x arity)))))
-pattern TQuant q = Fx (FRight (FLeft (FRight (Bind q))))
-pattern TFunc f arity = Fx (FRight (FRight (Function f arity)))
-pattern TVar s = TFunc (Var s) AZero
-pattern TAnd = ToyCon And ATwo
-pattern TNot = ToyCon Not AOne
-pattern TProp n = ToyPred (Prop n) AZero
+pattern (:!!$:) f y      = f :!$: y
+pattern ToyPred x arity  = Fx1 (Predicate x arity)
+pattern ToyCon x arity   = Fx2 (Connective x arity)
+pattern TQuant q         = Fx3 (Bind q)
+pattern TFunc f arity    = Fx4 (Function f arity)
+pattern TVar s           = TFunc (Var s) AZero
+pattern TAnd             = ToyCon And ATwo
+pattern TNot             = ToyCon Not AOne
+pattern TProp n          = ToyPred (Prop n) AZero
 pattern TAll :: String -> ToyLanguage ((Term Int -> Form Bool) -> Form Bool)
-pattern TAll x = TQuant (All x) 
+pattern TAll x           = TQuant (All x)
 --XXX: TAll appears not to always work in pattern matches
-pattern TBind q f = (TQuant q :!!$: LLam f)
+pattern TBind q f        = (TQuant q :!!$: LLam f)
 --XXX: TBind appears to require :!!$: to resolve some type ambiguities for,
 --e.g. show instances.
-pattern Conj x y  = TAnd :!$: x :!$: y
-pattern (:&:) x y = TAnd :!$: x :!$: y
-pattern Neg x = TNot :!$: x
-pattern (:=:) x y = ToyPred EqProp (ASucc (ASucc AZero)) :!$: x :!$: y
-pattern Univ v f = TBind (All v) f
+pattern Conj x y         = TAnd :!$: x :!$: y
+pattern (:&:) x y        = TAnd :!$: x :!$: y
+pattern Neg x            = TNot :!$: x
+pattern (:=:) x y        = ToyPred EqProp (ASucc (ASucc AZero)) :!$: x :!$: y
+pattern Univ v f         = TBind (All v) f
 
 quantif v f =  (TAll v :!$: LLam f) 
 
@@ -230,21 +231,22 @@ instance Evaluable SimpleTerm where
 type SimpleLambda = FixLang ( Applicators Application
                           :|: Abstractors Abstraction
                           :|: Function IntObject
-                          :|: Function SimpleTerm)
+                          :|: Function SimpleTerm
+                          :|: EndLang)
 
 pattern (:!$$:) :: SimpleLambda (a -> b) -> SimpleLambda a -> SimpleLambda b
-pattern (:!$$:) f y = f :!$: y
-pattern AppFunc f = Fx (FRight (FLeft (FLeft (FLeft ((Apply f))))))
-pattern SAbstract q = Fx (FRight (FLeft (FLeft (FRight (Abstract q)))))
-pattern ObFunc f arity = Fx (FRight (FLeft (FRight (Function f arity))))
-pattern SimpAbs v f = (SAbstract (Abs v)) :!$$: LLam f
+pattern (:!$$:) f y    = f :!$: y
+pattern AppFunc f      = Fx1 (Apply f)
+pattern SAbstract q    = Fx2 (Abstract q)
+pattern ObFunc f arity = Fx3 (Function f arity)
+pattern SBlank v       = Fx4 (Function (Blank v) AZero)
+pattern SimpAbs v f    = (SAbstract (Abs v)) :!$$: LLam f
 pattern SimpInt :: Int -> SimpleLambda (Term Int)
-pattern SimpInt n = ObFunc (IntOb n) AZero
-pattern SimpApp a b = (AppFunc App) :!$$: a :!$$: b
-pattern SBlank v = Fx (FRight (FRight (Function (Blank v) AZero)))
+pattern SimpInt n      = ObFunc (IntOb n) AZero
+pattern SimpApp a b    = (AppFunc App) :!$$: a :!$$: b
 
 instance CopulaSchema SimpleLambda where
     appSchema (SAbstract (Abs v)) (LLam f) e = schematize (Abs v) (show (f $ SBlank v) : e)
-    appSchema x y e = schematize x (show y : e)
-    lamSchema = error "how did you even do this?"
-    liftSchema = error "should not print a lifted value"
+    appSchema x y e                          = schematize x (show y : e)
+    lamSchema                                = error "how did you even do this?"
+    liftSchema                               = error "should not print a lifted value"

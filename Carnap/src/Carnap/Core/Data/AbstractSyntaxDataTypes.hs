@@ -8,7 +8,9 @@ module Carnap.Core.Data.AbstractSyntaxDataTypes(
   Nat(Zero, Succ), Fix(Fx), Vec(VNil, VCons), Arity(AZero, ASucc),
   Predicate(Predicate), Connective(Connective), Function(Function),
   Subnective(Subnective),CanonicalForm, Schematizable, FixLang, 
-  pattern AOne, pattern ATwo , pattern LLam, pattern (:!$:)
+  pattern AOne, pattern ATwo , pattern LLam, pattern (:!$:), 
+  pattern Fx1, pattern Fx2, pattern Fx3, pattern Fx4, pattern Fx5, pattern
+  Fx6, pattern Fx7, pattern Fx8, pattern Fx9, pattern Fx10, pattern Fx11, EndLang
 ) where
 
 import Carnap.Core.Util
@@ -90,16 +92,33 @@ data (:|:) :: (k -> k' -> *) -> (k -> k' -> *) -> k -> k' -> * where
     FLeft :: f x idx -> (f :|: g) x idx
     FRight :: g x idx -> (f :|: g) x idx
 
+infixr 5 :|:
+
 -- | This type fixes the first argument of a functor and carries though a
--- | phantom type
--- | note that only certian kinds of functors even have a kind
+-- | phantom type. note that only certian kinds of functors even have a kind
 -- | such that the first argument is fixable
 newtype Fix f idx = Fx (f (Fix f) idx)
+
+-- | This is an empty functor, which can be used to close off a series of
+-- | applications of `:|:`, so that the right-most leaf doesn't need
+-- | special treatment.
+data EndLang :: (* -> *) -> * -> * 
 
 type FixLang f = Fix (Copula :|: f)
 
 pattern LLam f = Fx (FLeft (Lam f))
 pattern (:!$:) f x = Fx (FLeft (f :$: x))
+pattern Fx1 x  = Fx (FRight (FLeft x))
+pattern Fx2 x  = Fx (FRight (FRight (FLeft x)))
+pattern Fx3 x  = Fx (FRight (FRight (FRight (FLeft x))))
+pattern Fx4 x  = Fx (FRight (FRight (FRight (FRight (FLeft x)))))
+pattern Fx5 x  = Fx (FRight (FRight (FRight (FRight (FRight (FLeft x))))))
+pattern Fx6 x  = Fx (FRight (FRight (FRight (FRight (FRight (FRight (FLeft x)))))))
+pattern Fx7 x  = Fx (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FLeft x))))))))
+pattern Fx8 x  = Fx (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FLeft x)))))))))
+pattern Fx9 x  = Fx (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FLeft x))))))))))
+pattern Fx10 x = Fx (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FLeft x)))))))))))
+pattern Fx11 x = Fx (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FLeft x))))))))))))
 
 data Quantifiers :: (* -> *) -> (* -> *) -> * -> * where
     Bind :: quant ((t a -> f b) -> f b) -> Quantifiers quant lang ((t a -> f b) -> f b)
@@ -154,6 +173,10 @@ data Subnective :: (* -> *) -> (* -> *) -> * -> * where
 --------------------------------------------------------
 --3. Schematizable, Show, and Eq
 --------------------------------------------------------
+
+--dummy instance for a type with no constructors
+instance Schematizable (EndLang lang) where
+        schematize = undefined
 
 instance (Schematizable (f a), Schematizable (g a)) => Schematizable ((f :|: g) a) where
         schematize (FLeft a) = schematize a
@@ -259,6 +282,10 @@ instance Evaluable app => Evaluable (Applicators app lang) where
 
 instance Evaluable sub => Evaluable (Subnective sub lang) where
     eval (Subnective p a) = eval p
+    
+--dummy instance for a type with no constructors
+instance Evaluable (EndLang lang) where
+        eval = undefined
 
 instance (Evaluable (f lang), Evaluable (g lang)) => Evaluable ((f :|: g) lang) where
     eval (FLeft p) = eval p
@@ -295,6 +322,10 @@ instance Modelable m app => Modelable m (Applicators app lang) where
 
 instance Modelable m sub => Modelable m (Subnective sub lang) where
     satisfies m (Subnective p a) = satisfies m p
+
+--dummy instance for a type with no constructors
+instance Modelable m (EndLang lang) where
+        satisfies = undefined
 
 instance (Modelable m (f lang), Modelable m (g lang)) => Modelable m ((f :|: g) lang) where
     satisfies m (FLeft p) = satisfies m p
