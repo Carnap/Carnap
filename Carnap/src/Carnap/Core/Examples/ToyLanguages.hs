@@ -131,7 +131,7 @@ quantif v f =  (TAll v :!$: LLam f)
 instance Plated (ToyLanguage (Form Bool)) where
         plate f (Conj x y) = Conj <$> f x <*> f y
         plate f (Neg x) = Neg <$> f x
-        plate f (Univ v phi) = TBind (All v) <$> abstractTerm (TVar v) 
+        plate f (Univ v phi) = TBind (All v) <$> platedAbstractTerm (TVar v) 
                                              <$> f (phi $ TVar v)
         plate _ x = pure x
         
@@ -180,11 +180,17 @@ relabelVars phi = evalState (transformM trans phi) 0
 --This function vacuums a given term out of a formula and returns the
 --corresponding function from terms to formulas
 abstractTerm :: ToyTerm -> ToyForm -> (ToyTerm -> ToyForm)
-abstractTerm v (Conj p p') = \x -> Conj (abstractTerm v p x) (abstractTerm v p' x)
-abstractTerm v (Neg p) = \x -> Neg (abstractTerm v p x)
-abstractTerm v (TBind q f) = \x -> TBind q ((\g -> g x) . abstractTerm v . f)
-abstractTerm v (v' :=: v'') = \x -> (if v == v' then x else v') :=: (if v == v'' then x else v'')
+abstractTerm t (Conj p p') = \x -> Conj (abstractTerm t p x) (abstractTerm t p' x)
+abstractTerm t (Neg p) = \x -> Neg (abstractTerm t p x)
+abstractTerm t (TBind q f) = \x -> TBind q ((\g -> g x) . abstractTerm t . f)
+abstractTerm t (t' :=: t'') = \x -> (if t == t' then x else t') :=: (if t == t'' then x else t'')
 abstractTerm _ p = const p
+
+platedAbstractTerm :: ToyTerm -> ToyForm -> (ToyTerm -> ToyForm)
+platedAbstractTerm t f = \x -> transform (replaceWith x) f
+    where replaceWith x (t' :=: t'') = (if t == t' then x else t') :=: (if t == t'' then x else t'')
+          replaceWith x f = f
+
 
 --------------------------------------------------------
 --2. A Simply Typed Lambda Calculus
