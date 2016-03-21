@@ -121,6 +121,23 @@ pattern Fx10 x = Fx (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRi
 pattern Fx11 x = Fx (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FLeft x))))))))))))
 pattern Fx12 x = Fx (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FLeft x)))))))))))))
 
+--XXX: Idea for a uniform definition of plate: the big difficulty here is
+--doing a kind very flexible pattern matching, which depends on whether the
+--head is Fx_n wrapped around a predicate, a connective, a quantifier, or
+--god-knows-what. If we pattern-match, we get type refinements on the RHS,
+--which let us put things back together. The best idea right now is to try
+--to use a prism, which, given a formula, previews a tuple of the MC and the
+--parts if there is an MC, and otherwise nothing. so, something like 
+--`Prism' (Lang .. (Form a)) (Lang .. (Form b), Lang .. (Form c), Lang .. (Form b -> Form c -> Form a)`.
+--We could then reconstruct from parts, or try something new if we get
+--nothing. Might be able to build these uniformly using arities. No loss,
+--since our connectives have to have uniformly typed arguments anyway.
+--
+--So, while prisms like this would be nice to have, this just pushes the
+--problem back to producing the appropriate prism. Current best idea:
+--a typeclass that returns a "Maybe .. (a -> a -> b)" of the appropriate kind, and
+--which can be used to drill down into the  :|: structures. Again, maybe
+--this can be done uniformly with an arity
 data Quantifiers :: (* -> *) -> (* -> *) -> * -> * where
     Bind :: quant ((t a -> f b) -> f b) -> Quantifiers quant lang ((t a -> f b) -> f b)
 
@@ -132,17 +149,18 @@ data Applicators :: (* -> *) -> (* -> *) -> * -> * where
 
 data Term a = Term a
     deriving(Eq, Ord, Show)
-data Form a = Form a
-    deriving(Eq, Ord, Show)
 
 instance Evaluable Term where
     eval (Term x) = x
 
-instance Evaluable Form where
-    eval (Form x) = x
-
 instance Liftable Term where
     lift = Term
+
+data Form a = Form a
+    deriving(Eq, Ord, Show)
+
+instance Evaluable Form where
+    eval (Form x) = x
 
 instance Liftable Form where
     lift = Form
@@ -158,16 +176,16 @@ pattern AOne = (ASucc AZero)
 pattern ATwo = (ASucc (ASucc AZero))
 
 data Predicate :: (* -> *) -> (* -> *) -> * -> * where
-    Predicate :: pred t -> Arity a b n t -> Predicate pred lang t
+    Predicate :: pred t -> Arity (Term a) (Form b) n t -> Predicate pred lang t
 
 data Connective :: (* -> *) -> (* -> *) -> * -> * where
-    Connective :: con t -> Arity a b n t -> Connective con lang t
+    Connective :: con t -> Arity (Form a) (Form b) n t -> Connective con lang t
 
 data Function :: (* -> *) -> (* -> *) -> * -> * where
-    Function :: func t -> Arity a b n t -> Function func lang t
+    Function :: func t -> Arity (Term a) (Term b) n t -> Function func lang t
 
 data Subnective :: (* -> *) -> (* -> *) -> * -> * where
-    Subnective :: sub t -> Arity a b n t -> Subnective sub lang t
+    Subnective :: sub t -> Arity (Form a) (Term b) n t -> Subnective sub lang t
 
 --data Quote :: (* -> *) -> * -> *
     --Quote :: (lang )
