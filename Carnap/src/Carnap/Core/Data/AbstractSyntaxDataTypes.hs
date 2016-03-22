@@ -1,4 +1,4 @@
-{-#LANGUAGE TypeFamilies, UndecidableInstances, FlexibleInstances, MultiParamTypeClasses, AllowAmbiguousTypes, GADTs, KindSignatures, DataKinds, PolyKinds, TypeOperators, ViewPatterns, PatternSynonyms, RankNTypes, FlexibleContexts #-}
+{-#LANGUAGE TypeFamilies, UndecidableInstances, FlexibleInstances, MultiParamTypeClasses, AllowAmbiguousTypes, GADTs, KindSignatures, DataKinds, PolyKinds, TypeOperators, ViewPatterns, PatternSynonyms, RankNTypes, FlexibleContexts, ScopedTypeVariables, AutoDeriveTypeable #-}
 
 module Carnap.Core.Data.AbstractSyntaxDataTypes(
   Modelable, Evaluable, Term(Term), Form(Form), CopulaSchema,
@@ -14,6 +14,8 @@ module Carnap.Core.Data.AbstractSyntaxDataTypes(
 ) where
 
 import Carnap.Core.Util
+import Data.Typeable
+import Control.Lens
 
 --This module attempts to provide abstract syntax types that would cover
 --a wide variety of languages
@@ -174,6 +176,7 @@ data Arity :: * -> * -> Nat -> * -> * where
 
 pattern AOne = (ASucc AZero)
 pattern ATwo = (ASucc (ASucc AZero))
+
 
 data Predicate :: (* -> *) -> (* -> *) -> * -> * where
     Predicate :: pred t -> Arity (Term a) (Form b) n t -> Predicate pred lang t
@@ -357,3 +360,49 @@ instance (Liftable lang, Modelable m lang) => Modelable m (Copula lang) where
     satisfies m (f :$: x) = satisfies m f (satisfies m x)
     satisfies m (Lam f) = \t -> satisfies m $ f (lift t)
     satisfies m (Lift t) = t
+
+--------------------------------------------------------
+--Head Extractors and a Generic Plated Instance.
+--------------------------------------------------------
+
+class Searchable f l where
+        getConnective :: (Typeable idx, Typeable t) => Arity (Form a) (Form b) n t -> f l idx -> Maybe (f l t)
+        getConnective _ _ = Nothing
+        getFunction   :: (Typeable idx, Typeable t) => Arity (Term a) (Term b) n t -> f l idx -> Maybe (f l t)
+        getFunction _ _ = Nothing
+        getSubnective :: (Typeable idx, Typeable t) => Arity (Form a) (Term b) n t -> f l idx -> Maybe (f l t)
+        getSubnective _ _ = Nothing
+        getPredicate  :: (Typeable idx, Typeable t) => Arity (Term a) (Form b) n t -> f l idx -> Maybe (f l t)
+        getPredicate _ _ = Nothing
+
+instance Searchable (Predicate pred) lang where
+        getPredicate  (a1 :: Arity (Term a) (Form b) n t) f@(Predicate p (a2 :: Arity (Term a1) (Form b1) n1 idx)) = 
+            case eqT :: Maybe (t :~: idx) of
+                Just Refl -> Just f
+                Nothing -> Nothing
+        getPredicate _ _ = Nothing
+
+instance Searchable (Connective con) lang where
+        getConnective (a1 :: Arity (Form a) (Form b) n t) f@(Connective c (a2 :: Arity (Form a1) (Form b1) n1 idx)) = 
+            case eqT :: Maybe (t :~: idx) of
+                Just Refl -> Just f
+                Nothing -> Nothing
+        getConnective _ _ = Nothing
+
+instance (Searchable f l, Searchable g l ) => 
+        Searchable (f :|: g) l where
+        getConnective ar (FLeft a)  = FLeft  <$> getConnective ar a
+        getConnective ar (FRight a) = FRight <$> getConnective ar a
+        getFunction   ar (FLeft a)  = FLeft  <$> getFunction   ar a
+        getFunction   ar (FRight a) = FRight <$> getFunction   ar a
+        getSubnective ar (FLeft a)  = FLeft  <$> getSubnective ar a
+        getSubnective ar (FRight a) = FRight <$> getSubnective ar a
+        getPredicate  ar (FLeft a)  = FLeft  <$> getPredicate  ar a
+        getPredicate  ar (FRight a) = FRight <$> getPredicate  ar a
+
+getConnectiveFx ar (Fx c) = Fx <$> getConnective ar c
+getConnectiveFx _ _ = Nothing
+
+-- instance (Searchable f l, Typeable idx) => Plated (FixLang f (Form idx)) where
+--         plate f phi@ (h :!$: t) = case (getConnectiveFx (ASucc (AZero)) h) of
+--                                      (Just c) -> pure phi
