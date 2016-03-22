@@ -108,6 +108,8 @@ pattern (:!!$:) :: ToyLanguage (a -> b) -> ToyLanguage a -> ToyLanguage b
 pattern (:!!$:) f y      = f :!$: y
 pattern ConnZero         :: Arity (Form Bool) (Form Bool) 'Zero (Form Bool) 
 pattern ConnZero         = AZero
+pattern ConnOne         :: Arity (Form Bool) (Form Bool) ('Succ 'Zero) (Form Bool -> Form Bool) 
+pattern ConnOne          = ASucc ConnZero
 pattern ToyPred x arity  = Fx1 (Predicate x arity)
 pattern ToyCon x arity   = Fx2 (Connective x arity)
 pattern TQuant q         = Fx3 (Bind q)
@@ -124,7 +126,7 @@ pattern TBind q f        = (TQuant q :!!$: LLam f)
 --e.g. show instances.
 pattern Conj x y         = TAnd :!$: x :!$: y
 pattern (:&:) x y        = TAnd :!$: x :!$: y
-pattern Neg x            = TNot :!$: x
+pattern Neg x            = TNot :!!$: x
 pattern (:=:) x y        = ToyPred EqProp (ASucc (ASucc AZero)) :!$: x :!$: y
 pattern Univ v f         = TBind (All v) f
 
