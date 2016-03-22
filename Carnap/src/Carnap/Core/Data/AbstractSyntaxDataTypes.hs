@@ -389,6 +389,14 @@ instance Searchable (Connective con) lang where
                 Nothing -> Nothing
         getConnective _ _ = Nothing
 
+instance Searchable (Function con) lang 
+
+instance Searchable Copula lang 
+
+instance Searchable (Quantifiers quant) lang 
+
+instance Searchable EndLang lang 
+
 instance (Searchable f l, Searchable g l ) => 
         Searchable (f :|: g) l where
         getConnective ar (FLeft a)  = FLeft  <$> getConnective ar a
@@ -400,6 +408,7 @@ instance (Searchable f l, Searchable g l ) =>
         getPredicate  ar (FLeft a)  = FLeft  <$> getPredicate  ar a
         getPredicate  ar (FRight a) = FRight <$> getPredicate  ar a
 
+getConnectiveFx :: (Typeable idx, Typeable idx1, Searchable f (Fix f)) => Arity (Form a) (Form b) n idx -> Fix f idx1 -> Maybe (Fix f idx)
 getConnectiveFx ar (Fx c) = Fx <$> getConnective ar c
 getConnectiveFx _ _ = Nothing
 

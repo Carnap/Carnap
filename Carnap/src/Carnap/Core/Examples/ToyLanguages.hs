@@ -106,6 +106,8 @@ type ToyForm = ToyLanguage (Form Bool)
 --the user would most likely not care about this stuff
 pattern (:!!$:) :: ToyLanguage (a -> b) -> ToyLanguage a -> ToyLanguage b
 pattern (:!!$:) f y      = f :!$: y
+pattern ConnZero         :: Arity (Form Bool) (Form Bool) 'Zero (Form Bool) 
+pattern ConnZero         = AZero
 pattern ToyPred x arity  = Fx1 (Predicate x arity)
 pattern ToyCon x arity   = Fx2 (Connective x arity)
 pattern TQuant q         = Fx3 (Bind q)
