@@ -6,6 +6,7 @@ module Carnap.Core.Data.AbstractSyntaxDataTypes(
   appSchema, lamSchema, liftSchema,
   Copula((:$:), Lam), (:|:)(FLeft, FRight), Quantifiers(Bind),Abstractors(Abstract),Applicators(Apply),
   Nat(Zero, Succ), Fix(Fx), Vec(VNil, VCons), Arity(AZero, ASucc),
+  TArity(TZero, TSucc),
   Predicate(Predicate), Connective(Connective), Function(Function),
   Subnective(Subnective),CanonicalForm, Schematizable, FixLang, 
   pattern AOne, pattern ATwo , pattern LLam, pattern (:!$:), 
@@ -16,6 +17,7 @@ module Carnap.Core.Data.AbstractSyntaxDataTypes(
 import Carnap.Core.Util
 import Data.Typeable
 import Control.Lens
+import Unsafe.Coerce
 
 --This module attempts to provide abstract syntax types that would cover
 --a wide variety of languages
@@ -84,7 +86,7 @@ lift2 f fa fb = lift (f (eval fa) (eval fb))
 --    Fix (Copula :|: Copula :|: (Predicate BasicProp :|: Connective BasicConn))
 -- @
 data Copula lang t where
-    (:$:) :: lang (t -> t') -> lang t -> Copula lang t'
+    (:$:) :: (Typeable t, Typeable t') => lang (t -> t') -> lang t -> Copula lang t'
     Lam :: (lang t -> lang t') -> Copula lang (t -> t')
     Lift :: t -> Copula lang t
 
@@ -107,6 +109,7 @@ newtype Fix f idx = Fx (f (Fix f) idx)
 data EndLang :: (* -> *) -> * -> * 
 
 type FixLang f = Fix (Copula :|: f)
+
 
 pattern LLam f = Fx (FLeft (Lam f))
 pattern (:!$:) f x = Fx (FLeft (f :$: x))
@@ -174,9 +177,12 @@ data Arity :: * -> * -> Nat -> * -> * where
     AZero :: Arity arg ret Zero ret
     ASucc :: Arity arg ret n ret' -> Arity arg ret (Succ n) (arg -> ret')
 
+data TArity :: * -> * -> Nat -> * -> * where
+    TZero :: Typeable ret => TArity arg ret Zero ret
+    TSucc :: (Typeable ret, Typeable arg, Typeable ret') => TArity arg ret n ret' -> TArity arg ret (Succ n) (arg -> ret')
+
 pattern AOne = (ASucc AZero)
 pattern ATwo = (ASucc (ASucc AZero))
-
 
 data Predicate :: (* -> *) -> (* -> *) -> * -> * where
     Predicate :: pred t -> Arity (Term a) (Form b) n t -> Predicate pred lang t
@@ -364,26 +370,41 @@ instance (Liftable lang, Modelable m lang) => Modelable m (Copula lang) where
 --------------------------------------------------------
 --Head Extractors and a Generic Plated Instance.
 --------------------------------------------------------
-
 class Searchable f l where
-        getConnective :: (Typeable idx, Typeable t) => Arity (Form a) (Form b) n t -> f l idx -> Maybe (f l t)
+        getConnective :: (Typeable idx) => TArity (Form a) (Form b) n t -> f l idx -> Maybe (f l t)
         getConnective _ _ = Nothing
-        getFunction   :: (Typeable idx, Typeable t) => Arity (Term a) (Term b) n t -> f l idx -> Maybe (f l t)
+        getFunction   :: (Typeable idx) => TArity (Term a) (Term b) n t -> f l idx -> Maybe (f l t)
         getFunction _ _ = Nothing
-        getSubnective :: (Typeable idx, Typeable t) => Arity (Form a) (Term b) n t -> f l idx -> Maybe (f l t)
+        getSubnective :: (Typeable idx) => TArity (Form a) (Term b) n t -> f l idx -> Maybe (f l t)
         getSubnective _ _ = Nothing
-        getPredicate  :: (Typeable idx, Typeable t) => Arity (Term a) (Form b) n t -> f l idx -> Maybe (f l t)
+        getPredicate  :: (Typeable idx) => TArity (Term a) (Form b) n t -> f l idx -> Maybe (f l t)
         getPredicate _ _ = Nothing
 
 instance Searchable (Predicate pred) lang where
-        getPredicate  (a1 :: Arity (Term a) (Form b) n t) f@(Predicate p (a2 :: Arity (Term a1) (Form b1) n1 idx)) = 
+        getPredicate  (TZero :: TArity (Term a) (Form b) n t) f@(Predicate p (a2 :: Arity (Term a1) (Form b1) n1 idx)) = 
+            case eqT :: Maybe (t :~: idx) of
+                Just Refl -> Just f
+                Nothing -> Nothing
+        getPredicate  ((TSucc TZero) :: TArity (Term a) (Form b) n t) f@(Predicate p (a2 :: Arity (Term a1) (Form b1) n1 idx)) = 
+            case eqT :: Maybe (t :~: idx) of
+                Just Refl -> Just f
+                Nothing -> Nothing
+        getPredicate  ((TSucc(TSucc TZero)) :: TArity (Term a) (Form b) n t) f@(Predicate p (a2 :: Arity (Term a1) (Form b1) n1 idx)) = 
             case eqT :: Maybe (t :~: idx) of
                 Just Refl -> Just f
                 Nothing -> Nothing
         getPredicate _ _ = Nothing
 
 instance Searchable (Connective con) lang where
-        getConnective (a1 :: Arity (Form a) (Form b) n t) f@(Connective c (a2 :: Arity (Form a1) (Form b1) n1 idx)) = 
+        getConnective (TZero :: TArity (Form a) (Form b) n t) f@(Connective c (a2 :: Arity (Form a1) (Form b1) n1 idx)) = 
+            case eqT :: Maybe (t :~: idx) of
+                Just Refl -> Just f
+                Nothing -> Nothing
+        getConnective ((TSucc TZero) :: TArity (Form a) (Form b) n t) f@(Connective c (a2 :: Arity (Form a1) (Form b1) n1 idx)) = 
+            case eqT :: Maybe (t :~: idx) of
+                Just Refl -> Just f
+                Nothing -> Nothing
+        getConnective ((TSucc (TSucc TZero)) :: TArity (Form a) (Form b) n t) f@(Connective c (a2 :: Arity (Form a1) (Form b1) n1 idx)) = 
             case eqT :: Maybe (t :~: idx) of
                 Just Refl -> Just f
                 Nothing -> Nothing
@@ -406,12 +427,22 @@ instance (Searchable f l, Searchable g l ) =>
         getSubnective ar (FLeft a)  = FLeft  <$> getSubnective ar a
         getSubnective ar (FRight a) = FRight <$> getSubnective ar a
         getPredicate  ar (FLeft a)  = FLeft  <$> getPredicate  ar a
-        getPredicate  ar (FRight a) = FRight <$> getPredicate  ar a
 
-getConnectiveFx :: (Typeable idx, Typeable idx1, Searchable f (Fix f)) => Arity (Form a) (Form b) n idx -> Fix f idx1 -> Maybe (Fix f idx)
+getConnectiveFx :: (Typeable idx1, Searchable f (Fix f)) => TArity (Form a) (Form b) n idx -> Fix f idx1 -> Maybe (Fix f idx)
 getConnectiveFx ar (Fx c) = Fx <$> getConnective ar c
-getConnectiveFx _ _ = Nothing
 
--- instance (Searchable f l, Typeable idx) => Plated (FixLang f (Form idx)) where
---         plate f phi@ (h :!$: t) = case (getConnectiveFx (ASucc (AZero)) h) of
---                                      (Just c) -> pure phi
+instance (Searchable f (FixLang f), Typeable idx) => 
+        Plated (FixLang f (Form idx)) where
+             plate g phi@(h :!$: (t1 :: FixLang f t1t) :!$: (t2 :: FixLang f t2t)) = 
+                                                   case (getConnectiveFx two h, eqT :: Maybe (t1t :~: Form idx), eqT :: Maybe (t2t :~: Form idx) ) of
+                                                         (Just c, Just Refl, Just Refl) -> (:!$:) <$> ((:!$:) <$> pure h <*> g t1) <*> g t2
+                                                         _ -> pure phi
+                 where two   = (TSucc (TSucc TZero)) :: TArity (Form idx) (Form idx) (Succ (Succ Zero)) (Form idx -> Form idx -> Form idx)
+             plate g phi@(h :!$: (t :: FixLang f tt)) = case (getConnectiveFx one h, eqT :: Maybe (tt :~: Form idx)) of
+                                                     (Just c, Just Refl) -> (:!$:) <$> pure h <*> g t
+                                                     _ -> pure phi
+                 where one   = (TSucc TZero) :: TArity (Form idx) (Form idx) (Succ Zero) (Form idx -> Form idx)
+                    -- three = (TSucc TZero) :: TArity (Form idx) (Form idx) (Succ Zero) (Form idx -> Form idx)
+                    -- four  = (TSucc TZero) :: TArity (Form idx) (Form idx) (Succ Zero) (Form idx -> Form idx)
+--         plate f phi@(h :$$: t) = case (getConnectiveFx (TSucc (TZero)) h) of
+--                                                 (Just c) -> pure phi

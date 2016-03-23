@@ -1,4 +1,4 @@
-{-#LANGUAGE TypeSynonymInstances, UndecidableInstances, FlexibleInstances, MultiParamTypeClasses, GADTs, DataKinds, PolyKinds, TypeOperators, ViewPatterns, PatternSynonyms, RankNTypes, FlexibleContexts #-}
+{-#LANGUAGE TypeSynonymInstances, UndecidableInstances, FlexibleInstances, MultiParamTypeClasses, GADTs, DataKinds, PolyKinds, TypeOperators, ViewPatterns, PatternSynonyms, RankNTypes, FlexibleContexts, AutoDeriveTypeable #-}
 
 module Carnap.Core.Examples.ToyLanguages where
 
@@ -6,6 +6,7 @@ import Carnap.Core.Data.AbstractSyntaxDataTypes
 import Data.Function
 import Control.Lens
 import Control.Monad.State.Lazy
+import Data.Typeable
 
 --This module gives some toy language examples, with instances of
 --important typeclasses, and explanation of the guiding ideas behind them.
@@ -104,8 +105,12 @@ type ToyForm = ToyLanguage (Form Bool)
                        
 --this stuff is kinda boiler plate that I want for the sake of testing
 --the user would most likely not care about this stuff
-pattern (:!!$:) :: ToyLanguage (a -> b) -> ToyLanguage a -> ToyLanguage b
+pattern (:!!$:) :: (Typeable a, Typeable b) => ToyLanguage (a -> b) -> ToyLanguage a -> ToyLanguage b
 pattern (:!!$:) f y      = f :!$: y
+-- pattern ConnTZero         :: TArity (Form Bool) (Form Bool) 'Zero (Form Bool) 
+-- pattern ConnTZero         = TZero
+-- pattern ConnTOne         :: TArity (Form Bool) (Form Bool) ('Succ 'Zero) (Form Bool -> Form Bool) 
+-- pattern ConnTOne          = TSucc ConnTZero
 pattern ConnZero         :: Arity (Form Bool) (Form Bool) 'Zero (Form Bool) 
 pattern ConnZero         = AZero
 pattern ConnOne         :: Arity (Form Bool) (Form Bool) ('Succ 'Zero) (Form Bool -> Form Bool) 
@@ -124,20 +129,21 @@ pattern TAll x           = TQuant (All x)
 pattern TBind q f        = (TQuant q :!!$: LLam f)
 --XXX: TBind appears to require :!!$: to resolve some type ambiguities for,
 --e.g. show instances.
-pattern Conj x y         = TAnd :!$: x :!$: y
-pattern (:&:) x y        = TAnd :!$: x :!$: y
+pattern Conj x y         = TAnd :!!$: x :!!$: y
+pattern (:&:) :: ToyLanguage (Form Bool) -> ToyLanguage (Form Bool) -> ToyLanguage (Form Bool)
+pattern (:&:) x y        = TAnd :!!$: x :!!$: y
 pattern Neg x            = TNot :!!$: x
 pattern (:=:) x y        = ToyPred EqProp (ASucc (ASucc AZero)) :!$: x :!$: y
 pattern Univ v f         = TBind (All v) f
 
 quantif v f =  (TAll v :!$: LLam f) 
 
-instance Plated (ToyLanguage (Form Bool)) where
-        plate f (Conj x y) = Conj <$> f x <*> f y
-        plate f (Neg x) = Neg <$> f x
-        plate f (Univ v phi) = TBind (All v) <$> platedAbstractTerm (TVar v) 
-                                             <$> f (phi $ TVar v)
-        plate _ x = pure x
+-- instance Plated (ToyLanguage (Form Bool)) where
+--         plate f (Conj x y) = Conj <$> f x <*> f y
+--         plate f (Neg x) = Neg <$> f x
+--         plate f (Univ v phi) = TBind (All v) <$> platedAbstractTerm (TVar v) 
+--                                              <$> f (phi $ TVar v)
+--         plate _ x = pure x
         
 --finally you need to tell us how things go togethor
 --it is perhaps possible that this will always be the way to do this
@@ -167,6 +173,9 @@ p0 = TProp 0
 p1 :: ToyLanguage (Form Bool)
 p1 = TProp 1
 
+tand :: ToyLanguage (Form Bool -> Form Bool -> Form Bool)
+tand = TAnd
+
 --------------------------------------------------------
 --1.2.2 Instance Helpers
 --------------------------------------------------------
@@ -183,17 +192,17 @@ relabelVars phi = evalState (transformM trans phi) 0
 
 --This function vacuums a given term out of a formula and returns the
 --corresponding function from terms to formulas
-abstractTerm :: ToyTerm -> ToyForm -> (ToyTerm -> ToyForm)
-abstractTerm t (Conj p p') = \x -> Conj (abstractTerm t p x) (abstractTerm t p' x)
-abstractTerm t (Neg p) = \x -> Neg (abstractTerm t p x)
-abstractTerm t (TBind q f) = \x -> TBind q ((\g -> g x) . abstractTerm t . f)
-abstractTerm t (t' :=: t'') = \x -> (if t == t' then x else t') :=: (if t == t'' then x else t'')
-abstractTerm _ p = const p
+-- abstractTerm :: ToyTerm -> ToyForm -> (ToyTerm -> ToyForm)
+-- abstractTerm t (Conj p p') = \x -> Conj (abstractTerm t p x) (abstractTerm t p' x)
+-- abstractTerm t (Neg p) = \x -> Neg (abstractTerm t p x)
+-- abstractTerm t (TBind q f) = \x -> TBind q ((\g -> g x) . abstractTerm t . f)
+-- abstractTerm t (t' :=: t'') = \x -> (if t == t' then x else t') :=: (if t == t'' then x else t'')
+-- abstractTerm _ p = const p
 
-platedAbstractTerm :: ToyTerm -> ToyForm -> (ToyTerm -> ToyForm)
-platedAbstractTerm t f = \x -> transform (replaceWith x) f
-    where replaceWith x (t' :=: t'') = (if t == t' then x else t') :=: (if t == t'' then x else t'')
-          replaceWith x f = f
+-- platedAbstractTerm :: ToyTerm -> ToyForm -> (ToyTerm -> ToyForm)
+-- platedAbstractTerm t f = \x -> transform (replaceWith x) f
+--     where replaceWith x (t' :=: t'') = (if t == t' then x else t') :=: (if t == t'' then x else t'')
+--           replaceWith x f = f
 
 
 --------------------------------------------------------
@@ -244,7 +253,7 @@ type SimpleLambda = FixLang ( Applicators Application
                           :|: Function SimpleTerm
                           :|: EndLang)
 
-pattern (:!$$:) :: SimpleLambda (a -> b) -> SimpleLambda a -> SimpleLambda b
+pattern (:!$$:) :: (Typeable a, Typeable b) => SimpleLambda (a -> b) -> SimpleLambda a -> SimpleLambda b
 pattern (:!$$:) f y    = f :!$: y
 pattern AppFunc f      = Fx1 (Apply f)
 pattern SAbstract q    = Fx2 (Abstract q)
