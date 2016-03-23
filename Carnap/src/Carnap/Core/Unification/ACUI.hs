@@ -1,4 +1,7 @@
-module Carnap.Core.Unification.ACUI () where
+module Carnap.Core.Unification.ACUI (
+  SatProblem, unitProp, units, unassigned,valuation,evaluate,
+  ListSat(ListSat), cascadeUnits, search
+) where
 
 import Data.List
 import Control.Monad
@@ -21,6 +24,7 @@ class SatProblem t where
 
 data ListSat = ListSat [Int] [Int] [[Int]]
              | ListSatFalse
+    deriving(Show)
 
 instance SatProblem ListSat where
     evaluate ListSatFalse       = False
@@ -42,50 +46,44 @@ instance SatProblem ListSat where
     unitProp u (ListSat vs us cs) = case csM of
         Just cs' -> ListSat (u : vs) (delete (abs u) us) cs'
         Nothing -> ListSatFalse
-        where csM = filterM pass . map (delete u) $ cs
+        where csM = filterM pass . map (delete (negate u)) $ cs
               pass clause = case clause of
                   [] -> Nothing
                   _ -> Just . not $ u `elem` clause
-
---the basic algorithm I came up with is based on DPLL
-
---1. cascade all units until there are no more units
---2. select a literal and call l. the order in which literals is selected is
---   important to performance. choose varibles to go early that have a higher
---   chance of causing unit cascades when assigned false
---3. assign that literal false and find all solutions
---4. given the current assignment and solutons determine weather it is worth it
---   to search for this 1. if adding this to valuation dominates all solutions
---   then there is no point in searching because all further solutions will be
---   bigger than one of the current solutions
-
-
-compSols :: [Int] -> [Int] -> Bool
-compSols x y = not . null $ (filter (> 0) y) \\ (filter (> 0) x)
-
-worthIt :: [Int] -> [[Int]] -> Bool
-worthIt proposal sols = all (compSols proposal) sols
 
 cascadeUnits :: SatProblem t => t -> t
 cascadeUnits s | null us   = s
                | otherwise = cascadeUnits $ foldr unitProp s us
                where us = units s
 
---search :: SatProblem t => t -> State [[Int]] ()
---search s = do
-    --let s' = cascadeUnits s --first flush out all of the units
-    --case unassigned s' of
-      --  (l:_) -> do search (unitProp (negate l) s')
-        --            vals <- get
-          --          search (unitProp l s') vals
-            --        return ()
-        --[]    -> return ()
-    --case unassigned s' where
-      --  (l:_) -> runIdentity $ do
-        --    let sols' = search (unitProp (negate l) s') sols
-          --  let vals = map valuation sols'
-            --let sols'' = search (unitProp l s') vals in
-            --if worthIt (l : valutation s') vals
-              --then sols'
-              --else sols' ++ sols''
-        --[]    -> if evaluate s' then [s'] else []
+--this is nice feature/optimization. by representing our solutions as a tree
+--we can prune whole search paths simply by not pattern matching on certian
+--branches. this allows us to decouple finding minimal solutions from searching
+--for solutions. so this is both a good design choice *and* an optimization
+data Solutions = Sat Bool
+               | Sols Int Solutions Solutions
+    deriving(Show)
+
+valuation2sol []                 = Sat True
+valuation2sol (x:xs) | x < 0     = Sols x (valuation2sol xs) (Sat False)
+                     | otherwise = Sols x (Sat False) (valuation2sol xs)
+
+--when done right this search is extremelly simple, I'm super happy
+search :: SatProblem t => t -> Solutions
+search s = let s' = cascadeUnits s in case unassigned s' of
+    (l:_) -> Sols l (search $ unitProp (negate l) s') (search $ unitProp l s')
+    []    -> if evaluate s' then valuation2sol (units s) else Sat False
+
+--enumerate (Sols l s1 s2) ls = enumerate s1 ((0-l) : ls) ++ enumerate s2 (l : ls)
+--enumerate (Sat True)     ls = [ls]
+--enumerate _              _  = []
+
+--optimizations to consider
+--1. have evaluate return true in the non-false case
+--2. find units when unit propigating and store them at the top so that
+--   finding the head of the units list happens more quickly
+--3. use a different SAT problem representation
+--4. use conflict driven clause learning (this is a big step forward)
+--5. select which of the unassigneds to first propogate
+--6. it might be possible to propogate all units more efficently than to cascade
+--   a single
