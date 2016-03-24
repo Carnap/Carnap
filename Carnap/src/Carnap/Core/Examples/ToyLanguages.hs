@@ -169,7 +169,7 @@ instance BoundVars (Predicate BasicProp
 
     subBoundVar a@(TVar _) b@(TVar _) (x :=: y) = 
         (if x == a then b else x) :=: (if y == a then b else y)
-    subBoundVar _ _ _ = undefined
+    subBoundVar _ _ phi = phi
 
 
 --------------------------------------------------------
