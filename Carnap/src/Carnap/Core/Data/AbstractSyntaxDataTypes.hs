@@ -371,44 +371,38 @@ instance (Liftable lang, Modelable m lang) => Modelable m (Copula lang) where
 --Head Extractors and a Generic Plated Instance.
 --------------------------------------------------------
 class Searchable f l where
-        getConnective :: (Typeable idx) => TArity (Form a) (Form b) n t -> f l idx -> Maybe (f l t)
-        getConnective _ _ = Nothing
-        getFunction   :: (Typeable idx) => TArity (Term a) (Term b) n t -> f l idx -> Maybe (f l t)
-        getFunction _ _ = Nothing
-        getSubnective :: (Typeable idx) => TArity (Form a) (Term b) n t -> f l idx -> Maybe (f l t)
-        getSubnective _ _ = Nothing
-        getPredicate  :: (Typeable idx) => TArity (Term a) (Form b) n t -> f l idx -> Maybe (f l t)
-        getPredicate _ _ = Nothing
+        castArity:: (Typeable idx) => TArity a b n t -> f l idx -> Maybe (f l t)
+        castArity _ _ = Nothing
 
 instance Searchable (Predicate pred) lang where
-        getPredicate  (TZero :: TArity (Term a) (Form b) n t) f@(Predicate p (a2 :: Arity (Term a1) (Form b1) n1 idx)) = 
+        castArity  (TZero :: TArity a b n t) f@(Predicate p (a2 :: Arity (Term a1) (Form b1) n1 idx)) = 
             case eqT :: Maybe (t :~: idx) of
                 Just Refl -> Just f
                 Nothing -> Nothing
-        getPredicate  ((TSucc TZero) :: TArity (Term a) (Form b) n t) f@(Predicate p (a2 :: Arity (Term a1) (Form b1) n1 idx)) = 
+        castArity  ((TSucc TZero) :: TArity a b n t) f@(Predicate p (a2 :: Arity (Term a1) (Form b1) n1 idx)) = 
             case eqT :: Maybe (t :~: idx) of
                 Just Refl -> Just f
                 Nothing -> Nothing
-        getPredicate  ((TSucc(TSucc TZero)) :: TArity (Term a) (Form b) n t) f@(Predicate p (a2 :: Arity (Term a1) (Form b1) n1 idx)) = 
+        castArity  ((TSucc(TSucc TZero)) :: TArity a b n t) f@(Predicate p (a2 :: Arity (Term a1) (Form b1) n1 idx)) = 
             case eqT :: Maybe (t :~: idx) of
                 Just Refl -> Just f
                 Nothing -> Nothing
-        getPredicate _ _ = Nothing
+        castArity _ _ = Nothing
 
 instance Searchable (Connective con) lang where
-        getConnective (TZero :: TArity (Form a) (Form b) n t) f@(Connective c (a2 :: Arity (Form a1) (Form b1) n1 idx)) = 
+        castArity (TZero :: TArity a b n t) f@(Connective c (a2 :: Arity (Form a1) (Form b1) n1 idx)) = 
             case eqT :: Maybe (t :~: idx) of
                 Just Refl -> Just f
                 Nothing -> Nothing
-        getConnective ((TSucc TZero) :: TArity (Form a) (Form b) n t) f@(Connective c (a2 :: Arity (Form a1) (Form b1) n1 idx)) = 
+        castArity ((TSucc TZero) :: TArity a b n t) f@(Connective c (a2 :: Arity (Form a1) (Form b1) n1 idx)) = 
             case eqT :: Maybe (t :~: idx) of
                 Just Refl -> Just f
                 Nothing -> Nothing
-        getConnective ((TSucc (TSucc TZero)) :: TArity (Form a) (Form b) n t) f@(Connective c (a2 :: Arity (Form a1) (Form b1) n1 idx)) = 
+        castArity ((TSucc (TSucc TZero)) :: TArity a b n t) f@(Connective c (a2 :: Arity (Form a1) (Form b1) n1 idx)) = 
             case eqT :: Maybe (t :~: idx) of
                 Just Refl -> Just f
                 Nothing -> Nothing
-        getConnective _ _ = Nothing
+        castArity _ _ = Nothing
 
 instance Searchable (Function con) lang 
 
@@ -420,25 +414,20 @@ instance Searchable EndLang lang
 
 instance (Searchable f l, Searchable g l ) => 
         Searchable (f :|: g) l where
-        getConnective ar (FLeft a)  = FLeft  <$> getConnective ar a
-        getConnective ar (FRight a) = FRight <$> getConnective ar a
-        getFunction   ar (FLeft a)  = FLeft  <$> getFunction   ar a
-        getFunction   ar (FRight a) = FRight <$> getFunction   ar a
-        getSubnective ar (FLeft a)  = FLeft  <$> getSubnective ar a
-        getSubnective ar (FRight a) = FRight <$> getSubnective ar a
-        getPredicate  ar (FLeft a)  = FLeft  <$> getPredicate  ar a
+        castArity     ar (FLeft a)  = FLeft  <$> castArity ar a
+        castArity     ar (FRight a) = FRight <$> castArity ar a
 
-getConnectiveFx :: (Typeable idx1, Searchable f (Fix f)) => TArity (Form a) (Form b) n idx -> Fix f idx1 -> Maybe (Fix f idx)
-getConnectiveFx ar (Fx c) = Fx <$> getConnective ar c
+getHead :: (Typeable idx1, Searchable f (Fix f)) => TArity a b n idx -> Fix f idx1 -> Maybe (Fix f idx)
+getHead ar (Fx c) = Fx <$> castArity ar c
 
 instance (Searchable f (FixLang f), Typeable idx) => 
         Plated (FixLang f (Form idx)) where
              plate g phi@(h :!$: (t1 :: FixLang f t1t) :!$: (t2 :: FixLang f t2t)) = 
-                                                   case (getConnectiveFx two h, eqT :: Maybe (t1t :~: Form idx), eqT :: Maybe (t2t :~: Form idx) ) of
+                                                   case (getHead two h, eqT :: Maybe (t1t :~: Form idx), eqT :: Maybe (t2t :~: Form idx) ) of
                                                          (Just c, Just Refl, Just Refl) -> (:!$:) <$> ((:!$:) <$> pure h <*> g t1) <*> g t2
                                                          _ -> pure phi
                  where two   = (TSucc (TSucc TZero)) :: TArity (Form idx) (Form idx) (Succ (Succ Zero)) (Form idx -> Form idx -> Form idx)
-             plate g phi@(h :!$: (t :: FixLang f tt)) = case (getConnectiveFx one h, eqT :: Maybe (tt :~: Form idx)) of
+             plate g phi@(h :!$: (t :: FixLang f tt)) = case (getHead one h, eqT :: Maybe (tt :~: Form idx)) of
                                                      (Just c, Just Refl) -> (:!$:) <$> pure h <*> g t
                                                      _ -> pure phi
                  where one   = (TSucc TZero) :: TArity (Form idx) (Form idx) (Succ Zero) (Form idx -> Form idx)
