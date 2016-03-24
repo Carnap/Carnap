@@ -159,6 +159,19 @@ instance CanonicalForm ToyForm where
 instance CanonicalForm ToyTerm where
         canonical = id
 
+instance BoundVars (Predicate BasicProp
+                       :|: Connective BasicConn
+                       :|: Quantifiers BasicQuant
+                       :|: Function BasicTerm
+                       :|: EndLang) where
+    getBoundVar (TQuant (All v)) = TVar v
+    getBoundVar _ = undefined
+
+    subBoundVar a@(TVar _) b@(TVar _) (x :=: y) = 
+        (if x == a then b else x) :=: (if y == a then b else y)
+    subBoundVar _ _ _ = undefined
+
+
 --------------------------------------------------------
 --1.2 Functions
 --------------------------------------------------------
@@ -172,9 +185,6 @@ p0 = TProp 0
 
 p1 :: ToyLanguage (Form Bool)
 p1 = TProp 1
-
-tand :: ToyLanguage (Form Bool -> Form Bool -> Form Bool)
-tand = TAnd
 
 --------------------------------------------------------
 --1.2.2 Instance Helpers

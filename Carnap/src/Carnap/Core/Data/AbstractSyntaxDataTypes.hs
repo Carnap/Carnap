@@ -3,7 +3,7 @@
 module Carnap.Core.Data.AbstractSyntaxDataTypes(
   Modelable, Evaluable, Term(Term), Form(Form), CopulaSchema,
   satisfies, eval, schematize, lift, lift1, lift2, canonical,
-  appSchema, lamSchema, liftSchema,
+  appSchema, lamSchema, liftSchema, BoundVars(..),
   Copula((:$:), Lam), (:|:)(FLeft, FRight), Quantifiers(Bind),Abstractors(Abstract),Applicators(Apply),
   Nat(Zero, Succ), Fix(Fx), Vec(VNil, VCons), Arity(AZero, ASucc),
   TArity(TZero, TSucc),
@@ -17,7 +17,6 @@ module Carnap.Core.Data.AbstractSyntaxDataTypes(
 import Carnap.Core.Util
 import Data.Typeable
 import Control.Lens
-import Unsafe.Coerce
 
 --This module attempts to provide abstract syntax types that would cover
 --a wide variety of languages
@@ -87,7 +86,7 @@ lift2 f fa fb = lift (f (eval fa) (eval fb))
 -- @
 data Copula lang t where
     (:$:) :: (Typeable t, Typeable t') => lang (t -> t') -> lang t -> Copula lang t'
-    Lam :: (lang t -> lang t') -> Copula lang (t -> t')
+    Lam :: (Typeable t, Typeable t') => (lang t -> lang t') -> Copula lang (t -> t')
     Lift :: t -> Copula lang t
 
 -- | this is type acts a disjoint sum/union of two functors
@@ -111,8 +110,8 @@ data EndLang :: (* -> *) -> * -> *
 type FixLang f = Fix (Copula :|: f)
 
 
-pattern LLam f = Fx (FLeft (Lam f))
 pattern (:!$:) f x = Fx (FLeft (f :$: x))
+pattern LLam f = Fx (FLeft (Lam f))
 pattern Fx1 x  = Fx (FRight (FLeft x))
 pattern Fx2 x  = Fx (FRight (FRight (FLeft x)))
 pattern Fx3 x  = Fx (FRight (FRight (FRight (FLeft x))))
@@ -145,6 +144,11 @@ pattern Fx12 x = Fx (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRi
 --this can be done uniformly with an arity
 data Quantifiers :: (* -> *) -> (* -> *) -> * -> * where
     Bind :: quant ((t a -> f b) -> f b) -> Quantifiers quant lang ((t a -> f b) -> f b)
+
+class BoundVars g where
+        getBoundVar :: FixLang g ((a -> b) -> b) -> FixLang g a
+        subBoundVar :: FixLang g a -> FixLang g a -> FixLang g b -> FixLang g b
+                 
 
 data Abstractors :: (* -> *) -> (* -> *) -> * -> * where
     Abstract :: abs ((t a -> t b) -> t (a -> b)) -> Abstractors abs lang ((t a -> t b) -> t (a -> b))
@@ -371,7 +375,7 @@ instance (Liftable lang, Modelable m lang) => Modelable m (Copula lang) where
 --Head Extractors and a Generic Plated Instance.
 --------------------------------------------------------
 class Searchable f l where
-        castArity:: (Typeable idx) => TArity a b n t -> f l idx -> Maybe (f l t)
+        castArity :: (Typeable idx) => TArity a b n t -> f l idx -> Maybe (f l t)
         castArity _ _ = Nothing
 
 instance Searchable (Predicate pred) lang where
@@ -406,11 +410,17 @@ instance Searchable (Connective con) lang where
 
 instance Searchable (Function con) lang 
 
-instance Searchable Copula lang 
+instance Searchable (Subnective sub) lang 
 
 instance Searchable (Quantifiers quant) lang 
 
+instance Searchable (Abstractors abs) lang
+
+instance Searchable (Applicators app) lang
+
 instance Searchable EndLang lang 
+
+instance Searchable Copula lang 
 
 instance (Searchable f l, Searchable g l ) => 
         Searchable (f :|: g) l where
@@ -419,18 +429,39 @@ instance (Searchable f l, Searchable g l ) =>
 
 getHead :: (Typeable idx1, Searchable f (Fix f)) => TArity a b n idx -> Fix f idx1 -> Maybe (Fix f idx)
 getHead ar (Fx c) = Fx <$> castArity ar c
+--TODO: type-safe specializations of this
 
-instance (Searchable f (FixLang f), Typeable idx) => 
+instance (Searchable f (FixLang f), Typeable idx, BoundVars f) => 
         Plated (FixLang f (Form idx)) where
              plate g phi@(h :!$: (t1 :: FixLang f t1t) :!$: (t2 :: FixLang f t2t)) = 
-                                                   case (getHead two h, eqT :: Maybe (t1t :~: Form idx), eqT :: Maybe (t2t :~: Form idx) ) of
-                                                         (Just c, Just Refl, Just Refl) -> (:!$:) <$> ((:!$:) <$> pure h <*> g t1) <*> g t2
+                                                   case (eqT :: Maybe (t1t :~: Form idx), eqT :: Maybe (t2t :~: Form idx) ) of
+                                                         (Just Refl, Just Refl) -> (:!$:) <$> ((:!$:) <$> pure h <*> g t1) <*> g t2
                                                          _ -> pure phi
-                 where two   = (TSucc (TSucc TZero)) :: TArity (Form idx) (Form idx) (Succ (Succ Zero)) (Form idx -> Form idx -> Form idx)
-             plate g phi@(h :!$: (t :: FixLang f tt)) = case (getHead one h, eqT :: Maybe (tt :~: Form idx)) of
-                                                     (Just c, Just Refl) -> (:!$:) <$> pure h <*> g t
+                 --where two   = (TSucc (TSucc TZero)) :: TArity (Form idx) (Form idx) (Succ (Succ Zero)) (Form idx -> Form idx -> Form idx)
+             plate g phi@(q :!$: LLam (h :: FixLang f t -> FixLang f t')) = case (eqT :: Maybe (t' :~: Form idx)) of
+                                                                                 Just Refl -> (\x y -> x :!$: LLam y) <$> pure q <*> modify h
+                                                                                    where bv = getBoundVar q
+                                                                                          abstractBv f = \x -> (subBoundVar bv x f)
+                                                                                          modify h = abstractBv <$> (g $ h $ bv)
+                                                                                 Nothing -> pure phi
+                                      
+                 --XXX:Ok, going to be a pain. 
+                 --
+                 --Here's the best idea so far. Introduce a typeclass that
+                 --retrieves a bound variable for a given quantifier
+                 --language item, of the form `lang (a -> b) -> b) -> a`
+                 --and also a typeclass that rewrites an arbitrary formula,
+                 --given an arbitrary language item (in practice, a term).
+                 --So this would be of the form `lang a -> (lang form idx) -> (lang form idx)`
+                 --Then use the latter, along with plated, for a mutually
+                 --recursive definition of term abstraction, and the
+                 --former to get from the formula-function that we pop out of the
+                 --lamba to an actual formula.
+             plate g phi@(h :!$: (t :: FixLang f tt)) = case (eqT :: Maybe (tt :~: Form idx)) of
+                                                     (Just Refl) -> (:!$:) <$> pure h <*> g t
                                                      _ -> pure phi
-                 where one   = (TSucc TZero) :: TArity (Form idx) (Form idx) (Succ Zero) (Form idx -> Form idx)
+
+--                 where one   = (TSucc TZero) :: TArity (Form idx) (Form idx) (Succ Zero) (Form idx -> Form idx)
                     -- three = (TSucc TZero) :: TArity (Form idx) (Form idx) (Succ Zero) (Form idx -> Form idx)
                     -- four  = (TSucc TZero) :: TArity (Form idx) (Form idx) (Succ Zero) (Form idx -> Form idx)
 --         plate f phi@(h :$$: t) = case (getConnectiveFx (TSucc (TZero)) h) of
