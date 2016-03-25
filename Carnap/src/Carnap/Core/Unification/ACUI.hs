@@ -51,9 +51,10 @@ instance SatProblem ListSat where
                   [] -> Nothing
                   _ -> Just . not $ u `elem` clause
 
-cascadeUnits :: SatProblem t => t -> t
-cascadeUnits s | null us   = s
-               | otherwise = cascadeUnits $ foldr unitProp s us
+cascadeUnits :: SatProblem t => t -> (t, [Int])
+cascadeUnits s | null us   = (s, [])
+               | otherwise = let (s', us') = cascadeUnits $ foldr unitProp s us
+                             in (s', us ++ us')
                where us = units s
 
 --this is nice feature/optimization. by representing our solutions as a tree
@@ -64,19 +65,18 @@ data Solutions = Sat Bool
                | Sols Int Solutions Solutions
     deriving(Show)
 
-valuation2sol []                 = Sat True
-valuation2sol (x:xs) | x < 0     = Sols x (valuation2sol xs) (Sat False)
-                     | otherwise = Sols x (Sat False) (valuation2sol xs)
+valuation2sol []     v             = v
+valuation2sol (x:xs) v | x < 0     = Sols (abs x) (valuation2sol xs v) (Sat False)
+                       | otherwise = Sols x (Sat False) (valuation2sol xs v)
 
---when done right this search is extremelly simple, I'm super happy
 search :: SatProblem t => t -> Solutions
-search s = let s' = cascadeUnits s in case unassigned s' of
-    (l:_) -> Sols l (search $ unitProp (negate l) s') (search $ unitProp l s')
-    []    -> if evaluate s' then valuation2sol (units s) else Sat False
+search s = let (s', us) = cascadeUnits s in case unassigned s' of
+    (l:_) -> valuation2sol us $ Sols l (search $ unitProp (negate l) s') (search $ unitProp l s')
+    []    -> if evaluate s' then valuation2sol us (Sat True) else Sat False
 
---enumerate (Sols l s1 s2) ls = enumerate s1 ((0-l) : ls) ++ enumerate s2 (l : ls)
---enumerate (Sat True)     ls = [ls]
---enumerate _              _  = []
+enumerate (Sols l s1 s2) ls = enumerate s1 ((0-l) : ls) ++ enumerate s2 (l : ls)
+enumerate (Sat True)     ls = [ls]
+enumerate _              _  = []
 
 --optimizations to consider
 --1. have evaluate return true in the non-false case
