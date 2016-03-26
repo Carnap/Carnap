@@ -146,7 +146,7 @@ data Quantifiers :: (* -> *) -> (* -> *) -> * -> * where
     Bind :: quant ((t a -> f b) -> f b) -> Quantifiers quant lang ((t a -> f b) -> f b)
 
 class BoundVars g where
-        getBoundVar :: FixLang g ((a -> b) -> b) -> FixLang g a
+        getBoundVar :: FixLang g ((a -> b) -> c) -> FixLang g a
         subBoundVar :: FixLang g a -> FixLang g a -> FixLang g b -> FixLang g b
                  
 
@@ -431,38 +431,88 @@ getHead :: (Typeable idx1, Searchable f (Fix f)) => TArity a b n idx -> Fix f id
 getHead ar (Fx c) = Fx <$> castArity ar c
 --TODO: type-safe specializations of this
 
-instance (Searchable f (FixLang f), Typeable idx, BoundVars f) => 
-        Plated (FixLang f (Form idx)) where
-             plate g phi@(h :!$: (t1 :: FixLang f t1t) :!$: (t2 :: FixLang f t2t)) = 
-                                                   case (eqT :: Maybe (t1t :~: Form idx), eqT :: Maybe (t2t :~: Form idx) ) of
-                                                         (Just Refl, Just Refl) -> (:!$:) <$> ((:!$:) <$> pure h <*> g t1) <*> g t2
-                                                         _ -> pure phi
-                 --where two   = (TSucc (TSucc TZero)) :: TArity (Form idx) (Form idx) (Succ (Succ Zero)) (Form idx -> Form idx -> Form idx)
-             plate g phi@(q :!$: LLam (h :: FixLang f t -> FixLang f t')) = case (eqT :: Maybe (t' :~: Form idx)) of
-                                                                                 Just Refl -> (\x y -> x :!$: LLam y) <$> pure q <*> modify h
-                                                                                    where bv = getBoundVar q
-                                                                                          abstractBv f = \x -> (subBoundVar bv x f)
-                                                                                          modify h = abstractBv <$> (g $ h $ bv)
-                                                                                 Nothing -> pure phi
-                                      
-                 --XXX:Ok, going to be a pain. 
-                 --
-                 --Here's the best idea so far. Introduce a typeclass that
-                 --retrieves a bound variable for a given quantifier
-                 --language item, of the form `lang (a -> b) -> b) -> a`
-                 --and also a typeclass that rewrites an arbitrary formula,
-                 --given an arbitrary language item (in practice, a term).
-                 --So this would be of the form `lang a -> (lang form idx) -> (lang form idx)`
-                 --Then use the latter, along with plated, for a mutually
-                 --recursive definition of term abstraction, and the
-                 --former to get from the formula-function that we pop out of the
-                 --lamba to an actual formula.
-             plate g phi@(h :!$: (t :: FixLang f tt)) = case (eqT :: Maybe (tt :~: Form idx)) of
-                                                     (Just Refl) -> (:!$:) <$> pure h <*> g t
-                                                     _ -> pure phi
+(.*$.) :: (Applicative g, Typeable a, Typeable b) => g (FixLang f (a -> b)) -> g (FixLang f a) -> g (FixLang f b)
+x .*$. y = (:!$:) <$> x <*> y
 
---                 where one   = (TSucc TZero) :: TArity (Form idx) (Form idx) (Succ Zero) (Form idx -> Form idx)
-                    -- three = (TSucc TZero) :: TArity (Form idx) (Form idx) (Succ Zero) (Form idx -> Form idx)
-                    -- four  = (TSucc TZero) :: TArity (Form idx) (Form idx) (Succ Zero) (Form idx -> Form idx)
---         plate f phi@(h :$$: t) = case (getConnectiveFx (TSucc (TZero)) h) of
---                                                 (Just c) -> pure phi
+instance (Typeable idx, BoundVars f) => 
+        Plated (FixLang f (syn idx)) where
+             plate g phi@(q :!$: LLam (h :: FixLang f t -> FixLang f t')) = 
+                        case (eqT :: Maybe (t' :~: syn idx)) of
+                                 Just Refl -> (\x y -> x :!$: LLam y) <$> pure q <*> modify h
+                                    where bv = getBoundVar q
+                                          abstractBv f = \x -> (subBoundVar bv x f)
+                                          modify h = abstractBv <$> (g $ h $ bv)
+                                 Nothing -> pure phi
+             plate g phi@(h :!$: (t1 :: FixLang f t1t) 
+                            :!$: (t2 :: FixLang f t2t)  
+                            :!$: (t3 :: FixLang f t3t)  
+                            :!$: (t4 :: FixLang f t4t)) = 
+                               case ( eqT :: Maybe (t1t :~: syn idx)
+                                    , eqT :: Maybe (t2t :~: syn idx) 
+                                    , eqT :: Maybe (t3t :~: syn idx) 
+                                    , eqT :: Maybe (t4t :~: syn idx)
+                                    ) of (Just Refl, Just Refl, Just Refl, Just Refl) -> 
+                                            pure h .*$. g t1 .*$. g t2 .*$. g t3 .*$. g t4
+                                         _ -> pure phi
+             plate g phi@(h :!$: (t1 :: FixLang f t1t) 
+                            :!$: (t2 :: FixLang f t2t)  
+                            :!$: (t3 :: FixLang f t3t)) = 
+                               case ( eqT :: Maybe (t1t :~: syn idx)
+                                    , eqT :: Maybe (t2t :~: syn idx) 
+                                    , eqT :: Maybe (t3t :~: syn idx) 
+                                    ) of (Just Refl, Just Refl, Just Refl) -> 
+                                            pure h .*$. g t1 .*$. g t2 .*$. g t3
+                                         _ -> pure phi
+             plate g phi@(h :!$: (t1 :: FixLang f t1t) 
+                            :!$: (t2 :: FixLang f t2t)) = 
+                               case ( eqT :: Maybe (t1t :~: syn idx)
+                                    , eqT :: Maybe (t2t :~: syn idx)
+                                    ) of (Just Refl, Just Refl) -> 
+                                             pure h .*$. g t1 .*$. g t2
+                                         _ -> pure phi
+             plate g phi@(h :!$: (t :: FixLang f tt)) = 
+                               case (eqT :: Maybe (tt :~: syn idx)) of
+                                         (Just Refl) -> pure h .*$. g t
+                                         _ -> pure phi
+             plate g phi = pure phi
+
+-- instance (Typeable idx, BoundVars f) => 
+--         Plated (FixLang f (Term idx)) where
+--              plate g phi@(q :!$: LLam (h :: FixLang f t -> FixLang f t')) = 
+--                         case (eqT :: Maybe (t' :~: Term idx)) of
+--                                  Just Refl -> (\x y -> x :!$: LLam y) <$> pure q <*> modify h
+--                                     where bv = getBoundVar q
+--                                           abstractBv f = \x -> (subBoundVar bv x f)
+--                                           modify h = abstractBv <$> (g $ h $ bv)
+--                                  Nothing -> pure phi
+--              plate g phi@(h :!$: (t1 :: FixLang f t1t) 
+--                             :!$: (t2 :: FixLang f t2t)  
+--                             :!$: (t3 :: FixLang f t3t)  
+--                             :!$: (t4 :: FixLang f t4t)) = 
+--                                case ( eqT :: Maybe (t1t :~: Term idx)
+--                                     , eqT :: Maybe (t2t :~: Term idx) 
+--                                     , eqT :: Maybe (t3t :~: Term idx) 
+--                                     , eqT :: Maybe (t4t :~: Term idx)
+--                                     ) of (Just Refl, Just Refl, Just Refl, Just Refl) -> 
+--                                             pure h .*$. g t1 .*$. g t2 .*$. g t3 .*$. g t4
+--                                          _ -> pure phi
+--              plate g phi@(h :!$: (t1 :: FixLang f t1t) 
+--                             :!$: (t2 :: FixLang f t2t)  
+--                             :!$: (t3 :: FixLang f t3t)) = 
+--                                case ( eqT :: Maybe (t1t :~: Term idx)
+--                                     , eqT :: Maybe (t2t :~: Term idx) 
+--                                     , eqT :: Maybe (t3t :~: Term idx) 
+--                                     ) of (Just Refl, Just Refl, Just Refl) -> 
+--                                             pure h .*$. g t1 .*$. g t2 .*$. g t3
+--                                          _ -> pure phi
+--              plate g phi@(h :!$: (t1 :: FixLang f t1t) 
+--                             :!$: (t2 :: FixLang f t2t)) = 
+--                                case ( eqT :: Maybe (t1t :~: Term idx)
+--                                     , eqT :: Maybe (t2t :~: Term idx)
+--                                     ) of (Just Refl, Just Refl) -> 
+--                                              pure h .*$. g t1 .*$. g t2
+--                                          _ -> pure phi
+--              plate g phi@(h :!$: (t :: FixLang f tt)) = case (eqT :: Maybe (tt :~: Term idx)) of
+--                                                      (Just Refl) -> pure h .*$. g t
+--                                                      _ -> pure phi
+--              plate g phi = pure phi

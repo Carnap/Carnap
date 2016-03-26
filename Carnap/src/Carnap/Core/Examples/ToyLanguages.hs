@@ -130,7 +130,6 @@ pattern TBind q f        = (TQuant q :!!$: LLam f)
 --XXX: TBind appears to require :!!$: to resolve some type ambiguities for,
 --e.g. show instances.
 pattern Conj x y         = TAnd :!!$: x :!!$: y
-pattern (:&:) :: ToyLanguage (Form Bool) -> ToyLanguage (Form Bool) -> ToyLanguage (Form Bool)
 pattern (:&:) x y        = TAnd :!!$: x :!!$: y
 pattern Neg x            = TNot :!!$: x
 pattern (:=:) x y        = ToyPred EqProp (ASucc (ASucc AZero)) :!$: x :!$: y
@@ -170,7 +169,6 @@ instance BoundVars (Predicate BasicProp
     subBoundVar a@(TVar _) b@(TVar _) (x :=: y) = 
         (if x == a then b else x) :=: (if y == a then b else y)
     subBoundVar _ _ phi = phi
-
 
 --------------------------------------------------------
 --1.2 Functions
@@ -257,6 +255,7 @@ instance Schematizable SimpleTerm where
 instance Evaluable SimpleTerm where
     eval = error "only closed terms are evaluable"
 
+
 type SimpleLambda = FixLang ( Applicators Application
                           :|: Abstractors Abstraction
                           :|: Function IntObject
@@ -273,6 +272,16 @@ pattern SimpAbs v f    = (SAbstract (Abs v)) :!$$: LLam f
 pattern SimpInt :: Int -> SimpleLambda (Term Int)
 pattern SimpInt n      = ObFunc (IntOb n) AZero
 pattern SimpApp a b    = (AppFunc App) :!$$: a :!$$: b
+
+instance BoundVars (Applicators Application
+                          :|: Abstractors Abstraction
+                          :|: Function IntObject
+                          :|: Function SimpleTerm
+                          :|: EndLang) where
+    getBoundVar (SAbstract (Abs v)) = SBlank v
+    getBoundVar _ = undefined
+
+    subBoundVar _ _ phi = phi
 
 instance CopulaSchema SimpleLambda where
     appSchema (SAbstract (Abs v)) (LLam f) e = schematize (Abs v) (show (f $ SBlank v) : e)
