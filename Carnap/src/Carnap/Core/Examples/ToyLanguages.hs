@@ -170,6 +170,17 @@ instance BoundVars (Predicate BasicProp
         (if x == a then b else x) :=: (if y == a then b else y)
     subBoundVar _ _ phi = phi
 
+instance LangTypes (Predicate BasicProp
+                       :|: Connective BasicConn
+                       :|: Quantifiers BasicQuant
+                       :|: Function BasicTerm
+                       :|: EndLang) Form Bool Term Int
+
+instance LangTypes (Predicate BasicProp
+                       :|: Connective BasicConn
+                       :|: Quantifiers BasicQuant
+                       :|: Function BasicTerm
+                       :|: EndLang) Term Int Form Bool
 --------------------------------------------------------
 --1.2 Functions
 --------------------------------------------------------
@@ -255,7 +266,6 @@ instance Schematizable SimpleTerm where
 instance Evaluable SimpleTerm where
     eval = error "only closed terms are evaluable"
 
-
 type SimpleLambda = FixLang ( Applicators Application
                           :|: Abstractors Abstraction
                           :|: Function IntObject
@@ -282,6 +292,7 @@ instance BoundVars (Applicators Application
     getBoundVar _ = undefined
 
     subBoundVar _ _ phi = phi
+
 
 instance CopulaSchema SimpleLambda where
     appSchema (SAbstract (Abs v)) (LLam f) e = schematize (Abs v) (show (f $ SBlank v) : e)
