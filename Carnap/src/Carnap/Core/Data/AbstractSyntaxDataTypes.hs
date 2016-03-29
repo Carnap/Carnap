@@ -477,14 +477,11 @@ class (Typeable syn1, Typeable sem1, Typeable syn2, Typeable sem2, BoundVars f) 
                                 , eqT :: Maybe (tt2 :~: syn2 sem2)
                                 ) of (r11, r12, r21, r22) ->
                                          pure h .*$. (handleArg (r11, r12) g t1) .*$. (handleArg (r21, r22) g t2)
-        simChildren g phi@(h :!$: (t1 :: FixLang f tt))= pure h .*$.
+        simChildren g phi@(h :!$: (t1 :: FixLang f tt))= 
                            case ( eqT :: Maybe (tt :~: syn1 sem1)
                                 , eqT :: Maybe (tt :~: syn2 sem2)
-                                ) of (Just Refl, _) ->
-                                         g t1
-                                     (_, Just Refl) ->
-                                         difChildren g t1
-                                     _-> pure t1
+                                ) of (r11, r12) ->
+                                         pure h .*$. (handleArg (r11, r12) g t1)
         simChildren g phi = pure phi
 
         difChildren :: Traversal' (FixLang f (syn2 sem2)) (FixLang f (syn1 sem1))
@@ -519,14 +516,11 @@ class (Typeable syn1, Typeable sem1, Typeable syn2, Typeable sem2, BoundVars f) 
                                 , eqT :: Maybe (tt2 :~: syn2 sem2)
                                 ) of (r11, r12, r21, r22) ->
                                          pure h .*$. (handleArg (r11, r12) g t1) .*$. (handleArg (r21, r22) g t2)
-        difChildren g phi@(h :!$: (t1 :: FixLang f tt))= pure h .*$.
+        difChildren g phi@(h :!$: (t1 :: FixLang f tt))= 
                            case ( eqT :: Maybe (tt :~: syn1 sem1)
                                 , eqT :: Maybe (tt :~: syn2 sem2)
-                                ) of (Just Refl, _) ->
-                                         g t1
-                                     (_, Just Refl) ->
-                                         difChildren g t1
-                                     _-> pure t1
+                                ) of (r11, r12) ->
+                                         pure h .*$. (handleArg (r11, r12) g t1)
         difChildren g phi = pure phi
 
 instance LangTypes f syn1 sem1 syn2 sem2 => Plated (FixLang f (syn1 sem1)) where
