@@ -8,8 +8,8 @@ module Carnap.Core.Data.AbstractSyntaxDataTypes(
   Nat(Zero, Succ), Fix(Fx), Vec(VNil, VCons), Arity(AZero, ASucc),
   TArity(TZero, TSucc),
   Predicate(Predicate), Connective(Connective), Function(Function),
-  Subnective(Subnective),CanonicalForm, Schematizable, FixLang, 
-  pattern AOne, pattern ATwo , pattern LLam, pattern (:!$:), 
+  Subnective(Subnective),CanonicalForm, Schematizable, FixLang,
+  pattern AOne, pattern ATwo , pattern LLam, pattern (:!$:),
   pattern Fx1, pattern Fx2, pattern Fx3, pattern Fx4, pattern Fx5, pattern
   Fx6, pattern Fx7, pattern Fx8, pattern Fx9, pattern Fx10, pattern Fx11, EndLang, LangTypes
 ) where
@@ -103,9 +103,9 @@ infixr 5 :|:
 newtype Fix f idx = Fx (f (Fix f) idx)
 
 -- | This is an empty abstract type, which can be used to close off
--- | a series of applications of `:|:`, so that the right-most leaf 
+-- | a series of applications of `:|:`, so that the right-most leaf
 -- | doesn't need special treatment.
-data EndLang :: (* -> *) -> * -> * 
+data EndLang :: (* -> *) -> * -> *
 
 type FixLang f = Fix (Copula :|: f)
 
@@ -131,7 +131,7 @@ pattern Fx12 x = Fx (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRi
 --god-knows-what. If we pattern-match, we get type refinements on the RHS,
 --which let us put things back together. The best idea right now is to try
 --to use a prism, which, given a formula, previews a tuple of the MC and the
---parts if there is an MC, and otherwise nothing. so, something like 
+--parts if there is an MC, and otherwise nothing. so, something like
 --`Prism' (Lang .. (Form a)) (Lang .. (Form b), Lang .. (Form c), Lang .. (Form b -> Form c -> Form a)`.
 --We could then reconstruct from parts, or try something new if we get
 --nothing. Might be able to build these uniformly using arities. No loss,
@@ -148,7 +148,7 @@ data Quantifiers :: (* -> *) -> (* -> *) -> * -> * where
 class BoundVars g where
         getBoundVar :: FixLang g ((a -> b) -> c) -> FixLang g a
         subBoundVar :: FixLang g a -> FixLang g a -> FixLang g b -> FixLang g b
-                 
+
 
 data Abstractors :: (* -> *) -> (* -> *) -> * -> * where
     Abstract :: abs ((t a -> t b) -> t (a -> b)) -> Abstractors abs lang ((t a -> t b) -> t (a -> b))
@@ -314,7 +314,7 @@ instance Evaluable app => Evaluable (Applicators app lang) where
 
 instance Evaluable sub => Evaluable (Subnective sub lang) where
     eval (Subnective p a) = eval p
-    
+
 --dummy instance for a type with no constructors
 instance Evaluable (EndLang lang) where
         eval = undefined
@@ -379,50 +379,50 @@ class Searchable f l where
         castArity _ _ = Nothing
 
 instance Searchable (Predicate pred) lang where
-        castArity  (TZero :: TArity a b n t) f@(Predicate p (a2 :: Arity (Term a1) (Form b1) n1 idx)) = 
+        castArity  (TZero :: TArity a b n t) f@(Predicate p (a2 :: Arity (Term a1) (Form b1) n1 idx)) =
             case eqT :: Maybe (t :~: idx) of
                 Just Refl -> Just f
                 Nothing -> Nothing
-        castArity  ((TSucc TZero) :: TArity a b n t) f@(Predicate p (a2 :: Arity (Term a1) (Form b1) n1 idx)) = 
+        castArity  ((TSucc TZero) :: TArity a b n t) f@(Predicate p (a2 :: Arity (Term a1) (Form b1) n1 idx)) =
             case eqT :: Maybe (t :~: idx) of
                 Just Refl -> Just f
                 Nothing -> Nothing
-        castArity  ((TSucc(TSucc TZero)) :: TArity a b n t) f@(Predicate p (a2 :: Arity (Term a1) (Form b1) n1 idx)) = 
+        castArity  ((TSucc(TSucc TZero)) :: TArity a b n t) f@(Predicate p (a2 :: Arity (Term a1) (Form b1) n1 idx)) =
             case eqT :: Maybe (t :~: idx) of
                 Just Refl -> Just f
                 Nothing -> Nothing
         castArity _ _ = Nothing
 
 instance Searchable (Connective con) lang where
-        castArity (TZero :: TArity a b n t) f@(Connective c (a2 :: Arity (Form a1) (Form b1) n1 idx)) = 
+        castArity (TZero :: TArity a b n t) f@(Connective c (a2 :: Arity (Form a1) (Form b1) n1 idx)) =
             case eqT :: Maybe (t :~: idx) of
                 Just Refl -> Just f
                 Nothing -> Nothing
-        castArity ((TSucc TZero) :: TArity a b n t) f@(Connective c (a2 :: Arity (Form a1) (Form b1) n1 idx)) = 
+        castArity ((TSucc TZero) :: TArity a b n t) f@(Connective c (a2 :: Arity (Form a1) (Form b1) n1 idx)) =
             case eqT :: Maybe (t :~: idx) of
                 Just Refl -> Just f
                 Nothing -> Nothing
-        castArity ((TSucc (TSucc TZero)) :: TArity a b n t) f@(Connective c (a2 :: Arity (Form a1) (Form b1) n1 idx)) = 
+        castArity ((TSucc (TSucc TZero)) :: TArity a b n t) f@(Connective c (a2 :: Arity (Form a1) (Form b1) n1 idx)) =
             case eqT :: Maybe (t :~: idx) of
                 Just Refl -> Just f
                 Nothing -> Nothing
         castArity _ _ = Nothing
 
-instance Searchable (Function con) lang 
+instance Searchable (Function con) lang
 
-instance Searchable (Subnective sub) lang 
+instance Searchable (Subnective sub) lang
 
-instance Searchable (Quantifiers quant) lang 
+instance Searchable (Quantifiers quant) lang
 
 instance Searchable (Abstractors abs) lang
 
 instance Searchable (Applicators app) lang
 
-instance Searchable EndLang lang 
+instance Searchable EndLang lang
 
-instance Searchable Copula lang 
+instance Searchable Copula lang
 
-instance (Searchable f l, Searchable g l ) => 
+instance (Searchable f l, Searchable g l ) =>
         Searchable (f :|: g) l where
         castArity     ar (FLeft a)  = FLeft  <$> castArity ar a
         castArity     ar (FRight a) = FRight <$> castArity ar a
@@ -434,10 +434,19 @@ getHead ar (Fx c) = Fx <$> castArity ar c
 (.*$.) :: (Applicative g, Typeable a, Typeable b) => g (FixLang f (a -> b)) -> g (FixLang f a) -> g (FixLang f b)
 x .*$. y = (:!$:) <$> x <*> y
 
+handleArg :: (Applicative g, LangTypes f syn1 sem1 syn2 sem2)
+          => (Maybe (tt :~: syn1 sem1), Maybe (tt :~: syn2 sem2))
+          -> (FixLang f (syn1 sem1) -> g (FixLang f (syn1 sem1)))
+          -> FixLang f tt
+          -> g (FixLang f tt)
+handleArg (Just Refl, _) f l = f l
+handleArg (_, Just Refl) f l = difChildren f l
+handleArg (_, _)         _ l = pure l
+
 class (Typeable syn1, Typeable sem1, Typeable syn2, Typeable sem2, BoundVars f) => LangTypes f syn1 sem1 syn2 sem2 | f syn1 sem1 -> syn2 sem2 where
 
         simChildren :: Traversal' (FixLang f (syn1 sem1)) (FixLang f (syn1 sem1))
-        simChildren g phi@(q :!$: LLam (h :: FixLang f t -> FixLang f t')) = 
+        simChildren g phi@(q :!$: LLam (h :: FixLang f t -> FixLang f t')) =
                    case ( eqT :: Maybe (t' :~: syn1 sem1)
                         , eqT :: Maybe (t' :~: syn2 sem2)) of
                             (Just Refl, _) -> (\x y -> x :!$: LLam y) <$> pure q <*> modify h
@@ -449,103 +458,37 @@ class (Typeable syn1, Typeable sem1, Typeable syn2, Typeable sem2, BoundVars f) 
                                      abstractBv f = \x -> (subBoundVar bv x f)
                                      modify h = abstractBv <$> (difChildren g $ h $ bv)
                             _ -> pure phi
-        simChildren g phi@(h :!$: (t1 :: FixLang f tt) 
+        simChildren g phi@(h :!$: (t1 :: FixLang f tt)
                              :!$: (t2 :: FixLang f tt2)
-                             :!$: (t3 :: FixLang f tt3))= 
+                             :!$: (t3 :: FixLang f tt3))=
                            case ( eqT :: Maybe (tt :~: syn1 sem1)
                                 , eqT :: Maybe (tt :~: syn2 sem2)
                                 , eqT :: Maybe (tt2 :~: syn1 sem1)
                                 , eqT :: Maybe (tt2 :~: syn2 sem2)
                                 , eqT :: Maybe (tt3 :~: syn1 sem1)
                                 , eqT :: Maybe (tt3 :~: syn2 sem2)
-                                ) of (Just Refl, _, Just Refl,_, Just Refl, _) -> 
-                                         pure h .*$. g t1 .*$. g t2 .*$. g t3
-                                     (_, Just Refl, Just Refl,_, Just Refl, _) ->
-                                         pure h .*$. difChildren g t1 .*$. g t2 .*$. g t3
-                                     (_, _, Just Refl, _ , Just Refl, _) ->
-                                         pure h .*$. pure t1 .*$. g t2 .*$. g t3
-                                     (Just Refl, _, _, Just Refl , Just Refl, _) ->
-                                         pure h .*$. g t1 .*$. difChildren g t2 .*$. g t3
-                                     (_, Just Refl, _, Just Refl , Just Refl, _) ->
-                                         pure h .*$. difChildren g t1 .*$. difChildren g t2 .*$. g t3
-                                     (_, _, _, Just Refl , Just Refl, _) ->
-                                         pure h .*$. pure t1 .*$. difChildren g t2 .*$. g t3
-                                     (Just Refl, _, _, _, Just Refl, _) ->
-                                         pure h .*$. g t1 .*$. pure t2 .*$. g t3
-                                     (_, Just Refl, _, _, Just Refl, _) ->
-                                         pure h .*$. difChildren g t1 .*$. pure t2 .*$. g t3
-                                     (_, _, _, _, Just Refl, _) ->
-                                         pure h .*$. pure t1 .*$. pure t2 .*$. g t3
-                                     (Just Refl, _, Just Refl,_,_,Just Refl) -> 
-                                         pure h .*$. g t1 .*$. g t2 .*$. difChildren g t3
-                                     (_, Just Refl, Just Refl,_,_,Just Refl) ->
-                                         pure h .*$. difChildren g t1 .*$. g t2 .*$. difChildren g t3
-                                     (_, _, Just Refl, _ ,_,Just Refl) ->
-                                         pure h .*$. pure t1 .*$. g t2 .*$. difChildren g t3
-                                     (Just Refl, _, _, Just Refl ,_,Just Refl) ->
-                                         pure h .*$. g t1 .*$. difChildren g t2 .*$. difChildren g t3
-                                     (_, Just Refl, _, Just Refl ,_,Just Refl) ->
-                                         pure h .*$. difChildren g t1 .*$. difChildren g t2 .*$. difChildren g t3
-                                     (_, _, _, Just Refl ,_,Just Refl) ->
-                                         pure h .*$. pure t1 .*$. difChildren g t2 .*$. difChildren g t3
-                                     (Just Refl, _, _, _,_,Just Refl) ->
-                                         pure h .*$. g t1 .*$. pure t2 .*$. difChildren g t3
-                                     (_, Just Refl, _, _,_,Just Refl) ->
-                                         pure h .*$. difChildren g t1 .*$. pure t2 .*$. difChildren g t3
-                                     (_, _, _, _,_,Just Refl) ->
-                                         pure h .*$. pure t1 .*$. pure t2 .*$. difChildren g t3
-                                     (Just Refl, _, Just Refl,_,_,_) -> 
-                                         pure h .*$. g t1 .*$. g t2 .*$. pure t3
-                                     (_, Just Refl, Just Refl,_,_,_) ->
-                                         pure h .*$. difChildren g t1 .*$. g t2 .*$. pure t3
-                                     (_, _, Just Refl, _ ,_,_) ->
-                                         pure h .*$. pure t1 .*$. g t2 .*$. pure t3
-                                     (Just Refl, _, _, Just Refl ,_,_) ->
-                                         pure h .*$. g t1 .*$. difChildren g t2 .*$. pure t3
-                                     (_, Just Refl, _, Just Refl ,_,_) ->
-                                         pure h .*$. difChildren g t1 .*$. difChildren g t2 .*$. pure t3
-                                     (_, _, _, Just Refl ,_,_) ->
-                                         pure h .*$. pure t1 .*$. difChildren g t2 .*$. pure t3
-                                     (Just Refl, _, _, _,_,_) ->
-                                         pure h .*$. g t1 .*$. pure t2 .*$. pure t3
-                                     (_, Just Refl, _, _,_,_) ->
-                                         pure h .*$. difChildren g t1 .*$. pure t2 .*$. pure t3
-                                     _-> pure phi
-        simChildren g phi@(h :!$: (t1 :: FixLang f tt) 
-                             :!$: (t2 :: FixLang f tt2))= 
+                                ) of (r11, r12, r21, r22, r31, r32) ->
+                                         pure h .*$. (handleArg (r11, r12) g t1) .*$. (handleArg (r21, r22) g t2) .*$. (handleArg (r31, r32) g t3)
+        simChildren g phi@(h :!$: (t1 :: FixLang f tt)
+                             :!$: (t2 :: FixLang f tt2))=
                            case ( eqT :: Maybe (tt :~: syn1 sem1)
                                 , eqT :: Maybe (tt :~: syn2 sem2)
                                 , eqT :: Maybe (tt2 :~: syn1 sem1)
                                 , eqT :: Maybe (tt2 :~: syn2 sem2)
-                                ) of (Just Refl, _, Just Refl,_) -> 
-                                         pure h .*$. g t1 .*$. g t2
-                                     (_, Just Refl, Just Refl,_) ->
-                                         pure h .*$. difChildren g t1 .*$. g t2
-                                     (_, _, Just Refl, _ ) ->
-                                         pure h .*$. pure t1 .*$. g t2
-                                     (Just Refl, _, _, Just Refl ) ->
-                                         pure h .*$. g t1 .*$. difChildren g t2
-                                     (_, Just Refl, _, Just Refl ) ->
-                                         pure h .*$. difChildren g t1 .*$. difChildren g t2
-                                     (_, _, _, Just Refl ) ->
-                                         pure h .*$. pure t1 .*$. difChildren g t2
-                                     (Just Refl, _, _, _) ->
-                                         pure h .*$. g t1 .*$. pure t2
-                                     (_, Just Refl, _, _) ->
-                                         pure h .*$. difChildren g t1 .*$. pure t2
-                                     _-> pure phi
+                                ) of (r11, r12, r21, r22) ->
+                                         pure h .*$. (handleArg (r11, r12) g t1) .*$. (handleArg (r21, r22) g t2)
         simChildren g phi@(h :!$: (t1 :: FixLang f tt))= pure h .*$.
                            case ( eqT :: Maybe (tt :~: syn1 sem1)
                                 , eqT :: Maybe (tt :~: syn2 sem2)
-                                ) of (Just Refl, _) -> 
-                                         g t1 
-                                     (_, Just Refl) -> 
+                                ) of (Just Refl, _) ->
+                                         g t1
+                                     (_, Just Refl) ->
                                          difChildren g t1
                                      _-> pure t1
         simChildren g phi = pure phi
 
         difChildren :: Traversal' (FixLang f (syn2 sem2)) (FixLang f (syn1 sem1))
-        difChildren g phi@(q :!$: LLam (h :: FixLang f t -> FixLang f t')) = 
+        difChildren g phi@(q :!$: LLam (h :: FixLang f t -> FixLang f t')) =
                    case ( eqT :: Maybe (t' :~: syn1 sem1)
                         , eqT :: Maybe (t' :~: syn2 sem2)) of
                             (Just Refl, _) -> (\x y -> x :!$: LLam y) <$> pure q <*> modify h
@@ -557,16 +500,16 @@ class (Typeable syn1, Typeable sem1, Typeable syn2, Typeable sem2, BoundVars f) 
                                      abstractBv f = \x -> (subBoundVar bv x f)
                                      modify h = abstractBv <$> (difChildren g $ h $ bv)
                             _ -> pure phi
-        difChildren g phi@(h :!$: (t1 :: FixLang f tt) 
+        difChildren g phi@(h :!$: (t1 :: FixLang f tt)
                              :!$: (t2 :: FixLang f tt2)
-                             :!$: (t3 :: FixLang f tt3))= 
+                             :!$: (t3 :: FixLang f tt3))=
                            case ( eqT :: Maybe (tt :~: syn1 sem1)
                                 , eqT :: Maybe (tt :~: syn2 sem2)
                                 , eqT :: Maybe (tt2 :~: syn1 sem1)
                                 , eqT :: Maybe (tt2 :~: syn2 sem2)
                                 , eqT :: Maybe (tt3 :~: syn1 sem1)
                                 , eqT :: Maybe (tt3 :~: syn2 sem2)
-                                ) of (Just Refl, _, Just Refl,_, Just Refl, _) -> 
+                                ) of (Just Refl, _, Just Refl,_, Just Refl, _) ->
                                          pure h .*$. g t1 .*$. g t2 .*$. g t3
                                      (_, Just Refl, Just Refl,_, Just Refl, _) ->
                                          pure h .*$. difChildren g t1 .*$. g t2 .*$. g t3
@@ -584,7 +527,7 @@ class (Typeable syn1, Typeable sem1, Typeable syn2, Typeable sem2, BoundVars f) 
                                          pure h .*$. difChildren g t1 .*$. pure t2 .*$. g t3
                                      (_, _, _, _, Just Refl, _) ->
                                          pure h .*$. pure t1 .*$. pure t2 .*$. g t3
-                                     (Just Refl, _, Just Refl,_,_,Just Refl) -> 
+                                     (Just Refl, _, Just Refl,_,_,Just Refl) ->
                                          pure h .*$. g t1 .*$. g t2 .*$. difChildren g t3
                                      (_, Just Refl, Just Refl,_,_,Just Refl) ->
                                          pure h .*$. difChildren g t1 .*$. g t2 .*$. difChildren g t3
@@ -602,7 +545,7 @@ class (Typeable syn1, Typeable sem1, Typeable syn2, Typeable sem2, BoundVars f) 
                                          pure h .*$. difChildren g t1 .*$. pure t2 .*$. difChildren g t3
                                      (_, _, _, _,_,Just Refl) ->
                                          pure h .*$. pure t1 .*$. pure t2 .*$. difChildren g t3
-                                     (Just Refl, _, Just Refl,_,_,_) -> 
+                                     (Just Refl, _, Just Refl,_,_,_) ->
                                          pure h .*$. g t1 .*$. g t2 .*$. pure t3
                                      (_, Just Refl, Just Refl,_,_,_) ->
                                          pure h .*$. difChildren g t1 .*$. g t2 .*$. pure t3
@@ -619,13 +562,13 @@ class (Typeable syn1, Typeable sem1, Typeable syn2, Typeable sem2, BoundVars f) 
                                      (_, Just Refl, _, _,_,_) ->
                                          pure h .*$. difChildren g t1 .*$. pure t2 .*$. pure t3
                                      _-> pure phi
-        difChildren g phi@(h :!$: (t1 :: FixLang f tt) 
-                             :!$: (t2 :: FixLang f tt2))= 
+        difChildren g phi@(h :!$: (t1 :: FixLang f tt)
+                             :!$: (t2 :: FixLang f tt2))=
                            case ( eqT :: Maybe (tt :~: syn1 sem1)
                                 , eqT :: Maybe (tt :~: syn2 sem2)
                                 , eqT :: Maybe (tt2 :~: syn1 sem1)
                                 , eqT :: Maybe (tt2 :~: syn2 sem2)
-                                ) of (Just Refl, _, Just Refl,_) -> 
+                                ) of (Just Refl, _, Just Refl,_) ->
                                          pure h .*$. g t1 .*$. g t2
                                      (_, Just Refl, Just Refl,_) ->
                                          pure h .*$. difChildren g t1 .*$. g t2
@@ -645,9 +588,9 @@ class (Typeable syn1, Typeable sem1, Typeable syn2, Typeable sem2, BoundVars f) 
         difChildren g phi@(h :!$: (t1 :: FixLang f tt))= pure h .*$.
                            case ( eqT :: Maybe (tt :~: syn1 sem1)
                                 , eqT :: Maybe (tt :~: syn2 sem2)
-                                ) of (Just Refl, _) -> 
-                                         g t1 
-                                     (_, Just Refl) -> 
+                                ) of (Just Refl, _) ->
+                                         g t1
+                                     (_, Just Refl) ->
                                          difChildren g t1
                                      _-> pure t1
         difChildren g phi = pure phi
