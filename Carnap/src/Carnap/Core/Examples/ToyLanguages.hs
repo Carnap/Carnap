@@ -5,7 +5,6 @@ module Carnap.Core.Examples.ToyLanguages where
 import Carnap.Core.Data.AbstractSyntaxDataTypes
 import Data.Function
 import Control.Lens
-import Control.Monad.State.Lazy
 import Data.Typeable
 
 --This module gives some toy language examples, with instances of
@@ -152,11 +151,6 @@ instance CopulaSchema ToyLanguage where
     lamSchema = error "how did you even do this?"
     liftSchema = error "should not print a lifted value"
 
-instance CanonicalForm ToyForm where
-        canonical = relabelVars
-
-instance CanonicalForm ToyTerm where
-        canonical = id
 
 instance BoundVars (Predicate BasicProp
                        :|: Connective BasicConn
@@ -181,6 +175,23 @@ instance LangTypes (Predicate BasicProp
                        :|: Quantifiers BasicQuant
                        :|: Function BasicTerm
                        :|: EndLang) Term Int Form Bool
+                       --
+
+instance RelabelVars (Predicate BasicProp
+                       :|: Connective BasicConn
+                       :|: Quantifiers BasicQuant
+                       :|: Function BasicTerm
+                       :|: EndLang) Form Bool where
+    subBinder (TBind (All x) f) y = Just (TBind (All y) f)
+    subBinder _ _ = Nothing
+    
+instance CanonicalForm ToyForm where
+        canonical = relabelVars varStream
+
+
+instance CanonicalForm ToyTerm where
+        canonical = id
+ 
 --------------------------------------------------------
 --1.2 Functions
 --------------------------------------------------------
@@ -201,13 +212,13 @@ p1 = TProp 1
 --Helper functions for defining instances
 
 --This function lets us base Eq on a canonical formula
-relabelVars :: ToyForm -> ToyForm
-relabelVars phi = evalState (transformM trans phi) 0
-    where trans :: ToyLanguage (Form Bool) -> State Int (ToyLanguage (Form Bool))
-          trans (TBind (All _) psi) = do n <- get
-                                         put (n+1)
-                                         return (TBind (All ("x_" ++ show n)) psi)
-          trans x = return x
+-- relabelVars :: ToyForm -> ToyForm
+-- relabelVars phi = evalState (transformM trans phi) 0
+--     where trans :: ToyLanguage (Form Bool) -> State Int (ToyLanguage (Form Bool))
+--           trans (TBind (All _) psi) = do n <- get
+--                                          put (n+1)
+--                                          return (TBind (All ("x_" ++ show n)) psi)
+--           trans x = return x
 
 --This function vacuums a given term out of a formula and returns the
 --corresponding function from terms to formulas
@@ -292,7 +303,6 @@ instance BoundVars (Applicators Application
     getBoundVar _ = undefined
 
     subBoundVar _ _ phi = phi
-
 
 instance CopulaSchema SimpleLambda where
     appSchema (SAbstract (Abs v)) (LLam f) e = schematize (Abs v) (show (f $ SBlank v) : e)

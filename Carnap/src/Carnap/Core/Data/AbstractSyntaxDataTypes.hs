@@ -8,15 +8,16 @@ module Carnap.Core.Data.AbstractSyntaxDataTypes(
   Nat(Zero, Succ), Fix(Fx), Vec(VNil, VCons), Arity(AZero, ASucc),
   TArity(TZero, TSucc),
   Predicate(Predicate), Connective(Connective), Function(Function),
-  Subnective(Subnective),CanonicalForm, Schematizable, FixLang,
+  Subnective(Subnective),CanonicalForm, Schematizable, FixLang, LangTypes, RelabelVars(..),
   pattern AOne, pattern ATwo , pattern LLam, pattern (:!$:),
   pattern Fx1, pattern Fx2, pattern Fx3, pattern Fx4, pattern Fx5, pattern
-  Fx6, pattern Fx7, pattern Fx8, pattern Fx9, pattern Fx10, pattern Fx11, EndLang, LangTypes
+  Fx6, pattern Fx7, pattern Fx8, pattern Fx9, pattern Fx10, pattern Fx11, EndLang
 ) where
 
 import Carnap.Core.Util
 import Data.Typeable
 import Control.Lens
+import qualified Control.Monad.State.Lazy as S
 
 --This module attempts to provide abstract syntax types that would cover
 --a wide variety of languages
@@ -525,3 +526,19 @@ class (Typeable syn1, Typeable sem1, Typeable syn2, Typeable sem2, BoundVars f) 
 
 instance LangTypes f syn1 sem1 syn2 sem2 => Plated (FixLang f (syn1 sem1)) where
         plate = simChildren
+
+class (Plated (FixLang f (syn sem)), BoundVars f) => RelabelVars f syn sem where 
+
+    relabelVars :: [String] -> FixLang f (syn sem) -> FixLang f (syn sem)
+    relabelVars vs phi = S.evalState (transformM trans phi) vs
+        where trans :: FixLang f (syn sem) -> S.State [String] (FixLang f (syn sem))
+              trans x = do (label:labels) <- S.get
+                           case subBinder x label of
+                            Nothing -> return x
+                            Just relabeled -> do S.put labels
+                                                 return relabeled
+
+    subBinder :: FixLang f (syn sem) -> String -> Maybe (FixLang f (syn sem))
+    
+    --XXX: could be changed to [[String]], with subBinder also returning an
+    --index, in order to accomodate simultaneous relabelings of several types of variables
