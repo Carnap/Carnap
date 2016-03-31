@@ -532,11 +532,14 @@ class (Plated (FixLang f (syn sem)), BoundVars f) => RelabelVars f syn sem where
     relabelVars :: [String] -> FixLang f (syn sem) -> FixLang f (syn sem)
     relabelVars vs phi = S.evalState (transformM trans phi) vs
         where trans :: FixLang f (syn sem) -> S.State [String] (FixLang f (syn sem))
-              trans x = do (label:labels) <- S.get
-                           case subBinder x label of
-                            Nothing -> return x
-                            Just relabeled -> do S.put labels
-                                                 return relabeled
+              trans x = do l <- S.get
+                           case l of 
+                             (label:labels) ->
+                               case subBinder x label of
+                                Just relabeled -> do S.put labels
+                                                     return relabeled
+                                Nothing -> return x
+                             _ -> return x
 
     subBinder :: FixLang f (syn sem) -> String -> Maybe (FixLang f (syn sem))
     

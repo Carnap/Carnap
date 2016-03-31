@@ -187,6 +187,7 @@ instance RelabelVars (Predicate BasicProp
     
 instance CanonicalForm ToyForm where
         canonical = relabelVars varStream
+            where varStream = [i ++ j | i <- ["x"], j <- map show [1 ..]]
 
 
 instance CanonicalForm ToyTerm where
