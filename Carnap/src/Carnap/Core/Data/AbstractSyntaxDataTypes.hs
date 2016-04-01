@@ -8,6 +8,7 @@ module Carnap.Core.Data.AbstractSyntaxDataTypes(
   Nat(Zero, Succ), Fix(Fx), Vec(VNil, VCons), Arity(AZero, ASucc),
   TArity(TZero, TSucc),
   Predicate(Predicate), Connective(Connective), Function(Function),
+<<<<<<< HEAD
   Subnective(Subnective),CanonicalForm, Schematizable, FixLang, LangTypes, RelabelVars(..),
   pattern AOne, pattern ATwo , pattern LLam, pattern (:!$:),
   pattern Fx1, pattern Fx2, pattern Fx3, pattern Fx4, pattern Fx5, pattern
@@ -18,6 +19,15 @@ import Carnap.Core.Util
 import Data.Typeable
 import Control.Lens
 import qualified Control.Monad.State.Lazy as S
+=======
+  Subnective(Subnective),CanonicalForm, Schematizable, FixLang,
+  pattern AOne, pattern ATwo , pattern LLam, pattern (:!$:)
+) where
+
+import Carnap.Core.Util
+import Control.Lens
+import Control.Lens.Plated
+>>>>>>> unification
 
 --This module attempts to provide abstract syntax types that would cover
 --a wide variety of languages
