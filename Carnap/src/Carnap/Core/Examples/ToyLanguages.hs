@@ -3,9 +3,9 @@
 module Carnap.Core.Examples.ToyLanguages where
 
 import Carnap.Core.Data.AbstractSyntaxDataTypes
-import Data.Function
-import Control.Lens
-import Data.Typeable
+--import Data.Function
+import Control.Lens (Plated)
+import Data.Typeable (Typeable)
 
 --This module gives some toy language examples, with instances of
 --important typeclasses, and explanation of the guiding ideas behind them.
