@@ -31,8 +31,11 @@ class FirstOrder f where
     occurs :: f a -> f a -> Bool
     subst :: f a -> f a -> f b -> f b
 
+data ExtApp f a where
+    ExtApp :: f (b -> a) -> f b -> ExtApp f a
+
 class FirstOrder f => HigherOrder f where
-    matchApp :: f a -> Maybe (f (b -> a), f a)
+    matchApp :: f a -> Maybe (ExtApp f a)
     castLam :: f a -> Maybe (f (b -> c), a :~: (b -> c))
     getLamVar :: f (a -> b) -> f a
     (.$.) :: f (a -> b) -> f a -> f b
