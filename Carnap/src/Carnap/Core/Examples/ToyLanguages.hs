@@ -3,7 +3,6 @@
 module Carnap.Core.Examples.ToyLanguages where
 
 import Carnap.Core.Data.AbstractSyntaxDataTypes
---import Data.Function
 import Control.Lens (Plated)
 import Data.Typeable (Typeable)
 
@@ -106,14 +105,6 @@ type ToyForm = ToyLanguage (Form Bool)
 --the user would most likely not care about this stuff
 pattern (:!!$:) :: (Typeable a, Typeable b) => ToyLanguage (a -> b) -> ToyLanguage a -> ToyLanguage b
 pattern (:!!$:) f y      = f :!$: y
--- pattern ConnTZero         :: TArity (Form Bool) (Form Bool) 'Zero (Form Bool) 
--- pattern ConnTZero         = TZero
--- pattern ConnTOne         :: TArity (Form Bool) (Form Bool) ('Succ 'Zero) (Form Bool -> Form Bool) 
--- pattern ConnTOne          = TSucc ConnTZero
-pattern ConnZero         :: Arity (Form Bool) (Form Bool) 'Zero (Form Bool) 
-pattern ConnZero         = AZero
-pattern ConnOne         :: Arity (Form Bool) (Form Bool) ('Succ 'Zero) (Form Bool -> Form Bool) 
-pattern ConnOne          = ASucc ConnZero
 pattern ToyPred x arity  = Fx1 (Predicate x arity)
 pattern ToyCon x arity   = Fx2 (Connective x arity)
 pattern TQuant q         = Fx3 (Bind q)
@@ -150,7 +141,6 @@ instance CopulaSchema ToyLanguage where
     appSchema x y e = schematize x (show y : e)
     lamSchema = error "how did you even do this?"
     liftSchema = error "should not print a lifted value"
-
 
 instance BoundVars (Predicate BasicProp
                        :|: Connective BasicConn
