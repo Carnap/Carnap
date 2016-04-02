@@ -3,7 +3,10 @@
 module Carnap.Languages.PurePropositional.Syntax where
 
 import Carnap.Core.Data.AbstractSyntaxDataTypes
+import Carnap.Core.Unification.Unification
 import Control.Lens (Plated)
+import Control.Lens.Fold (anyOf)
+import Control.Lens.Plated (cosmos, transform)
 import Data.Typeable (Typeable)
 
 data PureProp a where
@@ -76,9 +79,7 @@ pattern POr            = PCon Or ATwo
 pattern PIf            = PCon If ATwo
 pattern PIff           = PCon Iff ATwo
 pattern PNot           = PCon Not AOne
-pattern P :: Int -> PureForm
 pattern P n            = PPred (Prop n) AZero
-pattern Phi :: Int -> PureForm
 pattern Phi n          = PSPred (SProp n) AZero
 pattern PConj x y       = PAnd :!!$: x :!!$: y
 pattern (:&:) x y      = PAnd :!!$: x :!!$: y
@@ -107,3 +108,60 @@ instance RelabelVars PurePropLexicon Form Bool where
 
 instance CanonicalForm PureForm where
         canonical = id
+
+checkChildren phi psi = anyOf cosmos (== phi) psi
+
+castToForm :: PurePropLanguage a -> Maybe PureForm
+castToForm phi@(Neg x)     = Just phi  
+castToForm phi@(x :&: y)   = Just phi
+castToForm phi@(x :||: y)  = Just phi
+castToForm phi@(x :->: y)  = Just phi
+castToForm phi@(x :<->: y) = Just phi
+castToForm phi@(P _)       = Just phi
+castToForm phi@(Phi _)     = Just phi
+castToForm _ = Nothing
+
+instance FirstOrder PurePropLanguage where
+        
+    isVar (Phi _) = True
+    isVar _       = False
+
+    sameHead (Neg _) (Neg _) = True
+    sameHead (_ :&: _) (_ :&: _) = True
+    sameHead (_ :||: _) (_ :||: _) = True
+    sameHead (_ :->: _) (_ :->: _) = True
+    sameHead (_ :<->: _) (_ :<->: _) = True
+    sameHead _ _ = False
+
+    decompose (Neg x) (Neg y) = [x :=: y]
+    decompose (x :&: y) (x' :&: y') = [x :=: x', y :=: y']
+    decompose (x :||: y) (x' :||: y') = [x :=: x', y :=: y']
+    decompose (x :->: y) (x' :->: y') = [x :=: x', y :=: y']
+    decompose (x :<->: y) (x' :<->: y') = [x :=: x', y :=: y']
+    decompose _ _ = []
+
+    occurs phi (Neg x) = checkChildren phi x
+    occurs phi (x :&: y) = checkChildren phi x || checkChildren phi y
+    occurs phi (x :||: y) = checkChildren phi x || checkChildren phi y
+    occurs phi (x :->: y) = checkChildren phi x || checkChildren phi y
+    occurs phi (x :<->: y) = checkChildren phi x || checkChildren phi y
+    occurs phi psi@(P _) = phi == psi
+    occurs phi psi@(Phi _) = phi == psi
+    occurs _ _ = False
+
+    subst a b c = 
+          case c of 
+            (Neg x)     -> byCast a b c
+            (x :&: y)   -> byCast a b c 
+            (x :||: y)  -> byCast a b c
+            (x :->: y)  -> byCast a b c
+            (x :<->: y) -> byCast a b c
+            (P _)       -> byCast a b c
+            (Phi _)     -> byCast a b c
+            _ -> c
+        where 
+            byCast v phi psi =
+                case (castToForm v, castToForm phi, castToForm psi) of 
+                     (Just v', Just phi', Just psi') -> 
+                          transform (\x -> if x == v' then phi' else x) psi'
+                     _ -> psi
