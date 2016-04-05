@@ -30,6 +30,7 @@ class FirstOrder f where
     decompose :: f a -> f a -> [Equation f]
     occurs :: f a -> f a -> Bool
     subst :: f a -> f a -> f b -> f b
+    freshVars :: [f a]
 
 data ExtApp f a where
     ExtApp :: f (b -> a) -> f b -> ExtApp f a

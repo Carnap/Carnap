@@ -1,6 +1,7 @@
 module Carnap.Core.Unification.SAT (
   SatProblem, unitProp, units, unassigned,valuation,evaluate,
-  ListSat(ListSat), cascadeUnits, search
+  ListSat(ListSat), makeProblem, cascadeUnits, search,
+  Solutions(Sat, Sols), enumerate
 ) where
 
 import Data.List
@@ -17,6 +18,8 @@ class SatProblem t where
 data ListSat = ListSat [Int] [Int] [[Int]]
              | ListSatFalse
     deriving(Show)
+
+makeProblem prob = ListSat [] (nub $ concat prob) prob
 
 instance SatProblem ListSat where
     evaluate ListSatFalse       = False
