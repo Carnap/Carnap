@@ -28,7 +28,6 @@ data PureConn a where
         Iff :: PureConn (Form Bool -> Form Bool -> Form Bool)
         Not :: PureConn (Form Bool -> Form Bool)
 
-
 instance Schematizable PureConn where
         schematize Iff = \(x:y:_) -> "(" ++ x ++ " ↔ " ++ y ++ ")"
         schematize If  = \(x:y:_) -> "(" ++ x ++ " → " ++ y ++ ")"
@@ -51,14 +50,20 @@ data SchematicProp a where
 
 instance Schematizable SchematicProp where
         schematize (SProp n)   _       = "φ_" ++ show n
-
 --XXX:All Schematic Propositions are false. A better solution might make
 --a schematic language take semantic values in a Maybe monad
+
 instance Evaluable SchematicProp where
         eval (SProp _) = Form False
 
 instance Modelable (Int -> Bool) SchematicProp where
         satisfies _ (SProp _) = Form False
+
+data SubstitutionalProp a where
+        SubProp :: Int -> SubstitutionalProp b
+
+instance Schematizable SubstitutionalProp where
+        schematize (SubProp n)   _       = "α_" ++ show n
 
 type PurePropLexicon = (Predicate PureProp
                    :|: Predicate SchematicProp
@@ -74,6 +79,7 @@ pattern (:!!$:) f y    = f :!$: y
 pattern PPred x arity  = Fx1 (Predicate x arity)
 pattern PSPred x arity = Fx2 (Predicate x arity)
 pattern PCon x arity   = Fx3 (Connective x arity)
+pattern PBPred x arity = Fx4 (Predicate x arity)
 pattern PAnd           = PCon And ATwo
 pattern POr            = PCon Or ATwo
 pattern PIf            = PCon If ATwo
@@ -81,7 +87,7 @@ pattern PIff           = PCon Iff ATwo
 pattern PNot           = PCon Not AOne
 pattern P n            = PPred (Prop n) AZero
 pattern Phi n          = PSPred (SProp n) AZero
-pattern PConj x y       = PAnd :!!$: x :!!$: y
+pattern PConj x y      = PAnd :!!$: x :!!$: y
 pattern (:&:) x y      = PAnd :!!$: x :!!$: y
 pattern (:||:) x y     = POr :!!$: x :!!$: y
 pattern (:->:) x y     = PIf :!!$: x :!!$: y
@@ -140,14 +146,10 @@ instance FirstOrder PurePropLanguage where
     decompose (x :<->: y) (x' :<->: y') = [x :=: x', y :=: y']
     decompose _ _ = []
 
-    occurs phi (Neg x) = checkChildren phi x
-    occurs phi (x :&: y) = checkChildren phi x || checkChildren phi y
-    occurs phi (x :||: y) = checkChildren phi x || checkChildren phi y
-    occurs phi (x :->: y) = checkChildren phi x || checkChildren phi y
-    occurs phi (x :<->: y) = checkChildren phi x || checkChildren phi y
-    occurs phi psi@(P _) = phi == psi
-    occurs phi psi@(Phi _) = phi == psi
-    occurs _ _ = False
+
+    occurs phi psi = case (castToForm phi, castToForm psi) of
+                                 (Just f, Just f') -> checkChildren f f'
+                                 _ -> False
 
     subst a b c = 
           case c of 
@@ -165,3 +167,5 @@ instance FirstOrder PurePropLanguage where
                      (Just v', Just phi', Just psi') -> 
                           transform (\x -> if x == v' then phi' else x) psi'
                      _ -> psi
+
+    freshVars = map (\n -> SV n) [1..]
