@@ -1,5 +1,5 @@
 module Carnap.Core.Unification.ACUI (
-  isConst
+  isConst, acuiUnify
 ) where
 
   --to solve ACUI unification with constants we need to be able to find
@@ -82,6 +82,10 @@ subadd a b = like ++ unlike
           unlike = filter (not . (`elem` (map eqleft like)) . eqleft) a
           eqleft (l :==: _) = l
 
+toSub :: [SimpleEquation (f a)] -> [Equation f]
+toSub []              = []
+toSub ((x :==: y):xs) = (x :=: y):(toSub xs)
+
 acuiUnify :: (Eq (f a), Monoid (f a), Plated (f a), FirstOrder f)
           => f a -> f a -> State [f a] [Equation f]
 acuiUnify a b = do
@@ -91,4 +95,4 @@ acuiUnify a b = do
     let homo' = eqmap (map $ findIdx homo) $ homo
     let mins = minimals [] [] . search . makeProblem . toSatProblem $ homo'
     minSols <- mapM (conv homo) mins
-    return $ foldl subadd [] minSols
+    return $ toSub (foldl subadd [] minSols)

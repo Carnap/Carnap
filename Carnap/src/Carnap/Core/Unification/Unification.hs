@@ -4,7 +4,7 @@ module Carnap.Core.Unification.Unification (
    Equation((:=:)), FirstOrder, HigherOrder,
    isVar, sameHead, decompose, occurs, subst,
    matchApp, castLam, getLamVar, (.$.),
-   applySub, founify, mapAll,
+   applySub, founify, mapAll, freshVars
 ) where
 
 import Data.Type.Equality
@@ -28,7 +28,7 @@ class FirstOrder f where
     isVar :: f a -> Bool
     sameHead :: f a -> f a -> Bool
     decompose :: f a -> f a -> [Equation f]
-    occurs :: f a -> f a -> Bool
+    occurs :: f a -> f b -> Bool
     subst :: f a -> f a -> f b -> f b
     freshVars :: [f a]
 

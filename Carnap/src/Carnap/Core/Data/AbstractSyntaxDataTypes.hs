@@ -101,7 +101,8 @@ infixr 5 :|:
 -- | This type fixes the first argument of a functor and carries though a
 -- | phantom type. note that only certian kinds of functors even have a kind
 -- | such that the first argument is fixable
-newtype Fix f idx = Fx (f (Fix f) idx)
+data Fix f idx where
+    Fx :: f (Fix f) idx -> Fix f idx
 
 -- | This is an empty abstract type, which can be used to close off
 -- | a series of applications of `:|:`, so that the right-most leaf
