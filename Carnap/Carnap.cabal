@@ -14,8 +14,8 @@ cabal-version:       >=1.10
 
 library
   hs-source-dirs:      src
-  exposed-modules:
-  other-modules:       Carnap.Core.Examples.ACUI
+  exposed-modules:     Carnap.Core.Data.AbstractSyntaxDataTypes
+  other-modules:       Carnap.Core.Examples.ToyLanguages, Carnap.Languages.PurePropositional.Syntax, Carnap.Core.Unification.ACUI
   build-depends:       base >= 4.7
                      , megaparsec >= 4.4.0
                      , lens >= 4.12
