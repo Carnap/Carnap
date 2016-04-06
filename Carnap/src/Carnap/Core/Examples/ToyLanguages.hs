@@ -122,7 +122,7 @@ pattern TBind q f        = (TQuant q :!!$: LLam f)
 pattern Conj x y         = TAnd :!!$: x :!!$: y
 pattern (:&:) x y        = TAnd :!!$: x :!!$: y
 pattern Neg x            = TNot :!!$: x
-pattern (:=:) x y        = ToyPred EqProp (ASucc (ASucc AZero)) :!$: x :!$: y
+pattern (:==:) x y        = ToyPred EqProp (ASucc (ASucc AZero)) :!$: x :!$: y
 pattern Univ v f         = TBind (All v) f
 
 quantif v f =  (TAll v :!$: LLam f) 
@@ -150,8 +150,8 @@ instance BoundVars (Predicate BasicProp
     getBoundVar (TQuant (All v)) = TVar v
     getBoundVar _ = undefined
 
-    subBoundVar a@(TVar _) b@(TVar _) (x :=: y) = 
-        (if x == a then b else x) :=: (if y == a then b else y)
+    subBoundVar a@(TVar _) b@(TVar _) (x :==: y) = 
+        (if x == a then b else x) :==: (if y == a then b else y)
     subBoundVar _ _ phi = phi
 
 instance LangTypes (Predicate BasicProp

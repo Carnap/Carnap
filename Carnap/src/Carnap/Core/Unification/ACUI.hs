@@ -82,11 +82,11 @@ subadd a b = like ++ unlike
           unlike = filter (not . (`elem` (map eqleft like)) . eqleft) a
           eqleft (l :==: _) = l
 
-toSub :: [SimpleEquation (f a)] -> [Equation f]
+toSub :: Show (f a) => [SimpleEquation (f a)] -> [Equation f]
 toSub []              = []
 toSub ((x :==: y):xs) = (x :=: y):(toSub xs)
 
-acuiUnify :: (Eq (f a), Monoid (f a), Plated (f a), FirstOrder f)
+acuiUnify :: Show (f a) => (Eq (f a), Monoid (f a), Plated (f a), FirstOrder f)
           => f a -> f a -> State [f a] [Equation f]
 acuiUnify a b = do
     let l = unfoldTerm a
