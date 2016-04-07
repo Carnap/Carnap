@@ -19,7 +19,7 @@ data ListSat = ListSat [Int] [Int] [[Int]]
              | ListSatFalse
     deriving(Show)
 
-makeProblem prob = ListSat [] (nub $ concat prob) prob
+makeProblem prob = ListSat [] (nub $ prob >>= map abs) prob
 
 instance SatProblem ListSat where
     evaluate ListSatFalse       = False

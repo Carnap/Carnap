@@ -1,5 +1,5 @@
 module Carnap.Core.Unification.ACUI (
-  isConst, acuiUnify
+  acuiUnify
 ) where
 
   --to solve ACUI unification with constants we need to be able to find
@@ -19,28 +19,32 @@ import Data.Function
 isConst :: FirstOrder f => f a -> Bool
 isConst a = not (isVar a) && null (decompose a a)
 
-unfoldTerm :: (Plated (f a), FirstOrder f) => f a -> [f a]
-unfoldTerm a = concatMap conv (children a)
-    where conv x | isConst x = [x]
-                 | isVar x   = [x]
-                 | otherwise = unfoldTerm a
+--unfoldTerm :: (Plated (f a), FirstOrder f) => f a -> [f a]
+unfoldTerm a | a == mempty = []
+             | isConst a   = [a]
+             | isVar a     = [a]
+             | otherwise   = concatMap unfoldTerm (children a)
 
-refoldTerms :: Monoid m => [m] -> m
-refoldTerms = mconcat
+
+refoldTerms []     = mempty
+refoldTerms [x]    = x
+refoldTerms (x:xs) | x == mempty = refoldTerms xs
+                   | otherwise   = x `mappend` refoldTerms xs
 
 --list out equations of the correct form that we need to solve
 --in order to get our set of unifiers for
 data SimpleEquation a = a :==: a
+    deriving(Eq, Ord, Show)
 
 eqmap f (a :==: b) = f a :==: f b
 eqfilter p (a :==: b) = (filter p a) :==: (filter p b)
 eqadd (a :==: b) (a' :==: b') = (a ++ a') :==: (b ++ b')
 
-findIdx (l :==: r) x = let (Just idx) = findIndex (== x) (nub $ l ++ r) in idx
+findIdx (l :==: r) x = let (Just idx) = findIndex (== x) (nub $ l ++ r) in idx + 1
 homogenous eq = eqfilter isVar eq
 inhomogenous (l :==: r) = map (\c -> eqfilter (\x -> isVar x || x == c) (l :==: r))
     where consts = filter (not . isVar) (l ++ r)
-findTerm (l :==: r) i = nub (l ++ r) !! i
+findTerm (l :==: r) i = nub (l ++ r) !! (i - 1)
 
 --converts a homogenous problem to a non-homogenous one
 toSatProblem :: SimpleEquation [Int] -> [[Int]]
@@ -58,7 +62,7 @@ minimals ss cur (Sat True) | all (<0) cur = ss
                            | otherwise    = cur:ss
 minimals ss cur (Sat False) = ss
 minimals ss cur (Sols i s1 s2) | any ((i:cur) `dominates`) mins = mins
-                               | otherwise = mins ++ minimals mins (i:cur) s2
+                               | otherwise = minimals mins (i:cur) s2
     where mins = minimals ss ((negate i):cur) s1
 
 --for now lets just find the solution to the homogenous setup
@@ -67,19 +71,20 @@ pop = do
   (x:xs) <- get
   put xs
   return x
-ezip = zipWith (:==:)
+
+
+simplify e = refoldTerms (unfoldTerm e)
+
 --pass the homogenous equation and a solution
 --this will output a general solution
-conv (l :==: r) sol = do
-    var <- pop
-    let sub = ezip (l ++ r) (map (mconcat . flip replicate var) sol)
-    return sub
-
+conv eq sol = pop >>= \var -> return $ map (convVar var eq) sol
+    where convVar var eq idx | idx > 0 = (findTerm eq idx) :==: var
+                             | idx < 0 = (findTerm eq (abs idx)) :==: mempty
 --adds substitutions togethor
 subadd :: (Eq m, Monoid m) => [SimpleEquation m] -> [SimpleEquation m] -> [SimpleEquation m]
 subadd a b = like ++ unlike
-    where like = [x :==: (a' `mappend` b')| (x :==: a') <- a, (y :==: b') <- a, x == y]
-          unlike = filter (not . (`elem` (map eqleft like)) . eqleft) a
+    where like = [x :==: ((a' `mappend` b'))| (x :==: a') <- a, (y :==: b') <- b, x == y]
+          unlike = filter (not . (`elem` (map eqleft like)) . eqleft) (a ++ b)
           eqleft (l :==: _) = l
 
 toSub :: Show (f a) => [SimpleEquation (f a)] -> [Equation f]
@@ -92,7 +97,10 @@ acuiUnify a b = do
     let l = unfoldTerm a
     let r = unfoldTerm b
     let homo = homogenous (l :==: r)
-    let homo' = eqmap (map $ findIdx homo) $ homo
+    let homo' = eqmap (map $ findIdx homo) homo
     let mins = minimals [] [] . search . makeProblem . toSatProblem $ homo'
     minSols <- mapM (conv homo) mins
-    return $ toSub (foldl subadd [] minSols)
+    let minSols' = map (map (eqmap simplify)) minSols
+    let sol = foldl subadd [] minSols'
+    let sol' = map (eqmap simplify) sol
+    return $ toSub sol'

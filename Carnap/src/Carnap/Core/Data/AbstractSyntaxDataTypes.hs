@@ -125,7 +125,7 @@ pattern Fx5 x  = Fx (FRight (FRight (FRight (FRight (FRight (FRight (FLeft x))))
 pattern Fx6 x  = Fx (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FLeft x))))))))
 pattern Fx7 x  = Fx (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FLeft x)))))))))
 pattern Fx8 x  = Fx (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FLeft x))))))))))
-pattern Fx9 x = Fx (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FLeft x)))))))))))
+pattern Fx9 x  = Fx (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FLeft x)))))))))))
 pattern Fx10 x = Fx (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FLeft x))))))))))))
 pattern Fx11 x = Fx (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FLeft x)))))))))))))
 

@@ -43,7 +43,7 @@ instance Evaluable Set where
     eval Union = \(Term t) (Term t') -> Term (uv t t')
 
 data Var lang a where
-    SomeSet :: Typeable a => String -> Var lang a
+    SomeSet :: String -> Var lang (Term V)
 
 instance Schematizable (Var lang) where
     schematize (SomeSet s) _ = s
@@ -57,35 +57,52 @@ pattern VEmpty = Fx1 (Function Empty AZero)
 pattern VSomeSet s = Fx2 (SomeSet s)
 pattern VUnion x y = Fx1 (Function Union ATwo) :!$: x :!$: y
 
+instance LangTypes (Function Set :|: Var :|: EndLang) Term V Term V
+
+instance BoundVars (Function Set :|: Var :|: EndLang) where
+  getBoundVar = undefined
+  subBoundVar = undefined
+
+instance CopulaSchema VLang where
+    appSchema x y e = schematize x (show y : e)
+    lamSchema = error "how did you even do this?"
+    liftSchema = error "should not print a lifted value"
+
+instance Monoid (VLang (Term V)) where
+    mempty = VEmpty
+    mappend = VUnion
+
+instance CanonicalForm (VLang a) where
+    canonical = id
+
 --this could likely be defined just using generic things
 --however in this case I'm just defining it directly
 --more work will be needed to define this for all
 --needed languages.
-
 instance FirstOrder VLang where
+  isVar (SV _)       = True
   isVar (VSomeSet _) = True
+  isVar _            = False
 
   sameHead VEmpty VEmpty              = True
-  sameHead (VSomeSet s) (VSomeSet s') = s == s'
+  sameHead (SV s)       (SV s')       = s == s'
   sameHead (VUnion _ _) (VUnion _ _)  = True
   sameHead _            _             = False
 
   decompose (VUnion x y) (VUnion x' y') = [x :=: x', y :=: y']
   decompose _            _              = []
 
-  occurs (VSomeSet s) (VSomeSet s') = s == s'
-  occurs v            (VUnion x y)  = occurs v x || occurs v y
+  occurs (SV s) (SV s')      = s == s'
+  occurs v      (VUnion x y) = occurs v x || occurs v y
 
   --this is complicated and should be hidden from the user
   subst v new (VUnion x y)         = VUnion (subst v new x) (subst v new y)
-  subst (VSomeSet s :: VLang a) new orign@(VSomeSet s' :: VLang b)
-      | s == s'   = case eqT :: Maybe (a :~: b) of
-                        Just Refl -> new
-                        Nothing   -> orign
+  subst (VSomeSet s) new orign@(VSomeSet s')
+      | s == s'                    = new
       | otherwise                  = orign
-  subst _            _   orign     = orign
 
-  freshVars = undefined
+  --freshVars = undefined
+  freshVars = map SV [1..]
   --freshVars :: forall a. [VLang a] --this is complicated
   --freshVars = case eqT :: Maybe (a :~: Term V) of
     --  Just Refl -> map (VSomeSet . ("x" ++) . show) [(1 :: Int) ..]
