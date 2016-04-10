@@ -1,6 +1,6 @@
 {-#LANGUAGE ScopedTypeVariables, InstanceSigs, ExplicitForAll, TypeSynonymInstances, UndecidableInstances, FlexibleInstances, MultiParamTypeClasses, GADTs, DataKinds, PolyKinds, TypeOperators, ViewPatterns, PatternSynonyms, RankNTypes, FlexibleContexts, AutoDeriveTypeable #-}
 module Carnap.Core.Examples.ACUI (
-    V, Set, VLang,
+    V, Set, VLang, Var,
     pattern VEmpty, pattern VUnion, pattern VSomeSet, pattern VSingelton
 ) where
 
@@ -84,6 +84,12 @@ instance Monoid (VLang (Term V)) where
 
 instance CanonicalForm (VLang a) where
     canonical = id
+
+
+instance ACUI VLang (Term V) where
+    unfoldTerm (VUnion x y) = unfoldTerm x ++ unfoldTerm y
+    unfoldTerm VEmpty       = []
+    unfoldTerm leaf         = [leaf]
 
 --this could likely be defined just using generic things
 --however in this case I'm just defining it directly
