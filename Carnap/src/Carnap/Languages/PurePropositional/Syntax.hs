@@ -68,6 +68,7 @@ instance Schematizable SubstitutionalProp where
 type PurePropLexicon = (Predicate PureProp
                    :|: Predicate SchematicProp
                    :|: Connective PureConn
+                   :|: SubstitutionalVariable
                    :|: EndLang)
 
 type PurePropLanguage = FixLang PurePropLexicon
@@ -79,7 +80,7 @@ pattern (:!!$:) f y    = f :!$: y
 pattern PPred x arity  = Fx1 (Predicate x arity)
 pattern PSPred x arity = Fx2 (Predicate x arity)
 pattern PCon x arity   = Fx3 (Connective x arity)
-pattern PBPred x arity = Fx4 (Predicate x arity)
+pattern SV n           = Fx4 (SubVar n)
 pattern PAnd           = PCon And ATwo
 pattern POr            = PCon Or ATwo
 pattern PIf            = PCon If ATwo

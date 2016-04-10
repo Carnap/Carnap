@@ -8,11 +8,11 @@ module Carnap.Core.Data.AbstractSyntaxDataTypes(
   Nat(Zero, Succ), Fix(Fx), Vec(VNil, VCons), Arity(AZero, ASucc),
   TArity(TZero, TSucc),
   Predicate(Predicate), Connective(Connective), Function(Function),
-  Subnective(Subnective),CanonicalForm, Schematizable, FixLang, LangTypes,
+  Subnective(Subnective), SubstitutionalVariable(SubVar), CanonicalForm, Schematizable, FixLang, LangTypes,
   RelabelVars(..), pattern AOne, pattern ATwo , pattern LLam, pattern
   (:!$:), pattern Fx1, pattern Fx2, pattern Fx3, pattern Fx4, pattern Fx5,
   pattern Fx6, pattern Fx7, pattern Fx8, pattern Fx9, pattern Fx10, pattern
-  Fx11, pattern SV, EndLang
+  Fx11, EndLang
 ) where
 
 import Carnap.Core.Util
@@ -110,24 +110,22 @@ data Fix f idx where
 -- | doesn't need special treatment.
 data EndLang :: (* -> *) -> * -> *
 
-type FixLang f = Fix (Copula :|: SubstitutionalVariable :|: f)
+type FixLang f = Fix (Copula :|: f)
 
-
-
-pattern (:!$:) f x = Fx (FLeft (f :$: x))
-pattern LLam f = Fx (FLeft (Lam f))
-pattern SV n   = Fx (FRight (FLeft (SubVar n)))
-pattern Fx1 x  = Fx (FRight (FRight (FLeft x)))
-pattern Fx2 x  = Fx (FRight (FRight (FRight (FLeft x))))
-pattern Fx3 x  = Fx (FRight (FRight (FRight (FRight (FLeft x)))))
-pattern Fx4 x  = Fx (FRight (FRight (FRight (FRight (FRight (FLeft x))))))
-pattern Fx5 x  = Fx (FRight (FRight (FRight (FRight (FRight (FRight (FLeft x)))))))
-pattern Fx6 x  = Fx (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FLeft x))))))))
-pattern Fx7 x  = Fx (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FLeft x)))))))))
-pattern Fx8 x  = Fx (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FLeft x))))))))))
-pattern Fx9 x  = Fx (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FLeft x)))))))))))
-pattern Fx10 x = Fx (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FLeft x))))))))))))
-pattern Fx11 x = Fx (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FLeft x)))))))))))))
+pattern (:!$:) f x = Fx (FLeft  (f :$: x))
+pattern LLam f     = Fx (FLeft  (Lam f))
+pattern Fx1 x      = Fx (FRight (FLeft x))
+pattern Fx2 x      = Fx (FRight (FRight (FLeft x)))
+pattern Fx3 x      = Fx (FRight (FRight (FRight (FLeft x))))
+pattern Fx4 x      = Fx (FRight (FRight (FRight (FRight (FLeft x)))))
+pattern Fx5 x      = Fx (FRight (FRight (FRight (FRight (FRight (FLeft x))))))
+pattern Fx6 x      = Fx (FRight (FRight (FRight (FRight (FRight (FRight (FLeft x)))))))
+pattern Fx7 x      = Fx (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FLeft x))))))))
+pattern Fx8 x      = Fx (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FLeft x)))))))))
+pattern Fx9 x      = Fx (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FLeft x))))))))))
+pattern Fx10 x     = Fx (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FLeft x)))))))))))
+pattern Fx11 x     = Fx (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FLeft x))))))))))))
+pattern Fx12 x     = Fx (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FLeft x)))))))))))))
 
 --XXX: Idea for a uniform definition of plate: the big difficulty here is
 --doing a kind very flexible pattern matching, which depends on whether the

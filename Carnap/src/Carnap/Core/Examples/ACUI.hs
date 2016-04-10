@@ -1,5 +1,5 @@
 {-#LANGUAGE ScopedTypeVariables, InstanceSigs, ExplicitForAll, TypeSynonymInstances, UndecidableInstances, FlexibleInstances, MultiParamTypeClasses, GADTs, DataKinds, PolyKinds, TypeOperators, ViewPatterns, PatternSynonyms, RankNTypes, FlexibleContexts, AutoDeriveTypeable #-}
-module Carnap.Core.Examples.ACUI () where
+module Carnap.Core.Examples.ACUI where
 
 import Carnap.Core.Data.AbstractSyntaxDataTypes
 import Carnap.Core.Unification.Unification
@@ -51,15 +51,18 @@ instance Schematizable (Var lang) where
 instance Evaluable (Var lang) where
     eval _ = error "you are not allowed to do that silly"
 
-type VLang = FixLang (Function Set :|: Var :|: EndLang)
+type VLex = (Function Set :|: Var :|: SubstitutionalVariable :|: EndLang)
+
+type VLang = FixLang VLex
 
 pattern VEmpty = Fx1 (Function Empty AZero)
 pattern VSomeSet s = Fx2 (SomeSet s)
 pattern VUnion x y = Fx1 (Function Union ATwo) :!$: x :!$: y
+pattern SV n = Fx3 (SubVar n)
 
-instance LangTypes (Function Set :|: Var :|: EndLang) Term V Term V
+instance LangTypes VLex Term V Term V
 
-instance BoundVars (Function Set :|: Var :|: EndLang) where
+instance BoundVars VLex where
   getBoundVar = undefined
   subBoundVar = undefined
 
