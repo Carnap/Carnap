@@ -1,5 +1,7 @@
+{-#LANGUAGE MultiParamTypeClasses, FlexibleContexts #-}
+
 module Carnap.Core.Unification.ACUI (
-  acuiUnify, toSatProblem, solveEq, bigCrossWith
+  acuiUnify,
 ) where
 
   --to solve ACUI unification with constants we need to be able to find
@@ -19,17 +21,15 @@ import Data.Function
 isConst :: FirstOrder f => f a -> Bool
 isConst a = not (isVar a) && null (decompose a a)
 
---unfoldTerm :: (Plated (f a), FirstOrder f) => f a -> [f a]
-unfoldTerm a | a == mempty = []
-             | isConst a   = [a]
-             | isVar a     = [a]
-             | otherwise   = concatMap unfoldTerm (children a)
+class (Show (f a), Eq (f a), Monoid (f a), FirstOrder f) => ACUI f a where
+    --decompose into proper parts
+    unfoldTerm :: f a -> [f a]
 
-
-refoldTerms []     = mempty
-refoldTerms [x]    = x
-refoldTerms (x:xs) | x == mempty = refoldTerms xs
-                   | otherwise   = x `mappend` refoldTerms xs
+    refoldTerms :: [f a] -> f a
+    refoldTerms [] = mempty
+    refoldTerms [x] = x
+    refoldTerms (x:xs) | x == mempty = refoldTerms xs
+                       | otherwise   = x `mappend` refoldTerms xs
 
 --list out equations of the correct form that we need to solve
 --in order to get our set of unifiers for
@@ -42,8 +42,9 @@ eqadd (a :==: b) (a' :==: b') = (a ++ a') :==: (b ++ b')
 
 findIdx (l :==: r) x = let (Just idx) = findIndex (== x) (nub $ l ++ r) in idx + 1
 homogenous eq = eqfilter isVar eq
-inhomogenous (l :==: r) = map (\c -> eqfilter (\x -> isVar x || x == c) (l :==: r)) consts
+inhomogenous (l :==: r) = zip consts eqs
     where consts = filter isConst (nub $ l ++ r)
+          eqs = map (\c -> eqfilter (\x -> isVar x || x == c) (l :==: r)) consts
 findTerm (l :==: r) i = nub (l ++ r) !! (i - 1)
 
 isTrue a = isConst a && a /= mempty
@@ -89,7 +90,7 @@ simplify e = refoldTerms (unfoldTerm e)
 
 --pass the homogenous equation and a solution
 --this will output a general solution
-conv eq sol = pop >>= \var -> return $ map (convVar var eq) sol
+conv vget eq sol = vget >>= \var -> return $ map (convVar var eq) sol
     where convVar var eq idx | idx > 0 = (findTerm eq idx) :==: var
                              | idx < 0 = (findTerm eq (abs idx)) :==: mempty
 --adds substitutions togethor
@@ -103,26 +104,31 @@ toSub :: Show (f a) => [SimpleEquation (f a)] -> [Equation f]
 toSub []              = []
 toSub ((x :==: y):xs) = (x :=: y):(toSub xs)
 
-solveEq :: (Eq (f a), Monoid (f a), Plated (f a), FirstOrder f)
-        => SimpleEquation [f a] -> State [f a] [[SimpleEquation (f a)]]
-solveEq eq = do
+solveHomoEq :: ACUI f a => SimpleEquation [f a] -> State [f a] [SimpleEquation (f a)]
+solveHomoEq eq = do
     let mins = minimals [] [] . search . toSatProblem $ eq
-    minSols <- mapM (conv eq) mins
-    let minSols' = map (map (eqmap simplify)) minSols
-    return minSols'
+    minSols <- mapM (conv pop eq) mins
+    let homosol = foldl subadd [] minSols
+    return $ map (eqmap simplify) homosol
+
+--some code duplication here
+--refactoring this code later will be a good idea
+solveInHomoEq :: ACUI f a => f a -> SimpleEquation [f a] -> State [f a] [[SimpleEquation (f a)]]
+solveInHomoEq c eq = do
+  let mins = minimals [] [] . search . toSatProblem $ eq
+  minSols <- mapM (conv (return c) eq) mins
+  return $ (map . map . eqmap $ simplify) minSols
 
 crossWith f xs ys = [f x y | x <- xs, y <- ys]
 bigCrossWith f (xs:xss) = foldr (crossWith f) xs xss
 
-acuiUnify :: (Show (f a), Eq (f a), Monoid (f a), Plated (f a), FirstOrder f)
-          => f a -> f a -> State [f a] [[Equation f]]
+acuiUnify :: ACUI f a => f a -> f a -> State [f a] [[Equation f]]
 acuiUnify a b = do
     let l = unfoldTerm a
     let r = unfoldTerm b
     let homo = homogenous (l :==: r)
-    let inhomos = inhomogenous (l :==: r)
-    homosols <- solveEq homo
-    let homosol = foldl subadd [] homosols
-    inhomosolss <- mapM solveEq inhomos
-    let inhomosols = bigCrossWith subadd inhomosolss
-    return $ map (toSub . subadd homosol) inhomosols
+    homosol <- solveHomoEq homo --solve the homogenous equation
+    let inhomos = inhomogenous (l :==: r) --find all inhomogenous equations
+    inhomosolss <- mapM (uncurry solveInHomoEq) inhomos --solve each one
+    let inhomosols = bigCrossWith subadd inhomosolss --combine inhomo sols
+    return $ map (toSub . subadd homosol) inhomosols --lastly add homogenous sol

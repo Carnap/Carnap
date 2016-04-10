@@ -1,5 +1,8 @@
 {-#LANGUAGE ScopedTypeVariables, InstanceSigs, ExplicitForAll, TypeSynonymInstances, UndecidableInstances, FlexibleInstances, MultiParamTypeClasses, GADTs, DataKinds, PolyKinds, TypeOperators, ViewPatterns, PatternSynonyms, RankNTypes, FlexibleContexts, AutoDeriveTypeable #-}
-module Carnap.Core.Examples.ACUI (V, Set, VLang, pattern VEmpty, pattern VUnion, pattern VSomeSet) where
+module Carnap.Core.Examples.ACUI (
+    V, Set, VLang,
+    pattern VEmpty, pattern VUnion, pattern VSomeSet, pattern VSingelton
+) where
 
 import Carnap.Core.Data.AbstractSyntaxDataTypes
 import Carnap.Core.Unification.Unification
@@ -15,6 +18,9 @@ type V = VFix S.Set
 
 ev :: V
 ev = VFix S.empty
+
+sv :: V -> V
+sv x = VFix (S.singleton x)
 
 uv :: V -> V -> V
 uv (VFix x) (VFix y) = VFix $ S.union x y
@@ -32,15 +38,18 @@ instance Ord V where
 --So this language has no singeltons but that comes next
 data Set a where
     Empty :: Set (Term V)
+    Singelton :: Set (Term V -> Term V)
     Union :: Set (Term V -> Term V -> Term V)
 
 instance Schematizable Set where
-    schematize Empty  _       = "{}"
-    schematize Union  (x:y:_) = x ++ " ∪ " ++ y
+    schematize Singelton (x:_) = "{" ++ x ++ "}"
+    schematize Empty  _        = "{}"
+    schematize Union  (x:y:_)  = x ++ " ∪ " ++ y
 
 instance Evaluable Set where
     eval Empty = Term ev
     eval Union = \(Term t) (Term t') -> Term (uv t t')
+    eval Singelton = \(Term t) -> Term (sv t)
 
 data Var lang a where
     SomeSet :: String -> Var lang (Term V)
@@ -55,6 +64,7 @@ type VLang = FixLang (Function Set :|: Var :|: EndLang)
 
 pattern VEmpty = Fx1 (Function Empty AZero)
 pattern VSomeSet s = Fx2 (SomeSet s)
+pattern VSingelton x = Fx1 (Function Singelton AOne) :!$: x
 pattern VUnion x y = Fx1 (Function Union ATwo) :!$: x :!$: y
 
 instance LangTypes (Function Set :|: Var :|: EndLang) Term V Term V
@@ -84,19 +94,23 @@ instance FirstOrder VLang where
   isVar (VSomeSet _) = True
   isVar _            = False
 
-  sameHead VEmpty VEmpty              = True
-  sameHead (SV s)       (SV s')       = s == s'
-  sameHead (VUnion _ _) (VUnion _ _)  = True
-  sameHead _            _             = False
+  sameHead VEmpty         VEmpty         = True
+  sameHead (SV s)         (SV s')        = s == s'
+  sameHead (VUnion _ _)   (VUnion _ _)   = True
+  sameHead (VSingelton _) (VSingelton _) = True
+  sameHead _              _              = False
 
-  decompose (VUnion x y) (VUnion x' y') = [x :=: x', y :=: y']
-  decompose _            _              = []
+  decompose (VUnion x y)   (VUnion x' y') = [x :=: x', y :=: y']
+  decompose (VSingelton x) (VSingelton y) = [x :=: y]
+  decompose _              _              = []
 
-  occurs (SV s) (SV s')      = s == s'
-  occurs v      (VUnion x y) = occurs v x || occurs v y
+  occurs (SV s) (SV s')        = s == s'
+  occurs v      (VUnion x y)   = occurs v x || occurs v y
+  occurs v      (VSingelton x) = occurs v x
 
   --this is complicated and should be hidden from the user
   subst v new (VUnion x y)         = VUnion (subst v new x) (subst v new y)
+  subst v new (VSingelton x)       = VSingelton (subst v new x)
   subst (VSomeSet s) new orign@(VSomeSet s')
       | s == s'                    = new
       | otherwise                  = orign
