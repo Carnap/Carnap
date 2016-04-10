@@ -1,5 +1,5 @@
 {-#LANGUAGE ScopedTypeVariables, InstanceSigs, ExplicitForAll, TypeSynonymInstances, UndecidableInstances, FlexibleInstances, MultiParamTypeClasses, GADTs, DataKinds, PolyKinds, TypeOperators, ViewPatterns, PatternSynonyms, RankNTypes, FlexibleContexts, AutoDeriveTypeable #-}
-module Carnap.Core.Examples.ACUI () where
+module Carnap.Core.Examples.ACUI (V, Set, VLang, pattern VEmpty, pattern VUnion, pattern VSomeSet) where
 
 import Carnap.Core.Data.AbstractSyntaxDataTypes
 import Carnap.Core.Unification.Unification

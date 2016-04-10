@@ -1,5 +1,5 @@
 module Carnap.Core.Unification.ACUI (
-  acuiUnify
+  acuiUnify, toSatProblem, solveEq, bigCrossWith
 ) where
 
   --to solve ACUI unification with constants we need to be able to find
@@ -42,14 +42,27 @@ eqadd (a :==: b) (a' :==: b') = (a ++ a') :==: (b ++ b')
 
 findIdx (l :==: r) x = let (Just idx) = findIndex (== x) (nub $ l ++ r) in idx + 1
 homogenous eq = eqfilter isVar eq
-inhomogenous (l :==: r) = map (\c -> eqfilter (\x -> isVar x || x == c) (l :==: r))
-    where consts = filter (not . isVar) (l ++ r)
+inhomogenous (l :==: r) = map (\c -> eqfilter (\x -> isVar x || x == c) (l :==: r)) consts
+    where consts = filter isConst (nub $ l ++ r)
 findTerm (l :==: r) i = nub (l ++ r) !! (i - 1)
 
---converts a homogenous problem to a non-homogenous one
-toSatProblem :: SimpleEquation [Int] -> [[Int]]
-toSatProblem (l :==: r) = (impl l r) ++ (impl r l)
+isTrue a = isConst a && a /= mempty
+isFalse a = a == mempty
+
+--converts a SimpleEquation [f a] into a sat problem
+toSatProblem eq@(a :==: b) | ltrue && rtrue = ListSat [] (nub $ l ++ r) []
+                           | ltrue     = makeProblem [r]
+                           | rtrue     = makeProblem [l]
+                           | lfalse && rfalse = ListSat [] [] []
+                           | lfalse    = makeProblem $ map (\x -> [negate x]) r
+                           | rfalse    = makeProblem $ map (\x -> [negate x]) l
+                           | otherwise = makeProblem $ (impl l r) ++ (impl r l)
     where impl ant con = map (\lit -> (negate lit):con) ant
+          (l :==: r) = eqmap (map $ findIdx eq) eq
+          ltrue = any isTrue a
+          rtrue = any isTrue b
+          lfalse = all isFalse a
+          rfalse = all isFalse b
 
 dominates :: [Int] -> [Int] -> Bool
 dominates l r = null $ (pos r) \\ (pos l)
@@ -72,7 +85,6 @@ pop = do
   put xs
   return x
 
-
 simplify e = refoldTerms (unfoldTerm e)
 
 --pass the homogenous equation and a solution
@@ -91,16 +103,26 @@ toSub :: Show (f a) => [SimpleEquation (f a)] -> [Equation f]
 toSub []              = []
 toSub ((x :==: y):xs) = (x :=: y):(toSub xs)
 
-acuiUnify :: Show (f a) => (Eq (f a), Monoid (f a), Plated (f a), FirstOrder f)
-          => f a -> f a -> State [f a] [Equation f]
+solveEq :: (Eq (f a), Monoid (f a), Plated (f a), FirstOrder f)
+        => SimpleEquation [f a] -> State [f a] [[SimpleEquation (f a)]]
+solveEq eq = do
+    let mins = minimals [] [] . search . toSatProblem $ eq
+    minSols <- mapM (conv eq) mins
+    let minSols' = map (map (eqmap simplify)) minSols
+    return minSols'
+
+crossWith f xs ys = [f x y | x <- xs, y <- ys]
+bigCrossWith f (xs:xss) = foldr (crossWith f) xs xss
+
+acuiUnify :: (Show (f a), Eq (f a), Monoid (f a), Plated (f a), FirstOrder f)
+          => f a -> f a -> State [f a] [[Equation f]]
 acuiUnify a b = do
     let l = unfoldTerm a
     let r = unfoldTerm b
     let homo = homogenous (l :==: r)
-    let homo' = eqmap (map $ findIdx homo) homo
-    let mins = minimals [] [] . search . makeProblem . toSatProblem $ homo'
-    minSols <- mapM (conv homo) mins
-    let minSols' = map (map (eqmap simplify)) minSols
-    let sol = foldl subadd [] minSols'
-    let sol' = map (eqmap simplify) sol
-    return $ toSub sol'
+    let inhomos = inhomogenous (l :==: r)
+    homosols <- solveEq homo
+    let homosol = foldl subadd [] homosols
+    inhomosolss <- mapM solveEq inhomos
+    let inhomosols = bigCrossWith subadd inhomosolss
+    return $ map (toSub . subadd homosol) inhomosols
