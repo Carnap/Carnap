@@ -1,5 +1,13 @@
 {-#LANGUAGE ScopedTypeVariables, InstanceSigs, ExplicitForAll, TypeSynonymInstances, UndecidableInstances, FlexibleInstances, MultiParamTypeClasses, GADTs, DataKinds, PolyKinds, TypeOperators, ViewPatterns, PatternSynonyms, RankNTypes, FlexibleContexts, AutoDeriveTypeable #-}
 
+module Carnap.Core.Unification.ModelFinder (
+  Set(Set), Fin(FSucc, FZero), MTerm(), MLang(),
+  Domain, showElement, enumerateNames, enumerateValues,
+  forAll, forSome, (.&.), (.|.), (.->.), mnot, subset,
+  (.=.), (.$.), suchThat, union, inter, cross,
+  enumTerms
+) where
+
 import Control.Monad.State
 import qualified Data.IntMap as IntMap
 import Data.Typeable

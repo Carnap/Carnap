@@ -20,6 +20,7 @@ library
                      , Carnap.Core.Unification.Unification
                      , Carnap.Core.Unification.ACUI
                      , Carnap.Core.Unification.SAT
+                     , Carnap.Core.Unification.ModelFinder
                      , Carnap.Core.Util
                      , Carnap.Languages.PurePropositional.Syntax
   build-depends:       base >= 4.7
