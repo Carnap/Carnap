@@ -1,10 +1,7 @@
 {-#LANGUAGE MultiParamTypeClasses, FlexibleContexts, PatternSynonyms #-}
 
 module Carnap.Core.Unification.ACUI (
-  acuiUnify, ACUI, unfoldTerm, refoldTerms,
-  homogenous, solveHomoEq, inhomogenous,
-  solveInHomoEq, pattern (:===:), toSatProblem,
-  minimals
+  acuiUnify, ACUI, unfoldTerm, refoldTerms
 ) where
 
   --to solve ACUI unification with constants we need to be able to find
@@ -44,62 +41,59 @@ eqmap f (a :==: b) = f a :==: f b
 eqfilter p (a :==: b) = (filter p a) :==: (filter p b)
 eqadd (a :==: b) (a' :==: b') = (a ++ a') :==: (b ++ b')
 
---finds the index of a term
-findIdx (l :==: r) x = let (Just idx) = findIndex (== x) (nub $ l ++ r) in idx + 1
-
 --extracts the homogenous equation from the equation
 homogenous eq = eqfilter isVar eq
-
 --finds all inhomogenous equations that need to be solved
 inhomogenous (l :==: r) = zip consts eqs
     where consts = filter isConst (nub $ l ++ r)
           eqs = map (\c -> eqfilter (\x -> isVar x || x == c) (l :==: r)) consts
-
---finds a term in an equation based on it's index
-findTerm (l :==: r) i = nub (l ++ r) !! (i - 1)
 
 --returns true if term maps to 'true' in the SAT problem
 isTrue a = isConst a && a /= mempty
 --returns true if a term maps to 'false' in a the SAT problem
 isFalse a = a == mempty
 
+
 --converts a SimpleEquation [f a] into a sat problem
+toSatProblem :: (ACUI f a) => SimpleEquation [f a] -> ListSat (f a)
 toSatProblem eq@(a :==: b) | ltrue && rtrue = makeProb []
-                           | ltrue     = makeProb [r]
-                           | rtrue     = makeProb [l]
+                           | ltrue     = makeProb [map LPos b]
+                           | rtrue     = makeProb [map LPos a]
                            | lfalse && rfalse = makeProb []
-                           | lfalse    = makeProb $ map (\x -> [negate x]) r
-                           | rfalse    = makeProb $ map (\x -> [negate x]) l
-                           | otherwise = makeProb $ (impl l r) ++ (impl r l)
-    where impl ant con = map (\lit -> (negate lit):con) ant
-          (l :==: r) = eqmap (map $ findIdx eq) eq
+                           | lfalse    = makeProb $ map (\x -> [LNeg x]) b
+                           | rfalse    = makeProb $ map (\x -> [LNeg x]) a
+                           | otherwise = makeProb $ (impl a b) ++ (impl b a)
+    where impl ant con = map (\lit -> (LNeg lit):(map LPos con)) ant
           ltrue = any isTrue a
           rtrue = any isTrue b
           lfalse = all isFalse a
           rfalse = all isFalse b
           vars = nub $ filter isVar (a ++ b)
-          varsIdx = map (findIdx eq) vars
-          makeProb = ListSat [] varsIdx
+          makeProb = makeProblemWith vars
 
 --returns true if the left side is strictly greater than the right side
-dominates :: [Int] -> [Int] -> Bool
+dominates :: Eq a => [Literal a] -> [Literal a] -> Bool
 dominates l r = null $ (pos r) \\ (pos l)
-    where pos = filter (> 0)
+    where pos = filter isPos
+
+
 
 --finds all minimal non-trivial solutions being carful to never
 --pattern match on a solution that we know is not minimal
-minimals' :: [[Int]] -> [Int] -> Solutions -> [[Int]]
-minimals' ss cur (Sat True) | all (<0) cur = ss
-                            | otherwise    = cur:ss
+--minimals' :: [[Literal a]] -> [Literal a] -> Solutions a -> [[Literal a]]
+minimals' ss cur (Sat True) | all isNeg cur = ss
+                            | otherwise     = cur:ss
 minimals' ss cur (Sat False) = ss
-minimals' ss cur (Sols i s1 s2) | any ((i:cur) `dominates`) mins = mins
-                                | otherwise = minimals' mins (i:cur) s2
-    where mins = minimals' ss ((negate i):cur) s1
+minimals' ss cur (Sols i s1 s2) | any (((LPos i):cur) `dominates`) mins = mins
+                                | otherwise = minimals' mins ((LPos i):cur) s2
+    where mins = minimals' ss ((LNeg i):cur) s1
+
 
 --finds the trivial solution
-trivialSol (Sols i s _) = map ((negate i) :) (trivialSol s)
+trivialSol (Sols i s _) = map ((LNeg i) :) (trivialSol s)
 trivialSol (Sat True)   = [[]]
 trivialSol (Sat False)  = []
+
 
 --finds all minimal solutions or the trivial solution if no nontrivial ones
 --exist
@@ -118,11 +112,13 @@ pop = do
 --simplifies a term by removing all empties
 simplify e = refoldTerms (unfoldTerm e)
 
+
 --uses vget to get the term being solved for and converts a solution
 --into a substitution
-conv vget eq sol = vget >>= \var -> return $ map (convVar var eq) sol
-    where convVar var eq idx | idx > 0 = (findTerm eq idx) :==: var
-                             | idx < 0 = (findTerm eq (abs idx)) :==: mempty
+conv vget sol = vget >>= \var -> return $ map (convVar var) sol
+    where convVar var term | isPos term = (getVar term) :==: var
+                           | otherwise  = (getVar term) :==: mempty
+
 
 --adds substitutions togethor (in the way that adding solutions togethor)
 --maps to under the homomorphism that takes solutions into substitutions
@@ -131,6 +127,7 @@ subadd a b = like ++ unlike
     where like = [x :==: ((a' `mappend` b'))| (x :==: a') <- a, (y :==: b') <- b, x == y]
           unlike = filter (not . (`elem` (map eqleft like)) . eqleft) (a ++ b)
           eqleft (l :==: _) = l
+
 
 --converts our internal equation represnetation to our external
 toSub :: Show (f a) => [SimpleEquation (f a)] -> [Equation f]
@@ -141,7 +138,7 @@ toSub ((x :==: y):xs) = (x :=: y):(toSub xs)
 solveHomoEq :: ACUI f a => SimpleEquation [f a] -> State [f a] [SimpleEquation (f a)]
 solveHomoEq eq = do
     let mins = minimals . search . toSatProblem $ eq
-    minSols <- mapM (conv pop eq) mins
+    minSols <- mapM (conv pop) mins
     let homosol = foldl subadd [] minSols
     return homosol
 
@@ -149,7 +146,7 @@ solveHomoEq eq = do
 solveInHomoEq :: ACUI f a => f a -> SimpleEquation [f a] -> State [f a] [[SimpleEquation (f a)]]
 solveInHomoEq c eq = do
   let mins = minimals . search . toSatProblem $ eq
-  minSols <- mapM (conv (return c) eq) mins
+  minSols <- mapM (conv (return c)) mins
   return minSols
 
 --some generic helpers for combining solutions

@@ -51,14 +51,14 @@ data UError f where
 
 instance Show (UError f) where
         show (SubError x y e) =  show e ++ "with suberror"
-                                 ++ show x ++ ", " 
-                                 ++ show y 
+                                 ++ show x ++ ", "
+                                 ++ show y
         show (MatchError x y) = "Match Error:"
-                                 ++ show x ++ ", " 
-                                 ++ show y 
-        show (OccursError x y) = "OccursError: " 
-                                 ++ show x ++ ", " 
-                                 ++ show y 
+                                 ++ show x ++ ", "
+                                 ++ show y
+        show (OccursError x y) = "OccursError: "
+                                 ++ show x ++ ", "
+                                 ++ show y
 
 emap :: (forall a. f a -> f a) -> Equation f -> Equation f
 emap f (x :=: y) = f x :=: f y
@@ -69,6 +69,7 @@ mapAll f = map (emap f)
 (Left x) .<. f = Left (f x)
 x .<. _ = x
 
+--this needs to be generalized to include an optional label
 founify :: FirstOrder f => [Equation f] -> [Equation f] -> Either (UError f) [Equation f]
 founify [] ss = Right ss
 founify ((x :=: y):es) ss

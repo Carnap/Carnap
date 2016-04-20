@@ -1,28 +1,46 @@
+{-#LANGUAGE MultiParamTypeClasses, FunctionalDependencies, FlexibleInstances #-}
+
 module Carnap.Core.Unification.SAT (
-  SatProblem, unitProp, units, unassigned,valuation,evaluate,
-  ListSat(ListSat), makeProblem, cascadeUnits, search,
-  Solutions(Sat, Sols), enumerate
+  SatProblem, unitProp, units, unassigned, valuation, evaluate,
+  ListSat, neg, getVar, Solutions, Literal(LPos, LNeg), search, enumerate,
+  makeProblem, makeProblemWith, isPos, isNeg, Solutions(Sat, Sols)
 ) where
 
 import Data.List
 import Control.Monad
 import Control.Monad.State
 
-class SatProblem t where
-    unitProp :: Int -> t -> t
-    units :: t -> [Int]
-    unassigned :: t -> [Int]
-    valuation :: t -> [Int]
+data Literal a = LPos a
+               | LNeg a
+    deriving(Eq, Ord, Show)
+
+neg (LPos x) = LNeg x
+neg (LNeg x) = LPos x
+
+getVar (LPos x) = x
+getVar (LNeg x) = x
+
+isPos (LPos _) = True
+isPos _        = False
+
+isNeg = not . isPos
+
+class Eq a => SatProblem t a | t -> a where
+    unitProp :: Literal a -> t -> t
+    units :: t -> [Literal a]
+    unassigned :: t -> [a]
+    valuation :: t -> [Literal a]
     evaluate :: t -> Bool
 
-data ListSat = ListSat [Int] [Int] [[Int]]
-             | ListSatFalse
+data ListSat a = ListSat [Literal a] [a] [[Literal a]]
+               | ListSatFalse
     deriving(Show)
 
-makeProblem prob = ListSat [] (nub $ prob >>= map abs) prob
+makeProblem prob = ListSat [] (nub $ prob >>= map getVar) prob
+makeProblemWith with prob = ListSat [] (nub $ with ++ (prob >>= map getVar)) prob
 
-instance SatProblem ListSat where
-    evaluate ListSatFalse       = False
+instance Eq a => SatProblem (ListSat a) a where
+    evaluate ListSatFalse = False
     evaluate (ListSat vs [] cs) = all (any (`elem` vs)) cs
     evaluate _                  = error "You cannot evaluatae a term with unassigned literals"
 
@@ -39,14 +57,14 @@ instance SatProblem ListSat where
 
     unitProp _ ListSatFalse = ListSatFalse
     unitProp u (ListSat vs us cs) = case csM of
-        Just cs' -> ListSat (u : vs) (delete (abs u) us) cs'
+        Just cs' -> ListSat (u : vs) (delete (getVar u) us) cs'
         Nothing -> ListSatFalse
-        where csM = filterM pass . map (delete (negate u)) $ cs
+        where csM = filterM pass . map (delete (neg u)) $ cs
               pass clause = case clause of
                   [] -> Nothing
                   _ -> Just . not $ u `elem` clause
 
-cascadeUnits :: SatProblem t => t -> (t, [Int])
+cascadeUnits :: SatProblem t a => t -> (t, [Literal a])
 cascadeUnits s | null us   = (s, [])
                | otherwise = let (s', us') = cascadeUnits $ foldr unitProp s us
                              in (s', us ++ us')
@@ -56,25 +74,27 @@ cascadeUnits s | null us   = (s, [])
 --we can prune whole search paths simply by not pattern matching on certian
 --branches. this allows us to decouple finding minimal solutions from searching
 --for solutions. so this is both a good design choice *and* an optimization
-data Solutions = Sat Bool
-               | Sols Int Solutions Solutions
+data Solutions a = Sat Bool
+                 | Sols a (Solutions a) (Solutions a)
     deriving(Show)
 
-valuation2sol []     v             = v
-valuation2sol (x:xs) v | x < 0     = Sols (abs x) (valuation2sol xs v) (Sat False)
-                       | otherwise = Sols x (Sat False) (valuation2sol xs v)
+valuation2sol []     v        = v
+valuation2sol ((LNeg x):xs) v = Sols x (valuation2sol xs v) (Sat False)
+valuation2sol ((LPos x):xs) v = Sols x (Sat False) (valuation2sol xs v)
 
-search :: SatProblem t => t -> Solutions
+
+search :: SatProblem t a => t -> Solutions a
 search s = let (s', us) = cascadeUnits s in case unassigned s' of
-    (l:_) -> valuation2sol us $ Sols l (search $ unitProp (negate l) s') (search $ unitProp l s')
+    (l:_) -> valuation2sol us $ Sols l (search $ unitProp (LNeg l) s') (search $ unitProp (LPos l) s')
     []    -> if evaluate s' then valuation2sol us (Sat True) else Sat False
 
-enumerate (Sols l s1 s2) ls = enumerate s1 ((0-l) : ls) ++ enumerate s2 (l : ls)
-enumerate (Sat True)     ls = [ls]
-enumerate _              _  = []
 
+enumerate ls (Sols l s1 s2) = enumerate (LNeg l : ls) s1 ++ enumerate (LPos l : ls) s2
+enumerate ls (Sat True)     = [ls]
+enumerate _  _              = []
+
+{-
 --optimizations to consider
---1. have evaluate return true in the non-false case
 --2. find units when unit propigating and store them at the top so that
 --   finding the head of the units list happens more quickly
 --3. use a different SAT problem representation
@@ -82,3 +102,4 @@ enumerate _              _  = []
 --5. select which of the unassigneds to first propogate
 --6. it might be possible to propogate all units more efficently than to cascade
 --   a single
+-}
