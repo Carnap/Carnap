@@ -4,6 +4,7 @@ module Carnap.Languages.PurePropositional.Syntax where
 
 import Carnap.Core.Data.AbstractSyntaxDataTypes
 import Carnap.Core.Unification.Unification
+import Carnap.Languages.Util.LanguageClasses
 import Control.Lens (Plated)
 import Control.Lens.Fold (anyOf)
 import Control.Lens.Plated (cosmos, transform)
@@ -88,12 +89,11 @@ pattern PIff           = PCon Iff ATwo
 pattern PNot           = PCon Not AOne
 pattern P n            = PPred (Prop n) AZero
 pattern Phi n          = PSPred (SProp n) AZero
-pattern PConj x y      = PAnd :!!$: x :!!$: y
 pattern (:&:) x y      = PAnd :!!$: x :!!$: y
 pattern (:||:) x y     = POr :!!$: x :!!$: y
 pattern (:->:) x y     = PIf :!!$: x :!!$: y
 pattern (:<->:) x y    = PIff :!!$: x :!!$: y
-pattern Neg x          = PNot :!!$: x
+pattern PNeg x          = PNot :!!$: x
 
 instance CopulaSchema PurePropLanguage where
     appSchema x y e = schematize x (show y : e)
@@ -116,10 +116,20 @@ instance RelabelVars PurePropLexicon Form Bool where
 instance CanonicalForm PureForm where
         canonical = id
 
+instance BooleanLanguage PureForm where
+        land = (:&:)
+        lneg = PNeg
+        lor  = (:||:)
+        lif  = (:->:)
+        liff = (:<->:)
+
+instance IndexedPropLanguage PureForm where
+        pn = P
+
 checkChildren phi psi = anyOf cosmos (== phi) psi
 
 castToForm :: PurePropLanguage a -> Maybe PureForm
-castToForm phi@(Neg x)     = Just phi  
+castToForm phi@(PNeg x)     = Just phi  
 castToForm phi@(x :&: y)   = Just phi
 castToForm phi@(x :||: y)  = Just phi
 castToForm phi@(x :->: y)  = Just phi
@@ -133,14 +143,14 @@ instance FirstOrder PurePropLanguage where
     isVar (Phi _) = True
     isVar _       = False
 
-    sameHead (Neg _) (Neg _) = True
+    sameHead (PNeg _) (PNeg _) = True
     sameHead (_ :&: _) (_ :&: _) = True
     sameHead (_ :||: _) (_ :||: _) = True
     sameHead (_ :->: _) (_ :->: _) = True
     sameHead (_ :<->: _) (_ :<->: _) = True
     sameHead _ _ = False
 
-    decompose (Neg x) (Neg y) = [x :=: y]
+    decompose (PNeg x) (PNeg y) = [x :=: y]
     decompose (x :&: y) (x' :&: y') = [x :=: x', y :=: y']
     decompose (x :||: y) (x' :||: y') = [x :=: x', y :=: y']
     decompose (x :->: y) (x' :->: y') = [x :=: x', y :=: y']
@@ -154,7 +164,7 @@ instance FirstOrder PurePropLanguage where
 
     subst a b c = 
           case c of 
-            (Neg x)     -> byCast a b c
+            (PNeg x)     -> byCast a b c
             (x :&: y)   -> byCast a b c 
             (x :||: y)  -> byCast a b c
             (x :->: y)  -> byCast a b c
@@ -169,4 +179,7 @@ instance FirstOrder PurePropLanguage where
                           transform (\x -> if x == v' then phi' else x) psi'
                      _ -> psi
 
-    freshVars = map (\n -> SV n) [1..]
+    freshVars = map SV [1..]
+
+
+
