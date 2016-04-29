@@ -2,7 +2,7 @@
 
 module Carnap.Core.Unification.SAT (
   SatProblem, unitProp, units, unassigned, valuation, evaluate,
-  ListSat, neg, getVar, Solutions, Literal(LPos, LNeg), search, enumerate,
+  ListSat, neg, getVar, Literal(LPos, LNeg), search, enumerate,
   makeProblem, makeProblemWith, isPos, isNeg, Solutions(Sat, Sols)
 ) where
 

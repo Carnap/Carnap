@@ -9,10 +9,9 @@ module Carnap.Core.Unification.ModelFinder (
 ) where
 
 import Control.Monad.State
-import qualified Data.IntMap as IntMap
 import Data.Typeable
 import Data.Maybe
-import Data.List
+import qualified Data.List as List
 import Carnap.Core.Unification.SAT
 import Carnap.Core.Util
 
@@ -25,8 +24,8 @@ newtype Set a = Set [a]
     deriving(Ord, Eq, Show)
 
 --we need a way to name free sets
-data SetName t where
-    SetName :: (Typeable t, Domain t) => Int -> SetName t
+data SetName nm t where
+    SetName :: (Show nm, Eq nm, Typeable t, Domain t) => nm -> SetName nm t
 
 --we need a way to name elements of the domains
 data TermName t where
@@ -38,8 +37,8 @@ instance Eq (TermName t) where
     (DomainPairName n1 n2) == (DomainPairName n1' n2') = n1 == n1' && n2 == n2'
 
 --currentlly we only have 1 base predicate that gets converted to SAT
-data Pred where
-    PIn :: TermName t -> SetName t -> Pred
+data Pred nm where
+    PIn :: TermName t -> SetName nm t -> Pred nm
 
 eqSetName (SetName i) (SetName j) = i == j
 eqTermName :: TermName t -> TermName t' -> Bool
@@ -47,10 +46,10 @@ eqTermName (DomainName i)         (DomainName j)           = i == j
 eqTermName (DomainPairName t1 t2) (DomainPairName t1' t2') = eqTermName t1 t1' && eqTermName t2 t2'
 eqTermName _                      _                        = False
 
-instance Eq Pred where
+instance Eq (Pred nm) where
     (PIn tn sn) == (PIn tn' sn') = eqTermName tn tn' && eqSetName sn sn'
 
-instance Show Pred where
+instance Show (Pred nm) where
     show (PIn tn (SetName i)) = showElement tn ++ " ∈ S_" ++ show i
 
 --instance Show Pred where
@@ -61,11 +60,11 @@ instance Show Pred where
 --------------------------------------------------------------------------------
 
 --a type to represent boolean formulas over basic Preds
-data Sat = SPred Pred
-         | SAnd Sat Sat
-         | SOr Sat Sat
-         | SNot Sat
-         | SBool Bool
+data Sat nm = SPred (Pred nm)
+            | SAnd (Sat nm) (Sat nm)
+            | SOr (Sat nm) (Sat nm)
+            | SNot (Sat nm)
+            | SBool Bool
     deriving(Eq, Show)
 
 sImpl x y = SOr (SNot x) y
@@ -74,7 +73,7 @@ type Clause a = [Literal a]
 type CNF a = [Clause a]
 --types, function
 
-sat2CNF :: Sat -> State Int (CNF (Either Pred Int))
+sat2CNF :: Sat nm -> State Int (CNF (Either (Pred nm) Int))
 sat2CNF (SNot (SAnd x y)) = sat2CNF (SOr (SNot x) (SNot y))
 sat2CNF (SNot (SOr x y))  = sat2CNF (SAnd (SNot x) (SNot y))
 sat2CNF (SNot (SNot x))   = sat2CNF x
@@ -100,24 +99,25 @@ sat2CNF (SOr x y)         = do --now for the complicated case
 --------------------------------------------------------------------------------
 
 --the terms of our logic
-data MTerm t where
-    MSingelton :: Domain t => TermName t -> MTerm (Set t)
-    MSetName :: Domain t => SetName t -> MTerm (Set t)
-    MComp :: Domain t => (MTerm (Set t) -> MLang) -> MTerm (Set t)
-    MJoin :: (Domain a, Domain b, Domain c) => MTerm (Set (a, b)) -> MTerm (Set (b, c)) -> MTerm (Set (a, c))
-    MImage :: (Domain a, Domain b) => MTerm (Set (a, b)) -> MTerm (Set a) -> MTerm (Set b)
-    MCross :: (Domain a, Domain b) => MTerm (Set a) -> MTerm (Set b) -> MTerm (Set (a, b))
+data MTerm nm t where
+    MSingelton :: Domain t => TermName t -> MTerm nm (Set t)
+    MSetName :: Domain t => SetName nm t -> MTerm nm (Set t)
+    MComp :: Domain t => (MTerm nm (Set t) -> MLang nm) -> MTerm nm (Set t)
+    MJoin :: (Domain a, Domain b, Domain c) => MTerm nm (Set (a, b)) -> MTerm nm (Set (b, c)) -> MTerm nm (Set (a, c))
+    MImage :: (Domain a, Domain b) => MTerm nm (Set (a, b)) -> MTerm nm (Set a) -> MTerm nm (Set b)
+    MCross :: (Domain a, Domain b) => MTerm nm (Set a) -> MTerm nm (Set b) -> MTerm nm (Set (a, b))
 
 --the propostions of our logic
-data MLang where
-    MForall :: Domain t => (MTerm (Set t) -> MLang) -> MLang
-    MExists :: Domain t => (MTerm (Set t) -> MLang) -> MLang
-    MAnd :: MLang -> MLang -> MLang
-    MOr :: MLang -> MLang -> MLang
-    MNot :: MLang -> MLang
-    MSubset :: Domain t => MTerm (Set t) -> MTerm (Set t) -> MLang
+data MLang nm where
+    MForall :: Domain t => (MTerm nm (Set t) -> MLang nm) -> MLang nm
+    MExists :: Domain t => (MTerm nm (Set t) -> MLang nm) -> MLang nm
+    MAnd :: MLang nm -> MLang nm -> MLang nm
+    MOr :: MLang nm -> MLang nm -> MLang nm
+    MNot :: MLang nm -> MLang nm
+    MSubset :: Domain t => MTerm nm (Set t) -> MTerm nm (Set t) -> MLang nm
 
---all the values strictly less than a certian natural number
+--all the values strictly less than a certian natural number as specified by
+--a type
 data Fin :: Nat -> * where
     FZero :: Fin (Succ n)
     FSucc :: Fin n -> Fin (Succ n)
@@ -156,44 +156,45 @@ instance Domain (Fin n) => Domain (Fin (Succ n)) where
     enumerateNames = map DomainName [0..length (enumerateValues :: [Fin (Succ n)]) - 1]
 
 --helpers to make using the language easier
-forAll :: Domain t => (MTerm (Set t) -> MLang) -> MLang
+forAll :: Domain t => (MTerm nm (Set t) -> MLang nm) -> MLang nm
 forAll = MForall
-forSome :: Domain t => (MTerm (Set t) -> MLang) -> MLang
+forSome :: Domain t => (MTerm nm (Set t) -> MLang nm) -> MLang nm
 forSome = MExists
 (.&.) = MAnd
 (.|.) = MOr
 mnot = MNot
 x .->. y = (mnot x) .|. y
-subset :: Domain t => (MTerm (Set t)) -> (MTerm (Set t)) -> MLang
+subset :: Domain t => (MTerm nm (Set t)) -> (MTerm nm (Set t)) -> MLang nm
 subset = MSubset
 (.=.) a b = (a `subset` b) .&. (b `subset` a)
 
 --helpers for working in the terms
-(.$.) :: (Domain a, Domain b) => MTerm (Set (a, b)) -> MTerm (Set a) -> MTerm (Set b)
+(.$.) :: (Domain a, Domain b) => MTerm nm (Set (a, b)) -> MTerm nm (Set a) -> MTerm nm (Set b)
 (.$.) = MImage
-suchThat :: Domain t => (MTerm (Set t) -> MLang) -> MTerm (Set t)
+suchThat :: Domain t => (MTerm nm (Set t) -> MLang nm) -> MTerm nm (Set t)
 suchThat = MComp
 x `union` y = suchThat (\z -> (z `subset` x) .|. (z `subset` y))
 x `inter` y = suchThat (\z -> (z `subset` x) .&. (z `subset` y))
-cross :: (Domain a, Domain b) => MTerm (Set a) -> MTerm (Set b) -> MTerm (Set (a, b))
+cross :: (Domain a, Domain b) => MTerm nm (Set a) -> MTerm nm (Set b) -> MTerm nm (Set (a, b))
 cross = MCross
 
 --------------------------------------------------------------------------------
 -- 4. Conversion to boolean SAT
 --------------------------------------------------------------------------------
 
-toSat (MForall (f :: MTerm (Set t) -> MLang)) = foldr SAnd (SBool True) preds
+toSat :: MLang nm -> Sat nm
+toSat (MForall (f :: MTerm nm (Set t) -> MLang nm)) = foldr SAnd (SBool True) preds
     where preds = map (toSat . f . MSingelton) (enumerateNames :: [TermName t])
-toSat (MExists (f :: MTerm (Set t) -> MLang)) = foldr SOr (SBool False) preds
+toSat (MExists (f :: MTerm nm (Set t) -> MLang nm)) = foldr SOr (SBool False) preds
     where preds = map (toSat . f . MSingelton) (enumerateNames :: [TermName t])
 toSat (MAnd x y) = SAnd (toSat x) (toSat y)
 toSat (MOr x y) = SOr (toSat x) (toSat y)
 toSat (MNot x) = SNot (toSat x)
-toSat (MSubset (a :: MTerm (Set t)) b) = foldr SAnd (SBool True ) preds
+toSat (MSubset (a :: MTerm nm (Set t)) b) = foldr SAnd (SBool True ) preds
     where names = enumerateNames :: [TermName t]
           preds = map (\n -> (inToPred n a) `sImpl` (inToPred n b)) names
 
-inToPred :: Domain t => TermName t -> MTerm (Set t) -> Sat
+inToPred :: Domain t => TermName t -> MTerm nm (Set t) -> Sat nm
 inToPred name (MSingelton name')            = SBool (name == name')
 inToPred name (MSetName setname)            = SPred $ PIn name setname
 inToPred name (MComp t)                     = toSat . t . MSingelton $ name
@@ -217,40 +218,40 @@ getValue :: forall t. TermName t -> t
 getValue (DomainName idx) = (enumerateValues :: [t]) !! idx
 getValue (DomainPairName n1 n2) = (getValue n1, getValue n2)
 
-pred2set :: forall t. SetName t -> Pred -> [t]
-pred2set (SetName j) (PIn tname ((SetName i) :: SetName t')) = case eqT :: Maybe (t :~: t') of
+pred2set :: forall nm t. SetName nm t -> Pred nm -> [t]
+pred2set (SetName j) (PIn tname ((SetName i) :: SetName nm t')) = case eqT :: Maybe (t :~: t') of
     Just Refl -> if i == j then [getValue tname] else []
     Nothing   -> []
 
-isPos (LPos v) = Just v
-isPos _        = Nothing
-isLeft (Left v) = Just v
-isLeft _        = Nothing
+maybePos (LPos v) = Just v
+maybePos _        = Nothing
+maybeLeft (Left v) = Just v
+maybeLeft _        = Nothing
 
-satModel2set :: Model (Either Pred Int) -> SetName t -> [t]
-satModel2set model set = mapMaybe (isPos >=> isLeft) model >>= (pred2set set)
+satModel2set :: Model (Either (Pred nm) Int) -> SetName nm t -> [t]
+satModel2set model set = mapMaybe (maybePos >=> maybeLeft) model >>= (pred2set set)
 
-evalForm :: Model (Either Pred Int) -> MLang -> Bool
+evalForm :: Model (Either (Pred nm) Int) -> MLang nm -> Bool
 evalForm model (MForall f)   = all (evalForm model . f . MSingelton) enumerateNames
 evalForm model (MExists f)   = any (evalForm model . f . MSingelton) enumerateNames
 evalForm model (MAnd a b)    = (evalForm model a) && (evalForm model b)
 evalForm model (MOr a b)     = (evalForm model a) || (evalForm model b)
 evalForm model (MNot a)      = not $ evalForm model a
-evalForm model (MSubset a b) = null (aSet \\ bSet)
+evalForm model (MSubset a b) = null (aSet List.\\ bSet)
     where (Set aSet) = evalTerm model a
           (Set bSet) = evalTerm model b
 
-formNames :: MLang -> [Pred]
-formNames (MForall (f :: MTerm (Set t) -> MLang)) = formNames $ f (MSingelton name)
+formNames :: MLang nm -> [Pred nm]
+formNames (MForall (f :: MTerm nm (Set t) -> MLang nm)) = formNames $ f (MSingelton name)
     where name = head (enumerateNames :: [TermName t])
-formNames (MExists (f :: MTerm (Set t) -> MLang)) = formNames $ f (MSingelton name)
+formNames (MExists (f :: MTerm nm (Set t) -> MLang nm)) = formNames $ f (MSingelton name)
     where name = head (enumerateNames :: [TermName t])
 formNames (MAnd a b) = formNames a ++ formNames b
 formNames (MOr a b) = formNames a ++ formNames b
 formNames (MNot a) = formNames a
 formNames (MSubset a b) = setPreds a ++ setPreds b
 
-evalTerm :: Model (Either Pred Int) -> MTerm t -> t
+evalTerm :: Model (Either (Pred nm) Int) -> MTerm nm t -> t
 evalTerm model (MSingelton n) = Set $ [getValue n]
 evalTerm model (MSetName n)   = Set $ satModel2set model n
 evalTerm model (MComp f)      = Set $ map getValue names
@@ -265,11 +266,11 @@ evalTerm model (MCross a b)   = Set [(a, b) | a <- as, b <- bs]
     where (Set as) = evalTerm model a
           (Set bs) = evalTerm model b
 
-setPreds :: MTerm t -> [Pred]
-setPreds (MSetName (s :: SetName t))  = [PIn n s | n <- names]
+setPreds :: MTerm nm t -> [Pred nm]
+setPreds (MSetName (s :: SetName nm t))  = [PIn n s | n <- names]
     where names = enumerateNames :: [TermName t]
 setPreds (MSingelton _)               = []
-setPreds (MComp (f :: MTerm (Set t) -> MLang)) = formNames $ f (MSingelton name)
+setPreds (MComp (f :: MTerm nm (Set t) -> MLang nm)) = formNames $ f (MSingelton name)
     where name = head (enumerateNames :: [TermName t])
 setPreds (MJoin f g) = setPreds f ++ setPreds g
 setPreds (MImage f a) = setPreds f ++ setPreds a
@@ -279,13 +280,14 @@ enumModels l = enumerate [] . search . makeProblemWith names . conv . toSat $ l
     where conv st = evalState (sat2CNF st) 1
           names = map Left (formNames l)
 
-enumTerms :: MLang -> MTerm t -> [t]
+enumTerms :: forall nm t. MLang nm -> MTerm nm t -> [t]
 enumTerms l t = map (\m -> evalTerm m t) (enumerate [] . search . makeProblemWith names . conv . toSat $ l)
-    where conv st = evalState (sat2CNF st) 1
+    where conv :: Sat nm -> CNF (Either (Pred nm) Int)
+          conv st = evalState (sat2CNF st) 1
           names = map Left (setPreds t ++ formNames l)
 
 --example stuff for testing
-bn = SetName 0 :: SetName (Fin (Succ (Succ Zero)))
-an = SetName 1 :: SetName (Fin (Succ (Succ Zero)))
+bn = SetName 0 :: SetName Int (Fin (Succ (Succ Zero))) --this is a subset of the set {0, 1}
+an = SetName 1 :: SetName Int (Fin (Succ (Succ Zero))) --this is a subset of the set {0, 1}
 a = MSetName an
 b = MSetName bn

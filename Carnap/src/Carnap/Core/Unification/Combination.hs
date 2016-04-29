@@ -1,6 +1,7 @@
-module Combination () where
+module Combination (LabelPair(), Labeling, Label(), makeLabel, ) where
 
 import Carnap.Core.Unification.Unification
+import Carnap.Core.Unification.ModelFinder
 import Control.Monad.State
 import Data.Typeable
 
@@ -17,12 +18,14 @@ type Labeling f = [LabelPair f]
 data Label f where
     Label :: TypeRep -> (Labeling f -> f a -> f a -> State [f a] [[Equation f]]) -> Label f
 
+instance Eq (Label f) where
+    (Label t _) == (Label t' _) = t == t'
+
 --constraint that says that x must come before y
-data Constraint f = (f a) :<: (f a)
-data Clause f = [Constraint f]
-data CNF f = [Clause f]
 
 --only allow construction, not deconstruction (outside this module)
+--this is to avoid the unessary error of constructing a label with the wrong
+--type representation
 makeLabel :: TypeRep -> (Labeling f -> f a -> f a -> State [f a] [[Equation f]]) -> Label f
 makeLabel = Label
 
