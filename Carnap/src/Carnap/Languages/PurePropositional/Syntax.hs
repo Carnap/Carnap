@@ -9,12 +9,9 @@ import Control.Lens (Plated)
 import Control.Lens.Fold (anyOf)
 import Control.Lens.Plated (cosmos, transform)
 import Data.Typeable (Typeable)
+import Carnap.Languages.Util.GenericConnectives
 
-data PureProp a where
-        Prop :: Int -> PureProp (Form Bool)
-
-instance Schematizable PureProp where
-        schematize (Prop n)   _       = "P_" ++ show n
+type PureProp = IntProp Bool
 
 instance Evaluable PureProp where
         eval (Prop n) = Form $ even n
@@ -22,19 +19,7 @@ instance Evaluable PureProp where
 instance Modelable (Int -> Bool) PureProp where
         satisfies f (Prop n) = Form $ f n
 
-data PureConn a where
-        And :: PureConn (Form Bool -> Form Bool -> Form Bool)
-        Or :: PureConn (Form Bool -> Form Bool -> Form Bool)
-        If :: PureConn (Form Bool -> Form Bool -> Form Bool)
-        Iff :: PureConn (Form Bool -> Form Bool -> Form Bool)
-        Not :: PureConn (Form Bool -> Form Bool)
-
-instance Schematizable PureConn where
-        schematize Iff = \(x:y:_) -> "(" ++ x ++ " ↔ " ++ y ++ ")"
-        schematize If  = \(x:y:_) -> "(" ++ x ++ " → " ++ y ++ ")"
-        schematize Or = \(x:y:_) -> "(" ++ x ++ " ∨ " ++ y ++ ")"
-        schematize And = \(x:y:_) -> "(" ++ x ++ " ∧ " ++ y ++ ")"
-        schematize Not = \(x:_) -> "¬" ++ x
+type PureConn = BooleanConn Bool
 
 instance Evaluable PureConn where
         eval Iff = lift2  (==)
@@ -44,30 +29,18 @@ instance Evaluable PureConn where
         eval Not = lift1 not
 
 instance Modelable (Int -> Bool) PureConn where
-    satisfies _ x = eval x
+    satisfies _ = eval
 
-data SchematicProp a where
-        SProp :: Int -> SchematicProp (Form Bool)
+type PureSchematicProp = SchematicIntProp Bool
 
-instance Schematizable SchematicProp where
-        schematize (SProp n)   _       = "φ_" ++ show n
---XXX:All Schematic Propositions are false. A better solution might make
---a schematic language take semantic values in a Maybe monad
-
-instance Evaluable SchematicProp where
+instance Evaluable PureSchematicProp where
         eval (SProp _) = Form False
 
-instance Modelable (Int -> Bool) SchematicProp where
+instance Modelable (Int -> Bool) PureSchematicProp where
         satisfies _ (SProp _) = Form False
 
-data SubstitutionalProp a where
-        SubProp :: Int -> SubstitutionalProp b
-
-instance Schematizable SubstitutionalProp where
-        schematize (SubProp n)   _       = "α_" ++ show n
-
 type PurePropLexicon = (Predicate PureProp
-                   :|: Predicate SchematicProp
+                   :|: Predicate PureSchematicProp
                    :|: Connective PureConn
                    :|: SubstitutionalVariable
                    :|: EndLang)
@@ -81,14 +54,14 @@ pattern (:!!$:) f y    = f :!$: y
 pattern PPred x arity  = Fx1 (Predicate x arity)
 pattern PSPred x arity = Fx2 (Predicate x arity)
 pattern PCon x arity   = Fx3 (Connective x arity)
-pattern SV n           = Fx4 (SubVar n)
+pattern PSV n           = Fx4 (SubVar n)
 pattern PAnd           = PCon And ATwo
 pattern POr            = PCon Or ATwo
 pattern PIf            = PCon If ATwo
 pattern PIff           = PCon Iff ATwo
 pattern PNot           = PCon Not AOne
-pattern P n            = PPred (Prop n) AZero
-pattern Phi n          = PSPred (SProp n) AZero
+pattern PP n            = PPred (Prop n) AZero
+pattern PPhi n          = PSPred (SProp n) AZero
 pattern (:&:) x y      = PAnd :!!$: x :!!$: y
 pattern (:||:) x y     = POr :!!$: x :!!$: y
 pattern (:->:) x y     = PIf :!!$: x :!!$: y
@@ -124,24 +97,24 @@ instance BooleanLanguage PureForm where
         liff = (:<->:)
 
 instance IndexedPropLanguage PureForm where
-        pn = P
+        pn = PP
 
 checkChildren phi psi = anyOf cosmos (== phi) psi
 
 castToForm :: PurePropLanguage a -> Maybe PureForm
 castToForm phi@(PNeg x)     = Just phi  
-castToForm phi@(x :&: y)   = Just phi
-castToForm phi@(x :||: y)  = Just phi
-castToForm phi@(x :->: y)  = Just phi
-castToForm phi@(x :<->: y) = Just phi
-castToForm phi@(P _)       = Just phi
-castToForm phi@(Phi _)     = Just phi
+castToForm phi@(x :&: y)    = Just phi
+castToForm phi@(x :||: y)   = Just phi
+castToForm phi@(x :->: y)   = Just phi
+castToForm phi@(x :<->: y)  = Just phi
+castToForm phi@(PP _)        = Just phi
+castToForm phi@(PPhi _)      = Just phi
 castToForm _ = Nothing
 
 instance FirstOrder PurePropLanguage where
         
-    isVar (Phi _) = True
-    isVar _       = False
+    isVar (PPhi _) = True
+    isVar _        = False
 
     sameHead (PNeg _) (PNeg _) = True
     sameHead (_ :&: _) (_ :&: _) = True
@@ -165,12 +138,12 @@ instance FirstOrder PurePropLanguage where
     subst a b c = 
           case c of 
             (PNeg x)     -> byCast a b c
-            (x :&: y)   -> byCast a b c 
-            (x :||: y)  -> byCast a b c
-            (x :->: y)  -> byCast a b c
-            (x :<->: y) -> byCast a b c
-            (P _)       -> byCast a b c
-            (Phi _)     -> byCast a b c
+            (x :&: y)    -> byCast a b c 
+            (x :||: y)   -> byCast a b c
+            (x :->: y)   -> byCast a b c
+            (x :<->: y)  -> byCast a b c
+            (PP _)       -> byCast a b c
+            (PPhi _)     -> byCast a b c
             _ -> c
         where 
             byCast v phi psi =
@@ -179,7 +152,7 @@ instance FirstOrder PurePropLanguage where
                           transform (\x -> if x == v' then phi' else x) psi'
                      _ -> psi
 
-    freshVars = map SV [1..]
+    freshVars = map PSV [1..]
 
 
 
