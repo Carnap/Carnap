@@ -29,15 +29,9 @@ instance Evaluable PureConn where
         eval Not = lift1 not
 
 instance Modelable (Int -> Bool) PureConn where
-    satisfies _ = eval
+    satisfies = const eval
 
 type PureSchematicProp = SchematicIntProp Bool
-
-instance Evaluable PureSchematicProp where
-        eval (SProp _) = Form False
-
-instance Modelable (Int -> Bool) PureSchematicProp where
-        satisfies _ (SProp _) = Form False
 
 type PurePropLexicon = (Predicate PureProp
                    :|: Predicate PureSchematicProp

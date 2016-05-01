@@ -28,5 +28,13 @@ data SchematicIntProp b a where
 
 instance Schematizable (SchematicIntProp b) where
         schematize (SProp n)   _       = "φ_" ++ show n
---XXX:All Schematic Propositions are false. A better solution might make
---a schematic language take semantic values in a Maybe monad
+
+instance Evaluable (SchematicIntProp b) where
+        eval = error "You should not be able to evaluate schemata"
+
+instance Modelable m (SchematicIntProp b) where
+        satisfies = const eval
+
+data Modality b a where
+        Box     :: Modality b (Form b -> Form b)
+        Diamond :: Modality b (Form b -> Form b)
