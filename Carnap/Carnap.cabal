@@ -21,6 +21,9 @@ library
                      , Carnap.Core.Unification.ACUI
                      , Carnap.Core.Unification.SAT
                      , Carnap.Core.Util
+                     , Carnap.Languages.Util.GenericConnectives
+                     , Carnap.Languages.Util.GenericParsers
+                     , Carnap.Languages.Util.LanguageClasses
                      , Carnap.Languages.PurePropositional.Syntax
                      , Carnap.Languages.PurePropositional.Parser
 
