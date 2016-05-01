@@ -301,6 +301,8 @@ instance  (CanonicalForm (FixLang f a), Show (FixLang f a)) => Eq (FixLang f a) 
 --------------------------------------------------------
 --4. Evaluation and Modelable
 --------------------------------------------------------
+instance Evaluable (SubstitutionalVariable lang)  where
+        eval _ = error "It should not be possible to evaluate a substitutional variable"
 
 instance Evaluable quant => Evaluable (Quantifiers quant lang) where
     eval (Bind q) = eval q
@@ -341,6 +343,9 @@ instance (Liftable lang, Evaluable lang) => Evaluable (Copula lang) where
     eval (f :$: x) = eval f (eval x)
     eval (Lam f)   = \t -> eval $ f (lift t)
     eval (Lift t)  = t
+
+instance Modelable a (SubstitutionalVariable lang)  where
+        satisfies _ = eval
 
 instance Modelable m quant => Modelable m (Quantifiers quant lang) where
     satisfies m (Bind q) = satisfies m q
