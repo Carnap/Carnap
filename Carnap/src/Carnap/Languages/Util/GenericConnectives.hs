@@ -38,3 +38,7 @@ instance Modelable m (SchematicIntProp b) where
 data Modality b a where
         Box     :: Modality b (Form b -> Form b)
         Diamond :: Modality b (Form b -> Form b)
+
+instance Schematizable (Modality b) where
+        schematize Box = \(x:_) -> "□" ++ x
+        schematize Diamond = \(x:_) -> "◇" ++ x
