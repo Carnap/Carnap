@@ -64,9 +64,15 @@ type ModalPropLexicon = (Predicate ModalProp
                    :|: SubstitutionalVariable
                    :|: EndLang)
 
+instance BoundVars ModalPropLexicon
+
 type ModalPropLanguage = FixLang ModalPropLexicon
 
+instance CopulaSchema ModalPropLanguage
+
 type ModalForm = ModalPropLanguage (Form (World -> Bool))
+
+instance CanonicalForm ModalForm
 
 pattern (:!!$:) :: (Typeable a, Typeable b) => ModalPropLanguage (a -> b) -> ModalPropLanguage a -> ModalPropLanguage b
 pattern (:!!$:) f y    = f :!$: y
@@ -92,25 +98,9 @@ pattern MNeg x         = MNot :!!$: x
 pattern MNec x         = MBox :!!$: x
 pattern MPos x         = MDiamond :!!$: x
 
---XXX:These instances should be perhaps be made the defaults
-instance CopulaSchema ModalPropLanguage where
-    appSchema x y e = schematize x (show y : e)
-    lamSchema = error "how did you even do this?"
-    liftSchema = error "should not print a lifted value"
 
-instance BoundVars ModalPropLexicon where
-
-    getBoundVar _ = undefined
-
-    subBoundVar _ _ phi = phi
-
+--XXX:Another case where "LangTypes1" would be nice to have
 instance LangTypes ModalPropLexicon Form (World -> Bool) Term ()
-
-instance RelabelVars ModalPropLexicon Form (World -> Bool) where
-        subBinder _ _ = Nothing
-
-instance CanonicalForm ModalForm where
-        canonical = id
 
 instance BooleanLanguage ModalForm where
         land = (:&:)
@@ -119,9 +109,14 @@ instance BooleanLanguage ModalForm where
         lif  = (:->:)
         liff = (:<->:)
 
+instance ModalLanguage ModalForm where
+        nec = MNec
+        pos = MPos
+
 instance IndexedPropLanguage ModalForm where
         pn = MP
 
+checkChildren :: (Eq s, Plated s) => s -> s -> Bool
 checkChildren phi psi = anyOf cosmos (== phi) psi
 
 castToForm :: ModalPropLanguage a -> Maybe ModalForm
@@ -174,8 +169,8 @@ instance FirstOrder ModalPropLanguage where
             (MP _)       -> byCast a b c
             (MPhi _)     -> byCast a b c
             (MNec _)     -> byCast a b c
-            (MPos _) -> byCast a b c
-            _ -> c
+            (MPos _)     -> byCast a b c
+            _            -> c
         where 
             byCast v phi psi =
                 case (castToForm v, castToForm phi, castToForm psi) of 

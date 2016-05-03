@@ -1,4 +1,4 @@
-{-#LANGUAGE TypeFamilies, UndecidableInstances, FlexibleInstances, MultiParamTypeClasses, FunctionalDependencies, AllowAmbiguousTypes, GADTs, KindSignatures, DataKinds, PolyKinds, TypeOperators, ViewPatterns, PatternSynonyms, RankNTypes, FlexibleContexts, ScopedTypeVariables, AutoDeriveTypeable #-}
+{-#LANGUAGE TypeFamilies, UndecidableInstances, FlexibleInstances, MultiParamTypeClasses, FunctionalDependencies, AllowAmbiguousTypes, GADTs, KindSignatures, DataKinds, PolyKinds, TypeOperators, ViewPatterns, PatternSynonyms, RankNTypes, FlexibleContexts, ScopedTypeVariables, AutoDeriveTypeable, DefaultSignatures #-}
 
 module Carnap.Core.Data.AbstractSyntaxDataTypes(
   Modelable, Evaluable, Term(Term), Form(Form), CopulaSchema,
@@ -48,11 +48,16 @@ class Schematizable f where
 
 class CopulaSchema lang where
     appSchema :: lang (t -> t') -> lang t -> [String] -> String
+    default appSchema :: (Schematizable lang, Show (lang t)) => lang (t -> t') -> lang t -> [String] -> String
+    appSchema x y e = schematize x (show y : e)
     liftSchema :: Copula lang t -> [String] -> String
+    lamSchema = error "how did you even do this?"
     lamSchema :: (lang t -> lang t') -> [String] -> String
+    liftSchema = error "should not print a lifted value"
 
 class CanonicalForm a where
     canonical :: a -> a
+    canonical = id
 
 lift1 :: (Evaluable f, Liftable f) => (a -> b) -> (f a -> f b)
 lift1 f = lift . f . eval
@@ -149,7 +154,9 @@ data Quantifiers :: (* -> *) -> (* -> *) -> * -> * where
 
 class BoundVars g where
         getBoundVar :: FixLang g ((a -> b) -> c) -> FixLang g a
+        getBoundVar _ = error "you need to define a language-specific getBoundVar function"
         subBoundVar :: FixLang g a -> FixLang g a -> FixLang g b -> FixLang g b
+        subBoundVar _ _ = id
 
 
 data Abstractors :: (* -> *) -> (* -> *) -> * -> * where

@@ -39,7 +39,11 @@ type PurePropLexicon = (Predicate PureProp
                    :|: SubstitutionalVariable
                    :|: EndLang)
 
+instance BoundVars PurePropLexicon
+
 type PurePropLanguage = FixLang PurePropLexicon
+
+instance CopulaSchema PurePropLanguage
 
 type PureForm = PurePropLanguage (Form Bool)
 
@@ -62,27 +66,6 @@ pattern (:->:) x y     = PIf :!!$: x :!!$: y
 pattern (:<->:) x y    = PIff :!!$: x :!!$: y
 pattern PNeg x          = PNot :!!$: x
 
-instance CopulaSchema PurePropLanguage where
-    appSchema x y e = schematize x (show y : e)
-    lamSchema = error "how did you even do this?"
-    liftSchema = error "should not print a lifted value"
-
-instance BoundVars PurePropLexicon where
-
-    getBoundVar _ = undefined
-
-    subBoundVar _ _ phi = phi
-
---XXX:This is a little awkward. Ideally, maybe have LangTypes1, LangTypes2,
---LangTypes3...
-instance LangTypes PurePropLexicon Form Bool Term ()
-
-instance RelabelVars PurePropLexicon Form Bool where
-        subBinder _ _ = Nothing
-
-instance CanonicalForm PureForm where
-        canonical = id
-
 instance BooleanLanguage PureForm where
         land = (:&:)
         lneg = PNeg
@@ -93,14 +76,22 @@ instance BooleanLanguage PureForm where
 instance IndexedPropLanguage PureForm where
         pn = PP
 
+instance CanonicalForm PureForm
+        --
+--XXX:This is a little awkward. Ideally, maybe have LangTypes1, LangTypes2,
+--LangTypes3...
+
+instance LangTypes PurePropLexicon Form Bool Term ()
+
+checkChildren :: (Eq s, Plated s) => s -> s -> Bool
 checkChildren phi psi = anyOf cosmos (== phi) psi
 
 castToForm :: PurePropLanguage a -> Maybe PureForm
-castToForm phi@(PNeg x)     = Just phi  
-castToForm phi@(x :&: y)    = Just phi
-castToForm phi@(x :||: y)   = Just phi
-castToForm phi@(x :->: y)   = Just phi
-castToForm phi@(x :<->: y)  = Just phi
+castToForm phi@(PNeg x)      = Just phi  
+castToForm phi@(x :&: y)     = Just phi
+castToForm phi@(x :||: y)    = Just phi
+castToForm phi@(x :->: y)    = Just phi
+castToForm phi@(x :<->: y)   = Just phi
 castToForm phi@(PP _)        = Just phi
 castToForm phi@(PPhi _)      = Just phi
 castToForm _ = Nothing
@@ -147,6 +138,3 @@ instance FirstOrder PurePropLanguage where
                      _ -> psi
 
     freshVars = map PSV [1..]
-
-
-

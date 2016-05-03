@@ -38,3 +38,7 @@ class BooleanLanguage l where
 
 class IndexedPropLanguage l where
         pn :: Int -> l
+
+class ModalLanguage l where
+        nec :: l -> l
+        pos :: l -> l
