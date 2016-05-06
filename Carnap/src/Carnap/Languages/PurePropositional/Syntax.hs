@@ -77,9 +77,6 @@ instance IndexedPropLanguage PureForm where
         pn = PP
 
 instance CanonicalForm PureForm
-        --
---XXX:This is a little awkward. Ideally, maybe have LangTypes1, LangTypes2,
---LangTypes3...
 
 instance LangTypes PurePropLexicon Form Bool Term ()
 

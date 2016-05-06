@@ -5,27 +5,41 @@ where
 import Carnap.Languages.Util.LanguageClasses
 import Text.Parsec
 
-fromList (x:xs) op = do spaces
-                        _ <- foldr (\y -> (<|>) (try $ string y)) (try $ string x) xs
-                        spaces
-                        return op
+listToTry :: [ParsecT s u m a] -> ParsecT s u m a
+listToTry (x:xs) = foldr (\y -> (<|>) (try y)) (try x) xs
+
+stringsToTry :: Stream s m Char => [String] -> b -> ParsecT s u m b
+stringsToTry l op = do spaces
+                       _ <- listToTry (map string l)
+                       spaces
+                       return op
 
 parseAnd :: (Monad m, BooleanLanguage l) => ParsecT String u m (l -> l -> l)
-parseAnd = fromList ["/\\", "∧", "^", "&", "and"] land
+parseAnd = stringsToTry ["/\\", "∧", "^", "&", "and"] land
 
 parseOr :: (BooleanLanguage l, Monad m) => ParsecT String u m (l -> l -> l)
-parseOr = fromList ["\\/", "∨", "v", "|", "or"] lor
+parseOr = stringsToTry ["\\/", "∨", "v", "|", "or"] lor
 
 parseIf :: (BooleanLanguage l, Monad m) => ParsecT String u m (l -> l -> l)
-parseIf = fromList [ "=>", "->", ">", "→", "only if"] lif
+parseIf = stringsToTry [ "=>", "->", ">", "→", "only if"] lif
 
 parseIff :: (BooleanLanguage l, Monad m) => ParsecT String u m (l -> l -> l)
-parseIff = fromList [ "<=>",  "<->", "<>", "↔", "if and only if"] liff
+parseIff = stringsToTry [ "<=>",  "<->", "<>", "↔", "if and only if"] liff
 
 parseNeg :: (BooleanLanguage l, Monad m) => ParsecT String u m (l -> l)
 parseNeg = do spaces
               _ <- string "-" <|> string "~" <|> string "¬" <|> string "not "
               return lneg
+
+parseNec :: (ModalLanguage l, Monad m) => ParsecT String u m (l -> l)
+parseNec = do spaces
+              _ <- string "[]" <|> string "□"
+              return nec
+
+parsePos :: (ModalLanguage l, Monad m) => ParsecT String u m (l -> l)
+parsePos = do spaces
+              _ <- string "<>" <|> string "◇"
+              return pos
 
 atomParser :: (IndexedPropLanguage l, Monad m) => ParsecT String u m l
 atomParser = do char 'P'
@@ -37,7 +51,8 @@ atomParser = do char 'P'
 parenParser :: (BooleanLanguage l, Monad m, IndexedPropLanguage l) => ParsecT String u m l -> ParsecT String u m l
 parenParser recur = char '(' *> recur <* char ')' 
 
-negParser :: (Monad m, BooleanLanguage l, IndexedPropLanguage l) => ParsecT String u m l -> ParsecT String u m l
-negParser recur = do n <- try parseNeg 
-                     f <- recur
-                     return $ n f
+unaryOpParser :: (Monad m, BooleanLanguage l, IndexedPropLanguage l) => [ParsecT String u m (l -> l)] -> ParsecT String u m l ->  ParsecT String u m l
+unaryOpParser ops recur = do n <- listToTry ops
+                             f <- recur
+                             return $ n f
+

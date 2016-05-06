@@ -13,8 +13,8 @@ purePropFormulaParser = buildExpressionParser opTable subFormulaParser
     --subformulas are either
     where subFormulaParser = --formulas wrapped in parentheses
                              parenParser purePropFormulaParser
-                             --negations of subformulas
-                             <|> negParser subFormulaParser 
+                             --negations or modalizations of subformulas
+                             <|> unaryOpParser [parseNeg] subFormulaParser 
                              --or atom
                              <|> atomParser
 

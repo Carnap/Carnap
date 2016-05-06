@@ -27,6 +27,7 @@ library
                      , Carnap.Languages.PurePropositional.Syntax
                      , Carnap.Languages.PurePropositional.Parser
                      , Carnap.Languages.ModalPropositional.Syntax
+                     , Carnap.Languages.ModalPropositional.Parser
 
   build-depends:       base >= 4.7
                      , megaparsec >= 4.4.0

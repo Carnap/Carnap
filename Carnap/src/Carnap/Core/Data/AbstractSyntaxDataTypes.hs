@@ -463,6 +463,10 @@ handleArg (Just Refl, _) f l = f l
 handleArg (_, Just Refl) f l = difChildren f l
 handleArg (_, _)         _ l = pure l
 
+--XXX: Not ideal to have a fixed number of language types here, but we are
+--only allowed to infer Plated (FixLang f (syn1 sem1)) once. The only
+--alternative is to build in witness types, which makes the plated
+--functions kind of confusing to use.
 class (Typeable syn1, Typeable sem1, Typeable syn2, Typeable sem2, BoundVars f) => LangTypes f syn1 sem1 syn2 sem2 | f syn1 sem1 -> syn2 sem2 where
 
         simChildren :: Traversal' (FixLang f (syn1 sem1)) (FixLang f (syn1 sem1))
@@ -543,8 +547,14 @@ class (Typeable syn1, Typeable sem1, Typeable syn2, Typeable sem2, BoundVars f) 
                                          pure h .*$. (handleArg (r11, r12) g t1)
         difChildren g phi = pure phi
 
+
 instance LangTypes f syn1 sem1 syn2 sem2 => Plated (FixLang f (syn1 sem1)) where
         plate = simChildren
+
+class (Typeable syn, Typeable sem, BoundVars f) => LangTypes1 f syn sem
+
+data Empty :: k -> *
+
 
 class (Plated (FixLang f (syn sem)), BoundVars f) => RelabelVars f syn sem where
 

@@ -98,8 +98,6 @@ pattern MNeg x         = MNot :!!$: x
 pattern MNec x         = MBox :!!$: x
 pattern MPos x         = MDiamond :!!$: x
 
-
---XXX:Another case where "LangTypes1" would be nice to have
 instance LangTypes ModalPropLexicon Form (World -> Bool) Term ()
 
 instance BooleanLanguage ModalForm where
@@ -153,7 +151,6 @@ instance FirstOrder ModalPropLanguage where
     decompose (x :->: y) (x' :->: y') = [x :=: x', y :=: y']
     decompose (x :<->: y) (x' :<->: y') = [x :=: x', y :=: y']
     decompose _ _ = []
-
 
     occurs phi psi = case (castToForm phi, castToForm psi) of
                                  (Just f, Just f') -> checkChildren f f'
