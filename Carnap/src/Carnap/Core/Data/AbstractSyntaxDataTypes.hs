@@ -190,6 +190,14 @@ data Arity :: * -> * -> Nat -> * -> * where
     AZero :: Arity arg ret Zero ret
     ASucc :: Arity arg ret n ret' -> Arity arg ret (Succ n) (arg -> ret')
 
+
+instance Show (Arity arg ret n ret') where
+        show AZero = "0"
+        show (ASucc n) = show . inc . read . show $ n
+            where inc :: Int -> Int
+                  inc = (+) 1 
+
+
 data TArity :: * -> * -> Nat -> * -> * where
     TZero :: Typeable ret => TArity arg ret Zero ret
     TSucc :: (Typeable ret, Typeable arg, Typeable ret') => TArity arg ret n ret' -> TArity arg ret (Succ n) (arg -> ret')

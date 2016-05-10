@@ -1,4 +1,7 @@
+{-#LANGUAGE MultiParamTypeClasses #-}
 module Carnap.Languages.Util.LanguageClasses where
+
+import Carnap.Core.Data.AbstractSyntaxDataTypes
 
 --------------------------------------------------------
 --1. Connectives
@@ -38,6 +41,9 @@ class BooleanLanguage l where
 
 class IndexedPropLanguage l where
         pn :: Int -> l
+
+class PolyadicPredicateLanguage l arg ret where
+        ppn :: Int -> Arity arg ret n ret' -> l ret'
 
 class ModalLanguage l where
         nec :: l -> l
