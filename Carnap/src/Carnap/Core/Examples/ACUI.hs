@@ -11,6 +11,8 @@ import Carnap.Core.Unification.ACUI
 import qualified Data.Set as S
 import Data.Type.Equality
 import Data.Typeable
+import Text.Parsec hiding (Empty)
+import Text.Parsec.Expr
 
 --I really liked this example so I'm using it for testing
 newtype VFix f = VFix (f (VFix f))
@@ -65,6 +67,8 @@ type VLex = (Function Set :|: Var :|: SubstitutionalVariable :|: EndLang)
 
 type VLang = FixLang VLex
 
+type VTerm = VLang (Term V)
+
 pattern VEmpty = Fx1 (Function Empty AZero)
 pattern VSomeSet s = Fx2 (SomeSet s)
 pattern VSingelton x = Fx1 (Function Singelton AOne) :!$: x
@@ -88,7 +92,6 @@ instance Monoid (VLang (Term V)) where
 
 instance CanonicalForm (VLang a) where
     canonical = id
-
 
 instance ACUI VLang (Term V) where
     unfoldTerm (VUnion x y) = unfoldTerm x ++ unfoldTerm y
@@ -125,9 +128,35 @@ instance FirstOrder VLang where
       | s == s'                    = new
       | otherwise                  = orign
 
-  --freshVars = undefined
   freshVars = map SV [1..]
-  --freshVars :: forall a. [VLang a] --this is complicated
-  --freshVars = case eqT :: Maybe (a :~: Term V) of
-    --  Just Refl -> map (VSomeSet . ("x" ++) . show) [(1 :: Int) ..]
---}
+
+parseUnion :: (Monad m) => ParsecT String u m (VTerm -> VTerm -> VTerm)
+parseUnion = do spaces
+                string "u"
+                spaces
+                return VUnion
+
+emptyParser :: (Monad m) => ParsecT String u m (VTerm)
+emptyParser = do string "{}"
+                 return VEmpty
+
+singletonParser recur = do char '{'
+                           inner <- recur
+                           char '}'
+                           return $ VSingelton inner
+                     
+somesetParser :: (Monad m) => ParsecT String u m (VTerm)
+somesetParser = do c <- oneOf "abcdefghijklmnopqrstuvwxyz"
+                   return $ VSomeSet [c]
+
+subvarParser :: (Monad m) => ParsecT String u m (VTerm)
+subvarParser = do n <- read <$> many1 digit
+                  return $ SV n
+
+acuiParser :: (Monad m) => ParsecT String u m (VTerm)
+acuiParser = buildExpressionParser [[Infix (try parseUnion) AssocLeft]] subParser
+    where subParser = try emptyParser <|>
+                      try (singletonParser acuiParser) <|>
+                      subvarParser <|>
+                      somesetParser 
+
