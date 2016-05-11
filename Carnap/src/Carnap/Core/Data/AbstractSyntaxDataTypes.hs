@@ -1,4 +1,4 @@
-{-#LANGUAGE TypeFamilies, UndecidableInstances, FlexibleInstances, MultiParamTypeClasses, FunctionalDependencies, AllowAmbiguousTypes, GADTs, KindSignatures, DataKinds, PolyKinds, TypeOperators, ViewPatterns, PatternSynonyms, RankNTypes, FlexibleContexts, ScopedTypeVariables, AutoDeriveTypeable #-}
+{-#LANGUAGE TypeFamilies, UndecidableInstances, FlexibleInstances, MultiParamTypeClasses, FunctionalDependencies, AllowAmbiguousTypes, GADTs, KindSignatures, DataKinds, PolyKinds, TypeOperators, ViewPatterns, PatternSynonyms, RankNTypes, FlexibleContexts, ScopedTypeVariables, AutoDeriveTypeable, DefaultSignatures #-}
 
 module Carnap.Core.Data.AbstractSyntaxDataTypes(
   Modelable, Evaluable, Term(Term), Form(Form), CopulaSchema,
@@ -48,11 +48,16 @@ class Schematizable f where
 
 class CopulaSchema lang where
     appSchema :: lang (t -> t') -> lang t -> [String] -> String
+    default appSchema :: (Schematizable lang, Show (lang t)) => lang (t -> t') -> lang t -> [String] -> String
+    appSchema x y e = schematize x (show y : e)
     liftSchema :: Copula lang t -> [String] -> String
+    lamSchema = error "how did you even do this?"
     lamSchema :: (lang t -> lang t') -> [String] -> String
+    liftSchema = error "should not print a lifted value"
 
 class CanonicalForm a where
     canonical :: a -> a
+    canonical = id
 
 lift1 :: (Evaluable f, Liftable f) => (a -> b) -> (f a -> f b)
 lift1 f = lift . f . eval
@@ -149,7 +154,9 @@ data Quantifiers :: (* -> *) -> (* -> *) -> * -> * where
 
 class BoundVars g where
         getBoundVar :: FixLang g ((a -> b) -> c) -> FixLang g a
+        getBoundVar _ = error "you need to define a language-specific getBoundVar function"
         subBoundVar :: FixLang g a -> FixLang g a -> FixLang g b -> FixLang g b
+        subBoundVar _ _ = id
 
 
 data Abstractors :: (* -> *) -> (* -> *) -> * -> * where
@@ -182,6 +189,14 @@ instance Liftable Form where
 data Arity :: * -> * -> Nat -> * -> * where
     AZero :: Arity arg ret Zero ret
     ASucc :: Arity arg ret n ret' -> Arity arg ret (Succ n) (arg -> ret')
+
+
+instance Show (Arity arg ret n ret') where
+        show AZero = "0"
+        show (ASucc n) = show . inc . read . show $ n
+            where inc :: Int -> Int
+                  inc = (+) 1 
+
 
 data TArity :: * -> * -> Nat -> * -> * where
     TZero :: Typeable ret => TArity arg ret Zero ret
@@ -301,6 +316,8 @@ instance  (CanonicalForm (FixLang f a), Show (FixLang f a)) => Eq (FixLang f a) 
 --------------------------------------------------------
 --4. Evaluation and Modelable
 --------------------------------------------------------
+instance Evaluable (SubstitutionalVariable lang)  where
+        eval _ = error "It should not be possible to evaluate a substitutional variable"
 
 instance Evaluable quant => Evaluable (Quantifiers quant lang) where
     eval (Bind q) = eval q
@@ -341,6 +358,9 @@ instance (Liftable lang, Evaluable lang) => Evaluable (Copula lang) where
     eval (f :$: x) = eval f (eval x)
     eval (Lam f)   = \t -> eval $ f (lift t)
     eval (Lift t)  = t
+
+instance Modelable a (SubstitutionalVariable lang)  where
+        satisfies _ = eval
 
 instance Modelable m quant => Modelable m (Quantifiers quant lang) where
     satisfies m (Bind q) = satisfies m q
@@ -451,6 +471,10 @@ handleArg (Just Refl, _) f l = f l
 handleArg (_, Just Refl) f l = difChildren f l
 handleArg (_, _)         _ l = pure l
 
+--XXX: Not ideal to have a fixed number of language types here, but we are
+--only allowed to infer Plated (FixLang f (syn1 sem1)) once. The only
+--alternative is to build in witness types, which makes the plated
+--functions kind of confusing to use.
 class (Typeable syn1, Typeable sem1, Typeable syn2, Typeable sem2, BoundVars f) => LangTypes f syn1 sem1 syn2 sem2 | f syn1 sem1 -> syn2 sem2 where
 
         simChildren :: Traversal' (FixLang f (syn1 sem1)) (FixLang f (syn1 sem1))
@@ -531,8 +555,14 @@ class (Typeable syn1, Typeable sem1, Typeable syn2, Typeable sem2, BoundVars f) 
                                          pure h .*$. (handleArg (r11, r12) g t1)
         difChildren g phi = pure phi
 
+
 instance LangTypes f syn1 sem1 syn2 sem2 => Plated (FixLang f (syn1 sem1)) where
         plate = simChildren
+
+class (Typeable syn, Typeable sem, BoundVars f) => LangTypes1 f syn sem
+
+data Empty :: k -> *
+
 
 class (Plated (FixLang f (syn sem)), BoundVars f) => RelabelVars f syn sem where
 

@@ -22,10 +22,18 @@ library
                      , Carnap.Core.Unification.SAT
                      , Carnap.Core.Unification.ModelFinder
                      , Carnap.Core.Util
+                     , Carnap.Languages.Util.GenericConnectives
+                     , Carnap.Languages.Util.GenericParsers
+                     , Carnap.Languages.Util.LanguageClasses
                      , Carnap.Languages.PurePropositional.Syntax
+                     , Carnap.Languages.PurePropositional.Parser
+                     , Carnap.Languages.ModalPropositional.Syntax
+                     , Carnap.Languages.ModalPropositional.Parser
+
   build-depends:       base >= 4.7
                      , megaparsec >= 4.4.0
                      , lens >= 4.12
                      , mtl >= 2.2.1
                      , containers >= 0.5.6.2
+                     , parsec >= 3.1.9
   default-language:    Haskell2010
