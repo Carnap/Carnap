@@ -2,7 +2,8 @@
 
 module Carnap.Core.Examples.ACUI (
     V, Set, VLang, Var,
-    pattern VEmpty, pattern VUnion, pattern VSomeSet, pattern VSingelton
+    pattern VEmpty, pattern VUnion, pattern VSomeSet, pattern VSingelton,
+    acuiDemo
 ) where
 
 import Carnap.Core.Data.AbstractSyntaxDataTypes
@@ -13,6 +14,7 @@ import Data.Type.Equality
 import Data.Typeable
 import Text.Parsec hiding (Empty)
 import Text.Parsec.Expr
+import Control.Monad.State
 
 --I really liked this example so I'm using it for testing
 newtype VFix f = VFix (f (VFix f))
@@ -144,7 +146,7 @@ singletonParser recur = do char '{'
                            inner <- recur
                            char '}'
                            return $ VSingelton inner
-                     
+
 somesetParser :: (Monad m) => ParsecT String u m (VTerm)
 somesetParser = do c <- oneOf "abcdefghijklmnopqrstuvwxyz"
                    return $ VSomeSet [c]
@@ -158,5 +160,18 @@ acuiParser = buildExpressionParser [[Infix (try parseUnion) AssocLeft]] subParse
     where subParser = try emptyParser <|>
                       try (singletonParser acuiParser) <|>
                       subvarParser <|>
-                      somesetParser 
+                      somesetParser
 
+acuiDemo = do
+  lhs <- getLine
+  if lhs /= ""
+    then do
+      rhs <- getLine
+      let t1 = parse acuiParser "left hand side" lhs
+      let t2 = parse acuiParser "right hand side" rhs
+      case (t1, t2) of
+        (Left err, _) -> print err
+        (_, Left err) -> print err
+        (Right x, Right y) -> print $ evalState (acuiUnify x y) freshVars
+      acuiDemo
+    else return ()

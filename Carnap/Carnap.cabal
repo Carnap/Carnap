@@ -19,8 +19,9 @@ library
                      , Carnap.Core.Examples.ToyLanguages
                      , Carnap.Core.Unification.Unification
                      , Carnap.Core.Unification.ACUI
-                     , Carnap.Core.Unification.SAT
-                     , Carnap.Core.Unification.ModelFinder
+                     , Carnap.Core.ModelChecking.SAT
+                     , Carnap.Core.ModelChecking.ModelFinder
+                     , Carnap.Core.ModelChecking.Parser
                      , Carnap.Core.Util
                      , Carnap.Languages.Util.GenericConnectives
                      , Carnap.Languages.Util.GenericParsers

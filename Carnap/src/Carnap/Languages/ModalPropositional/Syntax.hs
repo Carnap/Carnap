@@ -1,5 +1,5 @@
 {-#LANGUAGE TypeSynonymInstances, UndecidableInstances, FlexibleInstances, MultiParamTypeClasses, GADTs, DataKinds, PolyKinds, TypeOperators, ViewPatterns, PatternSynonyms, RankNTypes, FlexibleContexts, AutoDeriveTypeable #-}
-module Carnap.Languages.ModalPropositional.Syntax 
+module Carnap.Languages.ModalPropositional.Syntax
      where
 
 import Carnap.Core.Data.AbstractSyntaxDataTypes
@@ -10,7 +10,7 @@ import Control.Lens.Fold (anyOf)
 import Control.Lens.Plated (cosmos, transform)
 import Data.Typeable (Typeable)
 import Data.Map.Lazy (Map, (!))
-import Data.Monoid
+import qualified Data.Monoid as M
 import Carnap.Languages.Util.GenericConnectives
 
 --the semantic values in this language are intensions rather than boolean
@@ -50,9 +50,9 @@ instance Evaluable PropModality where
         eval Diamond = lift1 $ \f -> const False
 
 instance Modelable PropFrame PropModality where
-        satisfies f Box = lift1 $ \f x -> getAll $ mconcat (map (All . f) (ac x))
+        satisfies f Box = lift1 $ \f x -> M.getAll $ mconcat (map (M.All . f) (ac x))
             where ac x = accessibility f ! x
-        satisfies f Diamond = lift1 $ \f x -> getAny $ mconcat (map (Any . f) (ac x))
+        satisfies f Diamond = lift1 $ \f x -> M.getAny $ mconcat (map (M.Any . f) (ac x))
             where ac x = accessibility f ! x
 
 type ModalSchematicProp = SchematicIntProp (World -> Bool)
@@ -118,7 +118,7 @@ checkChildren :: (Eq s, Plated s) => s -> s -> Bool
 checkChildren phi psi = anyOf cosmos (== phi) psi
 
 castToForm :: ModalPropLanguage a -> Maybe ModalForm
-castToForm phi@(MNeg x)      = Just phi  
+castToForm phi@(MNeg x)      = Just phi
 castToForm phi@(x :&: y)     = Just phi
 castToForm phi@(x :||: y)    = Just phi
 castToForm phi@(x :->: y)    = Just phi
@@ -130,7 +130,7 @@ castToForm phi@(MPos _)      = Just phi
 castToForm _ = Nothing
 
 instance FirstOrder ModalPropLanguage where
-        
+
     isVar (MPhi _) = True
     isVar _        = False
 
@@ -156,10 +156,10 @@ instance FirstOrder ModalPropLanguage where
                                  (Just f, Just f') -> checkChildren f f'
                                  _ -> False
 
-    subst a b c = 
-          case c of 
+    subst a b c =
+          case c of
             (MNeg _)     -> byCast a b c
-            (_ :&: _)    -> byCast a b c 
+            (_ :&: _)    -> byCast a b c
             (_ :||: _)   -> byCast a b c
             (_ :->: _)   -> byCast a b c
             (_ :<->: _)  -> byCast a b c
@@ -168,10 +168,10 @@ instance FirstOrder ModalPropLanguage where
             (MNec _)     -> byCast a b c
             (MPos _)     -> byCast a b c
             _            -> c
-        where 
+        where
             byCast v phi psi =
-                case (castToForm v, castToForm phi, castToForm psi) of 
-                     (Just v', Just phi', Just psi') -> 
+                case (castToForm v, castToForm phi, castToForm psi) of
+                     (Just v', Just phi', Just psi') ->
                           transform (\x -> if x == v' then phi' else x) psi'
                      _ -> psi
 

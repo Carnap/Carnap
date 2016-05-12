@@ -1,19 +1,20 @@
 {-#LANGUAGE ScopedTypeVariables, InstanceSigs, ExplicitForAll, TypeSynonymInstances, UndecidableInstances, FlexibleInstances, MultiParamTypeClasses, GADTs, DataKinds, PolyKinds, TypeOperators, ViewPatterns, PatternSynonyms, RankNTypes, FlexibleContexts, AutoDeriveTypeable #-}
 
-module Carnap.Core.Unification.ModelFinder (
+module Carnap.Core.ModelChecking.ModelFinder (
   Set(Set), Fin(FSucc, FZero), MTerm(), MLang(),
   Domain, showElement, enumerateNames, enumerateValues,
-  forAll, forSome, (.&.), (.|.), (.->.), mnot, subset,
+  forAll, forSome, (.&.), (.|.), (.->.), subset,
   (.=.), (.$.), suchThat, union, inter, cross,
-  enumTerms
+  enumTerms, set
 ) where
 
 import Control.Monad.State
 import Data.Typeable
 import Data.Maybe
 import qualified Data.List as List
-import Carnap.Core.Unification.SAT
+import Carnap.Core.ModelChecking.SAT
 import Carnap.Core.Util
+import Carnap.Languages.Util.LanguageClasses
 
 --------------------------------------------------------------------------------
 -- 1. Framework Setup
@@ -155,15 +156,31 @@ instance Domain (Fin n) => Domain (Fin (Succ n)) where
     enumerateValues = FZero : map FSucc (enumerateValues :: [Fin n])
     enumerateNames = map DomainName [0..length (enumerateValues :: [Fin (Succ n)]) - 1]
 
+instance BooleanLanguage (MLang nm) where
+    lneg = MNot
+    land = MAnd
+    lor = MOr
+    lif x y = (lneg x) .|. y
+    liff x y = (x .=>. y) ./\. (y .=>. x)
+
+mnot :: MLang nm -> MLang nm
+mnot = lneg
+
+set :: (Typeable t, Domain t) => String -> MTerm String (Set t)
+set s = MSetName (SetName s)
+
+(.->.) :: MLang nm -> MLang nm -> MLang nm
+(.->.) = lif
+(.&.) :: MLang nm -> MLang nm -> MLang nm
+(.&.) = land
+(.|.) :: MLang nm -> MLang nm -> MLang nm
+(.|.) = lor
+
 --helpers to make using the language easier
 forAll :: Domain t => (MTerm nm (Set t) -> MLang nm) -> MLang nm
 forAll = MForall
 forSome :: Domain t => (MTerm nm (Set t) -> MLang nm) -> MLang nm
 forSome = MExists
-(.&.) = MAnd
-(.|.) = MOr
-mnot = MNot
-x .->. y = (mnot x) .|. y
 subset :: Domain t => (MTerm nm (Set t)) -> (MTerm nm (Set t)) -> MLang nm
 subset = MSubset
 (.=.) a b = (a `subset` b) .&. (b `subset` a)

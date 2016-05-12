@@ -1,7 +1,7 @@
 module Combination (LabelPair(), Labeling, Label(), makeLabel, ) where
 
 import Carnap.Core.Unification.Unification
-import Carnap.Core.Unification.ModelFinder
+import Carnap.Core.ModelChecking.ModelFinder
 import Control.Monad.State
 import Data.Typeable
 

@@ -1,6 +1,6 @@
 {-#LANGUAGE MultiParamTypeClasses, FunctionalDependencies, FlexibleInstances #-}
 
-module Carnap.Core.Unification.SAT (
+module Carnap.Core.ModelChecking.SAT (
   SatProblem, unitProp, units, unassigned, valuation, evaluate,
   ListSat, neg, getVar, Literal(LPos, LNeg), search, enumerate,
   makeProblem, makeProblemWith, isPos, isNeg, Solutions(Sat, Sols)
