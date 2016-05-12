@@ -76,6 +76,9 @@ instance BooleanLanguage PureForm where
 instance IndexedPropLanguage PureForm where
         pn = PP
 
+instance IndexedSchemePropLanguage PureForm where
+        phin = PPhi
+
 instance CanonicalForm PureForm
 
 instance LangTypes PurePropLexicon Form Bool Term ()
@@ -112,7 +115,6 @@ instance FirstOrder PurePropLanguage where
     decompose (x :->: y) (x' :->: y') = [x :=: x', y :=: y']
     decompose (x :<->: y) (x' :<->: y') = [x :=: x', y :=: y']
     decompose _ _ = []
-
 
     occurs phi psi = case (cast phi :: Maybe PureForm, cast psi :: Maybe PureForm)
                             of (Just f, Just f') -> checkChildren f f'
