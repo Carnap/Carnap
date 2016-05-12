@@ -154,13 +154,13 @@ instance BoundVars (Predicate BasicProp
         (if x == a then b else x) :==: (if y == a then b else y)
     subBoundVar _ _ phi = phi
 
-instance LangTypes (Predicate BasicProp
+instance LangTypes2 (Predicate BasicProp
                        :|: Connective BasicConn
                        :|: Quantifiers BasicQuant
                        :|: Function BasicTerm
                        :|: EndLang) Form Bool Term Int
 
-instance LangTypes (Predicate BasicProp
+instance LangTypes2 (Predicate BasicProp
                        :|: Connective BasicConn
                        :|: Quantifiers BasicQuant
                        :|: Function BasicTerm

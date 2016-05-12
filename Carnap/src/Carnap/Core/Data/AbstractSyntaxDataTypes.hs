@@ -8,7 +8,7 @@ module Carnap.Core.Data.AbstractSyntaxDataTypes(
   Nat(Zero, Succ), Fix(Fx), Vec(VNil, VCons), Arity(AZero, ASucc),
   TArity(TZero, TSucc),
   Predicate(Predicate), Connective(Connective), Function(Function),
-  Subnective(Subnective), SubstitutionalVariable(SubVar), CanonicalForm, Schematizable, FixLang, LangTypes,
+  Subnective(Subnective), SubstitutionalVariable(SubVar), CanonicalForm, Schematizable, FixLang, LangTypes2, LangTypes1,
   RelabelVars(..), pattern AOne, pattern ATwo , pattern LLam, pattern
   (:!$:), pattern Fx1, pattern Fx2, pattern Fx3, pattern Fx4, pattern Fx5,
   pattern Fx6, pattern Fx7, pattern Fx8, pattern Fx9, pattern Fx10, pattern
@@ -466,23 +466,29 @@ getHead ar (Fx c) = Fx <$> castArity ar c
 (.*$.) :: (Applicative g, Typeable a, Typeable b) => g (FixLang f (a -> b)) -> g (FixLang f a) -> g (FixLang f b)
 x .*$. y = (:!$:) <$> x <*> y
 
-handleArg :: (Applicative g, LangTypes f syn1 sem1 syn2 sem2)
+handleArg2 :: (Applicative g, LangTypes2 f syn1 sem1 syn2 sem2)
           => (Maybe (tt :~: syn1 sem1), Maybe (tt :~: syn2 sem2))
           -> (FixLang f (syn1 sem1) -> g (FixLang f (syn1 sem1)))
           -> FixLang f tt
           -> g (FixLang f tt)
-handleArg (Just Refl, _) f l = f l
-handleArg (_, Just Refl) f l = difChildren f l
-handleArg (_, _)         _ l = pure l
+handleArg2 (Just Refl, _) f l = f l
+handleArg2 (_, Just Refl) f l = difChildren2 f l
+handleArg2 (_, _)         _ l = pure l
+
+handleArg1 :: (Applicative g, LangTypes1 f syn1 sem1)
+          => Maybe (tt :~: syn1 sem1) -> (FixLang f (syn1 sem1) 
+            -> g (FixLang f (syn1 sem1))) -> FixLang f tt -> g (FixLang f tt)
+handleArg1 (Just Refl) f l = f l
+handleArg1 Nothing     _ l = pure l
 
 --XXX: Not ideal to have a fixed number of language types here, but we are
 --only allowed to infer Plated (FixLang f (syn1 sem1)) once. The only
 --alternative is to build in witness types, which makes the plated
 --functions kind of confusing to use.
-class (Typeable syn1, Typeable sem1, Typeable syn2, Typeable sem2, BoundVars f) => LangTypes f syn1 sem1 syn2 sem2 | f syn1 sem1 -> syn2 sem2 where
+class (Typeable syn1, Typeable sem1, Typeable syn2, Typeable sem2, BoundVars f) => LangTypes2 f syn1 sem1 syn2 sem2 | f syn1 sem1 -> syn2 sem2 where
 
-        simChildren :: Traversal' (FixLang f (syn1 sem1)) (FixLang f (syn1 sem1))
-        simChildren g phi@(q :!$: LLam (h :: FixLang f t -> FixLang f t')) =
+        simChildren2 :: Traversal' (FixLang f (syn1 sem1)) (FixLang f (syn1 sem1))
+        simChildren2 g phi@(q :!$: LLam (h :: FixLang f t -> FixLang f t')) =
                    case ( eqT :: Maybe (t' :~: syn1 sem1)
                         , eqT :: Maybe (t' :~: syn2 sem2)) of
                             (Just Refl, _) -> (\x y -> x :!$: LLam y) <$> pure q <*> modify h
@@ -492,9 +498,9 @@ class (Typeable syn1, Typeable sem1, Typeable syn2, Typeable sem2, BoundVars f) 
                             (_ , Just Refl) -> (\x y -> x :!$: LLam y) <$> pure q <*> modify h
                                where bv = getBoundVar q
                                      abstractBv f = \x -> (subBoundVar bv x f)
-                                     modify h = abstractBv <$> (difChildren g $ h $ bv)
+                                     modify h = abstractBv <$> (difChildren2 g $ h $ bv)
                             _ -> pure phi
-        simChildren g phi@(h :!$: (t1 :: FixLang f tt)
+        simChildren2 g phi@(h :!$: (t1 :: FixLang f tt)
                              :!$: (t2 :: FixLang f tt2)
                              :!$: (t3 :: FixLang f tt3))=
                            case ( eqT :: Maybe (tt :~: syn1 sem1)
@@ -504,24 +510,24 @@ class (Typeable syn1, Typeable sem1, Typeable syn2, Typeable sem2, BoundVars f) 
                                 , eqT :: Maybe (tt3 :~: syn1 sem1)
                                 , eqT :: Maybe (tt3 :~: syn2 sem2)
                                 ) of (r11, r12, r21, r22, r31, r32) ->
-                                         pure h .*$. (handleArg (r11, r12) g t1) .*$. (handleArg (r21, r22) g t2) .*$. (handleArg (r31, r32) g t3)
-        simChildren g phi@(h :!$: (t1 :: FixLang f tt)
+                                         pure h .*$. (handleArg2 (r11, r12) g t1) .*$. (handleArg2 (r21, r22) g t2) .*$. (handleArg2 (r31, r32) g t3)
+        simChildren2 g phi@(h :!$: (t1 :: FixLang f tt)
                              :!$: (t2 :: FixLang f tt2))=
                            case ( eqT :: Maybe (tt :~: syn1 sem1)
                                 , eqT :: Maybe (tt :~: syn2 sem2)
                                 , eqT :: Maybe (tt2 :~: syn1 sem1)
                                 , eqT :: Maybe (tt2 :~: syn2 sem2)
                                 ) of (r11, r12, r21, r22) ->
-                                         pure h .*$. (handleArg (r11, r12) g t1) .*$. (handleArg (r21, r22) g t2)
-        simChildren g phi@(h :!$: (t1 :: FixLang f tt))=
+                                         pure h .*$. (handleArg2 (r11, r12) g t1) .*$. (handleArg2 (r21, r22) g t2)
+        simChildren2 g phi@(h :!$: (t1 :: FixLang f tt))=
                            case ( eqT :: Maybe (tt :~: syn1 sem1)
                                 , eqT :: Maybe (tt :~: syn2 sem2)
                                 ) of (r11, r12) ->
-                                         pure h .*$. (handleArg (r11, r12) g t1)
-        simChildren g phi = pure phi
+                                         pure h .*$. (handleArg2 (r11, r12) g t1)
+        simChildren2 g phi = pure phi
 
-        difChildren :: Traversal' (FixLang f (syn2 sem2)) (FixLang f (syn1 sem1))
-        difChildren g phi@(q :!$: LLam (h :: FixLang f t -> FixLang f t')) =
+        difChildren2 :: Traversal' (FixLang f (syn2 sem2)) (FixLang f (syn1 sem1))
+        difChildren2 g phi@(q :!$: LLam (h :: FixLang f t -> FixLang f t')) =
                    case ( eqT :: Maybe (t' :~: syn1 sem1)
                         , eqT :: Maybe (t' :~: syn2 sem2)) of
                             (Just Refl, _) -> (\x y -> x :!$: LLam y) <$> pure q <*> modify h
@@ -531,9 +537,9 @@ class (Typeable syn1, Typeable sem1, Typeable syn2, Typeable sem2, BoundVars f) 
                             (_ , Just Refl) -> (\x y -> x :!$: LLam y) <$> pure q <*> modify h
                                where bv = getBoundVar q
                                      abstractBv f = \x -> (subBoundVar bv x f)
-                                     modify h = abstractBv <$> (difChildren g $ h $ bv)
+                                     modify h = abstractBv <$> (difChildren2 g $ h $ bv)
                             _ -> pure phi
-        difChildren g phi@(h :!$: (t1 :: FixLang f tt)
+        difChildren2 g phi@(h :!$: (t1 :: FixLang f tt)
                              :!$: (t2 :: FixLang f tt2)
                              :!$: (t3 :: FixLang f tt3))=
                            case ( eqT :: Maybe (tt :~: syn1 sem1)
@@ -543,27 +549,56 @@ class (Typeable syn1, Typeable sem1, Typeable syn2, Typeable sem2, BoundVars f) 
                                 , eqT :: Maybe (tt3 :~: syn1 sem1)
                                 , eqT :: Maybe (tt3 :~: syn2 sem2)
                                 ) of (r11, r12, r21, r22, r31, r32) ->
-                                         pure h .*$. (handleArg (r11, r12) g t1) .*$. (handleArg (r21, r22) g t2) .*$. (handleArg (r31, r32) g t3)
-        difChildren g phi@(h :!$: (t1 :: FixLang f tt)
+                                         pure h .*$. (handleArg2 (r11, r12) g t1) .*$. (handleArg2 (r21, r22) g t2) .*$. (handleArg2 (r31, r32) g t3)
+        difChildren2 g phi@(h :!$: (t1 :: FixLang f tt)
                              :!$: (t2 :: FixLang f tt2))=
                            case ( eqT :: Maybe (tt :~: syn1 sem1)
                                 , eqT :: Maybe (tt :~: syn2 sem2)
                                 , eqT :: Maybe (tt2 :~: syn1 sem1)
                                 , eqT :: Maybe (tt2 :~: syn2 sem2)
                                 ) of (r11, r12, r21, r22) ->
-                                         pure h .*$. (handleArg (r11, r12) g t1) .*$. (handleArg (r21, r22) g t2)
-        difChildren g phi@(h :!$: (t1 :: FixLang f tt))=
+                                         pure h .*$. (handleArg2 (r11, r12) g t1) .*$. (handleArg2 (r21, r22) g t2)
+        difChildren2 g phi@(h :!$: (t1 :: FixLang f tt))=
                            case ( eqT :: Maybe (tt :~: syn1 sem1)
                                 , eqT :: Maybe (tt :~: syn2 sem2)
                                 ) of (r11, r12) ->
-                                         pure h .*$. (handleArg (r11, r12) g t1)
-        difChildren g phi = pure phi
+                                         pure h .*$. (handleArg2 (r11, r12) g t1)
+        difChildren2 g phi = pure phi
 
+class (Typeable syn1, Typeable sem1, BoundVars f) => LangTypes1 f syn1 sem1 where
 
-instance LangTypes f syn1 sem1 syn2 sem2 => Plated (FixLang f (syn1 sem1)) where
-        plate = simChildren
+        simChildren1 :: Traversal' (FixLang f (syn1 sem1)) (FixLang f (syn1 sem1))
+        simChildren1 g phi@(q :!$: LLam (h :: FixLang f t -> FixLang f t')) =
+                   case eqT :: Maybe (t' :~: syn1 sem1) of
+                            Just Refl -> (\x y -> x :!$: LLam y) <$> pure q <*> modify h
+                               where bv = getBoundVar q
+                                     abstractBv f = \x -> (subBoundVar bv x f)
+                                     modify h = abstractBv <$> (g $ h $ bv)
+                            _ -> pure phi
+        simChildren1 g phi@(h :!$: (t1 :: FixLang f tt)
+                             :!$: (t2 :: FixLang f tt2)
+                             :!$: (t3 :: FixLang f tt3))=
+                           case ( eqT :: Maybe (tt :~: syn1 sem1)
+                                , eqT :: Maybe (tt2 :~: syn1 sem1)
+                                , eqT :: Maybe (tt3 :~: syn1 sem1)
+                                ) of (r1,  r2,  r3) ->
+                                         pure h .*$. (handleArg1 r1 g t1) .*$. (handleArg1 r2 g t2) .*$. (handleArg1 r3 g t3)
+        simChildren1 g phi@(h :!$: (t1 :: FixLang f tt)
+                             :!$: (t2 :: FixLang f tt2))=
+                           case ( eqT :: Maybe (tt :~: syn1 sem1)
+                                , eqT :: Maybe (tt2 :~: syn1 sem1)
+                                ) of (r1, r2) ->
+                                         pure h .*$. (handleArg1 r1 g t1) .*$. (handleArg1 r2 g t2)
+        simChildren1 g phi@(h :!$: (t1 :: FixLang f tt))=
+                           case ( eqT :: Maybe (tt :~: syn1 sem1)
+                                ) of r1 -> pure h .*$. (handleArg1 r1 g t1)
+        simChildren1 g phi = pure phi
 
-class (Typeable syn, Typeable sem, BoundVars f) => LangTypes1 f syn sem
+instance {-# OVERLAPPABLE #-} LangTypes2 f syn1 sem1 syn2 sem2 => LangTypes1 f syn1 sem1 where
+        simChildren1 = simChildren2
+
+instance LangTypes1 f syn sem  => Plated (FixLang f (syn sem)) where
+        plate = simChildren1
 
 class (Plated (FixLang f (syn sem)), BoundVars f) => RelabelVars f syn sem where
 

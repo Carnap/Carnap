@@ -81,7 +81,7 @@ instance IndexedSchemePropLanguage PureForm where
 
 instance CanonicalForm PureForm
 
-instance LangTypes PurePropLexicon Form Bool Term ()
+instance LangTypes1 PurePropLexicon Form Bool
 
 checkChildren :: (Eq s, Plated s) => s -> s -> Bool
 checkChildren phi psi = anyOf cosmos (== phi) psi

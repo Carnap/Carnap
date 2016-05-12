@@ -30,7 +30,14 @@ type PureVar = StandardVar Int
 
 type PureQuant = StandardQuant Bool Int
 
---Polyadic First-Order Logic with Constant Symbols
+--------------------------------------------------------
+--2. Pure First Order Languages 
+--------------------------------------------------------
+
+--------------------------------------------------------
+--2.1 Polyadic First Order Logic With Constant Symbols
+--------------------------------------------------------
+
 type PureFirstOrderLexicon = (Predicate PurePredicate
                        :|: Predicate PureSchematicPred
                        :|: Connective PureConn
@@ -69,8 +76,8 @@ pattern PC n           = PConst (Constant n) AZero
 pattern PV s           = PVar (Var s) AZero
 pattern PPhi n a1 a2   = PSPred (SPred a1 n) a2
 pattern (:&:) x y      = PAnd :!!$: x :!!$: y
-pattern (:||:) x y     = POr :!!$: x :!!$: y
-pattern (:->:) x y     = PIf :!!$: x :!!$: y
+pattern (:||:) x y     = POr  :!!$: x :!!$: y
+pattern (:->:) x y     = PIf  :!!$: x :!!$: y
 pattern (:<->:) x y    = PIff :!!$: x :!!$: y
 pattern PNeg x         = PNot :!!$: x
 pattern PUniv v f      = PBind (All v) f

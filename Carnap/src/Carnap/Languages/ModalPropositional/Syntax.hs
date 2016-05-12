@@ -98,7 +98,7 @@ pattern MNeg x         = MNot :!!$: x
 pattern MNec x         = MBox :!!$: x
 pattern MPos x         = MDiamond :!!$: x
 
-instance LangTypes ModalPropLexicon Form (World -> Bool) Term ()
+instance LangTypes1 ModalPropLexicon Form (World -> Bool)
 
 instance BooleanLanguage ModalForm where
         land = (:&:)
