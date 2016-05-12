@@ -10,7 +10,7 @@ import Control.Lens.Fold (anyOf)
 import Control.Lens.Plated (cosmos, transform)
 import Data.Typeable (Typeable)
 import Data.Map.Lazy (Map, (!))
-import qualified Data.Monoid as M
+import Data.Monoid as M
 import Carnap.Languages.Util.GenericConnectives
 
 --the semantic values in this language are intensions rather than boolean
@@ -50,7 +50,11 @@ instance Evaluable PropModality where
         eval Diamond = lift1 $ \f -> const False
 
 instance Modelable PropFrame PropModality where
+<<<<<<< HEAD
         satisfies f Box = lift1 $ \f x -> M.getAll $ mconcat (map (M.All . f) (ac x))
+=======
+        satisfies f Box = lift1 $ \f x -> getAll $ mconcat (map (M.All . f) (ac x))
+>>>>>>> master
             where ac x = accessibility f ! x
         satisfies f Diamond = lift1 $ \f x -> M.getAny $ mconcat (map (M.Any . f) (ac x))
             where ac x = accessibility f ! x
@@ -114,9 +118,13 @@ instance ModalLanguage ModalForm where
 instance IndexedPropLanguage ModalForm where
         pn = MP
 
+instance IndexedSchemePropLanguage ModalForm where
+        phin = MPhi
+
 checkChildren :: (Eq s, Plated s) => s -> s -> Bool
 checkChildren phi psi = anyOf cosmos (== phi) psi
 
+<<<<<<< HEAD
 castToForm :: ModalPropLanguage a -> Maybe ModalForm
 castToForm phi@(MNeg x)      = Just phi
 castToForm phi@(x :&: y)     = Just phi
@@ -128,6 +136,19 @@ castToForm phi@(MPhi _)      = Just phi
 castToForm phi@(MNec _)      = Just phi
 castToForm phi@(MPos _)      = Just phi
 castToForm _ = Nothing
+=======
+instance Syncast ModalPropLanguage (Form (World -> Bool)) where
+    cast phi@(MNeg x)      = Just phi
+    cast phi@(x :&: y)     = Just phi
+    cast phi@(x :||: y)    = Just phi
+    cast phi@(x :->: y)    = Just phi
+    cast phi@(x :<->: y)   = Just phi
+    cast phi@(MP _)        = Just phi
+    cast phi@(MPhi _)      = Just phi
+    cast phi@(MNec _)      = Just phi
+    cast phi@(MPos _)      = Just phi
+    cast _ = Nothing
+>>>>>>> master
 
 instance FirstOrder ModalPropLanguage where
 
@@ -141,6 +162,7 @@ instance FirstOrder ModalPropLanguage where
     sameHead (_ :<->: _) (_ :<->: _) = True
     sameHead (MNec _) (MNec _) = True
     sameHead (MPos _) (MPos _) = True
+    sameHead (MP n) (MP m) = n == m
     sameHead _ _ = False
 
     decompose (MNeg x) (MNeg y) = [x :=: y]
@@ -152,7 +174,7 @@ instance FirstOrder ModalPropLanguage where
     decompose (x :<->: y) (x' :<->: y') = [x :=: x', y :=: y']
     decompose _ _ = []
 
-    occurs phi psi = case (castToForm phi, castToForm psi) of
+    occurs phi psi = case (cast phi :: Maybe ModalForm, cast psi :: Maybe ModalForm) of
                                  (Just f, Just f') -> checkChildren f f'
                                  _ -> False
 
@@ -170,8 +192,13 @@ instance FirstOrder ModalPropLanguage where
             _            -> c
         where
             byCast v phi psi =
+<<<<<<< HEAD
                 case (castToForm v, castToForm phi, castToForm psi) of
                      (Just v', Just phi', Just psi') ->
+=======
+                case (cast v :: Maybe ModalForm, cast phi :: Maybe ModalForm, cast psi :: Maybe ModalForm) of
+                     (Just v', Just phi', Just psi') ->
+>>>>>>> master
                           transform (\x -> if x == v' then phi' else x) psi'
                      _ -> psi
 

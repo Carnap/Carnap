@@ -39,7 +39,7 @@ parseNec = do spaces
 parsePos :: (ModalLanguage l, Monad m) => ParsecT String u m (l -> l)
 parsePos = do spaces
               _ <- string "<>" <|> string "◇"
-              return pos 
+              return pos
 
 atomParser :: (IndexedPropLanguage l, Monad m) => ParsecT String u m l
 atomParser = do char 'P'
@@ -48,7 +48,15 @@ atomParser = do char 'P'
                 return $ pn n
     where number = do { ds <- many1 digit; return (read ds) } <?> "number"
 
-parenParser :: (Monad m) => ParsecT String u m l -> ParsecT String u m l
+
+schemevarParser :: (IndexedSchemePropLanguage l, Monad m) => ParsecT String u m l
+schemevarParser = do string "Phi"
+                     char '_'
+                     n <- number
+                     return $ phin n
+    where number = do { ds <- many1 digit; return (read ds) } <?> "number"
+
+parenParser :: (BooleanLanguage l, Monad m, IndexedPropLanguage l) => ParsecT String u m l -> ParsecT String u m l
 parenParser recur = char '(' *> recur <* char ')'
 
 unaryOpParser :: (Monad m) => [ParsecT String u m (l -> l)] -> ParsecT String u m l ->  ParsecT String u m l

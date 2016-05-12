@@ -74,3 +74,9 @@ data StandardQuant b c a where
 instance Schematizable (StandardQuant b c) where
         schematize (All v) = \(x:_) -> "∀" ++ v ++ "(" ++ x ++ ")"
         schematize (Some v) = \(x:_) -> "∃" ++ v ++ "(" ++ x ++ ")"
+
+data StandardVar b a where
+    Var :: String -> StandardVar b (Term b)
+
+instance Schematizable (StandardVar b) where
+        schematize (Var s) = const s

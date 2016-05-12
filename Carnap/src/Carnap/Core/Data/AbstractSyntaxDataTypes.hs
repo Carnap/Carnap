@@ -1,7 +1,7 @@
 {-#LANGUAGE TypeFamilies, UndecidableInstances, FlexibleInstances, MultiParamTypeClasses, FunctionalDependencies, AllowAmbiguousTypes, GADTs, KindSignatures, DataKinds, PolyKinds, TypeOperators, ViewPatterns, PatternSynonyms, RankNTypes, FlexibleContexts, ScopedTypeVariables, AutoDeriveTypeable, DefaultSignatures #-}
 
 module Carnap.Core.Data.AbstractSyntaxDataTypes(
-  Modelable, Evaluable, Term(Term), Form(Form), CopulaSchema,
+  Modelable, Evaluable, Syncast(..), Term(Term), Form(Form), CopulaSchema,
   satisfies, eval, schematize, lift, lift1, lift2, canonical,
   appSchema, lamSchema, liftSchema, BoundVars(..),
   Copula((:$:), Lam), (:|:)(FLeft, FRight), Quantifiers(Bind),Abstractors(Abstract),Applicators(Apply),
@@ -58,6 +58,11 @@ class CopulaSchema lang where
 class CanonicalForm a where
     canonical :: a -> a
     canonical = id
+
+-- XXX: Seems like a generic implementation would be possible. Maybe also
+-- a generic typeclass for syntactic type equality
+class Syncast l a where
+        cast ::  l b -> Maybe (l a)
 
 lift1 :: (Evaluable f, Liftable f) => (a -> b) -> (f a -> f b)
 lift1 f = lift . f . eval
@@ -190,13 +195,11 @@ data Arity :: * -> * -> Nat -> * -> * where
     AZero :: Arity arg ret Zero ret
     ASucc :: Arity arg ret n ret' -> Arity arg ret (Succ n) (arg -> ret')
 
-
 instance Show (Arity arg ret n ret') where
         show AZero = "0"
         show (ASucc n) = show . inc . read . show $ n
             where inc :: Int -> Int
                   inc = (+) 1 
-
 
 data TArity :: * -> * -> Nat -> * -> * where
     TZero :: Typeable ret => TArity arg ret Zero ret
@@ -219,6 +222,7 @@ data Subnective :: (* -> *) -> (* -> *) -> * -> * where
 
 data SubstitutionalVariable :: (* -> *) -> * -> * where
         SubVar :: Int -> SubstitutionalVariable lang t
+
 
 --data Quote :: (* -> *) -> * -> *
     --Quote :: (lang )
@@ -560,9 +564,6 @@ instance LangTypes f syn1 sem1 syn2 sem2 => Plated (FixLang f (syn1 sem1)) where
         plate = simChildren
 
 class (Typeable syn, Typeable sem, BoundVars f) => LangTypes1 f syn sem
-
-data Empty :: k -> *
-
 
 class (Plated (FixLang f (syn sem)), BoundVars f) => RelabelVars f syn sem where
 

@@ -83,15 +83,15 @@ instance LangTypes PurePropLexicon Form Bool Term ()
 checkChildren :: (Eq s, Plated s) => s -> s -> Bool
 checkChildren phi psi = anyOf cosmos (== phi) psi
 
-castToForm :: PurePropLanguage a -> Maybe PureForm
-castToForm phi@(PNeg x)      = Just phi  
-castToForm phi@(x :&: y)     = Just phi
-castToForm phi@(x :||: y)    = Just phi
-castToForm phi@(x :->: y)    = Just phi
-castToForm phi@(x :<->: y)   = Just phi
-castToForm phi@(PP _)        = Just phi
-castToForm phi@(PPhi _)      = Just phi
-castToForm _ = Nothing
+instance Syncast PurePropLanguage (Form Bool) where
+    cast phi@(PNeg x)      = Just phi  
+    cast phi@(x :&: y)     = Just phi
+    cast phi@(x :||: y)    = Just phi
+    cast phi@(x :->: y)    = Just phi
+    cast phi@(x :<->: y)   = Just phi
+    cast phi@(PP _)        = Just phi
+    cast phi@(PPhi _)      = Just phi
+    cast _ = Nothing
 
 instance FirstOrder PurePropLanguage where
         
@@ -103,6 +103,7 @@ instance FirstOrder PurePropLanguage where
     sameHead (_ :||: _) (_ :||: _) = True
     sameHead (_ :->: _) (_ :->: _) = True
     sameHead (_ :<->: _) (_ :<->: _) = True
+    sameHead (PP n) (PP m) = n == m
     sameHead _ _ = False
 
     decompose (PNeg x) (PNeg y) = [x :=: y]
@@ -113,9 +114,9 @@ instance FirstOrder PurePropLanguage where
     decompose _ _ = []
 
 
-    occurs phi psi = case (castToForm phi, castToForm psi) of
-                                 (Just f, Just f') -> checkChildren f f'
-                                 _ -> False
+    occurs phi psi = case (cast phi :: Maybe PureForm, cast psi :: Maybe PureForm)
+                            of (Just f, Just f') -> checkChildren f f'
+                               _ -> False
 
     subst a b c = 
           case c of 
@@ -129,7 +130,7 @@ instance FirstOrder PurePropLanguage where
             _ -> c
         where 
             byCast v phi psi =
-                case (castToForm v, castToForm phi, castToForm psi) of 
+                case (cast v :: Maybe PureForm, cast phi :: Maybe PureForm, cast psi :: Maybe PureForm) of 
                      (Just v', Just phi', Just psi') -> 
                           transform (\x -> if x == v' then phi' else x) psi'
                      _ -> psi
