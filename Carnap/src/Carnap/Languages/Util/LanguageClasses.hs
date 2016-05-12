@@ -42,6 +42,9 @@ class BooleanLanguage l where
 class IndexedPropLanguage l where
         pn :: Int -> l
 
+class IndexedSchemePropLanguage l where
+        phin :: Int -> l
+
 class PolyadicPredicateLanguage l arg ret where
         ppn :: Int -> Arity arg ret n ret' -> l ret'
 

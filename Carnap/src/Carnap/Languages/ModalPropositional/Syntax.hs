@@ -114,6 +114,9 @@ instance ModalLanguage ModalForm where
 instance IndexedPropLanguage ModalForm where
         pn = MP
 
+instance IndexedSchemePropLanguage ModalForm where
+        phin = MPhi
+
 checkChildren :: (Eq s, Plated s) => s -> s -> Bool
 checkChildren phi psi = anyOf cosmos (== phi) psi
 

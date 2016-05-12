@@ -48,6 +48,13 @@ atomParser = do char 'P'
                 return $ pn n
     where number = do { ds <- many1 digit; return (read ds) } <?> "number"
 
+schemevarParser :: (IndexedSchemePropLanguage l, Monad m) => ParsecT String u m l
+schemevarParser = do string "Phi"
+                     char '_'
+                     n <- number
+                     return $ phin n
+    where number = do { ds <- many1 digit; return (read ds) } <?> "number"
+
 parenParser :: (BooleanLanguage l, Monad m, IndexedPropLanguage l) => ParsecT String u m l -> ParsecT String u m l
 parenParser recur = char '(' *> recur <* char ')' 
 
