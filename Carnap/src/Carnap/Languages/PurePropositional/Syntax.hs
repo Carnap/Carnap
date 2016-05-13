@@ -84,7 +84,7 @@ instance CanonicalForm PureForm
 instance LangTypes1 PurePropLexicon Form Bool
 
 checkChildren :: (Eq s, Plated s) => s -> s -> Bool
-checkChildren phi psi = anyOf cosmos (== phi) psi
+checkChildren phi psi = phi /= psi && anyOf cosmos (== phi) psi
 
 instance Syncast PurePropLanguage (Form Bool) where
     cast phi@(PNeg x)      = Just phi  

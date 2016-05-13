@@ -118,7 +118,7 @@ instance IndexedSchemePropLanguage ModalForm where
         phin = MPhi
 
 checkChildren :: (Eq s, Plated s) => s -> s -> Bool
-checkChildren phi psi = anyOf cosmos (== phi) psi
+checkChildren phi psi = phi /= psi && anyOf cosmos (== phi) psi
 
 instance Syncast ModalPropLanguage (Form (World -> Bool)) where
     cast phi@(MNeg x)      = Just phi  
