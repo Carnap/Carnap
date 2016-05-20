@@ -51,3 +51,7 @@ class PolyadicPredicateLanguage l arg ret where
 class ModalLanguage l where
         nec :: l -> l
         pos :: l -> l
+
+class QuantLanguage l t where
+        lall  :: String -> (t -> l) -> l
+        lsome :: String -> (t -> l) -> l

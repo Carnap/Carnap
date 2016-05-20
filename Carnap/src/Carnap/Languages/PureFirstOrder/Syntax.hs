@@ -93,13 +93,67 @@ instance BooleanLanguage PureFOLForm where
         liff = (:<->:)
 
 instance IndexedPropLanguage PureFOLForm where
-        pn = PS
+    pn = PS
 
-instance PolyadicPredicateLanguage PureFirstOrderLanguage (Term Int) (Form Bool) 
-        where
-        ppn n a = PP n a a
+instance PolyadicPredicateLanguage PureFirstOrderLanguage (Term Int) (Form Bool) where 
+    ppn n a = PP n a a
 
-instance CanonicalForm PureFOLForm
+instance QuantLanguage PureFOLForm PureFOLTerm where
+        lall  = PUniv 
+        lsome  = PExist 
+
+instance CanonicalForm PureFOLForm where
+    canonical = relabelVars varStream
+                where varStream = [i ++ j | i <- ["x"], j <- map show [1 ..]]
+
+instance CanonicalForm PureFOLTerm
+
+instance BoundVars PureFirstOrderLexicon where
+    getBoundVar (PQuant (All v)) _ = PV v
+    getBoundVar (PQuant (Some v)) _ = PV v
+    getBoundVar _ _ = undefined
+
+    getBindHeight (PQuant (All v)) (LLam f) = PV $ show $ height (f $ PV "" )
+    getBindHeight (PQuant (Some v)) (LLam f) = PV $ show $ height (f $ PV "" )
+    getBindHeight _ _ = undefined
+
+    subBoundVar a b (phi :&: psi)   = subBoundVar a b phi :&: subBoundVar a b psi
+    subBoundVar a b (phi :||: psi)  = subBoundVar a b phi :||: subBoundVar a b psi
+    subBoundVar a b (phi :->: psi)  = subBoundVar a b phi :||: subBoundVar a b psi
+    subBoundVar a b (phi :<->: psi) = subBoundVar a b phi :||: subBoundVar a b psi
+    subBoundVar a@(PV w) b (PUniv v f) = PUniv v (\x -> subBoundVar sv x $ subBoundVar a b $ f sv)
+        where sv = case getBindHeight (PQuant (All v)) (LLam f) of
+                           c@(PV v') -> if w == v' then PV ('_':v') else c
+    subBoundVar a@(PV w) b (PExist v f) = PUniv v (\x -> subBoundVar sv x $ subBoundVar a b $ f sv)
+        where sv = case getBindHeight (PQuant (All v)) (LLam f) of
+                       c@(PV v') -> if w == v' then PV ('_':v') else c
+    subBoundVar a b phi = mapover (swap a b) phi 
+
+mapover :: (forall a . PureFirstOrderLanguage a -> PureFirstOrderLanguage a) -> PureFirstOrderLanguage a -> PureFirstOrderLanguage a
+mapover f (x :!!$: y) = mapover f x :!!$: f y
+mapover f x = x
+
+swap :: PureFirstOrderLanguage b -> PureFirstOrderLanguage b -> PureFirstOrderLanguage a -> PureFirstOrderLanguage a
+swap a@(PV _) b@(PV _) x@(PV _) = if x == a then b else x
+swap a b c = c
+
+height :: PureFirstOrderLanguage b -> Int
+height (PUniv _ g)     = height (g $ PV "") + 1
+height (PExist _ g)    = height (g $ PV "") + 1
+height (phi :&: psi)   = max (height phi) (height psi)
+height (phi :||: psi)  = max (height phi) (height psi)
+height (phi :->: psi)  = max (height phi) (height psi)
+height (phi :<->: psi) = max (height phi) (height psi)
+height _               = 0
+
+instance LangTypes2 PureFirstOrderLexicon Term Int Form Bool
+
+instance LangTypes2 PureFirstOrderLexicon Form Bool Term Int
+
+instance RelabelVars PureFirstOrderLexicon Form Bool where
+    subBinder (PUniv v f) y = Just $ PUniv y f 
+    subBinder (PExist v f) y = Just $ PExist y f
+    subBinder _ _ = Nothing
 
 instance CopulaSchema PureFirstOrderLanguage where
     appSchema (PQuant (All x)) (LLam f) e = schematize (All x) (show (f $ PV x) : e)

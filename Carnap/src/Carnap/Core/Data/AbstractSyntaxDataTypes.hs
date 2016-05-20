@@ -6,10 +6,9 @@ module Carnap.Core.Data.AbstractSyntaxDataTypes(
   appSchema, lamSchema, liftSchema, BoundVars(..),
   Copula((:$:), Lam), (:|:)(FLeft, FRight), Quantifiers(Bind),Abstractors(Abstract),Applicators(Apply),
   Nat(Zero, Succ), Fix(Fx), Vec(VNil, VCons), Arity(AZero, ASucc),
-  TArity(TZero, TSucc),
   Predicate(Predicate), Connective(Connective), Function(Function),
-  Subnective(Subnective), SubstitutionalVariable(SubVar), CanonicalForm, Schematizable, FixLang, LangTypes2, LangTypes1,
-  RelabelVars(..), pattern AOne, pattern ATwo , pattern LLam, pattern
+  Subnective(Subnective), SubstitutionalVariable(SubVar), CanonicalForm, Schematizable, FixLang, LangTypes2(..), LangTypes1(..),
+  RelabelVars(..), pattern AOne, pattern ATwo, pattern AThree, pattern LLam, pattern
   (:!$:), pattern Fx1, pattern Fx2, pattern Fx3, pattern Fx4, pattern Fx5,
   pattern Fx6, pattern Fx7, pattern Fx8, pattern Fx9, pattern Fx10, pattern
   Fx11, EndLang
@@ -137,32 +136,21 @@ pattern Fx10 x     = Fx (FRight (FRight (FRight (FRight (FRight (FRight (FRight 
 pattern Fx11 x     = Fx (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FLeft x))))))))))))
 pattern Fx12 x     = Fx (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FLeft x)))))))))))))
 
---XXX: Idea for a uniform definition of plate: the big difficulty here is
---doing a kind very flexible pattern matching, which depends on whether the
---head is Fx_n wrapped around a predicate, a connective, a quantifier, or
---god-knows-what. If we pattern-match, we get type refinements on the RHS,
---which let us put things back together. The best idea right now is to try
---to use a prism, which, given a formula, previews a tuple of the MC and the
---parts if there is an MC, and otherwise nothing. so, something like
---`Prism' (Lang .. (Form a)) (Lang .. (Form b), Lang .. (Form c), Lang .. (Form b -> Form c -> Form a)`.
---We could then reconstruct from parts, or try something new if we get
---nothing. Might be able to build these uniformly using arities. No loss,
---since our connectives have to have uniformly typed arguments anyway.
---
---So, while prisms like this would be nice to have, this just pushes the
---problem back to producing the appropriate prism. Current best idea:
---a typeclass that returns a "Maybe .. (a -> a -> b)" of the appropriate kind, and
---which can be used to drill down into the  :|: structures. Again, maybe
---this can be done uniformly with an arity
 data Quantifiers :: (* -> *) -> (* -> *) -> * -> * where
     Bind :: quant ((t a -> f b) -> f b) -> Quantifiers quant lang ((t a -> f b) -> f b)
 
+-- | This typeclass needs to provide a way of getting bound variables,
+-- which will display binding positions, a way of substituting bound
+-- variables, and a way of getting a bound variable uniquely determined by
+-- the "Height" of a certain binder---how many binders occur below it in
+-- a parsing tree.
 class BoundVars g where
-        getBoundVar :: FixLang g ((a -> b) -> c) -> FixLang g a
-        getBoundVar _ = error "you need to define a language-specific getBoundVar function"
+        getBoundVar :: FixLang g ((a -> b) -> c) -> FixLang g (a -> b) -> FixLang g a
+        getBoundVar = error "you need to define a language-specific getBoundVar function"
         subBoundVar :: FixLang g a -> FixLang g a -> FixLang g b -> FixLang g b
         subBoundVar _ _ = id
-
+        getBindHeight:: FixLang g ((a -> b) -> c) -> FixLang g (a -> b) -> FixLang g a
+        getBindHeight = error "you need to define a language-specific getBindHeight function"
 
 data Abstractors :: (* -> *) -> (* -> *) -> * -> * where
     Abstract :: abs ((t a -> t b) -> t (a -> b)) -> Abstractors abs lang ((t a -> t b) -> t (a -> b))
@@ -205,8 +193,9 @@ data TArity :: * -> * -> Nat -> * -> * where
     TZero :: Typeable ret => TArity arg ret Zero ret
     TSucc :: (Typeable ret, Typeable arg, Typeable ret') => TArity arg ret n ret' -> TArity arg ret (Succ n) (arg -> ret')
 
-pattern AOne = (ASucc AZero)
-pattern ATwo = (ASucc (ASucc AZero))
+pattern AOne = ASucc AZero
+pattern ATwo = ASucc AOne
+pattern AThree = ASucc ATwo
 
 data Predicate :: (* -> *) -> (* -> *) -> * -> * where
     Predicate :: pred t -> Arity (Term a) (Form b) n t -> Predicate pred lang t
@@ -466,6 +455,12 @@ getHead ar (Fx c) = Fx <$> castArity ar c
 (.*$.) :: (Applicative g, Typeable a, Typeable b) => g (FixLang f (a -> b)) -> g (FixLang f a) -> g (FixLang f b)
 x .*$. y = (:!$:) <$> x <*> y
 
+handleArg1 :: (Applicative g, LangTypes1 f syn1 sem1)
+          => Maybe (tt :~: syn1 sem1) -> (FixLang f (syn1 sem1) 
+            -> g (FixLang f (syn1 sem1))) -> FixLang f tt -> g (FixLang f tt)
+handleArg1 (Just Refl) f l = f l
+handleArg1 Nothing     _ l = pure l
+
 handleArg2 :: (Applicative g, LangTypes2 f syn1 sem1 syn2 sem2)
           => (Maybe (tt :~: syn1 sem1), Maybe (tt :~: syn2 sem2))
           -> (FixLang f (syn1 sem1) -> g (FixLang f (syn1 sem1)))
@@ -475,16 +470,6 @@ handleArg2 (Just Refl, _) f l = f l
 handleArg2 (_, Just Refl) f l = difChildren2 f l
 handleArg2 (_, _)         _ l = pure l
 
-handleArg1 :: (Applicative g, LangTypes1 f syn1 sem1)
-          => Maybe (tt :~: syn1 sem1) -> (FixLang f (syn1 sem1) 
-            -> g (FixLang f (syn1 sem1))) -> FixLang f tt -> g (FixLang f tt)
-handleArg1 (Just Refl) f l = f l
-handleArg1 Nothing     _ l = pure l
-
---XXX: Not ideal to have a fixed number of language types here, but we are
---only allowed to infer Plated (FixLang f (syn1 sem1)) once. The only
---alternative is to build in witness types, which makes the plated
---functions kind of confusing to use.
 class (Typeable syn1, Typeable sem1, Typeable syn2, Typeable sem2, BoundVars f) => LangTypes2 f syn1 sem1 syn2 sem2 | f syn1 sem1 -> syn2 sem2 where
 
         simChildren2 :: Traversal' (FixLang f (syn1 sem1)) (FixLang f (syn1 sem1))
@@ -492,13 +477,13 @@ class (Typeable syn1, Typeable sem1, Typeable syn2, Typeable sem2, BoundVars f) 
                    case ( eqT :: Maybe (t' :~: syn1 sem1)
                         , eqT :: Maybe (t' :~: syn2 sem2)) of
                             (Just Refl, _) -> (\x y -> x :!$: LLam y) <$> pure q <*> modify h
-                               where bv = getBoundVar q
+                               where bv = getBindHeight q (LLam h)
                                      abstractBv f = \x -> (subBoundVar bv x f)
-                                     modify h = abstractBv <$> (g $ h $ bv)
+                                     modify h = abstractBv <$> (g $ h bv)
                             (_ , Just Refl) -> (\x y -> x :!$: LLam y) <$> pure q <*> modify h
-                               where bv = getBoundVar q
+                               where bv = getBindHeight q (LLam h)
                                      abstractBv f = \x -> (subBoundVar bv x f)
-                                     modify h = abstractBv <$> (difChildren2 g $ h $ bv)
+                                     modify h = abstractBv <$> (difChildren2 g $ h bv)
                             _ -> pure phi
         simChildren2 g phi@(h :!$: (t1 :: FixLang f tt)
                              :!$: (t2 :: FixLang f tt2)
@@ -531,11 +516,11 @@ class (Typeable syn1, Typeable sem1, Typeable syn2, Typeable sem2, BoundVars f) 
                    case ( eqT :: Maybe (t' :~: syn1 sem1)
                         , eqT :: Maybe (t' :~: syn2 sem2)) of
                             (Just Refl, _) -> (\x y -> x :!$: LLam y) <$> pure q <*> modify h
-                               where bv = getBoundVar q
+                               where bv = getBindHeight q (LLam h)
                                      abstractBv f = \x -> (subBoundVar bv x f)
                                      modify h = abstractBv <$> (g $ h $ bv)
                             (_ , Just Refl) -> (\x y -> x :!$: LLam y) <$> pure q <*> modify h
-                               where bv = getBoundVar q
+                               where bv = getBindHeight q (LLam h)
                                      abstractBv f = \x -> (subBoundVar bv x f)
                                      modify h = abstractBv <$> (difChildren2 g $ h $ bv)
                             _ -> pure phi
@@ -571,7 +556,7 @@ class (Typeable syn1, Typeable sem1, BoundVars f) => LangTypes1 f syn1 sem1 wher
         simChildren1 g phi@(q :!$: LLam (h :: FixLang f t -> FixLang f t')) =
                    case eqT :: Maybe (t' :~: syn1 sem1) of
                             Just Refl -> (\x y -> x :!$: LLam y) <$> pure q <*> modify h
-                               where bv = getBoundVar q
+                               where bv = getBindHeight q (LLam h)
                                      abstractBv f = \x -> (subBoundVar bv x f)
                                      modify h = abstractBv <$> (g $ h $ bv)
                             _ -> pure phi

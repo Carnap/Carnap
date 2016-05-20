@@ -2,6 +2,7 @@
 module Carnap.Languages.Util.GenericConnectives where
 
 import Carnap.Core.Data.AbstractSyntaxDataTypes
+import Data.List (intercalate)
 
 data IntProp b a where
         Prop :: Int -> IntProp b (Form b)
@@ -13,7 +14,8 @@ data IntPred b c a where
         Pred ::  Arity (Term c) (Form b) n ret -> Int -> IntPred b c ret
 
 instance Schematizable (IntPred b c) where
-        schematize (Pred a n)   _       = "P^" ++ show a ++ "_" ++ show n
+        schematize (Pred a n) xs = "P^" ++ show a ++ "_" ++ show n 
+                                        ++ "(" ++ intercalate "," xs ++ ")"
 
 data SchematicIntProp b a where
         SProp :: Int -> SchematicIntProp b (Form b)
