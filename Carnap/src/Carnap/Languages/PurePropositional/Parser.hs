@@ -11,13 +11,10 @@ import Text.Parsec.Expr
 purePropFormulaParser :: Monad m => ParsecT String u m PureForm
 purePropFormulaParser = buildExpressionParser opTable subFormulaParser 
     --subformulas are either
-    where subFormulaParser = --formulas wrapped in parentheses
-                             parenParser purePropFormulaParser
-                             --negations or modalizations of subformulas
-                             <|> unaryOpParser [parseNeg] subFormulaParser 
-                             --or atom
-                             <|> try atomParser
-                             <|> schemevarParser
+    where subFormulaParser = parenParser purePropFormulaParser  --formulas wrapped in parentheses
+                          <|> unaryOpParser [parseNeg] subFormulaParser --negations or modalizations of subformulas
+                          <|> try atomParser --or atoms
+                          <|> schemevarParser
 
 opTable :: Monad m => [[Operator String u m PureForm]]
 opTable = [[ Prefix (try parseNeg)], 

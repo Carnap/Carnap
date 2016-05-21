@@ -1,6 +1,6 @@
 {-#LANGUAGE TypeSynonymInstances, UndecidableInstances, FlexibleInstances, MultiParamTypeClasses, GADTs, DataKinds, PolyKinds, TypeOperators, ViewPatterns, PatternSynonyms, RankNTypes, FlexibleContexts, AutoDeriveTypeable #-}
-module Carnap.Languages.PureFirstOrder.Syntax (
-) where
+module Carnap.Languages.PureFirstOrder.Syntax 
+where
 
 import Carnap.Core.Data.AbstractSyntaxDataTypes
 import Carnap.Core.Unification.Unification

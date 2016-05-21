@@ -14,6 +14,10 @@ stringsToTry l op = do spaces
                        spaces
                        return op
 
+--------------------------------------------------------
+--Operators
+--------------------------------------------------------
+
 parseAnd :: (Monad m, BooleanLanguage l) => ParsecT String u m (l -> l -> l)
 parseAnd = stringsToTry ["/\\", "∧", "^", "&", "and"] land
 
@@ -41,11 +45,22 @@ parsePos = do spaces
               _ <- string "<>" <|> string "◇"
               return pos
 
+--------------------------------------------------------
+--Predicates and Sentences
+--------------------------------------------------------
+
 atomParser :: (IndexedPropLanguage l, Monad m) => ParsecT String u m l
 atomParser = do char 'P'
                 char '_'
                 n <- number
                 return $ pn n
+    where number = do { ds <- many1 digit; return (read ds) } <?> "number"
+
+schemevarParser :: (IndexedSchemePropLanguage l, Monad m) => ParsecT String u m l
+schemevarParser = do string "Phi"
+                     char '_'
+                     n <- number
+                     return $ phin n
     where number = do { ds <- many1 digit; return (read ds) } <?> "number"
 
 equalsParser :: (EqLanguage l t, Monad m) => ParsecT String u m t -> ParsecT String u m l
@@ -56,12 +71,9 @@ equalsParser parseTerm = do t1 <- parseTerm
                             t2 <- parseTerm
                             return $ equals t1 t2
 
-schemevarParser :: (IndexedSchemePropLanguage l, Monad m) => ParsecT String u m l
-schemevarParser = do string "Phi"
-                     char '_'
-                     n <- number
-                     return $ phin n
-    where number = do { ds <- many1 digit; return (read ds) } <?> "number"
+--------------------------------------------------------
+--Structural Elements
+--------------------------------------------------------
 
 parenParser :: (BooleanLanguage l, Monad m, IndexedPropLanguage l) => ParsecT String u m l -> ParsecT String u m l
 parenParser recur = char '(' *> recur <* char ')' 
