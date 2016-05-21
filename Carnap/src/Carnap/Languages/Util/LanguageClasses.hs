@@ -55,3 +55,6 @@ class ModalLanguage l where
 class QuantLanguage l t where
         lall  :: String -> (t -> l) -> l
         lsome :: String -> (t -> l) -> l
+
+class EqLanguage l t where
+        equals :: t -> t -> l

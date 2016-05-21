@@ -48,6 +48,14 @@ atomParser = do char 'P'
                 return $ pn n
     where number = do { ds <- many1 digit; return (read ds) } <?> "number"
 
+equalsParser :: (EqLanguage l t, Monad m) => ParsecT String u m t -> ParsecT String u m l
+equalsParser parseTerm = do t1 <- parseTerm
+                            spaces
+                            _ <- char '='
+                            spaces
+                            t2 <- parseTerm
+                            return $ equals t1 t2
+
 schemevarParser :: (IndexedSchemePropLanguage l, Monad m) => ParsecT String u m l
 schemevarParser = do string "Phi"
                      char '_'
