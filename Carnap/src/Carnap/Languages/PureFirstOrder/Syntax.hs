@@ -98,6 +98,7 @@ instance IndexedPropLanguage PureFOLForm where
 instance PolyadicPredicateLanguage PureFirstOrderLanguage (Term Int) (Form Bool) where 
     ppn n a = PP n a a
 
+instance IncrementablePredicate PureFirstOrderLexicon (Term Int) where
     incHead (PP n a b) = Just $ PP n (ASucc a) (ASucc a)
     incHead _  = Nothing
 

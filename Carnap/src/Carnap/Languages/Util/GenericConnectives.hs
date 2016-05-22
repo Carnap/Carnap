@@ -14,8 +14,12 @@ data IntPred b c a where
         Pred ::  Arity (Term c) (Form b) n ret -> Int -> IntPred b c ret
 
 instance Schematizable (IntPred b c) where
-        schematize (Pred a n) xs = "P^" ++ show a ++ "_" ++ show n 
-                                        ++ "(" ++ intercalate "," xs ++ ")"
+        schematize (Pred a n) xs = 
+            case read $ show a of
+                0 -> "P^0_" ++ show n
+                m -> "P^" ++ show a ++ "_" ++ show n 
+                                        ++ "(" ++ intercalate "," args ++ ")"
+                        where args = take m $ xs ++ repeat "_"
 
 data SchematicIntProp b a where
         SProp :: Int -> SchematicIntProp b (Form b)
