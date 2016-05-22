@@ -11,7 +11,7 @@ module Carnap.Core.Data.AbstractSyntaxDataTypes(
   RelabelVars(..), pattern AOne, pattern ATwo, pattern AThree, pattern LLam, pattern
   (:!$:), pattern Fx1, pattern Fx2, pattern Fx3, pattern Fx4, pattern Fx5,
   pattern Fx6, pattern Fx7, pattern Fx8, pattern Fx9, pattern Fx10, pattern
-  Fx11, EndLang
+  Fx11, EndLang, incArity
 ) where
 
 import Carnap.Core.Util
@@ -212,6 +212,15 @@ data Subnective :: (* -> *) -> (* -> *) -> * -> * where
 data SubstitutionalVariable :: (* -> *) -> * -> * where
         SubVar :: Int -> SubstitutionalVariable lang t
 
+incArity :: (Typeable a, Typeable b) => 
+    (forall c . FixLang l c ->  Maybe (FixLang l (b -> c))) -> 
+    FixLang l (b -> a)  ->  Maybe (FixLang l (b -> b -> a))
+incArity f ((head :: FixLang l (t -> b -> a)) :!$: (tail :: FixLang l t)) = 
+        case eqT :: Maybe (t :~: b) of
+            Nothing -> Nothing
+            Just Refl ->  do x <- incArity f head
+                             return $ x :!$: tail
+incArity f head = f head
 
 --data Quote :: (* -> *) -> * -> *
     --Quote :: (lang )
