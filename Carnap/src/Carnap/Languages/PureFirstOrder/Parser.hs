@@ -4,7 +4,7 @@ folFormulaParser
 
 import Carnap.Core.Data.AbstractSyntaxDataTypes
 import Carnap.Languages.PureFirstOrder.Syntax
-import Carnap.Languages.Util.LanguageClasses (BooleanLanguage, IndexedPropLanguage, QuantLanguage(..), PolyadicPredicateLanguage)
+import Carnap.Languages.Util.LanguageClasses (BooleanLanguage, IndexedPropLanguage, QuantLanguage(..), PolyadicPredicateLanguage(..), IncrementablePredicate(..))
 import Carnap.Languages.Util.GenericParsers
 import Text.Parsec
 import Text.Parsec.Expr
@@ -12,9 +12,9 @@ import Text.Parsec.Expr
 folFormulaParser :: Parsec String () PureFOLForm
 folFormulaParser = buildExpressionParser opTable subFormulaParser 
     where subFormulaParser = parenParser folFormulaParser
-                      <|> try quantifierParser
-                      <|> unaryOpParser [parseNeg] subFormulaParser
-                      <|> try atomParser
+                          <|> try quantifierParser
+                          <|> unaryOpParser [parseNeg] subFormulaParser
+                          <|> try atomPParser
 
 opTable :: Monad m => [[Operator String u m PureFOLForm]]
 opTable = [[ Prefix (try parseNeg)], 
@@ -39,7 +39,7 @@ parseFreeVar = choice [try $ do _ <- string "x_"
                       ]
 
 parseConstant :: Parsec String () PureFOLTerm
-parseConstant = do _ <- string "x_"
+parseConstant = do _ <- string "c_"
                    n <- number
                    return $ PC n
     where number = do { ds <- many1 digit; return (read ds) } <?> "number"
@@ -47,3 +47,22 @@ parseConstant = do _ <- string "x_"
 parseTerm :: Parsec String () PureFOLTerm
 parseTerm = try parseConstant <|> parseFreeVar
 
+atomPParser :: Parsec String () PureFOLForm
+atomPParser = do string "P_"
+                 n <- number
+                 getOpening n <|> returnSent n
+    where number = do { ds <- many1 digit; return (read ds) } <?> "number"
+          getOpening n = do char '('
+                            argParser (ppn n AOne)
+          returnSent :: Int -> Parsec String () PureFOLForm
+          returnSent n = return (PS n :: PureFOLForm)
+          argParser :: PureFirstOrderLanguage (Term Int -> Form Bool) -> Parsec String () PureFOLForm
+          argParser p = do t <- parseTerm
+                           incrementHead p t <|> returnArgs p t
+          incrementHead :: PureFirstOrderLanguage (Term Int -> Form Bool) -> PureFOLTerm -> Parsec String () PureFOLForm
+          incrementHead p t = do char ','
+                                 case incPred p of
+                                     Just p' -> argParser (p' :!$: t)
+                                     Nothing -> fail "Weird error with predicate"
+          returnArgs :: PureFirstOrderLanguage (Term Int -> Form Bool) -> PureFOLTerm -> Parsec String () PureFOLForm
+          returnArgs p t = char ')' *> (return $ p :!$: t)
