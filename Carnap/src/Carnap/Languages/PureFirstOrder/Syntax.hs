@@ -98,10 +98,8 @@ instance IndexedPropLanguage PureFOLForm where
 instance PolyadicPredicateLanguage PureFirstOrderLanguage (Term Int) (Form Bool) where 
     ppn n a = PP n a a
 
-incPred :: Typeable b => PureFirstOrderLanguage (Term Int -> b) -> Maybe (PureFirstOrderLanguage (Term Int -> Term Int -> b))
-incPred = incArity incHead 
-    where incHead (PP n a b) = Just $ PP n (ASucc a) (ASucc a)
-          incPred _  = Nothing
+    incHead (PP n a b) = Just $ PP n (ASucc a) (ASucc a)
+    incHead _  = Nothing
 
 instance QuantLanguage PureFOLForm PureFOLTerm where
         lall  = PUniv 
