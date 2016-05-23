@@ -11,7 +11,9 @@ import Data.Typeable
 --1.1 Boolean Languages
 --------------------------------------------------------
 --these are classes and datatypes for languages and schematic languages
---with boolean connectives
+--with boolean connectives. The convention for variables is that lex is
+--a lexicon, lang is language (without a particular associated syntactic
+--type) and l is a language with an associated syntactic type
 
 class BooleanLanguage l where
             lneg :: l -> l
@@ -46,14 +48,14 @@ class IndexedPropLanguage l where
 class IndexedSchemePropLanguage l where
         phin :: Int -> l
 
-class PolyadicPredicateLanguage l arg ret where
-        ppn :: Int -> Arity arg ret n ret' -> l ret'
+class PolyadicPredicateLanguage lang arg ret where
+        ppn :: Int -> Arity arg ret n ret' -> lang ret'
         --This needs to provide a way of bumping up the arity of a given
         --predicate
 
-class IncrementablePredicate l arg where
-        incHead :: FixLang l a -> Maybe (FixLang l (arg -> a)) 
-        incPred :: (Typeable b, Typeable arg) => FixLang l (arg -> b) -> Maybe (FixLang l (arg -> arg -> b))
+class IncrementablePredicate lex arg where
+        incHead :: FixLang lex a -> Maybe (FixLang lex (arg -> a)) 
+        incPred :: (Typeable b, Typeable arg) => FixLang lex (arg -> b) -> Maybe (FixLang lex (arg -> arg -> b))
         incPred = incArity incHead
 
 class ModalLanguage l where

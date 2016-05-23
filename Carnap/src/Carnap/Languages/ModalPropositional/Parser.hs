@@ -17,7 +17,7 @@ modalPropFormulaParser = buildExpressionParser opTable subFormulaParser
                              <|> unaryOpParser [parseNeg, parsePos, parseNec] 
                                 subFormulaParser
                              --or atom
-                             <|> try atomParser
+                             <|> try atomicSentenceParser
                              <|> schemevarParser
 
 opTable :: Monad m => [[Operator String u m ModalForm]]

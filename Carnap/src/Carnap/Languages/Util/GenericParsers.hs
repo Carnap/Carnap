@@ -2,8 +2,10 @@
 module Carnap.Languages.Util.GenericParsers 
 where
 
+import Carnap.Core.Data.AbstractSyntaxDataTypes
 import Carnap.Languages.Util.LanguageClasses
 import Text.Parsec
+import Data.Typeable(Typeable)
 
 listToTry :: [ParsecT s u m a] -> ParsecT s u m a
 listToTry (x:xs) = foldr (\y -> (<|>) (try y)) (try x) xs
@@ -49,11 +51,11 @@ parsePos = do spaces
 --Predicates and Sentences
 --------------------------------------------------------
 
-atomParser :: (IndexedPropLanguage l, Monad m) => ParsecT String u m l
-atomParser = do char 'P'
-                char '_'
-                n <- number
-                return $ pn n
+atomicSentenceParser :: (IndexedPropLanguage l, Monad m) => ParsecT String u m l
+atomicSentenceParser = do char 'P'
+                          char '_'
+                          n <- number
+                          return $ pn n
     where number = do { ds <- many1 digit; return (read ds) } <?> "number"
 
 schemevarParser :: (IndexedSchemePropLanguage l, Monad m) => ParsecT String u m l
@@ -71,6 +73,44 @@ equalsParser parseTerm = do t1 <- parseTerm
                             t2 <- parseTerm
                             return $ equals t1 t2
 
+molecularSentenceParser :: ( IndexedPropLanguage (FixLang lex ret)
+                           , PolyadicPredicateLanguage (FixLang lex) arg ret
+                           , IncrementablePredicate lex arg
+                           , Monad m
+                           , Typeable ret
+                           , Typeable arg
+                           ) => ParsecT String u m (FixLang lex arg) -> 
+                           ParsecT String u m (FixLang lex ret)
+molecularSentenceParser parseTerm = 
+        do string "P_"
+           n <- number
+           char '(' *> argParser (ppn n AOne) 
+              <|> return (pn n)
+    where number = do { ds <- many1 digit; return (read ds) } <?> "number"
+          argParser p = do t <- parseTerm
+                           incrementHead p t 
+                                <|> char ')' *> return (p :!$: t)
+          incrementHead p t = do char ','
+                                 case incPred p of
+                                     Just p' -> argParser (p' :!$: t)
+                                     Nothing -> fail "Weird error with predicate"
+
+quantifiedSentenceParser :: ( QuantLanguage (FixLang lex f) (FixLang lex t)
+                            , BoundVars lex
+                            , Show (FixLang lex t)
+                            , Monad m
+                            ) => ParsecT String u m (FixLang lex t) -> 
+                                 ParsecT String u m (FixLang lex f) -> 
+                                    ParsecT String u m (FixLang lex f)
+quantifiedSentenceParser parseFreeVar formulaParser = 
+        do s <- oneOf "AE∀∃"
+           v <- parseFreeVar
+           f <- formulaParser
+           let bf = \x -> subBoundVar v x f 
+               --partially applied, returning a function
+           return $ if s `elem` "A∀" then lall (show v) bf else lsome (show v) bf 
+               --which we bind
+               --
 --------------------------------------------------------
 --Structural Elements
 --------------------------------------------------------

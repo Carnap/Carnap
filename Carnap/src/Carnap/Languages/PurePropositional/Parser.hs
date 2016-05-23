@@ -13,7 +13,7 @@ purePropFormulaParser = buildExpressionParser opTable subFormulaParser
     --subformulas are either
     where subFormulaParser = parenParser purePropFormulaParser  --formulas wrapped in parentheses
                           <|> unaryOpParser [parseNeg] subFormulaParser --negations or modalizations of subformulas
-                          <|> try atomParser --or atoms
+                          <|> try atomicSentenceParser--or atoms
                           <|> schemevarParser
 
 opTable :: Monad m => [[Operator String u m PureForm]]
