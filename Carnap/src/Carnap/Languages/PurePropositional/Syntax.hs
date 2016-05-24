@@ -7,7 +7,7 @@ import Carnap.Core.Unification.Unification
 import Carnap.Languages.Util.LanguageClasses
 import Control.Lens (Plated)
 import Control.Lens.Fold (anyOf)
-import Control.Lens.Plated (cosmos, transform)
+import Control.Lens.Plated (cosmos, transform, children)
 import Data.Typeable (Typeable)
 import Carnap.Languages.Util.GenericConnectives
 
@@ -109,12 +109,18 @@ instance FirstOrder PurePropLanguage where
     sameHead (PP n) (PP m) = n == m
     sameHead _ _ = False
 
-    decompose (PNeg x) (PNeg y) = [x :=: y]
-    decompose (x :&: y) (x' :&: y') = [x :=: x', y :=: y']
-    decompose (x :||: y) (x' :||: y') = [x :=: x', y :=: y']
-    decompose (x :->: y) (x' :->: y') = [x :=: x', y :=: y']
-    decompose (x :<->: y) (x' :<->: y') = [x :=: x', y :=: y']
-    decompose _ _ = []
+    decompose x y = 
+        case (cast x :: Maybe PureForm, cast y :: Maybe PureForm) of 
+           (Just x', Just y') -> zipWith (:=:) (children x') (children y')
+           _ -> []
+                                                                   
+    -- The above is slicker, but you could do this naively with 
+    -- decompose (PNeg x) (PNeg y) = [x :=: y]
+    -- decompose (x :&: y) (x' :&: y') = [x :=: x', y :=: y']
+    -- decompose (x :||: y) (x' :||: y') = [x :=: x', y :=: y']
+    -- decompose (x :->: y) (x' :->: y') = [x :=: x', y :=: y']
+    -- decompose (x :<->: y) (x' :<->: y') = [x :=: x', y :=: y']
+    -- decompose _ _ = []
 
     occurs phi psi = case (cast phi :: Maybe PureForm, cast psi :: Maybe PureForm)
                             of (Just f, Just f') -> checkChildren f f'
