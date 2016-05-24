@@ -34,47 +34,28 @@ type PureQuant = StandardQuant Bool Int
 --2. Pure First Order Languages 
 --------------------------------------------------------
 
---------------------------------------------------------
---2.1 Polyadic First Order Logic With Constant Symbols
---------------------------------------------------------
+type CoreLexicon =  Connective PureConn
+                   :|: Quantifiers PureQuant
+                   :|: SubstitutionalVariable
+                   :|: Function PureConstant
+                   :|: Function PureVar
+                   :|: EndLang
 
-type PureFirstOrderLexicon = (Predicate PurePredicate
-                       :|: Predicate PureSchematicPred
-                       :|: Connective PureConn
-                       :|: Quantifiers PureQuant
-                       :|: SubstitutionalVariable
-                       :|: Function PureConstant
-                       :|: Function PureVar
-                       :|: EndLang)
+type PureFirstOrderLanguageWith a = FixLang (a :|: CoreLexicon :|: EndLang)
 
-type PureFirstOrderLanguage = FixLang PureFirstOrderLexicon
-
-type PureFOLForm = PureFirstOrderLanguage (Form Bool)
-
-type PureFOLTerm = PureFirstOrderLanguage (Term Int)
-
-pattern (:!!$:) :: (Typeable a, Typeable b) => PureFirstOrderLanguage (a -> b) -> PureFirstOrderLanguage a -> PureFirstOrderLanguage b
+pattern (:!!$:) :: (Typeable a, Typeable b) => PureFirstOrderLanguageWith c (a -> b) -> PureFirstOrderLanguageWith c a -> PureFirstOrderLanguageWith c b
 pattern (:!!$:) f y    = f :!$: y
-pattern PPred x arity  = Fx1 (Predicate x arity)
-pattern PSPred x arity = Fx2 (Predicate x arity)
-pattern PCon x arity   = Fx3 (Connective x arity)
-pattern PQuant q       = Fx4 (Bind q)
-pattern PSV n          = Fx5 (SubVar n)
-pattern PConst c a     = Fx6 (Function c a)
-pattern PVar c a       = Fx7 (Function c a)
+pattern PCon x arity   = FX (Lx2 (Lx1 (Connective x arity)))
+pattern PQuant q       = FX (Lx2 (Lx2 (Bind q)))
+pattern PSV n          = FX (Lx2 (Lx3 (SubVar n)))
+pattern PConst c a     = FX (Lx2 (Lx4 (Function c a)))
+pattern PVar c a       = FX (Lx2 (Lx5 (Function c a)))
 pattern PAnd           = PCon And ATwo
 pattern POr            = PCon Or ATwo
 pattern PIf            = PCon If ATwo
 pattern PIff           = PCon Iff ATwo
 pattern PNot           = PCon Not AOne
 pattern PBind q f      = PQuant q :!!$: LLam f
-pattern PP n a1 a2     = PPred (Pred a1 n) a2
-pattern PS :: Int -> PureFOLForm
-pattern PS n           = PPred (Pred AZero n) AZero
-pattern PC :: Int -> PureFOLTerm
-pattern PC n           = PConst (Constant n) AZero
-pattern PV s           = PVar (Var s) AZero
-pattern PPhi n a1 a2   = PSPred (SPred a1 n) a2
 pattern (:&:) x y      = PAnd :!!$: x :!!$: y
 pattern (:||:) x y     = POr  :!!$: x :!!$: y
 pattern (:->:) x y     = PIf  :!!$: x :!!$: y
@@ -82,8 +63,55 @@ pattern (:<->:) x y    = PIff :!!$: x :!!$: y
 pattern PNeg x         = PNot :!!$: x
 pattern PUniv v f      = PBind (All v) f
 pattern PExist v f     = PBind (Some v) f
-pattern PZero :: Arity (Term Int) (Form Bool) 'Zero (Form Bool)
-pattern PZero          = AZero 
+pattern PC n           = PConst (Constant n) AZero
+pattern PV s           = PVar (Var s) AZero
+
+height :: PureFirstOrderLanguageWith a b -> Int
+height (PUniv _ g)     = height (g $ PV "") + 1
+height (PExist _ g)    = height (g $ PV "") + 1
+height (phi :&: psi)   = max (height phi) (height psi)
+height (phi :||: psi)  = max (height phi) (height psi)
+height (phi :->: psi)  = max (height phi) (height psi)
+height (phi :<->: psi) = max (height phi) (height psi)
+height _               = 0
+
+
+swap :: PureFirstOrderLanguageWith c b -> PureFirstOrderLanguageWith c b -> PureFirstOrderLanguageWith c a -> PureFirstOrderLanguageWith c a
+swap a@(PV a') b@(PV b') x@(PV x') = if x' == a' then b else x
+swap a b c = c
+
+instance Schematizable (a (PureFirstOrderLanguageWith a)) => CopulaSchema (PureFirstOrderLanguageWith a) where
+    appSchema (PQuant (All x)) (LLam f) e = schematize (All x) (show (f $ PV x) : e)
+    appSchema (PQuant (Some x)) (LLam f) e = schematize (Some x) (show (f $ PV x) : e)
+    appSchema x y e = schematize x (show y : e)
+
+--TODO:This should be in a core.utils module
+mapover :: (forall a . PureFirstOrderLanguage a -> PureFirstOrderLanguage a) -> PureFirstOrderLanguage a -> PureFirstOrderLanguage a
+mapover f (x :!$: y) = mapover f x :!$: f y
+mapover f x = x
+
+--------------------------------------------------------
+--2.1 Polyadic First Order Logic With Constant Symbols
+--------------------------------------------------------
+
+type PolyadicPredicates = Predicate PurePredicate 
+                      :|: Predicate PureSchematicPred
+                      :|: EndLang
+
+
+type PureFirstOrderLexicon = PolyadicPredicates :|: CoreLexicon :|: EndLang
+
+type PureFirstOrderLanguage = FixLang PureFirstOrderLexicon
+
+type PureFOLForm = PureFirstOrderLanguage (Form Bool)
+
+type PureFOLTerm = PureFirstOrderLanguage (Term Int)
+
+pattern PPred x arity  = FX (Lx1 (Lx1 (Predicate x arity)))
+pattern PSPred x arity = FX (Lx1 (Lx2 (Predicate x arity)))
+pattern PP n a1 a2     = PPred (Pred a1 n) a2
+pattern PS n           = PPred (Pred AZero n) AZero
+pattern PPhi n a1 a2   = PSPred (SPred a1 n) a2
 
 instance BooleanLanguage PureFOLForm where
         land = (:&:)
@@ -133,22 +161,6 @@ instance BoundVars PureFirstOrderLexicon where
                        c@(PV v') -> if w == v' then PV ('_':v') else c
     subBoundVar a b phi = mapover (swap a b) phi 
 
-mapover :: (forall a . PureFirstOrderLanguage a -> PureFirstOrderLanguage a) -> PureFirstOrderLanguage a -> PureFirstOrderLanguage a
-mapover f (x :!!$: y) = mapover f x :!!$: f y
-mapover f x = x
-
-swap :: PureFirstOrderLanguage b -> PureFirstOrderLanguage b -> PureFirstOrderLanguage a -> PureFirstOrderLanguage a
-swap a@(PV _) b@(PV _) x@(PV _) = if x == a then b else x
-swap a b c = c
-
-height :: PureFirstOrderLanguage b -> Int
-height (PUniv _ g)     = height (g $ PV "") + 1
-height (PExist _ g)    = height (g $ PV "") + 1
-height (phi :&: psi)   = max (height phi) (height psi)
-height (phi :||: psi)  = max (height phi) (height psi)
-height (phi :->: psi)  = max (height phi) (height psi)
-height (phi :<->: psi) = max (height phi) (height psi)
-height _               = 0
 
 instance LangTypes2 PureFirstOrderLexicon Term Int Form Bool
 
@@ -159,7 +171,3 @@ instance RelabelVars PureFirstOrderLexicon Form Bool where
     subBinder (PExist v f) y = Just $ PExist y f
     subBinder _ _ = Nothing
 
-instance CopulaSchema PureFirstOrderLanguage where
-    appSchema (PQuant (All x)) (LLam f) e = schematize (All x) (show (f $ PV x) : e)
-    appSchema (PQuant (Some x)) (LLam f) e = schematize (Some x) (show (f $ PV x) : e)
-    appSchema x y e = schematize x (show y : e)

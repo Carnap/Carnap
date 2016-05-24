@@ -4,14 +4,16 @@ module Carnap.Core.Data.AbstractSyntaxDataTypes(
   Modelable, Evaluable, Syncast(..), Term(Term), Form(Form), CopulaSchema,
   satisfies, eval, schematize, lift, lift1, lift2, canonical,
   appSchema, lamSchema, liftSchema, BoundVars(..),
-  Copula((:$:), Lam), (:|:)(FLeft, FRight), Quantifiers(Bind),Abstractors(Abstract),Applicators(Apply),
-  Nat(Zero, Succ), Fix(Fx), Vec(VNil, VCons), Arity(AZero, ASucc),
-  Predicate(Predicate), Connective(Connective), Function(Function),
-  Subnective(Subnective), SubstitutionalVariable(SubVar), CanonicalForm, Schematizable, FixLang, LangTypes2(..), LangTypes1(..),
-  RelabelVars(..), pattern AOne, pattern ATwo, pattern AThree, pattern LLam, pattern
-  (:!$:), pattern Fx1, pattern Fx2, pattern Fx3, pattern Fx4, pattern Fx5,
-  pattern Fx6, pattern Fx7, pattern Fx8, pattern Fx9, pattern Fx10, pattern
-  Fx11, EndLang, incArity
+  Copula((:$:), Lam), (:|:)(FLeft, FRight), Quantifiers(Bind),Abstractors(Abstract),Applicators(Apply), Nat(Zero, Succ), Fix(Fx), Vec(VNil, VCons), 
+  Arity(AZero, ASucc), Predicate(Predicate), Connective(Connective),
+  Function(Function), Subnective(Subnective),
+  SubstitutionalVariable(SubVar), CanonicalForm, Schematizable, FixLang,
+  LangTypes2(..), LangTypes1(..), RelabelVars(..), pattern AOne, pattern
+  ATwo, pattern AThree, pattern LLam, pattern (:!$:), pattern Fx1, pattern Fx2,
+  pattern Fx3, pattern Fx4, pattern Fx5, pattern Fx6, pattern Fx7, pattern
+  Fx8, pattern Fx9, pattern Fx10, pattern Fx11, pattern Lx1, pattern Lx2,
+  pattern Lx3, pattern Lx4, pattern Lx5, pattern Lx6, pattern Lx7, pattern
+  Lx8, pattern Lx9, pattern Lx10, pattern Lx11, EndLang, incArity, pattern FX
 ) where
 
 import Carnap.Core.Util
@@ -123,18 +125,33 @@ type FixLang f = Fix (Copula :|: f)
 
 pattern (:!$:) f x = Fx (FLeft  (f :$: x))
 pattern LLam f     = Fx (FLeft  (Lam f))
-pattern Fx1 x      = Fx (FRight (FLeft x))
-pattern Fx2 x      = Fx (FRight (FRight (FLeft x)))
-pattern Fx3 x      = Fx (FRight (FRight (FRight (FLeft x))))
-pattern Fx4 x      = Fx (FRight (FRight (FRight (FRight (FLeft x)))))
-pattern Fx5 x      = Fx (FRight (FRight (FRight (FRight (FRight (FLeft x))))))
-pattern Fx6 x      = Fx (FRight (FRight (FRight (FRight (FRight (FRight (FLeft x)))))))
-pattern Fx7 x      = Fx (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FLeft x))))))))
-pattern Fx8 x      = Fx (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FLeft x)))))))))
-pattern Fx9 x      = Fx (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FLeft x))))))))))
-pattern Fx10 x     = Fx (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FLeft x)))))))))))
-pattern Fx11 x     = Fx (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FLeft x))))))))))))
-pattern Fx12 x     = Fx (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FLeft x)))))))))))))
+pattern Lx1 x      = FLeft x
+pattern Lx2 x      = FRight (FLeft x)
+pattern Lx3 x      = FRight (FRight (FLeft x))
+pattern Lx4 x      = FRight (FRight (FRight (FLeft x)))
+pattern Lx5 x      = FRight (FRight (FRight (FRight (FLeft x))))
+pattern Lx6 x      = FRight (FRight (FRight (FRight (FRight (FLeft x)))))
+pattern Lx7 x      = FRight (FRight (FRight (FRight (FRight (FRight (FLeft x))))))
+pattern Lx8 x      = FRight (FRight (FRight (FRight (FRight (FRight (FRight (FLeft x)))))))
+pattern Lx9 x      = FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FLeft x))))))))
+pattern Lx10 x     = FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FLeft x)))))))))
+pattern Lx11 x     = FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FLeft x))))))))))
+pattern Lx12 x     = FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FLeft x)))))))))))
+pattern Fx1 x      = FX (Lx1  x) 
+pattern Fx2 x      = FX (Lx2  x)
+pattern Fx3 x      = FX (Lx3  x)
+pattern Fx4 x      = FX (Lx4  x)
+pattern Fx5 x      = FX (Lx5  x)
+pattern Fx6 x      = FX (Lx6  x)
+pattern Fx7 x      = FX (Lx7  x)
+pattern Fx8 x      = FX (Lx8  x)
+pattern Fx9 x      = FX (Lx9  x)
+pattern Fx10 x     = FX (Lx10 x)
+pattern Fx11 x     = FX (Lx11 x)
+pattern Fx12 x     = FX (Lx12 x)
+pattern FX x = Fx (FRight x)
+
+
 
 data Quantifiers :: (* -> *) -> (* -> *) -> * -> * where
     Bind :: quant ((t a -> f b) -> f b) -> Quantifiers quant lang ((t a -> f b) -> f b)
