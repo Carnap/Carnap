@@ -151,8 +151,6 @@ pattern Fx11 x     = FX (Lx11 x)
 pattern Fx12 x     = FX (Lx12 x)
 pattern FX x = Fx (FRight x)
 
-
-
 data Quantifiers :: (* -> *) -> (* -> *) -> * -> * where
     Bind :: quant ((t a -> f b) -> f b) -> Quantifiers quant lang ((t a -> f b) -> f b)
 

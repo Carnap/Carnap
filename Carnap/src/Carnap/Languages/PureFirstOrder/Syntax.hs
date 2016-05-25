@@ -75,7 +75,6 @@ height (phi :->: psi)  = max (height phi) (height psi)
 height (phi :<->: psi) = max (height phi) (height psi)
 height _               = 0
 
-
 swap :: PureFirstOrderLanguageWith c b -> PureFirstOrderLanguageWith c b -> PureFirstOrderLanguageWith c a -> PureFirstOrderLanguageWith c a
 swap a@(PV a') b@(PV b') x@(PV x') = if x' == a' then b else x
 swap a b c = c
@@ -90,22 +89,43 @@ mapover :: (forall a . PureFirstOrderLanguage a -> PureFirstOrderLanguage a) -> 
 mapover f (x :!$: y) = mapover f x :!$: f y
 mapover f x = x
 
+instance BoundVars (a :|: CoreLexicon :|: EndLang) => LangTypes2 (a :|: CoreLexicon :|: EndLang) Term Int Form Bool
+
+instance BoundVars (a :|: CoreLexicon :|: EndLang) => LangTypes2 (a :|: CoreLexicon :|: EndLang) Form Bool Term Int
+
+instance BooleanLanguage (PureFirstOrderLanguageWith a (Form Bool)) where
+        land = (:&:)
+        lneg = PNeg
+        lor  = (:||:)
+        lif  = (:->:)
+        liff = (:<->:)
+
+instance QuantLanguage (PureFirstOrderLanguageWith a (Form Bool)) (PureFirstOrderLanguageWith a (Term Int)) where
+        lall  = PUniv 
+        lsome  = PExist 
+
+instance BoundVars (a :|: CoreLexicon :|: EndLang) => RelabelVars (a :|: CoreLexicon :|: EndLang) Form Bool where
+    subBinder (PUniv v f) y = Just $ PUniv y f 
+    subBinder (PExist v f) y = Just $ PExist y f
+    subBinder _ _ = Nothing
+
+instance BoundVars (a :|: CoreLexicon :|: EndLang) => CanonicalForm (PureFirstOrderLanguageWith a (Form Bool)) where
+    canonical = relabelVars varStream
+                where varStream = [i ++ j | i <- ["x"], j <- map show [1 ..]]
+
+instance CanonicalForm (PureFirstOrderLanguageWith a (Term Int))
+
 --------------------------------------------------------
---2.1 Polyadic First Order Logic With Constant Symbols
+--2.1 Polyadic First Order Logic
 --------------------------------------------------------
 
 type PolyadicPredicates = Predicate PurePredicate 
                       :|: Predicate PureSchematicPred
                       :|: EndLang
 
-
 type PureFirstOrderLexicon = PolyadicPredicates :|: CoreLexicon :|: EndLang
 
 type PureFirstOrderLanguage = FixLang PureFirstOrderLexicon
-
-type PureFOLForm = PureFirstOrderLanguage (Form Bool)
-
-type PureFOLTerm = PureFirstOrderLanguage (Term Int)
 
 pattern PPred x arity  = FX (Lx1 (Lx1 (Predicate x arity)))
 pattern PSPred x arity = FX (Lx1 (Lx2 (Predicate x arity)))
@@ -113,12 +133,9 @@ pattern PP n a1 a2     = PPred (Pred a1 n) a2
 pattern PS n           = PPred (Pred AZero n) AZero
 pattern PPhi n a1 a2   = PSPred (SPred a1 n) a2
 
-instance BooleanLanguage PureFOLForm where
-        land = (:&:)
-        lneg = PNeg
-        lor  = (:||:)
-        lif  = (:->:)
-        liff = (:<->:)
+type PureFOLForm = PureFirstOrderLanguage (Form Bool)
+
+type PureFOLTerm = PureFirstOrderLanguage (Term Int)
 
 instance IndexedPropLanguage PureFOLForm where
     pn = PS
@@ -129,16 +146,6 @@ instance PolyadicPredicateLanguage PureFirstOrderLanguage (Term Int) (Form Bool)
 instance IncrementablePredicate PureFirstOrderLexicon (Term Int) where
     incHead (PP n a b) = Just $ PP n (ASucc a) (ASucc a)
     incHead _  = Nothing
-
-instance QuantLanguage PureFOLForm PureFOLTerm where
-        lall  = PUniv 
-        lsome  = PExist 
-
-instance CanonicalForm PureFOLForm where
-    canonical = relabelVars varStream
-                where varStream = [i ++ j | i <- ["x"], j <- map show [1 ..]]
-
-instance CanonicalForm PureFOLTerm
 
 instance BoundVars PureFirstOrderLexicon where
     getBoundVar (PQuant (All v)) _ = PV v
@@ -162,12 +169,5 @@ instance BoundVars PureFirstOrderLexicon where
     subBoundVar a b phi = mapover (swap a b) phi 
 
 
-instance LangTypes2 PureFirstOrderLexicon Term Int Form Bool
 
-instance LangTypes2 PureFirstOrderLexicon Form Bool Term Int
-
-instance RelabelVars PureFirstOrderLexicon Form Bool where
-    subBinder (PUniv v f) y = Just $ PUniv y f 
-    subBinder (PExist v f) y = Just $ PExist y f
-    subBinder _ _ = Nothing
 
