@@ -16,7 +16,7 @@ import Carnap.Languages.Util.GenericConnectives
 --------------------------------------------------------
 
 data PureMonadicPredicate a where
-    MonPred :: Int -> PureMonadicPredicate Int
+    MonPred :: Int -> PureMonadicPredicate (Term Int -> Form Bool)
 
 type PurePredicate = IntPred Bool Int
 
@@ -114,9 +114,22 @@ instance BoundVars (a :|: CoreLexicon :|: EndLang) => CanonicalForm (PureFirstOr
                 where varStream = [i ++ j | i <- ["x"], j <- map show [1 ..]]
 
 instance CanonicalForm (PureFirstOrderLanguageWith a (Term Int))
+        
+--------------------------------------------------------
+--2.2 Monadic First Order Logic
+--------------------------------------------------------
+
+type MonadicPredicates = Predicate PureMonadicPredicate
+                      :|: EndLang
+
+type PureLexiconMonadicFOL = MonadicPredicates :|: CoreLexicon :|: EndLang
+
+type PureLanuageMonadicFOL = FixLang PureLexiconMonadicFOL
+
+pattern PMPred x = FX (Lx1 (Lx1 (Predicate (MonPred x) AOne)))
 
 --------------------------------------------------------
---2.1 Polyadic First Order Logic
+--2.2 Polyadic First Order Logic
 --------------------------------------------------------
 
 type PolyadicPredicates = Predicate PurePredicate 
