@@ -1,19 +1,33 @@
 {-#LANGUAGE TypeFamilies, UndecidableInstances, FlexibleInstances, MultiParamTypeClasses, FunctionalDependencies, AllowAmbiguousTypes, GADTs, KindSignatures, DataKinds, PolyKinds, TypeOperators, ViewPatterns, PatternSynonyms, RankNTypes, FlexibleContexts, ScopedTypeVariables, AutoDeriveTypeable, DefaultSignatures #-}
 
 module Carnap.Core.Data.AbstractSyntaxDataTypes(
-  Modelable, Evaluable, Syncast(..), Term(Term), Form(Form), CopulaSchema,
-  satisfies, eval, schematize, lift, lift1, lift2, canonical,
-  appSchema, lamSchema, liftSchema, BoundVars(..),
-  Copula((:$:), Lam), (:|:)(FLeft, FRight), Quantifiers(Bind),Abstractors(Abstract),Applicators(Apply), Nat(Zero, Succ), Fix(Fx), Vec(VNil, VCons), 
-  Arity(AZero, ASucc), Predicate(Predicate), Connective(Connective),
-  Function(Function), Subnective(Subnective),
-  SubstitutionalVariable(SubVar), CanonicalForm, Schematizable, FixLang,
-  LangTypes2(..), LangTypes1(..), RelabelVars(..), pattern AOne, pattern
-  ATwo, pattern AThree, pattern LLam, pattern (:!$:), pattern Fx1, pattern Fx2,
-  pattern Fx3, pattern Fx4, pattern Fx5, pattern Fx6, pattern Fx7, pattern
-  Fx8, pattern Fx9, pattern Fx10, pattern Fx11, pattern Lx1, pattern Lx2,
-  pattern Lx3, pattern Lx4, pattern Lx5, pattern Lx6, pattern Lx7, pattern
-  Lx8, pattern Lx9, pattern Lx10, pattern Lx11, EndLang, incArity, pattern FX
+  -- * Abstract Typeclasses
+  -- ** Classes for Semantics
+  Modelable(..), Evaluable(..), 
+  lift1, lift2,
+  -- ** Classes for Display
+  CopulaSchema(..), CanonicalForm(..), Schematizable(..),
+  Syncast(..), Term(..), Form(..), 
+  BoundVars(..),
+  -- * Abstract Types
+  -- $ATintro
+  -- ** Language Building Types
+  Copula((:$:), Lam), (:|:)(..), Fix(Fx), FixLang, EndLang, pattern AOne,
+  pattern ATwo, pattern AThree, pattern LLam, pattern (:!$:), pattern Fx1,
+  pattern Fx2, pattern Fx3, pattern Fx4, pattern Fx5, pattern Fx6, pattern
+  Fx7, pattern Fx8, pattern Fx9, pattern Fx10, pattern Fx11, pattern Lx1,
+  pattern Lx2, pattern Lx3, pattern Lx4, pattern Lx5, pattern Lx6, pattern
+  Lx7, pattern Lx8, pattern Lx9, pattern Lx10, pattern Lx11, pattern FX,
+  -- ** Abstract Term Types
+  -- *** Variable Binding Operators
+  Quantifiers(Bind),Abstractors(Abstract),Applicators(Apply), 
+  -- *** Non-Binding Operators 
+  Arity(AZero, ASucc), incArity,
+  Predicate(Predicate), 
+  Connective(Connective), Function(Function), 
+  Subnective(Subnective),
+  SubstitutionalVariable(SubVar),  
+  LangTypes2(..), LangTypes1(..), RelabelVars(..),   
 ) where
 
 import Carnap.Core.Util
@@ -24,26 +38,48 @@ import qualified Control.Monad.State.Lazy as S
 --This module attempts to provide abstract syntax types that would cover
 --a wide variety of languages
 
-
+--------------------------------------------------------
 --1. Abstract typeclasses
 --------------------------------------------------------
 
---class of terms that we can compute a fregean denotation for, relative to
---a model or assignment of some sort.
--- | a type is modelable if it can be modeled. these are generally parts from
--- | which LModelable types are built up
-class Modelable m f where
-    satisfies :: m -> f a -> a
-
--- | Just like modelable but where a default model is picked for us
--- | this is useful as a convience and when there is one cononical model
--- | such as in the case of peano arithmetic
+{-|
+Evaluable data  can be assigned a semantic value.  In the case of a formula
+(e.g. `2 + 2 = 4 :: Arithmetic (Form True)`)---an this might be for
+example, a truth value (in this case, `True`). In the case of a term, (e.g.
+`2 + 2 :: Arithmetic (Term Int)`), this might be for, example, an integer
+(in this case, `4`)
+-}
 class Evaluable f where
     eval :: f a -> a
+
+{-|   
+Modelable data can be assigned a semantic value, but only relative to
+a model---for example, in propositional logic `P_1 ∧ P_2 ::
+PropositionalLogic (Form True)` has a truth value relative to an assignment
+of truth values to truth values (which can be represented by a function
+`Int -> Bool`
+-}
+class Modelable m f where
+    satisfies :: m -> f a -> a
 
 class Liftable f where
     lift :: a -> f a
 
+lift1 :: (Evaluable f, Liftable f) => (a -> b) -> (f a -> f b)
+lift1 f = lift . f . eval
+
+lift2 :: (Evaluable f, Liftable f) => (a -> b -> c) -> (f a -> f b -> f c)
+lift2 f fa fb = lift (f (eval fa) (eval fb))
+
+{-|
+Schematizable data are associated with a way to take a list of strings
+associated with other data and bind them together to produce a new
+string representing the original datum combined with the other data. for
+example, the plus symbol might be schematized by a function `\(x:y:zs) ->
+x ++ " + " ++ y`. That means that when symbol is combined with
+some other data, say, the numerals 1 and 2, then the result will be
+represented by "1 + 2"
+-}
 class Schematizable f where
     schematize :: f a -> [String] -> String
 
@@ -56,54 +92,61 @@ class CopulaSchema lang where
     lamSchema :: (lang t -> lang t') -> [String] -> String
     liftSchema = error "should not print a lifted value"
 
+{-|
+CanonicalForm is a typeclass for data which can be put in a canonical form.
+For example, the canonical form of sentence of quantified logic might be
+a formula in which the variables are labeled sequentially. 
+-}
 class CanonicalForm a where
     canonical :: a -> a
     canonical = id
 
--- XXX: Seems like a generic implementation would be possible. Maybe also
--- a generic typeclass for syntactic type equality
+{-|
+This is a typeclass for doing simple casts from arguments whose types are
+not known to more specific data types.
+-}
+--XXX: This should be moved to a abstract util module
 class Syncast l a where
         cast ::  l b -> Maybe (l a)
-
-lift1 :: (Evaluable f, Liftable f) => (a -> b) -> (f a -> f b)
-lift1 f = lift . f . eval
-
-lift2 :: (Evaluable f, Liftable f) => (a -> b -> c) -> (f a -> f b -> f c)
-lift2 f fa fb = lift (f (eval fa) (eval fb))
 
 --------------------------------------------------------
 --2. Abstract Types
 --------------------------------------------------------
 
---Here are some types for abstract syntax. The basic proposal
---is that we only define how terms of different types connect
---and let the user define all the connections independently of
---of their subparts. In some sense they just define the type
---and the type system figures out how they can go together
+-- $ATintro
+-- Here are some types for abstract syntax. The basic proposal
+-- is that we only define how terms of different types connect
+-- and let the user define all the connections independently of
+-- of their subparts. In some sense they just define the type
+-- and the type system figures out how they can go together
 
---We use the idea of a semantic value to indicate approximately a Fregean
---sense, or intension: approximately a function from models to Fregean
---denotations in those models
+-- We use the idea of a semantic value to indicate approximately a Fregean
+-- sense, or intension: approximately a function from models to Fregean
+-- denotations in those models
 
 --------------------------------------------------------
---2.1 Abstract Terms
+--2.1 Language Building Types
 --------------------------------------------------------
 
--- | this is the type that describes how things are connected
--- | Things are connected either by application or by
--- | a lambda abstraction. The 'lang' parameter gets fixed to
--- | form a fully usable type
---
--- @
---    Fix (Copula :|: Copula :|: (Predicate BasicProp :|: Connective BasicConn))
--- @
+{-|
+This is the type that describes how things are connected.
+Things are connected either by application or by
+a lambda abstraction. The 'lang' parameter gets fixed to
+form a fully usable type
+
+@
+   Fix (Copula :|: Copula :|: (Predicate BasicProp :|: Connective BasicConn))
+@
+-}
 data Copula lang t where
     (:$:) :: (Typeable t, Typeable t') => lang (t -> t') -> lang t -> Copula lang t'
     Lam :: (Typeable t, Typeable t') => (lang t -> lang t') -> Copula lang (t -> t')
     Lift :: t -> Copula lang t
 
--- | this is type acts a disjoint sum/union of two functors
--- | it carries though the phantom type as well
+{-|
+this is type acts a disjoint sum/union of two functors
+it carries though the phantom type as well
+-}
 data (:|:) :: (k -> k' -> *) -> (k -> k' -> *) -> k -> k' -> * where
     FLeft :: f x idx -> (f :|: g) x idx
     FRight :: g x idx -> (f :|: g) x idx
@@ -151,14 +194,30 @@ pattern Fx11 x     = FX (Lx11 x)
 pattern Fx12 x     = FX (Lx12 x)
 pattern FX x = Fx (FRight x)
 
+--------------------------------------------------------
+--2.2 Abstract Operator Types 
+--------------------------------------------------------
+
+--------------------------------------------------------
+--2.2.1 Variable Binding Operators
+--------------------------------------------------------
+
 data Quantifiers :: (* -> *) -> (* -> *) -> * -> * where
     Bind :: quant ((t a -> f b) -> f b) -> Quantifiers quant lang ((t a -> f b) -> f b)
 
--- | This typeclass needs to provide a way of getting bound variables,
--- which will display binding positions, a way of substituting bound
--- variables, and a way of getting a bound variable uniquely determined by
--- the "Height" of a certain binder---how many binders occur below it in
--- a parsing tree.
+data Abstractors :: (* -> *) -> (* -> *) -> * -> * where
+    Abstract :: abs ((t a -> t b) -> t (a -> b)) -> Abstractors abs lang ((t a -> t b) -> t (a -> b))
+
+data Applicators :: (* -> *) -> (* -> *) -> * -> * where
+    Apply :: app (t (a -> b) -> t a -> t b) -> Applicators app lang (t (a -> b) -> t a -> t b)
+
+{-|
+This typeclass needs to provide a way of getting bound variables,
+which will display binding positions, a way of substituting bound
+variables, and a way of getting a bound variable uniquely determined by
+the "Height" of a certain binder---how many binders occur below it in
+a parsing tree.
+-}
 class BoundVars g where
         getBoundVar :: FixLang g ((a -> b) -> c) -> FixLang g (a -> b) -> FixLang g a
         getBoundVar = error "you need to define a language-specific getBoundVar function"
@@ -166,12 +225,6 @@ class BoundVars g where
         subBoundVar _ _ = id
         getBindHeight:: FixLang g ((a -> b) -> c) -> FixLang g (a -> b) -> FixLang g a
         getBindHeight = error "you need to define a language-specific getBindHeight function"
-
-data Abstractors :: (* -> *) -> (* -> *) -> * -> * where
-    Abstract :: abs ((t a -> t b) -> t (a -> b)) -> Abstractors abs lang ((t a -> t b) -> t (a -> b))
-
-data Applicators :: (* -> *) -> (* -> *) -> * -> * where
-    Apply :: app (t (a -> b) -> t a -> t b) -> Applicators app lang (t (a -> b) -> t a -> t b)
 
 data Term a = Term a
     deriving(Eq, Ord, Show)
@@ -191,12 +244,20 @@ instance Evaluable Form where
 instance Liftable Form where
     lift = Form
 
+--------------------------------------------------------
+--2.2.2 Non-Binding Operators
+--------------------------------------------------------
+
 -- | think of this as a type constraint. the lang type, model type, and number
 -- | must all match up for this type to be inhabited
 -- | this lets us do neat type safty things
 data Arity :: * -> * -> Nat -> * -> * where
     AZero :: Arity arg ret Zero ret
     ASucc :: Arity arg ret n ret' -> Arity arg ret (Succ n) (arg -> ret')
+
+pattern AOne = ASucc AZero
+pattern ATwo = ASucc AOne
+pattern AThree = ASucc ATwo
 
 instance Show (Arity arg ret n ret') where
         show AZero = "0"
@@ -207,10 +268,6 @@ instance Show (Arity arg ret n ret') where
 data TArity :: * -> * -> Nat -> * -> * where
     TZero :: Typeable ret => TArity arg ret Zero ret
     TSucc :: (Typeable ret, Typeable arg, Typeable ret') => TArity arg ret n ret' -> TArity arg ret (Succ n) (arg -> ret')
-
-pattern AOne = ASucc AZero
-pattern ATwo = ASucc AOne
-pattern AThree = ASucc ATwo
 
 data Predicate :: (* -> *) -> (* -> *) -> * -> * where
     Predicate :: pred t -> Arity (Term a) (Form b) n t -> Predicate pred lang t
@@ -227,6 +284,7 @@ data Subnective :: (* -> *) -> (* -> *) -> * -> * where
 data SubstitutionalVariable :: (* -> *) -> * -> * where
         SubVar :: Int -> SubstitutionalVariable lang t
 
+--XXX: This should go in a abstract util module
 incArity :: (Typeable a, Typeable b) => 
     (forall c . FixLang l c ->  Maybe (FixLang l (b -> c))) -> 
     FixLang l (b -> a)  ->  Maybe (FixLang l (b -> b -> a))
@@ -330,6 +388,7 @@ instance  (CanonicalForm (FixLang f a), Show (FixLang f a)) => Eq (FixLang f a) 
         x == y = show (canonical x) == show (canonical y)
 
 --}
+
 --------------------------------------------------------
 --4. Evaluation and Modelable
 --------------------------------------------------------
