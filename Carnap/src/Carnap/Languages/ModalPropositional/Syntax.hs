@@ -3,11 +3,10 @@ module Carnap.Languages.ModalPropositional.Syntax
      where
 
 import Carnap.Core.Data.AbstractSyntaxDataTypes
+import Carnap.Core.Data.Util (Syncast(..), checkChildren)
 import Carnap.Core.Unification.Unification
 import Carnap.Languages.Util.LanguageClasses
-import Control.Lens (Plated)
-import Control.Lens.Fold (anyOf)
-import Control.Lens.Plated (cosmos, transform)
+import Control.Lens.Plated (Plated, cosmos, transform)
 import Data.Typeable (Typeable)
 import Data.Map.Lazy (Map, (!))
 import Data.Monoid as M
@@ -116,9 +115,6 @@ instance IndexedPropLanguage ModalForm where
 
 instance IndexedSchemePropLanguage ModalForm where
         phin = MPhi
-
-checkChildren :: (Eq s, Plated s) => s -> s -> Bool
-checkChildren phi psi = phi /= psi && anyOf cosmos (== phi) psi
 
 instance Syncast ModalPropLanguage (Form (World -> Bool)) where
     cast phi@(MNeg x)      = Just phi  

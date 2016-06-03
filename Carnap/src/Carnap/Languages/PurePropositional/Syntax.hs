@@ -3,11 +3,10 @@
 module Carnap.Languages.PurePropositional.Syntax where
 
 import Carnap.Core.Data.AbstractSyntaxDataTypes
+import Carnap.Core.Data.Util (Syncast(..), checkChildren)
 import Carnap.Core.Unification.Unification
 import Carnap.Languages.Util.LanguageClasses
-import Control.Lens (Plated)
-import Control.Lens.Fold (anyOf)
-import Control.Lens.Plated (cosmos, transform, children)
+import Control.Lens.Plated (Plated, transform, children)
 import Data.Typeable (Typeable)
 import Carnap.Languages.Util.GenericConnectives
 
@@ -83,9 +82,6 @@ instance CanonicalForm PureForm
 
 instance LangTypes1 PurePropLexicon Form Bool
 
-checkChildren :: (Eq s, Plated s) => s -> s -> Bool
-checkChildren phi psi = phi /= psi && anyOf cosmos (== phi) psi
-
 instance Syncast PurePropLanguage (Form Bool) where
     cast phi@(PNeg x)      = Just phi  
     cast phi@(x :&: y)     = Just phi
@@ -110,11 +106,11 @@ instance FirstOrder PurePropLanguage where
     sameHead _ _ = False
 
     decompose x y = 
-        case (cast x :: Maybe PureForm, cast y :: Maybe PureForm) of 
-           (Just x', Just y') -> zipWith (:=:) (children x') (children y')
+        case (cast x :: Maybe PureForm, cast y :: Maybe PureForm, sameHead x y) of 
+           (Just x', Just y', True) -> zipWith (:=:) (children x') (children y')
            _ -> []
                                                                    
-    -- The above is slicker, but you could do this naively with 
+    -- NB: The above is slicker, but you can do this naively with 
     -- decompose (PNeg x) (PNeg y) = [x :=: y]
     -- decompose (x :&: y) (x' :&: y') = [x :=: x', y :=: y']
     -- decompose (x :||: y) (x' :||: y') = [x :=: x', y :=: y']

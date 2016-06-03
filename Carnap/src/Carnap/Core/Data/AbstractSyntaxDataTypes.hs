@@ -7,7 +7,7 @@ module Carnap.Core.Data.AbstractSyntaxDataTypes(
   lift1, lift2,
   -- ** Classes for Display
   CopulaSchema(..), CanonicalForm(..), Schematizable(..),
-  Syncast(..), Term(..), Form(..), 
+   Term(..), Form(..), 
   BoundVars(..),
   -- * Abstract Types
   -- $ATintro
@@ -22,7 +22,7 @@ module Carnap.Core.Data.AbstractSyntaxDataTypes(
   -- *** Variable Binding Operators
   Quantifiers(Bind),Abstractors(Abstract),Applicators(Apply), 
   -- *** Non-Binding Operators 
-  Arity(AZero, ASucc), incArity,
+  Arity(AZero, ASucc), 
   Predicate(Predicate), 
   Connective(Connective), Function(Function), 
   Subnective(Subnective),
@@ -100,14 +100,6 @@ a formula in which the variables are labeled sequentially.
 class CanonicalForm a where
     canonical :: a -> a
     canonical = id
-
-{-|
-This is a typeclass for doing simple casts from arguments whose types are
-not known to more specific data types.
--}
---XXX: This should be moved to a abstract util module
-class Syncast l a where
-        cast ::  l b -> Maybe (l a)
 
 --------------------------------------------------------
 --2. Abstract Types
@@ -283,17 +275,6 @@ data Subnective :: (* -> *) -> (* -> *) -> * -> * where
 
 data SubstitutionalVariable :: (* -> *) -> * -> * where
         SubVar :: Int -> SubstitutionalVariable lang t
-
---XXX: This should go in a abstract util module
-incArity :: (Typeable a, Typeable b) => 
-    (forall c . FixLang l c ->  Maybe (FixLang l (b -> c))) -> 
-    FixLang l (b -> a)  ->  Maybe (FixLang l (b -> b -> a))
-incArity f ((head :: FixLang l (t -> b -> a)) :!$: (tail :: FixLang l t)) = 
-        case eqT :: Maybe (t :~: b) of
-            Nothing -> Nothing
-            Just Refl ->  do x <- incArity f head
-                             return $ x :!$: tail
-incArity f head = f head
 
 --data Quote :: (* -> *) -> * -> *
     --Quote :: (lang )
