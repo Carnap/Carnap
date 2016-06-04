@@ -85,7 +85,7 @@ instance Schematizable (a (PureFirstOrderLanguageWith a)) => CopulaSchema (PureF
     appSchema x y e = schematize x (show y : e)
 
 --TODO:This should be in a core.utils module
-mapover :: (forall a . PureFirstOrderLanguage a -> PureFirstOrderLanguage a) -> PureFirstOrderLanguage a -> PureFirstOrderLanguage a
+mapover :: (forall a . PureLanguagePolyadicFOL a -> PureLanguagePolyadicFOL a) -> PureLanguagePolyadicFOL a -> PureLanguagePolyadicFOL a
 mapover f (x :!$: y) = mapover f x :!$: f y
 mapover f x = x
 
@@ -124,7 +124,7 @@ type MonadicPredicates = Predicate PureMonadicPredicate
 
 type PureLexiconMonadicFOL = MonadicPredicates :|: CoreLexicon :|: EndLang
 
-type PureLanuageMonadicFOL = FixLang PureLexiconMonadicFOL
+type PureLanguageMonadicFOL = FixLang PureLexiconMonadicFOL
 
 pattern PMPred x = FX (Lx1 (Lx1 (Predicate (MonPred x) AOne)))
 
@@ -136,9 +136,9 @@ type PolyadicPredicates = Predicate PurePredicate
                       :|: Predicate PureSchematicPred
                       :|: EndLang
 
-type PureFirstOrderLexicon = PolyadicPredicates :|: CoreLexicon :|: EndLang
+type PureLexiconPolyadicFOL = PolyadicPredicates :|: CoreLexicon :|: EndLang
 
-type PureFirstOrderLanguage = FixLang PureFirstOrderLexicon
+type PureLanguagePolyadicFOL = FixLang PureLexiconPolyadicFOL
 
 pattern PPred x arity  = FX (Lx1 (Lx1 (Predicate x arity)))
 pattern PSPred x arity = FX (Lx1 (Lx2 (Predicate x arity)))
@@ -146,21 +146,21 @@ pattern PP n a1 a2     = PPred (Pred a1 n) a2
 pattern PS n           = PPred (Pred AZero n) AZero
 pattern PPhi n a1 a2   = PSPred (SPred a1 n) a2
 
-type PureFOLForm = PureFirstOrderLanguage (Form Bool)
+type PurePFOLForm = PureLanguagePolyadicFOL (Form Bool)
 
-type PureFOLTerm = PureFirstOrderLanguage (Term Int)
+type PurePFOLTerm = PureLanguagePolyadicFOL (Term Int)
 
-instance IndexedPropLanguage PureFOLForm where
+instance IndexedPropLanguage PurePFOLForm where
     pn = PS
 
-instance PolyadicPredicateLanguage PureFirstOrderLanguage (Term Int) (Form Bool) where 
+instance PolyadicPredicateLanguage PureLanguagePolyadicFOL (Term Int) (Form Bool) where 
     ppn n a = PP n a a
 
-instance IncrementablePredicate PureFirstOrderLexicon (Term Int) where
+instance IncrementablePredicate PureLexiconPolyadicFOL (Term Int) where
     incHead (PP n a b) = Just $ PP n (ASucc a) (ASucc a)
     incHead _  = Nothing
 
-instance BoundVars PureFirstOrderLexicon where
+instance BoundVars PureLexiconPolyadicFOL where
     getBoundVar (PQuant (All v)) _ = PV v
     getBoundVar (PQuant (Some v)) _ = PV v
     getBoundVar _ _ = undefined
