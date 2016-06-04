@@ -45,6 +45,12 @@ instance Evaluable (SchematicIntPred b c) where
 instance Modelable m (SchematicIntPred b c) where
         satisfies = const eval
 
+data TermEq c b a where
+        TermEq :: TermEq c b (Term b -> Term b -> Form c)
+
+instance Schematizable (TermEq c b) where
+        schematize TermEq = \(t1:t2:_) -> t1 ++ "=" ++ t2
+
 data BooleanConn b a where
         And :: BooleanConn b (Form b -> Form b -> Form b)
         Or :: BooleanConn b (Form b -> Form b -> Form b)

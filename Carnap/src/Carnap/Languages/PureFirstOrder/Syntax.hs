@@ -24,6 +24,8 @@ data PureSentences a where
 
 type PurePredicate = IntPred Bool Int
 
+type PureEq = TermEq Bool Int
+
 type PureConn = BooleanConn Bool
 
 type PureSchematicPred = SchematicIntPred Bool Int
@@ -175,7 +177,7 @@ type PolyadicPredicates = Predicate PurePredicate
 
 type OpenLexiconPolyadicFOL a = CoreLexicon :|: PolyadicPredicates :|: a
 
-type OpenLanguagePolyadicFOL a = FixLang (OpenLexiconPolyadicFOL a )
+type OpenLanguagePolyadicFOL a = FixLang (OpenLexiconPolyadicFOL a)
 
 type PureLanguagePolyadicFOL = FixLang (OpenLexiconPolyadicFOL EndLang)
 
@@ -200,5 +202,14 @@ instance IncrementablePredicate (OpenLexiconPolyadicFOL a) (Term Int) where
     incHead _  = Nothing
 
 --------------------------------------------------------
---2.3 Polyadic First Order Logic with Function Symbols and Identity
+--2.3 Polyadic First Order Logic with Polyadic Function Symbols and Identity
 --------------------------------------------------------
+
+type PolyadicFunctionSymbolsAndIdentity = Predicate PureEq :|: EndLang
+
+type PureLanguagePFOL_EQ_FS = OpenLanguagePolyadicFOL (PolyadicFunctionSymbolsAndIdentity :|: EndLang)
+
+pattern PEq = FX (Lx3 (Lx1 (Predicate TermEq ATwo)))
+pattern (:=:) t1 t2 = PEq :!$: t1 :!$: t2
+
+
