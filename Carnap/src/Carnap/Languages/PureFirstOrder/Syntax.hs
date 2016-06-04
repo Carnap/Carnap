@@ -3,6 +3,7 @@ module Carnap.Languages.PureFirstOrder.Syntax
 where
 
 import Carnap.Core.Data.AbstractSyntaxDataTypes
+import Carnap.Core.Data.Util (mapover)
 import Carnap.Core.Unification.Unification
 import Carnap.Languages.Util.LanguageClasses
 import Control.Lens (Plated)
@@ -83,11 +84,6 @@ instance Schematizable (a (PureFirstOrderLanguageWith a)) => CopulaSchema (PureF
     appSchema (PQuant (All x)) (LLam f) e = schematize (All x) (show (f $ PV x) : e)
     appSchema (PQuant (Some x)) (LLam f) e = schematize (Some x) (show (f $ PV x) : e)
     appSchema x y e = schematize x (show y : e)
-
---TODO:This should be in a core.utils module
-mapover :: (forall a . PureLanguagePolyadicFOL a -> PureLanguagePolyadicFOL a) -> PureLanguagePolyadicFOL a -> PureLanguagePolyadicFOL a
-mapover f (x :!$: y) = mapover f x :!$: f y
-mapover f x = x
 
 instance BoundVars (a :|: CoreLexicon :|: EndLang) => LangTypes2 (a :|: CoreLexicon :|: EndLang) Term Int Form Bool
 
@@ -180,7 +176,5 @@ instance BoundVars PureLexiconPolyadicFOL where
         where sv = case getBindHeight (PQuant (All v)) (LLam f) of
                        c@(PV v') -> if w == v' then PV ('_':v') else c
     subBoundVar a b phi = mapover (swap a b) phi 
-
-
 
 

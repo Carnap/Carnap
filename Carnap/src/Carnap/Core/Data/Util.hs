@@ -1,7 +1,7 @@
 {-#LANGUAGE RankNTypes,TypeOperators, ScopedTypeVariables, GADTs, MultiParamTypeClasses #-}
 
-module Carnap.Core.Data.Util ( Syncast(..), incArity, checkChildren
-) where
+module Carnap.Core.Data.Util ( Syncast(..), incArity, checkChildren,
+mapover) where
 
 --this module defines utility functions and typeclasses for manipulating
 --the data types defined in Core.Data
@@ -10,7 +10,6 @@ import Carnap.Core.Data.AbstractSyntaxDataTypes
 import Data.Typeable
 import Control.Lens.Plated (Plated, cosmos, transform, children)
 import Control.Lens.Fold (anyOf)
-import Data.Monoid
 
 --------------------------------------------------------
 --1. Utility Classes
@@ -46,3 +45,10 @@ this function checks to see if phi occurs as a child of psi
 -}
 checkChildren :: (Eq s, Plated s) => s -> s -> Bool
 checkChildren phi psi = phi /= psi && anyOf cosmos (== phi) psi
+
+{-|
+this function will, given a suitably polymorphic argument `f`, apply `f` to each of the children of the linguistic expression `le`.
+-}
+mapover :: (forall a . FixLang l a -> FixLang l a) -> FixLang l b -> FixLang l b
+mapover f le@(x :!$: y) = mapover f x :!$: f y
+mapover f x = x
