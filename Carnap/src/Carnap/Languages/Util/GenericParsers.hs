@@ -73,6 +73,8 @@ equalsParser parseTerm = do t1 <- parseTerm
                             t2 <- parseTerm
                             return $ equals t1 t2
 
+--TODO: This would need an optional "^m" following P, if we're going to
+--achive read . show = id
 molecularSentenceParser :: ( IndexedPropLanguage (FixLang lex ret)
                            , PolyadicPredicateLanguage (FixLang lex) arg ret
                            , IncrementablePredicate lex arg
