@@ -27,6 +27,17 @@ data SchematicIntProp b a where
 instance Schematizable (SchematicIntProp b) where
         schematize (SProp n)   _       = "φ_" ++ show n
 
+data IntFunc c b a where
+        Func ::  Arity (Term c) (Term b) n ret -> Int -> IntFunc b c ret
+
+instance Schematizable (IntFunc b c) where
+        schematize (Func a n) xs = 
+            case read $ show a of
+                0 -> "f^0_" ++ show n
+                m -> "f^" ++ show a ++ "_" ++ show n 
+                                        ++ "(" ++ intercalate "," args ++ ")"
+                        where args = take m $ xs ++ repeat "_"
+
 instance Evaluable (SchematicIntProp b) where
         eval = error "You should not be able to evaluate schemata"
 

@@ -46,18 +46,22 @@ class BooleanLanguage l where
 class IndexedPropLanguage l where
         pn :: Int -> l
 
+class IndexedConstantLanguage l where
+        cn :: Int -> l
+
 class IndexedSchemePropLanguage l where
         phin :: Int -> l
 
 class PolyadicPredicateLanguage lang arg ret where
         ppn :: Int -> Arity arg ret n ret' -> lang ret'
-        --This needs to provide a way of bumping up the arity of a given
-        --predicate
 
-class IncrementablePredicate lex arg where
+class PolyadicFunctionLanguage lang arg ret where
+        pfn :: Int -> Arity arg ret n ret' -> lang ret'
+
+class Incrementable lex arg where
         incHead :: FixLang lex a -> Maybe (FixLang lex (arg -> a)) 
-        incPred :: (Typeable b, Typeable arg) => FixLang lex (arg -> b) -> Maybe (FixLang lex (arg -> arg -> b))
-        incPred = incArity incHead
+        incBody :: (Typeable b, Typeable arg) => FixLang lex (arg -> b) -> Maybe (FixLang lex (arg -> arg -> b))
+        incBody = incArity incHead
 
 class ModalLanguage l where
         nec :: l -> l

@@ -24,6 +24,8 @@ data PureSentences a where
 
 type PurePredicate = IntPred Bool Int
 
+type PureFunction = IntFunc Int Int
+
 type PureEq = TermEq Bool Int
 
 type PureConn = BooleanConn Bool
@@ -85,36 +87,10 @@ height (phi :->: psi)  = max (height phi) (height psi)
 height (phi :<->: psi) = max (height phi) (height psi)
 height _               = 0
 
-instance Schematizable (a (PureFirstOrderLanguageWith a)) => CopulaSchema (PureFirstOrderLanguageWith a) where
+instance Schematizable (a (PureFirstOrderLanguageWith a)) => CopulaSchema (PureFirstOrderLanguageWith a) where 
     appSchema (PQuant (All x)) (LLam f) e = schematize (All x) (show (f $ PV x) : e)
     appSchema (PQuant (Some x)) (LLam f) e = schematize (Some x) (show (f $ PV x) : e)
     appSchema x y e = schematize x (show y : e)
-
-instance BoundVars (CoreLexicon :|: a) => LangTypes2 (CoreLexicon :|: a) Term Int Form Bool
-
-instance BoundVars (CoreLexicon :|: a) => LangTypes2 (CoreLexicon :|: a) Form Bool Term Int
-
-instance BooleanLanguage (PureFirstOrderLanguageWith a (Form Bool)) where
-        land = (:&:)
-        lneg = PNeg
-        lor  = (:||:)
-        lif  = (:->:)
-        liff = (:<->:)
-
-instance QuantLanguage (PureFirstOrderLanguageWith a (Form Bool)) (PureFirstOrderLanguageWith a (Term Int)) where
-        lall  = PUniv 
-        lsome  = PExist 
-
-instance BoundVars (CoreLexicon :|: a) => RelabelVars (CoreLexicon :|: a) Form Bool where
-    subBinder (PUniv v f) y = Just $ PUniv y f 
-    subBinder (PExist v f) y = Just $ PExist y f
-    subBinder _ _ = Nothing
-
-instance BoundVars (CoreLexicon :|: a) => CanonicalForm (PureFirstOrderLanguageWith a (Form Bool)) where
-    canonical = relabelVars varStream
-                where varStream = [i ++ j | i <- ["x"], j <- map show [1 ..]]
-
-instance CanonicalForm (PureFirstOrderLanguageWith a (Term Int))
 
 instance BoundVars (CoreLexicon :|: a) where
     getBoundVar (PQuant (All v)) _ = PV v
@@ -136,6 +112,35 @@ instance BoundVars (CoreLexicon :|: a) where
         where sv = case getBindHeight (PQuant (All v)) (LLam f) of
                        c@(PV v') -> if w == v' then PV ('_':v') else c
     subBoundVar a b phi = mapover (swap a b) phi 
+
+instance LangTypes2 (CoreLexicon :|: a) Term Int Form Bool
+
+instance LangTypes2 (CoreLexicon :|: a) Form Bool Term Int
+
+instance BooleanLanguage (PureFirstOrderLanguageWith a (Form Bool)) where
+        land = (:&:)
+        lneg = PNeg
+        lor  = (:||:)
+        lif  = (:->:)
+        liff = (:<->:)
+
+instance QuantLanguage (PureFirstOrderLanguageWith a (Form Bool)) (PureFirstOrderLanguageWith a (Term Int)) where
+        lall  = PUniv 
+        lsome  = PExist 
+
+instance RelabelVars (CoreLexicon :|: a) Form Bool where
+    subBinder (PUniv v f) y = Just $ PUniv y f 
+    subBinder (PExist v f) y = Just $ PExist y f
+    subBinder _ _ = Nothing
+
+instance CanonicalForm (PureFirstOrderLanguageWith a (Form Bool)) where
+    canonical = relabelVars varStream
+                where varStream = [i ++ j | i <- ["x"], j <- map show [1 ..]]
+
+instance CanonicalForm (PureFirstOrderLanguageWith a (Term Int))
+
+instance IndexedConstantLanguage (PureFirstOrderLanguageWith a (Term Int)) where 
+        cn = PC
     
 --------------------------------------------------------
 --2.0.1 Generic FOL Helper Functions
@@ -143,6 +148,7 @@ instance BoundVars (CoreLexicon :|: a) where
 
 swap :: PureFirstOrderLanguageWith c b -> PureFirstOrderLanguageWith c b -> PureFirstOrderLanguageWith c a -> PureFirstOrderLanguageWith c a
 swap a@(PV a') b@(PV b') x@(PV x') = if x' == a' then b else x
+swap a b x@(f :!$: y) = mapover (swap a b) x
 swap a b c = c
 
 --------------------------------------------------------
@@ -197,7 +203,7 @@ instance IndexedPropLanguage (PurePFOLForm a) where
 instance PolyadicPredicateLanguage (OpenLanguagePolyadicFOL a) (Term Int) (Form Bool) where 
     ppn n a = PP n a a
 
-instance IncrementablePredicate (OpenLexiconPolyadicFOL a) (Term Int) where
+instance Incrementable (OpenLexiconPolyadicFOL EndLang) (Term Int) where
     incHead (PP n a b) = Just $ PP n (ASucc a) (ASucc a)
     incHead _  = Nothing
 
@@ -205,11 +211,29 @@ instance IncrementablePredicate (OpenLexiconPolyadicFOL a) (Term Int) where
 --2.3 Polyadic First Order Logic with Polyadic Function Symbols and Identity
 --------------------------------------------------------
 
-type PolyadicFunctionSymbolsAndIdentity = Predicate PureEq :|: EndLang
+type PolyadicFunctionSymbolsAndIdentity = Predicate PureEq :|: Function PureFunction :|: EndLang
 
-type PureLanguagePFOL_EQ_FS = OpenLanguagePolyadicFOL (PolyadicFunctionSymbolsAndIdentity :|: EndLang)
+type PureLexiconPFOL_EQ_FS = (OpenLexiconPolyadicFOL (PolyadicFunctionSymbolsAndIdentity :|: EndLang))
+
+type PureLanguage_EQ_FS = FixLang PureLexiconPFOL_EQ_FS
 
 pattern PEq = FX (Lx3 (Lx1 (Predicate TermEq ATwo)))
-pattern (:=:) t1 t2 = PEq :!$: t1 :!$: t2
+pattern (:==:) t1 t2 = PEq :!$: t1 :!$: t2
+pattern PFunc x arity  = FX (Lx3 (Lx2 (Function x arity)))
+pattern PF n a1 a2     = PFunc (Func a1 n) a2
 
+type PurePFOL_EQ_FSForm = PureLanguage_EQ_FS (Form Bool)
+
+type PurePFOL_EQ_FSTerm = PureLanguage_EQ_FS (Term Int)
+
+instance EqLanguage PurePFOL_EQ_FSForm PurePFOL_EQ_FSTerm  where 
+        equals = (:==:)
+
+instance PolyadicFunctionLanguage PureLanguage_EQ_FS (Term Int) (Term Int) where 
+    pfn n a = PF n a a
+
+instance Incrementable (PureLexiconPFOL_EQ_FS) (Term Int) where
+    incHead (PP n a b) = Just $ PP n (ASucc a) (ASucc a)
+    incHead (PF n a b) = Just $ PF n (ASucc a) (ASucc a)
+    incHead _  = Nothing
 

@@ -1,3 +1,4 @@
+{-#LANGUAGE TypeOperators #-}
 module Carnap.Languages.PureFirstOrder.Parser (
 folFormulaParser
 ) where
@@ -9,13 +10,22 @@ import Carnap.Languages.Util.GenericParsers
 import Text.Parsec
 import Text.Parsec.Expr
 
-folFormulaParser :: Parsec String () (PurePFOLForm EndLang)
+pfolFormulaParser :: Parsec String () (PurePFOLForm EndLang)
+pfolFormulaParser = buildExpressionParser opTable subFormulaParser 
+    where subFormulaParser = parenParser pfolFormulaParser
+                          <|> try (quantifiedSentenceParser 
+                                        parseFreeVar pfolFormulaParser)
+                          <|> unaryOpParser [parseNeg] subFormulaParser
+                          <|> try (molecularSentenceParser parsePFOLTerm)
+
+folFormulaParser :: Parsec String () (PurePFOL_EQ_FSForm)
 folFormulaParser = buildExpressionParser opTable subFormulaParser 
     where subFormulaParser = parenParser folFormulaParser
                           <|> try (quantifiedSentenceParser 
                                         parseFreeVar folFormulaParser)
                           <|> unaryOpParser [parseNeg] subFormulaParser
-                          <|> try (molecularSentenceParser parseTerm)
+                          <|> try (molecularSentenceParser parsePFOL_EQ_FSTerm)
+                          <|> try (equalsParser parsePFOL_EQ_FSTerm)
 
 parseFreeVar :: Parsec String () (PurePFOLTerm a)
 parseFreeVar = choice [try $ do _ <- string "x_"
@@ -31,8 +41,13 @@ parseConstant = do _ <- string "c_"
                    return $ PC n
     where number = do { ds <- many1 digit; return (read ds) } <?> "number"
 
-parseTerm :: Parsec String () (PurePFOLTerm EndLang)
-parseTerm = try parseConstant <|> parseFreeVar
+parsePFOLTerm :: Parsec String () (PurePFOLTerm EndLang)
+parsePFOLTerm = try parseConstant <|> parseFreeVar
+
+parsePFOL_EQ_FSTerm :: Parsec String () (PurePFOL_EQ_FSTerm)
+parsePFOL_EQ_FSTerm = try parseConstant 
+                    <|> parseFreeVar
+                    <|> molecularTermParser parsePFOL_EQ_FSTerm
 
 opTable :: Monad m => [[Operator String u m (PurePFOLForm a)]]
 opTable = [[ Prefix (try parseNeg)], 
