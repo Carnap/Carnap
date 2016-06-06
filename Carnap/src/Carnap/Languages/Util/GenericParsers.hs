@@ -47,6 +47,10 @@ parsePos = do spaces
               _ <- string "<>" <|> string "◇"
               return pos
 
+unaryOpParser :: (Monad m, BooleanLanguage l, IndexedPropLanguage l) => [ParsecT String u m (l -> l)] -> ParsecT String u m l ->  ParsecT String u m l
+unaryOpParser ops recur = do n <- listToTry ops
+                             f <- recur
+                             return $ n f
 --------------------------------------------------------
 --Predicates and Sentences
 --------------------------------------------------------
@@ -87,39 +91,9 @@ molecularSentenceParser :: ( IndexedPropLanguage (FixLang lex ret)
 molecularSentenceParser parseTerm = 
         do string "P_"
            n <- number
-           char '(' *> argParser (ppn n AOne) 
+           char '(' *> argParser parseTerm (ppn n AOne) 
               <|> return (pn n)
-    where number = do { ds <- many1 digit; return (read ds) } <?> "number"
-          argParser p = do t <- parseTerm
-                           incrementHead p t 
-                                <|> char ')' *> return (p :!$: t)
-          incrementHead p t = do char ','
-                                 case incBody p of
-                                     Just p' -> argParser (p' :!$: t)
-                                     Nothing -> fail "Weird error with predicate"
 
-molecularTermParser ::     ( IndexedConstantLanguage (FixLang lex ret)
-                           , PolyadicFunctionLanguage (FixLang lex) arg ret
-                           , Incrementable lex arg
-                           , Monad m
-                           , Typeable ret
-                           , Typeable arg
-                           ) => ParsecT String u m (FixLang lex arg) -> 
-                           ParsecT String u m (FixLang lex ret)
-
-molecularTermParser parseTerm = 
-        do string "f_"
-           n <- number
-           char '(' *> argParser (pfn n AOne) 
-              <|> return (cn n)
-    where number = do { ds <- many1 digit; return (read ds) } <?> "number"
-          argParser p = do t <- parseTerm
-                           incrementHead p t 
-                                <|> char ')' *> return (p :!$: t)
-          incrementHead p t = do char ','
-                                 case incBody p of
-                                     Just p' -> argParser (p' :!$: t)
-                                     Nothing -> fail "Weird error with function"
 
 quantifiedSentenceParser :: ( QuantLanguage (FixLang lex f) (FixLang lex t)
                             , BoundVars lex
@@ -137,15 +111,49 @@ quantifiedSentenceParser parseFreeVar formulaParser =
            return $ if s `elem` "A∀" then lall (show v) bf else lsome (show v) bf 
                --which we bind
                --
+
+--------------------------------------------------------
+--Terms
+--------------------------------------------------------
+
+molecularTermParser ::     ( IndexedConstantLanguage (FixLang lex ret)
+                           , PolyadicFunctionLanguage (FixLang lex) arg ret
+                           , Incrementable lex arg
+                           , Monad m
+                           , Typeable ret
+                           , Typeable arg
+                           ) => ParsecT String u m (FixLang lex arg) -> 
+                           ParsecT String u m (FixLang lex ret)
+molecularTermParser parseTerm = 
+        do string "f_"
+           n <- number
+           char '(' *> argParser parseTerm (pfn n AOne) 
+              <|> return (cn n)
+
 --------------------------------------------------------
 --Structural Elements
 --------------------------------------------------------
 
-parenParser :: (BooleanLanguage l, Monad m, IndexedPropLanguage l) => ParsecT String u m l -> ParsecT String u m l
+parenParser :: (BooleanLanguage l, Monad m) => ParsecT String u m l -> ParsecT String u m l
 parenParser recur = char '(' *> recur <* char ')' 
 
-unaryOpParser :: (Monad m, BooleanLanguage l, IndexedPropLanguage l) => [ParsecT String u m (l -> l)] -> ParsecT String u m l ->  ParsecT String u m l
-unaryOpParser ops recur = do n <- listToTry ops
-                             f <- recur
-                             return $ n f
 
+number :: Monad m => ParsecT String u m Int
+number = do { ds <- many1 digit; return (read ds) } <?> "number"
+
+--------------------------------------------------------
+--Helper functions
+--------------------------------------------------------
+
+argParser :: (Typeable b, Typeable t2, Incrementable lex t2, Monad m) => 
+             ParsecT String u m (FixLang lex t2) -> FixLang lex (t2 -> b) -> ParsecT String u m (FixLang lex b)
+argParser pt p = do t <- pt
+                    incrementHead pt p t 
+                        <|> char ')' *> return (p :!$: t)
+
+incrementHead :: (Monad m, Typeable t2, Typeable b, Incrementable lex t2) => 
+    ParsecT String u m (FixLang lex t2) -> FixLang lex (t2 -> b) -> FixLang lex t2 -> ParsecT String u m (FixLang lex b)
+incrementHead pt p t = do char ','
+                          case incBody p of
+                               Just p' -> argParser pt (p' :!$: t)
+                               Nothing -> fail "Weird error with function"

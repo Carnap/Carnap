@@ -232,7 +232,7 @@ instance EqLanguage PurePFOL_EQ_FSForm PurePFOL_EQ_FSTerm  where
 instance PolyadicFunctionLanguage PureLanguage_EQ_FS (Term Int) (Term Int) where 
     pfn n a = PF n a a
 
-instance Incrementable (PureLexiconPFOL_EQ_FS) (Term Int) where
+instance Incrementable PureLexiconPFOL_EQ_FS (Term Int) where
     incHead (PP n a b) = Just $ PP n (ASucc a) (ASucc a)
     incHead (PF n a b) = Just $ PF n (ASucc a) (ASucc a)
     incHead _  = Nothing
