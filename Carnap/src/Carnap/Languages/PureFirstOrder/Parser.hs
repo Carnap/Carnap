@@ -1,4 +1,4 @@
-{-#LANGUAGE TypeOperators #-}
+{-#LANGUAGE TypeOperators, FlexibleContexts#-}
 module Carnap.Languages.PureFirstOrder.Parser (
 folFormulaParser
 ) where
@@ -12,22 +12,25 @@ import Text.Parsec.Expr
 
 pfolFormulaParser :: Parsec String () (PurePFOLForm EndLang)
 pfolFormulaParser = buildExpressionParser opTable subFormulaParser 
-    where subFormulaParser = parenParser pfolFormulaParser
-                          <|> try (quantifiedSentenceParser 
-                                        parseFreeVar pfolFormulaParser)
-                          <|> unaryOpParser [parseNeg] subFormulaParser
-                          <|> try (molecularSentenceParser parsePFOLTerm)
+    where subFormulaParser = coreParser pfolFormulaParser subFormulaParser
+                      <|> try (molecularSentenceParser parseSimpleFOLTerm)
 
-folFormulaParser :: Parsec String () (PurePFOL_EQ_FSForm)
+folFormulaParser :: Parsec String () PurePFOL_EQ_FSForm
 folFormulaParser = buildExpressionParser opTable subFormulaParser 
-    where subFormulaParser = parenParser folFormulaParser
-                          <|> try (quantifiedSentenceParser 
-                                        parseFreeVar folFormulaParser)
-                          <|> unaryOpParser [parseNeg] subFormulaParser
-                          <|> try (molecularSentenceParser parsePFOL_EQ_FSTerm)
-                          <|> try (equalsParser parsePFOL_EQ_FSTerm)
+    where subFormulaParser = coreParser folFormulaParser subFormulaParser
+                      <|> try (molecularSentenceParser parseComplexFOLTerm)
+                      <|> try (equalsParser parseComplexFOLTerm) 
 
-parseFreeVar :: Parsec String () (PurePFOLTerm a)
+mfolFormulaParser :: Parsec String () PureMFOLForm
+mfolFormulaParser = buildExpressionParser opTable subFormulaParser 
+    where subFormulaParser = coreParser mfolFormulaParser subFormulaParser
+                      <|> try monadicSentenceParser 
+
+coreParser recur sfrecur = parenParser recur
+      <|> try (quantifiedSentenceParser parseFreeVar recur)
+      <|> unaryOpParser [parseNeg] sfrecur
+
+parseFreeVar :: Parsec String () (PureFirstOrderLanguageWith a (Term Int))
 parseFreeVar = choice [try $ do _ <- string "x_"
                                 dig <- many1 digit
                                 return $ PV $ "x_" ++ dig
@@ -35,21 +38,28 @@ parseFreeVar = choice [try $ do _ <- string "x_"
                                 return $ PV [c]
                       ]
 
-parseConstant :: Parsec String () (PurePFOLTerm a)
+parseConstant :: Parsec String () (PureFirstOrderLanguageWith a (Term Int))
 parseConstant = do _ <- string "c_"
                    n <- number
                    return $ PC n
-    where number = do { ds <- many1 digit; return (read ds) } <?> "number"
 
-parsePFOLTerm :: Parsec String () (PurePFOLTerm EndLang)
-parsePFOLTerm = try parseConstant <|> parseFreeVar
+monadicSentenceParser :: Parsec String () PureMFOLForm
+monadicSentenceParser = do _ <- string "P_"
+                           n <- number
+                           _ <- char '('
+                           t <- parseSimpleFOLTerm
+                           _ <- char ')'
+                           return (PMPred n :!$: t)
 
-parsePFOL_EQ_FSTerm :: Parsec String () (PurePFOL_EQ_FSTerm)
-parsePFOL_EQ_FSTerm = try parseConstant 
+parseSimpleFOLTerm :: Parsec String () (PureFirstOrderLanguageWith a (Term Int))
+parseSimpleFOLTerm = try parseConstant <|> parseFreeVar
+
+parseComplexFOLTerm :: Parsec String () (PureLanguage_EQ_FS (Term Int)) 
+parseComplexFOLTerm = try parseConstant 
                     <|> parseFreeVar
-                    <|> molecularTermParser parsePFOL_EQ_FSTerm
+                    <|> molecularTermParser parseComplexFOLTerm
 
-opTable :: Monad m => [[Operator String u m (PurePFOLForm a)]]
+opTable :: Monad m => [[Operator String u m (PureFirstOrderLanguageWith a (Form Bool))]]
 opTable = [[ Prefix (try parseNeg)], 
           [Infix (try parseOr) AssocLeft, Infix (try parseAnd) AssocLeft],
           [Infix (try parseIf) AssocNone, Infix (try parseIff) AssocNone]]

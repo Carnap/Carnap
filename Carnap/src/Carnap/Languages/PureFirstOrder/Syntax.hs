@@ -19,8 +19,14 @@ import Carnap.Languages.Util.GenericConnectives
 data PureMonadicPredicate a where
     MonPred :: Int -> PureMonadicPredicate (Term Int -> Form Bool)
 
+instance Schematizable (PureMonadicPredicate) where
+        schematize (MonPred n) = \(x:xs) -> "P_" ++ show n ++ "(" ++ x ++ ")"
+
 data PureSentences a where
     Sent :: Int -> PureSentences (Form Bool)
+
+instance Schematizable (PureSentences) where
+        schematize (Sent n) = const "P_n"
 
 type PurePredicate = IntPred Bool Int
 
