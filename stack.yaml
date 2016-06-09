@@ -2,8 +2,4 @@ flags: {}
 extra-package-dbs: []
 packages:
 - Carnap/
-extra-deps:
-- megaparsec-4.4.0
-- pretty-1.1.2.0
-- text-1.2.2.0
 resolver: lts-5.13

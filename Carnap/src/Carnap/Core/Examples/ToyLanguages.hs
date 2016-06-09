@@ -147,25 +147,27 @@ instance BoundVars (Predicate BasicProp
                        :|: Quantifiers BasicQuant
                        :|: Function BasicTerm
                        :|: EndLang) where
-    getBoundVar (TQuant (All v)) = TVar v
-    getBoundVar _ = undefined
+    getBoundVar (TQuant (All v)) _ = TVar v
+    getBoundVar _ _ = undefined
+
+    --XXX: placeholder, not correct
+    getBindHeight = getBoundVar
 
     subBoundVar a@(TVar _) b@(TVar _) (x :==: y) = 
         (if x == a then b else x) :==: (if y == a then b else y)
     subBoundVar _ _ phi = phi
 
-instance LangTypes (Predicate BasicProp
+instance LangTypes2 (Predicate BasicProp
                        :|: Connective BasicConn
                        :|: Quantifiers BasicQuant
                        :|: Function BasicTerm
                        :|: EndLang) Form Bool Term Int
 
-instance LangTypes (Predicate BasicProp
+instance LangTypes2 (Predicate BasicProp
                        :|: Connective BasicConn
                        :|: Quantifiers BasicQuant
                        :|: Function BasicTerm
                        :|: EndLang) Term Int Form Bool
-                       --
 
 instance RelabelVars (Predicate BasicProp
                        :|: Connective BasicConn
@@ -178,7 +180,6 @@ instance RelabelVars (Predicate BasicProp
 instance CanonicalForm ToyForm where
         canonical = relabelVars varStream
             where varStream = [i ++ j | i <- ["x"], j <- map show [1 ..]]
-
 
 instance CanonicalForm ToyTerm where
         canonical = id
@@ -290,9 +291,12 @@ instance BoundVars (Applicators Application
                           :|: Function IntObject
                           :|: Function SimpleTerm
                           :|: EndLang) where
-    getBoundVar (SAbstract (Abs v)) = SBlank v
-    getBoundVar _ = undefined
+    getBoundVar (SAbstract (Abs v)) _ = SBlank v
+    getBoundVar _ _ = undefined
 
+    --XXX:placeholder, not correct
+    getBindHeight = getBoundVar
+    
     subBoundVar _ _ phi = phi
 
 instance CopulaSchema SimpleLambda where

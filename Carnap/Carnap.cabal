@@ -19,9 +19,8 @@ library
                      , Carnap.Core.Examples.ToyLanguages
                      , Carnap.Core.Unification.Unification
                      , Carnap.Core.Unification.ACUI
-                     , Carnap.Core.ModelChecking.SAT
-                     , Carnap.Core.ModelChecking.ModelFinder
-                     , Carnap.Core.ModelChecking.Parser
+                     , Carnap.Core.Unification.SAT
+                     , Carnap.Core.Data.Util
                      , Carnap.Core.Util
                      , Carnap.Languages.Util.GenericConnectives
                      , Carnap.Languages.Util.GenericParsers
@@ -30,9 +29,10 @@ library
                      , Carnap.Languages.PurePropositional.Parser
                      , Carnap.Languages.ModalPropositional.Syntax
                      , Carnap.Languages.ModalPropositional.Parser
+                     , Carnap.Languages.PureFirstOrder.Syntax
+                     , Carnap.Languages.PureFirstOrder.Parser
 
   build-depends:       base >= 4.7
-                     , megaparsec >= 4.4.0
                      , lens >= 4.12
                      , mtl >= 2.2.1
                      , containers >= 0.5.6.2

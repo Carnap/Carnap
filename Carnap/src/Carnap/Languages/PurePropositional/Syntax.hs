@@ -3,11 +3,10 @@
 module Carnap.Languages.PurePropositional.Syntax where
 
 import Carnap.Core.Data.AbstractSyntaxDataTypes
+import Carnap.Core.Data.Util (Syncast(..), checkChildren)
 import Carnap.Core.Unification.Unification
 import Carnap.Languages.Util.LanguageClasses
-import Control.Lens (Plated)
-import Control.Lens.Fold (anyOf)
-import Control.Lens.Plated (cosmos, transform)
+import Control.Lens.Plated (Plated, transform, children)
 import Data.Typeable (Typeable)
 import Carnap.Languages.Util.GenericConnectives
 
@@ -76,12 +75,12 @@ instance BooleanLanguage PureForm where
 instance IndexedPropLanguage PureForm where
         pn = PP
 
+instance IndexedSchemePropLanguage PureForm where
+        phin = PPhi
+
 instance CanonicalForm PureForm
 
-instance LangTypes PurePropLexicon Form Bool Term ()
-
-checkChildren :: (Eq s, Plated s) => s -> s -> Bool
-checkChildren phi psi = anyOf cosmos (== phi) psi
+instance LangTypes1 PurePropLexicon Form Bool
 
 instance Syncast PurePropLanguage (Form Bool) where
     cast phi@(PNeg x)      = Just phi
@@ -106,13 +105,18 @@ instance FirstOrder PurePropLanguage where
     sameHead (PP n) (PP m) = n == m
     sameHead _ _ = False
 
-    decompose (PNeg x) (PNeg y) = [x :=: y]
-    decompose (x :&: y) (x' :&: y') = [x :=: x', y :=: y']
-    decompose (x :||: y) (x' :||: y') = [x :=: x', y :=: y']
-    decompose (x :->: y) (x' :->: y') = [x :=: x', y :=: y']
-    decompose (x :<->: y) (x' :<->: y') = [x :=: x', y :=: y']
-    decompose _ _ = []
-
+    decompose x y = 
+        case (cast x :: Maybe PureForm, cast y :: Maybe PureForm, sameHead x y) of 
+           (Just x', Just y', True) -> zipWith (:=:) (children x') (children y')
+           _ -> []
+                                                                   
+    -- NB: The above is slicker, but you can do this naively with 
+    -- decompose (PNeg x) (PNeg y) = [x :=: y]
+    -- decompose (x :&: y) (x' :&: y') = [x :=: x', y :=: y']
+    -- decompose (x :||: y) (x' :||: y') = [x :=: x', y :=: y']
+    -- decompose (x :->: y) (x' :->: y') = [x :=: x', y :=: y']
+    -- decompose (x :<->: y) (x' :<->: y') = [x :=: x', y :=: y']
+    -- decompose _ _ = []
 
     occurs phi psi = case (cast phi :: Maybe PureForm, cast psi :: Maybe PureForm)
                             of (Just f, Just f') -> checkChildren f f'

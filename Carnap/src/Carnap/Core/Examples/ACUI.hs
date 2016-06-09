@@ -77,7 +77,7 @@ pattern VSingelton x = Fx1 (Function Singelton AOne) :!$: x
 pattern VUnion x y = Fx1 (Function Union ATwo) :!$: x :!$: y
 pattern SV n = Fx3 (SubVar n)
 
-instance LangTypes VLex Term V Term V
+instance LangTypes1 VLex Term V
 
 instance BoundVars VLex where
   getBoundVar = undefined
