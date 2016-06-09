@@ -130,7 +130,7 @@ instance FirstOrder VLang where
       | s == s'                    = new
       | otherwise                  = orign
 
-  freshVars = map SV [1..]
+  freshVars = map (\n -> UnivAbs (SV n)) [1..]
 
 parseUnion :: (Monad m) => ParsecT String u m (VTerm -> VTerm -> VTerm)
 parseUnion = do spaces

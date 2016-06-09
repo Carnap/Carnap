@@ -1,4 +1,6 @@
-module Combination (LabelPair(), Labeling, Label(), makeLabel, ) where
+{-#LANGUAGE MultiParamTypeClasses, FlexibleContexts, PatternSynonyms #-}
+
+module Combination (LabelPair(), Labeling, Label(), makeLabel) where
 
 import Carnap.Core.Unification.Unification
 import Carnap.Core.ModelChecking.ModelFinder
@@ -6,29 +8,19 @@ import Control.Monad.State
 import Data.Typeable
 
 data LabelPair f where
-    LabelPair :: f a -> Label f -> LabelPair f
+    LabelPair :: Combineable f label => f a -> label -> LabelPair f
 
 type Labeling f = [LabelPair f]
 
---each label needs a unique value associated with it and a unification algorithm
---we can get a unique value and ensure that it is unique by declaring a label
---type in a module and not exporting it. It is then garenteed that the value
---can not be reproduced so the label is garenteed unique since the Label
---constructor is also not exported
-data Label f where
-    Label :: TypeRep -> (Labeling f -> f a -> f a -> State [f a] [[Equation f]]) -> Label f
+type UniFunction f = Labeling f -> f a -> f a -> State [f a] [[Equation f]]
 
-instance Eq (Label f) where
-    (Label t _) == (Label t' _) = t == t'
+class (FirstOrder f, Eq label) => Combineable f label | f -> label where
+    getLabel :: f a -> label
+    getAlgo :: label -> UniFunction f
+    replaceArgs ::
 
---constraint that says that x must come before y
-
---only allow construction, not deconstruction (outside this module)
---this is to avoid the unessary error of constructing a label with the wrong
---type representation
-makeLabel :: TypeRep -> (Labeling f -> f a -> f a -> State [f a] [[Equation f]]) -> Label f
-makeLabel = Label
-
-class Combine f where
-    getLabel :: f a -> Label f
-    getConstraints :: CNF f
+splitEqs :: Combineable f label => Equation f -> [(label, Equation f)]
+splitEqs eq@(a :=: b)
+    | getLabel a == getLabel b && sameHead a b = decompose eq >>= splitEqs --head dosn't matter
+    | getLabel a == getLabel b                 = undefined --head matters a
+    | otherwise                                = undefined --

@@ -1,7 +1,7 @@
-{-#LANGUAGE MultiParamTypeClasses, FlexibleContexts, PatternSynonyms #-}
+{-#LANGUAGE ImpredicativeTypes, MultiParamTypeClasses, FlexibleContexts, PatternSynonyms #-}
 
 module Carnap.Core.Unification.ACUI (
-  acuiUnify, ACUI, unfoldTerm, refoldTerms
+  acuiUnify, ACUI, unfoldTerm, refoldTerms, conv
 ) where
 
   --to solve ACUI unification with constants we need to be able to find
@@ -97,6 +97,7 @@ trivialSol (Sat False)  = []
 
 --finds all minimal solutions or the trivial solution if no nontrivial ones
 --exist
+--minimals :: Eq a => Solutions a -> [[Literal a]]
 minimals sols | null minsols = trivialSol sols
               | otherwise    = minsols
     where minsols = minimals' [] [] sols
@@ -115,6 +116,7 @@ simplify e = refoldTerms (unfoldTerm e)
 
 --uses vget to get the term being solved for and converts a solution
 --into a substitution
+--conv :: State [b] (f a) -> [Literal (f a)] -> [SimpleEquation (f a)]
 conv vget sol = vget >>= \var -> return $ map (convVar var) sol
     where convVar var term | isPos term = (getVar term) :==: var
                            | otherwise  = (getVar term) :==: mempty
@@ -134,16 +136,22 @@ toSub :: Show (f a) => [SimpleEquation (f a)] -> [Equation f]
 toSub []              = []
 toSub ((x :==: y):xs) = (x :=: y):(toSub xs)
 
+popVar :: State [UnivType f] (f a)
+popVar = do
+    v <- pop
+    return $ unUnivAbs v
+
+
 --solves a homogenous equation
-solveHomoEq :: ACUI f a => SimpleEquation [f a] -> State [f a] [SimpleEquation (f a)]
+solveHomoEq :: ACUI f a => SimpleEquation [f a] -> State [UnivType f] [SimpleEquation (f a)]
 solveHomoEq eq = do
     let mins = minimals . search . toSatProblem $ eq
-    minSols <- mapM (conv pop) mins
+    minSols <- mapM (conv popVar) mins
     let homosol = foldl subadd [] minSols
     return homosol
 
 --solves an inhomogenous equation for a specific constant
-solveInHomoEq :: ACUI f a => f a -> SimpleEquation [f a] -> State [f a] [[SimpleEquation (f a)]]
+solveInHomoEq :: ACUI f a => f a -> SimpleEquation [f a] -> State [UnivType f] [[SimpleEquation (f a)]]
 solveInHomoEq c eq = do
   let mins = minimals . search . toSatProblem $ eq
   minSols <- mapM (conv (return c)) mins
@@ -154,7 +162,7 @@ crossWith f xs ys = [f x y | x <- xs, y <- ys]
 bigCrossWith f xs xss = foldr (crossWith f) xs xss
 
 --finds all solutions to a = b
-acuiUnify :: ACUI f a => f a -> f a -> State [f a] [[Equation f]]
+acuiUnify :: ACUI f a => f a -> f a -> State [UnivType f] [[Equation f]]
 acuiUnify a b = do
     let l = unfoldTerm a
     let r = unfoldTerm b

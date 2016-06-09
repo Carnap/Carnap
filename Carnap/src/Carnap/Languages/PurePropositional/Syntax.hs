@@ -84,7 +84,7 @@ checkChildren :: (Eq s, Plated s) => s -> s -> Bool
 checkChildren phi psi = anyOf cosmos (== phi) psi
 
 instance Syncast PurePropLanguage (Form Bool) where
-    cast phi@(PNeg x)      = Just phi  
+    cast phi@(PNeg x)      = Just phi
     cast phi@(x :&: y)     = Just phi
     cast phi@(x :||: y)    = Just phi
     cast phi@(x :->: y)    = Just phi
@@ -94,7 +94,7 @@ instance Syncast PurePropLanguage (Form Bool) where
     cast _ = Nothing
 
 instance FirstOrder PurePropLanguage where
-        
+
     isVar (PPhi _) = True
     isVar _        = False
 
@@ -118,21 +118,21 @@ instance FirstOrder PurePropLanguage where
                             of (Just f, Just f') -> checkChildren f f'
                                _ -> False
 
-    subst a b c = 
-          case c of 
+    subst a b c =
+          case c of
             (PNeg x)     -> byCast a b c
-            (x :&: y)    -> byCast a b c 
+            (x :&: y)    -> byCast a b c
             (x :||: y)   -> byCast a b c
             (x :->: y)   -> byCast a b c
             (x :<->: y)  -> byCast a b c
             (PP _)       -> byCast a b c
             (PPhi _)     -> byCast a b c
             _ -> c
-        where 
+        where
             byCast v phi psi =
-                case (cast v :: Maybe PureForm, cast phi :: Maybe PureForm, cast psi :: Maybe PureForm) of 
-                     (Just v', Just phi', Just psi') -> 
+                case (cast v :: Maybe PureForm, cast phi :: Maybe PureForm, cast psi :: Maybe PureForm) of
+                     (Just v', Just phi', Just psi') ->
                           transform (\x -> if x == v' then phi' else x) psi'
                      _ -> psi
 
-    freshVars = map PSV [1..]
+    freshVars = map (\n -> UnivAbs (PSV n)) [1..]

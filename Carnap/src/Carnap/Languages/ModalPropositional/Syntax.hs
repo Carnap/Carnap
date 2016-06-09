@@ -50,11 +50,7 @@ instance Evaluable PropModality where
         eval Diamond = lift1 $ \f -> const False
 
 instance Modelable PropFrame PropModality where
-<<<<<<< HEAD
         satisfies f Box = lift1 $ \f x -> M.getAll $ mconcat (map (M.All . f) (ac x))
-=======
-        satisfies f Box = lift1 $ \f x -> getAll $ mconcat (map (M.All . f) (ac x))
->>>>>>> master
             where ac x = accessibility f ! x
         satisfies f Diamond = lift1 $ \f x -> M.getAny $ mconcat (map (M.Any . f) (ac x))
             where ac x = accessibility f ! x
@@ -124,19 +120,7 @@ instance IndexedSchemePropLanguage ModalForm where
 checkChildren :: (Eq s, Plated s) => s -> s -> Bool
 checkChildren phi psi = anyOf cosmos (== phi) psi
 
-<<<<<<< HEAD
-castToForm :: ModalPropLanguage a -> Maybe ModalForm
-castToForm phi@(MNeg x)      = Just phi
-castToForm phi@(x :&: y)     = Just phi
-castToForm phi@(x :||: y)    = Just phi
-castToForm phi@(x :->: y)    = Just phi
-castToForm phi@(x :<->: y)   = Just phi
-castToForm phi@(MP _)        = Just phi
-castToForm phi@(MPhi _)      = Just phi
-castToForm phi@(MNec _)      = Just phi
-castToForm phi@(MPos _)      = Just phi
-castToForm _ = Nothing
-=======
+
 instance Syncast ModalPropLanguage (Form (World -> Bool)) where
     cast phi@(MNeg x)      = Just phi
     cast phi@(x :&: y)     = Just phi
@@ -148,7 +132,6 @@ instance Syncast ModalPropLanguage (Form (World -> Bool)) where
     cast phi@(MNec _)      = Just phi
     cast phi@(MPos _)      = Just phi
     cast _ = Nothing
->>>>>>> master
 
 instance FirstOrder ModalPropLanguage where
 
@@ -192,14 +175,10 @@ instance FirstOrder ModalPropLanguage where
             _            -> c
         where
             byCast v phi psi =
-<<<<<<< HEAD
-                case (castToForm v, castToForm phi, castToForm psi) of
-                     (Just v', Just phi', Just psi') ->
-=======
+
                 case (cast v :: Maybe ModalForm, cast phi :: Maybe ModalForm, cast psi :: Maybe ModalForm) of
                      (Just v', Just phi', Just psi') ->
->>>>>>> master
                           transform (\x -> if x == v' then phi' else x) psi'
                      _ -> psi
 
-    freshVars = map MSV [1..]
+    freshVars = map (\n -> UnivAbs (MSV n)) [1..]
