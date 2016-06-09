@@ -5,7 +5,7 @@ module Carnap.Core.Unification.Unification (
    isVar, sameHead, decompose, occurs, subst,
    matchApp, castLam, getLamVar, (.$.),
    applySub, founify, mapAll, freshVars,
-   UnivType(UnivAbs), unUnivAbs, ExtApp(ExtApp)
+   EveryPig(EveryPig), unEveryPig, ExtApp(ExtApp)
 ) where
 
 import Data.Type.Equality
@@ -16,7 +16,7 @@ data Equation f where
 instance Show (Equation f) where
         show (x :=: y) = show x ++ " :=: " ++ show y
 
-newtype UnivType f = UnivAbs {unUnivAbs :: forall a. f a}
+newtype EveryPig f = EveryPig {unEveryPig :: forall a. f a}
 
 --this interface seems simpliar for the user to implement than our previous
 --1. There is no more varible type
@@ -36,7 +36,7 @@ class FirstOrder f where
     decompose :: f a -> f a -> [Equation f]
     occurs :: f a -> f b -> Bool
     subst :: f a -> f a -> f b -> f b
-    freshVars :: [UnivType f] --we need to universially quantify this
+    freshVars :: [EveryPig f] --we need to universially quantify this
 
 data ExtApp f a where
     ExtApp :: f (b -> a) -> f b -> ExtApp f a

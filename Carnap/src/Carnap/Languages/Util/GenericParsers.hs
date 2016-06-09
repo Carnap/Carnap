@@ -47,10 +47,6 @@ parsePos = do spaces
               _ <- string "<>" <|> string "◇"
               return pos
 
-unaryOpParser :: (Monad m, BooleanLanguage l, IndexedPropLanguage l) => [ParsecT String u m (l -> l)] -> ParsecT String u m l ->  ParsecT String u m l
-unaryOpParser ops recur = do n <- listToTry ops
-                             f <- recur
-                             return $ n f
 --------------------------------------------------------
 --Predicates and Sentences
 --------------------------------------------------------
@@ -69,10 +65,6 @@ schemevarParser = do string "Phi"
                      n <- number
                      return $ phin n
     where number = do { ds <- many1 digit; return (read ds) } <?> "number"
-
-
-parenParser :: (BooleanLanguage l, Monad m, IndexedPropLanguage l) => ParsecT String u m l -> ParsecT String u m l
-parenParser recur = char '(' *> recur <* char ')'
 
 unaryOpParser :: (Monad m) => [ParsecT String u m (l -> l)] -> ParsecT String u m l ->  ParsecT String u m l
 unaryOpParser ops recur = do n <- listToTry ops

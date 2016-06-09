@@ -116,11 +116,6 @@ instance IndexedPropLanguage ModalForm where
 instance IndexedSchemePropLanguage ModalForm where
         phin = MPhi
 
-
-checkChildren :: (Eq s, Plated s) => s -> s -> Bool
-checkChildren phi psi = anyOf cosmos (== phi) psi
-
-
 instance Syncast ModalPropLanguage (Form (World -> Bool)) where
     cast phi@(MNeg x)      = Just phi
     cast phi@(x :&: y)     = Just phi
@@ -181,4 +176,4 @@ instance FirstOrder ModalPropLanguage where
                           transform (\x -> if x == v' then phi' else x) psi'
                      _ -> psi
 
-    freshVars = map (\n -> UnivAbs (MSV n)) [1..]
+    freshVars = map (\n -> EveryPig (MSV n)) [1..]

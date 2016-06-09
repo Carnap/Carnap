@@ -1,7 +1,7 @@
 {-#LANGUAGE ImpredicativeTypes, MultiParamTypeClasses, FlexibleContexts, PatternSynonyms #-}
 
 module Carnap.Core.Unification.ACUI (
-  acuiUnify, ACUI, unfoldTerm, refoldTerms, conv
+  acuiUnify, ACUI, unfoldTerm, refoldTerms
 ) where
 
   --to solve ACUI unification with constants we need to be able to find
@@ -136,14 +136,14 @@ toSub :: Show (f a) => [SimpleEquation (f a)] -> [Equation f]
 toSub []              = []
 toSub ((x :==: y):xs) = (x :=: y):(toSub xs)
 
-popVar :: State [UnivType f] (f a)
+popVar :: State [EveryPig f] (f a)
 popVar = do
     v <- pop
-    return $ unUnivAbs v
+    return $ unEveryPig v
 
 
 --solves a homogenous equation
-solveHomoEq :: ACUI f a => SimpleEquation [f a] -> State [UnivType f] [SimpleEquation (f a)]
+solveHomoEq :: ACUI f a => SimpleEquation [f a] -> State [EveryPig f] [SimpleEquation (f a)]
 solveHomoEq eq = do
     let mins = minimals . search . toSatProblem $ eq
     minSols <- mapM (conv popVar) mins
@@ -151,7 +151,7 @@ solveHomoEq eq = do
     return homosol
 
 --solves an inhomogenous equation for a specific constant
-solveInHomoEq :: ACUI f a => f a -> SimpleEquation [f a] -> State [UnivType f] [[SimpleEquation (f a)]]
+solveInHomoEq :: ACUI f a => f a -> SimpleEquation [f a] -> State [EveryPig f] [[SimpleEquation (f a)]]
 solveInHomoEq c eq = do
   let mins = minimals . search . toSatProblem $ eq
   minSols <- mapM (conv (return c)) mins
@@ -162,7 +162,7 @@ crossWith f xs ys = [f x y | x <- xs, y <- ys]
 bigCrossWith f xs xss = foldr (crossWith f) xs xss
 
 --finds all solutions to a = b
-acuiUnify :: ACUI f a => f a -> f a -> State [UnivType f] [[Equation f]]
+acuiUnify :: ACUI f a => f a -> f a -> State [EveryPig f] [[Equation f]]
 acuiUnify a b = do
     let l = unfoldTerm a
     let r = unfoldTerm b

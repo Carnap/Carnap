@@ -105,12 +105,12 @@ instance FirstOrder PurePropLanguage where
     sameHead (PP n) (PP m) = n == m
     sameHead _ _ = False
 
-    decompose x y = 
-        case (cast x :: Maybe PureForm, cast y :: Maybe PureForm, sameHead x y) of 
+    decompose x y =
+        case (cast x :: Maybe PureForm, cast y :: Maybe PureForm, sameHead x y) of
            (Just x', Just y', True) -> zipWith (:=:) (children x') (children y')
            _ -> []
-                                                                   
-    -- NB: The above is slicker, but you can do this naively with 
+
+    -- NB: The above is slicker, but you can do this naively with
     -- decompose (PNeg x) (PNeg y) = [x :=: y]
     -- decompose (x :&: y) (x' :&: y') = [x :=: x', y :=: y']
     -- decompose (x :||: y) (x' :||: y') = [x :=: x', y :=: y']
@@ -139,4 +139,4 @@ instance FirstOrder PurePropLanguage where
                           transform (\x -> if x == v' then phi' else x) psi'
                      _ -> psi
 
-    freshVars = map (\n -> UnivAbs (PSV n)) [1..]
+    freshVars = map (\n -> EveryPig (PSV n)) [1..]
