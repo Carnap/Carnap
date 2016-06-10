@@ -1,0 +1,13 @@
+nav#navbar
+    ul 
+       list-style-type: none
+       margin: 0
+       padding 0
+       text-align: right
+
+    ul > li 
+       display: inline
+       border-right: 1px solid
+       margin-left: 5px
+    ul > li:last-child
+       border-right: none

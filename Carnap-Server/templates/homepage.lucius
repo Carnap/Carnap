@@ -1,0 +1,20 @@
+h1 {
+    text-align: center;
+    margin-bottom: 30px
+}
+h2##{aDomId} {
+    color: #990
+}
+li {
+    line-height: 2em;
+    font-size: 16px
+}
+ol {
+    margin-bottom: 30px
+}
+footer {
+    text-align: center
+}
+.input-sm {
+    margin-left: 20px
+}

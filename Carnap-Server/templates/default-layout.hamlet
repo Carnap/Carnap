@@ -1,0 +1,20 @@
+<nav id="navbar">
+    <ul>
+        <li>
+            <a href=@{HomeR}>
+                Carnap
+        <li>
+            <a href=@{BookR}>
+                Book
+        <li>
+            $maybe (Entity _ user) <- authmaybe
+                <a href=@{UserR (userIdent user)}>
+                    #{userIdent user}
+            $nothing
+                <a href=@{AuthR LoginR}>
+                    Login
+
+$maybe msg <- mmsg
+  <div #message>#{msg}
+
+^{widget}

@@ -1,0 +1,8 @@
+<h1.jumbotron>
+  Welcome to Carnap!
+
+<p>
+    Here's a little reference for Fay integration
+    <div>
+        <input #fibindex placeholder="Fibonacci Index">
+        <span #fibresult>
