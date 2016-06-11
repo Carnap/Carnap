@@ -61,19 +61,19 @@ It is common practice among those who study arguments to write an argument with
 the premises in a list, above the conclusion, like so:
 
 > | 1. <span class="premise">My house is far from fault lines.</span>
-> | ∴  <span class="conclusion">My house is safe from earthquakes.</span>
+> | <span class="conclusion">My house is safe from earthquakes.</span>
 
 > | 1. <span class="premise"> Cottonmouths are water moccasins.</span>
 > | 2. <span class="premise"> Water moccasins can be found only in Southeast Kansas.</span>
-> | ∴  <span class="conclusion"> There are no cottonmouths outside of Southeast Kansas.</span>
+> | <span class="conclusion"> There are no cottonmouths outside of Southeast Kansas.</span>
 
 > | 1. <span class="premise">Any motion can be made faster.</span>
-> | ∴ <span class="conclusion"> There's no fastest motion</span>
+> | <span class="conclusion"> There's no fastest motion</span>
 
 
 > | 1. <span class="premise">My Client ate a bad diet.</span>
 > | 2. <span class="premise">A bad diet can cause a lack of self-control.</span>
-> | ∴  <span class="conclusion"> My client is innocent by reason of insanity.</span>
+> | <span class="conclusion"> My client is innocent by reason of insanity.</span>
 
 
 This allows us to conveniently see the structure of the arguments.

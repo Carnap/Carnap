@@ -278,9 +278,15 @@ span.newthought { font-variant: small-caps;
                   font-size: 1.2em; }
 
 span.premise { padding-left: 1em;}
-span.conclusion { padding-left: 1em;
+span.conclusion { padding-left: .8em;
                   padding-right: 1em;
+                  display: inline-block;
                   border-top: solid 1pt;}
+
+span.conclusion::before { content: "∴";
+    position: relative;
+    left:-1em;
+}
 
 input.margin-toggle { display: none; }
 
