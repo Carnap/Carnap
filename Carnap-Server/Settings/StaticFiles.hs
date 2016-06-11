@@ -16,3 +16,7 @@ import Yesod.Static (staticFiles)
 --
 --     StaticFile ["js", "script.js"] []
 staticFiles (appStaticDir compileTimeAppSettings)
+
+-- XXX:for whatever reason, recompiling with the below seems to get it to reload
+-- the static file cache. You an then switch back to compileTimeAppSettings
+-- staticFiles "static/"

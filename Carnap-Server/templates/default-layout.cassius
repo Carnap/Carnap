@@ -1,5 +1,7 @@
 nav#navbar
     ul 
+       line-height: 2em;
+       font-size: 16px;
        list-style-type: none
        margin: 0
        padding 0
@@ -9,5 +11,7 @@ nav#navbar
        display: inline
        border-right: 1px solid
        margin-left: 5px
+       font-size: 15px
+       font-family: sans-serif;
     ul > li:last-child
        border-right: none
