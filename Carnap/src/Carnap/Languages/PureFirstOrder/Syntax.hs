@@ -165,18 +165,24 @@ type MonadicPredicates = Predicate PureMonadicPredicate
                       :|: Predicate PureSentences
                       :|: EndLang
 
-type PureLexiconMFOL = CoreLexicon :|: MonadicPredicates :|: EndLang
+type OpenLexiconMFOL a = CoreLexicon :|: MonadicPredicates :|: a
 
-type PureLanguageMFOL = FixLang PureLexiconMFOL
+type OpenLanguageMFOL a = FixLang (CoreLexicon :|: MonadicPredicates :|: a)
+
+type PureLanguageMFOL = OpenLanguageMFOL EndLang
 
 pattern PMPred n = FX (Lx2 (Lx1 (Predicate (MonPred n) AOne)))
 pattern PMSent n = FX (Lx2 (Lx2 (Predicate (Sent n) AZero)))
 
-type PureMFOLForm = PureLanguageMFOL (Form Bool)
+type OpenMFOLForm a = OpenLanguageMFOL a (Form Bool)
 
-type PureMFOLTerm = PureLanguageMFOL (Term Int)
+type PureMFOLForm = OpenMFOLForm EndLang
 
-instance IndexedPropLanguage PureMFOLForm where
+type OpenMFOLTerm a = OpenLanguageMFOL a (Term Int)
+
+type PureMFOLTerm = OpenMFOLTerm EndLang
+
+instance IndexedPropLanguage (OpenMFOLForm a) where
     pn = PMSent
 
 --------------------------------------------------------
@@ -191,7 +197,7 @@ type OpenLexiconPFOL a = CoreLexicon :|: PolyadicPredicates :|: a
 
 type OpenLanguagePFOL a = FixLang (OpenLexiconPFOL a)
 
-type PureLanguagePFOL = FixLang (OpenLexiconPFOL EndLang)
+type PureLanguagePFOL = OpenLanguagePFOL EndLang
 
 pattern PPred x arity  = FX (Lx2 (Lx1 (Predicate x arity)))
 pattern PSPred x arity = FX (Lx2 (Lx2 (Predicate x arity)))
@@ -199,11 +205,15 @@ pattern PP n a1 a2     = PPred (Pred a1 n) a2
 pattern PS n           = PPred (Pred AZero n) AZero
 pattern PPhi n a1 a2   = PSPred (SPred a1 n) a2
 
-type PurePFOLForm a = OpenLanguagePFOL a (Form Bool)
+type OpenPFOLForm a = OpenLanguagePFOL a (Form Bool)
 
-type PurePFOLTerm a = OpenLanguagePFOL a (Term Int)
+type PurePFOLForm = OpenPFOLForm EndLang
 
-instance IndexedPropLanguage (PurePFOLForm a) where
+type OpenPFOLTerm a = OpenLanguagePFOL a (Term Int)
+
+type PurePFOLTerm = OpenPFOLTerm EndLang
+
+instance IndexedPropLanguage (OpenPFOLForm a) where
     pn = PS
 
 instance PolyadicPredicateLanguage (OpenLanguagePFOL a) (Term Int) (Form Bool) 

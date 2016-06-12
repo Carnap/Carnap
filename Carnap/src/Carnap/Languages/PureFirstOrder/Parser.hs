@@ -10,7 +10,7 @@ import Carnap.Languages.Util.GenericParsers
 import Text.Parsec
 import Text.Parsec.Expr
 
-pfolFormulaParser :: Parsec String () (PurePFOLForm EndLang)
+pfolFormulaParser :: Parsec String () PurePFOLForm
 pfolFormulaParser = buildExpressionParser opTable subFormulaParser 
     where subFormulaParser = coreParser pfolFormulaParser subFormulaParser
                       <|> try (molecularSentenceParser parseSimpleFOLTerm)
