@@ -153,7 +153,7 @@ blockquote footer { width: 50%;
                     font-size: 1.1rem;
                     text-align: right; }
 
-div#main ol, div#main ul { width: 45%;
+div#main ol, div#main ul { width: 95%;
          -webkit-padding-start: 5%;
          -webkit-padding-end: 5%; }
 

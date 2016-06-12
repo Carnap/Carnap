@@ -123,16 +123,14 @@ remain unsure about whether the argument supports its conclusion.
 
 For example, consider these two arguments:
 
-<div class="argument">
-#.  Nine out of ten stop and frisk subjects are not charged with a crime.
-#.  NYC Police are unreliable judges of whether someone has committed a crime.
-</div>
 
-<div class="argument">
-#.  Unless soil is deep and sandy, it is not suitable for carrots.
-#.  Soil is either suitable for carrots or tomatoes, but not both. 
-#.  Soil suitable for tomatoes is not both deep and sandy.
-</div>
+> | 1. <span class="premise">Nine out of ten stop and frisk subjects are not charged with a crime.</span>
+> | <span class="conclusion">NYC Police are unreliable judges of whether someone has committed a crime.</span>
+
+> | 1. <span class="premise">Unless soil is deep and sandy, it is not suitable for carrots.</span>
+> | 2. <span class="premise">Soil is either suitable for carrots or tomatoes, but not both.</span>
+> |  <span class="conclusion">Soil suitable for tomatoes is not both deep and sandy.</span>
+
 
 It is far from immediately obvious, but the first argument does not give reason
 to believe its conclusion. That is in spite of the fact that we may have little
@@ -170,17 +168,17 @@ the premises are true. Once that is established, the conclusion is guaranteed.
 This is a fairly high standard. For example, consider the following argument
 pair:
 
-<div class="argument">
-#.  If the mouse isn't in the trap, the cat ate it.
-#.  The mouse is not in the trap.
-#.  The cat ate the mouse. 
-</div>
 
-<div class="argument">
-#.  If the mouse isn't in the trap, the cat ate it. 
-#.  The mouse is not in the trap.
-#.  The mouse is dead. 
-</div>
+> | 1. <span class="premise">If the mouse isn't in the trap, the cat ate it.</span>
+> | 2. <span class="premise">The mouse is not in the trap.</span>
+> | <span class="conclusion">The cat ate the mouse. </span>
+
+
+
+> | 1. <span class="premise">If the mouse isn't in the trap, the cat ate it. </span>
+> | 2. <span class="premise">The mouse is not in the trap.</span>
+> | <span class="conclusion">The mouse is dead. </span>
+
 
 The first argument is deductively valid. The second is not---while the premises
 make the conclusion very likely, it is still possible for them to be true and
@@ -190,19 +188,19 @@ in one bite and then coughed it up fully intact a moment later.
 Once we begin to think about deductive validity, we may notice something
 interesting. The cat/trap argument is valid, but so is this one:
 
-<div class="argument">
-#.  If the moose isn't in the trap, the dinosaur ate it. 
-#.  The moose is not in the trap.
-#.  The dinosaur ate the moose. 
-</div>
+
+> | 1. <span class="premise">If the moose isn't in the trap, the dinosaur ate it. </span>
+> | 2. <span class="premise">The moose is not in the trap.</span>
+> | <span class="conclusion">The dinosaur ate the moose. </span>
+
 
 and so is this one:
 
-<div class="argument">
-#.  If the moose isn't an albino, the dinosaur ate it.
-#.  The moose is not an albino.
-#.  The dinosaur ate the moose. 
-</div>
+
+> | 1. <span class="premise">If the moose isn't an albino, the dinosaur ate it.</span>
+> | 2. <span class="premise">The moose is not an albino.</span>
+> | <span class="conclusion">The dinosaur ate the moose. </span>
+
 
 If you were somehow to find out that the premises of the latter argument were
 true, even if you did not know anything about albino moose and dinosaurs, you
@@ -220,11 +218,11 @@ Logical Form
 
 One way of depicting the form of the three arguments above is as follows:
 
-<div class="argument">
-#.  If $P$, then $Q$. 
-#.  $P$.
-#.  $Q$.
-</div>
+
+> | <span class="premise">If $P$, then $Q$. </span>
+> | <span class="premise">$P$.</span>
+> | <span class="conclusion">$Q$.</span>
+
 
 This logical form is called *modus ponens*. The result of replacing the letters
 $P$ and $Q$ with actual assertions will be a deductively valid argument.
@@ -245,6 +243,7 @@ we would have a good test for the deductive validity of arguments: we could
 just figure out their logical forms, and then check the form against our
 classification.
 
+
 #Formal Languages
  
 ##Ambiguity
@@ -253,36 +252,36 @@ The project of classifying arguments by their logical form is simple enough.
 But if we try to push it very far, we will meet a serious challenge. Here is an
 example. The following argument  looks quite compelling.
 
-<div class="argument">
-#.  A bronze medal is better than a silver medal.
-#.  A gold medal is better than a silver medal.
-#.  A gold medal is better than a bronze medal. 
-</div>
+
+> | 1. <span class="premise">A bronze medal is better than a silver medal.</span>
+> | 2. <span class="premise">A gold medal is better than a silver medal.</span>
+> | <span class="conclusion">A gold medal is better than a bronze medal. </span>
+
 
 Moreover, it seems to be good because of its form. For example, the argument
 
 
-<div class="argument">
-#.  A field goal is better than a safety.
-#.  A touchdown is better than a field goal.
-#.  A field goal is better than a safety. 
-</div>
+
+> | 1. <span class="premise">A field goal is better than a safety.</span>
+> | 2. <span class="premise">A touchdown is better than a field goal.</span>
+> | <span class="conclusion">A field goal is better than a safety. </span>
+
 
 is deductively valid as well. This might lead us to believe that the following
 logical form confers validity on the arguments that have it:
 
-<div class="argument">
-#.  $B$ is better than $C$.
-#.  $A$ is better than $B$.
-#.  $A$ is better than $C$ 
-</div>
+
+> | <span class="premise">$B$ is better than $C$.</span>
+> | <span class="premise">$A$ is better than $B$.</span>
+> | <span class="conclusion">$A$ is better than $C$ </span>
+
  But what about this argument?
 
-<div class="argument">
-#.  Nothing is better than world peace.
-#.  Cold pizza is better than nothing.
-#.  Cold pizza is better than world peace. 
-</div>
+
+| 1. <span class="premise">Nothing is better than world peace.</span>
+| 2. <span class="premise">Cold pizza is better than nothing.</span>
+| <span class="conclusion">Cold pizza is better than world peace. </span>
+
 The conclusion is certainly false, but the premises are plausibly true. What is
 going on here?
 
@@ -305,26 +304,17 @@ ambiguous sentences. It is a good exercise to think about them, and see if you
 can spot how one reading makes the argument deductively valid, and the other
 reading does not.
 
-<div class="argument">
-#.  Salvatore brought a hat from Italy.
-#.  Salvatore has been to Italy.
-</div>
+| 1. <span class="premise">Salvatore brought a hat from Italy.</span>
+| <span class="conclusion">Salvatore has been to Italy.</span>
 
-<div class="argument">
-#.  Bill and Barb are married.
-#.  Bill is Barb's husband.
-</div>
+| 1. <span class="premise">Bill and Barb are married.</span>
+| <span class="conclusion">Bill is Barb's husband.</span>
 
-<div class="argument">
-#.  Charlotte's Web is a children's novel about a pig named Wilbur who is saved
-from being slaughtered by an intelligent spider named Charlotte.
-#.  In C.W., Charlotte saves Wilbur.
-</div>
+| 1. <span class="premise">Charlotte's Web is a children's novel about a pig named Wilbur who is saved from being slaughtered by an intelligent spider named Charlotte. </span>
+| <span class="conclusion">In C.W., Charlotte saves Wilbur.</span>
 
-<div class="argument">
-#.  John saw the man on the mountain with a telescope.
-#.  The man on the mountain has a telescope.
-</div>
+| 1. <span class="premise">John saw the man on the mountain with a telescope.</span>
+| <span class="conclusion">The man on the mountain has a telescope.</span>
 
 If we are to get very far with formal logic, we will need to have a way of
 dealing with ambiguity. The key idea here come from
@@ -418,10 +408,14 @@ assertions. Some examples of connectives are "and", "or" "if ...
 then ...", and "if and only if". We can use them to stick
 together sentences like this:
 
-1. If I go to work then I will pass by Detroit.
-2. If I dance a jig then I will amuse onlookers.
-3. There's a storm outside and hail is beginning to come down.
-4. You're in or you're out.
+1. If <span style="color: blue;"> I go to work </span> then <span
+   style="color:red"> I will pass by Detroit</span>.
+2. If <span style="color: blue;">I dance a jig</span> then <span
+   style="color:red;">I will amuse onlookers</span>.
+3. <span style="color: blue;">There's a storm outside</span> and <span
+   style="color: red;">hail is beginning to come down</span>.
+4. <span style="color: blue;">You're in</span> or <span
+   style="color:red;">you're out</span>.
 
 Another connective is "it is not the case that". This connective is a bit odd,
 because it does not serve to connect two sentences. But it is, nevertheless,
