@@ -15,7 +15,7 @@ pfolFormulaParser = buildExpressionParser opTable subFormulaParser
     where subFormulaParser = coreParser pfolFormulaParser subFormulaParser
                       <|> try (molecularSentenceParser parseSimpleFOLTerm)
 
-folFormulaParser :: Parsec String () PurePFOL_EQ_FSForm
+folFormulaParser :: Parsec String () PureFOLForm
 folFormulaParser = buildExpressionParser opTable subFormulaParser 
     where subFormulaParser = coreParser folFormulaParser subFormulaParser
                       <|> try (molecularSentenceParser parseComplexFOLTerm)
@@ -54,7 +54,7 @@ monadicSentenceParser = do _ <- string "P_"
 parseSimpleFOLTerm :: Parsec String () (PureFirstOrderLanguageWith a (Term Int))
 parseSimpleFOLTerm = try parseConstant <|> parseFreeVar
 
-parseComplexFOLTerm :: Parsec String () (PureLanguage_EQ_FS (Term Int)) 
+parseComplexFOLTerm :: Parsec String () (PureLanguageFOL (Term Int)) 
 parseComplexFOLTerm = try parseConstant 
                     <|> parseFreeVar
                     <|> molecularTermParser parseComplexFOLTerm

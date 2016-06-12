@@ -165,16 +165,16 @@ type MonadicPredicates = Predicate PureMonadicPredicate
                       :|: Predicate PureSentences
                       :|: EndLang
 
-type PureLexiconMonadicFOL = CoreLexicon :|: MonadicPredicates :|: EndLang
+type PureLexiconMFOL = CoreLexicon :|: MonadicPredicates :|: EndLang
 
-type PureLanguageMonadicFOL = FixLang PureLexiconMonadicFOL
+type PureLanguageMFOL = FixLang PureLexiconMFOL
 
 pattern PMPred n = FX (Lx2 (Lx1 (Predicate (MonPred n) AOne)))
 pattern PMSent n = FX (Lx2 (Lx2 (Predicate (Sent n) AZero)))
 
-type PureMFOLForm = PureLanguageMonadicFOL (Form Bool)
+type PureMFOLForm = PureLanguageMFOL (Form Bool)
 
-type PureMFOLTerm = PureLanguageMonadicFOL (Term Int)
+type PureMFOLTerm = PureLanguageMFOL (Term Int)
 
 instance IndexedPropLanguage PureMFOLForm where
     pn = PMSent
@@ -187,11 +187,11 @@ type PolyadicPredicates = Predicate PurePredicate
                       :|: Predicate PureSchematicPred
                       :|: EndLang
 
-type OpenLexiconPolyadicFOL a = CoreLexicon :|: PolyadicPredicates :|: a
+type OpenLexiconPFOL a = CoreLexicon :|: PolyadicPredicates :|: a
 
-type OpenLanguagePolyadicFOL a = FixLang (OpenLexiconPolyadicFOL a)
+type OpenLanguagePFOL a = FixLang (OpenLexiconPFOL a)
 
-type PureLanguagePolyadicFOL = FixLang (OpenLexiconPolyadicFOL EndLang)
+type PureLanguagePFOL = FixLang (OpenLexiconPFOL EndLang)
 
 pattern PPred x arity  = FX (Lx2 (Lx1 (Predicate x arity)))
 pattern PSPred x arity = FX (Lx2 (Lx2 (Predicate x arity)))
@@ -199,17 +199,17 @@ pattern PP n a1 a2     = PPred (Pred a1 n) a2
 pattern PS n           = PPred (Pred AZero n) AZero
 pattern PPhi n a1 a2   = PSPred (SPred a1 n) a2
 
-type PurePFOLForm a = OpenLanguagePolyadicFOL a (Form Bool)
+type PurePFOLForm a = OpenLanguagePFOL a (Form Bool)
 
-type PurePFOLTerm a = OpenLanguagePolyadicFOL a (Term Int)
+type PurePFOLTerm a = OpenLanguagePFOL a (Term Int)
 
 instance IndexedPropLanguage (PurePFOLForm a) where
     pn = PS
 
-instance PolyadicPredicateLanguage (OpenLanguagePolyadicFOL a) (Term Int) (Form Bool) where 
-    ppn n a = PP n a a
+instance PolyadicPredicateLanguage (OpenLanguagePFOL a) (Term Int) (Form Bool) 
+        where ppn n a = PP n a a
 
-instance Incrementable (OpenLexiconPolyadicFOL EndLang) (Term Int) where
+instance Incrementable (OpenLexiconPFOL EndLang) (Term Int) where
     incHead (PP n a b) = Just $ PP n (ASucc a) (ASucc a)
     incHead _  = Nothing
 
@@ -219,26 +219,26 @@ instance Incrementable (OpenLexiconPolyadicFOL EndLang) (Term Int) where
 
 type PolyadicFunctionSymbolsAndIdentity = Predicate PureEq :|: Function PureFunction :|: EndLang
 
-type PureLexiconPFOL_EQ_FS = (OpenLexiconPolyadicFOL (PolyadicFunctionSymbolsAndIdentity :|: EndLang))
+type PureLexiconFOL = (OpenLexiconPFOL (PolyadicFunctionSymbolsAndIdentity :|: EndLang))
 
-type PureLanguage_EQ_FS = FixLang PureLexiconPFOL_EQ_FS
+type PureLanguageFOL = FixLang PureLexiconFOL
 
 pattern PEq = FX (Lx3 (Lx1 (Predicate TermEq ATwo)))
 pattern (:==:) t1 t2 = PEq :!$: t1 :!$: t2
 pattern PFunc x arity  = FX (Lx3 (Lx2 (Function x arity)))
 pattern PF n a1 a2     = PFunc (Func a1 n) a2
 
-type PurePFOL_EQ_FSForm = PureLanguage_EQ_FS (Form Bool)
+type PureFOLForm = PureLanguageFOL (Form Bool)
 
-type PurePFOL_EQ_FSTerm = PureLanguage_EQ_FS (Term Int)
+type PureFOLTerm = PureLanguageFOL (Term Int)
 
-instance EqLanguage PurePFOL_EQ_FSForm PurePFOL_EQ_FSTerm  where 
+instance EqLanguage PureFOLForm PureFOLTerm  where 
         equals = (:==:)
 
-instance PolyadicFunctionLanguage PureLanguage_EQ_FS (Term Int) (Term Int) where 
+instance PolyadicFunctionLanguage PureLanguageFOL (Term Int) (Term Int) where 
     pfn n a = PF n a a
 
-instance Incrementable PureLexiconPFOL_EQ_FS (Term Int) where
+instance Incrementable PureLexiconFOL (Term Int) where
     incHead (PP n a b) = Just $ PP n (ASucc a) (ASucc a)
     incHead (PF n a b) = Just $ PF n (ASucc a) (ASucc a)
     incHead _  = Nothing
