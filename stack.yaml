@@ -4,4 +4,4 @@ extra-deps: [yesod-markdown-0.11.1]
 packages:
 - Carnap/
 - Carnap-Server/
-resolver: lts-5.13
+resolver: lts-6.2
