@@ -3,11 +3,11 @@
 module Carnap.Core.Data.AbstractSyntaxDataTypes(
   -- * Abstract Typeclasses
   -- ** Classes for Semantics
-  Modelable(..), Evaluable(..), 
+  Modelable(..), Evaluable(..),
   lift1, lift2,
   -- ** Classes for Display
   CopulaSchema(..), CanonicalForm(..), Schematizable(..),
-   Term(..), Form(..), 
+   Term(..), Form(..),
   BoundVars(..),
   -- * Abstract Types
   -- $ATintro
@@ -20,14 +20,14 @@ module Carnap.Core.Data.AbstractSyntaxDataTypes(
   Lx7, pattern Lx8, pattern Lx9, pattern Lx10, pattern Lx11, pattern FX,
   -- ** Abstract Term Types
   -- *** Variable Binding Operators
-  Quantifiers(Bind),Abstractors(Abstract),Applicators(Apply), 
-  -- *** Non-Binding Operators 
-  Arity(AZero, ASucc), 
-  Predicate(Predicate), 
-  Connective(Connective), Function(Function), 
+  Quantifiers(Bind),Abstractors(Abstract),Applicators(Apply),
+  -- *** Non-Binding Operators
+  Arity(AZero, ASucc),
+  Predicate(Predicate),
+  Connective(Connective), Function(Function),
   Subnective(Subnective),
-  SubstitutionalVariable(SubVar),  
-  LangTypes2(..), LangTypes1(..), RelabelVars(..),   
+  SubstitutionalVariable(SubVar),
+  LangTypes2(..), LangTypes1(..), RelabelVars(..),
 ) where
 
 import Carnap.Core.Util
@@ -52,7 +52,7 @@ example, a truth value (in this case, `True`). In the case of a term, (e.g.
 class Evaluable f where
     eval :: f a -> a
 
-{-|   
+{-|
 Modelable data can be assigned a semantic value, but only relative to
 a model---for example, in propositional logic `P_1 ∧ P_2 ::
 PropositionalLogic (Form True)` has a truth value relative to an assignment
@@ -95,7 +95,7 @@ class CopulaSchema lang where
 {-|
 CanonicalForm is a typeclass for data which can be put in a canonical form.
 For example, the canonical form of sentence of quantified logic might be
-a formula in which the variables are labeled sequentially. 
+a formula in which the variables are labeled sequentially.
 -}
 class CanonicalForm a where
     canonical :: a -> a
@@ -172,7 +172,7 @@ pattern Lx9 x      = FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRi
 pattern Lx10 x     = FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FLeft x)))))))))
 pattern Lx11 x     = FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FLeft x))))))))))
 pattern Lx12 x     = FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FLeft x)))))))))))
-pattern Fx1 x      = FX (Lx1  x) 
+pattern Fx1 x      = FX (Lx1  x)
 pattern Fx2 x      = FX (Lx2  x)
 pattern Fx3 x      = FX (Lx3  x)
 pattern Fx4 x      = FX (Lx4  x)
@@ -187,7 +187,7 @@ pattern Fx12 x     = FX (Lx12 x)
 pattern FX x = Fx (FRight x)
 
 --------------------------------------------------------
---2.2 Abstract Operator Types 
+--2.2 Abstract Operator Types
 --------------------------------------------------------
 
 --------------------------------------------------------
@@ -255,7 +255,7 @@ instance Show (Arity arg ret n ret') where
         show AZero = "0"
         show (ASucc n) = show . inc . read . show $ n
             where inc :: Int -> Int
-                  inc = (+) 1 
+                  inc = (+) 1
 
 data TArity :: * -> * -> Nat -> * -> * where
     TZero :: Typeable ret => TArity arg ret Zero ret
@@ -520,7 +520,7 @@ getHead ar (Fx c) = Fx <$> castArity ar c
 x .*$. y = (:!$:) <$> x <*> y
 
 handleArg1 :: (Applicative g, LangTypes1 f syn1 sem1)
-          => Maybe (tt :~: syn1 sem1) -> (FixLang f (syn1 sem1) 
+          => Maybe (tt :~: syn1 sem1) -> (FixLang f (syn1 sem1)
             -> g (FixLang f (syn1 sem1))) -> FixLang f tt -> g (FixLang f tt)
 handleArg1 (Just Refl) f l = f l
 handleArg1 Nothing     _ l = pure l

@@ -3,7 +3,7 @@
 module Carnap.Core.Examples.ACUI (
     V, Set, VLang, Var,
     pattern VEmpty, pattern VUnion, pattern VSomeSet, pattern VSingelton,
-    acuiDemo
+    --acuiDemo
 ) where
 
 import Carnap.Core.Data.AbstractSyntaxDataTypes
@@ -162,6 +162,7 @@ acuiParser = buildExpressionParser [[Infix (try parseUnion) AssocLeft]] subParse
                       subvarParser <|>
                       somesetParser
 
+{--
 acuiDemo = do
   lhs <- getLine
   if lhs /= ""
@@ -175,3 +176,4 @@ acuiDemo = do
         (Right x, Right y) -> print $ evalState (acuiUnify x y) freshVars
       acuiDemo
     else return ()
+--}

@@ -132,7 +132,7 @@ subadd a b = like ++ unlike
 
 
 --converts our internal equation represnetation to our external
-toSub :: Show (f a) => [SimpleEquation (f a)] -> [Equation f]
+toSub :: FirstOrder f => [SimpleEquation (f a)] -> [Equation f]
 toSub []              = []
 toSub ((x :==: y):xs) = (x :=: y):(toSub xs)
 
