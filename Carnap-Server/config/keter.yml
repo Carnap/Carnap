@@ -1,6 +1,6 @@
 # After you've edited this file, remove the following line to allow
 # `yesod keter` to build your bundle.
-user-edited: false
+user-edited: true
 
 # A Keter app is composed of 1 or more stanzas. The main stanza will define our
 # web application. See the Keter documentation for more information on
@@ -12,7 +12,7 @@ stanzas:
 
     # Name of your executable. You are unlikely to need to change this.
     # Note that all file paths are relative to the keter.yml file.
-    exec: ../dist/build/Carnap-Server/Carnap-Server
+    exec: ../dist/bin/Carnap-Server
 
     # Command line options passed to your application.
     args: []
@@ -21,7 +21,8 @@ stanzas:
       # You can specify one or more hostnames for your application to respond
       # to. The primary hostname will be used for generating your application
       # root.
-      - www.Carnap-Server.com
+      - 162.243.233.227
+      - Carnap.io
 
     # Enable to force Keter to redirect to https
     # Can be added to any stanza
@@ -37,21 +38,21 @@ stanzas:
     # directory-listing: true
 
   # Redirect plain domain name to www.
-  - type: redirect
+  # - type: redirect
 
-    hosts:
-      - Carnap-Server.com
-    actions:
-      - host: www.Carnap-Server.com
-        # secure: false
-        # port: 80
+  #   hosts:
+  #     - Carnap-Server.com
+  #   actions:
+  #     - host: www.Carnap-Server.com
+  #       # secure: false
+  #       # port: 80
 
     # Uncomment to switch to a non-permanent redirect.
     # status: 303
 
 # Use the following to automatically copy your bundle upon creation via `yesod
 # keter`. Uses `scp` internally, so you can set it to a remote destination
-# copy-to: user@host:/opt/keter/incoming/
+copy-to: root@162.243.233.227:/opt/keter/incoming/
 
 # You can pass arguments to `scp` used above. This example limits bandwidth to
 # 1024 Kbit/s and uses port 2222 instead of the default 22
@@ -62,5 +63,5 @@ stanzas:
 # If you would like to have Keter automatically create a PostgreSQL database
 # and set appropriate environment variables for it to be discovered, uncomment
 # the following line.
-# plugins:
-#   postgres: true
+plugins:
+    postgres: true
