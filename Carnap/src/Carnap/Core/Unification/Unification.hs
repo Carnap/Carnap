@@ -4,21 +4,17 @@ module Carnap.Core.Unification.Unification (
    Equation((:=:)), FirstOrder, HigherOrder,
    isVar, sameHead, decompose, occurs, subst,
    matchApp, castLam, getLamVar, (.$.),
-   applySub, founify, mapAll, freshVars,
+   applySub, mapAll, freshVars,
    EveryPig(EveryPig), unEveryPig, ExtApp(ExtApp),
-   AnyPig(AnyPig)
+   AnyPig(AnyPig), freeVars
 ) where
 
-import Data.Typeable
 import Data.Type.Equality
+import Carnap.Core.Util
+import Data.Typeable
 
 data Equation f where
-    (:=:) :: FirstOrder f => f a -> f a -> Equation f
-
-newtype EveryPig f = EveryPig {unEveryPig :: forall a. f a}
---the typeable constraint lets us unpack this in a safe way
-data AnyPig f where
-    AnyPig :: Typeable a => f a -> AnyPig f
+    (:=:) :: (Typeable a, FirstOrder f) => f a -> f a -> Equation f
 
 --this interface seems simpliar for the user to implement than our previous
 --1. There is no more varible type
@@ -63,16 +59,11 @@ mapAll f = map (emap f)
 (Left x) .<. f = Left (f x)
 x .<. _ = x
 
---this needs to be generalized to include an optional label
-founify :: FirstOrder f => [Equation f] -> [Equation f] -> Either (UError f) [Equation f]
-founify [] ss = Right ss
-founify ((x :=: y):es) ss
-    | isVar x && occurs x y       = Left $ OccursError x y
-    | isVar x && not (occurs x y) = founify (mapAll (subst x y) es) ((x :=: y):ss)
-    | isVar y                     = founify ((y :=: x):es) ss
-    | sameHead x y                = founify (es ++ decompose x y) ss .<. SubError x y
-    | otherwise                   = Left $ MatchError x y
-
 applySub :: FirstOrder f => [Equation f] -> f a -> f a
 applySub []             y = y
 applySub ((v :=: x):ss) y = applySub ss (subst v x y)
+
+freeVars :: (Typeable a, FirstOrder f) => f a -> [AnyPig f]
+freeVars t | isVar t   = [AnyPig t]
+           | otherwise = concatMap rec (decompose t t)
+    where rec (a :=: _) = freeVars a

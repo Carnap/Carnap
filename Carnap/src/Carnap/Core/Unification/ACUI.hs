@@ -8,7 +8,9 @@ module Carnap.Core.Unification.ACUI (
   --all minimal solutions to a SAT problem
 import Carnap.Core.ModelChecking.SAT
 import Carnap.Core.Unification.Unification
+import Carnap.Core.Util
 import Data.Monoid
+import Data.Typeable
 import Control.Lens
 import Control.Monad.State
 import Control.Lens.Plated
@@ -19,7 +21,7 @@ import Data.Function
 isConst a = not (isVar a || a == mempty)
 
 --typeclass that contains everything we need to perform ACUI unfication
-class (Show (f a), Eq (f a), Monoid (f a), FirstOrder f) => ACUI f a where
+class (Typeable a, Eq (f a), Monoid (f a), FirstOrder f) => ACUI f a where
     --decompose into proper parts
     unfoldTerm :: f a -> [f a]
 
@@ -102,14 +104,6 @@ minimals sols | null minsols = trivialSol sols
               | otherwise    = minsols
     where minsols = minimals' [] [] sols
 
---for now lets just find the solution to the homogenous setup
---we use it to get a fresh varible
-pop :: State [a] a
-pop = do
-  (x:xs) <- get
-  put xs
-  return x
-
 --simplifies a term by removing all empties
 simplify e = refoldTerms (unfoldTerm e)
 
@@ -132,7 +126,7 @@ subadd a b = like ++ unlike
 
 
 --converts our internal equation represnetation to our external
-toSub :: FirstOrder f => [SimpleEquation (f a)] -> [Equation f]
+toSub :: (Typeable a, FirstOrder f) => [SimpleEquation (f a)] -> [Equation f]
 toSub []              = []
 toSub ((x :==: y):xs) = (x :=: y):(toSub xs)
 
@@ -156,10 +150,6 @@ solveInHomoEq c eq = do
   let mins = minimals . search . toSatProblem $ eq
   minSols <- mapM (conv (return c)) mins
   return minSols
-
---some generic helpers for combining solutions
-crossWith f xs ys = [f x y | x <- xs, y <- ys]
-bigCrossWith f xs xss = foldr (crossWith f) xs xss
 
 --finds all solutions to a = b
 acuiUnify :: ACUI f a => f a -> f a -> State [EveryPig f] [[Equation f]]

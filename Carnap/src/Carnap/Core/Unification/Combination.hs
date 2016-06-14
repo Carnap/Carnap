@@ -5,9 +5,9 @@ module Carnap.Core.Unification.Combination (
   labelings, getVars,
 ) where
 
-import Carnap.Core.Data.AbstractSyntaxDataTypes
+
 import Carnap.Core.Unification.Unification
---import Carnap.Core.ModelChecking.ModelFinder
+import Carnap.Core.Util
 import Control.Monad.State
 import Data.Typeable
 import Data.Type.Equality
@@ -27,14 +27,8 @@ class (FirstOrder f, Eq label) => Combineable f label | f -> label where
     getAlgo :: label -> UniFunction f
     replaceChild :: f a -> EveryPig f -> Int -> f a
 
-pop :: State [a] a
-pop = do
-  (x:xs) <- get
-  put xs
-  return x
-
 --first we need to split apart the terms into multiple equations
-abstract :: Combineable f label => f a -> State [EveryPig f] (f a, [Equation f])
+abstract :: (Typeable a, Combineable f label) => f a -> State [EveryPig f] (f a, [Equation f])
 abstract term = do
     pureTerm <- foldM replace term (zip [0..] (decompose term term))
     return (pureTerm, makeEqs (pureTerm :=: term)) --finally we need the actual equations
@@ -78,23 +72,41 @@ partitions (x:xs) = [[x]:p | p <- partitions xs] ++ [(x:ys):yss | (ys:yss) <- pa
 part2Sub ((x:xs):xss) = (map (x :=:) xs) ++ part2Sub xss
 part2Sub []           = []
 
-crossWith f xs ys = [f x y | x <- xs, y <- ys]
-bigCrossWith f (xs:xss) = foldr (crossWith f) xs xss
-bigCrossWith f []       = []
-
 --finds all substitutions of AnyPig varibles
 substitutions :: FirstOrder f => [AnyPig f] -> [[Equation f]]
-substitutions vars = bigCrossWith (++) (map parts (typeGroup vars))
+substitutions vars = bigCrossWithH (++) (map parts (typeGroup vars))
     where parts (AnyPig (ListComp l)) = map part2Sub (partitions l)
 
 --finds all lebeling functions
 labelings :: Combineable f label => [AnyPig f] -> [label] -> [Labeling f]
 labelings ((AnyPig x):domain) range = [(LabelPair x l):f | f <- labelings domain range, l <- range]
 
-validSub :: [Equation f] -> Bool
-validSub = undefined
+equiv :: (FirstOrder f) => AnyPig f -> AnyPig f -> Bool
+equiv (AnyPig (x :: f a)) (AnyPig (y :: f b)) = case eqT :: Maybe (a :~: b) of
+    Just Refl -> sameHead x y && all (\(a :=: b) -> equiv (AnyPig a) (AnyPig b)) (decompose x y)
+    Nothing   -> False
 
-getVars :: [Equation f] -> [AnyPig f]
+--depth first search to detect cycle
+hasBackEdge :: (FirstOrder f) => [AnyPig f] -> [(AnyPig f, [AnyPig f])] -> Bool
+hasBackEdge nodes gph = any (\n -> any (equiv n) (closure [] gph n)) nodes
+
+findNodes n ((n1, n2):gph) | equiv n n1 = n2 ++ findNodes n gph
+                           | otherwise  = findNodes n gph
+findNodes n []                          = []
+
+closure :: (FirstOrder f) => [AnyPig f] -> [(AnyPig f, [AnyPig f])] -> AnyPig f -> [AnyPig f]
+closure visit gph node
+    | any (equiv node) visit = visit
+    | otherwise              = case findNodes node gph of
+        []     -> visit
+        childs -> concatMap (\c -> closure (c:visit) gph c) childs
+
+buildGraph ((v :=: e):eqs) = (AnyPig v, freeVars e) : buildGraph eqs
+
+validSub :: Combineable f label => [Equation f] -> Bool
+validSub eqs = not (hasBackEdge (getVars eqs) (buildGraph eqs))
+
+getVars :: Combineable f label => [Equation f] -> [AnyPig f]
 getVars = undefined
 
 getLabels :: Combineable f label => [Equation f] -> [label]
