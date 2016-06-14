@@ -160,6 +160,11 @@ instance YesodAuth App where
                 , userPassword = Nothing
                 }
 
+    --can't do a straight redirect, since this takes place before logout is
+    --completed. Instead, we delete the credentials manually, and then
+    --redirect
+    onLogout = deleteSession credsKey >> redirect HomeR
+
     -- You can add other plugins like Google Email, email or OAuth here
     authPlugins _ = [authDummy, authGoogleEmail "" ""]
 
