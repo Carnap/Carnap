@@ -16,6 +16,7 @@ cabal.sandbox.config
 *.hp
 .stack-work
 Session.vim
+Sessionx.vim
 .DS_Store
 *.swp
 *.keter
