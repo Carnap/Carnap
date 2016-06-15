@@ -107,7 +107,9 @@ validSub :: Combineable f label => [Equation f] -> Bool
 validSub eqs = not (hasBackEdge (getVars eqs) (buildGraph eqs))
 
 getVars :: Combineable f label => [Equation f] -> [AnyPig f]
-getVars = undefined
+getVars eqs = nubBy equiv (go eqs)
+    where go ((a :=: b):eqs) = freeVars a ++ freeVars b ++ go eqs
+          go []              = []
 
 getLabels :: Combineable f label => [Equation f] -> [label]
 getLabels = nub . map getEqLabel
