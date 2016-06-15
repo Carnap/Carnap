@@ -6,7 +6,7 @@ import Carnap.Core.Data.AbstractSyntaxDataTypes
 import Carnap.Core.Data.Util (Syncast(..), checkChildren)
 import Carnap.Core.Unification.Unification
 import Carnap.Languages.Util.LanguageClasses
-import Control.Lens.Plated (Plated, cosmos, transform)
+import Control.Lens.Plated (transform)
 import Data.Typeable (Typeable)
 import Data.Map.Lazy (Map, (!))
 import Data.Monoid as M

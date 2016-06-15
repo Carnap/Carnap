@@ -6,9 +6,6 @@ import Carnap.Core.Data.AbstractSyntaxDataTypes
 import Carnap.Core.Data.Util (mapover)
 import Carnap.Core.Unification.Unification
 import Carnap.Languages.Util.LanguageClasses
-import Control.Lens (Plated)
-import Control.Lens.Fold (anyOf)
-import Control.Lens.Plated (cosmos, transform)
 import Data.Typeable (Typeable)
 import Carnap.Languages.Util.GenericConnectives
 
