@@ -6,6 +6,7 @@ import Carnap.Core.Data.AbstractSyntaxDataTypes
 import Carnap.Core.Data.Util (mapover)
 import Carnap.Core.Unification.Unification
 import Carnap.Languages.Util.LanguageClasses
+import Control.Lens (Traversal')
 import Data.Typeable (Typeable)
 import Carnap.Languages.Util.GenericConnectives
 
@@ -117,6 +118,9 @@ instance BoundVars (CoreLexicon :|: a) where
     subBoundVar a b phi = mapover (swap a b) phi 
 
 instance LangTypes2 (CoreLexicon :|: a) Term Int Form Bool
+
+termsOf :: Traversal' (FixLang (CoreLexicon :|: a) (Form Bool)) (FixLang (CoreLexicon :|: a) (Term Int))
+termsOf = difChildren2
 
 instance LangTypes2 (CoreLexicon :|: a) Form Bool Term Int
 
