@@ -23,6 +23,7 @@ module Carnap.Core.Data.AbstractSyntaxDataTypes(
   Subnective(Subnective),
   SubstitutionalVariable(SubVar),  
   LangTypes2(..), LangTypes1(..), RelabelVars(..),   
+  FirstOrderLex(..),
 ) where
 
 import Carnap.Core.Util
@@ -426,30 +427,40 @@ instance FirstOrderLex (SubstitutionalVariable idx) where
         freshVarsLex = Just $ map SubVar [1 ..]
 
 instance FirstOrderLex quant => FirstOrderLex (Quantifiers quant lang) where
+        isVarLex (Bind q) = isVarLex q
         sameHeadLex (Bind q) (Bind q') = sameHeadLex q q'
 
+instance FirstOrderLex app => FirstOrderLex (Applicators app lang) where
+        isVarLex (Apply f) = isVarLex f
+        sameHeadLex (Apply f) (Apply f') = sameHeadLex f f'
+        
+
 instance FirstOrderLex abs => FirstOrderLex (Abstractors abs lang) where
+        isVarLex (Abstract a) = isVarLex a
         sameHeadLex (Abstract a) (Abstract b) = sameHeadLex a b
 
 instance FirstOrderLex pred => FirstOrderLex (Predicate pred lang) where
+        isVarLex (Predicate p a) = isVarLex p
         sameHeadLex (Predicate p a) (Predicate p' a') =
             show a == show a' && sameHeadLex p p'
 
--- instance Schematizable con => Schematizable (Connective con lang) where
---                 schematize (Connective c _) = schematize c
+instance FirstOrderLex con => FirstOrderLex (Connective con lang) where
+        isVarLex (Connective c a) = isVarLex c
+        sameHeadLex (Connective c a) (Connective c' a') = 
+            show a == show a' && sameHeadLex c c'
 
--- instance Schematizable func => Schematizable (Function func lang) where
---                 schematize (Function f _) = schematize f
+instance FirstOrderLex func => FirstOrderLex (Function func lang) where
+        isVarLex (Function f a) = isVarLex f
+        sameHeadLex (Function f a) (Function f' a') = 
+            show a == show a' && sameHeadLex f f'
 
--- instance Schematizable app => Schematizable (Applicators app lang) where
---                 schematize (Apply f) = schematize f
-
--- instance Schematizable sub => Schematizable (Subnective sub lang) where
---                 schematize (Subnective s _) = schematize s
+instance FirstOrderLex sub => FirstOrderLex (Subnective sub lang) where
+        isVarLex (Subnective s a) = isVarLex s
+        sameHeadLex (Subnective s a) (Subnective s' a') = 
+            show a == show a' && sameHeadLex s s'
 
 instance FirstOrderLex (EndLang idx) where
         sameHeadLex = undefined
-        
 
 instance ( FirstOrderLex (f idx)
          , FirstOrderLex (g idx)) => FirstOrderLex ((f :|: g) idx) where
@@ -505,7 +516,15 @@ instance {-# OVERLAPPABLE #-} (UniformlyEq (FixLang f), FirstOrderLex (FixLang f
         --might want a clause for LLam
         occurs phi psi = phi =* psi
 
-        subst a b c = undefined
+        subst a@(Fx _ :: FixLang f t) b@(Fx _ :: FixLang f t') c@(Fx _ :: FixLang f t'')
+            | a =* b = case eqT :: Maybe (t' :~: t'') of
+                           Just Refl -> b
+                           Nothing -> c
+            | otherwise = case c of
+                           (x :!$: y) -> subst a b x :!$: subst a b y
+                           --might want a clause for LLam
+                           _ -> c
+            
 
         freshVars = case freshVarsLex  of
                         Just fv -> fv

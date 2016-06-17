@@ -93,6 +93,10 @@ instance Syncast PurePropLanguage (Form Bool) where
     cast phi@(PPhi _)      = Just phi
     cast _ = Nothing
 
+--TODO Do this right
+instance UniformlyEq PurePropLanguage where
+        x =* y = schematize x (repeat "_") == schematize y (repeat "_")
+
 -- instance FirstOrder PurePropLanguage where
         
 --     isVar (PPhi _) = True
