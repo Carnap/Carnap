@@ -3,6 +3,7 @@ module Carnap.Languages.PureFirstOrder.Syntax
 where
 
 import Carnap.Core.Data.AbstractSyntaxDataTypes
+import Carnap.Core.Data.AbstractSyntaxClasses
 import Carnap.Core.Data.Util (mapover)
 import Carnap.Core.Unification.Unification
 import Carnap.Languages.Util.LanguageClasses
@@ -112,9 +113,9 @@ instance BoundVars (CoreLexicon :|: a) where
     subBoundVar a@(PV w) b (PUniv v f) = PUniv v (\x -> subBoundVar sv x $ subBoundVar a b $ f sv)
         where sv = case getBindHeight (PQuant (All v)) (LLam f) of
                            c@(PV v') -> if w == v' then PV ('_':v') else c
-    subBoundVar a@(PV w) b (PExist v f) = PUniv v (\x -> subBoundVar sv x $ subBoundVar a b $ f sv)
-        where sv = case getBindHeight (PQuant (All v)) (LLam f) of
-                       c@(PV v') -> if w == v' then PV ('_':v') else c
+    subBoundVar a@(PV w) b (PExist v f) = PExist v (\x -> subBoundVar sv x $ subBoundVar a b $ f sv)
+        where sv = case getBindHeight (PQuant (Some v)) (LLam f) of
+                           c@(PV v') -> if w == v' then PV ('_':v') else c
     subBoundVar a b phi = mapover (swap a b) phi 
 
 instance LangTypes2 (CoreLexicon :|: a) Term Int Form Bool

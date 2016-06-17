@@ -2,6 +2,7 @@
 module Carnap.Languages.Util.GenericConnectives where
 
 import Carnap.Core.Data.AbstractSyntaxDataTypes
+import Carnap.Core.Data.AbstractSyntaxClasses 
 import Data.List (intercalate)
 
 data IntProp b a where

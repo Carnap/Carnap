@@ -1,17 +1,12 @@
 {-#LANGUAGE TypeFamilies, UndecidableInstances, FlexibleInstances, MultiParamTypeClasses, FunctionalDependencies, AllowAmbiguousTypes, GADTs, KindSignatures, DataKinds, PolyKinds, TypeOperators, ViewPatterns, PatternSynonyms, RankNTypes, FlexibleContexts, ScopedTypeVariables, AutoDeriveTypeable, DefaultSignatures #-}
 
 module Carnap.Core.Data.AbstractSyntaxDataTypes(
-  -- * Abstract Typeclasses
-  -- ** Classes for Semantics
-  Modelable(..), Evaluable(..), 
-  lift1, lift2,
-  -- ** Classes for Display
-  CopulaSchema(..), CanonicalForm(..), Schematizable(..),
-   Term(..), Form(..), 
+  CopulaSchema(..),
   BoundVars(..),
   -- * Abstract Types
   -- $ATintro
   -- ** Language Building Types
+  Term(..), Form(..), 
   Copula((:$:), Lam), (:|:)(..), Fix(Fx), FixLang, EndLang, pattern AOne,
   pattern ATwo, pattern AThree, pattern LLam, pattern (:!$:), pattern Fx1,
   pattern Fx2, pattern Fx3, pattern Fx4, pattern Fx5, pattern Fx6, pattern
@@ -32,74 +27,22 @@ module Carnap.Core.Data.AbstractSyntaxDataTypes(
 
 import Carnap.Core.Util
 import Data.Typeable
+import Carnap.Core.Unification.Unification
 import Control.Lens
+import Carnap.Core.Data.AbstractSyntaxClasses
 import qualified Control.Monad.State.Lazy as S
 
 --This module attempts to provide abstract syntax types that would cover
 --a wide variety of languages
 
---------------------------------------------------------
---1. Abstract typeclasses
---------------------------------------------------------
 
-{-|
-Evaluable data  can be assigned a semantic value.  In the case of a formula
-(e.g. `2 + 2 = 4 :: Arithmetic (Form True)`)---an this might be for
-example, a truth value (in this case, `True`). In the case of a term, (e.g.
-`2 + 2 :: Arithmetic (Term Int)`), this might be for, example, an integer
-(in this case, `4`)
--}
-class Evaluable f where
-    eval :: f a -> a
-
-{-|   
-Modelable data can be assigned a semantic value, but only relative to
-a model---for example, in propositional logic `P_1 ∧ P_2 ::
-PropositionalLogic (Form True)` has a truth value relative to an assignment
-of truth values to truth values (which can be represented by a function
-`Int -> Bool`
--}
-class Modelable m f where
-    satisfies :: m -> f a -> a
-
-class Liftable f where
-    lift :: a -> f a
-
-lift1 :: (Evaluable f, Liftable f) => (a -> b) -> (f a -> f b)
-lift1 f = lift . f . eval
-
-lift2 :: (Evaluable f, Liftable f) => (a -> b -> c) -> (f a -> f b -> f c)
-lift2 f fa fb = lift (f (eval fa) (eval fb))
-
-{-|
-Schematizable data are associated with a way to take a list of strings
-associated with other data and bind them together to produce a new
-string representing the original datum combined with the other data. for
-example, the plus symbol might be schematized by a function `\(x:y:zs) ->
-x ++ " + " ++ y`. That means that when symbol is combined with
-some other data, say, the numerals 1 and 2, then the result will be
-represented by "1 + 2"
--}
-class Schematizable f where
-    schematize :: f a -> [String] -> String
-
-class CopulaSchema lang where
-    appSchema :: lang (t -> t') -> lang t -> [String] -> String
-    default appSchema :: (Schematizable lang, Show (lang t)) => lang (t -> t') -> lang t -> [String] -> String
-    appSchema x y e = schematize x (show y : e)
-    liftSchema :: Copula lang t -> [String] -> String
-    lamSchema = error "how did you even do this?"
-    lamSchema :: (lang t -> lang t') -> [String] -> String
-    liftSchema = error "should not print a lifted value"
-
-{-|
-CanonicalForm is a typeclass for data which can be put in a canonical form.
-For example, the canonical form of sentence of quantified logic might be
-a formula in which the variables are labeled sequentially. 
--}
-class CanonicalForm a where
-    canonical :: a -> a
-    canonical = id
+class FirstOrderLex f where
+    isVarLex :: f idx a -> Bool
+    sameHeadLex :: f idx a -> f idx a -> Bool
+    decomposeLex :: f idx a -> f idx a -> [Equation (f idx)]
+    occursLex :: f idx a -> f idx b -> Bool
+    substLex :: (Typeable a, Typeable b) => f idx a -> f idx a -> f idx b -> f idx b
+    freshVarsLex :: Maybe [f idx a]
 
 --------------------------------------------------------
 --2. Abstract Types
@@ -134,6 +77,15 @@ data Copula lang t where
     (:$:) :: (Typeable t, Typeable t') => lang (t -> t') -> lang t -> Copula lang t'
     Lam :: (Typeable t, Typeable t') => (lang t -> lang t') -> Copula lang (t -> t')
     Lift :: t -> Copula lang t
+
+class CopulaSchema lang where
+    appSchema :: lang (t -> t') -> lang t -> [String] -> String
+    default appSchema :: (Schematizable lang, Show (lang t)) => lang (t -> t') -> lang t -> [String] -> String
+    appSchema x y e = schematize x (show y : e)
+    liftSchema :: Copula lang t -> [String] -> String
+    lamSchema = error "how did you even do this?"
+    lamSchema :: (lang t -> lang t') -> [String] -> String
+    liftSchema = error "should not print a lifted value"
 
 {-|
 this is type acts a disjoint sum/union of two functors
@@ -455,6 +407,63 @@ instance (Liftable lang, Modelable m lang) => Modelable m (Copula lang) where
     satisfies m (f :$: x) = satisfies m f (satisfies m x)
     satisfies m (Lam f) = \t -> satisfies m $ f (lift t)
     satisfies m (Lift t) = t
+
+--------------------------------------------------------
+--5. First Order Lexicon
+--------------------------------------------------------
+
+instance FirstOrderLex SubstitutionalVariable where
+        --Not a *schematic* variable
+        isVarLex _ = False
+
+        sameHeadLex _ _ = False
+
+        decomposeLex _ _ = []
+
+        occursLex _ _ = False
+
+        substLex (SubVar n :: SubstitutionalVariable idx a)
+                 newTerm 
+                 (SubVar m :: SubstitutionalVariable idx b) = 
+                    case (eqT :: Maybe (a :~: b)) of
+                        Just Refl -> if n == m then newTerm else SubVar m
+                        Nothing -> SubVar m
+        substLex _ _ c = c
+
+        freshVarsLex = Just $ map SubVar [1 ..]
+
+instance FirstOrderLex EndLang where
+        --Not a *schematic* variable
+        isVarLex _ = False
+
+        sameHeadLex _ _ = False
+
+        decomposeLex _ _ = []
+
+        occursLex _ _ = False
+
+        substLex _ _ c = c
+
+        freshVarsLex = Nothing
+
+instance (Schematizable (f idx), Schematizable (g idx), FirstOrderLex f, FirstOrderLex g) => FirstOrderLex (f :|: g) where
+        isVarLex (FLeft a) = isVarLex a
+        isVarLex (FRight a) = isVarLex a
+
+        sameHeadLex (FLeft a) (FLeft b) = sameHeadLex a b
+        sameHeadLex (FRight a) (FRight b) = sameHeadLex a b
+        sameHeadLex _ _ = False
+
+        decomposeLex (FLeft a) (FLeft b) = map liftEq $ decomposeLex a b
+            where liftEq (x :=: y) = FLeft x :=: FLeft y
+        -- decomposeLex (FRight a) (FRight b) = decomposeLex a b
+        -- decomposeLex _ _ = []
+
+        -- occursLex a (FLeft b) = occursLex a b
+        -- occursLex a (FRight b) = occursLex a b
+
+
+
 
 --------------------------------------------------------
 --Head Extractors and a Generic Plated Instance.

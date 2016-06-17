@@ -3,6 +3,7 @@
 module Carnap.Languages.PurePropositional.Syntax where
 
 import Carnap.Core.Data.AbstractSyntaxDataTypes
+import Carnap.Core.Data.AbstractSyntaxClasses
 import Carnap.Core.Data.Util (Syncast(..), checkChildren)
 import Carnap.Core.Unification.Unification
 import Carnap.Languages.Util.LanguageClasses
@@ -51,19 +52,19 @@ pattern (:!!$:) f y    = f :!$: y
 pattern PPred x arity  = Fx1 (Predicate x arity)
 pattern PSPred x arity = Fx2 (Predicate x arity)
 pattern PCon x arity   = Fx3 (Connective x arity)
-pattern PSV n           = Fx4 (SubVar n)
+pattern PSV n          = Fx4 (SubVar n)
 pattern PAnd           = PCon And ATwo
 pattern POr            = PCon Or ATwo
 pattern PIf            = PCon If ATwo
 pattern PIff           = PCon Iff ATwo
 pattern PNot           = PCon Not AOne
-pattern PP n            = PPred (Prop n) AZero
-pattern PPhi n          = PSPred (SProp n) AZero
+pattern PP n           = PPred (Prop n) AZero
+pattern PPhi n         = PSPred (SProp n) AZero
 pattern (:&:) x y      = PAnd :!!$: x :!!$: y
 pattern (:||:) x y     = POr :!!$: x :!!$: y
 pattern (:->:) x y     = PIf :!!$: x :!!$: y
 pattern (:<->:) x y    = PIff :!!$: x :!!$: y
-pattern PNeg x          = PNot :!!$: x
+pattern PNeg x         = PNot :!!$: x
 
 instance BooleanLanguage PureForm where
         land = (:&:)
@@ -134,9 +135,9 @@ instance FirstOrder PurePropLanguage where
             _ -> c
         where 
             byCast v phi psi =
-                case (cast v :: Maybe PureForm, cast phi :: Maybe PureForm, cast psi :: Maybe PureForm) of 
-                     (Just v', Just phi', Just psi') -> 
-                          transform (\x -> if x == v' then phi' else x) psi'
+                case (cast v :: Maybe PureForm, cast phi :: Maybe PureForm) of 
+                     (Just v', Just phi') -> 
+                          transform (\x -> if x == v' then phi' else x) psi
                      _ -> psi
 
     freshVars = map PSV [1..]

@@ -6,6 +6,7 @@ module Carnap.Core.Examples.ACUI (
 ) where
 
 import Carnap.Core.Data.AbstractSyntaxDataTypes
+import Carnap.Core.Data.AbstractSyntaxClasses
 import Carnap.Core.Unification.Unification
 import Carnap.Core.Unification.ACUI
 import qualified Data.Set as S

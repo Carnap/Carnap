@@ -8,12 +8,13 @@ module Carnap.Core.Unification.Unification (
 ) where
 
 import Data.Type.Equality
+import Carnap.Core.Data.AbstractSyntaxClasses (Schematizable(..))
 
 data Equation f where
-    (:=:) :: Show (f a) => f a -> f a -> Equation f
+    (:=:) :: f a -> f a -> Equation f
 
-instance Show (Equation f) where
-        show (x :=: y) = show x ++ " :=: " ++ show y
+instance Schematizable f => Show (Equation f) where
+        show (x :=: y) = schematize x [] ++ " :=: " ++ schematize y []
 
 --this interface seems simpliar for the user to implement than our previous
 --1. There is no more varible type
@@ -45,20 +46,20 @@ class FirstOrder f => HigherOrder f where
     (.$.) :: f (a -> b) -> f a -> f b
 
 data UError f where
-    SubError :: Show (f a) => f a -> f a -> UError f -> UError f
-    MatchError :: Show (f a) => f a -> f a -> UError f
-    OccursError :: Show (f a) => f a -> f a -> UError f
+    SubError :: f a -> f a -> UError f -> UError f
+    MatchError ::  f a -> f a -> UError f
+    OccursError :: f a -> f a -> UError f
 
-instance Show (UError f) where
+instance Schematizable f => Show (UError f) where
         show (SubError x y e) =  show e ++ "with suberror"
-                                 ++ show x ++ ", " 
-                                 ++ show y 
+                                 ++ schematize x [] ++ ", " 
+                                 ++ schematize y []
         show (MatchError x y) = "Match Error:"
-                                 ++ show x ++ ", " 
-                                 ++ show y 
+                                 ++ schematize x [] ++ ", " 
+                                 ++ schematize y []
         show (OccursError x y) = "OccursError: " 
-                                 ++ show x ++ ", " 
-                                 ++ show y 
+                                 ++ schematize x [] ++ ", " 
+                                 ++ schematize y []
 
 emap :: (forall a. f a -> f a) -> Equation f -> Equation f
 emap f (x :=: y) = f x :=: f y
