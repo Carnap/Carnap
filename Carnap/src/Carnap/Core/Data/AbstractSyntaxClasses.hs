@@ -47,6 +47,9 @@ represented by "1 + 2"
 class Schematizable f where
     schematize :: f a -> [String] -> String
 
+class UniformlyEq f where
+        (=*) :: f a -> f b -> Bool
+
 
 {-|
 CanonicalForm is a typeclass for data which can be put in a canonical form.
