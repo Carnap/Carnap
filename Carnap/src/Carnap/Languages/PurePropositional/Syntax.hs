@@ -93,51 +93,51 @@ instance Syncast PurePropLanguage (Form Bool) where
     cast phi@(PPhi _)      = Just phi
     cast _ = Nothing
 
-instance FirstOrder PurePropLanguage where
+-- instance FirstOrder PurePropLanguage where
         
-    isVar (PPhi _) = True
-    isVar _        = False
+--     isVar (PPhi _) = True
+--     isVar _        = False
 
-    sameHead (PNeg _) (PNeg _) = True
-    sameHead (_ :&: _) (_ :&: _) = True
-    sameHead (_ :||: _) (_ :||: _) = True
-    sameHead (_ :->: _) (_ :->: _) = True
-    sameHead (_ :<->: _) (_ :<->: _) = True
-    sameHead (PP n) (PP m) = n == m
-    sameHead _ _ = False
+--     sameHead (PNeg _) (PNeg _) = True
+--     sameHead (_ :&: _) (_ :&: _) = True
+--     sameHead (_ :||: _) (_ :||: _) = True
+--     sameHead (_ :->: _) (_ :->: _) = True
+--     sameHead (_ :<->: _) (_ :<->: _) = True
+--     sameHead (PP n) (PP m) = n == m
+--     sameHead _ _ = False
 
-    decompose x y = 
-        case (cast x :: Maybe PureForm, cast y :: Maybe PureForm, sameHead x y) of 
-           (Just x', Just y', True) -> zipWith (:=:) (children x') (children y')
-           _ -> []
+--     decompose x y = 
+--         case (cast x :: Maybe PureForm, cast y :: Maybe PureForm, sameHead x y) of 
+--            (Just x', Just y', True) -> zipWith (:=:) (children x') (children y')
+--            _ -> []
                                                                    
-    -- NB: The above is slicker, but you can do this naively with 
-    -- decompose (PNeg x) (PNeg y) = [x :=: y]
-    -- decompose (x :&: y) (x' :&: y') = [x :=: x', y :=: y']
-    -- decompose (x :||: y) (x' :||: y') = [x :=: x', y :=: y']
-    -- decompose (x :->: y) (x' :->: y') = [x :=: x', y :=: y']
-    -- decompose (x :<->: y) (x' :<->: y') = [x :=: x', y :=: y']
-    -- decompose _ _ = []
+--     -- NB: The above is slicker, but you can do this naively with 
+--     -- decompose (PNeg x) (PNeg y) = [x :=: y]
+--     -- decompose (x :&: y) (x' :&: y') = [x :=: x', y :=: y']
+--     -- decompose (x :||: y) (x' :||: y') = [x :=: x', y :=: y']
+--     -- decompose (x :->: y) (x' :->: y') = [x :=: x', y :=: y']
+--     -- decompose (x :<->: y) (x' :<->: y') = [x :=: x', y :=: y']
+--     -- decompose _ _ = []
 
-    occurs phi psi = case (cast phi :: Maybe PureForm, cast psi :: Maybe PureForm)
-                            of (Just f, Just f') -> checkChildren f f'
-                               _ -> False
+--     occurs phi psi = case (cast phi :: Maybe PureForm, cast psi :: Maybe PureForm)
+--                             of (Just f, Just f') -> checkChildren f f'
+--                                _ -> False
 
-    subst a b c = 
-          case c of 
-            (PNeg x)     -> byCast a b c
-            (x :&: y)    -> byCast a b c 
-            (x :||: y)   -> byCast a b c
-            (x :->: y)   -> byCast a b c
-            (x :<->: y)  -> byCast a b c
-            (PP _)       -> byCast a b c
-            (PPhi _)     -> byCast a b c
-            _ -> c
-        where 
-            byCast v phi psi =
-                case (cast v :: Maybe PureForm, cast phi :: Maybe PureForm) of 
-                     (Just v', Just phi') -> 
-                          transform (\x -> if x == v' then phi' else x) psi
-                     _ -> psi
+--     subst a b c = 
+--           case c of 
+--             (PNeg x)     -> byCast a b c
+--             (x :&: y)    -> byCast a b c 
+--             (x :||: y)   -> byCast a b c
+--             (x :->: y)   -> byCast a b c
+--             (x :<->: y)  -> byCast a b c
+--             (PP _)       -> byCast a b c
+--             (PPhi _)     -> byCast a b c
+--             _ -> c
+--         where 
+--             byCast v phi psi =
+--                 case (cast v :: Maybe PureForm, cast phi :: Maybe PureForm) of 
+--                      (Just v', Just phi') -> 
+--                           transform (\x -> if x == v' then phi' else x) psi
+--                      _ -> psi
 
-    freshVars = map PSV [1..]
+--     freshVars = map PSV [1..]

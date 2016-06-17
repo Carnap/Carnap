@@ -94,42 +94,42 @@ instance Monoid (VLang (Term V)) where
 instance CanonicalForm (VLang a) where
     canonical = id
 
-instance ACUI VLang (Term V) where
-    unfoldTerm (VUnion x y) = unfoldTerm x ++ unfoldTerm y
-    unfoldTerm VEmpty       = []
-    unfoldTerm leaf         = [leaf]
+-- instance ACUI VLang (Term V) where
+--     unfoldTerm (VUnion x y) = unfoldTerm x ++ unfoldTerm y
+--     unfoldTerm VEmpty       = []
+--     unfoldTerm leaf         = [leaf]
 
 --this could likely be defined just using generic things
 --however in this case I'm just defining it directly
 --more work will be needed to define this for all
 --needed languages.
-instance FirstOrder VLang where
-  isVar (SV _)       = True
-  isVar (VSomeSet _) = True
-  isVar _            = False
+-- instance FirstOrder VLang where
+--   isVar (SV _)       = True
+--   isVar (VSomeSet _) = True
+--   isVar _            = False
 
-  sameHead VEmpty         VEmpty         = True
-  sameHead (SV s)         (SV s')        = s == s'
-  sameHead (VUnion _ _)   (VUnion _ _)   = True
-  sameHead (VSingelton _) (VSingelton _) = True
-  sameHead _              _              = False
+--   sameHead VEmpty         VEmpty         = True
+--   sameHead (SV s)         (SV s')        = s == s'
+--   sameHead (VUnion _ _)   (VUnion _ _)   = True
+--   sameHead (VSingelton _) (VSingelton _) = True
+--   sameHead _              _              = False
 
-  decompose (VUnion x y)   (VUnion x' y') = [x :=: x', y :=: y']
-  decompose (VSingelton x) (VSingelton y) = [x :=: y]
-  decompose _              _              = []
+--   decompose (VUnion x y)   (VUnion x' y') = [x :=: x', y :=: y']
+--   decompose (VSingelton x) (VSingelton y) = [x :=: y]
+--   decompose _              _              = []
 
-  occurs (SV s) (SV s')        = s == s'
-  occurs v      (VUnion x y)   = occurs v x || occurs v y
-  occurs v      (VSingelton x) = occurs v x
+--   occurs (SV s) (SV s')        = s == s'
+--   occurs v      (VUnion x y)   = occurs v x || occurs v y
+--   occurs v      (VSingelton x) = occurs v x
 
-  --this is complicated and should be hidden from the user
-  subst v new (VUnion x y)         = VUnion (subst v new x) (subst v new y)
-  subst v new (VSingelton x)       = VSingelton (subst v new x)
-  subst (VSomeSet s) new orign@(VSomeSet s')
-      | s == s'                    = new
-      | otherwise                  = orign
+--   --this is complicated and should be hidden from the user
+--   subst v new (VUnion x y)         = VUnion (subst v new x) (subst v new y)
+--   subst v new (VSingelton x)       = VSingelton (subst v new x)
+--   subst (VSomeSet s) new orign@(VSomeSet s')
+--       | s == s'                    = new
+--       | otherwise                  = orign
 
-  freshVars = map SV [1..]
+--   freshVars = map SV [1..]
 
 parseUnion :: (Monad m) => ParsecT String u m (VTerm -> VTerm -> VTerm)
 parseUnion = do spaces

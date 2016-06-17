@@ -106,7 +106,7 @@ infixr 5 :|:
 -- | phantom type. note that only certian kinds of functors even have a kind
 -- | such that the first argument is fixable
 data Fix f idx where
-    Fx :: f (Fix f) idx -> Fix f idx
+    Fx ::  f (Fix f) idx -> Fix f idx
 
 -- | This is an empty abstract type, which can be used to close off
 -- | a series of applications of `:|:`, so that the right-most leaf
@@ -503,6 +503,37 @@ instance FirstOrderLex (f (Fix f)) => FirstOrderLex (Fix f) where
 
         freshVarsLex = map Fx <$> freshVarsLex 
 
+instance (UniformlyEq (FixLang f), FirstOrderLex (FixLang f)) => FirstOrder (FixLang f) where
+        
+        isVar = isVarLex
+
+        sameHead = sameHeadLex
+
+        decompose a b
+            | sameHead a b = recur a b []
+            | otherwise = []
+            where recur :: FixLang f a -> FixLang f b -> [Equation (FixLang f)]
+                    ->[Equation (FixLang f)]
+                  recur (x :!$: (y :: FixLang f t)) 
+                        (x' :!$: (y' :: FixLang f t')) 
+                        terms = case eqT :: Maybe (t :~: t') of
+                                    Just Refl -> recur x x' ((y :=: y') : terms) 
+                                    Nothing -> []
+                  recur _ _ terms = terms
+
+        occurs phi psi@(x :!$: y)= phi =* psi || occurs phi x || occurs phi y
+        --might want a clause for LLam
+        occurs phi psi = phi =* psi
+
+        subst a b c@(x :!$: y) = subst a b x :!$: subst a b y
+        --might want a clause for LLam
+        subst a b c = substLex a b c
+
+        freshVars = case freshVarsLex of
+                        Just fv -> fv
+                        Nothing -> error "a store of fresh variables hasn't been included in this language"
+
+
 --------------------------------------------------------
 --Head Extractors and a Generic Plated Instance.
 --------------------------------------------------------
@@ -559,7 +590,7 @@ instance (Searchable f l, Searchable g l ) =>
         castArity     ar (FLeft a)  = FLeft  <$> castArity ar a
         castArity     ar (FRight a) = FRight <$> castArity ar a
 
-getHead :: (Typeable idx1, Searchable f (Fix f)) => TArity a b n idx -> Fix f idx1 -> Maybe (Fix f idx)
+getHead :: (Typeable idx1, Typeable idx, Searchable f (Fix f)) => TArity a b n idx -> Fix f idx1 -> Maybe (Fix f idx)
 getHead ar (Fx c) = Fx <$> castArity ar c
 --TODO: type-safe specializations of this
 

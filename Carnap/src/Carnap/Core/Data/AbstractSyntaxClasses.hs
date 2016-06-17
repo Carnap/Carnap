@@ -2,6 +2,8 @@
 module Carnap.Core.Data.AbstractSyntaxClasses
     where
 
+import Data.Typeable
+
 --------------------------------------------------------
 --1. Abstract typeclasses
 --------------------------------------------------------
