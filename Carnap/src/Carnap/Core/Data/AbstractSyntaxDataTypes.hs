@@ -48,7 +48,7 @@ class FirstOrderLex f where
     --unless we're dealing with a fixed point, we only substitute at the
     --top level with this function
     --substLex :: f a -> f c -> f b -> f b
-    freshVarsLex :: Maybe [f a]
+    freshVarsLex :: Typeable a => Maybe [f a]
     freshVarsLex = Nothing
 
 --------------------------------------------------------
@@ -108,7 +108,7 @@ infixr 5 :|:
 -- | phantom type. note that only certian kinds of functors even have a kind
 -- | such that the first argument is fixable
 data Fix f idx where
-    Fx ::  f (Fix f) idx -> Fix f idx
+    Fx ::  Typeable idx => f (Fix f) idx -> Fix f idx
 
 -- | This is an empty abstract type, which can be used to close off
 -- | a series of applications of `:|:`, so that the right-most leaf
@@ -170,11 +170,11 @@ the "Height" of a certain binder---how many binders occur below it in
 a parsing tree.
 -}
 class BoundVars g where
-        getBoundVar :: FixLang g ((a -> b) -> c) -> FixLang g (a -> b) -> FixLang g a
+        getBoundVar :: Typeable a => FixLang g ((a -> b) -> c) -> FixLang g (a -> b) -> FixLang g a
         getBoundVar = error "you need to define a language-specific getBoundVar function"
         subBoundVar :: FixLang g a -> FixLang g a -> FixLang g b -> FixLang g b
         subBoundVar _ _ = id
-        getBindHeight:: FixLang g ((a -> b) -> c) -> FixLang g (a -> b) -> FixLang g a
+        getBindHeight:: Typeable a => FixLang g ((a -> b) -> c) -> FixLang g (a -> b) -> FixLang g a
         getBindHeight = error "you need to define a language-specific getBindHeight function"
 
 data Term a = Term a
@@ -224,16 +224,16 @@ data Predicate :: (* -> *) -> (* -> *) -> * -> * where
     Predicate :: pred t -> Arity (Term a) (Form b) n t -> Predicate pred lang t
 
 data Connective :: (* -> *) -> (* -> *) -> * -> * where
-    Connective :: con t -> Arity (Form a) (Form b) n t -> Connective con lang t
+    Connective :: Typeable t => con t -> Arity (Form a) (Form b) n t -> Connective con lang t
 
 data Function :: (* -> *) -> (* -> *) -> * -> * where
-    Function :: func t -> Arity (Term a) (Term b) n t -> Function func lang t
+    Function :: Typeable t => func t -> Arity (Term a) (Term b) n t -> Function func lang t
 
 data Subnective :: (* -> *) -> (* -> *) -> * -> * where
-    Subnective :: sub t -> Arity (Form a) (Term b) n t -> Subnective sub lang t
+    Subnective :: Typeable t => sub t -> Arity (Form a) (Term b) n t -> Subnective sub lang t
 
 data SubstitutionalVariable :: (* -> *) -> * -> * where
-        SubVar :: Int -> SubstitutionalVariable lang t
+        SubVar :: Typeable t => Int -> SubstitutionalVariable lang t
 
 --data Quote :: (* -> *) -> * -> *
     --Quote :: (lang )
@@ -460,7 +460,7 @@ instance ( FirstOrderLex (f idx)
         sameHeadLex (FRight a) (FRight b) = sameHeadLex a b
         sameHeadLex _ _ = False
 
-        freshVarsLex = case (freshVarsLex :: Maybe [f idx a], freshVarsLex :: Maybe [g idx b]) of
+        freshVarsLex = case (freshVarsLex :: Typeable a => Maybe [f idx a], freshVarsLex :: Typeable b => Maybe [g idx b]) of
                            (Just vs, _) -> Just $ map FLeft vs
                            (_, Just vs) -> Just $ map FRight vs
                            _ -> Nothing
@@ -507,7 +507,7 @@ instance {-# OVERLAPPABLE #-} (UniformlyEq (FixLang f), FirstOrderLex (FixLang f
 
         subst a b c = undefined
 
-        freshVars = case freshVarsLex of
+        freshVars = case freshVarsLex  of
                         Just fv -> fv
                         Nothing -> error "a store of fresh variables hasn't been included in this language"
 

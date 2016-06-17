@@ -8,6 +8,7 @@ module Carnap.Core.Unification.Unification (
 ) where
 
 import Data.Type.Equality
+import Data.Typeable
 import Carnap.Core.Data.AbstractSyntaxClasses (Schematizable(..))
 
 data Equation f where
@@ -34,7 +35,7 @@ class FirstOrder f where
     decompose :: f a -> f a -> [Equation f]
     occurs :: f a -> f b -> Bool
     subst :: f a -> f a -> f b -> f b
-    freshVars :: [f a]
+    freshVars :: Typeable a => [f a]
 
 data ExtApp f a where
     ExtApp :: f (b -> a) -> f b -> ExtApp f a

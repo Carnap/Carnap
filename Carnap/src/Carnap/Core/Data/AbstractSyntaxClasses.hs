@@ -29,12 +29,12 @@ class Modelable m f where
     satisfies :: m -> f a -> a
 
 class Liftable f where
-    lift :: a -> f a
+    lift :: Typeable a => a -> f a
 
-lift1 :: (Evaluable f, Liftable f) => (a -> b) -> (f a -> f b)
+lift1 :: (Evaluable f, Liftable f, Typeable b) => (a -> b) -> (f a -> f b)
 lift1 f = lift . f . eval
 
-lift2 :: (Evaluable f, Liftable f) => (a -> b -> c) -> (f a -> f b -> f c)
+lift2 :: (Evaluable f, Liftable f, Typeable c) => (a -> b -> c) -> (f a -> f b -> f c)
 lift2 f fa fb = lift (f (eval fa) (eval fb))
 
 {-|
