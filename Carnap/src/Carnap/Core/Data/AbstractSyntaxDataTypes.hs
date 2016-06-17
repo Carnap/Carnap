@@ -463,9 +463,10 @@ instance ( FirstOrderLex (f idx)
             substLex ot nt tar
         substLex _ _ tar = tar
 
-        freshVarsLex = case (freshVarsLex :: Maybe [f idx a]) of
-                           Just vs -> Just $ map FLeft vs
-                           Nothing -> map FRight <$> (freshVarsLex :: Maybe [g idx b])
+        freshVarsLex = case (freshVarsLex :: Maybe [f idx a], freshVarsLex :: Maybe [g idx b]) of
+                           (Just vs, _) -> Just $ map FLeft vs
+                           (_, Just vs) -> Just $ map FRight vs
+                           _ -> Nothing
 
 instance (FirstOrderLex lang, UniformlyEq lang) => FirstOrderLex (Copula lang)
         where
