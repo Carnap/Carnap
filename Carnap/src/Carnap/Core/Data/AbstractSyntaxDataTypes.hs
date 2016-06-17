@@ -38,7 +38,8 @@ import qualified Control.Monad.State.Lazy as S
 
 class FirstOrderLex f where
     isVarLex :: f a -> Bool
-    sameHeadLex :: f a -> f a -> Bool
+    isVarLex _ = False
+    sameHeadLex :: f a -> f b -> Bool
     -- decomposeLex :: f a -> f a -> [Equation f]
     --we'll work on this at the fixed point.
     --
@@ -46,8 +47,9 @@ class FirstOrderLex f where
     --
     --unless we're dealing with a fixed point, we only substitute at the
     --top level with this function
-    substLex :: f a -> f a -> f b -> f b
+    --substLex :: f a -> f c -> f b -> f b
     freshVarsLex :: Maybe [f a]
+    freshVarsLex = Nothing
 
 --------------------------------------------------------
 --2. Abstract Types
@@ -418,29 +420,36 @@ instance (Liftable lang, Modelable m lang) => Modelable m (Copula lang) where
 --------------------------------------------------------
 
 instance FirstOrderLex (SubstitutionalVariable idx) where
-        --Not a *schematic* variable
-        isVarLex _ = False
 
         sameHeadLex (SubVar n) (SubVar m) = n == m
 
-        -- decomposeLex _ _ = []
-
-        substLex oldterm@(SubVar n) newTerm@(SubVar m) target@(SubVar k) = 
-            if n == m then (SubVar m) else target
-
         freshVarsLex = Just $ map SubVar [1 ..]
 
+instance FirstOrderLex quant => FirstOrderLex (Quantifiers quant lang) where
+        sameHeadLex (Bind q) (Bind q') = sameHeadLex q q'
+
+instance FirstOrderLex abs => FirstOrderLex (Abstractors abs lang) where
+        sameHeadLex (Abstract a) (Abstract b) = sameHeadLex a b
+
+instance FirstOrderLex pred => FirstOrderLex (Predicate pred lang) where
+        sameHeadLex (Predicate p a) (Predicate p' a') =
+            show a == show a' && sameHeadLex p p'
+
+-- instance Schematizable con => Schematizable (Connective con lang) where
+--                 schematize (Connective c _) = schematize c
+
+-- instance Schematizable func => Schematizable (Function func lang) where
+--                 schematize (Function f _) = schematize f
+
+-- instance Schematizable app => Schematizable (Applicators app lang) where
+--                 schematize (Apply f) = schematize f
+
+-- instance Schematizable sub => Schematizable (Subnective sub lang) where
+--                 schematize (Subnective s _) = schematize s
+
 instance FirstOrderLex (EndLang idx) where
-        --Not a *schematic* variable
-        isVarLex _ = False
-
-        sameHeadLex _ _ = False
-
-        -- decomposeLex _ _ = []
-
-        substLex _ _ c = c
-
-        freshVarsLex = Nothing
+        sameHeadLex = undefined
+        
 
 instance ( FirstOrderLex (f idx)
          , FirstOrderLex (g idx)) => FirstOrderLex ((f :|: g) idx) where
@@ -451,27 +460,13 @@ instance ( FirstOrderLex (f idx)
         sameHeadLex (FRight a) (FRight b) = sameHeadLex a b
         sameHeadLex _ _ = False
 
-        -- decomposeLex (FLeft a) (FLeft b) = map liftEq $ decomposeLex a b
-        --     where liftEq (x :=: y) = FLeft x :=: FLeft y
-        -- decomposeLex (FRight a) (FRight b) = map liftEq $ decomposeLex a b
-        --     where liftEq (x :=: y) = FRight x :=: FRight y
-        -- decomposeLex _ _ = []
-
-        substLex ot@(FLeft a) nt@(FLeft b) tar@(FLeft c) = 
-            substLex ot nt tar
-        substLex ot@(FRight a) nt@(FRight b) tar@(FRight c) = 
-            substLex ot nt tar
-        substLex _ _ tar = tar
-
         freshVarsLex = case (freshVarsLex :: Maybe [f idx a], freshVarsLex :: Maybe [g idx b]) of
                            (Just vs, _) -> Just $ map FLeft vs
                            (_, Just vs) -> Just $ map FRight vs
                            _ -> Nothing
 
-instance (FirstOrderLex lang, UniformlyEq lang) => FirstOrderLex (Copula lang)
+instance (UniformlyEq lang, FirstOrderLex lang) => FirstOrderLex (Copula lang)
         where
-
-        isVarLex _ = False
 
         sameHeadLex ((x :: lang (t1  -> t2 )) :$: _) 
                     ((y :: lang (t1' -> t2')) :$: _) = 
@@ -480,30 +475,15 @@ instance (FirstOrderLex lang, UniformlyEq lang) => FirstOrderLex (Copula lang)
                 Nothing -> False
         sameHeadLex _ _ = False
 
-        -- decomposeLex (x :$: (y :: a)) (x' :$: (y' :: b)) = 
-        --     case eqT :: Maybe (a :~: b) of
-        --         Refl -> [y :=: y'] : decomposeLex x x'
-        --         Nothing -> []
-        
-        substLex ot@( (x  :: lang (t1  -> t2 ))  :$: y ) nt 
-                 tar@((x' :: lang (t1' -> t2'))  :$: y') = 
-                    case eqT :: Maybe ((t1 -> t2) :~: (t1' -> t2')) of
-                        Just Refl -> if x =* x' && y =* y' then nt else tar
-                        Nothing -> tar
-
-        freshVarsLex = Nothing
-
 instance FirstOrderLex (f (Fix f)) => FirstOrderLex (Fix f) where
 
         isVarLex (Fx x) = isVarLex x
 
         sameHeadLex (Fx x) (Fx y) = sameHeadLex x y
 
-        substLex (Fx ot) (Fx nt) (Fx tar) = Fx (substLex ot nt tar)
-
         freshVarsLex = map Fx <$> freshVarsLex 
 
-instance (UniformlyEq (FixLang f), FirstOrderLex (FixLang f)) => FirstOrder (FixLang f) where
+instance {-# OVERLAPPABLE #-} (UniformlyEq (FixLang f), FirstOrderLex (FixLang f)) => FirstOrder (FixLang f) where
         
         isVar = isVarLex
 
@@ -525,9 +505,7 @@ instance (UniformlyEq (FixLang f), FirstOrderLex (FixLang f)) => FirstOrder (Fix
         --might want a clause for LLam
         occurs phi psi = phi =* psi
 
-        subst a b c@(x :!$: y) = subst a b x :!$: subst a b y
-        --might want a clause for LLam
-        subst a b c = substLex a b c
+        subst a b c = undefined
 
         freshVars = case freshVarsLex of
                         Just fv -> fv

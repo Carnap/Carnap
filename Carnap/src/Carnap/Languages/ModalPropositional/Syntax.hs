@@ -129,51 +129,51 @@ instance Syncast ModalPropLanguage (Form (World -> Bool)) where
     cast phi@(MPos _)      = Just phi
     cast _ = Nothing
 
--- instance FirstOrder ModalPropLanguage where
+instance FirstOrder ModalPropLanguage where
         
---     isVar (MPhi _) = True
---     isVar _        = False
+    isVar (MPhi _) = True
+    isVar _        = False
 
---     sameHead (MNeg _) (MNeg _) = True
---     sameHead (_ :&: _) (_ :&: _) = True
---     sameHead (_ :||: _) (_ :||: _) = True
---     sameHead (_ :->: _) (_ :->: _) = True
---     sameHead (_ :<->: _) (_ :<->: _) = True
---     sameHead (MNec _) (MNec _) = True
---     sameHead (MPos _) (MPos _) = True
---     sameHead (MP n) (MP m) = n == m
---     sameHead _ _ = False
+    sameHead (MNeg _) (MNeg _) = True
+    sameHead (_ :&: _) (_ :&: _) = True
+    sameHead (_ :||: _) (_ :||: _) = True
+    sameHead (_ :->: _) (_ :->: _) = True
+    sameHead (_ :<->: _) (_ :<->: _) = True
+    sameHead (MNec _) (MNec _) = True
+    sameHead (MPos _) (MPos _) = True
+    sameHead (MP n) (MP m) = n == m
+    sameHead _ _ = False
 
---     decompose (MNeg x) (MNeg y) = [x :=: y]
---     decompose (MNec x) (MNec y) = [x :=: y]
---     decompose (MPos x) (MPos y) = [x :=: y]
---     decompose (x :&: y) (x' :&: y') = [x :=: x', y :=: y']
---     decompose (x :||: y) (x' :||: y') = [x :=: x', y :=: y']
---     decompose (x :->: y) (x' :->: y') = [x :=: x', y :=: y']
---     decompose (x :<->: y) (x' :<->: y') = [x :=: x', y :=: y']
---     decompose _ _ = []
+    decompose (MNeg x) (MNeg y) = [x :=: y]
+    decompose (MNec x) (MNec y) = [x :=: y]
+    decompose (MPos x) (MPos y) = [x :=: y]
+    decompose (x :&: y) (x' :&: y') = [x :=: x', y :=: y']
+    decompose (x :||: y) (x' :||: y') = [x :=: x', y :=: y']
+    decompose (x :->: y) (x' :->: y') = [x :=: x', y :=: y']
+    decompose (x :<->: y) (x' :<->: y') = [x :=: x', y :=: y']
+    decompose _ _ = []
 
---     occurs phi psi = case (cast phi :: Maybe ModalForm, cast psi :: Maybe ModalForm) of
---                                  (Just f, Just f') -> checkChildren f f'
---                                  _ -> False
+    occurs phi psi = case (cast phi :: Maybe ModalForm, cast psi :: Maybe ModalForm) of
+                                 (Just f, Just f') -> checkChildren f f'
+                                 _ -> False
 
---     subst a b c = 
---           case c of 
---             (MNeg _)     -> byCast a b c
---             (_ :&: _)    -> byCast a b c 
---             (_ :||: _)   -> byCast a b c
---             (_ :->: _)   -> byCast a b c
---             (_ :<->: _)  -> byCast a b c
---             (MP _)       -> byCast a b c
---             (MPhi _)     -> byCast a b c
---             (MNec _)     -> byCast a b c
---             (MPos _)     -> byCast a b c
---             _            -> c
---         where 
---             byCast v phi psi =
---                 case (cast v :: Maybe ModalForm, cast phi :: Maybe ModalForm, cast psi :: Maybe ModalForm) of 
---                      (Just v', Just phi', Just psi') -> 
---                           transform (\x -> if x == v' then phi' else x) psi'
---                      _ -> psi
+    subst a b c = 
+          case c of 
+            (MNeg _)     -> byCast a b c
+            (_ :&: _)    -> byCast a b c 
+            (_ :||: _)   -> byCast a b c
+            (_ :->: _)   -> byCast a b c
+            (_ :<->: _)  -> byCast a b c
+            (MP _)       -> byCast a b c
+            (MPhi _)     -> byCast a b c
+            (MNec _)     -> byCast a b c
+            (MPos _)     -> byCast a b c
+            _            -> c
+        where 
+            byCast v phi psi =
+                case (cast v :: Maybe ModalForm, cast phi :: Maybe ModalForm, cast psi :: Maybe ModalForm) of 
+                     (Just v', Just phi', Just psi') -> 
+                          transform (\x -> if x == v' then phi' else x) psi'
+                     _ -> psi
 
---     freshVars = map MSV [1..]
+    freshVars = map MSV [1..]
