@@ -2,8 +2,8 @@
 
 module Carnap.Languages.PurePropositional.Syntax where
 
-import Carnap.Core.Data.AbstractSyntaxDataTypes
 import Carnap.Core.Data.AbstractSyntaxClasses
+import Carnap.Core.Data.AbstractSyntaxDataTypes
 import Carnap.Core.Data.Util (Syncast(..), checkChildren)
 import Carnap.Core.Unification.Unification
 import Carnap.Languages.Util.LanguageClasses
