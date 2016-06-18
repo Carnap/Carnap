@@ -217,10 +217,6 @@ instance Show (Arity arg ret n ret') where
             where inc :: Int -> Int
                   inc = (+) 1 
 
-data TArity :: * -> * -> Nat -> * -> * where
-    TZero :: Typeable ret => TArity arg ret Zero ret
-    TSucc :: (Typeable ret, Typeable arg, Typeable ret') => TArity arg ret n ret' -> TArity arg ret (Succ n) (arg -> ret')
-
 data Predicate :: (* -> *) -> (* -> *) -> * -> * where
     Predicate :: pred t -> Arity (Term a) (Form b) n t -> Predicate pred lang t
 
@@ -434,7 +430,6 @@ instance FirstOrderLex app => FirstOrderLex (Applicators app lang) where
         isVarLex (Apply f) = isVarLex f
         sameHeadLex (Apply f) (Apply f') = sameHeadLex f f'
         
-
 instance FirstOrderLex abs => FirstOrderLex (Abstractors abs lang) where
         isVarLex (Abstract a) = isVarLex a
         sameHeadLex (Abstract a) (Abstract b) = sameHeadLex a b
@@ -530,66 +525,9 @@ instance {-# OVERLAPPABLE #-} (UniformlyEq (FixLang f), FirstOrderLex (FixLang f
                         Just fv -> fv
                         Nothing -> error "a store of fresh variables hasn't been included in this language"
 
-
 --------------------------------------------------------
 --Head Extractors and a Generic Plated Instance.
 --------------------------------------------------------
-class Searchable f l where
-        castArity :: (Typeable idx) => TArity a b n t -> f l idx -> Maybe (f l t)
-        castArity _ _ = Nothing
-
-instance Searchable (Predicate pred) lang where
-        castArity  (TZero :: TArity a b n t) f@(Predicate p (a2 :: Arity (Term a1) (Form b1) n1 idx)) =
-            case eqT :: Maybe (t :~: idx) of
-                Just Refl -> Just f
-                Nothing -> Nothing
-        castArity  ((TSucc TZero) :: TArity a b n t) f@(Predicate p (a2 :: Arity (Term a1) (Form b1) n1 idx)) =
-            case eqT :: Maybe (t :~: idx) of
-                Just Refl -> Just f
-                Nothing -> Nothing
-        castArity  ((TSucc(TSucc TZero)) :: TArity a b n t) f@(Predicate p (a2 :: Arity (Term a1) (Form b1) n1 idx)) =
-            case eqT :: Maybe (t :~: idx) of
-                Just Refl -> Just f
-                Nothing -> Nothing
-        castArity _ _ = Nothing
-
-instance Searchable (Connective con) lang where
-        castArity (TZero :: TArity a b n t) f@(Connective c (a2 :: Arity (Form a1) (Form b1) n1 idx)) =
-            case eqT :: Maybe (t :~: idx) of
-                Just Refl -> Just f
-                Nothing -> Nothing
-        castArity ((TSucc TZero) :: TArity a b n t) f@(Connective c (a2 :: Arity (Form a1) (Form b1) n1 idx)) =
-            case eqT :: Maybe (t :~: idx) of
-                Just Refl -> Just f
-                Nothing -> Nothing
-        castArity ((TSucc (TSucc TZero)) :: TArity a b n t) f@(Connective c (a2 :: Arity (Form a1) (Form b1) n1 idx)) =
-            case eqT :: Maybe (t :~: idx) of
-                Just Refl -> Just f
-                Nothing -> Nothing
-        castArity _ _ = Nothing
-
-instance Searchable (Function con) lang
-
-instance Searchable (Subnective sub) lang
-
-instance Searchable (Quantifiers quant) lang
-
-instance Searchable (Abstractors abs) lang
-
-instance Searchable (Applicators app) lang
-
-instance Searchable EndLang lang
-
-instance Searchable Copula lang
-
-instance (Searchable f l, Searchable g l ) =>
-        Searchable (f :|: g) l where
-        castArity     ar (FLeft a)  = FLeft  <$> castArity ar a
-        castArity     ar (FRight a) = FRight <$> castArity ar a
-
-getHead :: (Typeable idx1, Typeable idx, Searchable f (Fix f)) => TArity a b n idx -> Fix f idx1 -> Maybe (Fix f idx)
-getHead ar (Fx c) = Fx <$> castArity ar c
---TODO: type-safe specializations of this
 
 (.*$.) :: (Applicative g, Typeable a, Typeable b) => g (FixLang f (a -> b)) -> g (FixLang f a) -> g (FixLang f b)
 x .*$. y = (:!$:) <$> x <*> y
