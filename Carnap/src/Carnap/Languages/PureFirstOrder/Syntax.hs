@@ -21,8 +21,10 @@ data PureMonadicPredicate a where
 instance Schematizable (PureMonadicPredicate) where
         schematize (MonPred n) = \(x:xs) -> "P_" ++ show n ++ "(" ++ x ++ ")"
 
-instance FirstOrderLex (PureMonadicPredicate) where
-        sameHeadLex (MonPred n) (MonPred m) = n == m
+instance UniformlyEq (PureMonadicPredicate) where
+        (MonPred n) =* (MonPred m) = n == m
+
+instance FirstOrderLex (PureMonadicPredicate) 
 
 data PureSentences a where
     Sent :: Int -> PureSentences (Form Bool)
@@ -30,8 +32,10 @@ data PureSentences a where
 instance Schematizable (PureSentences) where
         schematize (Sent n) = const "P_n"
 
-instance FirstOrderLex (PureSentences) where
-        sameHeadLex (Sent n) (Sent m) = n == m
+instance UniformlyEq (PureSentences) where
+        (Sent n) =* (Sent m) = n == m
+
+instance FirstOrderLex (PureSentences) 
 
 type PurePredicate = IntPred Bool Int
 
