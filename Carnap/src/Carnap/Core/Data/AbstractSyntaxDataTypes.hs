@@ -211,11 +211,12 @@ pattern AOne = ASucc AZero
 pattern ATwo = ASucc AOne
 pattern AThree = ASucc ATwo
 
+arityInt :: Arity arg ret n ret' -> Int
+arityInt AZero = 0
+arityInt (ASucc n) = arityInt n + 1
+
 instance Show (Arity arg ret n ret') where
-        show AZero = "0"
-        show (ASucc n) = show . inc . read . show $ n
-            where inc :: Int -> Int
-                  inc = (+) 1 
+        show = show . arityInt
 
 data Predicate :: (* -> *) -> (* -> *) -> * -> * where
     Predicate :: pred t -> Arity (Term a) (Form b) n t -> Predicate pred lang t
