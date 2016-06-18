@@ -221,16 +221,16 @@ data Predicate :: (* -> *) -> (* -> *) -> * -> * where
     Predicate :: pred t -> Arity (Term a) (Form b) n t -> Predicate pred lang t
 
 data Connective :: (* -> *) -> (* -> *) -> * -> * where
-    Connective :: Typeable t => con t -> Arity (Form a) (Form b) n t -> Connective con lang t
+    Connective :: con t -> Arity (Form a) (Form b) n t -> Connective con lang t
 
 data Function :: (* -> *) -> (* -> *) -> * -> * where
-    Function :: Typeable t => func t -> Arity (Term a) (Term b) n t -> Function func lang t
+    Function :: func t -> Arity (Term a) (Term b) n t -> Function func lang t
 
 data Subnective :: (* -> *) -> (* -> *) -> * -> * where
-    Subnective :: Typeable t => sub t -> Arity (Form a) (Term b) n t -> Subnective sub lang t
+    Subnective :: sub t -> Arity (Form a) (Term b) n t -> Subnective sub lang t
 
 data SubstitutionalVariable :: (* -> *) -> * -> * where
-        SubVar :: Typeable t => Int -> SubstitutionalVariable lang t
+        SubVar :: Int -> SubstitutionalVariable lang t
 
 --data Quote :: (* -> *) -> * -> *
     --Quote :: (lang )
