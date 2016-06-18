@@ -11,8 +11,10 @@ data IntProp b a where
 instance Schematizable (IntProp b) where
         schematize (Prop n)   _       = "P_" ++ show n
 
+instance UniformlyEq (IntProp b) where
+        (Prop n) =* (Prop m) = n == m
+
 instance FirstOrderLex (IntProp b) where
-        sameHeadLex (Prop n) (Prop m) = n == m
 
 data IntPred b c a where
         Pred ::  Arity (Term c) (Form b) n ret -> Int -> IntPred b c ret
@@ -25,8 +27,10 @@ instance Schematizable (IntPred b c) where
                                         ++ "(" ++ intercalate "," args ++ ")"
                         where args = take m $ xs ++ repeat "_"
 
-instance FirstOrderLex (IntPred b c) where
-        sameHeadLex (Pred a n) (Pred a' m) = show a == show a' && n == m
+instance UniformlyEq (IntPred b c) where
+        (Pred a n) =* (Pred a' m) = show a == show a' && n == m
+
+instance FirstOrderLex (IntPred b c)
 
 data SchematicIntProp b a where
         SProp :: Int -> SchematicIntProp b (Form b)
@@ -34,9 +38,11 @@ data SchematicIntProp b a where
 instance Schematizable (SchematicIntProp b) where
         schematize (SProp n)   _       = "φ_" ++ show n
 
+instance UniformlyEq (SchematicIntProp b) where
+        (SProp n) =* (SProp m) = n == m
+
 instance FirstOrderLex (SchematicIntProp b) where
         isVarLex _ = True
-        sameHeadLex (SProp n) (SProp m) = n == m
 
 data IntFunc c b a where
         Func ::  Arity (Term c) (Term b) n ret -> Int -> IntFunc b c ret
@@ -49,8 +55,10 @@ instance Schematizable (IntFunc b c) where
                                         ++ "(" ++ intercalate "," args ++ ")"
                         where args = take m $ xs ++ repeat "_"
 
-instance FirstOrderLex (IntFunc b c) where
-        sameHeadLex (Func a n) (Func a' m) = show a == show a' && n == m
+instance UniformlyEq (IntFunc b c) where
+        (Func a n) =* (Func a' m) = show a == show a' && n == m
+
+instance FirstOrderLex (IntFunc b c)
 
 instance Evaluable (SchematicIntProp b) where
         eval = error "You should not be able to evaluate schemata"
@@ -64,9 +72,11 @@ data SchematicIntPred b c a where
 instance Schematizable (SchematicIntPred b c) where
         schematize (SPred a n) _ = "φ^" ++ show a ++ "_" ++ show n
 
+instance UniformlyEq (SchematicIntPred b c) where
+        (SPred a n) =* (SPred a' m) = show a == show a' && n == m
+
 instance FirstOrderLex (SchematicIntPred b c) where
         isVarLex _ = True
-        sameHeadLex (SPred a n) (SPred a' m) = show a == show a' && n == m
 
 instance Evaluable (SchematicIntPred b c) where
         eval = error "You should not be able to evaluate schemata"
@@ -80,8 +90,10 @@ data TermEq c b a where
 instance Schematizable (TermEq c b) where
         schematize TermEq = \(t1:t2:_) -> t1 ++ "=" ++ t2
 
-instance FirstOrderLex (TermEq c b) where
-        sameHeadLex _ _ = True
+instance UniformlyEq (TermEq c b) where
+        _ =* _ = True
+
+instance FirstOrderLex (TermEq c b)
 
 data BooleanConn b a where
         And :: BooleanConn b (Form b -> Form b -> Form b)
@@ -97,13 +109,15 @@ instance Schematizable (BooleanConn b) where
         schematize And = \(x:y:_) -> "(" ++ x ++ " ∧ " ++ y ++ ")"
         schematize Not = \(x:_) -> "¬" ++ x
 
-instance FirstOrderLex (BooleanConn b) where
-        sameHeadLex And And = True 
-        sameHeadLex Or Or = True 
-        sameHeadLex If If = True
-        sameHeadLex Iff Iff = True
-        sameHeadLex Not Not = True
-        sameHeadLex _ _ = False
+instance UniformlyEq (BooleanConn b) where
+        And =* And = True 
+        Or  =* Or  = True 
+        If  =* If  = True
+        Iff =* Iff = True
+        Not =* Not = True
+        _ =* _ = False
+
+instance FirstOrderLex (BooleanConn b)
 
 data Modality b a where
         Box     :: Modality b (Form b -> Form b)
@@ -113,9 +127,13 @@ instance Schematizable (Modality b) where
         schematize Box = \(x:_) -> "□" ++ x
         schematize Diamond = \(x:_) -> "◇" ++ x
 
-instance FirstOrderLex (Modality b) where
-        sameHeadLex Box Box = True 
-        sameHeadLex Diamond Diamond = True 
+instance UniformlyEq (Modality b) where
+         Box =* Box = True 
+         Diamond =* Diamond = True 
+         _ =* _ = False
+
+
+instance FirstOrderLex (Modality b)
 
 data IntConst b a where
         Constant :: Int -> IntConst b (Term b)
@@ -123,8 +141,10 @@ data IntConst b a where
 instance Schematizable (IntConst b) where
         schematize (Constant n)   _       = "c_" ++ show n
 
-instance FirstOrderLex (IntConst b) where
-        sameHeadLex (Constant n) (Constant m) = n == m
+instance UniformlyEq (IntConst b) where
+        (Constant n) =* (Constant m) = n == m
+
+instance FirstOrderLex (IntConst b) 
 
 data StandardQuant b c a where
         All  :: String -> StandardQuant b c ((Term c -> Form b) -> Form b)
@@ -134,9 +154,12 @@ instance Schematizable (StandardQuant b c) where
         schematize (All v) = \(x:_) -> "∀" ++ v ++ "(" ++ x ++ ")"
         schematize (Some v) = \(x:_) -> "∃" ++ v ++ "(" ++ x ++ ")"
 
-instance FirstOrderLex (StandardQuant b c) where
-        sameHeadLex (All _) (All _) = True
-        sameHeadLex (Some _) (Some _) = True
+instance UniformlyEq (StandardQuant b c) where
+        (All _) =* (All _) = True
+        (Some _) =* (Some _) = True
+        _ =* _ = False
+
+instance FirstOrderLex (StandardQuant b c) 
 
 data StandardVar b a where
     Var :: String -> StandardVar b (Term b)
@@ -144,5 +167,7 @@ data StandardVar b a where
 instance Schematizable (StandardVar b) where
         schematize (Var s) = const s
 
-instance FirstOrderLex (StandardVar b) where
-        sameHeadLex (Var n) (Var m) = n == m
+instance UniformlyEq (StandardVar b) where
+        (Var n) =* (Var m) = n == m
+
+instance FirstOrderLex (StandardVar b) 

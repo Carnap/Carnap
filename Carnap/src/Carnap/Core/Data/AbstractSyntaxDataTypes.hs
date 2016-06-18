@@ -476,6 +476,10 @@ instance ( UniformlyEq (f idx), UniformlyEq (g idx),
                            (_, Just vs) -> Just $ map FRight vs
                            _ -> Nothing
 
+        sameHeadLex (FLeft x) (FLeft y) = sameHeadLex x y
+        sameHeadLex (FRight x) (FRight y) = sameHeadLex x y
+        sameHeadLex _ _ = False
+
 instance (UniformlyEq lang, FirstOrderLex lang) => UniformlyEq (Copula lang) where
         (h :$: t ) =* (h' :$: t') = h =* h' && t =* t'
         Lam g =* Lam h = error "sorry, can't directly compare these. Try the fixpoint."
@@ -490,7 +494,7 @@ instance (UniformlyEq lang, FirstOrderLex lang) => FirstOrderLex (Copula lang)
                 Nothing -> False
         sameHeadLex _ _ = False
 
-instance (UniformlyEq ((Copula :|: f) (FixLang f))
+instance {-# OVERLAPPABLE #-} (UniformlyEq ((Copula :|: f) (FixLang f))
          , FirstOrderLex ((Copula :|: f) (FixLang f))
          ) => UniformlyEq (FixLang f) where
         (x :!$: y) =* (x' :!$: y') = x =* x' && y =* y'
@@ -518,6 +522,8 @@ instance (UniformlyEq ((Copula :|: f) (FixLang f)), FirstOrderLex ((Copula :|: f
         isVarLex (Fx x) = isVarLex x
 
         freshVarsLex = map Fx <$> freshVarsLex 
+
+        sameHeadLex (Fx x) (Fx y) = sameHeadLex x y
 
 instance {-# OVERLAPPABLE #-} FirstOrderLex (FixLang f) => FirstOrder (FixLang f) where
         
