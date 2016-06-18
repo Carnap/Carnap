@@ -1,13 +1,12 @@
 {-#LANGUAGE TypeFamilies, UndecidableInstances, FlexibleInstances, MultiParamTypeClasses, FunctionalDependencies, AllowAmbiguousTypes, GADTs, KindSignatures, DataKinds, PolyKinds, TypeOperators, ViewPatterns, PatternSynonyms, RankNTypes, FlexibleContexts, ScopedTypeVariables, AutoDeriveTypeable, DefaultSignatures #-}
 
 module Carnap.Core.Data.AbstractSyntaxDataTypes(
-  CopulaSchema(..),
-  BoundVars(..),
   -- * Abstract Types
   -- $ATintro
   -- ** Language Building Types
   Term(..), Form(..), 
-  Copula((:$:), Lam), (:|:)(..), Fix(Fx), FixLang, EndLang, pattern AOne,
+  Copula((:$:), Lam), CopulaSchema(..),
+  (:|:)(..), Fix(Fx), FixLang, EndLang, pattern AOne,
   pattern ATwo, pattern AThree, pattern LLam, pattern (:!$:), pattern Fx1,
   pattern Fx2, pattern Fx3, pattern Fx4, pattern Fx5, pattern Fx6, pattern
   Fx7, pattern Fx8, pattern Fx9, pattern Fx10, pattern Fx11, pattern Lx1,
@@ -15,15 +14,12 @@ module Carnap.Core.Data.AbstractSyntaxDataTypes(
   Lx7, pattern Lx8, pattern Lx9, pattern Lx10, pattern Lx11, pattern FX,
   -- ** Abstract Term Types
   -- *** Variable Binding Operators
-  Quantifiers(Bind),Abstractors(Abstract),Applicators(Apply), 
+  Quantifiers(Bind),Abstractors(Abstract),Applicators(Apply), BoundVars(..),
   -- *** Non-Binding Operators 
-  Arity(AZero, ASucc), 
-  Predicate(Predicate), 
-  Connective(Connective), Function(Function), 
-  Subnective(Subnective),
-  SubstitutionalVariable(SubVar),  
-  LangTypes2(..), LangTypes1(..), RelabelVars(..),   
-  FirstOrderLex(..),
+  Arity(AZero, ASucc), Predicate(Predicate), Connective(Connective), 
+  Function(Function), Subnective(Subnective), SubstitutionalVariable(SubVar),  
+  -- * Generic Programming Utilities
+  LangTypes2(..), LangTypes1(..), RelabelVars(..), FirstOrderLex(..),
 ) where
 
 import Carnap.Core.Util
@@ -36,24 +32,8 @@ import qualified Control.Monad.State.Lazy as S
 --This module attempts to provide abstract syntax types that would cover
 --a wide variety of languages
 
-
-class FirstOrderLex f where
-    isVarLex :: f a -> Bool
-    isVarLex _ = False
-    sameHeadLex :: f a -> f b -> Bool
-    -- decomposeLex :: f a -> f a -> [Equation f]
-    --we'll work on this at the fixed point.
-    --
-    --occursLex :: f idx a -> f idx b -> Bool
-    --
-    --unless we're dealing with a fixed point, we only substitute at the
-    --top level with this function
-    --substLex :: f a -> f c -> f b -> f b
-    freshVarsLex :: Typeable a => Maybe [f a]
-    freshVarsLex = Nothing
-
 --------------------------------------------------------
---2. Abstract Types
+--1. Abstract Types
 --------------------------------------------------------
 
 -- $ATintro
@@ -68,7 +48,7 @@ class FirstOrderLex f where
 -- denotations in those models
 
 --------------------------------------------------------
---2.1 Language Building Types
+--1.1 Language Building Types
 --------------------------------------------------------
 
 {-|
@@ -147,11 +127,11 @@ pattern Fx12 x     = FX (Lx12 x)
 pattern FX x = Fx (FRight x)
 
 --------------------------------------------------------
---2.2 Abstract Operator Types 
+--1.2 Abstract Operator Types 
 --------------------------------------------------------
 
 --------------------------------------------------------
---2.2.1 Variable Binding Operators
+--1.2.1 Variable Binding Operators
 --------------------------------------------------------
 
 data Quantifiers :: (* -> *) -> (* -> *) -> * -> * where
@@ -197,7 +177,7 @@ instance Liftable Form where
     lift = Form
 
 --------------------------------------------------------
---2.2.2 Non-Binding Operators
+--1.2.2 Non-Binding Operators
 --------------------------------------------------------
 
 -- | think of this as a type constraint. the lang type, model type, and number
@@ -235,14 +215,14 @@ data SubstitutionalVariable :: (* -> *) -> * -> * where
 
 --data Quote :: (* -> *) -> * -> *
     --Quote :: (lang )
+ 
 --------------------------------------------------------
---3. Schematizable, Show, and Eq
+--2. Schematizable, Show, and Eq
 --------------------------------------------------------
 
 instance Schematizable (SubstitutionalVariable lang)  where
         schematize (SubVar n) = const $ "α_" ++ show n
 
---dummy instance for a type with no constructors
 instance Schematizable (EndLang lang) where
         schematize = undefined
 
@@ -301,9 +281,6 @@ instance Schematizable func => Show (Function func lang a) where
 instance Schematizable sub => Show (Subnective sub lang a) where
         show x = schematize x []
 
---instance -# OVERLAPPING #- Schematizable ((Copula :|: f1) a) => Eq ((Copula :|: f1) a b) where
-        --x == y = show x == show y
-
 instance Schematizable quant => Eq (Quantifiers quant lang a) where
         x == y = show x == show y
 
@@ -325,10 +302,8 @@ instance (Schematizable (f a), Schematizable (g a)) => Eq ((f :|: g) a b) where
 instance  (CanonicalForm (FixLang f a), Show (FixLang f a)) => Eq (FixLang f a) where
         x == y = show (canonical x) == show (canonical y)
 
---}
-
 --------------------------------------------------------
---4. Evaluation and Modelable
+--3. Evaluation and Modelable
 --------------------------------------------------------
 instance Evaluable (SubstitutionalVariable lang)  where
         eval _ = error "It should not be possible to evaluate a substitutional variable"
@@ -354,7 +329,6 @@ instance Evaluable app => Evaluable (Applicators app lang) where
 instance Evaluable sub => Evaluable (Subnective sub lang) where
     eval (Subnective p a) = eval p
 
---dummy instance for a type with no constructors
 instance Evaluable (EndLang lang) where
         eval = undefined
 
@@ -414,63 +388,97 @@ instance (Liftable lang, Modelable m lang) => Modelable m (Copula lang) where
     satisfies m (Lift t) = t
 
 --------------------------------------------------------
---5. First Order Lexicon
+--4. First Order Lexicon
 --------------------------------------------------------
+
+class UniformlyEq f => FirstOrderLex f where
+    isVarLex :: f a -> Bool
+    isVarLex _ = False
+    sameHeadLex :: f a -> f b -> Bool
+    sameHeadLex = (=*)
+    freshVarsLex :: Typeable a => Maybe [f a]
+    freshVarsLex = Nothing
+
+instance UniformlyEq (SubstitutionalVariable idx) where
+
+        (SubVar n) =* (SubVar m) = n == m
 
 instance FirstOrderLex (SubstitutionalVariable idx) where
 
-        sameHeadLex (SubVar n) (SubVar m) = n == m
-
         freshVarsLex = Just $ map SubVar [1 ..]
 
-instance FirstOrderLex quant => FirstOrderLex (Quantifiers quant lang) where
+instance UniformlyEq quant => UniformlyEq (Quantifiers quant lang) where
+        (Bind q) =* (Bind q') = q =* q'
+
+instance (UniformlyEq quant, FirstOrderLex quant) => FirstOrderLex (Quantifiers quant lang) where
         isVarLex (Bind q) = isVarLex q
-        sameHeadLex (Bind q) (Bind q') = sameHeadLex q q'
 
-instance FirstOrderLex app => FirstOrderLex (Applicators app lang) where
+instance UniformlyEq app => UniformlyEq (Applicators app lang) where
+        (Apply f) =* (Apply f') = f =* f'
+
+instance (UniformlyEq app, FirstOrderLex app) => FirstOrderLex (Applicators app lang) where
         isVarLex (Apply f) = isVarLex f
-        sameHeadLex (Apply f) (Apply f') = sameHeadLex f f'
         
-instance FirstOrderLex abs => FirstOrderLex (Abstractors abs lang) where
+instance UniformlyEq abs => UniformlyEq (Abstractors abs lang) where
+        (Abstract a) =* (Abstract b) = a =* b
+
+instance (UniformlyEq abs, FirstOrderLex abs) => FirstOrderLex (Abstractors abs lang) where
         isVarLex (Abstract a) = isVarLex a
-        sameHeadLex (Abstract a) (Abstract b) = sameHeadLex a b
 
-instance FirstOrderLex pred => FirstOrderLex (Predicate pred lang) where
+instance UniformlyEq pred => UniformlyEq (Predicate pred lang) where
+        (Predicate p a) =* (Predicate p' a') =
+            arityInt a == arityInt a' && p =* p'
+
+instance (UniformlyEq pred, FirstOrderLex pred) => FirstOrderLex (Predicate pred lang) where
         isVarLex (Predicate p a) = isVarLex p
-        sameHeadLex (Predicate p a) (Predicate p' a') =
-            show a == show a' && sameHeadLex p p'
 
-instance FirstOrderLex con => FirstOrderLex (Connective con lang) where
+instance UniformlyEq con => UniformlyEq (Connective con lang) where
+        (Connective c a) =* (Connective c' a') = 
+            arityInt a == arityInt a' && c =* c'
+
+instance (UniformlyEq con, FirstOrderLex con) => FirstOrderLex (Connective con lang) where
         isVarLex (Connective c a) = isVarLex c
-        sameHeadLex (Connective c a) (Connective c' a') = 
-            show a == show a' && sameHeadLex c c'
 
-instance FirstOrderLex func => FirstOrderLex (Function func lang) where
+instance UniformlyEq func => UniformlyEq (Function func lang) where
+        (Function f a) =* (Function f' a') = 
+            arityInt a == arityInt a' && f =* f'
+
+instance (UniformlyEq func, FirstOrderLex func) => FirstOrderLex (Function func lang) where
         isVarLex (Function f a) = isVarLex f
-        sameHeadLex (Function f a) (Function f' a') = 
-            show a == show a' && sameHeadLex f f'
+
+instance UniformlyEq sub => UniformlyEq (Subnective sub lang) where
+        (Subnective s a) =* (Subnective s' a') = 
+            arityInt a == arityInt a' && s =* s'
 
 instance FirstOrderLex sub => FirstOrderLex (Subnective sub lang) where
         isVarLex (Subnective s a) = isVarLex s
-        sameHeadLex (Subnective s a) (Subnective s' a') = 
-            show a == show a' && sameHeadLex s s'
+        
+instance UniformlyEq (EndLang idx) where
+        (=*) = undefined
 
 instance FirstOrderLex (EndLang idx) where
         sameHeadLex = undefined
 
-instance ( FirstOrderLex (f idx)
-         , FirstOrderLex (g idx)) => FirstOrderLex ((f :|: g) idx) where
+instance ( UniformlyEq (f idx)
+         , UniformlyEq (g idx)) => UniformlyEq ((f :|: g) idx) where
+
+        (FLeft a) =* (FLeft b) = a =* b
+        (FRight a) =* (FRight b) = a =* b
+        _ =* _ = False
+
+instance ( UniformlyEq (f idx), UniformlyEq (g idx),
+        FirstOrderLex (f idx) , FirstOrderLex (g idx)) => FirstOrderLex ((f :|: g) idx) where
         isVarLex (FLeft a) = isVarLex a
         isVarLex (FRight a) = isVarLex a
-
-        sameHeadLex (FLeft a) (FLeft b) = sameHeadLex a b
-        sameHeadLex (FRight a) (FRight b) = sameHeadLex a b
-        sameHeadLex _ _ = False
 
         freshVarsLex = case (freshVarsLex :: Typeable a => Maybe [f idx a], freshVarsLex :: Typeable b => Maybe [g idx b]) of
                            (Just vs, _) -> Just $ map FLeft vs
                            (_, Just vs) -> Just $ map FRight vs
                            _ -> Nothing
+
+instance (UniformlyEq lang, FirstOrderLex lang) => UniformlyEq (Copula lang) where
+        (h :$: t ) =* (h' :$: t') = h =* h' && t =* t'
+        Lam g =* Lam h = error "sorry, can't directly compare these. Try the fixpoint."
 
 instance (UniformlyEq lang, FirstOrderLex lang) => FirstOrderLex (Copula lang)
         where
@@ -482,15 +490,36 @@ instance (UniformlyEq lang, FirstOrderLex lang) => FirstOrderLex (Copula lang)
                 Nothing -> False
         sameHeadLex _ _ = False
 
-instance FirstOrderLex (f (Fix f)) => FirstOrderLex (Fix f) where
+instance (UniformlyEq ((Copula :|: f) (FixLang f))
+         , FirstOrderLex ((Copula :|: f) (FixLang f))
+         ) => UniformlyEq (FixLang f) where
+        (x :!$: y) =* (x' :!$: y') = x =* x' && y =* y'
+        (LLam (f :: FixLang f t1 -> FixLang f t1')) =* (LLam (g :: FixLang f t2 -> FixLang f t2')) = 
+            case eqT :: Maybe (t1 :~: t2) of 
+                Just Refl -> case freshVarsLex of
+                    Just sv -> accEq (f . Fx . head $ sv) (g . Fx . head $ sv) 1
+                    Nothing -> error "you need to add substitutional variables to your language"
+                Nothing -> False
+            where 
+                accEq :: FixLang f a -> FixLang f b -> Int -> Bool
+                accEq (x :!$: y) (x' :!$: y') n = accEq x x' n && accEq y y' n
+                accEq (LLam (f :: FixLang f t3 -> FixLang f t3')) (LLam (g :: FixLang f t4 -> FixLang f t4')) n =
+                    case eqT :: Maybe (t3 :~: t4) of 
+                        Just Refl -> case freshVarsLex of
+                            Just sv -> accEq (f . Fx . head . drop n $ sv) (g . Fx . head . drop n $ sv) (n + 1) 
+                            Nothing -> error "you need to add substitutional variables to your language"
+                        Nothing -> False
+                accEq x y _ = x =* y
+
+        (Fx x) =* (Fx y) = x =* y
+
+instance (UniformlyEq ((Copula :|: f) (FixLang f)), FirstOrderLex ((Copula :|: f) (FixLang f))) => FirstOrderLex (FixLang f) where
 
         isVarLex (Fx x) = isVarLex x
 
-        sameHeadLex (Fx x) (Fx y) = sameHeadLex x y
-
         freshVarsLex = map Fx <$> freshVarsLex 
 
-instance {-# OVERLAPPABLE #-} (UniformlyEq (FixLang f), FirstOrderLex (FixLang f)) => FirstOrder (FixLang f) where
+instance {-# OVERLAPPABLE #-} FirstOrderLex (FixLang f) => FirstOrder (FixLang f) where
         
         isVar = isVarLex
 
