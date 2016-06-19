@@ -299,9 +299,6 @@ instance Schematizable sub => Eq (Subnective sub lang a) where
 instance (Schematizable (f a), Schematizable (g a)) => Eq ((f :|: g) a b) where
         x == y = show x == show y
 
-instance  (CanonicalForm (FixLang f a), Show (FixLang f a)) => Eq (FixLang f a) where
-        x == y = show (canonical x) == show (canonical y)
-
 --------------------------------------------------------
 --3. Evaluation and Modelable
 --------------------------------------------------------

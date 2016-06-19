@@ -184,6 +184,12 @@ instance CanonicalForm ToyForm where
 
 instance CanonicalForm ToyTerm where
         canonical = id
+
+instance Eq ToyForm where
+        x == y = canonical x == canonical y
+
+instance Eq ToyTerm where
+        x == y = canonical x == canonical y
  
 --------------------------------------------------------
 --1.2 Functions
