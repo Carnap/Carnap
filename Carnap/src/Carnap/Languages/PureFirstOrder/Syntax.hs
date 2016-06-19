@@ -160,7 +160,7 @@ instance CanonicalForm (PureFirstOrderLanguageWith a (Term Int))
 instance IndexedConstantLanguage (PureFirstOrderLanguageWith a (Term Int)) where 
         cn = PC
 
---equality up to alpha equivalence
+--equality up to α-equivalence
 instance UniformlyEq (PureFirstOrderLanguageWith a) => Eq (PureFirstOrderLanguageWith a b) where
         (==) = (=*)
     

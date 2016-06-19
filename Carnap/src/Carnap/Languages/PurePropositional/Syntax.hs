@@ -47,6 +47,9 @@ instance CopulaSchema PurePropLanguage
 
 type PureForm = PurePropLanguage (Form Bool)
 
+instance Eq (PureForm) where
+        (==) = (=*)
+
 pattern (:!!$:) :: (Typeable a, Typeable b) => PurePropLanguage (a -> b) -> PurePropLanguage a -> PurePropLanguage b
 pattern (:!!$:) f y    = f :!$: y
 pattern PPred x arity  = Fx1 (Predicate x arity)

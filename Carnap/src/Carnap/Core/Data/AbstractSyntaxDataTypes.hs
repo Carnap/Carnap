@@ -540,12 +540,17 @@ instance {-# OVERLAPPABLE #-} FirstOrderLex (FixLang f) => FirstOrder (FixLang f
                                     Nothing -> []
                   recur _ _ terms = terms
 
-        occurs phi psi@(x :!$: y)= phi =* psi || occurs phi x || occurs phi y
+        occurs phi psi@(x :!$: y)= occursImproperly phi x || occursImproperly phi y
+            where occursImproperly :: FixLang f a -> FixLang f b -> Bool
+                  occursImproperly phi psi@(x :!$: y) = phi =* psi 
+                                                         || occursImproperly phi x 
+                                                         || occursImproperly phi y
+                  occursImproperly phi psi = phi =* psi
         --might want a clause for LLam
-        occurs phi psi = phi =* psi
+        occurs phi psi = False
 
         subst a@(Fx _ :: FixLang f t) b@(Fx _ :: FixLang f t') c@(Fx _ :: FixLang f t'')
-            | a =* b = case eqT :: Maybe (t' :~: t'') of
+            | a =* c = case eqT :: Maybe (t' :~: t'') of
                            Just Refl -> b
                            Nothing -> c
             | otherwise = case c of
