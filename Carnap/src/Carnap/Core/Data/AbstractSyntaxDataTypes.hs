@@ -5,7 +5,7 @@ module Carnap.Core.Data.AbstractSyntaxDataTypes(
   -- $ATintro
   -- ** Language Building Types
   Term(..), Form(..), 
-  Copula((:$:), Lam), CopulaSchema(..),
+  Copula((:$:), Lam), CopulaSchema(..), MaybeMonadVar(..),
   (:|:)(..), Fix(Fx), FixLang, EndLang, pattern AOne,
   pattern ATwo, pattern AThree, pattern LLam, pattern (:!$:), pattern Fx1,
   pattern Fx2, pattern Fx3, pattern Fx4, pattern Fx5, pattern Fx6, pattern
@@ -394,24 +394,25 @@ class UniformlyEq f => FirstOrderLex f where
     isVarLex _ = False
     sameHeadLex :: f a -> f b -> Bool
     sameHeadLex = (=*)
-    freshVarsLex :: Typeable a => Maybe [f a]
-    freshVarsLex = Nothing
 
-instance FirstOrderLex f => MonadVar f (S.State Int)
-        where fresh = do n <- get
-                         case freshVarsLex of
-                             Nothing -> error "no substitutional variables..."
-                             Just sv -> do let var = head $ drop n sv
-                                           put (n+1)
-                                           return var
+class Monad m => MaybeMonadVar f m where
+        maybeFresh :: Typeable a => Maybe (m (f a))
+        maybeFresh = Nothing 
 
 instance UniformlyEq (SubstitutionalVariable idx) where
 
         (SubVar n) =* (SubVar m) = n == m
 
-instance FirstOrderLex (SubstitutionalVariable idx) where
+instance FirstOrderLex (SubstitutionalVariable idx)
 
-        freshVarsLex = Just $ map SubVar [1 ..]
+-- instance {-# OVERLAPS #-} MonadVar f m => MaybeMonadVar f m where
+--         maybeFresh = fresh
+--         hasFresh _ = True
+
+instance MaybeMonadVar (SubstitutionalVariable idx) (State Int)
+        where maybeFresh = Just $ do n <- get
+                                     put (n+1)
+                                     return $ SubVar n
 
 instance UniformlyEq quant => UniformlyEq (Quantifiers quant lang) where
         (Bind q) =* (Bind q') = q =* q'
@@ -419,17 +420,23 @@ instance UniformlyEq quant => UniformlyEq (Quantifiers quant lang) where
 instance (UniformlyEq quant, FirstOrderLex quant) => FirstOrderLex (Quantifiers quant lang) where
         isVarLex (Bind q) = isVarLex q
 
+instance Monad m => MaybeMonadVar (Quantifiers quant lang) m
+
 instance UniformlyEq app => UniformlyEq (Applicators app lang) where
         (Apply f) =* (Apply f') = f =* f'
 
 instance (UniformlyEq app, FirstOrderLex app) => FirstOrderLex (Applicators app lang) where
         isVarLex (Apply f) = isVarLex f
+
+instance Monad m => MaybeMonadVar (Applicators app lang) m
         
 instance UniformlyEq abs => UniformlyEq (Abstractors abs lang) where
         (Abstract a) =* (Abstract b) = a =* b
 
 instance (UniformlyEq abs, FirstOrderLex abs) => FirstOrderLex (Abstractors abs lang) where
         isVarLex (Abstract a) = isVarLex a
+
+instance Monad m => MaybeMonadVar (Abstractors app lang) m
 
 instance UniformlyEq pred => UniformlyEq (Predicate pred lang) where
         (Predicate p a) =* (Predicate p' a') =
@@ -438,12 +445,16 @@ instance UniformlyEq pred => UniformlyEq (Predicate pred lang) where
 instance (UniformlyEq pred, FirstOrderLex pred) => FirstOrderLex (Predicate pred lang) where
         isVarLex (Predicate p a) = isVarLex p
 
+instance Monad m => MaybeMonadVar (Predicate pred lang) m
+
 instance UniformlyEq con => UniformlyEq (Connective con lang) where
         (Connective c a) =* (Connective c' a') = 
             arityInt a == arityInt a' && c =* c'
 
 instance (UniformlyEq con, FirstOrderLex con) => FirstOrderLex (Connective con lang) where
         isVarLex (Connective c a) = isVarLex c
+
+instance Monad m => MaybeMonadVar (Connective con lang) m
 
 instance UniformlyEq func => UniformlyEq (Function func lang) where
         (Function f a) =* (Function f' a') = 
@@ -452,18 +463,24 @@ instance UniformlyEq func => UniformlyEq (Function func lang) where
 instance (UniformlyEq func, FirstOrderLex func) => FirstOrderLex (Function func lang) where
         isVarLex (Function f a) = isVarLex f
 
+instance Monad m => MaybeMonadVar (Function func lang) m
+
 instance UniformlyEq sub => UniformlyEq (Subnective sub lang) where
         (Subnective s a) =* (Subnective s' a') = 
             arityInt a == arityInt a' && s =* s'
 
 instance FirstOrderLex sub => FirstOrderLex (Subnective sub lang) where
         isVarLex (Subnective s a) = isVarLex s
+
+instance Monad m => MaybeMonadVar (Subnective sub lang) m
         
 instance UniformlyEq (EndLang idx) where
         (=*) = undefined
 
 instance FirstOrderLex (EndLang idx) where
         sameHeadLex = undefined
+        
+instance Monad m => MaybeMonadVar (EndLang idx) m
 
 instance ( UniformlyEq (f idx)
          , UniformlyEq (g idx)) => UniformlyEq ((f :|: g) idx) where
@@ -477,14 +494,15 @@ instance ( UniformlyEq (f idx), UniformlyEq (g idx),
         isVarLex (FLeft a) = isVarLex a
         isVarLex (FRight a) = isVarLex a
 
-        freshVarsLex = case (freshVarsLex :: Typeable a => Maybe [f idx a], freshVarsLex :: Typeable b => Maybe [g idx b]) of
-                           (Just vs, _) -> Just $ map FLeft vs
-                           (_, Just vs) -> Just $ map FRight vs
-                           _ -> Nothing
-
         sameHeadLex (FLeft x) (FLeft y) = sameHeadLex x y
         sameHeadLex (FRight x) (FRight y) = sameHeadLex x y
         sameHeadLex _ _ = False
+
+instance (MaybeMonadVar (g idx) m, MaybeMonadVar (f idx) m) => MaybeMonadVar ((f :|: g) idx) m where
+        maybeFresh = case (maybeFresh  :: Typeable a => Maybe (m (f idx a)), maybeFresh :: Typeable b => Maybe (m (g idx b))) of
+                         (Just l ,_) -> Just $ fmap FLeft l
+                         (_, Just r ) -> Just $ fmap FRight r
+                         _ -> Nothing
 
 instance (UniformlyEq lang, FirstOrderLex lang) => UniformlyEq (Copula lang) where
         (h :$: t ) =* (h' :$: t') = h =* h' && t =* t'
@@ -500,12 +518,12 @@ instance (UniformlyEq lang, FirstOrderLex lang) => FirstOrderLex (Copula lang)
                 Nothing -> False
         sameHeadLex _ _ = False
 
+instance Monad m => MaybeMonadVar (Copula lang) m
+
 instance {-# OVERLAPPABLE #-} (UniformlyEq ((Copula :|: f) (FixLang f))
-         , FirstOrderLex ((Copula :|: f) (FixLang f))
-         ) => UniformlyEq (FixLang f) where
-             x =* y = case freshVarsLex :: Maybe [(Copula :|: f) (FixLang f) Int] of
-                          Just sv -> fst $ S.runState (stateEq x y) 0
-                          Nothing -> error "you need to add substitutional variables to your language"
+         , MaybeMonadVar ((Copula :|: f) (FixLang f)) (State Int))
+         => UniformlyEq (FixLang f) where
+             x =* y = fst $ S.runState (stateEq x y) 0
         -- (x :!$: y) =* (x' :!$: y') = x =* x' && y =* y'
         -- (LLam (f :: FixLang f t1 -> FixLang f t1')) =* (LLam (g :: FixLang f t2 -> FixLang f t2')) = 
         --     case eqT :: Maybe (t1 :~: t2) of 
@@ -528,24 +546,28 @@ instance {-# OVERLAPPABLE #-} (UniformlyEq ((Copula :|: f) (FixLang f))
                     stateEq :: FixLang f a -> FixLang f b -> State Int Bool
                     stateEq (x :!$: y) (x' :!$: y') = return $ x =* x' && y =* y'
                     stateEq (LLam (f :: FixLang f t1 -> FixLang f t1')) (LLam (g :: FixLang f t2 -> FixLang f t2')) =
-                        case eqT :: Maybe (t1 :~: t2) of 
-                            Just Refl -> do v <- fresh :: State Int (FixLang f t1)
-                                            stateEq (f v) (g v)
-                            Nothing -> return False
+                        case (eqT :: Maybe (t1 :~: t2), maybeFresh :: Maybe (State Int ((Copula :|: f) (FixLang f) ()))) of 
+                            (Just Refl, Just _) -> do let (Just fresh) = maybeFresh :: Maybe (State Int ((Copula :|: f) (FixLang f) t1))
+                                                      v <- fresh
+                                                      stateEq (f (Fx v)) (g (Fx v))
+                            _ -> return False
                     stateEq (Fx x) (Fx y) = return $ x =* y
-
-
-
 
         -- (Fx x) =* (Fx y) = x =* y
 
-instance (UniformlyEq ((Copula :|: f) (FixLang f)), FirstOrderLex ((Copula :|: f) (FixLang f))) => FirstOrderLex (FixLang f) where
+instance ( MaybeMonadVar (f (FixLang f)) (State Int)
+         , MaybeMonadVar (Copula (FixLang f)) (State Int)
+         , FirstOrderLex ((Copula :|: f) (FixLang f))
+        ) => FirstOrderLex (FixLang f) where
 
         isVarLex (Fx x) = isVarLex x
 
-        freshVarsLex = map Fx <$> freshVarsLex 
-
         sameHeadLex (Fx x) (Fx y) = sameHeadLex x y
+
+instance MaybeMonadVar ((Copula :|: f) (FixLang f)) m => MonadVar (FixLang f) m where
+        fresh = case maybeFresh :: Typeable a => Maybe (m (((Copula :|: f) (FixLang f)) a)) of
+                    Just fsh -> fmap Fx fsh
+                    Nothing -> error "you need substitutional variables in your language for this"
 
 instance {-# OVERLAPPABLE #-} FirstOrderLex (FixLang f) => FirstOrder (FixLang f) where
         
@@ -582,11 +604,6 @@ instance {-# OVERLAPPABLE #-} FirstOrderLex (FixLang f) => FirstOrder (FixLang f
                            (x :!$: y) -> subst a b x :!$: subst a b y
                            --might want a clause for LLam
                            _ -> c
-            
-
-        freshVars = case freshVarsLex  of
-                        Just fv -> fv
-                        Nothing -> error "a store of fresh variables hasn't been included in this language"
 
 --------------------------------------------------------
 --Head Extractors and a Generic Plated Instance.

@@ -53,6 +53,9 @@ instance UniformlyEq Set where
 
 instance FirstOrderLex Set
 
+instance Monad m => MaybeMonadVar Set m where
+        maybeFresh = Nothing
+
 instance Schematizable Set where
     schematize Singleton (x:_) = "{" ++ x ++ "}"
     schematize Empty  _        = "{}"
@@ -71,6 +74,9 @@ instance UniformlyEq (Var lang) where
 
 instance FirstOrderLex (Var lang) where
         isVarLex (SomeSet _) = True
+
+instance Monad m => MaybeMonadVar (Var lang) m where
+        maybeFresh = Nothing
 
 instance Schematizable (Var lang) where
     schematize (SomeSet s) _ = s

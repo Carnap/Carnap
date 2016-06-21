@@ -18,13 +18,15 @@ import Carnap.Languages.Util.GenericConnectives
 data PureMonadicPredicate a where
     MonPred :: Int -> PureMonadicPredicate (Term Int -> Form Bool)
 
-instance Schematizable (PureMonadicPredicate) where
+instance Schematizable PureMonadicPredicate where
         schematize (MonPred n) = \(x:xs) -> "P_" ++ show n ++ "(" ++ x ++ ")"
 
-instance UniformlyEq (PureMonadicPredicate) where
+instance UniformlyEq PureMonadicPredicate where
         (MonPred n) =* (MonPred m) = n == m
 
-instance FirstOrderLex (PureMonadicPredicate) 
+instance FirstOrderLex PureMonadicPredicate 
+
+instance Monad m => MaybeMonadVar PureMonadicPredicate m
 
 data PureSentences a where
     Sent :: Int -> PureSentences (Form Bool)
@@ -35,7 +37,9 @@ instance Schematizable (PureSentences) where
 instance UniformlyEq (PureSentences) where
         (Sent n) =* (Sent m) = n == m
 
-instance FirstOrderLex (PureSentences) 
+instance FirstOrderLex PureSentences
+
+instance Monad m => MaybeMonadVar PureSentences m
 
 type PurePredicate = IntPred Bool Int
 

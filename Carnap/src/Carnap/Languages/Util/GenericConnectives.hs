@@ -14,7 +14,9 @@ instance Schematizable (IntProp b) where
 instance UniformlyEq (IntProp b) where
         (Prop n) =* (Prop m) = n == m
 
-instance FirstOrderLex (IntProp b) where
+instance Monad m => MaybeMonadVar (IntProp b) m
+
+instance FirstOrderLex (IntProp b) 
 
 data IntPred b c a where
         Pred ::  Arity (Term c) (Form b) n ret -> Int -> IntPred b c ret
@@ -30,6 +32,8 @@ instance Schematizable (IntPred b c) where
 instance UniformlyEq (IntPred b c) where
         (Pred a n) =* (Pred a' m) = show a == show a' && n == m
 
+instance Monad m => MaybeMonadVar (IntPred b c) m
+
 instance FirstOrderLex (IntPred b c)
 
 data SchematicIntProp b a where
@@ -40,6 +44,8 @@ instance Schematizable (SchematicIntProp b) where
 
 instance UniformlyEq (SchematicIntProp b) where
         (SProp n) =* (SProp m) = n == m
+
+instance Monad m => MaybeMonadVar (SchematicIntProp b) m
 
 instance FirstOrderLex (SchematicIntProp b) where
         isVarLex _ = True
@@ -58,6 +64,8 @@ instance Schematizable (IntFunc b c) where
 instance UniformlyEq (IntFunc b c) where
         (Func a n) =* (Func a' m) = show a == show a' && n == m
 
+instance Monad m => MaybeMonadVar (IntFunc b c) m
+
 instance FirstOrderLex (IntFunc b c)
 
 instance Evaluable (SchematicIntProp b) where
@@ -74,6 +82,8 @@ instance Schematizable (SchematicIntPred b c) where
 
 instance UniformlyEq (SchematicIntPred b c) where
         (SPred a n) =* (SPred a' m) = show a == show a' && n == m
+
+instance Monad m => MaybeMonadVar (SchematicIntPred b c) m
 
 instance FirstOrderLex (SchematicIntPred b c) where
         isVarLex _ = True
@@ -92,6 +102,8 @@ instance Schematizable (TermEq c b) where
 
 instance UniformlyEq (TermEq c b) where
         _ =* _ = True
+
+instance Monad m => MaybeMonadVar (TermEq c b) m
 
 instance FirstOrderLex (TermEq c b)
 
@@ -117,6 +129,8 @@ instance UniformlyEq (BooleanConn b) where
         Not =* Not = True
         _ =* _ = False
 
+instance Monad m => MaybeMonadVar (BooleanConn b) m
+
 instance FirstOrderLex (BooleanConn b)
 
 data Modality b a where
@@ -133,6 +147,8 @@ instance UniformlyEq (Modality b) where
          _ =* _ = False
 
 
+instance Monad m => MaybeMonadVar (Modality b) m
+
 instance FirstOrderLex (Modality b)
 
 data IntConst b a where
@@ -143,6 +159,8 @@ instance Schematizable (IntConst b) where
 
 instance UniformlyEq (IntConst b) where
         (Constant n) =* (Constant m) = n == m
+
+instance Monad m => MaybeMonadVar (IntConst b) m
 
 instance FirstOrderLex (IntConst b) 
 
@@ -159,6 +177,8 @@ instance UniformlyEq (StandardQuant b c) where
         (Some _) =* (Some _) = True
         _ =* _ = False
 
+instance Monad m => MaybeMonadVar (StandardQuant b c) m
+
 instance FirstOrderLex (StandardQuant b c) 
 
 data StandardVar b a where
@@ -169,5 +189,7 @@ instance Schematizable (StandardVar b) where
 
 instance UniformlyEq (StandardVar b) where
         (Var n) =* (Var m) = n == m
+
+instance Monad m => MaybeMonadVar (StandardVar b) m
 
 instance FirstOrderLex (StandardVar b) 
