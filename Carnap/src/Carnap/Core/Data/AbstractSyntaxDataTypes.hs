@@ -27,6 +27,7 @@ import Data.Typeable
 import Carnap.Core.Unification.Unification
 import Control.Lens
 import Carnap.Core.Data.AbstractSyntaxClasses
+import Control.Monad.State (get, put, State)
 import qualified Control.Monad.State.Lazy as S
 
 --This module attempts to provide abstract syntax types that would cover
@@ -396,6 +397,14 @@ class UniformlyEq f => FirstOrderLex f where
     freshVarsLex :: Typeable a => Maybe [f a]
     freshVarsLex = Nothing
 
+instance FirstOrderLex f => MonadVar f (S.State Int)
+        where fresh = do n <- get
+                         case freshVarsLex of
+                             Nothing -> error "no substitutional variables..."
+                             Just sv -> do let var = head $ drop n sv
+                                           put (n+1)
+                                           return var
+
 instance UniformlyEq (SubstitutionalVariable idx) where
 
         (SubVar n) =* (SubVar m) = n == m
@@ -494,25 +503,41 @@ instance (UniformlyEq lang, FirstOrderLex lang) => FirstOrderLex (Copula lang)
 instance {-# OVERLAPPABLE #-} (UniformlyEq ((Copula :|: f) (FixLang f))
          , FirstOrderLex ((Copula :|: f) (FixLang f))
          ) => UniformlyEq (FixLang f) where
-        (x :!$: y) =* (x' :!$: y') = x =* x' && y =* y'
-        (LLam (f :: FixLang f t1 -> FixLang f t1')) =* (LLam (g :: FixLang f t2 -> FixLang f t2')) = 
-            case eqT :: Maybe (t1 :~: t2) of 
-                Just Refl -> case freshVarsLex of
-                    Just sv -> accEq (f . Fx . head $ sv) (g . Fx . head $ sv) 1
-                    Nothing -> error "you need to add substitutional variables to your language"
-                Nothing -> False
-            where 
-                accEq :: FixLang f a -> FixLang f b -> Int -> Bool
-                accEq (x :!$: y) (x' :!$: y') n = accEq x x' n && accEq y y' n
-                accEq (LLam (f :: FixLang f t3 -> FixLang f t3')) (LLam (g :: FixLang f t4 -> FixLang f t4')) n =
-                    case eqT :: Maybe (t3 :~: t4) of 
-                        Just Refl -> case freshVarsLex of
-                            Just sv -> accEq (f . Fx . head . drop n $ sv) (g . Fx . head . drop n $ sv) (n + 1) 
-                            Nothing -> error "you need to add substitutional variables to your language"
-                        Nothing -> False
-                accEq x y _ = x =* y
+             x =* y = case freshVarsLex :: Maybe [(Copula :|: f) (FixLang f) Int] of
+                          Just sv -> fst $ S.runState (stateEq x y) 0
+                          Nothing -> error "you need to add substitutional variables to your language"
+        -- (x :!$: y) =* (x' :!$: y') = x =* x' && y =* y'
+        -- (LLam (f :: FixLang f t1 -> FixLang f t1')) =* (LLam (g :: FixLang f t2 -> FixLang f t2')) = 
+        --     case eqT :: Maybe (t1 :~: t2) of 
+        --         Just Refl -> case freshVarsLex of
+        --             Just sv -> accEq (f . Fx . head $ sv) (g . Fx . head $ sv) 1
+        --             Nothing -> error "you need to add substitutional variables to your language"
+        --         Nothing -> False
+                where 
+                    -- accEq :: FixLang f a -> FixLang f b -> Int -> Bool
+                    -- accEq (x :!$: y) (x' :!$: y') n = accEq x x' n && accEq y y' n
+                    -- accEq (LLam (f :: FixLang f t3 -> FixLang f t3')) (LLam (g :: FixLang f t4 -> FixLang f t4')) n =
+                    --     case eqT :: Maybe (t3 :~: t4) of 
+                    --         Just Refl -> case freshVarsLex of
+                    --             Just sv -> accEq (f . Fx . head . drop n $ sv) (g . Fx . head . drop n $ sv) (n + 1) 
+                    --             Nothing -> error "you need to add substitutional variables to your language"
+                    --         Nothing -> False
+                    -- accEq x y _ = x =* y
 
-        (Fx x) =* (Fx y) = x =* y
+
+                    stateEq :: FixLang f a -> FixLang f b -> State Int Bool
+                    stateEq (x :!$: y) (x' :!$: y') = return $ x =* x' && y =* y'
+                    stateEq (LLam (f :: FixLang f t1 -> FixLang f t1')) (LLam (g :: FixLang f t2 -> FixLang f t2')) =
+                        case eqT :: Maybe (t1 :~: t2) of 
+                            Just Refl -> do v <- fresh :: State Int (FixLang f t1)
+                                            stateEq (f v) (g v)
+                            Nothing -> return False
+                    stateEq (Fx x) (Fx y) = return $ x =* y
+
+
+
+
+        -- (Fx x) =* (Fx y) = x =* y
 
 instance (UniformlyEq ((Copula :|: f) (FixLang f)), FirstOrderLex ((Copula :|: f) (FixLang f))) => FirstOrderLex (FixLang f) where
 
