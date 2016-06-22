@@ -19,10 +19,10 @@ data PureMonadicPredicate a where
     MonPred :: Int -> PureMonadicPredicate (Term Int -> Form Bool)
 
 instance Schematizable PureMonadicPredicate where
-        schematize (MonPred n) = \(x:xs) -> "P_" ++ show n ++ "(" ++ x ++ ")"
+    schematize (MonPred n) = \(x:xs) -> "P_" ++ show n ++ "(" ++ x ++ ")"
 
 instance UniformlyEq PureMonadicPredicate where
-        (MonPred n) =* (MonPred m) = n == m
+    (MonPred n) =* (MonPred m) = n == m
 
 instance FirstOrderLex PureMonadicPredicate 
 
@@ -32,10 +32,10 @@ data PureSentences a where
     Sent :: Int -> PureSentences (Form Bool)
 
 instance Schematizable (PureSentences) where
-        schematize (Sent n) = const "P_n"
+    schematize (Sent n) = const "P_n"
 
 instance UniformlyEq (PureSentences) where
-        (Sent n) =* (Sent m) = n == m
+    (Sent n) =* (Sent m) = n == m
 
 instance FirstOrderLex PureSentences
 
@@ -107,14 +107,14 @@ height (phi :<->: psi) = max (height phi) (height psi)
 height _               = 0
 
 instance Schematizable (a (PureFirstOrderLanguageWith a)) => 
-        CopulaSchema (PureFirstOrderLanguageWith a) where 
+    CopulaSchema (PureFirstOrderLanguageWith a) where 
 
     appSchema (PQuant (All x)) (LLam f) e = schematize (All x) (show (f $ PV x) : e)
     appSchema (PQuant (Some x)) (LLam f) e = schematize (Some x) (show (f $ PV x) : e)
     appSchema x y e = schematize x (show y : e)
 
 instance FirstOrder (FixLang (CoreLexicon :|: a)) => 
-        BoundVars (CoreLexicon :|: a) where
+    BoundVars (CoreLexicon :|: a) where
 
     getBoundVar (PQuant (All v)) _ = PV v
     getBoundVar (PQuant (Some v)) _ = PV v
@@ -137,7 +137,7 @@ instance FirstOrder (FixLang (CoreLexicon :|: a)) =>
     subBoundVar a b phi = mapover (subst a b) phi 
 
 instance FirstOrder (FixLang (CoreLexicon :|: a)) => 
-        LangTypes2 (CoreLexicon :|: a) Term Int Form Bool
+    LangTypes2 (CoreLexicon :|: a) Term Int Form Bool
 
 termsOf :: FirstOrder (FixLang (CoreLexicon :|: a)) => 
         Traversal' (FixLang (CoreLexicon :|: a) (Form Bool)) (FixLang (CoreLexicon :|: a) (Term Int))
@@ -158,14 +158,14 @@ instance QuantLanguage (PureFirstOrderLanguageWith a (Form Bool)) (PureFirstOrde
     lsome  = PExist 
 
 instance FirstOrder (FixLang (CoreLexicon :|: a)) => 
-        RelabelVars (CoreLexicon :|: a) Form Bool where
+    RelabelVars (CoreLexicon :|: a) Form Bool where
 
     subBinder (PUniv v f) y = Just $ PUniv y f 
     subBinder (PExist v f) y = Just $ PExist y f
     subBinder _ _ = Nothing
 
 instance FirstOrder (FixLang (CoreLexicon :|: a)) => 
-        CanonicalForm (PureFirstOrderLanguageWith a (Form Bool)) where
+    CanonicalForm (PureFirstOrderLanguageWith a (Form Bool)) where
 
     canonical = relabelVars varStream
                 where varStream = [i ++ j | i <- ["x"], j <- map show [1 ..]]
@@ -239,7 +239,7 @@ instance IndexedPropLanguage (OpenPFOLForm a) where
     pn = PS
 
 instance PolyadicPredicateLanguage (OpenLanguagePFOL a) (Term Int) (Form Bool) 
-        where ppn n a = PP n a a
+    where ppn n a = PP n a a
 
 instance Incrementable (OpenLexiconPFOL EndLang) (Term Int) where
     incHead (PP n a b) = Just $ PP n (ASucc a) (ASucc a)
@@ -265,7 +265,7 @@ type PureFOLForm = PureLanguageFOL (Form Bool)
 type PureFOLTerm = PureLanguageFOL (Term Int)
 
 instance EqLanguage PureFOLForm PureFOLTerm  where 
-        equals = (:==:)
+    equals = (:==:)
 
 instance PolyadicFunctionLanguage PureLanguageFOL (Term Int) (Term Int) where 
     pfn n a = PF n a a
