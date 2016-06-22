@@ -16,8 +16,29 @@ import Data.Typeable
 --1.Utility Functions
 --------------------------------------------------------
 
-equalizeTypes :: FixLang f a -> FixLang f b -> Maybe (a :~: b)
-equalizeTypes (x@(Fx _) :: FixLang f a) (y@(Fx _) :: FixLang f b) = eqT :: Maybe (a :~: b)
+{-|
+Given two occupants of a typed fixpoint, this function returns @Just@
+a proof of the equality of their types, if their types are equal, and
+otherwise @Nothing@.  Concretely, it lets you do things like dispatch to
+different behaviors depending on the type of your arguments, for all the
+languages that Carnap supports (since these languages are typed
+fixedpoints).
+
+For example, suppose you have two functions @f :: Language Int -> Bool@ and
+@g :: Language Bool -> Bool@, and two representative language items @a ::
+Language Int@, and @b :: Language Bool@. Then you can write
+
+> combine f g v = case equalizeTypes v a of
+>                     Just Refl -> f v
+>                     Nothing -> case equalizeTypes v b of
+>                         Just Refl -> g v
+>                         Nothing -> False
+
+to union the functions into a single polymorphic function.
+
+-}
+equalizeTypes :: Fix f a -> Fix f b -> Maybe (a :~: b)
+equalizeTypes (x@(Fx _) :: Fix f a) (y@(Fx _) :: Fix f b) = eqT :: Maybe (a :~: b)
 
 {-|
 This function replaces the head of a given language item with another head
