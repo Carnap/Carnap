@@ -409,6 +409,9 @@ instance FirstOrderLex (SubstitutionalVariable idx)
 --         maybeFresh = fresh
 --         hasFresh _ = True
 
+instance {-# OVERLAPPABLE #-} Monad m => MaybeMonadVar f m where
+        maybeFresh = Nothing
+
 instance MaybeMonadVar (SubstitutionalVariable idx) (State Int)
         where maybeFresh = Just $ do n <- get
                                      put (n+1)
@@ -524,25 +527,7 @@ instance {-# OVERLAPPABLE #-} (UniformlyEq ((Copula :|: f) (FixLang f))
          , MaybeMonadVar ((Copula :|: f) (FixLang f)) (State Int))
          => UniformlyEq (FixLang f) where
              x =* y = fst $ S.runState (stateEq x y) 0
-        -- (x :!$: y) =* (x' :!$: y') = x =* x' && y =* y'
-        -- (LLam (f :: FixLang f t1 -> FixLang f t1')) =* (LLam (g :: FixLang f t2 -> FixLang f t2')) = 
-        --     case eqT :: Maybe (t1 :~: t2) of 
-        --         Just Refl -> case freshVarsLex of
-        --             Just sv -> accEq (f . Fx . head $ sv) (g . Fx . head $ sv) 1
-        --             Nothing -> error "you need to add substitutional variables to your language"
-        --         Nothing -> False
                 where 
-                    -- accEq :: FixLang f a -> FixLang f b -> Int -> Bool
-                    -- accEq (x :!$: y) (x' :!$: y') n = accEq x x' n && accEq y y' n
-                    -- accEq (LLam (f :: FixLang f t3 -> FixLang f t3')) (LLam (g :: FixLang f t4 -> FixLang f t4')) n =
-                    --     case eqT :: Maybe (t3 :~: t4) of 
-                    --         Just Refl -> case freshVarsLex of
-                    --             Just sv -> accEq (f . Fx . head . drop n $ sv) (g . Fx . head . drop n $ sv) (n + 1) 
-                    --             Nothing -> error "you need to add substitutional variables to your language"
-                    --         Nothing -> False
-                    -- accEq x y _ = x =* y
-
-
                     stateEq :: FixLang f a -> FixLang f b -> State Int Bool
                     stateEq (x :!$: y) (x' :!$: y') = return $ x =* x' && y =* y'
                     stateEq (LLam (f :: FixLang f t1 -> FixLang f t1')) (LLam (g :: FixLang f t2 -> FixLang f t2')) =
@@ -553,12 +538,7 @@ instance {-# OVERLAPPABLE #-} (UniformlyEq ((Copula :|: f) (FixLang f))
                             _ -> return False
                     stateEq (Fx x) (Fx y) = return $ x =* y
 
-        -- (Fx x) =* (Fx y) = x =* y
-
-instance ( MaybeMonadVar (f (FixLang f)) (State Int)
-         , MaybeMonadVar (Copula (FixLang f)) (State Int)
-         , FirstOrderLex ((Copula :|: f) (FixLang f))
-        ) => FirstOrderLex (FixLang f) where
+instance FirstOrderLex ((Copula :|: f) (FixLang f)) => FirstOrderLex (FixLang f) where
 
         isVarLex (Fx x) = isVarLex x
 
