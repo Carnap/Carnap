@@ -18,7 +18,6 @@ import Data.Typeable
 
 equalizeTypes :: FixLang f a -> FixLang f b -> Maybe (a :~: b)
 equalizeTypes (x@(Fx _) :: FixLang f a) (y@(Fx _) :: FixLang f b) = eqT :: Maybe (a :~: b)
-equalizeTypes _ _ = Nothing
 
 {-|
 This function replaces the head of a given language item with another head

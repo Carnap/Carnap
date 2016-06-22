@@ -106,12 +106,16 @@ height (phi :->: psi)  = max (height phi) (height psi)
 height (phi :<->: psi) = max (height phi) (height psi)
 height _               = 0
 
-instance Schematizable (a (PureFirstOrderLanguageWith a)) => CopulaSchema (PureFirstOrderLanguageWith a) where 
+instance Schematizable (a (PureFirstOrderLanguageWith a)) => 
+        CopulaSchema (PureFirstOrderLanguageWith a) where 
+
     appSchema (PQuant (All x)) (LLam f) e = schematize (All x) (show (f $ PV x) : e)
     appSchema (PQuant (Some x)) (LLam f) e = schematize (Some x) (show (f $ PV x) : e)
     appSchema x y e = schematize x (show y : e)
 
-instance BoundVars (CoreLexicon :|: a) where
+instance FirstOrder (FixLang (CoreLexicon :|: a)) => 
+        BoundVars (CoreLexicon :|: a) where
+
     getBoundVar (PQuant (All v)) _ = PV v
     getBoundVar (PQuant (Some v)) _ = PV v
     getBoundVar _ _ = undefined
@@ -130,32 +134,39 @@ instance BoundVars (CoreLexicon :|: a) where
     subBoundVar a@(PV w) b (PExist v f) = PExist v (\x -> subBoundVar sv x $ subBoundVar a b $ f sv)
         where sv = case getBindHeight (PQuant (Some v)) (LLam f) of
                            c@(PV v') -> if w == v' then PV ('_':v') else c
-    subBoundVar a b phi = mapover (swap a b) phi 
+    subBoundVar a b phi = mapover (subst a b) phi 
 
-instance LangTypes2 (CoreLexicon :|: a) Term Int Form Bool
+instance FirstOrder (FixLang (CoreLexicon :|: a)) => 
+        LangTypes2 (CoreLexicon :|: a) Term Int Form Bool
 
-termsOf :: Traversal' (FixLang (CoreLexicon :|: a) (Form Bool)) (FixLang (CoreLexicon :|: a) (Term Int))
+termsOf :: FirstOrder (FixLang (CoreLexicon :|: a)) => 
+        Traversal' (FixLang (CoreLexicon :|: a) (Form Bool)) (FixLang (CoreLexicon :|: a) (Term Int))
 termsOf = difChildren2
 
-instance LangTypes2 (CoreLexicon :|: a) Form Bool Term Int
+instance FirstOrder (FixLang (CoreLexicon :|: a)) => 
+    LangTypes2 (CoreLexicon :|: a) Form Bool Term Int
 
 instance BooleanLanguage (PureFirstOrderLanguageWith a (Form Bool)) where
-        land = (:&:)
-        lneg = PNeg
-        lor  = (:||:)
-        lif  = (:->:)
-        liff = (:<->:)
+    land = (:&:)
+    lneg = PNeg
+    lor  = (:||:)
+    lif  = (:->:)
+    liff = (:<->:)
 
 instance QuantLanguage (PureFirstOrderLanguageWith a (Form Bool)) (PureFirstOrderLanguageWith a (Term Int)) where
-        lall  = PUniv 
-        lsome  = PExist 
+    lall  = PUniv 
+    lsome  = PExist 
 
-instance RelabelVars (CoreLexicon :|: a) Form Bool where
+instance FirstOrder (FixLang (CoreLexicon :|: a)) => 
+        RelabelVars (CoreLexicon :|: a) Form Bool where
+
     subBinder (PUniv v f) y = Just $ PUniv y f 
     subBinder (PExist v f) y = Just $ PExist y f
     subBinder _ _ = Nothing
 
-instance CanonicalForm (PureFirstOrderLanguageWith a (Form Bool)) where
+instance FirstOrder (FixLang (CoreLexicon :|: a)) => 
+        CanonicalForm (PureFirstOrderLanguageWith a (Form Bool)) where
+
     canonical = relabelVars varStream
                 where varStream = [i ++ j | i <- ["x"], j <- map show [1 ..]]
 
@@ -168,22 +179,6 @@ instance IndexedConstantLanguage (PureFirstOrderLanguageWith a (Term Int)) where
 instance UniformlyEq (PureFirstOrderLanguageWith a) => Eq (PureFirstOrderLanguageWith a b) where
         (==) = (=*)
     
---------------------------------------------------------
---2.0.1 Generic FOL Helper Functions
---------------------------------------------------------
-
-swap :: PureFirstOrderLanguageWith c b -> PureFirstOrderLanguageWith c b -> PureFirstOrderLanguageWith c a -> PureFirstOrderLanguageWith c a
-swap a b x@(f :!$: y) = mapover (swap a b) x
-swap a@(PV a') b@(PV b') x@(PV x') = if a' == x' then b else x
-swap a@(PV a') b@(PSV b') x@(PV x') = if x' == a' then PSV b' else x
-swap a@(PSV a') b@(PSV b') x@(PSV x') = if x' == a' then PSV b' else x
-swap a@(PSV a') b@(PV b') x@(PSV x') = if x' == a' then 
-                                           case equalizeTypes b x of
-                                               Just Refl -> b
-                                               Nothing -> x
-                                       else x
-swap a b c = c
-
 --------------------------------------------------------
 --2.1 Monadic First Order Logic
 --------------------------------------------------------
@@ -279,4 +274,3 @@ instance Incrementable PureLexiconFOL (Term Int) where
     incHead (PP n a b) = Just $ PP n (ASucc a) (ASucc a)
     incHead (PF n a b) = Just $ PF n (ASucc a) (ASucc a)
     incHead _  = Nothing
-
