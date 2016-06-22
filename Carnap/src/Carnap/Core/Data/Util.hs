@@ -1,7 +1,7 @@
 {-#LANGUAGE RankNTypes,TypeOperators, ScopedTypeVariables, GADTs, MultiParamTypeClasses #-}
 
-module Carnap.Core.Data.Util ( Syncast(..), incArity, checkChildren,
-mapover) where
+module Carnap.Core.Data.Util (equalizeTypes, incArity, checkChildren,
+mapover, (:~:)(Refl)) where
 
 --this module defines utility functions and typeclasses for manipulating
 --the data types defined in Core.Data
@@ -10,21 +10,15 @@ import Carnap.Core.Data.AbstractSyntaxDataTypes
 import Data.Typeable
 import Control.Lens.Plated (Plated, cosmos, transform, children)
 import Control.Lens.Fold (anyOf)
+import Data.Typeable
 
 --------------------------------------------------------
---1. Utility Classes
+--1.Utility Functions
 --------------------------------------------------------
 
-{-|
-This is a typeclass for doing simple casts from arguments whose types are
-not known to more specific data types.
--}
-class Syncast l a where
-        cast ::  l b -> Maybe (l a)
-
---------------------------------------------------------
---2.Utility Functions
---------------------------------------------------------
+equalizeTypes :: FixLang f a -> FixLang f b -> Maybe (a :~: b)
+equalizeTypes (x@(Fx _) :: FixLang f a) (y@(Fx _) :: FixLang f b) = eqT :: Maybe (a :~: b)
+equalizeTypes _ _ = Nothing
 
 {-|
 This function replaces the head of a given language item with another head

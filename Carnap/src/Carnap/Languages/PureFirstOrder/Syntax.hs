@@ -4,7 +4,7 @@ where
 
 import Carnap.Core.Data.AbstractSyntaxDataTypes
 import Carnap.Core.Data.AbstractSyntaxClasses
-import Carnap.Core.Data.Util (mapover)
+import Carnap.Core.Data.Util (mapover, equalizeTypes, (:~:)(..))
 import Carnap.Core.Unification.Unification
 import Carnap.Languages.Util.LanguageClasses
 import Control.Lens (Traversal')
@@ -172,14 +172,16 @@ instance UniformlyEq (PureFirstOrderLanguageWith a) => Eq (PureFirstOrderLanguag
 --2.0.1 Generic FOL Helper Functions
 --------------------------------------------------------
 
---XXX: To do this properly seems to require a typecast, since we don't know
---the types of the PSV. It doesn't matter, but this doesn't allow you to
---swap bound variables for substitutional variables.
 swap :: PureFirstOrderLanguageWith c b -> PureFirstOrderLanguageWith c b -> PureFirstOrderLanguageWith c a -> PureFirstOrderLanguageWith c a
 swap a b x@(f :!$: y) = mapover (swap a b) x
 swap a@(PV a') b@(PV b') x@(PV x') = if a' == x' then b else x
 swap a@(PV a') b@(PSV b') x@(PV x') = if x' == a' then PSV b' else x
 swap a@(PSV a') b@(PSV b') x@(PSV x') = if x' == a' then PSV b' else x
+swap a@(PSV a') b@(PV b') x@(PSV x') = if x' == a' then 
+                                           case equalizeTypes b x of
+                                               Just Refl -> b
+                                               Nothing -> x
+                                       else x
 swap a b c = c
 
 --------------------------------------------------------
