@@ -2,10 +2,13 @@ module Handler.Chapter where
 
 import Import
 import Yesod.Markdown
+import Filter.Sidenotes
+import Text.Pandoc.Walk (walkM)
 import System.Directory (getDirectoryContents, doesDirectoryExist)
 import Text.Hamlet                 (hamletFile)
 import qualified Data.CaseInsensitive as CI
 import qualified Data.Text.Encoding as TE
+import Control.Monad.State (runState)
 
 getChapterR :: Int -> Handler Html
 getChapterR n = do content <- liftIO $ chapter n 
@@ -20,7 +23,14 @@ getChapterR n = do content <- liftIO $ chapter n
 chapter n = do localbook <- doesDirectoryExist "book"
                let path = (if localbook then "book/chapter" else "/root/book/chapter") 
                                     ++  show n ++ ".pandoc"
-               fmap markdownToHtml (markdownFromFile path)
+               fileToHtml path
+
+fileToHtml path = do md <- markdownFromFile path
+                     let pdOrEr = parseMarkdown yesodDefaultReaderOptions md
+                     let walkedOrEr  = fmap (\x -> fst $ runState (walkM makeSideNotes x) 0) pdOrEr
+                     let htmlOrEr = fmap (writePandoc yesodDefaultWriterOptions) walkedOrEr
+                     return htmlOrEr
+
 
 chapterLayout widget = do
         master <- getYesod

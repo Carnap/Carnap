@@ -109,9 +109,12 @@ projects, amongst other things. We could also be better lawyers, politicians,
 and engineers, insofar as we could try to craft arguments that give our
 audiences *good* reasons to believe.
 
-[^1]: Which is not to say that this is not an interesting question. But it is
+[^1]:: Which is not to say that this is not an interesting question. But it is
 a question for a psychology or English composition class, not for a logic
-class.
+class. 
+
+    A second paragraph
+
 
 In some cases, finding out whether an argument gives us good reason to believe
 something might require doing careful research. We might ask a geologist, for
@@ -333,7 +336,7 @@ What are the sources of ambiguity? Let's consider another example.
 
 >   "I shot an elephant in my pajamas"[^2] 
 
-[^2]: See [The Marx Brothers Video](http://www.youtube.com/watch?v=NfN_gcjGoJo).
+[^2]:: See [The Marx Brothers Video](http://www.youtube.com/watch?v=NfN_gcjGoJo).
 
 What makes this sentence ambiguous is that it is not clear which words are
 meant to modify which other words. The sentence might be read in one of two

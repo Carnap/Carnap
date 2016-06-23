@@ -27,6 +27,7 @@ library
                      Handler.User
                      Handler.Chapter
                      Handler.Book
+                     Filter.Sidenotes
 
     if flag(dev) || flag(library-only)
         cpp-options:   -DDEVELOPMENT
@@ -91,6 +92,9 @@ library
                  , time
                  , case-insensitive
                  , wai
+                 , pandoc
+                 , pandoc-types
+                 , mtl
 
 executable         Carnap-Server
     if flag(library-only)
