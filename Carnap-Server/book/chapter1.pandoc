@@ -113,9 +113,6 @@ audiences *good* reasons to believe.
 a question for a psychology or English composition class, not for a logic
 class. 
 
-    A second paragraph
-
-
 In some cases, finding out whether an argument gives us good reason to believe
 something might require doing careful research. We might ask a geologist, for
 example, whether the house really *is* far from faultlines. If it's next to
@@ -391,7 +388,7 @@ So we might express the first reading of the sentence by writing "I shot (an
 elephant in my pajamas)", and the second by writing "I (shot an elephant) in my
 pajamas".[^3]
 
-[^3]: This idea may seem unfamiliar, but it is actually something
+[^3]:: This idea may seem unfamiliar, but it is actually something
 that you have been doing for a long time. If you know the difference between
 "$(2 + 2) \times 2$" and "$2 + (2 \times 2)$" then you know how to disambiguate
 language by using parentheses.

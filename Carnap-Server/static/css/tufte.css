@@ -153,11 +153,20 @@ blockquote footer { width: 50%;
                     font-size: 1.1rem;
                     text-align: right; }
 
-div#main ol, div#main ul { width: 95%;
+article > ol, article > ul  { 
+         width:55%;
          -webkit-padding-start: 5%;
          -webkit-padding-end: 5%; }
 
-div#main li { padding: 0.5rem 0; }
+article > dl { width:55% }
+
+dl dd, li p, dl p, { width: 100%; }
+
+li p { width: 100%; }
+
+dl p { width: 100%; }
+
+li { padding: 0.5rem 0; }
 
 figure { padding: 0;
          border: 0;
@@ -250,7 +259,9 @@ div.table-wrapper { overflow-x: auto;
 
 @media screen and (max-width: 760px) { p, footer { width: 90%; }
                                        pre.code { width: 87.5%; }
-                                       div#main ul { width: 85%; }
+                                       article > ol { width: 90%; }
+                                       article > ul { width: 90%; }
+                                       article > dl { width: 90%; }
                                        figure { max-width: 90%; }
                                        figcaption, figure.fullwidth figcaption { margin-right: 0%;
                                                                                  max-width: none; }
