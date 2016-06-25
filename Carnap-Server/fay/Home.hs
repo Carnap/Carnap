@@ -16,7 +16,7 @@ main :: Fay ()
 main = do
     input <- getElementById "fibindex"
     result <- getElementById "fibresult"
-    onKeyUp input $ do
+    onKeyUp input $ \_ -> do
         indexS <- getValue input
         index <- parseInt indexS
         call (GetFib index) $ setInnerHTML result . T.pack . show

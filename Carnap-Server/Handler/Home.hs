@@ -16,3 +16,4 @@ getHomeR = do
         setTitle "Welcome To Carnap!"
         $(widgetFile "homepage")
         $(fayFile "Home")
+        $(fayFile "Comment")

@@ -6,3 +6,9 @@
     <div>
         <input #fibindex placeholder="Fibonacci Index">
         <span #fibresult>
+
+<p>
+    Here's another
+    <div>
+        <input #comment placeholder="Comment Test">
+        <span #commentsuccess>
