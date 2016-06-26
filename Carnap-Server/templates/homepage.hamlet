@@ -10,5 +10,6 @@
 <p>
     Here's another
     <div>
-        <input #comment placeholder="Comment Test">
+        <input #newcomment placeholder="Comment Test">
         <span #commentsuccess>
+        <div #comments>
