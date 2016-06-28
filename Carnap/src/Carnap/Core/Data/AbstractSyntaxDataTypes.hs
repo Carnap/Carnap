@@ -147,15 +147,16 @@ data Applicators :: (* -> *) -> (* -> *) -> * -> * where
 {-|
 This typeclass needs to provide a way of replacing bound variables within
 a given expression, and a way of getting a bound variable uniquely
-determined by the scope of a given binder.
+determined by the scope of a given binder, in such a way that none of the
+binders in its subformulas will determine the same variable.
 
 It's used to create generic @Traversal@s and @Plated@ instances, via LangTypes
 -}
 class BoundVars g where
         subBoundVar :: FixLang g a -> FixLang g a -> FixLang g b -> FixLang g b
         subBoundVar _ _ = id
-        getBindHeight:: Typeable a => FixLang g ((a -> b) -> c) -> FixLang g (a -> b) -> FixLang g a
-        getBindHeight = error "you need to define a language-specific getBindHeight function"
+        scopeUniqueVar :: Typeable a => FixLang g ((a -> b) -> c) -> FixLang g (a -> b) -> FixLang g a
+        scopeUniqueVar = error "you need to define a language-specific scopeUniqueVar function"
 
 data Term a = Term a
     deriving(Eq, Ord, Show)
@@ -524,7 +525,7 @@ instance Monad m => MaybeMonadVar (Copula lang) m
 instance {-# OVERLAPPABLE #-} (UniformlyEq ((Copula :|: f) (FixLang f))
          , MaybeMonadVar ((Copula :|: f) (FixLang f)) (State Int))
          => UniformlyEq (FixLang f) where
-             x =* y = fst $ S.runState (stateEq x y) 0
+             x =* y = S.evalState (stateEq x y) 0
                 where 
                     stateEq :: FixLang f a -> FixLang f b -> State Int Bool
                     stateEq (x :!$: y) (x' :!$: y') = return $ x =* x' && y =* y'
@@ -591,7 +592,7 @@ instance {-# OVERLAPPABLE #-} (MonadVar (FixLang f) (State Int), FirstOrderLex (
                   height _ = 0
 
                   nth :: Typeable a => Int -> FixLang f a
-                  nth n = fst $ S.runState fresh n
+                  nth = S.evalState fresh
 
 --------------------------------------------------------
 --Head Extractors and a Generic Plated Instance.
@@ -622,11 +623,11 @@ class (Typeable syn1, Typeable sem1, Typeable syn2, Typeable sem2, BoundVars f) 
                    case ( eqT :: Maybe (t' :~: syn1 sem1)
                         , eqT :: Maybe (t' :~: syn2 sem2)) of
                             (Just Refl, _) -> (\x y -> x :!$: LLam y) <$> pure q <*> modify h
-                               where bv = getBindHeight q (LLam h)
+                               where bv = scopeUniqueVar q (LLam h)
                                      abstractBv f = \x -> (subBoundVar bv x f)
                                      modify h = abstractBv <$> (g $ h bv)
                             (_ , Just Refl) -> (\x y -> x :!$: LLam y) <$> pure q <*> modify h
-                               where bv = getBindHeight q (LLam h)
+                               where bv = scopeUniqueVar q (LLam h)
                                      abstractBv f = \x -> (subBoundVar bv x f)
                                      modify h = abstractBv <$> (difChildren2 g $ h bv)
                             _ -> pure phi
@@ -661,11 +662,11 @@ class (Typeable syn1, Typeable sem1, Typeable syn2, Typeable sem2, BoundVars f) 
                    case ( eqT :: Maybe (t' :~: syn1 sem1)
                         , eqT :: Maybe (t' :~: syn2 sem2)) of
                             (Just Refl, _) -> (\x y -> x :!$: LLam y) <$> pure q <*> modify h
-                               where bv = getBindHeight q (LLam h)
+                               where bv = scopeUniqueVar q (LLam h)
                                      abstractBv f = \x -> (subBoundVar bv x f)
                                      modify h = abstractBv <$> (g $ h $ bv)
                             (_ , Just Refl) -> (\x y -> x :!$: LLam y) <$> pure q <*> modify h
-                               where bv = getBindHeight q (LLam h)
+                               where bv = scopeUniqueVar q (LLam h)
                                      abstractBv f = \x -> (subBoundVar bv x f)
                                      modify h = abstractBv <$> (difChildren2 g $ h $ bv)
                             _ -> pure phi
@@ -701,7 +702,7 @@ class (Typeable syn1, Typeable sem1, BoundVars f) => LangTypes1 f syn1 sem1 wher
         simChildren1 g phi@(q :!$: LLam (h :: FixLang f t -> FixLang f t')) =
                    case eqT :: Maybe (t' :~: syn1 sem1) of
                             Just Refl -> (\x y -> x :!$: LLam y) <$> pure q <*> modify h
-                               where bv = getBindHeight q (LLam h)
+                               where bv = scopeUniqueVar q (LLam h)
                                      abstractBv f = \x -> (subBoundVar bv x f)
                                      modify h = abstractBv <$> (g $ h $ bv)
                             _ -> pure phi

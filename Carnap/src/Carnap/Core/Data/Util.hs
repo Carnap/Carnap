@@ -1,16 +1,18 @@
-{-#LANGUAGE RankNTypes,TypeOperators, ScopedTypeVariables, GADTs, MultiParamTypeClasses #-}
+{-#LANGUAGE FlexibleContexts, RankNTypes,TypeOperators, ScopedTypeVariables, GADTs, MultiParamTypeClasses #-}
 
-module Carnap.Core.Data.Util (equalizeTypes, incArity, checkChildren,
+module Carnap.Core.Data.Util (scopeHeight, equalizeTypes, incArity, checkChildren,
 mapover, (:~:)(Refl)) where
 
 --this module defines utility functions and typeclasses for manipulating
 --the data types defined in Core.Data
 
 import Carnap.Core.Data.AbstractSyntaxDataTypes
+import Carnap.Core.Data.AbstractSyntaxClasses
 import Data.Typeable
 import Control.Lens.Plated (Plated, cosmos, transform, children)
 import Control.Lens.Fold (anyOf)
 import Data.Typeable
+import Control.Monad.State.Lazy
 
 --------------------------------------------------------
 --1.Utility Functions
@@ -66,3 +68,14 @@ this function will, given a suitably polymorphic argument `f`, apply `f` to each
 mapover :: (forall a . FixLang l a -> FixLang l a) -> FixLang l b -> FixLang l b
 mapover f le@(x :!$: y) = mapover f x :!$: f y
 mapover f x = x
+
+{-|
+This function will assign a height to a given linguistic expression,
+greater than the height of any of any formula in the scope of one of its
+variable-binding subexpressions
+-}
+scopeHeight :: MonadVar (FixLang f) (State Int) => FixLang f a -> Int
+scopeHeight (x :!$: y) = max (scopeHeight x) (scopeHeight y)
+scopeHeight (LLam f) = scopeHeight (f dv) + 1
+    where  dv = evalState fresh (0 :: Int)
+scopeHeight _ = 0

@@ -4,6 +4,7 @@ where
 
 import Carnap.Core.Data.AbstractSyntaxDataTypes
 import Carnap.Core.Data.AbstractSyntaxClasses
+import Carnap.Core.Data.Util (scopeHeight)
 import Carnap.Core.Unification.Unification
 import Carnap.Languages.Util.LanguageClasses
 import Control.Lens (Traversal')
@@ -96,14 +97,14 @@ pattern PExist v f     = PBind (Some v) f
 pattern PC n           = PConst (Constant n) AZero
 pattern PV s           = PVar (Var s) AZero
 
-height :: PureFirstOrderLanguageWith a b -> Int
-height (PUniv _ g)     = height (g $ PV "") + 1
-height (PExist _ g)    = height (g $ PV "") + 1
-height (phi :&: psi)   = max (height phi) (height psi)
-height (phi :||: psi)  = max (height phi) (height psi)
-height (phi :->: psi)  = max (height phi) (height psi)
-height (phi :<->: psi) = max (height phi) (height psi)
-height _               = 0
+-- height :: PureFirstOrderLanguageWith a b -> Int
+-- height (PUniv _ g)     = height (g $ PV "") + 1
+-- height (PExist _ g)    = height (g $ PV "") + 1
+-- height (phi :&: psi)   = max (height phi) (height psi)
+-- height (phi :||: psi)  = max (height phi) (height psi)
+-- height (phi :->: psi)  = max (height phi) (height psi)
+-- height (phi :<->: psi) = max (height phi) (height psi)
+-- height _               = 0
 
 instance Schematizable (a (PureFirstOrderLanguageWith a)) => 
     CopulaSchema (PureFirstOrderLanguageWith a) where 
@@ -115,9 +116,9 @@ instance Schematizable (a (PureFirstOrderLanguageWith a)) =>
 instance FirstOrder (FixLang (CoreLexicon :|: a)) => 
     BoundVars (CoreLexicon :|: a) where
 
-    getBindHeight (PQuant (All v)) (LLam f) = PV $ show $ height (f $ PV "" )
-    getBindHeight (PQuant (Some v)) (LLam f) = PV $ show $ height (f $ PV "" )
-    getBindHeight _ _ = undefined
+    scopeUniqueVar (PQuant (Some v)) (LLam f) = PV $ show $ scopeHeight (f $ PV "")
+    scopeUniqueVar (PQuant (All v)) (LLam f)  = PV $ show $ scopeHeight (f $ PV "")
+    scopeUniqueVar _ _ = undefined
 
     subBoundVar = subst
     -- subBoundVar a b (phi :&: psi)   = subBoundVar a b phi :&: subBoundVar a b psi
@@ -125,10 +126,10 @@ instance FirstOrder (FixLang (CoreLexicon :|: a)) =>
     -- subBoundVar a b (phi :->: psi)  = subBoundVar a b phi :||: subBoundVar a b psi
     -- subBoundVar a b (phi :<->: psi) = subBoundVar a b phi :||: subBoundVar a b psi
     -- subBoundVar a@(PV w) b (PUniv v f) = PUniv v (\x -> subBoundVar sv x $ subBoundVar a b $ f sv)
-    --     where sv = case getBindHeight (PQuant (All v)) (LLam f) of
+    --     where sv = case scopeUniqueVar (PQuant (All v)) (LLam f) of
     --                        c@(PV v') -> if w == v' then PV ('_':v') else c
     -- subBoundVar a@(PV w) b (PExist v f) = PExist v (\x -> subBoundVar sv x $ subBoundVar a b $ f sv)
-    --     where sv = case getBindHeight (PQuant (Some v)) (LLam f) of
+    --     where sv = case scopeUniqueVar (PQuant (Some v)) (LLam f) of
     --                        c@(PV v') -> if w == v' then PV ('_':v') else c
     -- subBoundVar a b phi = mapover (subst a b) phi 
 

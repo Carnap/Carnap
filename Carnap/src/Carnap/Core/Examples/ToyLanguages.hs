@@ -149,7 +149,7 @@ instance BoundVars (Predicate BasicProp
                        :|: Function BasicTerm
                        :|: EndLang) where
     --XXX: placeholder, not correct
-    getBindHeight = undefined
+    scopeUniqueVar = undefined
 
     subBoundVar a@(TVar _) b@(TVar _) (x :==: y) = 
         (if x == a then b else x) :==: (if y == a then b else y)
@@ -296,7 +296,7 @@ instance BoundVars (Applicators Application
                           :|: Function SimpleTerm
                           :|: EndLang) where
     --XXX:placeholder, not correct
-    getBindHeight = undefined
+    scopeUniqueVar = undefined
     
     subBoundVar _ _ phi = phi
 
