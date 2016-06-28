@@ -148,11 +148,8 @@ instance BoundVars (Predicate BasicProp
                        :|: Quantifiers BasicQuant
                        :|: Function BasicTerm
                        :|: EndLang) where
-    getBoundVar (TQuant (All v)) _ = TVar v
-    getBoundVar _ _ = undefined
-
     --XXX: placeholder, not correct
-    getBindHeight = getBoundVar
+    getBindHeight = undefined
 
     subBoundVar a@(TVar _) b@(TVar _) (x :==: y) = 
         (if x == a then b else x) :==: (if y == a then b else y)
@@ -298,11 +295,8 @@ instance BoundVars (Applicators Application
                           :|: Function IntObject
                           :|: Function SimpleTerm
                           :|: EndLang) where
-    getBoundVar (SAbstract (Abs v)) _ = SBlank v
-    getBoundVar _ _ = undefined
-
     --XXX:placeholder, not correct
-    getBindHeight = getBoundVar
+    getBindHeight = undefined
     
     subBoundVar _ _ phi = phi
 

@@ -145,15 +145,13 @@ data Applicators :: (* -> *) -> (* -> *) -> * -> * where
     Apply :: app (t (a -> b) -> t a -> t b) -> Applicators app lang (t (a -> b) -> t a -> t b)
 
 {-|
-This typeclass needs to provide a way of getting bound variables,
-which will display binding positions, a way of substituting bound
-variables, and a way of getting a bound variable uniquely determined by
-the "Height" of a certain binder---how many binders occur below it in
-a parsing tree.
+This typeclass needs to provide a way of replacing bound variables within
+a given expression, and a way of getting a bound variable uniquely
+determined by the scope of a given binder.
+
+It's used to create generic @Traversal@s and @Plated@ instances, via LangTypes
 -}
 class BoundVars g where
-        getBoundVar :: Typeable a => FixLang g ((a -> b) -> c) -> FixLang g (a -> b) -> FixLang g a
-        getBoundVar = error "you need to define a language-specific getBoundVar function"
         subBoundVar :: FixLang g a -> FixLang g a -> FixLang g b -> FixLang g b
         subBoundVar _ _ = id
         getBindHeight:: Typeable a => FixLang g ((a -> b) -> c) -> FixLang g (a -> b) -> FixLang g a
@@ -549,7 +547,7 @@ instance MaybeMonadVar ((Copula :|: f) (FixLang f)) m => MonadVar (FixLang f) m 
                     Just fsh -> fmap Fx fsh
                     Nothing -> error "you need substitutional variables in your language for this"
 
-instance {-# OVERLAPPABLE #-} FirstOrderLex (FixLang f) => FirstOrder (FixLang f) where
+instance {-# OVERLAPPABLE #-} (MonadVar (FixLang f) (State Int), FirstOrderLex (FixLang f)) => FirstOrder (FixLang f) where
         
         isVar = isVarLex
 
@@ -558,7 +556,8 @@ instance {-# OVERLAPPABLE #-} FirstOrderLex (FixLang f) => FirstOrder (FixLang f
         decompose a b
             | sameHead a b = recur a b []
             | otherwise = []
-            where recur :: FixLang f a -> FixLang f b -> [Equation (FixLang f)]
+            where 
+                  recur :: FixLang f a -> FixLang f b -> [Equation (FixLang f)]
                     ->[Equation (FixLang f)]
                   recur (x :!$: (y :: FixLang f t)) 
                         (x' :!$: (y' :: FixLang f t')) 
@@ -582,8 +581,17 @@ instance {-# OVERLAPPABLE #-} FirstOrderLex (FixLang f) => FirstOrder (FixLang f
                            Nothing -> c
             | otherwise = case c of
                            (x :!$: y) -> subst a b x :!$: subst a b y
-                           --might want a clause for LLam
+                           (LLam f) -> LLam $ \x -> subst sv x $ subst a b $ f sv
+                                where sv = nth $ height (LLam f)
                            _ -> c
+            where --XXX:Might want to just break this off into the data utility module
+                  height :: FixLang f a -> Int
+                  height (x :!$: y) = max (height x) (height y)
+                  height (LLam f) = height (f (nth 0)) + 1
+                  height _ = 0
+
+                  nth :: Typeable a => Int -> FixLang f a
+                  nth n = fst $ S.runState fresh n
 
 --------------------------------------------------------
 --Head Extractors and a Generic Plated Instance.

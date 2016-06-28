@@ -4,7 +4,6 @@ where
 
 import Carnap.Core.Data.AbstractSyntaxDataTypes
 import Carnap.Core.Data.AbstractSyntaxClasses
-import Carnap.Core.Data.Util (mapover, equalizeTypes, (:~:)(..))
 import Carnap.Core.Unification.Unification
 import Carnap.Languages.Util.LanguageClasses
 import Control.Lens (Traversal')
@@ -116,25 +115,22 @@ instance Schematizable (a (PureFirstOrderLanguageWith a)) =>
 instance FirstOrder (FixLang (CoreLexicon :|: a)) => 
     BoundVars (CoreLexicon :|: a) where
 
-    getBoundVar (PQuant (All v)) _ = PV v
-    getBoundVar (PQuant (Some v)) _ = PV v
-    getBoundVar _ _ = undefined
-
     getBindHeight (PQuant (All v)) (LLam f) = PV $ show $ height (f $ PV "" )
     getBindHeight (PQuant (Some v)) (LLam f) = PV $ show $ height (f $ PV "" )
     getBindHeight _ _ = undefined
 
-    subBoundVar a b (phi :&: psi)   = subBoundVar a b phi :&: subBoundVar a b psi
-    subBoundVar a b (phi :||: psi)  = subBoundVar a b phi :||: subBoundVar a b psi
-    subBoundVar a b (phi :->: psi)  = subBoundVar a b phi :||: subBoundVar a b psi
-    subBoundVar a b (phi :<->: psi) = subBoundVar a b phi :||: subBoundVar a b psi
-    subBoundVar a@(PV w) b (PUniv v f) = PUniv v (\x -> subBoundVar sv x $ subBoundVar a b $ f sv)
-        where sv = case getBindHeight (PQuant (All v)) (LLam f) of
-                           c@(PV v') -> if w == v' then PV ('_':v') else c
-    subBoundVar a@(PV w) b (PExist v f) = PExist v (\x -> subBoundVar sv x $ subBoundVar a b $ f sv)
-        where sv = case getBindHeight (PQuant (Some v)) (LLam f) of
-                           c@(PV v') -> if w == v' then PV ('_':v') else c
-    subBoundVar a b phi = mapover (subst a b) phi 
+    subBoundVar = subst
+    -- subBoundVar a b (phi :&: psi)   = subBoundVar a b phi :&: subBoundVar a b psi
+    -- subBoundVar a b (phi :||: psi)  = subBoundVar a b phi :||: subBoundVar a b psi
+    -- subBoundVar a b (phi :->: psi)  = subBoundVar a b phi :||: subBoundVar a b psi
+    -- subBoundVar a b (phi :<->: psi) = subBoundVar a b phi :||: subBoundVar a b psi
+    -- subBoundVar a@(PV w) b (PUniv v f) = PUniv v (\x -> subBoundVar sv x $ subBoundVar a b $ f sv)
+    --     where sv = case getBindHeight (PQuant (All v)) (LLam f) of
+    --                        c@(PV v') -> if w == v' then PV ('_':v') else c
+    -- subBoundVar a@(PV w) b (PExist v f) = PExist v (\x -> subBoundVar sv x $ subBoundVar a b $ f sv)
+    --     where sv = case getBindHeight (PQuant (Some v)) (LLam f) of
+    --                        c@(PV v') -> if w == v' then PV ('_':v') else c
+    -- subBoundVar a b phi = mapover (subst a b) phi 
 
 instance FirstOrder (FixLang (CoreLexicon :|: a)) => 
     LangTypes2 (CoreLexicon :|: a) Term Int Form Bool

@@ -99,7 +99,6 @@ pattern SV n = Fx3 (SubVar n)
 instance LangTypes1 VLex Term V
 
 instance BoundVars VLex where
-  getBoundVar = undefined
   subBoundVar = undefined
 
 instance CopulaSchema VLang where
