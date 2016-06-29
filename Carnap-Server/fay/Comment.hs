@@ -41,4 +41,4 @@ toSpans (x,y) = do s1 <- createElement "span"
 updateComments comments = do
     setInnerHTML comments ""
     call GetComments $ \x -> do divs <- mapM toSpans x
-                                mapM (appendChild comments) divs
+                                mapM_ (appendChild comments) divs
