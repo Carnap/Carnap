@@ -5,5 +5,5 @@ database:
   # would like to have environment variable overrides, you could instead use
   # something like:
   #
-  #   database: "_env:PGDATABASE:Carnap-Server_LOWER_test"
-  database: Carnap-Server_LOWER_test
+  database: "_env:PGDATABASE:carnapdb"
+  # database: Carnap-Server_LOWER_test

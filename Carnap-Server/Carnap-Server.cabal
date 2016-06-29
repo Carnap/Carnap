@@ -109,9 +109,7 @@ executable         Carnap-Server
 test-suite test
     type:              exitcode-stdio-1.0
     main-is:           Spec.hs
-    other-modules:     Handler.CommentSpec
-                       Handler.CommonSpec
-                       Handler.HomeSpec
+    other-modules:     Handler.CommonSpec
                        TestImport
     hs-source-dirs:    test
     ghc-options:       -Wall
