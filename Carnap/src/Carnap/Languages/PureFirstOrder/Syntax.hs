@@ -31,8 +31,8 @@ instance Monad m => MaybeMonadVar PureMonadicPredicate m
 data PureSentences a where
     Sent :: Int -> PureSentences (Form Bool)
 
-instance Schematizable (PureSentences) where
-    schematize (Sent n) = const "P_n"
+instance Schematizable PureSentences where
+    schematize (Sent n) = const $ "P_" ++ show n
 
 instance UniformlyEq (PureSentences) where
     (Sent n) =* (Sent m) = n == m
@@ -113,25 +113,19 @@ instance Schematizable (a (PureFirstOrderLanguageWith a)) =>
     appSchema (PQuant (Some x)) (LLam f) e = schematize (Some x) (show (f $ PV x) : e)
     appSchema x y e = schematize x (show y : e)
 
+    lamSchema f [] = "λα_" ++ show h ++ "." ++ show (f (PSV h))
+        where h = scopeHeight (LLam f)
+    lamSchema f (x:xs) = "(λα_" ++ show h ++ "." ++ show (f (PSV h)) ++ " " ++ x ++ ")"
+        where h = scopeHeight (LLam f)
+
 instance FirstOrder (FixLang (CoreLexicon :|: a)) => 
     BoundVars (CoreLexicon :|: a) where
 
-    scopeUniqueVar (PQuant (Some v)) (LLam f) = PV $ show $ scopeHeight (f $ PV "")
-    scopeUniqueVar (PQuant (All v)) (LLam f)  = PV $ show $ scopeHeight (f $ PV "")
+    scopeUniqueVar (PQuant (Some v)) (LLam f) = PV $ show $ scopeHeight (LLam f)
+    scopeUniqueVar (PQuant (All v)) (LLam f)  = PV $ show $ scopeHeight (LLam f)
     scopeUniqueVar _ _ = undefined
 
     subBoundVar = subst
-    -- subBoundVar a b (phi :&: psi)   = subBoundVar a b phi :&: subBoundVar a b psi
-    -- subBoundVar a b (phi :||: psi)  = subBoundVar a b phi :||: subBoundVar a b psi
-    -- subBoundVar a b (phi :->: psi)  = subBoundVar a b phi :||: subBoundVar a b psi
-    -- subBoundVar a b (phi :<->: psi) = subBoundVar a b phi :||: subBoundVar a b psi
-    -- subBoundVar a@(PV w) b (PUniv v f) = PUniv v (\x -> subBoundVar sv x $ subBoundVar a b $ f sv)
-    --     where sv = case scopeUniqueVar (PQuant (All v)) (LLam f) of
-    --                        c@(PV v') -> if w == v' then PV ('_':v') else c
-    -- subBoundVar a@(PV w) b (PExist v f) = PExist v (\x -> subBoundVar sv x $ subBoundVar a b $ f sv)
-    --     where sv = case scopeUniqueVar (PQuant (Some v)) (LLam f) of
-    --                        c@(PV v') -> if w == v' then PV ('_':v') else c
-    -- subBoundVar a b phi = mapover (subst a b) phi 
 
 instance FirstOrder (FixLang (CoreLexicon :|: a)) => 
     LangTypes2 (CoreLexicon :|: a) Term Int Form Bool
@@ -267,7 +261,7 @@ instance EqLanguage PureFOLForm PureFOLTerm  where
 instance PolyadicFunctionLanguage PureLanguageFOL (Term Int) (Term Int) where 
     pfn n a = PF n a a
 
-instance Incrementable PureLexiconFOL (Term Int) where
+instance Incrementable (OpenLexiconPFOL (PolyadicFunctionSymbolsAndIdentity :|: a)) (Term Int) where
     incHead (PP n a b) = Just $ PP n (ASucc a) (ASucc a)
     incHead (PF n a b) = Just $ PF n (ASucc a) (ASucc a)
     incHead _  = Nothing

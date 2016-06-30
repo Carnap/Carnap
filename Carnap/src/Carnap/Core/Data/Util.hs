@@ -1,18 +1,19 @@
 {-#LANGUAGE FlexibleContexts, RankNTypes,TypeOperators, ScopedTypeVariables, GADTs, MultiParamTypeClasses #-}
 
 module Carnap.Core.Data.Util (scopeHeight, equalizeTypes, incArity, checkChildren,
-mapover, (:~:)(Refl), Buds(..), Blossoms(..), bloom, grow) where
+mapover, (:~:)(Refl), Buds(..), Blossoms(..), betaReduce, sbetaReduce, bloom, sbloom, grow, betaGrow) where
 
 --this module defines utility functions and typeclasses for manipulating
 --the data types defined in Core.Data
 
 import Carnap.Core.Data.AbstractSyntaxDataTypes
 import Carnap.Core.Data.AbstractSyntaxClasses
+import Carnap.Core.Unification.Unification
 import Data.Typeable
 import Data.List (nub)
 import Control.Lens.Plated (Plated, cosmos, transform, children)
 import Control.Lens.Fold (anyOf)
-import Control.Monad.State.Lazy
+import Control.Monad.State.Lazy as S
 
 --------------------------------------------------------
 --1.Utility Functions
@@ -80,6 +81,22 @@ scopeHeight (LLam f) = scopeHeight (f dv) + 1
     where  dv = evalState fresh (0 :: Int)
 scopeHeight _ = 0
 
+{-|
+This function eliminates one layer of applied lambdas from a given piece of syntax.
+-}
+
+betaReduce ::(MonadVar (FixLang f) (State Int), FirstOrder (FixLang f)) => FixLang f a -> FixLang f a
+betaReduce phi = evalState (sbetaReduce phi) 0
+
+sbetaReduce ::(MonadVar (FixLang f) (State Int), FirstOrder (FixLang f)) => FixLang f a -> State Int (FixLang f a)
+sbetaReduce (LLam f :!$: a) = return $ f a
+sbetaReduce (x :!$: y) = do x' <- sbetaReduce x 
+                            y' <- sbetaReduce y
+                            return $ x' :!$: y'
+sbetaReduce (LLam f) = do sv <- fresh
+                          f' <- sbetaReduce $ f sv
+                          return $ LLam $ \x -> subst x sv f'
+sbetaReduce z = return z
 --------------------------------------------------------
 --2. Random Syntax
 --------------------------------------------------------
@@ -97,24 +114,40 @@ These are data structures that will replace buds
 -}
 data Blossoms f where Blossom :: Typeable a => f a -> Blossoms f
 
-bloom :: UniformlyEq (FixLang f) => [Buds (FixLang f)] -> [Blossoms (FixLang f)] -> FixLang f a -> [FixLang f a]
-bloom buds blossoms tree = 
-        do (Bud bud) <- buds
-           (Blossom blossom) <- blossoms
+bloom :: (MonadVar (FixLang f) (State Int), MonadVar (FixLang f) (StateT Int []), FirstOrder (FixLang f), UniformlyEq (FixLang f)) => 
+    [Buds (FixLang f)] -> [Blossoms (FixLang f)] -> FixLang f a -> [FixLang f a]
+bloom buds blossoms tree = evalStateT (sbloom buds blossoms tree) (scopeHeight tree + 1)
+
+sbloom :: (MonadVar (FixLang f) (StateT Int []), FirstOrder (FixLang f), UniformlyEq (FixLang f)) => 
+    [Buds (FixLang f)] -> [Blossoms (FixLang f)] -> FixLang f a -> StateT Int [] (FixLang f a)
+sbloom buds blossoms tree = 
+        do (Bud bud) <- S.lift buds
+           (Blossom blossom) <- S.lift blossoms
            case tree of 
                 (h :!$: t) -> 
-                    do head <- [True,False]
+                    do head <- S.lift [True,False]
                        if head 
-                          then do h' <- bloom buds blossoms h
+                          then do h' <- sbloom buds blossoms h
                                   return $ h' :!$: t
-                          else do t' <- bloom buds blossoms t
+                          else do t' <- sbloom buds blossoms t
                                   return $ h :!$: t'
+                (LLam f) -> do sv <- fresh
+                               f' <- sbloom buds blossoms (f sv)
+                               return $ LLam $ \x -> subst sv x f'
                 _ -> case (equalizeTypes bud blossom, equalizeTypes bud tree) of
                          (Just Refl, Just Refl) -> 
                             if bud =* tree 
                                 then return blossom 
-                                else []
-                         _ -> []
+                                else S.lift []
+                         _ -> S.lift []
 
-grow :: (UniformlyEq (FixLang f), Eq (FixLang f a)) => [Buds (FixLang f)] -> [Blossoms (FixLang f)] -> FixLang f a -> [[FixLang f a]]
+grow :: (MonadVar (FixLang f) (State Int), MonadVar (FixLang f) (StateT Int []), FirstOrder (FixLang f), UniformlyEq (FixLang f), Eq (FixLang f a)) => 
+    [Buds (FixLang f)] -> [Blossoms (FixLang f)] -> FixLang f a -> [[FixLang f a]]
 grow buds blossoms tree = iterate (\x -> x >>= nub . bloom buds blossoms) [tree]
+
+{-
+If some of your blossoms are lambdas, you might be more pleased with the results of this function.
+-}
+betaGrow :: (MonadVar (FixLang f) (State Int), MonadVar (FixLang f) (StateT Int []), FirstOrder (FixLang f), UniformlyEq (FixLang f), Eq (FixLang f a)) => 
+    [Buds (FixLang f)] -> [Blossoms (FixLang f)] -> FixLang f a -> [[FixLang f a]]
+betaGrow buds blossoms tree = iterate (\x -> x >>= fmap betaReduce . nub . bloom buds blossoms) [tree]

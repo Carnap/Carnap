@@ -71,9 +71,9 @@ class CopulaSchema lang where
     appSchema :: lang (t -> t') -> lang t -> [String] -> String
     default appSchema :: (Schematizable lang, Show (lang t)) => lang (t -> t') -> lang t -> [String] -> String
     appSchema x y e = schematize x (show y : e)
-    liftSchema :: Copula lang t -> [String] -> String
+    lamSchema :: (Typeable t, Typeable t') => (lang t -> lang t') -> [String] -> String
     lamSchema = error "how did you even do this?"
-    lamSchema :: (lang t -> lang t') -> [String] -> String
+    liftSchema :: Copula lang t -> [String] -> String
     liftSchema = error "should not print a lifted value"
 
 {-|
@@ -411,7 +411,7 @@ instance FirstOrderLex (SubstitutionalVariable idx)
 instance {-# OVERLAPPABLE #-} Monad m => MaybeMonadVar f m where
         maybeFresh = Nothing
 
-instance MaybeMonadVar (SubstitutionalVariable idx) (State Int)
+instance Monad m => MaybeMonadVar (SubstitutionalVariable idx) (S.StateT Int m)
         where maybeFresh = Just $ do n <- get
                                      put (n+1)
                                      return $ SubVar n
