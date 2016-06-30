@@ -1,7 +1,7 @@
 {-#LANGUAGE FlexibleContexts, RankNTypes,TypeOperators, ScopedTypeVariables, GADTs, MultiParamTypeClasses #-}
 
 module Carnap.Core.Data.Util (scopeHeight, equalizeTypes, incArity, checkChildren,
-mapover, (:~:)(Refl)) where
+mapover, (:~:)(Refl), Buds(..), Blossoms(..), bloom, grow) where
 
 --this module defines utility functions and typeclasses for manipulating
 --the data types defined in Core.Data
@@ -9,9 +9,9 @@ mapover, (:~:)(Refl)) where
 import Carnap.Core.Data.AbstractSyntaxDataTypes
 import Carnap.Core.Data.AbstractSyntaxClasses
 import Data.Typeable
+import Data.List (nub)
 import Control.Lens.Plated (Plated, cosmos, transform, children)
 import Control.Lens.Fold (anyOf)
-import Data.Typeable
 import Control.Monad.State.Lazy
 
 --------------------------------------------------------
@@ -79,3 +79,42 @@ scopeHeight (x :!$: y) = max (scopeHeight x) (scopeHeight y)
 scopeHeight (LLam f) = scopeHeight (f dv) + 1
     where  dv = evalState fresh (0 :: Int)
 scopeHeight _ = 0
+
+--------------------------------------------------------
+--2. Random Syntax
+--------------------------------------------------------
+
+{-|
+These are data structures that will be replaced in the course of
+a generating list syntax items for testing. If one thinks of the piece of
+syntax as a tree, then the buds are what are replaced by blossoms as the
+tree grows.
+-}
+data Buds f where Bud :: Typeable a => f a -> Buds f
+
+{-|
+These are data structures that will replace buds
+-}
+data Blossoms f where Blossom :: Typeable a => f a -> Blossoms f
+
+bloom :: UniformlyEq (FixLang f) => [Buds (FixLang f)] -> [Blossoms (FixLang f)] -> FixLang f a -> [FixLang f a]
+bloom buds blossoms tree = 
+        do (Bud bud) <- buds
+           (Blossom blossom) <- blossoms
+           case tree of 
+                (h :!$: t) -> 
+                    do head <- [True,False]
+                       if head 
+                          then do h' <- bloom buds blossoms h
+                                  return $ h' :!$: t
+                          else do t' <- bloom buds blossoms t
+                                  return $ h :!$: t'
+                _ -> case (equalizeTypes bud blossom, equalizeTypes bud tree) of
+                         (Just Refl, Just Refl) -> 
+                            if bud =* tree 
+                                then return blossom 
+                                else []
+                         _ -> []
+
+grow :: (UniformlyEq (FixLang f), Eq (FixLang f a)) => [Buds (FixLang f)] -> [Blossoms (FixLang f)] -> FixLang f a -> [[FixLang f a]]
+grow buds blossoms tree = iterate (\x -> x >>= nub . bloom buds blossoms) [tree]
