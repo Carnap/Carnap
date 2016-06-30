@@ -50,10 +50,10 @@ class Schematizable f where
     schematize :: f a -> [String] -> String
 
 class UniformlyEq f where
-        (=*) :: f a -> f b -> Bool
+    (=*) :: f a -> f b -> Bool
 
 class UniformlyOrd f where
-        (<=*) :: f a -> f b -> Bool
+    (<=*) :: f a -> f b -> Bool
 
 {-|
 CanonicalForm is a typeclass for data which can be put in a canonical form.
@@ -66,4 +66,4 @@ class CanonicalForm a where
 
 
 class Monad m => MonadVar f m where
-        fresh :: Typeable a => m (f a)
+    fresh :: Typeable a => m (f a)

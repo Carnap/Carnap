@@ -10,7 +10,6 @@ import Carnap.Core.Data.AbstractSyntaxDataTypes
 import Carnap.Core.Data.AbstractSyntaxClasses
 import Data.Typeable
 import Data.List (nub)
-import Data.Set.Monad
 import Control.Lens.Plated (Plated, cosmos, transform, children)
 import Control.Lens.Fold (anyOf)
 import Control.Monad.State.Lazy
