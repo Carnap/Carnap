@@ -6,7 +6,7 @@ module Carnap.Core.Unification.Unification (
    matchApp, castLam, getLamVar, (.$.),
    applySub, mapAll, freshVars,
    EveryPig(EveryPig), unEveryPig, ExtApp(ExtApp),
-   AnyPig(AnyPig), freeVars
+   AnyPig(AnyPig), freeVars, UError(..)
 ) where
 
 import Data.Type.Equality
@@ -55,9 +55,6 @@ emap f (x :=: y) = f x :=: f y
 
 mapAll :: (forall a. f a -> f a) -> [Equation f] -> [Equation f]
 mapAll f = map (emap f)
-
-(Left x) .<. f = Left (f x)
-x .<. _ = x
 
 applySub :: FirstOrder f => [Equation f] -> f a -> f a
 applySub []             y = y

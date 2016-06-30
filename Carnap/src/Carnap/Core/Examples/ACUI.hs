@@ -1,14 +1,17 @@
 {-#LANGUAGE ScopedTypeVariables, InstanceSigs, ExplicitForAll, TypeSynonymInstances, UndecidableInstances, FlexibleInstances, MultiParamTypeClasses, GADTs, DataKinds, PolyKinds, TypeOperators, ViewPatterns, PatternSynonyms, RankNTypes, FlexibleContexts, AutoDeriveTypeable #-}
 
 module Carnap.Core.Examples.ACUI (
-    V, Set, VLang, Var,
+    V, Set, VLang, Var, acuiParser,
     pattern VEmpty, pattern VUnion, pattern VSomeSet, pattern VSingelton,
+    parseTerm, evalTerm
     --acuiDemo
 ) where
 
 import Carnap.Core.Data.AbstractSyntaxDataTypes
 import Carnap.Core.Unification.Unification
 import Carnap.Core.Unification.ACUI
+import Carnap.Core.Unification.FirstOrder
+import Carnap.Core.Unification.Combination
 import qualified Data.Set as S
 import Data.Type.Equality
 import Data.Typeable
@@ -19,6 +22,7 @@ import Control.Monad.State
 --I really liked this example so I'm using it for testing
 newtype VFix f = VFix (f (VFix f))
     deriving(Typeable)
+
 type V = VFix S.Set
 
 ev :: V
@@ -65,7 +69,18 @@ instance Schematizable (Var lang) where
 instance Evaluable (Var lang) where
     eval _ = error "you are not allowed to do that silly"
 
-type VLex = (Function Set :|: Var :|: SubstitutionalVariable :|: EndLang)
+data Extra a where
+    ConstUnFunc :: String -> Extra (Term V -> Term V)
+    ConstBinFunc :: String -> Extra (Term V -> Term V -> Term V)
+
+instance Schematizable Extra where
+    schematize (ConstUnFunc s) (x:_)    = s ++ "(" ++ x ++ ")"
+    schematize (ConstBinFunc s) (x:y:_) = s ++ "(" ++ x ++ "," ++ y ++ ")"
+
+instance Evaluable Extra where
+    eval _ = error "don't do this, I too lazy to implement this"
+
+type VLex = (Function Set :|: Var :|: SubstitutionalVariable :|: Function Extra :|: EndLang)
 
 type VLang = FixLang VLex
 
@@ -76,6 +91,8 @@ pattern VSomeSet s = Fx2 (SomeSet s)
 pattern VSingelton x = Fx1 (Function Singelton AOne) :!$: x
 pattern VUnion x y = Fx1 (Function Union ATwo) :!$: x :!$: y
 pattern SV n = Fx3 (SubVar n)
+pattern VUnFunc s x = Fx4 (Function (ConstUnFunc s) AOne) :!$: x
+pattern VBinFunc s x y = Fx4 (Function (ConstBinFunc s) ATwo) :!$: x :!$: y
 
 instance LangTypes1 VLex Term V
 
@@ -100,6 +117,28 @@ instance ACUI VLang (Term V) where
     unfoldTerm VEmpty       = []
     unfoldTerm leaf         = [leaf]
 
+--This is just a place holder until we define things compositionally
+data VLangLabel = VExtra
+                | VSet
+    deriving(Eq, Ord, Show)
+
+instance Combineable VLang VLangLabel where
+    getLabel VEmpty           = VSet
+    getLabel (VSingelton _)   = VSet
+    getLabel (VUnion _ _)     = VSet
+    getLabel (VUnFunc _ _)    = VExtra
+    getLabel (VBinFunc _ _ _) = VExtra
+
+    getAlgo VSet = undefined
+    getAlgo VExtra = undefined
+
+    replaceChild (VSingelton _)   pig _ = VSingelton $ unEveryPig pig
+    replaceChild (VUnion _ x)     pig 0 = VUnion (unEveryPig pig) x
+    replaceChild (VUnion x _)     pig 1 = VUnion x (unEveryPig pig)
+    replaceChild (VUnFunc s _)    pig _ = VUnFunc s (unEveryPig pig)
+    replaceChild (VBinFunc s _ x) pig 0 = VBinFunc s (unEveryPig pig) x
+    replaceChild (VBinFunc s x _) pig 1 = VBinFunc s x (unEveryPig pig)
+
 --this could likely be defined just using generic things
 --however in this case I'm just defining it directly
 --more work will be needed to define this for all
@@ -109,21 +148,30 @@ instance FirstOrder VLang where
   isVar (VSomeSet _) = True
   isVar _            = False
 
-  sameHead VEmpty         VEmpty         = True
-  sameHead (SV s)         (SV s')        = s == s'
-  sameHead (VUnion _ _)   (VUnion _ _)   = True
-  sameHead (VSingelton _) (VSingelton _) = True
-  sameHead _              _              = False
+  sameHead VEmpty           VEmpty            = True
+  sameHead (SV s)           (SV s')           = s == s'
+  sameHead (VUnion _ _)     (VUnion _ _)      = True
+  sameHead (VSingelton _)   (VSingelton _)    = True
+  sameHead (VUnFunc s _)    (VUnFunc s' _)    = s == s'
+  sameHead (VBinFunc s _ _) (VBinFunc s' _ _) = s == s'
+  sameHead _                _                 = False
 
-  decompose (VUnion x y)   (VUnion x' y') = [x :=: x', y :=: y']
-  decompose (VSingelton x) (VSingelton y) = [x :=: y]
+  decompose (VUnion x y)     (VUnion x' y')     = [x :=: x', y :=: y']
+  decompose (VSingelton x)   (VSingelton y)     = [x :=: y]
+  decompose (VUnFunc _ x)    (VUnFunc _ y)      = [x :=: y]
+  decompose (VBinFunc _ x y) (VBinFunc _ x' y') = [x :=: x', y :=: y']
   decompose _              _              = []
 
-  occurs (SV s) (SV s')        = s == s'
-  occurs v      (VUnion x y)   = occurs v x || occurs v y
-  occurs v      (VSingelton x) = occurs v x
+  occurs (SV s)       (SV s')          = s == s'
+  occurs (VSomeSet s) (VSomeSet s')    = s == s'
+  occurs v            (VUnion x y)     = occurs v x || occurs v y
+  occurs v            (VSingelton x)   = occurs v x
+  occurs v            (VUnFunc s x)    = occurs v x
+  occurs v            (VBinFunc s x y) = occurs v x || occurs v y
 
   --this is complicated and should be hidden from the user
+  subst v new (VBinFunc s x y)     = VBinFunc s (subst v new x) (subst v new y)
+  subst v new (VUnFunc s x)        = VUnFunc s (subst v new x)
   subst v new (VUnion x y)         = VUnion (subst v new x) (subst v new y)
   subst v new (VSingelton x)       = VSingelton (subst v new x)
   subst (VSomeSet s) new orign@(VSomeSet s')
@@ -131,6 +179,8 @@ instance FirstOrder VLang where
       | otherwise                  = orign
 
   freshVars = map (\n -> EveryPig (SV n)) [1..]
+
+
 
 parseUnion :: (Monad m) => ParsecT String u m (VTerm -> VTerm -> VTerm)
 parseUnion = do spaces
@@ -147,8 +197,24 @@ singletonParser recur = do char '{'
                            char '}'
                            return $ VSingelton inner
 
+unfuncParser :: (Monad m) => ParsecT String u m (VTerm)
+unfuncParser = do c <- oneOf "fgjkl"
+                  char '('
+                  arg <- acuiParser
+                  char ')'
+                  return $ VUnFunc [c] arg
+
+binfuncParser :: (Monad m) => ParsecT String u m (VTerm)
+binfuncParser = do c <- oneOf "rhtqs"
+                   char '('
+                   arg1 <- acuiParser
+                   char ','
+                   arg2 <- acuiParser
+                   char ')'
+                   return $ VBinFunc [c] arg1 arg2
+
 somesetParser :: (Monad m) => ParsecT String u m (VTerm)
-somesetParser = do c <- oneOf "abcdefghijklmnopqrstuvwxyz"
+somesetParser = do c <- oneOf "abcdexyz"
                    return $ VSomeSet [c]
 
 subvarParser :: (Monad m) => ParsecT String u m (VTerm)
@@ -158,9 +224,17 @@ subvarParser = do n <- read <$> many1 digit
 acuiParser :: (Monad m) => ParsecT String u m (VTerm)
 acuiParser = buildExpressionParser [[Infix (try parseUnion) AssocLeft]] subParser
     where subParser = try emptyParser <|>
+                      try unfuncParser <|>
+                      try binfuncParser <|>
                       try (singletonParser acuiParser) <|>
                       subvarParser <|>
                       somesetParser
+
+instance Show (Equation VLang) where
+    show (a :=: b) = schematize a [] ++ " = " ++ schematize b []
+
+parseTerm s = let (Right term) = parse acuiParser "" s in term
+evalTerm m = evalState m freshVars
 
 {--
 acuiDemo = do

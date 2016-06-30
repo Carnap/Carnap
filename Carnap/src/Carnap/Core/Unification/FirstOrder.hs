@@ -1,6 +1,9 @@
-module FirstOrder (founify) where
+module Carnap.Core.Unification.FirstOrder (founify) where
 
 import Carnap.Core.Unification.Unification
+
+(Left x) .<. f = Left (f x)
+x .<. _ = x
 
 --this needs to be generalized to include an optional label
 founify :: FirstOrder f => [Equation f] -> [Equation f] -> Either (UError f) [Equation f]
