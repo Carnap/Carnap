@@ -53,10 +53,10 @@ class IndexedSchemePropLanguage l where
         phin :: Int -> l
 
 class PolyadicPredicateLanguage lang arg ret where
-        ppn :: Int -> Arity arg ret n ret' -> lang ret'
+        ppn :: Typeable ret' => Int -> Arity arg ret n ret' -> lang ret'
 
 class PolyadicFunctionLanguage lang arg ret where
-        pfn :: Int -> Arity arg ret n ret' -> lang ret'
+        pfn :: Typeable ret' => Int -> Arity arg ret n ret' -> lang ret'
 
 class Incrementable lex arg where
         incHead :: FixLang lex a -> Maybe (FixLang lex (arg -> a)) 

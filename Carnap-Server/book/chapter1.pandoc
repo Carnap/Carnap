@@ -1,0 +1,586 @@
+#Chapter 1: The Subject Matter of Logic
+##Arguments and Reasoning
+
+In this class, we are going to learn about reasoning. 
+
+What is reasoning? 
+
+*Reasoning is giving reasons for beliefs.*
+
+When a lawyer approaches a jury and says 
+
+> You must find my client innocent, and here's why...
+
+that lawyer is giving reasons for for beliefs. When an engineer says 
+
+> If we follow these construction plans, the bridge we build will fall down,
+> and here's why...
+
+the engineer is giving reasons for beliefs. When a politician
+says 
+
+> I think the death penalty is barbaric, and here's why...
+
+the politician is giving reasons for beliefs.
+
+Reasoning, like the air we breathe, can be found anywhere that we find human
+beings. Like the air, reasoning is often invisible to us until we focus our
+attention on it. Once we do focus our attention on this pervasive activity, we
+may become curious about it. What makes something a piece of reasoning? 
+
+What all the examples above seem to have in common is a certain *structure*.
+The structure involves, first, proposing a belief. The lawyer proposes that the
+client is innocent. The engineer proposes that the bridge is structurally
+unsound. The politician proposes that the death penalty is barbaric. The
+structure then requires the proposer to support their belief. So some evidence
+is given for adopting the belief. In each case above that is what we left out,
+as "...". 
+
+If we are to begin to study the nature of reasoning, we will need to find some
+words for these parts of reasoning. So let us call the belief proposed
+a **conclusion** and let us call the evidence for accepting the conclusion some
+**premises**. We can call the whole unit of reasoning, the premises and
+conclusion taken together, an **argument**.
+
+Here are some examples of arguments
+
+> My house is quite safe from earthquakes, since it is located far from any
+> major fault lines.
+
+> There are no cottonmouths around here---cottonmouths are the same as water
+> moccasins, and water moccasins can be found only in southeast Kansas.
+
+> My client is innocent by reason of insanity, since he ate a very bad diet in
+> the months leading up to the shooting, and such a diet can cause a person to
+> become unable to control themselves.
+
+> There's no fastest motion, because any motion can be made faster by applying
+> more force.
+
+It is common practice among those who study arguments to write an argument with
+the premises in a list, above the conclusion, like so:
+
+> | 1. <span class="premise">My house is far from fault lines.</span>
+> | <span class="conclusion">My house is safe from earthquakes.</span>
+
+> | 1. <span class="premise"> Cottonmouths are water moccasins.</span>
+> | 2. <span class="premise"> Water moccasins can be found only in Southeast Kansas.</span>
+> | <span class="conclusion"> There are no cottonmouths outside of Southeast Kansas.</span>
+
+> | 1. <span class="premise">Any motion can be made faster.</span>
+> | <span class="conclusion"> There's no fastest motion</span>
+
+
+> | 1. <span class="premise">My Client ate a bad diet.</span>
+> | 2. <span class="premise">A bad diet can cause a lack of self-control.</span>
+> | <span class="conclusion"> My client is innocent by reason of insanity.</span>
+
+
+This allows us to conveniently see the structure of the arguments.
+
+##Good and Bad Arguments
+
+Not all of the arguments above are entirely foolproof. For example, a bad diet
+might cause a lack of self-control without causing enough lack of self-control
+to merit a finding of innocent by reasoning by insanity. And some arguments are
+downright bad; politicians often say misleading things in an attempt to elicit
+beliefs among their constituents. Engineers make mistakes. Lawyers sometimes
+persuade a jury to believe one thing, when they really ought to believe
+another. 
+
+When arguments are bad like this, it is not always because they are not
+persuasive. Often, people are persuaded by arguments that aren't very good. For
+example, it is not uncommon to hear people say that because they've had
+a loosing streak in some game of chance, they are more likely to win in the
+future. But having a losing streak has no effect on your future chances of
+winning, even though people tend to feel like it does, perhaps because they
+feel like they *deserve* to win, after losing for a while. In other cases, bad
+arguments may be decorated with emotionally loaded or smart-sounding language,
+in order to cause the audience to *feel* like the conclusion is true. 
+
+What we want to know is not which arguments *feel* like they lead us to the
+truth.[^1] We want to know which arguments *actually do* lead us to the truth.
+From this point of view, neither our ordinary habits of reasoning, nor the
+emotional impact of an argument (whether it seems intimidatingly smart or
+heartwrenchingly moving) count for anything at all. We want to know *when* an
+argument really gives a good reason to believe. If we knew this, we could be
+better voting citizens, better jury members, and better managers of engineering
+projects, amongst other things. We could also be better lawyers, politicians,
+and engineers, insofar as we could try to craft arguments that give our
+audiences *good* reasons to believe.
+
+[^1]:: Which is not to say that this is not an interesting question. But it is
+a question for a psychology or English composition class, not for a logic
+class. 
+
+In some cases, finding out whether an argument gives us good reason to believe
+something might require doing careful research. We might ask a geologist, for
+example, whether the house really *is* far from faultlines. If it's next to
+a giant fault, then you shouldn't listen to someone who says that it is safe
+because it is far from faults. But in some cases, knowing the facts is not
+enough. We may be sure about the truth of all the premises of an argument, but
+remain unsure about whether the argument supports its conclusion.
+
+For example, consider these two arguments:
+
+
+> | 1. <span class="premise">Nine out of ten stop and frisk subjects are not charged with a crime.</span>
+> | <span class="conclusion">NYC Police are unreliable judges of whether someone has committed a crime.</span>
+
+> | 1. <span class="premise">Unless soil is deep and sandy, it is not suitable for carrots.</span>
+> | 2. <span class="premise">Soil is either suitable for carrots or tomatoes, but not both.</span>
+> |  <span class="conclusion">Soil suitable for tomatoes is not both deep and sandy.</span>
+
+
+It is far from immediately obvious, but the first argument does not give reason
+to believe its conclusion. That is in spite of the fact that we may have little
+doubt about the first premise. If we consider the second argument, we'll also
+find ourselves unsure about the conclusion. If a master gardener tells us that
+the first two premises are true and a gardener of unknown skill remarks to us
+"Ah, and so soil suitable for tomatoes is not both deep and sandy", we may be
+quite confident of the premises, but unsure of whether they support the
+conclusion being drawn.
+
+The concern of logic is not to answer questions like whether houses are far
+from fault lines, or whether the same soil can support both carrots and
+tomatoes. Instead, logic aims to tell us which arguments describe a real
+*connection* between premises and conclusion, and which arguments merely appear
+to do so. 
+
+##Validity
+
+When an argument fails to lead us to the truth, it is because the premises are
+true and the conclusion false. The arguments we are after are the ones that
+cannot fail to lead us to the truth in this way. So we are after arguments in
+which it is impossible for the premises to be true while the conclusion is at
+the same time false. We call these arguments *deductively valid*
+
+Deductively Valid
+
+:   An argument is *deductively valid* if either
+
+    1. It is impossible for its premises to be true and its conclusion false. 
+    2. The truth of the premises guarantees the truth of the conclusion. 
+
+If we have a deductively valid argument for some conclusion, then as far as
+logic goes, all is right with the world. All that remains to be shown is that
+the premises are true. Once that is established, the conclusion is guaranteed.
+This is a fairly high standard. For example, consider the following argument
+pair:
+
+
+> | 1. <span class="premise">If the mouse isn't in the trap, the cat ate it.</span>
+> | 2. <span class="premise">The mouse is not in the trap.</span>
+> | <span class="conclusion">The cat ate the mouse. </span>
+
+
+
+> | 1. <span class="premise">If the mouse isn't in the trap, the cat ate it. </span>
+> | 2. <span class="premise">The mouse is not in the trap.</span>
+> | <span class="conclusion">The mouse is dead. </span>
+
+
+The first argument is deductively valid. The second is not---while the premises
+make the conclusion very likely, it is still possible for them to be true and
+the conclusion false. This might happen if, for example, the cat ate the mouse
+in one bite and then coughed it up fully intact a moment later. 
+
+Once we begin to think about deductive validity, we may notice something
+interesting. The cat/trap argument is valid, but so is this one:
+
+
+> | 1. <span class="premise">If the moose isn't in the trap, the dinosaur ate it. </span>
+> | 2. <span class="premise">The moose is not in the trap.</span>
+> | <span class="conclusion">The dinosaur ate the moose. </span>
+
+
+and so is this one:
+
+
+> | 1. <span class="premise">If the moose isn't an albino, the dinosaur ate it.</span>
+> | 2. <span class="premise">The moose is not an albino.</span>
+> | <span class="conclusion">The dinosaur ate the moose. </span>
+
+
+If you were somehow to find out that the premises of the latter argument were
+true, even if you did not know anything about albino moose and dinosaurs, you
+could still responsibly infer that the dinosaur must have eaten the moose. What
+this suggests is that the validity of the argument sketched here does not
+depend on the specific content of the premises. Rather, since we could vary the
+content of the premises without changing the validity of the argument, the
+validity of this argument must depend on something that all three arguments
+have in common, something that we did not vary. We call this thing the *logical
+form* of the argument. 
+
+Logical Form
+
+:   *Logical form* is what similarly structured arguments have in common.
+
+One way of depicting the form of the three arguments above is as follows:
+
+
+> | <span class="premise">If $P$, then $Q$. </span>
+> | <span class="premise">$P$.</span>
+> | <span class="conclusion">$Q$.</span>
+
+
+This logical form is called *modus ponens*. The result of replacing the letters
+$P$ and $Q$ with actual assertions will be a deductively valid argument.
+
+When the deductive validity of an argument depends only on the argument's
+logical form, we say that the argument is *formally valid*.
+
+Formally Valid
+
+:   An argument is *formally valid* if 
+
+    1. It is deductively valid because of its logical form.
+    2. Every argument with the same logical form is deductively valid.
+
+The basic idea of formal logic is to try to find and classify all of the
+logical forms that make arguments deductively valid. If we could do this, then
+we would have a good test for the deductive validity of arguments: we could
+just figure out their logical forms, and then check the form against our
+classification.
+
+
+#Formal Languages
+ 
+##Ambiguity
+ 
+The project of classifying arguments by their logical form is simple enough.
+But if we try to push it very far, we will meet a serious challenge. Here is an
+example. The following argument  looks quite compelling.
+
+
+> | 1. <span class="premise">A bronze medal is better than a silver medal.</span>
+> | 2. <span class="premise">A gold medal is better than a silver medal.</span>
+> | <span class="conclusion">A gold medal is better than a bronze medal. </span>
+
+
+Moreover, it seems to be good because of its form. For example, the argument
+
+
+
+> | 1. <span class="premise">A field goal is better than a safety.</span>
+> | 2. <span class="premise">A touchdown is better than a field goal.</span>
+> | <span class="conclusion">A field goal is better than a safety. </span>
+
+
+is deductively valid as well. This might lead us to believe that the following
+logical form confers validity on the arguments that have it:
+
+
+> | <span class="premise">$B$ is better than $C$.</span>
+> | <span class="premise">$A$ is better than $B$.</span>
+> | <span class="conclusion">$A$ is better than $C$ </span>
+
+ But what about this argument?
+
+
+| 1. <span class="premise">Nothing is better than world peace.</span>
+| 2. <span class="premise">Cold pizza is better than nothing.</span>
+| <span class="conclusion">Cold pizza is better than world peace. </span>
+
+The conclusion is certainly false, but the premises are plausibly true. What is
+going on here?
+
+The trouble is that English (and indeed all natural languages) contains many
+*ambiguous* sentences.
+
+Ambiguous
+
+:   An ambiguous sentence is a sentence that has more than one possible meaning.
+
+And logical form is determined not by the sentences that make up our arguments,
+but of their *meanings*. When the sentences that make up an argument have more
+than one meaning, the argument can have more than one logical form. And if an
+argument has more than one logical form, then the answer to the question "is it
+formally valid?" will generally be "it depends". This is an unsatisfying state
+of affairs.
+
+Here are some examples of arguments whose validity depends on how we interpret
+ambiguous sentences. It is a good exercise to think about them, and see if you
+can spot how one reading makes the argument deductively valid, and the other
+reading does not.
+
+| 1. <span class="premise">Salvatore brought a hat from Italy.</span>
+| <span class="conclusion">Salvatore has been to Italy.</span>
+
+| 1. <span class="premise">Bill and Barb are married.</span>
+| <span class="conclusion">Bill is Barb's husband.</span>
+
+| 1. <span class="premise">Charlotte's Web is a children's novel about a pig named Wilbur who is saved from being slaughtered by an intelligent spider named Charlotte. </span>
+| <span class="conclusion">In C.W., Charlotte saves Wilbur.</span>
+
+| 1. <span class="premise">John saw the man on the mountain with a telescope.</span>
+| <span class="conclusion">The man on the mountain has a telescope.</span>
+
+If we are to get very far with formal logic, we will need to have a way of
+dealing with ambiguity. The key idea here come from
+a mathematician-philosopher, named Gottlob Frege. Frege's idea was this.
+Because natural languages contain ambiguous sentences, we need a special
+artificial language for the purpose of studying logical consequence. Such
+a language should be free of ambiguity. Each sentence should have exactly one
+meaning, and exactly one logical form. If we could devise such a language, then
+we could say clearly and systematically which arguments are formally valid.
+Such a language is called a *formal* language.
+
+In order to design an unambiguous formal language language, we need to get some
+grip on the sources of ambiguity in natural language. That way, we can make
+sure to prevent those sources from including ambiguity in our formal language.
+What are the sources of ambiguity? Let's consider another example.
+
+>   "I shot an elephant in my pajamas"[^2] 
+
+[^2]:: See [The Marx Brothers Video](http://www.youtube.com/watch?v=NfN_gcjGoJo).
+
+What makes this sentence ambiguous is that it is not clear which words are
+meant to modify which other words. The sentence might be read in one of two
+ways, either as:
+
+<div style="display: table; margin: 0 auto">
+
+```{#img1 .latex .tikz}
+\begin{center}
+\begin{tikzpicture}
+\Tree [.{``I shot an elephant in my pajamas''}
+		{``I''}
+		[.{``shot an elephant''}
+			{``shot''}
+			{``an elephant''}
+		]
+		{``in my pajamas''}
+	]
+\end{tikzpicture}
+\end{center}
+```
+
+</div>
+
+Or alternatively, as
+
+<div style="display: table; margin: 0 auto">
+
+```{#img2 .latex .tikz}
+\begin{center}
+\begin{tikzpicture}
+\Tree[.{``I shot an elephant in my pajamas''}
+		{``I''}
+		{``shot''}
+		[.{``an elephant in my pajamas''}
+			{``an elephant''}
+			{``in my pajamas''}	
+		]
+	]
+\end{tikzpicture}
+\end{center}
+```
+</div>
+
+The meaning of the sentence depends on how we read it. Of course, we can
+eliminate the ambiguity by specifying which of the trees above we intend. But
+this is pretty awkward. A better way to eliminate the ambiguity is to use
+*parentheses* to stick together the units that are supposed to go
+together---the units that we do not unpack until further down the tree. 
+
+So we might express the first reading of the sentence by writing "I shot (an
+elephant in my pajamas)", and the second by writing "I (shot an elephant) in my
+pajamas".[^3]
+
+[^3]:: This idea may seem unfamiliar, but it is actually something
+that you have been doing for a long time. If you know the difference between
+"$(2 + 2) \times 2$" and "$2 + (2 \times 2)$" then you know how to disambiguate
+language by using parentheses.
+
+Our formal language will make use of parentheses for the same purpose.
+
+##Our Formal Language
+
+It will pay to start simple. So we will begin by building our formal language
+out of just two types of ingredients: *assertions*, and *connectives*.
+Assertions are simple true or false statements of fact. For example "The atomic
+number of gold is 79" is an assertion. So is "The atomic number of gold is 32",
+and "the air conditioner is noisy". Some things that are not assertions are "Do
+your homework!" and "Who's the number one marching band drummer of all time?".
+Connectives are expressions that can be used to combine assertions into complex
+assertions. Some examples of connectives are "and", "or" "if ...
+then ...", and "if and only if". We can use them to stick
+together sentences like this:
+
+1. If <span style="color: blue;"> I go to work </span> then <span
+   style="color:red"> I will pass by Detroit</span>.
+2. If <span style="color: blue;">I dance a jig</span> then <span
+   style="color:red;">I will amuse onlookers</span>.
+3. <span style="color: blue;">There's a storm outside</span> and <span
+   style="color: red;">hail is beginning to come down</span>.
+4. <span style="color: blue;">You're in</span> or <span
+   style="color:red;">you're out</span>.
+
+Another connective is "it is not the case that". This connective is a bit odd,
+because it does not serve to connect two sentences. But it is, nevertheless,
+useful for forming new assertions out of old ones. For example, we can take
+"there's a cat on the roof", and get "It's not the case that there's a cat on
+the roof".
+
+Even with this small set of ingredients, however, ambiguity is possible. Consider:
+
+>   "Jack R. was in town and the night watchman saw him or nobody saw Jack R."
+
+Does this sentence imply that Jack R. was in town? It depends on which of the following two ways we read it:
+
+(@) "(Jack R. was in town and the night watchman saw him) or nobody saw Jack R."
+(@) "Jack R. was in town and (the night watchman saw him or nobody saw Jack R.)"
+
+The first doesn't imply that Jack R. was in town. The second does. If we are to
+avoid this kind of unclarity, we are also going to need to include parentheses
+in our language, in order to make sure that the structure of each assertion of
+our language has exactly one clear meaning.
+
+The last consideration is efficiency. We want to be able to write down our
+sentences quickly, and to see their structure at a glance. So it will be
+helpful to be rather minimalistic about what we use to represent the assertions
+and connectives of our language. 
+
+Let us use, to represent assertions in our language, single capital letters
+$P,Q, R,..., Z$. If we need more, let's make them by adding a little subscript
+to letters that we already have: $P_1, P_2,...$. That way, we will have as many
+assertion letters as we need. Let's also abbreviate the connectives of our
+language. Let's use just the five connectives from before, and write
+
+1. "$\land$" for "and"
+2. "$\lor$" for "or"
+3. "$\rightarrow$" for "if ... then ..."
+4. "$\leftrightarrow$" for "if and only if"
+5. "$\sim$" for "it is not the case that"
+
+This tells us what the ingredients in our language will be: assertion letters,
+connective symbols, and parentheses. But how should we put them together? Here,
+we need to be careful. It must be clear how to extract the structure of
+a sentence from how we write it. In order to be sure that this is possible, we
+must adhere to the following two rules in building sentences:
+
+1. Every sentence letter "$P, Q, R, ..., Z, P_1, Q_1, R_1, ..., Z_1, P_2,...$"
+   is a grammatical assertion.
+2. We may build a grammatical assertion:
+    a.  by taking two grammatical assertions we already have, putting an
+        $\land,\lor,\rightarrow$ or $\leftrightarrow$ between, and wrapping the
+        result in parentheses;
+
+        *For example, $(P\land R)$ is a grammatical assertion.*
+
+    b.  by taking one grammatical assertions we already have, and putting
+        a $\sim$ in front.
+
+        *For example, $\sim P$ is a grammatical assertion, as is $\sim (P\land R)$.
+        Notice that adding $\sim$ does not require us to add new parentheses.*
+
+Every grammatical assertion in our language **must be constructed according to
+these two rules.** No other assertions will count as grammatical (we will
+eventually allow for some abbreviations---but for an abbreviated sentence to be
+an abbreviation of a sentence constructed according to the two rules above). We
+call those assertions which can be built by merely repeatedly applying the two
+rules above *sentences in official notation*.
+
+Official Notation
+
+:   A sentence is in official notation when it is built by merely repeatedly
+    applying rules one and two above.
+
+We can, notice, easily recover the tree that should be associated with
+a sentence by thinking about the order in which that sentence must have been
+created. For example, consider the sentence $((P\lor Q)\lor R)$. This must have
+been built by first taking a $P$ and $Q$ and sticking them together, then
+taking an $R$ and sticking that on. So it has the tree: 
+
+<div style="display: table; margin: 0 auto">
+```{#img3 .latex .tikz}
+\begin{center}
+\begin{tikzpicture}
+\Tree[.{$((P\lor Q)\lor R)$}
+		[.{$(P\lor Q)$}
+			$P$
+			$Q$
+		]
+		$R$
+	]
+\end{tikzpicture}
+\end{center}
+```
+</div>
+
+In general we can recover the tree of a sentence by finding the last connective
+which was added, breaking it up into the one or two sentences that it was made
+out of, and repeating. To take another example: in the sentence $(((P\lor
+Q)\lor R)\rightarrow S)$, the connective $\rightarrow$ must have been added
+last (since it is wrapped in only one set of parentheses). So we can break the
+sentence up as 
+
+<div style="display: table; margin: 0 auto">
+```{#img4 .latex .tikz}
+\begin{center}
+\begin{tikzpicture}
+\Tree[.{$(((P\lor Q)\lor R)\rightarrow S)$}
+		[.{$(((P\lor Q)\lor R)$}
+		]
+		$S$
+	]
+\end{tikzpicture}
+\end{center}
+```
+</div>
+
+In $(((P\lor Q)\lor R)$, the $\lor$ must have been added last (since it is
+wrapped only once), so we can break as:
+
+<div style="display: table; margin: 0 auto">
+```{#img5 .latex .tikz}
+\begin{center}
+\begin{tikzpicture}
+\Tree[.{$(((P\lor Q)\lor R)\rightarrow S)$}
+		[.{$(((P\lor Q)\lor R)$}
+			[.{$(P\lor Q)$}
+			]
+		$R$
+		]
+		$S$
+	]
+\end{tikzpicture}
+\end{center}
+```
+</div>
+
+Finally, in $(P\lor Q)$, $\lor$ was obviously added last. So we have:
+
+<div style="display: table; margin: 0 auto">
+```{#img6 .latex .tikz}
+\begin{center}
+\begin{tikzpicture}
+\Tree[.{$(((P\lor Q)\lor R)\rightarrow S)$}
+		[.{$(((P\lor Q)\lor R)$}
+			[.{$(P\lor Q)$}
+				$P$
+				$Q$
+			]
+		$R$
+		]
+		$S$
+	]
+\end{tikzpicture}
+\end{center}
+```
+</div>
+
+We call the last connective to be added the *main connective* of the assertion.
+
+Main Connective
+
+:   The *main connective of a sentence in official notation* is the last
+    connective to be added in the process of building that sentence up.
+
+Sentences in official notation are very clear---it is easy to find their
+structure. They can sometimes seem a bit cluttered, though. For example, do we
+really need the outer parentheses in the sentence "$(P\land Q)$"? Would
+"$P\land Q$" be any less clear? The answer is obviously no. So, next week, we
+will introduce some simplification rules---kind of like PEMDAS---that will let
+us know when we can afford to leave out the extra parentheses.

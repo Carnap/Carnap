@@ -1,18 +1,12 @@
 {-#LANGUAGE TypeFamilies, UndecidableInstances, FlexibleInstances, MultiParamTypeClasses, FunctionalDependencies, AllowAmbiguousTypes, GADTs, KindSignatures, DataKinds, PolyKinds, TypeOperators, ViewPatterns, PatternSynonyms, RankNTypes, FlexibleContexts, ScopedTypeVariables, AutoDeriveTypeable, DefaultSignatures #-}
 
 module Carnap.Core.Data.AbstractSyntaxDataTypes(
-  -- * Abstract Typeclasses
-  -- ** Classes for Semantics
-  Modelable(..), Evaluable(..),
-  lift1, lift2,
-  -- ** Classes for Display
-  CopulaSchema(..), CanonicalForm(..), Schematizable(..),
-   Term(..), Form(..),
-  BoundVars(..),
   -- * Abstract Types
   -- $ATintro
   -- ** Language Building Types
-  Copula((:$:), Lam), (:|:)(..), Fix(Fx), FixLang, EndLang, pattern AOne,
+  Term(..), Form(..), 
+  Copula((:$:), Lam), CopulaSchema(..), MaybeMonadVar(..),
+  (:|:)(..), Fix(Fx), FixLang, EndLang, pattern AOne,
   pattern ATwo, pattern AThree, pattern LLam, pattern (:!$:), pattern Fx1,
   pattern Fx2, pattern Fx3, pattern Fx4, pattern Fx5, pattern Fx6, pattern
   Fx7, pattern Fx8, pattern Fx9, pattern Fx10, pattern Fx11, pattern Lx1,
@@ -20,90 +14,24 @@ module Carnap.Core.Data.AbstractSyntaxDataTypes(
   Lx7, pattern Lx8, pattern Lx9, pattern Lx10, pattern Lx11, pattern FX,
   -- ** Abstract Term Types
   -- *** Variable Binding Operators
-  Quantifiers(Bind),Abstractors(Abstract),Applicators(Apply),
-  -- *** Non-Binding Operators
-  Arity(AZero, ASucc),
-  Predicate(Predicate),
-  Connective(Connective), Function(Function),
-  Subnective(Subnective),
-  SubstitutionalVariable(SubVar),
-  LangTypes2(..), LangTypes1(..), RelabelVars(..),
+  Quantifiers(Bind),Abstractors(Abstract),Applicators(Apply), BoundVars(..),
+  -- *** Non-Binding Operators 
+  Arity(AZero, ASucc), Predicate(Predicate), Connective(Connective), 
+  Function(Function), Subnective(Subnective), SubstitutionalVariable(SubVar),  
+  -- * Generic Programming Utilities
+  LangTypes2(..), LangTypes1(..), RelabelVars(..), FirstOrderLex(..),
 ) where
 
 import Carnap.Core.Util
 import Data.Typeable
+import Carnap.Core.Unification.Unification
 import Control.Lens
+import Carnap.Core.Data.AbstractSyntaxClasses
+import Control.Monad.State (get, put, State)
 import qualified Control.Monad.State.Lazy as S
 
 --This module attempts to provide abstract syntax types that would cover
 --a wide variety of languages
-
---------------------------------------------------------
---1. Abstract typeclasses
---------------------------------------------------------
-
-{-|
-Evaluable data  can be assigned a semantic value.  In the case of a formula
-(e.g. `2 + 2 = 4 :: Arithmetic (Form True)`)---an this might be for
-example, a truth value (in this case, `True`). In the case of a term, (e.g.
-`2 + 2 :: Arithmetic (Term Int)`), this might be for, example, an integer
-(in this case, `4`)
--}
-class Evaluable f where
-    eval :: f a -> a
-
-{-|
-Modelable data can be assigned a semantic value, but only relative to
-a model---for example, in propositional logic `P_1 ∧ P_2 ::
-PropositionalLogic (Form True)` has a truth value relative to an assignment
-of truth values to truth values (which can be represented by a function
-`Int -> Bool`
--}
-class Modelable m f where
-    satisfies :: m -> f a -> a
-
-class Liftable f where
-    lift :: a -> f a
-
-lift1 :: (Evaluable f, Liftable f) => (a -> b) -> (f a -> f b)
-lift1 f = lift . f . eval
-
-lift2 :: (Evaluable f, Liftable f) => (a -> b -> c) -> (f a -> f b -> f c)
-lift2 f fa fb = lift (f (eval fa) (eval fb))
-
-{-|
-Schematizable data are associated with a way to take a list of strings
-associated with other data and bind them together to produce a new
-string representing the original datum combined with the other data. for
-example, the plus symbol might be schematized by a function `\(x:y:zs) ->
-x ++ " + " ++ y`. That means that when symbol is combined with
-some other data, say, the numerals 1 and 2, then the result will be
-represented by "1 + 2"
--}
-class Schematizable f where
-    schematize :: f a -> [String] -> String
-
-class CopulaSchema lang where
-    appSchema :: lang (t -> t') -> lang t -> [String] -> String
-    default appSchema :: (Schematizable lang, Show (lang t)) => lang (t -> t') -> lang t -> [String] -> String
-    appSchema x y e = schematize x (show y : e)
-    liftSchema :: Copula lang t -> [String] -> String
-    lamSchema = error "how did you even do this?"
-    lamSchema :: (lang t -> lang t') -> [String] -> String
-    liftSchema = error "should not print a lifted value"
-
-{-|
-CanonicalForm is a typeclass for data which can be put in a canonical form.
-For example, the canonical form of sentence of quantified logic might be
-a formula in which the variables are labeled sequentially.
--}
-class CanonicalForm a where
-    canonical :: a -> a
-    canonical = id
-
---------------------------------------------------------
---2. Abstract Types
---------------------------------------------------------
 
 -- $ATintro
 -- Here are some types for abstract syntax. The basic proposal
@@ -117,7 +45,7 @@ class CanonicalForm a where
 -- denotations in those models
 
 --------------------------------------------------------
---2.1 Language Building Types
+--1.1 Language Building Types
 --------------------------------------------------------
 
 {-|
@@ -135,6 +63,15 @@ data Copula lang t where
     Lam :: (Typeable t, Typeable t') => (lang t -> lang t') -> Copula lang (t -> t')
     Lift :: t -> Copula lang t
 
+class CopulaSchema lang where
+    appSchema :: lang (t -> t') -> lang t -> [String] -> String
+    default appSchema :: (Schematizable lang, Show (lang t)) => lang (t -> t') -> lang t -> [String] -> String
+    appSchema x y e = schematize x (show y : e)
+    lamSchema :: (Typeable t, Typeable t') => (lang t -> lang t') -> [String] -> String
+    lamSchema = error "how did you even do this?"
+    liftSchema :: Copula lang t -> [String] -> String
+    liftSchema = error "should not print a lifted value"
+
 {-|
 this is type acts a disjoint sum/union of two functors
 it carries though the phantom type as well
@@ -149,7 +86,7 @@ infixr 5 :|:
 -- | phantom type. note that only certian kinds of functors even have a kind
 -- | such that the first argument is fixable
 data Fix f idx where
-    Fx :: f (Fix f) idx -> Fix f idx
+    Fx ::  Typeable idx => f (Fix f) idx -> Fix f idx
 
 -- | This is an empty abstract type, which can be used to close off
 -- | a series of applications of `:|:`, so that the right-most leaf
@@ -187,11 +124,11 @@ pattern Fx12 x     = FX (Lx12 x)
 pattern FX x = Fx (FRight x)
 
 --------------------------------------------------------
---2.2 Abstract Operator Types
+--1.2 Abstract Operator Types 
 --------------------------------------------------------
 
 --------------------------------------------------------
---2.2.1 Variable Binding Operators
+--1.2.1 Variable Binding Operators
 --------------------------------------------------------
 
 data Quantifiers :: (* -> *) -> (* -> *) -> * -> * where
@@ -204,19 +141,18 @@ data Applicators :: (* -> *) -> (* -> *) -> * -> * where
     Apply :: app (t (a -> b) -> t a -> t b) -> Applicators app lang (t (a -> b) -> t a -> t b)
 
 {-|
-This typeclass needs to provide a way of getting bound variables,
-which will display binding positions, a way of substituting bound
-variables, and a way of getting a bound variable uniquely determined by
-the "Height" of a certain binder---how many binders occur below it in
-a parsing tree.
+This typeclass needs to provide a way of replacing bound variables within
+a given expression, and a way of getting a bound variable uniquely
+determined by the scope of a given binder, in such a way that none of the
+binders in its subformulas will determine the same variable.
+
+It's used to create generic @Traversal@s and @Plated@ instances, via LangTypes
 -}
 class BoundVars g where
-        getBoundVar :: FixLang g ((a -> b) -> c) -> FixLang g (a -> b) -> FixLang g a
-        getBoundVar = error "you need to define a language-specific getBoundVar function"
         subBoundVar :: FixLang g a -> FixLang g a -> FixLang g b -> FixLang g b
         subBoundVar _ _ = id
-        getBindHeight:: FixLang g ((a -> b) -> c) -> FixLang g (a -> b) -> FixLang g a
-        getBindHeight = error "you need to define a language-specific getBindHeight function"
+        scopeUniqueVar :: Typeable a => FixLang g ((a -> b) -> c) -> FixLang g (a -> b) -> FixLang g a
+        scopeUniqueVar = error "you need to define a language-specific scopeUniqueVar function"
 
 data Term a = Term a
     deriving(Eq, Ord, Show)
@@ -237,7 +173,7 @@ instance Liftable Form where
     lift = Form
 
 --------------------------------------------------------
---2.2.2 Non-Binding Operators
+--1.2.2 Non-Binding Operators
 --------------------------------------------------------
 
 -- | think of this as a type constraint. the lang type, model type, and number
@@ -251,15 +187,13 @@ pattern AOne = ASucc AZero
 pattern ATwo = ASucc AOne
 pattern AThree = ASucc ATwo
 
-instance Show (Arity arg ret n ret') where
-        show AZero = "0"
-        show (ASucc n) = show . inc . read . show $ n
-            where inc :: Int -> Int
-                  inc = (+) 1
 
-data TArity :: * -> * -> Nat -> * -> * where
-    TZero :: Typeable ret => TArity arg ret Zero ret
-    TSucc :: (Typeable ret, Typeable arg, Typeable ret') => TArity arg ret n ret' -> TArity arg ret (Succ n) (arg -> ret')
+arityInt :: Arity arg ret n ret' -> Int
+arityInt AZero = 0
+arityInt (ASucc n) = arityInt n + 1
+
+instance Show (Arity arg ret n ret') where
+        show = show . arityInt
 
 data Predicate :: (* -> *) -> (* -> *) -> * -> * where
     Predicate :: pred t -> Arity (Term a) (Form b) n t -> Predicate pred lang t
@@ -278,14 +212,14 @@ data SubstitutionalVariable :: (* -> *) -> * -> * where
 
 --data Quote :: (* -> *) -> * -> *
     --Quote :: (lang )
+ 
 --------------------------------------------------------
---3. Schematizable, Show, and Eq
+--2. Schematizable, Show, and Eq
 --------------------------------------------------------
 
 instance Schematizable (SubstitutionalVariable lang)  where
         schematize (SubVar n) = const $ "α_" ++ show n
 
---dummy instance for a type with no constructors
 instance Schematizable (EndLang lang) where
         schematize = undefined
 
@@ -344,9 +278,6 @@ instance Schematizable func => Show (Function func lang a) where
 instance Schematizable sub => Show (Subnective sub lang a) where
         show x = schematize x []
 
---instance -# OVERLAPPING #- Schematizable ((Copula :|: f1) a) => Eq ((Copula :|: f1) a b) where
-        --x == y = show x == show y
-
 instance Schematizable quant => Eq (Quantifiers quant lang a) where
         x == y = show x == show y
 
@@ -365,13 +296,8 @@ instance Schematizable sub => Eq (Subnective sub lang a) where
 instance (Schematizable (f a), Schematizable (g a)) => Eq ((f :|: g) a b) where
         x == y = show x == show y
 
-instance  (CanonicalForm (FixLang f a), Show (FixLang f a)) => Eq (FixLang f a) where
-        x == y = show (canonical x) == show (canonical y)
-
---}
-
 --------------------------------------------------------
---4. Evaluation and Modelable
+--3. Evaluation and Modelable
 --------------------------------------------------------
 instance Evaluable (SubstitutionalVariable lang)  where
         eval _ = error "It should not be possible to evaluate a substitutional variable"
@@ -397,7 +323,6 @@ instance Evaluable app => Evaluable (Applicators app lang) where
 instance Evaluable sub => Evaluable (Subnective sub lang) where
     eval (Subnective p a) = eval p
 
---dummy instance for a type with no constructors
 instance Evaluable (EndLang lang) where
         eval = undefined
 
@@ -457,64 +382,218 @@ instance (Liftable lang, Modelable m lang) => Modelable m (Copula lang) where
     satisfies m (Lift t) = t
 
 --------------------------------------------------------
+--4. First Order Lexicon
+--------------------------------------------------------
+
+class UniformlyEq f => FirstOrderLex f where
+    isVarLex :: f a -> Bool
+    isVarLex _ = False
+    sameHeadLex :: f a -> f b -> Bool
+    sameHeadLex = (=*)
+
+class Monad m => MaybeMonadVar f m where
+        maybeFresh :: Typeable a => Maybe (m (f a))
+        maybeFresh = Nothing 
+
+instance UniformlyEq (SubstitutionalVariable idx) where
+
+        (SubVar n) =* (SubVar m) = n == m
+
+instance FirstOrderLex (SubstitutionalVariable idx)
+
+-- instance {-# OVERLAPS #-} MonadVar f m => MaybeMonadVar f m where
+--         maybeFresh = fresh
+--         hasFresh _ = True
+
+instance {-# OVERLAPPABLE #-} Monad m => MaybeMonadVar f m where
+        maybeFresh = Nothing
+
+instance Monad m => MaybeMonadVar (SubstitutionalVariable idx) (S.StateT Int m)
+        where maybeFresh = Just $ do n <- get
+                                     put (n+1)
+                                     return $ SubVar n
+
+instance UniformlyEq quant => UniformlyEq (Quantifiers quant lang) where
+        (Bind q) =* (Bind q') = q =* q'
+
+instance (UniformlyEq quant, FirstOrderLex quant) => FirstOrderLex (Quantifiers quant lang) where
+        isVarLex (Bind q) = isVarLex q
+
+instance Monad m => MaybeMonadVar (Quantifiers quant lang) m
+
+instance UniformlyEq app => UniformlyEq (Applicators app lang) where
+        (Apply f) =* (Apply f') = f =* f'
+
+instance (UniformlyEq app, FirstOrderLex app) => FirstOrderLex (Applicators app lang) where
+        isVarLex (Apply f) = isVarLex f
+
+instance Monad m => MaybeMonadVar (Applicators app lang) m
+        
+instance UniformlyEq abs => UniformlyEq (Abstractors abs lang) where
+        (Abstract a) =* (Abstract b) = a =* b
+
+instance (UniformlyEq abs, FirstOrderLex abs) => FirstOrderLex (Abstractors abs lang) where
+        isVarLex (Abstract a) = isVarLex a
+
+instance Monad m => MaybeMonadVar (Abstractors app lang) m
+
+instance UniformlyEq pred => UniformlyEq (Predicate pred lang) where
+        (Predicate p a) =* (Predicate p' a') =
+            arityInt a == arityInt a' && p =* p'
+
+instance (UniformlyEq pred, FirstOrderLex pred) => FirstOrderLex (Predicate pred lang) where
+        isVarLex (Predicate p a) = isVarLex p
+
+instance Monad m => MaybeMonadVar (Predicate pred lang) m
+
+instance UniformlyEq con => UniformlyEq (Connective con lang) where
+        (Connective c a) =* (Connective c' a') = 
+            arityInt a == arityInt a' && c =* c'
+
+instance (UniformlyEq con, FirstOrderLex con) => FirstOrderLex (Connective con lang) where
+        isVarLex (Connective c a) = isVarLex c
+
+instance Monad m => MaybeMonadVar (Connective con lang) m
+
+instance UniformlyEq func => UniformlyEq (Function func lang) where
+        (Function f a) =* (Function f' a') = 
+            arityInt a == arityInt a' && f =* f'
+
+instance (UniformlyEq func, FirstOrderLex func) => FirstOrderLex (Function func lang) where
+        isVarLex (Function f a) = isVarLex f
+
+instance Monad m => MaybeMonadVar (Function func lang) m
+
+instance UniformlyEq sub => UniformlyEq (Subnective sub lang) where
+        (Subnective s a) =* (Subnective s' a') = 
+            arityInt a == arityInt a' && s =* s'
+
+instance FirstOrderLex sub => FirstOrderLex (Subnective sub lang) where
+        isVarLex (Subnective s a) = isVarLex s
+
+instance Monad m => MaybeMonadVar (Subnective sub lang) m
+        
+instance UniformlyEq (EndLang idx) where
+        (=*) = undefined
+
+instance FirstOrderLex (EndLang idx) where
+        sameHeadLex = undefined
+        
+instance Monad m => MaybeMonadVar (EndLang idx) m
+
+instance ( UniformlyEq (f idx)
+         , UniformlyEq (g idx)) => UniformlyEq ((f :|: g) idx) where
+
+        (FLeft a) =* (FLeft b) = a =* b
+        (FRight a) =* (FRight b) = a =* b
+        _ =* _ = False
+
+instance ( UniformlyEq (f idx), UniformlyEq (g idx),
+        FirstOrderLex (f idx) , FirstOrderLex (g idx)) => FirstOrderLex ((f :|: g) idx) where
+        isVarLex (FLeft a) = isVarLex a
+        isVarLex (FRight a) = isVarLex a
+
+        sameHeadLex (FLeft x) (FLeft y) = sameHeadLex x y
+        sameHeadLex (FRight x) (FRight y) = sameHeadLex x y
+        sameHeadLex _ _ = False
+
+instance (MaybeMonadVar (g idx) m, MaybeMonadVar (f idx) m) => MaybeMonadVar ((f :|: g) idx) m where
+        maybeFresh = case (maybeFresh  :: Typeable a => Maybe (m (f idx a)), maybeFresh :: Typeable b => Maybe (m (g idx b))) of
+                         (Just l ,_) -> Just $ fmap FLeft l
+                         (_, Just r ) -> Just $ fmap FRight r
+                         _ -> Nothing
+
+instance (UniformlyEq lang, FirstOrderLex lang) => UniformlyEq (Copula lang) where
+        (h :$: t ) =* (h' :$: t') = h =* h' && t =* t'
+        Lam g =* Lam h = error "sorry, can't directly compare these. Try the fixpoint."
+
+instance (UniformlyEq lang, FirstOrderLex lang) => FirstOrderLex (Copula lang)
+        where
+
+        sameHeadLex ((x :: lang (t1  -> t2 )) :$: _) 
+                    ((y :: lang (t1' -> t2')) :$: _) = 
+            case eqT :: Maybe ((t1 -> t2) :~: (t1' -> t2')) of
+                Just Refl -> sameHeadLex x y
+                Nothing -> False
+        sameHeadLex _ _ = False
+
+instance Monad m => MaybeMonadVar (Copula lang) m
+
+instance {-# OVERLAPPABLE #-} (UniformlyEq ((Copula :|: f) (FixLang f))
+         , MaybeMonadVar ((Copula :|: f) (FixLang f)) (State Int))
+         => UniformlyEq (FixLang f) where
+             x =* y = S.evalState (stateEq x y) 0
+                where 
+                    stateEq :: FixLang f a -> FixLang f b -> State Int Bool
+                    stateEq (x :!$: y) (x' :!$: y') = return $ x =* x' && y =* y'
+                    stateEq (LLam (f :: FixLang f t1 -> FixLang f t1')) (LLam (g :: FixLang f t2 -> FixLang f t2')) =
+                        case (eqT :: Maybe (t1 :~: t2), maybeFresh :: Maybe (State Int ((Copula :|: f) (FixLang f) ()))) of 
+                            (Just Refl, Just _) -> do let (Just fresh) = maybeFresh :: Maybe (State Int ((Copula :|: f) (FixLang f) t1))
+                                                      v <- fresh
+                                                      stateEq (f (Fx v)) (g (Fx v))
+                            _ -> return False
+                    stateEq (Fx x) (Fx y) = return $ x =* y
+
+instance FirstOrderLex ((Copula :|: f) (FixLang f)) => FirstOrderLex (FixLang f) where
+
+        isVarLex (Fx x) = isVarLex x
+
+        sameHeadLex (Fx x) (Fx y) = sameHeadLex x y
+
+instance MaybeMonadVar ((Copula :|: f) (FixLang f)) m => MonadVar (FixLang f) m where
+        fresh = case maybeFresh :: Typeable a => Maybe (m (((Copula :|: f) (FixLang f)) a)) of
+                    Just fsh -> fmap Fx fsh
+                    Nothing -> error "you need substitutional variables in your language for this"
+
+instance {-# OVERLAPPABLE #-} (MonadVar (FixLang f) (State Int), FirstOrderLex (FixLang f)) => FirstOrder (FixLang f) where
+        
+        isVar = isVarLex
+
+        sameHead = sameHeadLex
+
+        decompose a b
+            | sameHead a b = recur a b []
+            | otherwise = []
+            where 
+                  recur :: FixLang f a -> FixLang f b -> [Equation (FixLang f)]
+                    ->[Equation (FixLang f)]
+                  recur (x :!$: (y :: FixLang f t)) 
+                        (x' :!$: (y' :: FixLang f t')) 
+                        terms = case eqT :: Maybe (t :~: t') of
+                                    Just Refl -> recur x x' ((y :=: y') : terms) 
+                                    Nothing -> []
+                  recur _ _ terms = terms
+
+        occurs phi psi@(x :!$: y)= occursImproperly phi x || occursImproperly phi y
+            where occursImproperly :: FixLang f a -> FixLang f b -> Bool
+                  occursImproperly phi psi@(x :!$: y) = phi =* psi 
+                                                         || occursImproperly phi x 
+                                                         || occursImproperly phi y
+                  occursImproperly phi psi = phi =* psi
+        --might want a clause for LLam
+        occurs phi psi = False
+
+        subst a@(Fx _ :: FixLang f t) b@(Fx _ :: FixLang f t') c@(Fx _ :: FixLang f t'')
+            | a =* c = case eqT :: Maybe (t' :~: t'') of
+                           Just Refl -> b
+                           Nothing -> c
+            | otherwise = case c of
+                           (x :!$: y) -> subst a b x :!$: subst a b y
+                           (LLam f) -> LLam $ \x -> subst sv x $ subst a b $ f sv
+                                where sv = nth $ height (LLam f)
+                           _ -> c
+            where --XXX:Might want to just break this off into the data utility module
+                  height :: FixLang f a -> Int
+                  height (x :!$: y) = max (height x) (height y)
+                  height (LLam f) = height (f (nth 0)) + 1
+                  height _ = 0
+
+                  nth :: Typeable a => Int -> FixLang f a
+                  nth = S.evalState fresh
+
+--------------------------------------------------------
 --Head Extractors and a Generic Plated Instance.
 --------------------------------------------------------
-class Searchable f l where
-        castArity :: (Typeable idx) => TArity a b n t -> f l idx -> Maybe (f l t)
-        castArity _ _ = Nothing
-
-instance Searchable (Predicate pred) lang where
-        castArity  (TZero :: TArity a b n t) f@(Predicate p (a2 :: Arity (Term a1) (Form b1) n1 idx)) =
-            case eqT :: Maybe (t :~: idx) of
-                Just Refl -> Just f
-                Nothing -> Nothing
-        castArity  ((TSucc TZero) :: TArity a b n t) f@(Predicate p (a2 :: Arity (Term a1) (Form b1) n1 idx)) =
-            case eqT :: Maybe (t :~: idx) of
-                Just Refl -> Just f
-                Nothing -> Nothing
-        castArity  ((TSucc(TSucc TZero)) :: TArity a b n t) f@(Predicate p (a2 :: Arity (Term a1) (Form b1) n1 idx)) =
-            case eqT :: Maybe (t :~: idx) of
-                Just Refl -> Just f
-                Nothing -> Nothing
-        castArity _ _ = Nothing
-
-instance Searchable (Connective con) lang where
-        castArity (TZero :: TArity a b n t) f@(Connective c (a2 :: Arity (Form a1) (Form b1) n1 idx)) =
-            case eqT :: Maybe (t :~: idx) of
-                Just Refl -> Just f
-                Nothing -> Nothing
-        castArity ((TSucc TZero) :: TArity a b n t) f@(Connective c (a2 :: Arity (Form a1) (Form b1) n1 idx)) =
-            case eqT :: Maybe (t :~: idx) of
-                Just Refl -> Just f
-                Nothing -> Nothing
-        castArity ((TSucc (TSucc TZero)) :: TArity a b n t) f@(Connective c (a2 :: Arity (Form a1) (Form b1) n1 idx)) =
-            case eqT :: Maybe (t :~: idx) of
-                Just Refl -> Just f
-                Nothing -> Nothing
-        castArity _ _ = Nothing
-
-instance Searchable (Function con) lang
-
-instance Searchable (Subnective sub) lang
-
-instance Searchable (Quantifiers quant) lang
-
-instance Searchable (Abstractors abs) lang
-
-instance Searchable (Applicators app) lang
-
-instance Searchable EndLang lang
-
-instance Searchable Copula lang
-
-instance (Searchable f l, Searchable g l ) =>
-        Searchable (f :|: g) l where
-        castArity     ar (FLeft a)  = FLeft  <$> castArity ar a
-        castArity     ar (FRight a) = FRight <$> castArity ar a
-
-getHead :: (Typeable idx1, Searchable f (Fix f)) => TArity a b n idx -> Fix f idx1 -> Maybe (Fix f idx)
-getHead ar (Fx c) = Fx <$> castArity ar c
---TODO: type-safe specializations of this
 
 (.*$.) :: (Applicative g, Typeable a, Typeable b) => g (FixLang f (a -> b)) -> g (FixLang f a) -> g (FixLang f b)
 x .*$. y = (:!$:) <$> x <*> y
@@ -541,11 +620,11 @@ class (Typeable syn1, Typeable sem1, Typeable syn2, Typeable sem2, BoundVars f) 
                    case ( eqT :: Maybe (t' :~: syn1 sem1)
                         , eqT :: Maybe (t' :~: syn2 sem2)) of
                             (Just Refl, _) -> (\x y -> x :!$: LLam y) <$> pure q <*> modify h
-                               where bv = getBindHeight q (LLam h)
+                               where bv = scopeUniqueVar q (LLam h)
                                      abstractBv f = \x -> (subBoundVar bv x f)
                                      modify h = abstractBv <$> (g $ h bv)
                             (_ , Just Refl) -> (\x y -> x :!$: LLam y) <$> pure q <*> modify h
-                               where bv = getBindHeight q (LLam h)
+                               where bv = scopeUniqueVar q (LLam h)
                                      abstractBv f = \x -> (subBoundVar bv x f)
                                      modify h = abstractBv <$> (difChildren2 g $ h bv)
                             _ -> pure phi
@@ -580,11 +659,11 @@ class (Typeable syn1, Typeable sem1, Typeable syn2, Typeable sem2, BoundVars f) 
                    case ( eqT :: Maybe (t' :~: syn1 sem1)
                         , eqT :: Maybe (t' :~: syn2 sem2)) of
                             (Just Refl, _) -> (\x y -> x :!$: LLam y) <$> pure q <*> modify h
-                               where bv = getBindHeight q (LLam h)
+                               where bv = scopeUniqueVar q (LLam h)
                                      abstractBv f = \x -> (subBoundVar bv x f)
                                      modify h = abstractBv <$> (g $ h $ bv)
                             (_ , Just Refl) -> (\x y -> x :!$: LLam y) <$> pure q <*> modify h
-                               where bv = getBindHeight q (LLam h)
+                               where bv = scopeUniqueVar q (LLam h)
                                      abstractBv f = \x -> (subBoundVar bv x f)
                                      modify h = abstractBv <$> (difChildren2 g $ h $ bv)
                             _ -> pure phi
@@ -620,7 +699,7 @@ class (Typeable syn1, Typeable sem1, BoundVars f) => LangTypes1 f syn1 sem1 wher
         simChildren1 g phi@(q :!$: LLam (h :: FixLang f t -> FixLang f t')) =
                    case eqT :: Maybe (t' :~: syn1 sem1) of
                             Just Refl -> (\x y -> x :!$: LLam y) <$> pure q <*> modify h
-                               where bv = getBindHeight q (LLam h)
+                               where bv = scopeUniqueVar q (LLam h)
                                      abstractBv f = \x -> (subBoundVar bv x f)
                                      modify h = abstractBv <$> (g $ h $ bv)
                             _ -> pure phi

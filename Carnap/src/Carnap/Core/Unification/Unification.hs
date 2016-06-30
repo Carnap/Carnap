@@ -4,17 +4,18 @@ module Carnap.Core.Unification.Unification (
    Equation((:=:)), FirstOrder, HigherOrder,
    isVar, sameHead, decompose, occurs, subst,
    matchApp, castLam, getLamVar, (.$.),
-   applySub, mapAll, freshVars,
-   EveryPig(EveryPig), unEveryPig, ExtApp(ExtApp),
-   AnyPig(AnyPig), freeVars, UError(..)
+   applySub, founify, mapAll 
 ) where
 
 import Data.Type.Equality
-import Carnap.Core.Util
 import Data.Typeable
+import Carnap.Core.Data.AbstractSyntaxClasses (Schematizable(..))
 
 data Equation f where
-    (:=:) :: (Typeable a, FirstOrder f) => f a -> f a -> Equation f
+    (:=:) :: f a -> f a -> Equation f
+
+instance Schematizable f => Show (Equation f) where
+        show (x :=: y) = schematize x [] ++ " :=: " ++ schematize y []
 
 --this interface seems simpliar for the user to implement than our previous
 --1. There is no more varible type
@@ -34,7 +35,6 @@ class FirstOrder f where
     decompose :: f a -> f a -> [Equation f]
     occurs :: f a -> f b -> Bool
     subst :: f a -> f a -> f b -> f b
-    freshVars :: [EveryPig f] --we need to universially quantify this
 
 data ExtApp f a where
     ExtApp :: f (b -> a) -> f b -> ExtApp f a
@@ -46,9 +46,20 @@ class FirstOrder f => HigherOrder f where
     (.$.) :: f (a -> b) -> f a -> f b
 
 data UError f where
-    SubError :: FirstOrder f => f a -> f a -> UError f -> UError f
-    MatchError :: FirstOrder f => f a -> f a -> UError f
-    OccursError :: FirstOrder f => f a -> f a -> UError f
+    SubError :: f a -> f a -> UError f -> UError f
+    MatchError ::  f a -> f a -> UError f
+    OccursError :: f a -> f a -> UError f
+
+instance Schematizable f => Show (UError f) where
+        show (SubError x y e) =  show e ++ "with suberror"
+                                 ++ schematize x [] ++ ", " 
+                                 ++ schematize y []
+        show (MatchError x y) = "Match Error:"
+                                 ++ schematize x [] ++ ", " 
+                                 ++ schematize y []
+        show (OccursError x y) = "OccursError: " 
+                                 ++ schematize x [] ++ ", " 
+                                 ++ schematize y []
 
 emap :: (forall a. f a -> f a) -> Equation f -> Equation f
 emap f (x :=: y) = f x :=: f y

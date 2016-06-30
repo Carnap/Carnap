@@ -3,6 +3,7 @@
 module Carnap.Core.Examples.ToyLanguages where
 
 import Carnap.Core.Data.AbstractSyntaxDataTypes
+import Carnap.Core.Data.AbstractSyntaxClasses
 import Control.Lens (Plated)
 import Data.Typeable (Typeable)
 
@@ -147,11 +148,8 @@ instance BoundVars (Predicate BasicProp
                        :|: Quantifiers BasicQuant
                        :|: Function BasicTerm
                        :|: EndLang) where
-    getBoundVar (TQuant (All v)) _ = TVar v
-    getBoundVar _ _ = undefined
-
     --XXX: placeholder, not correct
-    getBindHeight = getBoundVar
+    scopeUniqueVar = undefined
 
     subBoundVar a@(TVar _) b@(TVar _) (x :==: y) = 
         (if x == a then b else x) :==: (if y == a then b else y)
@@ -183,6 +181,12 @@ instance CanonicalForm ToyForm where
 
 instance CanonicalForm ToyTerm where
         canonical = id
+
+instance Eq ToyForm where
+        x == y = canonical x == canonical y
+
+instance Eq ToyTerm where
+        x == y = canonical x == canonical y
  
 --------------------------------------------------------
 --1.2 Functions
@@ -291,11 +295,8 @@ instance BoundVars (Applicators Application
                           :|: Function IntObject
                           :|: Function SimpleTerm
                           :|: EndLang) where
-    getBoundVar (SAbstract (Abs v)) _ = SBlank v
-    getBoundVar _ _ = undefined
-
     --XXX:placeholder, not correct
-    getBindHeight = getBoundVar
+    scopeUniqueVar = undefined
     
     subBoundVar _ _ phi = phi
 

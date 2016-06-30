@@ -8,6 +8,7 @@ module Carnap.Core.Examples.ACUI (
 ) where
 
 import Carnap.Core.Data.AbstractSyntaxDataTypes
+import Carnap.Core.Data.AbstractSyntaxClasses
 import Carnap.Core.Unification.Unification
 import Carnap.Core.Unification.ACUI
 import Carnap.Core.Unification.FirstOrder
@@ -47,21 +48,41 @@ instance Ord V where
 --So this language has no singeltons but that comes next
 data Set a where
     Empty :: Set (Term V)
-    Singelton :: Set (Term V -> Term V)
+    Singleton :: Set (Term V -> Term V)
     Union :: Set (Term V -> Term V -> Term V)
 
+instance UniformlyEq Set where
+        Empty =* Empty = True
+        Singleton =* Singleton = True
+        Union =* Union = True
+        _ =* _ = False
+
+instance FirstOrderLex Set
+
+instance Monad m => MaybeMonadVar Set m where
+        maybeFresh = Nothing
+
 instance Schematizable Set where
-    schematize Singelton (x:_) = "{" ++ x ++ "}"
+    schematize Singleton (x:_) = "{" ++ x ++ "}"
     schematize Empty  _        = "{}"
     schematize Union  (x:y:_)  = x ++ " ∪ " ++ y
 
 instance Evaluable Set where
     eval Empty = Term ev
     eval Union = \(Term t) (Term t') -> Term (uv t t')
-    eval Singelton = \(Term t) -> Term (sv t)
+    eval Singleton = \(Term t) -> Term (sv t)
 
 data Var lang a where
     SomeSet :: String -> Var lang (Term V)
+
+instance UniformlyEq (Var lang) where
+    (SomeSet x) =* (SomeSet y) = x == y
+
+instance FirstOrderLex (Var lang) where
+        isVarLex (SomeSet _) = True
+
+instance Monad m => MaybeMonadVar (Var lang) m where
+        maybeFresh = Nothing
 
 instance Schematizable (Var lang) where
     schematize (SomeSet s) _ = s
@@ -88,7 +109,7 @@ type VTerm = VLang (Term V)
 
 pattern VEmpty = Fx1 (Function Empty AZero)
 pattern VSomeSet s = Fx2 (SomeSet s)
-pattern VSingelton x = Fx1 (Function Singelton AOne) :!$: x
+pattern VSingleton x = Fx1 (Function Singleton AOne) :!$: x
 pattern VUnion x y = Fx1 (Function Union ATwo) :!$: x :!$: y
 pattern SV n = Fx3 (SubVar n)
 pattern VUnFunc s x = Fx4 (Function (ConstUnFunc s) AOne) :!$: x
@@ -97,7 +118,6 @@ pattern VBinFunc s x y = Fx4 (Function (ConstBinFunc s) ATwo) :!$: x :!$: y
 instance LangTypes1 VLex Term V
 
 instance BoundVars VLex where
-  getBoundVar = undefined
   subBoundVar = undefined
 
 instance CopulaSchema VLang where
@@ -109,8 +129,8 @@ instance Monoid (VLang (Term V)) where
     mempty = VEmpty
     mappend = VUnion
 
-instance CanonicalForm (VLang a) where
-    canonical = id
+instance Eq (VLang a) where
+    (==) = (=*)
 
 instance ACUI VLang (Term V) where
     unfoldTerm (VUnion x y) = unfoldTerm x ++ unfoldTerm y
@@ -179,8 +199,6 @@ instance FirstOrder VLang where
       | otherwise                  = orign
 
   freshVars = map (\n -> EveryPig (SV n)) [1..]
-
-
 
 parseUnion :: (Monad m) => ParsecT String u m (VTerm -> VTerm -> VTerm)
 parseUnion = do spaces
