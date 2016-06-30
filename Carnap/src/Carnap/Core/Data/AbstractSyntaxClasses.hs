@@ -52,6 +52,9 @@ class Schematizable f where
 class UniformlyEq f where
         (=*) :: f a -> f b -> Bool
 
+class UniformlyOrd f where
+        (<=*) :: f a -> f b -> Bool
+
 {-|
 CanonicalForm is a typeclass for data which can be put in a canonical form.
 For example, the canonical form of sentence of quantified logic might be

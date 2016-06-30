@@ -84,7 +84,7 @@ instance CanonicalForm PureForm
 instance Eq (PurePropLanguage a) where
         (==) = (=*)
 
-instance Ord (PurePropLanguage a) where
-        phi <= psi = show phi <= show psi
+instance UniformlyOrd PurePropLanguage where
+        phi <=* psi = show phi <= show psi
 
 instance LangTypes1 PurePropLexicon Form Bool
