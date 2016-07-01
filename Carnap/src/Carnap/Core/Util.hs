@@ -4,7 +4,7 @@ module Carnap.Core.Util(
     Nat(Zero, Succ), Vec(VNil, VCons),
     crossWith, bigCrossWith, bigCrossWithH,
     bigUnionWith, bigUnion,
-    EveryPig(..), AnyPig(..), UniformlyEq(..),
+    EveryPig(..), AnyPig(..),
     pop
 ) where
 
@@ -77,10 +77,10 @@ newtype EveryPig f = EveryPig {unEveryPig :: forall a. f a}
 data AnyPig f where
     AnyPig :: Typeable a => f a -> AnyPig f
 
-class UniformlyEq f where
-    eq :: f a -> f b -> Bool
-    eq x y = not (neq x y)
-    neq :: f a -> f b -> Bool
+--class UniformlyEq f where
+  --  eq :: f a -> f b -> Bool
+    --eq x y = not (neq x y)
+    --neq :: f a -> f b -> Bool
 
-instance UniformlyEq f => Eq (AnyPig f) where
-    (AnyPig x) == (AnyPig y) = eq x y
+--instance UniformlyEq f => Eq (AnyPig f) where
+  --  (AnyPig x) == (AnyPig y) = eq x y

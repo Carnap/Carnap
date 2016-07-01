@@ -13,6 +13,7 @@ import Carnap.Core.Unification.Unification
 import Carnap.Core.Unification.ACUI
 import Carnap.Core.Unification.FirstOrder
 import Carnap.Core.Unification.Combination
+import Carnap.Core.Util
 import qualified Data.Set as S
 import Data.Type.Equality
 import Data.Typeable
@@ -94,12 +95,19 @@ data Extra a where
     ConstUnFunc :: String -> Extra (Term V -> Term V)
     ConstBinFunc :: String -> Extra (Term V -> Term V -> Term V)
 
+instance UniformlyEq Extra where
+    (ConstUnFunc s)  =* (ConstUnFunc s')  = s == s'
+    (ConstBinFunc s) =* (ConstBinFunc s') = s == s'
+    _                =* _                 = False
+
 instance Schematizable Extra where
     schematize (ConstUnFunc s) (x:_)    = s ++ "(" ++ x ++ ")"
     schematize (ConstBinFunc s) (x:y:_) = s ++ "(" ++ x ++ "," ++ y ++ ")"
 
 instance Evaluable Extra where
     eval _ = error "don't do this, I too lazy to implement this"
+
+instance FirstOrderLex Extra
 
 type VLex = (Function Set :|: Var :|: SubstitutionalVariable :|: Function Extra :|: EndLang)
 
@@ -109,7 +117,7 @@ type VTerm = VLang (Term V)
 
 pattern VEmpty = Fx1 (Function Empty AZero)
 pattern VSomeSet s = Fx2 (SomeSet s)
-pattern VSingleton x = Fx1 (Function Singleton AOne) :!$: x
+pattern VSingelton x = Fx1 (Function Singleton AOne) :!$: x
 pattern VUnion x y = Fx1 (Function Union ATwo) :!$: x :!$: y
 pattern SV n = Fx3 (SubVar n)
 pattern VUnFunc s x = Fx4 (Function (ConstUnFunc s) AOne) :!$: x
@@ -163,6 +171,7 @@ instance Combineable VLang VLangLabel where
 --however in this case I'm just defining it directly
 --more work will be needed to define this for all
 --needed languages.
+{--
 instance FirstOrder VLang where
   isVar (SV _)       = True
   isVar (VSomeSet _) = True
@@ -198,7 +207,9 @@ instance FirstOrder VLang where
       | s == s'                    = new
       | otherwise                  = orign
 
-  freshVars = map (\n -> EveryPig (SV n)) [1..]
+  --freshVars = map (\n -> EveryPig (SV n)) [1..]
+
+--}
 
 parseUnion :: (Monad m) => ParsecT String u m (VTerm -> VTerm -> VTerm)
 parseUnion = do spaces
@@ -252,7 +263,7 @@ instance Show (Equation VLang) where
     show (a :=: b) = schematize a [] ++ " = " ++ schematize b []
 
 parseTerm s = let (Right term) = parse acuiParser "" s in term
-evalTerm m = evalState m freshVars
+evalTerm m = evalState m 0
 
 {--
 acuiDemo = do
