@@ -2,6 +2,7 @@
 module Carnap.Core.Data.AbstractSyntaxClasses
     where
 
+import Carnap.Core.Util
 import Data.Typeable
 
 --------------------------------------------------------
@@ -67,3 +68,4 @@ class CanonicalForm a where
 
 class Monad m => MonadVar f m where
     fresh :: Typeable a => m (f a)
+    freshPig :: m (EveryPig f)

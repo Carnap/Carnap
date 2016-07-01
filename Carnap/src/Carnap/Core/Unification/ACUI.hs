@@ -130,7 +130,7 @@ toSub :: (Typeable a, FirstOrder f) => [SimpleEquation (f a)] -> [Equation f]
 toSub []              = []
 toSub ((x :==: y):xs) = (x :=: y):(toSub xs)
 
-popVar :: State [EveryPig f] (f a)
+popVar :: Typeable a => State [EveryPig f] (f a)
 popVar = do
     v <- pop
     return $ unEveryPig v

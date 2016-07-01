@@ -1,4 +1,4 @@
-{-#LANGUAGE FlexibleContexts, RankNTypes,TypeOperators, ScopedTypeVariables, GADTs, MultiParamTypeClasses #-}
+{-#LANGUAGE ImpredicativeTypes, FlexibleContexts, RankNTypes,TypeOperators, ScopedTypeVariables, GADTs, MultiParamTypeClasses #-}
 
 module Carnap.Core.Data.Util (scopeHeight, equalizeTypes, incArity, checkChildren,
 mapover, (:~:)(Refl), Buds(..), Blossoms(..), betaReduce, sbetaReduce, bloom, sbloom, grow, betaGrow) where
@@ -6,6 +6,7 @@ mapover, (:~:)(Refl), Buds(..), Blossoms(..), betaReduce, sbetaReduce, bloom, sb
 --this module defines utility functions and typeclasses for manipulating
 --the data types defined in Core.Data
 
+import Carnap.Core.Util
 import Carnap.Core.Data.AbstractSyntaxDataTypes
 import Carnap.Core.Data.AbstractSyntaxClasses
 import Carnap.Core.Unification.Unification
@@ -97,6 +98,7 @@ sbetaReduce (LLam f) = do sv <- fresh
                           f' <- sbetaReduce $ f sv
                           return $ LLam $ \x -> subst x sv f'
 sbetaReduce z = return z
+
 --------------------------------------------------------
 --2. Random Syntax
 --------------------------------------------------------

@@ -2,6 +2,8 @@
 module Carnap.Languages.PureFirstOrder.Syntax 
 where
 
+import Carnap.Core.Util 
+import Control.Monad.State
 import Carnap.Core.Data.AbstractSyntaxDataTypes
 import Carnap.Core.Data.AbstractSyntaxClasses
 import Carnap.Core.Data.Util (scopeHeight)
@@ -105,6 +107,8 @@ pattern PV s           = PVar (Var s) AZero
 -- height (phi :->: psi)  = max (height phi) (height psi)
 -- height (phi :<->: psi) = max (height phi) (height psi)
 -- height _               = 0
+
+
 
 instance Schematizable (a (PureFirstOrderLanguageWith a)) => 
     CopulaSchema (PureFirstOrderLanguageWith a) where 

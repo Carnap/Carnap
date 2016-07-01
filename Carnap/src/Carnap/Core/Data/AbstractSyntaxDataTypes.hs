@@ -393,7 +393,9 @@ class UniformlyEq f => FirstOrderLex f where
 
 class Monad m => MaybeMonadVar f m where
         maybeFresh :: Typeable a => Maybe (m (f a))
-        maybeFresh = Nothing 
+        maybeFresh = Nothing
+        maybePig :: Maybe (m (EveryPig f))
+        maybePig = Nothing
 
 instance UniformlyEq (SubstitutionalVariable idx) where
 
@@ -412,6 +414,10 @@ instance Monad m => MaybeMonadVar (SubstitutionalVariable idx) (S.StateT Int m)
         where maybeFresh = Just $ do n <- get
                                      put (n+1)
                                      return $ SubVar n
+
+              maybePig = Just $ do n <- get
+                                   put (n + 1)
+                                   return $ EveryPig (SubVar n)
 
 instance UniformlyEq quant => UniformlyEq (Quantifiers quant lang) where
         (Bind q) =* (Bind q') = q =* q'
@@ -503,6 +509,14 @@ instance (MaybeMonadVar (g idx) m, MaybeMonadVar (f idx) m) => MaybeMonadVar ((f
                          (_, Just r ) -> Just $ fmap FRight r
                          _ -> Nothing
 
+        maybePig = case (maybePig :: Maybe (m (EveryPig (f idx))),  maybePig :: Maybe (m (EveryPig (g idx)))) of
+                       (Just l,_ ) -> Just $ do p <- l
+                                                return $ EveryPig (FLeft (unEveryPig p))
+                       (_, Just r) -> Just $ do p <- r
+                                                return $ EveryPig (FRight (unEveryPig p))
+
+                       _ -> Nothing
+
 instance (UniformlyEq lang, FirstOrderLex lang) => UniformlyEq (Copula lang) where
         (h :$: t ) =* (h' :$: t') = h =* h' && t =* t'
         Lam g =* Lam h = error "sorry, can't directly compare these. Try the fixpoint."
@@ -544,6 +558,10 @@ instance MaybeMonadVar ((Copula :|: f) (FixLang f)) m => MonadVar (FixLang f) m 
         fresh = case maybeFresh :: Typeable a => Maybe (m (((Copula :|: f) (FixLang f)) a)) of
                     Just fsh -> fmap Fx fsh
                     Nothing -> error "you need substitutional variables in your language for this"
+
+        freshPig = case maybePig :: Maybe (m (EveryPig ((Copula :|: f) (FixLang f)))) of 
+                    Just pig -> do p <- pig
+                                   return $ EveryPig (Fx (unEveryPig p))
 
 instance {-# OVERLAPPABLE #-} (MonadVar (FixLang f) (State Int), FirstOrderLex (FixLang f)) => FirstOrder (FixLang f) where
         
