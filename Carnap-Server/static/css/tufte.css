@@ -121,7 +121,7 @@ article { position: relative;
 section { padding-top: 1rem;
           padding-bottom: 1rem; }
 
-p, ol, ul, dt { font-size: 1.4rem; }
+p, ol, ul, dt, dd { font-size: 1.4rem; }
 
 dt {font-variant: small-caps;}
 
@@ -143,6 +143,12 @@ div.epigraph > blockquote > footer { font-style: normal; }
 
 div.epigraph > blockquote > footer > cite { font-style: italic; }
 
+div.algorithm {
+    background: #dfffff;
+    padding: 1pt 1pt 15pt 15pt ;
+
+}
+
 /* end chapter epigraphs styles */
 
 blockquote { font-size: 1.4rem; }
@@ -159,6 +165,8 @@ article > ol, article > ul  {
          -webkit-padding-end: 5%; }
 
 article > dl { width:55% }
+
+article > div { width:55% }
 
 dl dd, li p, dl p, { width: 100%; }
 
@@ -262,6 +270,7 @@ div.table-wrapper { overflow-x: auto;
                                        article > ol { width: 90%; }
                                        article > ul { width: 90%; }
                                        article > dl { width: 90%; }
+                                       article > div { width:95% }
                                        figure { max-width: 90%; }
                                        figcaption, figure.fullwidth figcaption { margin-right: 0%;
                                                                                  max-width: none; }
