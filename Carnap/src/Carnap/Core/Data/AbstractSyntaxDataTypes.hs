@@ -19,13 +19,14 @@ module Carnap.Core.Data.AbstractSyntaxDataTypes(
   Arity(AZero, ASucc), Predicate(Predicate), Connective(Connective), 
   Function(Function), Subnective(Subnective), SubstitutionalVariable(SubVar),  
   -- * Generic Programming Utilities
-  LangTypes2(..), LangTypes1(..), RelabelVars(..), FirstOrderLex(..),
+  LangTypes2(..), LangTypes1(..), RelabelVars(..), FirstOrderLex(..), PrismLink(..),
 ) where
 
 import Carnap.Core.Util
 import Data.Typeable
 import Carnap.Core.Unification.Unification
 import Control.Lens
+import Control.Monad ((>=>))
 import Carnap.Core.Data.AbstractSyntaxClasses
 import Control.Monad.State (get, put, State)
 import qualified Control.Monad.State.Lazy as S
@@ -595,7 +596,11 @@ instance {-# OVERLAPPABLE #-} (MonadVar (FixLang f) (State Int), FirstOrderLex (
                   nth = S.evalState fresh
 
 --------------------------------------------------------
---Head Extractors and a Generic Plated Instance.
+--5. Generic Traversals and Prisms
+--------------------------------------------------------
+
+--------------------------------------------------------
+--5.1 Traversals of similar children, plated instances
 --------------------------------------------------------
 
 (.*$.) :: (Applicative g, Typeable a, Typeable b) => g (FixLang f (a -> b)) -> g (FixLang f a) -> g (FixLang f b)
@@ -749,3 +754,41 @@ class (Plated (FixLang f (syn sem)), BoundVars f) => RelabelVars f syn sem where
 
     --XXX: could be changed to [[String]], with subBinder also returning an
     --index, in order to accomodate simultaneous relabelings of several types of variables
+
+--------------------------------------------------------
+--5.2 Prisms
+--------------------------------------------------------
+
+class PrismLink f g | g -> f where
+        raisePrism :: Typeable a => Prism' (g a) c -> Prism' (f a) c
+
+addConstructor :: (Typeable a) => (g a -> f a) -> (f a -> Maybe (g a)) -> Prism' (g a) c -> Prism' (f a) c
+addConstructor c unc p = prism' (c . review p)
+                                (unc >=> preview p) 
+
+instance PrismLink f f where
+        raisePrism = id
+
+instance PrismLink ((f :|: g) idx) (f idx) where
+        raisePrism = addConstructor FLeft unc
+            where unc (FLeft x) = Just x
+                  unc _ = Nothing
+
+instance PrismLink ((f :|: g) idx) (g idx) where
+        raisePrism = addConstructor FRight unc
+            where unc (FRight x) = Just x
+                  unc _ = Nothing
+
+--XXX:Doesn't work yet
+instance {-# INCOHERENT #-} (PrismLink f g, PrismLink g h) 
+        => PrismLink f h where
+        raisePrism p = raisePrism1 (raisePrism2 p) 
+            where raisePrism1 :: Typeable a => Prism' (g a) c -> Prism' (f a) c
+                  raisePrism1 = raisePrism 
+                  raisePrism2  :: Typeable a => Prism' (h a) c -> Prism' (g a) c
+                  raisePrism2 = raisePrism 
+
+instance PrismLink (FixLang f) (f (FixLang f)) where
+        raisePrism = addConstructor FX unc
+            where unc (FX x) = Just x
+                  unc _ = Nothing

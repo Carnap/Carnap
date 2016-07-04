@@ -8,6 +8,7 @@ import Carnap.Core.Data.Util (checkChildren)
 import Carnap.Core.Unification.Unification
 import Carnap.Languages.Util.LanguageClasses
 import Control.Lens.Plated (transform, children)
+import Control.Lens.Prism
 import Data.Typeable (Typeable)
 import Carnap.Languages.Util.GenericConnectives
 
@@ -87,4 +88,14 @@ instance Eq (PurePropLanguage a) where
 instance UniformlyOrd PurePropLanguage where
         phi <=* psi = show phi <= show psi
 
+--------------------------------------------------------
+--Optics
+--------------------------------------------------------
+
 instance LangTypes1 PurePropLexicon Form Bool
+
+predIndex :: Prism' (Predicate PureProp PurePropLanguage (Form Bool)) Int
+predIndex = prism' (\n -> Predicate (Prop n) AZero) pm
+    where pm :: Predicate PureProp idx (Form Bool) -> Maybe Int
+          pm (Predicate (Prop n) AZero) = Just n
+          pm _ = Nothing
