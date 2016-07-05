@@ -99,3 +99,7 @@ predIndex = prism' (\n -> Predicate (Prop n) AZero) pm
     where pm :: Predicate PureProp idx (Form Bool) -> Maybe Int
           pm (Predicate (Prop n) AZero) = Just n
           pm _ = Nothing
+
+
+propIndex :: Prism' (PurePropLanguage (Form Bool)) Int
+propIndex = raisePrism predIndex

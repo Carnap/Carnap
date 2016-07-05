@@ -759,36 +759,53 @@ class (Plated (FixLang f (syn sem)), BoundVars f) => RelabelVars f syn sem where
 --5.2 Prisms
 --------------------------------------------------------
 
-class PrismLink f g | g -> f where
-        raisePrism :: Typeable a => Prism' (g a) c -> Prism' (f a) c
+--A more specific type of prism, where the choice functor is guaranteed to
+--be @->@
+data Flag a f g where
+        Flag :: {checkFlag :: a} -> Flag a f g
 
-addConstructor :: (Typeable a) => (g a -> f a) -> (f a -> Maybe (g a)) -> Prism' (g a) c -> Prism' (f a) c
-addConstructor c unc p = prism' (c . review p)
-                                (unc >=> preview p) 
+class PrismLink f g where
+        raisePrism :: Typeable a => Prism' (g a) c -> Prism' (f a) c
+        pflag :: Flag Bool f g --const False indicates that this is the trivial select nothing prism
+
+-- addConstructor :: (Typeable a) => Prism'' (f a) (g a) -> 
+--     (Prism'' (h a) c -> Prism'' (g a) c) -> (Prism'' (h a) c -> Prism'' (f a) c)
+-- addConstructor p rp p' = p . rp p'
+
+instance {-# OVERLAPPABLE #-} PrismLink f g where
+        raisePrism = error "you need to define an instance of PrismLink to do this"
+        pflag = Flag False
 
 instance PrismLink f f where
         raisePrism = id
+        pflag = Flag True
 
-instance PrismLink ((f :|: g) idx) (f idx) where
-        raisePrism = addConstructor FLeft unc
-            where unc (FLeft x) = Just x
-                  unc _ = Nothing
+_FLeft :: Prism' ((f :|: g) idx a) (f idx a)
+_FLeft = prism' FLeft un
+    where un (FLeft s) = Just s
+          un _ = Nothing
 
-instance PrismLink ((f :|: g) idx) (g idx) where
-        raisePrism = addConstructor FRight unc
-            where unc (FRight x) = Just x
-                  unc _ = Nothing
+_FRight :: Prism' ((f :|: g) idx a) (g idx a)
+_FRight = prism' FRight un
+    where un (FRight s) = Just s
+          un _ = Nothing
 
---XXX:Doesn't work yet
-instance {-# INCOHERENT #-} (PrismLink f g, PrismLink g h) 
-        => PrismLink f h where
-        raisePrism p = raisePrism1 (raisePrism2 p) 
-            where raisePrism1 :: Typeable a => Prism' (g a) c -> Prism' (f a) c
-                  raisePrism1 = raisePrism 
-                  raisePrism2  :: Typeable a => Prism' (h a) c -> Prism' (g a) c
-                  raisePrism2 = raisePrism 
+instance (PrismLink (f idx) h, PrismLink (g idx) h) =>  PrismLink ((f :|: g) idx) h where
+        raisePrism
+            | checkFlag (pflag :: Flag Bool (f idx) h) = \p -> _FLeft . (rpl p)
+            | checkFlag (pflag :: Flag Bool (g idx) h) = \p -> _FRight . (rpr p)
+            | otherwise = error "no nontrivial PrismLink instances available"
+            where rpl = raisePrism :: Typeable a => Prism' (h a) c -> Prism' (f idx a) c
+                  rpr = raisePrism :: Typeable a => Prism' (h a) c -> Prism' (g idx a) c
 
-instance PrismLink (FixLang f) (f (FixLang f)) where
-        raisePrism = addConstructor FX unc
-            where unc (FX x) = Just x
-                  unc _ = Nothing
+        pflag = Flag $ checkFlag ((pflag :: Flag Bool (f idx) h)) || checkFlag ((pflag :: Flag Bool (g idx) h))
+
+_Fx :: Typeable a => Prism' (Fix f a) (f (Fix f) a)
+_Fx = prism' Fx un
+    where un (Fx s) = Just s
+
+instance (PrismLink (f (Fix f)) h) => PrismLink (Fix f) h where
+        raisePrism = \p -> _Fx . rp p
+            where rp = raisePrism :: Typeable a => Prism' (h a) c -> Prism' (f (Fix f) a) c
+
+        pflag = Flag $ checkFlag (pflag :: Flag Bool (f (Fix f)) h)
