@@ -4,4 +4,20 @@ extra-deps: [yesod-markdown-0.11.1]
 packages:
 - Carnap/
 - Carnap-Server/
+- Carnap-GHCJS/
 resolver: lts-6.2
+
+
+# #Uncomment this and run stack setup to install ghcjs; you can uncomment to
+# #build the Carnap-Web with ghcjs, by running `stack build Carnap-Web`. To
+# #build the Carnap-Web components without altering this file, use 
+# #`stack build --compiler ghcjs-0.2.0.20160414_ghc-7.10.3`Carnap-Web
+#
+# compiler: ghcjs-0.2.0.20160414_ghc-7.10.3
+# compiler-check: match-exact
+# setup-info:
+#   ghcjs:
+#     source:
+#       ghcjs-0.2.0.20160414_ghc-7.10.3:
+#         url: https://s3.amazonaws.com/ghcjs/ghcjs-0.2.0.20160414_ghc-7.10.3.tar.gz
+#         sha1: 6d6f307503be9e94e0c96ef1308c7cf224d06be3

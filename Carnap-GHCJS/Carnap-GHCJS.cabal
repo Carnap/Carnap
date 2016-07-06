@@ -1,0 +1,45 @@
+name:                Carnap-GHCJS
+version:             0.1.0.0
+synopsis:            GHCJS-compiled Components for Carnap Proof Assistant
+description:         Please see README.md
+license:             GPL-3
+author:              Jake Ehrlich, Graham Leach-Krouse
+maintainer:          gleachkr@gmail.com
+copyright:           2016 Jake Ehrlich, Graham Leach-Krouse
+category:            Web
+build-type:          Simple
+-- extra-source-files:
+cabal-version:       >=1.10
+
+library
+  hs-source-dirs:      src
+  exposed-modules:     Lib
+  build-depends:       base >= 4.7 && < 5
+  default-language:    Haskell2010
+
+executable Syntax-Check
+  synopsis:            Perform simple checks on syntax, using parsers
+  hs-source-dirs:      Syntax-Check
+  main-is:             Main.hs
+  ghc-options:         -threaded -rtsopts -with-rtsopts=-N
+  build-depends:       base
+                     , Carnap
+                     , ghcjs-dom
+                     , Carnap-GHCJS
+                     , transformers
+  default-language:    Haskell2010
+
+test-suite ghcjs-test
+  type:                exitcode-stdio-1.0
+  hs-source-dirs:      test
+  main-is:             Spec.hs
+  build-depends:       base
+                     , Carnap
+                     , Carnap-GHCJS
+                     , ghcjs-dom
+  ghc-options:         -threaded -rtsopts -with-rtsopts=-N
+  default-language:    Haskell2010
+
+source-repository head
+  type:     git
+  location: https://github.com/githubuser/ghcjs
