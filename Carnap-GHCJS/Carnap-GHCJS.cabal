@@ -18,13 +18,14 @@ library
   default-language:    Haskell2010
 
 executable Syntax-Check
-  synopsis:            Perform simple checks on syntax, using parsers
+  synopsis: blah
   hs-source-dirs:      Syntax-Check
   main-is:             Main.hs
   ghc-options:         -threaded -rtsopts -with-rtsopts=-N
   build-depends:       base
                      , Carnap
-                     , ghcjs-dom
+                     , ghcjs-dom == 0.2.4.0
+                     , parsec
                      , Carnap-GHCJS
                      , transformers
   default-language:    Haskell2010
