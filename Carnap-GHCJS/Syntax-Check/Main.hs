@@ -15,6 +15,7 @@ import GHCJS.DOM.Types
 import GHCJS.DOM.HTMLInputElement
 import GHCJS.DOM.Document (createElement, getBody)
 import GHCJS.DOM.Node
+import GHCJS.DOM.NodeList
 import GHCJS.DOM.Event
 import GHCJS.DOM.KeyboardEvent
 import GHCJS.DOM.EventM
@@ -24,13 +25,9 @@ import Control.Monad.IO.Class (liftIO)
 main :: IO ()
 main = runWebGUI $ \w -> 
             do (Just dom) <- webViewGetDomDocument w
-               (Just i) <- createElement dom (Just "input")
-               (Just o) <- createElement dom (Just "span")
                (Just b) <- getBody dom
-               echo     <- newListener $ echoTo tryParse o
-               addListener i keyUp echo False
-               appendChild b (Just i)
-               appendChild b (Just o)
+               mcheckers <- getCheckers b
+               mapM activateChecker mcheckers
                return ()
 
 echoTo :: IsElement element => (String -> String) -> element -> EventM HTMLInputElement KeyboardEvent ()
@@ -43,3 +40,27 @@ echoTo f o = do (Just t) <- target :: EventM HTMLInputElement KeyboardEvent (May
 tryParse s = unPack $ parse purePropFormulaParser "" s 
     where unPack (Right s) = show s
           unPack (Left e)  = show e
+
+listOfNodesByClass :: IsElement self => self -> String -> IO [Maybe Node]
+listOfNodesByClass elt c = do mnl <- getElementsByClassName elt c
+                              case mnl of 
+                                Nothing -> return []
+                                Just nl -> do l <- getLength nl
+                                              mapM (item nl) [0 .. l-1]
+
+getCheckers :: IsElement self => self -> IO [Maybe (Element, Element)]
+getCheckers b = do lspans <- listOfNodesByClass b "synchecker"
+                   mapM extractCheckers lspans
+        where extractCheckers Nothing = return Nothing
+              extractCheckers (Just span) = do mi <- getFirstElementChild (castToElement span)
+                                               case mi of
+                                                   Just i -> do mo <- getNextElementSibling i
+                                                                case mo of (Just o) -> return $ Just (i,o)
+                                                                           Nothing -> return Nothing
+                                                   Nothing -> return Nothing
+                
+
+activateChecker :: (IsElement element, IsElement t) => Maybe (t, element) -> IO ()
+activateChecker Nothing    = return ()
+activateChecker (Just (i,o)) = do echo <- newListener $ echoTo tryParse o
+                                  addListener i keyUp echo False
