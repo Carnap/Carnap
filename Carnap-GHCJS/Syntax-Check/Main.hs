@@ -27,8 +27,7 @@ main = runWebGUI $ \w ->
             do (Just dom) <- webViewGetDomDocument w
                (Just b) <- getBody dom
                mcheckers <- getCheckers b
-               mapM activateChecker mcheckers
-               return ()
+               mapM_ activateChecker mcheckers
 
 echoTo :: IsElement element => (String -> String) -> element -> EventM HTMLInputElement KeyboardEvent ()
 echoTo f o = do (Just t) <- target :: EventM HTMLInputElement KeyboardEvent (Maybe HTMLInputElement)
@@ -48,19 +47,21 @@ listOfNodesByClass elt c = do mnl <- getElementsByClassName elt c
                                 Just nl -> do l <- getLength nl
                                               mapM (item nl) [0 .. l-1]
 
-getCheckers :: IsElement self => self -> IO [Maybe (Element, Element)]
+getCheckers :: IsElement self => self -> IO [Maybe (Element, Element, [String])]
 getCheckers b = do lspans <- listOfNodesByClass b "synchecker"
                    mapM extractCheckers lspans
         where extractCheckers Nothing = return Nothing
-              extractCheckers (Just span) = do mi <- getFirstElementChild (castToElement span)
+              extractCheckers (Just span) = do let espan = castToElement span
+                                               mi <- getFirstElementChild espan
+                                               cn <- getClassName espan
                                                case mi of
                                                    Just i -> do mo <- getNextElementSibling i
-                                                                case mo of (Just o) -> return $ Just (i,o)
+                                                                case mo of (Just o) -> return $ Just (i,o,words cn)
                                                                            Nothing -> return Nothing
                                                    Nothing -> return Nothing
-                
 
-activateChecker :: (IsElement element, IsElement t) => Maybe (t, element) -> IO ()
+activateChecker :: (IsElement e1, IsElement e2) => Maybe (e1, e2,[String]) -> IO ()
 activateChecker Nothing    = return ()
-activateChecker (Just (i,o)) = do echo <- newListener $ echoTo tryParse o
-                                  addListener i keyUp echo False
+activateChecker (Just (i,o,classes))
+                | "echo" `elem` classes = do echo <- newListener $ echoTo tryParse o
+                                             addListener i keyUp echo False
