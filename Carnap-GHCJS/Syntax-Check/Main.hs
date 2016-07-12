@@ -1,8 +1,15 @@
+{-# LANGUAGE FlexibleContexts #-}
 module Main where
 
 import Lib
+import Carnap.Languages.Util.GenericParsers
 import Carnap.Languages.PurePropositional.Parser
+import Carnap.Languages.PurePropositional.Syntax
+import Carnap.Core.Data.AbstractSyntaxDataTypes
+import Carnap.Core.Data.AbstractSyntaxClasses
 import Text.Parsec
+import Text.Parsec.Error
+import Text.Parsec.Pos
 import GHCJS.DOM
 import GHCJS.DOM.Element
 --the import below is here to make ghc-mod work properly. GHCJS compiles
@@ -40,6 +47,36 @@ tryParse s = unPack $ parse purePropFormulaParser "" s
     where unPack (Right s) = show s
           unPack (Left e)  = show e
 
+tryMatch :: Element -> EventM HTMLInputElement KeyboardEvent ()
+tryMatch o = do (Just t) <- target :: EventM HTMLInputElement KeyboardEvent (Maybe HTMLInputElement)
+                (Just ival)  <- getValue t
+                (Just ohtml) <- getInnerHTML o
+                case matchMC ival ohtml of
+                    Right b -> if b then (liftIO $ putStrLn "success!") else (liftIO $ putStrLn "failure..")
+                    Left e -> liftIO $ putStrLn (show e)
+
+
+parseConnective :: Monad m => ParsecT String u m String
+parseConnective = choice [getAnd, getOr, getIff, getIf, getNeg]
+    where tstringsToTry :: Monad m => [String] -> PurePropLanguage a -> ParsecT String u m String
+          tstringsToTry l c = stringsToTry l (show c)
+          getAnd = tstringsToTry ["/\\", "∧", "^", "&", "and"]  PAnd
+          getOr  = tstringsToTry ["\\/", "∨", "v", "|", "or"]  POr
+          getIf  = tstringsToTry [ "=>", "->", ">", "→", "only if"]  PIf
+          getIff = tstringsToTry [ "<=>",  "<->", "<>", "↔", "if and only if"]  PIff
+          getNeg = do spaces
+                      _ <- string "-" <|> string "~" <|> string "¬" <|> string "not "
+                      return (show (PNot :: PurePropLanguage (Form Bool-> Form Bool)))
+
+matchMC :: String -> String -> Either ParseError Bool
+matchMC c f = do con <- parse parseConnective "" c
+                 fm  <- parse purePropFormulaParser "" f
+                 mc  <- mcOf fm
+                 return $ con == mc
+        where mcOf :: (Schematizable (f (FixLang f)), CopulaSchema (FixLang f)) => FixLang f a -> Either ParseError String
+              mcOf (h :!$: t) = mcOf h
+              mcOf h = Right (show h)
+
 listOfNodesByClass :: IsElement self => self -> String -> IO [Maybe Node]
 listOfNodesByClass elt c = do mnl <- getElementsByClassName elt c
                               case mnl of 
@@ -60,8 +97,12 @@ getCheckers b = do lspans <- listOfNodesByClass b "synchecker"
                                                                            Nothing -> return Nothing
                                                    Nothing -> return Nothing
 
-activateChecker :: (IsElement e1, IsElement e2) => Maybe (e1, e2,[String]) -> IO ()
+activateChecker :: Maybe (Element, Element,[String]) -> IO ()
 activateChecker Nothing    = return ()
 activateChecker (Just (i,o,classes))
-                | "echo" `elem` classes = do echo <- newListener $ echoTo tryParse o
-                                             addListener i keyUp echo False
+                | "echo" `elem` classes  = do echo <- newListener $ echoTo tryParse o
+                                              addListener i keyUp echo False
+                | "match" `elem` classes = do match <- newListener $ tryMatch o
+                                              addListener i keyUp match False
+                | otherwise = return () 
+activateChecker _ = Prelude.error "impossible"

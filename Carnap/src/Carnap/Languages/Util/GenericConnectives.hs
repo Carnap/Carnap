@@ -115,11 +115,16 @@ data BooleanConn b a where
         Not :: BooleanConn b (Form b -> Form b)
 
 instance Schematizable (BooleanConn b) where
-        schematize Iff = \(x:y:_) -> "(" ++ x ++ " ↔ " ++ y ++ ")"
-        schematize If  = \(x:y:_) -> "(" ++ x ++ " → " ++ y ++ ")"
-        schematize Or = \(x:y:_) -> "(" ++ x ++ " ∨ " ++ y ++ ")"
-        schematize And = \(x:y:_) -> "(" ++ x ++ " ∧ " ++ y ++ ")"
-        schematize Not = \(x:_) -> "¬" ++ x
+        schematize Iff (x:y:_)  = "(" ++ x ++ " ↔ " ++ y ++ ")"
+        schematize Iff []       = "↔"
+        schematize If  (x:y:_)  = "(" ++ x ++ " → " ++ y ++ ")"
+        schematize If  []       = "→"
+        schematize Or  (x:y:_)  = "(" ++ x ++ " ∨ " ++ y ++ ")"
+        schematize Or  []       = "∨"
+        schematize And (x:y:_)  = "(" ++ x ++ " ∧ " ++ y ++ ")"
+        schematize And []       = "∧"
+        schematize Not (x:_)    = "¬" ++ x
+        schematize Not []       = "¬"
 
 instance UniformlyEq (BooleanConn b) where
         And =* And = True 
