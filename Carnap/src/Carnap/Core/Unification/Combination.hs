@@ -6,6 +6,7 @@ module Carnap.Core.Unification.Combination (
   substitutions, equiv, getLabels, combine
 ) where
 
+import Carnap.Core.Data.AbstractSyntaxClasses
 import Carnap.Core.Unification.Unification
 import Carnap.Core.Util
 import Control.Monad.State
@@ -20,15 +21,15 @@ data LabelPair f where
 
 type Labeling f = [LabelPair f]
 
-type UniFunction f = Labeling f -> [Equation f] -> State [EveryPig f] [[Equation f]]
+type UniFunction f m = Labeling f -> [Equation f] -> m [[Equation f]]
 
 class (FirstOrder f, Eq label) => Combineable f label | f -> label where
     getLabel :: f a -> label
-    getAlgo :: label -> UniFunction f
+    getAlgo :: MonadVar f m => label -> UniFunction f m
     replaceChild :: f a -> EveryPig f -> Int -> f a
 
 --first we need to split apart the terms into multiple equations
-abstract :: (Typeable a, Combineable f label) => f a -> State [EveryPig f] (f a, [Equation f])
+abstract :: (MonadVar f m, Typeable a, Combineable f label) => f a -> m (f a, [Equation f])
 abstract term
     | isVar term = return $ (term, [])
     | otherwise = do
@@ -38,16 +39,16 @@ abstract term
                             | otherwise    = [a :=: b]
           replace tm (n, (l :=: _))
               | isVar l                   = return tm
-              | getLabel l /= getLabel tm = pop >>= \v -> return $ replaceChild tm v n
+              | getLabel l /= getLabel tm = freshPig >>= \v -> return $ replaceChild tm v n
               | otherwise                 = return tm
 
 --this breaks down a set of equations into so called "pure" equations
 --namely they only contain function symbols from a single equational theory
-pureAbstract :: Combineable f label => [Equation f] -> State [EveryPig f] [Equation f]
+pureAbstract :: (MonadVar f m, Combineable f label) => [Equation f] -> m [Equation f]
 pureAbstract ((a :=: b):eqs) = do
     (pureA, newA) <- abstract a
     (pureB, newB) <- abstract b
-    v <- pop
+    v <- freshPig
     rest <- pureAbstract $ newA ++ newB ++ eqs
     let top = [unEveryPig v :=: pureA, unEveryPig v :=: pureB]
     return (top ++ rest)
@@ -130,7 +131,7 @@ getEqLabel (a :=: b) | isVar a   = getLabel b
                      | otherwise = getLabel a
 
 --solves a system of equations for a fixed theory if given a labeling
-solveEqs :: Combineable f label => Labeling f -> [Equation f] -> State [EveryPig f] [[Equation f]]
+solveEqs :: (MonadVar f m, Combineable f label) => Labeling f -> [Equation f] -> m [[Equation f]]
 solveEqs labeling (eq:eqs) = getAlgo (getEqLabel eq) labeling (eq:eqs)
 
 --weaves a though a 2D list making a 1D path simalar to how you map
@@ -148,7 +149,7 @@ weave xss = go xss 1
 --it would be less dense if I could handle this case by case in a loop
 --yielding ansers as I went such that the results were woven togethor for me
 --I might refactor all of this to do that
-combine :: Combineable f label => [Equation f] -> State [EveryPig f] [[Equation f]]
+combine :: (MonadVar f m, Combineable f label) => [Equation f] -> m [[Equation f]]
 combine eqs = do
     pureEqs <- pureAbstract eqs
     let vars = getVars pureEqs
