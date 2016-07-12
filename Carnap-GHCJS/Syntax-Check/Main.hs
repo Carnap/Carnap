@@ -31,7 +31,7 @@ import GHCJS.DOM.Event
 import GHCJS.DOM.KeyboardEvent
 import GHCJS.DOM.EventM
 import GHCJS.DOM.EventTarget
-import Control.Monad.IO.Class (liftIO)
+import Control.Monad.IO.Class (MonadIO, liftIO)
 
 main :: IO ()
 main = runWebGUI $ \w -> 
@@ -47,31 +47,22 @@ echoTo f o = do (Just t) <- target :: EventM HTMLInputElement KeyboardEvent (May
                     Nothing -> return ()
                     Just v -> liftIO $ setInnerHTML o (fmap f mv)
 
-tryParse s = unPack $ parse purePropFormulaParser "" s 
-    where unPack (Right s) = show s
-          unPack (Left e)  = show e
 
 tryMatch :: Element -> IORef (PureForm,[PureForm]) -> EventM HTMLInputElement KeyboardEvent ()
-tryMatch o ref = do kbe      <- event
-                    id       <- getKeyIdentifier kbe
-                    if id == "Enter" 
-                        then do 
-                            (Just t) <- target :: EventM HTMLInputElement KeyboardEvent (Maybe HTMLInputElement)
-                            (Just ival)  <- getValue t
-                            setValue t (Just "")
-                            forms <- liftIO $ readIORef ref
-                            case snd forms of
-                                [] -> setInnerHTML o (Just "success!")
-                                x:xs -> case matchMC ival x of
-                                    Right b -> if b then do
-                                        case children x of 
+tryMatch o ref = onEnter $ do (Just t) <- target :: EventM HTMLInputElement KeyboardEvent (Maybe HTMLInputElement)
+                              (Just ival)  <- getValue t
+                              (f,forms) <- liftIO $ readIORef ref
+                              case forms of
+                                  [] -> setInnerHTML o (Just "success!")
+                                  x:xs -> case matchMC ival x of
+                                      Right b -> if b then do
+                                          case children x of 
+                                               [] -> shorten xs
+                                               children -> updateGoal (children ++ xs)
+                                          else resetGoal
+                                      Left e -> case children x of
                                              [] -> shorten xs
-                                             children -> updateGoal (children ++ xs)
-                                        else resetGoal
-                                    Left e -> case children x of
-                                           [] -> shorten xs
-                                           _ -> return ()
-                        else return ()
+                                             _ -> return ()
         where updateGoal xs = do liftIO $ modifyIORef ref (_2 .~ xs)
                                  setInnerHTML o (Just $ intercalate " " $ map show xs)
               shorten xs = case xs of [] -> liftIO $ setInnerHTML o (Just "success!") 
@@ -100,20 +91,13 @@ matchMC c f = do con <- parse parseConnective "" c
               mcOf (h :!$: t) = mcOf h
               mcOf h = Right (show h)
 
-listOfNodesByClass :: IsElement self => self -> String -> IO [Maybe Node]
-listOfNodesByClass elt c = do mnl <- getElementsByClassName elt c
-                              case mnl of 
-                                Nothing -> return []
-                                Just nl -> do l <- getLength nl
-                                              mapM (item nl) [0 .. l-1]
 
 getCheckers :: IsElement self => self -> IO [Maybe (Element, Element, [String])]
-getCheckers b = do lspans <- listOfNodesByClass b "synchecker"
+getCheckers b = do lspans <- getListOfElementsByClass b "synchecker"
                    mapM extractCheckers lspans
         where extractCheckers Nothing = return Nothing
-              extractCheckers (Just span) = do let espan = castToElement span
-                                               mi <- getFirstElementChild espan
-                                               cn <- getClassName espan
+              extractCheckers (Just span) = do mi <- getFirstElementChild span
+                                               cn <- getClassName span
                                                case mi of
                                                    Just i -> do mo <- getNextElementSibling i
                                                                 case mo of (Just o) -> return $ Just (i,o,words cn)
@@ -123,7 +107,7 @@ getCheckers b = do lspans <- listOfNodesByClass b "synchecker"
 activateChecker :: Maybe (Element, Element,[String]) -> IO ()
 activateChecker Nothing    = return ()
 activateChecker (Just (i,o,classes))
-                | "echo" `elem` classes  = do echo <- newListener $ echoTo tryParse o
+                | "echo" `elem` classes  = do echo <- newListener $ echoTo (tryParse purePropFormulaParser) o
                                               addListener i keyUp echo False
                 | "match" `elem` classes = do Just ohtml <- getInnerHTML o
                                               let (Right f) = parse purePropFormulaParser "" ohtml
@@ -132,3 +116,31 @@ activateChecker (Just (i,o,classes))
                                               addListener i keyUp match False
                 | otherwise = return () 
 activateChecker _ = Prelude.error "impossible"
+
+--------------------------------------------------------
+--Functions that should go in a library
+--------------------------------------------------------
+--
+
+onEnter :: EventM HTMLInputElement KeyboardEvent () ->  EventM HTMLInputElement KeyboardEvent ()
+onEnter action = do kbe      <- event
+                    id       <- getKeyIdentifier kbe
+                    if id == "Enter" then do action
+                                     else return ()
+
+clearInput :: (MonadIO m) => HTMLInputElement -> m ()
+clearInput i = setValue i (Just "")
+
+
+--XXX: one might also want to include a "mutable lens" or "mutable traversal"
+--kind of thing: http://stackoverflow.com/questions/18794745/can-i-make-a-lens-with-a-monad-constraint
+getListOfElementsByClass :: IsElement self => self -> String -> IO [Maybe Element]
+getListOfElementsByClass elt c = do mnl <- getElementsByClassName elt c
+                                    case mnl of 
+                                        Nothing -> return []
+                                        Just nl -> do l <- getLength nl
+                                                      mapM ((fmap . fmap) castToElement . item nl) [0 .. l-1]
+
+tryParse p s = unPack $ parse p "" s 
+    where unPack (Right s) = show s
+          unPack (Left e)  = show e
