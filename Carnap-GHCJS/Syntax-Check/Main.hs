@@ -7,6 +7,10 @@ import Carnap.Languages.PurePropositional.Parser
 import Carnap.Languages.PurePropositional.Syntax
 import Carnap.Core.Data.AbstractSyntaxDataTypes
 import Carnap.Core.Data.AbstractSyntaxClasses
+import Data.IORef
+import Data.List (intercalate)
+import Control.Lens
+import Control.Lens.Plated (children)
 import Text.Parsec
 import Text.Parsec.Error
 import Text.Parsec.Pos
@@ -47,14 +51,34 @@ tryParse s = unPack $ parse purePropFormulaParser "" s
     where unPack (Right s) = show s
           unPack (Left e)  = show e
 
-tryMatch :: Element -> EventM HTMLInputElement KeyboardEvent ()
-tryMatch o = do (Just t) <- target :: EventM HTMLInputElement KeyboardEvent (Maybe HTMLInputElement)
-                (Just ival)  <- getValue t
-                (Just ohtml) <- getInnerHTML o
-                case matchMC ival ohtml of
-                    Right b -> if b then (liftIO $ putStrLn "success!") else (liftIO $ putStrLn "failure..")
-                    Left e -> liftIO $ putStrLn (show e)
-
+tryMatch :: Element -> IORef (PureForm,[PureForm]) -> EventM HTMLInputElement KeyboardEvent ()
+tryMatch o ref = do kbe      <- event
+                    id       <- getKeyIdentifier kbe
+                    if id == "Enter" 
+                        then do 
+                            (Just t) <- target :: EventM HTMLInputElement KeyboardEvent (Maybe HTMLInputElement)
+                            (Just ival)  <- getValue t
+                            setValue t (Just "")
+                            forms <- liftIO $ readIORef ref
+                            case snd forms of
+                                [] -> setInnerHTML o (Just "success!")
+                                x:xs -> case matchMC ival x of
+                                    Right b -> if b then do
+                                        case children x of 
+                                             [] -> shorten xs
+                                             children -> updateGoal (children ++ xs)
+                                        else resetGoal
+                                    Left e -> case children x of
+                                           [] -> shorten xs
+                                           _ -> return ()
+                        else return ()
+        where updateGoal xs = do liftIO $ modifyIORef ref (_2 .~ xs)
+                                 setInnerHTML o (Just $ intercalate " " $ map show xs)
+              shorten xs = case xs of [] -> liftIO $ setInnerHTML o (Just "success!") 
+                                      _  -> updateGoal xs
+              resetGoal = do (f,xs) <- liftIO $ readIORef ref
+                             liftIO $ writeIORef ref (f, [f])
+                             setInnerHTML o (Just $ show f)
 
 parseConnective :: Monad m => ParsecT String u m String
 parseConnective = choice [getAnd, getOr, getIff, getIf, getNeg]
@@ -68,10 +92,9 @@ parseConnective = choice [getAnd, getOr, getIff, getIf, getNeg]
                       _ <- string "-" <|> string "~" <|> string "¬" <|> string "not "
                       return (show (PNot :: PurePropLanguage (Form Bool-> Form Bool)))
 
-matchMC :: String -> String -> Either ParseError Bool
+matchMC :: String -> PureForm -> Either ParseError Bool
 matchMC c f = do con <- parse parseConnective "" c
-                 fm  <- parse purePropFormulaParser "" f
-                 mc  <- mcOf fm
+                 mc  <- mcOf f
                  return $ con == mc
         where mcOf :: (Schematizable (f (FixLang f)), CopulaSchema (FixLang f)) => FixLang f a -> Either ParseError String
               mcOf (h :!$: t) = mcOf h
@@ -102,7 +125,10 @@ activateChecker Nothing    = return ()
 activateChecker (Just (i,o,classes))
                 | "echo" `elem` classes  = do echo <- newListener $ echoTo tryParse o
                                               addListener i keyUp echo False
-                | "match" `elem` classes = do match <- newListener $ tryMatch o
+                | "match" `elem` classes = do Just ohtml <- getInnerHTML o
+                                              let (Right f) = parse purePropFormulaParser "" ohtml
+                                              ref <- newIORef (f,[f])
+                                              match <- newListener $ tryMatch o ref
                                               addListener i keyUp match False
                 | otherwise = return () 
 activateChecker _ = Prelude.error "impossible"

@@ -22,6 +22,7 @@ executable Syntax-Check
   main-is:             Main.hs
   ghc-options:         -threaded -rtsopts -with-rtsopts=-N
   build-depends:       base
+                     , lens
                      , Carnap
                      , ghcjs-dom == 0.2.4.0
                      , parsec
