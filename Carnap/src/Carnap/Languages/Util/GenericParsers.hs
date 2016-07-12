@@ -1,5 +1,5 @@
 {-#LANGUAGE FlexibleContexts, AllowAmbiguousTypes #-}
-module Carnap.Languages.Util.GenericParsers 
+module Carnap.Languages.Util.GenericParsers
 where
 
 import Carnap.Core.Data.AbstractSyntaxDataTypes
@@ -47,10 +47,6 @@ parsePos = do spaces
               _ <- string "<>" <|> string "◇"
               return pos
 
-unaryOpParser :: (Monad m, BooleanLanguage l, IndexedPropLanguage l) => [ParsecT String u m (l -> l)] -> ParsecT String u m l ->  ParsecT String u m l
-unaryOpParser ops recur = do n <- listToTry ops
-                             f <- recur
-                             return $ n f
 --------------------------------------------------------
 --Predicates and Sentences
 --------------------------------------------------------
@@ -62,12 +58,18 @@ atomicSentenceParser = do char 'P'
                           return $ pn n
     where number = do { ds <- many1 digit; return (read ds) } <?> "number"
 
+
 schemevarParser :: (IndexedSchemePropLanguage l, Monad m) => ParsecT String u m l
 schemevarParser = do string "Phi"
                      char '_'
                      n <- number
                      return $ phin n
     where number = do { ds <- many1 digit; return (read ds) } <?> "number"
+
+unaryOpParser :: (Monad m) => [ParsecT String u m (l -> l)] -> ParsecT String u m l ->  ParsecT String u m l
+unaryOpParser ops recur = do n <- listToTry ops
+                             f <- recur
+                             return $ n f
 
 equalsParser :: (EqLanguage l t, Monad m) => ParsecT String u m t -> ParsecT String u m l
 equalsParser parseTerm = do t1 <- parseTerm
@@ -86,12 +88,12 @@ molecularSentenceParser :: ( IndexedPropLanguage (FixLang lex ret)
                            , Monad m
                            , Typeable ret
                            , Typeable arg
-                           ) => ParsecT String u m (FixLang lex arg) -> 
+                           ) => ParsecT String u m (FixLang lex arg) ->
                            ParsecT String u m (FixLang lex ret)
-molecularSentenceParser parseTerm = 
+molecularSentenceParser parseTerm =
         do string "P_"
            n <- number
-           char '(' *> argParser parseTerm (ppn n AOne) 
+           char '(' *> argParser parseTerm (ppn n AOne)
               <|> return (pn n)
 
 
@@ -99,16 +101,16 @@ quantifiedSentenceParser :: ( QuantLanguage (FixLang lex f) (FixLang lex t)
                             , BoundVars lex
                             , Show (FixLang lex t)
                             , Monad m
-                            ) => ParsecT String u m (FixLang lex t) -> 
-                                 ParsecT String u m (FixLang lex f) -> 
+                            ) => ParsecT String u m (FixLang lex t) ->
+                                 ParsecT String u m (FixLang lex f) ->
                                     ParsecT String u m (FixLang lex f)
-quantifiedSentenceParser parseFreeVar formulaParser = 
+quantifiedSentenceParser parseFreeVar formulaParser =
         do s <- oneOf "AE∀∃"
            v <- parseFreeVar
            f <- formulaParser
-           let bf = \x -> subBoundVar v x f 
+           let bf = \x -> subBoundVar v x f
                --partially applied, returning a function
-           return $ if s `elem` "A∀" then lall (show v) bf else lsome (show v) bf 
+           return $ if s `elem` "A∀" then lall (show v) bf else lsome (show v) bf
                --which we bind
                --
 
@@ -122,12 +124,12 @@ molecularTermParser ::     ( IndexedConstantLanguage (FixLang lex ret)
                            , Monad m
                            , Typeable ret
                            , Typeable arg
-                           ) => ParsecT String u m (FixLang lex arg) -> 
+                           ) => ParsecT String u m (FixLang lex arg) ->
                            ParsecT String u m (FixLang lex ret)
-molecularTermParser parseTerm = 
+molecularTermParser parseTerm =
         do string "f_"
            n <- number
-           char '(' *> argParser parseTerm (pfn n AOne) 
+           char '(' *> argParser parseTerm (pfn n AOne)
               <|> return (cn n)
 
 --------------------------------------------------------
@@ -135,7 +137,7 @@ molecularTermParser parseTerm =
 --------------------------------------------------------
 
 parenParser :: (BooleanLanguage l, Monad m) => ParsecT String u m l -> ParsecT String u m l
-parenParser recur = char '(' *> recur <* char ')' 
+parenParser recur = char '(' *> recur <* char ')'
 
 
 number :: Monad m => ParsecT String u m Int
@@ -145,13 +147,13 @@ number = do { ds <- many1 digit; return (read ds) } <?> "number"
 --Helper functions
 --------------------------------------------------------
 
-argParser :: (Typeable b, Typeable t2, Incrementable lex t2, Monad m) => 
+argParser :: (Typeable b, Typeable t2, Incrementable lex t2, Monad m) =>
              ParsecT String u m (FixLang lex t2) -> FixLang lex (t2 -> b) -> ParsecT String u m (FixLang lex b)
 argParser pt p = do t <- pt
-                    incrementHead pt p t 
+                    incrementHead pt p t
                         <|> char ')' *> return (p :!$: t)
 
-incrementHead :: (Monad m, Typeable t2, Typeable b, Incrementable lex t2) => 
+incrementHead :: (Monad m, Typeable t2, Typeable b, Incrementable lex t2) =>
     ParsecT String u m (FixLang lex t2) -> FixLang lex (t2 -> b) -> FixLang lex t2 -> ParsecT String u m (FixLang lex b)
 incrementHead pt p t = do char ','
                           case incBody p of

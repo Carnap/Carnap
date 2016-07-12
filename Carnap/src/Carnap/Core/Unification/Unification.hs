@@ -1,18 +1,19 @@
-{-#LANGUAGE FunctionalDependencies, TypeFamilies, UndecidableInstances, FlexibleInstances, MultiParamTypeClasses, AllowAmbiguousTypes, GADTs, KindSignatures, DataKinds, PolyKinds, TypeOperators, ViewPatterns, PatternSynonyms, RankNTypes, FlexibleContexts #-}
+{-#LANGUAGE ImpredicativeTypes, FunctionalDependencies, TypeFamilies, UndecidableInstances, FlexibleInstances, MultiParamTypeClasses, AllowAmbiguousTypes, GADTs, KindSignatures, DataKinds, PolyKinds, TypeOperators, ViewPatterns, PatternSynonyms, RankNTypes, FlexibleContexts #-}
 
 module Carnap.Core.Unification.Unification (
-   Equation((:=:)), FirstOrder, HigherOrder,
+   Equation((:=:)), UError(..), FirstOrder, HigherOrder,
    isVar, sameHead, decompose, occurs, subst,
    matchApp, castLam, getLamVar, (.$.),
-   applySub, founify, mapAll 
+   applySub, mapAll, freeVars
 ) where
 
 import Data.Type.Equality
 import Data.Typeable
 import Carnap.Core.Data.AbstractSyntaxClasses (Schematizable(..))
+import Carnap.Core.Util
 
 data Equation f where
-    (:=:) :: f a -> f a -> Equation f
+    (:=:) :: (Typeable a) => f a -> f a -> Equation f
 
 instance Schematizable f => Show (Equation f) where
         show (x :=: y) = schematize x [] ++ " :=: " ++ schematize y []
@@ -52,13 +53,13 @@ data UError f where
 
 instance Schematizable f => Show (UError f) where
         show (SubError x y e) =  show e ++ "with suberror"
-                                 ++ schematize x [] ++ ", " 
+                                 ++ schematize x [] ++ ", "
                                  ++ schematize y []
         show (MatchError x y) = "Match Error:"
-                                 ++ schematize x [] ++ ", " 
+                                 ++ schematize x [] ++ ", "
                                  ++ schematize y []
-        show (OccursError x y) = "OccursError: " 
-                                 ++ schematize x [] ++ ", " 
+        show (OccursError x y) = "OccursError: "
+                                 ++ schematize x [] ++ ", "
                                  ++ schematize y []
 
 emap :: (forall a. f a -> f a) -> Equation f -> Equation f
@@ -67,18 +68,11 @@ emap f (x :=: y) = f x :=: f y
 mapAll :: (forall a. f a -> f a) -> [Equation f] -> [Equation f]
 mapAll f = map (emap f)
 
-(Left x) .<. f = Left (f x)
-x .<. _ = x
-
-founify :: FirstOrder f => [Equation f] -> [Equation f] -> Either (UError f) [Equation f]
-founify [] ss = Right ss
-founify ((x :=: y):es) ss
-    | isVar x && occurs x y       = Left $ OccursError x y
-    | isVar x && not (occurs x y) = founify (mapAll (subst x y) es) ((x :=: y):ss)
-    | isVar y                     = founify ((y :=: x):es) ss
-    | sameHead x y                = founify (es ++ decompose x y) ss .<. SubError x y
-    | otherwise                   = Left $ MatchError x y
-
 applySub :: FirstOrder f => [Equation f] -> f a -> f a
 applySub []             y = y
 applySub ((v :=: x):ss) y = applySub ss (subst v x y)
+
+freeVars :: (Typeable a, FirstOrder f) => f a -> [AnyPig f]
+freeVars t | isVar t   = [AnyPig t]
+           | otherwise = concatMap rec (decompose t t)
+    where rec (a :=: _) = freeVars a

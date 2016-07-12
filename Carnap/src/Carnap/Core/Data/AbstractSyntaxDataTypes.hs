@@ -34,10 +34,6 @@ import qualified Control.Monad.State.Lazy as S
 --This module attempts to provide abstract syntax types that would cover
 --a wide variety of languages
 
---------------------------------------------------------
---1. Abstract Types
---------------------------------------------------------
-
 -- $ATintro
 -- Here are some types for abstract syntax. The basic proposal
 -- is that we only define how terms of different types connect
@@ -114,7 +110,7 @@ pattern Lx9 x      = FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRi
 pattern Lx10 x     = FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FLeft x)))))))))
 pattern Lx11 x     = FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FLeft x))))))))))
 pattern Lx12 x     = FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FRight (FLeft x)))))))))))
-pattern Fx1 x      = FX (Lx1  x) 
+pattern Fx1 x      = FX (Lx1  x)
 pattern Fx2 x      = FX (Lx2  x)
 pattern Fx3 x      = FX (Lx3  x)
 pattern Fx4 x      = FX (Lx4  x)
@@ -191,6 +187,7 @@ data Arity :: * -> * -> Nat -> * -> * where
 pattern AOne = ASucc AZero
 pattern ATwo = ASucc AOne
 pattern AThree = ASucc ATwo
+
 
 arityInt :: Arity arg ret n ret' -> Int
 arityInt AZero = 0
@@ -397,7 +394,9 @@ class UniformlyEq f => FirstOrderLex f where
 
 class Monad m => MaybeMonadVar f m where
         maybeFresh :: Typeable a => Maybe (m (f a))
-        maybeFresh = Nothing 
+        maybeFresh = Nothing
+        maybePig :: Maybe (m (EveryPig f))
+        maybePig = Nothing
 
 instance UniformlyEq (SubstitutionalVariable idx) where
 
@@ -416,6 +415,10 @@ instance Monad m => MaybeMonadVar (SubstitutionalVariable idx) (S.StateT Int m)
         where maybeFresh = Just $ do n <- get
                                      put (n+1)
                                      return $ SubVar n
+
+              maybePig = Just $ do n <- get
+                                   put (n + 1)
+                                   return $ EveryPig (SubVar n)
 
 instance UniformlyEq quant => UniformlyEq (Quantifiers quant lang) where
         (Bind q) =* (Bind q') = q =* q'
@@ -507,6 +510,14 @@ instance (MaybeMonadVar (g idx) m, MaybeMonadVar (f idx) m) => MaybeMonadVar ((f
                          (_, Just r ) -> Just $ fmap FRight r
                          _ -> Nothing
 
+        maybePig = case (maybePig :: Maybe (m (EveryPig (f idx))),  maybePig :: Maybe (m (EveryPig (g idx)))) of
+                       (Just l,_ ) -> Just $ do p <- l
+                                                return $ EveryPig (FLeft (unEveryPig p))
+                       (_, Just r) -> Just $ do p <- r
+                                                return $ EveryPig (FRight (unEveryPig p))
+
+                       _ -> Nothing
+
 instance (UniformlyEq lang, FirstOrderLex lang) => UniformlyEq (Copula lang) where
         (h :$: t ) =* (h' :$: t') = h =* h' && t =* t'
         Lam g =* Lam h = error "sorry, can't directly compare these. Try the fixpoint."
@@ -548,6 +559,10 @@ instance MaybeMonadVar ((Copula :|: f) (FixLang f)) m => MonadVar (FixLang f) m 
         fresh = case maybeFresh :: Typeable a => Maybe (m (((Copula :|: f) (FixLang f)) a)) of
                     Just fsh -> fmap Fx fsh
                     Nothing -> error "you need substitutional variables in your language for this"
+
+        freshPig = case maybePig :: Maybe (m (EveryPig ((Copula :|: f) (FixLang f)))) of 
+                    Just pig -> do p <- pig
+                                   return $ EveryPig (Fx (unEveryPig p))
 
 instance {-# OVERLAPPABLE #-} (MonadVar (FixLang f) (State Int), FirstOrderLex (FixLang f)) => FirstOrder (FixLang f) where
         
@@ -607,7 +622,7 @@ instance {-# OVERLAPPABLE #-} (MonadVar (FixLang f) (State Int), FirstOrderLex (
 x .*$. y = (:!$:) <$> x <*> y
 
 handleArg1 :: (Applicative g, LangTypes1 f syn1 sem1)
-          => Maybe (tt :~: syn1 sem1) -> (FixLang f (syn1 sem1) 
+          => Maybe (tt :~: syn1 sem1) -> (FixLang f (syn1 sem1)
             -> g (FixLang f (syn1 sem1))) -> FixLang f tt -> g (FixLang f tt)
 handleArg1 (Just Refl) f l = f l
 handleArg1 Nothing     _ l = pure l
