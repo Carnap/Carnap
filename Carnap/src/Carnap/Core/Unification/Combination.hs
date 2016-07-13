@@ -4,8 +4,7 @@ module Carnap.Core.Unification.Combination (
   LabelPair(LabelPair), Labeling, UniFunction, Combineable(..),
   labelings, getVars, abstract, pureAbstract, partitions,
   substitutions, getLabels, combine, typeGroup, weave,
-  hasBackEdge, findNodes, closure, buildGraph, validSub,
-  weave
+  hasBackEdge, findNodes, closure, buildGraph, validSub
 ) where
 
 import Carnap.Core.Data.AbstractSyntaxClasses
@@ -87,6 +86,7 @@ substitutions vars = bigCrossWithH (++) (map parts (typeGroup vars))
 --finds all lebeling functions
 labelings :: Combineable f label => [AnyPig f] -> [label] -> [Labeling f]
 labelings ((AnyPig x):domain) range = [(LabelPair x l):f | f <- labelings domain range, l <- range]
+labelings []                  range = []
 
 --equiv :: (FirstOrder f) => AnyPig f -> AnyPig f -> Bool
 --equiv (AnyPig (x :: f a)) (AnyPig (y :: f b))
@@ -151,6 +151,7 @@ weave xss = go xss 1
           go []  _ = []
           go xss n = let (rest, l) = step xss n in l ++ go rest (n + 1)
 
+
 --this is some dense code, I'm displeased with dense it is in fact
 --it would be less dense if I could handle this case by case in a loop
 --yielding ansers as I went such that the results were woven togethor for me
@@ -160,12 +161,15 @@ combine eqs = do
     pureEqs <- pureAbstract eqs
     let vars = getVars pureEqs
     let subs = substitutions vars
-    let pureSubbedEqs = map (\sub -> mapAll (applySub sub) pureEqs) subs
-    let labelFuncs = map (\eq -> labelings (getVars eq) (getLabels pureEqs)) pureSubbedEqs
-    let eqGroups = map (groupBy ((==) `on` getEqLabel)) pureSubbedEqs
-    let combineTheory eqg l = mapM (solveEqs l) eqg >>= (return . concat)
-    sols2d <- mapM (\(l, eqg) -> mapM (combineTheory eqg) l) (zip labelFuncs eqGroups)
-    --sols2d is indexed by labelings on the outside and subsitutions on the inside
-    --sols2d is isomorphim to (subs, labelFuncs) -> solutions
-    let sols = weave (weave sols2d) --weave the set of solutions missing no solution even if solutions are infinite
-    return $ filter validSub sols --filter out ones that have cycles
+    let doSubs sub = do
+        let pureSubbedEqs = mapAll (applySub sub) pureEqs
+        let vars = getVars pureSubbedEqs
+        let labels = getLabels pureSubbedEqs
+        let labelingsList = labelings vars labels
+        let eqGroups = groupBy ((==) `on` getEqLabel) pureSubbedEqs
+        let doLabelings lbling = do
+            solsByGroup <- mapM (solveEqs lbling) eqGroups
+            return $ bigCrossWithH (++) solsByGroup
+        mapM doLabelings labelingsList
+    sols2d <- mapM doSubs subs
+    return $ weave (weave sols2d)

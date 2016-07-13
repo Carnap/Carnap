@@ -6,6 +6,7 @@ module Carnap.Core.Unification.ACUI (
 
   --to solve ACUI unification with constants we need to be able to find
   --all minimal solutions to a SAT problem
+import Carnap.Core.Data.AbstractSyntaxClasses
 import Carnap.Core.ModelChecking.SAT
 import Carnap.Core.Unification.Unification
 import Carnap.Core.Util
@@ -130,14 +131,14 @@ toSub :: (Typeable a, FirstOrder f) => [SimpleEquation (f a)] -> [Equation f]
 toSub []              = []
 toSub ((x :==: y):xs) = (x :=: y):(toSub xs)
 
-popVar :: Typeable a => State [EveryPig f] (f a)
+popVar :: (MonadVar f m, Typeable a) => m (f a)
 popVar = do
-    v <- pop
+    v <- freshPig
     return $ unEveryPig v
 
 
 --solves a homogenous equation
-solveHomoEq :: ACUI f a => SimpleEquation [f a] -> State [EveryPig f] [SimpleEquation (f a)]
+solveHomoEq :: (MonadVar f m, ACUI f a) => SimpleEquation [f a] -> m [SimpleEquation (f a)]
 solveHomoEq eq = do
     let mins = minimals . search . toSatProblem $ eq
     minSols <- mapM (conv popVar) mins
@@ -145,14 +146,14 @@ solveHomoEq eq = do
     return homosol
 
 --solves an inhomogenous equation for a specific constant
-solveInHomoEq :: ACUI f a => f a -> SimpleEquation [f a] -> State [EveryPig f] [[SimpleEquation (f a)]]
+solveInHomoEq :: (MonadVar f m, ACUI f a) => f a -> SimpleEquation [f a] -> m [[SimpleEquation (f a)]]
 solveInHomoEq c eq = do
   let mins = minimals . search . toSatProblem $ eq
   minSols <- mapM (conv (return c)) mins
   return minSols
 
 --finds all solutions to a = b
-acuiUnify :: ACUI f a => f a -> f a -> State [EveryPig f] [[Equation f]]
+acuiUnify :: (MonadVar f m, ACUI f a) => f a -> f a -> m [[Equation f]]
 acuiUnify a b = do
     let l = unfoldTerm a
     let r = unfoldTerm b
