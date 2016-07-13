@@ -9,7 +9,7 @@ module Carnap.Core.Unification.Unification (
 
 import Data.Type.Equality
 import Data.Typeable
-import Carnap.Core.Data.AbstractSyntaxClasses (Schematizable(..))
+import Carnap.Core.Data.AbstractSyntaxClasses
 import Carnap.Core.Util
 
 data Equation f where
@@ -30,7 +30,7 @@ instance Schematizable f => Show (Equation f) where
 --   unification algorithms so that this is a one stop shop for unification
 --5. I have tried to name things here in a way that someone reading the HoAR
 --   would recognize (hence "decompose" rather than "match")
-class FirstOrder f where
+class UniformlyEq f => FirstOrder f where
     isVar :: f a -> Bool
     sameHead :: f a -> f a -> Bool
     decompose :: f a -> f a -> [Equation f]

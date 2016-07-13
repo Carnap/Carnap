@@ -3,7 +3,9 @@
 module Carnap.Core.Unification.Combination (
   LabelPair(LabelPair), Labeling, UniFunction, Combineable(..),
   labelings, getVars, abstract, pureAbstract, partitions,
-  substitutions, equiv, getLabels, combine
+  substitutions, getLabels, combine, typeGroup, weave,
+  hasBackEdge, findNodes, closure, buildGraph, validSub,
+  weave
 ) where
 
 import Carnap.Core.Data.AbstractSyntaxClasses
@@ -16,6 +18,7 @@ import Data.List
 import Data.Function
 import Data.Proxy
 
+--this is really hard to test with
 data LabelPair f where
     LabelPair :: Combineable f label => f a -> label -> LabelPair f
 
@@ -45,6 +48,7 @@ abstract term
 --this breaks down a set of equations into so called "pure" equations
 --namely they only contain function symbols from a single equational theory
 pureAbstract :: (MonadVar f m, Combineable f label) => [Equation f] -> m [Equation f]
+pureAbstract []              = return []
 pureAbstract ((a :=: b):eqs) = do
     (pureA, newA) <- abstract a
     (pureB, newB) <- abstract b
@@ -53,11 +57,12 @@ pureAbstract ((a :=: b):eqs) = do
     let top = [unEveryPig v :=: pureA, unEveryPig v :=: pureB]
     return (top ++ rest)
 
---this gives bell's number answers
-
 --compose the list functor with another functor
 data ListComp f a where
     ListComp :: [f a] -> ListComp f a
+
+instance Schematizable f => Schematizable (ListComp f) where
+    schematize (ListComp l) [] = "[" ++ intercalate ", " (map (\x -> schematize x []) l) ++ "]"
 
 --take a list of AnyPigs and group them by their type
 typeGroup :: [AnyPig f] -> [AnyPig (ListComp f)]
@@ -83,32 +88,33 @@ substitutions vars = bigCrossWithH (++) (map parts (typeGroup vars))
 labelings :: Combineable f label => [AnyPig f] -> [label] -> [Labeling f]
 labelings ((AnyPig x):domain) range = [(LabelPair x l):f | f <- labelings domain range, l <- range]
 
-equiv :: (FirstOrder f) => AnyPig f -> AnyPig f -> Bool
-equiv (AnyPig (x :: f a)) (AnyPig (y :: f b))
-    | isVar x && isVar y = occurs x y
-    | otherwise = case eqT :: Maybe (a :~: b) of
-        Just Refl -> sameHead x y && all (\(a :=: b) -> equiv (AnyPig a) (AnyPig b)) (decompose x y)
-        Nothing   -> False
+--equiv :: (FirstOrder f) => AnyPig f -> AnyPig f -> Bool
+--equiv (AnyPig (x :: f a)) (AnyPig (y :: f b))
+  --  | isVar x && isVar y = occurs x y
+  --  | otherwise = case eqT :: Maybe (a :~: b) of
+      --  Just Refl -> sameHead x y && all (\(a :=: b) -> equiv (AnyPig a) (AnyPig b)) (decompose x y)
+        --Nothing   -> False
 
 --trys to find a back edge by checking if a node is it's own closure
 hasBackEdge :: (FirstOrder f) => [AnyPig f] -> [(AnyPig f, [AnyPig f])] -> Bool
-hasBackEdge nodes gph = any (\n -> any (equiv n) (closure [] gph n)) nodes
+hasBackEdge nodes gph = any (\n -> any (== n) (closure [] gph n)) nodes
 
 --finds all adjacent nodes
-findNodes n ((n1, n2):gph) | equiv n n1 = n2 ++ findNodes n gph
-                           | otherwise  = findNodes n gph
-findNodes n []                          = []
+findNodes n ((n1, n2):gph) | n == n1   = n2 ++ findNodes n gph
+                           | otherwise = findNodes n gph
+findNodes n []                         = []
 
 --finds all nodes reachable from a start node
-closure :: (FirstOrder f) => [AnyPig f] -> [(AnyPig f, [AnyPig f])] -> AnyPig f -> [AnyPig f]
+--closure :: (FirstOrder f) => [AnyPig f] -> [(AnyPig f, [AnyPig f])] -> AnyPig f -> [AnyPig f]
 closure visit gph node
-    | any (equiv node) visit = visit
-    | otherwise              = case findNodes node gph of
-        []     -> visit
-        childs -> concatMap (\c -> closure (c:visit) gph c) childs
+    | any (== node) visit = findNodes node gph
+    | otherwise           = case findNodes node gph of
+        []     -> []
+        childs -> nub $ childs ++ concatMap (\c -> closure (node:visit) gph c) childs
 
 --builds a graph out of a set of equations in the correct manner
 buildGraph ((v :=: e):eqs) = (AnyPig v, freeVars e) : buildGraph eqs
+buildGraph []              = []
 
 --checks if a subsitution is valid by converting it to a graph and checking
 --for back edges
@@ -117,7 +123,7 @@ validSub eqs = not (hasBackEdge (getVars eqs) (buildGraph eqs))
 
 --gets all the varibles from a set of equations
 getVars :: Combineable f label => [Equation f] -> [AnyPig f]
-getVars eqs = nubBy equiv (go eqs)
+getVars eqs = nubBy (==) (go eqs)
     where go ((a :=: b):eqs) = freeVars a ++ freeVars b ++ go eqs
           go []              = []
 

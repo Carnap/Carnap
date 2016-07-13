@@ -19,7 +19,7 @@ example, a truth value (in this case, `True`). In the case of a term, (e.g.
 class Evaluable f where
     eval :: f a -> a
 
-{-|   
+{-|
 Modelable data can be assigned a semantic value, but only relative to
 a model---for example, in propositional logic `P_1 ∧ P_2 ::
 PropositionalLogic (Form True)` has a truth value relative to an assignment
@@ -59,13 +59,15 @@ class UniformlyOrd f where
 {-|
 CanonicalForm is a typeclass for data which can be put in a canonical form.
 For example, the canonical form of sentence of quantified logic might be
-a formula in which the variables are labeled sequentially. 
+a formula in which the variables are labeled sequentially.
 -}
 class CanonicalForm a where
     canonical :: a -> a
     canonical = id
 
-
 class Monad m => MonadVar f m where
     fresh :: Typeable a => m (f a)
     freshPig :: m (EveryPig f)
+
+instance UniformlyEq f => Eq (AnyPig f) where
+    (AnyPig x) == (AnyPig y) = x =* y

@@ -84,6 +84,3 @@ mutatePig f x = EveryPig (f (unEveryPig x))
   --  eq :: f a -> f b -> Bool
     --eq x y = not (neq x y)
     --neq :: f a -> f b -> Bool
-
---instance UniformlyEq f => Eq (AnyPig f) where
-  --  (AnyPig x) == (AnyPig y) = eq x y

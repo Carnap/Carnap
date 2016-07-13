@@ -3,8 +3,8 @@
 module Carnap.Core.Examples.ACUI (
     V, Set, VLang, Var, acuiParser,
     pattern VEmpty, pattern VUnion, pattern VSomeSet, pattern VSingelton,
-    parseTerm, evalTerm
-    --acuiDemo
+    parseTerm, evalTerm,
+    pattern ACUISV
 ) where
 
 import Carnap.Core.Data.AbstractSyntaxDataTypes
@@ -120,6 +120,7 @@ pattern VSomeSet s = Fx2 (SomeSet s)
 pattern VSingelton x = Fx1 (Function Singleton AOne) :!$: x
 pattern VUnion x y = Fx1 (Function Union ATwo) :!$: x :!$: y
 pattern SV n = Fx3 (SubVar n)
+pattern ACUISV n = SV n
 pattern VUnFunc s x = Fx4 (Function (ConstUnFunc s) AOne) :!$: x
 pattern VBinFunc s x y = Fx4 (Function (ConstBinFunc s) ATwo) :!$: x :!$: y
 
@@ -259,24 +260,8 @@ acuiParser = buildExpressionParser [[Infix (try parseUnion) AssocLeft]] subParse
                       subvarParser <|>
                       somesetParser
 
-instance Show (Equation VLang) where
-    show (a :=: b) = schematize a [] ++ " = " ++ schematize b []
-
 parseTerm s = let (Right term) = parse acuiParser "" s in term
-evalTerm m = evalState m 0
+evalTerm m = evalState m (0 :: Int)
 
-{--
-acuiDemo = do
-  lhs <- getLine
-  if lhs /= ""
-    then do
-      rhs <- getLine
-      let t1 = parse acuiParser "left hand side" lhs
-      let t2 = parse acuiParser "right hand side" rhs
-      case (t1, t2) of
-        (Left err, _) -> print err
-        (_, Left err) -> print err
-        (Right x, Right y) -> print $ evalState (acuiUnify x y) freshVars
-      acuiDemo
-    else return ()
---}
+instance Schematizable f => Show (AnyPig f) where
+    show (AnyPig t) = schematize t []
