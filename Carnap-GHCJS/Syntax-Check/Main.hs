@@ -1,4 +1,4 @@
-{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE RankNTypes, FlexibleContexts #-}
 module Main where
 
 import Lib
@@ -9,6 +9,7 @@ import Carnap.Core.Data.AbstractSyntaxDataTypes
 import Carnap.Core.Data.AbstractSyntaxClasses
 import Data.IORef
 import Data.List (intercalate)
+import Data.Tree as T
 import Control.Lens
 import Control.Lens.Plated (children)
 import Text.Parsec
@@ -32,13 +33,14 @@ import GHCJS.DOM.KeyboardEvent
 import GHCJS.DOM.EventM
 import GHCJS.DOM.EventTarget
 import Control.Monad.IO.Class (MonadIO, liftIO)
+import Control.Monad.State
 
 main :: IO ()
 main = runWebGUI $ \w -> 
             do (Just dom) <- webViewGetDomDocument w
                (Just b) <- getBody dom
                mcheckers <- getCheckers b
-               mapM_ activateChecker mcheckers
+               mapM_ (activateChecker dom) mcheckers
 
 echoTo :: IsElement element => (String -> String) -> element -> EventM HTMLInputElement KeyboardEvent ()
 echoTo f o = do (Just t) <- target :: EventM HTMLInputElement KeyboardEvent (Maybe HTMLInputElement)
@@ -48,28 +50,42 @@ echoTo f o = do (Just t) <- target :: EventM HTMLInputElement KeyboardEvent (May
                     Just v -> liftIO $ setInnerHTML o (fmap f mv)
 
 
-tryMatch :: Element -> IORef (PureForm,[PureForm]) -> EventM HTMLInputElement KeyboardEvent ()
-tryMatch o ref = onEnter $ do (Just t) <- target :: EventM HTMLInputElement KeyboardEvent (Maybe HTMLInputElement)
-                              (Just ival)  <- getValue t
-                              (f,forms) <- liftIO $ readIORef ref
-                              case forms of
-                                  [] -> setInnerHTML o (Just "success!")
-                                  x:xs -> case matchMC ival x of
-                                      Right b -> if b then do
-                                          case children x of 
-                                               [] -> shorten xs
-                                               children -> updateGoal (children ++ xs)
-                                          else resetGoal
-                                      Left e -> case children x of
-                                             [] -> shorten xs
-                                             _ -> return ()
-        where updateGoal xs = do liftIO $ modifyIORef ref (_2 .~ xs)
-                                 setInnerHTML o (Just $ intercalate " " $ map show xs)
-              shorten xs = case xs of [] -> liftIO $ setInnerHTML o (Just "success!") 
-                                      _  -> updateGoal xs
-              resetGoal = do (f,xs) <- liftIO $ readIORef ref
-                             liftIO $ writeIORef ref (f, [f])
+tryMatch :: Element -> IORef (PureForm,[PureForm], Tree PureForm) -> Document -> EventM HTMLInputElement KeyboardEvent ()
+tryMatch o ref w = onEnter $ do (Just t) <- target :: EventM HTMLInputElement KeyboardEvent (Maybe HTMLInputElement)
+                                (Just ival)  <- getValue t
+                                (f,forms,ft) <- liftIO $ readIORef ref
+                                setValue t (Just "")
+                                case forms of
+                                    [] -> setInnerHTML o (Just "success!")
+                                    x:xs -> case matchMC ival x of
+                                        Right b -> if b then do
+                                            case children x of 
+                                                 [] -> shorten x xs
+                                                 children -> updateGoal x (children ++ xs)
+                                            else resetGoal
+                                        Left e -> case children x of
+                                               [] -> shorten x xs
+                                               _ -> return ()
+        where updateGoal x xs = liftIO $ do modifyIORef ref (_2 .~ xs)
+                                            modifyIORef ref (_3 %~ dev x)
+                                            (_,_,t) <- readIORef ref
+                                            redraw (head xs) t
+              shorten x xs = case xs of [] -> liftIO $ setInnerHTML o (Just "success!") 
+                                        _  -> updateGoal x xs
+              resetGoal = do (f,_,_) <- liftIO $ readIORef ref
+                             liftIO $ writeIORef ref (f, [f], T.Node f [])
                              setInnerHTML o (Just $ show f)
+              dev x = adjustFirstMatching leaves (== T.Node x []) dev'
+              dev' (T.Node f _) = T.Node f (map nodify $ children f)
+              nodify x = T.Node x []
+              redraw x t = do setInnerHTML o (Just "")
+                              let t' = fmap (\y -> (y, "")) t
+                              let t'' = adjustFirstMatching leaves (== T.Node (x, "") []) (const (T.Node (x, "target") [])) $ t'
+                              te <- treeToUl w t''
+                              ul@(Just ul') <- createElement w (Just "ul")
+                              appendChild ul' (Just te)
+                              appendChild o ul
+                              return ()
 
 parseConnective :: Monad m => ParsecT String u m String
 parseConnective = choice [getAnd, getOr, getIff, getIf, getNeg]
@@ -91,7 +107,6 @@ matchMC c f = do con <- parse parseConnective "" c
               mcOf (h :!$: t) = mcOf h
               mcOf h = Right (show h)
 
-
 getCheckers :: IsElement self => self -> IO [Maybe (Element, Element, [String])]
 getCheckers b = do lspans <- getListOfElementsByClass b "synchecker"
                    mapM extractCheckers lspans
@@ -104,18 +119,18 @@ getCheckers b = do lspans <- getListOfElementsByClass b "synchecker"
                                                                            Nothing -> return Nothing
                                                    Nothing -> return Nothing
 
-activateChecker :: Maybe (Element, Element,[String]) -> IO ()
-activateChecker Nothing    = return ()
-activateChecker (Just (i,o,classes))
+activateChecker :: Document -> Maybe (Element, Element,[String]) -> IO ()
+activateChecker _ Nothing  = return ()
+activateChecker w (Just (i,o,classes))
                 | "echo" `elem` classes  = do echo <- newListener $ echoTo (tryParse purePropFormulaParser) o
                                               addListener i keyUp echo False
                 | "match" `elem` classes = do Just ohtml <- getInnerHTML o
                                               let (Right f) = parse purePropFormulaParser "" ohtml
-                                              ref <- newIORef (f,[f])
-                                              match <- newListener $ tryMatch o ref
+                                              ref <- newIORef (f,[f], T.Node f [])
+                                              match <- newListener $ tryMatch o ref w
                                               addListener i keyUp match False
                 | otherwise = return () 
-activateChecker _ = Prelude.error "impossible"
+activateChecker _ _ = Prelude.error "impossible"
 
 --------------------------------------------------------
 --Functions that should go in a library
@@ -144,3 +159,35 @@ getListOfElementsByClass elt c = do mnl <- getElementsByClassName elt c
 tryParse p s = unPack $ parse p "" s 
     where unPack (Right s) = show s
           unPack (Left e)  = show e
+
+treeToElement :: (a -> IO Element) -> (Element -> [Element] -> IO ()) -> Tree a -> IO Element
+treeToElement f g (T.Node n []) = f n
+treeToElement f g (T.Node n ts) = do r <- f n
+                                     elts <- mapM (treeToElement f g) ts
+                                     g r elts
+                                     return r
+
+treeToUl :: Show a => Document -> Tree (a, String) -> IO Element
+treeToUl w t = treeToElement itemize listify t
+    where itemize (x,c) = do s@(Just s') <- createElement w (Just "li")
+                             setInnerHTML s' (Just $ show x)
+                             setAttribute s' "class" c 
+                             return s'
+          listify x xs = do o@(Just o') <- createElement w (Just "ul")
+                            mapM_ (appendChild o' . Just) xs
+                            appendChild x o
+                            return ()
+                                     
+formToTree :: Plated a => a -> Tree a
+formToTree f = T.Node f (map formToTree (children f))
+
+leaves :: Traversal' (Tree a) (Tree a)
+leaves f (T.Node x []) = f (T.Node x [])
+leaves f (T.Node x xs) = T.Node <$> pure x <*> traverse (leaves f) xs
+
+adjustFirstMatching :: Traversal' a b -> (b -> Bool) -> (b -> b) -> a -> a
+adjustFirstMatching t pred  f x = evalState (traverseOf t adj x) True where
+    adj y =  do b <- get
+                if b && pred y 
+                    then put False >> return (f y)
+                    else return y
