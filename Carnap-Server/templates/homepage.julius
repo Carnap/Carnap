@@ -1,0 +1,15 @@
+function test (arg) {
+    jQuery.ajax({
+        url: '@{CommandR}',
+        type: 'POST',
+        contentType: "application/json",
+        data: arg,
+        success: function (data) {
+            console.log("Success: " + data);
+            },
+        error: function (data) {
+            console.log("Error in ajax request to @{HomeR}: " + data);
+            }
+        });
+    };
+

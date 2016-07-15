@@ -2,6 +2,8 @@
 /auth           AuthR       Auth    getAuth
 /fay-command    FaySiteR    FaySite getFaySite
 
+/command        CommandR    POST
+
 /favicon.ico    FaviconR    GET
 /robots.txt     RobotsR     GET
 

@@ -27,6 +27,7 @@ library
                      Handler.User
                      Handler.Chapter
                      Handler.Book
+                     Handler.Command
                      Filter.Sidenotes
 
     if flag(dev) || flag(library-only)
