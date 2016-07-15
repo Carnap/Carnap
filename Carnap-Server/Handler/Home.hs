@@ -13,7 +13,11 @@ getHomeR :: Handler Html
 getHomeR = do
     defaultLayout $ do
         aDomId <- newIdent
+        addScript $ StaticR ghcjs_rts_js
+        addScript $ StaticR ghcjs_syncheck_lib_js
+        addScript $ StaticR ghcjs_syncheck_out_js
         setTitle "Welcome To Carnap!"
         $(widgetFile "homepage")
         $(fayFile "Home")
         $(fayFile "Comment")
+        addScript $ StaticR ghcjs_syncheck_runmain_js

@@ -13,3 +13,8 @@
         <input #newcomment placeholder="Comment Test">
         <span #commentsuccess>
         <div #comments>
+<p>
+    Here's a reference for GHCJS integration
+    <div .synchecker .echo>
+        <input>
+        <span>

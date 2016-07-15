@@ -1,11 +1,11 @@
-/static StaticR Static appStatic
-/auth   AuthR   Auth   getAuth
-/fay-command FaySiteR FaySite getFaySite
+/static         StaticR     Static  appStatic
+/auth           AuthR       Auth    getAuth
+/fay-command    FaySiteR    FaySite getFaySite
 
-/favicon.ico FaviconR GET
-/robots.txt RobotsR GET
+/favicon.ico    FaviconR    GET
+/robots.txt     RobotsR     GET
 
-/             HomeR GET
-/book         BookR GET
-/book/#Int    ChapterR GET
-/user/#Text   UserR GET
+/               HomeR       GET
+/book           BookR       GET
+/book/#Int      ChapterR    GET
+/user/#Text     UserR       GET

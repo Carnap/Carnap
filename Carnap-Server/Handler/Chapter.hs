@@ -31,7 +31,6 @@ fileToHtml path = do md <- markdownFromFile path
                      let htmlOrEr = fmap (writePandoc yesodDefaultWriterOptions) walkedOrEr
                      return htmlOrEr
 
-
 chapterLayout widget = do
         master <- getYesod
         mmsg <- getMessage
