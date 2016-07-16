@@ -18,6 +18,7 @@ getHomeR = do
         addScript $ StaticR ghcjs_syncheck_out_js
         setTitle "Welcome To Carnap!"
         $(widgetFile "homepage")
+        $(widgetFile "command")
         $(fayFile "Home")
         $(fayFile "Comment")
         addScript $ StaticR ghcjs_syncheck_runmain_js
