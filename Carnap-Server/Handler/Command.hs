@@ -4,9 +4,9 @@ import Import
 
 postCommandR :: Handler Value
 postCommandR = do
-    command <- (requireJsonBody :: Handler String)
+    (s1, s2) <- (requireJsonBody :: Handler (String,String))
 
     maybeCurrentUserId <- maybeAuthId
 
-    returnJson (reverse command)
+    returnJson (reverse s1)
 

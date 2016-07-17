@@ -8,6 +8,7 @@ import Carnap.Languages.PurePropositional.Syntax
 import Carnap.Core.Data.AbstractSyntaxDataTypes
 import Carnap.Core.Data.AbstractSyntaxClasses
 import Data.IORef
+import Data.Aeson
 import Data.List (intercalate)
 import Data.Tree as T
 import Control.Lens
@@ -15,6 +16,9 @@ import Control.Lens.Plated (children)
 import Text.Parsec
 import Text.Parsec.Error
 import Text.Parsec.Pos
+import GHCJS.Types
+import GHCJS.Foreign
+import GHCJS.Marshal
 import GHCJS.DOM
 import GHCJS.DOM.Element
 --the import below is here to make ghc-mod work properly. GHCJS compiles
@@ -38,6 +42,10 @@ import Control.Monad.State
 main :: IO ()
 main = runWebGUI $ \w -> 
             do (Just dom) <- webViewGetDomDocument w
+               --XXX:this next line is ugly, to put it mildly. It'd be nice
+               --if there was a better way to remove extraneous quotes, or
+               --if the ToJSVal instance for Aeson was better beheaved
+               jsonCommand $ toJSString (read $ show $ encode ("hello","hello") :: String)
                (Just b) <- getBody dom
                mcheckers <- getCheckers b
                mapM_ (activateChecker dom) mcheckers

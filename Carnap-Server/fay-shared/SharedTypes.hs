@@ -11,4 +11,3 @@ data Command = GetFib Int (Returns Int)
              | PutComment Text (Returns Bool)
              | GetComments (Returns [(Text,Text)])
     deriving (Typeable, Data)
-

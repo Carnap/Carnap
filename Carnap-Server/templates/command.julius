@@ -1,4 +1,4 @@
-function test (arg) {
+function jsonCommand (arg) {
     jQuery.ajax({
         url: '@{CommandR}',
         type: 'POST',
@@ -8,8 +8,7 @@ function test (arg) {
             console.log("Success: " + data);
             },
         error: function (data) {
-            console.log("Error in ajax request to @{HomeR}: " + data);
+            console.log("Error in ajax request to jsonCommand: " + data);
             }
         });
     };
-
