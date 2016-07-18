@@ -8,36 +8,29 @@ import Carnap.Languages.PurePropositional.Syntax
 import Carnap.Core.Data.AbstractSyntaxDataTypes
 import Carnap.Core.Data.AbstractSyntaxClasses
 import Data.IORef
-import Data.Aeson
-import Data.List (intercalate)
 import Data.Tree as T
 import Control.Lens
 import Control.Lens.Plated (children)
 import Text.Parsec
-import Text.Parsec.Error
-import Text.Parsec.Pos
-import GHCJS.Types
-import GHCJS.Foreign
-import GHCJS.Marshal
 import GHCJS.DOM
 import GHCJS.DOM.Element
---the import below is here to make ghc-mod work properly. GHCJS compiles
+--the import below is needed to make ghc-mod work properly. GHCJS compiles
 --using the generated javascript FFI versions of 2.4.0, but those are
 --slightly different from the webkit versions of 2.4.0. In particular,
 --Element doesn't export IsElement, although Types does in the webkit
 --version---but it's the other way around in the FFI version. This appears
 --to be cleaner in 3.0, but there's no documentation for that at all, yet.
-import GHCJS.DOM.Types
-import GHCJS.DOM.HTMLInputElement
-import GHCJS.DOM.Document (createElement, getBody)
-import GHCJS.DOM.Node
-import GHCJS.DOM.NodeList
-import GHCJS.DOM.Event
+--
+--because other modules in Lib are imported from ghcjs-base, ghc-mod will
+--not work anyway.
+--
+--import GHCJS.DOM.Types
+import GHCJS.DOM.HTMLInputElement (HTMLInputElement, getValue, setValue)
+import GHCJS.DOM.Document (Document,createElement, getBody)
+import GHCJS.DOM.Node (appendChild)
 import GHCJS.DOM.KeyboardEvent
 import GHCJS.DOM.EventM
-import GHCJS.DOM.EventTarget
 import Control.Monad.IO.Class (MonadIO, liftIO)
-import Control.Monad.State
 
 main :: IO ()
 main = runWebGUI $ \w -> 
@@ -45,7 +38,7 @@ main = runWebGUI $ \w ->
                --XXX:this next line is ugly, to put it mildly. It'd be nice
                --if there was a better way to remove extraneous quotes, or
                --if the ToJSVal instance for Aeson was better beheaved
-               jsonCommand $ toJSString (read $ show $ encode ("hello","hello") :: String)
+               sendJSON ("hello","hello")
                (Just b) <- getBody dom
                mcheckers <- getCheckers b
                mapM_ (activateChecker dom) mcheckers
@@ -139,63 +132,3 @@ activateChecker w (Just (i,o,classes))
                                               addListener i keyUp match False
                 | otherwise = return () 
 activateChecker _ _ = Prelude.error "impossible"
-
---------------------------------------------------------
---Functions that should go in a library
---------------------------------------------------------
---
-
-onEnter :: EventM HTMLInputElement KeyboardEvent () ->  EventM HTMLInputElement KeyboardEvent ()
-onEnter action = do kbe      <- event
-                    id       <- getKeyIdentifier kbe
-                    if id == "Enter" then do action
-                                     else return ()
-
-clearInput :: (MonadIO m) => HTMLInputElement -> m ()
-clearInput i = setValue i (Just "")
-
-
---XXX: one might also want to include a "mutable lens" or "mutable traversal"
---kind of thing: http://stackoverflow.com/questions/18794745/can-i-make-a-lens-with-a-monad-constraint
-getListOfElementsByClass :: IsElement self => self -> String -> IO [Maybe Element]
-getListOfElementsByClass elt c = do mnl <- getElementsByClassName elt c
-                                    case mnl of 
-                                        Nothing -> return []
-                                        Just nl -> do l <- getLength nl
-                                                      mapM ((fmap . fmap) castToElement . item nl) [0 .. l-1]
-
-tryParse p s = unPack $ parse p "" s 
-    where unPack (Right s) = show s
-          unPack (Left e)  = show e
-
-treeToElement :: (a -> IO Element) -> (Element -> [Element] -> IO ()) -> Tree a -> IO Element
-treeToElement f g (T.Node n []) = f n
-treeToElement f g (T.Node n ts) = do r <- f n
-                                     elts <- mapM (treeToElement f g) ts
-                                     g r elts
-                                     return r
-
-treeToUl :: Show a => Document -> Tree (a, String) -> IO Element
-treeToUl w t = treeToElement itemize listify t
-    where itemize (x,c) = do s@(Just s') <- createElement w (Just "li")
-                             setInnerHTML s' (Just $ show x)
-                             setAttribute s' "class" c 
-                             return s'
-          listify x xs = do o@(Just o') <- createElement w (Just "ul")
-                            mapM_ (appendChild o' . Just) xs
-                            appendChild x o
-                            return ()
-                                     
-formToTree :: Plated a => a -> Tree a
-formToTree f = T.Node f (map formToTree (children f))
-
-leaves :: Traversal' (Tree a) (Tree a)
-leaves f (T.Node x []) = f (T.Node x [])
-leaves f (T.Node x xs) = T.Node <$> pure x <*> traverse (leaves f) xs
-
-adjustFirstMatching :: Traversal' a b -> (b -> Bool) -> (b -> b) -> a -> a
-adjustFirstMatching t pred  f x = evalState (traverseOf t adj x) True where
-    adj y =  do b <- get
-                if b && pred y 
-                    then put False >> return (f y)
-                    else return y

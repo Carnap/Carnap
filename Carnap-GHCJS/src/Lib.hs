@@ -1,23 +1,125 @@
-{-# LANGUAGE DeriveDataTypeable, CPP, JavaScriptFFI #-}
+{-# LANGUAGE RankNTypes, FlexibleContexts, DeriveDataTypeable, CPP, JavaScriptFFI #-}
 module Lib
-    ( someFunc, jsonCommand
+    ( sendJSON, onEnter, clearInput, getListOfElementsByClass, tryParse, treeToElement, treeToUl,formToTree, leaves, adjustFirstMatching
     ) where
 
-import Data.Data
 import Data.Aeson
+import Data.Tree as T
+import Text.Parsec
+import Control.Lens
+import Control.Lens.Plated (children)
+import Control.Monad.State
+--The following three imports come from ghcjs-base, and break ghc-mod
 import GHCJS.Types
 import GHCJS.Foreign
 import GHCJS.Marshal
+--the import below required to make ghc-mod work properly. GHCJS compiles
+--using the generated javascript FFI versions of 2.4.0, but those are
+--slightly different from the webkit versions of 2.4.0. In particular,
+--Element doesn't export IsElement, although Types does in the webkit
+--version---but it's the other way around in the FFI version. This appears
+--to be cleaner in 3.0, but there's no documentation for that at all, yet.
+--import GHCJS.DOM.Types
+import GHCJS.DOM.Element
+import GHCJS.DOM.HTMLInputElement
+import GHCJS.DOM.Document (createElement, getBody)
+import GHCJS.DOM.Node
+import GHCJS.DOM.NodeList
+import GHCJS.DOM.Event
+import GHCJS.DOM.KeyboardEvent
+import GHCJS.DOM.EventM
+import GHCJS.DOM.EventTarget
 
-someFunc :: IO ()
-someFunc = Prelude.putStrLn "someFunc"
+--------------------------------------------------------
+--1. Utility Functions
+--------------------------------------------------------
+
+--------------------------------------------------------
+--1.1 Events
+--------------------------------------------------------
+
+onEnter :: EventM HTMLInputElement KeyboardEvent () ->  EventM HTMLInputElement KeyboardEvent ()
+onEnter action = do kbe      <- event
+                    id       <- getKeyIdentifier kbe
+                    if id == "Enter" then do action
+                                     else return ()
+
+--------------------------------------------------------
+--1.2 DOM Manipulation
+--------------------------------------------------------
+
+clearInput :: (MonadIO m) => HTMLInputElement -> m ()
+clearInput i = setValue i (Just "")
+
+--XXX: one might also want to include a "mutable lens" or "mutable traversal"
+--kind of thing: http://stackoverflow.com/questions/18794745/can-i-make-a-lens-with-a-monad-constraint
+getListOfElementsByClass :: IsElement self => self -> String -> IO [Maybe Element]
+getListOfElementsByClass elt c = do mnl <- getElementsByClassName elt c
+                                    case mnl of 
+                                        Nothing -> return []
+                                        Just nl -> do l <- getLength nl
+                                                      mapM ((fmap . fmap) castToElement . item nl) [0 .. l-1]
+
+tryParse p s = unPack $ parse p "" s 
+    where unPack (Right s) = show s
+          unPack (Left e)  = show e
+
+treeToElement :: (a -> IO Element) -> (Element -> [Element] -> IO ()) -> Tree a -> IO Element
+treeToElement f g (T.Node n []) = f n
+treeToElement f g (T.Node n ts) = do r <- f n
+                                     elts <- mapM (treeToElement f g) ts
+                                     g r elts
+                                     return r
+
+treeToUl :: Show a => Document -> Tree (a, String) -> IO Element
+treeToUl w t = treeToElement itemize listify t
+    where itemize (x,c) = do s@(Just s') <- createElement w (Just "li")
+                             setInnerHTML s' (Just $ show x)
+                             setAttribute s' "class" c 
+                             return s'
+          listify x xs = do o@(Just o') <- createElement w (Just "ul")
+                            mapM_ (appendChild o' . Just) xs
+                            appendChild x o
+                            return ()
+                                     
+--------------------------------------------------------
+--1.3 Optics
+--------------------------------------------------------
+
+leaves :: Traversal' (Tree a) (Tree a)
+leaves f (T.Node x []) = f (T.Node x [])
+leaves f (T.Node x xs) = T.Node <$> pure x <*> traverse (leaves f) xs
+
+adjustFirstMatching :: Traversal' a b -> (b -> Bool) -> (b -> b) -> a -> a
+adjustFirstMatching t pred  f x = evalState (traverseOf t adj x) True where
+    adj y =  do b <- get
+                if b && pred y 
+                    then put False >> return (f y)
+                    else return y
+
+--------------------------------------------------------
+--1.4 Carnap-Specific
+--------------------------------------------------------
+
+formToTree :: Plated a => a -> Tree a
+formToTree f = T.Node f (map formToTree (children f))
+
+--------------------------------------------------------
+--FFI Wrappers
+--------------------------------------------------------
+
+sendJSON :: ToJSON a => a -> IO ()
+sendJSON = jsonCommand . toJSString . clean . encode
+    where clean :: Show a => a -> String
+          clean = read . show 
 
 #ifdef __GHCJS__
--- | Run the AJAX command.
+
 foreign import javascript unsafe "jsonCommand($1)" jsonCommand :: JSString -> IO ()
 
--- | Run the AJAX command, handling errors as well
 #else
+
 jsonCommand :: JSString -> IO ()
 jsonCommand = error "jsonCommand requires JS FFI"
+
 #endif
