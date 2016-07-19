@@ -20,11 +20,7 @@ import GHCJS.DOM.Element
 --Element doesn't export IsElement, although Types does in the webkit
 --version---but it's the other way around in the FFI version. This appears
 --to be cleaner in 3.0, but there's no documentation for that at all, yet.
---
---because other modules in Lib are imported from ghcjs-base, ghc-mod will
---not work anyway.
---
---import GHCJS.DOM.Types
+import GHCJS.DOM.Types
 import GHCJS.DOM.HTMLInputElement (HTMLInputElement, getValue, setValue)
 import GHCJS.DOM.Document (Document,createElement, getBody, getDefaultView)
 import GHCJS.DOM.Window (alert)

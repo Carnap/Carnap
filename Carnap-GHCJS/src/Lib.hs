@@ -10,9 +10,11 @@ import Control.Lens
 import Control.Lens.Plated (children)
 import Control.Monad.State
 --The following three imports come from ghcjs-base, and break ghc-mod
+#ifdef __GHCJS__
 import GHCJS.Types
 import GHCJS.Foreign
 import GHCJS.Marshal
+#endif
 --the import below required to make ghc-mod work properly. GHCJS compiles
 --using the generated javascript FFI versions of 2.4.0, but those are
 --slightly different from the webkit versions of 2.4.0. In particular,
@@ -108,18 +110,19 @@ formToTree f = T.Node f (map formToTree (children f))
 --FFI Wrappers
 --------------------------------------------------------
 
+
+#ifdef __GHCJS__
+
 sendJSON :: ToJSON a => a -> IO ()
 sendJSON = jsonCommand . toJSString . clean . encode
     where clean :: Show a => a -> String
           clean = read . show 
 
-#ifdef __GHCJS__
-
 foreign import javascript unsafe "jsonCommand($1)" jsonCommand :: JSString -> IO ()
 
 #else
 
-jsonCommand :: JSString -> IO ()
-jsonCommand = error "jsonCommand requires JS FFI"
+sendJSON :: ToJSON a => a -> IO ()
+sendJSON = Prelude.error "sendJSON requires the GHCJS FFI"
 
 #endif

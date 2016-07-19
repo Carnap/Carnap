@@ -14,15 +14,28 @@ cabal-version:       >=1.10
 library
   hs-source-dirs:      src
   exposed-modules:     Lib
-  build-depends:       base >= 4.7 && < 5
-                     , aeson
-                     , ghcjs-base
-                     , lens
-                     , ghcjs-dom == 0.2.4.0
-                     , containers
-                     , mtl
-                     , parsec
-                     , Carnap
+  if impl(ghcjs)
+      build-depends:       base >= 4.7 && < 5
+                         , aeson
+                         , ghcjs-base
+                         , lens
+                         , ghcjs-dom == 0.2.4.0
+                         , containers
+                         , mtl
+                         , parsec
+                         , Carnap
+  else 
+      build-depends:       base >= 4.7 && < 5
+                         , aeson
+                         , lens
+                         , ghcjs-dom == 0.2.4.0
+                         , containers
+                         , mtl
+                         , parsec
+                         , Carnap
+
+
+
   default-language:    Haskell2010
 
 executable Syntax-Check
