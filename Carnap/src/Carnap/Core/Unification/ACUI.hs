@@ -1,7 +1,7 @@
 {-#LANGUAGE GADTs, TypeOperators, ScopedTypeVariables, ExplicitForAll, ImpredicativeTypes, MultiParamTypeClasses, FlexibleContexts, PatternSynonyms #-}
 
 module Carnap.Core.Unification.ACUI (
-  ACUI(..)
+  ACUI(..), acuiUnifySys
   --acuiUnify, ACUI(..)
 ) where
 
@@ -164,3 +164,13 @@ acuiUnify a b = do
     inhomosolss <- mapM (uncurry solveInHomoEq) inhomos --solve each one
     let sols = bigCrossWith subadd [homosol] inhomosolss --combine inhomo sols
     return $ map (map (emap simplify)) sols --simplify the solutions
+
+acuiUnifySys :: (MonadVar f m, ACUI f) => [Equation f] -> m [[Equation f]]
+acuiUnifySys ((a :=: b):eqs) = do
+    sols <- acuiUnify a b
+    let handleSub sub = do
+        let eqs' = mapAll (applySub sub) eqs
+        sols' <- acuiUnifySys eqs'
+        return $ map (sub ++) sols'
+    solsBysubs <- mapM handleSub sols
+    return $ concat solsBysubs
