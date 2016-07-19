@@ -4,7 +4,7 @@ module Carnap.Core.Data.AbstractSyntaxDataTypes(
   -- * Abstract Types
   -- $ATintro
   -- ** Language Building Types
-  Term(..), Form(..), 
+  Term(..), Form(..),
   Copula((:$:), Lam), CopulaSchema(..), MaybeMonadVar(..),
   (:|:)(..), Fix(Fx), FixLang, EndLang, pattern AOne,
   pattern ATwo, pattern AThree, pattern LLam, pattern (:!$:), pattern Fx1,
@@ -15,9 +15,9 @@ module Carnap.Core.Data.AbstractSyntaxDataTypes(
   -- ** Abstract Term Types
   -- *** Variable Binding Operators
   Quantifiers(Bind),Abstractors(Abstract),Applicators(Apply), BoundVars(..),
-  -- *** Non-Binding Operators 
-  Arity(AZero, ASucc), Predicate(Predicate), Connective(Connective), 
-  Function(Function), Subnective(Subnective), SubstitutionalVariable(SubVar),  
+  -- *** Non-Binding Operators
+  Arity(AZero, ASucc), Predicate(Predicate), Connective(Connective),
+  Function(Function), Subnective(Subnective), SubstitutionalVariable(SubVar),
   -- * Generic Programming Utilities
   LangTypes2(..), LangTypes1(..), RelabelVars(..), FirstOrderLex(..), PrismLink(..),
 ) where
@@ -125,7 +125,7 @@ pattern Fx12 x     = FX (Lx12 x)
 pattern FX x = Fx (FRight x)
 
 --------------------------------------------------------
---1.2 Abstract Operator Types 
+--1.2 Abstract Operator Types
 --------------------------------------------------------
 
 --------------------------------------------------------
@@ -213,7 +213,7 @@ data SubstitutionalVariable :: (* -> *) -> * -> * where
 
 --data Quote :: (* -> *) -> * -> *
     --Quote :: (lang )
- 
+
 --------------------------------------------------------
 --2. Schematizable, Show, and Eq
 --------------------------------------------------------
@@ -402,7 +402,8 @@ instance UniformlyEq (SubstitutionalVariable idx) where
 
         (SubVar n) =* (SubVar m) = n == m
 
-instance FirstOrderLex (SubstitutionalVariable idx)
+instance FirstOrderLex (SubstitutionalVariable idx) where
+        isVarLex (SubVar n) = True
 
 -- instance {-# OVERLAPS #-} MonadVar f m => MaybeMonadVar f m where
 --         maybeFresh = fresh
@@ -435,7 +436,7 @@ instance (UniformlyEq app, FirstOrderLex app) => FirstOrderLex (Applicators app 
         isVarLex (Apply f) = isVarLex f
 
 instance Monad m => MaybeMonadVar (Applicators app lang) m
-        
+
 instance UniformlyEq abs => UniformlyEq (Abstractors abs lang) where
         (Abstract a) =* (Abstract b) = a =* b
 
@@ -454,7 +455,7 @@ instance (UniformlyEq pred, FirstOrderLex pred) => FirstOrderLex (Predicate pred
 instance Monad m => MaybeMonadVar (Predicate pred lang) m
 
 instance UniformlyEq con => UniformlyEq (Connective con lang) where
-        (Connective c a) =* (Connective c' a') = 
+        (Connective c a) =* (Connective c' a') =
             arityInt a == arityInt a' && c =* c'
 
 instance (UniformlyEq con, FirstOrderLex con) => FirstOrderLex (Connective con lang) where
@@ -463,7 +464,7 @@ instance (UniformlyEq con, FirstOrderLex con) => FirstOrderLex (Connective con l
 instance Monad m => MaybeMonadVar (Connective con lang) m
 
 instance UniformlyEq func => UniformlyEq (Function func lang) where
-        (Function f a) =* (Function f' a') = 
+        (Function f a) =* (Function f' a') =
             arityInt a == arityInt a' && f =* f'
 
 instance (UniformlyEq func, FirstOrderLex func) => FirstOrderLex (Function func lang) where
@@ -472,20 +473,20 @@ instance (UniformlyEq func, FirstOrderLex func) => FirstOrderLex (Function func 
 instance Monad m => MaybeMonadVar (Function func lang) m
 
 instance UniformlyEq sub => UniformlyEq (Subnective sub lang) where
-        (Subnective s a) =* (Subnective s' a') = 
+        (Subnective s a) =* (Subnective s' a') =
             arityInt a == arityInt a' && s =* s'
 
 instance FirstOrderLex sub => FirstOrderLex (Subnective sub lang) where
         isVarLex (Subnective s a) = isVarLex s
 
 instance Monad m => MaybeMonadVar (Subnective sub lang) m
-        
+
 instance UniformlyEq (EndLang idx) where
         (=*) = undefined
 
 instance FirstOrderLex (EndLang idx) where
         sameHeadLex = undefined
-        
+
 instance Monad m => MaybeMonadVar (EndLang idx) m
 
 instance ( UniformlyEq (f idx)
@@ -525,8 +526,8 @@ instance (UniformlyEq lang, FirstOrderLex lang) => UniformlyEq (Copula lang) whe
 instance (UniformlyEq lang, FirstOrderLex lang) => FirstOrderLex (Copula lang)
         where
 
-        sameHeadLex ((x :: lang (t1  -> t2 )) :$: _) 
-                    ((y :: lang (t1' -> t2')) :$: _) = 
+        sameHeadLex ((x :: lang (t1  -> t2 )) :$: _)
+                    ((y :: lang (t1' -> t2')) :$: _) =
             case eqT :: Maybe ((t1 -> t2) :~: (t1' -> t2')) of
                 Just Refl -> sameHeadLex x y
                 Nothing -> False
@@ -538,11 +539,11 @@ instance {-# OVERLAPPABLE #-} (UniformlyEq ((Copula :|: f) (FixLang f))
          , MaybeMonadVar ((Copula :|: f) (FixLang f)) (State Int))
          => UniformlyEq (FixLang f) where
              x =* y = S.evalState (stateEq x y) 0
-                where 
+                where
                     stateEq :: FixLang f a -> FixLang f b -> State Int Bool
                     stateEq (x :!$: y) (x' :!$: y') = return $ x =* x' && y =* y'
                     stateEq (LLam (f :: FixLang f t1 -> FixLang f t1')) (LLam (g :: FixLang f t2 -> FixLang f t2')) =
-                        case (eqT :: Maybe (t1 :~: t2), maybeFresh :: Maybe (State Int ((Copula :|: f) (FixLang f) ()))) of 
+                        case (eqT :: Maybe (t1 :~: t2), maybeFresh :: Maybe (State Int ((Copula :|: f) (FixLang f) ()))) of
                             (Just Refl, Just _) -> do let (Just fresh) = maybeFresh :: Maybe (State Int ((Copula :|: f) (FixLang f) t1))
                                                       v <- fresh
                                                       stateEq (f (Fx v)) (g (Fx v))
@@ -560,12 +561,12 @@ instance MaybeMonadVar ((Copula :|: f) (FixLang f)) m => MonadVar (FixLang f) m 
                     Just fsh -> fmap Fx fsh
                     Nothing -> error "you need substitutional variables in your language for this"
 
-        freshPig = case maybePig :: Maybe (m (EveryPig ((Copula :|: f) (FixLang f)))) of 
+        freshPig = case maybePig :: Maybe (m (EveryPig ((Copula :|: f) (FixLang f)))) of
                     Just pig -> do p <- pig
                                    return $ EveryPig (Fx (unEveryPig p))
 
 instance {-# OVERLAPPABLE #-} (MonadVar (FixLang f) (State Int), FirstOrderLex (FixLang f)) => FirstOrder (FixLang f) where
-        
+
         isVar = isVarLex
 
         sameHead = sameHeadLex
@@ -573,20 +574,20 @@ instance {-# OVERLAPPABLE #-} (MonadVar (FixLang f) (State Int), FirstOrderLex (
         decompose a b
             | sameHead a b = recur a b []
             | otherwise = []
-            where 
+            where
                   recur :: FixLang f a -> FixLang f b -> [Equation (FixLang f)]
                     ->[Equation (FixLang f)]
-                  recur (x :!$: (y :: FixLang f t)) 
-                        (x' :!$: (y' :: FixLang f t')) 
+                  recur (x :!$: (y :: FixLang f t))
+                        (x' :!$: (y' :: FixLang f t'))
                         terms = case eqT :: Maybe (t :~: t') of
-                                    Just Refl -> recur x x' ((y :=: y') : terms) 
+                                    Just Refl -> recur x x' ((y :=: y') : terms)
                                     Nothing -> []
                   recur _ _ terms = terms
 
         occurs phi psi@(x :!$: y)= occursImproperly phi x || occursImproperly phi y
             where occursImproperly :: FixLang f a -> FixLang f b -> Bool
-                  occursImproperly phi psi@(x :!$: y) = phi =* psi 
-                                                         || occursImproperly phi x 
+                  occursImproperly phi psi@(x :!$: y) = phi =* psi
+                                                         || occursImproperly phi x
                                                          || occursImproperly phi y
                   occursImproperly phi psi = phi =* psi
         --might want a clause for LLam
@@ -783,7 +784,7 @@ class PrismLink f g where
         raisePrism :: Typeable a => Prism' (g a) c -> Prism' (f a) c
         pflag :: Flag Bool f g --const False indicates that this is the trivial select nothing prism
 
--- addConstructor :: (Typeable a) => Prism'' (f a) (g a) -> 
+-- addConstructor :: (Typeable a) => Prism'' (f a) (g a) ->
 --     (Prism'' (h a) c -> Prism'' (g a) c) -> (Prism'' (h a) c -> Prism'' (f a) c)
 -- addConstructor p rp p' = p . rp p'
 

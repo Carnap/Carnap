@@ -2,7 +2,8 @@
 
 module Carnap.Core.Examples.ACUI (
     V, Set, VLang, Var, acuiParser,
-    pattern VEmpty, pattern VUnion, pattern VSomeSet, pattern VSingelton,
+    pattern VEmpty, pattern VUnion, pattern VSomeSet,
+    --pattern VSingelton,
     parseTerm, evalTerm,
     pattern ACUISV
 ) where
@@ -145,11 +146,33 @@ instance ACUI VLang where
     unfoldTerm (VUnion x y) = unfoldTerm x ++ unfoldTerm y
     unfoldTerm VEmpty       = []
     unfoldTerm leaf         = [leaf]
-    isId = undefined
-    refoldTerms = undefined
-    isACUI = undefined
-    getId = undefined
-    acuiOp = undefined
+
+    isId VEmpty = True
+    isId _      = False
+
+    isACUI (VUnFunc _ _)    = False
+    isACUI (VBinFunc _ _ _) = False
+    isACUI _                = True
+
+    getId (Proxy :: Proxy a) = case eqT :: Maybe (a :~: (Term V)) of
+                                   Just Refl -> VEmpty
+                                   _         -> error "you have to use the right type"
+
+    acuiOp a              b@VEmpty = a
+    acuiOp a@VEmpty       b        = b
+    acuiOp a@(VUnion _ _)     b    = VUnion a b
+    acuiOp a@(VSomeSet _)     b    = VUnion a b
+    acuiOp a@(VSingelton _)   b    = VUnion a b
+    acuiOp a@(VUnFunc _ _)    b    = VUnion a b
+    acuiOp a@(VBinFunc _ _ _) b    = VUnion a b
+    acuiOp b a@(VUnion _ _)        = VUnion b a
+    acuiOp b a@(VSomeSet _)        = VUnion b a
+    acuiOp b a@(VSingelton _)      = VUnion b a
+    acuiOp b a@(VUnFunc _ _)       = VUnion b a
+    acuiOp b a@(VBinFunc _ _ _)    = VUnion b a
+    acuiOp ((SV n) :: VLang a) b   = case eqT :: Maybe (a :~: (Term V)) of
+                                         Just Refl -> VUnion (SV n) b
+                                         _         -> error "you have to use the right type"
 
 --This is just a place holder until we define things compositionally
 data VLangLabel = VExtra

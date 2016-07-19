@@ -23,19 +23,15 @@ class FirstOrder f => ACUI f where
   --only if this returns true are ther other functions valid
   isACUI :: f a -> Bool
   isId :: f a -> Bool --this one can be called weather acui or not
-  getId :: Proxy a -> f a --given a valid term give the
+  getId :: Typeable a => Proxy a -> f a --given a valid term give the
   acuiOp :: f a -> f a -> f a
   unfoldTerm :: f a -> [f a]
-  refoldTerms :: [f a] -> f a
 
 isConst a = not (isVar a || isId a)
 
 --a simiplair equation type we can work with here
 data SimpleEquation a = a :==: a
     deriving(Eq, Ord, Show)
-
---export for testing
-pattern (:===:) x y = x :==: y
 
 --some helpers for minipulating equations
 eqmap f (a :==: b) = f a :==: f b
@@ -105,7 +101,7 @@ minimals sols | null minsols = trivialSol sols
 
 --simplifies a term by removing all empties
 --simplify :: ACUI f => f a -> f a
-simplify e = refoldTerms (unfoldTerm e)
+--simplify e = refoldTerms (unfoldTerm e)
 
 
 --uses vget to get the term being solved for and converts a solution
@@ -162,10 +158,12 @@ acuiUnify a b = do
     homosol <- solveHomoEq homo --solve the homogenous equation
     let inhomos = inhomogenous (l :==: r) --find all inhomogenous equations
     inhomosolss <- mapM (uncurry solveInHomoEq) inhomos --solve each one
-    let sols = bigCrossWith subadd [homosol] inhomosolss --combine inhomo sols
-    return $ map (map (emap simplify)) sols --simplify the solutions
+    return $ bigCrossWith subadd [homosol] inhomosolss
+    --let sols = bigCrossWith subadd [homosol] inhomosolss --combine inhomo sols
+    --return $ map (map (emap simplify)) sols --simplify the solutions
 
 acuiUnifySys :: (MonadVar f m, ACUI f) => [Equation f] -> m [[Equation f]]
+acuiUnifySys [] = return [[]]
 acuiUnifySys ((a :=: b):eqs) = do
     sols <- acuiUnify a b
     let handleSub sub = do
