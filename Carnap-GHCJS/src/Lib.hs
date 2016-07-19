@@ -19,7 +19,7 @@ import GHCJS.Marshal
 --Element doesn't export IsElement, although Types does in the webkit
 --version---but it's the other way around in the FFI version. This appears
 --to be cleaner in 3.0, but there's no documentation for that at all, yet.
---import GHCJS.DOM.Types
+import GHCJS.DOM.Types
 import GHCJS.DOM.Element
 import GHCJS.DOM.HTMLInputElement
 import GHCJS.DOM.Document (createElement, getBody)

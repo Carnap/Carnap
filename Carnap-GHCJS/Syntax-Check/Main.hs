@@ -26,8 +26,9 @@ import GHCJS.DOM.Element
 --
 --import GHCJS.DOM.Types
 import GHCJS.DOM.HTMLInputElement (HTMLInputElement, getValue, setValue)
-import GHCJS.DOM.Document (Document,createElement, getBody)
-import GHCJS.DOM.Node (appendChild)
+import GHCJS.DOM.Document (Document,createElement, getBody, getDefaultView)
+import GHCJS.DOM.Window (alert)
+import GHCJS.DOM.Node (appendChild, getParentNode, insertBefore)
 import GHCJS.DOM.KeyboardEvent
 import GHCJS.DOM.EventM
 import Control.Monad.IO.Class (MonadIO, liftIO)
@@ -35,10 +36,6 @@ import Control.Monad.IO.Class (MonadIO, liftIO)
 main :: IO ()
 main = runWebGUI $ \w -> 
             do (Just dom) <- webViewGetDomDocument w
-               --XXX:this next line is ugly, to put it mildly. It'd be nice
-               --if there was a better way to remove extraneous quotes, or
-               --if the ToJSVal instance for Aeson was better beheaved
-               sendJSON ("hello","hello")
                (Just b) <- getBody dom
                mcheckers <- getCheckers b
                mapM_ (activateChecker dom) mcheckers
@@ -49,6 +46,13 @@ echoTo f o = do (Just t) <- target :: EventM HTMLInputElement KeyboardEvent (May
                 case mv of 
                     Nothing -> return ()
                     Just v -> liftIO $ setInnerHTML o (fmap f mv)
+
+trySubmit :: IORef (PureForm,[PureForm], Tree PureForm) -> Document -> EventM HTMLInputElement e ()
+trySubmit ref w = do (Just w') <- getDefaultView w
+                     (_,forms,_) <- liftIO $ readIORef ref
+                     case forms of 
+                        [] -> alert w' "submitted!"
+                        _ -> alert w' "not yet finished"
 
 
 tryMatch :: Element -> IORef (PureForm,[PureForm], Tree PureForm) -> Document -> EventM HTMLInputElement KeyboardEvent ()
@@ -71,7 +75,8 @@ tryMatch o ref w = onEnter $ do (Just t) <- target :: EventM HTMLInputElement Ke
                                             modifyIORef ref (_3 %~ dev x)
                                             (_,_,t) <- readIORef ref
                                             redraw (head xs) t
-              shorten x xs = case xs of [] -> liftIO $ setInnerHTML o (Just "success!") 
+              shorten x xs = case xs of [] -> liftIO $ do setInnerHTML o (Just "success!") 
+                                                          modifyIORef ref (_2 .~ []) 
                                         _  -> updateGoal x xs
               resetGoal = do (f,_,_) <- liftIO $ readIORef ref
                              liftIO $ writeIORef ref (f, [f], T.Node f [])
@@ -127,8 +132,14 @@ activateChecker w (Just (i,o,classes))
                                               addListener i keyUp echo False
                 | "match" `elem` classes = do Just ohtml <- getInnerHTML o
                                               let (Right f) = parse purePropFormulaParser "" ohtml
+                                              mbt@(Just bt) <- createElement w (Just "button")
+                                              setInnerHTML bt (Just "submit solution")
+                                              mpar@(Just par) <- getParentNode o
+                                              insertBefore par mbt (Just o)
                                               ref <- newIORef (f,[f], T.Node f [])
                                               match <- newListener $ tryMatch o ref w
+                                              submit <- newListener $ trySubmit ref w
                                               addListener i keyUp match False
+                                              addListener bt click submit False 
                 | otherwise = return () 
 activateChecker _ _ = Prelude.error "impossible"
