@@ -141,10 +141,15 @@ instance Monoid (VLang (Term V)) where
 instance Eq (VLang a) where
     (==) = (=*)
 
-instance ACUI VLang (Term V) where
+instance ACUI VLang where
     unfoldTerm (VUnion x y) = unfoldTerm x ++ unfoldTerm y
     unfoldTerm VEmpty       = []
     unfoldTerm leaf         = [leaf]
+    isId = undefined
+    refoldTerms = undefined
+    isACUI = undefined
+    getId = undefined
+    acuiOp = undefined
 
 --This is just a place holder until we define things compositionally
 data VLangLabel = VExtra
@@ -167,50 +172,6 @@ instance Combineable VLang VLangLabel where
     replaceChild (VUnFunc s _)    pig _ = VUnFunc s (unEveryPig pig)
     replaceChild (VBinFunc s _ x) pig 0 = VBinFunc s (unEveryPig pig) x
     replaceChild (VBinFunc s x _) pig 1 = VBinFunc s x (unEveryPig pig)
-
---this could likely be defined just using generic things
---however in this case I'm just defining it directly
---more work will be needed to define this for all
---needed languages.
-{--
-instance FirstOrder VLang where
-  isVar (SV _)       = True
-  isVar (VSomeSet _) = True
-  isVar _            = False
-
-  sameHead VEmpty           VEmpty            = True
-  sameHead (SV s)           (SV s')           = s == s'
-  sameHead (VUnion _ _)     (VUnion _ _)      = True
-  sameHead (VSingelton _)   (VSingelton _)    = True
-  sameHead (VUnFunc s _)    (VUnFunc s' _)    = s == s'
-  sameHead (VBinFunc s _ _) (VBinFunc s' _ _) = s == s'
-  sameHead _                _                 = False
-
-  decompose (VUnion x y)     (VUnion x' y')     = [x :=: x', y :=: y']
-  decompose (VSingelton x)   (VSingelton y)     = [x :=: y]
-  decompose (VUnFunc _ x)    (VUnFunc _ y)      = [x :=: y]
-  decompose (VBinFunc _ x y) (VBinFunc _ x' y') = [x :=: x', y :=: y']
-  decompose _              _              = []
-
-  occurs (SV s)       (SV s')          = s == s'
-  occurs (VSomeSet s) (VSomeSet s')    = s == s'
-  occurs v            (VUnion x y)     = occurs v x || occurs v y
-  occurs v            (VSingelton x)   = occurs v x
-  occurs v            (VUnFunc s x)    = occurs v x
-  occurs v            (VBinFunc s x y) = occurs v x || occurs v y
-
-  --this is complicated and should be hidden from the user
-  subst v new (VBinFunc s x y)     = VBinFunc s (subst v new x) (subst v new y)
-  subst v new (VUnFunc s x)        = VUnFunc s (subst v new x)
-  subst v new (VUnion x y)         = VUnion (subst v new x) (subst v new y)
-  subst v new (VSingelton x)       = VSingelton (subst v new x)
-  subst (VSomeSet s) new orign@(VSomeSet s')
-      | s == s'                    = new
-      | otherwise                  = orign
-
-  --freshVars = map (\n -> EveryPig (SV n)) [1..]
-
---}
 
 parseUnion :: (Monad m) => ParsecT String u m (VTerm -> VTerm -> VTerm)
 parseUnion = do spaces

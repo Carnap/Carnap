@@ -4,7 +4,7 @@ module Carnap.Core.Unification.Unification (
    Equation((:=:)), UError(..), FirstOrder, HigherOrder,
    isVar, sameHead, decompose, occurs, subst,
    matchApp, castLam, getLamVar, (.$.),
-   applySub, mapAll, freeVars
+   applySub, mapAll, freeVars, emap
 ) where
 
 import Data.Type.Equality

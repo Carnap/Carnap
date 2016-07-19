@@ -57,8 +57,7 @@ pureAbstract ((a :=: b):eqs) = do
     return (top ++ rest)
 
 --compose the list functor with another functor
-data ListComp f a where
-    ListComp :: [f a] -> ListComp f a
+
 
 instance Schematizable f => Schematizable (ListComp f) where
     schematize (ListComp l) [] = "[" ++ intercalate ", " (map (\x -> schematize x []) l) ++ "]"

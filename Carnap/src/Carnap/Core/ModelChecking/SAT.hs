@@ -25,7 +25,7 @@ isPos _        = False
 
 isNeg = not . isPos
 
-class Eq a => SatProblem t a | t -> a where
+class SatProblem t a | t -> a where
     unitProp :: Literal a -> t -> t
     units :: t -> [Literal a]
     unassigned :: t -> [a]

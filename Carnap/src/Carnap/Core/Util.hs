@@ -5,7 +5,7 @@ module Carnap.Core.Util(
     crossWith, bigCrossWith, bigCrossWithH,
     bigUnionWith, bigUnion,
     EveryPig(..), AnyPig(..),
-    pop
+    ListComp(..)
 ) where
 
 import Data.List
@@ -13,11 +13,8 @@ import Control.Lens
 import Data.Typeable
 import Control.Monad.State
 
-pop :: State [a] a
-pop = do
-  (x:xs) <- get
-  put xs
-  return x
+data ListComp f a where
+    ListComp :: [f a] -> ListComp f a
 
 --define natural numbers for type lifting
 data Nat = Zero
@@ -79,8 +76,3 @@ data AnyPig f where
 
 mutatePig :: (forall a . f a -> f a) -> EveryPig f -> EveryPig f
 mutatePig f x = EveryPig (f (unEveryPig x))
-
---class UniformlyEq f where
-  --  eq :: f a -> f b -> Bool
-    --eq x y = not (neq x y)
-    --neq :: f a -> f b -> Bool

@@ -65,6 +65,7 @@ class CanonicalForm a where
     canonical :: a -> a
     canonical = id
 
+
 class Monad m => MonadVar f m where
     fresh :: Typeable a => m (f a)
     freshPig :: m (EveryPig f)

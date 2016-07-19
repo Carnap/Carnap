@@ -1,7 +1,8 @@
-{-#LANGUAGE ImpredicativeTypes, MultiParamTypeClasses, FlexibleContexts, PatternSynonyms #-}
+{-#LANGUAGE GADTs, TypeOperators, ScopedTypeVariables, ExplicitForAll, ImpredicativeTypes, MultiParamTypeClasses, FlexibleContexts, PatternSynonyms #-}
 
 module Carnap.Core.Unification.ACUI (
-  acuiUnify, ACUI, unfoldTerm, refoldTerms
+  ACUI(..)
+  --acuiUnify, ACUI(..)
 ) where
 
   --to solve ACUI unification with constants we need to be able to find
@@ -10,27 +11,24 @@ import Carnap.Core.Data.AbstractSyntaxClasses
 import Carnap.Core.ModelChecking.SAT
 import Carnap.Core.Unification.Unification
 import Carnap.Core.Util
-import Data.Monoid
 import Data.Typeable
 import Control.Lens
 import Control.Monad.State
 import Control.Lens.Plated
 import Data.List
 import Data.Function
+import Data.Proxy
 
---determines weather a term is a non-empty constant
-isConst a = not (isVar a || a == mempty)
+class FirstOrder f => ACUI f where
+  --only if this returns true are ther other functions valid
+  isACUI :: f a -> Bool
+  isId :: f a -> Bool --this one can be called weather acui or not
+  getId :: Proxy a -> f a --given a valid term give the
+  acuiOp :: f a -> f a -> f a
+  unfoldTerm :: f a -> [f a]
+  refoldTerms :: [f a] -> f a
 
---typeclass that contains everything we need to perform ACUI unfication
-class (Typeable a, Eq (f a), Monoid (f a), FirstOrder f) => ACUI f a where
-    --decompose into proper parts
-    unfoldTerm :: f a -> [f a]
-
-    refoldTerms :: [f a] -> f a
-    refoldTerms [] = mempty
-    refoldTerms [x] = x
-    refoldTerms (x:xs) | x == mempty = refoldTerms xs
-                       | otherwise   = x `mappend` refoldTerms xs
+isConst a = not (isVar a || isId a)
 
 --a simiplair equation type we can work with here
 data SimpleEquation a = a :==: a
@@ -48,34 +46,34 @@ eqadd (a :==: b) (a' :==: b') = (a ++ a') :==: (b ++ b')
 homogenous eq = eqfilter isVar eq
 --finds all inhomogenous equations that need to be solved
 inhomogenous (l :==: r) = zip consts eqs
-    where consts = filter isConst (nub $ l ++ r)
-          eqs = map (\c -> eqfilter (\x -> isVar x || x == c) (l :==: r)) consts
+    where consts = filter isConst (nubBy (=*) $ l ++ r)
+          eqs = map (\c -> eqfilter (\x -> isVar x || x =* c) (l :==: r)) consts
 
 --returns true if term maps to 'true' in the SAT problem
-isTrue a = isConst a && a /= mempty
+isTrue a = isConst a && not (isId a)
 --returns true if a term maps to 'false' in a the SAT problem
-isFalse a = a == mempty
+isFalse a = isId a
 
 
 --converts a SimpleEquation [f a] into a sat problem
-toSatProblem :: (ACUI f a) => SimpleEquation [f a] -> ListSat (f a)
+--toSatProblem :: (ACUI f a) => SimpleEquation [f a] -> ListSat (f a)
 toSatProblem eq@(a :==: b) | ltrue && rtrue = makeProb []
-                           | ltrue     = makeProb [map LPos b]
-                           | rtrue     = makeProb [map LPos a]
+                           | ltrue     = makeProb [map (LPos . AnyPig) b]
+                           | rtrue     = makeProb [map (LPos . AnyPig) a]
                            | lfalse && rfalse = makeProb []
-                           | lfalse    = makeProb $ map (\x -> [LNeg x]) b
-                           | rfalse    = makeProb $ map (\x -> [LNeg x]) a
+                           | lfalse    = makeProb $ map (\x -> [LNeg $ AnyPig x]) b
+                           | rfalse    = makeProb $ map (\x -> [LNeg $ AnyPig x]) a
                            | otherwise = makeProb $ (impl a b) ++ (impl b a)
-    where impl ant con = map (\lit -> (LNeg lit):(map LPos con)) ant
+    where impl ant con = map (\lit -> (LNeg $ AnyPig lit):(map (LPos . AnyPig) con)) ant
           ltrue = any isTrue a
           rtrue = any isTrue b
           lfalse = all isFalse a
           rfalse = all isFalse b
-          vars = nub $ filter isVar (a ++ b)
+          vars = nub $ map AnyPig (filter isVar (a ++ b))
           makeProb = makeProblemWith vars
 
 --returns true if the left side is strictly greater than the right side
-dominates :: Eq a => [Literal a] -> [Literal a] -> Bool
+--dominates :: [Literal (AnyPig f)] -> [Literal a] -> Bool
 dominates l r = null $ (pos r) \\ (pos l)
     where pos = filter isPos
 
@@ -100,36 +98,37 @@ trivialSol (Sat False)  = []
 
 --finds all minimal solutions or the trivial solution if no nontrivial ones
 --exist
---minimals :: Eq a => Solutions a -> [[Literal a]]
+--minimals :: Solutions a -> [[Literal a]]
 minimals sols | null minsols = trivialSol sols
               | otherwise    = minsols
     where minsols = minimals' [] [] sols
 
 --simplifies a term by removing all empties
+--simplify :: ACUI f => f a -> f a
 simplify e = refoldTerms (unfoldTerm e)
 
 
 --uses vget to get the term being solved for and converts a solution
 --into a substitution
---conv :: State [b] (f a) -> [Literal (f a)] -> [SimpleEquation (f a)]
+conv :: forall f m a. (Typeable a, Monad m, ACUI f) => m (f a) -> [Literal (AnyPig f)] -> m [Equation f]
 conv vget sol = vget >>= \var -> return $ map (convVar var) sol
-    where convVar var term | isPos term = (getVar term) :==: var
-                           | otherwise  = (getVar term) :==: mempty
+    where convVar var term = case getVar term of
+                                 (AnyPig (term' :: f b))
+                                     | isPos term -> case eqT :: Maybe (a :~: b) of
+                                                         Just Refl -> term' :=: var
+                                     | otherwise  -> term' :=: getId Proxy
 
-
---adds substitutions togethor (in the way that adding solutions togethor)
---maps to under the homomorphism that takes solutions into substitutions
-subadd :: (Eq m, Monoid m) => [SimpleEquation m] -> [SimpleEquation m] -> [SimpleEquation m]
+subadd :: forall f. (ACUI f) => [Equation f] -> [Equation f] -> [Equation f]
 subadd a b = like ++ unlike
-    where like = [x :==: ((a' `mappend` b'))| (x :==: a') <- a, (y :==: b') <- b, x == y]
-          unlike = filter (not . (`elem` (map eqleft like)) . eqleft) (a ++ b)
-          eqleft (l :==: _) = l
-
-
---converts our internal equation represnetation to our external
-toSub :: (Typeable a, FirstOrder f) => [SimpleEquation (f a)] -> [Equation f]
-toSub []              = []
-toSub ((x :==: y):xs) = (x :=: y):(toSub xs)
+    where like = concat [add e1 e2 | e1 <- a, e2 <- b]
+          add :: Equation f -> Equation f -> [Equation f]
+          add (x :=: (a :: f a)) (y :=: (b :: f b))
+              | x =* y = case eqT :: Maybe (a :~: b) of
+                             Just Refl -> [x :=: (a `acuiOp` b)]
+                             _         -> []
+              | otherwise = []
+          unlike = filter (not . leftMatches) (a ++ b)
+          leftMatches (v :=: _) = any (\(v' :=: _) -> v =* v') like
 
 popVar :: (MonadVar f m, Typeable a) => m (f a)
 popVar = do
@@ -138,22 +137,24 @@ popVar = do
 
 
 --solves a homogenous equation
-solveHomoEq :: (MonadVar f m, ACUI f a) => SimpleEquation [f a] -> m [SimpleEquation (f a)]
+solveHomoEq :: forall f m a. (MonadVar f m, ACUI f, Typeable a) => SimpleEquation [f a] -> m [Equation f]
 solveHomoEq eq = do
     let mins = minimals . search . toSatProblem $ eq
-    minSols <- mapM (conv popVar) mins
+    minSols <- mapM (conv (popVar :: m (f a))) mins
     let homosol = foldl subadd [] minSols
     return homosol
 
+
 --solves an inhomogenous equation for a specific constant
-solveInHomoEq :: (MonadVar f m, ACUI f a) => f a -> SimpleEquation [f a] -> m [[SimpleEquation (f a)]]
+solveInHomoEq :: (MonadVar f m, ACUI f, Typeable a) => f a -> SimpleEquation [f a] -> m [[Equation f]]
 solveInHomoEq c eq = do
   let mins = minimals . search . toSatProblem $ eq
   minSols <- mapM (conv (return c)) mins
   return minSols
 
+
 --finds all solutions to a = b
-acuiUnify :: (MonadVar f m, ACUI f a) => f a -> f a -> m [[Equation f]]
+acuiUnify :: (MonadVar f m, ACUI f, Typeable a) => f a -> f a -> m [[Equation f]]
 acuiUnify a b = do
     let l = unfoldTerm a
     let r = unfoldTerm b
@@ -162,4 +163,4 @@ acuiUnify a b = do
     let inhomos = inhomogenous (l :==: r) --find all inhomogenous equations
     inhomosolss <- mapM (uncurry solveInHomoEq) inhomos --solve each one
     let sols = bigCrossWith subadd [homosol] inhomosolss --combine inhomo sols
-    return $ map (toSub . map (eqmap simplify)) sols --simplify the solutions
+    return $ map (map (emap simplify)) sols --simplify the solutions
