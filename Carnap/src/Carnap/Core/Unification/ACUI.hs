@@ -169,6 +169,6 @@ acuiUnifySys ((a :=: b):eqs) = do
     let handleSub sub = do
         let eqs' = mapAll (applySub sub) eqs
         sols' <- acuiUnifySys eqs'
-        return $ map (sub ++) sols'
+        return $ map (\sub2 -> (mapAll (applySub sub2) sub) ++ sub2) sols'
     solsBysubs <- mapM handleSub sols
     return $ concat solsBysubs
