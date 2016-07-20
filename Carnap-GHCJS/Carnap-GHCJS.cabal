@@ -45,6 +45,7 @@ executable Syntax-Check
   build-depends:       base
                      , lens
                      , mtl
+                     , Carnap
                      , ghcjs-dom == 0.2.4.0
                      , parsec
                      , Carnap

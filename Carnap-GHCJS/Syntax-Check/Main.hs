@@ -47,7 +47,8 @@ trySubmit :: IORef (PureForm,[PureForm], Tree PureForm) -> Document -> EventM HT
 trySubmit ref w = do (Just w') <- getDefaultView w
                      (_,forms,_) <- liftIO $ readIORef ref
                      case forms of 
-                        [] -> alert w' "submitted!"
+                        [] -> do alert w' "submitted!"
+                                 liftIO $ sendJSON ("Submitted",True) putStrLn putStrLn
                         _ -> alert w' "not yet finished"
 
 

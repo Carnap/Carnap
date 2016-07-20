@@ -13,6 +13,7 @@ import Control.Monad.State
 #ifdef __GHCJS__
 import GHCJS.Types
 import GHCJS.Foreign
+import GHCJS.Foreign.Callback
 import GHCJS.Marshal
 #endif
 --the import below required to make ghc-mod work properly. GHCJS compiles
@@ -110,19 +111,22 @@ formToTree f = T.Node f (map formToTree (children f))
 --FFI Wrappers
 --------------------------------------------------------
 
-
 #ifdef __GHCJS__
 
-sendJSON :: ToJSON a => a -> IO ()
-sendJSON = jsonCommand . toJSString . clean . encode
+sendJSON :: ToJSON a => a -> (String -> IO ()) -> (String -> IO ()) -> IO ()
+sendJSON x succ fail = do cb1 <- asyncCallback1 (cb succ)
+                          cb2 <- asyncCallback1 (cb fail)
+                          jsonCommand (toJSString . clean . encode $ x) cb1 cb2
     where clean :: Show a => a -> String
           clean = read . show 
+          cb f x = do (Just s) <- fromJSVal x 
+                      f s
 
-foreign import javascript unsafe "jsonCommand($1)" jsonCommand :: JSString -> IO ()
+foreign import javascript unsafe "jsonCommand($1,$2,$3)" jsonCommand :: JSString -> Callback (JSVal -> IO()) -> Callback (JSVal -> IO()) -> IO ()
 
 #else
 
-sendJSON :: ToJSON a => a -> IO ()
+sendJSON :: ToJSON a => a -> (String -> IO ()) -> (String -> IO ()) -> IO ()
 sendJSON = Prelude.error "sendJSON requires the GHCJS FFI"
 
 #endif
