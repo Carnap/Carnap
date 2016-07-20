@@ -38,34 +38,38 @@ eqmap f (a :==: b) = f a :==: f b
 eqfilter p (a :==: b) = (filter p a) :==: (filter p b)
 eqadd (a :==: b) (a' :==: b') = (a ++ a') :==: (b ++ b')
 
+isVar' varConst x = isVar x && not (varConst x)
+isConst' varConst x = isConst x || varConst x
+
 --extracts the homogenous equation from the equation
-homogenous eq = eqfilter isVar eq
+homogenous varConst eq = eqfilter (isVar' varConst) eq
 --finds all inhomogenous equations that need to be solved
-inhomogenous (l :==: r) = zip consts eqs
-    where consts = filter isConst (nubBy (=*) $ l ++ r)
-          eqs = map (\c -> eqfilter (\x -> isVar x || x =* c) (l :==: r)) consts
+inhomogenous varConst (l :==: r) = zip consts eqs
+    where consts = filter (isConst' varConst) (nubBy (=*) $ l ++ r)
+          eqs = map (\c -> eqfilter (\x -> isVar' varConst x || x =* c) (l :==: r)) consts
 
 --returns true if term maps to 'true' in the SAT problem
-isTrue a = isConst a && not (isId a)
+isTrue varConst a = isConst' varConst a && not (isId a)
 --returns true if a term maps to 'false' in a the SAT problem
 isFalse a = isId a
 
 
 --converts a SimpleEquation [f a] into a sat problem
 --toSatProblem :: (ACUI f a) => SimpleEquation [f a] -> ListSat (f a)
-toSatProblem eq@(a :==: b) | ltrue && rtrue = makeProb []
-                           | ltrue     = makeProb [map (LPos . AnyPig) b]
-                           | rtrue     = makeProb [map (LPos . AnyPig) a]
-                           | lfalse && rfalse = makeProb []
-                           | lfalse    = makeProb $ map (\x -> [LNeg $ AnyPig x]) b
-                           | rfalse    = makeProb $ map (\x -> [LNeg $ AnyPig x]) a
-                           | otherwise = makeProb $ (impl a b) ++ (impl b a)
+toSatProblem varConst eq@(a :==: b)
+    | ltrue && rtrue = makeProb []
+    | ltrue     = makeProb [map (LPos . AnyPig) b]
+    | rtrue     = makeProb [map (LPos . AnyPig) a]
+    | lfalse && rfalse = makeProb []
+    | lfalse    = makeProb $ map (\x -> [LNeg $ AnyPig x]) b
+    | rfalse    = makeProb $ map (\x -> [LNeg $ AnyPig x]) a
+    | otherwise = makeProb $ (impl a b) ++ (impl b a)
     where impl ant con = map (\lit -> (LNeg $ AnyPig lit):(map (LPos . AnyPig) con)) ant
-          ltrue = any isTrue a
-          rtrue = any isTrue b
+          ltrue = any (isTrue varConst) a
+          rtrue = any (isTrue varConst) b
           lfalse = all isFalse a
           rfalse = all isFalse b
-          vars = nub $ map AnyPig (filter isVar (a ++ b))
+          vars = nub $ map AnyPig (filter (isVar' varConst) (a ++ b))
           makeProb = makeProblemWith vars
 
 --returns true if the left side is strictly greater than the right side
@@ -133,42 +137,45 @@ popVar = do
 
 
 --solves a homogenous equation
-solveHomoEq :: forall f m a. (MonadVar f m, ACUI f, Typeable a) => SimpleEquation [f a] -> m [Equation f]
-solveHomoEq eq = do
-    let mins = minimals . search . toSatProblem $ eq
+solveHomoEq :: forall f m a. (MonadVar f m, ACUI f, Typeable a)
+            => (forall a. f a -> Bool)
+            -> SimpleEquation [f a]
+            -> m [Equation f]
+solveHomoEq varConst eq = do
+    let mins = minimals . search . toSatProblem varConst $ eq
     minSols <- mapM (conv (popVar :: m (f a))) mins
     let homosol = foldl subadd [] minSols
     return homosol
 
-
 --solves an inhomogenous equation for a specific constant
-solveInHomoEq :: (MonadVar f m, ACUI f, Typeable a) => f a -> SimpleEquation [f a] -> m [[Equation f]]
-solveInHomoEq c eq = do
-  let mins = minimals . search . toSatProblem $ eq
+solveInHomoEq :: (MonadVar f m, ACUI f, Typeable a)
+              => (forall a. f a -> Bool)
+              -> f a
+              -> SimpleEquation [f a]
+              -> m [[Equation f]]
+solveInHomoEq varConst c eq = do
+  let mins = minimals . search . toSatProblem varConst $ eq
   minSols <- mapM (conv (return c)) mins
   return minSols
 
-
 --finds all solutions to a = b
-acuiUnify :: (MonadVar f m, ACUI f, Typeable a) => f a -> f a -> m [[Equation f]]
-acuiUnify a b = do
+acuiUnify :: (MonadVar f m, ACUI f, Typeable a) => (forall a. f a -> Bool) -> f a -> f a -> m [[Equation f]]
+acuiUnify varConst a b = do
     let l = unfoldTerm a
     let r = unfoldTerm b
-    let homo = homogenous (l :==: r)
-    homosol <- solveHomoEq homo --solve the homogenous equation
-    let inhomos = inhomogenous (l :==: r) --find all inhomogenous equations
-    inhomosolss <- mapM (uncurry solveInHomoEq) inhomos --solve each one
+    let homo = homogenous varConst (l :==: r)
+    homosol <- solveHomoEq varConst homo --solve the homogenous equation
+    let inhomos = inhomogenous varConst (l :==: r) --find all inhomogenous equations
+    inhomosolss <- mapM (uncurry $ solveInHomoEq varConst) inhomos --solve each one
     return $ bigCrossWith subadd [homosol] inhomosolss
-    --let sols = bigCrossWith subadd [homosol] inhomosolss --combine inhomo sols
-    --return $ map (map (emap simplify)) sols --simplify the solutions
 
-acuiUnifySys :: (MonadVar f m, ACUI f) => [Equation f] -> m [[Equation f]]
-acuiUnifySys [] = return [[]]
-acuiUnifySys ((a :=: b):eqs) = do
-    sols <- acuiUnify a b
+acuiUnifySys :: (MonadVar f m, ACUI f) => (forall a. f a -> Bool) -> [Equation f] -> m [[Equation f]]
+acuiUnifySys _ [] = return [[]]
+acuiUnifySys varConst ((a :=: b):eqs) = do
+    sols <- acuiUnify varConst a b
     let handleSub sub = do
         let eqs' = mapAll (applySub sub) eqs
-        sols' <- acuiUnifySys eqs'
+        sols' <- acuiUnifySys varConst eqs'
         return $ map (\sub2 -> (mapAll (applySub sub2) sub) ++ sub2) sols'
     solsBysubs <- mapM handleSub sols
     return $ concat solsBysubs
