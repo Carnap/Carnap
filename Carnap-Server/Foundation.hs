@@ -123,6 +123,7 @@ instance Yesod App where
 
     makeLogger = return . appLogger
 
+
 instance YesodJquery App
 instance YesodFay App where
 

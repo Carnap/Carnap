@@ -18,3 +18,10 @@
     <div .synchecker .echo>
         <input>
         <span>
+
+<p>
+    Here's another
+    <div .synchecker .match>
+        <input>
+        <span>
+            P_1 ∧ P_2

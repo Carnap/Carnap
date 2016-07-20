@@ -4,9 +4,10 @@ import Import
 
 postCommandR :: Handler Value
 postCommandR = do
-    (s1, s2) <- (requireJsonBody :: Handler (String,String))
+    (s1, s2) <- (requireJsonBody :: Handler (String,Bool))
 
     maybeCurrentUserId <- maybeAuthId
 
-    returnJson (reverse s1)
-
+    case maybeCurrentUserId of 
+           Nothing -> returnJson ("No User" :: String)
+           Just _  -> returnJson (reverse s1)

@@ -1,14 +1,10 @@
-function jsonCommand (arg) {
+function jsonCommand (arg,scallback,fcallback) {
     jQuery.ajax({
         url: '@{CommandR}',
         type: 'POST',
         contentType: "application/json",
         data: arg,
-        success: function (data) {
-            console.log("Success: " + data);
-            },
-        error: function (data) {
-            console.log("Error in ajax request to jsonCommand: " + data);
-            }
+        success: scallback,
+        error: fcallback
         });
     };
