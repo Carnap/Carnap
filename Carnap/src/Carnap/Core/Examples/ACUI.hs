@@ -3,7 +3,7 @@
 module Carnap.Core.Examples.ACUI (
     V, Set, VLang, Var, acuiParser,
     pattern VEmpty, pattern VUnion, pattern VSomeSet,
-    --pattern VSingelton,
+    VLangLabel(..),
     parseTerm, evalTerm,
     pattern ACUISV
 ) where
@@ -186,8 +186,8 @@ instance Combineable VLang VLangLabel where
     getLabel (VUnFunc _ _)    = VExtra
     getLabel (VBinFunc _ _ _) = VExtra
 
-    getAlgo VSet = undefined
-    getAlgo VExtra = undefined
+    getAlgo VSet = acuiUnifySys
+    getAlgo VExtra = foUnifySys
 
     replaceChild (VSingelton _)   pig _ = VSingelton $ unEveryPig pig
     replaceChild (VUnion _ x)     pig 0 = VUnion (unEveryPig pig) x

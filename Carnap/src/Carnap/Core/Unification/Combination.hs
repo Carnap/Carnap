@@ -4,7 +4,8 @@ module Carnap.Core.Unification.Combination (
   LabelPair(LabelPair), Labeling, UniFunction, Combineable(..),
   labelings, getVars, abstract, pureAbstract, partitions,
   substitutions, getLabels, combine, typeGroup, weave,
-  hasBackEdge, findNodes, closure, buildGraph, validSub
+  hasBackEdge, findNodes, closure, buildGraph, validSub,
+  getEqLabel, solveEqs
 ) where
 
 import Carnap.Core.Data.AbstractSyntaxClasses
@@ -18,12 +19,17 @@ import Data.Function
 import Data.Proxy
 
 --this is really hard to test with
-data LabelPair f where
-    LabelPair :: Combineable f label => f a -> label -> LabelPair f
+data LabelPair f label where
+    LabelPair :: f a -> label -> LabelPair f label
 
-type Labeling f = [LabelPair f]
+type Labeling f label = [LabelPair f label]
 
-type UniFunction f m = Labeling f -> [Equation f] -> m [[Equation f]]
+findVar :: Combineable f label => f a -> [LabelPair f label] -> label -> label
+findVar v []                        def           = def
+findVar v ((LabelPair v' lbl):lbls) def | v =* v'   = lbl
+                                        | otherwise = findVar v lbls def
+
+type UniFunction f m = (forall a. f a -> Bool) -> [Equation f] -> m [[Equation f]]
 
 class (FirstOrder f, Eq label) => Combineable f label | f -> label where
     getLabel :: f a -> label
@@ -83,9 +89,9 @@ substitutions vars = bigCrossWithH (++) (map parts (typeGroup vars))
           part2Sub []           = []
 
 --finds all lebeling functions
-labelings :: Combineable f label => [AnyPig f] -> [label] -> [Labeling f]
+labelings :: Combineable f label => [AnyPig f] -> [label] -> [Labeling f label]
 labelings ((AnyPig x):domain) range = [(LabelPair x l):f | f <- labelings domain range, l <- range]
-labelings []                  range = []
+labelings []                  range = [[]]
 
 --equiv :: (FirstOrder f) => AnyPig f -> AnyPig f -> Bool
 --equiv (AnyPig (x :: f a)) (AnyPig (y :: f b))
@@ -136,8 +142,12 @@ getEqLabel (a :=: b) | isVar a   = getLabel b
                      | otherwise = getLabel a
 
 --solves a system of equations for a fixed theory if given a labeling
-solveEqs :: (MonadVar f m, Combineable f label) => Labeling f -> [Equation f] -> m [[Equation f]]
-solveEqs labeling (eq:eqs) = getAlgo (getEqLabel eq) labeling (eq:eqs)
+solveEqs :: forall f m label. (MonadVar f m, Combineable f label) => Labeling f label -> [Equation f] -> m [[Equation f]]
+solveEqs _        []       = return [[]]
+solveEqs labeling (eq:eqs) = getAlgo lbl varConst (eq:eqs)
+    where varConst :: forall a. f a -> Bool
+	  varConst v = lbl /= findVar v labeling lbl
+          lbl = getEqLabel eq
 
 --weaves a though a 2D list making a 1D path simalar to how you map
 --pairs of natural numbers to natural numbers
