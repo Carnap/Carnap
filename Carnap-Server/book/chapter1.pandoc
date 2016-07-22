@@ -584,3 +584,13 @@ really need the outer parentheses in the sentence "$(P\land Q)$"? Would
 "$P\land Q$" be any less clear? The answer is obviously no. So, next week, we
 will introduce some simplification rules---kind of like PEMDAS---that will let
 us know when we can afford to leave out the extra parentheses.
+
+To practice some of these concepts, try the following exercises: what you need
+to do is enter the *main connective* of the highlighted sentence. (type the
+connective and press return), breaking the sentence down into its constituent
+parts. Keep doing this until the sentence can't be broken down any further.
+
+```{.SynChecker .Match}
+P_1 /\ P_2
+```
+

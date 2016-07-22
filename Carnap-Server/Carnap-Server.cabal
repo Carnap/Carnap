@@ -29,6 +29,7 @@ library
                      Handler.Book
                      Handler.Command
                      Filter.Sidenotes
+                     Filter.SynCheckers
 
     if flag(dev) || flag(library-only)
         cpp-options:   -DDEVELOPMENT

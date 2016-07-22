@@ -43,14 +43,14 @@ echoTo f o = do (Just t) <- target :: EventM HTMLInputElement KeyboardEvent (May
                     Nothing -> return ()
                     Just v -> liftIO $ setInnerHTML o (fmap f mv)
 
-trySubmit :: IORef (PureForm,[PureForm], Tree PureForm) -> Document -> EventM HTMLInputElement e ()
-trySubmit ref w = do (Just w') <- getDefaultView w
-                     (_,forms,_) <- liftIO $ readIORef ref
+trySubmit :: IORef (PureForm,[PureForm], Tree PureForm) -> Window -> EventM HTMLInputElement e ()
+trySubmit ref w = do (_,forms,_) <- liftIO $ readIORef ref
                      case forms of 
-                        [] -> do alert w' "submitted!"
-                                 liftIO $ sendJSON ("Submitted",True) putStrLn putStrLn
-                        _ -> alert w' "not yet finished"
-
+                        [] -> liftIO $ sendJSON ("Submitted",True) loginCheck error
+                        _  -> alert w "not yet finished"
+    where loginCheck c | c == "No User" = alert w "You need to log in before you can submit anything"
+                       | otherwise =alert w "Submitted!" 
+          error c = alert w ("Something has gone wrong. Here's the error: " ++ c)
 
 tryMatch :: Element -> IORef (PureForm,[PureForm], Tree PureForm) -> Document -> EventM HTMLInputElement KeyboardEvent ()
 tryMatch o ref w = onEnter $ do (Just t) <- target :: EventM HTMLInputElement KeyboardEvent (Maybe HTMLInputElement)
@@ -135,8 +135,10 @@ activateChecker w (Just (i,o,classes))
                                               insertBefore par mbt (Just o)
                                               ref <- newIORef (f,[f], T.Node f [])
                                               match <- newListener $ tryMatch o ref w
-                                              submit <- newListener $ trySubmit ref w
+                                              (Just w') <- getDefaultView w
+                                              submit <- newListener $ trySubmit ref w'
                                               addListener i keyUp match False
                                               addListener bt click submit False 
                 | otherwise = return () 
 activateChecker _ _ = Prelude.error "impossible"
+
