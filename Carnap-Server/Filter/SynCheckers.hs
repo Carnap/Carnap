@@ -9,10 +9,9 @@ makeSynCheckers cb@(CodeBlock (_,classes,_) contents)
     | otherwise = cb
 makeSynCheckers x = x
 
-
 activate cls cnt
     | "Match" `elem` cls = RawBlock "html" $ 
-        "<div class=\"synchecker match\"><input></input><div class=\"tree\">" 
+        "<div class=\"synchecker match container\"><input></input><div class=\"tree\">" 
         ++ cnt 
         ++ "</div></div>"
     | otherwise = RawBlock "html" "<div>No Matching SynChecker</div>"

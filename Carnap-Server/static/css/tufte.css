@@ -131,7 +131,7 @@ p { line-height: 2rem;
     padding-right: 0;
     vertical-align: baseline; }
 
-/* Chapter Epigraphs */
+/* Specialty Divs: Epigraphs, Algorithms, Trees */
 div.epigraph { margin: 5em 0; }
 
 div.epigraph > blockquote { margin-top: 3em;
@@ -146,8 +146,13 @@ div.epigraph > blockquote > footer > cite { font-style: italic; }
 div.algorithm {
     background: #dfffff;
     padding: 1pt 1pt 15pt 15pt ;
-
 }
+
+div.tree {
+    font-size:1.4rem;
+    padding:10pt;
+}
+
 
 /* end chapter epigraphs styles */
 

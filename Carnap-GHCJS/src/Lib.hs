@@ -61,7 +61,9 @@ getListOfElementsByClass elt c = do mnl <- getElementsByClassName elt c
                                     case mnl of 
                                         Nothing -> return []
                                         Just nl -> do l <- getLength nl
-                                                      mapM ((fmap . fmap) castToElement . item nl) [0 .. l-1]
+                                                      if l > 0 then 
+                                                          mapM ((fmap . fmap) castToElement . item nl) [0 .. l-1]
+                                                      else return []
 
 tryParse p s = unPack $ parse p "" s 
     where unPack (Right s) = show s

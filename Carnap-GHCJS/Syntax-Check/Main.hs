@@ -34,7 +34,9 @@ main = runWebGUI $ \w ->
             do (Just dom) <- webViewGetDomDocument w
                (Just b) <- getBody dom
                mcheckers <- getCheckers b
-               mapM_ (activateChecker dom) mcheckers
+               case mcheckers of 
+                    [] -> return ()
+                    _ -> mapM_ (activateChecker dom) mcheckers
 
 echoTo :: IsElement element => (String -> String) -> element -> EventM HTMLInputElement KeyboardEvent ()
 echoTo f o = do (Just t) <- target :: EventM HTMLInputElement KeyboardEvent (Maybe HTMLInputElement)

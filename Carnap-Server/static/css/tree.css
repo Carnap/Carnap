@@ -14,7 +14,7 @@
 	float: left; text-align: center;
 	list-style-type: none;
 	position: relative;
-	padding: 20px 5px 0 5px;
+	padding: 20px 15px 0 5px;
 	
 	transition: all 0.5s;
 	-webkit-transition: all 0.5s;
@@ -99,6 +99,3 @@ right connector from last child*/
 .tree li a:hover+ul ul::before{
 	border-color:  #94a0b4;
 }
-
-/*Thats all. I hope you enjoyed it.
-Thanks :)*/
