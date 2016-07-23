@@ -6,6 +6,9 @@ import Carnap.Core.Data.AbstractSyntaxClasses
 import Carnap.Core.Data.AbstractSyntaxDataTypes
 import Carnap.Core.Data.Util (checkChildren)
 import Carnap.Core.Unification.Unification
+import Carnap.Core.Unification.Combination
+import Carnap.Core.Unification.FirstOrder
+import Carnap.Core.Util
 import Carnap.Languages.Util.LanguageClasses
 import Control.Lens.Plated (transform, children)
 import Control.Lens.Prism
@@ -87,6 +90,24 @@ instance Eq (PurePropLanguage a) where
 
 instance UniformlyOrd PurePropLanguage where
         phi <=* psi = show phi <= show psi
+
+data PropLangLabel = PropFormLabel
+    deriving (Eq, Ord, Show)
+
+instance Combineable PurePropLanguage PropLangLabel where
+    getLabel _ = PropFormLabel
+
+    getAlgo PropFormLabel = foUnifySys
+
+    replaceChild (PNeg _)     pig _ = PNeg $ unEveryPig pig
+    replaceChild (_ :&: x)    pig 0 = (unEveryPig pig) :&: x
+    replaceChild (x :&: _)    pig 1 = x :&: (unEveryPig pig)
+    replaceChild (_ :||: x)   pig 0 = (unEveryPig pig) :||: x
+    replaceChild (x :||: _)   pig 1 = x :||: (unEveryPig pig)
+    replaceChild (_ :->: x)   pig 0 = (unEveryPig pig) :->: x
+    replaceChild (x :->: _)   pig 1 = x :->: (unEveryPig pig)
+    replaceChild (_ :<->: x)  pig 0 = (unEveryPig pig) :<->: x
+    replaceChild (x :<->: _)  pig 1 = x :<->: (unEveryPig pig)
 
 --------------------------------------------------------
 --Optics
