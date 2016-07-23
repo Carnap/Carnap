@@ -46,9 +46,8 @@ abstract term
     where makeEqs (a :=: b) | sameHead a b = decompose a b >>= makeEqs
                             | otherwise    = [a :=: b]
           replace tm (n, (l :=: _))
-              | isVar l                   = return tm
-              | getLabel l /= getLabel tm = freshPig >>= \v -> return $ replaceChild tm v n
-              | otherwise                 = return tm
+              | isVar l   = return tm
+              | otherwise = freshPig >>= \v -> return $ replaceChild tm v n
 
 --this breaks down a set of equations into so called "pure" equations
 --namely they only contain function symbols from a single equational theory
@@ -173,8 +172,9 @@ combine eqs = do
                         let labels = getLabels pureSubbedEqs
                         let labelingsList = labelings vars labels
                         let eqGroups = groupBy ((==) `on` getEqLabel) pureSubbedEqs
-                        let doLabelings lbling = do solsByGroup <- mapM (solveEqs lbling) eqGroups
-                                                    return $ bigCrossWithH (++) solsByGroup
+                        let doLabelings lbling = do 
+                            solsByGroup <- mapM (solveEqs lbling) eqGroups
+                            return $ map (sub ++) (bigCrossWithH (++) solsByGroup)
                         mapM doLabelings labelingsList
     sols2d <- mapM doSubs subs
-    return $ map (subAdd ++) (weave . weave $ sols2d) --but we need to add subAdd back into
+    return $ map (subAdd ++) (weave . weave $ sols2d) --but we need to add subAdd back in too
