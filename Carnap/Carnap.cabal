@@ -30,6 +30,7 @@ library
                      , Carnap.Languages.Util.LanguageClasses
                      , Carnap.Languages.PurePropositional.Syntax
                      , Carnap.Languages.PurePropositional.Parser
+                     , Carnap.Languages.ClassicalSequent.Syntax
                      , Carnap.Languages.ModalPropositional.Syntax
                      , Carnap.Languages.ModalPropositional.Parser
                      , Carnap.Languages.PureFirstOrder.Syntax
