@@ -168,15 +168,13 @@ combine eqs = do
     let pureEqs = mapAll (applySub subAdd) pureEqs' --so we need to get rid of them
     let vars = getVars pureEqs
     let subs = substitutions vars
-    let doSubs sub = do
-        let pureSubbedEqs = mapAll (applySub sub) pureEqs
-        let vars = getVars pureSubbedEqs
-        let labels = getLabels pureSubbedEqs
-        let labelingsList = labelings vars labels
-        let eqGroups = groupBy ((==) `on` getEqLabel) pureSubbedEqs
-        let doLabelings lbling = do
-            solsByGroup <- mapM (solveEqs lbling) eqGroups
-            return $ bigCrossWithH (++) solsByGroup
-        mapM doLabelings labelingsList
+    let doSubs sub = do let pureSubbedEqs = mapAll (applySub sub) pureEqs
+                        let vars = getVars pureSubbedEqs
+                        let labels = getLabels pureSubbedEqs
+                        let labelingsList = labelings vars labels
+                        let eqGroups = groupBy ((==) `on` getEqLabel) pureSubbedEqs
+                        let doLabelings lbling = do solsByGroup <- mapM (solveEqs lbling) eqGroups
+                                                    return $ bigCrossWithH (++) solsByGroup
+                        mapM doLabelings labelingsList
     sols2d <- mapM doSubs subs
     return $ map (subAdd ++) (weave . weave $ sols2d) --but we need to add subAdd back into

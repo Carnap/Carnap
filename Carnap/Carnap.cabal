@@ -18,6 +18,7 @@ library
                      , Carnap.Core.Examples.ACUI
                      , Carnap.Core.Data.AbstractSyntaxClasses
                      , Carnap.Core.Examples.ToyLanguages
+                     , Carnap.Core.Unification.FirstOrder
                      , Carnap.Core.Unification.Unification
                      , Carnap.Core.Unification.ACUI
                      , Carnap.Core.Unification.Combination
@@ -40,7 +41,6 @@ library
                      , containers >= 0.5.6.2
                      , parsec >= 3.1.9
   default-language:    Haskell2010
-
 
 test-suite test
     type:              exitcode-stdio-1.0

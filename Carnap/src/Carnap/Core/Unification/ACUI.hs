@@ -173,9 +173,8 @@ acuiUnifySys :: (MonadVar f m, ACUI f) => (forall a. f a -> Bool) -> [Equation f
 acuiUnifySys _ [] = return [[]]
 acuiUnifySys varConst ((a :=: b):eqs) = do
     sols <- acuiUnify varConst a b
-    let handleSub sub = do
-        let eqs' = mapAll (applySub sub) eqs
-        sols' <- acuiUnifySys varConst eqs'
-        return $ map (\sub2 -> (mapAll (applySub sub2) sub) ++ sub2) sols'
+    let handleSub sub = do let eqs' = mapAll (applySub sub) eqs
+                           sols' <- acuiUnifySys varConst eqs'
+                           return $ map (\sub2 -> (mapAll (applySub sub2) sub) ++ sub2) sols'
     solsBysubs <- mapM handleSub sols
     return $ concat solsBysubs
