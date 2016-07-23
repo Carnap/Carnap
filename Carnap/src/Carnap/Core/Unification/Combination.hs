@@ -59,12 +59,13 @@ pureAbstract ((a :=: b):eqs) = do
     (pureB, newB) <- abstract b
     v <- freshPig
     rest <- pureAbstract $ newA ++ newB ++ eqs
-    let top = [unEveryPig v :=: pureA, unEveryPig v :=: pureB]
+    let top = if isVar pureA || isVar pureB
+              then [pureA :=: pureB]
+              else [unEveryPig v :=: pureA, unEveryPig v :=: pureB]
     return (top ++ rest)
 
+
 --compose the list functor with another functor
-
-
 instance Schematizable f => Schematizable (ListComp f) where
     schematize (ListComp l) [] = "[" ++ intercalate ", " (map (\x -> schematize x []) l) ++ "]"
 
@@ -92,13 +93,6 @@ substitutions vars = bigCrossWithH (++) (map parts (typeGroup vars))
 labelings :: Combineable f label => [AnyPig f] -> [label] -> [Labeling f label]
 labelings ((AnyPig x):domain) range = [(LabelPair x l):f | f <- labelings domain range, l <- range]
 labelings []                  range = [[]]
-
---equiv :: (FirstOrder f) => AnyPig f -> AnyPig f -> Bool
---equiv (AnyPig (x :: f a)) (AnyPig (y :: f b))
-  --  | isVar x && isVar y = occurs x y
-  --  | otherwise = case eqT :: Maybe (a :~: b) of
-      --  Just Refl -> sameHead x y && all (\(a :=: b) -> equiv (AnyPig a) (AnyPig b)) (decompose x y)
-        --Nothing   -> False
 
 --trys to find a back edge by checking if a node is it's own closure
 hasBackEdge :: (FirstOrder f) => [AnyPig f] -> [(AnyPig f, [AnyPig f])] -> Bool
@@ -146,7 +140,7 @@ solveEqs :: forall f m label. (MonadVar f m, Combineable f label) => Labeling f 
 solveEqs _        []       = return [[]]
 solveEqs labeling (eq:eqs) = getAlgo lbl varConst (eq:eqs)
     where varConst :: forall a. f a -> Bool
-	  varConst v = lbl /= findVar v labeling lbl
+          varConst v = lbl /= findVar v labeling lbl
           lbl = getEqLabel eq
 
 --weaves a though a 2D list making a 1D path simalar to how you map
@@ -161,13 +155,17 @@ weave xss = go xss 1
           go xss n = let (rest, l) = step xss n in l ++ go rest (n + 1)
 
 
+isTrivial (a :=: b) = isVar a && isVar b
+
 --this is some dense code, I'm displeased with dense it is in fact
 --it would be less dense if I could handle this case by case in a loop
 --yielding ansers as I went such that the results were woven togethor for me
 --I might refactor all of this to do that
 combine :: (MonadVar f m, Combineable f label) => [Equation f] -> m [[Equation f]]
 combine eqs = do
-    pureEqs <- pureAbstract eqs
+    pureEqs'' <- pureAbstract eqs
+    let (subAdd, pureEqs') = partition isTrivial pureEqs'' -- trivial equations break things
+    let pureEqs = mapAll (applySub subAdd) pureEqs' --so we need to get rid of them
     let vars = getVars pureEqs
     let subs = substitutions vars
     let doSubs sub = do
@@ -181,4 +179,4 @@ combine eqs = do
             return $ bigCrossWithH (++) solsByGroup
         mapM doLabelings labelingsList
     sols2d <- mapM doSubs subs
-    return $ weave (weave sols2d)
+    return $ map (subAdd ++) (weave . weave $ sols2d) --but we need to add subAdd back into
