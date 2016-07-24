@@ -16,6 +16,11 @@ import Control.Lens.Prism
 import Data.Typeable (Typeable)
 import Carnap.Languages.Util.GenericConnectives
 
+
+--------------------------------------------------------
+--1. Sequent Data
+--------------------------------------------------------
+
 data Antecedent = Antecedent
 
 data Succedent = Succedent
@@ -26,32 +31,49 @@ data Nilcedent :: k -> * -> * where
         NilAntecedent :: Nilcedent lang Antecedent
         NilSuccedent  :: Nilcedent lang Succedent
 
-data AnteComma :: k -> * -> * where
-        AnteComma :: AnteComma lang (Form Bool -> Antecedent -> Antecedent)
+instance Schematizable (Nilcedent a) where
+        schematize NilAntecedent xs = ""
+        schematize NilSuccedent xs = ""
 
-data SuccComma :: k -> * -> * where
-        SuccComma :: SuccComma lang (Form Bool -> Succedent-> Succedent)
+data Comma :: k -> * -> * where
+        AnteComma :: Comma lang (Form Bool -> Antecedent -> Antecedent)
+        SuccComma :: Comma lang (Form Bool -> Succedent-> Succedent)
+
+instance Schematizable (Comma a) where
+        schematize AnteComma (x:"":[]) = x
+        schematize AnteComma (x:y:[])  = x ++ "," ++ y
+        schematize SuccComma (x:"":[]) = x
+        schematize SuccComma (x:y:[])  = x ++ "," ++ y
 
 data Turnstile :: k -> * -> * where
         Turnstile :: Turnstile lang (Antecedent -> Succedent -> Sequent)
 
+instance Schematizable (Turnstile a) where
+        schematize Turnstile (x:y:xs) = x ++ " ⊢ " ++ y
+
 type ClassicalSequentLex = Nilcedent
-                           :|: AnteComma
-                           :|: SuccComma
+                           :|: Comma
                            :|: Turnstile 
                            :|: EndLang
 
 type ClassicalSequentOver a = FixLang (ClassicalSequentLex :|: a)
 
+
 pattern Top                 = FX (Lx1 (Lx1 NilAntecedent))
 pattern Bot                 = FX (Lx1 (Lx1 NilSuccedent))
 pattern (:+:) x y           = FX (Lx1 (Lx2 AnteComma)) :!$: x :!$: y
---We're unlikely to be doing anything with multi-conclusion sequents right now
+pattern (:-:) x y           = FX (Lx1 (Lx2 SuccComma)) :!$: x :!$: y
+-- --We're unlikely to be doing anything with multi-conclusion sequents right now
 pattern (:|-:) :: ClassicalSequentOver a Antecedent -> ClassicalSequentOver a (Form Bool) -> ClassicalSequentOver a Sequent
-pattern (:|-:) x y          = FX (Lx1 (Lx4 Turnstile)) :!$: x :!$: 
-                                (FX (Lx1 (Lx3 SuccComma)) :!$: y :!$: Bot)
+pattern (:|-:) x y          = FX (Lx1 (Lx3 Turnstile)) :!$: x :!$: (y :-: Bot)
+
+--------------------------------------------------------
+--2. Sequent Languages
+--------------------------------------------------------
 
 type PropSequentCalc = ClassicalSequentOver (PurePropLexicon :|: EndLang)
+
+instance CopulaSchema PropSequentCalc
 
 pattern SeqP x arity      = FX (Lx2 (Lx1 (Predicate x arity)))
 pattern SeqSP x arity     = FX (Lx2 (Lx2 (Predicate x arity)))
