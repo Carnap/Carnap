@@ -2,7 +2,7 @@
 
 module Carnap.Core.Unification.Combination (
   LabelPair(LabelPair), Labeling, UniFunction, Combineable(..),
-  labelings, getVars, abstract, pureAbstract, partitions,
+  labelings, getVars, purify, findAllAliens, pureAbstract, partitions,
   substitutions, getLabels, combine, typeGroup, weave,
   hasBackEdge, findNodes, closure, buildGraph, validSub,
   getEqLabel, solveEqs
@@ -37,32 +37,80 @@ class (FirstOrder f, Eq label) => Combineable f label | f -> label where
     replaceChild :: f a -> EveryPig f -> Int -> f a
 
 --first we need to split apart the terms into multiple equations
-abstract :: (MonadVar f m, Typeable a, Combineable f label) => f a -> m (f a, [Equation f])
-abstract term
-    | isVar term = return $ (term, [])
-    | otherwise = do
-    pureTerm <- foldM replace term (zip [0..] (decompose term term))
-    return (pureTerm, makeEqs (pureTerm :=: term)) --finally we need the actual equations
-    where makeEqs (a :=: b) | sameHead a b = decompose a b >>= makeEqs
-                            | otherwise    = [a :=: b]
-          replace tm (n, (l :=: _))
-              | isVar l   = return tm
-              | otherwise = freshPig >>= \v -> return $ replaceChild tm v n
+-- abstract :: (MonadVar f m, Typeable a, Combineable f label) => f a -> m (f a, [Equation f])
+-- abstract term
+--     | isVar term = return $ (term, [])
+--     | otherwise = do
+--     pureTerm <- foldM replace term (zip [0..] (decompose term term))
+--     return (pureTerm, makeEqs (pureTerm :=: term)) --finally we need the actual equations
+--     where makeEqs (a :=: b) | sameHead a b = decompose a b >>= makeEqs
+--                             | otherwise    = [a :=: b]
+--           replace tm (n, (l :=: _))
+--               | isVar l   = return tm
+--               | otherwise = freshPig >>= \v -> return $ replaceChild tm v n
 
 --this breaks down a set of equations into so called "pure" equations
 --namely they only contain function symbols from a single equational theory
-pureAbstract :: (MonadVar f m, Combineable f label) => [Equation f] -> m [Equation f]
-pureAbstract []              = return []
-pureAbstract ((a :=: b):eqs) = do
-    (pureA, newA) <- abstract a
-    (pureB, newB) <- abstract b
-    v <- freshPig
-    rest <- pureAbstract $ newA ++ newB ++ eqs
-    let top = if isVar pureA || isVar pureB
-              then [pureA :=: pureB]
-              else [unEveryPig v :=: pureA, unEveryPig v :=: pureB]
-    return (top ++ rest)
+-- pureAbstract :: (MonadVar f m, Combineable f label) => [Equation f] -> m [Equation f]
+-- pureAbstract []              = return []
+-- pureAbstract ((a :=: b):eqs) = do
+--     (pureA, newA) <- abstract a
+--     (pureB, newB) <- abstract b
+--     v <- freshPig
+--     rest <- pureAbstract $ newA ++ newB ++ eqs
+--     let top = if isVar pureA || isVar pureB
+--               then [pureA :=: pureB]
+--               else [unEveryPig v :=: pureA, unEveryPig v :=: pureB]
+--     return (top ++ rest)
 
+--this decomposes a term into a term, minus a subterm x, and an equation
+castOut:: (MonadVar f m, Typeable a, Typeable b, Combineable f label) => f b -> f a -> m (f a, Equation f)
+castOut x y = do v <- fresh
+                 --replace x with v in y
+                 let y' = subst x v y
+                 return (y', v :=: x)
+
+pureAbstract :: (MonadVar f m, Combineable f label) => [Equation f] -> m [Equation f]
+pureAbstract [] = return []
+pureAbstract ((a :=: b):eqs) = do
+        (a',aeqs) <- purify a
+        (b',beqs) <- purify b
+        eqs' <- pureAbstract eqs
+        if getLabel a' == getLabel b' 
+            then return $ (a' :=: b'):(aeqs ++ beqs ++ eqs')
+            else do split <- split a' b'
+                    return $ split ++ aeqs ++ beqs ++ eqs'
+    where split x y = do v <- fresh
+                         return [v :=: x, v :=: y]
+
+purify :: (MonadVar f m, Typeable a, Combineable f label) => f a -> m (f a, [Equation f])
+purify x
+    | isVar x = return (x,[])
+    | otherwise = 
+        do let xl = getLabel x
+           let xchildren = disintegrate x
+           --the code gets weirdly nationalistic at this point.
+           let allaliens = findAllAliens xl xchildren 
+           (pureTerm, impurities) <- deport allaliens x
+           purity <- pureAbstract impurities
+           return (pureTerm, purity)
+
+    where 
+          deport :: (MonadVar f m, Typeable a, Combineable f label) => 
+                [Equation f] -> f a -> m (f a, [Equation f])
+          deport [] x' = return (x',[])
+          deport ((a:=:_):as) x' = do (out , eq) <- castOut a x'
+                                      (out', eqs') <- deport as out
+                                      return (out', eq:eqs')
+
+findAllAliens :: (Combineable f label) => label -> [Equation f] -> [Equation f]
+findAllAliens lbl [] = []
+findAllAliens lbl x = 
+  let (terrans,aliens) = partition (\(y:=:_) -> getLabel y == lbl) x in
+      aliens ++ findAllAliens lbl 
+        (concat $ map (\(y:=:_) -> disintegrate y) terrans) 
+
+disintegrate x = decompose x x     
 
 --compose the list functor with another functor
 instance Schematizable f => Schematizable (ListComp f) where
@@ -172,9 +220,8 @@ combine eqs = do
                         let labels = getLabels pureSubbedEqs
                         let labelingsList = labelings vars labels
                         let eqGroups = groupBy ((==) `on` getEqLabel) pureSubbedEqs
-                        let doLabelings lbling = do 
-                            solsByGroup <- mapM (solveEqs lbling) eqGroups
-                            return $ map (sub ++) (bigCrossWithH (++) solsByGroup)
+                        let doLabelings lbling = do solsByGroup <- mapM (solveEqs lbling) eqGroups
+                                                    return $ map (sub ++) (bigCrossWithH (++) solsByGroup)
                         mapM doLabelings labelingsList
     sols2d <- mapM doSubs subs
     return $ map (subAdd ++) (weave . weave $ sols2d) --but we need to add subAdd back in too

@@ -183,8 +183,7 @@ instance Combineable VLang VLangLabel where
     getLabel VEmpty           = VSet
     getLabel (VSingelton _)   = VSet
     getLabel (VUnion _ _)     = VSet
-    getLabel (VUnFunc _ _)    = VExtra
-    getLabel (VBinFunc _ _ _) = VExtra
+    getLabel _                = VExtra
 
     getAlgo VSet = acuiUnifySys
     getAlgo VExtra = foUnifySys

@@ -4,6 +4,7 @@ module Main where
 
 import Carnap.Core.Unification.Unification
 import Carnap.Core.Unification.Combination
+import Carnap.Languages.ClassicalSequent.Syntax
 import Carnap.Core.Examples.ACUI
 import System.CPUTime
 
@@ -14,6 +15,7 @@ main = do putStrLn ""
           t2 <- timeCombine 
                     (parseTerm "g(a u b u c u d u e)") 
                     (parseTerm "f(b u c u d u a)")
+          t3 <- timeCombine b b
           putStrLn $ "Test Results (Positive Case):" ++ show t1 
           putStrLn $ "Test Results (Negative Case):" ++ show t2
           putStrLn ""

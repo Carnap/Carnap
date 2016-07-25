@@ -65,8 +65,8 @@ pattern PNot           = PCon Not AOne
 pattern PP n           = PPred (Prop n) AZero
 pattern PPhi n         = PSPred (SProp n) AZero
 pattern (:&:) x y      = PAnd :!!$: x :!!$: y
-pattern (:||:) x y     = POr :!!$: x :!!$: y
-pattern (:->:) x y     = PIf :!!$: x :!!$: y
+pattern (:||:) x y     = POr  :!!$: x :!!$: y
+pattern (:->:) x y     = PIf  :!!$: x :!!$: y
 pattern (:<->:) x y    = PIff :!!$: x :!!$: y
 pattern PNeg x         = PNot :!!$: x
 
@@ -120,7 +120,6 @@ predIndex = prism' (\n -> Predicate (Prop n) AZero) pm
     where pm :: Predicate PureProp idx (Form Bool) -> Maybe Int
           pm (Predicate (Prop n) AZero) = Just n
           pm _ = Nothing
-
 
 propIndex :: Prism' (PurePropLanguage (Form Bool)) Int
 propIndex = raisePrism predIndex
