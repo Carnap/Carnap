@@ -135,7 +135,7 @@ instance (FirstOrderLex (t (ClassicalSequentOver t))) =>
         isACUI Top        = True
         isACUI (SA _)     = True
         isACUI (GammaV _) = True
-        isACUI (SV _)     = True
+        --isACUI (SV _)     = True
         isACUI (_ :+: _)  = True
         isACUI _ = False
 
@@ -199,7 +199,6 @@ instance Combineable PropSequentCalc PropSeqLabel where
     getLabel Top               = PropSeqACUI
     getLabel (_ :+: _)         = PropSeqACUI
     getLabel (GammaV _)        = PropSeqACUI
-    getLabel (SA _)            = PropSeqACUI
     getLabel _                 = PropSeqFO
 
     getAlgo PropSeqFO   = foUnifySys
@@ -223,11 +222,18 @@ instance Combineable PropSequentCalc PropSeqLabel where
     replaceChild (SS _ )      pig _ = SS $ unEveryPig pig 
     replaceChild (SA _ )      pig _ = SA $ unEveryPig pig
 
+p_ :: PropSequentCalc (Form Bool)
+p_ = SeqProp 1
+
+p'_ :: PropSequentCalc (Form Bool)
+p'_ = SeqProp 2
+
 p :: PropSequentCalc Antecedent
 p = (SA $ SeqProp 1)
 
 p' :: PropSequentCalc Antecedent
 p' = (SA $ SeqProp 2)
+
 
 q :: PropSequentCalc Succedent
 q = (SS $ SeqProp 1)

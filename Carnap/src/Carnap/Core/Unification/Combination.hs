@@ -3,9 +3,11 @@
 module Carnap.Core.Unification.Combination (
   LabelPair(LabelPair), Labeling, UniFunction, Combineable(..),
   labelings, getVars, purify, findAllAliens, pureAbstract, partitions,
-  substitutions, getLabels, combine, typeGroup, weave,
+  substitutions, getLabels, combine,  typeGroup, weave,
   hasBackEdge, findNodes, closure, buildGraph, validSub,
   getEqLabel, solveEqs
+  --testing 
+  , doSubs
 ) where
 
 import Carnap.Core.Data.AbstractSyntaxClasses
@@ -31,7 +33,7 @@ findVar v ((LabelPair v' lbl):lbls) def | v =* v'   = lbl
 
 type UniFunction f m = (forall a. f a -> Bool) -> [Equation f] -> m [[Equation f]]
 
-class (FirstOrder f, Eq label) => Combineable f label | f -> label where
+class (FirstOrder f, Ord label, Eq label) => Combineable f label | f -> label where
     getLabel :: f a -> label
     getAlgo :: MonadVar f m => label -> UniFunction f m
     replaceChild :: f a -> EveryPig f -> Int -> f a
@@ -70,16 +72,21 @@ castOut x y = do v <- fresh
                  let y' = subst x v y
                  return (y', v :=: x)
 
+--given a system of equations, returns an equivalent system of
+--pureEquations (in which every equation contains only terms from a single
+--theory), with no redundant equations.
 pureAbstract :: (MonadVar f m, Combineable f label) => [Equation f] -> m [Equation f]
 pureAbstract [] = return []
 pureAbstract ((a :=: b):eqs) = do
         (a',aeqs) <- purify a
         (b',beqs) <- purify b
         eqs' <- pureAbstract eqs
+        -- trivial equations break things; we remove them here.
+        let (_, final) = deTrivialize (aeqs ++ beqs ++ eqs')
         if getLabel a' == getLabel b' 
-            then return $ (a' :=: b'):(aeqs ++ beqs ++ eqs')
+            then return $ (a' :=: b'):final
             else do split <- split a' b'
-                    return $ split ++ aeqs ++ beqs ++ eqs'
+                    return $ split ++ final
     where split x y = do v <- fresh
                          return [v :=: x, v :=: y]
 
@@ -130,6 +137,7 @@ partitions (x:xs) = [[x]:p | p <- partitions xs] ++ [(x:ys):yss | (ys:yss) <- pa
 
 --finds all substitutions of AnyPig varibles
 substitutions :: FirstOrder f => [AnyPig f] -> [[Equation f]]
+substitutions [] = [[]]
 substitutions vars = bigCrossWithH (++) (map parts (typeGroup vars))
     where parts (AnyPig (ListComp l)) = map part2Sub (partitions l)
           --conerts a partition to a substitution
@@ -202,7 +210,28 @@ weave xss = go xss 1
           go xss n = let (rest, l) = step xss n in l ++ go rest (n + 1)
 
 
-isTrivial (a :=: b) = isVar a && isVar b
+
+
+deTrivialize :: (Combineable f label) => [Equation f] -> ([Equation f],[Equation f])
+deTrivialize eqs = let (trivial, nontrivial) = partition isTrivial eqs 
+                       final = mapAll (applySub trivial) nontrivial 
+                       in (trivial, final)
+            where isTrivial (a :=: b) = isVar a && isVar b
+
+
+groupByLabel :: (Combineable f label) => [Equation f] -> [[Equation f]]
+groupByLabel eqs = groupBy ((==) `on` getEqLabel) (sortOn getEqLabel eqs)
+
+doSubs :: (MonadVar f m, Combineable f label) => [Equation f] -> [Equation f] -> m [[[Equation f]]]
+doSubs sub pureeqs = do let pureSubbedEqs = mapAll (applySub sub) pureeqs
+                        let vars = getVars pureSubbedEqs
+                        let labels = getLabels pureSubbedEqs
+                        let labelingsList = labelings vars labels
+                        let eqGroups = groupByLabel pureSubbedEqs
+                        let doLabelings lbling = do
+                               solsByGroup <- mapM (solveEqs lbling) eqGroups
+                               return $ map (sub ++) (bigCrossWithH (++) solsByGroup)
+                        mapM doLabelings labelingsList
 
 --this is some dense code, I'm displeased with dense it is in fact
 --it would be less dense if I could handle this case by case in a loop
@@ -210,18 +239,9 @@ isTrivial (a :=: b) = isVar a && isVar b
 --I might refactor all of this to do that
 combine :: (MonadVar f m, Combineable f label) => [Equation f] -> m [[Equation f]]
 combine eqs = do
-    pureEqs'' <- pureAbstract eqs
-    let (subAdd, pureEqs') = partition isTrivial pureEqs'' -- trivial equations break things
-    let pureEqs = mapAll (applySub subAdd) pureEqs' --so we need to get rid of them
+    let (trivs,eqs') = deTrivialize eqs
+    pureEqs <- pureAbstract eqs
     let vars = getVars pureEqs
     let subs = substitutions vars
-    let doSubs sub = do let pureSubbedEqs = mapAll (applySub sub) pureEqs
-                        let vars = getVars pureSubbedEqs
-                        let labels = getLabels pureSubbedEqs
-                        let labelingsList = labelings vars labels
-                        let eqGroups = groupBy ((==) `on` getEqLabel) pureSubbedEqs
-                        let doLabelings lbling = do solsByGroup <- mapM (solveEqs lbling) eqGroups
-                                                    return $ map (sub ++) (bigCrossWithH (++) solsByGroup)
-                        mapM doLabelings labelingsList
-    sols2d <- mapM doSubs subs
-    return $ map (subAdd ++) (weave . weave $ sols2d) --but we need to add subAdd back in too
+    sols2d <- mapM (\x -> doSubs x pureEqs) subs
+    return $ map (++ trivs) $ weave . weave $ sols2d 
