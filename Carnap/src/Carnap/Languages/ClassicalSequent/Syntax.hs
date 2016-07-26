@@ -221,27 +221,3 @@ instance Combineable PropSequentCalc PropSeqLabel where
     replaceChild (SeqNeg _)   pig _ = SeqNeg $ unEveryPig pig
     replaceChild (SS _ )      pig _ = SS $ unEveryPig pig 
     replaceChild (SA _ )      pig _ = SA $ unEveryPig pig
-
-p_ :: PropSequentCalc (Form Bool)
-p_ = SeqProp 1
-
-p'_ :: PropSequentCalc (Form Bool)
-p'_ = SeqProp 2
-
-p :: PropSequentCalc Antecedent
-p = (SA $ SeqProp 1)
-
-p' :: PropSequentCalc Antecedent
-p' = (SA $ SeqProp 2)
-
-
-q :: PropSequentCalc Succedent
-q = (SS $ SeqProp 1)
-
-b :: PropSequentCalc Sequent
-b = (p :+: Top) :|-: q
-
-b' :: PropSequentCalc Sequent
-b' = p' :|-: q
-
---XXX: evalTerm $ combine [b :=: b'] returns a solution
