@@ -80,9 +80,9 @@ instance UniformlyEq (Comma a) where
 
 instance Schematizable (Comma a) where
         schematize AnteComma (x:"⊤":[]) = x
-        schematize AnteComma (x:y:[])  = x ++ "," ++ y
+        schematize AnteComma (x:y:[])  = x ++ ";" ++ y
         schematize SuccComma (x:"⊥":[]) = x
-        schematize SuccComma (x:y:[])  = x ++ "," ++ y
+        schematize SuccComma (x:y:[])  = x ++ ";" ++ y
 
 instance FirstOrderLex (Comma a)
 
@@ -138,6 +138,7 @@ instance (FirstOrderLex (t (ClassicalSequentOver t))) =>
         --isACUI (SV _)     = True
         isACUI (_ :+: _)  = True
         isACUI _ = False
+        
 
         getId (Proxy :: Proxy a) = 
             case eqT :: Maybe (a :~: Antecedent) of
@@ -199,6 +200,7 @@ instance Combineable PropSequentCalc PropSeqLabel where
     getLabel Top               = PropSeqACUI
     getLabel (_ :+: _)         = PropSeqACUI
     getLabel (GammaV _)        = PropSeqACUI
+    getLabel (SA     _)        = PropSeqACUI
     getLabel _                 = PropSeqFO
 
     getAlgo PropSeqFO   = foUnifySys

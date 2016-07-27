@@ -27,6 +27,7 @@ main = do putStrLn ""
           timeCombine [pacuicase1] "big positive acui" (posTest pacuicase1)
           timeCombine [nacuicase1] "big negative acui" (negTest nacuicase1)
           timeCombine simpleModusPonens "positive modus ponens" (posTest "modus ponens")
+          timeCombine simpleModusPonens "positive modus ponens 2" (posTest "modus ponens")
           timeCombine simpleModusPonensErr "negative modus ponens" (negTest "modus ponens")
           putStrLn ""
 
@@ -81,8 +82,16 @@ simpleModusPonens = [ ((GammaV 1) :|-: SS (phi_ :->-: phi'_)) :=:
                     , ((GammaV 3) :|-: psi) :=: 
                       ((GammaV 4) :|-: q)
                     , ((GammaV 1 :+: GammaV 3) :|-: psi') :=: 
-                      ((GammaV 2 :+: GammaV 4) :|-: q')
+                      ((GammaV 2 :+: GammaV 4) :|-: SS p'_)
                     ]
+
+simpleModusPonens2 = [ ((GammaV 1) :|-: SS (phi_ :->-: phi'_)) :=: 
+                       ((GammaV 2) :|-: SS (p_ :->-: p_))
+                     , ((GammaV 3) :|-: psi) :=: 
+                       ((GammaV 4) :|-: q)
+                     , ((GammaV 1 :+: GammaV 3) :|-: psi') :=: 
+                       ((GammaV 2 :+: GammaV 4) :|-: SS p_)
+                     ]
 
 p_ :: PropSequentCalc (Form Bool)
 p_ = SeqProp 1

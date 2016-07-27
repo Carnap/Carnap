@@ -70,5 +70,8 @@ class Monad m => MonadVar f m where
     fresh :: Typeable a => m (f a)
     freshPig :: m (EveryPig f)
 
+instance (UniformlyEq f, UniformlyOrd f) => Ord (AnyPig f) where
+    (AnyPig x) <= (AnyPig y) = x <=* y
+
 instance UniformlyEq f => Eq (AnyPig f) where
     (AnyPig x) == (AnyPig y) = x =* y

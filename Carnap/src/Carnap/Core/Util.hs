@@ -5,10 +5,11 @@ module Carnap.Core.Util(
     crossWith, bigCrossWith, bigCrossWithH,
     bigUnionWith, bigUnion,
     EveryPig(..), AnyPig(..),
-    ListComp(..)
+    ListComp(..), ordNub
 ) where
 
 import Data.List
+import qualified Data.Set as Set
 import Control.Lens
 import Data.Typeable
 import Control.Monad.State
@@ -76,3 +77,10 @@ data AnyPig f where
 
 mutatePig :: (forall a . f a -> f a) -> EveryPig f -> EveryPig f
 mutatePig f x = EveryPig (f (unEveryPig x))
+
+ordNub :: (Ord a) => [a] -> [a]
+ordNub l = go Set.empty l
+  where
+    go _ [] = []
+    go s (x:xs) = if x `Set.member` s then go s xs
+                                      else x : go (Set.insert x s) xs

@@ -18,6 +18,14 @@ data Equation f where
 instance Schematizable f => Show (Equation f) where
         show (x :=: y) = schematize x [] ++ " :=: " ++ schematize y []
 
+instance UniformlyEq f => Eq (Equation f) where
+        (x :=: y) == (x' :=: y') = x =* x' && y =* y'
+
+instance (UniformlyEq f, UniformlyOrd f) => Ord (Equation f) where
+        (x :=: y) <= (x' :=: y') =  (x :=: y) == (x' :=: y') 
+                                 || (x =* x') && (y <=* y')
+                                 || (x <=* x')
+
 --this interface seems simpliar for the user to implement than our previous
 --1. There is no more varible type
 --2. There is no substitution type
@@ -68,6 +76,18 @@ emap f (x :=: y) = f x :=: f y
 mapAll :: (forall a. f a -> f a) -> [Equation f] -> [Equation f]
 mapAll f = map (emap f)
 
+(Left x) .<. f = Left (f x)
+x .<. _ = x
+
+founify :: FirstOrder f => [Equation f] -> [Equation f] -> Either (UError f) [Equation f]
+founify [] ss = Right ss
+founify ((x :=: y):es) ss
+    | isVar x && occurs x y       = Left $ OccursError x y
+    | isVar x && not (occurs x y) = founify (mapAll (subst x y) es) ((x :=: y):ss)
+    | isVar y                     = founify ((y :=: x):es) ss
+    | sameHead x y                = founify (es ++ decompose x y) ss .<. SubError x y
+    | otherwise                   = Left $ MatchError x y
+
 applySub :: FirstOrder f => [Equation f] -> f a -> f a
 applySub []             y = y
 applySub ((v :=: x):ss) y = applySub ss (subst v x y)
@@ -76,3 +96,5 @@ freeVars :: (Typeable a, FirstOrder f) => f a -> [AnyPig f]
 freeVars t | isVar t   = [AnyPig t]
            | otherwise = concatMap rec (decompose t t)
     where rec (a :=: _) = freeVars a
+
+
