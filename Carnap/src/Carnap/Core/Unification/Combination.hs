@@ -33,7 +33,7 @@ findVar v ((LabelPair v' lbl):lbls) def | v =* v'   = lbl
 
 type UniFunction f m = (forall a. f a -> Bool) -> [Equation f] -> m [[Equation f]]
 
-class (UniformlyOrd f, FirstOrder f, Ord label, Eq label) => Combineable f label | f -> label where
+class (FirstOrder f, Ord label, Eq label) => Combineable f label | f -> label where
     getLabel :: f a -> label
     getAlgo :: MonadVar f m => label -> UniFunction f m
     replaceChild :: f a -> EveryPig f -> Int -> f a
@@ -95,7 +95,7 @@ purify x
     | isVar x = return (x,[])
     | otherwise = 
         do let xl = getLabel x
-           let xchildren = ordNub $ disintegrate x
+           let xchildren = nub $ disintegrate x
            --the code gets weirdly nationalistic at this point.
            let allaliens = findAllAliens xl xchildren 
            (pureTerm, impurities) <- deport allaliens x
@@ -150,7 +150,7 @@ labelings ((AnyPig x):domain) range = [(LabelPair x l):f | f <- labelings domain
 labelings []                  range = [[]]
 
 --trys to find a back edge by checking if a node is it's own closure
-hasBackEdge :: (FirstOrder f,UniformlyOrd f) => [AnyPig f] -> [(AnyPig f, [AnyPig f])] -> Bool
+hasBackEdge :: (FirstOrder f) => [AnyPig f] -> [(AnyPig f, [AnyPig f])] -> Bool
 hasBackEdge nodes gph = any (\n -> any (== n) (closure [] gph n)) nodes
 
 --finds all adjacent nodes
@@ -164,7 +164,7 @@ closure visit gph node
     | any (== node) visit = findNodes node gph
     | otherwise           = case findNodes node gph of
         []     -> []
-        childs -> ordNub $ childs ++ concatMap (\c -> closure (node:visit) gph c) childs
+        childs -> nub $ childs ++ concatMap (\c -> closure (node:visit) gph c) childs
 
 --builds a graph out of a set of equations in the correct manner
 buildGraph ((v :=: e):eqs) = (AnyPig v, freeVars e) : buildGraph eqs
@@ -177,13 +177,13 @@ validSub eqs = not (hasBackEdge (getVars eqs) (buildGraph eqs))
 
 --gets all the varibles from a set of equations
 getVars :: Combineable f label => [Equation f] -> [AnyPig f]
-getVars eqs = ordNub (go eqs)
+getVars eqs = nubBy (==) (go eqs)
     where go ((a :=: b):eqs) = freeVars a ++ freeVars b ++ go eqs
           go []              = []
 
 --get's all the labels of every equation
 getLabels :: Combineable f label => [Equation f] -> [label]
-getLabels = ordNub . map getEqLabel
+getLabels = nub . map getEqLabel
 
 --get's a associated theory label of an equation
 getEqLabel :: Combineable f label => Equation f -> label
@@ -229,6 +229,7 @@ doSubs sub pureeqs = do let pureSubbedEqs = mapAll (applySub sub) pureeqs
                                solsByGroup <- mapM (solveEqs lbling) eqGroups
                                return $ map (sub ++) (bigCrossWithH (++) solsByGroup)
                         mapM doLabelings labelingsList
+
 
 --this is some dense code, I'm displeased with dense it is in fact
 --it would be less dense if I could handle this case by case in a loop
