@@ -4,6 +4,7 @@ module Main where
 
 import Carnap.Core.Data.AbstractSyntaxDataTypes
 import Carnap.Core.Unification.Unification
+import Carnap.Core.Unification.FirstOrder
 import Carnap.Core.Unification.Combination
 import Carnap.Languages.ClassicalSequent.Syntax
 import Carnap.Core.Examples.ACUI
@@ -27,6 +28,7 @@ main = do putStrLn ""
           timeCombine [pacuicase1] "big positive acui" (posTest pacuicase1)
           timeCombine [nacuicase1] "big negative acui" (negTest nacuicase1)
           timeCombine simpleModusPonens "positive modus ponens" (posTest "modus ponens")
+          timeAltCombine simpleModusPonens "alt positive modus ponens" (posTest "modus ponens")
           timeCombine simpleModusPonens "positive modus ponens 2" (posTest "modus ponens")
           timeCombine simpleModusPonensErr "negative modus ponens" (negTest "modus ponens")
           putStrLn ""
@@ -38,6 +40,13 @@ timeCombine eqs desc test = do startTime <- getCPUTime
                                finishTime <- getCPUTime
                                let t = fromIntegral (finishTime - startTime) / 1000000000000
                                putStrLn $ "Test Results (" ++ desc ++ "):" ++ show t
+
+timeAltCombine eqs desc test = do startTime <- getCPUTime
+                                  let subs = altCombine eqs
+                                  test subs
+                                  finishTime <- getCPUTime
+                                  let t = fromIntegral (finishTime - startTime) / 1000000000000
+                                  putStrLn $ "Test Results (" ++ desc ++ "):" ++ show t
 
 testTemplate :: (a -> Bool) -> String -> a -> IO ()
 testTemplate pred desc x = if pred x then return ()
@@ -92,6 +101,16 @@ simpleModusPonens2 = [ ((GammaV 1) :|-: SS (phi_ :->-: phi'_)) :=:
                      , ((GammaV 1 :+: GammaV 3) :|-: psi') :=: 
                        ((GammaV 2 :+: GammaV 4) :|-: SS p_)
                      ]
+
+altCombine :: [Equation PropSequentCalc] -> [[Equation PropSequentCalc]]
+altCombine eqs = evalTerm $ combine $ succs ++ head (evalTerm $ foUnifySys (const False) ants)
+        where succPair :: Equation PropSequentCalc -> Equation PropSequentCalc
+              succPair ((_ :|-: x):=:(_:|-: y))  = x :=: y
+              antPair :: Equation PropSequentCalc -> Equation PropSequentCalc
+              antPair  ((x :|-: _):=:(y:|-: _))  = x :=: y
+              ants  = map antPair eqs
+              succs = map succPair eqs
+
 
 p_ :: PropSequentCalc (Form Bool)
 p_ = SeqProp 1
