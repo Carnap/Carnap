@@ -5,7 +5,7 @@ module Carnap.Core.Unification.Combination (
   labelings, getVars, purify, findAllAliens, pureAbstract, partitions,
   substitutions, getLabels, combine,  typeGroup, weave,
   hasBackEdge, findNodes, closure, buildGraph, validSub,
-  getEqLabel, solveEqs
+  getEqLabel, solveEqs, groupEqBy
   --testing 
   , doSubs
 ) where
@@ -183,7 +183,11 @@ getVars eqs = nubBy (==) (go eqs)
 
 --get's all the labels of every equation
 getLabels :: Combineable f label => [Equation f] -> [label]
-getLabels = nub . map getEqLabel
+getLabels =  map labelsOfGroups . groupByLabel 
+    where labelsOfGroups (x:xs) = getEqLabel x
+
+--XXX:Weirdly, this version seems faster on big negative cases
+--getLabels = nub . map getEqLabel
 
 --get's a associated theory label of an equation
 getEqLabel :: Combineable f label => Equation f -> label
@@ -215,9 +219,14 @@ deTrivialize eqs = let (trivial, nontrivial) = partition isTrivial eqs
                        in (trivial, final)
             where isTrivial (a :=: b) = isVar a && isVar b
 
-
 groupByLabel :: (Combineable f label) => [Equation f] -> [[Equation f]]
 groupByLabel eqs = groupBy ((==) `on` getEqLabel) (sortOn getEqLabel eqs)
+
+groupEqBy :: (Equation f -> Equation f -> Bool) -> [Equation f] -> [[Equation f]]
+groupEqBy r [] = []
+groupEqBy r (x:xs) = sameAsHead:(groupEqBy r rest)
+    where (sameAsHead, rest) = partition (r x) (x:xs)
+
 
 doSubs :: (MonadVar f m, Combineable f label) => [Equation f] -> [Equation f] -> m [[[Equation f]]]
 doSubs sub pureeqs = do let pureSubbedEqs = mapAll (applySub sub) pureeqs
@@ -230,7 +239,6 @@ doSubs sub pureeqs = do let pureSubbedEqs = mapAll (applySub sub) pureeqs
                                return $ map (sub ++) (bigCrossWithH (++) solsByGroup)
                         mapM doLabelings labelingsList
 
-
 --this is some dense code, I'm displeased with dense it is in fact
 --it would be less dense if I could handle this case by case in a loop
 --yielding ansers as I went such that the results were woven togethor for me
@@ -239,10 +247,13 @@ combine :: (MonadVar f m, Combineable f label) => [Equation f] -> m [[Equation f
 combine eqs = do
     let (trivs,eqs') = deTrivialize eqs
     pureEqs <- pureAbstract eqs
-    let vars = getVars pureEqs
+    let eqsByType = groupEqBy sameTypeEq pureEqs
+    let varsByType = map getVars eqsByType
     --XXX: the following hack, focusing on only substitutional variables, seems
     --to help with the sequent case a lot. Need to check if it is correct.
+    --No counterexamples yet.
     --let vars' = filter (\x -> head (show x) == 'α') vars 
-    let subs = substitutions vars
+    let subsByType = map substitutions varsByType
+    let subs = bigCrossWithH (++) subsByType
     sols2d <- mapM (\x -> doSubs x pureEqs) subs
     return $ map (++ trivs) $ weave . weave $ sols2d 

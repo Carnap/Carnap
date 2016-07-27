@@ -1,10 +1,10 @@
-{-#LANGUAGE ImpredicativeTypes, FunctionalDependencies, TypeFamilies, UndecidableInstances, FlexibleInstances, MultiParamTypeClasses, AllowAmbiguousTypes, GADTs, KindSignatures, DataKinds, PolyKinds, TypeOperators, ViewPatterns, PatternSynonyms, RankNTypes, FlexibleContexts #-}
+{-#LANGUAGE ImpredicativeTypes, ScopedTypeVariables, FunctionalDependencies, TypeFamilies, UndecidableInstances, FlexibleInstances, MultiParamTypeClasses, AllowAmbiguousTypes, GADTs, KindSignatures, DataKinds, PolyKinds, TypeOperators, ViewPatterns, PatternSynonyms, RankNTypes, FlexibleContexts #-}
 
 module Carnap.Core.Unification.Unification (
    Equation((:=:)), UError(..), FirstOrder, HigherOrder,
    isVar, sameHead, decompose, occurs, subst,
    matchApp, castLam, getLamVar, (.$.),
-   applySub, mapAll, freeVars, emap
+   applySub, mapAll, freeVars, emap, sameTypeEq
 ) where
 
 import Data.Type.Equality
@@ -69,6 +69,12 @@ instance Schematizable f => Show (UError f) where
         show (OccursError x y) = "OccursError: "
                                  ++ schematize x [] ++ ", "
                                  ++ schematize y []
+
+sameTypeEq :: Equation f -> Equation f -> Bool
+sameTypeEq ((a :: f a) :=: _) ((b :: f b) :=: _) = 
+        case eqT :: Maybe (a :~: b) of
+            Just Refl -> True
+            Nothing -> False
 
 emap :: (forall a. f a -> f a) -> Equation f -> Equation f
 emap f (x :=: y) = f x :=: f y
