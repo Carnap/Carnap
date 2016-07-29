@@ -132,12 +132,13 @@ instance (FirstOrderLex (t (ClassicalSequentOver t))) =>
         isId Top = True
         isId _   = False
 
-        isACUI Top        = True
-        isACUI (SA _)     = True
-        isACUI (GammaV _) = True
-        --isACUI (SV _)     = True
-        isACUI (_ :+: _)  = True
-        isACUI _ = False
+        -- isACUI Top        = True
+        -- isACUI (SA _)     = True
+        -- isACUI (GammaV _) = True
+        -- --isACUI (SV _)     = True
+        -- isACUI (_ :+: _)  = True
+        isACUI (SA _)     = False
+        isACUI _ = True
         
 
         getId (Proxy :: Proxy a) = 
@@ -200,7 +201,7 @@ instance Combineable PropSequentCalc PropSeqLabel where
     getLabel Top               = PropSeqACUI
     getLabel (_ :+: _)         = PropSeqACUI
     getLabel (GammaV _)        = PropSeqACUI
-    getLabel (SA     _)        = PropSeqACUI
+    --getLabel (SA     _)        = PropSeqACUI
     getLabel _                 = PropSeqFO
 
     getAlgo PropSeqFO   = foUnifySys
@@ -223,3 +224,11 @@ instance Combineable PropSequentCalc PropSeqLabel where
     replaceChild (SeqNeg _)   pig _ = SeqNeg $ unEveryPig pig
     replaceChild (SS _ )      pig _ = SS $ unEveryPig pig 
     replaceChild (SA _ )      pig _ = SA $ unEveryPig pig
+
+liftToSequent :: PurePropLanguage (Form Bool) -> PropSequentCalc (Form Bool)
+liftToSequent (x :&: y)     = (liftToSequent x :&-: liftToSequent y)
+liftToSequent (x :||: y)    = (liftToSequent x :||-: liftToSequent y)
+liftToSequent (x :->: y)    = (liftToSequent x :->-: liftToSequent y)
+liftToSequent (x :<->: y)   = (liftToSequent x :<->-: liftToSequent y)
+liftToSequent (PNeg y)      = (SeqNeg $ liftToSequent y)
+liftToSequent (PP n)        = SeqProp n
