@@ -74,10 +74,8 @@ toSatProblem varConst eq@(a :==: b)
 
 --returns true if the left side is strictly greater than the right side
 --dominates :: [Literal (AnyPig f)] -> [Literal a] -> Bool
-dominates l r = null $ (pos r) \\ (pos l)
+dominates l r = (null $ (pos r) \\ (pos l))
     where pos = filter isPos
-
-
 
 --finds all minimal non-trivial solutions being carful to never
 --pattern match on a solution that we know is not minimal
@@ -89,6 +87,27 @@ minimals' ss cur (Sols i s1 s2) | any (((LPos i):cur) `dominates`) mins = mins
                                 | otherwise = minimals' mins ((LPos i):cur) s2
     where mins = minimals' ss ((LNeg i):cur) s1
 
+crudeMinimals :: Eq a => Solutions a -> [[Literal a]]
+crudeMinimals = minimize [] . enumerate []
+    where minimize :: Eq a => [[Literal a]] -> [[Literal a]] -> [[Literal a]]
+          minimize gs sols@(x:xs) = 
+            if gens x $ concat $ filter (compat x) (gs ++ xs)
+                then minimize gs xs
+                else minimize (x:gs) xs
+          minimize gs [] = gs
+
+          compat x y = null $ (negs x) \\ (negs y)
+
+          gens x y = (not $ null y) && (null $ (pos x) \\ (pos y))
+
+          negs y = filter isNeg y
+
+          pos y = filter (not . isNeg) y
+
+          --isTrivial = null . pos 
+
+          isNeg (LNeg _) = True
+          isNeg _        = False
 
 --finds the trivial solution
 trivialSol (Sols i s _) = map ((LNeg i) :) (trivialSol s)
@@ -101,7 +120,7 @@ trivialSol (Sat False)  = []
 --minimals :: Solutions a -> [[Literal a]]
 minimals sols | null minsols = trivialSol sols
               | otherwise    = minsols
-    where minsols = minimals' [] [] sols
+    where minsols = crudeMinimals sols --minimals' [] [] sols
 
 --simplifies a term by removing all empties
 --simplify :: ACUI f => f a -> f a
@@ -142,7 +161,7 @@ solveHomoEq :: forall f m a. (MonadVar f m, ACUI f, Typeable a)
             -> SimpleEquation [f a]
             -> m [Equation f]
 solveHomoEq varConst eq = do
-    let mins = minimals . search . toSatProblem varConst $ eq
+    let mins = enumerate [] . search . toSatProblem varConst $ eq
     minSols <- mapM (conv (popVar :: m (f a))) mins
     let homosol = foldl subadd [] minSols
     return homosol
@@ -154,7 +173,7 @@ solveInHomoEq :: (MonadVar f m, ACUI f, Typeable a)
               -> SimpleEquation [f a]
               -> m [[Equation f]]
 solveInHomoEq varConst c eq = do
-  let mins = minimals . search . toSatProblem varConst $ eq
+  let mins = enumerate [] . search . toSatProblem varConst $ eq
   minSols <- mapM (conv (return c)) mins
   return minSols
 
