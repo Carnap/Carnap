@@ -167,6 +167,9 @@ instance (FirstOrderLex (t (ClassicalSequentOver t))) =>
 --2. Sequent Languages
 --------------------------------------------------------
 
+class Sequentable f where
+        liftToSequent :: FixLang f a -> ClassicalSequentOver (f :|: EndLang) a
+
 --------------------------------------------------------
 --2.1 Propositional Sequent Calculus
 --------------------------------------------------------
@@ -225,10 +228,10 @@ instance Combineable PropSequentCalc PropSeqLabel where
     replaceChild (SS _ )      pig _ = SS $ unEveryPig pig 
     replaceChild (SA _ )      pig _ = SA $ unEveryPig pig
 
-liftToSequent :: PurePropLanguage (Form Bool) -> PropSequentCalc (Form Bool)
-liftToSequent (x :&: y)     = (liftToSequent x :&-: liftToSequent y)
-liftToSequent (x :||: y)    = (liftToSequent x :||-: liftToSequent y)
-liftToSequent (x :->: y)    = (liftToSequent x :->-: liftToSequent y)
-liftToSequent (x :<->: y)   = (liftToSequent x :<->-: liftToSequent y)
-liftToSequent (PNeg y)      = (SeqNeg $ liftToSequent y)
-liftToSequent (PP n)        = SeqProp n
+instance Sequentable PurePropLexicon where
+    liftToSequent (x :&: y)     = (liftToSequent x :&-: liftToSequent y)
+    liftToSequent (x :||: y)    = (liftToSequent x :||-: liftToSequent y)
+    liftToSequent (x :->: y)    = (liftToSequent x :->-: liftToSequent y)
+    liftToSequent (x :<->: y)   = (liftToSequent x :<->-: liftToSequent y)
+    liftToSequent (PNeg y)      = (SeqNeg $ liftToSequent y)
+    liftToSequent (PP n)        = SeqProp n
