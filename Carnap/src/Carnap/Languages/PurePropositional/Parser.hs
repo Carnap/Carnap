@@ -1,5 +1,5 @@
 module Carnap.Languages.PurePropositional.Parser
-    (purePropFormulaParser)
+    (prePurePropFormulaParser, purePropFormulaParser)
     where
 
 import Carnap.Languages.PurePropositional.Syntax

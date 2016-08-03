@@ -1,4 +1,4 @@
-{-#LANGUAGE ScopedTypeVariables, TypeSynonymInstances, UndecidableInstances, FlexibleInstances, MultiParamTypeClasses, GADTs, DataKinds, PolyKinds, TypeOperators, ViewPatterns, PatternSynonyms, RankNTypes, FlexibleContexts, AutoDeriveTypeable #-}
+{-#LANGUAGE ScopedTypeVariables, TypeSynonymInstances, UndecidableInstances, FlexibleInstances, MultiParamTypeClasses, GADTs, DataKinds, PolyKinds, TypeOperators, ViewPatterns, PatternSynonyms, RankNTypes, FlexibleContexts, AutoDeriveTypeable, FunctionalDependencies #-}
 module Carnap.Languages.ClassicalSequent.Syntax where
 
 import Carnap.Core.Data.AbstractSyntaxClasses
@@ -15,6 +15,7 @@ import Carnap.Languages.Util.LanguageClasses
 import Control.Lens.Plated (transform, children)
 import Control.Lens.Prism
 import Data.Typeable
+import Data.Tree
 import Carnap.Languages.Util.GenericConnectives
 
 
