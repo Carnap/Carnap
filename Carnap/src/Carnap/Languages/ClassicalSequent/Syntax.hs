@@ -15,7 +15,6 @@ import Carnap.Languages.Util.LanguageClasses
 import Control.Lens.Plated (transform, children)
 import Control.Lens.Prism
 import Data.Typeable
-import Data.Tree
 import Carnap.Languages.Util.GenericConnectives
 
 

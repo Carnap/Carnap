@@ -1,6 +1,6 @@
 {-#LANGUAGE GADTs, TypeOperators, FlexibleContexts, MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances, FunctionalDependencies#-}
-module Carnap.Calculi.NaturalDeduction.Syntax (
-) where
+module Carnap.Calculi.NaturalDeduction.Syntax
+where
 
 import Data.Tree
 import Data.List (permutations)
@@ -14,7 +14,6 @@ import Carnap.Languages.PurePropositional.Syntax
 import Carnap.Languages.ClassicalSequent.Syntax
 import Carnap.Languages.ClassicalSequent.Parser
 import Carnap.Languages.PurePropositional.Parser
-import qualified Text.Parsec as P
 --------------------------------------------------------
 --1. Data For Natural Deduction
 --------------------------------------------------------
@@ -64,8 +63,6 @@ reduceProofTree (Node (ProofLine no cont rule) ts) =
 
 data PropLogic = MP | AX
 
-
-
 instance Inference PropLogic (PurePropLexicon :|: EndLang) where
     premisesOf MP = [ GammaV 1 :|-: SS (SeqPhi 1 :->-: SeqPhi 2)
                     , GammaV 2 :|-: SS (SeqPhi 1)
@@ -75,18 +72,6 @@ instance Inference PropLogic (PurePropLexicon :|: EndLang) where
     conclusionOf MP = (GammaV 1 :+: GammaV 2) :|-: SS (SeqPhi 2)
     conclusionOf AX = SA (SeqPhi 1) :|-: SS (SeqPhi 1)
 
-demoTree :: ProofTree PropLogic (PurePropLexicon :|: EndLang)
-demoTree = Node (ProofLine 0 (parseIt "P_1") MP)
-                [ Node (ProofLine 0 (parseIt "P_2 -> P_1") MP)
-                    [ Node (ProofLine 0 (parseIt "P_3 -> (P_2 -> P_1)") AX) []
-                    , Node (ProofLine 0 (parseIt "P_3") AX) []
-                    ]
-                , Node (ProofLine 0 (parseIt "P_2") AX) []
-                ]
-
-parseIt s = case P.parse purePropFormulaParser "" s of
-              Right form -> SS $ liftToSequent form
-              _ -> error "boo"
 
 firstRight :: [Either a [b]] -> Either [a] b
 firstRight xs = case filter isRight xs of
