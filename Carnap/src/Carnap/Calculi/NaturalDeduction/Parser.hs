@@ -28,7 +28,7 @@ demoTree = Node (ProofLine 0 (parseIt "P_1") MP)
                 , Node (ProofLine 0 (parseIt "P_2") AX) [] 
                 ]
 
-demoPropProof = "P_1 :AX\nP_1 -> P_2 :AX\nP_2 :MP 1,2\nP_2 :MP 1,2"
+demoPropProof = "P_1 :AX\nP_1 -> P_2 :AX\nP_2 :MP 1,2\nShow: P_2\n  P_3 :AX\n:MP 1,2"
 
 toDeduction :: Parsec String () r -> Parsec String () (FixLang lex a) -> String 
     -> [Either ParseError (DeductionLine r lex a)]
@@ -73,8 +73,9 @@ parseAssertLine r f = do dpth  <- indent
                          return $ AssertLine phi rule dpth deps
 
 parseShowLine :: Parsec String u (FixLang lex a) -> Parsec String u (DeductionLine r lex a)
-parseShowLine f = do string "Show:" <|> string "show:"
-                     dpth <- indent
+parseShowLine f = do dpth <- indent
+                     string "Show:" <|> string "show:"
+                     spaces
                      phi <- f
                      return $ ShowLine phi dpth
  
@@ -98,11 +99,11 @@ toProofTree ded n = case ded !! (n - 1)  of
                 where checkDep depline = takeRange depline n >>= scan
           (ShowLine f d) -> 
                 do m <- matchShow
-                   let (QedLine r d' deps) = ded !! m
-                   mapM (checkDep m d') deps 
+                   let (QedLine r _ deps) = ded !! m
+                   mapM (checkDep $ m + 1) deps 
                    deps' <- mapM (\x -> toProofTree ded x) deps
                    return $ Node (ProofLine n (SS $ liftToSequent f) r) deps'
-                where checkDep m d' m' = takeRange m' m >>= scan 
+                where checkDep m m' = takeRange m' m >>= scan 
                       matchShow = let ded' = drop n ded in
                           case findIndex (qedAt d) ded' of
                               Nothing -> Left "Open subproof (no corresponding QED)"
@@ -116,13 +117,13 @@ toProofTree ded n = case ded !! (n - 1)  of
           (QedLine _ _ _) -> Left "A QED line cannot be cited as a justification" 
     where ln = length ded
           scan chunk@(h:_) =
-              if and (map (\x -> depth h >= depth x) chunk)
+              if and (map (\x -> depth h <= depth x) chunk)
                   then Right True
-                  else Left "Dependency appears to be in a separate subproof"
+                  else Left $ "head has depth" ++ (show $ depth h)
           takeRange m' n' = 
               if n' <= m' 
-                  then Left "Dependency is later than Assertion"
-                  else Right $ lineRange m' n' ded
+                      then Left "Dependency is later than assertion"
+                      else Right $ lineRange m' n' ded
           --sublist, given by line numbers
           lineRange m n l = drop (m - 1) $ take n l
 
