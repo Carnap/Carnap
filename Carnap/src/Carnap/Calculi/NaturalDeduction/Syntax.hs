@@ -62,6 +62,7 @@ reduceProofTree (Node (ProofLine no cont rule) ts) =
                ---TODO: label errors with lineNo
 
 data PropLogic = MP | AX
+               deriving Show
 
 instance Inference PropLogic PurePropLexicon where
     premisesOf MP = [ GammaV 1 :|-: SS (SeqPhi 1 :->-: SeqPhi 2)
