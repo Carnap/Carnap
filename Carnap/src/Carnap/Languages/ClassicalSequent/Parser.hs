@@ -19,7 +19,7 @@ class ParsableLex a f where
 
 --XXX: need to add variable parsing
 seqFormulaParser :: (Sequentable f, ParsableLex (Form Bool) f) =>
-    Parsec String u (ClassicalSequentOver (f :|: EndLang) Sequent)
+    Parsec String u (ClassicalSequentOver f Sequent)
 seqFormulaParser = do (lhs,rhs) <- splitSequent --split on turnstile and commas
                       let lhs'  = map (SA . liftToSequent) lhs
                       let rhs'  = map (SS . liftToSequent) rhs

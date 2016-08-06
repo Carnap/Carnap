@@ -63,7 +63,7 @@ reduceProofTree (Node (ProofLine no cont rule) ts) =
 
 data PropLogic = MP | AX
 
-instance Inference PropLogic (PurePropLexicon :|: EndLang) where
+instance Inference PropLogic PurePropLexicon where
     premisesOf MP = [ GammaV 1 :|-: SS (SeqPhi 1 :->-: SeqPhi 2)
                     , GammaV 2 :|-: SS (SeqPhi 1)
                     ]

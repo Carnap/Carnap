@@ -109,7 +109,7 @@ type ClassicalSequentLex = Cedent
                            :|: SubstitutionalVariable
                            :|: EndLang
 
-type ClassicalSequentOver a = FixLang (ClassicalSequentLex :|: a)
+type ClassicalSequentOver a = FixLang (ClassicalSequentLex :|: a :|: EndLang)
 
 pattern Top                 = FX (Lx1 (Lx1 NilAntecedent))
 pattern Bot                 = FX (Lx1 (Lx1 NilSuccedent))
@@ -168,13 +168,13 @@ instance (FirstOrderLex (t (ClassicalSequentOver t))) =>
 --------------------------------------------------------
 
 class Sequentable f where
-        liftToSequent :: FixLang f a -> ClassicalSequentOver (f :|: EndLang) a
+        liftToSequent :: FixLang f a -> ClassicalSequentOver f a
 
 --------------------------------------------------------
 --2.1 Propositional Sequent Calculus
 --------------------------------------------------------
 
-type PropSequentCalc = ClassicalSequentOver (PurePropLexicon :|: EndLang)
+type PropSequentCalc = ClassicalSequentOver PurePropLexicon
 
 --we write the Copula schema at this level since we may want other schemata
 --for sequent languages that contain things like quantifiers
