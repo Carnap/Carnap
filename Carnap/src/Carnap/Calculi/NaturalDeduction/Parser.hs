@@ -34,11 +34,6 @@ toDeduction :: Parsec String () r -> Parsec String () (FixLang lex a) -> String
     -> [Either ParseError (DeductionLine r lex a)]
 toDeduction r f = map (parse (parseLine r f) "") . lines
 
---idea:
---1. Parse string into a list of prooflines with depths and dependencies
---2. map depths and dependencies into a proof tree and a display tree. 
---3. accumulate errors and successes in a Map with line numbers
-
 data DeductionLine r lex a where
         AssertLine :: 
             { asserted :: FixLang lex a
@@ -84,12 +79,7 @@ parseQedLine r = do dpth <- indent
                     (rule, deps) <- rline r
                     return $ QedLine rule dpth deps
 
---still need to convert these into proofTrees. Will need to do this in
---a somewhat "global" way, since show lines can look ahead to the
---conclusions of their subderivations.
-
---find the prooftree corresponding to *line n* in ded---proof line numbers
---start at 1
+--find the prooftree corresponding to *line n* in ded, where proof line numbers start at 1
 toProofTree :: (Inference r lex, Sequentable lex) => [DeductionLine r lex (Form Bool)] -> Int -> Either ProofErrorMessage (ProofTree r lex)
 toProofTree ded n = case ded !! (n - 1)  of
           (AssertLine f r dpth deps) -> 

@@ -30,11 +30,14 @@ library
                      , Carnap.Languages.Util.LanguageClasses
                      , Carnap.Languages.PurePropositional.Syntax
                      , Carnap.Languages.PurePropositional.Parser
-                     , Carnap.Languages.ClassicalSequent.Syntax
                      , Carnap.Languages.ModalPropositional.Syntax
                      , Carnap.Languages.ModalPropositional.Parser
                      , Carnap.Languages.PureFirstOrder.Syntax
                      , Carnap.Languages.PureFirstOrder.Parser
+                     , Carnap.Languages.ClassicalSequent.Syntax
+                     , Carnap.Languages.ClassicalSequent.Parser
+                     , Carnap.Calculi.NaturalDeduction.Parser
+                     , Carnap.Calculi.NaturalDeduction.Syntax
 
   build-depends:       base >= 4.7
                      , lens >= 4.12
