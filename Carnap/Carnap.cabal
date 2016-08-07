@@ -18,9 +18,11 @@ library
                      , Carnap.Core.Examples.ACUI
                      , Carnap.Core.Data.AbstractSyntaxClasses
                      , Carnap.Core.Examples.ToyLanguages
+                     , Carnap.Core.Unification.FirstOrder
                      , Carnap.Core.Unification.Unification
                      , Carnap.Core.Unification.ACUI
-                     , Carnap.Core.Unification.SAT
+                     , Carnap.Core.Unification.Combination
+                     , Carnap.Core.ModelChecking.SAT
                      , Carnap.Core.Data.Util
                      , Carnap.Core.Util
                      , Carnap.Languages.Util.GenericConnectives
@@ -32,6 +34,10 @@ library
                      , Carnap.Languages.ModalPropositional.Parser
                      , Carnap.Languages.PureFirstOrder.Syntax
                      , Carnap.Languages.PureFirstOrder.Parser
+                     , Carnap.Languages.ClassicalSequent.Syntax
+                     , Carnap.Languages.ClassicalSequent.Parser
+                     , Carnap.Calculi.NaturalDeduction.Parser
+                     , Carnap.Calculi.NaturalDeduction.Syntax
 
   build-depends:       base >= 4.7
                      , lens >= 4.12
@@ -39,7 +45,6 @@ library
                      , containers >= 0.5.6.2
                      , parsec >= 3.1.9
   default-language:    Haskell2010
-
 
 test-suite test
     type:              exitcode-stdio-1.0
@@ -49,5 +54,6 @@ test-suite test
     ghc-options:       -Wall
 
 
-    build-depends: base, Carnap
-    default-language:    Haskell2010
+    build-depends:     base
+                     , Carnap
+    default-language:  Haskell2010

@@ -1,5 +1,5 @@
 {-#LANGUAGE TypeSynonymInstances, UndecidableInstances, FlexibleInstances, MultiParamTypeClasses, GADTs, DataKinds, PolyKinds, TypeOperators, ViewPatterns, PatternSynonyms, RankNTypes, FlexibleContexts, AutoDeriveTypeable #-}
-module Carnap.Languages.ModalPropositional.Syntax 
+module Carnap.Languages.ModalPropositional.Syntax
      where
 
 import Carnap.Core.Data.AbstractSyntaxDataTypes
@@ -50,9 +50,9 @@ instance Evaluable PropModality where
         eval Diamond = lift1 $ \f -> const False
 
 instance Modelable PropFrame PropModality where
-        satisfies f Box = lift1 $ \f x -> getAll $ mconcat (map (M.All . f) (ac x))
+        satisfies f Box = lift1 $ \f x -> M.getAll $ mconcat (map (M.All . f) (ac x))
             where ac x = accessibility f ! x
-        satisfies f Diamond = lift1 $ \f x -> getAny $ mconcat (map (Any . f) (ac x))
+        satisfies f Diamond = lift1 $ \f x -> M.getAny $ mconcat (map (M.Any . f) (ac x))
             where ac x = accessibility f ! x
 
 type ModalSchematicProp = SchematicIntProp (World -> Bool)

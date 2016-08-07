@@ -1,8 +1,21 @@
 {-#LANGUAGE TypeSynonymInstances, UndecidableInstances, FlexibleInstances, MultiParamTypeClasses, GADTs, DataKinds, PolyKinds, TypeOperators, ViewPatterns, PatternSynonyms, RankNTypes, FlexibleContexts #-}
 
-module Carnap.Core.Util(Nat(Zero, Succ), Vec(VNil, VCons)) where
+module Carnap.Core.Util(
+    Nat(Zero, Succ), Vec(VNil, VCons),
+    crossWith, bigCrossWith, bigCrossWithH,
+    bigUnionWith, bigUnion,
+    EveryPig(..), AnyPig(..),
+    ListComp(..), ordNub
+) where
 
+import Data.List
+import qualified Data.Set as Set
 import Control.Lens
+import Data.Typeable
+import Control.Monad.State
+
+data ListComp f a where
+    ListComp :: [f a] -> ListComp f a
 
 --define natural numbers for type lifting
 data Nat = Zero
@@ -48,3 +61,26 @@ class Plated a' => MultiPlated a a' where
 
 instance Plated a => MultiPlated a a where
     multiplate = id
+
+bigUnion :: Eq a => [[a]] -> [a]
+bigUnion = bigUnionWith id
+bigUnionWith f xss = foldr union [] (map f xss)
+crossWith f xs ys = [f x y | x <- xs, y <- ys]
+bigCrossWith f xs xss = foldr (crossWith f) xs xss
+bigCrossWithH f (xs:xss) = bigCrossWith f xs xss
+bigCrossWithH _ []       = []
+
+newtype EveryPig f = EveryPig {unEveryPig :: forall a. Typeable a => f a}
+--the typeable constraint lets us unpack this in a safe way
+data AnyPig f where
+    AnyPig :: Typeable a => f a -> AnyPig f
+
+mutatePig :: (forall a . f a -> f a) -> EveryPig f -> EveryPig f
+mutatePig f x = EveryPig (f (unEveryPig x))
+
+ordNub :: (Ord a) => [a] -> [a]
+ordNub l = go Set.empty l
+  where
+    go _ [] = []
+    go s (x:xs) = if x `Set.member` s then go s xs
+                                      else x : go (Set.insert x s) xs

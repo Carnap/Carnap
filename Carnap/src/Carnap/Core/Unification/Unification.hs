@@ -1,21 +1,30 @@
-{-#LANGUAGE FunctionalDependencies, TypeFamilies, UndecidableInstances, FlexibleInstances, MultiParamTypeClasses, AllowAmbiguousTypes, GADTs, KindSignatures, DataKinds, PolyKinds, TypeOperators, ViewPatterns, PatternSynonyms, RankNTypes, FlexibleContexts #-}
+{-#LANGUAGE ImpredicativeTypes, ScopedTypeVariables, FunctionalDependencies, TypeFamilies, UndecidableInstances, FlexibleInstances, MultiParamTypeClasses, AllowAmbiguousTypes, GADTs, KindSignatures, DataKinds, PolyKinds, TypeOperators, ViewPatterns, PatternSynonyms, RankNTypes, FlexibleContexts #-}
 
 module Carnap.Core.Unification.Unification (
-   Equation((:=:)), FirstOrder, HigherOrder,
+   Equation((:=:)), UError(..), FirstOrder, HigherOrder,
    isVar, sameHead, decompose, occurs, subst,
    matchApp, castLam, getLamVar, (.$.),
-   applySub, founify, mapAll 
+   applySub, mapAll, freeVars, emap, sameTypeEq
 ) where
 
 import Data.Type.Equality
 import Data.Typeable
-import Carnap.Core.Data.AbstractSyntaxClasses (Schematizable(..))
+import Carnap.Core.Data.AbstractSyntaxClasses
+import Carnap.Core.Util
 
 data Equation f where
-    (:=:) :: f a -> f a -> Equation f
+    (:=:) :: (Typeable a) => f a -> f a -> Equation f
 
 instance Schematizable f => Show (Equation f) where
         show (x :=: y) = schematize x [] ++ " :=: " ++ schematize y []
+
+instance UniformlyEq f => Eq (Equation f) where
+        (x :=: y) == (x' :=: y') = x =* x' && y =* y'
+
+instance (UniformlyEq f, UniformlyOrd f) => Ord (Equation f) where
+        (x :=: y) <= (x' :=: y') =  (x :=: y) == (x' :=: y') 
+                                 || (x =* x') && (y <=* y')
+                                 || (x <=* x')
 
 --this interface seems simpliar for the user to implement than our previous
 --1. There is no more varible type
@@ -29,7 +38,7 @@ instance Schematizable f => Show (Equation f) where
 --   unification algorithms so that this is a one stop shop for unification
 --5. I have tried to name things here in a way that someone reading the HoAR
 --   would recognize (hence "decompose" rather than "match")
-class FirstOrder f where
+class UniformlyEq f => FirstOrder f where
     isVar :: f a -> Bool
     sameHead :: f a -> f a -> Bool
     decompose :: f a -> f a -> [Equation f]
@@ -52,14 +61,20 @@ data UError f where
 
 instance Schematizable f => Show (UError f) where
         show (SubError x y e) =  show e ++ "with suberror"
-                                 ++ schematize x [] ++ ", " 
+                                 ++ schematize x [] ++ ", "
                                  ++ schematize y []
         show (MatchError x y) = "Match Error:"
-                                 ++ schematize x [] ++ ", " 
+                                 ++ schematize x [] ++ ", "
                                  ++ schematize y []
-        show (OccursError x y) = "OccursError: " 
-                                 ++ schematize x [] ++ ", " 
+        show (OccursError x y) = "OccursError: "
+                                 ++ schematize x [] ++ ", "
                                  ++ schematize y []
+
+sameTypeEq :: Equation f -> Equation f -> Bool
+sameTypeEq ((a :: f a) :=: _) ((b :: f b) :=: _) = 
+        case eqT :: Maybe (a :~: b) of
+            Just Refl -> True
+            Nothing -> False
 
 emap :: (forall a. f a -> f a) -> Equation f -> Equation f
 emap f (x :=: y) = f x :=: f y
@@ -82,3 +97,10 @@ founify ((x :=: y):es) ss
 applySub :: FirstOrder f => [Equation f] -> f a -> f a
 applySub []             y = y
 applySub ((v :=: x):ss) y = applySub ss (subst v x y)
+
+freeVars :: (Typeable a, FirstOrder f) => f a -> [AnyPig f]
+freeVars t | isVar t   = [AnyPig t]
+           | otherwise = concatMap rec (decompose t t)
+    where rec (a :=: _) = freeVars a
+
+
