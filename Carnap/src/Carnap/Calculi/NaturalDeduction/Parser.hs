@@ -15,21 +15,6 @@ import Carnap.Languages.PurePropositional.Parser
 import Carnap.Calculi.NaturalDeduction.Syntax
 import Text.Parsec
 
-parseIt s = case parse purePropFormulaParser "" s of
-              Right form -> SS $ liftToSequent form
-              _ -> error "boo"
-
-demoTree :: ProofTree PropLogic PurePropLexicon
-demoTree = Node (ProofLine 0 (parseIt "P_1") MP)
-                [ Node (ProofLine 0 (parseIt "P_2 -> P_1") MP)
-                    [ Node (ProofLine 0 (parseIt "P_3 -> (P_2 -> P_1)") AX) []
-                    , Node (ProofLine 0 (parseIt "P_3") AX) []
-                    ]
-                , Node (ProofLine 0 (parseIt "P_2") AX) [] 
-                ]
-
-demoPropProof = "P_1 :AX\nP_1 -> P_2 :AX\nP_2 :MP 1,2\nShow: P_2\n  P_3 :AX\n:MP 1,2"
-
 toDeduction :: Parsec String () r -> Parsec String () (FixLang lex a) -> String 
     -> [Either ParseError (DeductionLine r lex a)]
 toDeduction r f = map (parse (parseLine r f) "") . lines
@@ -80,6 +65,7 @@ parseQedLine r = do dpth <- indent
                     return $ QedLine rule dpth deps
 
 --find the prooftree corresponding to *line n* in ded, where proof line numbers start at 1
+--TODO: handle a list of deductionlines which contains some parsing errors
 toProofTree :: (Inference r lex, Sequentable lex) => [DeductionLine r lex (Form Bool)] -> Int -> Either ProofErrorMessage (ProofTree r lex)
 toProofTree ded n = case ded !! (n - 1)  of
           (AssertLine f r dpth deps) -> 
@@ -117,7 +103,6 @@ toProofTree ded n = case ded !! (n - 1)  of
           --sublist, given by line numbers
           lineRange m n l = drop (m - 1) $ take n l
 
-
 --------------------------------------------------------
 --Utilities
 --------------------------------------------------------
@@ -134,6 +119,26 @@ rline r = do rule <- spaces *> char ':' *> r
 indent = do ws <- many $ char ' '
             return $ length ws
 
+--------------------------------------------------------
+--Testing
+--------------------------------------------------------
+
+parseIt s = case parse purePropFormulaParser "" s of
+              Right form -> SS $ liftToSequent form
+              _ -> error "boo"
+
+demoTree :: ProofTree PropLogic PurePropLexicon
+demoTree = Node (ProofLine 0 (parseIt "P_1") MP)
+                [ Node (ProofLine 0 (parseIt "P_2 -> P_1") MP)
+                    [ Node (ProofLine 0 (parseIt "P_3 -> (P_2 -> P_1)") AX) []
+                    , Node (ProofLine 0 (parseIt "P_3") AX) []
+                    ]
+                , Node (ProofLine 0 (parseIt "P_2") AX) [] 
+                ]
+
+demoPropProof = "P_1 :AX\nP_1 -> P_2 :AX\nP_2 :MP 1,2\nShow: P_2\n  P_3 :AX\n:MP 1,2"
+
+
 parsePropLogic :: Parsec String u PropLogic
 parsePropLogic = do r <- string "AX" <|> string "MP"
                     case r of
@@ -142,3 +147,18 @@ parsePropLogic = do r <- string "AX" <|> string "MP"
 
 parsePropProof :: String -> [Either ParseError (DeductionLine PropLogic PurePropLexicon (Form Bool))]
 parsePropProof = toDeduction parsePropLogic prePurePropFormulaParser
+
+toDisplaySequencePropProof :: String -> [Either ProofErrorMessage (ClassicalSequentOver PurePropLexicon Sequent)]
+toDisplaySequencePropProof s = if isParsed 
+                                   then map (processLine(rights ded)) [1 .. length ded]
+                                   else map handle ded
+    where ded = parsePropProof s
+          isParsed = null $ lefts ded 
+          handle (Left e) = Left $ "parsing error:" ++ show e
+          handle (Right _) = Left ""
+          processLine ded n = toProofTree ded n >>= firstLeft . reduceProofTree
+          firstLeft (Left (x:xs)) = Left x
+          firstLeft (Right x) = Right x
+
+
+                   

@@ -1,6 +1,6 @@
 {-# LANGUAGE RankNTypes, FlexibleContexts, DeriveDataTypeable, CPP, JavaScriptFFI #-}
 module Lib
-    ( sendJSON, onEnter, clearInput, getListOfElementsByClass, tryParse, treeToElement, treeToUl,formToTree, leaves, adjustFirstMatching
+    ( sendJSON, onEnter, clearInput, getListOfElementsByClass, tryParse, treeToElement, treeToUl,listToUl, formToTree, leaves, adjustFirstMatching
     ) where
 
 import Data.Aeson
@@ -86,7 +86,17 @@ treeToUl w t = treeToElement itemize listify t
                             mapM_ (appendChild o' . Just) xs
                             appendChild x o
                             return ()
-                                     
+
+listToUl :: Show a => Document -> [a] -> IO Element
+listToUl doc l = do elts <- mapM wrapIt l
+                    (Just ul) <- createElement doc (Just "ul")
+                    mapM_ (appendChild ul) elts
+                    return ul
+    where wrapIt e = do (Just li) <- createElement doc (Just "ul")
+                        setInnerHTML li (Just $ show e)
+                        return (Just li)
+
+
 --------------------------------------------------------
 --1.3 Optics
 --------------------------------------------------------
@@ -110,7 +120,7 @@ formToTree :: Plated a => a -> Tree a
 formToTree f = T.Node f (map formToTree (children f))
 
 --------------------------------------------------------
---FFI Wrappers
+--2. FFI Wrappers
 --------------------------------------------------------
 
 #ifdef __GHCJS__
