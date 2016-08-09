@@ -1,6 +1,6 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE DeriveDataTypeable #-}
-module SharedTypes where
+module Fay.SharedTypes where
 
 import Prelude
 import Data.Data

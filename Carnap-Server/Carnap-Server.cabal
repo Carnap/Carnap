@@ -20,7 +20,7 @@ library
                      Model
                      Settings
                      Settings.StaticFiles
-                     SharedTypes
+                     Fay.SharedTypes
                      Handler.Common
                      Handler.Fay
                      Handler.Home
@@ -97,6 +97,7 @@ library
                  , pandoc
                  , pandoc-types
                  , mtl
+                 , Carnap-GHCJS
 
 executable         Carnap-Server
     if flag(library-only)

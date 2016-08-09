@@ -10,7 +10,7 @@ import           Data.Text (fromString)
 import qualified Data.Text as T
 import           Fay.Yesod
 import           Prelude
-import           SharedTypes
+import           Fay.SharedTypes
 
 main :: Fay ()
 main = do 

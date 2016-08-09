@@ -7,6 +7,7 @@ import Carnap.Languages.PurePropositional.Parser
 import Carnap.Languages.PurePropositional.Syntax
 import Carnap.Core.Data.AbstractSyntaxDataTypes
 import Carnap.Core.Data.AbstractSyntaxClasses
+import Carnap.GHCJS.SharedTypes
 import Data.IORef
 import Data.Tree as T
 import Control.Lens
@@ -48,10 +49,10 @@ echoTo f o = do (Just t) <- target :: EventM HTMLInputElement KeyboardEvent (May
 trySubmit :: IORef (PureForm,[PureForm], Tree PureForm) -> Window -> EventM HTMLInputElement e ()
 trySubmit ref w = do (_,forms,_) <- liftIO $ readIORef ref
                      case forms of 
-                        [] -> liftIO $ sendJSON ("Submitted",True) loginCheck error
+                        [] -> liftIO $ sendJSON (EchoBack ("Submitted",True)) loginCheck error
                         _  -> alert w "not yet finished"
     where loginCheck c | c == "No User" = alert w "You need to log in before you can submit anything"
-                       | otherwise =alert w "Submitted!" 
+                       | otherwise      = alert w "Submitted!" 
           error c = alert w ("Something has gone wrong. Here's the error: " ++ c)
 
 tryMatch :: Element -> IORef (PureForm,[PureForm], Tree PureForm) -> Document -> EventM HTMLInputElement KeyboardEvent ()
@@ -62,10 +63,10 @@ tryMatch o ref w = onEnter $ do (Just t) <- target :: EventM HTMLInputElement Ke
                                 case forms of
                                     [] -> setInnerHTML o (Just "success!")
                                     x:xs -> case matchMC ival x of
-                                        Right b -> if b then do
-                                            case children x of 
-                                                 [] -> shorten x xs
-                                                 children -> updateGoal x (children ++ xs)
+                                        Right b -> if b 
+                                            then case children x of 
+                                                    [] -> shorten x xs
+                                                    children -> updateGoal x (children ++ xs)
                                             else resetGoal
                                         Left e -> case children x of
                                                [] -> shorten x xs
@@ -85,7 +86,7 @@ tryMatch o ref w = onEnter $ do (Just t) <- target :: EventM HTMLInputElement Ke
               nodify x = T.Node x []
               redraw x t = do setInnerHTML o (Just "")
                               let t' = fmap (\y -> (y, "")) t
-                              let t'' = adjustFirstMatching leaves (== T.Node (x, "") []) (const (T.Node (x, "target") [])) $ t'
+                              let t'' = adjustFirstMatching leaves (== T.Node (x, "") []) (const (T.Node (x, "target") [])) t'
                               te <- treeToUl w t''
                               ul@(Just ul') <- createElement w (Just "ul")
                               appendChild ul' (Just te)
@@ -125,7 +126,6 @@ getCheckers b = do lspans <- getListOfElementsByClass b "synchecker"
                                                    Nothing -> return Nothing
 
 activateChecker :: Document -> Maybe (Element, Element,[String]) -> IO ()
-activateChecker _ Nothing  = return ()
 activateChecker w (Just (i,o,classes))
                 | "echo" `elem` classes  = do echo <- newListener $ echoTo (tryParse purePropFormulaParser) o
                                               addListener i keyUp echo False
@@ -142,5 +142,4 @@ activateChecker w (Just (i,o,classes))
                                               addListener i keyUp match False
                                               addListener bt click submit False 
                 | otherwise = return () 
-activateChecker _ _ = Prelude.error "impossible"
-
+activateChecker _ Nothing  = return ()
