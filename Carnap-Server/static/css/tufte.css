@@ -158,16 +158,23 @@ div.tree {
 
 blockquote { font-size: 1.4rem; }
 
-blockquote p { width: 50%; }
+blockquote p { 
+    width: 50%; 
+    margin-left:10pt;
+}
 
 blockquote footer { width: 50%;
                     font-size: 1.1rem;
                     text-align: right; }
 
+ol, ul {
+         -webkit-padding-start: 5%;
+         -webkit-padding-end: 5%;
+     }
+
 article > ol, article > ul  { 
          width:55%;
-         -webkit-padding-start: 5%;
-         -webkit-padding-end: 5%; }
+     }
 
 article > dl { width:55% }
 
@@ -175,9 +182,12 @@ article > div { width:55% }
 
 dl dd, li p, dl p, { width: 100%; }
 
+dd { margin-left: 10pt; }
+
 li p { width: 100%; }
 
-dl p { width: 100%; }
+dl p { width: 100%; 
+}
 
 li { padding: 0.5rem 0; }
 
