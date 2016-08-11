@@ -592,5 +592,9 @@ parts. Keep doing this until the sentence can't be broken down any further.
 
 ```{.SynChecker .Match}
 P_1 /\ P_2
+P_1 \/ P_2
+P_1 /\ (P_2 -> P_3)
+P_3 <-> (P_2 \/ ~P_1)
+(P_2 /\ P_3) <-> (P_1 \/ (P_2 /\ ~P_2))
 ```
 

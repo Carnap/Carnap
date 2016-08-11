@@ -130,16 +130,17 @@ activateChecker w (Just (i,o,classes))
                 | "echo" `elem` classes  = do echo <- newListener $ echoTo (tryParse purePropFormulaParser) o
                                               addListener i keyUp echo False
                 | "match" `elem` classes = do Just ohtml <- getInnerHTML o
-                                              let (Right f) = parse purePropFormulaParser "" ohtml
-                                              mbt@(Just bt) <- createElement w (Just "button")
-                                              setInnerHTML bt (Just "submit solution")
-                                              mpar@(Just par) <- getParentNode o
-                                              insertBefore par mbt (Just o)
-                                              ref <- newIORef (f,[f], T.Node f [])
-                                              match <- newListener $ tryMatch o ref w
-                                              (Just w') <- getDefaultView w
-                                              submit <- newListener $ trySubmit ref w'
-                                              addListener i keyUp match False
-                                              addListener bt click submit False 
+                                              case parse purePropFormulaParser "" (decodeHtml ohtml) of
+                                                (Right f) -> do mbt@(Just bt) <- createElement w (Just "button")
+                                                                setInnerHTML bt (Just "submit solution")
+                                                                mpar@(Just par) <- getParentNode o
+                                                                insertBefore par mbt (Just o)
+                                                                ref <- newIORef (f,[f], T.Node f [])
+                                                                match <- newListener $ tryMatch o ref w
+                                                                (Just w') <- getDefaultView w
+                                                                submit <- newListener $ trySubmit ref w'
+                                                                addListener i keyUp match False
+                                                                addListener bt click submit False 
+                                                (Left e) -> print $ ohtml
                 | otherwise = return () 
 activateChecker _ Nothing  = return ()

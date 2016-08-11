@@ -5,7 +5,7 @@ import Prelude
 
 makeSynCheckers :: Block -> Block
 makeSynCheckers cb@(CodeBlock (_,classes,_) contents)
-    | "SynChecker" `elem` classes = activate classes contents
+    | "SynChecker" `elem` classes = Div ("",[],[]) $ map (activate classes) (lines contents)
     | otherwise = cb
 makeSynCheckers x = x
 

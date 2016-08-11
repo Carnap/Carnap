@@ -1,11 +1,13 @@
 {-# LANGUAGE RankNTypes, FlexibleContexts, DeriveDataTypeable, CPP, JavaScriptFFI #-}
 module Lib
-    ( sendJSON, onEnter, clearInput, getListOfElementsByClass, tryParse, treeToElement, treeToUl,listToUl, formToTree, leaves, adjustFirstMatching
+    ( sendJSON, onEnter, clearInput, getListOfElementsByClass, tryParse, treeToElement, treeToUl,listToUl, formToTree, leaves, adjustFirstMatching, decodeHtml
     ) where
 
 import Data.Aeson
 import Data.Tree as T
 import Text.Parsec
+import Text.StringLike
+import Text.HTML.TagSoup as TS
 import Control.Lens
 import Control.Lens.Plated (children)
 import Control.Monad.State
@@ -96,9 +98,15 @@ listToUl doc l = do elts <- mapM wrapIt l
                         setInnerHTML li (Just $ show e)
                         return (Just li)
 
+--------------------------------------------------------
+--1.3 Encodings
+--------------------------------------------------------
+
+decodeHtml :: (StringLike s, Show s) => s -> s
+decodeHtml = TS.fromTagText . head . parseTags
 
 --------------------------------------------------------
---1.3 Optics
+--1.4 Optics
 --------------------------------------------------------
 
 leaves :: Traversal' (Tree a) (Tree a)
@@ -113,7 +121,7 @@ adjustFirstMatching t pred  f x = evalState (traverseOf t adj x) True where
                     else return y
 
 --------------------------------------------------------
---1.4 Carnap-Specific
+--1.5 Carnap-Specific
 --------------------------------------------------------
 
 formToTree :: Plated a => a -> Tree a
