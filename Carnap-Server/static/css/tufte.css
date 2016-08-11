@@ -151,7 +151,15 @@ div.algorithm {
 div.tree {
     font-size:1.4rem;
     padding:10pt;
+    overflow:auto;
+    min-width: 600pt;
 }
+
+div.tree > ul { width:100%; }
+
+div.tree > ul > li { width:100% !important; }
+
+div.tree ul li { width:50%; }
 
 
 /* end chapter epigraphs styles */
