@@ -5,10 +5,13 @@ import Carnap.GHCJS.SharedTypes
 
 postCommandR :: Handler Value
 postCommandR = do
-    EchoBack (s,b) <- (requireJsonBody :: Handler GHCJSCommand)
+    cmd  <- requireJsonBody :: Handler GHCJSCommand
 
     maybeCurrentUserId <- maybeAuthId
 
     case maybeCurrentUserId of 
            Nothing -> returnJson ("No User" :: String)
-           Just _  -> returnJson (reverse s)
+           Just _  -> case cmd of
+                EchoBack (s,b) -> returnJson (reverse s)
+                SubmitSyntaxCheck f -> do returnJson f
+                                          

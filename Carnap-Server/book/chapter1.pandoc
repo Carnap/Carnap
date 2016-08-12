@@ -591,10 +591,10 @@ connective and press return), breaking the sentence down into its constituent
 parts. Keep doing this until the sentence can't be broken down any further.
 
 ```{.SynChecker .Match}
-P_1 /\ P_2
-P_1 \/ P_2
-P_1 /\ (P_2 -> P_3)
-P_3 <-> (P_2 \/ ~P_1)
-(P_2 /\ P_3) <-> (P_1 \/ (P_5 /\ ~P_2))
+1.1 P_1 /\ P_2
+1.2 P_1 \/ P_2
+1.3 P_1 /\ (P_2 -> P_3)
+1.4 P_3 <-> (P_2 \/ ~P_1)
+1.5 (P_2 /\ P_3) <-> (P_1 \/ (P_5 /\ ~P_2))
 ```
 

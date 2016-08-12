@@ -7,8 +7,8 @@ import Prelude
 import Data.Aeson
 import GHC.Generics
 
-data GHCJSCommand = 
-        EchoBack (String, Bool)
+data GHCJSCommand = EchoBack (String, Bool)
+        | SubmitSyntaxCheck String
         deriving (Generic, Show)
 
 instance ToJSON GHCJSCommand

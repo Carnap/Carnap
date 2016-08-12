@@ -24,4 +24,4 @@
     <div .synchecker .match>
         <input>
         <span>
-            P_1 ∧ P_2
+            1 P_1 ∧ P_2

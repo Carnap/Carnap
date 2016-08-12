@@ -46,13 +46,13 @@ echoTo f o = do (Just t) <- target :: EventM HTMLInputElement KeyboardEvent (May
                     Nothing -> return ()
                     Just v -> liftIO $ setInnerHTML o (fmap f mv)
 
-trySubmit :: IORef (PureForm,[(PureForm,Int)], Tree (PureForm,Int),Int) -> Window -> EventM HTMLInputElement e ()
-trySubmit ref w = do (_,forms,_,_) <- liftIO $ readIORef ref
-                     case forms of 
-                        [] -> liftIO $ sendJSON (EchoBack ("Submitted",True)) loginCheck error
-                        _  -> alert w "not yet finished"
+trySubmit :: IORef (PureForm,[(PureForm,Int)], Tree (PureForm,Int),Int) -> Window -> String -> EventM HTMLInputElement e ()
+trySubmit ref w l = do (f,forms,_,_) <- liftIO $ readIORef ref
+                       case forms of 
+                          [] -> liftIO $ sendJSON (SubmitSyntaxCheck (show f)) loginCheck error
+                          _  -> alert w "not yet finished"
     where loginCheck c | c == "No User" = alert w "You need to log in before you can submit anything"
-                       | otherwise      = alert w "Submitted!" 
+                       | otherwise      = alert w $ "Submitted Syntax-Check for Exercise " ++ l
           error c = alert w ("Something has gone wrong. Here's the error: " ++ c)
 
 --XXX:this could be cleaner. The basic idea is that we maintain a "stage"
@@ -76,7 +76,8 @@ tryMatch o ref w = onEnter $ do (Just t) <- target :: EventM HTMLInputElement Ke
                                         Left e -> case children (fst x) of
                                                [] -> shorten x xs s
                                                _ -> return ()
-        where --updates the goal, by adding labeled formulas to the todo ist, developing the tree with those labeled formulas at the given label, and 
+        where --updates the goal, by adding labeled formulas to the todo ist, 
+              --developing the tree with those labeled formulas at the given label, and 
               --advances the stage
               updateGoal x cs xs s = liftIO $ do modifyIORef ref (_2 .~ (cs ++ xs))
                                                  modifyIORef ref (_3 %~ dev x cs)
@@ -139,19 +140,24 @@ activateChecker w (Just (i,o,classes))
                 | "echo" `elem` classes  = do echo <- newListener $ echoTo (tryParse purePropFormulaParser) o
                                               addListener i keyUp echo False
                 | "match" `elem` classes = do Just ohtml <- getInnerHTML o
-                                              case parse purePropFormulaParser "" (decodeHtml ohtml) of
-                                                (Right f) -> do mbt@(Just bt) <- createElement w (Just "button")
-                                                                setInnerHTML o (Just $ show f)
-                                                                setInnerHTML bt (Just "submit solution")
-                                                                mpar@(Just par) <- getParentNode o
-                                                                insertBefore par mbt (Just o)
-                                                                ref <- newIORef (f,[(f,0)], T.Node (f,0) [], 0)
-                                                                match <- newListener $ tryMatch o ref w
-                                                                (Just w') <- getDefaultView w
-                                                                submit <- newListener $ trySubmit ref w'
-                                                                addListener i keyUp match False
-                                                                addListener bt click submit False 
-                                                (Left e) -> print $ ohtml
+                                              case parse formAndLabel "" (decodeHtml ohtml) of
+                                                (Right (l,f)) -> do mbt@(Just bt) <- createElement w (Just "button")
+                                                                    setInnerHTML o (Just $ show f)
+                                                                    setInnerHTML bt (Just "submit solution")
+                                                                    mpar@(Just par) <- getParentNode o
+                                                                    insertBefore par mbt (Just o)
+                                                                    ref <- newIORef (f,[(f,0)], T.Node (f,0) [], 0)
+                                                                    match <- newListener $ tryMatch o ref w
+                                                                    (Just w') <- getDefaultView w
+                                                                    submit <- newListener $ trySubmit ref w' l
+                                                                    addListener i keyUp match False
+                                                                    addListener bt click submit False 
+                                                (Left e) -> print $ ohtml ++ show e
                 | otherwise = return () 
 activateChecker _ Nothing  = return ()
  
+formAndLabel = do label <- many (digit <|> char '.')
+                  spaces
+                  f <- purePropFormulaParser
+                  return (label,f)
+
