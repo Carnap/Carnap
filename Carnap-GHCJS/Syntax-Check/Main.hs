@@ -46,8 +46,8 @@ echoTo f o = do (Just t) <- target :: EventM HTMLInputElement KeyboardEvent (May
                     Nothing -> return ()
                     Just v -> liftIO $ setInnerHTML o (fmap f mv)
 
-trySubmit :: IORef (PureForm,[PureForm], Tree PureForm) -> Window -> EventM HTMLInputElement e ()
-trySubmit ref w = do (_,forms,_) <- liftIO $ readIORef ref
+trySubmit :: IORef (PureForm,[(PureForm,Int)], Tree (PureForm,Int),Int) -> Window -> EventM HTMLInputElement e ()
+trySubmit ref w = do (_,forms,_,_) <- liftIO $ readIORef ref
                      case forms of 
                         [] -> liftIO $ sendJSON (EchoBack ("Submitted",True)) loginCheck error
                         _  -> alert w "not yet finished"
@@ -55,39 +55,48 @@ trySubmit ref w = do (_,forms,_) <- liftIO $ readIORef ref
                        | otherwise      = alert w "Submitted!" 
           error c = alert w ("Something has gone wrong. Here's the error: " ++ c)
 
-tryMatch :: Element -> IORef (PureForm,[PureForm], Tree PureForm) -> Document -> EventM HTMLInputElement KeyboardEvent ()
+--XXX:this could be cleaner. The basic idea is that we maintain a "stage"
+--in development and use the stages to match formulas in the tree with
+--formulas in the todo list. The labeling makes it possible to identify
+--which formula is in the queue, even when there are several
+--indistinguishable formulas
+tryMatch :: Element -> IORef (PureForm, [(PureForm, Int)], Tree (PureForm, Int), Int) -> Document -> EventM HTMLInputElement KeyboardEvent ()
 tryMatch o ref w = onEnter $ do (Just t) <- target :: EventM HTMLInputElement KeyboardEvent (Maybe HTMLInputElement)
                                 (Just ival)  <- getValue t
-                                (f,forms,ft) <- liftIO $ readIORef ref
+                                (f,forms,ft, s) <- liftIO $ readIORef ref
                                 setValue t (Just "")
                                 case forms of
                                     [] -> setInnerHTML o (Just "success!")
-                                    x:xs -> case matchMC ival x of
+                                    x:xs -> case matchMC ival (fst x) of
                                         Right b -> if b 
-                                            then case children x of 
-                                                    [] -> shorten x xs
-                                                    children -> updateGoal x (children ++ xs)
+                                            then case children (fst x) of 
+                                                    [] -> shorten x xs s
+                                                    children -> updateGoal x (zip children [(s + 1)..]) xs (s + length children + 1)
                                             else resetGoal
-                                        Left e -> case children x of
-                                               [] -> shorten x xs
+                                        Left e -> case children (fst x) of
+                                               [] -> shorten x xs s
                                                _ -> return ()
-        where updateGoal x xs = liftIO $ do modifyIORef ref (_2 .~ xs)
-                                            modifyIORef ref (_3 %~ dev x)
-                                            (_,_,t) <- readIORef ref
-                                            redraw (head xs) t
-              shorten x xs = case xs of [] -> liftIO $ do setInnerHTML o (Just "success!") 
-                                                          modifyIORef ref (_2 .~ []) 
-                                        _  -> updateGoal x xs
-              resetGoal = do (f,_,_) <- liftIO $ readIORef ref
-                             liftIO $ writeIORef ref (f, [f], T.Node f [])
+        where --updates the goal, by adding labeled formulas to the todo ist, developing the tree with those labeled formulas at the given label, and 
+              --advances the stage
+              updateGoal x cs xs s = liftIO $ do modifyIORef ref (_2 .~ (cs ++ xs))
+                                                 modifyIORef ref (_3 %~ dev x cs)
+                                                 modifyIORef ref (_4 .~ s)
+                                                 (_,_,t,_) <- readIORef ref
+                                                 redraw (head (cs ++ xs)) t
+              shorten x xs s = case xs of [] -> liftIO $ do setInnerHTML o (Just "success!") 
+                                                            modifyIORef ref (_2 .~ []) 
+                                          _  -> updateGoal x [] xs s 
+              resetGoal = do (f,_,_,_) <- liftIO $ readIORef ref
+                             liftIO $ writeIORef ref (f, [(f,0)], T.Node (f,0) [],0)
                              setInnerHTML o (Just $ show f)
-              dev x = adjustFirstMatching leaves (== T.Node x []) dev'
-              dev' (T.Node f _) = T.Node f (map nodify $ children f)
+              dev x xs = adjustFirstMatching leaves (== T.Node x []) (dev' xs)
+              dev' xs (T.Node x _) = T.Node x (map nodify xs)
               nodify x = T.Node x []
               redraw x t = do setInnerHTML o (Just "")
                               let t' = fmap (\y -> (y, "")) t
                               let t'' = adjustFirstMatching leaves (== T.Node (x, "") []) (const (T.Node (x, "target") [])) t'
-                              te <- treeToUl w t''
+                              let t''' = fmap  (\((x,_),s) -> (x,s)) t''
+                              te <- treeToUl w t'''
                               ul@(Just ul') <- createElement w (Just "ul")
                               appendChild ul' (Just te)
                               appendChild o ul
@@ -132,10 +141,11 @@ activateChecker w (Just (i,o,classes))
                 | "match" `elem` classes = do Just ohtml <- getInnerHTML o
                                               case parse purePropFormulaParser "" (decodeHtml ohtml) of
                                                 (Right f) -> do mbt@(Just bt) <- createElement w (Just "button")
+                                                                setInnerHTML o (Just $ show f)
                                                                 setInnerHTML bt (Just "submit solution")
                                                                 mpar@(Just par) <- getParentNode o
                                                                 insertBefore par mbt (Just o)
-                                                                ref <- newIORef (f,[f], T.Node f [])
+                                                                ref <- newIORef (f,[(f,0)], T.Node (f,0) [], 0)
                                                                 match <- newListener $ tryMatch o ref w
                                                                 (Just w') <- getDefaultView w
                                                                 submit <- newListener $ trySubmit ref w'
@@ -144,3 +154,4 @@ activateChecker w (Just (i,o,classes))
                                                 (Left e) -> print $ ohtml
                 | otherwise = return () 
 activateChecker _ Nothing  = return ()
+ 
