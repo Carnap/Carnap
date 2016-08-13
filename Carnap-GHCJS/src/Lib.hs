@@ -135,14 +135,16 @@ formToTree f = T.Node f (map formToTree (children f))
 
 sendJSON :: ToJSON a => a -> (String -> IO ()) -> (String -> IO ()) -> IO ()
 sendJSON x succ fail = do cb1 <- asyncCallback1 (cb succ)
-                          cb2 <- asyncCallback1 (cb fail)
+                          cb2 <- asyncCallback3 (cb3 fail)
                           jsonCommand (toJSString . clean . encode $ x) cb1 cb2
     where clean :: Show a => a -> String
           clean = read . show 
           cb f x = do (Just s) <- fromJSVal x 
                       f s
+          cb3 f _ x _  = do (Just s) <- fromJSVal x 
+                            f s 
 
-foreign import javascript unsafe "jsonCommand($1,$2,$3)" jsonCommand :: JSString -> Callback (JSVal -> IO()) -> Callback (JSVal -> IO()) -> IO ()
+foreign import javascript unsafe "jsonCommand($1,$2,$3)" jsonCommand :: JSString -> Callback (JSVal -> IO()) -> Callback (JSVal -> JSVal -> JSVal -> IO()) -> IO ()
 
 #else
 

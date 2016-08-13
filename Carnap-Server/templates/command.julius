@@ -1,4 +1,4 @@
-function jsonCommand (arg,scallback,fcallback) {
+function jsonCommand (arg, scallback, fcallback) {
     jQuery.ajax({
         url: '@{CommandR}',
         type: 'POST',

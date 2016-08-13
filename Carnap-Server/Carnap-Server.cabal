@@ -97,6 +97,7 @@ library
                  , pandoc
                  , pandoc-types
                  , mtl
+                 , blaze-html
                  , Carnap-GHCJS
 
 executable         Carnap-Server
