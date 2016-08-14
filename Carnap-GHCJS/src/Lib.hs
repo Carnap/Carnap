@@ -4,6 +4,8 @@ module Lib
     ) where
 
 import Data.Aeson
+import qualified Data.ByteString.Lazy as BSL
+import Data.Text.Encoding
 import Data.Tree as T
 import Text.Parsec
 import Text.StringLike
@@ -136,9 +138,9 @@ formToTree f = T.Node f (map formToTree (children f))
 sendJSON :: ToJSON a => a -> (String -> IO ()) -> (String -> IO ()) -> IO ()
 sendJSON x succ fail = do cb1 <- asyncCallback1 (cb succ)
                           cb2 <- asyncCallback3 (cb3 fail)
-                          jsonCommand (toJSString . clean . encode $ x) cb1 cb2
-    where clean :: Show a => a -> String
-          clean = read . show 
+                          jsonCommand (toJSString . decodeUtf8. BSL.toStrict . encode $ x) cb1 cb2
+    where --clean :: Show a => a -> String
+          --clean = read . show 
           cb f x = do (Just s) <- fromJSVal x 
                       f s
           cb3 f _ x _  = do (Just s) <- fromJSVal x 

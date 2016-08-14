@@ -49,7 +49,7 @@ echoTo f o = do (Just t) <- target :: EventM HTMLInputElement KeyboardEvent (May
 trySubmit :: IORef (PureForm,[(PureForm,Int)], Tree (PureForm,Int),Int) -> Window -> String -> EventM HTMLInputElement e ()
 trySubmit ref w l = do (f,forms,_,_) <- liftIO $ readIORef ref
                        case forms of 
-                          [] -> liftIO $ sendJSON (SubmitSyntaxCheck l) loginCheck error
+                          [] -> liftIO $ sendJSON (SubmitSyntaxCheck (l ++ ":" ++ show f)) loginCheck error
                           _  -> alert w "not yet finished"
     where loginCheck c | c == "No User" = alert w "You need to log in before you can submit anything"
                        | c == "Clash"   = alert w "it appears you've already successfully submitted this problem"
