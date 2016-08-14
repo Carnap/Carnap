@@ -85,14 +85,14 @@ instance Yesod App where
     -- The page to be redirected to when authentication is required.
     authRoute _ = Just $ AuthR LoginR
 
-    -- Routes not requiring authentication.
+    -- Routes requiring authentication.
     isAuthorized (UserR ident) _ = do (Entity _ user) <- requireAuth
                                       let ident' = userIdent user
-                                      return $ if ident'    == "admin" 
+                                      return $ if ident'    == "gleachkr@gmail.com" 
                                                   || ident' == ident
                                                then Authorized
                                                else Unauthorized "boo"
-    -- Default to Authorized for now.
+    -- Routes not requiring authentication
     isAuthorized _ _ = return Authorized
 
     -- This function creates static content files in the static folder
@@ -168,7 +168,7 @@ instance YesodAuth App where
     onLogout = deleteSession credsKey >> deleteSession "_ULT" >> redirect HomeR
 
     -- You can add other plugins like Google Email, email or OAuth here
-    authPlugins _ = [authDummy, authGoogleEmail "" ""]
+    authPlugins _ = [authGoogleEmail "" ""]
 
     authHttpManager = getHttpManager
 

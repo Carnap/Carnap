@@ -10,12 +10,13 @@ getUserR userId = do
     defaultLayout $ do
         setTitle "Welcome To Your Homepage!"
         [whamlet|
-            <h1> Homepage for #{userId}
-            <p> This is your homepage, where you can keep track of your progress in the course, and find other useful information.
-            <h2> Syntax Checking
-            <p> #{subPairToTable synsubs}
-            <a href=@{AuthR LogoutR}>
-                Logout
+            <div.container>
+                <h1> Homepage for #{userId}
+                <p> This is your homepage, where you can keep track of your progress in the course, and find other useful information.
+                <h2> Syntax Checking
+                <p> #{subPairToTable synsubs}
+                <a href=@{AuthR LogoutR}>
+                    Logout
         |]
 
 textToUl :: [Text] -> Html

@@ -271,16 +271,16 @@ is deductively valid as well. This might lead us to believe that the following
 logical form confers validity on the arguments that have it:
 
 
-> | <span class="premise">$B$ is better than $C$.</span>
-> | <span class="premise">$A$ is better than $B$.</span>
+> | 1. <span class="premise">$B$ is better than $C$.</span>
+> | 2. <span class="premise">$A$ is better than $B$.</span>
 > | <span class="conclusion">$A$ is better than $C$ </span>
 
  But what about this argument?
 
 
-| 1. <span class="premise">Nothing is better than world peace.</span>
-| 2. <span class="premise">Cold pizza is better than nothing.</span>
-| <span class="conclusion">Cold pizza is better than world peace. </span>
+> | 1. <span class="premise">Nothing is better than world peace.</span>
+> | 2. <span class="premise">Cold pizza is better than nothing.</span>
+> | <span class="conclusion">Cold pizza is better than world peace. </span>
 
 The conclusion is certainly false, but the premises are plausibly true. What is
 going on here?
@@ -293,32 +293,31 @@ Ambiguous
 :   An ambiguous sentence is a sentence that has more than one possible meaning.
 
 And logical form is determined not by the sentences that make up our arguments,
-but of their *meanings*. When the sentences that make up an argument have more
+but by their *meanings*. When the sentences that make up an argument have more
 than one meaning, the argument can have more than one logical form. And if an
 argument has more than one logical form, then the answer to the question "is it
 formally valid?" will generally be "it depends". This is an unsatisfying state
 of affairs.
 
 Here are some examples of arguments whose validity depends on how we interpret
-ambiguous sentences. It is a good exercise to think about them, and see if you
-can spot how one reading makes the argument deductively valid, and the other
-reading does not.
+ambiguous sentences. It is a good exercise to try to spot how one reading makes
+the argument deductively valid and the other reading does not.
 
-| 1. <span class="premise">Salvatore brought a hat from Italy.</span>
-| <span class="conclusion">Salvatore has been to Italy.</span>
+> | 1. <span class="premise">Salvatore brought a hat from Italy.</span>
+> | <span class="conclusion">Salvatore has been to Italy.</span>
 
-| 1. <span class="premise">Bill and Barb are married.</span>
-| <span class="conclusion">Bill is Barb's husband.</span>
+> | 1. <span class="premise">Bill and Barb are married.</span>
+> | <span class="conclusion">Bill is Barb's husband.</span>
 
-| 1. <span class="premise">Charlotte's Web is a children's novel about a pig named Wilbur who is saved from being slaughtered by an intelligent spider named Charlotte. </span>
-| <span class="conclusion">In C.W., Charlotte saves Wilbur.</span>
+> | 1. <span class="premise">Charlotte's Web is a children's novel about a pig named Wilbur who is saved from being slaughtered by an intelligent spider named Charlotte. </span>
+> | <span class="conclusion">In C.W., Charlotte saves Wilbur.</span>
 
-| 1. <span class="premise">John saw the man on the mountain with a telescope.</span>
-| <span class="conclusion">The man on the mountain has a telescope.</span>
+> | 1. <span class="premise">John saw the man on the mountain with a telescope.</span>
+> | <span class="conclusion">The man on the mountain has a telescope.</span>
 
 If we are to get very far with formal logic, we will need to have a way of
 dealing with ambiguity. The key idea here come from
-a mathematician-philosopher, named Gottlob Frege. Frege's idea was this.
+a mathematician-philosopher named Gottlob Frege. Frege's idea was this.
 Because natural languages contain ambiguous sentences, we need a special
 artificial language for the purpose of studying logical consequence. Such
 a language should be free of ambiguity. Each sentence should have exactly one
@@ -427,7 +426,8 @@ Even with this small set of ingredients, however, ambiguity is possible. Conside
 
 >   "Jack R. was in town and the night watchman saw him or nobody saw Jack R."
 
-Does this sentence imply that Jack R. was in town? It depends on which of the following two ways we read it:
+Does this sentence imply that Jack R. was in town? It depends on which of the
+following two ways we read it:
 
 (@) "(Jack R. was in town and the night watchman saw him) or nobody saw Jack R."
 (@) "Jack R. was in town and (the night watchman saw him or nobody saw Jack R.)"
@@ -475,12 +475,14 @@ must adhere to the following two rules in building sentences:
         *For example, $\sim P$ is a grammatical assertion, as is $\sim (P\land R)$.
         Notice that adding $\sim$ does not require us to add new parentheses.*
 
-Every grammatical assertion in our language **must be constructed according to
-these two rules.** No other assertions will count as grammatical (we will
-eventually allow for some abbreviations---but for an abbreviated sentence to be
-an abbreviation of a sentence constructed according to the two rules above). We
+Every grammatical assertion in our language must be constructed according to
+these two rules. *No other assertions will count as grammatical.*[^4] We
 call those assertions which can be built by merely repeatedly applying the two
 rules above *sentences in official notation*.
+
+[^4]:: we will eventually allow for some abbreviations---but for an abbreviated
+sentence to be grammatical will just mean that it is an abbreviation of
+a sentence constructed according to the two rules above
 
 Official Notation
 

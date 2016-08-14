@@ -18,8 +18,9 @@ getChapterR n = do content <- liftIO $ chapter n
                        Right html -> chapterLayout $ layout html
                        Left err -> defaultLayout $ layout (show err)
     where layout c = [whamlet|
-                        <article>
-                            #{c}
+                        <div.container>
+                            <article>
+                                #{c}
                        |]
 
 chapter n = do localbook <- doesDirectoryExist "book"
