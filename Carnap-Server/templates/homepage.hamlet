@@ -1,27 +1,26 @@
-<h1.jumbotron>
-  Welcome to Carnap!
+<div#carnap-intro-head> 
+    <div.container>
+        <h2>
+            Welcome to Carnap.io
+        <p>
+            Logic 320, Kansas State University, Fall 2016
 
-<p>
-    Here's a little reference for Fay integration
-    <div>
-        <input #fibindex placeholder="Fibonacci Index">
-        <span #fibresult>
 
-<p>
-    Here's another
-    <div>
-        <input #newcomment placeholder="Comment Test">
-        <span #commentsuccess>
-        <div #comments>
-<p>
-    Here's a reference for GHCJS integration
-    <div .synchecker .echo>
-        <input>
-        <span>
-
-<p>
-    Here's another
-    <div .synchecker .match>
-        <input>
-        <span>
-            1 P_1 ∧ P_2
+<div.container>
+    <h2> Background
+    <img class="img-responsive pull-right" src=@{StaticR russell_png}>
+    <p>
+        This site is currently hosting the interactive component of <i>Logic 320:
+        Introduction to Formal Logic</i>. This course is being taught at Kansas
+        State University, using the Carnap proofchecking framework.
+    <p>
+        If you're a student, please following the links at the top of the page
+        to access course materials.
+    <p>
+        For other course information, including syllabi and scheduling, please
+        visit
+        <a href="http://k-state.instructure.com">the canvas site for this course
+    <p>
+        If you're just curious about Carnap, you can find some general,
+        slightly outdated, information at
+        <a href="http://gleachkr.github.io/Carnap/">Carnap's github page

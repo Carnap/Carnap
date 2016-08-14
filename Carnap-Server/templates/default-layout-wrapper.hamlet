@@ -43,8 +43,7 @@ $newline never
     <script>
       document.documentElement.className = document.documentElement.className.replace(/\bno-js\b/,'js');
   <body>
-    <div class="container">
-        ^{pageBody pc}
+    ^{pageBody pc}
 
     $maybe analytics <- appAnalytics $ appSettings master
       <script>

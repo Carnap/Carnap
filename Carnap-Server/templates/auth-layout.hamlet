@@ -20,7 +20,9 @@
     $maybe msg <- mmsg
       <div #message>#{msg}
 
+<div.container>
     ^{widget}
+
 <div.container>
     <footer>
         #{appCopyright $ appSettings master}

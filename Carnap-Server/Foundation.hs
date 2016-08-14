@@ -172,6 +172,15 @@ instance YesodAuth App where
 
     authHttpManager = getHttpManager
 
+    authLayout widget = do
+        master <- getYesod
+        mmsg <- getMessage
+        authmaybe <- maybeAuth
+        pc <- widgetToPageContent $ do
+            addStylesheet $ StaticR css_bootstrap_css
+            $(widgetFile "auth-layout")
+        withUrlRenderer $(hamletFile "templates/default-layout-wrapper.hamlet")
+
 instance YesodAuthPersist App
 
 -- This instance is required to use forms. You can modify renderMessage to
