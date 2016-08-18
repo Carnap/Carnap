@@ -16,7 +16,7 @@ import qualified Diagrams.Builder                as DB
 import           Diagrams.Prelude                (centerXY, pad, (&), (.~))
 --import           Diagrams.Size                   (dims)
 import           Linear                          (V2 (..), zero)
-import           System.Directory                (createDirectoryIfMissing)
+import           System.Directory                (createDirectoryIfMissing, doesDirectoryExist)
 import           System.FilePath                 ((<.>), (</>))
 import           System.IO
 import           Text.Pandoc.Definition
@@ -25,11 +25,14 @@ import           Text.Pandoc.Definition
 makeDiagrams :: Block -> IO (Block)
 makeDiagrams cb@(CodeBlock (_,classes,_) contents)
     | "diagram" `elem` classes = do svg <- activate classes contents
-                                    return $ Div ("",[],[]) [svg]
+                                    return svg
     | otherwise = return cb
 makeDiagrams x = return x
 
-activate cls cnt = do mdia <- compileDiagram cnt [] ""
+activate cls cnt = do let lns  = lines cnt
+                      let expr = if lns /= [] then head $ lines cnt else []
+                      let snip = if lns /= [] then unlines $ tail $ lines cnt else []
+                      mdia <- compileDiagram expr [] snip
                       case mdia of 
                          Left s -> return $ RawBlock "html" s
                          Right s -> return $ RawBlock "html" 
@@ -37,34 +40,29 @@ activate cls cnt = do mdia <- compileDiagram cnt [] ""
 
 compileDiagram :: String -> [(String,String)] -> String -> IO (Either String String)
 compileDiagram expr attrs src = do
+  localbook <- doesDirectoryExist "book"
+  let path = (if localbook then "book/cache/" else "/root/book/cache/") 
   ensureDir "/tmp/"
 
   let bopts :: DB.BuildOpts SVG V2 Double
-      bopts = DB.mkBuildOpts SVG zero (SVGOptions (mkWidth 250) Nothing "")
+      bopts = DB.mkBuildOpts SVG zero (SVGOptions (mkWidth 600) Nothing "")
                 & DB.snippets .~ [src]
                 & DB.imports  .~
                 [ "Diagrams.Prelude" 
                 , "Diagrams.Backend.SVG"
                 ]
-                --   [ "Diagrams.TwoD.Types"      -- WHY IS THIS NECESSARY =(
-                --   , "Diagrams.Core.Points"
-                --       -- GHC 7.2 bug?  need  V (Point R2) = R2  (see #65)
-                --   , "Diagrams.Backend.SVG"
-                --   , "Graphics.SVGFonts"
-                --   , "Data.Typeable"
-                --   ]
                 & DB.pragmas .~ ["NoMonomorphismRestriction, DeriveDataTypeable"]
                 & DB.diaExpr .~ expr
                 & DB.postProcess .~ (pad 1.1 . centerXY)
-                & DB.decideRegen .~ (DB.hashedRegenerate (\hash opts' -> opts') "/root/book/cache/")
+                & DB.decideRegen .~ (DB.hashedRegenerate (\hash opts' -> opts') path)
 
   res <- DB.buildDiagram bopts
 
   case res of
     DB.ParseErr err    -> do
-      hPutStrLn stderr ("\nError while parsing\n" ++ src)
+      hPutStrLn stderr ("\nError while parsing\n" ++ err)
       hPutStrLn stderr err
-      return $ Left "Error while parsing: "
+      return $ Left $ "Error while parsing: " ++ err
 
     DB.InterpErr ierr  -> do
       hPutStrLn stderr ("\nError while interpreting\n" ++ src)
