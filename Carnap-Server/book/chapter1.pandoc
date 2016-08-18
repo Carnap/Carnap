@@ -260,8 +260,6 @@ example. The following argument  looks quite compelling.
 
 Moreover, it seems to be good because of its form. For example, the argument
 
-
-
 > | 1. <span class="premise">A field goal is better than a safety.</span>
 > | 2. <span class="premise">A touchdown is better than a field goal.</span>
 > | <span class="conclusion">A field goal is better than a safety. </span>
@@ -338,44 +336,80 @@ What makes this sentence ambiguous is that it is not clear which words are
 meant to modify which other words. The sentence might be read in one of two
 ways, either as:
 
-<div style="display: table; margin: 0 auto">
+<figure>
 
-```{#img1 .latex .tikz}
-\begin{center}
-\begin{tikzpicture}
-\Tree [.{``I shot an elephant in my pajamas''}
-		{``I''}
-		[.{``shot an elephant''}
-			{``shot''}
-			{``an elephant''}
-		]
-		{``in my pajamas''}
-	]
-\end{tikzpicture}
-\end{center}
+```diagram
+exampleSymmTreeWithDs
+
+import Data.Tree
+import Data.Maybe (fromMaybe)
+import Diagrams.TwoD.Layout.Tree
+
+tD = Node (toText "I shot an elephant in my pajamas") 
+        [ Node (toText "I") []
+        , Node (toText "shot an elephant in my pajamas") 
+            [ Node (toText "shot an elephant") 
+                [ Node (toText "shot") []
+                , Node (toText "an elephant") []
+                ]
+            , Node (toText "in my pajamas") []
+            ]
+        ]
+
+toText :: String -> Diagram SVG
+toText s = let ln = fromIntegral (length s) in
+    text s <> rect (ln * 7/10) 1 # lc white # fc white
+
+exampleSymmTreeWithDs =
+  renderTree id (~~)
+  (symmLayout' (with & slWidth  .~ fromMaybe (0,0) . extentX
+                     & slHeight .~ fromMaybe (0,0) . extentY
+                     & slHSep    .~ 4
+                     & slVSep    .~ 4)
+     tD)
+  # centerXY # pad 1.1 <> rect 40 25
 ```
 
-</div>
+</figure>
 
 Or alternatively, as
 
-<div style="display: table; margin: 0 auto">
+<figure>
 
-```{#img2 .latex .tikz}
-\begin{center}
-\begin{tikzpicture}
-\Tree[.{``I shot an elephant in my pajamas''}
-		{``I''}
-		{``shot''}
-		[.{``an elephant in my pajamas''}
-			{``an elephant''}
-			{``in my pajamas''}	
-		]
-	]
-\end{tikzpicture}
-\end{center}
-```
-</div>
+```diagram
+exampleSymmTreeWithDs
+
+import Data.Tree
+import Data.Maybe (fromMaybe)
+import Diagrams.TwoD.Layout.Tree
+
+tD = Node (toText "I shot an elephant in my pajamas") 
+        [ Node (toText "I") []
+        , Node (toText "shot an elephant in my pajamas") 
+            [ Node (toText "shot") []
+            , Node (toText "an elephant in my pajamas") 
+                [ Node (toText "an elephant") []
+                , Node (toText "in my pajamas") []
+                ]
+            ]
+
+        ]
+
+toText :: String -> Diagram SVG
+toText s = let ln = fromIntegral (length s) in
+    text s <> rect (ln * 7/10) 1 # lc white # fc white
+
+exampleSymmTreeWithDs = 
+  renderTree id (~~)
+  (symmLayout' (with & slWidth  .~ fromMaybe (0,0) . extentX
+                     & slHeight .~ fromMaybe (0,0) . extentY
+                     & slHSep    .~ 4
+                     & slVSep    .~ 4)
+     tD)
+  # centerXY # pad 1.1 <> rect 40 25
+``` 
+
+</figure>
 
 The meaning of the sentence depends on how we read it. Of course, we can
 eliminate the ambiguity by specifying which of the trees above we intend. But
@@ -495,21 +529,36 @@ created. For example, consider the sentence $((P\lor Q)\lor R)$. This must have
 been built by first taking a $P$ and $Q$ and sticking them together, then
 taking an $R$ and sticking that on. So it has the tree: 
 
-<div style="display: table; margin: 0 auto">
-```{#img3 .latex .tikz}
-\begin{center}
-\begin{tikzpicture}
-\Tree[.{$((P\lor Q)\lor R)$}
-		[.{$(P\lor Q)$}
-			$P$
-			$Q$
-		]
-		$R$
-	]
-\end{tikzpicture}
-\end{center}
+```diagram
+exampleSymmTreeWithDs
+
+import Data.Tree
+import Data.Maybe (fromMaybe)
+import Diagrams.TwoD.Layout.Tree
+
+tD = Node (toText "((P ∨ Q) ∨ R)") 
+        [ Node (toText "(P ∨ Q)") 
+            [ Node (toText "P") []
+            , Node (toText "Q") []
+            ]
+        , Node (toText "R") []
+        ]
+
+toText :: String -> Diagram SVG
+toText s = let ln = fromIntegral (length s) in
+    text s <> rect (ln * 7/10) 1 # lc white # fc white
+
+exampleSymmTreeWithDs =
+  renderTree id (~~)
+  (symmLayout' (with & slWidth  .~ fromMaybe (0,0) . extentX
+                     & slHeight .~ fromMaybe (0,0) . extentY
+                     & slHSep    .~ 4
+                     & slVSep    .~ 4)
+     tD)
+  # centerXY # pad 1.1 <> rect 40 25
 ```
-</div>
+
+</figure>
 
 In general we can recover the tree of a sentence by finding the last connective
 which was added, breaking it up into the one or two sentences that it was made
@@ -518,60 +567,109 @@ Q)\lor R)\rightarrow S)$, the connective $\rightarrow$ must have been added
 last (since it is wrapped in only one set of parentheses). So we can break the
 sentence up as 
 
-<div style="display: table; margin: 0 auto">
-```{#img4 .latex .tikz}
-\begin{center}
-\begin{tikzpicture}
-\Tree[.{$(((P\lor Q)\lor R)\rightarrow S)$}
-		[.{$(((P\lor Q)\lor R)$}
-		]
-		$S$
-	]
-\end{tikzpicture}
-\end{center}
+<figure>
+
+```diagram
+exampleSymmTreeWithDs
+
+import Data.Tree
+import Data.Maybe (fromMaybe)
+import Diagrams.TwoD.Layout.Tree
+
+tD = Node (toText "((P ∨ Q) ∨ R)→ S") 
+        [ Node (toText "((P ∨ Q) ∨ R)") []
+        , Node (toText "S") []
+        ]
+
+toText :: String -> Diagram SVG
+toText s = let ln = fromIntegral (length s) in
+    text s <> rect (ln * 7/10) 1 # lc white # fc white
+
+exampleSymmTreeWithDs =
+  renderTree id (~~)
+  (symmLayout' (with & slWidth  .~ fromMaybe (0,0) . extentX
+                     & slHeight .~ fromMaybe (0,0) . extentY
+                     & slHSep    .~ 4
+                     & slVSep    .~ 4)
+     tD)
+  # centerXY # pad 1.1 <> rect 40 25
 ```
-</div>
+
+</figure>
 
 In $(((P\lor Q)\lor R)$, the $\lor$ must have been added last (since it is
 wrapped only once), so we can break as:
 
-<div style="display: table; margin: 0 auto">
-```{#img5 .latex .tikz}
-\begin{center}
-\begin{tikzpicture}
-\Tree[.{$(((P\lor Q)\lor R)\rightarrow S)$}
-		[.{$(((P\lor Q)\lor R)$}
-			[.{$(P\lor Q)$}
-			]
-		$R$
-		]
-		$S$
-	]
-\end{tikzpicture}
-\end{center}
-```
-</div>
+<figure>
 
-Finally, in $(P\lor Q)$, $\lor$ was obviously added last. So we have:
+```diagram
+exampleSymmTreeWithDs
 
-<div style="display: table; margin: 0 auto">
-```{#img6 .latex .tikz}
-\begin{center}
-\begin{tikzpicture}
-\Tree[.{$(((P\lor Q)\lor R)\rightarrow S)$}
-		[.{$(((P\lor Q)\lor R)$}
-			[.{$(P\lor Q)$}
-				$P$
-				$Q$
-			]
-		$R$
-		]
-		$S$
-	]
-\end{tikzpicture}
-\end{center}
+import Data.Tree
+import Data.Maybe (fromMaybe)
+import Diagrams.TwoD.Layout.Tree
+
+tD = Node (toText "((P ∨ Q) ∨ R)→ S") 
+        [ Node (toText "((P ∨ Q) ∨ R)") 
+            [ Node (toText "(P ∨ Q)") []
+            , Node (toText "R") []
+            ]
+        , Node (toText "S") []
+        ]
+
+toText :: String -> Diagram SVG
+toText s = let ln = fromIntegral (length s) in
+    text s <> rect (ln * 7/10) 1 # lc white # fc white
+
+exampleSymmTreeWithDs =
+  renderTree id (~~)
+  (symmLayout' (with & slWidth  .~ fromMaybe (0,0) . extentX
+                     & slHeight .~ fromMaybe (0,0) . extentY
+                     & slHSep    .~ 4
+                     & slVSep    .~ 4)
+     tD)
+  # centerXY # pad 1.1 <> rect 40 25
 ```
-</div>
+
+</figure>
+
+Finally, in $(P \lor Q)$, $\lor$ was obviously added last. So we have:
+
+<figure>
+
+```diagram
+exampleSymmTreeWithDs
+
+import Data.Tree
+import Data.Maybe (fromMaybe)
+import Diagrams.TwoD.Layout.Tree
+
+tD = Node (toText "((P ∨ Q) ∨ R)→ S") 
+        [ Node (toText "((P ∨ Q) ∨ R)") 
+            [ Node (toText "(P ∨ Q)") 
+                [ Node (toText "P") []
+                , Node (toText "Q") []
+                ]
+            , Node (toText "R") []
+            ]
+        , Node (toText "S") []
+        ]
+
+toText :: String -> Diagram SVG
+toText s = let ln = fromIntegral (length s) in
+    text s <> rect (ln * 7/10) 1 # lc white # fc white
+
+exampleSymmTreeWithDs =
+  renderTree id (~~)
+  (symmLayout' (with & slWidth  .~ fromMaybe (0,0) . extentX
+                     & slHeight .~ fromMaybe (0,0) . extentY
+                     & slHSep    .~ 4
+                     & slVSep    .~ 4)
+     tD)
+  # centerXY # pad 1.1 <> rect 40 25
+```
+
+</figure>
 
 We call the last connective to be added the *main connective* of the assertion.
 
