@@ -4,8 +4,9 @@ import Import
 import Yesod.Markdown
 import Filter.Sidenotes
 import Filter.SynCheckers
+import Filter.Diagrams
 import Text.Pandoc.Walk (walkM, walk)
-import System.Directory (getDirectoryContents, doesDirectoryExist)
+import System.Directory (doesDirectoryExist)
 import Text.Julius (juliusFile)
 import Text.Hamlet (hamletFile)
 import qualified Data.CaseInsensitive as CI
@@ -29,12 +30,12 @@ chapter n = do localbook <- doesDirectoryExist "book"
                fileToHtml path
 
 fileToHtml path = do md <- markdownFromFile path
-                     let pdOrEr = parseMarkdown yesodDefaultReaderOptions md
-                     let walkedOrEr  = fmap runFilters pdOrEr
-                     let htmlOrEr = fmap (writePandoc yesodDefaultWriterOptions) walkedOrEr
-                     return htmlOrEr
+                     case parseMarkdown yesodDefaultReaderOptions md of
+                         Right pd -> do pd' <- runFilters pd
+                                        return $ Right $ writePandoc yesodDefaultWriterOptions pd'
+                         Left e -> return $ Left e
 
-runFilters x = walk makeSynCheckers $ evalState (walkM makeSideNotes x) 0
+runFilters x = walkM makeDiagrams $ walk makeSynCheckers $ evalState (walkM makeSideNotes x) 0
 
 chapterLayout widget = do
         master <- getYesod

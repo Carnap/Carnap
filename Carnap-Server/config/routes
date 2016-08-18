@@ -11,3 +11,4 @@
 /book           BookR       GET
 /book/#Int      ChapterR    GET
 /user/#Text     UserR       GET
+/hash/#Text     HashedR     GET
