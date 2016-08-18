@@ -15,6 +15,7 @@ library
     hs-source-dirs:  ., fay-shared, app
     exposed-modules: Application
                      Foundation
+                     SecureStrings
                      Import
                      Import.NoFoundation
                      Model
@@ -28,8 +29,10 @@ library
                      Handler.Chapter
                      Handler.Book
                      Handler.Command
+                     Handler.Hashed
                      Filter.Sidenotes
                      Filter.SynCheckers
+                     Filter.Diagrams
 
     if flag(dev) || flag(library-only)
         cpp-options:   -DDEVELOPMENT
@@ -98,6 +101,15 @@ library
                  , pandoc-types
                  , mtl
                  , blaze-html
+                 , lucid
+                 , linear
+                 , diagrams
+                 , diagrams-lib
+                 , diagrams-svg
+                 , diagrams-builder
+                 , filepath
+                 , hashable
+                 , lens
                  , Carnap-GHCJS
 
 executable         Carnap-Server

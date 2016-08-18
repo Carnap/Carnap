@@ -3,8 +3,9 @@ module Foundation where
 import Database.Persist.Sql        (ConnectionPool, runSqlPool)
 import Import.NoFoundation
 import Text.Hamlet                 (hamletFile)
+import SecureStrings               (googleApiKey, googleSecret)
 import Yesod.Auth.GoogleEmail2     (authGoogleEmail)
-import Yesod.Auth.Dummy            (authDummy)
+--import Yesod.Auth.Dummy            (authDummy)
 import qualified Yesod.Core.Unsafe as Unsafe
 import Yesod.Core.Types            (Logger)
 import Yesod.Default.Util          (addStaticContentExternal)
@@ -168,7 +169,7 @@ instance YesodAuth App where
     onLogout = deleteSession credsKey >> deleteSession "_ULT" >> redirect HomeR
 
     -- You can add other plugins like Google Email, email or OAuth here
-    authPlugins _ = [authGoogleEmail "" ""]
+    authPlugins _ = [authGoogleEmail googleApiKey googleSecret]
 
     authHttpManager = getHttpManager
 
