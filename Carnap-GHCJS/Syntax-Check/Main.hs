@@ -73,10 +73,11 @@ tryMatch o ref w = onEnter $ do (Just t) <- target :: EventM HTMLInputElement Ke
                                             then case children (fst x) of 
                                                     [] -> shorten x xs s
                                                     children -> updateGoal x (zip children [(s + 1)..]) xs (s + length children + 1)
-                                            else resetGoal
+                                            else do message $ "Sorry, that's not the main connective. Try again!"
+                                                    resetGoal
                                         Left e -> case children (fst x) of
                                                [] -> shorten x xs s
-                                               _ -> return ()
+                                               _ -> message "what you've entered doesn't appear to be a connective"
         where --updates the goal, by adding labeled formulas to the todo ist, 
               --developing the tree with those labeled formulas at the given label, and 
               --advances the stage
@@ -103,6 +104,8 @@ tryMatch o ref w = onEnter $ do (Just t) <- target :: EventM HTMLInputElement Ke
                               appendChild ul' (Just te)
                               appendChild o ul
                               return ()
+              message s = do (Just w') <- getDefaultView w
+                             alert w' s
 
 parseConnective :: Monad m => ParsecT String u m String
 parseConnective = choice [getAnd, getOr, getIff, getIf, getNeg]
