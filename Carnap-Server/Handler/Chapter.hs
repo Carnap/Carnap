@@ -11,7 +11,7 @@ import Text.Julius (juliusFile)
 import Text.Hamlet (hamletFile)
 import qualified Data.CaseInsensitive as CI
 import qualified Data.Text.Encoding as TE
-import Control.Monad.State (evalState)
+import Control.Monad.State (evalState, evalStateT)
 
 getChapterR :: Int -> Handler Html
 getChapterR n = do content <- liftIO $ chapter n 
@@ -35,7 +35,10 @@ fileToHtml path = do md <- markdownFromFile path
                                         return $ Right $ writePandoc yesodDefaultWriterOptions pd'
                          Left e -> return $ Left e
 
-runFilters x = walkM makeDiagrams $ walk makeSynCheckers $ evalState (walkM makeSideNotes x) 0
+runFilters = let walkNotes y = evalState (walkM makeSideNotes y) 0
+                 walkCheckers y = walk makeSynCheckers y
+                 walkDiagrams y = evalStateT (walkM makeDiagrams y) []
+                   in walkDiagrams . walkNotes . walkCheckers 
 
 chapterLayout widget = do
         master <- getYesod

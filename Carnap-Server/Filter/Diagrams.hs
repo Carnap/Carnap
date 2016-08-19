@@ -3,42 +3,43 @@ module Filter.Diagrams (makeDiagrams)
 where
 
 import           Prelude
-import           Control.Monad                   (when)
+import           Control.Monad.IO.Class          (liftIO)
+import           Control.Monad.State.Lazy as S   (StateT, get, modify)
 import           Data.Char                       (toLower)
-import           Data.List                       (delete, tails)
 import           Lucid
 import           Control.Lens ((.~), (&))
---import           Diagrams.Backend.Cairo
---import           Diagrams.Backend.Cairo.Internal
 import           Diagrams.Backend.SVG
 import           Diagrams.TwoD.Size
 import qualified Diagrams.Builder                as DB
 import           Diagrams.Prelude                (centerXY, pad, (&), (.~))
---import           Diagrams.Size                   (dims)
 import           Linear                          (V2 (..), zero)
 import           System.Directory                (createDirectoryIfMissing, doesDirectoryExist)
 import           System.FilePath                 ((<.>), (</>))
-import           System.IO
+import           System.IO              
 import           Text.Pandoc.Definition
 
 
-makeDiagrams :: Block -> IO (Block)
+makeDiagrams :: Block -> StateT [String] IO (Block)
 makeDiagrams cb@(CodeBlock (_,classes,_) contents)
-    | "diagram" `elem` classes = do svg <- activate classes contents
-                                    return svg
+    | "diagram" `elem` classes = if "snip" `elem` classes 
+                                     then do S.modify (\x -> contents:x)
+                                             return $ RawBlock "html" ""
+                                     else do snips <- S.get
+                                             svg <- liftIO $ activate classes contents snips
+                                             return svg
     | otherwise = return cb
 makeDiagrams x = return x
 
-activate cls cnt = do let lns  = lines cnt
-                      let expr = if lns /= [] then head $ lines cnt else []
-                      let snip = if lns /= [] then unlines $ tail $ lines cnt else []
-                      mdia <- compileDiagram expr [] snip
-                      case mdia of 
-                         Left s -> return $ RawBlock "html" s
-                         Right s -> return $ RawBlock "html" 
-                            ("<img src=\"/hash/" ++ s ++ "\">")
+activate cls cnt snips = do let lns  = lines cnt
+                            let expr = if lns /= [] then head $ lines cnt else []
+                            let snip = if lns /= [] then unlines $ tail $ lines cnt else []
+                            mdia <- compileDiagram expr [] (snip:snips)
+                            case mdia of 
+                               Left s -> return $ RawBlock "html" s
+                               Right s -> return $ RawBlock "html" 
+                                  ("<img src=\"/hash/" ++ s ++ "\">")
 
-compileDiagram :: String -> [(String,String)] -> String -> IO (Either String String)
+compileDiagram :: String -> [(String,String)] -> [String] -> IO (Either String String)
 compileDiagram expr attrs src = do
   localbook <- doesDirectoryExist "book"
   let path = (if localbook then "book/cache/" else "/root/book/cache/") 
@@ -46,7 +47,7 @@ compileDiagram expr attrs src = do
 
   let bopts :: DB.BuildOpts SVG V2 Double
       bopts = DB.mkBuildOpts SVG zero (SVGOptions (mkWidth 600) Nothing "")
-                & DB.snippets .~ [src]
+                & DB.snippets .~ src
                 & DB.imports  .~
                 [ "Diagrams.Prelude" 
                 , "Diagrams.Backend.SVG"
@@ -65,7 +66,7 @@ compileDiagram expr attrs src = do
       return $ Left $ "Error while parsing: " ++ err
 
     DB.InterpErr ierr  -> do
-      hPutStrLn stderr ("\nError while interpreting\n" ++ src)
+      hPutStrLn stderr ("\nError while interpreting\n")
       hPutStrLn stderr (DB.ppInterpError ierr)
       return $ Left ("Error while interpreting: " ++ DB.ppInterpError ierr)
 

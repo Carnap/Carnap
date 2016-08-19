@@ -336,6 +336,13 @@ What makes this sentence ambiguous is that it is not clear which words are
 meant to modify which other words. The sentence might be read in one of two
 ways, either as:
 
+```{.diagram .snip}
+toText :: String -> Diagram SVG
+toText s = let ln = fromIntegral (length s) in
+    text s <> rect (ln * 7/10) 1 # lc white # fc white
+```
+
+
 <figure>
 
 ```diagram
@@ -355,10 +362,6 @@ tD = Node (toText "I shot an elephant in my pajamas")
             , Node (toText "in my pajamas") []
             ]
         ]
-
-toText :: String -> Diagram SVG
-toText s = let ln = fromIntegral (length s) in
-    text s <> rect (ln * 7/10) 1 # lc white # fc white
 
 exampleSymmTreeWithDs =
   renderTree id (~~)
@@ -394,10 +397,6 @@ tD = Node (toText "I shot an elephant in my pajamas")
             ]
 
         ]
-
-toText :: String -> Diagram SVG
-toText s = let ln = fromIntegral (length s) in
-    text s <> rect (ln * 7/10) 1 # lc white # fc white
 
 exampleSymmTreeWithDs = 
   renderTree id (~~)
@@ -544,10 +543,6 @@ tD = Node (toText "((P ∨ Q) ∨ R)")
         , Node (toText "R") []
         ]
 
-toText :: String -> Diagram SVG
-toText s = let ln = fromIntegral (length s) in
-    text s <> rect (ln * 7/10) 1 # lc white # fc white
-
 exampleSymmTreeWithDs =
   renderTree id (~~)
   (symmLayout' (with & slWidth  .~ fromMaybe (0,0) . extentX
@@ -581,10 +576,6 @@ tD = Node (toText "((P ∨ Q) ∨ R)→ S")
         , Node (toText "S") []
         ]
 
-toText :: String -> Diagram SVG
-toText s = let ln = fromIntegral (length s) in
-    text s <> rect (ln * 7/10) 1 # lc white # fc white
-
 exampleSymmTreeWithDs =
   renderTree id (~~)
   (symmLayout' (with & slWidth  .~ fromMaybe (0,0) . extentX
@@ -616,10 +607,6 @@ tD = Node (toText "((P ∨ Q) ∨ R)→ S")
             ]
         , Node (toText "S") []
         ]
-
-toText :: String -> Diagram SVG
-toText s = let ln = fromIntegral (length s) in
-    text s <> rect (ln * 7/10) 1 # lc white # fc white
 
 exampleSymmTreeWithDs =
   renderTree id (~~)
@@ -654,10 +641,6 @@ tD = Node (toText "((P ∨ Q) ∨ R)→ S")
             ]
         , Node (toText "S") []
         ]
-
-toText :: String -> Diagram SVG
-toText s = let ln = fromIntegral (length s) in
-    text s <> rect (ln * 7/10) 1 # lc white # fc white
 
 exampleSymmTreeWithDs =
   renderTree id (~~)
