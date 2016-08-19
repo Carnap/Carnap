@@ -21,7 +21,7 @@ postCommandR = do
                                              else returnJson ("Clash" :: String)
 
 submitSynCheck f u = do time <- liftIO getCurrentTime
-                        let sub = SyntaxCheckSubmission (pack f) (pack $ show time) (Just u)
+                        let sub = SyntaxCheckSubmission (pack f) (pack $ show time) u
                         runDB $ do munique <- checkUnique sub
                                    case munique of 
                                         (Just _) -> return False

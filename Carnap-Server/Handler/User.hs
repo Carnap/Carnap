@@ -44,7 +44,7 @@ yourSynSubs  userId = do subs <- runDB $ selectList [] []
                          let upairs = filter (\(x,_,_) -> x == userId) cpairs
                          return $ map (\(_,x,y) -> (x,y)) upairs
 
-    where toPair (SyntaxCheckSubmission prob time pu)  = (pu,prob,time)
+    where toPair (SyntaxCheckSubmission prob time pu)  = (Just pu, prob,time)
 
 clean :: (Maybe (Key User), Text, Text) -> Handler (Text,Text,Text)
 clean (Nothing, s,s')  = return ("annonyous", s,s')

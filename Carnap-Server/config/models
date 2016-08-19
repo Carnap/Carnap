@@ -16,7 +16,8 @@ Comment json -- Adding "json" causes ToJSON and FromJSON instances to be derived
 SyntaxCheckSubmission
     problem Text
     time Text
-    userId UserId Maybe
-    UniqueSyntaxCheckSubmission problem
+    userId UserId 
+    UniqueSyntaxCheckP problem userId
+    --UniqueSyntaxCheckU userId
 
  -- By default this file is used in Model.hs (which is imported by Foundation.hs)
