@@ -143,21 +143,39 @@ But in principle, we could do the same thing with other natural languages.
 
 The general idea for applying our tools can be summed up in this way.
 
-<div style="display: table; margin: 0 auto">
-```{#img1 .latex .tikz}
-\begin{tikzpicture}[scale=1.5]
-\node (FP) {Formal Premises};
-\node[below of= FP] (EP) {English Premises}
-	edge[<->] node[left] {\small Translation} (FP);
-\node[right of = EP, node distance = 6cm] (EC) {English Conclusions}
-	edge[<-, dashed] node[below] {\small Valid Argument} (EP);
-\node[above of= EC] {Formal Conclusions}
-	edge[<->] node[right] {\small Translation} (EC)
-	edge[<-] node[above] {\small Valid Argument} (FP);
-\end{tikzpicture}
-```
-</div>
+<figure>
 
+```diagram
+dia
+
+--a labeled arrow function would be nice
+
+import Diagrams.TwoD.Arrow
+
+dia = atPoints (trailVertices (rect 16 4))
+        [node2,node4,node3,node1] 
+        # connectOutside' arrowOpts  (4 :: Int) (2 :: Int) 
+        # connectOutside' arrowOpts  (3 :: Int) (4 :: Int) 
+        # connectOutside' arrowOpts' (1 :: Int) (2 :: Int) 
+        # connectOutside' arrowOpts  (1 :: Int) (3 :: Int) 
+        <> rect 29 8 
+
+arrowOpts  = with & gaps .~ small
+
+arrowOpts' = with & gaps .~ small 
+                  & shaftStyle %~ dashingG [0.25,0.25] 0
+
+node1 = toText "English Premises" # named (1 :: Int)
+node2 = toText "English Conclusions" # named (2 :: Int)
+node3 = toText "Formal Premises" # named (3 :: Int)
+node4 = toText "Formal Conclusions" # named (4 :: Int)
+
+toText :: String -> Diagram SVG
+toText s = let ln = fromIntegral (length s) in
+    text s <> rect (ln * 6/10) 1.2 # lc white # fc white
+```
+
+</figure>
 We will first show how to translate between English and our artificial
 language: both how to turn a sentence of our artificial language into English,
 and how to go in the other direction with certain sentences of English. Our
