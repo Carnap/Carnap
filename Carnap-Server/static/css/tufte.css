@@ -194,6 +194,10 @@ dd { margin-left: 10pt; }
 
 li p { width: 100%; }
 
+li > p:first-child { margin-top: 0px; }
+
+li > p:last-child { margin-: 0px; }
+
 dl p { width: 100%; 
 }
 
@@ -288,16 +292,16 @@ div.fullwidth, table.fullwidth { width: 100%; }
 div.table-wrapper { overflow-x: auto;
                     font-family: "Trebuchet MS", "Gill Sans", "Gill Sans MT", sans-serif; }
 
-@media screen and (max-width: 760px) { p, footer { width: 90%; }
+@media screen and (max-width: 760px) { p, footer { width: 100%; }
                                        pre.code { width: 87.5%; }
-                                       article > ol { width: 90%; }
-                                       article > ul { width: 90%; }
-                                       article > dl { width: 90%; }
-                                       article > div { width:95% }
-                                       figure { max-width: 90%; }
+                                       article > ol { width: 100%; }
+                                       article > ul { width: 100%; }
+                                       article > dl { width: 100%; }
+                                       article > div { width:100% }
+                                       figure { max-width: 100%; }
                                        figcaption, figure.fullwidth figcaption { margin-right: 0%;
                                                                                  max-width: none; }
-                                       blockquote p, blockquote footer { width: 90%; }}
+                                       blockquote p, blockquote footer { width: 100%; }}
 
 .sans { font-family: "Gill Sans", "Gill Sans MT", Calibri, sans-serif;
         letter-spacing: .03em; }
@@ -364,3 +368,7 @@ label.margin-toggle:not(.sidenote-number) { display: none; }
                             div.table-wrapper, table, table.booktabs { width: 85%; }
                             div.table-wrapper { border-right: 1px solid #efefef; }
                             img { width: 100%; } }
+
+@media (max-width: 360px) { p, ol, ul, dt, dd { font-size: 1.2rem; }
+
+}

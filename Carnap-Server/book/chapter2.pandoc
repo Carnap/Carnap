@@ -1,23 +1,20 @@
----
-course_title: Symbolic Logic 1
-note_title: Week 2
-has_toc: Yes
-css: logic.css
----
-
 #Official and Unofficial Notation
 
 Recall, the basic rules for building up grammatical assertions in the simple
 language we've been using so far.
 
-1. Every sentence letter "$P, Q, R, ..., Z, P_1, Q_1, R_1, ..., Z_1, P_2,...$"
-   is a grammatical assertion.
-2. We may build a grammatical assertion:
-    a.  by taking two grammatical assertions we already have, putting an
-        $\land,\lor,\rightarrow$ or $\leftrightarrow$ between, and wrapping the
-        result in parentheses;
-    b.  by taking one grammatical assertions we already have, and putting
-        a $\sim$ in front.
+1.  Every sentence letter in the list
+
+    $P_1, Q_1, R_1, ..., Z_1, P_2,...$
+
+    is a grammatical assertion
+
+2.  We may build a grammatical assertion:
+     a.  by taking two grammatical assertions we already have, putting an
+         $\land,\lor,\rightarrow$ or $\leftrightarrow$ between, and wrapping the
+         result in parentheses;
+     b.  by taking one grammatical assertions we already have, and putting
+         a $\neg$ in front.
 
 We say that a sentence built up merely by following these rules is in official
 notation. Such sentences are easy to parse, but sometimes tedious to write, and
@@ -211,7 +208,7 @@ language, work out a bunch of formal conclusions that follow from it, and
 finally translate these formal conclusions back into English.
 
 We'll start simple, by restricting ourselves to the connectives that we know
-how to construct derivations for, the connectives $\rightarrow$ and $\sim$. 
+how to construct derivations for, the connectives $\rightarrow$ and $\neg$. 
 
 Given a sentence $\phi$ in our formal language, the first step to translating
 is to select an appropriate scheme of abbreviation:
@@ -247,7 +244,7 @@ Symbols to English
     #.  Locate the main connective of the formal sentence.
     #.  If the main connective is $\rightarrow$, so that the sentence is
         $(\phi\rightarrow\psi)$, then write "If $\phi$, then $\psi$"
-    #.  If the main connective is $\sim$, so that the sentence is $\sim\phi$, then
+    #.  If the main connective is $\neg$, so that the sentence is $\neg\phi$, then
         write "It is not the case that $\phi$"
     #.  If either $\phi$ or $\psi$ contains any formal language connectives, then
         apply this procedure to $\phi$ and $\psi$ as well.
@@ -265,18 +262,18 @@ abbreviation above.
 
 ####Ex. 2
 #. $Q\rightarrow\neg R$
-#. If $Q$, then $\sim R$
+#. If $Q$, then $\neg R$
 #. If $Q$, then it is not the case that $R$.
 #. If Carl Cringes, then it is not the case that Ronny Runs
 
 ####Ex. 3
-#. $\sim Q\rightarrow R$
-#. If $\sim Q$, then $R$
+#. $\neg Q\rightarrow R$
+#. If $\neg Q$, then $R$
 #. If it is not the case that $Q$, then it is not the case that $R$
 #. If it is not the case that Carl Cringes, then Ronny Runs
 
 ####Ex. 4
-#. $\sim (Q\rightarrow R)$
+#. $\neg (Q\rightarrow R)$
 #. It s not the case that $(Q\rightarrow R)$
 #. It is not the case that if $Q$, then $R$
 #. It is not the case that if Carl Cringes, then Ronny Runs
@@ -349,14 +346,19 @@ unexpected way. For example, consider the following sentence.
 
     You can see that this is correct if you compare the sentences
 
-    (a). You can drive only if you're older than eleven.
-    (b). If you can drive, then you're older than eleven.
-    (c). You can drive if you're older than eleven.
-    (d). If you're older than eleven, then you can drive.
+    a. You can drive only if you're older than eleven.
+    b. If you can drive, then you're older than eleven.
 
-    \(a) and (b) mean the same thing (something that's true in the state of
-    Kansas). (c) and (d) also mean the same thing (something that's false, in
-    the state of Kansas).
+    with the sentences 
+
+    c. You can drive if you're older than eleven.
+    d. If you're older than eleven, then you can drive.
+
+    The first two sentences mean the same thing (something true). The second
+    two sentences also mean the same thing as one another (something false).
+    But what the second two sentences mean is different from what the first
+    two sentences mean.
+
 4.  When "it is not the case that" is in front of a sentence that has no
     internal logical structure---usually a sentence with just one
     verb-phrase---the negation can be "transferred to the verb" in various
@@ -437,13 +439,13 @@ For example:
     "If Carl Cringes on the condition that Deputy Dan Dances, then Ronny Runs".
 #.  A correct translation of "It is not the case that if Carl Cringes, then
     Ronny Runs", relative to the scheme of abbreviation that we used in the
-    previous section, is $\sim (Q\rightarrow R)$---because one good translation of
-    $\sim (Q\rightarrow R)$ using this scheme is "It is not the case that if Carl
+    previous section, is $\neg (Q\rightarrow R)$---because one good translation of
+    $\neg (Q\rightarrow R)$ using this scheme is "It is not the case that if Carl
     Cringes, then Ronny Runs".
 #.  The translation of "It is not the case that if Carl Cringes, then Ronny
     Runs", relative to the scheme of abbreviation that we used in the previous
-    section, as $(\sim Q\rightarrow R)$ is not correct---because there is no way of
-    translating $(\sim Q\rightarrow R)$ to mean "It is not the case that if Carl
+    section, as $(\neg Q\rightarrow R)$ is not correct---because there is no way of
+    translating $(\neg Q\rightarrow R)$ to mean "It is not the case that if Carl
     Cringes, then Ronny Runs".
 
 Sometimes more than one translation from English to symbols will technically be
@@ -482,7 +484,7 @@ Some tips:
 
 Here's how the sentences of the previous section look if we translate in the other direction:
 
-####Ex. 1
+####Ex. 
 #. If Carl Cringes, then Ronny Runs
 #. (Carl Cringes $\rightarrow$ Ronny Runs)
 #. $Q\rightarrow R$
@@ -490,19 +492,19 @@ Here's how the sentences of the previous section look if we translate in the oth
 ####Ex. 2
 #. If Carl Cringes, then it is not the case that Ronny Runs
 #. (Carl Cringes $\rightarrow$ it is not the case that Ronny Runs)
-#. (Carl Cringes $\rightarrow \sim$Ronny Runs)
-#. $(Q\rightarrow \sim R)$
+#. (Carl Cringes $\rightarrow \neg$Ronny Runs)
+#. $(Q\rightarrow \neg R)$
 
 ####Ex. 3
 #. If it is not the case that Carl Cringes, then Ronny Runs
 #. (it is not the case that Carl Cringes $\rightarrow$ Ronny Runs)
-#. ($\sim$Carl Cringes $\rightarrow$ Ronny Runs)
-#. $(\sim Q \rightarrow R)$
+#. ($\neg$Carl Cringes $\rightarrow$ Ronny Runs)
+#. $(\neg Q \rightarrow R)$
 
 ####Ex. 4
 #. It is not the case that if Carl Cringes, then Ronny Runs
-#. $\sim$ if Carl Cringes, then Ronny Runs
-#. $\sim$(Carl Cringes $\rightarrow$ Ronny Runs)
+#. $\neg$ if Carl Cringes, then Ronny Runs
+#. $\neg$(Carl Cringes $\rightarrow$ Ronny Runs)
 
 ####Ex. 5
 #. If Deputy Dan Dances, then if Carl Cringes, then Ronny Runs
