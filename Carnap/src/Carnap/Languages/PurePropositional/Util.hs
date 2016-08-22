@@ -1,8 +1,16 @@
-module Carnap.Languages.PurePropositional.Util (showClean) where
+module Carnap.Languages.PurePropositional.Util (showClean,isValid, isEquivTo) where
 
 import Carnap.Core.Data.AbstractSyntaxClasses
 import Carnap.Core.Data.AbstractSyntaxDataTypes
 import Carnap.Languages.PurePropositional.Syntax
+import Control.Lens.Plated (universe)
+import Control.Lens
+import Data.Maybe
+import Data.List
+
+--------------------------------------------------------
+--1. Show Clean
+--------------------------------------------------------
 
 showClean :: PurePropLanguage (Form Bool) -> String
 showClean (x@(_ :||: _) :->: y@(_ :||: _))  = dropBoth   PIf x y
@@ -42,3 +50,18 @@ noDrop x y = schematize x [showClean y]
 dropOutermost :: String -> String
 dropOutermost s@('(':xs) = init . tail $ s
 dropOutermost s = s
+
+--------------------------------------------------------
+--2. Truth Tables
+--------------------------------------------------------
+
+getIndicies :: PurePropLanguage (Form Bool) -> [Int]
+getIndicies = catMaybes . map (preview propIndex) . universe
+
+getValuations = (map toValuation) . subsequences. getIndicies 
+    where toValuation l = \x -> x `elem` l
+
+isValid p = and $ map (\v -> unform $ satisfies v p) (getValuations p)
+    where unform (Form x) = x
+
+isEquivTo x y = isValid (x :<->: y)
