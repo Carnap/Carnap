@@ -14,8 +14,7 @@ module Application
     ) where
 
 import Control.Monad.Logger                 (liftLoc, runLoggingT)
-import Database.Persist.Postgresql          (createPostgresqlPool, pgConnStr,
-                                             pgPoolSize, runSqlPool)
+import Database.Persist.Postgresql          (createPostgresqlPool, pgConnStr, pgPoolSize, runSqlPool)
 import Import
 import Language.Haskell.TH.Syntax           (qLocation)
 import Network.Wai (Middleware)

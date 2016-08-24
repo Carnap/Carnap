@@ -4,7 +4,7 @@ import Database.Persist.Sql        (ConnectionPool, runSqlPool)
 import Import.NoFoundation
 import Text.Hamlet                 (hamletFile)
 import SecureStrings               (googleApiKey, googleSecret)
-import Yesod.Auth.GoogleEmail2     (authGoogleEmail)
+import Yesod.Auth.GoogleEmail2 as GE (authGoogleEmail, forwardUrl)
 --import Yesod.Auth.Dummy            (authDummy)
 import qualified Yesod.Core.Unsafe as Unsafe
 import Yesod.Core.Types            (Logger)
@@ -84,7 +84,7 @@ instance Yesod App where
         withUrlRenderer $(hamletFile "templates/default-layout-wrapper.hamlet")
 
     -- The page to be redirected to when authentication is required.
-    authRoute _ = Just $ AuthR LoginR
+    authRoute _ = Just $ AuthR GE.forwardUrl
 
     -- Routes requiring authentication.
     isAuthorized (UserR ident) _ = do (Entity _ user) <- requireAuth
