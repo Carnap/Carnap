@@ -5,6 +5,7 @@ import Lib
 import Carnap.Languages.Util.GenericParsers
 import Carnap.Languages.PurePropositional.Parser
 import Carnap.Languages.PurePropositional.Syntax
+import Carnap.Languages.PurePropositional.Util
 import Carnap.Core.Data.AbstractSyntaxDataTypes
 import Carnap.Core.Data.AbstractSyntaxClasses
 import Carnap.GHCJS.SharedTypes
@@ -61,23 +62,23 @@ trySubmit ref w l = do (f,forms,_,_) <- liftIO $ readIORef ref
 --formulas in the todo list. The labeling makes it possible to identify
 --which formula is in the queue, even when there are several
 --indistinguishable formulas
-tryMatch :: Element -> IORef (PureForm, [(PureForm, Int)], Tree (PureForm, Int), Int) -> Document -> EventM HTMLInputElement KeyboardEvent ()
-tryMatch o ref w = onEnter $ do (Just t) <- target :: EventM HTMLInputElement KeyboardEvent (Maybe HTMLInputElement)
-                                (Just ival)  <- getValue t
-                                (f,forms,ft, s) <- liftIO $ readIORef ref
-                                setValue t (Just "")
-                                case forms of
-                                    [] -> setInnerHTML o (Just "success!")
-                                    x:xs -> case matchMC ival (fst x) of
-                                        Right b -> if b 
-                                            then case children (fst x) of 
-                                                    [] -> shorten x xs s
-                                                    children -> updateGoal x (zip children [(s + 1)..]) xs (s + length children + 1)
-                                            else do message $ "Sorry, that's not the main connective. Try again!"
-                                                    resetGoal
-                                        Left e -> case children (fst x) of
-                                               [] -> shorten x xs s
-                                               _ -> message "what you've entered doesn't appear to be a connective"
+tryMatch :: Element -> IORef (PureForm, [(PureForm, Int)], Tree (PureForm, Int), Int) -> Document -> (PureForm -> String) -> EventM HTMLInputElement KeyboardEvent ()
+tryMatch o ref w sf = onEnter $ do (Just t) <- target :: EventM HTMLInputElement KeyboardEvent (Maybe HTMLInputElement)
+                                   (Just ival)  <- getValue t
+                                   (f,forms,ft, s) <- liftIO $ readIORef ref
+                                   setValue t (Just "")
+                                   case forms of
+                                       [] -> setInnerHTML o (Just "success!")
+                                       x:xs -> case matchMC ival (fst x) of
+                                           Right b -> if b 
+                                               then case children (fst x) of 
+                                                       [] -> shorten x xs s
+                                                       children -> updateGoal x (zip children [(s + 1)..]) xs (s + length children + 1)
+                                               else do message $ "Sorry, that's not the main connective. Try again!"
+                                                       resetGoal
+                                           Left e -> case children (fst x) of
+                                                  [] -> shorten x xs s
+                                                  _ -> message "what you've entered doesn't appear to be a connective"
         where --updates the goal, by adding labeled formulas to the todo ist, 
               --developing the tree with those labeled formulas at the given label, and 
               --advances the stage
@@ -91,7 +92,7 @@ tryMatch o ref w = onEnter $ do (Just t) <- target :: EventM HTMLInputElement Ke
                                           _  -> updateGoal x [] xs s 
               resetGoal = do (f,_,_,_) <- liftIO $ readIORef ref
                              liftIO $ writeIORef ref (f, [(f,0)], T.Node (f,0) [],0)
-                             setInnerHTML o (Just $ show f)
+                             setInnerHTML o (Just $ sf f)
               dev x xs = adjustFirstMatching leaves (== T.Node x []) (dev' xs)
               dev' xs (T.Node x _) = T.Node x (map nodify xs)
               nodify x = T.Node x []
@@ -99,7 +100,7 @@ tryMatch o ref w = onEnter $ do (Just t) <- target :: EventM HTMLInputElement Ke
                               let t' = fmap (\y -> (y, "")) t
                               let t'' = adjustFirstMatching leaves (== T.Node (x, "") []) (const (T.Node (x, "target") [])) t'
                               let t''' = fmap  (\((x,_),s) -> (x,s)) t''
-                              te <- treeToUl w t'''
+                              te <- genericTreeToUl sf w t'''
                               ul@(Just ul') <- createElement w (Just "ul")
                               appendChild ul' (Just te)
                               appendChild o ul
@@ -143,23 +144,26 @@ activateChecker :: Document -> Maybe (Element, Element,[String]) -> IO ()
 activateChecker w (Just (i,o,classes))
                 | "echo" `elem` classes  = do echo <- newListener $ echoTo (tryParse purePropFormulaParser) o
                                               addListener i keyUp echo False
-                | "match" `elem` classes = do Just ohtml <- getInnerHTML o
-                                              case parse formAndLabel "" (decodeHtml ohtml) of
-                                                (Right (l,f)) -> do mbt@(Just bt) <- createElement w (Just "button")
-                                                                    setInnerHTML o (Just $ show f)
-                                                                    setInnerHTML bt (Just "submit solution")
-                                                                    mpar@(Just par) <- getParentNode o
-                                                                    insertBefore par mbt (Just o)
-                                                                    ref <- newIORef (f,[(f,0)], T.Node (f,0) [], 0)
-                                                                    match <- newListener $ tryMatch o ref w
-                                                                    (Just w') <- getDefaultView w
-                                                                    submit <- newListener $ trySubmit ref w' l
-                                                                    addListener i keyUp match False
-                                                                    addListener bt click submit False 
-                                                (Left e) -> print $ ohtml ++ show e
+                | "match" `elem` classes = activateMatchWith show
+                | "matchclean" `elem` classes = activateMatchWith showClean
                 | otherwise = return () 
+    where activateMatchWith :: (PureForm -> String) -> IO ()
+          activateMatchWith sf = do Just ohtml <- getInnerHTML o                                           
+                                    case parse formAndLabel "" (decodeHtml ohtml) of                       
+                                      (Right (l,f)) -> do mbt@(Just bt) <- createElement w (Just "button") 
+                                                          setInnerHTML o (Just $ sf f)                   
+                                                          setInnerHTML bt (Just "submit solution")         
+                                                          mpar@(Just par) <- getParentNode o               
+                                                          insertBefore par mbt (Just o)                    
+                                                          ref <- newIORef (f,[(f,0)], T.Node (f,0) [], 0)  
+                                                          match <- newListener $ tryMatch o ref w sf
+                                                          (Just w') <- getDefaultView w                    
+                                                          submit <- newListener $ trySubmit ref w' l       
+                                                          addListener i keyUp match False                  
+                                                          addListener bt click submit False                
+                                      (Left e) -> print $ ohtml ++ show e                                  
 activateChecker _ Nothing  = return ()
- 
+
 formAndLabel = do label <- many (digit <|> char '.')
                   spaces
                   f <- purePropFormulaParser

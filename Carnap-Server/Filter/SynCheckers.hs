@@ -14,4 +14,8 @@ activate cls cnt
         "<div class=\"synchecker match container\"><input></input><div class=\"tree\">" 
         ++ cnt 
         ++ "</div></div>"
+    | "MatchClean" `elem` cls = RawBlock "html" $ 
+        "<div class=\"synchecker matchclean container\"><input></input><div class=\"tree\">" 
+        ++ cnt 
+        ++ "</div></div>"
     | otherwise = RawBlock "html" "<div>No Matching SynChecker</div>"

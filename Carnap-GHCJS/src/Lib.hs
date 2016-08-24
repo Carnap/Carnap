@@ -1,6 +1,6 @@
 {-# LANGUAGE RankNTypes, FlexibleContexts, DeriveDataTypeable, CPP, JavaScriptFFI #-}
 module Lib
-    ( sendJSON, onEnter, clearInput, getListOfElementsByClass, tryParse, treeToElement, treeToUl,listToUl, formToTree, leaves, adjustFirstMatching, decodeHtml
+    ( sendJSON, onEnter, clearInput, getListOfElementsByClass, tryParse, treeToElement, genericTreeToUl, treeToUl, listToUl, formToTree, leaves, adjustFirstMatching, decodeHtml
     ) where
 
 import Data.Aeson
@@ -80,16 +80,20 @@ treeToElement f g (T.Node n ts) = do r <- f n
                                      g r elts
                                      return r
 
-treeToUl :: Show a => Document -> Tree (a, String) -> IO Element
-treeToUl w t = treeToElement itemize listify t
+genericTreeToUl :: (a -> String) -> Document -> Tree (a, String) -> IO Element
+genericTreeToUl sf w t = treeToElement itemize listify t
     where itemize (x,c) = do s@(Just s') <- createElement w (Just "li")
-                             setInnerHTML s' (Just $ show x)
+                             setInnerHTML s' (Just $ sf x)
                              setAttribute s' "class" c 
                              return s'
           listify x xs = do o@(Just o') <- createElement w (Just "ul")
                             mapM_ (appendChild o' . Just) xs
                             appendChild x o
                             return ()
+
+
+treeToUl :: Show a => Document -> Tree (a, String) -> IO Element
+treeToUl = genericTreeToUl show
 
 listToUl :: Show a => Document -> [a] -> IO Element
 listToUl doc l = do elts <- mapM wrapIt l
