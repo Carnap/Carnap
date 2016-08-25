@@ -1,4 +1,4 @@
-<div#carnap-intro-head> 
+<div#carnap-intro-head>
     <div.container>
         <h2>
             Welcome to Carnap.io
@@ -11,10 +11,10 @@
     <img class="img-responsive pull-right" src=@{StaticR russell_png}>
     <p>
         This site is currently hosting the interactive component of <i>Logic 320:
-        Introduction to Formal Logic</i>. This course is being taught at Kansas
+        Introduction to Symbolic Logic I</i>. This course is being taught at Kansas
         State University, using the Carnap proofchecking framework.
     <p>
-        If you're a student, please following the links at the top of the page
+        If you're a student, please follow the links at the top of the page
         to access course materials.
     <p>
         For other course information, including syllabi and scheduling, please

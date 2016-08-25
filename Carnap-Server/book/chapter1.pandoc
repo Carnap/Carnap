@@ -485,7 +485,7 @@ language. Let's use just the five connectives from before, and write
 2. "$\lor$" for "or"
 3. "$\rightarrow$" for "if ... then ..."
 4. "$\leftrightarrow$" for "if and only if"
-5. "$\sim$" for "it is not the case that"
+5. "$\neg$" for "it is not the case that"
 
 This tells us what the ingredients in our language will be: assertion letters,
 connective symbols, and parentheses. But how should we put them together? Here,
@@ -503,10 +503,10 @@ must adhere to the following two rules in building sentences:
         *For example, $(P\land R)$ is a grammatical assertion.*
 
     b.  by taking one grammatical assertions we already have, and putting
-        a $\sim$ in front.
+        a $\neg$ in front.
 
-        *For example, $\sim P$ is a grammatical assertion, as is $\sim (P\land R)$.
-        Notice that adding $\sim$ does not require us to add new parentheses.*
+        *For example, $\neg P$ is a grammatical assertion, as is $\neg (P\land R)$.
+        Notice that adding $\neg$ does not require us to add new parentheses.*
 
 Every grammatical assertion in our language must be constructed according to
 these two rules. *No other assertions will count as grammatical.*[^4] We
@@ -668,16 +668,46 @@ really need the outer parentheses in the sentence "$(P\land Q)$"? Would
 will introduce some simplification rules---kind of like PEMDAS---that will let
 us know when we can afford to leave out the extra parentheses.
 
+#Exercises
+
 To practice some of these concepts, try the following exercises: what you need
-to do is enter the *main connective* of the highlighted sentence. (type the
-connective and press return), breaking the sentence down into its constituent
-parts. Keep doing this until the sentence can't be broken down any further.
+to do is enter the *main connective* of the highlighted sentence. To do this,
+type in the main connective and then press return (don't press the submit
+button until you're done with the problem---when you are, the display will say
+"success!"). 
+
+Once you've entered that connective, the sentence will be broken down into its
+parts---keep going, entering the main connective for each highlighted
+sentence. When you reach a sentence that has no connectives, press return to
+advance to the next branch.
+
+When you're done, and the sentence has been completely broken down, so that
+the display reads "success!", press the submit button to save your work.
+You'll then be able to see the completed problem in your user page.
+
+The way to type in the different connectives is given in this table:
+
+ Connective           Keyboard Shorthand 
+------------         --------------------
+  $\land$            /\\
+  $\lor$             \\/
+  $\rightarrow$      -> 
+  $\leftrightarrow$  <->
+  $\neg$             ~
+
+##Problem Set 1
+
+Here's your first set of problems:
 
 ```{.SynChecker .Match}
-1.1 P_1 /\ P_2
-1.2 P_1 \/ P_2
-1.3 P_1 /\ (P_2 -> P_3)
-1.4 P_3 <-> (P_2 \/ ~P_1)
-1.5 (P_2 /\ P_3) <-> (P_1 \/ (P_5 /\ ~P_2))
+1.1   P_1 /\ P_2
+1.2   P_1 \/ P_2
+1.3   P_1 /\ (P_2 -> P_3)
+1.4   P_3 <-> (P_2 \/ ~P_1)
+1.5   (P_2 /\ P_3) <-> (P_1 \/ (P_5 /\ ~P_2))
+1.6   (P_1 -> P_2) \/ (P_2 -> P_1)
+1.7   (P_1 -> (P_2 -> P_3)) -> ((P_1 -> P_2)->(P_1 -> P_3))
+1.8   (P_1 \/ P_2) -> (P_3<-> ~P_1\/P_2)
+1.9   (P_1 /\ (P_2 /\ (P_3 /\ (P_4 /\ P_5))))
+1.10  (P_1<->P_2) \/ (P_1/\ -P_2) \/ (-P_1 /\ P_2)
 ```
-
