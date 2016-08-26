@@ -102,7 +102,7 @@ makeLogWare foundation =
                 else Apache
                         (if appIpFromHeader $ appSettings foundation
                             then FromFallback
-                            else FromSocket)
+                            else FromHeader)
         , destination = Logger $ loggerSet $ appLogger foundation
         }
 
