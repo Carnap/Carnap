@@ -5,44 +5,46 @@ language we've been using so far.
 
 1.  Every sentence letter in the list
 
-    $P_1, Q_1, R_1, ..., Z_1, P_2,...$
+    $P,Q,...,Z, P_1, Q_1,..., Z_1, P_2,...$
 
     is a grammatical assertion
 
 2.  We may build a grammatical assertion:
      a.  by taking two grammatical assertions we already have, putting an
-         $\land,\lor,\rightarrow$ or $\leftrightarrow$ between, and wrapping the
-         result in parentheses;
+         $\land,\lor,\rightarrow$ or $\leftrightarrow$ between them, and
+         wrapping the result in parentheses;
      b.  by taking one grammatical assertions we already have, and putting
-         a $\neg$ in front.
+         a $\neg$ in front of it.
 
 We say that a sentence built up merely by following these rules is in official
-notation. Such sentences are easy to parse, but sometimes tedious to write, and
-strangely difficult to read. We will allow three sorts of abbreviations to our official
-sentences, in order to make them easier to read and write.
+notation. Such sentences are easy to parse, but sometimes tedious to write,
+and difficult to read at a glance. So, we will allow three sorts of
+abbreviations to our official sentences, in order to make them easier to read
+and write.
 
 The first type of abbreviation is easy to explain. When the first symbol of
 a sentence is "$($", and the last is "$)$", we allow these to be removed. This
-won't cause any confusion about the structure of the sentence. You can safely
-parse it "as if" the outer parentheses are there.
+won't cause any confusion about the structure of the sentence, since if the
+outer parentheses are missing, you can still parse the sentence "as if" they
+were there.
 
-The second type of abbreviation needs a little more explanation. Think of
-PEMDAS. What PEMDAS really instructs you to do is to combine the numerals in
-a formula in a certain way. So, for example, PEMDAS tells you that in $2
-+ 2 \times 2$, you ought to combine the right pair of "$2$"s, and then combine
-the result of that with the left pair of "$2$"s. You can think of these
-instructions as telling you how to "group" the numerals. To make this explicit
-, you can wrap the groups in parentheses; since you combine the right "$2$"s,
-you can wrap those, and since you combine that result with the left "$2$"s, you
-can wrap the whole thing. What you get is $(2 + (2 \times 2))$---which is the
-same, according to PEMDAS, as $2 + 2 \times 2$.
+The second type of abbreviation needs a little more explanation. An analogy
+will be helpful. Think of PEMDAS. What PEMDAS really instructs you to do is to
+combine the numerals in a formula in a certain way. So, for example, PEMDAS
+tells you that in $2 + 2 \times 2$, you ought to combine the right pair of
+$2$s, and then combine the result of that with the left pair of $2$s. You
+can think of these instructions as telling you how to "group" the numerals. To
+make this explicit , you can wrap the groups in parentheses; since you combine
+the right pair of $2$s, you can wrap those, and since you combine that result
+with the left-most $2$, you can wrap the whole thing. What you get is $(2 + (2
+\times 2))$---which is the same, according to PEMDAS, as $2 + 2 \times 2$.
 
 In logic, we're not dealing with addition and so on, so we don't use PEMDAS.
 Instead, we use what you might think of as a "JI"-rule. "J" stands for
 *junctions*---specifically, $\land$, the "and" symbol (sometimes known as
 "conjunction"), and $\lor$, the "or" symbol (sometimes known as "disjunction").
 "I" stands for *ifs*---specifically, $\rightarrow$, the "if-then" symbol, and
-$\leftrightarrow$, the "if and only if" symbol. What the rule says is that,
+$\leftrightarrow$, the "if and only if" symbol. What the rule says is that
 when there aren't enough parentheses, you group junctions together before you
 group together your ifs, just like PEMDAS says that you group 
 multiplications together before you group additions together.
@@ -79,11 +81,13 @@ The JI-Rule
 There's just one more rule to take care of. Again, it's helpful to think of
 arithmetic. When we do arithmetic, we (usually) proceed from left to right. So,
 for example, $10 - 10 - 10$ is equal to $-20 = ((10 - 10) - 10)$, not to $10
-= (10 - (10 - 10))$. Call this way of doing subtraction a "lefty rule" for
+= (10 - (10 - 10))$.[^1] Call this way of doing subtraction a "lefty rule" for
 subtraction. Operations are grouped "lefty" rather than "righty", meaning you
-do the ones on the left first. One has a similar "lefty rule" for division. $2
-\div 2 \div 2$ is equal to $1/4 = ((2 \div 2) \div 2)$, rather than $2 = ((2
-\div (2 \div 2))$.
+do the ones on the left first.
+
+[^1]:: One has a similar "lefty rule" for division. $2 \div 2 \div 2$ is equal
+to $1/2 = ((2 \div 2) \div 2)$, rather than $2 = ((2 \div (2 \div 2))$.
+
 
 In logic, we have a similar lefty-rule for each of our junctions: there's
 a lefty-rule for $\land$ and a lefty-rule for $\lor$. So for example
@@ -108,25 +112,44 @@ Lefty-Rules
  
      In other words, you may take a formula that has one of the shapes on the
      left, above, and remove parentheses to make it match the corresponding
-     formula on the right[^1]
+     formula on the right[^2]
 
-[^1]:: Note that the lefty-rule can be applied several times, so that long
+[^2]:: Note that the lefty-rule can be applied several times, so that long
 strings of $\land$s or $\lor$s can be used without parentheses. For example,
 changing $((P \lor Q) \lor R) \lor S$ into $(P\lor Q)\lor R \lor S$ and then
 into $P\lor Q \lor R \lor S$ would be a legitimate use of the lefty-rule for
 $\lor$.
 
 These---the rule that lets us remove outer parentheses, the JI-rule, and the
-lefty-rules for $\lor$ and $\land$ are our three basic types of abbreviation.
-None of them introduces any ambiguity into our language. Since formulas that
-are abbreviated using these rules go beyond what's allowed in official
-notation, however, we give them a new name: formulas in unofficial notation.
+lefty-rules for $\lor$ and $\land$---are our three basic types of
+abbreviation. None of them introduces any ambiguity into our language. Since
+formulas that are abbreviated using these rules go beyond what's allowed in
+official notation, however, we give them a new name: formulas in unofficial
+notation.
 
 Unofficial notation
 :   A formula is said to be in *unofficial notation* when it can be generated
     from a formula in official notation by removing one or more pairs of
     parentheses, using the JI rule, the lefty-rule for $\land$, the lefty-rule
     for $\lor$ or the operation of dropping an outer set of parentheses.
+
+##Problem Set 2
+
+As in the previous chapter, unpack the parsing trees for the following
+sentences:
+
+```{.SynChecker .MatchClean}
+2.1  P_1 /\ -P_2 
+2.2  P_1 /\ P_1 -> P_4 \/ P_5
+2.3  ~P_1 \/ ~(P_1 -> P_2 \/ P_5)
+2.4  P_2 \/ P_1 \/ P_1 -> P_4
+2.5  P_1 <-> (P_2 /\ P_4 /\ P_1)
+2.6  ~~P_2 -> P_2
+2.7  ~(~P_2 -> P_2) 
+2.8  (P_1 -> P_2) -> (P_3 \/ P_1)
+2.9  P_3 -> (P_1 -> ~P_2 \/ P_1 \/ (P_2 /\ P_1))
+1.10  (P_1<->P_2) \/ (P_1/\ -P_2) \/ (-P_1 /\ P_2)
+```
 
 #Translation
 
@@ -184,9 +207,9 @@ are translations of one another, we can test the formal one for formal validity
 (we don't know how to do this yet, but we will learn soon). If we find that the
 formal argument is formally valid, then the English sentence must be formally
 valid too (and that it is therefore deductively valid---the truth of its
-premises ensures the truth of its conclusions).[^2]
+premises ensures the truth of its conclusions).[^3]
 
-[^2]:: If we find that the Formal Argument is invalid, can we infer that the
+[^3]:: If we find that the Formal Argument is invalid, can we infer that the
 English argument is too? Often we can, but not in every case. There are
 aspects of the logical form of english sentences that can't be captured in our
 current---very simple--formal language; for example, arguments in english can
@@ -292,9 +315,9 @@ abbreviation above.
 This gives us a unique translation for each sentence, and one that has the
 right logical properties. But although the resulting sentences are grammatical,
 they're sometimes very difficult to understand, and extremely bad in terms of
-style.[^3] So we may want to make them more readable. The following tricks are helpful.
+style.[^4] So we may want to make them more readable. The following tricks are helpful.
 
-[^3]::How can such an awkward sentence be grammatical? Well, the grammar of a
+[^4]::How can such an awkward sentence be grammatical? Well, the grammar of a
 language and the readability and style of the sentences you make in accordance
 with that grammar are two different things. For example, there's no limit on
 how long a grammatical sentence of English can be. But beyond a certain point,
