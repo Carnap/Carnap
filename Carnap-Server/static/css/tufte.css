@@ -161,6 +161,8 @@ div.tree > ul > li { width:100% !important; }
 
 div.tree ul li { width:50%; }
 
+div.tree ul li:only-child { width:100%; }
+
 
 /* end chapter epigraphs styles */
 
