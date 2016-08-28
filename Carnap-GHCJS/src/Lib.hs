@@ -47,9 +47,9 @@ import GHCJS.DOM.EventTarget
 
 onEnter :: EventM HTMLInputElement KeyboardEvent () ->  EventM HTMLInputElement KeyboardEvent ()
 onEnter action = do kbe      <- event
-                    id       <- getKeyIdentifier kbe
-                    if id == "Enter" then do action
-                                     else return ()
+                    id       <- getKeyIdentifier kbe --this is deprecated, and doesn't work in firefox 
+                    id'       <- liftIO $ keyString kbe
+                    if id == "Enter" || id' == "Enter" then do action else return ()
 
 --------------------------------------------------------
 --1.2 DOM Manipulation
@@ -150,11 +150,19 @@ sendJSON x succ fail = do cb1 <- asyncCallback1 (cb succ)
           cb3 f _ x _  = do (Just s) <- fromJSVal x 
                             f s 
 
+keyString :: KeyboardEvent -> IO String
+keyString e = key e >>= return . fromJSString
+
 foreign import javascript unsafe "jsonCommand($1,$2,$3)" jsonCommand :: JSString -> Callback (JSVal -> IO()) -> Callback (JSVal -> JSVal -> JSVal -> IO()) -> IO ()
+
+foreign import javascript unsafe "$1.key" key :: KeyboardEvent -> IO JSString
 
 #else
 
 sendJSON :: ToJSON a => a -> (String -> IO ()) -> (String -> IO ()) -> IO ()
 sendJSON = Prelude.error "sendJSON requires the GHCJS FFI"
+
+keyString :: KeyboardEvent -> IO String
+keyString = Prelude.error "keyString requires the GHCJS FFI"
 
 #endif
