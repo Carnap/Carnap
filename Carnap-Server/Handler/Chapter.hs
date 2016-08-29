@@ -4,6 +4,7 @@ import Import
 import Yesod.Markdown
 import Filter.Sidenotes
 import Filter.SynCheckers
+import Filter.Translate
 import Filter.Diagrams
 import Text.Pandoc.Walk (walkM, walk)
 import System.Directory (doesDirectoryExist)
@@ -37,9 +38,12 @@ fileToHtml path = do md <- markdownFromFile path
 
 runFilters = let walkNotes y = evalState (walkM makeSideNotes y) 0
                  walkCheckers y = walk makeSynCheckers y
+                 walkTranslate y = walk makeTranslate y
                  walkDiagrams y = evalStateT (walkM makeDiagrams y) []
-                   in walkDiagrams . walkNotes . walkCheckers 
+                   in walkDiagrams . walkNotes . walkCheckers . walkTranslate
 
+-- TODO: get some info about which ghcjs widgets are used, load those, then
+    -- load the page, then preload the rest
 chapterLayout widget = do
         master <- getYesod
         mmsg <- getMessage
@@ -47,10 +51,10 @@ chapterLayout widget = do
         pc     <- widgetToPageContent $ do
             toWidgetHead $(juliusFile "templates/command.julius")
             addScript $ StaticR ghcjs_rts_js
-            addScript $ StaticR ghcjs_syncheck_lib_js
-            addScript $ StaticR ghcjs_syncheck_out_js
+            addScript $ StaticR ghcjs_allactions_lib_js
+            addScript $ StaticR ghcjs_allactions_out_js
             addStylesheet $ StaticR css_tree_css
             addStylesheet $ StaticR css_tufte_css
             $(widgetFile "default-layout")
-            addScript $ StaticR ghcjs_syncheck_runmain_js
+            addScript $ StaticR ghcjs_allactions_runmain_js
         withUrlRenderer $(hamletFile "templates/default-layout-wrapper.hamlet")

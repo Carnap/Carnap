@@ -32,6 +32,7 @@ library
                      Handler.Hashed
                      Filter.Sidenotes
                      Filter.SynCheckers
+                     Filter.Translate
                      Filter.Diagrams
 
     if flag(dev) || flag(library-only)
@@ -111,6 +112,7 @@ library
                  , filepath
                  , hashable
                  , lens
+                 , split
                  , Carnap-GHCJS
 
 executable         Carnap-Server

@@ -156,10 +156,12 @@ sentences:
 
 \section{Symbolization}
 
-What we need to do now is do our best to apply the tools that we have built up
-to actual natural language arguments. For practical reasons (since English is
-the only language we all speak) we will focus on English-language arguments.
-But in principle, we could do the same thing with other natural languages.
+We've now done everything we need to do to present the formal language that we
+will be using for quite a while. In this section, we'll take a little bit of
+time to think about how our formal language relates to natural language. For
+practical reasons (since English is the only language we all speak) we will
+focus on English-language arguments. But in principle, we could do the same
+thing with other natural languages.
 
 The general idea for applying our tools can be summed up in this way.
 
@@ -206,13 +208,13 @@ As a result, if we come up with two arguments---one formal, one English---that
 are translations of one another, we can test the formal one for formal validity
 (we don't know how to do this yet, but we will learn soon). If we find that the
 formal argument is formally valid, then the English sentence must be formally
-valid too (and that it is therefore deductively valid---the truth of its
-premises ensures the truth of its conclusions).[^3]
+valid too (and so it is also deductively valid---the truth of its premises
+ensures the truth of its conclusions).[^3]
 
 [^3]:: If we find that the Formal Argument is invalid, can we infer that the
 English argument is too? Often we can, but not in every case. There are
-aspects of the logical form of english sentences that can't be captured in our
-current---very simple--formal language; for example, arguments in english can
+aspects of the logical form of English sentences that can't be captured in our
+current---very simple--formal language; for example, arguments in English can
 be valid because of the presence of words like "all" and "some", which we do
 not yet have any way of representing.
 

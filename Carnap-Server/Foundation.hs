@@ -5,7 +5,7 @@ import Import.NoFoundation
 import Text.Hamlet                 (hamletFile)
 import SecureStrings               (googleApiKey, googleSecret)
 import Yesod.Auth.GoogleEmail2 as GE (authGoogleEmail, forwardUrl)
---import Yesod.Auth.Dummy            (authDummy)
+import Yesod.Auth.Dummy            (authDummy)
 import qualified Yesod.Core.Unsafe as Unsafe
 import Yesod.Core.Types            (Logger)
 import Yesod.Default.Util          (addStaticContentExternal)

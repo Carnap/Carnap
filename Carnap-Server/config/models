@@ -18,6 +18,10 @@ SyntaxCheckSubmission
     time Text
     userId UserId 
     UniqueSyntaxCheckP problem userId
-    --UniqueSyntaxCheckU userId
+TranslationSubmission
+    problem Text
+    time Text
+    userId UserId 
+    UniqueTranslationP problem userId
 
  -- By default this file is used in Model.hs (which is imported by Foundation.hs)
