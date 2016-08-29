@@ -9,6 +9,7 @@ import GHC.Generics
 
 data GHCJSCommand = EchoBack (String, Bool)
         | SubmitSyntaxCheck String
+        | SubmitTranslation String
         deriving (Generic, Show)
 
 instance ToJSON GHCJSCommand

@@ -47,8 +47,12 @@ import GHCJS.DOM.EventTarget
 
 onEnter :: EventM HTMLInputElement KeyboardEvent () ->  EventM HTMLInputElement KeyboardEvent ()
 onEnter action = do kbe      <- event
-                    id       <- getKeyIdentifier kbe --this is deprecated, and doesn't work in firefox 
-                    id'       <- liftIO $ keyString kbe
+                    id       <- getKeyIdentifier kbe 
+                    -- XXX: keyIdentifier is deprecated and doesn't work in
+                    -- firefox; hence the use of `keyString`. But `key`
+                    -- doesn't work in some older browsers, so we keep
+                    -- this line around.
+                    id'      <- liftIO $ keyString kbe
                     if id == "Enter" || id' == "Enter" then do action else return ()
 
 --------------------------------------------------------
@@ -58,7 +62,7 @@ onEnter action = do kbe      <- event
 clearInput :: (MonadIO m) => HTMLInputElement -> m ()
 clearInput i = setValue i (Just "")
 
---XXX: one might also want to include a "mutable lens" or "mutable traversal"
+-- XXX: one might also want to include a "mutable lens" or "mutable traversal"
 --kind of thing: http://stackoverflow.com/questions/18794745/can-i-make-a-lens-with-a-monad-constraint
 getListOfElementsByClass :: IsElement self => self -> String -> IO [Maybe Element]
 getListOfElementsByClass elt c = do mnl <- getElementsByClassName elt c
