@@ -6,6 +6,7 @@ import Carnap.Core.Data.AbstractSyntaxDataTypes
 import Carnap.Languages.Util.LanguageClasses
 import Text.Parsec
 import Data.Typeable(Typeable)
+import Data.List (findIndex)
 
 listToTry :: [ParsecT s u m a] -> ParsecT s u m a
 listToTry (x:xs) = foldr (\y -> (<|>) (try y)) (try x) xs
@@ -52,12 +53,15 @@ parsePos = do spaces
 --------------------------------------------------------
 
 atomicSentenceParser :: (IndexedPropLanguage l, Monad m) => ParsecT String u m l
-atomicSentenceParser = do char 'P'
-                          char '_'
-                          n <- number
-                          return $ pn n
-    where number = do { ds <- many1 digit; return (read ds) } <?> "number"
-
+atomicSentenceParser = try parseNumbered <|> parseUnnumbered
+        where number = do { ds <- many1 digit; return (read ds) } <?> "number"
+              parseUnnumbered = do c <- oneOf "PQRSTUVWXYZ"
+                                   let Just n = findIndex (== c) "_PQRSTUVWXYZ"
+                                   return $ pn (-1 * n)
+              parseNumbered = do char 'P'
+                                 char '_'
+                                 n <- number
+                                 return $ pn n
 
 schemevarParser :: (IndexedSchemePropLanguage l, Monad m) => ParsecT String u m l
 schemevarParser = do string "Phi"
