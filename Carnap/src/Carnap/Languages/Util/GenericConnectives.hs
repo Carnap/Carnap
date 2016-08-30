@@ -9,7 +9,9 @@ data IntProp b a where
         Prop :: Int -> IntProp b (Form b)
 
 instance Schematizable (IntProp b) where
-        schematize (Prop n)   _       = "P_" ++ show n
+        schematize (Prop n)   _ 
+            | n < 0 && n > -12 = ["_PQRSTUVWXYZ" !! (-1 * n)]
+            | otherwise = "P_" ++ show n
 
 instance UniformlyEq (IntProp b) where
         (Prop n) =* (Prop m) = n == m

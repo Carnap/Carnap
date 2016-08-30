@@ -28,7 +28,7 @@ getUserR userId = do
                         #{dueDateTable}
                     <div.col-md-3>
                         <h3> Total Points Earned
-                        <span style="font-size:56pt; color:gray; padding-left:20pt"> #{totalScore (synsubs ++ transsubs)}/50
+                        <span style="font-size:56pt; color:gray; padding-left:20pt"> #{totalScore (synsubs ++ transsubs)}/100
                 <div>
                 <a href=@{AuthR LogoutR}>
                     Logout
@@ -89,7 +89,8 @@ laterThan t1 t2 = diffUTCTime t1 t2 > 0
 -- TODO: this should be pushed to a configuration file
 -- remember, the day clicks over at midnight.
 dueDates :: M.Map Int UTCTime
-dueDates = M.fromList [(1, toTime "12:00 am CDT, Aug 30, 2016")
+dueDates = M.fromList [(1, toTime "11:59 pm CDT, Aug 30, 2016")
+                      ,(2, toTime "12:00 am CDT, Sep 1, 2016")
                       ]
     where toTime = parseTimeOrError True defaultTimeLocale "%l:%M %P %Z, %b %e, %Y"
 

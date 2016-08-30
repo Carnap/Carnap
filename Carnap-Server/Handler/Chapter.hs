@@ -55,6 +55,7 @@ chapterLayout widget = do
             addScript $ StaticR ghcjs_allactions_out_js
             addStylesheet $ StaticR css_tree_css
             addStylesheet $ StaticR css_tufte_css
+            addStylesheet $ StaticR css_tuftextra_css
             $(widgetFile "default-layout")
             addScript $ StaticR ghcjs_allactions_runmain_js
         withUrlRenderer $(hamletFile "templates/default-layout-wrapper.hamlet")
