@@ -48,7 +48,7 @@ activateTranslate :: Document -> Maybe (Element, Element,[String]) -> IO ()
 activateTranslate w (Just (i,o,classes))
                 | "prop" `elem` classes = 
                                  do Just ohtml <- getInnerHTML o                                           
-                                    case parse formAndLabel "" (simpleCipher $ decodeHtml ohtml) of                       
+                                    case parse formAndLabel "" (simpleDecipher $ read $ decodeHtml ohtml) of                       
                                       (Right (l,f)) -> do mbt@(Just bt) <- createElement w (Just "button")
                                                           (Just ival) <- getValue (castToHTMLInputElement i)
                                                           setInnerHTML o (Just ival :: Maybe String)
@@ -90,7 +90,6 @@ trySubmit ref w l f = do isFinished <- liftIO $ readIORef ref
                        | c == "Clash"   = alert w "it appears you've already successfully submitted this problem"
                        | otherwise      = alert w $ "Submitted Translation for Exercise " ++ l
           error c = alert w ("Something has gone wrong. Here's the error: " ++ c)
-
 
 formAndLabel = do label <- many (digit <|> char '.')
                   spaces

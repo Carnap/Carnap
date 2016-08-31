@@ -17,6 +17,6 @@ activate cls l
         case (splitOn ":" l) of
             [x,y] -> "<div class=\"translate prop\"><input type =\"text\" value=\""
                                 ++ y ++ "\"><div>" 
-                                ++ simpleCipher x ++ "</div></div>"
+                                ++ show (simpleCipher x) ++ "</div></div>"
             _ -> "<div>No Matching Translation</div>"
     | otherwise = RawBlock "html" "<div>No Matching Translation</div>"

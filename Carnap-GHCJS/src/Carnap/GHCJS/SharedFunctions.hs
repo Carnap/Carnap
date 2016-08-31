@@ -1,8 +1,13 @@
 module Carnap.GHCJS.SharedFunctions
-        (simpleCipher)
+        (simpleCipher, simpleDecipher)
     where
 
 import Data.Bits (xor)
 
-simpleCipher :: String -> String
-simpleCipher x = map toEnum (zipWith xor (cycle $ map fromEnum "wallis") (map fromEnum x))
+simpleCipher :: String -> [Int]
+simpleCipher x =  spliceWithWallis (map fromEnum x)
+
+simpleDecipher :: [Int] -> String
+simpleDecipher x = map toEnum (spliceWithWallis x)
+
+spliceWithWallis = zipWith xor (cycle $ map fromEnum "wallis")
