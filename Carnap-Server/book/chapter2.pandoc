@@ -153,8 +153,7 @@ sentences:
 
 #Translation
 
-
-\section{Symbolization}
+##Symbolization
 
 We've now done everything we need to do to present the formal language that we
 will be using for quite a while. In this section, we'll take a little bit of
@@ -198,9 +197,10 @@ toText s = let ln = fromIntegral (length s) in
 ```
 
 </figure>
-We will first show how to translate between English and our artificial
-language: both how to turn a sentence of our artificial language into English,
-and how to go in the other direction with certain sentences of English. Our
+
+We will show how to translate between English and our artificial language:
+both how to turn a sentence of our artificial language into English, and how
+to go in the other direction with certain sentences of English. Our
 translation technique will have the property that the translation of an
 argument shares a logical form with the original argument. 
 
@@ -215,8 +215,9 @@ ensures the truth of its conclusions).[^3]
 English argument is too? Often we can, but not in every case. There are
 aspects of the logical form of English sentences that can't be captured in our
 current---very simple--formal language; for example, arguments in English can
-be valid because of the presence of words like "all" and "some", which we do
-not yet have any way of representing.
+be valid because of the presence of words like "all" and "some". But we don't
+yet have any way of representing the contribution that these words make to the
+logical form of an argument.
 
 ##Symbols to English
 
@@ -232,8 +233,8 @@ implies. Then we might take that statement, translate it into our formal
 language, work out a bunch of formal conclusions that follow from it, and
 finally translate these formal conclusions back into English.
 
-We'll start simple, by restricting ourselves to the connectives that we know
-how to construct derivations for, the connectives $\rightarrow$ and $\neg$. 
+We'll start simple, by restricting ourselves to the connectives $\rightarrow$
+and $\neg$.
 
 Given a sentence $\phi$ in our formal language, the first step to translating
 is to select an appropriate scheme of abbreviation:
@@ -254,9 +255,9 @@ For example, if we have an sentence $(P\lor Q)\rightarrow R$, we need
 a scheme of abbreviation that covers $P,Q$ and $R$. So we might choose this
 one:
 
-1. $P =$ Deputy Dan Dances
-2. $Q =$ Carl Cringes
-3. $R =$ Ronny Runs
+| $P~=~$Deputy Dan Dances
+| $Q~=~$Carl Cringes
+| $R~=~$Ronny Runs
 
 Once we have our scheme of abbreviation, we can translate into English by carrying out the following procedure.
 
@@ -281,30 +282,30 @@ Here are some examples of translations of formal sentences, using the scheme of
 abbreviation above.
 
 ####Ex. 1
-1. $Q\rightarrow R$
+1. $(Q\rightarrow R)$
 2. If $Q$, then $R$
 3. If Carl Cringes, then Ronny Runs
 
 ####Ex. 2
-#. $Q\rightarrow\neg R$
+#. $(Q\rightarrow\neg R)$
 #. If $Q$, then $\neg R$
 #. If $Q$, then it is not the case that $R$.
 #. If Carl Cringes, then it is not the case that Ronny Runs
 
 ####Ex. 3
-#. $\neg Q\rightarrow R$
+#. $(\neg Q\rightarrow R)$
 #. If $\neg Q$, then $R$
 #. If it is not the case that $Q$, then it is not the case that $R$
 #. If it is not the case that Carl Cringes, then Ronny Runs
 
 ####Ex. 4
 #. $\neg (Q\rightarrow R)$
-#. It s not the case that $(Q\rightarrow R)$
+#. It is not the case that $(Q\rightarrow R)$
 #. It is not the case that if $Q$, then $R$
 #. It is not the case that if Carl Cringes, then Ronny Runs
 
 ####Ex. 5
-#. $P\rightarrow (Q\rightarrow R)$
+#. $(P\rightarrow (Q\rightarrow R))$
 #. If $P$, then ($Q\rightarrow R)$
 #. If $P$, then if $Q$, then $R$
 #. If Deputy Dan Dances, then if Carl Cringes, then Ronny Runs
@@ -331,7 +332,8 @@ unexpected way. For example, consider the following sentence.
 
     Is it grammatical? Yes.<br>
 
-    What does it mean? Think---start with the noun phrase "the cat the rat bit".
+    What does it mean? Think---start with the noun phrase "the cat the rat
+    bit".
 
 
 1.  The word "if" functions as a flag to mark off the left sentence in
@@ -415,7 +417,8 @@ Cleaning up sentences can be a dangerous matter, though. This is because the
 transformations we apply when we clean up sentences can sometimes introduce
 ambiguity. 
 
-Here's an example. Consider the sentence "It is not the case that if Ronny Runs, then Carl Cringes", which we get from $\neg (R\rightarrow Q)$
+Here's an example. Consider the sentence "It is not the case that if Ronny
+Runs, then Carl Cringes", which we get from $\neg (R\rightarrow Q)$
 
 1. It is not the case that if Ronny Runs, then Carl Cringes
 2. Is not the case that on the condition that Ronny Runs, Carl Cringes
@@ -431,9 +434,9 @@ Runs, it is not the case that Carl Cringes", which we get from $(R\rightarrow\ne
 Notice that we get exactly the same sentence. Thus, in our attempt at a more
 elegant expression, we've lost some information. At least without looking at
 context and other things, there's no way of recovering which sentence "It is
-not the case that Carl Cringes on the condition that Ronny Runs" is
-a translation of. In cleaning up the style, we've obscured the logical
-structure of the sentence and introduced an ambiguity.
+not the case that Carl Cringes on the condition that Ronny Runs" is a
+translation of. By cleaning up the style, we've obscured the logical structure
+of the sentence and introduced an ambiguity.
 
 How we can transform sentences while preserving their meanings, and not
 introducing ambiguities is a big and hard problem, and one still studied by
@@ -489,12 +492,17 @@ a bit of intuition. But there's a good approximate algorithm to follow.
 <div class="algorithm">
 English To Symbols
 
-:   #.  Replace all the stylistic variations on "if ..., then" and "it is not the case that" with their "if ..., then" and "it is not the case that" equivalents.
+:   #.  Replace all the stylistic variations on "if ..., then" and "it is not
+        the case that" with their "if ..., then" and "it is not the case that"
+        equivalents.
     #.  Replace the English main connective with the appropriate symbol. If you are
-        replacing an "If... then", remember to wrap the two clauses you're replacing in
+        replacing an "If... then", remember to wrap the two clauses you're
+        replacing in
         parentheses, if they're not already wrapped. 
-    #.  If there are any sentences remaining that do not occur in the scheme of abbreviation, repeat this procedure on those sentences.
-    #.  If there are just sentences that occur in the scheme of abbreviation, replace them with the corresponding sentence letters.
+    #.  If there are any sentences remaining that do not occur in the scheme
+        of abbreviation, repeat this procedure on those sentences.
+    #.  If there are just sentences that occur in the scheme of abbreviation,
+        replace them with the corresponding sentence letters.
 </div>
 
 Some tips:
@@ -542,3 +550,40 @@ Here's how the sentences of the previous section look if we translate in the oth
 #. (If Deputy Dan Dances, then Carl Cringes $\rightarrow$ Ronny Runs)
 #. ((Deputy Dan Dances $\rightarrow$ Carl Cringes)$\rightarrow$ Ronny Runs)
 #. $((P\rightarrow Q)\rightarrow R)$
+
+#Problem Set 3
+
+Please use the following scheme of abbreviation to translate the attached
+English sentences into our formal language.
+
+| $P~=~$People want to know what's going on
+| $Q~=~$Questions will be raised
+| $R~=~$Randy's wrangling a deal
+| $S~=~$Somebody is going to get rich
+
+Press return to check your translation. If the sentence to be translated is
+replaced by the word "success!", then press submit to submit and save your
+answer.
+
+Remember, the keyboard shorthand for our logical symbols is as follows:
+
+ Connective           Keyboard Shorthand 
+------------         --------------------
+  $\land$            /\\
+  $\lor$             \\/
+  $\rightarrow$      -> 
+  $\leftrightarrow$  <->
+  $\neg$             ~
+
+```{.Translate .Prop}
+3.1 P : People want to know what's going on.
+3.2 P->Q : If people want to know what's going on, then questions will be raised.
+3.3 Q->P : Questions will be raised only if people want to know what's going on.
+3.4 (P -> Q) -> ~R : Given that questions will be raised if people want to know what's going on, Randy's not wrangling a deal.
+3.5 R -> (~Q ->S ) : If Randy's wrangling a deal, then provided that questions won't be raised, somebody is going to get rich.
+3.6 S -> R : Somebody is going to get rich only provided that Randy's wrangling a deal.
+3.7  R -> ~Q : Assuming that Randy's wrangling a deal, questions won't be raised.
+3.8 S -> (~R -> P) : In the case where somebody is going to get rich, if Randy's not wrangling a deal, then people want to know what's going on.
+3.9 ~Q -> S : Questions won't be raised only on the condition that somebody is going to get rich.
+3.10 ~(R->S) : It's not the case that if Randy's wrangling a deal, then somebody is going to get rich 
+```

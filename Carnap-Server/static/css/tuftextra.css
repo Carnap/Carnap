@@ -23,3 +23,13 @@ div.synchecker {
     margin-top: 5pt;
     border: solid 1pt #dddddd;
     }
+
+div.translate {
+    padding:10pt;
+    margin-top: 5pt;
+    border: solid 1pt #dddddd;
+}
+
+div.translate input {
+    width: 400pt;
+}
