@@ -108,8 +108,9 @@ toProofTree ded n = case ded !! (n - 1)  of
 --------------------------------------------------------
 
 parseInts :: Parsec String u [Int]
-parseInts = do ints <- sepBy (many1 digit) (string ",")
+parseInts = do ints <- many1 digit `sepBy` separator
                return $ map read ints
+    where separator = spaces *> optional (string ",") *> spaces 
 
 rline r = do rule <- spaces *> char ':' *> r 
              deps <- spaces *> parseInts
