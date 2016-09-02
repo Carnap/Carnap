@@ -1,7 +1,6 @@
 {-# LANGUAGE RankNTypes, FlexibleContexts, DeriveDataTypeable, CPP, JavaScriptFFI #-}
 module Lib
-    ( sendJSON, onEnter, clearInput, getListOfElementsByClass, tryParse, treeToElement, genericTreeToUl, treeToUl, listToUl, formToTree, leaves, adjustFirstMatching, decodeHtml
-    ) where
+    ( sendJSON, onEnter, clearInput, getListOfElementsByClass, tryParse, treeToElement, genericTreeToUl, treeToUl, listToUl, formToTree, leaves, adjustFirstMatching, decodeHtml, syncScroll) where
 
 import Data.Aeson
 import qualified Data.ByteString.Lazy as BSL
@@ -55,6 +54,19 @@ onEnter action = do kbe      <- event
                     id'      <- liftIO $ keyString kbe
                     if id == "Enter" || id' == "Enter" then do action else return ()
 
+
+--------------------------------------------------------
+--1.1.2 Common responsive behavior
+--------------------------------------------------------
+
+syncScroll e1 e2 = do cup1 <- catchup e1 e2
+                      cup2 <- catchup e2 e1
+                      addListener e1 scroll cup1 False
+                      addListener e2 scroll cup2 False
+    where catchup e1 e2 = newListener $ liftIO $ do st <- getScrollTop e1
+                                                    setScrollTop e2 st
+
+
 --------------------------------------------------------
 --1.2 DOM Manipulation
 --------------------------------------------------------
@@ -104,7 +116,7 @@ listToUl doc l = do elts <- mapM wrapIt l
                     (Just ul) <- createElement doc (Just "ul")
                     mapM_ (appendChild ul) elts
                     return ul
-    where wrapIt e = do (Just li) <- createElement doc (Just "ul")
+    where wrapIt e = do (Just li) <- createElement doc (Just "li")
                         setInnerHTML li (Just $ show e)
                         return (Just li)
 

@@ -30,12 +30,12 @@ main = runWebGUI $ \w ->
 
 getCheckers :: IsElement self => self -> IO [Maybe (Element, Element, [String])]
 getCheckers b = 
-        do lspans <- getListOfElementsByClass b "proofchecker"
-           mapM extractCheckers lspans
+        do ldivs <- getListOfElementsByClass b "proofchecker"
+           mapM extractCheckers ldivs
         where extractCheckers Nothing = return Nothing
-              extractCheckers (Just span) = 
-                do mi <- getFirstElementChild span
-                   cn <- getClassName span
+              extractCheckers (Just div) = 
+                do mi <- getFirstElementChild div
+                   cn <- getClassName div
                    case mi of
                        Just i -> 
                          do mo <- getNextElementSibling i
@@ -45,9 +45,17 @@ getCheckers b =
 
 activateChecker :: Document -> Maybe (Element, Element,[String]) -> IO ()
 activateChecker w (Just (i,o,classes)) = 
-        do echo <- newListener $ updateResults 
-                        (listToUl w . toDisplaySequencePropProof) o
+        do mfeedbackDiv@(Just fd) <- createElement w (Just "div")
+           mnumberDiv@(Just nd) <-createElement w (Just "div")
+           setAttribute fd "class" "proofFeedback"
+           setAttribute nd "class" "numbering"
+           appendChild o mnumberDiv
+           appendChild o mfeedbackDiv
+           echo <- newListener $ updateResults 
+                        (listToUl w . toDisplaySequencePropProof) fd
            addListener i keyUp echo False
+           setLinesTo w nd 5
+           syncScroll i o
 activateChecker _ Nothing  = return ()
 
 updateResults :: (IsElement e, IsElement e') => 
@@ -61,4 +69,11 @@ updateResults f o =
                             v' <- liftIO $ f v
                             appendChild o (Just v')
                             return ()
+
+setLinesTo w nd n = do setInnerHTML nd (Just "")
+                       linenos <- mapM toLineNo [1..n]
+                       mapM (appendChild nd . Just) linenos
+    where toLineNo m = do (Just lno) <- createElement w (Just "div")
+                          setInnerHTML lno (Just $ show m ++ ".")
+                          return lno
 
