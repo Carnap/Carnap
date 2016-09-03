@@ -79,23 +79,26 @@ toProofTree ded n = case ded !! (n - 1)  of
                    mapM (checkDep $ m + 1) deps 
                    deps' <- mapM (\x -> toProofTree ded x) deps
                    return $ Node (ProofLine n (SS $ liftToSequent f) r) deps'
-                where checkDep m m' = takeRange m' m >>= scan 
+                where --for scanning, we ignore the depth of the QED line
+                      checkDep m m' = takeRange m' m >>= scan . init
                       matchShow = let ded' = drop n ded in
                           case findIndex (qedAt d) ded' of
                               Nothing -> Left "Open subproof (no corresponding QED)"
                               Just m' -> isSubProof n (n + m' - 1)
                       isSubProof n m = let (h:t) = lineRange n m ded in
-                          case and (map (\x -> depth x < depth h) t) of
-                              False -> Left "Open subproof (no QED in this subproof)"
+                          case and (map (\x -> depth x > depth h) t) of
+                              False -> Left $ "Open subproof on lines" ++ show n ++ " to " ++ show m ++ " (no QED in this subproof)"
                               True -> Right (m + 1)
                       qedAt d (QedLine _ dpth _) = d == dpth
                       qedAt d _ = False
           (QedLine _ _ _) -> Left "A QED line cannot be cited as a justification" 
     where ln = length ded
+          --line h is accessible from the end of the chunk if everything in
+          --the chunk has depth greater than or equal to that of line h
           scan chunk@(h:_) =
               if and (map (\x -> depth h <= depth x) chunk)
                   then Right True
-                  else Left $ "head has depth" ++ (show $ depth h)
+                  else Left "It looks like you're citing a line which is not in your subproof. If you're not, you may need to tidy up your proof."
           takeRange m' n' = 
               if n' <= m' 
                       then Left "Dependency is later than assertion"
@@ -124,42 +127,42 @@ indent = do ws <- many $ char ' '
 --Testing
 --------------------------------------------------------
 
-parseIt s = case parse purePropFormulaParser "" s of
-              Right form -> SS $ liftToSequent form
-              _ -> error "boo"
-
-demoTree :: ProofTree PropLogic PurePropLexicon
-demoTree = Node (ProofLine 0 (parseIt "P_1") MP)
-                [ Node (ProofLine 0 (parseIt "P_2 -> P_1") MP)
-                    [ Node (ProofLine 0 (parseIt "P_3 -> (P_2 -> P_1)") AX) []
-                    , Node (ProofLine 0 (parseIt "P_3") AX) []
-                    ]
-                , Node (ProofLine 0 (parseIt "P_2") AX) [] 
-                ]
-
-demoPropProof = "P_1 :AX\nP_1 -> P_2 :AX\nP_2 :MP 1,2\nShow: P_2\n  P_3 :AX\n:MP 1,2"
-
-
 parsePropLogic :: Parsec String u PropLogic
-parsePropLogic = do r <- string "AX" <|> string "MP"
+parsePropLogic = do r <- choice (map (try . string) ["AX","PR","MP","MT","DD","DNE","DNI"])
                     case r of
-                        "AX" -> return AX
-                        "MP" -> return MP
+                        "AX"  -> return AX
+                        "PR"  -> return AX
+                        "MP"  -> return MP
+                        "MT"  -> return MT
+                        "DD"  -> return DD
+                        "DNE" -> return DNE
+                        "DNI" -> return DNI
 
 parsePropProof :: String -> [Either ParseError (DeductionLine PropLogic PurePropLexicon (Form Bool))]
 parsePropProof = toDeduction parsePropLogic prePurePropFormulaParser
 
-toDisplaySequencePropProof :: String -> [Either ProofErrorMessage (ClassicalSequentOver PurePropLexicon Sequent)]
+toDisplaySequencePropProof :: String -> 
+    (Maybe (ClassicalSequentOver PurePropLexicon Sequent),[Either ProofErrorMessage (ClassicalSequentOver PurePropLexicon Sequent)])
 toDisplaySequencePropProof s = if isParsed 
-                                   then map (processLine(rights ded)) [1 .. length ded]
-                                   else map handle ded
+                                   then let feedback = map (processLine(rights ded)) [1 .. length ded] in
+                                       (lastTopInd >>= fromFeedback feedback , feedback )
+                                   else (Nothing, map handle ded)
     where ded = parsePropProof s
           isParsed = null $ lefts ded 
           handle (Left e) = Left $ "parsing error:" ++ show e
           handle (Right _) = Left ""
-          processLine ded n = toProofTree ded n >>= firstLeft . reduceProofTree
+          isTop x = case x of
+            (Right (AssertLine _ _ 0 _)) -> True
+            (Right (ShowLine _ 0)) -> True
+            _ -> False
+          lastTopInd = do i <- findIndex isTop (reverse ded)
+                          return $ length ded - i
+          fromFeedback fb n = case fb !! n of
+            Left _ -> Nothing
+            Right s -> Just s
+          processLine ded n = case ded !! (n - 1) of
+            --special case to catch QedLines not being cited in justifications
+            (QedLine _ _ _) -> Left ""
+            _ -> toProofTree ded n >>= firstLeft . reduceProofTree
           firstLeft (Left (x:xs)) = Left x
           firstLeft (Right x) = Right x
-
-
-                   

@@ -18,7 +18,7 @@
     resize: none;
 }
 
-.proofchecker > div{
+.proofchecker .output{
     position: absolute;
     padding:10pt;
     margin:5pt;
@@ -33,14 +33,31 @@
 
 .proofFeedback {
     position:absolute;
-    left:100pt;
+    left:120pt;
     top:10pt;
+    pointer-events: auto;
+}
+
+.proofFeedback div span {
+    visibility:hidden;
+    position:absolute;
+    width:200pt;
+    left:20pt;
+    border:1pt solid black;
+    padding:5pt;
+    z-index:1;
+}
+
+.proofFeedback div:hover span {
+    visibility:visible;
 }
 
 .proofFeedback ul {
+    list-style-type:none;
     padding:0pt;
     margin:0pt;
 }
+
 
 .proofLines {
     position:absolute;
@@ -55,8 +72,9 @@
 </head>
   <body>
       <div class="proofchecker">
+          <div>Goal goes here</div>
           <textarea></textarea>
-          <div></div>
+          <div class="output"></div>
       </div>
   </body>
   <script language="javascript" src="../.stack-work/dist/x86_64-linux/Cabal-1.22.8.0_ghcjs/build/Proof-Check/Proof-Check.jsexe/runmain.js" defer></script>

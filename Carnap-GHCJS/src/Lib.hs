@@ -1,6 +1,6 @@
 {-# LANGUAGE RankNTypes, FlexibleContexts, DeriveDataTypeable, CPP, JavaScriptFFI #-}
 module Lib
-    ( sendJSON, onEnter, clearInput, getListOfElementsByClass, tryParse, treeToElement, genericTreeToUl, treeToUl, listToUl, formToTree, leaves, adjustFirstMatching, decodeHtml, syncScroll) where
+    ( sendJSON, onEnter, clearInput, getListOfElementsByClass, tryParse, treeToElement, genericTreeToUl, treeToUl, genericListToUl, listToUl, formToTree, leaves, adjustFirstMatching, decodeHtml, syncScroll) where
 
 import Data.Aeson
 import qualified Data.ByteString.Lazy as BSL
@@ -107,18 +107,21 @@ genericTreeToUl sf w t = treeToElement itemize listify t
                             appendChild x o
                             return ()
 
-
 treeToUl :: Show a => Document -> Tree (a, String) -> IO Element
 treeToUl = genericTreeToUl show
 
-listToUl :: Show a => Document -> [a] -> IO Element
-listToUl doc l = do elts <- mapM wrapIt l
-                    (Just ul) <- createElement doc (Just "ul")
-                    mapM_ (appendChild ul) elts
-                    return ul
+genericListToUl :: (a -> String) -> Document -> [a] -> IO Element
+genericListToUl f doc l = 
+        do elts <- mapM wrapIt l
+           (Just ul) <- createElement doc (Just "ul")
+           mapM_ (appendChild ul) elts
+           return ul
     where wrapIt e = do (Just li) <- createElement doc (Just "li")
-                        setInnerHTML li (Just $ show e)
+                        setInnerHTML li (Just $ f e)
                         return (Just li)
+
+listToUl :: Show a => Document -> [a] -> IO Element
+listToUl = genericListToUl show
 
 --------------------------------------------------------
 --1.3 Encodings

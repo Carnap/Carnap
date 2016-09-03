@@ -37,8 +37,8 @@ data Cedent :: k -> * -> * where
 instance Schematizable (Cedent a) where
         schematize NilAntecedent xs = "⊤"
         schematize NilSuccedent xs = "⊥"
-        schematize SingleAntecedent (x:xs) = "|" ++ x ++ "|"
-        schematize SingleSuccedent (x:xs) = "|" ++ x ++ "|"
+        schematize SingleAntecedent (x:xs) = x
+        schematize SingleSuccedent (x:xs) = x 
 
 instance FirstOrderLex (Cedent a)
 
@@ -80,9 +80,9 @@ instance UniformlyEq (Comma a) where
 
 instance Schematizable (Comma a) where
         schematize AnteComma (x:"⊤":[]) = x
-        schematize AnteComma (x:y:[])  = x ++ ";" ++ y
+        schematize AnteComma (x:y:[])  = x ++ "," ++ y
         schematize SuccComma (x:"⊥":[]) = x
-        schematize SuccComma (x:y:[])  = x ++ ";" ++ y
+        schematize SuccComma (x:y:[])  = x ++ "," ++ y
 
 instance FirstOrderLex (Comma a)
 

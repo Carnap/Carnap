@@ -61,17 +61,27 @@ reduceProofTree (Node (ProofLine no cont rule) ts) =
            firstRight $ seqFromNode rule prems cont
                ---TODO: label errors with lineNo
 
-data PropLogic = MP | AX
+data PropLogic = MP | MT | DNE | DNI | DD | AX
                deriving Show
 
 instance Inference PropLogic PurePropLexicon where
     premisesOf MP = [ GammaV 1 :|-: SS (SeqPhi 1 :->-: SeqPhi 2)
                     , GammaV 2 :|-: SS (SeqPhi 1)
                     ]
+    premisesOf MT = [ GammaV 1 :|-: SS (SeqPhi 1 :->-: SeqPhi 2)
+                    , GammaV 2 :|-: SS (SeqNeg $ SeqPhi 2)
+                    ]
     premisesOf AX = []
+    premisesOf DD  = [ GammaV 1 :|-: SS (SeqPhi 1) ]
+    premisesOf DNE = [ GammaV 1 :|-: SS (SeqNeg $ SeqNeg $ SeqPhi 1) ]
+    premisesOf DNI = [ GammaV 1 :|-: SS (SeqPhi 1) ]
 
     conclusionOf MP = (GammaV 1 :+: GammaV 2) :|-: SS (SeqPhi 2)
+    conclusionOf MT = (GammaV 1 :+: GammaV 2) :|-: SS (SeqNeg $ SeqPhi 1)
     conclusionOf AX = SA (SeqPhi 1) :|-: SS (SeqPhi 1)
+    conclusionOf DD =  GammaV 1 :|-: SS (SeqPhi 1) 
+    conclusionOf DNE =  GammaV 1 :|-: SS (SeqPhi 1) 
+    conclusionOf DNI =  GammaV 1 :|-: SS (SeqNeg $ SeqNeg $ SeqPhi 1) 
 
 
 firstRight :: [Either a [b]] -> Either [a] b
