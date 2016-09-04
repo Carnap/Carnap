@@ -1,6 +1,11 @@
 module Main where
 
+import Carnap.Calculi.NaturalDeduction.Syntax (seqUnify)
 import Carnap.Calculi.NaturalDeduction.Parser (toDisplaySequencePropProof)
+import Carnap.Languages.ClassicalSequent.Parser (propSeqParser)
+import Carnap.GHCJS.SharedTypes
+import Text.Parsec
+import Data.IORef
 import Lib
 import GHCJS.DOM
 import GHCJS.DOM.Element
@@ -11,7 +16,7 @@ import GHCJS.DOM.Element
 --version---but it's the other way around in the FFI version. This appears
 --to be cleaner in 3.0, but there's no documentation for that at all, yet.
 import GHCJS.DOM.Types
-import GHCJS.DOM.HTMLTextAreaElement (HTMLTextAreaElement, getValue)
+import GHCJS.DOM.HTMLTextAreaElement (HTMLTextAreaElement, getValue, castToHTMLTextAreaElement)
 import GHCJS.DOM.Document (Document,createElement, getBody, getDefaultView)
 import GHCJS.DOM.Window (alert)
 import GHCJS.DOM.Node (appendChild, getParentNode, insertBefore)
@@ -36,6 +41,7 @@ getCheckers b =
               extractCheckers (Just div) = 
                 do mg <- getFirstElementChild div
                    cn <- getClassName div
+                   -- XXX: very ugly. Clean this code
                    case mg of
                        Nothing -> return Nothing
                        Just g -> 
@@ -49,24 +55,49 @@ getCheckers b =
                                            (Just o) -> return $ Just (i,o,g,words cn)
 
 activateChecker :: Document -> Maybe (Element, Element, Element, [String]) -> IO ()
+activateChecker _ Nothing  = return ()
 activateChecker w (Just (i,o,g, classes)) = 
-        do mfeedbackDiv@(Just fd) <- createElement w (Just "div")
-           mnumberDiv@(Just nd) <-createElement w (Just "div")
-           setAttribute fd "class" "proofFeedback"
-           setAttribute nd "class" "numbering"
-           appendChild o mnumberDiv
-           appendChild o mfeedbackDiv
-           echo <- newListener $ updateResults 
-                        (genericListToUl wrap w . snd . toDisplaySequencePropProof) fd
-           lineupd <- newListener $ onEnter $ updateLines w nd
-           addListener i keyUp echo False
-           addListener i keyUp lineupd False
-           setLinesTo w nd 1
-           syncScroll i o
+        do (Just gs) <- getInnerHTML g 
+           case parse seqAndLabel "" (decodeHtml gs) of
+               Left e -> setInnerHTML g (Just "Couldn't Parse Goal")
+               Right (l,s) -> do
+                   mfeedbackDiv@(Just fd) <- createElement w (Just "div")
+                   mnumberDiv@(Just nd) <-createElement w (Just "div")
+                   mbt@(Just bt) <- createElement w (Just "button")
+                   ref <- newIORef False
+                   setInnerHTML g (Just $ show s)
+                   setAttribute fd "class" "proofFeedback"
+                   setAttribute nd "class" "numbering"
+                   setInnerHTML bt (Just "submit solution")         
+                   mpar@(Just par) <- getParentNode o               
+                   appendChild o mnumberDiv
+                   appendChild o mfeedbackDiv
+                   appendChild par mbt
+                   echo <- newListener $ genericUpdateResults2 (updateFunction ref s) g fd
+                   lineupd <- newListener $ onEnter $ updateLines w nd
+                   (Just w') <- getDefaultView w                    
+                   submit <- newListener $ trySubmit ref w' l s i
+                   addListener i keyUp echo False
+                   addListener i keyUp lineupd False
+                   addListener bt click submit False                
+                   setLinesTo w nd 1
+                   syncScroll i o
     where wrap (Left "") ="<div>&nbsp;</div>"
           wrap (Left s) = "<div>✗<span>" ++ s ++ "</span></div>"
           wrap (Right seq) = "<div>+<span>" ++ show seq ++ "</span></div>"
-activateChecker _ Nothing  = return ()
+          updateFunction ref' s' v (g',fd') = do let (mseq, ds) = toDisplaySequencePropProof v
+                                                 ul <- genericListToUl wrap w ds
+                                                 setInnerHTML fd' (Just "")
+                                                 appendChild fd' (Just ul)
+                                                 case mseq of
+                                                     Nothing -> do setAttribute g' "class" "goal"
+                                                                   writeIORef ref' False
+                                                     (Just seq) ->  if seqUnify s' seq
+                                                           then do setAttribute g' "class" "goal success"
+                                                                   writeIORef ref' True
+                                                           else do setAttribute g' "class" "goal"
+                                                                   writeIORef ref' False
+                                                 return ()
 
 -- XXX: this should be a library function
 updateResults :: (IsElement e, IsElement e') => 
@@ -83,17 +114,22 @@ updateResults f o =
 
 updateResults2 :: (IsElement e, IsElement e', IsElement e'', IsElement e''') => 
     (String -> IO (e'', e''')) -> e -> e' -> EventM HTMLTextAreaElement KeyboardEvent ()
-updateResults2 f o o' = 
+updateResults2 f o o' = genericUpdateResults2 (\v (e1, e2) -> do
+    liftIO $ setInnerHTML e1 (Just "") 
+    liftIO $ setInnerHTML e2 (Just "")                            
+    (v',v'') <- liftIO $ f v                                      
+    appendChild o (Just v')                                       
+    appendChild o' (Just v'')                                     
+    return ()) o o'
+
+genericUpdateResults2 :: (IsElement e, IsElement e') => 
+    (String -> (e, e') -> IO ()) -> e -> e' -> EventM HTMLTextAreaElement KeyboardEvent ()
+genericUpdateResults2 f o o' = 
         do (Just t) <- target :: EventM HTMLTextAreaElement KeyboardEvent (Maybe HTMLTextAreaElement)
            mv <- getValue t
            case mv of 
                Nothing -> return ()
-               Just v -> do liftIO $ setInnerHTML o (Just "")
-                            liftIO $ setInnerHTML o' (Just "")
-                            (v',v'') <- liftIO $ f v
-                            appendChild o (Just v')
-                            appendChild o' (Just v'')
-                            return ()
+               Just v -> liftIO $ f v (o, o')
 
 updateLines :: (IsElement e) => Document -> e -> EventM HTMLTextAreaElement KeyboardEvent ()
 updateLines w nd = onEnter $ do (Just t) <- target :: EventM HTMLTextAreaElement KeyboardEvent (Maybe HTMLTextAreaElement)
@@ -109,3 +145,17 @@ setLinesTo w nd n = do setInnerHTML nd (Just "")
                           setInnerHTML lno (Just $ show m ++ ".")
                           return lno
 
+trySubmit ref w l s i = do isFinished <- liftIO $ readIORef ref
+                           if isFinished
+                             then do (Just v) <- getValue (castToHTMLTextAreaElement i)
+                                     liftIO $ sendJSON (SubmitDerivation (l ++ ":" ++ show s) v) loginCheck error
+                             else alert w "not yet finished"
+    where loginCheck c | c == "No User" = alert w "You need to log in before you can submit anything"
+                       | c == "Clash"   = alert w "it appears you've already successfully submitted this problem"
+                       | otherwise      = alert w $ "Submitted Derivation for Exercise " ++ l
+          error c = alert w ("Something has gone wrong. Here's the error: " ++ c)
+
+seqAndLabel =  do label <- many (digit <|> char '.')
+                  spaces
+                  s <- propSeqParser
+                  return (label,s)

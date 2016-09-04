@@ -59,7 +59,7 @@ reduceProofTree :: (Inference r lang, MaybeMonadVar (ClassicalSequentOver lang) 
 reduceProofTree (Node (ProofLine no cont rule) ts) =  
         do prems <- mapM reduceProofTree ts
            firstRight $ seqFromNode rule prems cont
-               ---TODO: label errors with lineNo
+               -- TODO: label errors with lineNo
 
 data PropLogic = MP | MT | DNE | DNI | DD | AX
                deriving Show
@@ -83,7 +83,6 @@ instance Inference PropLogic PurePropLexicon where
     conclusionOf DNE =  GammaV 1 :|-: SS (SeqPhi 1) 
     conclusionOf DNI =  GammaV 1 :|-: SS (SeqNeg $ SeqNeg $ SeqPhi 1) 
 
-
 firstRight :: [Either a [b]] -> Either [a] b
 firstRight xs = case filter isRight xs of
                     [] -> Left $ map (\(Left x) -> x) xs
@@ -99,7 +98,7 @@ seqFromNode :: (Inference r lang, MaybeMonadVar (ClassicalSequentOver lang) (Sta
     r -> [ClassicalSequentOver lang Sequent] -> ClassicalSequentOver lang Succedent 
       -> [Either ProofErrorMessage [ClassicalSequentOver lang Sequent]]
 seqFromNode rule prems conc = do rprems <- permutations (premisesOf rule)
-                                 --XXX:there's premumably a nicer solution
+                                 -- XXX:there's premumably a nicer solution
                                  --with monad transfomers
                                  return $ do if length rprems /= length prems 
                                                  then Left "Wrong number of premises"
@@ -116,6 +115,17 @@ seqFromNode rule prems conc = do rprems <- permutations (premisesOf rule)
                                                     (map lhs subbedrule) 
                                                     (map lhs prems))
                                              return $ map (\x -> applySub x subbedconc) acuisubs
+
+--A simple check of whether two sequents can be unified
+seqUnify s1 s2 = case check of
+                     Left _ -> False
+                     Right [] -> False
+                     Right _ -> True
+            where check = do fosub <- fosolve [rhs s1 :=: rhs s2]
+                             acuisolve [lhs (applySub fosub s1) :=: lhs (applySub fosub s2)]
+
+
+                 
 
 fosolve :: (FirstOrder (ClassicalSequentOver lang), MonadVar (ClassicalSequentOver lang) (State Int)) =>  
     [Equation (ClassicalSequentOver lang)] -> Either ProofErrorMessage [Equation (ClassicalSequentOver lang)]

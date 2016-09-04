@@ -23,8 +23,12 @@ seqFormulaParser :: (Sequentable f, ParsableLex (Form Bool) f) =>
 seqFormulaParser = do (lhs,rhs) <- splitSequent --split on turnstile and commas
                       let lhs'  = map (SA . liftToSequent) lhs
                       let rhs'  = map (SS . liftToSequent) rhs
-                      let lhs'' = foldl (:+:) Top lhs'
-                      let rhs'' = foldl (:-:) Bot rhs'
+                      let lhs'' = case lhs' of
+                            [] -> Top
+                            x:xs -> foldl (:+:) x xs
+                      let rhs'' = case rhs' of
+                            [] -> Bot
+                            x:xs -> foldl (:-:) x xs
                       return $ lhs'' :|-: rhs''
 
 splitSequent :: (ParsableLex (Form Bool) f) =>

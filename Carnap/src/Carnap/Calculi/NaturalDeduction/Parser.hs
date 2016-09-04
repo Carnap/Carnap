@@ -157,7 +157,7 @@ toDisplaySequencePropProof s = if isParsed
             _ -> False
           lastTopInd = do i <- findIndex isTop (reverse ded)
                           return $ length ded - i
-          fromFeedback fb n = case fb !! n of
+          fromFeedback fb n = case fb !! (n - 1) of
             Left _ -> Nothing
             Right s -> Just s
           processLine ded n = case ded !! (n - 1) of

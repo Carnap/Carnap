@@ -82,6 +82,7 @@ tryTrans o ref w f = onEnter $ do (Just t) <- target :: EventM HTMLInputElement 
                                                 setInnerHTML o (Just "success!")
                         | otherwise = message "Not quite. Try again!"
 
+-- XXX: and here.
 trySubmit ref w l f = do isFinished <- liftIO $ readIORef ref
                          if isFinished
                            then liftIO $ sendJSON (SubmitTranslation (l ++ ":" ++ show f)) loginCheck error

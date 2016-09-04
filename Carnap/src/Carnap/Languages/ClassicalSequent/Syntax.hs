@@ -199,6 +199,9 @@ pattern SeqNeg x          = SeqNot :!$: x
 data PropSeqLabel = PropSeqFO | PropSeqACUI
         deriving (Eq, Ord, Show)
 
+instance Eq (PropSequentCalc a) where
+        (==) = (=*)
+
 instance Combineable PropSequentCalc PropSeqLabel where
 
     getLabel Top               = PropSeqACUI
