@@ -11,6 +11,7 @@ getUserR :: Text -> Handler Html
 getUserR userId = do
     synsubs <- yourSubs synPair userId
     transsubs <- yourSubs transPair userId
+    dersubs <- yourSubs derPair userId
     defaultLayout $ do
         setTitle "Welcome To Your Homepage!"
         [whamlet|
@@ -22,6 +23,8 @@ getUserR userId = do
                 #{exPairToTable synsubs}
                 <h4> Translation
                 #{exPairToTable transsubs}
+                <h4> Derivation
+                #{exPairToTable dersubs}
                 <div.row>
                     <div.col-md-9 style="padding-right:30pt">
                         <h3> Due Dates
@@ -104,6 +107,8 @@ yourSubs pair userId = do subs <- runDB $ selectList [] []
 synPair (SyntaxCheckSubmission prob time pu)  = (Just pu, prob,time)
 
 transPair (TranslationSubmission prob time pu)  = (Just pu, prob,time)
+
+derPair (DerivationSubmission prob _ time pu) = (Just pu, prob, time)
 
 clean :: (Maybe (Key User), Text, Text) -> Handler (Text,Text,Text)
 clean (Nothing, s,s')  = return ("annonyous", s,s')

@@ -80,9 +80,9 @@ instance UniformlyEq (Comma a) where
 
 instance Schematizable (Comma a) where
         schematize AnteComma (x:"⊤":[]) = x
-        schematize AnteComma (x:y:[])  = x ++ "," ++ y
+        schematize AnteComma (x:y:[])  = x ++ ", " ++ y
         schematize SuccComma (x:"⊥":[]) = x
-        schematize SuccComma (x:y:[])  = x ++ "," ++ y
+        schematize SuccComma (x:y:[])  = x ++ ", " ++ y
 
 instance FirstOrderLex (Comma a)
 
