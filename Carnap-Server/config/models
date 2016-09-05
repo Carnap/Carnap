@@ -23,5 +23,11 @@ TranslationSubmission
     time Text
     userId UserId 
     UniqueTranslationP problem userId
+DerivationSubmission
+    problem Text
+    derivation Text
+    time Text
+    userId UserId 
+    UniqueDerivationP problem userId
 
  -- By default this file is used in Model.hs (which is imported by Foundation.hs)

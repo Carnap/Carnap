@@ -1,35 +1,116 @@
-div.algorithm {
+.algorithm {
     background: #dfffff;
     padding: 1pt 1pt 15pt 15pt ;
 }
 
-div.tree {
+.tree {
     font-size:1.4rem;
     padding:10pt;
     overflow:auto;
     min-width: 600pt;
 }
 
-div.tree > ul { width:100%; }
+.tree > ul { width:100%; }
 
-div.tree > ul > li { width:100% !important; }
+.tree > ul > li { width:100% !important; }
 
-div.tree ul li { width:50%; }
+.tree ul li { width:50%; }
 
-div.tree ul li:only-child { width:100%; }
+.tree ul li:only-child { width:100%; }
 
-div.synchecker {
+.synchecker {
     padding:10pt;
     margin-top: 5pt;
     border: solid 1pt #dddddd;
     }
 
-div.translate {
+.translate {
     padding:10pt;
     margin-top: 5pt;
     border: solid 1pt #dddddd;
 }
 
-div.translate input {
+.translate input {
     width: 400pt;
+}
+
+/* This is what will need to be the locus of responsive resizing */
+.proofchecker {
+    position:relative;
+    width:200pt;
+    height:110pt;
+    margin-bottom:50pt;
+}
+
+.proofchecker > textarea {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    font-size:10pt;
+    padding:14pt;
+    padding-left:30pt;
+    resize: none;
+}
+
+.proofchecker > button {
+    position: relative;
+    top:110pt;
+}
+
+.proofchecker .output{
+    position: absolute;
+    width:400pt;
+    height:100%;
+    padding:14pt;
+    font-size:10pt;
+    pointer-events: none;
+    font-family: monospace;
+    overflow:hidden;
+}
+
+.proofFeedback {
+    position:absolute;
+    right:210pt;
+    top:13pt;
+    pointer-events: auto;
+}
+
+.proofFeedback div span {
+    visibility:hidden;
+    position:absolute;
+    background:white;
+    width:180pt;
+    left:20pt;
+    top:-5pt;
+    border:1pt solid black;
+    padding:5pt;
+    z-index:1;
+}
+
+.proofFeedback div:hover span {
+    visibility:visible;
+}
+
+.proofFeedback ul {
+    list-style-type:none;
+    padding:0pt;
+    margin:0pt;
+    font-size:10pt;
+}
+
+.proofFeedback li {
+    padding:0pt;
+}
+
+.proofLines {
+    position:absolute;
+}
+
+.proofchecker .success {
+    background: #CCFFCC;
+}
+
+.proofchecker .goal {
+    padding:5pt;
+    margin:5pt;
 }

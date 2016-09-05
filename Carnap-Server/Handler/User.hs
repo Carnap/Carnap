@@ -28,7 +28,7 @@ getUserR userId = do
                         #{dueDateTable}
                     <div.col-md-3>
                         <h3> Total Points Earned
-                        <span style="font-size:56pt; color:gray; padding-left:20pt"> #{totalScore (synsubs ++ transsubs)}/100
+                        <span style="font-size:56pt; color:gray; padding-left:20pt"> #{totalScore (synsubs ++ transsubs)}/150
                 <div>
                 <a href=@{AuthR LogoutR}>
                     Logout

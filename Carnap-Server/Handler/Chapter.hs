@@ -4,6 +4,7 @@ import Import
 import Yesod.Markdown
 import Filter.Sidenotes
 import Filter.SynCheckers
+import Filter.ProofCheckers
 import Filter.Translate
 import Filter.Diagrams
 import Text.Pandoc.Walk (walkM, walk)
@@ -37,10 +38,9 @@ fileToHtml path = do md <- markdownFromFile path
                          Left e -> return $ Left e
 
 runFilters = let walkNotes y = evalState (walkM makeSideNotes y) 0
-                 walkCheckers y = walk makeSynCheckers y
-                 walkTranslate y = walk makeTranslate y
+                 walkProblems y = walk (makeSynCheckers . makeProofChecker . makeTranslate ) y
                  walkDiagrams y = evalStateT (walkM makeDiagrams y) []
-                   in walkDiagrams . walkNotes . walkCheckers . walkTranslate
+                   in walkDiagrams . walkNotes . walkProblems
 
 -- TODO: get some info about which ghcjs widgets are used, load those, then
     -- load the page, then preload the rest

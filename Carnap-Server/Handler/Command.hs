@@ -15,20 +15,20 @@ postCommandR = do
            Nothing -> returnJson ("No User" :: String)
            Just u  -> case cmd of
                 EchoBack (s,b) -> returnJson (reverse s)
-                SubmitSyntaxCheck f -> do success <- submit SyntaxCheckSubmission f u
-                                          if success 
-                                             then returnJson ("submitted!" :: String)
-                                             else returnJson ("Clash" :: String)
-                SubmitTranslation f -> do success <- submit TranslationSubmission f u
-                                          if success 
-                                             then returnJson ("submitted!" :: String)
-                                             else returnJson ("Clash" :: String)
-
+                SubmitSyntaxCheck f -> submit SyntaxCheckSubmission f u >>= afterInsert
+                SubmitTranslation f -> submit TranslationSubmission f u >>= afterInsert
+                SubmitDerivation s d -> do time <- liftIO getCurrentTime               
+                                           let sub = DerivationSubmission (pack s) (pack d) (pack $ show time) u 
+                                           tryInsert sub >>= afterInsert
 
 submit typ f u = do time <- liftIO getCurrentTime
                     let sub = typ (pack f) (pack $ show time) u
-                    runDB $ do munique <- checkUnique sub
-                               case munique of 
-                                    (Just _) -> return False
-                                    Nothing  -> do insert sub
-                                                   return True
+                    tryInsert sub
+
+tryInsert sub = runDB $ do munique <- checkUnique sub       
+                           case munique of                  
+                                (Just _) -> return False    
+                                Nothing  -> do insert sub   
+                                               return True
+
+afterInsert success = if success then returnJson ("submitted!" :: String) else returnJson ("Clash" :: String)
