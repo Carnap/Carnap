@@ -15,14 +15,16 @@ import Carnap.Languages.PurePropositional.Parser
 import Carnap.Calculi.NaturalDeduction.Syntax
 import Text.Parsec
 
-toDeduction :: Parsec String () r -> Parsec String () (FixLang lex a) -> String 
+toDeduction :: Parsec String () [r] -> Parsec String () (FixLang lex a) -> String 
     -> [Either ParseError (DeductionLine r lex a)]
 toDeduction r f = map (parse (parseLine r f) "") . lines
+
+type MultiRule r = [r]
 
 data DeductionLine r lex a where
         AssertLine :: 
             { asserted :: FixLang lex a
-            , assertRule :: r
+            , assertRule :: [r]
             , assertDepth :: Int
             , assertDependencies :: [Int]
             } -> DeductionLine r lex a
@@ -31,7 +33,7 @@ data DeductionLine r lex a where
             , showDepth :: Int
             } -> DeductionLine r lex a
         QedLine :: 
-            { closureRule :: r
+            { closureRule :: [r]
             , closureDepth :: Int
             , closureDependencies :: [Int]
             } -> DeductionLine r lex a
@@ -41,12 +43,12 @@ depth (ShowLine _ dpth) = dpth
 depth (QedLine _ dpth _) = dpth
 
 parseLine :: 
-    Parsec String u r -> Parsec String u (FixLang lex a) -> Parsec String u (DeductionLine r lex a)
+    Parsec String u [r] -> Parsec String u (FixLang lex a) -> Parsec String u (DeductionLine r lex a)
 parseLine r f = try (parseAssertLine r f) 
                 <|> try (parseShowLine f) 
                 <|> try (parseQedLine r)
 
-parseAssertLine :: Parsec String u r -> Parsec String u (FixLang lex a) -> Parsec String u (DeductionLine r lex a)
+parseAssertLine :: Parsec String u [r] -> Parsec String u (FixLang lex a) -> Parsec String u (DeductionLine r lex a)
 parseAssertLine r f = do dpth  <- indent
                          phi <- f
                          (rule,deps) <- rline r
@@ -59,7 +61,7 @@ parseShowLine f = do dpth <- indent
                      phi <- f
                      return $ ShowLine phi dpth
  
-parseQedLine :: Parsec String u r -> Parsec String u (DeductionLine r lex a)
+parseQedLine :: Parsec String u [r] -> Parsec String u (DeductionLine r lex a)
 parseQedLine r = do dpth <- indent 
                     (rule, deps) <- rline r
                     return $ QedLine rule dpth deps
@@ -127,16 +129,19 @@ indent = do ws <- many $ char ' '
 --Testing
 --------------------------------------------------------
 
-parsePropLogic :: Parsec String u PropLogic
-parsePropLogic = do r <- choice (map (try . string) ["AX","PR","MP","MT","DD","DNE","DNI"])
+parsePropLogic :: Parsec String u [PropLogic]
+parsePropLogic = do r <- choice (map (try . string) ["AX","PR","MP","MT","DD","DNE","DNI", "DN", "CD", "ID"])
                     case r of
-                        "AX"  -> return AX
-                        "PR"  -> return AX
-                        "MP"  -> return MP
-                        "MT"  -> return MT
-                        "DD"  -> return DD
-                        "DNE" -> return DNE
-                        "DNI" -> return DNI
+                        "AX"  -> return [AX]
+                        "PR"  -> return [AX]
+                        "MP"  -> return [MP]
+                        "MT"  -> return [MT]
+                        "DD"  -> return [DD]
+                        "DNE" -> return [DNE]
+                        "DNI" -> return [DNI]
+                        "DN"  -> return [DNE,DNI]
+                        "CD"  -> return [CP1,CP2]
+                        "ID"  -> return [ID1,ID2,ID3]
 
 parsePropProof :: String -> [Either ParseError (DeductionLine PropLogic PurePropLexicon (Form Bool))]
 parsePropProof = toDeduction parsePropLogic prePurePropFormulaParser

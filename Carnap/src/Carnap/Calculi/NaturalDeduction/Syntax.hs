@@ -30,7 +30,7 @@ data ProofLine r lex where
        ProofLine :: Inference r lex => 
             { lineNo  :: Int 
             , content :: ClassicalSequentOver lex Succedent
-            , rule    :: r } -> ProofLine r lex
+            , rule    :: [r] } -> ProofLine r lex
 
 type ProofTree r lex = Tree (ProofLine r lex)
 
@@ -61,27 +61,43 @@ reduceProofTree (Node (ProofLine no cont rule) ts) =
            firstRight $ seqFromNode rule prems cont
                -- TODO: label errors with lineNo
 
-data PropLogic = MP | MT | DNE | DNI | DD | AX
+data PropLogic = MP | MT | DNE | DNI | DD | AX | CP1 | CP2 | ID1 | ID2 | ID3
                deriving Show
 
 instance Inference PropLogic PurePropLexicon where
-    premisesOf MP = [ GammaV 1 :|-: SS (SeqPhi 1 :->-: SeqPhi 2)
-                    , GammaV 2 :|-: SS (SeqPhi 1)
-                    ]
-    premisesOf MT = [ GammaV 1 :|-: SS (SeqPhi 1 :->-: SeqPhi 2)
-                    , GammaV 2 :|-: SS (SeqNeg $ SeqPhi 2)
-                    ]
-    premisesOf AX = []
+    premisesOf MP  = [ GammaV 1 :|-: SS (SeqPhi 1 :->-: SeqPhi 2)
+                     , GammaV 2 :|-: SS (SeqPhi 1)
+                     ]
+    premisesOf MT  = [ GammaV 1 :|-: SS (SeqPhi 1 :->-: SeqPhi 2)
+                     , GammaV 2 :|-: SS (SeqNeg $ SeqPhi 2)
+                     ]
+    premisesOf AX  = []
     premisesOf DD  = [ GammaV 1 :|-: SS (SeqPhi 1) ]
     premisesOf DNE = [ GammaV 1 :|-: SS (SeqNeg $ SeqNeg $ SeqPhi 1) ]
     premisesOf DNI = [ GammaV 1 :|-: SS (SeqPhi 1) ]
+    premisesOf CP1 = [ GammaV 1 :+: SA (SeqPhi 1) :|-: SS (SeqPhi 2) ]
+    premisesOf CP2 = [ GammaV 1 :|-: SS (SeqPhi 2) ]
+    premisesOf ID1 = [ GammaV 1 :+: SA (SeqPhi 1) :|-: SS (SeqPhi 2) 
+                     , GammaV 2 :|-: SS (SeqNeg $ SeqPhi 2)
+                     ]
+    premisesOf ID2 = [ GammaV 1  :|-: SS (SeqPhi 2) 
+                     , GammaV 2 :+: SA (SeqPhi 1) :|-: SS (SeqNeg $ SeqPhi 2)
+                     ]
+    premisesOf ID3 = [ GammaV 1  :|-: SS (SeqPhi 2) 
+                     , GammaV 2  :|-: SS (SeqNeg $ SeqPhi 2)
+                     ]
 
-    conclusionOf MP = (GammaV 1 :+: GammaV 2) :|-: SS (SeqPhi 2)
-    conclusionOf MT = (GammaV 1 :+: GammaV 2) :|-: SS (SeqNeg $ SeqPhi 1)
-    conclusionOf AX = SA (SeqPhi 1) :|-: SS (SeqPhi 1)
-    conclusionOf DD =  GammaV 1 :|-: SS (SeqPhi 1) 
-    conclusionOf DNE =  GammaV 1 :|-: SS (SeqPhi 1) 
-    conclusionOf DNI =  GammaV 1 :|-: SS (SeqNeg $ SeqNeg $ SeqPhi 1) 
+    conclusionOf MP  = (GammaV 1 :+: GammaV 2) :|-: SS (SeqPhi 2)
+    conclusionOf MT  = (GammaV 1 :+: GammaV 2) :|-: SS (SeqNeg $ SeqPhi 1)
+    conclusionOf AX  = SA (SeqPhi 1) :|-: SS (SeqPhi 1)
+    conclusionOf DD  = GammaV 1 :|-: SS (SeqPhi 1) 
+    conclusionOf DNE = GammaV 1 :|-: SS (SeqPhi 1) 
+    conclusionOf DNI = GammaV 1 :|-: SS (SeqNeg $ SeqNeg $ SeqPhi 1) 
+    conclusionOf CP1 = GammaV 1 :|-: SS (SeqPhi 1 :->-: SeqPhi 2) 
+    conclusionOf CP2 = GammaV 1 :|-: SS (SeqPhi 1 :->-: SeqPhi 2)
+    conclusionOf ID1 = GammaV 1 :+: GammaV 2 :|-: SS (SeqNeg $ SeqPhi 1)
+    conclusionOf ID2 = GammaV 1 :+: GammaV 2 :|-: SS (SeqNeg $ SeqPhi 1)
+    conclusionOf ID3 = GammaV 1 :+: GammaV 2 :|-: SS (SeqNeg $ SeqPhi 1)
 
 firstRight :: [Either a [b]] -> Either [a] b
 firstRight xs = case filter isRight xs of
@@ -90,31 +106,31 @@ firstRight xs = case filter isRight xs of
     where isRight (Right _) = True
           isRight _ = False
 
---Given a rule and a list of (variable-free) premise sequents, and a (variable-free) 
+--Given a list of concrete rules and a list of (variable-free) premise sequents, and a (variable-free) 
 --conclusion succeedent, return an error or a list of possible (variable-free) correct 
 --conclusion sequents
 seqFromNode :: (Inference r lang, MaybeMonadVar (ClassicalSequentOver lang) (State Int),
         MonadVar (ClassicalSequentOver lang) (State Int)) =>  
-    r -> [ClassicalSequentOver lang Sequent] -> ClassicalSequentOver lang Succedent 
+    [r] -> [ClassicalSequentOver lang Sequent] -> ClassicalSequentOver lang Succedent 
       -> [Either ProofErrorMessage [ClassicalSequentOver lang Sequent]]
-seqFromNode rule prems conc = do rprems <- permutations (premisesOf rule)
-                                 -- XXX:there's premumably a nicer solution
-                                 --with monad transfomers
-                                 return $ do if length rprems /= length prems 
-                                                 then Left "Wrong number of premises"
-                                                 else Right ""
-                                             let rconc = conclusionOf rule
-                                             fosub <- fosolve 
-                                                (zipWith (:=:) 
-                                                    (map rhs (rconc:rprems)) 
-                                                    (conc:map rhs prems))
-                                             let subbedrule = map (applySub fosub) rprems
-                                             let subbedconc = applySub fosub rconc
-                                             acuisubs <- acuisolve 
-                                                (zipWith (:=:) 
-                                                    (map lhs subbedrule) 
-                                                    (map lhs prems))
-                                             return $ map (\x -> applySub x subbedconc) acuisubs
+seqFromNode rules prems conc = do rrule <- rules
+                                  rprems <- permutations (premisesOf rrule) 
+                                  return $ oneRule rrule rprems
+    where oneRule r rp = do if length rp /= length prems 
+                                then Left "Wrong number of premises"
+                                else Right ""
+                            let rconc = conclusionOf r
+                            fosub <- fosolve 
+                               (zipWith (:=:) 
+                                   (map rhs (rconc:rp)) 
+                                   (conc:map rhs prems))
+                            let subbedrule = map (applySub fosub) rp
+                            let subbedconc = applySub fosub rconc
+                            acuisubs <- acuisolve 
+                               (zipWith (:=:) 
+                                   (map lhs subbedrule) 
+                                   (map lhs prems))
+                            return $ map (\x -> applySub x subbedconc) acuisubs
 
 --A simple check of whether two sequents can be unified
 seqUnify s1 s2 = case check of
@@ -123,9 +139,6 @@ seqUnify s1 s2 = case check of
                      Right _ -> True
             where check = do fosub <- fosolve [rhs s1 :=: rhs s2]
                              acuisolve [lhs (applySub fosub s1) :=: lhs (applySub fosub s2)]
-
-
-                 
 
 fosolve :: (FirstOrder (ClassicalSequentOver lang), MonadVar (ClassicalSequentOver lang) (State Int)) =>  
     [Equation (ClassicalSequentOver lang)] -> Either ProofErrorMessage [Equation (ClassicalSequentOver lang)]

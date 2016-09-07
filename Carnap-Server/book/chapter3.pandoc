@@ -165,13 +165,13 @@ Double Negation
 
 :   1.  *Double Negation Introduction* (abbreviated DNI), the argument form
 
-        $\phi\vdash \neg\neg\psi$
+        $\phi\vdash \neg\neg\phi$
 
         is a rule of direct inference.
 
     2.  *Double Negation Elimination* (abbreviated DNE), the argument form
 
-        $\neg\neg\phi\vdash\neg\phi$
+        $\neg\neg\phi\vdash\phi$
 
         is a rule of direct inference.
 
@@ -194,7 +194,7 @@ keep track of what we intend to show by writing "Show", followed by the
 conclusion that we are aiming to show follows from the premises. We can call
 this line the *show line*
 
-We then need to give the list of reasoning steps. Lets indent these a little
+We then need to give the list of reasoning steps. Let's indent these a little
 to keep them apart from the show line. To further organize them, let's give
 each assertion a number. Finally, to keep track of the justification for each
 step we are making, let's write an abbreviated explanation to the right of the
@@ -245,7 +245,7 @@ looks like this:
 3.    P->Q :PR
 4.    Q->R :PR
 5.    Q    :MP 2,3
-6.    R    :MP 3,4
+6.    R    :MP 4,5
 7.:DD 6
 ```
 

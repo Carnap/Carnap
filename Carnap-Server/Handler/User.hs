@@ -31,7 +31,7 @@ getUserR userId = do
                         #{dueDateTable}
                     <div.col-md-3>
                         <h3> Total Points Earned
-                        <span style="font-size:56pt; color:gray; padding-left:20pt"> #{totalScore (synsubs ++ transsubs)}/150
+                        <span style="font-size:56pt; color:gray; padding-left:20pt"> #{totalScore (synsubs ++ (transsubs ++ dersubs))}/175
                 <div>
                 <a href=@{AuthR LogoutR}>
                     Logout
@@ -94,7 +94,8 @@ laterThan t1 t2 = diffUTCTime t1 t2 > 0
 dueDates :: M.Map Int UTCTime
 dueDates = M.fromList [(1, toTime "11:59 pm CDT, Aug 30, 2016")
                       ,(2, toTime "11:30 am CDT, Sep 1, 2016")
-                      ,(3, toTime "11:59 pm CDT, Sep 5, 2016")
+                      ,(3, toTime "11:59 pm CDT, Sep 7, 2016")
+                      ,(4, toTime "11:59 pm CDT, Sep 7, 2016")
                       ]
     where toTime = parseTimeOrError True defaultTimeLocale "%l:%M %P %Z, %b %e, %Y"
 

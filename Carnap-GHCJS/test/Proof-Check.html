@@ -5,6 +5,7 @@
 
 .proofchecker {
     position: relative;
+    height:160pt;
 }
 
 .proofchecker > textarea {
@@ -21,6 +22,7 @@
 .proofchecker > button {
     position: relative;
     left:300pt;
+    visibility:none;
 }
 
 .proofchecker .output{
@@ -81,7 +83,12 @@
 </head>
   <body>
       <div class="proofchecker">
-          <div class="goal">1.1 P->Q,P :|-: Q</div>
+          <div class="goal">P->Q, ~P->R, ~Q :|-: R</div>
+          <textarea></textarea>
+          <div class="output"></div>
+      </div>
+      <div class="proofchecker">
+          <div class="goal">~P->Q,~Q :|-: P</div>
           <textarea></textarea>
           <div class="output"></div>
       </div>
