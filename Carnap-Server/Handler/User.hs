@@ -96,6 +96,7 @@ dueDates = M.fromList [(1, toTime "11:59 pm CDT, Aug 30, 2016")
                       ,(2, toTime "11:30 am CDT, Sep 1, 2016")
                       ,(3, toTime "11:59 pm CDT, Sep 7, 2016")
                       ,(4, toTime "11:59 pm CDT, Sep 7, 2016")
+                      ,(5, toTime "11:59 pm CDT, Sep 12, 2016")
                       ]
     where toTime = parseTimeOrError True defaultTimeLocale "%l:%M %P %Z, %b %e, %Y"
 

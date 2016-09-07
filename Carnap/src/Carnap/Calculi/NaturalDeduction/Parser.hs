@@ -130,9 +130,9 @@ indent = do ws <- many $ char ' '
 --------------------------------------------------------
 
 parsePropLogic :: Parsec String u [PropLogic]
-parsePropLogic = do r <- choice (map (try . string) ["AX","PR","MP","MT","DD","DNE","DNI", "DN", "CD", "ID"])
+parsePropLogic = do r <- choice (map (try . string) ["AS","PR","MP","MT","DD","DNE","DNI", "DN", "CD", "ID"])
                     case r of
-                        "AX"  -> return [AX]
+                        "AS"  -> return [AX]
                         "PR"  -> return [AX]
                         "MP"  -> return [MP]
                         "MT"  -> return [MT]
