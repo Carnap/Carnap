@@ -37,6 +37,7 @@ library
                      , Carnap.Languages.PureFirstOrder.Parser
                      , Carnap.Languages.ClassicalSequent.Syntax
                      , Carnap.Languages.ClassicalSequent.Parser
+                     , Carnap.Calculi.NaturalDeduction.Checker
                      , Carnap.Calculi.NaturalDeduction.Parser
                      , Carnap.Calculi.NaturalDeduction.Syntax
 

@@ -1,7 +1,7 @@
+{-#LANGUAGE FlexibleContexts #-}
 module Carnap.GHCJS.Action.ProofCheck (proofCheckAction) where
 
-import Carnap.Calculi.NaturalDeduction.Syntax (seqUnify)
-import Carnap.Calculi.NaturalDeduction.Parser (toDisplaySequencePropProof)
+import Carnap.Calculi.NaturalDeduction.Checker (Feedback(..), seqUnify, toDisplaySequencePropProof, parsePropProof)
 import Carnap.Languages.ClassicalSequent.Parser (propSeqParser)
 import Carnap.GHCJS.SharedTypes
 import Text.Parsec
@@ -85,19 +85,19 @@ activateChecker w (Just (i,o,g, classes)) =
     where wrap (Left "") ="<div>&nbsp;</div>"
           wrap (Left s) = "<div>✗<span>" ++ s ++ "</span></div>"
           wrap (Right seq) = "<div>+<span>" ++ show seq ++ "</span></div>"
-          updateFunction ref' s' v (g',fd') = do let (mseq, ds) = toDisplaySequencePropProof v
-                                                 ul <- genericListToUl wrap w ds
-                                                 setInnerHTML fd' (Just "")
-                                                 appendChild fd' (Just ul)
-                                                 case mseq of
-                                                     Nothing -> do setAttribute g' "class" "goal"
-                                                                   writeIORef ref' False
-                                                     (Just seq) ->  if seqUnify s' seq
-                                                           then do setAttribute g' "class" "goal success"
-                                                                   writeIORef ref' True
-                                                           else do setAttribute g' "class" "goal"
-                                                                   writeIORef ref' False
-                                                 return ()
+          updateFunction ref' s' v (g', fd') = do let Feedback mseq ds = toDisplaySequencePropProof parsePropProof v
+                                                  ul <- genericListToUl wrap w ds
+                                                  setInnerHTML fd' (Just "")
+                                                  appendChild fd' (Just ul)
+                                                  case mseq of
+                                                      Nothing -> do setAttribute g' "class" "goal"
+                                                                    writeIORef ref' False
+                                                      (Just seq) ->  if seqUnify s' seq
+                                                            then do setAttribute g' "class" "goal success"
+                                                                    writeIORef ref' True
+                                                            else do setAttribute g' "class" "goal"
+                                                                    writeIORef ref' False
+                                                  return ()
 
 -- XXX: this should be a library function
 updateResults :: (IsElement e, IsElement e') => 
