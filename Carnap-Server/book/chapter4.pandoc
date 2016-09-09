@@ -150,14 +150,14 @@ CD, to mean "I have shown the conditional statement by means of a conditional
 derivation ending with this line". The result will look like this:
 
 ```
-1 . Show: φ->ψ
-2 .     φ          :AS
-3 .     assertion  :Justification
-4 .     assertion  :Justification
-5 .     assertion  :Justification
-6 .     assertion  :Justification
-7 .     ψ          :Justification
-8 . :CD 7
+1. Show: φ->ψ
+2.     φ          :AS
+3.     assertion  :Justification
+4.     assertion  :Justification
+5.     assertion  :Justification
+6.     assertion  :Justification
+7.     ψ          :Justification
+8. :CD 7
 ```
 
 Here are some examples of conditional derivations.
@@ -212,6 +212,11 @@ Construct derivations to show the validity of the listed arguments.
 
 Abbreviations are the same as in previous chapters. When the argument turns a
 light green color, then you can press the "submit" button to submit your work.
+
+One small note. The symbol "⊤" that sometimes shows up here to the left of the
+"therefore" symbol means that there are no premises to the problem. In
+problems with this symbol, it should be possible to finish the conditional
+derivation with nothing but the assumption introduced by AS. 
 
 ```{.ProofChecker .Prop}
 5.1 :|-: P->P
