@@ -1,5 +1,5 @@
-{-#LANGUAGE GADTs, TypeOperators, FlexibleContexts, TypeSynonymInstances, FlexibleInstances, MultiParamTypeClasses #-}
-module Carnap.Calculi.NaturalDeduction.Checker (toDisplaySequencePropProof, Feedback(..),seqUnify, parsePropProof) where
+{-#LANGUAGE GADTs, KindSignatures, TypeOperators, FlexibleContexts, TypeSynonymInstances, FlexibleInstances, MultiParamTypeClasses #-}
+module Carnap.Calculi.NaturalDeduction.Checker (toDisplaySequencePropProof, ProofErrorMessage(..), Feedback(..),seqUnify, parsePropProof) where
 
 import Carnap.Calculi.NaturalDeduction.Syntax
 import Carnap.Calculi.NaturalDeduction.Parser
@@ -26,7 +26,18 @@ type PartialDeduction r lex = [Either ParseError (DeductionLine r lex (Form Bool
 type Deduction r lex = [DeductionLine r lex (Form Bool)]
 
 data Feedback lex = Feedback { finalresult :: Maybe (ClassicalSequentOver lex Sequent)
-                             , lineresults :: [Either ProofErrorMessage (ClassicalSequentOver lex Sequent)]}
+                             , lineresults :: [Either (ProofErrorMessage lex) (ClassicalSequentOver lex Sequent)]}
+
+data ProofErrorMessage :: ((* -> *) -> * -> *) -> * where
+        NoParse :: ParseError -> Int -> ProofErrorMessage lex
+        NoUnify :: [[Equation (ClassicalSequentOver lex)]]  -> Int -> ProofErrorMessage lex
+        GenericError :: String -> Int -> ProofErrorMessage lex
+        NoResult :: Int -> ProofErrorMessage lex --meant for blanks
+
+lineNoOfError (NoParse _ n) = n
+lineNoOfError (NoUnify _ n) = n
+lineNoOfError (GenericError _ n) = n
+lineNoOfError (NoResult n) = n
 
 --------------------------------------------------------
 --Main Functions
@@ -37,7 +48,7 @@ data Feedback lex = Feedback { finalresult :: Maybe (ClassicalSequentOver lex Se
 find the prooftree corresponding to *line n* in ded, where proof line numbers start at 1
 -}
 toProofTree :: (Inference r lex, Sequentable lex) => 
-    Deduction r lex -> Int -> Either ProofErrorMessage (ProofTree r lex)
+    Deduction r lex -> Int -> Either (ProofErrorMessage lex) (ProofTree r lex)
 toProofTree ded n = case ded !! (n - 1)  of
           (AssertLine f r dpth deps) -> 
                 do mapM checkDep deps
@@ -54,25 +65,27 @@ toProofTree ded n = case ded !! (n - 1)  of
                       checkDep m m' = takeRange m' m >>= scan . init
                       matchShow = let ded' = drop n ded in
                           case findIndex (qedAt d) ded' of
-                              Nothing -> Left "Open subproof (no corresponding QED)"
+                              Nothing -> err "Open subproof (no corresponding QED)"
                               Just m' -> isSubProof n (n + m' - 1)
                       isSubProof n m = let (h:t) = lineRange n m ded in
                           case and (map (\x -> depth x > depth h) t) of
-                              False -> Left $ "Open subproof on lines" ++ show n ++ " to " ++ show m ++ " (no QED in this subproof)"
+                              False -> err $ "Open subproof on lines" ++ show n ++ " to " ++ show m ++ " (no QED in this subproof)"
                               True -> Right (m + 1)
                       qedAt d (QedLine _ dpth _) = d == dpth
                       qedAt d _ = False
-          (QedLine _ _ _) -> Left "A QED line cannot be cited as a justification" 
-    where ln = length ded
+          (QedLine _ _ _) -> err "A QED line cannot be cited as a justification" 
+    where err :: String -> Either (ProofErrorMessage lex) a
+          err = \x -> Left $ GenericError x n
+          ln = length ded
           --line h is accessible from the end of the chunk if everything in
           --the chunk has depth greater than or equal to that of line h
           scan chunk@(h:_) =
               if and (map (\x -> depth h <= depth x) chunk)
                   then Right True
-                  else Left "It looks like you're citing a line which is not in your subproof. If you're not, you may need to tidy up your proof."
+                  else err "It looks like you're citing a line which is not in your subproof. If you're not, you may need to tidy up your proof."
           takeRange m' n' = 
               if n' <= m' 
-                      then Left "Dependency is later than assertion"
+                      then err "Dependency is later than assertion"
                       else Right $ lineRange m' n' ded
           --sublist, given by line numbers
           lineRange m n l = drop (m - 1) $ take n l
@@ -82,29 +95,28 @@ toDisplaySequencePropProof :: (MonadVar (ClassicalSequentOver lex) (State Int), 
 toDisplaySequencePropProof topd s = if isParsed 
                                    then let feedback = map (processLine(rights ded)) [1 .. length ded] in
                                        Feedback (lastTopInd >>= fromFeedback feedback) feedback
-                                   else Feedback Nothing (map handle ded)
+                                   else Feedback Nothing (zipWith handle ded [1 .. length ded])
     where ded = topd s
           isParsed = null $ lefts ded 
-          handle (Left e) = Left $ "parsing error:" ++ show e
-          handle (Right _) = Left ""
-          isTop x = case x of
-            (Right (AssertLine _ _ 0 _)) -> True
-            (Right (ShowLine _ 0)) -> True
-            _ -> False
+          handle (Left e) n = Left $ NoParse e n
+          handle (Right _) n = Left $ NoResult n
+          isTop (Right (AssertLine _ _ 0 _)) = True
+          isTop  (Right (ShowLine _ 0)) = True
+          isTop  _ = False
           lastTopInd = do i <- findIndex isTop (reverse ded)
                           return $ length ded - i
           fromFeedback fb n = case fb !! (n - 1) of
             Left _ -> Nothing
             Right s -> Just s
+          updateLine n (Right x) = Right x
+          updateLine n (Left e) = Left e
           processLine :: (Sequentable lex, Inference r lex, MonadVar (ClassicalSequentOver lex) (State Int)) => 
-            [DeductionLine r lex (Form Bool)] -> Int -> Either ProofErrorMessage (ClassicalSequentOver lex Sequent)
+            [DeductionLine r lex (Form Bool)] -> Int -> Either (ProofErrorMessage lex) (ClassicalSequentOver lex Sequent)
           processLine ded n = case ded !! (n - 1) of
             --special case to catch QedLines not being cited in justifications
-            (QedLine _ _ _) -> Left ""
-            _ -> toProofTree ded n >>= firstLeft . reduceProofTree
-          firstLeft (Left (x:xs)) = Left x
-          firstLeft (Right x) = Right x
-          --
+            (QedLine _ _ _) -> Left $ NoResult n
+            _ -> toProofTree ded n >>= (updateLine n . reduceProofTree)
+          
 -- | A simple check of whether two sequents can be unified
 seqUnify s1 s2 = case check of
                      Left _ -> False
@@ -112,7 +124,6 @@ seqUnify s1 s2 = case check of
                      Right _ -> True
             where check = do fosub <- fosolve [rhs s1 :=: rhs s2]
                              acuisolve [lhs (applySub fosub s1) :=: lhs (applySub fosub s2)]
-
 
 --------------------------------------------------------
 --Logics
@@ -178,25 +189,24 @@ parsePropProof = toDeduction parsePropLogic prePurePropFormulaParser
 --Utility Functions
 --------------------------------------------------------
 
-firstRight :: [Either a [b]] -> Either [a] b
-firstRight xs = case filter isRight xs of
-                    [] -> Left $ map (\(Left x) -> x) xs
-                    (Right (r:x):rs) -> Right r
-    where isRight (Right _) = True
-          isRight _ = False
+reduceResult :: Int -> [Either (ProofErrorMessage lex) [b]] -> Either (ProofErrorMessage lex) b
+reduceResult lineno xs = case rights xs of
+                           [] -> Left $ NoUnify (concat $ map eqsOf xs) lineno
+                           (r:x):rs -> Right r
+    where eqsOf (Left (NoUnify eqs _)) = eqs
 
 --Given a list of concrete rules and a list of (variable-free) premise sequents, and a (variable-free) 
 --conclusion succeedent, return an error or a list of possible (variable-free) correct 
 --conclusion sequents
 seqFromNode :: (Inference r lex, MaybeMonadVar (ClassicalSequentOver lex) (State Int),
         MonadVar (ClassicalSequentOver lex) (State Int)) =>  
-    [r] -> [ClassicalSequentOver lex Sequent] -> ClassicalSequentOver lex Succedent 
-      -> [Either ProofErrorMessage [ClassicalSequentOver lex Sequent]]
-seqFromNode rules prems conc = do rrule <- rules
-                                  rprems <- permutations (premisesOf rrule) 
-                                  return $ oneRule rrule rprems
+    Int -> [r] -> [ClassicalSequentOver lex Sequent] -> ClassicalSequentOver lex Succedent 
+      -> [Either (ProofErrorMessage lex) [ClassicalSequentOver lex Sequent]]
+seqFromNode lineno rules prems conc = do rrule <- rules
+                                         rprems <- permutations (premisesOf rrule) 
+                                         return $ oneRule rrule rprems
     where oneRule r rp = do if length rp /= length prems 
-                                then Left "Wrong number of premises"
+                                then Left $ GenericError "Wrong number of premises" lineno
                                 else Right ""
                             let rconc = conclusionOf r
                             fosub <- fosolve 
@@ -214,23 +224,22 @@ seqFromNode rules prems conc = do rrule <- rules
 reduceProofTree :: (Inference r lex, 
                    MaybeMonadVar (ClassicalSequentOver lex) (State Int),
         MonadVar (ClassicalSequentOver lex) (State Int)) =>  
-        ProofTree r lex -> Either [ProofErrorMessage] (ClassicalSequentOver lex Sequent)
+        ProofTree r lex -> Either (ProofErrorMessage lex) (ClassicalSequentOver lex Sequent)
 reduceProofTree (Node (ProofLine no cont rule) ts) =  
         do prems <- mapM reduceProofTree ts
-           firstRight $ seqFromNode rule prems cont
-               -- TODO: label errors with lineNo
+           reduceResult no $ seqFromNode no rule prems cont
 
 fosolve :: (FirstOrder (ClassicalSequentOver lex), MonadVar (ClassicalSequentOver lex) (State Int)) =>  
-    [Equation (ClassicalSequentOver lex)] -> Either ProofErrorMessage [Equation (ClassicalSequentOver lex)]
+    [Equation (ClassicalSequentOver lex)] -> Either (ProofErrorMessage lex) [Equation (ClassicalSequentOver lex)]
 fosolve eqs = case evalState (foUnifySys (const False) eqs) (0 :: Int) of 
-                [] -> Left $ "The matching required to apply this rule here can't be done"
+                [] -> Left $ NoUnify [eqs] 0
                 [s] -> Right s
 
 acuisolve :: (ACUI (ClassicalSequentOver lex), MonadVar (ClassicalSequentOver lex) (State Int)) =>  
-    [Equation (ClassicalSequentOver lex)] -> Either ProofErrorMessage [[Equation (ClassicalSequentOver lex)]]
+    [Equation (ClassicalSequentOver lex)] -> Either (ProofErrorMessage lex) [[Equation (ClassicalSequentOver lex)]]
 acuisolve eqs = 
         case evalState (acuiUnifySys (const False) eqs) (0 :: Int) of
-          [] -> Left $ "The matching required to apply this rule here can't be done."
+          [] -> Left $ NoUnify [eqs] 0
           subs -> Right subs
 
 rhs :: ClassicalSequentOver lex Sequent -> ClassicalSequentOver lex Succedent

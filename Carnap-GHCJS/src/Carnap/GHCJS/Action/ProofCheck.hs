@@ -1,7 +1,7 @@
 {-#LANGUAGE FlexibleContexts #-}
 module Carnap.GHCJS.Action.ProofCheck (proofCheckAction) where
 
-import Carnap.Calculi.NaturalDeduction.Checker (Feedback(..), seqUnify, toDisplaySequencePropProof, parsePropProof)
+import Carnap.Calculi.NaturalDeduction.Checker (ProofErrorMessage(..), Feedback(..), seqUnify, toDisplaySequencePropProof, parsePropProof)
 import Carnap.Languages.ClassicalSequent.Parser (propSeqParser)
 import Carnap.GHCJS.SharedTypes
 import Text.Parsec
@@ -82,8 +82,10 @@ activateChecker w (Just (i,o,g, classes)) =
                    addListener bt click submit False                
                    setLinesTo w nd 1
                    syncScroll i o
-    where wrap (Left "") ="<div>&nbsp;</div>"
-          wrap (Left s) = "<div>✗<span>" ++ s ++ "</span></div>"
+    where wrap (Left (GenericError s n))  = errDiv s n Nothing
+          wrap (Left (NoParse e n))       = errDiv "Can't read this line. There may be a typo." n Nothing
+          wrap (Left (NoUnify eqs n))     = errDiv "Can't match these premises with this conclusion, using this rule" n Nothing
+          wrap (Left (NoResult n))        = "<div>&nbsp;</div>"
           wrap (Right seq) = "<div>+<span>" ++ show seq ++ "</span></div>"
           updateFunction ref' s' v (g', fd') = do let Feedback mseq ds = toDisplaySequencePropProof parsePropProof v
                                                   ul <- genericListToUl wrap w ds
@@ -98,6 +100,9 @@ activateChecker w (Just (i,o,g, classes)) =
                                                             else do setAttribute g' "class" "goal"
                                                                     writeIORef ref' False
                                                   return ()
+
+errDiv msg lineno Nothing = "<div>✗<span>Error on line " ++ show lineno ++ ":" ++ msg ++ "</span></div>"
+errDiv msg lineno (Just details) = undefined
 
 -- XXX: this should be a library function
 updateResults :: (IsElement e, IsElement e') => 
