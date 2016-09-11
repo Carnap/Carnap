@@ -83,10 +83,10 @@ activateChecker w (Just (i,o,g, classes)) =
                    setLinesTo w nd 1
                    syncScroll i o
     where wrap (Left (GenericError s n))  = errDiv s n Nothing
-          wrap (Left (NoParse e n))       = errDiv "Can't read this line. There may be a typo." n Nothing
+          wrap (Left (NoParse e n))       = errDiv "Can't read this line. There may be a typo." n (Just $ show e)
           wrap (Left (NoUnify eqs n))     = errDiv "Can't match these premises with this conclusion, using this rule" n Nothing
           wrap (Left (NoResult n))        = "<div>&nbsp;</div>"
-          wrap (Right seq) = "<div>+<span>" ++ show seq ++ "</span></div>"
+          wrap (Right seq) = "<div>+<div>" ++ show seq ++ "</div></div>"
           updateFunction ref' s' v (g', fd') = do let Feedback mseq ds = toDisplaySequencePropProof parsePropProof v
                                                   ul <- genericListToUl wrap w ds
                                                   setInnerHTML fd' (Just "")
@@ -101,8 +101,9 @@ activateChecker w (Just (i,o,g, classes)) =
                                                                     writeIORef ref' False
                                                   return ()
 
-errDiv msg lineno Nothing = "<div>✗<span>Error on line " ++ show lineno ++ ":" ++ msg ++ "</span></div>"
-errDiv msg lineno (Just details) = undefined
+errDiv msg lineno (Just details)= 
+        "<div>✗<div>Error on line " ++ show lineno ++ ": " ++ msg ++ "<div>see details<div>" ++ details ++ "</div></div></div></div>"
+errDiv msg lineno Nothing = "<div>✗<div>Error on line " ++ show lineno ++ ": " ++ msg ++ "</div></div>"
 
 -- XXX: this should be a library function
 updateResults :: (IsElement e, IsElement e') => 

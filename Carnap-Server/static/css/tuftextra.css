@@ -69,7 +69,7 @@
 
 .proofchecker .output{
     position: absolute;
-    width:400pt;
+    width:600px;
     height:100%;
     padding:21px;
     pointer-events: none;
@@ -81,26 +81,57 @@
 .proofFeedback {
     font-size:10pt;
     position:absolute;
-    right:210pt;
+    right:325px;
     top:13pt;
+    width:20pt;
     pointer-events: auto;
 }
 
-.proofFeedback div span {
-    visibility:hidden;
+.proofFeedback li > div > div {
+    font-size:8pt;
     position:absolute;
     background:white;
-    width:180pt;
+    width:200pt;
     left:20pt;
     top:-5pt;
     border:1pt solid black;
     padding:5pt;
     z-index:1;
+    max-height:125px;
+    overflow-y:scroll;
 }
 
-.proofFeedback div:hover span {
-    visibility:visible;
+.proofFeedback li > div div {
+    visibility:hidden;
+    display:none;
 }
+
+.proofFeedback li > div:hover > div {
+    visibility:visible;
+    display:block;
+}
+
+.proofFeedback li > div:hover > div > div {
+    visibility:visible;
+    display:block;
+}
+
+.proofFeedback li > div:hover > div > div:hover > div {
+    visibility:visible;
+    display:block;
+    border-top:1pt solid gray;
+    color:black;
+    line-height:1.2em;
+    font-size:8pt;
+    padding-top:5px;
+    overflow-y:auto;
+}
+
+.proofFeedback li > div:hover > div > div:hover {
+    color:white;
+    line-height:5px;
+    font-size:0pt;
+} 
 
 .proofFeedback ul {
     list-style-type:none;
