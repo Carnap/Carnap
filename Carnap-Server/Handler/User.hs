@@ -31,7 +31,7 @@ getUserR userId = do
                         #{dueDateTable}
                     <div.col-md-3>
                         <h3> Total Points Earned
-                        <span style="font-size:56pt; color:gray; padding-left:20pt"> #{totalScore (synsubs ++ (transsubs ++ dersubs))}/175
+                        <span style="font-size:56pt; color:gray; padding-left:20pt"> #{totalScore (synsubs ++ (transsubs ++ dersubs))}/275
                 <div>
                 <a href=@{AuthR LogoutR}>
                     Logout
@@ -97,6 +97,7 @@ dueDates = M.fromList [(1, toTime "11:59 pm CDT, Aug 30, 2016")
                       ,(3, toTime "11:59 pm CDT, Sep 7, 2016")
                       ,(4, toTime "11:59 pm CDT, Sep 7, 2016")
                       ,(5, toTime "11:59 pm CDT, Sep 12, 2016")
+                      ,(6, toTime "11:59 pm CDT, Sep 14, 2016")
                       ]
     where toTime = parseTimeOrError True defaultTimeLocale "%l:%M %P %Z, %b %e, %Y"
 

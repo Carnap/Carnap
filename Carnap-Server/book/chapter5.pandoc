@@ -1,0 +1,235 @@
+#Nested Derivations
+
+Sometimes, a conditional derivation will not be enough to show that a certain
+conditional we want is true. The trouble is that in a conditional derivation,
+you can only make *one* assumption.
+
+But there are situations where it seems that we ought to make more than one
+assumption. For example, conditionals of the form $P → (Q → R)$ will be
+difficult to prove by assuming only $P$. Such a conditional says that if $P$
+is true, then if, furthermore, $R$ is true, then $Q$ is true. Intuitively,
+this seems to say that $Q$ is true whenever $P$ and $Q$ are both true. So, to
+prove that conditional, it should be enough to demonstrate that $Q$ is true in
+any hypothetical situation where $R$ and $Q$ are true. But this means assuming
+two things: both $R$ and $Q$.
+
+This need for multiple simultaneous assumptions is reflected in ordinary
+informal reasoning.
+
+We may, while playing chess, want to know whether a statement like “If I take
+the queen, then if my opponent moves her bishop to 8D, she can put me in
+check” is true. Just imagining that we take the queen is not enough for us to
+figure out what will happen if we take the queen *and* our opponent moves her
+bishop. We need to first imagine that we take the queen. We then need to add
+another piece of information to that hypothetical scenario---we need suppose
+additionally that our opponent then moves her Bishop.
+
+What we are doing is adding another “layer” of hypothesis to our imaginary 
+situation. Just as our first imaginary situation was like the real world 
+except for one addition (that we took the queen), our second imaginary 
+situation is just like our first imaginary situation, but with one addition 
+(that our opponent moves her bishop).
+
+It is natural to model this type of “double assumption”, by allowing for
+derivations to occur inside of other derivations.[^1] Let's call a derivation
+that has other derivations occurring inside of it a Nested Derivation. And
+let’s divide the nested derivations we know how to construct into two types:
+Nested Conditional Derivations, and Nested Direct Derivations.
+
+[^1]:: If you like a good metaphor, you can think of a double assumption as a
+"dream within a dream." We first imagine that we are in a scenario where $P$
+is known to be true. We then imagine that, in this hypothetical scenario, we
+are imagining that $Q$ is known to be true. If our hypothetical reasoning
+within the hypothetical scenario where $P$ is true lets us deduce that $Q→R$
+is true in that scenario, then we can (in real life) infer that $P→(Q→R)$ is
+true.
+
+##Available Lines
+
+The main difficulty with this kind of "doubly hypothetical reasoning" is
+keeping track of what you are currently allowing yourself to assume. 
+
+The difficulty is that everything that is shown given those two hypotheses is
+only true *if* those two hypotheses are true. And we cannot use this
+"conditional" information to draw unqualified conclusions, any more than we
+can use facts that are true only within our daydreams to plan our morning
+commute or our finances.
+
+For example, compare the following two pseudo-arguments:
+
+``` 
+1. Show: If santa is real, then if I am good I will get a pony.
+2.    Santa is real                                    :AS
+3.    Show: If I am good, I will get a pony 
+4.        I am good                                    :AS
+5.        if Santa is real, good children are rewarded :PR
+6.        good children are rewarded                   :MP 2 5
+7.        I will get a pony                            :? 4 6
+8.    :CD 7
+9. :CD 3
+```
+
+This one seems good, if we're willing to grant the premise, and the mysterious
+inference on line 7 (this is an example of an inference involving
+quantifiers---something we will cover later in this course).
+
+``` 
+1. Show: If Santa is real, then I will get a pony.
+2.    Santa is real                                    :AS
+3.    Show: If I am good, I will get a pony 
+4.        I am good                                    :AS
+5.        if Santa is real, good children are rewarded :PR
+6.        good children are rewarded                   :MP 2 5
+7.        I will get a pony                            :? 4 6
+8.    :CD 7
+9. :CD 7
+```
+
+This argument seems questionable. Santa, even if he exists, only rewards good
+children. So, even if Santa exists, that doesn't guarantee that I will get a
+pony---I might have been bad, in which case, I'll get nothing, or coal.
+
+The trouble is with line 9. To justify finishing our proof, we cite line 7.
+But line 7 is only true within the hypothetical scenario where we suppose that
+I am good---it stops being true when we leave that scenario and move to the
+scenario where all that is known is that Santa is real. So it can't be used to
+draw a conclusion in that outer scenario.
+
+In order to avoid mistakes like this one, we need some way of thinking about
+which lines can be cited, and which lines cannot be cited in the course of a
+proof. It seems that the ones that we cannot cite are the ones that are parts
+of hypothetical scenarios that we have already stopped considering---those
+scenarios whose truths are contained between a show line and a corresponding
+QED line, like CD or DD. So, let us use this criterion to distinguish between
+the available lines and the unavailable lines.
+
+Unavailable Line 
+
+: A line is *unavailable* at a certain point in a proof if it is contained
+between a show line and QED line corresponding to that show line which are
+both earlier in the proof.
+
+Having said what an unavailable line is, we can now say what we will
+officially count as a legitimate nested derivation.
+
+Nested Direct Derivation
+:   
+
+    A Nested Direct Derivation is is a sequence of assertions, aimed at
+    showing some statement φ, each of which is justified, either because
+
+    * it is a premise of the argument under consideration;
+
+    * it is the conclusion of a rule of direct derivation applied to previous
+      assertions which are available from the line it occupies;
+
+    * or, it is listed next to a show-line that contains a complete derivation
+      and is justified by a matching QED line.
+
+We use nested direct derivations in the same way that we use ordinary direct
+derivations. We begin with a show line, saying what it is we aim to show, for
+example, φ. We then indent, and beneath our indentation, we place our nested
+direct derivation. Once we arrive at φ, within the derivation, we can finish
+by pointing to that line from a qed line containing the justification DD, and
+the line number on which φ occurs. The only complication when the proof
+involves nesting is that we must also be sure that φ is available from qed
+line.
+
+Nested Conditional Derivation
+:   
+
+    A Nested Conditional Derivation is is a sequence of assertions aimed at 
+    showing some statement φ → ψ, beginning with an assumption that φ, in 
+    which every assertion after the first is justified, either because
+
+    * it is a premise of the argument under consideration;
+
+    * it is the conclusion of a rule of direct derivation applied to previous
+      assertions;
+
+    * or, it is listed next to a show-line that contains a complete derivation
+      and is justified by a matching QED line.
+
+As with nested direct derivations, we can use nested conditional derivations
+in almost the same way as their unnested counterparts. The main difference is
+that we must be sure, when we write down our finishing QED line, that the line
+we cite is available from the QED line.
+
+So, to recap, the main difference between the nested and the simple cases is
+that in the nested case, we allow a new way of basing later assertions on
+earlier assertions. In addition to rules of direct inference, we allow for an
+assertion to be made on the basis of a earlier assertions if that assertion
+can be *shown*, by a derivation which uses those earlier assertions. 
+
+Allowing these new assertions requires some new safety measures, to make sure
+that we don't mix up what we known only conditionally with what we really
+know. We must make sure that we make assertions only on the basis of lines
+that are available from the point where we wish to make the assertion, and
+close derivations only on the basis of lines that are available from where we
+want to close the derivation.
+
+Here are some examples of nested derivations.
+
+For the argument $P\rightarrow (Q\rightarrow R),~ \neg Q\rightarrow S \vdash
+P\rightarrow (\neg S\rightarrow R)$, we can derive:
+
+```
+1. Show: P-> (~S-> R)
+2.    P              :AS
+3.    P -> (Q -> R)    :PR
+4.    ~Q -> S         :PR
+5.    Q -> R          :MP 2 3
+6.    Show: ~S -> R          
+7.      ~S           :AS
+8.      ~~Q          :MT 7 4
+9.      Q            :DN 8
+10.     R            :MP 9 5
+11.   :CD 10
+12. :CD 6
+```
+
+For the argument $(P\rightarrow R)\rightarrow S~.~ P\rightarrow Q~.~ Q\rightarrow R\therefore S$, we can derive:
+
+```
+1. Show: S
+2.   (P -> R)-> S    :PR
+3.   P -> Q          :PR
+4.   Q -> R          :PR
+5.   Show: P -> R   
+6.       P           :AS
+7.       Q           :MP 3 6
+8.       R           :MP 4 7
+9.   :CD 8
+10.  S               :MP 2,5
+11.:DD 10
+```
+
+##Problem Set 6
+
+Construct derivations to show the validity of the listed arguments. 
+
+Abbreviations are the same as in previous chapters. When the argument turns a
+light green color, then you can press the "submit" button to submit your work.
+
+```{.ProofChecker .Prop}
+6.1 :|-: P->(Q->P)
+6.2 P->Q :|-: (Q->R)->(P->R)
+6.3 P->(Q->R) :|-: (P->Q) -> (P->R)
+6.4 P->(Q->R) :|-: Q->(P->R)
+6.5 (S->R)->Q, R :|-: Q
+```
+
+Please also complete the translations below, using the following scheme of
+abbreviation 
+
+| $W~=~$William leaves
+| $V~=~$Veronica leaves
+| $Y~=~$Yolanda leaves
+
+```{.Translate .Prop}
+6.6  W->-V : Veronica won't leave if William does
+6.7  V -> (-W -> Y) : If Veronica leaves, then if William doesn't leave, Yolanda will leave
+6.8  (-W -> -V) -> -Y : If Veronica doesn't leave if William doesn't, then Yolanda won't.
+6.9  (-V -> -W) : William won’t leave provided that Veronica doesn’t leave
+6.10 W-> (V->Y) : If William leaves, then if Veronica leaves so will Yolanda
+```

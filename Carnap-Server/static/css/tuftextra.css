@@ -81,29 +81,44 @@
 .proofFeedback {
     font-size:10pt;
     position:absolute;
-    right:325px;
+    right:300px;
     top:13pt;
-    width:20pt;
+    width:50px;
     pointer-events: auto;
 }
 
+/* the div that pops open to catch your hover*/
 .proofFeedback li > div > div {
+    position:absolute;
+    left:20pt;
+    top:-5pt;
+    height:150px;
+    z-index:1;
+    width:200px;
+}
+
+/* The div containing feedback */
+.proofFeedback li > div > div > div {
     font-size:8pt;
     position:absolute;
     background:white;
     width:200pt;
-    left:20pt;
-    top:-5pt;
     border:1pt solid black;
     padding:5pt;
     z-index:1;
     max-height:125px;
     overflow-y:scroll;
+    color:black;
 }
 
 .proofFeedback li > div div {
     visibility:hidden;
     display:none;
+}
+
+/* when you hover over the div containing the feedback mark */
+.proofFeedback li > div:hover {
+    color:red;
 }
 
 .proofFeedback li > div:hover > div {
@@ -116,7 +131,12 @@
     display:block;
 }
 
-.proofFeedback li > div:hover > div > div:hover > div {
+.proofFeedback li > div:hover > div > div > div {
+    visibility:visible;
+    display:block;
+}
+
+.proofFeedback li > div:hover > div > div > div:hover > div {
     visibility:visible;
     display:block;
     border-top:1pt solid gray;
@@ -127,7 +147,7 @@
     overflow-y:auto;
 }
 
-.proofFeedback li > div:hover > div > div:hover {
+.proofFeedback li > div:hover > div > div > div:hover {
     color:white;
     line-height:5px;
     font-size:0pt;
