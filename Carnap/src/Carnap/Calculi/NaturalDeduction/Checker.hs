@@ -44,6 +44,7 @@ lineNoOfError (NoResult n) = n
 --------------------------------------------------------
 
 -- TODO: handle a list of deductionlines which contains some parsing errors
+-- XXX: This is pretty ugly, and should be rewritten
 {- | 
 find the prooftree corresponding to *line n* in ded, where proof line numbers start at 1
 -}
@@ -58,7 +59,7 @@ toProofTree ded n = case ded !! (n - 1)  of
           (ShowLine f d) -> 
                 do m <- matchShow
                    let (QedLine r _ deps) = ded !! m
-                   mapM (checkDep $ m + 1) deps 
+                   mapM_ (checkDep $ m + 1) deps 
                    deps' <- mapM (\x -> toProofTree ded x) deps
                    return $ Node (ProofLine n (SS $ liftToSequent f) r) deps'
                 where --for scanning, we ignore the depth of the QED line
@@ -67,10 +68,11 @@ toProofTree ded n = case ded !! (n - 1)  of
                           case findIndex (qedAt d) ded' of
                               Nothing -> err "Open subproof (no corresponding QED)"
                               Just m' -> isSubProof n (n + m' - 1)
-                      isSubProof n m = let (h:t) = lineRange n m ded in
-                          case and (map (\x -> depth x > depth h) t) of
-                              False -> err $ "Open subproof on lines" ++ show n ++ " to " ++ show m ++ " (no QED in this subproof)"
-                              True -> Right (m + 1)
+                      isSubProof n m = case lineRange n m ded of
+                        (h:t) -> if and (map (\x -> depth x > depth h) t) 
+                                   then Right (m + 1)
+                                   else  err $ "Open subproof on lines" ++ show n ++ " to " ++ show m ++ " (no QED in this subproof)"
+                        []    -> Right (m+1)
                       qedAt d (QedLine _ dpth _) = d == dpth
                       qedAt d _ = False
           (QedLine _ _ _) -> err "A QED line cannot be cited as a justification" 
@@ -78,10 +80,15 @@ toProofTree ded n = case ded !! (n - 1)  of
           err = \x -> Left $ GenericError x n
           ln = length ded
           --line h is accessible from the end of the chunk if everything in
-          --the chunk has depth greater than or equal to that of line h
-          scan chunk@(h:_) =
+          --the chunk has depth greater than or equal to that of line h,
+          --and h is not a show line with no matching QED
+          scan chunk@(h:t) =
               if and (map (\x -> depth h <= depth x) chunk)
-                  then Right True
+                  then case h of
+                    (ShowLine _ _) -> if or (map (\x -> depth h == depth x) t)
+                        then Right True
+                        else err "To cite a show line at this point, the line be available---it must have a matching QED earlier than this line."
+                    _ -> Right True
                   else err "It looks like you're citing a line which is not in your subproof. If you're not, you may need to tidy up your proof."
           takeRange m' n' = 
               if n' <= m' 

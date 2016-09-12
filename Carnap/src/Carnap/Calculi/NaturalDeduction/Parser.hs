@@ -54,7 +54,8 @@ parseAssertLine r f = do dpth  <- indent
 
 parseShowLine :: Parsec String u (FixLang lex a) -> Parsec String u (DeductionLine r lex a)
 parseShowLine f = do dpth <- indent
-                     string "Show:" <|> string "show:"
+                     string "Show" <|> string "show"
+                     optional $ char ':'
                      spaces
                      phi <- f
                      return $ ShowLine phi dpth
