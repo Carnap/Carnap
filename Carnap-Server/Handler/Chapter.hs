@@ -4,7 +4,6 @@ import Import
 import Yesod.Markdown
 import Filter.Sidenotes
 import Filter.SynCheckers
-import Filter.ProofCheckers
 import Filter.Translate
 import Filter.Diagrams
 import Text.Pandoc.Walk (walkM, walk)
@@ -15,8 +14,14 @@ import qualified Data.CaseInsensitive as CI
 import qualified Data.Text.Encoding as TE
 import Control.Monad.State (evalState, evalStateT)
 
+-- XXX: Fair amount of code-duplication between this and Handler/Book.hs
+
 getChapterR :: Int -> Handler Html
-getChapterR n = do content <- liftIO $ chapter n 
+getChapterR n = do cdir <- lift $ do localbook <- doesDirectoryExist "book"
+                                     if localbook then getDirectoryContents "book"
+                                                  else getDirectoryContents "/root/book"
+                   let nchaps = length (filter (\x -> take 7 x == "chapter") cdir)
+                   content <- liftIO $ content n nchaps
                    case content of
                        Right html -> chapterLayout $ layout html
                        Left err -> defaultLayout $ layout (show err)
@@ -26,10 +31,15 @@ getChapterR n = do content <- liftIO $ chapter n
                                 #{c}
                        |]
 
-chapter n = do localbook <- doesDirectoryExist "book"
-               let path = (if localbook then "book/chapter" else "/root/book/chapter") 
-                                    ++  show n ++ ".pandoc"
-               fileToHtml path
+chapterPath n ctype = do localbook <- doesDirectoryExist "book"
+                         return $ (if localbook then "book/" ++ ctype else "/root/book/" ++ ctype) 
+                                  ++  show n ++ ".pandoc" 
+
+content n offset = do cpath <- chapterPath n "chapter"
+                      apath <- chapterPath (n - offset) "appendix"
+                      ce <- doesFileExist cpath 
+                      if ce then fileToHtml cpath
+                            else fileToHtml apath
 
 fileToHtml path = do md <- markdownFromFile path
                      case parseMarkdown yesodDefaultReaderOptions md of
@@ -42,8 +52,6 @@ runFilters = let walkNotes y = evalState (walkM makeSideNotes y) 0
                  walkDiagrams y = evalStateT (walkM makeDiagrams y) []
                    in walkDiagrams . walkNotes . walkProblems
 
--- TODO: get some info about which ghcjs widgets are used, load those, then
-    -- load the page, then preload the rest
 chapterLayout widget = do
         master <- getYesod
         mmsg <- getMessage

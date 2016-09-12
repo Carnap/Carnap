@@ -3,6 +3,11 @@
         Table of Contents:
     <ol>
         $forall (_, n) <- ccount
-            <li> 
+            <li>
                 <a href="@{BookR}/#{show n}">
                     Chapter #{show n}
+    <ol>
+        $forall (_, n, m) <- acount
+            <li>
+                <a href="@{BookR}/#{show m}">
+                    Appendix #{show n}
