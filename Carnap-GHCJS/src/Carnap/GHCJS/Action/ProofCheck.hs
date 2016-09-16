@@ -1,7 +1,7 @@
 {-#LANGUAGE FlexibleContexts #-}
 module Carnap.GHCJS.Action.ProofCheck (proofCheckAction) where
 
-import Carnap.Calculi.NaturalDeduction.Checker (ProofErrorMessage(..), Feedback(..), seqUnify, toDisplaySequencePropProof, parsePropProof)
+import Carnap.Calculi.NaturalDeduction.Checker (ProofErrorMessage(..), Feedback(..), seqSubsetUnify, toDisplaySequencePropProof, parsePropProof)
 import Carnap.Languages.ClassicalSequent.Parser (propSeqParser)
 import Carnap.GHCJS.SharedTypes
 import Text.Parsec
@@ -94,7 +94,7 @@ activateChecker w (Just (i,o,g, classes)) =
                                                   case mseq of
                                                       Nothing -> do setAttribute g' "class" "goal"
                                                                     writeIORef ref' False
-                                                      (Just seq) ->  if seqUnify s' seq
+                                                      (Just seq) ->  if  seq `seqSubsetUnify` s'
                                                             then do setAttribute g' "class" "goal success"
                                                                     writeIORef ref' True
                                                             else do setAttribute g' "class" "goal"

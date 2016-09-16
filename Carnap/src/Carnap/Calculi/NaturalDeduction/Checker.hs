@@ -1,5 +1,5 @@
 {-#LANGUAGE GADTs, KindSignatures, TypeOperators, FlexibleContexts, TypeSynonymInstances, FlexibleInstances, MultiParamTypeClasses #-}
-module Carnap.Calculi.NaturalDeduction.Checker (toDisplaySequencePropProof, ProofErrorMessage(..), Feedback(..),seqUnify, parsePropProof) where
+module Carnap.Calculi.NaturalDeduction.Checker (toDisplaySequencePropProof, ProofErrorMessage(..), Feedback(..),seqUnify,seqSubsetUnify, parsePropProof) where
 
 import Carnap.Calculi.NaturalDeduction.Syntax
 import Carnap.Calculi.NaturalDeduction.Parser
@@ -131,6 +131,17 @@ seqUnify s1 s2 = case check of
                      Right _ -> True
             where check = do fosub <- fosolve [rhs s1 :=: rhs s2]
                              acuisolve [lhs (applySub fosub s1) :=: lhs (applySub fosub s2)]
+
+
+-- TODO: remove the need for this assumption.
+-- | A simple check of whether one sequent unifies with a another, allowing
+-- for weakening on the lhs; assumption is that neither side contains Delta -1
+seqSubsetUnify s1 s2 = case check of
+                       Left _ -> False
+                       Right [] -> False
+                       Right _ -> True
+            where check = do fosub <- fosolve [rhs s1 :=: rhs s2]
+                             acuisolve [(lhs (applySub fosub s1) :+: GammaV (0 - 1)) :=: lhs (applySub fosub s2) ]
 
 --------------------------------------------------------
 --Logics
