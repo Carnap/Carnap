@@ -4,10 +4,11 @@ import Import
 import Yesod.Markdown
 import Filter.Sidenotes
 import Filter.SynCheckers
+import Filter.ProofCheckers
 import Filter.Translate
 import Filter.Diagrams
 import Text.Pandoc.Walk (walkM, walk)
-import System.Directory (doesDirectoryExist)
+import System.Directory (doesDirectoryExist, getDirectoryContents, doesFileExist)
 import Text.Julius (juliusFile)
 import Text.Hamlet (hamletFile)
 import qualified Data.CaseInsensitive as CI
