@@ -136,7 +136,7 @@ seqUnify s1 s2 = case check of
 --Logics
 --------------------------------------------------------
 
-data PropLogic = MP | MT | DNE | DNI | DD | AX | CP1 | CP2 | ID1 | ID2 | ID3
+data PropLogic = MP | MT | DNE | DNI | DD | AX | CP1 | CP2 | ID1 | ID2 | ID3 | ID4
                deriving Show
 
 instance Inference PropLogic PurePropLexicon where
@@ -153,12 +153,15 @@ instance Inference PropLogic PurePropLexicon where
     premisesOf CP1 = [ GammaV 1 :+: SA (SeqPhi 1) :|-: SS (SeqPhi 2) ]
     premisesOf CP2 = [ GammaV 1 :|-: SS (SeqPhi 2) ]
     premisesOf ID1 = [ GammaV 1 :+: SA (SeqPhi 1) :|-: SS (SeqPhi 2) 
-                     , GammaV 2 :|-: SS (SeqNeg $ SeqPhi 2)
-                     ]
-    premisesOf ID2 = [ GammaV 1  :|-: SS (SeqPhi 2) 
                      , GammaV 2 :+: SA (SeqPhi 1) :|-: SS (SeqNeg $ SeqPhi 2)
                      ]
+    premisesOf ID2 = [ GammaV 1 :+: SA (SeqPhi 1) :|-: SS (SeqPhi 2) 
+                     , GammaV 2 :|-: SS (SeqNeg $ SeqPhi 2)
+                     ]
     premisesOf ID3 = [ GammaV 1  :|-: SS (SeqPhi 2) 
+                     , GammaV 2 :+: SA (SeqPhi 1) :|-: SS (SeqNeg $ SeqPhi 2)
+                     ]
+    premisesOf ID4 = [ GammaV 1  :|-: SS (SeqPhi 2) 
                      , GammaV 2  :|-: SS (SeqNeg $ SeqPhi 2)
                      ]
 
@@ -173,6 +176,7 @@ instance Inference PropLogic PurePropLexicon where
     conclusionOf ID1 = GammaV 1 :+: GammaV 2 :|-: SS (SeqNeg $ SeqPhi 1)
     conclusionOf ID2 = GammaV 1 :+: GammaV 2 :|-: SS (SeqNeg $ SeqPhi 1)
     conclusionOf ID3 = GammaV 1 :+: GammaV 2 :|-: SS (SeqNeg $ SeqPhi 1)
+    conclusionOf ID4 = GammaV 1 :+: GammaV 2 :|-: SS (SeqNeg $ SeqPhi 1)
 
 parsePropLogic :: Parsec String u [PropLogic]
 parsePropLogic = do r <- choice (map (try . string) ["AS","PR","MP","MT","DD","DNE","DNI", "DN", "CD", "ID"])
@@ -186,7 +190,7 @@ parsePropLogic = do r <- choice (map (try . string) ["AS","PR","MP","MT","DD","D
                         "DNI" -> return [DNI]
                         "DN"  -> return [DNE,DNI]
                         "CD"  -> return [CP1,CP2]
-                        "ID"  -> return [ID1,ID2,ID3]
+                        "ID"  -> return [ID1,ID2,ID3,ID4]
 
 parsePropProof :: String -> [Either ParseError (DeductionLine PropLogic PurePropLexicon (Form Bool))]
 parsePropProof = toDeduction parsePropLogic prePurePropFormulaParser
