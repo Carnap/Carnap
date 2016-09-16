@@ -73,7 +73,7 @@ activateChecker w (Just (i,o,g, classes)) =
                    appendChild o mnumberDiv
                    appendChild o mfeedbackDiv
                    appendChild par mbt
-                   echo <- newListener $ genericUpdateResults2 (updateFunction ref s) g fd
+                   echo <- newListener $ genericUpdateResults2 (updateFunction w ref s) g fd
                    lineupd <- newListener $ onEnter $ updateLines w nd
                    (Just w') <- getDefaultView w                    
                    submit <- newListener $ trySubmit ref w' l s i
@@ -82,24 +82,33 @@ activateChecker w (Just (i,o,g, classes)) =
                    addListener bt click submit False                
                    setLinesTo w nd 1
                    syncScroll i o
-    where wrap (Left (GenericError s n))  = errDiv s n Nothing
-          wrap (Left (NoParse e n))       = errDiv "Can't read this line. There may be a typo." n (Just $ show e)
-          wrap (Left (NoUnify eqs n))     = errDiv "Can't match these premises with this conclusion, using this rule" n Nothing
-          wrap (Left (NoResult n))        = "<div>&nbsp;</div>"
-          wrap (Right seq) = "<div>+<div><div>" ++ show seq ++ "<div></div></div>"
-          updateFunction ref' s' v (g', fd') = do let Feedback mseq ds = toDisplaySequencePropProof parsePropProof v
-                                                  ul <- genericListToUl wrap w ds
-                                                  setInnerHTML fd' (Just "")
-                                                  appendChild fd' (Just ul)
-                                                  case mseq of
-                                                      Nothing -> do setAttribute g' "class" "goal"
-                                                                    writeIORef ref' False
-                                                      (Just seq) ->  if  seq `seqSubsetUnify` s'
-                                                            then do setAttribute g' "class" "goal success"
-                                                                    writeIORef ref' True
-                                                            else do setAttribute g' "class" "goal"
-                                                                    writeIORef ref' False
-                                                  return ()
+
+wrap (Left (GenericError s n))  = errDiv s n Nothing
+wrap (Left (NoParse e n))       = errDiv "Can't read this line. There may be a typo." n (Just $ show e)
+wrap (Left (NoUnify eqs n))     = errDiv "Can't match these premises with this conclusion, using this rule" n (Just $ toUniErr eqs)
+wrap (Left (NoResult n))        = "<div>&nbsp;</div>"
+wrap (Right seq) = "<div>+<div><div>" ++ show seq ++ "<div></div></div>"
+
+toUniErr eqs = "In order to apply this inference rule, there needs to be a substitution that makes at least one of these sets of pairings match:" 
+                ++ (concat $ map endiv' $ map (concat . map (endiv . show) . reverse) eqs)
+                -- TODO: make this less horrible, give equations internal structure so that
+                -- they can be aligned properly
+    where endiv e = "<div>" ++ e ++ "</div>"
+          endiv' e = "<div class=\"equations\">" ++ e ++ "</div>"
+
+updateFunction w ref s v (g, fd) = do let Feedback mseq ds = toDisplaySequencePropProof parsePropProof v
+                                      ul <- genericListToUl wrap w ds
+                                      setInnerHTML fd (Just "")
+                                      appendChild fd (Just ul)
+                                      case mseq of
+                                          Nothing -> do setAttribute g "class" "goal"
+                                                        writeIORef ref False
+                                          (Just seq) ->  if  seq `seqSubsetUnify` s
+                                                then do setAttribute g "class" "goal success"
+                                                        writeIORef ref True
+                                                else do setAttribute g "class" "goal"
+                                                        writeIORef ref False
+                                      return ()
 
 errDiv msg lineno (Just details)= 
         "<div>✗<div><div>Error on line " ++ show lineno ++ ": " ++ msg ++ "<div>see details<div>" ++ details ++ "</div></div></div></div></div>"

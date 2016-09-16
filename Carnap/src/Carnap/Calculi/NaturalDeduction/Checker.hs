@@ -213,9 +213,15 @@ parsePropProof = toDeduction parsePropLogic prePurePropFormulaParser
 
 reduceResult :: Int -> [Either (ProofErrorMessage lex) [b]] -> Either (ProofErrorMessage lex) b
 reduceResult lineno xs = case rights xs of
-                           [] -> Left $ NoUnify (concat $ map eqsOf xs) lineno
+                           [] -> Left $ errFrom xs
                            (r:x):rs -> Right r
     where eqsOf (Left (NoUnify eqs _)) = eqs
+          errFrom xs@(Left x:_) = if and (map uni xs) 
+                                     then NoUnify (concat $ map eqsOf xs) lineno
+                                     else x
+          uni (Left (NoUnify _ _)) = True
+          uni _ = False
+          
 
 --Given a list of concrete rules and a list of (variable-free) premise sequents, and a (variable-free) 
 --conclusion succeedent, return an error or a list of possible (variable-free) correct 

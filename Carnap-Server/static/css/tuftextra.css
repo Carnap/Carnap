@@ -142,14 +142,21 @@
 }
 
 .proofFeedback li > div:hover > div > div > div:hover > div {
+    border-top:1px solid gray;
+}
+
+.proofFeedback li > div:hover > div > div > div:hover div {
     visibility:visible;
     display:block;
-    border-top:1pt solid gray;
     color:black;
     line-height:1.2em;
     font-size:8pt;
     padding-top:5px;
-    overflow-y:auto;
+}
+
+.proofFeedback .equations {
+    padding:10px;
+    border:1px solid gray;
 }
 
 .proofFeedback li > div:hover > div > div > div:hover {
