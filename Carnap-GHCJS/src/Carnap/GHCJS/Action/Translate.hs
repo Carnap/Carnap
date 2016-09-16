@@ -86,7 +86,7 @@ tryTrans o ref w f = onEnter $ do (Just t) <- target :: EventM HTMLInputElement 
 trySubmit ref w l f = do isFinished <- liftIO $ readIORef ref
                          if isFinished
                            then liftIO $ sendJSON (SubmitTranslation (l ++ ":" ++ show f)) loginCheck error
-                           else alert w "not yet finished"
+                           else alert w "not yet finished (remember to press return to check your work before submitting!)"
     where loginCheck c | c == "No User" = alert w "You need to log in before you can submit anything"
                        | c == "Clash"   = alert w "it appears you've already successfully submitted this problem"
                        | otherwise      = alert w $ "Submitted Translation for Exercise " ++ l
