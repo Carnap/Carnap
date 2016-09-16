@@ -58,7 +58,7 @@ totalScore xs = foldr (+) 0 (map exPairToScore xs)
 exPairToScore :: ((Text,Text),Text) -> Int
 exPairToScore ((x,y),z) =  case utcDueDate x of                      
                               Just d -> if asUTC z `laterThan` d       
-                                            then 0
+                                            then 2
                                             else 5
                               Nothing -> 0
 
