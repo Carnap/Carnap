@@ -9,14 +9,31 @@ import qualified Data.Map as M
 
 getUserR :: Text -> Handler Html
 getUserR userId = do
-    synsubs <- yourSubs synPair userId
-    transsubs <- yourSubs transPair userId
-    dersubs <- yourSubs derPair userId
+    (synsubs, transsubs,dersubs) <- subsById userId
+    let isAdmin = userId == "gleachkr@gmail.com"
+    let pointsAvailable = "325" :: Text
+    allUsers <- if isAdmin 
+                    then (runDB $ selectList [] []) >>= return . (map $ userIdent . fromEnt )
+                    else return []
+    allScores <- mapM scoreById allUsers >>= return . zip allUsers
     defaultLayout $ do
         setTitle "Welcome To Your Homepage!"
         [whamlet|
             <div.container>
                 <h1> Homepage for #{userId}
+                $if isAdmin
+                    <h2> Admin Panel
+                    <table class="table table-striped">
+                        <thead>
+                            <th> Student
+                            <th> Total Score
+                        <tbody>
+                            $forall id' <- allUsers
+                                <tr>
+                                    <td>
+                                        <a href="@{UserR id'}">#{id'}
+                                    <td>
+                                        #{tryLookup allScores id'}/#{pointsAvailable}
                 <p> This is your homepage, where you can keep track of your progress in the course, and find other useful information.
                 <h3 style="padding-top:10pt"> Completed Problems
                 <h4> Syntax Checking
@@ -31,14 +48,25 @@ getUserR userId = do
                         #{dueDateTable}
                     <div.col-md-3>
                         <h3> Total Points Earned
-                        <span style="font-size:56pt; color:gray; padding-left:20pt"> #{totalScore (synsubs ++ (transsubs ++ dersubs))}/275
+                        <span style="font-size:56pt; color:gray; padding-left:20pt"> #{totalScore (synsubs ++ (transsubs ++ dersubs))}/#{pointsAvailable}
                 <div>
                 <a href=@{AuthR LogoutR}>
                     Logout
         |]
+    where tryLookup l x = case lookup x l of
+                          Just n -> show n
+                          Nothing -> "can't find scores"
 
 textToUl :: [Text] -> Html
 textToUl xs = do B.ul $ mapM_ (B.li . B.toHtml) xs
+
+adminTable users = B.table B.! class_ "table table-striped" $ do
+                        B.thead $ do
+                            B.th "Student"
+                            -- B.th "Score"
+                            -- B.th "Homepage"
+                        B.tbody $ mapM_ toRow users
+        where toRow u = B.tr $ do B.td $ B.toHtml u
 
 exPairToTable :: [((Text,Text), Text)] -> Html
 exPairToTable xs = B.table B.! class_ "table table-striped" $ do
@@ -54,6 +82,14 @@ exPairToTable xs = B.table B.! class_ "table table-striped" $ do
                                           B.td $ B.toHtml $ show $ exPairToScore ((x,y),z)
 
 totalScore xs = foldr (+) 0 (map exPairToScore xs)
+
+scoreById uid = do (a,b,c) <- subsById uid
+                   return $ totalScore $ a ++ b ++ c
+
+subsById uid = do synsubs <- yourSubs synPair uid
+                  transsubs <- yourSubs transPair uid
+                  dersubs <- yourSubs derPair uid
+                  return (synsubs, transsubs, dersubs)
 
 exPairToScore :: ((Text,Text),Text) -> Int
 exPairToScore ((x,y),z) =  case utcDueDate x of                      
@@ -98,6 +134,7 @@ dueDates = M.fromList [(1, toTime "11:59 pm CDT, Aug 30, 2016")
                       ,(4, toTime "11:59 pm CDT, Sep 7, 2016")
                       ,(5, toTime "11:59 pm CDT, Sep 12, 2016")
                       ,(6, toTime "11:59 pm CDT, Sep 14, 2016")
+                      ,(7, toTime "11:59 pm CDT, Sep 19, 2016")
                       ]
     where toTime = parseTimeOrError True defaultTimeLocale "%l:%M %P %Z, %b %e, %Y"
 

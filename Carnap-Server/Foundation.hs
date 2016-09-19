@@ -92,7 +92,7 @@ instance Yesod App where
                                       return $ if ident'    == "gleachkr@gmail.com" 
                                                   || ident' == ident
                                                then Authorized
-                                               else Unauthorized "boo"
+                                               else Unauthorized "It appears you're not authorized to access this page"
     -- Routes not requiring authentication
     isAuthorized _ _ = return Authorized
 
