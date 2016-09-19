@@ -48,7 +48,7 @@ getUserR userId = do
                         #{dueDateTable}
                     <div.col-md-3>
                         <h3> Total Points Earned
-                        <span style="font-size:56pt; color:gray; padding-left:20pt"> 
+                        <span style="font-size:56pt; color:gray; padding-left:20pt">
                             #{totalScore (synsubs ++ (transsubs ++ dersubs))}/#{pointsAvailable}
                 <div>
                 <a href=@{AuthR LogoutR}>
@@ -83,17 +83,12 @@ totalScore xs = foldr (+) 0 (map exPairToScore xs)
 asUTC :: Text -> UTCTime
 asUTC z = read (unpack z)
 
-centralDaylight = TimeZone (-300) False "CDT"
-
 toKansasLocal z = ZonedTime (utcToLocalTime centralDaylight z) centralDaylight
+    where centralDaylight = TimeZone (-300) False "CDT"
 
 formatted z = formatTime defaultTimeLocale "%l:%M %P %Z, %a %b %e, %Y" (toKansasLocal z)
 
 utcDueDate x = M.lookup (read $ unpack (takeWhile (/= '.') x) :: Int) dueDates
-
-printDueDate x = case utcDueDate x of
-                Just d -> formatted d
-                Nothing -> "None"
 
 laterThan :: UTCTime -> UTCTime -> Bool
 laterThan t1 t2 = diffUTCTime t1 t2 > 0
@@ -115,17 +110,6 @@ dueDates = M.fromList [(1, toTime "11:59 pm CDT, Aug 30, 2016")
 --Blaze utility functions
 --------------------------------------------------------
 --functions for manipulating html
-
-textToUl :: [Text] -> Html
-textToUl xs = do B.ul $ mapM_ (B.li . B.toHtml) xs
-
-adminTable users = B.table B.! class_ "table table-striped" $ do
-                        B.thead $ do
-                            B.th "Student"
-                            -- B.th "Score"
-                            -- B.th "Homepage"
-                        B.tbody $ mapM_ toRow users
-        where toRow u = B.tr $ do B.td $ B.toHtml u
 
 exPairToTable :: [((Text,Text), Text)] -> Html
 exPairToTable xs = B.table B.! class_ "table table-striped" $ do
