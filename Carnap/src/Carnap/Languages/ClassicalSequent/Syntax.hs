@@ -13,7 +13,8 @@ import Carnap.Languages.PurePropositional.Syntax
 import Carnap.Core.Util
 import Carnap.Languages.Util.LanguageClasses
 import Control.Lens.Plated (transform, children)
-import Control.Lens.Prism
+--import Control.Lens.Prism
+import Control.Lens.Lens (lens)
 import Data.Typeable
 import Carnap.Languages.Util.GenericConnectives
 
@@ -98,7 +99,6 @@ instance FirstOrderLex (Turnstile a)
 
 instance UniformlyEq (Turnstile a) where
         Turnstile =* Turnstile = True
-        _ =* _ = False
 
 instance Monad m => MaybeMonadVar (Turnstile a) m
 
@@ -162,6 +162,12 @@ instance (FirstOrderLex (t (ClassicalSequentOver t))) =>
             case eqT :: Maybe (a :~: Antecedent) of
                 Just Refl -> a :+: (SV n)
                 _         -> error "you have to use the right type 3"
+
+instance Handed (ClassicalSequentOver a Sequent) 
+                (ClassicalSequentOver a Antecedent)
+                (ClassicalSequentOver a Succedent)
+    where lhs = lens (\(x :|-: y) -> x) (\( y:|-:z ) x -> x:|-: z)
+          rhs = lens (\(x :|-: y) -> y) (\( y:|-:z ) x -> y:|-: x)
 
 --------------------------------------------------------
 --2. Sequent Languages

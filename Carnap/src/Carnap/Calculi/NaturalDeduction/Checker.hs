@@ -11,6 +11,7 @@ import Carnap.Core.Unification.ACUI
 import Carnap.Languages.ClassicalSequent.Syntax
 import Carnap.Languages.PurePropositional.Syntax
 import Carnap.Languages.PurePropositional.Parser
+import Control.Lens
 import Control.Monad.State
 import Data.Tree
 import Data.Either
@@ -107,7 +108,7 @@ toDisplaySequencePropProof topd s = if isParsed
           isParsed = null $ lefts ded 
           handle (Left e) n = Left $ NoParse e n
           handle (Right _) n = Left $ NoResult n
-          isTop (Right (AssertLine _ _ 0 _)) = True
+          isTop  (Right (AssertLine _ _ 0 _)) = True
           isTop  (Right (ShowLine _ 0)) = True
           isTop  _ = False
           lastTopInd = do i <- findIndex isTop (reverse ded)
@@ -129,8 +130,8 @@ seqUnify s1 s2 = case check of
                      Left _ -> False
                      Right [] -> False
                      Right _ -> True
-            where check = do fosub <- fosolve [rhs s1 :=: rhs s2]
-                             acuisolve [lhs (applySub fosub s1) :=: lhs (applySub fosub s2)]
+            where check = do fosub <- fosolve [view lhs s1 :=: view rhs s2]
+                             acuisolve [view lhs (applySub fosub s1) :=: view lhs (applySub fosub s2)]
 
 
 -- TODO: remove the need for this assumption.
@@ -140,8 +141,8 @@ seqSubsetUnify s1 s2 = case check of
                        Left _ -> False
                        Right [] -> False
                        Right _ -> True
-            where check = do fosub <- fosolve [rhs s1 :=: rhs s2]
-                             acuisolve [(lhs (applySub fosub s1) :+: GammaV (0 - 1)) :=: lhs (applySub fosub s2) ]
+            where check = do fosub <- fosolve [view rhs s1 :=: view rhs s2]
+                             acuisolve [(view lhs (applySub fosub s1) :+: GammaV (0 - 1)) :=: view lhs (applySub fosub s2) ]
 
 --------------------------------------------------------
 --Logics
@@ -239,14 +240,14 @@ seqFromNode lineno rules prems conc = do rrule <- rules
                             let rconc = conclusionOf r
                             fosub <- fosolve 
                                (zipWith (:=:) 
-                                   (map rhs (rconc:rp)) 
-                                   (conc:map rhs prems))
+                                   (map (view rhs) (rconc:rp)) 
+                                   (conc:map (view rhs) prems))
                             let subbedrule = map (applySub fosub) rp
                             let subbedconc = applySub fosub rconc
                             acuisubs <- acuisolve 
                                (zipWith (:=:) 
-                                   (map lhs subbedrule) 
-                                   (map lhs prems))
+                                   (map (view lhs) subbedrule) 
+                                   (map (view lhs) prems))
                             return $ map (\x -> applySub x subbedconc) acuisubs
 
 reduceProofTree :: (Inference r lex, 
@@ -269,10 +270,3 @@ acuisolve eqs =
         case evalState (acuiUnifySys (const False) eqs) (0 :: Int) of
           [] -> Left $ NoUnify [eqs] 0
           subs -> Right subs
-
-rhs :: ClassicalSequentOver lex Sequent -> ClassicalSequentOver lex Succedent
-rhs (x :|-: (Bot :-: y)) = rhs (x :|-: y)
-rhs (_ :|-: y) = y 
-
-lhs :: ClassicalSequentOver lex Sequent -> ClassicalSequentOver lex Antecedent
-lhs (x :|-: _) = x

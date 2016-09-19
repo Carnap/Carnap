@@ -4,6 +4,7 @@ module Carnap.Core.Data.AbstractSyntaxClasses
 
 import Carnap.Core.Util
 import Data.Typeable
+import Control.Lens 
 
 --------------------------------------------------------
 --1. Abstract typeclasses
@@ -65,6 +66,14 @@ class CanonicalForm a where
     canonical :: a -> a
     canonical = id
 
+{-|
+Handed is a typeclass for data like equations and sequents, which have
+left-hand-side and a right-hand-side
+-}
+
+class Handed a l r | a -> l r where
+        lhs :: Lens' a l
+        rhs :: Lens' a r
 
 class Monad m => MonadVar f m where
     fresh :: Typeable a => m (f a)
