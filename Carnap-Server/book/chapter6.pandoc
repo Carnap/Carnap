@@ -1,0 +1,203 @@
+#Indirect Derivations
+
+The last type of derivation that we will consider is an indirect derivation. 
+An indirect derivation is, generally speaking, a derivation used in order to 
+show that something is *not* true. How do we ordinarily know that something is 
+not true? One thing that we do is to reject statements that conflict with 
+things that we already know to be true.
+
+For example:
+
+1. You get a call from the elementary school, saying that your little brother 
+   was absent. Later, you ask: where were you this afternoon? Your brother 
+   says: I was at school. You then know that what your bother says is false,
+   since it contradicts what you know to be true.
+
+2. As a materials engineer, you know for a fact that a certain type of
+   building material cannot handle humid climates. A contractor tells you that
+   the best material to use in your new house, to be built in a humid climate,
+   is this particular building material. In this case, you know that the
+   contractor is not saying something true, because what he says contradicts
+   what you know for sure.
+
+3. You happen to know that, to ski down Mount Terror, the suspect would have 
+   needed to buy some skiing gear. You also happen to know that if the suspect 
+   spent the day skiing down Mount Terror, then the suspect had no time to buy 
+   any skiing gear. You ask the suspect: "Where were you today?" They say 
+   “why, I was skiing down Mount Terror!”. Then you know the suspect is lying 
+   to you.
+
+Let’s take a closer look at this last case. How do we know the suspect is
+lying? Well, suppose the suspect *did* go skiing down mount terror. Then given
+what we know, they’d have to have bought some skis. But given what we know,
+they also could not have bought some skis. So, under the assumption that the
+suspect did go skiing down mount terror, they both did and did not buy skis.
+And that is surely impossible.
+
+In any situation compatible with our knowledge, where the suspect did go
+skiing, they both bought and did not buy skis. But such a situation simply not
+possible. So we can safely conclude on the basis of what we know that the
+suspect did not, in fact, go skiing down Mount Terror.
+
+We can represent the abstract structure of this sort of reasoning as a 
+(simple) Indirect Derivation
+
+Indirect Derivation
+
+:   A (simple) indirect derivation is a sequence of assertions
+
+    1. Aimed at showing a statement φ is false, or equivalently that ∼φ is
+       true,
+
+    2. beginning with an assumption that φ is true,
+
+    3. in which every assertion other than the first justified, either because
+       it is a premise or because it is the conclusion of a rule of direct
+       inference with previous lines as premises,
+
+To use an indirect derivation to show something, we’ll need to do many of the 
+same things that we needed to do to show something with a conditional 
+derivation. First of all, we will need to keep track of what we are trying to 
+show, so that others can know what we are intending to do. Second of all, we 
+will need to keep track of what we are assuming, and what we are actually 
+justifying on the basis of other things. Third of all, we will need to keep 
+track of what we have already shown, since each new step must be based on 
+previous steps or premises. Fourth, we will need to keep track of the 
+justification for each step that we are making, so that we, and others, can 
+easily verify the correctness of each step in our reasoning.
+
+As before, we will write “Show” to indicate what we are showing, we will 
+number our lines, and indicate where the premises to rules MP,MT, and DN are 
+coming from by using line numbers.
+
+For simple indirect derivations, we will aim only to show negative statements
+of the form ¬φ. Second, we will begin each derivation by assuming the
+statement φ. As usual, we will write :AS to justify our assumption. Third, we
+will consider ourselves finished when we manage to assert both some statement
+ψ and the negation ∼ψ of ψ. At this point, we will write the numbers of the
+line where we asserted these two statements, together with :ID, to mean “I
+have shown the negative statement by means of a indirect derivation ending
+with these lines.
+
+The result will look like this:
+
+```
+1. Show ¬φ
+2.    φ           :AS
+3.    ASSERTION   :JUSTIFICATION
+4.    ASSERTION   :JUSTIFICATION
+5.    ψ           :JUSTIFICATION
+6.    ASSERTION   :JUSTIFICATION
+7.    ASSERTION   :JUSTIFICATION
+8.    ¬ψ          :JUSTIFICATION
+9. :ID 5 8
+```
+
+The particular numbers do not matter, of course, and neither does whether 
+$\psi$ or $\neg\psi$ comes first in the derivation.
+
+Here's an example of how you might use an indirect derivation, to prove the
+validity of an argument like this one: $P→\neg P\vdash \neg P$
+
+``` 
+1. Show: ~P
+2.   P     :AS
+3.   P->~P :PR
+4.   ~P    :MP 2 3
+5. :ID 2 4
+```
+
+Here's another example, this time showing how to prove $P\rightarrow Q, P\rightarrow\neg Q\vdash \neg P$
+
+``` 
+1. Show: ~P
+2.    P      :AS
+3.    P->Q   :PR
+4.    Q      :MP 2 3
+5.    P->~Q  :PR
+6.    ~Q     :MP 2 5
+7. :ID 4 5
+```
+
+Notice something important about this example: the lines that you apply :ID to
+do not have to be the same as the lines that you assume to begin the indirect
+derivation. As long as your derivation reaches a contradiction, that's enough
+for you to have shown the negation of the assumption that began your
+derivation---it doesn't matter whether or not the assumption is actually part
+of the contradiction.
+
+##Nested Indirect Derivations
+
+In the same way that conditional and direct derivations can be nested inside
+of one another, indirect derivations can be nested inside of other types of
+derivations, and can also have other types of derivations nested inside of
+them.
+
+Here's the official definition.
+
+Nested Indirect Derivation
+:   
+
+    A nested indirect derivation derivation is a sequence of assertions, aimed 
+    at showing ∼φ, beginning with the assumption that φ, each of which after 
+    the first is justified because either
+
+    1. it is a premise of the argument under consideration;
+
+    2. it is the conclusion of a rule of direct derivation applied to previous
+       assertions which are available from the line it occupies; or
+
+    3. it is listed next to a completed show-line (a show line that has been
+       paired with a QED line), meaning that this assertion has been shown to
+       be true by a derivation.
+
+Where by an available line here, we mean the same thing as in the previous
+chapter---a line is available at a certain point if it is not part of a
+subproof that has already been completed (because it is between an earlier
+show line and a QED line corresponding to that show line). Here are some
+simple examples of indirect derivations.
+
+Here's an example of how you might use an indirect derivation nested inside a
+conditional derivation, to prove the validity of an argument like this one:
+$P\rightarrow Q\vdash (P\rightarrow\neg Q)\rightarrow\neg P$
+
+``` 
+1. Show: (P -> ~Q) -> ~P
+2.   P->~Q     :AS
+3.   Show: ~P
+4.      P      :AS
+5.      P->Q   :PR
+6.      Q      :MP 5 4
+7.      ~Q     :MP 2 4
+8.   :ID 6 7
+9. :CD 3
+```
+
+#Problem Set 7
+
+Abbreviations are the same as in previous chapters. When the argument turns a
+light green color, then you can press the "submit" button to submit your work.
+
+Construct indirect derivations (no nesting will be necessary) to show the
+validity of the listed arguments. 
+
+```{.ProofChecker .Prop}
+7.1 (-P->P) :|-: --P
+7.2 P,-P :|-: -Q
+7.3 -Q->R, S-> -R, -S->Q :|-: --Q
+7.4 P->Q, Q->R, R->S, P :|-: -(P->-S)
+7.5 (P->Q)->R, S->(P->Q), -S->R :|-: --R
+7.6 -P->(R->S), (R->S)-> T, -T, Q->(R->S) :|-: -(P->Q)
+```
+
+Construct nested derivations, which will include some indirect derivations, to
+show the validity of this second set of arguments. If you're not sure how to
+start, here's a hint: look at the main connective of the conclusion you're
+trying to show. Which of ID and CD would help show that conclusion?
+
+```{.ProofChecker .Prop}
+7.7 :|-: (-P->P) -> --P
+7.8 R->(Q->P), Q->-P :|-: R->-Q 
+7.9 P->Q, Q->R, R->S :|-: P->-(P->-S)
+7.10 P->Q, (R->Q)->-P :|-: -P
+```

@@ -1,11 +1,13 @@
 {-#LANGUAGE FlexibleContexts #-}
 module Carnap.GHCJS.Action.ProofCheck (proofCheckAction) where
 
-import Carnap.Calculi.NaturalDeduction.Checker (ProofErrorMessage(..), Feedback(..), seqSubsetUnify, toDisplaySequencePropProof, parsePropProof)
+import Carnap.Calculi.NaturalDeduction.Checker (ProofErrorMessage(..), Feedback(..), seqSubsetUnify, toDisplaySequence)
 import Carnap.Languages.ClassicalSequent.Parser (propSeqParser)
+import Carnap.Languages.PurePropositional.Logic (parsePropProof)
 import Carnap.GHCJS.SharedTypes
 import Text.Parsec
 import Data.IORef
+import Data.Map (empty)
 import Lib
 import GHCJS.DOM
 import GHCJS.DOM.Element
@@ -96,7 +98,8 @@ toUniErr eqs = "In order to apply this inference rule, there needs to be a subst
     where endiv e = "<div>" ++ e ++ "</div>"
           endiv' e = "<div class=\"equations\">" ++ e ++ "</div>"
 
-updateFunction w ref s v (g, fd) = do let Feedback mseq ds = toDisplaySequencePropProof parsePropProof v
+updateFunction w ref s v (g, fd) = do let Feedback mseq ds = toDisplaySequence (parsePropProof empty) v
+                                      --currently no derived rules, hence the empty.
                                       ul <- genericListToUl wrap w ds
                                       setInnerHTML fd (Just "")
                                       appendChild fd (Just ul)

@@ -121,5 +121,5 @@ predIndex = prism' (\n -> Predicate (Prop n) AZero) pm
           pm (Predicate (Prop n) AZero) = Just n
           pm _ = Nothing
 
-propIndex :: Prism' (PurePropLanguage (Form Bool)) Int
+propIndex :: Prism' PureForm Int
 propIndex = raisePrism predIndex

@@ -1,5 +1,5 @@
 {-#LANGUAGE GADTs, KindSignatures, TypeOperators, FlexibleContexts, TypeSynonymInstances, FlexibleInstances, MultiParamTypeClasses #-}
-module Carnap.Calculi.NaturalDeduction.Checker (toDisplaySequencePropProof, ProofErrorMessage(..), Feedback(..),seqUnify,seqSubsetUnify, parsePropProof) where
+module Carnap.Calculi.NaturalDeduction.Checker (toDisplaySequence, ProofErrorMessage(..), Feedback(..),seqUnify,seqSubsetUnify, toDeduction) where
 
 import Carnap.Calculi.NaturalDeduction.Syntax
 import Carnap.Calculi.NaturalDeduction.Parser
@@ -9,8 +9,6 @@ import Carnap.Core.Unification.Unification
 import Carnap.Core.Unification.FirstOrder
 import Carnap.Core.Unification.ACUI
 import Carnap.Languages.ClassicalSequent.Syntax
-import Carnap.Languages.PurePropositional.Syntax
-import Carnap.Languages.PurePropositional.Parser
 import Control.Lens
 import Control.Monad.State
 import Data.Tree
@@ -98,12 +96,12 @@ toProofTree ded n = case ded !! (n - 1)  of
           --sublist, given by line numbers
           lineRange m n l = drop (m - 1) $ take n l
 
-toDisplaySequencePropProof :: (MonadVar (ClassicalSequentOver lex) (State Int), Inference r lex, Sequentable lex) => 
+toDisplaySequence:: (MonadVar (ClassicalSequentOver lex) (State Int), Inference r lex, Sequentable lex) => 
     (String -> PartialDeduction r lex) -> String -> Feedback lex
-toDisplaySequencePropProof topd s = if isParsed 
-                                   then let feedback = map (processLine(rights ded)) [1 .. length ded] in
-                                       Feedback (lastTopInd >>= fromFeedback feedback) feedback
-                                   else Feedback Nothing (zipWith handle ded [1 .. length ded])
+toDisplaySequence topd s = if isParsed 
+                              then let feedback = map (processLine(rights ded)) [1 .. length ded] in
+                                  Feedback (lastTopInd >>= fromFeedback feedback) feedback
+                              else Feedback Nothing (zipWith handle ded [1 .. length ded])
     where ded = topd s
           isParsed = null $ lefts ded 
           handle (Left e) n = Left $ NoParse e n
@@ -143,70 +141,6 @@ seqSubsetUnify s1 s2 = case check of
                        Right _ -> True
             where check = do fosub <- fosolve [view rhs s1 :=: view rhs s2]
                              acuisolve [(view lhs (applySub fosub s1) :+: GammaV (0 - 1)) :=: view lhs (applySub fosub s2) ]
-
---------------------------------------------------------
---Logics
---------------------------------------------------------
-
-data PropLogic = MP | MT | DNE | DNI | DD | AX | CP1 | CP2 | ID1 | ID2 | ID3 | ID4
-               deriving Show
-
-instance Inference PropLogic PurePropLexicon where
-    premisesOf MP  = [ GammaV 1 :|-: SS (SeqPhi 1 :->-: SeqPhi 2)
-                     , GammaV 2 :|-: SS (SeqPhi 1)
-                     ]
-    premisesOf MT  = [ GammaV 1 :|-: SS (SeqPhi 1 :->-: SeqPhi 2)
-                     , GammaV 2 :|-: SS (SeqNeg $ SeqPhi 2)
-                     ]
-    premisesOf AX  = []
-    premisesOf DD  = [ GammaV 1 :|-: SS (SeqPhi 1) ]
-    premisesOf DNE = [ GammaV 1 :|-: SS (SeqNeg $ SeqNeg $ SeqPhi 1) ]
-    premisesOf DNI = [ GammaV 1 :|-: SS (SeqPhi 1) ]
-    premisesOf CP1 = [ GammaV 1 :+: SA (SeqPhi 1) :|-: SS (SeqPhi 2) ]
-    premisesOf CP2 = [ GammaV 1 :|-: SS (SeqPhi 2) ]
-    premisesOf ID1 = [ GammaV 1 :+: SA (SeqPhi 1) :|-: SS (SeqPhi 2) 
-                     , GammaV 2 :+: SA (SeqPhi 1) :|-: SS (SeqNeg $ SeqPhi 2)
-                     ]
-    premisesOf ID2 = [ GammaV 1 :+: SA (SeqPhi 1) :|-: SS (SeqPhi 2) 
-                     , GammaV 2 :|-: SS (SeqNeg $ SeqPhi 2)
-                     ]
-    premisesOf ID3 = [ GammaV 1  :|-: SS (SeqPhi 2) 
-                     , GammaV 2 :+: SA (SeqPhi 1) :|-: SS (SeqNeg $ SeqPhi 2)
-                     ]
-    premisesOf ID4 = [ GammaV 1  :|-: SS (SeqPhi 2) 
-                     , GammaV 2  :|-: SS (SeqNeg $ SeqPhi 2)
-                     ]
-
-    conclusionOf MP  = (GammaV 1 :+: GammaV 2) :|-: SS (SeqPhi 2)
-    conclusionOf MT  = (GammaV 1 :+: GammaV 2) :|-: SS (SeqNeg $ SeqPhi 1)
-    conclusionOf AX  = SA (SeqPhi 1) :|-: SS (SeqPhi 1)
-    conclusionOf DD  = GammaV 1 :|-: SS (SeqPhi 1) 
-    conclusionOf DNE = GammaV 1 :|-: SS (SeqPhi 1) 
-    conclusionOf DNI = GammaV 1 :|-: SS (SeqNeg $ SeqNeg $ SeqPhi 1) 
-    conclusionOf CP1 = GammaV 1 :|-: SS (SeqPhi 1 :->-: SeqPhi 2) 
-    conclusionOf CP2 = GammaV 1 :|-: SS (SeqPhi 1 :->-: SeqPhi 2)
-    conclusionOf ID1 = GammaV 1 :+: GammaV 2 :|-: SS (SeqNeg $ SeqPhi 1)
-    conclusionOf ID2 = GammaV 1 :+: GammaV 2 :|-: SS (SeqNeg $ SeqPhi 1)
-    conclusionOf ID3 = GammaV 1 :+: GammaV 2 :|-: SS (SeqNeg $ SeqPhi 1)
-    conclusionOf ID4 = GammaV 1 :+: GammaV 2 :|-: SS (SeqNeg $ SeqPhi 1)
-
-parsePropLogic :: Parsec String u [PropLogic]
-parsePropLogic = do r <- choice (map (try . string) ["AS","PR","MP","MT","DD","DNE","DNI", "DN", "CD", "ID"])
-                    case r of
-                        "AS"  -> return [AX]
-                        "PR"  -> return [AX]
-                        "MP"  -> return [MP]
-                        "MT"  -> return [MT]
-                        "DD"  -> return [DD]
-                        "DNE" -> return [DNE]
-                        "DNI" -> return [DNI]
-                        "DN"  -> return [DNE,DNI]
-                        "CD"  -> return [CP1,CP2]
-                        "ID"  -> return [ID1,ID2,ID3,ID4]
-
-parsePropProof :: String -> [Either ParseError (DeductionLine PropLogic PurePropLexicon (Form Bool))]
-parsePropProof = toDeduction parsePropLogic prePurePropFormulaParser
-
 
 --------------------------------------------------------
 --Utility Functions
