@@ -15,6 +15,7 @@ import Carnap.Languages.Util.LanguageClasses
 import Control.Lens.Plated (transform, children)
 --import Control.Lens.Prism
 import Control.Lens.Lens (lens)
+import Control.Lens.Traversal (Traversal')
 import Data.Typeable
 import Carnap.Languages.Util.GenericConnectives
 
@@ -163,11 +164,19 @@ instance (FirstOrderLex (t (ClassicalSequentOver t))) =>
                 Just Refl -> a :+: (SV n)
                 _         -> error "you have to use the right type 3"
 
-instance Handed (ClassicalSequentOver a Sequent) 
-                (ClassicalSequentOver a Antecedent)
-                (ClassicalSequentOver a Succedent)
+instance Handed (ClassicalSequentOver lex Sequent) 
+                (ClassicalSequentOver lex Antecedent)
+                (ClassicalSequentOver lex Succedent)
     where lhs = lens (\(x :|-: y) -> x) (\( y:|-:z ) x -> x:|-: z)
           rhs = lens (\(x :|-: y) -> y) (\( y:|-:z ) x -> y:|-: x)
+
+
+-- TODO: Generalize to a typeclass
+concretes :: Traversal' (ClassicalSequentOver lex Antecedent) (ClassicalSequentOver lex (Form Bool))
+concretes f (a :+: a') = (:+:) <$> concretes f a <*> concretes f a'
+concretes f (SA x)     = SA <$> f x
+concretes f (GammaV n) = pure (GammaV n)
+concretes f (SV n) = pure (SV n)
 
 --------------------------------------------------------
 --2. Sequent Languages
@@ -175,6 +184,8 @@ instance Handed (ClassicalSequentOver a Sequent)
 
 class Sequentable f where
         liftToSequent :: FixLang f a -> ClassicalSequentOver f a
+        fromSequent :: ClassicalSequentOver f a -> FixLang f a
+        -- XXX: add an iso?
 
 --------------------------------------------------------
 --2.1 Propositional Sequent Calculus
@@ -244,3 +255,12 @@ instance Sequentable PurePropLexicon where
     liftToSequent (x :<->: y)   = (liftToSequent x :<->-: liftToSequent y)
     liftToSequent (PNeg y)      = (SeqNeg $ liftToSequent y)
     liftToSequent (PP n)        = SeqProp n
+    liftToSequent (PPhi n)      = SeqPhi n
+
+    fromSequent (x :&-: y)     = (fromSequent x :&: fromSequent y)
+    fromSequent (x :||-: y)    = (fromSequent x :||: fromSequent y)
+    fromSequent (x :->-: y)    = (fromSequent x :->: fromSequent y)
+    fromSequent (x :<->-: y)   = (fromSequent x :<->: fromSequent y)
+    fromSequent (SeqNeg y)     = (PNeg $ fromSequent y)
+    fromSequent (SeqProp n)    = PP n
+    fromSequent (SeqPhi n)     = PPhi n

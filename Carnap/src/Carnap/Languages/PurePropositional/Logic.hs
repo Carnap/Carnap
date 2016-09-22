@@ -1,8 +1,8 @@
 {-#LANGUAGE TypeSynonymInstances, FlexibleInstances, MultiParamTypeClasses #-}
-module Carnap.Languages.PurePropositional.Logic (parsePropLogic, parsePropProof) where
+module Carnap.Languages.PurePropositional.Logic (parsePropLogic, parsePropProof, DerivedRule(..)) where
 
+import Data.Map as M (lookup, Map)
 import Text.Parsec
-import Data.Map as M (lookup, Map) 
 import Carnap.Core.Data.AbstractSyntaxDataTypes
 import Carnap.Languages.PurePropositional.Syntax
 import Carnap.Languages.PurePropositional.Parser

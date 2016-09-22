@@ -2,12 +2,14 @@
 module Carnap.GHCJS.Action.ProofCheck (proofCheckAction) where
 
 import Carnap.Calculi.NaturalDeduction.Checker (ProofErrorMessage(..), Feedback(..), seqSubsetUnify, toDisplaySequence)
+import Carnap.Languages.ClassicalSequent.Syntax
 import Carnap.Languages.ClassicalSequent.Parser (propSeqParser)
-import Carnap.Languages.PurePropositional.Logic (parsePropProof)
+import Carnap.Languages.PurePropositional.Logic (DerivedRule(..), parsePropProof)
 import Carnap.GHCJS.SharedTypes
 import Text.Parsec
 import Data.IORef
 import Data.Map (empty)
+import Control.Lens.Fold (toListOf)
 import Lib
 import GHCJS.DOM
 import GHCJS.DOM.Element
@@ -20,7 +22,7 @@ import GHCJS.DOM.Element
 import GHCJS.DOM.Types
 import GHCJS.DOM.HTMLTextAreaElement (HTMLTextAreaElement, getValue, castToHTMLTextAreaElement)
 import GHCJS.DOM.Document (Document,createElement, getBody, getDefaultView)
-import GHCJS.DOM.Window (alert)
+import GHCJS.DOM.Window (alert, prompt)
 import GHCJS.DOM.Node (appendChild, getParentNode, insertBefore)
 import GHCJS.DOM.KeyboardEvent
 import GHCJS.DOM.EventM
@@ -36,7 +38,7 @@ proofCheckAction = runWebGUI $ \w ->
                 _ -> mapM_ (activateChecker dom) mcheckers
 
 getCheckers :: IsElement self => self -> IO [Maybe (Element, Element, Element, [String])]
-getCheckers b = 
+getCheckers b =
         do ldivs <- getListOfElementsByClass b "proofchecker"
            mapM extractCheckers ldivs
         where extractCheckers Nothing = return Nothing
@@ -58,30 +60,34 @@ getCheckers b =
 
 activateChecker :: Document -> Maybe (Element, Element, Element, [String]) -> IO ()
 activateChecker _ Nothing  = return ()
-activateChecker w (Just (i,o,g, classes)) = 
-        do (Just gs) <- getInnerHTML g 
-           case parse seqAndLabel "" (decodeHtml gs) of
-               Left e -> setInnerHTML g (Just "Couldn't Parse Goal")
-               Right (l,s) -> do
+activateChecker w (Just (i,o,g, classes))
+        | "ruleMaker" `elem` classes = checkerWith "save rule" trySave computeRule 
+        | otherwise = 
+            do (Just gs) <- getInnerHTML g 
+               case parse seqAndLabel "" (decodeHtml gs) of
+                   Left e -> setInnerHTML g (Just "Couldn't Parse Goal")
+                   Right (l,s) -> do
+                       setInnerHTML g (Just $ show s)
+                       checkerWith "submit solution" (trySubmit l s) (checkSolution s) 
+        where checkerWith buttonLabel buttonFunction updateres = do
                    mfeedbackDiv@(Just fd) <- createElement w (Just "div")
                    mnumberDiv@(Just nd) <-createElement w (Just "div")
                    mbt@(Just bt) <- createElement w (Just "button")
                    ref <- newIORef False
-                   setInnerHTML g (Just $ show s)
                    setAttribute fd "class" "proofFeedback"
                    setAttribute nd "class" "numbering"
-                   setInnerHTML bt (Just "submit solution")         
+                   setInnerHTML bt (Just buttonLabel)         
                    mpar@(Just par) <- getParentNode o               
                    appendChild o mnumberDiv
                    appendChild o mfeedbackDiv
                    appendChild par mbt
-                   echo <- newListener $ genericUpdateResults2 (updateFunction w ref s) g fd
+                   echo <- newListener $ genericUpdateResults2 (updateres w ref) g fd
                    lineupd <- newListener $ onEnter $ updateLines w nd
                    (Just w') <- getDefaultView w                    
-                   submit <- newListener $ trySubmit ref w' l s i
+                   buttonAct <- newListener $ buttonFunction ref w' i
                    addListener i keyUp echo False
                    addListener i keyUp lineupd False
-                   addListener bt click submit False                
+                   addListener bt click buttonAct False                
                    setLinesTo w nd 1
                    syncScroll i o
 
@@ -98,7 +104,7 @@ toUniErr eqs = "In order to apply this inference rule, there needs to be a subst
     where endiv e = "<div>" ++ e ++ "</div>"
           endiv' e = "<div class=\"equations\">" ++ e ++ "</div>"
 
-updateFunction w ref s v (g, fd) = do let Feedback mseq ds = toDisplaySequence (parsePropProof empty) v
+checkSolution s w ref v (g, fd) =  do let Feedback mseq ds = toDisplaySequence (parsePropProof empty) v
                                       --currently no derived rules, hence the empty.
                                       ul <- genericListToUl wrap w ds
                                       setInnerHTML fd (Just "")
@@ -113,9 +119,26 @@ updateFunction w ref s v (g, fd) = do let Feedback mseq ds = toDisplaySequence (
                                                         writeIORef ref False
                                       return ()
 
-errDiv msg lineno (Just details)= 
-        "<div>✗<div><div>Error on line " ++ show lineno ++ ": " ++ msg ++ "<div>see details<div>" ++ details ++ "</div></div></div></div></div>"
-errDiv msg lineno Nothing = "<div>✗<div><div>Error on line " ++ show lineno ++ ": " ++ msg ++ "</div></div></div>"
+computeRule w ref v (g, fd) = do let Feedback mseq ds = toDisplaySequence (parsePropProof empty) v
+                                 --currently no derived rules, hence the empty.
+                                 ul <- genericListToUl wrap w ds
+                                 setInnerHTML fd (Just "")
+                                 appendChild fd (Just ul)
+                                 case mseq of
+                                     Nothing -> do setInnerHTML g (Just "No Rule Found")
+                                                   writeIORef ref False
+                                     (Just seq) -> do setInnerHTML g (Just $ show seq)
+                                                      writeIORef ref True
+                                 return ()
+
+errDiv msg lineno (Just details)= "<div>✗<div><div>Error on line " 
+                                    ++ show lineno ++ ": " ++ msg 
+                                    ++ "<div>see details<div>" 
+                                    ++ details 
+                                    ++ "</div></div></div></div></div>"
+errDiv msg lineno Nothing = "<div>✗<div><div>Error on line " 
+                              ++ show lineno ++ ": " ++ msg 
+                              ++ "</div></div></div>"
 
 -- XXX: this should be a library function
 updateResults :: (IsElement e, IsElement e') => 
@@ -163,7 +186,7 @@ setLinesTo w nd n = do setInnerHTML nd (Just "")
                           setInnerHTML lno (Just $ show m ++ ".")
                           return lno
 
-trySubmit ref w l s i = do isFinished <- liftIO $ readIORef ref
+trySubmit l s ref w i = do isFinished <- liftIO $ readIORef ref
                            if isFinished
                              then do (Just v) <- getValue (castToHTMLTextAreaElement i)
                                      liftIO $ sendJSON (SubmitDerivation (l ++ ":" ++ show s) v) loginCheck error
@@ -171,6 +194,25 @@ trySubmit ref w l s i = do isFinished <- liftIO $ readIORef ref
     where loginCheck c | c == "No User" = alert w "You need to log in before you can submit anything"
                        | c == "Clash"   = alert w "it appears you've already successfully submitted this problem"
                        | otherwise      = alert w $ "Submitted Derivation for Exercise " ++ l
+          error c = alert w ("Something has gone wrong. Here's the error: " ++ c)
+
+trySave ref w i = do isFinished <- liftIO $ readIORef ref
+                     if isFinished
+                       then do (Just v) <- getValue (castToHTMLTextAreaElement i)
+                               let Feedback mseq _ = toDisplaySequence (parsePropProof empty) v
+                               case mseq of
+                                Nothing -> alert w "A rule can't be extracted from this proof"
+                                (Just (a :|-: (SS c))) -> do
+                                    let prems = map fromSequent (toListOf concretes a)
+                                    let conc = fromSequent c
+                                    mname <- prompt w "What name will you give this rule (use all capital letters!)" (Just "")
+                                    case mname of
+                                        (Just name) -> liftIO $ sendJSON (SaveDerivedRule name $ DerivedRule conc prems) loginCheck error
+                                        Nothing -> alert w "No name entered"
+                       else alert w "not yet finished"
+    where loginCheck c | c == "No User" = alert w "You need to log in before you can save a rule"
+                       | c == "Clash"   = alert w "it appears you've already got a rule like this"
+                       | otherwise      = alert w $ "Saved your new rule!"
           error c = alert w ("Something has gone wrong. Here's the error: " ++ c)
 
 seqAndLabel =  do label <- many (digit <|> char '.')
