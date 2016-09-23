@@ -30,6 +30,7 @@ library
                      Handler.Book
                      Handler.Command
                      Handler.Hashed
+                     Handler.Rule
                      Filter.Sidenotes
                      Filter.SynCheckers
                      Filter.ProofCheckers
@@ -115,6 +116,7 @@ library
                  , lens
                  , split
                  , Carnap-GHCJS
+                 , Carnap
 
 executable         Carnap-Server
     if flag(library-only)

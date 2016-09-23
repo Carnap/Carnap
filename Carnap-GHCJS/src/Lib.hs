@@ -1,6 +1,6 @@
 {-# LANGUAGE RankNTypes, FlexibleContexts, DeriveDataTypeable, CPP, JavaScriptFFI #-}
 module Lib
-    ( sendJSON, onEnter, clearInput, getListOfElementsByClass, tryParse, treeToElement, genericTreeToUl, treeToUl, genericListToUl, listToUl, formToTree, leaves, adjustFirstMatching, decodeHtml, syncScroll) where
+    (genericSendJSON, sendJSON, onEnter, clearInput, getListOfElementsByClass, tryParse, treeToElement, genericTreeToUl, treeToUl, genericListToUl, listToUl, formToTree, leaves, adjustFirstMatching, decodeHtml, syncScroll) where
 
 import Data.Aeson
 import qualified Data.ByteString.Lazy as BSL
@@ -167,6 +167,15 @@ sendJSON x succ fail = do cb1 <- asyncCallback1 (cb succ)
           cb3 f _ x _  = do (Just s) <- fromJSVal x 
                             f s 
 
+genericSendJSON :: ToJSON a => a -> (Value -> IO ()) -> (Value -> IO ()) -> IO ()
+genericSendJSON x succ fail = do cb1 <- asyncCallback1 (cb succ)
+                                 cb2 <- asyncCallback3 (cb3 fail)
+                                 jsonCommand (toJSString . decodeUtf8. BSL.toStrict . encode $ x) cb1 cb2
+    where cb f x = do (Just v) <- fromJSVal x 
+                      f v
+          cb3 f _ x _  = do (Just v) <- fromJSVal x 
+                            f v 
+
 keyString :: KeyboardEvent -> IO String
 keyString e = key e >>= return . fromJSString
 
@@ -178,6 +187,9 @@ foreign import javascript unsafe "$1.key" key :: KeyboardEvent -> IO JSString
 
 sendJSON :: ToJSON a => a -> (String -> IO ()) -> (String -> IO ()) -> IO ()
 sendJSON = Prelude.error "sendJSON requires the GHCJS FFI"
+
+genericSendJSON :: ToJSON a => a -> (Value -> IO ()) -> (Value -> IO ()) -> IO ()
+genericSendJSON = Prelude.error "sendJSON requires the GHCJS FFI"
 
 keyString :: KeyboardEvent -> IO String
 keyString = Prelude.error "keyString requires the GHCJS FFI"

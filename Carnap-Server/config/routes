@@ -12,3 +12,4 @@
 /book/#Int      ChapterR    GET
 /user/#Text     UserR       GET
 /hash/#Text     HashedR     GET
+/rulelab        RuleR       GET

@@ -5,10 +5,12 @@ import Carnap.Calculi.NaturalDeduction.Checker (ProofErrorMessage(..), Feedback(
 import Carnap.Languages.ClassicalSequent.Syntax
 import Carnap.Languages.ClassicalSequent.Parser (propSeqParser)
 import Carnap.Languages.PurePropositional.Logic (DerivedRule(..), parsePropProof)
+import Carnap.Languages.PurePropositional.Util (toSchema)
 import Carnap.GHCJS.SharedTypes
 import Text.Parsec
 import Data.IORef
-import Data.Map (empty)
+import Data.Aeson as A
+import Data.Map (empty,fromList)
 import Control.Lens.Fold (toListOf)
 import Lib
 import GHCJS.DOM
@@ -33,9 +35,18 @@ proofCheckAction = runWebGUI $ \w ->
         do (Just dom) <- webViewGetDomDocument w
            (Just b) <- getBody dom
            mcheckers <- getCheckers b
+           availableDerived <- newIORef []
+           liftIO $ genericSendJSON RequestDerivedRulesForUser (addRules availableDerived) errcb
            case mcheckers of 
                 [] -> return ()
-                _ -> mapM_ (activateChecker dom) mcheckers
+                _ -> mapM_ (activateChecker dom availableDerived) mcheckers
+    where errcb e = case fromJSON e :: Result String of
+                               A.Error e -> print $ "Getting kind of meta. Error decoding error message:" ++ e
+                               Success e -> print $ "Error in retrieving derived rules" ++ e
+
+          addRules avd v = case fromJSON v :: Result [(String,DerivedRule)] of
+                               A.Error e -> print $ "error decoding derived rules:" ++ e
+                               Success rs -> writeIORef avd rs
 
 getCheckers :: IsElement self => self -> IO [Maybe (Element, Element, Element, [String])]
 getCheckers b =
@@ -58,17 +69,17 @@ getCheckers b =
                                            Nothing -> return Nothing
                                            (Just o) -> return $ Just (i,o,g,words cn)
 
-activateChecker :: Document -> Maybe (Element, Element, Element, [String]) -> IO ()
-activateChecker _ Nothing  = return ()
-activateChecker w (Just (i,o,g, classes))
-        | "ruleMaker" `elem` classes = checkerWith "save rule" trySave computeRule 
+activateChecker :: Document -> IORef [(String,DerivedRule)] -> Maybe (Element, Element, Element, [String]) -> IO ()
+activateChecker _ _ Nothing  = return ()
+activateChecker w drs (Just (i,o,g, classes))
+        | "ruleMaker" `elem` classes = checkerWith "save rule" (trySave drs) (computeRule drs)
         | otherwise = 
             do (Just gs) <- getInnerHTML g 
                case parse seqAndLabel "" (decodeHtml gs) of
                    Left e -> setInnerHTML g (Just "Couldn't Parse Goal")
                    Right (l,s) -> do
                        setInnerHTML g (Just $ show s)
-                       checkerWith "submit solution" (trySubmit l s) (checkSolution s) 
+                       checkerWith "submit solution" (trySubmit l s) (checkSolution drs s) 
         where checkerWith buttonLabel buttonFunction updateres = do
                    mfeedbackDiv@(Just fd) <- createElement w (Just "div")
                    mnumberDiv@(Just nd) <-createElement w (Just "div")
@@ -104,32 +115,32 @@ toUniErr eqs = "In order to apply this inference rule, there needs to be a subst
     where endiv e = "<div>" ++ e ++ "</div>"
           endiv' e = "<div class=\"equations\">" ++ e ++ "</div>"
 
-checkSolution s w ref v (g, fd) =  do let Feedback mseq ds = toDisplaySequence (parsePropProof empty) v
-                                      --currently no derived rules, hence the empty.
-                                      ul <- genericListToUl wrap w ds
-                                      setInnerHTML fd (Just "")
-                                      appendChild fd (Just ul)
-                                      case mseq of
-                                          Nothing -> do setAttribute g "class" "goal"
-                                                        writeIORef ref False
-                                          (Just seq) ->  if  seq `seqSubsetUnify` s
-                                                then do setAttribute g "class" "goal success"
-                                                        writeIORef ref True
-                                                else do setAttribute g "class" "goal"
-                                                        writeIORef ref False
-                                      return ()
+checkSolution drs s w ref v (g, fd) =  do rules <- liftIO $ readIORef drs
+                                          let Feedback mseq ds = toDisplaySequence (parsePropProof (fromList rules)) v
+                                          ul <- genericListToUl wrap w ds
+                                          setInnerHTML fd (Just "")
+                                          appendChild fd (Just ul)
+                                          case mseq of
+                                              Nothing -> do setAttribute g "class" "goal"
+                                                            writeIORef ref False
+                                              (Just seq) ->  if  seq `seqSubsetUnify` s
+                                                    then do setAttribute g "class" "goal success"
+                                                            writeIORef ref True
+                                                    else do setAttribute g "class" "goal"
+                                                            writeIORef ref False
+                                          return ()
 
-computeRule w ref v (g, fd) = do let Feedback mseq ds = toDisplaySequence (parsePropProof empty) v
-                                 --currently no derived rules, hence the empty.
-                                 ul <- genericListToUl wrap w ds
-                                 setInnerHTML fd (Just "")
-                                 appendChild fd (Just ul)
-                                 case mseq of
-                                     Nothing -> do setInnerHTML g (Just "No Rule Found")
-                                                   writeIORef ref False
-                                     (Just seq) -> do setInnerHTML g (Just $ show seq)
-                                                      writeIORef ref True
-                                 return ()
+computeRule drs w ref v (g, fd) = do rules <- liftIO $ readIORef drs
+                                     let Feedback mseq ds = toDisplaySequence (parsePropProof (fromList rules)) v
+                                     ul <- genericListToUl wrap w ds
+                                     setInnerHTML fd (Just "")
+                                     appendChild fd (Just ul)
+                                     case mseq of
+                                         Nothing -> do setInnerHTML g (Just "No Rule Found")
+                                                       writeIORef ref False
+                                         (Just seq) -> do setInnerHTML g (Just $ show seq)
+                                                          writeIORef ref True
+                                     return ()
 
 errDiv msg lineno (Just details)= "<div>✗<div><div>Error on line " 
                                     ++ show lineno ++ ": " ++ msg 
@@ -196,22 +207,23 @@ trySubmit l s ref w i = do isFinished <- liftIO $ readIORef ref
                        | otherwise      = alert w $ "Submitted Derivation for Exercise " ++ l
           error c = alert w ("Something has gone wrong. Here's the error: " ++ c)
 
-trySave ref w i = do isFinished <- liftIO $ readIORef ref
-                     if isFinished
-                       then do (Just v) <- getValue (castToHTMLTextAreaElement i)
-                               let Feedback mseq _ = toDisplaySequence (parsePropProof empty) v
-                               case mseq of
-                                Nothing -> alert w "A rule can't be extracted from this proof"
-                                (Just (a :|-: (SS c))) -> do
-                                    let prems = map fromSequent (toListOf concretes a)
-                                    let conc = fromSequent c
-                                    mname <- prompt w "What name will you give this rule (use all capital letters!)" (Just "")
-                                    case mname of
-                                        (Just name) -> liftIO $ sendJSON (SaveDerivedRule name $ DerivedRule conc prems) loginCheck error
-                                        Nothing -> alert w "No name entered"
-                       else alert w "not yet finished"
+trySave drs ref w i = do isFinished <- liftIO $ readIORef ref
+                         rules <- liftIO $ readIORef drs
+                         if isFinished
+                           then do (Just v) <- getValue (castToHTMLTextAreaElement i)
+                                   let Feedback mseq _ = toDisplaySequence (parsePropProof (fromList rules)) v
+                                   case mseq of
+                                    Nothing -> alert w "A rule can't be extracted from this proof"
+                                    (Just (a :|-: (SS c))) -> do
+                                        let prems = map (toSchema . fromSequent) (toListOf concretes a)
+                                        let conc = (toSchema . fromSequent) c
+                                        mname <- prompt w "What name will you give this rule (use all capital letters!)" (Just "")
+                                        case mname of
+                                            (Just name) -> liftIO $ sendJSON (SaveDerivedRule name $ DerivedRule conc prems) loginCheck error
+                                            Nothing -> alert w "No name entered"
+                           else alert w "not yet finished"
     where loginCheck c | c == "No User" = alert w "You need to log in before you can save a rule"
-                       | c == "Clash"   = alert w "it appears you've already got a rule like this"
+                       | c == "Clash"   = alert w "it appears you've already got a rule with this name"
                        | otherwise      = alert w $ "Saved your new rule!"
           error c = alert w ("Something has gone wrong. Here's the error: " ++ c)
 

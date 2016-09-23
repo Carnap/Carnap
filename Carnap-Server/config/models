@@ -29,5 +29,11 @@ DerivationSubmission
     time Text
     userId UserId 
     UniqueDerivationP problem userId
+SavedDerivedRule
+    derivedRule ByteString
+    name Text
+    time Text
+    userId UserId
+    UniqueDerivedRule name userId
 
  -- By default this file is used in Model.hs (which is imported by Foundation.hs)

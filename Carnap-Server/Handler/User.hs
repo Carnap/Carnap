@@ -150,6 +150,10 @@ subsById uid = do synsubs <- yourSubs synPair uid
                   return (synsubs, transsubs, dersubs)
 
 yourSubs pair userId = do subs <- runDB $ selectList [] []
+                          -- XXX: It would almost certainly be more
+                          -- efficient to do filtering in the query rather
+                          -- than after. That makese the code a little less
+                          -- generic, but it can probably be fixed.
                           let pairs = map (pair . entityVal) subs
                           cpairs <- mapM clean pairs
                           let upairs = filter (\(x,_,_) -> x == userId) cpairs

@@ -60,7 +60,7 @@ instance Inference PropLogic PurePropLexicon where
         where gammas = foldl (:+:) Top (map GammaV [1..length (premises r)])
 
 parsePropLogic :: Map String DerivedRule -> Parsec String u [PropLogic]
-parsePropLogic ders = do r <- choice (map (try . string) ["AS","PR","MP","MT","DD","DNE","DNI", "DN", "CD", "ID", "DER-"])
+parsePropLogic ders = do r <- choice (map (try . string) ["AS","PR","MP","MT","DD","DNE","DNI", "DN", "CD", "ID", "D-"])
                          case r of
                              "AS"   -> return [AX]
                              "PR"   -> return [AX]
@@ -72,10 +72,10 @@ parsePropLogic ders = do r <- choice (map (try . string) ["AS","PR","MP","MT","D
                              "DN"   -> return [DNE,DNI]
                              "CD"   -> return [CP1,CP2]
                              "ID"   -> return [ID1,ID2,ID3,ID4]
-                             "DER-" -> do rn <- many1 upper
-                                          case M.lookup rn ders of
-                                              Just r  -> return [DER r]
-                                              Nothing -> parserFail "Looks like you're citing a derived rule that doesn't exist"
+                             "D-" -> do rn <- many1 upper
+                                        case M.lookup rn ders of
+                                            Just r  -> return [DER r]
+                                            Nothing -> parserFail "Looks like you're citing a derived rule that doesn't exist"
 
 parsePropProof :: Map String DerivedRule -> String -> [Either ParseError (DeductionLine PropLogic PurePropLexicon (Form Bool))]
 parsePropProof ders = toDeduction (parsePropLogic ders) prePurePropFormulaParser

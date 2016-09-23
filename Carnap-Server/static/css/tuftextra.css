@@ -188,3 +188,31 @@
     margin:5pt;
     top:-10px;
 }
+
+.ruleBuilder {
+    display:inline-block;
+    padding-right:50px;
+    width:400px;
+    height:500px;
+}
+
+.ruleBuilder .output {
+    width:650px;
+}
+
+
+.derivedRules {
+    width:400px;
+    vertical-align:top;
+    display:inline-block;
+}
+
+
+.derivedRules table{
+    width:100%;
+    margin-top:20px;
+}
+
+.derivedRules th {
+    text-align:left;
+}

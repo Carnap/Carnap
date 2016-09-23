@@ -54,8 +54,7 @@ parsePos = do spaces
 
 atomicSentenceParser :: (IndexedPropLanguage l, Monad m) => ParsecT String u m l
 atomicSentenceParser = try parseNumbered <|> parseUnnumbered
-        where number = do { ds <- many1 digit; return (read ds) } <?> "number"
-              parseUnnumbered = do c <- oneOf "PQRSTUVWXYZ"
+        where parseUnnumbered = do c <- oneOf "PQRSTUVWXYZ"
                                    let Just n = findIndex (== c) "_PQRSTUVWXYZ"
                                    return $ pn (-1 * n)
               parseNumbered = do char 'P'
@@ -64,11 +63,10 @@ atomicSentenceParser = try parseNumbered <|> parseUnnumbered
                                  return $ pn n
 
 schemevarParser :: (IndexedSchemePropLanguage l, Monad m) => ParsecT String u m l
-schemevarParser = do string "Phi"
+schemevarParser = do string "Phi" <|> string "φ"
                      char '_'
-                     n <- number
+                     n <- number <?> "number"
                      return $ phin n
-    where number = do { ds <- many1 digit; return (read ds) } <?> "number"
 
 unaryOpParser :: (Monad m) => [ParsecT String u m (l -> l)] -> ParsecT String u m l ->  ParsecT String u m l
 unaryOpParser ops recur = do n <- listToTry ops
@@ -145,7 +143,11 @@ parenParser recur = char '(' *> recur <* char ')'
 
 
 number :: Monad m => ParsecT String u m Int
-number = do { ds <- many1 digit; return (read ds) } <?> "number"
+number = do valence <- option "+" (string "-") 
+            ds <- many1 digit; 
+            if valence == "+" 
+                then return (read ds) 
+                else return (read ds * (-1))
 
 --------------------------------------------------------
 --Helper functions

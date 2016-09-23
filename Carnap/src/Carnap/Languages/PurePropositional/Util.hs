@@ -1,9 +1,9 @@
-module Carnap.Languages.PurePropositional.Util (showClean,isValid, isEquivTo) where
+module Carnap.Languages.PurePropositional.Util (showClean,isValid, isEquivTo, toSchema) where
 
 import Carnap.Core.Data.AbstractSyntaxClasses
 import Carnap.Core.Data.AbstractSyntaxDataTypes
 import Carnap.Languages.PurePropositional.Syntax
-import Control.Lens.Plated (universe)
+import Control.Lens.Plated (universe, plate)
 import Control.Lens
 import Data.Maybe
 import Data.List
@@ -68,3 +68,13 @@ isValid p = and $ map (\v -> unform $ satisfies v p) (getValuations p)
     where unform (Form x) = x
 
 isEquivTo x y = isValid (x :<->: y)
+
+--------------------------------------------------------
+--3. Transformations
+--------------------------------------------------------
+
+type PurePropTransform = PurePropLanguage (Form Bool) -> PurePropLanguage (Form Bool)
+
+toSchema :: PurePropTransform
+toSchema (PP n) = (PPhi n)
+toSchema a = (over plate) toSchema a
