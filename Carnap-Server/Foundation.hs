@@ -169,7 +169,7 @@ instance YesodAuth App where
     onLogout = deleteSession credsKey >> deleteSession "_ULT" >> redirect HomeR
 
     -- You can add other plugins like Google Email, email or OAuth here
-    authPlugins _ = [authDummy, authGoogleEmail googleApiKey googleSecret]
+    authPlugins _ = [authGoogleEmail googleApiKey googleSecret]
 
     authHttpManager = getHttpManager
 

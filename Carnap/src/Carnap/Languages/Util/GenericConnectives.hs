@@ -42,7 +42,9 @@ data SchematicIntProp b a where
         SProp :: Int -> SchematicIntProp b (Form b)
 
 instance Schematizable (SchematicIntProp b) where
-        schematize (SProp n)   _       = "φ_" ++ show n
+        schematize (SProp n)   _ 
+            | n < 0 && n > -8 = ["_φψχθγζξ" !! (-1 * n)]
+            | otherwise = "P_" ++ show n
 
 instance UniformlyEq (SchematicIntProp b) where
         (SProp n) =* (SProp m) = n == m

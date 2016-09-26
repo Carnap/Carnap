@@ -1,6 +1,6 @@
 {-# LANGUAGE RankNTypes, FlexibleContexts, DeriveDataTypeable, CPP, JavaScriptFFI #-}
 module Lib
-    (genericSendJSON, sendJSON, onEnter, clearInput, getListOfElementsByClass, tryParse, treeToElement, genericTreeToUl, treeToUl, genericListToUl, listToUl, formToTree, leaves, adjustFirstMatching, decodeHtml, syncScroll) where
+    (genericSendJSON, sendJSON, onEnter, clearInput, getListOfElementsByClass, tryParse, treeToElement, genericTreeToUl, treeToUl, genericListToUl, listToUl, formToTree, leaves, adjustFirstMatching, decodeHtml, syncScroll, reloadPage) where
 
 import Data.Aeson
 import qualified Data.ByteString.Lazy as BSL
@@ -183,6 +183,8 @@ foreign import javascript unsafe "jsonCommand($1,$2,$3)" jsonCommand :: JSString
 
 foreign import javascript unsafe "$1.key" key :: KeyboardEvent -> IO JSString
 
+foreign import javascript unsafe "location.reload()" reloadPage :: IO ()
+
 #else
 
 sendJSON :: ToJSON a => a -> (String -> IO ()) -> (String -> IO ()) -> IO ()
@@ -194,4 +196,6 @@ genericSendJSON = Prelude.error "sendJSON requires the GHCJS FFI"
 keyString :: KeyboardEvent -> IO String
 keyString = Prelude.error "keyString requires the GHCJS FFI"
 
+reloadPage :: IO ()
+reloadPage = Prelude.error "you can't reload the page without the GHCJS FFI"
 #endif

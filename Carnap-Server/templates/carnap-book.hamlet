@@ -11,3 +11,8 @@
             <li>
                 <a href="@{BookR}/#{show m}">
                     Appendix #{show n}
+    <h3> Special Sections
+    <ol>
+        <li>
+            <a href="@{RuleR}">
+                Index of Rules

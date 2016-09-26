@@ -9,22 +9,32 @@ import Data.Aeson (decodeStrict)
 import qualified Data.CaseInsensitive as CI
 import qualified Data.Text.Encoding as TE
 import qualified Text.Blaze.Html5 as B
+import Text.Blaze.Html5.Attributes
 
 getRuleR :: Handler Html
 getRuleR = do derivedRules <- getDrList
               ruleLayout $ [whamlet|
                             <div.container>
-                                <h1> Rule Lab
-                                In the rule lab, you can define and save new rules.<br>
-                                <div.ruleBuilder class="proofchecker ruleMaker">
-                                    <div.goal>
-                                    <textarea>
-                                    <div.output>
+                                <h1> Index of Basic Rules
+                                <table.rules>
+                                    <thead> <th> Name </th> <th> Premises </th><th> Conclusion </th>
+                                    <tbody>
+                                        <tr> <td> MP </td> <td> φ, φ→ψ </td> <td> ψ </td
+                                        <tr> <td> MT </td> <td> ¬ψ, φ→ψ </td> <td> ¬φ </td>
+                                        <tr> <td> DNE </td> <td> ¬¬φ </td> <td> φ </td>
+                                        <tr> <td> DNE </td> <td> φ </td> <td> ¬¬φ </td>
+                                <h1> Index of Derived Rules
                                 $maybe rules <- derivedRules
                                     <div.derivedRules>
-                                        <h3> My Derived Rules
+                                        <h2> My Derived Rules
                                         #{rules}
                                 $nothing
+                                <div.ruleBuilder>
+                                    <h2>The Rule Builder
+                                    <div class="proofchecker ruleMaker">
+                                        <div.goal>
+                                        <textarea>
+                                        <div.output>
                             |]
 
 ruleLayout widget = do
@@ -49,13 +59,13 @@ getDrList = do maybeCurrentUserId <- maybeAuthId
                    Just u -> do savedRules <- runDB $ selectList [SavedDerivedRuleUserId ==. u] []
                                 return $ Just (formatRules (map entityVal savedRules))
 
-formatRules rules = B.table $ do
+formatRules rules = B.table B.! class_ "rules" $ do
         B.thead $ do
             B.th "Name"
             B.th "Premises"
             B.th "Conclusion"
         B.tbody $ mapM_ toRow rules
     where toRow (SavedDerivedRule dr n _ _) = let (Just dr') = decodeStrict dr in 
-                                              B.tr $ do B.td $ B.toHtml n
-                                                        B.td $ B.toHtml $ show $ premises dr'
+                                              B.tr $ do B.td $ B.toHtml $ "D-" ++ n
+                                                        B.td $ B.toHtml $ intercalate "," $ map show $ premises dr'
                                                         B.td $ B.toHtml $ show $ conclusion dr'

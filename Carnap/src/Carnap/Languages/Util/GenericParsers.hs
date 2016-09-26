@@ -63,10 +63,14 @@ atomicSentenceParser = try parseNumbered <|> parseUnnumbered
                                  return $ pn n
 
 schemevarParser :: (IndexedSchemePropLanguage l, Monad m) => ParsecT String u m l
-schemevarParser = do string "Phi" <|> string "φ"
-                     char '_'
-                     n <- number <?> "number"
-                     return $ phin n
+schemevarParser = try parseNumbered <|> parseUnnumbered
+    where parseUnnumbered = do c <- oneOf "_φψχθγζξ"
+                               let Just n = findIndex (== c) "_φψχθγζξ"
+                               return $ phin (-1 * n)
+          parseNumbered = do string "Phi" <|> string "φ"
+                             char '_'
+                             n <- number <?> "number"
+                             return $ phin n
 
 unaryOpParser :: (Monad m) => [ParsecT String u m (l -> l)] -> ParsecT String u m l ->  ParsecT String u m l
 unaryOpParser ops recur = do n <- listToTry ops

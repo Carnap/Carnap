@@ -219,13 +219,16 @@ trySave drs ref w i = do isFinished <- liftIO $ readIORef ref
                                         let conc = (toSchema . fromSequent) c
                                         mname <- prompt w "What name will you give this rule (use all capital letters!)" (Just "")
                                         case mname of
-                                            (Just name) -> liftIO $ sendJSON (SaveDerivedRule name $ DerivedRule conc prems) loginCheck error
+                                            (Just name) -> if allcaps name 
+                                                               then liftIO $ sendJSON (SaveDerivedRule name $ DerivedRule conc prems) loginCheck error
+                                                               else alert w "rule name must be all capital letters"
                                             Nothing -> alert w "No name entered"
                            else alert w "not yet finished"
     where loginCheck c | c == "No User" = alert w "You need to log in before you can save a rule"
                        | c == "Clash"   = alert w "it appears you've already got a rule with this name"
-                       | otherwise      = alert w $ "Saved your new rule!"
+                       | otherwise      = alert w "Saved your new rule!" >> reloadPage
           error c = alert w ("Something has gone wrong. Here's the error: " ++ c)
+          allcaps s = and (map (`elem` "ABCDEFGHIJKLMNOPQRSTUVWXYZ") s)
 
 seqAndLabel =  do label <- many (digit <|> char '.')
                   spaces

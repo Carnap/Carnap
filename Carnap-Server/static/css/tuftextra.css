@@ -191,10 +191,18 @@
 
 .ruleBuilder {
     display:inline-block;
-    padding-right:50px;
     width:400px;
     height:500px;
 }
+
+.ruleBuilder .ruleMaker{
+    margin-top:10px;
+}
+
+.ruleBuilder textarea {
+    height: 320px; 
+    width:350px;
+} 
 
 .ruleBuilder .output {
     width:650px;
@@ -202,17 +210,33 @@
 
 
 .derivedRules {
+    width: 400px;
+    vertical-align: top;
+    margin-right:50px;
+    display: inline-block;
+}
+
+table.rules {
+    table-layout:fixed;
     width:400px;
-    vertical-align:top;
-    display:inline-block;
-}
-
-
-.derivedRules table{
-    width:100%;
     margin-top:20px;
+    border-collapse:collapse;
 }
 
-.derivedRules th {
+table.rules th {
     text-align:left;
+    width:70px;
+    border-bottom:1px black solid;
 }
+
+table.rules tr {
+    border-bottom:1px #eee solid;
+}
+
+
+/* @media (min-width: 1100px) { */
+/*     .derivedRules { */
+/*         width:400px; */
+/*     } */
+/* } */
+
