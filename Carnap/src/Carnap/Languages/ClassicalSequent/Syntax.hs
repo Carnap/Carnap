@@ -177,6 +177,7 @@ concretes f (a :+: a') = (:+:) <$> concretes f a <*> concretes f a'
 concretes f (SA x)     = SA <$> f x
 concretes f (GammaV n) = pure (GammaV n)
 concretes f (SV n) = pure (SV n)
+concretes f (Top) = pure Top
 
 --------------------------------------------------------
 --2. Sequent Languages

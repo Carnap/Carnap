@@ -22,7 +22,7 @@ getRuleR = do derivedRules <- getDrList
                                         <tr> <td> MP </td> <td> φ, φ→ψ </td> <td> ψ </td
                                         <tr> <td> MT </td> <td> ¬ψ, φ→ψ </td> <td> ¬φ </td>
                                         <tr> <td> DNE </td> <td> ¬¬φ </td> <td> φ </td>
-                                        <tr> <td> DNE </td> <td> φ </td> <td> ¬¬φ </td>
+                                        <tr> <td> DNI </td> <td> φ </td> <td> ¬¬φ </td>
                                 <h1> Index of Derived Rules
                                 $maybe rules <- derivedRules
                                     <div.derivedRules>
