@@ -37,7 +37,7 @@
 /* This is what will need to be the locus of responsive resizing */
 .proofchecker {
     position: relative;
-    width:210pt;
+    max-width:500px;
     min-height:110pt;
     margin-bottom:50pt;
     line-height:1.2em;
@@ -62,6 +62,9 @@
     font-family: monospace;
     line-height:1.2em;
     resize: vertical;
+    white-space:pre;
+    overflow-wrap:normal;
+    word-wrap:normal;
 }
 
 .proofchecker > button {
@@ -75,7 +78,7 @@
     margin-top:36px;
     top:0px;
     bottom:-30px;
-    width:600px;
+    width:200%;
     padding:21px;
     pointer-events: none;
     font-family: monospace;
@@ -86,7 +89,7 @@
 .proofFeedback {
     font-size:10pt;
     position:absolute;
-    right:330px;
+    right:50%;
     top:13pt;
     width:20px;
     pointer-events: auto;
@@ -96,7 +99,6 @@
 .proofFeedback li > div > div {
     position:absolute;
     left:10pt;
-    top:-5pt;
     height:150px;
     z-index:1;
     width:200px;
@@ -106,6 +108,7 @@
 .proofFeedback li > div > div > div {
     font-size:8pt;
     position:absolute;
+    top:-20px;
     background:white;
     width:200pt;
     border:1pt solid black;
@@ -233,10 +236,19 @@ table.rules tr {
     border-bottom:1px #eee solid;
 }
 
+ol.example > li {
+    list-style:none;
+    position:relative;
+}
 
-/* @media (min-width: 1100px) { */
-/*     .derivedRules { */
-/*         width:400px; */
-/*     } */
-/* } */
+ol.example {
+    counter-increment:example;
+    padding-left:10px;
+    padding-right:25px;
+}
 
+ol.example > li:before {
+
+    content:"(" counter(example) ")";
+    float:right;
+}

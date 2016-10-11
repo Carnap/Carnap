@@ -1,0 +1,267 @@
+#Advanced Symbolization
+
+If we want to be able to use our new system of derivations effectively, we
+need to be able to apply them to English language arguments. But if we want to
+do that, we need to know how to go back and forth, from English to symbols,
+and from symbols to English.
+
+##Symbols to English
+
+As before, let's begin by thinking about how we can translate sentences in our
+formal language into English, and some simple ways in which we can "clean up"
+our translations in order to make them more readable. 
+
+<div class="algorithm"> 
+
+Symbols to English
+
+:   #. If the sentence to be translated is in unofficial notation, then (if it
+       makes things simpler for you) restore any parentheses that would be there if
+       the sentence were in official notation. 
+    #. Locate the main connective of the formal sentence. 
+    #. If the main connective is $\rightarrow$, so that the sentence is
+       $(\phi\rightarrow\psi)$, then write "If $\phi$, then $\psi$". 
+    #. If the main connective is $\land$, so that the sentence is
+       $(\phi\land\psi)$, then write "it's both the case that $\phi$ and that
+       $\psi$". 
+    #. If the main connective is $\lor$, so that the
+       sentence is $(\phi\lor\psi)$, then write "either $\phi$ or $\psi$" 
+    #. If the main connective is $\leftrightarrow$ so that the sentence is
+       $(\phi\leftrightarrow\psi)$, then write "if $\phi$ then, and only then,
+       $\psi$" 
+    #. If the main connective is $\neg$, so that the sentence is $\neg\phi$,
+       then write "It is not the case that $\phi$." 
+    #. If either $\phi$ or $\psi$ contains any formal language connectives, then
+       apply this procedure to $\phi$ and $\psi$ as well. 
+    #. If there's no main connective, and you have only a sentence letter, replace
+       the letter with its English meaning according
+       to the scheme of translation. 
+    #. Apply this procedure to each of the sub-formulas of the target sentence.
+
+</div>
+
+Here are some examples, using the following scheme of abbreviation.
+
+| $P~=~$Language is powerful 
+| $Q~=~$We try to understand each other 
+| $R~=~$All is lost  
+
+####Ex. 1 
+
+#. $P\lor R$ 
+#. Either $P$ or $R$ 
+#. Either Language is powerful or all is lost
+
+####Ex. 2 
+
+#. $P\land Q\rightarrow\neg R$ 
+#. If $P\land Q$, then $\neg R$ 
+#. If it's both the case that $P$ and that $Q$, then it's not the case that $R$ 
+#. If it's both the case that language is powerful and that we work hard to
+   understand each other, then it's not the case that all is lost.
+
+####Ex. 3 
+
+#. $P\land Q\leftrightarrow\neg R$ 
+#. If $P\land Q$ then, and only then, $\neg R$ 
+#. If it's both the case that $P$ and that $Q$ then, and only
+   then, it's not the case that $R$ 
+#. If it's both the case that language is powerful and that we work hard to
+   understand each other then, and only then, it's not the case that all is lost.
+
+####Ex. 4 
+
+#. $\neg P \lor R$ 
+#. Either $\neg P$ or $R$ 
+#. Either it's not the case that $P$ or $R$ 
+#. Either it's not the case that language is powerful or all is lost.
+
+As with our first procedure for translating from symbols to English, this
+gives us a unique translation for every sentence, and the translation will
+have the right logical properties. But, once again, the sentences are not
+automatically easy to understand.[^1]
+
+[^1]:: Why do we do it this way, then? Well, the key idea is this: expressions
+like "It's both the case that ... and ..." make it easy to figure out what a
+connective has inside its left side. For example, with "both ... and ...",
+whatever's in the left side is whatever's between "both" and "and". This makes
+it easy to recover the parsing structure of our original logical sentence from
+the English translation, and ensures that the translation is logically
+unambiguous. For example, $(P\land(Q\lor R))$ and $((P\land Q)\lor R)$ are
+translated, respectively, as "It's both the case that $P$ and that either $Q$
+or $R$" and "Either it's both the case that $P$ and that $Q$ or $R$". On the
+other hand, if we just replace "$\land$" with "and", and '$\lor$' with "or",
+then both $(P\land(Q\lor R))$ and $((P\land Q)\lor R)$ become "$P$ and $Q$ or
+$R$", which is logically ambiguous.
+
+How can we make the sentence more readable? This is more of an art than a
+science, but the following four tricks may help.
+
+###Commas
+
+Commas can be used to mark logical breaks in a sentence. For example,
+"Either $P$ or it's both the case that $Q$ and $R$" has two main parts: "$P$"
+and "it's both the case that $Q$ and that $R$". So, one can write it as
+"Either $P$, or it's both the case that $Q$ and $R$". Note that one would not
+write this as "Either $P$ or it's both the case that $Q$, and $R$". 
+
+###Stylistic Variants
+
+If it creates no ambiguity about the parsing structure of the
+sentence (for example, if you have made clear what the main parts are by using
+commas), then we can replace some of our standard logic phrases with stylistic
+variants, in the same way that we can replace the standard phrase "if ...
+then" with something like "given that ..., ...". The following possible
+stylistic variants all are correct:
+
+#. "It's both the case that $P$ and that $Q$" can be replaced by 
+    #. "$\phi$ and $\psi$", 
+    #.  "$\phi$ but $\psi$", 
+    #.  "$\phi$ although $\psi$", 
+    #. "$\phi$ even though $\psi$", 
+    #.  "$\phi$ despite the fact that $\psi$", and similar phrases. 
+#.  "Either $\phi$ or $\psi$" can be replaced by 
+    #.  "$\phi$ or $\psi$" 
+    #.  "$\phi$ unless $\psi$", and similar phrases. 
+#.  "If $\phi$ then, and only then, $\psi$" can be replaced by 
+    #. "$\phi$ just in case $\psi$", 
+    #. "$\phi$ exactly on the condition that $\psi$", 
+    #.  "$\phi$ if and only if $\psi$" 
+    #.  "Just in case $\phi$, $\psi$", 
+    #.  "Exactly on the condition that $\phi$, $\psi$", 
+    #.  "If and only if $\phi$, $\psi$, and similar phrases.
+
+###Subjects and predicates containing connectives
+
+When we have a cluster of simple sentences which are combined using
+only English phrases that translate '$\land$', '$\lor$' or '$\neg$' we can
+usually "put this in the noun phrase", by creating a new sentence whose main
+noun phrase is "both the subjects of the previous sentence", "either of the
+subjects of the previous sentence" or "neither of the subjects of the previous
+sentence."
+
+For example, the sentence
+
+(@quincyand) "It's both the case that Polk was a president and that Quincy was
+a president" 
+
+can be paraphrased as "Both Polk and Quincy were presidents" and the sentence
+
+(@quincyor) "Either Polk was a president or Quincy was a president"
+
+can be paraphrased as "Either Polk or Quincy was a president".[^2] In the same
+way, 
+
+(@quincynor) "It's not the case that it's both the case that Polk was a president and Quincy was a president"
+
+can be paraphrased as "Not both Polk and Quincy were presidents". 
+
+There are, however, some cases where this doesn't work. For example, consider
+"Either Polk was not a president, or Quincy was not a president". We can't
+paraphrase this as "Either not Polk or not Quincy was a president"---I suppose
+this is because "not Polk" and "not Quincy" aren't noun-phrases that can be
+joined into a larger noun phrase. 
+
+[^2]:: Although in English, we use a singular, rather than plural form of the
+verb here---I wonder why that is.
+
+We an also sometimes take a logical cluster like this and "put it in the verb
+phrase". For example
+
+(@emmaand) "Emma sings and Emma dances" 
+
+can be paraphrased as "Emma sings and dances". 
+
+(@emmaor) "Either Emma sings or Emma dances" 
+
+can be paraphrased as "Emma either sings or dances". 
+
+(@emmanor) "Either it's not the case that Emma sings or it's not the case that
+Emma dances" 
+
+can be paraphrased as "Emma either doesn't sing or doesn't dance". Here, we
+*can* paraphrase a sentence with embedded negations---I suppose because
+"doesn't sing" is still a verb-phrase that can be joined into a larger
+verb phrase.
+
+###Non-Restrictive Relative Clauses
+
+One last type of "cleaning up" which we sometimes see is the use of
+*non-restrictive relative clauses*. These allow you to take a verb phrase,
+like "dances" and attach it to a noun-phrase (like "cat"), where sometimes
+this noun-phrase is inside of a more complex verb-phrase. For example:
+
+(@twilaand) "Twyla is a cat and Twyla hunts well." 
+
+can be paraphrased as "Twla is a cat who hunts well" 
+
+(@tacklesand) "Tackles hurt the players, and tackles are forbidden" 
+
+can be paraphrased as "Tackles, which hurt the players, are forbiddden".[^3]
+
+(@geniesand) "Genies grant wishes and genies are often malicious" 
+
+can be paraphrased as "Genies, who grant wishes, are often malicious".
+
+[^3]:: Though not as "Tackles which hurt the players are forbidden". What's
+the difference here? 
+
+##English to Symbols
+
+Translations from English to symbols are correct if they result in a symbolic
+sentence that, when translated back into English, means the same as (is a
+stylistic variant of) the original sentence. When we're dealing with sentences
+we find "in the wild", we sometimes have to rely a little bit on our intuition
+for natural language. But the same approximate algorithm that we used before
+is still sometimes helpful.
+
+<div class="algorithm"> 
+
+English To Symbols
+
+:   #.  Replace all the stylistic variations on "if $\phi$, then $\psi$", "it
+        is not the case that $\phi$", "It's both the case that $\phi$ and that
+        $\psi$", "Either $\phi$ or $\psi$", and "if $\phi$ then, and only then,
+        $\psi$" with their corresponding non-variant phrases. 
+    #.  Replace the English main connective with the appropriate symbol. If
+        you are replacing anything but "it is not the case that", remember to wrap
+        the two clauses you're replacing in parentheses, if they're not already
+        wrapped. 
+    #.  If there are any sentences remaining that do not occur in the scheme
+        of abbreviation, repeat this procedure on those sentences. 
+    #.  If there are just sentences that occur in the scheme of abbreviation,
+        replace them with the corresponding sentence letters.
+
+</div>
+
+As with our previous translation exercises, the hard part is step 1. Once you
+have done that, you can always locate the main connective by looking at the
+leftmost word. Whatever phrase that word is a part of (whether it is "if
+$\phi$, then $\psi$", "it is not the case that $\phi$", "It's both the case
+that $\phi$ and that $\psi$", "Either $\phi$ or $\psi$", or "if $\phi$ then,
+and only then, $\psi$"), that phrase is the English main connective which we
+need to replace in step 2.
+
+##Problem Set 10
+
+Please translate the following English sentences into our formal language.
+
+| $P~=~$Peter is proud.
+| $Q~=~$Queens is a short ride away.
+| $R~=~$Real estate is harder than it seems.
+| $S~=~$Susan is getting a deal.
+| $T~=~$Tom is Proud.
+| $U~=~$Susan is buying an umbrella.
+
+```{.Translate .Prop}
+10.1 Q/\S : Queens is a short ride away, and Susan is getting a deal.
+10.2 -P/\S : Peter isn't proud, but Susan is getting a deal.
+10.3 S\/R : Susan is getting a deal, unless real estate is harder than it seems.
+10.4 (P->S)/\ R: If Peter is proud then Susan is getting a deal, but real estate is harder than it seems.
+10.5 P<-> T/\ S : Peter is proud, if and only if Tom is proud and Susan is getting a deal.
+10.6 P/\T-> -R : Given that Peter and Tom are proud, Real estate isn't harder than it seems 
+10.7 T->S\/U : If Tom is proud then Susan is either getting a deal or buying an umbrella
+10.8 (T->P)/\(T->U) : Peter is proud if Tom is proud, but Tom is proud only if Susan is buying an umbrella
+10.9 (P\/T)\/(U->S) : Unless Peter or Tom is proud, Susan is getting a deal if she is buying an umbrella.
+10.10 (T->P\/R)->~(U/\S) : It's not the case that Susan is buying an umbrella and getting a deal, given that if Tom is proud then either Peter is proud or real estate is harder than it seems
+```

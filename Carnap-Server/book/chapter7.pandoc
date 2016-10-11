@@ -1,0 +1,347 @@
+#Derived Rules
+
+
+> *As men at first made use of the instruments supplied by nature to
+> accomplish very easy pieces of workmanship, laboriously and imperfectly, and
+> then, when these were finished, wrought other things more difficult with
+> less labour and greater perfection; and so gradually mounted from the
+> simplest operations to the making of tools, and from the making of tools to
+> the making of more complex tools, and fresh feats of workmanship, till they
+> arrived at making, complicated mechanisms which they now possess. So, in
+> like manner, the intellect, by its native strength, makes for itself
+> intellectual instruments, whereby it acquires strength for performing other
+> intellectual operations, and from these operations again fresh instruments,
+> or the power of pushing its investigations further, and thus gradually
+> proceeds till it reaches the summit of wisdom.* <cite style="display:block;
+> padding:10px;text-align:right">Spinoza, Treatise on the Emendation of the
+> Intellect</cite>
+
+In this chapter, we will introduce a technique that makes proving things
+easier. The technique is roughly, putting together several different
+inferential moves into a single step, called a *derived rule*. By combing a
+sequence of moves into one, we can remove a lot of boilerplate from our
+proofs. In every place where we would repeat a certain common sequence of
+moves, we can instead using our new derived rule to complete the same task in
+just one inference. In addition to shortening our proofs, we save ourselves
+the mental effort of "rediscovering", over and over, how to complete certain
+simple tasks in our proofs. We only need to figure it out once to create a
+derived rule, but once the derived rule is created, we can complete the task
+as many times as we want without any additional effort.
+
+Here is the idea. Well-formed proofs establish the formal validity[^1] of
+arguments like this one: 
+
+(@f1) $P$, $P\rightarrow Q\vdash Q$ 
+
+But when we know an argument is formally valid, then we know that any argument
+that results from replacing the sentence letters of that argument with actual
+assertions will be valid as well. 
+
+[^1]:: Remember, a formally valid argument is an argument that is valid
+because of its *logical form*. For more discussion of this idea, take another
+look back at chapter 1.
+
+Notice, however, that any argument we can get by replacing the sentence
+letters in an argument form like this one:
+
+(@f2) $R\lor S$, $R\lor S\rightarrow Q\vdash Q$
+
+we can *also* get by replacing the sentence letters in $P,P\rightarrow Q\vdash
+Q$---all we have to do is replace $P$ in the first example above with the
+sentence that would have replaced $R\lor S$ with in the second example.
+
+Here's the crucial observation to make at this point. Since $P,P\rightarrow
+Q\vdash Q$ is formally valid, any argument we get by replacing its sentence
+letters with actual assertions is deductively valid. Hence, any argument that
+we get by replacing the sentence letters of our $R\lor S$, $R\lor S\rightarrow
+Q\vdash Q$ with actual assertions is *also* deductively valid (since we could
+have gotten that argument from $P,P\rightarrow Q\vdash Q$. Hence, $R\lor S$,
+$R\lor S\rightarrow Q\vdash Q$ is also formally valid.
+
+The general lesson here is that, whenever we have a deductively valid
+argument, every argument form that results from replacing the sentence letters
+of that argument with other sentences in our formal language will *also* be
+deductively valid. So, for example, because $P,P\rightarrow Q\vdash Q$ is
+formally valid, so is every instance of the scheme $\phi, \phi\rightarrow
+\psi\vdash \psi$.
+
+Of course, you already knew that. The scheme $\phi, \phi\rightarrow\psi\vdash
+\psi$ is just modus ponens. We use it all the time. What's new is that, it
+turns out, whenever you prove that an argument is formally valid, you learn
+that a new *rule* is correct. Just like modus ponens expresses that, given
+three sentences which have the same shape as $P\rightarrow Q$, $P$ and $Q$,
+you can infer the third from the first two, when you prove an argument is
+formally valid, you learn that you can use whatever rule expresses that you
+are allowed to infer, from sentences that have the same shape as the premises
+of your deductively valid argument, conclusions that have the same shape as
+the conclusion of your deductively valid argument.
+
+In the next few sections, we'll look at several new inference rules that can
+be introduced in this way. In order to use these rules, you'll need to prove
+the corresponding argument using the rule builder in your [index of
+rules](../rules). Problem set eight is distributed through the different
+sections of this chapter, in order to help you see which problems might be
+easier to solve with new rules.
+
+##Hypothetical Syllogism
+
+Let us begin with a very simple derived inference rule. The rule is
+traditionally called *hypothetical syllogism*---syllogism, because it is a
+very argument with two premises, and hypothetical because it involves
+conditionals. It looks like this:
+
+Hypothetical Syllogism 
+
+:   Hypothetical syllogism is the argument form
+
+    $\phi\rightarrow\psi,\psi\rightarrow\chi\vdash\phi\rightarrow\chi$
+
+It's up to you what you want to name the inference rule corresponding to
+hypothetical syllogism, but I suggest the name HS. If this is what you call
+it, then you will cite this rule in proofs by writing :D-HS, followed by the
+line numbers of the premises you wish to use.
+
+The intuitive idea behind a hypothetical syllogism is simple. If we know that
+one thing leads to a second, and the second to a third, then we know that the
+first thing leads to the third. For example, If Sam is a dog or a cat, then
+Sam is a mammal, and if Sam is a mammal, then Sam is a vertebrate. Therefore,
+if Sam is a dog or a cat, then Sam is a vertebrate.
+
+Here are some problems to work on that are greatly simplified by use of the
+hypothetical syllogism.
+
+```{.ProofChecker .Prop}
+8.1 P->Q, Q->R, (P->R)->(U->S), S->T :|-: U->T
+8.2 P->(P->R), (P->R)->R :|-: R
+```
+
+##The Material Conditional Rules
+
+The next set of derived rules make explicit something that we've already
+observed. The rules are these:
+
+The Material Conditional Rules
+
+:   The material conditional rules are the following two argument forms
+
+    1. $\psi\vdash\phi\rightarrow\psi$
+    2. $\neg\phi\vdash\phi\rightarrow\psi$
+
+Each of these rules tells us something important about how the if-then
+connective $\rightarrow$ works. 
+
+Let's focus on the first of these. What it says is that, when you know that
+the right hand side of a conditional is true, then you know that the whole
+conditional is true. This strikes some people as strange. After all, can't I
+know that the door is shut without knowing that *if* the house were burning
+down, *then* the door would be shut? It seems like, if that were to happen,
+the door might well pop open.
+
+The key thing to notice here is that there is a difference between a sentence
+like 
+
+(@sub) "If the house were burning down, then the door would be shut."
+
+and 
+
+(@mat) "If the house is burning down then the door is shut." 
+
+The difference is that in sentence (@mat), "the house is burning down" and
+"the door is shut" are both complete assertions that can stand on their own.
+In sentence (@sub), we have an if-then connecting two strings of
+words---namely "the house were burning down" and "the door would be
+shut"---neither of which is a complete sentence on its own.
+
+This signals the difference between the two sentences. Sentence (@mat)
+involves what is traditionally called a *material conditional*---an if-then
+connective that expresses what we known about the actual truth or falsity of
+the sentences that it connects. Sentence (@sub) expresses what is
+traditionally called a *subjective*, or *counterfactual* conditional, which is
+a conditional that expresses what we know about how the two conditions it
+connects are related to one another in merely possible (counterfactual, or
+contrary to fact) situations.
+
+In introductory logic courses, we always use the *material* conditional. Logic
+has plenty to say about counterfactual conditionals, and about other kinds of
+conditionals as well. But the material conditional is the simplest kind of
+conditional. So, we save the study of those other conditionals for later, and
+build the material conditional into our inference rules.
+
+The kinds of cases where we use material conditionals usually involve what we
+know about what is actually true. For example, if you are unsure of the exact
+place you left your keys, you might still believe "if my keys are not in the
+car, then they're on the bedstand". If your keys turn out to be on the
+bedstand, then your belief was correct. It's only if they turn out to *not* be
+in the car and *not* be on the bedstand that you were wrong.[^2]
+
+[^2]:: Here is another place you use material conditionals, perhaps without
+realizing it. It turns out that hypothetical syllogism requires you to use a
+material conditional. It is *not* a good argument form when you are dealing
+with subjunctive conditionals. For example, the argument "If I was dolphin, I
+would be able to swim at 20 km/h., and if I could swim at 20 km/h, I would be
+an Olympic champion, therefore, if I was a dolphin, I would be an Olympic
+champion." is not valid. Dolphins are not eligible to compete in the Olympics.
+
+Here are some arguments that are greatly simplified by using the material
+conditional rules. 
+
+```{.ProofChecker .Prop}
+8.3 T, (R->T)->-Q, (Q->S)->W :|-: W
+8.4 P->-(S->W), W :|-: P->(Q->R)
+```
+
+##Contraposition
+
+There are several ways of rearranging an if-then statement. Suppose you know
+that $P\rightarrow Q$ is true. Then which of the following must also be true?
+
+1. $Q\rightarrow P$ (this is sometimes called the *converse* of $P\rightarrow Q$)
+2. $\neg P\rightarrow \neg Q$ (this is sometimes called the *inverse* of $P\rightarrow Q$)
+3. $\neg Q\rightarrow \neg P$ (this is sometimes called the *contrapositive* of $P\rightarrow Q$)
+
+Well, if $P$ is "Sam is a cat" and $Q$ is "Sam is a mammal", then
+$P\rightarrow Q$ must true. But $Q\rightarrow P$ (if Sam is a mammal, Sam is a
+cat) need not be true, because Sam could be, for example, a human. And $\neg
+P\rightarrow \neg Q$ (if Sam is not a cat, then Sam is not a mammal) need not
+be true either. Even if Sam is not a cat, Sam could be some other kind of
+mammal. However, $\neg Q\rightarrow \neg P$ doesn't seem to have any obvious
+counterexamples. If Sam is not a mammal, Sam certainly is not a cat.
+
+It turns out that a given conditional $\phi\rightarrow\psi$ and its
+contrapositive $\neg\psi\rightarrow\neg\phi$ are *logically equivalent*,
+just like $\phi$ is logically equivalent to $\neg\neg\phi$. You can infer the
+first statement from the second, and the second from the first. So we have the
+following two rules
+
+The Contrapositive Rules
+
+:   The contrapositive rules are the following two argument forms
+
+    1. $\phi\rightarrow\psi\vdash\neg\psi\rightarrow\neg\phi$
+    2. $\neg\phi\rightarrow\neg\psi\vdash\psi\rightarrow\phi$
+
+Here are a few problems in which the contrapositive rules are useful
+
+```{.ProofChecker .Prop}
+8.5 :|-: X -> ((-P->-Q)->(Q->P))
+8.6 (R->S)->-P, Q->T, -Q -> (R->S), T->(X->Y) :|-: P->(-Y->-X)
+```
+
+##Dilemma
+
+You're in a dilemma when you're damned if you do, and damned if you don't.
+You're in a logical dilemma when both assuming some statement is true and
+assuming that the statement is false leads to the same conclusion. In such a
+situation, even if you don't know whether the statement is true, you can still
+safely infer that the conclusion (the one that you're led to in both cases) is
+true.
+
+Dilemma
+
+:   The Dilemma rule is the following
+
+    $\phi\rightarrow\psi$, $\neg\phi\rightarrow\psi$ $\vdash$ $\psi$.
+
+Here's an example of an argument where constructing a logical dilemma can be
+useful (you may find hypothetical syllogism and contraposition helpful here
+too):
+
+```{.ProofChecker .Prop}
+8.7 P -> R, R -> -Q, Z-> P, Q->Z :|-: -Q
+```
+
+##Consequentia Mirabilis
+
+Suppose that a statement is "self-contradictory"---it implies its own denial.
+No reasonable person could believe such a statement, since believing it would
+mean either failing to accept its consequences (which would be unreasonable),
+or believing both the statement and its denial (which would be *very*
+unreasonable).
+
+Now, imagine a statement which is "undeniable", for something like the same
+reason. In order to deny the statement, you *must* accept it. For example,
+some people have observed that in order to deny that epistemology (the study
+of what we can and can't know) will ever reach any conclusions, you need to
+accept that it is possible to know something about what we can and can't know
+(specifically, you must think that we can't know anything about what we can
+know).
+
+In a case like this, what you set out to deny is presupposed by your denial,
+and that makes it the denial of this "undeniable" statement just as
+unreasonable as the assertion of a self-contradictory statement.
+
+This logical observation is quite old. The rule is called *consequentia
+mirabilis* (meaning "admirable consequence"), or sometimes "Clavius's law",
+after Christopher Clavius.[^3]
+
+[^3]:: Christopher Clavius is a renaissance mathematician who did a great deal
+to reinvigorate the study of geometry and mathematics after the end of the
+middle ages. Isaac Newton and Gottfried Leibniz are both believed to have
+studied from his textbooks.
+
+It can be written formally as follows:
+
+Consequentia Mirabilis
+
+:   The rule of consequentia mirabilis is the following:
+
+    $\neg\phi\rightarrow\phi\vdash\phi$.
+
+Consequentia Mirabilis is easy to prove using a logical dilemma: $P$ is true
+if we assume $P$ is true, obviously, so if $P$ is also true when we assume that $\neg
+P$ is true (which is given, by the premise that $\neg P\rightarrow P$), then $P$ is true no matter what.
+
+Here's a problem for which consequentia mirabilis (and some of our other rules
+above) might come in handy:
+
+```{.ProofChecker .Prop}
+8.8 -Q->--P, --R->-Q, -R-> P :|-: P
+```
+
+##Ex Falso Quodlibet
+
+The Arabic philosopher Avicenna, in a moment of great frustration with someone
+who kept contradicting themselves, quipped that 
+
+>Anyone who denies the law of non-contradiction should be beaten and burned
+>until he admits that to be beaten is not the same as not to be beaten, and to
+>be burned is not the same as not to be burned.
+
+This is perhaps a bit much. But to violate the law of non-contradiction by
+both asserting and denying the same thing carries a logical penalty that is
+almost as bad as being burned and beaten.[^4] Poetically, a person who wishes
+to assert too much ends up logically committed to asserting *everything*.
+
+[^4]:: Actually, maybe it's worse. Plenty of very admirable people have
+preferred to be burned or beaten, rather than denying the things that they
+most deeply believe, or assenting to things that they abhor.
+
+In particular, we have the following logical rule:
+
+Ex Falso Quodlibet
+
+:   The rule of ex falso quodlibet is the following:
+
+    $\phi$, $\neg\phi\vdash \psi$
+
+The name "ex falso quodlibet" means roughly, "from what's ridiculously false,
+you can infer whatever conclusion you want".
+
+Here's a problem where ex falso quodlibet might come in handy:
+
+```{.ProofChecker .Prop}
+8.9 P->-P, R->P, Q->R, -Q->R :|-: Z
+```
+
+Here's a final interesting statement to try to prove by combining the rules
+you've learned. 
+
+```{.ProofChecker .Prop}
+8.10 :|-: ((P->Q)->P)->P
+```
+
+If you get stuck, here's a hint: Try to construct a dilemma, by showing that
+$P\rightarrow ((P\rightarrow Q)\rightarrow P)\rightarrow P)$ using the
+material conditional rules, and that $\neg P\rightarrow((P\rightarrow
+Q)\rightarrow P)\rightarrow P)$ by using the material conditional rules and
+our ordinary strategies for dealing with conditionals.
