@@ -68,7 +68,7 @@ activateChecker _ Nothing  = return ()
 tryTrans :: Element -> IORef Bool -> Document -> PureForm -> EventM HTMLInputElement KeyboardEvent ()
 tryTrans o ref w f = onEnter $ do (Just t) <- target :: EventM HTMLInputElement KeyboardEvent (Maybe HTMLInputElement)
                                   (Just ival)  <- getValue t
-                                  case parse purePropFormulaParser "" ival of
+                                  case parse (spaces *> purePropFormulaParser) "" ival of
                                       Right f' -> liftIO $ checkForm f'
                                       Left e -> message "Sorry, try again---that formula isn't gramatical."
               where message s = do (Just w') <- getDefaultView w
