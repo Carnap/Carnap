@@ -10,6 +10,6 @@
 /               HomeR       GET
 /book           BookR       GET
 /book/#Int      ChapterR    GET
-/user/#Text     UserR       GET
+/user/#Text     UserR       GET POST
 /hash/#Text     HashedR     GET
 /rules          RuleR       GET
