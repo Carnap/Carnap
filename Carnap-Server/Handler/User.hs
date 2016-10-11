@@ -4,56 +4,43 @@ import Import
 import Prelude (read)
 import qualified Text.Blaze.Html5 as B
 import Text.Blaze.Html5.Attributes
+import Carnap.Languages.PurePropositional.Logic (DerivedRule(..))
+import Carnap.GHCJS.SharedTypes
+import Data.Aeson (decodeStrict)
 import Data.Time
 import qualified Data.Map as M
+
+postUserR :: Text -> Handler Value
+postUserR userId = do
+    msg <- requireJsonBody :: Handler Text
+    maybeCurrentUserId <- maybeAuthId
+    case maybeCurrentUserId of
+        Nothing -> return ()
+        Just u -> runDB $ do (targetkey:_) <- selectKeysList 
+                                                    [SavedDerivedRuleUserId ==. u
+                                                    ,SavedDerivedRuleName ==. msg ] []
+                             delete targetkey
+    returnJson (msg ++ " deleted")
+
+-- getDrList = do maybeCurrentUserId <- maybeAuthId
+--                case maybeCurrentUserId of
+--                    Nothing -> return Nothing
+--                    Just u -> do savedRules <- runDB $ selectList [SavedDerivedRuleUserId ==. u] []
+--                                 return $ Just (formatRules (map entityVal savedRules))
 
 getUserR :: Text -> Handler Html
 getUserR userId = do
     (synsubs, transsubs,dersubs) <- subsById userId
     let isAdmin = userId == "gleachkr@gmail.com"
-    let pointsAvailable = "325" :: Text
+    let pointsAvailable = "425" :: Text
     allUsers <- if isAdmin 
                     then (runDB $ selectList [] []) >>= return . (map $ userIdent . entityVal)
                     else return []
     allScores <- mapM scoreById allUsers >>= return . zip allUsers
+    derivedRules <- getDrList
     defaultLayout $ do
         setTitle "Welcome To Your Homepage!"
-        [whamlet|
-            <div.container>
-                <h1> Homepage for #{userId}
-                $if isAdmin
-                    <h2> Admin Panel
-                    <table class="table table-striped">
-                        <thead>
-                            <th> Student
-                            <th> Total Score
-                        <tbody>
-                            $forall id' <- allUsers
-                                <tr>
-                                    <td>
-                                        <a href="@{UserR id'}">#{id'}
-                                    <td>
-                                        #{tryLookup allScores id'}/#{pointsAvailable}
-                <p> This is your homepage, where you can keep track of your progress in the course, and find other useful information.
-                <h3 style="padding-top:10pt"> Completed Problems
-                <h4> Syntax Checking
-                #{exPairToTable synsubs}
-                <h4> Translation
-                #{exPairToTable transsubs}
-                <h4> Derivation
-                #{exPairToTable dersubs}
-                <div.row>
-                    <div.col-md-9 style="padding-right:30pt">
-                        <h3> Due Dates
-                        #{dueDateTable}
-                    <div.col-md-3>
-                        <h3> Total Points Earned
-                        <span style="font-size:56pt; color:gray; padding-left:20pt">
-                            #{totalScore (synsubs ++ (transsubs ++ dersubs))}/#{pointsAvailable}
-                <div>
-                <a href=@{AuthR LogoutR}>
-                    Logout
-        |]
+        $(widgetFile "user")
     where tryLookup l x = case lookup x l of
                           Just n -> show n
                           Nothing -> "can't find scores"
@@ -96,13 +83,16 @@ laterThan t1 t2 = diffUTCTime t1 t2 > 0
 -- TODO: this should be pushed to a configuration file
 -- remember, the day clicks over at midnight.
 dueDates :: M.Map Int UTCTime
-dueDates = M.fromList [(1, toTime "11:59 pm CDT, Aug 30, 2016")
-                      ,(2, toTime "11:30 am CDT, Sep 1, 2016")
-                      ,(3, toTime "11:59 pm CDT, Sep 7, 2016")
-                      ,(4, toTime "11:59 pm CDT, Sep 7, 2016")
-                      ,(5, toTime "11:59 pm CDT, Sep 12, 2016")
-                      ,(6, toTime "11:59 pm CDT, Sep 14, 2016")
-                      ,(7, toTime "11:59 pm CDT, Sep 19, 2016")
+dueDates = M.fromList [( 1, toTime "11:59 pm CDT, Aug 30, 2016")
+                      ,( 2, toTime "11:30 am CDT, Sep 1, 2016")
+                      ,( 3, toTime "11:59 pm CDT, Sep 7, 2016")
+                      ,( 4, toTime "11:59 pm CDT, Sep 7, 2016")
+                      ,( 5, toTime "11:59 pm CDT, Sep 12, 2016")
+                      ,( 6, toTime "11:59 pm CDT, Sep 14, 2016")
+                      ,( 7, toTime "11:59 pm CDT, Sep 19, 2016")
+                      ,( 8, toTime "11:59 pm CDT, Oct 5, 2016")
+                      ,( 9, toTime "11:59 pm CDT, Oct 12, 2016")
+                      ,(10, toTime "11:59 pm CDT, Oct 12, 2016")
                       ]
     where toTime = parseTimeOrError True defaultTimeLocale "%l:%M %P %Z, %b %e, %Y"
 
@@ -113,6 +103,10 @@ dueDates = M.fromList [(1, toTime "11:59 pm CDT, Aug 30, 2016")
 
 exPairToTable :: [((Text,Text), Text)] -> Html
 exPairToTable xs = B.table B.! class_ "table table-striped" $ do
+                        B.col B.! style "width:50px"
+                        B.col B.! style "width:100px"
+                        B.col B.! style "width:100px"
+                        B.col B.! style "width:100px"
                         B.thead $ do
                             B.th "Exercise"
                             B.th "Content"
@@ -133,10 +127,32 @@ dueDateTable = B.table B.! class_ "table table-striped" $ do
         where toRow (n, d) = B.tr $ do B.td $ B.toHtml $ show n
                                        B.td $ B.toHtml $ formatted d
 
+formatRules rules = B.table B.! class_ "table table-striped" $ do
+        B.thead $ do
+            B.th "Name"
+            B.th "Premises"
+            B.th "Conclusion"
+            B.th "Action"
+        B.tbody $ mapM_ toRow rules
+    where toRow (SavedDerivedRule dr n _ _) = let (Just dr') = decodeStrict dr in 
+                                              B.tr $ do B.td $ B.toHtml $ "D-" ++ n
+                                                        B.td $ B.toHtml $ intercalate "," $ map show $ premises dr'
+                                                        B.td $ B.toHtml $ show $ conclusion dr'
+                                                        B.td $ delAct n
+          delAct name = B.span B.! class_ "glyphicon glyphicon-trash ruleaction" 
+                               B.! onclick (B.textValue $ "tryDeleteRule(\"" ++ name ++ "\")") $ ""
+
+
 --------------------------------------------------------
 --Database Handling
 --------------------------------------------------------
---functions for retrieving database informaiton and formatting it
+--functions for retrieving database infomration and formatting it
+
+getDrList = do maybeCurrentUserId <- maybeAuthId
+               case maybeCurrentUserId of
+                   Nothing -> return Nothing
+                   Just u -> do savedRules <- runDB $ selectList [SavedDerivedRuleUserId ==. u] []
+                                return $ Just (formatRules (map entityVal savedRules))
     
 synPair (SyntaxCheckSubmission prob time pu)  = (Just pu, prob,time)
 

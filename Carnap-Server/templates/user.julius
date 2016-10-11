@@ -1,0 +1,21 @@
+function deleteRule (name) {
+    jQuery.ajax({
+        url: '@{UserR userId}',
+        type: 'POST',
+        contentType: "application/json",
+        data: JSON.stringify(name),
+        success: function(data) {
+            window.alert("Deleted the rule " + name);
+            location.reload();
+            },
+        error: function(data) {
+            window.alert("Error, couldn't delete the rule" + name)
+            },
+        });
+    };
+
+function tryDeleteRule (name) {
+    if (confirm("Permanently delete the rule " + name + "?")) {
+        deleteRule(name);
+        }
+    }

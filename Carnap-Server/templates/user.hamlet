@@ -1,0 +1,38 @@
+<div.container>
+    <h1> Homepage for #{userId}
+    $if isAdmin
+        <h2> Admin Panel
+        <table class="table table-striped">
+            <thead>
+                <th> Student
+                <th> Total Score
+            <tbody>
+                $forall id' <- allUsers
+                    <tr>
+                        <td>
+                            <a href="@{UserR id'}">#{id'}
+                        <td>
+                            #{tryLookup allScores id'}/#{pointsAvailable}
+    <p> This is your homepage, where you can keep track of your progress in the course, and find other useful information.
+    <h3 style="padding-top:10pt"> Completed Problems
+    <h4> Syntax Checking
+    #{exPairToTable synsubs}
+    <h4> Translation
+    #{exPairToTable transsubs}
+    <h4> Derivation
+    #{exPairToTable dersubs}
+    <div.row>
+        <div.col-md-9 style="padding-right:30pt">
+            <h3> Due Dates
+            #{dueDateTable}
+        <div.col-md-3>
+            <h3> Total Points Earned
+            <span style="font-size:56pt; color:gray; padding-left:20pt">
+                #{totalScore (synsubs ++ (transsubs ++ dersubs))}/#{pointsAvailable}
+    <div>
+    <h3> Derived Rules
+    $maybe rules <- derivedRules
+        <div.derivedRules>
+            #{rules}
+    <a href=@{AuthR LogoutR}>
+        Logout
