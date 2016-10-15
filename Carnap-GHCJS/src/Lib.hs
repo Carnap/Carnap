@@ -1,6 +1,6 @@
 {-# LANGUAGE RankNTypes, FlexibleContexts, DeriveDataTypeable, CPP, JavaScriptFFI #-}
 module Lib
-    (genericSendJSON, sendJSON, onEnter, clearInput, getListOfElementsByClass, tryParse, treeToElement, genericTreeToUl, treeToUl, genericListToUl, listToUl, formToTree, leaves, adjustFirstMatching, decodeHtml, syncScroll, reloadPage) where
+    (genericSendJSON, sendJSON, onEnter, clearInput, getListOfElementsByClass, tryParse, treeToElement, genericTreeToUl, treeToUl, genericListToUl, listToUl, formToTree, leaves, adjustFirstMatching, decodeHtml, syncScroll, reloadPage, initElements, loginCheck,errorPopup) where
 
 import Data.Aeson
 import qualified Data.ByteString.Lazy as BSL
@@ -25,6 +25,7 @@ import GHCJS.Marshal
 --Element doesn't export IsElement, although Types does in the webkit
 --version---but it's the other way around in the FFI version. This appears
 --to be cleaner in 3.0, but there's no documentation for that at all, yet.
+import GHCJS.DOM
 import GHCJS.DOM.Types
 import GHCJS.DOM.Element
 import GHCJS.DOM.HTMLInputElement
@@ -54,7 +55,6 @@ onEnter action = do kbe      <- event
                     id'      <- liftIO $ keyString kbe
                     if id == "Enter" || id' == "Enter" then do action else return ()
 
-
 --------------------------------------------------------
 --1.1.2 Common responsive behavior
 --------------------------------------------------------
@@ -65,7 +65,6 @@ syncScroll e1 e2 = do cup1 <- catchup e1 e2
                       addListener e2 scroll cup2 False
     where catchup e1 e2 = newListener $ liftIO $ do st <- getScrollTop e1
                                                     setScrollTop e2 st
-
 
 --------------------------------------------------------
 --1.2 DOM Manipulation
@@ -153,6 +152,26 @@ formToTree :: Plated a => a -> Tree a
 formToTree f = T.Node f (map formToTree (children f))
 
 --------------------------------------------------------
+--1.6 Boilerplate
+--------------------------------------------------------
+
+initElements :: (HTMLElement -> IO [a]) -> (Document -> a -> IO b) -> IO ()
+initElements getter setter = runWebGUI $ \w -> 
+            do (Just dom) <- webViewGetDomDocument w
+               (Just b) <- getBody dom
+               elts <- getter b
+               case elts of 
+                    [] -> return ()
+                    _ -> mapM_ (setter dom) elts
+
+loginCheck successMsg serverResponse  
+     | serverResponse == "No User" = alert "You need to log in before you can submit anything"
+     | serverResponse == "Clash"   = alert "it appears you've already successfully submitted this problem"
+     | otherwise      = alert successMsg
+
+errorPopup msg = alert ("Something has gone wrong. Here's the error: " ++ msg)
+
+--------------------------------------------------------
 --2. FFI Wrappers
 --------------------------------------------------------
 
@@ -161,7 +180,7 @@ formToTree f = T.Node f (map formToTree (children f))
 sendJSON :: ToJSON a => a -> (String -> IO ()) -> (String -> IO ()) -> IO ()
 sendJSON x succ fail = do cb1 <- asyncCallback1 (cb succ)
                           cb2 <- asyncCallback3 (cb3 fail)
-                          jsonCommand (toJSString . decodeUtf8. BSL.toStrict . encode $ x) cb1 cb2
+                          jsonCommand (toJSString . decodeUtf8 . BSL.toStrict . encode $ x) cb1 cb2
     where cb f x = do (Just s) <- fromJSVal x 
                       f s
           cb3 f _ x _  = do (Just s) <- fromJSVal x 
@@ -170,7 +189,7 @@ sendJSON x succ fail = do cb1 <- asyncCallback1 (cb succ)
 genericSendJSON :: ToJSON a => a -> (Value -> IO ()) -> (Value -> IO ()) -> IO ()
 genericSendJSON x succ fail = do cb1 <- asyncCallback1 (cb succ)
                                  cb2 <- asyncCallback3 (cb3 fail)
-                                 jsonCommand (toJSString . decodeUtf8. BSL.toStrict . encode $ x) cb1 cb2
+                                 jsonCommand (toJSString . decodeUtf8 . BSL.toStrict . encode $ x) cb1 cb2
     where cb f x = do (Just v) <- fromJSVal x 
                       f v
           cb3 f _ x _  = do (Just v) <- fromJSVal x 
@@ -179,11 +198,16 @@ genericSendJSON x succ fail = do cb1 <- asyncCallback1 (cb succ)
 keyString :: KeyboardEvent -> IO String
 keyString e = key e >>= return . fromJSString
 
+alert :: String -> IO ()
+alert = alert' . toJSString
+
 foreign import javascript unsafe "jsonCommand($1,$2,$3)" jsonCommand :: JSString -> Callback (JSVal -> IO()) -> Callback (JSVal -> JSVal -> JSVal -> IO()) -> IO ()
 
 foreign import javascript unsafe "$1.key" key :: KeyboardEvent -> IO JSString
 
 foreign import javascript unsafe "location.reload()" reloadPage :: IO ()
+
+foreign import javascript unsafe "alert($1)" alert' :: JSString -> IO ()
 
 #else
 
@@ -195,6 +219,9 @@ genericSendJSON = Prelude.error "sendJSON requires the GHCJS FFI"
 
 keyString :: KeyboardEvent -> IO String
 keyString = Prelude.error "keyString requires the GHCJS FFI"
+
+alert :: String -> IO ()
+alert = Prelude.error "alert requires the GHCJS FFI"
 
 reloadPage :: IO ()
 reloadPage = Prelude.error "you can't reload the page without the GHCJS FFI"

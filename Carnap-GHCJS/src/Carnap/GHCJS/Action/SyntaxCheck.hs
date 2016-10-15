@@ -32,13 +32,7 @@ import GHCJS.DOM.EventM
 import Control.Monad.IO.Class (MonadIO, liftIO)
 
 syntaxCheckAction:: IO ()
-syntaxCheckAction = runWebGUI $ \w -> 
-            do (Just dom) <- webViewGetDomDocument w
-               (Just b) <- getBody dom
-               mcheckers <- getCheckers b
-               case mcheckers of 
-                    [] -> return ()
-                    _ -> mapM_ (activateChecker dom) mcheckers
+syntaxCheckAction = initElements getCheckers activateChecker
 
 echoTo :: IsElement element => (String -> String) -> element -> EventM HTMLInputElement KeyboardEvent ()
 echoTo f o = do (Just t) <- target :: EventM HTMLInputElement KeyboardEvent (Maybe HTMLInputElement)
@@ -50,14 +44,13 @@ echoTo f o = do (Just t) <- target :: EventM HTMLInputElement KeyboardEvent (May
 trySubmit :: IORef (PureForm,[(PureForm,Int)], Tree (PureForm,Int),Int) -> Window -> String -> EventM HTMLInputElement e ()
 trySubmit ref w l = do (f,forms,_,_) <- liftIO $ readIORef ref
                        case forms of 
-                          [] -> liftIO $ sendJSON (SubmitSyntaxCheck (l ++ ":" ++ show f)) loginCheck error
+                          [] -> liftIO $ sendJSON 
+                            (SubmitSyntaxCheck $ l ++ ":" ++ show f) 
+                            (loginCheck $ "Submitted Syntax-Check for Exercise " ++ l) 
+                            errorPopup
                           _  -> alert w "not yet finished"
-    where loginCheck c | c == "No User" = alert w "You need to log in before you can submit anything"
-                       | c == "Clash"   = alert w "it appears you've already successfully submitted this problem"
-                       | otherwise      = alert w $ "Submitted Syntax-Check for Exercise " ++ l
-          error c = alert w ("Something has gone wrong. Here's the error: " ++ c)
 
---XXX:this could be cleaner. The basic idea is that we maintain a "stage"
+-- XXX:this could be cleaner. The basic idea is that we maintain a "stage"
 --in development and use the stages to match formulas in the tree with
 --formulas in the todo list. The labeling makes it possible to identify
 --which formula is in the queue, even when there are several

@@ -20,15 +20,8 @@ import GHCJS.DOM.KeyboardEvent
 import GHCJS.DOM.EventM
 import Control.Monad.IO.Class (MonadIO, liftIO)
 
--- XXX: There's clearly a pattern here that could be factored out.
 translateAction :: IO ()
-translateAction = runWebGUI $ \w -> 
-            do (Just dom) <- webViewGetDomDocument w
-               (Just b) <- getBody dom
-               mtranslates <- getTranslates b
-               case mtranslates of 
-                    [] -> return ()
-                    _ -> mapM_ (activateTranslate dom) mtranslates
+translateAction = initElements getTranslates activateTranslate
 
 -- XXX: also here
 getTranslates :: IsElement self => self -> IO [Maybe (Element, Element, [String])]
@@ -85,12 +78,11 @@ tryTrans o ref w f = onEnter $ do (Just t) <- target :: EventM HTMLInputElement 
 -- XXX: and here.
 trySubmit ref w l f = do isFinished <- liftIO $ readIORef ref
                          if isFinished
-                           then liftIO $ sendJSON (SubmitTranslation (l ++ ":" ++ show f)) loginCheck error
+                           then liftIO $ sendJSON 
+                                    (SubmitTranslation $ l ++ ":" ++ show f) 
+                                    (loginCheck $ "Submitted Translation for Exercise " ++ l)
+                                    errorPopup
                            else alert w "not yet finished (remember to press return to check your work before submitting!)"
-    where loginCheck c | c == "No User" = alert w "You need to log in before you can submit anything"
-                       | c == "Clash"   = alert w "it appears you've already successfully submitted this problem"
-                       | otherwise      = alert w $ "Submitted Translation for Exercise " ++ l
-          error c = alert w ("Something has gone wrong. Here's the error: " ++ c)
 
 formAndLabel = do label <- many (digit <|> char '.')
                   spaces

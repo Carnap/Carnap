@@ -29,17 +29,12 @@ import GHCJS.DOM.Node (appendChild, getParentNode, insertBefore)
 import GHCJS.DOM.KeyboardEvent
 import GHCJS.DOM.EventM
 import Control.Monad.IO.Class (MonadIO, liftIO)
+import Control.Monad.Trans.Maybe (runMaybeT, MaybeT(..))
 
 proofCheckAction :: IO ()
-proofCheckAction = runWebGUI $ \w -> 
-        do (Just dom) <- webViewGetDomDocument w
-           (Just b) <- getBody dom
-           mcheckers <- getCheckers b
-           availableDerived <- newIORef []
-           liftIO $ genericSendJSON RequestDerivedRulesForUser (addRules availableDerived) errcb
-           case mcheckers of 
-                [] -> return ()
-                _ -> mapM_ (activateChecker dom availableDerived) mcheckers
+proofCheckAction = do availableDerived <- newIORef []
+                      genericSendJSON RequestDerivedRulesForUser (addRules availableDerived) errcb
+                      initElements getCheckers (activateChecker availableDerived)
     where errcb e = case fromJSON e :: Result String of
                                A.Error e -> print $ "Getting kind of meta. Error decoding error message:" ++ e
                                Success e -> print $ "Error in retrieving derived rules" ++ e
@@ -49,29 +44,22 @@ proofCheckAction = runWebGUI $ \w ->
                                Success rs -> writeIORef avd rs
 
 getCheckers :: IsElement self => self -> IO [Maybe (Element, Element, Element, [String])]
-getCheckers b =
-        do ldivs <- getListOfElementsByClass b "proofchecker"
-           mapM extractCheckers ldivs
+getCheckers b = do ldivs <- getListOfElementsByClass b "proofchecker"
+                   mapM extractCheckers ldivs
         where extractCheckers Nothing = return Nothing
               extractCheckers (Just div) = 
                 do mg <- getFirstElementChild div
                    cn <- getClassName div
-                   -- XXX: very ugly. Clean this code
                    case mg of
                        Nothing -> return Nothing
-                       Just g -> 
-                         do mi <- getNextElementSibling g
-                            case mi of 
-                               Nothing -> return Nothing
-                               (Just i) -> 
-                                    do mo <- getNextElementSibling i
-                                       case mo of 
-                                           Nothing -> return Nothing
-                                           (Just o) -> return $ Just (i,o,g,words cn)
+                       Just g -> runMaybeT $ 
+                            do i <- MaybeT $ getNextElementSibling g 
+                               o <- MaybeT $ getNextElementSibling i
+                               return $ (i,o,g,words cn)
 
-activateChecker :: Document -> IORef [(String,DerivedRule)] -> Maybe (Element, Element, Element, [String]) -> IO ()
+activateChecker ::  IORef [(String,DerivedRule)] -> Document -> Maybe (Element, Element, Element, [String]) -> IO ()
 activateChecker _ _ Nothing  = return ()
-activateChecker w drs (Just (i,o,g, classes))
+activateChecker drs w (Just (i,o,g, classes))
         | "ruleMaker" `elem` classes = checkerWith "save rule" (trySave drs) (computeRule drs)
         | otherwise = 
             do (Just gs) <- getInnerHTML g 
@@ -200,12 +188,11 @@ setLinesTo w nd n = do setInnerHTML nd (Just "")
 trySubmit l s ref w i = do isFinished <- liftIO $ readIORef ref
                            if isFinished
                              then do (Just v) <- getValue (castToHTMLTextAreaElement i)
-                                     liftIO $ sendJSON (SubmitDerivation (l ++ ":" ++ show s) v) loginCheck error
+                                     liftIO $ sendJSON 
+                                        (SubmitDerivation (l ++ ":" ++ show s) v) 
+                                        (loginCheck $ "Submitted Derivation for Exercise " ++ l)
+                                        errorPopup
                              else alert w "not yet finished"
-    where loginCheck c | c == "No User" = alert w "You need to log in before you can submit anything"
-                       | c == "Clash"   = alert w "it appears you've already successfully submitted this problem"
-                       | otherwise      = alert w $ "Submitted Derivation for Exercise " ++ l
-          error c = alert w ("Something has gone wrong. Here's the error: " ++ c)
 
 trySave drs ref w i = do isFinished <- liftIO $ readIORef ref
                          rules <- liftIO $ readIORef drs
