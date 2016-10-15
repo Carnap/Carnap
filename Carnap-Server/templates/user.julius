@@ -1,7 +1,7 @@
 function deleteRule (name) {
     jQuery.ajax({
         url: '@{UserR userId}',
-        type: 'POST',
+        type: 'DELETE',
         contentType: "application/json",
         data: JSON.stringify(name),
         success: function(data) {

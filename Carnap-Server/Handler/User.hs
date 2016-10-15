@@ -10,29 +10,24 @@ import Data.Aeson (decodeStrict)
 import Data.Time
 import qualified Data.Map as M
 
-postUserR :: Text -> Handler Value
-postUserR userId = do
+deleteUserR :: Text -> Handler Value
+deleteUserR userId = do
     msg <- requireJsonBody :: Handler Text
     maybeCurrentUserId <- maybeAuthId
     case maybeCurrentUserId of
         Nothing -> return ()
-        Just u -> runDB $ do (targetkey:_) <- selectKeysList 
-                                                    [SavedDerivedRuleUserId ==. u
-                                                    ,SavedDerivedRuleName ==. msg ] []
-                             delete targetkey
+        Just u -> runDB $ do kl <- selectKeysList [SavedDerivedRuleUserId ==. u
+                                                  ,SavedDerivedRuleName ==. msg ] []
+                             case kl of
+                                 [] -> return ()
+                                 (targetkey:_) -> delete targetkey
     returnJson (msg ++ " deleted")
-
--- getDrList = do maybeCurrentUserId <- maybeAuthId
---                case maybeCurrentUserId of
---                    Nothing -> return Nothing
---                    Just u -> do savedRules <- runDB $ selectList [SavedDerivedRuleUserId ==. u] []
---                                 return $ Just (formatRules (map entityVal savedRules))
 
 getUserR :: Text -> Handler Html
 getUserR userId = do
     (synsubs, transsubs,dersubs) <- subsById userId
     let isAdmin = userId == "gleachkr@gmail.com"
-    let pointsAvailable = "425" :: Text
+    let pointsAvailable = "525" :: Text
     allUsers <- if isAdmin 
                     then (runDB $ selectList [] []) >>= return . (map $ userIdent . entityVal)
                     else return []
@@ -93,6 +88,7 @@ dueDates = M.fromList [( 1, toTime "11:59 pm CDT, Aug 30, 2016")
                       ,( 8, toTime "11:59 pm CDT, Oct 5, 2016")
                       ,( 9, toTime "11:59 pm CDT, Oct 12, 2016")
                       ,(10, toTime "11:59 pm CDT, Oct 12, 2016")
+                      ,(11, toTime "11:59 pm CDT, Oct 17, 2016")
                       ]
     where toTime = parseTimeOrError True defaultTimeLocale "%l:%M %P %Z, %b %e, %Y"
 
