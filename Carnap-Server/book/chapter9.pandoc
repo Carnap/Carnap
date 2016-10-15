@@ -129,7 +129,7 @@ stylistic variants all are correct:
     #.  "$\phi$ if and only if $\psi$" 
     #.  "Just in case $\phi$, $\psi$", 
     #.  "Exactly on the condition that $\phi$, $\psi$", 
-    #.  "If and only if $\phi$, $\psi$, and similar phrases.
+    #.  "If and only if $\phi$, $\psi$", and similar phrases.
 
 ###Subjects and predicates containing connectives
 
@@ -244,7 +244,8 @@ need to replace in step 2.
 
 ##Problem Set 10
 
-Please translate the following English sentences into our formal language.
+Please translate the following English sentences into our formal language,
+using this scheme of abbreviation:
 
 | $P~=~$Peter is proud.
 | $Q~=~$Queens is a short ride away.
@@ -264,4 +265,36 @@ Please translate the following English sentences into our formal language.
 10.8 (T->P)/\(T->U) : Peter is proud if Tom is proud, but Tom is proud only if Susan is buying an umbrella
 10.9 (P\/T)\/(U->S) : Unless Peter or Tom is proud, Susan is getting a deal if she is buying an umbrella.
 10.10 (T->P\/R)->~(U/\S) : It's not the case that Susan is buying an umbrella and getting a deal, given that if Tom is proud then either Peter is proud or real estate is harder than it seems
+```
+
+##Problem Set 11
+
+Please translate the following English sentences into our formal language,
+using this scheme of abbreviation:
+
+| $P~=~$Professor Farnsworth has built a robot. 
+| $Q~=~$Kif's quips are rather funny.
+| $R~=~$Robots can be trusted.
+| $S~=~$Kif's quips sink ships
+| $T~=~$There will be a tomorrow.
+| $U~=~$Robots can be underestimated.
+
+```{.Translate .Prop}
+11.1 -R/\P : Although robots can't be trusted, professor Farnsworth has built one.
+11.2 (R\/S)/\Q : Unless robots can be trusted Kif's quips sink ships, although they *are* rather funny
+11.3 ~(R\/U)/\T : Robots can't be underestimated or trusted, but nevertheless there will be a tomorrow.
+11.4 (Q/\S)/\(P/\~R->~T) : Kif's quips, which are rather funny, sink ships; but given that professor Farnsworth has built a robot and robots can't be trusted, there won't be a tomorrow.
+11.5 (T->Q)/\(R\/~T) : If there will be a tomorrow then Kif's quips are rather funny, but unless robots can be trusted, there won't be a tomorrow.
+```
+
+Please also prove the validity of the following arguments. DeMorgan's laws,
+proof by cases, and the negated conditional rule are very likely to be useful
+here.
+
+```{.ProofChecker .Prop}
+11.6 ~(~P->(Q/\R)), ~S\/P :|-: ~S
+11.7 P\/Q->S, ~(R\/~P) :|-: ~(R<->S)
+11.8 (P->Q)->T, S\/T, P->(S->Q) :|-: T
+11.9 (P->Q)->P, Q->P :|-: P
+11.10 ~(P->Q), ~(R->Q) :|-: ~(P->~R)
 ```
