@@ -1,6 +1,6 @@
 {-# LANGUAGE RankNTypes, FlexibleContexts, DeriveDataTypeable, CPP, JavaScriptFFI #-}
 module Lib
-    (genericSendJSON, sendJSON, onEnter, clearInput, getListOfElementsByClass, tryParse, treeToElement, genericTreeToUl, treeToUl, genericListToUl, listToUl, formToTree, leaves, adjustFirstMatching, decodeHtml, syncScroll, reloadPage, initElements, loginCheck,errorPopup) where
+    (genericSendJSON, sendJSON, onEnter, clearInput, getListOfElementsByClass, tryParse, treeToElement, genericTreeToUl, treeToUl, genericListToUl, listToUl, formToTree, leaves, adjustFirstMatching, decodeHtml, syncScroll, reloadPage, initElements, loginCheck,errorPopup, getInOutElts, getInOutGoalElts,seqAndLabel,formAndLabel) where
 
 import Data.Aeson
 import qualified Data.ByteString.Lazy as BSL
@@ -12,6 +12,7 @@ import Text.HTML.TagSoup as TS
 import Control.Lens
 import Control.Lens.Plated (children)
 import Control.Monad.State
+import Control.Monad.Trans.Maybe (runMaybeT, MaybeT(..))
 --The following three imports come from ghcjs-base, and break ghc-mod
 #ifdef __GHCJS__
 import GHCJS.Types
@@ -36,6 +37,9 @@ import GHCJS.DOM.Event
 import GHCJS.DOM.KeyboardEvent
 import GHCJS.DOM.EventM
 import GHCJS.DOM.EventTarget
+import Carnap.Languages.PurePropositional.Syntax (PureForm)
+import Carnap.Languages.ClassicalSequent.Parser (propSeqParser)
+import Carnap.Languages.PurePropositional.Parser (purePropFormulaParser)
 
 --------------------------------------------------------
 --1. Utility Functions
@@ -122,6 +126,39 @@ genericListToUl f doc l =
 listToUl :: Show a => Document -> [a] -> IO Element
 listToUl = genericListToUl show
 
+{-
+This function supports a pattern where we gather a list of elements that
+have a designated input (usually a text area or something) and output
+children, and then attach events to them according to the classes of their
+parents. 
+-}
+getInOutElts :: IsElement self => String -> self -> IO [Maybe (Element, Element, [String])]
+getInOutElts cls b = do els <- getListOfElementsByClass b cls
+                        mapM extract els
+        where extract Nothing = return Nothing
+              extract (Just el) = 
+                do cn <- getClassName el
+                   runMaybeT $ do
+                        i <- MaybeT $ getFirstElementChild el
+                        o <- MaybeT $ getNextElementSibling i
+                        return (i ,o ,words cn)
+
+{-
+This function supports a similar pattern where we also gather a third
+element that will carry information about a goal (what to do, and whether it has been achieved)
+-}
+getInOutGoalElts :: IsElement self => String -> self -> IO [Maybe (Element, Element, Element, [String])]
+getInOutGoalElts cls b = do els <- getListOfElementsByClass b "proofchecker"
+                            mapM extract els
+        where extract Nothing = return Nothing
+              extract (Just el ) = 
+                do cn <- getClassName el
+                   runMaybeT $ do
+                       g <- MaybeT $ getFirstElementChild el
+                       i <- MaybeT $ getNextElementSibling g 
+                       o <- MaybeT $ getNextElementSibling i
+                       return $ (i,o,g,words cn)
+
 --------------------------------------------------------
 --1.3 Encodings
 --------------------------------------------------------
@@ -170,6 +207,21 @@ loginCheck successMsg serverResponse
      | otherwise      = alert successMsg
 
 errorPopup msg = alert ("Something has gone wrong. Here's the error: " ++ msg)
+
+--------------------------------------------------------
+--1.7 Parsing
+--------------------------------------------------------
+ 
+formAndLabel :: Monad m => ParsecT String u m (String, PureForm)
+formAndLabel = do label <- many (digit <|> char '.')
+                  spaces
+                  f <- purePropFormulaParser
+                  return (label,f)
+
+seqAndLabel =  do label <- many (digit <|> char '.')
+                  spaces
+                  s <- propSeqParser
+                  return (label,s)
 
 --------------------------------------------------------
 --2. FFI Wrappers

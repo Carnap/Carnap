@@ -3,7 +3,7 @@ module Carnap.GHCJS.Action.Translate (translateAction) where
 
 import Lib
 import Carnap.Languages.PurePropositional.Syntax
-import Carnap.Languages.PurePropositional.Parser
+import Carnap.Languages.PurePropositional.Parser (purePropFormulaParser)
 import Carnap.Languages.PurePropositional.Util (isEquivTo)
 import Carnap.GHCJS.SharedTypes
 import Carnap.GHCJS.SharedFunctions
@@ -23,19 +23,8 @@ import Control.Monad.IO.Class (MonadIO, liftIO)
 translateAction :: IO ()
 translateAction = initElements getTranslates activateTranslate
 
--- XXX: also here
 getTranslates :: IsElement self => self -> IO [Maybe (Element, Element, [String])]
-getTranslates b = do els <- getListOfElementsByClass b "translate"
-                     mapM extractTranslates els
-        where extractTranslates Nothing = return Nothing
-              extractTranslates (Just el) = 
-                do mi <- getFirstElementChild el
-                   cn <- getClassName el
-                   case mi of
-                       Just c1 -> do mc2 <- getNextElementSibling c1
-                                     case mc2 of (Just c2) -> return $ Just (c1,c2,words cn)
-                                                 Nothing -> return Nothing
-                       Nothing -> return Nothing
+getTranslates = getInOutElts "translate"
 
 activateTranslate :: Document -> Maybe (Element, Element,[String]) -> IO ()
 activateTranslate w (Just (i,o,classes))
@@ -84,7 +73,3 @@ trySubmit ref w l f = do isFinished <- liftIO $ readIORef ref
                                     errorPopup
                            else alert w "not yet finished (remember to press return to check your work before submitting!)"
 
-formAndLabel = do label <- many (digit <|> char '.')
-                  spaces
-                  f <- purePropFormulaParser
-                  return (label,f)

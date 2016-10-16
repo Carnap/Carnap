@@ -3,7 +3,6 @@ module Carnap.GHCJS.Action.ProofCheck (proofCheckAction) where
 
 import Carnap.Calculi.NaturalDeduction.Checker (ProofErrorMessage(..), Feedback(..), seqSubsetUnify, toDisplaySequence)
 import Carnap.Languages.ClassicalSequent.Syntax
-import Carnap.Languages.ClassicalSequent.Parser (propSeqParser)
 import Carnap.Languages.PurePropositional.Logic (DerivedRule(..), parsePropProof)
 import Carnap.Languages.PurePropositional.Util (toSchema)
 import Carnap.GHCJS.SharedTypes
@@ -44,18 +43,7 @@ proofCheckAction = do availableDerived <- newIORef []
                                Success rs -> writeIORef avd rs
 
 getCheckers :: IsElement self => self -> IO [Maybe (Element, Element, Element, [String])]
-getCheckers b = do ldivs <- getListOfElementsByClass b "proofchecker"
-                   mapM extractCheckers ldivs
-        where extractCheckers Nothing = return Nothing
-              extractCheckers (Just div) = 
-                do mg <- getFirstElementChild div
-                   cn <- getClassName div
-                   case mg of
-                       Nothing -> return Nothing
-                       Just g -> runMaybeT $ 
-                            do i <- MaybeT $ getNextElementSibling g 
-                               o <- MaybeT $ getNextElementSibling i
-                               return $ (i,o,g,words cn)
+getCheckers = getInOutGoalElts "proofchecker"
 
 activateChecker ::  IORef [(String,DerivedRule)] -> Document -> Maybe (Element, Element, Element, [String]) -> IO ()
 activateChecker _ _ Nothing  = return ()
@@ -130,7 +118,7 @@ computeRule drs w ref v (g, fd) = do rules <- liftIO $ readIORef drs
                                                           writeIORef ref True
                                      return ()
 
-errDiv msg lineno (Just details)= "<div>✗<div><div>Error on line " 
+errDiv msg lineno (Just details) = "<div>✗<div><div>Error on line " 
                                     ++ show lineno ++ ": " ++ msg 
                                     ++ "<div>see details<div>" 
                                     ++ details 
@@ -216,8 +204,3 @@ trySave drs ref w i = do isFinished <- liftIO $ readIORef ref
                        | otherwise      = alert w "Saved your new rule!" >> reloadPage
           error c = alert w ("Something has gone wrong. Here's the error: " ++ c)
           allcaps s = and (map (`elem` "ABCDEFGHIJKLMNOPQRSTUVWXYZ") s)
-
-seqAndLabel =  do label <- many (digit <|> char '.')
-                  spaces
-                  s <- propSeqParser
-                  return (label,s)

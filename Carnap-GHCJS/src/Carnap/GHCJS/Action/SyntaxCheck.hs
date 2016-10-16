@@ -4,7 +4,7 @@ module Carnap.GHCJS.Action.SyntaxCheck (syntaxCheckAction) where
 import Lib
 import Carnap.Languages.Util.GenericParsers
 import Carnap.Languages.PurePropositional.Parser
-import Carnap.Languages.PurePropositional.Syntax
+import Carnap.Languages.PurePropositional.Syntax 
 import Carnap.Languages.PurePropositional.Util
 import Carnap.Core.Data.AbstractSyntaxDataTypes
 import Carnap.Core.Data.AbstractSyntaxClasses
@@ -122,16 +122,7 @@ matchMC c f = do con <- parse parseConnective "" c
               mcOf h = Right (show h)
 
 getCheckers :: IsElement self => self -> IO [Maybe (Element, Element, [String])]
-getCheckers b = do lspans <- getListOfElementsByClass b "synchecker"
-                   mapM extractCheckers lspans
-        where extractCheckers Nothing = return Nothing
-              extractCheckers (Just span) = do mi <- getFirstElementChild span
-                                               cn <- getClassName span
-                                               case mi of
-                                                   Just i -> do mo <- getNextElementSibling i
-                                                                case mo of (Just o) -> return $ Just (i,o,words cn)
-                                                                           Nothing -> return Nothing
-                                                   Nothing -> return Nothing
+getCheckers = getInOutElts "synchecker"
 
 activateChecker :: Document -> Maybe (Element, Element,[String]) -> IO ()
 activateChecker w (Just (i,o,classes))
@@ -156,9 +147,3 @@ activateChecker w (Just (i,o,classes))
                                                           addListener bt click submit False                
                                       (Left e) -> print $ ohtml ++ show e                                  
 activateChecker _ Nothing  = return ()
-
-formAndLabel = do label <- many (digit <|> char '.')
-                  spaces
-                  f <- purePropFormulaParser
-                  return (label,f)
-
