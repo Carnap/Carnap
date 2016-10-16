@@ -11,10 +11,12 @@ import GHC.Generics
 import Carnap.Languages.PurePropositional.Logic (DerivedRule(..))
 import Carnap.Languages.PurePropositional.Parser
 
+--XXX: these should be more structured.
 data GHCJSCommand = EchoBack (String, Bool)
         | SubmitSyntaxCheck String
         | SubmitTranslation String
         | SubmitDerivation String String
+        | SubmitTruthTable String
         | SaveDerivedRule String DerivedRule
         | RequestDerivedRulesForUser
         deriving (Generic, Show)

@@ -19,6 +19,7 @@ library
                      , Carnap.GHCJS.Action.SyntaxCheck
                      , Carnap.GHCJS.Action.ProofCheck
                      , Carnap.GHCJS.Action.Translate
+                     , Carnap.GHCJS.Action.TruthTable
   if impl(ghcjs)
       build-depends:       base >= 4.7 && < 5
                          , aeson
@@ -67,6 +68,14 @@ executable Proof-Check
 
 executable Translate
   hs-source-dirs:      Translate
+  main-is:             Main.hs
+  ghc-options:         -threaded -rtsopts -with-rtsopts=-N
+  build-depends:       base
+                     , Carnap-GHCJS
+  default-language:    Haskell2010
+
+executable TruthTable
+  hs-source-dirs:      TruthTable
   main-is:             Main.hs
   ghc-options:         -threaded -rtsopts -with-rtsopts=-N
   build-depends:       base

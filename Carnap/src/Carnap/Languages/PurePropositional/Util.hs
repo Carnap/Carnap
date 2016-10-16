@@ -1,4 +1,4 @@
-module Carnap.Languages.PurePropositional.Util (showClean,isValid, isEquivTo, toSchema) where
+module Carnap.Languages.PurePropositional.Util (showClean,isValid, isEquivTo, toSchema, getIndicies, getValuations) where
 
 import Carnap.Core.Data.AbstractSyntaxClasses
 import Carnap.Core.Data.AbstractSyntaxDataTypes
@@ -61,7 +61,8 @@ dropOutermost s = s
 getIndicies :: PurePropLanguage (Form Bool) -> [Int]
 getIndicies = catMaybes . map (preview propIndex) . universe
 
-getValuations = (map toValuation) . subsequences. getIndicies 
+getValuations :: PurePropLanguage (Form Bool) -> [Int -> Bool]
+getValuations = (map toValuation) . subsequences . getIndicies 
     where toValuation l = \x -> x `elem` l
 
 isValid p = and $ map (\v -> unform $ satisfies v p) (getValuations p)
