@@ -7,6 +7,7 @@ import Filter.SynCheckers
 import Filter.ProofCheckers
 import Filter.Translate
 import Filter.Diagrams
+import Filter.TruthTables
 import Text.Pandoc.Walk (walkM, walk)
 import System.Directory (doesDirectoryExist, getDirectoryContents, doesFileExist)
 import Text.Julius (juliusFile)
@@ -49,7 +50,7 @@ fileToHtml path = do md <- markdownFromFile path
                          Left e -> return $ Left e
 
 runFilters = let walkNotes y = evalState (walkM makeSideNotes y) 0
-                 walkProblems y = walk (makeSynCheckers . makeProofChecker . makeTranslate ) y
+                 walkProblems y = walk (makeSynCheckers . makeProofChecker . makeTranslate . makeTruthTables) y
                  walkDiagrams y = evalStateT (walkM makeDiagrams y) []
                    in walkDiagrams . walkNotes . walkProblems
 

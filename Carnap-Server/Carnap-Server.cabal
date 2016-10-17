@@ -35,6 +35,7 @@ library
                      Filter.SynCheckers
                      Filter.ProofCheckers
                      Filter.Translate
+                     Filter.TruthTables
                      Filter.Diagrams
 
     if flag(dev) || flag(library-only)

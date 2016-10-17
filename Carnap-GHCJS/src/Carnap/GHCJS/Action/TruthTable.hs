@@ -4,17 +4,20 @@ module Carnap.GHCJS.Action.TruthTable (truthTableAction) where
 import Lib
 import Carnap.GHCJS.SharedTypes
 import Carnap.Core.Data.AbstractSyntaxDataTypes
-import Carnap.Core.Data.AbstractSyntaxClasses (Schematizable)
-import Carnap.Languages.PurePropositional.Util (getIndicies, getValuations)
+import Carnap.Core.Data.AbstractSyntaxClasses (Schematizable, Modelable(..))
+import Carnap.Languages.PurePropositional.Util (getIndicies)
 import Carnap.Languages.PurePropositional.Syntax (PureForm)
 import Carnap.Languages.Util.LanguageClasses
 import GHCJS.DOM.Types
 import GHCJS.DOM.Element
+import GHCJS.DOM.HTMLOptionElement (getValue)
 import GHCJS.DOM.Window (alert)
 import GHCJS.DOM.Document (createElement, getBody, getDefaultView)
 import GHCJS.DOM.Node (appendChild, getParentNode, insertBefore)
-import GHCJS.DOM.EventM (newListener, addListener, EventM)
-import Data.IORef (newIORef, IORef, readIORef)
+import GHCJS.DOM.EventM (newListener, addListener, EventM, target)
+import Data.IORef (newIORef, IORef, readIORef,writeIORef, modifyIORef)
+import Data.Map as M
+import Data.List (subsequences)
 import Control.Monad.IO.Class (liftIO)
 import Control.Lens.Plated (children)
 import Text.Parsec (parse, ParseError)
@@ -25,21 +28,35 @@ truthTableAction = initElements getTruthTables activateTruthTables
 getTruthTables :: HTMLElement -> IO [Maybe (Element, Element, [String])]
 getTruthTables = getInOutElts "truthtable"
 
--- XXX: no dispatch on classes here yet
+-- XXX: no dispatch on classes here yet. We'll want it for Sequent tables,
+-- tables with counterexamples, etc.
 activateTruthTables :: Document -> Maybe (Element, Element,[String]) -> IO ()
 activateTruthTables w (Just (i,o,_)) = do Just ohtml <- getInnerHTML o
                                           case parse formAndLabel "" (decodeHtml ohtml) of
                                               (Right (l,f)) -> do
-                                                  mbt@(Just bt) <- createElement w (Just "button")
-                                                  setInnerHTML bt (Just "submit solution")
-                                                  mpar@(Just par) <- getParentNode o
-                                                  insertBefore par mbt (Just o)
                                                   ref <- newIORef False
-                                                  createTruthTable w f o ref
+                                                  bt1 <- makeButton "Submit Solution"
+                                                  bt2 <- makeButton "Check Solution"
+                                                  gRef <- createTruthTable w f o ref
+                                                  setInnerHTML i (Just $ show f)
                                                   (Just w') <- getDefaultView w                    
                                                   submit <- newListener $ trySubmit ref f w' l       
-                                                  addListener bt click submit False                
+                                                  check <- newListener $ checkTable ref gRef w'
+                                                  addListener bt1 click submit False                
+                                                  addListener bt2 click check False                
                                               (Left e) -> print $ ohtml ++ show e
+    where makeButton message = do mbt@(Just bt) <- createElement w (Just "button")
+                                  setInnerHTML bt (Just message)
+                                  mpar@(Just par) <- getParentNode o
+                                  insertBefore par mbt (Just o)
+                                  return bt
+          checkTable ref gRef w' = do vals <- liftIO $ readIORef gRef
+                                      let val = M.foldr (&&) True vals
+                                      if val then do alert w' "Success!"
+                                                     liftIO $ writeIORef ref True
+                                                     setAttribute i "class" "completeTT"
+                                             else do alert w' "Something's not quite right"
+                                                     setAttribute i "class" "incompleteTT"
 
 trySubmit :: IORef Bool -> PureForm -> Window -> String -> EventM HTMLInputElement e ()
 trySubmit ref f w l = do isDone <- liftIO $ readIORef ref
@@ -53,36 +70,55 @@ trySubmit ref f w l = do isDone <- liftIO $ readIORef ref
 createTruthTable w f o ref = do (Just table) <- createElement w (Just "table")
                                 (Just thead) <- createElement w (Just "thead")
                                 (Just tbody) <- createElement w (Just "tbody")
+                                gRef <- makeGridRef (length orderedChildren) (length valuations)
                                 head <- toHead w atomIndicies orderedChildren
-                                rows <- mapM toRow' valuations
+                                rows <- mapM (toRow' gRef) (zip valuations [1..])
                                 appendChild table (Just thead)
                                 appendChild table (Just tbody)
                                 appendChild thead (Just head)
-                                mapM (appendChild tbody . Just) (reverse rows)
+                                mapM_ (appendChild tbody . Just) (reverse rows)
                                 setInnerHTML o (Just "")
                                 appendChild o (Just table)
-    where atomIndicies = getIndicies f
-          valuations = getValuations f
+                                return gRef
+    where atomIndicies = sort $ getIndicies f
+          valuations = (Prelude.map toValuation) . subsequences $ reverse atomIndicies
+            where toValuation l = \x -> x `elem` l
           orderedChildren = traverseBPT . toBPT $ f
           toRow' = toRow w atomIndicies orderedChildren o
+          makeGridRef x y = newIORef (M.fromList [((z,w), True) | z <- [1..x], w <-[1.. y]])
 
-toRow w atomIndicies orderedChildren o v = 
+--this is a sorting that gets the correct ordering of indicies (reversed on
+--negative, negative less than positive, postive as usual)
+sort :: [Int] -> [Int]
+sort (x:xs) = smaller ++ [x] ++ bigger
+    where smaller = sort (Prelude.filter small xs )
+          bigger = sort (Prelude.filter (not . small) xs)
+          small y | x < 0 && y > 0 = False
+                  | x < 0 && y < 0 = x < y
+                  | otherwise = y < x
+sort [] = []
+
+toRow w atomIndicies orderedChildren o gRef (v,n) = 
         do (Just row) <- createElement w (Just "tr")
            valTds <- mapM toValTd atomIndicies
-           childTds <- mapM toChildTd orderedChildren
-           mapM (appendChild row . Just) (reverse valTds)
-           mapM (appendChild row . Just) (childTds)
+           childTds <- mapM toChildTd (zip orderedChildren [1..])
+           mapM_ (appendChild row . Just) valTds
+           mapM_ (appendChild row . Just) childTds
            return row
     where toValTd i = do (Just td) <- createElement w (Just "td")
                          setInnerHTML td (Just $ if v i then "T" else "F")
                          return td
-          toChildTd c = do (Just td) <- createElement w (Just "td")
-                           case c of
-                               Left c' -> setInnerHTML td (Just "")
-                               Right f -> do sel <- trueFalseOpts
-                                             appendChild td (Just sel)
-                                             return ()
-                           return td
+          toChildTd (c,m) = do (Just td) <- createElement w (Just "td")
+                               case c of
+                                   Left c' -> setInnerHTML td (Just "")
+                                   Right f -> do sel <- trueFalseOpts
+                                                 appendChild td (Just sel)
+                                                 modifyIORef gRef (M.insert (n,m) False)
+                                                 let (Form tv) = satisfies v f
+                                                 onSwitch <- newListener $ switchOnMatch gRef (n,m) tv
+                                                 addListener sel change onSwitch False
+                                                 return ()
+                               return td
           trueFalseOpts = do (Just sel) <- createElement w (Just "select")
                              (Just bl)  <- createElement w (Just "option")
                              (Just tr)  <- createElement w (Just "option")
@@ -94,17 +130,22 @@ toRow w atomIndicies orderedChildren o v =
                              appendChild sel (Just tr)
                              appendChild sel (Just fs)
                              return sel
-
+          switchOnMatch gRef (n,m) tv = do 
+                             (Just t) <- target :: EventM HTMLOptionElement Event (Maybe HTMLOptionElement)
+                             s <- getValue t 
+                             if s == "T" 
+                                 then liftIO $ modifyIORef gRef (M.insert (n,m) tv)
+                                 else liftIO $ modifyIORef gRef (M.insert (n,m) (not tv))
 
 toHead w atomIndicies orderedChildren = 
         do (Just row) <- createElement w (Just "tr")
            atomThs <- mapM toAtomTh atomIndicies
            childThs <- mapM toChildTh orderedChildren
-           mapM (appendChild row . Just) (reverse atomThs)
-           mapM (appendChild row . Just) (childThs)
+           mapM_ (appendChild row . Just) atomThs
+           mapM_ (appendChild row . Just) childThs
            return row
     where toAtomTh i = do (Just td) <- createElement w (Just "th")
-                          setInnerHTML td (Just $ show $ (pn i :: PureForm))
+                          setInnerHTML td (Just $ show (pn i :: PureForm))
                           return td
           toChildTh c = do (Just td) <- createElement w (Just "th")
                            case c of
