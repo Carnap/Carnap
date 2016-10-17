@@ -20,6 +20,7 @@ postCommandR = do
                 EchoBack (s,b) -> returnJson (reverse s)
                 SubmitSyntaxCheck f -> submit SyntaxCheckSubmission f u >>= afterInsert
                 SubmitTranslation f -> submit TranslationSubmission f u >>= afterInsert
+                SubmitTruthTable f  -> submit TruthTableSubmission f u   >>= afterInsert
                 SubmitDerivation s d -> do time <- liftIO getCurrentTime               
                                            let sub = DerivationSubmission (pack s) (pack d) (pack $ show time) u 
                                            tryInsert sub >>= afterInsert

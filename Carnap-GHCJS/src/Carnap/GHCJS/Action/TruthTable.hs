@@ -48,7 +48,7 @@ activateTruthTables w (Just (i,o,_)) = do Just ohtml <- getInnerHTML o
     where makeButton message = do mbt@(Just bt) <- createElement w (Just "button")
                                   setInnerHTML bt (Just message)
                                   mpar@(Just par) <- getParentNode o
-                                  insertBefore par mbt (Just o)
+                                  appendChild par mbt
                                   return bt
           checkTable ref gRef w' = do vals <- liftIO $ readIORef gRef
                                       let val = M.foldr (&&) True vals
@@ -107,6 +107,7 @@ toRow w atomIndicies orderedChildren o gRef (v,n) =
            return row
     where toValTd i = do (Just td) <- createElement w (Just "td")
                          setInnerHTML td (Just $ if v i then "T" else "F")
+                         setAttribute td "class" "valtd"
                          return td
           toChildTd (c,m) = do (Just td) <- createElement w (Just "td")
                                case c of

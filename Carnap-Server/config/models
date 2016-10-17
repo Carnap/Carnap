@@ -23,6 +23,11 @@ TranslationSubmission
     time Text
     userId UserId 
     UniqueTranslationP problem userId
+TruthTableSubmission
+    problem Text
+    time Text
+    userId UserId 
+    UniqueTruthTableP problem userId
 DerivationSubmission
     problem Text
     derivation Text

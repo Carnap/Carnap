@@ -25,7 +25,7 @@ deleteUserR userId = do
 
 getUserR :: Text -> Handler Html
 getUserR userId = do
-    (synsubs, transsubs,dersubs) <- subsById userId
+    (synsubs, transsubs,dersubs, ttsubs) <- subsById userId
     let isAdmin = userId == "gleachkr@gmail.com"
     let pointsAvailable = "525" :: Text
     allUsers <- if isAdmin 
@@ -52,8 +52,8 @@ exPairToScore ((x,y),z) =  case utcDueDate x of
                                             else 5
                               Nothing -> 0
 
-scoreById uid = do (a,b,c) <- subsById uid
-                   return $ totalScore $ a ++ b ++ c
+scoreById uid = do (a,b,c,d) <- subsById uid
+                   return $ totalScore $ a ++ b ++ c ++ d
 
 totalScore xs = foldr (+) 0 (map exPairToScore xs)
 
@@ -154,12 +154,16 @@ synPair (SyntaxCheckSubmission prob time pu)  = (Just pu, prob,time)
 
 transPair (TranslationSubmission prob time pu)  = (Just pu, prob,time)
 
+ttPair  (TruthTableSubmission prob time pu) = (Just pu, prob, time)
+
 derPair (DerivationSubmission prob _ time pu) = (Just pu, prob, time)
 
-subsById uid = do synsubs <- yourSubs synPair uid
+
+subsById uid = do synsubs   <- yourSubs synPair uid
                   transsubs <- yourSubs transPair uid
-                  dersubs <- yourSubs derPair uid
-                  return (synsubs, transsubs, dersubs)
+                  dersubs   <- yourSubs derPair uid
+                  ttsubs    <- yourSubs ttPair uid
+                  return (synsubs, transsubs, dersubs, ttsubs)
 
 yourSubs pair userId = do subs <- runDB $ selectList [] []
                           -- XXX: It would almost certainly be more

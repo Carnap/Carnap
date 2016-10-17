@@ -21,6 +21,8 @@
     #{exPairToTable transsubs}
     <h4> Derivation
     #{exPairToTable dersubs}
+    <h4> Truth Tables
+    #{exPairToTable ttsubs}
     <div.row>
         <div.col-md-9 style="padding-right:30pt">
             <h3> Due Dates

@@ -211,7 +211,6 @@
     width:650px;
 }
 
-
 .derivedRules {
     width: 400px;
     vertical-align: top;
@@ -235,6 +234,31 @@ table.rules th {
 table.rules tr {
     border-bottom:1px #eee solid;
 }
+
+.truthtable table{
+    width:auto;
+    border-collapse:collapse;
+    margin:20px;
+}
+
+.truthtable select {
+    padding:0px;
+    margin:0px;
+}
+
+.truthtable th {
+    border-bottom:solid black 1px;
+}
+
+.truthtable .valtd {
+    width:20px;
+    text-align:center;
+}
+
+.truthtable .completeTT {
+    background: #CCFFCC;
+}
+
 
 ol.example > li {
     list-style:none;
