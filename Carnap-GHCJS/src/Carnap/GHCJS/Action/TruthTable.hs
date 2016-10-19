@@ -17,7 +17,7 @@ import GHCJS.DOM.Node (appendChild, getParentNode, insertBefore)
 import GHCJS.DOM.EventM (newListener, addListener, EventM, target)
 import Data.IORef (newIORef, IORef, readIORef,writeIORef, modifyIORef)
 import Data.Map as M
-import Data.List (subsequences)
+import Data.List (subsequences, nub)
 import Control.Monad.IO.Class (liftIO)
 import Control.Lens.Plated (children)
 import Text.Parsec (parse, ParseError)
@@ -80,10 +80,10 @@ createTruthTable w f o ref = do (Just table) <- createElement w (Just "table")
                                 setInnerHTML o (Just "")
                                 appendChild o (Just table)
                                 return gRef
-    where atomIndicies = sort $ getIndicies f
+    where atomIndicies = nub . sort . getIndicies $ f
           valuations = (Prelude.map toValuation) . subsequences $ reverse atomIndicies
             where toValuation l = \x -> x `elem` l
-          orderedChildren = traverseBPT . toBPT $ f
+          orderedChildren =  traverseBPT . toBPT $ f
           toRow' = toRow w atomIndicies orderedChildren o
           makeGridRef x y = newIORef (M.fromList [((z,w), True) | z <- [1..x], w <-[1.. y]])
 
@@ -100,9 +100,12 @@ sort [] = []
 
 toRow w atomIndicies orderedChildren o gRef (v,n) = 
         do (Just row) <- createElement w (Just "tr")
+           (Just sep) <- createElement w (Just "td")
+           setAttribute sep "class" "tttdSep"
            valTds <- mapM toValTd atomIndicies
            childTds <- mapM toChildTd (zip orderedChildren [1..])
            mapM_ (appendChild row . Just) valTds
+           appendChild row (Just sep)
            mapM_ (appendChild row . Just) childTds
            return row
     where toValTd i = do (Just td) <- createElement w (Just "td")
@@ -140,9 +143,12 @@ toRow w atomIndicies orderedChildren o gRef (v,n) =
 
 toHead w atomIndicies orderedChildren = 
         do (Just row) <- createElement w (Just "tr")
+           (Just sep) <- createElement w (Just "th")
+           setAttribute sep "class" "ttthSep"
            atomThs <- mapM toAtomTh atomIndicies
            childThs <- mapM toChildTh orderedChildren
            mapM_ (appendChild row . Just) atomThs
+           appendChild row (Just sep)
            mapM_ (appendChild row . Just) childThs
            return row
     where toAtomTh i = do (Just td) <- createElement w (Just "th")
@@ -169,5 +175,5 @@ toBPT f = case children f of
 
 traverseBPT :: BPT -> [Either Char PureForm]
 traverseBPT (Leaf f) = [Right f]
-traverseBPT (MonNode f a) = traverseBPT a ++ [Right f]
+traverseBPT (MonNode f a) = [Right f] ++ traverseBPT a
 traverseBPT (BiNode f a b) = [Left '('] ++ traverseBPT a ++ [Right f] ++ traverseBPT b ++ [Left ')']

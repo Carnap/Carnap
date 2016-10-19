@@ -235,6 +235,28 @@ table.rules tr {
     border-bottom:1px #eee solid;
 }
 
+.ttdisplay {
+    padding-left:10px;
+}
+
+.ttdisplay table {
+    border-collapse:collapse;
+}
+
+.ttdisplay th {
+    border-bottom: 1px solid black;
+}
+
+.ttdisplay td {
+    text-align:center;
+}
+
+.truthtable {
+    padding:10pt;
+    margin-top: 5pt;
+    border: solid 1pt #dddddd;
+}
+
 .truthtable table{
     width:auto;
     border-collapse:collapse;
@@ -259,6 +281,10 @@ table.rules tr {
     background: #CCFFCC;
 }
 
+.ttthSep, .tttdSep {
+    border-left:1px solid black;
+    padding:2px;
+}
 
 ol.example > li {
     list-style:none;

@@ -7,7 +7,7 @@ import Prelude
 
 makeTruthTables :: Block -> Block
 makeTruthTables cb@(CodeBlock (_,classes,_) contents)
-    | "TruthTable" `elem` classes = Div ("",[],[]) $ map (activate classes) (lines contents)
+    | "TruthTable" `elem` classes = Div ("problem",[],[]) $ map (activate classes) (lines contents)
     | otherwise = cb
 makeTruthTables x = x
 

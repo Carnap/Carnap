@@ -18,8 +18,8 @@ postCommandR = do
            Nothing -> returnJson ("No User" :: String)
            Just u  -> case cmd of
                 EchoBack (s,b) -> returnJson (reverse s)
-                SubmitSyntaxCheck f -> submit SyntaxCheckSubmission f u >>= afterInsert
-                SubmitTranslation f -> submit TranslationSubmission f u >>= afterInsert
+                SubmitSyntaxCheck f -> submit SyntaxCheckSubmission f u  >>= afterInsert
+                SubmitTranslation f -> submit TranslationSubmission f u  >>= afterInsert
                 SubmitTruthTable f  -> submit TruthTableSubmission f u   >>= afterInsert
                 SubmitDerivation s d -> do time <- liftIO getCurrentTime               
                                            let sub = DerivationSubmission (pack s) (pack d) (pack $ show time) u 
@@ -34,7 +34,6 @@ postCommandR = do
 packageRule (SavedDerivedRule dr n _ _) = case (decodeStrict dr :: Maybe DerivedRule) of
                                               Just r -> Just (unpack n, r)
                                               _ -> Nothing
-                                                
 
 submit typ f u = do time <- liftIO getCurrentTime
                     let sub = typ (pack f) (pack $ show time) u
