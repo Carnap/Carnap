@@ -1,0 +1,893 @@
+#Truth Tables
+
+In this chapter, we'll discuss the method of *Truth Tables*, which gives us a
+"negative test" for validity. Derivations show us when an argument form is
+good---when the particular instances of that form are guaranteed to be
+formally valid. Truth tables show us when an argument form is not good: when
+the particular instances of that argument form are not guaranteed to be
+formally valid. 
+
+Our ability to use truth tables depends on two things: *Compositionality*, and
+*the Principle of Truth Functionality*.
+
+Compositionality
+
+:   Compositionality is the following feature of languages: the meaning of a
+    whole expression, like a sentence, is determined by the meanings of its
+    parts. 
+
+Compositionality is often thought to explain how it is even possible for human
+beings (finite creatures that we are) are capable of understanding
+a potentially infinite collection of sentences. We do not need to know the
+meaning of every sentence in advance. We just need to know the meanings of
+words that sentences comprise, and the rules for computing the meaning of a
+whole from the meanings of the parts. 
+
+The principle of truth functionality is a certain rule that we have enforced
+in the construction of our artificial language.
+
+The Principle of Truth Functionality
+ 
+:   The only contribution that the  parts of our sentences shall make to the
+    meanings of the whole is their truth value.
+
+Compositionality tells us that whether a sentence is true or not (this is the
+only aspect of its meaning that we will be concerned with) depends only on
+what its parts mean. The Principle of Truth Functionality ensures that the
+only relevant aspect of the meaning of the parts of a sentence in our language
+is whether they are true or false. Between these two principles, we know
+that whether a sentence of our language is true or not depends only on whether
+its parts are true or false. But there are only a finite number of possible
+combinations of truth and falsity that the basic parts of the sentence might
+have. This is how we manage to find, among a potentially infinite collection
+of cases where an argument might be applied, the cases in which it is possible
+for the premises to be true and the conclusion false.
+
+##And, Or, Not
+
+Let us see how these ideas play out in some particular cases. First, we will
+observe how sentences whose main connective is $\land$ get their truth values.
+These sentences---which look like $(\phi\land\psi)$ are true only when both
+halves (the $\phi$ and the $\psi$) are true. This makes sense---the symbol
+$\land$ means "and", and what does it mean to say "$\phi$ and $\psi$", other
+than to say that $\phi$ is true and $\psi$ is also true?
+
+####Ex. 1
+#.  If $P$ is true, and $Q$ is true, then $(P\land Q)$ must be true.
+#.  If $P$ is true, and $Q$ is false, then $(P\land Q)$ must be false.
+#.  If $P$ is false and $Q$ is true, then $(P\land Q)$ must be false.
+#.  If both $P$ and $Q$ are false, then $(P\land Q)$ must be false.
+#.  If $P$ is true and $Q$ is true, and $R$ is also true, then $(P\land Q)$ must be true, so $((P\land Q)\land R)$ must also be true.
+
+What about when the main connective is $\lor$? These sentences---which look
+like $(\phi\land\psi)$ are true only when one of the halves  (the $\phi$ and
+the $\psi$) are true. This makes sense---the symbol $\lor$ means "or", and
+what does it mean to say "$\phi$ or $\psi$", other than to say that at least
+one of $\phi$ or $\psi$ is true?[^1]
+
+[^1]:: This explanation is a little quick, so I include a footnote here to
+    address one possible concern. The way that we are thinking about "or" above,
+    an or-statement can be true if both of its parts are true. This is how things
+    sometimes work in English. For example, when I say "there's going to be beer
+    or sangria at the party", this is naturally read as meaning that there might
+    be one or the other, or there might be both. 
+
+    But, sometimes in natural language we use "$\phi$ or $\psi$" to mean not just
+    that at least one of $\phi$ or $\psi$ is true, but to mean that exactly one of
+    $\phi$ or $\psi$ is true. When I say "Each of you will be assigned to either
+    the blue team or the red team", that is naturally understood as meaning that
+    each person will be assigned to one team, but nobody will be assigned to both. 
+
+    The first reading of "or", on which "$\phi$ or $\psi$" can be true when both
+    sides are true is called the "inclusive" or. The second reading, on which
+    "$\phi$ or $\psi$" is true when exactly one of $\phi$ or $\psi$ is true is
+    called the "exclusive" or. This difference is important in contexts where we
+    need to know exactly what we mean (for example, logic, law, and computer
+    programming). But it might have slipped by without notice, if we had not
+    thought carefully about how the meaning of an or-sentence depends on the
+    meanings of its parts.
+
+####Ex. 2
+#.  If $P$ is true, and $Q$ is true, then $(P\lor Q)$ must be true.
+#.  If $P$ is true, and $Q$ is false, then $(P\lor Q)$ must be true.
+#.  If $P$ is false and $Q$ is true, then $(P\lor Q)$ must be true.
+#.  If both $P$ and $Q$ are false, then $(P\land Q)$ must be false.
+#.  If $P$ is true and $Q$ is true, and $R$ is false, then $(P\land Q)$ must
+be true, so $((P\land Q)\lor R)$ must also be true.
+
+What about when the main connective is $\neg$? These sentences---which look
+like $\neg\phi$ are true only when the main part (the $\phi$) is false. This
+makes sense---the symbol $\neg$ means "it is not the case that", and what does
+it mean to say "it is not the case that $\phi$", other than to say that it is
+not the case that  $\phi$ is true?
+
+#.  If $P$ is false, $\neg P$ must be true.
+#.  If $P$ is true, $\neg P$ must be false.
+#.  If $P$ is false and $Q$ is true, then $\neg P$ must be true, so $(\neg
+P\land Q)$ must be true.
+#.  If both $P$ and $Q$ are false, then $\neg P$ is true and $\neg Q$ is also
+true, so $(\neg P\land\neg Q)$ must be true.
+#.  If $P$ is true and $Q$ is false, and $R$ is false, then $(P\land Q)$ must
+be false, but $\neg R$ must be true, so $((P\land Q)\lor \neg R)$ must be
+true.
+
+We can summarize the rules for $\land, \lor$ and $\neg$ as follows:
+
+Truth-Value Rules for $\land$, $\lor$, $\neg$
+
+:   #.  if a sentence has $\land$ as its main connective, it is true when both
+    halves are true. Otherwise it is false.
+    #.  If a sentence has $\lor$ as its main connective, it is true when at
+    least one half is true. Otherwise, it is false.
+    #.  If a sentence as $\neg$ as its main connective, it is true when its
+    main part is true. Otherwise, it is false.
+
+##Truth Values, Truth Tables, Tautologies
+
+As the examples of the previous section show, we can use the three simple
+rules associated with $\land, \lor$ and $\neg$ to find out what truth values
+the sentences built up using these truth connectives have. Here is a
+systematic procedure for finding the truth value of a sentence, once you know
+the truth values of the sentence letters that occur in the sentence.
+
+<div class="algorithm">
+The Method of Composing Truth-Values 
+
+:   #. Parse the sentence, writing out the parsing tree associated with the
+       sentence (do this by repeatedly breaking at the main connective, and placing
+       the parts that a sentence was built out of beneath the sentence). 
+    #. Write the truth values that you know next to the appropriate letters, at
+       the bottom of the tree. 
+    #. Use the truth value rules associated with the
+       connectives to figure out the truth values of sentences higher up in the tree,
+       writing these down next to the higher sentences as you figure them out. 
+    #. Repeat step 3 until you know the truth value of the whole sentence.
+
+</div>
+
+####Ex. 3
+
+```{.diagram .snip}
+import Data.Tree
+import Data.Maybe (fromMaybe)
+import Diagrams.TwoD.Layout.Tree
+
+renderIt = renderIt' 40
+
+renderIt' x t =
+  renderTree id (~~)
+  (symmLayout' (with & slWidth  .~ fromMaybe (0,0) . extentX
+                     & slHeight .~ fromMaybe (0,0) . extentY
+                     & slHSep    .~ 4
+                     & slVSep    .~ 4)
+     t) # centerXY # pad 1.1 <> rect x 25
+
+toText :: String -> Diagram SVG
+toText s = let ln = fromIntegral (length s) in
+    text s <> rect (ln * 7/10) 1 # lc white # fc white
+```
+
+Suppose we know that $P$ and $Q$ are true and that $R$ is false, and we wish
+to know whether $(((P\lor \neg Q)\land (P\lor \neg R))\lor ((P\land R)\land
+(P\lor \neg R)))$ is true.
+
+First, we find the main connective, splitting the sentence into:
+
+```diagram
+renderIt it
+
+it = Node (toText "(((P ∨ ¬Q)∧(P ∨ ¬R))∨((P ∧ R)∧(P ∨ ¬R)))") 
+      [ Node (toText "((P ∨ ¬Q)∧(P ∨ ¬R))") []
+      , Node (toText "((P ∧ R)∧(P ∨ ¬R))") []
+      ]
+
+```
+
+</figure>
+
+We repeat this procedure, finding main connectives and subdividing, finally getting:
+
+<figure>
+
+```diagram
+renderIt it
+
+it = Node (toText "(((P ∨ ¬Q)∧(P ∨ ¬R))∨((P ∧ R)∧(P ∨ ¬R)))") 
+      [ Node (toText "((P ∨ ¬Q)∧(P ∨ ¬R))") 
+          [ Node (toText "(P∨¬Q)") 
+             [ Node (toText "P") []
+             , Node (toText "¬Q")
+                 [Node (toText "Q") []]
+             ]
+          , Node (toText "(P∨¬R)") 
+             [ Node (toText "P") []
+             , Node (toText "¬R") 
+                 [Node (toText "R") []]
+             ]
+          ]
+      , Node (toText "((P ∧ R)∧(P ∨ ¬R))") 
+            [ Node (toText "(P ∧ R)") 
+                [ Node (toText "P") []
+                , Node (toText "R") []
+                ]
+            , Node (toText "(P∨¬R)") 
+                [ Node (toText "P") []
+                , Node (toText "¬R") 
+                    [Node (toText "R") []]
+                ]
+            ]
+        
+      ]
+```
+
+</figure>
+
+We've now completed step 1. Step 2 tells us to write out appropriate truth
+values at the bottom of the tree. Since we know that $P$ and $Q$ are true, and
+$R$ is false (we assumed this at the outset), we write these next to the
+appropriate sentence letters:
+
+<figure>
+
+```diagram
+renderIt' 50 it
+
+it = Node (toText "(((P ∨ ¬Q)∧(P ∨ ¬R))∨((P ∧ R)∧(P ∨ ¬R)))") 
+      [ Node (toText "((P ∨ ¬Q)∧(P ∨ ¬R))") 
+          [ Node (toText "(P∨¬Q)") 
+             [ Node (toText "P=T") []
+             , Node (toText "¬Q")
+                 [Node (toText "Q=T") []]
+             ]
+          , Node (toText "(P∨¬R)") 
+             [ Node (toText "P=T") []
+             , Node (toText "¬R") 
+                 [Node (toText "R=F") []]
+             ]
+          ]
+      , Node (toText "((P ∧ R)∧(P ∨ ¬R))") 
+            [ Node (toText "(P ∧ R)") 
+                [ Node (toText "P=T") []
+                , Node (toText "R=F") []
+                ]
+            , Node (toText "(P∨¬R)") 
+                [ Node (toText "P=T") []
+                , Node (toText "¬R") 
+                    [Node (toText "R=F") []]
+                ]
+            ]
+        
+      ]
+```
+
+</figure>
+	
+We're now done with step 2. We now repeat step 3 (applying the rules for $\land,\lor$ and $\neg$ until we are done. Since we now know the truth values of all of the parts of several of the sentences on our tree, we can compute the truth values of those sentences using the rules for $\land, \lor$ and $\neg$. We compute those values and write them in:
+
+<figure>
+
+```diagram
+renderIt' 50 it
+
+it = Node (toText "(((P ∨ ¬Q)∧(P ∨ ¬R))∨((P ∧ R)∧(P ∨ ¬R)))") 
+      [ Node (toText "((P ∨ ¬Q)∧(P ∨ ¬R))") 
+          [ Node (toText "(P∨¬Q)") 
+             [ Node (toText "P=T") []
+             , Node (toText "¬Q=F")
+                 [Node (toText "Q=T") []]
+             ]
+          , Node (toText "(P∨¬R)") 
+             [ Node (toText "P=T") []
+             , Node (toText "¬R=T") 
+                 [Node (toText "R=F") []]
+             ]
+          ]
+      , Node (toText "((P ∧ R)∧(P ∨ ¬R))") 
+            [ Node (toText "(P ∧ R)=F") 
+                [ Node (toText "P=T") []
+                , Node (toText "R=F") []
+                ]
+            , Node (toText "(P∨¬R)") 
+                [ Node (toText "P=T") []
+                , Node (toText "¬R=T") 
+                    [Node (toText "R=F") []]
+                ]
+            ]
+        
+      ]
+```
+
+</figure>
+
+Since we now know the truth values of the parts of the sentences in the second
+row from the top, we can write those in too:
+
+<figure>
+
+```diagram
+renderIt' 50 it
+
+it = Node (toText "(((P ∨ ¬Q)∧(P ∨ ¬R))∨((P ∧ R)∧(P ∨ ¬R)))") 
+      [ Node (toText "((P ∨ ¬Q)∧(P ∨ ¬R))") 
+          [ Node (toText "(P∨¬Q)=T") 
+             [ Node (toText "P=T") []
+             , Node (toText "¬Q=F")
+                 [Node (toText "Q=T") []]
+             ]
+          , Node (toText "(P∨¬R)=T") 
+             [ Node (toText "P=T") []
+             , Node (toText "¬R=T") 
+                 [Node (toText "R=F") []]
+             ]
+          ]
+      , Node (toText "((P ∧ R)∧(P ∨ ¬R))") 
+            [ Node (toText "(P ∧ R)=F") 
+                [ Node (toText "P=T") []
+                , Node (toText "R=F") []
+                ]
+            , Node (toText "(P∨¬R)=T") 
+                [ Node (toText "P=T") []
+                , Node (toText "¬R=T") 
+                    [Node (toText "R=F") []]
+                ]
+            ]
+        
+      ]
+```
+
+</figure>
+	
+And that means that $(((P\lor \neg Q)\land (P\lor \neg R))\lor ((P\land
+R)\land (P\lor \neg R)))$ was built using $\lor$ out of one true and one false
+sentence. So, the whole sentence is true:
+
+<figure>
+
+```diagram
+renderIt' 50 it
+
+it = Node (toText "(((P ∨ ¬Q)∧(P ∨ ¬R))∨((P ∧ R)∧(P ∨ ¬R)))=T") 
+      [ Node (toText "((P ∨ ¬Q)∧(P ∨ ¬R))=T") 
+          [ Node (toText "(P∨¬Q)=T") 
+             [ Node (toText "P=T") []
+             , Node (toText "¬Q=F")
+                 [Node (toText "Q=T") []]
+             ]
+          , Node (toText "(P∨¬R)=T") 
+             [ Node (toText "P=T") []
+             , Node (toText "¬R=T") 
+                 [Node (toText "R=F") []]
+             ]
+          ]
+      , Node (toText "((P ∧ R)∧(P ∨ ¬R))=F") 
+            [ Node (toText "(P ∧ R)=F") 
+                [ Node (toText "P=T") []
+                , Node (toText "R=F") []
+                ]
+            , Node (toText "(P∨¬R)=T") 
+                [ Node (toText "P=T") []
+                , Node (toText "¬R=T") 
+                    [Node (toText "R=F") []]
+                ]
+            ]
+        
+      ]
+```
+
+</figure>
+
+This is interesting, but there is one problem in using this method to
+determine whether a sentence is true (we will eventually extend the same
+technique to also test arguments for validity). How do we know what the truth
+values of the basic components of a sentence are? 
+
+The answer is that sometimes, we will not know. But in some of the cases where
+we don't know, we can still figure out the truth value of the whole sentence.
+The trick is this. When we do not know what the truth values of the basic
+parts of a sentence are, we can still know what the *might be*. And that is
+sometimes enough. Because, when we know all of the possible truth values of
+the sentence letters---all the truth values the sentence letters might
+have---we can check each possibility. If the sentence is true on every
+possibility, then the sentence (and indeed, any similar sentence) must be
+true, no matter which of the ways the truth values actually turn out to be
+assigned. 
+
+If a sentence is true no matter what the truth values of its sentence letters
+turn out to be, we say that the sentence is a *tautology*.
+
+Tautology
+
+:   A sentence in official or unofficial notation is a tautology if it is true
+no matter what truth values are assigned to its sentence letters.
+
+To find out whether a sentence is a tautology, we just need to list all of the
+ways that truth values might be assigned to its sentence letters, and then use
+the method of Example 3 to determine what truth values the sentence have on
+those assignments. This is not too hard to do, in principle, but it can be a
+little bit hard to check whether you have listed *all* of the possible
+ways that truth values can be assigned to the sentence letters. So, here is a
+simple method of bookkeeping, called "the method of truth tables", which is
+helpful when trying to see whether a sentence is a tautology.
+
+##Conditionals
+
+We now are equipped with the method of composing truth values, and the rules
+for $\land,\lor$ and $\neg$. These  tools make it possible for us to tell, of
+any sentence in our language built out of $\land, \lor$ and $\neg$, what its
+truth value is (so long as we know the truth values of its parts). And they
+will soon give us the power to tell, of any argument formulated in our
+language, whether it is formally valid.
+
+But we are still missing some pieces. In particular, we do not know what the
+rules for $\rightarrow$, and $\leftrightarrow$ are. These two connectives are
+related; the first means "If, \ldots then", while the second means "if and
+only if". Since the $\rightarrow$ makes sentences that say that something will
+happen on some condition, it is sometimes called a *conditional*. Since
+$\leftrightarrow$ makes sentences saying that one thing will happen if another
+does, and only if that other does (incorporating two conditions), it is
+sometimes called a *biconditional*.
+
+When is a sentence which looks like $(\phi\leftrightarrow\psi)$, built using
+$\leftrightarrow$ true? We say that such a sentence is true only when both
+halves (the $\phi$ and the $\psi$) have the same truth value. This has some
+intuitive appeal. $\leftrightarrow$ means "if and only if". If someone says "I
+will come to the party if, and only if, there is some beer", then they've lied
+(said something false) if there's beer and they don't come to the party. After
+all, they said they'd come if there's some beer. They've also lied if they
+come to the party even though there's no beer. After all, they said they'd
+come *only* if there was beer. On the other hand, if there's no beer and they
+don't come, or if there's beer and they do, they're behaving as they said they
+would.
+
+So, 
+
+#.  If $P$ is true, and $Q$ is true, then $(P\leftrightarrow Q)$ must be true.
+#.  If $P$ is true, and $Q$ is false, then $(P\leftrightarrow Q)$ must be false.
+#.  If $P$ is false and $Q$ is true, then $(P\leftrightarrow Q)$ must be false.
+#.  If both $P$ and $Q$ are false, then $(P\leftrightarrow Q)$ must be true.
+#.  If $P$ is true and $Q$ is true, and $R$ is also true, then
+    $(P\leftrightarrow Q)$ must be true, so $((P\leftrightarrow Q)\leftrightarrow
+    R)$ must also be true.
+
+What about a sentence which looks like $(\phi\rightarrow\psi)$? Here, some
+cases are clear.  $(\phi\rightarrow\psi)$ means "if $\phi$ then $\psi$".  If
+someone says "if there's beer, I will come to the party", then they've lied
+(said something false) if there's beer and they don't come to the party (after
+all, they said they'd come if there's some beer), and they've been honest if
+there's beer at the party, so they come to the party. Some cases are not
+terribly clear. Were they saying something true if it turns out that there's
+no beer at the party? We have no cause for complaint, at least---we can't
+accuse them of lying. So it is plausible to simply stipulate that we will
+understand $(\phi\rightarrow\psi)$ to be true whenever $\phi$ is false. 
+
+There are a number of reasons for this stipulation. One reason is that it is
+the simplest solution---all other ways of treating conditionals are much more
+complicated. Moreover, those other accounts of conditionals inevitably build
+on the type of simple logic we are doing here. So we need to start with this
+simplification if we are to understand these more complicated accounts. A
+third reason is that this set of rules for the conditional are the only
+possible way of introducing $\rightarrow$ into our language without either
+violating the principle of truth functionality, or making $\rightarrow$ mean
+the same thing as some other connective that we already have. The last reason
+for accepting this stipulation is that, by and large, it works. In fact, we
+are committed to it in various ways by our deductive system[^2]
+
+[^2]:: Consider, for example, the material conditional rules, which we can
+       derive: $P\therefore Q\rightarrow P$ and $\neg Q\rightarrow
+       Q\rightarrow P$. These show that the conditional is true whenever its
+       antecedent is false or consequent is true. And the NC rule, $P\land
+       \neg Q\therefore \neg(P\rightarrow Q)$ tells us that the conditional is
+       false whenever the antecedent is true and the conclusion false.
+
+#. If $P$ is true, and $Q$ is true, then $(P\rightarrow Q)$ must be true.
+#. If $P$ is true, and $Q$ is false, then $(P\rightarrow Q)$ must be false.
+#. If $P$ is false and $Q$ is true, then $(P\rightarrow Q)$ must be true.
+#. If both $P$ and $Q$ are false, then $(P\leftrightarrow Q)$ must be true.
+#. If $P$ is true and $Q$ is true, and $R$ is also true, then
+$(P\leftrightarrow Q)$ must be true, so $((P\leftrightarrow Q)\leftrightarrow
+R)$ must also be true.
+
+We can summarize the rules for $\leftrightarrow$ and $\rightarrow$ as follows: 
+
+Truth-Value Rules for $\rightarrow$, $\leftrightarrow$
+
+:   #.  if a sentence has $\rightarrow$ as its main connective, it is true
+    when the left half is false, or the right half is true. Otherwise it is false.
+    #.  If a sentence has $\leftrightarrow$ as its main connective, it is true
+    when the left half and the right half have the same truth value.
+    Otherwise, it is false.
+
+We now have the rules for all of the connectives. Using these rules, together
+with the method of truth tables, and the method composing truth-values, it is
+possible to determine of any sentence in our language, whether that sentence
+is a tautology.
+
+##The Method of Truth Tables
+
+We now officially introduce the method of truth tables
+
+<div class="algorithm">
+
+The (Sped-Up) Method of Truth-Tables
+
+:   #.  Make a "table" by drawing two lines that cross one another---one
+        separating the top row of the table from the rest, one separating the left
+        half of the table from the right.
+    #.  Find all of the sentence letters of the sentence you are testing. List
+        those letters on the top row, in the left half of the table, and write the
+        sentence that you are testing in the right half of the table.
+    #.  Determine the number of sentence letters, and compute $2^n$, where $n$
+        is the number of sentence letters (that is, multiply $2$ by itself once
+        for each sentence letter after the first---if there is one sentence
+        letter, you will get 2 as a result. If there are 2, you will get 4, if
+        there are 3, you will get 8, and so on.) write in that many rows in the
+        lower half of the table.
+    #.  Underneath the first sentence letter, fill the first half of the rows
+        with the letter $T$, and the second half with the letter $F$. Under the
+        second sentence letter, fill the first half of the first half of the rows
+        with the letter $T$, the second half of the first half with the letter
+        $F$, the first half of the second half with the letter $T$, and the second
+        half of the second half with the letter $F$. Continue this pattern.
+    #.  Underneath each sentence letter on the right, fill in its truth
+        values, as listed on the left.
+    #.  Underneath each connective which is connecting a formula or formulas
+        that are either 
+        #.  Sentence letters,
+        #.  Complex sentences with truth values filled in under their main
+            connectives, use the Truth-Value rules to fill in truth values, on the
+            basis of what is under the complex formulas or sentence letters that
+            that connective  are connecting. Repeat this step until every
+            connective has truth values filled in underneath.
+    #.  If you end up with only $T$s underneath the main connective of the
+        sentence you are testing, then you have found a tautology. If you end up
+        with one or more $F$ underneath the sentence, then you have found a
+        non-tautology.
+
+</div>
+
+####Ex. 4
+Here's an example of how to use the method of truth tables. Suppose we want to
+know whether $(((P\rightarrow Q)\rightarrow P)\rightarrow P)$ is a tautology. 
+
+Step 1: we make a table:
+
+<figure class="ttdisplay">
+<table>
+<th style="width:60pt;border-right:solid black 1px; border-bottom:solid black 1px; ">&nbsp;
+</th>
+<th style="width:340pt;border-bottom:solid black 1px;">&nbsp;
+</th>
+</thead>
+<tbody>
+<tr>
+<td style="width:60pt;border-right:solid black 1px;">
+&nbsp;
+</td>
+<td style="width:340pt;">
+&nbsp;
+</td>
+</tr>
+</tbody>
+</table>
+</figure>
+
+Step 2: We find the sentence letters in our sentence (they are $P$ and $Q$)
+and we list them on the top left. We write the sentence we are testing on the
+right:
+
+<figure class="ttdisplay">
+<table>
+<th>P</th>
+<th style="border-right:solid black 1px;">Q</th>
+<th>(((</th>
+<th>P</th><th>→</th><th>Q</th><th>)</th><th>→</th><th>P</th><th>)</th><th>→</th><th>P</th><th>)</th>
+</th>
+</thead>
+<tbody>
+<tr>
+<td>&nbsp;</td>
+<td style="border-right:solid black 1px;">&nbsp;</td>
+<td ></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+</td>
+</td>
+</tr>
+</tbody>
+</table>
+</figure>
+
+We have two sentence letters, so step 3 tells us to write in $2^2 = 4$ rows:
+
+<figure class="ttdisplay">
+<table>
+<th>P</th>
+<th style="border-right:solid black 1px;">Q</th>
+<th>(((</th>
+<th>P</th><th>→</th><th>Q</th><th>)</th><th>→</th><th>P</th><th>)</th><th>→</th><th>P</th><th>)</th>
+</th>
+</thead>
+<tbody>
+<tr>
+<td>&nbsp;</td>
+<td style="border-right:solid black 1px;">&nbsp;</td>
+<td ></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+</td>
+</td>
+</tr>
+<tr>
+<td>&nbsp;</td>
+<td style="border-right:solid black 1px;">&nbsp;</td>
+<td ></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+</td>
+</td>
+</tr>
+<tr>
+<td>&nbsp;</td>
+<td style="border-right:solid black 1px;">&nbsp;</td>
+<td ></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+</td>
+</td>
+</tr>
+<tr>
+<td>&nbsp;</td>
+<td style="border-right:solid black 1px;">&nbsp;</td>
+<td ></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+</td>
+</td>
+</tr>
+</tbody>
+</table>
+</figure>
+
+For step 4, underneath the first sentence letter (i.e. $P$), we fill the first
+half of the rows (i.e. the first two rows) with the letter $T$, and the second
+two rows with $F$. We then fill in the first half of the first half (i.e. the
+first row) under the second letter with $T$, the second half of the first half
+with with $F$, the first half of the second half with $T$, and so on:
+
+<figure class="ttdisplay">
+<table>
+<th>P</th>
+<th style="border-right:solid black 1px;">Q</th>
+<th>(((</th>
+<th>P</th><th>→</th><th>Q</th><th>)</th><th>→</th><th>P</th><th>)</th><th>→</th><th>P</th><th>)</th>
+</th>
+</thead>
+<tbody>
+<tr>
+<td>T</td>
+<td style="border-right:solid black 1px;">T</td>
+<td ></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+</td>
+</td>
+</tr>
+<tr>
+<td>T</td>
+<td style="border-right:solid black 1px;">F</td>
+<td ></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+</td>
+</td>
+</tr>
+<tr>
+<td>F</td>
+<td style="border-right:solid black 1px;">T</td>
+<td ></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+</td>
+</td>
+</tr>
+<tr>
+<td>F</td>
+<td style="border-right:solid black 1px;">F</td>
+<td ></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+</td>
+</td>
+</tr>
+</tbody>
+</table>
+</figure>
+
+So far, this hasn't involved using our knowledge of connectives. But
+now, we need to start filling in truth values "within the table", rather than
+using the method of composing truth values. The first step is to fill in the
+truth values under all the sentence letters:
+
+<figure class="ttdisplay">
+<table>
+<th>P</th>
+<th style="border-right:solid black 1px;">Q</th>
+<th>(((</th><th>P</th><th>→</th><th>Q</th><th>)</th><th>→</th><th>P</th><th>)</th><th>→</th><th>P</th><th>)</th>
+</th>
+</thead>
+<tbody>
+<tr>
+<td>T</td>
+<td style="border-right:solid black 1px;">T</td>
+<td></td><td>T</td><td></td><td>T</td><td></td><td></td><td>T</td><td></td><td></td><td>T</td><td></td>
+</td>
+</td>
+</tr>
+<tr>
+<td>T</td>
+<td style="border-right:solid black 1px;">F</td>
+<td></td><td>T</td><td></td><td>F</td><td></td><td></td><td>T</td><td></td><td></td><td>T</td><td></td>
+</td>
+</td>
+</tr>
+<tr>
+<td>F</td>
+<td style="border-right:solid black 1px;">T</td>
+<td></td><td>F</td><td></td><td>T</td><td></td><td></td><td>F</td><td></td><td></td><td>F</td><td></td>
+</td>
+</td>
+</tr>
+<tr>
+<td>F</td>
+<td style="border-right:solid black 1px;">F</td>
+<td></td><td>F</td><td></td><td>F</td><td></td><td></td><td>F</td><td></td><td></td><td>F</td><td></td>
+</td>
+</td>
+</tr>
+</tbody>
+</table>
+</figure>
+
+Having done this, we now have exactly one connective which combines 
+formulas that we know the truth value of. This one connective is the leftmost
+$\rightarrow$. So, we can fill in truth values for that.
+
+<figure class="ttdisplay">
+<table>
+<th>P</th>
+<th style="border-right:solid black 1px;">Q</th>
+<th>(((</th><th>P</th><th>→</th><th>Q</th><th>)</th><th>→</th><th>P</th><th>)</th><th>→</th><th>P</th><th>)</th>
+</th>
+</thead>
+<tbody>
+<tr>
+<td>T</td>
+<td style="border-right:solid black 1px;">T</td>
+<td></td><td>T</td><td>T</td><td>T</td><td></td><td></td><td>T</td><td></td><td></td><td>T</td><td></td>
+</td>
+</td>
+</tr>
+<tr>
+<td>T</td>
+<td style="border-right:solid black 1px;">F</td>
+<td></td><td>T</td><td>F</td><td>F</td><td></td><td></td><td>T</td><td></td><td></td><td>T</td><td></td>
+</td>
+</td>
+</tr>
+<tr>
+<td>F</td>
+<td style="border-right:solid black 1px;">T</td>
+<td></td><td>F</td><td>T</td><td>T</td><td></td><td></td><td>F</td><td></td><td></td><td>F</td><td></td>
+</td>
+</td>
+</tr>
+<tr>
+<td>F</td>
+<td style="border-right:solid black 1px;">F</td>
+<td></td><td>F</td><td>T</td><td>F</td><td></td><td></td><td>F</td><td></td><td></td><td>F</td><td></td>
+</td>
+</td>
+</tr>
+</tbody>
+</table>
+</figure>
+
+Now, though, we have filled in truth values for both $P$ and for
+$(P\rightarrow Q)$, the two things that the second-from-rightmost
+$\rightarrow$ is connecting. So, we can fill in truth values for that, on the
+basis of what we have filled in for these (remember, we put what we fill in
+for $(P\rightarrow Q)$ under the main connective of this formula):
+
+<figure class="ttdisplay">
+<table>
+<th>P</th>
+<th style="border-right:solid black 1px;">Q</th>
+<th>(((</th><th>P</th><th>→</th><th>Q</th><th>)</th><th>→</th><th>P</th><th>)</th><th>→</th><th>P</th><th>)</th>
+</th>
+</thead>
+<tbody>
+<tr>
+<td>T</td>
+<td style="border-right:solid black 1px;">T</td>
+<td></td><td>T</td><td>T</td><td>T</td><td></td><td>T</td><td>T</td><td></td><td></td><td>T</td><td></td>
+</td>
+</td>
+</tr>
+<tr>
+<td>T</td>
+<td style="border-right:solid black 1px;">F</td>
+<td></td><td>T</td><td>F</td><td>F</td><td></td><td>T</td><td>T</td><td></td><td></td><td>T</td><td></td>
+</td>
+</td>
+</tr>
+<tr>
+<td>F</td>
+<td style="border-right:solid black 1px;">T</td>
+<td></td><td>F</td><td>T</td><td>T</td><td></td><td>F</td><td>F</td><td></td><td></td><td>F</td><td></td>
+</td>
+</td>
+</tr>
+<tr>
+<td>F</td>
+<td style="border-right:solid black 1px;">F</td>
+<td></td><td>F</td><td>T</td><td>F</td><td></td><td>F</td><td>F</td><td></td><td></td><td>F</td><td></td>
+</td>
+</td>
+</tr>
+</tbody>
+</table>
+</figure>
+
+There's just one connective remaining, the rightmost $\rightarrow$. This one, we can fill in by looking at what we have put under the main connective of $((P\rightarrow Q)\rightarrow P)$ and of $P$:
+
+<figure class="ttdisplay">
+<table>
+<th>P</th>
+<th style="border-right:solid black 1px;">Q</th>
+<th>(((</th><th>P</th><th>→</th><th>Q</th><th>)</th><th>→</th><th>P</th><th>)</th><th>→</th><th>P</th><th>)</th>
+</th>
+</thead>
+<tbody>
+<tr>
+<td>T</td>
+<td style="border-right:solid black 1px;">T</td>
+<td></td><td>T</td><td>T</td><td>T</td><td></td><td>T</td><td>T</td><td></td><td>T</td><td>T</td><td></td>
+</td>
+</td>
+</tr>
+<tr>
+<td>T</td>
+<td style="border-right:solid black 1px;">F</td>
+<td></td><td>T</td><td>F</td><td>F</td><td></td><td>T</td><td>T</td><td></td><td>T</td><td>T</td><td></td>
+</td>
+</td>
+</tr>
+<tr>
+<td>F</td>
+<td style="border-right:solid black 1px;">T</td>
+<td></td><td>F</td><td>T</td><td>T</td><td></td><td>F</td><td>F</td><td></td><td>T</td><td>F</td><td></td>
+</td>
+</td>
+</tr>
+<tr>
+<td>F</td>
+<td style="border-right:solid black 1px;">F</td>
+<td></td><td>F</td><td>T</td><td>F</td><td></td><td>F</td><td>F</td><td></td><td>T</td><td>F</td><td></td>
+</td>
+</td>
+</tr>
+</tbody>
+</table>
+</figure>
+
+We now know what the truth values underneath the main connective of
+$(((P\rightarrow Q)\rightarrow P)\rightarrow P)$ are: they are all T. That
+means, according to step 7, that $(((P\rightarrow Q)\rightarrow P)\rightarrow
+P)$ is a tautology.
+
+##Problem Set 13
+
+Please fill in the following truth tables:
+
+```{.TruthTable .Simple}
+13.1 P/\Q
+13.2 P->Q
+13.3 P/\-P
+13.4 P\/-P
+13.5 P->(Q->P)
+13.6 P/\Q->P\/Q
+13.7 ((P->Q)->P)->P
+13.8 -(P/\Q)<->-P\/-Q
+```
+
+Please also complete the following two derivations of tautologies:[^3]
+
+[^3]:: The first of these was originally noted and proved by G.W. Leibniz, who
+called it the *Praeclarum Theorema* (in English: "splendid theorem"). 
+
+```{.ProofChecker .Prop} 
+13.9 :|-: (P->R)/\(Q->S)->(P/\Q->R/\S)
+13.10 :|-: (P->(Q<->R))<->(P/\Q<->P/\R)
+```

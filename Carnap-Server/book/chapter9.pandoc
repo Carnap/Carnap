@@ -298,3 +298,28 @@ here.
 11.9 (P->Q)->P, Q->P :|-: P
 11.10 ~(P->Q), ~(R->Q) :|-: ~(P->~R)
 ```
+
+##Problem Set 12
+
+Please prove the validity of the following two arguments. In both cases,
+DeMorgan's laws well be very helpful, as part of a strategy for showing a
+disjunction.
+
+```{.ProofChecker .Prop} 
+12.1 P<->S, ~Q->~P, ~R->P :|-: R\/(S/\Q)
+12.2 P\/S, S->~(Q->~P) :|-: P\/R
+```
+
+Please also translate the following sentences, using this scheme of
+abbreviation
+
+| $P~=~$Genies are playful. 
+| $Q~=~$Genies are quick
+| $R~=~$Genies seek revenge
+| $S~=~$Genies are scary
+
+```{.Translate .Prop} 
+12.3 (P/\Q)/\R : Genies are playful and quick, but they seek revenge.
+12.4 P->(R->S) : Given that genies are playful, if they seek revenge, they're scary.
+12.5 P/\(R->S) : Genies, which are playful, are scary if they seek revenge.
+```
