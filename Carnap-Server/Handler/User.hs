@@ -27,7 +27,7 @@ getUserR :: Text -> Handler Html
 getUserR userId = do
     (synsubs, transsubs,dersubs, ttsubs) <- subsById userId
     let isAdmin = userId == "gleachkr@gmail.com"
-    let pointsAvailable = "550" :: Text
+    let pointsAvailable = "600" :: Text
     allUsers <- if isAdmin 
                     then (runDB $ selectList [] []) >>= return . (map $ userIdent . entityVal)
                     else return []
@@ -90,7 +90,7 @@ dueDates = M.fromList [( 1, toTime "11:59 pm CDT, Aug 30, 2016")
                       ,(10, toTime "11:59 pm CDT, Oct 12, 2016")
                       ,(11, toTime "11:59 pm CDT, Oct 17, 2016")
                       ,(12, toTime "11:59 pm CDT, Oct 19, 2016")
-                      ,(13, toTime "11:59 pm CDT, Oct 23, 2016")
+                      ,(13, toTime "11:59 pm CDT, Oct 24, 2016")
                       ]
     where toTime = parseTimeOrError True defaultTimeLocale "%l:%M %P %Z, %b %e, %Y"
 

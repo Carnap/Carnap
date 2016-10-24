@@ -30,7 +30,7 @@
         <div.col-md-3>
             <h3> Total Points Earned
             <span style="font-size:56pt; color:gray; padding-left:20pt">
-                #{totalScore (synsubs ++ (transsubs ++ dersubs))}/#{pointsAvailable}
+                #{totalScore (synsubs ++ (transsubs ++ (dersubs ++ ttsubs)))}/#{pointsAvailable}
     <div>
     <h3> Derived Rules
     $maybe rules <- derivedRules
