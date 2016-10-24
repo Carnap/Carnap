@@ -13,6 +13,9 @@ makeTruthTables x = x
 
 activate cls cnt
     | "Simple" `elem` cls = RawBlock "html" $ 
-        "<div class=\"truthtable\"><div></div><div>" 
+        "<div class=\"truthtable simple\"><div></div><div>" 
+        ++ cnt ++ "</div></div>"
+    | "Validity" `elem` cls = RawBlock "html" $ 
+        "<div class=\"truthtable validity\"><div></div><div>" 
         ++ cnt ++ "</div></div>"
     | otherwise = RawBlock "html" "<div>No Matching TruthTable</div>"
