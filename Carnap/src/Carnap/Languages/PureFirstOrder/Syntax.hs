@@ -108,8 +108,6 @@ pattern PV s           = PVar (Var s) AZero
 -- height (phi :<->: psi) = max (height phi) (height psi)
 -- height _               = 0
 
-
-
 instance Schematizable (a (PureFirstOrderLanguageWith a)) => 
     CopulaSchema (PureFirstOrderLanguageWith a) where 
 
@@ -184,7 +182,7 @@ type MonadicPredicates = Predicate PureMonadicPredicate
 
 type OpenLexiconMFOL a = CoreLexicon :|: MonadicPredicates :|: a
 
-type OpenLanguageMFOL a = FixLang (CoreLexicon :|: MonadicPredicates :|: a)
+type OpenLanguageMFOL a = FixLang (OpenLexiconMFOL a)
 
 type PureLanguageMFOL = OpenLanguageMFOL EndLang
 

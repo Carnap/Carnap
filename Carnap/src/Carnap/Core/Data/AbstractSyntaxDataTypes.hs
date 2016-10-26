@@ -523,7 +523,7 @@ instance (UniformlyEq lang, FirstOrderLex lang) => UniformlyEq (Copula lang) whe
         (h :$: t ) =* (h' :$: t') = h =* h' && t =* t'
         Lam g =* Lam h = error "sorry, can't directly compare these. Try the fixpoint."
 
-instance (UniformlyEq lang, FirstOrderLex lang) => FirstOrderLex (Copula lang)
+instance (UniformlyEq lang, FirstOrderLex lang, MonadVar lang (State Int)) => FirstOrderLex (Copula lang)
         where
 
         sameHeadLex ((x :: lang (t1  -> t2 )) :$: _)
@@ -531,7 +531,15 @@ instance (UniformlyEq lang, FirstOrderLex lang) => FirstOrderLex (Copula lang)
             case eqT :: Maybe ((t1 -> t2) :~: (t1' -> t2')) of
                 Just Refl -> sameHeadLex x y
                 Nothing -> False
+        sameHeadLex (Lam (f  :: lang t1  -> lang t2))
+                    (Lam (f' :: lang t1' -> lang t2')) =
+            case (eqT :: Maybe (t1 :~: t1'), eqT :: Maybe (t2 :~: t2')) of
+                (Just Refl, Just Refl) -> sameHeadLex (f dummy) (f' dummy)
+                _ -> False
+            where dummy :: Typeable a => lang a
+                  dummy = S.evalState fresh (0 :: Int)
         sameHeadLex _ _ = False
+
 
 instance Monad m => MaybeMonadVar (Copula lang) m
 
@@ -571,11 +579,30 @@ instance {-# OVERLAPPABLE #-} (MonadVar (FixLang f) (State Int), FirstOrderLex (
 
         sameHead = sameHeadLex
 
+        decompose (LLam (f :: FixLang f t1 -> FixLang f t2))
+                  (LLam (f' :: FixLang f t1' -> FixLang f t2')) = 
+            case (eqT :: Maybe (t1 :~: t1'), eqT :: Maybe (t2 :~: t2')) of
+                (Just Refl, Just Refl) -> map reabstract (decompose (f sv) (f' sv))
+                _ -> []
+            where -- XXX: Might want to just break this off as a utility
+                  --(can't use Util, since that imports this module)
+
+                  reabstract (t:=:t') = (LLam $ \x -> subst sv x t) :=: (LLam $ \x -> subst sv x t')
+
+                  sv = nth (height (LLam f))
+
+                  height :: FixLang f a -> Int
+                  height (x :!$: y) = max (height x) (height y)
+                  height (LLam f) = height (f (nth 0)) + 1
+                  height _ = 0
+
+                  nth :: Typeable a => Int -> FixLang f a
+                  nth = S.evalState fresh
+
         decompose a b
             | sameHead a b = recur a b []
             | otherwise = []
-            where
-                  recur :: FixLang f a -> FixLang f b -> [Equation (FixLang f)]
+            where recur :: FixLang f a -> FixLang f b -> [Equation (FixLang f)]
                     ->[Equation (FixLang f)]
                   recur (x :!$: (y :: FixLang f t))
                         (x' :!$: (y' :: FixLang f t'))
@@ -602,7 +629,8 @@ instance {-# OVERLAPPABLE #-} (MonadVar (FixLang f) (State Int), FirstOrderLex (
                            (LLam f) -> LLam $ \x -> subst sv x $ subst a b $ f sv
                                 where sv = nth $ height (LLam f)
                            _ -> c
-            where --XXX:Might want to just break this off into the data utility module
+            where -- XXX: Might want to just break this off as a utility
+                  --(can't use Util, since that imports this module)
                   height :: FixLang f a -> Int
                   height (x :!$: y) = max (height x) (height y)
                   height (LLam f) = height (f (nth 0)) + 1
