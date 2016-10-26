@@ -171,7 +171,9 @@ Suppose we know that $P$ and $Q$ are true and that $R$ is false, and we wish
 to know whether $(((P\lor \neg Q)\land (P\lor \neg R))\lor ((P\land R)\land
 (P\lor \neg R)))$ is true.
 
-First, we find the main connective, splitting the sentence into:
+First, we find the main connective, splitting the sentence into: 
+
+<figure>
 
 ```diagram
 renderIt it
@@ -508,7 +510,7 @@ We now officially introduce the method of truth tables
 
 <div class="algorithm">
 
-The (Sped-Up) Method of Truth-Tables
+The Method of Truth-Tables
 
 :   #.  Make a "table" by drawing two lines that cross one another---one
         separating the top row of the table from the rest, one separating the left
@@ -890,4 +892,27 @@ called it the *Praeclarum Theorema* (in English: "splendid theorem").
 ```{.ProofChecker .Prop} 
 13.9 :|-: (P->R)/\(Q->S)->(P/\Q->R/\S)
 13.10 :|-: (P->(Q<->R))<->(P/\Q<->P/\R)
+```
+
+##Problem Set 14
+
+Please determine whether the following arguments are valid, either by
+providing a counterexample, or filling in the associated truth tables.
+
+```{.TruthTable .Validity}
+14.1 P/\Q  :|-: P\/Q
+14.2 P\/Q  :|-: P/\Q
+14.3 (P->Q)/\(Q->P) :|-: P<->Q
+14.4 P->Q, Q->R :|-: P->R
+14.5 S/\R, -S, -R :|-: Q
+14.6 (P->(Q<->R)) :|-: (P/\Q<->Q/\R)
+14.7 P<->Q :|-: -Q<->-P
+14.8 P->Q, R->Q :|-: P->R
+```
+
+Please also complete the following two derivations:
+
+```{.ProofChecker .Prop} 
+14.9 :|-: ((P->Q)\/R)<->(P->Q\/R)
+14.10 P<->Q, P<->R :|-: P<->Q\/R
 ```
