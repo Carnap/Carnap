@@ -1,10 +1,8 @@
 {-#LANGUAGE ImpredicativeTypes, ScopedTypeVariables, FunctionalDependencies, TypeFamilies, UndecidableInstances, FlexibleInstances, MultiParamTypeClasses, AllowAmbiguousTypes, GADTs, KindSignatures, DataKinds, PolyKinds, TypeOperators, ViewPatterns, PatternSynonyms, RankNTypes, FlexibleContexts #-}
 
 module Carnap.Core.Unification.Unification (
-   Equation((:=:)), UError(..), FirstOrder, HigherOrder,
-   isVar, sameHead, decompose, occurs, subst,
-   matchApp, castLam, getLamVar, (.$.),
-   applySub, mapAll, freeVars, emap, sameTypeEq
+   Equation((:=:)), UError(..), FirstOrder(..), HigherOrder(..),
+      applySub, mapAll, freeVars, emap, sameTypeEq, ExtApp(..), ExtLam(..)
 ) where
 
 import Data.Type.Equality
@@ -26,15 +24,15 @@ instance (UniformlyEq f, UniformlyOrd f) => Ord (Equation f) where
                                  || (x =* x') && (y <=* y')
                                  || (x <=* x')
 
---this interface seems simpliar for the user to implement than our previous
+--this interface seems simpler for the user to implement than our previous
 --1. There is no more varible type
 --2. There is no substitution type
---3. other than decompose the operations are simpliar. For instance rather than
+--3. other than decompose the operations are simpler. For instance rather than
 --   freeVars there is occurs. rather than a full substitution there is just
 --   a single varible substitution. rather than combining sameHead and decompose
 --   they are seperate methods. rather than converting a varible to check if it
 --   it is a varible we just have 'isVar'
---4. Addtionally I have tried to allow this to meet the demands of more
+--4. Additionally I have tried to allow this to meet the demands of more
 --   unification algorithms so that this is a one stop shop for unification
 --5. I have tried to name things here in a way that someone reading the HoAR
 --   would recognize (hence "decompose" rather than "match")
@@ -46,13 +44,18 @@ class UniformlyEq f => FirstOrder f where
     subst :: f a -> f a -> f b -> f b
 
 data ExtApp f a where
-    ExtApp :: f (b -> a) -> f b -> ExtApp f a
+    ExtApp :: Typeable b => f (b -> a) -> f b -> ExtApp f a
+
+data ExtLam f a where
+    ExtLam :: (Typeable b, Typeable c) => 
+        f (b -> c) -> (a :~: (b -> c)) -> ExtLam f a
 
 class FirstOrder f => HigherOrder f where
     matchApp :: f a -> Maybe (ExtApp f a)
-    castLam :: f a -> Maybe (f (b -> c), a :~: (b -> c))
+    castLam ::  f a -> Maybe (ExtLam f a)
     getLamVar :: f (a -> b) -> f a
     (.$.) :: f (a -> b) -> f a -> f b
+    lam :: (f a -> f b) -> f (a -> b) 
 
 data UError f where
     SubError :: f a -> f a -> UError f -> UError f
@@ -105,5 +108,3 @@ freeVars :: (Typeable a, FirstOrder f) => f a -> [AnyPig f]
 freeVars t | isVar t   = [AnyPig t]
            | otherwise = concatMap rec (decompose t t)
     where rec (a :=: _) = freeVars a
-
-
