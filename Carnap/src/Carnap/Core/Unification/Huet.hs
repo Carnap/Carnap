@@ -1,4 +1,4 @@
-{-#LANGUAGE ImpredicativeTypes, ScopedTypeVariables, FunctionalDependencies, TypeFamilies, UndecidableInstances, FlexibleInstances, MultiParamTypeClasses, AllowAmbiguousTypes, GADTs, KindSignatures, DataKinds, PolyKinds, TypeOperators, ViewPatterns, PatternSynonyms, RankNTypes, FlexibleContexts #-}
+{-#LANGUAGE ImpredicativeTypes, ScopedTypeVariables, FunctionalDependencies, TypeFamilies, UndecidableInstances, FlexibleInstances, MultiParamTypeClasses, AllowAmbiguousTypes, GADTs, TypeOperators, ViewPatterns, PatternSynonyms, RankNTypes, FlexibleContexts #-}
 
 module Carnap.Core.Unification.Huet
         ( 
@@ -92,31 +92,59 @@ generate ((x :: f t1):=: y ) projterms = --accumulator for projection terms
                                                    return (eq',sub)
                                            Nothing -> mzero
                                 _ -> mzero
-                        (Nothing,Nothing) -> do let vbranches = map (vbranch x) projterms
+                        (Nothing,Nothing) -> do let vbranches = map (M.lift . project projterms) projterms
                                                 let hbranch = M.lift $ imitate projterms x
-                                                (newTerm :: f t5) <- foldr mplus hbranch vbranches
+                                                vpig <- foldr mplus mzero vbranches 
+                                                (newTerm :: f t5) <- hbranch `mplus` (castPig x vpig)
                                                 case eqT :: Maybe (t5 :~: t1) of
                                                     Just Refl -> return (newTerm:=:y,x:=:newTerm)
                                                     Nothing -> mzero
-    where vbranch :: (Typeable a, MonadVar f m) =>  f a -> AnyPig f -> LogicT m (f a)
-          vbranch (x :: f a) (AnyPig (p :: f b)) = 
+    where castPig :: (Typeable a, MonadPlus m) =>  f a -> AnyPig f -> m (f a)
+          castPig (x :: f a) (AnyPig (y :: f b)) =
             case eqT :: Maybe (a :~: b) of
-                Just Refl -> M.lift $ project projterms p
+                Just Refl -> return y
                 Nothing -> mzero
                 
 
 --recursively performs a surgery on a projection term, eventually replacing every part
 --of the term with an appropriate chunk of variables.
-project :: (MonadVar f m, HigherOrder f, Typeable a) => [AnyPig f] -> f a ->  m (f a)
-project projterms (term :: f t1) = 
-        case matchApp term of
-           Nothing -> return term
-           (Just (ExtApp h t)) -> do newInit <- project projterms h
-                                     freshArg <- genFreshArg projterms newInit
-                                     return $ newInit .$. freshArg
+--
+--Note that the projection term will not be of the same type as the return
+--value. Hence, we need an AnyPig here.
+project :: (MonadVar f m, HigherOrder f) => [AnyPig f] -> AnyPig f ->  m (AnyPig f)
+project projterms (AnyPig term) = do pvs <- toVars projterms
+                                     body <- handleBody pvs term
+                                     projection <- bindAll pvs (AnyPig body)
+                                     return projection
+    where handleBody :: (MonadVar f m, HigherOrder f, Typeable a) => [AnyPig f] -> f a ->  m (f a)
+          handleBody projvars term = case matchApp term of
+               Nothing -> return term
+               (Just (ExtApp h t)) -> do newInit <- handleBody projvars h
+                                         freshArg <- genFreshArg projvars newInit
+                                         return $ newInit .$. freshArg
+
+toVars :: (MonadVar f m) => [AnyPig f] -> m [AnyPig f]
+toVars (AnyPig (x :: f t):xs) = do y :: f t <- fresh 
+                                   tail <- toVars xs
+                                   return (AnyPig y:tail)
+
+bindAll :: (HigherOrder f, MonadVar f m) => [AnyPig f] -> AnyPig f -> m (AnyPig f)
+bindAll (AnyPig v :vs) (AnyPig body ) = 
+            do f <- safesubst v body
+               bindAll vs (AnyPig (lam f))
+bindAll [] body = return body
+
+--substitute f a in f b while avoiding collision of variables
+safesubst :: (MonadVar f m) => f a -> f b -> m (f a -> f b)
+safesubst x y = undefined
 
 genFreshArg :: (MonadVar f m, HigherOrder f) => [AnyPig f] -> f (a -> b) -> m (f a)
-genFreshArg = undefined
+genFreshArg projvars term = undefined
+        -- do head <- fresh 
+        --    return $ attach head projvars
+    -- where attach :: f c -> [AnyPig f] -> f d
+        --   attach (h :: f c) (AnyPig (v :: f t3):vs) = attach (h .$. v) vs
+        --   attach h [] = h
 
 -- rebuilds a term from just the head and the projection terms
 imitate :: (MonadVar f m, HigherOrder f) => [AnyPig f] -> f a ->  m (f a)
