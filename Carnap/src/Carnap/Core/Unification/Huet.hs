@@ -92,28 +92,35 @@ generate ((x :: f t1):=: y ) projterms = --accumulator for projection terms
                                                    return (eq',sub)
                                            Nothing -> mzero
                                 _ -> mzero
-                        (Nothing,Nothing) -> do let vbranches = map (M.lift . parfit projterms x) projterms
-                                                let hbranch = M.lift $ rebuild projterms x
-                                                newTerm <- foldr mplus hbranch vbranches
-                                                return (newTerm:=:y,x:=:newTerm)
+                        (Nothing,Nothing) -> do let vbranches = map (vbranch x) projterms
+                                                let hbranch = M.lift $ imitate projterms x
+                                                (newTerm :: f t5) <- foldr mplus hbranch vbranches
+                                                case eqT :: Maybe (t5 :~: t1) of
+                                                    Just Refl -> return (newTerm:=:y,x:=:newTerm)
+                                                    Nothing -> mzero
+    where vbranch :: (Typeable a, MonadVar f m) =>  f a -> AnyPig f -> LogicT m (f a)
+          vbranch (x :: f a) (AnyPig (p :: f b)) = 
+            case eqT :: Maybe (a :~: b) of
+                Just Refl -> M.lift $ project projterms p
+                Nothing -> mzero
+                
 
 --recursively performs a surgery on a projection term, eventually replacing every part
 --of the term with an appropriate chunk of variables.
-parfit :: (MonadVar f m, HigherOrder f) => [AnyPig f] -> f a -> AnyPig f ->  m (f a)
-parfit projterms x (AnyPig (term :: f t1))  =  undefined
-        -- case matchApp term of
-        --    Nothing -> case eqT :: Maybe (t1 :~: a) of
+project :: (MonadVar f m, HigherOrder f, Typeable a) => [AnyPig f] -> f a ->  m (f a)
+project projterms (term :: f t1) = 
+        case matchApp term of
+           Nothing -> return term
+           (Just (ExtApp h t)) -> do newInit <- project projterms h
+                                     freshArg <- genFreshArg projterms newInit
+                                     return $ newInit .$. freshArg
 
-        --    (Just (ExtApp h t)) -> do (AnyPig newInit) <- parfit projterms (AnyPig term)
-        --                              return $ AnyPig (newInit .$. freshArg projterms newInit)
-
-
-freshArg :: (MonadVar f m, HigherOrder f) => [AnyPig f] -> f (a -> b) -> m (f a)
-freshArg = undefined
+genFreshArg :: (MonadVar f m, HigherOrder f) => [AnyPig f] -> f (a -> b) -> m (f a)
+genFreshArg = undefined
 
 -- rebuilds a term from just the head and the projection terms
-rebuild :: (MonadVar f m, HigherOrder f) => [AnyPig f] -> f a ->  m (f a)
-rebuild = undefined
+imitate :: (MonadVar f m, HigherOrder f) => [AnyPig f] -> f a ->  m (f a)
+imitate = undefined
 
 --- | given x, y with no leading variables, this applies the generate rule
 --to replace the old head of x with the new head
