@@ -61,39 +61,59 @@ abstractEq (AnyPig (v :: f a)) (AnyPig (v' :: f b)) (t :=:t') =
 -- XXX : the case-statement mess here could probably be improved by using
 -- view-patterns.
 --
--- | given a flexible/rigid equation, this indeterministically returns
--- a simplified equation resulting from the generate rule (not doing the
--- βη-reduction), and the associated substituitional equation. 
+-- XXX : excessive eqT use could probably be cleand up.
 --
---bad behavior can be expected when given a rigid/rigid or
---flexible/flexible equation.
-generate :: (MonadVar f m, HigherOrder f) => Equation f -> [EveryPig f] -> LogicT m (Equation f,Equation f)
-generate ((x :: f t1):=:(y :: f t2)) projvar = --accumulator for projection variables
+-- | given a an oriented flexible/rigid equation (with the flexible side on
+-- the left), this indeterministically returns a simplified equation
+-- resulting from the generate rule (not doing the βη-reduction), and the
+-- associated substituitional equation. 
+--
+--bad behavior can be expected when given a rigid/rigid, flexible/flexible,
+--or rigid/flexible equation.
+generate :: (MonadVar f m, HigherOrder f) => Equation f -> [AnyPig f] -> LogicT m (Equation f,Equation f)
+generate ((x :: f t1):=: y ) projterms = --accumulator for projection terms
          do case (castLam x, castLam y) of
                 (Just (ExtLam l Refl),Just (ExtLam l' Refl)) -> 
-                    do let lv = pigLamb l
-                       let lv' = pigLamb l'
-                       (eq, sub) <- generate (toBody l :=: toBody l') projvar
-                       let (Just eq') = abstractEq lv lv' eq
+                    do fv <- M.lift fresh
+                       fv' <- M.lift fresh
+                       (eq, sub) <- generate ((l .$. fv) :=:  (l' .$. fv')) projterms
+                       let (Just eq') = abstractEq (AnyPig fv) (AnyPig fv') eq
                        return (eq', sub)
                 (Nothing, Nothing) -> 
                     case (matchApp x, matchApp y) of
-                        (Just (ExtApp (h :: f (t3-> t1)) (t :: f t3)), 
-                         Just (ExtApp (h' :: f (t4->t1 )) (t':: f t4))) -> 
-                            case eqT :: Maybe (t3 :~: t4) of
+                        (Just (ExtApp (h :: f (t2-> t1)) (t :: f t2)), 
+                         Just (ExtApp (h' :: f (t3->t1 )) (t':: f t3))) -> 
+                            case eqT :: Maybe (t2 :~: t3) of
                                 Just Refl -> 
-                                    do pvar :: EveryPig f <- M.lift freshPig
-                                       (((z::f t5):=:w), sub) <- generate (h:=:h') (pvar:projvar)
-                                       case eqT :: Maybe (t5 :~: (t3 -> t1)) of
+                                    do (((z::f t4):=:w), sub) <- generate (h:=:h') ((AnyPig t):projterms)
+                                       case eqT :: Maybe (t4 :~: (t3 -> t1)) of
                                            Just Refl -> 
                                                 do let eq' = (z .$. t) :=: (w .$. t')
                                                    return (eq',sub)
                                            Nothing -> mzero
                                 _ -> mzero
-                        (Nothing,Nothing) ->
-                            if isVar x && not (isVar y) then return (y :=: y, x:=:y) -- XXX : need newhead here
-                            else if isVar y && not (isVar x) then return (x :=: x, y:=:x)
-                            else mzero
+                        (Nothing,Nothing) -> do let vbranches = map (M.lift . parfit projterms x) projterms
+                                                let hbranch = M.lift $ rebuild projterms x
+                                                newTerm <- foldr mplus hbranch vbranches
+                                                return (newTerm:=:y,x:=:newTerm)
+
+--recursively performs a surgery on a projection term, eventually replacing every part
+--of the term with an appropriate chunk of variables.
+parfit :: (MonadVar f m, HigherOrder f) => [AnyPig f] -> f a -> AnyPig f ->  m (f a)
+parfit projterms x (AnyPig (term :: f t1))  =  undefined
+        -- case matchApp term of
+        --    Nothing -> case eqT :: Maybe (t1 :~: a) of
+
+        --    (Just (ExtApp h t)) -> do (AnyPig newInit) <- parfit projterms (AnyPig term)
+        --                              return $ AnyPig (newInit .$. freshArg projterms newInit)
+
+
+freshArg :: (MonadVar f m, HigherOrder f) => [AnyPig f] -> f (a -> b) -> m (f a)
+freshArg = undefined
+
+-- rebuilds a term from just the head and the projection terms
+rebuild :: (MonadVar f m, HigherOrder f) => [AnyPig f] -> f a ->  m (f a)
+rebuild = undefined
 
 --- | given x, y with no leading variables, this applies the generate rule
 --to replace the old head of x with the new head
