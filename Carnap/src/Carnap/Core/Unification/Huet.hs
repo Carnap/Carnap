@@ -10,6 +10,7 @@ import Carnap.Core.Data.AbstractSyntaxClasses
 import Carnap.Core.Unification.Unification 
 import Data.Typeable
 import Control.Monad
+import Control.Monad.Identity
 import Control.Monad.Logic
 import Control.Monad.Trans.Class as M
 
@@ -17,12 +18,13 @@ import Control.Monad.Trans.Class as M
 --set of solutions, but no rigid-rigid equations---or Nothing, in the case
 --where the set of equations has no solutions.
 simplify eqs = 
-    case filter rigidRigid eqs of
-        [] -> Just eqs
-        rr -> do failCheck rr 
-                 >>= massDecompose 
-                 >>= simplify
-                 >>= (\x -> return $ (filter (not . rigidRigid) eqs) ++ x)
+        do filtered <- filterM rigidRigid eqs
+           case filtered of
+               [] -> Just eqs
+               rr -> do failCheck rr 
+                        >>= massDecompose 
+                        >>= simplify
+                        >>= (\x -> return $ (filter (not . \x -> elem x rr) eqs) ++ x)
     where failCheck l = if and (map (\(x:=:y) -> sameHead x y) l) 
                            then Just l
                            else Nothing
@@ -32,21 +34,15 @@ simplify eqs =
 --(since these are guaranteed to have heads that are either constants or
 --variables).
 
-rigidRigid :: HigherOrder f => Equation f -> Bool
-rigidRigid (x:=:y) = acc x y []
-    where acc ::  (HigherOrder f, Typeable a) => f a -> f a -> [AnyPig f] -> Bool
-          acc x y bv = case (castLam x, castLam y) of
-           (Just (ExtLam l Refl), Just (ExtLam l' Refl)) -> acc (toBody l) (toBody l') (pigLamb l:pigLamb l': bv)
-           _ -> case (matchApp x,matchApp y) of -- XXX : lnf does not guarantee that the bodies have the same length.
-                    (Just (ExtApp h _), Just (ExtApp h' _)) -> 
-                        not (freeVar (AnyPig h) || freeVar (AnyPig h'))
-                    _ -> False
+rigidRigid :: (HigherOrder f, MonadVar f m)  => Equation f -> m Bool
+rigidRigid (x:=:y) = (&&) <$> constHead x [] <*> constHead y []
+    where constHead ::  (HigherOrder f, MonadVar f m, Typeable a) => f a -> [AnyPig f] -> m Bool
+          constHead x bv = case castLam x of
+           (Just (ExtLam l Refl)) -> do lv <- fresh
+                                        constHead (l .$. lv) ((AnyPig l):bv)
+           _ ->  do (h, _) <- guillotine x
+                    return $ not (freeVar h)
            where freeVar p@(AnyPig x) = isVar x && not (p `elem` bv)
-
-toBody l = l .$. getLamVar l
-
-pigLamb :: (HigherOrder f, Typeable a) => f (a -> b) -> AnyPig f
-pigLamb = AnyPig . getLamVar
        
 abstractEq :: HigherOrder f => AnyPig f -> AnyPig f -> Equation f -> Maybe (Equation f)
 abstractEq (AnyPig (v :: f a)) (AnyPig (v' :: f b)) (t :=:t') = 
@@ -80,32 +76,36 @@ generate ((x :: f a) :=: y) = --accumulator for projection terms
                        let (Just eq') = abstractEq (AnyPig fv) (AnyPig fv') eq
                        return (eq', sub)
                 (Nothing, Nothing) -> 
-                    do (AnyPig headY,_) <- guillotine y
-                       (AnyPig (headX :: f t1), projterms) <- guillotine x
+                    do (AnyPig (headX :: f t1), projterms) <- guillotine x
                        let vbranches = map (M.lift . project projterms) projterms
-                       let hbranch = M.lift $ imitate projterms headY
+                       let hbranch = M.lift $ imitate projterms (AnyPig y)
                        vpig <- foldr mplus mzero vbranches 
                        (AnyPig (newTerm :: f t5)) <- hbranch `mplus` (return vpig)
                        gappyX <- M.lift $ safesubst headX x
                        case eqT :: Maybe (t5 :~: t1) of
                            Just Refl -> return (gappyX newTerm :=:y,headX:=:newTerm)
                            Nothing -> mzero
-    where guillotine :: Monad m => f a -> m (AnyPig f, [AnyPig f])
-          guillotine x = basket (AnyPig x) []
-                where basket (AnyPig x) pigs = case matchApp x of
-                          Just (ExtApp h t) -> basket (AnyPig h) ((AnyPig t):pigs)
-                          Nothing -> return (AnyPig x,pigs)
+          where project = projectOrImitate
+                imitate = projectOrImitate
 
---recursively performs a surgery on a projection term, eventually replacing every part
---of the term with an appropriate chunk of variables.
+guillotine :: (HigherOrder f, Monad m,Typeable a) => f a -> m (AnyPig f, [AnyPig f])
+guillotine x = basket (AnyPig x) []
+            where basket (AnyPig x) pigs = case matchApp x of
+                      Just (ExtApp h t) -> basket (AnyPig h) ((AnyPig t):pigs)
+                      Nothing -> return (AnyPig x,pigs)
+
+--recursively performs a surgery on a term (either a projection term or the
+--body of the rhs), eventually replacing every part of the term with an
+--appropriate chunk of variables.
 --
 --Note that the projection term will not be of the same type as the return
 --value. Hence, we need an AnyPig here.
-project :: (MonadVar f m, HigherOrder f) => [AnyPig f] -> AnyPig f ->  m (AnyPig f)
-project projterms (AnyPig term) = do pvs <- toVars projterms
-                                     body <- handleBody pvs term
-                                     projection <- bindAll pvs (AnyPig body)
-                                     return projection
+projectOrImitate :: (MonadVar f m, HigherOrder f) => [AnyPig f] -> AnyPig f ->  m (AnyPig f)
+projectOrImitate projterms (AnyPig term) = 
+        do pvs <- toVars projterms
+           body <- handleBody pvs term
+           projection <- bindAll pvs (AnyPig body)
+           return projection
     where handleBody :: (MonadVar f m, HigherOrder f, Typeable a) => [AnyPig f] -> f a ->  m (f a)
           handleBody projvars term = case matchApp term of
                Nothing -> return term
@@ -135,10 +135,6 @@ genFreshArg projvars term =
     where attach ::  (HigherOrder f, Typeable d) => (forall c .Typeable c => f c) -> [AnyPig f] -> f d
           attach h  ((AnyPig v):vs) = attach (h .$. v) vs
           attach h [] = h
-
--- rebuilds an imitation term from just the head to imitate and the projection terms
-imitate :: (MonadVar f m, HigherOrder f) => [AnyPig f] -> f a ->  m (AnyPig f)
-imitate projterms oldhead = undefined
 
 --- | given x, y with no leading variables, this applies the generate rule
 --to replace the old head of x with the new head

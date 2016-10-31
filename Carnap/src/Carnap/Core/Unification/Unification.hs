@@ -53,9 +53,9 @@ data ExtLam f a where
 class FirstOrder f => HigherOrder f where
     matchApp :: f a -> Maybe (ExtApp f a)
     castLam ::  f a -> Maybe (ExtLam f a)
-    getLamVar :: f (a -> b) -> f a
-    (.$.) :: f (a -> b) -> f a -> f b
-    lam :: (f a -> f b) -> f (a -> b) 
+    --getLamVar :: f (a -> b) -> f a
+    (.$.) :: (Typeable a, Typeable b) => f (a -> b) -> f a -> f b
+    lam :: (Typeable a, Typeable b) => (f a -> f b) -> f (a -> b) 
 
 data UError f where
     SubError :: f a -> f a -> UError f -> UError f

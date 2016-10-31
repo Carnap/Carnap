@@ -639,6 +639,18 @@ instance {-# OVERLAPPABLE #-} (MonadVar (FixLang f) (State Int), FirstOrderLex (
                   nth :: Typeable a => Int -> FixLang f a
                   nth = S.evalState fresh
 
+instance {-# OVERLAPPABLE #-} FirstOrder (FixLang f) => HigherOrder (FixLang f) where
+
+    matchApp (x :!$: y) = Just (ExtApp x y)
+    matchApp _ = Nothing 
+
+    castLam l@(LLam _ :: FixLang f a ) = Just (ExtLam l (Refl :: a :~: a ))
+    castLam _ = Nothing 
+
+    (.$.) = (:!$:)
+    
+    lam = LLam
+
 --------------------------------------------------------
 --5. Generic Traversals and Prisms
 --------------------------------------------------------
