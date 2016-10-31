@@ -5,7 +5,7 @@ module Carnap.Core.Data.AbstractSyntaxDataTypes(
   -- $ATintro
   -- ** Language Building Types
   Term(..), Form(..),
-  Copula((:$:), Lam), CopulaSchema(..), MaybeMonadVar(..),
+  Copula((:$:), Lam), CopulaSchema(..), MaybeMonadVar(..),MaybeStaticVar(..),
   (:|:)(..), Fix(Fx), FixLang, EndLang, pattern AOne,
   pattern ATwo, pattern AThree, pattern LLam, pattern (:!$:), pattern Fx1,
   pattern Fx2, pattern Fx3, pattern Fx4, pattern Fx5, pattern Fx6, pattern
@@ -17,7 +17,7 @@ module Carnap.Core.Data.AbstractSyntaxDataTypes(
   Quantifiers(Bind),Abstractors(Abstract),Applicators(Apply), BoundVars(..),
   -- *** Non-Binding Operators
   Arity(AZero, ASucc), Predicate(Predicate), Connective(Connective),
-  Function(Function), Subnective(Subnective), SubstitutionalVariable(SubVar),
+  Function(Function), Subnective(Subnective), SubstitutionalVariable(SubVar,StaticVar),
   -- * Generic Programming Utilities
   LangTypes2(..), LangTypes1(..), RelabelVars(..), FirstOrderLex(..), PrismLink(..),
 ) where
@@ -210,6 +210,7 @@ data Subnective :: (* -> *) -> (* -> *) -> * -> * where
 
 data SubstitutionalVariable :: (* -> *) -> * -> * where
         SubVar :: Int -> SubstitutionalVariable lang t
+        StaticVar :: Int -> SubstitutionalVariable lang t
 
 --data Quote :: (* -> *) -> * -> *
     --Quote :: (lang )
@@ -220,6 +221,7 @@ data SubstitutionalVariable :: (* -> *) -> * -> * where
 
 instance Schematizable (SubstitutionalVariable lang)  where
         schematize (SubVar n) = const $ "α_" ++ show n
+        schematize (StaticVar n) = const $ "β_" ++ show n
 
 instance Schematizable (EndLang lang) where
         schematize = undefined
@@ -398,19 +400,25 @@ class Monad m => MaybeMonadVar f m where
         maybePig :: Maybe (m (EveryPig f))
         maybePig = Nothing
 
+class MaybeStaticVar f where
+        maybeStatic :: Typeable a => Maybe (Int -> f a)
+        maybeStatic = Nothing
+
 instance UniformlyEq (SubstitutionalVariable idx) where
 
         (SubVar n) =* (SubVar m) = n == m
+        (StaticVar n) =* (StaticVar m) = n == m
+        _ =* _ = False
 
 instance FirstOrderLex (SubstitutionalVariable idx) where
-        isVarLex (SubVar n) = True
-
--- instance {-# OVERLAPS #-} MonadVar f m => MaybeMonadVar f m where
---         maybeFresh = fresh
---         hasFresh _ = True
+        isVarLex (SubVar _) = True
+        isVarLex (StaticVar _) = True
 
 instance {-# OVERLAPPABLE #-} Monad m => MaybeMonadVar f m where
         maybeFresh = Nothing
+
+instance {-# OVERLAPPABLE #-} MaybeStaticVar f where
+        maybeStatic = Nothing
 
 instance Monad m => MaybeMonadVar (SubstitutionalVariable idx) (S.StateT Int m)
         where maybeFresh = Just $ do n <- get
@@ -421,6 +429,9 @@ instance Monad m => MaybeMonadVar (SubstitutionalVariable idx) (S.StateT Int m)
                                    put (n + 1)
                                    return $ EveryPig (SubVar n)
 
+instance MaybeStaticVar (SubstitutionalVariable idx) 
+        where maybeStatic = Just StaticVar
+
 instance UniformlyEq quant => UniformlyEq (Quantifiers quant lang) where
         (Bind q) =* (Bind q') = q =* q'
 
@@ -428,6 +439,8 @@ instance (UniformlyEq quant, FirstOrderLex quant) => FirstOrderLex (Quantifiers 
         isVarLex (Bind q) = isVarLex q
 
 instance Monad m => MaybeMonadVar (Quantifiers quant lang) m
+
+instance MaybeStaticVar (Quantifiers quant lang)
 
 instance UniformlyEq app => UniformlyEq (Applicators app lang) where
         (Apply f) =* (Apply f') = f =* f'
@@ -437,6 +450,8 @@ instance (UniformlyEq app, FirstOrderLex app) => FirstOrderLex (Applicators app 
 
 instance Monad m => MaybeMonadVar (Applicators app lang) m
 
+instance MaybeStaticVar (Applicators app lang)
+
 instance UniformlyEq abs => UniformlyEq (Abstractors abs lang) where
         (Abstract a) =* (Abstract b) = a =* b
 
@@ -444,6 +459,8 @@ instance (UniformlyEq abs, FirstOrderLex abs) => FirstOrderLex (Abstractors abs 
         isVarLex (Abstract a) = isVarLex a
 
 instance Monad m => MaybeMonadVar (Abstractors app lang) m
+
+instance MaybeStaticVar (Abstractors app lang)
 
 instance UniformlyEq pred => UniformlyEq (Predicate pred lang) where
         (Predicate p a) =* (Predicate p' a') =
@@ -454,6 +471,8 @@ instance (UniformlyEq pred, FirstOrderLex pred) => FirstOrderLex (Predicate pred
 
 instance Monad m => MaybeMonadVar (Predicate pred lang) m
 
+instance MaybeStaticVar (Predicate pred lang)
+
 instance UniformlyEq con => UniformlyEq (Connective con lang) where
         (Connective c a) =* (Connective c' a') =
             arityInt a == arityInt a' && c =* c'
@@ -462,6 +481,8 @@ instance (UniformlyEq con, FirstOrderLex con) => FirstOrderLex (Connective con l
         isVarLex (Connective c a) = isVarLex c
 
 instance Monad m => MaybeMonadVar (Connective con lang) m
+
+instance MaybeStaticVar (Connective con lang)
 
 instance UniformlyEq func => UniformlyEq (Function func lang) where
         (Function f a) =* (Function f' a') =
@@ -472,6 +493,8 @@ instance (UniformlyEq func, FirstOrderLex func) => FirstOrderLex (Function func 
 
 instance Monad m => MaybeMonadVar (Function func lang) m
 
+instance MaybeStaticVar (Function func lang)
+
 instance UniformlyEq sub => UniformlyEq (Subnective sub lang) where
         (Subnective s a) =* (Subnective s' a') =
             arityInt a == arityInt a' && s =* s'
@@ -481,6 +504,8 @@ instance FirstOrderLex sub => FirstOrderLex (Subnective sub lang) where
 
 instance Monad m => MaybeMonadVar (Subnective sub lang) m
 
+instance MaybeStaticVar (Subnective sub lang)
+
 instance UniformlyEq (EndLang idx) where
         (=*) = undefined
 
@@ -488,6 +513,8 @@ instance FirstOrderLex (EndLang idx) where
         sameHeadLex = undefined
 
 instance Monad m => MaybeMonadVar (EndLang idx) m
+
+instance MaybeStaticVar (EndLang idx)
 
 instance ( UniformlyEq (f idx)
          , UniformlyEq (g idx)) => UniformlyEq ((f :|: g) idx) where
@@ -519,11 +546,17 @@ instance (MaybeMonadVar (g idx) m, MaybeMonadVar (f idx) m) => MaybeMonadVar ((f
 
                        _ -> Nothing
 
+instance (MaybeStaticVar (g idx), MaybeStaticVar (f idx)) => MaybeStaticVar ((f :|: g) idx) where
+        maybeStatic = case (maybeStatic :: Typeable a => Maybe (Int -> (f idx a)), maybeStatic :: Typeable b => Maybe (Int -> (g idx b))) of
+                         (Just l ,_) -> Just $ \n -> FLeft (l n)
+                         (_, Just r ) -> Just $ \n -> FRight (r n)
+                         _ -> Nothing
+
 instance (UniformlyEq lang, FirstOrderLex lang) => UniformlyEq (Copula lang) where
         (h :$: t ) =* (h' :$: t') = h =* h' && t =* t'
         Lam g =* Lam h = error "sorry, can't directly compare these. Try the fixpoint."
 
-instance (UniformlyEq lang, FirstOrderLex lang, MonadVar lang (State Int)) => FirstOrderLex (Copula lang)
+instance (UniformlyEq lang, FirstOrderLex lang, StaticVar lang) => FirstOrderLex (Copula lang)
         where
 
         sameHeadLex ((x :: lang (t1  -> t2 )) :$: _)
@@ -534,31 +567,37 @@ instance (UniformlyEq lang, FirstOrderLex lang, MonadVar lang (State Int)) => Fi
         sameHeadLex (Lam (f  :: lang t1  -> lang t2))
                     (Lam (f' :: lang t1' -> lang t2')) =
             case (eqT :: Maybe (t1 :~: t1'), eqT :: Maybe (t2 :~: t2')) of
-                (Just Refl, Just Refl) -> sameHeadLex (f dummy) (f' dummy)
+                (Just Refl, Just Refl) -> sameHeadLex (f $ static 0) (f' $ static 0)
                 _ -> False
-            where dummy :: Typeable a => lang a
-                  dummy = S.evalState fresh (0 :: Int)
         sameHeadLex _ _ = False
 
 
 instance Monad m => MaybeMonadVar (Copula lang) m
 
-instance {-# OVERLAPPABLE #-} (UniformlyEq ((Copula :|: f) (FixLang f))
-         , MaybeMonadVar ((Copula :|: f) (FixLang f)) (State Int))
-         => UniformlyEq (FixLang f) where
-             x =* y = S.evalState (stateEq x y) 0
-                where
-                    stateEq :: FixLang f a -> FixLang f b -> State Int Bool
-                    stateEq (x :!$: y) (x' :!$: y') = return $ x =* x' && y =* y'
-                    stateEq (LLam (f :: FixLang f t1 -> FixLang f t1')) (LLam (g :: FixLang f t2 -> FixLang f t2')) =
-                        case (eqT :: Maybe (t1 :~: t2), maybeFresh :: Maybe (State Int ((Copula :|: f) (FixLang f) ()))) of
-                            (Just Refl, Just _) -> do let (Just fresh) = maybeFresh :: Maybe (State Int ((Copula :|: f) (FixLang f) t1))
-                                                      v <- fresh
-                                                      stateEq (f (Fx v)) (g (Fx v))
-                            _ -> return False
-                    stateEq (Fx x) (Fx y) = return $ x =* y
+instance MaybeStaticVar (Copula lang) 
 
-instance FirstOrderLex ((Copula :|: f) (FixLang f)) => FirstOrderLex (FixLang f) where
+instance {-# OVERLAPPABLE #-} (UniformlyEq ((Copula :|: f) (FixLang f))
+         , MaybeStaticVar ((Copula :|: f) (FixLang f)))
+         => UniformlyEq (FixLang f) where
+             (x :!$: y) =* (x' :!$: y') = x =* x' && y =* y'
+             x@(LLam (f :: FixLang f t1 -> FixLang f t1')) =* y@(LLam (g :: FixLang f t2 -> FixLang f t2')) = 
+                    case (eqT :: Maybe (t1 :~: t2), maybeStatic :: Maybe (Int -> ((Copula :|: f) (FixLang f) t1))) of
+                            (Just Refl, Just sv) -> (f $ Fx $ sv $ height x) =* (g $ Fx $ sv $ height y)
+                                where height :: MaybeStaticVar ((Copula :|: f) (FixLang f)) => FixLang f a -> Int
+                                      height (x :!$: y) = max (height x) (height y)
+                                      height x@(LLam (f :: FixLang f t3 -> FixLang f t3')) = 
+                                        case maybeStatic :: Maybe (Int -> ((Copula :|: f) (FixLang f) t3)) of
+                                            Just sv -> height (f $ Fx $ sv 0) + 1
+                                            Nothing -> error "Comparison of lambdas requires static variables"
+                                      height _ = 0
+                            _ -> False
+             Fx x =* Fx y = x =* y
+             _ =* _ = False
+
+instance (MaybeStaticVar (Copula (Fix (Copula :|: f))), 
+          MaybeStaticVar (f (Fix (Copula :|: f))), 
+          FirstOrderLex ((Copula :|: f) (FixLang f))) 
+            => FirstOrderLex (FixLang f) where
 
         isVarLex (Fx x) = isVarLex x
 
@@ -573,7 +612,12 @@ instance MaybeMonadVar ((Copula :|: f) (FixLang f)) m => MonadVar (FixLang f) m 
                     Just pig -> do p <- pig
                                    return $ EveryPig (Fx (unEveryPig p))
 
-instance {-# OVERLAPPABLE #-} (MonadVar (FixLang f) (State Int), FirstOrderLex (FixLang f)) => FirstOrder (FixLang f) where
+instance MaybeStaticVar ((Copula :|: f) (FixLang f)) => StaticVar (FixLang f) where
+        static = case maybeStatic :: Typeable a => Maybe (Int -> (((Copula :|: f) (FixLang f)) a)) of
+                    Just s -> \n -> Fx (s n)
+                    Nothing -> error "you need static variables in your language for this"
+
+instance {-# OVERLAPPABLE #-} (StaticVar (FixLang f), FirstOrderLex (FixLang f)) => FirstOrder (FixLang f) where
 
         isVar = isVarLex
 
@@ -589,15 +633,12 @@ instance {-# OVERLAPPABLE #-} (MonadVar (FixLang f) (State Int), FirstOrderLex (
 
                   reabstract (t:=:t') = (LLam $ \x -> subst sv x t) :=: (LLam $ \x -> subst sv x t')
 
-                  sv = nth (height (LLam f))
+                  sv = static (height (LLam f))
 
                   height :: FixLang f a -> Int
                   height (x :!$: y) = max (height x) (height y)
-                  height (LLam f) = height (f (nth 0)) + 1
+                  height (LLam f) = height (f (static 0)) + 1
                   height _ = 0
-
-                  nth :: Typeable a => Int -> FixLang f a
-                  nth = S.evalState fresh
 
         decompose a b
             | sameHead a b = recur a b []
@@ -627,17 +668,14 @@ instance {-# OVERLAPPABLE #-} (MonadVar (FixLang f) (State Int), FirstOrderLex (
             | otherwise = case c of
                            (x :!$: y) -> subst a b x :!$: subst a b y
                            (LLam f) -> LLam $ \x -> subst sv x $ subst a b $ f sv
-                                where sv = nth $ height (LLam f)
+                                where sv = static $ height (LLam f)
                            _ -> c
             where -- XXX: Might want to just break this off as a utility
                   --(can't use Util, since that imports this module)
                   height :: FixLang f a -> Int
                   height (x :!$: y) = max (height x) (height y)
-                  height (LLam f) = height (f (nth 0)) + 1
+                  height (LLam f) = height (f (static 0)) + 1
                   height _ = 0
-
-                  nth :: Typeable a => Int -> FixLang f a
-                  nth = S.evalState fresh
 
 instance {-# OVERLAPPABLE #-} FirstOrder (FixLang f) => HigherOrder (FixLang f) where
 

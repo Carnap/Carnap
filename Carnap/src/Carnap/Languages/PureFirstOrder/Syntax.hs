@@ -30,6 +30,8 @@ instance FirstOrderLex PureMonadicPredicate
 
 instance Monad m => MaybeMonadVar PureMonadicPredicate m
 
+instance MaybeStaticVar PureMonadicPredicate
+
 data PureSentences a where
     Sent :: Int -> PureSentences (Form Bool)
 
@@ -42,6 +44,8 @@ instance UniformlyEq (PureSentences) where
 instance FirstOrderLex PureSentences
 
 instance Monad m => MaybeMonadVar PureSentences m
+
+instance MaybeStaticVar PureSentences
 
 type PurePredicate = IntPred Bool Int
 

@@ -1,7 +1,7 @@
 {-#LANGUAGE ImpredicativeTypes, ScopedTypeVariables, FunctionalDependencies, TypeFamilies, UndecidableInstances, FlexibleInstances, MultiParamTypeClasses, AllowAmbiguousTypes, GADTs, TypeOperators, ViewPatterns, PatternSynonyms, RankNTypes, FlexibleContexts #-}
 
 module Carnap.Core.Unification.Huet
-    where
+where
 
 import Carnap.Core.Util
 import Carnap.Core.Data.AbstractSyntaxClasses
@@ -15,18 +15,19 @@ import Control.Monad.Trans.Class as M
 -- | simplfies a set of equations, returning a set of equations with the same
 --set of solutions, but no rigid-rigid equations---or Nothing, in the case
 --where the set of equations has no solutions.
+simplify ::(HigherOrder f, MonadVar f m) => [Equation f] -> LogicT m [Equation f]
 simplify eqs = 
-        do filtered <- filterM rigidRigid eqs
+        do filtered <- M.lift $ filterM rigidRigid eqs
            case filtered of
-               [] -> Just eqs
+               [] -> return eqs
                rr -> do failCheck rr 
                         >>= massDecompose 
                         >>= simplify
                         >>= (\x -> return $ (filter (not . \x -> elem x rr) eqs) ++ x)
     where failCheck l = if and (map (\(x:=:y) -> sameHead x y) l) 
-                           then Just l
-                           else Nothing
-          massDecompose l = Just $ concat $ map (\(x:=:y) -> decompose x y) l
+                           then return l
+                           else mzero
+          massDecompose l = return $ concat $ map (\(x:=:y) -> decompose x y) l
 
 -- | returns true on rigid-rigid equations between terms in βη long normal form
 --(since these are guaranteed to have heads that are either constants or
@@ -42,11 +43,11 @@ rigidRigid (x:=:y) = (&&) <$> constHead x [] <*> constHead y []
                     return $ not (freeVar h)
            where freeVar p@(AnyPig x) = isVar x && not (p `elem` bv)
        
-abstractEq :: HigherOrder f => AnyPig f -> AnyPig f -> Equation f -> Maybe (Equation f)
+abstractEq :: (MonadPlus m, HigherOrder f) => AnyPig f -> AnyPig f -> Equation f -> m (Equation f)
 abstractEq (AnyPig (v :: f a)) (AnyPig (v' :: f b)) (t :=:t') = 
         case eqT :: Maybe (a :~: b) of
-            Just Refl -> Just $ (lam $ \x -> subst v x t) :=: (lam $ \x -> subst v' x t')
-            Nothing -> Nothing
+            Just Refl -> return $ (lam $ \x -> subst v x t) :=: (lam $ \x -> subst v' x t')
+            Nothing -> mzero
 
 -- XXX : This needs to take place in a fresh variable monad. Should use
 --a new type of fresh variable for fresh unification variables, in order to
@@ -71,7 +72,7 @@ generate ((x :: f a) :=: y) = --accumulator for projection terms
                     do fv <- M.lift fresh
                        fv' <- M.lift fresh
                        (eq, sub) <- generate $ (l fv) :=:  (l' fv')
-                       let (Just eq') = abstractEq (AnyPig fv) (AnyPig fv') eq
+                       eq' <-  abstractEq (AnyPig fv) (AnyPig fv') eq
                        return (eq', sub)
                 (Nothing, Nothing) -> 
                     do (AnyPig (headX :: f t1), projterms) <- guillotine x
@@ -115,6 +116,7 @@ toVars :: (MonadVar f m) => [AnyPig f] -> m [AnyPig f]
 toVars (AnyPig (x :: f t):xs) = do y :: f t <- fresh 
                                    tail <- toVars xs
                                    return (AnyPig y:tail)
+toVars [] = return []
 
 bindAll :: (HigherOrder f, MonadVar f m) => [AnyPig f] -> AnyPig f -> m (AnyPig f)
 bindAll (AnyPig v :vs) (AnyPig body ) = 
@@ -123,8 +125,8 @@ bindAll (AnyPig v :vs) (AnyPig body ) =
 bindAll [] body = return body
 
 --substitute f a in f b while avoiding collision of variables
-safesubst :: (MonadVar f m) => f a -> f b -> m (f a -> f b)
-safesubst x y = undefined
+safesubst :: (HigherOrder f, MonadVar f m, Typeable a, Typeable b) => f a -> f b -> m (f a -> f b)
+safesubst (x :: f a) (y :: f b) = return $ \z -> subst x z y
 
 genFreshArg :: (MonadVar f m, HigherOrder f, Typeable a) => [AnyPig f] -> f (a -> b) -> m (f a)
 genFreshArg projvars term =

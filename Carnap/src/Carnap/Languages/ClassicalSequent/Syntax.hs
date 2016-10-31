@@ -46,6 +46,8 @@ instance FirstOrderLex (Cedent a)
 
 instance Monad m => MaybeMonadVar (Cedent a) m
 
+instance MaybeStaticVar (Cedent a)
+
 instance UniformlyEq (Cedent a) where
         NilAntecedent =* NilAntecedent = True
         NilSuccedent =* NilSuccedent = True
@@ -71,6 +73,8 @@ instance FirstOrderLex (CedentVar a) where
 
 instance Monad m => MaybeMonadVar (CedentVar a) m
 
+instance MaybeStaticVar (CedentVar a)
+
 data Comma :: k -> * -> * where
         AnteComma :: Comma lang (Antecedent -> Antecedent -> Antecedent)
         SuccComma :: Comma lang (Succedent -> Succedent-> Succedent)
@@ -90,6 +94,8 @@ instance FirstOrderLex (Comma a)
 
 instance Monad m => MaybeMonadVar (Comma a) m
 
+instance MaybeStaticVar (Comma a)
+
 data Turnstile :: k -> * -> * where
         Turnstile :: Turnstile lang (Antecedent -> Succedent -> Sequent)
 
@@ -102,6 +108,8 @@ instance UniformlyEq (Turnstile a) where
         Turnstile =* Turnstile = True
 
 instance Monad m => MaybeMonadVar (Turnstile a) m
+
+instance MaybeStaticVar (Turnstile a)
 
 type ClassicalSequentLex = Cedent
                            :|: Comma
@@ -123,7 +131,7 @@ pattern GammaV n            = FX (Lx1 (Lx4 (Gamma n)))
 pattern DeltaV n            = FX (Lx1 (Lx4 (Delta n)))
 pattern SV n                = FX (Lx1 (Lx5 (SubVar n)))
 
-instance (FirstOrderLex (t (ClassicalSequentOver t))) =>
+instance (MaybeStaticVar (t (ClassicalSequentOver t)), FirstOrderLex (t (ClassicalSequentOver t))) =>
         ACUI (ClassicalSequentOver t) where
 
         unfoldTerm (x :+: y) = unfoldTerm x ++ unfoldTerm y
