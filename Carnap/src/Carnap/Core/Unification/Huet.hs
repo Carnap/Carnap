@@ -37,7 +37,7 @@ rigidRigid (x:=:y) = acc x y []
     where acc ::  (HigherOrder f, Typeable a) => f a -> f a -> [AnyPig f] -> Bool
           acc x y bv = case (castLam x, castLam y) of
            (Just (ExtLam l Refl), Just (ExtLam l' Refl)) -> acc (toBody l) (toBody l') (pigLamb l:pigLamb l': bv)
-           _ -> case (matchApp x,matchApp y) of
+           _ -> case (matchApp x,matchApp y) of -- XXX : lnf does not guarantee that the bodies have the same length.
                     (Just (ExtApp h _), Just (ExtApp h' _)) -> 
                         not (freeVar (AnyPig h) || freeVar (AnyPig h'))
                     _ -> False
@@ -70,41 +70,31 @@ abstractEq (AnyPig (v :: f a)) (AnyPig (v' :: f b)) (t :=:t') =
 --
 --bad behavior can be expected when given a rigid/rigid, flexible/flexible,
 --or rigid/flexible equation.
-generate :: (MonadVar f m, HigherOrder f) => Equation f -> [AnyPig f] -> LogicT m (Equation f,Equation f)
-generate ((x :: f t1):=: y ) projterms = --accumulator for projection terms
+generate :: (MonadVar f m, HigherOrder f) => Equation f -> LogicT m (Equation f,Equation f)
+generate ((x :: f a) :=: y) = --accumulator for projection terms
          do case (castLam x, castLam y) of
                 (Just (ExtLam l Refl),Just (ExtLam l' Refl)) -> 
                     do fv <- M.lift fresh
                        fv' <- M.lift fresh
-                       (eq, sub) <- generate ((l .$. fv) :=:  (l' .$. fv')) projterms
+                       (eq, sub) <- generate ((l .$. fv) :=:  (l' .$. fv'))
                        let (Just eq') = abstractEq (AnyPig fv) (AnyPig fv') eq
                        return (eq', sub)
                 (Nothing, Nothing) -> 
-                    case (matchApp x, matchApp y) of
-                        (Just (ExtApp (h :: f (t2-> t1)) (t :: f t2)), 
-                         Just (ExtApp (h' :: f (t3->t1 )) (t':: f t3))) -> 
-                            case eqT :: Maybe (t2 :~: t3) of
-                                Just Refl -> 
-                                    do (((z::f t4):=:w), sub) <- generate (h:=:h') ((AnyPig t):projterms)
-                                       case eqT :: Maybe (t4 :~: (t3 -> t1)) of
-                                           Just Refl -> 
-                                                do let eq' = (z .$. t) :=: (w .$. t')
-                                                   return (eq',sub)
-                                           Nothing -> mzero
-                                _ -> mzero
-                        (Nothing,Nothing) -> do let vbranches = map (M.lift . project projterms) projterms
-                                                let hbranch = M.lift $ imitate projterms x
-                                                vpig <- foldr mplus mzero vbranches 
-                                                (newTerm :: f t5) <- hbranch `mplus` (castPig x vpig)
-                                                case eqT :: Maybe (t5 :~: t1) of
-                                                    Just Refl -> return (newTerm:=:y,x:=:newTerm)
-                                                    Nothing -> mzero
-    where castPig :: (Typeable a, MonadPlus m) =>  f a -> AnyPig f -> m (f a)
-          castPig (x :: f a) (AnyPig (y :: f b)) =
-            case eqT :: Maybe (a :~: b) of
-                Just Refl -> return y
-                Nothing -> mzero
-                
+                    do (AnyPig headY,_) <- guillotine y
+                       (AnyPig (headX :: f t1), projterms) <- guillotine x
+                       let vbranches = map (M.lift . project projterms) projterms
+                       let hbranch = M.lift $ imitate projterms headY
+                       vpig <- foldr mplus mzero vbranches 
+                       (AnyPig (newTerm :: f t5)) <- hbranch `mplus` (return vpig)
+                       gappyX <- M.lift $ safesubst headX x
+                       case eqT :: Maybe (t5 :~: t1) of
+                           Just Refl -> return (gappyX newTerm :=:y,headX:=:newTerm)
+                           Nothing -> mzero
+    where guillotine :: Monad m => f a -> m (AnyPig f, [AnyPig f])
+          guillotine x = basket (AnyPig x) []
+                where basket (AnyPig x) pigs = case matchApp x of
+                          Just (ExtApp h t) -> basket (AnyPig h) ((AnyPig t):pigs)
+                          Nothing -> return (AnyPig x,pigs)
 
 --recursively performs a surgery on a projection term, eventually replacing every part
 --of the term with an appropriate chunk of variables.
@@ -138,17 +128,17 @@ bindAll [] body = return body
 safesubst :: (MonadVar f m) => f a -> f b -> m (f a -> f b)
 safesubst x y = undefined
 
-genFreshArg :: (MonadVar f m, HigherOrder f) => [AnyPig f] -> f (a -> b) -> m (f a)
-genFreshArg projvars term = undefined
-        -- do head <- fresh 
-        --    return $ attach head projvars
-    -- where attach :: f c -> [AnyPig f] -> f d
-        --   attach (h :: f c) (AnyPig (v :: f t3):vs) = attach (h .$. v) vs
-        --   attach h [] = h
+genFreshArg :: (MonadVar f m, HigherOrder f, Typeable a) => [AnyPig f] -> f (a -> b) -> m (f a)
+genFreshArg projvars term =
+        do (EveryPig head) <- freshPig 
+           return $ attach head projvars
+    where attach ::  (HigherOrder f, Typeable d) => (forall c .Typeable c => f c) -> [AnyPig f] -> f d
+          attach h  ((AnyPig v):vs) = attach (h .$. v) vs
+          attach h [] = h
 
--- rebuilds a term from just the head and the projection terms
-imitate :: (MonadVar f m, HigherOrder f) => [AnyPig f] -> f a ->  m (f a)
-imitate = undefined
+-- rebuilds an imitation term from just the head to imitate and the projection terms
+imitate :: (MonadVar f m, HigherOrder f) => [AnyPig f] -> f a ->  m (AnyPig f)
+imitate projterms oldhead = undefined
 
 --- | given x, y with no leading variables, this applies the generate rule
 --to replace the old head of x with the new head
