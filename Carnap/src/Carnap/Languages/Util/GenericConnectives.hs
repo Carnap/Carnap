@@ -82,7 +82,12 @@ data SchematicIntPred b c a where
         SPred :: Arity (Term c) (Form b) n ret -> Int -> SchematicIntPred b c ret
 
 instance Schematizable (SchematicIntPred b c) where
-        schematize (SPred a n) _ = "φ^" ++ show a ++ "_" ++ show n
+        schematize (SPred a n) xs = 
+            case read $ show a of
+                0 -> "φ^0_" ++ show n
+                m -> "φ^" ++ show a ++ "_" ++ show n 
+                                        ++ "(" ++ intercalate "," args ++ ")"
+                        where args = take m $ xs ++ repeat "_"
 
 instance UniformlyEq (SchematicIntPred b c) where
         (SPred a n) =* (SPred a' m) = show a == show a' && n == m
@@ -154,7 +159,6 @@ instance UniformlyEq (Modality b) where
          Box =* Box = True 
          Diamond =* Diamond = True 
          _ =* _ = False
-
 
 instance Monad m => MaybeMonadVar (Modality b) m
 

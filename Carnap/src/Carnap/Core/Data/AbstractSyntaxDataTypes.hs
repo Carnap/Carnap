@@ -644,7 +644,7 @@ instance {-# OVERLAPPABLE #-} FirstOrder (FixLang f) => HigherOrder (FixLang f) 
     matchApp (x :!$: y) = Just (ExtApp x y)
     matchApp _ = Nothing 
 
-    castLam l@(LLam _ :: FixLang f a ) = Just (ExtLam l (Refl :: a :~: a ))
+    castLam (LLam g :: FixLang f a ) = Just (ExtLam g (Refl :: a :~: a ))
     castLam _ = Nothing 
 
     (.$.) = (:!$:)

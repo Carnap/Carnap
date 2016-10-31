@@ -1,8 +1,6 @@
 {-#LANGUAGE ImpredicativeTypes, ScopedTypeVariables, FunctionalDependencies, TypeFamilies, UndecidableInstances, FlexibleInstances, MultiParamTypeClasses, AllowAmbiguousTypes, GADTs, TypeOperators, ViewPatterns, PatternSynonyms, RankNTypes, FlexibleContexts #-}
 
 module Carnap.Core.Unification.Huet
-        ( 
-        )
     where
 
 import Carnap.Core.Util
@@ -38,8 +36,8 @@ rigidRigid :: (HigherOrder f, MonadVar f m)  => Equation f -> m Bool
 rigidRigid (x:=:y) = (&&) <$> constHead x [] <*> constHead y []
     where constHead ::  (HigherOrder f, MonadVar f m, Typeable a) => f a -> [AnyPig f] -> m Bool
           constHead x bv = case castLam x of
-           (Just (ExtLam l Refl)) -> do lv <- fresh
-                                        constHead (l .$. lv) ((AnyPig l):bv)
+           (Just (ExtLam l _)) -> do lv <- fresh
+                                     constHead (l lv) ((AnyPig lv):bv)
            _ ->  do (h, _) <- guillotine x
                     return $ not (freeVar h)
            where freeVar p@(AnyPig x) = isVar x && not (p `elem` bv)
@@ -72,7 +70,7 @@ generate ((x :: f a) :=: y) = --accumulator for projection terms
                 (Just (ExtLam l Refl),Just (ExtLam l' Refl)) -> 
                     do fv <- M.lift fresh
                        fv' <- M.lift fresh
-                       (eq, sub) <- generate ((l .$. fv) :=:  (l' .$. fv'))
+                       (eq, sub) <- generate $ (l fv) :=:  (l' fv')
                        let (Just eq') = abstractEq (AnyPig fv) (AnyPig fv') eq
                        return (eq', sub)
                 (Nothing, Nothing) -> 
@@ -139,15 +137,15 @@ genFreshArg projvars term =
 --- | given x, y with no leading variables, this applies the generate rule
 --to replace the old head of x with the new head
 
-huetunify :: HigherOrder f
-        => (forall a. f a -> Bool) --treat certain variables as constants
-        -> [Equation f] --equations to be solved
-        -> [Equation f] --accumulator for the substitution
-        -> [[Equation f]]
-huetunify varConst [] ss = Right ss
-huetunify varConst es ss = 
-        do let esFlex = simplify es
-           return undefined
+-- huetunify :: HigherOrder f
+--         => (forall a. f a -> Bool) --treat certain variables as constants
+--         -> [Equation f] --equations to be solved
+--         -> [Equation f] --accumulator for the substitution
+--         -> [[Equation f]]
+-- huetunify varConst [] ss = Right ss
+-- huetunify varConst es ss = 
+--         do let esFlex = simplify es
+--            return undefined
 
 huetUnifySys :: (MonadVar f m, HigherOrder f) => (forall a. f a -> Bool) -> [Equation f] -> m [[Equation f]]
 huetUnifySys = undefined

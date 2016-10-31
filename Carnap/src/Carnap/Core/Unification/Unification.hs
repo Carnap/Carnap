@@ -48,7 +48,7 @@ data ExtApp f a where
 
 data ExtLam f a where
     ExtLam :: (Typeable b, Typeable c) => 
-        f (b -> c) -> (a :~: (b -> c)) -> ExtLam f a
+        (f b -> f c) -> (a :~: (b -> c)) -> ExtLam f a
 
 class FirstOrder f => HigherOrder f where
     matchApp :: f a -> Maybe (ExtApp f a)
