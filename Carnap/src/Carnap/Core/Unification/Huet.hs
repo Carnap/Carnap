@@ -76,8 +76,9 @@ generate ((x :: f a) :=: y) = --accumulator for projection terms
                        return (eq', sub)
                 (Nothing, Nothing) -> 
                     do (AnyPig (headX :: f t1), projterms) <- guillotine x
-                       let vbranches = map (M.lift . project projterms) projterms
-                       let hbranch = M.lift $ imitate projterms (AnyPig y)
+                       projvars <- M.lift $ toVars projterms
+                       let vbranches = map (M.lift . project projvars) projvars
+                       let hbranch = M.lift $ imitate projvars (AnyPig y)
                        vpig <- foldr mplus mzero vbranches 
                        (AnyPig (newTerm :: f t5)) <- hbranch `mplus` (return vpig)
                        gappyX <- M.lift $ safesubst headX x
@@ -100,9 +101,8 @@ guillotine x = basket (AnyPig x) []
 --Note that the projection term will not be of the same type as the return
 --value. Hence, we need an AnyPig here.
 projectOrImitate :: (MonadVar f m, HigherOrder f) => [AnyPig f] -> AnyPig f ->  m (AnyPig f)
-projectOrImitate projterms (AnyPig term) = 
-        do pvs <- toVars projterms
-           body <- handleBody pvs term
+projectOrImitate pvs (AnyPig term) = 
+        do body <- handleBody pvs term
            projection <- bindAll pvs (AnyPig body)
            return projection
 
