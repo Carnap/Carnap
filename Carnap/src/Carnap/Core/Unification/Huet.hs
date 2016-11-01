@@ -105,12 +105,13 @@ projectOrImitate projterms (AnyPig term) =
            body <- handleBody pvs term
            projection <- bindAll pvs (AnyPig body)
            return projection
-    where handleBody :: (MonadVar f m, HigherOrder f, Typeable a) => [AnyPig f] -> f a ->  m (f a)
-          handleBody projvars term = case matchApp term of
-               Nothing -> return term
-               (Just (ExtApp h t)) -> do newInit <- handleBody projvars h
-                                         freshArg <- genFreshArg projvars newInit
-                                         return $ newInit .$. freshArg
+
+handleBody :: (MonadVar f m, HigherOrder f, Typeable a) => [AnyPig f] -> f a ->  m (f a)
+handleBody projvars term = case matchApp term of
+   Nothing -> return term
+   (Just (ExtApp h t)) -> do newInit <- handleBody projvars h
+                             freshArg <- genFreshArg projvars newInit
+                             return $ newInit .$. freshArg
 
 toVars :: (MonadVar f m) => [AnyPig f] -> m [AnyPig f]
 toVars (AnyPig (x :: f t):xs) = do y :: f t <- fresh 

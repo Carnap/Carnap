@@ -11,6 +11,7 @@ import Carnap.Core.Unification.Unification
 import Carnap.Languages.Util.LanguageClasses
 import Control.Lens (Traversal')
 import Data.Typeable (Typeable)
+import Data.List (intercalate)
 import Carnap.Languages.Util.GenericConnectives
 
 --------------------------------------------------------
@@ -121,7 +122,7 @@ instance Schematizable (a (PureFirstOrderLanguageWith a)) =>
 
     lamSchema f [] = "λα_" ++ show h ++ "." ++ show (f (PSV h))
         where h = scopeHeight (LLam f)
-    lamSchema f (x:xs) = "(λα_" ++ show h ++ "." ++ show (f (PSV h)) ++ " " ++ x ++ ")"
+    lamSchema f (x:xs) = "(λα_" ++ show h ++ "." ++ show (f (PSV h)) ++ intercalate " " (x:xs) ++ ")"
         where h = scopeHeight (LLam f)
 
 instance FirstOrder (FixLang (CoreLexicon :|: a)) => 

@@ -24,6 +24,7 @@ module Carnap.Core.Data.AbstractSyntaxDataTypes(
 
 import Carnap.Core.Util
 import Data.Typeable
+import Data.List (intercalate)
 import Carnap.Core.Unification.Unification
 import Control.Lens
 import Control.Monad ((>=>))
@@ -220,8 +221,10 @@ data SubstitutionalVariable :: (* -> *) -> * -> * where
 --------------------------------------------------------
 
 instance Schematizable (SubstitutionalVariable lang)  where
-        schematize (SubVar n) = const $ "α_" ++ show n
-        schematize (StaticVar n) = const $ "β_" ++ show n
+        schematize (SubVar n) [] = "α_" ++ show n
+        schematize (SubVar n) l = "α_" ++ show n ++ "(" ++ intercalate "," l ++ ")"
+        schematize (StaticVar n) [] = "β_" ++ show n
+        schematize (StaticVar n) l = "β_" ++ show n ++ "(" ++ intercalate "," l ++ ")"
 
 instance Schematizable (EndLang lang) where
         schematize = undefined
@@ -555,6 +558,7 @@ instance (MaybeStaticVar (g idx), MaybeStaticVar (f idx)) => MaybeStaticVar ((f 
 instance (UniformlyEq lang, FirstOrderLex lang) => UniformlyEq (Copula lang) where
         (h :$: t ) =* (h' :$: t') = h =* h' && t =* t'
         Lam g =* Lam h = error "sorry, can't directly compare these. Try the fixpoint."
+        _ =* _ = False
 
 instance (UniformlyEq lang, FirstOrderLex lang, StaticVar lang) => FirstOrderLex (Copula lang)
         where
