@@ -408,7 +408,6 @@ class MaybeStaticVar f where
         maybeStatic = Nothing
 
 instance UniformlyEq (SubstitutionalVariable idx) where
-
         (SubVar n) =* (SubVar m) = n == m
         (StaticVar n) =* (StaticVar m) = n == m
         _ =* _ = False
@@ -575,7 +574,6 @@ instance (UniformlyEq lang, FirstOrderLex lang, StaticVar lang) => FirstOrderLex
                 _ -> False
         sameHeadLex _ _ = False
 
-
 instance Monad m => MaybeMonadVar (Copula lang) m
 
 instance MaybeStaticVar (Copula lang) 
@@ -587,13 +585,6 @@ instance {-# OVERLAPPABLE #-} (UniformlyEq ((Copula :|: f) (FixLang f))
              x@(LLam (f :: FixLang f t1 -> FixLang f t1')) =* y@(LLam (g :: FixLang f t2 -> FixLang f t2')) = 
                     case (eqT :: Maybe (t1 :~: t2), maybeStatic :: Maybe (Int -> ((Copula :|: f) (FixLang f) t1))) of
                             (Just Refl, Just sv) -> (f $ Fx $ sv $ height x) =* (g $ Fx $ sv $ height y)
-                                where height :: MaybeStaticVar ((Copula :|: f) (FixLang f)) => FixLang f a -> Int
-                                      height (x :!$: y) = max (height x) (height y)
-                                      height x@(LLam (f :: FixLang f t3 -> FixLang f t3')) = 
-                                        case maybeStatic :: Maybe (Int -> ((Copula :|: f) (FixLang f) t3)) of
-                                            Just sv -> height (f $ Fx $ sv 0) + 1
-                                            Nothing -> error "Comparison of lambdas requires static variables"
-                                      height _ = 0
                             _ -> False
              Fx x =* Fx y = x =* y
              _ =* _ = False
@@ -632,17 +623,9 @@ instance {-# OVERLAPPABLE #-} (StaticVar (FixLang f), FirstOrderLex (FixLang f))
             case (eqT :: Maybe (t1 :~: t1'), eqT :: Maybe (t2 :~: t2')) of
                 (Just Refl, Just Refl) -> map reabstract (decompose (f sv) (f' sv))
                 _ -> []
-            where -- XXX: Might want to just break this off as a utility
-                  --(can't use Util, since that imports this module)
-
-                  reabstract (t:=:t') = (LLam $ \x -> subst sv x t) :=: (LLam $ \x -> subst sv x t')
+            where reabstract (t:=:t') = (LLam $ \x -> subst sv x t) :=: (LLam $ \x -> subst sv x t')
 
                   sv = static (height (LLam f))
-
-                  height :: FixLang f a -> Int
-                  height (x :!$: y) = max (height x) (height y)
-                  height (LLam f) = height (f (static 0)) + 1
-                  height _ = 0
 
         decompose a b
             | sameHead a b = recur a b []
@@ -674,12 +657,6 @@ instance {-# OVERLAPPABLE #-} (StaticVar (FixLang f), FirstOrderLex (FixLang f))
                            (LLam f) -> LLam $ \x -> subst sv x $ subst a b $ f sv
                                 where sv = static $ height (LLam f)
                            _ -> c
-            where -- XXX: Might want to just break this off as a utility
-                  --(can't use Util, since that imports this module)
-                  height :: FixLang f a -> Int
-                  height (x :!$: y) = max (height x) (height y)
-                  height (LLam f) = height (f (static 0)) + 1
-                  height _ = 0
 
 instance {-# OVERLAPPABLE #-} FirstOrder (FixLang f) => HigherOrder (FixLang f) where
 
@@ -692,6 +669,10 @@ instance {-# OVERLAPPABLE #-} FirstOrder (FixLang f) => HigherOrder (FixLang f) 
     (.$.) = (:!$:)
     
     lam = LLam
+
+instance (Typeable a, MonadVar (FixLang f) m) => EtaExpand m (FixLang f) (Form a)
+
+instance (Typeable a, MonadVar (FixLang f) m) => EtaExpand m (FixLang f) (Term a)
 
 --------------------------------------------------------
 --5. Generic Traversals and Prisms
@@ -907,3 +888,14 @@ instance (PrismLink (f (Fix f)) h) => PrismLink (Fix f) h where
             where rp = raisePrism :: Typeable a => Prism' (h a) c -> Prism' (f (Fix f) a) c
 
         pflag = Flag $ checkFlag (pflag :: Flag Bool (f (Fix f)) h)
+
+--------------------------------------------------------
+--6 Utility Functions
+--------------------------------------------------------
+--Auxiluary functions useful for defining the functions and classes that we
+--eventually export
+
+height :: StaticVar (FixLang f) => FixLang f a -> Int
+height (x :!$: y) = max (height x) (height y)
+height x@(LLam (f :: FixLang f t3 -> FixLang f t3')) =  height (f $ static 0) + 1
+height _ = 0

@@ -82,6 +82,17 @@ class Monad m => MonadVar f m where
 class StaticVar f where 
         static :: Typeable a => Int -> f a
 
+{-|
+EtaExpand is a typeclass for languages where you can perform
+eta-expansions inside of a fresh variable monad. The default instance
+assumes that you're dealing with a saturated linguistic item that can't be
+expanded. A "Nothing" means the term cannot be expanded, and a "Just s"
+means that one expansion has taken place.
+-}
+class (Monad m, Typeable a) => EtaExpand m f a where
+        etaExpand :: f a -> m (Maybe (f a))
+        etaExpand x = return Nothing
+
 
 instance (UniformlyEq f, UniformlyOrd f) => Ord (AnyPig f) where
     (AnyPig x) <= (AnyPig y) = x <=* y

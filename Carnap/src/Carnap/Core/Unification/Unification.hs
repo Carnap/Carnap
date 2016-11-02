@@ -57,6 +57,19 @@ class FirstOrder f => HigherOrder f where
     (.$.) :: (Typeable a, Typeable b) => f (a -> b) -> f a -> f b
     lam :: (Typeable a, Typeable b) => (f a -> f b) -> f (a -> b) 
 
+instance {-# OVERLAPPABLE #-} (Monad m, Typeable a, HigherOrder f) => EtaExpand m f a
+
+instance (Typeable b, MonadVar f m, EtaExpand m f a, HigherOrder f) 
+        => EtaExpand m f (b -> a) where
+        etaExpand l  = case castLam l of 
+                        Just (ExtLam f Refl) -> 
+                                 do v <- fresh
+                                    inner <- etaExpand (f v)
+                                    case inner of
+                                        Nothing -> return Nothing 
+                                        Just t -> return $ Just $ lam $ \x -> subst v x t
+                        Nothing -> return $ Just $ lam $ \x -> l .$. x
+
 data UError f where
     SubError :: f a -> f a -> UError f -> UError f
     MatchError ::  f a -> f a -> UError f

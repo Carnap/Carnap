@@ -105,26 +105,51 @@ betaNormalize :: (HigherOrder f, MonadVar f m, Typeable a) => f a -> m (Maybe (f
 betaNormalize x = case (castLam x) of
                      Just (ExtLam f Refl) -> 
                         do v <- fresh
-                           innerNF <- betaNormalize (f v)
-                           return $ do inf <- innerNF 
-                                       return (lam $ \x -> subst v x inf)
+                           inf <- betaNF (f v)
+                           return $ Just (lam $ \x -> subst v x inf)
                      Nothing -> case (matchApp x) of
                         Just (ExtApp h t) -> do
                             mh <- betaNormalize h
                             mt <- betaNormalize t
                             case (mh,mt) of
-                                (Just h', Just t') -> renormalize (h' .$. t') 
-                                (Nothing, Just t') -> renormalize (h .$. t') 
-                                (Just h', Nothing) -> renormalize (h' .$. t)
+                                (Just h', Just t') -> mbetaNF (h' .$. t') 
+                                (Nothing, Just t') -> mbetaNF (h .$. t') 
+                                (Just h', Nothing) -> mbetaNF (h' .$. t)
                                 (Nothing, Nothing) -> 
                                     case betaReduce x of
                                         Nothing -> return Nothing
-                                        Just x' -> renormalize x' 
+                                        Just x' -> mbetaNF x' 
                         Nothing -> return Nothing
-    where renormalize x = do nf <- betaNormalize x
-                             case nf of
-                                  Nothing -> return (Just x)
-                                  y -> return y
+        where mbetaNF x = do y <- betaNF x
+                             return (Just y)
+
+betaNF :: (HigherOrder f, MonadVar f m, Typeable a) => f a -> m (f a)
+betaNF x = do nf <- betaNormalize x
+              case nf of
+                   Nothing -> return x
+                   (Just y) -> return y
+
+
+toLNF :: (HigherOrder f, MonadVar f m, Typeable a, EtaExpand m f a) => f a -> m (f a)
+toLNF x = do bnf <- betaNF x
+             case matchApp bnf of 
+                Just (ExtApp h t) -> do t' <- toLNF t
+                                        etaMaximize  (h .$. t')
+                Nothing -> case (castLam bnf) of
+                         Just (ExtLam f Refl) -> 
+                            do v <- fresh
+                               inf <- toLNF (f v)
+                               return $ (lam $ \y -> subst v y inf)
+                         Nothing -> etaMaximize bnf
+
+etaMaximize :: (HigherOrder f, MonadVar f m, Typeable a, EtaExpand m f a) => f a -> m (f a)
+etaMaximize x = do y <- etaExpand x
+                   case y of 
+                    Nothing -> return x
+                    Just y' -> etaMaximize y'
+
+
+
 
 --recursively performs a surgery on a term (either a projection term or the
 --body of the rhs), eventually replacing every part of the term with an
