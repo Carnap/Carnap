@@ -94,6 +94,38 @@ guillotine x = basket (AnyPig x) []
                       Just (ExtApp h t) -> basket (AnyPig h) ((AnyPig t):pigs)
                       Nothing -> return (AnyPig x,pigs)
 
+--return "Nothing" in the do nothing case
+betaReduce :: (HigherOrder f) => f a -> Maybe (f a)
+betaReduce x = do (ExtApp h t) <- (matchApp x)
+                  (ExtLam l Refl) <- (castLam h)
+                  return (l t)
+
+--return "Nothing" in the do nothing case
+betaNormalize :: (HigherOrder f, MonadVar f m, Typeable a) => f a -> m (Maybe (f a))
+betaNormalize x = case (castLam x) of
+                     Just (ExtLam f Refl) -> 
+                        do v <- fresh
+                           innerNF <- betaNormalize (f v)
+                           return $ do inf <- innerNF 
+                                       return (lam $ \x -> subst v x inf)
+                     Nothing -> case (matchApp x) of
+                        Just (ExtApp h t) -> do
+                            mh <- betaNormalize h
+                            mt <- betaNormalize t
+                            case (mh,mt) of
+                                (Just h', Just t') -> renormalize (h' .$. t') 
+                                (Nothing, Just t') -> renormalize (h .$. t') 
+                                (Just h', Nothing) -> renormalize (h' .$. t)
+                                (Nothing, Nothing) -> 
+                                    case betaReduce x of
+                                        Nothing -> return Nothing
+                                        Just x' -> renormalize x' 
+                        Nothing -> return Nothing
+    where renormalize x = do nf <- betaNormalize x
+                             case nf of
+                                  Nothing -> return (Just x)
+                                  y -> return y
+
 --recursively performs a surgery on a term (either a projection term or the
 --body of the rhs), eventually replacing every part of the term with an
 --appropriate chunk of variables.

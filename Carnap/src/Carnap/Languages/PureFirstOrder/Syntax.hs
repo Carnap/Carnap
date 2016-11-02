@@ -85,7 +85,7 @@ pattern (:!!$:) :: (Typeable a, Typeable b) => PureFirstOrderLanguageWith c (a -
 pattern (:!!$:) f y    = f :!$: y
 pattern PCon x arity   = FX (Lx1 (Lx1 (Connective x arity)))
 pattern PQuant q       = FX (Lx1 (Lx2 (Bind q)))
-pattern PSV n          = FX (Lx1 (Lx3 (SubVar n)))
+pattern PSV n          = FX (Lx1 (Lx3 (StaticVar n)))
 pattern PConst c a     = FX (Lx1 (Lx4 (Function c a)))
 pattern PVar c a       = FX (Lx1 (Lx5 (Function c a)))
 pattern PAnd           = PCon And ATwo
@@ -120,9 +120,9 @@ instance Schematizable (a (PureFirstOrderLanguageWith a)) =>
     appSchema (PQuant (Some x)) (LLam f) e = schematize (Some x) (show (f $ PV x) : e)
     appSchema x y e = schematize x (show y : e)
 
-    lamSchema f [] = "λα_" ++ show h ++ "." ++ show (f (PSV h))
+    lamSchema f [] = "λβ_" ++ show h ++ "." ++ show (f (PSV h))
         where h = scopeHeight (LLam f)
-    lamSchema f (x:xs) = "(λα_" ++ show h ++ "." ++ show (f (PSV h)) ++ intercalate " " (x:xs) ++ ")"
+    lamSchema f (x:xs) = "(λβ_" ++ show h ++ "." ++ show (f (PSV h)) ++ intercalate " " (x:xs) ++ ")"
         where h = scopeHeight (LLam f)
 
 instance FirstOrder (FixLang (CoreLexicon :|: a)) => 
