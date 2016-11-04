@@ -89,15 +89,13 @@ generate ((x :: f a) :=: y) = --accumulator for projection terms
                     do (AnyPig (headX :: f t1), projterms) <- guillotine x
                        projvars <- M.lift $ toVars projterms
                        let vbranches = map (M.lift . project projvars) projvars
-                       let hbranch = M.lift $ imitate projvars (AnyPig y)
+                       let hbranch = imitate projvars (AnyPig y)
                        vpig <- foldr mplus mzero vbranches 
                        (AnyPig (newTerm :: f t5)) <- hbranch `mplus` (return vpig)
                        gappyX <- M.lift $ safesubst headX x
                        case eqT :: Maybe (t5 :~: t1) of
                            Just Refl -> return (gappyX newTerm :=:y,headX:=:newTerm)
                            Nothing -> mzero
-          where project = projectOrImitate
-                imitate = projectOrImitate
 
 guillotine :: (HigherOrder f, Monad m,Typeable a) => f a -> m (AnyPig f, [AnyPig f])
 guillotine x = basket (AnyPig x) []
@@ -168,11 +166,19 @@ etaMaximize x = do y <- etaExpand x
 --
 --Note that the projection term will not be of the same type as the return
 --value. Hence, we need an AnyPig here.
-projectOrImitate :: (MonadVar f m, HigherOrder f) => [AnyPig f] -> AnyPig f ->  m (AnyPig f)
-projectOrImitate pvs (AnyPig term) = 
+project :: (MonadVar f m, HigherOrder f) => [AnyPig f] -> AnyPig f ->  m (AnyPig f)
+project pvs (AnyPig term) = 
         do body <- handleBody pvs term
            projection <- bindAll pvs (AnyPig body)
            return projection
+
+imitate :: (MonadVar f m, HigherOrder f) => [AnyPig f] -> AnyPig f ->  LogicT m (AnyPig f)
+imitate pvs (AnyPig term) 
+    | isVar term = mzero
+    | otherwise = 
+        do body <- M.lift $ handleBody pvs term
+           imitation <- M.lift $ bindAll pvs (AnyPig body)
+           return imitation 
 
 handleBody :: (MonadVar f m, HigherOrder f, Typeable a) => [AnyPig f] -> f a ->  m (f a)
 handleBody projvars term = case matchApp term of

@@ -670,10 +670,6 @@ instance {-# OVERLAPPABLE #-} FirstOrder (FixLang f) => HigherOrder (FixLang f) 
     
     lam = LLam
 
-instance (Typeable a, MonadVar (FixLang f) m) => EtaExpand m (FixLang f) (Form a)
-
-instance (Typeable a, MonadVar (FixLang f) m) => EtaExpand m (FixLang f) (Term a)
-
 --------------------------------------------------------
 --5. Generic Traversals and Prisms
 --------------------------------------------------------
