@@ -6,7 +6,7 @@ import Carnap.Core.Data.AbstractSyntaxClasses
 import Carnap.Core.Data.AbstractSyntaxDataTypes
 import Carnap.Core.Data.Util (checkChildren)
 import Carnap.Core.Unification.Unification
-import Carnap.Core.Unification.Combination
+--import Carnap.Core.Unification.Combination
 import Carnap.Core.Unification.FirstOrder
 import Carnap.Core.Util
 import Carnap.Languages.Util.LanguageClasses
@@ -94,20 +94,20 @@ instance UniformlyOrd PurePropLanguage where
 data PropLangLabel = PropFormLabel
     deriving (Eq, Ord, Show)
 
-instance Combineable PurePropLanguage PropLangLabel where
-    getLabel _ = PropFormLabel
+-- instance Combineable PurePropLanguage PropLangLabel where
+--     getLabel _ = PropFormLabel
 
-    getAlgo PropFormLabel = foUnifySys
+--     getAlgo PropFormLabel = foUnifySys
 
-    replaceChild (PNeg _)     pig _ = PNeg $ unEveryPig pig
-    replaceChild (_ :&: x)    pig 0 = (unEveryPig pig) :&: x
-    replaceChild (x :&: _)    pig 1 = x :&: (unEveryPig pig)
-    replaceChild (_ :||: x)   pig 0 = (unEveryPig pig) :||: x
-    replaceChild (x :||: _)   pig 1 = x :||: (unEveryPig pig)
-    replaceChild (_ :->: x)   pig 0 = (unEveryPig pig) :->: x
-    replaceChild (x :->: _)   pig 1 = x :->: (unEveryPig pig)
-    replaceChild (_ :<->: x)  pig 0 = (unEveryPig pig) :<->: x
-    replaceChild (x :<->: _)  pig 1 = x :<->: (unEveryPig pig)
+--     replaceChild (PNeg _)     pig _ = PNeg $ unEveryPig pig
+--     replaceChild (_ :&: x)    pig 0 = (unEveryPig pig) :&: x
+--     replaceChild (x :&: _)    pig 1 = x :&: (unEveryPig pig)
+--     replaceChild (_ :||: x)   pig 0 = (unEveryPig pig) :||: x
+--     replaceChild (x :||: _)   pig 1 = x :||: (unEveryPig pig)
+--     replaceChild (_ :->: x)   pig 0 = (unEveryPig pig) :->: x
+--     replaceChild (x :->: _)   pig 1 = x :->: (unEveryPig pig)
+--     replaceChild (_ :<->: x)  pig 0 = (unEveryPig pig) :<->: x
+--     replaceChild (x :<->: _)  pig 1 = x :<->: (unEveryPig pig)
 
 --------------------------------------------------------
 --Optics

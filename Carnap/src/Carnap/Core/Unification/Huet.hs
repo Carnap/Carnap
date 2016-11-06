@@ -11,12 +11,13 @@ import Data.List
 import Control.Monad
 import Control.Monad.Identity
 import Control.Monad.Logic
+import Control.Monad.State
 import Control.Monad.Trans.Class as M
 
 -- | simplfies a set of equations, returning a set of equations with the same
 --set of solutions, but no rigid-rigid equations---or Nothing, in the case
 --where the set of equations has no solutions.
-simplify ::(HigherOrder f, MonadVar f m) => [Equation f] -> LogicT m [Equation f]
+simplify ::(HigherOrder f, MonadVar f (State Int)) => [Equation f] -> LogicT (State Int) [Equation f]
 simplify eqs = 
         do filtered <- M.lift $ filterM rigidRigid eqs
            case filtered of
@@ -44,10 +45,10 @@ orient ((x:=:y):eqs) =  do chx <- constHead x []
                                           if chy then return $ (x:=:y):oeqs
                                                  else return oeqs
 
-rigidRigid :: (HigherOrder f, MonadVar f m)  => Equation f -> m Bool
+rigidRigid :: (HigherOrder f, MonadVar f (State Int))  => Equation f -> (State Int) Bool
 rigidRigid (x:=:y) = (&&) <$> constHead x [] <*> constHead y []
 
-constHead ::  (HigherOrder f, MonadVar f m, Typeable a) => f a -> [AnyPig f] -> m Bool
+constHead ::  (HigherOrder f, MonadVar f (State Int), Typeable a, EtaExpand (State Int) f a) => f a -> [AnyPig f] -> State Int Bool
 constHead x bv = case castLam x of
  (Just (ExtLam l _)) -> do lv <- fresh
                            constHead (l lv) ((AnyPig lv):bv)
@@ -55,7 +56,7 @@ constHead x bv = case castLam x of
           return $ not (freeVar h)
  where freeVar p@(AnyPig x) = isVar x && not (p `elem` bv)
 
-abstractEq :: (MonadPlus m, HigherOrder f) => AnyPig f -> AnyPig f -> Equation f -> m (Equation f)
+abstractEq :: (MonadPlus m, HigherOrder f, MonadVar f (State Int)) => AnyPig f -> AnyPig f -> Equation f -> m (Equation f)
 abstractEq (AnyPig (v :: f a)) (AnyPig (v' :: f b)) (t :=:t') = 
         case eqT :: Maybe (a :~: b) of
             Just Refl -> return $ (lam $ \x -> subst v x t) :=: (lam $ \x -> subst v' x t')
@@ -77,7 +78,7 @@ abstractEq (AnyPig (v :: f a)) (AnyPig (v' :: f b)) (t :=:t') =
 --
 --bad behavior can be expected when given a rigid/rigid, flexible/flexible,
 --or rigid/flexible equation.
-generate :: (MonadVar f m, HigherOrder f) => Equation f -> LogicT m (Equation f,Equation f)
+generate :: (MonadVar f (State Int), HigherOrder f) => Equation f -> LogicT (State Int) (Equation f,Equation f)
 generate ((x :: f a) :=: y) = --accumulator for projection terms
          do case (castLam x, castLam y) of
                 (Just (ExtLam l Refl),Just (ExtLam l' Refl)) -> 
@@ -90,74 +91,17 @@ generate ((x :: f a) :=: y) = --accumulator for projection terms
                        projvars <- M.lift $ toVars projterms
                        let vbranches = map (M.lift . project projvars) projvars
                        let hbranch = imitate projvars (AnyPig y)
-                       vpig <- foldr mplus mzero vbranches 
-                       (AnyPig (newTerm :: f t5)) <- hbranch `mplus` (return vpig)
+                       (AnyPig (newTerm :: f t5)) <- hbranch `mplus` foldr mplus mzero vbranches 
                        gappyX <- M.lift $ safesubst headX x
                        case eqT :: Maybe (t5 :~: t1) of
                            Just Refl -> return (gappyX newTerm :=:y,headX:=:newTerm)
                            Nothing -> mzero
 
-guillotine :: (HigherOrder f, Monad m,Typeable a) => f a -> m (AnyPig f, [AnyPig f])
+guillotine :: (HigherOrder f, Monad m,Typeable a, MonadVar f (State Int), EtaExpand (State Int) f a) => f a -> m (AnyPig f, [AnyPig f])
 guillotine x = basket (AnyPig x) []
             where basket (AnyPig x) pigs = case matchApp x of
                       Just (ExtApp h t) -> basket (AnyPig h) ((AnyPig t):pigs)
                       Nothing -> return (AnyPig x,pigs)
-
---return "Nothing" in the do nothing case
-betaReduce :: (HigherOrder f) => f a -> Maybe (f a)
-betaReduce x = do (ExtApp h t) <- (matchApp x)
-                  (ExtLam l Refl) <- (castLam h)
-                  return (l t)
-
---return "Nothing" in the do nothing case
-betaNormalize :: (HigherOrder f, MonadVar f m, Typeable a) => f a -> m (Maybe (f a))
-betaNormalize x = case (castLam x) of
-                     Just (ExtLam f Refl) -> 
-                        do v <- fresh
-                           inf <- betaNormalize (f v)
-                           case inf of
-                               Nothing -> return Nothing
-                               Just inf' -> return $ Just (lam $ \x -> subst v x inf')
-                     Nothing -> case (matchApp x) of
-                        Just (ExtApp h t) -> do
-                            mh <- betaNormalize h
-                            mt <- betaNormalize t
-                            case (mh,mt) of
-                                (Just h', Just t') -> mbetaNF (h' .$. t') 
-                                (Nothing, Just t') -> mbetaNF (h .$. t') 
-                                (Just h', Nothing) -> mbetaNF (h' .$. t)
-                                (Nothing, Nothing) -> 
-                                    case betaReduce x of
-                                        Nothing -> return Nothing
-                                        Just x' -> mbetaNF x' 
-                        Nothing -> return Nothing
-        where mbetaNF x = do y <- toBNF x
-                             return (Just y)
-
-toBNF :: (HigherOrder f, MonadVar f m, Typeable a) => f a -> m (f a)
-toBNF x = do nf <- betaNormalize x
-             case nf of
-                   Nothing -> return x
-                   (Just y) -> return y
-
-
-toLNF :: (HigherOrder f, MonadVar f m, Typeable a, EtaExpand m f a) => f a -> m (f a)
-toLNF x = do bnf <- toBNF x
-             case matchApp bnf of 
-                Just (ExtApp h t) -> do t' <- toLNF t
-                                        etaMaximize  (h .$. t')
-                Nothing -> case (castLam bnf) of
-                         Just (ExtLam f Refl) -> 
-                            do v <- fresh
-                               inf <- toLNF (f v)
-                               return $ (lam $ \y -> subst v y inf)
-                         Nothing -> etaMaximize bnf
-
-etaMaximize :: (HigherOrder f, MonadVar f m, Typeable a, EtaExpand m f a) => f a -> m (f a)
-etaMaximize x = do y <- etaExpand x
-                   case y of 
-                    Nothing -> return x
-                    Just y' -> etaMaximize y'
 
 
 --recursively performs a surgery on a term (either a projection term or the
@@ -166,13 +110,13 @@ etaMaximize x = do y <- etaExpand x
 --
 --Note that the projection term will not be of the same type as the return
 --value. Hence, we need an AnyPig here.
-project :: (MonadVar f m, HigherOrder f) => [AnyPig f] -> AnyPig f ->  m (AnyPig f)
+project :: (MonadVar f (State Int), HigherOrder f) => [AnyPig f] -> AnyPig f ->  State Int (AnyPig f)
 project pvs (AnyPig term) = 
         do body <- handleBody pvs term
            projection <- bindAll pvs (AnyPig body)
            return projection
 
-imitate :: (MonadVar f m, HigherOrder f) => [AnyPig f] -> AnyPig f ->  LogicT m (AnyPig f)
+imitate :: (MonadVar f (State Int), HigherOrder f) => [AnyPig f] -> AnyPig f ->  LogicT (State Int) (AnyPig f)
 imitate pvs (AnyPig term) 
     | isVar term = mzero
     | otherwise = 
@@ -180,7 +124,7 @@ imitate pvs (AnyPig term)
            imitation <- M.lift $ bindAll pvs (AnyPig body)
            return imitation 
 
-handleBody :: (MonadVar f m, HigherOrder f, Typeable a) => [AnyPig f] -> f a ->  m (f a)
+handleBody :: (MonadVar f (State Int), HigherOrder f, Typeable a) => [AnyPig f] -> f a ->  State Int (f a)
 handleBody projvars term = case matchApp term of
    Nothing -> return term
    (Just (ExtApp h t)) -> do newInit <- handleBody projvars h
@@ -193,7 +137,7 @@ toVars (AnyPig (x :: f t):xs) = do y :: f t <- fresh
                                    return (AnyPig y:tail)
 toVars [] = return []
 
-bindAll :: (HigherOrder f, MonadVar f m) => [AnyPig f] -> AnyPig f -> m (AnyPig f)
+bindAll :: (HigherOrder f, MonadVar f (State Int)) => [AnyPig f] -> AnyPig f -> State Int (AnyPig f)
 bindAll (AnyPig v :vs) (AnyPig body ) = 
             do f <- safesubst v body
                bindAll vs (AnyPig (lam f))
@@ -203,41 +147,84 @@ bindAll [] body = return body
 safesubst :: (HigherOrder f, MonadVar f m, Typeable a, Typeable b) => f a -> f b -> m (f a -> f b)
 safesubst (x :: f a) (y :: f b) = return $ \z -> subst x z y
 
-genFreshArg :: (MonadVar f m, HigherOrder f, Typeable a) => [AnyPig f] -> f (a -> b) -> m (f a)
+genFreshArg :: (MonadVar f (State Int), EtaExpand (State Int) f a, HigherOrder f, Typeable a) => 
+    [AnyPig f] -> f (a -> b) -> State Int (f a)
 genFreshArg projvars term =
         do (EveryPig head) <- freshPig 
            return $ attach head projvars
-    where attach ::  (HigherOrder f, Typeable d) => (forall c .Typeable c => f c) -> [AnyPig f] -> f d
+    where attach ::  (HigherOrder f, Typeable d, MonadVar f (State Int), EtaExpand (State Int) f d) 
+            => (forall c . (Typeable c, EtaExpand (State Int) f c) => f c) -> [AnyPig f] -> f d
           attach h  ((AnyPig v):vs) = attach (h .$. v) vs
           attach h [] = h
 
 --- | given x, y with no leading variables, this applies the generate rule
 --to replace the old head of x with the new head
 
-huetunify :: (HigherOrder f, MonadVar f m)
+huetunify :: (HigherOrder f, MonadVar f (State Int))
         => (forall a. f a -> Bool) --treat certain variables as constants
         -> [Equation f] --equations to be solved
         -> [Equation f] --accumulator for the substitution
-        -> LogicT m [Equation f]
-huetunify varConst [] ss = return ss
+        -> LogicT (State Int) [Equation f]
+huetunify varConst [] ss = return (reverse ss)
 huetunify varConst es ss = 
         do seqs <- simplify es
-           let (x:xs) = nub seqs
-           (genEq, genSub@(a:=:b)) <- generate x
-           lnfeq <- (M.lift . eqLNF) genEq
-           let subbed = mapAll (subst a b) (lnfeq:xs)
-           huetunify varConst (filter (not . trivial) subbed) (genSub:ss)
+           case nub seqs of 
+                []     -> return (reverse ss)
+                (x:xs) -> do lnfx <- (M.lift . eqLMatch) x
+                             (genEq, genSub@(a:=:b)) <- generate lnfx
+                             let subbed = mapAll (subst a b) (genEq:xs)
+                             lnfeqs <- mapM (M.lift . eqLNF) subbed
+                             huetunify varConst (filter (not . trivial) lnfeqs) (genSub:ss)
     where trivial (x:=:y) = x =* y
-           
-eqLNF (x:=:y) = do x' <- toLNF x
-                   y' <- toLNF y
-                   return (x':=:y')
+
+huetunify' :: (HigherOrder f, MonadVar f (State Int))
+        => (forall a. f a -> Bool) --treat certain variables as constants
+        -> [Equation f] --equations to be solved
+        -> [Equation f] --accumulator for the substitution
+        -> Int
+        -> LogicT (State Int) ([Equation f],[Equation f])
+huetunify' varConst es ss 0 = return (es,reverse ss)
+huetunify' varConst es ss n = 
+        do seqs <- simplify es
+           case nub seqs of 
+                []     -> return (es,reverse ss)
+                (x:xs) -> do lnfx <- (M.lift . eqLMatch) x
+                             (genEq, genSub@(a:=:b)) <- generate lnfx
+                             let subbed = mapAll (subst a b) (genEq:xs)
+                             lnfeqs <- mapM (M.lift . eqLNF) subbed
+                             huetunify' varConst (filter (not . trivial) lnfeqs) (genSub:ss) (n-1)
+    where trivial (x:=:y) = x =* y
+
+eqLMatch :: (MonadVar f (State Int), HigherOrder f) => Equation f -> (State Int) (Equation f)
+eqLMatch (x :=: y) = 
+        case (castLam x, castLam y) of
+             (Nothing, Nothing) -> 
+                return (x :=: y)
+             (Nothing, Just (ExtLam f Refl)) -> 
+                do v <- fresh 
+                   (x':=: y') <- eqLMatch (x .$. v :=: f v)
+                   return $ (lam $ \z -> subst v z x') :=: (lam $ \z -> subst v z y')
+             (Just (ExtLam f Refl), Nothing) -> 
+                do v <- fresh 
+                   (x':=: y') <- eqLMatch (f v :=: (y .$. v))
+                   return $ 
+                        (lam $ \z -> subst v z x') :=:
+                        (lam $ \z -> subst v z y') 
+             (Just (ExtLam f Refl), Just (ExtLam f' Refl)) -> 
+                do v <- fresh
+                   (x':=:y') <- eqLMatch (f v :=: f' v)
+                   return $ 
+                        (lam $ \z -> subst v z x') :=:
+                        (lam $ \z -> subst v z y') 
+                   
+
+eqLNF ((x :: f a):=:y) =  do x' <- toLNF x
+                             y' <- toLNF y
+                             return (x':=:y')
 
 eqBNF (x:=:y) = do x' <- toBNF x
                    y' <- toBNF y
                    return (x':=:y')
 
-
-huetUnifySys :: (MonadVar f m, HigherOrder f) => (forall a. f a -> Bool) -> [Equation f] -> m [[Equation f]]
-huetUnifySys = undefined
-
+huetUnifySys :: (MonadVar f (State Int), HigherOrder f) => (forall a. f a -> Bool) -> [Equation f] -> (State Int) [[Equation f]]
+huetUnifySys varConst eqs = observeAllT (huetunify varConst eqs [])

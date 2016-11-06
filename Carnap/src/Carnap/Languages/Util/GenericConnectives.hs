@@ -22,6 +22,30 @@ instance MaybeStaticVar (IntProp b)
 
 instance FirstOrderLex (IntProp b) 
 
+data SchematicIntProp b a where
+        SProp :: Int -> SchematicIntProp b (Form b)
+
+instance Schematizable (SchematicIntProp b) where
+        schematize (SProp n)   _ 
+            | n < 0 && n > -8 = ["_φψχθγζξ" !! (-1 * n)]
+            | otherwise = "P_" ++ show n
+
+instance UniformlyEq (SchematicIntProp b) where
+        (SProp n) =* (SProp m) = n == m
+
+instance Monad m => MaybeMonadVar (SchematicIntProp b) m
+
+instance MaybeStaticVar (SchematicIntProp b)
+
+instance FirstOrderLex (SchematicIntProp b) where
+        isVarLex _ = True
+
+instance Evaluable (SchematicIntProp b) where
+        eval = error "You should not be able to evaluate schemata"
+
+instance Modelable m (SchematicIntProp b) where
+        satisfies = const eval
+
 data IntPred b c a where
         Pred ::  Arity (Term c) (Form b) n ret -> Int -> IntPred b c ret
 
@@ -41,50 +65,6 @@ instance Monad m => MaybeMonadVar (IntPred b c) m
 instance MaybeStaticVar (IntPred b c)
 
 instance FirstOrderLex (IntPred b c)
-
-data SchematicIntProp b a where
-        SProp :: Int -> SchematicIntProp b (Form b)
-
-instance Schematizable (SchematicIntProp b) where
-        schematize (SProp n)   _ 
-            | n < 0 && n > -8 = ["_φψχθγζξ" !! (-1 * n)]
-            | otherwise = "P_" ++ show n
-
-instance UniformlyEq (SchematicIntProp b) where
-        (SProp n) =* (SProp m) = n == m
-
-instance Monad m => MaybeMonadVar (SchematicIntProp b) m
-
-instance MaybeStaticVar (SchematicIntProp b)
-
-instance FirstOrderLex (SchematicIntProp b) where
-        isVarLex _ = True
-
-data IntFunc c b a where
-        Func ::  Arity (Term c) (Term b) n ret -> Int -> IntFunc b c ret
-
-instance Schematizable (IntFunc b c) where
-        schematize (Func a n) xs = 
-            case read $ show a of
-                0 -> "f^0_" ++ show n
-                m -> "f^" ++ show a ++ "_" ++ show n 
-                                        ++ "(" ++ intercalate "," args ++ ")"
-                        where args = take m $ xs ++ repeat "_"
-
-instance UniformlyEq (IntFunc b c) where
-        (Func a n) =* (Func a' m) = show a == show a' && n == m
-
-instance Monad m => MaybeMonadVar (IntFunc b c) m
-
-instance MaybeStaticVar (IntFunc b c)
-
-instance FirstOrderLex (IntFunc b c)
-
-instance Evaluable (SchematicIntProp b) where
-        eval = error "You should not be able to evaluate schemata"
-
-instance Modelable m (SchematicIntProp b) where
-        satisfies = const eval
 
 data SchematicIntPred b c a where
         SPred :: Arity (Term c) (Form b) n ret -> Int -> SchematicIntPred b c ret
@@ -112,6 +92,47 @@ instance Evaluable (SchematicIntPred b c) where
 
 instance Modelable m (SchematicIntPred b c) where
         satisfies = const eval
+
+data IntFunc c b a where
+        Func ::  Arity (Term c) (Term b) n ret -> Int -> IntFunc b c ret
+
+instance Schematizable (IntFunc b c) where
+        schematize (Func a n) xs = 
+            case read $ show a of
+                0 -> "f^0_" ++ show n
+                m -> "f^" ++ show a ++ "_" ++ show n 
+                                        ++ "(" ++ intercalate "," args ++ ")"
+                        where args = take m $ xs ++ repeat "_"
+
+instance UniformlyEq (IntFunc b c) where
+        (Func a n) =* (Func a' m) = show a == show a' && n == m
+
+instance Monad m => MaybeMonadVar (IntFunc b c) m
+
+instance MaybeStaticVar (IntFunc b c)
+
+instance FirstOrderLex (IntFunc b c)
+
+data SchematicIntFunc c b a where
+        SFunc ::  Arity (Term c) (Term b) n ret -> Int -> SchematicIntFunc b c ret
+
+instance Schematizable (SchematicIntFunc b c) where
+        schematize (SFunc a n) xs = 
+            case read $ show a of
+                0 -> "τ^0_" ++ show n
+                m -> "τ^" ++ show a ++ "_" ++ show n 
+                                        ++ "(" ++ intercalate "," args ++ ")"
+                        where args = take m $ xs ++ repeat "_"
+
+instance UniformlyEq (SchematicIntFunc b c) where
+        (SFunc a n) =* (SFunc a' m) = show a == show a' && n == m
+
+instance Monad m => MaybeMonadVar (SchematicIntFunc b c) m
+
+instance MaybeStaticVar (SchematicIntFunc b c)
+
+instance FirstOrderLex (SchematicIntFunc b c) where
+        isVarLex _ = True
 
 data TermEq c b a where
         TermEq :: TermEq c b (Term b -> Term b -> Form c)
@@ -227,4 +248,5 @@ instance Monad m => MaybeMonadVar (StandardVar b) m
 
 instance MaybeStaticVar (StandardVar b)
 
+--Note that standard variables are 
 instance FirstOrderLex (StandardVar b) 

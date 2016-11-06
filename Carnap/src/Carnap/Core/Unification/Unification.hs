@@ -2,16 +2,34 @@
 
 module Carnap.Core.Unification.Unification (
    Equation((:=:)), UError(..), FirstOrder(..), HigherOrder(..),
-      applySub, mapAll, freeVars, emap, sameTypeEq, ExtApp(..), ExtLam(..)
+      applySub, mapAll, freeVars, emap, sameTypeEq, ExtApp(..), ExtLam(..), 
+      EveryPig(..),AnyPig(..), EtaExpand(..), MonadVar(..), betaReduce, 
+      betaNormalize, toBNF, toLNF, etaMaximize
 ) where
 
 import Data.Type.Equality
 import Data.Typeable
 import Carnap.Core.Data.AbstractSyntaxClasses
 import Carnap.Core.Util
+import Control.Monad.State 
 
 data Equation f where
-    (:=:) :: (Typeable a) => f a -> f a -> Equation f
+    (:=:) :: (Typeable a, EtaExpand (State Int) f a) => f a -> f a -> Equation f
+
+newtype EveryPig f = EveryPig {unEveryPig :: forall a. (Typeable a) => f a}
+                     --
+--the typeable constraint lets us unpack this in a safe way
+data AnyPig f where
+    AnyPig :: (EtaExpand (State Int) f a, Typeable a) => f a -> AnyPig f
+
+instance (UniformlyEq f, UniformlyOrd f) => Ord (AnyPig f) where
+    (AnyPig x) <= (AnyPig y) = x <=* y
+
+instance UniformlyEq f => Eq (AnyPig f) where
+    (AnyPig x) == (AnyPig y) = x =* y
+
+mutatePig :: (forall a . f a -> f a) -> EveryPig f -> EveryPig f
+mutatePig f x = EveryPig (f (unEveryPig x))
 
 instance Schematizable f => Show (Equation f) where
         show (x :=: y) = schematize x [] ++ " :=: " ++ schematize y []
@@ -43,11 +61,26 @@ class UniformlyEq f => FirstOrder f where
     occurs :: f a -> f b -> Bool
     subst :: f a -> f a -> f b -> f b
 
+class Monad m => MonadVar f m where
+    fresh :: (Typeable a) => m (f a)
+    freshPig :: m (EveryPig f)
+
+{-|
+EtaExpand is a typeclass for languages where you can perform
+eta-expansions inside of a fresh variable monad. The default instance
+assumes that you're dealing with a saturated linguistic item that can't be
+expanded. A "Nothing" means the term cannot be expanded, and a "Just s"
+means that one expansion has taken place.
+-}
+class (Monad m, Typeable a) => EtaExpand m f a where
+        etaExpand :: f a -> m (Maybe (f a))
+        etaExpand x = return Nothing
+
 data ExtApp f a where
-    ExtApp :: Typeable b => f (b -> a) -> f b -> ExtApp f a
+    ExtApp :: (Typeable b, EtaExpand (State Int) f b) => f (b -> a) -> f b -> ExtApp f a
 
 data ExtLam f a where
-    ExtLam :: (Typeable b, Typeable c) => 
+    ExtLam :: (Typeable b, Typeable c, EtaExpand (State Int) f c, EtaExpand (State Int) f b) => 
         (f b -> f c) -> (a :~: (b -> c)) -> ExtLam f a
 
 class FirstOrder f => HigherOrder f where
@@ -59,7 +92,7 @@ class FirstOrder f => HigherOrder f where
 
 instance {-# OVERLAPPABLE #-} (Monad m, Typeable a, HigherOrder f) => EtaExpand m f a
 
-instance (Typeable b, MonadVar f m, EtaExpand m f a, HigherOrder f) 
+instance (Typeable b, MonadVar f m, EtaExpand m f b, EtaExpand m f a, HigherOrder f) 
         => EtaExpand m f (b -> a) where
         etaExpand l  = case castLam l of 
                         Just (ExtLam f Refl) -> 
@@ -117,7 +150,67 @@ applySub :: FirstOrder f => [Equation f] -> f a -> f a
 applySub []             y = y
 applySub ((v :=: x):ss) y = applySub ss (subst v x y)
 
-freeVars :: (Typeable a, FirstOrder f) => f a -> [AnyPig f]
+freeVars :: (Typeable a, FirstOrder f, EtaExpand (State Int) f a) => f a -> [AnyPig f]
 freeVars t | isVar t   = [AnyPig t]
            | otherwise = concatMap rec (decompose t t)
     where rec (a :=: _) = freeVars a
+
+--------------------------------------------------------
+--Beta/Eta operations
+--------------------------------------------------------
+--
+
+--return "Nothing" in the do nothing case
+betaReduce :: (HigherOrder f) => f a -> Maybe (f a)
+betaReduce x = do (ExtApp h t) <- (matchApp x)
+                  (ExtLam l Refl) <- (castLam h)
+                  return (l t)
+
+--return "Nothing" in the do nothing case
+betaNormalize :: (HigherOrder f, MonadVar f m, Typeable a) => f a -> m (Maybe (f a))
+betaNormalize x = case (castLam x) of
+                     Just (ExtLam f Refl) -> 
+                        do v <- fresh
+                           inf <- betaNormalize (f v)
+                           case inf of
+                               Nothing -> return Nothing
+                               Just inf' -> return $ Just (lam $ \x -> subst v x inf')
+                     Nothing -> case (matchApp x) of
+                        Just (ExtApp h t) -> do
+                            mh <- betaNormalize h
+                            mt <- betaNormalize t
+                            case (mh,mt) of
+                                (Just h', Just t') -> mbetaNF (h' .$. t') 
+                                (Nothing, Just t') -> mbetaNF (h .$. t') 
+                                (Just h', Nothing) -> mbetaNF (h' .$. t)
+                                (Nothing, Nothing) -> 
+                                    case betaReduce x of
+                                        Nothing -> return Nothing
+                                        Just x' -> mbetaNF x' 
+                        Nothing -> return Nothing
+        where mbetaNF x = do y <- toBNF x
+                             return (Just y)
+
+toBNF :: (HigherOrder f, MonadVar f m, Typeable a) => f a -> m (f a)
+toBNF x = do nf <- betaNormalize x
+             case nf of
+                   Nothing -> return x
+                   (Just y) -> return y
+
+toLNF :: (HigherOrder f, MonadVar f (State Int), Typeable a, EtaExpand (State Int) f a) => f a -> State Int (f a)
+toLNF x = do bnf <- toBNF x
+             case matchApp bnf of 
+                Just (ExtApp h t) -> do t' <- toLNF t
+                                        etaMaximize  (h .$. t')
+                Nothing -> case (castLam bnf) of
+                         Just (ExtLam f Refl) -> 
+                            do v <- fresh
+                               inf <- toLNF (f v)
+                               return $ (lam $ \y -> subst v y inf)
+                         Nothing -> etaMaximize bnf
+
+etaMaximize :: (HigherOrder f, MonadVar f m, Typeable a, EtaExpand m f a) => f a -> m (f a)
+etaMaximize x = do y <- etaExpand x
+                   case y of 
+                    Nothing -> return x
+                    Just y' -> etaMaximize y'

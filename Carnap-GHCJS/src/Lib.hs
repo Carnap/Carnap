@@ -1,6 +1,6 @@
 {-# LANGUAGE RankNTypes, FlexibleContexts, DeriveDataTypeable, CPP, JavaScriptFFI #-}
 module Lib
-    (genericSendJSON, sendJSON, onEnter, clearInput, getListOfElementsByClass, tryParse, treeToElement, genericTreeToUl, treeToUl, genericListToUl, listToUl, formToTree, leaves, adjustFirstMatching, decodeHtml, syncScroll, reloadPage, initElements, loginCheck,errorPopup, getInOutElts, getInOutGoalElts,seqAndLabel,formAndLabel) where
+    (genericSendJSON, sendJSON, onEnter, clearInput, getListOfElementsByClass, tryParse, treeToElement, genericTreeToUl, treeToUl, genericListToUl, listToUl, formToTree, leaves, adjustFirstMatching, decodeHtml, syncScroll, reloadPage, initElements, loginCheck,errorPopup, getInOutElts, getInOutGoalElts,seqAndLabel, folSeqAndLabel,formAndLabel) where
 
 import Data.Aeson
 import qualified Data.ByteString.Lazy as BSL
@@ -38,7 +38,8 @@ import GHCJS.DOM.KeyboardEvent
 import GHCJS.DOM.EventM
 import GHCJS.DOM.EventTarget
 import Carnap.Languages.PurePropositional.Syntax (PureForm)
-import Carnap.Languages.ClassicalSequent.Parser (propSeqParser)
+import Carnap.Languages.PurePropositional.Logic (propSeqParser)
+import Carnap.Languages.PureFirstOrder.Logic (folSeqParser)
 import Carnap.Languages.PurePropositional.Parser (purePropFormulaParser)
 
 --------------------------------------------------------
@@ -222,6 +223,11 @@ seqAndLabel =  do label <- many (digit <|> char '.')
                   spaces
                   s <- propSeqParser
                   return (label,s)
+
+folSeqAndLabel =  do label <- many (digit <|> char '.')
+                     spaces
+                     s <- folSeqParser
+                     return (label,s)
 
 --------------------------------------------------------
 --2. FFI Wrappers

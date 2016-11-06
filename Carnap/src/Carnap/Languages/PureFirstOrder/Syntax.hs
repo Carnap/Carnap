@@ -77,6 +77,7 @@ type CoreLexicon =  Connective PureConn
                    :|: SubstitutionalVariable
                    :|: Function PureConstant
                    :|: Function PureVar
+                   :|: Function (SchematicIntFunc Int Int)
                    :|: EndLang
 
 type PureFirstOrderLanguageWith a = FixLang (CoreLexicon :|: a)
@@ -86,8 +87,10 @@ pattern (:!!$:) f y    = f :!$: y
 pattern PCon x arity   = FX (Lx1 (Lx1 (Connective x arity)))
 pattern PQuant q       = FX (Lx1 (Lx2 (Bind q)))
 pattern PSV n          = FX (Lx1 (Lx3 (StaticVar n)))
+pattern PDV n          = FX (Lx1 (Lx3 (SubVar n)))
 pattern PConst c a     = FX (Lx1 (Lx4 (Function c a)))
 pattern PVar c a       = FX (Lx1 (Lx5 (Function c a)))
+pattern PTau c a       = FX (Lx1 (Lx6 (Function c a)))
 pattern PAnd           = PCon And ATwo
 pattern POr            = PCon Or ATwo
 pattern PIf            = PCon If ATwo
@@ -103,6 +106,7 @@ pattern PUniv v f      = PBind (All v) f
 pattern PExist v f     = PBind (Some v) f
 pattern PC n           = PConst (Constant n) AZero
 pattern PV s           = PVar (Var s) AZero
+pattern PT n           = PTau (SFunc AZero n) AZero
 
 -- height :: PureFirstOrderLanguageWith a b -> Int
 -- height (PUniv _ g)     = height (g $ PV "") + 1
@@ -152,8 +156,8 @@ instance BooleanLanguage (PureFirstOrderLanguageWith a (Form Bool)) where
     liff = (:<->:)
 
 instance QuantLanguage (PureFirstOrderLanguageWith a (Form Bool)) (PureFirstOrderLanguageWith a (Term Int)) where
-    lall  = PUniv 
-    lsome  = PExist 
+    lall  v f = PQuant (All v) :!$: LLam f
+    lsome  v f = PQuant (Some v) :!$: LLam f
 
 instance FirstOrder (FixLang (CoreLexicon :|: a)) => 
     RelabelVars (CoreLexicon :|: a) Form Bool where
@@ -247,7 +251,9 @@ instance Incrementable (OpenLexiconPFOL EndLang) (Term Int) where
 --2.3 Polyadic First Order Logic with Polyadic Function Symbols and Identity
 --------------------------------------------------------
 
-type PolyadicFunctionSymbolsAndIdentity = Predicate PureEq :|: Function PureFunction :|: EndLang
+type PolyadicFunctionSymbolsAndIdentity = Predicate PureEq 
+                                        :|: Function PureFunction 
+                                        :|: EndLang
 
 type PureLexiconFOL = (OpenLexiconPFOL (PolyadicFunctionSymbolsAndIdentity :|: EndLang))
 

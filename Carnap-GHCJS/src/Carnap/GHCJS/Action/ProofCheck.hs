@@ -1,9 +1,10 @@
 {-#LANGUAGE FlexibleContexts #-}
 module Carnap.GHCJS.Action.ProofCheck (proofCheckAction) where
 
-import Carnap.Calculi.NaturalDeduction.Checker (ProofErrorMessage(..), Feedback(..), seqSubsetUnify, toDisplaySequence)
+import Carnap.Calculi.NaturalDeduction.Checker (ProofErrorMessage(..), Feedback(..), seqSubsetUnify, hoToDisplaySequence, toDisplaySequence)
 import Carnap.Languages.ClassicalSequent.Syntax
 import Carnap.Languages.PurePropositional.Logic (DerivedRule(..), parsePropProof)
+import Carnap.Languages.PureFirstOrder.Logic (parseFOLProof)
 import Carnap.Languages.PurePropositional.Util (toSchema)
 import Carnap.GHCJS.SharedTypes
 import Text.Parsec
@@ -32,7 +33,7 @@ import Control.Monad.Trans.Maybe (runMaybeT, MaybeT(..))
 
 proofCheckAction :: IO ()
 proofCheckAction = do availableDerived <- newIORef []
-                      genericSendJSON RequestDerivedRulesForUser (addRules availableDerived) errcb
+                      --genericSendJSON RequestDerivedRulesForUser (addRules availableDerived) errcb
                       initElements getCheckers (activateChecker availableDerived)
     where errcb e = case fromJSON e :: Result String of
                                A.Error e -> print $ "Getting kind of meta. Error decoding error message:" ++ e
@@ -49,13 +50,18 @@ activateChecker ::  IORef [(String,DerivedRule)] -> Document -> Maybe (Element, 
 activateChecker _ _ Nothing  = return ()
 activateChecker drs w (Just (i,o,g, classes))
         | "ruleMaker" `elem` classes = checkerWith "save rule" (trySave drs) (computeRule drs)
+        | "firstOrder" `elem` classes = 
+            do (Just gs) <- getInnerHTML g 
+               case parse folSeqAndLabel "" (decodeHtml gs) of
+                   Left e -> setInnerHTML g (Just "Couldn't Parse Goal")
+                   Right (l,s) -> do setInnerHTML g (Just $ show s)
+                                     checkerWith "submit solution" (trySubmit l s) (folCheckSolution s)
         | otherwise = 
             do (Just gs) <- getInnerHTML g 
                case parse seqAndLabel "" (decodeHtml gs) of
                    Left e -> setInnerHTML g (Just "Couldn't Parse Goal")
-                   Right (l,s) -> do
-                       setInnerHTML g (Just $ show s)
-                       checkerWith "submit solution" (trySubmit l s) (checkSolution drs s) 
+                   Right (l,s) -> do setInnerHTML g (Just $ show s)
+                                     checkerWith "submit solution" (trySubmit l s) (checkSolution drs s) 
         where checkerWith buttonLabel buttonFunction updateres = do
                    mfeedbackDiv@(Just fd) <- createElement w (Just "div")
                    mnumberDiv@(Just nd) <-createElement w (Just "div")
@@ -93,18 +99,24 @@ toUniErr eqs = "In order to apply this inference rule, there needs to be a subst
 
 checkSolution drs s w ref v (g, fd) =  do rules <- liftIO $ readIORef drs
                                           let Feedback mseq ds = toDisplaySequence (parsePropProof (fromList rules)) v
-                                          ul <- genericListToUl wrap w ds
-                                          setInnerHTML fd (Just "")
-                                          appendChild fd (Just ul)
-                                          case mseq of
-                                              Nothing -> do setAttribute g "class" "goal"
-                                                            writeIORef ref False
-                                              (Just seq) ->  if  seq `seqSubsetUnify` s
-                                                    then do setAttribute g "class" "goal success"
-                                                            writeIORef ref True
-                                                    else do setAttribute g "class" "goal"
-                                                            writeIORef ref False
-                                          return ()
+                                          updateGoal s w ref (g, fd) mseq ds
+
+folCheckSolution s w ref v (g, fd) =  do let Feedback mseq ds = hoToDisplaySequence parseFOLProof v
+                                         --setInnerHTML fd (Just $ show mseq)
+                                         updateGoal s w ref (g, fd) mseq ds
+
+updateGoal s w ref (g, fd) mseq ds = do ul <- genericListToUl wrap w ds
+                                        setInnerHTML fd (Just "")
+                                        appendChild fd (Just ul)
+                                        case mseq of
+                                            Nothing -> do setAttribute g "class" "goal"
+                                                          writeIORef ref False
+                                            (Just seq) ->  if  seq `seqSubsetUnify` s
+                                                  then do setAttribute g "class" "goal success"
+                                                          writeIORef ref True
+                                                  else do setAttribute g "class" "goal"
+                                                          writeIORef ref False
+                                        return ()
 
 computeRule drs w ref v (g, fd) = do rules <- liftIO $ readIORef drs
                                      let Feedback mseq ds = toDisplaySequence (parsePropProof (fromList rules)) v

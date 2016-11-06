@@ -13,7 +13,7 @@ import Carnap.Core.Data.AbstractSyntaxClasses
 import Carnap.Core.Unification.Unification
 import Carnap.Core.Unification.ACUI
 import Carnap.Core.Unification.FirstOrder
-import Carnap.Core.Unification.Combination
+--import Carnap.Core.Unification.Combination
 import Carnap.Core.Util
 import qualified Data.Set as S
 import Data.Type.Equality
@@ -181,21 +181,21 @@ data VLangLabel = VExtra
                 | VSet
     deriving(Eq, Ord, Show)
 
-instance Combineable VLang VLangLabel where
-    getLabel VEmpty           = VSet
-    getLabel (VSingelton _)   = VSet
-    getLabel (VUnion _ _)     = VSet
-    getLabel _                = VExtra
+-- instance Combineable VLang VLangLabel where
+--     getLabel VEmpty           = VSet
+--     getLabel (VSingelton _)   = VSet
+--     getLabel (VUnion _ _)     = VSet
+--     getLabel _                = VExtra
 
-    getAlgo VSet = acuiUnifySys
-    getAlgo VExtra = foUnifySys
+--     getAlgo VSet = acuiUnifySys
+--     getAlgo VExtra = foUnifySys
 
-    replaceChild (VSingelton _)   pig _ = VSingelton $ unEveryPig pig
-    replaceChild (VUnion _ x)     pig 0 = VUnion (unEveryPig pig) x
-    replaceChild (VUnion x _)     pig 1 = VUnion x (unEveryPig pig)
-    replaceChild (VUnFunc s _)    pig _ = VUnFunc s (unEveryPig pig)
-    replaceChild (VBinFunc s _ x) pig 0 = VBinFunc s (unEveryPig pig) x
-    replaceChild (VBinFunc s x _) pig 1 = VBinFunc s x (unEveryPig pig)
+--     replaceChild (VSingelton _)   pig _ = VSingelton $ unEveryPig pig
+--     replaceChild (VUnion _ x)     pig 0 = VUnion (unEveryPig pig) x
+--     replaceChild (VUnion x _)     pig 1 = VUnion x (unEveryPig pig)
+--     replaceChild (VUnFunc s _)    pig _ = VUnFunc s (unEveryPig pig)
+--     replaceChild (VBinFunc s _ x) pig 0 = VBinFunc s (unEveryPig pig) x
+--     replaceChild (VBinFunc s x _) pig 1 = VBinFunc s x (unEveryPig pig)
 
 parseUnion :: (Monad m) => ParsecT String u m (VTerm -> VTerm -> VTerm)
 parseUnion = do spaces

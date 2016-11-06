@@ -8,6 +8,7 @@ import Carnap.Core.Data.AbstractSyntaxClasses (Schematizable, Modelable(..))
 import Carnap.Languages.PurePropositional.Util (getIndicies)
 import Carnap.Languages.PurePropositional.Syntax (PureForm)
 import Carnap.Languages.ClassicalSequent.Syntax
+import Carnap.Languages.PurePropositional.Logic (PropSequentCalc)
 import Carnap.Languages.Util.LanguageClasses
 import GHCJS.DOM.Types
 import GHCJS.DOM.Element
@@ -30,8 +31,6 @@ truthTableAction = initElements getTruthTables activateTruthTables
 getTruthTables :: HTMLElement -> IO [Maybe (Element, Element, [String])]
 getTruthTables = getInOutElts "truthtable"
 
--- XXX: no dispatch on classes here yet. We'll want it for Sequent tables,
--- tables with counterexamples, etc.
 activateTruthTables :: Document -> Maybe (Element, Element,[String]) -> IO ()
 activateTruthTables w (Just (i,o,classes))
         | "simple" `elem` classes  = checkerWith formAndLabel createSimpleTruthTable

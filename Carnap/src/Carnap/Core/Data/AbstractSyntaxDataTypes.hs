@@ -123,7 +123,7 @@ pattern Fx9 x      = FX (Lx9  x)
 pattern Fx10 x     = FX (Lx10 x)
 pattern Fx11 x     = FX (Lx11 x)
 pattern Fx12 x     = FX (Lx12 x)
-pattern FX x = Fx (FRight x)
+pattern FX x       = Fx (FRight x)
 
 --------------------------------------------------------
 --1.2 Abstract Operator Types
@@ -669,6 +669,10 @@ instance {-# OVERLAPPABLE #-} FirstOrder (FixLang f) => HigherOrder (FixLang f) 
     (.$.) = (:!$:)
     
     lam = LLam
+
+instance (Typeable a, MonadVar (FixLang f) m) => EtaExpand m (FixLang f) (Form a)
+
+instance (Typeable a, MonadVar (FixLang f) m) => EtaExpand m (FixLang f) (Term a)
 
 --------------------------------------------------------
 --5. Generic Traversals and Prisms

@@ -1,5 +1,5 @@
 {-#LANGUAGE GADTs, KindSignatures, TypeOperators, FlexibleContexts, TypeSynonymInstances, FlexibleInstances, MultiParamTypeClasses #-}
-module Carnap.Calculi.NaturalDeduction.Checker (toDisplaySequence, ProofErrorMessage(..), Feedback(..),seqUnify,seqSubsetUnify, toDeduction) where
+module Carnap.Calculi.NaturalDeduction.Checker (toDisplaySequence, hoToDisplaySequence, hosolve, ProofErrorMessage(..), Feedback(..),seqUnify,seqSubsetUnify, toDeduction) where
 
 import Carnap.Calculi.NaturalDeduction.Syntax
 import Carnap.Calculi.NaturalDeduction.Parser
@@ -7,6 +7,7 @@ import Carnap.Core.Data.AbstractSyntaxDataTypes
 import Carnap.Core.Data.AbstractSyntaxClasses
 import Carnap.Core.Unification.Unification
 import Carnap.Core.Unification.FirstOrder
+import Carnap.Core.Unification.Huet
 import Carnap.Core.Unification.ACUI
 import Carnap.Languages.ClassicalSequent.Syntax
 import Control.Lens
@@ -122,6 +123,36 @@ toDisplaySequence topd s = if isParsed
             --special case to catch QedLines not being cited in justifications
             (QedLine _ _ _) -> Left $ NoResult n
             _ -> toProofTree ded n >>= (updateLine n . reduceProofTree)
+
+-- XXX: Obviously find some way to reduce duplication here.
+hoToDisplaySequence:: (StaticVar (ClassicalSequentOver lex), Schematizable (ClassicalSequentOver lex),
+    MonadVar (ClassicalSequentOver lex) (State Int), Inference r lex, Sequentable lex) => 
+    (String -> PartialDeduction r lex) -> String -> Feedback lex
+hoToDisplaySequence topd s = if isParsed 
+                              then let feedback = map (processLine(rights ded)) [1 .. length ded] in
+                                  Feedback (lastTopInd >>= fromFeedback feedback) feedback
+                              else Feedback Nothing (zipWith handle ded [1 .. length ded])
+    where ded = topd s
+          isParsed = null $ lefts ded 
+          handle (Left e) n = Left $ NoParse e n
+          handle (Right _) n = Left $ NoResult n
+          isTop  (Right (AssertLine _ _ 0 _)) = True
+          isTop  (Right (ShowLine _ 0)) = True
+          isTop  _ = False
+          lastTopInd = do i <- findIndex isTop (reverse ded)
+                          return $ length ded - i
+          fromFeedback fb n = case fb !! (n - 1) of
+            Left _ -> Nothing
+            Right s -> Just s
+          updateLine n (Right x) = Right x
+          updateLine n (Left e) = Left e
+          processLine :: (StaticVar (ClassicalSequentOver lex),Sequentable lex, Inference r lex, MonadVar (ClassicalSequentOver lex) (State Int),
+            Schematizable (ClassicalSequentOver lex)) => 
+            [DeductionLine r lex (Form Bool)] -> Int -> Either (ProofErrorMessage lex) (ClassicalSequentOver lex Sequent)
+          processLine ded n = case ded !! (n - 1) of
+            --special case to catch QedLines not being cited in justifications
+            (QedLine _ _ _) -> Left $ NoResult n
+            _ -> toProofTree ded n >>= (updateLine n . hoReduceProofTree)
           
 -- | A simple check of whether two sequents can be unified
 seqUnify s1 s2 = case check of
@@ -158,16 +189,19 @@ reduceResult lineno xs = case rights xs of
           uni _ = False
           
 
---Given a list of concrete rules and a list of (variable-free) premise sequents, and a (variable-free) 
---conclusion succeedent, return an error or a list of possible (variable-free) correct 
+--Given a list of concrete rules and a list of (schematic-variable-free)
+--premise sequents, and a (schematic-variable-free) conclusion succeedent,
+--return an error or a list of possible (schematic-variable-free) correct
 --conclusion sequents
-seqFromNode :: (Inference r lex, MaybeMonadVar (ClassicalSequentOver lex) (State Int),
+
+foseqFromNode :: (Inference r lex, MaybeMonadVar (ClassicalSequentOver lex) (State Int),
         MonadVar (ClassicalSequentOver lex) (State Int)) =>  
     Int -> [r] -> [ClassicalSequentOver lex Sequent] -> ClassicalSequentOver lex Succedent 
       -> [Either (ProofErrorMessage lex) [ClassicalSequentOver lex Sequent]]
-seqFromNode lineno rules prems conc = do rrule <- rules
-                                         rprems <- permutations (premisesOf rrule) 
-                                         return $ oneRule rrule rprems
+foseqFromNode lineno rules prems conc = 
+        do rrule <- rules
+           rprems <- permutations (premisesOf rrule) 
+           return $ oneRule rrule rprems
     where oneRule r rp = do if length rp /= length prems 
                                 then Left $ GenericError "Wrong number of premises" lineno
                                 else Right ""
@@ -184,19 +218,61 @@ seqFromNode lineno rules prems conc = do rrule <- rules
                                    (map (view lhs) prems))
                             return $ map (\x -> applySub x subbedconc) acuisubs
 
+hoseqFromNode :: (Inference r lex, MaybeMonadVar (ClassicalSequentOver lex) (State Int),
+        MonadVar (ClassicalSequentOver lex) (State Int), Schematizable (ClassicalSequentOver lex)) =>  
+    Int -> [r] -> [ClassicalSequentOver lex Sequent] -> ClassicalSequentOver lex Succedent 
+      -> [Either (ProofErrorMessage lex) [ClassicalSequentOver lex Sequent]]
+hoseqFromNode lineno rules prems conc = 
+        do rrule <- rules
+           rprems <- permutations (premisesOf rrule) 
+           return $ oneRule rrule rprems
+    where oneRule r rps = do if length rps /= length prems 
+                                then Left $ GenericError "Wrong number of premises" lineno
+                                else Right ""
+                             let rconc = conclusionOf r
+                             hosubs <- hosolve -- need to catch Eigenvariable issues inside this function
+                                (zipWith (:=:) 
+                                    (map (view rhs) (rconc:rps)) 
+                                    (conc:map (view rhs) prems))
+                             let sols = do hosub <-  hosubs 
+                                           let subbedrule = map (applySub hosub) rps
+                                           let subbedconc = applySub hosub rconc
+                                           return (subbedconc, (zipWith (:=:) 
+                                                 (map (view lhs) subbedrule) 
+                                                 (map (view lhs) prems)))
+                             acuisubs <- mapM (acuisolve . snd) sols
+                             let sols' = zip sols acuisubs
+                             return $ concat $ map (\(x,y) -> map (\z -> applySub z (fst x)) y) sols'
+
 reduceProofTree :: (Inference r lex, 
                    MaybeMonadVar (ClassicalSequentOver lex) (State Int),
         MonadVar (ClassicalSequentOver lex) (State Int)) =>  
         ProofTree r lex -> Either (ProofErrorMessage lex) (ClassicalSequentOver lex Sequent)
-reduceProofTree (Node (ProofLine no cont rule) ts) =  
+reduceProofTree (Node (ProofLine no cont rules) ts) =  
         do prems <- mapM reduceProofTree ts
-           reduceResult no $ seqFromNode no rule prems cont
+           reduceResult no $ foseqFromNode no rules prems cont
+
+hoReduceProofTree :: (Inference r lex, 
+                   MaybeMonadVar (ClassicalSequentOver lex) (State Int),
+        MonadVar (ClassicalSequentOver lex) (State Int),
+        StaticVar (ClassicalSequentOver lex), Schematizable (ClassicalSequentOver lex)) =>  
+        ProofTree r lex -> Either (ProofErrorMessage lex) (ClassicalSequentOver lex Sequent)
+hoReduceProofTree (Node (ProofLine no cont rules) ts) =  
+        do prems <- mapM hoReduceProofTree ts
+           rslt <- reduceResult no $ hoseqFromNode no rules prems cont
+           return $ evalState (toBNF rslt) (0 :: Int)
 
 fosolve :: (FirstOrder (ClassicalSequentOver lex), MonadVar (ClassicalSequentOver lex) (State Int)) =>  
     [Equation (ClassicalSequentOver lex)] -> Either (ProofErrorMessage lex) [Equation (ClassicalSequentOver lex)]
 fosolve eqs = case evalState (foUnifySys (const False) eqs) (0 :: Int) of 
                 [] -> Left $ NoUnify [eqs] 0
                 [s] -> Right s
+
+hosolve :: (HigherOrder (ClassicalSequentOver lex), MonadVar (ClassicalSequentOver lex) (State Int), Schematizable (ClassicalSequentOver lex)) =>
+    [Equation (ClassicalSequentOver lex)] -> Either (ProofErrorMessage lex) [[Equation (ClassicalSequentOver lex)]]
+hosolve eqs = case evalState (huetUnifySys (const False) eqs) (0 :: Int) of
+                [] -> Left $ NoUnify [eqs] 0
+                subs -> Right subs
 
 acuisolve :: (ACUI (ClassicalSequentOver lex), MonadVar (ClassicalSequentOver lex) (State Int)) =>  
     [Equation (ClassicalSequentOver lex)] -> Either (ProofErrorMessage lex) [[Equation (ClassicalSequentOver lex)]]

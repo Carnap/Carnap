@@ -1,7 +1,5 @@
 {-#LANGUAGE TypeOperators, FlexibleInstances, TypeSynonymInstances, MultiParamTypeClasses, FlexibleContexts #-}
-module Carnap.Languages.ClassicalSequent.Parser (
-    propSeqParser
-) where
+module Carnap.Languages.ClassicalSequent.Parser (ParsableLex(..), seqFormulaParser) where
 
 import Text.Parsec
 import Carnap.Core.Data.AbstractSyntaxDataTypes
@@ -46,12 +44,3 @@ formlist = do spaces
     where comma = do spaces
                      char ','
                      spaces
-
---------------------------------------------------------
---2. Parsable Languages
---------------------------------------------------------
-
-instance ParsableLex (Form Bool) PurePropLexicon where
-        langParser = prePurePropFormulaParser
-
-propSeqParser = seqFormulaParser :: Parsec String u (PropSequentCalc Sequent)

@@ -1,23 +1,12 @@
-{-#LANGUAGE ScopedTypeVariables, TypeSynonymInstances, UndecidableInstances, FlexibleInstances, MultiParamTypeClasses, GADTs, DataKinds, PolyKinds, TypeOperators, ViewPatterns, PatternSynonyms, RankNTypes, FlexibleContexts, AutoDeriveTypeable, FunctionalDependencies #-}
+{-#LANGUAGE ScopedTypeVariables,  UndecidableInstances, FlexibleInstances,  GADTs,  PolyKinds, TypeOperators,  PatternSynonyms, MultiParamTypeClasses #-}
 module Carnap.Languages.ClassicalSequent.Syntax where
 
 import Carnap.Core.Data.AbstractSyntaxClasses
 import Carnap.Core.Data.AbstractSyntaxDataTypes
-import Carnap.Core.Data.Util (checkChildren)
-import Carnap.Core.Util
-import Carnap.Core.Unification.Unification
-import Carnap.Core.Unification.Combination
-import Carnap.Core.Unification.FirstOrder
 import Carnap.Core.Unification.ACUI
-import Carnap.Languages.PurePropositional.Syntax
-import Carnap.Core.Util
-import Carnap.Languages.Util.LanguageClasses
-import Control.Lens.Plated (transform, children)
---import Control.Lens.Prism
 import Control.Lens.Lens (lens)
 import Control.Lens.Traversal (Traversal')
 import Data.Typeable
-import Carnap.Languages.Util.GenericConnectives
 
 
 --------------------------------------------------------
@@ -196,80 +185,3 @@ class Sequentable f where
         fromSequent :: ClassicalSequentOver f a -> FixLang f a
         -- XXX: add an iso?
 
---------------------------------------------------------
---2.1 Propositional Sequent Calculus
---------------------------------------------------------
-
-type PropSequentCalc = ClassicalSequentOver PurePropLexicon
-
---we write the Copula schema at this level since we may want other schemata
---for sequent languages that contain things like quantifiers
-instance CopulaSchema PropSequentCalc
-
-pattern SeqP x arity      = FX (Lx2 (Lx1 (Predicate x arity)))
-pattern SeqSP x arity     = FX (Lx2 (Lx2 (Predicate x arity)))
-pattern SeqCon x arity    = FX (Lx2 (Lx3 (Connective x arity)))
-pattern SeqProp n         = SeqP (Prop n) AZero
-pattern SeqPhi n          = SeqSP (SProp n) AZero
-pattern SeqAnd            = SeqCon And ATwo
-pattern SeqOr             = SeqCon Or ATwo
-pattern SeqIf             = SeqCon If ATwo
-pattern SeqIff            = SeqCon Iff ATwo
-pattern SeqNot            = SeqCon Not AOne
-pattern (:&-:) x y        = SeqAnd :!$: x :!$: y
-pattern (:||-:) x y       = SeqOr  :!$: x :!$: y
-pattern (:->-:) x y       = SeqIf  :!$: x :!$: y
-pattern (:<->-:) x y      = SeqIff :!$: x :!$: y
-pattern SeqNeg x          = SeqNot :!$: x
-
-data PropSeqLabel = PropSeqFO | PropSeqACUI
-        deriving (Eq, Ord, Show)
-
-instance Eq (PropSequentCalc a) where
-        (==) = (=*)
-
-instance Combineable PropSequentCalc PropSeqLabel where
-
-    getLabel Top               = PropSeqACUI
-    getLabel (_ :+: _)         = PropSeqACUI
-    getLabel (GammaV _)        = PropSeqACUI
-    --getLabel (SA     _)        = PropSeqACUI
-    getLabel _                 = PropSeqFO
-
-    getAlgo PropSeqFO   = foUnifySys
-    getAlgo PropSeqACUI = acuiUnifySys
-
-    replaceChild (_ :&-: x)   pig 0 = unEveryPig pig :&-: x
-    replaceChild (x :&-: _)   pig 1 = x :&-: unEveryPig pig
-    replaceChild (_ :||-: x)  pig 0 = unEveryPig pig :||-: x
-    replaceChild (x :||-: _)  pig 1 = x :||-: unEveryPig pig
-    replaceChild (_ :->-: x)  pig 0 = unEveryPig pig :->-: x
-    replaceChild (x :->-: _)  pig 1 = x :->-: unEveryPig pig
-    replaceChild (_ :<->-: x) pig 0 = unEveryPig pig :<->-: x
-    replaceChild (x :<->-: _) pig 1 = x :<->-: unEveryPig pig
-    replaceChild (_ :+: x)    pig 0 = unEveryPig pig :+: x
-    replaceChild (x :+: _)    pig 1 = x :+: unEveryPig pig
-    replaceChild (_ :-: x)    pig 0 = unEveryPig pig :-: x
-    replaceChild (x :-: _)    pig 1 = x :-: unEveryPig pig
-    replaceChild (_ :|-: x)   pig 0 = unEveryPig pig :|-: x
-    replaceChild (x :|-: _)   pig 1 = x :|-: unEveryPig pig
-    replaceChild (SeqNeg _)   pig _ = SeqNeg $ unEveryPig pig
-    replaceChild (SS _ )      pig _ = SS $ unEveryPig pig 
-    replaceChild (SA _ )      pig _ = SA $ unEveryPig pig
-
-instance Sequentable PurePropLexicon where
-    liftToSequent (x :&: y)     = (liftToSequent x :&-: liftToSequent y)
-    liftToSequent (x :||: y)    = (liftToSequent x :||-: liftToSequent y)
-    liftToSequent (x :->: y)    = (liftToSequent x :->-: liftToSequent y)
-    liftToSequent (x :<->: y)   = (liftToSequent x :<->-: liftToSequent y)
-    liftToSequent (PNeg y)      = (SeqNeg $ liftToSequent y)
-    liftToSequent (PP n)        = SeqProp n
-    liftToSequent (PPhi n)      = SeqPhi n
-
-    fromSequent (x :&-: y)     = (fromSequent x :&: fromSequent y)
-    fromSequent (x :||-: y)    = (fromSequent x :||: fromSequent y)
-    fromSequent (x :->-: y)    = (fromSequent x :->: fromSequent y)
-    fromSequent (x :<->-: y)   = (fromSequent x :<->: fromSequent y)
-    fromSequent (SeqNeg y)     = (PNeg $ fromSequent y)
-    fromSequent (SeqProp n)    = PP n
-    fromSequent (SeqPhi n)     = PPhi n

@@ -4,7 +4,6 @@ module Carnap.Core.Util(
     Nat(Zero, Succ), Vec(VNil, VCons),
     crossWith, bigCrossWith, bigCrossWithH,
     bigUnionWith, bigUnion,
-    EveryPig(..), AnyPig(..),
     ListComp(..), ordNub
 ) where
 
@@ -70,13 +69,6 @@ bigCrossWith f xs xss = foldr (crossWith f) xs xss
 bigCrossWithH f (xs:xss) = bigCrossWith f xs xss
 bigCrossWithH _ []       = []
 
-newtype EveryPig f = EveryPig {unEveryPig :: forall a. Typeable a => f a}
---the typeable constraint lets us unpack this in a safe way
-data AnyPig f where
-    AnyPig :: Typeable a => f a -> AnyPig f
-
-mutatePig :: (forall a . f a -> f a) -> EveryPig f -> EveryPig f
-mutatePig f x = EveryPig (f (unEveryPig x))
 
 ordNub :: (Ord a) => [a] -> [a]
 ordNub l = go Set.empty l

@@ -18,7 +18,6 @@ prePurePropFormulaParser = buildExpressionParser opTable subFormulaParser
                           <|> try (atomicSentenceParser <* spaces)--or atoms
                           <|> (schemevarParser <* spaces)
 
-
 --this requires that the whole string be a formula, although it allows
 --trailing spaces.
 purePropFormulaParser :: Monad m => ParsecT String u m PureForm

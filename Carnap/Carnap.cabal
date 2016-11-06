@@ -22,7 +22,6 @@ library
                      , Carnap.Core.Unification.Unification
                      , Carnap.Core.Unification.ACUI
                      , Carnap.Core.Unification.Huet
-                     , Carnap.Core.Unification.Combination
                      , Carnap.Core.ModelChecking.SAT
                      , Carnap.Core.Data.Util
                      , Carnap.Core.Util
@@ -37,6 +36,7 @@ library
                      , Carnap.Languages.ModalPropositional.Parser
                      , Carnap.Languages.PureFirstOrder.Syntax
                      , Carnap.Languages.PureFirstOrder.Parser
+                     , Carnap.Languages.PureFirstOrder.Logic
                      , Carnap.Languages.ClassicalSequent.Syntax
                      , Carnap.Languages.ClassicalSequent.Parser
                      , Carnap.Calculi.NaturalDeduction.Checker
