@@ -206,12 +206,13 @@ instance Inference FOLogic PureLexiconFOL where
      conclusionOf CB    = GammaV 1 :+: GammaV 2 :|-: ss (phiS 1 :<->: phiS 2)
      conclusionOf UI    = GammaV 1 :|-: ss (phi 1 tau)
      conclusionOf EG    = GammaV 1  :|-: ss (PExist "v" (phi 1))
-     -- XXX : need eigenvariable constraints for these
      conclusionOf UD    = GammaV 1  :|-: ss (PUniv "v" (phi 1))
      conclusionOf ED1   = GammaV 1 :+: GammaV 2 :|-: ss (phiS 1)
      conclusionOf ED2   = GammaV 1 :+: GammaV 2 :|-: ss (phiS 1)
 
-     restriction UD     = Just (eigenConstraint (SeqT 1) (ss $ phi 1 $ static 0) (GammaV 1))
+     restriction UD     = Just (eigenConstraint (SeqT 1) (ss $ PUniv "v" $ phi 1) (GammaV 1))
+     restriction ED1    = Just (eigenConstraint (SeqT 1) ((ss $ PExist "v" $ phi 1) :-: (ss $ phiS 1)) (GammaV 1 :+: GammaV 2))
+     restriction ED2    = Nothing --Since this one does not use the assumption with a fresh object
      restriction _      = Nothing
 
 eigenConstraint c suc ant sub
