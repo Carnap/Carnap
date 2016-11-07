@@ -29,7 +29,8 @@ simplify eqs =
     where failCheck l = if and (map (\(x:=:y) -> sameHead x y) l) 
                            then return l
                            else mzero
-          massDecompose l = return $ concat $ map (\(x:=:y) -> decompose x y) l
+
+massDecompose l = return $ concat $ map (\(x:=:y) -> decompose x y) l
 
 -- | returns true on rigid-rigid equations between terms in βη long normal form
 --(since these are guaranteed to have heads that are either constants or

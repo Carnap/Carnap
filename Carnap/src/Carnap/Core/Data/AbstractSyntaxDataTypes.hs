@@ -559,18 +559,24 @@ instance (UniformlyEq lang, FirstOrderLex lang) => UniformlyEq (Copula lang) whe
         Lam g =* Lam h = error "sorry, can't directly compare these. Try the fixpoint."
         _ =* _ = False
 
-instance (UniformlyEq lang, FirstOrderLex lang, StaticVar lang) => FirstOrderLex (Copula lang)
+instance (UniformlyEq (FixLang lex), FirstOrderLex (FixLang lex), StaticVar (FixLang lex)) => FirstOrderLex (Copula (FixLang lex))
         where
 
-        sameHeadLex ((x :: lang (t1  -> t2 )) :$: _)
-                    ((y :: lang (t1' -> t2')) :$: _) =
+        sameHeadLex ((x :: (FixLang lex) (t1  -> t2 )) :$: _)
+                    ((y :: (FixLang lex) (t1' -> t2')) :$: _) =
             case eqT :: Maybe ((t1 -> t2) :~: (t1' -> t2')) of
                 Just Refl -> sameHeadLex x y
                 Nothing -> False
-        sameHeadLex (Lam (f  :: lang t1  -> lang t2))
-                    (Lam (f' :: lang t1' -> lang t2')) =
+        sameHeadLex (Lam (f  :: (FixLang lex) t1  -> (FixLang lex) t2))
+                    (Lam (f' :: (FixLang lex) t1' -> (FixLang lex) t2')) =
             case (eqT :: Maybe (t1 :~: t1'), eqT :: Maybe (t2 :~: t2')) of
-                (Just Refl, Just Refl) -> sameHeadLex (f $ static 0) (f' $ static 0)
+                (Just Refl, Just Refl) -> sameHeadLex (f $ static $ height $ LLam f) (f' $ static $ height $ LLam f) 
+                    --the idea here is that we pick a scope-unique variable
+                    --at each stage of the recursion, but that the variable
+                    --is determined by the lhs---so two expressions with
+                    --bound lambda variables in their heads will register
+                    --as having the same head if that variable is the same
+                    --argument, and otherwise not.
                 _ -> False
         sameHeadLex _ _ = False
 
@@ -621,11 +627,13 @@ instance {-# OVERLAPPABLE #-} (StaticVar (FixLang f), FirstOrderLex (FixLang f))
         decompose (LLam (f :: FixLang f t1 -> FixLang f t2))
                   (LLam (f' :: FixLang f t1' -> FixLang f t2')) = 
             case (eqT :: Maybe (t1 :~: t1'), eqT :: Maybe (t2 :~: t2')) of
-                (Just Refl, Just Refl) -> map reabstract (decompose (f sv) (f' sv))
+                (Just Refl, Just Refl) -> map reabstract (decompose (f sv) (f' sv'))
                 _ -> []
-            where reabstract (t:=:t') = (LLam $ \x -> subst sv x t) :=: (LLam $ \x -> subst sv x t')
+            where reabstract (t:=:t') = (LLam $ \x -> subst sv x t) :=: (LLam $ \x -> subst sv' x t')
 
                   sv = static (height (LLam f))
+
+                  sv' = static (height (LLam f'))
 
         decompose a b
             | sameHead a b = recur a b []
@@ -896,6 +904,6 @@ instance (PrismLink (f (Fix f)) h) => PrismLink (Fix f) h where
 --eventually export
 
 height :: StaticVar (FixLang f) => FixLang f a -> Int
-height (x :!$: y) = max (height x) (height y)
+height (x :!$: y) = max (height x) (height y) + 1 
 height x@(LLam (f :: FixLang f t3 -> FixLang f t3')) =  height (f $ static 0) + 1
 height _ = 0
