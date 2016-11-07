@@ -208,8 +208,22 @@ instance Inference FOLogic PureLexiconFOL where
      conclusionOf EG    = GammaV 1  :|-: ss (PExist "v" (phi 1))
      -- XXX : need eigenvariable constraints for these
      conclusionOf UD    = GammaV 1  :|-: ss (PUniv "v" (phi 1))
-     conclusionOf ED1    = GammaV 1 :+: GammaV 2 :|-: ss (phiS 1)
-     conclusionOf ED2    = GammaV 1 :+: GammaV 2 :|-: ss (phiS 1)
+     conclusionOf ED1   = GammaV 1 :+: GammaV 2 :|-: ss (phiS 1)
+     conclusionOf ED2   = GammaV 1 :+: GammaV 2 :|-: ss (phiS 1)
+
+     restriction UD     = Just (eigenConstraint (SeqT 1) (ss $ phi 1 $ static 0) (GammaV 1))
+     restriction _      = Nothing
+
+eigenConstraint c suc ant sub
+    | c' `occursIn` ant' = Just $ "The constant " ++ show c' ++ " appears not to be fresh, given that this line relies on " ++ show ant'
+    | c' `occursIn` suc' = Just $ "The constant " ++ show c' ++ " appears not to be fresh in the other premise " ++ show suc'
+    | otherwise = Nothing
+    where c'   = applySub sub c
+          ant' = applySub sub ant
+          suc' = applySub sub suc
+          -- XXX : this is not the most efficient way of checking
+          -- imaginable.
+          occursIn x y = not $ (subst x (static 0) y) =* y
 
 parseFOLLogic :: Parsec String u [FOLogic]
 parseFOLLogic = do r <- choice (map (try . string) ["AS","PR","MP","MTP","MT","DD","DNE","DNI", "DN", "S", "ADJ",  "ADD" , "BC", "CB",  "CD", "ID", "UI", "UD", "EG", "ED"])
@@ -230,6 +244,7 @@ parseFOLLogic = do r <- choice (map (try . string) ["AS","PR","MP","MTP","MT","D
                              "BC"   -> return [BC1, BC2]
                              "CB"   -> return [CB]
                              "UI"   -> return [UI]
+                             "UD"   -> return [UD]
                              "EG"   -> return [EG]
                              "ED"   -> return [ED1, ED2]
 

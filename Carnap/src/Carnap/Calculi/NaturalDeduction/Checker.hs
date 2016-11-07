@@ -14,6 +14,7 @@ import Control.Lens
 import Control.Monad.State
 import Data.Tree
 import Data.Either
+import Data.Maybe (isNothing)
 import Data.List
 import Text.Parsec (parse, Parsec, ParseError, choice, try, string)
 
@@ -39,6 +40,12 @@ lineNoOfError (NoUnify _ n) = n
 lineNoOfError (GenericError _ n) = n
 lineNoOfError (NoResult n) = n
 
+renumber :: Int -> ProofErrorMessage lex -> ProofErrorMessage lex
+renumber m (NoParse x n) = NoParse x m
+renumber m (NoUnify x n) = NoUnify x m
+renumber m (GenericError s n) = GenericError s m
+renumber m (NoResult n) = NoResult m
+
 --------------------------------------------------------
 --Main Functions
 --------------------------------------------------------
@@ -48,8 +55,10 @@ lineNoOfError (NoResult n) = n
 {- | 
 find the prooftree corresponding to *line n* in ded, where proof line numbers start at 1
 -}
-toProofTree :: (Inference r lex, Sequentable lex) => 
-    Deduction r lex -> Int -> Either (ProofErrorMessage lex) (ProofTree r lex)
+toProofTree :: 
+    ( Inference r lex
+    , Sequentable lex
+    ) => Deduction r lex -> Int -> Either (ProofErrorMessage lex) (ProofTree r lex)
 toProofTree ded n = case ded !! (n - 1)  of
           (AssertLine f r dpth deps) -> 
                 do mapM checkDep deps
@@ -97,8 +106,10 @@ toProofTree ded n = case ded !! (n - 1)  of
           --sublist, given by line numbers
           lineRange m n l = drop (m - 1) $ take n l
 
-toDisplaySequence:: (MonadVar (ClassicalSequentOver lex) (State Int), Inference r lex, Sequentable lex) => 
-    (String -> PartialDeduction r lex) -> String -> Feedback lex
+toDisplaySequence:: 
+    ( MonadVar (ClassicalSequentOver lex) (State Int)
+    , Inference r lex, Sequentable lex
+    ) => (String -> PartialDeduction r lex) -> String -> Feedback lex
 toDisplaySequence topd s = if isParsed 
                               then let feedback = map (processLine(rights ded)) [1 .. length ded] in
                                   Feedback (lastTopInd >>= fromFeedback feedback) feedback
@@ -124,10 +135,12 @@ toDisplaySequence topd s = if isParsed
             (QedLine _ _ _) -> Left $ NoResult n
             _ -> toProofTree ded n >>= (updateLine n . reduceProofTree)
 
--- XXX: Obviously find some way to reduce duplication here.
-hoToDisplaySequence:: (StaticVar (ClassicalSequentOver lex), Schematizable (ClassicalSequentOver lex),
-    MonadVar (ClassicalSequentOver lex) (State Int), Inference r lex, Sequentable lex) => 
-    (String -> PartialDeduction r lex) -> String -> Feedback lex
+-- XXX Obviously find some way to reduce duplication here.
+hoToDisplaySequence:: 
+    ( StaticVar (ClassicalSequentOver lex)
+    , MonadVar (ClassicalSequentOver lex) (State Int)
+    , Inference r lex, Sequentable lex
+    ) => (String -> PartialDeduction r lex) -> String -> Feedback lex
 hoToDisplaySequence topd s = if isParsed 
                               then let feedback = map (processLine(rights ded)) [1 .. length ded] in
                                   Feedback (lastTopInd >>= fromFeedback feedback) feedback
@@ -146,9 +159,12 @@ hoToDisplaySequence topd s = if isParsed
             Right s -> Just s
           updateLine n (Right x) = Right x
           updateLine n (Left e) = Left e
-          processLine :: (StaticVar (ClassicalSequentOver lex),Sequentable lex, Inference r lex, MonadVar (ClassicalSequentOver lex) (State Int),
-            Schematizable (ClassicalSequentOver lex)) => 
-            [DeductionLine r lex (Form Bool)] -> Int -> Either (ProofErrorMessage lex) (ClassicalSequentOver lex Sequent)
+          processLine :: 
+            ( StaticVar (ClassicalSequentOver lex)
+            , Sequentable lex
+            , Inference r lex
+            , MonadVar (ClassicalSequentOver lex) (State Int)
+            ) => [DeductionLine r lex (Form Bool)] -> Int -> Either (ProofErrorMessage lex) (ClassicalSequentOver lex Sequent)
           processLine ded n = case ded !! (n - 1) of
             --special case to catch QedLines not being cited in justifications
             (QedLine _ _ _) -> Left $ NoResult n
@@ -194,10 +210,12 @@ reduceResult lineno xs = case rights xs of
 --return an error or a list of possible (schematic-variable-free) correct
 --conclusion sequents
 
-foseqFromNode :: (Inference r lex, MaybeMonadVar (ClassicalSequentOver lex) (State Int),
-        MonadVar (ClassicalSequentOver lex) (State Int)) =>  
-    Int -> [r] -> [ClassicalSequentOver lex Sequent] -> ClassicalSequentOver lex Succedent 
-      -> [Either (ProofErrorMessage lex) [ClassicalSequentOver lex Sequent]]
+foseqFromNode :: 
+    ( Inference r lex
+    , MaybeMonadVar (ClassicalSequentOver lex) (State Int)
+    , MonadVar (ClassicalSequentOver lex) (State Int)
+    ) =>  Int -> [r] -> [ClassicalSequentOver lex Sequent] -> ClassicalSequentOver lex Succedent 
+              -> [Either (ProofErrorMessage lex) [ClassicalSequentOver lex Sequent]]
 foseqFromNode lineno rules prems conc = 
         do rrule <- rules
            rprems <- permutations (premisesOf rrule) 
@@ -218,65 +236,89 @@ foseqFromNode lineno rules prems conc =
                                    (map (view lhs) prems))
                             return $ map (\x -> applySub x subbedconc) acuisubs
 
-hoseqFromNode :: (Inference r lex, MaybeMonadVar (ClassicalSequentOver lex) (State Int),
-        MonadVar (ClassicalSequentOver lex) (State Int), Schematizable (ClassicalSequentOver lex)) =>  
-    Int -> [r] -> [ClassicalSequentOver lex Sequent] -> ClassicalSequentOver lex Succedent 
-      -> [Either (ProofErrorMessage lex) [ClassicalSequentOver lex Sequent]]
+hoseqFromNode :: 
+    ( Inference r lex
+    , MaybeMonadVar (ClassicalSequentOver lex) (State Int)
+    , MonadVar (ClassicalSequentOver lex) (State Int)
+    ) =>  Int -> [r] -> [ClassicalSequentOver lex Sequent] -> ClassicalSequentOver lex Succedent 
+              -> [Either (ProofErrorMessage lex) [ClassicalSequentOver lex Sequent]]
 hoseqFromNode lineno rules prems conc = 
-        do rrule <- rules
-           rprems <- permutations (premisesOf rrule) 
-           return $ oneRule rrule rprems
-    where oneRule r rps = do if length rps /= length prems 
-                                then Left $ GenericError "Wrong number of premises" lineno
-                                else Right ""
-                             let rconc = conclusionOf r
-                             hosubs <- hosolve -- need to catch Eigenvariable issues inside this function
-                                (zipWith (:=:) 
-                                    (map (view rhs) (rconc:rps)) 
-                                    (conc:map (view rhs) prems))
-                             let sols = do hosub <-  hosubs 
-                                           let subbedrule = map (applySub hosub) rps
-                                           let subbedconc = applySub hosub rconc
-                                           return (subbedconc, (zipWith (:=:) 
-                                                 (map (view lhs) subbedrule) 
-                                                 (map (view lhs) prems)))
-                             acuisubs <- mapM (acuisolve . snd) sols
-                             let sols' = zip sols acuisubs
-                             return $ concat $ map (\(x,y) -> map (\z -> applySub z (fst x)) y) sols'
+        do r <- rules
+           rps <- permutations (premisesOf r) 
+           if length rps /= length prems 
+                then return $ Left $ GenericError "Wrong number of premises" lineno
+                else do let rconc = conclusionOf r
+                        case hosolve (zipWith (:=:) (map (view rhs) (rconc:rps)) (conc:map (view rhs) prems)) of 
+                            Left e -> return $ Left $ renumber lineno e 
+                            Right hosubs -> 
+                                do hosub <- hosubs
+                                   let subbedrule = map (applySub hosub) rps
+                                   let subbedconc = applySub hosub rconc
+                                   let prob = (zipWith (:=:) (map (view lhs) subbedrule) 
+                                                             (map (view lhs) prems))
+                                   case hoacuisolve r hosub prob of Right s -> return $ Right $ map (\x -> applySub x subbedconc) s
+                                                                    Left e -> return $ Left $ renumber lineno e
 
-reduceProofTree :: (Inference r lex, 
-                   MaybeMonadVar (ClassicalSequentOver lex) (State Int),
-        MonadVar (ClassicalSequentOver lex) (State Int)) =>  
-        ProofTree r lex -> Either (ProofErrorMessage lex) (ClassicalSequentOver lex Sequent)
+reduceProofTree :: 
+    ( Inference r lex
+    , MaybeMonadVar (ClassicalSequentOver lex) (State Int)
+    , MonadVar (ClassicalSequentOver lex) (State Int)
+    ) =>  ProofTree r lex -> Either (ProofErrorMessage lex) (ClassicalSequentOver lex Sequent)
 reduceProofTree (Node (ProofLine no cont rules) ts) =  
         do prems <- mapM reduceProofTree ts
            reduceResult no $ foseqFromNode no rules prems cont
 
-hoReduceProofTree :: (Inference r lex, 
-                   MaybeMonadVar (ClassicalSequentOver lex) (State Int),
-        MonadVar (ClassicalSequentOver lex) (State Int),
-        StaticVar (ClassicalSequentOver lex), Schematizable (ClassicalSequentOver lex)) =>  
-        ProofTree r lex -> Either (ProofErrorMessage lex) (ClassicalSequentOver lex Sequent)
+hoReduceProofTree :: 
+    ( Inference r lex
+    , MaybeMonadVar (ClassicalSequentOver lex) (State Int)
+    , MonadVar (ClassicalSequentOver lex) (State Int)
+    , StaticVar (ClassicalSequentOver lex)
+    ) =>  ProofTree r lex -> Either (ProofErrorMessage lex) (ClassicalSequentOver lex Sequent)
 hoReduceProofTree (Node (ProofLine no cont rules) ts) =  
         do prems <- mapM hoReduceProofTree ts
            rslt <- reduceResult no $ hoseqFromNode no rules prems cont
            return $ evalState (toBNF rslt) (0 :: Int)
 
-fosolve :: (FirstOrder (ClassicalSequentOver lex), MonadVar (ClassicalSequentOver lex) (State Int)) =>  
-    [Equation (ClassicalSequentOver lex)] -> Either (ProofErrorMessage lex) [Equation (ClassicalSequentOver lex)]
+fosolve :: 
+    ( FirstOrder (ClassicalSequentOver lex)
+    , MonadVar (ClassicalSequentOver lex) (State Int)
+    ) =>  [Equation (ClassicalSequentOver lex)] -> Either (ProofErrorMessage lex) [Equation (ClassicalSequentOver lex)]
 fosolve eqs = case evalState (foUnifySys (const False) eqs) (0 :: Int) of 
                 [] -> Left $ NoUnify [eqs] 0
                 [s] -> Right s
 
-hosolve :: (HigherOrder (ClassicalSequentOver lex), MonadVar (ClassicalSequentOver lex) (State Int), Schematizable (ClassicalSequentOver lex)) =>
-    [Equation (ClassicalSequentOver lex)] -> Either (ProofErrorMessage lex) [[Equation (ClassicalSequentOver lex)]]
+hosolve :: 
+    ( HigherOrder (ClassicalSequentOver lex)
+    , MonadVar (ClassicalSequentOver lex) (State Int)
+    ) => [Equation (ClassicalSequentOver lex)] -> Either (ProofErrorMessage lex) [[Equation (ClassicalSequentOver lex)]]
 hosolve eqs = case evalState (huetUnifySys (const False) eqs) (0 :: Int) of
-                [] -> Left $ NoUnify [eqs] 0
-                subs -> Right subs
+                    [] -> Left $ NoUnify [eqs] 0
+                    subs -> Right subs
 
-acuisolve :: (ACUI (ClassicalSequentOver lex), MonadVar (ClassicalSequentOver lex) (State Int)) =>  
-    [Equation (ClassicalSequentOver lex)] -> Either (ProofErrorMessage lex) [[Equation (ClassicalSequentOver lex)]]
+acuisolve :: 
+    ( ACUI (ClassicalSequentOver lex)
+    , MonadVar (ClassicalSequentOver lex) (State Int)
+    ) => [Equation (ClassicalSequentOver lex)] -> Either (ProofErrorMessage lex) [[Equation (ClassicalSequentOver lex)]]
 acuisolve eqs = 
         case evalState (acuiUnifySys (const False) eqs) (0 :: Int) of
           [] -> Left $ NoUnify [eqs] 0
           subs -> Right subs
+
+hoacuisolve :: 
+    ( Inference r lex
+    , ACUI (ClassicalSequentOver lex)
+    , MonadVar (ClassicalSequentOver lex) (State Int)
+    ) =>  r -> [Equation (ClassicalSequentOver lex)] -> [Equation (ClassicalSequentOver lex)] 
+            -> Either (ProofErrorMessage lex) [[Equation (ClassicalSequentOver lex)]]
+hoacuisolve r sub1 eqs = 
+        case evalState (acuiUnifySys (const False) eqs) (0 :: Int) of
+          [] -> Left $ NoUnify [eqs] 0
+          subs -> case restriction r of
+                                Nothing -> Right subs
+                                Just rst -> case partitionEithers $ checkAgainst rst subs of
+                                           (s:_,[]) -> Left $ GenericError s 0
+                                           (_,subs') -> Right subs'
+    where checkAgainst f [] = []
+          checkAgainst f (l:ls)  = case f (sub1 ++ l) of
+                                     Nothing -> Right l : checkAgainst f ls
+                                     Just s -> Left s : checkAgainst f ls

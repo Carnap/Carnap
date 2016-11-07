@@ -22,6 +22,9 @@ class ( FirstOrder (ClassicalSequentOver lex)
         Inference r lex | r -> lex where
         premisesOf :: r -> [ClassicalSequentOver lex Sequent]
         conclusionOf :: r -> ClassicalSequentOver lex Sequent
+        --restrictions, based on given substitutions
+        restriction :: r -> Maybe ([Equation (ClassicalSequentOver lex)] -> Maybe String)
+        restriction _ = Nothing
         --TODO: direct, indirect inferences, template for error messages,
         --etc.
 
