@@ -19,4 +19,10 @@ activate cls l
                                 ++ y ++ "\"><div>" 
                                 ++ show (simpleCipher x) ++ "</div></div>"
             _ -> "<div>No Matching Translation</div>"
+    | "FOL" `elem` cls = RawBlock "html" $ 
+        case (splitOn ":" l) of
+            [x,y] -> "<div class=\"translate first-order\"><input type =\"text\" value=\""
+                                ++ y ++ "\"><div>" 
+                                ++ show (simpleCipher x) ++ "</div></div>"
+            _ -> "<div>No Matching Translation</div>"
     | otherwise = RawBlock "html" "<div>No Matching Translation</div>"
