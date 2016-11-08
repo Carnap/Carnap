@@ -34,13 +34,6 @@ import Control.Monad.IO.Class (MonadIO, liftIO)
 syntaxCheckAction:: IO ()
 syntaxCheckAction = initElements getCheckers activateChecker
 
-echoTo :: IsElement element => (String -> String) -> element -> EventM HTMLInputElement KeyboardEvent ()
-echoTo f o = do (Just t) <- target :: EventM HTMLInputElement KeyboardEvent (Maybe HTMLInputElement)
-                mv <- getValue t
-                case mv of 
-                    Nothing -> return ()
-                    Just v -> liftIO $ setInnerHTML o (fmap f mv)
-
 trySubmit :: IORef (PureForm,[(PureForm,Int)], Tree (PureForm,Int),Int) -> Window -> String -> EventM HTMLInputElement e ()
 trySubmit ref w l = do (f,forms,_,_) <- liftIO $ readIORef ref
                        case forms of 
@@ -126,8 +119,6 @@ getCheckers = getInOutElts "synchecker"
 
 activateChecker :: Document -> Maybe (Element, Element,[String]) -> IO ()
 activateChecker w (Just (i,o,classes))
-                | "echo" `elem` classes  = do echo <- newListener $ echoTo (tryParse purePropFormulaParser) o
-                                              addListener i keyUp echo False
                 | "match" `elem` classes = activateMatchWith show
                 | "matchclean" `elem` classes = activateMatchWith showClean
                 | otherwise = return () 

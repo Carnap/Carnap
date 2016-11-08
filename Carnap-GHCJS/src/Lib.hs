@@ -1,6 +1,11 @@
 {-# LANGUAGE RankNTypes, FlexibleContexts, DeriveDataTypeable, CPP, JavaScriptFFI #-}
 module Lib
-    (genericSendJSON, sendJSON, onEnter, clearInput, getListOfElementsByClass, tryParse, treeToElement, genericTreeToUl, treeToUl, genericListToUl, listToUl, formToTree, leaves, adjustFirstMatching, decodeHtml, syncScroll, reloadPage, initElements, loginCheck,errorPopup, getInOutElts, getInOutGoalElts,seqAndLabel, folSeqAndLabel,formAndLabel) where
+    (genericSendJSON, sendJSON, onEnter, clearInput,
+    getListOfElementsByClass, tryParse, treeToElement, genericTreeToUl,
+    treeToUl, genericListToUl, listToUl, formToTree, leaves,
+    adjustFirstMatching, decodeHtml, syncScroll, reloadPage, initElements,
+    loginCheck,errorPopup, getInOutElts, getInOutGoalElts, seqAndLabel,
+    folSeqAndLabel,formAndLabel,folFormAndLabel, message) where
 
 import Data.Aeson
 import qualified Data.ByteString.Lazy as BSL
@@ -39,6 +44,7 @@ import GHCJS.DOM.EventM
 import GHCJS.DOM.EventTarget
 import Carnap.Languages.PurePropositional.Syntax (PureForm)
 import Carnap.Languages.PurePropositional.Logic (propSeqParser)
+import Carnap.Languages.PureFirstOrder.Parser (folFormulaParser)
 import Carnap.Languages.PureFirstOrder.Logic (folSeqParser)
 import Carnap.Languages.PurePropositional.Parser (purePropFormulaParser)
 
@@ -214,20 +220,20 @@ errorPopup msg = alert ("Something has gone wrong. Here's the error: " ++ msg)
 --------------------------------------------------------
  
 formAndLabel :: Monad m => ParsecT String u m (String, PureForm)
-formAndLabel = do label <- many (digit <|> char '.')
-                  spaces
-                  f <- purePropFormulaParser
-                  return (label,f)
+formAndLabel = withLabel purePropFormulaParser
 
-seqAndLabel =  do label <- many (digit <|> char '.')
-                  spaces
-                  s <- propSeqParser
-                  return (label,s)
+seqAndLabel = withLabel propSeqParser
 
-folSeqAndLabel =  do label <- many (digit <|> char '.')
-                     spaces
-                     s <- folSeqParser
-                     return (label,s)
+folSeqAndLabel =  withLabel folSeqParser
+
+folFormAndLabel =  withLabel folFormulaParser
+
+withLabel :: Monad m => ParsecT String u m b -> ParsecT String u m (String, b)
+withLabel parser = do label <- many (digit <|> char '.')
+                      spaces
+                      s <- parser
+                      return (label,s)
+
 
 --------------------------------------------------------
 --2. FFI Wrappers
@@ -267,6 +273,8 @@ foreign import javascript unsafe "location.reload()" reloadPage :: IO ()
 
 foreign import javascript unsafe "alert($1)" alert' :: JSString -> IO ()
 
+message = alert
+
 #else
 
 sendJSON :: ToJSON a => a -> (String -> IO ()) -> (String -> IO ()) -> IO ()
@@ -280,6 +288,8 @@ keyString = Prelude.error "keyString requires the GHCJS FFI"
 
 alert :: String -> IO ()
 alert = Prelude.error "alert requires the GHCJS FFI"
+
+message = alert
 
 reloadPage :: IO ()
 reloadPage = Prelude.error "you can't reload the page without the GHCJS FFI"

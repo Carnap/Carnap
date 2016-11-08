@@ -289,10 +289,11 @@ table.rules tr {
 ol.example > li {
     list-style:none;
     position:relative;
+    counter-increment:example;
 }
 
 ol.example {
-    counter-increment:example;
+    counter-increment:example 0;
     padding-left:10px;
     padding-right:25px;
 }
