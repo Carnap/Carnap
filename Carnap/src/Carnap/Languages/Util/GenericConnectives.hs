@@ -50,12 +50,18 @@ data IntPred b c a where
         Pred ::  Arity (Term c) (Form b) n ret -> Int -> IntPred b c ret
 
 instance Schematizable (IntPred b c) where
-        schematize (Pred a n) xs = 
-            case read $ show a of
-                0 -> "P^0_" ++ show n
-                m -> "P^" ++ show a ++ "_" ++ show n 
-                                        ++ "(" ++ intercalate "," args ++ ")"
-                        where args = take m $ xs ++ repeat "_"
+        schematize (Pred a n) xs = pred ++ tail 
+            where arity = read $ show a
+                  args = take arity $ xs ++ repeat "_"
+                  pred 
+                    | n < 0 && n > -11 = ["_FGHIJKLMO" !! (-1 * n)]
+                    | arity == 0       = "P^0_" ++ show n
+                    | otherwise        = "P^" ++ show a ++ "_" ++ show n 
+                  tail
+                    | arity == 0    = ""
+                    | otherwise     = "(" ++ intercalate "," args ++ ")"
+                  
+
 
 instance UniformlyEq (IntPred b c) where
         (Pred a n) =* (Pred a' m) = show a == show a' && n == m
@@ -205,7 +211,9 @@ data IntConst b a where
         Constant :: Int -> IntConst b (Term b)
 
 instance Schematizable (IntConst b) where
-        schematize (Constant n)   _       = "c_" ++ show n
+        schematize (Constant n)   _       
+            | n < 0 && n > -6 = ["_abcde" !! (-1 * n)]
+            | otherwise = "c_" ++ show n
 
 instance UniformlyEq (IntConst b) where
         (Constant n) =* (Constant m) = n == m

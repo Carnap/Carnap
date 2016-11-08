@@ -28,20 +28,16 @@ mfolFormulaParser = buildExpressionParser opTable subFormulaParser
 
 coreParser recur sfrecur = parenParser recur
       <|> try (quantifiedSentenceParser parseFreeVar sfrecur)
+      <|> try atomicSentenceParser
       <|> unaryOpParser [parseNeg] sfrecur
 
 parseFreeVar :: Parsec String u (PureFirstOrderLanguageWith a (Term Int))
 parseFreeVar = choice [try $ do _ <- string "x_"
                                 dig <- many1 digit
                                 return $ PV $ "x_" ++ dig
-                      ,      do c <- oneOf "xyzw"
+                      ,      do c <- oneOf "vwxyz"
                                 return $ PV [c]
                       ]
-
-parseConstant :: Parsec String u (PureFirstOrderLanguageWith a (Term Int))
-parseConstant = do _ <- string "c_"
-                   n <- number
-                   return $ PC n
 
 monadicSentenceParser :: Parsec String u PureMFOLForm
 monadicSentenceParser = do _ <- string "P_"
