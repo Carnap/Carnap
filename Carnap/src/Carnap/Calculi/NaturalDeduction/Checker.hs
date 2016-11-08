@@ -234,7 +234,7 @@ foseqFromNode lineno rules prems conc =
                                (zipWith (:=:) 
                                    (map (view lhs) subbedrule) 
                                    (map (view lhs) prems))
-                            return $ map (\x -> applySub x subbedconc) acuisubs
+                            return $ map (\x -> antecedentNub $ applySub x subbedconc) acuisubs
 
 hoseqFromNode :: 
     ( Inference r lex

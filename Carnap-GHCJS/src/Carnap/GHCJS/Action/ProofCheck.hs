@@ -33,7 +33,7 @@ import Control.Monad.Trans.Maybe (runMaybeT, MaybeT(..))
 
 proofCheckAction :: IO ()
 proofCheckAction = do availableDerived <- newIORef []
-                      --genericSendJSON RequestDerivedRulesForUser (addRules availableDerived) errcb
+                      genericSendJSON RequestDerivedRulesForUser (addRules availableDerived) errcb
                       initElements getCheckers (activateChecker availableDerived)
     where errcb e = case fromJSON e :: Result String of
                                A.Error e -> print $ "Getting kind of meta. Error decoding error message:" ++ e
@@ -88,7 +88,7 @@ wrap (Left (GenericError s n))  = errDiv s n Nothing
 wrap (Left (NoParse e n))       = errDiv "Can't read this line. There may be a typo." n (Just $ show e)
 wrap (Left (NoUnify eqs n))     = errDiv "Can't match these premises with this conclusion, using this rule" n (Just $ toUniErr eqs)
 wrap (Left (NoResult n))        = "<div>&nbsp;</div>"
-wrap (Right seq) = "<div>+<div><div>" ++ show seq ++ "<div></div></div>"
+wrap (Right seq)                = "<div>+<div><div>" ++ show seq ++ "<div></div></div>"
 
 toUniErr eqs = "In order to apply this inference rule, there needs to be a substitution that makes at least one of these sets of pairings match:" 
                 ++ (concat $ map endiv' $ map (concat . map (endiv . show) . reverse) eqs)

@@ -114,7 +114,6 @@ trivialSol (Sols i s _) = map ((LNeg i) :) (trivialSol s)
 trivialSol (Sat True)   = [[]]
 trivialSol (Sat False)  = []
 
-
 --finds all minimal solutions or the trivial solution if no nontrivial ones
 --exist
 --minimals :: Solutions a -> [[Literal a]]
@@ -125,7 +124,6 @@ minimals sols | null minsols = trivialSol sols
 --simplifies a term by removing all empties
 --simplify :: ACUI f => f a -> f a
 --simplify e = refoldTerms (unfoldTerm e)
-
 
 --uses vget to get the term being solved for and converts a solution
 --into a substitution
@@ -153,7 +151,6 @@ popVar :: (MonadVar f m, Typeable a, EtaExpand (State Int) f a) => m (f a)
 popVar = do
     v <- freshPig
     return $ unEveryPig v
-
 
 --solves a homogenous equation
 solveHomoEq :: forall f m a. (MonadVar f m, ACUI f, Typeable a, EtaExpand (State Int) f a)

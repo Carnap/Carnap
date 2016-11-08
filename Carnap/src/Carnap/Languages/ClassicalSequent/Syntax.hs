@@ -1,11 +1,13 @@
-{-#LANGUAGE ScopedTypeVariables,  UndecidableInstances, FlexibleInstances,  GADTs,  PolyKinds, TypeOperators,  PatternSynonyms, MultiParamTypeClasses #-}
+{-#LANGUAGE ScopedTypeVariables,  UndecidableInstances, FlexibleContexts, FlexibleInstances,  GADTs,  PolyKinds, TypeOperators,  PatternSynonyms, MultiParamTypeClasses #-}
 module Carnap.Languages.ClassicalSequent.Syntax where
 
 import Carnap.Core.Data.AbstractSyntaxClasses
 import Carnap.Core.Data.AbstractSyntaxDataTypes
 import Carnap.Core.Unification.ACUI
+import Carnap.Core.Unification.Unification
 import Control.Lens.Lens (lens)
 import Control.Lens.Traversal (Traversal')
+import Control.Monad.State
 import Data.Typeable
 
 
@@ -167,6 +169,9 @@ instance Handed (ClassicalSequentOver lex Sequent)
     where lhs = lens (\(x :|-: y) -> x) (\( y:|-:z ) x -> x:|-: z)
           rhs = lens (\(x :|-: y) -> y) (\( y:|-:z ) x -> y:|-: x)
 
+--------------------------------------------------------
+--2. Optics
+--------------------------------------------------------
 
 -- TODO: Generalize to a typeclass
 concretes :: Traversal' (ClassicalSequentOver lex Antecedent) (ClassicalSequentOver lex (Form Bool))
@@ -177,7 +182,7 @@ concretes f (SV n) = pure (SV n)
 concretes f (Top) = pure Top
 
 --------------------------------------------------------
---2. Sequent Languages
+--3. Sequent Languages
 --------------------------------------------------------
 
 class Sequentable f where
@@ -185,3 +190,13 @@ class Sequentable f where
         fromSequent :: ClassicalSequentOver f a -> FixLang f a
         -- XXX: add an iso?
 
+--------------------------------------------------------
+--4. Utilities
+--------------------------------------------------------
+
+antecedentNub :: 
+    ( ACUI (ClassicalSequentOver a)
+    , MonadVar (ClassicalSequentOver a) (State Int)
+    ) => ClassicalSequentOver a Sequent -> ClassicalSequentOver a Sequent
+antecedentNub (x:|-:y) = (applySub (head subs) (GammaV 1) :|-: y)
+    where subs = evalState (acuiUnifySys (const False) [x :=: GammaV 1]) (0 :: Int)
