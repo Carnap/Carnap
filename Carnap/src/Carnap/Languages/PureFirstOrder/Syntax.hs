@@ -82,8 +82,6 @@ type CoreLexicon =  Connective PureConn
 
 type PureFirstOrderLanguageWith a = FixLang (CoreLexicon :|: a)
 
-pattern (:!!$:) :: (Typeable a, Typeable b) => PureFirstOrderLanguageWith c (a -> b) -> PureFirstOrderLanguageWith c a -> PureFirstOrderLanguageWith c b
-pattern (:!!$:) f y    = f :!$: y
 pattern PCon x arity   = FX (Lx1 (Lx1 (Connective x arity)))
 pattern PQuant q       = FX (Lx1 (Lx2 (Bind q)))
 pattern PSV n          = FX (Lx1 (Lx3 (StaticVar n)))
@@ -96,26 +94,15 @@ pattern POr            = PCon Or ATwo
 pattern PIf            = PCon If ATwo
 pattern PIff           = PCon Iff ATwo
 pattern PNot           = PCon Not AOne
-pattern PBind q f      = PQuant q :!!$: LLam f
-pattern (:&:) x y      = PAnd :!!$: x :!!$: y
-pattern (:||:) x y     = POr  :!!$: x :!!$: y
-pattern (:->:) x y     = PIf  :!!$: x :!!$: y
-pattern (:<->:) x y    = PIff :!!$: x :!!$: y
-pattern PNeg x         = PNot :!!$: x
-pattern PUniv v f      = PBind (All v) f
-pattern PExist v f     = PBind (Some v) f
+pattern PBind q f      = PQuant q :!$: LLam f
+pattern (:&:) x y      = PAnd :!$: x :!$: y
+pattern (:||:) x y     = POr  :!$: x :!$: y
+pattern (:->:) x y     = PIf  :!$: x :!$: y
+pattern (:<->:) x y    = PIff :!$: x :!$: y
+pattern PNeg x         = PNot :!$: x
 pattern PC n           = PConst (Constant n) AZero
 pattern PV s           = PVar (Var s) AZero
 pattern PT n           = PTau (SFunc AZero n) AZero
-
--- height :: PureFirstOrderLanguageWith a b -> Int
--- height (PUniv _ g)     = height (g $ PV "") + 1
--- height (PExist _ g)    = height (g $ PV "") + 1
--- height (phi :&: psi)   = max (height phi) (height psi)
--- height (phi :||: psi)  = max (height phi) (height psi)
--- height (phi :->: psi)  = max (height phi) (height psi)
--- height (phi :<->: psi) = max (height phi) (height psi)
--- height _               = 0
 
 instance Schematizable (a (PureFirstOrderLanguageWith a)) => 
     CopulaSchema (PureFirstOrderLanguageWith a) where 
@@ -162,8 +149,8 @@ instance QuantLanguage (PureFirstOrderLanguageWith a (Form Bool)) (PureFirstOrde
 instance FirstOrder (FixLang (CoreLexicon :|: a)) => 
     RelabelVars (CoreLexicon :|: a) Form Bool where
 
-    subBinder (PUniv v f) y = Just $ PUniv y f 
-    subBinder (PExist v f) y = Just $ PExist y f
+    subBinder (PBind (All v) f) y = Just $ PBind (All y) f 
+    subBinder (PBind (Some v) f) y = Just $ PBind (Some y) f
     subBinder _ _ = Nothing
 
 instance FirstOrder (FixLang (CoreLexicon :|: a)) => 

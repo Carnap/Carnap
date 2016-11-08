@@ -49,8 +49,8 @@ pattern SeqDV n           = FX (Lx2 (Lx1 (Lx3 (SubVar n))))
 pattern SeqPred x arity   = FX (Lx2 (Lx2 (Lx1 (Predicate x arity))))
 pattern SeqSPred x arity  = FX (Lx2 (Lx2 (Lx2 (Predicate x arity))))
 pattern SeqCon x arity    = FX (Lx2 (Lx1 (Lx1 (Connective x arity))))
-pattern SeqPEq            = FX (Lx2 (Lx3 (Lx1 (Predicate TermEq ATwo))))
-pattern SeqPFunc x arity  = FX (Lx2 (Lx3 (Lx2 (Function x arity))))
+pattern SeqEq             = FX (Lx2 (Lx3 (Lx1 (Predicate TermEq ATwo))))
+pattern SeqFunc x arity   = FX (Lx2 (Lx3 (Lx2 (Function x arity))))
 pattern SeqConst c a      = FX (Lx2 (Lx1 (Lx4 (Function c a))))
 pattern SeqVar c a        = FX (Lx2 (Lx1 (Lx5 (Function c a))))
 pattern SeqTau c a        = FX (Lx2 (Lx1 (Lx6 (Function c a))))
@@ -82,8 +82,10 @@ instance Sequentable PureLexiconFOL where
     liftToSequent (PC n)          = SeqC n
     liftToSequent (PV s)          = SeqV s
     liftToSequent (PT n)          = SeqT n
-    liftToSequent (PSV n)         = SeqSSV n --Not obvious where these should go.
+    liftToSequent (PSV n)         = SeqSSV n --Preserve relation to MonadVar
     liftToSequent (PDV n)         = SeqSDV n
+    liftToSequent (PFunc x a)     = SeqFunc x a
+    liftToSequent PEq             = SeqEq
 
     fromSequent (x :!$: y)       = (fromSequent x :!$: fromSequent y)
     fromSequent (LLam f)         = LLam (fromSequent . f . liftToSequent)
@@ -98,11 +100,13 @@ instance Sequentable PureLexiconFOL where
     fromSequent (SeqC n)         = PC n
     fromSequent (SeqV s)         = PV s
     fromSequent (SeqT n)         = PT n
-    --fromSequent (SeqDV n)        = PDV n
+    fromSequent (SeqFunc x a)    = PFunc x a
+    fromSequent SeqEq            = PEq
     fromSequent (SeqSDV n)       = PDV n
-    --fromSequent (SeqSV n)        = PSV n
-    fromSequent (SeqSSV n)       = PSV n -- XXX Note this issue.
+    fromSequent (SeqSSV n)       = PSV n
     fromSequent x                = error ("fromSequent can't handle " ++ show x)
+    --This will arise if a SeqSV or SeqDV is somehow passed in---this
+    --shouldn't happen.
 
 data FOLogic = MP | MT  | DNE | DNI | DD   | AX 
                   | CP1 | CP2 | ID1 | ID2  | ID3  | ID4 
@@ -173,14 +177,14 @@ instance Inference FOLogic PureLexiconFOL where
      premisesOf BC2   = [ GammaV 1  :|-: ss (phiS 1 :<->: phiS 2) ]
      premisesOf CB    = [ GammaV 1  :|-: ss (phiS 1 :->: phiS 2)
                         , GammaV 2  :|-: ss (phiS 2 :->: phiS 1) ]
-     premisesOf UI    = [ GammaV 1  :|-: ss (PUniv "v" (phi 1))]
+     premisesOf UI    = [ GammaV 1  :|-: ss (PBind (All "v") (phi 1))]
      premisesOf EG    = [ GammaV 1 :|-: ss (phi 1 tau)]
      -- XXX : need eigenvariable constraint for these
      premisesOf UD    = [ GammaV 1 :|-: ss (phi 1 tau)]
      premisesOf ED1   = [ GammaV 1 :+:  sa (phi 1 tau) :|-: ss (phiS 1)
-                        , GammaV 2 :|-: ss (PExist "v" $ phi 1)]
+                        , GammaV 2 :|-: ss (PBind (Some "v") $ phi 1)]
      premisesOf ED2   = [ GammaV 1 :|-: ss (phiS 1)
-                        , GammaV 2 :|-: ss (PExist "v" $ phi 1)]
+                        , GammaV 2 :|-: ss (PBind (Some "v") $ phi 1)]
 
      conclusionOf MP    = (GammaV 1 :+: GammaV 2) :|-: ss (phiS 2)
      conclusionOf MT    = (GammaV 1 :+: GammaV 2) :|-: ss (PNeg $ phiS 1)
@@ -205,13 +209,13 @@ instance Inference FOLogic PureLexiconFOL where
      conclusionOf BC2   = GammaV 1 :|-: ss (phiS 1 :->: phiS 2)
      conclusionOf CB    = GammaV 1 :+: GammaV 2 :|-: ss (phiS 1 :<->: phiS 2)
      conclusionOf UI    = GammaV 1 :|-: ss (phi 1 tau)
-     conclusionOf EG    = GammaV 1  :|-: ss (PExist "v" (phi 1))
-     conclusionOf UD    = GammaV 1  :|-: ss (PUniv "v" (phi 1))
+     conclusionOf EG    = GammaV 1  :|-: ss (PBind (Some "v") (phi 1))
+     conclusionOf UD    = GammaV 1  :|-: ss (PBind (All "v") (phi 1))
      conclusionOf ED1   = GammaV 1 :+: GammaV 2 :|-: ss (phiS 1)
      conclusionOf ED2   = GammaV 1 :+: GammaV 2 :|-: ss (phiS 1)
 
-     restriction UD     = Just (eigenConstraint (SeqT 1) (ss $ PUniv "v" $ phi 1) (GammaV 1))
-     restriction ED1    = Just (eigenConstraint (SeqT 1) ((ss $ PExist "v" $ phi 1) :-: (ss $ phiS 1)) (GammaV 1 :+: GammaV 2))
+     restriction UD     = Just (eigenConstraint (SeqT 1) (ss $ PBind (All "v") $ phi 1) (GammaV 1))
+     restriction ED1    = Just (eigenConstraint (SeqT 1) ((ss $ PBind (Some "v") $ phi 1) :-: (ss $ phiS 1)) (GammaV 1 :+: GammaV 2))
      restriction ED2    = Nothing --Since this one does not use the assumption with a fresh object
      restriction _      = Nothing
 

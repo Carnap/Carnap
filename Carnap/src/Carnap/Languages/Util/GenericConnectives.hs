@@ -60,8 +60,6 @@ instance Schematizable (IntPred b c) where
                   tail
                     | arity == 0    = ""
                     | otherwise     = "(" ++ intercalate "," args ++ ")"
-                  
-
 
 instance UniformlyEq (IntPred b c) where
         (Pred a n) =* (Pred a' m) = show a == show a' && n == m
@@ -103,12 +101,16 @@ data IntFunc c b a where
         Func ::  Arity (Term c) (Term b) n ret -> Int -> IntFunc b c ret
 
 instance Schematizable (IntFunc b c) where
-        schematize (Func a n) xs = 
-            case read $ show a of
-                0 -> "f^0_" ++ show n
-                m -> "f^" ++ show a ++ "_" ++ show n 
-                                        ++ "(" ++ intercalate "," args ++ ")"
-                        where args = take m $ xs ++ repeat "_"
+        schematize (Func a n) xs = pred ++ tail 
+            where arity = read $ show a
+                  args = take arity $ xs ++ repeat "_"
+                  pred 
+                    | n < 0 && n > -4  = ["_fgh" !! (-1 * n)]
+                    | arity == 0       = "f^0_" ++ show n
+                    | otherwise        = "f^" ++ show a ++ "_" ++ show n 
+                  tail
+                    | arity == 0    = ""
+                    | otherwise     = "(" ++ intercalate "," args ++ ")"
 
 instance UniformlyEq (IntFunc b c) where
         (Func a n) =* (Func a' m) = show a == show a' && n == m

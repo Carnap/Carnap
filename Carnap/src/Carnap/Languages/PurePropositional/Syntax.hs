@@ -51,8 +51,6 @@ instance CopulaSchema PurePropLanguage
 
 type PureForm = PurePropLanguage (Form Bool)
 
-pattern (:!!$:) :: (Typeable a, Typeable b) => PurePropLanguage (a -> b) -> PurePropLanguage a -> PurePropLanguage b
-pattern (:!!$:) f y    = f :!$: y
 pattern PPred x arity  = Fx1 (Predicate x arity)
 pattern PSPred x arity = Fx2 (Predicate x arity)
 pattern PCon x arity   = Fx3 (Connective x arity)
@@ -64,11 +62,11 @@ pattern PIff           = PCon Iff ATwo
 pattern PNot           = PCon Not AOne
 pattern PP n           = PPred (Prop n) AZero
 pattern PPhi n         = PSPred (SProp n) AZero
-pattern (:&:) x y      = PAnd :!!$: x :!!$: y
-pattern (:||:) x y     = POr  :!!$: x :!!$: y
-pattern (:->:) x y     = PIf  :!!$: x :!!$: y
-pattern (:<->:) x y    = PIff :!!$: x :!!$: y
-pattern PNeg x         = PNot :!!$: x
+pattern (:&:) x y      = PAnd :!$: x :!$: y
+pattern (:||:) x y     = POr  :!$: x :!$: y
+pattern (:->:) x y     = PIf  :!$: x :!$: y
+pattern (:<->:) x y    = PIff :!$: x :!$: y
+pattern PNeg x         = PNot :!$: x
 
 instance BooleanLanguage PureForm where
         land = (:&:)

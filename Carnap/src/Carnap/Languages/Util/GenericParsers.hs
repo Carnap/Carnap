@@ -62,7 +62,10 @@ atomicSentenceParser = try parseNumbered <|> parseUnnumbered
                                  n <- number
                                  return $ pn n
 
-schemevarParser :: (IndexedSchemePropLanguage l, Monad m) => ParsecT String u m l
+schemevarParser :: 
+    ( IndexedSchemePropLanguage l
+    , Monad m
+    ) => ParsecT String u m l
 schemevarParser = try parseNumbered <|> parseUnnumbered
     where parseUnnumbered = do c <- oneOf "_φψχθγζξ"
                                let Just n = findIndex (== c) "_φψχθγζξ"
@@ -77,7 +80,10 @@ unaryOpParser ops recur = do n <- listToTry ops
                              f <- recur
                              return $ n f
 
-equalsParser :: (EqLanguage l t, Monad m) => ParsecT String u m t -> ParsecT String u m l
+equalsParser :: 
+    ( EqLanguage l t
+    , Monad m
+    ) => ParsecT String u m t -> ParsecT String u m l
 equalsParser parseTerm = do t1 <- parseTerm
                             spaces
                             _ <- char '='
@@ -130,10 +136,13 @@ molecularTermParser ::
     , Typeable ret
     , Typeable arg
     ) => ParsecT String u m (FixLang lex arg) -> ParsecT String u m (FixLang lex ret)
-molecularTermParser parseTerm =
-        do string "f_"
-           n <- number
-           char '(' *> argParser parseTerm (pfn n AOne)
+molecularTermParser parseTerm = try parseNumbered <|> parseUnnumbered
+    where parseNumbered = do string "f_"
+                             n <- number
+                             char '(' *> argParser parseTerm (pfn n AOne)
+          parseUnnumbered = do c <- oneOf "fgh"
+                               let Just n = findIndex (== c) "_fgh"
+                               char '(' *> argParser parseTerm (pfn (-1 * n) AOne)
 
 parseConstant :: 
     ( IndexedConstantLanguage (FixLang lex ret)
