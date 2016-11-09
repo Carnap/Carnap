@@ -2,7 +2,7 @@
 
 module Carnap.Core.Unification.Unification (
    Equation((:=:)), UError(..), FirstOrder(..), HigherOrder(..),
-      applySub, mapAll, freeVars, emap, sameTypeEq, ExtApp(..), ExtLam(..), 
+      applySub, mapAll, emap, ExtApp(..), ExtLam(..), 
       EveryPig(..),AnyPig(..), EtaExpand(..), MonadVar(..), betaReduce, 
       betaNormalize, toBNF, toLNF, etaMaximize
 ) where
@@ -119,11 +119,6 @@ instance Schematizable f => Show (UError f) where
                                  ++ schematize x [] ++ ", "
                                  ++ schematize y []
 
-sameTypeEq :: Equation f -> Equation f -> Bool
-sameTypeEq ((a :: f a) :=: _) ((b :: f b) :=: _) = 
-        case eqT :: Maybe (a :~: b) of
-            Just Refl -> True
-            Nothing -> False
 
 emap :: (forall a. f a -> f a) -> Equation f -> Equation f
 emap f (x :=: y) = f x :=: f y
@@ -150,10 +145,6 @@ applySub :: FirstOrder f => [Equation f] -> f a -> f a
 applySub []             y = y
 applySub ((v :=: x):ss) y = applySub ss (subst v x y)
 
-freeVars :: (Typeable a, FirstOrder f, EtaExpand (State Int) f a) => f a -> [AnyPig f]
-freeVars t | isVar t   = [AnyPig t]
-           | otherwise = concatMap rec (decompose t t)
-    where rec (a :=: _) = freeVars a
 
 --------------------------------------------------------
 --Beta/Eta operations

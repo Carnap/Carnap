@@ -82,7 +82,6 @@ scopeHeight (LLam f) = scopeHeight (f dv) + 1
     where  dv = evalState fresh (0 :: Int)
 scopeHeight _ = 0
 
-
 --------------------------------------------------------
 --2. Random Syntax
 --------------------------------------------------------
