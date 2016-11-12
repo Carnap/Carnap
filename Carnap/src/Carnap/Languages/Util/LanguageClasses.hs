@@ -5,6 +5,11 @@ import Carnap.Core.Data.AbstractSyntaxDataTypes
 import Carnap.Core.Data.Util (incArity)
 import Data.Typeable
 
+
+--The convention for variables in this module is that lex is
+--a lexicon, lang is language (without a particular associated syntactic
+--type) and l is a language with an associated syntactic type
+
 --------------------------------------------------------
 --1. Connectives
 --------------------------------------------------------
@@ -12,10 +17,7 @@ import Data.Typeable
 --1.1 Boolean Languages
 --------------------------------------------------------
 --these are classes and datatypes for languages and schematic languages
---with boolean connectives. The convention for variables is that lex is
---a lexicon, lang is language (without a particular associated syntactic
---type) and l is a language with an associated syntactic type
-
+--with boolean connectives. 
 class BooleanLanguage l where
             lneg :: l -> l
             land :: l -> l -> l
