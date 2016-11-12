@@ -1,0 +1,608 @@
+#The Quantified Language
+
+In the previous sections, we've built up a powerful propositional language,
+which we can use to study the logical forms of many different types of
+sentences, and to determine whether arguments involving those sentences are
+formally valid on the basis of those logical forms, by either providing a
+derivation (our positive test for validity), or by providing a counterexample
+by means of truth tables (our negative test for validity).
+
+In this section, we'll introduce a new type of construction into our logical
+language: quantified sentences, corresponding to English constructions like
+"Every dog has its day". We'll then show how to apply a positive test for
+formal validity, by generalizing our rules for derivations to the case of
+quantified sentences.
+
+
+##Predicates and Names
+
+Our new language will be based on a naïve[^1] idea about language. The idea is
+this: simple sentences in English, and in many, perhaps all, human languages
+tend to have two parts. The first part is something like a name---an
+expression that refers to some object. The second part is something like a
+verb---an expression that tells you what that object is doing. Two examples of
+simple sentences like these are:
+
+(@) Alan is tired. 
+
+(@) Grace leads the way.
+
+[^1]:: Maybe an overly naïve idea. But we've got to start somewhere, and to
+understand more complicated theories about the structure of language, it's a
+good idea to try to to understand the simplest theories first.
+
+More complicated sentences are then built up out of these simple sentences.
+For example:
+
+(@mole1) If Alan is tired, then Grace leads the way.
+
+Because the simple sentences can be packed into more complicated sentences,
+and because it seems as if every logically complicated sentence needs to be
+built up out of simple parts, we call these sentences which have no sentential
+parts "Atomic sentences".
+
+Atomic Sentences 
+:   Atomic Sentences are sentences that don't have other sentences as parts.
+
+What if we want to "split the atom"? What can we say about the
+parts---non-sentential parts---that atomic sentences are built out of? Well,
+these sentences have their noun-like part, and they have their verb-like part.
+The traditional name for the noun-like part of a simple sentence is the
+sentence's "subject". The verb-like part might be a verb, but it might also be
+made out of several words, as in our two examples above, where the verb-like
+parts are "is tired" and "leads the way". So, the verb-like part of an atomic
+sentence is not exactly a verb. Let's call this part of the sentence a
+"Predicate".
+
+These two parts of a sentence, the subject and predicate, will be the basic
+building blocks of our expanded formal language. We will have just one type of
+predicate, and we'll use capital letters "$F$" through "$O$" to stand for
+predicates (the letters "$P, Q, R$", and so on are already taken---they stand for
+whole atomic sentences). 
+
+We'll have two types of subjects for our atomic sentences. The first type of
+subject will be something like a name, in English: an expression that is
+supposed to refer to a single object. For these names, we'll use lowercase
+letters "$a$" through "$e$", which we will call *constants*. We'll also have a
+symbol for a type of expression in English that functions a lot like a name,
+but which doesn't have a single thing that it is intended to refer to. Some
+examples of such expressions are "that person", "she", "he", and "it". For
+these expressions, we will use lowercase letters "$v,w,x,y,z$", which we will
+call *variables*. If we run out of predicates, constants, or variables, we'll
+also allow ourselves to make new symbols by attaching numbers as subscripts to
+certain predicates, names and variables. So for example, $R_1$, $c_2$, and
+$x_{22}$ are a predicate, a constant, and a variable respectively.
+
+Notice that our language does not include any symbols for "compound noun
+phrases", like "Jules and Jim". Suppose we would like to formalize the
+sentence "Jules and Jim are European", and we have a scheme of abbreviation
+like this:
+
+
+| $a$  =  "Jules"
+| $b$  =  "Jim" 
+| $F$  =  "is European" 
+
+
+We need to understand the conjunction as meaning "Jules is European and Jim is
+European", which would be formalized as $P(a)\land P(b)$. So in this respect, even
+though we have a new type of symbol available for dealing with nouns, we still
+translate compound noun-phrases as in the previous sections.
+
+###Problem Set 15
+
+Please translate the following set of sentences using this scheme of
+abbreviation:
+
+| $a$  =  "Jules"
+| $b$  =  "Jim" 
+| $F$  =  "is European" 
+| $G$  =  "is dramatic"
+| $H$  = "is emotional"
+
+```{.Translate .FOL}
+15.1 F(a) : Jules is European.
+15.2 F(a)/\-H(a) : Jules is European but not emotional.
+15.3 (F(a)/\F(b))/\(G(b)/\-G(a)) : Jules and Jim are both European, but Jim is dramatic and Jules is not.
+```
+
+(Note, Problem set 15 continues below.)
+
+##Quantificational Phrases
+
+This is all very nice, but there wouldn't be very much here that's new if this
+was all there were to it. Luckily, there's more to English than just combining
+names and verbs. In particular, we have words like "Everybody" and
+"Somebody." And these words have a special significance for reasoning. Here
+are two clues that show us just how special they are.
+
+###Clue 1
+
+Consider the sentence 
+
+(@Q1) Everybody waits.
+
+This sentence implies 
+
+(@TW) Tom waits.
+
+Even though (@Q1) is not specifically about Tom. Now, consider the sentence 
+
+(@) Somebody waits.
+
+This sentence is implied by (@TW), even though the sentence still doesn't have
+any special connection to Tom.
+
+What we're seeing here is the effect of logical structure, hidden inside the
+words "Anybody" and "Everybody". "Anybody" is not another sentence subject
+referring to some thing in the world. It is not a name or a pronoun. Neither
+is "Somebody." No object is connected to Tom in such a way that the inferences
+above would make sense if we believed that "Anybody", or "Somebody" referred
+to that object.
+
+These are words with a special meaning, where that meaning does not just
+involve referring to some person or object.
+
+###Clue 2
+
+Consider the sentences
+
+(@T1) Everything is good
+
+(@T2) Anything is good
+
+These sentences appear to mean the same thing. But consider:
+
+(@NT1) It's not the case that everything is good.
+
+(@NT2) It's not the case that anything is good.
+
+Even though both (@T1) and (@T2) seem to mean the same thing, their negations
+do not seem to mean the same thing. (@NT1) seems to mean the same as
+"Something is bad", while (@NT2) seems to mean the same thing as "Everything
+is bad".
+
+Is this a violation of the principle of compositionality? It looks like what
+we're seeing is a sentence whose meaning is not determined by the meanings of
+its parts. Of course, this is only true if the *real* parts determining the
+meaning of the sentence are "It's not the case that", and "anything is
+good/everything is good", combined in exactly the same way.
+
+In fact, what's going on here is that the phrase "Everything" conceals logical
+structure. Because of this structure, there is more than one way for negation
+to combine with a sentence having the meaning that (@T1) and (@T2) share. And
+the different ways that negation can combine with that meaning give you the
+two different meanings of (@NT1) and (@NT2). 
+
+Here's how we can unpack the meaning shared by (@T1) and (@T2) in order to
+make it clear that there are two possible ways to incorporate a negation.
+Consider
+
+(@T3) For every thing, that thing is good.
+
+This means the same as (@NT1) and (@NT2). But, when we want to add a negation
+to it, we really have two options. We could write
+
+(@NT3) *It's not the case that* for every thing, that thing is good. 
+
+Or we could write 
+
+(@NT4) For every thing, *it's not the case that* that that thing is good.
+
+It looks like (@NT3) means the same as (@NT1), above, while (@NT4) means the
+same as (@NT2). So the difference between (@NT1) and (@NT2) can be explained
+by saying that the logical structure shared by (@T1) and (@T2) resembles the
+grammatical structure of (@T3), with two potential "places" for a negation to
+be inserted.
+
+You can notice that (@T3) involves the phrase "that thing", which is the
+subject to which the predicate "is good" is being applied. "that person" isn't
+exactly a name, since there's no single thing it's intended to
+apply to. But it is the sort of subject that we use *variables* to stand for.
+Besides the subject and the predicate, (@T3) seems to have one other important
+part: the phrase "For every thing", which the word "that thing" refers back
+to. 
+
+In order to capture the kind of logical structure that we're seeing in the
+sentences (@T3), (@NT3), and (@NT4), we'll introduce a new type of symbol,
+which we will call a quantifier. We'll have just two quantifiers: the
+"universal" quantifier "$\forall$", which will represent universal words like
+"any, all, every", and the "existential" quantifier "$\exists$", which will
+represent words indicating the existence of something, like "there is", or
+"something". In order to make it easy to see which variables are referring
+back to which quantifier, we'll attach to each quantifier variable, like this:
+"$\forall x$". We'll call the resulting expression---built out of a quantifier
+and a variable---a quantificational phrase.
+
+A quantifier phrase like $\forall x$ corresponds to the English phrase "for
+every thing", and a quantifier phrase like "$\exists x$" corresponds to the
+phrase "For some thing". Hence, if we have a scheme of abbreviation like
+
+| G = "is good"
+
+our examples above can be formalized as follows: "It's not the case that for
+every thing that thing is good" becomes "$\neg\forall x G(x)$", while "for
+every thing it's not the case that that thing is good" becomes "$\neg\forall x
+G(x)$ $\forall x\neg G(x)$"
+
+<!-- Add clue number three using alternating quantifier ambiguities -->
+
+###Problem Set 15
+
+Please translate the next few sentences using the following scheme of
+abbreviation:
+
+| F = "is funny"
+
+To enter the existential quantifier, you can just use the letter "E", and to
+enter the universal quantifier, you can just use the letter "A"--so entering
+"Ax" will give you $\forall x$, and entering "Ex" will give you $\exists x$
+
+```{.Translate .FOL} 
+15.4 Ax(F(x)) : Everything is funny.
+15.5 Ax(F(x)) : Anything is funny.
+15.6 Ax(-F(x)): For every thing, it's not the case that that thing is funny.
+15.7 Ax(-F(x)) : It's not the case that anything is funny.
+15.8 -Ax(F(x)) : It's not the case that everything is funny.
+```
+
+(Note, problem set 15 is continued below)
+
+##Official Statement of the language
+
+So, to sum up, here are the different basic parts of our expanded language:
+
+The basic building blocks of our language are:
+
+1. Terms
+
+    a. Constants "$a,b,c,d,e, c_1, c_2\ldots$"
+
+    b. Variables "$v,w,x,y,z, x_1, x_2\ldots$"
+
+2. Predicates: $F,G,H,I,J,K,L,M,N,O,F_1,F_2\ldots$
+
+3. Quantificational phrases: $\forall x$, $\forall y\ldots\exists x, \exists y\ldots$
+
+   Where quantificational phrases are made by applying a quantifier to
+   a variable.
+
+Atomic formulas are built up by applying a predicate to a term.
+Other "molecular" formulas are built up by combining two sentences
+using ∧,∨,→, or ↔, or by putting ¬ in front of a sentence. Finally,
+"quantified formulas" can be built up by putting a quantifier in
+front of a sentence. So the formulas are:
+
+1. Atomic formulas: formulas which are made by applying a predicate to a
+   term, for example $F(a), F(x), F(b)$...
+
+2. Molecular formulas, which can be made by
+
+       i. Sticking two formulas together using $\land,
+          \lor,\rightarrow, \leftrightarrow$, and wrapping in
+          parentheses, for example $(F(a)\land G(x))$ 
+
+      ii. Putting a negation in front of a formula, for
+          example $\neg(Fa\land Gx)$
+
+3. Quantified formulas, which can be made by taking a formula and putting a
+   quantificational phrase in front of it, for example $\ ∀x(F(a)∧G(x))$.
+
+   The above specification of the language tells us to put in parentheses
+   whenever we built up a formula out of two other formulas. But as in the
+   case of our original propositional language, we can sometimes afford to
+   drop parentheses. In particular, we can still drop outermost parentheses,
+   use the lefty-rule to drop parentheses that only serve to group a series of
+   junctions left-to-right (where these junctions are of the same type), and
+   use the JI-rule to drop parentheses that only serve to tell us that a
+   certain junction comes directly below a certain if-connective in the
+   parsing tree.
+
+#Quantification and English
+
+The second clue above shows us that we can learn something about natural
+language, by thinking about our formal language. In this section, I'll give
+some examples of natural language phenomena that our formal language can help
+us understand, and I'll use these examples as an opportunity to introduce two
+important concepts that we will need when we begin to spell our our deductive
+system for quantifiers. Those two concepts are the idea of the *scope* of a
+quantifier, and the idea of a quantifier *binding* a variable.
+
+First, though, we need to have some idea of how to understand our quantified
+formulas. Just like with formulas in our previous language, the best way to do
+this will be to think about the parsing tree of the formula---how it was built
+up using the rules described above. As before, we'll always make our
+translation by using a scheme of abbreviation, which tells us which symbols in
+our formal language we are using to stand for expressions in natural language.
+The only difference will be that our scheme of abbreviation will now give the
+meanings of predicates and names, rather than of whole sentences. We can
+translate all of the logical connectives ∧, ∨, →, ↔ and ¬ as we did before. So
+the only new things we really need to deal with are quantificational phrases,
+and variables. To translate the quantificational phrase $\forall x$ we will
+usually want to use the English phrase "Everything is such that", and to
+translate the quantificational phrase $\exists x$, we will usually want to use
+the English phrase "Something is such that." When we do this, we'll then want
+to translate the variable $x$ with an English pronoun that refers back in an
+appropriate way to the English translation of the quantificational phrase
+$\forall x$ or $\exists x$.
+
+###Example
+
+If we're given the scheme of abbreviation:
+
+    
+|  $D$  =   "is a dog" 
+|  $C$  =   "is cute" 
+
+then we should translate as follows:
+
+1.  $\forall x(Dx \rightarrow Cx)$ should be "Everything is such that, if it
+    is a dog, then it is cute.", by first translating the main connective
+    $\forall x$, giving us "Everything is such that ($Dx\rightarrow Cx$)",
+    then translating the main connective of the remaining formal part, giving
+    us "Everything is such that if $Dx$ then $Cx$", and finally translating
+    the two atomic formulas, giving us "Everything is such that if it is a
+    dog, then it is cute." 
+2.  $\exists x(Dx\land Cx)$ should be "Something is such that it is a dog, and
+    it is cute.", which we can get by doing the
+    same thing as above: translating the main connective at each stage.
+
+English sentences which are the translations of formal sentences whose
+main connective is a universal quantifier, we call "universal
+generalizations." English sentences which are translations of formal sentences
+whose main connective is a existential quantifier, we call "existential
+generalizations."
+
+Universal and Existential Generalizations
+:   A universal generalization is a sentence which is the result of
+    translating a formal sentence whose main connective is a universal quantifier.
+    An existential generalization is a sentence which is the result of translating
+    a formal sentence whose main connective is an existential quantifier
+
+##Restricted and Unrestricted Quantification
+
+The two translations above, "Everything is such that, if it is a dog, then it
+it is cute", and "Something is such that it is a dog, and it is cute" are both
+awkward, to say the least. We could express the same ideas considerably more
+nicely in English by saying "Every dog is cute", and "Some dog is cute." 
+
+It turns out that English sentences like this, where we do not talk about
+absolutely all of the objects that we're presently concerned with, but instead
+talk about just some of the objects---those to which a certain predicate, like
+"is a dog" can truly be applied---are very common; they're perhaps the primary
+way that quantifiers are used in informal English. We can call a sentence
+where we talk about every member of some restricted class of objects---say,
+the dogs---a "restricted universal generalization." A sentence which asserts
+the existence of a member of some restricted class of objects, we can call a
+"restricted existential generalization."
+
+The way that we express restricted universal generalization in our formal
+language is by making an assertion about absolutely all the objects. Suppose
+we wish to say that every object of which some predicate $A$ is true has some
+property $B$. We then say, of every object, that *if* that object belongs to
+the restricted class---if the predicate $A$ is true of it, then it has the
+property $B$. So we would translate the pseudo-English sentence "All $A$s are
+$B$" into our formal language as $\forall x(Ax\rightarrow Bx)$.
+
+We use a similar trick to express restricted existential generalization.
+Suppose we wish to say, that some object of which the predicate $A$ is true
+has the property $B$. We can say this by asserting, in our formal language,
+that there's some object of which $A$ is true, which has the property $B$. So
+we would translate the pseudo-English sentence "Some $A$s are $B$" into our
+formal language as $\exists x(Ax\land Bx)$.
+
+In general, an English language sentence of the form "All $A$s are $B$s" can
+be viewed as a stylistic variant[^2] on an English sentence of the form
+"Everything is such that if it is an $A$, it is a $B$", and similarly,
+sentences "Some $A$s are $B$s" can be viewed as a stylistic variants on
+sentences "Something is such that it is an $A$ and it is a $B$."
+
+[^2]:: for the notion of a stylistic variant, take a look back to the earlier
+chapters on translation from symbols into English.
+
+###Problem Set 15
+
+Please translate the following sentences using this scheme of abbreviation
+
+| F = "is a frog"
+| H = "is happy" 
+| I = "is ignorant"
+
+```{.Translate .FOL} 
+15.9 Ax(F(x)->H(x)) : All frogs are happy.
+15.10 Ex(F(x)/\I(x)) : Some frog is ignorant.
+```
+
+##Scope
+
+One feature of natural language, which our symbolic language makes clearer, is
+the way in which certain kinds of ambiguities depend on the way in which a
+sentence is "parsed". For example, an ambiguous sentence like "Jack the ripper
+was seen by the guard or he was arrested and he was thrown in jail" can be
+parsed as either "(Jack the ripper was seen by the guard or he was arrested)
+and he was thrown in jail"---in which case the sentence implies that Jack was
+thrown in jail---or as "Jack the ripper was seen by the guard or (he was
+arrested and he was thrown in jail)"---in which case it does not imply that
+Jack was thrown in jail.
+
+Because our formal language is careful to always make the parsing structure of
+a sentence explicit, these types of ambiguities can't arise. When we translate
+into symbols, we automatically disambiguate by inserting parentheses.
+
+Knowing how to disambiguate a sentence by disambiguating its parsing structure
+can let us see certain "patterns" of in how sentences are parsed. A good
+example of this is the second clue, from above. 
+
+The clue was the fact that, while the sentences (@T1): "Every person is tall"
+and (@T2): "Any person is tall" seemed to have the same meaning, they behaved
+differently when they were combined with a negation. The English-language
+negation of the first sentence, (@NT1): "It's not the case that every person
+is tall" seemed to have the logical form $\neg\forall x Tx$, where the
+predicate $T$ abbreviates "is tall". The English language negation of the
+second sentence, (@NT2): "It's not the case that any person is tall" seemed to
+have the logical form $\forall x\neg Tx$. 
+
+This may seem like an isolated phenomenon. In fact, it is part of a larger
+pattern. Consider the sentences:
+
+(@T4) If anyone is tall, then we'll need a bigger boat.
+
+(@T5) If everyone is tall, then we'll need a bigger boat.
+
+The first of these seems to mean that, if any person at all is tall, then we
+can infer that we need a bigger boat. So in particular, if I am tall, or if
+you are tall, or if Shaquille O'Neal is tall, then we'll need a bigger boat.
+In fact, if (@T4) is true, then we know that, for every person $x$, the
+following conditional is true: if $x$ is tall, then we'll need a bigger boat.
+So (@T4) seems to have the following logical form: $\forall x(Tx \rightarrow
+P)$, where $P$ abbreviates the sentence "We need a bigger boat".[^3] On the
+other hand, (@T5) seems only imply that we need a bigger boat if *everyone* is
+tall. So it has a logical form like this: $\forall xTx \rightarrow P$, where
+the quantified formula that means "everyone is tall" is in the antecedent of
+the conditional. 
+
+Now, compare the translations of our two "any" sentences with the translations
+of our two "every" sentences:
+
+Any                           Every
+----------------------------- ---------
+$\forall x \neg Tx$           $\neg \forall x Tx$
+$\forall x (Tx\rightarrow B)$ $\forall x Tx\rightarrow B$
+----------------------------- ---------
+
+Now, imagine writing out a parsing tree for each of these sentences. The
+important observation to make is that with the "any" sentences, the quantifier
+in the appropriate formalization seems to float "to the top of the parsing
+tree". If we were to parse the sentences under "any", we'd find that the
+quantifier is the main connective in both cases. On the other hand, when we
+deal with "every" sentences, we find that the quantifier sinks as low as it
+can in the parsing tree---in each "every" sentence, the quantifier ends up
+underneath the other logical connectives in a parsing of the sentence.
+
+[^3]:: You may have the intuition that a good translation of (@T4) would be
+$\exists x Tx\rightarrow B$. That would be a good intuition: that sentence is
+logically equivalent to $\forall x(Tx\rightarrow B)$. Once we have the rules
+for derivations with quantifiers, we'll see that each of these two sentences
+can be derived from the other.
+
+We can put this observation concisely by using a new concept. Let us say that
+the *scope* of a given connective, or quantificational phrase, is the set of
+formulas that comes below that connective or quantificational phrase in the
+parsing tree.
+
+Scope 
+:   The scope of a connective (i.e. $\land,\lor, \rightarrow,
+    \leftrightarrow$, or $\neg$, or quantificational phrase (i.e. $\forall x$ or
+    $\exists x$) is the set of formulas which come below that connective in the
+    parsing tree.
+
+For example, we can see that in the formula $\forall x \neg Tx$ that
+translates the sentence (@NT2) ("It's not the case that any person is tall"),
+the formulas $\neg Tx$, and $Tx$ are both within the scope of the
+quantificational phrase $\forall x$. In the formula $\neg \forall x Tx$, which
+translates (@NT1), on the other hand, only $Tx$ is within the scope of
+$\forall x$. Similarly, in $\forall x(Tx\rightarrow B)$, all the formulas
+$Tx\rightarrow B, Tx$, and $B$ are within the scope of $\forall x$, while in
+$\forall x Tx \rightarrow B$, the only formula within the scope of $\forall x$
+is $Tx$.
+
+Let us say that a given quantificational phrase $Q$ has *narrow scope* in a
+given formula if $Q$ has just one formula in its scope. And let's say that a
+quantificational phrase $Q$ has *wide scope* if every sub-formula of the
+formula in which $Q$ occurs is within the scope of $Q$.
+
+Narrow and Wide Scope 
+:   1. A quantificational phrase $Q$ in a formula $\phi$ has wide scope if
+       every subformula of $\phi$ (other than $\phi$ itself) is within the scope of $Q$.
+
+    2. a quantificational phrase $Q$ in a formula $\phi$ has narrow scope if
+       $Q$ has just one subformula of $\phi$ in its scope.
+
+Using the concept of wide and narrow scope, we can formulate a general
+hypothesis,[^4] which would explain the logical behavior of "any" and
+"every": the word "any" is used to express sentences whose
+quantificational phrase is intended to have narrow scope. The word
+"every" is used to express sentences whose quantificational phrase is
+intended to have wide scope.
+
+[^4]:: Of course, this is just a first hypothesis. It's easy to find cases
+where it doesn't quite work---so it needs some modifications before it is a
+really serious piece of semantic theory.
+
+So the concept of scope lets us express interesting generalizations about the
+way that certain pieces of language work. The concept of scope will also be
+important to formulate the next interesting feature of quantifiers: the way in
+which quantifiers serve to "bind" variables.
+
+##Binding
+
+To understand variable binding, it will again help to start from an example in
+natural language. Consider the sentence
+
+(@jerks1) For every person, there's some person such if that person is angry,
+then that person is happy.
+
+Now, this sentence is clearly ambiguous. But the way in which it is ambiguous
+is interesting. When we say "that person", it's not clear if we're referring
+back to the quantificational phrase "every person" or to the quantificational
+phrase "some person". Let's disambiguate, by labeling the occurrences of "that
+person" in such a way that they match the quantificational phrases they refer
+back to. If we do this, then the two possible readings are something like
+this:
+
+(@jerks2) For every person${_1}$, there's some person${_2}$ such if that
+person${_1}$ is angry, then that person${_2}$ is happy.
+
+(@jerks3) For every person${_1}$, there's some person${_2}$ such if that
+person${_2}$ is angry, then that person${_1}$ is happy.
+
+On the first reading, the reading given in (@jerks2), the sentence says that
+every person has a critic, somebody who's happy whenever that person is angry.
+But the sentence is not specific about whether or not two people might have
+the same critic, it just says that everybody has a critic. So, it's compatible
+with that first sentence that there's really just one critic---and that person
+is critical of everybody. 
+
+On the second reading, the reading given in (@jerks3), the sentence say that
+everybody is somebody's critic. That is to say: every person has someone of
+whom they're critical, someone who, if angry, makes that person happy. This
+clearly means something very different from the first sentence. For one thing,
+(@jerks3) implies that everyone is a critic, while (@jerks2) did not
+imply that there was more than one critic.
+
+So there's a big difference in meaning between these two readings of the
+sentence. That's why the original sentence is ambiguous: because it admits
+more than one reading.
+
+To eliminate this kind of ambiguity in our formal language, we do something
+analogous to labeling the different occurrences of the phrase "that person".
+But rather than distinguishing occurrences with labels, we instead use an
+entirely different variable for each occurrence. This, plus some careful
+specifications of the conditions under which a variable refers back to, or "is
+bound by" a quantifier, allows us to avoid the type of ambiguity that arises
+in a sentence like (@jerks1). Here are the rules for variable binding:
+
+Binding 
+:   A quantificational phrase $Q$ binds an occurance of a variable $x$ if and only if
+
+    1. $x$ is part of $Q$. So, $Q$ is either $\exists x$ or $\forall x$
+
+    2. $x$ occurs in a formula within the scope of $Q$
+
+    3. There is no other quantificational phrase $Q'$ within the scope of $Q$
+       such that $x$ is a part of $Q'$ and $x$ within the scope of $Q'$. 
+
+###Example
+
+In the formula $\forall y (Ax\land Ay$), the variable $x$ is not bound by the
+quantificational phrase $\forall y$, since $x$ is not a part of $\forall y$.
+But, the variable $y$ is bound by $\forall y$, since $y$ is a part of $\forall
+y$, since $\forall y$ has $Ay$ in its scope, and since there's no other
+quantificational phrase that gets in the way. In the formula $\forall x (Ax
+\land \exists x Bx)$, the first quantificational phrase---the $\forall
+x$---binds the first occurrence of $x$, since $x$ is part of $\forall x$, $Ax$
+is in the scope of $\forall x$, and there's no other quantificational phrase
+which has $Ax$ in its scope. But the occurrence of $x$ inside of $Bx$ is not
+bound by $\forall x$; the $\exists x$ "gets in the way", because $x$ is a part
+of $\exists x$, $Bx$ is within the scope of $\exists x$, and $\exists x$ is
+part of a formula within the scope of $\forall x$.
