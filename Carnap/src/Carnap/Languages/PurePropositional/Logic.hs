@@ -5,7 +5,7 @@ import Data.Map as M (lookup, Map)
 import Text.Parsec
 import Carnap.Core.Util
 import Carnap.Core.Unification.Unification
---import Carnap.Core.Unification.Combination
+import Carnap.Core.Unification.Combination
 import Carnap.Core.Unification.FirstOrder
 import Carnap.Core.Unification.ACUI
 import Carnap.Core.Data.AbstractSyntaxClasses
@@ -50,34 +50,34 @@ data PropSeqLabel = PropSeqFO | PropSeqACUI
 instance Eq (PropSequentCalc a) where
         (==) = (=*)
 
--- instance Combineable PropSequentCalc PropSeqLabel where
+instance Combineable PropSequentCalc PropSeqLabel where
 
---     getLabel Top               = PropSeqACUI
---     getLabel (_ :+: _)         = PropSeqACUI
---     getLabel (GammaV _)        = PropSeqACUI
---     --getLabel (SA     _)        = PropSeqACUI
---     getLabel _                 = PropSeqFO
+    getLabel Top               = PropSeqACUI
+    getLabel (_ :+: _)         = PropSeqACUI
+    getLabel (GammaV _)        = PropSeqACUI
+    --getLabel (SA     _)        = PropSeqACUI
+    getLabel _                 = PropSeqFO
 
---     getAlgo PropSeqFO   = foUnifySys
---     getAlgo PropSeqACUI = acuiUnifySys
+    getAlgo PropSeqFO   = foUnifySys
+    getAlgo PropSeqACUI = acuiUnifySys
 
---     replaceChild (_ :&-: x)   pig 0 = unEveryPig pig :&-: x
---     replaceChild (x :&-: _)   pig 1 = x :&-: unEveryPig pig
---     replaceChild (_ :||-: x)  pig 0 = unEveryPig pig :||-: x
---     replaceChild (x :||-: _)  pig 1 = x :||-: unEveryPig pig
---     replaceChild (_ :->-: x)  pig 0 = unEveryPig pig :->-: x
---     replaceChild (x :->-: _)  pig 1 = x :->-: unEveryPig pig
---     replaceChild (_ :<->-: x) pig 0 = unEveryPig pig :<->-: x
---     replaceChild (x :<->-: _) pig 1 = x :<->-: unEveryPig pig
---     replaceChild (_ :+: x)    pig 0 = unEveryPig pig :+: x
---     replaceChild (x :+: _)    pig 1 = x :+: unEveryPig pig
---     replaceChild (_ :-: x)    pig 0 = unEveryPig pig :-: x
---     replaceChild (x :-: _)    pig 1 = x :-: unEveryPig pig
---     replaceChild (_ :|-: x)   pig 0 = unEveryPig pig :|-: x
---     replaceChild (x :|-: _)   pig 1 = x :|-: unEveryPig pig
---     replaceChild (SeqNeg _)   pig _ = SeqNeg $ unEveryPig pig
---     replaceChild (SS _ )      pig _ = SS $ unEveryPig pig 
---     replaceChild (SA _ )      pig _ = SA $ unEveryPig pig
+    replaceChild (_ :&-: x)   pig 0 = unEveryPig pig :&-: x
+    replaceChild (x :&-: _)   pig 1 = x :&-: unEveryPig pig
+    replaceChild (_ :||-: x)  pig 0 = unEveryPig pig :||-: x
+    replaceChild (x :||-: _)  pig 1 = x :||-: unEveryPig pig
+    replaceChild (_ :->-: x)  pig 0 = unEveryPig pig :->-: x
+    replaceChild (x :->-: _)  pig 1 = x :->-: unEveryPig pig
+    replaceChild (_ :<->-: x) pig 0 = unEveryPig pig :<->-: x
+    replaceChild (x :<->-: _) pig 1 = x :<->-: unEveryPig pig
+    replaceChild (_ :+: x)    pig 0 = unEveryPig pig :+: x
+    replaceChild (x :+: _)    pig 1 = x :+: unEveryPig pig
+    replaceChild (_ :-: x)    pig 0 = unEveryPig pig :-: x
+    replaceChild (x :-: _)    pig 1 = x :-: unEveryPig pig
+    replaceChild (_ :|-: x)   pig 0 = unEveryPig pig :|-: x
+    replaceChild (x :|-: _)   pig 1 = x :|-: unEveryPig pig
+    replaceChild (SeqNeg _)   pig _ = SeqNeg $ unEveryPig pig
+    replaceChild (SS _ )      pig _ = SS $ unEveryPig pig 
+    replaceChild (SA _ )      pig _ = SA $ unEveryPig pig
 
 instance Sequentable PurePropLexicon where
     liftToSequent (x :&: y)     = (liftToSequent x :&-: liftToSequent y)

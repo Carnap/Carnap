@@ -43,8 +43,6 @@ instance CopulaSchema FOLSequentCalc where
 
 pattern SeqQuant q        = FX (Lx2 (Lx1 (Lx2 (Bind q))))
 pattern SeqSV n           = FX (Lx2 (Lx1 (Lx3 (StaticVar n))))
-pattern SeqSSV n          = FX (Lx1 (Lx5 (StaticVar n)))
-pattern SeqSDV n          = FX (Lx1 (Lx5 (SubVar n)))
 pattern SeqDV n           = FX (Lx2 (Lx1 (Lx3 (SubVar n))))
 pattern SeqPred x arity   = FX (Lx2 (Lx2 (Lx1 (Predicate x arity))))
 pattern SeqSPred x arity  = FX (Lx2 (Lx2 (Lx2 (Predicate x arity))))
@@ -82,8 +80,8 @@ instance Sequentable PureLexiconFOL where
     liftToSequent (PC n)          = SeqC n
     liftToSequent (PV s)          = SeqV s
     liftToSequent (PT n)          = SeqT n
-    liftToSequent (PSV n)         = SeqSSV n --Preserve relation to MonadVar
-    liftToSequent (PDV n)         = SeqSDV n
+    liftToSequent (PSV n)         = SeqSV n
+    liftToSequent (PDV n)         = SeqDV n
     liftToSequent (PFunc x a)     = SeqFunc x a
     liftToSequent PEq             = SeqEq
 
@@ -102,11 +100,9 @@ instance Sequentable PureLexiconFOL where
     fromSequent (SeqT n)         = PT n
     fromSequent (SeqFunc x a)    = PFunc x a
     fromSequent SeqEq            = PEq
-    fromSequent (SeqSDV n)       = PDV n
-    fromSequent (SeqSSV n)       = PSV n
+    fromSequent (SeqDV n)       = PDV n
+    fromSequent (SeqSV n)       = PSV n
     fromSequent x                = error ("fromSequent can't handle " ++ show x)
-    --This will arise if a SeqSV or SeqDV is somehow passed in---this
-    --shouldn't happen.
 
 data FOLogic = MP | MT  | DNE | DNI | DD   | AX 
                   | CP1 | CP2 | ID1 | ID2  | ID3  | ID4 

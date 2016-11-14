@@ -106,7 +106,6 @@ type ClassicalSequentLex = Cedent
                            :|: Comma
                            :|: Turnstile
                            :|: CedentVar
-                           :|: SubstitutionalVariable
                            :|: EndLang
 
 type ClassicalSequentOver a = FixLang (ClassicalSequentLex :|: a :|: EndLang)
@@ -120,10 +119,10 @@ pattern (:-:) x y           = FX (Lx1 (Lx2 SuccComma)) :!$: x :!$: y
 pattern (:|-:) x y          = FX (Lx1 (Lx3 Turnstile)) :!$: x :!$: y
 pattern GammaV n            = FX (Lx1 (Lx4 (Gamma n)))
 pattern DeltaV n            = FX (Lx1 (Lx4 (Delta n)))
-pattern SV n                = FX (Lx1 (Lx5 (SubVar n)))
 
-instance (MaybeStaticVar (t (ClassicalSequentOver t)), FirstOrderLex (t (ClassicalSequentOver t))) =>
-        ACUI (ClassicalSequentOver t) where
+instance ( MaybeStaticVar (t (ClassicalSequentOver t))
+         , FirstOrderLex (t (ClassicalSequentOver t))
+         ) => ACUI (ClassicalSequentOver t) where
 
         unfoldTerm (x :+: y) = unfoldTerm x ++ unfoldTerm y
         unfoldTerm Top       = []
@@ -132,14 +131,8 @@ instance (MaybeStaticVar (t (ClassicalSequentOver t)), FirstOrderLex (t (Classic
         isId Top = True
         isId _   = False
 
-        -- isACUI Top        = True
-        -- isACUI (SA _)     = True
-        -- isACUI (GammaV _) = True
-        -- --isACUI (SV _)     = True
-        -- isACUI (_ :+: _)  = True
         isACUI (SA _)     = False
         isACUI _ = True
-        
 
         getId (Proxy :: Proxy a) = 
             case eqT :: Maybe (a :~: Antecedent) of
@@ -154,14 +147,6 @@ instance (MaybeStaticVar (t (ClassicalSequentOver t)), FirstOrderLex (t (Classic
         acuiOp x y@(SA _) = x :+: y
         acuiOp x@(GammaV _) y  = x :+: y
         acuiOp x y@(GammaV _)  = x :+: y
-        acuiOp ((SV n) :: ClassicalSequentOver t a) b = 
-            case eqT :: Maybe (a :~: Antecedent) of
-                Just Refl -> (SV n) :+: b
-                _         -> error "you have to use the right type 2"
-        acuiOp a ((SV n) :: ClassicalSequentOver t a) = 
-            case eqT :: Maybe (a :~: Antecedent) of
-                Just Refl -> a :+: (SV n)
-                _         -> error "you have to use the right type 3"
 
 instance Handed (ClassicalSequentOver lex Sequent) 
                 (ClassicalSequentOver lex Antecedent)
@@ -178,7 +163,6 @@ concretes :: Traversal' (ClassicalSequentOver lex Antecedent) (ClassicalSequentO
 concretes f (a :+: a') = (:+:) <$> concretes f a <*> concretes f a'
 concretes f (SA x)     = SA <$> f x
 concretes f (GammaV n) = pure (GammaV n)
-concretes f (SV n) = pure (SV n)
 concretes f (Top) = pure Top
 
 --------------------------------------------------------

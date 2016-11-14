@@ -855,10 +855,6 @@ class PrismLink f g where
         raisePrism :: Typeable a => Prism' (g a) c -> Prism' (f a) c
         pflag :: Flag Bool f g --const False indicates that this is the trivial select nothing prism
 
--- addConstructor :: (Typeable a) => Prism'' (f a) (g a) ->
---     (Prism'' (h a) c -> Prism'' (g a) c) -> (Prism'' (h a) c -> Prism'' (f a) c)
--- addConstructor p rp p' = p . rp p'
-
 instance {-# OVERLAPPABLE #-} PrismLink f g where
         raisePrism = error "you need to define an instance of PrismLink to do this"
         pflag = Flag False

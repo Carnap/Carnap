@@ -11,10 +11,14 @@ import Data.Typeable
 --type) and l is a language with an associated syntactic type
 
 --------------------------------------------------------
---1. Connectives
+--1. Constructor classes
+--------------------------------------------------------
+
+--------------------------------------------------------
+--1.1 Connectives
 --------------------------------------------------------
 --------------------------------------------------------
---1.1 Boolean Languages
+--1.1.1 Boolean Languages
 --------------------------------------------------------
 --these are classes and datatypes for languages and schematic languages
 --with boolean connectives. 
@@ -46,12 +50,21 @@ class BooleanLanguage l where
             (.<=>.) = liff
 
 --------------------------------------------------------
---1.2 Modal Languages
+--1.1.2 Modal Languages
 --------------------------------------------------------
 
 class ModalLanguage l where
         nec :: l -> l
         pos :: l -> l
+
+--------------------------------------------------------
+--1.2 Propositions
+--------------------------------------------------------
+
+--------------------------------------------------------
+--1.2.1 Propositional Languages
+--------------------------------------------------------
+--languages with propositions
 
 class IndexedPropLanguage l where
         pn :: Int -> l
@@ -59,27 +72,43 @@ class IndexedPropLanguage l where
 class IndexedSchemePropLanguage l where
         phin :: Int -> l
 
-class IndexedConstantLanguage l where
-        cn :: Int -> l
+--------------------------------------------------------
+--1.2.2 Predicate Languages
+--------------------------------------------------------
+--languages with predicates
 
 class PolyadicPredicateLanguage lang arg ret where
         ppn :: Typeable ret' => Int -> Arity arg ret n ret' -> lang ret'
 
+class EqLanguage l t where
+        equals :: t -> t -> l
+
+--------------------------------------------------------
+--1.3. Terms
+--------------------------------------------------------
+
+class IndexedConstantLanguage l where
+        cn :: Int -> l
+
 class PolyadicFunctionLanguage lang arg ret where
         pfn :: Typeable ret' => Int -> Arity arg ret n ret' -> lang ret'
 
-class Incrementable lex arg where
-        incHead :: FixLang lex a -> Maybe (FixLang lex (arg -> a)) 
-        incBody :: (Typeable b, Typeable arg) => FixLang lex (arg -> b) -> Maybe (FixLang lex (arg -> arg -> b))
-        incBody = incArity incHead
-
+--------------------------------------------------------
+--1.4. Quantifiers
+--------------------------------------------------------
 
 class QuantLanguage l t where
         lall  :: String -> (t -> l) -> l
         lsome :: String -> (t -> l) -> l
 
-class EqLanguage l t where
-        equals :: t -> t -> l
+--------------------------------------------------------
+--2. Utility Classes
+--------------------------------------------------------
+
+class Incrementable lex arg where
+        incHead :: FixLang lex a -> Maybe (FixLang lex (arg -> a)) 
+        incBody :: (Typeable b, Typeable arg) => FixLang lex (arg -> b) -> Maybe (FixLang lex (arg -> arg -> b))
+        incBody = incArity incHead
 
 class f :<: g where
         liftLang :: FixLang f a -> FixLang g a
