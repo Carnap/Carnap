@@ -109,8 +109,3 @@ class Incrementable lex arg where
         incHead :: FixLang lex a -> Maybe (FixLang lex (arg -> a)) 
         incBody :: (Typeable b, Typeable arg) => FixLang lex (arg -> b) -> Maybe (FixLang lex (arg -> arg -> b))
         incBody = incArity incHead
-
-class f :<: g where
-        liftLang :: FixLang f a -> FixLang g a
-        sinkLang :: FixLang g a -> FixLang f a
-        --- TODO : add assocatied prism, viewed as partial iso

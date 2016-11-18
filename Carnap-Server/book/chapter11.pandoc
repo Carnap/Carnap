@@ -222,8 +222,8 @@ phrase "For some thing". Hence, if we have a scheme of abbreviation like
 
 our examples above can be formalized as follows: "It's not the case that for
 every thing that thing is good" becomes "$\neg\forall x G(x)$", while "for
-every thing it's not the case that that thing is good" becomes "$\neg\forall x
-G(x)$ $\forall x\neg G(x)$"
+every thing it's not the case that that thing is good" becomes "$\forall x\neg
+G(x)$"
 
 <!-- Add clue number three using alternating quantifier ambiguities -->
 

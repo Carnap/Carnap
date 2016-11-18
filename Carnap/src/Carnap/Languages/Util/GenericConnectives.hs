@@ -111,7 +111,6 @@ instance Schematizable (IntFunc b c) where
                   tail
                     | arity == 0    = ""
                     | otherwise     = "(" ++ intercalate "," args ++ ")"
-
 instance UniformlyEq (IntFunc b c) where
         (Func a n) =* (Func a' m) = show a == show a' && n == m
 
@@ -231,8 +230,8 @@ data StandardQuant b c a where
         Some :: String -> StandardQuant b c ((Term c -> Form b) -> Form b)
 
 instance Schematizable (StandardQuant b c) where
-        schematize (All v) = \(x:_) -> "∀" ++ v ++ "(" ++ x ++ ")"
-        schematize (Some v) = \(x:_) -> "∃" ++ v ++ "(" ++ x ++ ")"
+        schematize (All v) = \(x:_) -> "∀" ++ v ++ x 
+        schematize (Some v) = \(x:_) -> "∃" ++ v ++ x 
 
 instance UniformlyEq (StandardQuant b c) where
         (All _) =* (All _) = True

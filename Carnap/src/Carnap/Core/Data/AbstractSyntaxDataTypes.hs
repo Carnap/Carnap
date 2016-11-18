@@ -19,7 +19,7 @@ module Carnap.Core.Data.AbstractSyntaxDataTypes(
   Arity(AZero, ASucc), Predicate(Predicate), Connective(Connective),
   Function(Function), Subnective(Subnective), SubstitutionalVariable(SubVar,StaticVar),
   -- * Generic Programming Utilities
-  LangTypes2(..), LangTypes1(..), RelabelVars(..), FirstOrderLex(..), PrismLink(..),
+  LangTypes2(..), LangTypes1(..), RelabelVars(..), FirstOrderLex(..), PrismLink(..), (:<:)(..)
 ) where
 
 import Carnap.Core.Util
@@ -846,21 +846,19 @@ class (Plated (FixLang f (syn sem)), BoundVars f) => RelabelVars f syn sem where
 --5.2 Prisms
 --------------------------------------------------------
 
---A more specific type of prism, where the choice functor is guaranteed to
---be @->@
 data Flag a f g where
         Flag :: {checkFlag :: a} -> Flag a f g
 
 class PrismLink f g where
-        raisePrism :: Typeable a => Prism' (g a) c -> Prism' (f a) c
+        link :: Typeable a => Prism' (f a) (g a) 
         pflag :: Flag Bool f g --const False indicates that this is the trivial select nothing prism
 
 instance {-# OVERLAPPABLE #-} PrismLink f g where
-        raisePrism = error "you need to define an instance of PrismLink to do this"
+        link = error "you need to define an instance of PrismLink to do this"
         pflag = Flag False
 
 instance PrismLink f f where
-        raisePrism = id
+        link = prism' id Just
         pflag = Flag True
 
 _FLeft :: Prism' ((f :|: g) idx a) (f idx a)
@@ -874,12 +872,13 @@ _FRight = prism' FRight un
           un _ = Nothing
 
 instance (PrismLink (f idx) h, PrismLink (g idx) h) =>  PrismLink ((f :|: g) idx) h where
-        raisePrism
-            | checkFlag (pflag :: Flag Bool (f idx) h) = \p -> _FLeft . (rpl p)
-            | checkFlag (pflag :: Flag Bool (g idx) h) = \p -> _FRight . (rpr p)
-            | otherwise = error "no nontrivial PrismLink instances available"
-            where rpl = raisePrism :: Typeable a => Prism' (h a) c -> Prism' (f idx a) c
-                  rpr = raisePrism :: Typeable a => Prism' (h a) c -> Prism' (g idx a) c
+
+        link 
+            | checkFlag (pflag :: Flag Bool (f idx) h) = _FLeft . ll
+            | checkFlag (pflag :: Flag Bool (g idx) h) = _FRight . rl
+            | otherwise = error "No instance found for PrismLink"
+            where ll = link :: Typeable a => Prism' (f idx a) (h a)
+                  rl = link :: Typeable a => Prism' (g idx a) (h a)
 
         pflag = Flag $ checkFlag ((pflag :: Flag Bool (f idx) h)) || checkFlag ((pflag :: Flag Bool (g idx) h))
 
@@ -888,10 +887,13 @@ _Fx = prism' Fx un
     where un (Fx s) = Just s
 
 instance (PrismLink (f (Fix f)) h) => PrismLink (Fix f) h where
-        raisePrism = \p -> _Fx . rp p
-            where rp = raisePrism :: Typeable a => Prism' (h a) c -> Prism' (f (Fix f) a) c
+
+        link = _Fx . link
 
         pflag = Flag $ checkFlag (pflag :: Flag Bool (f (Fix f)) h)
+
+class f :<: g where
+        sublang :: Typeable a => Prism' (FixLang g a) (FixLang f a)
 
 --------------------------------------------------------
 --6 Utility Functions

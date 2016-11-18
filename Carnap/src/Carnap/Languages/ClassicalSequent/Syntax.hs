@@ -172,7 +172,6 @@ concretes f (Top) = pure Top
 class Sequentable f where
         liftToSequent :: FixLang f a -> ClassicalSequentOver f a
         fromSequent :: ClassicalSequentOver f a -> FixLang f a
-        -- XXX: add a prism?
 
 --------------------------------------------------------
 --4. Utilities

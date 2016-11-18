@@ -4,7 +4,7 @@ module Carnap.Core.Unification.Unification (
    Equation((:=:)), UError(..), FirstOrder(..), HigherOrder(..),
       applySub, mapAll, freeVars, emap, sameTypeEq, ExtApp(..), ExtLam(..), 
       EveryPig(..),AnyPig(..), EtaExpand(..), MonadVar(..), betaReduce, 
-      betaNormalize, toBNF, toLNF, etaMaximize
+      betaNormalize, toBNF, pureBNF, toLNF, etaMaximize
 ) where
 
 import Data.Type.Equality
@@ -196,6 +196,9 @@ toBNF x = do nf <- betaNormalize x
              case nf of
                    Nothing -> return x
                    (Just y) -> return y
+
+pureBNF :: (HigherOrder f, MonadVar f (State Int), Typeable a) => f a -> f a
+pureBNF x = evalState (toBNF x) (0 :: Int)
 
 toLNF :: (HigherOrder f, MonadVar f (State Int), Typeable a, EtaExpand (State Int) f a) => f a -> State Int (f a)
 toLNF x = do bnf <- toBNF x

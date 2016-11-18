@@ -178,8 +178,10 @@ instance Inference FOLogic PureLexiconFOL where
      -- XXX : need eigenvariable constraint for these
      premisesOf UD    = [ GammaV 1 :|-: ss (phi 1 tau)]
      premisesOf ED1   = [ GammaV 1 :+:  sa (phi 1 tau) :|-: ss (phiS 1)
-                        , GammaV 2 :|-: ss (PBind (Some "v") $ phi 1)]
+                        , GammaV 2 :|-: ss (PBind (Some "v") $ phi 1)
+                        , sa (phi 1 tau) :|-: ss (phi 1 tau)]
      premisesOf ED2   = [ GammaV 1 :|-: ss (phiS 1)
+                        , sa (phi 1 tau) :|-: ss (phi 1 tau)
                         , GammaV 2 :|-: ss (PBind (Some "v") $ phi 1)]
 
      conclusionOf MP    = (GammaV 1 :+: GammaV 2) :|-: ss (phiS 2)
@@ -247,7 +249,7 @@ parseFOLLogic = do r <- choice (map (try . string) ["AS","PR","MP","MTP","MT","D
                              "UI"   -> return [UI]
                              "UD"   -> return [UD]
                              "EG"   -> return [EG]
-                             "ED"   -> return [ED1, ED2]
+                             "ED"   -> return [ED1,ED2]
 
 parseFOLProof ::  String -> [Either ParseError (DeductionLine FOLogic PureLexiconFOL (Form Bool))]
 parseFOLProof = toDeduction parseFOLLogic folFormulaParser

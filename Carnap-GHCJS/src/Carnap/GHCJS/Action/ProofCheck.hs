@@ -30,6 +30,7 @@ import GHCJS.DOM.KeyboardEvent
 import GHCJS.DOM.EventM
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Control.Monad.Trans.Maybe (runMaybeT, MaybeT(..))
+import Control.Concurrent
 
 proofCheckAction :: IO ()
 proofCheckAction = do availableDerived <- newIORef []
@@ -54,8 +55,9 @@ activateChecker drs w (Just (i,o,g, classes))
             do (Just gs) <- getInnerHTML g 
                case parse folSeqAndLabel "" (decodeHtml gs) of
                    Left e -> setInnerHTML g (Just "Couldn't Parse Goal")
-                   Right (l,s) -> do setInnerHTML g (Just $ show s)
-                                     checkerWith "submit solution" (trySubmit l s) (folCheckSolution s)
+                   Right (l,s) -> do mtref <- newIORef Nothing
+                                     setInnerHTML g (Just $ show s)
+                                     checkerWith "submit solution" (trySubmit l s) (folCheckSolution s mtref)
         | otherwise = 
             do (Just gs) <- getInnerHTML g 
                case parse seqAndLabel "" (decodeHtml gs) of
@@ -101,9 +103,15 @@ checkSolution drs s w ref v (g, fd) =  do rules <- liftIO $ readIORef drs
                                           let Feedback mseq ds = toDisplaySequence (parsePropProof (fromList rules)) v
                                           updateGoal s w ref (g, fd) mseq ds
 
-folCheckSolution s w ref v (g, fd) =  do let Feedback mseq ds = hoToDisplaySequence parseFOLProof v
-                                         --setInnerHTML fd (Just $ show mseq)
-                                         updateGoal s w ref (g, fd) mseq ds
+folCheckSolution s mtref w ref v (g, fd) = do mt <- readIORef mtref
+                                              case mt of
+                                                  Just t -> killThread t
+                                                  Nothing -> return ()
+                                              t' <- forkIO $ do threadDelay 1000000
+                                                                let Feedback mseq ds = hoToDisplaySequence parseFOLProof v
+                                                                updateGoal s w ref (g, fd) mseq ds
+                                              writeIORef mtref (Just t')
+                                              return ()
 
 updateGoal s w ref (g, fd) mseq ds = do ul <- genericListToUl wrap w ds
                                         setInnerHTML fd (Just "")

@@ -18,17 +18,17 @@ pfolFormulaParser = buildExpressionParser opTable subFormulaParser
 folFormulaParser :: Parsec String u PureFOLForm
 folFormulaParser = buildExpressionParser opTable subFormulaParser 
     where subFormulaParser = coreParser folFormulaParser subFormulaParser
-                      <|> try (molecularSentenceParser parseComplexFOLTerm)
-                      <|> try (equalsParser parseComplexFOLTerm) 
+                      <|> try (molecularSentenceParser parseComplexFOLTerm <* spaces)
+                      <|> try (equalsParser parseComplexFOLTerm <* spaces) 
 
 mfolFormulaParser :: Parsec String u PureMFOLForm
 mfolFormulaParser = buildExpressionParser opTable subFormulaParser 
     where subFormulaParser = coreParser mfolFormulaParser subFormulaParser
                       <|> try monadicSentenceParser 
 
-coreParser recur sfrecur = parenParser recur
+coreParser recur sfrecur = (parenParser recur <* spaces)
       <|> try (quantifiedSentenceParser parseFreeVar sfrecur)
-      <|> try atomicSentenceParser
+      <|> try (atomicSentenceParser <* spaces)
       <|> unaryOpParser [parseNeg] sfrecur
 
 parseFreeVar :: Parsec String u (PureFirstOrderLanguageWith a (Term Int))
