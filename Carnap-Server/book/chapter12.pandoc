@@ -179,6 +179,6 @@ Please complete the following derivations:
 17.6 Ex(F(x)/\G(a)) :|-: G(a)
 17.7 Ax(F(x)->G(x)), ExF(x) :|-: ExG(x)
 17.8 Ax(F(x)->G(x)), Ex(F(x)/\H(x)) :|-: Ex(G(x)/\H(x))
-17.9 Ax(F(x)->G(x)), -Ex(F(x)/\G(x)) :|-: -Ex(H(x)/\G(x))
+17.9 Ax(F(x)->G(x)), -Ex(F(x)/\G(x)) :|-: -ExF(x)
 17.10 Ex-F(x) :|-: -AxF(x)
 ```
