@@ -2,15 +2,16 @@
 module Carnap.GHCJS.Action.ProofCheck (proofCheckAction) where
 
 import Carnap.Calculi.NaturalDeduction.Checker (ProofErrorMessage(..), Feedback(..), seqSubsetUnify, hoToDisplaySequence, toDisplaySequence)
+import Carnap.Core.Data.AbstractSyntaxDataTypes (liftLang)
 import Carnap.Languages.ClassicalSequent.Syntax
-import Carnap.Languages.PurePropositional.Logic (DerivedRule(..), parsePropProof)
-import Carnap.Languages.PureFirstOrder.Logic (parseFOLProof)
+import Carnap.Languages.PurePropositional.Logic as P (DerivedRule(..), parsePropProof) 
+import Carnap.Languages.PureFirstOrder.Logic as FOL (DerivedRule(..), parseFOLProof) 
 import Carnap.Languages.PurePropositional.Util (toSchema)
 import Carnap.GHCJS.SharedTypes
 import Text.Parsec
 import Data.IORef
 import Data.Aeson as A
-import Data.Map (empty,fromList)
+import qualified Data.Map as M (fromList,map) 
 import Control.Lens.Fold (toListOf)
 import Lib
 import GHCJS.DOM
@@ -37,17 +38,17 @@ proofCheckAction = do availableDerived <- newIORef []
                       genericSendJSON RequestDerivedRulesForUser (addRules availableDerived) errcb
                       initElements getCheckers (activateChecker availableDerived)
     where errcb e = case fromJSON e :: Result String of
-                               A.Error e -> print $ "Getting kind of meta. Error decoding error message:" ++ e
-                               Success e -> print $ "Error in retrieving derived rules" ++ e
+                               A.Error e -> print $ "Getting kind of meta. Error decoding error message: " ++ e
+                               Success e -> print $ "Error in retrieving derived rules: " ++ e
 
-          addRules avd v = case fromJSON v :: Result [(String,DerivedRule)] of
-                               A.Error e -> print $ "error decoding derived rules:" ++ e
+          addRules avd v = case fromJSON v :: Result [(String,P.DerivedRule)] of
+                               A.Error e -> print $ "error decoding derived rules: " ++ e
                                Success rs -> writeIORef avd rs
 
 getCheckers :: IsElement self => self -> IO [Maybe (Element, Element, Element, [String])]
 getCheckers = getInOutGoalElts "proofchecker"
 
-activateChecker ::  IORef [(String,DerivedRule)] -> Document -> Maybe (Element, Element, Element, [String]) -> IO ()
+activateChecker ::  IORef [(String,P.DerivedRule)] -> Document -> Maybe (Element, Element, Element, [String]) -> IO ()
 activateChecker _ _ Nothing  = return ()
 activateChecker drs w (Just (i,o,g, classes))
         | "ruleMaker" `elem` classes = checkerWith "save rule" (trySave drs) (computeRule drs)
@@ -57,7 +58,7 @@ activateChecker drs w (Just (i,o,g, classes))
                    Left e -> setInnerHTML g (Just "Couldn't Parse Goal")
                    Right (l,s) -> do mtref <- newIORef Nothing
                                      setInnerHTML g (Just $ show s)
-                                     checkerWith "submit solution" (trySubmit l s) (folCheckSolution s mtref)
+                                     checkerWith "submit solution" (trySubmit l s) (folCheckSolution drs s mtref)
         | otherwise = 
             do (Just gs) <- getInnerHTML g 
                case parse seqAndLabel "" (decodeHtml gs) of
@@ -94,24 +95,28 @@ wrap (Right seq)                = "<div>+<div><div>" ++ show seq ++ "<div></div>
 
 toUniErr eqs = "In order to apply this inference rule, there needs to be a substitution that makes at least one of these sets of pairings match:" 
                 ++ (concat $ map endiv' $ map (concat . map (endiv . show) . reverse) eqs)
-                -- TODO: make this less horrible, give equations internal structure so that
-                -- they can be aligned properly
+                -- TODO make this less horrible, give equations internal
+                -- structure so that they can be aligned properly
     where endiv e = "<div>" ++ e ++ "</div>"
           endiv' e = "<div class=\"equations\">" ++ e ++ "</div>"
 
-checkSolution drs s w ref v (g, fd) =  do rules <- liftIO $ readIORef drs
-                                          let Feedback mseq ds = toDisplaySequence (parsePropProof (fromList rules)) v
-                                          updateGoal s w ref (g, fd) mseq ds
+checkSolution drs s w ref v (g, fd)   =  do rules <- liftIO $ readIORef drs 
+                                            -- XXX this is here, rather than earlier, 
+                                            -- because if this ref is read too quickly, the async callback for the rules fails. 
+                                            let Feedback mseq ds = toDisplaySequence (parsePropProof (M.fromList rules)) v
+                                            updateGoal s w ref (g, fd) mseq ds
 
-folCheckSolution s mtref w ref v (g, fd) = do mt <- readIORef mtref
-                                              case mt of
-                                                  Just t -> killThread t
-                                                  Nothing -> return ()
-                                              t' <- forkIO $ do threadDelay 1000000
-                                                                let Feedback mseq ds = hoToDisplaySequence parseFOLProof v
-                                                                updateGoal s w ref (g, fd) mseq ds
-                                              writeIORef mtref (Just t')
-                                              return ()
+folCheckSolution drs s mtref w ref v (g, fd) = 
+        do mt <- readIORef mtref
+           rules <- liftIO $ readIORef drs 
+           case mt of
+               Just t -> killThread t
+               Nothing -> return ()
+           t' <- forkIO $ do threadDelay 1000000
+                             let Feedback mseq ds = hoToDisplaySequence (parseFOLProof $ M.map liftDerivedRule $ M.fromList rules) v
+                             updateGoal s w ref (g, fd) mseq ds
+           writeIORef mtref (Just t')
+           return ()
 
 updateGoal s w ref (g, fd) mseq ds = do ul <- genericListToUl wrap w ds
                                         setInnerHTML fd (Just "")
@@ -127,7 +132,7 @@ updateGoal s w ref (g, fd) mseq ds = do ul <- genericListToUl wrap w ds
                                         return ()
 
 computeRule drs w ref v (g, fd) = do rules <- liftIO $ readIORef drs
-                                     let Feedback mseq ds = toDisplaySequence (parsePropProof (fromList rules)) v
+                                     let Feedback mseq ds = toDisplaySequence (parsePropProof (M.fromList rules)) v
                                      ul <- genericListToUl wrap w ds
                                      setInnerHTML fd (Just "")
                                      appendChild fd (Just ul)
@@ -147,7 +152,7 @@ errDiv msg lineno Nothing = "<div>✗<div><div>Error on line "
                               ++ show lineno ++ ": " ++ msg 
                               ++ "</div></div></div>"
 
--- XXX: this should be a library function
+-- XXX this should be a library function
 updateResults :: (IsElement e, IsElement e') => 
     (String -> IO e') -> e -> EventM HTMLTextAreaElement KeyboardEvent ()
 updateResults f o = 
@@ -206,7 +211,7 @@ trySave drs ref w i = do isFinished <- liftIO $ readIORef ref
                          rules <- liftIO $ readIORef drs
                          if isFinished
                            then do (Just v) <- getValue (castToHTMLTextAreaElement i)
-                                   let Feedback mseq _ = toDisplaySequence (parsePropProof (fromList rules)) v
+                                   let Feedback mseq _ = toDisplaySequence (parsePropProof (M.fromList rules)) v
                                    case mseq of
                                     Nothing -> alert w "A rule can't be extracted from this proof"
                                     (Just (a :|-: (SS c))) -> do
@@ -215,7 +220,7 @@ trySave drs ref w i = do isFinished <- liftIO $ readIORef ref
                                         mname <- prompt w "What name will you give this rule (use all capital letters!)" (Just "")
                                         case mname of
                                             (Just name) -> if allcaps name 
-                                                               then liftIO $ sendJSON (SaveDerivedRule name $ DerivedRule conc prems) loginCheck error
+                                                               then liftIO $ sendJSON (SaveDerivedRule name $ P.DerivedRule conc prems) loginCheck error
                                                                else alert w "rule name must be all capital letters"
                                             Nothing -> alert w "No name entered"
                            else alert w "not yet finished"
@@ -224,3 +229,10 @@ trySave drs ref w i = do isFinished <- liftIO $ readIORef ref
                        | otherwise      = alert w "Saved your new rule!" >> reloadPage
           error c = alert w ("Something has gone wrong. Here's the error: " ++ c)
           allcaps s = and (map (`elem` "ABCDEFGHIJKLMNOPQRSTUVWXYZ") s)
+
+-------------------------
+--  Utility Functions  --
+-------------------------
+
+liftDerivedRule (P.DerivedRule conc prems) = FOL.DerivedRule (liftLang conc) (map liftLang prems)
+

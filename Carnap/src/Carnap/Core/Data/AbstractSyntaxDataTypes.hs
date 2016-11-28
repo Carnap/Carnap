@@ -892,8 +892,16 @@ instance (PrismLink (f (Fix f)) h) => PrismLink (Fix f) h where
 
         pflag = Flag $ checkFlag (pflag :: Flag Bool (f (Fix f)) h)
 
+-- TODO eventually, derive generically given appropriate PrismLinks.
+-- The trouble at the moment is transferring constructors "horizontally":
+-- retyping the (Fix f) argument.
 class f :<: g where
-        sublang :: Typeable a => Prism' (FixLang g a) (FixLang f a)
+        sublang :: Prism' (FixLang g a) (FixLang f a)
+        sublang = prism' liftLang lowerLang
+        liftLang :: FixLang f a -> FixLang g a
+        liftLang = review sublang
+        lowerLang :: FixLang g a -> Maybe (FixLang f a)
+        lowerLang = preview sublang
 
 --------------------------------------------------------
 --6 Utility Functions

@@ -1,6 +1,6 @@
 {-#LANGUAGE GADTs, PatternSynonyms, TypeSynonymInstances, FlexibleInstances, MultiParamTypeClasses #-}
 module Carnap.Languages.PureFirstOrder.Logic
-        ( parseFOLLogic, parseFOLProof, folSeqParser, phiS, phi, tau, ss, FOLSequentCalc)
+        ( parseFOLLogic, parseFOLProof, folSeqParser, phiS, phi, tau, ss, FOLSequentCalc, DerivedRule(..))
     where
 
 import Data.Map as M (lookup, Map)
@@ -104,12 +104,6 @@ instance Sequentable PureLexiconFOL where
     fromSequent (SeqSV n)       = PSV n
     fromSequent x                = error ("fromSequent can't handle " ++ show x)
 
-data FOLogic = MP | MT  | DNE | DNI | DD   | AX 
-                  | CP1 | CP2 | ID1 | ID2  | ID3  | ID4 
-                  | ADJ | S1  | S2  | ADD1 | ADD2 | MTP1 | MTP2 | BC1 | BC2 | CB  
-                  | UD  | UI  | EG  | ED1  | ED2
-               deriving Show
-
 instance ParsableLex (Form Bool) PureLexiconFOL where
         langParser = folFormulaParser
 
@@ -119,10 +113,19 @@ folSeqParser = seqFormulaParser :: Parsec String u (FOLSequentCalc Sequent)
 --2. Classical First-Order Logic
 --------------------------------------------------------
 
-ss :: PureLanguageFOL (Form Bool) -> FOLSequentCalc Succedent
+data DerivedRule = DerivedRule { conclusion :: PureFOLForm, premises :: [PureFOLForm]}
+               deriving Show
+
+data FOLogic = MP | MT  | DNE | DNI | DD   | AX 
+                  | CP1 | CP2 | ID1 | ID2  | ID3  | ID4 
+                  | ADJ | S1  | S2  | ADD1 | ADD2 | MTP1 | MTP2 | BC1 | BC2 | CB  
+                  | UD  | UI  | EG  | ED1  | ED2  | DER DerivedRule
+               deriving Show
+
+ss :: PureFOLForm -> FOLSequentCalc Succedent
 ss = SS . liftToSequent
 
-sa :: PureLanguageFOL (Form Bool) -> FOLSequentCalc Antecedent
+sa :: PureFOLForm -> FOLSequentCalc Antecedent
 sa = SA . liftToSequent
 
 phiS n = PPhi n AZero AZero
@@ -183,6 +186,8 @@ instance Inference FOLogic PureLexiconFOL where
      premisesOf ED2   = [ GammaV 1 :|-: ss (phiS 1)
                         , sa (phi 1 tau) :|-: ss (phi 1 tau)
                         , GammaV 2 :|-: ss (PBind (Some "v") $ phi 1)]
+     premisesOf (DER r) = zipWith gammafy (premises r) [1..]
+        where gammafy p n = GammaV n :|-: SS (liftToSequent p)
 
      conclusionOf MP    = (GammaV 1 :+: GammaV 2) :|-: ss (phiS 2)
      conclusionOf MT    = (GammaV 1 :+: GammaV 2) :|-: ss (PNeg $ phiS 1)
@@ -211,6 +216,8 @@ instance Inference FOLogic PureLexiconFOL where
      conclusionOf UD    = GammaV 1  :|-: ss (PBind (All "v") (phi 1))
      conclusionOf ED1   = GammaV 1 :+: GammaV 2 :|-: ss (phiS 1)
      conclusionOf ED2   = GammaV 1 :+: GammaV 2 :|-: ss (phiS 1)
+     conclusionOf (DER r) = gammas :|-: SS (liftToSequent $ conclusion r)
+        where gammas = foldl (:+:) Top (map GammaV [1..length (premises r)])
 
      restriction UD     = Just (eigenConstraint (SeqT 1) (ss $ PBind (All "v") $ phi 1) (GammaV 1))
      restriction ED1    = Just (eigenConstraint (SeqT 1) ((ss $ PBind (Some "v") $ phi 1) :-: (ss $ phiS 1)) (GammaV 1 :+: GammaV 2))
@@ -228,8 +235,12 @@ eigenConstraint c suc ant sub
           -- imaginable.
           occursIn x y = not $ (subst x (static 0) y) =* y
 
-parseFOLLogic :: Parsec String u [FOLogic]
-parseFOLLogic = do r <- choice (map (try . string) ["AS","PR","MP","MTP","MT","DD","DNE","DNI", "DN", "S", "ADJ",  "ADD" , "BC", "CB",  "CD", "ID", "UI", "UD", "EG", "ED"])
+parseFOLLogic :: Map String DerivedRule -> Parsec String u [FOLogic]
+parseFOLLogic ders = 
+                do r <- choice (map (try . string) 
+                            [ "AS","PR","MP","MTP","MT","DD","DNE"
+                            , "DNI", "DN", "S", "ADJ",  "ADD" , "BC"
+                            , "CB",  "CD", "ID", "UI", "UD", "EG", "ED", "D-"])
                    case r of "AS"   -> return [AX]
                              "PR"   -> return [AX]
                              "MP"   -> return [MP]
@@ -250,6 +261,11 @@ parseFOLLogic = do r <- choice (map (try . string) ["AS","PR","MP","MTP","MT","D
                              "UD"   -> return [UD]
                              "EG"   -> return [EG]
                              "ED"   -> return [ED1,ED2]
+                             "D-" -> do rn <- many1 upper
+                                        case M.lookup rn ders of
+                                            Just r  -> return [DER r]
+                                            Nothing -> parserFail "--- Looks like you're citing a derived rule that doesn't exist"
 
-parseFOLProof ::  String -> [Either ParseError (DeductionLine FOLogic PureLexiconFOL (Form Bool))]
-parseFOLProof = toDeduction parseFOLLogic folFormulaParser
+
+parseFOLProof ::  Map String DerivedRule -> String -> [Either ParseError (DeductionLine FOLogic PureLexiconFOL (Form Bool))]
+parseFOLProof ders = toDeduction (parseFOLLogic ders) folFormulaParser
