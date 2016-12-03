@@ -51,7 +51,7 @@ renumber m (NoResult n) = NoResult m
 --------------------------------------------------------
 
 -- TODO: handle a list of deductionlines which contains some parsing errors
--- XXX: This is pretty ugly, and should be rewritten
+-- XXX This is pretty ugly, and should be rewritten
 {- | 
 find the prooftree corresponding to *line n* in ded, where proof line numbers start at 1
 -}
@@ -126,14 +126,15 @@ toDisplaySequence topd s = if isParsed
           fromFeedback fb n = case fb !! (n - 1) of
             Left _ -> Nothing
             Right s -> Just s
-          updateLine n (Right x) = Right x
-          updateLine n (Left e) = Left e
-          processLine :: (Sequentable lex, Inference r lex, MonadVar (ClassicalSequentOver lex) (State Int)) => 
-            [DeductionLine r lex (Form Bool)] -> Int -> Either (ProofErrorMessage lex) (ClassicalSequentOver lex Sequent)
+          processLine :: 
+            ( Sequentable lex
+            , Inference r lex
+            , MonadVar (ClassicalSequentOver lex) (State Int)
+            ) => [DeductionLine r lex (Form Bool)] -> Int -> Either (ProofErrorMessage lex) (ClassicalSequentOver lex Sequent)
           processLine ded n = case ded !! (n - 1) of
             --special case to catch QedLines not being cited in justifications
             (QedLine _ _ _) -> Left $ NoResult n
-            _ -> toProofTree ded n >>= (updateLine n . reduceProofTree)
+            _ -> toProofTree ded n >>= reduceProofTree
 
 -- XXX Obviously find some way to reduce duplication here.
 hoToDisplaySequence:: 
@@ -157,8 +158,6 @@ hoToDisplaySequence topd s = if isParsed
           fromFeedback fb n = case fb !! (n - 1) of
             Left _ -> Nothing
             Right s -> Just s
-          updateLine n (Right x) = Right x
-          updateLine n (Left e) = Left e
           processLine :: 
             ( StaticVar (ClassicalSequentOver lex)
             , Sequentable lex
@@ -168,7 +167,7 @@ hoToDisplaySequence topd s = if isParsed
           processLine ded n = case ded !! (n - 1) of
             --special case to catch QedLines not being cited in justifications
             (QedLine _ _ _) -> Left $ NoResult n
-            _ -> toProofTree ded n >>= (updateLine n . hoReduceProofTree)
+            _ -> toProofTree ded n >>= hoReduceProofTree
           
 -- | A simple check of whether two sequents can be unified
 seqUnify s1 s2 = case check of
@@ -179,7 +178,7 @@ seqUnify s1 s2 = case check of
                              acuisolve [view lhs (applySub fosub s1) :=: view lhs (applySub fosub s2)]
 
 
--- TODO: remove the need for this assumption.
+-- TODO remove the need for this assumption.
 -- | A simple check of whether one sequent unifies with a another, allowing
 -- for weakening on the lhs; assumption is that neither side contains Delta -1
 seqSubsetUnify s1 s2 = case check of
@@ -203,7 +202,6 @@ reduceResult lineno xs = case rights xs of
                                      else x
           uni (Left (NoUnify _ _)) = True
           uni _ = False
-          
 
 --Given a list of concrete rules and a list of (schematic-variable-free)
 --premise sequents, and a (schematic-variable-free) conclusion succeedent,

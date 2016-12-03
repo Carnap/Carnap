@@ -604,7 +604,7 @@ instance (MaybeStaticVar (Copula (Fix (Copula :|: f))),
 
         sameHeadLex (Fx x) (Fx y) = sameHeadLex x y
 
-instance MaybeMonadVar ((Copula :|: f) (FixLang f)) m => MonadVar (FixLang f) m where
+instance (Monad m, MaybeMonadVar ((Copula :|: f) (FixLang f)) m) => MonadVar (FixLang f) m where
         fresh = case maybeFresh :: Typeable a => Maybe (m (((Copula :|: f) (FixLang f)) a)) of
                     Just fsh -> fmap Fx fsh
                     Nothing -> error "you need substitutional variables in your language for this"
@@ -618,7 +618,10 @@ instance MaybeStaticVar ((Copula :|: f) (FixLang f)) => StaticVar (FixLang f) wh
                     Just s -> \n -> Fx (s n)
                     Nothing -> error "you need static variables in your language for this"
 
-instance {-# OVERLAPPABLE #-} (StaticVar (FixLang f), FirstOrderLex (FixLang f)) => FirstOrder (FixLang f) where
+instance {-# OVERLAPPABLE #-} 
+        ( StaticVar (FixLang f)
+        , FirstOrderLex (FixLang f)
+        , UniformlyEq (FixLang f)) => FirstOrder (FixLang f) where
 
         isVar = isVarLex
 
@@ -790,7 +793,7 @@ class (Typeable syn1, Typeable sem1, Typeable syn2, Typeable sem2, BoundVars f) 
 
 class (Typeable syn1, Typeable sem1, BoundVars f) => LangTypes1 f syn1 sem1 where
 
-        simChildren1 :: Traversal' (FixLang f (syn1 sem1)) (FixLang f (syn1 sem1))
+        simChildren1 ::  Traversal' (FixLang f (syn1 sem1)) (FixLang f (syn1 sem1))
         simChildren1 g phi@(q :!$: LLam (h :: FixLang f t -> FixLang f t')) =
                    case eqT :: Maybe (t' :~: syn1 sem1) of
                             Just Refl -> (\x y -> x :!$: LLam y) <$> pure q <*> modify h
@@ -817,7 +820,12 @@ class (Typeable syn1, Typeable sem1, BoundVars f) => LangTypes1 f syn1 sem1 wher
                                 ) of r1 -> pure h .*$. (handleArg1 r1 g t1)
         simChildren1 g phi = pure phi
 
-instance {-# OVERLAPPABLE #-} LangTypes2 f syn1 sem1 syn2 sem2 => LangTypes1 f syn1 sem1 where
+instance {-# OVERLAPPABLE #-} 
+        ( BoundVars f
+        , Typeable syn1
+        , Typeable sem1
+        , LangTypes2 f syn1 sem1 syn2 sem2) => LangTypes1 f syn1 sem1 where
+
         simChildren1 = simChildren2
 
 instance LangTypes1 f syn sem  => Plated (FixLang f (syn sem)) where

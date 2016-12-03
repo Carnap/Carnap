@@ -75,8 +75,6 @@ type ModalForm = ModalPropLanguage (Form (World -> Bool))
 instance Eq ModalForm where
         (==) = (=*)
 
-pattern (:!!$:) :: (Typeable a, Typeable b) => ModalPropLanguage (a -> b) -> ModalPropLanguage a -> ModalPropLanguage b
-pattern (:!!$:) f y    = f :!$: y
 pattern MPred x arity  = Fx1 (Predicate x arity)
 pattern MSPred x arity = Fx2 (Predicate x arity)
 pattern MBCon x arity  = Fx3 (Connective x arity)
@@ -91,13 +89,13 @@ pattern MBox           = MMCon Box AOne
 pattern MDiamond       = MMCon Diamond AOne
 pattern MP n           = MPred (Prop n) AZero
 pattern MPhi n         = MSPred (SProp n) AZero
-pattern (:&:) x y      = MAnd :!!$: x :!!$: y
-pattern (:||:) x y     = MOr :!!$: x :!!$: y
-pattern (:->:) x y     = MIf :!!$: x :!!$: y
-pattern (:<->:) x y    = MIff :!!$: x :!!$: y
-pattern MNeg x         = MNot :!!$: x
-pattern MNec x         = MBox :!!$: x
-pattern MPos x         = MDiamond :!!$: x
+pattern (:&:) x y      = MAnd :!$: x :!$: y
+pattern (:||:) x y     = MOr :!$: x :!$: y
+pattern (:->:) x y     = MIf :!$: x :!$: y
+pattern (:<->:) x y    = MIff :!$: x :!$: y
+pattern MNeg x         = MNot :!$: x
+pattern MNec x         = MBox :!$: x
+pattern MPos x         = MDiamond :!$: x
 
 instance LangTypes1 ModalPropLexicon Form (World -> Bool)
 

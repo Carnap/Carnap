@@ -182,7 +182,6 @@ instance Inference PropLogic PurePropLexicon where
     conclusionOf BC1   = GammaV 1 :|-: SS (SeqPhi 2 :->-: SeqPhi 1)
     conclusionOf BC2   = GammaV 1 :|-: SS (SeqPhi 1 :->-: SeqPhi 2)
     conclusionOf CB    = GammaV 1 :+: GammaV 2 :|-: SS (SeqPhi 1 :<->-: SeqPhi 2)
-
     conclusionOf (DER r) = gammas :|-: SS (liftToSequent $ conclusion r)
         where gammas = foldl (:+:) Top (map GammaV [1..length (premises r)])
 

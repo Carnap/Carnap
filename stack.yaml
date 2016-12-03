@@ -5,7 +5,7 @@ packages:
 - Carnap/
 - Carnap-Server/
 - Carnap-GHCJS/
-resolver: lts-6.11
+resolver: lts-6.25
 
 
 # #Uncomment this and run stack setup to install ghcjs; you can uncomment to
@@ -21,3 +21,13 @@ resolver: lts-6.11
 #       ghcjs-0.2.0.20160414_ghc-7.10.3:
 #         url: https://s3.amazonaws.com/ghcjs/ghcjs-0.2.0.20160414_ghc-7.10.3.tar.gz
 #         sha1: 6d6f307503be9e94e0c96ef1308c7cf224d06be3
+
+# compiler: ghcjs-0.2.0.9006025_ghc-7.10.3
+# compiler-check: match-exact
+
+# setup-info:
+#   ghcjs:
+#     source:
+#       ghcjs-0.2.0.9006025_ghc-7.10.3:
+#          url: http://ghcjs.tolysz.org/lts-6.25-9006025.tar.gz
+#          sha1: 3c87228579b55c05e227a7876682c2a7d4c9c007

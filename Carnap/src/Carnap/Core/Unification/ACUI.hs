@@ -1,4 +1,4 @@
-{-#LANGUAGE GADTs, TypeOperators, ScopedTypeVariables, ExplicitForAll, ImpredicativeTypes, MultiParamTypeClasses, FlexibleContexts, PatternSynonyms #-}
+{-#LANGUAGE GADTs, TypeOperators, ScopedTypeVariables, ExplicitForAll, RankNTypes, MultiParamTypeClasses, FlexibleContexts, PatternSynonyms #-}
 
 module Carnap.Core.Unification.ACUI (
   ACUI(..), acuiUnifySys
