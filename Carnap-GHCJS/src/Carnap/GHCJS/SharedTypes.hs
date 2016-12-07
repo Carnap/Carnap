@@ -28,7 +28,7 @@ instance FromJSON GHCJSCommand
 instance ToJSON DerivedRule where
         toJSON (DerivedRule conclusion prems) = 
             object [ "conclusion" .= show conclusion
-                   , "premises" .= map show prems]
+                   , "premises"   .= map show prems]
 
 instance FromJSON DerivedRule where
         parseJSON (Object v) = 
