@@ -6,7 +6,7 @@ import Carnap.GHCJS.SharedTypes
 import Carnap.Languages.PurePropositional.Logic (DerivedRule)
 import Data.Aeson (encode, decodeStrict)
 import Model (SyntaxCheckSubmission,TranslationSubmission)
-import Data.Time 
+import Data.Time
 
 postCommandR :: Handler Value
 postCommandR = do
@@ -28,8 +28,9 @@ postCommandR = do
                                            let save = SavedDerivedRule (toStrict $ encode dr) (pack n) (pack $ show time) u
                                            tryInsert save >>= afterInsert
                 RequestDerivedRulesForUser -> do savedRules <- runDB $ selectList [SavedDerivedRuleUserId ==. u] []
-                                                 let packagedRules = map (packageRule . entityVal) savedRules
-                                                 returnJson $ catMaybes packagedRules
+                                                 let packagedRules = catMaybes $ map (packageRule . entityVal) savedRules
+                                                 liftIO $ print $ "sending" ++ (show $ toJSON packagedRules)
+                                                 returnJson $ show $ toJSON packagedRules
 
 packageRule (SavedDerivedRule dr n _ _) = case (decodeStrict dr :: Maybe DerivedRule) of
                                               Just r -> Just (unpack n, r)

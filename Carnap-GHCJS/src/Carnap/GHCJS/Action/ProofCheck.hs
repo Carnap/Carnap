@@ -35,15 +35,30 @@ import Control.Concurrent
 
 proofCheckAction :: IO ()
 proofCheckAction = do availableDerived <- newIORef []
+                      print "starting"
                       genericSendJSON RequestDerivedRulesForUser (addRules availableDerived) errcb
                       initElements getCheckers (activateChecker availableDerived)
-    where errcb e = case fromJSON e :: Result String of
-                               A.Error e -> print $ "Getting kind of meta. Error decoding error message: " ++ e
-                               Success e -> print $ "Error in retrieving derived rules: " ++ e
 
-          addRules avd v = case fromJSON v :: Result [(String,P.DerivedRule)] of
-                               A.Error e -> print $ "error decoding derived rules: " ++ e
-                               Success rs -> writeIORef avd rs
+errcb e = case fromJSON e :: Result String of
+               A.Error e' -> print $ "Getting kind of meta. Error decoding error message: " ++ e'
+               Success e' -> print $ "Error in retrieving derived rules: " ++ e'
+
+--- XXX bizarre error arises when I try to send the JSON for the derived
+--- rules directly. It worked on previous versions of ghcjs, so I'm going
+--- to wait until I move all this to GHC 8.2 and the latest ghcjs before
+--- spending too much time trying to fix.
+--
+--  Notes: the bug arises only with the custom toJSON instance for
+--  DerivedRule. toJSON and fromJSON seem to work fine for that instance.
+addRules avd v =  case fromJSON v :: Result String of
+                    A.Error e -> do print $ "error decoding derived rules: " ++ e
+                                    print $ "recieved string: " ++ show v
+                    Success s -> do let v' = read s :: Value
+                                    case fromJSON v' :: Result [(String,P.DerivedRule)] of
+                                          A.Error e -> do print $ "error decoding derived rules: " ++ e
+                                                          print $ "recieved JSON: " ++ show v
+                                          Success rs -> do print $ show rs
+                                                           writeIORef avd rs
 
 getCheckers :: IsElement self => self -> IO [Maybe (Element, Element, Element, [String])]
 getCheckers = getInOutGoalElts "proofchecker"
@@ -112,7 +127,7 @@ folCheckSolution drs s mtref w ref v (g, fd) =
            case mt of
                Just t -> killThread t
                Nothing -> return ()
-           t' <- forkIO $ do threadDelay 1000000
+           t' <- forkIO $ do threadDelay 200000
                              let Feedback mseq ds = hoToDisplaySequence (parseFOLProof $ M.map liftDerivedRule $ M.fromList rules) v
                              updateGoal s w ref (g, fd) mseq ds
            writeIORef mtref (Just t')

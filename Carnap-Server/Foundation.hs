@@ -26,7 +26,6 @@ data App = App
     , appFayCommandHandler :: CommandHandler App
     }
 
-
 -- This is where we define all of the routes in our application. For a full
 -- explanation of the syntax, please see:
 -- http://www.yesodweb.com/book/routing-and-handlers
@@ -169,7 +168,7 @@ instance YesodAuth App where
     onLogout = deleteSession credsKey >> deleteSession "_ULT" >> redirect HomeR
 
     -- You can add other plugins like Google Email, email or OAuth here
-    authPlugins _ = [authGoogleEmail googleApiKey googleSecret]
+    authPlugins _ = [authDummy, authGoogleEmail googleApiKey googleSecret]
 
     authHttpManager = getHttpManager
 
