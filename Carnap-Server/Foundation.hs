@@ -167,8 +167,12 @@ instance YesodAuth App where
     --redirect manually.
     onLogout = deleteSession credsKey >> deleteSession "_ULT" >> redirect HomeR
 
-    -- You can add other plugins like Google Email, email or OAuth here
-    authPlugins _ = [authGoogleEmail googleApiKey googleSecret]
+    -- appDevel is a custom method added to the settings, which is true
+    -- when yesod is running in the development environment and false
+    -- otherwise
+    authPlugins app = if appDevel (appSettings app) 
+                          then [authDummy]
+                          else [authGoogleEmail googleApiKey googleSecret]
 
     authHttpManager = getHttpManager
 

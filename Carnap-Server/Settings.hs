@@ -55,11 +55,13 @@ data AppSettings = AppSettings
     -- ^ Copyright text to appear in the footer of the page
     , appAnalytics              :: Maybe Text
     -- ^ Google Analytics code
+    , appDevel :: Bool
+    -- Flag to indicate development mode
     }
 
 instance FromJSON AppSettings where
     parseJSON = withObject "AppSettings" $ \o -> do
-        let defaultDev =
+        let appDevel =
 #if DEVELOPMENT
                 True
 #else
@@ -72,11 +74,11 @@ instance FromJSON AppSettings where
         appPort                   <- o .: "port"
         appIpFromHeader           <- o .: "ip-from-header"
 
-        appDetailedRequestLogging <- o .:? "detailed-logging" .!= defaultDev
-        appShouldLogAll           <- o .:? "should-log-all"   .!= defaultDev
-        appReloadTemplates        <- o .:? "reload-templates" .!= defaultDev
-        appMutableStatic          <- o .:? "mutable-static"   .!= defaultDev
-        appSkipCombining          <- o .:? "skip-combining"   .!= defaultDev
+        appDetailedRequestLogging <- o .:? "detailed-logging" .!= appDevel
+        appShouldLogAll           <- o .:? "should-log-all"   .!= appDevel
+        appReloadTemplates        <- o .:? "reload-templates" .!= appDevel
+        appMutableStatic          <- o .:? "mutable-static"   .!= appDevel
+        appSkipCombining          <- o .:? "skip-combining"   .!= appDevel
 
         appCopyright              <- o .: "copyright"
         appAnalytics              <- o .:? "analytics"
