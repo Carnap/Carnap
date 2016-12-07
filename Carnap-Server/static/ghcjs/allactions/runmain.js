@@ -1,1 +1,1 @@
-/home/graham/projects/CarnapPrime/Carnap-GHCJS/.stack-work/dist/x86_64-linux/Cabal-1.22.8.0_ghcjs/build/AllActions/AllActions.jsexe/runmain.js
+../../../../Carnap-GHCJS/.stack-work/dist/x86_64-linux/Cabal-1.24.0.0_ghcjs/build/AllActions/AllActions.jsexe/runmain.js
