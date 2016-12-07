@@ -2,6 +2,7 @@ module Handler.Chapter where
 
 import Import
 import Yesod.Markdown
+import Data.List as L (last, tails) 
 import Filter.Sidenotes
 import Filter.SynCheckers
 import Filter.ProofCheckers
@@ -19,11 +20,9 @@ import Control.Monad.State (evalState, evalStateT)
 -- XXX: Fair amount of code-duplication between this and Handler/Book.hs
 
 getChapterR :: Int -> Handler Html
-getChapterR n = do cdir <- lift $ do localbook <- doesDirectoryExist "book"
-                                     if localbook then getDirectoryContents "book"
-                                                  else getDirectoryContents "/root/book"
-                   let nchaps = length (filter (\x -> take 7 x == "chapter") cdir)
-                   content <- liftIO $ content n nchaps
+getChapterR n = do cdirp <- lift $ chapterDir 
+                   cdir <- lift $ getDirectoryContents cdirp
+                   content <- liftIO $ content n cdir cdirp
                    case content of
                        Right html -> chapterLayout $ layout html
                        Left err -> defaultLayout $ layout (show err)
@@ -33,15 +32,16 @@ getChapterR n = do cdir <- lift $ do localbook <- doesDirectoryExist "book"
                                 #{c}
                        |]
 
-chapterPath n ctype = do localbook <- doesDirectoryExist "book"
-                         return $ (if localbook then "book/" ++ ctype else "/root/book/" ++ ctype) 
-                                  ++  show n ++ ".pandoc" 
+chapterDir = do localbook <- doesDirectoryExist "book"
+                return (if localbook then "book/" else "/root/book/")
 
-content n offset = do cpath <- chapterPath n "chapter"
-                      apath <- chapterPath (n - offset) "appendix"
-                      ce <- doesFileExist cpath 
-                      if ce then fileToHtml cpath
-                            else fileToHtml apath
+content n cdir cdirp = do let matches = filter (\x -> (show n ++ ".pandoc") `elem` tails x) cdir
+                          case matches of
+                              [] -> do print "no matches"
+                                       fileToHtml ""
+                              ms  -> do let m = L.last ms 
+                                        fileToHtml (cdirp ++ m)
+
 
 fileToHtml path = do md <- markdownFromFile path
                      case parseMarkdown yesodDefaultReaderOptions md of
@@ -58,7 +58,7 @@ chapterLayout widget = do
         master <- getYesod
         mmsg <- getMessage
         authmaybe <- maybeAuth
-        pc     <- widgetToPageContent $ do
+        pc <- widgetToPageContent $ do
             toWidgetHead $(juliusFile "templates/command.julius")
             addScript $ StaticR ghcjs_rts_js
             addScript $ StaticR ghcjs_allactions_lib_js

@@ -1,0 +1,40 @@
+#Appendix: Practice Problems
+
+##First-Order Derivations:
+
+This first set of derivations are all *syllogisms*: simple two-premise
+arguments whose natural language equivalents have been known to be valid for
+quite a long time.
+
+```{.ProofChecker .FirstOrder}
+0.1 Ax(F(x) -> G(x)), Ex(H(x)/\-G(x)) :|-: Ex(H(x)/\-F(x))
+0.2 Ex(F(x)/\ -G(x)), Ax(F(x) -> H(x)) :|-: Ex(H(x)/\ -G(x))
+0.3 Ax(F(x)->G(x)), -Ex(G(x)/\H(x)) :|-: -Ex(H(x)/\F(x))
+0.4 Ax(H(x)->F(x)), -Ex(F(x)/\G(x)) :|-: -Ex(H(x)/\G(x))
+0.5 -Ex(F(x)/\G(x)), Ex(H(x)/\F(x)) :|-: Ex(H(x)/\-G(x))
+```
+
+This set of derivations cover the quantifier equivalents of DeMorgan's laws:
+
+```{.ProofChecker .FirstOrder}
+0.6 :|-: Ax(F(x)/\G(x)) <-> AxF(x)/\AxG(x)
+0.7 :|-: Ex(F(x)\/G(x)) <-> ExF(x)\/ExG(x)
+```
+
+This set of derivations shows some implications similar to the above, which
+are valid, but which are not reversible (while the premise implies the
+conclusion, the conclusion does not imply the premise)
+
+```{.ProofChecker .FirstOrder}
+0.7 AxF(x)\/AxG(x) :|-:  Ax(F(x)\/G(x))
+0.8 Ex(F(x)/\G(x)) :|-:  ExF(x)/\ExG(x)
+```
+
+We can also explore how the quantifiers can "travel over" or "commute" with
+other connectives (the second one here might be a little tricky
+using the QN rule):
+
+```{.ProofChecker .FirstOrder}
+0.9 Ax(F(x)<->G(x)) :|-: AxF(x)<->AxG(x)
+0.10 ExF(x)->ExG(x) :|-: Ex(F(x)->G(x))
+```

@@ -1,16 +1,25 @@
 <div.container>
-    <h1>
-        Table of Contents:
+    <h1> Table of Contents:
+    <h3> Chapters:
     <ol>
-        $forall (_, n) <- ccount
+        $forall (mt, n) <- ccount
             <li>
-                <a href="@{BookR}/#{show n}">
-                    Chapter #{show n}
+                $maybe title <- mt
+                    <a href="@{BookR}/#{show n}">
+                        Chapter #{show n}: #{title}
+                $nothing
+                    <a href="@{BookR}/#{show n}">
+                        Chapter #{show n}
+    <h3> Appendicies:
     <ol>
-        $forall (_, n, m) <- acount
+        $forall (mt, n, m) <- acount
             <li>
-                <a href="@{BookR}/#{show m}">
-                    Appendix #{show n}
+                $maybe title <- mt
+                    <a href="@{BookR}/#{show m}">
+                        Appendix: #{title}
+                $nothing
+                    <a href="@{BookR}/#{show m}">
+                        Appendix #{show n}
     <h3> Special Sections
     <ol>
         <li>

@@ -120,6 +120,7 @@ data FOLogic = MP | MT  | DNE | DNI | DD   | AX
                   | CP1 | CP2 | ID1 | ID2  | ID3  | ID4 
                   | ADJ | S1  | S2  | ADD1 | ADD2 | MTP1 | MTP2 | BC1 | BC2 | CB  
                   | UD  | UI  | EG  | ED1  | ED2  | DER DerivedRule
+                  | QN1 | QN2 | QN3 | QN4
                deriving Show
 
 ss :: PureFOLForm -> FOLSequentCalc Succedent
@@ -188,6 +189,10 @@ instance Inference FOLogic PureLexiconFOL where
                         , GammaV 2 :|-: ss (PBind (Some "v") $ phi 1)]
      premisesOf (DER r) = zipWith gammafy (premises r) [1..]
         where gammafy p n = GammaV n :|-: SS (liftToSequent p)
+     premisesOf QN1   = [ GammaV 1 :|-: ss (PNeg $ PBind (Some "v") $ phi 1)]
+     premisesOf QN2   = [ GammaV 1 :|-: ss (PBind (Some "v") $ \x -> PNeg $ phi 1 x)]
+     premisesOf QN3   = [ GammaV 1 :|-: ss (PNeg $ PBind (All "v") $ phi 1)]
+     premisesOf QN4   = [ GammaV 1 :|-: ss (PBind (All "v") $ \x -> PNeg $ phi 1 x)]
 
      conclusionOf MP    = (GammaV 1 :+: GammaV 2) :|-: ss (phiS 2)
      conclusionOf MT    = (GammaV 1 :+: GammaV 2) :|-: ss (PNeg $ phiS 1)
@@ -218,6 +223,10 @@ instance Inference FOLogic PureLexiconFOL where
      conclusionOf ED2   = GammaV 1 :+: GammaV 2 :|-: ss (phiS 1)
      conclusionOf (DER r) = gammas :|-: SS (liftToSequent $ conclusion r)
         where gammas = foldl (:+:) Top (map GammaV [1..length (premises r)])
+     conclusionOf QN1   = GammaV 1 :|-: ss (PBind (All "v") $ \x -> PNeg $ phi 1 x)
+     conclusionOf QN2   = GammaV 1 :|-: ss (PNeg $ PBind (All "v")  $ phi 1)
+     conclusionOf QN3   = GammaV 1 :|-: ss (PBind (Some "v") $ \x -> PNeg $ phi 1 x)
+     conclusionOf QN4   = GammaV 1 :|-: ss (PNeg $ PBind (Some "v") $ phi 1)
 
      restriction UD     = Just (eigenConstraint (SeqT 1) (ss $ PBind (All "v") $ phi 1) (GammaV 1))
      restriction ED1    = Just (eigenConstraint (SeqT 1) ((ss $ PBind (Some "v") $ phi 1) :-: (ss $ phiS 1)) (GammaV 1 :+: GammaV 2))
@@ -240,7 +249,8 @@ parseFOLLogic ders =
                 do r <- choice (map (try . string) 
                             [ "AS","PR","MP","MTP","MT","DD","DNE"
                             , "DNI", "DN", "S", "ADJ",  "ADD" , "BC"
-                            , "CB",  "CD", "ID", "UI", "UD", "EG", "ED", "D-"])
+                            , "CB",  "CD", "ID", "UI", "UD", "EG", "ED"
+                            , "D-", "QN"])
                    case r of "AS"   -> return [AX]
                              "PR"   -> return [AX]
                              "MP"   -> return [MP]
@@ -261,6 +271,7 @@ parseFOLLogic ders =
                              "UD"   -> return [UD]
                              "EG"   -> return [EG]
                              "ED"   -> return [ED1,ED2]
+                             "QN"   -> return [QN1, QN2, QN3, QN4]
                              "D-" -> do rn <- many1 upper
                                         case M.lookup rn ders of
                                             Just r  -> return [DER r]
