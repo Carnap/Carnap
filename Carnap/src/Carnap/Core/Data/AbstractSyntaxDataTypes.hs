@@ -19,7 +19,7 @@ module Carnap.Core.Data.AbstractSyntaxDataTypes(
   Arity(AZero, ASucc), Predicate(Predicate), Connective(Connective),
   Function(Function), Subnective(Subnective), SubstitutionalVariable(SubVar,StaticVar),
   -- * Generic Programming Utilities
-  LangTypes2(..), LangTypes1(..), RelabelVars(..), FirstOrderLex(..), PrismLink(..), (:<:)(..)
+  LangTypes2(..), LangTypes1(..), RelabelVars(..), FirstOrderLex(..), PrismLink(..), (:<:)(..), ReLex(..)
 ) where
 
 import Carnap.Core.Util
@@ -853,6 +853,39 @@ class (Plated (FixLang f (syn sem)), BoundVars f) => RelabelVars f syn sem where
 --------------------------------------------------------
 --5.2 Prisms
 --------------------------------------------------------
+
+class ReLex f where
+        relex :: f idx a -> f idy a
+
+instance ReLex (Predicate pred) where
+        relex (Predicate p a) = Predicate p a
+
+instance ReLex (Connective con) where
+        relex (Connective p a) = Connective p a
+
+instance ReLex (Function func) where
+        relex (Function p a) = Function p a
+
+instance ReLex (Subnective sub) where
+        relex (Subnective p a) = Subnective p a
+
+instance ReLex SubstitutionalVariable where
+        relex (SubVar n) = SubVar n
+        relex (StaticVar n) = StaticVar n
+
+instance ReLex (Quantifiers quant) where
+        relex (Bind q) = Bind q
+
+instance ReLex (Abstractors abs) where
+        relex (Abstract abs) = Abstract abs
+
+instance ReLex (Applicators app) where
+        relex (Apply app) = Apply app
+
+instance (ReLex f, ReLex g) => ReLex (f :|: g) where
+        relex (FLeft l) = FLeft (relex l)
+        relex (FRight l) = FRight (relex l)
+
 
 data Flag a f g where
         Flag :: {checkFlag :: a} -> Flag a f g
