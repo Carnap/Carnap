@@ -19,7 +19,7 @@ module Carnap.Core.Data.AbstractSyntaxDataTypes(
   Arity(AZero, ASucc), Predicate(Predicate), Connective(Connective),
   Function(Function), Subnective(Subnective), SubstitutionalVariable(SubVar,StaticVar),
   -- * Generic Programming Utilities
-  LangTypes2(..), LangTypes1(..), RelabelVars(..), FirstOrderLex(..), PrismLink(..), (:<:)(..), ReLex(..)
+  LangTypes2(..), LangTypes1(..), RelabelVars(..), FirstOrderLex(..), PrismLink(..), (:<:)(..), ReLex(..),Flag
 ) where
 
 import Carnap.Core.Util
@@ -882,25 +882,34 @@ instance ReLex (Abstractors abs) where
 instance ReLex (Applicators app) where
         relex (Apply app) = Apply app
 
+instance ReLex EndLang
+
 instance (ReLex f, ReLex g) => ReLex (f :|: g) where
         relex (FLeft l) = FLeft (relex l)
         relex (FRight l) = FRight (relex l)
 
+relexIso :: ReLex f => Iso' (f idx a) (f idy a)
+relexIso = iso relex relex
 
 data Flag a f g where
         Flag :: {checkFlag :: a} -> Flag a f g
+    deriving (Show)
+
+instance {-# OVERLAPPABLE #-} PrismLink f f where
+        link = prism' id Just
+        pflag = Flag True
+
+instance PrismLink ((f :|: g) idx) ((f :|: g) idx) where
+        link = prism' id Just
+        pflag = Flag True
 
 class PrismLink f g where
         link :: Typeable a => Prism' (f a) (g a) 
-        pflag :: Flag Bool f g --const False indicates that this is the trivial select nothing prism
+        pflag :: Flag Bool f g --const False indicates that we don't have a prism here
 
 instance {-# OVERLAPPABLE #-} PrismLink f g where
         link = error "you need to define an instance of PrismLink to do this"
         pflag = Flag False
-
-instance PrismLink f f where
-        link = prism' id Just
-        pflag = Flag True
 
 _FLeft :: Prism' ((f :|: g) idx a) (f idx a)
 _FLeft = prism' FLeft un
@@ -912,10 +921,10 @@ _FRight = prism' FRight un
     where un (FRight s) = Just s
           un _ = Nothing
 
-instance (PrismLink (f idx) h, PrismLink (g idx) h) =>  PrismLink ((f :|: g) idx) h where
+instance {-# OVERLAPPABLE #-} (PrismLink (f idx) h, PrismLink (g idx) h) => PrismLink ((f :|: g) idx) h where
 
         link 
-            | checkFlag (pflag :: Flag Bool (f idx) h) = _FLeft . ll
+            | checkFlag (pflag :: Flag Bool (f idx) h) = _FLeft  . ll
             | checkFlag (pflag :: Flag Bool (g idx) h) = _FRight . rl
             | otherwise = error "No instance found for PrismLink"
             where ll = link :: Typeable a => Prism' (f idx a) (h a)
@@ -933,9 +942,6 @@ instance (PrismLink (f (Fix f)) h) => PrismLink (Fix f) h where
 
         pflag = Flag $ checkFlag (pflag :: Flag Bool (f (Fix f)) h)
 
--- TODO eventually, derive generically given appropriate PrismLinks.
--- The trouble at the moment is transferring constructors "horizontally":
--- retyping the (Fix f) argument.
 class f :<: g where
         sublang :: Prism' (FixLang g a) (FixLang f a)
         sublang = prism' liftLang lowerLang
@@ -943,6 +949,25 @@ class f :<: g where
         liftLang = review sublang
         lowerLang :: FixLang g a -> Maybe (FixLang f a)
         lowerLang = preview sublang
+
+instance {-# OVERLAPPABLE #-} (PrismLink (g (FixLang g)) (f (FixLang g)), ReLex f) => f :<: g where
+        liftLang (x :!$: y) = liftLang x :!$: liftLang y 
+        liftLang (LLam f) = LLam $ liftLang . f . unMaybe . lowerLang
+            where unMaybe (Just a) = a
+                  unMaybe Nothing = error "lifted lambda given bad argument"
+        liftLang (FX a) = FX $ review' (link' . relexIso) a
+            where link' :: Typeable a => Prism' (g (FixLang g) a) (f (FixLang g) a)
+                  link' = link
+                  review' :: Prism' b a -> a -> b
+                  review' = review
+
+        lowerLang (x :!$: y) = (:!$:) <$> lowerLang x <*> lowerLang y
+        lowerLang (LLam f) = Just $ LLam (unMaybe . lowerLang . f . liftLang)
+            where unMaybe (Just a) = a
+                  unMaybe Nothing = error "lowered lambda returning bad value"
+        lowerLang (FX a) = FX <$> preview (link' . relexIso) a
+            where link' :: Typeable a => Prism' (g (FixLang g) a) (f (FixLang g) a)
+                  link' = link
 
 --------------------------------------------------------
 --6 Utility Functions
