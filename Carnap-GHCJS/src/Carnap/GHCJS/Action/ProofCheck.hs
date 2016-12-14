@@ -230,6 +230,7 @@ trySave drs ref w i = do isFinished <- liftIO $ readIORef ref
                                    case mseq of
                                     Nothing -> alert w "A rule can't be extracted from this proof"
                                     (Just (a :|-: (SS c))) -> do
+                                        -- XXX : throw a more transparent error here if necessary
                                         let prems = map (toSchema . fromSequent) (toListOf concretes a)
                                         let conc = (toSchema . fromSequent) c
                                         mname <- prompt w "What name will you give this rule (use all capital letters!)" (Just "")

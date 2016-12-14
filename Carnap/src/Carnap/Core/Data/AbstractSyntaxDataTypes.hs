@@ -19,7 +19,7 @@ module Carnap.Core.Data.AbstractSyntaxDataTypes(
   Arity(AZero, ASucc), Predicate(Predicate), Connective(Connective),
   Function(Function), Subnective(Subnective), SubstitutionalVariable(SubVar,StaticVar),
   -- * Generic Programming Utilities
-  LangTypes2(..), LangTypes1(..), RelabelVars(..), FirstOrderLex(..), PrismLink(..), (:<:)(..), ReLex(..),Flag
+  LangTypes2(..), LangTypes1(..), RelabelVars(..), FirstOrderLex(..), PrismLink(..), (:<:)(..), ReLex(..)
 ) where
 
 import Carnap.Core.Util

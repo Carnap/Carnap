@@ -1,4 +1,4 @@
-{-#LANGUAGE ScopedTypeVariables,  UndecidableInstances, FlexibleContexts, FlexibleInstances,  GADTs,  PolyKinds, TypeOperators,  PatternSynonyms, MultiParamTypeClasses #-}
+{-#LANGUAGE ScopedTypeVariables,  UndecidableInstances, ConstraintKinds, FlexibleContexts, FlexibleInstances,  GADTs,  PolyKinds, TypeOperators,  PatternSynonyms, MultiParamTypeClasses #-}
 module Carnap.Languages.ClassicalSequent.Syntax where
 
 import Carnap.Core.Data.AbstractSyntaxClasses
@@ -169,9 +169,20 @@ concretes f (Top) = pure Top
 --3. Sequent Languages
 --------------------------------------------------------
 
-class Sequentable f where
-        liftToSequent :: FixLang f a -> ClassicalSequentOver f a
-        fromSequent :: ClassicalSequentOver f a -> FixLang f a
+-- XXX : using constraint kinds, we can create  conjunctive typeclass as
+-- a tuple.
+type Sequentable f = ( PrismLink (EndLang (ClassicalSequentOver f)) (f (ClassicalSequentOver f))
+                     , PrismLink (f (ClassicalSequentOver f)) (f (ClassicalSequentOver f))
+                     , PrismLink (ClassicalSequentLex (ClassicalSequentOver f)) (f (ClassicalSequentOver f))
+                     , ReLex f, f :<: (ClassicalSequentLex :|: f :|: EndLang))
+
+liftToSequent :: Sequentable f => FixLang f a -> ClassicalSequentOver f a
+liftToSequent x = liftLang x
+
+fromSequent :: Sequentable f => ClassicalSequentOver f a -> FixLang f a
+fromSequent x = case lowerLang x of
+                    Just y -> y
+                    Nothing -> error "could not lower sequent"
 
 --------------------------------------------------------
 --4. Utilities

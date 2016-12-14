@@ -1,4 +1,4 @@
-{-#LANGUAGE GADTs, PatternSynonyms, TypeSynonymInstances, FlexibleInstances, MultiParamTypeClasses #-}
+{-#LANGUAGE GADTs, FlexibleContexts, PatternSynonyms, TypeSynonymInstances, FlexibleInstances, MultiParamTypeClasses #-}
 module Carnap.Languages.PurePropositional.Logic (parsePropLogic, parsePropProof, DerivedRule(..), propSeqParser, PropSequentCalc) where
 
 import Data.Map as M (lookup, Map)
@@ -79,22 +79,22 @@ instance Combineable PropSequentCalc PropSeqLabel where
     replaceChild (SS _ )      pig _ = SS $ unEveryPig pig 
     replaceChild (SA _ )      pig _ = SA $ unEveryPig pig
 
-instance Sequentable PurePropLexicon where
-    liftToSequent (x :&: y)     = (liftToSequent x :&-: liftToSequent y)
-    liftToSequent (x :||: y)    = (liftToSequent x :||-: liftToSequent y)
-    liftToSequent (x :->: y)    = (liftToSequent x :->-: liftToSequent y)
-    liftToSequent (x :<->: y)   = (liftToSequent x :<->-: liftToSequent y)
-    liftToSequent (PNeg y)      = (SeqNeg $ liftToSequent y)
-    liftToSequent (PP n)        = SeqProp n
-    liftToSequent (PPhi n)      = SeqPhi n
+-- instance Sequentable PurePropLexicon where
+--     liftToSequent (x :&: y)     = (liftToSequent x :&-: liftToSequent y)
+--     liftToSequent (x :||: y)    = (liftToSequent x :||-: liftToSequent y)
+--     liftToSequent (x :->: y)    = (liftToSequent x :->-: liftToSequent y)
+--     liftToSequent (x :<->: y)   = (liftToSequent x :<->-: liftToSequent y)
+--     liftToSequent (PNeg y)      = (SeqNeg $ liftToSequent y)
+--     liftToSequent (PP n)        = SeqProp n
+--     liftToSequent (PPhi n)      = SeqPhi n
 
-    fromSequent (x :&-: y)     = (fromSequent x :&: fromSequent y)
-    fromSequent (x :||-: y)    = (fromSequent x :||: fromSequent y)
-    fromSequent (x :->-: y)    = (fromSequent x :->: fromSequent y)
-    fromSequent (x :<->-: y)   = (fromSequent x :<->: fromSequent y)
-    fromSequent (SeqNeg y)     = (PNeg $ fromSequent y)
-    fromSequent (SeqProp n)    = PP n
-    fromSequent (SeqPhi n)     = PPhi n
+--     fromSequent (x :&-: y)     = (fromSequent x :&: fromSequent y)
+--     fromSequent (x :||-: y)    = (fromSequent x :||: fromSequent y)
+--     fromSequent (x :->-: y)    = (fromSequent x :->: fromSequent y)
+--     fromSequent (x :<->-: y)   = (fromSequent x :<->: fromSequent y)
+--     fromSequent (SeqNeg y)     = (PNeg $ fromSequent y)
+--     fromSequent (SeqProp n)    = PP n
+--     fromSequent (SeqPhi n)     = PPhi n
 
 instance ParsableLex (Form Bool) PurePropLexicon where
         langParser = prePurePropFormulaParser

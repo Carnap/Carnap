@@ -1,4 +1,4 @@
-{-#LANGUAGE TypeOperators, FlexibleInstances, TypeSynonymInstances, MultiParamTypeClasses, FlexibleContexts #-}
+{-#LANGUAGE TypeOperators, ScopedTypeVariables, FlexibleInstances, TypeSynonymInstances, MultiParamTypeClasses, FlexibleContexts #-}
 module Carnap.Languages.ClassicalSequent.Parser (ParsableLex(..), seqFormulaParser) where
 
 import Text.Parsec
@@ -19,8 +19,8 @@ class ParsableLex a f where
 seqFormulaParser :: (Sequentable f, ParsableLex (Form Bool) f) =>
     Parsec String u (ClassicalSequentOver f Sequent)
 seqFormulaParser = do (lhs,rhs) <- splitSequent --split on turnstile and commas
-                      let lhs'  = map (SA . liftToSequent) lhs
-                      let rhs'  = map (SS . liftToSequent) rhs
+                      let lhs'  = map liftL lhs
+                      let rhs' = map liftR rhs
                       let lhs'' = case lhs' of
                             [] -> Top
                             x:xs -> foldl (:+:) x xs
@@ -28,6 +28,10 @@ seqFormulaParser = do (lhs,rhs) <- splitSequent --split on turnstile and commas
                             [] -> Bot
                             x:xs -> foldl (:-:) x xs
                       return $ lhs'' :|-: rhs''
+        where liftL :: Sequentable f => FixLang f (Form Bool) -> ClassicalSequentOver f Antecedent
+              liftL x = SA (liftToSequent x)
+              liftR :: Sequentable f => FixLang f (Form Bool) -> ClassicalSequentOver f Succedent
+              liftR x = SS (liftToSequent x)
 
 splitSequent :: (ParsableLex (Form Bool) f) =>
     Parsec String u ([FixLang f (Form Bool)], [FixLang f (Form Bool)])
