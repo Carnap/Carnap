@@ -34,21 +34,6 @@ instance Monad m => MaybeMonadVar PureMonadicPredicate m
 
 instance MaybeStaticVar PureMonadicPredicate
 
-data PureSentences a where
-    Sent :: Int -> PureSentences (Form Bool)
-
-instance Schematizable PureSentences where
-    schematize (Sent n) = const $ "P_" ++ show n
-
-instance UniformlyEq (PureSentences) where
-    (Sent n) =* (Sent m) = n == m
-
-instance FirstOrderLex PureSentences
-
-instance Monad m => MaybeMonadVar PureSentences m
-
-instance MaybeStaticVar PureSentences
-
 type PurePredicate = IntPred Bool Int
 
 type PureFunction = IntFunc Int Int
@@ -73,9 +58,8 @@ type PureQuant = StandardQuant Bool Int
 --2.0 Common Core of FOL
 --------------------------------------------------------
 
-type CoreLexicon =  Connective PureConn
+type CoreLexicon = P.PurePropLexicon
                    :|: Quantifiers PureQuant
-                   :|: SubstitutionalVariable
                    :|: Function PureConstant
                    :|: Function PureVar
                    :|: Function (SchematicIntFunc Int Int)
@@ -83,13 +67,15 @@ type CoreLexicon =  Connective PureConn
 
 type PureFirstOrderLanguageWith a = FixLang (CoreLexicon :|: a)
 
-pattern PCon x arity   = FX (Lx1 (Lx1 (Connective x arity)))
+pattern PSent n        = FX (Lx1 (Lx1 (Lx1 (Predicate (Prop n) AZero))))
+pattern PSPhi n        = FX (Lx1 (Lx1 (Lx2 (Predicate (SProp n) AZero))))
+pattern PCon x arity   = FX (Lx1 (Lx1 (Lx3 (Connective x arity))))
+pattern PSV n          = FX (Lx1 (Lx1 (Lx4 (StaticVar n))))
+pattern PDV n          = FX (Lx1 (Lx1 (Lx4 (SubVar n))))
 pattern PQuant q       = FX (Lx1 (Lx2 (Bind q)))
-pattern PSV n          = FX (Lx1 (Lx3 (StaticVar n)))
-pattern PDV n          = FX (Lx1 (Lx3 (SubVar n)))
-pattern PConst c a     = FX (Lx1 (Lx4 (Function c a)))
-pattern PVar c a       = FX (Lx1 (Lx5 (Function c a)))
-pattern PTau c a       = FX (Lx1 (Lx6 (Function c a)))
+pattern PConst c a     = FX (Lx1 (Lx3 (Function c a)))
+pattern PVar c a       = FX (Lx1 (Lx4 (Function c a)))
+pattern PTau c a       = FX (Lx1 (Lx5 (Function c a)))
 pattern PAnd           = PCon And ATwo
 pattern POr            = PCon Or ATwo
 pattern PIf            = PCon If ATwo
@@ -165,6 +151,12 @@ instance CanonicalForm (PureFirstOrderLanguageWith a (Term Int))
 instance IndexedConstantLanguage (PureFirstOrderLanguageWith a (Term Int)) where 
         cn = PC
 
+instance IndexedPropLanguage (PureFirstOrderLanguageWith a (Form Bool)) where
+    pn = PSent
+
+instance IndexedSchemePropLanguage (PureFirstOrderLanguageWith a (Form Bool))where
+        phin = PSPhi
+
 --equality up to α-equivalence
 instance UniformlyEq (PureFirstOrderLanguageWith a) => Eq (PureFirstOrderLanguageWith a b) where
         (==) = (=*)
@@ -173,9 +165,7 @@ instance UniformlyEq (PureFirstOrderLanguageWith a) => Eq (PureFirstOrderLanguag
 --2.1 Monadic First Order Logic
 --------------------------------------------------------
 
-type MonadicPredicates = Predicate PureMonadicPredicate
-                      :|: Predicate PureSentences
-                      :|: EndLang
+type MonadicPredicates = Predicate PureMonadicPredicate :|: EndLang
 
 type OpenLexiconMFOL a = CoreLexicon :|: MonadicPredicates :|: a
 
@@ -184,7 +174,6 @@ type OpenLanguageMFOL a = FixLang (OpenLexiconMFOL a)
 type PureLanguageMFOL = OpenLanguageMFOL EndLang
 
 pattern PMPred n = FX (Lx2 (Lx1 (Predicate (MonPred n) AOne)))
-pattern PMSent n = FX (Lx2 (Lx2 (Predicate (Sent n) AZero)))
 
 type OpenMFOLForm a = OpenLanguageMFOL a (Form Bool)
 
@@ -194,8 +183,6 @@ type OpenMFOLTerm a = OpenLanguageMFOL a (Term Int)
 
 type PureMFOLTerm = OpenMFOLTerm EndLang
 
-instance IndexedPropLanguage (OpenMFOLForm a) where
-    pn = PMSent
 
 --------------------------------------------------------
 --2.2 Polyadic First Order Logic
@@ -214,7 +201,6 @@ type PureLanguagePFOL = OpenLanguagePFOL EndLang
 pattern PPred x arity  = FX (Lx2 (Lx1 (Predicate x arity)))
 pattern PSPred x arity = FX (Lx2 (Lx2 (Predicate x arity)))
 pattern PP n a1 a2     = PPred (Pred a1 n) a2
-pattern PS n           = PPred (Pred AZero n) AZero
 pattern PPhi n a1 a2   = PSPred (SPred a1 n) a2
 
 type OpenPFOLForm a = OpenLanguagePFOL a (Form Bool)
@@ -224,9 +210,6 @@ type PurePFOLForm = OpenPFOLForm EndLang
 type OpenPFOLTerm a = OpenLanguagePFOL a (Term Int)
 
 type PurePFOLTerm = OpenPFOLTerm EndLang
-
-instance IndexedPropLanguage (OpenPFOLForm a) where
-    pn = PS
 
 instance PolyadicPredicateLanguage (OpenLanguagePFOL a) (Term Int) (Form Bool) 
     where ppn n a = PP n a a
@@ -247,8 +230,8 @@ type PureLexiconFOL = (OpenLexiconPFOL (PolyadicFunctionSymbolsAndIdentity :|: E
 
 type PureLanguageFOL = FixLang PureLexiconFOL
 
-pattern PEq = FX (Lx3 (Lx1 (Predicate TermEq ATwo)))
-pattern (:==:) t1 t2 = PEq :!$: t1 :!$: t2
+pattern PEq            = FX (Lx3 (Lx1 (Predicate TermEq ATwo)))
+pattern (:==:) t1 t2   = PEq :!$: t1 :!$: t2
 pattern PFunc x arity  = FX (Lx3 (Lx2 (Function x arity)))
 pattern PF n a1 a2     = PFunc (Func a1 n) a2
 
@@ -269,29 +252,24 @@ instance Incrementable (OpenLexiconPFOL (PolyadicFunctionSymbolsAndIdentity :|: 
 
 -- TODO Eventually phase out manual sublang implementation 
 -- in favor of a generic instance.
-instance P.PurePropLexicon :<: PureLexiconFOL where
-        liftLang (x :!$: y) = liftLang x :!$: liftLang y
-        liftLang P.PAnd     = PAnd
-        liftLang P.POr      = POr
-        liftLang P.PIf      = PIf
-        liftLang P.PIff     = PIff
-        liftLang P.PNot     = PNot
-        liftLang (P.PP n)   = PS n
-        liftLang (P.PPhi n) = PPhi n AZero AZero
-        liftLang (P.PSV n)  = PSV n
+-- instance P.PurePropLexicon :<: PureLexiconFOL where
+--         liftLang (x :!$: y) = liftLang x :!$: liftLang y
+--         liftLang P.PAnd     = PAnd
+--         liftLang P.POr      = POr
+--         liftLang P.PIf      = PIf
+--         liftLang P.PIff     = PIff
+--         liftLang P.PNot     = PNot
+--         liftLang (P.PP n)   = PS n
+--         liftLang (P.PPhi n) = PPhi n AZero AZero
+--         liftLang (P.PSV n)  = PSV n
 
-        lowerLang (x :!$: y) = (:!$:) <$> lowerLang x <*> lowerLang y
-        lowerLang PAnd                 = Just $ P.PAnd      
-        lowerLang POr                  = Just $ P.POr       
-        lowerLang PIf                  = Just $ P.PIf       
-        lowerLang PIff                 = Just $ P.PIff      
-        lowerLang PNot                 = Just $ P.PNot      
-        lowerLang (PS n)               = Just $ P.PP n    
-        lowerLang (PPhi n AZero AZero) = Just $ P.PPhi n
-        lowerLang (PSV n)              = Just $ P.PSV n   
-        lowerLang _                    = Nothing
-
-
-
-
-
+--         lowerLang (x :!$: y) = (:!$:) <$> lowerLang x <*> lowerLang y
+--         lowerLang PAnd                 = Just $ P.PAnd      
+--         lowerLang POr                  = Just $ P.POr       
+--         lowerLang PIf                  = Just $ P.PIf       
+--         lowerLang PIff                 = Just $ P.PIff      
+--         lowerLang PNot                 = Just $ P.PNot      
+--         lowerLang (PS n)               = Just $ P.PP n    
+--         lowerLang (PPhi n AZero AZero) = Just $ P.PPhi n
+--         lowerLang (PSV n)              = Just $ P.PSV n   
+--         lowerLang _                    = Nothing

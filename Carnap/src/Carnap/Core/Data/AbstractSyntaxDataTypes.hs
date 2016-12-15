@@ -32,14 +32,14 @@ import Carnap.Core.Data.AbstractSyntaxClasses
 import Control.Monad.State (get, put, State)
 import qualified Control.Monad.State.Lazy as S
 
---This module attempts to provide abstract syntax types that would cover
---a wide variety of languages
+-- This module attempts to provide abstract syntax types covering a wide
+-- variety of languages
 
 -- $ATintro
 -- Here are some types for abstract syntax. The basic proposal
 -- is that we only define how terms of different types connect
 -- and let the user define all the connections independently of
--- of their subparts. In some sense they just define the type
+-- of their subparts. In some sense you can just define the types
 -- and the type system figures out how they can go together
 
 -- We use the idea of a semantic value to indicate approximately a Fregean

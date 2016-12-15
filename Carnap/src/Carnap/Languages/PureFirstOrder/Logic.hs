@@ -42,67 +42,15 @@ instance CopulaSchema FOLSequentCalc where
         where h = scopeHeight (LLam f)
 
 pattern SeqQuant q        = FX (Lx2 (Lx1 (Lx2 (Bind q))))
-pattern SeqSV n           = FX (Lx2 (Lx1 (Lx3 (StaticVar n))))
-pattern SeqDV n           = FX (Lx2 (Lx1 (Lx3 (SubVar n))))
-pattern SeqPred x arity   = FX (Lx2 (Lx2 (Lx1 (Predicate x arity))))
-pattern SeqSPred x arity  = FX (Lx2 (Lx2 (Lx2 (Predicate x arity))))
-pattern SeqCon x arity    = FX (Lx2 (Lx1 (Lx1 (Connective x arity))))
-pattern SeqEq             = FX (Lx2 (Lx3 (Lx1 (Predicate TermEq ATwo))))
-pattern SeqFunc x arity   = FX (Lx2 (Lx3 (Lx2 (Function x arity))))
-pattern SeqConst c a      = FX (Lx2 (Lx1 (Lx4 (Function c a))))
-pattern SeqVar c a        = FX (Lx2 (Lx1 (Lx5 (Function c a))))
-pattern SeqTau c a        = FX (Lx2 (Lx1 (Lx6 (Function c a))))
-pattern SeqP n a1 a2      = SeqPred (Pred a1 n) a2
-pattern SeqPhi n a1 a2    = SeqSPred (SPred a1 n) a2
-pattern SeqAnd            = SeqCon And ATwo
-pattern SeqOr             = SeqCon Or ATwo
-pattern SeqIf             = SeqCon If ATwo
-pattern SeqIff            = SeqCon Iff ATwo
-pattern SeqNot            = SeqCon Not AOne
-pattern SeqC n            = SeqConst (Constant n) AZero
+pattern SeqSV n           = FX (Lx2 (Lx1 (Lx1 (Lx4 (StaticVar n)))))
+pattern SeqVar c a        = FX (Lx2 (Lx1 (Lx4 (Function c a))))
+pattern SeqTau c a        = FX (Lx2 (Lx1 (Lx5 (Function c a))))
 pattern SeqV s            = SeqVar (Var s) AZero
 pattern SeqT n            = SeqTau (SFunc AZero n) AZero
 
 instance Eq (FOLSequentCalc a) where
         (==) = (=*)
 
--- instance Sequentable PureLexiconFOL where
---     liftToSequent (x :!$: y)      = (liftToSequent x :!$: liftToSequent y)
---     liftToSequent (LLam f)        = LLam (liftToSequent . f . fromSequent)
---     liftToSequent (PP n a1 a2)    = SeqP n a1 a2
---     liftToSequent (PPhi n a1 a2)  = SeqPhi n a1 a2
---     liftToSequent PAnd            = SeqAnd
---     liftToSequent POr             = SeqOr
---     liftToSequent PIf             = SeqIf
---     liftToSequent PIff            = SeqIff
---     liftToSequent PNot            = SeqNot
---     liftToSequent (PQuant q)      = SeqQuant q
---     liftToSequent (PC n)          = SeqC n
---     liftToSequent (PV s)          = SeqV s
---     liftToSequent (PT n)          = SeqT n
---     liftToSequent (PSV n)         = SeqSV n
---     liftToSequent (PDV n)         = SeqDV n
---     liftToSequent (PFunc x a)     = SeqFunc x a
---     liftToSequent PEq             = SeqEq
-
---     fromSequent (x :!$: y)       = (fromSequent x :!$: fromSequent y)
---     fromSequent (LLam f)         = LLam (fromSequent . f . liftToSequent)
---     fromSequent (SeqP n a1 a2)   = PP n a1 a2
---     fromSequent (SeqPhi n a1 a2) = PPhi n a1 a2
---     fromSequent SeqAnd           = PAnd
---     fromSequent SeqOr            = POr
---     fromSequent SeqIf            = PIf
---     fromSequent SeqIff           = PIff
---     fromSequent SeqNot           = PNot
---     fromSequent (SeqQuant q)     = PQuant q
---     fromSequent (SeqC n)         = PC n
---     fromSequent (SeqV s)         = PV s
---     fromSequent (SeqT n)         = PT n
---     fromSequent (SeqFunc x a)    = PFunc x a
---     fromSequent SeqEq            = PEq
---     fromSequent (SeqDV n)       = PDV n
---     fromSequent (SeqSV n)       = PSV n
---     fromSequent x                = error ("fromSequent can't handle " ++ show x)
 
 instance ParsableLex (Form Bool) PureLexiconFOL where
         langParser = folFormulaParser
