@@ -13,9 +13,14 @@ makeTruthTables x = x
 
 activate cls cnt
     | "Simple" `elem` cls = RawBlock "html" $ 
-        "<div class=\"truthtable simple\"><div></div><div>" 
-        ++ cnt ++ "</div></div>"
+        "<div class=\"exercise\">"
+        ++ "<span> exercise " ++ numof cnt ++ "</span>"
+        ++ "<div class=\"truthtable simple\"><div></div><div>" 
+        ++ cnt ++ "</div></div></div>"
     | "Validity" `elem` cls = RawBlock "html" $ 
-        "<div class=\"truthtable validity\"><div></div><div>" 
-        ++ cnt ++ "</div></div>"
+        "<div class=\"exercise\">"
+        ++ "<span> exercise " ++ numof cnt ++ "</span>"
+        ++ "<div class=\"truthtable validity\"><div></div><div>" 
+        ++ cnt ++ "</div></div></div>"
     | otherwise = RawBlock "html" "<div>No Matching TruthTable</div>"
+    where numof x = takeWhile (/= ' ') x

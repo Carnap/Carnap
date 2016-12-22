@@ -14,15 +14,20 @@ makeTranslate x = x
 
 activate cls l
     | "Prop" `elem` cls = RawBlock "html" $ 
-        case (splitOn ":" l) of
+        "<div class=\"exercise\">"
+        ++ "<span> exercise " ++ numof l ++ "</span>"
+        ++ case (splitOn ":" l) of
             [x,y] -> "<div class=\"translate prop\"><input type =\"text\" value=\""
                                 ++ y ++ "\"><div>" 
-                                ++ show (simpleCipher x) ++ "</div></div>"
-            _ -> "<div>No Matching Translation</div>"
+                                ++ show (simpleCipher x) ++ "</div></div></div>"
+            _ -> "<div>No Matching Translation</div></div>"
     | "FOL" `elem` cls = RawBlock "html" $ 
-        case (splitOn ":" l) of
+        "<div class=\"exercise\">"
+        ++ "<span> exercise " ++ numof l ++ "</span>"
+        ++ case (splitOn ":" l) of
             [x,y] -> "<div class=\"translate first-order\"><input type =\"text\" value=\""
                                 ++ y ++ "\"><div>" 
                                 ++ show (simpleCipher x) ++ "</div></div>"
-            _ -> "<div>No Matching Translation</div>"
-    | otherwise = RawBlock "html" "<div>No Matching Translation</div>"
+            _ -> "<div>No Matching Translation</div></div>"
+    | otherwise = RawBlock "html" "<div>No Matching Translation</div></div>"
+    where numof x = takeWhile (/= ' ') x

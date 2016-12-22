@@ -162,12 +162,12 @@ G(x))\vdash \exists x G(x)$ is valid, by the following derivation:
 1. Show:ExG(x)
 2.   ExF(x):PR
 3.   Ax(F(x)->G(x)):PR
-4.     Show:ExG(x)
-5.        F(c):AS
-6.        F(c)->G(c):UI 2
-7.        G(c):MP 5 6
-8.        ExG(x):EG 7
-9.     :ED 2 8 5
+4.   Show:ExG(x)
+5.      F(c):AS
+6.      F(c)->G(c):UI 3
+7.      G(c):MP 5 6
+8.      ExG(x):EG 7
+9.   :ED 2 8 5
 10.:DD 4
 ```
 
