@@ -183,7 +183,6 @@ type OpenMFOLTerm a = OpenLanguageMFOL a (Term Int)
 
 type PureMFOLTerm = OpenMFOLTerm EndLang
 
-
 --------------------------------------------------------
 --2.2 Polyadic First Order Logic
 --------------------------------------------------------
@@ -249,27 +248,3 @@ instance Incrementable (OpenLexiconPFOL (PolyadicFunctionSymbolsAndIdentity :|: 
     incHead (PP n a b) = Just $ PP n (ASucc a) (ASucc a)
     incHead (PF n a b) = Just $ PF n (ASucc a) (ASucc a)
     incHead _  = Nothing
-
--- TODO Eventually phase out manual sublang implementation 
--- in favor of a generic instance.
--- instance P.PurePropLexicon :<: PureLexiconFOL where
---         liftLang (x :!$: y) = liftLang x :!$: liftLang y
---         liftLang P.PAnd     = PAnd
---         liftLang P.POr      = POr
---         liftLang P.PIf      = PIf
---         liftLang P.PIff     = PIff
---         liftLang P.PNot     = PNot
---         liftLang (P.PP n)   = PS n
---         liftLang (P.PPhi n) = PPhi n AZero AZero
---         liftLang (P.PSV n)  = PSV n
-
---         lowerLang (x :!$: y) = (:!$:) <$> lowerLang x <*> lowerLang y
---         lowerLang PAnd                 = Just $ P.PAnd      
---         lowerLang POr                  = Just $ P.POr       
---         lowerLang PIf                  = Just $ P.PIf       
---         lowerLang PIff                 = Just $ P.PIff      
---         lowerLang PNot                 = Just $ P.PNot      
---         lowerLang (PS n)               = Just $ P.PP n    
---         lowerLang (PPhi n AZero AZero) = Just $ P.PPhi n
---         lowerLang (PSV n)              = Just $ P.PSV n   
---         lowerLang _                    = Nothing
