@@ -226,5 +226,5 @@ parseFOLLogic ders =
                                             Nothing -> parserFail "--- Looks like you're citing a derived rule that doesn't exist"
 
 
-parseFOLProof ::  Map String DerivedRule -> String -> [Either ParseError (DeductionLine FOLogic PureLexiconFOL (Form Bool))]
+parseFOLProof ::  Map String DerivedRule -> String -> [DeductionLine FOLogic PureLexiconFOL (Form Bool)]
 parseFOLProof ders = toDeduction (parseFOLLogic ders) folFormulaParser

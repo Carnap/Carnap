@@ -22,7 +22,7 @@ import Text.Parsec (parse, Parsec, ParseError, choice, try, string)
 --Deduction Data
 --------------------------------------------------------
 
-type PartialDeduction r lex = [Either ParseError (DeductionLine r lex (Form Bool))]
+--type PartialDeduction r lex = [Either ParseError (DeductionLine r lex (Form Bool))]
 
 type Deduction r lex = [DeductionLine r lex (Form Bool)]
 
@@ -85,7 +85,9 @@ toProofTree ded n = case ded !! (n - 1)  of
                       qedAt d (QedLine _ dpth _) = d == dpth
                       qedAt d _ = False
           (QedLine _ _ _) -> err "A QED line cannot be cited as a justification" 
-    where err :: String -> Either (ProofErrorMessage lex) a
+          (PartialLine _ e _) -> Left $ NoParse e n
+    where -- XXX : inline this?
+          err :: String -> Either (ProofErrorMessage lex) a
           err = \x -> Left $ GenericError x n
           ln = length ded
           --line h is accessible from the end of the chunk if everything in
@@ -109,17 +111,13 @@ toProofTree ded n = case ded !! (n - 1)  of
 toDisplaySequence:: 
     ( MonadVar (ClassicalSequentOver lex) (State Int)
     , Inference r lex, Sequentable lex
-    ) => (String -> PartialDeduction r lex) -> String -> Feedback lex
-toDisplaySequence topd s = if isParsed 
-                              then let feedback = map (processLine(rights ded)) [1 .. length ded] in
+    ) => (String -> Deduction r lex) -> String -> Feedback lex
+toDisplaySequence tod s = let feedback = map (processLine ded) [1 .. length ded] in
                                   Feedback (lastTopInd >>= fromFeedback feedback) feedback
-                              else Feedback Nothing (zipWith handle ded [1 .. length ded])
-    where ded = topd s
-          isParsed = null $ lefts ded 
-          handle (Left e) n = Left $ NoParse e n
-          handle (Right _) n = Left $ NoResult n
-          isTop  (Right (AssertLine _ _ 0 _)) = True
-          isTop  (Right (ShowLine _ 0)) = True
+                          
+    where ded = tod s
+          isTop  (AssertLine _ _ 0 _) = True
+          isTop  (ShowLine _ 0) = True
           isTop  _ = False
           lastTopInd = do i <- findIndex isTop (reverse ded)
                           return $ length ded - i
@@ -137,21 +135,16 @@ toDisplaySequence topd s = if isParsed
             _ -> toProofTree ded n >>= reduceProofTree
 
 -- XXX Obviously find some way to reduce duplication here.
-hoToDisplaySequence:: 
+hoToDisplaySequence :: 
     ( StaticVar (ClassicalSequentOver lex)
     , MonadVar (ClassicalSequentOver lex) (State Int)
     , Inference r lex, Sequentable lex
-    ) => (String -> PartialDeduction r lex) -> String -> Feedback lex
-hoToDisplaySequence topd s = if isParsed 
-                              then let feedback = map (processLine(rights ded)) [1 .. length ded] in
+    ) => (String -> Deduction r lex) -> String -> Feedback lex
+hoToDisplaySequence tod s = let feedback = map (processLine ded) [1 .. length ded] in
                                   Feedback (lastTopInd >>= fromFeedback feedback) feedback
-                              else Feedback Nothing (zipWith handle ded [1 .. length ded])
-    where ded = topd s
-          isParsed = null $ lefts ded 
-          handle (Left e) n = Left $ NoParse e n
-          handle (Right _) n = Left $ NoResult n
-          isTop  (Right (AssertLine _ _ 0 _)) = True
-          isTop  (Right (ShowLine _ 0)) = True
+    where ded = tod s
+          isTop  (AssertLine _ _ 0 _) = True
+          isTop  (ShowLine _ 0) = True
           isTop  _ = False
           lastTopInd = do i <- findIndex isTop (reverse ded)
                           return $ length ded - i

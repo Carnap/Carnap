@@ -14,8 +14,16 @@ import Carnap.Calculi.NaturalDeduction.Syntax
 import Text.Parsec
 
 toDeduction :: Parsec String () [r] -> Parsec String () (FixLang lex a) -> String 
-    -> [Either ParseError (DeductionLine r lex a)]
-toDeduction r f = map (parse (parseLine r f) "") . lines
+    -> [DeductionLine r lex a]
+toDeduction r f = map handle . lines
+        where handle l = 
+                case parse (parseLine r f) "" l of
+                    Right dl -> dl
+                    Left e -> PartialLine Nothing e (linedepth l)
+              linedepth l = 
+                case parse indent "" l of 
+                    Right n -> n
+                    Left e -> 0
 
 type MultiRule r = [r]
 
@@ -35,10 +43,16 @@ data DeductionLine r lex a where
             , closureDepth :: Int
             , closureDependencies :: [Int]
             } -> DeductionLine r lex a
+        PartialLine ::
+            { partialLineFormula :: Maybe (FixLang lex a)
+            , partialLineError   :: ParseError
+            , partialLineDepth   :: Int
+            } -> DeductionLine r lex a
 
 depth (AssertLine _ _ dpth _) = dpth
 depth (ShowLine _ dpth) = dpth
 depth (QedLine _ dpth _) = dpth
+depth (PartialLine _ _ dpth) = dpth
 
 parseLine :: 
     Parsec String u [r] -> Parsec String u (FixLang lex a) -> Parsec String u (DeductionLine r lex a)

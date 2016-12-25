@@ -209,5 +209,5 @@ parsePropLogic ders = do r <- choice (map (try . string) ["AS","PR","MP","MTP","
                                             Just r  -> return [DER r]
                                             Nothing -> parserFail "Looks like you're citing a derived rule that doesn't exist"
 
-parsePropProof :: Map String DerivedRule -> String -> [Either ParseError (DeductionLine PropLogic PurePropLexicon (Form Bool))]
+parsePropProof :: Map String DerivedRule -> String -> [DeductionLine PropLogic PurePropLexicon (Form Bool)]
 parsePropProof ders = toDeduction (parsePropLogic ders) prePurePropFormulaParser

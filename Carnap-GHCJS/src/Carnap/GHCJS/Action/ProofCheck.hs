@@ -14,7 +14,6 @@ import Data.Aeson as A
 import qualified Data.Map as M (fromList,map) 
 import Control.Lens.Fold (toListOf)
 import Lib
-import GHCJS.DOM
 import GHCJS.DOM.Element
 --the import below is needed to make ghc-mod work properly. GHCJS compiles
 --using the generated javascript FFI versions of 2.4.0, but those are
@@ -23,14 +22,12 @@ import GHCJS.DOM.Element
 --version---but it's the other way around in the FFI version. This appears
 --to be cleaner in 3.0, but there's no documentation for that at all, yet.
 import GHCJS.DOM.Types
-import GHCJS.DOM.HTMLTextAreaElement (HTMLTextAreaElement, getValue, castToHTMLTextAreaElement)
-import GHCJS.DOM.Document (Document,createElement, getBody, getDefaultView)
+import GHCJS.DOM.HTMLTextAreaElement (getValue)
+import GHCJS.DOM.Document (createElement, getDefaultView)
 import GHCJS.DOM.Window (alert, prompt)
-import GHCJS.DOM.Node (appendChild, getParentNode, insertBefore)
-import GHCJS.DOM.KeyboardEvent
+import GHCJS.DOM.Node (appendChild, getParentNode )
 import GHCJS.DOM.EventM
-import Control.Monad.IO.Class (MonadIO, liftIO)
-import Control.Monad.Trans.Maybe (runMaybeT, MaybeT(..))
+import Control.Monad.IO.Class (liftIO)
 import Control.Concurrent
 
 proofCheckAction :: IO ()
@@ -39,6 +36,7 @@ proofCheckAction = do availableDerived <- newIORef []
                       genericSendJSON RequestDerivedRulesForUser (addRules availableDerived) errcb
                       initElements getCheckers (activateChecker availableDerived)
 
+errcb :: Value -> IO ()
 errcb e = case fromJSON e :: Result String of
                A.Error e' -> print $ "Getting kind of meta. Error decoding error message: " ++ e'
                Success e' -> print $ "Error in retrieving derived rules: " ++ e'
@@ -50,6 +48,7 @@ errcb e = case fromJSON e :: Result String of
 --
 --  Notes: the bug arises only with the custom toJSON instance for
 --  DerivedRule. toJSON and fromJSON seem to work fine for that instance.
+addRules :: IORef [(String, P.DerivedRule)] -> Value -> IO ()
 addRules avd v =  case fromJSON v :: Result String of
                     A.Error e -> do print $ "error decoding derived rules: " ++ e
                                     print $ "recieved string: " ++ show v
@@ -102,11 +101,11 @@ activateChecker drs w (Just (i,o,g, classes))
                    setLinesTo w nd 1
                    syncScroll i o
 
-wrap (Left (GenericError s n))  = errDiv s n Nothing
-wrap (Left (NoParse e n))       = errDiv "Can't read this line. There may be a typo." n (Just $ show e)
-wrap (Left (NoUnify eqs n))     = errDiv "Can't match these premises with this conclusion, using this rule" n (Just $ toUniErr eqs)
-wrap (Left (NoResult n))        = "<div>&nbsp;</div>"
-wrap (Right seq)                = "<div>+<div><div>" ++ show seq ++ "<div></div></div>"
+wrap (Left (GenericError s n))  = errDiv "?" s n Nothing
+wrap (Left (NoParse e n))       = errDiv "⚠" "Can't read this line. There may be a typo." n (Just $ show e)
+wrap (Left (NoUnify eqs n))     = errDiv "✗" "Can't match these premises with this conclusion, using this rule" n (Just $ toUniErr eqs)
+wrap (Left (NoResult _))        = "<div>&nbsp;</div>"
+wrap (Right s)                = "<div>+<div><div>" ++ show s ++ "<div></div></div>"
 
 toUniErr eqs = "In order to apply this inference rule, there needs to be a substitution that makes at least one of these sets of pairings match:" 
                 ++ (concat $ map endiv' $ map (concat . map (endiv . show) . reverse) eqs)
@@ -158,12 +157,13 @@ computeRule drs w ref v (g, fd) = do rules <- liftIO $ readIORef drs
                                                           writeIORef ref True
                                      return ()
 
-errDiv msg lineno (Just details) = "<div>✗<div><div>Error on line " 
-                                    ++ show lineno ++ ": " ++ msg 
-                                    ++ "<div>see details<div>" 
-                                    ++ details 
-                                    ++ "</div></div></div></div></div>"
-errDiv msg lineno Nothing = "<div>✗<div><div>Error on line " 
+errDiv :: [Char] -> [Char] -> Int -> Maybe [Char] -> [Char]
+errDiv ico msg lineno (Just details) = "<div>" ++ ico ++ "<div><div>Error on line " 
+                                       ++ show lineno ++ ": " ++ msg 
+                                       ++ "<div>see details<div>" 
+                                       ++ details 
+                                       ++ "</div></div></div></div></div>"
+errDiv ico msg lineno Nothing = "<div>" ++ ico ++ "<div><div>Error on line " 
                               ++ show lineno ++ ": " ++ msg 
                               ++ "</div></div></div>"
 
