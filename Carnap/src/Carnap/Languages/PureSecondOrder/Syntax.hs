@@ -16,11 +16,11 @@ import Carnap.Languages.Util.GenericConnectives
 import Data.List (intercalate)
 
 --------------------------------------------------------
---1. Data for Monadically Second Order Logic
+--1. Data for Monadic Second Order Logic
 --------------------------------------------------------
 
 data MonadicSOVar a where
-        MonVar :: String -> MonadicSOVar (Term Int -> Form Bool)
+        MonVar :: String -> MonadicSOVar (Form (Int -> Bool))
 
 instance Schematizable MonadicSOVar where
         schematize (MonVar s) = \(x:xs) -> s ++ "(" ++ x ++ ")"
@@ -34,11 +34,41 @@ instance MaybeStaticVar MonadicSOVar
 
 instance FirstOrderLex MonadicSOVar
 
+data SOLambda a where
+        SOLam :: String -> SOLambda ((Term Int -> Form b) -> Form (Int -> b))
+
+instance UniformlyEq SOLambda where
+    (SOLam _) =* (SOLam _) = True
+
+instance Monad m => MaybeMonadVar SOLambda m
+
+instance MaybeStaticVar SOLambda
+
+instance FirstOrderLex SOLambda
+
+instance Schematizable SOLambda where
+        schematize (SOLam v)  = \(x:_) -> "λ" ++ v ++ x 
+
+data SOApplicator a where
+        SOApp :: SOApplicator (Form (Int -> b) -> Term Int -> Form b)
+
+instance Schematizable SOApplicator where
+        schematize (SOApp)  = \(x:y:_) -> x ++ "." ++ y 
+
+instance UniformlyEq SOApplicator where
+    (SOApp) =* (SOApp) = True
+
+instance Monad m => MaybeMonadVar SOApplicator m
+
+instance MaybeStaticVar SOApplicator
+
+instance FirstOrderLex SOApplicator
+
 data MonadicSOQuant a where
         SOAll :: String -> 
-            MonadicSOQuant (((Term Int -> Form Bool) -> Form Bool) -> Form Bool)
+            MonadicSOQuant ((Form (Int -> Bool) -> Form Bool) -> Form Bool)
         SOSome :: String -> 
-            MonadicSOQuant (((Term Int -> Form Bool) -> Form Bool) -> Form Bool)
+            MonadicSOQuant ((Form (Int -> Bool) -> Form Bool) -> Form Bool)
 
 instance Schematizable MonadicSOQuant where
         schematize (SOAll v)  = \(x:_) -> "∀" ++ v ++ x 
@@ -62,6 +92,8 @@ instance FirstOrderLex MonadicSOQuant
 type MonadicallySOLLex = FOL.PureLexiconFOL
                         :|: Predicate MonadicSOVar
                         :|: Quantifiers MonadicSOQuant
+                        :|: Abstractors SOLambda
+                        :|: Applicators SOApplicator
                         :|: EndLang
 
 type MonadicallySOL = FixLang MonadicallySOLLex
@@ -76,12 +108,13 @@ pattern SOQuant q       = FX (Lx1 (Lx1 (Lx2 (Bind q))))
 pattern SOConst c a     = FX (Lx1 (Lx1 (Lx3 (Function c a))))
 pattern SOVar c a       = FX (Lx1 (Lx1 (Lx4 (Function c a))))
 pattern SOTau c a       = FX (Lx1 (Lx1 (Lx5 (Function c a))))
-pattern PPred x arity   = FX (Lx1 (Lx2 (Lx1 (Predicate x arity))))
+pattern SOPred x arity   = FX (Lx1 (Lx2 (Lx1 (Predicate x arity))))
 pattern SOSPred x arity = FX (Lx1 (Lx2 (Lx2 (Predicate x arity))))
 pattern SOFunc x arity  = FX (Lx1 (Lx3 (Lx2 (Function x arity))))
-pattern SOMVar n        = FX (Lx2 (Predicate (MonVar n) AOne))
+pattern SOMVar n        = FX (Lx2 (Predicate (MonVar n) AZero))
 pattern SOMQuant q      = FX (Lx3 (Bind q))
-pattern SOPred x arity  = FX (Lx1 (Lx2 (Lx1 (Predicate x arity))))
+pattern SOMAbs a        = FX (Lx4 (Abstract a))
+pattern SOMApp a        = FX (Lx5 (Apply a))
 pattern SOP n a1 a2     = SOPred (Pred a1 n) a2
 pattern SOPhi n a1 a2   = PSPred (SPred a1 n) a2
 pattern SOAnd           = SOCon And ATwo
@@ -89,6 +122,7 @@ pattern SOOr            = SOCon Or ATwo
 pattern SOIf            = SOCon If ATwo
 pattern SOIff           = SOCon Iff ATwo
 pattern SONot           = SOCon Not AOne
+pattern SOAbstract l f  = SOMAbs l :!$: LLam f
 pattern SOBind q f      = SOQuant q :!$: LLam f
 pattern SOMBind q f     = SOMQuant q :!$: LLam f
 pattern (:&:) x y       = SOAnd :!$: x :!$: y
@@ -109,6 +143,7 @@ instance CopulaSchema MonadicallySOL where
     appSchema (SOQuant (Some x)) (LLam f) e = schematize (Some x) (show (f $ SOV x) : e)
     appSchema (SOMQuant (SOAll x)) (LLam f) e = schematize (SOAll x) (show (f $ SOMVar x) : e)
     appSchema (SOMQuant (SOSome x)) (LLam f) e = schematize (SOSome x) (show (f $ SOMVar x) : e)
+    appSchema (SOMAbs (SOLam v)) (LLam f) e = schematize (SOLam v) (show (f $ SOV v) : e)
     appSchema x y e = schematize x (show y : e)
 
     lamSchema f [] = "λβ_" ++ show h ++ "." ++ show (f (SOSV (-1 * h)))

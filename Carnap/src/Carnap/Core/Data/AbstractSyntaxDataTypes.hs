@@ -133,18 +133,21 @@ pattern FX x       = Fx (FRight x)
 --1.2.1 Variable Binding Operators
 --------------------------------------------------------
 
+-- XXX why can't these all be subsumed to something more general, again?
 data Quantifiers :: (* -> *) -> (* -> *) -> * -> * where
-    Bind :: quant ((t a -> f b) -> f b) -> Quantifiers quant lang ((t a -> f b) -> f b)
+    Bind :: quant ((t a -> f b) -> f' c) -> Quantifiers quant lang ((t a -> f b) -> f' c)
 
 data Abstractors :: (* -> *) -> (* -> *) -> * -> * where
-    Abstract :: abs ((t a -> t b) -> t (a -> b)) -> Abstractors abs lang ((t a -> t b) -> t (a -> b))
+    Abstract :: abs ((t a -> t' b) -> t'' c) -> Abstractors abs lang ((t a -> t' b) -> t'' c)
 
 data Applicators :: (* -> *) -> (* -> *) -> * -> * where
-    Apply :: app (t (a -> b) -> t a -> t b) -> Applicators app lang (t (a -> b) -> t a -> t b)
+    Apply :: app (t (a -> b) -> t' a -> t'' b) -> Applicators app lang (t (a -> b) -> t' a -> t'' b)
+
+-- TODO variadic binders
 
 {-|
 This typeclass needs to provide a way of replacing bound variables within
-a given expression, and a way of getting a bound variable uniquely
+a given expression, and a way of getting a producing a variable uniquely
 determined by the scope of a given binder, in such a way that none of the
 binders in its subformulas will determine the same variable.
 
@@ -179,8 +182,8 @@ instance Liftable Form where
 --------------------------------------------------------
 
 -- | think of this as a type constraint. the lang type, model type, and number
--- | must all match up for this type to be inhabited
--- | this lets us do neat type safty things
+-- must all match up for this type to be inhabited. This lets us do neat
+-- type safty things
 data Arity :: * -> * -> Nat -> * -> * where
     AZero :: Arity arg ret Zero ret
     ASucc :: Arity arg ret n ret' -> Arity arg ret (Succ n) (arg -> ret')
@@ -212,9 +215,6 @@ data Subnective :: (* -> *) -> (* -> *) -> * -> * where
 data SubstitutionalVariable :: (* -> *) -> * -> * where
         SubVar :: Int -> SubstitutionalVariable lang t
         StaticVar :: Int -> SubstitutionalVariable lang t
-
---data Quote :: (* -> *) -> * -> *
-    --Quote :: (lang )
 
 --------------------------------------------------------
 --2. Schematizable, Show, and Eq
