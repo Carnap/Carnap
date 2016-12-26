@@ -135,10 +135,10 @@ pattern FX x       = Fx (FRight x)
 
 -- XXX why can't these all be subsumed to something more general, again?
 data Quantifiers :: (* -> *) -> (* -> *) -> * -> * where
-    Bind :: quant ((t a -> f b) -> f' c) -> Quantifiers quant lang ((t a -> f b) -> f' c)
+    Bind :: quant ((t a -> f b) -> f b) -> Quantifiers quant lang ((t a -> f b) -> f b)
 
 data Abstractors :: (* -> *) -> (* -> *) -> * -> * where
-    Abstract :: abs ((t a -> t' b) -> t'' c) -> Abstractors abs lang ((t a -> t' b) -> t'' c)
+    Abstract :: abs ((t a -> t' b) -> t'' (a -> b)) -> Abstractors abs lang ((t a -> t' b) -> t'' (a -> b))
 
 data Applicators :: (* -> *) -> (* -> *) -> * -> * where
     Apply :: app (t (a -> b) -> t' a -> t'' b) -> Applicators app lang (t (a -> b) -> t' a -> t'' b)
