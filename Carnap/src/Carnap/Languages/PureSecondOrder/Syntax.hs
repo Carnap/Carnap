@@ -370,9 +370,11 @@ Nope. Need a polymorphic rule, roughly
 
 Φ(κ(a)) ⊢ Φ((λyκ(y),a))
 
-where κ can be any lambda term. No idea if this will typecheck, but it
-doesn't feel good. It does feel like the requirement of a polymorphic type for lambda terms is unavoidable.
+where κ can be any lambda term (including a formula). No idea if this will
+typecheck, or unify properly, but it does feel like the requirement of
+a polymorphic type for lambda terms is unavoidable.
 
-
+Maybe experiment with a polymorphic beta rule when monadic SOL is up and
+running. If it works, it seems like the most elegant option.
 
 --}

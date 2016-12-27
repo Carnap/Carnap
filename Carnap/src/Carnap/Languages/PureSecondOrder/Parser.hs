@@ -15,7 +15,8 @@ import Data.List (findIndex)
 
 msolFormulaParser :: Parsec String u (MonadicallySOL (Form Bool))
 msolFormulaParser = buildExpressionParser opTable subFormulaParser 
-    where subFormulaParser = coreParser msolFormulaParser subFormulaParser
+    
+subFormulaParser = coreParser msolFormulaParser subFormulaParser
                       <|> try (predicationParser parseSimpleFOTerm)
 
 coreParser recur sfrecur = (parenParser recur <* spaces)
@@ -54,9 +55,8 @@ opTable = [[ Prefix (try parseNeg)],
           [Infix (try parseIf) AssocNone, Infix (try parseIff) AssocNone]]
 
 predicationParser :: 
-     Monad m => 
-        ParsecT String u m (MonadicallySOL (Term Int)) -> ParsecT String u m (MonadicallySOL (Form Bool))
-predicationParser parseTerm = try parseNumbered <|> try parseUnnumbered <|> parseVarApp
+        Parsec String u  (MonadicallySOL (Term Int)) -> Parsec String u (MonadicallySOL (Form Bool))
+predicationParser parseTerm = try parseNumbered <|> parseUnnumbered <|> parseVarApp <|> parseLamApp
     where parseUnnumbered = do c <- oneOf "FGHIJKLMNO"
                                let Just n = findIndex (== c) "_FGHIJKLMNO"
                                char '(' *> argParser parseTerm (ppn (-1 * n) AOne)
@@ -66,3 +66,11 @@ predicationParser parseTerm = try parseNumbered <|> try parseUnnumbered <|> pars
           parseVarApp   = do c <- oneOf "XYZ"
                              t <- char '(' *>  parseTerm <* char ')'
                              return (SOMApp SOApp :!$: SOMVar [c] :!$: t)
+          parseLamApp   = do s <- oneOf "λ\\"
+                             v <- parseFreeVar
+                             f <- char '[' *> subFormulaParser <* char ']'
+                             t <- char '(' *>  parseTerm <* char ')'
+                             let bf = \x -> subBoundVar v x f
+                                 --partially applied, returning a function
+                             return $ (SOMApp SOApp) :!$: SOAbstract (SOLam $ show v) bf :!$: t
+
