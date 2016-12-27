@@ -54,8 +54,8 @@ parsePos = do spaces
 
 atomicSentenceParser :: (IndexedPropLanguage l, Monad m) => ParsecT String u m l
 atomicSentenceParser = try parseNumbered <|> parseUnnumbered
-        where parseUnnumbered = do c <- oneOf "PQRSTUVWXYZ"
-                                   let Just n = findIndex (== c) "_PQRSTUVWXYZ"
+        where parseUnnumbered = do c <- oneOf "PQRSTUVW"
+                                   let Just n = findIndex (== c) "_PQRSTUVW"
                                    return $ pn (-1 * n)
               parseNumbered = do char 'P'
                                  char '_'

@@ -79,23 +79,6 @@ instance Combineable PropSequentCalc PropSeqLabel where
     replaceChild (SS _ )      pig _ = SS $ unEveryPig pig 
     replaceChild (SA _ )      pig _ = SA $ unEveryPig pig
 
--- instance Sequentable PurePropLexicon where
---     liftToSequent (x :&: y)     = (liftToSequent x :&-: liftToSequent y)
---     liftToSequent (x :||: y)    = (liftToSequent x :||-: liftToSequent y)
---     liftToSequent (x :->: y)    = (liftToSequent x :->-: liftToSequent y)
---     liftToSequent (x :<->: y)   = (liftToSequent x :<->-: liftToSequent y)
---     liftToSequent (PNeg y)      = (SeqNeg $ liftToSequent y)
---     liftToSequent (PP n)        = SeqProp n
---     liftToSequent (PPhi n)      = SeqPhi n
-
---     fromSequent (x :&-: y)     = (fromSequent x :&: fromSequent y)
---     fromSequent (x :||-: y)    = (fromSequent x :||: fromSequent y)
---     fromSequent (x :->-: y)    = (fromSequent x :->: fromSequent y)
---     fromSequent (x :<->-: y)   = (fromSequent x :<->: fromSequent y)
---     fromSequent (SeqNeg y)     = (PNeg $ fromSequent y)
---     fromSequent (SeqProp n)    = PP n
---     fromSequent (SeqPhi n)     = PPhi n
-
 instance ParsableLex (Form Bool) PurePropLexicon where
         langParser = prePurePropFormulaParser
 
@@ -113,6 +96,8 @@ data PropLogic = MP | MT  | DNE | DNI | DD   | AX
                     | ADJ | S1  | S2  | ADD1 | ADD2 | MTP1 | MTP2 | BC1 | BC2 | CB  
                     | DER DerivedRule
                deriving Show
+
+
 
 instance Inference PropLogic PurePropLexicon where
     premisesOf MP    = [ GammaV 1 :|-: SS (SeqPhi 1 :->-: SeqPhi 2)

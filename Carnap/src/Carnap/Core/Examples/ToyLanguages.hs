@@ -120,9 +120,9 @@ pattern TAll x           = TQuant (All x)
 pattern TBind q f        = (TQuant q :!!$: LLam f)
 --XXX: TBind appears to require :!!$: to resolve some type ambiguities for,
 --e.g. show instances.
-pattern Conj x y         = TAnd :!!$: x :!!$: y
-pattern (:&:) x y        = TAnd :!!$: x :!!$: y
-pattern Neg x            = TNot :!!$: x
+pattern Conj x y         = TAnd :!$: x :!$: y
+pattern (:&:) x y        = TAnd :!$: x :!$: y
+pattern Neg x            = TNot :!$: x
 pattern (:==:) x y        = ToyPred EqProp (ASucc (ASucc AZero)) :!$: x :!$: y
 pattern Univ v f         = TBind (All v) f
 
