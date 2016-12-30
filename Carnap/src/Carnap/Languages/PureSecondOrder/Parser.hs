@@ -66,11 +66,15 @@ predicationParser parseTerm = try parseNumbered <|> parseUnnumbered <|> parseVar
           parseVarApp   = do c <- oneOf "XYZ"
                              t <- char '(' *>  parseTerm <* char ')'
                              return (SOMApp SOApp :!$: SOMVar [c] :!$: t)
-          parseLamApp   = do s <- oneOf "λ\\"
-                             v <- parseFreeVar
-                             f <- char '[' *> subFormulaParser <* char ']'
-                             t <- char '(' *>  parseTerm <* char ')'
-                             let bf = \x -> subBoundVar v x f
-                                 --partially applied, returning a function
-                             return $ (SOMApp SOApp) :!$: SOAbstract (SOLam $ show v) bf :!$: t
+          parseLamApp = do binders <- many1 binder
+                           f <- char '[' *> subFormulaParser <* char ']'
+                           terms <- char '(' *> sepBy1 parseTerm (char ',') <* char ')'
+                           case together 0 f (reverse binders) terms of
+                               Just f' -> return f'
+                               Nothing -> unexpected "wrong number of lambdas"
+              where binder = do oneOf "λ\\"
+                                parseFreeVar
 
+                    together n f (v:vs) (t:ts) = together (n+1) (SOMApp SOApp :!$: incLam n f v :!$: t) vs ts
+                    together n f [] []  = Just f
+                    together n f _ _    = Nothing

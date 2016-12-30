@@ -305,6 +305,16 @@ instance CopulaSchema PolyadicallySOL where
 --------------------------------------------------------
 --Notes
 --------------------------------------------------------
+--
+--Needs to preserve the number of Applications, and the fact that all
+--applications are above all Lambdas. The n parameter counts the number of
+--applications to drill down through before abstracting.
+incLam :: Typeable a => Int -> MonadicallySOL (Form a) -> MonadicallySOL (Term Int) 
+    -> MonadicallySOL (Form (Int -> a))
+incLam n l@((SOMApp SOApp) :!$: l' :!$: t) v = 
+        if n > 0 then (SOMApp SOApp) :!$: (incLam (n - 1) l' v) :!$: t
+                 else SOAbstract (SOLam $ show v) (\x -> subBoundVar v x l)
+incLam _ l v = SOAbstract (SOLam $ show v) (\x -> subBoundVar v x l)
 
 {--
 the idea would be for lambda abstraction to work like this:
