@@ -12,102 +12,16 @@ import Carnap.Core.Unification.ACUI
 import Carnap.Languages.ClassicalSequent.Syntax
 import Control.Lens
 import Control.Monad.State
-import Data.Tree
+import Data.Tree (Tree(Node))
 import Data.Either
 import Data.Maybe (isNothing)
 import Data.List
-import Text.Parsec (parse, Parsec, ParseError, choice, try, string)
-
---------------------------------------------------------
---Deduction Data
---------------------------------------------------------
-
---type PartialDeduction r lex = [Either ParseError (DeductionLine r lex (Form Bool))]
-
-type Deduction r lex = [DeductionLine r lex (Form Bool)]
-
-data Feedback lex = Feedback { finalresult :: Maybe (ClassicalSequentOver lex Sequent)
-                             , lineresults :: [Either (ProofErrorMessage lex) (ClassicalSequentOver lex Sequent)]}
-
-data ProofErrorMessage :: ((* -> *) -> * -> *) -> * where
-        NoParse :: ParseError -> Int -> ProofErrorMessage lex
-        NoUnify :: [[Equation (ClassicalSequentOver lex)]]  -> Int -> ProofErrorMessage lex
-        GenericError :: String -> Int -> ProofErrorMessage lex
-        NoResult :: Int -> ProofErrorMessage lex --meant for blanks
-
-lineNoOfError (NoParse _ n) = n
-lineNoOfError (NoUnify _ n) = n
-lineNoOfError (GenericError _ n) = n
-lineNoOfError (NoResult n) = n
-
-renumber :: Int -> ProofErrorMessage lex -> ProofErrorMessage lex
-renumber m (NoParse x n) = NoParse x m
-renumber m (NoUnify x n) = NoUnify x m
-renumber m (GenericError s n) = GenericError s m
-renumber m (NoResult n) = NoResult m
 
 --------------------------------------------------------
 --Main Functions
 --------------------------------------------------------
 
--- TODO: handle a list of deductionlines which contains some parsing errors
--- XXX This is pretty ugly, and should be rewritten
-{- | 
-find the prooftree corresponding to *line n* in ded, where proof line numbers start at 1
--}
-toProofTree :: 
-    ( Inference r lex
-    , Sequentable lex
-    ) => Deduction r lex -> Int -> Either (ProofErrorMessage lex) (ProofTree r lex)
-toProofTree ded n = case ded !! (n - 1)  of
-          (AssertLine f r dpth deps) -> 
-                do mapM checkDep deps
-                   deps' <- mapM (\x -> toProofTree ded x) deps
-                   return $ Node (ProofLine n (SS $ liftToSequent f) r) deps'
-                where checkDep depline = takeRange depline n >>= scan
-          (ShowLine f d) -> 
-                do m <- matchShow
-                   let (QedLine r _ deps) = ded !! m
-                   mapM_ (checkDep $ m + 1) deps 
-                   deps' <- mapM (\x -> toProofTree ded x) deps
-                   return $ Node (ProofLine n (SS $ liftToSequent f) r) deps'
-                where --for scanning, we ignore the depth of the QED line
-                      checkDep m m' = takeRange m' m >>= scan . init
-                      matchShow = let ded' = drop n ded in
-                          case findIndex (qedAt d) ded' of
-                              Nothing -> err "Open subproof (no corresponding QED)"
-                              Just m' -> isSubProof n (n + m' - 1)
-                      isSubProof n m = case lineRange n m ded of
-                        (h:t) -> if and (map (\x -> depth x > depth h) t) 
-                                   then Right (m + 1)
-                                   else  err $ "Open subproof on lines" ++ show n ++ " to " ++ show m ++ " (no QED in this subproof)"
-                        []    -> Right (m+1)
-                      qedAt d (QedLine _ dpth _) = d == dpth
-                      qedAt d _ = False
-          (QedLine _ _ _) -> err "A QED line cannot be cited as a justification" 
-          (PartialLine _ e _) -> Left $ NoParse e n
-    where -- XXX : inline this?
-          err :: String -> Either (ProofErrorMessage lex) a
-          err = \x -> Left $ GenericError x n
-          ln = length ded
-          --line h is accessible from the end of the chunk if everything in
-          --the chunk has depth greater than or equal to that of line h,
-          --and h is not a show line with no matching QED
-          scan chunk@(h:t) =
-              if and (map (\x -> depth h <= depth x) chunk)
-                  then case h of
-                    (ShowLine _ _) -> if or (map (\x -> depth h == depth x) t)
-                        then Right True
-                        else err "To cite a show line at this point, the line be available---it must have a matching QED earlier than this line."
-                    _ -> Right True
-                  else err "It looks like you're citing a line which is not in your subproof. If you're not, you may need to tidy up your proof."
-          takeRange m' n' = 
-              if n' <= m' 
-                      then err "Dependency is later than assertion"
-                      else Right $ lineRange m' n' ded
-          --sublist, given by line numbers
-          lineRange m n l = drop (m - 1) $ take n l
-
+-- XXX Obviously find some way to reduce duplication here. 
 toDisplaySequence:: 
     ( MonadVar (ClassicalSequentOver lex) (State Int)
     , Inference r lex, Sequentable lex
@@ -134,7 +48,6 @@ toDisplaySequence tod s = let feedback = map (processLine ded) [1 .. length ded]
             (QedLine _ _ _) -> Left $ NoResult n
             _ -> toProofTree ded n >>= reduceProofTree
 
--- XXX Obviously find some way to reduce duplication here.
 hoToDisplaySequence :: 
     ( StaticVar (ClassicalSequentOver lex)
     , MonadVar (ClassicalSequentOver lex) (State Int)
@@ -170,7 +83,6 @@ seqUnify s1 s2 = case check of
             where check = do fosub <- fosolve [view lhs s1 :=: view rhs s2]
                              acuisolve [view lhs (applySub fosub s1) :=: view lhs (applySub fosub s2)]
 
-
 -- TODO remove the need for this assumption.
 -- | A simple check of whether one sequent unifies with a another, allowing
 -- for weakening on the lhs; assumption is that neither side contains Delta -1
@@ -180,10 +92,6 @@ seqSubsetUnify s1 s2 = case check of
                        Right _ -> True
             where check = do fosub <- fosolve [view rhs s1 :=: view rhs s2]
                              acuisolve [(view lhs (applySub fosub s1) :+: GammaV (0 - 1)) :=: view lhs (applySub fosub s2) ]
-
---------------------------------------------------------
---Utility Functions
---------------------------------------------------------
 
 reduceResult :: Int -> [Either (ProofErrorMessage lex) [b]] -> Either (ProofErrorMessage lex) b
 reduceResult lineno xs = case rights xs of
