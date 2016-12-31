@@ -24,7 +24,7 @@ data DeductionLine r lex a where
             { asserted :: FixLang lex a
             , assertRule :: [r]
             , assertDepth :: Int
-            , assertDependencies :: [Int]
+            , assertDependencies :: [(Int,Int)]
             } -> DeductionLine r lex a
         ShowLine :: 
             { toShow :: FixLang lex a
@@ -33,7 +33,7 @@ data DeductionLine r lex a where
         QedLine :: 
             { closureRule :: [r]
             , closureDepth :: Int
-            , closureDependencies :: [Int]
+            , closureDependencies :: [(Int,Int)]
             } -> DeductionLine r lex a
         PartialLine ::
             { partialLineFormula :: Maybe (FixLang lex a)

@@ -97,7 +97,6 @@ data PropLogic = MP | MT  | DNE | DNI | DD   | AX
                     | DER DerivedRule
                deriving Show
 
-
 instance Inference PropLogic PurePropLexicon where
     premisesOf MP    = [ GammaV 1 :|-: SS (SeqPhi 1 :->-: SeqPhi 2)
                        , GammaV 2 :|-: SS (SeqPhi 1)

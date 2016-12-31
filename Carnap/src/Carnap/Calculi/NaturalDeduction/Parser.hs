@@ -28,18 +28,16 @@ toDeduction r f = map handle . lines
                 case parse indent "" l of 
                     Right n -> n
                     Left e -> 0
+              parseLine r f = try (parseAssertLine r f) 
+                                <|> try (parseShowLine f) 
+                                <|> try (parseQedLine r)
 
-parseLine :: 
-    Parsec String u [r] -> Parsec String u (FixLang lex a) -> Parsec String u (DeductionLine r lex a)
-parseLine r f = try (parseAssertLine r f) 
-                <|> try (parseShowLine f) 
-                <|> try (parseQedLine r)
-
-parseAssertLine :: Parsec String u [r] -> Parsec String u (FixLang lex a) -> Parsec String u (DeductionLine r lex a)
+parseAssertLine :: Parsec String u [r] -> Parsec String u (FixLang lex a) 
+    -> Parsec String u (DeductionLine r lex a)
 parseAssertLine r f = do dpth  <- indent
                          phi <- f
                          (rule,deps) <- rline r
-                         return $ AssertLine phi rule dpth deps
+                         return $ AssertLine phi rule dpth (map (\x -> (x,x)) deps)
 
 parseShowLine :: Parsec String u (FixLang lex a) -> Parsec String u (DeductionLine r lex a)
 parseShowLine f = do dpth <- indent
@@ -52,7 +50,38 @@ parseShowLine f = do dpth <- indent
 parseQedLine :: Parsec String u [r] -> Parsec String u (DeductionLine r lex a)
 parseQedLine r = do dpth <- indent 
                     (rule, deps) <- rline r
-                    return $ QedLine rule dpth deps
+                    return $ QedLine rule dpth (map (\x->(x,x)) deps)
+
+toDeductionBE :: Parsec String () [r] -> Parsec String () (FixLang lex a) -> String 
+    -> [DeductionLine r lex a]
+toDeductionBE r f = map handle . lines
+        where handle l = 
+                case parse (parseLine r f) "" l of
+                    Right dl -> dl
+                    Left e -> PartialLine Nothing e (linedepth l)
+              linedepth l = 
+                case parse indent "" l of 
+                    Right n -> n
+                    Left e -> 0
+              parseLine r f = try (parseAssertLineBE r f) 
+
+parseAssertLineBE :: Parsec String u [r] -> Parsec String u (FixLang lex a) 
+    -> Parsec String u (DeductionLine r lex a)
+parseAssertLineBE r f = do dpth  <- indent
+                           phi <- f
+                           rule <- spaces *> char ':' *> r 
+                           intPairs <- many1 (parseIntPair <|> parseInt)
+                           return $ AssertLine phi rule dpth intPairs
+        where parseIntPair = do spaces
+                                i1 <- many1 digit
+                                char '-'
+                                i2 <- many1 digit
+                                spaces
+                                return ((read i1, read i2) :: (Int,Int))
+              parseInt= do spaces
+                           i <- many1 digit
+                           spaces
+                           return ((read i, read i) :: (Int,Int))
 
 --------------------------------------------------------
 --2. To Proof Tree
@@ -68,14 +97,16 @@ toProofTree ::
     , Sequentable lex
     ) => Deduction r lex -> Int -> Either (ProofErrorMessage lex) (ProofTree r lex)
 toProofTree ded n = case ded !! (n - 1)  of
-          (AssertLine f r dpth deps) -> 
-                do mapM checkDep deps
+          (AssertLine f r dpth depairs) -> 
+                do let deps = map fst depairs
+                   mapM checkDep deps
                    deps' <- mapM (\x -> toProofTree ded x) deps
                    return $ Node (ProofLine n (SS $ liftToSequent f) r) deps'
                 where checkDep depline = takeRange depline n >>= scan
           (ShowLine f d) -> 
                 do m <- matchShow
-                   let (QedLine r _ deps) = ded !! m
+                   let (QedLine r _ depairs) = ded !! m
+                   let deps = map fst depairs
                    mapM_ (checkDep $ m + 1) deps 
                    deps' <- mapM (\x -> toProofTree ded x) deps
                    return $ Node (ProofLine n (SS $ liftToSequent f) r) deps'
@@ -85,7 +116,7 @@ toProofTree ded n = case ded !! (n - 1)  of
                           case findIndex (qedAt d) ded' of
                               Nothing -> err "Open subproof (no corresponding QED)"
                               Just m' -> isSubProof n (n + m' - 1)
-                      isSubProof n m = case lineRange n m ded of
+                      isSubProof n m = case lineRange n m of
                         (h:t) -> if and (map (\x -> depth x > depth h) t) 
                                    then Right (m + 1)
                                    else  err $ "Open subproof on lines" ++ show n ++ " to " ++ show m ++ " (no QED in this subproof)"
@@ -94,9 +125,8 @@ toProofTree ded n = case ded !! (n - 1)  of
                       qedAt d _ = False
           (QedLine _ _ _) -> err "A QED line cannot be cited as a justification" 
           (PartialLine _ e _) -> Left $ NoParse e n
-    where -- XXX : inline this?
-          err :: String -> Either (ProofErrorMessage lex) a
-          err = \x -> Left $ GenericError x n
+    where err :: String -> Either (ProofErrorMessage lex) a
+          err x = Left $ GenericError x n
           ln = length ded
           --line h is accessible from the end of the chunk if everything in
           --the chunk has depth greater than or equal to that of line h,
@@ -112,13 +142,59 @@ toProofTree ded n = case ded !! (n - 1)  of
           takeRange m' n' = 
               if n' <= m' 
                       then err "Dependency is later than assertion"
-                      else Right $ lineRange m' n' ded
+                      else Right $ lineRange m' n'
           --sublist, given by line numbers
-          lineRange m n l = drop (m - 1) $ take n l
+          lineRange m n = drop (m - 1) $ take n ded
+
+{- | 
+In a Barwise and Etchymendy deduction, find the prooftree corresponding to
+*line n* in ded, where proof line numbers start at 1
+-}
+toProofTreeBE :: 
+    ( Inference r lex
+    , Sequentable lex
+    ) => Deduction r lex -> Int -> Either (ProofErrorMessage lex) (ProofTree r lex)
+toProofTreeBE ded n = case ded !! (n - 1)  of
+          (AssertLine f r dpth deps) -> 
+                do mapM isSP deps
+                   mapM checkDep (map snd deps)
+                   deps' <- mapM (\x -> toProofTreeBE ded x) (map snd deps)
+                   return $ Node (ProofLine n (SS $ liftToSequent f) r) deps'
+                where checkDep depline = takeRange depline n >>= scan
+          (PartialLine _ e _) -> Left $ NoParse e n
+    where err :: String -> Either (ProofErrorMessage lex) a
+          err x = Left $ GenericError x n
+          ln = length ded
+          --line h is accessible from the end of the chunk if everything in
+          --the chunk has depth greater than or equal to that of line h,
+          --and h is not a show line with no matching QED
+          scan chunk@(h:t) =
+              if and (map (\x -> depth h <= depth x) chunk)
+                  then Right True
+                  else err "It looks like you're citing a line which is not in your subproof. If you're not, you may need to tidy up your proof."
+          takeRange m' n' = 
+              if n' <= m' 
+                      then err "Dependency is later than assertion"
+                      else Right $ lineRange m' n'
+          --sublist, given by line numbers
+          lineRange m n = drop (m - 1) $ take n ded
+          isSP :: (Int,Int) -> Either (ProofErrorMessage lex) Bool
+          isSP (m, n)
+            | m == n = Right True
+            | m > n = err "The last line of a subproof cannot come before the first"
+            | depth begin /= depth end = err $ "the lines " ++ show m ++ " and " ++ show n ++ " must be vertically aligned to form a subproof"
+            | or (map (\x -> depth x > depth begin) (lineRange m n)) = err $ "the lines " ++ show m ++ " and " ++ show n ++ " can't have a less indented line between them, if they are a subproof"
+            | otherwise = Right True
+            -- TODO also impose some "assumption" constraints: subproofs
+            -- must begin with assumptions, and this is the only context
+            -- where an assumption can occur
+            where begin = (ded !! (m - 1))
+                  end = (ded !! (n - 1))
 
 --------------------------------------------------------
 --Utility functions
 --------------------------------------------------------
+
 
 parseInts :: Parsec String u [Int]
 parseInts = do ints <- many1 digit `sepEndBy` separator

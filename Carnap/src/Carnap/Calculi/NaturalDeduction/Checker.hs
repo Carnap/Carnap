@@ -58,33 +58,6 @@ hoProcessLine ded n = case ded !! (n - 1) of
   (QedLine _ _ _) -> Left $ NoResult n
   _ -> toProofTree ded n >>= hoReduceProofTree
 
--- hoToDisplaySequence :: 
---     ( StaticVar (ClassicalSequentOver lex)
---     , MonadVar (ClassicalSequentOver lex) (State Int)
---     , Inference r lex, Sequentable lex
---     ) => (String -> Deduction r lex) -> String -> Feedback lex
--- hoToDisplaySequence tod s = let feedback = map (processLine ded) [1 .. length ded] in
---                                   Feedback (lastTopInd >>= fromFeedback feedback) feedback
---     where ded = tod s
---           isTop  (AssertLine _ _ 0 _) = True
---           isTop  (ShowLine _ 0) = True
---           isTop  _ = False
---           lastTopInd = do i <- findIndex isTop (reverse ded)
---                           return $ length ded - i
---           fromFeedback fb n = case fb !! (n - 1) of
---             Left _ -> Nothing
---             Right s -> Just s
---           processLine :: 
---             ( StaticVar (ClassicalSequentOver lex)
---             , Sequentable lex
---             , Inference r lex
---             , MonadVar (ClassicalSequentOver lex) (State Int)
---             ) => [DeductionLine r lex (Form Bool)] -> Int -> Either (ProofErrorMessage lex) (ClassicalSequentOver lex Sequent)
---           processLine ded n = case ded !! (n - 1) of
---             --special case to catch QedLines not being cited in justifications
---             (QedLine _ _ _) -> Left $ NoResult n
---             _ -> toProofTree ded n >>= hoReduceProofTree
-          
 -- | A simple check of whether two sequents can be unified
 seqUnify s1 s2 = case check of
                      Left _ -> False
@@ -162,7 +135,9 @@ hoseqFromNode lineno rules prems conc =
            if length rps /= length prems 
                 then return $ Left $ GenericError "Wrong number of premises" lineno
                 else do let rconc = conclusionOf r
-                        case hosolve (zipWith (:=:) (map (view rhs) (rconc:rps)) (conc:map (view rhs) prems)) of 
+                        case hosolve (zipWith (:=:) 
+                                        (map (view rhs) (rconc:rps)) 
+                                        (conc:map (view rhs) prems)) of 
                             Left e -> return $ Left $ renumber lineno e 
                             Right hosubs -> 
                                 do hosub <- hosubs
@@ -170,8 +145,9 @@ hoseqFromNode lineno rules prems conc =
                                    let subbedconc = applySub hosub rconc
                                    let prob = (zipWith (:=:) (map (pureBNF . view lhs) subbedrule) 
                                                              (map (view lhs) prems))
-                                   case hoacuisolve r hosub prob of Right s -> return $ Right $ map (\x -> applySub x subbedconc) s
-                                                                    Left e -> return $ Left $ renumber lineno e
+                                   case hoacuisolve r hosub prob of 
+                                     Right s -> return $ Right $ map (\x -> applySub x subbedconc) s
+                                     Left e -> return $ Left $ renumber lineno e
 
 reduceProofTree :: 
     ( Inference r lex
