@@ -1,7 +1,7 @@
 {-#LANGUAGE FlexibleContexts #-}
 module Carnap.GHCJS.Action.ProofCheck (proofCheckAction) where
 
-import Carnap.Calculi.NaturalDeduction.Checker (ProofErrorMessage(..), Feedback(..), seqSubsetUnify, hoToDisplaySequence, toDisplaySequence)
+import Carnap.Calculi.NaturalDeduction.Checker (ProofErrorMessage(..), Feedback(..), seqSubsetUnify, processLine, hoProcessLine, toDisplaySequence)
 import Carnap.Core.Data.AbstractSyntaxDataTypes (liftLang)
 import Carnap.Languages.ClassicalSequent.Syntax
 import Carnap.Languages.PurePropositional.Logic as P (DerivedRule(..), parsePropProof) 
@@ -117,7 +117,7 @@ toUniErr eqs = "In order to apply this inference rule, there needs to be a subst
 checkSolution drs s w ref v (g, fd)   =  do rules <- liftIO $ readIORef drs 
                                             -- XXX this is here, rather than earlier, 
                                             -- because if this ref is read too quickly, the async callback for the rules fails. 
-                                            let Feedback mseq ds = toDisplaySequence (parsePropProof (M.fromList rules)) v
+                                            let Feedback mseq ds = toDisplaySequence processLine . parsePropProof (M.fromList rules) $ v
                                             updateGoal s w ref (g, fd) mseq ds
 
 folCheckSolution drs s mtref w ref v (g, fd) = 
@@ -127,7 +127,7 @@ folCheckSolution drs s mtref w ref v (g, fd) =
                Just t -> killThread t
                Nothing -> return ()
            t' <- forkIO $ do threadDelay 200000
-                             let Feedback mseq ds = hoToDisplaySequence (parseFOLProof $ M.map liftDerivedRule $ M.fromList rules) v
+                             let Feedback mseq ds = toDisplaySequence hoProcessLine . parseFOLProof (M.map liftDerivedRule $ M.fromList rules) $ v
                              updateGoal s w ref (g, fd) mseq ds
            writeIORef mtref (Just t')
            return ()
@@ -146,7 +146,7 @@ updateGoal s w ref (g, fd) mseq ds = do ul <- genericListToUl wrap w ds
                                         return ()
 
 computeRule drs w ref v (g, fd) = do rules <- liftIO $ readIORef drs
-                                     let Feedback mseq ds = toDisplaySequence (parsePropProof (M.fromList rules)) v
+                                     let Feedback mseq ds = toDisplaySequence processLine . parsePropProof (M.fromList rules) $ v
                                      ul <- genericListToUl wrap w ds
                                      setInnerHTML fd (Just "")
                                      appendChild fd (Just ul)
@@ -226,7 +226,7 @@ trySave drs ref w i = do isFinished <- liftIO $ readIORef ref
                          rules <- liftIO $ readIORef drs
                          if isFinished
                            then do (Just v) <- getValue (castToHTMLTextAreaElement i)
-                                   let Feedback mseq _ = toDisplaySequence (parsePropProof (M.fromList rules)) v
+                                   let Feedback mseq _ = toDisplaySequence processLine . parsePropProof (M.fromList rules) $ v
                                    case mseq of
                                     Nothing -> alert w "A rule can't be extracted from this proof"
                                     (Just (a :|-: (SS c))) -> do

@@ -1,5 +1,5 @@
 {-#LANGUAGE GADTs, KindSignatures, TypeOperators, FlexibleContexts, TypeSynonymInstances, FlexibleInstances, MultiParamTypeClasses #-}
-module Carnap.Calculi.NaturalDeduction.Checker (toDisplaySequence, hoToDisplaySequence, hosolve, ProofErrorMessage(..), Feedback(..),seqUnify,seqSubsetUnify, toDeduction) where
+module Carnap.Calculi.NaturalDeduction.Checker (toDisplaySequence, processLine, hoProcessLine, hosolve, ProofErrorMessage(..), Feedback(..),seqUnify,seqSubsetUnify, toDeduction) where
 
 import Carnap.Calculi.NaturalDeduction.Syntax
 import Carnap.Calculi.NaturalDeduction.Parser
@@ -21,16 +21,14 @@ import Data.List
 --Main Functions
 --------------------------------------------------------
 
--- XXX Obviously find some way to reduce duplication here. 
 toDisplaySequence:: 
     ( MonadVar (ClassicalSequentOver lex) (State Int)
     , Inference r lex, Sequentable lex
-    ) => (String -> Deduction r lex) -> String -> Feedback lex
-toDisplaySequence tod s = let feedback = map (processLine ded) [1 .. length ded] in
+    ) =>  (Deduction r lex -> Int -> FeedbackLine lex) -> Deduction r lex -> Feedback lex
+toDisplaySequence pl ded = let feedback = map (pl ded) [1 .. length ded] in
                                   Feedback (lastTopInd >>= fromFeedback feedback) feedback
                           
-    where ded = tod s
-          isTop  (AssertLine _ _ 0 _) = True
+    where isTop  (AssertLine _ _ 0 _) = True
           isTop  (ShowLine _ 0) = True
           isTop  _ = False
           lastTopInd = do i <- findIndex isTop (reverse ded)
@@ -38,42 +36,54 @@ toDisplaySequence tod s = let feedback = map (processLine ded) [1 .. length ded]
           fromFeedback fb n = case fb !! (n - 1) of
             Left _ -> Nothing
             Right s -> Just s
-          processLine :: 
-            ( Sequentable lex
-            , Inference r lex
-            , MonadVar (ClassicalSequentOver lex) (State Int)
-            ) => [DeductionLine r lex (Form Bool)] -> Int -> Either (ProofErrorMessage lex) (ClassicalSequentOver lex Sequent)
-          processLine ded n = case ded !! (n - 1) of
-            --special case to catch QedLines not being cited in justifications
-            (QedLine _ _ _) -> Left $ NoResult n
-            _ -> toProofTree ded n >>= reduceProofTree
 
-hoToDisplaySequence :: 
-    ( StaticVar (ClassicalSequentOver lex)
-    , MonadVar (ClassicalSequentOver lex) (State Int)
-    , Inference r lex, Sequentable lex
-    ) => (String -> Deduction r lex) -> String -> Feedback lex
-hoToDisplaySequence tod s = let feedback = map (processLine ded) [1 .. length ded] in
-                                  Feedback (lastTopInd >>= fromFeedback feedback) feedback
-    where ded = tod s
-          isTop  (AssertLine _ _ 0 _) = True
-          isTop  (ShowLine _ 0) = True
-          isTop  _ = False
-          lastTopInd = do i <- findIndex isTop (reverse ded)
-                          return $ length ded - i
-          fromFeedback fb n = case fb !! (n - 1) of
-            Left _ -> Nothing
-            Right s -> Just s
-          processLine :: 
-            ( StaticVar (ClassicalSequentOver lex)
-            , Sequentable lex
-            , Inference r lex
-            , MonadVar (ClassicalSequentOver lex) (State Int)
-            ) => [DeductionLine r lex (Form Bool)] -> Int -> Either (ProofErrorMessage lex) (ClassicalSequentOver lex Sequent)
-          processLine ded n = case ded !! (n - 1) of
-            --special case to catch QedLines not being cited in justifications
-            (QedLine _ _ _) -> Left $ NoResult n
-            _ -> toProofTree ded n >>= hoReduceProofTree
+processLine :: 
+  ( Sequentable lex
+  , Inference r lex
+  , MonadVar (ClassicalSequentOver lex) (State Int)
+  ) => Deduction r lex -> Int -> FeedbackLine lex
+processLine ded n = case ded !! (n - 1) of
+  --special case to catch QedLines not being cited in justifications
+  (QedLine _ _ _) -> Left $ NoResult n
+  _ -> toProofTree ded n >>= reduceProofTree
+
+hoProcessLine :: 
+  ( StaticVar (ClassicalSequentOver lex)
+  , Sequentable lex
+  , Inference r lex
+  , MonadVar (ClassicalSequentOver lex) (State Int)
+  ) => Deduction r lex -> Int -> FeedbackLine lex
+hoProcessLine ded n = case ded !! (n - 1) of
+  --special case to catch QedLines not being cited in justifications
+  (QedLine _ _ _) -> Left $ NoResult n
+  _ -> toProofTree ded n >>= hoReduceProofTree
+
+-- hoToDisplaySequence :: 
+--     ( StaticVar (ClassicalSequentOver lex)
+--     , MonadVar (ClassicalSequentOver lex) (State Int)
+--     , Inference r lex, Sequentable lex
+--     ) => (String -> Deduction r lex) -> String -> Feedback lex
+-- hoToDisplaySequence tod s = let feedback = map (processLine ded) [1 .. length ded] in
+--                                   Feedback (lastTopInd >>= fromFeedback feedback) feedback
+--     where ded = tod s
+--           isTop  (AssertLine _ _ 0 _) = True
+--           isTop  (ShowLine _ 0) = True
+--           isTop  _ = False
+--           lastTopInd = do i <- findIndex isTop (reverse ded)
+--                           return $ length ded - i
+--           fromFeedback fb n = case fb !! (n - 1) of
+--             Left _ -> Nothing
+--             Right s -> Just s
+--           processLine :: 
+--             ( StaticVar (ClassicalSequentOver lex)
+--             , Sequentable lex
+--             , Inference r lex
+--             , MonadVar (ClassicalSequentOver lex) (State Int)
+--             ) => [DeductionLine r lex (Form Bool)] -> Int -> Either (ProofErrorMessage lex) (ClassicalSequentOver lex Sequent)
+--           processLine ded n = case ded !! (n - 1) of
+--             --special case to catch QedLines not being cited in justifications
+--             (QedLine _ _ _) -> Left $ NoResult n
+--             _ -> toProofTree ded n >>= hoReduceProofTree
           
 -- | A simple check of whether two sequents can be unified
 seqUnify s1 s2 = case check of
@@ -82,6 +92,7 @@ seqUnify s1 s2 = case check of
                      Right _ -> True
             where check = do fosub <- fosolve [view lhs s1 :=: view rhs s2]
                              acuisolve [view lhs (applySub fosub s1) :=: view lhs (applySub fosub s2)]
+
 
 -- TODO remove the need for this assumption.
 -- | A simple check of whether one sequent unifies with a another, allowing
@@ -92,6 +103,10 @@ seqSubsetUnify s1 s2 = case check of
                        Right _ -> True
             where check = do fosub <- fosolve [view rhs s1 :=: view rhs s2]
                              acuisolve [(view lhs (applySub fosub s1) :+: GammaV (0 - 1)) :=: view lhs (applySub fosub s2) ]
+
+--------------------------------------------------------
+--Utility Functions
+--------------------------------------------------------
 
 reduceResult :: Int -> [Either (ProofErrorMessage lex) [b]] -> Either (ProofErrorMessage lex) b
 reduceResult lineno xs = case rights xs of

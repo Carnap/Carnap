@@ -77,8 +77,12 @@ data ProofLine r lex where
 
 type ProofTree r lex = Tree (ProofLine r lex)
 
+--type PossProofTree r lex = Either (ProofErrorMessage lex) (ProofTree r lex)
+
+type FeedbackLine lex = Either (ProofErrorMessage lex) (ClassicalSequentOver lex Sequent)
+
 data Feedback lex = Feedback { finalresult :: Maybe (ClassicalSequentOver lex Sequent)
-                             , lineresults :: [Either (ProofErrorMessage lex) (ClassicalSequentOver lex Sequent)]}
+                             , lineresults :: [FeedbackLine lex]}
 
 type SequentTree lex = Tree (Int, ClassicalSequentOver lex Sequent)
 
