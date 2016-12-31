@@ -166,8 +166,7 @@ toProofTreeBE ded n = case ded !! (n - 1)  of
           err x = Left $ GenericError x n
           ln = length ded
           --line h is accessible from the end of the chunk if everything in
-          --the chunk has depth greater than or equal to that of line h,
-          --and h is not a show line with no matching QED
+          --the chunk has depth greater than or equal to that of line h
           scan chunk@(h:t) =
               if and (map (\x -> depth h <= depth x) chunk)
                   then Right True
@@ -181,6 +180,9 @@ toProofTreeBE ded n = case ded !! (n - 1)  of
           isSP :: (Int,Int) -> Either (ProofErrorMessage lex) Bool
           isSP (m, n)
             | m == n = Right True
+            | depth begin == 0 = err $ "line " ++ show m ++ " must be indented to begin a subproof"
+            | m > 1 && depth begin >= depth (ded !! (m - 2)) = err $ "line " ++ show m ++ " must be more indented that the preceding line to begin a subproof"
+            | ln > n && depth end >= depth (ded !! n) = err $ "line " ++ show (m + 1) ++ " must be less indented than the preceding subproof"
             | m > n = err "The last line of a subproof cannot come before the first"
             | depth begin /= depth end = err $ "the lines " ++ show m ++ " and " ++ show n ++ " must be vertically aligned to form a subproof"
             | or (map (\x -> depth x > depth begin) (lineRange m n)) = err $ "the lines " ++ show m ++ " and " ++ show n ++ " can't have a less indented line between them, if they are a subproof"
@@ -194,7 +196,6 @@ toProofTreeBE ded n = case ded !! (n - 1)  of
 --------------------------------------------------------
 --Utility functions
 --------------------------------------------------------
-
 
 parseInts :: Parsec String u [Int]
 parseInts = do ints <- many1 digit `sepEndBy` separator
