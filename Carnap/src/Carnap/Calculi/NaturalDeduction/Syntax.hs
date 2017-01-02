@@ -101,6 +101,8 @@ class ( FirstOrder (ClassicalSequentOver lex)
         --restrictions, based on given substitutions
         restriction :: r -> Maybe ([Equation (ClassicalSequentOver lex)] -> Maybe String)
         restriction _ = Nothing
+        indirectInference :: r -> Bool
+        indirectInference = const False
         --TODO: direct, indirect inferences, template for error messages,
         --etc.
 

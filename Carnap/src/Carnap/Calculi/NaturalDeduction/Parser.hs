@@ -70,7 +70,7 @@ parseAssertLineBE :: Parsec String u [r] -> Parsec String u (FixLang lex a)
 parseAssertLineBE r f = do dpth  <- indent
                            phi <- f
                            rule <- spaces *> char ':' *> r 
-                           intPairs <- many1 (parseIntPair <|> parseInt)
+                           intPairs <- many (try parseIntPair <|> parseInt)
                            return $ AssertLine phi rule dpth intPairs
         where parseIntPair = do spaces
                                 i1 <- many1 digit
@@ -157,32 +157,46 @@ toProofTreeBE ::
 toProofTreeBE ded n = case ded !! (n - 1)  of
           (AssertLine f r dpth deps) -> 
                 do mapM isSP deps
-                   mapM checkDep (map snd deps)
+                   mapM checkDep deps
                    deps' <- mapM (\x -> toProofTreeBE ded x) (map snd deps)
                    return $ Node (ProofLine n (SS $ liftToSequent f) r) deps'
-                where checkDep depline = takeRange depline n >>= scan
+                where checkDep (begin,end) = if and (map indirectInference r) 
+                                                 then do range <- if end + 1 == n then return [] else takeRange (end + 1) n
+                                                         scan2 range
+                                                         checkEnds begin end
+                                                 else takeRange end n >>= scan1
+                                                      
           (PartialLine _ e _) -> Left $ NoParse e n
     where err :: String -> Either (ProofErrorMessage lex) a
           err x = Left $ GenericError x n
           ln = length ded
-          --line h is accessible from the end of the chunk if everything in
-          --the chunk has depth greater than or equal to that of line h
-          scan chunk@(h:t) =
+          --line h is accessible by an ordinary inference from the end of
+          --the chunk if everything in the chunk has depth greater than or
+          --equal to that of line h
+          scan1 chunk@(h:_) =
               if and (map (\x -> depth h <= depth x) chunk)
                   then Right True
                   else err "It looks like you're citing a line which is not in your subproof. If you're not, you may need to tidy up your proof."
+          scan2 [] = Right True
+          scan2 chunk@(h:_) = 
+              if and (map (\x -> depth h <= depth x) chunk)
+                  then Right True
+                  else err "it looks like you're citing a subproof that isn't available at this point, since its final line isn't available"
           takeRange m' n' = 
               if n' <= m' 
                       then err "Dependency is later than assertion"
                       else Right $ lineRange m' n'
           --sublist, given by line numbers
           lineRange m n = drop (m - 1) $ take n ded
+          checkEnds m n = if m == 1 || depth (ded !! (m - 2)) == depth (ded !! n)
+                              then Right True
+                              else err "it looks like you're citing a subproof that isn't available at this point, because its first line isn't available."
           isSP :: (Int,Int) -> Either (ProofErrorMessage lex) Bool
           isSP (m, n)
             | m == n = Right True
             | depth begin == 0 = err $ "line " ++ show m ++ " must be indented to begin a subproof"
-            | m > 1 && depth begin >= depth (ded !! (m - 2)) = err $ "line " ++ show m ++ " must be more indented that the preceding line to begin a subproof"
-            | ln > n && depth end >= depth (ded !! n) = err $ "line " ++ show (m + 1) ++ " must be less indented than the preceding subproof"
+            | m > 1 && depth begin <= depth (ded !! (m - 2)) = err $ "line " ++ show m ++ " must be more indented that the preceding line to begin a subproof"
+            | ln > n && depth end <= depth (ded !! n) = err $ "line " ++ show n ++ " must be more indented than the subsequent line to end a subproof"
             | m > n = err "The last line of a subproof cannot come before the first"
             | depth begin /= depth end = err $ "the lines " ++ show m ++ " and " ++ show n ++ " must be vertically aligned to form a subproof"
             | or (map (\x -> depth x > depth begin) (lineRange m n)) = err $ "the lines " ++ show m ++ " and " ++ show n ++ " can't have a less indented line between them, if they are a subproof"

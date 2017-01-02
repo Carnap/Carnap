@@ -1,5 +1,7 @@
 {-#LANGUAGE GADTs, FlexibleContexts, PatternSynonyms, TypeSynonymInstances, FlexibleInstances, MultiParamTypeClasses #-}
-module Carnap.Languages.PurePropositional.Logic (parsePropLogic, parsePropProof, DerivedRule(..), propSeqParser, PropSequentCalc) where
+module Carnap.Languages.PurePropositional.Logic 
+    (parsePropLogic, parsePropProof, parsePropProofBE, 
+    DerivedRule(..), propSeqParser, PropSequentCalc) where
 
 import Data.Map as M (lookup, Map)
 import Text.Parsec
@@ -89,13 +91,13 @@ propSeqParser = seqFormulaParser :: Parsec String u (PropSequentCalc Sequent)
 --------------------------------------------------------
 
 data DerivedRule = DerivedRule { conclusion :: PureForm, premises :: [PureForm]}
-               deriving Show
+               deriving (Show, Eq)
 
 data PropLogic = MP | MT  | DNE | DNI | DD   | AX 
                     | CP1 | CP2 | ID1 | ID2  | ID3  | ID4 
                     | ADJ | S1  | S2  | ADD1 | ADD2 | MTP1 | MTP2 | BC1 | BC2 | CB  
                     | DER DerivedRule
-               deriving Show
+               deriving (Show, Eq)
 
 instance Inference PropLogic PurePropLexicon where
     premisesOf MP    = [ GammaV 1 :|-: SS (SeqPhi 1 :->-: SeqPhi 2)
@@ -168,6 +170,8 @@ instance Inference PropLogic PurePropLexicon where
     conclusionOf (DER r) = gammas :|-: SS (liftToSequent $ conclusion r)
         where gammas = foldl (:+:) Top (map GammaV [1..length (premises r)])
 
+    indirectInference x = x `elem` [DD,CP1,CP2,ID1,ID2,ID3,ID4]
+
 parsePropLogic :: Map String DerivedRule -> Parsec String u [PropLogic]
 parsePropLogic ders = do r <- choice (map (try . string) ["AS","PR","MP","MTP","MT","DD","DNE","DNI", "DN", "S", "ADJ",  "ADD" , "BC", "CB",  "CD", "ID", "D-"])
                          case r of
@@ -194,3 +198,6 @@ parsePropLogic ders = do r <- choice (map (try . string) ["AS","PR","MP","MTP","
 
 parsePropProof :: Map String DerivedRule -> String -> [DeductionLine PropLogic PurePropLexicon (Form Bool)]
 parsePropProof ders = toDeduction (parsePropLogic ders) prePurePropFormulaParser
+
+parsePropProofBE :: Map String DerivedRule -> String -> [DeductionLine PropLogic PurePropLexicon (Form Bool)]
+parsePropProofBE ders = toDeductionBE (parsePropLogic ders) prePurePropFormulaParser
