@@ -5,7 +5,8 @@ module Lib
     treeToUl, genericListToUl, listToUl, formToTree, leaves,
     adjustFirstMatching, decodeHtml, syncScroll, reloadPage, initElements,
     loginCheck,errorPopup, getInOutElts, getInOutGoalElts, seqAndLabel,
-    folSeqAndLabel,formAndLabel,folFormAndLabel, message) where
+    folSeqAndLabel,formAndLabel,folFormAndLabel, message, IOGoal(..),
+    genericUpdateResults2) where
 
 import Data.Aeson
 import qualified Data.ByteString.Lazy as BSL
@@ -35,6 +36,7 @@ import GHCJS.DOM
 import GHCJS.DOM.Types
 import GHCJS.DOM.Element
 import GHCJS.DOM.HTMLInputElement
+import qualified GHCJS.DOM.HTMLTextAreaElement as TA (getValue)
 import GHCJS.DOM.Document (createElement, getBody)
 import GHCJS.DOM.Node
 import GHCJS.DOM.NodeList
@@ -80,6 +82,18 @@ syncScroll e1 e2 = do cup1 <- catchup e1 e2
 --------------------------------------------------------
 --1.2 DOM Manipulation
 --------------------------------------------------------
+
+--------------------------------------------------------
+--1.2.1 DOM Data
+--------------------------------------------------------
+-- data structures for DOM elements
+
+data IOGoal= IOGoal { inputArea :: Element
+                    , outputArea :: Element
+                    , goalArea :: Element
+                    , classes :: [String]
+                    }
+
 
 clearInput :: (MonadIO m) => HTMLInputElement -> m ()
 clearInput i = setValue i (Just "")
@@ -154,7 +168,7 @@ getInOutElts cls b = do els <- getListOfElementsByClass b cls
 This function supports a similar pattern where we also gather a third
 element that will carry information about a goal (what to do, and whether it has been achieved)
 -}
-getInOutGoalElts :: IsElement self => String -> self -> IO [Maybe (Element, Element, Element, [String])]
+getInOutGoalElts :: IsElement self => String -> self -> IO [Maybe IOGoal]
 getInOutGoalElts cls b = do els <- getListOfElementsByClass b "proofchecker"
                             mapM extract els
         where extract Nothing = return Nothing
@@ -164,7 +178,38 @@ getInOutGoalElts cls b = do els <- getListOfElementsByClass b "proofchecker"
                        g <- MaybeT $ getFirstElementChild el
                        i <- MaybeT $ getNextElementSibling g 
                        o <- MaybeT $ getNextElementSibling i
-                       return $ (i,o,g,words cn)
+                       return $ IOGoal i o g (words cn)
+
+updateResults :: (IsElement e, IsElement e') => 
+    (String -> IO e') -> e -> EventM HTMLTextAreaElement KeyboardEvent ()
+updateResults f o = 
+        do (Just t) <- target :: EventM HTMLTextAreaElement KeyboardEvent (Maybe HTMLTextAreaElement)
+           mv <- TA.getValue t
+           case mv of 
+               Nothing -> return ()
+               Just v -> do liftIO $ setInnerHTML o (Just "")
+                            v' <- liftIO $ f v
+                            appendChild o (Just v')
+                            return ()
+
+genericUpdateResults2 :: (IsElement e, IsElement e') => 
+    (String -> (e, e') -> IO ()) -> e -> e' -> EventM HTMLTextAreaElement KeyboardEvent ()
+genericUpdateResults2 f o o' = 
+        do (Just t) <- target :: EventM HTMLTextAreaElement KeyboardEvent (Maybe HTMLTextAreaElement)
+           mv <- TA.getValue t
+           case mv of 
+               Nothing -> return ()
+               Just v -> liftIO $ f v (o, o')
+
+updateResults2 :: (IsElement e, IsElement e', IsElement e'', IsElement e''') => 
+    (String -> IO (e'', e''')) -> e -> e' -> EventM HTMLTextAreaElement KeyboardEvent ()
+updateResults2 f o o' = genericUpdateResults2 (\v (e1, e2) -> do
+    liftIO $ setInnerHTML e1 (Just "") 
+    liftIO $ setInnerHTML e2 (Just "")                            
+    (v',v'') <- liftIO $ f v                                      
+    appendChild o (Just v')                                       
+    appendChild o' (Just v'')                                     
+    return ()) o o'
 
 --------------------------------------------------------
 --1.3 Encodings
