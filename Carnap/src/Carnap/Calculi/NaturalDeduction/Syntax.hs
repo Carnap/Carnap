@@ -40,11 +40,15 @@ data DeductionLine r lex a where
             , partialLineError   :: ParseError
             , partialLineDepth   :: Int
             } -> DeductionLine r lex a
+        SeparatorLine ::
+            { separatorLineDepth :: Int
+            } -> DeductionLine r lex a
 
 depth (AssertLine _ _ dpth _) = dpth
 depth (ShowLine _ dpth) = dpth
 depth (QedLine _ dpth _) = dpth
 depth (PartialLine _ _ dpth) = dpth
+depth (SeparatorLine dpth) = dpth
 
 type Deduction r lex = [DeductionLine r lex (Form Bool)]
 

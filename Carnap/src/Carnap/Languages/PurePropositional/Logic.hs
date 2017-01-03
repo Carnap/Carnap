@@ -1,6 +1,6 @@
 {-#LANGUAGE GADTs, FlexibleContexts, PatternSynonyms, TypeSynonymInstances, FlexibleInstances, MultiParamTypeClasses #-}
 module Carnap.Languages.PurePropositional.Logic 
-    (parsePropLogic, parsePropProof, parsePropProofBE, 
+    (parsePropLogic, parsePropProof, parseLBPropProof, 
     DerivedRule(..), propSeqParser, PropSequentCalc) where
 
 import Data.Map as M (lookup, Map)
@@ -87,8 +87,10 @@ instance ParsableLex (Form Bool) PurePropLexicon where
 propSeqParser = seqFormulaParser :: Parsec String u (PropSequentCalc Sequent)
 
 --------------------------------------------------------
---2. Classical Propositional Logic 
+--2. System 1
 --------------------------------------------------------
+--A system for propositional logic resembling the proof system from Kalish
+--and Montegue's LOGIC, with derived rules
 
 data DerivedRule = DerivedRule { conclusion :: PureForm, premises :: [PureForm]}
                deriving (Show, Eq)
@@ -199,5 +201,152 @@ parsePropLogic ders = do r <- choice (map (try . string) ["AS","PR","MP","MTP","
 parsePropProof :: Map String DerivedRule -> String -> [DeductionLine PropLogic PurePropLexicon (Form Bool)]
 parsePropProof ders = toDeduction (parsePropLogic ders) prePurePropFormulaParser
 
-parsePropProofBE :: Map String DerivedRule -> String -> [DeductionLine PropLogic PurePropLexicon (Form Bool)]
-parsePropProofBE ders = toDeductionBE (parsePropLogic ders) prePurePropFormulaParser
+--------------------------------------------------------
+--2. System 2
+--------------------------------------------------------
+--A system for propositional logic resembling the proof system SD from
+--Bergmann, Moor and Nelson's Logic Book
+
+data LogicBookPropLogic = ConjIntro  
+                        | ConjElim1  | ConjElim2
+                        | CondIntro1 | CondIntro2
+                        | CondElim
+                        | NegeIntro1 | NegeIntro2
+                        | NegeIntro3 | NegeIntro4
+                        | NegeElim1  | NegeElim2
+                        | NegeElim3  | NegeElim4
+                        | DisjIntro1 | DisjIntro2
+                        | DisjElim1  | DisjElim2
+                        | DisjElim3  | DisjElim4
+                        | BicoIntro1 | BicoIntro2 
+                        | BicoIntro3 | BicoIntro4
+                        | BicoElim1  | BicoElim2
+                        | Reiterate  | LBAX
+               deriving (Show, Eq)
+
+instance Inference LogicBookPropLogic PurePropLexicon where
+    premisesOf Reiterate  = [ GammaV 1 :|-: SS (SeqPhi 1) ]
+    premisesOf CondElim   = [ GammaV 1 :|-: SS (SeqPhi 1 :->-: SeqPhi 2)
+                            , GammaV 2 :|-: SS (SeqPhi 1)
+                            ]
+    premisesOf CondIntro1 = [ GammaV 1 :+: SA (SeqPhi 1) :|-: SS (SeqPhi 2) ]
+    premisesOf CondIntro2 = [ GammaV 1 :|-: SS (SeqPhi 2) ]
+    premisesOf ConjIntro  = [ GammaV 1  :|-: SS (SeqPhi 1) 
+                            , GammaV 2  :|-: SS (SeqPhi 2)
+                            ]
+    premisesOf NegeIntro1 = [ GammaV 1 :+: SA (SeqPhi 1) :|-: SS (SeqPhi 2) 
+                            , GammaV 2 :+: SA (SeqPhi 1) :|-: SS (SeqNeg $ SeqPhi 2)
+                            ]
+    premisesOf NegeIntro2 = [ GammaV 1 :+: SA (SeqPhi 1) :|-: SS (SeqPhi 2) 
+                            , GammaV 2 :|-: SS (SeqNeg $ SeqPhi 2)
+                            ]
+    premisesOf NegeIntro3 = [ GammaV 1  :|-: SS (SeqPhi 2) 
+                            , GammaV 2 :+: SA (SeqPhi 1) :|-: SS (SeqNeg $ SeqPhi 2)
+                            ]
+    premisesOf NegeIntro4 = [ GammaV 1  :|-: SS (SeqPhi 2) 
+                            , GammaV 2  :|-: SS (SeqNeg $ SeqPhi 2)
+                            ]
+    premisesOf NegeElim1  = [ GammaV 1 :+: SA (SeqNeg $ SeqPhi 1) :|-: SS (SeqPhi 2) 
+                            , GammaV 2 :+: SA (SeqNeg $ SeqPhi 1) :|-: SS (SeqNeg $ SeqPhi 2)
+                            ]
+    premisesOf NegeElim2  = [ GammaV 1 :+: SA (SeqNeg $ SeqPhi 1) :|-: SS (SeqPhi 2) 
+                            , GammaV 2 :|-: SS (SeqNeg $ SeqPhi 2)
+                            ]
+    premisesOf NegeElim3  = [ GammaV 1  :|-: SS (SeqPhi 2) 
+                            , GammaV 2 :+: SA (SeqNeg $ SeqPhi 1) :|-: SS (SeqNeg $ SeqPhi 2)
+                            ]
+    premisesOf NegeElim4  = [ GammaV 1  :|-: SS (SeqPhi 2) 
+                            , GammaV 2  :|-: SS (SeqNeg $ SeqPhi 2)
+                            ]
+    premisesOf DisjIntro1 = [ GammaV 1  :|-: SS (SeqPhi 1) ]
+    premisesOf DisjIntro2 = [ GammaV 1  :|-: SS (SeqPhi 1) ]
+    premisesOf DisjElim1  = [ GammaV 1  :|-: SS (SeqPhi 1 :||-: SeqPhi 2)
+                            , GammaV 2 :+: SA (SeqPhi 1) :|-: SS (SeqPhi 3)
+                            , GammaV 3 :+: SA (SeqPhi 2) :|-: SS (SeqPhi 3)
+                            ]
+    premisesOf DisjElim2  = [ GammaV 1  :|-: SS (SeqPhi 1 :||-: SeqPhi 2)
+                            , GammaV 2 :|-: SS (SeqPhi 3)
+                            , GammaV 3 :+: SA (SeqPhi 2) :|-: SS (SeqPhi 3)
+                            ]
+    premisesOf DisjElim3  = [ GammaV 1 :|-: SS (SeqPhi 1 :||-: SeqPhi 2)
+                            , GammaV 2 :+: SA (SeqPhi 1) :|-: SS (SeqPhi 3)
+                            , GammaV 3 :|-: SS (SeqPhi 3)
+                            ]
+    premisesOf DisjElim4  = [ GammaV 1 :|-: SS (SeqPhi 1 :||-: SeqPhi 2)
+                            , GammaV 2 :|-: SS (SeqPhi 3)
+                            , GammaV 3 :|-: SS (SeqPhi 3)
+                            ]
+    premisesOf ConjElim1  = [ GammaV 1  :|-: SS (SeqPhi 1 :&-: SeqPhi 2) ]
+    premisesOf ConjElim2  = [ GammaV 1  :|-: SS (SeqPhi 1 :&-: SeqPhi 2) ]
+    premisesOf BicoIntro1 = [ GammaV 1 :+: SA (SeqPhi 1) :|-: SS (SeqPhi 2)
+                            , GammaV 2 :+: SA (SeqPhi 2) :|-: SS (SeqPhi 1) 
+                            ]
+    premisesOf BicoIntro2 = [ GammaV 1 :|-: SS (SeqPhi 2)
+                            , GammaV 2 :+: SA (SeqPhi 2) :|-: SS (SeqPhi 1)
+                            ]
+    premisesOf BicoIntro3 = [ GammaV 1 :+: SA (SeqPhi 1) :|-: SS (SeqPhi 2)
+                            , GammaV 2 :|-: SS (SeqPhi 1) 
+                            ]
+    premisesOf BicoIntro4 = [ GammaV 1 :|-: SS (SeqPhi 2)
+                            , GammaV 2 :|-: SS (SeqPhi 1) 
+                            ]
+    premisesOf BicoElim1  = [ GammaV 1  :|-: SS (SeqPhi 1 :<->-: SeqPhi 2)
+                            , GammaV 2  :|-: SS (SeqPhi 1)
+                            ]
+    premisesOf BicoElim2  = [ GammaV 1  :|-: SS (SeqPhi 1 :<->-: SeqPhi 2)
+                            , GammaV 2  :|-: SS (SeqPhi 2)
+                            ]
+    premisesOf LBAX       = []
+
+    conclusionOf Reiterate  = GammaV 1 :|-: SS (SeqPhi 1) 
+    conclusionOf CondElim   = (GammaV 1 :+: GammaV 2) :|-: SS (SeqPhi 2)
+    conclusionOf CondIntro1 = GammaV 1 :|-: SS (SeqPhi 1 :->-: SeqPhi 2) 
+    conclusionOf CondIntro2 = GammaV 1 :|-: SS (SeqPhi 1 :->-: SeqPhi 2)
+    conclusionOf ConjIntro  = GammaV 1 :+: GammaV 2 :|-: SS (SeqPhi 1 :&-: SeqPhi 2)
+    conclusionOf NegeIntro1 = GammaV 1 :+: GammaV 2 :|-: SS (SeqNeg $ SeqPhi 1)
+    conclusionOf NegeIntro2 = GammaV 1 :+: GammaV 2 :|-: SS (SeqNeg $ SeqPhi 1)
+    conclusionOf NegeIntro3 = GammaV 1 :+: GammaV 2 :|-: SS (SeqNeg $ SeqPhi 1)
+    conclusionOf NegeIntro4 = GammaV 1 :+: GammaV 2 :|-: SS (SeqNeg $ SeqPhi 1)
+    conclusionOf NegeElim1  = GammaV 1 :+: GammaV 2 :|-: SS (SeqPhi 1)
+    conclusionOf NegeElim2  = GammaV 1 :+: GammaV 2 :|-: SS (SeqPhi 1)
+    conclusionOf NegeElim3  = GammaV 1 :+: GammaV 2 :|-: SS (SeqPhi 1)
+    conclusionOf NegeElim4  = GammaV 1 :+: GammaV 2 :|-: SS (SeqPhi 1)
+    conclusionOf DisjIntro1 = GammaV 1 :|-: SS (SeqPhi 2 :||-: SeqPhi 1)
+    conclusionOf DisjIntro2 = GammaV 1 :|-: SS (SeqPhi 1 :||-: SeqPhi 2)
+    conclusionOf DisjElim1  = GammaV 1 :+: GammaV 2 :+: GammaV 3 :|-: SS (SeqPhi 3)
+    conclusionOf DisjElim2  = GammaV 1 :+: GammaV 2 :+: GammaV 3 :|-: SS (SeqPhi 3)
+    conclusionOf DisjElim3  = GammaV 1 :+: GammaV 2 :+: GammaV 3 :|-: SS (SeqPhi 3)
+    conclusionOf DisjElim4  = GammaV 1 :+: GammaV 2 :+: GammaV 3 :|-: SS (SeqPhi 3)
+    conclusionOf ConjElim1  = GammaV 1 :|-: SS (SeqPhi 1)
+    conclusionOf ConjElim2  = GammaV 1 :|-: SS (SeqPhi 2)
+    conclusionOf BicoIntro1 = GammaV 1 :+: GammaV 2 :|-: SS (SeqPhi 2 :<->-: SeqPhi 1)
+    conclusionOf BicoIntro2 = GammaV 1 :+: GammaV 2 :|-: SS (SeqPhi 2 :<->-: SeqPhi 1)
+    conclusionOf BicoIntro3 = GammaV 1 :+: GammaV 2 :|-: SS (SeqPhi 2 :<->-: SeqPhi 1)
+    conclusionOf BicoIntro4 = GammaV 1 :+: GammaV 2 :|-: SS (SeqPhi 2 :<->-: SeqPhi 1)
+    conclusionOf BicoElim1  = GammaV 1 :+: GammaV 2 :|-: SS (SeqPhi 2)
+    conclusionOf BicoElim2  = GammaV 1 :+: GammaV 2 :|-: SS (SeqPhi 1)
+    conclusionOf LBAX       = SA (SeqPhi 1) :|-: SS (SeqPhi 1)
+
+    indirectInference x = x `elem` [ CondIntro1,CondIntro2,NegeIntro1, NegeIntro2
+                                   , NegeIntro3, NegeIntro4, NegeElim1, NegeElim2, NegeElim3, NegeElim4
+                                   , BicoIntro1, BicoIntro2, BicoIntro3, BicoIntro4
+                                   , DisjElim1, DisjElim2, DisjElim3, DisjElim4
+                                   ]
+parseLBPropLogic :: Map String DerivedRule -> Parsec String u [LogicBookPropLogic]
+parseLBPropLogic ders = do r <- choice (map (try . string) ["AS","PR","&I","&E","CI","CE","~I","~E","vI", "vE","BI", "BE"])
+                           case r of
+                               "AS"   -> return [LBAX]
+                               "PR"   -> return [LBAX]
+                               "&I"   -> return [ConjIntro]
+                               "&E"   -> return [ConjElim1, ConjElim2]
+                               "CI"   -> return [CondIntro1,CondIntro2]
+                               "CE"   -> return [CondElim]
+                               "~I"   -> return [NegeIntro1, NegeIntro2, NegeIntro3, NegeIntro4]
+                               "~E"   -> return [NegeElim1, NegeElim2, NegeElim3, NegeElim4]
+                               "vI"   -> return [DisjIntro1, DisjIntro2]
+                               "vE"   -> return [DisjElim1, DisjElim2,DisjElim3, DisjElim4]
+                               "BI"   -> return [BicoIntro1, BicoIntro2, BicoIntro3, BicoIntro4]
+                               "BE"   -> return [BicoElim1, BicoElim2]
+
+parseLBPropProof :: Map String DerivedRule -> String -> [DeductionLine LogicBookPropLogic PurePropLexicon (Form Bool)]
+parseLBPropProof ders = toDeductionBE (parseLBPropLogic ders) prePurePropFormulaParser

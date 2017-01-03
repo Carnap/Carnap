@@ -4,7 +4,7 @@ module Carnap.GHCJS.Action.ProofCheck (proofCheckAction) where
 import Carnap.Calculi.NaturalDeduction.Checker (ProofErrorMessage(..), Feedback(..), seqSubsetUnify, processLine, processLineBE, hoProcessLine, toDisplaySequence)
 import Carnap.Core.Data.AbstractSyntaxDataTypes (liftLang)
 import Carnap.Languages.ClassicalSequent.Syntax
-import Carnap.Languages.PurePropositional.Logic as P (DerivedRule(..), parsePropProof,parsePropProofBE) 
+import Carnap.Languages.PurePropositional.Logic as P (DerivedRule(..), parsePropProof,parseLBPropProof) 
 import Carnap.Languages.PureFirstOrder.Logic as FOL (DerivedRule(..), parseFOLProof) 
 import Carnap.Languages.PurePropositional.Util (toSchema)
 import Carnap.GHCJS.SharedTypes
@@ -82,14 +82,14 @@ activateChecker drs w (Just iog@(IOGoal i o g classes))
                                                  (folCheckSolution drs s mtref)
                                                  iog w
 
-        | "BE" `elem` classes = 
+        | "LogicBook" `elem` classes = 
             do (Just gs) <- getInnerHTML g 
                case parse seqAndLabel "" (decodeHtml gs) of
                    Left e -> setInnerHTML g (Just "Couldn't Parse Goal")
                    Right (l,s) -> do setInnerHTML g (Just $ show s)
                                      checkerWith "submit solution" 
                                                  (trySubmit l s) 
-                                                 (checkSolutionBE drs s) 
+                                                 (checkSolutionLB drs s) 
                                                  iog w
         | otherwise = 
             do (Just gs) <- getInnerHTML g 
@@ -107,10 +107,10 @@ checkSolution drs s w ref v (g, fd)   =  do rules <- liftIO $ readIORef drs
                                             let Feedback mseq ds = toDisplaySequence processLine . parsePropProof (M.fromList rules) $ v
                                             updateGoal s w ref (g, fd) mseq ds
 
-checkSolutionBE drs s w ref v (g, fd)   =  do rules <- liftIO $ readIORef drs 
+checkSolutionLB drs s w ref v (g, fd)   =  do rules <- liftIO $ readIORef drs 
                                               -- XXX this is here, rather than earlier, 
                                               -- because if this ref is read too quickly, the async callback for the rules fails. 
-                                              let Feedback mseq ds = toDisplaySequence processLineBE . parsePropProofBE (M.fromList rules) $ v
+                                              let Feedback mseq ds = toDisplaySequence processLineBE . parseLBPropProof (M.fromList rules) $ v
                                               updateGoal s w ref (g, fd) mseq ds
 
 

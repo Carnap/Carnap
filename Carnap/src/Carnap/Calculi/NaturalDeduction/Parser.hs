@@ -64,6 +64,7 @@ toDeductionBE r f = map handle . lines
                     Right n -> n
                     Left e -> 0
               parseLine r f = try (parseAssertLineBE r f) 
+                              <|> parseSeparatorLine
 
 parseAssertLineBE :: Parsec String u [r] -> Parsec String u (FixLang lex a) 
     -> Parsec String u (DeductionLine r lex a)
@@ -82,6 +83,12 @@ parseAssertLineBE r f = do dpth  <- indent
                            i <- many1 digit
                            spaces
                            return ((read i, read i) :: (Int,Int))
+                           
+parseSeparatorLine :: Parsec String u (DeductionLine r lex a)
+parseSeparatorLine = do dpth <- indent
+                        char '-'
+                        spaces
+                        return $ SeparatorLine dpth
 
 --------------------------------------------------------
 --2. To Proof Tree
@@ -160,13 +167,16 @@ toProofTreeBE ded n = case ded !! (n - 1)  of
                    mapM checkDep deps
                    deps' <- mapM (\x -> toProofTreeBE ded x) (map snd deps)
                    return $ Node (ProofLine n (SS $ liftToSequent f) r) deps'
-                where checkDep (begin,end) = if and (map indirectInference r) 
+                where checkDep (begin,end) = if and (map indirectInference r) && begin /= end
                                                  then do range <- if end + 1 == n then return [] else takeRange (end + 1) n
                                                          scan2 range
                                                          checkEnds begin end
-                                                 else takeRange end n >>= scan1
+                                                 else do if begin /= end then err "you appear to be supplying a line range to a rule of direct proof"
+                                                                         else Right True
+                                                         takeRange end n >>= scan1
                                                       
           (PartialLine _ e _) -> Left $ NoParse e n
+          (SeparatorLine _) -> Left $ NoResult n
     where err :: String -> Either (ProofErrorMessage lex) a
           err x = Left $ GenericError x n
           ln = length ded
@@ -199,7 +209,7 @@ toProofTreeBE ded n = case ded !! (n - 1)  of
             | ln > n && depth end <= depth (ded !! n) = err $ "line " ++ show n ++ " must be more indented than the subsequent line to end a subproof"
             | m > n = err "The last line of a subproof cannot come before the first"
             | depth begin /= depth end = err $ "the lines " ++ show m ++ " and " ++ show n ++ " must be vertically aligned to form a subproof"
-            | or (map (\x -> depth x > depth begin) (lineRange m n)) = err $ "the lines " ++ show m ++ " and " ++ show n ++ " can't have a less indented line between them, if they are a subproof"
+            | or (map (\x -> depth x < depth begin) (lineRange m n)) = err $ "the lines " ++ show m ++ " and " ++ show n ++ " can't have a less indented line between them, if they are a subproof"
             | otherwise = Right True
             -- TODO also impose some "assumption" constraints: subproofs
             -- must begin with assumptions, and this is the only context
