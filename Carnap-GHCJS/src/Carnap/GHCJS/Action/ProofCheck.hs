@@ -34,7 +34,7 @@ import Control.Concurrent
 proofCheckAction :: IO ()
 proofCheckAction = do availableDerived <- newIORef []
                       print "starting"
-                      --genericSendJSON RequestDerivedRulesForUser (addRules availableDerived) errcb
+                      genericSendJSON RequestDerivedRulesForUser (addRules availableDerived) errcb
                       initElements getCheckers (activateChecker availableDerived)
 
 errcb :: Value -> IO ()

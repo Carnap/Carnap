@@ -310,7 +310,7 @@ keyString e = key e >>= return . fromJSString
 alert :: String -> IO ()
 alert = alert' . toJSString
 
-foreign import javascript unsafe "jsonCommand($1,$2,$3)" jsonCommand :: JSString -> Callback (JSVal -> IO()) -> Callback (JSVal -> JSVal -> JSVal -> IO()) -> IO ()
+foreign import javascript unsafe "try {jsonCommand($1,$2,$3)} catch(e) {console.log(e)};" jsonCommand :: JSString -> Callback (JSVal -> IO()) -> Callback (JSVal -> JSVal -> JSVal -> IO()) -> IO ()
 
 foreign import javascript unsafe "$1.key" key :: KeyboardEvent -> IO JSString
 
