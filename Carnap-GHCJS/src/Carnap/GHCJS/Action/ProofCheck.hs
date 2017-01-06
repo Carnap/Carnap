@@ -4,8 +4,8 @@ module Carnap.GHCJS.Action.ProofCheck (proofCheckAction) where
 import Carnap.Calculi.NaturalDeduction.Checker (ProofErrorMessage(..), Feedback(..), seqSubsetUnify, processLine, processLineBE, hoProcessLine, toDisplaySequence)
 import Carnap.Core.Data.AbstractSyntaxDataTypes (liftLang)
 import Carnap.Languages.ClassicalSequent.Syntax
-import Carnap.Languages.PurePropositional.Logic as P (DerivedRule(..), parsePropProof,parseLBPropProof) 
-import Carnap.Languages.PureFirstOrder.Logic as FOL (DerivedRule(..), parseFOLProof) 
+import Carnap.Languages.PurePropositional.Logic as P (DerivedRule(..), parsePropProof,parseLBPropProof, propSeqParser) 
+import Carnap.Languages.PureFirstOrder.Logic as FOL (DerivedRule(..), parseFOLProof, folSeqParser) 
 import Carnap.Languages.PurePropositional.Util (toSchema)
 import Carnap.GHCJS.SharedTypes
 import Text.Parsec
@@ -14,8 +14,10 @@ import Data.Aeson as A
 import qualified Data.Map as M (fromList,map) 
 import Control.Lens.Fold (toListOf)
 import Lib
-import ProofCheckBox (checkerWith)
+import Carnap.GHCJS.Widget.ProofCheckBox (checkerWith)
+import Carnap.GHCJS.Widget.RenderDeduction (renderDeduction)
 import GHCJS.DOM.Element
+import GHCJS.DOM.HTMLElement (insertAdjacentElement)
 --the import below is needed to make ghc-mod work properly. GHCJS compiles
 --using the generated javascript FFI versions of 2.4.0, but those are
 --slightly different from the webkit versions of 2.4.0. In particular,
@@ -63,8 +65,7 @@ addRules avd v =  case fromJSON v :: Result String of
 getCheckers :: IsElement self => self -> IO [Maybe IOGoal]
 getCheckers = getInOutGoalElts "proofchecker"
 
-activateChecker ::  IORef [(String,P.DerivedRule)] -> Document -> 
-    Maybe IOGoal -> IO ()
+activateChecker ::  IORef [(String,P.DerivedRule)] -> Document -> Maybe IOGoal -> IO ()
 activateChecker _ _ Nothing  = return ()
 activateChecker drs w (Just iog@(IOGoal i o g classes))
         | "ruleMaker" `elem` classes = checkerWith "save rule" 
@@ -72,34 +73,26 @@ activateChecker drs w (Just iog@(IOGoal i o g classes))
                                                    (computeRule drs)
                                                    iog w
         | "firstOrder" `elem` classes = 
-            do (Just gs) <- getInnerHTML g 
-               case parse folSeqAndLabel "" (decodeHtml gs) of
-                   Left e -> setInnerHTML g (Just "Couldn't Parse Goal")
-                   Right (l,s) -> do mtref <- newIORef Nothing
-                                     setInnerHTML g (Just $ show s)
-                                     checkerWith "submit solution" 
-                                                 (trySubmit l s) 
-                                                 (folCheckSolution drs s mtref)
-                                                 iog w
+                        tryParse folSeqParser 
+                            (\s mtref pd -> folCheckSolution drs s mtref)
 
         | "LogicBook" `elem` classes = 
-            do (Just gs) <- getInnerHTML g 
-               case parse seqAndLabel "" (decodeHtml gs) of
-                   Left e -> setInnerHTML g (Just "Couldn't Parse Goal")
-                   Right (l,s) -> do setInnerHTML g (Just $ show s)
-                                     checkerWith "submit solution" 
-                                                 (trySubmit l s) 
-                                                 (checkSolutionLB drs s) 
-                                                 iog w
-        | otherwise = 
-            do (Just gs) <- getInnerHTML g 
-               case parse seqAndLabel "" (decodeHtml gs) of
-                   Left e -> setInnerHTML g (Just "Couldn't Parse Goal")
-                   Right (l,s) -> do setInnerHTML g (Just $ show s)
-                                     checkerWith "submit solution" 
-                                                 (trySubmit l s) 
-                                                 (checkSolution drs s) 
-                                                 iog w
+                        tryParse propSeqParser
+                            (\s mtref pd -> checkSolutionLB drs s pd) 
+        | otherwise = tryParse propSeqParser
+                            (\s mtref pd -> checkSolution drs s) 
+        where tryParse seqParse checker = do
+                  (Just gs) <- getInnerHTML g 
+                  case parse (withLabel seqParse) "" (decodeHtml gs) of
+                       Left e -> setInnerHTML g (Just "Couldn't Parse Goal")
+                       Right (l,s) -> do mtref <- newIORef Nothing
+                                         (Just pd) <- createElement w (Just "div")
+                                         setAttribute pd "class" "proofDisplay"
+                                         insertAdjacentElement (castToHTMLElement o) "afterend" (Just pd)
+                                         checkerWith "submit solution" 
+                                                     (trySubmit l s) 
+                                                     (checker s mtref pd)
+                                                     iog w
 
 checkSolution drs s w ref v (g, fd)   =  do rules <- liftIO $ readIORef drs 
                                             -- XXX this is here, rather than earlier, 
@@ -107,12 +100,13 @@ checkSolution drs s w ref v (g, fd)   =  do rules <- liftIO $ readIORef drs
                                             let Feedback mseq ds = toDisplaySequence processLine . parsePropProof (M.fromList rules) $ v
                                             updateGoal s w ref (g, fd) mseq ds
 
-checkSolutionLB drs s w ref v (g, fd)   =  do rules <- liftIO $ readIORef drs 
-                                              -- XXX this is here, rather than earlier, 
-                                              -- because if this ref is read too quickly, the async callback for the rules fails. 
-                                              let Feedback mseq ds = toDisplaySequence processLineBE . parseLBPropProof (M.fromList rules) $ v
-                                              updateGoal s w ref (g, fd) mseq ds
-
+checkSolutionLB drs s pd w ref v (g, fd) =  do rules <- liftIO $ readIORef drs 
+                                               let ded = parseLBPropProof (M.fromList rules) v
+                                               renderedProof <- renderDeduction w ded
+                                               setInnerHTML pd (Just "")
+                                               appendChild pd (Just renderedProof)
+                                               let Feedback mseq ds = toDisplaySequence processLineBE ded
+                                               updateGoal s w ref (g, fd) mseq ds
 
 folCheckSolution drs s mtref w ref v (g, fd) = 
         do mt <- readIORef mtref

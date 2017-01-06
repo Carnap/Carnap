@@ -14,7 +14,8 @@ cabal-version:       >=1.10
 library
   hs-source-dirs:      src
   exposed-modules:     Lib
-                     , ProofCheckBox
+                     , Carnap.GHCJS.Widget.ProofCheckBox
+                     , Carnap.GHCJS.Widget.RenderDeduction
                      , Carnap.GHCJS.SharedTypes
                      , Carnap.GHCJS.SharedFunctions
                      , Carnap.GHCJS.Action.SyntaxCheck

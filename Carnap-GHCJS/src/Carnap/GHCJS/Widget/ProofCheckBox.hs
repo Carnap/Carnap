@@ -1,4 +1,4 @@
-module ProofCheckBox (checkerWith) where
+module Carnap.GHCJS.Widget.ProofCheckBox (checkerWith) where
 
 import Lib
 import Data.IORef (IORef, newIORef,writeIORef,readIORef)

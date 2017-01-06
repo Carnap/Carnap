@@ -5,7 +5,7 @@ module Lib
     treeToUl, genericListToUl, listToUl, formToTree, leaves,
     adjustFirstMatching, decodeHtml, syncScroll, reloadPage, initElements,
     loginCheck,errorPopup, getInOutElts, getInOutGoalElts, seqAndLabel,
-    folSeqAndLabel,formAndLabel,folFormAndLabel, message, IOGoal(..),
+    folSeqAndLabel,formAndLabel,folFormAndLabel, withLabel, message, IOGoal(..),
     genericUpdateResults2) where
 
 import Data.Aeson
