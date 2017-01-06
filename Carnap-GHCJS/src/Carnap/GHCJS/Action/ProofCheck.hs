@@ -85,7 +85,8 @@ activateChecker drs w (Just iog@(IOGoal i o g classes))
                   (Just gs) <- getInnerHTML g 
                   case parse (withLabel seqParse) "" (decodeHtml gs) of
                        Left e -> setInnerHTML g (Just "Couldn't Parse Goal")
-                       Right (l,s) -> do mtref <- newIORef Nothing
+                       Right (l,s) -> do setInnerHTML g (Just $ show s)
+                                         mtref <- newIORef Nothing
                                          (Just pd) <- createElement w (Just "div")
                                          setAttribute pd "class" "proofDisplay"
                                          insertAdjacentElement (castToHTMLElement o) "afterend" (Just pd)
