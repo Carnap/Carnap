@@ -50,6 +50,9 @@ depth (QedLine _ dpth _) = dpth
 depth (PartialLine _ _ dpth) = dpth
 depth (SeparatorLine dpth) = dpth
 
+isAssumptionLine (AssertLine _ r _ _) = and (map isAssumption r)
+isAssumptionLine _ = False
+
 type Deduction r lex = [DeductionLine r lex (Form Bool)]
 
 type MultiRule r = [r]
@@ -107,8 +110,9 @@ class ( FirstOrder (ClassicalSequentOver lex)
         restriction _ = Nothing
         indirectInference :: r -> Bool
         indirectInference = const False
-        --TODO: direct, indirect inferences, template for error messages,
-        --etc.
+        isAssumption :: r -> Bool
+        isAssumption = const False
+        --TODO: template for error messages, etc.
 
 --------------------------------------------------------
 --2. Transformations

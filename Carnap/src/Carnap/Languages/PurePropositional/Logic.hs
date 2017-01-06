@@ -366,6 +366,10 @@ instance Inference LogicBookPropLogic PurePropLexicon where
                                    , BicoIntro1, BicoIntro2, BicoIntro3, BicoIntro4
                                    , DisjElim1, DisjElim2, DisjElim3, DisjElim4
                                    ]
+
+    isAssumption LBAS = True
+    isAssumption _ = False
+
 parseLBPropLogic :: Map String DerivedRule -> Parsec String u [LogicBookPropLogic]
 parseLBPropLogic ders = do r <- choice (map (try . string) ["AS","PR","&I","&E","CI","CE","~I","~E","vI", "vE","BI", "BE", "R"])
                            case r of
@@ -382,7 +386,6 @@ parseLBPropLogic ders = do r <- choice (map (try . string) ["AS","PR","&I","&E",
                                "BI"   -> return [BicoIntro1, BicoIntro2, BicoIntro3, BicoIntro4]
                                "BE"   -> return [BicoElim1, BicoElim2]
                                "R"    -> return [Reiterate]
-
 
 parseLBPropProof :: Map String DerivedRule -> String -> [DeductionLine LogicBookPropLogic PurePropLexicon (Form Bool)]
 parseLBPropProof ders = toDeductionBE (parseLBPropLogic ders) prePurePropFormulaParser

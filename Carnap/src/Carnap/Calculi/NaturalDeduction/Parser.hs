@@ -162,9 +162,10 @@ toProofTreeBE ::
     , Sequentable lex
     ) => Deduction r lex -> Int -> Either (ProofErrorMessage lex) (ProofTree r lex)
 toProofTreeBE ded n = case ded !! (n - 1)  of
-          (AssertLine f r dpth deps) -> 
+          l@(AssertLine f r dpth deps) -> 
                 do mapM isSP deps
                    mapM checkDep deps
+                   if isAssumptionLine l then checkAssumptionLegit else return True
                    deps' <- mapM (\x -> toProofTreeBE ded x) (map snd deps)
                    return $ Node (ProofLine n (SS $ liftToSequent f) r) deps'
                 where checkDep (begin,end) = if and (map indirectInference r) && begin /= end
@@ -174,6 +175,10 @@ toProofTreeBE ded n = case ded !! (n - 1)  of
                                                  else do if begin /= end then err "you appear to be supplying a line range to a rule of direct proof"
                                                                          else Right True
                                                          takeRange end n >>= scan1
+                      checkAssumptionLegit 
+                        | dpth == 0 = err "you can't make an assumption unless you are beginning a subproof--maybe you forgot to indent?"
+                        | n > 1 && dpth <= depth (ded !! (n - 2)) = err "you can't make an assumption unless you are beginning a subproof--maybe you forgot to indent?"
+                        | otherwise = return True
                                                       
           (PartialLine _ e _) -> Left $ NoParse e n
           (SeparatorLine _) -> Left $ NoResult n
@@ -201,7 +206,6 @@ toProofTreeBE ded n = case ded !! (n - 1)  of
           checkEnds m n = if m == 1 || depth (ded !! (m - 2)) == depth (ded !! n)
                               then Right True
                               else err "it looks like you're citing a subproof that isn't available at this point, because its first line isn't available."
-          isSP :: (Int,Int) -> Either (ProofErrorMessage lex) Bool
           isSP (m, n)
             | m == n = Right True
             | depth begin == 0 = err $ "line " ++ show m ++ " must be indented to begin a subproof"
@@ -210,6 +214,7 @@ toProofTreeBE ded n = case ded !! (n - 1)  of
             | m > n = err "The last line of a subproof cannot come before the first"
             | depth begin /= depth end = err $ "the lines " ++ show m ++ " and " ++ show n ++ " must be vertically aligned to form a subproof"
             | or (map (\x -> depth x < depth begin) (lineRange m n)) = err $ "the lines " ++ show m ++ " and " ++ show n ++ " can't have a less indented line between them, if they are a subproof"
+            | not (isAssumptionLine begin) = err $ "the subproof beginning on line " ++ show m ++ " needs to start with an assumption"
             | otherwise = Right True
             -- TODO also impose some "assumption" constraints: subproofs
             -- must begin with assumptions, and this is the only context
