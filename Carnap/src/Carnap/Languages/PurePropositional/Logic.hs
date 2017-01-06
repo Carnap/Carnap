@@ -222,6 +222,7 @@ data LogicBookPropLogic = ConjIntro
                         | BicoIntro3 | BicoIntro4
                         | BicoElim1  | BicoElim2
                         | Reiterate  | LBAX
+                        | LBAS
                deriving Eq
 
 instance Show LogicBookPropLogic where
