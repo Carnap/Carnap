@@ -9,13 +9,13 @@ import GHCJS.DOM.Element (setInnerHTML,setAttribute)
 import GHCJS.DOM.Node (appendChild)
 import GHCJS.DOM.Document (createElement)
 import Data.Tree (Tree(..))
+import Data.List (intercalate)
 
-deductionToForest :: Deduction r lex  -> [Tree (DeductionLine r lex (Form Bool))]
-deductionToForest ded@(d:ds) = map toTree chunks
-    where chunks = chunkBy (depth d) ded
+deductionToForest n ded@(d:ds) = map toTree chunks
+    where chunks = chunkBy n ded
           toTree [x] = Node x []
-          toTree (x:xs)  = Node x (deductionToForest xs)
-deductionToForest [] = []
+          toTree (x:xs)  = Node x (deductionToForest (depth x) xs)
+deductionToForest _ [] = []
 
 chunkBy n [] = []
 chunkBy n (x:xs)
@@ -31,7 +31,7 @@ renderTree w = treeToElement asLine asSubproof
                                               (Just theForm) <- createElement w (Just "span")
                                               (Just theRule) <- createElement w (Just "span")
                                               setInnerHTML theForm (Just $ show f)
-                                              setInnerHTML theRule (Just $ show r ++ " " ++ concat (map show deps))
+                                              setInnerHTML theRule (Just $ show (head r) ++ " " ++ intercalate ", " (map renderDep deps))
                                               appendChild theLine (Just theForm)
                                               appendChild theLine (Just theRule)
                                               appendChild theWrapper (Just theLine)
@@ -42,9 +42,11 @@ renderTree w = treeToElement asLine asSubproof
                                           return sl
 
           asSubproof l ls = do setAttribute l "class" "subproof"
-                               mapM_ (appendChild l . Just) ls 
+                               mapM_ (appendChild l . Just) ls
 
-renderDeduction w ded = do let forest = deductionToForest ded
+renderDep (n,m) = if n==m then show n else show n ++ "-" ++ show m
+
+renderDeduction w ded = do let forest = deductionToForest 0 ded
                            lines <- mapM (renderTree w) forest
                            (Just theProof) <- createElement w (Just "div")
                            mapM_ (appendChild theProof . Just) lines

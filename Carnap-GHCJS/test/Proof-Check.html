@@ -46,24 +46,80 @@
     pointer-events: auto;
 }
 
-.proofFeedback div span {
-    visibility:hidden;
+/* The div containing feedback */
+.proofFeedback li > div > div > div {
+    font-size:8pt;
     position:absolute;
+    top:-20px;
+    background:white;
     width:200pt;
-    left:20pt;
     border:1pt solid black;
     padding:5pt;
     z-index:1;
+    max-height:125px;
+    overflow-y:scroll;
+    color:black;
 }
 
-.proofFeedback div:hover span {
-    visibility:visible;
+.proofFeedback li > div div {
+    visibility:hidden;
+    display:none;
 }
+
+/* when you hover over the div containing the feedback mark */
+.proofFeedback li > div:hover {
+    color:red;
+}
+
+.proofFeedback li > div:hover > div {
+    visibility:visible;
+    display:block;
+}
+
+.proofFeedback li > div:hover > div > div {
+    visibility:visible;
+    display:block;
+}
+
+.proofFeedback li > div:hover > div > div > div {
+    visibility:visible;
+    display:block;
+}
+
+.proofFeedback li > div:hover > div > div > div:hover > div {
+    border-top:1px solid gray;
+}
+
+.proofFeedback li > div:hover > div > div > div:hover div {
+    visibility:visible;
+    display:block;
+    color:black;
+    line-height:1.2em;
+    font-size:8pt;
+    padding-top:5px;
+}
+
+.proofFeedback .equations {
+    padding:10px;
+    border:1px solid gray;
+}
+
+.proofFeedback li > div:hover > div > div > div:hover {
+    color:white;
+    line-height:5px;
+    font-size:0pt;
+} 
 
 .proofFeedback ul {
     list-style-type:none;
     padding:0pt;
     margin:0pt;
+}
+
+.proofFeedback li {
+    padding:0pt;
+    font-family: monospace;
+    font-size:10pt;
 }
 
 
@@ -78,12 +134,27 @@
 .proofDisplay {
     position:relative;
     left:500pt;
+    width:200pt;
 }
 
 .proofDisplay .subproof {
-    margin-left:5pt;
-    padding-left:5pt;
-    border-left:1px solid black
+    border-left:1px solid black;
+    margin-top:5px;
+}
+
+.proofDisplay .subproof div > span:first-child{
+    padding-left: 5pt;
+}
+
+.proofDisplay div span:nth-child(2) {
+    float: right;
+}
+
+.proofDisplay .subproof > div:first-child {
+    border-bottom:1px solid black;
+}
+.proofDisplay .subproof .subproof {
+    margin-left: 5pt;
 }
 
 

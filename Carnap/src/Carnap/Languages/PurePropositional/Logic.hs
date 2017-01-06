@@ -222,7 +222,38 @@ data LogicBookPropLogic = ConjIntro
                         | BicoIntro3 | BicoIntro4
                         | BicoElim1  | BicoElim2
                         | Reiterate  | LBAX
-               deriving (Show, Eq)
+               deriving Eq
+
+instance Show LogicBookPropLogic where
+        show ConjIntro  = "&I"
+        show ConjElim1  = "&E"
+        show ConjElim2  = "&E"
+        show CondIntro1 = "⊃I"
+        show CondIntro2 = "⊃I"
+        show CondElim   = "⊃E"
+        show NegeIntro1 = "¬I"
+        show NegeIntro2 = "¬I"
+        show NegeIntro3 = "¬I"
+        show NegeIntro4 = "¬I"
+        show NegeElim1  = "¬E" 
+        show NegeElim2  = "¬E"
+        show NegeElim3  = "¬E"
+        show NegeElim4  = "¬E"
+        show DisjElim1  = "∨E"
+        show DisjElim2  = "∨E"
+        show DisjElim3  = "∨E"
+        show DisjElim4  = "∨E"
+        show DisjIntro1 = "∨I"
+        show DisjIntro2 = "∨I"
+        show BicoIntro1 = "≡I"
+        show BicoIntro2 = "≡I"
+        show BicoIntro3 = "≡I"
+        show BicoIntro4 = "≡I"
+        show BicoElim1  = "≡E"
+        show BicoElim2  = "≡E"
+        show Reiterate  = "R"
+        show LBAX       = "PR"
+        show LBAS       = "AS"
 
 instance Inference LogicBookPropLogic PurePropLexicon where
     premisesOf Reiterate  = [ GammaV 1 :|-: SS (SeqPhi 1) ]
@@ -297,6 +328,7 @@ instance Inference LogicBookPropLogic PurePropLexicon where
                             , GammaV 2  :|-: SS (SeqPhi 2)
                             ]
     premisesOf LBAX       = []
+    premisesOf LBAS       = []
 
     conclusionOf Reiterate  = GammaV 1 :|-: SS (SeqPhi 1) 
     conclusionOf CondElim   = (GammaV 1 :+: GammaV 2) :|-: SS (SeqPhi 2)
@@ -326,6 +358,7 @@ instance Inference LogicBookPropLogic PurePropLexicon where
     conclusionOf BicoElim1  = GammaV 1 :+: GammaV 2 :|-: SS (SeqPhi 2)
     conclusionOf BicoElim2  = GammaV 1 :+: GammaV 2 :|-: SS (SeqPhi 1)
     conclusionOf LBAX       = SA (SeqPhi 1) :|-: SS (SeqPhi 1)
+    conclusionOf LBAS       = SA (SeqPhi 1) :|-: SS (SeqPhi 1)
 
     indirectInference x = x `elem` [ CondIntro1,CondIntro2,NegeIntro1, NegeIntro2
                                    , NegeIntro3, NegeIntro4, NegeElim1, NegeElim2, NegeElim3, NegeElim4
@@ -333,9 +366,9 @@ instance Inference LogicBookPropLogic PurePropLexicon where
                                    , DisjElim1, DisjElim2, DisjElim3, DisjElim4
                                    ]
 parseLBPropLogic :: Map String DerivedRule -> Parsec String u [LogicBookPropLogic]
-parseLBPropLogic ders = do r <- choice (map (try . string) ["AS","PR","&I","&E","CI","CE","~I","~E","vI", "vE","BI", "BE"])
+parseLBPropLogic ders = do r <- choice (map (try . string) ["AS","PR","&I","&E","CI","CE","~I","~E","vI", "vE","BI", "BE", "R"])
                            case r of
-                               "AS"   -> return [LBAX]
+                               "AS"   -> return [LBAS]
                                "PR"   -> return [LBAX]
                                "&I"   -> return [ConjIntro]
                                "&E"   -> return [ConjElim1, ConjElim2]
@@ -347,6 +380,8 @@ parseLBPropLogic ders = do r <- choice (map (try . string) ["AS","PR","&I","&E",
                                "vE"   -> return [DisjElim1, DisjElim2,DisjElim3, DisjElim4]
                                "BI"   -> return [BicoIntro1, BicoIntro2, BicoIntro3, BicoIntro4]
                                "BE"   -> return [BicoElim1, BicoElim2]
+                               "R"    -> return [Reiterate]
+
 
 parseLBPropProof :: Map String DerivedRule -> String -> [DeductionLine LogicBookPropLogic PurePropLexicon (Form Bool)]
 parseLBPropProof ders = toDeductionBE (parseLBPropLogic ders) prePurePropFormulaParser
