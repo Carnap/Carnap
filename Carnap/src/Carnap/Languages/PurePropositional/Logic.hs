@@ -371,8 +371,8 @@ instance Inference LogicBookPropLogic PurePropLexicon where
     isAssumption _ = False
 
 parseLBPropLogic :: Map String DerivedRule -> Parsec String u [LogicBookPropLogic]
-parseLBPropLogic ders = do r <- choice (map (try . string) ["AS","PR","&I","/\\I","&E","/\\E","CI","->I","CE","->E","~I","-I","~E","-E","vI","\\/I", "vE","\\/E","BI","<->I"
-                                                           , "BE", "<->E", "R"])
+parseLBPropLogic ders = do r <- choice (map (try . string) ["AS","PR","&I","/\\I","&E","/\\E","CI","->I","CE","->E","~I","-I","~E","-E"
+                                                           ,"vI","\\/I", "vE","\\/E","BI","<->I" , "BE", "<->E", "R"])
                            case r of
                                "AS"   -> return [LBAS]
                                "PR"   -> return [LBAX]
