@@ -226,12 +226,12 @@ data LogicBookPropLogic = ConjIntro
                deriving Eq
 
 instance Show LogicBookPropLogic where
-        show ConjIntro  = "&I"
-        show ConjElim1  = "&E"
-        show ConjElim2  = "&E"
-        show CondIntro1 = "⊃I"
-        show CondIntro2 = "⊃I"
-        show CondElim   = "⊃E"
+        show ConjIntro  = "∧I"
+        show ConjElim1  = "∧E"
+        show ConjElim2  = "∧E"
+        show CondIntro1 = "→I"
+        show CondIntro2 = "→I"
+        show CondElim   = "→E"
         show NegeIntro1 = "¬I"
         show NegeIntro2 = "¬I"
         show NegeIntro3 = "¬I"
@@ -246,12 +246,12 @@ instance Show LogicBookPropLogic where
         show DisjElim4  = "∨E"
         show DisjIntro1 = "∨I"
         show DisjIntro2 = "∨I"
-        show BicoIntro1 = "≡I"
-        show BicoIntro2 = "≡I"
-        show BicoIntro3 = "≡I"
-        show BicoIntro4 = "≡I"
-        show BicoElim1  = "≡E"
-        show BicoElim2  = "≡E"
+        show BicoIntro1 = "↔I"
+        show BicoIntro2 = "↔I"
+        show BicoIntro3 = "↔I"
+        show BicoIntro4 = "↔I"
+        show BicoElim1  = "↔E"
+        show BicoElim2  = "↔E"
         show Reiterate  = "R"
         show LBAX       = "PR"
         show LBAS       = "AS"
@@ -371,20 +371,31 @@ instance Inference LogicBookPropLogic PurePropLexicon where
     isAssumption _ = False
 
 parseLBPropLogic :: Map String DerivedRule -> Parsec String u [LogicBookPropLogic]
-parseLBPropLogic ders = do r <- choice (map (try . string) ["AS","PR","&I","&E","CI","CE","~I","~E","vI", "vE","BI", "BE", "R"])
+parseLBPropLogic ders = do r <- choice (map (try . string) ["AS","PR","&I","/\\I","&E","/\\E","CI","->I","CE","->E","~I","-I","~E","-E","vI","\\/I", "vE","\\/E","BI","<->I"
+                                                           , "BE", "<->E", "R"])
                            case r of
                                "AS"   -> return [LBAS]
                                "PR"   -> return [LBAX]
                                "&I"   -> return [ConjIntro]
                                "&E"   -> return [ConjElim1, ConjElim2]
+                               "/\\I" -> return [ConjIntro]
+                               "/\\E" -> return [ConjElim1, ConjElim2]
                                "CI"   -> return [CondIntro1,CondIntro2]
                                "CE"   -> return [CondElim]
+                               "->I"  -> return [CondIntro1,CondIntro2]
+                               "->E"  -> return [CondElim]
                                "~I"   -> return [NegeIntro1, NegeIntro2, NegeIntro3, NegeIntro4]
                                "~E"   -> return [NegeElim1, NegeElim2, NegeElim3, NegeElim4]
+                               "-I"   -> return [NegeIntro1, NegeIntro2, NegeIntro3, NegeIntro4]
+                               "-E"   -> return [NegeElim1, NegeElim2, NegeElim3, NegeElim4]
                                "vI"   -> return [DisjIntro1, DisjIntro2]
                                "vE"   -> return [DisjElim1, DisjElim2,DisjElim3, DisjElim4]
+                               "\\/I" -> return [DisjIntro1, DisjIntro2]
+                               "\\/E" -> return [DisjElim1, DisjElim2,DisjElim3, DisjElim4]
                                "BI"   -> return [BicoIntro1, BicoIntro2, BicoIntro3, BicoIntro4]
                                "BE"   -> return [BicoElim1, BicoElim2]
+                               "<->I" -> return [BicoIntro1, BicoIntro2, BicoIntro3, BicoIntro4]
+                               "<->E" -> return [BicoElim1, BicoElim2]
                                "R"    -> return [Reiterate]
 
 parseLBPropProof :: Map String DerivedRule -> String -> [DeductionLine LogicBookPropLogic PurePropLexicon (Form Bool)]
