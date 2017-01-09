@@ -1,10 +1,10 @@
 {-#LANGUAGE FlexibleContexts #-}
 module Carnap.GHCJS.Action.ProofCheck (proofCheckAction) where
 
-import Carnap.Calculi.NaturalDeduction.Checker (ProofErrorMessage(..), Feedback(..), seqSubsetUnify, processLine, processLineBE, hoProcessLine, toDisplaySequence)
+import Carnap.Calculi.NaturalDeduction.Checker (ProofErrorMessage(..), Feedback(..), seqSubsetUnify, processLine, processLineFitch, hoProcessLine, toDisplaySequence)
 import Carnap.Core.Data.AbstractSyntaxDataTypes (liftLang)
 import Carnap.Languages.ClassicalSequent.Syntax
-import Carnap.Languages.PurePropositional.Logic as P (DerivedRule(..), parsePropProof,parseLBPropProof, propSeqParser) 
+import Carnap.Languages.PurePropositional.Logic as P (DerivedRule(..), parsePropProof,parseFitchPropProof, propSeqParser) 
 import Carnap.Languages.PureFirstOrder.Logic as FOL (DerivedRule(..), parseFOLProof, folSeqParser) 
 import Carnap.Languages.PurePropositional.Util (toSchema)
 import Carnap.GHCJS.SharedTypes
@@ -80,7 +80,7 @@ activateChecker drs w (Just iog@(IOGoal i o g classes))
                             (\s mtref pd -> folCheckSolution drs s mtref)
         | "LogicBook" `elem` classes = 
                         tryParse buildOptions propSeqParser
-                            (\s mtref pd -> checkSolutionLB drs s pd) 
+                            (\s mtref pd -> checkSolutionFitch drs s pd) 
         | otherwise = tryParse buildOptions propSeqParser
                             (\s mtref pd -> checkSolution drs s) 
         where tryParse options seqParse checker = do
@@ -118,13 +118,13 @@ checkSolution drs s w ref v (g, fd)   =  do rules <- liftIO $ readIORef drs
                                             let Feedback mseq ds = toDisplaySequence processLine . parsePropProof (M.fromList rules) $ v
                                             updateGoal s w ref (g, fd) mseq ds
 
-checkSolutionLB drs s pd w ref v (g, fd) =  do rules <- liftIO $ readIORef drs 
-                                               let ded = parseLBPropProof (M.fromList rules) v
-                                               renderedProof <- renderDeduction w ded
-                                               setInnerHTML pd (Just "")
-                                               appendChild pd (Just renderedProof)
-                                               let Feedback mseq ds = toDisplaySequence processLineBE ded
-                                               updateGoal s w ref (g, fd) mseq ds
+checkSolutionFitch drs s pd w ref v (g, fd) =  do rules <- liftIO $ readIORef drs 
+                                                  let ded = parseFitchPropProof (M.fromList rules) v
+                                                  renderedProof <- renderDeduction w ded
+                                                  setInnerHTML pd (Just "")
+                                                  appendChild pd (Just renderedProof)
+                                                  let Feedback mseq ds = toDisplaySequence processLineFitch ded
+                                                  updateGoal s w ref (g, fd) mseq ds
 
 folCheckSolution drs s mtref w ref v (g, fd) = 
         do mt <- readIORef mtref

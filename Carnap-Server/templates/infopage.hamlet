@@ -19,6 +19,4 @@
     <p> This is a proofbox with a Fitch system, using rules from the LogicBook,
         and rendering the proof structure.
 
-    ^{proofcheck 3 "proofchecker LogicBook Demo" ":|-:(((P->Q)->P)->P)" ""}
-
-
+    ^{proofcheck 3 "proofchecker LogicBook Demo" ":|-:(((P->Q)->P)->P)" ded2}

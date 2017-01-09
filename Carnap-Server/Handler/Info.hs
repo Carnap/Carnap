@@ -35,3 +35,18 @@ Show: P
    P:PR
 :DD 2
 |]
+
+ded2 = [st|
+  (P->Q)->P:AS
+     -P:AS
+        P:AS
+          Q:AS
+          P:R 3
+          -P:R 2
+        Q:-E 4-6
+     P->Q:CI 3-7
+     P:CE 8 1
+     -P:R 2
+  P:-E 2-10
+((P->Q)->P)->P:CI 1-11
+|]

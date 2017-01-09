@@ -154,31 +154,45 @@ toProofTree ded n = case ded !! (n - 1)  of
           lineRange m n = drop (m - 1) $ take n ded
 
 {- | 
-In a Barwise and Etchymendy deduction, find the prooftree corresponding to
+In a Fitch deduction, find the prooftree corresponding to
 *line n* in ded, where proof line numbers start at 1
 -}
-toProofTreeBE :: 
+toProofTreeFitch :: 
     ( Inference r lex
     , Sequentable lex
     ) => Deduction r lex -> Int -> Either (ProofErrorMessage lex) (ProofTree r lex)
-toProofTreeBE ded n = case ded !! (n - 1)  of
-          l@(AssertLine f r dpth deps) -> 
+toProofTreeFitch ded n = case ded !! (n - 1)  of
+          l@(AssertLine f r@(r':_) dpth deps) -> 
                 do mapM isSP deps
                    mapM checkDep deps
                    if isAssumptionLine l then checkAssumptionLegit else return True
-                   deps' <- mapM (\x -> toProofTreeBE ded x) (map snd deps)
-                   return $ Node (ProofLine n (SS $ liftToSequent f) r) deps'
-                where checkDep (begin,end) = if and (map indirectInference r) && begin /= end
-                                                 then do range <- if end + 1 == n then return [] else takeRange (end + 1) n
-                                                         scan2 range
-                                                         checkEnds begin end
-                                                 else do if begin /= end then err "you appear to be supplying a line range to a rule of direct proof"
-                                                                         else Right True
-                                                         takeRange end n >>= scan1
+                   case indirectInference r' of
+                        Just DoubleProof -> do dp <- doubleProcess deps
+                                               deps' <- mapM (\x -> toProofTreeFitch ded x) dp
+                                               return $ Node (ProofLine n (SS $ liftToSequent f) r) deps'
+                        _ -> do deps' <- mapM (\x -> toProofTreeFitch ded x) (map snd deps)
+                                return $ Node (ProofLine n (SS $ liftToSequent f) r) deps'
+                where checkDep (begin,end) = 
+                        case indirectInference r' of 
+                            Nothing -> if begin /= end 
+                                           then err "you appear to be supplying a line range to a rule of direct proof"
+                                           else takeRange end n >>= scan1
+                            Just _  -> if begin /= end 
+                                                  then do range <- if end + 1 == n 
+                                                                      then return [] 
+                                                                      else takeRange (end + 1) n
+                                                          scan2 range
+                                                          checkEnds begin end
+                                                  else takeRange end n >>= scan1
                       checkAssumptionLegit 
                         | dpth == 0 = err "you can't make an assumption unless you are beginning a subproof--maybe you forgot to indent?"
                         | n > 1 && dpth <= depth (ded !! (n - 2)) = err "you can't make an assumption unless you are beginning a subproof--maybe you forgot to indent?"
                         | otherwise = return True
+                      doubleProcess ((m,n):xs)
+                        | xs /= [] = err "this rule requires multiple assertions in one subproof, not multiple subproofs"
+                        | depth (ded !! (n - 2)) /= depth (ded !! (n - 1)) = err $ "looks like the final two lines of the subproof starting at" ++ show m ++ " aren't aligned"
+                        | m + 2 > n = err "a subproof proof needs to be at least two lines long to be used with this rule"
+                        | otherwise = return [n-1,n]
                                                       
           (PartialLine _ e _) -> Left $ NoParse e n
           (SeparatorLine _) -> Left $ NoResult n

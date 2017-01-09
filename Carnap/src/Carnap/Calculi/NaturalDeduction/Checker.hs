@@ -1,5 +1,5 @@
 {-#LANGUAGE GADTs, KindSignatures, TypeOperators, FlexibleContexts, TypeSynonymInstances, FlexibleInstances, MultiParamTypeClasses #-}
-module Carnap.Calculi.NaturalDeduction.Checker (toDisplaySequence, processLine, processLineBE, hoProcessLine, hosolve, ProofErrorMessage(..), Feedback(..),seqUnify,seqSubsetUnify, toDeduction) where
+module Carnap.Calculi.NaturalDeduction.Checker (toDisplaySequence, processLine, processLineFitch, hoProcessLine, hosolve, ProofErrorMessage(..), Feedback(..),seqUnify,seqSubsetUnify, toDeduction) where
 
 import Carnap.Calculi.NaturalDeduction.Syntax
 import Carnap.Calculi.NaturalDeduction.Parser
@@ -47,15 +47,15 @@ processLine ded n = case ded !! (n - 1) of
   (QedLine _ _ _) -> Left $ NoResult n
   _ -> toProofTree ded n >>= reduceProofTree
 
-processLineBE :: 
+processLineFitch :: 
   ( Sequentable lex
   , Inference r lex
   , MonadVar (ClassicalSequentOver lex) (State Int)
   ) => Deduction r lex -> Int -> FeedbackLine lex
-processLineBE ded n = case ded !! (n - 1) of
+processLineFitch ded n = case ded !! (n - 1) of
   --special case to catch QedLines not being cited in justifications
   (QedLine _ _ _) -> Left $ NoResult n
-  _ -> toProofTreeBE ded n >>= reduceProofTree
+  _ -> toProofTreeFitch ded n >>= reduceProofTree
 
 hoProcessLine :: 
   ( StaticVar (ClassicalSequentOver lex)

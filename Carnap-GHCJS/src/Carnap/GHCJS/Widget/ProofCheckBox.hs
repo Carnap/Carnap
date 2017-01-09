@@ -9,7 +9,7 @@ import GHCJS.DOM.Element (setAttribute, setInnerHTML,keyUp,click)
 import GHCJS.DOM.Document (createElement, getDefaultView)
 import GHCJS.DOM.Node (appendChild, getParentNode)
 import GHCJS.DOM.EventM (EventM, target, newListener,addListener)
-import GHCJS.DOM.HTMLTextAreaElement (getValue)
+import GHCJS.DOM.HTMLTextAreaElement (castToHTMLTextAreaElement,getValue)
 
 data Button = Button { label  :: String 
                      , action :: IORef Bool -> Window -> Element -> 
@@ -44,6 +44,11 @@ checkerWith options updateres iog@(IOGoal i o g classes) w = do
                    buttonAct <- newListener $ (action button) ref w' i
                    addListener bt click buttonAct False                
                Nothing -> return ()
+           mv <- getValue (castToHTMLTextAreaElement i)
+           case mv of
+               Nothing -> return ()
+               (Just iv) -> do setLinesTo w nd (1 + (length $ lines iv))
+                               updateres w ref iv (g, fd)
 
 updateLines :: (IsElement e) => Document -> e -> EventM HTMLTextAreaElement KeyboardEvent ()
 updateLines w nd = onEnter $ do (Just t) <- target :: EventM HTMLTextAreaElement KeyboardEvent (Maybe HTMLTextAreaElement)

@@ -1,6 +1,6 @@
 {-#LANGUAGE GADTs, FlexibleContexts, PatternSynonyms, TypeSynonymInstances, FlexibleInstances, MultiParamTypeClasses #-}
 module Carnap.Languages.PurePropositional.Logic 
-    (parsePropLogic, parsePropProof, parseLBPropProof, 
+    (parsePropLogic, parsePropProof, parseFitchPropProof, 
     DerivedRule(..), propSeqParser, PropSequentCalc) where
 
 import Data.Map as M (lookup, Map)
@@ -172,7 +172,9 @@ instance Inference PropLogic PurePropLexicon where
     conclusionOf (DER r) = gammas :|-: SS (liftToSequent $ conclusion r)
         where gammas = foldl (:+:) Top (map GammaV [1..length (premises r)])
 
-    indirectInference x = x `elem` [DD,CP1,CP2,ID1,ID2,ID3,ID4]
+    indirectInference x
+        | x `elem` [DD,CP1,CP2,ID1,ID2,ID3,ID4] = Just PolyProof
+        | otherwise = Nothing
 
 parsePropLogic :: Map String DerivedRule -> Parsec String u [PropLogic]
 parsePropLogic ders = do r <- choice (map (try . string) ["AS","PR","MP","MTP","MT","DD","DNE","DNI", "DN", "S", "ADJ",  "ADD" , "BC", "CB",  "CD", "ID", "D-"])
@@ -361,42 +363,45 @@ instance Inference LogicBookPropLogic PurePropLexicon where
     conclusionOf LBAX       = SA (SeqPhi 1) :|-: SS (SeqPhi 1)
     conclusionOf LBAS       = SA (SeqPhi 1) :|-: SS (SeqPhi 1)
 
-    indirectInference x = x `elem` [ CondIntro1,CondIntro2,NegeIntro1, NegeIntro2
-                                   , NegeIntro3, NegeIntro4, NegeElim1, NegeElim2, NegeElim3, NegeElim4
-                                   , BicoIntro1, BicoIntro2, BicoIntro3, BicoIntro4
-                                   , DisjElim1, DisjElim2, DisjElim3, DisjElim4
-                                   ]
+    indirectInference x
+        | x `elem` [CondIntro1,CondIntro2, BicoIntro1, BicoIntro2
+                   , BicoIntro3, BicoIntro4 , DisjElim1, DisjElim2
+                   , DisjElim3, DisjElim4 ] = Just PolyProof
+        | x `elem` [ NegeIntro1, NegeIntro2 , NegeIntro3, NegeIntro4
+                   , NegeElim1, NegeElim2, NegeElim3, NegeElim4
+                   ] = Just DoubleProof
+        | otherwise = Nothing
 
     isAssumption LBAS = True
     isAssumption _ = False
 
-parseLBPropLogic :: Map String DerivedRule -> Parsec String u [LogicBookPropLogic]
-parseLBPropLogic ders = do r <- choice (map (try . string) ["AS","PR","&I","/\\I","&E","/\\E","CI","->I","CE","->E","~I","-I","~E","-E"
+parseFitchPropLogic :: Map String DerivedRule -> Parsec String u [LogicBookPropLogic]
+parseFitchPropLogic ders = do r <- choice (map (try . string) ["AS","PR","&I","/\\I","&E","/\\E","CI","->I","CE","->E","~I","-I","~E","-E"
                                                            ,"vI","\\/I", "vE","\\/E","BI","<->I" , "BE", "<->E", "R"])
-                           case r of
-                               "AS"   -> return [LBAS]
-                               "PR"   -> return [LBAX]
-                               "&I"   -> return [ConjIntro]
-                               "&E"   -> return [ConjElim1, ConjElim2]
-                               "/\\I" -> return [ConjIntro]
-                               "/\\E" -> return [ConjElim1, ConjElim2]
-                               "CI"   -> return [CondIntro1,CondIntro2]
-                               "CE"   -> return [CondElim]
-                               "->I"  -> return [CondIntro1,CondIntro2]
-                               "->E"  -> return [CondElim]
-                               "~I"   -> return [NegeIntro1, NegeIntro2, NegeIntro3, NegeIntro4]
-                               "~E"   -> return [NegeElim1, NegeElim2, NegeElim3, NegeElim4]
-                               "-I"   -> return [NegeIntro1, NegeIntro2, NegeIntro3, NegeIntro4]
-                               "-E"   -> return [NegeElim1, NegeElim2, NegeElim3, NegeElim4]
-                               "vI"   -> return [DisjIntro1, DisjIntro2]
-                               "vE"   -> return [DisjElim1, DisjElim2,DisjElim3, DisjElim4]
-                               "\\/I" -> return [DisjIntro1, DisjIntro2]
-                               "\\/E" -> return [DisjElim1, DisjElim2,DisjElim3, DisjElim4]
-                               "BI"   -> return [BicoIntro1, BicoIntro2, BicoIntro3, BicoIntro4]
-                               "BE"   -> return [BicoElim1, BicoElim2]
-                               "<->I" -> return [BicoIntro1, BicoIntro2, BicoIntro3, BicoIntro4]
-                               "<->E" -> return [BicoElim1, BicoElim2]
-                               "R"    -> return [Reiterate]
+                              case r of
+                                  "AS"   -> return [LBAS]
+                                  "PR"   -> return [LBAX]
+                                  "&I"   -> return [ConjIntro]
+                                  "&E"   -> return [ConjElim1, ConjElim2]
+                                  "/\\I" -> return [ConjIntro]
+                                  "/\\E" -> return [ConjElim1, ConjElim2]
+                                  "CI"   -> return [CondIntro1,CondIntro2]
+                                  "CE"   -> return [CondElim]
+                                  "->I"  -> return [CondIntro1,CondIntro2]
+                                  "->E"  -> return [CondElim]
+                                  "~I"   -> return [NegeIntro1, NegeIntro2, NegeIntro3, NegeIntro4]
+                                  "~E"   -> return [NegeElim1, NegeElim2, NegeElim3, NegeElim4]
+                                  "-I"   -> return [NegeIntro1, NegeIntro2, NegeIntro3, NegeIntro4]
+                                  "-E"   -> return [NegeElim1, NegeElim2, NegeElim3, NegeElim4]
+                                  "vI"   -> return [DisjIntro1, DisjIntro2]
+                                  "vE"   -> return [DisjElim1, DisjElim2,DisjElim3, DisjElim4]
+                                  "\\/I" -> return [DisjIntro1, DisjIntro2]
+                                  "\\/E" -> return [DisjElim1, DisjElim2,DisjElim3, DisjElim4]
+                                  "BI"   -> return [BicoIntro1, BicoIntro2, BicoIntro3, BicoIntro4]
+                                  "BE"   -> return [BicoElim1, BicoElim2]
+                                  "<->I" -> return [BicoIntro1, BicoIntro2, BicoIntro3, BicoIntro4]
+                                  "<->E" -> return [BicoElim1, BicoElim2]
+                                  "R"    -> return [Reiterate]
 
-parseLBPropProof :: Map String DerivedRule -> String -> [DeductionLine LogicBookPropLogic PurePropLexicon (Form Bool)]
-parseLBPropProof ders = toDeductionBE (parseLBPropLogic ders) prePurePropFormulaParser
+parseFitchPropProof :: Map String DerivedRule -> String -> [DeductionLine LogicBookPropLogic PurePropLexicon (Form Bool)]
+parseFitchPropProof ders = toDeductionBE (parseFitchPropLogic ders) prePurePropFormulaParser

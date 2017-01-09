@@ -57,6 +57,7 @@ type Deduction r lex = [DeductionLine r lex (Form Bool)]
 
 type MultiRule r = [r]
 
+
 data ProofErrorMessage :: ((* -> *) -> * -> *) -> * where
         NoParse :: ParseError -> Int -> ProofErrorMessage lex
         NoUnify :: [[Equation (ClassicalSequentOver lex)]]  -> Int -> ProofErrorMessage lex
@@ -100,6 +101,12 @@ type SequentTree lex = Tree (Int, ClassicalSequentOver lex Sequent)
 --2. Typeclasses for natural deduction
 --------------------------------------------------------
 
+-- XXX we get indeterminism if we want full generality here, so I leave this
+--simple for now.
+
+data IndirectArity = PolyProof --takes an arbitrary number of assertions or subproofs, each ending in one assertion
+                   | DoubleProof --takes one subproof ending in two assertions
+
 class ( FirstOrder (ClassicalSequentOver lex)
       , ACUI (ClassicalSequentOver lex)) => 
         Inference r lex | r -> lex where
@@ -108,8 +115,8 @@ class ( FirstOrder (ClassicalSequentOver lex)
         --restrictions, based on given substitutions
         restriction :: r -> Maybe ([Equation (ClassicalSequentOver lex)] -> Maybe String)
         restriction _ = Nothing
-        indirectInference :: r -> Bool
-        indirectInference = const False
+        indirectInference :: r -> Maybe IndirectArity
+        indirectInference = const Nothing
         isAssumption :: r -> Bool
         isAssumption = const False
         --TODO: template for error messages, etc.
