@@ -35,6 +35,7 @@ import Yesod.Fay                            (getFaySite)
 import Handler.Common
 import Handler.Fay
 import Handler.Home
+import Handler.Info
 import Handler.Chapter
 import Handler.Book
 import Handler.User

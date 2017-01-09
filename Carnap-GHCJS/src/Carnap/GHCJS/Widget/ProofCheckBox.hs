@@ -1,5 +1,7 @@
-module Carnap.GHCJS.Widget.ProofCheckBox (checkerWith) where
-
+module Carnap.GHCJS.Widget.ProofCheckBox (
+    checkerWith, 
+    CheckerOptions(..), 
+    Button(..)) where 
 import Lib
 import Data.IORef (IORef, newIORef,writeIORef,readIORef)
 import GHCJS.DOM.Types
@@ -9,30 +11,39 @@ import GHCJS.DOM.Node (appendChild, getParentNode)
 import GHCJS.DOM.EventM (EventM, target, newListener,addListener)
 import GHCJS.DOM.HTMLTextAreaElement (getValue)
 
-checkerWith :: String -> (IORef Bool -> Window -> Element -> EventM Element MouseEvent ()) -> 
-                         (Document -> IORef Bool -> String -> (Element, Element) -> IO ()) -> 
-                         IOGoal -> Document -> IO ()
-checkerWith buttonLabel buttonFunction updateres iog@(IOGoal i o g classes) w = do
+data Button = Button { label  :: String 
+                     , action :: IORef Bool -> Window -> Element -> 
+                            EventM Element MouseEvent ()
+                     }
+
+data CheckerOptions = CheckerOptions { submit :: Maybe Button
+                                     }
+
+checkerWith :: CheckerOptions -> (Document -> IORef Bool -> String -> (Element, Element) -> IO ()) -> IOGoal -> Document -> IO ()
+checkerWith options updateres iog@(IOGoal i o g classes) w = do
            mfeedbackDiv@(Just fd) <- createElement w (Just "div")
            mnumberDiv@(Just nd) <-createElement w (Just "div")
-           mbt@(Just bt) <- createElement w (Just "button")
            ref <- newIORef False
            setAttribute fd "class" "proofFeedback"
            setAttribute nd "class" "numbering"
-           setInnerHTML bt (Just buttonLabel)         
            mpar@(Just par) <- getParentNode o               
            appendChild o mnumberDiv
            appendChild o mfeedbackDiv
-           appendChild par mbt
            echo <- newListener $ genericUpdateResults2 (updateres w ref) g fd
            lineupd <- newListener $ onEnter $ updateLines w nd
            (Just w') <- getDefaultView w                    
-           buttonAct <- newListener $ buttonFunction ref w' i
            addListener i keyUp echo False
            addListener i keyUp lineupd False
-           addListener bt click buttonAct False                
            setLinesTo w nd 1
            syncScroll i o
+           case submit options of
+               Just button -> do 
+                   mbt@(Just bt) <- createElement w (Just "button")
+                   setInnerHTML bt (Just (label button))         
+                   appendChild par mbt
+                   buttonAct <- newListener $ (action button) ref w' i
+                   addListener bt click buttonAct False                
+               Nothing -> return ()
 
 updateLines :: (IsElement e) => Document -> e -> EventM HTMLTextAreaElement KeyboardEvent ()
 updateLines w nd = onEnter $ do (Just t) <- target :: EventM HTMLTextAreaElement KeyboardEvent (Maybe HTMLTextAreaElement)

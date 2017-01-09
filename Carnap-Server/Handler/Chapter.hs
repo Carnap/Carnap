@@ -42,7 +42,6 @@ content n cdir cdirp = do let matches = filter (\x -> (show n ++ ".pandoc") `ele
                               ms  -> do let m = L.last ms 
                                         fileToHtml (cdirp ++ m)
 
-
 fileToHtml path = do md <- markdownFromFile path
                      case parseMarkdown yesodDefaultReaderOptions md of
                          Right pd -> do pd' <- runFilters pd
@@ -66,6 +65,7 @@ chapterLayout widget = do
             addStylesheet $ StaticR css_tree_css
             addStylesheet $ StaticR css_tufte_css
             addStylesheet $ StaticR css_tuftextra_css
+            addStylesheet $ StaticR css_exercises_css
             $(widgetFile "default-layout")
             addScript $ StaticR ghcjs_allactions_runmain_js
         withUrlRenderer $(hamletFile "templates/default-layout-wrapper.hamlet")

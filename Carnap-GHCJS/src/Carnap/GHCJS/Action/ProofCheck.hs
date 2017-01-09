@@ -8,15 +8,15 @@ import Carnap.Languages.PurePropositional.Logic as P (DerivedRule(..), parseProp
 import Carnap.Languages.PureFirstOrder.Logic as FOL (DerivedRule(..), parseFOLProof, folSeqParser) 
 import Carnap.Languages.PurePropositional.Util (toSchema)
 import Carnap.GHCJS.SharedTypes
-import Text.Parsec
+import Text.Parsec (parse)
 import Data.IORef (IORef, newIORef,writeIORef,readIORef)
 import Data.Aeson as A
 import qualified Data.Map as M (fromList,map) 
 import Control.Lens.Fold (toListOf)
 import Lib
-import Carnap.GHCJS.Widget.ProofCheckBox (checkerWith)
+import Carnap.GHCJS.Widget.ProofCheckBox (checkerWith, CheckerOptions(..),Button(..))
 import Carnap.GHCJS.Widget.RenderDeduction (renderDeduction)
-import GHCJS.DOM.Element
+import GHCJS.DOM.Element (setInnerHTML,getInnerHTML, setAttribute)
 import GHCJS.DOM.HTMLElement (insertAdjacentElement)
 --the import below is needed to make ghc-mod work properly. GHCJS compiles
 --using the generated javascript FFI versions of 2.4.0, but those are
@@ -31,6 +31,7 @@ import GHCJS.DOM.Window (alert, prompt)
 import GHCJS.DOM.Node (appendChild, getParentNode )
 --import GHCJS.DOM.EventM
 import Control.Monad.IO.Class (liftIO)
+import Control.Monad.State (modify,get,execState)
 import Control.Concurrent
 
 proofCheckAction :: IO ()
@@ -68,20 +69,21 @@ getCheckers = getInOutGoalElts "proofchecker"
 activateChecker ::  IORef [(String,P.DerivedRule)] -> Document -> Maybe IOGoal -> IO ()
 activateChecker _ _ Nothing  = return ()
 activateChecker drs w (Just iog@(IOGoal i o g classes))
-        | "ruleMaker" `elem` classes = checkerWith "save rule" 
-                                                   (trySave drs) 
-                                                   (computeRule drs)
-                                                   iog w
+        | "ruleMaker" `elem` classes = 
+            checkerWith CheckerOptions {submit = Just Button 
+                                            { label = "save rule"
+                                            , action = trySave drs
+                                            }
+                                        } (computeRule drs) iog w
         | "firstOrder" `elem` classes = 
-                        tryParse folSeqParser 
+                        tryParse buildOptions folSeqParser 
                             (\s mtref pd -> folCheckSolution drs s mtref)
-
         | "LogicBook" `elem` classes = 
-                        tryParse propSeqParser
+                        tryParse buildOptions propSeqParser
                             (\s mtref pd -> checkSolutionLB drs s pd) 
-        | otherwise = tryParse propSeqParser
+        | otherwise = tryParse buildOptions propSeqParser
                             (\s mtref pd -> checkSolution drs s) 
-        where tryParse seqParse checker = do
+        where tryParse options seqParse checker = do
                   (Just gs) <- getInnerHTML g 
                   case parse (withLabel seqParse) "" (decodeHtml gs) of
                        Left e -> setInnerHTML g (Just "Couldn't Parse Goal")
@@ -90,10 +92,25 @@ activateChecker drs w (Just iog@(IOGoal i o g classes))
                                          (Just pd) <- createElement w (Just "div")
                                          setAttribute pd "class" "proofDisplay"
                                          insertAdjacentElement (castToHTMLElement o) "afterend" (Just pd)
-                                         checkerWith "submit solution" 
-                                                     (trySubmit l s) 
-                                                     (checker s mtref pd)
-                                                     iog w
+                                         case submit options of
+                                             Nothing -> checkerWith options
+                                                         (checker s mtref pd)
+                                                         iog w
+                                             Just b -> checkerWith 
+                                                         options {submit = Just b {action = trySubmit l s }}
+                                                         (checker s mtref pd)
+                                                         iog w
+
+              standardOptions = 
+                    CheckerOptions {
+                         submit = Just Button { label = "Submit Solution"
+                                              , action = \r w e -> return ()
+                                              }
+                                   }
+              buildOptions = execState (do if "Demo" `elem` classes 
+                                                   then modify (\o -> o {submit = Nothing})
+                                                   else return ())
+                                            standardOptions
 
 checkSolution drs s w ref v (g, fd)   =  do rules <- liftIO $ readIORef drs 
                                             -- XXX this is here, rather than earlier, 

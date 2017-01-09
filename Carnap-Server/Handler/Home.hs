@@ -2,11 +2,11 @@ module Handler.Home where
 
 import Import
 
+
 getHomeR :: Handler Html
 getHomeR = do
     defaultLayout $ do
-        aDomId <- newIdent
-        -- attempt to preload ghcjs runtime
+        --attempt to preload ghcjs runtime
         addScript $ StaticR ghcjs_rts_js
         setTitle "Welcome To Carnap!"
         $(widgetFile "homepage")

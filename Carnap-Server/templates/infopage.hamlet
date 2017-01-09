@@ -1,0 +1,24 @@
+<div#carnap-info-head>
+    <div.container>
+        <h1>
+            About Carnap
+
+<div.container>
+    <h2> Demos
+
+    <p> Here are some quick examples of what Carnap can do.
+
+    <p> This is a proofbox with a Kalish and Montegue System for Propositional Logic
+
+    ^{proofcheck 1 "proofchecker Demo" "P:|-:P" ded1}
+
+    <p> This is a proofbox with a Kalish and Montegue System for First-Order Logic
+
+    ^{proofcheck 2 "proofchecker firstOrder Demo" "AxF(x):|-:F(c)" ""}
+
+    <p> This is a proofbox with a Fitch system, using rules from the LogicBook,
+        and rendering the proof structure.
+
+    ^{proofcheck 3 "proofchecker LogicBook Demo" ":|-:(((P->Q)->P)->P)" ""}
+
+
