@@ -35,8 +35,10 @@
 
 /* This is what will need to be the locus of responsive resizing */
 .proofchecker {
+    display:inline-block;
+    vertical-align:top;
     position: relative;
-    max-width:500px;
+    width:500px;
     min-height:110pt;
     margin-bottom:50pt;
     line-height:1.2em;
@@ -88,7 +90,7 @@
 .proofFeedback {
     font-size:10pt;
     position:absolute;
-    right:50%;
+    right:51%;
     top:13pt;
     width:20px;
     pointer-events: auto;
@@ -180,10 +182,11 @@
 }
 
 .proofDisplay {
-    position:absolute;
-    top:40pt;
-    left:420pt;
-    width:200pt;
+    display:inline-block;
+    vertical-align:top;
+    padding-left:60px;
+    position:relative;
+    width:240pt;
     padding-bottom:5pt;
     overflow:auto;
     max-height:100%
@@ -196,7 +199,7 @@
 
 .proofDisplay div > span:first-child {
     position:absolute;
-    left:-15pt;
+    left:20pt;
 }
 
 .proofDisplay .subproof div > span:nth-child(2){

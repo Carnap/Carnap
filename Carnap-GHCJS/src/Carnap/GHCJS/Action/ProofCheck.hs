@@ -91,7 +91,8 @@ activateChecker drs w (Just iog@(IOGoal i o g classes))
                                          mtref <- newIORef Nothing
                                          (Just pd) <- createElement w (Just "div")
                                          setAttribute pd "class" "proofDisplay"
-                                         insertAdjacentElement (castToHTMLElement o) "afterend" (Just pd)
+                                         (Just parent) <- getParentNode o
+                                         insertAdjacentElement (castToHTMLElement parent) "afterend" (Just pd)
                                          case submit options of
                                              Nothing -> checkerWith options
                                                          (checker s mtref pd)
