@@ -123,18 +123,20 @@ activateChecker w (Just (i,o,classes))
                 | "matchclean" `elem` classes = activateMatchWith showClean
                 | otherwise = return () 
     where activateMatchWith :: (PureForm -> String) -> IO ()
-          activateMatchWith sf = do Just ohtml <- getInnerHTML o                                           
-                                    case parse formAndLabel "" (decodeHtml ohtml) of                       
-                                      (Right (l,f)) -> do mbt@(Just bt) <- createElement w (Just "button") 
-                                                          setInnerHTML o (Just $ sf f)                   
-                                                          setInnerHTML bt (Just "submit solution")         
-                                                          mpar@(Just par) <- getParentNode o               
-                                                          insertBefore par mbt (Just o)                    
-                                                          ref <- newIORef (f,[(f,0)], T.Node (f,0) [], 0)  
-                                                          match <- newListener $ tryMatch o ref w sf
-                                                          (Just w') <- getDefaultView w                    
-                                                          submit <- newListener $ trySubmit ref w' l       
-                                                          addListener i keyUp match False                  
-                                                          addListener bt click submit False                
-                                      (Left e) -> print $ ohtml ++ show e                                  
+          activateMatchWith sf = 
+             do Just ohtml <- getInnerHTML o
+                case parse formAndLabel "" (decodeHtml ohtml) of
+                    (Right (l,f)) -> 
+                           do mbt@(Just bt) <- createElement w (Just "button") 
+                              setInnerHTML o (Just $ sf f)                   
+                              setInnerHTML bt (Just "submit solution")         
+                              mpar@(Just par) <- getParentNode o               
+                              insertBefore par mbt (Just o)                    
+                              ref <- newIORef (f,[(f,0)], T.Node (f,0) [], 0)  
+                              match <- newListener $ tryMatch o ref w sf
+                              (Just w') <- getDefaultView w                    
+                              submit <- newListener $ trySubmit ref w' l       
+                              addListener i keyUp match False                  
+                              addListener bt click submit False                
+                    (Left e) -> print $ ohtml ++ show e
 activateChecker _ Nothing  = return ()

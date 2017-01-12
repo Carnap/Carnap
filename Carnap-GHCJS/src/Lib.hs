@@ -4,9 +4,9 @@ module Lib
     getListOfElementsByClass, tryParse, treeToElement, genericTreeToUl,
     treeToUl, genericListToUl, listToUl, formToTree, leaves,
     adjustFirstMatching, decodeHtml, syncScroll, reloadPage, initElements,
-    loginCheck,errorPopup, getInOutElts, getInOutGoalElts, seqAndLabel,
-    folSeqAndLabel,formAndLabel,folFormAndLabel, withLabel, message, IOGoal(..),
-    genericUpdateResults2) where
+    loginCheck,errorPopup, getInOutElts, getInOutGoalElts, withLabel,
+    formAndLabel,seqAndLabel, folSeqAndLabel, folFormAndLabel,
+    message, IOGoal(..), genericUpdateResults2) where
 
 import Data.Aeson
 import qualified Data.ByteString.Lazy as BSL
@@ -265,7 +265,7 @@ errorPopup msg = alert ("Something has gone wrong. Here's the error: " ++ msg)
 --------------------------------------------------------
  
 formAndLabel :: Monad m => ParsecT String u m (String, PureForm)
-formAndLabel = withLabel purePropFormulaParser
+formAndLabel = withLabel (purePropFormulaParser "PQRSTUVW")
 
 seqAndLabel = withLabel propSeqParser
 

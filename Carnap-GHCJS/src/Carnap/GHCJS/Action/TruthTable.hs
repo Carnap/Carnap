@@ -8,7 +8,7 @@ import Carnap.Core.Data.AbstractSyntaxClasses (Schematizable, Modelable(..))
 import Carnap.Languages.PurePropositional.Util (getIndicies)
 import Carnap.Languages.PurePropositional.Syntax (PureForm)
 import Carnap.Languages.ClassicalSequent.Syntax
-import Carnap.Languages.PurePropositional.Logic (PropSequentCalc)
+import Carnap.Languages.PurePropositional.Logic (PropSequentCalc, propSeqParser)
 import Carnap.Languages.Util.LanguageClasses
 import GHCJS.DOM.Types
 import GHCJS.DOM.Element
@@ -33,8 +33,10 @@ getTruthTables = getInOutElts "truthtable"
 
 activateTruthTables :: Document -> Maybe (Element, Element,[String]) -> IO ()
 activateTruthTables w (Just (i,o,classes))
-        | "simple" `elem` classes  = checkerWith formAndLabel createSimpleTruthTable
-        | "validity" `elem` classes = do checkerWith seqAndLabel createValidityTruthTable
+        | "simple" `elem` classes  = 
+            checkerWith formAndLabel createSimpleTruthTable
+        | "validity" `elem` classes = 
+            checkerWith seqAndLabel createValidityTruthTable
         | otherwise = return ()
     where checkerWith parser ttfunc = 
            do Just ohtml <- getInnerHTML o

@@ -2,7 +2,7 @@ module Handler.Chapter where
 
 import Import
 import Yesod.Markdown
-import Data.List as L (last, tails) 
+import Data.Char (isDigit)
 import Filter.Sidenotes
 import Filter.SynCheckers
 import Filter.ProofCheckers
@@ -35,12 +35,11 @@ getChapterR n = do cdirp <- lift $ chapterDir
 chapterDir = do localbook <- doesDirectoryExist "book"
                 return (if localbook then "book/" else "/root/book/")
 
-content n cdir cdirp = do let matches = filter (\x -> (show n ++ ".pandoc") `elem` tails x) cdir
+content n cdir cdirp = do let matches = filter (\x -> (show n ++ ".pandoc") == dropWhile (not . isDigit) x) cdir
                           case matches of
                               [] -> do print "no matches"
                                        fileToHtml ""
-                              ms  -> do let m = L.last ms 
-                                        fileToHtml (cdirp ++ m)
+                              (m:ms)  -> fileToHtml (cdirp ++ m)
 
 fileToHtml path = do md <- markdownFromFile path
                      case parseMarkdown yesodDefaultReaderOptions md of
