@@ -14,12 +14,13 @@
 .tree ul li:only-child { width:100%; }
 
 .exercise {
+    display:inline-block;
     position:relative;
     padding:10pt;
     padding-top:15pt;
     margin:10pt;
     border: solid 1pt #dddddd;
-    }
+}
 
 .exercise > span:first-child {
     position: absolute;

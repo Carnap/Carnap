@@ -10,7 +10,7 @@ data IntProp b a where
 
 instance Schematizable (IntProp b) where
         schematize (Prop n)   _ 
-            | n < 0 && n > -9 = ["_PQRSTUVW" !! (-1 * n)]
+            | n < 0 && n > -27 = ["_ABCDEFGHIJKLMNOPQRSTUVWXYZ" !! (-1 * n)]
             | otherwise = "P_" ++ show n
 
 instance UniformlyEq (IntProp b) where

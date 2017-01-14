@@ -10,20 +10,20 @@ import Text.Parsec.Expr
 
 --this parses as much formula as it can, but is happy to return an output if the
 --initial segment of a string is a formula
-prePurePropFormulaParser :: Monad m => ParsecT String u m PureForm
-prePurePropFormulaParser = buildExpressionParser opTable subFormulaParser
+prePurePropFormulaParser :: Monad m => String -> ParsecT String u m PureForm
+prePurePropFormulaParser s = buildExpressionParser opTable subFormulaParser
     --subformulas are either
-    where subFormulaParser = (parenParser prePurePropFormulaParser <* spaces)  --formulas wrapped in parentheses
+    where subFormulaParser = (parenParser (prePurePropFormulaParser s) <* spaces)  --formulas wrapped in parentheses
                           <|> unaryOpParser [parseNeg] subFormulaParser --negations or modalizations of subformulas
-                          <|> try (atomicSentenceParser <* spaces)--or atoms
+                          <|> try (atomicSentenceParser s <* spaces)--or atoms
                           <|> (schemevarParser <* spaces)
 
 --this requires that the whole string be a formula, although it allows
 --trailing spaces.
-purePropFormulaParser :: Monad m => ParsecT String u m PureForm
-purePropFormulaParser = do e <- prePurePropFormulaParser
-                           eof
-                           return e
+purePropFormulaParser :: Monad m => String -> ParsecT String u m PureForm
+purePropFormulaParser s = do e <- prePurePropFormulaParser s
+                             eof
+                             return e
 
 opTable :: Monad m => [[Operator String u m PureForm]]
 opTable = [[ Prefix (try parseNeg)], 

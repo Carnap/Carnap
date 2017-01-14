@@ -8,6 +8,12 @@ Email
     userId UserId Maybe
     verkey Text Maybe
     UniqueEmail email
+UserData
+    firstName Text
+    lastName Text
+    enrolledIn Text
+    userId UserId
+    UniqueUserData userId
 Comment json -- Adding "json" causes ToJSON and FromJSON instances to be derived.
     message Text
     userId UserId Maybe

@@ -163,8 +163,8 @@ toProofTreeFitch ::
     ) => Deduction r lex -> Int -> Either (ProofErrorMessage lex) (ProofTree r lex)
 toProofTreeFitch ded n = case ded !! (n - 1)  of
           l@(AssertLine f r@(r':_) dpth deps) -> 
-                do mapM isSP deps
-                   mapM checkDep deps
+                do mapM checkDep deps 
+                   mapM isSP deps
                    if isAssumptionLine l then checkAssumptionLegit else return True
                    case indirectInference r' of
                         Just DoubleProof -> do dp <- doubleProcess deps

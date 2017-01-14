@@ -1,5 +1,5 @@
 <div.container>
-    <h1> Homepage for #{userId}
+    <h1> Homepage for #{firstname} #{lastname}
     $if isAdmin
         <h2> Admin Panel
         <table class="table table-striped">
@@ -7,12 +7,12 @@
                 <th> Student
                 <th> Total Score
             <tbody>
-                $forall id' <- allUsers
+                $forall (Entity _ u) <- allUsersEnt
                     <tr>
                         <td>
-                            <a href="@{UserR id'}">#{id'}
+                            <a href="@{UserR (userIdent u)}">#{userIdent u}
                         <td>
-                            #{tryLookup allScores id'}/#{pointsAvailable}
+                            #{tryLookup allScores (userIdent u)}/#{pointsAvailable}
     <p> This is your homepage, where you can keep track of your progress in the course, and find other useful information.
     <h3 style="padding-top:10pt"> Completed Problems
     <h4> Syntax Checking

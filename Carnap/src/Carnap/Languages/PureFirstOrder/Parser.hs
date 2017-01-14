@@ -28,7 +28,7 @@ mfolFormulaParser = buildExpressionParser opTable subFormulaParser
 
 coreParser recur sfrecur = (parenParser recur <* spaces)
       <|> try (quantifiedSentenceParser parseFreeVar sfrecur)
-      <|> try (atomicSentenceParser <* spaces)
+      <|> try (atomicSentenceParser "PQRSTUVW" <* spaces)
       <|> unaryOpParser [parseNeg] sfrecur
 
 parseFreeVar :: Parsec String u (PureFirstOrderLanguageWith a (Term Int))

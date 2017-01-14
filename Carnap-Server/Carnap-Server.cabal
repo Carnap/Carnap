@@ -26,6 +26,7 @@ library
                      Handler.Fay
                      Handler.Home
                      Handler.Info
+                     Handler.Register
                      Handler.User
                      Handler.Chapter
                      Handler.Book

@@ -82,9 +82,11 @@ instance Combineable PropSequentCalc PropSeqLabel where
     replaceChild (SA _ )      pig _ = SA $ unEveryPig pig
 
 instance ParsableLex (Form Bool) PurePropLexicon where
-        langParser = prePurePropFormulaParser
+        langParser = prePurePropFormulaParser "PQRSTUVW"
 
 propSeqParser = seqFormulaParser :: Parsec String u (PropSequentCalc Sequent)
+
+extendedPropSeqParser = parseSeqOver (prePurePropFormulaParser "ABCDEFGHIJKLMNOPQRSTUVWXYZ")
 
 --------------------------------------------------------
 --2. System 1
@@ -201,7 +203,7 @@ parsePropLogic ders = do r <- choice (map (try . string) ["AS","PR","MP","MTP","
                                             Nothing -> parserFail "Looks like you're citing a derived rule that doesn't exist"
 
 parsePropProof :: Map String DerivedRule -> String -> [DeductionLine PropLogic PurePropLexicon (Form Bool)]
-parsePropProof ders = toDeduction (parsePropLogic ders) prePurePropFormulaParser
+parsePropProof ders = toDeduction (parsePropLogic ders) (prePurePropFormulaParser "PQRSTUVW")
 
 --------------------------------------------------------
 --2. System 2
@@ -404,4 +406,4 @@ parseFitchPropLogic ders = do r <- choice (map (try . string) ["AS","PR","&I","/
                                   "R"    -> return [Reiterate]
 
 parseFitchPropProof :: Map String DerivedRule -> String -> [DeductionLine LogicBookPropLogic PurePropLexicon (Form Bool)]
-parseFitchPropProof ders = toDeductionBE (parseFitchPropLogic ders) prePurePropFormulaParser
+parseFitchPropProof ders = toDeductionBE (parseFitchPropLogic ders) (prePurePropFormulaParser "ABCDEFGHIJKLMNOPQRSTUVWXYZ")

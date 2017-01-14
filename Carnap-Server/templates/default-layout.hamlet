@@ -3,11 +3,9 @@
         <nav id="navbar">
             <ul>
                 <li>
-                    <a href=@{HomeR}>
-                        Carnap
+                    <a href=@{HomeR}>Carnap
                 <li>
-                    <a href=@{BookR}>
-                        Book
+                    <a href=@{BookR}>Book
                 <li>
                     $maybe (Entity _ user) <- authmaybe
                         <a href=@{UserR (userIdent user)}>

@@ -40,6 +40,7 @@ submit typ f u = do time <- liftIO getCurrentTime
                     let sub = typ (pack f) (pack $ show time) u
                     tryInsert sub
 
+--this would be a good library function
 tryInsert s = runDB $ do munique <- checkUnique s
                          case munique of                  
                               (Just _) -> return False    

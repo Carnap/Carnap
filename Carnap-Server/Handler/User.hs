@@ -25,20 +25,31 @@ deleteUserR userId = do
 
 getUserR :: Text -> Handler Html
 getUserR userId = do
-    (synsubs, transsubs,dersubs, ttsubs) <- subsById userId
-    let isAdmin = userId == "gleachkr@gmail.com"
-    let pointsAvailable = "725" :: Text
-    allUsers <- if isAdmin 
-                    then (runDB $ selectList [] []) >>= return . (map $ userIdent . entityVal)
-                    else return []
-    allScores <- mapM scoreById allUsers >>= return . zip allUsers
-    derivedRules <- getDrList
-    defaultLayout $ do
-        setTitle "Welcome To Your Homepage!"
-        $(widgetFile "user")
+    musr <- runDB $ getBy $ UniqueUser userId
+    case musr of 
+        Nothing -> defaultLayout nouserPage
+        (Just (Entity k _))  -> do
+            UserData firstname lastname enrolledin _ <- checkUserData userId k
+            (synsubs, transsubs,dersubs, ttsubs) <- subsById k
+            let isAdmin = userId == "gleachkr@gmail.com"
+            let pointsAvailable = "725" :: Text
+            allUsersEnt <- if isAdmin 
+                            then (runDB $ selectList [] [])
+                            else return []
+            allScores <- mapM scoreById allUsersEnt
+                            >>= return . zip (map (userIdent . entityVal) allUsersEnt)
+            derivedRules <- getDrList
+            defaultLayout $ do
+                setTitle "Welcome To Your Homepage!"
+                $(widgetFile "user")
     where tryLookup l x = case lookup x l of
                           Just n -> show n
                           Nothing -> "can't find scores"
+          
+          nouserPage = [whamlet|
+                        <div.container>
+                            <p> This user does not exist
+                       |]
 
 --------------------------------------------------------
 --Grading
@@ -52,8 +63,8 @@ exPairToScore ((x,y),z) =  case utcDueDate x of
                                             else 5
                               Nothing -> 0
 
-scoreById uid = do (a,b,c,d) <- subsById uid
-                   return $ totalScore $ a ++ b ++ c ++ d
+scoreById (Entity k v)  = do (a,b,c,d) <- subsById k
+                             return $ totalScore $ a ++ b ++ c ++ d
 
 totalScore xs = foldr (+) 0 (map exPairToScore xs)
 
@@ -149,6 +160,11 @@ formatRules rules = B.table B.! class_ "table table-striped" $ do
 --------------------------------------------------------
 --functions for retrieving database infomration and formatting it
 
+checkUserData uid k = do maybeData <- runDB $ getBy $ UniqueUserData k
+                         case maybeData of
+                            Nothing -> redirect (RegisterR uid)
+                            Just (Entity _ ud) -> return ud
+
 getDrList = do maybeCurrentUserId <- maybeAuthId
                case maybeCurrentUserId of
                    Nothing -> return Nothing
@@ -163,12 +179,20 @@ ttPair  (TruthTableSubmission prob time pu) = (Just pu, prob, time)
 
 derPair (DerivationSubmission prob _ time pu) = (Just pu, prob, time)
 
-
-subsById uid = do synsubs   <- yourSubs synPair uid
-                  transsubs <- yourSubs transPair uid
-                  dersubs   <- yourSubs derPair uid
-                  ttsubs    <- yourSubs ttPair uid
-                  return (synsubs, transsubs, dersubs, ttsubs)
+subsById v = do synsubs'  <- runDB $ selectList [SyntaxCheckSubmissionUserId ==. v] []
+                let synsubs = map (separate . synPair . entityVal) synsubs'
+                transsubs'  <- runDB $ selectList [TranslationSubmissionUserId ==. v] []
+                let transsubs = map (separate . transPair . entityVal) transsubs'
+                dersubs'  <- runDB $ selectList [DerivationSubmissionUserId ==. v] []
+                let dersubs = map (separate . derPair . entityVal) dersubs'
+                ttsubs'  <- runDB $ selectList [TruthTableSubmissionUserId ==. v] []
+                let ttsubs = map (separate . ttPair . entityVal) ttsubs'
+                --synsubs   <- yourSubs synPair v
+                -- transsubs <- yourSubs transPair v
+                -- dersubs   <- yourSubs derPair v
+                -- ttsubs    <- yourSubs ttPair v
+                return (synsubs, transsubs, dersubs, ttsubs)
+    where separate = \(_,x,y) -> (break (== ':') x ,y)
 
 yourSubs pair userId = do subs <- runDB $ selectList [] []
                           -- XXX: It would almost certainly be more

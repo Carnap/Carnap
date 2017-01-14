@@ -167,6 +167,19 @@ instance YesodAuth App where
     --redirect manually.
     onLogout = deleteSession credsKey >> deleteSession "_ULT" >> redirect HomeR
 
+    onLogin = do mid <- maybeAuthId
+                 case mid of 
+                    Nothing -> return ()
+                    Just uid -> 
+                        do maybeData <- runDB $ getBy $ UniqueUserData uid
+                           case maybeData of
+                               Nothing -> 
+                                    do musr <- runDB $ get uid
+                                       case musr of 
+                                          (Just (User ident _)) -> redirect (RegisterR ident)
+                                          Nothing -> return ()
+                               Just ud -> return ()
+
     -- appDevel is a custom method added to the settings, which is true
     -- when yesod is running in the development environment and false
     -- otherwise

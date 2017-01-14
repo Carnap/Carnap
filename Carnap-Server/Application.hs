@@ -41,6 +41,7 @@ import Handler.Book
 import Handler.User
 import Handler.Command
 import Handler.Hashed
+import Handler.Register
 import Handler.Rule
 
 -- This line actually creates our YesodDispatch instance. It is the second half
