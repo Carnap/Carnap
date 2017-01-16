@@ -318,6 +318,8 @@ foreign import javascript unsafe "location.reload()" reloadPage :: IO ()
 
 foreign import javascript unsafe "alert($1)" alert' :: JSString -> IO ()
 
+foreign import javascript unsafe "window.location.href()" currentUrl :: IO JSString
+
 message = alert
 
 #else
@@ -333,6 +335,8 @@ keyString = Prelude.error "keyString requires the GHCJS FFI"
 
 alert :: String -> IO ()
 alert = Prelude.error "alert requires the GHCJS FFI"
+
+currentUrl = Prelude.error "currentUrl requires the GHCJS FFI"
 
 message = alert
 

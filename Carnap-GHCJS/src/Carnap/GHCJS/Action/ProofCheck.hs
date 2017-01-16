@@ -168,7 +168,7 @@ trySubmit l s ref w i = do isFinished <- liftIO $ readIORef ref
                            if isFinished
                              then do (Just v) <- getValue (castToHTMLTextAreaElement i)
                                      liftIO $ sendJSON 
-                                        (SubmitDerivation (l ++ ":" ++ show s) v) 
+                                        (SubmitDerivation (l ++ ":" ++ show s) v Book) 
                                         (loginCheck $ "Submitted Derivation for Exercise " ++ l)
                                         errorPopup
                              else alert w "not yet finished"

@@ -4,6 +4,6 @@
 
         Please enter the following information
 
-        <form method=post action=@{RegisterR uid} enctype=#{enctype}>
+        <form method=post action=@{RegisterR ident} enctype=#{enctype}>
             ^{widget}
             <button> Register Now

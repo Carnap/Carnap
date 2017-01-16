@@ -38,7 +38,7 @@ trySubmit :: IORef (PureForm,[(PureForm,Int)], Tree (PureForm,Int),Int) -> Windo
 trySubmit ref w l = do (f,forms,_,_) <- liftIO $ readIORef ref
                        case forms of 
                           [] -> liftIO $ sendJSON 
-                            (SubmitSyntaxCheck $ l ++ ":" ++ show f) 
+                            (SubmitSyntaxCheck (l ++ ":" ++ show f) Book) 
                             (loginCheck $ "Submitted Syntax-Check for Exercise " ++ l) 
                             errorPopup
                           _  -> alert w "not yet finished"

@@ -7,6 +7,8 @@ import Carnap.Languages.PurePropositional.Logic (DerivedRule)
 import Data.Aeson (encode, decodeStrict)
 import Model (SyntaxCheckSubmission,TranslationSubmission)
 import Data.Time
+import Util.Database
+import Util.Data
 
 postCommandR :: Handler Value
 postCommandR = do
@@ -18,12 +20,13 @@ postCommandR = do
            Nothing -> returnJson ("No User" :: String)
            Just u  -> case cmd of
                 EchoBack (s,b) -> returnJson (reverse s)
-                SubmitSyntaxCheck f -> submit SyntaxCheckSubmission f u  >>= afterInsert
-                SubmitTranslation f -> submit TranslationSubmission f u  >>= afterInsert
-                SubmitTruthTable f  -> submit TruthTableSubmission f u   >>= afterInsert
-                SubmitDerivation s d -> do time <- liftIO getCurrentTime               
-                                           let sub = DerivationSubmission (pack s) (pack d) (pack $ show time) u 
-                                           tryInsert sub >>= afterInsert
+                SubmitSyntaxCheck f  Book -> submit SyntaxCheckSubmission f u CarnapTextbook
+                SubmitTranslation f  Book -> submit TranslationSubmission f u CarnapTextbook
+                SubmitTruthTable f   Book -> submit TruthTableSubmission f u CarnapTextbook
+                SubmitDerivation s d Book -> do time <- liftIO getCurrentTime               
+                                                let sub = DerivationSubmission (pack s) (pack d) 
+                                                                  (pack $ show time) u CarnapTextbook
+                                                tryInsert sub >>= afterInsert
                 SaveDerivedRule n dr -> do time <- liftIO getCurrentTime
                                            let save = SavedDerivedRule (toStrict $ encode dr) (pack n) (pack $ show time) u
                                            tryInsert save >>= afterInsert
@@ -36,16 +39,10 @@ packageRule (SavedDerivedRule dr n _ _) = case (decodeStrict dr :: Maybe Derived
                                               Just r -> Just (unpack n, r)
                                               _ -> Nothing
 
-submit typ f u = do time <- liftIO getCurrentTime
-                    let sub = typ (pack f) (pack $ show time) u
-                    tryInsert sub
-
---this would be a good library function
-tryInsert s = runDB $ do munique <- checkUnique s
-                         case munique of                  
-                              (Just _) -> return False    
-                              Nothing  -> do insert s
-                                             return True
+submit typ f u c = do time <- liftIO getCurrentTime
+                      let sub = typ (pack f) (pack $ show time) u c
+                      success <- tryInsert sub
+                      afterInsert success
 
 afterInsert success = if success then returnJson ("submitted!" :: String) 
                                  else returnJson ("Clash" :: String)

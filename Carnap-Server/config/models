@@ -11,7 +11,7 @@ Email
 UserData
     firstName Text
     lastName Text
-    enrolledIn Text
+    enrolledIn CourseEnrollment
     userId UserId
     UniqueUserData userId
 Comment json -- Adding "json" causes ToJSON and FromJSON instances to be derived.
@@ -22,24 +22,28 @@ Comment json -- Adding "json" causes ToJSON and FromJSON instances to be derived
 SyntaxCheckSubmission
     problem Text
     time Text
-    userId UserId 
-    UniqueSyntaxCheckP problem userId
+    userId UserId
+    source ProblemSource default='CarnapTextbook'
+    UniqueSyntaxCheckP problem userId source
 TranslationSubmission
     problem Text
     time Text
     userId UserId 
-    UniqueTranslationP problem userId
+    source ProblemSource default='CarnapTextbook'
+    UniqueTranslationP problem userId source
 TruthTableSubmission
     problem Text
     time Text
     userId UserId 
-    UniqueTruthTableP problem userId
+    source ProblemSource default='CarnapTextbook'
+    UniqueTruthTableP problem userId source
 DerivationSubmission
     problem Text
     derivation Text
     time Text
     userId UserId 
-    UniqueDerivationP problem userId
+    source ProblemSource default='CarnapTextbook'
+    UniqueDerivationP problem userId source
 SavedDerivedRule
     derivedRule ByteString
     name Text

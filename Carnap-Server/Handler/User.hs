@@ -171,13 +171,13 @@ getDrList = do maybeCurrentUserId <- maybeAuthId
                    Just u -> do savedRules <- runDB $ selectList [SavedDerivedRuleUserId ==. u] []
                                 return $ Just (formatRules (map entityVal savedRules))
     
-synPair (SyntaxCheckSubmission prob time pu)  = (Just pu, prob,time)
+synPair (SyntaxCheckSubmission prob time pu _)  = (Just pu, prob,time)
 
-transPair (TranslationSubmission prob time pu)  = (Just pu, prob,time)
+transPair (TranslationSubmission prob time pu _)  = (Just pu, prob,time)
 
-ttPair  (TruthTableSubmission prob time pu) = (Just pu, prob, time)
+ttPair  (TruthTableSubmission prob time pu _) = (Just pu, prob, time)
 
-derPair (DerivationSubmission prob _ time pu) = (Just pu, prob, time)
+derPair (DerivationSubmission prob _ time pu _) = (Just pu, prob, time)
 
 subsById v = do synsubs'  <- runDB $ selectList [SyntaxCheckSubmissionUserId ==. v] []
                 let synsubs = map (separate . synPair . entityVal) synsubs'

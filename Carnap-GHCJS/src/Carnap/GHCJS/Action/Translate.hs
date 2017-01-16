@@ -85,7 +85,7 @@ tryFOLTrans o ref f = onEnter $ do (Just t) <- target :: EventM HTMLInputElement
 trySubmit ref l f = do isFinished <- liftIO $ readIORef ref
                        if isFinished
                          then liftIO $ sendJSON 
-                                    (SubmitTranslation $ l ++ ":" ++ show f) 
+                                    (SubmitTranslation (l ++ ":" ++ show f) Book) 
                                     (loginCheck $ "Submitted Translation for Exercise " ++ l)
                                     errorPopup
                          else liftIO $ message "not yet finished (remember to press return to check your work before submitting!)"

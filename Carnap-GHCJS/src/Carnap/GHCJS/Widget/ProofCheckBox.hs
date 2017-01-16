@@ -4,6 +4,7 @@ module Carnap.GHCJS.Widget.ProofCheckBox (
     Button(..)) where 
 import Lib
 import Data.IORef (IORef, newIORef,writeIORef,readIORef)
+import Control.Monad (zipWithM_)
 import GHCJS.DOM.Types
 import GHCJS.DOM.Element (setAttribute, setInnerHTML,keyUp,click)
 import GHCJS.DOM.Document (createElement, getDefaultView)

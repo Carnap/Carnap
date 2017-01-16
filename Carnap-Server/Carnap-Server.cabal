@@ -39,6 +39,8 @@ library
                      Filter.Translate
                      Filter.TruthTables
                      Filter.Diagrams
+                     Util.Database
+                     Util.Data
 
     if flag(dev) || flag(library-only)
         cpp-options:   -DDEVELOPMENT

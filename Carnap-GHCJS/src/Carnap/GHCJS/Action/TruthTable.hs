@@ -71,7 +71,7 @@ trySubmit :: IORef Bool -> String -> Window -> String -> EventM HTMLInputElement
 trySubmit ref s w l = do isDone <- liftIO $ readIORef ref
                          if isDone 
                             then  liftIO $ sendJSON 
-                                    (SubmitTruthTable $ l ++ ":" ++ s) 
+                                    (SubmitTruthTable (l ++ ":" ++ s) Book) 
                                     (loginCheck $ "Submitted Truth-Table for Exercise " ++ l) 
                                     errorPopup
                             else alert w "not yet finished"
