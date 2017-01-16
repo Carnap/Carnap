@@ -1,0 +1,26 @@
+<div.container>
+    <h1> Instructor Page for #{firstname} #{lastname}
+    <h2> Student Scores
+    <table class="table table-striped">
+        <thead>
+            <th> Student
+            <th> Total Score
+        <tbody>
+            $forall u <- users
+                <tr>
+                    <td>
+                        <a href="@{UserR (userIdent u)}">#{userIdent u}
+                    <td>
+                        #{tryLookup allScores (userIdent u)}/#{pointsAvailable}
+    <h2> Upload Assignments
+    <div.form-actions>
+        <form method=post enctype=#{enctype}>
+            ^{assignmentWidget}
+            <input.btn type=submit value="upload">
+    <table class="table">
+        <thead>
+            <th> Assignment
+        <tbody>
+            $forall a <- savedassignments
+                <tr>
+                    <td>#{a}

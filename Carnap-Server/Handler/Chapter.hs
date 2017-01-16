@@ -10,17 +10,19 @@ import Filter.Translate
 import Filter.Diagrams
 import Filter.TruthTables
 import Text.Pandoc.Walk (walkM, walk)
-import System.Directory (doesDirectoryExist, getDirectoryContents, doesFileExist)
+import System.Directory (getDirectoryContents)
 import Text.Julius (juliusFile)
 import Text.Hamlet (hamletFile)
 import qualified Data.CaseInsensitive as CI
 import qualified Data.Text.Encoding as TE
 import Control.Monad.State (evalState, evalStateT)
 
--- XXX: Fair amount of code-duplication between this and Handler/Book.hs
+-- XXX Fair amount of code-duplication between this and Handler/Book.hs
+--
+-- XXX Can replace the chapterDir code using conditional compilation
 
 getChapterR :: Int -> Handler Html
-getChapterR n = do cdirp <- lift $ chapterDir 
+getChapterR n = do cdirp <- chapterDir 
                    cdir <- lift $ getDirectoryContents cdirp
                    content <- liftIO $ content n cdir cdirp
                    case content of
@@ -32,8 +34,10 @@ getChapterR n = do cdirp <- lift $ chapterDir
                                 #{c}
                        |]
 
-chapterDir = do localbook <- doesDirectoryExist "book"
-                return (if localbook then "book/" else "/root/book/")
+chapterDir = do master <- getYesod 
+                if appDevel (appSettings master)
+                    then return "book/" 
+                    else return "/root/book/"
 
 content n cdir cdirp = do let matches = filter (\x -> (show n ++ ".pandoc") == dropWhile (not . isDigit) x) cdir
                           case matches of

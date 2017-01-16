@@ -8,6 +8,7 @@ import Carnap.Languages.PurePropositional.Logic (DerivedRule(..))
 import Carnap.GHCJS.SharedTypes
 import Data.Aeson (decodeStrict)
 import Data.Time
+import Util.Database
 import qualified Data.Map as M
 
 deleteUserR :: Text -> Handler Value
@@ -24,20 +25,15 @@ deleteUserR userId = do
     returnJson (msg ++ " deleted")
 
 getUserR :: Text -> Handler Html
-getUserR userId = do
-    musr <- runDB $ getBy $ UniqueUser userId
+getUserR ident = do
+    musr <- runDB $ getBy $ UniqueUser ident
     case musr of 
         Nothing -> defaultLayout nouserPage
         (Just (Entity k _))  -> do
-            UserData firstname lastname enrolledin _ <- checkUserData userId k
+            UserData firstname lastname enrolledin _ <- checkUserData ident k
             (synsubs, transsubs,dersubs, ttsubs) <- subsById k
-            let isAdmin = userId == "gleachkr@gmail.com"
+            let isAdmin = ident == "gleachkr@gmail.com"
             let pointsAvailable = "725" :: Text
-            allUsersEnt <- if isAdmin 
-                            then (runDB $ selectList [] [])
-                            else return []
-            allScores <- mapM scoreById allUsersEnt
-                            >>= return . zip (map (userIdent . entityVal) allUsersEnt)
             derivedRules <- getDrList
             defaultLayout $ do
                 setTitle "Welcome To Your Homepage!"
@@ -63,8 +59,8 @@ exPairToScore ((x,y),z) =  case utcDueDate x of
                                             else 5
                               Nothing -> 0
 
-scoreById (Entity k v)  = do (a,b,c,d) <- subsById k
-                             return $ totalScore $ a ++ b ++ c ++ d
+scoreById uid = do (a,b,c,d) <- subsById uid
+                   return $ totalScore $ a ++ b ++ c ++ d
 
 totalScore xs = foldr (+) 0 (map exPairToScore xs)
 
@@ -159,11 +155,6 @@ formatRules rules = B.table B.! class_ "table table-striped" $ do
 --Database Handling
 --------------------------------------------------------
 --functions for retrieving database infomration and formatting it
-
-checkUserData uid k = do maybeData <- runDB $ getBy $ UniqueUserData k
-                         case maybeData of
-                            Nothing -> redirect (RegisterR uid)
-                            Just (Entity _ ud) -> return ud
 
 getDrList = do maybeCurrentUserId <- maybeAuthId
                case maybeCurrentUserId of

@@ -1,19 +1,9 @@
 <div.container>
     <h1> Homepage for #{firstname} #{lastname}
-    $if isAdmin
-        <h2> Admin Panel
-        <table class="table table-striped">
-            <thead>
-                <th> Student
-                <th> Total Score
-            <tbody>
-                $forall (Entity _ u) <- allUsersEnt
-                    <tr>
-                        <td>
-                            <a href="@{UserR (userIdent u)}">#{userIdent u}
-                        <td>
-                            #{tryLookup allScores (userIdent u)}/#{pointsAvailable}
     <p> This is your homepage, where you can keep track of your progress in the course, and find other useful information.
+    $if isAdmin
+        <p> Your instructor page is 
+            <a href=@{InstructorR ident}>here
     <h3 style="padding-top:10pt"> Completed Problems
     <h4> Syntax Checking
     #{exPairToTable synsubs}

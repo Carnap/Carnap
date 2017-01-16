@@ -1,6 +1,6 @@
 function deleteRule (name) {
     jQuery.ajax({
-        url: '@{UserR userId}',
+        url: '@{UserR ident}',
         type: 'DELETE',
         contentType: "application/json",
         data: JSON.stringify(name),

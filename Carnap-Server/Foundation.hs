@@ -86,12 +86,22 @@ instance Yesod App where
     authRoute _ = Just $ AuthR GE.forwardUrl
 
     -- Routes requiring authentication.
-    isAuthorized (UserR ident) _ = do (Entity _ user) <- requireAuth
-                                      let ident' = userIdent user
-                                      return $ if ident'    == "gleachkr@gmail.com" 
-                                                  || ident' == ident
-                                               then Authorized
-                                               else Unauthorized "It appears you're not authorized to access this page"
+    isAuthorized (UserR ident) _ = 
+        do (Entity _ user) <- requireAuth
+           let ident' = userIdent user
+           return $ if ident'    == "gleachkr@gmail.com" 
+                       || ident' == ident
+                    then Authorized
+                    else Unauthorized "It appears you're not authorized to access this page"
+
+    isAuthorized (InstructorR ident) _ = 
+        do (Entity _ user) <- requireAuth
+           let ident' = userIdent user
+           return $ if ident'    == "gleachkr@gmail.com" 
+                       && ident' == ident
+                    then Authorized
+                    else Unauthorized "It appears you're not authorized to access this page"
+                    --
     -- Routes not requiring authentication
     isAuthorized _ _ = return Authorized
 
