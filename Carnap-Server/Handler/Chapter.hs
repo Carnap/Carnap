@@ -18,8 +18,6 @@ import qualified Data.Text.Encoding as TE
 import Control.Monad.State (evalState, evalStateT)
 
 -- XXX Fair amount of code-duplication between this and Handler/Book.hs
---
--- XXX Can replace the chapterDir code using conditional compilation
 
 getChapterR :: Int -> Handler Html
 getChapterR n = do cdirp <- chapterDir 

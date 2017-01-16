@@ -23,6 +23,8 @@ Sessionx.vim
 *.sqlite3
 yesod-devel
 Carnap-Server/SecureStrings.hs
+Carnap-Server/assignments
+Carnap-Server/book/cache
 Carnap-Server/fay/Fay/Yesod.hs
 Carnap-Server/static/tmp/
 client_session_key.aes
