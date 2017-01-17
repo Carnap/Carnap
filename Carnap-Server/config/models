@@ -23,26 +23,26 @@ SyntaxCheckSubmission
     problem Text
     time Text
     userId UserId
-    source ProblemSource default='CarnapTextbook'
+    source ProblemSource
     UniqueSyntaxCheckP problem userId source
 TranslationSubmission
     problem Text
     time Text
     userId UserId 
-    source ProblemSource default='CarnapTextbook'
+    source ProblemSource
     UniqueTranslationP problem userId source
 TruthTableSubmission
     problem Text
     time Text
     userId UserId 
-    source ProblemSource default='CarnapTextbook'
+    source ProblemSource
     UniqueTruthTableP problem userId source
 DerivationSubmission
     problem Text
     derivation Text
     time Text
     userId UserId 
-    source ProblemSource default='CarnapTextbook'
+    source ProblemSource
     UniqueDerivationP problem userId source
 SavedDerivedRule
     derivedRule ByteString
@@ -50,5 +50,12 @@ SavedDerivedRule
     time Text
     userId UserId
     UniqueDerivedRule name userId
+AssignmentMetadata
+    filename Text
+    description Text Maybe
+    duedate UTCTime
+    date UTCTime
+    course CourseEnrollment
+    UniqueAssignment filename
 
  -- By default this file is used in Model.hs (which is imported by Foundation.hs)

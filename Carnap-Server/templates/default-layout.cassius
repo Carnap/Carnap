@@ -18,3 +18,11 @@ nav#navbar
 
 footer
     color:#999
+
+div#message
+    position: absolute
+    top: 20px
+    left: 20px
+    border: 1px solid
+    background: white
+    padding:20px

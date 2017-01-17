@@ -3,24 +3,32 @@
     <h2> Student Scores
     <table class="table table-striped">
         <thead>
-            <th> Student
+            <th> Registered Student
+            <th> Student Name
             <th> Total Score
         <tbody>
-            $forall u <- users
+            $forall (u,UserData fn ln _ _) <- usersAndData
                 <tr>
                     <td>
                         <a href="@{UserR (userIdent u)}">#{userIdent u}
                     <td>
-                        #{tryLookup allScores (userIdent u)}/#{pointsAvailable}
+                        #{ln}, #{fn}
+                    <td>
+                        #{tryLookup allScores (userIdent u)}/#{show $ pointsByClass theclass}
     <h2> Upload Assignments
     <div.form-actions>
         <form method=post enctype=#{enctype}>
             ^{assignmentWidget}
             <input.btn type=submit value="upload">
+    <h2> Uploaded Assignments
     <table class="table">
         <thead>
-            <th> Assignment
+            <th> Filename
+            <th> Due Date
+            <th> Saved on
         <tbody>
-            $forall a <- savedassignments
+            $forall a <- assignmentMetadata
                 <tr>
-                    <td>#{a}
+                    <td>#{assignmentMetadataFilename a}
+                    <td>#{show $ assignmentMetadataDuedate a}
+                    <td>#{show $ assignmentMetadataDate a}
