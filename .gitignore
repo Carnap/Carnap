@@ -27,4 +27,5 @@ Carnap-Server/assignments
 Carnap-Server/book/cache
 Carnap-Server/fay/Fay/Yesod.hs
 Carnap-Server/static/tmp/
+Carnap-Server/static/faygen*
 client_session_key.aes
