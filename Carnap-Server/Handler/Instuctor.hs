@@ -64,7 +64,7 @@ getInstructorR ident = do
           pointsByClass Birmingham2017 = 0
 
 getClass "gleachkr@gmail.com" = Just KSUSymbolicI2016
-getClass "sflorio@bham.ac.uk" = Just Birmingham2017
+getClass "florio.2@buckeyemail.osu.edu" = Just Birmingham2017
 getClass _ = Nothing
 
 uploadAssignmentForm = renderBootstrap3 BootstrapBasicForm $ (,,,)
