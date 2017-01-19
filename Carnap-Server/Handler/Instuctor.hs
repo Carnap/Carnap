@@ -9,7 +9,21 @@ import Handler.User (scoreById)
 import Text.Blaze.Html (toMarkup)
 import Data.Time
 import System.FilePath
-import System.Directory (getDirectoryContents)
+import System.Directory (getDirectoryContents,removeFile)
+
+deleteInstructorR :: Text -> Handler Value
+deleteInstructorR _ = do
+    fn <- requireJsonBody :: Handler Text
+    adir <- assignmentDir 
+    deleted <- runDB $ do mk <- getBy $ UniqueAssignment fn
+                          case mk of
+                              Just (Entity k v) -> do delete k
+                                                      liftIO $ removeFile (adir </> unpack fn)
+                                                      return True
+                              Nothing -> return False
+    if deleted 
+        then returnJson (fn ++ " deleted")
+        else returnJson ("unable to retrieve metadata for " ++ fn)
 
 postInstructorR :: Text -> Handler Html
 postInstructorR ident = do
@@ -28,14 +42,13 @@ postInstructorR ident = do
         _ -> setMessage "something went wrong with the form submission"
     redirect $ InstructorR ident
 
-
 getInstructorR :: Text -> Handler Html
 getInstructorR ident = do
     musr <- runDB $ getBy $ UniqueUser ident
     case musr of 
         Nothing -> defaultLayout nopage
         (Just (Entity uid _))  -> do
-            UserData firstname lastname enrolledin _ <- checkUserData ident uid 
+            UserData firstname lastname enrolledin _ <- checkUserData uid 
             let maybeclass = getClass ident
             case maybeclass of
                 Nothing -> defaultLayout nopage
@@ -62,6 +75,8 @@ getInstructorR ident = do
 
           pointsByClass KSUSymbolicI2016 = 725
           pointsByClass Birmingham2017 = 0
+
+          tryDelete (AssignmentMetadata fn _ _ _ _) = "tryDeleteAssignment(\"" ++ fn ++ "\")"
 
 getClass "gleachkr@gmail.com" = Just KSUSymbolicI2016
 getClass "florio.2@buckeyemail.osu.edu" = Just Birmingham2017

@@ -12,7 +12,7 @@ import Util.Database
 import qualified Data.Map as M
 
 deleteUserR :: Text -> Handler Value
-deleteUserR userId = do
+deleteUserR ident = do
     msg <- requireJsonBody :: Handler Text
     maybeCurrentUserId <- maybeAuthId
     case maybeCurrentUserId of
@@ -30,7 +30,7 @@ getUserR ident = do
     case musr of 
         Nothing -> defaultLayout nouserPage
         (Just (Entity k _))  -> do
-            UserData firstname lastname enrolledin _ <- checkUserData ident k
+            UserData firstname lastname enrolledin _ <- checkUserData k
             (synsubs, transsubs,dersubs, ttsubs) <- subsById k
             let isAdmin = ident == "gleachkr@gmail.com"
             let pointsAvailable = "725" :: Text

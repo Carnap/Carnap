@@ -1,18 +1,20 @@
-/static            StaticR     Static  appStatic
-/auth              AuthR       Auth    getAuth
-/fay-command       FaySiteR    FaySite getFaySite
+/static            StaticR      Static  appStatic
+/auth              AuthR        Auth    getAuth
+/fay-command       FaySiteR     FaySite getFaySite
 
-/command           CommandR    POST
+/command           CommandR     POST
 
-/favicon.ico       FaviconR    GET
-/robots.txt        RobotsR     GET
+/favicon.ico       FaviconR     GET
+/robots.txt        RobotsR      GET
 
-/                  HomeR       GET
-/about             InfoR       GET
-/register/#Text    RegisterR   GET POST
-/book              BookR       GET
-/book/#Int         ChapterR    GET
-/user/#Text        UserR       GET DELETE
-/instructor/#Text  InstructorR GET POST
-/hash/#Text        HashedR     GET
-/rules             RuleR       GET
+/                  HomeR        GET
+/about             InfoR        GET
+/register/#Text    RegisterR    GET POST
+/book              BookR        GET
+/book/#Int         ChapterR     GET
+/user/#Text        UserR        GET DELETE
+/instructor/#Text  InstructorR  GET POST DELETE
+/hash/#Text        HashedR      GET
+/assignments/      AssignmentsR GET
+/assignments/#Text AssignmentR  GET
+/rules             RuleR        GET

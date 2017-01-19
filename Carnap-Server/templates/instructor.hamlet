@@ -1,7 +1,7 @@
 <div.container>
     <h1> Instructor Page for #{firstname} #{lastname}
     <h2> Student Scores
-    <table class="table table-striped">
+    <table.table.table-striped>
         <thead>
             <th> Registered Student
             <th> Student Name
@@ -10,7 +10,7 @@
             $forall (u,UserData fn ln _ _) <- usersAndData
                 <tr>
                     <td>
-                        <a href="@{UserR (userIdent u)}">#{userIdent u}
+                        <a href=@{UserR (userIdent u)}>#{userIdent u}
                     <td>
                         #{ln}, #{fn}
                     <td>
@@ -29,6 +29,10 @@
         <tbody>
             $forall a <- assignmentMetadata
                 <tr>
-                    <td>#{assignmentMetadataFilename a}
+                    <td>
+                        <a href=@{AssignmentR $ assignmentMetadataFilename a}>
+                            #{assignmentMetadataFilename a}
                     <td>#{show $ assignmentMetadataDuedate a}
                     <td>#{show $ assignmentMetadataDate a}
+                    <td>
+                        <span.glyphicon.glyphicon-trash.ruleaction onclick=#{tryDelete a}>

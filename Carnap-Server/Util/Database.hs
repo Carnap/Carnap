@@ -14,9 +14,13 @@ tryInsert s = runDB $ do munique <- checkUnique s
 fromIdent ident = runDB $ do (Just (Entity k _)) <- getBy $ UniqueUser ident 
                              return k
 
--- | given an ident and a UserId, return the userdata or redirect to
+-- | given a UserId, return the userdata or redirect to
 -- registration
-checkUserData ident uid = do maybeData <- runDB $ getBy $ UniqueUserData uid
-                             case maybeData of
-                                Nothing -> redirect (RegisterR ident)
-                                Just (Entity _ userdata) -> return userdata
+checkUserData uid = do maybeData <- runDB $ getBy $ UniqueUserData uid
+                       muser <- runDB $ get uid
+                       case muser of
+                           Nothing -> do setMessage "no user found"  
+                                         redirect HomeR
+                           Just u -> case maybeData of
+                              Nothing -> redirect (RegisterR (userIdent u))
+                              Just (Entity _ userdata) -> return userdata

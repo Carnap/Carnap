@@ -17,7 +17,7 @@ import qualified Data.CaseInsensitive as CI
 import qualified Data.Text.Encoding as TE
 import Control.Monad.State (evalState, evalStateT)
 
--- XXX Fair amount of code-duplication between this and Handler/Book.hs
+-- XXX Fair amount of code-duplication between this and Handler/Book.hs. Perhaps merge those modules.
 
 getChapterR :: Int -> Handler Html
 getChapterR n = do cdirp <- chapterDir 
