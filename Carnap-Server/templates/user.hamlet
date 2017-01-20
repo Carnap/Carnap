@@ -16,15 +16,29 @@
     <div.row>
         <div.col-md-9 style="padding-right:30pt">
             <h3> Due Dates
-            #{dueDateTable}
+            ^{assignments}
         <div.col-md-3>
             <h3> Total Points Earned
             <span style="font-size:56pt; color:gray; padding-left:20pt">
                 #{totalScore (synsubs ++ (transsubs ++ (dersubs ++ ttsubs)))}/#{pointsAvailable}
     <div>
-    <h3> Derived Rules
     $maybe rules <- derivedRules
+        <h3> Derived Rules
         <div.derivedRules>
-            #{rules}
+            <table.table.table-striped>
+                <thead>
+                    <th> Name
+                    <th> Premises
+                    <th> Conclusion
+                    <th> Action
+                <tbody>
+                    $forall SavedDerivedRule dr name _ _ <- rules
+                        $maybe dr' <- decodeStrict dr
+                            <tr>
+                                <td>D-#{name}
+                                <td>#{intercalate "," $ map show (premises dr')}
+                                <td>#{show $ conclusion dr'}
+                                <td>
+                                    <span.glyphicon.glyphicon-trash.ruleaction onclick=#{tryDelete name}>
     <a href=@{AuthR LogoutR}>
         Logout

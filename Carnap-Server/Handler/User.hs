@@ -8,6 +8,7 @@ import Carnap.Languages.PurePropositional.Logic (DerivedRule(..))
 import Carnap.GHCJS.SharedTypes
 import Data.Aeson (decodeStrict)
 import Data.Time
+import Util.Data
 import Util.Database
 import qualified Data.Map as M
 
@@ -31,9 +32,11 @@ getUserR ident = do
         Nothing -> defaultLayout nouserPage
         (Just (Entity k _))  -> do
             UserData firstname lastname enrolledin _ <- checkUserData k
-            (synsubs, transsubs,dersubs, ttsubs) <- subsById k
-            let isAdmin = ident == "gleachkr@gmail.com"
-            let pointsAvailable = "725" :: Text
+            (synsubs, transsubs,dersubs, ttsubs) <- subsByIdAndSource (sourceOf enrolledin) k
+            let isAdmin = ident `elem` 
+                            ["gleachkr@gmail.com","florio.2@buckeyemail.osu.edu"]
+            assignments <- assignmentsOf enrolledin
+            let pointsAvailable = show $ pointsOf enrolledin 
             derivedRules <- getDrList
             defaultLayout $ do
                 setTitle "Welcome To Your Homepage!"
@@ -47,6 +50,36 @@ getUserR ident = do
                             <p> This user does not exist
                        |]
 
+          assignmentsOf KSUSymbolicI2016 = return $
+            [whamlet| 
+            <table.table.table-striped>
+                <thead>
+                    <th> Problem Set
+                    <th> Due Date
+                <tbody>
+                    $forall (n,date) <- M.toList dueDates
+                        <tr>
+                            <td>#{show n}
+                            <td>#{formatted date}
+            |]
+          assignmentsOf theclass = do
+             asmd <- runDB $ selectList [AssignmentMetadataCourse ==. theclass] []
+             return $
+                [whamlet|
+                <table.table.table-striped>
+                    <thead>
+                        <th> Assignment
+                        <th> Due Date
+                    <tbody>
+                        $forall a <- map entityVal asmd
+                            <tr>
+                                <td>
+                                    <a href=@{AssignmentR $ assignmentMetadataFilename a}>
+                                        #{assignmentMetadataFilename a}
+                                <td>#{show $ assignmentMetadataDuedate a}
+                |]
+
+
 --------------------------------------------------------
 --Grading
 --------------------------------------------------------
@@ -59,8 +92,9 @@ exPairToScore ((x,y),z) =  case utcDueDate x of
                                             else 5
                               Nothing -> 0
 
-scoreById uid = do (a,b,c,d) <- subsById uid
-                   return $ totalScore $ a ++ b ++ c ++ d
+scoreByIdAndSource thesource uid = 
+        do (a,b,c,d) <- subsByIdAndSource thesource uid
+           return $ totalScore $ a ++ b ++ c ++ d
 
 totalScore xs = foldr (+) 0 (map exPairToScore xs)
 
@@ -127,29 +161,7 @@ exPairToTable xs = B.table B.! class_ "table table-striped" $ do
                                           B.td $ B.toHtml (formatted $ asUTC z)
                                           B.td $ B.toHtml $ show $ exPairToScore ((x,y),z)
 
-dueDateTable :: Html
-dueDateTable = B.table B.! class_ "table table-striped" $ do
-                  B.thead $ do
-                      B.th "Problem Set"
-                      B.th "Due Date"
-                  B.tbody $ mapM_ toRow (M.toList dueDates) 
-        where toRow (n, d) = B.tr $ do B.td $ B.toHtml $ show n
-                                       B.td $ B.toHtml $ formatted d
-
-formatRules rules = B.table B.! class_ "table table-striped" $ do
-        B.thead $ do
-            B.th "Name"
-            B.th "Premises"
-            B.th "Conclusion"
-            B.th "Action"
-        B.tbody $ mapM_ toRow rules
-    where toRow (SavedDerivedRule dr n _ _) = let (Just dr') = decodeStrict dr in 
-                                              B.tr $ do B.td $ B.toHtml $ "D-" ++ n
-                                                        B.td $ B.toHtml $ intercalate "," $ map show $ premises dr'
-                                                        B.td $ B.toHtml $ show $ conclusion dr'
-                                                        B.td $ delAct n
-          delAct name = B.span B.! class_ "glyphicon glyphicon-trash ruleaction" 
-                               B.! onclick (B.textValue $ "tryDeleteRule(\"" ++ name ++ "\")") $ ""
+tryDelete name = "tryDeleteRule(\"" <> name <> "\")"
 
 --------------------------------------------------------
 --Database Handling
@@ -159,8 +171,9 @@ formatRules rules = B.table B.! class_ "table table-striped" $ do
 getDrList = do maybeCurrentUserId <- maybeAuthId
                case maybeCurrentUserId of
                    Nothing -> return Nothing
-                   Just u -> do savedRules <- runDB $ selectList [SavedDerivedRuleUserId ==. u] []
-                                return $ Just (formatRules (map entityVal savedRules))
+                   Just u -> do savedRules <- runDB $ selectList 
+                                    [SavedDerivedRuleUserId ==. u] []
+                                return $ Just (map entityVal savedRules)
     
 synPair (SyntaxCheckSubmission prob time pu _)  = (Just pu, prob,time)
 
@@ -170,30 +183,21 @@ ttPair  (TruthTableSubmission prob time pu _) = (Just pu, prob, time)
 
 derPair (DerivationSubmission prob _ time pu _) = (Just pu, prob, time)
 
-subsById v = do synsubs'  <- runDB $ selectList [SyntaxCheckSubmissionUserId ==. v] []
-                let synsubs = map (separate . synPair . entityVal) synsubs'
-                transsubs'  <- runDB $ selectList [TranslationSubmissionUserId ==. v] []
-                let transsubs = map (separate . transPair . entityVal) transsubs'
-                dersubs'  <- runDB $ selectList [DerivationSubmissionUserId ==. v] []
-                let dersubs = map (separate . derPair . entityVal) dersubs'
-                ttsubs'  <- runDB $ selectList [TruthTableSubmissionUserId ==. v] []
-                let ttsubs = map (separate . ttPair . entityVal) ttsubs'
-                --synsubs   <- yourSubs synPair v
-                -- transsubs <- yourSubs transPair v
-                -- dersubs   <- yourSubs derPair v
-                -- ttsubs    <- yourSubs ttPair v
-                return (synsubs, transsubs, dersubs, ttsubs)
+subsByIdAndSource thesource v = 
+        do synsubs'  <- runDB $ selectList [ SyntaxCheckSubmissionUserId ==. v
+                                           , SyntaxCheckSubmissionSource ==. thesource] []
+           let synsubs = map (separate . synPair . entityVal) synsubs'
+           transsubs'  <- runDB $ selectList [ TranslationSubmissionUserId ==. v
+                                             , TranslationSubmissionSource ==. thesource] []
+           let transsubs = map (separate . transPair . entityVal) transsubs'
+           dersubs'  <- runDB $ selectList [ DerivationSubmissionUserId ==. v
+                                           , DerivationSubmissionSource ==. thesource] []
+           let dersubs = map (separate . derPair . entityVal) dersubs'
+           ttsubs'  <- runDB $ selectList [ TruthTableSubmissionUserId ==. v
+                                          , TruthTableSubmissionSource ==. thesource] []
+           let ttsubs = map (separate . ttPair . entityVal) ttsubs'
+           return (synsubs, transsubs, dersubs, ttsubs)
     where separate = \(_,x,y) -> (break (== ':') x ,y)
-
-yourSubs pair userId = do subs <- runDB $ selectList [] []
-                          -- XXX: It would almost certainly be more
-                          -- efficient to do filtering in the query rather
-                          -- than after. That makese the code a little less
-                          -- generic, but it can probably be fixed.
-                          let pairs = map (pair . entityVal) subs
-                          cpairs <- mapM clean pairs
-                          let upairs = filter (\(x,_,_) -> x == userId) cpairs
-                          return $ map (\(_,x,y) -> (break (== ':') x ,y)) upairs
 
 clean :: (Maybe (Key User), Text, Text) -> Handler (Text,Text,Text)
 clean (Nothing, s,s')  = return ("annonyous", s,s')

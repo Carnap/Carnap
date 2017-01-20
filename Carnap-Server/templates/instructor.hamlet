@@ -14,7 +14,7 @@
                     <td>
                         #{ln}, #{fn}
                     <td>
-                        #{tryLookup allScores (userIdent u)}/#{show $ pointsByClass theclass}
+                        #{tryLookup allScores (userIdent u)}/#{show $ pointsOf theclass}
     <h2> Upload Assignments
     <div.form-actions>
         <form method=post enctype=#{enctype}>

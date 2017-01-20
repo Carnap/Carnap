@@ -5,7 +5,7 @@ import Util.Data
 import Util.Database
 import Yesod.Form.Bootstrap3
 import Yesod.Form.Jquery
-import Handler.User (scoreById)
+import Handler.User (scoreByIdAndSource)
 import Text.Blaze.Html (toMarkup)
 import Data.Time
 import System.FilePath
@@ -57,7 +57,7 @@ getInstructorR ident = do
                        let allUids = (map userDataUserId  allUserData)
                        musers <- mapM (\x -> runDB (get x)) allUids
                        let users = catMaybes musers
-                       allScores <- mapM scoreById allUids >>= return . zip (map userIdent users)
+                       allScores <- mapM (scoreByIdAndSource (sourceOf theclass)) allUids >>= return . zip (map userIdent users)
                        let usersAndData = zip users allUserData
                        assignmentMetadata <- map entityVal <$> listAssignmentMetadata theclass
                        ((_,assignmentWidget),enctype) <- runFormPost uploadAssignmentForm
@@ -72,9 +72,6 @@ getInstructorR ident = do
                     <div.container>
                         <p> Instructor not found.
                    |]
-
-          pointsByClass KSUSymbolicI2016 = 725
-          pointsByClass Birmingham2017 = 0
 
           tryDelete (AssignmentMetadata fn _ _ _ _) = "tryDeleteAssignment(\"" ++ fn ++ "\")"
 
