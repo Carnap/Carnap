@@ -58,7 +58,7 @@ tryTrans o ref f = onEnter $ do (Just t) <- target :: EventM HTMLInputElement Ke
                                 (Just ival)  <- getValue t
                                 case parse (spaces *> purePropFormulaParser "PQRSTUVW") "" ival of
                                       Right f' -> liftIO $ checkForm f'
-                                      Left e -> liftIO $ message "Sorry, try again---that formula isn't gramatical."
+                                      Left e -> message "Sorry, try again---that formula isn't gramatical."
    where checkForm f' 
             | f' == f = do message "perfect match!"
                            writeIORef ref True
@@ -74,7 +74,7 @@ tryFOLTrans o ref f = onEnter $ do (Just t) <- target :: EventM HTMLInputElement
                                    (Just ival)  <- getValue t
                                    case parse (spaces *> folFormulaParser) "" ival of
                                           Right f' -> liftIO $ checkForm f'
-                                          Left e -> liftIO $ message "Sorry, try again---that formula isn't gramatical."
+                                          Left e -> message "Sorry, try again---that formula isn't gramatical."
   where checkForm f' 
             | f' == f = do message "perfect match!"
                            writeIORef ref True
@@ -84,8 +84,11 @@ tryFOLTrans o ref f = onEnter $ do (Just t) <- target :: EventM HTMLInputElement
 
 trySubmit ref l f = do isFinished <- liftIO $ readIORef ref
                        if isFinished
-                         then liftIO $ sendJSON 
-                                    (SubmitTranslation (l ++ ":" ++ show f) Book) 
-                                    (loginCheck $ "Submitted Translation for Exercise " ++ l)
-                                    errorPopup
-                         else liftIO $ message "not yet finished (remember to press return to check your work before submitting!)"
+                         then do source <- liftIO submissionSource
+                                 case source of 
+                                    Nothing -> message "Not able to identify problem source"
+                                    Just so -> liftIO $ sendJSON 
+                                                (SubmitTranslation (l ++ ":" ++ show f) Book) 
+                                                (loginCheck $ "Submitted Translation for Exercise " ++ l)
+                                                errorPopup
+                         else message "not yet finished (remember to press return to check your work before submitting!)"

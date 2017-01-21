@@ -25,7 +25,6 @@ import GHCJS.DOM.Element
 import GHCJS.DOM.Types
 import GHCJS.DOM.HTMLInputElement (HTMLInputElement, getValue, setValue)
 import GHCJS.DOM.Document (Document,createElement, getBody, getDefaultView)
-import GHCJS.DOM.Window (alert)
 import GHCJS.DOM.Node (appendChild, getParentNode, insertBefore)
 import GHCJS.DOM.KeyboardEvent
 import GHCJS.DOM.EventM
@@ -37,11 +36,14 @@ syntaxCheckAction = initElements getCheckers activateChecker
 trySubmit :: IORef (PureForm,[(PureForm,Int)], Tree (PureForm,Int),Int) -> Window -> String -> EventM HTMLInputElement e ()
 trySubmit ref w l = do (f,forms,_,_) <- liftIO $ readIORef ref
                        case forms of 
-                          [] -> liftIO $ sendJSON 
-                            (SubmitSyntaxCheck (l ++ ":" ++ show f) Book) 
-                            (loginCheck $ "Submitted Syntax-Check for Exercise " ++ l) 
-                            errorPopup
-                          _  -> alert w "not yet finished"
+                          [] -> do source <- liftIO submissionSource
+                                   case source of 
+                                        Nothing -> message "Not able to identify problem source"
+                                        Just s -> liftIO $ sendJSON 
+                                                    (SubmitSyntaxCheck (l ++ ":" ++ show f) Book) 
+                                                    (loginCheck $ "Submitted Syntax-Check for Exercise " ++ l) 
+                                                    errorPopup
+                          _  -> message "not yet finished"
 
 -- XXX:this could be cleaner. The basic idea is that we maintain a "stage"
 --in development and use the stages to match formulas in the tree with
@@ -92,7 +94,7 @@ tryMatch o ref w sf = onEnter $ do (Just t) <- target :: EventM HTMLInputElement
                               appendChild o ul
                               return ()
               message s = do (Just w') <- getDefaultView w
-                             alert w' s
+                             message s
 
 parseConnective :: Monad m => ParsecT String u m String
 parseConnective = choice [getAnd, getOr, getIff, getIf, getNeg]

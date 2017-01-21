@@ -6,7 +6,7 @@ module Lib
     adjustFirstMatching, decodeHtml, syncScroll, reloadPage, initElements,
     loginCheck,errorPopup, getInOutElts, getInOutGoalElts, withLabel,
     formAndLabel,seqAndLabel, folSeqAndLabel, folFormAndLabel,
-    message, IOGoal(..), genericUpdateResults2) where
+    message, IOGoal(..), genericUpdateResults2, submissionSource) where
 
 import Data.Aeson
 import qualified Data.ByteString.Lazy as BSL
@@ -44,6 +44,7 @@ import GHCJS.DOM.Event
 import GHCJS.DOM.KeyboardEvent
 import GHCJS.DOM.EventM
 import GHCJS.DOM.EventTarget
+import Carnap.GHCJS.SharedTypes
 import Carnap.Languages.PurePropositional.Syntax (PureForm)
 import Carnap.Languages.PurePropositional.Logic (propSeqParser)
 import Carnap.Languages.PureFirstOrder.Parser (folFormulaParser)
@@ -320,9 +321,20 @@ foreign import javascript unsafe "alert($1)" alert' :: JSString -> IO ()
 
 foreign import javascript unsafe "window.location.href()" currentUrl :: IO JSString
 
-message = alert
+foreign import javascript unsafe "(function(){try {var v=submission_source;} catch (e) {var v=\"no submission source found\";}; return v})()" submissionQueryJS :: IO JSString
+
+submissionSource = do qr <- submissionQueryJS
+                      case fromJSString qr of
+                          "book" -> return $ Just Book
+                          "birmingham" -> return $ Just BirminghamAssignment
+                          s -> do return Nothing
+
+message s = liftIO (alert s)
 
 #else
+
+submissionSource :: IO (Maybe ProblemSource)
+submissionSource = Prelude.error "submissionSource requires the GHCJS FFI"
 
 sendJSON :: ToJSON a => a -> (String -> IO ()) -> (String -> IO ()) -> IO ()
 sendJSON = Prelude.error "sendJSON requires the GHCJS FFI"
@@ -338,7 +350,7 @@ alert = Prelude.error "alert requires the GHCJS FFI"
 
 currentUrl = Prelude.error "currentUrl requires the GHCJS FFI"
 
-message = alert
+message s = liftIO (alert s)
 
 reloadPage :: IO ()
 reloadPage = Prelude.error "you can't reload the page without the GHCJS FFI"

@@ -70,11 +70,14 @@ activateTruthTables w (Just (i,o,classes))
 trySubmit :: IORef Bool -> String -> Window -> String -> EventM HTMLInputElement e ()
 trySubmit ref s w l = do isDone <- liftIO $ readIORef ref
                          if isDone 
-                            then  liftIO $ sendJSON 
-                                    (SubmitTruthTable (l ++ ":" ++ s) Book) 
-                                    (loginCheck $ "Submitted Truth-Table for Exercise " ++ l) 
-                                    errorPopup
-                            else alert w "not yet finished"
+                            then do source <- liftIO submissionSource
+                                    case source of 
+                                        Nothing -> message "Not able to identify problem source"
+                                        Just so -> liftIO $ sendJSON 
+                                                    (SubmitTruthTable (l ++ ":" ++ s) so) 
+                                                    (loginCheck $ "Submitted Truth-Table for Exercise " ++ l) 
+                                                    errorPopup
+                            else message "not yet finished"
 
 createValidityTruthTable :: Document -> PropSequentCalc Sequent -> (Element,Element) -> IORef Bool -> IO (IORef (Map (Int, Int) Bool))
 createValidityTruthTable w (antced :|-: (SS succed)) (i,o) ref =  

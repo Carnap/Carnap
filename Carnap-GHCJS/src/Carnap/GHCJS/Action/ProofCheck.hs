@@ -27,7 +27,7 @@ import GHCJS.DOM.HTMLElement (insertAdjacentElement)
 import GHCJS.DOM.Types
 import GHCJS.DOM.HTMLTextAreaElement (getValue)
 import GHCJS.DOM.Document (createElement, getDefaultView)
-import GHCJS.DOM.Window (alert, prompt)
+import GHCJS.DOM.Window (prompt)
 import GHCJS.DOM.Node (appendChild, getParentNode )
 --import GHCJS.DOM.EventM
 import Control.Monad.IO.Class (liftIO)
@@ -167,11 +167,14 @@ computeRule drs w ref v (g, fd) = do rules <- liftIO $ readIORef drs
 trySubmit l s ref w i = do isFinished <- liftIO $ readIORef ref
                            if isFinished
                              then do (Just v) <- getValue (castToHTMLTextAreaElement i)
-                                     liftIO $ sendJSON 
-                                        (SubmitDerivation (l ++ ":" ++ show s) v Book) 
-                                        (loginCheck $ "Submitted Derivation for Exercise " ++ l)
-                                        errorPopup
-                             else alert w "not yet finished"
+                                     source <- liftIO submissionSource
+                                     case source of 
+                                        Nothing -> message "Not able to identify problem source"
+                                        Just s -> liftIO $ sendJSON 
+                                                    (SubmitDerivation (l ++ ":" ++ show s) v s) 
+                                                    (loginCheck $ "Submitted Derivation for Exercise " ++ l)
+                                                    errorPopup
+                             else message "not yet finished"
 
 trySave drs ref w i = do isFinished <- liftIO $ readIORef ref
                          rules <- liftIO $ readIORef drs
@@ -179,7 +182,7 @@ trySave drs ref w i = do isFinished <- liftIO $ readIORef ref
                            then do (Just v) <- getValue (castToHTMLTextAreaElement i)
                                    let Feedback mseq _ = toDisplaySequence processLine . parsePropProof (M.fromList rules) $ v
                                    case mseq of
-                                    Nothing -> alert w "A rule can't be extracted from this proof"
+                                    Nothing -> message "A rule can't be extracted from this proof"
                                     (Just (a :|-: (SS c))) -> do
                                         -- XXX : throw a more transparent error here if necessary
                                         let prems = map (toSchema . fromSequent) (toListOf concretes a)
@@ -188,13 +191,13 @@ trySave drs ref w i = do isFinished <- liftIO $ readIORef ref
                                         case mname of
                                             (Just name) -> if allcaps name 
                                                                then liftIO $ sendJSON (SaveDerivedRule name $ P.DerivedRule conc prems) loginCheck error
-                                                               else alert w "rule name must be all capital letters"
-                                            Nothing -> alert w "No name entered"
-                           else alert w "not yet finished"
-    where loginCheck c | c == "No User" = alert w "You need to log in before you can save a rule"
-                       | c == "Clash"   = alert w "it appears you've already got a rule with this name"
-                       | otherwise      = alert w "Saved your new rule!" >> reloadPage
-          error c = alert w ("Something has gone wrong. Here's the error: " ++ c)
+                                                               else message "rule name must be all capital letters"
+                                            Nothing -> message "No name entered"
+                           else message "not yet finished"
+    where loginCheck c | c == "No User" = message "You need to log in before you can save a rule"
+                       | c == "Clash"   = message "it appears you've already got a rule with this name"
+                       | otherwise      = message "Saved your new rule!" >> reloadPage
+          error c = message ("Something has gone wrong. Here's the error: " ++ c)
           allcaps s = and (map (`elem` "ABCDEFGHIJKLMNOPQRSTUVWXYZ") s)
 
 -------------------------
