@@ -20,13 +20,13 @@ postCommandR = do
            Nothing -> returnJson ("No User" :: String)
            Just u  -> case cmd of
                 EchoBack (s,b) -> returnJson (reverse s)
-                SubmitSyntaxCheck f  Book -> submit SyntaxCheckSubmission f u CarnapTextbook
-                SubmitTranslation f  Book -> submit TranslationSubmission f u CarnapTextbook
-                SubmitTruthTable f   Book -> submit TruthTableSubmission f u CarnapTextbook
-                SubmitDerivation s d Book -> do time <- liftIO getCurrentTime               
-                                                let sub = DerivationSubmission (pack s) (pack d) 
-                                                                  (pack $ show time) u CarnapTextbook
-                                                tryInsert sub >>= afterInsert
+                SubmitSyntaxCheck f source -> submit SyntaxCheckSubmission f u (liftSource source) 
+                SubmitTranslation f source -> submit TranslationSubmission f u (liftSource source) 
+                SubmitTruthTable f source  -> submit TruthTableSubmission  f u (liftSource source) 
+                SubmitDerivation s d source-> do time <- liftIO getCurrentTime
+                                                 let sub = DerivationSubmission (pack s) (pack d) 
+                                                                   (pack $ show time) u (liftSource source)
+                                                 tryInsert sub >>= afterInsert
                 SaveDerivedRule n dr -> do time <- liftIO getCurrentTime
                                            let save = SavedDerivedRule (toStrict $ encode dr) (pack n) (pack $ show time) u
                                            tryInsert save >>= afterInsert
@@ -34,6 +34,9 @@ postCommandR = do
                                                  let packagedRules = catMaybes $ map (packageRule . entityVal) savedRules
                                                  liftIO $ print $ "sending" ++ (show $ toJSON packagedRules)
                                                  returnJson $ show $ toJSON packagedRules
+
+liftSource Book = CarnapTextbook
+liftSource BirminghamAssignment = BirminghamAssignment2017
 
 packageRule (SavedDerivedRule dr n _ _) = case (decodeStrict dr :: Maybe DerivedRule) of
                                               Just r -> Just (unpack n, r)

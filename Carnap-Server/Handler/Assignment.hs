@@ -4,6 +4,7 @@ import Import
 import Util.Data
 import Util.Database
 import Yesod.Markdown
+import Text.Julius (juliusFile)
 import System.Directory (doesFileExist,getDirectoryContents)
 import Text.Pandoc.Walk (walkM, walk)
 import Filter.SynCheckers
@@ -47,11 +48,22 @@ getAssignmentR t = do adir <- assignmentDir
                         then defaultLayout nopage
                         else do ehtml <- lift $ fileToHtml path
                                 case ehtml of
-                                    Right html -> defaultLayout $ layout html
                                     Left err -> defaultLayout $ layout (show err)
+                                    Right html -> do
+                                        defaultLayout $ do
+                                            toWidgetHead $(juliusFile "templates/command.julius")
+                                            toWidgetHead [julius|var submission_source="birmingham";|]
+                                            addScript $ StaticR ghcjs_rts_js
+                                            addScript $ StaticR ghcjs_allactions_lib_js
+                                            addScript $ StaticR ghcjs_allactions_out_js
+                                            addStylesheet $ StaticR css_tree_css
+                                            addStylesheet $ StaticR css_exercises_css
+                                            layout html
+                                            addScript $ StaticR ghcjs_allactions_runmain_js
     where layout c = [whamlet|
                         <div.container>
-                            #{c}
+                            <article>
+                                #{c}
                         |]
 
           nopage = layout ("assignment not found" :: Text)
