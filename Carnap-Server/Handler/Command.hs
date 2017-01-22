@@ -20,12 +20,12 @@ postCommandR = do
            Nothing -> returnJson ("No User" :: String)
            Just u  -> case cmd of
                 EchoBack (s,b) -> returnJson (reverse s)
-                SubmitSyntaxCheck f source -> submit SyntaxCheckSubmission f u (liftSource source) 
-                SubmitTranslation f source -> submit TranslationSubmission f u (liftSource source) 
-                SubmitTruthTable f source  -> submit TruthTableSubmission  f u (liftSource source) 
+                SubmitSyntaxCheck f source -> submit SyntaxCheckSubmission f u (liftSource source) Nothing
+                SubmitTranslation f source -> submit TranslationSubmission f u (liftSource source) Nothing
+                SubmitTruthTable f source  -> submit TruthTableSubmission  f u (liftSource source) Nothing
                 SubmitDerivation s d source-> do time <- liftIO getCurrentTime
                                                  let sub = DerivationSubmission (pack s) (pack d) 
-                                                                   (pack $ show time) u (liftSource source)
+                                                                   (pack $ show time) u (liftSource source) Nothing
                                                  tryInsert sub >>= afterInsert
                 SaveDerivedRule n dr -> do time <- liftIO getCurrentTime
                                            let save = SavedDerivedRule (toStrict $ encode dr) (pack n) (pack $ show time) u
@@ -42,10 +42,10 @@ packageRule (SavedDerivedRule dr n _ _) = case (decodeStrict dr :: Maybe Derived
                                               Just r -> Just (unpack n, r)
                                               _ -> Nothing
 
-submit typ f u c = do time <- liftIO getCurrentTime
-                      let sub = typ (pack f) (pack $ show time) u c
-                      success <- tryInsert sub
-                      afterInsert success
+submit typ f u c a = do time <- liftIO getCurrentTime
+                        let sub = typ (pack f) (pack $ show time) u c a
+                        success <- tryInsert sub
+                        afterInsert success
 
 afterInsert success = if success then returnJson ("submitted!" :: String) 
                                  else returnJson ("Clash" :: String)

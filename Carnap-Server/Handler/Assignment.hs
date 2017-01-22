@@ -4,7 +4,7 @@ import Import
 import Util.Data
 import Util.Database
 import Yesod.Markdown
-import Text.Julius (juliusFile)
+import Text.Julius (juliusFile,rawJS)
 import System.Directory (doesFileExist,getDirectoryContents)
 import Text.Pandoc.Walk (walkM, walk)
 import Filter.SynCheckers
@@ -53,9 +53,11 @@ getAssignmentR t = do adir <- assignmentDir
                                         defaultLayout $ do
                                             toWidgetHead $(juliusFile "templates/command.julius")
                                             toWidgetHead [julius|var submission_source="birmingham";|]
+                                            toWidgetHead [julius|var assignment_name="#{rawJS t}";|] --Better to actually retrieve this from the metadata
                                             addScript $ StaticR ghcjs_rts_js
                                             addScript $ StaticR ghcjs_allactions_lib_js
                                             addScript $ StaticR ghcjs_allactions_out_js
+                                            addStylesheet $ StaticR css_exercises_css
                                             addStylesheet $ StaticR css_tree_css
                                             addStylesheet $ StaticR css_exercises_css
                                             layout html
