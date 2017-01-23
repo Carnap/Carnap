@@ -6,13 +6,13 @@
             <a href=@{InstructorR ident}>here
     <h3 style="padding-top:10pt"> Completed Problems
     <h4> Syntax Checking
-    #{exPairToTable synsubs}
+    #{syntable}
     <h4> Translation
-    #{exPairToTable transsubs}
+    #{transtable}
     <h4> Derivation
-    #{exPairToTable dersubs}
+    #{dertable}
     <h4> Truth Tables
-    #{exPairToTable ttsubs}
+    #{tttable}
     <div.row>
         <div.col-md-9 style="padding-right:30pt">
             <h3> Due Dates
@@ -20,7 +20,7 @@
         <div.col-md-3>
             <h3> Total Points Earned
             <span style="font-size:56pt; color:gray; padding-left:20pt">
-                #{totalScore (synsubs ++ (transsubs ++ (dersubs ++ ttsubs)))}/#{pointsAvailable}
+                #{score}/#{pointsAvailable}
     <div>
     $maybe rules <- derivedRules
         <h3> Derived Rules

@@ -85,10 +85,11 @@ tryFOLTrans o ref f = onEnter $ do (Just t) <- target :: EventM HTMLInputElement
 trySubmit ref l f = do isFinished <- liftIO $ readIORef ref
                        if isFinished
                          then do source <- liftIO submissionSource
+                                 key <- liftIO assignmentKey
                                  case source of 
                                     Nothing -> message "Not able to identify problem source"
                                     Just so -> liftIO $ sendJSON 
-                                                (SubmitTranslation (l ++ ":" ++ show f) Book) 
+                                                (SubmitTranslation (l ++ ":" ++ show f) Book key) 
                                                 (loginCheck $ "Submitted Translation for Exercise " ++ l)
                                                 errorPopup
                          else message "not yet finished (remember to press return to check your work before submitting!)"

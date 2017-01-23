@@ -37,10 +37,11 @@ trySubmit :: IORef (PureForm,[(PureForm,Int)], Tree (PureForm,Int),Int) -> Windo
 trySubmit ref w l = do (f,forms,_,_) <- liftIO $ readIORef ref
                        case forms of 
                           [] -> do source <- liftIO submissionSource
+                                   key <- liftIO assignmentKey
                                    case source of 
                                         Nothing -> message "Not able to identify problem source"
                                         Just s -> liftIO $ sendJSON 
-                                                    (SubmitSyntaxCheck (l ++ ":" ++ show f) Book) 
+                                                    (SubmitSyntaxCheck (l ++ ":" ++ show f) Book key) 
                                                     (loginCheck $ "Submitted Syntax-Check for Exercise " ++ l) 
                                                     errorPopup
                           _  -> message "not yet finished"

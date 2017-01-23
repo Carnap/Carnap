@@ -168,10 +168,11 @@ trySubmit l s ref w i = do isFinished <- liftIO $ readIORef ref
                            if isFinished
                              then do (Just v) <- getValue (castToHTMLTextAreaElement i)
                                      source <- liftIO submissionSource
+                                     key <- liftIO assignmentKey
                                      case source of 
                                         Nothing -> message "Not able to identify problem source"
                                         Just s -> liftIO $ sendJSON 
-                                                    (SubmitDerivation (l ++ ":" ++ show s) v s) 
+                                                    (SubmitDerivation (l ++ ":" ++ show s) v s key) 
                                                     (loginCheck $ "Submitted Derivation for Exercise " ++ l)
                                                     errorPopup
                              else message "not yet finished"

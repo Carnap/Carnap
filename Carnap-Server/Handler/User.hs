@@ -38,6 +38,11 @@ getUserR ident = do
             assignments <- assignmentsOf enrolledin
             let pointsAvailable = show $ pointsOf enrolledin 
             derivedRules <- getDrList
+            syntable <- problemsToTable synsubs
+            transtable <- problemsToTable transsubs
+            dertable <- problemsToTable dersubs
+            tttable <- problemsToTable ttsubs
+            score <- totalScore synsubs transsubs dersubs ttsubs
             defaultLayout $ do
                 setTitle "Welcome To Your Homepage!"
                 $(widgetFile "user")
@@ -85,18 +90,33 @@ getUserR ident = do
 --------------------------------------------------------
 --functions for calculating grades
 
-exPairToScore :: ((Text,Text),Text) -> Int
-exPairToScore ((x,y),z) =  case utcDueDate x of                      
-                              Just d -> if asUTC z `laterThan` d       
-                                            then 2
-                                            else 5
-                              Nothing -> 0
+toScore p = case assignment p of
+                   Nothing -> 
+                        case utcDueDate (problem p) of                      
+                              Just d -> if asUTC (submitted p) `laterThan` d       
+                                            then return (2 :: Int)
+                                            else return (5 :: Int)
+                              Nothing -> return (0 :: Int)
+                   Just a -> do
+                        mmd <- runDB $ get a
+                        case mmd of
+                            Nothing -> return (0 :: Int)
+                            Just v -> do
+                                if asUTC (submitted p) `laterThan` assignmentMetadataDuedate v
+                                    then return (2 :: Int)
+                                    else return (5 :: Int)
+
+                            
 
 scoreByIdAndSource thesource uid = 
         do (a,b,c,d) <- subsByIdAndSource thesource uid
-           return $ totalScore $ a ++ b ++ c ++ d
+           totalScore a b c d
 
-totalScore xs = foldr (+) 0 (map exPairToScore xs)
+totalScore a b c d = do
+           (a',b',c',d') <- (,,,) <$> score a <*> score b <*> score c <*> score d
+           return $ a' + b' + c' + d'
+   where score xs = do xs' <- mapM toScore xs
+                       return $ foldr (+) 0 xs'
 
 --------------------------------------------------------
 --Due dates
@@ -116,7 +136,7 @@ utcDueDate x = M.lookup (read $ unpack (takeWhile (/= '.') x) :: Int) dueDates
 laterThan :: UTCTime -> UTCTime -> Bool
 laterThan t1 t2 = diffUTCTime t1 t2 > 0
 
--- TODO: this should be pushed to a configuration file
+-- TODO this should be pushed to a configuration file
 -- remember, the day clicks over at midnight.
 dueDates :: M.Map Int UTCTime
 dueDates = M.fromList [( 1, toTime "11:59 pm CDT, Aug 30, 2016")
@@ -144,22 +164,24 @@ dueDates = M.fromList [( 1, toTime "11:59 pm CDT, Aug 30, 2016")
 --------------------------------------------------------
 --functions for manipulating html
 
-exPairToTable :: [((Text,Text), Text)] -> Html
-exPairToTable xs = B.table B.! class_ "table table-striped" $ do
-                        B.col B.! style "width:50px"
-                        B.col B.! style "width:100px"
-                        B.col B.! style "width:100px"
-                        B.col B.! style "width:100px"
-                        B.thead $ do
-                            B.th "Exercise"
-                            B.th "Content"
-                            B.th "Submitted"
-                            B.th "Points Earned"
-                        B.tbody $ mapM_ toRow xs
-        where toRow ((x,y),z) = B.tr $ do B.td $ B.toHtml x
-                                          B.td $ B.toHtml (drop 1 y)
-                                          B.td $ B.toHtml (formatted $ asUTC z)
-                                          B.td $ B.toHtml $ show $ exPairToScore ((x,y),z)
+problemsToTable xs = do rows <- mapM toRow xs
+                        return $ do B.table B.! class_ "table table-striped" $ do
+                                        B.col B.! style "width:50px"
+                                        B.col B.! style "width:100px"
+                                        B.col B.! style "width:100px"
+                                        B.col B.! style "width:100px"
+                                        B.thead $ do
+                                            B.th "Exercise"
+                                            B.th "Content"
+                                            B.th "Submitted"
+                                            B.th "Points Earned"
+                                        B.tbody $ sequence_ rows
+        where toRow p = do score <- toScore p 
+                           return $ do
+                              B.tr $ do B.td $ B.toHtml (takeWhile (/= ':') $ problem p)
+                                        B.td $ B.toHtml (drop 1 . dropWhile (/= ':') $ problem p)
+                                        B.td $ B.toHtml (formatted $ asUTC $ submitted p )
+                                        B.td $ B.toHtml $ show $ score
 
 tryDelete name = "tryDeleteRule(\"" <> name <> "\")"
 
@@ -174,30 +196,42 @@ getDrList = do maybeCurrentUserId <- maybeAuthId
                    Just u -> do savedRules <- runDB $ selectList 
                                     [SavedDerivedRuleUserId ==. u] []
                                 return $ Just (map entityVal savedRules)
-    
-synPair (SyntaxCheckSubmission prob time pu _ _)  = (Just pu, prob,time)
 
-transPair (TranslationSubmission prob time pu _ _)  = (Just pu, prob,time)
+class Problem p where
+        problem :: p -> Text
+        submitted :: p -> Text
+        assignment :: p -> Maybe AssignmentMetadataId
 
-ttPair  (TruthTableSubmission prob time pu _ _) = (Just pu, prob, time)
+instance Problem SyntaxCheckSubmission where
+        problem (SyntaxCheckSubmission prob _ _ _ _) = prob
+        submitted (SyntaxCheckSubmission _ time _ _ _) = time
+        assignment (SyntaxCheckSubmission _ _ _ _ key) = key
 
-derPair (DerivationSubmission prob _ time pu _ _) = (Just pu, prob, time)
+instance Problem TranslationSubmission where
+        problem (TranslationSubmission prob _ _ _ _) = prob
+        submitted (TranslationSubmission _ time _ _ _) = time
+        assignment (TranslationSubmission _ _ _ _ key) = key
+
+instance Problem TruthTableSubmission where
+        problem (TruthTableSubmission prob _ _ _ _) = prob
+        submitted (TruthTableSubmission _ time _ _ _) = time
+        assignment (TruthTableSubmission _ _ _ _ key) = key
+
+instance Problem DerivationSubmission where
+        problem (DerivationSubmission prob _ _ _ _ _) = prob
+        submitted (DerivationSubmission _ _ time _ _ _) = time
+        assignment (DerivationSubmission _ _ _ _ _ key) = key
 
 subsByIdAndSource thesource v = 
-        do synsubs'  <- runDB $ selectList [ SyntaxCheckSubmissionUserId ==. v
+        do synsubs  <- runDB $ selectList [ SyntaxCheckSubmissionUserId ==. v
                                            , SyntaxCheckSubmissionSource ==. thesource] []
-           let synsubs = map (separate . synPair . entityVal) synsubs'
-           transsubs'  <- runDB $ selectList [ TranslationSubmissionUserId ==. v
+           transsubs  <- runDB $ selectList [ TranslationSubmissionUserId ==. v
                                              , TranslationSubmissionSource ==. thesource] []
-           let transsubs = map (separate . transPair . entityVal) transsubs'
-           dersubs'  <- runDB $ selectList [ DerivationSubmissionUserId ==. v
+           dersubs  <- runDB $ selectList [ DerivationSubmissionUserId ==. v
                                            , DerivationSubmissionSource ==. thesource] []
-           let dersubs = map (separate . derPair . entityVal) dersubs'
-           ttsubs'  <- runDB $ selectList [ TruthTableSubmissionUserId ==. v
+           ttsubs  <- runDB $ selectList [ TruthTableSubmissionUserId ==. v
                                           , TruthTableSubmissionSource ==. thesource] []
-           let ttsubs = map (separate . ttPair . entityVal) ttsubs'
-           return (synsubs, transsubs, dersubs, ttsubs)
-    where separate = \(_,x,y) -> (break (== ':') x ,y)
+           return (map entityVal synsubs, map entityVal transsubs, map entityVal dersubs, map entityVal ttsubs)
 
 clean :: (Maybe (Key User), Text, Text) -> Handler (Text,Text,Text)
 clean (Nothing, s,s')  = return ("annonyous", s,s')

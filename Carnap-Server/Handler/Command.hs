@@ -9,6 +9,7 @@ import Model (SyntaxCheckSubmission,TranslationSubmission)
 import Data.Time
 import Util.Database
 import Util.Data
+import Text.Read (read)
 
 postCommandR :: Handler Value
 postCommandR = do
@@ -20,13 +21,13 @@ postCommandR = do
            Nothing -> returnJson ("No User" :: String)
            Just u  -> case cmd of
                 EchoBack (s,b) -> returnJson (reverse s)
-                SubmitSyntaxCheck f source -> submit SyntaxCheckSubmission f u (liftSource source) Nothing
-                SubmitTranslation f source -> submit TranslationSubmission f u (liftSource source) Nothing
-                SubmitTruthTable f source  -> submit TruthTableSubmission  f u (liftSource source) Nothing
-                SubmitDerivation s d source-> do time <- liftIO getCurrentTime
-                                                 let sub = DerivationSubmission (pack s) (pack d) 
-                                                                   (pack $ show time) u (liftSource source) Nothing
-                                                 tryInsert sub >>= afterInsert
+                SubmitSyntaxCheck f source key -> submit SyntaxCheckSubmission f u (liftSource source) (keycheck key)
+                SubmitTranslation f source key -> submit TranslationSubmission f u (liftSource source) (keycheck key)
+                SubmitTruthTable f source key -> submit TruthTableSubmission  f u (liftSource source) (keycheck key)
+                SubmitDerivation s d source key -> do time <- liftIO getCurrentTime
+                                                      let sub = DerivationSubmission (pack s) (pack d) 
+                                                                        (pack $ show time) u (liftSource source) (keycheck key)
+                                                      tryInsert sub >>= afterInsert
                 SaveDerivedRule n dr -> do time <- liftIO getCurrentTime
                                            let save = SavedDerivedRule (toStrict $ encode dr) (pack n) (pack $ show time) u
                                            tryInsert save >>= afterInsert
@@ -34,6 +35,9 @@ postCommandR = do
                                                  let packagedRules = catMaybes $ map (packageRule . entityVal) savedRules
                                                  liftIO $ print $ "sending" ++ (show $ toJSON packagedRules)
                                                  returnJson $ show $ toJSON packagedRules
+
+keycheck "" = Nothing
+keycheck s  = Just (read s)
 
 liftSource Book = CarnapTextbook
 liftSource BirminghamAssignment = BirminghamAssignment2017

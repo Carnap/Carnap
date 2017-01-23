@@ -44,31 +44,33 @@ getAssignmentR :: Text -> Handler Html
 getAssignmentR t = do adir <- assignmentDir
                       let path = (adir </> unpack t)
                       exists <- lift $ doesFileExist path
+                      ment <- runDB $ getBy (UniqueAssignment t)
                       if not exists 
-                        then defaultLayout nopage
-                        else do ehtml <- lift $ fileToHtml path
-                                case ehtml of
-                                    Left err -> defaultLayout $ layout (show err)
-                                    Right html -> do
-                                        defaultLayout $ do
-                                            toWidgetHead $(juliusFile "templates/command.julius")
-                                            toWidgetHead [julius|var submission_source="birmingham";|]
-                                            toWidgetHead [julius|var assignment_name="#{rawJS t}";|] --Better to actually retrieve this from the metadata
-                                            addScript $ StaticR ghcjs_rts_js
-                                            addScript $ StaticR ghcjs_allactions_lib_js
-                                            addScript $ StaticR ghcjs_allactions_out_js
-                                            addStylesheet $ StaticR css_exercises_css
-                                            addStylesheet $ StaticR css_tree_css
-                                            addStylesheet $ StaticR css_exercises_css
-                                            layout html
-                                            addScript $ StaticR ghcjs_allactions_runmain_js
+                        then defaultLayout $ layout ("assignment not found" :: Text)
+                        else case ment of
+                                 Nothing -> defaultLayout $ layout ("metadata for this assignment not found" :: Text)
+                                 Just (Entity key val) -> do 
+                                      ehtml <- lift $ fileToHtml path
+                                      case ehtml of
+                                          Left err -> defaultLayout $ layout (show err)
+                                          Right html -> do
+                                              defaultLayout $ do
+                                                  toWidgetHead $(juliusFile "templates/command.julius")
+                                                  toWidgetHead [julius|var submission_source="birmingham";|]
+                                                  toWidgetHead [julius|var assignment_key="#{rawJS $ show key}";|]
+                                                  addScript $ StaticR ghcjs_rts_js
+                                                  addScript $ StaticR ghcjs_allactions_lib_js
+                                                  addScript $ StaticR ghcjs_allactions_out_js
+                                                  addStylesheet $ StaticR css_exercises_css
+                                                  addStylesheet $ StaticR css_tree_css
+                                                  addStylesheet $ StaticR css_exercises_css
+                                                  layout html
+                                                  addScript $ StaticR ghcjs_allactions_runmain_js
     where layout c = [whamlet|
                         <div.container>
                             <article>
                                 #{c}
                         |]
-
-          nopage = layout ("assignment not found" :: Text)
 
 fileToHtml path = do md <- markdownFromFile path
                      case parseMarkdown yesodDefaultReaderOptions md of

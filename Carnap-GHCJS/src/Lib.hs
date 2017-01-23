@@ -6,7 +6,7 @@ module Lib
     adjustFirstMatching, decodeHtml, syncScroll, reloadPage, initElements,
     loginCheck,errorPopup, getInOutElts, getInOutGoalElts, withLabel,
     formAndLabel,seqAndLabel, folSeqAndLabel, folFormAndLabel,
-    message, IOGoal(..), genericUpdateResults2, submissionSource) where
+    message, IOGoal(..), genericUpdateResults2, submissionSource, assignmentKey) where
 
 import Data.Aeson
 import qualified Data.ByteString.Lazy as BSL
@@ -323,6 +323,8 @@ foreign import javascript unsafe "window.location.href()" currentUrl :: IO JSStr
 
 foreign import javascript unsafe "(function(){try {var v=submission_source;} catch (e) {var v=\"no submission source found\";}; return v})()" submissionQueryJS :: IO JSString
 
+foreign import javascript unsafe "(function(){try {var v=assignment_key;} catch (e) {var v=\"\";}; return v})()" assignmentKeyJS :: IO JSString
+
 submissionSource = do qr <- submissionQueryJS
                       case fromJSString qr of
                           "book" -> return $ Just Book
@@ -331,7 +333,14 @@ submissionSource = do qr <- submissionQueryJS
 
 message s = liftIO (alert s)
 
+assignmentKey :: IO String
+assignmentKey = do k <- assignmentKeyJS
+                   return $ fromJSString k
+
 #else
+
+assignmentKey :: IO String
+assignmentKey = Prelude.error "assignmentKey requires the GHJS FFI"
 
 submissionSource :: IO (Maybe ProblemSource)
 submissionSource = Prelude.error "submissionSource requires the GHCJS FFI"

@@ -1,7 +1,7 @@
 $("textarea").addClass("form-control")
 
 function tryDeleteAssignment (name) {
-    if (confirm("Permanently delete the assignment " + name + "?")) {
+    if (confirm("Are you sure you want to permanently delete the assignment " + name + ", and all submitted problems from this assignment?")) {
         deleteAssignment(name);
         }
     }

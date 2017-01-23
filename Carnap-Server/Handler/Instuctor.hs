@@ -18,6 +18,14 @@ deleteInstructorR _ = do
     deleted <- runDB $ do mk <- getBy $ UniqueAssignment fn
                           case mk of
                               Just (Entity k v) -> do delete k
+                                                      syn <- selectList [SyntaxCheckSubmissionAssignmentId ==. Just k] []
+                                                      ders <- selectList [DerivationSubmissionAssignmentId ==. Just k] []
+                                                      trans <- selectList [TranslationSubmissionAssignmentId ==. Just k] []
+                                                      trutht <- selectList [TruthTableSubmissionAssignmentId ==. Just k] []
+                                                      mapM (delete . entityKey) syn
+                                                      mapM (delete . entityKey) ders
+                                                      mapM (delete . entityKey) trans
+                                                      mapM (delete . entityKey) trutht
                                                       liftIO $ removeFile (adir </> unpack fn)
                                                       return True
                               Nothing -> return False
@@ -72,6 +80,7 @@ getInstructorR ident = do
                     <div.container>
                         <p> Instructor not found.
                    |]
+
 
           tryDelete (AssignmentMetadata fn _ _ _ _) = "tryDeleteAssignment(\"" ++ fn ++ "\")"
 

@@ -71,10 +71,11 @@ trySubmit :: IORef Bool -> String -> Window -> String -> EventM HTMLInputElement
 trySubmit ref s w l = do isDone <- liftIO $ readIORef ref
                          if isDone 
                             then do source <- liftIO submissionSource
+                                    key <- liftIO assignmentKey
                                     case source of 
                                         Nothing -> message "Not able to identify problem source"
                                         Just so -> liftIO $ sendJSON 
-                                                    (SubmitTruthTable (l ++ ":" ++ s) so) 
+                                                    (SubmitTruthTable (l ++ ":" ++ s) so key) 
                                                     (loginCheck $ "Submitted Truth-Table for Exercise " ++ l) 
                                                     errorPopup
                             else message "not yet finished"
