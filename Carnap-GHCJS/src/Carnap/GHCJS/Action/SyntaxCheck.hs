@@ -94,8 +94,6 @@ tryMatch o ref w sf = onEnter $ do (Just t) <- target :: EventM HTMLInputElement
                               appendChild ul' (Just te)
                               appendChild o ul
                               return ()
-              message s = do (Just w') <- getDefaultView w
-                             message s
 
 parseConnective :: Monad m => ParsecT String u m String
 parseConnective = choice [getAnd, getOr, getIff, getIf, getNeg]
