@@ -167,14 +167,14 @@ computeRule drs w ref v (g, fd) = do rules <- liftIO $ readIORef drs
 trySubmit l s ref w i = do isFinished <- liftIO $ readIORef ref
                            if isFinished
                              then do (Just v) <- getValue (castToHTMLTextAreaElement i)
-                                     source <- liftIO submissionSource
+                                     msource <- liftIO submissionSource
                                      key <- liftIO assignmentKey
-                                     case source of 
+                                     case msource of 
                                         Nothing -> message "Not able to identify problem source"
-                                        Just s -> liftIO $ sendJSON 
-                                                    (SubmitDerivation (l ++ ":" ++ show s) v s key) 
-                                                    (loginCheck $ "Submitted Derivation for Exercise " ++ l)
-                                                    errorPopup
+                                        Just source -> liftIO $ sendJSON 
+                                                        (SubmitDerivation (l ++ ":" ++ show s) v source key) 
+                                                        (loginCheck $ "Submitted Derivation for Exercise " ++ l)
+                                                        errorPopup
                              else message "not yet finished"
 
 trySave drs ref w i = do isFinished <- liftIO $ readIORef ref

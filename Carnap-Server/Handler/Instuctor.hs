@@ -17,8 +17,7 @@ deleteInstructorR _ = do
     adir <- assignmentDir 
     deleted <- runDB $ do mk <- getBy $ UniqueAssignment fn
                           case mk of
-                              Just (Entity k v) -> do delete k
-                                                      syn <- selectList [SyntaxCheckSubmissionAssignmentId ==. Just k] []
+                              Just (Entity k v) -> do syn <- selectList [SyntaxCheckSubmissionAssignmentId ==. Just k] []
                                                       ders <- selectList [DerivationSubmissionAssignmentId ==. Just k] []
                                                       trans <- selectList [TranslationSubmissionAssignmentId ==. Just k] []
                                                       trutht <- selectList [TruthTableSubmissionAssignmentId ==. Just k] []
@@ -26,6 +25,7 @@ deleteInstructorR _ = do
                                                       mapM (delete . entityKey) ders
                                                       mapM (delete . entityKey) trans
                                                       mapM (delete . entityKey) trutht
+                                                      delete k
                                                       liftIO $ removeFile (adir </> unpack fn)
                                                       return True
                               Nothing -> return False

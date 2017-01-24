@@ -36,14 +36,14 @@ syntaxCheckAction = initElements getCheckers activateChecker
 trySubmit :: IORef (PureForm,[(PureForm,Int)], Tree (PureForm,Int),Int) -> Window -> String -> EventM HTMLInputElement e ()
 trySubmit ref w l = do (f,forms,_,_) <- liftIO $ readIORef ref
                        case forms of 
-                          [] -> do source <- liftIO submissionSource
+                          [] -> do msource <- liftIO submissionSource
                                    key <- liftIO assignmentKey
-                                   case source of 
+                                   case msource of 
                                         Nothing -> message "Not able to identify problem source"
-                                        Just s -> liftIO $ sendJSON 
-                                                    (SubmitSyntaxCheck (l ++ ":" ++ show f) Book key) 
-                                                    (loginCheck $ "Submitted Syntax-Check for Exercise " ++ l) 
-                                                    errorPopup
+                                        Just source -> liftIO $ sendJSON 
+                                                         (SubmitSyntaxCheck (l ++ ":" ++ show f) source key) 
+                                                         (loginCheck $ "Submitted Syntax-Check for Exercise " ++ l) 
+                                                         errorPopup
                           _  -> message "not yet finished"
 
 -- XXX:this could be cleaner. The basic idea is that we maintain a "stage"
