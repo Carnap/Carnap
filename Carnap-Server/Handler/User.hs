@@ -232,8 +232,3 @@ subsByIdAndSource thesource v =
            ttsubs  <- runDB $ selectList [ TruthTableSubmissionUserId ==. v
                                           , TruthTableSubmissionSource ==. thesource] []
            return (map entityVal synsubs, map entityVal transsubs, map entityVal dersubs, map entityVal ttsubs)
-
-clean :: (Maybe (Key User), Text, Text) -> Handler (Text,Text,Text)
-clean (Nothing, s,s')  = return ("annonyous", s,s')
-clean (Just sid, s,s') = do sub <- runDB $ get404 sid
-                            return (userIdent sub, s,s')
