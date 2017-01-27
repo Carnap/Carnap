@@ -66,6 +66,11 @@ instance MaybeStaticVar SOApplicator
 
 instance FirstOrderLex SOApplicator
 
+-- | this is a data type for abstractions and their contexts
+data SOAbstractionV a where
+        SOAbsVar :: Int -> SOAbstractionV (Form b) 
+        SOAbsCtx :: Int -> SOAbstractionV (Form b -> Form Bool) 
+
 data MonadicSOQuant a where
         SOAll :: String -> 
             MonadicSOQuant ((Form (Int -> Bool) -> Form Bool) -> Form Bool)
@@ -118,7 +123,7 @@ pattern SOMQuant q      = FX (Lx3 (Bind q))
 pattern SOMAbs a        = FX (Lx4 (Abstract a))
 pattern SOMApp a        = FX (Lx5 (Apply a))
 pattern SOP n a1 a2     = SOPred (Pred a1 n) a2
-pattern SOPhi n a1 a2   = SOPred (SPred a1 n) a2
+pattern SOPhi n a1 a2   = SOSPred (SPred a1 n) a2
 pattern SOAnd           = SOCon And ATwo
 pattern SOOr            = SOCon Or ATwo
 pattern SOIf            = SOCon If ATwo
