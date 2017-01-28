@@ -75,6 +75,9 @@ activateChecker drs w (Just iog@(IOGoal i o g classes))
                                             , action = trySave drs
                                             }
                                         } (computeRule drs) iog w
+        | "playground" `elem` classes = do pd <- makeDisplay
+                                           checkerWith CheckerOptions {submit = Nothing } 
+                                                (fitchPlayground drs pd) iog w
         | "firstOrder" `elem` classes = 
                         tryParse buildOptions folSeqParser 
                             (\s mtref pd -> folCheckSolution drs s mtref)
@@ -89,10 +92,7 @@ activateChecker drs w (Just iog@(IOGoal i o g classes))
                        Left e -> setInnerHTML g (Just "Couldn't Parse Goal")
                        Right (l,s) -> do setInnerHTML g (Just $ show s)
                                          mtref <- newIORef Nothing
-                                         (Just pd) <- createElement w (Just "div")
-                                         setAttribute pd "class" "proofDisplay"
-                                         (Just parent) <- getParentNode o
-                                         insertAdjacentElement (castToHTMLElement parent) "afterend" (Just pd)
+                                         pd <- makeDisplay
                                          case submit options of
                                              Nothing -> checkerWith options
                                                          (checker s mtref pd)
@@ -101,6 +101,11 @@ activateChecker drs w (Just iog@(IOGoal i o g classes))
                                                          options {submit = Just b {action = trySubmit l s }}
                                                          (checker s mtref pd)
                                                          iog w
+              makeDisplay = do (Just pd) <- createElement w (Just "div")
+                               setAttribute pd "class" "proofDisplay"
+                               (Just parent) <- getParentNode o
+                               insertAdjacentElement (castToHTMLElement parent) "afterend" (Just pd)
+                               return pd
 
               standardOptions = 
                     CheckerOptions {
@@ -163,6 +168,24 @@ computeRule drs w ref v (g, fd) = do rules <- liftIO $ readIORef drs
                                          (Just seq) -> do setInnerHTML g (Just $ show seq)
                                                           writeIORef ref True
                                      return ()
+
+fitchPlayground drs pd w ref v (g, fd) =  do rules <- liftIO $ readIORef drs 
+                                             let ded = parseFitchPropProof (M.fromList rules) v
+                                             renderedProof <- renderDeduction w ded
+                                             setInnerHTML pd (Just "")
+                                             appendChild pd (Just renderedProof)
+                                             let Feedback mseq ds = toDisplaySequence processLineFitch ded
+                                             ul <- genericListToUl wrap w ds
+                                             setInnerHTML fd (Just "")
+                                             appendChild fd (Just ul)
+                                             case mseq of
+                                                 Nothing -> do setInnerHTML g (Just "Nothing Proven")
+                                                               writeIORef ref False
+                                                 (Just seq) -> do setInnerHTML g (Just $ show seq)
+                                                                  writeIORef ref True
+                                             return ()
+
+                                               
 
 trySubmit l s ref w i = do isFinished <- liftIO $ readIORef ref
                            if isFinished
