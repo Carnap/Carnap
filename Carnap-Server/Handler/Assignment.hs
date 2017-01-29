@@ -72,8 +72,9 @@ getAssignmentR t = do adir <- assignmentDir
                                 #{c}
                         |]
 
-fileToHtml path = do md <- markdownFromFile path
-                     case parseMarkdown yesodDefaultReaderOptions md of
+fileToHtml path = do Markdown md <- markdownFromFile path
+                     let md' = Markdown (filter ((/=) '\r') md) --remove carrage returns from dos files
+                     case parseMarkdown yesodDefaultReaderOptions md' of
                          Right pd -> do let pd' = walk allFilters pd
                                         return $ Right $ writePandoc yesodDefaultWriterOptions pd'
                          Left e -> return $ Left e
