@@ -8,7 +8,7 @@ import Prelude
 makeProofChecker :: Block -> Block
 makeProofChecker cb@(CodeBlock (_,classes,_) contents)
     | "ProofChecker" `elem` classes = Div ("",[],[]) $ map (activate classes) $ intoChunks contents
-
+    | "Playground" `elem` classes = Div ("",[],[]) [toPlayground contents]
     | otherwise = cb
 makeProofChecker x = x
 
@@ -42,10 +42,15 @@ splitIt l = case break (== '\n') l of
 
 intoChunks [] = []
 intoChunks l = cons $ case splitIt l of (h,t) -> (h,intoChunks t)
+    where cons (h,t) = h : t
+
+toPlayground contents = RawBlock "html" $
+        "<div class=\"exercise\">"
+        ++ "<span> playground </span>"
+        ++ "<div class=\"proofchecker playground\"><div class = \"goal\"></div>"
+        ++ "<textarea>" ++ contents ++ "</textarea><div class=\"output\"></div></div></div>"
 
 formatChunk = map cleanProof . lines
     where cleanProof l@ (x:xs) = if x == '|' then dropWhile (\y -> isDigit y || (y == '.')) xs
                                              else l
 
-
-cons (h,t) = h : t
