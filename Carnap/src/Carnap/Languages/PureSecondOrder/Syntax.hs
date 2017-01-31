@@ -66,6 +66,40 @@ instance MaybeStaticVar SOApplicator
 
 instance FirstOrderLex SOApplicator
 
+data MonadicSOScheme a where
+        MonScheme :: Int -> MonadicSOScheme (Form (Int -> Bool))
+
+instance Schematizable MonadicSOScheme where
+        schematize (MonScheme n) = const $ "ζ_" ++ show n
+
+instance UniformlyEq MonadicSOScheme where
+    (MonScheme n) =* (MonScheme m) = n == m
+
+instance Monad m => MaybeMonadVar MonadicSOScheme m
+
+instance MaybeStaticVar MonadicSOScheme
+
+instance FirstOrderLex MonadicSOScheme where
+        isVarLex _ = True
+
+-- XXX this is a good candidate for a generic constructor
+data MonadicSOCtx a where
+        MonCtx :: Int -> MonadicSOCtx (Form Bool -> Form Bool)
+
+instance Schematizable MonadicSOCtx where
+        schematize (MonCtx n) = const $ "Φ_" ++ show n
+
+instance UniformlyEq MonadicSOCtx where
+    (MonCtx n) =* (MonCtx m) = n == m
+
+instance Monad m => MaybeMonadVar MonadicSOCtx m
+
+instance MaybeStaticVar MonadicSOCtx
+
+instance FirstOrderLex MonadicSOCtx where
+        isVarLex _ = True
+
+
 data MonadicSOQuant a where
         SOAll :: String -> 
             MonadicSOQuant ((Form (Int -> Bool) -> Form Bool) -> Form Bool)
@@ -96,6 +130,8 @@ type MonadicallySOLLex = FOL.PureLexiconFOL
                         :|: Quantifiers MonadicSOQuant
                         :|: Abstractors SOLambda
                         :|: Applicators SOApplicator
+                        :|: Predicate MonadicSOScheme
+                        :|: Connective MonadicSOCtx
                         :|: EndLang
 
 type MonadicallySOL = FixLang MonadicallySOLLex
@@ -117,6 +153,8 @@ pattern SOMVar n        = FX (Lx2 (Predicate (MonVar n) AZero))
 pattern SOMQuant q      = FX (Lx3 (Bind q))
 pattern SOMAbs a        = FX (Lx4 (Abstract a))
 pattern SOMApp a        = FX (Lx5 (Apply a))
+pattern SOMScheme n     = FX (Lx6 (Predicate (MonScheme n) AZero))
+pattern SOMCtx n        = FX (Lx7 (Connective (MonCtx n) AOne))
 pattern SOP n a1 a2     = SOPred (Pred a1 n) a2
 pattern SOPhi n a1 a2   = SOSPred (SPred a1 n) a2
 pattern SOAnd           = SOCon And ATwo
@@ -317,17 +355,6 @@ incLam n l@((SOMApp SOApp) :!$: l' :!$: t) v =
                  else SOAbstract (SOLam $ show v) (\x -> subBoundVar v x l)
 incLam _ l v = SOAbstract (SOLam $ show v) (\x -> subBoundVar v x l)
 
--- | produces a schematic formula abstracting n terms from a given formula
-lambdaScheme :: Int -> MonadicallySOL (Form Bool)
-lambdaScheme n = ls' n n
-        where tau = SOT
-              v n = SOV $ "v_" ++ show n
-              phi n | n < 1 = SOPhi 1 AOne AOne
-                    | n > 0 = case incBody (phi (n - 1))  of
-                                  Just p' -> p' :!$: (v (n - 1))
-                                  Nothing -> error "trouble in lambdaScheme algorithm"
-              ls' n m | n < 1 = SOMApp SOApp :!$: incLam 0 (phi m :!$: v m) (v 0) :!$: tau m                              
-                      | n > 0 = SOMApp SOApp :!$: incLam n (ls' (n - 1) m) (v n) :!$: tau (m - n)                         
 {--
 the idea would be for lambda abstraction to work like this:
 
