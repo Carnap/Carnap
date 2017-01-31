@@ -8,6 +8,7 @@ import Carnap.Languages.ClassicalSequent.Syntax
 import Carnap.Languages.Util.GenericConnectives
 import Carnap.Calculi.NaturalDeduction.Syntax
 import Data.List (intercalate)
+import Data.Typeable (Typeable)
 import Carnap.Core.Data.Util (scopeHeight)
 
 ---------------------------------------
@@ -50,7 +51,7 @@ instance CopulaSchema MSOLSequentCalc where
     lamSchema f (x:xs) = "(λβ_" ++ show h ++ "." ++ show (f $ liftToSequent $ SOSV (-1 * h)) ++ intercalate " " (x:xs) ++ ")"
         where h = scopeHeight (LLam f)
 
-data MSOLogic = ABS | APP | COM
+data MSOLogic = ABS | APP
               deriving (Show,Eq)
 
 ss :: MonadicallySOL (Form Bool) -> MSOLSequentCalc Succedent
@@ -65,15 +66,14 @@ phi n x = SOPhi n AOne AOne :!$: x
 tau :: MonadicallySOL (Term Int)
 tau = SOT 1
 
-abstract :: (MonadicallySOL (Term Int) -> MonadicallySOL (Form Bool)) -> MonadicallySOL (Form (Int -> Bool))
+abstract :: Typeable b => (MonadicallySOL (Term Int) -> MonadicallySOL (Form b)) -> MonadicallySOL (Form (Int -> b))
 abstract = SOAbstract (SOLam "v")
 
 apply x y = SOMApp SOApp :!$: x :!$: y
 
 instance Inference MSOLogic MonadicallySOLLex where
-        premisesOf ABS = [GammaV 1 :|-: ss (phi 1 tau)]
-        premisesOf APP = [GammaV 1 :|-: ss (apply (abstract (phi 1)) tau)]
+        premisesOf ABS  = [GammaV 1 :|-: ss (phi 1 tau)]
+        premisesOf APP  = [GammaV 1 :|-: ss (apply (abstract (phi 1)) tau)]
 
         conclusionOf ABS = GammaV 1 :|-: ss (apply (abstract (phi 1)) tau)
         conclusionOf APP = GammaV 1 :|-: ss (phi 1 (tau))
-        

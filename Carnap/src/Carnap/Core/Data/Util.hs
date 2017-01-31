@@ -65,7 +65,7 @@ checkChildren :: (Eq s, Plated s) => s -> s -> Bool
 checkChildren phi psi = phi /= psi && anyOf cosmos (== phi) psi
 
 {-|
-this function will, given a suitably polymorphic argument `f`, apply `f` to each of the children of the linguistic expression `le`.
+this function will, given a suitably polymorphic argument `f`, apply `f` to each of the immediate children of the linguistic expression `le`.
 -}
 mapover :: (forall a . FixLang l a -> FixLang l a) -> FixLang l b -> FixLang l b
 mapover f le@(x :!$: y) = mapover f x :!$: f y

@@ -665,8 +665,11 @@ instance {-# OVERLAPPABLE #-}
                            Nothing -> c
             | otherwise = case c of
                            (x :!$: y) -> subst a b x :!$: subst a b y
-                           (LLam f) -> LLam $ \x -> subst sv x $ subst a b $ f sv
-                                where sv = static $ height (LLam f)
+                           (LLam f) -> LLam $ subst a b . f 
+                           -- XXX : above is *much* faster than below under
+                           -- binders.
+                           -- (LLam f) -> LLam $ \x -> subst sv x $ subst a b $ f sv
+                           --      where sv = static $ height (LLam f)
                            _ -> c
 
 instance {-# OVERLAPPABLE #-} FirstOrder (FixLang f) => HigherOrder (FixLang f) where
