@@ -4,6 +4,7 @@ module Carnap.Languages.PureSecondOrder.Logic where
 import Carnap.Core.Data.Util (mapover)
 import Carnap.Core.Data.AbstractSyntaxDataTypes
 import Carnap.Core.Data.AbstractSyntaxClasses
+import Carnap.Core.Unification.Unification
 import Carnap.Languages.PureSecondOrder.Syntax
 import Carnap.Languages.ClassicalSequent.Syntax
 import Carnap.Languages.Util.GenericConnectives
@@ -53,7 +54,7 @@ instance CopulaSchema MSOLSequentCalc where
     lamSchema f (x:xs) = "(λβ_" ++ show h ++ "." ++ show (f $ liftToSequent $ SOSV (-1 * h)) ++ intercalate " " (x:xs) ++ ")"
         where h = scopeHeight (LLam f)
 
-data MSOLogic = ABS | APP | SOUI | SOEG
+data MSOLogic = ABS | APP | SOUI | SOEG | SOUD | SOED
               deriving (Show,Eq)
 
 ss :: MonadicallySOL (Form Bool) -> MSOLSequentCalc Succedent
@@ -97,8 +98,25 @@ instance Inference MSOLogic MonadicallySOLLex where
         premisesOf APP  = [GammaV 1 :|-: ss (lambdaScheme 0)]
         premisesOf SOUI = [GammaV 1 :|-: ss (SOMBind (SOAll "v") (\x -> SOMCtx 1 :!$: (apply x tau)))]
         premisesOf SOEG = [GammaV 1 :|-: ss (SOMCtx 1 :!$: (apply (SOMScheme 1) tau))]
+        premisesOf SOUD = [GammaV 1 :|-: ss (SOMCtx 1 :!$: (apply (SOMScheme 1) tau))]
 
         conclusionOf ABS  = GammaV 1 :|-: ss (lambdaScheme 0)
         conclusionOf APP  = GammaV 1 :|-: ss (predScheme 0)
         conclusionOf SOUI = GammaV 1 :|-: ss (SOMCtx 1 :!$: (apply (SOMScheme 1) tau))
         conclusionOf SOEG = GammaV 1 :|-: ss (SOMBind (SOSome "v") (\x -> SOMCtx 1 :!$: (apply x tau)))
+        conclusionOf SOUD = GammaV 1 :|-: ss (SOMBind (SOAll "v") (\x -> SOMCtx 1 :!$: (apply x tau)))
+
+        restriction SOUD = Just (mpredicateEigenConstraint (liftToSequent $ SOMScheme 1) (ss $ SOMCtx 1 :!$: (apply (SOMScheme 1) tau))  (GammaV 1))
+
+--need a oattern match here to make sure that c' ends up being an SO
+--variable
+mpredicateEigenConstraint c suc ant sub
+    | c' `occursIn` ant' = Just $ "The constant " ++ show c' ++ " appears not to be fresh, given that this line relies on " ++ show ant'
+    | c' `occursIn` suc' = Just $ "The constant " ++ show c' ++ " appears not to be fresh in the other premise " ++ show suc'
+    | otherwise = Nothing
+    where c'   = applySub sub c
+          ant' = applySub sub ant
+          suc' = applySub sub suc
+          -- XXX : this is not the most efficient way of checking
+          -- imaginable.
+          occursIn x y = not $ (subst x (static 0) y) =* y
