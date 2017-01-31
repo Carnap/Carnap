@@ -184,7 +184,9 @@ instance Inference FOLogic PureLexiconFOL where
 eigenConstraint c suc ant sub
     | c' `occursIn` ant' = Just $ "The constant " ++ show c' ++ " appears not to be fresh, given that this line relies on " ++ show ant'
     | c' `occursIn` suc' = Just $ "The constant " ++ show c' ++ " appears not to be fresh in the other premise " ++ show suc'
-    | otherwise = Nothing
+    | otherwise = case fromSequent c' of 
+                          PC _ -> Nothing
+                          _ -> Just $ "The term " ++ show c' ++ " is not a constant"
     where c'   = applySub sub c
           ant' = applySub sub ant
           suc' = applySub sub suc
