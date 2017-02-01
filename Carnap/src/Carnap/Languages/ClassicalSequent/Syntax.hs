@@ -184,6 +184,16 @@ fromSequent x = case lowerLang x of
                     Just y -> y
                     Nothing -> error "could not lower sequent"
 
+liftSequent :: (Sequentable f, Sequentable g, f :<: g) => ClassicalSequentOver f a -> ClassicalSequentOver g a
+liftSequent Top = Top
+liftSequent (GammaV n) = GammaV n
+liftSequent (DeltaV n) = DeltaV n
+liftSequent (x :+: y) = liftSequent x :+: liftSequent y
+liftSequent (x :-: y) = liftSequent x :-: liftSequent y
+liftSequent (x :|-: y) = liftSequent x :|-: liftSequent y
+liftSequent (SA x) = SA $ liftToSequent (liftLang (fromSequent x) )
+liftSequent (SS x) = SS $ liftToSequent (liftLang (fromSequent x) )
+
 --------------------------------------------------------
 --4. Utilities
 --------------------------------------------------------

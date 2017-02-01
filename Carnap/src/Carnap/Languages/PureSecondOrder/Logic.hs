@@ -9,6 +9,7 @@ import Carnap.Languages.PureSecondOrder.Syntax
 import Carnap.Languages.ClassicalSequent.Syntax
 import Carnap.Languages.Util.GenericConnectives
 import Carnap.Languages.Util.LanguageClasses
+import Carnap.Languages.PureFirstOrder.Logic (FOLogic(..))
 import Carnap.Calculi.NaturalDeduction.Syntax
 import Data.List (intercalate)
 import Data.Typeable (Typeable)
@@ -54,8 +55,8 @@ instance CopulaSchema MSOLSequentCalc where
     lamSchema f (x:xs) = "(λβ_" ++ show h ++ "." ++ show (f $ liftToSequent $ SOSV (-1 * h)) ++ intercalate " " (x:xs) ++ ")"
         where h = scopeHeight (LLam f)
 
-data MSOLogic = ABS | APP | SOUI | SOEG | SOUD | SOED
-              deriving (Show,Eq)
+data MSOLogic = ABS | APP | SOUI | SOEG | SOUD | SOED | FO FOLogic
+              deriving Show
 
 ss :: MonadicallySOL (Form Bool) -> MSOLSequentCalc Succedent
 ss = SS . liftToSequent
@@ -94,26 +95,29 @@ predScheme n = phi n :!$: SOT n
                                    Nothing -> error "trouble in predScheme algorithm"
 
 instance Inference MSOLogic MonadicallySOLLex where
-        premisesOf ABS  = [GammaV 1 :|-: ss (predScheme 0)]
-        premisesOf APP  = [GammaV 1 :|-: ss (lambdaScheme 0)]
-        premisesOf SOUI = [GammaV 1 :|-: ss (SOMBind (SOAll "v") (\x -> SOMCtx 1 :!$: (apply x tau)))]
-        premisesOf SOEG = [GammaV 1 :|-: ss (SOMCtx 1 :!$: (apply (SOMScheme 1) tau))]
-        premisesOf SOUD = [GammaV 1 :|-: ss (SOMCtx 1 :!$: (apply (SOMScheme 1) tau))]
+        premisesOf ABS    = [GammaV 1 :|-: ss (predScheme 0)]
+        premisesOf APP    = [GammaV 1 :|-: ss (lambdaScheme 0)]
+        premisesOf SOUI   = [GammaV 1 :|-: ss (SOMBind (SOAll "v") (\x -> SOMCtx 1 :!$: (apply x tau)))]
+        premisesOf SOEG   = [GammaV 1 :|-: ss (SOMCtx 1 :!$: (apply (SOMScheme 1) tau))]
+        premisesOf SOUD   = [GammaV 1 :|-: ss (SOMCtx 1 :!$: (apply (SOMScheme 1) tau))]
+        premisesOf (FO x) = map liftSequent (premisesOf x)
 
-        conclusionOf ABS  = GammaV 1 :|-: ss (lambdaScheme 0)
-        conclusionOf APP  = GammaV 1 :|-: ss (predScheme 0)
-        conclusionOf SOUI = GammaV 1 :|-: ss (SOMCtx 1 :!$: (apply (SOMScheme 1) tau))
-        conclusionOf SOEG = GammaV 1 :|-: ss (SOMBind (SOSome "v") (\x -> SOMCtx 1 :!$: (apply x tau)))
-        conclusionOf SOUD = GammaV 1 :|-: ss (SOMBind (SOAll "v") (\x -> SOMCtx 1 :!$: (apply x tau)))
+        conclusionOf ABS    = GammaV 1 :|-: ss (lambdaScheme 0)
+        conclusionOf APP    = GammaV 1 :|-: ss (predScheme 0)
+        conclusionOf SOUI   = GammaV 1 :|-: ss (SOMCtx 1 :!$: (apply (SOMScheme 1) tau))
+        conclusionOf SOEG   = GammaV 1 :|-: ss (SOMBind (SOSome "v") (\x -> SOMCtx 1 :!$: (apply x tau)))
+        conclusionOf SOUD   = GammaV 1 :|-: ss (SOMBind (SOAll "v") (\x -> SOMCtx 1 :!$: (apply x tau)))
+        conclusionOf (FO x) = liftSequent (conclusionOf x)
 
         restriction SOUD = Just (mpredicateEigenConstraint (liftToSequent $ SOMScheme 1) (ss $ SOMCtx 1 :!$: (apply (SOMScheme 1) tau))  (GammaV 1))
 
---need a oattern match here to make sure that c' ends up being an SO
---variable
 mpredicateEigenConstraint c suc ant sub
-    | c' `occursIn` ant' = Just $ "The constant " ++ show c' ++ " appears not to be fresh, given that this line relies on " ++ show ant'
-    | c' `occursIn` suc' = Just $ "The constant " ++ show c' ++ " appears not to be fresh in the other premise " ++ show suc'
-    | otherwise = Nothing
+    | c' `occursIn` ant' = Just $ "The predicate " ++ show c' ++ " appears not to be fresh, given that this line relies on " ++ show ant'
+    | c' `occursIn` suc' = Just $ "The predicate " ++ show c' ++ " appears not to be fresh in the other premise " ++ show suc'
+    | otherwise = case fromSequent c' of
+                      SOPred _ _ -> Nothing
+                      _ -> Just $ "the expression " ++ show c' ++ " appears not to be a predicate."
+
     where c'   = applySub sub c
           ant' = applySub sub ant
           suc' = applySub sub suc

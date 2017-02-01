@@ -1,6 +1,6 @@
 {-#LANGUAGE GADTs, FlexibleContexts, PatternSynonyms, TypeSynonymInstances, FlexibleInstances, MultiParamTypeClasses #-}
 module Carnap.Languages.PureFirstOrder.Logic
-        ( parseFOLLogic, parseFOLProof, folSeqParser, phiS, phi, tau, ss, FOLSequentCalc, DerivedRule(..))
+        (FOLogic(..), parseFOLLogic, parseFOLProof, folSeqParser, phiS, phi, tau, ss, FOLSequentCalc, DerivedRule(..))
     where
 
 import Data.Map as M (lookup, Map)
@@ -226,7 +226,6 @@ parseFOLLogic ders =
                                         case M.lookup rn ders of
                                             Just r  -> return [DER r]
                                             Nothing -> parserFail "--- Looks like you're citing a derived rule that doesn't exist"
-
 
 parseFOLProof ::  Map String DerivedRule -> String -> [DeductionLine FOLogic PureLexiconFOL (Form Bool)]
 parseFOLProof ders = toDeduction (parseFOLLogic ders) folFormulaParser
