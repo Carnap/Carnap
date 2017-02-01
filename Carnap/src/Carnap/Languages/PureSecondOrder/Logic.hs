@@ -10,10 +10,13 @@ import Carnap.Languages.ClassicalSequent.Syntax
 import Carnap.Languages.Util.GenericConnectives
 import Carnap.Languages.Util.LanguageClasses
 import Carnap.Languages.PureFirstOrder.Logic (FOLogic(..))
+import Carnap.Languages.PureSecondOrder.Parser
 import Carnap.Calculi.NaturalDeduction.Syntax
+import Carnap.Calculi.NaturalDeduction.Parser
+import Carnap.Core.Data.Util (scopeHeight)
 import Data.List (intercalate)
 import Data.Typeable (Typeable)
-import Carnap.Core.Data.Util (scopeHeight)
+import Text.Parsec
 
 ---------------------------------------
 --  1.Second Order Sequent Calculus  --
@@ -26,9 +29,7 @@ pattern SeqSOMQuant q     = FX (Lx2 (Lx3 (Bind q)))
 pattern SeqAbst a         = FX (Lx2 (Lx4 (Abstract a)))
 -- pattern SeqSV n           = FX (Lx2 (Lx1 (Lx1 (Lx4 (StaticVar n)))))
 -- pattern SeqVar c a        = FX (Lx2 (Lx1 (Lx4 (Function c a))))
--- pattern SeqTau c a        = FX (Lx2 (Lx1 (Lx5 (Function c a))))
 -- pattern SeqV s            = SeqVar (Var s) AZero
--- pattern SeqT n            = SeqTau (SFunc AZero n) AZero
 
 seqv :: String -> MSOLSequentCalc (Term Int)
 seqv x = liftToSequent $ SOV x
@@ -63,9 +64,6 @@ ss = SS . liftToSequent
 
 sa :: MonadicallySOL (Form Bool) -> MSOLSequentCalc Antecedent
 sa = SA . liftToSequent
-
-phi :: Int -> MonadicallySOL (Term Int) -> MonadicallySOL (Form Bool)
-phi n x = SOPhi n AOne AOne :!$: x
 
 tau :: MonadicallySOL (Term Int)
 tau = SOT 0
@@ -109,8 +107,19 @@ instance Inference MSOLogic MonadicallySOLLex where
         conclusionOf SOUD   = GammaV 1 :|-: ss (SOMBind (SOAll "v") (\x -> SOMCtx 1 :!$: (apply x tau)))
         conclusionOf (FO x) = liftSequent (conclusionOf x)
 
-        restriction SOUD = Just (mpredicateEigenConstraint (liftToSequent $ SOMScheme 1) (ss $ SOMCtx 1 :!$: (apply (SOMScheme 1) tau))  (GammaV 1))
+        restriction SOUD     = Just (mpredicateEigenConstraint (liftToSequent $ SOMScheme 1) (ss $ SOMCtx 1 :!$: (apply (SOMScheme 1) tau))  (GammaV 1))
+        restriction (FO UD)  = Just (eigenConstraint stau (ss $ SOBind (All "v") phi) (GammaV 1))
+            where phi x = SOPhi 1 AOne AOne :!$: x
+                  stau = liftToSequent tau
 
+        restriction (FO ED1) = Just (eigenConstraint stau ((ss $ SOBind (Some "v") phi) :-: ss phiS) (GammaV 1 :+: GammaV 2))
+            where phi x = SOPhi 1 AOne AOne :!$: x
+                  phiS = SOPhi 1 AZero AZero
+                  stau = liftToSequent tau
+        restriction _ = Nothing
+
+-- TODO unify the different kinds of eigenconstrants using a prism for the
+-- case deconstruction below.
 mpredicateEigenConstraint c suc ant sub
     | c' `occursIn` ant' = Just $ "The predicate " ++ show c' ++ " appears not to be fresh, given that this line relies on " ++ show ant'
     | c' `occursIn` suc' = Just $ "The predicate " ++ show c' ++ " appears not to be fresh in the other premise " ++ show suc'
@@ -124,3 +133,50 @@ mpredicateEigenConstraint c suc ant sub
           -- XXX : this is not the most efficient way of checking
           -- imaginable.
           occursIn x y = not $ (subst x (static 0) y) =* y
+
+eigenConstraint c suc ant sub
+    | c' `occursIn` ant' = Just $ "The constant " ++ show c' ++ " appears not to be fresh, given that this line relies on " ++ show ant'
+    | c' `occursIn` suc' = Just $ "The constant " ++ show c' ++ " appears not to be fresh in the other premise " ++ show suc'
+    | otherwise = case fromSequent c' of 
+                          SOC _ -> Nothing
+                          _ -> Just $ "The term " ++ show c' ++ " is not a constant"
+    where c'   = applySub sub c
+          ant' = applySub sub ant
+          suc' = applySub sub suc
+          -- XXX : this is not the most efficient way of checking
+          -- imaginable.
+          occursIn x y = not $ (subst x (static 0) y) =* y
+
+-- XXX Skipping derived rules for now.
+parseMSOLogic :: Parsec String u [MSOLogic]
+parseMSOLogic = do r <- choice (map (try . string) 
+                            [ "AS","PR","MP","MTP","MT","DD","DNE"
+                            , "DNI", "DN", "S", "ADJ",  "ADD" , "BC"
+                            , "CB",  "CD", "ID", "UI", "UD", "EG", "ED"
+                            , "D-", "QN","ABS","APP"])
+                   case r of "AS"   -> return [FO AX]
+                             "PR"   -> return [FO AX]
+                             "MP"   -> return [FO MP]
+                             "MT"   -> return [FO MT]
+                             "DD"   -> return [FO DD]
+                             "DNE"  -> return [FO DNE]
+                             "DNI"  -> return [FO DNI]
+                             "DN"   -> return [FO DNE,FO DNI]
+                             "CD"   -> return [FO CP1, FO CP2]
+                             "ID"   -> return [FO ID1,FO ID2,FO ID3,FO ID4]
+                             "ADJ"  -> return [FO ADJ]
+                             "S"    -> return [FO S1,FO S2]
+                             "ADD"  -> return [FO ADD1, FO ADD2]
+                             "MTP"  -> return [FO MTP1, FO MTP2]
+                             "BC"   -> return [FO BC1, FO BC2]
+                             "CB"   -> return [FO CB]
+                             "UI"   -> return [FO UI,SOUI]
+                             "UD"   -> return [FO UD,SOUD]
+                             "EG"   -> return [FO EG,SOEG]
+                             "ED"   -> return [FO ED1,FO ED2]
+                             "QN"   -> return [FO QN1, FO QN2, FO QN3,FO QN4]
+                             "ABS"  -> return [ABS]
+                             "APP"  -> return [APP]
+
+parseMSOLProof :: String -> [DeductionLine MSOLogic MonadicallySOLLex (Form Bool)]
+parseMSOLProof = toDeduction (parseMSOLogic) msolFormulaParser

@@ -22,7 +22,7 @@ subFormulaParser = coreParser msolFormulaParser subFormulaParser
 coreParser recur sfrecur = (parenParser recur <* spaces)
       <|> try (quantifiedSentenceParser parseFreeVar sfrecur)
       <|> try (quantifiedSentenceParser parseMSOLVar sfrecur)
-      <|> try (atomicSentenceParser <* spaces)
+      <|> try (atomicSentenceParser "PQRSTUVW" <* spaces)
       <|> unaryOpParser [parseNeg] sfrecur
 
 parseFreeVar :: Parsec String u (MonadicallySOL (Term Int))
