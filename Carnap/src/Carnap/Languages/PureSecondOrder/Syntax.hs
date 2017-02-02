@@ -136,7 +136,6 @@ type MonadicallySOLLex = FOL.PureLexiconFOL
 
 type MonadicallySOL = FixLang MonadicallySOLLex
 
-
 pattern SOSent n        = FX (Lx1 (Lx1 (Lx1 (Lx1 (Predicate (Prop n) AZero)))))
 pattern SOSPhi n        = FX (Lx1 (Lx1 (Lx1 (Lx2 (Predicate (SProp n) AZero)))))
 pattern SOCon x arity   = FX (Lx1 (Lx1 (Lx1 (Lx3 (Connective x arity)))))

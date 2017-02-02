@@ -1,6 +1,6 @@
 {-#LANGUAGE GADTs, FlexibleContexts, PatternSynonyms, TypeSynonymInstances, FlexibleInstances, MultiParamTypeClasses #-}
 module Carnap.Languages.PureFirstOrder.Logic
-        (FOLogic(..), parseFOLLogic, parseFOLProof, folSeqParser, phiS, phi, tau, ss, FOLSequentCalc, DerivedRule(..))
+        (FOLogic(..), parseFOLogic, parseFOLProof, folSeqParser, phiS, phi, tau, ss, FOLSequentCalc, DerivedRule(..))
     where
 
 import Data.Map as M (lookup, Map)
@@ -50,7 +50,6 @@ pattern SeqT n            = SeqTau (SFunc AZero n) AZero
 
 instance Eq (FOLSequentCalc a) where
         (==) = (=*)
-
 
 instance ParsableLex (Form Bool) PureLexiconFOL where
         langParser = folFormulaParser
@@ -194,8 +193,8 @@ eigenConstraint c suc ant sub
           -- imaginable.
           occursIn x y = not $ (subst x (static 0) y) =* y
 
-parseFOLLogic :: Map String DerivedRule -> Parsec String u [FOLogic]
-parseFOLLogic ders = 
+parseFOLogic :: Map String DerivedRule -> Parsec String u [FOLogic]
+parseFOLogic ders = 
                 do r <- choice (map (try . string) 
                             [ "AS","PR","MP","MTP","MT","DD","DNE"
                             , "DNI", "DN", "S", "ADJ",  "ADD" , "BC"
@@ -228,4 +227,4 @@ parseFOLLogic ders =
                                             Nothing -> parserFail "--- Looks like you're citing a derived rule that doesn't exist"
 
 parseFOLProof ::  Map String DerivedRule -> String -> [DeductionLine FOLogic PureLexiconFOL (Form Bool)]
-parseFOLProof ders = toDeduction (parseFOLLogic ders) folFormulaParser
+parseFOLProof ders = toDeduction (parseFOLogic ders) folFormulaParser

@@ -11,6 +11,7 @@ import Carnap.Languages.Util.GenericConnectives
 import Carnap.Languages.Util.LanguageClasses
 import Carnap.Languages.PureFirstOrder.Logic (FOLogic(..))
 import Carnap.Languages.PureSecondOrder.Parser
+import Carnap.Languages.ClassicalSequent.Parser
 import Carnap.Calculi.NaturalDeduction.Syntax
 import Carnap.Calculi.NaturalDeduction.Parser
 import Carnap.Core.Data.Util (scopeHeight)
@@ -36,6 +37,9 @@ seqv x = liftToSequent $ SOV x
 
 seqsov :: String -> MSOLSequentCalc (Form (Int -> Bool))
 seqsov x = liftToSequent $ SOMVar x
+
+instance ParsableLex (Form Bool) MonadicallySOLLex where
+        langParser = msolFormulaParser
 
 instance CopulaSchema MSOLSequentCalc where 
 
@@ -66,7 +70,7 @@ sa :: MonadicallySOL (Form Bool) -> MSOLSequentCalc Antecedent
 sa = SA . liftToSequent
 
 tau :: MonadicallySOL (Term Int)
-tau = SOT 0
+tau = SOT 1
 
 apply l t = SOMApp SOApp :!$: l :!$: t
 
@@ -107,12 +111,19 @@ instance Inference MSOLogic MonadicallySOLLex where
         conclusionOf SOUD   = GammaV 1 :|-: ss (SOMBind (SOAll "v") (\x -> SOMCtx 1 :!$: (apply x tau)))
         conclusionOf (FO x) = liftSequent (conclusionOf x)
 
-        restriction SOUD     = Just (mpredicateEigenConstraint (liftToSequent $ SOMScheme 1) (ss $ SOMCtx 1 :!$: (apply (SOMScheme 1) tau))  (GammaV 1))
-        restriction (FO UD)  = Just (eigenConstraint stau (ss $ SOBind (All "v") phi) (GammaV 1))
+        restriction SOUD     = Just (mpredicateEigenConstraint 
+                                        (liftToSequent $ SOMScheme 1) 
+                                        (ss (SOMBind (SOAll "v") (\x -> SOMCtx 1 :!$: (apply x tau))))  
+                                        (GammaV 1))
+        restriction (FO UD)  = Just (eigenConstraint stau 
+                                        (ss $ SOBind (All "v") phi) 
+                                        (GammaV 1))
             where phi x = SOPhi 1 AOne AOne :!$: x
                   stau = liftToSequent tau
 
-        restriction (FO ED1) = Just (eigenConstraint stau ((ss $ SOBind (Some "v") phi) :-: ss phiS) (GammaV 1 :+: GammaV 2))
+        restriction (FO ED1) = Just (eigenConstraint stau 
+                                        ((ss $ SOBind (Some "v") phi) :-: ss phiS) 
+                                        (GammaV 1 :+: GammaV 2))
             where phi x = SOPhi 1 AOne AOne :!$: x
                   phiS = SOPhi 1 AZero AZero
                   stau = liftToSequent tau
@@ -123,9 +134,10 @@ instance Inference MSOLogic MonadicallySOLLex where
 mpredicateEigenConstraint c suc ant sub
     | c' `occursIn` ant' = Just $ "The predicate " ++ show c' ++ " appears not to be fresh, given that this line relies on " ++ show ant'
     | c' `occursIn` suc' = Just $ "The predicate " ++ show c' ++ " appears not to be fresh in the other premise " ++ show suc'
-    | otherwise = case fromSequent c' of
-                      SOPred _ _ -> Nothing
-                      _ -> Just $ "the expression " ++ show c' ++ " appears not to be a predicate."
+    | otherwise = Nothing
+                    -- case fromSequent c' of
+                    --   SOPred _ _ -> Nothing
+                    --   _ -> Just $ "the expression " ++ show c' ++ " appears not to be a predicate."
 
     where c'   = applySub sub c
           ant' = applySub sub ant
@@ -140,7 +152,7 @@ eigenConstraint c suc ant sub
     | otherwise = case fromSequent c' of 
                           SOC _ -> Nothing
                           _ -> Just $ "The term " ++ show c' ++ " is not a constant"
-    where c'   = applySub sub c
+    where c' = applySub sub c
           ant' = applySub sub ant
           suc' = applySub sub suc
           -- XXX : this is not the most efficient way of checking
@@ -161,18 +173,18 @@ parseMSOLogic = do r <- choice (map (try . string)
                              "DD"   -> return [FO DD]
                              "DNE"  -> return [FO DNE]
                              "DNI"  -> return [FO DNI]
-                             "DN"   -> return [FO DNE,FO DNI]
+                             "DN"   -> return [FO DNE, FO DNI]
                              "CD"   -> return [FO CP1, FO CP2]
-                             "ID"   -> return [FO ID1,FO ID2,FO ID3,FO ID4]
+                             "ID"   -> return [FO ID1, FO ID2,FO ID3,FO ID4]
                              "ADJ"  -> return [FO ADJ]
                              "S"    -> return [FO S1,FO S2]
                              "ADD"  -> return [FO ADD1, FO ADD2]
                              "MTP"  -> return [FO MTP1, FO MTP2]
                              "BC"   -> return [FO BC1, FO BC2]
                              "CB"   -> return [FO CB]
-                             "UI"   -> return [FO UI,SOUI]
-                             "UD"   -> return [FO UD,SOUD]
-                             "EG"   -> return [FO EG,SOEG]
+                             "UI"   -> return [FO UI, SOUI]
+                             "UD"   -> return [SOUD, FO UD]
+                             "EG"   -> return [FO EG, SOEG]
                              "ED"   -> return [FO ED1,FO ED2]
                              "QN"   -> return [FO QN1, FO QN2, FO QN3,FO QN4]
                              "ABS"  -> return [ABS]
@@ -180,3 +192,5 @@ parseMSOLogic = do r <- choice (map (try . string)
 
 parseMSOLProof :: String -> [DeductionLine MSOLogic MonadicallySOLLex (Form Bool)]
 parseMSOLProof = toDeduction (parseMSOLogic) msolFormulaParser
+
+msolSeqParser = seqFormulaParser :: Parsec String u (MSOLSequentCalc Sequent)

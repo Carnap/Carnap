@@ -39,6 +39,7 @@ library
                      , Carnap.Languages.PureFirstOrder.Parser
                      , Carnap.Languages.PureFirstOrder.Logic
                      , Carnap.Languages.PureSecondOrder.Syntax
+                     , Carnap.Languages.PureSecondOrder.Parser
                      , Carnap.Languages.PureSecondOrder.Logic
                      , Carnap.Languages.ClassicalSequent.Syntax
                      , Carnap.Languages.ClassicalSequent.Parser

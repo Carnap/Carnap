@@ -6,6 +6,7 @@ import Carnap.Core.Data.AbstractSyntaxDataTypes (liftLang)
 import Carnap.Languages.ClassicalSequent.Syntax
 import Carnap.Languages.PurePropositional.Logic as P (DerivedRule(..), parsePropProof,parseFitchPropProof, propSeqParser) 
 import Carnap.Languages.PureFirstOrder.Logic as FOL (DerivedRule(..), parseFOLProof, folSeqParser) 
+import Carnap.Languages.PureSecondOrder.Logic (parseMSOLProof, msolSeqParser) 
 import Carnap.Languages.PurePropositional.Util (toSchema)
 import Carnap.GHCJS.SharedTypes
 import Text.Parsec (parse)
@@ -81,6 +82,9 @@ activateChecker drs w (Just iog@(IOGoal i o g classes))
         | "firstOrder" `elem` classes = 
                         tryParse buildOptions folSeqParser 
                             (\s mtref pd -> folCheckSolution drs s mtref)
+        | "secondOrder" `elem` classes = 
+                        tryParse buildOptions msolSeqParser
+                            (\s mtref pd -> msolCheckSolution s mtref)
         | "LogicBook" `elem` classes = 
                         tryParse buildOptions propSeqParser
                             (\s mtref pd -> checkSolutionFitch drs s pd) 
@@ -140,6 +144,17 @@ folCheckSolution drs s mtref w ref v (g, fd) =
                Nothing -> return ()
            t' <- forkIO $ do threadDelay 200000
                              let Feedback mseq ds = toDisplaySequence hoProcessLine . parseFOLProof (M.map liftDerivedRule $ M.fromList rules) $ v
+                             updateGoal s w ref (g, fd) mseq ds
+           writeIORef mtref (Just t')
+           return ()
+
+msolCheckSolution s mtref w ref v (g, fd) = 
+        do mt <- readIORef mtref
+           case mt of
+               Just t -> killThread t
+               Nothing -> return ()
+           t' <- forkIO $ do threadDelay 200000
+                             let Feedback mseq ds = toDisplaySequence hoProcessLine . parseMSOLProof $ v
                              updateGoal s w ref (g, fd) mseq ds
            writeIORef mtref (Just t')
            return ()
