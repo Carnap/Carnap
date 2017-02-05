@@ -54,8 +54,8 @@ data SOApplicator a where
         SOApp :: SOApplicator (Form (Int -> b) -> Term Int -> Form b)
 
 instance Schematizable SOApplicator where
-        schematize (SOApp)  = \(x:y:_) -> if last x == ')' then init x ++ "," ++ y  ++ ")"
-                                                           else x ++ "(" ++ y ++ ")"
+        schematize (SOApp)  = \(x:y:_) -> if last x == '}' then init x ++ "," ++ y  ++ ")"
+                                                           else x ++ "{" ++ y ++ "}"
 
 instance UniformlyEq SOApplicator where
     (SOApp) =* (SOApp) = True
@@ -84,10 +84,10 @@ instance FirstOrderLex MonadicSOScheme where
 
 -- XXX this is a good candidate for a generic constructor
 data MonadicSOCtx a where
-        MonCtx :: Int -> MonadicSOCtx (Form Bool -> Form Bool)
+        MonCtx :: Int -> MonadicSOCtx (Form (Int -> Bool) -> Form Bool)
 
 instance Schematizable MonadicSOCtx where
-        schematize (MonCtx n) = const $ "Φ_" ++ show n
+        schematize (MonCtx n) = \(x:_) -> "Φ_" ++ show n ++ "(" ++ x ++ ")"
 
 instance UniformlyEq MonadicSOCtx where
     (MonCtx n) =* (MonCtx m) = n == m

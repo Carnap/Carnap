@@ -49,7 +49,7 @@ orient ((x:=:y):eqs) =  do chx <- constHead x []
 rigidRigid :: (HigherOrder f, MonadVar f (State Int))  => Equation f -> (State Int) Bool
 rigidRigid (x:=:y) = (&&) <$> constHead x [] <*> constHead y []
 
-constHead ::  (HigherOrder f, MonadVar f (State Int), Typeable a, EtaExpand (State Int) f a) => f a -> [AnyPig f] -> State Int Bool
+constHead ::  (HigherOrder f, MonadVar f (State Int), Typeable a, EtaExpand f a) => f a -> [AnyPig f] -> State Int Bool
 constHead x bv = case castLam x of
  (Just (ExtLam l _)) -> do lv <- fresh
                            constHead (l lv) ((AnyPig lv):bv)
@@ -98,7 +98,7 @@ generate ((x :: f a) :=: y) = --accumulator for projection terms
                            Just Refl -> return (gappyX newTerm :=:y,headX:=:newTerm)
                            Nothing -> mzero
 
-guillotine :: (HigherOrder f, Monad m,Typeable a, MonadVar f (State Int), EtaExpand (State Int) f a) => f a -> m (AnyPig f, [AnyPig f])
+guillotine :: (HigherOrder f, Monad m,Typeable a, MonadVar f (State Int), EtaExpand f a) => f a -> m (AnyPig f, [AnyPig f])
 guillotine x = basket (AnyPig x) []
             where basket (AnyPig x) pigs = case matchApp x of
                       Just (ExtApp h t) -> basket (AnyPig h) ((AnyPig t):pigs)
@@ -114,7 +114,7 @@ guillotine x = basket (AnyPig x) []
 project :: (MonadVar f (State Int), HigherOrder f) => [AnyPig f] -> AnyPig f ->  State Int (AnyPig f)
 project pvs (AnyPig term) = 
         do body <- handleBody pvs term
-           projection <- bindAll pvs (AnyPig body)
+           projection <- bindAll (reverse pvs) (AnyPig body)
            return projection
 
 imitate :: (MonadVar f (State Int), HigherOrder f) => [AnyPig f] -> AnyPig f ->  LogicT (State Int) (AnyPig f)
@@ -122,7 +122,7 @@ imitate pvs (AnyPig term)
     | isVar term = mzero
     | otherwise = 
         do body <- M.lift $ handleBody pvs term
-           imitation <- M.lift $ bindAll pvs (AnyPig body)
+           imitation <- M.lift $ bindAll (reverse pvs) (AnyPig body)
            return imitation 
 
 handleBody :: (MonadVar f (State Int), HigherOrder f, Typeable a) => [AnyPig f] -> f a ->  State Int (f a)
@@ -148,13 +148,13 @@ bindAll [] body = return body
 safesubst :: (HigherOrder f, MonadVar f m, Typeable a, Typeable b) => f a -> f b -> m (f a -> f b)
 safesubst (x :: f a) (y :: f b) = return $ \z -> subst x z y
 
-genFreshArg :: (MonadVar f (State Int), EtaExpand (State Int) f a, HigherOrder f, Typeable a) => 
+genFreshArg :: (MonadVar f (State Int), EtaExpand f a, HigherOrder f, Typeable a) => 
     [AnyPig f] -> f (a -> b) -> State Int (f a)
 genFreshArg projvars term =
         do (EveryPig head) <- freshPig 
            return $ attach head projvars
-    where attach ::  (HigherOrder f, Typeable d, MonadVar f (State Int), EtaExpand (State Int) f d) 
-            => (forall c . (Typeable c, EtaExpand (State Int) f c) => f c) -> [AnyPig f] -> f d
+    where attach ::  (HigherOrder f, Typeable d, MonadVar f (State Int), EtaExpand f d) 
+            => (forall c . (Typeable c, EtaExpand f c) => f c) -> [AnyPig f] -> f d
           attach h  ((AnyPig v):vs) = attach (h .$. v) vs
           attach h [] = h
 
@@ -219,6 +219,7 @@ eqLMatch (x :=: y) =
                         (lam $ \z -> subst v z y') 
                    
 
+eqLNF :: (HigherOrder f, MonadVar f (State Int)) => Equation f -> (State Int) (Equation f)
 eqLNF ((x :: f a):=:y) =  do x' <- toLNF x
                              y' <- toLNF y
                              return (x':=:y')

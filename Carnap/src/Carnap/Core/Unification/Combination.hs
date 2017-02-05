@@ -69,7 +69,7 @@ class (FirstOrder f, Ord label, Eq label) => Combineable f label | f -> label wh
 --     return (top ++ rest)
 
 --this decomposes a term into a term, minus a subterm x, and an equation
-castOut:: (MonadVar f m, Typeable a, Typeable b, EtaExpand (State Int) f b, Combineable f label) => f b -> f a -> m (f a, Equation f)
+castOut:: (MonadVar f m, Typeable a, Typeable b, EtaExpand f b, Combineable f label) => f b -> f a -> m (f a, Equation f)
 castOut x y = do v <- fresh
                  --replace x with v in y
                  let y' = subst x v y

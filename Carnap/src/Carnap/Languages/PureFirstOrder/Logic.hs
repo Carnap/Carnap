@@ -185,6 +185,7 @@ eigenConstraint c suc ant sub
     | c' `occursIn` suc' = Just $ "The constant " ++ show c' ++ " appears not to be fresh in the other premise " ++ show suc'
     | otherwise = case fromSequent c' of 
                           PC _ -> Nothing
+                          PT _ -> Nothing
                           _ -> Just $ "The term " ++ show c' ++ " is not a constant"
     where c'   = applySub sub c
           ant' = applySub sub ant

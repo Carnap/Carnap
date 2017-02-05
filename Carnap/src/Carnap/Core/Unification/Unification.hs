@@ -4,7 +4,7 @@ module Carnap.Core.Unification.Unification (
    Equation((:=:)), UError(..), FirstOrder(..), HigherOrder(..),
       applySub, mapAll, freeVars, emap, sameTypeEq, ExtApp(..), ExtLam(..), 
       EveryPig(..),AnyPig(..), EtaExpand(..), MonadVar(..), betaReduce, 
-      betaNormalize, toBNF, pureBNF, toLNF, etaMaximize
+      betaNormalize, toBNF, pureBNF, toLNF, etaMaximize, etaMaximize'
 ) where
 
 import Data.Type.Equality
@@ -14,13 +14,13 @@ import Carnap.Core.Util
 import Control.Monad.State 
 
 data Equation f where
-    (:=:) :: (Typeable a, EtaExpand (State Int) f a) => f a -> f a -> Equation f
+    (:=:) :: (Typeable a, EtaExpand f a) => f a -> f a -> Equation f
 
 newtype EveryPig f = EveryPig {unEveryPig :: forall a. (Typeable a) => f a}
                      --
 --the typeable constraint lets us unpack this in a safe way
 data AnyPig f where
-    AnyPig :: (EtaExpand (State Int) f a, Typeable a) => f a -> AnyPig f
+    AnyPig :: (EtaExpand f a, Typeable a) => f a -> AnyPig f
 
 instance (UniformlyEq f, UniformlyOrd f) => Ord (AnyPig f) where
     (AnyPig x) <= (AnyPig y) = x <=* y
@@ -65,22 +65,15 @@ class Monad m => MonadVar f m where
     fresh :: (Typeable a) => m (f a)
     freshPig :: m (EveryPig f)
 
-{-|
-EtaExpand is a typeclass for languages where you can perform
-eta-expansions inside of a fresh variable monad. The default instance
-assumes that you're dealing with a saturated linguistic item that can't be
-expanded. A "Nothing" means the term cannot be expanded, and a "Just s"
-means that one expansion has taken place.
--}
-class (Monad m, Typeable a) => EtaExpand m f a where
-        etaExpand :: f a -> m (Maybe (f a))
-        etaExpand x = return Nothing
+class (Typeable a) => EtaExpand f a where
+        etaExpand :: f a -> f a
+        etaExpand = id
 
 data ExtApp f a where
-    ExtApp :: (Typeable b, EtaExpand (State Int) f b) => f (b -> a) -> f b -> ExtApp f a
+    ExtApp :: (Typeable b, EtaExpand f b) => f (b -> a) -> f b -> ExtApp f a
 
 data ExtLam f a where
-    ExtLam :: (Typeable b, Typeable c, EtaExpand (State Int) f c, EtaExpand (State Int) f b) => 
+    ExtLam :: (Typeable b, Typeable c, EtaExpand f c, EtaExpand f b) => 
         (f b -> f c) -> (a :~: (b -> c)) -> ExtLam f a
 
 class FirstOrder f => HigherOrder f where
@@ -90,18 +83,13 @@ class FirstOrder f => HigherOrder f where
     (.$.) :: (Typeable a, Typeable b) => f (a -> b) -> f a -> f b
     lam :: (Typeable a, Typeable b) => (f a -> f b) -> f (a -> b) 
 
-instance {-# OVERLAPPABLE #-} (Monad m, Typeable a, HigherOrder f) => EtaExpand m f a
+instance {-# OVERLAPPABLE #-} (Typeable a, HigherOrder f) => EtaExpand f a
 
-instance (Typeable b, MonadVar f m, EtaExpand m f b, EtaExpand m f a, HigherOrder f) 
-        => EtaExpand m f (b -> a) where
+instance (Typeable b, EtaExpand f b, EtaExpand f a, HigherOrder f) 
+        => EtaExpand f (b -> a) where
         etaExpand l  = case castLam l of 
-                        Just (ExtLam f Refl) -> 
-                                 do v <- fresh
-                                    inner <- etaExpand (f v)
-                                    case inner of
-                                        Nothing -> return Nothing 
-                                        Just t -> return $ Just $ lam $ \x -> subst v x t
-                        Nothing -> return $ Just $ lam $ \x -> l .$. x
+                        Just (ExtLam f Refl) -> lam $ etaExpand . f 
+                        Nothing -> lam $ \x -> l .$. x
 
 data UError f where
     SubError :: f a -> f a -> UError f -> UError f
@@ -150,7 +138,7 @@ applySub :: FirstOrder f => [Equation f] -> f a -> f a
 applySub []             y = y
 applySub ((v :=: x):ss) y = applySub ss (subst v x y)
 
-freeVars :: (Typeable a, FirstOrder f, EtaExpand (State Int) f a) => f a -> [AnyPig f]
+freeVars :: (Typeable a, FirstOrder f, EtaExpand f a) => f a -> [AnyPig f]
 freeVars t | isVar t   = [AnyPig t]
            | otherwise = concatMap rec (decompose t t)
     where rec (a :=: _) = freeVars a
@@ -158,7 +146,6 @@ freeVars t | isVar t   = [AnyPig t]
 --------------------------------------------------------
 --Beta/Eta operations
 --------------------------------------------------------
---
 
 --return "Nothing" in the do nothing case
 betaReduce :: (HigherOrder f) => f a -> Maybe (f a)
@@ -200,20 +187,27 @@ toBNF x = do nf <- betaNormalize x
 pureBNF :: (HigherOrder f, MonadVar f (State Int), Typeable a) => f a -> f a
 pureBNF x = evalState (toBNF x) (0 :: Int)
 
-toLNF :: (HigherOrder f, MonadVar f (State Int), Typeable a, EtaExpand (State Int) f a) => f a -> State Int (f a)
+toLNF :: (HigherOrder f, MonadVar f (State Int), Typeable a, EtaExpand f a) => f a -> State Int (f a)
 toLNF x = do bnf <- toBNF x
-             case matchApp bnf of 
-                Just (ExtApp h t) -> do t' <- toLNF t
-                                        etaMaximize  (h .$. t')
-                Nothing -> case (castLam bnf) of
-                         Just (ExtLam f Refl) -> 
-                            do v <- fresh
-                               inf <- toLNF (f v)
-                               return $ (lam $ \y -> subst v y inf)
-                         Nothing -> etaMaximize bnf
+             bnfeta <- etaMaximize bnf
+             rec bnfeta
+    where rec :: (HigherOrder f, MonadVar f (State Int), Typeable a, EtaExpand f a) => f a -> State Int (f a)
+          rec bnfeta = case matchApp bnfeta of 
+                          Just (ExtApp h t) -> do t' <- toLNF t
+                                                  h' <- case matchApp h of
+                                                              Just (ExtApp _ _) -> rec h
+                                                              _ -> return h
+                                                  return (h' .$. t')
+                          Nothing -> case (castLam bnfeta) of
+                                   Just (ExtLam f Refl) -> 
+                                      do v <- fresh
+                                         inf <- rec (f v)
+                                         return $ (lam $ \y -> subst v y inf)
+                                   Nothing -> return bnfeta
 
-etaMaximize :: (HigherOrder f, MonadVar f m, Typeable a, EtaExpand m f a) => f a -> m (f a)
-etaMaximize x = do y <- etaExpand x
-                   case y of 
-                    Nothing -> return x
-                    Just y' -> etaMaximize y'
+etaMaximize :: (HigherOrder f, Typeable a, EtaExpand f a) => f a -> (State Int) (f a)
+etaMaximize = return . etaMaximize'
+
+etaMaximize' :: (HigherOrder f, Typeable a, EtaExpand f a) => f a -> f a
+etaMaximize' x = if y =* x then x else etaMaximize' y
+    where y = etaExpand x

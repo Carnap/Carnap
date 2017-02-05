@@ -1,7 +1,7 @@
 {-#LANGUAGE GADTs, FlexibleContexts, PatternSynonyms, TypeSynonymInstances, FlexibleInstances, MultiParamTypeClasses #-}
 module Carnap.Languages.PureSecondOrder.Logic where
 
-import Carnap.Core.Data.Util (mapover)
+import Carnap.Core.Data.Util (scopeHeight,mapover)
 import Carnap.Core.Data.AbstractSyntaxDataTypes
 import Carnap.Core.Data.AbstractSyntaxClasses
 import Carnap.Core.Unification.Unification
@@ -14,7 +14,6 @@ import Carnap.Languages.PureSecondOrder.Parser
 import Carnap.Languages.ClassicalSequent.Parser
 import Carnap.Calculi.NaturalDeduction.Syntax
 import Carnap.Calculi.NaturalDeduction.Parser
-import Carnap.Core.Data.Util (scopeHeight)
 import Data.List (intercalate)
 import Data.Typeable (Typeable)
 import Text.Parsec
@@ -52,7 +51,7 @@ instance CopulaSchema MSOLSequentCalc where
     appSchema (SeqSOMQuant (SOSome x)) (LLam f) e = 
         schematize (SOSome x) (show (f $ seqsov x) : e)
     appSchema (SeqAbst (SOLam v)) (LLam f) e = 
-        schematize (SOLam v) (show (f $ (seqv v)) : e)
+        schematize (SOLam v) (show (f $ seqv v) : e)
     appSchema x y e = schematize x (show y : e)
 
     lamSchema f [] = "λβ_" ++ show h ++ "." ++ show (f $ liftToSequent $ SOSV (-1 * h))
@@ -60,7 +59,7 @@ instance CopulaSchema MSOLSequentCalc where
     lamSchema f (x:xs) = "(λβ_" ++ show h ++ "." ++ show (f $ liftToSequent $ SOSV (-1 * h)) ++ intercalate " " (x:xs) ++ ")"
         where h = scopeHeight (LLam f)
 
-data MSOLogic = ABS | APP | SOUI | SOEG | SOUD | SOED | FO FOLogic
+data MSOLogic = ABS | APP | SOUI | SOEG | SOUD | SOED1 | SOED2 | FO FOLogic
               deriving Show
 
 ss :: MonadicallySOL (Form Bool) -> MSOLSequentCalc Succedent
@@ -71,6 +70,8 @@ sa = SA . liftToSequent
 
 tau :: MonadicallySOL (Term Int)
 tau = SOT 1
+
+phiS = SOPhi 1 AZero AZero
 
 apply l t = SOMApp SOApp :!$: l :!$: t
 
@@ -97,24 +98,41 @@ predScheme n = phi n :!$: SOT n
                                    Nothing -> error "trouble in predScheme algorithm"
 
 instance Inference MSOLogic MonadicallySOLLex where
-        premisesOf ABS    = [GammaV 1 :|-: ss (predScheme 0)]
-        premisesOf APP    = [GammaV 1 :|-: ss (lambdaScheme 0)]
-        premisesOf SOUI   = [GammaV 1 :|-: ss (SOMBind (SOAll "v") (\x -> SOMCtx 1 :!$: (apply x tau)))]
-        premisesOf SOEG   = [GammaV 1 :|-: ss (SOMCtx 1 :!$: (apply (SOMScheme 1) tau))]
-        premisesOf SOUD   = [GammaV 1 :|-: ss (SOMCtx 1 :!$: (apply (SOMScheme 1) tau))]
+        premisesOf ABS    = [ GammaV 1 :|-: ss (predScheme 0)]
+        premisesOf APP    = [ GammaV 1 :|-: ss (lambdaScheme 0)]
+        premisesOf SOUI   = [ GammaV 1 :|-: ss (SOMBind (SOAll "v") (\x -> SOMCtx 1 :!$: x))]
+        premisesOf SOEG   = [ GammaV 1 :|-: ss (SOMCtx 1 :!$: SOMScheme 1)]
+        premisesOf SOUD   = [ GammaV 1 :|-: ss (SOMCtx 1 :!$: SOMScheme 1)]
+        premisesOf SOED1  = [ GammaV 1 :+: sa (SOMCtx 1 :!$: SOMScheme 1) :|-: ss phiS
+                            , GammaV 2 :|-: ss (SOMBind (SOSome "v") (\x -> SOMCtx 1 :!$: x))
+                            ]
+        premisesOf SOED1  = [ GammaV 1 :+: sa (SOMCtx 1 :!$: SOMScheme 1) :|-: ss phiS
+                            , GammaV 2 :|-: ss (SOMBind (SOSome "v") (\x -> SOMCtx 1 :!$: x))
+                            ]
+        premisesOf SOED2  = [ GammaV 1 :|-: ss phiS
+                            , GammaV 2 :|-: ss (SOMBind (SOSome "v") (\x -> SOMCtx 1 :!$: x))
+                            ]
         premisesOf (FO x) = map liftSequent (premisesOf x)
 
         conclusionOf ABS    = GammaV 1 :|-: ss (lambdaScheme 0)
         conclusionOf APP    = GammaV 1 :|-: ss (predScheme 0)
-        conclusionOf SOUI   = GammaV 1 :|-: ss (SOMCtx 1 :!$: (apply (SOMScheme 1) tau))
-        conclusionOf SOEG   = GammaV 1 :|-: ss (SOMBind (SOSome "v") (\x -> SOMCtx 1 :!$: (apply x tau)))
-        conclusionOf SOUD   = GammaV 1 :|-: ss (SOMBind (SOAll "v") (\x -> SOMCtx 1 :!$: (apply x tau)))
+        conclusionOf SOUI   = GammaV 1 :|-: ss (SOMCtx 1 :!$: SOMScheme 1)
+        conclusionOf SOEG   = GammaV 1 :|-: ss (SOMBind (SOSome "v") (\x -> SOMCtx 1 :!$: x))
+        conclusionOf SOUD   = GammaV 1 :|-: ss (SOMBind (SOAll "v") (\x -> SOMCtx 1 :!$: x))
+        conclusionOf SOED1  = GammaV 1 :+: GammaV 2 :|-: ss phiS
+        conclusionOf SOED2  = GammaV 1 :+: GammaV 2 :|-: ss phiS
         conclusionOf (FO x) = liftSequent (conclusionOf x)
 
         restriction SOUD     = Just (mpredicateEigenConstraint 
                                         (liftToSequent $ SOMScheme 1) 
-                                        (ss (SOMBind (SOAll "v") (\x -> SOMCtx 1 :!$: (apply x tau))))  
+                                        (ss (SOMBind (SOAll "v") (\x -> SOMCtx 1 :!$: x)))  
                                         (GammaV 1))
+
+        restriction SOED1    = Just (mpredicateEigenConstraint
+                                        (liftToSequent $ SOMScheme 1)
+                                        (ss (SOMBind (SOSome "v") (\x -> SOMCtx 1 :!$: x))
+                                            :-: ss phiS)
+                                        (GammaV 1 :+: GammaV 2))
         restriction (FO UD)  = Just (eigenConstraint stau 
                                         (ss $ SOBind (All "v") phi) 
                                         (GammaV 1))
@@ -125,7 +143,7 @@ instance Inference MSOLogic MonadicallySOLLex where
                                         ((ss $ SOBind (Some "v") phi) :-: ss phiS) 
                                         (GammaV 1 :+: GammaV 2))
             where phi x = SOPhi 1 AOne AOne :!$: x
-                  phiS = SOPhi 1 AZero AZero
+                  
                   stau = liftToSequent tau
         restriction _ = Nothing
 
@@ -151,6 +169,7 @@ eigenConstraint c suc ant sub
     | c' `occursIn` suc' = Just $ "The constant " ++ show c' ++ " appears not to be fresh in the other premise " ++ show suc'
     | otherwise = case fromSequent c' of 
                           SOC _ -> Nothing
+                          SOT _ -> Nothing
                           _ -> Just $ "The term " ++ show c' ++ " is not a constant"
     where c' = applySub sub c
           ant' = applySub sub ant
@@ -185,7 +204,7 @@ parseMSOLogic = do r <- choice (map (try . string)
                              "UI"   -> return [FO UI, SOUI]
                              "UD"   -> return [SOUD, FO UD]
                              "EG"   -> return [FO EG, SOEG]
-                             "ED"   -> return [FO ED1,FO ED2]
+                             "ED"   -> return [FO ED1,FO ED2, SOED1, SOED2]
                              "QN"   -> return [FO QN1, FO QN2, FO QN3,FO QN4]
                              "ABS"  -> return [ABS]
                              "APP"  -> return [APP]
