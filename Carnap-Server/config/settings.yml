@@ -32,5 +32,5 @@ database:
   database: "_env:PGDATABASE:carnapdb"
   poolsize: "_env:PGPOOLSIZE:10"
 
-copyright: Copyright 2015-2016 G. Leach-Krouse and J. Ehrlich
+copyright: Copyright 2015-2017 G. Leach-Krouse and J. Ehrlich
 #analytics: UA-YOURCODE

@@ -16,7 +16,12 @@
 
     ^{proofcheck 2 "proofchecker firstOrder Demo" "AxF(x):|-:F(c)" ""}
 
+    <p> This is a proofbox with an (experimental) Kalish and Montegue System for Second-Order
+    Logic, with a predicate abstraction rule.
+
+    ^{proofcheck 3 "proofchecker secondOrder Demo" ":|-: EXAx(F(x) /\\ G(x) <-> X(x))" ded3}
+
     <p> This is a proofbox with a Fitch system, using rules from <i>the Logic Book</i>, 
         and visually rendering the proof structure.
 
-    ^{proofcheck 3 "proofchecker LogicBook Demo" ":|-:(((P->Q)->P)->P)" ded2}
+    ^{proofcheck 4 "proofchecker LogicBook Demo" ":|-:(((P->Q)->P)->P)" ded2}
