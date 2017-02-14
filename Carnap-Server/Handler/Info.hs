@@ -53,16 +53,16 @@ ded2 = [st|
 
 ded3 = [st|
 Show EXAx(F(x)/\G(x)<->X(x))
-   Show Ax(F(x)/\G(x)<->\y[(F(y)/\G(y))](x))
-       Show F(c)/\G(c)->\y[(F(y)/\G(y))](c)
+   Show Ax(F(x)/\G(x)<->\y[F(y)/\G(y)](x))
+       Show F(c)/\G(c)->\y[F(y)/\G(y)](c)
             F(c)/\G(c):AS
-            \y[(F(y)/\G(y))](c):ABS 4
+            \y[F(y)/\G(y)](c):ABS 4
        :CD 5
-       Show \y[(F(y)/\G(y))](c)->F(c)/\G(c)
-            \y[(F(y)/\G(y))](c):AS
+       Show \y[F(y)/\G(y)](c)->F(c)/\G(c)
+            \y[F(y)/\G(y)](c):AS
             F(c)/\G(c):APP 8
        :CD 9
-       F(c)/\G(c)<->\y[(F(y)/\G(y))](c):CB 3 7
+       F(c)/\G(c)<->\y[F(y)/\G(y)](c):CB 3 7
    :UD 11
    EXAx(F(x)/\G(x)<->X(x)):EG 2
 :DD 13
