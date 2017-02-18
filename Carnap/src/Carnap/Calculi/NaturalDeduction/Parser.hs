@@ -44,7 +44,7 @@ parseShowLine f = do dpth <- indent
                      string "Show" <|> string "show"
                      optional $ char ':'
                      spaces
-                     phi <- f
+                     phi <- f <* eof
                      return $ ShowLine phi dpth
  
 parseQedLine :: Parsec String u [r] -> Parsec String u (DeductionLine r lex a)

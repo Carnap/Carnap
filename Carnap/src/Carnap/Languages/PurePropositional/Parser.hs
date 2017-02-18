@@ -1,6 +1,4 @@
-module Carnap.Languages.PurePropositional.Parser
-    (prePurePropFormulaParser, purePropFormulaParser)
-    where
+module Carnap.Languages.PurePropositional.Parser (purePropFormulaParser) where
 
 import Carnap.Languages.PurePropositional.Syntax
 import Carnap.Languages.Util.LanguageClasses (BooleanLanguage, IndexedPropLanguage)
@@ -10,20 +8,13 @@ import Text.Parsec.Expr
 
 --this parses as much formula as it can, but is happy to return an output if the
 --initial segment of a string is a formula
-prePurePropFormulaParser :: Monad m => String -> ParsecT String u m PureForm
-prePurePropFormulaParser s = buildExpressionParser opTable subFormulaParser
+purePropFormulaParser :: Monad m => String -> ParsecT String u m PureForm
+purePropFormulaParser s = buildExpressionParser opTable subFormulaParser
     --subformulas are either
-    where subFormulaParser = (parenParser (prePurePropFormulaParser s) <* spaces)  --formulas wrapped in parentheses
+    where subFormulaParser = (parenParser (purePropFormulaParser s) <* spaces)  --formulas wrapped in parentheses
                           <|> unaryOpParser [parseNeg] subFormulaParser --negations or modalizations of subformulas
                           <|> try (atomicSentenceParser s <* spaces)--or atoms
                           <|> (schemevarParser <* spaces)
-
---this requires that the whole string be a formula, although it allows
---trailing spaces.
-purePropFormulaParser :: Monad m => String -> ParsecT String u m PureForm
-purePropFormulaParser s = do e <- prePurePropFormulaParser s
-                             eof
-                             return e
 
 opTable :: Monad m => [[Operator String u m PureForm]]
 opTable = [[ Prefix (try parseNeg)], 

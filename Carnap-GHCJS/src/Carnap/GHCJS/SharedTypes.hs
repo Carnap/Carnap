@@ -6,7 +6,7 @@ module Carnap.GHCJS.SharedTypes (
 import Prelude
 import Data.Aeson
 import Data.Either
-import Text.Parsec (parse)
+import Text.Parsec (parse, eof)
 import GHC.Generics
 import Carnap.Languages.PurePropositional.Logic (DerivedRule(..))
 import Carnap.Languages.PurePropositional.Parser
@@ -46,5 +46,5 @@ instance FromJSON DerivedRule where
                case (toForm c, lefts ps') of 
                  (Right f, []) -> return $ DerivedRule f (rights ps')
                  _ -> mempty
-            where toForm = parse (purePropFormulaParser "PQRSTUVW") ""
+            where toForm = parse (purePropFormulaParser "PQRSTUVW" <* eof) ""
         parseJSON _ = mempty

@@ -266,7 +266,7 @@ errorPopup msg = alert ("Something has gone wrong. Here's the error: " ++ msg)
 --------------------------------------------------------
  
 formAndLabel :: Monad m => ParsecT String u m (String, PureForm)
-formAndLabel = withLabel (purePropFormulaParser "PQRSTUVW")
+formAndLabel = withLabel (purePropFormulaParser "PQRSTUVW" <* eof)
 
 seqAndLabel = withLabel propSeqParser
 

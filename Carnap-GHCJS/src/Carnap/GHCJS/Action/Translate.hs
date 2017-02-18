@@ -56,7 +56,7 @@ tryTrans :: Element -> IORef Bool -> PureForm ->
     EventM HTMLInputElement KeyboardEvent ()
 tryTrans o ref f = onEnter $ do (Just t) <- target :: EventM HTMLInputElement KeyboardEvent (Maybe HTMLInputElement)
                                 (Just ival)  <- getValue t
-                                case parse (spaces *> purePropFormulaParser "PQRSTUVW") "" ival of
+                                case parse (spaces *> purePropFormulaParser "PQRSTUVW" <* eof) "" ival of
                                       Right f' -> liftIO $ checkForm f'
                                       Left e -> message "Sorry, try again---that formula isn't gramatical."
    where checkForm f' 
@@ -72,7 +72,7 @@ tryFOLTrans :: Element -> IORef Bool -> PureFOLForm ->
     EventM HTMLInputElement KeyboardEvent ()
 tryFOLTrans o ref f = onEnter $ do (Just t) <- target :: EventM HTMLInputElement KeyboardEvent (Maybe HTMLInputElement)
                                    (Just ival)  <- getValue t
-                                   case parse (spaces *> folFormulaParser) "" ival of
+                                   case parse (spaces *> folFormulaParser <* eof) "" ival of
                                           Right f' -> liftIO $ checkForm f'
                                           Left e -> message "Sorry, try again---that formula isn't gramatical."
   where checkForm f' 
