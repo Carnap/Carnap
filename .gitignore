@@ -28,4 +28,5 @@ Carnap-Server/book/cache
 Carnap-Server/fay/Fay/Yesod.hs
 Carnap-Server/static/tmp/
 Carnap-Server/static/faygen*
+Carnap-GHCJS/test/testpages/
 client_session_key.aes
