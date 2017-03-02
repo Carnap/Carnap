@@ -1,6 +1,6 @@
 {-#LANGUAGE GADTs, FlexibleContexts, PatternSynonyms, TypeSynonymInstances, FlexibleInstances, MultiParamTypeClasses #-}
 module Carnap.Languages.PurePropositional.Logic 
-    (parsePropLogic, parsePropProof, parseFitchPropProof, 
+    (parsePropLogic, parseFitchPropLogic, parsePropProof, parseFitchPropProof, LogicBookPropLogic,
     DerivedRule(..), propSeqParser, PropSequentCalc) where
 
 import Data.Map as M (lookup, Map)
@@ -378,8 +378,9 @@ instance Inference LogicBookPropLogic PurePropLexicon where
     isAssumption _ = False
 
 parseFitchPropLogic :: Map String DerivedRule -> Parsec String u [LogicBookPropLogic]
-parseFitchPropLogic ders = do r <- choice (map (try . string) ["AS","PR","&I","/\\I","&E","/\\E","CI","->I","CE","->E","~I","-I","~E","-E"
-                                                           ,"vI","\\/I", "vE","\\/E","BI","<->I" , "BE", "<->E", "R"])
+parseFitchPropLogic ders = do r <- choice (map (try . string) ["AS","PR","&I","/\\I", "∧I","&E","/\\E","∧E","CI","->I","→I","→E","CE","->E", "→E"
+                                                              ,"~I","-I", "¬I","~E","-E","¬E" ,"vI","\\/I","∨I", "vE","\\/E", "∨E","BI","<->I", "↔I" 
+                                                              , "BE", "<->E", "↔E", "R"])
                               case r of
                                   "AS"   -> return [LBAS]
                                   "PR"   -> return [LBAX]
@@ -387,12 +388,18 @@ parseFitchPropLogic ders = do r <- choice (map (try . string) ["AS","PR","&I","/
                                   "&E"   -> return [ConjElim1, ConjElim2]
                                   "/\\I" -> return [ConjIntro]
                                   "/\\E" -> return [ConjElim1, ConjElim2]
+                                  "∧I"   -> return [ConjIntro]
+                                  "∧E"   -> return [ConjElim1, ConjElim2]
                                   "CI"   -> return [CondIntro1,CondIntro2]
                                   "CE"   -> return [CondElim]
                                   "->I"  -> return [CondIntro1,CondIntro2]
                                   "->E"  -> return [CondElim]
+                                  "→I"   -> return [CondIntro1,CondIntro2]
+                                  "→E"   -> return [CondElim]
                                   "~I"   -> return [NegeIntro1, NegeIntro2, NegeIntro3, NegeIntro4]
                                   "~E"   -> return [NegeElim1, NegeElim2, NegeElim3, NegeElim4]
+                                  "¬I"   -> return [NegeIntro1, NegeIntro2, NegeIntro3, NegeIntro4]
+                                  "¬E"   -> return [NegeElim1, NegeElim2, NegeElim3, NegeElim4]
                                   "-I"   -> return [NegeIntro1, NegeIntro2, NegeIntro3, NegeIntro4]
                                   "-E"   -> return [NegeElim1, NegeElim2, NegeElim3, NegeElim4]
                                   "vI"   -> return [DisjIntro1, DisjIntro2]
@@ -403,6 +410,8 @@ parseFitchPropLogic ders = do r <- choice (map (try . string) ["AS","PR","&I","/
                                   "BE"   -> return [BicoElim1, BicoElim2]
                                   "<->I" -> return [BicoIntro1, BicoIntro2, BicoIntro3, BicoIntro4]
                                   "<->E" -> return [BicoElim1, BicoElim2]
+                                  "↔I"   -> return [BicoIntro1, BicoIntro2, BicoIntro3, BicoIntro4]
+                                  "↔E"   -> return [BicoElim1, BicoElim2]
                                   "R"    -> return [Reiterate]
 
 parseFitchPropProof :: Map String DerivedRule -> String -> [DeductionLine LogicBookPropLogic PurePropLexicon (Form Bool)]
