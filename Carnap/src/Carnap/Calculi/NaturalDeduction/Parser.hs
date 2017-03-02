@@ -106,8 +106,8 @@ toProofTree ::
 toProofTree ded n = case ded !! (n - 1)  of
           (AssertLine f r dpth depairs) -> 
                 do let deps = map fst depairs
-                   mapM checkDep deps
-                   deps' <- mapM (\x -> toProofTree ded x) deps
+                   mapM_ checkDep deps
+                   deps' <- mapM (toProofTree ded) deps
                    return $ Node (ProofLine n (SS $ liftToSequent f) r) deps'
                 where checkDep depline = takeRange depline n >>= scan
           (ShowLine f d) -> 
@@ -115,7 +115,7 @@ toProofTree ded n = case ded !! (n - 1)  of
                    let (QedLine r _ depairs) = ded !! m
                    let deps = map fst depairs
                    mapM_ (checkDep $ m + 1) deps 
-                   deps' <- mapM (\x -> toProofTree ded x) deps
+                   deps' <- mapM (toProofTree ded) deps
                    return $ Node (ProofLine n (SS $ liftToSequent f) r) deps'
                 where --for scanning, we ignore the depth of the QED line
                       checkDep m m' = takeRange m' m >>= scan . init
@@ -124,7 +124,7 @@ toProofTree ded n = case ded !! (n - 1)  of
                               Nothing -> err "Open subproof (no corresponding QED)"
                               Just m' -> isSubProof n (n + m' - 1)
                       isSubProof n m = case lineRange n m of
-                        (h:t) -> if and (map (\x -> depth x > depth h) t) 
+                        (h:t) -> if all (\x -> depth x > depth h) t
                                    then Right (m + 1)
                                    else  err $ "Open subproof on lines" ++ show n ++ " to " ++ show m ++ " (no QED in this subproof)"
                         []    -> Right (m+1)
@@ -139,9 +139,9 @@ toProofTree ded n = case ded !! (n - 1)  of
           --the chunk has depth greater than or equal to that of line h,
           --and h is not a show line with no matching QED
           scan chunk@(h:t) =
-              if and (map (\x -> depth h <= depth x) chunk)
+              if all (\x -> depth h <= depth x) chunk
                   then case h of
-                    (ShowLine _ _) -> if or (map (\x -> depth h == depth x) t)
+                    (ShowLine _ _) -> if any (\x -> depth h == depth x) t
                         then Right True
                         else err "To cite a show line at this point, the line be available---it must have a matching QED earlier than this line."
                     _ -> Right True
@@ -163,14 +163,14 @@ toProofTreeFitch ::
     ) => Deduction r lex -> Int -> Either (ProofErrorMessage lex) (ProofTree r lex)
 toProofTreeFitch ded n = case ded !! (n - 1)  of
           l@(AssertLine f r@(r':_) dpth deps) -> 
-                do mapM checkDep deps 
-                   mapM isSP deps
+                do mapM_ checkDep deps 
+                   mapM_ isSP deps
                    if isAssumptionLine l then checkAssumptionLegit else return True
                    case indirectInference r' of
                         Just DoubleProof -> do dp <- doubleProcess deps
-                                               deps' <- mapM (\x -> toProofTreeFitch ded x) dp
+                                               deps' <- mapM (toProofTreeFitch ded) dp
                                                return $ Node (ProofLine n (SS $ liftToSequent f) r) deps'
-                        _ -> do deps' <- mapM (\x -> toProofTreeFitch ded x) (map snd deps)
+                        _ -> do deps' <- mapM (toProofTreeFitch ded . snd) deps
                                 return $ Node (ProofLine n (SS $ liftToSequent f) r) deps'
                 where checkDep (begin,end) = 
                         case indirectInference r' of 
@@ -203,12 +203,12 @@ toProofTreeFitch ded n = case ded !! (n - 1)  of
           --the chunk if everything in the chunk has depth greater than or
           --equal to that of line h
           scan1 chunk@(h:_) =
-              if and (map (\x -> depth h <= depth x) chunk)
+              if all (\x -> depth h <= depth x) chunk
                   then Right True
-                  else err "It looks like you're citing a line which is not in your subproof. If you're not, you may need to tidy up your proof."
+                  else err "It looks like you're citing a line which is not in your subproof. If that's not what you're doing, you may need to tidy up your proof."
           scan2 [] = Right True
           scan2 chunk@(h:_) = 
-              if and (map (\x -> depth h <= depth x) chunk)
+              if all (\x -> depth h <= depth x) chunk
                   then Right True
                   else err "it looks like you're citing a subproof that isn't available at this point, since its final line isn't available"
           takeRange m' n' = 
@@ -227,14 +227,67 @@ toProofTreeFitch ded n = case ded !! (n - 1)  of
             | ln > n && depth end <= depth (ded !! n) = err $ "line " ++ show n ++ " must be more indented than the subsequent line to end a subproof"
             | m > n = err "The last line of a subproof cannot come before the first"
             | depth begin /= depth end = err $ "the lines " ++ show m ++ " and " ++ show n ++ " must be vertically aligned to form a subproof"
-            | or (map (\x -> depth x < depth begin) (lineRange m n)) = err $ "the lines " ++ show m ++ " and " ++ show n ++ " can't have a less indented line between them, if they are a subproof"
+            | any (\x -> depth x < depth begin) (lineRange m n) = err $ "the lines " ++ show m ++ " and " ++ show n ++ " can't have a less indented line between them, if they are a subproof"
             | not (isAssumptionLine begin) = err $ "the subproof beginning on line " ++ show m ++ " needs to start with an assumption"
             | otherwise = Right True
             -- TODO also impose some "assumption" constraints: subproofs
             -- must begin with assumptions, and this is the only context
             -- where an assumption can occur
-            where begin = (ded !! (m - 1))
-                  end = (ded !! (n - 1))
+            where begin = ded !! (m - 1)
+                  end = ded !! (n - 1)
+
+{-|
+In an appropriately structured Fitch deduction, find the proof tree corresponding to *line n*, where proof numbers start at one
+-}
+toProofTreeStructuredFitch t n = case t .! n of
+          Just (l@(AssertLine f r@(r':_) dpth deps)) -> 
+                do mapM_ checkDep deps 
+                   mapM_ isSP deps
+                   if isAssumptionLine l then checkAssumptionLegit else return True
+                   case indirectInference r' of
+                        Just DoubleProof -> do dp <- doubleProcess deps
+                                               deps' <- mapM (toProofTreeStructuredFitch t) dp
+                                               return $ Node (ProofLine n (SS $ liftToSequent f) r) deps'
+                        _ -> do deps' <- mapM (toProofTreeStructuredFitch t . snd) deps
+                                return $ Node (ProofLine n (SS $ liftToSequent f) r) deps'
+                where checkDep (begin,end) = 
+                        case indirectInference r' of 
+                            Nothing | begin /= end -> err "you appear to be supplying a line range to a rule of direct proof"
+                                    | begin `elem` linesFromHere -> Right True
+                                    | otherwise ->  err "you appear to be citing a line that is not available"
+                            Just _  | begin == end -> err "you appear to be supplying a single line to a rule of indirect proof"
+                                    | (begin,end) `elem` rangesFromHere -> Right True
+                                    | otherwise ->  err "you appear to be citing a subproof that is not available"
+                      checkAssumptionLegit = case subProofOf n t of
+                                                 Just (SubProof _ (Leaf _ l':_)) -> if l == l' then return True else err "Assumptions need to come at the beginning of subproofs"
+                                                 _ -> err "Assuptions must occur within subproofs"
+                      doubleProcess [(m,n)] = case range m n t of
+                                                  Just (SubProof _ ls) -> if m + 2 > n then err "a subproof proof needs to be at least two lines long to be used with this rule"
+                                                                                       else return [n-1,n]
+                      doubleProcess _ = err "This rule takes exactly one subproof as a premise"
+                                                      
+          Just (PartialLine _ e _) -> Left $ NoParse e n
+          Just (SeparatorLine _) -> Left $ NoResult n
+          Nothing -> err $ "Line " ++ show n ++ " is not a part of this proof"
+    where err :: String -> Either (ProofErrorMessage lex) a
+          err x = Left $ GenericError x n
+          isSP (m, n) = case range m n t of 
+                            Nothing -> err $ "It looks like the line range " ++ show m ++ " to " ++ show n ++ " isn't a subproof"
+                            _ -> return True
+
+          linesOf (Leaf n _) = [n]
+          linesOf (SubProof _ ls) = concatMap linesOf ls
+
+          rangesOf (Leaf _ _)  = []
+          rangesOf (SubProof r ls) = r : concatMap rangesOf ls
+
+          linesFromHere = case availableLine n t of
+                              Nothing -> []
+                              Just sp -> linesOf sp
+
+          rangesFromHere = case availableSubproof n t of
+                               Nothing -> []
+                               Just sp -> rangesOf sp
 
 --------------------------------------------------------
 --Utility functions

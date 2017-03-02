@@ -19,10 +19,16 @@ import Text.Parsec (parse, Parsec, ParseError, choice, try, string)
 --1. Data For Natural Deduction
 --------------------------------------------------------
 
+---------------------------
+--  1.0 Deduction Lines  --
+---------------------------
+
+type MultiRule r = [r]
+
 data DeductionLine r lex a where
         AssertLine :: 
             { asserted :: FixLang lex a
-            , assertRule :: [r]
+            , assertRule :: MultiRule r
             , assertDepth :: Int
             , assertDependencies :: [(Int,Int)]
             } -> DeductionLine r lex a
@@ -31,7 +37,7 @@ data DeductionLine r lex a where
             , showDepth :: Int
             } -> DeductionLine r lex a
         QedLine :: 
-            { closureRule :: [r]
+            { closureRule :: MultiRule r
             , closureDepth :: Int
             , closureDependencies :: [(Int,Int)]
             } -> DeductionLine r lex a
@@ -53,10 +59,82 @@ depth (SeparatorLine dpth) = dpth
 isAssumptionLine (AssertLine _ r _ _) = and (map isAssumption r)
 isAssumptionLine _ = False
 
+----------------------
+--  1.1 Deductions  --
+----------------------
+
 type Deduction r lex = [DeductionLine r lex (Form Bool)]
 
-type MultiRule r = [r]
+---------------------------
+--  1.2 Deduction Trees  --
+---------------------------
 
+--Deduction trees are deduction lines organized in a treelike structure
+--indicating subproofs. They are not assumed to include every line; so for
+--lines available from a given line may be regarded as a deduction tree.
+data DeductionTree r lex = Leaf Int (DeductionLine r lex (Form Bool)) 
+                         | SubProof (Int,Int) [DeductionTree r lex]
+                         --
+--First and last numbers of a given deduction tree
+headNum (Leaf n _) = n
+headNum (SubProof (n,m) _) = n
+
+--First and last numbers of a given deduction tree
+tailNum (Leaf n _) = n
+tailNum (SubProof (n,m) ls) = m
+
+--one step of getting the deduction tree where a certian line resides
+locale m l@(Leaf n _) = if n == m then Just l else Nothing
+locale _ (SubProof _ []) = Nothing
+locale k (SubProof (n,m) (l:ls)) | k < n = Nothing
+                                 | k <= tailNum l = Just l
+                                 | otherwise = locale k (SubProof (n,m) ls)
+
+--getting a line by number
+(Leaf n l) .! m = if n == m then Just l else Nothing
+sp .! m = case locale m sp of
+              Just sp' -> sp' .! m
+              Nothing -> Nothing
+
+--getting the surrounding subproof of a line, if there is one
+subProofOf m (Leaf n l)  = Nothing
+subProofOf m sp = case locale m sp of 
+              Just (Leaf _ _) -> Just sp
+              Just sp' -> subProofOf m sp'
+              Nothing -> Nothing
+
+--getting the subproof in a certain range, if there is one
+range _ _ l@(Leaf _ _) = Nothing
+range i j sp@(SubProof (n,m) ls) = if n == i && j == m then Just sp
+                                                       else locale n sp >>= range i j
+
+--getting the subtree of available lines for a given line (which is assumed
+--to be contained in the given deduction tree)
+availableLine m l@(Leaf n _) = if n == m then Just l else Nothing
+availableLine m sp@(SubProof r ls) = do loc <- locale m sp
+                                        recur <- availableLine m loc
+                                        return $ SubProof r $ preleaves ++ [recur] ++ postleaves
+    where clean = filter (\x -> case x of SubProof _ _ -> False; _ -> True) ls
+          preleaves = filter (\(Leaf x _) -> x < m) clean
+          postleaves = filter (\(Leaf x _) -> x < m) clean
+
+--getting the subtree of available subproofs for a given line (which is assumed
+--to be contained in the given deduction tree)
+availableSubproof m l@(Leaf _ _) = Nothing
+availableSubproof m sp@(SubProof r ls) = do loc <- locale m sp
+                                            case loc of
+                                                (Leaf _ _) -> return $ SubProof r $ preproofs ++ postproofs
+                                                _ -> do recur <- availableSubproof m loc
+                                                        return $ SubProof r $ preproofs ++ [recur] ++ postproofs
+                                                
+    where clean = filter (\x -> case x of SubProof _ _ -> True; _ -> False) ls
+          removeChildren (SubProof r _) = SubProof r []
+          preproofs = map removeChildren . filter (\(SubProof (_,n) _) -> n < m) $ clean
+          postproofs = map removeChildren . filter (\(SubProof (n,_) _) -> n < m) $ clean
+
+--------------------------
+--  1.3 Error Messages  --
+--------------------------
 
 data ProofErrorMessage :: ((* -> *) -> * -> *) -> * where
         NoParse :: ParseError -> Int -> ProofErrorMessage lex
@@ -77,6 +155,10 @@ renumber m (NoUnify x n) = NoUnify x m
 renumber m (GenericError s n) = GenericError s m
 renumber m (NoResult n) = NoResult m
 
+------------------
+--  1.4 Proofs  --
+------------------
+
 data ProofLine r lex where 
        ProofLine :: Inference r lex => 
             { lineNo  :: Int 
@@ -85,7 +167,9 @@ data ProofLine r lex where
 
 type ProofTree r lex = Tree (ProofLine r lex)
 
---type PossProofTree r lex = Either (ProofErrorMessage lex) (ProofTree r lex)
+--------------------
+--  1.5 Feedback  --
+--------------------
 
 type FeedbackLine lex = Either (ProofErrorMessage lex) (ClassicalSequentOver lex Sequent)
 
