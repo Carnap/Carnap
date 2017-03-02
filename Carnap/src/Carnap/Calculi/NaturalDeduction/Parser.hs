@@ -242,7 +242,6 @@ In an appropriately structured Fitch deduction, find the proof tree correspondin
 toProofTreeStructuredFitch t n = case t .! n of
           Just (l@(AssertLine f r@(r':_) dpth deps)) -> 
                 do mapM_ checkDep deps 
-                   mapM_ isSP deps
                    if isAssumptionLine l then checkAssumptionLegit else return True
                    case indirectInference r' of
                         Just DoubleProof -> do dp <- doubleProcess deps
@@ -257,13 +256,14 @@ toProofTreeStructuredFitch t n = case t .! n of
                                     | otherwise ->  err "you appear to be citing a line that is not available"
                             Just _  | begin == end -> err "you appear to be supplying a single line to a rule of indirect proof"
                                     | (begin,end) `elem` rangesFromHere -> Right True
-                                    | otherwise ->  err "you appear to be citing a subproof that is not available"
+                                    | otherwise ->  err "you appear to be citing a subproof that is not available or does not exist"
                       checkAssumptionLegit = case subProofOf n t of
-                                                 Just (SubProof _ (Leaf _ l':_)) -> if l == l' then return True else err "Assumptions need to come at the beginning of subproofs"
+                                                 Just (SubProof _ (Leaf k _:_)) -> if k == n then return True else err "Assumptions need to come at the beginning of subproofs"
                                                  _ -> err "Assuptions must occur within subproofs"
                       doubleProcess [(m,n)] = case range m n t of
                                                   Just (SubProof _ ls) -> if m + 2 > n then err "a subproof proof needs to be at least two lines long to be used with this rule"
                                                                                        else return [n-1,n]
+                                                  Nothing -> err $ "the range " ++ show m ++ " to " ++ show n ++ " does not appear to be a subproof"
                       doubleProcess _ = err "This rule takes exactly one subproof as a premise"
                                                       
           Just (PartialLine _ e _) -> Left $ NoParse e n
@@ -271,9 +271,6 @@ toProofTreeStructuredFitch t n = case t .! n of
           Nothing -> err $ "Line " ++ show n ++ " is not a part of this proof"
     where err :: String -> Either (ProofErrorMessage lex) a
           err x = Left $ GenericError x n
-          isSP (m, n) = case range m n t of 
-                            Nothing -> err $ "It looks like the line range " ++ show m ++ " to " ++ show n ++ " isn't a subproof"
-                            _ -> return True
 
           linesOf (Leaf n _) = [n]
           linesOf (SubProof _ ls) = concatMap linesOf ls

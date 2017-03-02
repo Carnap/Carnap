@@ -1,5 +1,5 @@
 {-#LANGUAGE GADTs, KindSignatures, TypeOperators, FlexibleContexts, TypeSynonymInstances, FlexibleInstances, MultiParamTypeClasses #-}
-module Carnap.Calculi.NaturalDeduction.Checker (toDisplaySequence, processLine, processLineFitch, hoProcessLine, hosolve, ProofErrorMessage(..), Feedback(..),seqUnify,seqSubsetUnify, toDeduction) where
+module Carnap.Calculi.NaturalDeduction.Checker (toDisplaySequence,toDisplaySequenceStructured, processLine, processLineFitch, processLineStructuredFitch, hoProcessLine, hosolve, ProofErrorMessage(..), Feedback(..),seqUnify,seqSubsetUnify, toDeduction) where
 
 import Carnap.Calculi.NaturalDeduction.Syntax
 import Carnap.Calculi.NaturalDeduction.Parser
@@ -21,6 +21,8 @@ import Data.List
 --Main Functions
 --------------------------------------------------------
 
+-- XXX Clean this up and reduce duplication
+
 toDisplaySequence:: 
     ( MonadVar (ClassicalSequentOver lex) (State Int)
     , Inference r lex, Sequentable lex
@@ -33,6 +35,20 @@ toDisplaySequence pl ded = let feedback = map (pl ded) [1 .. length ded] in
           isTop  _ = False
           lastTopInd = do i <- findIndex isTop (reverse ded)
                           return $ length ded - i
+          fromFeedback fb n = case fb !! (n - 1) of
+            Left _ -> Nothing
+            Right s -> Just s
+
+toDisplaySequenceStructured:: 
+    ( MonadVar (ClassicalSequentOver lex) (State Int)
+    , Inference r lex, Sequentable lex
+    ) =>  (DeductionTree r lex -> Int -> FeedbackLine lex) -> DeductionTree r lex -> Feedback lex
+toDisplaySequenceStructured pl ded@(SubProof (1,m) ls) = let feedback = map (pl ded) [1 .. m] in
+                                  Feedback (lastTopInd >>= fromFeedback feedback) feedback
+                          
+    where lastTopInd = case filter (\x -> case x of Leaf _ _ -> True; _ -> False) ls of
+                           [] -> Nothing
+                           ls -> Just $ (\(Leaf n _) -> n) $ last ls
           fromFeedback fb n = case fb !! (n - 1) of
             Left _ -> Nothing
             Right s -> Just s
@@ -56,6 +72,16 @@ processLineFitch ded n = case ded !! (n - 1) of
   --special case to catch QedLines not being cited in justifications
   (QedLine _ _ _) -> Left $ NoResult n
   _ -> toProofTreeFitch ded n >>= reduceProofTree
+
+processLineStructuredFitch :: 
+  ( Sequentable lex
+  , Inference r lex
+  , MonadVar (ClassicalSequentOver lex) (State Int)
+  ) => DeductionTree r lex -> Int -> FeedbackLine lex
+processLineStructuredFitch ded n = case ded .! n of
+  --special case to catch QedLines not being cited in justifications
+  Just (QedLine _ _ _) -> Left $ NoResult n
+  _ -> toProofTreeStructuredFitch ded n >>= reduceProofTree
 
 hoProcessLine :: 
   ( StaticVar (ClassicalSequentOver lex)

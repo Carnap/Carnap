@@ -77,11 +77,11 @@ data DeductionTree r lex = Leaf Int (DeductionLine r lex (Form Bool))
                          --
 --First and last numbers of a given deduction tree
 headNum (Leaf n _) = n
-headNum (SubProof (n,m) _) = n
+headNum (SubProof (n,_) _) = n
 
 --First and last numbers of a given deduction tree
 tailNum (Leaf n _) = n
-tailNum (SubProof (n,m) ls) = m
+tailNum (SubProof (_,n) _) = n
 
 --one step of getting the deduction tree where a certian line resides
 locale m l@(Leaf n _) = if n == m then Just l else Nothing
@@ -106,7 +106,7 @@ subProofOf m sp = case locale m sp of
 --getting the subproof in a certain range, if there is one
 range _ _ l@(Leaf _ _) = Nothing
 range i j sp@(SubProof (n,m) ls) = if n == i && j == m then Just sp
-                                                       else locale n sp >>= range i j
+                                                       else locale i sp >>= range i j
 
 --getting the subtree of available lines for a given line (which is assumed
 --to be contained in the given deduction tree)
