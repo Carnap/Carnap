@@ -260,10 +260,10 @@ toProofTreeStructuredFitch t n = case t .! n of
                       checkAssumptionLegit = case subProofOf n t of
                                                  Just (SubProof _ (Leaf k _:_)) -> if k == n then return True else err "Assumptions need to come at the beginning of subproofs"
                                                  _ -> err "Assuptions must occur within subproofs"
-                      doubleProcess [(m,n)] = case range m n t of
-                                                  Just (SubProof _ ls) -> if m + 2 > n then err "a subproof proof needs to be at least two lines long to be used with this rule"
-                                                                                       else return [n-1,n]
-                                                  Nothing -> err $ "the range " ++ show m ++ " to " ++ show n ++ " does not appear to be a subproof"
+                      doubleProcess [(i,j)] = case range i j t of
+                                                  Just (SubProof _ ls) -> if i + 2 > n then err "a subproof proof needs to be at least two lines long to be used with this rule"
+                                                                                       else return [j-1,j]
+                                                  Nothing -> err $ "the range " ++ show i ++ " to " ++ show j ++ " does not appear to be a subproof"
                       doubleProcess _ = err "This rule takes exactly one subproof as a premise"
                                                       
           Just (PartialLine _ e _) -> Left $ NoParse e n

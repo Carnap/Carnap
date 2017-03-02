@@ -1,4 +1,4 @@
-{-# LANGUAGE RankNTypes, OverloadedStrings, FlexibleContexts, DeriveDataTypeable, CPP, JavaScriptFFI #-}
+{-# LANGUAGE FlexibleInstances, RankNTypes, OverloadedStrings, FlexibleContexts, DeriveDataTypeable, CPP, JavaScriptFFI #-}
 
 module Carnap.GHCJS.Action.AcceptJSON
         ( acceptJSONAction) where
@@ -21,13 +21,13 @@ import GHCJS.Marshal
 #endif
 import GHCJS.DOM
 import GHCJS.DOM.Types
+import Carnap.Core.Data.AbstractSyntaxDataTypes (Form)
 import Carnap.Calculi.NaturalDeduction.Syntax
 import Carnap.Calculi.NaturalDeduction.Parser
 import Carnap.Calculi.NaturalDeduction.Checker
 import Carnap.Languages.PurePropositional.Syntax
 import Carnap.Languages.PurePropositional.Logic
 import Carnap.Languages.PurePropositional.Parser
-import Carnap.Core.Data.AbstractSyntaxDataTypes (Form)
 
 acceptJSONAction ::  IO ()
 acceptJSONAction = runWebGUI $ \w -> 
@@ -35,15 +35,15 @@ acceptJSONAction = runWebGUI $ \w ->
                initializeCallback checkJSON
                return ()
 
-checkJSON:: Value -> IO String
+checkJSON:: Value -> IO (String,Value)
 checkJSON v = do let Success (s,d,c,p) = parse parseReply v
-                 print $ show d
                  case parseProofData d of
-                     Left e -> return $ "parsing error: " ++ show e
+                     Left e -> return ("parsing error: " ++ show e, toJSON ("" :: String) )
                      Right ded -> do let Feedback mseq ds = toDisplaySequenceStructured processLineStructuredFitch ded
-                                     print "errors:"
-                                     print $ map wrap ds
-                                     return $ show mseq 
+                                     let fb = toJSON $ map serialize ds
+                                     return (show mseq,fb)
+    where serialize (Left e) = Left e
+          serialize (Right s) = Right $ show s
                                       
 
 parseReply = withObject "not an object" $ \o -> do
@@ -107,26 +107,43 @@ parseProofData valList = evalStateT (process valList) 1
                  spaces
                  return ((read i, read i) :: (Int,Int))
 
-wrap (Left (GenericError s n))  = "?" ++ s ++ " on line " ++ show n 
-wrap (Left (NoParse e n))       = "⚠ Can't read this line. There may be a typo."++ show e
-wrap (Left (NoUnify eqs n))     = "Can't match these premises with this conclusion, using this rule"
-wrap (Left (NoResult _))        = "<div>&nbsp;</div>"
-wrap (Right s)                  = "<div>+<div><div>" ++ show s ++ "<div></div></div>"
+instance ToJSON (ProofErrorMessage PurePropLexicon) where
+        toJSON (GenericError s n) = object [ "errorType" .= ("GenericError" :: String)
+                                           , "message" .= s
+                                           , "lineNo" .= n
+                                           ]
+        toJSON (NoParse e n) = object      [ "errorType" .= ("NoParse" :: String)
+                                           , "message" .= show e
+                                           , "lineNo" .= n
+                                           ]
+        toJSON (NoUnify eqs n) = object    [ "errorType" .= ("NoUnify" :: String)
+                                           , "message" .= ("could not apply this rule" :: String)
+                                           , "equations" .= map (map show) eqs
+                                           , "lineNo" .= n
+                                           ]
+        toJSON (NoResult n)    = object    [ "errorType" .= ("NoResult" :: String)
+                                           , "message" .= ("" :: String)
+                                           , "lineNo" .= n
+                                           ]
+
 
 #ifdef __GHCJS__
 
-foreign import javascript unsafe "acceptJSONCallback_ = $1" initializeCallbackJS :: Callback (payload -> succ -> IO ()) -> IO ()
+foreign import javascript unsafe "acceptJSONCallback_ = $1" initializeCallbackJS :: Callback (payload -> succ -> feedback -> IO ()) -> IO ()
 
-foreign import javascript unsafe "$1($2);" simpleCall :: JSVal -> JSString -> IO ()
+foreign import javascript unsafe "$1($2);" simpleCall :: JSVal -> JSVal -> IO ()
 
-initializeCallback :: (Value -> IO String) -> IO ()
-initializeCallback f = do theCB <- asyncCallback2 (cb f)
+initializeCallback :: (Value -> IO (String,Value)) -> IO ()
+initializeCallback f = do theCB <- asyncCallback3 (cb f)
                           initializeCallbackJS theCB
-    where cb f payload succ = do (Just raw) <- fromJSVal payload
-                                 let (Just val) = decode . fromStrict . encodeUtf8 $ raw
-                                 rslt <- f val
-                                 return ()
-                                 simpleCall succ (toJSString rslt)
+    where cb f payload succ feedback = do (Just raw) <- fromJSVal payload
+                                          let (Just val) = decode . fromStrict . encodeUtf8 $ raw
+                                          (rslt,fb) <- f val
+                                          rslt' <- toJSVal rslt
+                                          fb' <- toJSVal fb
+                                          simpleCall succ rslt'
+                                          simpleCall feedback fb'
+
 
 #else
 
