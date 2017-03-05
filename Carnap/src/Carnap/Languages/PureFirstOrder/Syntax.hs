@@ -169,9 +169,11 @@ type MonadicPredicates = Predicate PureMonadicPredicate :|: EndLang
 
 type OpenLexiconMFOL a = CoreLexicon :|: MonadicPredicates :|: a
 
+type PureLexiconMFOL = OpenLexiconMFOL EndLang
+
 type OpenLanguageMFOL a = FixLang (OpenLexiconMFOL a)
 
-type PureLanguageMFOL = OpenLanguageMFOL EndLang
+type PureLanguageMFOL = FixLang PureLexiconMFOL
 
 pattern PMPred n = FX (Lx2 (Lx1 (Predicate (MonPred n) AOne)))
 
@@ -193,9 +195,11 @@ type PolyadicPredicates = Predicate PurePredicate
 
 type OpenLexiconPFOL a = CoreLexicon :|: PolyadicPredicates :|: a
 
+type PureLexiconPFOL = OpenLexiconPFOL EndLang
+
 type OpenLanguagePFOL a = FixLang (OpenLexiconPFOL a)
 
-type PureLanguagePFOL = OpenLanguagePFOL EndLang
+type PureLanguagePFOL = FixLang PureLexiconPFOL
 
 pattern PPred x arity  = FX (Lx2 (Lx1 (Predicate x arity)))
 pattern PSPred x arity = FX (Lx2 (Lx2 (Predicate x arity)))

@@ -49,7 +49,7 @@ import Carnap.Languages.PurePropositional.Syntax (PureForm)
 import Carnap.Languages.PurePropositional.Logic (propSeqParser)
 import Carnap.Languages.PureFirstOrder.Parser (folFormulaParser)
 import Carnap.Languages.PureFirstOrder.Logic (folSeqParser)
-import Carnap.Languages.PurePropositional.Parser (purePropFormulaParser)
+import Carnap.Languages.PurePropositional.Parser (purePropFormulaParser, standardLetters)
 
 --------------------------------------------------------
 --1. Utility Functions
@@ -266,7 +266,7 @@ errorPopup msg = alert ("Something has gone wrong. Here's the error: " ++ msg)
 --------------------------------------------------------
  
 formAndLabel :: Monad m => ParsecT String u m (String, PureForm)
-formAndLabel = withLabel (purePropFormulaParser "PQRSTUVW" <* eof)
+formAndLabel = withLabel (purePropFormulaParser standardLetters <* eof)
 
 seqAndLabel = withLabel propSeqParser
 

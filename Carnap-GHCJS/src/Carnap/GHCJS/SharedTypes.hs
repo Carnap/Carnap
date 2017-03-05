@@ -46,5 +46,5 @@ instance FromJSON DerivedRule where
                case (toForm c, lefts ps') of 
                  (Right f, []) -> return $ DerivedRule f (rights ps')
                  _ -> mempty
-            where toForm = parse (purePropFormulaParser "PQRSTUVW" <* eof) ""
+            where toForm = parse (purePropFormulaParser standardLetters <* eof) ""
         parseJSON _ = mempty

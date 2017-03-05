@@ -70,6 +70,10 @@ data FOLogic = MP | MT  | DNE | DNI | DD   | AX
                   | QN1 | QN2 | QN3 | QN4
                deriving Show
 
+-- TODO do this right
+instance Eq FOLogic where
+        x == y = show x == show y
+
 ss :: PureFOLForm -> FOLSequentCalc Succedent
 ss = SS . liftToSequent
 
@@ -164,8 +168,8 @@ instance Inference FOLogic PureLexiconFOL where
      conclusionOf BC2   = GammaV 1 :|-: ss (phiS 1 :->: phiS 2)
      conclusionOf CB    = GammaV 1 :+: GammaV 2 :|-: ss (phiS 1 :<->: phiS 2)
      conclusionOf UI    = GammaV 1 :|-: ss (phi 1 tau)
-     conclusionOf EG    = GammaV 1  :|-: ss (PBind (Some "v") (phi 1))
-     conclusionOf UD    = GammaV 1  :|-: ss (PBind (All "v") (phi 1))
+     conclusionOf EG    = GammaV 1 :|-: ss (PBind (Some "v") (phi 1))
+     conclusionOf UD    = GammaV 1 :|-: ss (PBind (All "v") (phi 1))
      conclusionOf ED1   = GammaV 1 :+: GammaV 2 :|-: ss (phiS 1)
      conclusionOf ED2   = GammaV 1 :+: GammaV 2 :|-: ss (phiS 1)
      conclusionOf (DER r) = gammas :|-: SS (liftToSequent $ conclusion r)
@@ -175,10 +179,15 @@ instance Inference FOLogic PureLexiconFOL where
      conclusionOf QN3   = GammaV 1 :|-: ss (PBind (Some "v") $ \x -> PNeg $ phi 1 x)
      conclusionOf QN4   = GammaV 1 :|-: ss (PNeg $ PBind (Some "v") $ phi 1)
 
-     restriction UD     = Just (eigenConstraint (SeqT 1) (ss $ PBind (All "v") $ phi 1) (GammaV 1))
-     restriction ED1    = Just (eigenConstraint (SeqT 1) ((ss $ PBind (Some "v") $ phi 1) :-: (ss $ phiS 1)) (GammaV 1 :+: GammaV 2))
+     restriction UD     = Just (eigenConstraint (SeqT 1) (ss (PBind (All "v") $ phi 1)) (GammaV 1))
+     restriction ED1    = Just (eigenConstraint (SeqT 1) (ss (PBind (Some "v") $ phi 1) :-: ss (phiS 1)) (GammaV 1 :+: GammaV 2))
      restriction ED2    = Nothing --Since this one does not use the assumption with a fresh object
      restriction _      = Nothing
+
+     indirectInference x
+        | x `elem` [ CP1,CP2,ED1,ED2 ] = Just PolyProof
+        | x `elem` [ ID1,ID2,ID3,ID4 ] = Just DoubleProof
+        | otherwise = Nothing
 
 eigenConstraint c suc ant sub
     | c' `occursIn` ant' = Just $ "The constant " ++ show c' ++ " appears not to be fresh, given that this line relies on " ++ show ant'

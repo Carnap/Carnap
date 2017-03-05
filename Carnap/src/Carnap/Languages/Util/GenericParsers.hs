@@ -6,10 +6,10 @@ import Carnap.Core.Data.AbstractSyntaxDataTypes
 import Carnap.Languages.Util.LanguageClasses
 import Text.Parsec
 import Data.Typeable(Typeable)
-import Data.List (findIndex)
+import Data.List (elemIndex)
 
 listToTry :: [ParsecT s u m a] -> ParsecT s u m a
-listToTry (x:xs) = foldr (\y -> (<|>) (try y)) (try x) xs
+listToTry (x:xs) = foldr ((<|>) . try) (try x) xs
 
 stringsToTry :: Stream s m Char => [String] -> b -> ParsecT s u m b
 stringsToTry l op = do spaces
@@ -52,11 +52,11 @@ parsePos = do spaces
 --Predicates and Sentences
 --------------------------------------------------------
 
-atomicSentenceParser :: (IndexedPropLanguage l, Monad m) => String ->
+sentenceLetterParser :: (IndexedPropLanguage l, Monad m) => String ->
     ParsecT String u m l
-atomicSentenceParser s = try parseNumbered <|> parseUnnumbered
+sentenceLetterParser s = try parseNumbered <|> parseUnnumbered
         where parseUnnumbered = do c <- oneOf s
-                                   let Just n = findIndex (== c) "_ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+                                   let Just n = elemIndex c "_ABCDEFGHIJKLMNOPQRSTUVWXYZ"
                                    return $ pn (-1 * n)
               parseNumbered = do char 'P'
                                  char '_'
@@ -69,7 +69,7 @@ schemevarParser ::
     ) => ParsecT String u m l
 schemevarParser = try parseNumbered <|> parseUnnumbered
     where parseUnnumbered = do c <- oneOf "_φψχθγζξ"
-                               let Just n = findIndex (== c) "_φψχθγζξ"
+                               let Just n = elemIndex c "_φψχθγζξ"
                                return $ phin (-1 * n)
           parseNumbered = do string "Phi" <|> string "φ"
                              char '_'
@@ -95,20 +95,36 @@ equalsParser parseTerm = do t1 <- parseTerm
 --TODO: This would need an optional "^m" following P, if we're going to
 --achive read . show = id; the code overlap with the next function could be
 --significantly reduced.
-molecularSentenceParser :: 
+parsePredicateSymbol :: 
     ( PolyadicPredicateLanguage (FixLang lex) arg ret
     , Incrementable lex arg
     , Monad m
     , Typeable ret
     , Typeable arg
-    ) => ParsecT String u m (FixLang lex arg) -> ParsecT String u m (FixLang lex ret)
-molecularSentenceParser parseTerm = try parseNumbered <|> parseUnnumbered
-    where parseUnnumbered = do c <- oneOf "FGHIJKLMNO"
-                               let Just n = findIndex (== c) "_FGHIJKLMNO"
+    ) => String -> ParsecT String u m (FixLang lex arg) -> ParsecT String u m (FixLang lex ret)
+parsePredicateSymbol s parseTerm = try parseNumbered <|> parseUnnumbered
+    where parseUnnumbered = do c <- oneOf s
+                               let Just n = ucIndex c
                                char '(' *> argParser parseTerm (ppn (-1 * n) AOne)
           parseNumbered = do string "F_"
                              n <- number
                              char '(' *> argParser parseTerm (ppn n AOne)
+
+
+parsePredicateSymbolNoParen :: 
+    ( PolyadicPredicateLanguage (FixLang lex) arg ret
+    , Incrementable lex arg
+    , Monad m
+    , Typeable ret
+    , Typeable arg
+    ) => String -> ParsecT String u m (FixLang lex arg) -> ParsecT String u m (FixLang lex ret)
+parsePredicateSymbolNoParen s parseTerm = try parseNumbered <|> parseUnnumbered
+    where parseUnnumbered = do c <- oneOf s
+                               let Just n = ucIndex c
+                               argParserNoParen parseTerm (ppn (-1 * n) AOne)
+          parseNumbered = do string "F_"
+                             n <- number
+                             argParserNoParen parseTerm (ppn n AOne)
 
 quantifiedSentenceParser :: 
     ( QuantLanguage (FixLang lex f) (FixLang lex t)
@@ -121,7 +137,7 @@ quantifiedSentenceParser parseFreeVar formulaParser =
         do s <- oneOf "AE∀∃"
            v <- parseFreeVar
            f <- formulaParser
-           let bf = \x -> subBoundVar v x f
+           let bf x = subBoundVar v x f
                --partially applied, returning a function
            return $ if s `elem` "A∀" then lall (show v) bf else lsome (show v) bf
                --which we bind
@@ -130,29 +146,29 @@ quantifiedSentenceParser parseFreeVar formulaParser =
 --Terms
 --------------------------------------------------------
 
-molecularTermParser ::     
+parseFunctionSymbol ::     
     ( PolyadicFunctionLanguage (FixLang lex) arg ret
     , Incrementable lex arg
     , Monad m
     , Typeable ret
     , Typeable arg
-    ) => ParsecT String u m (FixLang lex arg) -> ParsecT String u m (FixLang lex ret)
-molecularTermParser parseTerm = try parseNumbered <|> parseUnnumbered
+    ) => String -> ParsecT String u m (FixLang lex arg) -> ParsecT String u m (FixLang lex ret)
+parseFunctionSymbol s parseTerm = try parseNumbered <|> parseUnnumbered
     where parseNumbered = do string "f_"
                              n <- number
                              char '(' *> argParser parseTerm (pfn n AOne)
-          parseUnnumbered = do c <- oneOf "fgh"
-                               let Just n = findIndex (== c) "_fgh"
+          parseUnnumbered = do c <- oneOf s
+                               let Just n = lcIndex c
                                char '(' *> argParser parseTerm (pfn (-1 * n) AOne)
 
 parseConstant :: 
     ( IndexedConstantLanguage (FixLang lex ret)
     , Typeable ret
     , Monad m
-    ) => ParsecT String u m (FixLang lex ret)
-parseConstant = try parseNumbered <|> parseUnnumbered
-    where parseUnnumbered = do c <- oneOf "abcde"
-                               let Just n = findIndex (== c) "_abcde"
+    ) => String -> ParsecT String u m (FixLang lex ret)
+parseConstant s = try parseNumbered <|> parseUnnumbered
+    where parseUnnumbered = do c <- oneOf s
+                               let Just n = lcIndex c
                                return $ cn (-1 * n)
           parseNumbered  = do _ <- string "c_"
                               n <- number
@@ -166,7 +182,6 @@ parenParser ::
     (BooleanLanguage l, Monad m) => ParsecT String u m l -> ParsecT String u m l
 parenParser recur = char '(' *> recur <* char ')'
 
-
 number :: Monad m => ParsecT String u m Int
 number = do valence <- option "+" (string "-") 
             ds <- many1 digit; 
@@ -177,6 +192,10 @@ number = do valence <- option "+" (string "-")
 --------------------------------------------------------
 --Helper functions
 --------------------------------------------------------
+
+lcIndex c = elemIndex c "_abcdefghijklmnopqrstuvwxyz"
+
+ucIndex c = elemIndex c "_ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
 argParser :: 
     ( Typeable b
@@ -199,3 +218,24 @@ incrementHead pt p t = do char ','
                           case incBody p of
                                Just p' -> argParser pt (p' :!$: t)
                                Nothing -> fail "Weird error with function"
+
+argParserNoParen :: 
+    ( Typeable b
+    , Typeable t2
+    , Incrementable lex t2
+    , Monad m) => ParsecT String u m (FixLang lex t2) -> FixLang lex (t2 -> b) 
+            -> ParsecT String u m (FixLang lex b)
+argParserNoParen pt p = do t <- pt
+                           incrementHeadNoParen pt p t
+                               <|> return (p :!$: t)
+
+incrementHeadNoParen :: 
+    ( Monad m
+    , Typeable t2
+    , Typeable b
+    , Incrementable lex t2
+    ) => ParsecT String u m (FixLang lex t2) -> FixLang lex (t2 -> b) -> FixLang lex t2 
+        -> ParsecT String u m (FixLang lex b)
+incrementHeadNoParen pt p t = case incBody p of
+                                   Just p' -> argParserNoParen pt (p' :!$: t)
+                                   Nothing -> fail "Weird error with function"

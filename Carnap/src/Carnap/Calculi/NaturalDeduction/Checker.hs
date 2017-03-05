@@ -1,5 +1,5 @@
 {-#LANGUAGE GADTs, KindSignatures, TypeOperators, FlexibleContexts, TypeSynonymInstances, FlexibleInstances, MultiParamTypeClasses #-}
-module Carnap.Calculi.NaturalDeduction.Checker (toDisplaySequence,toDisplaySequenceStructured, processLine, processLineFitch, processLineStructuredFitch, hoProcessLine, hosolve, ProofErrorMessage(..), Feedback(..),seqUnify,seqSubsetUnify, toDeduction) where
+module Carnap.Calculi.NaturalDeduction.Checker (toDisplaySequence,toDisplaySequenceStructured, processLine, processLineFitch, processLineStructuredFitch,processLineStructuredFitchHO, hoProcessLine, hosolve, ProofErrorMessage(..), Feedback(..),seqUnify,seqSubsetUnify, toDeduction) where
 
 import Carnap.Calculi.NaturalDeduction.Syntax
 import Carnap.Calculi.NaturalDeduction.Parser
@@ -82,6 +82,17 @@ processLineStructuredFitch ded n = case ded .! n of
   --special case to catch QedLines not being cited in justifications
   Just (QedLine _ _ _) -> Left $ NoResult n
   _ -> toProofTreeStructuredFitch ded n >>= reduceProofTree
+
+processLineStructuredFitchHO :: 
+  ( StaticVar (ClassicalSequentOver lex)
+  , Sequentable lex
+  , Inference r lex
+  , MonadVar (ClassicalSequentOver lex) (State Int)
+  ) => DeductionTree r lex -> Int -> FeedbackLine lex
+processLineStructuredFitchHO ded n = case ded .! n of
+  --special case to catch QedLines not being cited in justifications
+  Just (QedLine _ _ _) -> Left $ NoResult n
+  _ -> toProofTreeStructuredFitch ded n >>= hoReduceProofTree
 
 hoProcessLine :: 
   ( StaticVar (ClassicalSequentOver lex)

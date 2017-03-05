@@ -1,4 +1,4 @@
-module Carnap.Languages.PurePropositional.Parser (purePropFormulaParser) where
+module Carnap.Languages.PurePropositional.Parser (purePropFormulaParser, standardLetters, extendedLetters) where
 
 import Carnap.Languages.PurePropositional.Syntax
 import Carnap.Languages.Util.LanguageClasses (BooleanLanguage, IndexedPropLanguage)
@@ -6,14 +6,25 @@ import Carnap.Languages.Util.GenericParsers
 import Text.Parsec
 import Text.Parsec.Expr
 
+data PurePropositionalParserOptions u m = PurePropositionalParserOptions 
+                                        { atomicSentenceParser :: ParsecT String u m PureForm }
+
+standardLetters :: Monad m => PurePropositionalParserOptions u m
+standardLetters = PurePropositionalParserOptions { 
+                        atomicSentenceParser = sentenceLetterParser "PQRSTUVW" }
+
+extendedLetters :: Monad m => PurePropositionalParserOptions u m
+extendedLetters = PurePropositionalParserOptions { 
+                        atomicSentenceParser = sentenceLetterParser "ABCDEFGHIJKLMNOPQRSTUVWXYZ" }
+
 --this parses as much formula as it can, but is happy to return an output if the
 --initial segment of a string is a formula
-purePropFormulaParser :: Monad m => String -> ParsecT String u m PureForm
-purePropFormulaParser s = buildExpressionParser opTable subFormulaParser
+purePropFormulaParser :: Monad m => PurePropositionalParserOptions u m -> ParsecT String u m PureForm
+purePropFormulaParser opts = buildExpressionParser opTable subFormulaParser
     --subformulas are either
-    where subFormulaParser = (parenParser (purePropFormulaParser s) <* spaces)  --formulas wrapped in parentheses
+    where subFormulaParser = (parenParser (purePropFormulaParser opts) <* spaces)  --formulas wrapped in parentheses
                           <|> unaryOpParser [parseNeg] subFormulaParser --negations or modalizations of subformulas
-                          <|> try (atomicSentenceParser s <* spaces)--or atoms
+                          <|> try (atomicSentenceParser opts <* spaces)--or atoms
                           <|> (schemevarParser <* spaces)
 
 opTable :: Monad m => [[Operator String u m PureForm]]

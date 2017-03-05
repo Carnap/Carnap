@@ -4,7 +4,7 @@ module Carnap.GHCJS.Action.Translate (translateAction) where
 import Lib
 import Carnap.Languages.PurePropositional.Syntax (PureForm)
 import Carnap.Languages.PureFirstOrder.Syntax (PureFOLForm)
-import Carnap.Languages.PurePropositional.Parser (purePropFormulaParser)
+import Carnap.Languages.PurePropositional.Parser (purePropFormulaParser,standardLetters)
 import Carnap.Languages.PureFirstOrder.Parser (folFormulaParser)
 import Carnap.Languages.PurePropositional.Util (isEquivTo)
 import Carnap.GHCJS.SharedTypes
@@ -56,7 +56,7 @@ tryTrans :: Element -> IORef Bool -> PureForm ->
     EventM HTMLInputElement KeyboardEvent ()
 tryTrans o ref f = onEnter $ do (Just t) <- target :: EventM HTMLInputElement KeyboardEvent (Maybe HTMLInputElement)
                                 (Just ival)  <- getValue t
-                                case parse (spaces *> purePropFormulaParser "PQRSTUVW" <* eof) "" ival of
+                                case parse (spaces *> purePropFormulaParser standardLetters <* eof) "" ival of
                                       Right f' -> liftIO $ checkForm f'
                                       Left e -> message "Sorry, try again---that formula isn't gramatical."
    where checkForm f' 

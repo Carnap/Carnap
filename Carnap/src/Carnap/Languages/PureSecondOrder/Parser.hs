@@ -11,7 +11,7 @@ import Carnap.Languages.Util.LanguageClasses (BooleanLanguage, IndexedPropLangua
 import Carnap.Languages.Util.GenericParsers
 import Text.Parsec
 import Text.Parsec.Expr
-import Data.List (findIndex)
+import Data.List (elemIndex)
 
 msolFormulaParser :: Parsec String u (MonadicallySOL (Form Bool))
 msolFormulaParser = buildExpressionParser opTable subFormulaParser 
@@ -21,7 +21,7 @@ subFormulaParser = coreParser msolFormulaParser subFormulaParser
 coreParser recur sfrecur = (parenParser recur <* spaces)
       <|> try (quantifiedSentenceParser parseFreeVar sfrecur)
       <|> try (quantifiedSentenceParser parseMSOLVar sfrecur)
-      <|> try (atomicSentenceParser "PQRSTUVW" <* spaces)
+      <|> try (sentenceLetterParser "PQRSTUVW" <* spaces)
       <|> try (predicationParser recur parseSimpleFOTerm)
       <|> unaryOpParser [parseNeg] sfrecur
 
@@ -42,12 +42,12 @@ parseMSOLVar = choice [try $ do _ <- string "X_"
                       ]
 
 parseSimpleFOTerm :: Parsec String u (MonadicallySOL (Term Int))
-parseSimpleFOTerm = try parseConstant <|> parseFreeVar
+parseSimpleFOTerm = try (parseConstant "abcde") <|> parseFreeVar
 
 parseComplexFOLTerm :: Parsec String u (MonadicallySOL (Term Int)) 
-parseComplexFOLTerm = try parseConstant 
-                    <|> parseFreeVar
-                    <|> molecularTermParser parseComplexFOLTerm
+parseComplexFOLTerm = try (parseConstant "abcde")
+                      <|> parseFreeVar
+                      <|> parseFunctionSymbol "fgh" parseComplexFOLTerm
 
 opTable :: Monad m => [[Operator String u m (MonadicallySOL (Form Bool))]]
 opTable = [[ Prefix (try parseNeg)], 
@@ -57,7 +57,7 @@ opTable = [[ Prefix (try parseNeg)],
 predicationParser :: Parsec String u  (MonadicallySOL (Form Bool)) -> Parsec String u  (MonadicallySOL (Term Int)) -> Parsec String u (MonadicallySOL (Form Bool))
 predicationParser parseForm parseTerm = try parseNumbered <|> parseUnnumbered <|> parseVarApp <|> parseLamApp
     where parseUnnumbered = do c <- oneOf "FGHIJKLMNO"
-                               let Just n = findIndex (== c) "_FGHIJKLMNO"
+                               let Just n = elemIndex c "_FGHIJKLMNO"
                                char '(' *> argParser parseTerm (ppn (-1 * n) AOne)
           parseNumbered = do string "F_"
                              n <- number

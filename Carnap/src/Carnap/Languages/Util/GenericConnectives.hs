@@ -54,8 +54,7 @@ instance Schematizable (IntPred b c) where
             where arity = read $ show a
                   args = take arity $ xs ++ repeat "_"
                   pred 
-                    | n < 0 && n > -11 = ["_FGHIJKLMO" !! (-1 * n)]
-                    | arity == 0       = "P^0_" ++ show n
+                    | n < 0 && n > -27 = ["_ABCDEFGHIJKLMNOPQRSTUVWXYZ" !! (-1 * n)]
                     | otherwise        = "P^" ++ show a ++ "_" ++ show n 
                   tail
                     | arity == 0    = ""
@@ -105,12 +104,12 @@ instance Schematizable (IntFunc b c) where
             where arity = read $ show a
                   args = take arity $ xs ++ repeat "_"
                   pred 
-                    | n < 0 && n > -4  = ["_fgh" !! (-1 * n)]
-                    | arity == 0       = "f^0_" ++ show n
+                    | n < 0 && n > -27 = ["_abcdefghijklmnopqrstuvwxyz" !! (-1 * n)]
                     | otherwise        = "f^" ++ show a ++ "_" ++ show n 
                   tail
                     | arity == 0    = ""
                     | otherwise     = "(" ++ intercalate "," args ++ ")"
+
 instance UniformlyEq (IntFunc b c) where
         (Func a n) =* (Func a' m) = show a == show a' && n == m
 
@@ -213,7 +212,7 @@ data IntConst b a where
 
 instance Schematizable (IntConst b) where
         schematize (Constant n)   _       
-            | n < 0 && n > -6 = ["_abcde" !! (-1 * n)]
+            | n < 0 && n > -27 = ["_abcdefghijklmnopqrstuvwxyz" !! (-1 * n)]
             | otherwise = "c_" ++ show n
 
 instance UniformlyEq (IntConst b) where

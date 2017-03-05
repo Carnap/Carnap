@@ -1,4 +1,4 @@
-{-# LANGUAGE FlexibleInstances, RankNTypes, OverloadedStrings, FlexibleContexts, DeriveDataTypeable, CPP, JavaScriptFFI #-}
+{-# LANGUAGE UndecidableInstances, FlexibleInstances, RankNTypes, OverloadedStrings, FlexibleContexts, DeriveDataTypeable, CPP, JavaScriptFFI #-}
 
 module Carnap.GHCJS.Action.AcceptJSON
         ( acceptJSONAction) where
@@ -21,13 +21,17 @@ import GHCJS.Marshal
 #endif
 import GHCJS.DOM
 import GHCJS.DOM.Types
-import Carnap.Core.Data.AbstractSyntaxDataTypes (Form)
+import Carnap.Core.Data.AbstractSyntaxDataTypes (Form, FixLang)
+import Carnap.Core.Data.AbstractSyntaxClasses (Schematizable)
 import Carnap.Calculi.NaturalDeduction.Syntax
 import Carnap.Calculi.NaturalDeduction.Parser
 import Carnap.Calculi.NaturalDeduction.Checker
 import Carnap.Languages.PurePropositional.Syntax
 import Carnap.Languages.PurePropositional.Logic
 import Carnap.Languages.PurePropositional.Parser
+import Carnap.Languages.PureFirstOrder.Logic
+import Carnap.Languages.PureFirstOrder.Parser
+import Carnap.Languages.ClassicalSequent.Syntax
 
 acceptJSONAction ::  IO ()
 acceptJSONAction = runWebGUI $ \w -> 
@@ -37,26 +41,33 @@ acceptJSONAction = runWebGUI $ \w ->
 
 checkJSON:: Value -> IO (String,Value)
 checkJSON v = do let Success (s,d,c,p) = parse parseReply v
-                 case parseProofData d of
-                     Left e -> return ("parsing error: " ++ show e, toJSON ("" :: String) )
-                     Right ded -> do let Feedback mseq ds = toDisplaySequenceStructured processLineStructuredFitch ded
-                                     let fb = toJSON $ map serialize ds
-                                     return (show mseq,fb)
+                 print (s,d,c,p)
+                 --- XXX See if this duplication can be avoided
+                 if s then case parseProofData parsePairFOL d of
+                        (Left e) -> return ("parsing error: " ++ show e, toJSON ("" :: String) )
+                        (Right ded) -> do let Feedback mseq ds = toDisplaySequenceStructured processLineStructuredFitchHO ded
+                                          let fb = toJSON $ map serialize ds
+                                          return (show mseq,fb)
+                      else case parseProofData parsePairProp d of
+                        (Left e) -> return ("parsing error: " ++ show e, toJSON ("" :: String) )
+                        (Right ded) -> do let Feedback mseq ds = toDisplaySequenceStructured processLineStructuredFitch ded
+                                          let fb = toJSON $ map serialize ds
+                                          return (show mseq,fb)
+
+
     where serialize (Left e) = Left e
           serialize (Right s) = Right $ show s
                                       
-
 parseReply = withObject "not an object" $ \o -> do
-    psetting <- o .: "predicateSettings" :: Parser Bool
-    proofdata <- o .: "proofData" :: Parser Value
+    psetting   <- o .: "predicateSettings" :: Parser Bool
+    proofdata  <- o .: "proofData" :: Parser Value
     wantedconc <- o .: "wantedConclusion" :: Parser String
-    numPrems <- o .: "numPrems" :: Parser Int
+    numPrems   <- o .: "numPrems" :: Parser Int
     return (psetting, proofdata, wantedconc, numPrems)
 
-parseProofData :: Value -> Either P.ParseError (DeductionTree LogicBookPropLogic PurePropLexicon)
-parseProofData valList = evalStateT (process valList) 1
+parseProofData :: ((String,String) -> Either P.ParseError (DeductionLine r lex (Form Bool))) -> Value -> Either P.ParseError (DeductionTree r lex)
+parseProofData parsePair valList = evalStateT (process valList) 1
     where
-    process :: Value -> StateT Int (Either P.ParseError) (DeductionTree LogicBookPropLogic PurePropLexicon)
     process v = case parse parseJSON v :: Result [Value] of
                     Success vl -> do n <- get
                                      list <- toList vl
@@ -64,7 +75,6 @@ parseProofData valList = evalStateT (process valList) 1
                                      return $ SubProof (n,m - 1) list
                     Error e -> error "bad json"
 
-    toList :: [Value] -> StateT Int (Either P.ParseError) [DeductionTree LogicBookPropLogic PurePropLexicon]
     toList vl = case vl of
                    [] -> return []
                    (o:vl') -> case parse (withObject "" splitLine) o of
@@ -77,7 +87,6 @@ parseProofData valList = evalStateT (process valList) 1
                                                vl'' <- toList vl'
                                                return $ o' : vl''
 
-    splitLine :: Object -> Parser (String,String)
     splitLine o = do wff <- o .: "wffstr"
                      jst <- o .: "jstr"
                      let jst' = case jst of
@@ -86,28 +95,33 @@ parseProofData valList = evalStateT (process valList) 1
                             x -> x
                      return (wff,jst')
 
-    parsePair (wff,jstr) = AssertLine <$> P.parse (purePropFormulaParser "ABCDEFGHIJKLMNOPQRSTUVWXYZ") "" wff
+parsePairProp (wff,jstr) = AssertLine <$> P.parse (purePropFormulaParser extendedLetters) "" wff
                                       <*> (fst <$> P.parse (parseJstr $ parseFitchPropLogic M.empty) "" jstr)
                                       <*> return 0
                                       <*> (snd <$> P.parse (parseJstr $ parseFitchPropLogic M.empty) "" jstr)
 
-    parseJstr r = do rule <- spaces *> r
-                     deps <- spaces *> many (try parseIntPair <|> parseInt)
-                     return (rule,deps)
+parsePairFOL  (wff,jstr) = AssertLine <$> P.parse forallxFOLFormulaParser "" wff
+                                      <*> (fst <$> P.parse (parseJstr $ parseFOLogic M.empty) "" jstr)
+                                      <*> return 0
+                                      <*> (snd <$> P.parse (parseJstr $ parseFOLogic M.empty) "" jstr)
 
-    parseIntPair = do P.spaces
-                      i1 <- many1 digit
-                      char '–'  
-                      i2 <- many1 digit
-                      spaces
-                      return ((read i1, read i2) :: (Int,Int))
+parseJstr r = do rule <- spaces *> r
+                 deps <- spaces *> many (try parseIntPair <|> parseInt)
+                 return (rule,deps)
 
-    parseInt= do spaces
-                 i <- many1 digit
-                 spaces
-                 return ((read i, read i) :: (Int,Int))
+parseIntPair = do P.spaces
+                  i1 <- many1 digit
+                  char '–'  
+                  i2 <- many1 digit
+                  spaces
+                  return ((read i1, read i2) :: (Int,Int))
 
-instance ToJSON (ProofErrorMessage PurePropLexicon) where
+parseInt = do spaces
+              i <- many1 digit
+              spaces
+              return ((read i, read i) :: (Int,Int))
+
+instance (Schematizable (FixLang lex), Schematizable (ClassicalSequentOver lex)) => ToJSON (ProofErrorMessage lex) where
         toJSON (GenericError s n) = object [ "errorType" .= ("GenericError" :: String)
                                            , "message" .= s
                                            , "lineNo" .= n
@@ -125,7 +139,6 @@ instance ToJSON (ProofErrorMessage PurePropLexicon) where
                                            , "message" .= ("" :: String)
                                            , "lineNo" .= n
                                            ]
-
 
 #ifdef __GHCJS__
 
@@ -147,7 +160,7 @@ initializeCallback f = do theCB <- asyncCallback3 (cb f)
 
 #else
 
-initializeCallback :: (Value -> IO String) -> IO ()
+initializeCallback :: (Value -> IO (String,Value)) -> IO ()
 initializeCallback = undefined
 
 #endif
