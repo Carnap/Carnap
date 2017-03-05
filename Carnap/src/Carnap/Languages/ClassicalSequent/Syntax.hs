@@ -120,6 +120,15 @@ pattern (:|-:) x y          = FX (Lx1 (Lx3 Turnstile)) :!$: x :!$: y
 pattern GammaV n            = FX (Lx1 (Lx4 (Gamma n)))
 pattern DeltaV n            = FX (Lx1 (Lx4 (Delta n)))
 
+-- we set the fixity thus to reduce the need for parentheses when using :+:
+infixr 7 :|-:
+
+-- we set the fixity thus to reduce the need for parentheses when using
+-- infix formula building operations
+infixr 8 :+:
+
+infixr 8 :-:
+
 instance ( MaybeStaticVar (t (ClassicalSequentOver t))
          , FirstOrderLex (t (ClassicalSequentOver t))
          ) => ACUI (ClassicalSequentOver t) where
@@ -153,6 +162,14 @@ instance Handed (ClassicalSequentOver lex Sequent)
                 (ClassicalSequentOver lex Succedent)
     where lhs = lens (\(x :|-: y) -> x) (\( y:|-:z ) x -> x:|-: z)
           rhs = lens (\(x :|-: y) -> y) (\( y:|-:z ) x -> y:|-: x)
+
+data SequentRule a = SequentRule { upperSequents :: [ClassicalSequentOver a Sequent]
+                                 , lowerSequent :: ClassicalSequentOver a Sequent
+                                 }
+
+(∴) = SequentRule
+
+infixr 6 ∴
 
 --------------------------------------------------------
 --2. Optics

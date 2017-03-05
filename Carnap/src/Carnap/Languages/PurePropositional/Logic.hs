@@ -88,8 +88,167 @@ propSeqParser = seqFormulaParser :: Parsec String u (PropSequentCalc Sequent)
 
 extendedPropSeqParser = parseSeqOver (purePropFormulaParser extendedLetters)
 
+-------------------------
+--  1. Standard Rules  --
+-------------------------
+--Rules found in many systems of propositional logic
+
+modusPonens = [ GammaV 1 :|-: SS (SeqPhi 1 :->-: SeqPhi 2)
+              , GammaV 2 :|-: SS (SeqPhi 1)
+              ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (SeqPhi 2)
+
+modusTollens = [ GammaV 1 :|-: SS (SeqPhi 1 :->-: SeqPhi 2)
+               , GammaV 2 :|-: SS (SeqNeg $ SeqPhi 2)
+               ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (SeqNeg $ SeqPhi 1)
+
+axiom = [] ∴ SA (SeqPhi 1) :|-: SS (SeqPhi 1)
+
+identityRule = [ GammaV 1 :|-: SS (SeqPhi 1) ] ∴ GammaV 1 :|-: SS (SeqPhi 1)
+
+doubleNegationElimination = [ GammaV 1 :|-: SS (SeqNeg $ SeqNeg $ SeqPhi 1) ] ∴ GammaV 1 :|-: SS (SeqPhi 1) 
+
+doubleNegationIntroduction = [ GammaV 1 :|-: SS (SeqPhi 1) ] ∴ GammaV 1 :|-: SS (SeqNeg $ SeqNeg $ SeqPhi 1) 
+
+adjunction = [ GammaV 1  :|-: SS (SeqPhi 1) 
+             , GammaV 2  :|-: SS (SeqPhi 2)
+             ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (SeqPhi 1 :&-: SeqPhi 2)
+
+conditionalToBiconditional = [ GammaV 1  :|-: SS (SeqPhi 1 :->-: SeqPhi 2)
+                             , GammaV 2  :|-: SS (SeqPhi 2 :->-: SeqPhi 1) 
+                             ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (SeqPhi 1 :<->-: SeqPhi 2)
+
+---------------------------
+--  1.1 Variation Rules  --
+---------------------------
+-- Rules with several variations
+
+modusTollendoPonensVariations = [
+                [ GammaV 1  :|-: SS (SeqNeg $ SeqPhi 1) 
+                , GammaV 2  :|-: SS (SeqPhi 1 :||-: SeqPhi 2)
+                ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (SeqPhi 2)
+            , 
+                [ GammaV 1  :|-: SS (SeqNeg $ SeqPhi 1) 
+                , GammaV 2  :|-: SS (SeqPhi 2 :||-: SeqPhi 1)
+                ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (SeqPhi 2)
+            ]
+
+constructiveReductioVariations = [
+                [ GammaV 1 :+: SA (SeqPhi 1) :|-: SS (SeqPhi 2) 
+                , GammaV 2 :+: SA (SeqPhi 1) :|-: SS (SeqNeg $ SeqPhi 2)
+                ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (SeqNeg $ SeqPhi 1)
+            ,
+
+                [ GammaV 1 :+: SA (SeqPhi 1) :|-: SS (SeqPhi 2) 
+                , GammaV 2 :|-: SS (SeqNeg $ SeqPhi 2)
+                ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (SeqNeg $ SeqPhi 1)
+            ,
+
+                [ GammaV 1  :|-: SS (SeqPhi 2) 
+                , GammaV 2 :+: SA (SeqPhi 1) :|-: SS (SeqNeg $ SeqPhi 2)
+                ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (SeqNeg $ SeqPhi 1)
+            ,
+                [ GammaV 1  :|-: SS (SeqPhi 2) 
+                , GammaV 2  :|-: SS (SeqNeg $ SeqPhi 2)
+                ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (SeqNeg $ SeqPhi 1)
+            ]
+
+nonConstructiveReductioVariations = [
+                [ GammaV 1 :+: SA (SeqNeg $ SeqPhi 1) :|-: SS (SeqPhi 2) 
+                , GammaV 2 :+: SA (SeqNeg $ SeqPhi 1) :|-: SS (SeqNeg $ SeqPhi 2)
+                ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (SeqPhi 1)
+            ,
+
+                [ GammaV 1 :+: SA (SeqNeg $ SeqPhi 1) :|-: SS (SeqPhi 2) 
+                , GammaV 2 :|-: SS (SeqNeg $ SeqPhi 2)
+                ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (SeqPhi 1)
+            ,
+
+                [ GammaV 1  :|-: SS (SeqPhi 2) 
+                , GammaV 2 :+: SA (SeqNeg $ SeqPhi 1) :|-: SS (SeqNeg $ SeqPhi 2)
+                ] ∴ GammaV 1 :+: GammaV 2 :|-: SS ( SeqPhi 1)
+            ,
+                [ GammaV 1  :|-: SS (SeqPhi 2) 
+                , GammaV 2  :|-: SS (SeqNeg $ SeqPhi 2)
+                ] ∴ GammaV 1 :+: GammaV 2 :|-: SS ( SeqPhi 1)
+            ]
+
+conditionalProofVariations = [
+                [ GammaV 1 :+: SA (SeqPhi 1) :|-: SS (SeqPhi 2) 
+                ] ∴ GammaV 1 :|-: SS (SeqPhi 1 :->-: SeqPhi 2) 
+            ,   [ GammaV 1 :|-: SS (SeqPhi 2) ] ∴ GammaV 1 :|-: SS (SeqPhi 1 :->-: SeqPhi 2)
+            ]
+
+simplificationVariations = [
+                [ GammaV 1  :|-: SS (SeqPhi 1 :&-: SeqPhi 2) ] ∴ GammaV 1 :|-: SS (SeqPhi 1)
+            ,
+                [ GammaV 1  :|-: SS (SeqPhi 1 :&-: SeqPhi 2) ] ∴ GammaV 1 :|-: SS (SeqPhi 2)
+            ]
+
+additionVariations = [
+                [ GammaV 1  :|-: SS (SeqPhi 1) ] ∴ GammaV 1 :|-: SS (SeqPhi 2 :||-: SeqPhi 1)
+            ,
+                [ GammaV 1  :|-: SS (SeqPhi 1) ] ∴ GammaV 1 :|-: SS (SeqPhi 1 :||-: SeqPhi 2)
+            ]
+
+biconditionalToConditionalVariations = [
+                [ GammaV 1  :|-: SS (SeqPhi 1 :<->-: SeqPhi 2) ] ∴ GammaV 1 :|-: SS (SeqPhi 2 :->-: SeqPhi 1)
+            , 
+                [ GammaV 1  :|-: SS (SeqPhi 1 :<->-: SeqPhi 2) ] ∴ GammaV 1 :|-: SS (SeqPhi 1 :->-: SeqPhi 2)
+            ]
+
+proofByCasesVariations = [
+                [ GammaV 1  :|-: SS (SeqPhi 1 :||-: SeqPhi 2)
+                , GammaV 2 :+: SA (SeqPhi 1) :|-: SS (SeqPhi 3)
+                , GammaV 3 :+: SA (SeqPhi 2) :|-: SS (SeqPhi 3)
+                ] ∴ GammaV 1 :+: GammaV 2 :+: GammaV 3 :|-: SS (SeqPhi 3)
+            ,   
+                [ GammaV 1  :|-: SS (SeqPhi 1 :||-: SeqPhi 2)
+                , GammaV 2 :|-: SS (SeqPhi 3)
+                , GammaV 3 :+: SA (SeqPhi 2) :|-: SS (SeqPhi 3)
+                ] ∴ GammaV 1 :+: GammaV 2 :+: GammaV 3 :|-: SS (SeqPhi 3)
+            ,   
+                [ GammaV 1 :|-: SS (SeqPhi 1 :||-: SeqPhi 2)
+                , GammaV 2 :+: SA (SeqPhi 1) :|-: SS (SeqPhi 3)
+                , GammaV 3 :|-: SS (SeqPhi 3)
+                ] ∴ GammaV 1 :+: GammaV 2 :+: GammaV 3 :|-: SS (SeqPhi 3)
+            , 
+                [ GammaV 1 :|-: SS (SeqPhi 1 :||-: SeqPhi 2)
+                , GammaV 2 :|-: SS (SeqPhi 3)
+                , GammaV 3 :|-: SS (SeqPhi 3)
+                ] ∴ GammaV 1 :+: GammaV 2 :+: GammaV 3 :|-: SS (SeqPhi 3)
+            ]
+
+biconditionalProofVariations = [
+                [ GammaV 1 :+: SA (SeqPhi 1) :|-: SS (SeqPhi 2)
+                , GammaV 2 :+: SA (SeqPhi 2) :|-: SS (SeqPhi 1) 
+                ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (SeqPhi 2 :<->-: SeqPhi 1)
+            ,
+                [ GammaV 1 :|-: SS (SeqPhi 2)
+                , GammaV 2 :+: SA (SeqPhi 2) :|-: SS (SeqPhi 1)
+                ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (SeqPhi 2 :<->-: SeqPhi 1)
+            ,
+                [ GammaV 1 :+: SA (SeqPhi 1) :|-: SS (SeqPhi 2)
+                , GammaV 2 :|-: SS (SeqPhi 1) 
+                ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (SeqPhi 2 :<->-: SeqPhi 1)
+            , 
+                [ GammaV 1 :|-: SS (SeqPhi 2)
+                , GammaV 2 :|-: SS (SeqPhi 1) 
+                ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (SeqPhi 2 :<->-: SeqPhi 1)
+            ]
+
+biconditionalPonensVariations = [
+                [ GammaV 1  :|-: SS (SeqPhi 1 :<->-: SeqPhi 2)
+                , GammaV 2  :|-: SS (SeqPhi 1)
+                ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (SeqPhi 2)
+            ,
+                [ GammaV 1  :|-: SS (SeqPhi 1 :<->-: SeqPhi 2)
+                , GammaV 2  :|-: SS (SeqPhi 2)
+                ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (SeqPhi 1)
+            ]
+
+
 --------------------------------------------------------
---2. System 1
+--  2. System 1
 --------------------------------------------------------
 --A system for propositional logic resembling the proof system from Kalish
 --and Montegue's LOGIC, with derived rules
@@ -104,73 +263,30 @@ data PropLogic = MP | MT  | DNE | DNI | DD   | AX
                deriving (Show, Eq)
 
 instance Inference PropLogic PurePropLexicon where
-    premisesOf MP    = [ GammaV 1 :|-: SS (SeqPhi 1 :->-: SeqPhi 2)
-                       , GammaV 2 :|-: SS (SeqPhi 1)
-                       ]
-    premisesOf MT    = [ GammaV 1 :|-: SS (SeqPhi 1 :->-: SeqPhi 2)
-                       , GammaV 2 :|-: SS (SeqNeg $ SeqPhi 2)
-                       ]
-    premisesOf AX    = []
-    premisesOf DD    = [ GammaV 1 :|-: SS (SeqPhi 1) ]
-    premisesOf DNE   = [ GammaV 1 :|-: SS (SeqNeg $ SeqNeg $ SeqPhi 1) ]
-    premisesOf DNI   = [ GammaV 1 :|-: SS (SeqPhi 1) ]
-    premisesOf CP1   = [ GammaV 1 :+: SA (SeqPhi 1) :|-: SS (SeqPhi 2) ]
-    premisesOf CP2   = [ GammaV 1 :|-: SS (SeqPhi 2) ]
-    premisesOf ID1   = [ GammaV 1 :+: SA (SeqPhi 1) :|-: SS (SeqPhi 2) 
-                       , GammaV 2 :+: SA (SeqPhi 1) :|-: SS (SeqNeg $ SeqPhi 2)
-                       ]
-    premisesOf ID2   = [ GammaV 1 :+: SA (SeqPhi 1) :|-: SS (SeqPhi 2) 
-                       , GammaV 2 :|-: SS (SeqNeg $ SeqPhi 2)
-                       ]
-    premisesOf ID3   = [ GammaV 1  :|-: SS (SeqPhi 2) 
-                       , GammaV 2 :+: SA (SeqPhi 1) :|-: SS (SeqNeg $ SeqPhi 2)
-                       ]
-    premisesOf ID4   = [ GammaV 1  :|-: SS (SeqPhi 2) 
-                       , GammaV 2  :|-: SS (SeqNeg $ SeqPhi 2)
-                       ]
-    premisesOf ADJ   = [ GammaV 1  :|-: SS (SeqPhi 1) 
-                       , GammaV 2  :|-: SS (SeqPhi 2)
-                       ]
-    premisesOf S1    = [ GammaV 1  :|-: SS (SeqPhi 1 :&-: SeqPhi 2) ]
-    premisesOf S2    = [ GammaV 1  :|-: SS (SeqPhi 1 :&-: SeqPhi 2) ]
-    premisesOf ADD1  = [ GammaV 1  :|-: SS (SeqPhi 1) ]
-    premisesOf ADD2  = [ GammaV 1  :|-: SS (SeqPhi 1) ]
-    premisesOf MTP1  = [ GammaV 1  :|-: SS (SeqNeg $ SeqPhi 1) 
-                       , GammaV 2  :|-: SS (SeqPhi 1 :||-: SeqPhi 2)
-                       ]
-    premisesOf MTP2  = [ GammaV 1  :|-: SS (SeqNeg $ SeqPhi 1) 
-                       , GammaV 2  :|-: SS (SeqPhi 2 :||-: SeqPhi 1)
-                       ]
-    premisesOf BC1   = [ GammaV 1  :|-: SS (SeqPhi 1 :<->-: SeqPhi 2) ]
-    premisesOf BC2   = [ GammaV 1  :|-: SS (SeqPhi 1 :<->-: SeqPhi 2) ]
-    premisesOf CB    = [ GammaV 1  :|-: SS (SeqPhi 1 :->-: SeqPhi 2)
-                       , GammaV 2  :|-: SS (SeqPhi 2 :->-: SeqPhi 1) ]
+    ruleOf MP        = modusPonens
+    ruleOf MT        = modusTollens
+    ruleOf AX        = axiom
+    ruleOf ID1       = constructiveReductioVariations !! 0
+    ruleOf ID2       = constructiveReductioVariations !! 1
+    ruleOf ID3       = constructiveReductioVariations !! 2
+    ruleOf ID4       = constructiveReductioVariations !! 3
+    ruleOf DD        = identityRule
+    ruleOf DNE       = doubleNegationElimination
+    ruleOf DNI       = doubleNegationIntroduction
+    ruleOf CP1       = constructiveReductioVariations !! 0
+    ruleOf CP2       = constructiveReductioVariations !! 1
+    ruleOf ADJ       = adjunction
+    ruleOf S1        = simplificationVariations !! 0
+    ruleOf S2        = simplificationVariations !! 1
+    ruleOf MTP1      =  modusTollendoPonensVariations !! 0
+    ruleOf MTP2      =  modusTollendoPonensVariations !! 1
+    ruleOf BC1       = biconditionalToConditionalVariations !! 0
+    ruleOf BC2       = biconditionalToConditionalVariations !! 1
+    ruleOf CB        = conditionalToBiconditional
 
     premisesOf (DER r) = zipWith gammafy (premises r) [1..]
         where gammafy p n = GammaV n :|-: SS (liftToSequent p)
 
-    conclusionOf MP    = (GammaV 1 :+: GammaV 2) :|-: SS (SeqPhi 2)
-    conclusionOf MT    = (GammaV 1 :+: GammaV 2) :|-: SS (SeqNeg $ SeqPhi 1)
-    conclusionOf AX    = SA (SeqPhi 1) :|-: SS (SeqPhi 1)
-    conclusionOf DD    = GammaV 1 :|-: SS (SeqPhi 1) 
-    conclusionOf DNE   = GammaV 1 :|-: SS (SeqPhi 1) 
-    conclusionOf DNI   = GammaV 1 :|-: SS (SeqNeg $ SeqNeg $ SeqPhi 1) 
-    conclusionOf CP1   = GammaV 1 :|-: SS (SeqPhi 1 :->-: SeqPhi 2) 
-    conclusionOf CP2   = GammaV 1 :|-: SS (SeqPhi 1 :->-: SeqPhi 2)
-    conclusionOf ID1   = GammaV 1 :+: GammaV 2 :|-: SS (SeqNeg $ SeqPhi 1)
-    conclusionOf ID2   = GammaV 1 :+: GammaV 2 :|-: SS (SeqNeg $ SeqPhi 1)
-    conclusionOf ID3   = GammaV 1 :+: GammaV 2 :|-: SS (SeqNeg $ SeqPhi 1)
-    conclusionOf ID4   = GammaV 1 :+: GammaV 2 :|-: SS (SeqNeg $ SeqPhi 1)
-    conclusionOf ADJ   = GammaV 1 :+: GammaV 2 :|-: SS (SeqPhi 1 :&-: SeqPhi 2)
-    conclusionOf S1    = GammaV 1 :|-: SS (SeqPhi 1)
-    conclusionOf S2    = GammaV 1 :|-: SS (SeqPhi 2)
-    conclusionOf ADD1  = GammaV 1 :|-: SS (SeqPhi 2 :||-: SeqPhi 1)
-    conclusionOf ADD2  = GammaV 1 :|-: SS (SeqPhi 1 :||-: SeqPhi 2)
-    conclusionOf MTP1  = GammaV 1 :+: GammaV 2 :|-: SS (SeqPhi 2)
-    conclusionOf MTP2  = GammaV 1 :+: GammaV 2 :|-: SS (SeqPhi 2)
-    conclusionOf BC1   = GammaV 1 :|-: SS (SeqPhi 2 :->-: SeqPhi 1)
-    conclusionOf BC2   = GammaV 1 :|-: SS (SeqPhi 1 :->-: SeqPhi 2)
-    conclusionOf CB    = GammaV 1 :+: GammaV 2 :|-: SS (SeqPhi 1 :<->-: SeqPhi 2)
     conclusionOf (DER r) = gammas :|-: SS (liftToSequent $ conclusion r)
         where gammas = foldl (:+:) Top (map GammaV [1..length (premises r)])
 
@@ -206,7 +322,7 @@ parsePropProof :: Map String DerivedRule -> String -> [DeductionLine PropLogic P
 parsePropProof ders = toDeduction (parsePropLogic ders) (purePropFormulaParser standardLetters)
 
 --------------------------------------------------------
---2. System 2
+--  3. System 2
 --------------------------------------------------------
 --A system for propositional logic resembling the proof system SD from
 --Bergmann, Moor and Nelson's Logic Book
@@ -261,109 +377,35 @@ instance Show LogicBookPropLogic where
         show LBAS       = "AS"
 
 instance Inference LogicBookPropLogic PurePropLexicon where
-    premisesOf Reiterate  = [ GammaV 1 :|-: SS (SeqPhi 1) ]
-    premisesOf CondElim   = [ GammaV 1 :|-: SS (SeqPhi 1 :->-: SeqPhi 2)
-                            , GammaV 2 :|-: SS (SeqPhi 1)
-                            ]
-    premisesOf CondIntro1 = [ GammaV 1 :+: SA (SeqPhi 1) :|-: SS (SeqPhi 2) ]
-    premisesOf CondIntro2 = [ GammaV 1 :|-: SS (SeqPhi 2) ]
-    premisesOf ConjIntro  = [ GammaV 1  :|-: SS (SeqPhi 1) 
-                            , GammaV 2  :|-: SS (SeqPhi 2)
-                            ]
-    premisesOf NegeIntro1 = [ GammaV 1 :+: SA (SeqPhi 1) :|-: SS (SeqPhi 2) 
-                            , GammaV 2 :+: SA (SeqPhi 1) :|-: SS (SeqNeg $ SeqPhi 2)
-                            ]
-    premisesOf NegeIntro2 = [ GammaV 1 :+: SA (SeqPhi 1) :|-: SS (SeqPhi 2) 
-                            , GammaV 2 :|-: SS (SeqNeg $ SeqPhi 2)
-                            ]
-    premisesOf NegeIntro3 = [ GammaV 1  :|-: SS (SeqPhi 2) 
-                            , GammaV 2 :+: SA (SeqPhi 1) :|-: SS (SeqNeg $ SeqPhi 2)
-                            ]
-    premisesOf NegeIntro4 = [ GammaV 1  :|-: SS (SeqPhi 2) 
-                            , GammaV 2  :|-: SS (SeqNeg $ SeqPhi 2)
-                            ]
-    premisesOf NegeElim1  = [ GammaV 1 :+: SA (SeqNeg $ SeqPhi 1) :|-: SS (SeqPhi 2) 
-                            , GammaV 2 :+: SA (SeqNeg $ SeqPhi 1) :|-: SS (SeqNeg $ SeqPhi 2)
-                            ]
-    premisesOf NegeElim2  = [ GammaV 1 :+: SA (SeqNeg $ SeqPhi 1) :|-: SS (SeqPhi 2) 
-                            , GammaV 2 :|-: SS (SeqNeg $ SeqPhi 2)
-                            ]
-    premisesOf NegeElim3  = [ GammaV 1  :|-: SS (SeqPhi 2) 
-                            , GammaV 2 :+: SA (SeqNeg $ SeqPhi 1) :|-: SS (SeqNeg $ SeqPhi 2)
-                            ]
-    premisesOf NegeElim4  = [ GammaV 1  :|-: SS (SeqPhi 2) 
-                            , GammaV 2  :|-: SS (SeqNeg $ SeqPhi 2)
-                            ]
-    premisesOf DisjIntro1 = [ GammaV 1  :|-: SS (SeqPhi 1) ]
-    premisesOf DisjIntro2 = [ GammaV 1  :|-: SS (SeqPhi 1) ]
-    premisesOf DisjElim1  = [ GammaV 1  :|-: SS (SeqPhi 1 :||-: SeqPhi 2)
-                            , GammaV 2 :+: SA (SeqPhi 1) :|-: SS (SeqPhi 3)
-                            , GammaV 3 :+: SA (SeqPhi 2) :|-: SS (SeqPhi 3)
-                            ]
-    premisesOf DisjElim2  = [ GammaV 1  :|-: SS (SeqPhi 1 :||-: SeqPhi 2)
-                            , GammaV 2 :|-: SS (SeqPhi 3)
-                            , GammaV 3 :+: SA (SeqPhi 2) :|-: SS (SeqPhi 3)
-                            ]
-    premisesOf DisjElim3  = [ GammaV 1 :|-: SS (SeqPhi 1 :||-: SeqPhi 2)
-                            , GammaV 2 :+: SA (SeqPhi 1) :|-: SS (SeqPhi 3)
-                            , GammaV 3 :|-: SS (SeqPhi 3)
-                            ]
-    premisesOf DisjElim4  = [ GammaV 1 :|-: SS (SeqPhi 1 :||-: SeqPhi 2)
-                            , GammaV 2 :|-: SS (SeqPhi 3)
-                            , GammaV 3 :|-: SS (SeqPhi 3)
-                            ]
-    premisesOf ConjElim1  = [ GammaV 1  :|-: SS (SeqPhi 1 :&-: SeqPhi 2) ]
-    premisesOf ConjElim2  = [ GammaV 1  :|-: SS (SeqPhi 1 :&-: SeqPhi 2) ]
-    premisesOf BicoIntro1 = [ GammaV 1 :+: SA (SeqPhi 1) :|-: SS (SeqPhi 2)
-                            , GammaV 2 :+: SA (SeqPhi 2) :|-: SS (SeqPhi 1) 
-                            ]
-    premisesOf BicoIntro2 = [ GammaV 1 :|-: SS (SeqPhi 2)
-                            , GammaV 2 :+: SA (SeqPhi 2) :|-: SS (SeqPhi 1)
-                            ]
-    premisesOf BicoIntro3 = [ GammaV 1 :+: SA (SeqPhi 1) :|-: SS (SeqPhi 2)
-                            , GammaV 2 :|-: SS (SeqPhi 1) 
-                            ]
-    premisesOf BicoIntro4 = [ GammaV 1 :|-: SS (SeqPhi 2)
-                            , GammaV 2 :|-: SS (SeqPhi 1) 
-                            ]
-    premisesOf BicoElim1  = [ GammaV 1  :|-: SS (SeqPhi 1 :<->-: SeqPhi 2)
-                            , GammaV 2  :|-: SS (SeqPhi 1)
-                            ]
-    premisesOf BicoElim2  = [ GammaV 1  :|-: SS (SeqPhi 1 :<->-: SeqPhi 2)
-                            , GammaV 2  :|-: SS (SeqPhi 2)
-                            ]
-    premisesOf LBAX       = []
-    premisesOf LBAS       = []
-
-    conclusionOf Reiterate  = GammaV 1 :|-: SS (SeqPhi 1) 
-    conclusionOf CondElim   = (GammaV 1 :+: GammaV 2) :|-: SS (SeqPhi 2)
-    conclusionOf CondIntro1 = GammaV 1 :|-: SS (SeqPhi 1 :->-: SeqPhi 2) 
-    conclusionOf CondIntro2 = GammaV 1 :|-: SS (SeqPhi 1 :->-: SeqPhi 2)
-    conclusionOf ConjIntro  = GammaV 1 :+: GammaV 2 :|-: SS (SeqPhi 1 :&-: SeqPhi 2)
-    conclusionOf NegeIntro1 = GammaV 1 :+: GammaV 2 :|-: SS (SeqNeg $ SeqPhi 1)
-    conclusionOf NegeIntro2 = GammaV 1 :+: GammaV 2 :|-: SS (SeqNeg $ SeqPhi 1)
-    conclusionOf NegeIntro3 = GammaV 1 :+: GammaV 2 :|-: SS (SeqNeg $ SeqPhi 1)
-    conclusionOf NegeIntro4 = GammaV 1 :+: GammaV 2 :|-: SS (SeqNeg $ SeqPhi 1)
-    conclusionOf NegeElim1  = GammaV 1 :+: GammaV 2 :|-: SS (SeqPhi 1)
-    conclusionOf NegeElim2  = GammaV 1 :+: GammaV 2 :|-: SS (SeqPhi 1)
-    conclusionOf NegeElim3  = GammaV 1 :+: GammaV 2 :|-: SS (SeqPhi 1)
-    conclusionOf NegeElim4  = GammaV 1 :+: GammaV 2 :|-: SS (SeqPhi 1)
-    conclusionOf DisjIntro1 = GammaV 1 :|-: SS (SeqPhi 2 :||-: SeqPhi 1)
-    conclusionOf DisjIntro2 = GammaV 1 :|-: SS (SeqPhi 1 :||-: SeqPhi 2)
-    conclusionOf DisjElim1  = GammaV 1 :+: GammaV 2 :+: GammaV 3 :|-: SS (SeqPhi 3)
-    conclusionOf DisjElim2  = GammaV 1 :+: GammaV 2 :+: GammaV 3 :|-: SS (SeqPhi 3)
-    conclusionOf DisjElim3  = GammaV 1 :+: GammaV 2 :+: GammaV 3 :|-: SS (SeqPhi 3)
-    conclusionOf DisjElim4  = GammaV 1 :+: GammaV 2 :+: GammaV 3 :|-: SS (SeqPhi 3)
-    conclusionOf ConjElim1  = GammaV 1 :|-: SS (SeqPhi 1)
-    conclusionOf ConjElim2  = GammaV 1 :|-: SS (SeqPhi 2)
-    conclusionOf BicoIntro1 = GammaV 1 :+: GammaV 2 :|-: SS (SeqPhi 2 :<->-: SeqPhi 1)
-    conclusionOf BicoIntro2 = GammaV 1 :+: GammaV 2 :|-: SS (SeqPhi 2 :<->-: SeqPhi 1)
-    conclusionOf BicoIntro3 = GammaV 1 :+: GammaV 2 :|-: SS (SeqPhi 2 :<->-: SeqPhi 1)
-    conclusionOf BicoIntro4 = GammaV 1 :+: GammaV 2 :|-: SS (SeqPhi 2 :<->-: SeqPhi 1)
-    conclusionOf BicoElim1  = GammaV 1 :+: GammaV 2 :|-: SS (SeqPhi 2)
-    conclusionOf BicoElim2  = GammaV 1 :+: GammaV 2 :|-: SS (SeqPhi 1)
-    conclusionOf LBAX       = SA (SeqPhi 1) :|-: SS (SeqPhi 1)
-    conclusionOf LBAS       = SA (SeqPhi 1) :|-: SS (SeqPhi 1)
+    ruleOf Reiterate  = identityRule
+    ruleOf CondElim   = modusPonens
+    ruleOf CondIntro1 = conditionalProofVariations !! 0 
+    ruleOf CondIntro2 = conditionalProofVariations !! 1
+    ruleOf ConjIntro  = adjunction
+    ruleOf NegeIntro1 = constructiveReductioVariations !! 0
+    ruleOf NegeIntro2 = constructiveReductioVariations !! 1
+    ruleOf NegeIntro3 = constructiveReductioVariations !! 2
+    ruleOf NegeIntro4 = constructiveReductioVariations !! 3
+    ruleOf NegeElim1  = nonConstructiveReductioVariations !! 0
+    ruleOf NegeElim2  = nonConstructiveReductioVariations !! 1
+    ruleOf NegeElim3  = nonConstructiveReductioVariations !! 2
+    ruleOf NegeElim4  = nonConstructiveReductioVariations !! 4
+    ruleOf DisjIntro1 = additionVariations !! 0
+    ruleOf DisjIntro2 = additionVariations !! 1
+    ruleOf DisjElim1  = proofByCasesVariations !! 0
+    ruleOf DisjElim2  = proofByCasesVariations !! 1
+    ruleOf DisjElim3  = proofByCasesVariations !! 2
+    ruleOf DisjElim4  = proofByCasesVariations !! 3
+    ruleOf ConjElim1  = simplificationVariations !! 0
+    ruleOf ConjElim2  = simplificationVariations !! 1
+    ruleOf BicoIntro1 = biconditionalProofVariations !! 0
+    ruleOf BicoIntro2 = biconditionalProofVariations !! 1
+    ruleOf BicoIntro3 = biconditionalProofVariations !! 2
+    ruleOf BicoIntro4 = biconditionalProofVariations !! 3
+    ruleOf LBAX       = axiom
+    ruleOf LBAS       = axiom
+    ruleOf BicoElim1  = biconditionalPonensVariations !! 0
+    ruleOf BicoElim2  = biconditionalPonensVariations !! 1
 
     indirectInference x
         | x `elem` [CondIntro1,CondIntro2, BicoIntro1, BicoIntro2
@@ -416,3 +458,9 @@ parseFitchPropLogic ders = do r <- choice (map (try . string) ["AS","PR","&I","/
 
 parseFitchPropProof :: Map String DerivedRule -> String -> [DeductionLine LogicBookPropLogic PurePropLexicon (Form Bool)]
 parseFitchPropProof ders = toDeductionBE (parseFitchPropLogic ders) (purePropFormulaParser extendedLetters)
+
+-------------------
+--  4. System 3  --
+-------------------
+--A system for propositional logic resembling the proof system SL from PD
+--Magnus' forallx book

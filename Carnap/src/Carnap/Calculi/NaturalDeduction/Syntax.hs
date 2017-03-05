@@ -195,8 +195,12 @@ class ( FirstOrder (ClassicalSequentOver lex)
       , ACUI (ClassicalSequentOver lex)) => 
         Inference r lex | r -> lex where
         premisesOf :: r -> [ClassicalSequentOver lex Sequent]
+        premisesOf r = upperSequents (ruleOf r)
         conclusionOf :: r -> ClassicalSequentOver lex Sequent
         --restrictions, based on given substitutions
+        conclusionOf r = lowerSequent (ruleOf r)
+        ruleOf :: r -> SequentRule lex
+        ruleOf r = SequentRule (premisesOf r) (conclusionOf r)
         restriction :: r -> Maybe ([Equation (ClassicalSequentOver lex)] -> Maybe String)
         restriction _ = Nothing
         indirectInference :: r -> Maybe IndirectArity
