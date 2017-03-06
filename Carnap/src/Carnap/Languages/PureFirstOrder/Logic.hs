@@ -1,6 +1,6 @@
 {-#LANGUAGE GADTs, FlexibleContexts, PatternSynonyms, TypeSynonymInstances, FlexibleInstances, MultiParamTypeClasses #-}
 module Carnap.Languages.PureFirstOrder.Logic
-        (FOLogic(..), parseFOLogic, parseFOLProof, folSeqParser, phiS, phi, tau, ss, FOLSequentCalc, DerivedRule(..))
+        (FOLogic(..), parseFOLogic,parseForallxQL, parseFOLProof, folSeqParser, phiS, phi, tau, ss, FOLSequentCalc, DerivedRule(..))
     where
 
 import Data.Map as M (lookup, Map)
@@ -16,6 +16,7 @@ import Carnap.Core.Data.AbstractSyntaxClasses
 import Carnap.Core.Data.AbstractSyntaxDataTypes
 import Carnap.Languages.PureFirstOrder.Syntax
 import Carnap.Languages.PureFirstOrder.Parser
+import qualified Carnap.Languages.PurePropositional.Logic as P
 import Carnap.Calculi.NaturalDeduction.Syntax
 import Carnap.Calculi.NaturalDeduction.Parser
 import Carnap.Languages.ClassicalSequent.Syntax
@@ -86,6 +87,7 @@ phi n x = PPhi n AOne AOne :!$: x
 
 tau = PT 1
 
+-- TODO use liftSequent to clean this up
 instance Inference FOLogic PureLexiconFOL where
      premisesOf MP    = [ GammaV 1 :|-: ss (phiS 1 :->: phiS 2)
                         , GammaV 2 :|-: ss (phiS 1)
@@ -130,7 +132,6 @@ instance Inference FOLogic PureLexiconFOL where
                         , GammaV 2  :|-: ss (phiS 2 :->: phiS 1) ]
      premisesOf UI    = [ GammaV 1  :|-: ss (PBind (All "v") (phi 1))]
      premisesOf EG    = [ GammaV 1 :|-: ss (phi 1 tau)]
-     -- XXX : need eigenvariable constraint for these
      premisesOf UD    = [ GammaV 1 :|-: ss (phi 1 tau)]
      premisesOf ED1   = [ GammaV 1 :+:  sa (phi 1 tau) :|-: ss (phiS 1)
                         , GammaV 2 :|-: ss (PBind (Some "v") $ phi 1)
@@ -238,3 +239,57 @@ parseFOLogic ders =
 
 parseFOLProof ::  Map String DerivedRule -> String -> [DeductionLine FOLogic PureLexiconFOL (Form Bool)]
 parseFOLProof ders = toDeduction (parseFOLogic ders) folFormulaParser
+
+--------------------
+--  3. System QL  --
+--------------------
+-- A system of first-order logic resembling system QL from PD Magnus'
+-- forallx
+
+data ForallxQL = ForallxSL P.ForallxSL | UIX | UEX | EIX | EE1X | EE2X
+                    deriving (Show, Eq)
+
+instance Inference ForallxQL PureLexiconFOL where
+
+         ruleOf UIX   = [ GammaV 1 :|-: ss (phi 1 tau)]
+                        ∴ GammaV 1 :|-: ss (PBind (All "v") (phi 1))
+         ruleOf UEX   = [ GammaV 1  :|-: ss (PBind (All "v") (phi 1))]
+                        ∴ GammaV 1 :|-: ss (phi 1 tau)
+         ruleOf EIX   = [ GammaV 1 :|-: ss (phi 1 tau)]
+                        ∴ GammaV 1 :|-: ss (PBind (Some "v") (phi 1))
+         ruleOf EE1X  = [ GammaV 1 :+:  sa (phi 1 tau) :|-: ss (phiS 1)
+                        , GammaV 2 :|-: ss (PBind (Some "v") $ phi 1)
+                        , sa (phi 1 tau) :|-: ss (phi 1 tau)
+                        ] ∴ GammaV 1 :+: GammaV 2 :|-: ss (phiS 1) 
+         ruleOf EE2X  = [ GammaV 1 :|-: ss (phiS 1)
+                        , sa (phi 1 tau) :|-: ss (phi 1 tau)
+                        , GammaV 2 :|-: ss (PBind (Some "v") $ phi 1)
+                        ] ∴ GammaV 1 :+: GammaV 2 :|-: ss (phiS 1)
+
+         premisesOf (ForallxSL x) = map liftSequent (premisesOf x)
+         
+         conclusionOf (ForallxSL x) = liftSequent (conclusionOf x)
+
+         indirectInference (ForallxSL x) = indirectInference x
+         indirectInference x  
+            | x `elem` [ EE1X,EE2X ] = Just PolyProof
+            | otherwise = Nothing
+
+         restriction UIX    = Just (eigenConstraint (SeqT 1) (ss (PBind (All "v") $ phi 1)) (GammaV 1))
+         restriction EE1X   = Just (eigenConstraint (SeqT 1) (ss (PBind (Some "v") $ phi 1) :-: ss (phiS 1)) (GammaV 1 :+: GammaV 2))
+         restriction EE2X   = Nothing --Since this one does not use the assumption with a fresh object
+         restriction _      = Nothing
+
+parseForallxQL ders = try liftProp <|> quantRule
+    where liftProp = do r <- P.parseForallxSL ders
+                        return (map ForallxSL r)
+          quantRule = do r <- choice (map (try . string) ["∀I", "AI", "∀E", "AE", "∃I", "EI", "∃E", "EE"])
+                         case r of 
+                            "∀I" -> return [UIX]
+                            "AI" -> return [UIX]
+                            "∀E" -> return [UEX]
+                            "AE" -> return [UEX]
+                            "∃I" -> return [EIX]
+                            "EI" -> return [EIX]
+                            "∃E" -> return [EE1X, EE2X]
+                            "EE" -> return [EE1X, EE2X]

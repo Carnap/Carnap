@@ -94,7 +94,8 @@ parseSeparatorLine = do dpth <- indent
 --2. To Proof Tree
 --------------------------------------------------------
 
--- XXX This is pretty ugly, and should be rewritten
+-- XXX This is pretty ugly, and should be rewritten. Probably a lot should
+-- be folded into methods associated with ND data
 {- | 
 In a Kalish and Montegue deduction, find the prooftree corresponding to
 *line n* in ded, where proof line numbers start at 1
@@ -254,7 +255,7 @@ toProofTreeStructuredFitch t n = case t .! n of
                             Nothing | begin /= end -> err "you appear to be supplying a line range to a rule of direct proof"
                                     | begin `elem` linesFromHere -> Right True
                                     | otherwise ->  err "you appear to be citing a line that is not available"
-                            Just _  | begin == end -> err "you appear to be supplying a single line to a rule of indirect proof"
+                            Just _  | begin == end && begin `elem` linesFromHere -> Right True
                                     | (begin,end) `elem` rangesFromHere -> Right True
                                     | otherwise ->  err "you appear to be citing a subproof that is not available or does not exist"
                       checkAssumptionLegit = case subProofOf n t of

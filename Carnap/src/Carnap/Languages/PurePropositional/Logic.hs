@@ -1,7 +1,7 @@
 {-#LANGUAGE GADTs, FlexibleContexts, PatternSynonyms, TypeSynonymInstances, FlexibleInstances, MultiParamTypeClasses #-}
 module Carnap.Languages.PurePropositional.Logic 
-    (parsePropLogic, parseFitchPropLogic, parsePropProof, parseFitchPropProof, LogicBookPropLogic,
-    DerivedRule(..), propSeqParser, PropSequentCalc) where
+    (parsePropLogic, parseFitchPropLogic, parseForallxSL, parsePropProof, parseFitchPropProof, LogicBookPropLogic,
+    DerivedRule(..), propSeqParser, PropSequentCalc, ForallxSL) where
 
 import Data.Map as M (lookup, Map)
 import Text.Parsec
@@ -465,33 +465,33 @@ parseFitchPropProof ders = toDeductionBE (parseFitchPropLogic ders) (purePropFor
 --A system for propositional logic resembling the proof system SL from PD
 --Magnus' forallx book
 
-data ForallxRules = ReiterateX  | ConjIntroX
-                  | ConjElim1X  | ConjElim2X
-                  | DisjIntro1X | DisjIntro2X
-                  | DisjElim1X  | DisjElem2X
-                  | CondIntro1X | CondIntro2X
-                  | CondElimX
-                  | BicoIntro1X | BicoIntro2X
-                  | BicoIntro3X | BicoIntro4X
-                  | BicoElim1X  | BicoElim2X
-                  | NegeIntro1X | NegeIntro2X
-                  | NegeIntro3X | NegeIntro4X
-                  | NegeElim1X  | NegeElim2X
-                  | NegeElim3X  | NegeElim4X
-                  | ForXAssump  | ForXPrem
-                  deriving (Show, Eq)
-                  --skipping derived rules for now
+data ForallxSL = ReiterateX  | ConjIntroX
+               | ConjElim1X  | ConjElim2X
+               | DisjIntro1X | DisjIntro2X
+               | DisjElim1X  | DisjElim2X
+               | CondIntro1X | CondIntro2X
+               | CondElimX
+               | BicoIntro1X | BicoIntro2X
+               | BicoIntro3X | BicoIntro4X
+               | BicoElim1X  | BicoElim2X
+               | NegeIntro1X | NegeIntro2X
+               | NegeIntro3X | NegeIntro4X
+               | NegeElim1X  | NegeElim2X
+               | NegeElim3X  | NegeElim4X
+               | ForXAssump  | ForXPrem
+               deriving (Show, Eq)
+               --skipping derived rules for now
 
-instance Inference ForallxRules where
+instance Inference ForallxSL PurePropLexicon where
         ruleOf ReiterateX = identityRule
-        ruleOf ConjIntro = adjunction
+        ruleOf ConjIntroX = adjunction
         ruleOf ConjElim1X = simplificationVariations !! 0
         ruleOf ConjElim2X = simplificationVariations !! 1
         ruleOf DisjIntro1X = additionVariations !! 0
         ruleOf DisjIntro2X = additionVariations !! 1 
         ruleOf DisjElim1X = modusTollendoPonensVariations !! 0
         ruleOf DisjElim2X = modusTollendoPonensVariations !! 1
-        ruleOf CondIntro1 = conditionalProofVariations !! 0
+        ruleOf CondIntro1X = conditionalProofVariations !! 0
         ruleOf CondIntro2X = conditionalProofVariations !! 1
         ruleOf CondElimX = modusPonens
         ruleOf BicoIntro1X = biconditionalProofVariations !! 0
@@ -500,14 +500,14 @@ instance Inference ForallxRules where
         ruleOf BicoIntro4X = biconditionalProofVariations !! 3
         ruleOf BicoElim1X = biconditionalPonensVariations !! 0
         ruleOf BicoElim2X = biconditionalPonensVariations !! 1
-        ruleOf NegeIntro1 = constructiveReductioVariations !! 0
-        ruleOf NegeIntro2 = constructiveReductioVariations !! 1
-        ruleOf NegeIntro3 = constructiveReductioVariations !! 2
-        ruleOf NegeIntro4 = constructiveReductioVariations !! 3
-        ruleOf NegeElim1 = nonConstructiveReductioVariations !! 0
-        ruleOf NegeElim2 = nonConstructiveReductioVariations !! 1
-        ruleOf NegeElim3 = nonConstructiveReductioVariations !! 2
-        ruleOf NegeElim4 = nonConstructiveReductioVariations !! 3
+        ruleOf NegeIntro1X = constructiveReductioVariations !! 0
+        ruleOf NegeIntro2X = constructiveReductioVariations !! 1
+        ruleOf NegeIntro3X = constructiveReductioVariations !! 2
+        ruleOf NegeIntro4X = constructiveReductioVariations !! 3
+        ruleOf NegeElim1X = nonConstructiveReductioVariations !! 0
+        ruleOf NegeElim2X = nonConstructiveReductioVariations !! 1
+        ruleOf NegeElim3X = nonConstructiveReductioVariations !! 2
+        ruleOf NegeElim4X = nonConstructiveReductioVariations !! 3
         ruleOf ForXAssump = axiom
         ruleOf ForXPrem  = axiom
 
@@ -523,39 +523,41 @@ instance Inference ForallxRules where
         isAssumption _ = False
 
 
-parseForallXPropLogic :: Map String DerivedRule -> Parsec String u [LogicBookPropLogic]
-parseForallXPropLogic ders = do r <- choice (map (try . string) ["AS","PR","&I","/\\I", "∧I","&E","/\\E","∧E","CI","->I","→I","→E","CE","->E", "→E"
-                                                              ,"~I","-I", "¬I","~E","-E","¬E" ,"vI","\\/I","∨I", "vE","\\/E", "∨E","BI","<->I", "↔I" 
-                                                              , "BE", "<->E", "↔E", "R"])
-                                case r of
-                                    "AS"   -> return [ForXAssump]
-                                    "PR"   -> return [ForXPrem]
-                                    "&I"   -> return [ConjIntroX]
-                                    "&E"   -> return [ConjElim1X, ConjElim2X]
-                                    "/\\I" -> return [ConjIntroX]
-                                    "/\\E" -> return [ConjElim1X, ConjElim2X]
-                                    "∧I"   -> return [ConjIntroX]
-                                    "∧E"   -> return [ConjElim1X, ConjElim2X]
-                                    "CI"   -> return [CondIntro1X,CondIntro2X]
-                                    "CE"   -> return [CondElimX]
-                                    "->I"  -> return [CondIntro1X,CondIntro2X]
-                                    "->E"  -> return [CondElimX]
-                                    "→I"   -> return [CondIntro1X,CondIntro2X]
-                                    "→E"   -> return [CondElimX]
-                                    "~I"   -> return [NegeIntro1X, NegeIntro2X, NegeIntro3X, NegeIntro4X]
-                                    "~E"   -> return [NegeElim1X, NegeElim2X, NegeElim3X, NegeElim4X]
-                                    "¬I"   -> return [NegeIntro1X, NegeIntro2X, NegeIntro3X, NegeIntro4X]
-                                    "¬E"   -> return [NegeElim1X, NegeElim2X, NegeElim3X, NegeElim4X]
-                                    "-I"   -> return [NegeIntro1X, NegeIntro2X, NegeIntro3X, NegeIntro4X]
-                                    "-E"   -> return [NegeElim1X, NegeElim2X, NegeElim3X, NegeElim4X]
-                                    "vI"   -> return [DisjIntro1X, DisjIntro2X]
-                                    "vE"   -> return [DisjElim1X, DisjElim2X]
-                                    "\\/I" -> return [DisjIntro1X, DisjIntro2X]
-                                    "\\/E" -> return [DisjElim1X, DisjElim2X]
-                                    "BI"   -> return [BicoIntro1X, BicoIntro2X, BicoIntro3X, BicoIntro4X]
-                                    "BE"   -> return [BicoElim1, BicoElim2]
-                                    "<->I" -> return [BicoIntro1, BicoIntro2, BicoIntro3, BicoIntro4]
-                                    "<->E" -> return [BicoElim1, BicoElim2]
-                                    "↔I"   -> return [BicoIntro1, BicoIntro2, BicoIntro3, BicoIntro4]
-                                    "↔E"   -> return [BicoElim1, BicoElim2]
-                                    "R"    -> return [Reiterate]
+parseForallxSL :: Map String DerivedRule -> Parsec String u [ForallxSL]
+parseForallxSL ders = do r <- choice (map (try . string) ["AS","PR","&I","/\\I", "∧I","&E","/\\E","∧E","CI","->I","→I","→E","CE","->E", "→E"
+                                                         ,"~I","-I", "¬I","~E","-E","¬E" ,"vI","\\/I","∨I", "vE","\\/E", "∨E","BI","<->I", "↔I" 
+                                                         , "BE", "<->E", "↔E", "R"])
+                         case r of
+                             "AS"   -> return [ForXAssump]
+                             "PR"   -> return [ForXPrem]
+                             "&I"   -> return [ConjIntroX]
+                             "&E"   -> return [ConjElim1X, ConjElim2X]
+                             "/\\I" -> return [ConjIntroX]
+                             "/\\E" -> return [ConjElim1X, ConjElim2X]
+                             "∧I"   -> return [ConjIntroX]
+                             "∧E"   -> return [ConjElim1X, ConjElim2X]
+                             "CI"   -> return [CondIntro1X,CondIntro2X]
+                             "CE"   -> return [CondElimX]
+                             "->I"  -> return [CondIntro1X,CondIntro2X]
+                             "->E"  -> return [CondElimX]
+                             "→I"   -> return [CondIntro1X,CondIntro2X]
+                             "→E"   -> return [CondElimX]
+                             "~I"   -> return [NegeIntro1X, NegeIntro2X, NegeIntro3X, NegeIntro4X]
+                             "~E"   -> return [NegeElim1X, NegeElim2X, NegeElim3X, NegeElim4X]
+                             "¬I"   -> return [NegeIntro1X, NegeIntro2X, NegeIntro3X, NegeIntro4X]
+                             "¬E"   -> return [NegeElim1X, NegeElim2X, NegeElim3X, NegeElim4X]
+                             "-I"   -> return [NegeIntro1X, NegeIntro2X, NegeIntro3X, NegeIntro4X]
+                             "-E"   -> return [NegeElim1X, NegeElim2X, NegeElim3X, NegeElim4X]
+                             "vI"   -> return [DisjIntro1X, DisjIntro2X]
+                             "vE"   -> return [DisjElim1X, DisjElim2X]
+                             "∨I"   -> return [DisjIntro1X, DisjIntro2X]
+                             "∨E"   -> return [DisjElim1X, DisjElim2X]
+                             "\\/I" -> return [DisjIntro1X, DisjIntro2X]
+                             "\\/E" -> return [DisjElim1X, DisjElim2X]
+                             "BI"   -> return [BicoIntro1X, BicoIntro2X, BicoIntro3X, BicoIntro4X]
+                             "BE"   -> return [BicoElim1X, BicoElim2X]
+                             "<->I" -> return [BicoIntro1X, BicoIntro2X, BicoIntro3X, BicoIntro4X]
+                             "<->E" -> return [BicoElim1X, BicoElim2X]
+                             "↔I"   -> return [BicoIntro1X, BicoIntro2X, BicoIntro3X, BicoIntro4X]
+                             "↔E"   -> return [BicoElim1X, BicoElim2X]
+                             "R"    -> return [ReiterateX]
