@@ -188,19 +188,24 @@ type SequentTree lex = Tree (Int, ClassicalSequentOver lex Sequent)
 -- XXX we get indeterminism if we want full generality here, so I leave this
 --simple for now.
 
-data IndirectArity = PolyProof --takes an arbitrary number of assertions or subproofs, each ending in one assertion
+data IndirectArity = PolyProof   --takes an arbitrary number of assertions or subproofs, each ending in one assertion
                    | DoubleProof --takes one subproof ending in two assertions
+                   | AssumptiveProof --takes a subproof and a line, but the first line of the subproof is used as a premise
 
 class ( FirstOrder (ClassicalSequentOver lex)
       , ACUI (ClassicalSequentOver lex)) => 
         Inference r lex | r -> lex where
+
         premisesOf :: r -> [ClassicalSequentOver lex Sequent]
         premisesOf r = upperSequents (ruleOf r)
+
         conclusionOf :: r -> ClassicalSequentOver lex Sequent
-        --restrictions, based on given substitutions
         conclusionOf r = lowerSequent (ruleOf r)
+
         ruleOf :: r -> SequentRule lex
         ruleOf r = SequentRule (premisesOf r) (conclusionOf r)
+
+        --restrictions, based on given substitutions
         restriction :: r -> Maybe ([Equation (ClassicalSequentOver lex)] -> Maybe String)
         restriction _ = Nothing
         indirectInference :: r -> Maybe IndirectArity

@@ -89,7 +89,7 @@ propSeqParser = seqFormulaParser :: Parsec String u (PropSequentCalc Sequent)
 extendedPropSeqParser = parseSeqOver (purePropFormulaParser extendedLetters)
 
 -------------------------
---  1. Standard Rules  --
+--  1.1 Standard Rules  --
 -------------------------
 --Rules found in many systems of propositional logic
 
@@ -286,9 +286,11 @@ instance Inference PropLogic PurePropLexicon where
 
     premisesOf (DER r) = zipWith gammafy (premises r) [1..]
         where gammafy p n = GammaV n :|-: SS (liftToSequent p)
+    premisesOf r = upperSequents (ruleOf r)
 
     conclusionOf (DER r) = gammas :|-: SS (liftToSequent $ conclusion r)
         where gammas = foldl (:+:) Top (map GammaV [1..length (premises r)])
+    conclusionOf r = lowerSequent (ruleOf r)
 
     indirectInference x
         | x `elem` [DD,CP1,CP2,ID1,ID2,ID3,ID4] = Just PolyProof

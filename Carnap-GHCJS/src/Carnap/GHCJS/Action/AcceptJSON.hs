@@ -157,7 +157,6 @@ initializeCallback f = do theCB <- asyncCallback3 (cb f)
                                           simpleCall succ rslt'
                                           simpleCall feedback fb'
 
-
 #else
 
 initializeCallback :: (Value -> IO (String,Value)) -> IO ()

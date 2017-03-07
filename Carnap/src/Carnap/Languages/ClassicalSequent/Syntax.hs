@@ -167,6 +167,9 @@ data SequentRule a = SequentRule { upperSequents :: [ClassicalSequentOver a Sequ
                                  , lowerSequent :: ClassicalSequentOver a Sequent
                                  }
 
+instance Show (ClassicalSequentOver a Sequent) => Show (SequentRule a) where
+        show (SequentRule us ls) = show us ++ " ∴ " ++ show ls
+
 (∴) = SequentRule
 
 infixr 6 ∴

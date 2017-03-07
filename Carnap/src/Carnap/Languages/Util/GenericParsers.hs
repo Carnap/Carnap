@@ -136,6 +136,7 @@ quantifiedSentenceParser ::
 quantifiedSentenceParser parseFreeVar formulaParser =
         do s <- oneOf "AE∀∃"
            v <- parseFreeVar
+           spaces
            f <- formulaParser
            let bf x = subBoundVar v x f
                --partially applied, returning a function

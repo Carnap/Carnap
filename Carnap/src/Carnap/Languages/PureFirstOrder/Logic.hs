@@ -57,6 +57,28 @@ instance ParsableLex (Form Bool) PureLexiconFOL where
 
 folSeqParser = seqFormulaParser :: Parsec String u (FOLSequentCalc Sequent)
 
+-------------------------
+--  1.1. Common Rules  --
+-------------------------
+
+eqReflexivity = [] ∴ Top :|-: ss (tau :==: tau)
+
+------------------------------------
+--  1.1.2. Rules with Variations  --
+------------------------------------
+
+leibnizLawVariations = [
+                           [ GammaV 1 :|-: ss (phi 1 tau)
+                           , GammaV 2 :|-: ss (tau :==: tau')
+                           ] ∴ GammaV 1 :+: GammaV 2 :|-: ss (phi 1 tau')
+                       , 
+                           [ GammaV 1 :|-: ss (phi 1 tau')
+                           , GammaV 2 :|-: ss (tau :==: tau')
+                           ] ∴ GammaV 1 :+: GammaV 2 :|-: ss (phi 1 tau)
+                       ]
+
+
+
 --------------------------------------------------------
 --2. Classical First-Order Logic
 --------------------------------------------------------
@@ -86,6 +108,8 @@ phiS n = PPhi n AZero AZero
 phi n x = PPhi n AOne AOne :!$: x
 
 tau = PT 1
+
+tau' = PT 2
 
 -- TODO use liftSequent to clean this up
 instance Inference FOLogic PureLexiconFOL where
@@ -246,7 +270,7 @@ parseFOLProof ders = toDeduction (parseFOLogic ders) folFormulaParser
 -- A system of first-order logic resembling system QL from PD Magnus'
 -- forallx
 
-data ForallxQL = ForallxSL P.ForallxSL | UIX | UEX | EIX | EE1X | EE2X
+data ForallxQL = ForallxSL P.ForallxSL | UIX | UEX | EIX | EE1X | EE2X | IDIX | IDE1X | IDE2X
                     deriving (Show, Eq)
 
 instance Inference ForallxQL PureLexiconFOL where
@@ -266,13 +290,20 @@ instance Inference ForallxQL PureLexiconFOL where
                         , GammaV 2 :|-: ss (PBind (Some "v") $ phi 1)
                         ] ∴ GammaV 1 :+: GammaV 2 :|-: ss (phiS 1)
 
+         ruleOf IDIX  = eqReflexivity
+
+         ruleOf IDE1X  = leibnizLawVariations !! 0
+         ruleOf IDE2X  = leibnizLawVariations !! 1
+
          premisesOf (ForallxSL x) = map liftSequent (premisesOf x)
+         premisesOf r = upperSequents (ruleOf r)
          
          conclusionOf (ForallxSL x) = liftSequent (conclusionOf x)
+         conclusionOf r = lowerSequent (ruleOf r)
 
          indirectInference (ForallxSL x) = indirectInference x
          indirectInference x  
-            | x `elem` [ EE1X,EE2X ] = Just PolyProof
+            | x `elem` [ EE1X,EE2X ] = Just AssumptiveProof
             | otherwise = Nothing
 
          restriction UIX    = Just (eigenConstraint (SeqT 1) (ss (PBind (All "v") $ phi 1)) (GammaV 1))
@@ -283,13 +314,11 @@ instance Inference ForallxQL PureLexiconFOL where
 parseForallxQL ders = try liftProp <|> quantRule
     where liftProp = do r <- P.parseForallxSL ders
                         return (map ForallxSL r)
-          quantRule = do r <- choice (map (try . string) ["∀I", "AI", "∀E", "AE", "∃I", "EI", "∃E", "EE"])
+          quantRule = do r <- choice (map (try . string) ["∀I", "AI", "∀E", "AE", "∃I", "EI", "∃E", "EE", "=I","=E" ])
                          case r of 
-                            "∀I" -> return [UIX]
-                            "AI" -> return [UIX]
-                            "∀E" -> return [UEX]
-                            "AE" -> return [UEX]
-                            "∃I" -> return [EIX]
-                            "EI" -> return [EIX]
-                            "∃E" -> return [EE1X, EE2X]
-                            "EE" -> return [EE1X, EE2X]
+                            r | r `elem` ["∀I","AI"] -> return [UIX]
+                              | r `elem` ["∀E","AE"] -> return [UEX]
+                              | r `elem` ["∃I","EI"] -> return [EIX]
+                              | r `elem` ["∃E","EE"] -> return [EE1X, EE2X]
+                              | r == "=I" -> return [IDIX]
+                              | r == "=E" -> return [IDE1X,IDE2X]

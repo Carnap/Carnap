@@ -171,6 +171,9 @@ toProofTreeFitch ded n = case ded !! (n - 1)  of
                         Just DoubleProof -> do dp <- doubleProcess deps
                                                deps' <- mapM (toProofTreeFitch ded) dp
                                                return $ Node (ProofLine n (SS $ liftToSequent f) r) deps'
+                        Just AssumptiveProof -> do dp <- assumptiveProcess deps
+                                                   deps' <- mapM (toProofTreeFitch ded) dp
+                                                   return $ Node (ProofLine n (SS $ liftToSequent f) r) deps'
                         _ -> do deps' <- mapM (toProofTreeFitch ded . snd) deps
                                 return $ Node (ProofLine n (SS $ liftToSequent f) r) deps'
                 where checkDep (begin,end) = 
@@ -194,6 +197,12 @@ toProofTreeFitch ded n = case ded !! (n - 1)  of
                         | depth (ded !! (n - 2)) /= depth (ded !! (n - 1)) = err $ "looks like the final two lines of the subproof starting at" ++ show m ++ " aren't aligned"
                         | m + 2 > n = err "a subproof proof needs to be at least two lines long to be used with this rule"
                         | otherwise = return [n-1,n]
+                      doubleProcess _ = err "this rule requires you to cite at least one subproof"
+                      assumptiveProcess [(i,j),(h,k)] 
+                                    | i == j && h /= k = return [i,h,k]
+                                    | h == k && i /= j = return [h,i,j]
+                                    | otherwise = err "you need to specify one line and one subproof for this rule"
+                      assumptiveProcess _ = err "this rule requires a line and a subproof"
                                                       
           (PartialLine _ e _) -> Left $ NoParse e n
           (SeparatorLine _) -> Left $ NoResult n
@@ -248,6 +257,9 @@ toProofTreeStructuredFitch t n = case t .! n of
                         Just DoubleProof -> do dp <- doubleProcess deps
                                                deps' <- mapM (toProofTreeStructuredFitch t) dp
                                                return $ Node (ProofLine n (SS $ liftToSequent f) r) deps'
+                        Just AssumptiveProof -> do dp <- assumptiveProcess deps
+                                                   deps' <- mapM (toProofTreeStructuredFitch t) dp
+                                                   return $ Node (ProofLine n (SS $ liftToSequent f) r) deps'
                         _ -> do deps' <- mapM (toProofTreeStructuredFitch t . snd) deps
                                 return $ Node (ProofLine n (SS $ liftToSequent f) r) deps'
                 where checkDep (begin,end) = 
@@ -259,13 +271,19 @@ toProofTreeStructuredFitch t n = case t .! n of
                                     | (begin,end) `elem` rangesFromHere -> Right True
                                     | otherwise ->  err "you appear to be citing a subproof that is not available or does not exist"
                       checkAssumptionLegit = case subProofOf n t of
-                                                 Just (SubProof _ (Leaf k _:_)) -> if k == n then return True else err "Assumptions need to come at the beginning of subproofs"
+                                                 Just (SubProof _ (Leaf k _:_)) | k == n -> return True 
+                                                                                | otherwise -> err "Assumptions need to come at the beginning of subproofs"
                                                  _ -> err "Assuptions must occur within subproofs"
                       doubleProcess [(i,j)] = case range i j t of
-                                                  Just (SubProof _ ls) -> if i + 2 > n then err "a subproof proof needs to be at least two lines long to be used with this rule"
-                                                                                       else return [j-1,j]
+                                                  Just (SubProof _ ls) | i + 2 > n -> err "a subproof proof needs to be at least two lines long to be used with this rule"
+                                                                       | otherwise -> return [j-1,j]
                                                   Nothing -> err $ "the range " ++ show i ++ " to " ++ show j ++ " does not appear to be a subproof"
                       doubleProcess _ = err "This rule takes exactly one subproof as a premise"
+                      assumptiveProcess [(i,j),(h,k)] 
+                                    | i == j && h /= j  = return [i,h,k]
+                                    | h == k && i /= j  = return [h,i,j]
+                                    | otherwise = err "you need to specify an available range and an available line for this rule"
+                      assumptiveProcess _ = err "this rule requires you to cite a line range and a line"
                                                       
           Just (PartialLine _ e _) -> Left $ NoParse e n
           Just (SeparatorLine _) -> Left $ NoResult n
