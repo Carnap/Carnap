@@ -273,8 +273,8 @@ instance Inference PropLogic PurePropLexicon where
     ruleOf DD        = identityRule
     ruleOf DNE       = doubleNegationElimination
     ruleOf DNI       = doubleNegationIntroduction
-    ruleOf CP1       = constructiveReductioVariations !! 0
-    ruleOf CP2       = constructiveReductioVariations !! 1
+    ruleOf CP1       = conditionalProofVariations !! 0
+    ruleOf CP2       = conditionalProofVariations !! 1
     ruleOf ADJ       = adjunction
     ruleOf S1        = simplificationVariations !! 0
     ruleOf S2        = simplificationVariations !! 1
@@ -391,7 +391,7 @@ instance Inference LogicBookPropLogic PurePropLexicon where
     ruleOf NegeElim1  = nonConstructiveReductioVariations !! 0
     ruleOf NegeElim2  = nonConstructiveReductioVariations !! 1
     ruleOf NegeElim3  = nonConstructiveReductioVariations !! 2
-    ruleOf NegeElim4  = nonConstructiveReductioVariations !! 4
+    ruleOf NegeElim4  = nonConstructiveReductioVariations !! 3
     ruleOf DisjIntro1 = additionVariations !! 0
     ruleOf DisjIntro2 = additionVariations !! 1
     ruleOf DisjElim1  = proofByCasesVariations !! 0
