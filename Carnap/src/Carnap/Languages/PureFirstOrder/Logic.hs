@@ -3,7 +3,7 @@ module Carnap.Languages.PureFirstOrder.Logic
         (FOLogic(..), parseFOLogic,parseForallxQL, parseFOLProof, folSeqParser, phiS, phi, tau, ss, FOLSequentCalc, DerivedRule(..))
     where
 
-import Data.Map as M (lookup, Map)
+import Data.Map as M (lookup, Map,empty)
 import Data.List (intercalate)
 import Text.Parsec
 import Carnap.Core.Data.Util (scopeHeight)
@@ -182,48 +182,23 @@ eigenConstraint c suc ant sub
           -- imaginable.
           occursIn x y = not $ (subst x (static 0) y) =* y
 
--- parseFOLogic ders = 
---                 do r <- choice (map (try . string) 
-                            
---                    case r of "AS"   -> return [AX]
---                              "PR"   -> return [AX]
---                              "MP"   -> return [MP]
---                              "MT"   -> return [MT]
---                              "DD"   -> return [DD]
---                              "DNE"  -> return [DNE]
---                              "DNI"  -> return [DNI]
---                              "DN"   -> return [DNE,DNI]
---                              "CD"   -> return [CP1,CP2]
---                              "ID"   -> return [ID1,ID2,ID3,ID4]
---                              "ADJ"  -> return [ADJ]
---                              "S"    -> return [S1, S2]
---                              "ADD"  -> return [ADD1, ADD2]
---                              "MTP"  -> return [MTP1, MTP2]
---                              "BC"   -> return [BC1, BC2]
---                              "CB"   -> return [CB]
---                              "UI"   -> return [UI]
---                              "UD"   -> return [UD]
---                              "EG"   -> return [EG]
---                              "ED"   -> return [ED1,ED2]
---                              "QN"   -> return [QN1, QN2, QN3, QN4]
---                              "D-" -> do rn <- many1 upper
---                                         case M.lookup rn ders of
---                                             Just r  -> return [DER r]
---                                             Nothing -> parserFail "--- Looks like you're citing a derived rule that doesn't exist"
-
-parseFOLogic :: Map String P.DerivedRule -> Parsec String u [FOLogic]
-parseFOLogic ders = try liftProp <|> quantRule
-    where liftProp = do r <- P.parsePropLogic ders
+parseFOLogic :: Map String DerivedRule -> Parsec String u [FOLogic]
+parseFOLogic ders = try quantRule <|> liftProp
+    where liftProp = do r <- P.parsePropLogic M.empty
                         return (map SL r)
-          quantRule = do r <- choice (map (try . string) [ "UI", "UD", "EG", "ED", "QN"])
+          quantRule = do r <- choice (map (try . string) [ "UI", "UD", "EG", "ED", "QN","D-"])
                          case r of 
                             r | r == "UI" -> return [UI]
                               | r == "UD" -> return [UD]
                               | r == "EG" -> return [EG]
                               | r == "ED" -> return [ED1,ED2]
                               | r == "QN" -> return [QN1,QN2,QN3,QN4]
+                              | r == "D-" ->  do rn <- many1 upper
+                                                 case M.lookup rn ders of
+                                                    Just r  -> return [DER r]
+                                                    Nothing -> parserFail "Looks like you're citing a derived rule that doesn't exist"
 
-parseFOLProof ::  Map String P.DerivedRule -> String -> [DeductionLine FOLogic PureLexiconFOL (Form Bool)]
+parseFOLProof ::  Map String DerivedRule -> String -> [DeductionLine FOLogic PureLexiconFOL (Form Bool)]
 parseFOLProof ders = toDeduction (parseFOLogic ders) folFormulaParser
 
 --------------------
