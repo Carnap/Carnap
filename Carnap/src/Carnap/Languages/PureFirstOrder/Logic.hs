@@ -63,6 +63,15 @@ folSeqParser = seqFormulaParser :: Parsec String u (FOLSequentCalc Sequent)
 
 eqReflexivity = [] ∴ Top :|-: ss (tau :==: tau)
 
+universalGeneralization = [ GammaV 1 :|-: ss (phi 1 tau)]
+                          ∴ GammaV 1 :|-: ss (PBind (All "v") (phi 1))
+
+universalInstantiation = [ GammaV 1 :|-: ss (PBind (All "v") (phi 1))]
+                         ∴ GammaV 1 :|-: ss (phi 1 tau)
+
+existentialGeneralization = [ GammaV 1 :|-: ss (phi 1 tau)]
+                            ∴ GammaV 1 :|-: ss (PBind (Some "v") (phi 1))
+
 ------------------------------------
 --  1.1.2. Rules with Variations  --
 ------------------------------------
@@ -77,25 +86,40 @@ leibnizLawVariations = [
                            ] ∴ GammaV 1 :+: GammaV 2 :|-: ss (phi 1 tau)
                        ]
 
+existentialDerivation = [
+                            [ GammaV 1 :+:  sa (phi 1 tau) :|-: ss (phiS 1) 
+                            , GammaV 2 :|-: ss (PBind (Some "v") $ phi 1)   
+                            , sa (phi 1 tau) :|-: ss (phi 1 tau)            
+                            ] ∴ GammaV 1 :+: GammaV 2 :|-: ss (phiS 1)      
+                        ,
+                            [ GammaV 1 :|-: ss (phiS 1)
+                            , sa (phi 1 tau) :|-: ss (phi 1 tau)
+                            , GammaV 2 :|-: ss (PBind (Some "v") $ phi 1)
+                            ] ∴ GammaV 1 :+: GammaV 2 :|-: ss (phiS 1)
+                        ]
 
+quantifierNegation = [  
+                        [ GammaV 1 :|-: ss (PNeg $ PBind (Some "v") $ phi 1)] 
+                        ∴ GammaV 1 :|-: ss (PBind (All "v") $ \x -> PNeg $ phi 1 x)
+                     ,  [ GammaV 1 :|-: ss (PBind (Some "v") $ \x -> PNeg $ phi 1 x)] 
+                        ∴ GammaV 1 :|-: ss (PNeg $ PBind (All "v")  $ phi 1)
+                     ,  [ GammaV 1 :|-: ss (PNeg $ PBind (All "v") $ phi 1)] 
+                        ∴ GammaV 1 :|-: ss (PBind (Some "v") $ \x -> PNeg $ phi 1 x)
+                     ,  [ GammaV 1 :|-: ss (PBind (All "v") $ \x -> PNeg $ phi 1 x)] 
+                        ∴ GammaV 1 :|-: ss (PNeg $ PBind (Some "v") $ phi 1)
+                     ]
 
 --------------------------------------------------------
 --2. Classical First-Order Logic
 --------------------------------------------------------
 
 data DerivedRule = DerivedRule { conclusion :: PureFOLForm, premises :: [PureFOLForm]}
-               deriving Show
+               deriving (Show, Eq)
 
-data FOLogic = MP | MT  | DNE | DNI | DD   | AX 
-                  | CP1 | CP2 | ID1 | ID2  | ID3  | ID4 
-                  | ADJ | S1  | S2  | ADD1 | ADD2 | MTP1 | MTP2 | BC1 | BC2 | CB  
-                  | UD  | UI  | EG  | ED1  | ED2  | DER DerivedRule
-                  | QN1 | QN2 | QN3 | QN4
-               deriving Show
-
--- TODO do this right
-instance Eq FOLogic where
-        x == y = show x == show y
+data FOLogic =  SL P.PropLogic
+                | UD  | UI  | EG  | ED1  | ED2  | DER DerivedRule
+                | QN1 | QN2 | QN3 | QN4
+               deriving (Show, Eq)
 
 ss :: PureFOLForm -> FOLSequentCalc Succedent
 ss = SS . liftToSequent
@@ -113,105 +137,35 @@ tau' = PT 2
 
 -- TODO use liftSequent to clean this up
 instance Inference FOLogic PureLexiconFOL where
-     premisesOf MP    = [ GammaV 1 :|-: ss (phiS 1 :->: phiS 2)
-                        , GammaV 2 :|-: ss (phiS 1)
-                        ]
-     premisesOf MT    = [ GammaV 1 :|-: ss (phiS 1 :->: phiS 2)
-                        , GammaV 2 :|-: ss (PNeg $ phiS 2)
-                        ]
-     premisesOf AX    = []
-     premisesOf DD    = [ GammaV 1 :|-: ss (phiS 1) ]
-     premisesOf DNE   = [ GammaV 1 :|-: ss (PNeg $ PNeg $ phiS 1) ]
-     premisesOf DNI   = [ GammaV 1 :|-: ss (phiS 1) ]
-     premisesOf CP1   = [ GammaV 1 :+: sa (phiS 1) :|-: ss (phiS 2) ]
-     premisesOf CP2   = [ GammaV 1 :|-: ss (phiS 2) ]
-     premisesOf ID1   = [ GammaV 1 :+: sa (phiS 1) :|-: ss (phiS 2) 
-                        , GammaV 2 :+: sa (phiS 1) :|-: ss (PNeg $ phiS 2)
-                        ]
-     premisesOf ID2   = [ GammaV 1 :+: sa (phiS 1) :|-: ss (phiS 2) 
-                        , GammaV 2 :|-: ss (PNeg $ phiS 2)
-                        ]
-     premisesOf ID3   = [ GammaV 1  :|-: ss (phiS 2) 
-                        , GammaV 2 :+: sa (phiS 1) :|-: ss (PNeg $ phiS 2)
-                        ]
-     premisesOf ID4   = [ GammaV 1  :|-: ss (phiS 2) 
-                        , GammaV 2  :|-: ss (PNeg $ phiS 2)
-                        ]
-     premisesOf ADJ   = [ GammaV 1  :|-: ss (phiS 1) 
-                        , GammaV 2  :|-: ss (phiS 2)
-                        ]
-     premisesOf S1    = [ GammaV 1  :|-: ss (phiS 1 :&: phiS 2) ]
-     premisesOf S2    = [ GammaV 1  :|-: ss (phiS 1 :&: phiS 2) ]
-     premisesOf ADD1  = [ GammaV 1  :|-: ss (phiS 1) ]
-     premisesOf ADD2  = [ GammaV 1  :|-: ss (phiS 1) ]
-     premisesOf MTP1  = [ GammaV 1  :|-: ss (PNeg $ phiS 1) 
-                        , GammaV 2  :|-: ss (phiS 1 :||: phiS 2)
-                        ]
-     premisesOf MTP2  = [ GammaV 1  :|-: ss (PNeg $ phiS 1) 
-                        , GammaV 2  :|-: ss (phiS 2 :||: phiS 1)
-                        ]
-     premisesOf BC1   = [ GammaV 1  :|-: ss (phiS 1 :<->: phiS 2) ]
-     premisesOf BC2   = [ GammaV 1  :|-: ss (phiS 1 :<->: phiS 2) ]
-     premisesOf CB    = [ GammaV 1  :|-: ss (phiS 1 :->: phiS 2)
-                        , GammaV 2  :|-: ss (phiS 2 :->: phiS 1) ]
-     premisesOf UI    = [ GammaV 1  :|-: ss (PBind (All "v") (phi 1))]
-     premisesOf EG    = [ GammaV 1 :|-: ss (phi 1 tau)]
-     premisesOf UD    = [ GammaV 1 :|-: ss (phi 1 tau)]
-     premisesOf ED1   = [ GammaV 1 :+:  sa (phi 1 tau) :|-: ss (phiS 1)
-                        , GammaV 2 :|-: ss (PBind (Some "v") $ phi 1)
-                        , sa (phi 1 tau) :|-: ss (phi 1 tau)]
-     premisesOf ED2   = [ GammaV 1 :|-: ss (phiS 1)
-                        , sa (phi 1 tau) :|-: ss (phi 1 tau)
-                        , GammaV 2 :|-: ss (PBind (Some "v") $ phi 1)]
+     ruleOf UI        = universalInstantiation
+     ruleOf EG        = existentialGeneralization
+     ruleOf UD        = universalGeneralization
+     ruleOf ED1       = existentialDerivation !! 0
+     ruleOf ED2       = existentialDerivation !! 1
+     ruleOf QN1       = quantifierNegation !! 0
+     ruleOf QN2       = quantifierNegation !! 1
+     ruleOf QN3       = quantifierNegation !! 2
+     ruleOf QN4       = quantifierNegation !! 3
+
+     premisesOf (SL x) = map liftSequent (premisesOf x)
      premisesOf (DER r) = zipWith gammafy (premises r) [1..]
         where gammafy p n = GammaV n :|-: SS (liftToSequent p)
-     premisesOf QN1   = [ GammaV 1 :|-: ss (PNeg $ PBind (Some "v") $ phi 1)]
-     premisesOf QN2   = [ GammaV 1 :|-: ss (PBind (Some "v") $ \x -> PNeg $ phi 1 x)]
-     premisesOf QN3   = [ GammaV 1 :|-: ss (PNeg $ PBind (All "v") $ phi 1)]
-     premisesOf QN4   = [ GammaV 1 :|-: ss (PBind (All "v") $ \x -> PNeg $ phi 1 x)]
+     
+     premisesOf x     = upperSequents (ruleOf x)
 
-     conclusionOf MP    = (GammaV 1 :+: GammaV 2) :|-: ss (phiS 2)
-     conclusionOf MT    = (GammaV 1 :+: GammaV 2) :|-: ss (PNeg $ phiS 1)
-     conclusionOf AX    = sa (phiS 1) :|-: ss (phiS 1)
-     conclusionOf DD    = GammaV 1 :|-: ss (phiS 1) 
-     conclusionOf DNE   = GammaV 1 :|-: ss (phiS 1) 
-     conclusionOf DNI   = GammaV 1 :|-: ss (PNeg $ PNeg $ phiS 1) 
-     conclusionOf CP1   = GammaV 1 :|-: ss (phiS 1 :->: phiS 2) 
-     conclusionOf CP2   = GammaV 1 :|-: ss (phiS 1 :->: phiS 2)
-     conclusionOf ID1   = GammaV 1 :+: GammaV 2 :|-: ss (PNeg $ phiS 1)
-     conclusionOf ID2   = GammaV 1 :+: GammaV 2 :|-: ss (PNeg $ phiS 1)
-     conclusionOf ID3   = GammaV 1 :+: GammaV 2 :|-: ss (PNeg $ phiS 1)
-     conclusionOf ID4   = GammaV 1 :+: GammaV 2 :|-: ss (PNeg $ phiS 1)
-     conclusionOf ADJ   = GammaV 1 :+: GammaV 2 :|-: ss (phiS 1 :&: phiS 2)
-     conclusionOf S1    = GammaV 1 :|-: ss (phiS 1)
-     conclusionOf S2    = GammaV 1 :|-: ss (phiS 2)
-     conclusionOf ADD1  = GammaV 1 :|-: ss (phiS 2 :||: phiS 1)
-     conclusionOf ADD2  = GammaV 1 :|-: ss (phiS 1 :||: phiS 2)
-     conclusionOf MTP1  = GammaV 1 :+: GammaV 2 :|-: ss (phiS 2)
-     conclusionOf MTP2  = GammaV 1 :+: GammaV 2 :|-: ss (phiS 2)
-     conclusionOf BC1   = GammaV 1 :|-: ss (phiS 2 :->: phiS 1)
-     conclusionOf BC2   = GammaV 1 :|-: ss (phiS 1 :->: phiS 2)
-     conclusionOf CB    = GammaV 1 :+: GammaV 2 :|-: ss (phiS 1 :<->: phiS 2)
-     conclusionOf UI    = GammaV 1 :|-: ss (phi 1 tau)
-     conclusionOf EG    = GammaV 1 :|-: ss (PBind (Some "v") (phi 1))
-     conclusionOf UD    = GammaV 1 :|-: ss (PBind (All "v") (phi 1))
-     conclusionOf ED1   = GammaV 1 :+: GammaV 2 :|-: ss (phiS 1)
-     conclusionOf ED2   = GammaV 1 :+: GammaV 2 :|-: ss (phiS 1)
+     conclusionOf (SL x) = liftSequent (conclusionOf x)
      conclusionOf (DER r) = gammas :|-: SS (liftToSequent $ conclusion r)
         where gammas = foldl (:+:) Top (map GammaV [1..length (premises r)])
-     conclusionOf QN1   = GammaV 1 :|-: ss (PBind (All "v") $ \x -> PNeg $ phi 1 x)
-     conclusionOf QN2   = GammaV 1 :|-: ss (PNeg $ PBind (All "v")  $ phi 1)
-     conclusionOf QN3   = GammaV 1 :|-: ss (PBind (Some "v") $ \x -> PNeg $ phi 1 x)
-     conclusionOf QN4   = GammaV 1 :|-: ss (PNeg $ PBind (Some "v") $ phi 1)
+     conclusionOf x   = lowerSequent (ruleOf x)
 
      restriction UD     = Just (eigenConstraint (SeqT 1) (ss (PBind (All "v") $ phi 1)) (GammaV 1))
      restriction ED1    = Just (eigenConstraint (SeqT 1) (ss (PBind (Some "v") $ phi 1) :-: ss (phiS 1)) (GammaV 1 :+: GammaV 2))
      restriction ED2    = Nothing --Since this one does not use the assumption with a fresh object
      restriction _      = Nothing
 
+     indirectInference (SL x) = indirectInference x
      indirectInference x
-        | x `elem` [ CP1,CP2,ED1,ED2 ] = Just PolyProof
-        | x `elem` [ ID1,ID2,ID3,ID4 ] = Just DoubleProof
+        | x `elem` [ ED1,ED2 ] = Just PolyProof
         | otherwise = Nothing
 
 eigenConstraint c suc ant sub
@@ -228,40 +182,48 @@ eigenConstraint c suc ant sub
           -- imaginable.
           occursIn x y = not $ (subst x (static 0) y) =* y
 
-parseFOLogic :: Map String DerivedRule -> Parsec String u [FOLogic]
-parseFOLogic ders = 
-                do r <- choice (map (try . string) 
-                            [ "AS","PR","MP","MTP","MT","DD","DNE"
-                            , "DNI", "DN", "S", "ADJ",  "ADD" , "BC"
-                            , "CB",  "CD", "ID", "UI", "UD", "EG", "ED"
-                            , "D-", "QN"])
-                   case r of "AS"   -> return [AX]
-                             "PR"   -> return [AX]
-                             "MP"   -> return [MP]
-                             "MT"   -> return [MT]
-                             "DD"   -> return [DD]
-                             "DNE"  -> return [DNE]
-                             "DNI"  -> return [DNI]
-                             "DN"   -> return [DNE,DNI]
-                             "CD"   -> return [CP1,CP2]
-                             "ID"   -> return [ID1,ID2,ID3,ID4]
-                             "ADJ"  -> return [ADJ]
-                             "S"    -> return [S1, S2]
-                             "ADD"  -> return [ADD1, ADD2]
-                             "MTP"  -> return [MTP1, MTP2]
-                             "BC"   -> return [BC1, BC2]
-                             "CB"   -> return [CB]
-                             "UI"   -> return [UI]
-                             "UD"   -> return [UD]
-                             "EG"   -> return [EG]
-                             "ED"   -> return [ED1,ED2]
-                             "QN"   -> return [QN1, QN2, QN3, QN4]
-                             "D-" -> do rn <- many1 upper
-                                        case M.lookup rn ders of
-                                            Just r  -> return [DER r]
-                                            Nothing -> parserFail "--- Looks like you're citing a derived rule that doesn't exist"
+-- parseFOLogic ders = 
+--                 do r <- choice (map (try . string) 
+                            
+--                    case r of "AS"   -> return [AX]
+--                              "PR"   -> return [AX]
+--                              "MP"   -> return [MP]
+--                              "MT"   -> return [MT]
+--                              "DD"   -> return [DD]
+--                              "DNE"  -> return [DNE]
+--                              "DNI"  -> return [DNI]
+--                              "DN"   -> return [DNE,DNI]
+--                              "CD"   -> return [CP1,CP2]
+--                              "ID"   -> return [ID1,ID2,ID3,ID4]
+--                              "ADJ"  -> return [ADJ]
+--                              "S"    -> return [S1, S2]
+--                              "ADD"  -> return [ADD1, ADD2]
+--                              "MTP"  -> return [MTP1, MTP2]
+--                              "BC"   -> return [BC1, BC2]
+--                              "CB"   -> return [CB]
+--                              "UI"   -> return [UI]
+--                              "UD"   -> return [UD]
+--                              "EG"   -> return [EG]
+--                              "ED"   -> return [ED1,ED2]
+--                              "QN"   -> return [QN1, QN2, QN3, QN4]
+--                              "D-" -> do rn <- many1 upper
+--                                         case M.lookup rn ders of
+--                                             Just r  -> return [DER r]
+--                                             Nothing -> parserFail "--- Looks like you're citing a derived rule that doesn't exist"
 
-parseFOLProof ::  Map String DerivedRule -> String -> [DeductionLine FOLogic PureLexiconFOL (Form Bool)]
+parseFOLogic :: Map String P.DerivedRule -> Parsec String u [FOLogic]
+parseFOLogic ders = try liftProp <|> quantRule
+    where liftProp = do r <- P.parsePropLogic ders
+                        return (map SL r)
+          quantRule = do r <- choice (map (try . string) [ "UI", "UD", "EG", "ED", "QN"])
+                         case r of 
+                            r | r == "UI" -> return [UI]
+                              | r == "UD" -> return [UD]
+                              | r == "EG" -> return [EG]
+                              | r == "ED" -> return [ED1,ED2]
+                              | r == "QN" -> return [QN1,QN2,QN3,QN4]
+
+parseFOLProof ::  Map String P.DerivedRule -> String -> [DeductionLine FOLogic PureLexiconFOL (Form Bool)]
 parseFOLProof ders = toDeduction (parseFOLogic ders) folFormulaParser
 
 --------------------
@@ -275,21 +237,11 @@ data ForallxQL = ForallxSL P.ForallxSL | UIX | UEX | EIX | EE1X | EE2X | IDIX | 
 
 instance Inference ForallxQL PureLexiconFOL where
 
-         ruleOf UIX   = [ GammaV 1 :|-: ss (phi 1 tau)]
-                        ∴ GammaV 1 :|-: ss (PBind (All "v") (phi 1))
-         ruleOf UEX   = [ GammaV 1  :|-: ss (PBind (All "v") (phi 1))]
-                        ∴ GammaV 1 :|-: ss (phi 1 tau)
-         ruleOf EIX   = [ GammaV 1 :|-: ss (phi 1 tau)]
-                        ∴ GammaV 1 :|-: ss (PBind (Some "v") (phi 1))
-         ruleOf EE1X  = [ GammaV 1 :+:  sa (phi 1 tau) :|-: ss (phiS 1)
-                        , GammaV 2 :|-: ss (PBind (Some "v") $ phi 1)
-                        , sa (phi 1 tau) :|-: ss (phi 1 tau)
-                        ] ∴ GammaV 1 :+: GammaV 2 :|-: ss (phiS 1) 
-         ruleOf EE2X  = [ GammaV 1 :|-: ss (phiS 1)
-                        , sa (phi 1 tau) :|-: ss (phi 1 tau)
-                        , GammaV 2 :|-: ss (PBind (Some "v") $ phi 1)
-                        ] ∴ GammaV 1 :+: GammaV 2 :|-: ss (phiS 1)
-
+         ruleOf UIX   = universalInstantiation
+         ruleOf UEX   = universalInstantiation
+         ruleOf EIX   = existentialGeneralization
+         ruleOf EE1X  = existentialDerivation !! 0 
+         ruleOf EE2X  = existentialDerivation !! 1 
          ruleOf IDIX  = eqReflexivity
 
          ruleOf IDE1X  = leibnizLawVariations !! 0

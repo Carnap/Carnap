@@ -9,12 +9,13 @@ import Carnap.Languages.PureSecondOrder.Syntax
 import Carnap.Languages.ClassicalSequent.Syntax
 import Carnap.Languages.Util.GenericConnectives
 import Carnap.Languages.Util.LanguageClasses
-import Carnap.Languages.PureFirstOrder.Logic (FOLogic(..))
+import Carnap.Languages.PureFirstOrder.Logic (FOLogic(..),parseFOLogic)
 import Carnap.Languages.PureSecondOrder.Parser
 import Carnap.Languages.ClassicalSequent.Parser
 import Carnap.Calculi.NaturalDeduction.Syntax
 import Carnap.Calculi.NaturalDeduction.Parser
 import Data.List (intercalate)
+import Data.Map (empty)
 import Data.Typeable (Typeable)
 import Text.Parsec
 
@@ -180,36 +181,19 @@ eigenConstraint c suc ant sub
 
 -- XXX Skipping derived rules for now.
 parseMSOLogic :: Parsec String u [MSOLogic]
-parseMSOLogic = do r <- choice (map (try . string) 
-                            [ "AS","PR","MP","MTP","MT","DD","DNE"
-                            , "DNI", "DN", "S", "ADJ",  "ADD" , "BC"
-                            , "CB",  "CD", "ID", "UI", "UD", "EG", "ED"
-                            , "D-", "QN","ABS","APP"])
-                   case r of "AS"   -> return [FO AX]
-                             "PR"   -> return [FO AX]
-                             "MP"   -> return [FO MP]
-                             "MT"   -> return [FO MT]
-                             "DD"   -> return [FO DD]
-                             "DNE"  -> return [FO DNE]
-                             "DNI"  -> return [FO DNI]
-                             "DN"   -> return [FO DNE, FO DNI]
-                             "CD"   -> return [FO CP1, FO CP2]
-                             "ID"   -> return [FO ID1, FO ID2,FO ID3,FO ID4]
-                             "ADJ"  -> return [FO ADJ]
-                             "S"    -> return [FO S1,FO S2]
-                             "ADD"  -> return [FO ADD1, FO ADD2]
-                             "MTP"  -> return [FO MTP1, FO MTP2]
-                             "BC"   -> return [FO BC1, FO BC2]
-                             "CB"   -> return [FO CB]
-                             "UI"   -> return [FO UI, SOUI]
-                             "UD"   -> return [SOUD, FO UD]
-                             "EG"   -> return [FO EG, SOEG]
-                             "ED"   -> return [FO ED1,FO ED2, SOED1, SOED2]
-                             "QN"   -> return [FO QN1, FO QN2, FO QN3,FO QN4]
-                             "ABS"  -> return [ABS]
-                             "APP"  -> return [APP]
+parseMSOLogic = try soRule <|> liftFO
+    where liftFO = do r <- parseFOLogic empty
+                      return (map FO r)
+          soRule = do r <- choice (map (try . string) [ "UI", "UD", "EG", "ED", "ABS","APP"])
+                      case r of 
+                            r | r == "UI"   -> return [FO UI, SOUI]
+                              | r == "UD"   -> return [SOUD, FO UD]
+                              | r == "EG"   -> return [FO EG, SOEG]
+                              | r == "ED"   -> return [FO ED1,FO ED2, SOED1, SOED2]
+                              | r == "ABS"  -> return [ABS]
+                              | r == "APP"  -> return [APP]
 
 parseMSOLProof :: String -> [DeductionLine MSOLogic MonadicallySOLLex (Form Bool)]
-parseMSOLProof = toDeduction (parseMSOLogic) msolFormulaParser
+parseMSOLProof = toDeduction parseMSOLogic msolFormulaParser
 
 msolSeqParser = seqFormulaParser :: Parsec String u (MSOLSequentCalc Sequent)

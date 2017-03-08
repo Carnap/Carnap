@@ -1,7 +1,7 @@
 {-#LANGUAGE GADTs, FlexibleContexts, PatternSynonyms, TypeSynonymInstances, FlexibleInstances, MultiParamTypeClasses #-}
 module Carnap.Languages.PurePropositional.Logic 
     (parsePropLogic, parseFitchPropLogic, parseForallxSL, parsePropProof, parseFitchPropProof, LogicBookPropLogic,
-    DerivedRule(..), propSeqParser, PropSequentCalc, ForallxSL) where
+    DerivedRule(..), propSeqParser, PropSequentCalc, ForallxSL, PropLogic) where
 
 import Data.Map as M (lookup, Map)
 import Text.Parsec
