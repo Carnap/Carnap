@@ -1,0 +1,48 @@
+section > p 
+    max-width:650pt
+
+#main
+    margin-bottom:50px
+
+#toc
+    float:right
+    font-size:14pt
+    margin-left:20px
+    margin-top:10px
+    ul li
+        margin:5px
+
+#demo-selector
+    max-width:650pt
+    font-size:18pt
+    text-align:center
+
+.hidden
+    display:none
+
+.demo
+    display:none
+
+.demo.visible
+    display:block
+    -webkit-animation-duration: 1s;
+    animation-duration: 1s;
+    animation-name: slidein;
+    -webkit-animation-name: slidein;
+
+@keyframes slidein
+    from
+        margin-left: 10pt;
+        opacity:0;
+    to
+        margin-left: 0pt;
+        opacity:1;
+
+
+@-webkit-keyframes slidein
+    from
+        margin-left: 10pt;
+        opacity:0;
+    to 
+        margin-left: 0%;
+        opacity:1;
