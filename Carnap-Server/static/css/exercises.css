@@ -203,20 +203,28 @@
     left:20pt;
 }
 
+.proofDisplay .subproof .subproof {
+    margin-left: 5pt;
+}
+
 .proofDisplay .subproof div > span:nth-child(2){
     padding-left: 5pt;
 }
 
-.proofDisplay div span:nth-child(3) {
+.montegueDisplay .assertion > div > span:nth-child(3) {
     float: right;
 }
 
-.proofDisplay .subproof > div:first-child {
-    border-bottom:1px solid black;
+.montegueDisplay .subproof > div > span:nth-child(3) {
+    float: right;
 }
 
-.proofDisplay .subproof .subproof {
-    margin-left: 5pt;
+.fitchDisplay div span:nth-child(3) {
+    float: right;
+}
+
+.fitchDisplay .subproof > div:first-child {
+    border-bottom:1px solid black;
 }
 
 .proofchecker .success {

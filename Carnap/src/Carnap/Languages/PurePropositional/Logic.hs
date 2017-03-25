@@ -260,7 +260,31 @@ data PropLogic = MP | MT  | DNE | DNI | DD   | AX
                     | CP1 | CP2 | ID1 | ID2  | ID3  | ID4 
                     | ADJ | S1  | S2  | ADD1 | ADD2 | MTP1 | MTP2 | BC1 | BC2 | CB  
                     | DER DerivedRule
-               deriving (Show, Eq)
+               deriving (Eq)
+
+instance Show PropLogic where
+        show MT = "MT"
+        show DNE = "DNE"
+        show DNI = "DNI"
+        show DD = "DD"
+        show AX = "PR"
+        show CP1 = "CD"
+        show CP2 = "CD"
+        show ID1 = "ID"
+        show ID2 = "ID"
+        show ID3 = "ID"
+        show ID4 = "ID"
+        show ADJ = "ADJ"
+        show S1 = "S"
+        show S2 = "S"
+        show ADD1 = "ADD"
+        show ADD2 = "ADD"
+        show MTP1 = "MTP"
+        show MTP2 = "MTP"
+        show BC1 = "BC"
+        show BC2 = "BC"
+        show CB = "CB"
+        show (DER _) = "Derived" 
 
 instance Inference PropLogic PurePropLexicon where
     ruleOf MP        = modusPonens
@@ -523,7 +547,6 @@ instance Inference ForallxSL PurePropLexicon where
 
         isAssumption ForXAssump = True
         isAssumption _ = False
-
 
 parseForallxSL :: Map String DerivedRule -> Parsec String u [ForallxSL]
 parseForallxSL ders = do r <- choice (map (try . string) ["AS","PR","&I","/\\I", "∧I","&E","/\\E","∧E","CI","->I","→I","→E","CE","->E", "→E"

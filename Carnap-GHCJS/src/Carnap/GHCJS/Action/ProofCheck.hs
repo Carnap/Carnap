@@ -16,7 +16,7 @@ import qualified Data.Map as M (fromList,map)
 import Control.Lens.Fold (toListOf)
 import Lib
 import Carnap.GHCJS.Widget.ProofCheckBox (checkerWith, CheckerOptions(..),Button(..))
-import Carnap.GHCJS.Widget.RenderDeduction (renderDeduction)
+import Carnap.GHCJS.Widget.RenderDeduction
 import GHCJS.DOM.Element (setInnerHTML,getInnerHTML, setAttribute)
 import GHCJS.DOM.HTMLElement (insertAdjacentElement)
 --the import below is needed to make ghc-mod work properly. GHCJS compiles
@@ -31,6 +31,7 @@ import GHCJS.DOM.Document (createElement, getDefaultView)
 import GHCJS.DOM.Window (prompt)
 import GHCJS.DOM.Node (appendChild, getParentNode )
 --import GHCJS.DOM.EventM
+import Control.Monad (when)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.State (modify,get,execState)
 import Control.Concurrent
@@ -76,34 +77,38 @@ activateChecker drs w (Just iog@(IOGoal i o g classes))
                                             , action = trySave drs
                                             }
                                         } (computeRule drs) iog w
+        -- TODO Assimilate playground as an option
         | "playground" `elem` classes = do pd <- makeDisplay
-                                           checkerWith CheckerOptions {submit = Nothing } 
+                                           checkerWith standardOptions {submit = Nothing} 
                                                 (fitchPlayground drs pd) iog w
         | "firstOrder" `elem` classes = 
                         tryParse buildOptions folSeqParser 
-                            (\s mtref pd -> folCheckSolution drs s mtref)
+                            (\s mtref mpd -> folCheckSolution drs s mtref mpd)
         | "secondOrder" `elem` classes = 
                         tryParse buildOptions msolSeqParser
-                            (\s mtref pd -> msolCheckSolution s mtref)
+                            (\s mtref mpd -> msolCheckSolution s mtref mpd)
         | "LogicBook" `elem` classes = 
                         tryParse buildOptions propSeqParser
-                            (\s mtref pd -> checkSolutionFitch drs s pd) 
+                            (\s mtref mpd -> checkSolutionFitch drs s mpd) 
         | otherwise = tryParse buildOptions propSeqParser
-                            (\s mtref pd -> checkSolution drs s) 
+                            (\s mtref mpd -> checkSolution drs s mpd) 
         where tryParse options seqParse checker = do
                   (Just gs) <- getInnerHTML g 
                   case parse (withLabel seqParse) "" (decodeHtml gs) of
                        Left e -> setInnerHTML g (Just "Couldn't Parse Goal")
                        Right (l,s) -> do setInnerHTML g (Just $ show s)
+                                         --Maybe thread ref
                                          mtref <- newIORef Nothing
-                                         pd <- makeDisplay
+                                         --Maybe proof display
+                                         mpd <- if render options then Just <$> makeDisplay
+                                                                  else return Nothing
                                          case submit options of
                                              Nothing -> checkerWith options
-                                                         (checker s mtref pd)
+                                                         (checker s mtref mpd)
                                                          iog w
                                              Just b -> checkerWith 
                                                          options {submit = Just b {action = trySubmit l s }}
-                                                         (checker s mtref pd)
+                                                         (checker s mtref mpd)
                                                          iog w
               makeDisplay = do (Just pd) <- createElement w (Just "div")
                                setAttribute pd "class" "proofDisplay"
@@ -112,31 +117,42 @@ activateChecker drs w (Just iog@(IOGoal i o g classes))
                                return pd
 
               standardOptions = 
-                    CheckerOptions {
-                         submit = Just Button { label = "Submit Solution"
+                    CheckerOptions { submit = Just Button { label = "Submit Solution"
                                               , action = \r w e -> return ()
                                               }
+                                   , render = False
                                    }
-              buildOptions = execState (do if "Demo" `elem` classes 
-                                                   then modify (\o -> o {submit = Nothing})
-                                                   else return ())
-                                            standardOptions
+              buildOptions = execState (do when ("NoSub" `elem` classes) 
+                                                (modify (\o -> o {submit = Nothing}))
+                                           when ("Render" `elem` classes) 
+                                                (modify (\o -> o {render = True})))
+                                           standardOptions
 
-checkSolution drs s w ref v (g, fd)   =  do rules <- liftIO $ readIORef drs 
-                                            -- XXX this is here, rather than earlier, 
-                                            -- because if this ref is read too quickly, the async callback for the rules fails. 
-                                            let Feedback mseq ds = toDisplaySequence processLine . parsePropProof (M.fromList rules) $ v
-                                            updateGoal s w ref (g, fd) mseq ds
+checkSolution drs s mpd w ref v (g, fd) = do rules <- liftIO $ readIORef drs 
+                                             -- XXX this is here, rather than earlier, 
+                                             -- because if this ref is read too quickly, the async callback for the rules fails. 
+                                             let ded = parsePropProof (M.fromList rules) v
+                                             case mpd of 
+                                               Just pd -> 
+                                                   do renderedProof <- renderDeductionMontegue w ded
+                                                      setInnerHTML pd (Just "")
+                                                      appendChild pd (Just renderedProof)
+                                               Nothing -> return Nothing
+                                             let Feedback mseq ds = toDisplaySequence processLine ded
+                                             updateGoal s w ref (g, fd) mseq ds
 
-checkSolutionFitch drs s pd w ref v (g, fd) =  do rules <- liftIO $ readIORef drs 
+checkSolutionFitch drs s mpd w ref v (g, fd) = do rules <- liftIO $ readIORef drs 
                                                   let ded = parseFitchPropProof (M.fromList rules) v
-                                                  renderedProof <- renderDeduction w ded
-                                                  setInnerHTML pd (Just "")
-                                                  appendChild pd (Just renderedProof)
+                                                  case mpd of 
+                                                    Just pd -> 
+                                                        do renderedProof <- renderDeductionFitch w ded
+                                                           setInnerHTML pd (Just "")
+                                                           appendChild pd (Just renderedProof)
+                                                    Nothing -> return Nothing
                                                   let Feedback mseq ds = toDisplaySequence processLineFitch ded
                                                   updateGoal s w ref (g, fd) mseq ds
 
-folCheckSolution drs s mtref w ref v (g, fd) = 
+folCheckSolution drs s mtref mpd w ref v (g, fd) = 
         do mt <- readIORef mtref
            rules <- liftIO $ readIORef drs 
            case mt of
@@ -148,7 +164,7 @@ folCheckSolution drs s mtref w ref v (g, fd) =
            writeIORef mtref (Just t')
            return ()
 
-msolCheckSolution s mtref w ref v (g, fd) = 
+msolCheckSolution s mtref mpd w ref v (g, fd) = 
         do mt <- readIORef mtref
            case mt of
                Just t -> killThread t
@@ -186,7 +202,7 @@ computeRule drs w ref v (g, fd) = do rules <- liftIO $ readIORef drs
 
 fitchPlayground drs pd w ref v (g, fd) =  do rules <- liftIO $ readIORef drs 
                                              let ded = parseFitchPropProof (M.fromList rules) v
-                                             renderedProof <- renderDeduction w ded
+                                             renderedProof <- renderDeductionFitch w ded
                                              setInnerHTML pd (Just "")
                                              appendChild pd (Just renderedProof)
                                              let Feedback mseq ds = toDisplaySequence processLineFitch ded

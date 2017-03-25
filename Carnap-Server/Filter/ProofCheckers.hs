@@ -29,7 +29,7 @@ activate cls chunk
         ++ "<div class=\"proofchecker LogicBook\"><div class=\"goal\">" ++ h ++ "</div>"
         ++ "<textarea>" ++ unlines t ++ "</textarea><div class=\"output\"></div></div></div>"
     | otherwise = RawBlock "html" "<div>No Matching Logic for Derivation</div>"
-    where numof x = takeWhile (/= ' ') x
+    where numof = takeWhile (/= ' ')
           (h:t) = formatChunk chunk
 
 splitIt [] = ([],[])

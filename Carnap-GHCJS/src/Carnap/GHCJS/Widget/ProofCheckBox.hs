@@ -18,6 +18,7 @@ data Button = Button { label  :: String
                      }
 
 data CheckerOptions = CheckerOptions { submit :: Maybe Button
+                                     , render :: Bool
                                      }
 
 checkerWith :: CheckerOptions -> (Document -> IORef Bool -> String -> (Element, Element) -> IO ()) -> IOGoal -> Document -> IO ()
