@@ -32,7 +32,7 @@ checkerWith options updateres iog@(IOGoal i o g classes) w = do
            appendChild o mnumberDiv
            appendChild o mfeedbackDiv
            echo <- newListener $ genericUpdateResults2 (updateres w ref) g fd
-           lineupd <- newListener $ onEnter $ updateLines w nd
+           lineupd <- newListener $ onKey ["Enter","Backspace","Delete"] $ updateLines w nd
            (Just w') <- getDefaultView w                    
            addListener i keyUp echo False
            addListener i keyUp lineupd False
@@ -49,15 +49,15 @@ checkerWith options updateres iog@(IOGoal i o g classes) w = do
            mv <- getValue (castToHTMLTextAreaElement i)
            case mv of
                Nothing -> return ()
-               (Just iv) -> do setLinesTo w nd (1 + (length $ lines iv))
+               (Just iv) -> do setLinesTo w nd (1 + length (lines iv))
                                updateres w ref iv (g, fd)
 
 updateLines :: (IsElement e) => Document -> e -> EventM HTMLTextAreaElement KeyboardEvent ()
-updateLines w nd = onEnter $ do (Just t) <- target :: EventM HTMLTextAreaElement KeyboardEvent (Maybe HTMLTextAreaElement)
-                                mv <- getValue t
-                                case mv of 
-                                    Nothing -> return ()
-                                    Just v -> setLinesTo w nd (1 + (length $ lines v))
+updateLines w nd =  do (Just t) <- target :: EventM HTMLTextAreaElement KeyboardEvent (Maybe HTMLTextAreaElement)
+                       mv <- getValue t
+                       case mv of 
+                           Nothing -> return ()
+                           Just v -> setLinesTo w nd (1 + length (lines v))
                                       
 setLinesTo w nd n = do setInnerHTML nd (Just "")
                        linenos <- mapM toLineNo [1 .. n]

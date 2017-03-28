@@ -1,6 +1,6 @@
 {-# LANGUAGE RankNTypes, FlexibleContexts, DeriveDataTypeable, CPP, JavaScriptFFI #-}
 module Lib
-    (genericSendJSON, sendJSON, onEnter, clearInput,
+    (genericSendJSON, sendJSON, onEnter, onKey, clearInput,
     getListOfElementsByClass, tryParse, treeToElement, genericTreeToUl,
     treeToUl, genericListToUl, listToUl, formToTree, leaves,
     adjustFirstMatching, decodeHtml, syncScroll, reloadPage, initElements,
@@ -59,15 +59,18 @@ import Carnap.Languages.PurePropositional.Parser (purePropFormulaParser, standar
 --1.1 Events
 --------------------------------------------------------
 
+onKey :: [String] -> EventM HTMLInputElement KeyboardEvent () ->  EventM HTMLInputElement KeyboardEvent ()
+onKey keylist action = do kbe      <- event
+                          id       <- getKeyIdentifier kbe 
+                          -- XXX: keyIdentifier is deprecated and doesn't work in
+                          -- firefox; hence the use of `keyString`. But `key`
+                          -- doesn't work in some older browsers, so we keep
+                          -- this line around.
+                          id'      <- liftIO $ keyString kbe
+                          if id `elem` keylist || id' `elem` keylist then do action else return ()
+
 onEnter :: EventM HTMLInputElement KeyboardEvent () ->  EventM HTMLInputElement KeyboardEvent ()
-onEnter action = do kbe      <- event
-                    id       <- getKeyIdentifier kbe 
-                    -- XXX: keyIdentifier is deprecated and doesn't work in
-                    -- firefox; hence the use of `keyString`. But `key`
-                    -- doesn't work in some older browsers, so we keep
-                    -- this line around.
-                    id'      <- liftIO $ keyString kbe
-                    if id == "Enter" || id' == "Enter" then do action else return ()
+onEnter = onKey ["Enter"]
 
 --------------------------------------------------------
 --1.1.2 Common responsive behavior
