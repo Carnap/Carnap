@@ -187,7 +187,7 @@
     vertical-align:top;
     padding-left:60px;
     position:relative;
-    width:240pt;
+    min-width:240pt;
     padding-bottom:5pt;
     overflow:auto;
     max-height:100%
@@ -211,12 +211,9 @@
     padding-left: 5pt;
 }
 
-.montegueDisplay .assertion > div > span:nth-child(3),
-.montegueDisplay .subproof > div > span:nth-child(3),
-.montegueDisplay .qed div > span:nth-child(2) {
-    position: absolute;
-    right:0px;
-
+.montegueDisplay span.rule {
+    float:right;
+    padding-left:10px;
 }
 
 .montegueDisplay .qed div > span:nth-child(2) {

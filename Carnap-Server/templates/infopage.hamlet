@@ -52,19 +52,19 @@
                 <div.demo>
                     <p> This is a proofbox with a Kalish and Montegue System for First-Order Logic
 
-                    ^{proofcheck 2 "proofchecker firstOrder NoSub" "AxF(x):|-:F(c)" ""}
+                    ^{proofcheck 2 "proofchecker firstOrder Render NoSub" "AxF(x):|-:F(c)" ""}
+
+                <div.demo>
+
+                    <p> This is a proofbox with a Fitch system, using rules from <i>the Logic Book</i>, and visually rendering the proof structure in the Fitch style.
+
+                    ^{proofcheck 4 "proofchecker LogicBook NoSub Render" ":|-:(((P->Q)->P)->P)" ded2}
 
                 <div.demo>
 
                     <p> This is a proofbox with a Kalish and Montegue System for Second-Order Logic, with a predicate abstraction rule.
 
-                    ^{proofcheck 3 "proofchecker secondOrder NoSub" ":|-: EXAx(F(x) /\\ G(x) <-> X(x))" ded3}
-
-                <div.demo>
-
-                    <p> This is a proofbox with a Fitch system, using rules from <i>the Logic Book</i>, and visually rendering the proof structure.
-
-                    ^{proofcheck 4 "proofchecker LogicBook NoSub Render" ":|-:(((P->Q)->P)->P)" ded2}
+                    ^{proofcheck 3 "proofchecker secondOrder NoSub Render" ":|-: EXAx(F(x) /\\ G(x) <-> X(x))" ded3}
 
             <div#demo-selector>
                 <span#demo-left>〈

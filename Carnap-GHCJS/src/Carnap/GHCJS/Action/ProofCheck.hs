@@ -47,10 +47,10 @@ errcb e = case fromJSON e :: Result String of
                A.Error e' -> print $ "Getting kind of meta. Error decoding error message: " ++ e'
                Success e' -> print $ "Error in retrieving derived rules: " ++ e'
 
---- XXX bizarre error arises when I try to send the JSON for the derived
---- rules directly. It worked on previous versions of ghcjs, so I'm going
---- to wait until I move all this to GHC 8.2 and the latest ghcjs before
---- spending too much time trying to fix.
+-- XXX bizarre error arises when I try to send the JSON for the derived
+-- rules directly. It worked on previous versions of ghcjs, so I'm going
+-- to wait until I move all this to GHC 8.2 and the latest ghcjs before
+-- spending too much time trying to fix.
 --
 --  Notes: the bug arises only with the custom toJSON instance for
 --  DerivedRule. toJSON and fromJSON seem to work fine for that instance.
@@ -68,6 +68,7 @@ addRules avd v =  case fromJSON v :: Result String of
 getCheckers :: IsElement self => self -> IO [Maybe IOGoal]
 getCheckers = getInOutGoalElts "proofchecker"
 
+-- TODO Remove the parameter mess here by passing around a new record type
 activateChecker ::  IORef [(String,P.DerivedRule)] -> Document -> Maybe IOGoal -> IO ()
 activateChecker _ _ Nothing  = return ()
 activateChecker drs w (Just iog@(IOGoal i o g classes))
@@ -128,6 +129,7 @@ activateChecker drs w (Just iog@(IOGoal i o g classes))
                                                 (modify (\o -> o {render = True})))
                                            standardOptions
 
+-- TODO Reduce silly code duplication in the next four functions
 checkSolution drs s mpd w ref v (g, fd) = do rules <- liftIO $ readIORef drs 
                                              -- XXX this is here, rather than earlier, 
                                              -- because if this ref is read too quickly, the async callback for the rules fails. 
@@ -159,7 +161,14 @@ folCheckSolution drs s mtref mpd w ref v (g, fd) =
                Just t -> killThread t
                Nothing -> return ()
            t' <- forkIO $ do threadDelay 200000
-                             let Feedback mseq ds = toDisplaySequence hoProcessLine . parseFOLProof (M.map liftDerivedRule $ M.fromList rules) $ v
+                             let ded = parseFOLProof (M.map liftDerivedRule $ M.fromList rules) v
+                             case mpd of 
+                               Just pd -> 
+                                   do renderedProof <- renderDeductionMontegue w ded
+                                      setInnerHTML pd (Just "")
+                                      appendChild pd (Just renderedProof)
+                               Nothing -> return Nothing
+                             let Feedback mseq ds = toDisplaySequence hoProcessLine ded
                              updateGoal s w ref (g, fd) mseq ds
            writeIORef mtref (Just t')
            return ()
@@ -170,7 +179,14 @@ msolCheckSolution s mtref mpd w ref v (g, fd) =
                Just t -> killThread t
                Nothing -> return ()
            t' <- forkIO $ do threadDelay 200000
-                             let Feedback mseq ds = toDisplaySequence hoProcessLine . parseMSOLProof $ v
+                             let ded = parseMSOLProof v
+                             case mpd of 
+                               Just pd -> 
+                                   do renderedProof <- renderDeductionMontegue w ded
+                                      setInnerHTML pd (Just "")
+                                      appendChild pd (Just renderedProof)
+                               Nothing -> return Nothing
+                             let Feedback mseq ds = toDisplaySequence hoProcessLine ded
                              updateGoal s w ref (g, fd) mseq ds
            writeIORef mtref (Just t')
            return ()
@@ -215,8 +231,6 @@ fitchPlayground drs pd w ref v (g, fd) =  do rules <- liftIO $ readIORef drs
                                                  (Just seq) -> do setInnerHTML g (Just $ show seq)
                                                                   writeIORef ref True
                                              return ()
-
-                                               
 
 trySubmit l s ref w i = do isFinished <- liftIO $ readIORef ref
                            if isFinished

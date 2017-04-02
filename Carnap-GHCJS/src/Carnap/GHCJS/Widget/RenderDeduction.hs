@@ -62,6 +62,7 @@ renderTreeMontegue w = treeToElement asLine asSubproof
                                                 appendChild theLine (Just theForm)
                                                 appendChild theLine (Just theRule)
                                                 appendChild theWrapper (Just theLine)
+                                                setAttribute theRule "class" "rule"
                                                 setAttribute theWrapper "class" "assertion"
                                                 return theWrapper
 
@@ -89,6 +90,7 @@ renderTreeMontegue w = treeToElement asLine asSubproof
                                            appendChild theLine (Just lineNum)
                                            appendChild theLine (Just theRule)
                                            appendChild theWrapper (Just theLine)
+                                           setAttribute theRule "class" "rule"
                                            setAttribute theWrapper "class" "qed"
                                            return theWrapper
 
