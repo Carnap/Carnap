@@ -61,7 +61,16 @@ instance CopulaSchema MSOLSequentCalc where
         where h = scopeHeight (LLam f)
 
 data MSOLogic = ABS | APP | SOUI | SOEG | SOUD | SOED1 | SOED2 | FO FOLogic
-              deriving Show
+
+instance Show MSOLogic where
+        show ABS = "ABS"
+        show APP = "APP"
+        show SOUI = "UI"
+        show SOEG = "EG"
+        show SOUD = "UD"
+        show SOED1 = "ED"
+        show SOED2 = "ED"
+        show (FO x) = show x
 
 ss :: MonadicallySOL (Form Bool) -> MSOLSequentCalc Succedent
 ss = SS . liftToSequent
