@@ -302,8 +302,10 @@ instance Inference PropLogic PurePropLexicon where
     ruleOf ADJ       = adjunction
     ruleOf S1        = simplificationVariations !! 0
     ruleOf S2        = simplificationVariations !! 1
-    ruleOf MTP1      =  modusTollendoPonensVariations !! 0
-    ruleOf MTP2      =  modusTollendoPonensVariations !! 1
+    ruleOf ADD1      = additionVariations !! 0
+    ruleOf ADD2      = additionVariations !! 1
+    ruleOf MTP1      = modusTollendoPonensVariations !! 0
+    ruleOf MTP2      = modusTollendoPonensVariations !! 1
     ruleOf BC1       = biconditionalToConditionalVariations !! 0
     ruleOf BC2       = biconditionalToConditionalVariations !! 1
     ruleOf CB        = conditionalToBiconditional

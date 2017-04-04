@@ -40,17 +40,17 @@
             <div#demo-slider>
 
                 <div.demo>
-                    <p> This is a proofbox with a Kalish and Montegue System for Propositional Logic
+                    <p> This is a proofbox with a Kalish and Montegue System for Propositional Logic. You can directly manipulate the proof by typing in the proofbox, and see the effects of your changes by mousing over the line-decorations on the right hand side.
 
-                    ^{proofcheck 1 "proofchecker NoSub" "P:|-:P" ded1}
+                    ^{proofcheck 1 "proofchecker NoSub" ":|-:P\/-P" ded1}
 
                 <div.demo>
-                    <p> This is a rendering proofbox with a Kalish and Montegue System for Propositional Logic
+                    <p> This is a rendering proofbox with a Kalish and Montegue System for Propositional Logic.
 
                     ^{proofcheck 1 "proofchecker NoSub Render" "P:|-:P" ded1}
 
                 <div.demo>
-                    <p> This is a proofbox with a Kalish and Montegue System for First-Order Logic
+                    <p> This is a proofbox with a Kalish and Montegue System for First-Order Logic, displaying a proof of Russell's Theorem.
 
                     ^{proofcheck 2 "proofchecker firstOrder Render NoSub" "AxF(x):|-:F(c)" ""}
 
@@ -62,7 +62,7 @@
 
                 <div.demo>
 
-                    <p> This is a proofbox with a Kalish and Montegue System for Second-Order Logic, with a predicate abstraction rule.
+                    <p> This is a proofbox with a Kalish and Montegue System for Second-Order Logic, showing how to prove an instance of the comprehension scheme, using with a predicate abstraction rule.
 
                     ^{proofcheck 3 "proofchecker secondOrder NoSub Render" ":|-: EXAx(F(x) /\\ G(x) <-> X(x))" ded3}
 
@@ -92,9 +92,9 @@
 
         <p>There are a couple of different tricks involved. But basically, Haskell's type system makes it possible to represent different lexical categories as datatypes, to combine these lexical category datatypes into a larger datatype representing a lexicon (using something like the method described in <a href="http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.101.4131">this paper</a>), and to define a language as the result of applying different elements of a lexicon to one another in a grammatical way.
 
-        <p>The upshot is that, using Carnap, you can define a language as the result of snapping together predefined lexical categories. Thanks to Haskell's typeclasses, your languages will inherit various useful properties that their constituent lexical categories carry along with them (for example, languages that contain the lexical category for boolean connectives will automatically know how to parse and display the symbol for "and", or how to compute the semantic value of a conjunction from the semantic values of its conjuncts). And, thanks to Haskell's static typing and the trick of representing lexical categories as types, you're guaranteed that any programming mistake potentially resulting in an ungrammatical expression will be detected when you try to compile the program.
+        <p>The upshot is that, using Carnap, you can define a language as the result of snapping together predefined lexical categories. Thanks to Haskell's typeclasses, your languages will inherit various useful properties that their constituent lexical categories carry along with them (for example, languages that contain the lexical category for boolean connectives will automatically know how to parse and display the symbol for "and", or how to compute the semantic value of a conjunction from the semantic values of its conjuncts). And, because of Haskell's static typing and the trick of representing lexical categories as types, you're guaranteed that any programming mistake potentially resulting in an ungrammatical expression will be detected when you try to compile the program.
 
-        <p>By representing a large class of languages uniformly (as the result of snapping together lexical categories), we also end up being able to handle them uniformly. In particular, we can use entirely generic algorithms for things like variable substitution, semantic evaluation, β-normalization, higher-order unification... all the good stuff that you need in order to, for example, check proofs for correctness using only a list of acceptable inference rules. As a result, we only need to write code for these algorithms once; we can then automatically use that code with any language that can be defined in the Carnap framework.
+        <p>By representing a large class of languages uniformly (as the result of snapping together lexical categories), we also end up being able to manipulate them uniformly. In particular, we can use entirely generic algorithms for things like variable substitution, semantic evaluation, β-normalization, higher-order unification... all the good stuff that you need in order to, for example, check proofs for correctness using only a declaration of acceptable inference rules. As a result, we only need to write code for these algorithms once; we can then automatically use that code with any language that can be defined in the Carnap framework.
 
         <p>So that's the gist of it. If you'd like to learn more about the details, you can inspect the code, talk to a developer, or read the documentation.
 

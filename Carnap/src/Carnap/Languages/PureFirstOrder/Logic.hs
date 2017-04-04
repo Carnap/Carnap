@@ -119,7 +119,20 @@ data DerivedRule = DerivedRule { conclusion :: PureFOLForm, premises :: [PureFOL
 data FOLogic =  SL P.PropLogic
                 | UD  | UI  | EG  | ED1  | ED2  | DER DerivedRule
                 | QN1 | QN2 | QN3 | QN4
-               deriving (Show, Eq)
+               deriving (Eq)
+
+instance Show FOLogic where
+        show UD      = "UD"
+        show UI      = "UI"
+        show EG      = "EG"
+        show ED1     = "ED"
+        show ED2     = "ED"
+        show (DER _) = "Derived"
+        show QN1     = "QN"
+        show QN2     = "QN"
+        show QN3     = "QN"
+        show QN4     = "QN"
+        show (SL x)  = show x
 
 ss :: PureFOLForm -> FOLSequentCalc Succedent
 ss = SS . liftToSequent

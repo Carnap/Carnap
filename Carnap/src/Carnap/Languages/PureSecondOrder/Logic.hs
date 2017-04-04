@@ -63,13 +63,13 @@ instance CopulaSchema MSOLSequentCalc where
 data MSOLogic = ABS | APP | SOUI | SOEG | SOUD | SOED1 | SOED2 | FO FOLogic
 
 instance Show MSOLogic where
-        show ABS = "ABS"
-        show APP = "APP"
-        show SOUI = "UI"
-        show SOEG = "EG"
-        show SOUD = "UD"
-        show SOED1 = "ED"
-        show SOED2 = "ED"
+        show ABS    = "ABS"
+        show APP    = "APP"
+        show SOUI   = "UI"
+        show SOEG   = "EG"
+        show SOUD   = "UD"
+        show SOED1  = "ED"
+        show SOED2  = "ED"
         show (FO x) = show x
 
 ss :: MonadicallySOL (Form Bool) -> MSOLSequentCalc Succedent

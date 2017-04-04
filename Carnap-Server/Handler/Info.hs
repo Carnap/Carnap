@@ -31,9 +31,17 @@ proofcheck n cls goal proof =
 
 -- XXX function that strips text of indentation and line-numbers.
 ded1 = [st|
-Show: P
-   P:PR
-:DD 2
+Show: P\/-P
+    Show: --(P\/-P)
+        -(P\/-P):AS
+        Show: -P
+            P:AS
+            P\/-P:ADD 5
+        :ID 6 3
+        P\/-P:ADD 4
+    :ID 3 8
+    P\/-P:DNE 2
+:DD 10
 |]
 
 ded2 = [st|
