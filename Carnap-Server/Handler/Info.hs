@@ -30,7 +30,7 @@ proofcheck n cls goal proof =
         |]
 
 -- XXX function that strips text of indentation and line-numbers.
-ded1 = [st|
+aristotleTheorem = [st|
 Show: P\/-P
     Show: --(P\/-P)
         -(P\/-P):AS
@@ -44,7 +44,7 @@ Show: P\/-P
 :DD 10
 |]
 
-ded2 = [st|
+pierceTheorem = [st|
   (P->Q)->P:AS
      -P:AS
         P:AS
@@ -59,7 +59,7 @@ ded2 = [st|
 ((P->Q)->P)->P:CI 1-11
 |]
 
-ded3 = [st|
+comprehensionTheorem = [st|
 Show EXAx(F(x)/\G(x)<->X(x))
    Show Ax(F(x)/\G(x)<->\y[F(y)/\G(y)](x))
        Show F(c)/\G(c)->\y[F(y)/\G(y)](c)
@@ -75,3 +75,26 @@ Show EXAx(F(x)/\G(x)<->X(x))
    EXAx(F(x)/\G(x)<->X(x)):EG 2
 :DD 13
 |]
+
+russellTheorem = [st|
+Show -ExAy(-F(y,y) <-> F(x,y))
+    ExAy(-F(y,y)<->F(x,y)):AS
+    Show: -ExAy(-F(y,y) <-> F(x,y))
+        Ay(-F(y,y)<->F(c_1,y)):AS
+        -F(c_1,c_1)<->F(c_1,c_1):UI 4
+        Show:-F(c_1,c_1)
+            F(c_1,c_1):AS
+            F(c_1,c_1)->-F(c_1,c_1) :BC 5
+            -F(c_1,c_1) :MP 8 7
+        :ID 7 9
+        -F(c_1,c_1) -> F(c_1,c_1) :BC 5
+        F(c_1,c_1) :MP 11 6
+        Show: -ExAy(-F(y,y) <-> F(x,y))
+        :ID 6 12
+    :ED 13 2 4
+:ID 2 3
+|]
+
+            
+            
+

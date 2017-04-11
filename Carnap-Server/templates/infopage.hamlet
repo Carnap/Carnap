@@ -42,29 +42,29 @@
                 <div.demo>
                     <p> This is a proofbox with a Kalish and Montegue System for Propositional Logic. You can directly manipulate the proof by typing in the proofbox, and see the effects of your changes by mousing over the line-decorations on the right hand side.
 
-                    ^{proofcheck 1 "proofchecker NoSub" ":|-:P\/-P" ded1}
+                    ^{proofcheck 1 "proofchecker NoSub" ":|-:P\\/-P" aristotleTheorem}
 
                 <div.demo>
                     <p> This is a rendering proofbox with a Kalish and Montegue System for Propositional Logic.
 
-                    ^{proofcheck 1 "proofchecker NoSub Render" "P:|-:P" ded1}
+                    ^{proofcheck 1 "proofchecker NoSub Render" ":|-:P\\/-P" aristotleTheorem}
 
                 <div.demo>
                     <p> This is a proofbox with a Kalish and Montegue System for First-Order Logic, displaying a proof of Russell's Theorem.
 
-                    ^{proofcheck 2 "proofchecker firstOrder Render NoSub" "AxF(x):|-:F(c)" ""}
+                    ^{proofcheck 2 "proofchecker firstOrder Render NoSub" ":|-:-ExAy(-F(y,y) <-> F(x,y))" russellTheorem}
 
                 <div.demo>
 
                     <p> This is a proofbox with a Fitch system, using rules from <i>the Logic Book</i>, and visually rendering the proof structure in the Fitch style.
 
-                    ^{proofcheck 4 "proofchecker LogicBook NoSub Render" ":|-:(((P->Q)->P)->P)" ded2}
+                    ^{proofcheck 4 "proofchecker LogicBook NoSub Render" ":|-:(((P->Q)->P)->P)" pierceTheorem}
 
                 <div.demo>
 
                     <p> This is a proofbox with a Kalish and Montegue System for Second-Order Logic, showing how to prove an instance of the comprehension scheme, using with a predicate abstraction rule.
 
-                    ^{proofcheck 3 "proofchecker secondOrder NoSub Render" ":|-: EXAx(F(x) /\\ G(x) <-> X(x))" ded3}
+                    ^{proofcheck 3 "proofchecker secondOrder NoSub Render" ":|-: EXAx(F(x) /\\ G(x) <-> X(x))" comprehensionTheorem}
 
             <div#demo-selector>
                 <span#demo-left>〈
