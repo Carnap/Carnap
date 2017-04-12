@@ -54,7 +54,7 @@
 .proofchecker > textarea {
     position: relative;
     width: 100%;
-    height: 100%;
+    /* height: 100%; */
     font-size:10pt;
     top:35px;
     padding:20px;
@@ -97,10 +97,15 @@
     pointer-events: auto;
 }
 
+/* the div containing the feedback mark */
+.proofFeedback li > div {
+    width:10px;
+}
+
 /* the div that pops open to catch your hover*/
 .proofFeedback li > div > div {
     position:absolute;
-    left:10pt;
+    left:10px;
     height:150px;
     z-index:1;
     width:200px;
@@ -123,7 +128,7 @@
 
 .proofFeedback li > div div {
     visibility:hidden;
-    display:none;
+    /* display:none; */
 }
 
 /* when you hover over the div containing the feedback mark */
@@ -133,17 +138,20 @@
 
 .proofFeedback li > div:hover > div {
     visibility:visible;
-    display:block;
+    /* display:block; */
 }
 
 .proofFeedback li > div:hover > div > div {
     visibility:visible;
-    display:block;
+    transition-property:visibility 1s;
+    -webkit-transition-property:visibility 1s;
+    transition-delay:1s
+    /* display:block; */
 }
 
 .proofFeedback li > div:hover > div > div > div {
     visibility:visible;
-    display:block;
+    /* display:block; */
 }
 
 .proofFeedback li > div:hover > div > div > div:hover > div {
