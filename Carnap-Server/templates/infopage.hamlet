@@ -1,10 +1,10 @@
-<div#carnap-info-head>
+<div.jumbotron.jumbotron-fluod>
     <div.container>
-        <h1>About Carnap
+        <h1.display-4>About Carnap
 
 <div#main.container>
 
-    <nav#toc>
+    <nav#toc.hidden-sm-down>
         <ul.list-unstyled>
             <li>
                 <a href=#what> What is Carnap?
@@ -19,12 +19,12 @@
             <li>
                 <a href=#contributing>How can I get involved?
 
-    <blockquote>
-        <p> “The acceptance or rejection of abstract linguistic forms, just as the acceptance or rejection of any other linguistic forms in any branch of science, will finally be decided by their efficiency as instruments, the ratio of the results achieved to the amount and complexity of the efforts required. To decree dogmatic prohibitions of certain linguistic forms instead of testing them by their success or failure in practical use, is worse than futile; it is positively harmful because it may obstruct scientific progress.
+    <blockquote.blockquote>
+        <p> &ldquo;The acceptance or rejection of abstract linguistic forms, just as the acceptance or rejection of any other linguistic forms in any branch of science, will finally be decided by their efficiency as instruments, the ratio of the results achieved to the amount and complexity of the efforts required. To decree dogmatic prohibitions of certain linguistic forms instead of testing them by their success or failure in practical use, is worse than futile; it is positively harmful because it may obstruct scientific progress.
 
-        <p> Let us grant to those who work in any special field of investigation the freedom to use any form of expression which seems useful to them; the work in the field will sooner or later lead to the elimination of those forms which have no useful function. Let us be cautious in making assertions and critical in examining them, but tolerant in permitting linguistic forms.”
+        <p> Let us grant to those who work in any special field of investigation the freedom to use any form of expression which seems useful to them; the work in the field will sooner or later lead to the elimination of those forms which have no useful function. Let us be cautious in making assertions and critical in examining them, but tolerant in permitting linguistic forms.&rdquo;
 
-        <footer>Rudolph Carnap,
+        <footer.blockquote-footer>Rudolph Carnap,
             <cite title="Empiricism Semantics and Ontology"> Empiricism Semantics and Ontology
 
 
@@ -47,12 +47,12 @@
                 <div.demo>
                     <p> This is a rendering proofbox with a Kalish and Montegue System for Propositional Logic.
 
-                    ^{proofcheck 1 "proofchecker NoSub Render" ":|-:P\\/-P" aristotleTheorem}
+                    ^{proofcheck 2 "proofchecker NoSub Render" ":|-:P\\/-P" aristotleTheorem}
 
                 <div.demo>
                     <p> This is a proofbox with a Kalish and Montegue System for First-Order Logic, displaying a proof of Russell's Theorem.
 
-                    ^{proofcheck 2 "proofchecker firstOrder Render NoSub" ":|-:-ExAy(-F(y,y) <-> F(x,y))" russellTheorem}
+                    ^{proofcheck 3 "proofchecker firstOrder Render NoSub" ":|-:-ExAy(-F(y,y) <-> F(x,y))" russellTheorem}
 
                 <div.demo>
 
@@ -64,7 +64,7 @@
 
                     <p> This is a proofbox with a Kalish and Montegue System for Second-Order Logic, showing how to prove an instance of the comprehension scheme, using with a predicate abstraction rule.
 
-                    ^{proofcheck 3 "proofchecker secondOrder NoSub Render" ":|-: EXAx(F(x) /\\ G(x) <-> X(x))" comprehensionTheorem}
+                    ^{proofcheck 5 "proofchecker secondOrder NoSub Render" ":|-: EXAx(F(x) /\\ G(x) <-> X(x))" comprehensionTheorem}
 
             <div#demo-selector>
                 <span#demo-left>〈
@@ -90,7 +90,9 @@
     <section#how>
         <h2>How does Carnap work?
 
-        <p>There are a couple of different tricks involved. But basically, Haskell's type system makes it possible to represent different lexical categories as datatypes, to combine these lexical category datatypes into a larger datatype representing a lexicon (using something like the method described in <a href="http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.101.4131">this paper</a>), and to define a language as the result of applying different elements of a lexicon to one another in a grammatical way.
+        <p>Well, it's a little technical. There are a couple of different tricks involved.
+
+        <p>But basically, Haskell's type system makes it possible to represent different lexical categories as datatypes, to combine these lexical category datatypes into a larger datatype representing a lexicon (using something like the method described in <a href="http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.101.4131">this paper</a>), and to define a language as the result of applying different elements of a lexicon to one another in a grammatical way.
 
         <p>The upshot is that, using Carnap, you can define a language as the result of snapping together predefined lexical categories. Thanks to Haskell's typeclasses, your languages will inherit various useful properties that their constituent lexical categories carry along with them (for example, languages that contain the lexical category for boolean connectives will automatically know how to parse and display the symbol for "and", or how to compute the semantic value of a conjunction from the semantic values of its conjuncts). And, because of Haskell's static typing and the trick of representing lexical categories as types, you're guaranteed that any programming mistake potentially resulting in an ungrammatical expression will be detected when you try to compile the program.
 
@@ -105,7 +107,7 @@
 
         <p>The webapps already written using Carnap should be easy to include in websites. Since they're compiled down from Haskell to pure JavaScript, all you have to do is include the relevant JavaScript file, and indicate in your HTML where you want the interactive widgets to go. You can even use Carnap without doing any coding at all; Carnap integrates with John McFarlane's <a href="pandoc.org">pandoc</a>. So you can transform documents written in pandoc markdown into interactive websites and lecture slides. In fact, the <a href="@{BookR}">Carnap Book</a> was written in this way.
 
-        <p>Carnap also powers the course website for Kansas State University's <i>Introduction to Symbolic Logic I</i>, allowing instructors to write problem sets in pandoc, handling the grading, and allowing students to build up a repetoire of derived rules and lemmas that they can use in their work. If you're interested in teaching your own logic class using Carnap, please don't hesitate to get in touch.
+        <p>Carnap also powers Kansas State University's <i>Introduction to Formal Logic</i> and <i>Introduction to Symbolic Logic I</i>, allowing instructors to write problem sets in pandoc, handling the grading, and allowing students to build up a repetoire of derived rules and lemmas that they can use in their work. If you're interested in teaching your own logic class using Carnap, please don't hesitate to get in touch.
 
         <p>Other applications (including a command-line tool for proof-checking, and a standalone desktop application) are in the works.
 

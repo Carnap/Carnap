@@ -1,14 +1,12 @@
-<div#carnap-intro-head>
+<div.jumbotron.jumbotron-fluid>
     <div.container>
-        <h2>
-            Welcome to Carnap.io
-        <p>
-            Logic 320, Kansas State University, Fall 2016
+        <h1.display-3> Welcome to Carnap.io
+        <p.lead> Logic 320, Kansas State University, Fall 2016
 
 
-<div.container>
+<div#main.container>
+    <img.float-right.hidden-sm-down src=@{StaticR russell_png}>
     <h2> Background
-    <img class="img-responsive pull-right" src=@{StaticR russell_png}>
     <p>
         This site is currently hosting the interactive component of <i>Logic 320:
         Introduction to Symbolic Logic I</i>. This course is being taught at Kansas

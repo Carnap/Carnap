@@ -1,8 +1,8 @@
-section > p 
+section p 
     max-width:650pt
 
 #main
-    margin-bottom:50px
+    margin-bottom:100px
 
 #toc
     float:right
@@ -16,6 +16,10 @@ section > p
     max-width:650pt
     font-size:18pt
     text-align:center
+    cursor:pointer
+
+#demo-left:hover, #demo-right:hover
+    font-weight:bold
 
 .hidden
     display:none
