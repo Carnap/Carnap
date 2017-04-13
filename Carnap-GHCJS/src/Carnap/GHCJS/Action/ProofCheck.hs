@@ -1,7 +1,7 @@
 {-#LANGUAGE FlexibleContexts #-}
 module Carnap.GHCJS.Action.ProofCheck (proofCheckAction) where
 
-import Carnap.Calculi.NaturalDeduction.Syntax (NaturalDeductionCalc(..),RenderStyle(..))
+import Carnap.Calculi.NaturalDeduction.Syntax (NaturalDeductionCalc(..),RenderStyle(..), Inference(..))
 import Carnap.Calculi.NaturalDeduction.Checker (ProofErrorMessage(..), Feedback(..), seqSubsetUnify, processLine, processLineFitch, hoProcessLine, toDisplaySequence)
 import Carnap.Core.Data.AbstractSyntaxDataTypes (liftLang)
 import Carnap.Languages.ClassicalSequent.Syntax
@@ -69,11 +69,20 @@ addRules avd v =  case fromJSON v :: Result String of
 getCheckers :: IsElement self => self -> IO [Maybe IOGoal]
 getCheckers = getInOutGoalElts "proofchecker"
 
+data Checker r lex der = Checker 
+        { checkerRules :: IORef [(String,der)]
+        , sequent :: ClassicalSequentOver lex Sequent
+        , threadRef :: IORef (Maybe ThreadId)
+        , proofDisplay :: Maybe Element
+        , checkerCalc :: NaturalDeductionCalc r lex der
+        }
+
+
 activateChecker ::  IORef [(String,P.DerivedRule)] -> Document -> Maybe IOGoal -> IO ()
 activateChecker _ _ Nothing  = return ()
 activateChecker drs w (Just iog@(IOGoal i o g classes))
         | "ruleMaker" `elem` classes = 
-            checkerWith CheckerOptions {submit = Just Button 
+            checkerWith standardOptions {submit = Just Button 
                                             { label = "save rule"
                                             , action = trySave drs
                                             }
@@ -85,15 +94,10 @@ activateChecker drs w (Just iog@(IOGoal i o g classes))
         | "firstOrder" `elem` classes = do
                         drs' <- newIORef [] -- XXX we don't yet have derived rules for FOL
                         tryParse buildOptions folSeqParser 
-                            (\s mtref mpd -> folCheckSolution drs' s mtref mpd)
-        | "secondOrder" `elem` classes = 
-                        tryParse buildOptions msolSeqParser
-                            (\s mtref mpd -> msolCheckSolution drs s mtref mpd)
-        | "LogicBook" `elem` classes = 
-                        tryParse buildOptions propSeqParser
-                            (\s mtref mpd -> checkSolutionFitch drs s mtref mpd) 
-        | otherwise = tryParse buildOptions propSeqParser
-                            (\s mtref mpd -> checkSolution drs s mtref mpd) 
+                            (\s mtref mpd -> threadedCheck (Checker drs' s mtref mpd folCalc))
+        | "secondOrder" `elem` classes = tryParse buildOptions msolSeqParser (standardCheck msolCalc)
+        | "LogicBook" `elem` classes = tryParse buildOptions propSeqParser (standardCheck logicBookCalc)
+        | otherwise = tryParse buildOptions propSeqParser (standardCheck propCalc)
         where tryParse options seqParse checker = do
                   (Just gs) <- getInnerHTML g 
                   case parse (withLabel seqParse) "" (decodeHtml gs) of
@@ -129,36 +133,31 @@ activateChecker drs w (Just iog@(IOGoal i o g classes))
                                            when ("Render" `elem` classes) 
                                                 (modify (\o -> o {render = True})))
                                            standardOptions
+              standardCheck calc s mtref mpd = threadedCheck (Checker drs s mtref mpd calc)
 
-checkSolution = threadedCheck propCalc
 
-checkSolutionFitch = threadedCheck logicBookCalc
-
-folCheckSolution = threadedCheck folCalc
-
-msolCheckSolution = threadedCheck msolCalc
-
-threadedCheck ndcalc drs s mtref mpd w ref v (g, fd) = 
-        do mt <- readIORef mtref
+threadedCheck checker w ref v (g, fd) = 
+        do mt <- readIORef (threadRef checker)
            case mt of
                Just t -> killThread t
                Nothing -> return ()
            t' <- forkIO $ do threadDelay 200000
-                             rlist <- liftIO $ readIORef drs
+                             rlist <- liftIO $ readIORef (checkerRules checker)
                              let rules = M.fromList rlist
+                             let ndcalc = checkerCalc checker
                              let ded = ndParseProof ndcalc rules v
-                             case mpd of 
+                             case proofDisplay checker of 
                                Just pd -> 
                                    do renderedProof <- renderer w ded
                                       setInnerHTML pd (Just "")
                                       appendChild pd (Just renderedProof)
                                Nothing -> return Nothing
                              let Feedback mseq ds = toDisplaySequence (ndProcessLine ndcalc) ded
-                             updateGoal s w ref (g, fd) mseq ds
-           writeIORef mtref (Just t')
+                             updateGoal (sequent checker) w ref (g, fd) mseq ds
+           writeIORef (threadRef checker) (Just t')
            return ()
 
-    where renderer = case ndRenderer ndcalc of
+    where renderer = case ndRenderer (checkerCalc checker) of
                          MontegueStyle -> renderDeductionMontegue
                          FitchStyle -> renderDeductionFitch
 

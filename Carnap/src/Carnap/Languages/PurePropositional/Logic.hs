@@ -500,7 +500,7 @@ parseFitchPropProof ders = toDeductionBE (parseFitchPropLogic ders) (purePropFor
 logicBookCalc = NaturalDeductionCalc 
     { ndRenderer = FitchStyle
     , ndParseProof = parseFitchPropProof
-    , ndProcessLine = processLine
+    , ndProcessLine = processLineFitch
     , ndParseSeq = extendedPropSeqParser
     }
 
@@ -612,6 +612,6 @@ parseForallxSLProof ders = toDeductionBE (parseForallxSL ders) (purePropFormulaP
 forallxSLCalc = NaturalDeductionCalc 
     { ndRenderer = FitchStyle
     , ndParseProof = parseForallxSLProof
-    , ndProcessLine = processLine
+    , ndProcessLine = processLineFitch
     , ndParseSeq = extendedPropSeqParser
     }
