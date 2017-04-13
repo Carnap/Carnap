@@ -26,84 +26,66 @@ chunkBy n (x:xs)
 
 --this is for Fitch proofs
 renderTreeFitch w = treeToElement asLine asSubproof
-    where asLine (n,AssertLine f r _ deps) = do (Just theWrapper) <- createElement w (Just "div")
-                                                (Just theLine) <- createElement w (Just "div")
-                                                (Just lineNum) <- createElement w (Just "span")
-                                                (Just theForm) <- createElement w (Just "span")
-                                                (Just theRule) <- createElement w (Just "span")
-                                                setInnerHTML lineNum (Just $ show n ++ ".")
-                                                setInnerHTML theForm (Just $ show f)
-                                                setInnerHTML theRule (Just $ show (head r) ++ " " ++ intercalate ", " (map renderDep deps))
-                                                appendChild theLine (Just lineNum)
+    where asLine (n,AssertLine f r _ deps) = do (theWrapper,theLine,theForm,theRule) <- lineBase w n (Just f) (Just (r,deps)) "assertion"
                                                 appendChild theLine (Just theForm)
                                                 appendChild theLine (Just theRule)
-                                                appendChild theWrapper (Just theLine)
                                                 return theWrapper
-          asLine (n,SeparatorLine _) = do (Just sl) <- createElement w (Just "div")
-                                          return sl
-          asLine (n,PartialLine _ _ _) = do (Just sl) <- createElement w (Just "div")
-                                            return sl
+
+          asLine _ = do (Just sl) <- createElement w (Just "div")
+                        return sl
 
           asSubproof l ls = do setAttribute l "class" "subproof"
                                mapM_ (appendChild l . Just) ls
 
--- TODO DRY this up
 --this is for Kalish and Montegue Proofs
 renderTreeMontegue w = treeToElement asLine asSubproof
-    where asLine (n,AssertLine f r _ deps) = do (Just theWrapper) <- createElement w (Just "div")
-                                                (Just theLine) <- createElement w (Just "div")
-                                                (Just lineNum) <- createElement w (Just "span")
-                                                (Just theForm) <- createElement w (Just "span")
-                                                (Just theRule) <- createElement w (Just "span")
-                                                setInnerHTML lineNum (Just $ show n ++ ".")
-                                                setInnerHTML theForm (Just $ show f)
-                                                setInnerHTML theRule (Just $ show (head r) ++ " " ++ intercalate ", " (map renderDep deps))
-                                                appendChild theLine (Just lineNum)
+    where asLine (n,AssertLine f r _ deps) = do (theWrapper,theLine,theForm,theRule) <- lineBase w n (Just f) norule "assertion"
                                                 appendChild theLine (Just theForm)
                                                 appendChild theLine (Just theRule)
-                                                appendChild theWrapper (Just theLine)
-                                                setAttribute theRule "class" "rule"
-                                                setAttribute theWrapper "class" "assertion"
                                                 return theWrapper
 
-          asLine (n,ShowLine f _)   = do (Just theWrapper) <- createElement w (Just "div")
-                                         (Just theLine) <- createElement w (Just "div")
-                                         (Just lineNum) <- createElement w (Just "span")
-                                         (Just theForm) <- createElement w (Just "span")
+          asLine (n,ShowLine f _)   = do (theWrapper,theLine,theForm,_) <- lineBase w n (Just f) norule "show"
                                          (Just theHead) <- createElement w (Just "span")
-                                         setInnerHTML lineNum (Just $ show n ++ ".")
-                                         setInnerHTML theForm (Just $ show f)
                                          setInnerHTML theHead (Just $ "Show: ")
-                                         appendChild theLine (Just lineNum)
                                          appendChild theLine (Just theHead)
                                          appendChild theLine (Just theForm)
-                                         appendChild theWrapper (Just theLine)
-                                         setAttribute theWrapper "class" "show"
                                          return theWrapper
 
-          asLine (n,QedLine r _ deps) = do (Just theWrapper) <- createElement w (Just "div")
-                                           (Just theLine) <- createElement w (Just "div")
-                                           (Just lineNum) <- createElement w (Just "span")
-                                           (Just theRule) <- createElement w (Just "span")
-                                           setInnerHTML lineNum (Just $ show n ++ ".")
-                                           setInnerHTML theRule (Just $ show (head r) ++ " " ++ intercalate ", " (map renderDep deps))
-                                           appendChild theLine (Just lineNum)
+          asLine (n,QedLine r _ deps) = do (theWrapper,theLine,_,theRule) <- lineBase w n noform (Just (r,deps)) "qed"
                                            appendChild theLine (Just theRule)
                                            appendChild theWrapper (Just theLine)
-                                           setAttribute theRule "class" "rule"
-                                           setAttribute theWrapper "class" "qed"
                                            return theWrapper
 
-          asLine (n,SeparatorLine _) = do (Just sl) <- createElement w (Just "div")
-                                          return sl
-
-          asLine (n,PartialLine _ _ _) = do (Just sl) <- createElement w (Just "div")
-                                            return sl
+          asLine _ = do (Just sl) <- createElement w (Just "div")
+                        return sl
 
           asSubproof l ls = do setAttribute l "class" "subproof"
                                mapM_ (appendChild l . Just) ls
 
-renderDep (n,m) = if n==m then show n else show n ++ "-" ++ show m
+          noform :: Maybe ()
+          noform = Nothing
+
+          norule :: Maybe ([()],[(Int,Int)])
+          norule = Nothing
+
+--The basic parts of a line, with maybes for the fomula and the
+--rule-dependency pair.
+lineBase :: (Show a, Show b) => 
+    Document -> Int -> Maybe a -> Maybe ([b],[(Int,Int)]) -> String -> IO (Element,Element,Element,Element)
+lineBase w n mf mrd lineclass = 
+        do (Just theWrapper) <- createElement w (Just "div")
+           (Just theLine) <- createElement w (Just "div")
+           (Just lineNum) <- createElement w (Just "span")
+           (Just theForm) <- createElement w (Just "span")
+           (Just theRule) <- createElement w (Just "span")
+           setInnerHTML lineNum (Just $ show n ++ ".")
+           whileJust mrd (\(r,deps) -> setInnerHTML theRule (Just $ show (head r) ++ " " ++ intercalate ", " (map renderDep deps)))
+           whileJust mf (\f -> setInnerHTML theForm (Just $ show f))
+           setAttribute theRule "class" "rule"
+           appendChild theWrapper (Just theLine)
+           appendChild theLine (Just lineNum)
+           setAttribute theWrapper "class" lineclass
+           return (theWrapper,theLine,theForm,theRule)
 
 renderDeduction :: String -> (Document -> Tree (Int, DeductionLine t t1 t2) -> IO Element) -> Document -> [DeductionLine t t1 t2] -> IO Element
 renderDeduction cls render w ded = 
@@ -120,3 +102,8 @@ renderDeductionFitch = renderDeduction "fitchDisplay" renderTreeFitch
 renderDeductionMontegue :: (Show t,Schematizable (t1 (FixLang t1)), CopulaSchema (FixLang t1)) => Document -> [DeductionLine t t1 t2] -> IO Element
 renderDeductionMontegue = renderDeduction "montegueDisplay" renderTreeMontegue
 
+renderDep (n,m) = if n==m then show n else show n ++ "-" ++ show m
+
+whileJust :: Monad m => Maybe a -> (a -> m b) -> m ()
+whileJust (Just m) f = f m >> return ()
+whileJust Nothing _ = return ()
