@@ -11,7 +11,7 @@
             <li>
                 <a href=#why> What's Carnap for?
             <li>
-                <a href=#name>Why "Carnap"?
+                <a href=#name>Why “Carnap”?
             <li>
                 <a href=#how>How does Carnap Work?
             <li>
@@ -20,9 +20,9 @@
                 <a href=#contributing>How can I get involved?
 
     <blockquote.blockquote>
-        <p> &ldquo;The acceptance or rejection of abstract linguistic forms, just as the acceptance or rejection of any other linguistic forms in any branch of science, will finally be decided by their efficiency as instruments, the ratio of the results achieved to the amount and complexity of the efforts required. To decree dogmatic prohibitions of certain linguistic forms instead of testing them by their success or failure in practical use, is worse than futile; it is positively harmful because it may obstruct scientific progress.
+        <p>“The acceptance or rejection of abstract linguistic forms, just as the acceptance or rejection of any other linguistic forms in any branch of science, will finally be decided by their efficiency as instruments, the ratio of the results achieved to the amount and complexity of the efforts required. To decree dogmatic prohibitions of certain linguistic forms instead of testing them by their success or failure in practical use, is worse than futile; it is positively harmful because it may obstruct scientific progress.
 
-        <p> Let us grant to those who work in any special field of investigation the freedom to use any form of expression which seems useful to them; the work in the field will sooner or later lead to the elimination of those forms which have no useful function. Let us be cautious in making assertions and critical in examining them, but tolerant in permitting linguistic forms.&rdquo;
+        <p> Let us grant to those who work in any special field of investigation the freedom to use any form of expression which seems useful to them; the work in the field will sooner or later lead to the elimination of those forms which have no useful function. Let us be cautious in making assertions and critical in examining them, but tolerant in permitting linguistic forms.”
 
         <footer.blockquote-footer>Rudolph Carnap,
             <cite title="Empiricism Semantics and Ontology"> Empiricism Semantics and Ontology
@@ -79,7 +79,7 @@
         <p>Carnap is intended for use by educators, students, and researchers working on logic. Carnap makes it possible for educators to create interactive exercises and teaching materials, and for students to get quick and helpful feedback as they learn semantic and syntactic methods for determining what follows from what. Carnap also enables researchers interested in unorthodox formal systems to rapidly prototype proof-checking and semantic tools for computer-assisted logical investigation.
 
     <section#name>
-        <h2>Why "Carnap"?
+        <h2>Why “Carnap”?
 
         <p>Carnap is named after Rudolf Carnap, the philosopher quoted above.
 
@@ -94,7 +94,7 @@
 
         <p>But basically, Haskell's type system makes it possible to represent different lexical categories as datatypes, to combine these lexical category datatypes into a larger datatype representing a lexicon (using something like the method described in <a href="http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.101.4131">this paper</a>), and to define a language as the result of applying different elements of a lexicon to one another in a grammatical way.
 
-        <p>The upshot is that, using Carnap, you can define a language as the result of snapping together predefined lexical categories. Thanks to Haskell's typeclasses, your languages will inherit various useful properties that their constituent lexical categories carry along with them (for example, languages that contain the lexical category for boolean connectives will automatically know how to parse and display the symbol for "and", or how to compute the semantic value of a conjunction from the semantic values of its conjuncts). And, because of Haskell's static typing and the trick of representing lexical categories as types, you're guaranteed that any programming mistake potentially resulting in an ungrammatical expression will be detected when you try to compile the program.
+        <p>The upshot is that, using Carnap, you can define a language as the result of snapping together predefined lexical categories. Thanks to Haskell's typeclasses, your languages will inherit various useful properties that their constituent lexical categories carry along with them (for example, languages that contain the lexical category for boolean connectives will automatically know how to parse and display the symbol for “and”, or how to compute the semantic value of a conjunction from the semantic values of its conjuncts). And, because of Haskell's static typing and the trick of representing lexical categories as types, you're guaranteed that any programming mistake potentially resulting in an ungrammatical expression will be detected when you try to compile the program.
 
         <p>By representing a large class of languages uniformly (as the result of snapping together lexical categories), we also end up being able to manipulate them uniformly. In particular, we can use entirely generic algorithms for things like variable substitution, semantic evaluation, β-normalization, higher-order unification... all the good stuff that you need in order to, for example, check proofs for correctness using only a declaration of acceptable inference rules. As a result, we only need to write code for these algorithms once; we can then automatically use that code with any language that can be defined in the Carnap framework.
 

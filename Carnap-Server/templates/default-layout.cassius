@@ -18,6 +18,7 @@ nav#navbar
 
 footer
     color:#999
+    padding-bottom:20px
 
 div#message
     position: absolute

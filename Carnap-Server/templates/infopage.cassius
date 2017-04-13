@@ -2,7 +2,7 @@ section p
     max-width:650pt
 
 #main
-    margin-bottom:100px
+    margin-bottom:50px
 
 #toc
     float:right

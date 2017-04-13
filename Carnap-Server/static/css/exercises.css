@@ -145,7 +145,7 @@
     visibility:visible;
     transition-property:visibility 1s;
     -webkit-transition-property:visibility 1s;
-    transition-delay:1s
+    transition-delay:.5s
     /* display:block; */
 }
 
