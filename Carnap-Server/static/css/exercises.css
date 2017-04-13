@@ -143,19 +143,37 @@
 
 .proofFeedback li > div:hover > div > div {
     visibility:visible;
-    transition-property:visibility 1s;
-    -webkit-transition-property:visibility 1s;
-    transition-delay:.5s
+    transition-property:visibility 0s;
+    -webkit-transition-property:visibility 0s;
+    transition-delay:.5s;
     /* display:block; */
+}
+
+.proofFeedback li > div > div > div > div {
+    transition-delay:0s;
 }
 
 .proofFeedback li > div:hover > div > div > div {
     visibility:visible;
-    /* display:block; */
+    transition-property:visibility 0s;
+    -webkit-transition-property:visibility 0s;
+    transition-delay:.5s;
+}
+
+.proofFeedback li > div:hover > div > div > div:hover {
+    color:white;
+    line-height:5px;
+    font-size:0pt;
+    transition-delay:0s;
+} 
+
+.proofFeedback li > div:hover > div > div > div > div {
+    display:none;
 }
 
 .proofFeedback li > div:hover > div > div > div:hover > div {
     border-top:1px solid gray;
+    display:block;
 }
 
 .proofFeedback li > div:hover > div > div > div:hover div {
@@ -172,11 +190,6 @@
     border:1px solid gray;
 }
 
-.proofFeedback li > div:hover > div > div > div:hover {
-    color:white;
-    line-height:5px;
-    font-size:0pt;
-} 
 
 .proofFeedback ul {
     list-style-type:none;
