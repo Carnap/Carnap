@@ -1,16 +1,17 @@
 {-#LANGUAGE FlexibleContexts #-}
 module Carnap.GHCJS.Action.ProofCheck (proofCheckAction) where
 
+import Carnap.Calculi.NaturalDeduction.Syntax (NaturalDeductionCalc(..),RenderStyle(..))
 import Carnap.Calculi.NaturalDeduction.Checker (ProofErrorMessage(..), Feedback(..), seqSubsetUnify, processLine, processLineFitch, hoProcessLine, toDisplaySequence)
 import Carnap.Core.Data.AbstractSyntaxDataTypes (liftLang)
 import Carnap.Languages.ClassicalSequent.Syntax
-import Carnap.Languages.PurePropositional.Logic as P (DerivedRule(..), parsePropProof,parseFitchPropProof, propSeqParser) 
-import Carnap.Languages.PureFirstOrder.Logic as FOL (DerivedRule(..), parseFOLProof, folSeqParser) 
-import Carnap.Languages.PureSecondOrder.Logic (parseMSOLProof, msolSeqParser) 
+import Carnap.Languages.PurePropositional.Logic as P (DerivedRule(..), propSeqParser, logicBookCalc, forallxSLCalc, propCalc, ) 
+import Carnap.Languages.PureFirstOrder.Logic as FOL (DerivedRule(..),  folSeqParser, folCalc) 
+import Carnap.Languages.PureSecondOrder.Logic (msolSeqParser, msolCalc) 
 import Carnap.Languages.PurePropositional.Util (toSchema)
 import Carnap.GHCJS.SharedTypes
 import Text.Parsec (parse)
-import Data.IORef (IORef, newIORef,writeIORef,readIORef)
+import Data.IORef (IORef, newIORef,writeIORef,readIORef,modifyIORef)
 import Data.Aeson as A
 import qualified Data.Map as M (fromList,map) 
 import Control.Lens.Fold (toListOf)
@@ -68,7 +69,6 @@ addRules avd v =  case fromJSON v :: Result String of
 getCheckers :: IsElement self => self -> IO [Maybe IOGoal]
 getCheckers = getInOutGoalElts "proofchecker"
 
--- TODO Remove the parameter mess here by passing around a new record type
 activateChecker ::  IORef [(String,P.DerivedRule)] -> Document -> Maybe IOGoal -> IO ()
 activateChecker _ _ Nothing  = return ()
 activateChecker drs w (Just iog@(IOGoal i o g classes))
@@ -82,17 +82,18 @@ activateChecker drs w (Just iog@(IOGoal i o g classes))
         | "playground" `elem` classes = do pd <- makeDisplay
                                            checkerWith standardOptions {submit = Nothing} 
                                                 (fitchPlayground drs pd) iog w
-        | "firstOrder" `elem` classes = 
+        | "firstOrder" `elem` classes = do
+                        drs' <- newIORef [] -- XXX we don't yet have derived rules for FOL
                         tryParse buildOptions folSeqParser 
-                            (\s mtref mpd -> folCheckSolution drs s mtref mpd)
+                            (\s mtref mpd -> folCheckSolution drs' s mtref mpd)
         | "secondOrder" `elem` classes = 
                         tryParse buildOptions msolSeqParser
-                            (\s mtref mpd -> msolCheckSolution s mtref mpd)
+                            (\s mtref mpd -> msolCheckSolution drs s mtref mpd)
         | "LogicBook" `elem` classes = 
                         tryParse buildOptions propSeqParser
-                            (\s mtref mpd -> checkSolutionFitch drs s mpd) 
+                            (\s mtref mpd -> checkSolutionFitch drs s mtref mpd) 
         | otherwise = tryParse buildOptions propSeqParser
-                            (\s mtref mpd -> checkSolution drs s mpd) 
+                            (\s mtref mpd -> checkSolution drs s mtref mpd) 
         where tryParse options seqParse checker = do
                   (Just gs) <- getInnerHTML g 
                   case parse (withLabel seqParse) "" (decodeHtml gs) of
@@ -129,67 +130,37 @@ activateChecker drs w (Just iog@(IOGoal i o g classes))
                                                 (modify (\o -> o {render = True})))
                                            standardOptions
 
--- TODO Reduce silly code duplication in the next four functions
-checkSolution drs s mpd w ref v (g, fd) = do rules <- liftIO $ readIORef drs 
-                                             -- XXX this is here, rather than earlier, 
-                                             -- because if this ref is read too quickly, the async callback for the rules fails. 
-                                             let ded = parsePropProof (M.fromList rules) v
-                                             case mpd of 
-                                               Just pd -> 
-                                                   do renderedProof <- renderDeductionMontegue w ded
-                                                      setInnerHTML pd (Just "")
-                                                      appendChild pd (Just renderedProof)
-                                               Nothing -> return Nothing
-                                             let Feedback mseq ds = toDisplaySequence processLine ded
-                                             updateGoal s w ref (g, fd) mseq ds
+checkSolution = threadedCheck propCalc
 
-checkSolutionFitch drs s mpd w ref v (g, fd) = do rules <- liftIO $ readIORef drs 
-                                                  let ded = parseFitchPropProof (M.fromList rules) v
-                                                  case mpd of 
-                                                    Just pd -> 
-                                                        do renderedProof <- renderDeductionFitch w ded
-                                                           setInnerHTML pd (Just "")
-                                                           appendChild pd (Just renderedProof)
-                                                    Nothing -> return Nothing
-                                                  let Feedback mseq ds = toDisplaySequence processLineFitch ded
-                                                  updateGoal s w ref (g, fd) mseq ds
+checkSolutionFitch = threadedCheck logicBookCalc
 
-folCheckSolution drs s mtref mpd w ref v (g, fd) = 
-        do mt <- readIORef mtref
-           rules <- liftIO $ readIORef drs 
-           case mt of
-               Just t -> killThread t
-               Nothing -> return ()
-           t' <- forkIO $ do threadDelay 200000
-                             let ded = parseFOLProof (M.map liftDerivedRule $ M.fromList rules) v
-                             case mpd of 
-                               Just pd -> 
-                                   do renderedProof <- renderDeductionMontegue w ded
-                                      setInnerHTML pd (Just "")
-                                      appendChild pd (Just renderedProof)
-                               Nothing -> return Nothing
-                             let Feedback mseq ds = toDisplaySequence hoProcessLine ded
-                             updateGoal s w ref (g, fd) mseq ds
-           writeIORef mtref (Just t')
-           return ()
+folCheckSolution = threadedCheck folCalc
 
-msolCheckSolution s mtref mpd w ref v (g, fd) = 
+msolCheckSolution = threadedCheck msolCalc
+
+threadedCheck ndcalc drs s mtref mpd w ref v (g, fd) = 
         do mt <- readIORef mtref
            case mt of
                Just t -> killThread t
                Nothing -> return ()
            t' <- forkIO $ do threadDelay 200000
-                             let ded = parseMSOLProof v
+                             rlist <- liftIO $ readIORef drs
+                             let rules = M.fromList rlist
+                             let ded = ndParseProof ndcalc rules v
                              case mpd of 
                                Just pd -> 
-                                   do renderedProof <- renderDeductionMontegue w ded
+                                   do renderedProof <- renderer w ded
                                       setInnerHTML pd (Just "")
                                       appendChild pd (Just renderedProof)
                                Nothing -> return Nothing
-                             let Feedback mseq ds = toDisplaySequence hoProcessLine ded
+                             let Feedback mseq ds = toDisplaySequence (ndProcessLine ndcalc) ded
                              updateGoal s w ref (g, fd) mseq ds
            writeIORef mtref (Just t')
            return ()
+
+    where renderer = case ndRenderer ndcalc of
+                         MontegueStyle -> renderDeductionMontegue
+                         FitchStyle -> renderDeductionFitch
 
 updateGoal s w ref (g, fd) mseq ds = do ul <- genericListToUl wrap w ds
                                         setInnerHTML fd (Just "")
@@ -205,7 +176,7 @@ updateGoal s w ref (g, fd) mseq ds = do ul <- genericListToUl wrap w ds
                                         return ()
 
 computeRule drs w ref v (g, fd) = do rules <- liftIO $ readIORef drs
-                                     let Feedback mseq ds = toDisplaySequence processLine . parsePropProof (M.fromList rules) $ v
+                                     let Feedback mseq ds = toDisplaySequence (ndProcessLine propCalc) . ndParseProof propCalc (M.fromList rules) $ v
                                      ul <- genericListToUl wrap w ds
                                      setInnerHTML fd (Just "")
                                      appendChild fd (Just ul)
@@ -217,11 +188,11 @@ computeRule drs w ref v (g, fd) = do rules <- liftIO $ readIORef drs
                                      return ()
 
 fitchPlayground drs pd w ref v (g, fd) =  do rules <- liftIO $ readIORef drs 
-                                             let ded = parseFitchPropProof (M.fromList rules) v
+                                             let ded = ndParseProof logicBookCalc (M.fromList rules) v
                                              renderedProof <- renderDeductionFitch w ded
                                              setInnerHTML pd (Just "")
                                              appendChild pd (Just renderedProof)
-                                             let Feedback mseq ds = toDisplaySequence processLineFitch ded
+                                             let Feedback mseq ds = toDisplaySequence (ndProcessLine logicBookCalc) ded
                                              ul <- genericListToUl wrap w ds
                                              setInnerHTML fd (Just "")
                                              appendChild fd (Just ul)
@@ -249,7 +220,7 @@ trySave drs ref w i = do isFinished <- liftIO $ readIORef ref
                          rules <- liftIO $ readIORef drs
                          if isFinished
                            then do (Just v) <- getValue (castToHTMLTextAreaElement i)
-                                   let Feedback mseq _ = toDisplaySequence processLine . parsePropProof (M.fromList rules) $ v
+                                   let Feedback mseq _ = toDisplaySequence (ndProcessLine propCalc) . ndParseProof propCalc (M.fromList rules) $ v
                                    case mseq of
                                     Nothing -> message "A rule can't be extracted from this proof"
                                     (Just (a :|-: (SS c))) -> do
@@ -286,7 +257,8 @@ toUniErr eqs = "In order to apply this inference rule, there needs to be a subst
     where endiv e = "<div>" ++ e ++ "</div>"
           endiv' e = "<div class=\"equations\">" ++ e ++ "</div>"
 
-liftDerivedRule (P.DerivedRule conc prems) = FOL.DerivedRule (liftLang conc) (map liftLang prems)
+liftDerivedRules = map $ \(s,r) -> (s,liftDerivedRule r)
+    where liftDerivedRule (P.DerivedRule conc prems) = FOL.DerivedRule (liftLang conc) (map liftLang prems)
 
 errDiv :: [Char] -> [Char] -> Int -> Maybe [Char] -> [Char]
 errDiv ico msg lineno (Just details) = "<div>" ++ ico ++ "<div><div>Error on line " 

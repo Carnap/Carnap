@@ -14,6 +14,7 @@ import Carnap.Languages.PureSecondOrder.Parser
 import Carnap.Languages.ClassicalSequent.Parser
 import Carnap.Calculi.NaturalDeduction.Syntax
 import Carnap.Calculi.NaturalDeduction.Parser
+import Carnap.Calculi.NaturalDeduction.Checker (hoProcessLine)
 import Data.List (intercalate)
 import Data.Map (empty)
 import Data.Typeable (Typeable)
@@ -205,4 +206,11 @@ parseMSOLogic = try soRule <|> liftFO
 parseMSOLProof :: String -> [DeductionLine MSOLogic MonadicallySOLLex (Form Bool)]
 parseMSOLProof = toDeduction parseMSOLogic msolFormulaParser
 
-msolSeqParser = seqFormulaParser :: Parsec String u (MSOLSequentCalc Sequent)
+msolSeqParser = seqFormulaParser :: Parsec String () (MSOLSequentCalc Sequent)
+
+msolCalc = NaturalDeductionCalc 
+    { ndRenderer = MontegueStyle
+    , ndParseProof = const parseMSOLProof -- XXX ignore derived rules for now
+    , ndProcessLine = hoProcessLine
+    , ndParseSeq = msolSeqParser
+    }

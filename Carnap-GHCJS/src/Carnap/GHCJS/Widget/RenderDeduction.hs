@@ -68,8 +68,7 @@ renderTreeMontegue w = treeToElement asLine asSubproof
           norule :: Maybe ([()],[(Int,Int)])
           norule = Nothing
 
---The basic parts of a line, with maybes for the fomula and the
---rule-dependency pair.
+--The basic parts of a line, with Maybes for the fomula and the rule-dependency pair.
 lineBase :: (Show a, Show b) => 
     Document -> Int -> Maybe a -> Maybe ([b],[(Int,Int)]) -> String -> IO (Element,Element,Element,Element)
 lineBase w n mf mrd lineclass = 

@@ -1,7 +1,7 @@
 {-#LANGUAGE GADTs, FlexibleContexts, PatternSynonyms, TypeSynonymInstances, FlexibleInstances, MultiParamTypeClasses #-}
 module Carnap.Languages.PurePropositional.Logic 
     (parsePropLogic, parseFitchPropLogic, parseForallxSL, parsePropProof, parseFitchPropProof, LogicBookPropLogic,
-    DerivedRule(..), propSeqParser, PropSequentCalc, ForallxSL, PropLogic) where
+    DerivedRule(..), propSeqParser, PropSequentCalc, ForallxSL, PropLogic, forallxSLCalc, logicBookCalc, propCalc) where
 
 import Data.Map as M (lookup, Map)
 import Text.Parsec
@@ -16,7 +16,9 @@ import Carnap.Languages.PurePropositional.Syntax
 import Carnap.Languages.PurePropositional.Parser
 import Carnap.Calculi.NaturalDeduction.Syntax
 import Carnap.Calculi.NaturalDeduction.Parser
+import Carnap.Calculi.NaturalDeduction.Checker
 import Carnap.Languages.ClassicalSequent.Syntax
+import Carnap.Languages.ClassicalSequent.Parser
 import Carnap.Languages.ClassicalSequent.Parser
 import Carnap.Languages.Util.GenericConnectives
 
@@ -350,6 +352,13 @@ parsePropLogic ders = do r <- choice (map (try . string) ["AS","PR","MP","MTP","
 parsePropProof :: Map String DerivedRule -> String -> [DeductionLine PropLogic PurePropLexicon (Form Bool)]
 parsePropProof ders = toDeduction (parsePropLogic ders) (purePropFormulaParser standardLetters)
 
+propCalc = NaturalDeductionCalc 
+    { ndRenderer = MontegueStyle
+    , ndParseProof = parsePropProof
+    , ndProcessLine = processLine
+    , ndParseSeq = propSeqParser
+    }
+
 --------------------------------------------------------
 --  3. System 2
 --------------------------------------------------------
@@ -488,6 +497,13 @@ parseFitchPropLogic ders = do r <- choice (map (try . string) ["AS","PR","&I","/
 parseFitchPropProof :: Map String DerivedRule -> String -> [DeductionLine LogicBookPropLogic PurePropLexicon (Form Bool)]
 parseFitchPropProof ders = toDeductionBE (parseFitchPropLogic ders) (purePropFormulaParser extendedLetters)
 
+logicBookCalc = NaturalDeductionCalc 
+    { ndRenderer = FitchStyle
+    , ndParseProof = parseFitchPropProof
+    , ndProcessLine = processLine
+    , ndParseSeq = extendedPropSeqParser
+    }
+
 -------------------
 --  4. System 3  --
 -------------------
@@ -589,3 +605,13 @@ parseForallxSL ders = do r <- choice (map (try . string) ["AS","PR","&I","/\\I",
                              "↔I"   -> return [BicoIntro1X, BicoIntro2X, BicoIntro3X, BicoIntro4X]
                              "↔E"   -> return [BicoElim1X, BicoElim2X]
                              "R"    -> return [ReiterateX]
+
+parseForallxSLProof :: Map String DerivedRule -> String -> [DeductionLine ForallxSL PurePropLexicon (Form Bool)]
+parseForallxSLProof ders = toDeductionBE (parseForallxSL ders) (purePropFormulaParser extendedLetters)
+
+forallxSLCalc = NaturalDeductionCalc 
+    { ndRenderer = FitchStyle
+    , ndParseProof = parseForallxSLProof
+    , ndProcessLine = processLine
+    , ndParseSeq = extendedPropSeqParser
+    }

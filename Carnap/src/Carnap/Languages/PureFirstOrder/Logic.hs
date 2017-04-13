@@ -1,6 +1,6 @@
 {-#LANGUAGE GADTs, FlexibleContexts, PatternSynonyms, TypeSynonymInstances, FlexibleInstances, MultiParamTypeClasses #-}
 module Carnap.Languages.PureFirstOrder.Logic
-        (FOLogic(..), parseFOLogic,parseForallxQL, parseFOLProof, folSeqParser, phiS, phi, tau, ss, FOLSequentCalc, DerivedRule(..))
+        (FOLogic(..), parseFOLogic,parseForallxQL, parseFOLProof, folSeqParser, phiS, phi, tau, ss, FOLSequentCalc, DerivedRule(..), folCalc)
     where
 
 import Data.Map as M (lookup, Map,empty)
@@ -19,6 +19,7 @@ import Carnap.Languages.PureFirstOrder.Parser
 import qualified Carnap.Languages.PurePropositional.Logic as P
 import Carnap.Calculi.NaturalDeduction.Syntax
 import Carnap.Calculi.NaturalDeduction.Parser
+import Carnap.Calculi.NaturalDeduction.Checker (hoProcessLine)
 import Carnap.Languages.ClassicalSequent.Syntax
 import Carnap.Languages.ClassicalSequent.Parser
 import Carnap.Languages.Util.GenericConnectives
@@ -214,6 +215,13 @@ parseFOLogic ders = try quantRule <|> liftProp
 parseFOLProof ::  Map String DerivedRule -> String -> [DeductionLine FOLogic PureLexiconFOL (Form Bool)]
 parseFOLProof ders = toDeduction (parseFOLogic ders) folFormulaParser
 
+folCalc = NaturalDeductionCalc
+    { ndRenderer = MontegueStyle
+    , ndParseProof = parseFOLProof
+    , ndProcessLine = hoProcessLine
+    , ndParseSeq = folSeqParser
+    }
+
 --------------------
 --  3. System QL  --
 --------------------
@@ -262,3 +270,13 @@ parseForallxQL ders = try liftProp <|> quantRule
                               | r `elem` ["∃E","EE"] -> return [EE1X, EE2X]
                               | r == "=I" -> return [IDIX]
                               | r == "=E" -> return [IDE1X,IDE2X]
+
+parseForallxQLProof ::  Map String P.DerivedRule -> String -> [DeductionLine ForallxQL PureLexiconFOL (Form Bool)]
+parseForallxQLProof ders = toDeductionBE (parseForallxQL ders) folFormulaParser
+
+forallxQLCalc = NaturalDeductionCalc
+    { ndRenderer = FitchStyle
+    , ndParseProof = parseForallxQLProof
+    , ndProcessLine = hoProcessLine
+    , ndParseSeq = folSeqParser
+    }
