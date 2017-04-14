@@ -6,7 +6,7 @@ import Carnap.Calculi.NaturalDeduction.Checker (ProofErrorMessage(..), Feedback(
 import Carnap.Core.Data.AbstractSyntaxDataTypes (liftLang)
 import Carnap.Languages.ClassicalSequent.Syntax
 import Carnap.Languages.PurePropositional.Logic as P (DerivedRule(..), propSeqParser, logicBookCalc, forallxSLCalc, propCalc, ) 
-import Carnap.Languages.PureFirstOrder.Logic as FOL (DerivedRule(..),  folSeqParser, folCalc) 
+import Carnap.Languages.PureFirstOrder.Logic as FOL (DerivedRule(..),  folSeqParser, folCalc,forallxQLCalc) 
 import Carnap.Languages.PureSecondOrder.Logic (msolSeqParser, msolCalc) 
 import Carnap.Languages.PurePropositional.Util (toSchema)
 import Carnap.GHCJS.SharedTypes
@@ -77,7 +77,6 @@ data Checker r lex der = Checker
         , checkerCalc :: NaturalDeductionCalc r lex der
         }
 
-
 activateChecker ::  IORef [(String,P.DerivedRule)] -> Document -> Maybe IOGoal -> IO ()
 activateChecker _ _ Nothing  = return ()
 activateChecker drs w (Just iog@(IOGoal i o g classes))
@@ -95,8 +94,13 @@ activateChecker drs w (Just iog@(IOGoal i o g classes))
                         drs' <- newIORef [] -- XXX we don't yet have derived rules for FOL
                         tryParse buildOptions folSeqParser 
                             (\s mtref mpd -> threadedCheck (Checker drs' s mtref mpd folCalc))
+        | "forallxQL" `elem` classes = do
+                        drs' <- newIORef [] -- XXX we don't yet have derived rules for FOL
+                        tryParse buildOptions folSeqParser 
+                            (\s mtref mpd -> threadedCheck (Checker drs' s mtref mpd forallxQLCalc))
         | "secondOrder" `elem` classes = tryParse buildOptions msolSeqParser (standardCheck msolCalc)
         | "LogicBook" `elem` classes = tryParse buildOptions propSeqParser (standardCheck logicBookCalc)
+        | "forallxSL" `elem` classes = tryParse buildOptions propSeqParser (standardCheck forallxSLCalc)
         | otherwise = tryParse buildOptions propSeqParser (standardCheck propCalc)
         where tryParse options seqParse checker = do
                   (Just gs) <- getInnerHTML g 

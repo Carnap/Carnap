@@ -95,6 +95,21 @@ Show -ExAy(-F(y,y) <-> F(x,y))
 :ID 2 3
 |]
 
-            
-            
+russellTheoremForallx = [st|
+    ExAy(-Fyy <-> Fxy):AS
+       Ay(-Fyy<->Fry):AS
+       -Frr<->Frr:AE 2
+            -Frr:AS
+            Frr:<->E 3 4
+            -Frr:R 4
+       Frr:-E 4-6
+       -Frr:<->E 7 3
+            ExAy(-Fyy <-> Fxy):AS
+            Frr:R 7
+            -Frr:R 8
+       -ExAy(-Fyy <-> Fxy):-I 9-11
+    -ExAy(-Fyy <-> Fxy):EE 1 2-12
+    ExAy(-Fyy <-> Fxy):R 1
+-ExAy(-Fyy <-> Fxy):-I 1-14
+|]
 

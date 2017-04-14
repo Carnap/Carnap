@@ -524,8 +524,37 @@ data ForallxSL = ReiterateX  | ConjIntroX
                | NegeElim1X  | NegeElim2X
                | NegeElim3X  | NegeElim4X
                | ForXAssump  | ForXPrem
-               deriving (Show, Eq)
+               deriving (Eq)
                --skipping derived rules for now
+
+instance Show ForallxSL where
+        show ConjIntroX  = "∧I"
+        show ConjElim1X  = "∧E"
+        show ConjElim2X  = "∧E"
+        show CondIntro1X = "→I"
+        show CondIntro2X = "→I"
+        show CondElimX   = "→E"
+        show NegeIntro1X = "¬I"
+        show NegeIntro2X = "¬I"
+        show NegeIntro3X = "¬I"
+        show NegeIntro4X = "¬I"
+        show NegeElim1X  = "¬E" 
+        show NegeElim2X  = "¬E"
+        show NegeElim3X  = "¬E"
+        show NegeElim4X  = "¬E"
+        show DisjElim1X  = "∨E"
+        show DisjElim2X  = "∨E"
+        show DisjIntro1X = "∨I"
+        show DisjIntro2X = "∨I"
+        show BicoIntro1X = "↔I"
+        show BicoIntro2X = "↔I"
+        show BicoIntro3X = "↔I"
+        show BicoIntro4X = "↔I"
+        show BicoElim1X  = "↔E"
+        show BicoElim2X  = "↔E"
+        show ReiterateX  = "R"
+        show ForXAssump  = "AS"
+        show ForXPrem    = "PR"
 
 instance Inference ForallxSL PurePropLexicon where
         ruleOf ReiterateX = identityRule

@@ -1,6 +1,6 @@
 {-#LANGUAGE GADTs, FlexibleContexts, PatternSynonyms, TypeSynonymInstances, FlexibleInstances, MultiParamTypeClasses #-}
 module Carnap.Languages.PureFirstOrder.Logic
-        (FOLogic(..), parseFOLogic,parseForallxQL, parseFOLProof, folSeqParser, phiS, phi, tau, ss, FOLSequentCalc, DerivedRule(..), folCalc)
+        (FOLogic(..), parseFOLogic,parseForallxQL, parseFOLProof, folSeqParser, phiS, phi, tau, ss, FOLSequentCalc, DerivedRule(..), folCalc, forallxQLCalc)
     where
 
 import Data.Map as M (lookup, Map,empty)
@@ -19,7 +19,7 @@ import Carnap.Languages.PureFirstOrder.Parser
 import qualified Carnap.Languages.PurePropositional.Logic as P
 import Carnap.Calculi.NaturalDeduction.Syntax
 import Carnap.Calculi.NaturalDeduction.Parser
-import Carnap.Calculi.NaturalDeduction.Checker (hoProcessLine)
+import Carnap.Calculi.NaturalDeduction.Checker (hoProcessLine, hoProcessLineFitch)
 import Carnap.Languages.ClassicalSequent.Syntax
 import Carnap.Languages.ClassicalSequent.Parser
 import Carnap.Languages.Util.GenericConnectives
@@ -229,7 +229,18 @@ folCalc = NaturalDeductionCalc
 -- forallx
 
 data ForallxQL = ForallxSL P.ForallxSL | UIX | UEX | EIX | EE1X | EE2X | IDIX | IDE1X | IDE2X
-                    deriving (Show, Eq)
+                    deriving Eq
+
+instance Show ForallxQL where
+        show (ForallxSL x) = show x
+        show UIX          = "∀I"
+        show UEX          = "∀E"
+        show EIX          = "∃I"
+        show EE1X         = "∃E"
+        show EE2X         = "∃E"
+        show IDIX         = "=I"
+        show IDE1X        = "=E"
+        show IDE2X        = "=E"
 
 instance Inference ForallxQL PureLexiconFOL where
 
@@ -259,6 +270,9 @@ instance Inference ForallxQL PureLexiconFOL where
          restriction EE2X   = Nothing --Since this one does not use the assumption with a fresh object
          restriction _      = Nothing
 
+         isAssumption (ForallxSL x) = isAssumption x
+         isAssumption _ = False
+
 parseForallxQL ders = try liftProp <|> quantRule
     where liftProp = do r <- P.parseForallxSL ders
                         return (map ForallxSL r)
@@ -272,11 +286,11 @@ parseForallxQL ders = try liftProp <|> quantRule
                               | r == "=E" -> return [IDE1X,IDE2X]
 
 parseForallxQLProof ::  Map String P.DerivedRule -> String -> [DeductionLine ForallxQL PureLexiconFOL (Form Bool)]
-parseForallxQLProof ders = toDeductionBE (parseForallxQL ders) folFormulaParser
+parseForallxQLProof ders = toDeductionBE (parseForallxQL ders) forallxFOLFormulaParser
 
 forallxQLCalc = NaturalDeductionCalc
     { ndRenderer = FitchStyle
     , ndParseProof = parseForallxQLProof
-    , ndProcessLine = hoProcessLine
+    , ndProcessLine = hoProcessLineFitch
     , ndParseSeq = folSeqParser
     }

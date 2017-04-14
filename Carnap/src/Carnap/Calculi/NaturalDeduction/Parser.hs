@@ -1,7 +1,5 @@
 {-#LANGUAGE GADTs, TypeOperators, FlexibleContexts #-}
-module Carnap.Calculi.NaturalDeduction.Parser 
-
-where
+module Carnap.Calculi.NaturalDeduction.Parser where
 
 import Data.Tree
 import Data.Either
@@ -133,6 +131,7 @@ toProofTree ded n = case ded !! (n - 1)  of
                       qedAt d _ = False
           (QedLine _ _ _) -> err "A QED line cannot be cited as a justification" 
           (PartialLine _ e _) -> Left $ NoParse e n
+
     where err :: String -> Either (ProofErrorMessage lex) a
           err x = Left $ GenericError x n
           ln = length ded

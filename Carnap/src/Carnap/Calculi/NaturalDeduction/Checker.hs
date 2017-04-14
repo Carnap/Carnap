@@ -1,5 +1,5 @@
 {-#LANGUAGE GADTs, KindSignatures, TypeOperators, FlexibleContexts, TypeSynonymInstances, FlexibleInstances, MultiParamTypeClasses #-}
-module Carnap.Calculi.NaturalDeduction.Checker (toDisplaySequence,toDisplaySequenceStructured, processLine, processLineFitch, processLineStructuredFitch,processLineStructuredFitchHO, hoProcessLine, hosolve, ProofErrorMessage(..), Feedback(..),seqUnify,seqSubsetUnify, toDeduction) where
+module Carnap.Calculi.NaturalDeduction.Checker (toDisplaySequence,toDisplaySequenceStructured, processLine, processLineFitch, processLineStructuredFitch,processLineStructuredFitchHO, hoProcessLineFitch, hoProcessLine, hosolve, ProofErrorMessage(..), Feedback(..),seqUnify,seqSubsetUnify, toDeduction) where
 
 import Carnap.Calculi.NaturalDeduction.Syntax
 import Carnap.Calculi.NaturalDeduction.Parser
@@ -62,6 +62,17 @@ processLine ded n = case ded !! (n - 1) of
   --special case to catch QedLines not being cited in justifications
   (QedLine _ _ _) -> Left $ NoResult n
   _ -> toProofTree ded n >>= reduceProofTree
+  
+hoProcessLine :: 
+  ( StaticVar (ClassicalSequentOver lex)
+  , Sequentable lex
+  , Inference r lex
+  , MonadVar (ClassicalSequentOver lex) (State Int)
+  ) => Deduction r lex -> Int -> FeedbackLine lex
+hoProcessLine ded n = case ded !! (n - 1) of
+  --special case to catch QedLines not being cited in justifications
+  (QedLine _ _ _) -> Left $ NoResult n
+  _ -> toProofTree ded n >>= hoReduceProofTree
 
 processLineFitch :: 
   ( Sequentable lex
@@ -72,6 +83,17 @@ processLineFitch ded n = case ded !! (n - 1) of
   --special case to catch QedLines not being cited in justifications
   (QedLine _ _ _) -> Left $ NoResult n
   _ -> toProofTreeFitch ded n >>= reduceProofTree
+
+hoProcessLineFitch :: 
+  ( StaticVar (ClassicalSequentOver lex)
+  , Sequentable lex
+  , Inference r lex
+  , MonadVar (ClassicalSequentOver lex) (State Int)
+  ) => Deduction r lex -> Int -> FeedbackLine lex
+hoProcessLineFitch ded n = case ded !! (n - 1) of
+  --special case to catch QedLines not being cited in justifications
+  (QedLine _ _ _) -> Left $ NoResult n
+  _ -> toProofTreeFitch ded n >>= hoReduceProofTree
 
 processLineStructuredFitch :: 
   ( Sequentable lex
@@ -94,16 +116,6 @@ processLineStructuredFitchHO ded n = case ded .! n of
   Just (QedLine _ _ _) -> Left $ NoResult n
   _ -> toProofTreeStructuredFitch ded n >>= hoReduceProofTree
 
-hoProcessLine :: 
-  ( StaticVar (ClassicalSequentOver lex)
-  , Sequentable lex
-  , Inference r lex
-  , MonadVar (ClassicalSequentOver lex) (State Int)
-  ) => Deduction r lex -> Int -> FeedbackLine lex
-hoProcessLine ded n = case ded !! (n - 1) of
-  --special case to catch QedLines not being cited in justifications
-  (QedLine _ _ _) -> Left $ NoResult n
-  _ -> toProofTree ded n >>= hoReduceProofTree
 
 -- | A simple check of whether two sequents can be unified
 seqUnify s1 s2 = case check of
