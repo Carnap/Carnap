@@ -190,7 +190,6 @@
     border:1px solid gray;
 }
 
-
 .proofFeedback ul {
     list-style-type:none;
     padding:0pt;
@@ -216,7 +215,6 @@
 
 .proofDisplay .subproof {
     border-left:1px solid black;
-    margin-top:5px;
 }
 
 .proofDisplay div > span:first-child {
@@ -244,7 +242,7 @@
 .montegueDisplay .qed div {
     border-left:1px solid black;
     border-bottom:1px solid black;
-    height:20px;
+    height:25px;
 }
 
 .montegueDisplay .subproof > div.qed {
@@ -253,6 +251,10 @@
 
 .fitchDisplay div span:nth-child(3) {
     float: right;
+}
+
+.fitchDisplay .subproof {
+    margin-top:5px;
 }
 
 .fitchDisplay .subproof > div:first-child {
