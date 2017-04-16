@@ -39,7 +39,7 @@ renderTreeFitch w = treeToElement asLine asSubproof
 
 --this is for Kalish and Montegue Proofs
 renderTreeMontegue w = treeToElement asLine asSubproof
-    where asLine (n,AssertLine f r _ deps) = do (theWrapper,theLine,theForm,theRule) <- lineBase w n (Just f) norule "assertion"
+    where asLine (n,AssertLine f r _ deps) = do (theWrapper,theLine,theForm,theRule) <- lineBase w n (Just f) (Just (r,deps)) "assertion"
                                                 appendChild theLine (Just theForm)
                                                 appendChild theLine (Just theRule)
                                                 return theWrapper
@@ -53,7 +53,7 @@ renderTreeMontegue w = treeToElement asLine asSubproof
 
           asLine (n,QedLine r _ deps) = do (theWrapper,theLine,_,theRule) <- lineBase w n noform (Just (r,deps)) "qed"
                                            appendChild theLine (Just theRule)
-                                           appendChild theWrapper (Just theLine)
+                                           --appendChild theWrapper (Just theLine)
                                            return theWrapper
 
           asLine _ = do (Just sl) <- createElement w (Just "div")

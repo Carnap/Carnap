@@ -90,7 +90,7 @@
 
         <p>Carnap (the philosopher) famously advocated a tolerant and experimental approach to logic. Carnap (the program) is pluralistic by design. Inference rules are specified declaratively, making it easy to add new logics to those already provided for a given language. The algorithms for checking whether inferences are correct are applicable to a wide variety of languages, making it easy to introduce new languages.
 
-        <p>Carnap (the philosopher) also had a lot to say about logical types, and how ignoring them can leave you with beliefs that don’t work very well. Carnap (the program) is written in Haskell, a statically-typed functional programming language that uses a theory of logical types to ensure code correctness.
+        <p>Carnap (the philosopher) also had a lot to say about logical types, and how ignoring them can leave you with beliefs that don’t work very well. Carnap (the program) is written in Haskell, a statically-typed pure functional programming language that uses a theory of logical types to ensure code correctness.
 
     <section#how>
         <h2>How does Carnap work?
