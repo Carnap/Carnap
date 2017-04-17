@@ -5,6 +5,8 @@
                 <li>
                     <a href=@{HomeR}>Carnap
                 <li>
+                    <a href=@{InfoR}>About
+                <li>
                     <a href=@{BookR}>Book
                 <li>
                     $maybe (Entity _ user) <- authmaybe

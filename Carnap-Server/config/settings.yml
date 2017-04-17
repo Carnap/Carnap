@@ -33,4 +33,7 @@ database:
   poolsize: "_env:PGPOOLSIZE:10"
 
 copyright: Copyright 2015-2017 G. Leach-Krouse and J. Ehrlich
+
 #analytics: UA-YOURCODE
+
+mailto: "&#103;&#108;&#101;&#097;&#099;&#104;&#107;&#114;&#064;&#107;&#115;&#117;&#046;&#101;&#100;&#117;"
