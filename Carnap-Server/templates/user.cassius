@@ -1,5 +1,0 @@
-span.ruleaction
-    cursor:pointer;
-
-span.ruleaction > span
-    display:none;

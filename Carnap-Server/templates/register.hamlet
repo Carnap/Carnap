@@ -1,9 +1,0 @@
-<div#carnap-info-head>
-    <div.container>
-        <h1> Looks Like You Need to Register
-
-        Please enter the following information
-
-        <form method=post action=@{RegisterR ident} enctype=#{enctype}>
-            ^{widget}
-            <button> Register Now
