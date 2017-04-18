@@ -5,18 +5,18 @@ packages:
 - Carnap/
 - Carnap-Server/
 - Carnap-GHCJS/
-resolver: lts-6.25
+resolver: lts-6.30
 
 
 # to build Carnap-GHCJS in ghcjs with this file, run 
 # `stack --stack-yaml stack-ghcjs-yaml build Carnap-GHCJS`
 
-compiler: ghcjs-0.2.0.9006025_ghc-7.10.3
+compiler: ghcjs-0.2.0.9006030_ghc-7.10.3
 compiler-check: match-exact
 
 setup-info:
   ghcjs:
     source:
-      ghcjs-0.2.0.9006025_ghc-7.10.3:
-         url: http://ghcjs.tolysz.org/lts-6.25-9006025.tar.gz
-         sha1: 3c87228579b55c05e227a7876682c2a7d4c9c007
+      ghcjs-0.2.0.9006030_ghc-7.10.3:
+         url: http://ghcjs.tolysz.org/lts-6.30-9006030.tar.gz
+         sha1: 2371e2ffe9e8781808b7a04313e6a0065b64ee51
