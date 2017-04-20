@@ -89,9 +89,9 @@ getClass "florio.2@buckeyemail.osu.edu" = Just Birmingham2017
 getClass _ = Nothing
 
 uploadAssignmentForm = renderBootstrap3 BootstrapBasicForm $ (,,,)
-    <$> fileAFormReq "Assignment"
-    <*> areq (jqueryDayField def) "Due Date" Nothing
-    <*> aopt textareaField "Assignment Description" Nothing
+    <$> fileAFormReq (bfs ("Assignment" :: Text))
+    <*> areq (jqueryDayField def) (bfs ("Due Date"::Text)) Nothing
+    <*> aopt textareaField (bfs ("Assignment Description"::Text)) Nothing
     <*> lift (liftIO getCurrentTime)
 
 saveAssignment file = do

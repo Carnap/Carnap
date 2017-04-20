@@ -16,10 +16,11 @@
                     <td>
                         #{tryLookup allScores (userIdent u)}/#{show $ pointsOf theclass}
     <h2> Upload Assignments
-    <div.form-group>
+    <div>
         <form method=post enctype=#{enctype}>
             ^{assignmentWidget}
-            <input.btn.btn-primary type=submit value="upload">
+            <div.form-group>
+                <input.btn.btn-primary type=submit value="upload">
     <h2> Uploaded Assignments
     <table class="table">
         <thead>
