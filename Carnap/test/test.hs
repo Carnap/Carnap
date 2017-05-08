@@ -5,6 +5,7 @@ module Main where
 import Carnap.Core.Data.AbstractSyntaxDataTypes
 import Carnap.Core.Unification.Unification
 import Carnap.Core.Unification.FirstOrder
+import Carnap.Core.Unification.Huet
 import Carnap.Core.Unification.ACUI
 import Carnap.Core.Unification.Combination
 import Carnap.Languages.ClassicalSequent.Syntax
@@ -15,11 +16,8 @@ import System.CPUTime
 import System.Exit (exitFailure)
 
 main = do putStrLn ""
-          --testPositives psequents
           testPositives psequents
-          --testNegatives nsequents
           testNegatives nsequents
-          -- timeCombine simpleModusPonens "positive modus ponens" (posTest "combine modus ponens")
           timeFirstOrder simpleCI "first order positive conditional introduction" (posTest "CI 1")
           timeFirstOrder simpleCI2 "first order positive conditional introduction 2" (posTest "CI 2")
           timeFirstOrder simpleCI3 "first order positive conditional introduction 3" (posTest "CI 3")
@@ -30,15 +28,11 @@ main = do putStrLn ""
           timeFirstOrder simpleModusPonens "first order positive modus ponens 1" (posTest "alt modus ponens 1")
           timeFirstOrder simpleModusPonens2 "first order positive modus ponens 2" (posTest "alt modus ponens 2")
           timeFirstOrder simpleModusPonensErr "first order negative modus ponens 1" (negTest "alt modus ponens err 1")
-          --timeCombine [pacuicase1] "big positive acui" (posTest pacuicase1)
-          --timeCombine [nacuicase1] "big negative acui" (negTest nacuicase1)
           putStrLn ""
 
 -------------------------
 --  Testing Functions  --
 -------------------------
-
---timeCombine = timeMethod combine
 
 timeFirstOrder = timeMethod (pure . firstOrderMethod)
 
@@ -57,8 +51,15 @@ testTemplate pred desc x = if pred x then return ()
                                              exitFailure
                                              --
 --A simple method of first-order unification
-firstOrderMethod :: [Equation PropSequentCalc] -> [[Equation PropSequentCalc]]
 firstOrderMethod eqs = case evalTerm $ foUnifySys (const False) succs of
+                     [x] -> evalTerm $ acuiUnifySys (const False) (mapAll (applySub x) ants)
+                     [] -> []
+            where
+              ants  = map antPair eqs
+              succs = map succPair eqs
+
+--A simple method of higher-order unification
+higherOrderMethod eqs = case evalTerm $ huetUnifySys (const False) succs of
                      [x] -> evalTerm $ acuiUnifySys (const False) (mapAll (applySub x) ants)
                      [] -> []
             where
@@ -76,13 +77,20 @@ posTest eq = (testTemplate (not . null) (show eq ++ " as Positive" ))
 
 negTest eq = (testTemplate null (show eq ++ " as Negative" ))
 
---testNegatives = mapM (\eqs -> timeCombine [eqs] ("Negative test of " ++ show eqs) (negTest eqs))
-
 testNegatives = mapM (\eqs -> timeFirstOrder [eqs] ("First order Negative test of " ++ show eqs) (negTest eqs))
-                            
---testPositives = mapM (\eqs -> timeCombine [eqs] ("Positive test of " ++ show eqs) (posTest eqs))
 
 testPositives = mapM (\eqs -> timeFirstOrder [eqs] ("First order Positive test of " ++ show eqs) (posTest eqs))
+
+--related to old combination tests
+--timeCombine = timeMethod combine
+--testNegatives = mapM (\eqs -> timeCombine [eqs] ("Negative test of " ++ show eqs) (negTest eqs))
+--testPositives = mapM (\eqs -> timeCombine [eqs] ("Positive test of " ++ show eqs) (posTest eqs))
+
+--some specific tests
+--timeCombine [pacuicase1] "big positive acui" (posTest pacuicase1)
+--timeCombine [nacuicase1] "big negative acui" (negTest nacuicase1)
+--timeCombine simpleModusPonens "positive modus ponens" (posTest "combine modus ponens") 
+          
 
 -------------
 --  Tests  --
@@ -120,7 +128,6 @@ nsequents = [nseqcase1
             ,nseqcase4
             ,nseqcase5
             ]
-
 
 simpleModusPonens = [ (GammaV 1 :|-: ss (phi_ :->: phi'_))    :=: (sa p_    :|-: ss (p_ :->: p'_))
                     , (GammaV 3 :|-: ss phi_)                  :=: (sa p'_   :|-: ss p_)
