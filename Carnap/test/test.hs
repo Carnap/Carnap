@@ -15,57 +15,79 @@ import System.CPUTime
 import System.Exit (exitFailure)
 
 main = do putStrLn ""
+          --testPositives psequents
           testPositives psequents
-          altTestPositives psequents
+          --testNegatives nsequents
           testNegatives nsequents
-          altTestNegatives nsequents
           -- timeCombine simpleModusPonens "positive modus ponens" (posTest "combine modus ponens")
-          timeAltCombine simpleCI "alt positive conditional introduction" (posTest "CI 1")
-          timeAltCombine simpleCI2 "alt positive conditional introduction 2" (posTest "CI 2")
-          timeAltCombine simpleCI3 "alt positive conditional introduction 3" (posTest "CI 3")
-          timeAltCombine simpleCI4 "alt positive conditional introduction 4" (posTest "CI 4")
-          timeAltCombine simpleCIErr "alt negative conditional introduction 1" (negTest "CI Neg 1")
-          timeAltCombine simpleCIErr2 "alt negative conditional introduction 2" (negTest "CI Neg 2")
-          timeAltCombine simpleCIErr3 "alt negative conditional introduction 3" (negTest "CI Neg 3")
-          timeAltCombine simpleModusPonens "alt positive modus ponens 1" (posTest "alt modus ponens 1")
-          timeAltCombine simpleModusPonens2 "alt positive modus ponens 2" (posTest "alt modus ponens 2")
-          timeAltCombine simpleModusPonensErr "alt negative modus ponens 1" (negTest "alt modus ponens err 1")
+          timeFirstOrder simpleCI "first order positive conditional introduction" (posTest "CI 1")
+          timeFirstOrder simpleCI2 "first order positive conditional introduction 2" (posTest "CI 2")
+          timeFirstOrder simpleCI3 "first order positive conditional introduction 3" (posTest "CI 3")
+          timeFirstOrder simpleCI4 "first order positive conditional introduction 4" (posTest "CI 4")
+          timeFirstOrder simpleCIErr "first order negative conditional introduction 1" (negTest "CI Neg 1")
+          timeFirstOrder simpleCIErr2 "first order negative conditional introduction 2" (negTest "CI Neg 2")
+          timeFirstOrder simpleCIErr3 "first order negative conditional introduction 3" (negTest "CI Neg 3")
+          timeFirstOrder simpleModusPonens "first order positive modus ponens 1" (posTest "alt modus ponens 1")
+          timeFirstOrder simpleModusPonens2 "first order positive modus ponens 2" (posTest "alt modus ponens 2")
+          timeFirstOrder simpleModusPonensErr "first order negative modus ponens 1" (negTest "alt modus ponens err 1")
           --timeCombine [pacuicase1] "big positive acui" (posTest pacuicase1)
           --timeCombine [nacuicase1] "big negative acui" (negTest nacuicase1)
           putStrLn ""
 
---test must be nontrivial or it optimizes away the test results
-timeCombine eqs desc test = do startTime <- getCPUTime
-                               let subs = evalTerm $ combine eqs
-                               test subs
-                               finishTime <- getCPUTime
-                               let t = fromIntegral (finishTime - startTime) / 1000000000000
-                               putStrLn $ "Test Results (" ++ desc ++ "):" ++ show t
+-------------------------
+--  Testing Functions  --
+-------------------------
 
-timeAltCombine eqs desc test = do startTime <- getCPUTime
-                                  let subs = altCombine eqs
-                                  test subs
-                                  finishTime <- getCPUTime
-                                  let t = fromIntegral (finishTime - startTime)
-                                  putStrLn $ "Test Results (" ++ desc ++ "):" ++ show t
+--timeCombine = timeMethod combine
+
+timeFirstOrder = timeMethod (pure . firstOrderMethod)
+
+--the test must be nontrivial (error signal on failure) or Haskell optimizes away the test results
+timeMethod method eqs desc test = do startTime <- getCPUTime
+                                     subs <- method eqs
+                                     test subs
+                                     finishTime <- getCPUTime
+                                     let t = fromIntegral (finishTime - startTime)
+                                     putStrLn $ "Test Results (" ++ desc ++ "):" ++ show t
 
 testTemplate :: Show a => (a -> Bool) -> String -> a -> IO ()
 testTemplate pred desc x = if pred x then return ()
                                      else do putStrLn $ "test " ++ desc ++ " failed"
                                              putStrLn $ "failing object: " ++ show x
                                              exitFailure
+                                             --
+--A simple method of first-order unification
+firstOrderMethod :: [Equation PropSequentCalc] -> [[Equation PropSequentCalc]]
+firstOrderMethod eqs = case evalTerm $ foUnifySys (const False) succs of
+                     [x] -> evalTerm $ acuiUnifySys (const False) (mapAll (applySub x) ants)
+                     [] -> []
+            where
+              ants  = map antPair eqs
+              succs = map succPair eqs
+
+succPair :: Equation PropSequentCalc -> Equation PropSequentCalc
+succPair ((_ :|-: (SS x)):=:(_:|-: (SS y)))  = x :=: y
+succPair ((_ :|-: x):=:(_:|-: y))  = x :=: y
+
+antPair :: Equation PropSequentCalc -> Equation PropSequentCalc
+antPair  ((x :|-: _):=:(y:|-: _))  = x :=: y
 
 posTest eq = (testTemplate (not . null) (show eq ++ " as Positive" ))
 
 negTest eq = (testTemplate null (show eq ++ " as Negative" ))
 
-testNegatives = mapM (\eqs -> timeCombine [eqs] ("Negative test of " ++ show eqs) (negTest eqs))
+--testNegatives = mapM (\eqs -> timeCombine [eqs] ("Negative test of " ++ show eqs) (negTest eqs))
 
-altTestNegatives = mapM (\eqs -> timeAltCombine [eqs] ("Alternative Negative test of " ++ show eqs) (negTest eqs))
+testNegatives = mapM (\eqs -> timeFirstOrder [eqs] ("First order Negative test of " ++ show eqs) (negTest eqs))
                             
-testPositives = mapM (\eqs -> timeCombine [eqs] ("Positive test of " ++ show eqs) (posTest eqs))
+--testPositives = mapM (\eqs -> timeCombine [eqs] ("Positive test of " ++ show eqs) (posTest eqs))
 
-altTestPositives = mapM (\eqs -> timeAltCombine [eqs] ("Alternative Positive test of " ++ show eqs) (posTest eqs))
+testPositives = mapM (\eqs -> timeFirstOrder [eqs] ("First order Positive test of " ++ show eqs) (posTest eqs))
+
+-------------
+--  Tests  --
+-------------
+
 
 pacuicase1 = (parseTerm "f(a u b u c u d u e)" :=: parseTerm "f(b u c u d u a)")
 
@@ -146,20 +168,11 @@ simpleCIErr3      = [ ((GammaV 1 :+: sa phi_) :|-: ss phi'_)        :=: (sa p_  
                     , (GammaV 1 :|-: ss (phi_ :->: phi'_))         :=: ((Top :+: sa p_ :+: sa p'_):|-: ss (p_ :->: p'_))
                     ]
 
-altCombine :: [Equation PropSequentCalc] -> [[Equation PropSequentCalc]]
-altCombine eqs = case evalTerm $ foUnifySys (const False) succs of
-                     [x] -> evalTerm $ acuiUnifySys (const False) (mapAll (applySub x) ants)
-                     [] -> []
-            where
-              ants  = map antPair eqs
-              succs = map succPair eqs
 
-succPair :: Equation PropSequentCalc -> Equation PropSequentCalc
-succPair ((_ :|-: (SS x)):=:(_:|-: (SS y)))  = x :=: y
-succPair ((_ :|-: x):=:(_:|-: y))  = x :=: y
+-------------------
+--  Test Syntax  --
+-------------------
 
-antPair :: Equation PropSequentCalc -> Equation PropSequentCalc
-antPair  ((x :|-: _):=:(y:|-: _))  = x :=: y
 
 p_ :: PureForm
 p_ = PP 1
