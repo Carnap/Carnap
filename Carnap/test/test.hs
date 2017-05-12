@@ -1,4 +1,4 @@
-{-#LANGUAGE FlexibleContexts#-}
+{-#LANGUAGE QuasiQuotes, FlexibleContexts#-}
 
 module Main where
 
@@ -11,7 +11,12 @@ import Carnap.Core.Unification.Combination
 import Carnap.Languages.ClassicalSequent.Syntax
 import Carnap.Languages.PurePropositional.Syntax
 import Carnap.Languages.PurePropositional.Logic
+import Carnap.Languages.PureSecondOrder.Logic (msolCalc)
+import Carnap.Calculi.NaturalDeduction.Syntax (NaturalDeductionCalc(..),RenderStyle(..), Inference(..))
+import Carnap.Calculi.NaturalDeduction.Checker (ProofErrorMessage(..), Feedback(..), seqSubsetUnify, processLine, processLineFitch, hoProcessLine, toDisplaySequence)
 import Carnap.Core.Examples.ACUI
+import Text.Shakespeare.Text
+import Data.Text (unpack)
 import System.CPUTime
 import System.Exit (exitFailure)
 
@@ -28,7 +33,9 @@ main = do putStrLn ""
           timeFirstOrder simpleModusPonens "first order positive modus ponens 1" (posTest "alt modus ponens 1")
           timeFirstOrder simpleModusPonens2 "first order positive modus ponens 2" (posTest "alt modus ponens 2")
           timeFirstOrder simpleModusPonensErr "first order negative modus ponens 1" (negTest "alt modus ponens err 1")
+          mapM compTiming [1 .. 5]
           putStrLn ""
+    where compTiming n = timeProof msolCalc ("comprehension proof, attempt  " ++ show n) comprehensionTheorem
 
 -------------------------
 --  Testing Functions  --
@@ -66,6 +73,20 @@ higherOrderMethod eqs = case evalTerm $ huetUnifySys (const False) succs of
               ants  = map antPair eqs
               succs = map succPair eqs
 
+timeProof ndcalc desc prooftext = do startTime <- getCPUTime
+                                     let pt = dropWhile (== '\n') (unpack prooftext)
+                                     let ded = ndParseProof ndcalc mempty pt
+                                     let Feedback mseq ds = toDisplaySequence (ndProcessLine ndcalc) ded
+                                     mapM checkline ds
+                                     finishTime <- getCPUTime
+                                     let t = fromIntegral (finishTime - startTime)
+                                     putStrLn $ "Test Results (" ++ desc ++ "):" ++ show t
+    where checkline (Right _) = return ()
+          checkline (Left (NoResult _)) = return ()
+          checkline (Left e) = do putStrLn $ "test " ++ desc ++ " failed"
+                                  putStrLn $ "with error " ++ show e
+                                  exitFailure
+
 succPair :: Equation PropSequentCalc -> Equation PropSequentCalc
 succPair ((_ :|-: (SS x)):=:(_:|-: (SS y)))  = x :=: y
 succPair ((_ :|-: x):=:(_:|-: y))  = x :=: y
@@ -95,6 +116,10 @@ testPositives = mapM (\eqs -> timeFirstOrder [eqs] ("First order Positive test o
 -------------
 --  Tests  --
 -------------
+
+-----------------
+--  Equations  --
+-----------------
 
 
 pacuicase1 = (parseTerm "f(a u b u c u d u e)" :=: parseTerm "f(b u c u d u a)")
@@ -133,9 +158,7 @@ simpleModusPonens = [ (GammaV 1 :|-: ss (phi_ :->: phi'_))    :=: (sa p_    :|-:
                     , (GammaV 3 :|-: ss phi_)                  :=: (sa p'_   :|-: ss p_)
                     , ((GammaV 1 :+: GammaV 3) :|-: ss phi'_)  :=: ((sa p_ :+: sa p'_) :|-: ss p'_)
                     ]
-
-simpleModusPonens2 = [ (GammaV 1 :|-: ss (phi_ :->: phi'_))    :=: (GammaV 2   :|-: ss (p_ :->: p_))
-                     , (GammaV 3 :|-: ss phi_)                  :=: (GammaV 4   :|-: ss p_)
+simpleModusPonens2 = [ (GammaV 1 :|-: ss (phi_ :->: phi'_))    :=: (GammaV 2   :|-: ss (p_ :->: p_)) , (GammaV 3 :|-: ss phi_)                  :=: (GammaV 4   :|-: ss p_)
                      , ((GammaV 1 :+: GammaV 3) :|-: ss phi'_)  :=: ((GammaV 2 :+: GammaV 4) :|-: ss p_)
                      ]
 
@@ -174,6 +197,93 @@ simpleCIErr2      = [ ((GammaV 1 :+: sa phi_) :|-: ss phi'_)        :=: (sa p_  
 simpleCIErr3      = [ ((GammaV 1 :+: sa phi_) :|-: ss phi'_)        :=: (sa p_                     :|-: ss p'_)
                     , (GammaV 1 :|-: ss (phi_ :->: phi'_))         :=: ((Top :+: sa p_ :+: sa p'_):|-: ss (p_ :->: p'_))
                     ]
+
+--------------
+--  Proofs  --
+--------------
+
+aristotleTheorem = [st|
+Show: P\/-P
+    Show: --(P\/-P)
+        -(P\/-P):AS
+        Show: -P
+            P:AS
+            P\/-P:ADD 5
+        :ID 6 3
+        P\/-P:ADD 4
+    :ID 3 8
+    P\/-P:DNE 2
+:DD 10
+|]
+
+pierceTheorem = [st|
+  (P->Q)->P:AS
+     -P:AS
+        P:AS
+          Q:AS
+          P:R 3
+          -P:R 2
+        Q:-E 4-6
+     P->Q:CI 3-7
+     P:CE 8 1
+     -P:R 2
+  P:-E 2-10
+((P->Q)->P)->P:CI 1-11
+|]
+
+comprehensionTheorem = [st|
+Show EXAx(F(x)/\G(x)<->X(x))
+   Show Ax(F(x)/\G(x)<->\y[F(y)/\G(y)](x))
+       Show F(c)/\G(c)->\y[F(y)/\G(y)](c)
+            F(c)/\G(c):AS
+            \y[F(y)/\G(y)](c):ABS 4
+       :CD 5
+       Show \y[F(y)/\G(y)](c)->F(c)/\G(c)
+            \y[F(y)/\G(y)](c):AS
+            F(c)/\G(c):APP 8
+       :CD 9
+       F(c)/\G(c)<->\y[F(y)/\G(y)](c):CB 3 7
+   :UD 11
+   EXAx(F(x)/\G(x)<->X(x)):EG 2
+:DD 13
+|]
+
+russellTheorem = [st|
+Show -ExAy(-F(y,y) <-> F(x,y))
+    ExAy(-F(y,y)<->F(x,y)):AS
+    Show: -ExAy(-F(y,y) <-> F(x,y))
+        Ay(-F(y,y)<->F(c_1,y)):AS
+        -F(c_1,c_1)<->F(c_1,c_1):UI 4
+        Show:-F(c_1,c_1)
+            F(c_1,c_1):AS
+            F(c_1,c_1)->-F(c_1,c_1) :BC 5
+            -F(c_1,c_1) :MP 8 7
+        :ID 7 9
+        -F(c_1,c_1) -> F(c_1,c_1) :BC 5
+        F(c_1,c_1) :MP 11 6
+        Show: -ExAy(-F(y,y) <-> F(x,y))
+        :ID 6 12
+    :ED 13 2 4
+:ID 2 3
+|]
+
+russellTheoremForallx = [st|
+    ExAy(-Fyy <-> Fxy):AS
+       Ay(-Fyy<->Fry):AS
+       -Frr<->Frr:AE 2
+            -Frr:AS
+            Frr:<->E 3 4
+            -Frr:R 4
+       Frr:-E 4-6
+       -Frr:<->E 7 3
+            ExAy(-Fyy <-> Fxy):AS
+            Frr:R 7
+            -Frr:R 8
+       -ExAy(-Fyy <-> Fxy):-I 9-11
+    -ExAy(-Fyy <-> Fxy):EE 1 2-12
+    ExAy(-Fyy <-> Fxy):R 1
+-ExAy(-Fyy <-> Fxy):-I 1-14
+|]
 
 
 -------------------
