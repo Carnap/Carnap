@@ -84,7 +84,6 @@ timeProof ndcalc desc prooftext = do startTime <- getCPUTime
     where checkline (Right _) = return ()
           checkline (Left (NoResult _)) = return ()
           checkline (Left e) = do putStrLn $ "test " ++ desc ++ " failed"
-                                  putStrLn $ "with error " ++ show e
                                   exitFailure
 
 succPair :: Equation PropSequentCalc -> Equation PropSequentCalc
