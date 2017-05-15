@@ -13,9 +13,11 @@ import Carnap.Languages.ClassicalSequent.Syntax
 import Control.Lens
 import Control.Monad.State
 import Data.Tree (Tree(Node))
+import Data.IORef
 import Data.Either
-import Data.Maybe (isNothing)
 import Data.List
+import qualified Data.Map as M
+import Data.Maybe (isNothing)
 
 --------------------------------------------------------
 --Main Functions
@@ -26,7 +28,8 @@ import Data.List
 toDisplaySequence:: 
     ( MonadVar (ClassicalSequentOver lex) (State Int)
     , Inference r lex, Sequentable lex
-    ) =>  (Deduction r lex -> Int -> FeedbackLine lex) -> Deduction r lex -> Feedback lex
+    ) =>  (Deduction r lex -> Int -> FeedbackLine lex) 
+            -> Deduction r lex -> Feedback lex
 toDisplaySequence pl ded = let feedback = map (pl ded) [1 .. length ded] in
                                   Feedback (lastTopInd >>= fromFeedback feedback) feedback
                           
@@ -73,6 +76,21 @@ hoProcessLine ded n = case ded !! (n - 1) of
   --special case to catch QedLines not being cited in justifications
   (QedLine _ _ _) -> Left $ NoResult n
   _ -> toProofTree ded n >>= hoReduceProofTree
+
+hoProcessLineMemo :: 
+  ( StaticVar (ClassicalSequentOver lex)
+  , Sequentable lex
+  , Inference r lex
+  , MonadVar (ClassicalSequentOver lex) (State Int)
+  , Ord (ProofTree r lex)
+  ) => IORef (M.Map (ProofTree r lex) (FeedbackLine lex))
+    -> Deduction r lex -> Int -> IO (FeedbackLine lex)
+hoProcessLineMemo ref ded n = case ded !! (n - 1) of
+  --special case to catch QedLines not being cited in justifications
+  (QedLine _ _ _) -> return $ Left $ NoResult n
+  _ -> case toProofTree ded n of
+        Right t -> hoReduceProofTreeMemo ref t
+        Left e -> return $ Left e
 
 processLineFitch :: 
   ( Sequentable lex
@@ -212,7 +230,7 @@ reduceProofTree ::
     ( Inference r lex
     , MaybeMonadVar (ClassicalSequentOver lex) (State Int)
     , MonadVar (ClassicalSequentOver lex) (State Int)
-    ) =>  ProofTree r lex -> Either (ProofErrorMessage lex) (ClassicalSequentOver lex Sequent)
+    ) =>  ProofTree r lex -> FeedbackLine lex
 reduceProofTree (Node (ProofLine no cont rules) ts) =  
         do prems <- mapM reduceProofTree ts
            reduceResult no $ foseqFromNode no rules prems cont
@@ -222,11 +240,31 @@ hoReduceProofTree ::
     , MaybeMonadVar (ClassicalSequentOver lex) (State Int)
     , MonadVar (ClassicalSequentOver lex) (State Int)
     , StaticVar (ClassicalSequentOver lex)
-    ) =>  ProofTree r lex -> Either (ProofErrorMessage lex) (ClassicalSequentOver lex Sequent)
+    ) =>  ProofTree r lex -> FeedbackLine lex
 hoReduceProofTree (Node (ProofLine no cont rules) ts) =  
         do prems <- mapM hoReduceProofTree ts
            rslt <- reduceResult no $ hoseqFromNode no rules prems cont
            return $ evalState (toBNF rslt) (0 :: Int)
+
+hoReduceProofTreeMemo :: 
+    ( Inference r lex
+    , MaybeMonadVar (ClassicalSequentOver lex) (State Int)
+    , MonadVar (ClassicalSequentOver lex) (State Int)
+    , StaticVar (ClassicalSequentOver lex)
+    , Ord (ProofTree r lex)
+    ) =>  IORef (M.Map (ProofTree r lex) (FeedbackLine lex)) 
+            -> ProofTree r lex -> IO (FeedbackLine lex)
+hoReduceProofTreeMemo ref pt@(Node (ProofLine no cont rules) ts) =  
+        do thememo <- readIORef ref
+           case M.lookup pt thememo of
+               Just x -> return x
+               Nothing -> do prems <- mapM (hoReduceProofTreeMemo ref) ts
+                             let x = do prems' <- sequence prems 
+                                        rslt <- reduceResult no $ hoseqFromNode no rules prems' cont
+                                        return $ evalState (toBNF rslt) (0 :: Int)
+                             writeIORef ref (M.insert pt x thememo)
+                             return x
+
 
 fosolve :: 
     ( FirstOrder (ClassicalSequentOver lex)
