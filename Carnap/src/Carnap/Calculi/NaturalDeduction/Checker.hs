@@ -101,7 +101,6 @@ hoProcessLineMemo ::
   , Sequentable lex
   , Inference r lex
   , MonadVar (ClassicalSequentOver lex) (State Int)
-  , Ord (ProofTree r lex)
   , Show (ClassicalSequentOver lex Succedent), Show r
   ) => IORef (M.Map Int (FeedbackLine lex))
     -> Deduction r lex -> Int -> IO (FeedbackLine lex)
