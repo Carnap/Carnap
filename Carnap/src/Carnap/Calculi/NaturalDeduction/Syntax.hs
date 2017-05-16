@@ -3,6 +3,7 @@ module Carnap.Calculi.NaturalDeduction.Syntax where
 
 import Data.Tree
 import Data.Map (Map)
+import Data.IORef (IORef)
 import Data.List (permutations)
 import Data.Hashable
 import Carnap.Core.Unification.Unification
@@ -210,11 +211,15 @@ type SequentTree lex = Tree (Int, ClassicalSequentOver lex Sequent)
 
 data RenderStyle = MontegueStyle | FitchStyle
 
+type ProofMemoRef lex = IORef (Map Int (FeedbackLine lex))
+
 data NaturalDeductionCalc r lex der = NaturalDeductionCalc 
         { ndRenderer :: RenderStyle
         , ndParseProof :: Map String der -> String -> [DeductionLine r lex (Form Bool)]
         , ndProcessLine :: (Sequentable lex , Inference r lex , MonadVar (ClassicalSequentOver lex) (State Int))
                                 => Deduction r lex -> Int -> FeedbackLine lex
+        , ndProcessLineMemo :: (Sequentable lex , Inference r lex , MonadVar (ClassicalSequentOver lex) (State Int))
+                                => Maybe (ProofMemoRef lex -> Deduction r lex -> Int -> IO (FeedbackLine lex))
         , ndParseSeq :: Parsec String () (ClassicalSequentOver lex Sequent)
         }
 

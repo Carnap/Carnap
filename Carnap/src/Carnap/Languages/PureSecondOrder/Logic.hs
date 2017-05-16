@@ -14,7 +14,7 @@ import Carnap.Languages.PureSecondOrder.Parser
 import Carnap.Languages.ClassicalSequent.Parser
 import Carnap.Calculi.NaturalDeduction.Syntax
 import Carnap.Calculi.NaturalDeduction.Parser
-import Carnap.Calculi.NaturalDeduction.Checker (hoProcessLine)
+import Carnap.Calculi.NaturalDeduction.Checker (hoProcessLine, hoProcessLineMemo)
 import Data.List (intercalate)
 import Data.Map (empty)
 import Data.Typeable (Typeable)
@@ -212,5 +212,6 @@ msolCalc = NaturalDeductionCalc
     { ndRenderer = MontegueStyle
     , ndParseProof = const parseMSOLProof -- XXX ignore derived rules for now
     , ndProcessLine = hoProcessLine
+    , ndProcessLineMemo = Just hoProcessLineMemo
     , ndParseSeq = msolSeqParser
     }

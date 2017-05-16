@@ -95,7 +95,9 @@ timeProofMemo ref ndcalc desc prooftext =
         do startTime <- getCPUTime
            let pt = dropWhile (== '\n') (unpack prooftext)
            let ded = ndParseProof ndcalc mempty pt
-           Feedback mseq ds <- toDisplaySequenceMemo (hoProcessLineMemo ref) ded
+           Feedback mseq ds <- case ndProcessLineMemo ndcalc of
+                                   Just memo -> toDisplaySequenceMemo (memo ref) ded
+                                   Nothing -> return $ toDisplaySequence (ndProcessLine ndcalc) ded
            mapM checkline ds
            finishTime <- getCPUTime
            let t = fromIntegral (finishTime - startTime)

@@ -102,8 +102,7 @@ hoProcessLineMemo ::
   , Inference r lex
   , MonadVar (ClassicalSequentOver lex) (State Int)
   , Show (ClassicalSequentOver lex Succedent), Show r
-  ) => IORef (M.Map Int (FeedbackLine lex))
-    -> Deduction r lex -> Int -> IO (FeedbackLine lex)
+  ) => ProofMemoRef lex -> Deduction r lex -> Int -> IO (FeedbackLine lex)
 hoProcessLineMemo ref ded n = case ded !! (n - 1) of
   --special case to catch QedLines not being cited in justifications
   (QedLine _ _ _) -> return $ Left $ NoResult n
@@ -271,8 +270,7 @@ hoReduceProofTreeMemo ::
     , MonadVar (ClassicalSequentOver lex) (State Int)
     , StaticVar (ClassicalSequentOver lex)
     , Hashable (ProofTree r lex)
-    ) =>  IORef (M.Map Int (FeedbackLine lex)) 
-            -> ProofTree r lex -> IO (FeedbackLine lex)
+    ) =>  ProofMemoRef lex -> ProofTree r lex -> IO (FeedbackLine lex)
 hoReduceProofTreeMemo ref pt@(Node (ProofLine no cont rules) ts) =  
         do thememo <- readIORef ref
            let thehash = hash pt
