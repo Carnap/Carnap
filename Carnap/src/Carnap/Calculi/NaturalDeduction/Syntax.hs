@@ -1,9 +1,10 @@
-{-#LANGUAGE GADTs, KindSignatures, TypeOperators, FlexibleContexts, MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances, FunctionalDependencies, RankNTypes#-}
+{-#LANGUAGE GADTs, KindSignatures, TypeOperators, FlexibleContexts, MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances, UndecidableInstances, FunctionalDependencies, RankNTypes#-}
 module Carnap.Calculi.NaturalDeduction.Syntax where
 
 import Data.Tree
 import Data.Map (Map)
 import Data.List (permutations)
+import Data.Hashable
 import Carnap.Core.Unification.Unification
 --import Carnap.Core.Unification.FirstOrder
 import Carnap.Core.Unification.ACUI
@@ -166,7 +167,26 @@ data ProofLine r lex where
             , content :: ClassicalSequentOver lex Succedent
             , rule    :: [r] } -> ProofLine r lex
 
+instance (Eq r, Eq (ClassicalSequentOver lex Succedent)) => Eq (ProofLine r lex)
+        where (ProofLine n c r) == (ProofLine n' c' r') = n == n' && c == c' && r == r'
+
+instance (Ord r, Ord (ClassicalSequentOver lex Succedent)) => Ord (ProofLine r lex)
+        where (ProofLine n c r) < (ProofLine n' c' r') =  n < n' 
+                                                       || (n == n' && c < c')
+                                                       || (n == n' && c == c' && r < r')
+
+instance (Show (ClassicalSequentOver lex Succedent), Show r) => Hashable (ProofLine r lex)
+        where hashWithSalt k (ProofLine n l r) = hashWithSalt k (show n ++ show l ++ show r)
+
 type ProofTree r lex = Tree (ProofLine r lex)
+
+instance Ord a => Ord (Tree a) where 
+        compare (Node x ts) (Node x' ts') = case compare x x' of
+                                                EQ -> compare ts ts'
+                                                c -> c
+
+instance Hashable a => Hashable (Tree a) where 
+        hashWithSalt k (Node x ts) = hashWithSalt k x `hashWithSalt` ts
 
 --------------------
 --  1.5 Feedback  --

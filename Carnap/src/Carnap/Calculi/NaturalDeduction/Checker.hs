@@ -1,5 +1,5 @@
 {-#LANGUAGE GADTs, KindSignatures, TypeOperators, FlexibleContexts, TypeSynonymInstances, FlexibleInstances, MultiParamTypeClasses #-}
-module Carnap.Calculi.NaturalDeduction.Checker (toDisplaySequence,toDisplaySequenceStructured, processLine, processLineFitch, processLineStructuredFitch,processLineStructuredFitchHO, hoProcessLineFitch, hoProcessLine, hosolve, ProofErrorMessage(..), Feedback(..),seqUnify,seqSubsetUnify, toDeduction) where
+module Carnap.Calculi.NaturalDeduction.Checker (toDisplaySequence,toDisplaySequenceMemo, toDisplaySequenceStructured, processLine, processLineFitch, processLineStructuredFitch,processLineStructuredFitchHO, hoProcessLineFitch, hoProcessLine, hoProcessLineMemo, hosolve, ProofErrorMessage(..), Feedback(..),seqUnify,seqSubsetUnify, toDeduction) where
 
 import Carnap.Calculi.NaturalDeduction.Syntax
 import Carnap.Calculi.NaturalDeduction.Parser
@@ -16,7 +16,8 @@ import Data.Tree (Tree(Node))
 import Data.IORef
 import Data.Either
 import Data.List
-import qualified Data.Map as M
+import Data.Hashable
+import qualified Data.Map.Strict as M
 import Data.Maybe (isNothing)
 
 --------------------------------------------------------
@@ -32,6 +33,24 @@ toDisplaySequence::
             -> Deduction r lex -> Feedback lex
 toDisplaySequence pl ded = let feedback = map (pl ded) [1 .. length ded] in
                                   Feedback (lastTopInd >>= fromFeedback feedback) feedback
+                          
+    where isTop  (AssertLine _ _ 0 _) = True
+          isTop  (ShowLine _ 0) = True
+          isTop  _ = False
+          lastTopInd = do i <- findIndex isTop (reverse ded)
+                          return $ length ded - i
+          fromFeedback fb n = case fb !! (n - 1) of
+            Left _ -> Nothing
+            Right s -> Just s
+
+toDisplaySequenceMemo :: 
+    ( MonadVar (ClassicalSequentOver lex) (State Int)
+    , Inference r lex, Sequentable lex
+    ) =>  (Deduction r lex -> Int -> IO (FeedbackLine lex)) 
+            -> Deduction r lex -> IO (Feedback lex)
+toDisplaySequenceMemo pl ded = 
+        do feedback <- mapM (pl ded) [1 .. length ded]
+           return $ Feedback (lastTopInd >>= fromFeedback feedback) feedback
                           
     where isTop  (AssertLine _ _ 0 _) = True
           isTop  (ShowLine _ 0) = True
@@ -83,7 +102,8 @@ hoProcessLineMemo ::
   , Inference r lex
   , MonadVar (ClassicalSequentOver lex) (State Int)
   , Ord (ProofTree r lex)
-  ) => IORef (M.Map (ProofTree r lex) (FeedbackLine lex))
+  , Show (ClassicalSequentOver lex Succedent), Show r
+  ) => IORef (M.Map Int (FeedbackLine lex))
     -> Deduction r lex -> Int -> IO (FeedbackLine lex)
 hoProcessLineMemo ref ded n = case ded !! (n - 1) of
   --special case to catch QedLines not being cited in justifications
@@ -251,20 +271,20 @@ hoReduceProofTreeMemo ::
     , MaybeMonadVar (ClassicalSequentOver lex) (State Int)
     , MonadVar (ClassicalSequentOver lex) (State Int)
     , StaticVar (ClassicalSequentOver lex)
-    , Ord (ProofTree r lex)
-    ) =>  IORef (M.Map (ProofTree r lex) (FeedbackLine lex)) 
+    , Hashable (ProofTree r lex)
+    ) =>  IORef (M.Map Int (FeedbackLine lex)) 
             -> ProofTree r lex -> IO (FeedbackLine lex)
 hoReduceProofTreeMemo ref pt@(Node (ProofLine no cont rules) ts) =  
         do thememo <- readIORef ref
-           case M.lookup pt thememo of
+           let thehash = hash pt
+           case M.lookup thehash thememo of
                Just x -> return x
-               Nothing -> do prems <- mapM (hoReduceProofTreeMemo ref) ts
+               _       -> do prems <- mapM (hoReduceProofTreeMemo ref) ts
                              let x = do prems' <- sequence prems 
                                         rslt <- reduceResult no $ hoseqFromNode no rules prems' cont
                                         return $ evalState (toBNF rslt) (0 :: Int)
-                             writeIORef ref (M.insert pt x thememo)
+                             writeIORef ref (M.insert thehash x thememo)
                              return x
-
 
 fosolve :: 
     ( FirstOrder (ClassicalSequentOver lex)

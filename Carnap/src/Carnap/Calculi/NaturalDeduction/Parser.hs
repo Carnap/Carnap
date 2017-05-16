@@ -246,7 +246,8 @@ toProofTreeFitch ded n = case ded !! (n - 1)  of
                   end = ded !! (n - 1)
 
 {-|
-In an appropriately structured Fitch deduction, find the proof tree corresponding to *line n*, where proof numbers start at one
+In an appropriately structured Fitch deduction, find the proof tree
+corresponding to *line n*, where proof numbers start at 1
 -}
 toProofTreeStructuredFitch t n = case t .! n of
           Just (l@(AssertLine f r@(r':_) dpth deps)) -> 

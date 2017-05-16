@@ -13,10 +13,12 @@ import Carnap.Languages.PurePropositional.Syntax
 import Carnap.Languages.PurePropositional.Logic
 import Carnap.Languages.PureSecondOrder.Logic (msolCalc)
 import Carnap.Calculi.NaturalDeduction.Syntax (NaturalDeductionCalc(..),RenderStyle(..), Inference(..))
-import Carnap.Calculi.NaturalDeduction.Checker (ProofErrorMessage(..), Feedback(..), seqSubsetUnify, processLine, processLineFitch, hoProcessLine, toDisplaySequence)
+import Carnap.Calculi.NaturalDeduction.Checker (ProofErrorMessage(..), Feedback(..), seqSubsetUnify, processLine, 
+    processLineFitch, hoProcessLine, hoProcessLineMemo, toDisplaySequence, toDisplaySequenceMemo)
 import Carnap.Core.Examples.ACUI
 import Text.Shakespeare.Text
 import Data.Text (unpack)
+import Data.IORef
 import System.CPUTime
 import System.Exit (exitFailure)
 
@@ -34,8 +36,11 @@ main = do putStrLn ""
           timeFirstOrder simpleModusPonens2 "first order positive modus ponens 2" (posTest "alt modus ponens 2")
           timeFirstOrder simpleModusPonensErr "first order negative modus ponens 1" (negTest "alt modus ponens err 1")
           mapM compTiming [1 .. 5]
+          ref <- newIORef mempty
+          mapM (compTimingMemo ref) [1 .. 5]
           putStrLn ""
     where compTiming n = timeProof msolCalc ("comprehension proof, attempt  " ++ show n) comprehensionTheorem
+          compTimingMemo ref n = timeProofMemo ref msolCalc ("comprehension proof, attempt  " ++ show n) comprehensionTheorem
 
 -------------------------
 --  Testing Functions  --
@@ -81,6 +86,20 @@ timeProof ndcalc desc prooftext = do startTime <- getCPUTime
                                      finishTime <- getCPUTime
                                      let t = fromIntegral (finishTime - startTime)
                                      putStrLn $ "Test Results (" ++ desc ++ "):" ++ show t
+    where checkline (Right _) = return ()
+          checkline (Left (NoResult _)) = return ()
+          checkline (Left e) = do putStrLn $ "test " ++ desc ++ " failed"
+                                  exitFailure
+
+timeProofMemo ref ndcalc desc prooftext = 
+        do startTime <- getCPUTime
+           let pt = dropWhile (== '\n') (unpack prooftext)
+           let ded = ndParseProof ndcalc mempty pt
+           Feedback mseq ds <- toDisplaySequenceMemo (hoProcessLineMemo ref) ded
+           mapM checkline ds
+           finishTime <- getCPUTime
+           let t = fromIntegral (finishTime - startTime)
+           putStrLn $ "Test Results (" ++ desc ++ "):" ++ show t
     where checkline (Right _) = return ()
           checkline (Left (NoResult _)) = return ()
           checkline (Left e) = do putStrLn $ "test " ++ desc ++ " failed"
