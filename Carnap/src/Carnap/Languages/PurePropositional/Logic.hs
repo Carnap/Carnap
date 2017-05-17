@@ -356,6 +356,7 @@ propCalc = NaturalDeductionCalc
     { ndRenderer = MontegueStyle
     , ndParseProof = parsePropProof
     , ndProcessLine = processLine
+    , ndProcessLineMemo = Nothing
     , ndParseSeq = propSeqParser
     }
 
@@ -501,6 +502,7 @@ logicBookCalc = NaturalDeductionCalc
     { ndRenderer = FitchStyle
     , ndParseProof = parseFitchPropProof
     , ndProcessLine = processLineFitch
+    , ndProcessLineMemo = Nothing
     , ndParseSeq = extendedPropSeqParser
     }
 
@@ -642,5 +644,6 @@ forallxSLCalc = NaturalDeductionCalc
     { ndRenderer = FitchStyle
     , ndParseProof = parseForallxSLProof
     , ndProcessLine = processLineFitch
+    , ndProcessLineMemo = Nothing
     , ndParseSeq = extendedPropSeqParser
     }

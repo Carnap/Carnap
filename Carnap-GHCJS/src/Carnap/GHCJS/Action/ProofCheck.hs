@@ -1,8 +1,10 @@
 {-#LANGUAGE FlexibleContexts #-}
 module Carnap.GHCJS.Action.ProofCheck (proofCheckAction) where
 
-import Carnap.Calculi.NaturalDeduction.Syntax (NaturalDeductionCalc(..),RenderStyle(..), Inference(..))
-import Carnap.Calculi.NaturalDeduction.Checker (ProofErrorMessage(..), Feedback(..), seqSubsetUnify, processLine, processLineFitch, hoProcessLine, toDisplaySequence)
+import Carnap.Calculi.NaturalDeduction.Syntax 
+    (ProofMemoRef, NaturalDeductionCalc(..),RenderStyle(..), Inference(..))
+import Carnap.Calculi.NaturalDeduction.Checker 
+    (ProofErrorMessage(..), Feedback(..), seqSubsetUnify, toDisplaySequenceMemo, toDisplaySequence)
 import Carnap.Core.Data.AbstractSyntaxDataTypes (liftLang)
 import Carnap.Languages.ClassicalSequent.Syntax
 import Carnap.Languages.PurePropositional.Logic as P (DerivedRule(..), propSeqParser, logicBookCalc, forallxSLCalc, propCalc, ) 
@@ -74,6 +76,7 @@ data Checker r lex der = Checker
         , sequent :: ClassicalSequentOver lex Sequent
         , threadRef :: IORef (Maybe ThreadId)
         , proofDisplay :: Maybe Element
+        , proofMemo :: ProofMemoRef lex
         , checkerCalc :: NaturalDeductionCalc r lex der
         }
 
@@ -92,16 +95,25 @@ activateChecker drs w (Just iog@(IOGoal i o g classes))
                                                 (fitchPlayground drs pd) iog w
         | "firstOrder" `elem` classes = do
                         drs' <- newIORef [] -- XXX we don't yet have derived rules for FOL
+                        memo <- newIORef mempty 
                         tryParse buildOptions folSeqParser 
-                            (\s mtref mpd -> threadedCheck (Checker drs' s mtref mpd folCalc))
+                            (\s mtref mpd -> threadedCheck (Checker drs' s mtref mpd memo folCalc))
         | "forallxQL" `elem` classes = do
                         drs' <- newIORef [] -- XXX we don't yet have derived rules for FOL
+                        memo <- newIORef mempty 
                         tryParse buildOptions folSeqParser 
-                            (\s mtref mpd -> threadedCheck (Checker drs' s mtref mpd forallxQLCalc))
-        | "secondOrder" `elem` classes = tryParse buildOptions msolSeqParser (standardCheck msolCalc)
-        | "LogicBook" `elem` classes = tryParse buildOptions propSeqParser (standardCheck logicBookCalc)
-        | "forallxSL" `elem` classes = tryParse buildOptions propSeqParser (standardCheck forallxSLCalc)
-        | otherwise = tryParse buildOptions propSeqParser (standardCheck propCalc)
+                            (\s mtref mpd -> threadedCheck (Checker drs' s mtref mpd memo forallxQLCalc))
+        | "secondOrder" `elem` classes = do
+                        memo <- newIORef mempty 
+                        tryParse buildOptions msolSeqParser (standardCheck memo msolCalc)
+        | "LogicBook" `elem` classes = do
+                        memo <- newIORef mempty 
+                        tryParse buildOptions propSeqParser (standardCheck memo logicBookCalc)
+        | "forallxSL" `elem` classes = do
+                        memo <- newIORef mempty 
+                        tryParse buildOptions propSeqParser (standardCheck memo forallxSLCalc)
+        | otherwise = do memo <- newIORef mempty 
+                         tryParse buildOptions propSeqParser (standardCheck memo propCalc)
         where tryParse options seqParse checker = do
                   (Just gs) <- getInnerHTML g 
                   case parse (withLabel seqParse) "" (decodeHtml gs) of
@@ -137,7 +149,7 @@ activateChecker drs w (Just iog@(IOGoal i o g classes))
                                            when ("Render" `elem` classes) 
                                                 (modify (\o -> o {render = True})))
                                            standardOptions
-              standardCheck calc s mtref mpd = threadedCheck (Checker drs s mtref mpd calc)
+              standardCheck memo calc s mtref mpd = threadedCheck (Checker drs s mtref mpd memo calc)
 
 
 threadedCheck checker w ref v (g, fd) = 
@@ -156,7 +168,9 @@ threadedCheck checker w ref v (g, fd) =
                                       setInnerHTML pd (Just "")
                                       appendChild pd (Just renderedProof)
                                Nothing -> return Nothing
-                             let Feedback mseq ds = toDisplaySequence (ndProcessLine ndcalc) ded
+                             Feedback mseq ds <- case ndProcessLineMemo ndcalc of
+                                                     Just memoline -> toDisplaySequenceMemo (memoline $ proofMemo checker) ded
+                                                     Nothing -> return $ toDisplaySequence (ndProcessLine ndcalc) ded
                              updateGoal (sequent checker) w ref (g, fd) mseq ds
            writeIORef (threadRef checker) (Just t')
            return ()
