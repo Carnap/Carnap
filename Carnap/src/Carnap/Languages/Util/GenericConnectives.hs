@@ -27,8 +27,8 @@ data SchematicIntProp b a where
 
 instance Schematizable (SchematicIntProp b) where
         schematize (SProp n)   _ 
-            | n < 0 && n > -8 = ["_φψχθγζξ" !! (-1 * n)]
-            | otherwise = "P_" ++ show n
+            | n < -15 && n > -23 = ["_φψχθγζξ" !! (-1 * (n + 15))]
+            | otherwise = "φ_" ++ show n
 
 instance UniformlyEq (SchematicIntProp b) where
         (SProp n) =* (SProp m) = n == m

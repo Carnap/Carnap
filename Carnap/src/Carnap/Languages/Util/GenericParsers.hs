@@ -70,7 +70,7 @@ schemevarParser ::
 schemevarParser = try parseNumbered <|> parseUnnumbered
     where parseUnnumbered = do c <- oneOf "_φψχθγζξ"
                                let Just n = elemIndex c "_φψχθγζξ"
-                               return $ phin (-1 * n)
+                               return $ phin (-1 * (n + 15))
           parseNumbered = do string "Phi" <|> string "φ"
                              char '_'
                              n <- number <?> "number"
