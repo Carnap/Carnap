@@ -177,7 +177,9 @@ instance (Ord r, Ord (ClassicalSequentOver lex Succedent)) => Ord (ProofLine r l
                                                        || (n == n' && c == c' && r < r')
 
 instance (Show (ClassicalSequentOver lex Succedent), Show r) => Hashable (ProofLine r lex)
-        where hashWithSalt k (ProofLine n l r) = hashWithSalt k (show n ++ show l ++ show r)
+        where hashWithSalt k (ProofLine n l r) = hashWithSalt k n 
+                                                 `hashWithSalt` show l 
+                                                 `hashWithSalt` show r
 
 type ProofTree r lex = Tree (ProofLine r lex)
 
