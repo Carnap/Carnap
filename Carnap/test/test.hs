@@ -11,6 +11,7 @@ import Carnap.Core.Unification.Combination
 import Carnap.Languages.ClassicalSequent.Syntax
 import Carnap.Languages.PurePropositional.Syntax
 import Carnap.Languages.PurePropositional.Logic
+import Carnap.Languages.PureFirstOrder.Logic (folCalc)
 import Carnap.Languages.PureSecondOrder.Logic (msolCalc)
 import Carnap.Calculi.NaturalDeduction.Syntax (NaturalDeductionCalc(..),RenderStyle(..), Inference(..))
 import Carnap.Calculi.NaturalDeduction.Checker (ProofErrorMessage(..), Feedback(..), seqSubsetUnify, processLine, 
@@ -36,11 +37,16 @@ main = do putStrLn ""
           timeFirstOrder simpleModusPonens2 "first order positive modus ponens 2" (posTest "alt modus ponens 2")
           timeFirstOrder simpleModusPonensErr "first order negative modus ponens 1" (negTest "alt modus ponens err 1")
           mapM compTiming [1 .. 5]
-          ref <- newIORef mempty
-          mapM (compTimingMemo ref) [1 .. 5]
+          solref <- newIORef mempty
+          mapM (compTimingMemo solref) [1 .. 5]
+          mapM russTiming [1 .. 5]
+          rusref <- newIORef mempty
+          mapM (russTimingMemo rusref) [1 .. 5]
           putStrLn ""
     where compTiming n = timeProof msolCalc ("comprehension proof, attempt  " ++ show n) comprehensionTheorem
           compTimingMemo ref n = timeProofMemo ref msolCalc ("comprehension proof, attempt  " ++ show n) comprehensionTheorem
+          russTiming n = timeProof folCalc ("Russell's theorem, attempt " ++ show n) russellTheorem
+          russTimingMemo ref n = timeProofMemo ref folCalc ("Russell's theorem, attempt " ++ show n) russellTheorem
 
 -------------------------
 --  Testing Functions  --
@@ -132,7 +138,6 @@ testPositives = mapM (\eqs -> timeFirstOrder [eqs] ("First order Positive test o
 --timeCombine [nacuicase1] "big negative acui" (negTest nacuicase1)
 --timeCombine simpleModusPonens "positive modus ponens" (posTest "combine modus ponens") 
           
-
 -------------
 --  Tests  --
 -------------
