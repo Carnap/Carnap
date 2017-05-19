@@ -9,7 +9,7 @@ import Handler.User (scoreByIdAndSource)
 import Text.Blaze.Html (toMarkup)
 import Data.Time
 import System.FilePath
-import System.Directory (getDirectoryContents,removeFile)
+import System.Directory (getDirectoryContents,removeFile, doesFileExist)
 
 deleteInstructorR :: Text -> Handler Value
 deleteInstructorR _ = do
@@ -26,7 +26,9 @@ deleteInstructorR _ = do
                                                       mapM (delete . entityKey) trans
                                                       mapM (delete . entityKey) trutht
                                                       delete k
-                                                      liftIO $ removeFile (adir </> unpack fn)
+                                                      liftIO $ do fe <- doesFileExist (adir </> unpack fn) 
+                                                                  if fe then removeFile (adir </> unpack fn)
+                                                                        else return ()
                                                       return True
                               Nothing -> return False
     if deleted 

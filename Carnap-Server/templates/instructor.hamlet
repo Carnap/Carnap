@@ -36,4 +36,5 @@
                     <td>#{show $ assignmentMetadataDuedate a}
                     <td>#{show $ assignmentMetadataDate a}
                     <td>
-                        <span.glyphicon.glyphicon-trash.ruleaction onclick=#{tryDelete a}>
+                        <span onclick=#{tryDelete a}>
+                            delete
