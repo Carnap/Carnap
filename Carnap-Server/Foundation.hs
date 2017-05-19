@@ -10,6 +10,7 @@ import qualified Yesod.Core.Unsafe as Unsafe
 import Yesod.Core.Types            (Logger)
 import Yesod.Default.Util          (addStaticContentExternal)
 import Yesod.Fay
+import Util.Data
 import qualified Data.CaseInsensitive as CI
 import qualified Data.Text.Encoding as TE
 
@@ -89,7 +90,8 @@ instance Yesod App where
     isAuthorized (UserR ident) _ = 
         do (Entity _ user) <- requireAuth
            let ident' = userIdent user
-           return $ if ident'    == "gleachkr@gmail.com" 
+           return $ if ident' `elem` map instructorEmail instructorsDataList
+                        --TODO Improve this to restrict to viewing your own students
                        || ident' == ident
                     then Authorized
                     else Unauthorized "It appears you're not authorized to access this page"
@@ -97,7 +99,7 @@ instance Yesod App where
     isAuthorized (InstructorR ident) _ = 
         do (Entity _ user) <- requireAuth
            let ident' = userIdent user
-           return $ if ident' `elem` ["gleachkr@gmail.com","florio.2@buckeyemail.osu.edu"]
+           return $ if ident' `elem` map instructorEmail instructorsDataList
                        && ident' == ident
                     then Authorized
                     else Unauthorized "It appears you're not authorized to access this page"

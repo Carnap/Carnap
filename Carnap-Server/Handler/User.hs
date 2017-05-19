@@ -33,8 +33,7 @@ getUserR ident = do
         (Just (Entity k _))  -> do
             UserData firstname lastname enrolledin _ <- checkUserData k
             (synsubs, transsubs,dersubs, ttsubs) <- subsByIdAndSource (sourceOf enrolledin) k
-            let isAdmin = ident `elem` 
-                            ["gleachkr@gmail.com","florio.2@buckeyemail.osu.edu"]
+            let isAdmin = ident `elem` map instructorEmail instructorsDataList
             assignments <- assignmentsOf enrolledin
             let pointsAvailable = show $ pointsOf enrolledin 
             derivedRules <- getDrList
@@ -83,7 +82,6 @@ getUserR ident = do
                                         #{assignmentMetadataFilename a}
                                 <td>#{show $ assignmentMetadataDuedate a}
                 |]
-
 
 --------------------------------------------------------
 --Grading

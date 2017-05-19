@@ -36,7 +36,7 @@ deleteInstructorR _ = do
 postInstructorR :: Text -> Handler Html
 postInstructorR ident = do
     ((result,widget),enctype) <- runFormPost uploadAssignmentForm
-    let maybeclass = getClass ident
+    let maybeclass = instructorCourse <$> instructorData <$> instructorByEmail ident 
     case (result,maybeclass) of 
         (FormSuccess (file, duedate, textarea, subtime), Just theclass) ->
             do let fn = fileName file
@@ -57,7 +57,7 @@ getInstructorR ident = do
         Nothing -> defaultLayout nopage
         (Just (Entity uid _))  -> do
             UserData firstname lastname enrolledin _ <- checkUserData uid 
-            let maybeclass = getClass ident
+            let maybeclass = instructorCourse <$> instructorData <$> instructorByEmail ident
             case maybeclass of
                 Nothing -> defaultLayout nopage
                 Just theclass ->
@@ -81,12 +81,7 @@ getInstructorR ident = do
                         <p> Instructor not found.
                    |]
 
-
           tryDelete (AssignmentMetadata fn _ _ _ _) = "tryDeleteAssignment(\"" ++ fn ++ "\")"
-
-getClass "gleachkr@gmail.com" = Just KSUSymbolicI2016
-getClass "florio.2@buckeyemail.osu.edu" = Just Birmingham2017
-getClass _ = Nothing
 
 uploadAssignmentForm = renderBootstrap3 BootstrapBasicForm $ (,,,)
     <$> fileAFormReq (bfs ("Assignment" :: Text))
