@@ -37,4 +37,4 @@
                     <td>#{show $ assignmentMetadataDate a}
                     <td>
                         <button.btn.btn-sm.btn-secondary type="button" onclick=#{tryDelete a}>
-                            delete
+                            <i.fa.fa-trash-o>

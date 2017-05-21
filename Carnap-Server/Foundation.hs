@@ -80,6 +80,7 @@ instance Yesod App where
         authmaybe <- maybeAuth
         pc <- widgetToPageContent $ do
             addStylesheet $ StaticR css_bootstrap_css
+            addStylesheet $ StaticR css_font_awesome_css
             $(widgetFile "default-layout")
         withUrlRenderer $(hamletFile "templates/default-layout-wrapper.hamlet")
 
