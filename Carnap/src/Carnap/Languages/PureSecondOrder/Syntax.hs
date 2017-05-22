@@ -244,8 +244,7 @@ instance Schematizable PolySOLVar where
 instance UniformlyEq PolySOLVar where
     (PolyVar n a) =* (PolyVar m a') = n == m && show a == show a'
 
-instance Monad m => MaybeMonadVar PolySOLVar m
-
+instance Monad m => MaybeMonadVar PolySOLVar m 
 instance MaybeStaticVar PolySOLVar
 
 instance FirstOrderLex PolySOLVar
@@ -291,8 +290,8 @@ pattern SOPApp a        = FX (Lx5 (Apply a))
 pattern SOPBind q f     = SOPQuant q :!$: LLam f
 
 instance Incrementable PolyadicallySOLLex (Term Int) where
-    incHead (SOP n a b) = Just $ SOP n (ASucc a) (ASucc a)
-    incHead (SOF n a b) = Just $ SOF n (ASucc a) (ASucc a)
+    incHead (SOP n a b)  = Just $ SOP n (ASucc a) (ASucc a)
+    incHead (SOF n a b)  = Just $ SOF n (ASucc a) (ASucc a)
     incHead _  = Nothing
 
 instance BoundVars PolyadicallySOLLex where
@@ -353,6 +352,19 @@ incLam n l@((SOMApp SOApp) :!$: l' :!$: t) v =
         if n > 0 then (SOMApp SOApp) :!$: (incLam (n - 1) l' v) :!$: t
                  else SOAbstract (SOLam $ show v) (\x -> subBoundVar v x l)
 incLam _ l v = SOAbstract (SOLam $ show v) (\x -> subBoundVar v x l)
+
+incVar :: Typeable a => PolyadicallySOL (Form a) -> PolyadicallySOL (Form (Int -> a))
+incVar ((SOPApp SOApp) :!$: l :!$: t) = (SOPApp SOApp) :!$: (incVar l) :!$: t
+incVar (SOPVar s a) = SOPVar s (ASucc a)
+incVar _ = error "attempted to increment a nonvariable predication"
+
+incQuant :: PolyadicallySOL (Form Bool) -> PolyadicallySOL (Form Bool)
+incQuant ((SOPQuant (SOPAll s a)) :!$: (LLam f)) = 
+    (SOPQuant (SOPAll s (ASucc a))) :!$: (LLam $ \x -> subBoundVar (SOPVar s (ASucc a)) x (f $ SOPVar s a))
+incQuant ((SOPQuant (SOPSome s a)) :!$: (LLam f)) = 
+    (SOPQuant (SOPSome s (ASucc a))) :!$: (LLam $ \x -> subBoundVar (SOPVar s (ASucc a)) x (f $ SOPVar s a))
+incQuant _ = error "attempted to increment a sentence of the wrong form"
+
 
 {--
 the idea would be for lambda abstraction to work like this:

@@ -41,6 +41,20 @@ parseMSOLVar = choice [try $ do _ <- string "X_"
                                 return $ SOMVar [c]
                       ]
 
+quantifiedSentenceParserPSOL :: Parsec String u (PolyadicallySOL (Form Bool)) -> Parsec String u (PolyadicallySOL (Form Bool))
+quantifiedSentenceParserPSOL formulaParser = do
+        s  <- oneOf "AE∀∃"
+        v  <- oneOf "XYZ"
+        arityInt <- number
+        let vstring = v : show arityInt
+        spaces
+        f <- formulaParser
+        let bf x = subBoundVar (SOPVar vstring AOne) x f
+        let initForm = if s `elem` "A∀" 
+                           then SOPQuant (SOPAll vstring AOne) :!$: (LLam bf) 
+                           else SOPQuant (SOPSome vstring AOne) :!$: (LLam bf)
+        return $ (iterate incQuant initForm !! arityInt)
+
 parseSimpleFOTerm :: Parsec String u (MonadicallySOL (Term Int))
 parseSimpleFOTerm = try (parseConstant "abcde") <|> parseFreeVar
 
@@ -77,3 +91,20 @@ predicationParser parseForm parseTerm = try parseNumbered <|> parseUnnumbered <|
                     together n f (v:vs) (t:ts) = together (n+1) (SOMApp SOApp :!$: incLam n f v :!$: t) vs ts
                     together n f [] []  = Just f
                     together n f _ _    = Nothing
+
+psolPredicationParser :: Parsec String u (PolyadicallySOL (Form Bool)) -> Parsec String u (PolyadicallySOL (Term Int)) 
+    -> Parsec String u (PolyadicallySOL (Form Bool))
+psolPredicationParser parseForm parseTerm = parseVarApp
+    where parseVarApp = do v <- oneOf "XYZ"
+                           n <- number
+                           char '('
+                           terms <- lookAhead (sepBy1 parseTerm (char ',') <* char ')') -- XXX don't really need to parse terms here.
+                           if length terms /= n then unexpected "wrong number of arguments to second order variable"
+                                                else return ()
+                           parseVarTerms (SOPVar (v : show n) AOne)
+          parseVarTerms v = do t <- parseTerm
+                               let partialPred = (SOPApp SOApp :!$: v :!$: t)
+                               (char ',' *> parseVarTerms (incVar partialPred))
+                                    <|> (char ')' *> return partialPred)
+
+

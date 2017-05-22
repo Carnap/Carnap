@@ -185,7 +185,7 @@ parenParser recur = char '(' *> recur <* char ')'
 
 number :: Monad m => ParsecT String u m Int
 number = do valence <- option "+" (string "-") 
-            ds <- many1 digit; 
+            ds <- many1 digit
             if valence == "+" 
                 then return (read ds) 
                 else return (read ds * (-1))
