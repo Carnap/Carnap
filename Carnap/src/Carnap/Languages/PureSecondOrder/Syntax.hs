@@ -353,6 +353,15 @@ incLam n l@((SOMApp SOApp) :!$: l' :!$: t) v =
                  else SOAbstract (SOLam $ show v) (\x -> subBoundVar v x l)
 incLam _ l v = SOAbstract (SOLam $ show v) (\x -> subBoundVar v x l)
 
+--- XXX unify with a typeclass
+
+incLamPSOL :: Typeable a => Int -> PolyadicallySOL (Form a) -> PolyadicallySOL (Term Int) 
+    -> PolyadicallySOL (Form (Int -> a))
+incLamPSOL n l@((SOPApp SOApp) :!$: l' :!$: t) v = 
+        if n > 0 then (SOPApp SOApp) :!$: (incLamPSOL (n - 1) l' v) :!$: t
+                 else SOAbstract (SOLam $ show v) (\x -> subBoundVar v x l)
+incLamPSOL _ l v = SOAbstract (SOLam $ show v) (\x -> subBoundVar v x l)
+
 incVar :: Typeable a => PolyadicallySOL (Form a) -> PolyadicallySOL (Form (Int -> a))
 incVar ((SOPApp SOApp) :!$: l :!$: t) = (SOPApp SOApp) :!$: (incVar l) :!$: t
 incVar (SOPVar s a) = SOPVar s (ASucc a)
@@ -365,7 +374,8 @@ incQuant ((SOPQuant (SOPSome s a)) :!$: (LLam f)) =
     (SOPQuant (SOPSome s (ASucc a))) :!$: (LLam $ \x -> subBoundVar (SOPVar s (ASucc a)) x (f $ SOPVar s a))
 incQuant _ = error "attempted to increment a sentence of the wrong form"
 
-
+insantiate :: PolyadicallySOL (Form Bool) -> PolyadicallySOL (Form Bool)
+insantiate (SOPQuant (SOPAll _ AOne) :!$: (LLam f)) = f $ SOPVar "Y1" AOne 
 {--
 the idea would be for lambda abstraction to work like this:
 
