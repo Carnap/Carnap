@@ -97,18 +97,11 @@ msolpredicationParser parseForm parseTerm = try (parsePredicateSymbol "FGHIJKLMN
 --TODO : typeclass to unify these
 
 parseLamApp parseForm parseTerm = 
-        do binders <- many1 binder
+        do var <- oneOf "λ\\" *> parseFreeVar
            f <- char '[' *> parseForm <* char ']'
-           terms <- char '(' *> sepBy1 parseTerm (char ',') <* char ')'
-           case together 0 f (reverse binders) terms of
-               Just f' -> return f'
-               Nothing -> unexpected "wrong number of lambdas"
-    where binder = do oneOf "λ\\"
-                      parseFreeVar
-
-          together n f (v:vs) (t:ts) = together (n+1) (SOMApp SOApp :!$: incLam n f v :!$: t) vs ts
-          together n f [] []  = Just f
-          together n f _ _    = Nothing
+           term <- char '(' *> parseTerm <* char ')'
+           let bf x = subBoundVar var x f
+           return (SOMApp SOApp :!$: (SOAbstract (SOLam (show var)) bf) :!$: term)
 
 parseLamAppPSOL parseForm parseTerm = 
         do binders <- many1 binder
@@ -120,7 +113,7 @@ parseLamAppPSOL parseForm parseTerm =
     where binder = do oneOf "λ\\"
                       parseFreeVar
 
-          together n f (v:vs) (t:ts) = together (n+1) (SOPApp SOApp :!$: incLamPSOL n f v :!$: t) vs ts
+          together n f (v:vs) (t:ts) = together (n+1) (SOPApp SOApp :!$: incLam n f v :!$: t) vs ts
           together n f [] []  = Just f
           together n f _ _    = Nothing
 

@@ -24,6 +24,10 @@ import Text.Parsec
 --  1.Second Order Sequent Calculus  --
 ---------------------------------------
 
+------------------------------------------
+--  1.1 Monadically Second Order Logic  --
+------------------------------------------
+
 type MSOLSequentCalc = ClassicalSequentOver MonadicallySOLLex
 
 pattern SeqQuant q        = FX (Lx2 (Lx1 (Lx1 (Lx2 (Bind q)))))
@@ -32,12 +36,6 @@ pattern SeqAbst a         = FX (Lx2 (Lx4 (Abstract a)))
 -- pattern SeqSV n           = FX (Lx2 (Lx1 (Lx1 (Lx4 (StaticVar n)))))
 -- pattern SeqVar c a        = FX (Lx2 (Lx1 (Lx4 (Function c a))))
 -- pattern SeqV s            = SeqVar (Var s) AZero
-
-seqv :: String -> MSOLSequentCalc (Term Int)
-seqv x = liftToSequent $ SOV x
-
-seqsov :: String -> MSOLSequentCalc (Form (Int -> Bool))
-seqsov x = liftToSequent $ SOMVar x
 
 instance ParsableLex (Form Bool) MonadicallySOLLex where
         langParser = msolFormulaParser
@@ -49,9 +47,9 @@ instance CopulaSchema MSOLSequentCalc where
     appSchema (SeqQuant (Some x)) (LLam f) e = 
         schematize (Some x) (show (f $ seqv x) : e)
     appSchema (SeqSOMQuant (SOAll x)) (LLam f) e = 
-        schematize (SOAll x) (show (f $ seqsov x) : e)
+        schematize (SOAll x) (show (f $ seqsomv x) : e)
     appSchema (SeqSOMQuant (SOSome x)) (LLam f) e = 
-        schematize (SOSome x) (show (f $ seqsov x) : e)
+        schematize (SOSome x) (show (f $ seqsomv x) : e)
     appSchema (SeqAbst (SOLam v)) (LLam f) e = 
         schematize (SOLam v) (show (f $ seqv v) : e)
     appSchema x y e = schematize x (show y : e)
@@ -73,44 +71,9 @@ instance Show MSOLogic where
         show SOED2  = "ED"
         show (FO x) = show x
 
-ss :: MonadicallySOL (Form Bool) -> MSOLSequentCalc Succedent
-ss = SS . liftToSequent
-
-sa :: MonadicallySOL (Form Bool) -> MSOLSequentCalc Antecedent
-sa = SA . liftToSequent
-
-tau :: MonadicallySOL (Term Int)
-tau = SOT 1
-
-phiS = SOPhi 1 AZero AZero
-
-apply l t = SOMApp SOApp :!$: l :!$: t
-
--- | produces a schematic formula abstracting n terms from a given formula
-lambdaScheme :: Int -> MonadicallySOL (Form Bool)
-lambdaScheme n = ls' n n
-        where v n = SOV $ "v_" ++ show n
-              phi n | n < 1 = SOPhi 1 AOne AOne
-                    | n > 0 = case incBody (phi (n - 1))  of
-                                  Just p' -> mapover bump p' :!$: v 0 
-                                  Nothing -> error "trouble in lambdaScheme algorithm"
-              ls' n m | n < 1 = SOMApp SOApp :!$: incLam 0 (mapover bump (phi m) :!$: v 0) (v 0) :!$: SOT 0
-                      | n > 0 = SOMApp SOApp :!$: incLam n (ls' (n - 1) m) (v n) :!$: SOT n
-              bump (SOV s) = SOV $ "v_" ++ show (((read $ drop 2 s) :: Int) + 1)
-              bump x = x
-
--- | produces an n-ary schematic predicate with n schematic terms for
--- arguments
-predScheme :: Int -> MonadicallySOL (Form Bool)
-predScheme n = phi n :!$: SOT n
-        where phi n | n < 1 = SOPhi 1 AOne AOne
-                    | n > 0 = case incBody (phi (n - 1)) of
-                                   Just p' -> p' :!$: SOT (n - 1)
-                                   Nothing -> error "trouble in predScheme algorithm"
-
 instance Inference MSOLogic MonadicallySOLLex where
         premisesOf ABS    = [ GammaV 1 :|-: ss (predScheme 0)]
-        premisesOf APP    = [ GammaV 1 :|-: ss (lambdaScheme 0)]
+        premisesOf APP    = [ GammaV 1 :|-: ss (SOMApp SOApp :!$: (SOAbstract (SOLam "v") (\x -> SOPhi 1 AOne AOne :!$: x)) :!$: SOT 0)]
         premisesOf SOUI   = [ GammaV 1 :|-: ss (SOMBind (SOAll "v") (\x -> SOMCtx 1 :!$: x))]
         premisesOf SOEG   = [ GammaV 1 :|-: ss (SOMCtx 1 :!$: SOMScheme 1)]
         premisesOf SOUD   = [ GammaV 1 :|-: ss (SOMCtx 1 :!$: SOMScheme 1)]
@@ -125,7 +88,7 @@ instance Inference MSOLogic MonadicallySOLLex where
                             ]
         premisesOf (FO x) = map liftSequent (premisesOf x)
 
-        conclusionOf ABS    = GammaV 1 :|-: ss (lambdaScheme 0)
+        conclusionOf ABS    = GammaV 1 :|-: ss (SOMApp SOApp :!$: (SOAbstract (SOLam "v") (\x -> SOPhi 1 AOne AOne :!$: x)) :!$: SOT 0)
         conclusionOf APP    = GammaV 1 :|-: ss (predScheme 0)
         conclusionOf SOUI   = GammaV 1 :|-: ss (SOMCtx 1 :!$: SOMScheme 1)
         conclusionOf SOEG   = GammaV 1 :|-: ss (SOMBind (SOSome "v") (\x -> SOMCtx 1 :!$: x))
@@ -215,3 +178,91 @@ msolCalc = NaturalDeductionCalc
     , ndProcessLineMemo = Just hoProcessLineMemo
     , ndParseSeq = msolSeqParser
     }
+
+-------------------------------------------
+--  1.2 Polyadically Second Order Logic  --
+-------------------------------------------
+
+type PSOLSequentCalc = ClassicalSequentOver PolyadicallySOLLex
+
+pattern SeqSOPQuant q     = FX (Lx2 (Lx3 (Bind q)))
+
+instance ParsableLex (Form Bool) PolyadicallySOLLex where
+        langParser = psolFormulaParser
+
+instance CopulaSchema PSOLSequentCalc where 
+
+    appSchema (SeqQuant (All x)) (LLam f) e = 
+        schematize (All x) (show (f $ seqv x) : e)
+    appSchema (SeqQuant (Some x)) (LLam f) e = 
+        schematize (Some x) (show (f $ seqv x) : e)
+    appSchema (SeqSOPQuant (SOPAll x a)) (LLam f) e = 
+        schematize (SOPAll x a) (show (f $ seqsopv x a) : e)
+    appSchema (SeqSOPQuant (SOPSome x a)) (LLam f) e = 
+        schematize (SOPSome x a) (show (f $ seqsopv x a) : e)
+    appSchema (SeqAbst (SOLam v)) (LLam f) e = 
+        schematize (SOLam v) (show (f $ seqv v) : e)
+    appSchema x y e = schematize x (show y : e)
+
+    lamSchema f [] = "λβ_" ++ show h ++ "." ++ show (f $ liftToSequent $ SOSV (-1 * h))
+        where h = scopeHeight (LLam f)
+    lamSchema f (x:xs) = "(λβ_" ++ show h ++ "." ++ show (f $ liftToSequent $ SOSV (-1 * h)) ++ intercalate " " (x:xs) ++ ")"
+        where h = scopeHeight (LLam f)
+
+data PSOLogic = ABS_PSOL Int | APP_PSOL Int | SOUI_PSOL Int | SOEG_PSOL Int | SOUD_PSOL Int | SOED1_PSOL Int | SOED2_PSOL Int | FO_PSOL FOLogic
+
+-- instance Inference PSOLogic PolyadicallySOLLex where
+--         premisesOf (ABS_PSOL n) = [ GammaV 1 :|-: ss (predScheme (n - 1))]
+--         premisesOf (APP_PSOL n) = [ GammaV 1 :|-: ss (lambdaScheme (n - 1))]
+--         premisesOf (FO_PSOL x)  = map liftSequent (premisesOf x)
+
+--         conclusionOf (ABS_PSOL n) = GammaV 1 :|-: ss (lambdaScheme (n - 1))
+--         conclusionOf (APP_PSOL n) = GammaV 1 :|-: ss (predScheme (n - 1))
+--         conclusionOf (FO_PSOL x) = liftSequent (conclusionOf x)
+
+---------------------------
+--  2. Helper Functions  --
+---------------------------
+
+ss = SS . liftToSequent
+
+sa = SA . liftToSequent
+
+tau = SOT 1
+
+phiS = SOPhi 1 AZero AZero
+
+seqv x = liftToSequent $ SOV x
+
+apply l t = SOMApp SOApp :!$: l :!$: t
+
+applySOP l t = SOPApp SOApp :!$: l :!$: t
+
+predScheme n = phi n :!$: SOT n
+        where phi n | n < 1 = SOPhi 1 AOne AOne
+                    | n > 0 = case incBody (phi (n - 1)) of
+                                   Just p' -> p' :!$: SOT (n - 1)
+                                   Nothing -> error "trouble in predScheme algorithm"
+
+seqsomv :: String -> MSOLSequentCalc (Form (Int -> Bool))
+seqsomv x = liftToSequent $ SOMVar x
+
+seqsopv :: Typeable t => String -> Arity Int Bool n t -> PSOLSequentCalc (Form t)
+seqsopv x a = liftToSequent $ SOPVar x a
+
+-- | produces a schematic formula abstracting n terms from a given formula
+lambdaScheme :: Int -> PolyadicallySOL (Form Bool)
+lambdaScheme n = ls' n n
+        where v n = SOV $ "v_" ++ show n
+              phi n | n < 1 = SOPhi 1 AOne AOne
+                    | n > 0 = case incBody (phi (n - 1))  of
+                                  Just p' -> mapover bump p' :!$: v 0 
+                                  Nothing -> error "trouble in lambdaScheme algorithm"
+              ls' n m | n < 1 = SOPApp SOApp :!$: incLam 0 (mapover bump (phi m) :!$: v 0) (v 0) :!$: SOT 0
+                      | n > 0 = SOPApp SOApp :!$: incLam n (ls' (n - 1) m) (v n) :!$: SOT n
+              bump (SOV s) = SOV $ "v_" ++ show (((read $ drop 2 s) :: Int) + 1)
+              bump x = x
+
+-- | produces an n-ary schematic predicate with n schematic terms for
+-- arguments
+

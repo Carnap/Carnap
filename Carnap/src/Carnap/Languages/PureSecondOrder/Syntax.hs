@@ -16,23 +16,12 @@ import Carnap.Languages.Util.GenericConnectives
 import Data.List (intercalate)
 
 --------------------------------------------------------
---1. Data for Monadic Second Order Logic
+--  1. Data for Second Order Logic                    --
 --------------------------------------------------------
 
-data MonadicSOVar a where
-        MonVar :: String -> MonadicSOVar (Form (Int -> Bool))
-
-instance Schematizable MonadicSOVar where
-        schematize (MonVar s) = const s
-
-instance UniformlyEq MonadicSOVar where
-    (MonVar n) =* (MonVar m) = n == m
-
-instance Monad m => MaybeMonadVar MonadicSOVar m
-
-instance MaybeStaticVar MonadicSOVar
-
-instance FirstOrderLex MonadicSOVar
+------------------------
+--  1.0 Generic Data  --
+------------------------
 
 data SOLambda a where
         SOLam :: String -> SOLambda ((Term Int -> Form b) -> Form (Int -> b))
@@ -65,6 +54,25 @@ instance Monad m => MaybeMonadVar SOApplicator m
 instance MaybeStaticVar SOApplicator
 
 instance FirstOrderLex SOApplicator
+
+------------------------
+--  1.1 Monadic Data  --
+------------------------
+
+data MonadicSOVar a where
+        MonVar :: String -> MonadicSOVar (Form (Int -> Bool))
+
+instance Schematizable MonadicSOVar where
+        schematize (MonVar s) = const s
+
+instance UniformlyEq MonadicSOVar where
+    (MonVar n) =* (MonVar m) = n == m
+
+instance Monad m => MaybeMonadVar MonadicSOVar m
+
+instance MaybeStaticVar MonadicSOVar
+
+instance FirstOrderLex MonadicSOVar
 
 data MonadicSOScheme a where
         MonScheme :: Int -> MonadicSOScheme (Form (Int -> Bool))
@@ -99,7 +107,6 @@ instance MaybeStaticVar MonadicSOCtx
 instance FirstOrderLex MonadicSOCtx where
         isVarLex _ = True
 
-
 data MonadicSOQuant a where
         SOAll :: String -> 
             MonadicSOQuant ((Form (Int -> Bool) -> Form Bool) -> Form Bool)
@@ -121,20 +128,82 @@ instance MaybeStaticVar MonadicSOQuant
 
 instance FirstOrderLex MonadicSOQuant
 
---------------------------------------------------------
---2. Monadic Second Order Logic
---------------------------------------------------------
+-------------------------
+--  1.2 Polyadic Data  --
+-------------------------
 
-type MonadicallySOLLex = FOL.PureLexiconFOL
-                        :|: Predicate MonadicSOVar
-                        :|: Quantifiers MonadicSOQuant
-                        :|: Abstractors SOLambda
-                        :|: Applicators SOApplicator
-                        :|: Predicate MonadicSOScheme
-                        :|: Connective MonadicSOCtx
-                        :|: EndLang
+data PolySOLVar a where
+        PolyVar :: String -> Arity Int Bool n t -> PolySOLVar (Form t)
 
-type MonadicallySOL = FixLang MonadicallySOLLex
+instance Schematizable PolySOLVar where
+        schematize (PolyVar s a) = const s
+
+instance UniformlyEq PolySOLVar where
+    (PolyVar n a) =* (PolyVar m a') = n == m && show a == show a'
+
+instance Monad m => MaybeMonadVar PolySOLVar m 
+instance MaybeStaticVar PolySOLVar
+
+instance FirstOrderLex PolySOLVar
+        
+data PolyadicSOScheme a where
+        PolyScheme :: Typeable t => Int -> Arity Int Bool n t ->
+            PolyadicSOScheme (Form (t -> Bool))
+
+instance Schematizable PolyadicSOScheme where
+        schematize (PolyScheme n a) = const $ "ζ_" ++ show n
+
+instance UniformlyEq PolyadicSOScheme where
+    (PolyScheme n a) =* (PolyScheme m b) = n == m && show a == show b
+
+instance Monad m => MaybeMonadVar PolyadicSOScheme m
+
+instance MaybeStaticVar PolyadicSOScheme
+
+instance FirstOrderLex PolyadicSOScheme where
+        isVarLex _ = True
+
+data PolyadicSOCtx a where
+        PolyCtx :: Typeable t => Int -> Arity Int Bool n t ->
+            PolyadicSOCtx (Form (t -> Bool) -> Form Bool)
+
+instance Schematizable PolyadicSOCtx where
+        schematize (PolyCtx n a) = \(x:_) -> "Φ_" ++ show n ++ "(" ++ x ++ ")"
+
+instance UniformlyEq PolyadicSOCtx where
+    (PolyCtx n a) =* (PolyCtx m b) = n == m && show a == show b
+
+instance Monad m => MaybeMonadVar PolyadicSOCtx m
+
+instance MaybeStaticVar PolyadicSOCtx
+
+instance FirstOrderLex PolyadicSOCtx where
+        isVarLex _ = True
+
+data PolySOLQuant a where
+        SOPAll :: Typeable t => String -> Arity Int Bool n t ->
+            PolySOLQuant ((Form t -> Form Bool) -> Form Bool)
+        SOPSome :: Typeable t => String -> Arity Int Bool n t ->
+            PolySOLQuant ((Form t -> Form Bool) -> Form Bool)
+
+instance Schematizable PolySOLQuant where
+        schematize (SOPAll v a)  = \(x:_) -> "∀" ++ v ++ x 
+        schematize (SOPSome v a) = \(x:_) -> "∃" ++ v ++ x 
+
+instance UniformlyEq PolySOLQuant where
+        (SOPAll _ a) =* (SOPAll _ a') = show a == show a'
+        (SOPSome _ a) =* (SOPSome _ a') = show a == show a'
+        _ =* _ = False
+
+instance Monad m => MaybeMonadVar PolySOLQuant m
+
+instance MaybeStaticVar PolySOLQuant
+
+instance FirstOrderLex PolySOLQuant
+
+--------------------------------------------------------
+--2. Second Order Languages
+--------------------------------------------------------
 
 pattern SOSent n        = FX (Lx1 (Lx1 (Lx1 (Lx1 (Predicate (Prop n) AZero)))))
 pattern SOSPhi n        = FX (Lx1 (Lx1 (Lx1 (Lx2 (Predicate (SProp n) AZero)))))
@@ -148,12 +217,6 @@ pattern SOTau c a       = FX (Lx1 (Lx1 (Lx5 (Function c a))))
 pattern SOPred x arity  = FX (Lx1 (Lx2 (Lx1 (Predicate x arity))))
 pattern SOSPred x arity = FX (Lx1 (Lx2 (Lx2 (Predicate x arity))))
 pattern SOFunc x arity  = FX (Lx1 (Lx3 (Lx2 (Function x arity))))
-pattern SOMVar n        = FX (Lx2 (Predicate (MonVar n) AZero))
-pattern SOMQuant q      = FX (Lx3 (Bind q))
-pattern SOMAbs a        = FX (Lx4 (Abstract a))
-pattern SOMApp a        = FX (Lx5 (Apply a))
-pattern SOMScheme n     = FX (Lx6 (Predicate (MonScheme n) AZero))
-pattern SOMCtx n        = FX (Lx7 (Connective (MonCtx n) AOne))
 pattern SOP n a1 a2     = SOPred (Pred a1 n) a2
 pattern SOPhi n a1 a2   = SOSPred (SPred a1 n) a2
 pattern SOAnd           = SOCon And ATwo
@@ -161,20 +224,42 @@ pattern SOOr            = SOCon Or ATwo
 pattern SOIf            = SOCon If ATwo
 pattern SOIff           = SOCon Iff ATwo
 pattern SONot           = SOCon Not AOne
-pattern SOAbstract l f  = SOMAbs l :!$: LLam f
-pattern SOBind q f      = SOQuant q :!$: LLam f
-pattern SOMBind q f     = SOMQuant q :!$: LLam f
-pattern (:&:) x y       = SOAnd :!$: x :!$: y
-pattern (:||:) x y      = SOOr  :!$: x :!$: y
-pattern (:->:) x y      = SOIf  :!$: x :!$: y
-pattern (:<->:) x y     = SOIff :!$: x :!$: y
-pattern SONeg x         = SONot :!$: x
 pattern SOC n           = SOConst (Constant n) AZero
 pattern SOV s           = SOVar (Var s) AZero
 pattern SOT n           = SOTau (SFunc AZero n) AZero
 pattern SOEq            = FX (Lx1 (Lx3 (Lx1 (Predicate TermEq ATwo))))
 pattern (:==:) t1 t2    = SOEq :!$: t1 :!$: t2
 pattern SOF n a1 a2     = SOFunc (Func a1 n) a2
+pattern SOBind q f      = SOQuant q :!$: LLam f
+pattern (:&:) x y       = SOAnd :!$: x :!$: y
+pattern (:||:) x y      = SOOr  :!$: x :!$: y
+pattern (:->:) x y      = SOIf  :!$: x :!$: y
+pattern (:<->:) x y     = SOIff :!$: x :!$: y
+pattern SONeg x         = SONot :!$: x
+
+--------------------------------------------------------
+--2.1 Monadic Second Order Logic
+--------------------------------------------------------
+
+type MonadicallySOLLex = FOL.PureLexiconFOL
+                        :|: Predicate MonadicSOVar
+                        :|: Quantifiers MonadicSOQuant
+                        :|: Abstractors SOLambda
+                        :|: Applicators SOApplicator
+                        :|: Predicate MonadicSOScheme
+                        :|: Connective MonadicSOCtx
+                        :|: EndLang
+
+type MonadicallySOL = FixLang MonadicallySOLLex
+
+pattern SOMVar n        = FX (Lx2 (Predicate (MonVar n) AZero))
+pattern SOMQuant q      = FX (Lx3 (Bind q))
+pattern SOMAbs a        = FX (Lx4 (Abstract a))
+pattern SOMApp a        = FX (Lx5 (Apply a))
+pattern SOMScheme n     = FX (Lx6 (Predicate (MonScheme n) AZero))
+pattern SOMCtx n        = FX (Lx7 (Connective (MonCtx n) AOne))
+pattern SOAbstract l f  = SOMAbs l :!$: LLam f
+pattern SOMBind q f     = SOMQuant q :!$: LLam f
 
 instance CopulaSchema MonadicallySOL where 
 
@@ -231,47 +316,9 @@ instance QuantLanguage (MonadicallySOL (Form Bool)) (MonadicallySOL (Form (Int -
     lall  v f = SOMQuant (SOAll v) :!$: LLam f
     lsome  v f = SOMQuant (SOSome v) :!$: LLam f
 
---------------------------------------------------------
---3. Data for Polyadic SOL
---------------------------------------------------------
-
-data PolySOLVar a where
-        PolyVar :: String -> Arity Int Bool n t -> PolySOLVar (Form t)
-
-instance Schematizable PolySOLVar where
-        schematize (PolyVar s a) = const s
-
-instance UniformlyEq PolySOLVar where
-    (PolyVar n a) =* (PolyVar m a') = n == m && show a == show a'
-
-instance Monad m => MaybeMonadVar PolySOLVar m 
-instance MaybeStaticVar PolySOLVar
-
-instance FirstOrderLex PolySOLVar
-
-data PolySOLQuant a where
-        SOPAll :: Typeable t => String -> Arity Int Bool n t ->
-            PolySOLQuant ((Form t -> Form Bool) -> Form Bool)
-        SOPSome :: Typeable t => String -> Arity Int Bool n t ->
-            PolySOLQuant ((Form t -> Form Bool) -> Form Bool)
-
-instance Schematizable PolySOLQuant where
-        schematize (SOPAll v a)  = \(x:_) -> "∀" ++ v ++ x 
-        schematize (SOPSome v a) = \(x:_) -> "∃" ++ v ++ x 
-
-instance UniformlyEq PolySOLQuant where
-        (SOPAll _ a) =* (SOPAll _ a') = show a == show a'
-        (SOPSome _ a) =* (SOPSome _ a') = show a == show a'
-        _ =* _ = False
-
-instance Monad m => MaybeMonadVar PolySOLQuant m
-
-instance MaybeStaticVar PolySOLQuant
-
-instance FirstOrderLex PolySOLQuant
 
 --------------------------------------------------------
---3. Polyadic SOL
+--  2.2 Polyadic SOL
 --------------------------------------------------------
 
 type PolyadicallySOLLex = FOL.PureLexiconFOL
@@ -331,7 +378,7 @@ instance CopulaSchema PolyadicallySOL where
     appSchema (SOQuant (Some x)) (LLam f) e = schematize (Some x) (show (f $ SOV x) : e)
     appSchema (SOPQuant (SOPAll x a)) (LLam f) e = schematize (SOPAll x a) (show (f $ SOPVar x a) : e)
     appSchema (SOPQuant (SOPSome x a)) (LLam f) e = schematize (SOPSome x a) (show (f $ SOPVar x a) : e)
-    appSchema (SOMAbs (SOLam v)) (LLam f) e = schematize (SOLam v) (show (f $ SOV v) : e)
+    appSchema (SOPAbs (SOLam v)) (LLam f) e = schematize (SOLam v) (show (f $ SOV v) : e)
     appSchema x y e = schematize x (show y : e)
 
     lamSchema f [] = "λβ_" ++ show h ++ "." ++ show (f (SOSV (-1 * h)))
@@ -346,21 +393,12 @@ instance CopulaSchema PolyadicallySOL where
 --Needs to preserve the number of Applications, and the fact that all
 --applications are above all Lambdas. The n parameter counts the number of
 --applications to drill down through before abstracting.
-incLam :: Typeable a => Int -> MonadicallySOL (Form a) -> MonadicallySOL (Term Int) 
-    -> MonadicallySOL (Form (Int -> a))
-incLam n l@((SOMApp SOApp) :!$: l' :!$: t) v = 
-        if n > 0 then (SOMApp SOApp) :!$: (incLam (n - 1) l' v) :!$: t
+incLam :: Typeable a => Int -> PolyadicallySOL (Form a) -> PolyadicallySOL (Term Int) 
+    -> PolyadicallySOL (Form (Int -> a))
+incLam n l@((SOPApp SOApp) :!$: l' :!$: t) v = 
+        if n > 0 then (SOPApp SOApp) :!$: (incLam (n - 1) l' v) :!$: t
                  else SOAbstract (SOLam $ show v) (\x -> subBoundVar v x l)
 incLam _ l v = SOAbstract (SOLam $ show v) (\x -> subBoundVar v x l)
-
---- XXX unify with a typeclass
-
-incLamPSOL :: Typeable a => Int -> PolyadicallySOL (Form a) -> PolyadicallySOL (Term Int) 
-    -> PolyadicallySOL (Form (Int -> a))
-incLamPSOL n l@((SOPApp SOApp) :!$: l' :!$: t) v = 
-        if n > 0 then (SOPApp SOApp) :!$: (incLamPSOL (n - 1) l' v) :!$: t
-                 else SOAbstract (SOLam $ show v) (\x -> subBoundVar v x l)
-incLamPSOL _ l v = SOAbstract (SOLam $ show v) (\x -> subBoundVar v x l)
 
 incVar :: Typeable a => PolyadicallySOL (Form a) -> PolyadicallySOL (Form (Int -> a))
 incVar ((SOPApp SOApp) :!$: l :!$: t) = (SOPApp SOApp) :!$: (incVar l) :!$: t
@@ -374,8 +412,6 @@ incQuant ((SOPQuant (SOPSome s a)) :!$: (LLam f)) =
     (SOPQuant (SOPSome s (ASucc a))) :!$: (LLam $ \x -> subBoundVar (SOPVar s (ASucc a)) x (f $ SOPVar s a))
 incQuant _ = error "attempted to increment a sentence of the wrong form"
 
-insantiate :: PolyadicallySOL (Form Bool) -> PolyadicallySOL (Form Bool)
-insantiate (SOPQuant (SOPAll _ AOne) :!$: (LLam f)) = f $ SOPVar "Y1" AOne 
 {--
 the idea would be for lambda abstraction to work like this:
 
