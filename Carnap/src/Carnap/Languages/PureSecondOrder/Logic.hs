@@ -209,7 +209,10 @@ instance CopulaSchema PSOLSequentCalc where
     lamSchema f (x:xs) = "(λβ_" ++ show h ++ "." ++ show (f $ liftToSequent $ SOSV (-1 * h)) ++ intercalate " " (x:xs) ++ ")"
         where h = scopeHeight (LLam f)
 
-data PSOLogic = ABS_PSOL Int | APP_PSOL Int | SOUI_PSOL Int | SOEG_PSOL Int | SOUD_PSOL Int | SOED1_PSOL Int | SOED2_PSOL Int | FO_PSOL FOLogic
+data PSOLogic = ABS_PSOL Int   | APP_PSOL Int 
+              | SOUI_PSOL Int  | SOEG_PSOL Int 
+              | SOUD_PSOL Int  | SOED1_PSOL Int 
+              | SOED2_PSOL Int | FO_PSOL FOLogic
 
 -- instance Inference PSOLogic PolyadicallySOLLex where
 --         premisesOf (ABS_PSOL n) = [ GammaV 1 :|-: ss (predScheme (n - 1))]
@@ -238,6 +241,8 @@ apply l t = SOMApp SOApp :!$: l :!$: t
 
 applySOP l t = SOPApp SOApp :!$: l :!$: t
 
+-- | produces an n-ary schematic predicate with n schematic terms for
+-- arguments
 predScheme n = phi n :!$: SOT n
         where phi n | n < 1 = SOPhi 1 AOne AOne
                     | n > 0 = case incBody (phi (n - 1)) of
@@ -263,6 +268,6 @@ lambdaScheme n = ls' n n
               bump (SOV s) = SOV $ "v_" ++ show (((read $ drop 2 s) :: Int) + 1)
               bump x = x
 
--- | produces an n-ary schematic predicate with n schematic terms for
--- arguments
-
+-- | produces a universal instantiation premise instance for n-adic variables
+-- uiPremiseScheme :: Int -> PolyadicallySOL (Form Bool)
+-- uiPremiseScheme 0 = SOPhi 1

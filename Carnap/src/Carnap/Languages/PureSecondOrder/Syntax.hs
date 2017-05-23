@@ -236,6 +236,15 @@ pattern (:||:) x y      = SOOr  :!$: x :!$: y
 pattern (:->:) x y      = SOIf  :!$: x :!$: y
 pattern (:<->:) x y     = SOIff :!$: x :!$: y
 pattern SONeg x         = SONot :!$: x
+pattern SOMQuant q      = FX (Lx3 (Bind q))
+pattern SOMAbs a        = FX (Lx4 (Abstract a))
+pattern SOMApp a        = FX (Lx5 (Apply a))
+pattern SOAbstract l f  = SOMAbs l :!$: LLam f
+pattern SOMBind q f     = SOMQuant q :!$: LLam f
+pattern SOPQuant q      = FX (Lx3 (Bind q))
+pattern SOPAbs a        = FX (Lx4 (Abstract a))
+pattern SOPApp a        = FX (Lx5 (Apply a))
+pattern SOPBind q f     = SOPQuant q :!$: LLam f
 
 --------------------------------------------------------
 --2.1 Monadic Second Order Logic
@@ -253,13 +262,8 @@ type MonadicallySOLLex = FOL.PureLexiconFOL
 type MonadicallySOL = FixLang MonadicallySOLLex
 
 pattern SOMVar n        = FX (Lx2 (Predicate (MonVar n) AZero))
-pattern SOMQuant q      = FX (Lx3 (Bind q))
-pattern SOMAbs a        = FX (Lx4 (Abstract a))
-pattern SOMApp a        = FX (Lx5 (Apply a))
 pattern SOMScheme n     = FX (Lx6 (Predicate (MonScheme n) AZero))
 pattern SOMCtx n        = FX (Lx7 (Connective (MonCtx n) AOne))
-pattern SOAbstract l f  = SOMAbs l :!$: LLam f
-pattern SOMBind q f     = SOMQuant q :!$: LLam f
 
 instance CopulaSchema MonadicallySOL where 
 
@@ -326,15 +330,15 @@ type PolyadicallySOLLex = FOL.PureLexiconFOL
                         :|: Quantifiers PolySOLQuant
                         :|: Abstractors SOLambda
                         :|: Applicators SOApplicator
+                        :|: Predicate PolyadicSOScheme
+                        :|: Connective PolyadicSOCtx
                         :|: EndLang
 
 type PolyadicallySOL = FixLang PolyadicallySOLLex
 
 pattern SOPVar n a      = FX (Lx2 (Predicate (PolyVar n a) AZero))
-pattern SOPQuant q      = FX (Lx3 (Bind q))
-pattern SOPAbs a        = FX (Lx4 (Abstract a))
-pattern SOPApp a        = FX (Lx5 (Apply a))
-pattern SOPBind q f     = SOPQuant q :!$: LLam f
+pattern SOPScheme n a b = FX (Lx6 (Predicate (PolyScheme n a) b))
+pattern SOPCtx n a b    = FX (Lx7 (Connective (PolyCtx n a) b))
 
 instance Incrementable PolyadicallySOLLex (Term Int) where
     incHead (SOP n a b)  = Just $ SOP n (ASucc a) (ASucc a)
@@ -411,6 +415,7 @@ incQuant ((SOPQuant (SOPAll s a)) :!$: (LLam f)) =
 incQuant ((SOPQuant (SOPSome s a)) :!$: (LLam f)) = 
     (SOPQuant (SOPSome s (ASucc a))) :!$: (LLam $ \x -> subBoundVar (SOPVar s (ASucc a)) x (f $ SOPVar s a))
 incQuant _ = error "attempted to increment a sentence of the wrong form"
+
 
 {--
 the idea would be for lambda abstraction to work like this:
