@@ -148,7 +148,7 @@ instance FirstOrderLex PolySOLVar
         
 data PolyadicSOScheme a where
         PolyScheme :: Typeable t => Int -> Arity Int Bool n t ->
-            PolyadicSOScheme (Form (t -> Bool))
+            PolyadicSOScheme (Form t)
 
 instance Schematizable PolyadicSOScheme where
         schematize (PolyScheme n a) = const $ "ζ_" ++ show n
@@ -165,7 +165,7 @@ instance FirstOrderLex PolyadicSOScheme where
 
 data PolyadicSOCtx a where
         PolyCtx :: Typeable t => Int -> Arity Int Bool n t ->
-            PolyadicSOCtx (Form (t -> Bool) -> Form Bool)
+            PolyadicSOCtx (Form t -> Form Bool)
 
 instance Schematizable PolyadicSOCtx where
         schematize (PolyCtx n a) = \(x:_) -> "Φ_" ++ show n ++ "(" ++ x ++ ")"
@@ -337,8 +337,8 @@ type PolyadicallySOLLex = FOL.PureLexiconFOL
 type PolyadicallySOL = FixLang PolyadicallySOLLex
 
 pattern SOPVar n a      = FX (Lx2 (Predicate (PolyVar n a) AZero))
-pattern SOPScheme n a b = FX (Lx6 (Predicate (PolyScheme n a) b))
-pattern SOPCtx n a b    = FX (Lx7 (Connective (PolyCtx n a) b))
+pattern SOPScheme n a   = FX (Lx6 (Predicate (PolyScheme n a) AZero))
+pattern SOPCtx n a      = FX (Lx7 (Connective (PolyCtx n a) AOne))
 
 instance Incrementable PolyadicallySOLLex (Term Int) where
     incHead (SOP n a b)  = Just $ SOP n (ASucc a) (ASucc a)
@@ -407,15 +407,24 @@ incLam _ l v = SOAbstract (SOLam $ show v) (\x -> subBoundVar v x l)
 incVar :: Typeable a => PolyadicallySOL (Form a) -> PolyadicallySOL (Form (Int -> a))
 incVar ((SOPApp SOApp) :!$: l :!$: t) = (SOPApp SOApp) :!$: (incVar l) :!$: t
 incVar (SOPVar s a) = SOPVar s (ASucc a)
-incVar _ = error "attempted to increment a nonvariable predication"
+incVar _ = error "attempted to increment the variable of a nonvariable predication"
 
 incQuant :: PolyadicallySOL (Form Bool) -> PolyadicallySOL (Form Bool)
 incQuant ((SOPQuant (SOPAll s a)) :!$: (LLam f)) = 
     (SOPQuant (SOPAll s (ASucc a))) :!$: (LLam $ \x -> subBoundVar (SOPVar s (ASucc a)) x (f $ SOPVar s a))
 incQuant ((SOPQuant (SOPSome s a)) :!$: (LLam f)) = 
     (SOPQuant (SOPSome s (ASucc a))) :!$: (LLam $ \x -> subBoundVar (SOPVar s (ASucc a)) x (f $ SOPVar s a))
-incQuant _ = error "attempted to increment a sentence of the wrong form"
+incQuant _ = error "attempted to increment the quantifier of an unquantified sentence"
 
+--increment the context of a higher-order variable
+incVarCtx :: PolyadicallySOL (Form Bool) -> PolyadicallySOL (Form Bool)
+incVarCtx ((SOPCtx n a) :!$: (SOPVar s c)) = (SOPCtx n (ASucc a)) :!$: (SOPVar s (ASucc c))
+incVarCtx _ = error "attempted to increment the variable context of a non-variable/context predicaton"
+
+--increment the context of a higher-order schematic variable
+incSchemeCtx :: PolyadicallySOL (Form Bool) -> PolyadicallySOL (Form Bool)
+incSchemeCtx ((SOPCtx n a) :!$: (SOPScheme s c)) = (SOPCtx n (ASucc a)) :!$: (SOPScheme s (ASucc c))
+incSchemeCtx _ = error "attempted to increment the scheme context of a non-scheme/context predicaton"
 
 {--
 the idea would be for lambda abstraction to work like this:

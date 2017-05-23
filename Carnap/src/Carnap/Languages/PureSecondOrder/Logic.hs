@@ -97,12 +97,12 @@ instance Inference MSOLogic MonadicallySOLLex where
         conclusionOf SOED2  = GammaV 1 :+: GammaV 2 :|-: ss phiS
         conclusionOf (FO x) = liftSequent (conclusionOf x)
 
-        restriction SOUD     = Just (mpredicateEigenConstraint 
+        restriction SOUD     = Just (sopredicateEigenConstraint 
                                         (liftToSequent $ SOMScheme 1) 
                                         (ss (SOMBind (SOAll "v") (\x -> SOMCtx 1 :!$: x)))  
                                         (GammaV 1))
 
-        restriction SOED1    = Just (mpredicateEigenConstraint
+        restriction SOED1    = Just (sopredicateEigenConstraint
                                         (liftToSequent $ SOMScheme 1)
                                         (ss (SOMBind (SOSome "v") (\x -> SOMCtx 1 :!$: x))
                                             :-: ss phiS)
@@ -123,13 +123,12 @@ instance Inference MSOLogic MonadicallySOLLex where
 
 -- TODO unify the different kinds of eigenconstrants using a prism for the
 -- case deconstruction below.
-mpredicateEigenConstraint c suc ant sub
+sopredicateEigenConstraint c suc ant sub
     | c' `occursIn` ant' = Just $ "The predicate " ++ show c' ++ " appears not to be fresh, given that this line relies on " ++ show ant'
     | c' `occursIn` suc' = Just $ "The predicate " ++ show c' ++ " appears not to be fresh in the other premise " ++ show suc'
-    | otherwise = Nothing
-                    -- case fromSequent c' of
-                    --   SOPred _ _ -> Nothing
-                    --   _ -> Just $ "the expression " ++ show c' ++ " appears not to be a predicate."
+    | otherwise = case fromSequent c' of
+                    SOPred _ _ -> Nothing
+                    _ -> Just $ "the expression " ++ show c' ++ " appears not to be a predicate."
 
     where c'   = applySub sub c
           ant' = applySub sub ant
@@ -214,22 +213,70 @@ data PSOLogic = ABS_PSOL Int   | APP_PSOL Int
               | SOUD_PSOL Int  | SOED1_PSOL Int 
               | SOED2_PSOL Int | FO_PSOL FOLogic
 
--- instance Inference PSOLogic PolyadicallySOLLex where
---         premisesOf (ABS_PSOL n) = [ GammaV 1 :|-: ss (predScheme (n - 1))]
---         premisesOf (APP_PSOL n) = [ GammaV 1 :|-: ss (lambdaScheme (n - 1))]
---         premisesOf (FO_PSOL x)  = map liftSequent (premisesOf x)
+instance Inference PSOLogic PolyadicallySOLLex where
+        premisesOf (ABS_PSOL n)    = [ GammaV 1 :|-: ss' (predScheme (n - 1))]
+        premisesOf (APP_PSOL n)    = [ GammaV 1 :|-: ss' (lambdaScheme (n - 1))]
+        premisesOf (FO_PSOL x)     = map liftSequent (premisesOf x)
+        premisesOf (SOUI_PSOL n)   = [ GammaV 1 :|-: ss' (universalScheme n)]
+        premisesOf (SOUD_PSOL n)   = [ GammaV 1 :|-: ss' (schematicContextScheme n)]
+        premisesOf (SOEG_PSOL n)   = [ GammaV 1 :|-: ss' (schematicContextScheme n)]
+        premisesOf (SOED1_PSOL n)  = [ GammaV 1 :+: sa' (schematicContextScheme n) :|-: ss' phiS
+                                     , GammaV 2 :|-: ss' (existentialScheme n)
+                                     ]
+        premisesOf (SOED2_PSOL n)  = [ GammaV 1 :|-: ss' phiS
+                                     , GammaV 2 :|-: ss' (existentialScheme n)
+                                     ]
 
---         conclusionOf (ABS_PSOL n) = GammaV 1 :|-: ss (lambdaScheme (n - 1))
---         conclusionOf (APP_PSOL n) = GammaV 1 :|-: ss (predScheme (n - 1))
---         conclusionOf (FO_PSOL x) = liftSequent (conclusionOf x)
+        conclusionOf (ABS_PSOL n)   = GammaV 1 :|-: ss' (lambdaScheme (n - 1))
+        conclusionOf (APP_PSOL n)   = GammaV 1 :|-: ss' (predScheme (n - 1))
+        conclusionOf (SOUI_PSOL n)  = GammaV 1 :|-: ss' (schematicContextScheme n)
+        conclusionOf (SOUD_PSOL n)  = GammaV 1 :|-: ss' (universalScheme n)
+        conclusionOf (FO_PSOL x)    = liftSequent (conclusionOf x)
+        conclusionOf (SOEG_PSOL n)  = GammaV 1 :|-: ss' (existentialScheme n)
+        conclusionOf (SOED1_PSOL n) = GammaV 1 :+: GammaV 2 :|-: ss' phiS
+        conclusionOf (SOED2_PSOL n) = GammaV 1 :+: GammaV 2 :|-: ss' phiS
+
+        restriction (SOUD_PSOL n)  = Just (sopredicateEigenConstraint 
+                                          (liftToSequent $ schematicContextScheme n) 
+                                          -- XXX would be better to use
+                                          -- contexts alone in line above
+                                          (ss' $ universalScheme n)  
+                                          (GammaV 1))
+
+        restriction (SOED1_PSOL n)  = Just (sopredicateEigenConstraint 
+                                           (liftToSequent $ schematicContextScheme n) 
+                                           (ss' $ existentialScheme n)  
+                                           (GammaV 1 :+: GammaV 2))
+
+        restriction (FO_PSOL UD)  = Just (eigenConstraint stau 
+                                        (ss' $ SOBind (All "v") phi) 
+                                        (GammaV 1))
+            where phi x = SOPhi 1 AOne AOne :!$: x
+                  stau = liftToSequent tau
+
+        restriction (FO_PSOL ED1) = Just (eigenConstraint stau 
+                                        ((ss' $ SOBind (Some "v") phi) :-: ss' phiS) 
+                                        (GammaV 1 :+: GammaV 2))
+            where phi x = SOPhi 1 AOne AOne :!$: x
+                  
+                  stau = liftToSequent tau
+        restriction _ = Nothing
 
 ---------------------------
 --  2. Helper Functions  --
 ---------------------------
 
+ss :: MonadicallySOL (Form Bool) -> MSOLSequentCalc Succedent
 ss = SS . liftToSequent
 
+sa :: MonadicallySOL (Form Bool) -> MSOLSequentCalc Antecedent
 sa = SA . liftToSequent
+
+ss' :: PolyadicallySOL (Form Bool) -> PSOLSequentCalc Succedent
+ss' = SS . liftToSequent
+
+sa' :: PolyadicallySOL (Form Bool) -> PSOLSequentCalc Antecedent
+sa' = SA . liftToSequent
 
 tau = SOT 1
 
@@ -269,5 +316,16 @@ lambdaScheme n = ls' n n
               bump x = x
 
 -- | produces a universal instantiation premise instance for n-adic variables
--- uiPremiseScheme :: Int -> PolyadicallySOL (Form Bool)
--- uiPremiseScheme 0 = SOPhi 1
+universalScheme :: Int -> PolyadicallySOL (Form Bool)
+universalScheme n = iterate incQuant (SOPQuant (SOPAll ('V' : show n) (AZero)) :!$: LLam (theNthCtx)) !! n
+    where theNthCtx x = subBoundVar (SOPVar ('X' : show n) AZero) x (iterate incVarCtx initCtx !! n)
+          initCtx = SOPCtx 1 AZero :!$: (SOPVar ('V' : show n) AZero)
+
+existentialScheme :: Int -> PolyadicallySOL (Form Bool)
+existentialScheme n = iterate incQuant (SOPQuant (SOPSome ('V' : show n) (AZero)) :!$: LLam (theNthCtx)) !! n
+    where theNthCtx x = subBoundVar (SOPVar ('X' : show n) AZero) x (iterate incVarCtx initCtx !! n)
+          initCtx = SOPCtx 1 AZero :!$: (SOPVar ('V' : show n) AZero)
+
+schematicContextScheme :: Int -> PolyadicallySOL (Form Bool)
+schematicContextScheme n = iterate incSchemeCtx initCtx !! n
+    where initCtx = SOPCtx 1 AZero :!$: (SOPScheme 1 AZero)
