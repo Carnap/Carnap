@@ -213,6 +213,16 @@ data PSOLogic = ABS_PSOL Int   | APP_PSOL Int
               | SOUD_PSOL Int  | SOED1_PSOL Int 
               | SOED2_PSOL Int | FO_PSOL FOLogic
 
+instance Show PSOLogic where
+        show (ABS_PSOL n)   = "ABS" ++ show n
+        show (APP_PSOL n)   = "APP" ++ show n
+        show (SOUI_PSOL n)  = "UI"  ++ show n
+        show (SOEG_PSOL n)  = "EG"  ++ show n
+        show (SOUD_PSOL n)  = "UD"  ++ show n
+        show (SOED1_PSOL n) = "ED"  ++ show n
+        show (SOED2_PSOL n) = "ED"  ++ show n
+        show (FO_PSOL x) = show x
+
 instance Inference PSOLogic PolyadicallySOLLex where
         premisesOf (ABS_PSOL n)    = [ GammaV 1 :|-: ss' (predScheme (n - 1))]
         premisesOf (APP_PSOL n)    = [ GammaV 1 :|-: ss' (lambdaScheme (n - 1))]
@@ -261,6 +271,35 @@ instance Inference PSOLogic PolyadicallySOLLex where
                   
                   stau = liftToSequent tau
         restriction _ = Nothing
+
+-- XXX Skipping derived rules for now.
+parsePSOLogic :: Parsec String u [PSOLogic]
+parsePSOLogic = try soRule <|> liftFO
+    where liftFO = do r <- parseFOLogic empty
+                      return (map FO_PSOL r)
+          soRule = do r <- choice (map (try . string) [ "UI", "UD", "EG", "ED", "ABS","APP"])
+                      ds <- many1 digit
+                      let n = read ds :: Int
+                      case r of 
+                            r | r == "UI"   -> return [SOUI_PSOL n]
+                              | r == "UD"   -> return [SOUD_PSOL n]
+                              | r == "EG"   -> return [SOEG_PSOL n]
+                              | r == "ED"   -> return [SOED1_PSOL n, SOED2_PSOL n]
+                              | r == "ABS"  -> return [ABS_PSOL n]
+                              | r == "APP"  -> return [APP_PSOL n]
+
+parsePSOLProof :: String -> [DeductionLine PSOLogic PolyadicallySOLLex (Form Bool)]
+parsePSOLProof = toDeduction parsePSOLogic psolFormulaParser
+
+psolSeqParser = seqFormulaParser :: Parsec String () (PSOLSequentCalc Sequent)
+
+psolCalc = NaturalDeductionCalc 
+    { ndRenderer = MontegueStyle
+    , ndParseProof = const parsePSOLProof -- XXX ignore derived rules for now
+    , ndProcessLine = hoProcessLine
+    , ndProcessLineMemo = Just hoProcessLineMemo
+    , ndParseSeq = psolSeqParser
+    }
 
 ---------------------------
 --  2. Helper Functions  --
