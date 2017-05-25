@@ -9,7 +9,7 @@ import Carnap.Core.Data.AbstractSyntaxDataTypes (liftLang)
 import Carnap.Languages.ClassicalSequent.Syntax
 import Carnap.Languages.PurePropositional.Logic as P (DerivedRule(..), propSeqParser, logicBookCalc, forallxSLCalc, propCalc, ) 
 import Carnap.Languages.PureFirstOrder.Logic as FOL (DerivedRule(..),  folSeqParser, folCalc,forallxQLCalc) 
-import Carnap.Languages.PureSecondOrder.Logic (msolSeqParser, msolCalc) 
+import Carnap.Languages.PureSecondOrder.Logic (msolSeqParser, msolCalc, psolSeqParser,psolCalc) 
 import Carnap.Languages.PurePropositional.Util (toSchema)
 import Carnap.GHCJS.SharedTypes
 import Text.Parsec (parse)
@@ -106,6 +106,9 @@ activateChecker drs w (Just iog@(IOGoal i o g classes))
         | "secondOrder" `elem` classes = do
                         memo <- newIORef mempty 
                         tryParse buildOptions msolSeqParser (standardCheck memo msolCalc)
+        | "polyadicSecondOrder" `elem` classes = do
+                        memo <- newIORef mempty 
+                        tryParse buildOptions psolSeqParser (standardCheck memo psolCalc)
         | "LogicBook" `elem` classes = do
                         memo <- newIORef mempty 
                         tryParse buildOptions propSeqParser (standardCheck memo logicBookCalc)
