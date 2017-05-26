@@ -342,6 +342,7 @@ pattern SOPCtx n a      = FX (Lx7 (Connective (PolyCtx n a) AOne))
 
 instance Incrementable PolyadicallySOLLex (Term Int) where
     incHead (SOP n a b)  = Just $ SOP n (ASucc a) (ASucc a)
+    incHead (SOPhi n a b) = Just $ SOPhi n (ASucc a) (ASucc a)
     incHead (SOF n a b)  = Just $ SOF n (ASucc a) (ASucc a)
     incHead _  = Nothing
 
