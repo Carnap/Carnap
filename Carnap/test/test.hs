@@ -12,7 +12,7 @@ import Carnap.Languages.ClassicalSequent.Syntax
 import Carnap.Languages.PurePropositional.Syntax
 import Carnap.Languages.PurePropositional.Logic
 import Carnap.Languages.PureFirstOrder.Logic (folCalc)
-import Carnap.Languages.PureSecondOrder.Logic (msolCalc)
+import Carnap.Languages.PureSecondOrder.Logic (msolCalc,psolCalc)
 import Carnap.Calculi.NaturalDeduction.Syntax (NaturalDeductionCalc(..),RenderStyle(..), Inference(..))
 import Carnap.Calculi.NaturalDeduction.Checker (ProofErrorMessage(..), Feedback(..), seqSubsetUnify, processLine, 
     processLineFitch, hoProcessLine, hoProcessLineMemo, toDisplaySequence, toDisplaySequenceMemo)
@@ -42,11 +42,14 @@ main = do putStrLn ""
           mapM russTiming [1 .. 5]
           rusref <- newIORef mempty
           mapM (russTimingMemo rusref) [1 .. 5]
+          invref <- newIORef mempty
+          mapM (invTimingMemo invref) [1]
           putStrLn ""
-    where compTiming n = timeProof msolCalc ("comprehension proof, attempt  " ++ show n) comprehensionTheorem
-          compTimingMemo ref n = timeProofMemo ref msolCalc ("comprehension proof, attempt  " ++ show n) comprehensionTheorem
-          russTiming n = timeProof folCalc ("Russell's theorem, attempt " ++ show n) russellTheorem
-          russTimingMemo ref n = timeProofMemo ref folCalc ("Russell's theorem, attempt " ++ show n) russellTheorem
+    where compTiming n = timeProof msolCalc                 ("comprehension proof,  attempt " ++ show n) comprehensionTheorem
+          compTimingMemo ref n = timeProofMemo ref msolCalc ("comprehension proof,  attempt " ++ show n) comprehensionTheorem
+          russTiming n = timeProof folCalc                  ("Russell's theorem,    attempt " ++ show n) russellTheorem
+          russTimingMemo ref n = timeProofMemo ref folCalc  ("Russell's theorem,    attempt " ++ show n) russellTheorem
+          invTimingMemo ref n = timeProofMemo ref psolCalc  ("Inverse theorem,      attempt " ++ show n) inverseTheorem
 
 -------------------------
 --  Testing Functions  --
@@ -111,6 +114,12 @@ timeProofMemo ref ndcalc desc prooftext =
     where checkline (Right _) = return ()
           checkline (Left (NoResult _)) = return ()
           checkline (Left e) = do putStrLn $ "test " ++ desc ++ " failed"
+                                  case e of (NoParse e' n) -> putStrLn $ "no parse on line " ++ show n ++ ":" ++ show e'
+                                            (NoUnify eqs n) -> 
+                                                do putStrLn $ "couldn't unify on line " ++ show n
+                                                   mapM (putStrLn . show) eqs
+                                                   return ()
+                                            (GenericError s n) -> putStrLn $ "on line " ++ show n ++ s
                                   exitFailure
 
 succPair :: Equation PropSequentCalc -> Equation PropSequentCalc
@@ -310,7 +319,43 @@ russellTheoremForallx = [st|
 -ExAy(-Fyy <-> Fxy):-I 1-14
 |]
 
+inverseTheorem = [st|
+Show: ∀x∀y(X2(x,y) ↔ \w\v[X2(v,w)](y,x))
+  Show: ∀y(X2(a,y) ↔ \w\v[X2(v,w)](y,a))
+    Show: X2(a,b) -> \w\v[X2(v,w)](b,a)
+      X2(a,b):AS
+      \w\v[X2(v,w)](b,a):ABS2 4
+    :CD 5
+    Show: \w\v[X2(v,w)](b,a)-> X2(a,b)
+      \w\v[X2(v,w)](b,a):AS
+      X2(a,b):APP2 8
+    :CD 9
+    X2(a,b) <-> \x_1\x_2[X2(x_2,x_1)](b,a):CB 3 7
+  :UD 11
+:UD 2
+EY2∀x∀y(X2(x,y) ↔ Y2(y,x)):EG2 1
+|]
 
+simplifiedInverseTheorem = [st|
+Show: ∀X2∃Y2∀x∀y(X2(x,y) ↔ Y2(x,y))
+  Show: ∀x∀y(X2(x,y) ↔ X2(x,y))
+    Show: ∀y(X2(a,y) ↔ X2(a,y))
+      Show: X2(a,b) -> X2(a,b)
+        X2(a,b):AS
+      :CD 5
+      X2(a,b) <-> X2(a,b):CB 4 4
+    :UD 7
+  :UD 3
+  ∃Y2∀x∀y(X2(x,y) ↔ Y2(x,y)):EG2 2
+:UD2 10
+|]
+
+simplifiedInverseTheorem2 = [st|
+Show: ∀X2∃Y2∀x∀y(X2(x,y) ↔ Y2(x,y))
+  ∀x∀y(X2(x,y) ↔ X2(x,y)):PR
+  ∃Y2∀x∀y(X2(x,y) ↔ Y2(x,y)):EG2 2
+:UD2 3
+|]
 -------------------
 --  Test Syntax  --
 -------------------

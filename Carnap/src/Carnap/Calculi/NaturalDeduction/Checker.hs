@@ -5,6 +5,7 @@ import Carnap.Calculi.NaturalDeduction.Syntax
 import Carnap.Calculi.NaturalDeduction.Parser
 import Carnap.Core.Data.AbstractSyntaxDataTypes
 import Carnap.Core.Data.AbstractSyntaxClasses
+import Carnap.Core.Data.Util (rebuild)
 import Carnap.Core.Unification.Unification
 import Carnap.Core.Unification.FirstOrder
 import Carnap.Core.Unification.Huet
@@ -90,6 +91,7 @@ hoProcessLine ::
   , Sequentable lex
   , Inference r lex
   , MonadVar (ClassicalSequentOver lex) (State Int)
+  , MaybeStaticVar (lex (ClassicalSequentOver lex))
   ) => Deduction r lex -> Int -> FeedbackLine lex
 hoProcessLine ded n = case ded !! (n - 1) of
   --special case to catch QedLines not being cited in justifications
@@ -101,6 +103,7 @@ hoProcessLineMemo ::
   , Sequentable lex
   , Inference r lex
   , MonadVar (ClassicalSequentOver lex) (State Int)
+  , MaybeStaticVar (lex (ClassicalSequentOver lex))
   , Show (ClassicalSequentOver lex Succedent), Show r
   ) => ProofMemoRef lex -> Deduction r lex -> Int -> IO (FeedbackLine lex)
 hoProcessLineMemo ref ded n = case ded !! (n - 1) of
@@ -125,6 +128,7 @@ hoProcessLineFitch ::
   , Sequentable lex
   , Inference r lex
   , MonadVar (ClassicalSequentOver lex) (State Int)
+  , MaybeStaticVar (lex (ClassicalSequentOver lex))
   ) => Deduction r lex -> Int -> FeedbackLine lex
 hoProcessLineFitch ded n = case ded !! (n - 1) of
   --special case to catch QedLines not being cited in justifications
@@ -146,6 +150,7 @@ processLineStructuredFitchHO ::
   , Sequentable lex
   , Inference r lex
   , MonadVar (ClassicalSequentOver lex) (State Int)
+  , MaybeStaticVar (lex (ClassicalSequentOver lex))
   ) => DeductionTree r lex -> Int -> FeedbackLine lex
 processLineStructuredFitchHO ded n = case ded .! n of
   --special case to catch QedLines not being cited in justifications
@@ -222,6 +227,8 @@ hoseqFromNode ::
     ( Inference r lex
     , MaybeMonadVar (ClassicalSequentOver lex) (State Int)
     , MonadVar (ClassicalSequentOver lex) (State Int)
+    , StaticVar (ClassicalSequentOver lex)
+    , MaybeStaticVar (lex (ClassicalSequentOver lex))
     ) =>  Int -> [r] -> [ClassicalSequentOver lex Sequent] -> ClassicalSequentOver lex Succedent 
               -> [Either (ProofErrorMessage lex) [ClassicalSequentOver lex Sequent]]
 hoseqFromNode lineno rules prems conc = 
@@ -258,17 +265,22 @@ hoReduceProofTree ::
     , MaybeMonadVar (ClassicalSequentOver lex) (State Int)
     , MonadVar (ClassicalSequentOver lex) (State Int)
     , StaticVar (ClassicalSequentOver lex)
+    , MaybeStaticVar (lex (ClassicalSequentOver lex))
     ) =>  ProofTree r lex -> FeedbackLine lex
 hoReduceProofTree (Node (ProofLine no cont rules) ts) =  
         do prems <- mapM hoReduceProofTree ts
            rslt <- reduceResult no $ hoseqFromNode no rules prems cont
-           return $ evalState (toBNF rslt) (0 :: Int)
+           -- XXX: we need to rebuild the term here to make sure that there
+           -- are no unevaluated substitutions lurking inside under
+           -- lambdas, with stale variables in trapped in closures.
+           return $ rebuild $ evalState (toBNF (rebuild rslt)) (0 :: Int)
 
 hoReduceProofTreeMemo :: 
     ( Inference r lex
     , MaybeMonadVar (ClassicalSequentOver lex) (State Int)
     , MonadVar (ClassicalSequentOver lex) (State Int)
     , StaticVar (ClassicalSequentOver lex)
+    , MaybeStaticVar (lex (ClassicalSequentOver lex))
     , Hashable (ProofTree r lex)
     ) =>  ProofMemoRef lex -> ProofTree r lex -> IO (FeedbackLine lex)
 hoReduceProofTreeMemo ref pt@(Node (ProofLine no cont rules) ts) =  
@@ -279,7 +291,7 @@ hoReduceProofTreeMemo ref pt@(Node (ProofLine no cont rules) ts) =
                _       -> do prems <- mapM (hoReduceProofTreeMemo ref) ts
                              let x = do prems' <- sequence prems 
                                         rslt <- reduceResult no $ hoseqFromNode no rules prems' cont
-                                        return $ evalState (toBNF rslt) (0 :: Int)
+                                        return $ rebuild $ evalState (toBNF (rebuild rslt)) (0 :: Int)
                              writeIORef ref (M.insert thehash x thememo)
                              return x
 

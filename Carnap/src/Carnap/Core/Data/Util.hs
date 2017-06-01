@@ -1,7 +1,7 @@
 {-#LANGUAGE ImpredicativeTypes, FlexibleContexts, RankNTypes,TypeOperators, ScopedTypeVariables, GADTs, MultiParamTypeClasses #-}
 
 module Carnap.Core.Data.Util (scopeHeight, equalizeTypes, incArity, checkChildren,
-mapover, (:~:)(Refl), Buds(..), Blossoms(..), bloom, sbloom, grow) where
+mapover, (:~:)(Refl), Buds(..), Blossoms(..), bloom, sbloom, grow, rebuild) where
 
 --this module defines utility functions and typeclasses for manipulating
 --the data types defined in Core.Data
@@ -81,6 +81,19 @@ scopeHeight (x :!$: y) = max (scopeHeight x) (scopeHeight y)
 scopeHeight (LLam f) = scopeHeight (f dv) + 1
     where  dv = evalState fresh (0 :: Int)
 scopeHeight _ = 0
+
+{-|
+This function will rebuild a given linguistic expression, removing any
+closures that might be present in the open formulas
+-}
+
+rebuild :: ( FirstOrder (FixLang f) 
+           , MonadVar (FixLang f) (State Int)
+           , MaybeStaticVar (f (FixLang f))) => FixLang f a -> FixLang f a
+rebuild (x :!$: y) = rebuild x :!$: rebuild y
+rebuild (LLam f) = LLam (\x -> subst sv x $ rebuild (f sv))
+    where sv = static $ scopeHeight (LLam f)
+rebuild t = t
 
 --------------------------------------------------------
 --2. Random Syntax
