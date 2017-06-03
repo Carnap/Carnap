@@ -90,20 +90,30 @@
                 <div.demo>
 
                     <p> Here's another, this time using a version of system QL,
-                        \ from P.D. Magnus' <i>Forall x</i>. Note that we've changed
-                        \ how formulas are parsed (dropping the parentheses around
-                        \ the arguments to predicates), to match the display style of
-                        <i>Forall x
+                        \ from P.D. Magnus' <i>Forall x</i>. Note that we've
+                        \ changed how formulas are parsed (dropping the parentheses around
+                        \ the arguments to predicates), to match the display
+                        \ style of <i>Forall x</i>
 
                     ^{proofcheck 5 "proofchecker forallxQL NoSub Render" ":|-:-ExAy(-F(y,y) <-> F(x,y))" russellTheoremForallx}
                 <div.demo>
 
                     <p> This is a proofbox with a Kalish and Montegue System
-                        \ for Second-Order Logic, showing how to prove an instance of
-                        \ the comprehension scheme, using with a predicate
-                        \ abstraction rule.
+                        \ for Monadic Second-Order Logic, showing how to prove
+                        \ an instance of the comprehension scheme, using
+                        \ a predicate abstraction rule.
 
                     ^{proofcheck 6 "proofchecker secondOrder NoSub Render" ":|-: EXAx(F(x) /\\ G(x) <-> X(x))" comprehensionTheorem}
+
+                <div.demo>
+
+                    <p> This is a proof that every relation has an inverse, in
+                        \ a system of arbitrarily (finitely) Polyadic
+                        \ Second-Order Logic, again making use of a predicate
+                        \ abstraction rule.
+
+                    ^{proofcheck 7 "proofchecker polyadicSecondOrder NoSub Render" ":|-: AX2EY2AxAy(X2(x,y)<->Y2(y,x))" inverseTheorem}
+
 
             <div#demo-selector>
                 <span#demo-left>〈
@@ -113,6 +123,8 @@
                 <span#demo-right>〉
 
     <section#why>
+
+
         <h2>What's Carnap for?
 
         <p> Carnap is intended for use by educators, students, and researchers

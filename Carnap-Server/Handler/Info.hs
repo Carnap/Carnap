@@ -113,3 +113,22 @@ russellTheoremForallx = [st|
 -ExAy(-Fyy <-> Fxy):-I 1-14
 |]
 
+inverseTheorem = [st|
+Show: AX2EY2∀x∀y(X2(x,y) ↔ Y2(y,x))
+  Show: ∀x∀y(X2(x,y) ↔ \w\v[X2(v,w)](y,x))
+    Show: ∀y(X2(a,y) ↔ \w\v[X2(v,w)](y,a))
+      Show: X2(a,b) -> \w\v[X2(v,w)](b,a)
+        X2(a,b):AS
+        \w\v[X2(v,w)](b,a):ABS2 5
+      :CD 6
+      Show: \w\v[X2(v,w)](b,a)-> X2(a,b)
+        \w\v[X2(v,w)](b,a):AS
+        X2(a,b):APP2 9
+      :CD 10
+      X2(a,b) <-> \x_1\x_2[X2(x_2,x_1)](b,a):CB 4 8
+    :UD 12
+  :UD 3
+  EY2∀x∀y(X2(x,y) ↔ Y2(y,x)):EG2 2
+:UD2 15
+|]
+
