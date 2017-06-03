@@ -121,14 +121,13 @@ instance Inference MSOLogic MonadicallySOLLex where
                   stau = liftToSequent tau
         restriction _ = Nothing
 
--- TODO unify the different kinds of eigenconstrants using a prism for the
--- case deconstruction below.
+-- TODO unify the different kinds of eigenconstrants 
 sopredicateEigenConstraint c suc ant sub
     | c' `occursIn` ant' = Just $ "The predicate " ++ show c' ++ " appears not to be fresh, given that this line relies on " ++ show ant'
     | c' `occursIn` suc' = Just $ "The predicate " ++ show c' ++ " appears not to be fresh in the other premise " ++ show suc'
-    | otherwise = case fromSequent c' of
-                    SOPred _ _ -> Nothing
-                    _ -> Just $ "the expression " ++ show c' ++ " appears not to be a predicate."
+    | otherwise = if msolVarHead (fromSequent c') 
+                      then Nothing
+                      else Just $ "the expression " ++ show c' ++ " appears not to be a variable predication."
 
     where c'   = applySub sub c
           ant' = applySub sub ant
@@ -147,8 +146,6 @@ eigenConstraint c suc ant sub
     where c' = applySub sub c
           ant' = applySub sub ant
           suc' = applySub sub suc
-          -- XXX : this is not the most efficient way of checking
-          -- imaginable.
           occursIn x y = not $ (subst x (static 0) y) =* y
 
 -- XXX Skipping derived rules for now.
@@ -246,15 +243,15 @@ instance Inference PSOLogic PolyadicallySOLLex where
         conclusionOf (SOED1_PSOL n) = GammaV 1 :+: GammaV 2 :|-: ss' phiS
         conclusionOf (SOED2_PSOL n) = GammaV 1 :+: GammaV 2 :|-: ss' phiS
 
-        restriction (SOUD_PSOL n)  = Just (sopredicateEigenConstraint 
-                                          (liftToSequent $ schematicContextScheme n) 
+        restriction (SOUD_PSOL n)  = Just (psopredicateEigenConstraint 
+                                          (liftToSequent $ psolAppScheme (n - 1)) 
                                           -- XXX would be better to use
                                           -- contexts alone in line above
                                           (ss' $ universalScheme n)  
                                           (GammaV 1))
 
-        restriction (SOED1_PSOL n)  = Just (sopredicateEigenConstraint 
-                                           (liftToSequent $ schematicContextScheme n) 
+        restriction (SOED1_PSOL n)  = Just (psopredicateEigenConstraint 
+                                           (liftToSequent $ psolAppScheme (n - 1)) 
                                            (ss' $ existentialScheme n)  
                                            (GammaV 1 :+: GammaV 2))
 
@@ -271,6 +268,18 @@ instance Inference PSOLogic PolyadicallySOLLex where
                   
                   stau = liftToSequent tau
         restriction _ = Nothing
+        --
+psopredicateEigenConstraint c suc ant sub
+    | c' `occursIn` ant' = Just $ "The predicate " ++ show c' ++ " appears not to be fresh, given that this line relies on " ++ show ant'
+    | c' `occursIn` suc' = Just $ "The predicate " ++ show c' ++ " appears not to be fresh in the other premise " ++ show suc'
+    | otherwise = if psolVarHead (fromSequent c') 
+                      then Nothing
+                      else Just $ "the expression " ++ show c' ++ " appears not to be a predicate."
+
+    where c'   = applySub sub c
+          ant' = applySub sub ant
+          suc' = applySub sub suc
+          occursIn x y = not $ (subst x (static 0) y) =* y
 
 -- XXX Skipping derived rules for now.
 parsePSOLogic :: Parsec String u [PSOLogic]
@@ -334,6 +343,14 @@ predScheme n = phi n :!$: SOT n
                     | n > 0 = case incBody (phi (n - 1)) of
                                    Just p' -> p' :!$: SOT (n - 1)
                                    Nothing -> error "trouble in predScheme algorithm"
+                                   --
+-- | produces an n-ary schematic applicator with n schematic terms for
+-- arguments
+psolAppScheme ::  Int -> PolyadicallySOL (Form Bool)
+psolAppScheme n = (SOPApp SOApp :!$: phi n) :!$: SOT n
+        where phi :: Int -> PolyadicallySOL (Form (Int -> Bool))
+              phi n | n < 1 = SOPScheme 1 AOne
+                    | n > 0 = (SOPApp SOApp :!$: incScheme (phi (n - 1))) :!$: SOT (n - 1)
 
 seqsomv :: String -> MSOLSequentCalc (Form (Int -> Bool))
 seqsomv x = liftToSequent $ SOMVar x
@@ -360,11 +377,13 @@ universalScheme n = iterate incQuant (SOPQuant (SOPAll ('V' : show n) (AZero)) :
     where theNthCtx x = subBoundVar (SOPVar ('X' : show n) AZero) x (iterate incVarCtx initCtx !! n)
           initCtx = SOPCtx 1 AZero :!$: (SOPVar ('V' : show n) AZero)
 
+-- | produces a existential generalization conclusion instance for n-adic variables
 existentialScheme :: Int -> PolyadicallySOL (Form Bool)
 existentialScheme n = iterate incQuant (SOPQuant (SOPSome ('V' : show n) (AZero)) :!$: LLam (theNthCtx)) !! n
     where theNthCtx x = subBoundVar (SOPVar ('X' : show n) AZero) x (iterate incVarCtx initCtx !! n)
           initCtx = SOPCtx 1 AZero :!$: (SOPVar ('V' : show n) AZero)
 
+-- | produces a universal instantiation conclusion instance for n-adic variables
 schematicContextScheme :: Int -> PolyadicallySOL (Form Bool)
 schematicContextScheme n = iterate incSchemeCtx initCtx !! n
     where initCtx = SOPCtx 1 AZero :!$: (SOPScheme 1 AZero)

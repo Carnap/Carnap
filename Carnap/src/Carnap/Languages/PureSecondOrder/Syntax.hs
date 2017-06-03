@@ -410,6 +410,11 @@ incVar ((SOPApp SOApp) :!$: l :!$: t) = (SOPApp SOApp) :!$: (incVar l) :!$: t
 incVar (SOPVar s a) = SOPVar s (ASucc a)
 incVar _ = error "attempted to increment the variable of a nonvariable predication"
 
+incScheme :: Typeable a => PolyadicallySOL (Form a) -> PolyadicallySOL (Form (Int -> a))
+incScheme ((SOPApp SOApp) :!$: l :!$: t) = (SOPApp SOApp) :!$: (incScheme l) :!$: t
+incScheme (SOPScheme s a) = SOPScheme s (ASucc a)
+incScheme _ = error "attempted to increment the variable of a nonvariable predication"
+
 incQuant :: PolyadicallySOL (Form Bool) -> PolyadicallySOL (Form Bool)
 incQuant ((SOPQuant (SOPAll s a)) :!$: (LLam f)) = 
     (SOPQuant (SOPAll s (ASucc a))) :!$: (LLam $ \x -> subBoundVar (SOPVar s (ASucc a)) x (f $ SOPVar s a))
@@ -426,6 +431,19 @@ incVarCtx _ = error "attempted to increment the variable context of a non-variab
 incSchemeCtx :: PolyadicallySOL (Form Bool) -> PolyadicallySOL (Form Bool)
 incSchemeCtx ((SOPCtx n a) :!$: (SOPScheme s c)) = (SOPCtx n (ASucc a)) :!$: (SOPScheme s (ASucc c))
 incSchemeCtx _ = error "attempted to increment the scheme context of a non-scheme/context predicaton"
+
+--Determine whether a formula is a simple predication with a polyadic variable head
+psolVarHead :: PolyadicallySOL a -> Bool
+psolVarHead ((SOPApp SOApp) :!$: x) = psolVarHead x
+psolVarHead (x :!$: _) = psolVarHead x
+psolVarHead (SOPVar _ _) = True
+psolVarHead _ = False
+
+msolVarHead :: MonadicallySOL a -> Bool
+msolVarHead ((SOMApp SOApp) :!$: x) = msolVarHead x
+msolVarHead (x :!$: _) = msolVarHead x
+msolVarHead (SOMVar _) = True
+msolVarHead _ = False
 
 {--
 the idea would be for lambda abstraction to work like this:
