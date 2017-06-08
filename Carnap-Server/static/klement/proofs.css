@@ -1,0 +1,100 @@
+var {
+   margin-right: 1px;
+}
+button {
+   margin-right: 1em;
+   margin-bottom: 0.5ex;
+}
+div.resultsdiv {
+   margin-top: 1ex;
+   margin-bottom: 1ex;
+}
+table.prooftable {
+   border-collapse: collapse;
+   margin-bottom: 2ex;
+   /* border-spacing: 0; */
+}
+
+table.prooftable tr.spacerrow, table.prooftable tr.spacerrow td {
+   height: 0.5ex;
+}
+
+table.prooftable td {
+   padding: 0px;
+   height: 3.3ex;
+}
+
+table.prooftable td.linenocell {
+   text-align: right;
+   padding-right: 0.5em;
+}
+table.prooftable td.midcell {
+   min-width: 1em;
+}
+table.prooftable td.midcell, td.wffcell {
+   border-left: 2px solid black;
+}
+table.prooftable td.wffcell input {
+   font-size: inherit;
+   width: 10em;
+}
+table.prooftable td.wffcell {
+   min-width: 11em;
+}
+table.prooftable td.wffcell span {
+   padding-left: 0.5em;
+   padding-right: 0.5em;
+}
+table.prooftable td.jcell input {
+   font-size: inherit;
+   width: 5em;
+}
+table.prooftable td.jcell {
+   border: 1px dashed transparent;
+   min-width: 5.2em;
+}
+table.prooftable td.wffcell:hover, table.prooftable td.jcell:hover {
+   background-color: LightGray;
+   cursor: pointer;
+}
+table.prooftable td.wffcell.noclick:hover,table.prooftable td.jcell.noclick:hover {
+   background-color: transparent;
+   cursor: default;
+}
+table.prooftable td.sepcell span, table.prooftable td.sepcell input  {
+   border-bottom: 2px solid black;
+   padding-bottom: 2px;
+}
+table.prooftable td.buttoncell a {
+   visibility: hidden;
+}
+table.prooftable tr:hover td.buttoncell a {
+   visibility: visible;
+}
+
+
+table.prooftable td.buttoncell a, #key a {
+   color: blue;
+   cursor: pointer;
+   margin-left: 0.5em;
+   padding: 3px;
+   border: 1px solid blue;
+   border-radius: 5px;
+}
+table.prooftable td.buttoncell a:hover {
+   background-color: LightBlue;
+}
+table.prooftable td.jcell.showcell {
+   border: 1px dashed gray;
+   background-color: LightGray;
+}
+table.prooftable td.jcell.showcell:hover {
+   border-bottom: 1px solid LightGray;
+   background-color: DarkGray;
+}
+button img {
+   margin-top: 0.2ex;
+   margin-bottom: 0.2ex;
+   margin-right: 0.5ex;
+   vertical-align: middle;
+}
