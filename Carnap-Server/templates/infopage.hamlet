@@ -114,6 +114,14 @@
 
                     ^{proofcheck 7 "proofchecker polyadicSecondOrder NoSub Render" ":|-: AX2EY2AxAy(X2(x,y)<->Y2(y,x))" inverseTheorem}
 
+                <div.demo>
+
+                    <p>
+
+                    <div.exercise>
+                        <span> example 8
+                        <div#klementProof>
+                            (W ∨ X), (Y ∨ Z), X → Y, ¬Z ∴ W ∨ Y
 
             <div#demo-selector>
                 <span#demo-left>〈

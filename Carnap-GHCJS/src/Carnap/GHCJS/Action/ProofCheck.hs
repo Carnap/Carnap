@@ -154,7 +154,6 @@ activateChecker drs w (Just iog@(IOGoal i o g classes))
                                            standardOptions
               standardCheck memo calc s mtref mpd = threadedCheck (Checker drs s mtref mpd memo calc)
 
-
 threadedCheck checker w ref v (g, fd) = 
         do mt <- readIORef (threadRef checker)
            case mt of

@@ -4,6 +4,11 @@ $(".demo:first-child()").addClass("visible")
 
 $("#demo-tot").html($(".demo").length)
 
+var klement_new = "@{StaticR klement_new_png}"
+var klement_newsp = "@{StaticR klement_newsp_png}"
+var klement_newb = "@{StaticR klement_newb_png}"
+var klement_newspb = "@{StaticR klement_newspb_png}"
+
 function updateSlider(newelt){
     if (newelt.length > 0) {
         $(".visible").removeClass("visible")
@@ -34,3 +39,12 @@ function pushLeft(e) {
 $("#demo-right").on("click",pushRight)
 
 $("#demo-left").on("click",pushLeft)
+
+function klementActivate() {
+    s=document.getElementById("klementProof")
+    /* console.log(s.innerHTML) */
+    makeProof(s,[],"W ∨ Y")
+    console.log("activated Klement")
+    }
+
+klementActivate()

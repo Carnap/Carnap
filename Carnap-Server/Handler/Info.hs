@@ -10,10 +10,13 @@ getInfoR = do
         addScript $ StaticR ghcjs_rts_js
         addScript $ StaticR ghcjs_allactions_lib_js
         addScript $ StaticR ghcjs_allactions_out_js
+        addScript $ StaticR klement_proofs_js
+        addScript $ StaticR klement_syntax_js
         setTitle "Carnap - About"
         $(widgetFile "infopage")
         addStylesheet $ StaticR css_tree_css
         addStylesheet $ StaticR css_exercises_css
+        addStylesheet $ StaticR klement_proofs_css
         -- TODO : split out the stuff specifically relating to exercises
         addScript $ StaticR ghcjs_allactions_runmain_js
 
@@ -131,4 +134,3 @@ Show: AX2EY2∀x∀y(X2(x,y) ↔ Y2(y,x))
   EY2∀x∀y(X2(x,y) ↔ Y2(y,x)):EG2 2
 :UD2 15
 |]
-
