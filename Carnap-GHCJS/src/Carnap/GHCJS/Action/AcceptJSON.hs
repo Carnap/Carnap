@@ -39,24 +39,39 @@ acceptJSONAction = runWebGUI $ \w ->
                initializeCallback checkJSON
                return ()
 
-checkJSON:: Value -> IO (String,Value)
+checkJSON:: Value -> IO Value
 checkJSON v = do let Success (s,d,c,p) = parse parseReply v
                  print (s,d,c,p)
                  --- XXX See if this duplication can be avoided
-                 if s then case parseProofData parsePairFOL d of
-                        (Left e) -> return ("parsing error: " ++ show e, toJSON ("" :: String) )
-                        (Right ded) -> do let Feedback mseq ds = toDisplaySequenceStructured processLineStructuredFitchHO ded
-                                          let fb = toJSON $ map serialize ds
-                                          return (show mseq,fb)
-                      else case parseProofData parsePairProp d of
-                        (Left e) -> return ("parsing error: " ++ show e, toJSON ("" :: String) )
-                        (Right ded) -> do let Feedback mseq ds = toDisplaySequenceStructured processLineStructuredFitch ded
-                                          let fb = toJSON $ map serialize ds
-                                          return (show mseq,fb)
+                 if s then case (parseProofData parsePairFOL d, P.parse forallxFOLFormulaParser "" c) of
+                        (Left e,_) -> return $ replyObject False "" nilson (show e)
+                        (Right ded,Right conc) -> 
+                            do let Feedback mseq ds = toDisplaySequenceStructured processLineStructuredFitchHO ded
+                               let fb = toJSON $ map serialize ds
+                               return $ case mseq of 
+                                  Just seq@(_:|-: (SS s)) -> replyObject (s == liftToSequent conc) (show seq) fb ""
+                                  Nothing ->  replyObject False "" fb ""
+                        (_,Left e) -> return $ replyObject False "" nilson "couldn't parse conclusion"
+                      else case (parseProofData parsePairProp d, P.parse (purePropFormulaParser extendedLetters) "" c) of
+                        (Left e,_) -> return $ replyObject False "" nilson (show e)
+                        (Right ded, Right conc) -> 
+                            do let Feedback mseq ds = toDisplaySequenceStructured processLineStructuredFitch ded
+                               let fb = toJSON $ map serialize ds
+                               return $ case mseq of 
+                                  Just seq@(_:|-: (SS s)) -> replyObject (s == liftToSequent conc) (show seq) fb ""
+                                  Nothing ->  replyObject False "" fb ""
+                        (_,Left e) -> return $ replyObject False "" nilson "couldn't parse conclusion"
 
 
     where serialize (Left e) = Left e
           serialize (Right s) = Right $ show s
+          nilson = toJSON ("" :: String)
+
+replyObject succeeded sequent feedback errmsg = object [ "succeed" .= (succeeded :: Bool)
+                                                       , "sequent" .= (sequent :: String)
+                                                       , "feedback" .= (feedback :: Value)
+                                                       , "errmsg" .= (errmsg :: String)
+                                                       ]
                                       
 parseReply = withObject "not an object" $ \o -> do
     psetting   <- o .: "predicateSettings" :: Parser Bool
@@ -142,24 +157,22 @@ instance (Schematizable (FixLang lex), Schematizable (ClassicalSequentOver lex))
 
 #ifdef __GHCJS__
 
-foreign import javascript unsafe "acceptJSONCallback_ = $1" initializeCallbackJS :: Callback (payload -> succ -> feedback -> IO ()) -> IO ()
+foreign import javascript unsafe "acceptJSONCallback_ = $1" initializeCallbackJS :: Callback (payload -> succ -> IO ()) -> IO ()
 
 foreign import javascript unsafe "$1($2);" simpleCall :: JSVal -> JSVal -> IO ()
 
-initializeCallback :: (Value -> IO (String,Value)) -> IO ()
-initializeCallback f = do theCB <- asyncCallback3 (cb f)
+initializeCallback :: (Value -> IO Value) -> IO ()
+initializeCallback f = do theCB <- asyncCallback2 (cb f)
                           initializeCallbackJS theCB
-    where cb f payload succ feedback = do (Just raw) <- fromJSVal payload
-                                          let (Just val) = decode . fromStrict . encodeUtf8 $ raw
-                                          (rslt,fb) <- f val
-                                          rslt' <- toJSVal rslt
-                                          fb' <- toJSVal fb
-                                          simpleCall succ rslt'
-                                          simpleCall feedback fb'
+    where cb f payload succ = do (Just raw) <- fromJSVal payload
+                                 let (Just val) = decode . fromStrict . encodeUtf8 $ raw
+                                 rslt <- f val
+                                 rslt' <- toJSVal rslt
+                                 simpleCall succ rslt'
 
 #else
 
-initializeCallback :: (Value -> IO (String,Value)) -> IO ()
+initializeCallback :: (Value -> IO Value) -> IO ()
 initializeCallback = undefined
 
 #endif

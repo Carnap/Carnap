@@ -1,7 +1,7 @@
 
 var proofBeingChecked = false;
 
-function processProofCheckResponse(text) {
+function processProofCheckResponse(result) {
    // if (!(proofBeingChecked)) {
    //    return;
    // }
@@ -17,7 +17,14 @@ function processProofCheckResponse(text) {
    //    restext += '<span style="font-size: 150%; color: red;">☹</span> <strong>Sorry there were errors</strong>.<br />';
    //    restext += res.issues.join('<br />');
    // }
-   proofBeingChecked.results.innerHTML = text;
+   console.log(result)
+   if (result.succeed) { 
+       proofBeingChecked.results.innerHTML = "success!";
+   } else if (result.errmsg == "") { 
+       proofBeingChecked.results.innerHTML = "proof incomplete";
+   } else {
+       proofBeingChecked.results.innerHTML = result.errormsg;
+   }
    proofBeingChecked = false;
 }
 
@@ -449,8 +456,7 @@ function makeProof(pardiv, pstart, conc) {
       transmission.wantedConclusion = this.wantedConc;
       transmission.numPrems = this.numPrems;
       acceptJSONCallback_ ( JSON.stringify(transmission)
-                          , function(result) { processProofCheckResponse(result); }
-                          , function (feedback) { console.log(feedback); });
+                          , function(result) { processProofCheckResponse(result); });
    }
    
    p.displayMe = function() {
@@ -486,7 +492,7 @@ function makeProof(pardiv, pstart, conc) {
                sp.innerHTML = "finish subproof; add line";
                a.title = "Finish this subproof, and add a line to parent.";
             }
-            if (im.src.match(klement_newbsp)) {
+            if (im.src.match(klement_newspb)) {
                sp.innerHTML = "finish subproof; start another";
                a.title = "Finish this subproof, and add start a new one in parent.";
             }
