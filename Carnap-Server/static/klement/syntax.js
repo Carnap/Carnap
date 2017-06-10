@@ -83,6 +83,7 @@ function fixJInputStr(s) {
    fs = fs.replace(/r/g, "R");
    fs = fs.replace(/[Pp][Rr]/g, "");
    fs = fs.replace(/[Hh][Yy][Pp]/g, "");
+   fs = fs.replace(/[Aa][Ss]/g, "");
    fs = fs.replace(/([^\s,0-9–-])([0-9])/g,"$1 $2")
    fs = fs.replace(/([0-9])([^\s,0-9–-])/g,"$1 $2")
    fs = fs.replace(/^[,\s]*/,'');
