@@ -43,7 +43,24 @@ $("#demo-left").on("click",pushLeft)
 function klementActivate() {
     s=document.getElementById("klementProof")
     /* console.log(s.innerHTML) */
-    makeProof(s,[],"W ∨ Y")
+    sofar = []
+    sofar.push({
+       "wffstr" : "(W ∨ X)",
+       "jstr" : "Pr"
+    });
+    sofar.push({
+       "wffstr" : "(Y ∨ Z)",
+       "jstr" : "Pr"
+    });
+    sofar.push({
+       "wffstr" : "X → Y",
+       "jstr" : "Pr"
+    });
+    sofar.push({
+       "wffstr" : "¬Z",
+       "jstr" : "Pr"
+    });
+    makeProof(s,sofar,"W ∨ Y")
     console.log("activated Klement")
     }
 

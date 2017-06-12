@@ -451,7 +451,8 @@ function makeProof(pardiv, pstart, conc) {
    p.startCheckMe = function() {
       proofBeingChecked = this;
       var transmission = new Object();
-      transmission.predicateSettings = predicateSettings;
+      transmission.predicateSettings = predicateSettings; 
+      // predicate settings come from the environment 
       transmission.proofData = this.proofdata;
       transmission.wantedConclusion = this.wantedConc;
       transmission.numPrems = this.numPrems;
@@ -479,20 +480,21 @@ function makeProof(pardiv, pstart, conc) {
             var im=document.createElement("img");
             im.src = imgs[0].src;
             var sp=document.createElement("span");
-            console.log(im.src);
-            if (im.src.match(klement_new)) {
+            console.log("src:" + im.src);
+            console.log("new:" + klement_new);
+            if (im.src == klement_new) {
                sp.innerHTML = "new line";
                a.title = "Add a new line at end.";
             }
-            if (im.src.match(klement_newsp)) {
+            if (im.src == klement_newsp) {
                sp.innerHTML = "new subproof";
                a.title = "Start a new subproof at end.";
             }
-            if (im.src.match(klement_newb)) {
+            if (im.src == klement_newb) {
                sp.innerHTML = "finish subproof; add line";
                a.title = "Finish this subproof, and add a line to parent.";
             }
-            if (im.src.match(klement_newspb)) {
+            if (im.src == klement_newspb) {
                sp.innerHTML = "finish subproof; start another";
                a.title = "Finish this subproof, and add start a new one in parent.";
             }
