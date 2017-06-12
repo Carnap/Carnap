@@ -68,7 +68,8 @@
 
                 <div.demo>
                     <p>This is a rendering proofbox with a Kalish and Montegue
-                       \ System for Propositional Logic.
+                       \ System for Propositional Logic, which also visually
+                       \ displays the structure of the proof being developed.
 
                     ^{proofcheck 2 "proofchecker NoSub Render" ":|-:P\\/-P" aristotleTheorem}
 
@@ -116,7 +117,13 @@
 
                 <div.demo>
 
-                    <p>
+                    <p> Carnap also includes a JSON API, making it possible to
+                        \ create pure JavaScript GUIs that use Carnap under
+                        \ the hood for in-browser proof checking. Here's an example
+                        \ of such a GUI, adapted from #
+                            <a href="https://the21stcenturymonads.net/forallx/">
+                                Kevin Klement's forallx proofchecker
+                        \ using P.D. Magnus' <i>Forall x</i> system SL.
 
                     <div.exercise>
                         <span> example 8

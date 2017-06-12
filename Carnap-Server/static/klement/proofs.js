@@ -1,22 +1,22 @@
+// Copyright (C) 2017 Kevin C. Klement
+
+// This program is free software; you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation; either version 2 of the License, or
+// (at your option) any later version.
+
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+
+// You should have received a copy of the GNU General Public License
+// along with this program; if not, write to the Free Software
+// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 var proofBeingChecked = false;
 
 function processProofCheckResponse(result) {
-   // if (!(proofBeingChecked)) {
-   //    return;
-   // }
-   // var res = JSON.parse(text);
-   // var restext = '';
-   // if (res.issues.length == 0) {
-   //    if (res.concReached == true) {
-   //       restext += '<span style="font-size: 150%; color: green;">☺</span> Congratulations! This proof is correct.';
-   //    } else {
-   //       restext += '<span style="font-size: 150%; color: blue;">😐</span> No errors yet, but you haven’t reached the conclusion.';
-   //    }
-   // } else {
-   //    restext += '<span style="font-size: 150%; color: red;">☹</span> <strong>Sorry there were errors</strong>.<br />';
-   //    restext += res.issues.join('<br />');
-   // }
    console.log(result)
    if (result.succeed) { 
        proofBeingChecked.results.innerHTML = "success!";
@@ -480,8 +480,6 @@ function makeProof(pardiv, pstart, conc) {
             var im=document.createElement("img");
             im.src = imgs[0].src;
             var sp=document.createElement("span");
-            console.log("src:" + im.src);
-            console.log("new:" + klement_new);
             if (im.src == klement_new) {
                sp.innerHTML = "new line";
                a.title = "Add a new line at end.";
