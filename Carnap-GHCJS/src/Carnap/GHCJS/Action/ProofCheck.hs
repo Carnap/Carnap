@@ -72,12 +72,12 @@ getCheckers :: IsElement self => self -> IO [Maybe IOGoal]
 getCheckers = getInOutGoalElts "proofchecker"
 
 data Checker r lex der = Checker 
-        { checkerRules :: IORef [(String,der)]
+        { checkerCalc :: NaturalDeductionCalc r lex der
+        , checkerRules :: Maybe (IORef [(String,der)])
         , sequent :: ClassicalSequentOver lex Sequent
         , threadRef :: IORef (Maybe ThreadId)
         , proofDisplay :: Maybe Element
         , proofMemo :: ProofMemoRef lex
-        , checkerCalc :: NaturalDeductionCalc r lex der
         }
 
 activateChecker ::  IORef [(String,P.DerivedRule)] -> Document -> Maybe IOGoal -> IO ()
@@ -94,15 +94,23 @@ activateChecker drs w (Just iog@(IOGoal i o g classes))
                                            checkerWith standardOptions {submit = Nothing} 
                                                 (fitchPlayground drs pd) iog w
         | "firstOrder" `elem` classes = do
-                        drs' <- newIORef [] -- XXX we don't yet have derived rules for FOL
                         memo <- newIORef mempty 
                         tryParse buildOptions folSeqParser 
-                            (\s mtref mpd -> threadedCheck (Checker drs' s mtref mpd memo folCalc))
+                            (\s mtref mpd -> threadedCheck (Checker { checkerRules = Nothing
+                                                                    , sequent = s
+                                                                    , threadRef = mtref
+                                                                    , proofDisplay = mpd
+                                                                    , proofMemo = memo 
+                                                                    , checkerCalc = folCalc }))
         | "forallxQL" `elem` classes = do
-                        drs' <- newIORef [] -- XXX we don't yet have derived rules for FOL
                         memo <- newIORef mempty 
                         tryParse buildOptions folSeqParser 
-                            (\s mtref mpd -> threadedCheck (Checker drs' s mtref mpd memo forallxQLCalc))
+                            (\s mtref mpd -> threadedCheck (Checker { checkerRules = Nothing
+                                                                    , sequent = s
+                                                                    , threadRef = mtref
+                                                                    , proofDisplay = mpd
+                                                                    , proofMemo = memo 
+                                                                    , checkerCalc = forallxQLCalc}))
         | "secondOrder" `elem` classes = do
                         memo <- newIORef mempty 
                         tryParse buildOptions msolSeqParser (standardCheck memo msolCalc)
@@ -152,7 +160,12 @@ activateChecker drs w (Just iog@(IOGoal i o g classes))
                                            when ("Render" `elem` classes) 
                                                 (modify (\o -> o {render = True})))
                                            standardOptions
-              standardCheck memo calc s mtref mpd = threadedCheck (Checker drs s mtref mpd memo calc)
+              standardCheck memo calc s mtref mpd = threadedCheck (Checker { checkerRules = Just drs
+                                                                           , sequent = s
+                                                                           , threadRef = mtref
+                                                                           , proofDisplay = mpd
+                                                                           , proofMemo = memo
+                                                                           , checkerCalc = calc})
 
 threadedCheck checker w ref v (g, fd) = 
         do mt <- readIORef (threadRef checker)
@@ -160,8 +173,10 @@ threadedCheck checker w ref v (g, fd) =
                Just t -> killThread t
                Nothing -> return ()
            t' <- forkIO $ do threadDelay 200000
-                             rlist <- liftIO $ readIORef (checkerRules checker)
-                             let rules = M.fromList rlist
+                             rules <- case checkerRules checker of
+                                             Nothing -> return mempty
+                                             Just ref -> do rlist <- liftIO $ readIORef ref
+                                                            return $ M.fromList rlist
                              let ndcalc = checkerCalc checker
                              let ded = ndParseProof ndcalc rules v
                              case proofDisplay checker of 
