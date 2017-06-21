@@ -5,7 +5,8 @@ import Carnap.Calculi.NaturalDeduction.Syntax
     (ProofMemoRef, NaturalDeductionCalc(..),RenderStyle(..), Inference(..))
 import Carnap.Calculi.NaturalDeduction.Checker 
     (ProofErrorMessage(..), Feedback(..), seqSubsetUnify, toDisplaySequenceMemo, toDisplaySequence)
-import Carnap.Core.Data.AbstractSyntaxDataTypes (liftLang)
+import Carnap.Core.Data.AbstractSyntaxDataTypes (liftLang, FixLang, CopulaSchema)
+import Carnap.Core.Data.AbstractSyntaxClasses (Schematizable)
 import Carnap.Languages.ClassicalSequent.Syntax
 import Carnap.Languages.PurePropositional.Logic as P (DerivedRule(..), propSeqParser, logicBookCalc, forallxSLCalc, propCalc, ) 
 import Carnap.Languages.PureFirstOrder.Logic as FOL (DerivedRule(..),  folSeqParser, folCalc,forallxQLCalc) 
@@ -74,7 +75,7 @@ getCheckers = getInOutGoalElts "proofchecker"
 data Checker r lex der = Checker 
         { checkerCalc :: NaturalDeductionCalc r lex der
         , checkerRules :: Maybe (IORef [(String,der)])
-        , sequent :: ClassicalSequentOver lex Sequent
+        , sequent :: Maybe (ClassicalSequentOver lex Sequent)
         , threadRef :: IORef (Maybe ThreadId)
         , proofDisplay :: Maybe Element
         , proofMemo :: ProofMemoRef lex
@@ -83,66 +84,48 @@ data Checker r lex der = Checker
 activateChecker ::  IORef [(String,P.DerivedRule)] -> Document -> Maybe IOGoal -> IO ()
 activateChecker _ _ Nothing  = return ()
 activateChecker drs w (Just iog@(IOGoal i o g classes))
-        | "ruleMaker" `elem` classes = 
-            checkerWith standardOptions {submit = Just Button 
-                                            { label = "save rule"
-                                            , action = trySave drs
-                                            }
-                                        } (computeRule drs) iog w
-        -- TODO Assimilate playground as an option
-        | "playground" `elem` classes = do pd <- makeDisplay
-                                           checkerWith standardOptions {submit = Nothing} 
-                                                (fitchPlayground drs pd) iog w
         | "firstOrder" `elem` classes = do
-                        memo <- newIORef mempty 
-                        tryParse buildOptions folSeqParser 
-                            (\s mtref mpd -> threadedCheck (Checker { checkerRules = Nothing
-                                                                    , sequent = s
-                                                                    , threadRef = mtref
-                                                                    , proofDisplay = mpd
-                                                                    , proofMemo = memo 
-                                                                    , checkerCalc = folCalc }))
+                        tryParse buildOptions folSeqParser folCalc Nothing
         | "forallxQL" `elem` classes = do
-                        memo <- newIORef mempty 
-                        tryParse buildOptions folSeqParser 
-                            (\s mtref mpd -> threadedCheck (Checker { checkerRules = Nothing
-                                                                    , sequent = s
-                                                                    , threadRef = mtref
-                                                                    , proofDisplay = mpd
-                                                                    , proofMemo = memo 
-                                                                    , checkerCalc = forallxQLCalc}))
+                        tryParse buildOptions folSeqParser forallxQLCalc Nothing
         | "secondOrder" `elem` classes = do
-                        memo <- newIORef mempty 
-                        tryParse buildOptions msolSeqParser (standardCheck memo msolCalc)
+                        tryParse buildOptions msolSeqParser msolCalc (Just drs)
         | "polyadicSecondOrder" `elem` classes = do
-                        memo <- newIORef mempty 
-                        tryParse buildOptions psolSeqParser (standardCheck memo psolCalc)
+                        tryParse buildOptions psolSeqParser psolCalc (Just drs)
         | "LogicBook" `elem` classes = do
-                        memo <- newIORef mempty 
-                        tryParse buildOptions propSeqParser (standardCheck memo logicBookCalc)
+                        tryParse buildOptions propSeqParser logicBookCalc (Just drs)
         | "forallxSL" `elem` classes = do
-                        memo <- newIORef mempty 
-                        tryParse buildOptions propSeqParser (standardCheck memo forallxSLCalc)
-        | otherwise = do memo <- newIORef mempty 
-                         tryParse buildOptions propSeqParser (standardCheck memo propCalc)
-        where tryParse options seqParse checker = do
-                  (Just gs) <- getInnerHTML g 
-                  case parse (withLabel seqParse) "" (decodeHtml gs) of
-                       Left e -> setInnerHTML g (Just "Couldn't Parse Goal")
-                       Right (l,s) -> do setInnerHTML g (Just $ show s)
-                                         --Maybe thread ref
-                                         mtref <- newIORef Nothing
-                                         --Maybe proof display
-                                         mpd <- if render options then Just <$> makeDisplay
-                                                                  else return Nothing
-                                         case submit options of
-                                             Nothing -> checkerWith options
-                                                         (checker s mtref mpd)
-                                                         iog w
-                                             Just b -> checkerWith 
-                                                         options {submit = Just b {action = trySubmit l s }}
-                                                         (checker s mtref mpd)
-                                                         iog w
+                        tryParse buildOptions propSeqParser forallxSLCalc (Just drs)
+        | otherwise = do 
+                         tryParse buildOptions propSeqParser propCalc (Just drs)
+        where tryParse options seqParse calc mdrs = do
+                  memo <- newIORef mempty
+                  mtref <- newIORef Nothing
+                  mpd <- if render options then Just <$> makeDisplay else return Nothing
+                  let checker ms = threadedCheck (Checker { checkerRules = mdrs
+                                                          , sequent = ms
+                                                          , threadRef = mtref
+                                                          , proofDisplay = mpd
+                                                          , proofMemo = memo
+                                                          , checkerCalc = calc})
+                  mlabelseq <- if directed options then parseWith seqParse else return Nothing
+                  case (submit options, mlabelseq) of
+                      (Just b,Just (l,s)) -> checkerWith 
+                                          (options {submit = Just b {action = trySubmit l s }})
+                                          (checker (Just s))
+                                          iog w
+                      (Nothing,Just (l,s)) -> checkerWith 
+                                          options
+                                          (checker (Just s))
+                                          iog w
+                      _ -> checkerWith options (checker Nothing) iog w
+              parseWith seqParse = do (Just gs) <- getInnerHTML g 
+                                      case parse (withLabel seqParse) "" (decodeHtml gs) of
+                                          Left e -> do setInnerHTML g (Just "Couldn't Parse Goal")
+                                                       error "couldn't parse goal"
+                                          Right (l,s) -> do setInnerHTML g (Just $ show s)
+                                                            return (Just (l,s))
+
               makeDisplay = do (Just pd) <- createElement w (Just "div")
                                setAttribute pd "class" "proofDisplay"
                                (Just parent) <- getParentNode o
@@ -154,18 +137,21 @@ activateChecker drs w (Just iog@(IOGoal i o g classes))
                                               , action = \r w e -> return ()
                                               }
                                    , render = False
+                                   , directed = True
                                    }
               buildOptions = execState (do when ("NoSub" `elem` classes) 
                                                 (modify (\o -> o {submit = Nothing}))
                                            when ("Render" `elem` classes) 
-                                                (modify (\o -> o {render = True})))
-                                           standardOptions
-              standardCheck memo calc s mtref mpd = threadedCheck (Checker { checkerRules = Just drs
-                                                                           , sequent = s
-                                                                           , threadRef = mtref
-                                                                           , proofDisplay = mpd
-                                                                           , proofMemo = memo
-                                                                           , checkerCalc = calc})
+                                                (modify (\o -> o {render = True}))
+                                           when ("playground" `elem` classes)
+                                                (modify (\o -> o {directed = False, submit = Nothing}))
+                                           when ("ruleMaker" `elem` classes)
+                                                (modify (\o -> o {directed = False
+                                                                 , submit = Just Button 
+                                                                       { label = "Save Rule"
+                                                                       , action = trySave drs
+                                                                       }
+                                                                 }))) standardOptions
 
 threadedCheck checker w ref v (g, fd) = 
         do mt <- readIORef (threadRef checker)
@@ -188,7 +174,12 @@ threadedCheck checker w ref v (g, fd) =
                              Feedback mseq ds <- case ndProcessLineMemo ndcalc of
                                                      Just memoline -> toDisplaySequenceMemo (memoline $ proofMemo checker) ded
                                                      Nothing -> return $ toDisplaySequence (ndProcessLine ndcalc) ded
-                             updateGoal (sequent checker) w ref (g, fd) mseq ds
+                             ul <- genericListToUl wrap w ds
+                             setInnerHTML fd (Just "")
+                             appendChild fd (Just ul)
+                             case sequent checker of
+                                 Just s -> updateGoal s ref g mseq
+                                 Nothing -> computeRule ref g mseq
            writeIORef (threadRef checker) (Just t')
            return ()
 
@@ -196,46 +187,20 @@ threadedCheck checker w ref v (g, fd) =
                          MontegueStyle -> renderDeductionMontegue
                          FitchStyle -> renderDeductionFitch
 
-updateGoal s w ref (g, fd) mseq ds = do ul <- genericListToUl wrap w ds
-                                        setInnerHTML fd (Just "")
-                                        appendChild fd (Just ul)
-                                        case mseq of
-                                            Nothing -> do setAttribute g "class" "goal"
-                                                          writeIORef ref False
-                                            (Just seq) ->  if  seq `seqSubsetUnify` s
-                                                  then do setAttribute g "class" "goal success"
-                                                          writeIORef ref True
-                                                  else do setAttribute g "class" "goal"
-                                                          writeIORef ref False
-                                        return ()
+updateGoal s ref g mseq = case mseq of
+                         Nothing -> do setAttribute g "class" "goal"
+                                       writeIORef ref False
+                         (Just seq) ->  if  seq `seqSubsetUnify` s
+                               then do setAttribute g "class" "goal success"
+                                       writeIORef ref True
+                               else do setAttribute g "class" "goal"
+                                       writeIORef ref False
 
-computeRule drs w ref v (g, fd) = do rules <- liftIO $ readIORef drs
-                                     let Feedback mseq ds = toDisplaySequence (ndProcessLine propCalc) . ndParseProof propCalc (M.fromList rules) $ v
-                                     ul <- genericListToUl wrap w ds
-                                     setInnerHTML fd (Just "")
-                                     appendChild fd (Just ul)
-                                     case mseq of
-                                         Nothing -> do setInnerHTML g (Just "No Rule Found")
-                                                       writeIORef ref False
-                                         (Just seq) -> do setInnerHTML g (Just $ show seq)
-                                                          writeIORef ref True
-                                     return ()
-
-fitchPlayground drs pd w ref v (g, fd) =  do rules <- liftIO $ readIORef drs 
-                                             let ded = ndParseProof logicBookCalc (M.fromList rules) v
-                                             renderedProof <- renderDeductionFitch w ded
-                                             setInnerHTML pd (Just "")
-                                             appendChild pd (Just renderedProof)
-                                             let Feedback mseq ds = toDisplaySequence (ndProcessLine logicBookCalc) ded
-                                             ul <- genericListToUl wrap w ds
-                                             setInnerHTML fd (Just "")
-                                             appendChild fd (Just ul)
-                                             case mseq of
-                                                 Nothing -> do setInnerHTML g (Just "Nothing Proven")
-                                                               writeIORef ref False
-                                                 (Just seq) -> do setInnerHTML g (Just $ show seq)
-                                                                  writeIORef ref True
-                                             return ()
+computeRule ref g mseq = case mseq of
+                         Nothing -> do setInnerHTML g (Just "No Rule Found")
+                                       writeIORef ref False
+                         (Just seq) -> do setInnerHTML g (Just $ show seq)
+                                          writeIORef ref True
 
 trySubmit l s ref w i = do isFinished <- liftIO $ readIORef ref
                            if isFinished
