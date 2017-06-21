@@ -22,7 +22,8 @@ data CheckerFeedbackUpdate = Keypress | Click String | Never
 data CheckerOptions = CheckerOptions { submit :: Maybe Button -- What's the submission button, if there is one?
                                      , render :: Bool -- Should the checker render the proof?
                                      , directed :: Bool -- Is the checker directed towards a sequent?
-                                     , feedback :: CheckerFeedbackUpdate
+                                     , feedback :: CheckerFeedbackUpdate --what type of feedback should the checker give?
+                                     , initialUpdate :: Bool -- Should the checker be updated on load?
                                      }
 
 checkerWith :: CheckerOptions -> (Document -> IORef Bool -> String -> (Element, Element) -> IO ()) -> IOGoal -> Document -> IO ()
@@ -40,6 +41,8 @@ checkerWith options updateres iog@(IOGoal i o g classes) w = do
            addListener i keyUp lineupd False
            setLinesTo w nd 1
            syncScroll i o
+           initlistener <- newListener $ genericUpdateResults2 (updateres w ref) g fd
+           addListener i initialize initlistener False                
            case feedback options of
                Keypress -> do
                    kblistener <- newListener $ genericUpdateResults2 (updateres w ref) g fd
@@ -63,7 +66,7 @@ checkerWith options updateres iog@(IOGoal i o g classes) w = do
            case mv of
                Nothing -> return ()
                (Just iv) -> do setLinesTo w nd (1 + length (lines iv))
-                               updateres w ref iv (g, fd)
+                               if initialUpdate options then updateres w ref iv (g, fd) else return ()
 
 updateLines :: (IsElement e) => Document -> e -> EventM HTMLTextAreaElement KeyboardEvent ()
 updateLines w nd =  do (Just t) <- target :: EventM HTMLTextAreaElement KeyboardEvent (Maybe HTMLTextAreaElement)

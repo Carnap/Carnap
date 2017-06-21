@@ -8,17 +8,23 @@ var klement_new = "@{StaticR klement_new_png}"
 var klement_newsp = "@{StaticR klement_newsp_png}"
 var klement_newb = "@{StaticR klement_newb_png}"
 var klement_newspb = "@{StaticR klement_newspb_png}"
+var initialize = new Event('initialize');
 
 function updateSlider(newelt){
     if (newelt.length > 0) {
         $(".visible").removeClass("visible")
         newelt.addClass("visible")
+        window.setTimeout(initializeVisible,500)
         return true
         }
     else {
         return false
         }
 }
+
+function initializeVisible () {
+    document.querySelector(".visible textarea").dispatchEvent(initialize)
+    }
 
 function pushRight(e) {
     next=$(".visible").next()
@@ -64,4 +70,6 @@ function klementActivate() {
     console.log("activated Klement")
     }
 
+
+window.setTimeout(initializeVisible,2000)
 klementActivate()

@@ -139,6 +139,7 @@ activateChecker drs w (Just iog@(IOGoal i o g classes))
                                    , render = False
                                    , directed = True
                                    , feedback = Keypress
+                                   , initialUpdate = False
                                    }
               buildOptions = execState (do when ("NoSub" `elem` classes) 
                                                 (modify (\o -> o {submit = Nothing}))

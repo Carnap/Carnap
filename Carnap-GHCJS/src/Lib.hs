@@ -6,7 +6,8 @@ module Lib
     adjustFirstMatching, decodeHtml, syncScroll, reloadPage, initElements,
     loginCheck,errorPopup, getInOutElts, getInOutGoalElts, withLabel,
     formAndLabel,seqAndLabel, folSeqAndLabel, folFormAndLabel,
-    message, IOGoal(..), genericUpdateResults2, submissionSource, assignmentKey) where
+    message, IOGoal(..), genericUpdateResults2, submissionSource, assignmentKey,
+    initialize) where
 
 import Data.Aeson
 import qualified Data.ByteString.Lazy as BSL
@@ -44,6 +45,7 @@ import GHCJS.DOM.Event
 import GHCJS.DOM.KeyboardEvent
 import GHCJS.DOM.EventM
 import GHCJS.DOM.EventTarget
+import GHCJS.DOM.EventTargetClosures (EventName(..))
 import Carnap.GHCJS.SharedTypes
 import Carnap.Languages.PurePropositional.Syntax (PureForm)
 import Carnap.Languages.PurePropositional.Logic (propSeqParser)
@@ -340,7 +342,13 @@ assignmentKey :: IO String
 assignmentKey = do k <- assignmentKeyJS
                    return $ fromJSString k
 
+initialize :: EventName t Event
+initialize = EventName $ toJSString "initialize"
+
 #else
+
+initialize :: EventName t Event
+initialize = EventName "initialize"
 
 assignmentKey :: IO String
 assignmentKey = Prelude.error "assignmentKey requires the GHJS FFI"
