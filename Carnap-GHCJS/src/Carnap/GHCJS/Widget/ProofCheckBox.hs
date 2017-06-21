@@ -1,6 +1,7 @@
 module Carnap.GHCJS.Widget.ProofCheckBox (
     checkerWith, 
-    CheckerOptions(..), 
+    CheckerOptions(..),
+    CheckerFeedbackUpdate(..),
     Button(..)) where 
 import Lib
 import Data.IORef (IORef, newIORef,writeIORef,readIORef)
@@ -16,34 +17,47 @@ data Button = Button { label  :: String
                             EventM Element MouseEvent ()
                      }
 
-data CheckerOptions = CheckerOptions { submit :: Maybe Button
-                                     , render :: Bool
+data CheckerFeedbackUpdate = Keypress | Click String | Never
+
+data CheckerOptions = CheckerOptions { submit :: Maybe Button -- What's the submission button, if there is one?
+                                     , render :: Bool -- Should the checker render the proof?
+                                     , directed :: Bool -- Is the checker directed towards a sequent?
+                                     , feedback :: CheckerFeedbackUpdate
                                      }
 
 checkerWith :: CheckerOptions -> (Document -> IORef Bool -> String -> (Element, Element) -> IO ()) -> IOGoal -> Document -> IO ()
 checkerWith options updateres iog@(IOGoal i o g classes) w = do
            mfeedbackDiv@(Just fd) <- createElement w (Just "div")
-           mnumberDiv@(Just nd) <-createElement w (Just "div")
+           mnumberDiv@(Just nd) <- createElement w (Just "div")
            ref <- newIORef False
            setAttribute fd "class" "proofFeedback"
            setAttribute nd "class" "numbering"
            mpar@(Just par) <- getParentNode o               
            appendChild o mnumberDiv
            appendChild o mfeedbackDiv
-           echo <- newListener $ genericUpdateResults2 (updateres w ref) g fd
            lineupd <- newListener $ onKey ["Enter","Backspace","Delete"] $ updateLines w nd
-           (Just w') <- getDefaultView w                    
-           addListener i keyUp echo False
+           (Just w') <- getDefaultView w
            addListener i keyUp lineupd False
            setLinesTo w nd 1
            syncScroll i o
+           case feedback options of
+               Keypress -> do
+                   kblistener <- newListener $ genericUpdateResults2 (updateres w ref) g fd
+                   addListener i keyUp kblistener False
+               Never -> return ()
+               Click s -> do 
+                   mbt@(Just bt) <- createElement w (Just "button")
+                   setInnerHTML bt (Just s)         
+                   appendChild par mbt
+                   btlistener <- newListener $ genericUpdateResults2 (updateres w ref) g fd
+                   addListener bt click btlistener False                
            case submit options of
                Just button -> do 
-                   mbt@(Just bt) <- createElement w (Just "button")
-                   setInnerHTML bt (Just (label button))         
-                   appendChild par mbt
+                   mbt'@(Just bt') <- createElement w (Just "button")
+                   setInnerHTML bt' (Just (label button))         
+                   appendChild par mbt'
                    buttonAct <- newListener $ (action button) ref w' i
-                   addListener bt click buttonAct False                
+                   addListener bt' click buttonAct False                
                Nothing -> return ()
            mv <- getValue (castToHTMLTextAreaElement i)
            case mv of

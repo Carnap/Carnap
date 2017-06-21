@@ -184,10 +184,10 @@ getInOutGoalElts cls b = do els <- getListOfElementsByClass b "proofchecker"
                        o <- MaybeT $ getNextElementSibling i
                        return $ IOGoal i o g (words cn)
 
-updateResults :: (IsElement e, IsElement e') => 
-    (String -> IO e') -> e -> EventM HTMLTextAreaElement KeyboardEvent ()
+updateResults :: (IsElement e, IsElement e', IsEvent ev) => 
+    (String -> IO e') -> e -> EventM HTMLTextAreaElement ev ()
 updateResults f o = 
-        do (Just t) <- target :: EventM HTMLTextAreaElement KeyboardEvent (Maybe HTMLTextAreaElement)
+        do (Just t) <- target :: IsEvent ev' => EventM HTMLTextAreaElement ev' (Maybe HTMLTextAreaElement)
            mv <- TA.getValue t
            case mv of 
                Nothing -> return ()
@@ -196,17 +196,17 @@ updateResults f o =
                             appendChild o (Just v')
                             return ()
 
-genericUpdateResults2 :: (IsElement e, IsElement e') => 
-    (String -> (e, e') -> IO ()) -> e -> e' -> EventM HTMLTextAreaElement KeyboardEvent ()
+genericUpdateResults2 :: (IsElement e, IsElement e', IsEvent ev) => 
+    (String -> (e, e') -> IO ()) -> e -> e' -> EventM HTMLTextAreaElement ev ()
 genericUpdateResults2 f o o' = 
-        do (Just t) <- target :: EventM HTMLTextAreaElement KeyboardEvent (Maybe HTMLTextAreaElement)
+        do (Just t) <- target :: IsEvent ev' => EventM HTMLTextAreaElement ev' (Maybe HTMLTextAreaElement)
            mv <- TA.getValue t
            case mv of 
                Nothing -> return ()
                Just v -> liftIO $ f v (o, o')
 
-updateResults2 :: (IsElement e, IsElement e', IsElement e'', IsElement e''') => 
-    (String -> IO (e'', e''')) -> e -> e' -> EventM HTMLTextAreaElement KeyboardEvent ()
+updateResults2 :: (IsElement e, IsElement e', IsElement e'', IsElement e''', IsEvent ev) => 
+    (String -> IO (e'', e''')) -> e -> e' -> EventM HTMLTextAreaElement ev ()
 updateResults2 f o o' = genericUpdateResults2 (\v (e1, e2) -> do
     liftIO $ setInnerHTML e1 (Just "") 
     liftIO $ setInnerHTML e2 (Just "")                            

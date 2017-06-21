@@ -19,7 +19,7 @@ import Data.Aeson as A
 import qualified Data.Map as M (fromList,map) 
 import Control.Lens.Fold (toListOf)
 import Lib
-import Carnap.GHCJS.Widget.ProofCheckBox (checkerWith, CheckerOptions(..),Button(..))
+import Carnap.GHCJS.Widget.ProofCheckBox (checkerWith, CheckerOptions(..), Button(..), CheckerFeedbackUpdate(..))
 import Carnap.GHCJS.Widget.RenderDeduction
 import GHCJS.DOM.Element (setInnerHTML,getInnerHTML, setAttribute)
 import GHCJS.DOM.HTMLElement (insertAdjacentElement)
@@ -138,6 +138,7 @@ activateChecker drs w (Just iog@(IOGoal i o g classes))
                                               }
                                    , render = False
                                    , directed = True
+                                   , feedback = Keypress
                                    }
               buildOptions = execState (do when ("NoSub" `elem` classes) 
                                                 (modify (\o -> o {submit = Nothing}))
