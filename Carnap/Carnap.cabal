@@ -33,15 +33,18 @@ library
                      , Carnap.Languages.PurePropositional.Parser
                      , Carnap.Languages.PurePropositional.Util
                      , Carnap.Languages.PurePropositional.Logic
+                     , Carnap.Languages.PurePropositional.Logic.Rules
                      , Carnap.Languages.PurePropositional.Logic.KalishAndMontegue
                      , Carnap.Languages.PurePropositional.Logic.BergmannMoorAndNelson
                      , Carnap.Languages.PurePropositional.Logic.Magnus
-                     , Carnap.Languages.PurePropositional.Logic.Rules
                      , Carnap.Languages.ModalPropositional.Syntax
                      , Carnap.Languages.ModalPropositional.Parser
                      , Carnap.Languages.PureFirstOrder.Syntax
                      , Carnap.Languages.PureFirstOrder.Parser
                      , Carnap.Languages.PureFirstOrder.Logic
+                     , Carnap.Languages.PureFirstOrder.Logic.Rules
+                     , Carnap.Languages.PureFirstOrder.Logic.Magnus
+                     , Carnap.Languages.PureFirstOrder.Logic.KalishAndMontegue
                      , Carnap.Languages.PureSecondOrder.Syntax
                      , Carnap.Languages.PureSecondOrder.Parser
                      , Carnap.Languages.PureSecondOrder.Logic
