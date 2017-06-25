@@ -8,7 +8,7 @@ import Carnap.Core.Data.AbstractSyntaxClasses (Schematizable, Modelable(..))
 import Carnap.Languages.PurePropositional.Util (getIndicies)
 import Carnap.Languages.PurePropositional.Syntax (PureForm)
 import Carnap.Languages.ClassicalSequent.Syntax
-import Carnap.Languages.PurePropositional.Logic (PropSequentCalc, propSeqParser)
+import Carnap.Languages.PurePropositional.Logic (PropSequentCalc)
 import Carnap.Languages.Util.LanguageClasses
 import GHCJS.DOM.Types
 import GHCJS.DOM.Element

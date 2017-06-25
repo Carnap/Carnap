@@ -1,5 +1,5 @@
 module Carnap.Languages.PureFirstOrder.Logic
-        (FOLogic(..), parseFOLogic,parseForallxQL, folSeqParser, DerivedRule(..), folCalc, forallxQLCalc)
+        (FOLogic(..), parseFOLogic, parseForallxQL, DerivedRule(..), folCalc, forallxQLCalc)
     where
 
 import Carnap.Languages.PureFirstOrder.Logic.Magnus

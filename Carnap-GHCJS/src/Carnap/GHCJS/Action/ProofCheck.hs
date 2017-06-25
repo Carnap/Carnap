@@ -8,9 +8,9 @@ import Carnap.Calculi.NaturalDeduction.Checker
 import Carnap.Core.Data.AbstractSyntaxDataTypes (liftLang, FixLang, CopulaSchema)
 import Carnap.Core.Data.AbstractSyntaxClasses (Schematizable)
 import Carnap.Languages.ClassicalSequent.Syntax
-import Carnap.Languages.PurePropositional.Logic as P (DerivedRule(..), propSeqParser, logicBookCalc, forallxSLCalc, propCalc, ) 
-import Carnap.Languages.PureFirstOrder.Logic as FOL (DerivedRule(..),  folSeqParser, folCalc,forallxQLCalc) 
-import Carnap.Languages.PureSecondOrder.Logic (msolSeqParser, msolCalc, psolSeqParser,psolCalc) 
+import Carnap.Languages.PurePropositional.Logic as P (DerivedRule(..),  logicBookCalc, forallxSLCalc, propCalc, ) 
+import Carnap.Languages.PureFirstOrder.Logic as FOL (DerivedRule(..),   folCalc,forallxQLCalc) 
+import Carnap.Languages.PureSecondOrder.Logic ( msolCalc, psolCalc) 
 import Carnap.Languages.PurePropositional.Util (toSchema)
 import Carnap.GHCJS.SharedTypes
 import Text.Parsec (parse)
@@ -85,20 +85,20 @@ activateChecker ::  IORef [(String,P.DerivedRule)] -> Document -> Maybe IOGoal -
 activateChecker _ _ Nothing  = return ()
 activateChecker drs w (Just iog@(IOGoal i o g classes))
         | "firstOrder" `elem` classes = do
-                        tryParse buildOptions folSeqParser folCalc Nothing
+                        tryParse buildOptions folCalc Nothing
         | "forallxQL" `elem` classes = do
-                        tryParse buildOptions folSeqParser forallxQLCalc Nothing
+                        tryParse buildOptions forallxQLCalc Nothing
         | "secondOrder" `elem` classes = do
-                        tryParse buildOptions msolSeqParser msolCalc (Just drs)
+                        tryParse buildOptions msolCalc (Just drs)
         | "polyadicSecondOrder" `elem` classes = do
-                        tryParse buildOptions psolSeqParser psolCalc (Just drs)
+                        tryParse buildOptions psolCalc (Just drs)
         | "LogicBook" `elem` classes = do
-                        tryParse buildOptions propSeqParser logicBookCalc (Just drs)
+                        tryParse buildOptions logicBookCalc (Just drs)
         | "forallxSL" `elem` classes = do
-                        tryParse buildOptions propSeqParser forallxSLCalc (Just drs)
+                        tryParse buildOptions forallxSLCalc (Just drs)
         | otherwise = do 
-                         tryParse buildOptions propSeqParser propCalc (Just drs)
-        where tryParse options seqParse calc mdrs = do
+                         tryParse buildOptions propCalc (Just drs)
+        where tryParse options calc mdrs = do
                   memo <- newIORef mempty
                   mtref <- newIORef Nothing
                   mpd <- if render options then Just <$> makeDisplay else return Nothing
@@ -108,7 +108,7 @@ activateChecker drs w (Just iog@(IOGoal i o g classes))
                                                           , proofDisplay = mpd
                                                           , proofMemo = memo
                                                           , checkerCalc = calc})
-                  mlabelseq <- if directed options then parseWith seqParse else return Nothing
+                  mlabelseq <- if directed options then parseWith calc else return Nothing
                   case (submit options, mlabelseq) of
                       (Just b,Just (l,s)) -> checkerWith 
                                           (options {submit = Just b {action = trySubmit l s }})
@@ -119,12 +119,13 @@ activateChecker drs w (Just iog@(IOGoal i o g classes))
                                           (checker (Just s))
                                           iog w
                       _ -> checkerWith options (checker Nothing) iog w
-              parseWith seqParse = do (Just gs) <- getInnerHTML g 
-                                      case parse (withLabel seqParse) "" (decodeHtml gs) of
-                                          Left e -> do setInnerHTML g (Just "Couldn't Parse Goal")
-                                                       error "couldn't parse goal"
-                                          Right (l,s) -> do setInnerHTML g (Just $ show s)
-                                                            return (Just (l,s))
+              parseWith calc = do let seqParse = ndParseSeq calc
+                                  (Just gs) <- getInnerHTML g 
+                                  case parse (withLabel seqParse) "" (decodeHtml gs) of
+                                      Left e -> do setInnerHTML g (Just "Couldn't Parse Goal")
+                                                   error "couldn't parse goal"
+                                      Right (l,s) -> do setInnerHTML g (Just $ show s)
+                                                        return (Just (l,s))
 
               makeDisplay = do (Just pd) <- createElement w (Just "div")
                                setAttribute pd "class" "proofDisplay"

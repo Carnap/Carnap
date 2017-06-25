@@ -47,10 +47,11 @@ import GHCJS.DOM.EventM
 import GHCJS.DOM.EventTarget
 import GHCJS.DOM.EventTargetClosures (EventName(..))
 import Carnap.GHCJS.SharedTypes
+import Carnap.Calculi.NaturalDeduction.Syntax (NaturalDeductionCalc(..))
 import Carnap.Languages.PurePropositional.Syntax (PureForm)
-import Carnap.Languages.PurePropositional.Logic (propSeqParser)
+import Carnap.Languages.PurePropositional.Logic (propCalc)
 import Carnap.Languages.PureFirstOrder.Parser (folFormulaParser)
-import Carnap.Languages.PureFirstOrder.Logic (folSeqParser)
+import Carnap.Languages.PureFirstOrder.Logic (folCalc)
 import Carnap.Languages.PurePropositional.Parser (purePropFormulaParser, standardLetters)
 
 --------------------------------------------------------
@@ -273,9 +274,9 @@ errorPopup msg = alert ("Something has gone wrong. Here's the error: " ++ msg)
 formAndLabel :: Monad m => ParsecT String u m (String, PureForm)
 formAndLabel = withLabel (purePropFormulaParser standardLetters <* eof)
 
-seqAndLabel = withLabel propSeqParser
+seqAndLabel = withLabel (ndParseSeq propCalc)
 
-folSeqAndLabel =  withLabel folSeqParser
+folSeqAndLabel =  withLabel (ndParseSeq folCalc)
 
 folFormAndLabel =  withLabel folFormulaParser
 

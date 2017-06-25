@@ -48,6 +48,8 @@ library
                      , Carnap.Languages.PureSecondOrder.Syntax
                      , Carnap.Languages.PureSecondOrder.Parser
                      , Carnap.Languages.PureSecondOrder.Logic
+                     , Carnap.Languages.PureSecondOrder.Logic.Rules
+                     , Carnap.Languages.PureSecondOrder.Logic.KalishAndMontegue
                      , Carnap.Languages.ClassicalSequent.Syntax
                      , Carnap.Languages.ClassicalSequent.Parser
                      , Carnap.Calculi.NaturalDeduction.Checker
