@@ -1,3 +1,7 @@
+@font-face
+    font-family:street;
+    src:url("@{StaticR fonts_Streetvertising_ttf}");
+
 nav#navbar
     ul 
        line-height: 2em;
@@ -28,3 +32,7 @@ div#message
     background: white
     padding:20px
     z-index: 2
+
+a#opentower 
+    font-family:street;
+    color:gray;

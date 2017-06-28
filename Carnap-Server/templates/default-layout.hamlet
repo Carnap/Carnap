@@ -23,4 +23,6 @@
     ^{widget}
 <div.container>
     <footer>
-        #{appCopyright $ appSettings master}
+        An
+        <a#opentower href="https://open-tower.com"> Open-Tower
+        \ project. #{appCopyright $ appSettings master}

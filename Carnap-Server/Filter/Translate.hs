@@ -27,7 +27,7 @@ activate cls l
         ++ case (splitOn ":" l) of
             [x,y] -> "<div class=\"translate first-order\"><input type =\"text\" value=\""
                                 ++ y ++ "\"><div>" 
-                                ++ show (simpleCipher x) ++ "</div></div>"
+                                ++ show (simpleCipher x) ++ "</div></div></div>"
             _ -> "<div>No Matching Translation</div></div>"
     | otherwise = RawBlock "html" "<div>No Matching Translation</div></div>"
     where numof x = takeWhile (/= ' ') x

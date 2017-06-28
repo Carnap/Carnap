@@ -223,8 +223,8 @@ The Contrapositive Rules
 Here are a few problems in which the contrapositive rules are useful
 
 ```{.ProofChecker .Prop}
-8.5 :|-: X -> ((-P->-Q)->(Q->P))
-8.6 (R->S)->-P, Q->T, -Q -> (R->S), T->(X->Y) :|-: P->(-Y->-X)
+8.5 :|-: S -> ((-P->-Q)->(Q->P))
+8.6 (R->S)->-P, Q->T, -Q -> (R->S), T->(U->V) :|-: P->(-V->-U)
 ```
 
 ##Dilemma
@@ -247,7 +247,7 @@ useful (you may find hypothetical syllogism and contraposition helpful here
 too):
 
 ```{.ProofChecker .Prop}
-8.7 P -> R, R -> -Q, Z-> P, Q->Z :|-: -Q
+8.7 P -> R, R -> -Q, S-> P, Q->S :|-: -Q
 ```
 
 ##Consequentia Mirabilis
@@ -330,7 +330,7 @@ you can infer whatever conclusion you want".
 Here's a problem where ex falso quodlibet might come in handy:
 
 ```{.ProofChecker .Prop}
-8.9 P->-P, R->P, Q->R, -Q->R :|-: Z
+8.9 P->-P, R->P, Q->R, -Q->R :|-: S
 ```
 
 Here's a final interesting statement to try to prove by combining the rules
