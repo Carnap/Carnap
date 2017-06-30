@@ -273,6 +273,17 @@
     top:-10px;
 }
 
+.proofchecker .proofSpinner {
+    display:none;
+}
+
+.proofchecker .working .proofSpinner {
+    display:inline-block;
+    position:absolute;
+    right:10px;
+    top:-1px;
+}
+
 .ttdisplay {
     padding-left:10px;
 }

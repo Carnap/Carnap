@@ -37,6 +37,8 @@ library
                          , text
                          , bytestring
                          , transformers
+                         , shakespeare
+                         , blaze-html
 
   else 
       build-depends:       base >= 4.7 && < 5
@@ -50,7 +52,9 @@ library
                          , tagsoup
                          , text
                          , bytestring
+                         , shakespeare
                          , transformers
+                         , blaze-html
 
   default-language:    Haskell2010
 
