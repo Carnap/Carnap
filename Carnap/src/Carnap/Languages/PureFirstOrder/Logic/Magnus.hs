@@ -9,7 +9,7 @@ import Carnap.Languages.PureFirstOrder.Parser
 import qualified Carnap.Languages.PurePropositional.Logic as P
 import Carnap.Calculi.NaturalDeduction.Syntax
 import Carnap.Calculi.NaturalDeduction.Parser
-import Carnap.Calculi.NaturalDeduction.Checker (hoProcessLine, hoProcessLineMemo, hoProcessLineFitch)
+import Carnap.Calculi.NaturalDeduction.Checker (hoProcessLineFitchMemo, hoProcessLineFitch)
 import Carnap.Languages.ClassicalSequent.Syntax
 import Carnap.Languages.Util.GenericConnectives
 import Carnap.Languages.PureFirstOrder.Logic.Rules
@@ -84,6 +84,6 @@ forallxQLCalc = NaturalDeductionCalc
     { ndRenderer = FitchStyle
     , ndParseProof = parseForallxQLProof
     , ndProcessLine = hoProcessLineFitch
-    , ndProcessLineMemo = Nothing
+    , ndProcessLineMemo = Just hoProcessLineFitchMemo
     , ndParseSeq = folSeqParser
     }

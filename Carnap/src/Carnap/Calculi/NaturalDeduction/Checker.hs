@@ -1,5 +1,5 @@
 {-#LANGUAGE GADTs, KindSignatures, TypeOperators, FlexibleContexts, TypeSynonymInstances, FlexibleInstances, MultiParamTypeClasses #-}
-module Carnap.Calculi.NaturalDeduction.Checker (toDisplaySequence,toDisplaySequenceMemo, toDisplaySequenceStructured, processLine, processLineFitch, processLineStructuredFitch,processLineStructuredFitchHO, hoProcessLineFitch, hoProcessLine, hoProcessLineMemo, hosolve, ProofErrorMessage(..), Feedback(..),seqUnify,seqSubsetUnify, toDeduction) where
+module Carnap.Calculi.NaturalDeduction.Checker (toDisplaySequence,toDisplaySequenceMemo, toDisplaySequenceStructured, processLine, processLineFitch, processLineStructuredFitch,processLineStructuredFitchHO, hoProcessLineFitchMemo, hoProcessLineFitch, hoProcessLine, hoProcessLineMemo, hosolve, ProofErrorMessage(..), Feedback(..),seqUnify,seqSubsetUnify, toDeduction) where
 
 import Carnap.Calculi.NaturalDeduction.Syntax
 import Carnap.Calculi.NaturalDeduction.Parser
@@ -134,6 +134,20 @@ hoProcessLineFitch ded n = case ded !! (n - 1) of
   --special case to catch QedLines not being cited in justifications
   (QedLine _ _ _) -> Left $ NoResult n
   _ -> toProofTreeFitch ded n >>= hoReduceProofTree
+
+hoProcessLineFitchMemo :: 
+  ( StaticVar (ClassicalSequentOver lex)
+  , Sequentable lex
+  , Inference r lex
+  , MonadVar (ClassicalSequentOver lex) (State Int)
+  , MaybeStaticVar (lex (ClassicalSequentOver lex))
+  , Show (ClassicalSequentOver lex Succedent), Show r
+  ) => ProofMemoRef lex -> Deduction r lex -> Int -> IO (FeedbackLine lex)
+hoProcessLineFitchMemo ref ded n = case ded !! (n - 1) of
+  (QedLine _ _ _) -> return $ Left $ NoResult n
+  _ -> case toProofTreeFitch ded n of
+        Right t -> hoReduceProofTreeMemo ref t
+        Left e -> return $ Left e
 
 processLineStructuredFitch :: 
   ( Sequentable lex
