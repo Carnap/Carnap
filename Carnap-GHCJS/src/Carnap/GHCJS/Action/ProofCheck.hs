@@ -142,19 +142,16 @@ activateChecker drs w (Just iog@(IOGoal i o g classes))
                                    , feedback = Keypress
                                    , initialUpdate = False
                                    }
-              buildOptions = execState (do when ("NoSub" `elem` classes) 
-                                                (modify (\o -> o {submit = Nothing}))
-                                           when ("Render" `elem` classes) 
-                                                (modify (\o -> o {render = True}))
-                                           when ("playground" `elem` classes)
-                                                (modify (\o -> o {directed = False, submit = Nothing}))
-                                           when ("ruleMaker" `elem` classes)
-                                                (modify (\o -> o {directed = False
-                                                                 , submit = Just Button 
-                                                                       { label = "Save Rule"
-                                                                       , action = trySave drs
-                                                                       }
-                                                                 }))) standardOptions
+              buildOptions = execState (mapM processOption options) standardOptions
+                                where processOption (s,f) = when (s `elem` classes) (modify f)
+                                      options = [ ("NoSub", \o -> o {submit = Nothing})
+                                                , ("Render", \o -> o {render = True})
+                                                , ("playground", \o -> o {directed = False, submit = Nothing})
+                                                , ("ruleMaker", \o -> o {directed = False , submit = Just saveButton })
+                                                , ("manualFeedback", \o -> o {feedback = Click})
+                                                , ("noFeedback", \o -> o {feedback = Never})
+                                                ]
+                                      saveButton = Button {label = "Save Rule" , action = trySave drs}
 
 threadedCheck checker w ref v (g, fd) = 
         do mt <- readIORef (threadRef checker)
