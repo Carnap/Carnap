@@ -12,6 +12,7 @@ import Carnap.Languages.PurePropositional.Syntax
 import Carnap.Languages.PurePropositional.Parser
 import Carnap.Languages.ClassicalSequent.Syntax
 import Carnap.Languages.ClassicalSequent.Parser
+import Carnap.Languages.Util.LanguageClasses
 import Carnap.Languages.Util.GenericConnectives
 
 --------------------------------------------------------
@@ -114,8 +115,9 @@ conditionalToBiconditional = [ GammaV 1  :|-: SS (SeqPhi 1 :->-: SeqPhi 2)
                              , GammaV 2  :|-: SS (SeqPhi 2 :->-: SeqPhi 1) 
                              ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (SeqPhi 1 :<->-: SeqPhi 2)
 
+
 ---------------------------
---  1.1 Variation Rules  --
+--  1.2 Variation Rules  --
 ---------------------------
 -- Rules with several variations
 
@@ -243,3 +245,27 @@ biconditionalPonensVariations = [
                 ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (SeqPhi 1)
             ]
 
+-------------------------------
+--  1.2.1 Replacement Rules  --
+-------------------------------
+
+replace :: PurePropLanguage (Form Bool) -> PurePropLanguage (Form Bool) -> [SequentRule PurePropLexicon]
+replace x y = [ [GammaV 1  :|-: ss (propCtx 1 x)] ∴ GammaV 1  :|-: ss (propCtx 1 y)
+              , [GammaV 1  :|-: ss (propCtx 1 y)] ∴ GammaV 1  :|-: ss (propCtx 1 x)]
+    where ss = SS . liftToSequent
+
+andCommutativity = replace (phin 1 ./\. phin 2) (phin 2 ./\. phin 1)
+
+orCommutativity = replace (phin 1 .\/. phin 2) (phin 2 .\/. phin 1)
+
+iffCommutativity = replace (phin 1 .<=>. phin 2) (phin 2 .<=>. phin 1)
+
+deMorgansLaws = replace (lneg $ phin 1 ./\. phin 2) (lneg (phin 1) .\/. lneg (phin 2))
+             ++ replace (lneg $ phin 1 .\/. phin 2) (lneg (phin 1) ./\. lneg (phin 2))
+
+doubleNegation = replace (lneg $ lneg $ phin 1) (phin 1)
+
+materialConditional = replace (phin 1 .=>. phin 2) (lneg (phin 1) .\/. phin 2)
+                   ++ replace (phin 1 .\/. phin 2) (lneg (phin 1) .=>. phin 2)
+
+biconditionalExchange = replace (phin 1 .<=>. phin 2) ((phin 1 .=>. phin 2) ./\. (phin 2 .=>. phin 1))

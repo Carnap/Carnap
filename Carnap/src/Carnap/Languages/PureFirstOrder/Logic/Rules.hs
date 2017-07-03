@@ -11,6 +11,7 @@ import Carnap.Languages.PureFirstOrder.Syntax
 import Carnap.Languages.PureFirstOrder.Parser
 import Carnap.Languages.ClassicalSequent.Syntax
 import Carnap.Languages.ClassicalSequent.Parser
+import Carnap.Languages.Util.LanguageClasses
 import Carnap.Languages.Util.GenericConnectives
 
 --------------------------------------------------------
@@ -53,13 +54,11 @@ ss = SS . liftToSequent
 sa :: PureFOLForm -> FOLSequentCalc Antecedent
 sa = SA . liftToSequent
 
-phiS n = PPhi n AZero AZero
-
 phi n x = PPhi n AOne AOne :!$: x
 
-tau = PT 1
+tau = taun 1
 
-tau' = PT 2
+tau' = taun 2
 
 data DerivedRule = DerivedRule { conclusion :: PureFOLForm, premises :: [PureFOLForm]}
                deriving (Show, Eq)
@@ -94,7 +93,7 @@ existentialGeneralization = [ GammaV 1 :|-: ss (phi 1 tau)]
                             ∴ GammaV 1 :|-: ss (PBind (Some "v") (phi 1))
 
 ------------------------------------
---  1.1.2. Rules with Variations  --
+--  1.2. Rules with Variations  --
 ------------------------------------
 
 leibnizLawVariations = [
@@ -108,15 +107,15 @@ leibnizLawVariations = [
                        ]
 
 existentialDerivation = [
-                            [ GammaV 1 :+:  sa (phi 1 tau) :|-: ss (phiS 1) 
+                            [ GammaV 1 :+:  sa (phi 1 tau) :|-: ss (phin 1) 
                             , GammaV 2 :|-: ss (PBind (Some "v") $ phi 1)   
                             , sa (phi 1 tau) :|-: ss (phi 1 tau)            
-                            ] ∴ GammaV 1 :+: GammaV 2 :|-: ss (phiS 1)      
+                            ] ∴ GammaV 1 :+: GammaV 2 :|-: ss (phin 1)      
                         ,
-                            [ GammaV 1 :|-: ss (phiS 1)
+                            [ GammaV 1 :|-: ss (phin 1)
                             , sa (phi 1 tau) :|-: ss (phi 1 tau)
                             , GammaV 2 :|-: ss (PBind (Some "v") $ phi 1)
-                            ] ∴ GammaV 1 :+: GammaV 2 :|-: ss (phiS 1)
+                            ] ∴ GammaV 1 :+: GammaV 2 :|-: ss (phin 1)
                         ]
 
 quantifierNegation = [  

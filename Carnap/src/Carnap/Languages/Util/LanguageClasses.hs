@@ -49,6 +49,9 @@ class BooleanLanguage l where
             (.<=>.) :: l -> l -> l
             (.<=>.) = liff
 
+class IndexedPropContextSchemeLanguage l where
+            propCtx :: Int -> l -> l
+
 --------------------------------------------------------
 --1.1.2 Modal Languages
 --------------------------------------------------------
@@ -89,6 +92,9 @@ class EqLanguage l t where
 
 class IndexedConstantLanguage l where
         cn :: Int -> l
+
+class IndexedSchemeConstantLanguage l where
+        taun :: Int -> l
 
 class PolyadicFunctionLanguage lang arg ret where
         pfn :: Typeable ret' => Int -> Arity arg ret n ret' -> lang ret'

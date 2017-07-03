@@ -91,6 +91,9 @@ instance IndexedPropLanguage PureForm where
 instance IndexedSchemePropLanguage PureForm where
         phin = PPhi
 
+instance IndexedPropContextSchemeLanguage (PurePropLanguage (Form Bool)) where 
+        propCtx n x = PCtx n :!$: x
+
 instance CanonicalForm PureForm
 
 instance Eq (PurePropLanguage a) where

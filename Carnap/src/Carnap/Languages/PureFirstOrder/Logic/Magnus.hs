@@ -11,6 +11,7 @@ import Carnap.Calculi.NaturalDeduction.Syntax
 import Carnap.Calculi.NaturalDeduction.Parser
 import Carnap.Calculi.NaturalDeduction.Checker (hoProcessLineFitchMemo, hoProcessLineFitch)
 import Carnap.Languages.ClassicalSequent.Syntax
+import Carnap.Languages.Util.LanguageClasses
 import Carnap.Languages.Util.GenericConnectives
 import Carnap.Languages.PureFirstOrder.Logic.Rules
 
@@ -58,7 +59,7 @@ instance Inference ForallxQL PureLexiconFOL where
             | otherwise = Nothing
 
          restriction UIX    = Just (eigenConstraint (SeqT 1) (ss (PBind (All "v") $ phi 1)) (GammaV 1))
-         restriction EE1X   = Just (eigenConstraint (SeqT 1) (ss (PBind (Some "v") $ phi 1) :-: ss (phiS 1)) (GammaV 1 :+: GammaV 2))
+         restriction EE1X   = Just (eigenConstraint (SeqT 1) (ss (PBind (Some "v") $ phi 1) :-: ss (phin 1)) (GammaV 1 :+: GammaV 2))
          restriction EE2X   = Nothing --Since this one does not use the assumption with a fresh object
          restriction _      = Nothing
 

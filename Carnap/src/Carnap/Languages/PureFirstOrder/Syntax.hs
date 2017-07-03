@@ -151,10 +151,13 @@ instance CanonicalForm (PureFirstOrderLanguageWith a (Term Int))
 instance IndexedConstantLanguage (PureFirstOrderLanguageWith a (Term Int)) where 
         cn = PC
 
-instance IndexedPropLanguage (PureFirstOrderLanguageWith a (Form Bool)) where
-    pn = PSent
+instance IndexedSchemeConstantLanguage (PureFirstOrderLanguageWith a (Term Int))where
+        taun = PT
 
-instance IndexedSchemePropLanguage (PureFirstOrderLanguageWith a (Form Bool))where
+instance IndexedPropLanguage (PureFirstOrderLanguageWith a (Form Bool)) where
+        pn = PSent
+
+instance IndexedSchemePropLanguage (PureFirstOrderLanguageWith a (Form Bool)) where
         phin = PSPhi
 
 --equality up to α-equivalence
