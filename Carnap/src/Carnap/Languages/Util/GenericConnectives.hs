@@ -5,6 +5,10 @@ import Carnap.Core.Data.AbstractSyntaxDataTypes
 import Carnap.Core.Data.AbstractSyntaxClasses 
 import Data.List (intercalate)
 
+-----------------------
+--  1. Propositions  --
+-----------------------
+
 data IntProp b a where
         Prop :: Int -> IntProp b (Form b)
 
@@ -45,6 +49,10 @@ instance Evaluable (SchematicIntProp b) where
 
 instance Modelable m (SchematicIntProp b) where
         satisfies = const eval
+
+---------------------
+--  2. Predicates  --
+---------------------
 
 data IntPred b c a where
         Pred ::  Arity (Term c) (Form b) n ret -> Int -> IntPred b c ret
@@ -96,6 +104,25 @@ instance Evaluable (SchematicIntPred b c) where
 instance Modelable m (SchematicIntPred b c) where
         satisfies = const eval
 
+data TermEq c b a where
+        TermEq :: TermEq c b (Term b -> Term b -> Form c)
+
+instance Schematizable (TermEq c b) where
+        schematize TermEq = \(t1:t2:_) -> t1 ++ "=" ++ t2
+
+instance UniformlyEq (TermEq c b) where
+        _ =* _ = True
+
+instance Monad m => MaybeMonadVar (TermEq c b) m
+
+instance MaybeStaticVar (TermEq c b)
+
+instance FirstOrderLex (TermEq c b)
+
+---------------------------
+--  3. Function Symbols  --
+---------------------------
+
 data IntFunc c b a where
         Func ::  Arity (Term c) (Term b) n ret -> Int -> IntFunc b c ret
 
@@ -140,20 +167,9 @@ instance MaybeStaticVar (SchematicIntFunc b c)
 instance FirstOrderLex (SchematicIntFunc b c) where
         isVarLex _ = True
 
-data TermEq c b a where
-        TermEq :: TermEq c b (Term b -> Term b -> Form c)
-
-instance Schematizable (TermEq c b) where
-        schematize TermEq = \(t1:t2:_) -> t1 ++ "=" ++ t2
-
-instance UniformlyEq (TermEq c b) where
-        _ =* _ = True
-
-instance Monad m => MaybeMonadVar (TermEq c b) m
-
-instance MaybeStaticVar (TermEq c b)
-
-instance FirstOrderLex (TermEq c b)
+----------------------
+--  4. Connectives  --
+----------------------
 
 data BooleanConn b a where
         And :: BooleanConn b (Form b -> Form b -> Form b)
@@ -207,6 +223,26 @@ instance MaybeStaticVar (Modality b)
 
 instance FirstOrderLex (Modality b)
 
+data PropositionalContext b a where
+        PropCtx :: Int -> PropositionalContext b (Form b -> Form b)
+
+instance Schematizable (PropositionalContext b) where
+        schematize (PropCtx n) (x:_)  = "Φ_" ++ show n ++ "(" ++ x ++ ")"
+
+instance UniformlyEq (PropositionalContext b) where
+        (PropCtx n) =* (PropCtx m) = n == m
+
+instance Monad m => MaybeMonadVar (PropositionalContext b) m
+
+instance MaybeStaticVar (PropositionalContext b)
+
+instance FirstOrderLex (PropositionalContext b) where
+        isVarLex _ = True
+
+----------------
+--  5. Terms  --
+----------------
+
 data IntConst b a where
         Constant :: Int -> IntConst b (Term b)
 
@@ -223,6 +259,26 @@ instance Monad m => MaybeMonadVar (IntConst b) m
 instance MaybeStaticVar (IntConst b)
 
 instance FirstOrderLex (IntConst b) 
+
+data StandardVar b a where
+    Var :: String -> StandardVar b (Term b)
+
+instance Schematizable (StandardVar b) where
+        schematize (Var s) = const s
+
+instance UniformlyEq (StandardVar b) where
+        (Var n) =* (Var m) = n == m
+
+instance Monad m => MaybeMonadVar (StandardVar b) m
+
+instance MaybeStaticVar (StandardVar b)
+
+-- XXX Note: standard variables are not schematic variables
+instance FirstOrderLex (StandardVar b) 
+
+----------------------
+--  6. Quantifiers  --
+----------------------
 
 data StandardQuant b c a where
         All  :: String -> StandardQuant b c ((Term c -> Form b) -> Form b)
@@ -242,19 +298,3 @@ instance Monad m => MaybeMonadVar (StandardQuant b c) m
 instance MaybeStaticVar (StandardQuant b c)
 
 instance FirstOrderLex (StandardQuant b c) 
-
-data StandardVar b a where
-    Var :: String -> StandardVar b (Term b)
-
-instance Schematizable (StandardVar b) where
-        schematize (Var s) = const s
-
-instance UniformlyEq (StandardVar b) where
-        (Var n) =* (Var m) = n == m
-
-instance Monad m => MaybeMonadVar (StandardVar b) m
-
-instance MaybeStaticVar (StandardVar b)
-
---Note that standard variables are 
-instance FirstOrderLex (StandardVar b) 

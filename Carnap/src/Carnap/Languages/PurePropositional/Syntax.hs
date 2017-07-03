@@ -37,10 +37,19 @@ instance Modelable (Int -> Bool) PureConn where
 
 type PureSchematicProp = SchematicIntProp Bool
 
+type PurePropositionalContext = PropositionalContext Bool
+
+instance Evaluable PurePropositionalContext where
+        eval _ = error "don't evaluate schemata!"
+
+instance Modelable (Int -> Bool) PurePropositionalContext where
+    satisfies = const eval
+
 type PurePropLexicon = (Predicate PureProp
                    :|: Predicate PureSchematicProp
                    :|: Connective PureConn
                    :|: SubstitutionalVariable
+                   :|: Connective PurePropositionalContext
                    :|: EndLang)
 
 instance BoundVars PurePropLexicon
@@ -55,6 +64,7 @@ pattern PPred x arity  = Fx1 (Predicate x arity)
 pattern PSPred x arity = Fx2 (Predicate x arity)
 pattern PCon x arity   = Fx3 (Connective x arity)
 pattern PSV n          = Fx4 (SubVar n)
+pattern PCtx n         = Fx5 (Connective (PropCtx n) AOne)
 pattern PAnd           = PCon And ATwo
 pattern POr            = PCon Or ATwo
 pattern PIf            = PCon If ATwo
