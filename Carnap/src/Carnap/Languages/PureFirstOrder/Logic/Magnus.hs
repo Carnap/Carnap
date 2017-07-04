@@ -21,11 +21,11 @@ import Carnap.Languages.PureFirstOrder.Logic.Rules
 -- A system of first-order logic resembling system QL from PD Magnus'
 -- forallx
 
-data ForallxQL = ForallxSL P.ForallxSL | UIX | UEX | EIX | EE1X | EE2X | IDIX | IDE1X | IDE2X
+data ForallxQL = MagnusSL P.MagnusSL | UIX | UEX | EIX | EE1X | EE2X | IDIX | IDE1X | IDE2X
                     deriving Eq
 
 instance Show ForallxQL where
-        show (ForallxSL x) = show x
+        show (MagnusSL x) = show x
         show UIX          = "∀I"
         show UEX          = "∀E"
         show EIX          = "∃I"
@@ -47,13 +47,13 @@ instance Inference ForallxQL PureLexiconFOL where
          ruleOf IDE1X  = leibnizLawVariations !! 0
          ruleOf IDE2X  = leibnizLawVariations !! 1
 
-         premisesOf (ForallxSL x) = map liftSequent (premisesOf x)
+         premisesOf (MagnusSL x) = map liftSequent (premisesOf x)
          premisesOf r = upperSequents (ruleOf r)
          
-         conclusionOf (ForallxSL x) = liftSequent (conclusionOf x)
+         conclusionOf (MagnusSL x) = liftSequent (conclusionOf x)
          conclusionOf r = lowerSequent (ruleOf r)
 
-         indirectInference (ForallxSL x) = indirectInference x
+         indirectInference (MagnusSL x) = indirectInference x
          indirectInference x  
             | x `elem` [ EE1X,EE2X ] = Just AssumptiveProof
             | otherwise = Nothing
@@ -63,12 +63,12 @@ instance Inference ForallxQL PureLexiconFOL where
          restriction EE2X   = Nothing --Since this one does not use the assumption with a fresh object
          restriction _      = Nothing
 
-         isAssumption (ForallxSL x) = isAssumption x
+         isAssumption (MagnusSL x) = isAssumption x
          isAssumption _ = False
 
 parseForallxQL ders = try liftProp <|> quantRule
-    where liftProp = do r <- P.parseForallxSL ders
-                        return (map ForallxSL r)
+    where liftProp = do r <- P.parseMagnusSL ders
+                        return (map MagnusSL r)
           quantRule = do r <- choice (map (try . string) ["∀I", "AI", "∀E", "AE", "∃I", "EI", "∃E", "EE", "=I","=E" ])
                          case r of 
                             r | r `elem` ["∀I","AI"] -> return [UIX]

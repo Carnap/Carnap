@@ -1,6 +1,6 @@
 {-#LANGUAGE FlexibleContexts, FlexibleInstances, MultiParamTypeClasses #-}
 module Carnap.Languages.PurePropositional.Logic.Magnus
-    ( parseForallxSL,  ForallxSL,  forallxSLCalc, ) where
+    ( parseMagnusSL,  MagnusSL,  magnusSLCalc, ) where
 
 import Data.Map as M (lookup, Map)
 import Text.Parsec
@@ -18,137 +18,137 @@ import Carnap.Languages.PurePropositional.Logic.Rules
 --A system for propositional logic resembling the proof system SL from PD
 --Magnus' forallx book
 
-data ForallxSL = ReiterateX  | ConjIntroX
-               | ConjElim1X  | ConjElim2X
-               | DisjIntro1X | DisjIntro2X
-               | DisjElim1X  | DisjElim2X
-               | CondIntro1X | CondIntro2X
-               | CondElimX
-               | BicoIntro1X | BicoIntro2X
-               | BicoIntro3X | BicoIntro4X
-               | BicoElim1X  | BicoElim2X
-               | NegeIntro1X | NegeIntro2X
-               | NegeIntro3X | NegeIntro4X
-               | NegeElim1X  | NegeElim2X
-               | NegeElim3X  | NegeElim4X
-               | ForXAssump  | ForXPrem
-               deriving (Eq)
-               --skipping derived rules for now
+data MagnusSL = Reiterate  | ConjIntro
+              | ConjElim1  | ConjElim2
+              | DisjIntro1 | DisjIntro2
+              | DisjElim1  | DisjElim2
+              | CondIntro1 | CondIntro2
+              | CondElim
+              | BicoIntro1 | BicoIntro2
+              | BicoIntro3 | BicoIntro4
+              | BicoElim1  | BicoElim2
+              | NegeIntro1 | NegeIntro2
+              | NegeIntro3 | NegeIntro4
+              | NegeElim1  | NegeElim2
+              | NegeElim3  | NegeElim4
+              | As         | Pr
+              deriving (Eq)
+              --skipping derived rules for now
 
-instance Show ForallxSL where
-        show ConjIntroX  = "∧I"
-        show ConjElim1X  = "∧E"
-        show ConjElim2X  = "∧E"
-        show CondIntro1X = "→I"
-        show CondIntro2X = "→I"
-        show CondElimX   = "→E"
-        show NegeIntro1X = "¬I"
-        show NegeIntro2X = "¬I"
-        show NegeIntro3X = "¬I"
-        show NegeIntro4X = "¬I"
-        show NegeElim1X  = "¬E" 
-        show NegeElim2X  = "¬E"
-        show NegeElim3X  = "¬E"
-        show NegeElim4X  = "¬E"
-        show DisjElim1X  = "∨E"
-        show DisjElim2X  = "∨E"
-        show DisjIntro1X = "∨I"
-        show DisjIntro2X = "∨I"
-        show BicoIntro1X = "↔I"
-        show BicoIntro2X = "↔I"
-        show BicoIntro3X = "↔I"
-        show BicoIntro4X = "↔I"
-        show BicoElim1X  = "↔E"
-        show BicoElim2X  = "↔E"
-        show ReiterateX  = "R"
-        show ForXAssump  = "AS"
-        show ForXPrem    = "PR"
+instance Show MagnusSL where
+        show ConjIntro  = "∧I"
+        show ConjElim1  = "∧E"
+        show ConjElim2  = "∧E"
+        show CondIntro1 = "→I"
+        show CondIntro2 = "→I"
+        show CondElim   = "→E"
+        show NegeIntro1 = "¬I"
+        show NegeIntro2 = "¬I"
+        show NegeIntro3 = "¬I"
+        show NegeIntro4 = "¬I"
+        show NegeElim1  = "¬E" 
+        show NegeElim2  = "¬E"
+        show NegeElim3  = "¬E"
+        show NegeElim4  = "¬E"
+        show DisjElim1  = "∨E"
+        show DisjElim2  = "∨E"
+        show DisjIntro1 = "∨I"
+        show DisjIntro2 = "∨I"
+        show BicoIntro1 = "↔I"
+        show BicoIntro2 = "↔I"
+        show BicoIntro3 = "↔I"
+        show BicoIntro4 = "↔I"
+        show BicoElim1  = "↔E"
+        show BicoElim2  = "↔E"
+        show Reiterate  = "R"
+        show As         = "AS"
+        show Pr         = "PR"
 
-instance Inference ForallxSL PurePropLexicon where
-        ruleOf ReiterateX = identityRule
-        ruleOf ConjIntroX = adjunction
-        ruleOf ConjElim1X = simplificationVariations !! 0
-        ruleOf ConjElim2X = simplificationVariations !! 1
-        ruleOf DisjIntro1X = additionVariations !! 0
-        ruleOf DisjIntro2X = additionVariations !! 1 
-        ruleOf DisjElim1X = modusTollendoPonensVariations !! 0
-        ruleOf DisjElim2X = modusTollendoPonensVariations !! 1
-        ruleOf CondIntro1X = conditionalProofVariations !! 0
-        ruleOf CondIntro2X = conditionalProofVariations !! 1
-        ruleOf CondElimX = modusPonens
-        ruleOf BicoIntro1X = biconditionalProofVariations !! 0
-        ruleOf BicoIntro2X = biconditionalProofVariations !! 1
-        ruleOf BicoIntro3X = biconditionalProofVariations !! 2
-        ruleOf BicoIntro4X = biconditionalProofVariations !! 3
-        ruleOf BicoElim1X = biconditionalPonensVariations !! 0
-        ruleOf BicoElim2X = biconditionalPonensVariations !! 1
-        ruleOf NegeIntro1X = constructiveReductioVariations !! 0
-        ruleOf NegeIntro2X = constructiveReductioVariations !! 1
-        ruleOf NegeIntro3X = constructiveReductioVariations !! 2
-        ruleOf NegeIntro4X = constructiveReductioVariations !! 3
-        ruleOf NegeElim1X = nonConstructiveReductioVariations !! 0
-        ruleOf NegeElim2X = nonConstructiveReductioVariations !! 1
-        ruleOf NegeElim3X = nonConstructiveReductioVariations !! 2
-        ruleOf NegeElim4X = nonConstructiveReductioVariations !! 3
-        ruleOf ForXAssump = axiom
-        ruleOf ForXPrem  = axiom
+instance Inference MagnusSL PurePropLexicon where
+        ruleOf Reiterate = identityRule
+        ruleOf ConjIntro = adjunction
+        ruleOf ConjElim1 = simplificationVariations !! 0
+        ruleOf ConjElim2 = simplificationVariations !! 1
+        ruleOf DisjIntro1 = additionVariations !! 0
+        ruleOf DisjIntro2 = additionVariations !! 1 
+        ruleOf DisjElim1 = modusTollendoPonensVariations !! 0
+        ruleOf DisjElim2 = modusTollendoPonensVariations !! 1
+        ruleOf CondIntro1 = conditionalProofVariations !! 0
+        ruleOf CondIntro2 = conditionalProofVariations !! 1
+        ruleOf CondElim = modusPonens
+        ruleOf BicoIntro1 = biconditionalProofVariations !! 0
+        ruleOf BicoIntro2 = biconditionalProofVariations !! 1
+        ruleOf BicoIntro3 = biconditionalProofVariations !! 2
+        ruleOf BicoIntro4 = biconditionalProofVariations !! 3
+        ruleOf BicoElim1 = biconditionalPonensVariations !! 0
+        ruleOf BicoElim2 = biconditionalPonensVariations !! 1
+        ruleOf NegeIntro1 = constructiveReductioVariations !! 0
+        ruleOf NegeIntro2 = constructiveReductioVariations !! 1
+        ruleOf NegeIntro3 = constructiveReductioVariations !! 2
+        ruleOf NegeIntro4 = constructiveReductioVariations !! 3
+        ruleOf NegeElim1 = nonConstructiveReductioVariations !! 0
+        ruleOf NegeElim2 = nonConstructiveReductioVariations !! 1
+        ruleOf NegeElim3 = nonConstructiveReductioVariations !! 2
+        ruleOf NegeElim4 = nonConstructiveReductioVariations !! 3
+        ruleOf As  = axiom
+        ruleOf Pr  = axiom
 
         indirectInference x
-            | x `elem` [CondIntro1X,CondIntro2X, BicoIntro1X, BicoIntro2X
-                       , BicoIntro3X, BicoIntro4X ] = Just PolyProof
-            | x `elem` [ NegeIntro1X, NegeIntro2X , NegeIntro3X, NegeIntro4X
-                       , NegeElim1X, NegeElim2X, NegeElim3X , NegeElim4X
+            | x `elem` [CondIntro1,CondIntro2, BicoIntro1, BicoIntro2
+                       , BicoIntro3, BicoIntro4 ] = Just PolyProof
+            | x `elem` [ NegeIntro1, NegeIntro2 , NegeIntro3, NegeIntro4
+                       , NegeElim1, NegeElim2, NegeElim3 , NegeElim4
                        ] = Just DoubleProof
             | otherwise = Nothing
 
-        isAssumption ForXAssump = True
+        isAssumption As = True
         isAssumption _ = False
 
-parseForallxSL :: Map String DerivedRule -> Parsec String u [ForallxSL]
-parseForallxSL ders = do r <- choice (map (try . string) ["AS","PR","&I","/\\I", "∧I","&E","/\\E","∧E","CI","->I","→I","→E","CE","->E", "→E"
+parseMagnusSL :: Map String DerivedRule -> Parsec String u [MagnusSL]
+parseMagnusSL ders = do r <- choice (map (try . string) ["AS","PR","&I","/\\I", "∧I","&E","/\\E","∧E","CI","->I","→I","→E","CE","->E", "→E"
                                                          ,"~I","-I", "¬I","~E","-E","¬E" ,"vI","\\/I","∨I", "vE","\\/E", "∨E","BI","<->I", "↔I" 
                                                          , "BE", "<->E", "↔E", "R"])
-                         case r of
-                             "AS"   -> return [ForXAssump]
-                             "PR"   -> return [ForXPrem]
-                             "&I"   -> return [ConjIntroX]
-                             "&E"   -> return [ConjElim1X, ConjElim2X]
-                             "/\\I" -> return [ConjIntroX]
-                             "/\\E" -> return [ConjElim1X, ConjElim2X]
-                             "∧I"   -> return [ConjIntroX]
-                             "∧E"   -> return [ConjElim1X, ConjElim2X]
-                             "CI"   -> return [CondIntro1X,CondIntro2X]
-                             "CE"   -> return [CondElimX]
-                             "->I"  -> return [CondIntro1X,CondIntro2X]
-                             "->E"  -> return [CondElimX]
-                             "→I"   -> return [CondIntro1X,CondIntro2X]
-                             "→E"   -> return [CondElimX]
-                             "~I"   -> return [NegeIntro1X, NegeIntro2X, NegeIntro3X, NegeIntro4X]
-                             "~E"   -> return [NegeElim1X, NegeElim2X, NegeElim3X, NegeElim4X]
-                             "¬I"   -> return [NegeIntro1X, NegeIntro2X, NegeIntro3X, NegeIntro4X]
-                             "¬E"   -> return [NegeElim1X, NegeElim2X, NegeElim3X, NegeElim4X]
-                             "-I"   -> return [NegeIntro1X, NegeIntro2X, NegeIntro3X, NegeIntro4X]
-                             "-E"   -> return [NegeElim1X, NegeElim2X, NegeElim3X, NegeElim4X]
-                             "vI"   -> return [DisjIntro1X, DisjIntro2X]
-                             "vE"   -> return [DisjElim1X, DisjElim2X]
-                             "∨I"   -> return [DisjIntro1X, DisjIntro2X]
-                             "∨E"   -> return [DisjElim1X, DisjElim2X]
-                             "\\/I" -> return [DisjIntro1X, DisjIntro2X]
-                             "\\/E" -> return [DisjElim1X, DisjElim2X]
-                             "BI"   -> return [BicoIntro1X, BicoIntro2X, BicoIntro3X, BicoIntro4X]
-                             "BE"   -> return [BicoElim1X, BicoElim2X]
-                             "<->I" -> return [BicoIntro1X, BicoIntro2X, BicoIntro3X, BicoIntro4X]
-                             "<->E" -> return [BicoElim1X, BicoElim2X]
-                             "↔I"   -> return [BicoIntro1X, BicoIntro2X, BicoIntro3X, BicoIntro4X]
-                             "↔E"   -> return [BicoElim1X, BicoElim2X]
-                             "R"    -> return [ReiterateX]
+                        case r of
+                             "AS"   -> return [As]
+                             "PR"   -> return [Pr]
+                             "&I"   -> return [ConjIntro]
+                             "&E"   -> return [ConjElim1, ConjElim2]
+                             "/\\I" -> return [ConjIntro]
+                             "/\\E" -> return [ConjElim1, ConjElim2]
+                             "∧I"   -> return [ConjIntro]
+                             "∧E"   -> return [ConjElim1, ConjElim2]
+                             "CI"   -> return [CondIntro1,CondIntro2]
+                             "CE"   -> return [CondElim]
+                             "->I"  -> return [CondIntro1,CondIntro2]
+                             "->E"  -> return [CondElim]
+                             "→I"   -> return [CondIntro1,CondIntro2]
+                             "→E"   -> return [CondElim]
+                             "~I"   -> return [NegeIntro1, NegeIntro2, NegeIntro3, NegeIntro4]
+                             "~E"   -> return [NegeElim1, NegeElim2, NegeElim3, NegeElim4]
+                             "¬I"   -> return [NegeIntro1, NegeIntro2, NegeIntro3, NegeIntro4]
+                             "¬E"   -> return [NegeElim1, NegeElim2, NegeElim3, NegeElim4]
+                             "-I"   -> return [NegeIntro1, NegeIntro2, NegeIntro3, NegeIntro4]
+                             "-E"   -> return [NegeElim1, NegeElim2, NegeElim3, NegeElim4]
+                             "vI"   -> return [DisjIntro1, DisjIntro2]
+                             "vE"   -> return [DisjElim1, DisjElim2]
+                             "∨I"   -> return [DisjIntro1, DisjIntro2]
+                             "∨E"   -> return [DisjElim1, DisjElim2]
+                             "\\/I" -> return [DisjIntro1, DisjIntro2]
+                             "\\/E" -> return [DisjElim1, DisjElim2]
+                             "BI"   -> return [BicoIntro1, BicoIntro2, BicoIntro3, BicoIntro4]
+                             "BE"   -> return [BicoElim1, BicoElim2]
+                             "<->I" -> return [BicoIntro1, BicoIntro2, BicoIntro3, BicoIntro4]
+                             "<->E" -> return [BicoElim1, BicoElim2]
+                             "↔I"   -> return [BicoIntro1, BicoIntro2, BicoIntro3, BicoIntro4]
+                             "↔E"   -> return [BicoElim1, BicoElim2]
+                             "R"    -> return [Reiterate]
 
-parseForallxSLProof :: Map String DerivedRule -> String -> [DeductionLine ForallxSL PurePropLexicon (Form Bool)]
-parseForallxSLProof ders = toDeductionBE (parseForallxSL ders) (purePropFormulaParser extendedLetters)
+parseMagnusSLProof :: Map String DerivedRule -> String -> [DeductionLine MagnusSL PurePropLexicon (Form Bool)]
+parseMagnusSLProof ders = toDeductionBE (parseMagnusSL ders) (purePropFormulaParser extendedLetters)
 
-forallxSLCalc = NaturalDeductionCalc 
+magnusSLCalc = NaturalDeductionCalc 
     { ndRenderer = FitchStyle
-    , ndParseProof = parseForallxSLProof
+    , ndParseProof = parseMagnusSLProof
     , ndProcessLine = processLineFitch
     , ndProcessLineMemo = Nothing
     , ndParseSeq = extendedPropSeqParser

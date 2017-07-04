@@ -111,9 +111,9 @@ parseProofData parsePair valList = evalStateT (process valList) 1
                      return (wff,jst')
 
 parsePairProp (wff,jstr) = AssertLine <$> P.parse (purePropFormulaParser extendedLetters) "" wff
-                                      <*> (fst <$> P.parse (parseJstr $ parseForallxSL M.empty) "" jstr)
+                                      <*> (fst <$> P.parse (parseJstr $ parseMagnusSL M.empty) "" jstr)
                                       <*> return 0
-                                      <*> (snd <$> P.parse (parseJstr $ parseForallxSL M.empty) "" jstr)
+                                      <*> (snd <$> P.parse (parseJstr $ parseMagnusSL M.empty) "" jstr)
 
 parsePairFOL  (wff,jstr) = AssertLine <$> P.parse forallxFOLFormulaParser "" wff
                                       <*> (fst <$> P.parse (parseJstr $ parseForallxQL M.empty) "" jstr)

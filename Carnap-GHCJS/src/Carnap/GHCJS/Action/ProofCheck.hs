@@ -8,8 +8,8 @@ import Carnap.Calculi.NaturalDeduction.Checker
 import Carnap.Core.Data.AbstractSyntaxDataTypes (liftLang, FixLang, CopulaSchema)
 import Carnap.Core.Data.AbstractSyntaxClasses (Schematizable)
 import Carnap.Languages.ClassicalSequent.Syntax
-import Carnap.Languages.PurePropositional.Logic as P (DerivedRule(..),  logicBookCalc, forallxSLCalc, propCalc, ) 
-import Carnap.Languages.PureFirstOrder.Logic as FOL (DerivedRule(..),   folCalc,forallxQLCalc) 
+import Carnap.Languages.PurePropositional.Logic as P (DerivedRule(..), logicBookCalc, magnusSLCalc, propCalc, ) 
+import Carnap.Languages.PureFirstOrder.Logic as FOL (DerivedRule(..), folCalc, forallxQLCalc) 
 import Carnap.Languages.PureSecondOrder.Logic ( msolCalc, psolCalc) 
 import Carnap.Languages.PurePropositional.Util (toSchema)
 import Carnap.GHCJS.SharedTypes
@@ -94,8 +94,8 @@ activateChecker drs w (Just iog@(IOGoal i o g classes))
                         tryParse buildOptions psolCalc (Just drs)
         | "LogicBook" `elem` classes = do
                         tryParse buildOptions logicBookCalc (Just drs)
-        | "forallxSL" `elem` classes = do
-                        tryParse buildOptions forallxSLCalc (Just drs)
+        | "magnusSL" `elem` classes = do
+                        tryParse buildOptions magnusSLCalc (Just drs)
         | otherwise = do 
                          tryParse buildOptions propCalc (Just drs)
         where tryParse options calc mdrs = do

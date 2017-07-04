@@ -115,7 +115,6 @@ conditionalToBiconditional = [ GammaV 1  :|-: SS (SeqPhi 1 :->-: SeqPhi 2)
                              , GammaV 2  :|-: SS (SeqPhi 2 :->-: SeqPhi 1) 
                              ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (SeqPhi 1 :<->-: SeqPhi 2)
 
-
 ---------------------------
 --  1.2 Variation Rules  --
 ---------------------------
