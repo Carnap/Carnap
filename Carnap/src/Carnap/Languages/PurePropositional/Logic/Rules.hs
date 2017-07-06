@@ -115,6 +115,15 @@ conditionalToBiconditional = [ GammaV 1  :|-: SS (SeqPhi 1 :->-: SeqPhi 2)
                              , GammaV 2  :|-: SS (SeqPhi 2 :->-: SeqPhi 1) 
                              ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (SeqPhi 1 :<->-: SeqPhi 2)
 
+dilemma = [ GammaV 1 :|-: SS (SeqPhi 1 :||-: SeqPhi 2)
+          , GammaV 2 :|-: SS (SeqPhi 1 :->-: SeqPhi 3)
+          , GammaV 3 :|-: SS (SeqPhi 2 :->-: SeqPhi 3)
+          ] ∴ GammaV 1 :+: GammaV 2 :+: GammaV 3 :|-: SS (SeqPhi 3)
+
+hypotheticalSyllogism = [ GammaV 1 :|-: SS (SeqPhi 1 :->-: SeqPhi 2)
+                        , GammaV 2 :|-: SS (SeqPhi 2 :->-: SeqPhi 3)
+                        ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (SeqPhi 1 :->-: SeqPhi 3)
+
 ---------------------------
 --  1.2 Variation Rules  --
 ---------------------------

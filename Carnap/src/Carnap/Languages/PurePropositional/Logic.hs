@@ -1,6 +1,8 @@
 module Carnap.Languages.PurePropositional.Logic 
-    ( parsePropLogic, parseFitchPropLogic, parseMagnusSL, parsePropProof, parseFitchPropProof, LogicBookPropLogic,
-    DerivedRule(..),  PropSequentCalc, MagnusSL, PropLogic, magnusSLCalc, logicBookCalc, propCalc) where
+    ( DerivedRule(..),  PropSequentCalc
+    , parsePropLogic, parseFitchPropLogic, parseMagnusSL, parseMagnusSLPlus
+    , LogicBookPropLogic, MagnusSL, MagnusSLPlus, PropLogic
+    , magnusSLCalc, magnusSLPlusCalc, logicBookCalc, propCalc) where
 
 import Carnap.Languages.PurePropositional.Logic.Rules (PropSequentCalc,DerivedRule(..))
 import Carnap.Languages.PurePropositional.Logic.KalishAndMontegue

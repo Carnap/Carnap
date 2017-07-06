@@ -31,7 +31,12 @@ activate cls chunk
     | "ForallxSL" `elem` cls = RawBlock "html" $ 
         "<div class=\"exercise\">"
         ++ "<span> exercise " ++ numof h ++ "</span>"
-        ++ "<div class=\"proofchecker forallxSL Render\"><div class=\"goal\">" ++ h ++ "</div>"
+        ++ "<div class=\"proofchecker magnusSL Render\"><div class=\"goal\">" ++ h ++ "</div>"
+        ++ "<textarea>" ++ unlines t ++ "</textarea><div class=\"output\"></div></div></div>"
+    | "ForallxSLPlus" `elem` cls = RawBlock "html" $ 
+        "<div class=\"exercise\">"
+        ++ "<span> exercise " ++ numof h ++ "</span>"
+        ++ "<div class=\"proofchecker magnusSLPlus Render\"><div class=\"goal\">" ++ h ++ "</div>"
         ++ "<textarea>" ++ unlines t ++ "</textarea><div class=\"output\"></div></div></div>"
     | "ForallxQL" `elem` cls = RawBlock "html" $ 
         "<div class=\"exercise\">"

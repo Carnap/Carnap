@@ -1,6 +1,6 @@
 {-#LANGUAGE FlexibleContexts, FlexibleInstances, MultiParamTypeClasses #-}
 module Carnap.Languages.PurePropositional.Logic.Magnus
-    ( parseMagnusSL,  MagnusSL,  magnusSLCalc, ) where
+    ( parseMagnusSL, parseMagnusSLPlus, MagnusSLPlus, magnusSLPlusCalc, MagnusSL,  magnusSLCalc) where
 
 import Data.Map as M (lookup, Map)
 import Text.Parsec
@@ -14,9 +14,9 @@ import Carnap.Languages.ClassicalSequent.Syntax
 import Carnap.Languages.ClassicalSequent.Parser
 import Carnap.Languages.PurePropositional.Logic.Rules
 
-
---A system for propositional logic resembling the proof system SL from PD
---Magnus' forallx book
+{-| A system for propositional logic resembling the basic proof system SL
+from PD Magnus' forallx book
+-}
 
 data MagnusSL = Reiterate  | ConjIntro
               | ConjElim1  | ConjElim2
@@ -153,3 +153,89 @@ magnusSLCalc = NaturalDeductionCalc
     , ndProcessLineMemo = Nothing
     , ndParseSeq = extendedPropSeqParser
     }
+
+{-| A system for propositional logic resembling the proof system SL
+from PD Magnus' forallx book, including the derived and replacement rules
+-}
+data MagnusSLPlus = MSL MagnusSL | Hyp 
+                  | Dilemma      | MT
+                  --various replacement rules with their reverse
+                  --directions included
+                  | AndComm      | CommAnd 
+                  | OrComm       | CommOr
+                  | IffComm      | CommIff
+                  | DNRep        | RepDN
+                  | MCRep        | RepMC
+                  | MCRep2       | RepMC2
+                  | BiExRep      | RepBiEx
+
+instance Show MagnusSLPlus where
+        show (MSL x) = show x
+        show Hyp     = "HS"
+        show MT      = "MT"
+        show Dilemma = "DIL"
+        show AndComm = "Comm"
+        show CommAnd = "Comm"
+        show OrComm  = "Comm"
+        show CommOr  = "Comm"
+        show IffComm = "Comm"
+        show CommIff = "Comm"
+        show DNRep   = "DN"
+        show RepDN   = "DN"
+        show MCRep   = "MC"
+        show RepMC   = "MC"
+        show MCRep2  = "MC"
+        show RepMC2  = "MC"
+        show BiExRep = "↔ex"
+        show RepBiEx = "↔ex"
+
+instance Inference MagnusSLPlus PurePropLexicon where
+        ruleOf (MSL x) = ruleOf x
+        ruleOf Hyp     = hypotheticalSyllogism
+        ruleOf MT      = modusTollens
+        ruleOf Dilemma = dilemma
+        ruleOf AndComm = andCommutativity !! 0
+        ruleOf CommAnd = andCommutativity !! 1
+        ruleOf OrComm  = orCommutativity !! 0
+        ruleOf CommOr  = orCommutativity !! 1
+        ruleOf IffComm = iffCommutativity !! 0 
+        ruleOf CommIff = iffCommutativity !! 1
+        ruleOf DNRep   = doubleNegation !! 0
+        ruleOf RepDN   = doubleNegation !! 1
+        ruleOf MCRep   = materialConditional !! 0
+        ruleOf RepMC   = materialConditional !! 1
+        ruleOf MCRep2  = materialConditional !! 2
+        ruleOf RepMC2  = materialConditional !! 3
+        ruleOf BiExRep = biconditionalExchange !! 1
+        ruleOf RepBiEx = biconditionalExchange !! 2
+
+        indirectInference (MSL x) = indirectInference x
+        indirectInference _ = Nothing
+
+        isAssumption (MSL x) = isAssumption x
+        isAssumption _ = False
+
+parseMagnusSLPlus :: Map String DerivedRule -> Parsec String u [MagnusSLPlus]
+parseMagnusSLPlus ders = try basic <|> plus
+    where basic = map MSL <$> parseMagnusSL ders
+          plus = do r <- choice (map (try . string) ["HYP","DIL","MT", "Comm", "DN", "MC", "↔ex", "<->ex"])
+                    case r of
+                        "HYP"   -> return [Hyp]
+                        "DIL"   -> return [Dilemma]
+                        "Comm"  -> return [AndComm,CommAnd,OrComm,CommOr,IffComm,CommIff]
+                        "DN"    -> return [DNRep,RepDN]
+                        "MC"    -> return [MCRep,MCRep2,RepMC,RepMC2]
+                        "↔ex"   -> return [BiExRep,RepBiEx]
+                        "<->ex" -> return [BiExRep,RepBiEx]
+
+parseMagnusSLPlusProof :: Map String DerivedRule -> String -> [DeductionLine MagnusSLPlus PurePropLexicon (Form Bool)]
+parseMagnusSLPlusProof ders = toDeductionBE (parseMagnusSLPlus ders) (purePropFormulaParser extendedLetters)
+
+magnusSLPlusCalc = NaturalDeductionCalc 
+    { ndRenderer = FitchStyle
+    , ndParseProof = parseMagnusSLPlusProof
+    , ndProcessLine = hoProcessLineFitch
+    , ndProcessLineMemo = Just hoProcessLineFitchMemo
+    , ndParseSeq = extendedPropSeqParser
+    }
+
