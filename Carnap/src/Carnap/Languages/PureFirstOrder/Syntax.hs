@@ -168,6 +168,9 @@ instance UniformlyEq (PureFirstOrderLanguageWith a) => Eq (PureFirstOrderLanguag
 --2.1 Monadic First Order Logic
 --------------------------------------------------------
 
+--Note that we *could* add monadic function symbols and identity while
+--preserving decidability
+
 type MonadicPredicates = Predicate PureMonadicPredicate :|: EndLang
 
 type OpenLexiconMFOL a = CoreLexicon :|: MonadicPredicates :|: a

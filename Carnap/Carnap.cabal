@@ -40,6 +40,7 @@ library
                      , Carnap.Languages.ModalPropositional.Syntax
                      , Carnap.Languages.ModalPropositional.Parser
                      , Carnap.Languages.PureFirstOrder.Syntax
+                     , Carnap.Languages.PureFirstOrder.Semantics
                      , Carnap.Languages.PureFirstOrder.Parser
                      , Carnap.Languages.PureFirstOrder.Logic
                      , Carnap.Languages.PureFirstOrder.Logic.Rules
