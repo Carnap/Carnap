@@ -99,13 +99,24 @@ modusTollens = [ GammaV 1 :|-: SS (SeqPhi 1 :->-: SeqPhi 2)
                , GammaV 2 :|-: SS (SeqNeg $ SeqPhi 2)
                ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (SeqNeg $ SeqPhi 1)
 
-axiom = [] ∴ SA (SeqPhi 1) :|-: SS (SeqPhi 1)
+axiom = [
+        ] ∴ SA (SeqPhi 1) :|-: SS (SeqPhi 1)
 
-identityRule = [ GammaV 1 :|-: SS (SeqPhi 1) ] ∴ GammaV 1 :|-: SS (SeqPhi 1)
+identityRule = [ GammaV 1 :|-: SS (SeqPhi 1) 
+               ] ∴ GammaV 1 :|-: SS (SeqPhi 1)
 
-doubleNegationElimination = [ GammaV 1 :|-: SS (SeqNeg $ SeqNeg $ SeqPhi 1) ] ∴ GammaV 1 :|-: SS (SeqPhi 1) 
+doubleNegationElimination = [ GammaV 1 :|-: SS (SeqNeg $ SeqNeg $ SeqPhi 1) 
+                            ] ∴ GammaV 1 :|-: SS (SeqPhi 1) 
 
-doubleNegationIntroduction = [ GammaV 1 :|-: SS (SeqPhi 1) ] ∴ GammaV 1 :|-: SS (SeqNeg $ SeqNeg $ SeqPhi 1) 
+doubleNegationIntroduction = [ GammaV 1 :|-: SS (SeqPhi 1) 
+                             ] ∴ GammaV 1 :|-: SS (SeqNeg $ SeqNeg $ SeqPhi 1) 
+
+falsumElimination = [ GammaV 1 :|-: SS PFalsum
+                    ] ∴ GammaV 1 :|-: SeqPhi 1
+
+falsumIntroduction = [ GammaV 1 :|-: SS (SeqNeg $ SeqPhi 1)
+                     , GammaV 2 :|-: SS (SeqPhi 1)
+                     ] ∴ GammaV 1 :+: GammaV 2 :|-: SS PFalsum
 
 adjunction = [ GammaV 1  :|-: SS (SeqPhi 1) 
              , GammaV 2  :|-: SS (SeqPhi 2)
@@ -251,6 +262,22 @@ biconditionalPonensVariations = [
                 [ GammaV 1  :|-: SS (SeqPhi 1 :<->-: SeqPhi 2)
                 , GammaV 2  :|-: SS (SeqPhi 2)
                 ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (SeqPhi 1)
+            ]
+
+materialConditionalVariations =  [
+                [ GammaV 1 :|-: SS (SeqPhi 1)
+                ] ∴ GammaV 1 :|-: SS (SeqPhi 2 :->: SeqPhi 1)
+            ,
+                [ GammaV 1 :|-: SS (SeqNeg $ SeqPhi 2)
+                ] ∴ GammaV 1 :|-: SS (SeqPhi 2 :->: SeqPhi 1)
+            ]
+
+negatedConditionalVariations = [
+                [ GammaV 1 :|-: SS (SeqNeg $ SeqPhi 1 :-> SeqPhi 2)
+                ] ∴ GammaV 1 :|-: SS (SeqPhi 1 :&-: SeqNeg (SeqPhi 2))
+            ,
+                [ GammaV 1 :|-: SS (SeqPhi 1 :&-: SeqNeg (SeqPhi 2))
+                ] ∴ GammaV 1 :|-: SS (SeqNeg $ SeqPhi 1 :-> SeqPhi 2)
             ]
 
 -------------------------------
