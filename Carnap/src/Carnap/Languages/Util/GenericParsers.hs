@@ -38,6 +38,10 @@ parseNeg = do spaces
               _ <- string "-" <|> string "~" <|> string "¬" <|> string "not "
               return lneg
 
+booleanConstParser :: (BooleanConstLanguage l, Monad m) => ParsecT String u m l
+booleanConstParser = stringsToTry ["!?"] lfalsum
+                   <|> stringsToTry ["T"] lverum --XXX : this might collide with sentence letters
+
 parseNec :: (ModalLanguage l, Monad m) => ParsecT String u m (l -> l)
 parseNec = do spaces
               _ <- string "[]" <|> string "□"
@@ -47,6 +51,7 @@ parsePos :: (ModalLanguage l, Monad m) => ParsecT String u m (l -> l)
 parsePos = do spaces
               _ <- string "<>" <|> string "◇"
               return pos
+
 
 --------------------------------------------------------
 --Predicates and Sentences
@@ -109,7 +114,6 @@ parsePredicateSymbol s parseTerm = try parseNumbered <|> parseUnnumbered
           parseNumbered = do string "F_"
                              n <- number
                              char '(' *> argParser parseTerm (ppn n AOne)
-
 
 parsePredicateSymbolNoParen :: 
     ( PolyadicPredicateLanguage (FixLang lex) arg ret

@@ -7,15 +7,20 @@ import Text.Parsec
 import Text.Parsec.Expr
 
 data PurePropositionalParserOptions u m = PurePropositionalParserOptions 
-                                        { atomicSentenceParser :: ParsecT String u m PureForm }
+                                        { atomicSentenceParser :: ParsecT String u m PureForm 
+                                        , hasBooleanConstants :: Bool}
 
 standardLetters :: Monad m => PurePropositionalParserOptions u m
-standardLetters = PurePropositionalParserOptions { 
-                        atomicSentenceParser = sentenceLetterParser "PQRSTUVW" }
+standardLetters = PurePropositionalParserOptions 
+                        { atomicSentenceParser = sentenceLetterParser "PQRSTUVW" 
+                        , hasBooleanConstants = False
+                        }
 
 extendedLetters :: Monad m => PurePropositionalParserOptions u m
-extendedLetters = PurePropositionalParserOptions { 
-                        atomicSentenceParser = sentenceLetterParser "ABCDEFGHIJKLMNOPQRSTUVWXYZ" }
+extendedLetters = PurePropositionalParserOptions 
+                        { atomicSentenceParser = sentenceLetterParser "ABCDEFGHIJKLMNOPQRSTUVWXYZ" 
+                        , hasBooleanConstants = False
+                        }
 
 --this parses as much formula as it can, but is happy to return an output if the
 --initial segment of a string is a formula
@@ -25,6 +30,7 @@ purePropFormulaParser opts = buildExpressionParser opTable subFormulaParser
     where subFormulaParser = (parenParser (purePropFormulaParser opts) <* spaces)  --formulas wrapped in parentheses
                           <|> unaryOpParser [parseNeg] subFormulaParser --negations or modalizations of subformulas
                           <|> try (atomicSentenceParser opts <* spaces)--or atoms
+                          <|> if hasBooleanConstants opts then try (booleanConstParser <* spaces) else parserZero
                           <|> (schemevarParser <* spaces)
 
 opTable :: Monad m => [[Operator String u m PureForm]]

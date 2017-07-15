@@ -17,11 +17,8 @@ import Data.Typeable
 --------------------------------------------------------
 --1.1 Connectives
 --------------------------------------------------------
---------------------------------------------------------
---1.1.1 Boolean Languages
---------------------------------------------------------
---these are classes and datatypes for languages and schematic languages
---with boolean connectives. 
+
+--these are classes for languages and with boolean connectives. 
 class BooleanLanguage l where
             lneg :: l -> l
             land :: l -> l -> l
@@ -52,13 +49,13 @@ class BooleanLanguage l where
 class IndexedPropContextSchemeLanguage l where
             propCtx :: Int -> l -> l
 
---------------------------------------------------------
---1.1.2 Modal Languages
---------------------------------------------------------
-
 class ModalLanguage l where
         nec :: l -> l
         pos :: l -> l
+
+class BooleanConstLanguage l where 
+        lverum :: l
+        lfalsum :: l
 
 --------------------------------------------------------
 --1.2 Propositions

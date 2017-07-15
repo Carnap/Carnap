@@ -97,6 +97,10 @@ instance BooleanLanguage PureForm where
         lif  = (:->:)
         liff = (:<->:)
 
+instance BooleanConstLanguage PureForm where
+        lverum = PVerum
+        lfalsum = PFalsum
+
 instance IndexedPropLanguage PureForm where
         pn = PP
 
