@@ -11,6 +11,10 @@ type Thing = Term Int
 
 type TruthValue = Form Bool
 
+--------------------------------------
+--  Pure Monadic First Order Logic  --
+--------------------------------------
+
 data MonadicModel = MonadicModel 
                   { domain :: [Thing]
                   , property :: Int -> Thing -> TruthValue

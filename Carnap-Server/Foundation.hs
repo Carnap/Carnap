@@ -184,13 +184,16 @@ instance YesodAuth App where
                  case mid of 
                     Nothing -> return ()
                     Just uid -> 
+                        --check to see if data for this user exists
                         do maybeData <- runDB $ getBy $ UniqueUserData uid
                            case maybeData of
+                               --if not, redirect to registration
                                Nothing -> 
                                     do musr <- runDB $ get uid
                                        case musr of 
                                           (Just (User ident _)) -> redirect (RegisterR ident)
                                           Nothing -> return ()
+                               --if so, go ahead
                                Just ud -> return ()
 
     -- appDevel is a custom method added to the settings, which is true
