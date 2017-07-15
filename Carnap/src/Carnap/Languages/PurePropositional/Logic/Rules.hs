@@ -138,6 +138,11 @@ hypotheticalSyllogism = [ GammaV 1 :|-: SS (SeqPhi 1 :->-: SeqPhi 2)
 ---------------------------
 --  1.2 Variation Rules  --
 ---------------------------
+
+------------------------------
+--  1.2.1 Simple Variation  --
+------------------------------
+
 -- Rules with several variations
 
 modusTollendoPonensVariations = [

@@ -8,7 +8,8 @@ import Text.Parsec.Expr
 
 data PurePropositionalParserOptions u m = PurePropositionalParserOptions 
                                         { atomicSentenceParser :: ParsecT String u m PureForm 
-                                        , hasBooleanConstants :: Bool}
+                                        , hasBooleanConstants :: Bool
+                                        }
 
 standardLetters :: Monad m => PurePropositionalParserOptions u m
 standardLetters = PurePropositionalParserOptions 
