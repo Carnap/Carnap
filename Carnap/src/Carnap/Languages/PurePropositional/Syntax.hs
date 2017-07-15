@@ -27,12 +27,21 @@ type PureConn = BooleanConn Bool
 
 instance Evaluable PureConn where
         eval Iff = lift2  (==)
-        eval If = lift2 $ \x y -> (not x || y)
-        eval Or = lift2  (||)
+        eval If  = lift2 $ \x y -> (not x || y)
+        eval Or  = lift2  (||)
         eval And = lift2 (&&)
         eval Not = lift1 not
 
 instance Modelable (Int -> Bool) PureConn where
+    satisfies = const eval
+
+type PureConst = BooleanConst Bool
+
+instance Evaluable PureConst where
+        eval Verum = Form True
+        eval Falsum = Form False
+
+instance Modelable (Int -> Bool) PureConst where
     satisfies = const eval
 
 type PureSchematicProp = SchematicIntProp Bool
@@ -50,6 +59,7 @@ type PurePropLexicon = (Predicate PureProp
                    :|: Connective PureConn
                    :|: SubstitutionalVariable
                    :|: Connective PurePropositionalContext
+                   :|: Connective PureConst
                    :|: EndLang)
 
 instance BoundVars PurePropLexicon
@@ -65,6 +75,8 @@ pattern PSPred x arity = Fx2 (Predicate x arity)
 pattern PCon x arity   = Fx3 (Connective x arity)
 pattern PSV n          = Fx4 (SubVar n)
 pattern PCtx n         = Fx5 (Connective (PropCtx n) AOne)
+pattern PVerum         = Fx6 (Connective (Verum) AZero)
+pattern PFalsum        = Fx6 (Connective (Falsum) AZero)
 pattern PAnd           = PCon And ATwo
 pattern POr            = PCon Or ATwo
 pattern PIf            = PCon If ATwo

@@ -204,6 +204,25 @@ instance MaybeStaticVar (BooleanConn b)
 
 instance FirstOrderLex (BooleanConn b)
 
+data BooleanConst b a where
+        Verum :: BooleanConst b (Form b)
+        Falsum :: BooleanConst b (Form b)
+
+instance Schematizable (BooleanConst b) where
+        schematize Verum  _  = "⊤"
+        schematize Falsum _  = "⊥"
+
+instance UniformlyEq (BooleanConst b) where
+        Verum =* Verum = True 
+        Falsum =* Falsum = True 
+        _ =* _ = False
+
+instance Monad m => MaybeMonadVar (BooleanConst b) m
+
+instance MaybeStaticVar (BooleanConst b)
+
+instance FirstOrderLex (BooleanConst b)
+
 data Modality b a where
         Box     :: Modality b (Form b -> Form b)
         Diamond :: Modality b (Form b -> Form b)
