@@ -28,6 +28,7 @@ instance CopulaSchema PropSequentCalc
 pattern SeqP x arity      = FX (Lx2 (Lx1 (Predicate x arity)))
 pattern SeqSP x arity     = FX (Lx2 (Lx2 (Predicate x arity)))
 pattern SeqCon x arity    = FX (Lx2 (Lx3 (Connective x arity)))
+pattern LFalsum           = FX (Lx2 (Lx6 (Connective Falsum AZero)))
 pattern SeqProp n         = SeqP (Prop n) AZero
 pattern SeqPhi n          = SeqSP (SProp n) AZero
 pattern SeqAnd            = SeqCon And ATwo
@@ -111,12 +112,12 @@ doubleNegationElimination = [ GammaV 1 :|-: SS (SeqNeg $ SeqNeg $ SeqPhi 1)
 doubleNegationIntroduction = [ GammaV 1 :|-: SS (SeqPhi 1) 
                              ] ∴ GammaV 1 :|-: SS (SeqNeg $ SeqNeg $ SeqPhi 1) 
 
-falsumElimination = [ GammaV 1 :|-: SS PFalsum
-                    ] ∴ GammaV 1 :|-: SeqPhi 1
+falsumElimination = [ GammaV 1 :|-: SS LFalsum
+                    ] ∴ GammaV 1 :|-: SS (SeqPhi 1)
 
 falsumIntroduction = [ GammaV 1 :|-: SS (SeqNeg $ SeqPhi 1)
                      , GammaV 2 :|-: SS (SeqPhi 1)
-                     ] ∴ GammaV 1 :+: GammaV 2 :|-: SS PFalsum
+                     ] ∴ GammaV 1 :+: GammaV 2 :|-: SS LFalsum
 
 adjunction = [ GammaV 1  :|-: SS (SeqPhi 1) 
              , GammaV 2  :|-: SS (SeqPhi 2)
@@ -271,18 +272,18 @@ biconditionalPonensVariations = [
 
 materialConditionalVariations =  [
                 [ GammaV 1 :|-: SS (SeqPhi 1)
-                ] ∴ GammaV 1 :|-: SS (SeqPhi 2 :->: SeqPhi 1)
+                ] ∴ GammaV 1 :|-: SS (SeqPhi 2 :->-: SeqPhi 1)
             ,
                 [ GammaV 1 :|-: SS (SeqNeg $ SeqPhi 2)
-                ] ∴ GammaV 1 :|-: SS (SeqPhi 2 :->: SeqPhi 1)
+                ] ∴ GammaV 1 :|-: SS (SeqPhi 2 :->-: SeqPhi 1)
             ]
 
 negatedConditionalVariations = [
-                [ GammaV 1 :|-: SS (SeqNeg $ SeqPhi 1 :-> SeqPhi 2)
+                [ GammaV 1 :|-: SS (SeqNeg $ SeqPhi 1 :->-: SeqPhi 2)
                 ] ∴ GammaV 1 :|-: SS (SeqPhi 1 :&-: SeqNeg (SeqPhi 2))
             ,
                 [ GammaV 1 :|-: SS (SeqPhi 1 :&-: SeqNeg (SeqPhi 2))
-                ] ∴ GammaV 1 :|-: SS (SeqNeg $ SeqPhi 1 :-> SeqPhi 2)
+                ] ∴ GammaV 1 :|-: SS (SeqNeg $ SeqPhi 1 :->-: SeqPhi 2)
             ]
 
 -------------------------------
