@@ -176,6 +176,26 @@ constructiveReductioVariations = [
                 ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (SeqNeg $ SeqPhi 1)
             ]
 
+explicitConstructiveFalsumReductioVariations = [
+                [ GammaV 1 :+: SA (SeqPhi 1) :|-: SS LFalsum
+                , SA (SeqPhi 1) :|-: SS (SeqPhi 1)
+                ] ∴ GammaV 1 :|-: SS (SeqNeg $ SeqPhi 1)
+            ,
+                [ GammaV 1 :|-: SS LFalsum
+                , SA (SeqPhi 1) :|-: SS (SeqPhi 1)
+                ] ∴ GammaV 1 :|-: SS (SeqNeg $ SeqPhi 1)
+            ]
+
+explicitNonConstructiveFalsumReductioVariations = [
+                [ GammaV 1 :+: SA (SeqPhi 1) :|-: SS LFalsum
+                , SA (SeqPhi 1) :|-: SS (SeqNeg $ SeqPhi 1)
+                ] ∴ GammaV 1 :|-: SS (SeqPhi 1)
+            ,
+                [ GammaV 1 :|-: SS LFalsum
+                , SA (SeqPhi 1) :|-: SS (SeqNeg $ SeqPhi 1)
+                ] ∴ GammaV 1 :|-: SS (SeqPhi 1)
+            ]
+
 nonConstructiveReductioVariations = [
                 [ GammaV 1 :+: SA (SeqNeg $ SeqPhi 1) :|-: SS (SeqPhi 2) 
                 , GammaV 2 :+: SA (SeqNeg $ SeqPhi 1) :|-: SS (SeqNeg $ SeqPhi 2)
@@ -286,9 +306,34 @@ negatedConditionalVariations = [
                 ] ∴ GammaV 1 :|-: SS (SeqNeg $ SeqPhi 1 :->-: SeqPhi 2)
             ]
 
+negatedConjunctionVariations = [
+                [ GammaV 1 :|-: SS (SeqNeg $ SeqPhi 1 :&-: SeqPhi 2)
+                ] ∴ GammaV 1 :|-: SS (SeqPhi 1 :->-: SeqNeg (SeqPhi 2))
+            ,
+                [ GammaV 1 :|-: SS (SeqPhi 1 :->-: SeqNeg (SeqPhi 2))
+                ] ∴ GammaV 1 :|-: SS (SeqNeg $ SeqPhi 1 :&-: SeqPhi 2)
+            ]
+
+negatedBiconditionalVariations = [
+                [ GammaV 1 :|-: SS (SeqNeg $ SeqPhi 1 :<->-: SeqPhi 2)
+                ] ∴ GammaV 1 :|-: SS (SeqNeg (SeqPhi 1) :<->-: SeqPhi 2)
+            ,
+                [ GammaV 1 :|-: SS (SeqNeg (SeqPhi 1) :<->-: SeqPhi 2)
+                ] ∴ GammaV 1 :|-: SS (SeqNeg $ SeqPhi 1 :<->-: SeqPhi 2)
+            ]
+
+deMorgansNegatedOr = [
+                [ GammaV 1 :|-: SS (SeqNeg $ SeqPhi 1 :||-: SeqPhi 2)
+                ] ∴ GammaV 1 :|-: SS (SeqNeg (SeqPhi 1) :&-: SeqNeg (SeqPhi 2))
+            ,
+                [ GammaV 1 :|-: SS (SeqNeg (SeqPhi 1) :&-: SeqNeg (SeqPhi 2))
+                ] ∴ GammaV 1 :|-: SS (SeqNeg $ SeqPhi 1 :||-: SeqPhi 2)
+            ]
+
 -------------------------------
---  1.2.1 Replacement Rules  --
+--  1.2.2 Replacement Rules  --
 -------------------------------
+
 
 replace :: PurePropLanguage (Form Bool) -> PurePropLanguage (Form Bool) -> [SequentRule PurePropLexicon]
 replace x y = [ [GammaV 1  :|-: ss (propCtx 1 x)] ∴ GammaV 1  :|-: ss (propCtx 1 y)
@@ -310,3 +355,31 @@ materialConditional = replace (phin 1 .=>. phin 2) (lneg (phin 1) .\/. phin 2)
                    ++ replace (phin 1 .\/. phin 2) (lneg (phin 1) .=>. phin 2)
 
 biconditionalExchange = replace (phin 1 .<=>. phin 2) ((phin 1 .=>. phin 2) ./\. (phin 2 .=>. phin 1))
+
+----------------------------------------
+--  1.2.3 Infinitary Variation Rules  --
+----------------------------------------
+
+-- rules with an infnite number of schematic variations
+
+-- XXX at the moment, these requires all assumptions to be used. Should
+-- actually be parameterized by l::[Bool] of length n rather than n::Int
+-- or alternately, the checking mechanism should be modified to allow
+-- weakening.
+
+eliminationOfCases n = (premAnt n :|-: SS LFalsum
+                     : take n (map premiseForm [1 ..]))
+                     ∴ GammaV 1 :|-: SS (concSuc n)
+    where premiseForm m = SA (SeqNeg $ SeqPhi m) :|-: SS (SeqNeg $ SeqPhi m)
+          premAnt m = foldr (:+:) (GammaV 1) (take m $ map (SA . SeqNeg . SeqPhi) [1 ..])
+          concSuc m = foldr (:||-:) (SeqPhi 1) (take (m - 1) $ map SeqPhi [2 ..])
+
+-- XXX slight variation from Hardegree's rule, which has weird ad-hoc syntax.
+separationOfCases n = (GammaV 0 :|-: SS (premSuc n)
+                    : take n (map premiseForm [1 ..]))
+                    ∴ concAnt n :|-: SS (SeqPhi 0)
+    where premSuc m = foldr (:||-:) (SeqPhi 1) (take (m - 1) $ map SeqPhi [2 ..])
+          premiseForm m = GammaV m :+: SA (SeqPhi m) :|-: SS (SeqPhi 0)
+          concAnt m = foldr (:+:) (GammaV 0) (take m $ map GammaV [1 ..])
+
+
