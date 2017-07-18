@@ -55,7 +55,7 @@ instance Inference ForallxQL PureLexiconFOL where
 
          indirectInference (MagnusSL x) = indirectInference x
          indirectInference x  
-            | x `elem` [ EE1X,EE2X ] = Just AssumptiveProof
+            | x `elem` [ EE1X,EE2X ] = Just assumptiveProof
             | otherwise = Nothing
 
          restriction UIX    = Just (eigenConstraint (SeqT 1) (ss (PBind (All "v") $ phi 1)) (GammaV 1))

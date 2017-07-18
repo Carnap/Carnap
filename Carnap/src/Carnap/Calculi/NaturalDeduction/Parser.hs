@@ -191,12 +191,9 @@ toProofTreeFitch ded n = case ded !! (n - 1)  of
                    mapM_ isSP deps
                    if isAssumptionLine l then checkAssumptionLegit else return True
                    case indirectInference r' of
-                        Just DoubleProof -> do dp <- doubleProcess deps
-                                               deps' <- mapM (toProofTreeFitch ded) dp
-                                               return $ Node (ProofLine n (SS $ liftToSequent f) r) deps'
-                        Just AssumptiveProof -> do dp <- assumptiveProcess deps
-                                                   deps' <- mapM (toProofTreeFitch ded) dp
-                                                   return $ Node (ProofLine n (SS $ liftToSequent f) r) deps'
+                        Just (TypedProof prooftype) -> do dp <- subproofProcess prooftype deps
+                                                          deps' <- mapM (toProofTreeFitch ded) dp
+                                                          return $ Node (ProofLine n (SS $ liftToSequent f) r) deps'
                         _ -> do deps' <- mapM (toProofTreeFitch ded . snd) deps
                                 return $ Node (ProofLine n (SS $ liftToSequent f) r) deps'
                 where checkDep (begin,end) = 
@@ -215,18 +212,19 @@ toProofTreeFitch ded n = case ded !! (n - 1)  of
                         | dpth == 0 = err "you can't make an assumption unless you are beginning a subproof--maybe you forgot to indent?"
                         | n > 1 && dpth <= depth (ded !! (n - 2)) = err "you can't make an assumption unless you are beginning a subproof--maybe you forgot to indent?"
                         | otherwise = return True
-                      doubleProcess ((m,n):xs)
-                        | xs /= [] = err "this rule requires multiple assertions in one subproof, not multiple subproofs"
-                        | depth (ded !! (n - 2)) /= depth (ded !! (n - 1)) = err $ "looks like the final two lines of the subproof starting at" ++ show m ++ " aren't aligned"
-                        | m + 2 > n = err "a subproof proof needs to be at least two lines long to be used with this rule"
-                        | otherwise = return [n-1,n]
-                      doubleProcess _ = err "this rule requires you to cite at least one subproof"
-                      assumptiveProcess [(i,j),(h,k)] 
-                                    | i == j && h /= k = return [i,h,k]
-                                    | h == k && i /= j = return [h,i,j]
-                                    | otherwise = err "you need to specify one line and one subproof for this rule"
-                      assumptiveProcess _ = err "this rule requires a line and a subproof"
-                                                      
+                      subproofProcess (ProofType assumptionNumber conclusionNumber) deps = 
+                        case filter (\(x,y) -> x /= y) deps of
+                            [thesp@(first,last)] | (last - first) < (assumptionNumber + conclusionNumber) -> err "this subproof doesn't have enough lines to apply this rule"
+                                                 | let firstlines =  map (\x -> ded !! (x - 1)) (take assumptionNumber [first ..]) in 
+                                                     any (not . isAssumptionLine) firstlines  -> 
+                                                        err $ "this rule requires the first " ++ show assumptionNumber ++ " lines of the subproof to be assumptions"
+                                                 | let lastlines = map (\x -> ded !! (x - 1)) (take conclusionNumber [last, last - 1 ..]) in
+                                                     any (\x -> depth x /= depth (ded !! (last - 1))) lastlines -> 
+                                                        err $ "the last " ++ show conclusionNumber ++ " lines of the subproof appear not tbe be aligned"
+                                                 | otherwise -> return $  take assumptionNumber [first ..] 
+                                                                          ++ take conclusionNumber [last, last - 1 ..] 
+                                                                          ++ map fst (delete thesp deps)
+                            otherwise -> err "you need to specify exactly one subproof for this rule"
           (PartialLine _ e _) -> Left $ NoParse e n
           (SeparatorLine _) -> Left $ NoResult n
     where err :: String -> Either (ProofErrorMessage lex) a
@@ -279,12 +277,9 @@ toProofTreeStructuredFitch t n = case t .! n of
                 do mapM_ checkDep deps 
                    if isAssumptionLine l then checkAssumptionLegit else return True
                    case indirectInference r' of
-                        Just DoubleProof -> do dp <- doubleProcess deps
-                                               deps' <- mapM (toProofTreeStructuredFitch t) dp
-                                               return $ Node (ProofLine n (SS $ liftToSequent f) r) deps'
-                        Just AssumptiveProof -> do dp <- assumptiveProcess deps
-                                                   deps' <- mapM (toProofTreeStructuredFitch t) dp
-                                                   return $ Node (ProofLine n (SS $ liftToSequent f) r) deps'
+                        Just (TypedProof prooftype) -> do dp <- subproofProcess prooftype deps
+                                                          deps' <- mapM (toProofTreeStructuredFitch t) dp
+                                                          return $ Node (ProofLine n (SS $ liftToSequent f) r) deps'
                         _ -> do deps' <- mapM (toProofTreeStructuredFitch t . snd) deps
                                 return $ Node (ProofLine n (SS $ liftToSequent f) r) deps'
                 where checkDep (begin,end) = 
@@ -299,16 +294,19 @@ toProofTreeStructuredFitch t n = case t .! n of
                                                  Just (SubProof _ (Leaf k _:_)) | k == n -> return True 
                                                                                 | otherwise -> err "Assumptions need to come at the beginning of subproofs"
                                                  _ -> err "Assuptions must occur within subproofs"
-                      doubleProcess [(i,j)] = case range i j t of
-                                                  Just (SubProof _ ls) | i + 2 > n -> err "a subproof proof needs to be at least two lines long to be used with this rule"
-                                                                       | otherwise -> return [j-1,j]
-                                                  Nothing -> err $ "the range " ++ show i ++ " to " ++ show j ++ " does not appear to be a subproof"
-                      doubleProcess _ = err "This rule takes exactly one subproof as a premise"
-                      assumptiveProcess [(i,j),(h,k)] 
-                                    | i == j && h /= j  = return [i,h,k]
-                                    | h == k && i /= j  = return [h,i,j]
-                                    | otherwise = err "you need to specify an available range and an available line for this rule"
-                      assumptiveProcess _ = err "this rule requires you to cite a line range and a line"
+                      subproofProcess (ProofType assumptionNumber conclusionNumber) deps = 
+                        case filter (\(x,y) -> x /= y) deps of
+                            [thesp@(first,last)] -> case range first last t of
+                                Just (SubProof _ ls) | (last - first) < (assumptionNumber + conclusionNumber) -> err "this subproof doesn't have enough lines to apply this rule"
+                                                     | let firstlines =  map (\x -> t .! x) (take assumptionNumber [first ..]) 
+                                                           badLine (Just l) = not $ isAssumptionLine l
+                                                           badLine Nothing  = True
+                                                           in any badLine firstlines  ->
+                                                             err $ "this rule requires the first " ++ show assumptionNumber ++ " lines of the subproof to be assumptions"
+                                                     | otherwise -> return $  take assumptionNumber [first ..] 
+                                                                              ++ take conclusionNumber [last, last - 1 ..] 
+                                                                              ++ map fst (delete thesp deps)
+                            otherwise -> err "you need to specify exactly one subproof for this rule"
                                                       
           Just (PartialLine _ e _) -> Left $ NoParse e n
           Just (SeparatorLine _) -> Left $ NoResult n

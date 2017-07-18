@@ -238,9 +238,17 @@ data NaturalDeductionCalc r lex der = NaturalDeductionCalc
 -- XXX we get indeterminism if we want full generality here, so I leave this
 --simple for now.
 
+data ProofType = ProofType 
+               { assumptionNumber :: Int --the number of initial lines which will, if they are assumptions, be used as premises
+               , conclusionNumber :: Int --the number of final lines which will, if they are assumptions, be used as premises
+               }
+
 data IndirectArity = PolyProof   --takes an arbitrary number of assertions or subproofs, each ending in one assertion
-                   | DoubleProof --takes one subproof ending in two assertions
-                   | AssumptiveProof --takes a subproof and a line, but the first line of the subproof is used as a premise
+                   | TypedProof ProofType --takes a subproof with a particular structure, given by a prooftype
+
+doubleProof = TypedProof (ProofType 0 2)
+
+assumptiveProof = TypedProof (ProofType 1 1)
 
 class ( FirstOrder (ClassicalSequentOver lex)
       , ACUI (ClassicalSequentOver lex)) => 

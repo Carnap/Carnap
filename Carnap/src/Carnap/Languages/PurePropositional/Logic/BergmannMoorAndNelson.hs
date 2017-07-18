@@ -104,7 +104,7 @@ instance Inference LogicBookPropLogic PurePropLexicon where
                    , DisjElim3, DisjElim4 ] = Just PolyProof
         | x `elem` [ NegeIntro1, NegeIntro2 , NegeIntro3, NegeIntro4
                    , NegeElim1, NegeElim2, NegeElim3, NegeElim4
-                   ] = Just DoubleProof
+                   ] = Just doubleProof
         | otherwise = Nothing
 
     isAssumption LBAS = True
