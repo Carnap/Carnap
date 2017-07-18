@@ -39,6 +39,11 @@ data DeductionLine r lex a where
             { toShow :: FixLang lex a
             , showDepth :: Int
             } -> DeductionLine r lex a
+        ShowWithLine :: 
+            { toShowWith :: FixLang lex a
+            , showWithDepth :: Int
+            , showWithRule :: MultiRule r
+            } -> DeductionLine r lex a
         QedLine :: 
             { closureRule :: MultiRule r
             , closureDepth :: Int
@@ -74,7 +79,8 @@ type Deduction r lex = [DeductionLine r lex (Form Bool)]
 
 --Deduction trees are deduction lines organized in a treelike structure
 --indicating subproofs. They are not assumed to include every line; so for
---lines available from a given line may be regarded as a deduction tree.
+--example, the lines available from a given line may be regarded as
+--a deduction tree.
 data DeductionTree r lex = Leaf Int (DeductionLine r lex (Form Bool)) 
                          | SubProof (Int,Int) [DeductionTree r lex]
                          --

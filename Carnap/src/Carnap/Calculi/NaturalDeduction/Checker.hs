@@ -84,7 +84,7 @@ processLine ::
 processLine ded n = case ded !! (n - 1) of
   --special case to catch QedLines not being cited in justifications
   (QedLine _ _ _) -> Left $ NoResult n
-  _ -> toProofTree ded n >>= reduceProofTree
+  _ -> toProofTreeMontegue ded n >>= reduceProofTree
   
 hoProcessLine :: 
   ( StaticVar (ClassicalSequentOver lex)
@@ -96,7 +96,7 @@ hoProcessLine ::
 hoProcessLine ded n = case ded !! (n - 1) of
   --special case to catch QedLines not being cited in justifications
   (QedLine _ _ _) -> Left $ NoResult n
-  _ -> toProofTree ded n >>= hoReduceProofTree
+  _ -> toProofTreeMontegue ded n >>= hoReduceProofTree
 
 hoProcessLineMemo :: 
   ( StaticVar (ClassicalSequentOver lex)
@@ -109,7 +109,7 @@ hoProcessLineMemo ::
 hoProcessLineMemo ref ded n = case ded !! (n - 1) of
   --special case to catch QedLines not being cited in justifications
   (QedLine _ _ _) -> return $ Left $ NoResult n
-  _ -> case toProofTree ded n of
+  _ -> case toProofTreeMontegue ded n of
         Right t -> hoReduceProofTreeMemo ref t
         Left e -> return $ Left e
 
@@ -302,12 +302,12 @@ hoReduceProofTreeMemo ref pt@(Node (ProofLine no cont rules) ts) =
            let thehash = hash pt
            case M.lookup thehash thememo of
                Just x -> return x
-               _       -> do prems <- mapM (hoReduceProofTreeMemo ref) ts
-                             let x = do prems' <- sequence prems 
-                                        rslt <- reduceResult no $ hoseqFromNode no rules prems' cont
-                                        return $ rebuild $ evalState (toBNF (rebuild rslt)) (0 :: Int)
-                             writeIORef ref (M.insert thehash x thememo)
-                             return x
+               _      -> do prems <- mapM (hoReduceProofTreeMemo ref) ts
+                            let x = do prems' <- sequence prems 
+                                       rslt <- reduceResult no $ hoseqFromNode no rules prems' cont
+                                       return $ rebuild $ evalState (toBNF (rebuild rslt)) (0 :: Int)
+                            writeIORef ref (M.insert thehash x thememo)
+                            return x
 
 fosolve :: 
     ( FirstOrder (ClassicalSequentOver lex)

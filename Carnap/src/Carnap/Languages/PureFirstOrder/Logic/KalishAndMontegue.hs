@@ -90,7 +90,7 @@ parseFOLogic ders = try quantRule <|> liftProp
                                                     Nothing -> parserFail "Looks like you're citing a derived rule that doesn't exist"
 
 parseFOLProof ::  Map String DerivedRule -> String -> [DeductionLine FOLogic PureLexiconFOL (Form Bool)]
-parseFOLProof ders = toDeduction (parseFOLogic ders) folFormulaParser
+parseFOLProof ders = toDeductionMontegue (parseFOLogic ders) folFormulaParser
 
 folCalc = NaturalDeductionCalc
     { ndRenderer = MontegueStyle

@@ -131,8 +131,6 @@ parseMagnusSL ders = do r <- choice (map (try . string) ["AS","PR","&I","/\\I", 
                              "-E"   -> return [NegeElim1, NegeElim2, NegeElim3, NegeElim4]
                              "vI"   -> return [DisjIntro1, DisjIntro2]
                              "vE"   -> return [DisjElim1, DisjElim2]
-                             "∨I"   -> return [DisjIntro1, DisjIntro2]
-                             "∨E"   -> return [DisjElim1, DisjElim2]
                              "\\/I" -> return [DisjIntro1, DisjIntro2]
                              "\\/E" -> return [DisjElim1, DisjElim2]
                              "BI"   -> return [BicoIntro1, BicoIntro2, BicoIntro3, BicoIntro4]
@@ -144,7 +142,7 @@ parseMagnusSL ders = do r <- choice (map (try . string) ["AS","PR","&I","/\\I", 
                              "R"    -> return [Reiterate]
 
 parseMagnusSLProof :: Map String DerivedRule -> String -> [DeductionLine MagnusSL PurePropLexicon (Form Bool)]
-parseMagnusSLProof ders = toDeductionBE (parseMagnusSL ders) (purePropFormulaParser extendedLetters)
+parseMagnusSLProof ders = toDeductionFitch (parseMagnusSL ders) (purePropFormulaParser extendedLetters)
 
 magnusSLCalc = NaturalDeductionCalc 
     { ndRenderer = FitchStyle
@@ -229,7 +227,7 @@ parseMagnusSLPlus ders = try basic <|> plus
                         "<->ex" -> return [BiExRep,RepBiEx]
 
 parseMagnusSLPlusProof :: Map String DerivedRule -> String -> [DeductionLine MagnusSLPlus PurePropLexicon (Form Bool)]
-parseMagnusSLPlusProof ders = toDeductionBE (parseMagnusSLPlus ders) (purePropFormulaParser extendedLetters)
+parseMagnusSLPlusProof ders = toDeductionFitch (parseMagnusSLPlus ders) (purePropFormulaParser extendedLetters)
 
 magnusSLPlusCalc = NaturalDeductionCalc 
     { ndRenderer = FitchStyle

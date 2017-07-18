@@ -11,66 +11,21 @@ import Carnap.Languages.ClassicalSequent.Parser
 import Carnap.Calculi.NaturalDeduction.Syntax
 import Text.Parsec
 
---------------------------------------------------------
---1. To Deduction
---------------------------------------------------------
+-----------------------------
+--  1. Parsing Deductions  --
+-----------------------------
 
-toDeduction :: Parsec String () [r] -> Parsec String () (FixLang lex a) -> String 
-    -> [DeductionLine r lex a]
-toDeduction r f = map handle . lines
-        where handle l = 
-                case parse (parseLine r f) "" l of
-                    Right dl -> dl
-                    Left e -> PartialLine Nothing e (linedepth l)
-              linedepth l = 
-                case parse indent "" l of 
-                    Right n -> n
-                    Left e -> 0
-              parseLine r f = try (parseAssertLine r f) 
-                                <|> try (parseShowLine f) 
-                                <|> try (parseQedLine r)
+-----------------------------------
+--  1.1 Individual Line Parsers  --
+-----------------------------------
 
-parseAssertLine :: Parsec String u [r] -> Parsec String u (FixLang lex a) 
+parseAssertLineFitch :: Parsec String u [r] -> Parsec String u (FixLang lex a) 
     -> Parsec String u (DeductionLine r lex a)
-parseAssertLine r f = do dpth  <- indent
-                         phi <- f
-                         (rule,deps) <- rline r
-                         return $ AssertLine phi rule dpth (map (\x -> (x,x)) deps)
-
-parseShowLine :: Parsec String u (FixLang lex a) -> Parsec String u (DeductionLine r lex a)
-parseShowLine f = do dpth <- indent
-                     string "Show" <|> string "show"
-                     optional $ char ':'
-                     spaces
-                     phi <- f <* eof
-                     return $ ShowLine phi dpth
- 
-parseQedLine :: Parsec String u [r] -> Parsec String u (DeductionLine r lex a)
-parseQedLine r = do dpth <- indent 
-                    (rule, deps) <- rline r
-                    return $ QedLine rule dpth (map (\x->(x,x)) deps)
-
-toDeductionBE :: Parsec String () [r] -> Parsec String () (FixLang lex a) -> String 
-    -> [DeductionLine r lex a]
-toDeductionBE r f = map handle . lines
-        where handle l = 
-                case parse (parseLine r f) "" l of
-                    Right dl -> dl
-                    Left e -> PartialLine Nothing e (linedepth l)
-              linedepth l = 
-                case parse indent "" l of 
-                    Right n -> n
-                    Left e -> 0
-              parseLine r f = try (parseAssertLineBE r f) 
-                              <|> parseSeparatorLine
-
-parseAssertLineBE :: Parsec String u [r] -> Parsec String u (FixLang lex a) 
-    -> Parsec String u (DeductionLine r lex a)
-parseAssertLineBE r f = do dpth  <- indent
-                           phi <- f
-                           rule <- spaces *> char ':' *> r 
-                           intPairs <- many (try parseIntPair <|> parseInt)
-                           return $ AssertLine phi rule dpth intPairs
+parseAssertLineFitch r f = do dpth  <- indent
+                              phi <- f
+                              rule <- spaces *> char ':' *> r 
+                              intPairs <- many (try parseIntPair <|> parseInt)
+                              return $ AssertLine phi rule dpth intPairs
         where parseIntPair = do spaces
                                 i1 <- many1 digit
                                 char '-'
@@ -88,9 +43,78 @@ parseSeparatorLine = do dpth <- indent
                         spaces
                         return $ SeparatorLine dpth
 
---------------------------------------------------------
---2. To Proof Tree
---------------------------------------------------------
+parseAssertLine :: Parsec String u [r] -> Parsec String u (FixLang lex a) 
+    -> Parsec String u (DeductionLine r lex a)
+parseAssertLine r f = do dpth  <- indent
+                         phi <- f
+                         (rule,deps) <- rline r
+                         return $ AssertLine phi rule dpth (map (\x -> (x,x)) deps)
+
+parseShowLine :: Parsec String u (FixLang lex a) -> Parsec String u (DeductionLine r lex a)
+parseShowLine f = do dpth <- indent
+                     string "Show" <|> string "show"
+                     optional $ char ':'
+                     spaces
+                     phi <- f <* eof
+                     return $ ShowLine phi dpth
+
+parseShowWithLine :: Parsec String u [r] -> Parsec String u (FixLang lex a) -> Parsec String u (DeductionLine r lex a)
+parseShowWithLine r f = do dpth <- indent
+                           string "Show" <|> string "show"
+                           optional $ char ':'
+                           spaces
+                           phi <- f 
+                           spaces 
+                           rule <- r <* eof
+                           return $ ShowWithLine phi dpth rule
+ 
+parseQedLine :: Parsec String u [r] -> Parsec String u (DeductionLine r lex a)
+parseQedLine r = do dpth <- indent 
+                    (rule, deps) <- rline r
+                    return $ QedLine rule dpth (map (\x->(x,x)) deps)
+
+-----------------------------------
+--  1.2 Deduction style parsers  --
+-----------------------------------
+
+
+toDeduction :: Parsec String () (DeductionLine r lex a) -> String -> [DeductionLine r lex a]
+toDeduction parseLine = map handle . lines
+        where handle l = 
+                case parse parseLine "" l of
+                    Right dl -> dl
+                    Left e -> PartialLine Nothing e (linedepth l)
+              linedepth l = 
+                case parse indent "" l of 
+                    Right n -> n
+                    Left e -> 0
+
+toDeductionMontegue :: Parsec String () [r] -> Parsec String () (FixLang lex a) -> String 
+    -> [DeductionLine r lex a]
+toDeductionMontegue r f = toDeduction (parseLine r f)
+        where parseLine r f = try (parseAssertLine r f) 
+                                <|> try (parseShowLine f) 
+                                <|> try (parseQedLine r)
+
+
+toDeductionFitch :: Parsec String () [r] -> Parsec String () (FixLang lex a) -> String 
+    -> [DeductionLine r lex a]
+toDeductionFitch r f = toDeduction (parseLine r f)
+        where parseLine r f = try (parseAssertLineFitch r f) 
+                              <|> parseSeparatorLine
+
+
+toDeductionHardegree :: Parsec String () [r] -> Parsec String () (FixLang lex a) -> String 
+    -> [DeductionLine r lex a]
+toDeductionHardegree r f = toDeduction(parseLine r f)
+        where parseLine r f = try (parseAssertLine r f)
+                              <|> parseShowWithLine r f
+
+
+-----------------------------
+--  2. Proof Tree Parsers  --
+-----------------------------
+
 
 -- XXX This is pretty ugly, and should be rewritten. Probably a lot should
 -- be folded into methods associated with ND data
@@ -98,15 +122,15 @@ parseSeparatorLine = do dpth <- indent
 In a Kalish and Montegue deduction, find the prooftree corresponding to
 *line n* in ded, where proof line numbers start at 1
 -}
-toProofTree :: 
+toProofTreeMontegue :: 
     ( Inference r lex
     , Sequentable lex
     ) => Deduction r lex -> Int -> Either (ProofErrorMessage lex) (ProofTree r lex)
-toProofTree ded n = case ded !! (n - 1)  of
+toProofTreeMontegue ded n = case ded !! (n - 1)  of
           (AssertLine f r dpth depairs) -> 
                 do let deps = map fst depairs
                    mapM_ checkDep deps
-                   deps' <- mapM (toProofTree ded) deps
+                   deps' <- mapM (toProofTreeMontegue ded) deps
                    return $ Node (ProofLine n (SS $ liftToSequent f) r) deps'
                 where checkDep depline = takeRange depline n >>= scan
           (ShowLine f d) -> 
@@ -114,7 +138,7 @@ toProofTree ded n = case ded !! (n - 1)  of
                    let (QedLine r _ depairs) = ded !! m
                    let deps = map fst depairs
                    mapM_ (checkDep $ m + 1) deps 
-                   deps' <- mapM (toProofTree ded) deps
+                   deps' <- mapM (toProofTreeMontegue ded) deps
                    return $ Node (ProofLine n (SS $ liftToSequent f) r) deps'
                 where --for scanning, we ignore the depth of the QED line
                       checkDep m m' = takeRange m' m >>= scan . init
@@ -244,6 +268,7 @@ toProofTreeFitch ded n = case ded !! (n - 1)  of
             -- where an assumption can occur
             where begin = ded !! (m - 1)
                   end = ded !! (n - 1)
+
 
 {-|
 In an appropriately structured Fitch deduction, find the proof tree

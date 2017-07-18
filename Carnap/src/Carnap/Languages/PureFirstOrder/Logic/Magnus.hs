@@ -79,7 +79,7 @@ parseForallxQL ders = try liftProp <|> quantRule
                               | r == "=E" -> return [IDE1X,IDE2X]
 
 parseForallxQLProof ::  Map String P.DerivedRule -> String -> [DeductionLine ForallxQL PureLexiconFOL (Form Bool)]
-parseForallxQLProof ders = toDeductionBE (parseForallxQL ders) forallxFOLFormulaParser
+parseForallxQLProof ders = toDeductionFitch (parseForallxQL ders) forallxFOLFormulaParser
 
 forallxQLCalc = NaturalDeductionCalc
     { ndRenderer = FitchStyle

@@ -148,7 +148,7 @@ parseFitchPropLogic ders = do r <- choice (map (try . string) ["AS","PR","&I","/
                                   "R"    -> return [Reiterate]
 
 parseFitchPropProof :: Map String DerivedRule -> String -> [DeductionLine LogicBookPropLogic PurePropLexicon (Form Bool)]
-parseFitchPropProof ders = toDeductionBE (parseFitchPropLogic ders) (purePropFormulaParser extendedLetters)
+parseFitchPropProof ders = toDeductionFitch (parseFitchPropLogic ders) (purePropFormulaParser extendedLetters)
 
 logicBookCalc = NaturalDeductionCalc 
     { ndRenderer = FitchStyle

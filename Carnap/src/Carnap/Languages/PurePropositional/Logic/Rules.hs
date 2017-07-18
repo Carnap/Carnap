@@ -222,6 +222,15 @@ conditionalProofVariations = [
             ,   [ GammaV 1 :|-: SS (SeqPhi 2) ] ∴ GammaV 1 :|-: SS (SeqPhi 1 :->-: SeqPhi 2)
             ]
 
+explictConditionalProofVariations = [
+                [ SA (SeqPhi 1) :|-: SS (SeqPhi 2)
+                , GammaV 1 :+: SA (SeqPhi 1) :|-: SS (SeqPhi 2) 
+                ] ∴ GammaV 1 :|-: SS (SeqPhi 1 :->-: SeqPhi 2) 
+            ,   [ GammaV 1 :|-: SS (SeqPhi 2) 
+                , SA (SeqPhi 1) :|-: SS (SeqPhi 2)
+                ] ∴ GammaV 1 :|-: SS (SeqPhi 1 :->-: SeqPhi 2)
+            ]
+
 simplificationVariations = [
                 [ GammaV 1  :|-: SS (SeqPhi 1 :&-: SeqPhi 2) ] ∴ GammaV 1 :|-: SS (SeqPhi 1)
             ,
@@ -333,7 +342,6 @@ deMorgansNegatedOr = [
 -------------------------------
 --  1.2.2 Replacement Rules  --
 -------------------------------
-
 
 replace :: PurePropLanguage (Form Bool) -> PurePropLanguage (Form Bool) -> [SequentRule PurePropLexicon]
 replace x y = [ [GammaV 1  :|-: ss (propCtx 1 x)] ∴ GammaV 1  :|-: ss (propCtx 1 y)

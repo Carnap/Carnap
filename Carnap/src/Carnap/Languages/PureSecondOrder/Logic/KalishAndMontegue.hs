@@ -82,7 +82,7 @@ parseMSOLogic = try soRule <|> liftFO
                               | r == "APP"  -> return [APP]
 
 parseMSOLProof :: String -> [DeductionLine MSOLogic MonadicallySOLLex (Form Bool)]
-parseMSOLProof = toDeduction parseMSOLogic msolFormulaParser
+parseMSOLProof = toDeductionMontegue parseMSOLogic msolFormulaParser
 
 msolSeqParser = seqFormulaParser :: Parsec String () (MSOLSequentCalc Sequent)
 
@@ -170,7 +170,7 @@ parsePSOLogic = try soRule <|> liftFO
                               | r == "APP"  -> return [APP_PSOL n]
 
 parsePSOLProof :: String -> [DeductionLine PSOLogic PolyadicallySOLLex (Form Bool)]
-parsePSOLProof = toDeduction parsePSOLogic psolFormulaParser
+parsePSOLProof = toDeductionMontegue parsePSOLogic psolFormulaParser
 
 psolSeqParser = seqFormulaParser :: Parsec String () (PSOLSequentCalc Sequent)
 

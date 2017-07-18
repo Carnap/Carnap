@@ -109,7 +109,7 @@ parsePropLogic ders = do r <- choice (map (try . string) ["AS","PR","MP","MTP","
                                             Nothing -> parserFail "Looks like you're citing a derived rule that doesn't exist"
 
 parsePropProof :: Map String DerivedRule -> String -> [DeductionLine PropLogic PurePropLexicon (Form Bool)]
-parsePropProof ders = toDeduction (parsePropLogic ders) (purePropFormulaParser standardLetters)
+parsePropProof ders = toDeductionMontegue (parsePropLogic ders) (purePropFormulaParser standardLetters)
 
 propCalc = NaturalDeductionCalc 
     { ndRenderer = MontegueStyle
