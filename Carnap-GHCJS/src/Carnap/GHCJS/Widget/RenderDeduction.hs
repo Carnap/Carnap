@@ -44,6 +44,14 @@ renderTreeMontegue w = treeToElement asLine asSubproof
                                                 appendChild theLine (Just theRule)
                                                 return theWrapper
 
+          asLine (n,ShowWithLine f _ r deps) = do (theWrapper,theLine,theForm,theRule) <- lineBase w n (Just f) (Just (r,deps)) "show"
+                                                  (Just theHead) <- createElement w (Just "span")
+                                                  setInnerHTML theHead (Just $ "Show: ")
+                                                  appendChild theLine (Just theHead)
+                                                  appendChild theLine (Just theForm)
+                                                  appendChild theLine (Just theRule)
+                                                  return theWrapper
+
           asLine (n,ShowLine f _)   = do (theWrapper,theLine,theForm,_) <- lineBase w n (Just f) norule "show"
                                          (Just theHead) <- createElement w (Just "span")
                                          setInnerHTML theHead (Just $ "Show: ")
