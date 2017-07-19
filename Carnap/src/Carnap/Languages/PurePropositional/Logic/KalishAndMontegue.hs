@@ -114,7 +114,7 @@ parsePropProof ders = toDeductionMontegue (parsePropLogic ders) (purePropFormula
 propCalc = NaturalDeductionCalc 
     { ndRenderer = MontegueStyle
     , ndParseProof = parsePropProof
-    , ndProcessLine = processLine
+    , ndProcessLine = processLineMontegue
     , ndProcessLineMemo = Nothing
     , ndParseSeq = propSeqParser
     }

@@ -43,6 +43,7 @@ data DeductionLine r lex a where
             { toShowWith :: FixLang lex a
             , showWithDepth :: Int
             , showWithRule :: MultiRule r
+            , showWithDependencies :: [(Int,Int)]
             } -> DeductionLine r lex a
         QedLine :: 
             { closureRule :: MultiRule r
@@ -60,6 +61,7 @@ data DeductionLine r lex a where
 
 depth (AssertLine _ _ dpth _) = dpth
 depth (ShowLine _ dpth) = dpth
+depth (ShowWithLine _ dpth _ _) = dpth
 depth (QedLine _ dpth _) = dpth
 depth (PartialLine _ _ dpth) = dpth
 depth (SeparatorLine dpth) = dpth
@@ -240,7 +242,7 @@ data NaturalDeductionCalc r lex der = NaturalDeductionCalc
 
 data ProofType = ProofType 
                { assumptionNumber :: Int --the number of initial lines which will, if they are assumptions, be used as premises
-               , conclusionNumber :: Int --the number of final lines which will, if they are assumptions, be used as premises
+               , conclusionNumber :: Int --the number of final available lines which will be used as premises
                }
 
 data IndirectArity = PolyProof   --takes an arbitrary number of assertions or subproofs, each ending in one assertion

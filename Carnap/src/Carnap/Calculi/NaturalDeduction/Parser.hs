@@ -64,9 +64,8 @@ parseShowWithLine r f = do dpth <- indent
                            optional $ char ':'
                            spaces
                            phi <- f 
-                           spaces 
-                           rule <- r <* eof
-                           return $ ShowWithLine phi dpth rule
+                           (rule, deps) <- rline r
+                           return $ ShowWithLine phi dpth rule (map (\x->(x,x)) deps)
  
 parseQedLine :: Parsec String u [r] -> Parsec String u (DeductionLine r lex a)
 parseQedLine r = do dpth <- indent 
@@ -96,17 +95,15 @@ toDeductionMontegue r f = toDeduction (parseLine r f)
                                 <|> try (parseShowLine f) 
                                 <|> try (parseQedLine r)
 
-
 toDeductionFitch :: Parsec String () [r] -> Parsec String () (FixLang lex a) -> String 
     -> [DeductionLine r lex a]
 toDeductionFitch r f = toDeduction (parseLine r f)
         where parseLine r f = try (parseAssertLineFitch r f) 
                               <|> parseSeparatorLine
 
-
 toDeductionHardegree :: Parsec String () [r] -> Parsec String () (FixLang lex a) -> String 
     -> [DeductionLine r lex a]
-toDeductionHardegree r f = toDeduction(parseLine r f)
+toDeductionHardegree r f = toDeduction (parseLine r f)
         where parseLine r f = try (parseAssertLine r f)
                               <|> parseShowWithLine r f
 
@@ -118,6 +115,7 @@ toDeductionHardegree r f = toDeduction(parseLine r f)
 
 -- XXX This is pretty ugly, and should be rewritten. Probably a lot should
 -- be folded into methods associated with ND data
+
 {- | 
 In a Kalish and Montegue deduction, find the prooftree corresponding to
 *line n* in ded, where proof line numbers start at 1
@@ -190,12 +188,12 @@ toProofTreeFitch ded n = case ded !! (n - 1)  of
                 do mapM_ checkDep deps 
                    mapM_ isSP deps
                    if isAssumptionLine l then checkAssumptionLegit else return True
-                   case indirectInference r' of
-                        Just (TypedProof prooftype) -> do dp <- subproofProcess prooftype deps
-                                                          deps' <- mapM (toProofTreeFitch ded) dp
-                                                          return $ Node (ProofLine n (SS $ liftToSequent f) r) deps'
-                        _ -> do deps' <- mapM (toProofTreeFitch ded . snd) deps
-                                return $ Node (ProofLine n (SS $ liftToSequent f) r) deps'
+                   dp <- case indirectInference r' of
+                        Just (TypedProof prooftype) -> subproofProcess prooftype deps
+                        _ -> return . map snd $ deps -- XXX subproofs that don't have an arity just use the last line, e.g. the second of their range.
+                                                     -- this is a bit of a hack. All indirect rules should have arities.
+                   deps' <- mapM (toProofTreeFitch ded) dp
+                   return $ Node (ProofLine n (SS $ liftToSequent f) r) deps'
                 where checkDep (begin,end) = 
                         case indirectInference r' of 
                             Nothing -> if begin /= end 
@@ -219,8 +217,8 @@ toProofTreeFitch ded n = case ded !! (n - 1)  of
                                                      any (not . isAssumptionLine) firstlines  -> 
                                                         err $ "this rule requires the first " ++ show assumptionNumber ++ " lines of the subproof to be assumptions"
                                                  | let lastlines = map (\x -> ded !! (x - 1)) (take conclusionNumber [last, last - 1 ..]) in
-                                                     any (\x -> depth x /= depth (ded !! (last - 1))) lastlines -> 
-                                                        err $ "the last " ++ show conclusionNumber ++ " lines of the subproof appear not tbe be aligned"
+                                                     any (\x -> depth x /= depth (ded !! (first - 1))) lastlines -> 
+                                                        err $ "the last " ++ show conclusionNumber ++ " lines of the subproof appear not tbe be aligned with the first line"
                                                  | otherwise -> return $  take assumptionNumber [first ..] 
                                                                           ++ take conclusionNumber [last, last - 1 ..] 
                                                                           ++ map fst (delete thesp deps)
@@ -267,6 +265,73 @@ toProofTreeFitch ded n = case ded !! (n - 1)  of
             where begin = ded !! (m - 1)
                   end = ded !! (n - 1)
 
+
+{- | 
+In a Hardegree deduction, find the prooftree corresponding to
+*line n* in ded, where proof line numbers start at 1
+-}
+toProofTreeHardegree :: 
+    ( Inference r lex
+    , Sequentable lex
+    ) => Deduction r lex -> Int -> Either (ProofErrorMessage lex) (ProofTree r lex)
+toProofTreeHardegree ded n = case ded !! (n - 1)  of
+          (AssertLine f r dpth depairs) -> 
+                do let deps = map fst depairs
+                   mapM_ checkDep deps
+                   deps' <- mapM (toProofTreeHardegree ded) deps
+                   return $ Node (ProofLine n (SS $ liftToSequent f) r) deps'
+                where checkDep depline = takeRange depline n >>= scan
+          (ShowWithLine f d r@(r':_) depairs) -> 
+                do m <- matchShow --the last line of the subproof
+                   let deps = map fst depairs
+                   mapM_ checkDep deps
+                   dp <- case indirectInference r' of
+                            Just (TypedProof prooftype) -> subproofProcess prooftype (n + 1) m
+                            Nothing -> err "This rule is not a rule of indirect proof, and so cannot be used with a show line"
+                   deps' <- mapM (toProofTreeHardegree ded) (dp ++ deps)
+                   return $ Node (ProofLine n (SS $ liftToSequent f) r) deps'
+                where checkDep depline = takeRange depline n >>= scan
+                      matchShow = let ded' = drop n ded in
+                          case findIndex (\l -> depth l == d) ded' of
+                              Nothing -> isSubProof n (length ded)
+                              Just m' -> isSubProof n (n + m' - 1)
+                      isSubProof n m = case lineRange n m of
+                        (h:t) -> if all (\x -> depth x > depth h) t
+                                   then Right m
+                                   else  err $ "Open subproof on lines" ++ show n ++ " to " ++ show m
+                        []    -> Right (m+1)
+          (PartialLine _ e _) -> Left $ NoParse e n
+
+    where err :: String -> Either (ProofErrorMessage lex) a
+          err x = Left $ GenericError x n
+          ln = length ded
+          --line h is accessible from the end of the chunk if everything in
+          --the chunk has depth greater than or equal to that of line h,
+          --and h is not a show line with no matching QED
+          scan chunk@(h:t) =
+              if all (\x -> depth h <= depth x) chunk
+                  then case h of
+                    (ShowLine _ _) -> if any (\x -> depth h == depth x) t
+                        then Right True
+                        else err "To cite a show line at this point, the line be available---the associated subproof must be closed above this point."
+                    _ -> Right True
+                  else err "It looks like you're citing a line which is not in your subproof. If you're not, you may need to tidy up your proof."
+          takeRange m' n' = 
+              if n' <= m' 
+                      then err "Dependency is later than assertion"
+                      else Right $ lineRange m' n'
+          --sublist, given by line numbers
+          lineRange m n = drop (m - 1) $ take n ded
+          subproofProcess (ProofType assumptionNumber conclusionNumber) first last 
+               | (last - first) < (assumptionNumber + conclusionNumber) = err "this subproof doesn't have enough lines to apply this rule"
+               | let firstlines =  map (\x -> ded !! (x - 1)) (take assumptionNumber [first ..]) in 
+                   any (not . isAssumptionLine) firstlines  =
+                      err $ "this rule requires the first " ++ show assumptionNumber ++ " lines of the subproof to be assumptions"
+               | let lastlines = map (\x -> ded !! (x - 1)) (take conclusionNumber [last, last - 1 ..]) in
+                   any (\x -> depth x /= depth (ded !! (first - 1))) lastlines =
+                      err $ "the last " ++ show conclusionNumber ++ " lines of the subproof appear not to be be aligned with the first line"
+               | otherwise = return $  take assumptionNumber [first ..] 
+                                        ++ take conclusionNumber [last, last - 1 ..] 
 
 {-|
 In an appropriately structured Fitch deduction, find the proof tree

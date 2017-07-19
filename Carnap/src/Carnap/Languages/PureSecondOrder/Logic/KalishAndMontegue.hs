@@ -11,7 +11,7 @@ import Carnap.Languages.PureSecondOrder.Parser
 import Carnap.Languages.ClassicalSequent.Parser
 import Carnap.Calculi.NaturalDeduction.Syntax
 import Carnap.Calculi.NaturalDeduction.Parser
-import Carnap.Calculi.NaturalDeduction.Checker (hoProcessLine, hoProcessLineMemo)
+import Carnap.Calculi.NaturalDeduction.Checker (hoProcessLineMontegue, hoProcessLineMontegueMemo)
 import Data.Map (empty)
 import Text.Parsec
 import Carnap.Languages.PureSecondOrder.Logic.Rules
@@ -89,8 +89,8 @@ msolSeqParser = seqFormulaParser :: Parsec String () (MSOLSequentCalc Sequent)
 msolCalc = NaturalDeductionCalc 
     { ndRenderer = MontegueStyle
     , ndParseProof = const parseMSOLProof -- XXX ignore derived rules for now
-    , ndProcessLine = hoProcessLine
-    , ndProcessLineMemo = Just hoProcessLineMemo
+    , ndProcessLine = hoProcessLineMontegue
+    , ndProcessLineMemo = Just hoProcessLineMontegueMemo
     , ndParseSeq = msolSeqParser
     }
 
@@ -177,7 +177,7 @@ psolSeqParser = seqFormulaParser :: Parsec String () (PSOLSequentCalc Sequent)
 psolCalc = NaturalDeductionCalc 
     { ndRenderer = MontegueStyle
     , ndParseProof = const parsePSOLProof -- XXX ignore derived rules for now
-    , ndProcessLine = hoProcessLine
-    , ndProcessLineMemo = Just hoProcessLineMemo
+    , ndProcessLine = hoProcessLineMontegue
+    , ndProcessLineMemo = Just hoProcessLineMontegueMemo
     , ndParseSeq = psolSeqParser
     }

@@ -11,7 +11,7 @@ import Carnap.Languages.PureFirstOrder.Parser
 import qualified Carnap.Languages.PurePropositional.Logic as P
 import Carnap.Calculi.NaturalDeduction.Syntax
 import Carnap.Calculi.NaturalDeduction.Parser
-import Carnap.Calculi.NaturalDeduction.Checker (hoProcessLine, hoProcessLineMemo, hoProcessLineFitch)
+import Carnap.Calculi.NaturalDeduction.Checker (hoProcessLineMontegue, hoProcessLineMontegueMemo)
 import Carnap.Languages.ClassicalSequent.Syntax
 import Carnap.Languages.Util.LanguageClasses
 import Carnap.Languages.Util.GenericConnectives
@@ -72,7 +72,6 @@ instance Inference FOLogic PureLexiconFOL where
         | x `elem` [ ED1,ED2 ] = Just PolyProof
         | otherwise = Nothing
 
-
 parseFOLogic :: Map String DerivedRule -> Parsec String u [FOLogic]
 parseFOLogic ders = try quantRule <|> liftProp
     where liftProp = do r <- P.parsePropLogic M.empty
@@ -95,7 +94,7 @@ parseFOLProof ders = toDeductionMontegue (parseFOLogic ders) folFormulaParser
 folCalc = NaturalDeductionCalc
     { ndRenderer = MontegueStyle
     , ndParseProof = parseFOLProof
-    , ndProcessLine = hoProcessLine
-    , ndProcessLineMemo = Just hoProcessLineMemo
+    , ndProcessLine = hoProcessLineMontegue
+    , ndProcessLineMemo = Just hoProcessLineMontegueMemo
     , ndParseSeq = folSeqParser
     }

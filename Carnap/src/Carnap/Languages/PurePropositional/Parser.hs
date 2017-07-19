@@ -1,4 +1,4 @@
-module Carnap.Languages.PurePropositional.Parser (purePropFormulaParser, standardLetters, extendedLetters) where
+module Carnap.Languages.PurePropositional.Parser (purePropFormulaParser, standardLetters, extendedLetters, PurePropositionalParserOptions(..)) where
 
 import Carnap.Languages.PurePropositional.Syntax
 import Carnap.Languages.Util.LanguageClasses (BooleanLanguage, IndexedPropLanguage)

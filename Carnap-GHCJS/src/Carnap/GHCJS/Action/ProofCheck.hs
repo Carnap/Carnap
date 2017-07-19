@@ -8,7 +8,7 @@ import Carnap.Calculi.NaturalDeduction.Checker
 import Carnap.Core.Data.AbstractSyntaxDataTypes (liftLang, FixLang, CopulaSchema)
 import Carnap.Core.Data.AbstractSyntaxClasses (Schematizable)
 import Carnap.Languages.ClassicalSequent.Syntax
-import Carnap.Languages.PurePropositional.Logic as P (DerivedRule(..), logicBookCalc, magnusSLCalc, magnusSLPlusCalc, propCalc) 
+import Carnap.Languages.PurePropositional.Logic as P (DerivedRule(..), logicBookCalc, magnusSLCalc, magnusSLPlusCalc, propCalc, hardegreeSLCalc) 
 import Carnap.Languages.PureFirstOrder.Logic as FOL (DerivedRule(..), folCalc, forallxQLCalc) 
 import Carnap.Languages.PureSecondOrder.Logic ( msolCalc, psolCalc) 
 import Carnap.Languages.PurePropositional.Util (toSchema)
@@ -84,23 +84,15 @@ data Checker r lex der = Checker
 activateChecker ::  IORef [(String,P.DerivedRule)] -> Document -> Maybe IOGoal -> IO ()
 activateChecker _ _ Nothing  = return ()
 activateChecker drs w (Just iog@(IOGoal i o g classes))
-        | "firstOrder" `elem` classes = do
-                        tryParse buildOptions folCalc Nothing
-        | "forallxQL" `elem` classes = do
-                        tryParse buildOptions forallxQLCalc Nothing
-        | "secondOrder" `elem` classes = do
-                        tryParse buildOptions msolCalc (Just drs)
-        | "polyadicSecondOrder" `elem` classes = do
-                        tryParse buildOptions psolCalc (Just drs)
-        | "LogicBook" `elem` classes = do
-                        tryParse buildOptions logicBookCalc (Just drs)
-        | "magnusSL" `elem` classes = do
-                        tryParse buildOptions magnusSLCalc (Just drs)
-
-        | "magnusSLPlus" `elem` classes = do
-                        tryParse buildOptions magnusSLPlusCalc(Just drs)
-        | otherwise = do 
-                         tryParse buildOptions propCalc (Just drs)
+        | "firstOrder" `elem` classes          = tryParse buildOptions folCalc Nothing
+        | "forallxQL" `elem` classes           = tryParse buildOptions forallxQLCalc Nothing
+        | "secondOrder" `elem` classes         = tryParse buildOptions msolCalc (Just drs)
+        | "polyadicSecondOrder" `elem` classes = tryParse buildOptions psolCalc (Just drs)
+        | "LogicBook" `elem` classes           = tryParse buildOptions logicBookCalc (Just drs)
+        | "magnusSL" `elem` classes            = tryParse buildOptions magnusSLCalc (Just drs)
+        | "hardegreeSL" `elem` classes         = tryParse buildOptions hardegreeSLCalc (Just drs)
+        | "magnusSLPlus" `elem` classes        = tryParse buildOptions magnusSLPlusCalc(Just drs)
+        | otherwise                            = tryParse buildOptions propCalc (Just drs)
         where tryParse options calc mdrs = do
                   memo <- newIORef mempty
                   mtref <- newIORef Nothing

@@ -188,11 +188,11 @@ explicitConstructiveFalsumReductioVariations = [
 
 explicitNonConstructiveFalsumReductioVariations = [
                 [ GammaV 1 :+: SA (SeqPhi 1) :|-: SS LFalsum
-                , SA (SeqPhi 1) :|-: SS (SeqNeg $ SeqPhi 1)
+                , SA (SeqNeg $ SeqPhi 1) :|-: SS (SeqNeg $ SeqPhi 1)
                 ] ∴ GammaV 1 :|-: SS (SeqPhi 1)
             ,
                 [ GammaV 1 :|-: SS LFalsum
-                , SA (SeqPhi 1) :|-: SS (SeqNeg $ SeqPhi 1)
+                , SA (SeqNeg $ SeqPhi 1) :|-: SS (SeqNeg $ SeqPhi 1)
                 ] ∴ GammaV 1 :|-: SS (SeqPhi 1)
             ]
 
@@ -222,7 +222,7 @@ conditionalProofVariations = [
             ,   [ GammaV 1 :|-: SS (SeqPhi 2) ] ∴ GammaV 1 :|-: SS (SeqPhi 1 :->-: SeqPhi 2)
             ]
 
-explictConditionalProofVariations = [
+explicitConditionalProofVariations = [
                 [ SA (SeqPhi 1) :|-: SS (SeqPhi 2)
                 , GammaV 1 :+: SA (SeqPhi 1) :|-: SS (SeqPhi 2) 
                 ] ∴ GammaV 1 :|-: SS (SeqPhi 1 :->-: SeqPhi 2) 
