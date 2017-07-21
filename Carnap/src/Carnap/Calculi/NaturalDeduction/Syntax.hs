@@ -243,9 +243,9 @@ data NaturalDeductionCalc r lex der = NaturalDeductionCalc
 data ProofType = ProofType 
                { assumptionNumber :: Int --the number of initial lines which will, if they are assumptions, be used as premises
                , conclusionNumber :: Int --the number of final available lines which will be used as premises
-               }
+               } --any remaining premises need to be gathered explicitly
 
-data IndirectArity = PolyProof   --takes an arbitrary number of assertions or subproofs, each ending in one assertion
+data IndirectArity = PolyProof --takes an arbitrary number of assertions or subproofs, each ending in one assertion
                    | TypedProof ProofType --takes a subproof with a particular structure, given by a prooftype
 
 doubleProof = TypedProof (ProofType 0 2)

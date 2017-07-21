@@ -54,13 +54,13 @@ instance Evaluable PurePropositionalContext where
 instance Modelable (Int -> Bool) PurePropositionalContext where
     satisfies = const eval
 
-type PurePropLexicon = (Predicate PureProp
+type PurePropLexicon = Predicate PureProp
                    :|: Predicate PureSchematicProp
                    :|: Connective PureConn
                    :|: SubstitutionalVariable
                    :|: Connective PurePropositionalContext
                    :|: Connective PureConst
-                   :|: EndLang)
+                   :|: EndLang
 
 instance BoundVars PurePropLexicon
 

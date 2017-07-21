@@ -187,7 +187,7 @@ explicitConstructiveFalsumReductioVariations = [
             ]
 
 explicitNonConstructiveFalsumReductioVariations = [
-                [ GammaV 1 :+: SA (SeqPhi 1) :|-: SS LFalsum
+                [ GammaV 1 :+: SA (SeqNeg $ SeqPhi 1) :|-: SS LFalsum
                 , SA (SeqNeg $ SeqPhi 1) :|-: SS (SeqNeg $ SeqPhi 1)
                 ] ∴ GammaV 1 :|-: SS (SeqPhi 1)
             ,

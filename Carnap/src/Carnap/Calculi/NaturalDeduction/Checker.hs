@@ -37,6 +37,7 @@ toDisplaySequence pl ded = let feedback = map (pl ded) [1 .. length ded] in
                           
     where isTop  (AssertLine _ _ 0 _) = True
           isTop  (ShowLine _ 0) = True
+          isTop  (ShowWithLine _ 0 _ _) = True
           isTop  _ = False
           lastTopInd = do i <- findIndex isTop (reverse ded)
                           return $ length ded - i
@@ -55,6 +56,7 @@ toDisplaySequenceMemo pl ded =
                           
     where isTop  (AssertLine _ _ 0 _) = True
           isTop  (ShowLine _ 0) = True
+          isTop  (ShowWithLine _ 0 _ _) = True
           isTop  _ = False
           lastTopInd = do i <- findIndex isTop (reverse ded)
                           return $ length ded - i

@@ -76,7 +76,6 @@ parseQedLine r = do dpth <- indent
 --  1.2 Deduction style parsers  --
 -----------------------------------
 
-
 toDeduction :: Parsec String () (DeductionLine r lex a) -> String -> [DeductionLine r lex a]
 toDeduction parseLine = map handle . lines
         where handle l = 
@@ -112,8 +111,7 @@ toDeductionHardegree r f = toDeduction (parseLine r f)
 --  2. Proof Tree Parsers  --
 -----------------------------
 
-
--- XXX This is pretty ugly, and should be rewritten. Probably a lot should
+-- XXX These are pretty ugly, and should be rewritten. Probably a lot should
 -- be folded into methods associated with ND data
 
 {- | 
@@ -294,7 +292,7 @@ toProofTreeHardegree ded n = case ded !! (n - 1)  of
                       matchShow = let ded' = drop n ded in
                           case findIndex (\l -> depth l == d) ded' of
                               Nothing -> isSubProof n (length ded)
-                              Just m' -> isSubProof n (n + m' - 1)
+                              Just m' -> isSubProof n (n + m')
                       isSubProof n m = case lineRange n m of
                         (h:t) -> if all (\x -> depth x > depth h) t
                                    then Right m
@@ -323,15 +321,12 @@ toProofTreeHardegree ded n = case ded !! (n - 1)  of
           --sublist, given by line numbers
           lineRange m n = drop (m - 1) $ take n ded
           subproofProcess (ProofType assumptionNumber conclusionNumber) first last 
-               | (last - first) < (assumptionNumber + conclusionNumber) = err "this subproof doesn't have enough lines to apply this rule"
-               | let firstlines =  map (\x -> ded !! (x - 1)) (take assumptionNumber [first ..]) in 
+               | length available < (assumptionNumber + conclusionNumber) = err "this subproof doesn't have enough available lines to apply this rule"
+               | let firstlines =  map (\x -> ded !! (x - 1)) (take assumptionNumber available) in 
                    any (not . isAssumptionLine) firstlines  =
-                      err $ "this rule requires the first " ++ show assumptionNumber ++ " lines of the subproof to be assumptions"
-               | let lastlines = map (\x -> ded !! (x - 1)) (take conclusionNumber [last, last - 1 ..]) in
-                   any (\x -> depth x /= depth (ded !! (first - 1))) lastlines =
-                      err $ "the last " ++ show conclusionNumber ++ " lines of the subproof appear not to be be aligned with the first line"
-               | otherwise = return $  take assumptionNumber [first ..] 
-                                        ++ take conclusionNumber [last, last - 1 ..] 
+                      err $ "this rule requires the first " ++ show assumptionNumber ++ " available lines of the subproof to be assumptions"
+               | otherwise = return $ take assumptionNumber available ++ drop (length available - conclusionNumber) available
+               where available = filter (\x -> depth (ded !! (x - 1)) == depth (ded !! (first - 1))) [first .. last]
 
 {-|
 In an appropriately structured Fitch deduction, find the proof tree
