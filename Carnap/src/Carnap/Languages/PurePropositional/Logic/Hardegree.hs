@@ -98,7 +98,7 @@ instance Inference HardegreeSL PurePropLexicon where
          ruleOf DN1      = doubleNegationIntroduction
          ruleOf DN2      = doubleNegationElimination
          ruleOf CD1      = explicitConditionalProofVariations !! 0
-         ruleOf CD2      = explicitConditionalProofVariations !! 2
+         ruleOf CD2      = explicitConditionalProofVariations !! 1
          ruleOf DD       = identityRule
          ruleOf ID1      = explicitConstructiveFalsumReductioVariations !! 0
          ruleOf ID2      = explicitConstructiveFalsumReductioVariations !! 1
@@ -113,6 +113,7 @@ instance Inference HardegreeSL PurePropLexicon where
          indirectInference (SepCases n) = Just (TypedProof (ProofType 0 n))
          indirectInference (OrID n) = Just (TypedProof (ProofType n 1))
          indirectInference (AndD) = Just doubleProof
+         indirectInference DD = Just (TypedProof (ProofType 0 1))
          indirectInference x 
             | x `elem` [ID1,ID2,ID3,ID4,CD1,CD2] = Just assumptiveProof
             | otherwise = Nothing
@@ -123,7 +124,7 @@ instance Inference HardegreeSL PurePropLexicon where
 parseHardegreeSL :: Map String DerivedRule -> Parsec String u [HardegreeSL]
 parseHardegreeSL ders = do r <- choice (map (try . string) ["AS","PR","&I","&O","~&I","~&O","->I","->O","~->I","~->O","→I","→O","~→I","~→O","!?I"
                                                            ,"!?O","vID","\\/ID","vI","vO","~vI","~vO","\\/I","\\/O","~\\/I","~\\/O","<->I","<->O","~<->I"
-                                                           ,"~<->O","↔I","↔O","~↔I","~↔O","ID","&D","SC","DN"
+                                                           ,"~<->O","↔I","↔O","~↔I","~↔O","ID","&D","SC","DN","DD","CD"
                                                            ])
                            case r of
                              "AS"    -> return [As]
@@ -161,12 +162,15 @@ parseHardegreeSL ders = do r <- choice (map (try . string) ["AS","PR","&I","&O",
                              "ID"    -> return [ID1,ID2,ID3,ID4]
                              "DN"    -> return [DN1,DN2]
                              "&D"    -> return [AndD]
+                             "DD"    -> return [DD]
+                             "CD"    -> return [CD1,CD2]
                              "SC"    -> do ds <- many1 digit
                                            return [SepCases (read ds)]
                              "\\/ID" -> do ds <- many1 digit
                                            return [OrID (read ds)]
                              "vID"   -> do ds <- many1 digit
                                            return [OrID (read ds)]
+
 parseHardegreeSLProof :: Map String DerivedRule -> String -> [DeductionLine HardegreeSL PurePropLexicon (Form Bool)]
 parseHardegreeSLProof ders = toDeductionHardegree (parseHardegreeSL ders) (purePropFormulaParser (standardLetters {hasBooleanConstants = True}))
 

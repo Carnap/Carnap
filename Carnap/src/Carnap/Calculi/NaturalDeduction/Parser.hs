@@ -309,7 +309,7 @@ toProofTreeHardegree ded n = case ded !! (n - 1)  of
           scan chunk@(h:t) =
               if all (\x -> depth h <= depth x) chunk
                   then case h of
-                    (ShowLine _ _) -> if any (\x -> depth h == depth x) t
+                    (ShowWithLine _ _ _ _) -> if any (\x -> depth h == depth x) t
                         then Right True
                         else err "To cite a show line at this point, the line be available---the associated subproof must be closed above this point."
                     _ -> Right True

@@ -134,3 +134,13 @@ Show: AX2EY2∀x∀y(X2(x,y) ↔ Y2(y,x))
   EY2∀x∀y(X2(x,y) ↔ Y2(y,x)):EG2 2
 :UD2 15
 |]
+
+adjunctionTheorem = [st|
+Show P->(Q->R):CD
+    P:AS
+    Show Q->R:CD
+      Q:AS
+      P/\Q->R:PR
+      P/\Q:&I 2 4
+      R:->O 5 6
+|]

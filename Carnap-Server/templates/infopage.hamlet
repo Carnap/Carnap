@@ -73,20 +73,29 @@
 
                     ^{proofcheck 2 "proofchecker NoSub Render" ":|-:P\\/-P" aristotleTheorem}
 
+
+                <div.demo>
+
+                    <p> This is a rendering proofbox with Hardegree's variation
+                        \ on a Montegue system.
+
+                    ^{proofcheck 3 "proofchecker hardegreeSL NoSub Render" "P/\\Q->R:|-: P->(Q->R)" adjunctionTheorem}
+
                 <div.demo>
 
                     <p>This is a proofbox with a Fitch system, using rules from #
                        <i>the Logic Book
                        \ and visually rendering the proof structure in the Fitch style.
 
-                    ^{proofcheck 3 "proofchecker LogicBook NoSub Render" ":|-:(((P->Q)->P)->P)" pierceTheorem}
+                    ^{proofcheck 4 "proofchecker LogicBook NoSub Render" ":|-:(((P->Q)->P)->P)" pierceTheorem}
+
 
                 <div.demo>
                     <p>This is a proofbox with a Kalish and Montegue System
                        \ for First-Order Logic, displaying a proof of Russell's
                        \ Theorem.
 
-                    ^{proofcheck 4 "proofchecker firstOrder Render NoSub" ":|-:-ExAy(-F(y,y) <-> F(x,y))" russellTheorem}
+                    ^{proofcheck 5 "proofchecker firstOrder Render NoSub" ":|-:-ExAy(-F(y,y) <-> F(x,y))" russellTheorem}
 
                 <div.demo>
 
@@ -96,7 +105,7 @@
                         \ the arguments to predicates), to match the display
                         \ style of <i>Forall x</i>
 
-                    ^{proofcheck 5 "proofchecker forallxQL NoSub Render" ":|-:-ExAy(-F(y,y) <-> F(x,y))" russellTheoremForallx}
+                    ^{proofcheck 6 "proofchecker forallxQL NoSub Render" ":|-:-ExAy(-F(y,y) <-> F(x,y))" russellTheoremForallx}
                 <div.demo>
 
                     <p> This is a proofbox with a Kalish and Montegue System
@@ -104,7 +113,7 @@
                         \ an instance of the comprehension scheme, using
                         \ a predicate abstraction rule.
 
-                    ^{proofcheck 6 "proofchecker secondOrder NoSub Render" ":|-: EXAx(F(x) /\\ G(x) <-> X(x))" comprehensionTheorem}
+                    ^{proofcheck 7 "proofchecker secondOrder NoSub Render" ":|-: EXAx(F(x) /\\ G(x) <-> X(x))" comprehensionTheorem}
 
                 <div.demo>
 
@@ -113,7 +122,8 @@
                         \ Second-Order Logic, again making use of a predicate
                         \ abstraction rule.
 
-                    ^{proofcheck 7 "proofchecker polyadicSecondOrder NoSub Render" ":|-: AX2EY2AxAy(X2(x,y)<->Y2(y,x))" inverseTheorem}
+                    ^{proofcheck 8 "proofchecker polyadicSecondOrder NoSub Render" ":|-: AX2EY2AxAy(X2(x,y)<->Y2(y,x))" inverseTheorem}
+
 
                 <div.demo>
 
@@ -126,7 +136,7 @@
                         \ using P.D. Magnus' <i>Forall x</i> system SL.
 
                     <div.exercise>
-                        <span> example 8
+                        <span> example 9
                         <div#klementProof>
                             (W ∨ X), (Y ∨ Z), X → Y, ¬Z ∴ W ∨ Y
 
