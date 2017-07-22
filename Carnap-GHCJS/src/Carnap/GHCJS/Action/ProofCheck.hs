@@ -9,7 +9,7 @@ import Carnap.Core.Data.AbstractSyntaxDataTypes (liftLang, FixLang, CopulaSchema
 import Carnap.Core.Data.AbstractSyntaxClasses (Schematizable)
 import Carnap.Languages.ClassicalSequent.Syntax
 import Carnap.Languages.PurePropositional.Logic as P (DerivedRule(..), logicBookCalc, magnusSLCalc, magnusSLPlusCalc, propCalc, hardegreeSLCalc) 
-import Carnap.Languages.PureFirstOrder.Logic as FOL (DerivedRule(..), folCalc, forallxQLCalc) 
+import Carnap.Languages.PureFirstOrder.Logic as FOL (DerivedRule(..), folCalc, magnusQLCalc) 
 import Carnap.Languages.PureSecondOrder.Logic ( msolCalc, psolCalc) 
 import Carnap.Languages.PurePropositional.Util (toSchema)
 import Carnap.GHCJS.SharedTypes
@@ -85,7 +85,7 @@ activateChecker ::  IORef [(String,P.DerivedRule)] -> Document -> Maybe IOGoal -
 activateChecker _ _ Nothing  = return ()
 activateChecker drs w (Just iog@(IOGoal i o g classes))
         | "firstOrder" `elem` classes          = tryParse buildOptions folCalc Nothing
-        | "forallxQL" `elem` classes           = tryParse buildOptions forallxQLCalc Nothing
+        | "magnusQL" `elem` classes            = tryParse buildOptions magnusQLCalc Nothing
         | "secondOrder" `elem` classes         = tryParse buildOptions msolCalc (Just drs)
         | "polyadicSecondOrder" `elem` classes = tryParse buildOptions psolCalc (Just drs)
         | "LogicBook" `elem` classes           = tryParse buildOptions logicBookCalc (Just drs)

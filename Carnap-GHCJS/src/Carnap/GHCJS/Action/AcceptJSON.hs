@@ -43,7 +43,7 @@ checkJSON:: Value -> IO Value
 checkJSON v = do let Success (s,d,c,p) = parse parseReply v
                  print (s,d,c,p)
                  --- XXX See if this duplication can be avoided
-                 if s then case (parseProofData parsePairFOL d, P.parse forallxFOLFormulaParser "" c) of
+                 if s then case (parseProofData parsePairFOL d, P.parse magnusFOLFormulaParser "" c) of
                         (Left e,_) -> return $ replyObject False "" nilson (show e)
                         (Right ded,Right conc) -> 
                             do let Feedback mseq ds = toDisplaySequenceStructured processLineStructuredFitchHO ded
@@ -115,10 +115,10 @@ parsePairProp (wff,jstr) = AssertLine <$> P.parse (purePropFormulaParser extende
                                       <*> return 0
                                       <*> (snd <$> P.parse (parseJstr $ parseMagnusSL M.empty) "" jstr)
 
-parsePairFOL  (wff,jstr) = AssertLine <$> P.parse forallxFOLFormulaParser "" wff
-                                      <*> (fst <$> P.parse (parseJstr $ parseForallxQL M.empty) "" jstr)
+parsePairFOL  (wff,jstr) = AssertLine <$> P.parse magnusFOLFormulaParser "" wff
+                                      <*> (fst <$> P.parse (parseJstr $ parseMagnusQL M.empty) "" jstr)
                                       <*> return 0
-                                      <*> (snd <$> P.parse (parseJstr $ parseForallxQL M.empty) "" jstr)
+                                      <*> (snd <$> P.parse (parseJstr $ parseMagnusQL M.empty) "" jstr)
 
 parseJstr r = do rule <- spaces *> r
                  deps <- spaces *> many (try parseIntPair <|> parseInt)

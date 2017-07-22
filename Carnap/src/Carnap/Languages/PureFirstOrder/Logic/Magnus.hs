@@ -1,5 +1,5 @@
 {-#LANGUAGE  FlexibleContexts,  FlexibleInstances, MultiParamTypeClasses #-}
-module Carnap.Languages.PureFirstOrder.Logic.Magnus (forallxQLCalc,parseForallxQL) where
+module Carnap.Languages.PureFirstOrder.Logic.Magnus (magnusQLCalc,parseMagnusQL) where
 
 import Data.Map as M (lookup, Map,empty)
 import Text.Parsec
@@ -19,12 +19,12 @@ import Carnap.Languages.PureFirstOrder.Logic.Rules
 --  3. System QL  --
 --------------------
 -- A system of first-order logic resembling system QL from PD Magnus'
--- forallx
+-- magnus
 
-data ForallxQL = MagnusSL P.MagnusSL | UIX | UEX | EIX | EE1X | EE2X | IDIX | IDE1X | IDE2X
+data MagnusQL = MagnusSL P.MagnusSL | UIX | UEX | EIX | EE1X | EE2X | IDIX | IDE1X | IDE2X
                     deriving Eq
 
-instance Show ForallxQL where
+instance Show MagnusQL where
         show (MagnusSL x) = show x
         show UIX          = "∀I"
         show UEX          = "∀E"
@@ -35,7 +35,7 @@ instance Show ForallxQL where
         show IDE1X        = "=E"
         show IDE2X        = "=E"
 
-instance Inference ForallxQL PureLexiconFOL where
+instance Inference MagnusQL PureLexiconFOL where
 
          ruleOf UIX   = universalInstantiation
          ruleOf UEX   = universalInstantiation
@@ -66,7 +66,7 @@ instance Inference ForallxQL PureLexiconFOL where
          isAssumption (MagnusSL x) = isAssumption x
          isAssumption _ = False
 
-parseForallxQL ders = try liftProp <|> quantRule
+parseMagnusQL ders = try liftProp <|> quantRule
     where liftProp = do r <- P.parseMagnusSL ders
                         return (map MagnusSL r)
           quantRule = do r <- choice (map (try . string) ["∀I", "AI", "∀E", "AE", "∃I", "EI", "∃E", "EE", "=I","=E" ])
@@ -78,12 +78,12 @@ parseForallxQL ders = try liftProp <|> quantRule
                               | r == "=I" -> return [IDIX]
                               | r == "=E" -> return [IDE1X,IDE2X]
 
-parseForallxQLProof ::  Map String P.DerivedRule -> String -> [DeductionLine ForallxQL PureLexiconFOL (Form Bool)]
-parseForallxQLProof ders = toDeductionFitch (parseForallxQL ders) forallxFOLFormulaParser
+parseMagnusQLProof ::  Map String P.DerivedRule -> String -> [DeductionLine MagnusQL PureLexiconFOL (Form Bool)]
+parseMagnusQLProof ders = toDeductionFitch (parseMagnusQL ders) magnusFOLFormulaParser
 
-forallxQLCalc = NaturalDeductionCalc
+magnusQLCalc = NaturalDeductionCalc
     { ndRenderer = FitchStyle
-    , ndParseProof = parseForallxQLProof
+    , ndParseProof = parseMagnusQLProof
     , ndProcessLine = hoProcessLineFitch
     , ndProcessLineMemo = Just hoProcessLineFitchMemo
     , ndParseSeq = folSeqParser

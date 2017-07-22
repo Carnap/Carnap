@@ -1,5 +1,5 @@
 {-#LANGUAGE TypeOperators, FlexibleContexts#-}
-module Carnap.Languages.PureFirstOrder.Parser ( folFormulaParser, mfolFormulaParser, forallxFOLFormulaParser ) where
+module Carnap.Languages.PureFirstOrder.Parser ( folFormulaParser, mfolFormulaParser, magnusFOLFormulaParser ) where
 
 import Carnap.Core.Data.AbstractSyntaxDataTypes
 import Carnap.Core.Data.AbstractSyntaxClasses (Schematizable)
@@ -52,8 +52,8 @@ simpleMonadicFOLParserOptions = PureFirstOrderParserOptions
                          , functionParser = Nothing
                          }
 
-forallxFOLParserOptions :: PureFirstOrderParserOptions PureLexiconFOL u Identity
-forallxFOLParserOptions = PureFirstOrderParserOptions 
+magnusFOLParserOptions :: PureFirstOrderParserOptions PureLexiconFOL u Identity
+magnusFOLParserOptions = PureFirstOrderParserOptions 
                          { atomicSentenceParser = \x -> parsePredicateSymbolNoParen "ABCDEFGHIJKLMNOPQRSTUVWXYZ" x
                                                         <|> equalsParser x 
                          , quantifiedSentenceParser' = quantifiedSentenceParser
@@ -82,8 +82,8 @@ rawFOLFormulaParser opts = buildExpressionParser opTable subFormulaParser
           --Terms
           tparser = try (fparser tparser) <|> cparser <|> vparser
 
-forallxFOLFormulaParser :: Parsec String u PureFOLForm
-forallxFOLFormulaParser = rawFOLFormulaParser forallxFOLParserOptions
+magnusFOLFormulaParser :: Parsec String u PureFOLForm
+magnusFOLFormulaParser = rawFOLFormulaParser magnusFOLParserOptions
 
 folFormulaParser :: Parsec String u PureFOLForm
 folFormulaParser = rawFOLFormulaParser standardFOLParserOptions
