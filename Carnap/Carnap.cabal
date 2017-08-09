@@ -38,6 +38,7 @@ library
                      , Carnap.Languages.PurePropositional.Logic.BergmannMoorAndNelson
                      , Carnap.Languages.PurePropositional.Logic.Magnus
                      , Carnap.Languages.PurePropositional.Logic.Hardegree
+                     , Carnap.Languages.PurePropositional.Logic.ThomasBolducAndZach
                      , Carnap.Languages.ModalPropositional.Syntax
                      , Carnap.Languages.ModalPropositional.Parser
                      , Carnap.Languages.PureFirstOrder.Syntax
@@ -47,6 +48,7 @@ library
                      , Carnap.Languages.PureFirstOrder.Logic.Rules
                      , Carnap.Languages.PureFirstOrder.Logic.Magnus
                      , Carnap.Languages.PureFirstOrder.Logic.KalishAndMontegue
+                     , Carnap.Languages.PureFirstOrder.Logic.ThomasBolducAndZach
                      , Carnap.Languages.PureSecondOrder.Syntax
                      , Carnap.Languages.PureSecondOrder.Parser
                      , Carnap.Languages.PureSecondOrder.Logic

@@ -1,5 +1,5 @@
 {-#LANGUAGE  FlexibleContexts,  FlexibleInstances, MultiParamTypeClasses #-}
-module Carnap.Languages.PureFirstOrder.Logic.Magnus (magnusQLCalc,parseMagnusQL) where
+module Carnap.Languages.PureFirstOrder.Logic.ThomasBolducAndZach (thomasBolducAndZachFOLCalc,parseThomasBolducAndZachFOL) where
 
 import Data.Map as M (lookup, Map,empty)
 import Text.Parsec
@@ -16,16 +16,16 @@ import Carnap.Languages.Util.GenericConnectives
 import Carnap.Languages.PureFirstOrder.Logic.Rules
 
 --------------------
---  3. System QL  --
+--  3. System FOL  --
 --------------------
--- A system of first-order logic resembling system QL from PD Magnus'
--- magnus
+-- A system of first-order logic resembling system FOL from the Calcary
+-- Remix of forall x
 
-data MagnusQL = MagnusSL P.MagnusSL | UI | UE | EI | EE1 | EE2 | IDI | IDE1 | IDE2
+data ThomasBolducAndZachFOL = ThomasBolducAndZachTFL P.ThomasBolducAndZachTFL | UI | UE | EI | EE1 | EE2 | IDI | IDE1 | IDE2
                     deriving Eq
 
-instance Show MagnusQL where
-        show (MagnusSL x) = show x
+instance Show ThomasBolducAndZachFOL where
+        show (ThomasBolducAndZachTFL x) = show x
         show UI          = "∀I"
         show UE          = "∀E"
         show EI          = "∃I"
@@ -35,7 +35,7 @@ instance Show MagnusQL where
         show IDE1        = "=E"
         show IDE2        = "=E"
 
-instance Inference MagnusQL PureLexiconFOL where
+instance Inference ThomasBolducAndZachFOL PureLexiconFOL where
 
          ruleOf UI   = universalGeneralization
          ruleOf UE   = universalInstantiation
@@ -47,13 +47,13 @@ instance Inference MagnusQL PureLexiconFOL where
          ruleOf IDE1  = leibnizLawVariations !! 0
          ruleOf IDE2  = leibnizLawVariations !! 1
 
-         premisesOf (MagnusSL x) = map liftSequent (premisesOf x)
+         premisesOf (ThomasBolducAndZachTFL x) = map liftSequent (premisesOf x)
          premisesOf r = upperSequents (ruleOf r)
          
-         conclusionOf (MagnusSL x) = liftSequent (conclusionOf x)
+         conclusionOf (ThomasBolducAndZachTFL x) = liftSequent (conclusionOf x)
          conclusionOf r = lowerSequent (ruleOf r)
 
-         indirectInference (MagnusSL x) = indirectInference x
+         indirectInference (ThomasBolducAndZachTFL x) = indirectInference x
          indirectInference x  
             | x `elem` [ EE1,EE2 ] = Just assumptiveProof
             | otherwise = Nothing
@@ -61,14 +61,14 @@ instance Inference MagnusQL PureLexiconFOL where
          restriction UI    = Just (eigenConstraint (SeqT 1) (ss (PBind (All "v") $ phi 1)) (GammaV 1))
          restriction EE1   = Just (eigenConstraint (SeqT 1) (ss (PBind (Some "v") $ phi 1) :-: ss (phin 1)) (GammaV 1 :+: GammaV 2))
          restriction EE2   = Nothing --Since this one does not use the assumption with a fresh object
-         restriction _      = Nothing
+         restriction _     = Nothing
 
-         isAssumption (MagnusSL x) = isAssumption x
+         isAssumption (ThomasBolducAndZachTFL x) = isAssumption x
          isAssumption _ = False
 
-parseMagnusQL ders = try liftProp <|> quantRule
-    where liftProp = do r <- P.parseMagnusSL ders
-                        return (map MagnusSL r)
+parseThomasBolducAndZachFOL ders = try liftProp <|> quantRule
+    where liftProp = do r <- P.parseThomasBolducAndZachTFL ders
+                        return (map ThomasBolducAndZachTFL r)
           quantRule = do r <- choice (map (try . string) ["∀I", "AI", "∀E", "AE", "∃I", "EI", "∃E", "EE", "=I","=E" ])
                          case r of 
                             r | r `elem` ["∀I","AI"] -> return [UI]
@@ -78,12 +78,12 @@ parseMagnusQL ders = try liftProp <|> quantRule
                               | r == "=I" -> return [IDI]
                               | r == "=E" -> return [IDE1,IDE2]
 
-parseMagnusQLProof ::  Map String P.DerivedRule -> String -> [DeductionLine MagnusQL PureLexiconFOL (Form Bool)]
-parseMagnusQLProof ders = toDeductionFitch (parseMagnusQL ders) magnusFOLFormulaParser
+parseThomasBolducAndZachFOLProof ::  Map String P.DerivedRule -> String -> [DeductionLine ThomasBolducAndZachFOL PureLexiconFOL (Form Bool)]
+parseThomasBolducAndZachFOLProof ders = toDeductionFitch (parseThomasBolducAndZachFOL ders) magnusFOLFormulaParser
 
-magnusQLCalc = NaturalDeductionCalc
+thomasBolducAndZachFOLCalc = NaturalDeductionCalc
     { ndRenderer = FitchStyle
-    , ndParseProof = parseMagnusQLProof
+    , ndParseProof = parseThomasBolducAndZachFOLProof
     , ndProcessLine = hoProcessLineFitch
     , ndProcessLineMemo = Just hoProcessLineFitchMemo
     , ndParseSeq = folSeqParser
