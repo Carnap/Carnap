@@ -271,6 +271,24 @@ proofByCasesVariations = [
                 ] ∴ GammaV 1 :+: GammaV 2 :+: GammaV 3 :|-: SS (SeqPhi 3)
             ]
 
+tertiumNonDaturVariations = [
+                [ GammaV 1 :+: SA (SeqPhi 1) :|-: SS (SeqPhi 2)
+                , GammaV 2 :+: SA (SeqNeg $ SeqPhi 1) :|-: SS (SeqPhi 2)
+                ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (SeqPhi 2)
+            ,   
+                [ GammaV 1 :|-: SS (SeqPhi 2)
+                , GammaV 2 :+: SA (SeqNeg $ SeqPhi 1) :|-: SS (SeqPhi 2)
+                ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (SeqPhi 2)
+            ,   
+                [ GammaV 1 :+: SA (SeqPhi 1) :|-: SS (SeqPhi 2)
+                , GammaV 2 :|-: SS (SeqPhi 2)
+                ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (SeqPhi 2)
+            , 
+                [ GammaV 1 :|-: SS (SeqPhi 2)
+                , GammaV 2 :|-: SS (SeqPhi 2)
+                ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (SeqPhi 2)
+            ]
+
 biconditionalProofVariations = [
                 [ GammaV 1 :+: SA (SeqPhi 1) :|-: SS (SeqPhi 2)
                 , GammaV 2 :+: SA (SeqPhi 2) :|-: SS (SeqPhi 1) 
