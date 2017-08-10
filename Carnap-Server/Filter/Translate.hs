@@ -16,7 +16,7 @@ activate cls l
     | "Prop" `elem` cls = RawBlock "html" $ 
         "<div class=\"exercise\">"
         ++ "<span> exercise " ++ numof l ++ "</span>"
-        ++ case (splitOn ":" l) of
+        ++ case splitOn ":" l of
             [x,y] -> "<div class=\"translate prop\"><input type =\"text\" value=\""
                                 ++ y ++ "\"><div>" 
                                 ++ show (simpleCipher x) ++ "</div></div></div>"
@@ -30,4 +30,4 @@ activate cls l
                                 ++ show (simpleCipher x) ++ "</div></div></div>"
             _ -> "<div>No Matching Translation</div></div>"
     | otherwise = RawBlock "html" "<div>No Matching Translation</div></div>"
-    where numof x = takeWhile (/= ' ') x
+    where numof = takeWhile (/= ' ')

@@ -43,11 +43,11 @@ data SOApplicator a where
         SOApp :: SOApplicator (Form (Int -> b) -> Term Int -> Form b)
 
 instance Schematizable SOApplicator where
-        schematize (SOApp)  = \(x:y:_) -> if last x == ')' then init x ++ "," ++ y  ++ ")"
+        schematize SOApp  = \(x:y:_) -> if last x == ')' then init x ++ "," ++ y  ++ ")"
                                                            else x ++ "(" ++ y ++ ")"
 
 instance UniformlyEq SOApplicator where
-    (SOApp) =* (SOApp) = True
+    SOApp =* SOApp = True
 
 instance Monad m => MaybeMonadVar SOApplicator m
 
