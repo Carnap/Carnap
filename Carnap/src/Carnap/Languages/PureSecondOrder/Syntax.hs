@@ -44,7 +44,7 @@ data SOApplicator a where
 
 instance Schematizable SOApplicator where
         schematize SOApp  = \(x:y:_) -> if last x == ')' then init x ++ "," ++ y  ++ ")"
-                                                           else x ++ "(" ++ y ++ ")"
+                                                         else x ++ "(" ++ y ++ ")"
 
 instance UniformlyEq SOApplicator where
     SOApp =* SOApp = True
