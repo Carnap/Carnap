@@ -272,19 +272,27 @@ proofByCasesVariations = [
             ]
 
 tertiumNonDaturVariations = [
-                [ GammaV 1 :+: SA (SeqPhi 1) :|-: SS (SeqPhi 2)
+                [ SA (SeqPhi 1) :|-: SS (SeqPhi 1)
+                , SA (SeqNeg $ SeqPhi 1) :|-: SS (SeqNeg $ SeqPhi 1)
+                , GammaV 1 :+: SA (SeqPhi 1) :|-: SS (SeqPhi 2)
                 , GammaV 2 :+: SA (SeqNeg $ SeqPhi 1) :|-: SS (SeqPhi 2)
                 ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (SeqPhi 2)
             ,   
-                [ GammaV 1 :|-: SS (SeqPhi 2)
+                [ SA (SeqPhi 1) :|-: SS (SeqPhi 1)
+                , SA (SeqNeg $ SeqPhi 1) :|-: SS (SeqNeg $ SeqPhi 1)
+                , GammaV 1 :|-: SS (SeqPhi 2)
                 , GammaV 2 :+: SA (SeqNeg $ SeqPhi 1) :|-: SS (SeqPhi 2)
                 ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (SeqPhi 2)
             ,   
-                [ GammaV 1 :+: SA (SeqPhi 1) :|-: SS (SeqPhi 2)
+                [ SA (SeqPhi 1) :|-: SS (SeqPhi 1)
+                , SA (SeqNeg $ SeqPhi 1) :|-: SS (SeqNeg $ SeqPhi 1)
+                , GammaV 1 :+: SA (SeqPhi 1) :|-: SS (SeqPhi 2)
                 , GammaV 2 :|-: SS (SeqPhi 2)
                 ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (SeqPhi 2)
             , 
-                [ GammaV 1 :|-: SS (SeqPhi 2)
+                [ SA (SeqPhi 1) :|-: SS (SeqPhi 1)
+                , SA (SeqNeg $ SeqPhi 1) :|-: SS (SeqNeg $ SeqPhi 1)
+                , GammaV 1 :|-: SS (SeqPhi 2)
                 , GammaV 2 :|-: SS (SeqPhi 2)
                 ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (SeqPhi 2)
             ]

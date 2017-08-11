@@ -1,5 +1,5 @@
 {-#LANGUAGE TypeOperators, FlexibleContexts#-}
-module Carnap.Languages.PureFirstOrder.Parser ( folFormulaParser, mfolFormulaParser, magnusFOLFormulaParser ) where
+module Carnap.Languages.PureFirstOrder.Parser ( folFormulaParser, mfolFormulaParser, magnusFOLFormulaParser, thomasBolducAndZachFOLFormulaParser ) where
 
 import Carnap.Core.Data.AbstractSyntaxDataTypes
 import Carnap.Core.Data.AbstractSyntaxClasses (Schematizable)
@@ -20,6 +20,7 @@ data PureFirstOrderParserOptions lex u m = PureFirstOrderParserOptions
                                          , constantParser :: Maybe (ParsecT String u m (FixLang lex (Term Int)))
                                          , functionParser :: Maybe (ParsecT String u m (FixLang lex (Term Int)) 
                                             -> ParsecT String u m (FixLang lex (Term Int)))
+                                         , hasBooleanConstants :: Bool
                                          }
 
 standardFOLParserOptions :: PureFirstOrderParserOptions PureLexiconFOL u Identity
@@ -31,6 +32,7 @@ standardFOLParserOptions = PureFirstOrderParserOptions
                          , freeVarParser = parseFreeVar "vwxyz"
                          , constantParser = Just (parseConstant "abcde")
                          , functionParser = Just (parseFunctionSymbol "fgh")
+                         , hasBooleanConstants = False
                          }
 
 simplePolyadicFOLParserOptions :: PureFirstOrderParserOptions PureLexiconPFOL u Identity
@@ -41,6 +43,7 @@ simplePolyadicFOLParserOptions = PureFirstOrderParserOptions
                          , freeVarParser = parseFreeVar "vwxyz"
                          , constantParser = Just (parseConstant "abcde")
                          , functionParser = Nothing
+                         , hasBooleanConstants = False
                          }
 
 simpleMonadicFOLParserOptions :: PureFirstOrderParserOptions PureLexiconMFOL u Identity
@@ -50,6 +53,7 @@ simpleMonadicFOLParserOptions = PureFirstOrderParserOptions
                          , freeVarParser = parseFreeVar "vwxyz"
                          , constantParser = Just (parseConstant "abcde")
                          , functionParser = Nothing
+                         , hasBooleanConstants = False
                          }
 
 magnusFOLParserOptions :: PureFirstOrderParserOptions PureLexiconFOL u Identity
@@ -60,7 +64,11 @@ magnusFOLParserOptions = PureFirstOrderParserOptions
                          , freeVarParser = parseFreeVar "xyz"
                          , constantParser = Just (parseConstant "abcdefghijklmnopqrstuvw")
                          , functionParser = Nothing
+                         , hasBooleanConstants = False
                          }
+
+thomasBolducAndZachFOLParserOptions :: PureFirstOrderParserOptions PureLexiconFOL u Identity
+thomasBolducAndZachFOLParserOptions = magnusFOLParserOptions { hasBooleanConstants = True }
 
 rawFOLFormulaParser :: ( Monad m, Schematizable (a (PureFirstOrderLanguageWith a))
                        , MaybeStaticVar (a (PureFirstOrderLanguageWith a))
@@ -71,6 +79,7 @@ rawFOLFormulaParser opts = buildExpressionParser opTable subFormulaParser
                          <|> try (unaryOpParser [parseNeg] subFormulaParser)
                          <|> try (quantifiedSentenceParser vparser subFormulaParser <* spaces)
                          <|> (atomicSentenceParser opts tparser <* spaces)
+                         <|> if hasBooleanConstants opts then try (booleanConstParser <* spaces) else parserZero
           --Constants, if there are any
           cparser = case constantParser opts of Just c -> c
                                                 Nothing -> mzero
@@ -84,6 +93,9 @@ rawFOLFormulaParser opts = buildExpressionParser opTable subFormulaParser
 
 magnusFOLFormulaParser :: Parsec String u PureFOLForm
 magnusFOLFormulaParser = rawFOLFormulaParser magnusFOLParserOptions
+
+thomasBolducAndZachFOLFormulaParser :: Parsec String u PureFOLForm
+thomasBolducAndZachFOLFormulaParser = rawFOLFormulaParser thomasBolducAndZachFOLParserOptions
 
 folFormulaParser :: Parsec String u PureFOLForm
 folFormulaParser = rawFOLFormulaParser standardFOLParserOptions

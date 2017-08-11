@@ -187,7 +187,16 @@ toProofTreeFitch ded n = case ded !! (n - 1)  of
                    mapM_ isSP deps
                    if isAssumptionLine l then checkAssumptionLegit else return True
                    dp <- case indirectInference r' of
-                        Just (TypedProof prooftype) -> subproofProcess prooftype deps
+                        Just (TypedProof prooftype) -> 
+                            case filter (\(x,y) -> x /= y) deps of 
+                                 [thesp] -> do thesubprems <- subproofProcess prooftype thesp 
+                                               return $ thesubprems ++ map fst (delete thesp deps)
+                                 _ -> err "you need to specify exactly one subproof for this rule"
+                        Just (PolyTypedProof n prooftype) -> 
+                            case filter (\(x,y) -> x /= y) deps of 
+                                 l | length l == n -> do thesubprems <- mapM (subproofProcess prooftype) l
+                                                         return $ concat thesubprems ++ map fst (deps \\ l)
+                                 _ -> err $ "you need to specify exactly " ++ show n ++ " subproofs for this rule"
                         _ -> return . map snd $ deps -- XXX subproofs that don't have an arity just use the last line, e.g. the second of their range.
                                                      -- this is a bit of a hack. All indirect rules should have arities.
                    deps' <- mapM (toProofTreeFitch ded) dp
@@ -208,19 +217,19 @@ toProofTreeFitch ded n = case ded !! (n - 1)  of
                         | dpth == 0 = err "you can't make an assumption unless you are beginning a subproof--maybe you forgot to indent?"
                         | n > 1 && dpth <= depth (ded !! (n - 2)) = err "you can't make an assumption unless you are beginning a subproof--maybe you forgot to indent?"
                         | otherwise = return True
-                      subproofProcess (ProofType assumptionNumber conclusionNumber) deps = 
-                        case filter (\(x,y) -> x /= y) deps of
-                            [thesp@(first,last)] | (last - first) < (assumptionNumber + conclusionNumber) -> err "this subproof doesn't have enough lines to apply this rule"
-                                                 | let firstlines =  map (\x -> ded !! (x - 1)) (take assumptionNumber [first ..]) in 
-                                                     any (not . isAssumptionLine) firstlines  -> 
-                                                        err $ "this rule requires the first " ++ show assumptionNumber ++ " lines of the subproof to be assumptions"
-                                                 | let lastlines = map (\x -> ded !! (x - 1)) (take conclusionNumber [last, last - 1 ..]) in
-                                                     any (\x -> depth x /= depth (ded !! (first - 1))) lastlines -> 
-                                                        err $ "the last " ++ show conclusionNumber ++ " lines of the subproof appear not tbe be aligned with the first line"
-                                                 | otherwise -> return $  take assumptionNumber [first ..] 
-                                                                          ++ take conclusionNumber [last, last - 1 ..] 
-                                                                          ++ map fst (delete thesp deps)
-                            otherwise -> err "you need to specify exactly one subproof for this rule"
+                      subproofProcess (ProofType assumptionNumber conclusionNumber) thesp@(first,last)
+                        | (last - first) < (assumptionNumber + conclusionNumber) =
+                               err $ "the subproof on lines " ++ show first ++ " through " ++ show last ++ " doesn't have enough lines to apply this rule"
+                        | let firstlines =  map (\x -> ded !! (x - 1)) (take assumptionNumber [first ..]) in 
+                            any (not . isAssumptionLine) firstlines  =
+                               err $ "this rule requires the first " ++ show assumptionNumber ++ " lines of a subproof to be assumptions"
+                        | let lastlines = map (\x -> ded !! (x - 1)) (take conclusionNumber [last, last - 1 ..]) in
+                            any (\x -> depth x /= depth (ded !! (first - 1))) lastlines =
+                               err $ "the last " ++ show conclusionNumber 
+                                                 ++ " lines of the subproof on lines " 
+                                                 ++ show first ++ " through " ++ show last
+                                                 ++ " appear not to be be aligned with the first line"
+                        | otherwise = return $ take assumptionNumber [first ..] ++ take conclusionNumber [last, last - 1 ..] 
           (PartialLine _ e _) -> Left $ NoParse e n
           (SeparatorLine _) -> Left $ NoResult n
     where err :: String -> Either (ProofErrorMessage lex) a

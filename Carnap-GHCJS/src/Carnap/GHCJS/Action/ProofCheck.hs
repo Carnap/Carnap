@@ -13,11 +13,11 @@ import Carnap.Languages.PurePropositional.Logic as P
     , thomasBolducAndZachTFLCalc) 
 import Carnap.Languages.PureFirstOrder.Logic as FOL 
     (DerivedRule(..), folCalc, magnusQLCalc, thomasBolducAndZachFOLCalc) 
-import Carnap.Languages.PureSecondOrder.Logic ( msolCalc, psolCalc) 
+import Carnap.Languages.PureSecondOrder.Logic (msolCalc, psolCalc) 
 import Carnap.Languages.PurePropositional.Util (toSchema)
 import Carnap.GHCJS.SharedTypes
 import Text.Parsec (parse)
-import Data.IORef (IORef, newIORef,writeIORef,readIORef,modifyIORef)
+import Data.IORef (IORef, newIORef,writeIORef, readIORef, modifyIORef)
 import Data.Aeson as A
 import qualified Data.Map as M (fromList,map) 
 import Control.Lens.Fold (toListOf)

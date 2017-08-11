@@ -12,44 +12,46 @@ var initialize = new Event('initialize');
 
 function updateSlider(newelt){
     if (newelt.length > 0) {
-        $(".visible").removeClass("visible")
-        newelt.addClass("visible")
-        window.setTimeout(initializeVisible,500)
-        return true
+        $(".visible").removeClass("visible");
+        newelt.addClass("visible");
+        window.setTimeout(initializeVisible,500);
+        return true;
         }
     else {
-        return false
-        }
-}
+        return false;
+        };
+};
 
 function initializeVisible () {
-    document.querySelector(".visible textarea").dispatchEvent(initialize)
-    }
+    document.querySelectorAll(".visible textarea").forEach(
+    function (el) {
+        el.dispatchEvent(initialize);
+    });
+};
 
 function pushRight(e) {
-    next=$(".visible").next()
+    next=$(".visible").next();
     if (updateSlider(next)) {
-        n=parseInt($("#demo-num").html())
-        $("#demo-num").html(n + 1)
+        var n = parseInt($("#demo-num").html());
+        $("#demo-num").html(n + 1);
     }
 }
 
 function pushLeft(e) {
-    prev=$(".visible").prev()
+    prev=$(".visible").prev();
     if (updateSlider(prev)) {
-        n=parseInt($("#demo-num").html())
-        $("#demo-num").html(n - 1)
+        var n=parseInt($("#demo-num").html());
+        $("#demo-num").html(n - 1);
     }
 }
 
-$("#demo-right").on("click",pushRight)
+$("#demo-right").on("click",pushRight);
 
-$("#demo-left").on("click",pushLeft)
+$("#demo-left").on("click",pushLeft);
 
 function klementActivate() {
-    s=document.getElementById("klementProof")
-    /* console.log(s.innerHTML) */
-    sofar = []
+    var s = document.getElementById("klementProof");
+    var sofar = [];
     sofar.push({
        "wffstr" : "(W ∨ X)",
        "jstr" : "Pr"
@@ -66,10 +68,9 @@ function klementActivate() {
        "wffstr" : "¬Z",
        "jstr" : "Pr"
     });
-    makeProof(s,sofar,"W ∨ Y")
-    console.log("activated Klement")
+    makeProof(s,sofar,"W ∨ Y");
     }
 
 
-window.setTimeout(initializeVisible,2000)
-klementActivate()
+window.setTimeout(initializeVisible,2000);
+klementActivate();

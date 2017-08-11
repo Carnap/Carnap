@@ -274,7 +274,7 @@ hoseqFromNode lineno rules prems conc =
                                    let prob = (zipWith (:=:) (map (pureBNF . view lhs) subbedrule) 
                                                              (map (view lhs) prems))
                                    case hoacuisolve r hosub prob of 
-                                     Right s -> return $ Right $ map (\x -> applySub x subbedconc) s
+                                     Right s -> return $ Right $ map (\x -> antecedentNub $ applySub x subbedconc) s
                                      Left e -> return $ Left $ renumber lineno e
 
 reduceProofTree :: 

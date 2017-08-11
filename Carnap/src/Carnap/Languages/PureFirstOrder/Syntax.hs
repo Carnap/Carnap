@@ -72,6 +72,9 @@ pattern PSPhi n        = FX (Lx1 (Lx1 (Lx2 (Predicate (SProp n) AZero))))
 pattern PCon x arity   = FX (Lx1 (Lx1 (Lx3 (Connective x arity))))
 pattern PSV n          = FX (Lx1 (Lx1 (Lx4 (StaticVar n))))
 pattern PDV n          = FX (Lx1 (Lx1 (Lx4 (SubVar n))))
+pattern PCtx n         = FX (Lx1 (Lx1 (Lx5 (Connective (PropCtx n) AOne))))
+pattern PVerum         = FX (Lx1 (Lx1 (Lx6 (Connective (Verum) AZero))))
+pattern PFalsum        = FX (Lx1 (Lx1 (Lx6 (Connective (Falsum) AZero))))
 pattern PQuant q       = FX (Lx1 (Lx2 (Bind q)))
 pattern PConst c a     = FX (Lx1 (Lx3 (Function c a)))
 pattern PVar c a       = FX (Lx1 (Lx4 (Function c a)))
@@ -128,6 +131,13 @@ instance BooleanLanguage (PureFirstOrderLanguageWith a (Form Bool)) where
     lor  = (:||:)
     lif  = (:->:)
     liff = (:<->:)
+
+instance BooleanConstLanguage (PureFirstOrderLanguageWith a (Form Bool)) where
+    lverum = PVerum
+    lfalsum = PFalsum
+
+instance IndexedPropContextSchemeLanguage (PureFirstOrderLanguageWith a (Form Bool)) where 
+        propCtx n x = PCtx n :!$: x
 
 instance QuantLanguage (PureFirstOrderLanguageWith a (Form Bool)) (PureFirstOrderLanguageWith a (Term Int)) where
     lall  v f = PQuant (All v) :!$: LLam f

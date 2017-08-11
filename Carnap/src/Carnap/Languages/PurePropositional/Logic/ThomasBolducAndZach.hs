@@ -18,23 +18,23 @@ import Carnap.Languages.PurePropositional.Logic.Rules
 from the Calgary Remix of Forall x book
 -}
 
-data ThomasBolducAndZachTFL = Reiterate  | ConjIntro
-              | ConjElim1  | ConjElim2
-              | DisjIntro1 | DisjIntro2
-              | DisjElim1  | DisjElim2
-              | DisjElim3  | DisjElim4
-              | CondIntro1 | CondIntro2
-              | CondElim
-              | BicoIntro1 | BicoIntro2
-              | BicoIntro3 | BicoIntro4
-              | BicoElim1  | BicoElim2
-              | NegeIntro1 | NegeIntro2
-              | Tertium1   | Tertium2
-              | Tertium3   | Tertium4
-              | ContIntro  | ContElim 
-              | As         | Pr
-              deriving (Eq)
-              --skipping derived rules for now
+data ThomasBolducAndZachTFL = ConjIntro
+                            | ConjElim1  | ConjElim2
+                            | DisjIntro1 | DisjIntro2
+                            | DisjElim1  | DisjElim2
+                            | DisjElim3  | DisjElim4
+                            | CondIntro1 | CondIntro2
+                            | CondElim
+                            | BicoIntro1 | BicoIntro2
+                            | BicoIntro3 | BicoIntro4
+                            | BicoElim1  | BicoElim2
+                            | NegeIntro1 | NegeIntro2
+                            | Tertium1   | Tertium2
+                            | Tertium3   | Tertium4
+                            | ContIntro  | ContElim 
+                            | As         | Pr
+                            deriving (Eq)
+                            --skipping derived rules for now
 
 instance Show ThomasBolducAndZachTFL where
         show ConjIntro  = "∧I"
@@ -72,10 +72,10 @@ instance Inference ThomasBolducAndZachTFL PurePropLexicon where
         ruleOf ConjElim2  = simplificationVariations !! 1
         ruleOf DisjIntro1 = additionVariations !! 0
         ruleOf DisjIntro2 = additionVariations !! 1 
-        ruleOf DisjElim1   = proofByCasesVariations !! 0
-        ruleOf DisjElim2   = proofByCasesVariations !! 1
-        ruleOf DisjElim3   = proofByCasesVariations !! 2
-        ruleOf DisjElim4   = proofByCasesVariations !! 3
+        ruleOf DisjElim1  = proofByCasesVariations !! 0
+        ruleOf DisjElim2  = proofByCasesVariations !! 1
+        ruleOf DisjElim3  = proofByCasesVariations !! 2
+        ruleOf DisjElim4  = proofByCasesVariations !! 3
         ruleOf CondIntro1 = conditionalProofVariations !! 0
         ruleOf CondIntro2 = conditionalProofVariations !! 1
         ruleOf CondElim   = modusPonens
@@ -89,10 +89,10 @@ instance Inference ThomasBolducAndZachTFL PurePropLexicon where
         ruleOf NegeIntro2 = explicitConstructiveFalsumReductioVariations !! 1
         ruleOf ContIntro  = falsumIntroduction
         ruleOf ContElim   = falsumElimination
-        ruleOf Tertium1   = tertiumNonDaturVariations !! 1
-        ruleOf Tertium2   = tertiumNonDaturVariations !! 2
-        ruleOf Tertium3   = tertiumNonDaturVariations !! 3
-        ruleOf Tertium4   = tertiumNonDaturVariations !! 4
+        ruleOf Tertium1   = tertiumNonDaturVariations !! 0
+        ruleOf Tertium2   = tertiumNonDaturVariations !! 1
+        ruleOf Tertium3   = tertiumNonDaturVariations !! 2
+        ruleOf Tertium4   = tertiumNonDaturVariations !! 3
         ruleOf As         = axiom
         ruleOf Pr         = axiom
 
@@ -100,8 +100,8 @@ instance Inference ThomasBolducAndZachTFL PurePropLexicon where
             | x `elem` [ DisjElim1, DisjElim2, DisjElim3, DisjElim4
                        , CondIntro1, CondIntro2
                        , BicoIntro1, BicoIntro2 , BicoIntro3, BicoIntro4
-                       , Tertium1, Tertium2, Tertium3, Tertium4
                        ] = Just PolyProof
+            | x `elem` [Tertium1,Tertium2,Tertium3,Tertium4] = Just (PolyTypedProof 2 (ProofType 1 1))
             | x `elem` [NegeIntro1, NegeIntro2] = Just assumptiveProof
             | otherwise = Nothing
 
@@ -110,8 +110,8 @@ instance Inference ThomasBolducAndZachTFL PurePropLexicon where
 
 parseThomasBolducAndZachTFL :: Map String DerivedRule -> Parsec String u [ThomasBolducAndZachTFL]
 parseThomasBolducAndZachTFL ders = do r <- choice (map (try . string) [ "AS","PR","&I","/\\I", "∧I","&E","/\\E","∧E","CI","->I","→I","→E","CE","->E", "→E"
-                                                                      , "~I","-I", "¬I", "vI","\\/I","∨I", "vE","\\/E", "∨E","BI","<->I", "↔I", "BE", "<->E"
-                                                                      , "↔E", "R", "TND"])
+                                                                      , "~I","-I", "¬I","!?I","!?O", "vI","\\/I","∨I", "vE","\\/E", "∨E","BI","<->I", "↔I", "BE", "<->E"
+                                                                      , "↔E", "TND"])
                                       case r of
                                            "AS"   -> return [As]
                                            "PR"   -> return [Pr]
@@ -130,9 +130,11 @@ parseThomasBolducAndZachTFL ders = do r <- choice (map (try . string) [ "AS","PR
                                            "~I"   -> return [NegeIntro1, NegeIntro2]
                                            "¬I"   -> return [NegeIntro1, NegeIntro2]
                                            "-I"   -> return [NegeIntro1, NegeIntro2]
+                                           "!?I"  -> return [ContIntro]
+                                           "!?E"  -> return [ContElim]
                                            "vI"   -> return [DisjIntro1, DisjIntro2]
                                            "vE"   -> return [DisjElim1, DisjElim2, DisjElim3, DisjElim4]
-                                           "\\/I" -> return [DisjElim1, DisjElim2, DisjElim3, DisjElim4]
+                                           "\\/I" -> return [DisjIntro1, DisjIntro2]
                                            "\\/E" -> return [DisjElim1, DisjElim2, DisjElim3, DisjElim4]
                                            "BI"   -> return [BicoIntro1, BicoIntro2, BicoIntro3, BicoIntro4]
                                            "BE"   -> return [BicoElim1, BicoElim2]
@@ -140,11 +142,10 @@ parseThomasBolducAndZachTFL ders = do r <- choice (map (try . string) [ "AS","PR
                                            "<->E" -> return [BicoElim1, BicoElim2]
                                            "↔I"   -> return [BicoIntro1, BicoIntro2, BicoIntro3, BicoIntro4]
                                            "↔E"   -> return [BicoElim1, BicoElim2]
-                                           "R"    -> return [Reiterate]
                                            "TND"  -> return [Tertium1, Tertium2, Tertium3, Tertium4]
 
 parseThomasBolducAndZachTFLProof :: Map String DerivedRule -> String -> [DeductionLine ThomasBolducAndZachTFL PurePropLexicon (Form Bool)]
-parseThomasBolducAndZachTFLProof ders = toDeductionFitch (parseThomasBolducAndZachTFL ders) (purePropFormulaParser extendedLetters)
+parseThomasBolducAndZachTFLProof ders = toDeductionFitch (parseThomasBolducAndZachTFL ders) (purePropFormulaParser $ extendedLetters {hasBooleanConstants = True})
 
 thomasBolducAndZachTFLCalc = NaturalDeductionCalc 
     { ndRenderer = FitchStyle

@@ -99,13 +99,25 @@
 
                 <div.demo>
 
-                    <p> Here's another, this time using a version of system QL,
-                        \ from P.D. Magnus' <i>Forall x</i>. Note that we've
+                    <p> Here are two more proofs of Russell's theorem, this
+                        \ time using a version of system QL,
+                        \ from P.D. Magnus' free and open textbook #
+                        <a href="https://www.fecundity.com/logic/">
+                            Forall x.
+                        \ and the system FOL from the 
+                        <a href="https://github.com/rzach/forallx-yyc">
+                            Calgary remix
+                        \ of #
+                        <i>Forall x.
+                        \ Note that we've
                         \ changed how formulas are parsed (dropping the parentheses around
                         \ the arguments to predicates), to match the display
-                        \ style of <i>Forall x</i>
+                        \ style of #
+                        <i>Forall x
 
-                    ^{proofcheck 6 "proofchecker forallxQL NoSub Render" ":|-:-ExAy(-F(y,y) <-> F(x,y))" russellTheoremForallx}
+                    ^{proofcheck 6 "proofchecker magnusQL NoSub Render" ":|-:-ExAy(-F(y,y) <-> F(x,y))" russellTheoremForallx}
+
+                    ^{proofcheck 7 "proofchecker thomasBolducAndZachFOL NoSub Render" ":|-:-ExAy(-F(y,y) <-> F(x,y))" russellTheoremCalgary}
                 <div.demo>
 
                     <p> This is a proofbox with a Kalish and Montegue System
@@ -113,7 +125,7 @@
                         \ an instance of the comprehension scheme, using
                         \ a predicate abstraction rule.
 
-                    ^{proofcheck 7 "proofchecker secondOrder NoSub Render" ":|-: EXAx(F(x) /\\ G(x) <-> X(x))" comprehensionTheorem}
+                    ^{proofcheck 8 "proofchecker secondOrder NoSub Render" ":|-: EXAx(F(x) /\\ G(x) <-> X(x))" comprehensionTheorem}
 
                 <div.demo>
 
@@ -122,7 +134,7 @@
                         \ Second-Order Logic, again making use of a predicate
                         \ abstraction rule.
 
-                    ^{proofcheck 8 "proofchecker polyadicSecondOrder NoSub Render" ":|-: AX2EY2AxAy(X2(x,y)<->Y2(y,x))" inverseTheorem}
+                    ^{proofcheck 9 "proofchecker polyadicSecondOrder NoSub Render" ":|-: AX2EY2AxAy(X2(x,y)<->Y2(y,x))" inverseTheorem}
 
 
                 <div.demo>
@@ -131,9 +143,11 @@
                         \ create pure JavaScript GUIs that use Carnap under
                         \ the hood for in-browser proof checking. Here's an example
                         \ of such a GUI, adapted from #
-                            <a href="https://the21stcenturymonads.net/forallx/">
-                                Kevin Klement's forallx proofchecker
-                        \ using P.D. Magnus' <i>Forall x</i> system SL.
+                        <a href="https://the21stcenturymonads.net/forallx/">
+                            Kevin Klement's forallx proofchecker
+                        \ using P.D. Magnus' #
+                        <i>Forall x
+                        \ system SL.
 
                     <div.exercise>
                         <span> example 9

@@ -79,7 +79,7 @@ parseThomasBolducAndZachFOL ders = try liftProp <|> quantRule
                               | r == "=E" -> return [IDE1,IDE2]
 
 parseThomasBolducAndZachFOLProof ::  Map String P.DerivedRule -> String -> [DeductionLine ThomasBolducAndZachFOL PureLexiconFOL (Form Bool)]
-parseThomasBolducAndZachFOLProof ders = toDeductionFitch (parseThomasBolducAndZachFOL ders) magnusFOLFormulaParser
+parseThomasBolducAndZachFOLProof ders = toDeductionFitch (parseThomasBolducAndZachFOL ders) (thomasBolducAndZachFOLFormulaParser)
 
 thomasBolducAndZachFOLCalc = NaturalDeductionCalc
     { ndRenderer = FitchStyle

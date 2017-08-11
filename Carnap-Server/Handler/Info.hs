@@ -116,6 +116,22 @@ russellTheoremForallx = [st|
 -ExAy(-Fyy <-> Fxy):-I 1-14
 |]
 
+russellTheoremCalgary = [st|
+    ExAy(-Fyy <-> Fxy):AS
+        Ay(-Fyy<->Fry):AS
+        -Frr<->Frr:AE 2
+             -Frr:AS
+             Frr:<->E 3 4
+             !?:!?I 4 5
+        --
+             Frr:AS
+             -Frr:<->E 3 8
+             !?:!?I 8 9
+        !?:TND 4-6 8-10
+    !?:EE 1 2-11
+-ExAy(-Fyy <-> Fxy):-I 1-12
+|]
+
 inverseTheorem = [st|
 Show: AX2EY2∀x∀y(X2(x,y) ↔ Y2(y,x))
   Show: ∀x∀y(X2(x,y) ↔ \w\v[X2(v,w)](y,x))
