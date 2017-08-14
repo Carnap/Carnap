@@ -5,7 +5,7 @@ import Util.Data
 import Util.Database
 import Yesod.Form.Bootstrap3
 import Yesod.Form.Jquery
-import Handler.User (scoreByIdAndSource)
+import Handler.User (scoreByIdAndClass)
 import Text.Blaze.Html (toMarkup)
 import Data.Time
 import System.FilePath
@@ -37,18 +37,20 @@ deleteInstructorR _ = do
 
 postInstructorR :: Text -> Handler Html
 postInstructorR ident = do
-    ((result,widget),enctype) <- runFormPost uploadAssignmentForm
-    let maybeclass = instructorCourse <$> instructorData <$> instructorByEmail ident 
-    case (result,maybeclass) of 
-        (FormSuccess (file, duedate, textarea, subtime), Just theclass) ->
+    let classes = case instructorByEmail ident of
+          Just i -> coursesByInstructor i
+          Nothing -> []
+    ((result,widget),enctype) <- runFormPost (uploadAssignmentForm classes)
+    case (result) of 
+        (FormSuccess (file, theclass, duedate, textarea, subtime)) ->
             do let fn = fileName file
                let duetime = UTCTime duedate 0
                let info = unTextarea <$> textarea
                success <- tryInsert $ AssignmentMetadata fn info duetime subtime theclass
                if success then saveAssignment file 
                           else setMessage "Could not save---this file already exists"
-        (FormFailure s,_) -> setMessage $ "Something went wrong: " ++ toMarkup (show s)
-        (FormMissing,_) -> setMessage "Submission data incomplete"
+        (FormFailure s) -> setMessage $ "Something went wrong: " ++ toMarkup (show s)
+        (FormMissing) -> setMessage "Submission data incomplete"
         _ -> setMessage "something went wrong with the form submission"
     redirect $ InstructorR ident
 
@@ -59,22 +61,18 @@ getInstructorR ident = do
         Nothing -> defaultLayout nopage
         (Just (Entity uid _))  -> do
             UserData firstname lastname enrolledin _ <- checkUserData uid 
-            let maybeclass = instructorCourse <$> instructorData <$> instructorByEmail ident
-            case maybeclass of
-                Nothing -> defaultLayout nopage
-                Just theclass ->
-                    do allUserData <- map entityVal <$> (runDB $ selectList [UserDataEnrolledIn ==. theclass] [])
-                       let allUids = (map userDataUserId  allUserData)
-                       musers <- mapM (\x -> runDB (get x)) allUids
-                       let users = catMaybes musers
-                       allScores <- mapM (scoreByIdAndSource (sourceOf theclass)) allUids >>= return . zip (map userIdent users)
-                       let usersAndData = zip users allUserData
-                       assignmentMetadata <- map entityVal <$> listAssignmentMetadata theclass
-                       ((_,assignmentWidget),enctype) <- runFormPost uploadAssignmentForm
-                       defaultLayout $ do
-                         setTitle $ "Instructor Page for " ++ toMarkup firstname ++ " " ++ toMarkup lastname
-                         $(widgetFile "instructor")
-    where tryLookup l x = case lookup x l of
+            let classes = case instructorByEmail ident of
+                              Just i -> coursesByInstructor i
+                              Nothing -> []
+            classWidgets <- mapM classWidget classes
+            assignmentMetadata <- concat <$> mapM assignmentsOf classes
+            ((_,assignmentWidget),enctype) <- runFormPost (uploadAssignmentForm classes)
+            defaultLayout $ do
+                 setTitle $ "Instructor Page for " ++ toMarkup firstname ++ " " ++ toMarkup lastname
+                 $(widgetFile "instructor")
+    where assignmentsOf theclass = map entityVal <$> listAssignmentMetadata theclass
+          
+          tryLookup l x = case lookup x l of
                           Just n -> show n
                           Nothing -> "can't find scores"
           
@@ -85,11 +83,42 @@ getInstructorR ident = do
 
           tryDelete (AssignmentMetadata fn _ _ _ _) = "tryDeleteAssignment(\"" ++ fn ++ "\")"
 
-uploadAssignmentForm = renderBootstrap3 BootstrapBasicForm $ (,,,)
-    <$> fileAFormReq (bfs ("Assignment" :: Text))
-    <*> areq (jqueryDayField def) (bfs ("Due Date"::Text)) Nothing
-    <*> aopt textareaField (bfs ("Assignment Description"::Text)) Nothing
-    <*> lift (liftIO getCurrentTime)
+          classWidget :: CourseEnrollment -> HandlerT App IO Widget
+          classWidget theclass = 
+                do allUserData <- map entityVal <$> (runDB $ selectList [UserDataEnrolledIn ==. theclass] [])
+                   let allUids = (map userDataUserId  allUserData)
+                   musers <- mapM (\x -> runDB (get x)) allUids
+                   let users = catMaybes musers
+                   allScores <- mapM (scoreByIdAndClass theclass) allUids >>= return . zip (map userIdent users)
+                   let usersAndData = zip users allUserData
+                   return [whamlet|
+                            <div.card style="margin-bottom:20px">
+                                <div.card-header>
+                                    #{nameOf $ courseData theclass}
+                                <div.card-block>
+                                    <table.table.table-striped>
+                                        <thead>
+                                            <th> Registered Student
+                                            <th> Student Name
+                                            <th> Total Score
+                                        <tbody>
+                                            $forall (u,UserData fn ln _ _) <- usersAndData
+                                                <tr>
+                                                    <td>
+                                                        <a href=@{UserR (userIdent u)}>#{userIdent u}
+                                                    <td>
+                                                        #{ln}, #{fn}
+                                                    <td>
+                                                        #{tryLookup allScores (userIdent u)}/#{show $ pointsOf $ courseData theclass}
+                          |]
+
+uploadAssignmentForm classes = renderBootstrap3 BootstrapBasicForm $ (,,,,)
+            <$> fileAFormReq (bfs ("Assignment" :: Text))
+            <*> areq (selectFieldList classnames) (bfs ("Class" :: Text)) Nothing
+            <*> areq (jqueryDayField def) (bfs ("Due Date"::Text)) Nothing
+            <*> aopt textareaField (bfs ("Assignment Description"::Text)) Nothing
+            <*> lift (liftIO getCurrentTime)
+    where classnames = map (\theclass -> (nameOf $ courseData theclass, theclass)) classes
 
 saveAssignment file = do
         let assignmentname = unpack $ fileName file

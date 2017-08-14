@@ -4,42 +4,53 @@
     $if isAdmin
         <p> Your instructor page is 
             <a href=@{InstructorR ident}>here
-    <h3 style="padding-top:10pt"> Completed Problems
-    <h4> Syntax Checking
-    #{syntable}
-    <h4> Translation
-    #{transtable}
-    <h4> Derivation
-    #{dertable}
-    <h4> Truth Tables
-    #{tttable}
+    <h3> Upcoming Problems
     <div.row>
-        <div.col-md-9 style="padding-right:30pt">
-            <h3> Due Dates
-            ^{assignments}
-        <div.col-md-3>
-            <h3> Total Points Earned
-            <span style="font-size:56pt; color:gray; padding-left:20pt">
-                #{score}/#{pointsAvailable}
+        <div.col-md-8>
+            <div.card>
+                <h4.card-header> Due Dates
+                <div.card-body>
+                    ^{assignments}
+        <div.col-md-4>
+            <div.card>
+                <h4.card-header> Total Points Earned
+                <div.card-body.text-center>
+                    <span style="font-size:64pt; color:gray">
+                        #{score}/#{pointsAvailable}
     <div>
+    <h3 style="padding-top:10pt"> Completed Problems
+    $if (not $ null synsubs)
+        <h4> Syntax Checking
+        #{syntable}
+    $if (not $ null transsubs)
+        <h4> Translation
+        #{transtable}
+    $if (not $ null dersubs)
+        <h4> Derivation
+        #{dertable}
+    $if (not $ null ttsubs)
+        <h4> Truth Tables
+        #{tttable}
+    <h3> Your Profile
     $maybe rules <- derivedRules
-        <h3> Derived Rules
-        <div.derivedRules>
-            <table.table.table-striped>
-                <thead>
-                    <th> Name
-                    <th> Premises
-                    <th> Conclusion
-                    <th> Action
-                <tbody>
-                    $forall SavedDerivedRule dr name _ _ <- rules
-                        $maybe dr' <- decodeStrict dr
-                            <tr>
-                                <td>D-#{name}
-                                <td>#{intercalate "," $ map show (premises dr')}
-                                <td>#{show $ conclusion dr'}
-                                <td>
-                                    <button.btn.btn-sm.btn-secondary type="button" onclick=#{tryDelete name}>
-                                        <i.fa.fa-trash-o> delete rule
+        <div.card>
+            <h4.card-header> Derived Rules
+            <div.derivedRules.card-body>
+                <table.table.table-striped>
+                    <thead>
+                        <th> Name
+                        <th> Premises
+                        <th> Conclusion
+                        <th> Action
+                    <tbody>
+                        $forall SavedDerivedRule dr name _ _ <- rules
+                            $maybe dr' <- decodeStrict dr
+                                <tr>
+                                    <td>D-#{name}
+                                    <td>#{intercalate "," $ map show (premises dr')}
+                                    <td>#{show $ conclusion dr'}
+                                    <td>
+                                        <button.btn.btn-sm.btn-secondary type="button" onclick=#{tryDelete name}>
+                                                <i.fa.fa-trash-o> delete rule
     <a href=@{AuthR LogoutR}>
         Logout

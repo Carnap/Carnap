@@ -40,7 +40,7 @@ keycheck "" = Nothing
 keycheck s  = Just (read s)
 
 liftSource Book = CarnapTextbook
-liftSource BirminghamAssignment = BirminghamAssignment2017
+liftSource BirminghamAssignment = CourseAssignment Birmingham2017
 
 packageRule (SavedDerivedRule dr n _ _) = case (decodeStrict dr :: Maybe DerivedRule) of
                                               Just r -> Just (unpack n, r)

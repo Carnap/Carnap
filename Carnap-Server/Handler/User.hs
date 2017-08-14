@@ -32,10 +32,10 @@ getUserR ident = do
         Nothing -> defaultLayout nouserPage
         (Just (Entity k _))  -> do
             UserData firstname lastname enrolledin _ <- checkUserData k
-            (synsubs, transsubs,dersubs, ttsubs) <- subsByIdAndSource (sourceOf enrolledin) k
+            (synsubs, transsubs,dersubs, ttsubs) <- subsByIdAndSource enrolledin k
             let isAdmin = ident `elem` map instructorEmail instructorsDataList
             assignments <- assignmentsOf enrolledin
-            let pointsAvailable = show $ pointsOf enrolledin 
+            let pointsAvailable = show $ pointsOf (courseData enrolledin)
             derivedRules <- getDrList
             syntable <- problemsToTable synsubs
             transtable <- problemsToTable transsubs
@@ -54,18 +54,6 @@ getUserR ident = do
                             <p> This user does not exist
                        |]
 
-          assignmentsOf KSUSymbolicI2016 = return $
-            [whamlet| 
-            <table.table.table-striped>
-                <thead>
-                    <th> Problem Set
-                    <th> Due Date
-                <tbody>
-                    $forall (n,date) <- M.toList dueDates
-                        <tr>
-                            <td>#{show n}
-                            <td>#{formatted date}
-            |]
           assignmentsOf theclass = do
              asmd <- runDB $ selectList [AssignmentMetadataCourse ==. theclass] []
              return $
@@ -105,9 +93,8 @@ toScore p = case assignment p of
                                     else return (5 :: Int)
 
                             
-
-scoreByIdAndSource thesource uid = 
-        do (a,b,c,d) <- subsByIdAndSource thesource uid
+scoreByIdAndClass theclass uid = 
+        do (a,b,c,d) <- subsByIdAndSource theclass uid
            totalScore a b c d
 
 totalScore a b c d = do
@@ -220,13 +207,13 @@ instance Problem DerivationSubmission where
         submitted (DerivationSubmission _ _ time _ _ _) = time
         assignment (DerivationSubmission _ _ _ _ _ key) = key
 
-subsByIdAndSource thesource v = 
-        do synsubs  <- runDB $ selectList [ SyntaxCheckSubmissionUserId ==. v
-                                           , SyntaxCheckSubmissionSource ==. thesource] []
-           transsubs  <- runDB $ selectList [ TranslationSubmissionUserId ==. v
-                                             , TranslationSubmissionSource ==. thesource] []
-           dersubs  <- runDB $ selectList [ DerivationSubmissionUserId ==. v
-                                           , DerivationSubmissionSource ==. thesource] []
-           ttsubs  <- runDB $ selectList [ TruthTableSubmissionUserId ==. v
-                                          , TruthTableSubmissionSource ==. thesource] []
+subsByIdAndSource course v = 
+        do synsubs   <- runDB $ selectList (queryBy SyntaxCheckSubmissionUserId SyntaxCheckSubmissionSource) []
+           transsubs <- runDB $ selectList (queryBy TranslationSubmissionUserId TranslationSubmissionSource) []
+           dersubs   <- runDB $ selectList (queryBy DerivationSubmissionUserId DerivationSubmissionSource) []
+           ttsubs    <- runDB $ selectList (queryBy TruthTableSubmissionUserId TruthTableSubmissionSource) []
            return (map entityVal synsubs, map entityVal transsubs, map entityVal dersubs, map entityVal ttsubs)
+    where queryBy :: EntityField a (Key User) -> EntityField a Util.Data.ProblemSource -> [Filter a]
+          queryBy id src = case sourceOf (courseData course) of
+               Nothing -> [ id ==. v , src ==. CourseAssignment course] 
+               Just c -> [ id ==. v , src ==. CourseAssignment course] ||. [ id ==. v , src ==. c]

@@ -46,6 +46,7 @@ registrationForm userId = do
             <*> areq (selectFieldList courses) "enrolled in " Nothing
     where fixedId x y z = UserData x y z userId
           courses :: [(Text,CourseEnrollment)]
-          courses = [("Symbolic Logic I - Kansas State University",KSUSymbolicI2016)
+          courses = [("Symbolic Logic I - Kansas State University",KSUSymbolicI2017)
+                    ,("Introduction to Formal Logic - Kansas State University", KSUIntroToFormal2017)
                     ,("Birmingham University",Birmingham2017 )
                     ]

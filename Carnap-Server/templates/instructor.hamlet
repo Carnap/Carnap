@@ -1,20 +1,9 @@
 <div.container>
     <h1> Instructor Page for #{firstname} #{lastname}
     <h2> Student Scores
-    <table.table.table-striped>
-        <thead>
-            <th> Registered Student
-            <th> Student Name
-            <th> Total Score
-        <tbody>
-            $forall (u,UserData fn ln _ _) <- usersAndData
-                <tr>
-                    <td>
-                        <a href=@{UserR (userIdent u)}>#{userIdent u}
-                    <td>
-                        #{ln}, #{fn}
-                    <td>
-                        #{tryLookup allScores (userIdent u)}/#{show $ pointsOf theclass}
+    <div.card-columns>
+    $forall widget <- classWidgets
+         ^{widget}
     <h2> Upload Assignments
     <div>
         <form method=post enctype=#{enctype}>
@@ -27,6 +16,7 @@
             <th> Filename
             <th> Due Date
             <th> Saved on
+            <th> Course
         <tbody>
             $forall a <- assignmentMetadata
                 <tr>
@@ -35,6 +25,7 @@
                             #{assignmentMetadataFilename a}
                     <td>#{show $ assignmentMetadataDuedate a}
                     <td>#{show $ assignmentMetadataDate a}
+                    <td>#{show $ assignmentMetadataCourse a}
                     <td>
                         <button.btn.btn-sm.btn-secondary type="button" onclick=#{tryDelete a}>
                             <i.fa.fa-trash-o>

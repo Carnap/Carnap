@@ -9,23 +9,15 @@ data Instructor = GrahamLeachKrouse
     deriving (Show,Read,Eq,Enum,Bounded)
 
 data InstructorMetadata = InstructorMetadata
-    { instructorEmail :: Text
-    , instructorCourse :: CourseEnrollment
-    }
+    { instructorEmail :: Text }
 
 instructorData :: Instructor -> InstructorMetadata
 instructorData GrahamLeachKrouse = InstructorMetadata
-        { instructorEmail = "gleachkr@gmail.com"
-        , instructorCourse = KSUSymbolicI2016
-        }
+        { instructorEmail = "gleachkr@gmail.com" }
 instructorData SalvatoreFlorio = InstructorMetadata
-        { instructorEmail = "florio.2@buckeyemail.osu.edu"
-        , instructorCourse = Birmingham2017
-        }
+        { instructorEmail = "florio.2@buckeyemail.osu.edu" }
 instructorData CharlesPence = InstructorMetadata
-        { instructorEmail = "charles@charlespence.net"
-        , instructorCourse = SandboxCourse CharlesPence
-        }
+        { instructorEmail = "charles@charlespence.net" }
 
 instructorsList :: [Instructor]
 instructorsList = [minBound .. maxBound]
@@ -36,27 +28,44 @@ instructorsDataList = map instructorData instructorsList
 instructorByEmail :: Text -> Maybe Instructor
 instructorByEmail t = (!!) <$> (pure instructorsList) <*> elemIndex t (map instructorEmail instructorsDataList)
 
-data CourseEnrollment = KSUSymbolicI2016 
-                      | Birmingham2017 
+data CourseEnrollment = Birmingham2017 
+                      | KSUSymbolicI2017
+                      | KSUIntroToFormal2017
                       | SandboxCourse Instructor
       deriving (Show,Read,Eq)
 derivePersistField "CourseEnrollment"
 
+data CourseMetadata = CourseMetadata 
+                    { pointsOf :: Int
+                    , sourceOf :: Maybe ProblemSource
+                    , instructorOf :: Instructor
+                    , nameOf :: Text
+                    }
+
+blankCourse instructor name = CourseMetadata
+        { pointsOf = 0
+        , sourceOf = Nothing
+        , instructorOf = instructor
+        , nameOf = name
+        }
+
+
+
+courseData :: CourseEnrollment -> CourseMetadata
+courseData Birmingham2017 = blankCourse SalvatoreFlorio "Logic - University of Birmingham"
+courseData KSUSymbolicI2017 = (blankCourse GrahamLeachKrouse "Symbolic Logic I - Kansas State University")
+    {sourceOf = Just CarnapTextbook}
+courseData KSUIntroToFormal2017 = (blankCourse GrahamLeachKrouse "Introduction to Formal Logic - Kansas State University")
+    {sourceOf = Just CarnapTextbook}
+courseData (SandboxCourse i) = blankCourse i "Sandbox Course"
+
+courseList :: [CourseEnrollment]
+courseList = [Birmingham2017,KSUSymbolicI2017,KSUIntroToFormal2017] ++ map SandboxCourse instructorsList
+
+coursesByInstructor :: Instructor -> [CourseEnrollment]
+coursesByInstructor i = filter (\c -> instructorOf (courseData c) == i) courseList
+
 data ProblemSource = CarnapTextbook 
-                   | BirminghamAssignment2017 
-                   | SandboxSource Instructor
+                   | CourseAssignment CourseEnrollment
       deriving (Show,Read,Eq)
 derivePersistField "ProblemSource"
-
-class Course c where
-        pointsOf :: c -> Int
-        sourceOf :: c -> ProblemSource
-
-instance Course CourseEnrollment where
-        pointsOf KSUSymbolicI2016 = 725
-        pointsOf Birmingham2017 = 0
-        pointsOf (SandboxCourse _) = 0
-
-        sourceOf KSUSymbolicI2016 = CarnapTextbook
-        sourceOf Birmingham2017 = BirminghamAssignment2017
-        sourceOf (SandboxCourse i) = SandboxSource i
