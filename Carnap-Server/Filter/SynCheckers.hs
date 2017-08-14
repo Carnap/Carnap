@@ -13,13 +13,13 @@ activate cls cnt
     | "Match" `elem` cls = RawBlock "html" $ 
         "<div class=\"exercise\">"
         ++ "<span> exercise " ++ numof cnt ++ "</span>"
-        ++ "<div class=\"synchecker match container\"><input></input><div class=\"tree\">" 
+        ++ "<div class=\"synchecker match\"><input></input><div class=\"tree\">" 
         ++ cnt 
         ++ "</div></div></div>"
     | "MatchClean" `elem` cls = RawBlock "html" $ 
         "<div class=\"exercise\">"
         ++ "<span> exercise " ++ numof cnt ++ "</span>"
-        ++ "<div class=\"synchecker matchclean container\"><input></input><div class=\"tree\">" 
+        ++ "<div class=\"synchecker matchclean\"><input></input><div class=\"tree\">" 
         ++ cnt 
         ++ "</div></div></div>"
     | otherwise = RawBlock "html" "<div>No Matching SynChecker</div>"

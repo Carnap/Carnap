@@ -1,24 +1,23 @@
-* {margin: 0; padding: 0;}
 
 .target {color:red;}
 
 .tree ul {
-	padding-top: 20px; position: relative;
-	
-	transition: all 0.5s;
-	-webkit-transition: all 0.5s;
-	-moz-transition: all 0.5s;
+	padding-top: 20px; 
+    position: relative;
+    transform:scale(.9);
+    right:10%;
+    width:130%;
+    overflow:visible;
 }
 
 .tree li {
-	float: left; text-align: center;
+	float: left; 
+    text-align: center;
+    overflow:visible;
+    white-space:nowrap;
 	list-style-type: none;
 	position: relative;
 	padding: 20px 15px 0 5px;
-	
-	transition: all 0.5s;
-	-webkit-transition: all 0.5s;
-	-moz-transition: all 0.5s;
 }
 
 /*We will use ::before and ::after to draw the connectors*/
@@ -67,35 +66,4 @@ right connector from last child*/
 	position: absolute; top: 0; left: 50%;
 	border-left: 1px solid #ccc;
 	width: 0; height: 20px;
-}
-
-.tree li a{
-	border: 1px solid #ccc;
-	padding: 5px 10px;
-	text-decoration: none;
-	color: #666;
-	font-family: arial, verdana, tahoma;
-	font-size: 11px;
-	display: inline-block;
-	
-	border-radius: 5px;
-	-webkit-border-radius: 5px;
-	-moz-border-radius: 5px;
-	
-	transition: all 0.5s;
-	-webkit-transition: all 0.5s;
-	-moz-transition: all 0.5s;
-}
-
-/*Time for some hover effects*/
-/*We will apply the hover effect the the lineage of the element also*/
-.tree li a:hover, .tree li a:hover+ul li a {
-	background: #c8e4f8; color: #000; border: 1px solid #94a0b4;
-}
-/*Connector styles on hover*/
-.tree li a:hover+ul li::after, 
-.tree li a:hover+ul li::before, 
-.tree li a:hover+ul::before, 
-.tree li a:hover+ul ul::before{
-	border-color:  #94a0b4;
 }

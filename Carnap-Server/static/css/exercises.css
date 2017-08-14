@@ -2,7 +2,7 @@
     font-size:1.4rem;
     padding:10pt;
     overflow:auto;
-    min-width: 600pt;
+    min-width: 400pt;
 }
 
 .tree > ul { width:100%; }
