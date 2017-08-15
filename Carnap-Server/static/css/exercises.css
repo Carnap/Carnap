@@ -1,17 +1,3 @@
-.tree {
-    font-size:1.4rem;
-    padding:10pt;
-    overflow:auto;
-    min-width: 400pt;
-}
-
-.tree > ul { width:100%; }
-
-.tree > ul > li { width:100% !important; }
-
-.tree ul li { width:50%; }
-
-.tree ul li:only-child { width:100%; }
 
 .exercise {
     display:inline-block;
