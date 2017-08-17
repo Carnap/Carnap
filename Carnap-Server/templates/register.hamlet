@@ -3,7 +3,8 @@
         <h1> Looks Like You Need to Register
 
         Please enter the following information
-
-        <form method=post action=@{RegisterR ident} enctype=#{enctype}>
-            ^{widget}
-            <button> Register Now
+        <div>
+            <form method=post action=@{RegisterR ident} enctype=#{enctype}>
+                ^{widget}
+                <div.form-group>
+                    <input.btn.btn-primary type=submit value="Register">

@@ -2,6 +2,8 @@ module Util.Data where
 
 import ClassyPrelude.Yesod
 import Data.List ((!!), elemIndex)
+import Data.Time
+import qualified Data.Map as M (fromList)
 
 data Instructor = GrahamLeachKrouse 
                 | SalvatoreFlorio
@@ -31,6 +33,7 @@ instructorByEmail t = (!!) <$> (pure instructorsList) <*> elemIndex t (map instr
 data CourseEnrollment = Birmingham2017 
                       | KSUSymbolicI2017
                       | KSUIntroToFormal2017
+                      | KSUModalLogic2017
                       | SandboxCourse Instructor
       deriving (Show,Read,Eq)
 derivePersistField "CourseEnrollment"
@@ -40,6 +43,7 @@ data CourseMetadata = CourseMetadata
                     , sourceOf :: Maybe ProblemSource
                     , instructorOf :: Instructor
                     , nameOf :: Text
+                    , duedates :: Maybe (Map Int UTCTime)
                     }
 
 blankCourse instructor name = CourseMetadata
@@ -47,23 +51,32 @@ blankCourse instructor name = CourseMetadata
         , sourceOf = Nothing
         , instructorOf = instructor
         , nameOf = name
+        , duedates = Nothing
         }
-
-
 
 courseData :: CourseEnrollment -> CourseMetadata
 courseData Birmingham2017 = blankCourse SalvatoreFlorio "Logic - University of Birmingham"
 courseData KSUSymbolicI2017 = (blankCourse GrahamLeachKrouse "Symbolic Logic I - Kansas State University")
-    {sourceOf = Just CarnapTextbook}
+    { sourceOf = Just CarnapTextbook
+    , duedates = Just $ M.fromList [( 1, toTime "11:59 pm CDT, Aug 30, 2016")]
+    }
 courseData KSUIntroToFormal2017 = (blankCourse GrahamLeachKrouse "Introduction to Formal Logic - Kansas State University")
     {sourceOf = Just CarnapTextbook}
+courseData KSUModalLogic2017 = (blankCourse GrahamLeachKrouse "Modal Logic (independent study) - Kansas State University")
 courseData (SandboxCourse i) = blankCourse i "Sandbox Course"
 
+--TODO use an enum to generate these
+regularCourseList :: [CourseEnrollment]
+regularCourseList = [Birmingham2017,KSUSymbolicI2017,KSUIntroToFormal2017,KSUModalLogic2017]
+
 courseList :: [CourseEnrollment]
-courseList = [Birmingham2017,KSUSymbolicI2017,KSUIntroToFormal2017] ++ map SandboxCourse instructorsList
+courseList = [Birmingham2017,KSUSymbolicI2017,KSUIntroToFormal2017,KSUModalLogic2017] ++ map SandboxCourse instructorsList
 
 coursesByInstructor :: Instructor -> [CourseEnrollment]
 coursesByInstructor i = filter (\c -> instructorOf (courseData c) == i) courseList
+
+toTime :: String -> UTCTime
+toTime = parseTimeOrError True defaultTimeLocale "%l:%M %P %Z, %b %e, %Y"
 
 data ProblemSource = CarnapTextbook 
                    | CourseAssignment CourseEnrollment

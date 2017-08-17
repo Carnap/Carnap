@@ -37,11 +37,11 @@ getUserR ident = do
             assignments <- assignmentsOf enrolledin
             let pointsAvailable = show $ pointsOf (courseData enrolledin)
             derivedRules <- getDrList
-            syntable <- problemsToTable synsubs
-            transtable <- problemsToTable transsubs
-            dertable <- problemsToTable dersubs
-            tttable <- problemsToTable ttsubs
-            score <- totalScore synsubs transsubs dersubs ttsubs
+            syntable <- problemsToTable enrolledin synsubs
+            transtable <- problemsToTable enrolledin transsubs
+            dertable <- problemsToTable enrolledin dersubs
+            tttable <- problemsToTable enrolledin ttsubs
+            score <- totalScore enrolledin synsubs transsubs dersubs ttsubs
             defaultLayout $ do
                 setTitle "Welcome To Your Homepage!"
                 $(widgetFile "user")
@@ -69,6 +69,13 @@ getUserR ident = do
                                     <a href=@{AssignmentR $ assignmentMetadataFilename a}>
                                         #{assignmentMetadataFilename a}
                                 <td>#{show $ assignmentMetadataDuedate a}
+                        $maybe dd <- duedates $ courseData theclass
+                            $forall (num,date) <- M.toList dd
+                                <tr>
+                                    <td>
+                                        Problem Set #{show num}
+                                    <td>
+                                        #{formatted date}
                 |]
 
 --------------------------------------------------------
@@ -76,9 +83,9 @@ getUserR ident = do
 --------------------------------------------------------
 --functions for calculating grades
 
-toScore p = case assignment p of
+toScore theclass p = case assignment p of
                    Nothing -> 
-                        case utcDueDate (problem p) of                      
+                        case utcDueDate theclass (problem p) of                      
                               Just d -> if asUTC (submitted p) `laterThan` d       
                                             then return (2 :: Int)
                                             else return (5 :: Int)
@@ -95,12 +102,13 @@ toScore p = case assignment p of
                             
 scoreByIdAndClass theclass uid = 
         do (a,b,c,d) <- subsByIdAndSource theclass uid
-           totalScore a b c d
+           totalScore theclass a b c d
 
-totalScore a b c d = do
+totalScore theclass a b c d = do
            (a',b',c',d') <- (,,,) <$> score a <*> score b <*> score c <*> score d
            return $ a' + b' + c' + d'
-   where score xs = do xs' <- mapM toScore xs
+   where score :: Problem p => [p] -> Handler Int
+         score xs = do xs' <- mapM (toScore theclass) xs
                        return $ foldr (+) 0 xs'
 
 --------------------------------------------------------
@@ -116,52 +124,31 @@ toKansasLocal z = ZonedTime (utcToLocalTime centralDaylight z) centralDaylight
 
 formatted z = formatTime defaultTimeLocale "%l:%M %P %Z, %a %b %e, %Y" (toKansasLocal z)
 
-utcDueDate x = M.lookup (read $ unpack (takeWhile (/= '.') x) :: Int) dueDates
+utcDueDate theclass x = (duedates $ courseData theclass) >>= M.lookup (read $ unpack (takeWhile (/= '.') x) :: Int) 
 
 laterThan :: UTCTime -> UTCTime -> Bool
 laterThan t1 t2 = diffUTCTime t1 t2 > 0
 
--- TODO this should be pushed to a configuration file
--- remember, the day clicks over at midnight.
-dueDates :: M.Map Int UTCTime
-dueDates = M.fromList [( 1, toTime "11:59 pm CDT, Aug 30, 2016")
-                      ,( 2, toTime "11:30 am CDT, Sep 1, 2016")
-                      ,( 3, toTime "11:59 pm CDT, Sep 7, 2016")
-                      ,( 4, toTime "11:59 pm CDT, Sep 7, 2016")
-                      ,( 5, toTime "11:59 pm CDT, Sep 12, 2016")
-                      ,( 6, toTime "11:59 pm CDT, Sep 14, 2016")
-                      ,( 7, toTime "11:59 pm CDT, Sep 19, 2016")
-                      ,( 8, toTime "11:59 pm CDT, Oct 5, 2016")
-                      ,( 9, toTime "11:59 pm CDT, Oct 12, 2016")
-                      ,(10, toTime "11:59 pm CDT, Oct 12, 2016")
-                      ,(11, toTime "11:59 pm CDT, Oct 17, 2016")
-                      ,(12, toTime "11:59 pm CDT, Oct 19, 2016")
-                      ,(13, toTime "11:59 pm CDT, Oct 24, 2016")
-                      ,(14, toTime "11:59 pm CDT, Oct 26, 2016")
-                      ,(15, toTime "11:59 pm CDT, Nov 14, 2016")
-                      ,(16, toTime "11:59 pm CDT, Nov 18, 2016")
-                      ,(17, toTime "11:59 pm CDT, Dec 1, 2016")
-                      ]
-    where toTime = parseTimeOrError True defaultTimeLocale "%l:%M %P %Z, %b %e, %Y"
 
 --------------------------------------------------------
 --Blaze utility functions
 --------------------------------------------------------
 --functions for manipulating html
 
-problemsToTable xs = do rows <- mapM toRow xs
-                        return $ do B.table B.! class_ "table table-striped" $ do
-                                        B.col B.! style "width:50px"
-                                        B.col B.! style "width:100px"
-                                        B.col B.! style "width:100px"
-                                        B.col B.! style "width:100px"
-                                        B.thead $ do
-                                            B.th "Exercise"
-                                            B.th "Content"
-                                            B.th "Submitted"
-                                            B.th "Points Earned"
-                                        B.tbody $ sequence_ rows
-        where toRow p = do score <- toScore p 
+problemsToTable theclass xs = do 
+            rows <- mapM toRow xs
+            return $ do B.table B.! class_ "table table-striped" $ do
+                            B.col B.! style "width:50px"
+                            B.col B.! style "width:100px"
+                            B.col B.! style "width:100px"
+                            B.col B.! style "width:100px"
+                            B.thead $ do
+                                B.th "Exercise"
+                                B.th "Content"
+                                B.th "Submitted"
+                                B.th "Points Earned"
+                            B.tbody $ sequence_ rows
+        where toRow p = do score <- toScore theclass p 
                            return $ do
                               B.tr $ do B.td $ B.toHtml (takeWhile (/= ':') $ problem p)
                                         B.td $ B.toHtml (drop 1 . dropWhile (/= ':') $ problem p)

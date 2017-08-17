@@ -3,3 +3,6 @@ span.ruleaction
 
 span.ruleaction > span
     display:none;
+
+.card 
+    margin-bottom: 1rem;

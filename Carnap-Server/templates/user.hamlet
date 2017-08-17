@@ -8,33 +8,45 @@
     <div.row>
         <div.col-md-8>
             <div.card>
-                <h4.card-header> Due Dates
+                <div.card-header> Due Dates
                 <div.card-body>
                     ^{assignments}
         <div.col-md-4>
             <div.card>
-                <h4.card-header> Total Points Earned
+                <div.card-header> Total Points Earned
                 <div.card-body.text-center>
                     <span style="font-size:64pt; color:gray">
                         #{score}/#{pointsAvailable}
     <div>
     <h3 style="padding-top:10pt"> Completed Problems
     $if (not $ null synsubs)
-        <h4> Syntax Checking
-        #{syntable}
+        <div.card>
+            <div.card-header> 
+                Syntax Checking
+            <div.card-body>
+                #{syntable}
     $if (not $ null transsubs)
-        <h4> Translation
-        #{transtable}
+        <div.card>
+            <div.card-header>
+                Translation
+            <div.card-body>
+                #{transtable}
     $if (not $ null dersubs)
-        <h4> Derivation
-        #{dertable}
+        <div.card>
+            <div.card-header>
+                Derivation
+            <div.card-body>
+                #{dertable}
     $if (not $ null ttsubs)
-        <h4> Truth Tables
-        #{tttable}
+        <div.card>
+            <div.card-header>
+                Truth Tables
+            <div.card-body>
+                #{tttable}
     <h3> Your Profile
     $maybe rules <- derivedRules
         <div.card>
-            <h4.card-header> Derived Rules
+            <div.card-header> Derived Rules
             <div.derivedRules.card-body>
                 <table.table.table-striped>
                     <thead>
