@@ -13,12 +13,18 @@ import Data.Map.Lazy (Map, (!))
 import Data.Monoid as M
 import Carnap.Languages.Util.GenericConnectives
 
+--------------------------------------------------
+--  1. Data for Pure Propositional Modal Logic  --
+--------------------------------------------------
+
 --the semantic values in this language are intensions rather than boolean
 --values
 
 type World = Int
 
 type ModalProp = IntProp (World -> Bool)
+
+type Index = IntConst World
 
 data PropFrame = PropFrame { valuation :: World -> Bool
                            , accessibility :: Map World [World]
@@ -57,29 +63,31 @@ instance Modelable PropFrame PropModality where
 
 type ModalSchematicProp = SchematicIntProp (World -> Bool)
 
-type ModalPropLexicon = (Predicate ModalProp
+type ModalPropLanguageWith a = FixLang (CoreLexicon :|: a)
+        
+type CoreLexicon = Predicate ModalProp
                    :|: Predicate ModalSchematicProp
                    :|: Connective ModalConn
                    :|: Connective PropModality
                    :|: SubstitutionalVariable
-                   :|: EndLang)
+                   :|: EndLang
 
-instance BoundVars ModalPropLexicon
+instance BoundVars (CoreLexicon :|: a)
 
-type ModalPropLanguage = FixLang ModalPropLexicon
-
-instance CopulaSchema ModalPropLanguage
+type ModalPropLanguage = ModalPropLanguageWith EndLang
 
 type ModalForm = ModalPropLanguage (Form (World -> Bool))
 
-instance Eq ModalForm where
+instance CopulaSchema ModalPropLanguage
+
+instance UniformlyEq (ModalPropLanguageWith a) => Eq (ModalPropLanguageWith a b) where
         (==) = (=*)
 
-pattern MPred x arity  = Fx1 (Predicate x arity)
-pattern MSPred x arity = Fx2 (Predicate x arity)
-pattern MBCon x arity  = Fx3 (Connective x arity)
-pattern MMCon x arity  = Fx4 (Connective x arity)
-pattern MSV n          = Fx5 (SubVar n)
+pattern MPred x arity  = FX (Lx1 (Lx1 (Predicate x arity)))
+pattern MSPred x arity = FX (Lx1 (Lx2 (Predicate x arity)))
+pattern MBCon x arity  = FX (Lx1 (Lx3 (Connective x arity)))
+pattern MMCon x arity  = FX (Lx1 (Lx4 (Connective x arity)))
+pattern MSV n          = FX (Lx1 (Lx5 (SubVar n)))
 pattern MAnd           = MBCon And ATwo
 pattern MOr            = MBCon Or ATwo
 pattern MIf            = MBCon If ATwo
@@ -97,21 +105,21 @@ pattern MNeg x         = MNot :!$: x
 pattern MNec x         = MBox :!$: x
 pattern MPos x         = MDiamond :!$: x
 
-instance LangTypes1 ModalPropLexicon Form (World -> Bool)
+instance LangTypes1 (CoreLexicon :|: a) Form (World -> Bool)
 
-instance BooleanLanguage ModalForm where
+instance BooleanLanguage (ModalPropLanguageWith a (Form (World -> Bool))) where
         land = (:&:)
         lneg = MNeg
         lor  = (:||:)
         lif  = (:->:)
         liff = (:<->:)
 
-instance ModalLanguage ModalForm where
+instance ModalLanguage (ModalPropLanguageWith a (Form (World -> Bool))) where
         nec = MNec
         pos = MPos
 
-instance IndexedPropLanguage ModalForm where
+instance IndexedPropLanguage (ModalPropLanguageWith a (Form (World -> Bool))) where
         pn = MP
 
-instance IndexedSchemePropLanguage ModalForm where
+instance IndexedSchemePropLanguage (ModalPropLanguageWith a (Form (World -> Bool))) where
         phin = MPhi
