@@ -24,7 +24,6 @@ type World = Int
 
 type ModalProp = IntProp (World -> Bool)
 
-type Index = IntConst World
 
 data PropFrame = PropFrame { valuation :: World -> Bool
                            , accessibility :: Map World [World]
@@ -61,9 +60,23 @@ instance Modelable PropFrame PropModality where
         satisfies f Diamond = lift1 $ \f x -> M.getAny $ mconcat (map (M.Any . f) (ac x))
             where ac x = accessibility f ! x
 
+type Index = IntConst World
+--TODO: semantics?
+
 type ModalSchematicProp = SchematicIntProp (World -> Bool)
 
-type ModalPropLanguageWith a = FixLang (CoreLexicon :|: a)
+data WorldTheoryIndexer :: (* -> *) -> * -> * where
+        AtIndex :: WorldTheoryIndexer lang (Form (World -> Bool) -> Term World -> Form (World -> Bool))
+
+data IndexCons a where
+        IndexCons :: IndexCons (Term World -> Term World -> Term World)
+
+type IndexQuant = StandardQuant (World -> Bool) World
+
+-------------------------------------------
+--  2. Core Lexicon for Modal Languages  --
+-------------------------------------------
+
         
 type CoreLexicon = Predicate ModalProp
                    :|: Predicate ModalSchematicProp
@@ -72,13 +85,9 @@ type CoreLexicon = Predicate ModalProp
                    :|: SubstitutionalVariable
                    :|: EndLang
 
+type ModalPropLanguageWith a = FixLang (CoreLexicon :|: a)
+
 instance BoundVars (CoreLexicon :|: a)
-
-type ModalPropLanguage = ModalPropLanguageWith EndLang
-
-type ModalForm = ModalPropLanguage (Form (World -> Bool))
-
-instance CopulaSchema ModalPropLanguage
 
 instance UniformlyEq (ModalPropLanguageWith a) => Eq (ModalPropLanguageWith a b) where
         (==) = (=*)
@@ -105,7 +114,6 @@ pattern MNeg x         = MNot :!$: x
 pattern MNec x         = MBox :!$: x
 pattern MPos x         = MDiamond :!$: x
 
-instance LangTypes1 (CoreLexicon :|: a) Form (World -> Bool)
 
 instance BooleanLanguage (ModalPropLanguageWith a (Form (World -> Bool))) where
         land = (:&:)
@@ -123,3 +131,30 @@ instance IndexedPropLanguage (ModalPropLanguageWith a (Form (World -> Bool))) wh
 
 instance IndexedSchemePropLanguage (ModalPropLanguageWith a (Form (World -> Bool))) where
         phin = MPhi
+
+-------------------------------
+--  3. Basic Modal Language  --
+-------------------------------
+
+type ModalPropLexicon = (CoreLexicon :|: EndLang)
+
+type ModalPropLanguage = FixLang ModalPropLexicon
+
+instance LangTypes1 ModalPropLexicon Form (World -> Bool)
+
+type ModalForm = ModalPropLanguage (Form (World -> Bool))
+
+instance CopulaSchema ModalPropLanguage
+
+--------------------------------
+--  4. World Theory Language  --
+--------------------------------
+
+type WorldTheoryLexicon = WorldTheoryIndexer 
+                        :|: Function Index
+                        :|: Function IndexCons 
+                        :|: Quantifiers IndexQuant
+                        :|: EndLang
+
+type WorldTheoryPropLanguage = ModalPropLanguageWith WorldTheoryLexicon
+
