@@ -1,4 +1,4 @@
-{-#LANGUAGE TypeSynonymInstances, UndecidableInstances, FlexibleInstances, MultiParamTypeClasses, GADTs, DataKinds, PolyKinds, TypeOperators, ViewPatterns, PatternSynonyms, RankNTypes, FlexibleContexts, AutoDeriveTypeable #-}
+{-#LANGUAGE FlexibleInstances, MultiParamTypeClasses, GADTs, KindSignatures, TypeOperators, PatternSynonyms, FlexibleContexts, AutoDeriveTypeable #-}
 module Carnap.Languages.ModalPropositional.Syntax
      where
 
@@ -44,7 +44,16 @@ instance Evaluable ModalConn where
         eval And = lift2 $ \f g x -> f x && g x
         eval Not = lift1 $ \f x -> not $ f x
 
+type ModalConst = BooleanConst (World -> Bool)
+
 instance Modelable PropFrame ModalConn where
+    satisfies = const eval
+
+instance Evaluable ModalConst where
+        eval Verum = Form (const True)
+        eval Falsum = Form (const False)
+
+instance Modelable PropFrame ModalConst where
     satisfies = const eval
 
 type PropModality = Modality (World -> Bool)
@@ -68,8 +77,24 @@ type ModalSchematicProp = SchematicIntProp (World -> Bool)
 data WorldTheoryIndexer :: (* -> *) -> * -> * where
         AtIndex :: WorldTheoryIndexer lang (Form (World -> Bool) -> Term World -> Form (World -> Bool))
 
+instance FirstOrderLex (WorldTheoryIndexer lex)
+
+instance UniformlyEq (WorldTheoryIndexer lex) where
+        AtIndex =* AtIndex = True
+
+instance Schematizable (WorldTheoryIndexer lex) where
+        schematize AtIndex = \(x:y:_) -> x ++ "/" ++ y
+
 data IndexCons a where
         IndexCons :: IndexCons (Term World -> Term World -> Term World)
+
+instance Schematizable IndexCons where
+        schematize IndexCons = \(x:y:_) -> x ++ ";" ++ y
+
+instance FirstOrderLex IndexCons 
+
+instance UniformlyEq IndexCons where
+        IndexCons =* IndexCons = True
 
 type IndexQuant = StandardQuant (World -> Bool) World
 
@@ -82,6 +107,7 @@ type CoreLexicon = Predicate ModalProp
                    :|: Predicate ModalSchematicProp
                    :|: Connective ModalConn
                    :|: Connective PropModality
+                   :|: Connective ModalConst
                    :|: SubstitutionalVariable
                    :|: EndLang
 

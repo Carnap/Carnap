@@ -266,8 +266,10 @@ class ( FirstOrder (ClassicalSequentOver lex)
         --restrictions, based on given substitutions
         restriction :: r -> Maybe ([Equation (ClassicalSequentOver lex)] -> Maybe String)
         restriction _ = Nothing
+        
         indirectInference :: r -> Maybe IndirectArity
         indirectInference = const Nothing
+
         isAssumption :: r -> Bool
         isAssumption = const False
         --TODO: template for error messages, etc.
