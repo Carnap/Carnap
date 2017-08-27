@@ -21,8 +21,8 @@ import GHCJS.Marshal
 #endif
 import GHCJS.DOM
 import GHCJS.DOM.Types
-import Carnap.Core.Data.AbstractSyntaxDataTypes (Form, FixLang)
-import Carnap.Core.Data.AbstractSyntaxClasses (Schematizable)
+import Carnap.Core.Data.AbstractSyntaxDataTypes (Form, FixLang,)
+import Carnap.Core.Data.AbstractSyntaxClasses (Schematizable,UniformlyEq(..))
 import Carnap.Calculi.NaturalDeduction.Syntax
 import Carnap.Calculi.NaturalDeduction.Parser
 import Carnap.Calculi.NaturalDeduction.Checker
@@ -49,7 +49,7 @@ checkJSON v = do let Success (s,d,c,p) = parse parseReply v
                             do let Feedback mseq ds = toDisplaySequenceStructured processLineStructuredFitchHO ded
                                let fb = toJSON $ map serialize ds
                                return $ case mseq of 
-                                  Just seq@(_:|-: (SS s)) -> replyObject (s == liftToSequent conc) (show seq) fb ""
+                                  Just seq@(_:|-: (SS s)) -> replyObject (s =* liftToSequent conc) (show seq) fb ""
                                   Nothing ->  replyObject False "" fb ""
                         (_,Left e) -> return $ replyObject False "" nilson "couldn't parse conclusion"
                       else case (parseProofData parsePairProp d, P.parse (purePropFormulaParser extendedLetters) "" c) of
@@ -58,7 +58,7 @@ checkJSON v = do let Success (s,d,c,p) = parse parseReply v
                             do let Feedback mseq ds = toDisplaySequenceStructured processLineStructuredFitch ded
                                let fb = toJSON $ map serialize ds
                                return $ case mseq of 
-                                  Just seq@(_:|-: (SS s)) -> replyObject (s == liftToSequent conc) (show seq) fb ""
+                                  Just seq@(_:|-: (SS s)) -> replyObject (s =* liftToSequent conc) (show seq) fb ""
                                   Nothing ->  replyObject False "" fb ""
                         (_,Left e) -> return $ replyObject False "" nilson "couldn't parse conclusion"
 

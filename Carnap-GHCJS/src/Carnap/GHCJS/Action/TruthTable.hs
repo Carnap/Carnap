@@ -99,14 +99,15 @@ createValidityTruthTable w (antced :|-: (SS succed)) (i,o) ref =
            mpar@(Just par) <- getParentNode o
            appendChild par mbt
            return gRef
-    where forms = (Prelude.map fromSequent $ toListOf concretes antced) ++ [fromSequent succed]
+    where forms :: [PureForm]
+          forms = (Prelude.map fromSequent $ toListOf concretes antced) ++ (Prelude.map fromSequent $ toListOf concretes succed)
           implies v = not (and (Prelude.map (unform . satisfies v) (init forms))) || (unform . satisfies v $ last forms)
           unform (Form b) = b
           atomIndicies = nub . sort . concat $ (Prelude.map getIndicies forms) 
           toValuation l = \x -> x `elem` l
           valuations = (Prelude.map toValuation) . subsequences $ reverse atomIndicies
           orderedChildren =  concat $ Prelude.map (traverseBPT . toBPT. fromSequent) (toListOf concretes antced)
-                             ++ [[Left '⊢']] ++ [traverseBPT . toBPT. fromSequent $ succed]
+                             ++ [[Left '⊢']] ++ Prelude.map (traverseBPT . toBPT. fromSequent) (toListOf concretes succed)
           toRow' = toRow w atomIndicies orderedChildren o
           makeGridRef x y = newIORef (M.fromList [((z,w), True) | z <- [1..x], w <-[1.. y]])
           tryCounterexample w' = do mrow <- liftIO $ prompt w' "enter the truth values for your counterexample row" (Just "")

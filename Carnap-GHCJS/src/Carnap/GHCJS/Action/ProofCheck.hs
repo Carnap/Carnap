@@ -20,7 +20,7 @@ import Text.Parsec (parse)
 import Data.IORef (IORef, newIORef,writeIORef, readIORef, modifyIORef)
 import Data.Aeson as A
 import qualified Data.Map as M (fromList,map) 
-import Control.Lens.Fold (toListOf)
+import Control.Lens.Fold (toListOf,(^?))
 import Lib
 import Carnap.GHCJS.Widget.ProofCheckBox (checkerWith, CheckerOptions(..), Button(..), CheckerFeedbackUpdate(..))
 import Carnap.GHCJS.Widget.RenderDeduction
@@ -223,16 +223,19 @@ trySave drs ref w i = do isFinished <- liftIO $ readIORef ref
                                    let Feedback mseq _ = toDisplaySequence (ndProcessLine propCalc) . ndParseProof propCalc (M.fromList rules) $ v
                                    case mseq of
                                     Nothing -> message "A rule can't be extracted from this proof"
-                                    (Just (a :|-: (SS c))) -> do
+                                    (Just (a :|-: c)) -> do
                                         -- XXX : throw a more transparent error here if necessary
                                         let prems = map (toSchema . fromSequent) (toListOf concretes a)
-                                        let conc = (toSchema . fromSequent) c
-                                        mname <- prompt w "What name will you give this rule (use all capital letters!)" (Just "")
-                                        case mname of
-                                            (Just name) -> if allcaps name 
+                                        case c ^? concretes of
+                                            Nothing -> error "The formula type couldn't be decoded."
+                                            Just c' -> do
+                                                let conc = (toSchema . fromSequent) c'
+                                                mname <- prompt w "What name will you give this rule (use all capital letters!)" (Just "")
+                                                case mname of
+                                                    (Just name) -> if allcaps name 
                                                                then liftIO $ sendJSON (SaveDerivedRule name $ P.DerivedRule conc prems) loginCheck error
                                                                else message "rule name must be all capital letters"
-                                            Nothing -> message "No name entered"
+                                                    Nothing -> message "No name entered"
                            else message "not yet finished"
     where loginCheck c | c == "No User" = message "You need to log in before you can save a rule"
                        | c == "Clash"   = message "it appears you've already got a rule with this name"
