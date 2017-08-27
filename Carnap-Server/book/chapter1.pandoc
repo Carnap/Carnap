@@ -553,16 +553,12 @@ exampleSymmTreeWithDs =
   # centerXY # pad 1.1 <> rect 40 25
 ```
 
-</figure>
-
 In general we can recover the tree of a sentence by finding the last connective
 which was added, breaking it up into the one or two sentences that it was made
 out of, and repeating. To take another example: in the sentence $(((P\lor
 Q)\lor R)\rightarrow S)$, the connective $\rightarrow$ must have been added
 last (since it is wrapped in only one set of parentheses). So we can break the
 sentence up as 
-
-<figure>
 
 ```diagram
 exampleSymmTreeWithDs
@@ -586,12 +582,8 @@ exampleSymmTreeWithDs =
   # centerXY # pad 1.1 <> rect 40 25
 ```
 
-</figure>
-
 In $(((P\lor Q)\lor R)$, the $\lor$ must have been added last (since it is
 wrapped only once), so we can break as:
-
-<figure>
 
 ```diagram
 exampleSymmTreeWithDs
@@ -618,11 +610,7 @@ exampleSymmTreeWithDs =
   # centerXY # pad 1.1 <> rect 40 25
 ```
 
-</figure>
-
 Finally, in $(P \lor Q)$, $\lor$ was obviously added last. So we have:
-
-<figure>
 
 ```diagram
 exampleSymmTreeWithDs
@@ -651,8 +639,6 @@ exampleSymmTreeWithDs =
      tD)
   # centerXY # pad 1.1 <> rect 40 25
 ```
-
-</figure>
 
 We call the last connective to be added the *main connective* of the assertion.
 

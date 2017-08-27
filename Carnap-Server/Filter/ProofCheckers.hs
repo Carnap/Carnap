@@ -43,6 +43,11 @@ activate cls chunk
         ++ "<span> exercise " ++ numof h ++ "</span>"
         ++ "<div class=\"proofchecker forallxQL Render\"><div class=\"goal\">" ++ h ++ "</div>"
         ++ "<textarea>" ++ unlines t ++ "</textarea><div class=\"output\"></div></div></div>"
+    | "HardegreeSL" `elem` cls = RawBlock "html" $ 
+        "<div class=\"exercise\">"
+        ++ "<span> exercise " ++ numof h ++ "</span>"
+        ++ "<div class=\"proofchecker hardegreeSL Render\"><div class=\"goal\">" ++ h ++ "</div>"
+        ++ "<textarea>" ++ unlines t ++ "</textarea><div class=\"output\"></div></div></div>"
     | otherwise = RawBlock "html" "<div>No Matching Logic for Derivation</div>"
     where numof = takeWhile (/= ' ')
           (h:t) = formatChunk chunk

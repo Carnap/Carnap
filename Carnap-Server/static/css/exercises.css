@@ -1,6 +1,7 @@
 
 .exercise {
     display:inline-block;
+    min-width:100%;
     position:relative;
     padding:10pt;
     padding-top:15pt;
