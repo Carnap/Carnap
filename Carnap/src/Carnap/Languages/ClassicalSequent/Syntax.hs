@@ -24,8 +24,8 @@ data Sequent = Sequent
 data Cedent :: k -> * -> * where
         NilAntecedent    :: Cedent lang Antecedent
         NilSuccedent     :: Cedent lang Succedent
-        SingleAntecedent :: Cedent lang (Form Bool -> Antecedent)
-        SingleSuccedent  :: Cedent lang (Form Bool -> Succedent)
+        SingleAntecedent :: Typeable a => Cedent lang (a -> Antecedent)
+        SingleSuccedent  :: Typeable a => Cedent lang (a -> Succedent)
 
 instance Schematizable (Cedent a) where
         schematize NilAntecedent xs = "⊤"
@@ -178,12 +178,24 @@ infixr 6 ∴
 --2. Optics
 --------------------------------------------------------
 
--- TODO: Generalize to a typeclass
-concretes :: Traversal' (ClassicalSequentOver lex Antecedent) (ClassicalSequentOver lex (Form Bool))
-concretes f (a :+: a') = (:+:) <$> concretes f a <*> concretes f a'
-concretes f (SA x)     = SA <$> f x
-concretes f (GammaV n) = pure (GammaV n)
-concretes f (Top) = pure Top
+class Typeable a => Concretes lex a where
+    concretes :: Traversal' (ClassicalSequentOver lex b) (ClassicalSequentOver lex a)
+    concretes f (a :|-: a') = (:|-:) <$> concretes f a <*> concretes f a'
+    concretes f (a :+: a') = (:+:) <$> concretes f a <*> concretes f a'
+    concretes f (a :-: a') = (:-:) <$> concretes f a <*> concretes f a'
+    concretes f (SA (x :: ClassicalSequentOver lex b)) = 
+        case eqT :: Maybe (a :~: b) of
+            Just Refl -> SA <$> f x
+            Nothing -> pure (SA x)
+    concretes f (SS (x :: ClassicalSequentOver lex b)) = 
+        case eqT :: Maybe (a :~: b) of
+            Just Refl -> SS <$> f x
+            Nothing -> pure (SS x)
+    concretes f (GammaV n) = pure (GammaV n)
+    concretes f (Top) = pure Top
+    concretes f (Bot) = pure Bot
+
+instance Concretes lex (Form Bool)
 
 --------------------------------------------------------
 --3. Sequent Languages

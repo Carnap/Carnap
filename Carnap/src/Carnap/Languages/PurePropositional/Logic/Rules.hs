@@ -14,6 +14,7 @@ import Carnap.Languages.ClassicalSequent.Syntax
 import Carnap.Languages.ClassicalSequent.Parser
 import Carnap.Languages.Util.LanguageClasses
 import Carnap.Languages.Util.GenericConnectives
+import Data.Typeable
 
 --------------------------------------------------------
 --1 Propositional Sequent Calculus
@@ -30,6 +31,7 @@ pattern SeqSP x arity     = FX (Lx2 (Lx2 (Predicate x arity)))
 pattern SeqCon x arity    = FX (Lx2 (Lx3 (Connective x arity)))
 pattern LFalsum           = FX (Lx2 (Lx6 (Connective Falsum AZero)))
 pattern SeqProp n         = SeqP (Prop n) AZero
+pattern SeqPhi :: Int -> PropSequentCalc (Form Bool)
 pattern SeqPhi n          = SeqSP (SProp n) AZero
 pattern SeqAnd            = SeqCon And ATwo
 pattern SeqOr             = SeqCon Or ATwo
@@ -48,34 +50,34 @@ data PropSeqLabel = PropSeqFO | PropSeqACUI
 instance Eq (PropSequentCalc a) where
         (==) = (=*)
 
-instance Combineable PropSequentCalc PropSeqLabel where
+-- instance Combineable PropSequentCalc PropSeqLabel where
 
-    getLabel Top               = PropSeqACUI
-    getLabel (_ :+: _)         = PropSeqACUI
-    getLabel (GammaV _)        = PropSeqACUI
-    --getLabel (SA     _)        = PropSeqACUI
-    getLabel _                 = PropSeqFO
+--     getLabel Top               = PropSeqACUI
+--     getLabel (_ :+: _)         = PropSeqACUI
+--     getLabel (GammaV _)        = PropSeqACUI
+--     --getLabel (SA     _)        = PropSeqACUI
+--     getLabel _                 = PropSeqFO
 
-    getAlgo PropSeqFO   = foUnifySys
-    getAlgo PropSeqACUI = acuiUnifySys
+--     getAlgo PropSeqFO   = foUnifySys
+--     getAlgo PropSeqACUI = acuiUnifySys
 
-    replaceChild (_ :&-: x)   pig 0 = unEveryPig pig :&-: x
-    replaceChild (x :&-: _)   pig 1 = x :&-: unEveryPig pig
-    replaceChild (_ :||-: x)  pig 0 = unEveryPig pig :||-: x
-    replaceChild (x :||-: _)  pig 1 = x :||-: unEveryPig pig
-    replaceChild (_ :->-: x)  pig 0 = unEveryPig pig :->-: x
-    replaceChild (x :->-: _)  pig 1 = x :->-: unEveryPig pig
-    replaceChild (_ :<->-: x) pig 0 = unEveryPig pig :<->-: x
-    replaceChild (x :<->-: _) pig 1 = x :<->-: unEveryPig pig
-    replaceChild (_ :+: x)    pig 0 = unEveryPig pig :+: x
-    replaceChild (x :+: _)    pig 1 = x :+: unEveryPig pig
-    replaceChild (_ :-: x)    pig 0 = unEveryPig pig :-: x
-    replaceChild (x :-: _)    pig 1 = x :-: unEveryPig pig
-    replaceChild (_ :|-: x)   pig 0 = unEveryPig pig :|-: x
-    replaceChild (x :|-: _)   pig 1 = x :|-: unEveryPig pig
-    replaceChild (SeqNeg _)   pig _ = SeqNeg $ unEveryPig pig
-    replaceChild (SS _ )      pig _ = SS $ unEveryPig pig 
-    replaceChild (SA _ )      pig _ = SA $ unEveryPig pig
+--     replaceChild (_ :&-: x)   pig 0 = unEveryPig pig :&-: x
+--     replaceChild (x :&-: _)   pig 1 = x :&-: unEveryPig pig
+--     replaceChild (_ :||-: x)  pig 0 = unEveryPig pig :||-: x
+--     replaceChild (x :||-: _)  pig 1 = x :||-: unEveryPig pig
+--     replaceChild (_ :->-: x)  pig 0 = unEveryPig pig :->-: x
+--     replaceChild (x :->-: _)  pig 1 = x :->-: unEveryPig pig
+--     replaceChild (_ :<->-: x) pig 0 = unEveryPig pig :<->-: x
+--     replaceChild (x :<->-: _) pig 1 = x :<->-: unEveryPig pig
+--     replaceChild (_ :+: x)    pig 0 = unEveryPig pig :+: x
+--     replaceChild (x :+: _)    pig 1 = x :+: unEveryPig pig
+--     replaceChild (_ :-: x)    pig 0 = unEveryPig pig :-: x
+--     replaceChild (x :-: _)    pig 1 = x :-: unEveryPig pig
+--     replaceChild (_ :|-: x)   pig 0 = unEveryPig pig :|-: x
+--     replaceChild (x :|-: _)   pig 1 = x :|-: unEveryPig pig
+--     replaceChild (SeqNeg _)   pig _ = SeqNeg $ unEveryPig pig
+--     replaceChild (SS _ )      pig _ = SS $ unEveryPig pig 
+--     replaceChild (SA _ )      pig _ = SA $ unEveryPig pig
 
 instance ParsableLex (Form Bool) PurePropLexicon where
         langParser = purePropFormulaParser standardLetters
