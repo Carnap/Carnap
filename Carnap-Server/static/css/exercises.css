@@ -5,6 +5,7 @@
     padding:10pt;
     padding-top:15pt;
     margin:10pt;
+    min-width:100%;
     border: solid 1pt #dddddd;
 }
 
@@ -16,6 +17,7 @@
     padding:5px;
 }
 
+/* FIXME this need to be narrower, and to wrap, for mobile. */
 .translate input {
     width: 400pt;
 }
