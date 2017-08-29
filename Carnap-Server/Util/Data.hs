@@ -58,11 +58,16 @@ courseData :: CourseEnrollment -> CourseMetadata
 courseData Birmingham2017 = blankCourse SalvatoreFlorio "Logic - University of Birmingham"
 courseData KSUSymbolicI2017 = (blankCourse GrahamLeachKrouse "Symbolic Logic I - Kansas State University")
     { sourceOf = Just CarnapTextbook
-    , duedates = Just $ M.fromList []
-    --[( 1, toTime "11:59 pm CDT, Aug 30, 2016")]
+    , pointsOf = 50
+    , duedates = Just $ M.fromList
+    [( 1, toTime "11:59 pm CDT, Aug 30, 2017")]
     }
 courseData KSUIntroToFormal2017 = (blankCourse GrahamLeachKrouse "Introduction to Formal Logic - Kansas State University")
-    {sourceOf = Just CarnapTextbook}
+    { sourceOf = Just CarnapTextbook
+    , pointsOf = 50
+    , duedates = Just $ M.fromList
+    [( 1, toTime "11:59 pm CDT, Aug 30, 2017")]
+    }
 courseData KSUModalLogic2017 = (blankCourse GrahamLeachKrouse "Modal Logic (independent study) - Kansas State University")
 courseData (SandboxCourse i) = blankCourse i "Sandbox Course"
 
