@@ -24,6 +24,7 @@ type World = Int
 
 type ModalProp = IntProp (World -> Bool)
 
+type ModalSchematicPred = SchematicIntPred (World -> Bool) World
 
 data PropFrame = PropFrame { valuation :: World -> Bool
                            , accessibility :: Map World [World]
@@ -72,6 +73,8 @@ instance Modelable PropFrame PropModality where
 type Index = IntConst World
 --TODO: semantics?
 
+type IndexScheme = SchematicIntFunc World World
+
 type ModalSchematicProp = SchematicIntProp (World -> Bool)
 
 data WorldTheoryIndexer :: (* -> *) -> * -> * where
@@ -111,7 +114,7 @@ type CoreLexicon = Predicate ModalProp
                    :|: SubstitutionalVariable
                    :|: EndLang
 
-type ModalPropLanguageWith a = FixLang (CoreLexicon :|: a)
+type ModalPropLanguageWith a = FixLang (CoreLexicon :|: a :|: EndLang)
 
 instance BoundVars (CoreLexicon :|: a)
 
@@ -140,7 +143,6 @@ pattern MNeg x         = MNot :!$: x
 pattern MNec x         = MBox :!$: x
 pattern MPos x         = MDiamond :!$: x
 
-
 instance BooleanLanguage (ModalPropLanguageWith a (Form (World -> Bool))) where
         land = (:&:)
         lneg = MNeg
@@ -162,7 +164,7 @@ instance IndexedSchemePropLanguage (ModalPropLanguageWith a (Form (World -> Bool
 --  3. Basic Modal Language  --
 -------------------------------
 
-type ModalPropLexicon = (CoreLexicon :|: EndLang)
+type ModalPropLexicon = (CoreLexicon :|: EndLang :|: EndLang)
 
 type ModalPropLanguage = FixLang ModalPropLexicon
 
@@ -180,6 +182,8 @@ type WorldTheoryLexicon = WorldTheoryIndexer
                         :|: Function Index
                         :|: Function IndexCons 
                         :|: Quantifiers IndexQuant
+                        :|: Function IndexScheme
+                        :|: Predicate ModalSchematicPred
                         :|: EndLang
 
 type WorldTheoryPropLanguage = ModalPropLanguageWith WorldTheoryLexicon
