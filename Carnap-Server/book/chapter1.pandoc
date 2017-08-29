@@ -275,7 +275,6 @@ logical form confers validity on the arguments that have it:
 
  But what about this argument?
 
-
 > | 1. <span class="premise">Nothing is better than world peace.</span>
 > | 2. <span class="premise">Cold pizza is better than nothing.</span>
 > | <span class="conclusion">Cold pizza is better than world peace. </span>

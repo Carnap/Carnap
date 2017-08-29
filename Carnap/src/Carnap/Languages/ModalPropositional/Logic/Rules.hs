@@ -69,8 +69,7 @@ modusTollens = [ GammaV 1 :|-: SS (SeqPhi 1 :->-: SeqPhi 2)
                , GammaV 2 :|-: SS (SeqNeg $ SeqPhi 2)
                ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (SeqNeg $ SeqPhi 1)
 
-axiom = [
-        ] ∴ SA (SeqPhi 1) :|-: SS (SeqPhi 1)
+axiom = [] ∴ SA (SeqPhi 1) :|-: SS (SeqPhi 1)
 
 identityRule = [ GammaV 1 :|-: SS (SeqPhi 1) 
                ] ∴ GammaV 1 :|-: SS (SeqPhi 1)
