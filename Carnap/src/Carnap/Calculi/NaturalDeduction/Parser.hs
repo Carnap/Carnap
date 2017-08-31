@@ -141,7 +141,7 @@ toProofTreeMontegue ded n = case ded !! (n - 1)  of
                       matchShow = let ded' = drop n ded in
                           case findIndex (qedAt d) ded' of
                               Nothing -> err "Open subproof (no corresponding QED)"
-                              Just m' -> isSubProof n (n + m') --XXX : math is off here?
+                              Just m' -> isSubProof n (n + m')
                       isSubProof n m = case lineRange n m of
                         (h:t) -> if all (\x -> depth x > depth h) t
                                    then Right m 
