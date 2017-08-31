@@ -70,8 +70,21 @@ instance Modelable PropFrame PropModality where
         satisfies f Diamond = lift1 $ \f x -> M.getAny $ mconcat (map (M.Any . f) (ac x))
             where ac x = accessibility f ! x
 
-type Index = IntConst World
+data Index a where
+        Index :: Int -> Index (Term World)
 --TODO: semantics?
+
+instance Schematizable Index where
+        schematize (Index n) _ = show n
+
+instance UniformlyEq Index where
+        (Index n) =* (Index m) = n == m
+
+instance Monad m => MaybeMonadVar Index m
+
+instance MaybeStaticVar Index
+
+instance FirstOrderLex Index 
 
 type IndexScheme = SchematicIntFunc World World
 
@@ -188,3 +201,9 @@ type WorldTheoryLexicon = WorldTheoryIndexer
 
 type WorldTheoryPropLanguage = ModalPropLanguageWith WorldTheoryLexicon
 
+instance CopulaSchema WorldTheoryPropLanguage
+
+type WorldTheoryForm = WorldTheoryPropLanguage (Form (World -> Bool))
+
+atWorld :: WorldTheoryForm -> Int -> WorldTheoryForm
+atWorld x n = FX (Lx2 (Lx1 AtIndex)) :!$: x :!$: FX (Lx2 (Lx2 (Function (Index n) AZero)))
