@@ -141,12 +141,12 @@ toProofTreeMontegue ded n = case ded !! (n - 1)  of
                       matchShow = let ded' = drop n ded in
                           case findIndex (qedAt d) ded' of
                               Nothing -> err "Open subproof (no corresponding QED)"
-                              Just m' -> isSubProof n (n + m' - 1)
+                              Just m' -> isSubProof n (n + m') --XXX : math is off here?
                       isSubProof n m = case lineRange n m of
                         (h:t) -> if all (\x -> depth x > depth h) t
-                                   then Right (m + 1)
-                                   else  err $ "Open subproof on lines" ++ show n ++ " to " ++ show m ++ " (no QED in this subproof)"
-                        []    -> Right (m+1)
+                                   then Right m 
+                                   else err $ "Open subproof starting on " ++ show n ++ " (indented subproof ends before QED line at " ++ show (m + 1) ++ ")"
+                        []    -> Right (m + 1)
                       qedAt d (QedLine _ dpth _) = d == dpth
                       qedAt d _ = False
           (QedLine _ _ _) -> err "A QED line cannot be cited as a justification" 
@@ -271,7 +271,6 @@ toProofTreeFitch ded n = case ded !! (n - 1)  of
             -- where an assumption can occur
             where begin = ded !! (m - 1)
                   end = ded !! (n - 1)
-
 
 {- | 
 In a Hardegree deduction, find the prooftree corresponding to
