@@ -205,5 +205,6 @@ instance CopulaSchema WorldTheoryPropLanguage
 
 type WorldTheoryForm = WorldTheoryPropLanguage (Form (World -> Bool))
 
+--small convenience function for parsing
 atWorld :: WorldTheoryForm -> Int -> WorldTheoryForm
 atWorld x n = FX (Lx2 (Lx1 AtIndex)) :!$: x :!$: FX (Lx2 (Lx2 (Function (Index n) AZero)))
