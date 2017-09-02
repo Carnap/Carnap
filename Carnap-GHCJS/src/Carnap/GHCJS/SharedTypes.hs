@@ -12,7 +12,7 @@ import Carnap.Languages.PurePropositional.Logic (DerivedRule(..))
 import Carnap.Languages.PurePropositional.Parser
 
 data ProblemSource = Book
-                   | BirminghamAssignment
+                   | Assignment String
         deriving (Generic, Show, Read, Eq)
 
 instance ToJSON ProblemSource
