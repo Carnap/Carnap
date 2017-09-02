@@ -74,6 +74,8 @@ courseData KSUIntroToFormal2017 = (blankCourse GrahamLeachKrouse "Introduction t
         ]
     }
 courseData KSUModalLogic2017 = (blankCourse GrahamLeachKrouse "Modal Logic (independent study) - Kansas State University")
+    { pointsOf = 25
+    }
 courseData (SandboxCourse i) = blankCourse i "Sandbox Course"
 
 --TODO use an enum to generate these
