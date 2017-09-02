@@ -298,14 +298,11 @@ toProofTreeHardegree ded n = case ded !! (n - 1)  of
                    return $ Node (ProofLine n (SS $ liftToSequent f) r) deps'
                 where checkDep depline = takeRange depline n >>= scan
                       matchShow = let ded' = drop n ded in
-                          case findIndex (\l -> depth l == d) ded' of
-                              Nothing -> isSubProof n (length ded)
-                              Just m' -> isSubProof n (n + m')
-                      isSubProof n m = case lineRange n m of
-                        (h:t) -> if all (\x -> depth x > depth h) t
-                                   then Right m
-                                   else  err $ "Open subproof on lines" ++ show n ++ " to " ++ show m
-                        []    -> Right (m+1)
+                          case findIndex (\l -> depth l <= d) ded' of
+                              Nothing -> Right (length ded)
+                              Just m' -> Right (n + m')
+                                  -- XXX: since we're looking for the line number, starting at 1,
+                                  -- the index (starting at zero) of the next line is actually what we want
           (PartialLine _ e _) -> Left $ NoParse e n
 
     where err :: String -> Either (ProofErrorMessage lex) a
