@@ -65,8 +65,13 @@ pattern SeqCons x y       = SeqIdxCons IndexCons ATwo :!$: x :!$: y
 instance Eq (WorldTheorySequentCalc a) where
         (==) = (=*)
 
+instance ParsableLex (Form (World -> Bool)) WorldTheoryLexicon where
+        langParser = worldTheoryPropFormulaParser
+
 phi :: Int -> WorldTheorySequentCalc (Term World) -> WorldTheorySequentCalc (Form (World -> Bool))
 phi n x = SeqPPhi n :!$: x
+
+worldTheorySeqParser = seqFormulaParser :: Parsec String u (WorldTheorySequentCalc Sequent)
 
 -------------------------
 --  1.1 Standard Rules  --
@@ -325,17 +330,17 @@ materialConditionalVariations =  [
                 ] ∴ GammaV 1 :|-: SS (SeqPhi 2 :->-: SeqPhi 1)
             ]
 
-existentialDerivation = [
-                            [ GammaV 1 :+:  SA (phi 1 SomeWorld) :|-: SS (SeqPhi 1) 
-                            , GammaV 2 :|-: SS (SeqBind (Some "v") $ phi 1)   
-                            , SA (phi 1 SomeWorld) :|-: SS (phi 1 SomeWorld)            
-                            ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (SeqPhi 1)      
-                        ,
-                            [ GammaV 1 :|-: SS (SeqPhi 1)
-                            , SA (phi 1 SomeWorld) :|-: SS (phi 1 SomeWorld)
-                            , GammaV 2 :|-: SS (SeqBind (Some "v") $ phi 1)
-                            ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (SeqPhi 1)
-                        ]
+worldTheoryexistentialDerivation = [
+                                       [ GammaV 1 :+:  SA (phi 1 SomeWorld) :|-: SS (SeqPhi 1) 
+                                       , GammaV 2 :|-: SS (SeqBind (Some "v") $ phi 1)   
+                                       , SA (phi 1 SomeWorld) :|-: SS (phi 1 SomeWorld)            
+                                       ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (SeqPhi 1)      
+                                   ,
+                                       [ GammaV 1 :|-: SS (SeqPhi 1)
+                                       , SA (phi 1 SomeWorld) :|-: SS (phi 1 SomeWorld)
+                                       , GammaV 2 :|-: SS (SeqBind (Some "v") $ phi 1)
+                                       ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (SeqPhi 1)
+                                   ]
 
 -----------------------------------
 --  1.2.1.1 Bidirectional Rules  --

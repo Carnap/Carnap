@@ -101,6 +101,9 @@ instance UniformlyEq (WorldTheoryIndexer lex) where
 instance Schematizable (WorldTheoryIndexer lex) where
         schematize AtIndex = \(x:y:_) -> x ++ "/" ++ y
 
+instance ReLex (WorldTheoryIndexer) where
+        relex AtIndex = AtIndex
+
 data IndexCons a where
         IndexCons :: IndexCons (Term World -> Term World -> Term World)
 
