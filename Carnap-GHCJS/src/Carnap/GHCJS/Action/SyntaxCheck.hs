@@ -76,7 +76,7 @@ tryMatch o ref w sf = onEnter $ do (Just t) <- target :: EventM HTMLInputElement
                                                  modifyIORef ref (_4 .~ s)
                                                  (_,_,t,_) <- readIORef ref
                                                  redraw (head (cs ++ xs)) t
-              shorten x xs s = case xs of [] -> liftIO $ do setInnerHTML o (Just "success!") 
+              shorten x xs s = case xs of [] -> liftIO $ do setInnerHTML o (Just "success! You may now submit your soultion") 
                                                             modifyIORef ref (_2 .~ []) 
                                           _  -> updateGoal x [] xs s 
               resetGoal = do (f,_,_,_) <- liftIO $ readIORef ref
