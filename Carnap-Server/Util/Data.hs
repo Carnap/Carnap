@@ -56,7 +56,7 @@ blankCourse instructor name = CourseMetadata
 
 courseData :: CourseEnrollment -> CourseMetadata
 courseData Birmingham2017 = blankCourse SalvatoreFlorio "Logic - University of Birmingham"
-courseData KSUSymbolicI2017 = (blankCourse GrahamLeachKrouse "Symbolic Logic I - Kansas State University")
+courseData KSUSymbolicI2017 = (blankCourse GrahamLeachKrouse "Symbolic Logic I - PHILO320 - Kansas State University")
     { sourceOf = Just CarnapTextbook
     , pointsOf = 150
     , duedates = Just $ M.fromList
@@ -65,7 +65,7 @@ courseData KSUSymbolicI2017 = (blankCourse GrahamLeachKrouse "Symbolic Logic I -
         , ( 3, toTime "11:59 pm CDT, Sep 6, 2017")
         ]
     }
-courseData KSUIntroToFormal2017 = (blankCourse GrahamLeachKrouse "Introduction to Formal Logic - Kansas State University")
+courseData KSUIntroToFormal2017 = (blankCourse GrahamLeachKrouse "Introduction to Formal Logic - PHILO110 - Kansas State University")
     { sourceOf = Just CarnapTextbook
     , pointsOf = 100
     , duedates = Just $ M.fromList
