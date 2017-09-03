@@ -57,7 +57,7 @@ tryMatch o ref w sf = onEnter $ do (Just t) <- target :: EventM HTMLInputElement
                                    (f,forms,ft, s) <- liftIO $ readIORef ref
                                    setValue t (Just "")
                                    case forms of
-                                       [] -> setInnerHTML o (Just "success!")
+                                       [] -> setInnerHTML o (Just "success! You may now submit your solution")
                                        x:xs -> case matchMC ival (fst x) of
                                            Right b -> if b 
                                                then case children (fst x) of 
