@@ -409,9 +409,9 @@ this is pretty awkward. A better way to eliminate the ambiguity is to use
 *parentheses* to stick together the units that are supposed to go
 together---the units that we do not unpack until further down the tree. 
 
-So we might express the first reading of the sentence by writing "I shot (an
-elephant in my pajamas)", and the second by writing "I (shot an elephant) in my
-pajamas".[^3]
+So we might express the first reading of the sentence by writing "I ((shot an
+elephant) in my pajamas)", and the second by writing "I (shot (an elephant in
+my pajamas))".[^3]
 
 [^3]:: This idea may seem unfamiliar, but it is actually something
 that you have been doing for a long time. If you know the difference between
