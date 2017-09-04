@@ -9,10 +9,12 @@ import Carnap.Core.Data.AbstractSyntaxDataTypes (liftLang, FixLang, CopulaSchema
 import Carnap.Core.Data.AbstractSyntaxClasses (Schematizable)
 import Carnap.Languages.ClassicalSequent.Syntax
 import Carnap.Languages.PurePropositional.Logic as P 
-    ( DerivedRule(..), logicBookCalc, magnusSLCalc, magnusSLPlusCalc, propCalc, hardegreeSLCalc
+    (DerivedRule(..), logicBookCalc, magnusSLCalc, magnusSLPlusCalc, propCalc, hardegreeSLCalc
     , thomasBolducAndZachTFLCalc) 
 import Carnap.Languages.PureFirstOrder.Logic as FOL 
     (DerivedRule(..), folCalc, magnusQLCalc, thomasBolducAndZachFOLCalc) 
+import Carnap.Languages.ModalPropositional.Logic as MPL
+    (hardegreeWTLCalc)
 import Carnap.Languages.PureSecondOrder.Logic (msolCalc, psolCalc) 
 import Carnap.Languages.PurePropositional.Util (toSchema)
 import Carnap.GHCJS.SharedTypes
@@ -88,15 +90,16 @@ activateChecker ::  IORef [(String,P.DerivedRule)] -> Document -> Maybe IOGoal -
 activateChecker _ _ Nothing  = return ()
 activateChecker drs w (Just iog@(IOGoal i o g classes))
         | "firstOrder" `elem` classes             = tryParse buildOptions folCalc Nothing
-        | "magnusQL" `elem` classes               = tryParse buildOptions magnusQLCalc Nothing
-        | "thomasBolducAndZachTFL" `elem` classes = tryParse buildOptions thomasBolducAndZachTFLCalc (Just drs)
-        | "thomasBolducAndZachFOL" `elem` classes = tryParse buildOptions thomasBolducAndZachFOLCalc (Just drs)
         | "secondOrder" `elem` classes            = tryParse buildOptions msolCalc (Just drs)
         | "polyadicSecondOrder" `elem` classes    = tryParse buildOptions psolCalc (Just drs)
         | "LogicBook" `elem` classes              = tryParse buildOptions logicBookCalc (Just drs)
         | "magnusSL" `elem` classes               = tryParse buildOptions magnusSLCalc (Just drs)
-        | "hardegreeSL" `elem` classes            = tryParse buildOptions hardegreeSLCalc (Just drs)
         | "magnusSLPlus" `elem` classes           = tryParse buildOptions magnusSLPlusCalc(Just drs)
+        | "magnusQL" `elem` classes               = tryParse buildOptions magnusQLCalc Nothing
+        | "thomasBolducAndZachTFL" `elem` classes = tryParse buildOptions thomasBolducAndZachTFLCalc (Just drs)
+        | "thomasBolducAndZachFOL" `elem` classes = tryParse buildOptions thomasBolducAndZachFOLCalc (Just drs)
+        | "hardegreeSL" `elem` classes            = tryParse buildOptions hardegreeSLCalc (Just drs)
+        | "hardegreeWTL" `elem` classes           = tryParse buildOptions hardegreeWTLCalc (Just drs)
         | otherwise                               = tryParse buildOptions propCalc (Just drs)
         where tryParse options calc mdrs = do
                   memo <- newIORef mempty
