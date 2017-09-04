@@ -13,44 +13,22 @@ makeProofChecker cb@(CodeBlock (_,classes,_) contents)
 makeProofChecker x = x
 
 activate cls chunk
-    | "Prop" `elem` cls = RawBlock "html" $ 
-        "<div class=\"exercise\">"
-        ++ "<span> exercise " ++ numof h ++ "</span>"
-        ++ "<div class=\"proofchecker prop\"><div class=\"goal\">" ++ h ++ "</div>"
-        ++ "<textarea>" ++ unlines t ++ "</textarea><div class=\"output\"></div></div></div>"
-    | "FirstOrder" `elem` cls = RawBlock "html" $ 
-        "<div class=\"exercise\">"
-        ++ "<span> exercise " ++ numof h ++ "</span>"
-        ++ "<div class=\"proofchecker firstOrder\"><div class=\"goal\">" ++ h ++ "</div>"
-        ++ "<textarea>" ++ unlines t ++ "</textarea><div class=\"output\"></div></div></div>"
-    | "LogicBook" `elem` cls = RawBlock "html" $ 
-        "<div class=\"exercise\">"
-        ++ "<span> exercise " ++ numof h ++ "</span>"
-        ++ "<div class=\"proofchecker LogicBook\"><div class=\"goal\">" ++ h ++ "</div>"
-        ++ "<textarea>" ++ unlines t ++ "</textarea><div class=\"output\"></div></div></div>"
-    | "ForallxSL" `elem` cls = RawBlock "html" $ 
-        "<div class=\"exercise\">"
-        ++ "<span> exercise " ++ numof h ++ "</span>"
-        ++ "<div class=\"proofchecker magnusSL Render\"><div class=\"goal\">" ++ h ++ "</div>"
-        ++ "<textarea>" ++ unlines t ++ "</textarea><div class=\"output\"></div></div></div>"
-    | "ForallxSLPlus" `elem` cls = RawBlock "html" $ 
-        "<div class=\"exercise\">"
-        ++ "<span> exercise " ++ numof h ++ "</span>"
-        ++ "<div class=\"proofchecker magnusSLPlus Render\"><div class=\"goal\">" ++ h ++ "</div>"
-        ++ "<textarea>" ++ unlines t ++ "</textarea><div class=\"output\"></div></div></div>"
-    | "ForallxQL" `elem` cls = RawBlock "html" $ 
-        "<div class=\"exercise\">"
-        ++ "<span> exercise " ++ numof h ++ "</span>"
-        ++ "<div class=\"proofchecker magnusQL Render\"><div class=\"goal\">" ++ h ++ "</div>"
-        ++ "<textarea>" ++ unlines t ++ "</textarea><div class=\"output\"></div></div></div>"
-    | "HardegreeSL" `elem` cls = RawBlock "html" $ 
-        "<div class=\"exercise\">"
-        ++ "<span> exercise " ++ numof h ++ "</span>"
-        ++ "<div class=\"proofchecker hardegreeSL Render\"><div class=\"goal\">" ++ h ++ "</div>"
-        ++ "<textarea>" ++ unlines t ++ "</textarea><div class=\"output\"></div></div></div>"
+    | "Prop" `elem` cls = actTemplate "proofchecker prop"
+    | "FirstOrder" `elem` cls = actTemplate "proofchecker firstOrder"
+    | "LogicBook" `elem` cls = actTemplate "proofchecker LogicBook"
+    | "ForallxSL" `elem` cls = actTemplate "proofchecker magnusSL Render"
+    | "ForallxSLPlus" `elem` cls = actTemplate "proofchecker magnusSLPlus Render"
+    | "ForallxQL" `elem` cls = actTemplate "proofchecker magnusQL Render"
+    | "HardegreeSL" `elem` cls = actTemplate "proofchecker hardegreeSL Render"
+    | "HardegreeWTL" `elem` cls = actTemplate "proofchecker hardegreeWTL Render"
     | otherwise = RawBlock "html" "<div>No Matching Logic for Derivation</div>"
     where numof = takeWhile (/= ' ')
           (h:t) = formatChunk chunk
+          actTemplate opts = RawBlock "html" $ 
+                "<div class=\"exercise\">"
+                ++ "<span> exercise " ++ numof h ++ "</span>"
+                ++ "<div class=\"" ++ opts ++ "\"><div class=\"goal\">" ++ h ++ "</div>"
+                ++ "<textarea>" ++ unlines t ++ "</textarea><div class=\"output\"></div></div></div>"
 
 splitIt [] = ([],[])
 splitIt l = case break (== '\n') l of
