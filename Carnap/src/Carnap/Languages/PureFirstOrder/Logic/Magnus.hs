@@ -1,4 +1,4 @@
-{-#LANGUAGE  FlexibleContexts,  FlexibleInstances, MultiParamTypeClasses #-}
+{-#LANGUAGE  TypeOperators, FlexibleContexts,  FlexibleInstances, MultiParamTypeClasses #-}
 module Carnap.Languages.PureFirstOrder.Logic.Magnus (magnusQLCalc,parseMagnusQL) where
 
 import Data.Map as M (lookup, Map,empty)
@@ -6,6 +6,7 @@ import Text.Parsec
 import Carnap.Core.Data.AbstractSyntaxDataTypes (Form)
 import Carnap.Languages.PureFirstOrder.Syntax
 import Carnap.Languages.PureFirstOrder.Parser
+import Carnap.Languages.ClassicalSequent.Syntax
 import qualified Carnap.Languages.PurePropositional.Logic as P
 import Carnap.Calculi.NaturalDeduction.Syntax
 import Carnap.Calculi.NaturalDeduction.Parser
@@ -35,7 +36,7 @@ instance Show MagnusQL where
         show IDE1        = "=E"
         show IDE2        = "=E"
 
-instance Inference MagnusQL PureLexiconFOL where
+instance Inference MagnusQL PureLexiconFOL (Form Bool) where
 
          ruleOf UI   = universalGeneralization
          ruleOf UE   = universalInstantiation
@@ -58,10 +59,10 @@ instance Inference MagnusQL PureLexiconFOL where
             | x `elem` [ EE1,EE2 ] = Just assumptiveProof
             | otherwise = Nothing
 
-         restriction UI    = Just (eigenConstraint (SeqT 1) (ss (PBind (All "v") $ phi 1)) (GammaV 1))
-         restriction EE1   = Just (eigenConstraint (SeqT 1) (ss (PBind (Some "v") $ phi 1) :-: ss (phin 1)) (GammaV 1 :+: GammaV 2))
+         restriction UI    = Just (eigenConstraint (SeqT 1) (ss (PBind (All "v") $ phi 1)) (fogamma 1))
+         restriction EE1   = Just (eigenConstraint (SeqT 1) (ss (PBind (Some "v") $ phi 1) :-: ss (phin 1)) (fogamma 1 :+: fogamma 2))
          restriction EE2   = Nothing --Since this one does not use the assumption with a fresh object
-         restriction _      = Nothing
+         restriction _     = Nothing
 
          isAssumption (MagnusSL x) = isAssumption x
          isAssumption _ = False

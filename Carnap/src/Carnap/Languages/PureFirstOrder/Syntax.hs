@@ -10,6 +10,7 @@ import Carnap.Core.Data.AbstractSyntaxClasses
 import Carnap.Core.Data.Util (scopeHeight)
 import Carnap.Core.Unification.Unification
 import Carnap.Languages.Util.LanguageClasses
+import Carnap.Languages.ClassicalSequent.Syntax
 import Control.Lens (Traversal')
 import Data.Typeable (Typeable)
 import Data.List (intercalate)
@@ -248,6 +249,9 @@ type PolyadicFunctionSymbolsAndIdentity = Predicate PureEq
 type PureLexiconFOL = (OpenLexiconPFOL (PolyadicFunctionSymbolsAndIdentity :|: EndLang))
 
 type PureLanguageFOL = FixLang PureLexiconFOL
+
+fogamma :: Int -> ClassicalSequentOver PureLexiconFOL (Antecedent (Form Bool))
+fogamma n = GammaV n
 
 pattern PEq            = FX (Lx3 (Lx1 (Predicate TermEq ATwo)))
 pattern (:==:) t1 t2   = PEq :!$: t1 :!$: t2

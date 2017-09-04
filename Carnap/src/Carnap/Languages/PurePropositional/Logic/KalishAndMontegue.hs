@@ -48,7 +48,7 @@ instance Show PropLogic where
         show CB      = "CB"
         show (DER _) = "Derived"
 
-instance Inference PropLogic PurePropLexicon where
+instance Inference PropLogic PurePropLexicon (Form Bool) where
     ruleOf MP        = modusPonens
     ruleOf MT        = modusTollens
     ruleOf AX        = axiom

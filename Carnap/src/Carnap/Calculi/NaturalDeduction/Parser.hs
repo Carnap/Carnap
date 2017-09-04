@@ -4,6 +4,7 @@ module Carnap.Calculi.NaturalDeduction.Parser where
 import Data.Tree
 import Data.Either
 import Data.List
+import Data.Typeable
 import Carnap.Core.Data.AbstractSyntaxDataTypes
 import Carnap.Core.Data.AbstractSyntaxClasses
 import Carnap.Languages.ClassicalSequent.Syntax
@@ -119,9 +120,10 @@ In a Kalish and Montegue deduction, find the prooftree corresponding to
 *line n* in ded, where proof line numbers start at 1
 -}
 toProofTreeMontegue :: 
-    ( Inference r lex
+    ( Inference r lex sem
     , Sequentable lex
-    ) => Deduction r lex -> Int -> Either (ProofErrorMessage lex) (ProofTree r lex)
+    , Typeable sem
+    ) => Deduction r lex sem -> Int -> Either (ProofErrorMessage lex) (ProofTree r lex sem)
 toProofTreeMontegue ded n = case ded !! (n - 1)  of
           (AssertLine f r dpth depairs) -> 
                 do let deps = map fst depairs
@@ -178,9 +180,10 @@ In a Fitch deduction, find the prooftree corresponding to
 *line n* in ded, where proof line numbers start at 1
 -}
 toProofTreeFitch :: 
-    ( Inference r lex
+    ( Inference r lex sem
     , Sequentable lex
-    ) => Deduction r lex -> Int -> Either (ProofErrorMessage lex) (ProofTree r lex)
+    , Typeable sem
+    ) => Deduction r lex sem -> Int -> Either (ProofErrorMessage lex) (ProofTree r lex sem)
 toProofTreeFitch ded n = case ded !! (n - 1)  of
           l@(AssertLine f r@(r':_) dpth deps) -> 
                 do mapM_ checkDep deps 
@@ -277,9 +280,10 @@ In a Hardegree deduction, find the prooftree corresponding to
 *line n* in ded, where proof line numbers start at 1
 -}
 toProofTreeHardegree :: 
-    ( Inference r lex
+    ( Inference r lex sem
     , Sequentable lex
-    ) => Deduction r lex -> Int -> Either (ProofErrorMessage lex) (ProofTree r lex)
+    , Typeable sem
+    ) => Deduction r lex sem -> Int -> Either (ProofErrorMessage lex) (ProofTree r lex sem)
 toProofTreeHardegree ded n = case ded !! (n - 1)  of
           (AssertLine f r dpth depairs) -> 
                 do let deps = map fst depairs

@@ -75,13 +75,13 @@ addRules avd v =  case fromJSON v :: Result String of
 getCheckers :: IsElement self => self -> IO [Maybe IOGoal]
 getCheckers = getInOutGoalElts "proofchecker"
 
-data Checker r lex der = Checker 
-        { checkerCalc :: NaturalDeductionCalc r lex der
+data Checker r lex sem der = Checker 
+        { checkerCalc :: NaturalDeductionCalc r lex sem der
         , checkerRules :: Maybe (IORef [(String,der)])
-        , sequent :: Maybe (ClassicalSequentOver lex Sequent)
+        , sequent :: Maybe (ClassicalSequentOver lex (Sequent sem))
         , threadRef :: IORef (Maybe ThreadId)
         , proofDisplay :: Maybe Element
-        , proofMemo :: ProofMemoRef lex
+        , proofMemo :: ProofMemoRef lex sem
         }
 
 activateChecker ::  IORef [(String,P.DerivedRule)] -> Document -> Maybe IOGoal -> IO ()

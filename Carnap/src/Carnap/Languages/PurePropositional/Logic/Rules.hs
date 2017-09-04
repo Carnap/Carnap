@@ -82,7 +82,7 @@ instance Eq (PropSequentCalc a) where
 instance ParsableLex (Form Bool) PurePropLexicon where
         langParser = purePropFormulaParser standardLetters
 
-propSeqParser = seqFormulaParser :: Parsec String u (PropSequentCalc Sequent)
+propSeqParser = seqFormulaParser :: Parsec String u (PropSequentCalc (Sequent (Form Bool)))
 
 extendedPropSeqParser = parseSeqOver (purePropFormulaParser extendedLetters)
 
@@ -371,7 +371,7 @@ deMorgansNegatedOr = [
 --  1.2.2 Replacement Rules  --
 -------------------------------
 
-replace :: PurePropLanguage (Form Bool) -> PurePropLanguage (Form Bool) -> [SequentRule PurePropLexicon]
+replace :: PurePropLanguage (Form Bool) -> PurePropLanguage (Form Bool) -> [SequentRule PurePropLexicon (Form Bool)]
 replace x y = [ [GammaV 1  :|-: ss (propCtx 1 x)] ∴ GammaV 1  :|-: ss (propCtx 1 y)
               , [GammaV 1  :|-: ss (propCtx 1 y)] ∴ GammaV 1  :|-: ss (propCtx 1 x)]
     where ss = SS . liftToSequent

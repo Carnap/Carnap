@@ -69,7 +69,7 @@ instance Show HardegreeSL where
          show (OrID n) = "∨ID" ++ show n
          show (SepCases n) = "SC" ++ show n
 
-instance Inference HardegreeSL PurePropLexicon where
+instance Inference HardegreeSL PurePropLexicon (Form Bool) where
          ruleOf Pr       = axiom
          ruleOf As       = axiom
          ruleOf Rep      = identityRule

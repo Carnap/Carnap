@@ -14,8 +14,7 @@ import Carnap.Languages.PurePropositional.Logic
 import Carnap.Languages.PureFirstOrder.Logic (folCalc)
 import Carnap.Languages.PureSecondOrder.Logic (msolCalc,psolCalc)
 import Carnap.Calculi.NaturalDeduction.Syntax (NaturalDeductionCalc(..),RenderStyle(..), Inference(..))
-import Carnap.Calculi.NaturalDeduction.Checker (ProofErrorMessage(..), Feedback(..), seqSubsetUnify, processLine, 
-    processLineFitch, hoProcessLine, hoProcessLineMemo, toDisplaySequence, toDisplaySequenceMemo)
+import Carnap.Calculi.NaturalDeduction.Checker (ProofErrorMessage(..), Feedback(..),  toDisplaySequence, toDisplaySequenceMemo)
 import Carnap.Core.Examples.ACUI
 import Text.Shakespeare.Text
 import Data.Text (unpack)
@@ -379,23 +378,23 @@ ss = SS . liftToSequent
 
 sa = SA . liftToSequent
 
-p :: PropSequentCalc Antecedent
+p :: PropSequentCalc (Antecedent (Form Bool))
 p = sa p_
 
-p' :: PropSequentCalc Antecedent
+p' :: PropSequentCalc (Antecedent (Form Bool))
 p' = sa p'_
 
-phi :: PropSequentCalc Antecedent
+phi :: PropSequentCalc (Antecedent (Form Bool))
 phi = sa phi_
 
-psi :: PropSequentCalc Succedent
+psi :: PropSequentCalc (Succedent (Form Bool))
 psi = ss phi_
 
-psi' :: PropSequentCalc Succedent
+psi' :: PropSequentCalc (Succedent (Form Bool))
 psi' = ss phi'_
 
-q :: PropSequentCalc Succedent
+q :: PropSequentCalc (Succedent (Form Bool))
 q = ss p_
 
-q' :: PropSequentCalc Succedent
+q' :: PropSequentCalc (Succedent (Form Bool))
 q' = ss p'_

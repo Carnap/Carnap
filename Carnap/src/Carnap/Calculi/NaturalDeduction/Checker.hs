@@ -17,6 +17,7 @@ import Data.Tree (Tree(Node))
 import Data.IORef
 import Data.Either
 import Data.List
+import Data.Typeable
 import Data.Hashable
 import qualified Data.Map.Strict as M
 import Data.Maybe (isNothing)
@@ -29,9 +30,9 @@ import Data.Maybe (isNothing)
 
 toDisplaySequence:: 
     ( MonadVar (ClassicalSequentOver lex) (State Int)
-    , Inference r lex, Sequentable lex
-    ) =>  (Deduction r lex -> Int -> FeedbackLine lex) 
-            -> Deduction r lex -> Feedback lex
+    , Inference r lex sem, Sequentable lex
+    ) =>  (Deduction r lex sem -> Int -> FeedbackLine lex sem) 
+            -> Deduction r lex sem -> Feedback lex sem
 toDisplaySequence pl ded = let feedback = map (pl ded) [1 .. length ded] in
                                   Feedback (lastTopInd >>= fromFeedback feedback) feedback
                           
@@ -47,9 +48,9 @@ toDisplaySequence pl ded = let feedback = map (pl ded) [1 .. length ded] in
 
 toDisplaySequenceMemo :: 
     ( MonadVar (ClassicalSequentOver lex) (State Int)
-    , Inference r lex, Sequentable lex
-    ) =>  (Deduction r lex -> Int -> IO (FeedbackLine lex)) 
-            -> Deduction r lex -> IO (Feedback lex)
+    , Inference r lex sem, Sequentable lex
+    ) =>  (Deduction r lex sem -> Int -> IO (FeedbackLine lex sem)) 
+            -> Deduction r lex sem -> IO (Feedback lex sem)
 toDisplaySequenceMemo pl ded = 
         do feedback <- mapM (pl ded) [1 .. length ded]
            return $ Feedback (lastTopInd >>= fromFeedback feedback) feedback
@@ -66,8 +67,8 @@ toDisplaySequenceMemo pl ded =
 
 toDisplaySequenceStructured:: 
     ( MonadVar (ClassicalSequentOver lex) (State Int)
-    , Inference r lex, Sequentable lex
-    ) =>  (DeductionTree r lex -> Int -> FeedbackLine lex) -> DeductionTree r lex -> Feedback lex
+    , Inference r lex sem, Sequentable lex
+    ) =>  (DeductionTree r lex sem -> Int -> FeedbackLine lex sem) -> DeductionTree r lex sem -> Feedback lex sem
 toDisplaySequenceStructured pl ded@(SubProof (1,m) ls) = let feedback = map (pl ded) [1 .. m] in
                                   Feedback (lastTopInd >>= fromFeedback feedback) feedback
                           
@@ -80,9 +81,10 @@ toDisplaySequenceStructured pl ded@(SubProof (1,m) ls) = let feedback = map (pl 
 
 processLineMontegue :: 
   ( Sequentable lex
-  , Inference r lex
+  , Inference r lex sem
+  , Typeable sem
   , MonadVar (ClassicalSequentOver lex) (State Int)
-  ) => Deduction r lex -> Int -> FeedbackLine lex
+  ) => Deduction r lex sem -> Int -> FeedbackLine lex sem
 processLineMontegue ded n = case ded !! (n - 1) of
   --special case to catch QedLines not being cited in justifications
   (QedLine _ _ _) -> Left $ NoResult n
@@ -90,9 +92,10 @@ processLineMontegue ded n = case ded !! (n - 1) of
 
 processLineHardegree :: 
   ( Sequentable lex
-  , Inference r lex
+  , Inference r lex sem
+  , Typeable sem
   , MonadVar (ClassicalSequentOver lex) (State Int)
-  ) => Deduction r lex -> Int -> FeedbackLine lex
+  ) => Deduction r lex sem -> Int -> FeedbackLine lex sem
 processLineHardegree ded n = case ded !! (n - 1) of
   --special case to catch QedLines not being cited in justifications
   (QedLine _ _ _) -> Left $ NoResult n
@@ -101,10 +104,11 @@ processLineHardegree ded n = case ded !! (n - 1) of
 hoProcessLineMontegue :: 
   ( StaticVar (ClassicalSequentOver lex)
   , Sequentable lex
-  , Inference r lex
+  , Inference r lex sem
+  , Typeable sem
   , MonadVar (ClassicalSequentOver lex) (State Int)
   , MaybeStaticVar (lex (ClassicalSequentOver lex))
-  ) => Deduction r lex -> Int -> FeedbackLine lex
+  ) => Deduction r lex sem -> Int -> FeedbackLine lex sem
 hoProcessLineMontegue ded n = case ded !! (n - 1) of
   --special case to catch QedLines not being cited in justifications
   (QedLine _ _ _) -> Left $ NoResult n
@@ -113,11 +117,12 @@ hoProcessLineMontegue ded n = case ded !! (n - 1) of
 hoProcessLineMontegueMemo :: 
   ( StaticVar (ClassicalSequentOver lex)
   , Sequentable lex
-  , Inference r lex
+  , Inference r lex sem
+  , Typeable sem
   , MonadVar (ClassicalSequentOver lex) (State Int)
   , MaybeStaticVar (lex (ClassicalSequentOver lex))
-  , Show (ClassicalSequentOver lex Succedent), Show r
-  ) => ProofMemoRef lex -> Deduction r lex -> Int -> IO (FeedbackLine lex)
+  , Show (ClassicalSequentOver lex (Succedent sem)), Show r
+  ) => ProofMemoRef lex sem -> Deduction r lex sem -> Int -> IO (FeedbackLine lex sem)
 hoProcessLineMontegueMemo ref ded n = case ded !! (n - 1) of
   --special case to catch QedLines not being cited in justifications
   (QedLine _ _ _) -> return $ Left $ NoResult n
@@ -127,9 +132,10 @@ hoProcessLineMontegueMemo ref ded n = case ded !! (n - 1) of
 
 processLineFitch :: 
   ( Sequentable lex
-  , Inference r lex
+  , Inference r lex sem
   , MonadVar (ClassicalSequentOver lex) (State Int)
-  ) => Deduction r lex -> Int -> FeedbackLine lex
+  , Typeable sem
+  ) => Deduction r lex sem -> Int -> FeedbackLine lex sem
 processLineFitch ded n = case ded !! (n - 1) of
   --special case to catch QedLines not being cited in justifications
   (QedLine _ _ _) -> Left $ NoResult n
@@ -138,10 +144,11 @@ processLineFitch ded n = case ded !! (n - 1) of
 hoProcessLineFitch :: 
   ( StaticVar (ClassicalSequentOver lex)
   , Sequentable lex
-  , Inference r lex
+  , Typeable sem
+  , Inference r lex sem
   , MonadVar (ClassicalSequentOver lex) (State Int)
   , MaybeStaticVar (lex (ClassicalSequentOver lex))
-  ) => Deduction r lex -> Int -> FeedbackLine lex
+  ) => Deduction r lex sem -> Int -> FeedbackLine lex sem
 hoProcessLineFitch ded n = case ded !! (n - 1) of
   --special case to catch QedLines not being cited in justifications
   (QedLine _ _ _) -> Left $ NoResult n
@@ -150,11 +157,12 @@ hoProcessLineFitch ded n = case ded !! (n - 1) of
 hoProcessLineFitchMemo :: 
   ( StaticVar (ClassicalSequentOver lex)
   , Sequentable lex
-  , Inference r lex
+  , Inference r lex sem
+  , Typeable sem
   , MonadVar (ClassicalSequentOver lex) (State Int)
   , MaybeStaticVar (lex (ClassicalSequentOver lex))
-  , Show (ClassicalSequentOver lex Succedent), Show r
-  ) => ProofMemoRef lex -> Deduction r lex -> Int -> IO (FeedbackLine lex)
+  , Show (ClassicalSequentOver lex (Succedent sem)), Show r
+  ) => ProofMemoRef lex sem -> Deduction r lex sem -> Int -> IO (FeedbackLine lex sem)
 hoProcessLineFitchMemo ref ded n = case ded !! (n - 1) of
   (QedLine _ _ _) -> return $ Left $ NoResult n
   _ -> case toProofTreeFitch ded n of
@@ -163,9 +171,10 @@ hoProcessLineFitchMemo ref ded n = case ded !! (n - 1) of
 
 processLineStructuredFitch :: 
   ( Sequentable lex
-  , Inference r lex
+  , Inference r lex sem
+  , Typeable sem
   , MonadVar (ClassicalSequentOver lex) (State Int)
-  ) => DeductionTree r lex -> Int -> FeedbackLine lex
+  ) => DeductionTree r lex sem -> Int -> FeedbackLine lex sem
 processLineStructuredFitch ded n = case ded .! n of
   --special case to catch QedLines not being cited in justifications
   Just (QedLine _ _ _) -> Left $ NoResult n
@@ -174,10 +183,11 @@ processLineStructuredFitch ded n = case ded .! n of
 processLineStructuredFitchHO :: 
   ( StaticVar (ClassicalSequentOver lex)
   , Sequentable lex
-  , Inference r lex
+  , Inference r lex sem
+  , Typeable sem
   , MonadVar (ClassicalSequentOver lex) (State Int)
   , MaybeStaticVar (lex (ClassicalSequentOver lex))
-  ) => DeductionTree r lex -> Int -> FeedbackLine lex
+  ) => DeductionTree r lex sem -> Int -> FeedbackLine lex sem
 processLineStructuredFitchHO ded n = case ded .! n of
   --special case to catch QedLines not being cited in justifications
   Just (QedLine _ _ _) -> Left $ NoResult n
@@ -224,11 +234,12 @@ reduceResult lineno xs = case rights xs of
 --conclusion sequents
 
 foseqFromNode :: 
-    ( Inference r lex
+    ( Inference r lex sem
     , MaybeMonadVar (ClassicalSequentOver lex) (State Int)
     , MonadVar (ClassicalSequentOver lex) (State Int)
-    ) =>  Int -> [r] -> [ClassicalSequentOver lex Sequent] -> ClassicalSequentOver lex Succedent 
-              -> [Either (ProofErrorMessage lex) [ClassicalSequentOver lex Sequent]]
+    , Typeable sem
+    ) =>  Int -> [r] -> [ClassicalSequentOver lex (Sequent sem)] -> ClassicalSequentOver lex (Succedent sem)
+              -> [Either (ProofErrorMessage lex) [ClassicalSequentOver lex (Sequent sem)]]
 foseqFromNode lineno rules prems conc = 
         do rrule <- rules
            rprems <- permutations (premisesOf rrule) 
@@ -250,13 +261,14 @@ foseqFromNode lineno rules prems conc =
                             return $ map (\x -> antecedentNub $ applySub x subbedconc) acuisubs
 
 hoseqFromNode :: 
-    ( Inference r lex
+    ( Inference r lex sem
     , MaybeMonadVar (ClassicalSequentOver lex) (State Int)
     , MonadVar (ClassicalSequentOver lex) (State Int)
     , StaticVar (ClassicalSequentOver lex)
     , MaybeStaticVar (lex (ClassicalSequentOver lex))
-    ) =>  Int -> [r] -> [ClassicalSequentOver lex Sequent] -> ClassicalSequentOver lex Succedent 
-              -> [Either (ProofErrorMessage lex) [ClassicalSequentOver lex Sequent]]
+    , Typeable sem
+    ) =>  Int -> [r] -> [ClassicalSequentOver lex (Sequent sem)] -> ClassicalSequentOver lex (Succedent sem)
+              -> [Either (ProofErrorMessage lex) [ClassicalSequentOver lex (Sequent sem)]]
 hoseqFromNode lineno rules prems conc = 
         do r <- rules
            rps <- permutations (premisesOf r) 
@@ -278,21 +290,23 @@ hoseqFromNode lineno rules prems conc =
                                      Left e -> return $ Left $ renumber lineno e
 
 reduceProofTree :: 
-    ( Inference r lex
+    ( Inference r lex sem
     , MaybeMonadVar (ClassicalSequentOver lex) (State Int)
     , MonadVar (ClassicalSequentOver lex) (State Int)
-    ) =>  ProofTree r lex -> FeedbackLine lex
+    , Typeable sem
+    ) =>  ProofTree r lex sem -> FeedbackLine lex sem
 reduceProofTree (Node (ProofLine no cont rules) ts) =  
         do prems <- mapM reduceProofTree ts
            reduceResult no $ foseqFromNode no rules prems cont
 
 hoReduceProofTree :: 
-    ( Inference r lex
+    ( Inference r lex sem
     , MaybeMonadVar (ClassicalSequentOver lex) (State Int)
     , MonadVar (ClassicalSequentOver lex) (State Int)
     , StaticVar (ClassicalSequentOver lex)
     , MaybeStaticVar (lex (ClassicalSequentOver lex))
-    ) =>  ProofTree r lex -> FeedbackLine lex
+    , Typeable sem
+    ) =>  ProofTree r lex sem -> FeedbackLine lex sem
 hoReduceProofTree (Node (ProofLine no cont rules) ts) =  
         do prems <- mapM hoReduceProofTree ts
            rslt <- reduceResult no $ hoseqFromNode no rules prems cont
@@ -302,13 +316,14 @@ hoReduceProofTree (Node (ProofLine no cont rules) ts) =
            return $ rebuild $ evalState (toBNF (rebuild rslt)) (0 :: Int)
 
 hoReduceProofTreeMemo :: 
-    ( Inference r lex
+    ( Inference r lex sem
     , MaybeMonadVar (ClassicalSequentOver lex) (State Int)
     , MonadVar (ClassicalSequentOver lex) (State Int)
     , StaticVar (ClassicalSequentOver lex)
     , MaybeStaticVar (lex (ClassicalSequentOver lex))
-    , Hashable (ProofTree r lex)
-    ) =>  ProofMemoRef lex -> ProofTree r lex -> IO (FeedbackLine lex)
+    , Hashable (ProofTree r lex sem)
+    , Typeable sem
+    ) =>  ProofMemoRef lex sem -> ProofTree r lex sem -> IO (FeedbackLine lex sem)
 hoReduceProofTreeMemo ref pt@(Node (ProofLine no cont rules) ts) =  
         do thememo <- readIORef ref
            let thehash = hash pt
@@ -347,7 +362,7 @@ acuisolve eqs =
           subs -> Right subs
 
 hoacuisolve :: 
-    ( Inference r lex
+    ( Inference r lex sem
     , ACUI (ClassicalSequentOver lex)
     , MonadVar (ClassicalSequentOver lex) (State Int)
     ) =>  r -> [Equation (ClassicalSequentOver lex)] -> [Equation (ClassicalSequentOver lex)] 

@@ -67,7 +67,7 @@ instance Show LogicBookPropLogic where
         show LBAX       = "PR"
         show LBAS       = "AS"
 
-instance Inference LogicBookPropLogic PurePropLexicon where
+instance Inference LogicBookPropLogic PurePropLexicon (Form Bool) where
     ruleOf Reiterate  = identityRule
     ruleOf CondElim   = modusPonens
     ruleOf CondIntro1 = conditionalProofVariations !! 0 

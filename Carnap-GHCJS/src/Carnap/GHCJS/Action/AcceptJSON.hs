@@ -80,7 +80,7 @@ parseReply = withObject "not an object" $ \o -> do
     numPrems   <- o .: "numPrems" :: Parser Int
     return (psetting, proofdata, wantedconc, numPrems)
 
-parseProofData :: ((String,String) -> Either P.ParseError (DeductionLine r lex (Form Bool))) -> Value -> Either P.ParseError (DeductionTree r lex)
+parseProofData :: ((String,String) -> Either P.ParseError (DeductionLine r lex (Form Bool))) -> Value -> Either P.ParseError (DeductionTree r lex (Form Bool))
 parseProofData parsePair valList = evalStateT (process valList) 1
     where
     process v = case parse parseJSON v :: Result [Value] of

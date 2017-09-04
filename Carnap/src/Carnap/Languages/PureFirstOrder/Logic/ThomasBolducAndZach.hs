@@ -35,7 +35,7 @@ instance Show ThomasBolducAndZachFOL where
         show IDE1        = "=E"
         show IDE2        = "=E"
 
-instance Inference ThomasBolducAndZachFOL PureLexiconFOL where
+instance Inference ThomasBolducAndZachFOL PureLexiconFOL (Form Bool) where
 
          ruleOf UI   = universalGeneralization
          ruleOf UE   = universalInstantiation
@@ -58,8 +58,8 @@ instance Inference ThomasBolducAndZachFOL PureLexiconFOL where
             | x `elem` [ EE1,EE2 ] = Just assumptiveProof
             | otherwise = Nothing
 
-         restriction UI    = Just (eigenConstraint (SeqT 1) (ss (PBind (All "v") $ phi 1)) (GammaV 1))
-         restriction EE1   = Just (eigenConstraint (SeqT 1) (ss (PBind (Some "v") $ phi 1) :-: ss (phin 1)) (GammaV 1 :+: GammaV 2))
+         restriction UI    = Just (eigenConstraint (SeqT 1) (ss (PBind (All "v") $ phi 1)) (fogamma 1))
+         restriction EE1   = Just (eigenConstraint (SeqT 1) (ss (PBind (Some "v") $ phi 1) :-: ss (phin 1)) (fogamma 1 :+: fogamma 2))
          restriction EE2   = Nothing --Since this one does not use the assumption with a fresh object
          restriction _     = Nothing
 
