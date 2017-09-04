@@ -1,12 +1,13 @@
 {-#LANGUAGE FlexibleContexts, FlexibleInstances, MultiParamTypeClasses #-}
 module Carnap.Languages.ModalPropositional.Logic.Hardegree
-    (parseHardegreeSL,  parseHardegreeSLProof, HardegreeSL, hardegreeSLCalc) where
+    (parseHardegreeWTL,  parseHardegreeWTLProof, HardegreeWTL, hardegreeWTLCalc) where
 
 import Data.Map as M (lookup, Map)
 import Text.Parsec
 import Carnap.Core.Data.AbstractSyntaxDataTypes (Form)
 import Carnap.Languages.ModalPropositional.Syntax
 import Carnap.Languages.ModalPropositional.Parser
+import Carnap.Languages.PurePropositional.Logic.Rules (DerivedRule)
 import Carnap.Calculi.NaturalDeduction.Syntax
 import Carnap.Calculi.NaturalDeduction.Parser
 import Carnap.Calculi.NaturalDeduction.Checker
@@ -29,10 +30,10 @@ data HardegreeWTL = AndI | AndO1 | AndO2 | AndNI | AndNO
                  | WTZero1 | WTZero2 | WTNeg1 | WTNeg2 | WTAnd1 | WTAnd2 
                  | WTOr1 | WTOr2 | WTIf1 | WTIf2 | WTIff1 | WTIff2 
                  | WTAll1 | WTAll2 | WTSome1 | WTSome2 | WTNec1 | WTNec2 
-                 | WTPos1 | WTPos2 | WTEG | WTUI | WTUG | WTED
+                 | WTPos1 | WTPos2 | WTEG | WTUI | WTUG | WTED1 | WTED2
                deriving (Eq)
 
-instance Show HardegreeSL where
+instance Show HardegreeWTL where
          show Pr     = "PR"
          show As     = "As"
          show Rep    = "Rep"
@@ -72,7 +73,7 @@ instance Show HardegreeSL where
          show AndD   = "&D"
          show (OrID n) = "∨ID" ++ show n
          show (SepCases n) = "SC" ++ show n
-         show WTZero1 = "WT(0)
+         show WTZero1 = "WT(0)"
          show WTZero2 = "WT(0)"
          show WTNeg1 = "WT(¬)"
          show WTNeg2 = "WT(¬)"
@@ -95,9 +96,10 @@ instance Show HardegreeSL where
          show WTEG = "∃I"
          show WTUI = "∀O"
          show WTUG = "UD"
-         show WTED = "ED"
+         show WTED1 = "ED"
+         show WTED2 = "ED"
 
-instance Inference HardegreeSL PurePropLexicon where
+instance Inference HardegreeWTL WorldTheoryPropLexicon (Form (World -> Bool))where
          ruleOf Pr       = axiom
          ruleOf As       = axiom
          ruleOf Rep      = identityRule
@@ -137,30 +139,31 @@ instance Inference HardegreeSL PurePropLexicon where
          ruleOf AndD     = adjunction
          ruleOf (OrID n) = eliminationOfCases n
          ruleOf (SepCases n) = separationOfCases n
-         ruleOf WTZero1 = worldTheoryZeroAxiom
-         ruleOf WTZero2 = worldTheoryZeroAxiom
-         ruleOf WTNeg1 = worldTheoryNegAxiom
-         ruleOf WTNeg2 = worldTheoryNegAxiom
-         ruleOf WTAnd1 = worldTheoryAndAxiom
-         ruleOf WTAnd2 = worldTheoryAndAxiom
-         ruleOf WTOr1 = worldTheoryOrAxiom
-         ruleOf WTOr2 = worldThoeryOrAxiom
-         ruleOf WTIf1 = worldTheoryIfAxiom
-         ruleOf WTIf2 = worldTheoryIfAxiom
-         ruleOf WTIff1 = worldTheoryIffAxiom
-         ruleOf WTIff2 = worldTheoryIffAxiom
-         ruleOf WTAll1 = worldTheoryAllAxiom
-         ruleOf WTAll2 = worldTheoryAllAxiom
-         ruleOf WTSome1 = worldTheorySomeAxiom
-         ruleOf WTSome2 = worldTheorySomeAxiom
-         ruleOf WTNec1 = worldTheoryNecAxiom
-         ruleOf WTNec2 = worldTheoryNecAxiom
-         ruleOf WTPos1 = worldTheoryPosAxiom
-         ruleOf WTPos2 = worldTheoryPosAxiom
+         ruleOf WTZero1 = worldTheoryZeroAxiom !! 0
+         ruleOf WTZero2 = worldTheoryZeroAxiom !! 1
+         ruleOf WTNeg1 = worldTheoryNegAxiom !! 0
+         ruleOf WTNeg2 = worldTheoryNegAxiom !! 1
+         ruleOf WTAnd1 = worldTheoryAndAxiom !! 0
+         ruleOf WTAnd2 = worldTheoryAndAxiom !! 1
+         ruleOf WTOr1 = worldTheoryOrAxiom !! 0
+         ruleOf WTOr2 = worldTheoryOrAxiom !! 1
+         ruleOf WTIf1 = worldTheoryIfAxiom !! 0
+         ruleOf WTIf2 = worldTheoryIfAxiom !! 1
+         ruleOf WTIff1 = worldTheoryIffAxiom !! 0
+         ruleOf WTIff2 = worldTheoryIffAxiom !! 1
+         ruleOf WTAll1 = worldTheoryAllAxiom !! 0
+         ruleOf WTAll2 = worldTheoryAllAxiom !! 1
+         ruleOf WTSome1 = worldTheorySomeAxiom !! 0
+         ruleOf WTSome2 = worldTheorySomeAxiom !! 1
+         ruleOf WTNec1 = worldTheoryNecAxiom !! 0
+         ruleOf WTNec2 = worldTheoryNecAxiom !! 1
+         ruleOf WTPos1 = worldTheoryPosAxiom !! 0
+         ruleOf WTPos2 = worldTheoryPosAxiom !! 1
          ruleOf WTEG = worldTheoryExistentialGeneralization 
          ruleOf WTUI = worldTheoryUniversalInstantiation
          ruleOf WTUG = worldTheoryUniversalGeneralization
-         ruleOf WTED = worldTheoryExistentialDerivation
+         ruleOf WTED1 = worldTheoryExistentialDerivation !! 0
+         ruleOf WTED2 = worldTheoryExistentialDerivation !! 1
 
          -- TODO fix this up so that these rules use ProofTypes with variable
          -- arities.
@@ -168,7 +171,8 @@ instance Inference HardegreeSL PurePropLexicon where
          indirectInference (OrID n) = Just (TypedProof (ProofType n 1))
          indirectInference (AndD) = Just doubleProof
          indirectInference DD = Just (TypedProof (ProofType 0 1))
-         indirectInference ED = Just (TypedProof (ProofType 1 1))
+         indirectInference WTED1 = Just (TypedProof (ProofType 1 1))
+         indirectInference WTED2 = Just (TypedProof (ProofType 1 1))
          indirectInference x 
             | x `elem` [ID1,ID2,ID3,ID4,CD1,CD2] = Just assumptiveProof
             | otherwise = Nothing
@@ -176,81 +180,82 @@ instance Inference HardegreeSL PurePropLexicon where
          isAssumption As = True
          isAssumption _ = False
 
-parseHardegreeSL :: Map String DerivedRule -> Parsec String u [HardegreeSL]
-parseHardegreeSL ders = do r <- choice (map (try . string) ["AS","PR","&I","&O","~&I","~&O","->I","->O","~->I","~->O","→I","→O","~→I","~→O","!?I"
+parseHardegreeWTL ::  Parsec String u [HardegreeWTL]
+parseHardegreeWTL = do r <- choice (map (try . string) ["AS","PR","&I","&O","~&I","~&O","->I","->O","~->I","~->O","→I","→O","~→I","~→O","!?I"
                                                            ,"!?O","vID","\\/ID","vI","vO","~vI","~vO","\\/I","\\/O","~\\/I","~\\/O","<->I","<->O","~<->I"
-                                                           ,"~<->O","↔I","↔O","~↔I","~↔O","ID","&D","SC","DN","DD","CD","REP", 
-                                                           , "WT(0)", "WT(~)", "WT(/\\)", "WT(&)", "WT(\\/)", "WT(v)", "WT(->)", "WT(<->)", 
+                                                           ,"~<->O","↔I","↔O","~↔I","~↔O","ID","&D","SC","DN","DD","CD","REP"
+                                                           , "WT(0)", "WT(~)", "WT(/\\)", "WT(&)", "WT(\\/)", "WT(v)", "WT(->)", "WT(<->)"
                                                            , "WT(A)", "WT(E)", "WT([])", "WT(<>)", "EI", "AO", "UD" , "ED"
                                                            ])
-                           case r of
-                             "AS"    -> return [As]
-                             "PR"    -> return [Pr]
-                             "REP"   -> return [Rep]
-                             "&I"    -> return [AndI]
-                             "&O"    -> return [AndO1,AndO2]
-                             "~&I"   -> return [AndNI]
-                             "~&O"   -> return [AndNO]
-                             "->I"   -> return [IfI1,IfO2]
-                             "->O"   -> return [IfO1,IfO2]
-                             "~->I"  -> return [IfNI]
-                             "~->O"  -> return [IfNO]
-                             "→I"    -> return [IfO1,IffO2]           
-                             "→O"    -> return [IfI1,IfO2]          
-                             "~→I"   -> return [IfNI]
-                             "~→O"   -> return [IfNO]
-                             "!?I"   -> return [FalI]
-                             "!?O"   -> return [FalO]
-                             "vI"    -> return [OrI1, OrI2]
-                             "vO"    -> return [OrO1, OrO2]
-                             "~vI"   -> return [OrNI]
-                             "~vO"   -> return [OrNO]
-                             "\\/I"  -> return [OrI1, OrI2] 
-                             "\\/O"  -> return [OrO1, OrO2]
-                             "~\\/I" -> return [OrNI]
-                             "~\\/O" -> return [OrNO]
-                             "<->I"  -> return [IffI]       
-                             "<->O"  -> return [IffO1,IffO2]
-                             "~<->I" -> return [IffNI]       
-                             "~<->O" -> return [IffNO]
-                             "↔I"    -> return [IffI]       
-                             "↔O"    -> return [IffO1,IffO2]
-                             "~↔I"   -> return [IffNI]       
-                             "~↔O"   -> return [IffNO]
-                             "ID"    -> return [ID1,ID2,ID3,ID4]
-                             "DN"    -> return [DN1,DN2]
-                             "&D"    -> return [AndD]
-                             "DD"    -> return [DD]
-                             "CD"    -> return [CD1,CD2]
-                             "WT(0)" -> return [WTZero1,WTZero2]
-                             "WT(~)" -> return [WTNeg1,WTNeg2]
-                             "WT(/\\)" -> return [WTAnd1, WTAnd2]
-                             "WT(&)"   -> return [WTAnd1, WTAnd2]
-                             "WT(\\/)" -> return [WTOr1, WTOr2]
-                             "WT(v)"   -> return [WTOr1, WTOr2]
-                             "WT(->)"  -> return [WTIf1, WTIf2]
-                             "WT(<->)" -> return [WTIff1, WTIff2]
-                             "WT(A)"   -> return [WTAll1, WTAll2]
-                             "WT(E)"   -> return [WTSome1, WTSome2]
-                             "WT([])"  -> return [WTNeg1, WTNec2]
-                             "WT(<>)"  -> return [WTPos1, WTPos2]
-                             "EI"      -> return [WTEG]
-                             "AO"      -> return [WTUI]
-                             "UD"      -> return [WTUD]
-                             "SC"    -> do ds <- many1 digit
-                                           return [SepCases (read ds)]
-                             "\\/ID" -> do ds <- many1 digit
-                                           return [OrID (read ds)]
-                             "vID"   -> do ds <- many1 digit
-                                           return [OrID (read ds)]
+                       case r of
+                         "AS"    -> return [As]
+                         "PR"    -> return [Pr]
+                         "REP"   -> return [Rep]
+                         "&I"    -> return [AndI]
+                         "&O"    -> return [AndO1,AndO2]
+                         "~&I"   -> return [AndNI]
+                         "~&O"   -> return [AndNO]
+                         "->I"   -> return [IfI1,IfO2]
+                         "->O"   -> return [IfO1,IfO2]
+                         "~->I"  -> return [IfNI]
+                         "~->O"  -> return [IfNO]
+                         "→I"    -> return [IfO1,IffO2]           
+                         "→O"    -> return [IfI1,IfO2]          
+                         "~→I"   -> return [IfNI]
+                         "~→O"   -> return [IfNO]
+                         "!?I"   -> return [FalI]
+                         "!?O"   -> return [FalO]
+                         "vI"    -> return [OrI1, OrI2]
+                         "vO"    -> return [OrO1, OrO2]
+                         "~vI"   -> return [OrNI]
+                         "~vO"   -> return [OrNO]
+                         "\\/I"  -> return [OrI1, OrI2] 
+                         "\\/O"  -> return [OrO1, OrO2]
+                         "~\\/I" -> return [OrNI]
+                         "~\\/O" -> return [OrNO]
+                         "<->I"  -> return [IffI]       
+                         "<->O"  -> return [IffO1,IffO2]
+                         "~<->I" -> return [IffNI]       
+                         "~<->O" -> return [IffNO]
+                         "↔I"    -> return [IffI]       
+                         "↔O"    -> return [IffO1,IffO2]
+                         "~↔I"   -> return [IffNI]       
+                         "~↔O"   -> return [IffNO]
+                         "ID"    -> return [ID1,ID2,ID3,ID4]
+                         "DN"    -> return [DN1,DN2]
+                         "&D"    -> return [AndD]
+                         "DD"    -> return [DD]
+                         "CD"    -> return [CD1,CD2]
+                         "WT(0)" -> return [WTZero1,WTZero2]
+                         "WT(~)" -> return [WTNeg1,WTNeg2]
+                         "WT(/\\)" -> return [WTAnd1, WTAnd2]
+                         "WT(&)"   -> return [WTAnd1, WTAnd2]
+                         "WT(\\/)" -> return [WTOr1, WTOr2]
+                         "WT(v)"   -> return [WTOr1, WTOr2]
+                         "WT(->)"  -> return [WTIf1, WTIf2]
+                         "WT(<->)" -> return [WTIff1, WTIff2]
+                         "WT(A)"   -> return [WTAll1, WTAll2]
+                         "WT(E)"   -> return [WTSome1, WTSome2]
+                         "WT([])"  -> return [WTNec1, WTNec2]
+                         "WT(<>)"  -> return [WTPos1, WTPos2]
+                         "EI"      -> return [WTEG]
+                         "AO"      -> return [WTUI]
+                         "UD"      -> return [WTUG]
+                         "ED"      -> return [WTED1, WTED2]
+                         "SC"    -> do ds <- many1 digit
+                                       return [SepCases (read ds)]
+                         "\\/ID" -> do ds <- many1 digit
+                                       return [OrID (read ds)]
+                         "vID"   -> do ds <- many1 digit
+                                       return [OrID (read ds)]
 
-parseHardegreeWTLProof :: Map String DerivedRule -> String -> [DeductionLine HardegreeSL PurePropLexicon (Form Bool)]
-parseHardegreeWTLProof ders = toDeductionHardegree null worldTheoryPropFormulaParser
+parseHardegreeWTLProof ::  Map String DerivedRule -> String -> [DeductionLine HardegreeWTL WorldTheoryPropLexicon (Form (World -> Bool))]
+parseHardegreeWTLProof ders = toDeductionHardegree parseHardegreeWTL worldTheoryPropFormulaParser
 
 hardegreeWTLCalc = NaturalDeductionCalc 
     { ndRenderer = MontegueStyle
     , ndParseProof = parseHardegreeWTLProof
-    , ndProcessLine = processLineHardegree
-    , ndProcessLineMemo = Nothing
+    , ndProcessLine = hoProcessLineHardegree
+    , ndProcessLineMemo = Just hoProcessLineHardegreeMemo
     , ndParseSeq = worldTheorySeqParser
     }

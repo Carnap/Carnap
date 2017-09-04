@@ -1,5 +1,5 @@
 {-#LANGUAGE GADTs, KindSignatures, TypeOperators, FlexibleContexts, TypeSynonymInstances, FlexibleInstances, MultiParamTypeClasses #-}
-module Carnap.Calculi.NaturalDeduction.Checker (toDisplaySequence,toDisplaySequenceMemo, toDisplaySequenceStructured, processLineMontegue, processLineFitch, processLineHardegree, processLineStructuredFitch,processLineStructuredFitchHO, hoProcessLineFitchMemo, hoProcessLineFitch, hoProcessLineMontegue, hoProcessLineMontegueMemo, hosolve, ProofErrorMessage(..), Feedback(..),seqUnify,seqSubsetUnify, toDeduction) where
+module Carnap.Calculi.NaturalDeduction.Checker (toDisplaySequence,toDisplaySequenceMemo, toDisplaySequenceStructured, processLineMontegue, processLineFitch, processLineHardegree, hoProcessLineHardegree, hoProcessLineHardegreeMemo, processLineStructuredFitch,processLineStructuredFitchHO, hoProcessLineFitchMemo, hoProcessLineFitch, hoProcessLineMontegue, hoProcessLineMontegueMemo, hosolve, ProofErrorMessage(..), Feedback(..),seqUnify,seqSubsetUnify, toDeduction) where
 
 import Carnap.Calculi.NaturalDeduction.Syntax
 import Carnap.Calculi.NaturalDeduction.Parser
@@ -79,16 +79,6 @@ toDisplaySequenceStructured pl ded@(SubProof (1,m) ls) = let feedback = map (pl 
             Left _ -> Nothing
             Right s -> Just s
 
-processLineMontegue :: 
-  ( Sequentable lex
-  , Inference r lex sem
-  , Typeable sem
-  , MonadVar (ClassicalSequentOver lex) (State Int)
-  ) => Deduction r lex sem -> Int -> FeedbackLine lex sem
-processLineMontegue ded n = case ded !! (n - 1) of
-  --special case to catch QedLines not being cited in justifications
-  (QedLine _ _ _) -> Left $ NoResult n
-  _ -> toProofTreeMontegue ded n >>= reduceProofTree
 
 processLineHardegree :: 
   ( Sequentable lex
@@ -100,6 +90,46 @@ processLineHardegree ded n = case ded !! (n - 1) of
   --special case to catch QedLines not being cited in justifications
   (QedLine _ _ _) -> Left $ NoResult n
   _ -> toProofTreeHardegree ded n >>= reduceProofTree
+
+hoProcessLineHardegree :: 
+  ( StaticVar (ClassicalSequentOver lex)
+  , Sequentable lex
+  , Inference r lex sem
+  , Typeable sem
+  , MonadVar (ClassicalSequentOver lex) (State Int)
+  , MaybeStaticVar (lex (ClassicalSequentOver lex))
+  ) => Deduction r lex sem -> Int -> FeedbackLine lex sem
+hoProcessLineHardegree ded n = case ded !! (n - 1) of
+  --special case to catch QedLines not being cited in justifications
+  (QedLine _ _ _) -> Left $ NoResult n
+  _ -> toProofTreeHardegree ded n >>= hoReduceProofTree
+
+hoProcessLineHardegreeMemo :: 
+  ( StaticVar (ClassicalSequentOver lex)
+  , Sequentable lex
+  , Inference r lex sem
+  , Typeable sem
+  , MonadVar (ClassicalSequentOver lex) (State Int)
+  , MaybeStaticVar (lex (ClassicalSequentOver lex))
+  , Show (ClassicalSequentOver lex (Succedent sem)), Show r
+  ) => ProofMemoRef lex sem -> Deduction r lex sem -> Int -> IO (FeedbackLine lex sem)
+hoProcessLineHardegreeMemo ref ded n = case ded !! (n - 1) of
+  --special case to catch QedLines not being cited in justifications
+  (QedLine _ _ _) -> return $ Left $ NoResult n
+  _ -> case toProofTreeHardegree ded n of
+        Right t -> hoReduceProofTreeMemo ref t
+        Left e -> return $ Left e
+
+processLineMontegue :: 
+  ( Sequentable lex
+  , Inference r lex sem
+  , Typeable sem
+  , MonadVar (ClassicalSequentOver lex) (State Int)
+  ) => Deduction r lex sem -> Int -> FeedbackLine lex sem
+processLineMontegue ded n = case ded !! (n - 1) of
+  --special case to catch QedLines not being cited in justifications
+  (QedLine _ _ _) -> Left $ NoResult n
+  _ -> toProofTreeMontegue ded n >>= reduceProofTree
   
 hoProcessLineMontegue :: 
   ( StaticVar (ClassicalSequentOver lex)
@@ -192,7 +222,6 @@ processLineStructuredFitchHO ded n = case ded .! n of
   --special case to catch QedLines not being cited in justifications
   Just (QedLine _ _ _) -> Left $ NoResult n
   _ -> toProofTreeStructuredFitch ded n >>= hoReduceProofTree
-
 
 -- | A simple check of whether two sequents can be unified
 seqUnify s1 s2 = case check of

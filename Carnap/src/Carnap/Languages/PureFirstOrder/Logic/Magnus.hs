@@ -6,7 +6,6 @@ import Text.Parsec
 import Carnap.Core.Data.AbstractSyntaxDataTypes (Form)
 import Carnap.Languages.PureFirstOrder.Syntax
 import Carnap.Languages.PureFirstOrder.Parser
-import Carnap.Languages.ClassicalSequent.Syntax
 import qualified Carnap.Languages.PurePropositional.Logic as P
 import Carnap.Calculi.NaturalDeduction.Syntax
 import Carnap.Calculi.NaturalDeduction.Parser

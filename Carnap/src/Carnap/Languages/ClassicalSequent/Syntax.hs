@@ -23,7 +23,8 @@ data Succedent a = Succedent a
 data Sequent a = Sequent a
 
 data Cedent :: k -> * -> * where
-        NilAntecedent    :: Typeable a => Cedent lang a
+        NilAntecedent    :: Typeable a => Cedent lang a 
+        -- XXX should be `Cedent lang (Antecedent a)`, but first need a way to make this work with getId in the proxy instance
         NilSuccedent     :: Typeable a => Cedent lang (Succedent a)
         SingleAntecedent :: Typeable a => Cedent lang (a -> Antecedent a)
         SingleSuccedent  :: Typeable a => Cedent lang (a -> Succedent a)

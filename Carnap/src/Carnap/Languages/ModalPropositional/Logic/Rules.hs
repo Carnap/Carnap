@@ -8,6 +8,7 @@ import Carnap.Core.Unification.FirstOrder
 import Carnap.Core.Unification.ACUI
 import Carnap.Core.Data.AbstractSyntaxClasses
 import Carnap.Core.Data.AbstractSyntaxDataTypes
+import Carnap.Core.Data.Util (scopeHeight)
 import Carnap.Languages.ModalPropositional.Syntax
 import Carnap.Languages.ModalPropositional.Parser
 import Carnap.Languages.ClassicalSequent.Syntax
@@ -15,16 +16,25 @@ import Carnap.Languages.ClassicalSequent.Parser
 import Carnap.Languages.Util.LanguageClasses
 import Carnap.Languages.Util.GenericConnectives
 import Data.Typeable
+import Data.List (intercalate)
 
 --------------------------------------------------------
 --1 Propositional Sequent Calculus
 --------------------------------------------------------
 
-type WorldTheorySequentCalc = ClassicalSequentOver (CoreLexicon :|: WorldTheoryLexicon :|: EndLang)
+type WorldTheorySequentCalc = ClassicalSequentOver WorldTheoryPropLexicon
 
 --we write the Copula schema at this level since we may want other schemata
 --for sequent languages that contain things like quantifiers
-instance CopulaSchema WorldTheorySequentCalc
+instance CopulaSchema WorldTheorySequentCalc where
+    appSchema (SeqQuant (All x)) (LLam f) e = schematize (All x) (show (f $ liftToSequent $ worldVar x) : e)
+    appSchema (SeqQuant (Some x)) (LLam f) e = schematize (Some x) (show (f $ liftToSequent $ worldVar x) : e)
+    appSchema x y e = schematize x (show y : e)
+
+    lamSchema f [] = "λβ_" ++ show h ++ "." ++ show (f (SeqSV (-1 * h)))
+        where h = scopeHeight (LLam f)
+    lamSchema f (x:xs) = "(λβ_" ++ show h ++ "." ++ show (f (SeqSV (-1 * h))) ++ intercalate " " (x:xs) ++ ")"
+        where h = scopeHeight (LLam f)
 
 pattern SeqP x arity      = FX (Lx2 (Lx1 (Lx1 (Predicate x arity))))
 pattern SeqSP x arity     = FX (Lx2 (Lx1 (Lx2 (Predicate x arity))))
@@ -38,6 +48,7 @@ pattern SeqQuant q        = FX (Lx2 (Lx2 (Lx4 (Bind q))))
 pattern SeqSchemIdx c a   = FX (Lx2 (Lx2 (Lx5 (Function c a))))
 pattern SeqSchemPred c a  = FX (Lx2 (Lx2 (Lx6 (Predicate c a))))
 pattern LFalsum           = FX (Lx2 (Lx1 (Lx5 (Connective Falsum AZero))))
+pattern SeqSV n           = FX (Lx2 (Lx1 (Lx6 (StaticVar n))))
 pattern SeqProp n         = SeqP (Prop n) AZero
 pattern SeqPhi :: Int -> WorldTheorySequentCalc (Form (World -> Bool))
 pattern SeqPhi n          = SeqSP (SProp n) AZero
@@ -56,7 +67,7 @@ pattern (:<->-:) x y      = SeqIff :!$: x :!$: y
 pattern (:/:) x y         = SeqIndexer :!$: x :!$: y
 pattern SeqNeg x          = SeqNot :!$: x
 pattern SeqBind q f       = SeqQuant q :!$: LLam f
-pattern SeqIndex n        = SeqIndicies (Constant n) AZero
+pattern SeqIndex n        = SeqIndicies (Index n) AZero
 pattern SeqSchmIdx n      = SeqSchemIdx (SFunc AZero n) AZero
 pattern TheWorld          = SeqIndex 0
 pattern SomeWorld         = SeqSchmIdx 0
@@ -65,13 +76,13 @@ pattern SeqCons x y       = SeqIdxCons IndexCons ATwo :!$: x :!$: y
 instance Eq (WorldTheorySequentCalc a) where
         (==) = (=*)
 
-instance ParsableLex (Form (World -> Bool)) WorldTheoryLexicon where
+instance ParsableLex (Form (World -> Bool)) WorldTheoryPropLexicon where
         langParser = worldTheoryPropFormulaParser
 
 phi :: Int -> WorldTheorySequentCalc (Term World) -> WorldTheorySequentCalc (Form (World -> Bool))
 phi n x = SeqPPhi n :!$: x
 
-worldTheorySeqParser = seqFormulaParser :: Parsec String u (WorldTheorySequentCalc Sequent)
+worldTheorySeqParser = seqFormulaParser :: Parsec String u (WorldTheorySequentCalc (Sequent (Form (World -> Bool))))
 
 -------------------------
 --  1.1 Standard Rules  --
@@ -330,7 +341,7 @@ materialConditionalVariations =  [
                 ] ∴ GammaV 1 :|-: SS (SeqPhi 2 :->-: SeqPhi 1)
             ]
 
-worldTheoryexistentialDerivation = [
+worldTheoryExistentialDerivation = [
                                        [ GammaV 1 :+:  SA (phi 1 SomeWorld) :|-: SS (SeqPhi 1) 
                                        , GammaV 2 :|-: SS (SeqBind (Some "v") $ phi 1)   
                                        , SA (phi 1 SomeWorld) :|-: SS (phi 1 SomeWorld)            

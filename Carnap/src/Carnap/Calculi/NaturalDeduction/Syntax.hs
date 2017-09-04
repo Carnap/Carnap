@@ -225,7 +225,7 @@ type ProofMemoRef lex sem = IORef (Map Int (FeedbackLine lex sem))
 
 data NaturalDeductionCalc r lex sem der = NaturalDeductionCalc 
         { ndRenderer :: RenderStyle
-        , ndParseProof :: Map String der -> String -> [DeductionLine r lex (Form Bool)]
+        , ndParseProof :: Map String der -> String -> [DeductionLine r lex sem]
         , ndProcessLine :: (Sequentable lex , Inference r lex sem, MonadVar (ClassicalSequentOver lex) (State Int))
                                 => Deduction r lex sem -> Int -> FeedbackLine lex sem
         , ndProcessLineMemo :: (Sequentable lex , Inference r lex sem, MonadVar (ClassicalSequentOver lex) (State Int))

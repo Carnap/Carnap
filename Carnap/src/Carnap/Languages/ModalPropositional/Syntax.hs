@@ -7,10 +7,13 @@ import Carnap.Core.Data.AbstractSyntaxClasses
 import Carnap.Core.Data.Util (checkChildren)
 import Carnap.Core.Unification.Unification
 import Carnap.Languages.Util.LanguageClasses
+import Carnap.Core.Data.Util (scopeHeight)
 import Control.Lens.Plated (transform)
 import Data.Typeable (Typeable)
+import Data.List (intercalate)
+import Data.List (intercalate)
 import Data.Map.Lazy (Map, (!))
-import Data.Monoid as M
+import qualified Data.Monoid as M
 import Carnap.Languages.Util.GenericConnectives
 
 --------------------------------------------------
@@ -93,13 +96,15 @@ type ModalSchematicProp = SchematicIntProp (World -> Bool)
 data WorldTheoryIndexer :: (* -> *) -> * -> * where
         AtIndex :: WorldTheoryIndexer lang (Form (World -> Bool) -> Term World -> Form (World -> Bool))
 
+type IndexVar = StandardVar World
+
 instance FirstOrderLex (WorldTheoryIndexer lex)
 
 instance UniformlyEq (WorldTheoryIndexer lex) where
         AtIndex =* AtIndex = True
 
 instance Schematizable (WorldTheoryIndexer lex) where
-        schematize AtIndex = \(x:y:_) -> x ++ "/" ++ y
+        schematize AtIndex = \(x:y:_) -> "(" ++ x ++ "/" ++ y ++ ")"
 
 instance ReLex (WorldTheoryIndexer) where
         relex AtIndex = AtIndex
@@ -130,9 +135,9 @@ type CoreLexicon = Predicate ModalProp
                    :|: SubstitutionalVariable
                    :|: EndLang
 
-type ModalPropLanguageWith a = FixLang (CoreLexicon :|: a :|: EndLang)
+type ModalPropLexiconWith a = CoreLexicon :|: a :|: EndLang
 
-instance BoundVars (CoreLexicon :|: a)
+type ModalPropLanguageWith a = FixLang (ModalPropLexiconWith a)
 
 instance UniformlyEq (ModalPropLanguageWith a) => Eq (ModalPropLanguageWith a b) where
         (==) = (=*)
@@ -180,7 +185,9 @@ instance IndexedSchemePropLanguage (ModalPropLanguageWith a (Form (World -> Bool
 --  3. Basic Modal Language  --
 -------------------------------
 
-type ModalPropLexicon = (CoreLexicon :|: EndLang :|: EndLang)
+type ModalPropLexicon = ModalPropLexiconWith EndLang
+
+instance BoundVars ModalPropLexicon
 
 type ModalPropLanguage = FixLang ModalPropLexicon
 
@@ -200,14 +207,47 @@ type WorldTheoryLexicon = WorldTheoryIndexer
                         :|: Quantifiers IndexQuant
                         :|: Function IndexScheme
                         :|: Predicate ModalSchematicPred
+                        :|: Function IndexVar
                         :|: EndLang
+
+type WorldTheoryPropLexicon = ModalPropLexiconWith WorldTheoryLexicon
 
 type WorldTheoryPropLanguage = ModalPropLanguageWith WorldTheoryLexicon
 
-instance CopulaSchema WorldTheoryPropLanguage
+pattern IQuant q = (FX (Lx2 (Lx4 (Bind q))))
+pattern PSV n  = FX (Lx1 (Lx6 (StaticVar n)))
+
+instance CopulaSchema WorldTheoryPropLanguage where
+    appSchema (IQuant (All x)) (LLam f) e = schematize (All x) (show (f $ worldVar x) : e)
+    appSchema (IQuant (Some x)) (LLam f) e = schematize (Some x) (show (f $ worldVar x) : e)
+    appSchema x y e = schematize x (show y : e)
+
+    lamSchema f [] = "λβ_" ++ show h ++ "." ++ show (f (PSV (-1 * h)))
+        where h = scopeHeight (LLam f)
+    lamSchema f (x:xs) = "(λβ_" ++ show h ++ "." ++ show (f (PSV (-1 * h))) ++ intercalate " " (x:xs) ++ ")"
+        where h = scopeHeight (LLam f)
+
+instance QuantLanguage 
+        (WorldTheoryPropLanguage (Form (World -> Bool))) 
+        (WorldTheoryPropLanguage (Term World)) 
+         where
+    lall v f = IQuant (All v) :!$: LLam f
+    lsome v f = IQuant (Some v) :!$: LLam f
+
+instance BoundVars WorldTheoryPropLexicon where
+        scopeUniqueVar (IQuant (All v)) (LLam f) = worldVar (show $ scopeHeight (LLam f))
+        scopeUniqueVar (IQuant (Some v)) (LLam f) = worldVar (show $ scopeHeight (LLam f))
+
+        subBoundVar = subst
 
 type WorldTheoryForm = WorldTheoryPropLanguage (Form (World -> Bool))
 
 --small convenience function for parsing
-atWorld :: WorldTheoryForm -> Int -> WorldTheoryForm
-atWorld x n = FX (Lx2 (Lx1 AtIndex)) :!$: x :!$: FX (Lx2 (Lx2 (Function (Index n) AZero)))
+atWorld :: WorldTheoryForm -> WorldTheoryPropLanguage (Term World) -> WorldTheoryForm
+atWorld x t = FX (Lx2 (Lx1 AtIndex)) :!$: x :!$: t
+
+world :: Int -> WorldTheoryPropLanguage (Term World)
+world n = FX (Lx2 (Lx2 (Function (Index n) AZero)))
+
+worldVar :: String -> WorldTheoryPropLanguage (Term World)
+worldVar s = FX (Lx2 (Lx7 (Function (Var s) AZero)))

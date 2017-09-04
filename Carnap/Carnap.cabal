@@ -41,6 +41,9 @@ library
                      , Carnap.Languages.PurePropositional.Logic.ThomasBolducAndZach
                      , Carnap.Languages.ModalPropositional.Syntax
                      , Carnap.Languages.ModalPropositional.Parser
+                     , Carnap.Languages.ModalPropositional.Logic
+                     , Carnap.Languages.ModalPropositional.Logic.Rules
+                     , Carnap.Languages.ModalPropositional.Logic.Hardegree
                      , Carnap.Languages.PureFirstOrder.Syntax
                      , Carnap.Languages.PureFirstOrder.Semantics
                      , Carnap.Languages.PureFirstOrder.Parser
