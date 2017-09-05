@@ -65,15 +65,17 @@ worldTheoryPropFormulaParser = buildExpressionParser (worldTheoryOpTable worldTh
     where subFormulaParser = coreSubformulaParser worldTheoryPropFormulaParser worldTheoryOptions
 
 opTable :: Monad m => [[Operator String u m ModalForm]]
-opTable = [[Prefix (try parseNeg), Prefix (try parseNec), Prefix (try parsePos)],
-          [ Infix (try parseOr) AssocLeft, Infix (try parseAnd) AssocLeft],
-          [ Infix (try parseIf) AssocNone, Infix (try parseIff) AssocNone]]
+opTable = [ [Prefix (try parseNeg), Prefix (try parseNec), Prefix (try parsePos)]
+          , [ Infix (try parseOr) AssocLeft, Infix (try parseAnd) AssocLeft]
+          , [ Infix (try parseIf) AssocNone, Infix (try parseIff) AssocNone]
+          ]
 
 worldTheoryOpTable :: Monad m => ModalPropositionalParserOptions WorldTheoryPropLexicon u m -> [[Operator String u m WorldTheoryForm]]
-worldTheoryOpTable opts = [[Postfix (try $ parseWorldIndexer opts)],
-                          [ Prefix (try parseNeg), Prefix (try parseNec), Prefix (try parsePos)],
-                          [ Infix (try parseOr) AssocLeft, Infix (try parseAnd) AssocLeft],
-                          [ Infix (try parseIf) AssocNone, Infix (try parseIff) AssocNone]]
+worldTheoryOpTable opts = [ [Prefix (try parseNeg), Prefix (try parseNec), Prefix (try parsePos)]
+                          , [Infix (try parseOr) AssocLeft, Infix (try parseAnd) AssocLeft]
+                          , [Infix (try parseIf) AssocNone, Infix (try parseIff) AssocNone]
+                          , [Postfix (try $ parseWorldIndexer opts)]
+                          ]
 
 parseWorldIndexer :: Monad m => ModalPropositionalParserOptions WorldTheoryPropLexicon u m -> ParsecT String u m (WorldTheoryForm -> WorldTheoryForm)
 parseWorldIndexer opts = do char '/'
