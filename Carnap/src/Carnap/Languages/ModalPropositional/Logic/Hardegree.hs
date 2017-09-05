@@ -8,6 +8,7 @@ import Carnap.Core.Data.AbstractSyntaxDataTypes (Form)
 import Carnap.Languages.ModalPropositional.Syntax
 import Carnap.Languages.ModalPropositional.Parser
 import Carnap.Languages.PurePropositional.Logic.Rules (DerivedRule)
+import Carnap.Languages.Util.GenericConnectives (StandardQuant(..))
 import Carnap.Calculi.NaturalDeduction.Syntax
 import Carnap.Calculi.NaturalDeduction.Parser
 import Carnap.Calculi.NaturalDeduction.Checker
@@ -31,6 +32,7 @@ data HardegreeWTL = AndI | AndO1 | AndO2 | AndNI | AndNO
                  | WTOr1 | WTOr2 | WTIf1 | WTIf2 | WTIff1 | WTIff2 
                  | WTAll1 | WTAll2 | WTSome1 | WTSome2 | WTNec1 | WTNec2 
                  | WTPos1 | WTPos2 | WTEG | WTUI | WTUG | WTED1 | WTED2
+                 | WTAT1  | WTAT2
                deriving (Eq)
 
 instance Show HardegreeWTL where
@@ -93,6 +95,8 @@ instance Show HardegreeWTL where
          show WTNec2 = "WT(□)"
          show WTPos1 = "WT(◇)"
          show WTPos2 = "WT(◇)"
+         show WTAT1 = "WT(/)"
+         show WTAT2 = "WT(/)"
          show WTEG = "∃I"
          show WTUI = "∀O"
          show WTUG = "UD"
@@ -159,18 +163,19 @@ instance Inference HardegreeWTL WorldTheoryPropLexicon (Form (World -> Bool))whe
          ruleOf WTNec2 = worldTheoryNecAxiom !! 1
          ruleOf WTPos1 = worldTheoryPosAxiom !! 0
          ruleOf WTPos2 = worldTheoryPosAxiom !! 1
+         ruleOf WTAT1 = worldTheoryAtAxiom !! 0
+         ruleOf WTAT2 = worldTheoryAtAxiom !! 1
          ruleOf WTEG = worldTheoryExistentialGeneralization 
          ruleOf WTUI = worldTheoryUniversalInstantiation
          ruleOf WTUG = worldTheoryUniversalGeneralization
          ruleOf WTED1 = worldTheoryExistentialDerivation !! 0
          ruleOf WTED2 = worldTheoryExistentialDerivation !! 1
 
-         -- TODO fix this up so that these rules use ProofTypes with variable
-         -- arities.
          indirectInference (SepCases n) = Just (TypedProof (ProofType 0 n))
          indirectInference (OrID n) = Just (TypedProof (ProofType n 1))
          indirectInference (AndD) = Just doubleProof
          indirectInference DD = Just (TypedProof (ProofType 0 1))
+         indirectInference WTUG = Just (TypedProof (ProofType 0 1))
          indirectInference WTED1 = Just (TypedProof (ProofType 1 1))
          indirectInference WTED2 = Just (TypedProof (ProofType 1 1))
          indirectInference x 
@@ -180,11 +185,16 @@ instance Inference HardegreeWTL WorldTheoryPropLexicon (Form (World -> Bool))whe
          isAssumption As = True
          isAssumption _ = False
 
+
+         restriction WTUG     = Just (eigenConstraint SomeWorld (SS (SeqBind (All "v") $ phi 1)) (wtlgamma 1))
+         restriction WTED1    = Just (eigenConstraint SomeWorld (SS (SeqBind (Some "v") $ phi 1) :-: SS (SeqPhi 1)) (wtlgamma 1 :+: wtlgamma 2))
+         restriction _      = Nothing
+
 parseHardegreeWTL ::  Parsec String u [HardegreeWTL]
 parseHardegreeWTL = do r <- choice (map (try . string) ["AS","PR","&I","&O","~&I","~&O","->I","->O","~->I","~->O","→I","→O","~→I","~→O","!?I"
                                                            ,"!?O","vID","\\/ID","vI","vO","~vI","~vO","\\/I","\\/O","~\\/I","~\\/O","<->I","<->O","~<->I"
                                                            ,"~<->O","↔I","↔O","~↔I","~↔O","ID","&D","SC","DN","DD","CD","REP"
-                                                           , "WT(0)", "WT(~)", "WT(/\\)", "WT(&)", "WT(\\/)", "WT(v)", "WT(->)", "WT(<->)"
+                                                           , "WT(0)", "WT(~)", "WT(/\\)", "WT(&)", "WT(\\/)", "WT(v)", "WT(->)", "WT(<->)", "WT(/)"
                                                            , "WT(A)", "WT(E)", "WT([])", "WT(<>)", "EI", "AO", "UD" , "ED"
                                                            ])
                        case r of
@@ -234,6 +244,7 @@ parseHardegreeWTL = do r <- choice (map (try . string) ["AS","PR","&I","&O","~&I
                          "WT(v)"   -> return [WTOr1, WTOr2]
                          "WT(->)"  -> return [WTIf1, WTIf2]
                          "WT(<->)" -> return [WTIff1, WTIff2]
+                         "WT(/)"   -> return [WTAT1, WTAT2]
                          "WT(A)"   -> return [WTAll1, WTAll2]
                          "WT(E)"   -> return [WTSome1, WTSome2]
                          "WT([])"  -> return [WTNec1, WTNec2]

@@ -11,7 +11,6 @@ import Carnap.Core.Data.Util (scopeHeight)
 import Control.Lens.Plated (transform)
 import Data.Typeable (Typeable)
 import Data.List (intercalate)
-import Data.List (intercalate)
 import Data.Map.Lazy (Map, (!))
 import qualified Data.Monoid as M
 import Carnap.Languages.Util.GenericConnectives

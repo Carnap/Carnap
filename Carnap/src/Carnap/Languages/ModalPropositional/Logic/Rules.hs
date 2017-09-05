@@ -1,4 +1,4 @@
-{-#LANGUAGE GADTs, PatternSynonyms,  FlexibleInstances, MultiParamTypeClasses, TypeOperators #-}
+{-#LANGUAGE GADTs, PatternSynonyms, FlexibleContexts, FlexibleInstances, MultiParamTypeClasses, TypeOperators #-}
 module Carnap.Languages.ModalPropositional.Logic.Rules where
 
 import Text.Parsec
@@ -73,6 +73,19 @@ pattern TheWorld          = SeqIndex 0
 pattern SomeWorld         = SeqSchmIdx 0
 pattern SeqCons x y       = SeqIdxCons IndexCons ATwo :!$: x :!$: y
 
+eigenConstraint c suc ant sub
+    | c' `occursIn` ant' = Just $ "The index " ++ show c' ++ " appears not to be fresh, given that this line relies on " ++ show ant'
+    | c' `occursIn` suc' = Just $ "The index " ++ show c' ++ " appears not to be fresh in the other premise " ++ show suc'
+    | otherwise = case c' of 
+                          TheWorld -> Just "the index '0' is never counts as fresh, since it has a special meaning"
+                          _ -> Nothing
+    where c'   = applySub sub c
+          ant' = applySub sub ant
+          suc' = applySub sub suc
+          -- XXX : this is not the most efficient way of checking
+          -- imaginable.
+          occursIn x y = not $ (subst x (static 0) y) =* y
+
 instance Eq (WorldTheorySequentCalc a) where
         (==) = (=*)
 
@@ -81,6 +94,9 @@ instance ParsableLex (Form (World -> Bool)) WorldTheoryPropLexicon where
 
 phi :: Int -> WorldTheorySequentCalc (Term World) -> WorldTheorySequentCalc (Form (World -> Bool))
 phi n x = SeqPPhi n :!$: x
+
+wtlgamma :: Int -> WorldTheorySequentCalc (Antecedent (Form (World -> Bool)))
+wtlgamma = GammaV
 
 worldTheorySeqParser = seqFormulaParser :: Parsec String u (WorldTheorySequentCalc (Sequent (Form (World -> Bool))))
 
@@ -409,11 +425,15 @@ worldTheorySomeAxiom = bidir
 
 worldTheoryNecAxiom = bidir
                 ( GammaV 1 :|-: SS (SeqBind (All "v") (\x -> SeqPhi 1 :/: x)))
-                ( GammaV 1 :|-: SS (SeqNec $ SeqPhi 1 ))
+                ( GammaV 1 :|-: SS ((SeqNec $ SeqPhi 1) :/: SomeWorld ))
 
 worldTheoryPosAxiom = bidir
                 ( GammaV 1 :|-: SS (SeqBind (Some "v") (\x -> SeqPhi 1 :/: x)))
-                ( GammaV 1 :|-: SS (SeqPos $ SeqPhi 1 ))
+                ( GammaV 1 :|-: SS ((SeqPos $ SeqPhi 1) :/: SomeWorld ))
+
+worldTheoryAtAxiom = bidir
+                ( GammaV 1 :|-: SS (SeqPhi 1 :/: SomeWorld))
+                ( GammaV 1 :|-: SS ((SeqPhi 1 :/: SomeWorld) :/: SeqSchmIdx 1))
 
 -------------------------------
 --  1.2.2 Replacement Rules  --
