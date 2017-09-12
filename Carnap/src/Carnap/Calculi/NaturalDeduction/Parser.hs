@@ -297,7 +297,7 @@ toProofTreeHardegree ded n = case ded !! (n - 1)  of
                    mapM_ checkDep deps
                    dp <- case indirectInference r' of
                             Just (TypedProof prooftype) -> subproofProcess prooftype (n + 1) m
-                            Nothing -> err "This rule is not a rule of indirect proof, and so cannot be used with a show line"
+                            Nothing -> subproofProcess (ProofType 0 . length $ premisesOf r') (n + 1) m --Hardegree allows this, and it's rather nice in his notation
                    deps' <- mapM (toProofTreeHardegree ded) (dp ++ deps)
                    return $ Node (ProofLine n (SS $ liftToSequent f) r) deps'
                 where checkDep depline = takeRange depline n >>= scan
