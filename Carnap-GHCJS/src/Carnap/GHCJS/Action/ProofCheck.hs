@@ -162,7 +162,7 @@ threadedCheck checker w ref v (g, fd) =
                Just t -> killThread t
                Nothing -> return ()
            t' <- forkIO $ do setAttribute g "class" "goal working"
-                             threadDelay 200000
+                             threadDelay 500000
                              rules <- case checkerRules checker of
                                              Nothing -> return mempty
                                              Just ref -> do rlist <- liftIO $ readIORef ref
