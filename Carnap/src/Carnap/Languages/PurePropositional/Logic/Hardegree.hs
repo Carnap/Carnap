@@ -124,7 +124,7 @@ instance Inference HardegreeSL PurePropLexicon (Form Bool) where
          isAssumption _ = False
 
 parseHardegreeSL :: Map String DerivedRule -> Parsec String u [HardegreeSL]
-parseHardegreeSL ders = do r <- choice (map (try . string) ["AS","PR","&I","&O","~&I","~&O","->I","->O","~->I","~->O","→I","→O","~→I","~→O","!?I"
+parseHardegreeSL ders = do r <- choice (map (try . string) ["AS","PR","&I","&O","~&I","~&O","/\\I","/\\O","~/\\I","~/\\O","->I","->O","~->I","~->O","→I","→O","~→I","~→O","!?I"
                                                            ,"!?O","vID","\\/ID","vI","vO","~vI","~vO","\\/I","\\/O","~\\/I","~\\/O","<->I","<->O","~<->I"
                                                            ,"~<->O","↔I","↔O","~↔I","~↔O","ID","&D","SC","DN","DD","CD","REP"
                                                            ])
@@ -136,6 +136,10 @@ parseHardegreeSL ders = do r <- choice (map (try . string) ["AS","PR","&I","&O",
                              "&O"    -> return [AndO1,AndO2]
                              "~&I"   -> return [AndNI]
                              "~&O"   -> return [AndNO]
+                             "/\\I"  -> return [AndI]
+                             "/\\O"  -> return [AndO1,AndO2]
+                             "~/\\I" -> return [AndNI]
+                             "~/\\O" -> return [AndNO]
                              "->I"   -> return [IfI1,IfO2]
                              "->O"   -> return [IfO1,IfO2]
                              "~->I"  -> return [IfNI]
