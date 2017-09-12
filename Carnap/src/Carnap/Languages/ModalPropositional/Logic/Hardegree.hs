@@ -191,12 +191,13 @@ instance Inference HardegreeWTL WorldTheoryPropLexicon (Form (World -> Bool))whe
          restriction _      = Nothing
 
 parseHardegreeWTL ::  Parsec String u [HardegreeWTL]
-parseHardegreeWTL = do r <- choice (map (try . string) ["AS","PR","&I","&O","~&I","~&O","->I","->O","~->I","~->O","→I","→O","~→I","~→O","!?I"
-                                                           ,"!?O","vID","\\/ID","vI","vO","~vI","~vO","\\/I","\\/O","~\\/I","~\\/O","<->I","<->O","~<->I"
-                                                           ,"~<->O","↔I","↔O","~↔I","~↔O","ID","&D","SC","DN","DD","CD","REP"
-                                                           , "WT(0)", "WT(~)", "WT(/\\)", "WT(&)", "WT(\\/)", "WT(v)", "WT(->)", "WT(<->)", "WT(/)"
-                                                           , "WT(A)", "WT(E)", "WT([])", "WT(<>)", "EI", "AO", "UD" , "ED"
-                                                           ])
+parseHardegreeWTL = do r <- choice (map (try . string) [ "AS","PR","&I","&O","~&I","~&O","/\\I","/\\O","-/\\I","-/\\O","~/\\I","~/\\O","->I","->O","-->I"
+                                                       , "-->O","~->I","~->O","→I","→O","-→I","-→O","~→I","~→O","!?I"
+                                                       , "!?O","vID","\\/ID","vI","vO","-vI","-vO", "~vI","~vO","\\/I","\\/O","-\\/I","-\\/O","~\\/I","~\\/O"
+                                                       , "<->I","<->O","-<->I", "-<->O", "~<->I", "~<->O","↔I","↔O","-↔I","-↔O", "~↔I","~↔O"
+                                                       , "ID","&D","SC","DN","DD","CD","REP" , "WT(0)", "WT(~)", "WT(/\\)", "WT(&)", "WT(\\/)", "WT(v)", "WT(->)", "WT(<->)", "WT(/)"
+                                                       , "WT(A)", "WT(E)", "WT([])", "WT(<>)", "EI", "AO", "UD" , "ED"
+                                                       ])
                        case r of
                          "AS"    -> return [As]
                          "PR"    -> return [Pr]
@@ -205,18 +206,30 @@ parseHardegreeWTL = do r <- choice (map (try . string) ["AS","PR","&I","&O","~&I
                          "&O"    -> return [AndO1,AndO2]
                          "~&I"   -> return [AndNI]
                          "~&O"   -> return [AndNO]
+                         "/\\I"  -> return [AndI]
+                         "/\\O"  -> return [AndO1,AndO2]
+                         "-/\\I" -> return [AndNI]
+                         "-/\\O" -> return [AndNO]
+                         "~/\\I" -> return [AndNI]
+                         "~/\\O" -> return [AndNO]
                          "->I"   -> return [IfI1,IfO2]
                          "->O"   -> return [IfO1,IfO2]
+                         "-->I"  -> return [IfNI]
+                         "-->O"  -> return [IfNO]
                          "~->I"  -> return [IfNI]
                          "~->O"  -> return [IfNO]
                          "→I"    -> return [IfO1,IffO2]           
                          "→O"    -> return [IfI1,IfO2]          
+                         "-→I"   -> return [IfNI]
+                         "-→O"   -> return [IfNO]
                          "~→I"   -> return [IfNI]
                          "~→O"   -> return [IfNO]
                          "!?I"   -> return [FalI]
                          "!?O"   -> return [FalO]
                          "vI"    -> return [OrI1, OrI2]
                          "vO"    -> return [OrO1, OrO2]
+                         "-vI"   -> return [OrNI]
+                         "-vO"   -> return [OrNO]
                          "~vI"   -> return [OrNI]
                          "~vO"   -> return [OrNO]
                          "\\/I"  -> return [OrI1, OrI2] 
@@ -225,10 +238,14 @@ parseHardegreeWTL = do r <- choice (map (try . string) ["AS","PR","&I","&O","~&I
                          "~\\/O" -> return [OrNO]
                          "<->I"  -> return [IffI]       
                          "<->O"  -> return [IffO1,IffO2]
+                         "-<->I" -> return [IffNI]       
+                         "-<->O" -> return [IffNO]
                          "~<->I" -> return [IffNI]       
                          "~<->O" -> return [IffNO]
                          "↔I"    -> return [IffI]       
                          "↔O"    -> return [IffO1,IffO2]
+                         "-↔I"   -> return [IffNI]       
+                         "-↔O"   -> return [IffNO]
                          "~↔I"   -> return [IffNI]       
                          "~↔O"   -> return [IffNO]
                          "ID"    -> return [ID1,ID2,ID3,ID4]
