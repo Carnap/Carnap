@@ -5,7 +5,7 @@ where
 
 import Carnap.Core.Data.AbstractSyntaxDataTypes (Term, Form, FixLang)
 import Carnap.Languages.ModalPropositional.Syntax
-import Carnap.Languages.Util.LanguageClasses (BooleanLanguage, ModalLanguage, IndexedPropLanguage, IndexedSchemePropLanguage)
+import Carnap.Languages.Util.LanguageClasses (BooleanLanguage, BooleanConstLanguage, ModalLanguage, IndexedPropLanguage, IndexedSchemePropLanguage)
 import Carnap.Languages.Util.GenericParsers
 import Text.Parsec
 import Text.Parsec.Expr
@@ -18,11 +18,12 @@ data ModalPropositionalParserOptions lex u m = ModalPropositionalParserOptions
                                             -> ParsecT String u m (FixLang lex (Form (World -> Bool)))
                                             -> ParsecT String u m (FixLang lex (Form (World -> Bool))))
                                      , freeVarParser :: Maybe (ParsecT String u m (FixLang lex (Term World)))
+                                     , hasBooleanConstants :: Bool
                                      }
-
 
 --subformulas are either
 coreSubformulaParser :: ( BooleanLanguage (FixLang lex (Form (World -> Bool)))
+                        , BooleanConstLanguage (FixLang lex (Form (World -> Bool)))
                         , ModalLanguage (FixLang lex (Form (World -> Bool)))
                         , IndexedPropLanguage (FixLang lex (Form (World -> Bool)))
                         , IndexedSchemePropLanguage (FixLang lex (Form (World -> Bool)))) =>
@@ -40,13 +41,22 @@ coreSubformulaParser fp opts =
                  _ -> parserZero
         --or atoms
         <|> try (sentenceLetterParser "PQRSTUVW" <* spaces)
+        <|> if hasBooleanConstants opts 
+                then try (booleanConstParser <* spaces) 
+                else parserZero
         <|> (schemevarParser <* spaces)
 
-simpleModalOptions :: ModalPropositionalParserOptions ModalPropLexicon u Identity
+simpleModalOptions :: ( BooleanLanguage (FixLang lex (Form (World -> Bool)))
+                      , BooleanConstLanguage (FixLang lex (Form (World -> Bool)))
+                      , ModalLanguage (FixLang lex (Form (World -> Bool)))
+                      , IndexedPropLanguage (FixLang lex (Form (World -> Bool)))
+                      , IndexedSchemePropLanguage (FixLang lex (Form (World -> Bool)))) =>
+    ModalPropositionalParserOptions lex u Identity
 simpleModalOptions = ModalPropositionalParserOptions
                    { atomicSentenceParser = sentenceLetterParser "PQRSTUVW"
                    , quantifiedSentenceParser' = Nothing
                    , freeVarParser = Nothing
+                   , hasBooleanConstants = False
                    }
 
 modalPropFormulaParser :: Parsec String u ModalForm
@@ -54,10 +64,10 @@ modalPropFormulaParser = buildExpressionParser opTable subFormulaParser
     where subFormulaParser = coreSubformulaParser modalPropFormulaParser simpleModalOptions
 
 worldTheoryOptions :: ModalPropositionalParserOptions WorldTheoryPropLexicon u Identity
-worldTheoryOptions = ModalPropositionalParserOptions
-                   { atomicSentenceParser = sentenceLetterParser "PQRSTUVW"
-                   , quantifiedSentenceParser' = Just quantifiedSentenceParser
+worldTheoryOptions = simpleModalOptions
+                   { quantifiedSentenceParser' = Just quantifiedSentenceParser
                    , freeVarParser = Just (parseWorldVar "ijklmn")
+                   , hasBooleanConstants = True
                    }
 
 worldTheoryPropFormulaParser :: Parsec String u WorldTheoryForm

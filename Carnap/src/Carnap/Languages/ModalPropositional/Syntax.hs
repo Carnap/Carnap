@@ -145,7 +145,9 @@ pattern MPred x arity  = FX (Lx1 (Lx1 (Predicate x arity)))
 pattern MSPred x arity = FX (Lx1 (Lx2 (Predicate x arity)))
 pattern MBCon x arity  = FX (Lx1 (Lx3 (Connective x arity)))
 pattern MMCon x arity  = FX (Lx1 (Lx4 (Connective x arity)))
-pattern MSV n          = FX (Lx1 (Lx5 (SubVar n)))
+pattern MVerum         = FX (Lx1 (Lx5 (Connective (Verum) AZero)))
+pattern MFalsum        = FX (Lx1 (Lx5 (Connective (Falsum) AZero)))
+pattern MSV n          = FX (Lx1 (Lx6 (SubVar n)))
 pattern MAnd           = MBCon And ATwo
 pattern MOr            = MBCon Or ATwo
 pattern MIf            = MBCon If ATwo
@@ -173,6 +175,10 @@ instance BooleanLanguage (ModalPropLanguageWith a (Form (World -> Bool))) where
 instance ModalLanguage (ModalPropLanguageWith a (Form (World -> Bool))) where
         nec = MNec
         pos = MPos
+
+instance BooleanConstLanguage (ModalPropLanguageWith a (Form (World -> Bool))) where
+        lverum = MVerum
+        lfalsum = MFalsum
 
 instance IndexedPropLanguage (ModalPropLanguageWith a (Form (World -> Bool))) where
         pn = MP
