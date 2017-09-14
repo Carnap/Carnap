@@ -181,21 +181,19 @@ infixr 6 ∴
 --------------------------------------------------------
 
 class Typeable a => Concretes lex a where
-    concretes :: Traversal' (ClassicalSequentOver lex b) (ClassicalSequentOver lex a)
+    concretes :: Typeable b => Traversal' (ClassicalSequentOver lex b) (ClassicalSequentOver lex a)
     concretes f (a :|-: a') = (:|-:) <$> concretes f a <*> concretes f a'
     concretes f (a :+: a') = (:+:) <$> concretes f a <*> concretes f a'
     concretes f (a :-: a') = (:-:) <$> concretes f a <*> concretes f a'
-    concretes f (SA (x :: ClassicalSequentOver lex b)) = 
-        case eqT :: Maybe (a :~: b) of
-            Just Refl -> SA <$> f x
-            Nothing -> pure (SA x)
-    concretes f (SS (x :: ClassicalSequentOver lex b)) = 
-        case eqT :: Maybe (a :~: b) of
-            Just Refl -> SS <$> f x
-            Nothing -> pure (SS x)
+    concretes f (SA x) = SA <$> concretes f x
+    concretes f (SS x) = SS <$> concretes f x
     concretes f (GammaV n) = pure (GammaV n)
     concretes f (Top) = pure Top
     concretes f (Bot) = pure Bot
+    concretes f (x :: ClassicalSequentOver lex b) = 
+        case eqT :: Maybe (a :~: b) of
+            Just Refl -> f x
+            Nothing -> pure x
 
 instance Concretes lex (Form Bool)
 
