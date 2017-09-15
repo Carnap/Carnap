@@ -195,7 +195,7 @@ parseHardegreeWTL = do r <- choice (map (try . string) [ "AS","PR","&I","&O","~&
                                                        , "-->O","~->I","~->O","→I","→O","-→I","-→O","~→I","~→O","!?I"
                                                        , "!?O","vID","\\/ID","vI","vO","-vI","-vO", "~vI","~vO","\\/I","\\/O","-\\/I","-\\/O","~\\/I","~\\/O"
                                                        , "<->I","<->O","-<->I", "-<->O", "~<->I", "~<->O","↔I","↔O","-↔I","-↔O", "~↔I","~↔O"
-                                                       , "ID","&D","SC","DN","DD","CD","REP" , "WT(0)", "WT(~)", "WT(/\\)", "WT(&)", "WT(\\/)", "WT(v)", "WT(->)", "WT(<->)", "WT(/)"
+                                                       , "ID","&D","SC","DN","DD","CD","REP" , "WT(0)", "WT(-)", "WT(~)", "WT(/\\)", "WT(&)", "WT(\\/)", "WT(v)", "WT(->)", "WT(<->)", "WT(/)"
                                                        , "WT(A)", "WT(E)", "WT([])", "WT(<>)", "EI", "AO", "UD" , "ED"
                                                        ])
                        case r of
@@ -255,6 +255,7 @@ parseHardegreeWTL = do r <- choice (map (try . string) [ "AS","PR","&I","&O","~&
                          "CD"    -> return [CD1,CD2]
                          "WT(0)" -> return [WTZero1,WTZero2]
                          "WT(~)" -> return [WTNeg1,WTNeg2]
+                         "WT(-)" -> return [WTNeg1,WTNeg2]
                          "WT(/\\)" -> return [WTAnd1, WTAnd2]
                          "WT(&)"   -> return [WTAnd1, WTAnd2]
                          "WT(\\/)" -> return [WTOr1, WTOr2]
