@@ -65,6 +65,7 @@ courseData KSUSymbolicI2017 = (blankCourse GrahamLeachKrouse "Symbolic Logic I -
         , ( 3, toTime "11:59 pm CDT, Sep 8, 2017")
         , ( 4, toTime "11:59 pm CDT, Sep 13, 2017")
         , ( 5, toTime "11:59 pm CDT, Sep 15, 2017")
+        , ( 6, toTime "11:59 pm CDT, Sep 20, 2017")
         ]
     }
 courseData KSUIntroToFormal2017 = (blankCourse GrahamLeachKrouse "Introduction to Formal Logic - PHILO110 - Kansas State University")
@@ -75,6 +76,7 @@ courseData KSUIntroToFormal2017 = (blankCourse GrahamLeachKrouse "Introduction t
         , ( 2, toTime "11:59 pm CDT, Sep 6, 2017")
         , ( 3, toTime "11:59 pm CDT, Sep 11, 2017")
         , ( 4, toTime "11:59 pm CDT, Sep 15, 2017")
+        , ( 5, toTime "11:59 pm CDT, Sep 20, 2017")
         ]
     }
 courseData KSUModalLogic2017 = (blankCourse GrahamLeachKrouse "Modal Logic (independent study) - Kansas State University")
