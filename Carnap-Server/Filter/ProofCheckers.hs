@@ -20,7 +20,7 @@ activate cls chunk
     | "ForallxSLPlus" `elem` cls = actTemplate "proofchecker magnusSLPlus Render"
     | "ForallxQL" `elem` cls = actTemplate "proofchecker magnusQL Render"
     | "HardegreeSL" `elem` cls = actTemplate "proofchecker hardegreeSL Render"
-    | "HardegreeWTL" `elem` cls = actTemplate "proofchecker hardegreeWTL Render"
+    | "HardegreeWTL" `elem` cls = actTemplate "proofchecker hardegreeWTL Render guides"
     | otherwise = RawBlock "html" "<div>No Matching Logic for Derivation</div>"
     where numof = takeWhile (/= ' ')
           (h:t) = formatChunk chunk

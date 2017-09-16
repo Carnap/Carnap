@@ -144,6 +144,7 @@ activateChecker drs w (Just iog@(IOGoal i o g classes))
                                    , directed = True
                                    , feedback = Keypress
                                    , initialUpdate = False
+                                   , indentGuides = False
                                    }
               buildOptions = execState (mapM processOption options) standardOptions
                                 where processOption (s,f) = when (s `elem` classes) (modify f)
@@ -153,6 +154,7 @@ activateChecker drs w (Just iog@(IOGoal i o g classes))
                                                 , ("ruleMaker", \o -> o {directed = False , submit = Just saveButton })
                                                 , ("manualFeedback", \o -> o {feedback = Click})
                                                 , ("noFeedback", \o -> o {feedback = Never})
+                                                , ("guides", \o -> o {indentGuides = True})
                                                 ]
                                       saveButton = Button {label = "Save Rule" , action = trySave drs}
 

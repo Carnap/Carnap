@@ -8,6 +8,8 @@ import Lib
 import Data.IORef (IORef, newIORef,writeIORef,readIORef)
 import Text.Hamlet
 import Text.Blaze.Html.Renderer.String
+import Control.Monad.Trans.State.Lazy
+import Control.Monad.IO.Class
 import GHCJS.DOM.Types
 import GHCJS.DOM.Element (setAttribute, setInnerHTML,keyUp,click)
 import GHCJS.DOM.Document (createElement, getDefaultView)
@@ -27,6 +29,7 @@ data CheckerOptions = CheckerOptions { submit :: Maybe Button -- What's the subm
                                      , directed :: Bool -- Is the checker directed towards a sequent?
                                      , feedback :: CheckerFeedbackUpdate --what type of feedback should the checker give?
                                      , initialUpdate :: Bool -- Should the checker be updated on load?
+                                     , indentGuides :: Bool -- Should the checker display indentation guides?
                                      }
 
 checkerWith :: CheckerOptions -> (Document -> IORef Bool -> String -> (Element, Element) -> IO ()) -> IOGoal -> Document -> IO ()
@@ -43,10 +46,9 @@ checkerWith options updateres iog@(IOGoal i o g classes) w = do
            appendChild o mnumberDiv
            appendChild o mfeedbackDiv
            appendChild g mspinnerDiv
-           lineupd <- newListener $ onKey ["Enter","Backspace","Delete"] $ updateLines w nd
+           lineupd <- newListener $ updateLines w nd (indentGuides options) --formerly onKey ["Enter","Backspace","Delete"] $
            (Just w') <- getDefaultView w
            addListener i keyUp lineupd False
-           setLinesTo w nd 1
            syncScroll i o
            --respond to custom initialize events
            initlistener <- newListener $ genericUpdateResults2 (updateres w ref) g fd
@@ -72,8 +74,8 @@ checkerWith options updateres iog@(IOGoal i o g classes) w = do
                Nothing -> return ()
            mv <- getValue (castToHTMLTextAreaElement i)
            case mv of
-               Nothing -> return ()
-               (Just iv) -> do setLinesTo w nd (1 + length (lines iv))
+               Nothing -> setLinesTo w nd (indentGuides options) [" "]
+               (Just iv) -> do setLinesTo w nd (indentGuides options) (lines iv)
                                if initialUpdate options then updateres w ref iv (g, fd) else return ()
 
 spinnerHtml = renderHtml [shamlet|
@@ -82,16 +84,33 @@ spinnerHtml = renderHtml [shamlet|
     <path fill="#000" d="M26.013,10.047l1.654-2.866c-2.198-1.272-4.743-2.012-7.466-2.012h0v3.312h0 C22.32,8.481,24.301,9.057,26.013,10.047z">
         <animateTransform attributeType="xml" attributeName="transform" type="rotate" from="0 20 20" to="360 20 20" dur="0.5s" repeatCount="indefinite"/>|]
 
-updateLines :: (IsElement e) => Document -> e -> EventM HTMLTextAreaElement KeyboardEvent ()
-updateLines w nd =  do (Just t) <- target :: EventM HTMLTextAreaElement KeyboardEvent (Maybe HTMLTextAreaElement)
-                       mv <- getValue t
-                       case mv of 
-                           Nothing -> return ()
-                           Just v -> setLinesTo w nd (1 + length (lines v))
+updateLines :: (IsElement e) => Document -> e -> Bool -> EventM HTMLTextAreaElement KeyboardEvent ()
+updateLines w nd hasguides =  do (Just t) <- target :: EventM HTMLTextAreaElement KeyboardEvent (Maybe HTMLTextAreaElement)
+                                 mv <- getValue t
+                                 case mv of 
+                                     Nothing -> return ()
+                                     Just v -> liftIO $ setLinesTo w nd hasguides (lines v)
                                       
-setLinesTo w nd n = do setInnerHTML nd (Just "")
-                       linenos <- mapM toLineNo [1 .. n]
-                       mapM_ (appendChild nd . Just) linenos
-    where toLineNo m = do (Just lno) <- createElement w (Just "div")
-                          setInnerHTML lno (Just $ show m ++ ".")
-                          return lno
+setLinesTo :: (IsElement e) => Document -> e -> Bool -> [String] -> IO ()
+setLinesTo w nd hasguides [] = setLinesTo w nd hasguides [""]
+setLinesTo w nd hasguides lines = do setInnerHTML nd (Just "")
+                                     overlays <- evalStateT (mapM toLineNo lines) (0,[])
+                                     mapM_ (appendChild nd . Just) overlays
+    where toLineNo :: String -> StateT (Int,[Int]) IO Element
+          toLineNo l = do (no,guidelevels) <- get --line number and guide levels of previous line
+                          (Just overlay) <- liftIO $ createElement w (Just "div")
+                          let (indent,rest) = (takeWhile (== ' ') l, dropWhile (== ' ') l)
+                          let guidelevels'= dropWhile (\x -> (length indent) < x) guidelevels --remove guides below current indentation
+                          let guidestring = if hasguides 
+                                            then reverse . concat . map (\n -> '│' : replicate (n - 1) ' ') $ differences guidelevels'
+                                            else ""
+                          liftIO $ setInnerHTML overlay (Just $ show (no + 1) ++ "." ++ guidestring)
+                          let guidelevels'' = if take 4 rest `elem` ["show","Show","SHOW"] 
+                                              then length indent : guidelevels' 
+                                              else guidelevels' 
+                          put (no + 1, guidelevels'')
+                          return overlay
+
+          differences (x:y:l) = x - y : differences (y:l)
+          differences [x]     = [x]
+          differences []      = []

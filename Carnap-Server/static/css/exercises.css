@@ -36,6 +36,7 @@
 
 .numbering {
     display:inline-block;
+    white-space:pre;
 }
 
 /* probably need a subordinate div containing this and the feedback to fix the :hover issue on iOS*/
