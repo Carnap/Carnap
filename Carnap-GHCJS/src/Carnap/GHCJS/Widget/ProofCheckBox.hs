@@ -100,11 +100,15 @@ setLinesTo w nd hasguides lines = do setInnerHTML nd (Just "")
           toLineNo l = do (no,guidelevels) <- get --line number and guide levels of previous line
                           (Just overlay) <- liftIO $ createElement w (Just "div")
                           let (indent,rest) = (takeWhile (== ' ') l, dropWhile (== ' ') l)
-                          let guidelevels'= dropWhile (\x -> (length indent) < x) guidelevels --remove guides below current indentation
+                          let guidelevels'= dropWhile (\x -> (length indent) <= x) guidelevels --remove guides below current indentation
                           let guidestring = if hasguides 
                                             then reverse . concat . map (\n -> '│' : replicate (n - 1) ' ') $ differences guidelevels'
                                             else ""
-                          liftIO $ setInnerHTML overlay (Just $ show (no + 1) ++ "." ++ guidestring)
+                          let prespace  | no < 9 = "   "
+                                        | no < 99 = "  "
+                                        | no < 999 = " "
+                                        | otherwise  = ""
+                          liftIO $ setInnerHTML overlay (Just $ prespace ++ show (no + 1) ++ ". " ++ guidestring)
                           let guidelevels'' = if take 4 rest `elem` ["show","Show","SHOW"] 
                                               then length indent : guidelevels' 
                                               else guidelevels' 
