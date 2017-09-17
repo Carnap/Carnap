@@ -55,7 +55,6 @@ instance CopulaSchema MSOLSequentCalc where
         where h = scopeHeight (LLam f)
 
 -- TODO unify the different kinds of eigenconstrants 
-
 eigenConstraint c suc ant sub
     | c' `occursIn` ant' = Just $ "The constant " ++ show c' ++ " appears not to be fresh, given that this line relies on " ++ show ant'
     | c' `occursIn` suc' = Just $ "The constant " ++ show c' ++ " appears not to be fresh in the other premise " ++ show suc'
@@ -201,16 +200,16 @@ polyadicExistentialDerivation n = [
 --  2. Helper Functions  --
 ---------------------------
 
-ss :: MonadicallySOL (Form Bool) -> MSOLSequentCalc Succedent
+ss :: MonadicallySOL (Form Bool) -> MSOLSequentCalc (Succedent (Form Bool))
 ss = SS . liftToSequent
 
-sa :: MonadicallySOL (Form Bool) -> MSOLSequentCalc Antecedent
+sa :: MonadicallySOL (Form Bool) -> MSOLSequentCalc (Antecedent (Form Bool))
 sa = SA . liftToSequent
 
-ss' :: PolyadicallySOL (Form Bool) -> PSOLSequentCalc Succedent
+ss' :: PolyadicallySOL (Form Bool) -> PSOLSequentCalc (Succedent (Form Bool))
 ss' = SS . liftToSequent
 
-sa' :: PolyadicallySOL (Form Bool) -> PSOLSequentCalc Antecedent
+sa' :: PolyadicallySOL (Form Bool) -> PSOLSequentCalc (Antecedent (Form Bool))
 sa' = SA . liftToSequent
 
 tau :: MonadicallySOL (Term Int)

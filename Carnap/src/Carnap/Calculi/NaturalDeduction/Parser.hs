@@ -4,6 +4,7 @@ module Carnap.Calculi.NaturalDeduction.Parser where
 import Data.Tree
 import Data.Either
 import Data.List
+import Data.Typeable
 import Carnap.Core.Data.AbstractSyntaxDataTypes
 import Carnap.Core.Data.AbstractSyntaxClasses
 import Carnap.Languages.ClassicalSequent.Syntax
@@ -119,9 +120,10 @@ In a Kalish and Montegue deduction, find the prooftree corresponding to
 *line n* in ded, where proof line numbers start at 1
 -}
 toProofTreeMontegue :: 
-    ( Inference r lex
+    ( Inference r lex sem
     , Sequentable lex
-    ) => Deduction r lex -> Int -> Either (ProofErrorMessage lex) (ProofTree r lex)
+    , Typeable sem
+    ) => Deduction r lex sem -> Int -> Either (ProofErrorMessage lex) (ProofTree r lex sem)
 toProofTreeMontegue ded n = case ded !! (n - 1)  of
           (AssertLine f r dpth depairs) -> 
                 do let deps = map fst depairs
@@ -141,12 +143,12 @@ toProofTreeMontegue ded n = case ded !! (n - 1)  of
                       matchShow = let ded' = drop n ded in
                           case findIndex (qedAt d) ded' of
                               Nothing -> err "Open subproof (no corresponding QED)"
-                              Just m' -> isSubProof n (n + m' - 1)
+                              Just m' -> isSubProof n (n + m')
                       isSubProof n m = case lineRange n m of
                         (h:t) -> if all (\x -> depth x > depth h) t
-                                   then Right (m + 1)
-                                   else  err $ "Open subproof on lines" ++ show n ++ " to " ++ show m ++ " (no QED in this subproof)"
-                        []    -> Right (m+1)
+                                   then Right m 
+                                   else err $ "Open subproof starting on " ++ show n ++ " (indented subproof ends before QED line at " ++ show (m + 1) ++ ")"
+                        []    -> Right (m + 1)
                       qedAt d (QedLine _ dpth _) = d == dpth
                       qedAt d _ = False
           (QedLine _ _ _) -> err "A QED line cannot be cited as a justification" 
@@ -178,9 +180,10 @@ In a Fitch deduction, find the prooftree corresponding to
 *line n* in ded, where proof line numbers start at 1
 -}
 toProofTreeFitch :: 
-    ( Inference r lex
+    ( Inference r lex sem
     , Sequentable lex
-    ) => Deduction r lex -> Int -> Either (ProofErrorMessage lex) (ProofTree r lex)
+    , Typeable sem
+    ) => Deduction r lex sem -> Int -> Either (ProofErrorMessage lex) (ProofTree r lex sem)
 toProofTreeFitch ded n = case ded !! (n - 1)  of
           l@(AssertLine f r@(r':_) dpth deps) -> 
                 do mapM_ checkDep deps 
@@ -272,15 +275,15 @@ toProofTreeFitch ded n = case ded !! (n - 1)  of
             where begin = ded !! (m - 1)
                   end = ded !! (n - 1)
 
-
 {- | 
 In a Hardegree deduction, find the prooftree corresponding to
 *line n* in ded, where proof line numbers start at 1
 -}
 toProofTreeHardegree :: 
-    ( Inference r lex
+    ( Inference r lex sem
     , Sequentable lex
-    ) => Deduction r lex -> Int -> Either (ProofErrorMessage lex) (ProofTree r lex)
+    , Typeable sem
+    ) => Deduction r lex sem -> Int -> Either (ProofErrorMessage lex) (ProofTree r lex sem)
 toProofTreeHardegree ded n = case ded !! (n - 1)  of
           (AssertLine f r dpth depairs) -> 
                 do let deps = map fst depairs
@@ -294,19 +297,16 @@ toProofTreeHardegree ded n = case ded !! (n - 1)  of
                    mapM_ checkDep deps
                    dp <- case indirectInference r' of
                             Just (TypedProof prooftype) -> subproofProcess prooftype (n + 1) m
-                            Nothing -> err "This rule is not a rule of indirect proof, and so cannot be used with a show line"
+                            Nothing -> subproofProcess (ProofType 0 . length $ premisesOf r') (n + 1) m --Hardegree allows this, and it's rather nice in his notation
                    deps' <- mapM (toProofTreeHardegree ded) (dp ++ deps)
                    return $ Node (ProofLine n (SS $ liftToSequent f) r) deps'
                 where checkDep depline = takeRange depline n >>= scan
                       matchShow = let ded' = drop n ded in
-                          case findIndex (\l -> depth l == d) ded' of
-                              Nothing -> isSubProof n (length ded)
-                              Just m' -> isSubProof n (n + m')
-                      isSubProof n m = case lineRange n m of
-                        (h:t) -> if all (\x -> depth x > depth h) t
-                                   then Right m
-                                   else  err $ "Open subproof on lines" ++ show n ++ " to " ++ show m
-                        []    -> Right (m+1)
+                          case findIndex (\l -> depth l <= d) ded' of
+                              Nothing -> Right (length ded)
+                              Just m' -> Right (n + m')
+                                  -- XXX: since we're looking for the line number, starting at 1,
+                                  -- the index (starting at zero) of the next line is actually what we want
           (PartialLine _ e _) -> Left $ NoParse e n
 
     where err :: String -> Either (ProofErrorMessage lex) a

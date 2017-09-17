@@ -2,6 +2,7 @@
 module Carnap.Languages.ClassicalSequent.Parser (ParsableLex(..), parseSeqOver, seqFormulaParser) where
 
 import Text.Parsec
+import Data.Typeable
 import Carnap.Core.Data.AbstractSyntaxDataTypes
 import Carnap.Languages.PurePropositional.Parser
 import Carnap.Languages.PurePropositional.Syntax
@@ -12,17 +13,17 @@ import Carnap.Languages.ClassicalSequent.Syntax
 --1. The parser
 --------------------------------------------------------
 
-class ParsableLex a f where
-        langParser :: Parsec String u (FixLang f a)
+class ParsableLex sem f where
+        langParser :: Parsec String u (FixLang f sem)
         
 
-seqFormulaParser :: (Sequentable f, ParsableLex (Form Bool) f) => 
-    Parsec String u (ClassicalSequentOver f Sequent)
+seqFormulaParser :: (Sequentable f, ParsableLex sem f, Typeable sem) => 
+    Parsec String u (ClassicalSequentOver f (Sequent sem))
 seqFormulaParser = parseSeqOver langParser 
 
 --XXX: need to add variable parsing
-parseSeqOver :: (Sequentable f) => Parsec String u (FixLang f (Form Bool)) -> 
-    Parsec String u (ClassicalSequentOver f Sequent)
+parseSeqOver :: (Sequentable f, Typeable sem) => Parsec String u (FixLang f sem) -> 
+    Parsec String u (ClassicalSequentOver f (Sequent sem))
 parseSeqOver parser = do (lhs,rhs) <- splitSequent parser 
                          --split on turnstile and commas
                          let lhs'  = map liftL lhs
@@ -34,21 +35,21 @@ parseSeqOver parser = do (lhs,rhs) <- splitSequent parser
                                [] -> Bot
                                x:xs -> foldl (:-:) x xs
                          return $ lhs'' :|-: rhs''
-        where liftL :: Sequentable f => FixLang f (Form Bool) -> ClassicalSequentOver f Antecedent
+        where liftL :: (Typeable sem, Sequentable f) => FixLang f sem -> ClassicalSequentOver f (Antecedent sem)
               liftL x = SA (liftToSequent x)
-              liftR :: Sequentable f => FixLang f (Form Bool) -> ClassicalSequentOver f Succedent
+              liftR :: (Typeable sem, Sequentable f) => FixLang f sem -> ClassicalSequentOver f (Succedent sem)
               liftR x = SS (liftToSequent x)
 
-splitSequent :: Parsec String u (FixLang f (Form Bool)) -> 
-    Parsec String u ([FixLang f (Form Bool)], [FixLang f (Form Bool)])
+splitSequent :: Parsec String u (FixLang f sem) -> 
+    Parsec String u ([FixLang f sem], [FixLang f sem])
 splitSequent parser = do lhs <- formlist parser
                          string ":|-:" <|> string "⊢"
                          rhs <- formlist parser
                          eof
                          return (lhs,rhs)
 
-formlist :: Parsec String u (FixLang f (Form Bool)) -> 
-    Parsec String u [FixLang f (Form Bool)]
+formlist :: Parsec String u (FixLang f sem) -> 
+    Parsec String u [FixLang f sem]
 formlist parser = do spaces
                      sepEndBy (try parser) comma
     where comma = do spaces

@@ -42,6 +42,7 @@ getUserR ident = do
             dertable <- problemsToTable enrolledin dersubs
             tttable <- problemsToTable enrolledin ttsubs
             score <- totalScore enrolledin synsubs transsubs dersubs ttsubs
+            let coursetitle = nameOf (courseData enrolledin)
             defaultLayout $ do
                 setTitle "Welcome To Your Homepage!"
                 $(widgetFile "user")
@@ -167,7 +168,9 @@ getDrList = do maybeCurrentUserId <- maybeAuthId
                    Nothing -> return Nothing
                    Just u -> do savedRules <- runDB $ selectList 
                                     [SavedDerivedRuleUserId ==. u] []
-                                return $ Just (map entityVal savedRules)
+                                case savedRules of 
+                                    [] -> return Nothing
+                                    _  -> return $ Just (map entityVal savedRules)
 
 class Problem p where
         problem :: p -> Text

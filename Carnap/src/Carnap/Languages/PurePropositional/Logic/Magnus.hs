@@ -64,7 +64,7 @@ instance Show MagnusSL where
         show As         = "AS"
         show Pr         = "PR"
 
-instance Inference MagnusSL PurePropLexicon where
+instance Inference MagnusSL PurePropLexicon (Form Bool) where
         ruleOf Reiterate = identityRule
         ruleOf ConjIntro = adjunction
         ruleOf ConjElim1 = simplificationVariations !! 0
@@ -187,7 +187,7 @@ instance Show MagnusSLPlus where
         show BiExRep = "↔ex"
         show RepBiEx = "↔ex"
 
-instance Inference MagnusSLPlus PurePropLexicon where
+instance Inference MagnusSLPlus PurePropLexicon (Form Bool) where
         ruleOf (MSL x) = ruleOf x
         ruleOf Hyp     = hypotheticalSyllogism
         ruleOf MT      = modusTollens

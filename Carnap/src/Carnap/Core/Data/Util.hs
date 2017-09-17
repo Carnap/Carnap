@@ -1,7 +1,7 @@
 {-#LANGUAGE ImpredicativeTypes, FlexibleContexts, RankNTypes,TypeOperators, ScopedTypeVariables, GADTs, MultiParamTypeClasses #-}
 
 module Carnap.Core.Data.Util (scopeHeight, equalizeTypes, incArity, checkChildren,
-mapover, (:~:)(Refl), Buds(..), Blossoms(..), bloom, sbloom, grow, rebuild) where
+mapover, (:~:)(Refl), Buds(..), Blossoms(..), bloom, sbloom, grow, rebuild, castToProxy) where
 
 --this module defines utility functions and typeclasses for manipulating
 --the data types defined in Core.Data
@@ -43,6 +43,9 @@ to union the functions into a single polymorphic function.
 -}
 equalizeTypes :: Fix f a -> Fix f b -> Maybe (a :~: b)
 equalizeTypes (x@(Fx _) :: Fix f a) (y@(Fx _) :: Fix f b) = eqT :: Maybe (a :~: b)
+
+castToProxy :: Typeable a => Proxy a -> Fix f b -> Maybe (a :~: b)
+castToProxy (Proxy :: Proxy a) (y@(Fx _) :: Fix f b) = eqT :: Maybe (a :~: b)
 
 {-|
 This function replaces the head of a given language item with another head

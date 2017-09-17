@@ -46,12 +46,12 @@ instance Eq (FOLSequentCalc a) where
 instance ParsableLex (Form Bool) PureLexiconFOL where
         langParser = folFormulaParser
 
-folSeqParser = seqFormulaParser :: Parsec String u (FOLSequentCalc Sequent)
+folSeqParser = seqFormulaParser :: Parsec String u (FOLSequentCalc (Sequent (Form Bool)))
 
-ss :: PureFOLForm -> FOLSequentCalc Succedent
+ss :: PureFOLForm -> FOLSequentCalc (Succedent (Form Bool))
 ss = SS . liftToSequent
 
-sa :: PureFOLForm -> FOLSequentCalc Antecedent
+sa :: PureFOLForm -> FOLSequentCalc (Antecedent (Form Bool))
 sa = SA . liftToSequent
 
 phi n x = PPhi n AOne AOne :!$: x

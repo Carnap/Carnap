@@ -25,12 +25,13 @@ data HardegreeSL = AndI | AndO1 | AndO2 | AndNI | AndNO
                  | ID1  | ID2   | ID3   | ID4   | AndD  | DN1 | DN2
                  | OrID Int 
                  | SepCases Int
-                 | Pr | As
+                 | Pr | As | Rep
                deriving (Eq)
 
 instance Show HardegreeSL where
          show Pr     = "PR"
          show As     = "As"
+         show Rep    = "Rep"
          show AndI   = "&I"  
          show AndO1  = "&O"
          show AndO2  = "&O"
@@ -68,9 +69,10 @@ instance Show HardegreeSL where
          show (OrID n) = "∨ID" ++ show n
          show (SepCases n) = "SC" ++ show n
 
-instance Inference HardegreeSL PurePropLexicon where
+instance Inference HardegreeSL PurePropLexicon (Form Bool) where
          ruleOf Pr       = axiom
          ruleOf As       = axiom
+         ruleOf Rep      = identityRule
          ruleOf AndI     = adjunction
          ruleOf AndO1    = simplificationVariations !! 0
          ruleOf AndO2    = simplificationVariations !! 1
@@ -122,17 +124,22 @@ instance Inference HardegreeSL PurePropLexicon where
          isAssumption _ = False
 
 parseHardegreeSL :: Map String DerivedRule -> Parsec String u [HardegreeSL]
-parseHardegreeSL ders = do r <- choice (map (try . string) ["AS","PR","&I","&O","~&I","~&O","->I","->O","~->I","~->O","→I","→O","~→I","~→O","!?I"
+parseHardegreeSL ders = do r <- choice (map (try . string) ["AS","PR","&I","&O","~&I","~&O","/\\I","/\\O","~/\\I","~/\\O","->I","->O","~->I","~->O","→I","→O","~→I","~→O","!?I"
                                                            ,"!?O","vID","\\/ID","vI","vO","~vI","~vO","\\/I","\\/O","~\\/I","~\\/O","<->I","<->O","~<->I"
-                                                           ,"~<->O","↔I","↔O","~↔I","~↔O","ID","&D","SC","DN","DD","CD"
+                                                           ,"~<->O","↔I","↔O","~↔I","~↔O","ID","&D","SC","DN","DD","CD","REP"
                                                            ])
                            case r of
                              "AS"    -> return [As]
                              "PR"    -> return [Pr]
+                             "REP"   -> return [Rep]
                              "&I"    -> return [AndI]
                              "&O"    -> return [AndO1,AndO2]
                              "~&I"   -> return [AndNI]
                              "~&O"   -> return [AndNO]
+                             "/\\I"  -> return [AndI]
+                             "/\\O"  -> return [AndO1,AndO2]
+                             "~/\\I" -> return [AndNI]
+                             "~/\\O" -> return [AndNO]
                              "->I"   -> return [IfI1,IfO2]
                              "->O"   -> return [IfO1,IfO2]
                              "~->I"  -> return [IfNI]

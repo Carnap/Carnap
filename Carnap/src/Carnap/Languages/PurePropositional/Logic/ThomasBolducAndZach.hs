@@ -66,7 +66,7 @@ instance Show ThomasBolducAndZachTFL where
         show Tertium3   = "TND"
         show Tertium4   = "TND"
 
-instance Inference ThomasBolducAndZachTFL PurePropLexicon where
+instance Inference ThomasBolducAndZachTFL PurePropLexicon (Form Bool) where
         ruleOf ConjIntro  = adjunction
         ruleOf ConjElim1  = simplificationVariations !! 0
         ruleOf ConjElim2  = simplificationVariations !! 1

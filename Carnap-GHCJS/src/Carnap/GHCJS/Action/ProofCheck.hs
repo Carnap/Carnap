@@ -9,10 +9,12 @@ import Carnap.Core.Data.AbstractSyntaxDataTypes (liftLang, FixLang, CopulaSchema
 import Carnap.Core.Data.AbstractSyntaxClasses (Schematizable)
 import Carnap.Languages.ClassicalSequent.Syntax
 import Carnap.Languages.PurePropositional.Logic as P 
-    ( DerivedRule(..), logicBookCalc, magnusSLCalc, magnusSLPlusCalc, propCalc, hardegreeSLCalc
+    (DerivedRule(..), logicBookCalc, magnusSLCalc, magnusSLPlusCalc, propCalc, hardegreeSLCalc
     , thomasBolducAndZachTFLCalc) 
 import Carnap.Languages.PureFirstOrder.Logic as FOL 
     (DerivedRule(..), folCalc, magnusQLCalc, thomasBolducAndZachFOLCalc) 
+import Carnap.Languages.ModalPropositional.Logic as MPL
+    (hardegreeWTLCalc)
 import Carnap.Languages.PureSecondOrder.Logic (msolCalc, psolCalc) 
 import Carnap.Languages.PurePropositional.Util (toSchema)
 import Carnap.GHCJS.SharedTypes
@@ -20,7 +22,7 @@ import Text.Parsec (parse)
 import Data.IORef (IORef, newIORef,writeIORef, readIORef, modifyIORef)
 import Data.Aeson as A
 import qualified Data.Map as M (fromList,map) 
-import Control.Lens.Fold (toListOf)
+import Control.Lens.Fold (toListOf,(^?))
 import Lib
 import Carnap.GHCJS.Widget.ProofCheckBox (checkerWith, CheckerOptions(..), Button(..), CheckerFeedbackUpdate(..))
 import Carnap.GHCJS.Widget.RenderDeduction
@@ -75,28 +77,29 @@ addRules avd v =  case fromJSON v :: Result String of
 getCheckers :: IsElement self => self -> IO [Maybe IOGoal]
 getCheckers = getInOutGoalElts "proofchecker"
 
-data Checker r lex der = Checker 
-        { checkerCalc :: NaturalDeductionCalc r lex der
+data Checker r lex sem der = Checker 
+        { checkerCalc :: NaturalDeductionCalc r lex sem der
         , checkerRules :: Maybe (IORef [(String,der)])
-        , sequent :: Maybe (ClassicalSequentOver lex Sequent)
+        , sequent :: Maybe (ClassicalSequentOver lex (Sequent sem))
         , threadRef :: IORef (Maybe ThreadId)
         , proofDisplay :: Maybe Element
-        , proofMemo :: ProofMemoRef lex
+        , proofMemo :: ProofMemoRef lex sem
         }
 
 activateChecker ::  IORef [(String,P.DerivedRule)] -> Document -> Maybe IOGoal -> IO ()
 activateChecker _ _ Nothing  = return ()
 activateChecker drs w (Just iog@(IOGoal i o g classes))
         | "firstOrder" `elem` classes             = tryParse buildOptions folCalc Nothing
-        | "magnusQL" `elem` classes               = tryParse buildOptions magnusQLCalc Nothing
-        | "thomasBolducAndZachTFL" `elem` classes = tryParse buildOptions thomasBolducAndZachTFLCalc (Just drs)
-        | "thomasBolducAndZachFOL" `elem` classes = tryParse buildOptions thomasBolducAndZachFOLCalc (Just drs)
         | "secondOrder" `elem` classes            = tryParse buildOptions msolCalc (Just drs)
         | "polyadicSecondOrder" `elem` classes    = tryParse buildOptions psolCalc (Just drs)
         | "LogicBook" `elem` classes              = tryParse buildOptions logicBookCalc (Just drs)
         | "magnusSL" `elem` classes               = tryParse buildOptions magnusSLCalc (Just drs)
-        | "hardegreeSL" `elem` classes            = tryParse buildOptions hardegreeSLCalc (Just drs)
         | "magnusSLPlus" `elem` classes           = tryParse buildOptions magnusSLPlusCalc(Just drs)
+        | "magnusQL" `elem` classes               = tryParse buildOptions magnusQLCalc Nothing
+        | "thomasBolducAndZachTFL" `elem` classes = tryParse buildOptions thomasBolducAndZachTFLCalc (Just drs)
+        | "thomasBolducAndZachFOL" `elem` classes = tryParse buildOptions thomasBolducAndZachFOLCalc (Just drs)
+        | "hardegreeSL" `elem` classes            = tryParse buildOptions hardegreeSLCalc (Just drs)
+        | "hardegreeWTL" `elem` classes           = tryParse buildOptions hardegreeWTLCalc (Just drs)
         | otherwise                               = tryParse buildOptions propCalc (Just drs)
         where tryParse options calc mdrs = do
                   memo <- newIORef mempty
@@ -141,6 +144,7 @@ activateChecker drs w (Just iog@(IOGoal i o g classes))
                                    , directed = True
                                    , feedback = Keypress
                                    , initialUpdate = False
+                                   , indentGuides = False
                                    }
               buildOptions = execState (mapM processOption options) standardOptions
                                 where processOption (s,f) = when (s `elem` classes) (modify f)
@@ -150,6 +154,7 @@ activateChecker drs w (Just iog@(IOGoal i o g classes))
                                                 , ("ruleMaker", \o -> o {directed = False , submit = Just saveButton })
                                                 , ("manualFeedback", \o -> o {feedback = Click})
                                                 , ("noFeedback", \o -> o {feedback = Never})
+                                                , ("guides", \o -> o {indentGuides = True})
                                                 ]
                                       saveButton = Button {label = "Save Rule" , action = trySave drs}
 
@@ -159,7 +164,7 @@ threadedCheck checker w ref v (g, fd) =
                Just t -> killThread t
                Nothing -> return ()
            t' <- forkIO $ do setAttribute g "class" "goal working"
-                             threadDelay 200000
+                             threadDelay 500000
                              rules <- case checkerRules checker of
                                              Nothing -> return mempty
                                              Just ref -> do rlist <- liftIO $ readIORef ref
@@ -223,16 +228,19 @@ trySave drs ref w i = do isFinished <- liftIO $ readIORef ref
                                    let Feedback mseq _ = toDisplaySequence (ndProcessLine propCalc) . ndParseProof propCalc (M.fromList rules) $ v
                                    case mseq of
                                     Nothing -> message "A rule can't be extracted from this proof"
-                                    (Just (a :|-: (SS c))) -> do
+                                    (Just (a :|-: c)) -> do
                                         -- XXX : throw a more transparent error here if necessary
                                         let prems = map (toSchema . fromSequent) (toListOf concretes a)
-                                        let conc = (toSchema . fromSequent) c
-                                        mname <- prompt w "What name will you give this rule (use all capital letters!)" (Just "")
-                                        case mname of
-                                            (Just name) -> if allcaps name 
+                                        case c ^? concretes of
+                                            Nothing -> error "The formula type couldn't be decoded."
+                                            Just c' -> do
+                                                let conc = (toSchema . fromSequent) c'
+                                                mname <- prompt w "What name will you give this rule (use all capital letters!)" (Just "")
+                                                case mname of
+                                                    (Just name) -> if allcaps name 
                                                                then liftIO $ sendJSON (SaveDerivedRule name $ P.DerivedRule conc prems) loginCheck error
                                                                else message "rule name must be all capital letters"
-                                            Nothing -> message "No name entered"
+                                                    Nothing -> message "No name entered"
                            else message "not yet finished"
     where loginCheck c | c == "No User" = message "You need to log in before you can save a rule"
                        | c == "Clash"   = message "it appears you've already got a rule with this name"

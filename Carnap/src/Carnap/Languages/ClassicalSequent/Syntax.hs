@@ -5,6 +5,7 @@ import Carnap.Core.Data.AbstractSyntaxClasses
 import Carnap.Core.Data.AbstractSyntaxDataTypes
 import Carnap.Core.Unification.ACUI
 import Carnap.Core.Unification.Unification
+import Carnap.Core.Data.Util
 import Control.Lens.Lens (lens)
 import Control.Lens.Traversal (Traversal')
 import Control.Monad.State
@@ -15,17 +16,18 @@ import Data.Typeable
 --1. Sequent Data
 --------------------------------------------------------
 
-data Antecedent = Antecedent
+data Antecedent a = Antecedent a
 
-data Succedent = Succedent
+data Succedent a = Succedent a
 
-data Sequent = Sequent
+data Sequent a = Sequent a
 
 data Cedent :: k -> * -> * where
-        NilAntecedent    :: Cedent lang Antecedent
-        NilSuccedent     :: Cedent lang Succedent
-        SingleAntecedent :: Cedent lang (Form Bool -> Antecedent)
-        SingleSuccedent  :: Cedent lang (Form Bool -> Succedent)
+        NilAntecedent    :: Typeable a => Cedent lang a 
+        -- XXX should be `Cedent lang (Antecedent a)`, but first need a way to make this work with getId in the proxy instance
+        NilSuccedent     :: Typeable a => Cedent lang (Succedent a)
+        SingleAntecedent :: Typeable a => Cedent lang (a -> Antecedent a)
+        SingleSuccedent  :: Typeable a => Cedent lang (a -> Succedent a)
 
 instance Schematizable (Cedent a) where
         schematize NilAntecedent xs = "⊤"
@@ -47,8 +49,8 @@ instance UniformlyEq (Cedent a) where
         _ =* _ = False
 
 data CedentVar :: k -> * -> * where
-        Gamma :: Int -> CedentVar lang Antecedent
-        Delta :: Int -> CedentVar lang Succedent
+        Gamma :: Typeable a => Int -> CedentVar lang (Antecedent a)
+        Delta :: Typeable a => Int -> CedentVar lang (Succedent a)
 
 instance UniformlyEq (CedentVar a) where
         Gamma n =* Gamma m = n == m
@@ -67,8 +69,8 @@ instance Monad m => MaybeMonadVar (CedentVar a) m
 instance MaybeStaticVar (CedentVar a)
 
 data Comma :: k -> * -> * where
-        AnteComma :: Comma lang (Antecedent -> Antecedent -> Antecedent)
-        SuccComma :: Comma lang (Succedent -> Succedent-> Succedent)
+        AnteComma :: Comma lang (Antecedent a -> Antecedent a -> Antecedent a)
+        SuccComma :: Comma lang (Succedent a -> Succedent a-> Succedent a)
 
 instance UniformlyEq (Comma a) where
         AnteComma =* AnteComma = True
@@ -88,7 +90,7 @@ instance Monad m => MaybeMonadVar (Comma a) m
 instance MaybeStaticVar (Comma a)
 
 data Turnstile :: k -> * -> * where
-        Turnstile :: Turnstile lang (Antecedent -> Succedent -> Sequent)
+        Turnstile :: Turnstile lang (Antecedent a -> Succedent a -> Sequent a)
 
 instance Schematizable (Turnstile a) where
         schematize Turnstile (x:y:xs) = x ++ " ⊢ " ++ y
@@ -140,13 +142,13 @@ instance ( MaybeStaticVar (t (ClassicalSequentOver t))
         isId Top = True
         isId _   = False
 
-        isACUI (SA _)     = False
-        isACUI _ = True
+        isACUI (SA _) = False
+        isACUI _      = True
 
-        getId (Proxy :: Proxy a) = 
-            case eqT :: Maybe (a :~: Antecedent) of
-               Just Refl -> Top
-               _         -> error "you have to use the right type 1"
+        getId _ = Top
+            -- case (eqT :: Maybe (a :~: Antecedent b)) of
+            --    Just Refl -> Top
+            --    _         -> error "you have to use the right type 1"
 
         acuiOp a Top = a
         acuiOp Top b = b
@@ -157,17 +159,17 @@ instance ( MaybeStaticVar (t (ClassicalSequentOver t))
         acuiOp x@(GammaV _) y  = x :+: y
         acuiOp x y@(GammaV _)  = x :+: y
 
-instance Handed (ClassicalSequentOver lex Sequent) 
-                (ClassicalSequentOver lex Antecedent)
-                (ClassicalSequentOver lex Succedent)
+instance Handed (ClassicalSequentOver lex (Sequent a)) 
+                (ClassicalSequentOver lex (Antecedent a))
+                (ClassicalSequentOver lex (Succedent a))
     where lhs = lens (\(x :|-: y) -> x) (\( y:|-:z ) x -> x:|-: z)
           rhs = lens (\(x :|-: y) -> y) (\( y:|-:z ) x -> y:|-: x)
 
-data SequentRule a = SequentRule { upperSequents :: [ClassicalSequentOver a Sequent]
-                                 , lowerSequent :: ClassicalSequentOver a Sequent
-                                 }
+data SequentRule lex a = SequentRule { upperSequents :: [ClassicalSequentOver lex (Sequent a)]
+                                     , lowerSequent :: ClassicalSequentOver lex (Sequent a)
+                                     }
 
-instance Show (ClassicalSequentOver a Sequent) => Show (SequentRule a) where
+instance Show (ClassicalSequentOver lex (Sequent a)) => Show (SequentRule lex a) where
         show (SequentRule us ls) = show us ++ " ∴ " ++ show ls
 
 (∴) = SequentRule
@@ -178,12 +180,22 @@ infixr 6 ∴
 --2. Optics
 --------------------------------------------------------
 
--- TODO: Generalize to a typeclass
-concretes :: Traversal' (ClassicalSequentOver lex Antecedent) (ClassicalSequentOver lex (Form Bool))
-concretes f (a :+: a') = (:+:) <$> concretes f a <*> concretes f a'
-concretes f (SA x)     = SA <$> f x
-concretes f (GammaV n) = pure (GammaV n)
-concretes f (Top) = pure Top
+class Typeable a => Concretes lex a where
+    concretes :: Typeable b => Traversal' (ClassicalSequentOver lex b) (ClassicalSequentOver lex a)
+    concretes f (a :|-: a') = (:|-:) <$> concretes f a <*> concretes f a'
+    concretes f (a :+: a') = (:+:) <$> concretes f a <*> concretes f a'
+    concretes f (a :-: a') = (:-:) <$> concretes f a <*> concretes f a'
+    concretes f (SA x) = SA <$> concretes f x
+    concretes f (SS x) = SS <$> concretes f x
+    concretes f (GammaV n) = pure (GammaV n)
+    concretes f (Top) = pure Top
+    concretes f (Bot) = pure Bot
+    concretes f (x :: ClassicalSequentOver lex b) = 
+        case eqT :: Maybe (a :~: b) of
+            Just Refl -> f x
+            Nothing -> pure x
+
+instance Concretes lex (Form Bool)
 
 --------------------------------------------------------
 --3. Sequent Languages
@@ -219,8 +231,9 @@ liftSequent (SS x) = SS $ liftToSequent (liftLang (fromSequent x) )
 --------------------------------------------------------
 
 antecedentNub :: 
-    ( ACUI (ClassicalSequentOver a)
-    , MonadVar (ClassicalSequentOver a) (State Int)
-    ) => ClassicalSequentOver a Sequent -> ClassicalSequentOver a Sequent
+    ( Typeable a
+    , ACUI (ClassicalSequentOver lex)
+    , MonadVar (ClassicalSequentOver lex) (State Int)
+    ) => ClassicalSequentOver lex (Sequent a) -> ClassicalSequentOver lex (Sequent a)
 antecedentNub (x:|-:y) = (applySub (head subs) (GammaV 1) :|-: y)
     where subs = evalState (acuiUnifySys (const False) [x :=: GammaV 1]) (0 :: Int)

@@ -343,7 +343,6 @@ toText s = let ln = fromIntegral (length s) in
 ```
 
 
-<figure>
 
 ```diagram
 exampleSymmTreeWithDs
@@ -373,11 +372,7 @@ exampleSymmTreeWithDs =
   # centerXY # pad 1.1 <> rect 40 25
 ```
 
-</figure>
-
 Or alternatively, as
-
-<figure>
 
 ```diagram
 exampleSymmTreeWithDs
@@ -408,17 +403,15 @@ exampleSymmTreeWithDs =
   # centerXY # pad 1.1 <> rect 40 25
 ``` 
 
-</figure>
-
 The meaning of the sentence depends on how we read it. Of course, we can
 eliminate the ambiguity by specifying which of the trees above we intend. But
 this is pretty awkward. A better way to eliminate the ambiguity is to use
 *parentheses* to stick together the units that are supposed to go
 together---the units that we do not unpack until further down the tree. 
 
-So we might express the first reading of the sentence by writing "I shot (an
-elephant in my pajamas)", and the second by writing "I (shot an elephant) in my
-pajamas".[^3]
+So we might express the first reading of the sentence by writing "I ((shot an
+elephant) in my pajamas)", and the second by writing "I (shot (an elephant in
+my pajamas))".[^3]
 
 [^3]:: This idea may seem unfamiliar, but it is actually something
 that you have been doing for a long time. If you know the difference between

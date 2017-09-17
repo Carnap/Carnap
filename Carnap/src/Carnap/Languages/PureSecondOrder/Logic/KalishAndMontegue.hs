@@ -28,7 +28,10 @@ instance Show MSOLogic where
         show SOED2  = "ED"
         show (FO x) = show x
 
-instance Inference MSOLogic MonadicallySOLLex where
+somgamma :: Int -> ClassicalSequentOver MonadicallySOLLex (Antecedent (Form Bool))
+somgamma = GammaV
+
+instance Inference MSOLogic MonadicallySOLLex (Form Bool) where
         ruleOf ABS    = monadicAbstraction
         ruleOf APP    = monadicApplication
         ruleOf SOUI   = monadicUniversalInstantiation
@@ -46,22 +49,22 @@ instance Inference MSOLogic MonadicallySOLLex where
         restriction SOUD     = Just (sopredicateEigenConstraint 
                                         (liftToSequent $ SOMScheme 1) 
                                         (ss (SOMBind (SOAll "v") (\x -> SOMCtx 1 :!$: x)))  
-                                        (GammaV 1))
+                                        (somgamma 1))
 
         restriction SOED1    = Just (sopredicateEigenConstraint
                                         (liftToSequent $ SOMScheme 1)
                                         (ss (SOMBind (SOSome "v") (\x -> SOMCtx 1 :!$: x))
                                             :-: ss phiS)
-                                        (GammaV 1 :+: GammaV 2))
+                                        (somgamma 1 :+: somgamma 2))
         restriction (FO UD)  = Just (eigenConstraint stau 
                                         (ss $ SOBind (All "v") phi) 
-                                        (GammaV 1))
+                                        (somgamma 1))
             where phi x = SOPhi 1 AOne AOne :!$: x
                   stau = liftToSequent tau
 
         restriction (FO ED1) = Just (eigenConstraint stau 
                                         ((ss $ SOBind (Some "v") phi) :-: ss phiS) 
-                                        (GammaV 1 :+: GammaV 2))
+                                        (somgamma 1 :+: somgamma 2))
             where phi x = SOPhi 1 AOne AOne :!$: x
                   
                   stau = liftToSequent tau
@@ -84,7 +87,7 @@ parseMSOLogic = try soRule <|> liftFO
 parseMSOLProof :: String -> [DeductionLine MSOLogic MonadicallySOLLex (Form Bool)]
 parseMSOLProof = toDeductionMontegue parseMSOLogic msolFormulaParser
 
-msolSeqParser = seqFormulaParser :: Parsec String () (MSOLSequentCalc Sequent)
+msolSeqParser = seqFormulaParser :: Parsec String () (MSOLSequentCalc (Sequent (Form Bool)))
 
 msolCalc = NaturalDeductionCalc 
     { ndRenderer = MontegueStyle
@@ -111,7 +114,10 @@ instance Show PSOLogic where
         show (SOED2_PSOL n) = "ED"  ++ show n
         show (FO_PSOL x) = show x
 
-instance Inference PSOLogic PolyadicallySOLLex where
+sogamma :: Int -> ClassicalSequentOver PolyadicallySOLLex (Antecedent (Form Bool))
+sogamma = GammaV
+
+instance Inference PSOLogic PolyadicallySOLLex (Form Bool) where
         ruleOf (ABS_PSOL n) = polyadicAbstraction n
         ruleOf (APP_PSOL n) = polyadicApplication n
         ruleOf (SOUI_PSOL n) = polyadicUniversalInstantiation n
@@ -131,22 +137,22 @@ instance Inference PSOLogic PolyadicallySOLLex where
                                           -- XXX would be better to use
                                           -- contexts alone in line above
                                           (ss' $ universalScheme n)  
-                                          (GammaV 1))
+                                          (sogamma 1))
 
         restriction (SOED1_PSOL n)  = Just (psopredicateEigenConstraint 
                                            (liftToSequent $ psolAppScheme (n - 1)) 
                                            (ss' $ existentialScheme n)  
-                                           (GammaV 1 :+: GammaV 2))
+                                           (sogamma 1 :+: sogamma 2))
 
         restriction (FO_PSOL UD)  = Just (eigenConstraint stau 
                                         (ss' $ SOBind (All "v") phi) 
-                                        (GammaV 1))
+                                        (sogamma 1))
             where phi x = SOPhi 1 AOne AOne :!$: x
                   stau = liftToSequent taup
 
         restriction (FO_PSOL ED1) = Just (eigenConstraint stau 
                                         ((ss' $ SOBind (Some "v") phi) :-: ss' phiSp) 
-                                        (GammaV 1 :+: GammaV 2))
+                                        (sogamma 1 :+: sogamma 2))
             where phi x = SOPhi 1 AOne AOne :!$: x
                   
                   stau = liftToSequent taup
@@ -172,7 +178,7 @@ parsePSOLogic = try soRule <|> liftFO
 parsePSOLProof :: String -> [DeductionLine PSOLogic PolyadicallySOLLex (Form Bool)]
 parsePSOLProof = toDeductionMontegue parsePSOLogic psolFormulaParser
 
-psolSeqParser = seqFormulaParser :: Parsec String () (PSOLSequentCalc Sequent)
+psolSeqParser = seqFormulaParser :: Parsec String () (PSOLSequentCalc (Sequent (Form Bool)))
 
 psolCalc = NaturalDeductionCalc 
     { ndRenderer = MontegueStyle

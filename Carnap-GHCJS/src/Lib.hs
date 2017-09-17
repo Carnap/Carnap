@@ -334,8 +334,7 @@ foreign import javascript unsafe "(function(){try {var v=assignment_key;} catch 
 submissionSource = do qr <- submissionQueryJS
                       case fromJSString qr of
                           "book" -> return $ Just Book
-                          "birmingham" -> return $ Just BirminghamAssignment
-                          s -> do return Nothing
+                          s -> do return $ Just (Assignment s)
 
 message s = liftIO (alert s)
 
