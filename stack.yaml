@@ -7,3 +7,4 @@ packages:
 - Carnap-GHCJS/
 #resolver: lts-6.25
 resolver: lts-6.30
+ghc-build: nopie
