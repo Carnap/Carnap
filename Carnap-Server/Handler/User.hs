@@ -64,12 +64,6 @@ getUserR ident = do
                         <th> Assignment
                         <th> Due Date
                     <tbody>
-                        $forall a <- map entityVal asmd
-                            <tr>
-                                <td>
-                                    <a href=@{AssignmentR $ assignmentMetadataFilename a}>
-                                        #{assignmentMetadataFilename a}
-                                <td>#{show $ assignmentMetadataDuedate a}
                         $maybe dd <- duedates $ courseData theclass
                             $forall (num,date) <- M.toList dd
                                 <tr>
@@ -77,6 +71,12 @@ getUserR ident = do
                                         Problem Set #{show num}
                                     <td>
                                         #{formatted date}
+                        $forall a <- map entityVal asmd
+                            <tr>
+                                <td>
+                                    <a href=@{AssignmentR $ assignmentMetadataFilename a}>
+                                        #{assignmentMetadataFilename a}
+                                <td>#{formatted $ assignmentMetadataDuedate a}
                 |]
 
 --------------------------------------------------------
