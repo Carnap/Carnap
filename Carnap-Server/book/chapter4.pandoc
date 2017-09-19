@@ -184,7 +184,7 @@ P\rightarrow Q$, we can derive
 4.    ~R             :PR
 5.    ~Q -> R        :MP 2,3 
 6.    ~~Q            :MT 4,5
-7.    Q              :DNE
+7.    Q              :DNE 6
 8. :CD 7
 ```
 

@@ -224,7 +224,7 @@ abbreviation
 
 | $W~=~$William leaves
 | $V~=~$Veronica leaves
-| $Y~=~$Yolanda leaves
+| $U~=~$Ursula leaves
 
 ```{.Translate .Prop}
 6.6  W->-V : Veronica won't leave if William does
@@ -232,4 +232,4 @@ abbreviation
 6.8  (-W -> -V) -> -U : If Veronica doesn't leave if William doesn't, then Ursula won't.
 6.9  (-V -> -W) : William won’t leave provided that Veronica doesn’t leave.
 6.10 W-> (V->U) : If William leaves, then if Veronica leaves so will Ursula. 
-```
+``` z
