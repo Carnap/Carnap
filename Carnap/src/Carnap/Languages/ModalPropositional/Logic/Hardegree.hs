@@ -2,7 +2,7 @@
 module Carnap.Languages.ModalPropositional.Logic.Hardegree
     (parseHardegreeWTL,  parseHardegreeWTLProof, HardegreeWTL, hardegreeWTLCalc) where
 
-import Data.Map as M (lookup, Map)
+import Data.Map as M (lookup, Map,fromList)
 import Text.Parsec
 import Carnap.Core.Data.AbstractSyntaxDataTypes (Form)
 import Carnap.Languages.ModalPropositional.Syntax
@@ -12,6 +12,7 @@ import Carnap.Languages.Util.GenericConnectives (StandardQuant(..))
 import Carnap.Calculi.NaturalDeduction.Syntax
 import Carnap.Calculi.NaturalDeduction.Parser
 import Carnap.Calculi.NaturalDeduction.Checker
+import Carnap.Calculi.NaturalDeduction.Util
 import Carnap.Languages.ClassicalSequent.Syntax
 import Carnap.Languages.ClassicalSequent.Parser
 import Carnap.Languages.ModalPropositional.Logic.Rules
@@ -32,7 +33,7 @@ data HardegreeWTL = AndI | AndO1 | AndO2 | AndNI | AndNO
                  | WTOr1 | WTOr2 | WTIf1 | WTIf2 | WTIff1 | WTIff2 
                  | WTAll1 | WTAll2 | WTSome1 | WTSome2 | WTNec1 | WTNec2 
                  | WTPos1 | WTPos2 | WTEG | WTUI | WTUG | WTED1 | WTED2
-                 | WTAT1  | WTAT2
+                 | WTAT1  | WTAT2 | QN1 | QN2 | QN3 |QN4
                deriving (Eq)
 
 instance Show HardegreeWTL where
@@ -102,6 +103,10 @@ instance Show HardegreeWTL where
          show WTUG = "UD"
          show WTED1 = "ED"
          show WTED2 = "ED"
+         show QN1 = "QN"
+         show QN2 = "QN"
+         show QN3 = "QN"
+         show QN4 = "QN"
 
 instance Inference HardegreeWTL WorldTheoryPropLexicon (Form (World -> Bool))where
          ruleOf Pr       = axiom
@@ -170,6 +175,10 @@ instance Inference HardegreeWTL WorldTheoryPropLexicon (Form (World -> Bool))whe
          ruleOf WTUG = worldTheoryUniversalGeneralization
          ruleOf WTED1 = worldTheoryExistentialDerivation !! 0
          ruleOf WTED2 = worldTheoryExistentialDerivation !! 1
+         ruleOf QN1 = quantifierNegation !! 0
+         ruleOf QN2 = quantifierNegation !! 1
+         ruleOf QN3 = quantifierNegation !! 2
+         ruleOf QN4 = quantifierNegation !! 3
 
          indirectInference (SepCases n) = Just (TypedProof (ProofType 0 n))
          indirectInference (OrID n) = Just (TypedProof (ProofType n 1))
@@ -191,92 +200,84 @@ instance Inference HardegreeWTL WorldTheoryPropLexicon (Form (World -> Bool))whe
          restriction _      = Nothing
 
 parseHardegreeWTL ::  Parsec String u [HardegreeWTL]
-parseHardegreeWTL = do r <- choice (map (try . string) [ "AS","PR","&I","&O","~&I","~&O","/\\I","/\\O","-/\\I","-/\\O","~/\\I","~/\\O","->I","->O","-->I"
-                                                       , "-->O","~->I","~->O","→I","→O","-→I","-→O","~→I","~→O","!?I"
-                                                       , "!?O","vID","\\/ID","vI","vO","-vI","-vO", "~vI","~vO","\\/I","\\/O","-\\/I","-\\/O","~\\/I","~\\/O"
-                                                       , "<->I","<->O","-<->I", "-<->O", "~<->I", "~<->O","↔I","↔O","-↔I","-↔O", "~↔I","~↔O"
-                                                       , "ID","&D","SC","DN","DD","CD","REP" , "WT(0)", "WT(-)", "WT(~)", "WT(/\\)", "WT(&)", "WT(\\/)", "WT(v)", "WT(->)", "WT(<->)", "WT(/)"
-                                                       , "WT(A)", "WT(E)", "WT([])", "WT(<>)", "EI", "AO", "UD" , "ED"
-                                                       ])
-                       case r of
-                         "AS"    -> return [As]
-                         "PR"    -> return [Pr]
-                         "REP"   -> return [Rep]
-                         "&I"    -> return [AndI]
-                         "&O"    -> return [AndO1,AndO2]
-                         "~&I"   -> return [AndNI]
-                         "~&O"   -> return [AndNO]
-                         "/\\I"  -> return [AndI]
-                         "/\\O"  -> return [AndO1,AndO2]
-                         "-/\\I" -> return [AndNI]
-                         "-/\\O" -> return [AndNO]
-                         "~/\\I" -> return [AndNI]
-                         "~/\\O" -> return [AndNO]
-                         "->I"   -> return [IfI1,IfO2]
-                         "->O"   -> return [IfO1,IfO2]
-                         "-->I"  -> return [IfNI]
-                         "-->O"  -> return [IfNO]
-                         "~->I"  -> return [IfNI]
-                         "~->O"  -> return [IfNO]
-                         "→I"    -> return [IfO1,IffO2]           
-                         "→O"    -> return [IfI1,IfO2]          
-                         "-→I"   -> return [IfNI]
-                         "-→O"   -> return [IfNO]
-                         "~→I"   -> return [IfNI]
-                         "~→O"   -> return [IfNO]
-                         "!?I"   -> return [FalI]
-                         "!?O"   -> return [FalO]
-                         "vI"    -> return [OrI1, OrI2]
-                         "vO"    -> return [OrO1, OrO2]
-                         "-vI"   -> return [OrNI]
-                         "-vO"   -> return [OrNO]
-                         "~vI"   -> return [OrNI]
-                         "~vO"   -> return [OrNO]
-                         "\\/I"  -> return [OrI1, OrI2] 
-                         "\\/O"  -> return [OrO1, OrO2]
-                         "~\\/I" -> return [OrNI]
-                         "~\\/O" -> return [OrNO]
-                         "<->I"  -> return [IffI]       
-                         "<->O"  -> return [IffO1,IffO2]
-                         "-<->I" -> return [IffNI]       
-                         "-<->O" -> return [IffNO]
-                         "~<->I" -> return [IffNI]       
-                         "~<->O" -> return [IffNO]
-                         "↔I"    -> return [IffI]       
-                         "↔O"    -> return [IffO1,IffO2]
-                         "-↔I"   -> return [IffNI]       
-                         "-↔O"   -> return [IffNO]
-                         "~↔I"   -> return [IffNI]       
-                         "~↔O"   -> return [IffNO]
-                         "ID"    -> return [ID1,ID2,ID3,ID4]
-                         "DN"    -> return [DN1,DN2]
-                         "&D"    -> return [AndD]
-                         "DD"    -> return [DD]
-                         "CD"    -> return [CD1,CD2]
-                         "WT(0)" -> return [WTZero1,WTZero2]
-                         "WT(~)" -> return [WTNeg1,WTNeg2]
-                         "WT(-)" -> return [WTNeg1,WTNeg2]
-                         "WT(/\\)" -> return [WTAnd1, WTAnd2]
-                         "WT(&)"   -> return [WTAnd1, WTAnd2]
-                         "WT(\\/)" -> return [WTOr1, WTOr2]
-                         "WT(v)"   -> return [WTOr1, WTOr2]
-                         "WT(->)"  -> return [WTIf1, WTIf2]
-                         "WT(<->)" -> return [WTIff1, WTIff2]
-                         "WT(/)"   -> return [WTAT1, WTAT2]
-                         "WT(A)"   -> return [WTAll1, WTAll2]
-                         "WT(E)"   -> return [WTSome1, WTSome2]
-                         "WT([])"  -> return [WTNec1, WTNec2]
-                         "WT(<>)"  -> return [WTPos1, WTPos2]
-                         "EI"      -> return [WTEG]
-                         "AO"      -> return [WTUI]
-                         "UD"      -> return [WTUG]
-                         "ED"      -> return [WTED1, WTED2]
-                         "SC"    -> do ds <- many1 digit
-                                       return [SepCases (read ds)]
-                         "\\/ID" -> do ds <- many1 digit
-                                       return [OrID (read ds)]
-                         "vID"   -> do ds <- many1 digit
-                                       return [OrID (read ds)]
+parseHardegreeWTL = parseRuleTable (fromList 
+                    [ ("AS"      , return [As])
+                    , ("PR"      , return [Pr])
+                    , ("REP"     , return [Rep])
+                    , ("&I"      , return [AndI])
+                    , ("&O"      , return [AndO1,AndO2])
+                    , ("~&I"     , return [AndNI])
+                    , ("~&O"     , return [AndNO])
+                    , ("/\\I"    , return [AndI])
+                    , ("/\\O"    , return [AndO1,AndO2])
+                    , ("-/\\I"   , return [AndNI])
+                    , ("-/\\O"   , return [AndNO])
+                    , ("~/\\I"   , return [AndNI])
+                    , ("~/\\O"   , return [AndNO])
+                    , ("->I"     , return [IfI1,IfO2])
+                    , ("->O"     , return [IfO1,IfO2])
+                    , ("-->I"    , return [IfNI])
+                    , ("-->O"    , return [IfNO])
+                    , ("~->I"    , return [IfNI])
+                    , ("~->O"    , return [IfNO])
+                    , ("→I"      , return [IfO1,IffO2])
+                    , ("→O"      , return [IfI1,IfO2])
+                    , ("-→I"     , return [IfNI])
+                    , ("-→O"     , return [IfNO])
+                    , ("~→I"     , return [IfNI])
+                    , ("~→O"     , return [IfNO])
+                    , ("!?I"     , return [FalI])
+                    , ("!?O"     , return [FalO])
+                    , ("vI"      , return [OrI1, OrI2])
+                    , ("vO"      , return [OrO1, OrO2])
+                    , ("-vI"     , return [OrNI])
+                    , ("-vO"     , return [OrNO])
+                    , ("~vI"     , return [OrNI])
+                    , ("~vO"     , return [OrNO])
+                    , ("\\/I"    , return [OrI1, OrI2] )
+                    , ("\\/O"    , return [OrO1, OrO2])
+                    , ("~\\/I"   , return [OrNI])
+                    , ("~\\/O"   , return [OrNO])
+                    , ("<->I"    , return [IffI])
+                    , ("<->O"    , return [IffO1,IffO2])
+                    , ("-<->I"   , return [IffNI])
+                    , ("-<->O"   , return [IffNO])
+                    , ("~<->I"   , return [IffNI])
+                    , ("~<->O"   , return [IffNO])
+                    , ("↔I"      , return [IffI])
+                    , ("↔O"      , return [IffO1,IffO2])
+                    , ("-↔I"     , return [IffNI])
+                    , ("-↔O"     , return [IffNO])
+                    , ("~↔I"     , return [IffNI])
+                    , ("~↔O"     , return [IffNO])
+                    , ("ID"      , return [ID1,ID2,ID3,ID4])
+                    , ("DN"      , return [DN1,DN2])
+                    , ("&D"      , return [AndD])
+                    , ("DD"      , return [DD])
+                    , ("CD"      , return [CD1,CD2])
+                    , ("WT(0)"   , return [WTZero1,WTZero2])
+                    , ("WT(~)"   , return [WTNeg1,WTNeg2])
+                    , ("WT(-)"   , return [WTNeg1,WTNeg2])
+                    , ("WT(/\\)" , return [WTAnd1, WTAnd2])
+                    , ("WT(&)"   , return [WTAnd1, WTAnd2])
+                    , ("WT(\\/)" , return [WTOr1, WTOr2])
+                    , ("WT(v)"   , return [WTOr1, WTOr2])
+                    , ("WT(->)"  , return [WTIf1, WTIf2])
+                    , ("WT(<->)" , return [WTIff1, WTIff2])
+                    , ("WT(/)"   , return [WTAT1, WTAT2])
+                    , ("WT(A)"   , return [WTAll1, WTAll2])
+                    , ("WT(E)"   , return [WTSome1, WTSome2])
+                    , ("WT([])"  , return [WTNec1, WTNec2])
+                    , ("WT(<>)"  , return [WTPos1, WTPos2])
+                    , ("EI"      , return [WTEG])
+                    , ("AO"      , return [WTUI])
+                    , ("UD"      , return [WTUG])
+                    , ("ED"      , return [WTED1, WTED2])
+                    , ("SC"      , do ds <- many1 digit; return [SepCases (read ds)])
+                    , ("\\/ID"   , do ds <- many1 digit; return [OrID (read ds)])
+                    , ("vID"     , do ds <- many1 digit; return [OrID (read ds)])
+                    , ("QN"      , return [QN1, QN2, QN3, QN4])
+                    ])
 
 parseHardegreeWTLProof ::  Map String DerivedRule -> String -> [DeductionLine HardegreeWTL WorldTheoryPropLexicon (Form (World -> Bool))]
 parseHardegreeWTLProof ders = toDeductionHardegree parseHardegreeWTL worldTheoryPropFormulaParser

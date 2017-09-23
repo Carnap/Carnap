@@ -435,6 +435,11 @@ worldTheoryAtAxiom = bidir
                 ( GammaV 1 :|-: SS (SeqPhi 1 :/: SomeWorld))
                 ( GammaV 1 :|-: SS ((SeqPhi 1 :/: SomeWorld) :/: SeqSchmIdx 1))
 
+quantifierNegation = bidir ( GammaV 1 :|-: SS (SeqNeg $ SeqBind (All "v") (phi 1)))
+                           ( GammaV 1 :|-: SS (SeqBind (Some "v") (SeqNeg . phi 1)))
+                     ++ bidir ( GammaV 1 :|-: SS (SeqNeg $ SeqBind (Some "v") (phi 1)))
+                              ( GammaV 1 :|-: SS (SeqBind (All "v") (SeqNeg . phi 1)))
+
 -------------------------------
 --  1.2.2 Replacement Rules  --
 -------------------------------

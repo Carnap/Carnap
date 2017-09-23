@@ -62,6 +62,7 @@ library
                      , Carnap.Calculi.NaturalDeduction.Checker
                      , Carnap.Calculi.NaturalDeduction.Parser
                      , Carnap.Calculi.NaturalDeduction.Syntax
+                     , Carnap.Calculi.NaturalDeduction.Util
 
   build-depends:       base >= 4.7
                      , lens >= 4.12
