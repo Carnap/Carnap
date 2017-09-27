@@ -78,8 +78,9 @@ getCheckers :: IsElement self => self -> IO [Maybe IOGoal]
 getCheckers = getInOutGoalElts "proofchecker"
 
 data Checker r lex sem der = Checker 
-        { checkerCalc :: NaturalDeductionCalc r lex sem der
-        , checkerRules :: Maybe (IORef [(String,der)])
+        { rulePost :: IORef [(String,P.DerivedRule)] -> IO [(String,der)]
+        , checkerCalc :: NaturalDeductionCalc r lex sem der
+        , checkerRules :: IORef [(String,P.DerivedRule)]
         , sequent :: Maybe (ClassicalSequentOver lex (Sequent sem))
         , threadRef :: IORef (Maybe ThreadId)
         , proofDisplay :: Maybe Element
@@ -88,40 +89,35 @@ data Checker r lex sem der = Checker
 
 activateChecker ::  IORef [(String,P.DerivedRule)] -> Document -> Maybe IOGoal -> IO ()
 activateChecker _ _ Nothing  = return ()
-activateChecker drs w (Just iog@(IOGoal i o g classes))
-        | "firstOrder" `elem` classes             = tryParse buildOptions folCalc Nothing
-        | "secondOrder" `elem` classes            = tryParse buildOptions msolCalc (Just drs)
-        | "polyadicSecondOrder" `elem` classes    = tryParse buildOptions psolCalc (Just drs)
-        | "LogicBook" `elem` classes              = tryParse buildOptions logicBookCalc (Just drs)
-        | "magnusSL" `elem` classes               = tryParse buildOptions magnusSLCalc (Just drs)
-        | "magnusSLPlus" `elem` classes           = tryParse buildOptions magnusSLPlusCalc(Just drs)
-        | "magnusQL" `elem` classes               = tryParse buildOptions magnusQLCalc Nothing
-        | "thomasBolducAndZachTFL" `elem` classes = tryParse buildOptions thomasBolducAndZachTFLCalc (Just drs)
-        | "thomasBolducAndZachFOL" `elem` classes = tryParse buildOptions thomasBolducAndZachFOLCalc (Just drs)
-        | "hardegreeSL" `elem` classes            = tryParse buildOptions hardegreeSLCalc (Just drs)
-        | "hardegreeWTL" `elem` classes           = tryParse buildOptions hardegreeWTLCalc (Just drs)
-        | otherwise                               = tryParse buildOptions propCalc (Just drs)
-        where tryParse options calc mdrs = do
+activateChecker drs w (Just iog@(IOGoal i o g classes)) -- TODO: need to update non-montegue calculi to take first/higher-order derived rules
+        | "firstOrder" `elem` classes             = tryParse buildOptions folCalc folChecker
+        | "secondOrder" `elem` classes            = tryParse buildOptions msolCalc propChecker
+        | "polyadicSecondOrder" `elem` classes    = tryParse buildOptions psolCalc propChecker
+        | "LogicBook" `elem` classes              = tryParse buildOptions logicBookCalc propChecker
+        | "magnusSL" `elem` classes               = tryParse buildOptions magnusSLCalc propChecker
+        | "magnusSLPlus" `elem` classes           = tryParse buildOptions magnusSLPlusCalc propChecker
+        | "magnusQL" `elem` classes               = tryParse buildOptions magnusQLCalc propChecker
+        | "thomasBolducAndZachTFL" `elem` classes = tryParse buildOptions thomasBolducAndZachTFLCalc propChecker
+        | "thomasBolducAndZachFOL" `elem` classes = tryParse buildOptions thomasBolducAndZachFOLCalc propChecker
+        | "hardegreeSL" `elem` classes            = tryParse buildOptions hardegreeSLCalc propChecker
+        | "hardegreeWTL" `elem` classes           = tryParse buildOptions hardegreeWTLCalc propChecker
+        | otherwise                               = tryParse buildOptions propCalc propChecker
+        where tryParse options calc checker = do
                   memo <- newIORef mempty
                   mtref <- newIORef Nothing
                   mpd <- if render options then Just <$> makeDisplay else return Nothing
-                  let checker ms = threadedCheck (Checker { checkerRules = mdrs
-                                                          , sequent = ms
-                                                          , threadRef = mtref
-                                                          , proofDisplay = mpd
-                                                          , proofMemo = memo
-                                                          , checkerCalc = calc})
+                  let checkSeq ms = threadedCheck (checker calc drs ms mtref mpd memo)
                   mlabelseq <- if directed options then parseWith calc else return Nothing
                   case (submit options, mlabelseq) of
                       (Just b,Just (l,s)) -> checkerWith 
                                           (options {submit = Just b {action = trySubmit l s }})
-                                          (checker (Just s))
+                                          (checkSeq (Just s))
                                           iog w
                       (Nothing,Just (l,s)) -> checkerWith 
                                           options
-                                          (checker (Just s))
+                                          (checkSeq (Just s))
                                           iog w
-                      _ -> checkerWith options (checker Nothing) iog w
+                      _ -> checkerWith options (checkSeq Nothing) iog w
               parseWith calc = do let seqParse = ndParseSeq calc
                                   (Just gs) <- getInnerHTML g 
                                   case parse (withLabel seqParse) "" (decodeHtml gs) of
@@ -135,6 +131,10 @@ activateChecker drs w (Just iog@(IOGoal i o g classes))
                                (Just parent) <- getParentNode o
                                insertAdjacentElement (castToHTMLElement parent) "afterend" (Just pd)
                                return pd
+
+              propChecker = Checker readIORef
+
+              folChecker = Checker (\ref -> liftDerivedRules <$> readIORef ref)
 
               standardOptions = 
                     CheckerOptions { submit = Just Button { label = "Submit Solution"
@@ -165,10 +165,8 @@ threadedCheck checker w ref v (g, fd) =
                Nothing -> return ()
            t' <- forkIO $ do setAttribute g "class" "goal working"
                              threadDelay 500000
-                             rules <- case checkerRules checker of
-                                             Nothing -> return mempty
-                                             Just ref -> do rlist <- liftIO $ readIORef ref
-                                                            return $ M.fromList rlist
+                             rules <- do rlist <- liftIO $ (rulePost checker) (checkerRules checker)
+                                         return $ M.fromList rlist
                              let ndcalc = checkerCalc checker
                              let ded = ndParseProof ndcalc rules v
                              case proofDisplay checker of 
