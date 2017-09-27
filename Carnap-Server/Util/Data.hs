@@ -81,7 +81,7 @@ courseData KSUIntroToFormal2017 = (blankCourse GrahamLeachKrouse "Introduction t
         ]
     }
 courseData KSUModalLogic2017 = (blankCourse GrahamLeachKrouse "Modal Logic (independent study) - Kansas State University")
-    { pointsOf = 125
+    { pointsOf = 150
     }
 courseData (SandboxCourse i) = blankCourse i "Sandbox Course"
 
