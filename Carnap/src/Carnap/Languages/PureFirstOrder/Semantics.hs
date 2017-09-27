@@ -4,6 +4,7 @@ where
 
 import Carnap.Core.Data.AbstractSyntaxDataTypes
 import Carnap.Core.Data.AbstractSyntaxClasses
+import Carnap.Languages.PurePropositional.Syntax (PureConst)
 import Carnap.Languages.PureFirstOrder.Syntax
 import Carnap.Languages.Util.GenericConnectives
 
@@ -34,6 +35,10 @@ instance Modelable MonadicModel PureMonadicPredicate where
 
 instance Modelable MonadicModel PureConstant where
         satisfies m (Constant n) = name m n
+
+instance Modelable MonadicModel PureConst where
+        satisfies m Verum = Form True
+        satisfies m Falsum = Form False
 
 instance Modelable MonadicModel PureQuant where
         satisfies m (All _) = (\f -> Form $ all (eval . f) (domain m))
