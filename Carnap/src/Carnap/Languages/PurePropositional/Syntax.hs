@@ -104,6 +104,10 @@ instance BooleanConstLanguage PureForm where
 instance IndexedPropLanguage PureForm where
         pn = PP
 
+instance PrismPropLex PurePropLexicon Bool
+
+instance PrismBooleanConnLex PurePropLexicon Bool
+
 instance IndexedSchemePropLanguage PureForm where
         phin = PPhi
 
@@ -141,12 +145,3 @@ instance Combineable PurePropLanguage PropLangLabel where
 --------------------------------------------------------
 
 instance LangTypes1 PurePropLexicon Form Bool
-
-predIndex :: Prism' (Predicate PureProp PurePropLanguage (Form Bool)) Int
-predIndex = prism' (\n -> Predicate (Prop n) AZero) pm
-    where pm :: Predicate PureProp idx (Form Bool) -> Maybe Int
-          pm (Predicate (Prop n) AZero) = Just n
-          pm _ = Nothing
-
-propIndex :: Prism' PureForm Int
-propIndex = link . predIndex

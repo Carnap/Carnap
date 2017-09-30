@@ -1,9 +1,11 @@
-{-#LANGUAGE MultiParamTypeClasses, TypeOperators #-}
+{-#LANGUAGE MultiParamTypeClasses, FlexibleContexts, FlexibleInstances, TypeSynonymInstances, TypeOperators, GADTs, ScopedTypeVariables #-}
 module Carnap.Languages.Util.LanguageClasses where
 
 import Carnap.Core.Data.AbstractSyntaxDataTypes
 import Carnap.Core.Data.Util (incArity)
+import Carnap.Languages.Util.GenericConnectives
 import Data.Typeable
+import Control.Lens
 
 
 --The convention for variables in this module is that lex is
@@ -46,6 +48,54 @@ class BooleanLanguage l where
             (.<=>.) :: l -> l -> l
             (.<=>.) = liff
 
+class (Typeable b, PrismLink (FixLang lex) (Connective (BooleanConn b) (FixLang lex))) 
+        => PrismBooleanConnLex lex b where
+
+        _and :: Prism' (FixLang lex (Form b -> Form b -> Form b)) ()
+        _and = binarylink_PrismBooleanConnLex . andPris 
+
+        _or :: Prism' (FixLang lex (Form b -> Form b -> Form b)) ()
+        _or = binarylink_PrismBooleanConnLex . orPris 
+
+        _if :: Prism' (FixLang lex (Form b -> Form b -> Form b)) ()
+        _if = binarylink_PrismBooleanConnLex . ifPris 
+
+        _iff :: Prism' (FixLang lex (Form b -> Form b -> Form b)) ()
+        _iff = binarylink_PrismBooleanConnLex . iffPris 
+
+        _not :: Prism' (FixLang lex (Form b -> Form b)) ()
+        _not = unarylink_PrismBooleanConnLex . notPris 
+
+        binarylink_PrismBooleanConnLex :: 
+            Prism' (FixLang lex (Form b -> Form b -> Form b)) 
+                   (Connective (BooleanConn b) (FixLang lex) (Form b -> Form b -> Form b))
+        binarylink_PrismBooleanConnLex = link 
+
+        unarylink_PrismBooleanConnLex :: 
+            Prism' (FixLang lex (Form b -> Form b)) 
+                   (Connective (BooleanConn b) (FixLang lex) (Form b -> Form b))
+        unarylink_PrismBooleanConnLex = link 
+
+        andPris :: Prism' (Connective (BooleanConn b) (FixLang lex) (Form b -> Form b -> Form b)) ()
+        andPris = prism' (\_ -> Connective And ATwo) 
+                          (\x -> case x of Connective And ATwo -> Just (); _ -> Nothing)
+
+        orPris :: Prism' (Connective (BooleanConn b) (FixLang lex) (Form b -> Form b -> Form b)) ()
+        orPris = prism' (\_ -> Connective Or ATwo) 
+                         (\x -> case x of Connective Or ATwo -> Just (); _ -> Nothing)
+
+        ifPris :: Prism' (Connective (BooleanConn b) (FixLang lex) (Form b -> Form b -> Form b)) ()
+        ifPris = prism' (\_ -> Connective If ATwo) 
+                         (\x -> case x of Connective If ATwo -> Just (); _ -> Nothing)
+
+        iffPris :: Prism' (Connective (BooleanConn b) (FixLang lex) (Form b -> Form b -> Form b)) ()
+        iffPris = prism' (\_ -> Connective Iff ATwo) 
+                          (\x -> case x of Connective Iff ATwo -> Just (); _ -> Nothing)
+
+        notPris :: Prism' (Connective (BooleanConn b) (FixLang lex) (Form b -> Form b)) ()
+        notPris = prism' (\_ -> Connective Not AOne) 
+                          (\x -> case x of Connective Not AOne -> Just (); _ -> Nothing)
+
 class IndexedPropContextSchemeLanguage l where
             propCtx :: Int -> l -> l
 
@@ -65,9 +115,24 @@ class BooleanConstLanguage l where
 --1.2.1 Propositional Languages
 --------------------------------------------------------
 --languages with propositions
+--TODO: derive IndexedPropLanguage from PrismPropLex
 
 class IndexedPropLanguage l where
         pn :: Int -> l
+
+class (Typeable b, PrismLink (FixLang lex) (Predicate (IntProp b) (FixLang lex))) 
+        => PrismPropLex lex b where
+
+        propIndex :: Prism' (FixLang lex (Form b)) Int
+        propIndex = link_PrismPropLex . propIndex'
+
+        link_PrismPropLex :: Prism' (FixLang lex (Form b)) (Predicate (IntProp b) (FixLang lex) (Form b))
+        link_PrismPropLex = link 
+
+        propIndex' :: Prism' (Predicate (IntProp b) (FixLang lex) (Form b)) Int
+        propIndex' = prism' (\n -> Predicate (Prop n) AZero) 
+                            (\x -> case x of Predicate (Prop n) AZero -> Just n
+                                             _ -> Nothing)
 
 class IndexedSchemePropLanguage l where
         phin :: Int -> l

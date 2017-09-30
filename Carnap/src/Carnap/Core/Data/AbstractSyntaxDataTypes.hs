@@ -19,11 +19,13 @@ module Carnap.Core.Data.AbstractSyntaxDataTypes(
   Arity(AZero, ASucc), Predicate(Predicate), Connective(Connective),
   Function(Function), Subnective(Subnective), SubstitutionalVariable(SubVar,StaticVar),
   -- * Generic Programming Utilities
-  LangTypes2(..), LangTypes1(..), RelabelVars(..), FirstOrderLex(..), PrismLink(..), (:<:)(..), ReLex(..)
+  LangTypes2(..), LangTypes1(..), RelabelVars(..), FirstOrderLex(..), PrismLink(..), (:<:)(..), ReLex(..),
+  unaryOpPrism, binaryOpPrism
 ) where
 
 import Carnap.Core.Util
 import Data.Typeable
+import Data.Default
 import Data.List (intercalate)
 import Carnap.Core.Unification.Unification
 import Control.Lens
@@ -982,3 +984,31 @@ height :: StaticVar (FixLang f) => FixLang f a -> Int
 height (x :!$: y) = max (height x) (height y) + 1 
 height x@(LLam (f :: FixLang f t3 -> FixLang f t3')) =  height (f $ static 0) + 1
 height _ = 0
+
+{-| Transforms a prism selecting a nullary constructor for a unary language
+item into a prism onto the things that that item is predicated of. e.g.
+if you have a NOT in your language, selected by a prism, this would give
+you a prism on to the argument to a negation
+-}
+unaryOpPrism :: (Typeable a, Typeable b) => 
+    Prism' (FixLang lex (a -> b)) () -> Prism' (FixLang lex b) (FixLang lex a) 
+unaryOpPrism prism = prism' construct (destruct prism) 
+    where construct a = review prism () :!$: a
+
+          destruct :: Typeable a => Prism' (FixLang lex (a -> b)) () -> FixLang lex b -> Maybe (FixLang lex a)
+          destruct (prism :: Prism' (FixLang lex (a -> b)) ()) b@(h :!$: (t:: FixLang lex t)) =
+              case eqT :: Maybe (a :~: t) of 
+                        Just Refl -> preview prism h >> return t
+                        Nothing -> Nothing
+          destruct _ _ = Nothing
+
+binaryOpPrism :: (Typeable a, Typeable c, Typeable b) => 
+    Prism' (FixLang lex (a -> b -> c)) () -> Prism' (FixLang lex c) (FixLang lex a, FixLang lex b)
+binaryOpPrism prism = prism' construct (destruct prism)
+    where construct (a,b) = review prism () :!$: a :!$: b
+
+          destruct :: (Typeable b, Typeable a) => Prism' (FixLang lex (a -> b -> c)) () -> FixLang lex c -> Maybe (FixLang lex a, FixLang lex b)
+          destruct (prism :: Prism' (FixLang lex (a -> b -> c)) ()) b@(h :!$: (t:: FixLang lex a') :!$: (t':: FixLang lex b')) =
+              case eqT :: Maybe ((a,b) :~: (a',b')) of 
+                        Just Refl -> preview prism h >> return (t,t')
+                        Nothing -> Nothing
