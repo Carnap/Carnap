@@ -14,6 +14,7 @@ makeProofChecker x = x
 
 activate cls chunk
     | "Prop" `elem` cls = actTemplate "proofchecker prop"
+    | "Prop_practice" `elem` cls = actTemplate "proofchecker prop NoSub"
     | "FirstOrder" `elem` cls = actTemplate "proofchecker firstOrder"
     | "LogicBook" `elem` cls = actTemplate "proofchecker LogicBook"
     | "ForallxSL" `elem` cls = actTemplate "proofchecker magnusSL Render"
