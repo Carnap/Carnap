@@ -234,6 +234,8 @@ type PurePFOLTerm = OpenPFOLTerm EndLang
 instance PolyadicPredicateLanguage (OpenLanguagePFOL a) (Term Int) (Form Bool) 
     where ppn n a = PP n a a
 
+instance PrismPolyadicPredicate (OpenLexiconPFOL a) Int Bool
+
 instance Incrementable (OpenLexiconPFOL EndLang) (Term Int) where
     incHead (PP n a b) = Just $ PP n (ASucc a) (ASucc a)
     incHead _  = Nothing

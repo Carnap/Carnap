@@ -20,7 +20,7 @@ module Carnap.Core.Data.AbstractSyntaxDataTypes(
   Function(Function), Subnective(Subnective), SubstitutionalVariable(SubVar,StaticVar),
   -- * Generic Programming Utilities
   LangTypes2(..), LangTypes1(..), RelabelVars(..), FirstOrderLex(..), PrismLink(..), (:<:)(..), ReLex(..),
-  unaryOpPrism, binaryOpPrism
+  unaryOpPrism, binaryOpPrism, arityInt
 ) where
 
 import Carnap.Core.Util
