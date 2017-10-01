@@ -5,7 +5,7 @@ module Carnap.Languages.PureSecondOrder.Logic.KalishAndMontegue (psolCalc, msolC
 import Carnap.Core.Data.AbstractSyntaxDataTypes
 import Carnap.Languages.PureSecondOrder.Syntax
 import Carnap.Languages.ClassicalSequent.Syntax
-import Carnap.Languages.Util.GenericConnectives
+import Carnap.Languages.Util.GenericConstructors
 import Carnap.Languages.PureFirstOrder.Logic (FOLogic(..),parseFOLogic)
 import Carnap.Languages.PureSecondOrder.Parser
 import Carnap.Languages.ClassicalSequent.Parser

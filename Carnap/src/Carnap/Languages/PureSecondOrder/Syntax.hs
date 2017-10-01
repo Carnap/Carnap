@@ -12,7 +12,7 @@ import Carnap.Core.Data.Util (scopeHeight)
 import Carnap.Core.Unification.Unification
 import Carnap.Languages.Util.LanguageClasses
 import Data.Typeable (Typeable)
-import Carnap.Languages.Util.GenericConnectives
+import Carnap.Languages.Util.GenericConstructors
 import Data.List (intercalate)
 
 --------------------------------------------------------

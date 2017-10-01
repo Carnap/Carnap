@@ -1,5 +1,5 @@
 {-#LANGUAGE TypeSynonymInstances, UndecidableInstances, FlexibleInstances, MultiParamTypeClasses, GADTs, DataKinds, PolyKinds, TypeOperators, ViewPatterns, PatternSynonyms, RankNTypes, FlexibleContexts, AutoDeriveTypeable #-}
-module Carnap.Languages.Util.GenericConnectives where
+module Carnap.Languages.Util.GenericConstructors where
 
 import Carnap.Core.Data.AbstractSyntaxDataTypes
 import Carnap.Core.Data.AbstractSyntaxClasses 

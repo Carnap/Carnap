@@ -14,7 +14,7 @@ import Carnap.Languages.ClassicalSequent.Syntax
 import Control.Lens (Traversal')
 import Data.Typeable (Typeable)
 import Data.List (intercalate)
-import Carnap.Languages.Util.GenericConnectives
+import Carnap.Languages.Util.GenericConstructors
 
 --------------------------------------------------------
 --1. Data for Pure First Order Logic

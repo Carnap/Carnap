@@ -6,7 +6,7 @@ import Carnap.Core.Data.AbstractSyntaxDataTypes
 import Carnap.Core.Data.AbstractSyntaxClasses
 import Carnap.Languages.PurePropositional.Syntax (PureConst)
 import Carnap.Languages.PureFirstOrder.Syntax
-import Carnap.Languages.Util.GenericConnectives
+import Carnap.Languages.Util.GenericConstructors
 
 type Thing = Term Int
 

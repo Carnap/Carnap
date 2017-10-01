@@ -12,7 +12,7 @@ import Carnap.Languages.PureFirstOrder.Parser
 import Carnap.Languages.ClassicalSequent.Syntax
 import Carnap.Languages.ClassicalSequent.Parser
 import Carnap.Languages.Util.LanguageClasses
-import Carnap.Languages.Util.GenericConnectives
+import Carnap.Languages.Util.GenericConstructors
 
 --------------------------------------------------------
 --1. FirstOrder Sequent Calculus

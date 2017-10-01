@@ -26,7 +26,7 @@ library
                      , Carnap.Core.ModelChecking.SAT
                      , Carnap.Core.Data.Util
                      , Carnap.Core.Util
-                     , Carnap.Languages.Util.GenericConnectives
+                     , Carnap.Languages.Util.GenericConstructors
                      , Carnap.Languages.Util.GenericParsers
                      , Carnap.Languages.Util.LanguageClasses
                      , Carnap.Languages.PurePropositional.Syntax

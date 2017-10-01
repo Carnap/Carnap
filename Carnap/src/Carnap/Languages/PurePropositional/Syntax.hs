@@ -13,7 +13,7 @@ import Carnap.Languages.Util.LanguageClasses
 import Control.Lens.Plated (transform, children)
 import Control.Lens.Prism
 import Data.Typeable (Typeable)
-import Carnap.Languages.Util.GenericConnectives
+import Carnap.Languages.Util.GenericConstructors
 
 type PureProp = IntProp Bool
 

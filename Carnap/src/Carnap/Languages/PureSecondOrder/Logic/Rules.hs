@@ -7,7 +7,7 @@ import Carnap.Core.Data.AbstractSyntaxClasses
 import Carnap.Core.Unification.Unification
 import Carnap.Languages.PureSecondOrder.Syntax
 import Carnap.Languages.ClassicalSequent.Syntax
-import Carnap.Languages.Util.GenericConnectives
+import Carnap.Languages.Util.GenericConstructors
 import Carnap.Languages.Util.LanguageClasses
 import Carnap.Languages.PureSecondOrder.Parser
 import Carnap.Languages.ClassicalSequent.Parser

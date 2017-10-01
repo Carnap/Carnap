@@ -13,7 +13,7 @@ import Data.Typeable (Typeable)
 import Data.List (intercalate)
 import Data.Map.Lazy (Map, (!))
 import qualified Data.Monoid as M
-import Carnap.Languages.Util.GenericConnectives
+import Carnap.Languages.Util.GenericConstructors
 
 --------------------------------------------------
 --  1. Data for Pure Propositional Modal Logic  --

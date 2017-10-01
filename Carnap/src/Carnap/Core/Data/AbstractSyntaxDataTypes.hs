@@ -25,7 +25,6 @@ module Carnap.Core.Data.AbstractSyntaxDataTypes(
 
 import Carnap.Core.Util
 import Data.Typeable
-import Data.Default
 import Data.List (intercalate)
 import Carnap.Core.Unification.Unification
 import Control.Lens

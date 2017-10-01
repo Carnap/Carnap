@@ -14,7 +14,7 @@ import Carnap.Calculi.NaturalDeduction.Parser
 import Carnap.Calculi.NaturalDeduction.Checker (hoProcessLineMontegue, hoProcessLineMontegueMemo)
 import Carnap.Languages.ClassicalSequent.Syntax
 import Carnap.Languages.Util.LanguageClasses
-import Carnap.Languages.Util.GenericConnectives
+import Carnap.Languages.Util.GenericConstructors
 import Carnap.Languages.PureFirstOrder.Logic.Rules
 
 --------------------------------------------------------

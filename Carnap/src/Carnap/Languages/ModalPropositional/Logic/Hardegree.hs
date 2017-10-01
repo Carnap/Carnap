@@ -8,7 +8,7 @@ import Carnap.Core.Data.AbstractSyntaxDataTypes (Form)
 import Carnap.Languages.ModalPropositional.Syntax
 import Carnap.Languages.ModalPropositional.Parser
 import Carnap.Languages.PurePropositional.Logic.Rules (DerivedRule)
-import Carnap.Languages.Util.GenericConnectives (StandardQuant(..))
+import Carnap.Languages.Util.GenericConstructors (StandardQuant(..))
 import Carnap.Calculi.NaturalDeduction.Syntax
 import Carnap.Calculi.NaturalDeduction.Parser
 import Carnap.Calculi.NaturalDeduction.Checker

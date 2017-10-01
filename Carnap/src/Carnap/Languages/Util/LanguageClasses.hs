@@ -3,7 +3,7 @@ module Carnap.Languages.Util.LanguageClasses where
 
 import Carnap.Core.Data.AbstractSyntaxDataTypes
 import Carnap.Core.Data.Util (incArity)
-import Carnap.Languages.Util.GenericConnectives
+import Carnap.Languages.Util.GenericConstructors
 import Data.Typeable
 import Control.Lens
 
