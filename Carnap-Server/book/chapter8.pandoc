@@ -171,9 +171,9 @@ In the case above, we’re saying "I will come to the party if there's beer, and
 I will come to the party only if there’s beer".
 
 From our work on formalization, we know that this means "If there's beer, then
-I will come to the party, and if I come to the party, then then there's beer".
-So our "and" rules already tell us what to do. When we have the "if and only
-if" statement, we can break off either half, inferring either that "If there's
+I will come to the party, and if I come to the party, then there's beer". So
+our "and" rules already tell us what to do. When we have the "if and only if"
+statement, we can break off either half, inferring either that "If there's
 beer, then I will come to the party" or that "If I come to the party, then
 there's beer". And if we have both halves, we can put them together to get the
 “and” statement.

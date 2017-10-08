@@ -55,7 +55,7 @@ Q\vdash Q$ is formally valid, any argument we get by replacing its sentence
 letters with actual assertions is deductively valid. Hence, any argument that
 we get by replacing the sentence letters of our $R\lor S$, $R\lor S\rightarrow
 Q\vdash Q$ with actual assertions is *also* deductively valid (since we could
-have gotten that argument from $P,P\rightarrow Q\vdash Q$. Hence, $R\lor S$,
+have gotten that argument from $P,P\rightarrow Q\vdash Q$). Hence, $R\lor S$,
 $R\lor S\rightarrow Q\vdash Q$ is also formally valid.
 
 The general lesson here is that, whenever we have a deductively valid
