@@ -8,14 +8,14 @@ import Util.Data
 getRegisterR :: Text -> Handler Html
 getRegisterR ident = do
     userId <- fromIdent ident 
-    (widget,enctype) <- generateFormPost (registrationForm userId)
+    (widget,enctype) <- generateFormPost (registrationForm userId (SandboxCourse <$> instructorByEmail ident))
     defaultLayout $ do
         setTitle "Carnap - Registration"
         $(widgetFile "register")
 
 postRegisterR ident = do
         userId <- fromIdent ident
-        ((result,widget),enctype) <- runFormPost (registrationForm userId)
+        ((result,widget),enctype) <- runFormPost (registrationForm userId (SandboxCourse <$> instructorByEmail ident))
         case result of 
             FormSuccess userdata -> do msuccess <- tryInsert userdata 
                                        if msuccess
@@ -38,11 +38,14 @@ postRegisterR ident = do
                                 <a href=@{UserR ident}>Go to your user page?
                       |]
 
-registrationForm :: UserId -> Html -> MForm Handler (FormResult UserData, Widget)
-registrationForm userId = do
+registrationForm :: UserId -> Maybe CourseEnrollment -> Html -> MForm Handler (FormResult UserData, Widget)
+registrationForm userId maybeSandbox = do
         renderBootstrap3 BootstrapBasicForm $ fixedId
             <$> areq textField "first name " Nothing
             <*> areq textField "last name " Nothing
             <*> areq (selectFieldList courses) "enrolled in " Nothing
     where fixedId x y z = UserData x y z userId
-          courses = map (\c -> (nameOf $ courseData c, c)) regularCourseList
+          courses = map (\c -> (nameOf $ courseData c, c)) $
+                        case maybeSandbox of 
+                            Just sb ->  sb:regularCourseList 
+                            Nothing ->  regularCourseList

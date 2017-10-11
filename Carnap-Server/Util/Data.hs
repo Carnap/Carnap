@@ -8,6 +8,7 @@ import qualified Data.Map as M (fromList)
 data Instructor = GrahamLeachKrouse 
                 | SalvatoreFlorio
                 | CharlesPence
+                | DavidSanson
     deriving (Show,Read,Eq,Enum,Bounded)
 
 data InstructorMetadata = InstructorMetadata
@@ -20,6 +21,8 @@ instructorData SalvatoreFlorio = InstructorMetadata
         { instructorEmail = "florio.2@buckeyemail.osu.edu" }
 instructorData CharlesPence = InstructorMetadata
         { instructorEmail = "charles@charlespence.net" }
+instructorData DavidSanson = InstructorMetadata
+        { instructorEmail = "dsanson@gmail.com" }
 
 instructorsList :: [Instructor]
 instructorsList = [minBound .. maxBound]
