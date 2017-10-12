@@ -123,7 +123,7 @@ library
                  , hashable
                  , lens
                  , split
-                 , Carnap-GHCJS
+                 , Carnap-Client
                  , Carnap
 
 executable         Carnap-Server
