@@ -16,6 +16,8 @@ activate cls chunk
     | "Prop" `elem` cls = actTemplate "proofchecker prop"
     | "Prop_practice" `elem` cls = actTemplate "proofchecker prop NoSub"
     | "FirstOrder" `elem` cls = actTemplate "proofchecker firstOrder"
+    | "SecondOrder" `elem` cls = actTemplate "proofchecker secondOrder"
+    | "PolySecondOrder" `elem` cls = actTemplate "proofchecker polyadicSecondOrder"
     | "LogicBook" `elem` cls = actTemplate "proofchecker LogicBook"
     | "ForallxSL" `elem` cls = actTemplate "proofchecker magnusSL Render"
     | "ForallxSLPlus" `elem` cls = actTemplate "proofchecker magnusSLPlus Render"
