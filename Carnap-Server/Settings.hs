@@ -39,6 +39,8 @@ data AppSettings = AppSettings
     -- ^ Get the IP address from the header when logging. Useful when sitting
     -- behind a reverse proxy.
 
+    , appSqlite                 :: Bool
+    -- ^ Use Sqlite rather than postgres
     , appDetailedRequestLogging :: Bool
     -- ^ Use detailed request logging system
     , appShouldLogAll           :: Bool
@@ -74,6 +76,7 @@ instance FromJSON AppSettings where
         appPort                   <- o .: "port"
         appIpFromHeader           <- o .: "ip-from-header"
 
+        appSqlite                 <- o .:? "sqlite"           .!= False
         appDetailedRequestLogging <- o .:? "detailed-logging" .!= appDevel
         appShouldLogAll           <- o .:? "should-log-all"   .!= appDevel
         appReloadTemplates        <- o .:? "reload-templates" .!= appDevel

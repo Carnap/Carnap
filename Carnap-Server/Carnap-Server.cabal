@@ -84,6 +84,7 @@ library
                  , text                          >= 0.11       && < 2.0
                  , persistent                    >= 2.0        && < 2.6
                  , persistent-postgresql         >= 2.1.1      && < 2.6
+                 , persistent-sqlite
                  , persistent-template           >= 2.0        && < 2.6
                  , template-haskell
                  , shakespeare                   >= 2.0        && < 2.1

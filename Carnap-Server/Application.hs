@@ -15,6 +15,7 @@ module Application
 
 import Control.Monad.Logger                 (liftLoc, runLoggingT)
 import Database.Persist.Postgresql          (createPostgresqlPool, pgConnStr, pgPoolSize, runSqlPool)
+import Database.Persist.Sqlite              (createSqlitePool)
 import Import
 import Language.Haskell.TH.Syntax           (qLocation)
 import Network.Wai (Middleware)
@@ -78,10 +79,13 @@ makeFoundation appSettings = do
         tempFoundation = mkFoundation $ error "connPool forced in tempFoundation"
         logFunc = messageLoggerSource tempFoundation appLogger
 
-    -- Create the database connection pool
-    pool <- flip runLoggingT logFunc $ createPostgresqlPool
-        (pgConnStr  $ appDatabaseConf appSettings)
-        (pgPoolSize $ appDatabaseConf appSettings)
+    --Create the database connection pool
+    pool <- flip runLoggingT logFunc $ 
+                if appSqlite appSettings 
+                then createSqlitePool "sqlite.db" 10
+                else createPostgresqlPool
+                    (pgConnStr  $ appDatabaseConf appSettings)
+                    (pgPoolSize $ appDatabaseConf appSettings)
 
     -- Perform database migration using our application's logging settings.
     runLoggingT (runSqlPool (runMigration migrateAll) pool) logFunc
