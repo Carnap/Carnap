@@ -1,6 +1,5 @@
-{-#LANGUAGE FlexibleInstances, MultiParamTypeClasses, GADTs, KindSignatures, TypeOperators, PatternSynonyms, FlexibleContexts, AutoDeriveTypeable #-}
-module Carnap.Languages.ModalPropositional.Syntax
-     where
+{-#LANGUAGE FunctionalDependencies, FlexibleInstances, MultiParamTypeClasses, GADTs, KindSignatures, TypeOperators, PatternSynonyms, FlexibleContexts, AutoDeriveTypeable #-}
+module Carnap.Languages.ModalPropositional.Syntax where
 
 import Carnap.Core.Data.AbstractSyntaxDataTypes
 import Carnap.Core.Data.AbstractSyntaxClasses
@@ -108,6 +107,20 @@ instance Schematizable (WorldTheoryIndexer lex) where
 instance ReLex (WorldTheoryIndexer) where
         relex AtIndex = AtIndex
 
+data AbsoluteIndexer :: (* -> *) -> * -> * where
+        AtAbsIndex :: AbsoluteIndexer lang (Form (World -> Bool) -> Term World -> Form Bool)
+
+instance FirstOrderLex (AbsoluteIndexer lex)
+
+instance UniformlyEq (AbsoluteIndexer lex) where
+        AtAbsIndex =* AtAbsIndex = True
+
+instance Schematizable (AbsoluteIndexer lex) where
+        schematize AtAbsIndex = \(x:y:_) -> "(" ++ x ++ "/" ++ y ++ ")"
+
+instance ReLex (AbsoluteIndexer) where
+        relex AtAbsIndex = AtAbsIndex
+
 data IndexCons a where
         IndexCons :: IndexCons (Term World -> Term World -> Term World)
 
@@ -125,7 +138,6 @@ type IndexQuant = StandardQuant (World -> Bool) World
 --  2. Core Lexicon for Modal Languages  --
 -------------------------------------------
 
-        
 type CoreLexicon = Predicate ModalProp
                    :|: Predicate ModalSchematicProp
                    :|: Connective ModalConn
@@ -202,9 +214,9 @@ type ModalForm = ModalPropLanguage (Form (World -> Bool))
 
 instance CopulaSchema ModalPropLanguage
 
---------------------------------
---  4. World Theory Language  --
---------------------------------
+--------------------------
+--  4. World Languages  --
+--------------------------
 
 type WorldTheoryLexicon = WorldTheoryIndexer 
                         :|: Function Index
@@ -247,12 +259,43 @@ instance BoundVars WorldTheoryPropLexicon where
 
 type WorldTheoryForm = WorldTheoryPropLanguage (Form (World -> Bool))
 
---small convenience function for parsing
-atWorld :: WorldTheoryForm -> WorldTheoryPropLanguage (Term World) -> WorldTheoryForm
-atWorld x t = FX (Lx2 (Lx1 AtIndex)) :!$: x :!$: t
+----------------------------------------
+--  5. Absolute Modal Logic Language  --
+----------------------------------------
 
-world :: Int -> WorldTheoryPropLanguage (Term World)
-world n = FX (Lx2 (Lx2 (Function (Index n) AZero)))
+type AbsoluteModalLexicon = AbsoluteIndexer
+                        :|: Function Index
+                        :|: Function IndexCons 
+                        :|: Function IndexScheme
+                        :|: Function IndexVar
+                        :|: EndLang
 
-worldVar :: String -> WorldTheoryPropLanguage (Term World)
-worldVar s = FX (Lx2 (Lx7 (Function (Var s) AZero)))
+type AbsoluteModalPropLexicon = ModalPropLexiconWith AbsoluteModalLexicon
+
+type AbsoluteModalPropLanguage = ModalPropLanguageWith AbsoluteModalLexicon
+
+instance CopulaSchema AbsoluteModalPropLanguage
+
+type AbsoluteModalForm = AbsoluteModalPropLanguage (Form Bool)
+
+type AbsoluteModalPreForm = AbsoluteModalPropLanguage (Form (World -> Bool))
+
+----------------------------
+--  6. Utility Functions  --
+----------------------------
+--convenience class
+
+class IndexingLang lex indexed unindexed | lex -> indexed unindexed where
+    atWorld :: unindexed -> FixLang lex (Term World) -> indexed
+    world :: Int -> FixLang lex (Term World)
+    worldVar :: String -> FixLang lex (Term World)
+
+instance IndexingLang AbsoluteModalPropLexicon AbsoluteModalForm AbsoluteModalPreForm where
+    atWorld x t = FX (Lx2 (Lx1 AtAbsIndex)) :!$: x :!$: t
+    world n = FX (Lx2 (Lx2 (Function (Index n) AZero)))
+    worldVar s = FX (Lx2 (Lx5 (Function (Var s) AZero)))
+
+instance IndexingLang WorldTheoryPropLexicon WorldTheoryForm WorldTheoryForm where
+    atWorld x t = FX (Lx2 (Lx1 AtIndex)) :!$: x :!$: t
+    world n = FX (Lx2 (Lx2 (Function (Index n) AZero)))
+    worldVar s = FX (Lx2 (Lx7 (Function (Var s) AZero)))
