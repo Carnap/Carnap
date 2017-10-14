@@ -286,16 +286,16 @@ type AbsoluteModalPreForm = AbsoluteModalPropLanguage (Form (World -> Bool))
 --convenience class
 
 class IndexingLang lex indexed unindexed | lex -> indexed unindexed where
-    atWorld :: unindexed -> FixLang lex (Term World) -> indexed
+    atWorld :: FixLang lex unindexed -> FixLang lex (Term World) -> FixLang lex indexed
     world :: Int -> FixLang lex (Term World)
     worldVar :: String -> FixLang lex (Term World)
 
-instance IndexingLang AbsoluteModalPropLexicon AbsoluteModalForm AbsoluteModalPreForm where
+instance IndexingLang AbsoluteModalPropLexicon (Form Bool) (Form (World -> Bool)) where
     atWorld x t = FX (Lx2 (Lx1 AtAbsIndex)) :!$: x :!$: t
     world n = FX (Lx2 (Lx2 (Function (Index n) AZero)))
     worldVar s = FX (Lx2 (Lx5 (Function (Var s) AZero)))
 
-instance IndexingLang WorldTheoryPropLexicon WorldTheoryForm WorldTheoryForm where
+instance IndexingLang WorldTheoryPropLexicon (Form (World -> Bool)) (Form (World -> Bool)) where
     atWorld x t = FX (Lx2 (Lx1 AtIndex)) :!$: x :!$: t
     world n = FX (Lx2 (Lx2 (Function (Index n) AZero)))
     worldVar s = FX (Lx2 (Lx7 (Function (Var s) AZero)))
