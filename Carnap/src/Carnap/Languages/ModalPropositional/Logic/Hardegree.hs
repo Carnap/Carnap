@@ -1,6 +1,8 @@
 {-#LANGUAGE FlexibleContexts, FlexibleInstances, MultiParamTypeClasses #-}
 module Carnap.Languages.ModalPropositional.Logic.Hardegree
-    (parseHardegreeWTL,  parseHardegreeWTLProof, HardegreeWTL, hardegreeWTLCalc) where
+    ( parseHardegreeWTL,  parseHardegreeWTLProof, HardegreeWTL, hardegreeWTLCalc
+    , parseHardegreeL,  parseHardegreeLProof, HardegreeL, hardegreeLCalc
+    ) where
 
 import Data.Map as M (lookup, Map,fromList)
 import Text.Parsec
@@ -20,7 +22,7 @@ import Carnap.Languages.ModalPropositional.Logic.Rules
 --A system for propositional modal logic resembling the world-theory proof system from Gary
 --Hardegree's Modal Logic
 
-data HardegreeWTL = AndI | AndO1 | AndO2 | AndNI | AndNO
+data ModalPropRule = AndI | AndO1 | AndO2 | AndNI | AndNO
                  | OrI1 | OrI2  | OrO1  | OrO2  | OrNI  | OrNO
                  | IfI1 | IfI2  | IfO1  | IfO2  | IfNI  | IfNO
                  | IffI | IffO1 | IffO2 | IffNI | IffNO
@@ -29,6 +31,9 @@ data HardegreeWTL = AndI | AndO1 | AndO2 | AndNI | AndNO
                  | OrID Int 
                  | SepCases Int
                  | Pr | As | Rep
+               deriving (Eq)
+
+data HardegreeWTL = MoP ModalPropRule
                  | WTZero1 | WTZero2 | WTNeg1 | WTNeg2 | WTAnd1 | WTAnd2 
                  | WTOr1 | WTOr2 | WTIf1 | WTIf2 | WTIff1 | WTIff2 
                  | WTAll1 | WTAll2 | WTSome1 | WTSome2 | WTNec1 | WTNec2 
@@ -36,7 +41,7 @@ data HardegreeWTL = AndI | AndO1 | AndO2 | AndNI | AndNO
                  | WTAT1  | WTAT2 | QN1 | QN2 | QN3 |QN4
                deriving (Eq)
 
-instance Show HardegreeWTL where
+instance Show ModalPropRule where
          show Pr     = "PR"
          show As     = "As"
          show Rep    = "Rep"
@@ -76,6 +81,13 @@ instance Show HardegreeWTL where
          show AndD   = "&D"
          show (OrID n) = "∨ID" ++ show n
          show (SepCases n) = "SC" ++ show n
+
+----------------------------------
+--  1. Leibnizian World Theory  --
+----------------------------------
+
+instance Show HardegreeWTL where
+         show (MoP p) = show p
          show WTZero1 = "WT(0)"
          show WTZero2 = "WT(0)"
          show WTNeg1 = "WT(¬)"
@@ -109,45 +121,45 @@ instance Show HardegreeWTL where
          show QN4 = "QN"
 
 instance Inference HardegreeWTL WorldTheoryPropLexicon (Form (World -> Bool))where
-         ruleOf Pr       = axiom
-         ruleOf As       = axiom
-         ruleOf Rep      = identityRule
-         ruleOf AndI     = adjunction
-         ruleOf AndO1    = simplificationVariations !! 0
-         ruleOf AndO2    = simplificationVariations !! 1
-         ruleOf AndNI    = negatedConjunctionVariations !! 1
-         ruleOf AndNO    = negatedConjunctionVariations !! 0
-         ruleOf OrI1     = additionVariations !! 0
-         ruleOf OrI2     = additionVariations !! 1
-         ruleOf OrO1     = modusTollendoPonensVariations !! 0
-         ruleOf OrO2     = modusTollendoPonensVariations !! 1
-         ruleOf OrNI     = deMorgansNegatedOr !! 1
-         ruleOf OrNO     = deMorgansNegatedOr !! 0
-         ruleOf IfI1     = materialConditionalVariations !! 0
-         ruleOf IfI2     = materialConditionalVariations !! 1
-         ruleOf IfO1     = modusPonens
-         ruleOf IfO2     = modusTollens
-         ruleOf IfNI     = negatedConditionalVariations !! 1
-         ruleOf IfNO     = negatedConditionalVariations !! 0
-         ruleOf IffI     = conditionalToBiconditional
-         ruleOf IffO1    = biconditionalToConditionalVariations !! 0
-         ruleOf IffO2    = biconditionalToConditionalVariations !! 1
-         ruleOf IffNI    = negatedBiconditionalVariations !! 1
-         ruleOf IffNO    = negatedBiconditionalVariations !! 0
-         ruleOf FalI     = falsumIntroduction
-         ruleOf FalO     = falsumElimination
-         ruleOf DN1      = doubleNegationIntroduction
-         ruleOf DN2      = doubleNegationElimination
-         ruleOf CD1      = explicitConditionalProofVariations !! 0
-         ruleOf CD2      = explicitConditionalProofVariations !! 1
-         ruleOf DD       = identityRule
-         ruleOf ID1      = explicitConstructiveFalsumReductioVariations !! 0
-         ruleOf ID2      = explicitConstructiveFalsumReductioVariations !! 1
-         ruleOf ID3      = explicitNonConstructiveFalsumReductioVariations !! 0
-         ruleOf ID4      = explicitNonConstructiveFalsumReductioVariations !! 1
-         ruleOf AndD     = adjunction
-         ruleOf (OrID n) = eliminationOfCases n
-         ruleOf (SepCases n) = separationOfCases n
+         ruleOf (MoP Pr)       = axiom
+         ruleOf (MoP As)       = axiom
+         ruleOf (MoP Rep)      = identityRule
+         ruleOf (MoP AndI)     = adjunction
+         ruleOf (MoP AndO1)    = simplificationVariations !! 0
+         ruleOf (MoP AndO2)    = simplificationVariations !! 1
+         ruleOf (MoP AndNI)    = negatedConjunctionVariations !! 1
+         ruleOf (MoP AndNO)    = negatedConjunctionVariations !! 0
+         ruleOf (MoP OrI1)     = additionVariations !! 0
+         ruleOf (MoP OrI2)     = additionVariations !! 1
+         ruleOf (MoP OrO1)     = modusTollendoPonensVariations !! 0
+         ruleOf (MoP OrO2)     = modusTollendoPonensVariations !! 1
+         ruleOf (MoP OrNI)     = deMorgansNegatedOr !! 1
+         ruleOf (MoP OrNO)     = deMorgansNegatedOr !! 0
+         ruleOf (MoP IfI1)     = materialConditionalVariations !! 0
+         ruleOf (MoP IfI2)     = materialConditionalVariations !! 1
+         ruleOf (MoP IfO1)     = modusPonens
+         ruleOf (MoP IfO2)     = modusTollens
+         ruleOf (MoP IfNI)     = negatedConditionalVariations !! 1
+         ruleOf (MoP IfNO)     = negatedConditionalVariations !! 0
+         ruleOf (MoP IffI)     = conditionalToBiconditional
+         ruleOf (MoP IffO1)    = biconditionalToConditionalVariations !! 0
+         ruleOf (MoP IffO2)    = biconditionalToConditionalVariations !! 1
+         ruleOf (MoP IffNI)    = negatedBiconditionalVariations !! 1
+         ruleOf (MoP IffNO)    = negatedBiconditionalVariations !! 0
+         ruleOf (MoP FalI)     = falsumIntroduction
+         ruleOf (MoP FalO)     = falsumElimination
+         ruleOf (MoP DN1)      = doubleNegationIntroduction
+         ruleOf (MoP DN2)      = doubleNegationElimination
+         ruleOf (MoP CD1)      = explicitConditionalProofVariations !! 0
+         ruleOf (MoP CD2)      = explicitConditionalProofVariations !! 1
+         ruleOf (MoP DD)       = identityRule
+         ruleOf (MoP ID1)      = explicitConstructiveFalsumReductioVariations !! 0
+         ruleOf (MoP ID2)      = explicitConstructiveFalsumReductioVariations !! 1
+         ruleOf (MoP ID3)      = explicitNonConstructiveFalsumReductioVariations !! 0
+         ruleOf (MoP ID4)      = explicitNonConstructiveFalsumReductioVariations !! 1
+         ruleOf (MoP AndD)     = adjunction
+         ruleOf (MoP (OrID n)) = eliminationOfCases n
+         ruleOf (MoP (SepCases n)) = separationOfCases n
          ruleOf WTZero1 = worldTheoryZeroAxiom !! 0
          ruleOf WTZero2 = worldTheoryZeroAxiom !! 1
          ruleOf WTNeg1 = worldTheoryNegAxiom !! 0
@@ -180,27 +192,26 @@ instance Inference HardegreeWTL WorldTheoryPropLexicon (Form (World -> Bool))whe
          ruleOf QN3 = quantifierNegation !! 2
          ruleOf QN4 = quantifierNegation !! 3
 
-         indirectInference (SepCases n) = Just (TypedProof (ProofType 0 n))
-         indirectInference (OrID n) = Just (TypedProof (ProofType n 1))
-         indirectInference (AndD) = Just doubleProof
-         indirectInference DD = Just (TypedProof (ProofType 0 1))
+         indirectInference (MoP (SepCases n)) = Just (TypedProof (ProofType 0 n))
+         indirectInference (MoP (OrID n)) = Just (TypedProof (ProofType n 1))
+         indirectInference (MoP (AndD)) = Just doubleProof
+         indirectInference (MoP DD) = Just (TypedProof (ProofType 0 1))
          indirectInference WTUG = Just (TypedProof (ProofType 0 1))
          indirectInference WTED1 = Just (TypedProof (ProofType 1 1))
          indirectInference WTED2 = Just (TypedProof (ProofType 1 1))
          indirectInference x 
-            | x `elem` [ID1,ID2,ID3,ID4,CD1,CD2] = Just assumptiveProof
+            | x `elem` [MoP ID1,MoP ID2,MoP ID3,MoP ID4,MoP CD1,MoP CD2] = Just assumptiveProof
             | otherwise = Nothing
 
-         isAssumption As = True
+         isAssumption (MoP As) = True
          isAssumption _ = False
-
 
          restriction WTUG     = Just (eigenConstraint SomeWorld (SS (SeqBind (All "v") $ phi 1)) (wtlgamma 1))
          restriction WTED1    = Just (eigenConstraint SomeWorld (SS (SeqBind (Some "v") $ phi 1) :-: SS (SeqPhi 1)) (wtlgamma 1 :+: wtlgamma 2))
          restriction _      = Nothing
 
-parseHardegreeWTL ::  Parsec String u [HardegreeWTL]
-parseHardegreeWTL = parseRuleTable (fromList 
+parseHardegreeModalProp :: Parsec String u [ModalPropRule]
+parseHardegreeModalProp = parseRuleTable (fromList 
                     [ ("AS"      , return [As])
                     , ("PR"      , return [Pr])
                     , ("REP"     , return [Rep])
@@ -255,29 +266,34 @@ parseHardegreeWTL = parseRuleTable (fromList
                     , ("&D"      , return [AndD])
                     , ("DD"      , return [DD])
                     , ("CD"      , return [CD1,CD2])
-                    , ("WT(0)"   , return [WTZero1,WTZero2])
-                    , ("WT(~)"   , return [WTNeg1,WTNeg2])
-                    , ("WT(-)"   , return [WTNeg1,WTNeg2])
-                    , ("WT(/\\)" , return [WTAnd1, WTAnd2])
-                    , ("WT(&)"   , return [WTAnd1, WTAnd2])
-                    , ("WT(\\/)" , return [WTOr1, WTOr2])
-                    , ("WT(v)"   , return [WTOr1, WTOr2])
-                    , ("WT(->)"  , return [WTIf1, WTIf2])
-                    , ("WT(<->)" , return [WTIff1, WTIff2])
-                    , ("WT(/)"   , return [WTAT1, WTAT2])
-                    , ("WT(A)"   , return [WTAll1, WTAll2])
-                    , ("WT(E)"   , return [WTSome1, WTSome2])
-                    , ("WT([])"  , return [WTNec1, WTNec2])
-                    , ("WT(<>)"  , return [WTPos1, WTPos2])
-                    , ("EI"      , return [WTEG])
-                    , ("AO"      , return [WTUI])
-                    , ("UD"      , return [WTUG])
-                    , ("ED"      , return [WTED1, WTED2])
                     , ("SC"      , do ds <- many1 digit; return [SepCases (read ds)])
                     , ("\\/ID"   , do ds <- many1 digit; return [OrID (read ds)])
                     , ("vID"     , do ds <- many1 digit; return [OrID (read ds)])
-                    , ("QN"      , return [QN1, QN2, QN3, QN4])
                     ])
+
+parseHardegreeWTL :: Parsec String u [HardegreeWTL]
+parseHardegreeWTL = (map MoP <$> parseHardegreeModalProp) 
+                    <|> parseRuleTable (fromList 
+                        [ ("WT(0)"   , return [WTZero1,WTZero2])
+                        , ("WT(~)"   , return [WTNeg1,WTNeg2])
+                        , ("WT(-)"   , return [WTNeg1,WTNeg2])
+                        , ("WT(/\\)" , return [WTAnd1, WTAnd2])
+                        , ("WT(&)"   , return [WTAnd1, WTAnd2])
+                        , ("WT(\\/)" , return [WTOr1, WTOr2])
+                        , ("WT(v)"   , return [WTOr1, WTOr2])
+                        , ("WT(->)"  , return [WTIf1, WTIf2])
+                        , ("WT(<->)" , return [WTIff1, WTIff2])
+                        , ("WT(/)"   , return [WTAT1, WTAT2])
+                        , ("WT(A)"   , return [WTAll1, WTAll2])
+                        , ("WT(E)"   , return [WTSome1, WTSome2])
+                        , ("WT([])"  , return [WTNec1, WTNec2])
+                        , ("WT(<>)"  , return [WTPos1, WTPos2])
+                        , ("EI"      , return [WTEG])
+                        , ("AO"      , return [WTUI])
+                        , ("UD"      , return [WTUG])
+                        , ("ED"      , return [WTED1, WTED2])
+                        , ("QN"      , return [QN1, QN2, QN3, QN4])
+                        ])
 
 parseHardegreeWTLProof ::  Map String DerivedRule -> String -> [DeductionLine HardegreeWTL WorldTheoryPropLexicon (Form (World -> Bool))]
 parseHardegreeWTLProof ders = toDeductionHardegree parseHardegreeWTL worldTheoryPropFormulaParser
@@ -288,4 +304,71 @@ hardegreeWTLCalc = NaturalDeductionCalc
     , ndProcessLine = hoProcessLineHardegree
     , ndProcessLineMemo = Just hoProcessLineHardegreeMemo
     , ndParseSeq = worldTheorySeqParser
+    }
+
+------------------------------------
+--  2. Absolute Modal Logic (S5)  --
+------------------------------------
+
+data HardegreeL = MoPL ModalPropRule | BoxOut | DiaIn | ND | DiaD1 | DiaD2
+                  | MN1 | MN2 | MN3 | MN4
+               deriving (Eq)
+
+instance Show HardegreeL where
+         show (MoPL p) = show p
+         show BoxOut = "□O"
+         show DiaIn = "◇I"
+         show ND = "□D"
+         show DiaD1 = "◇D"
+         show DiaD2 = "◇D"
+         show MN1 = "MN"
+         show MN2 = "MN"
+         show MN3 = "MN"
+         show MN4 = "MN"
+
+instance Inference HardegreeL AbsoluteModalPropLexicon (Form Bool) where
+         ruleOf (MoPL x) = liftAbsRule (ruleOf (MoP x))
+         ruleOf ND = boxDerivation
+         ruleOf DiaIn = diamondIn
+         ruleOf BoxOut = boxOut
+         ruleOf MN1 = liftAbsRule $ modalNegation !! 0
+         ruleOf MN2 = liftAbsRule $ modalNegation !! 1
+         ruleOf MN3 = liftAbsRule $ modalNegation !! 2
+         ruleOf MN4 = liftAbsRule $ modalNegation !! 3
+         ruleOf DiaD1 = diamondDerivation !! 0
+         ruleOf DiaD2 = diamondDerivation !! 1
+
+         indirectInference (MoPL x) = indirectInference (MoP x)
+         indirectInference ND = Just (TypedProof (ProofType 0 1))
+         indirectInference DiaD1 = Just (TypedProof (ProofType 1 1))
+         indirectInference DiaD2 = Just (TypedProof (ProofType 1 1))
+
+         isAssumption (MoPL As) = True
+         isAssumption _ = False
+
+         restriction ND = Just (eigenConstraint SomeWorld (SS (SeqNec $ SeqPhiA 1)) (absgamma 1))
+         restriction DiaD1 = Just (eigenConstraint SomeWorld (SS (SeqPos $ SeqPhiA 1) :-: SS (SeqPhiA 1)) (absgamma 1 :+: absgamma 2))
+         restriction _     = Nothing
+        
+parseHardegreeL :: Parsec String u [HardegreeL]
+parseHardegreeL = (map MoPL <$> parseHardegreeModalProp) 
+                    <|> parseRuleTable (fromList 
+                        [ ("ND"      , return [ND])
+                        , ("[]D"     , return [ND])
+                        , ("DiaD"    , return [DiaD1,DiaD2])
+                        , ("<>D"     , return [DiaD1,DiaD2])
+                        , ("[]O"     , return [BoxOut])
+                        , ("<>I"     , return [DiaIn])
+                        , ("MN"      , return [MN1,MN2,MN3,MN4])
+                        ])
+
+parseHardegreeLProof ::  Map String DerivedRule -> String -> [DeductionLine HardegreeL AbsoluteModalPropLexicon (Form Bool)]
+parseHardegreeLProof ders = toDeductionHardegree parseHardegreeL absoluteModalPropFormulaParser
+
+hardegreeLCalc = NaturalDeductionCalc 
+    { ndRenderer = MontegueStyle
+    , ndParseProof = parseHardegreeLProof
+    , ndProcessLine = hoProcessLineHardegree
+    , ndProcessLineMemo = Just hoProcessLineHardegreeMemo
+    , ndParseSeq = absoluteModalPropSeqParser
     }

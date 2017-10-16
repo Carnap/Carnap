@@ -69,7 +69,7 @@ absoluteModalPropFormulaParser = formulaParser >>= indexIt
           subFormulaParser = coreSubformulaParser formulaParser simpleModalOptions{hasBooleanConstants = True}
           indexIt :: AbsoluteModalPreForm -> Parsec String u AbsoluteModalForm
           indexIt f = do char '/'
-                         w <- parseWorld <|> parseWorldVar "ijklmn"
+                         w <- parseWorld
                          return (f `atWorld` w)
 
 worldTheoryOptions :: ModalPropositionalParserOptions WorldTheoryPropLexicon u Identity
@@ -104,7 +104,7 @@ parseWorldIndexer opts = do char '/'
                        Just vp -> vp
                        _ -> parserZero
 
-parseWorldVar :: (IndexingLang lex unindexed indexed, Monad m) => String -> ParsecT String u m (FixLang lex (Term World))
+parseWorldVar :: Monad m => String -> ParsecT String u m (WorldTheoryPropLanguage (Term World))
 parseWorldVar s = choice [try $ do _ <- string "i_"
                                    dig <- many1 digit
                                    return $ worldVar $ "i_" ++ dig

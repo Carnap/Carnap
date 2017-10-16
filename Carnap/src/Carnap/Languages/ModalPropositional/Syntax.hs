@@ -221,8 +221,8 @@ instance CopulaSchema ModalPropLanguage
 type WorldTheoryLexicon = WorldTheoryIndexer 
                         :|: Function Index
                         :|: Function IndexCons 
-                        :|: Quantifiers IndexQuant
                         :|: Function IndexScheme
+                        :|: Quantifiers IndexQuant
                         :|: Predicate ModalSchematicPred
                         :|: Function IndexVar
                         :|: EndLang
@@ -231,7 +231,7 @@ type WorldTheoryPropLexicon = ModalPropLexiconWith WorldTheoryLexicon
 
 type WorldTheoryPropLanguage = ModalPropLanguageWith WorldTheoryLexicon
 
-pattern IQuant q = (FX (Lx2 (Lx4 (Bind q))))
+pattern IQuant q = (FX (Lx2 (Lx5 (Bind q))))
 pattern PSV n  = FX (Lx1 (Lx6 (StaticVar n)))
 
 instance CopulaSchema WorldTheoryPropLanguage where
@@ -267,7 +267,6 @@ type AbsoluteModalLexicon = AbsoluteIndexer
                         :|: Function Index
                         :|: Function IndexCons 
                         :|: Function IndexScheme
-                        :|: Function IndexVar
                         :|: EndLang
 
 type AbsoluteModalPropLexicon = ModalPropLexiconWith AbsoluteModalLexicon
@@ -288,14 +287,17 @@ type AbsoluteModalPreForm = AbsoluteModalPropLanguage (Form (World -> Bool))
 class IndexingLang lex indexed unindexed | lex -> indexed unindexed where
     atWorld :: FixLang lex unindexed -> FixLang lex (Term World) -> FixLang lex indexed
     world :: Int -> FixLang lex (Term World)
-    worldVar :: String -> FixLang lex (Term World)
+    worldScheme :: Int -> FixLang lex (Term World)
 
 instance IndexingLang AbsoluteModalPropLexicon (Form Bool) (Form (World -> Bool)) where
     atWorld x t = FX (Lx2 (Lx1 AtAbsIndex)) :!$: x :!$: t
     world n = FX (Lx2 (Lx2 (Function (Index n) AZero)))
-    worldVar s = FX (Lx2 (Lx5 (Function (Var s) AZero)))
+    worldScheme n = FX (Lx2 (Lx4 (Function (SFunc AZero n) AZero)))
+
+worldVar :: String -> WorldTheoryPropLanguage (Term World)
+worldVar s = FX (Lx2 (Lx7 (Function (Var s) AZero)))
 
 instance IndexingLang WorldTheoryPropLexicon (Form (World -> Bool)) (Form (World -> Bool)) where
     atWorld x t = FX (Lx2 (Lx1 AtIndex)) :!$: x :!$: t
     world n = FX (Lx2 (Lx2 (Function (Index n) AZero)))
-    worldVar s = FX (Lx2 (Lx7 (Function (Var s) AZero)))
+    worldScheme n = FX (Lx2 (Lx4 (Function (SFunc AZero n) AZero)))

@@ -24,6 +24,8 @@ import Data.List (intercalate)
 
 type WorldTheorySequentCalc = ClassicalSequentOver WorldTheoryPropLexicon
 
+type AbsoluteModalPropSequentCalc = ClassicalSequentOver AbsoluteModalPropLexicon
+
 --we write the Copula schema at this level since we may want other schemata
 --for sequent languages that contain things like quantifiers
 instance CopulaSchema WorldTheorySequentCalc where
@@ -36,22 +38,27 @@ instance CopulaSchema WorldTheorySequentCalc where
     lamSchema f (x:xs) = "(λβ_" ++ show h ++ "." ++ show (f (SeqSV (-1 * h))) ++ intercalate " " (x:xs) ++ ")"
         where h = scopeHeight (LLam f)
 
+instance CopulaSchema AbsoluteModalPropSequentCalc
+
 pattern SeqP x arity      = FX (Lx2 (Lx1 (Lx1 (Predicate x arity))))
 pattern SeqSP x arity     = FX (Lx2 (Lx1 (Lx2 (Predicate x arity))))
 pattern SeqCon x arity    = FX (Lx2 (Lx1 (Lx3 (Connective x arity))))
 pattern SeqBox            = FX (Lx2 (Lx1 (Lx4 (Connective Box AOne))))
 pattern SeqDia            = FX (Lx2 (Lx1 (Lx4 (Connective Diamond AOne))))
 pattern SeqIndexer        = FX (Lx2 (Lx2 (Lx1 AtIndex)))
+pattern SeqAbsIndexer     = FX (Lx2 (Lx2 (Lx1 AtAbsIndex)))
 pattern SeqIndicies c a   = FX (Lx2 (Lx2 (Lx2 (Function c a))))
 pattern SeqIdxCons c a    = FX (Lx2 (Lx2 (Lx3 (Function c a))))
-pattern SeqQuant q        = FX (Lx2 (Lx2 (Lx4 (Bind q))))
-pattern SeqSchemIdx c a   = FX (Lx2 (Lx2 (Lx5 (Function c a))))
+pattern SeqSchemIdx c a   = FX (Lx2 (Lx2 (Lx4 (Function c a))))
+pattern SeqQuant q        = FX (Lx2 (Lx2 (Lx5 (Bind q))))
 pattern SeqSchemPred c a  = FX (Lx2 (Lx2 (Lx6 (Predicate c a))))
 pattern LFalsum           = FX (Lx2 (Lx1 (Lx5 (Connective Falsum AZero))))
 pattern SeqSV n           = FX (Lx2 (Lx1 (Lx6 (StaticVar n))))
 pattern SeqProp n         = SeqP (Prop n) AZero
 pattern SeqPhi :: Int -> WorldTheorySequentCalc (Form (World -> Bool))
 pattern SeqPhi n          = SeqSP (SProp n) AZero
+pattern SeqPhiA :: Int -> AbsoluteModalPropSequentCalc (Form (World -> Bool))
+pattern SeqPhiA n         = SeqSP (SProp n) AZero
 pattern SeqPPhi n         = SeqSchemPred (SPred AOne n) AOne
 pattern SeqAnd            = SeqCon And ATwo
 pattern SeqOr             = SeqCon Or ATwo
@@ -65,12 +72,15 @@ pattern (:||-:) x y       = SeqOr  :!$: x :!$: y
 pattern (:->-:) x y       = SeqIf  :!$: x :!$: y
 pattern (:<->-:) x y      = SeqIff :!$: x :!$: y
 pattern (:/:) x y         = SeqIndexer :!$: x :!$: y
+pattern (://:) x y        = SeqAbsIndexer :!$: x :!$: y
 pattern SeqNeg x          = SeqNot :!$: x
 pattern SeqBind q f       = SeqQuant q :!$: LLam f
 pattern SeqIndex n        = SeqIndicies (Index n) AZero
 pattern SeqSchmIdx n      = SeqSchemIdx (SFunc AZero n) AZero
 pattern TheWorld          = SeqIndex 0
 pattern SomeWorld         = SeqSchmIdx 0
+pattern SomeOtherWorld    = SeqSchmIdx 1
+pattern SomeThirdWorld    = SeqSchmIdx 2
 pattern SeqCons x y       = SeqIdxCons IndexCons ATwo :!$: x :!$: y
 
 eigenConstraint c suc ant sub
@@ -92,13 +102,41 @@ instance Eq (WorldTheorySequentCalc a) where
 instance ParsableLex (Form (World -> Bool)) WorldTheoryPropLexicon where
         langParser = worldTheoryPropFormulaParser
 
+instance ParsableLex (Form Bool) AbsoluteModalPropLexicon where
+        langParser = absoluteModalPropFormulaParser
+
 phi :: Int -> WorldTheorySequentCalc (Term World) -> WorldTheorySequentCalc (Form (World -> Bool))
 phi n x = SeqPPhi n :!$: x
 
 wtlgamma :: Int -> WorldTheorySequentCalc (Antecedent (Form (World -> Bool)))
 wtlgamma = GammaV
 
+absgamma :: Int -> AbsoluteModalPropSequentCalc (Antecedent (Form (World -> Bool)))
+absgamma = GammaV
+
 worldTheorySeqParser = seqFormulaParser :: Parsec String u (WorldTheorySequentCalc (Sequent (Form (World -> Bool))))
+
+absoluteModalPropSeqParser = seqFormulaParser :: Parsec String u (AbsoluteModalPropSequentCalc (Sequent (Form Bool)))
+
+liftAbsRule (SequentRule p c) = map atSome p ∴ atSome c
+    where atSome :: WorldTheorySequentCalc (Sequent (Form (World -> Bool))) -> AbsoluteModalPropSequentCalc (Sequent (Form Bool))
+          atSome (a :|-: s) = atSomeAnt a :|-: atSomeSuc s
+          atSomeAnt :: WorldTheorySequentCalc (Antecedent (Form (World -> Bool))) -> AbsoluteModalPropSequentCalc (Antecedent (Form Bool))
+          atSomeAnt (x :+: y) = atSomeAnt x :+: atSomeAnt y
+          atSomeAnt (SA x) = SA (reconstruct x ://: SomeWorld) 
+          atSomeAnt (GammaV n) = GammaV n
+          atSomeSuc :: WorldTheorySequentCalc (Succedent (Form (World -> Bool))) -> AbsoluteModalPropSequentCalc (Succedent (Form Bool))
+          atSomeSuc (x :-: y) = atSomeSuc x :-: atSomeSuc y
+          atSomeSuc (SS x) = SS (reconstruct x ://: SomeWorld) 
+          reconstruct (x:&-:y) = reconstruct x :&-: reconstruct y
+          reconstruct (x:||-:y) = reconstruct x :||-: reconstruct y
+          reconstruct (x:->-:y) = reconstruct x :->-: reconstruct y
+          reconstruct (x:<->-:y) = reconstruct x :<->-: reconstruct y
+          reconstruct (SeqNec x) = SeqNec $ reconstruct x
+          reconstruct (SeqPos x) = SeqPos $ reconstruct x
+          reconstruct (SeqNeg x) = SeqNeg $ reconstruct x
+          reconstruct (SeqPhi n) = SeqPhiA n
+          reconstruct x = error "cannot reconstruct from wtl to l"
 
 -------------------------
 --  1.1 Standard Rules  --
@@ -156,9 +194,21 @@ worldTheoryUniversalGeneralization =
         [ GammaV 1 :|-: SS (phi 1 SomeWorld) ]
         ∴ GammaV 1 :|-: SS (SeqBind (All "v") (phi 1))
 
+boxDerivation = 
+        [ GammaV 1 :|-: SS (SeqPhiA 1 ://: SomeWorld) ]
+        ∴ GammaV 1 :|-: SS (SeqNec (SeqPhiA 1) ://: SomeOtherWorld)
+
+boxOut = 
+        [ GammaV 1 :|-: SS (SeqNec (SeqPhiA 1) ://: SomeWorld) ]
+        ∴ GammaV 1 :|-: SS (SeqPhiA 1 ://: SomeOtherWorld)
+
 worldTheoryExistentialGeneralization = 
         [ GammaV 1 :|-: SS (phi 1 SomeWorld)]
         ∴ GammaV 1 :|-: SS (SeqBind (Some "v") (phi 1))
+
+diamondIn = 
+        [ GammaV 1 :|-: SS (SeqPhiA 1 ://: SomeWorld) ]
+        ∴ GammaV 1 :|-: SS (SeqPos (SeqPhiA 1) ://: SomeOtherWorld)
 
 ---------------------------
 --  1.2 Variation Rules  --
@@ -369,6 +419,18 @@ worldTheoryExistentialDerivation = [
                                        ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (SeqPhi 1)
                                    ]
 
+diamondDerivation = [
+                        [ GammaV 1 :+:  SA (SeqPhiA 1 ://: SomeWorld) :|-: SS (SeqPhiA 2 ://: SomeThirdWorld) 
+                        , GammaV 2 :|-: SS (SeqPos (SeqPhiA 1) ://: SomeOtherWorld)   
+                        , SA (SeqPhiA 1 ://: SomeWorld) :|-: SS (SeqPhiA 1 ://: SomeWorld)            
+                        ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (SeqPhiA 2 ://: SomeThirdWorld)      
+                    ,
+                        [ GammaV 1 :|-: SS (SeqPhiA 2 ://: SomeThirdWorld) 
+                        , GammaV 2 :|-: SS (SeqPos (SeqPhiA 1) ://: SomeOtherWorld)   
+                        , SA (SeqPhiA 1 ://: SomeWorld) :|-: SS (SeqPhiA 1 ://: SomeWorld)            
+                        ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (SeqPhiA 2 ://: SomeThirdWorld)      
+                    ]
+
 -----------------------------------
 --  1.2.1.1 Bidirectional Rules  --
 -----------------------------------
@@ -440,30 +502,10 @@ quantifierNegation = bidir ( GammaV 1 :|-: SS (SeqNeg $ SeqBind (All "v") (phi 1
                      ++ bidir ( GammaV 1 :|-: SS (SeqNeg $ SeqBind (Some "v") (phi 1)))
                               ( GammaV 1 :|-: SS (SeqBind (All "v") (SeqNeg . phi 1)))
 
--------------------------------
---  1.2.2 Replacement Rules  --
--------------------------------
-
--- replace :: WorldTheoryPropLanguage (Form (World -> Bool)) -> WorldTheoryPropLanguage (Form (World -> Bool)) -> [SequentRule (CoreLexicon :|: WorldTheoryLexicon)]
--- replace x y = [ [GammaV 1  :|-: ss (propCtx 1 x)] ∴ GammaV 1  :|-: ss (propCtx 1 y)
---               , [GammaV 1  :|-: ss (propCtx 1 y)] ∴ GammaV 1  :|-: ss (propCtx 1 x)]
---     where ss = SS . liftToSequent
-
--- andCommutativity = replace (phin 1 ./\. phin 2) (phin 2 ./\. phin 1)
-
--- orCommutativity = replace (phin 1 .\/. phin 2) (phin 2 .\/. phin 1)
-
--- iffCommutativity = replace (phin 1 .<=>. phin 2) (phin 2 .<=>. phin 1)
-
--- deMorgansLaws = replace (lneg $ phin 1 ./\. phin 2) (lneg (phin 1) .\/. lneg (phin 2))
---              ++ replace (lneg $ phin 1 .\/. phin 2) (lneg (phin 1) ./\. lneg (phin 2))
-
--- doubleNegation = replace (lneg $ lneg $ phin 1) (phin 1)
-
--- materialConditional = replace (phin 1 .=>. phin 2) (lneg (phin 1) .\/. phin 2)
---                    ++ replace (phin 1 .\/. phin 2) (lneg (phin 1) .=>. phin 2)
-
--- biconditionalExchange = replace (phin 1 .<=>. phin 2) ((phin 1 .=>. phin 2) ./\. (phin 2 .=>. phin 1))
+modalNegation = bidir ( GammaV 1 :|-: SS ((SeqPos $ SeqNeg $ SeqPhi 1)))
+                ( GammaV 1 :|-: SS ((SeqNeg $ SeqNec $ SeqPhi 1)))
+                ++ bidir ( GammaV 1 :|-: SS ((SeqNeg $ SeqNeg $ SeqPhi 1)))
+                ( GammaV 1 :|-: SS ((SeqNeg $ SeqPos $ SeqPhi 1)))
 
 ----------------------------------------
 --  1.2.3 Infinitary Variation Rules  --
