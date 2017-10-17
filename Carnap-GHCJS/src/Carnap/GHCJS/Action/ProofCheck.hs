@@ -14,7 +14,7 @@ import Carnap.Languages.PurePropositional.Logic as P
 import Carnap.Languages.PureFirstOrder.Logic as FOL 
     (DerivedRule(..), folCalc, magnusQLCalc, thomasBolducAndZachFOLCalc) 
 import Carnap.Languages.ModalPropositional.Logic as MPL
-    (hardegreeWTLCalc)
+    (hardegreeWTLCalc, hardegreeLCalc)
 import Carnap.Languages.PureSecondOrder.Logic (msolCalc, psolCalc) 
 import Carnap.Languages.PurePropositional.Util (toSchema)
 import Carnap.GHCJS.SharedTypes
@@ -101,6 +101,7 @@ activateChecker drs w (Just iog@(IOGoal i o g classes)) -- TODO: need to update 
         | "thomasBolducAndZachFOL" `elem` classes = tryParse buildOptions thomasBolducAndZachFOLCalc propChecker
         | "hardegreeSL" `elem` classes            = tryParse buildOptions hardegreeSLCalc propChecker
         | "hardegreeWTL" `elem` classes           = tryParse buildOptions hardegreeWTLCalc propChecker
+        | "hardegreeL" `elem` classes             = tryParse buildOptions hardegreeLCalc propChecker
         | otherwise                               = tryParse buildOptions propCalc propChecker
         where tryParse options calc checker = do
                   memo <- newIORef mempty

@@ -24,6 +24,7 @@ activate cls chunk
     | "ForallxQL" `elem` cls = actTemplate "proofchecker magnusQL Render"
     | "HardegreeSL" `elem` cls = actTemplate "proofchecker hardegreeSL Render"
     | "HardegreeWTL" `elem` cls = actTemplate "proofchecker hardegreeWTL Render guides"
+    | "HardegreeL" `elem` cls = actTemplate "proofchecker hardegreeL guides" --XXX: Keep render off here until we have nicer rendering of indicies
     | otherwise = RawBlock "html" "<div>No Matching Logic for Derivation</div>"
     where numof = takeWhile (/= ' ')
           (h:t) = formatChunk chunk

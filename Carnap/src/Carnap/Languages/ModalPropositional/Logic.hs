@@ -1,5 +1,5 @@
 module Carnap.Languages.ModalPropositional.Logic
-        ( parseHardegreeWTL, hardegreeWTLCalc)
+        ( parseHardegreeL, parseHardegreeWTL, hardegreeLCalc, hardegreeWTLCalc)
     where
 
 import Carnap.Languages.ModalPropositional.Logic.Hardegree

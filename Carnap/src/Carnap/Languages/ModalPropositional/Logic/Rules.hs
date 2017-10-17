@@ -116,18 +116,21 @@ absgamma = GammaV
 
 worldTheorySeqParser = seqFormulaParser :: Parsec String u (WorldTheorySequentCalc (Sequent (Form (World -> Bool))))
 
-absoluteModalPropSeqParser = seqFormulaParser :: Parsec String u (AbsoluteModalPropSequentCalc (Sequent (Form Bool)))
+absoluteModalPropSeqParser = liftAbsSeq TheWorld <$> (seqFormulaParser :: Parsec String u (WorldTheorySequentCalc (Sequent (Form (World -> Bool)))))
 
-liftAbsRule (SequentRule p c) = map atSome p ∴ atSome c
-    where atSome :: WorldTheorySequentCalc (Sequent (Form (World -> Bool))) -> AbsoluteModalPropSequentCalc (Sequent (Form Bool))
-          atSome (a :|-: s) = atSomeAnt a :|-: atSomeSuc s
-          atSomeAnt :: WorldTheorySequentCalc (Antecedent (Form (World -> Bool))) -> AbsoluteModalPropSequentCalc (Antecedent (Form Bool))
+liftAbsRule (SequentRule p c) = map (liftAbsSeq SomeWorld) p ∴ liftAbsSeq SomeWorld c
+
+liftAbsSeq :: AbsoluteModalPropSequentCalc (Term World) -> WorldTheorySequentCalc (Sequent (Form (World -> Bool))) -> AbsoluteModalPropSequentCalc (Sequent (Form Bool))
+liftAbsSeq w (a :|-: s) = atSomeAnt a :|-: atSomeSuc s
+    where atSomeAnt :: WorldTheorySequentCalc (Antecedent (Form (World -> Bool))) -> AbsoluteModalPropSequentCalc (Antecedent (Form Bool))
           atSomeAnt (x :+: y) = atSomeAnt x :+: atSomeAnt y
-          atSomeAnt (SA x) = SA (reconstruct x ://: SomeWorld) 
+          atSomeAnt (SA x) = SA (reconstruct x ://: w) 
           atSomeAnt (GammaV n) = GammaV n
+          atSomeAnt Top        = Top
           atSomeSuc :: WorldTheorySequentCalc (Succedent (Form (World -> Bool))) -> AbsoluteModalPropSequentCalc (Succedent (Form Bool))
           atSomeSuc (x :-: y) = atSomeSuc x :-: atSomeSuc y
-          atSomeSuc (SS x) = SS (reconstruct x ://: SomeWorld) 
+          atSomeSuc (SS x) = SS (reconstruct x ://: w) 
+          atSomeSuc Bot = Bot
           reconstruct (x:&-:y) = reconstruct x :&-: reconstruct y
           reconstruct (x:||-:y) = reconstruct x :||-: reconstruct y
           reconstruct (x:->-:y) = reconstruct x :->-: reconstruct y
@@ -136,6 +139,7 @@ liftAbsRule (SequentRule p c) = map atSome p ∴ atSome c
           reconstruct (SeqPos x) = SeqPos $ reconstruct x
           reconstruct (SeqNeg x) = SeqNeg $ reconstruct x
           reconstruct (SeqPhi n) = SeqPhiA n
+          reconstruct (SeqProp n) = SeqProp n
           reconstruct x = error "cannot reconstruct from wtl to l"
 
 -------------------------
