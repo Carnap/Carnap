@@ -327,6 +327,12 @@ instance Show HardegreeL where
          show MN4 = "MN"
 
 instance Inference HardegreeL AbsoluteModalPropLexicon (Form Bool) where
+         ruleOf (MoPL ID1)      = worldlyExplicitConstructiveFalsumReductioVariations !! 0
+         ruleOf (MoPL ID2)      = worldlyExplicitConstructiveFalsumReductioVariations !! 1
+         ruleOf (MoPL ID3)      = worldlyExplicitNonConstructiveFalsumReductioVariations !! 0
+         ruleOf (MoPL ID4)      = worldlyExplicitNonConstructiveFalsumReductioVariations !! 1
+         ruleOf (MoPL FalI)     = worldlyFalsumIntroduction
+         ruleOf (MoPL FalO)     = worldlyFalsumElimination
          ruleOf (MoPL x) = liftAbsRule (ruleOf (MoP x))
          ruleOf ND = boxDerivation
          ruleOf DiaIn = diamondIn

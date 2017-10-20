@@ -174,9 +174,16 @@ doubleNegationIntroduction = [ GammaV 1 :|-: SS (SeqPhi 1)
 falsumElimination = [ GammaV 1 :|-: SS LFalsum
                     ] ∴ GammaV 1 :|-: SS (SeqPhi 1)
 
+worldlyFalsumElimination = [ GammaV 1 :|-: SS (LFalsum ://: SomeWorld)
+                           ] ∴ GammaV 1 :|-: SS (SeqPhiA 1 ://: SomeOtherWorld)
+
 falsumIntroduction = [ GammaV 1 :|-: SS (SeqNeg $ SeqPhi 1)
                      , GammaV 2 :|-: SS (SeqPhi 1)
                      ] ∴ GammaV 1 :+: GammaV 2 :|-: SS LFalsum
+
+worldlyFalsumIntroduction = [ GammaV 1 :|-: SS ((SeqNeg $ SeqPhiA 1) ://: SomeWorld)
+                            , GammaV 2 :|-: SS (SeqPhiA 1 ://: SomeWorld)
+                            ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (LFalsum ://: SomeOtherWorld)
 
 adjunction = [ GammaV 1  :|-: SS (SeqPhi 1) 
              , GammaV 2  :|-: SS (SeqPhi 2)
@@ -278,6 +285,28 @@ explicitNonConstructiveFalsumReductioVariations = [
                 , SA (SeqNeg $ SeqPhi 1) :|-: SS (SeqNeg $ SeqPhi 1)
                 ] ∴ GammaV 1 :|-: SS (SeqPhi 1)
             ]
+
+worldlyExplicitConstructiveFalsumReductioVariations = [
+                [ GammaV 1 :+: SA (SeqPhiA 1 ://: SomeWorld) :|-: SS (LFalsum ://: SomeOtherWorld)
+                , SA ( SeqPhiA 1 ://: SomeWorld) :|-: SS ( SeqPhiA 1 ://: SomeWorld)
+                ] ∴ GammaV 1 :|-: SS ((SeqNeg $ SeqPhiA 1) ://: SomeWorld)
+            ,
+                [ GammaV 1 :|-: SS (LFalsum ://: SomeOtherWorld)
+                , SA (SeqPhiA 1 ://: SomeWorld) :|-: SS (SeqPhiA 1 ://: SomeWorld)
+                ] ∴ GammaV 1 :|-: SS ((SeqNeg $ SeqPhiA 1) ://: SomeWorld)
+            ]
+
+worldlyExplicitNonConstructiveFalsumReductioVariations = [
+                [ GammaV 1 :+: SA ((SeqNeg $ SeqPhiA 1) ://: SomeWorld) :|-: SS (LFalsum ://: SomeOtherWorld)
+                , SA ((SeqNeg $ SeqPhiA 1) ://: SomeWorld) :|-: SS ((SeqNeg $ SeqPhiA 1) ://: SomeWorld)
+                ] ∴ GammaV 1 :|-: SS ( SeqPhiA 1 ://: SomeWorld)
+            ,
+                [ GammaV 1 :|-: SS (LFalsum ://: SomeOtherWorld)
+                , SA ((SeqNeg $ SeqPhiA 1) ://: SomeWorld) :|-: SS ((SeqNeg $ SeqPhiA 1) ://: SomeWorld)
+                ] ∴ GammaV 1 :|-: SS (SeqPhiA 1 ://: SomeWorld)
+            ]
+
+
 
 nonConstructiveReductioVariations = [
                 [ GammaV 1 :+: SA (SeqNeg $ SeqPhi 1) :|-: SS (SeqPhi 2) 
@@ -513,7 +542,7 @@ quantifierNegation = bidir ( GammaV 1 :|-: SS (SeqNeg $ SeqBind (All "v") (phi 1
 
 modalNegation = bidir ( GammaV 1 :|-: SS ((SeqPos $ SeqNeg $ SeqPhi 1)))
                 ( GammaV 1 :|-: SS ((SeqNeg $ SeqNec $ SeqPhi 1)))
-                ++ bidir ( GammaV 1 :|-: SS ((SeqNeg $ SeqNeg $ SeqPhi 1)))
+                ++ bidir ( GammaV 1 :|-: SS ((SeqNec $ SeqNeg $ SeqPhi 1)))
                 ( GammaV 1 :|-: SS ((SeqNeg $ SeqPos $ SeqPhi 1)))
 
 ----------------------------------------
