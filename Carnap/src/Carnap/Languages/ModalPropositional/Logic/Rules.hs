@@ -53,6 +53,7 @@ pattern SeqSchemIdx c a   = FX (Lx2 (Lx2 (Lx4 (Function c a))))
 pattern SeqQuant q        = FX (Lx2 (Lx2 (Lx5 (Bind q))))
 pattern SeqSchemPred c a  = FX (Lx2 (Lx2 (Lx6 (Predicate c a))))
 pattern LFalsum           = FX (Lx2 (Lx1 (Lx5 (Connective Falsum AZero))))
+pattern LVerum            = FX (Lx2 (Lx1 (Lx5 (Connective Verum AZero))))
 pattern SeqSV n           = FX (Lx2 (Lx1 (Lx6 (StaticVar n))))
 pattern SeqProp n         = SeqP (Prop n) AZero
 pattern SeqPhi :: Int -> WorldTheorySequentCalc (Form (World -> Bool))
@@ -122,11 +123,13 @@ liftAbsRule (SequentRule p c) = map (liftAbsSeq SomeWorld) p ∴ liftAbsSeq Some
 
 liftAbsSeq :: AbsoluteModalPropSequentCalc (Term World) -> WorldTheorySequentCalc (Sequent (Form (World -> Bool))) -> AbsoluteModalPropSequentCalc (Sequent (Form Bool))
 liftAbsSeq w (a :|-: s) = atSomeAnt a :|-: atSomeSuc s
-    where atSomeAnt :: WorldTheorySequentCalc (Antecedent (Form (World -> Bool))) -> AbsoluteModalPropSequentCalc (Antecedent (Form Bool))
+    where 
+          atSomeAnt :: WorldTheorySequentCalc (Antecedent (Form (World -> Bool))) -> AbsoluteModalPropSequentCalc (Antecedent (Form Bool))
           atSomeAnt (x :+: y) = atSomeAnt x :+: atSomeAnt y
           atSomeAnt (SA x) = SA (reconstruct x ://: w) 
           atSomeAnt (GammaV n) = GammaV n
           atSomeAnt Top        = Top
+
           atSomeSuc :: WorldTheorySequentCalc (Succedent (Form (World -> Bool))) -> AbsoluteModalPropSequentCalc (Succedent (Form Bool))
           atSomeSuc (x :-: y) = atSomeSuc x :-: atSomeSuc y
           atSomeSuc (SS x) = SS (reconstruct x ://: w) 
@@ -140,7 +143,9 @@ liftAbsSeq w (a :|-: s) = atSomeAnt a :|-: atSomeSuc s
           reconstruct (SeqNeg x) = SeqNeg $ reconstruct x
           reconstruct (SeqPhi n) = SeqPhiA n
           reconstruct (SeqProp n) = SeqProp n
-          reconstruct x = error "cannot reconstruct from wtl to l"
+          reconstruct LFalsum = LFalsum
+          reconstruct LVerum = LVerum
+          reconstruct x = error $ "cannot reconstruct " ++ show x ++ " from wtl to l"
 
 -------------------------
 --  1.1 Standard Rules  --
