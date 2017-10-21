@@ -85,7 +85,7 @@ courseData KSUIntroToFormal2017 = (blankCourse GrahamLeachKrouse "Introduction t
         , ( 5, toTime "11:59 pm CDT, Sep 20, 2017")
         , ( 6, toTime "11:59 pm CDT, Oct 6, 2017")
         , ( 7, toTime "11:59 pm CDT, Oct 13, 2017")
-        , ( 8, toTime "11:59 pm CDT, Oct 23, 2017")
+        , ( 8, toTime "11:59 pm CDT, Oct 24, 2017")
         ]
     }
 courseData KSUModalLogic2017 = (blankCourse GrahamLeachKrouse "Modal Logic (independent study) - Kansas State University")
