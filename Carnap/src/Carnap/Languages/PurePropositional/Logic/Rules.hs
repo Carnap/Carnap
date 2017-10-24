@@ -1,4 +1,4 @@
-{-#LANGUAGE GADTs, PatternSynonyms,  FlexibleInstances, MultiParamTypeClasses #-}
+{-#LANGUAGE GADTs, FlexibleContexts, RankNTypes, PatternSynonyms,  FlexibleInstances, MultiParamTypeClasses #-}
 module Carnap.Languages.PurePropositional.Logic.Rules where
 
 import Text.Parsec
@@ -53,6 +53,10 @@ instance Eq (PropSequentCalc a) where
         (==) = (=*)
 
 instance PrismBooleanConnLex PropSequentCalcLex Bool
+instance PrismPropositionalContext PropSequentCalcLex Bool
+instance PrismBooleanConst PropSequentCalcLex Bool
+instance PrismPropLex PropSequentCalcLex Bool
+instance PrismSchematicProp PropSequentCalcLex Bool
 
 -- instance Combineable PropSequentCalc PropSeqLabel where
 
@@ -98,277 +102,322 @@ data DerivedRule = DerivedRule { conclusion :: PureForm, premises :: [PureForm]}
 -------------------------
 --Rules found in many systems of propositional logic
 
-modusPonens = [ GammaV 1 :|-: SS (SeqPhi 1 .→. SeqPhi 2)
-              , GammaV 2 :|-: SS (SeqPhi 1)
-              ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (SeqPhi 2)
+type BooleanRule lex b = 
+        ( Typeable b
+        , BooleanLanguage (ClassicalSequentOver lex (Form b))
+        , BooleanConstLanguage (ClassicalSequentOver lex (Form b))
+        , IndexedSchemePropLanguage (ClassicalSequentOver lex (Form b))
+        ) => SequentRule lex (Form b)
 
-modusTollens = [ GammaV 1 :|-: SS (SeqPhi 1 :->-: SeqPhi 2)
-               , GammaV 2 :|-: SS (SeqNeg $ SeqPhi 2)
-               ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (SeqNeg $ SeqPhi 1)
+modusPonens :: BooleanRule lex b
+modusPonens = [ GammaV 1 :|-: SS (phin 1 .→. phin 2)
+              , GammaV 2 :|-: SS (phin 1)
+              ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (phin 2)
 
+modusTollens :: BooleanRule lex b
+modusTollens = [ GammaV 1 :|-: SS (phin 1 .→. phin 2)
+               , GammaV 2 :|-: SS (lneg $ phin 2)
+               ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (lneg $ phin 1)
+
+axiom :: BooleanRule lex b
 axiom = [
-        ] ∴ SA (SeqPhi 1) :|-: SS (SeqPhi 1)
+        ] ∴ SA (phin 1) :|-: SS (phin 1)
 
-identityRule = [ GammaV 1 :|-: SS (SeqPhi 1) 
-               ] ∴ GammaV 1 :|-: SS (SeqPhi 1)
+identityRule :: BooleanRule lex b
+identityRule = [ GammaV 1 :|-: SS (phin 1) 
+               ] ∴ GammaV 1 :|-: SS (phin 1)
 
-doubleNegationElimination = [ GammaV 1 :|-: SS (SeqNeg $ SeqNeg $ SeqPhi 1) 
-                            ] ∴ GammaV 1 :|-: SS (SeqPhi 1) 
+doubleNegationElimination :: BooleanRule lex b
+doubleNegationElimination = [ GammaV 1 :|-: SS (lneg $ lneg $ phin 1) 
+                            ] ∴ GammaV 1 :|-: SS (phin 1) 
 
-doubleNegationIntroduction = [ GammaV 1 :|-: SS (SeqPhi 1) 
-                             ] ∴ GammaV 1 :|-: SS (SeqNeg $ SeqNeg $ SeqPhi 1) 
+doubleNegationIntroduction :: BooleanRule lex b
+doubleNegationIntroduction = [ GammaV 1 :|-: SS (phin 1) 
+                             ] ∴ GammaV 1 :|-: SS (lneg $ lneg $ phin 1) 
 
-falsumElimination = [ GammaV 1 :|-: SS LFalsum
-                    ] ∴ GammaV 1 :|-: SS (SeqPhi 1)
+falsumElimination :: BooleanRule lex b
+falsumElimination = [ GammaV 1 :|-: SS lfalsum
+                    ] ∴ GammaV 1 :|-: SS (phin 1)
 
-falsumIntroduction = [ GammaV 1 :|-: SS (SeqNeg $ SeqPhi 1)
-                     , GammaV 2 :|-: SS (SeqPhi 1)
-                     ] ∴ GammaV 1 :+: GammaV 2 :|-: SS LFalsum
+falsumIntroduction :: BooleanRule lex b
+falsumIntroduction = [ GammaV 1 :|-: SS (lneg $ phin 1)
+                     , GammaV 2 :|-: SS (phin 1)
+                     ] ∴ GammaV 1 :+: GammaV 2 :|-: SS lfalsum
 
-adjunction = [ GammaV 1  :|-: SS (SeqPhi 1) 
-             , GammaV 2  :|-: SS (SeqPhi 2)
-             ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (SeqPhi 1 :&-: SeqPhi 2)
+adjunction :: BooleanRule lex b
+adjunction = [ GammaV 1  :|-: SS (phin 1) 
+             , GammaV 2  :|-: SS (phin 2)
+             ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (phin 1 .∧. phin 2)
 
-conditionalToBiconditional = [ GammaV 1  :|-: SS (SeqPhi 1 :->-: SeqPhi 2)
-                             , GammaV 2  :|-: SS (SeqPhi 2 :->-: SeqPhi 1) 
-                             ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (SeqPhi 1 :<->-: SeqPhi 2)
+conditionalToBiconditional :: BooleanRule lex b
+conditionalToBiconditional = [ GammaV 1  :|-: SS (phin 1 .→. phin 2)
+                             , GammaV 2  :|-: SS (phin 2 .→. phin 1) 
+                             ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (phin 1 .↔. phin 2)
 
-dilemma = [ GammaV 1 :|-: SS (SeqPhi 1 :||-: SeqPhi 2)
-          , GammaV 2 :|-: SS (SeqPhi 1 :->-: SeqPhi 3)
-          , GammaV 3 :|-: SS (SeqPhi 2 :->-: SeqPhi 3)
-          ] ∴ GammaV 1 :+: GammaV 2 :+: GammaV 3 :|-: SS (SeqPhi 3)
+dilemma :: BooleanRule lex b
+dilemma = [ GammaV 1 :|-: SS (phin 1 .∨. phin 2)
+          , GammaV 2 :|-: SS (phin 1 .→. phin 3)
+          , GammaV 3 :|-: SS (phin 2 .→. phin 3)
+          ] ∴ GammaV 1 :+: GammaV 2 :+: GammaV 3 :|-: SS (phin 3)
 
-hypotheticalSyllogism = [ GammaV 1 :|-: SS (SeqPhi 1 :->-: SeqPhi 2)
-                        , GammaV 2 :|-: SS (SeqPhi 2 :->-: SeqPhi 3)
-                        ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (SeqPhi 1 :->-: SeqPhi 3)
+hypotheticalSyllogism :: BooleanRule lex b
+hypotheticalSyllogism = [ GammaV 1 :|-: SS (phin 1 .→. phin 2)
+                        , GammaV 2 :|-: SS (phin 2 .→. phin 3)
+                        ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (phin 1 .→. phin 3)
 
 ---------------------------
 --  1.2 Variation Rules  --
 ---------------------------
+-- Rules with several variations
+
+type BooleanRuleVariants lex b = 
+        ( Typeable b
+        , BooleanLanguage (ClassicalSequentOver lex (Form b))
+        , BooleanConstLanguage (ClassicalSequentOver lex (Form b))
+        , IndexedSchemePropLanguage (ClassicalSequentOver lex (Form b))
+        ) => [SequentRule lex (Form b)]
 
 ------------------------------
 --  1.2.1 Simple Variation  --
 ------------------------------
 
--- Rules with several variations
 
+modusTollendoPonensVariations :: BooleanRuleVariants lex b
 modusTollendoPonensVariations = [
-                [ GammaV 1  :|-: SS (SeqNeg $ SeqPhi 1) 
-                , GammaV 2  :|-: SS (SeqPhi 1 :||-: SeqPhi 2)
-                ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (SeqPhi 2)
+                [ GammaV 1  :|-: SS (lneg $ phin 1) 
+                , GammaV 2  :|-: SS (phin 1 .∨. phin 2)
+                ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (phin 2)
             , 
-                [ GammaV 1  :|-: SS (SeqNeg $ SeqPhi 1) 
-                , GammaV 2  :|-: SS (SeqPhi 2 :||-: SeqPhi 1)
-                ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (SeqPhi 2)
+                [ GammaV 1  :|-: SS (lneg $ phin 1) 
+                , GammaV 2  :|-: SS (phin 2 .∨. phin 1)
+                ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (phin 2)
             ]
 
+constructiveReductioVariations :: BooleanRuleVariants lex b
 constructiveReductioVariations = [
-                [ GammaV 1 :+: SA (SeqPhi 1) :|-: SS (SeqPhi 2) 
-                , GammaV 2 :+: SA (SeqPhi 1) :|-: SS (SeqNeg $ SeqPhi 2)
-                ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (SeqNeg $ SeqPhi 1)
+                [ GammaV 1 :+: SA (phin 1) :|-: SS (phin 2) 
+                , GammaV 2 :+: SA (phin 1) :|-: SS (lneg $ phin 2)
+                ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (lneg $ phin 1)
             ,
 
-                [ GammaV 1 :+: SA (SeqPhi 1) :|-: SS (SeqPhi 2) 
-                , GammaV 2 :|-: SS (SeqNeg $ SeqPhi 2)
-                ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (SeqNeg $ SeqPhi 1)
+                [ GammaV 1 :+: SA (phin 1) :|-: SS (phin 2) 
+                , GammaV 2 :|-: SS (lneg $ phin 2)
+                ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (lneg $ phin 1)
             ,
 
-                [ GammaV 1  :|-: SS (SeqPhi 2) 
-                , GammaV 2 :+: SA (SeqPhi 1) :|-: SS (SeqNeg $ SeqPhi 2)
-                ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (SeqNeg $ SeqPhi 1)
+                [ GammaV 1  :|-: SS (phin 2) 
+                , GammaV 2 :+: SA (phin 1) :|-: SS (lneg $ phin 2)
+                ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (lneg $ phin 1)
             ,
-                [ GammaV 1  :|-: SS (SeqPhi 2) 
-                , GammaV 2  :|-: SS (SeqNeg $ SeqPhi 2)
-                ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (SeqNeg $ SeqPhi 1)
+                [ GammaV 1  :|-: SS (phin 2) 
+                , GammaV 2  :|-: SS (lneg $ phin 2)
+                ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (lneg $ phin 1)
             ]
 
+explicitConstructiveFalsumReductioVariations :: BooleanRuleVariants lex b
 explicitConstructiveFalsumReductioVariations = [
-                [ GammaV 1 :+: SA (SeqPhi 1) :|-: SS LFalsum
-                , SA (SeqPhi 1) :|-: SS (SeqPhi 1)
-                ] ∴ GammaV 1 :|-: SS (SeqNeg $ SeqPhi 1)
+                [ GammaV 1 :+: SA (phin 1) :|-: SS lfalsum
+                , SA (phin 1) :|-: SS (phin 1)
+                ] ∴ GammaV 1 :|-: SS (lneg $ phin 1)
             ,
-                [ GammaV 1 :|-: SS LFalsum
-                , SA (SeqPhi 1) :|-: SS (SeqPhi 1)
-                ] ∴ GammaV 1 :|-: SS (SeqNeg $ SeqPhi 1)
+                [ GammaV 1 :|-: SS lfalsum
+                , SA (phin 1) :|-: SS (phin 1)
+                ] ∴ GammaV 1 :|-: SS (lneg $ phin 1)
             ]
 
+explicitNonConstructiveFalsumReductioVariations :: BooleanRuleVariants lex b
 explicitNonConstructiveFalsumReductioVariations = [
-                [ GammaV 1 :+: SA (SeqNeg $ SeqPhi 1) :|-: SS LFalsum
-                , SA (SeqNeg $ SeqPhi 1) :|-: SS (SeqNeg $ SeqPhi 1)
-                ] ∴ GammaV 1 :|-: SS (SeqPhi 1)
+                [ GammaV 1 :+: SA (lneg $ phin 1) :|-: SS lfalsum
+                , SA (lneg $ phin 1) :|-: SS (lneg $ phin 1)
+                ] ∴ GammaV 1 :|-: SS (phin 1)
             ,
-                [ GammaV 1 :|-: SS LFalsum
-                , SA (SeqNeg $ SeqPhi 1) :|-: SS (SeqNeg $ SeqPhi 1)
-                ] ∴ GammaV 1 :|-: SS (SeqPhi 1)
+                [ GammaV 1 :|-: SS lfalsum
+                , SA (lneg $ phin 1) :|-: SS (lneg $ phin 1)
+                ] ∴ GammaV 1 :|-: SS (phin 1)
             ]
 
+nonConstructiveReductioVariations :: BooleanRuleVariants lex b
 nonConstructiveReductioVariations = [
-                [ GammaV 1 :+: SA (SeqNeg $ SeqPhi 1) :|-: SS (SeqPhi 2) 
-                , GammaV 2 :+: SA (SeqNeg $ SeqPhi 1) :|-: SS (SeqNeg $ SeqPhi 2)
-                ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (SeqPhi 1)
+                [ GammaV 1 :+: SA (lneg $ phin 1) :|-: SS (phin 2) 
+                , GammaV 2 :+: SA (lneg $ phin 1) :|-: SS (lneg $ phin 2)
+                ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (phin 1)
             ,
 
-                [ GammaV 1 :+: SA (SeqNeg $ SeqPhi 1) :|-: SS (SeqPhi 2) 
-                , GammaV 2 :|-: SS (SeqNeg $ SeqPhi 2)
-                ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (SeqPhi 1)
+                [ GammaV 1 :+: SA (lneg $ phin 1) :|-: SS (phin 2) 
+                , GammaV 2 :|-: SS (lneg $ phin 2)
+                ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (phin 1)
             ,
 
-                [ GammaV 1  :|-: SS (SeqPhi 2) 
-                , GammaV 2 :+: SA (SeqNeg $ SeqPhi 1) :|-: SS (SeqNeg $ SeqPhi 2)
-                ] ∴ GammaV 1 :+: GammaV 2 :|-: SS ( SeqPhi 1)
+                [ GammaV 1  :|-: SS (phin 2) 
+                , GammaV 2 :+: SA (lneg $ phin 1) :|-: SS (lneg $ phin 2)
+                ] ∴ GammaV 1 :+: GammaV 2 :|-: SS ( phin 1)
             ,
-                [ GammaV 1  :|-: SS (SeqPhi 2) 
-                , GammaV 2  :|-: SS (SeqNeg $ SeqPhi 2)
-                ] ∴ GammaV 1 :+: GammaV 2 :|-: SS ( SeqPhi 1)
+                [ GammaV 1  :|-: SS (phin 2) 
+                , GammaV 2  :|-: SS (lneg $ phin 2)
+                ] ∴ GammaV 1 :+: GammaV 2 :|-: SS ( phin 1)
             ]
 
+conditionalProofVariations :: BooleanRuleVariants lex b
 conditionalProofVariations = [
-                [ GammaV 1 :+: SA (SeqPhi 1) :|-: SS (SeqPhi 2) 
-                ] ∴ GammaV 1 :|-: SS (SeqPhi 1 :->-: SeqPhi 2) 
-            ,   [ GammaV 1 :|-: SS (SeqPhi 2) ] ∴ GammaV 1 :|-: SS (SeqPhi 1 :->-: SeqPhi 2)
+                [ GammaV 1 :+: SA (phin 1) :|-: SS (phin 2) 
+                ] ∴ GammaV 1 :|-: SS (phin 1 .→. phin 2) 
+            ,   [ GammaV 1 :|-: SS (phin 2) ] ∴ GammaV 1 :|-: SS (phin 1 .→. phin 2)
             ]
 
+explicitConditionalProofVariations :: BooleanRuleVariants lex b
 explicitConditionalProofVariations = [
-                [ GammaV 1 :+: SA (SeqPhi 1)  :|-: SS (SeqPhi 2) 
-                , SA (SeqPhi 1) :|-: SS (SeqPhi 1)
-                ] ∴ GammaV 1 :|-: SS (SeqPhi 1 :->-: SeqPhi 2) 
-            ,   [ GammaV 1 :|-: SS (SeqPhi 2) 
-                , SA (SeqPhi 1) :|-: SS (SeqPhi 1)
-                ] ∴ GammaV 1 :|-: SS (SeqPhi 1 :->-: SeqPhi 2)
+                [ GammaV 1 :+: SA (phin 1)  :|-: SS (phin 2) 
+                , SA (phin 1) :|-: SS (phin 1)
+                ] ∴ GammaV 1 :|-: SS (phin 1 .→. phin 2) 
+            ,   [ GammaV 1 :|-: SS (phin 2) 
+                , SA (phin 1) :|-: SS (phin 1)
+                ] ∴ GammaV 1 :|-: SS (phin 1 .→. phin 2)
             ]
 
+simplificationVariations :: BooleanRuleVariants lex b
 simplificationVariations = [
-                [ GammaV 1  :|-: SS (SeqPhi 1 :&-: SeqPhi 2) ] ∴ GammaV 1 :|-: SS (SeqPhi 1)
+                [ GammaV 1  :|-: SS (phin 1 .∧. phin 2) ] ∴ GammaV 1 :|-: SS (phin 1)
             ,
-                [ GammaV 1  :|-: SS (SeqPhi 1 :&-: SeqPhi 2) ] ∴ GammaV 1 :|-: SS (SeqPhi 2)
+                [ GammaV 1  :|-: SS (phin 1 .∧. phin 2) ] ∴ GammaV 1 :|-: SS (phin 2)
             ]
 
+additionVariations :: BooleanRuleVariants lex b
 additionVariations = [
-                [ GammaV 1  :|-: SS (SeqPhi 1) ] ∴ GammaV 1 :|-: SS (SeqPhi 2 :||-: SeqPhi 1)
+                [ GammaV 1  :|-: SS (phin 1) ] ∴ GammaV 1 :|-: SS (phin 2 .∨. phin 1)
             ,
-                [ GammaV 1  :|-: SS (SeqPhi 1) ] ∴ GammaV 1 :|-: SS (SeqPhi 1 :||-: SeqPhi 2)
+                [ GammaV 1  :|-: SS (phin 1) ] ∴ GammaV 1 :|-: SS (phin 1 .∨. phin 2)
             ]
 
+biconditionalToConditionalVariations :: BooleanRuleVariants lex b
 biconditionalToConditionalVariations = [
-                [ GammaV 1  :|-: SS (SeqPhi 1 :<->-: SeqPhi 2) ] ∴ GammaV 1 :|-: SS (SeqPhi 2 :->-: SeqPhi 1)
+                [ GammaV 1  :|-: SS (phin 1 .↔. phin 2) ] ∴ GammaV 1 :|-: SS (phin 2 .→. phin 1)
             , 
-                [ GammaV 1  :|-: SS (SeqPhi 1 :<->-: SeqPhi 2) ] ∴ GammaV 1 :|-: SS (SeqPhi 1 :->-: SeqPhi 2)
+                [ GammaV 1  :|-: SS (phin 1 .↔. phin 2) ] ∴ GammaV 1 :|-: SS (phin 1 .→. phin 2)
             ]
 
+proofByCasesVariations :: BooleanRuleVariants lex b
 proofByCasesVariations = [
-                [ GammaV 1  :|-: SS (SeqPhi 1 :||-: SeqPhi 2)
-                , GammaV 2 :+: SA (SeqPhi 1) :|-: SS (SeqPhi 3)
-                , GammaV 3 :+: SA (SeqPhi 2) :|-: SS (SeqPhi 3)
-                ] ∴ GammaV 1 :+: GammaV 2 :+: GammaV 3 :|-: SS (SeqPhi 3)
+                [ GammaV 1  :|-: SS (phin 1 .∨. phin 2)
+                , GammaV 2 :+: SA (phin 1) :|-: SS (phin 3)
+                , GammaV 3 :+: SA (phin 2) :|-: SS (phin 3)
+                ] ∴ GammaV 1 :+: GammaV 2 :+: GammaV 3 :|-: SS (phin 3)
             ,   
-                [ GammaV 1  :|-: SS (SeqPhi 1 :||-: SeqPhi 2)
-                , GammaV 2 :|-: SS (SeqPhi 3)
-                , GammaV 3 :+: SA (SeqPhi 2) :|-: SS (SeqPhi 3)
-                ] ∴ GammaV 1 :+: GammaV 2 :+: GammaV 3 :|-: SS (SeqPhi 3)
+                [ GammaV 1  :|-: SS (phin 1 .∨. phin 2)
+                , GammaV 2 :|-: SS (phin 3)
+                , GammaV 3 :+: SA (phin 2) :|-: SS (phin 3)
+                ] ∴ GammaV 1 :+: GammaV 2 :+: GammaV 3 :|-: SS (phin 3)
             ,   
-                [ GammaV 1 :|-: SS (SeqPhi 1 :||-: SeqPhi 2)
-                , GammaV 2 :+: SA (SeqPhi 1) :|-: SS (SeqPhi 3)
-                , GammaV 3 :|-: SS (SeqPhi 3)
-                ] ∴ GammaV 1 :+: GammaV 2 :+: GammaV 3 :|-: SS (SeqPhi 3)
+                [ GammaV 1 :|-: SS (phin 1 .∨. phin 2)
+                , GammaV 2 :+: SA (phin 1) :|-: SS (phin 3)
+                , GammaV 3 :|-: SS (phin 3)
+                ] ∴ GammaV 1 :+: GammaV 2 :+: GammaV 3 :|-: SS (phin 3)
             , 
-                [ GammaV 1 :|-: SS (SeqPhi 1 :||-: SeqPhi 2)
-                , GammaV 2 :|-: SS (SeqPhi 3)
-                , GammaV 3 :|-: SS (SeqPhi 3)
-                ] ∴ GammaV 1 :+: GammaV 2 :+: GammaV 3 :|-: SS (SeqPhi 3)
+                [ GammaV 1 :|-: SS (phin 1 .∨. phin 2)
+                , GammaV 2 :|-: SS (phin 3)
+                , GammaV 3 :|-: SS (phin 3)
+                ] ∴ GammaV 1 :+: GammaV 2 :+: GammaV 3 :|-: SS (phin 3)
             ]
 
+tertiumNonDaturVariations :: BooleanRuleVariants lex b
 tertiumNonDaturVariations = [
-                [ SA (SeqPhi 1) :|-: SS (SeqPhi 1)
-                , SA (SeqNeg $ SeqPhi 1) :|-: SS (SeqNeg $ SeqPhi 1)
-                , GammaV 1 :+: SA (SeqPhi 1) :|-: SS (SeqPhi 2)
-                , GammaV 2 :+: SA (SeqNeg $ SeqPhi 1) :|-: SS (SeqPhi 2)
-                ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (SeqPhi 2)
+                [ SA (phin 1) :|-: SS (phin 1)
+                , SA (lneg $ phin 1) :|-: SS (lneg $ phin 1)
+                , GammaV 1 :+: SA (phin 1) :|-: SS (phin 2)
+                , GammaV 2 :+: SA (lneg $ phin 1) :|-: SS (phin 2)
+                ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (phin 2)
             ,   
-                [ SA (SeqPhi 1) :|-: SS (SeqPhi 1)
-                , SA (SeqNeg $ SeqPhi 1) :|-: SS (SeqNeg $ SeqPhi 1)
-                , GammaV 1 :|-: SS (SeqPhi 2)
-                , GammaV 2 :+: SA (SeqNeg $ SeqPhi 1) :|-: SS (SeqPhi 2)
-                ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (SeqPhi 2)
+                [ SA (phin 1) :|-: SS (phin 1)
+                , SA (lneg $ phin 1) :|-: SS (lneg $ phin 1)
+                , GammaV 1 :|-: SS (phin 2)
+                , GammaV 2 :+: SA (lneg $ phin 1) :|-: SS (phin 2)
+                ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (phin 2)
             ,   
-                [ SA (SeqPhi 1) :|-: SS (SeqPhi 1)
-                , SA (SeqNeg $ SeqPhi 1) :|-: SS (SeqNeg $ SeqPhi 1)
-                , GammaV 1 :+: SA (SeqPhi 1) :|-: SS (SeqPhi 2)
-                , GammaV 2 :|-: SS (SeqPhi 2)
-                ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (SeqPhi 2)
+                [ SA (phin 1) :|-: SS (phin 1)
+                , SA (lneg $ phin 1) :|-: SS (lneg $ phin 1)
+                , GammaV 1 :+: SA (phin 1) :|-: SS (phin 2)
+                , GammaV 2 :|-: SS (phin 2)
+                ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (phin 2)
             , 
-                [ SA (SeqPhi 1) :|-: SS (SeqPhi 1)
-                , SA (SeqNeg $ SeqPhi 1) :|-: SS (SeqNeg $ SeqPhi 1)
-                , GammaV 1 :|-: SS (SeqPhi 2)
-                , GammaV 2 :|-: SS (SeqPhi 2)
-                ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (SeqPhi 2)
+                [ SA (phin 1) :|-: SS (phin 1)
+                , SA (lneg $ phin 1) :|-: SS (lneg $ phin 1)
+                , GammaV 1 :|-: SS (phin 2)
+                , GammaV 2 :|-: SS (phin 2)
+                ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (phin 2)
             ]
 
+biconditionalProofVariations :: BooleanRuleVariants lex b
 biconditionalProofVariations = [
-                [ GammaV 1 :+: SA (SeqPhi 1) :|-: SS (SeqPhi 2)
-                , GammaV 2 :+: SA (SeqPhi 2) :|-: SS (SeqPhi 1) 
-                ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (SeqPhi 2 :<->-: SeqPhi 1)
+                [ GammaV 1 :+: SA (phin 1) :|-: SS (phin 2)
+                , GammaV 2 :+: SA (phin 2) :|-: SS (phin 1) 
+                ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (phin 2 .↔. phin 1)
             ,
-                [ GammaV 1 :|-: SS (SeqPhi 2)
-                , GammaV 2 :+: SA (SeqPhi 2) :|-: SS (SeqPhi 1)
-                ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (SeqPhi 2 :<->-: SeqPhi 1)
+                [ GammaV 1 :|-: SS (phin 2)
+                , GammaV 2 :+: SA (phin 2) :|-: SS (phin 1)
+                ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (phin 2 .↔. phin 1)
             ,
-                [ GammaV 1 :+: SA (SeqPhi 1) :|-: SS (SeqPhi 2)
-                , GammaV 2 :|-: SS (SeqPhi 1) 
-                ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (SeqPhi 2 :<->-: SeqPhi 1)
+                [ GammaV 1 :+: SA (phin 1) :|-: SS (phin 2)
+                , GammaV 2 :|-: SS (phin 1) 
+                ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (phin 2 .↔. phin 1)
             , 
-                [ GammaV 1 :|-: SS (SeqPhi 2)
-                , GammaV 2 :|-: SS (SeqPhi 1) 
-                ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (SeqPhi 2 :<->-: SeqPhi 1)
+                [ GammaV 1 :|-: SS (phin 2)
+                , GammaV 2 :|-: SS (phin 1) 
+                ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (phin 2 .↔. phin 1)
             ]
 
+biconditionalPonensVariations :: BooleanRuleVariants lex b
 biconditionalPonensVariations = [
-                [ GammaV 1  :|-: SS (SeqPhi 1 :<->-: SeqPhi 2)
-                , GammaV 2  :|-: SS (SeqPhi 1)
-                ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (SeqPhi 2)
+                [ GammaV 1  :|-: SS (phin 1 .↔. phin 2)
+                , GammaV 2  :|-: SS (phin 1)
+                ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (phin 2)
             ,
-                [ GammaV 1  :|-: SS (SeqPhi 1 :<->-: SeqPhi 2)
-                , GammaV 2  :|-: SS (SeqPhi 2)
-                ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (SeqPhi 1)
+                [ GammaV 1  :|-: SS (phin 1 .↔. phin 2)
+                , GammaV 2  :|-: SS (phin 2)
+                ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (phin 1)
             ]
 
+materialConditionalVariations :: BooleanRuleVariants lex b
 materialConditionalVariations =  [
-                [ GammaV 1 :|-: SS (SeqPhi 1)
-                ] ∴ GammaV 1 :|-: SS (SeqPhi 2 :->-: SeqPhi 1)
+                [ GammaV 1 :|-: SS (phin 1)
+                ] ∴ GammaV 1 :|-: SS (phin 2 .→. phin 1)
             ,
-                [ GammaV 1 :|-: SS (SeqNeg $ SeqPhi 2)
-                ] ∴ GammaV 1 :|-: SS (SeqPhi 2 :->-: SeqPhi 1)
+                [ GammaV 1 :|-: SS (lneg $ phin 2)
+                ] ∴ GammaV 1 :|-: SS (phin 2 .→. phin 1)
             ]
 
+negatedConditionalVariations :: BooleanRuleVariants lex b
 negatedConditionalVariations = [
-                [ GammaV 1 :|-: SS (SeqNeg $ SeqPhi 1 :->-: SeqPhi 2)
-                ] ∴ GammaV 1 :|-: SS (SeqPhi 1 :&-: SeqNeg (SeqPhi 2))
+                [ GammaV 1 :|-: SS (lneg $ phin 1 .→. phin 2)
+                ] ∴ GammaV 1 :|-: SS (phin 1 .∧. lneg (phin 2))
             ,
-                [ GammaV 1 :|-: SS (SeqPhi 1 :&-: SeqNeg (SeqPhi 2))
-                ] ∴ GammaV 1 :|-: SS (SeqNeg $ SeqPhi 1 :->-: SeqPhi 2)
+                [ GammaV 1 :|-: SS (phin 1 .∧. lneg (phin 2))
+                ] ∴ GammaV 1 :|-: SS (lneg $ phin 1 .→. phin 2)
             ]
 
+negatedConjunctionVariations :: BooleanRuleVariants lex b
 negatedConjunctionVariations = [
-                [ GammaV 1 :|-: SS (SeqNeg $ SeqPhi 1 :&-: SeqPhi 2)
-                ] ∴ GammaV 1 :|-: SS (SeqPhi 1 :->-: SeqNeg (SeqPhi 2))
+                [ GammaV 1 :|-: SS (lneg $ phin 1 .∧. phin 2)
+                ] ∴ GammaV 1 :|-: SS (phin 1 .→. lneg (phin 2))
             ,
-                [ GammaV 1 :|-: SS (SeqPhi 1 :->-: SeqNeg (SeqPhi 2))
-                ] ∴ GammaV 1 :|-: SS (SeqNeg $ SeqPhi 1 :&-: SeqPhi 2)
+                [ GammaV 1 :|-: SS (phin 1 .→. lneg (phin 2))
+                ] ∴ GammaV 1 :|-: SS (lneg $ phin 1 .∧. phin 2)
             ]
 
+negatedBiconditionalVariations :: BooleanRuleVariants lex b
 negatedBiconditionalVariations = [
-                [ GammaV 1 :|-: SS (SeqNeg $ SeqPhi 1 :<->-: SeqPhi 2)
-                ] ∴ GammaV 1 :|-: SS (SeqNeg (SeqPhi 1) :<->-: SeqPhi 2)
+                [ GammaV 1 :|-: SS (lneg $ phin 1 .↔. phin 2)
+                ] ∴ GammaV 1 :|-: SS (lneg (phin 1) .↔. phin 2)
             ,
-                [ GammaV 1 :|-: SS (SeqNeg (SeqPhi 1) :<->-: SeqPhi 2)
-                ] ∴ GammaV 1 :|-: SS (SeqNeg $ SeqPhi 1 :<->-: SeqPhi 2)
+                [ GammaV 1 :|-: SS (lneg (phin 1) .↔. phin 2)
+                ] ∴ GammaV 1 :|-: SS (lneg $ phin 1 .↔. phin 2)
             ]
 
+deMorgansNegatedOr :: BooleanRuleVariants lex b
 deMorgansNegatedOr = [
-                [ GammaV 1 :|-: SS (SeqNeg $ SeqPhi 1 :||-: SeqPhi 2)
-                ] ∴ GammaV 1 :|-: SS (SeqNeg (SeqPhi 1) :&-: SeqNeg (SeqPhi 2))
+                [ GammaV 1 :|-: SS (lneg $ phin 1 .∨. phin 2)
+                ] ∴ GammaV 1 :|-: SS (lneg (phin 1) .∧. lneg (phin 2))
             ,
-                [ GammaV 1 :|-: SS (SeqNeg (SeqPhi 1) :&-: SeqNeg (SeqPhi 2))
-                ] ∴ GammaV 1 :|-: SS (SeqNeg $ SeqPhi 1 :||-: SeqPhi 2)
+                [ GammaV 1 :|-: SS (lneg (phin 1) .∧. lneg (phin 2))
+                ] ∴ GammaV 1 :|-: SS (lneg $ phin 1 .∨. phin 2)
             ]
 
 -------------------------------
@@ -407,19 +456,19 @@ biconditionalExchange = replace (phin 1 .<=>. phin 2) ((phin 1 .=>. phin 2) ./\.
 -- or alternately, the checking mechanism should be modified to allow
 -- weakening.
 
-eliminationOfCases n = (premAnt n :|-: SS LFalsum
+eliminationOfCases :: Int -> BooleanRule lex b
+eliminationOfCases n = (premAnt n :|-: SS lfalsum
                      : take n (map premiseForm [1 ..]))
                      ∴ GammaV 1 :|-: SS (concSuc n)
-    where premiseForm m = SA (SeqNeg $ SeqPhi m) :|-: SS (SeqNeg $ SeqPhi m)
-          premAnt m = foldr (:+:) (GammaV 1) (take m $ map (SA . SeqNeg . SeqPhi) [1 ..])
-          concSuc m = foldr (:||-:) (SeqPhi 1) (take (m - 1) $ map SeqPhi [2 ..])
+    where premiseForm m = SA (lneg $ phin m) :|-: SS (lneg $ phin m)
+          premAnt m = foldr (:+:) (GammaV 1) (take m $ map (SA . lneg . phin) [1 ..])
+          concSuc m = foldr (.∨.) (phin 1) (take (m - 1) $ map phin [2 ..])
 
 -- XXX slight variation from Hardegree's rule, which has weird ad-hoc syntax.
+separationOfCases :: Int -> BooleanRule lex b
 separationOfCases n = (GammaV 0 :|-: SS (premSuc n)
                     : take n (map premiseForm [1 ..]))
-                    ∴ concAnt n :|-: SS (SeqPhi 0)
-    where premSuc m = foldr (:||-:) (SeqPhi 1) (take (m - 1) $ map SeqPhi [2 ..])
-          premiseForm m = GammaV m :+: SA (SeqPhi m) :|-: SS (SeqPhi 0)
+                    ∴ concAnt n :|-: SS (phin 0)
+    where premSuc m = foldr (.∨.) (phin 1) (take (m - 1) $ map phin [2 ..])
+          premiseForm m = GammaV m :+: SA (phin m) :|-: SS (phin 0)
           concAnt m = foldr (:+:) (GammaV 0) (take m $ map GammaV [1 ..])
-
-
