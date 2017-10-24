@@ -28,23 +28,23 @@ type PropSequentCalcLex = ClassicalSequentLexOver PurePropLexicon
 --for sequent languages that contain things like quantifiers
 instance CopulaSchema PropSequentCalc
 
-pattern SeqP x arity      = FX (Lx2 (Lx1 (Predicate x arity)))
-pattern SeqSP x arity     = FX (Lx2 (Lx2 (Predicate x arity)))
-pattern SeqCon x arity    = FX (Lx2 (Lx3 (Connective x arity)))
-pattern LFalsum           = FX (Lx2 (Lx6 (Connective Falsum AZero)))
-pattern SeqProp n         = SeqP (Prop n) AZero
-pattern SeqPhi :: Int -> PropSequentCalc (Form Bool)
-pattern SeqPhi n          = SeqSP (SProp n) AZero
-pattern SeqAnd            = SeqCon And ATwo
-pattern SeqOr             = SeqCon Or ATwo
-pattern SeqIf             = SeqCon If ATwo
-pattern SeqIff            = SeqCon Iff ATwo
-pattern SeqNot            = SeqCon Not AOne
-pattern (:&-:) x y        = SeqAnd :!$: x :!$: y
-pattern (:||-:) x y       = SeqOr  :!$: x :!$: y
-pattern (:->-:) x y       = SeqIf  :!$: x :!$: y
-pattern (:<->-:) x y      = SeqIff :!$: x :!$: y
-pattern SeqNeg x          = SeqNot :!$: x
+-- pattern SeqP x arity      = FX (Lx2 (Lx1 (Predicate x arity)))
+-- pattern SeqSP x arity     = FX (Lx2 (Lx2 (Predicate x arity)))
+-- pattern SeqCon x arity    = FX (Lx2 (Lx3 (Connective x arity)))
+-- pattern LFalsum           = FX (Lx2 (Lx6 (Connective Falsum AZero)))
+-- pattern SeqProp n         = SeqP (Prop n) AZero
+-- pattern SeqPhi :: Int -> PropSequentCalc (Form Bool)
+-- pattern SeqPhi n          = SeqSP (SProp n) AZero
+-- pattern SeqAnd            = SeqCon And ATwo
+-- pattern SeqOr             = SeqCon Or ATwo
+-- pattern SeqIf             = SeqCon If ATwo
+-- pattern SeqIff            = SeqCon Iff ATwo
+-- pattern SeqNot            = SeqCon Not AOne
+-- pattern (:&-:) x y        = SeqAnd :!$: x :!$: y
+-- pattern (:||-:) x y       = SeqOr  :!$: x :!$: y
+-- pattern (:->-:) x y       = SeqIf  :!$: x :!$: y
+-- pattern (:<->-:) x y      = SeqIff :!$: x :!$: y
+-- pattern SeqNeg x          = SeqNot :!$: x
 
 data PropSeqLabel = PropSeqFO | PropSeqACUI
         deriving (Eq, Ord, Show)
