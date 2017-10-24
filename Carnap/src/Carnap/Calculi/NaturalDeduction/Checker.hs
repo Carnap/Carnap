@@ -251,11 +251,13 @@ reduceResult lineno xs = case rights xs of
                            [] -> Left $ errFrom xs
                            (r:x):rs -> Right r
     where eqsOf (Left (NoUnify eqs _)) = eqs
-          errFrom xs@(Left x:_) = if and (map uni xs) 
-                                     then NoUnify (concat $ map eqsOf xs) lineno
-                                     else x
-          uni (Left (NoUnify _ _)) = True
-          uni _ = False
+          errFrom xs = case firstNonUni xs of
+                               Nothing -> NoUnify (concat $ map eqsOf xs) lineno
+                               Just err -> err
+
+          firstNonUni [] = Nothing
+          firstNonUni ((Left (NoUnify _ _)):ys) = firstNonUni ys
+          firstNonUni ((Left y):_) = Just y
 
 --Given a list of concrete rules and a list of (schematic-variable-free)
 --premise sequents, and a (schematic-variable-free) conclusion succeedent,

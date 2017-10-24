@@ -352,8 +352,15 @@ instance Inference HardegreeL AbsoluteModalPropLexicon (Form Bool) where
          isAssumption (MoPL As) = True
          isAssumption _ = False
 
-         restriction ND = Just (eigenConstraint SomeWorld (SS (SeqNec $ SeqPhiA 1)) (absgamma 1))
-         restriction DiaD1 = Just (eigenConstraint SomeWorld (SS (SeqPos $ SeqPhiA 1) :-: SS (SeqPhiA 1)) (absgamma 1 :+: absgamma 2))
+         restriction ND = Just (eigenConstraint SomeWorld 
+                                                   (SS ((SeqNec $ SeqPhiA 1) ://: SomeOtherWorld)) 
+                                                   (absgamma 1))
+         restriction DiaD1 = Just (eigenConstraint SomeWorld 
+                                                   (SS ((SeqPos $ SeqPhiA 1) ://: SomeOtherWorld) :-: SS (SeqPhiA 2 ://: SomeThirdWorld)) 
+                                                   (absgamma 1 :+: absgamma 2))
+         restriction DiaD2 = Just (eigenConstraint SomeWorld 
+                                                   (SS ((SeqPos $ SeqPhiA 1) ://: SomeOtherWorld) :-: SS (SeqPhiA 2 ://: SomeThirdWorld)) 
+                                                   (absgamma 1 :+: absgamma 2))
          restriction _     = Nothing
         
 parseHardegreeL :: Parsec String u [HardegreeL]
