@@ -121,6 +121,9 @@ class (Typeable b, PrismLink (FixLang lex) (Connective (PropositionalContext b) 
                             (\x -> case x of Connective (PropCtx n) AOne -> Just n
                                              _ -> Nothing)
 
+instance {-#OVERLAPPABLE#-} PrismPropositionalContext lex b => IndexedPropContextSchemeLanguage (FixLang lex (Form b)) where
+        propCtx n = review (unaryOpPrism (_propCtxIdx . only n))
+
 class ModalLanguage l where
         nec :: l -> l
         pos :: l -> l
@@ -147,6 +150,10 @@ class (Typeable b, PrismLink (FixLang lex) (Connective (Modality b) (FixLang lex
         posPris = prism' (\_ -> Connective Diamond AOne) 
                           (\x -> case x of Connective Diamond AOne -> Just (); _ -> Nothing)
 
+instance {-#OVERLAPPABLE#-} PrismModality lex b => ModalLanguage (FixLang lex (Form b)) where
+        nec = review (unaryOpPrism _nec)
+        pos = review (unaryOpPrism _pos)
+
 class BooleanConstLanguage l where 
         lverum :: l
         lfalsum :: l
@@ -172,6 +179,10 @@ class (Typeable b, PrismLink (FixLang lex) (Connective (BooleanConst b) (FixLang
         falsumPris :: Prism' (Connective (BooleanConst b) (FixLang lex) (Form b)) ()
         falsumPris = prism' (\_ -> Connective Falsum AZero) 
                           (\x -> case x of Connective Falsum AZero -> Just (); _ -> Nothing)
+
+instance {-#OVERLAPPABLE#-} PrismBooleanConst lex b => BooleanConstLanguage (FixLang lex (Form b)) where
+        lverum = review _verum ()
+        lfalsum = review _falsum ()
 
 --------------------------------------------------------
 --1.2 Propositions
@@ -200,6 +211,9 @@ class (Typeable b, PrismLink (FixLang lex) (Predicate (IntProp b) (FixLang lex))
                             (\x -> case x of Predicate (Prop n) AZero -> Just n
                                              _ -> Nothing)
 
+instance {-#OVERLAPPABLE#-} PrismPropLex lex b => IndexedPropLanguage (FixLang lex (Form b)) where
+        pn = review propIndex
+
 class IndexedSchemePropLanguage l where
         phin :: Int -> l
 
@@ -216,6 +230,9 @@ class (Typeable b, PrismLink (FixLang lex) (Predicate (SchematicIntProp b) (FixL
         sPropIdx = prism' (\n -> Predicate (SProp n) AZero) 
                            (\x -> case x of Predicate (SProp n) AZero -> Just n
                                             _ -> Nothing)
+
+instance {-#OVERLAPPABLE#-} PrismSchematicProp lex b => IndexedSchemePropLanguage (FixLang lex (Form b)) where
+        phin = review _sPropIdx
 
 --------------------------------------------------------
 --1.2.2 Predicate Languages
@@ -239,6 +256,9 @@ class (Typeable c, Typeable b, PrismLink (FixLang lex) (Predicate (IntPred b c) 
                              (\x -> case x of (Predicate (Pred a' n) a'') | arityInt a == arityInt a' -> Just n
                                               _ -> Nothing)
 
+instance {-#OVERLAPPABLE#-} PrismPolyadicPredicate lex c b => PolyadicPredicateLanguage (FixLang lex) (Term c) (Form b) where
+        ppn n a = review (_predIdx a) n
+
 class EqLanguage l t where
         equals :: t -> t -> l
 
@@ -256,6 +276,9 @@ class (Typeable c, Typeable b, PrismLink (FixLang lex) (Predicate (TermEq b c) (
         termEq = prism' (\n -> Predicate TermEq ATwo) 
                            (\x -> case x of Predicate TermEq ATwo -> Just ()
                                             _ -> Nothing)
+
+instance {-#OVERLAPPABLE#-} PrismTermEquality lex c b => EqLanguage (FixLang lex (Form b)) (FixLang lex (Term c)) where
+        equals = curry $ review (binaryOpPrism _termEq)
 
 --------------------------------------------------------
 --1.3. Terms
@@ -277,6 +300,9 @@ class (Typeable b, PrismLink (FixLang lex) (Function (IntConst b) (FixLang lex))
         constIndex = prism' (\n -> Function (Constant n) AZero) 
                             (\x -> case x of Function (Constant n) AZero -> Just n
                                              _ -> Nothing)
+
+instance {-#OVERLAPPABLE#-} PrismIndexedConstant lex b => IndexedConstantLanguage (FixLang lex (Term b)) where
+       cn = review _constIdx
 
 class IndexedSchemeConstantLanguage l where
         taun :: Int -> l
