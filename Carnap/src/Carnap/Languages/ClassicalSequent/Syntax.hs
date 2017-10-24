@@ -110,7 +110,9 @@ type ClassicalSequentLex = Cedent
                            :|: CedentVar
                            :|: EndLang
 
-type ClassicalSequentOver a = FixLang (ClassicalSequentLex :|: a :|: EndLang)
+type ClassicalSequentLexOver a = ClassicalSequentLex :|: a :|: EndLang
+
+type ClassicalSequentOver a = FixLang (ClassicalSequentLexOver a)
 
 pattern Top                 = FX (Lx1 (Lx1 NilAntecedent))
 pattern Bot                 = FX (Lx1 (Lx1 NilSuccedent))

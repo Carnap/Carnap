@@ -5,7 +5,7 @@ where
 
 import Carnap.Core.Data.AbstractSyntaxDataTypes (Term, Form, FixLang)
 import Carnap.Languages.ModalPropositional.Syntax
-import Carnap.Languages.Util.LanguageClasses (BooleanLanguage, BooleanConstLanguage, ModalLanguage, IndexedPropLanguage, IndexedSchemePropLanguage)
+import Carnap.Languages.Util.LanguageClasses (PrismBooleanConnLex, BooleanLanguage, BooleanConstLanguage, ModalLanguage, IndexedPropLanguage, IndexedSchemePropLanguage)
 import Carnap.Languages.Util.GenericParsers
 import Text.Parsec
 import Text.Parsec.Expr
@@ -83,7 +83,7 @@ worldTheoryPropFormulaParser :: Parsec String u WorldTheoryForm
 worldTheoryPropFormulaParser = buildExpressionParser (worldTheoryOpTable worldTheoryOptions) subFormulaParser 
     where subFormulaParser = coreSubformulaParser worldTheoryPropFormulaParser worldTheoryOptions
 
-opTable :: Monad m => [[Operator String u m (ModalPropLanguageWith a (Form (World -> Bool)))]]
+opTable :: (PrismBooleanConnLex (ModalPropLexiconWith a) (World -> Bool), Monad m) => [[Operator String u m (ModalPropLanguageWith a (Form (World -> Bool)))]]
 opTable = [ [Prefix (try parseNeg), Prefix (try parseNec), Prefix (try parsePos)]
           , [ Infix (try parseOr) AssocLeft, Infix (try parseAnd) AssocLeft]
           , [ Infix (try parseIf) AssocNone, Infix (try parseIff) AssocNone]

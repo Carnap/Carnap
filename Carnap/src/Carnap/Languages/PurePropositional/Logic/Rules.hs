@@ -22,6 +22,8 @@ import Data.Typeable
 
 type PropSequentCalc = ClassicalSequentOver PurePropLexicon
 
+type PropSequentCalcLex = ClassicalSequentLexOver PurePropLexicon
+
 --we write the Copula schema at this level since we may want other schemata
 --for sequent languages that contain things like quantifiers
 instance CopulaSchema PropSequentCalc
@@ -49,6 +51,8 @@ data PropSeqLabel = PropSeqFO | PropSeqACUI
 
 instance Eq (PropSequentCalc a) where
         (==) = (=*)
+
+instance PrismBooleanConnLex PropSequentCalcLex Bool
 
 -- instance Combineable PropSequentCalc PropSeqLabel where
 
@@ -94,7 +98,7 @@ data DerivedRule = DerivedRule { conclusion :: PureForm, premises :: [PureForm]}
 -------------------------
 --Rules found in many systems of propositional logic
 
-modusPonens = [ GammaV 1 :|-: SS (SeqPhi 1 :->-: SeqPhi 2)
+modusPonens = [ GammaV 1 :|-: SS (SeqPhi 1 .→. SeqPhi 2)
               , GammaV 2 :|-: SS (SeqPhi 1)
               ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (SeqPhi 2)
 

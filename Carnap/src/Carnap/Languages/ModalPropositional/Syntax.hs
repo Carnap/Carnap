@@ -177,12 +177,7 @@ pattern MNeg x         = MNot :!$: x
 pattern MNec x         = MBox :!$: x
 pattern MPos x         = MDiamond :!$: x
 
-instance BooleanLanguage (ModalPropLanguageWith a (Form (World -> Bool))) where
-        land = (:&:)
-        lneg = MNeg
-        lor  = (:||:)
-        lif  = (:->:)
-        liff = (:<->:)
+instance PrismBooleanConnLex (ModalPropLexiconWith a) (World -> Bool)
 
 instance ModalLanguage (ModalPropLanguageWith a (Form (World -> Bool))) where
         nec = MNec

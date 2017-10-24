@@ -90,13 +90,6 @@ pattern (:->:) x y     = PIf  :!$: x :!$: y
 pattern (:<->:) x y    = PIff :!$: x :!$: y
 pattern PNeg x         = PNot :!$: x
 
-instance BooleanLanguage PureForm where
-        land = (:&:)
-        lneg = PNeg
-        lor  = (:||:)
-        lif  = (:->:)
-        liff = (:<->:)
-
 instance BooleanConstLanguage PureForm where
         lverum = PVerum
         lfalsum = PFalsum

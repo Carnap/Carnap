@@ -96,6 +96,13 @@ class (Typeable b, PrismLink (FixLang lex) (Connective (BooleanConn b) (FixLang 
         notPris = prism' (\_ -> Connective Not AOne) 
                           (\x -> case x of Connective Not AOne -> Just (); _ -> Nothing)
 
+instance {-#OVERLAPPABLE#-} PrismBooleanConnLex lex b => BooleanLanguage (FixLang lex (Form b)) where
+        lneg = review (unaryOpPrism _not)
+        land = curry $ review (binaryOpPrism _and)
+        lor  = curry $ review (binaryOpPrism _or)
+        lif  = curry $ review (binaryOpPrism _if)
+        liff = curry $ review (binaryOpPrism _iff)
+
 class IndexedPropContextSchemeLanguage l where
             propCtx :: Int -> l -> l
 
