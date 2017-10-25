@@ -333,7 +333,7 @@ instance Inference HardegreeL AbsoluteModalPropLexicon (Form Bool) where
          ruleOf (MoPL ID4)      = worldlyExplicitNonConstructiveFalsumReductioVariations !! 1
          ruleOf (MoPL FalI)     = worldlyFalsumIntroduction
          ruleOf (MoPL FalO)     = worldlyFalsumElimination
-         ruleOf (MoPL x) = liftAbsRule (ruleOf (MoP x))
+         ruleOf (MoPL x)        = liftAbsRule (ruleOf (MoP x))
          ruleOf ND = boxDerivation
          ruleOf DiaIn = diamondIn
          ruleOf BoxOut = boxOut

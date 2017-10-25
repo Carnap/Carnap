@@ -27,6 +27,8 @@ type ModalProp = IntProp (World -> Bool)
 
 type ModalSchematicPred = SchematicIntPred (World -> Bool) World
 
+type ModalPropositionalContext = PropositionalContext (World -> Bool)
+
 data PropFrame = PropFrame { valuation :: World -> Bool
                            , accessibility :: Map World [World]
                            }
@@ -144,6 +146,7 @@ type CoreLexicon = Predicate ModalProp
                    :|: Connective PropModality
                    :|: Connective ModalConst
                    :|: SubstitutionalVariable
+                   :|: Connective ModalPropositionalContext
                    :|: EndLang
 
 type ModalPropLexiconWith a = CoreLexicon :|: a :|: EndLang

@@ -1,5 +1,10 @@
 {-#LANGUAGE GADTs, PatternSynonyms, FlexibleContexts, FlexibleInstances, MultiParamTypeClasses, TypeOperators #-}
-module Carnap.Languages.ModalPropositional.Logic.Rules where
+module Carnap.Languages.ModalPropositional.Logic.Rules (
+    module Carnap.Languages.ModalPropositional.Logic.Rules,
+    module Carnap.Languages.PurePropositional.Logic.Rules
+    )
+
+where
 
 import Text.Parsec
 import Carnap.Core.Unification.Unification
@@ -15,6 +20,7 @@ import Carnap.Languages.ClassicalSequent.Syntax
 import Carnap.Languages.ClassicalSequent.Parser
 import Carnap.Languages.Util.LanguageClasses
 import Carnap.Languages.Util.GenericConstructors
+import Carnap.Languages.PurePropositional.Logic.Rules
 import Data.Typeable
 import Data.List (intercalate)
 
@@ -24,7 +30,11 @@ import Data.List (intercalate)
 
 type WorldTheorySequentCalc = ClassicalSequentOver WorldTheoryPropLexicon
 
+type WorldTheorySequentCalcLex = ClassicalSequentLexOver WorldTheoryPropLexicon
+
 type AbsoluteModalPropSequentCalc = ClassicalSequentOver AbsoluteModalPropLexicon
+
+type AbsoluteModalPropSequentCalcLex = ClassicalSequentLexOver AbsoluteModalPropLexicon
 
 --we write the Copula schema at this level since we may want other schemata
 --for sequent languages that contain things like quantifiers
@@ -106,6 +116,18 @@ instance ParsableLex (Form (World -> Bool)) WorldTheoryPropLexicon where
 instance ParsableLex (Form Bool) AbsoluteModalPropLexicon where
         langParser = absoluteModalPropFormulaParser
 
+instance PrismBooleanConnLex WorldTheorySequentCalcLex (World -> Bool)
+instance PrismPropositionalContext WorldTheorySequentCalcLex (World -> Bool)
+instance PrismBooleanConst WorldTheorySequentCalcLex (World -> Bool)
+instance PrismPropLex WorldTheorySequentCalcLex (World -> Bool)
+instance PrismSchematicProp WorldTheorySequentCalcLex (World -> Bool)
+
+instance PrismBooleanConnLex AbsoluteModalPropSequentCalcLex Bool
+instance PrismPropositionalContext AbsoluteModalPropSequentCalcLex Bool
+instance PrismBooleanConst AbsoluteModalPropSequentCalcLex Bool
+instance PrismPropLex AbsoluteModalPropSequentCalcLex Bool
+instance PrismSchematicProp AbsoluteModalPropSequentCalcLex Bool
+
 phi :: Int -> WorldTheorySequentCalc (Term World) -> WorldTheorySequentCalc (Form (World -> Bool))
 phi n x = SeqPPhi n :!$: x
 
@@ -152,55 +174,12 @@ liftAbsSeq w (a :|-: s) = atSomeAnt a :|-: atSomeSuc s
 -------------------------
 --Rules found in many systems of propositional logic
 
-modusPonens = [ GammaV 1 :|-: SS (SeqPhi 1 :->-: SeqPhi 2)
-              , GammaV 2 :|-: SS (SeqPhi 1)
-              ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (SeqPhi 2)
-
-modusTollens = [ GammaV 1 :|-: SS (SeqPhi 1 :->-: SeqPhi 2)
-               , GammaV 2 :|-: SS (SeqNeg $ SeqPhi 2)
-               ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (SeqNeg $ SeqPhi 1)
-
-axiom = [] ∴ SA (SeqPhi 1) :|-: SS (SeqPhi 1)
-
-identityRule = [ GammaV 1 :|-: SS (SeqPhi 1) 
-               ] ∴ GammaV 1 :|-: SS (SeqPhi 1)
-
-doubleNegationElimination = [ GammaV 1 :|-: SS (SeqNeg $ SeqNeg $ SeqPhi 1) 
-                            ] ∴ GammaV 1 :|-: SS (SeqPhi 1) 
-
-doubleNegationIntroduction = [ GammaV 1 :|-: SS (SeqPhi 1) 
-                             ] ∴ GammaV 1 :|-: SS (SeqNeg $ SeqNeg $ SeqPhi 1) 
-
-falsumElimination = [ GammaV 1 :|-: SS LFalsum
-                    ] ∴ GammaV 1 :|-: SS (SeqPhi 1)
-
 worldlyFalsumElimination = [ GammaV 1 :|-: SS (LFalsum ://: SomeWorld)
                            ] ∴ GammaV 1 :|-: SS (SeqPhiA 1 ://: SomeOtherWorld)
-
-falsumIntroduction = [ GammaV 1 :|-: SS (SeqNeg $ SeqPhi 1)
-                     , GammaV 2 :|-: SS (SeqPhi 1)
-                     ] ∴ GammaV 1 :+: GammaV 2 :|-: SS LFalsum
 
 worldlyFalsumIntroduction = [ GammaV 1 :|-: SS ((SeqNeg $ SeqPhiA 1) ://: SomeWorld)
                             , GammaV 2 :|-: SS (SeqPhiA 1 ://: SomeWorld)
                             ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (LFalsum ://: SomeOtherWorld)
-
-adjunction = [ GammaV 1  :|-: SS (SeqPhi 1) 
-             , GammaV 2  :|-: SS (SeqPhi 2)
-             ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (SeqPhi 1 :&-: SeqPhi 2)
-
-conditionalToBiconditional = [ GammaV 1  :|-: SS (SeqPhi 1 :->-: SeqPhi 2)
-                             , GammaV 2  :|-: SS (SeqPhi 2 :->-: SeqPhi 1) 
-                             ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (SeqPhi 1 :<->-: SeqPhi 2)
-
-dilemma = [ GammaV 1 :|-: SS (SeqPhi 1 :||-: SeqPhi 2)
-          , GammaV 2 :|-: SS (SeqPhi 1 :->-: SeqPhi 3)
-          , GammaV 3 :|-: SS (SeqPhi 2 :->-: SeqPhi 3)
-          ] ∴ GammaV 1 :+: GammaV 2 :+: GammaV 3 :|-: SS (SeqPhi 3)
-
-hypotheticalSyllogism = [ GammaV 1 :|-: SS (SeqPhi 1 :->-: SeqPhi 2)
-                        , GammaV 2 :|-: SS (SeqPhi 2 :->-: SeqPhi 3)
-                        ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (SeqPhi 1 :->-: SeqPhi 3)
 
 worldTheoryUniversalInstantiation = 
         [ GammaV 1 :|-: SS (SeqBind (All "v") (phi 1))]
@@ -236,56 +215,6 @@ diamondIn =
 
 -- Rules with several variations
 
-modusTollendoPonensVariations = [
-                [ GammaV 1  :|-: SS (SeqNeg $ SeqPhi 1) 
-                , GammaV 2  :|-: SS (SeqPhi 1 :||-: SeqPhi 2)
-                ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (SeqPhi 2)
-            , 
-                [ GammaV 1  :|-: SS (SeqNeg $ SeqPhi 1) 
-                , GammaV 2  :|-: SS (SeqPhi 2 :||-: SeqPhi 1)
-                ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (SeqPhi 2)
-            ]
-
-constructiveReductioVariations = [
-                [ GammaV 1 :+: SA (SeqPhi 1) :|-: SS (SeqPhi 2) 
-                , GammaV 2 :+: SA (SeqPhi 1) :|-: SS (SeqNeg $ SeqPhi 2)
-                ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (SeqNeg $ SeqPhi 1)
-            ,
-
-                [ GammaV 1 :+: SA (SeqPhi 1) :|-: SS (SeqPhi 2) 
-                , GammaV 2 :|-: SS (SeqNeg $ SeqPhi 2)
-                ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (SeqNeg $ SeqPhi 1)
-            ,
-
-                [ GammaV 1  :|-: SS (SeqPhi 2) 
-                , GammaV 2 :+: SA (SeqPhi 1) :|-: SS (SeqNeg $ SeqPhi 2)
-                ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (SeqNeg $ SeqPhi 1)
-            ,
-                [ GammaV 1  :|-: SS (SeqPhi 2) 
-                , GammaV 2  :|-: SS (SeqNeg $ SeqPhi 2)
-                ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (SeqNeg $ SeqPhi 1)
-            ]
-
-explicitConstructiveFalsumReductioVariations = [
-                [ GammaV 1 :+: SA (SeqPhi 1) :|-: SS LFalsum
-                , SA (SeqPhi 1) :|-: SS (SeqPhi 1)
-                ] ∴ GammaV 1 :|-: SS (SeqNeg $ SeqPhi 1)
-            ,
-                [ GammaV 1 :|-: SS LFalsum
-                , SA (SeqPhi 1) :|-: SS (SeqPhi 1)
-                ] ∴ GammaV 1 :|-: SS (SeqNeg $ SeqPhi 1)
-            ]
-
-explicitNonConstructiveFalsumReductioVariations = [
-                [ GammaV 1 :+: SA (SeqNeg $ SeqPhi 1) :|-: SS LFalsum
-                , SA (SeqNeg $ SeqPhi 1) :|-: SS (SeqNeg $ SeqPhi 1)
-                ] ∴ GammaV 1 :|-: SS (SeqPhi 1)
-            ,
-                [ GammaV 1 :|-: SS LFalsum
-                , SA (SeqNeg $ SeqPhi 1) :|-: SS (SeqNeg $ SeqPhi 1)
-                ] ∴ GammaV 1 :|-: SS (SeqPhi 1)
-            ]
-
 worldlyExplicitConstructiveFalsumReductioVariations = [
                 [ GammaV 1 :+: SA (SeqPhiA 1 ://: SomeWorld) :|-: SS (LFalsum ://: SomeOtherWorld)
                 , SA ( SeqPhiA 1 ://: SomeWorld) :|-: SS ( SeqPhiA 1 ://: SomeWorld)
@@ -304,145 +233,6 @@ worldlyExplicitNonConstructiveFalsumReductioVariations = [
                 [ GammaV 1 :|-: SS (LFalsum ://: SomeOtherWorld)
                 , SA ((SeqNeg $ SeqPhiA 1) ://: SomeWorld) :|-: SS ((SeqNeg $ SeqPhiA 1) ://: SomeWorld)
                 ] ∴ GammaV 1 :|-: SS (SeqPhiA 1 ://: SomeWorld)
-            ]
-
-
-
-nonConstructiveReductioVariations = [
-                [ GammaV 1 :+: SA (SeqNeg $ SeqPhi 1) :|-: SS (SeqPhi 2) 
-                , GammaV 2 :+: SA (SeqNeg $ SeqPhi 1) :|-: SS (SeqNeg $ SeqPhi 2)
-                ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (SeqPhi 1)
-            ,
-
-                [ GammaV 1 :+: SA (SeqNeg $ SeqPhi 1) :|-: SS (SeqPhi 2) 
-                , GammaV 2 :|-: SS (SeqNeg $ SeqPhi 2)
-                ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (SeqPhi 1)
-            ,
-
-                [ GammaV 1  :|-: SS (SeqPhi 2) 
-                , GammaV 2 :+: SA (SeqNeg $ SeqPhi 1) :|-: SS (SeqNeg $ SeqPhi 2)
-                ] ∴ GammaV 1 :+: GammaV 2 :|-: SS ( SeqPhi 1)
-            ,
-                [ GammaV 1  :|-: SS (SeqPhi 2) 
-                , GammaV 2  :|-: SS (SeqNeg $ SeqPhi 2)
-                ] ∴ GammaV 1 :+: GammaV 2 :|-: SS ( SeqPhi 1)
-            ]
-
-conditionalProofVariations = [
-                [ GammaV 1 :+: SA (SeqPhi 1) :|-: SS (SeqPhi 2) 
-                ] ∴ GammaV 1 :|-: SS (SeqPhi 1 :->-: SeqPhi 2) 
-            ,   [ GammaV 1 :|-: SS (SeqPhi 2) ] ∴ GammaV 1 :|-: SS (SeqPhi 1 :->-: SeqPhi 2)
-            ]
-
-explicitConditionalProofVariations = [
-                [ GammaV 1 :+: SA (SeqPhi 1)  :|-: SS (SeqPhi 2) 
-                , SA (SeqPhi 1) :|-: SS (SeqPhi 1)
-                ] ∴ GammaV 1 :|-: SS (SeqPhi 1 :->-: SeqPhi 2) 
-            ,   [ GammaV 1 :|-: SS (SeqPhi 2) 
-                , SA (SeqPhi 1) :|-: SS (SeqPhi 1)
-                ] ∴ GammaV 1 :|-: SS (SeqPhi 1 :->-: SeqPhi 2)
-            ]
-
-simplificationVariations = [
-                [ GammaV 1  :|-: SS (SeqPhi 1 :&-: SeqPhi 2) ] ∴ GammaV 1 :|-: SS (SeqPhi 1)
-            ,
-                [ GammaV 1  :|-: SS (SeqPhi 1 :&-: SeqPhi 2) ] ∴ GammaV 1 :|-: SS (SeqPhi 2)
-            ]
-
-additionVariations = [
-                [ GammaV 1  :|-: SS (SeqPhi 1) ] ∴ GammaV 1 :|-: SS (SeqPhi 2 :||-: SeqPhi 1)
-            ,
-                [ GammaV 1  :|-: SS (SeqPhi 1) ] ∴ GammaV 1 :|-: SS (SeqPhi 1 :||-: SeqPhi 2)
-            ]
-
-biconditionalToConditionalVariations = [
-                [ GammaV 1  :|-: SS (SeqPhi 1 :<->-: SeqPhi 2) ] ∴ GammaV 1 :|-: SS (SeqPhi 2 :->-: SeqPhi 1)
-            , 
-                [ GammaV 1  :|-: SS (SeqPhi 1 :<->-: SeqPhi 2) ] ∴ GammaV 1 :|-: SS (SeqPhi 1 :->-: SeqPhi 2)
-            ]
-
-proofByCasesVariations = [
-                [ GammaV 1  :|-: SS (SeqPhi 1 :||-: SeqPhi 2)
-                , GammaV 2 :+: SA (SeqPhi 1) :|-: SS (SeqPhi 3)
-                , GammaV 3 :+: SA (SeqPhi 2) :|-: SS (SeqPhi 3)
-                ] ∴ GammaV 1 :+: GammaV 2 :+: GammaV 3 :|-: SS (SeqPhi 3)
-            ,   
-                [ GammaV 1  :|-: SS (SeqPhi 1 :||-: SeqPhi 2)
-                , GammaV 2 :|-: SS (SeqPhi 3)
-                , GammaV 3 :+: SA (SeqPhi 2) :|-: SS (SeqPhi 3)
-                ] ∴ GammaV 1 :+: GammaV 2 :+: GammaV 3 :|-: SS (SeqPhi 3)
-            ,   
-                [ GammaV 1 :|-: SS (SeqPhi 1 :||-: SeqPhi 2)
-                , GammaV 2 :+: SA (SeqPhi 1) :|-: SS (SeqPhi 3)
-                , GammaV 3 :|-: SS (SeqPhi 3)
-                ] ∴ GammaV 1 :+: GammaV 2 :+: GammaV 3 :|-: SS (SeqPhi 3)
-            , 
-                [ GammaV 1 :|-: SS (SeqPhi 1 :||-: SeqPhi 2)
-                , GammaV 2 :|-: SS (SeqPhi 3)
-                , GammaV 3 :|-: SS (SeqPhi 3)
-                ] ∴ GammaV 1 :+: GammaV 2 :+: GammaV 3 :|-: SS (SeqPhi 3)
-            ]
-
-tertiumNonDaturVariations = [
-                [ SA (SeqPhi 1) :|-: SS (SeqPhi 1)
-                , SA (SeqNeg $ SeqPhi 1) :|-: SS (SeqNeg $ SeqPhi 1)
-                , GammaV 1 :+: SA (SeqPhi 1) :|-: SS (SeqPhi 2)
-                , GammaV 2 :+: SA (SeqNeg $ SeqPhi 1) :|-: SS (SeqPhi 2)
-                ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (SeqPhi 2)
-            ,   
-                [ SA (SeqPhi 1) :|-: SS (SeqPhi 1)
-                , SA (SeqNeg $ SeqPhi 1) :|-: SS (SeqNeg $ SeqPhi 1)
-                , GammaV 1 :|-: SS (SeqPhi 2)
-                , GammaV 2 :+: SA (SeqNeg $ SeqPhi 1) :|-: SS (SeqPhi 2)
-                ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (SeqPhi 2)
-            ,   
-                [ SA (SeqPhi 1) :|-: SS (SeqPhi 1)
-                , SA (SeqNeg $ SeqPhi 1) :|-: SS (SeqNeg $ SeqPhi 1)
-                , GammaV 1 :+: SA (SeqPhi 1) :|-: SS (SeqPhi 2)
-                , GammaV 2 :|-: SS (SeqPhi 2)
-                ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (SeqPhi 2)
-            , 
-                [ SA (SeqPhi 1) :|-: SS (SeqPhi 1)
-                , SA (SeqNeg $ SeqPhi 1) :|-: SS (SeqNeg $ SeqPhi 1)
-                , GammaV 1 :|-: SS (SeqPhi 2)
-                , GammaV 2 :|-: SS (SeqPhi 2)
-                ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (SeqPhi 2)
-            ]
-
-biconditionalProofVariations = [
-                [ GammaV 1 :+: SA (SeqPhi 1) :|-: SS (SeqPhi 2)
-                , GammaV 2 :+: SA (SeqPhi 2) :|-: SS (SeqPhi 1) 
-                ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (SeqPhi 2 :<->-: SeqPhi 1)
-            ,
-                [ GammaV 1 :|-: SS (SeqPhi 2)
-                , GammaV 2 :+: SA (SeqPhi 2) :|-: SS (SeqPhi 1)
-                ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (SeqPhi 2 :<->-: SeqPhi 1)
-            ,
-                [ GammaV 1 :+: SA (SeqPhi 1) :|-: SS (SeqPhi 2)
-                , GammaV 2 :|-: SS (SeqPhi 1) 
-                ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (SeqPhi 2 :<->-: SeqPhi 1)
-            , 
-                [ GammaV 1 :|-: SS (SeqPhi 2)
-                , GammaV 2 :|-: SS (SeqPhi 1) 
-                ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (SeqPhi 2 :<->-: SeqPhi 1)
-            ]
-
-biconditionalPonensVariations = [
-                [ GammaV 1  :|-: SS (SeqPhi 1 :<->-: SeqPhi 2)
-                , GammaV 2  :|-: SS (SeqPhi 1)
-                ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (SeqPhi 2)
-            ,
-                [ GammaV 1  :|-: SS (SeqPhi 1 :<->-: SeqPhi 2)
-                , GammaV 2  :|-: SS (SeqPhi 2)
-                ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (SeqPhi 1)
-            ]
-
-materialConditionalVariations =  [
-                [ GammaV 1 :|-: SS (SeqPhi 1)
-                ] ∴ GammaV 1 :|-: SS (SeqPhi 2 :->-: SeqPhi 1)
-            ,
-                [ GammaV 1 :|-: SS (SeqNeg $ SeqPhi 2)
-                ] ∴ GammaV 1 :|-: SS (SeqPhi 2 :->-: SeqPhi 1)
             ]
 
 worldTheoryExistentialDerivation = [
@@ -474,22 +264,6 @@ diamondDerivation = [
 -----------------------------------
 
 bidir x y = [[x] ∴ y, [y] ∴ x]
-
-deMorgansNegatedOr = bidir 
-                ( GammaV 1 :|-: SS (SeqNeg $ SeqPhi 1 :||-: SeqPhi 2) )
-                ( GammaV 1 :|-: SS (SeqNeg (SeqPhi 1) :&-: SeqNeg (SeqPhi 2)) )
-
-negatedBiconditionalVariations = bidir
-                ( GammaV 1 :|-: SS (SeqNeg $ SeqPhi 1 :<->-: SeqPhi 2) )
-                ( GammaV 1 :|-: SS (SeqNeg (SeqPhi 1) :<->-: SeqPhi 2) )
-
-negatedConjunctionVariations = bidir
-                ( GammaV 1 :|-: SS (SeqNeg $ SeqPhi 1 :&-: SeqPhi 2) )
-                ( GammaV 1 :|-: SS (SeqPhi 1 :->-: SeqNeg (SeqPhi 2)) )
-
-negatedConditionalVariations = bidir
-                ( GammaV 1 :|-: SS (SeqNeg $ SeqPhi 1 :->-: SeqPhi 2) )
-                ( GammaV 1 :|-: SS (SeqPhi 1 :&-: SeqNeg (SeqPhi 2)) )
 
 worldTheoryZeroAxiom = bidir 
                 ( GammaV 1 :|-: SS (SeqPhi 1) )
@@ -550,23 +324,3 @@ modalNegation = bidir ( GammaV 1 :|-: SS ((SeqPos $ SeqNeg $ SeqPhi 1)))
 ----------------------------------------
 
 -- rules with an infnite number of schematic variations
-
--- XXX at the moment, these requires all assumptions to be used. Should
--- actually be parameterized by l::[Bool] of length n rather than n::Int
--- or alternately, the checking mechanism should be modified to allow
--- weakening.
-
-eliminationOfCases n = (premAnt n :|-: SS LFalsum
-                     : take n (map premiseForm [1 ..]))
-                     ∴ GammaV 1 :|-: SS (concSuc n)
-    where premiseForm m = SA (SeqNeg $ SeqPhi m) :|-: SS (SeqNeg $ SeqPhi m)
-          premAnt m = foldr (:+:) (GammaV 1) (take m $ map (SA . SeqNeg . SeqPhi) [1 ..])
-          concSuc m = foldr (:||-:) (SeqPhi 1) (take (m - 1) $ map SeqPhi [2 ..])
-
--- XXX slight variation from Hardegree's rule, which has weird ad-hoc syntax.
-separationOfCases n = (GammaV 0 :|-: SS (premSuc n)
-                    : take n (map premiseForm [1 ..]))
-                    ∴ concAnt n :|-: SS (SeqPhi 0)
-    where premSuc m = foldr (:||-:) (SeqPhi 1) (take (m - 1) $ map SeqPhi [2 ..])
-          premiseForm m = GammaV m :+: SA (SeqPhi m) :|-: SS (SeqPhi 0)
-          concAnt m = foldr (:+:) (GammaV 0) (take m $ map GammaV [1 ..])
