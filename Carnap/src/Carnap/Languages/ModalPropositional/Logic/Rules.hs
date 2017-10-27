@@ -98,7 +98,7 @@ pattern SeqCons x y       = SeqIdxCons Cons ATwo :!$: x :!$: y
 
 eigenConstraint c suc ant sub
     | c' `occursIn` ant' = Just $ "The index " ++ show c' ++ " appears not to be fresh, given that this line relies on " ++ show ant'
-    | c' `occursIn` suc' = Just $ "The index " ++ show c' ++ " appears not to be fresh in the other premise " ++ show suc'
+    | c' `occursIn` suc' = Just $ "The index " ++ show c' ++ " appears not to be fresh, because it occurs in " ++ show suc'
     | otherwise = case c' of 
                           TheWorld -> Just "the index '0' is never counts as fresh, since it has a special meaning"
                           _ -> Nothing
@@ -155,7 +155,7 @@ phi n x = SeqPPhi n :!$: x
 wtlgamma :: Int -> WorldTheorySequentCalc (Antecedent (Form (World -> Bool)))
 wtlgamma = GammaV
 
-absgamma :: Int -> AbsoluteModalPropSequentCalc (Antecedent (Form (World -> Bool)))
+absgamma :: Int -> AbsoluteModalPropSequentCalc (Antecedent (Form Bool))
 absgamma = GammaV
 
 someWorld = worldScheme 0 
