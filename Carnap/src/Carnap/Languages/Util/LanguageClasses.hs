@@ -5,7 +5,7 @@ import Carnap.Core.Data.AbstractSyntaxDataTypes
 import Carnap.Core.Data.Util (incArity)
 import Carnap.Languages.Util.GenericConstructors
 import Data.Typeable
-import Control.Lens
+import Control.Lens (Prism', prism',review,only)
 
 
 --The convention for variables in this module is that lex is
@@ -332,6 +332,29 @@ class QuantLanguage l t where
         lall  :: String -> (t -> l) -> l
         lsome :: String -> (t -> l) -> l
 
+class (Typeable b, Typeable c, PrismLink (FixLang lex) (Quantifiers (StandardQuant b c) (FixLang lex))) 
+        => PrismStandardQuant lex b c where
+
+        _all :: Prism' (FixLang lex ((Term c -> Form b) -> Form b)) String
+        _all = link_standardQuant . qall
+
+        _some :: Prism' (FixLang lex ((Term c -> Form b) -> Form b)) String
+        _some = link_standardQuant . qsome
+
+        link_standardQuant :: Prism' (FixLang lex ((Term c -> Form b) -> Form b)) 
+                               (Quantifiers (StandardQuant b c) (FixLang lex) ((Term c -> Form b) -> Form b))
+        link_standardQuant = link 
+
+        qall :: Prism' (Quantifiers (StandardQuant b c) (FixLang lex) ((Term c -> Form b) -> Form b)) String
+        qall = prism' (\s -> Bind (All s))
+                      (\x -> case x of (Bind (All s)) -> Just s
+                                       _ -> Nothing)
+
+        qsome :: Prism' (Quantifiers (StandardQuant b c) (FixLang lex) ((Term c -> Form b) -> Form b)) String
+        qsome = prism' (\s -> Bind (Some s))
+                       (\x -> case x of (Bind (Some s)) -> Just s
+                                        _ -> Nothing)
+
 -------------------
 --  1.5 Exotica  --
 -------------------
@@ -353,6 +376,19 @@ class (Typeable a, Typeable b, Typeable c, PrismLink (FixLang lex) (Indexer a b 
 
         indexer :: Prism' (Indexer a b c (FixLang lex) (Form b -> Term a -> Form c)) ()
         indexer = prism' (const AtIndex) (const (Just ()))
+
+class (Typeable b, PrismLink (FixLang lex) (Function (Cons b) (FixLang lex))) 
+        => PrismCons lex b where
+
+        _cons :: Prism' (FixLang lex (Term b -> Term b -> Term b)) ()
+        _cons = link_cons . cons
+
+        link_cons :: Prism' (FixLang lex (Term b -> Term b -> Term b)) 
+                            (Function (Cons b) (FixLang lex) (Term b -> Term b -> Term b))
+        link_cons = link 
+
+        cons :: Prism' (Function (Cons b) (FixLang lex) (Term b -> Term b -> Term b)) ()
+        cons = prism' (const (Function Cons ATwo )) (const (Just ()))
 
 --------------------------------------------------------
 --2. Utility Classes
