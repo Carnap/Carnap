@@ -1,4 +1,4 @@
-{-#LANGUAGE GADTs, PatternSynonyms, FlexibleContexts, FlexibleInstances, MultiParamTypeClasses, TypeOperators #-}
+{-#LANGUAGE GADTs, PatternSynonyms, FlexibleContexts, RankNTypes, FlexibleInstances, MultiParamTypeClasses, TypeOperators #-}
 module Carnap.Languages.ModalPropositional.Logic.Rules (
     module Carnap.Languages.ModalPropositional.Logic.Rules,
     module Carnap.Languages.PurePropositional.Logic.Rules
@@ -32,6 +32,10 @@ type WorldTheorySequentCalc = ClassicalSequentOver WorldTheoryPropLexicon
 
 type WorldTheorySequentCalcLex = ClassicalSequentLexOver WorldTheoryPropLexicon
 
+type CoreCalcLex = ClassicalSequentLexOver CoreLexicon
+
+type CoreCalcSeq = ClassicalSequentOver CoreLexicon
+
 type AbsoluteModalPropSequentCalc = ClassicalSequentOver AbsoluteModalPropLexicon
 
 type AbsoluteModalPropSequentCalcLex = ClassicalSequentLexOver AbsoluteModalPropLexicon
@@ -56,7 +60,6 @@ pattern SeqCon x arity    = FX (Lx2 (Lx1 (Lx3 (Connective x arity))))
 pattern SeqBox            = FX (Lx2 (Lx1 (Lx4 (Connective Box AOne))))
 pattern SeqDia            = FX (Lx2 (Lx1 (Lx4 (Connective Diamond AOne))))
 pattern SeqIndexer        = FX (Lx2 (Lx2 (Lx1 AtIndex)))
-pattern SeqAbsIndexer     = FX (Lx2 (Lx2 (Lx1 AtAbsIndex)))
 pattern SeqIndicies c a   = FX (Lx2 (Lx2 (Lx2 (Function c a))))
 pattern SeqIdxCons c a    = FX (Lx2 (Lx2 (Lx3 (Function c a))))
 pattern SeqSchemIdx c a   = FX (Lx2 (Lx2 (Lx4 (Function c a))))
@@ -83,7 +86,6 @@ pattern (:||-:) x y       = SeqOr  :!$: x :!$: y
 pattern (:->-:) x y       = SeqIf  :!$: x :!$: y
 pattern (:<->-:) x y      = SeqIff :!$: x :!$: y
 pattern (:/:) x y         = SeqIndexer :!$: x :!$: y
-pattern (://:) x y        = SeqAbsIndexer :!$: x :!$: y
 pattern SeqNeg x          = SeqNot :!$: x
 pattern SeqBind q f       = SeqQuant q :!$: LLam f
 pattern SeqIndex n        = SeqIndicies (Index n) AZero
@@ -92,7 +94,7 @@ pattern TheWorld          = SeqIndex 0
 pattern SomeWorld         = SeqSchmIdx 0
 pattern SomeOtherWorld    = SeqSchmIdx 1
 pattern SomeThirdWorld    = SeqSchmIdx 2
-pattern SeqCons x y       = SeqIdxCons IndexCons ATwo :!$: x :!$: y
+pattern SeqCons x y       = SeqIdxCons Cons ATwo :!$: x :!$: y
 
 eigenConstraint c suc ant sub
     | c' `occursIn` ant' = Just $ "The index " ++ show c' ++ " appears not to be fresh, given that this line relies on " ++ show ant'
@@ -116,17 +118,36 @@ instance ParsableLex (Form (World -> Bool)) WorldTheoryPropLexicon where
 instance ParsableLex (Form Bool) AbsoluteModalPropLexicon where
         langParser = absoluteModalPropFormulaParser
 
+instance ParsableLex (Form (World -> Bool)) AbsoluteModalPropLexicon where
+        langParser = absoluteModalPropFormulaPreParser
+
+instance PrismBooleanConnLex CoreCalcLex (World -> Bool)
+instance PrismPropositionalContext CoreCalcLex (World -> Bool)
+instance PrismBooleanConst CoreCalcLex (World -> Bool)
+instance PrismPropLex CoreCalcLex (World -> Bool)
+instance PrismSchematicProp CoreCalcLex (World -> Bool)
+instance PrismModality CoreCalcLex (World -> Bool)
+
 instance PrismBooleanConnLex WorldTheorySequentCalcLex (World -> Bool)
 instance PrismPropositionalContext WorldTheorySequentCalcLex (World -> Bool)
 instance PrismBooleanConst WorldTheorySequentCalcLex (World -> Bool)
 instance PrismPropLex WorldTheorySequentCalcLex (World -> Bool)
 instance PrismSchematicProp WorldTheorySequentCalcLex (World -> Bool)
+instance PrismModality WorldTheorySequentCalcLex (World -> Bool)
 
 instance PrismBooleanConnLex AbsoluteModalPropSequentCalcLex Bool
 instance PrismPropositionalContext AbsoluteModalPropSequentCalcLex Bool
 instance PrismBooleanConst AbsoluteModalPropSequentCalcLex Bool
 instance PrismPropLex AbsoluteModalPropSequentCalcLex Bool
 instance PrismSchematicProp AbsoluteModalPropSequentCalcLex Bool
+instance PrismModality AbsoluteModalPropSequentCalcLex Bool
+
+instance PrismBooleanConnLex AbsoluteModalPropSequentCalcLex (World -> Bool)
+instance PrismPropositionalContext AbsoluteModalPropSequentCalcLex (World -> Bool)
+instance PrismBooleanConst AbsoluteModalPropSequentCalcLex (World -> Bool)
+instance PrismPropLex AbsoluteModalPropSequentCalcLex (World -> Bool)
+instance PrismSchematicProp AbsoluteModalPropSequentCalcLex (World -> Bool)
+instance PrismModality AbsoluteModalPropSequentCalcLex (World -> Bool)
 
 phi :: Int -> WorldTheorySequentCalc (Term World) -> WorldTheorySequentCalc (Form (World -> Bool))
 phi n x = SeqPPhi n :!$: x
@@ -137,77 +158,96 @@ wtlgamma = GammaV
 absgamma :: Int -> AbsoluteModalPropSequentCalc (Antecedent (Form (World -> Bool)))
 absgamma = GammaV
 
+someWorld = worldScheme 0 
+
+someOtherWorld = worldScheme 1 
+
+someThirdWorld = worldScheme 2
+
 worldTheorySeqParser = seqFormulaParser :: Parsec String u (WorldTheorySequentCalc (Sequent (Form (World -> Bool))))
 
-absoluteModalPropSeqParser = liftAbsSeq TheWorld <$> (seqFormulaParser :: Parsec String u (WorldTheorySequentCalc (Sequent (Form (World -> Bool)))))
+absoluteModalPropSeqParser = liftAbsSeq TheWorld <$> (seqFormulaParser :: Parsec String u (AbsoluteModalPropSequentCalc (Sequent (Form (World -> Bool)))))
 
 liftAbsRule (SequentRule p c) = map (liftAbsSeq SomeWorld) p ∴ liftAbsSeq SomeWorld c
 
-liftAbsSeq :: AbsoluteModalPropSequentCalc (Term World) -> WorldTheorySequentCalc (Sequent (Form (World -> Bool))) -> AbsoluteModalPropSequentCalc (Sequent (Form Bool))
+liftAbsSeq :: AbsoluteModalPropSequentCalc (Term World) -> AbsoluteModalPropSequentCalc (Sequent (Form (World -> Bool))) -> AbsoluteModalPropSequentCalc (Sequent (Form Bool))
 liftAbsSeq w (a :|-: s) = atSomeAnt a :|-: atSomeSuc s
     where 
-          atSomeAnt :: WorldTheorySequentCalc (Antecedent (Form (World -> Bool))) -> AbsoluteModalPropSequentCalc (Antecedent (Form Bool))
+          atSomeAnt :: AbsoluteModalPropSequentCalc (Antecedent (Form (World -> Bool))) -> AbsoluteModalPropSequentCalc (Antecedent (Form Bool))
           atSomeAnt (x :+: y) = atSomeAnt x :+: atSomeAnt y
-          atSomeAnt (SA x) = SA (reconstruct x ://: w) 
+          atSomeAnt (SA x) = SA (x :/: w) 
           atSomeAnt (GammaV n) = GammaV n
-          atSomeAnt Top        = Top
+          atSomeAnt Top = Top
 
-          atSomeSuc :: WorldTheorySequentCalc (Succedent (Form (World -> Bool))) -> AbsoluteModalPropSequentCalc (Succedent (Form Bool))
+          atSomeSuc :: AbsoluteModalPropSequentCalc (Succedent (Form (World -> Bool))) -> AbsoluteModalPropSequentCalc (Succedent (Form Bool))
           atSomeSuc (x :-: y) = atSomeSuc x :-: atSomeSuc y
-          atSomeSuc (SS x) = SS (reconstruct x ://: w) 
+          atSomeSuc (SS x) = SS (x :/: w) 
           atSomeSuc Bot = Bot
-          reconstruct (x:&-:y) = reconstruct x :&-: reconstruct y
-          reconstruct (x:||-:y) = reconstruct x :||-: reconstruct y
-          reconstruct (x:->-:y) = reconstruct x :->-: reconstruct y
-          reconstruct (x:<->-:y) = reconstruct x :<->-: reconstruct y
-          reconstruct (SeqNec x) = SeqNec $ reconstruct x
-          reconstruct (SeqPos x) = SeqPos $ reconstruct x
-          reconstruct (SeqNeg x) = SeqNeg $ reconstruct x
-          reconstruct (SeqPhi n) = SeqPhiA n
-          reconstruct (SeqProp n) = SeqProp n
-          reconstruct LFalsum = LFalsum
-          reconstruct LVerum = LVerum
-          reconstruct x = error $ "cannot reconstruct " ++ show x ++ " from wtl to l"
 
 -------------------------
 --  1.1 Standard Rules  --
 -------------------------
+
+type ModalRule lex b = 
+        ( Typeable b
+        , BooleanLanguage (ClassicalSequentOver lex (Form b))
+        , BooleanConstLanguage (ClassicalSequentOver lex (Form b))
+        , IndexedSchemePropLanguage (ClassicalSequentOver lex (Form b))
+        , ModalLanguage (ClassicalSequentOver lex (Form b))
+        , IndexingLang lex (Term World) (Form b) (Form (World -> Bool))
+        ) => SequentRule lex (Form b)
 --Rules found in many systems of propositional logic
 
-worldlyFalsumElimination = [ GammaV 1 :|-: SS (LFalsum ://: SomeWorld)
-                           ] ∴ GammaV 1 :|-: SS (SeqPhiA 1 ://: SomeOtherWorld)
+worldlyFalsumElimination :: ModalRule lex b
+worldlyFalsumElimination = [ GammaV 1 :|-: SS (lfalsum :/: SomeWorld)
+                           ] ∴ GammaV 1 :|-: SS (phin 1 :/: SomeOtherWorld)
 
-worldlyFalsumIntroduction = [ GammaV 1 :|-: SS ((SeqNeg $ SeqPhiA 1) ://: SomeWorld)
-                            , GammaV 2 :|-: SS (SeqPhiA 1 ://: SomeWorld)
-                            ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (LFalsum ://: SomeOtherWorld)
+worldlyFalsumIntroduction :: ModalRule lex b
+worldlyFalsumIntroduction = [ GammaV 1 :|-: SS ((lneg $ phin 1) :/: SomeWorld)
+                            , GammaV 2 :|-: SS (phin 1 :/: SomeWorld)
+                            ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (lfalsum :/: SomeOtherWorld)
 
+worldTheoryUniversalInstantiation :: ModalRule lex b
 worldTheoryUniversalInstantiation = 
         [ GammaV 1 :|-: SS (SeqBind (All "v") (phi 1))]
         ∴ GammaV 1 :|-: SS (phi 1 SomeWorld)
 
+worldTheoryUniversalGeneralization :: ModalRule lex b
 worldTheoryUniversalGeneralization = 
         [ GammaV 1 :|-: SS (phi 1 SomeWorld) ]
         ∴ GammaV 1 :|-: SS (SeqBind (All "v") (phi 1))
 
-boxDerivation = 
-        [ GammaV 1 :|-: SS (SeqPhiA 1 ://: SomeWorld) ]
-        ∴ GammaV 1 :|-: SS (SeqNec (SeqPhiA 1) ://: SomeOtherWorld)
-
-boxOut = 
-        [ GammaV 1 :|-: SS (SeqNec (SeqPhiA 1) ://: SomeWorld) ]
-        ∴ GammaV 1 :|-: SS (SeqPhiA 1 ://: SomeOtherWorld)
-
+worldTheoryExistentialGeneralization :: ModalRule lex b
 worldTheoryExistentialGeneralization = 
         [ GammaV 1 :|-: SS (phi 1 SomeWorld)]
         ∴ GammaV 1 :|-: SS (SeqBind (Some "v") (phi 1))
 
+boxDerivation :: ModalRule lex b
+boxDerivation = 
+        [ GammaV 1 :|-: SS (phin 1 :/: SomeWorld) ]
+        ∴ GammaV 1 :|-: SS (SeqNec (phin 1) :/: SomeOtherWorld)
+
+boxOut :: ModalRule lex b
+boxOut = 
+        [ GammaV 1 :|-: SS (SeqNec (phin 1) :/: SomeWorld) ]
+        ∴ GammaV 1 :|-: SS (phin 1 :/: SomeOtherWorld)
+
+diamondIn :: ModalRule lex b
 diamondIn = 
-        [ GammaV 1 :|-: SS (SeqPhiA 1 ://: SomeWorld) ]
-        ∴ GammaV 1 :|-: SS (SeqPos (SeqPhiA 1) ://: SomeOtherWorld)
+        [ GammaV 1 :|-: SS (phin 1 :/: SomeWorld) ]
+        ∴ GammaV 1 :|-: SS (SeqPos (phin 1) :/: SomeOtherWorld)
 
 ---------------------------
 --  1.2 Variation Rules  --
 ---------------------------
+
+type ModalRuleVariants lex b = 
+        ( Typeable b
+        , BooleanLanguage (ClassicalSequentOver lex (Form b))
+        , BooleanConstLanguage (ClassicalSequentOver lex (Form b))
+        , IndexedSchemePropLanguage (ClassicalSequentOver lex (Form b))
+        , ModalLanguage (ClassicalSequentOver lex (Form b))
+        ) => [SequentRule lex (Form b)]
 
 ------------------------------
 --  1.2.1 Simple Variation  --
@@ -215,26 +255,29 @@ diamondIn =
 
 -- Rules with several variations
 
+worldlyExplicitConstructiveFalsumReductioVariations :: ModalRuleVariants lex b
 worldlyExplicitConstructiveFalsumReductioVariations = [
-                [ GammaV 1 :+: SA (SeqPhiA 1 ://: SomeWorld) :|-: SS (LFalsum ://: SomeOtherWorld)
-                , SA ( SeqPhiA 1 ://: SomeWorld) :|-: SS ( SeqPhiA 1 ://: SomeWorld)
-                ] ∴ GammaV 1 :|-: SS ((SeqNeg $ SeqPhiA 1) ://: SomeWorld)
+                [ GammaV 1 :+: SA (phin 1 :/: SomeWorld) :|-: SS (lfalsum :/: SomeOtherWorld)
+                , SA ( phin 1 :/: SomeWorld) :|-: SS ( phin 1 :/: SomeWorld)
+                ] ∴ GammaV 1 :|-: SS ((lneg $ phin 1) :/: SomeWorld)
             ,
-                [ GammaV 1 :|-: SS (LFalsum ://: SomeOtherWorld)
-                , SA (SeqPhiA 1 ://: SomeWorld) :|-: SS (SeqPhiA 1 ://: SomeWorld)
-                ] ∴ GammaV 1 :|-: SS ((SeqNeg $ SeqPhiA 1) ://: SomeWorld)
+                [ GammaV 1 :|-: SS (lfalsum :/: SomeOtherWorld)
+                , SA (phin 1 :/: SomeWorld) :|-: SS (phin 1 :/: SomeWorld)
+                ] ∴ GammaV 1 :|-: SS ((lneg $ phin 1) :/: SomeWorld)
             ]
 
+worldlyExplicitNonConstructiveFalsumReductioVariations :: ModalRuleVariants lex b
 worldlyExplicitNonConstructiveFalsumReductioVariations = [
-                [ GammaV 1 :+: SA ((SeqNeg $ SeqPhiA 1) ://: SomeWorld) :|-: SS (LFalsum ://: SomeOtherWorld)
-                , SA ((SeqNeg $ SeqPhiA 1) ://: SomeWorld) :|-: SS ((SeqNeg $ SeqPhiA 1) ://: SomeWorld)
-                ] ∴ GammaV 1 :|-: SS ( SeqPhiA 1 ://: SomeWorld)
+                [ GammaV 1 :+: SA ((lneg $ phin 1) :/: SomeWorld) :|-: SS (lfalsum :/: SomeOtherWorld)
+                , SA ((lneg $ phin 1) :/: SomeWorld) :|-: SS ((lneg $ phin 1) :/: SomeWorld)
+                ] ∴ GammaV 1 :|-: SS ( phin 1 :/: SomeWorld)
             ,
-                [ GammaV 1 :|-: SS (LFalsum ://: SomeOtherWorld)
-                , SA ((SeqNeg $ SeqPhiA 1) ://: SomeWorld) :|-: SS ((SeqNeg $ SeqPhiA 1) ://: SomeWorld)
-                ] ∴ GammaV 1 :|-: SS (SeqPhiA 1 ://: SomeWorld)
+                [ GammaV 1 :|-: SS (lfalsum :/: SomeOtherWorld)
+                , SA ((lneg $ phin 1) :/: SomeWorld) :|-: SS ((lneg $ phin 1) :/: SomeWorld)
+                ] ∴ GammaV 1 :|-: SS (phin 1 :/: SomeWorld)
             ]
 
+worldTheoryExistentialDerivation :: ModalRuleVariants lex b
 worldTheoryExistentialDerivation = [
                                        [ GammaV 1 :+:  SA (phi 1 SomeWorld) :|-: SS (SeqPhi 1) 
                                        , GammaV 2 :|-: SS (SeqBind (Some "v") $ phi 1)   
@@ -247,16 +290,17 @@ worldTheoryExistentialDerivation = [
                                        ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (SeqPhi 1)
                                    ]
 
+diamondDerivation :: ModalRuleVariants lex b
 diamondDerivation = [
-                        [ GammaV 1 :+:  SA (SeqPhiA 1 ://: SomeWorld) :|-: SS (SeqPhiA 2 ://: SomeThirdWorld) 
-                        , GammaV 2 :|-: SS (SeqPos (SeqPhiA 1) ://: SomeOtherWorld)   
-                        , SA (SeqPhiA 1 ://: SomeWorld) :|-: SS (SeqPhiA 1 ://: SomeWorld)            
-                        ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (SeqPhiA 2 ://: SomeThirdWorld)      
+                        [ GammaV 1 :+:  SA (phin 1 :/: SomeWorld) :|-: SS (phin 2 :/: SomeThirdWorld) 
+                        , GammaV 2 :|-: SS (SeqPos (phin 1) :/: SomeOtherWorld)   
+                        , SA (phin 1 :/: SomeWorld) :|-: SS (phin 1 :/: SomeWorld)            
+                        ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (phin 2 :/: SomeThirdWorld)      
                     ,
-                        [ GammaV 1 :|-: SS (SeqPhiA 2 ://: SomeThirdWorld) 
-                        , GammaV 2 :|-: SS (SeqPos (SeqPhiA 1) ://: SomeOtherWorld)   
-                        , SA (SeqPhiA 1 ://: SomeWorld) :|-: SS (SeqPhiA 1 ://: SomeWorld)            
-                        ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (SeqPhiA 2 ://: SomeThirdWorld)      
+                        [ GammaV 1 :|-: SS (phin 2 :/: SomeThirdWorld) 
+                        , GammaV 2 :|-: SS (SeqPos (phin 1) :/: SomeOtherWorld)   
+                        , SA (phin 1 :/: SomeWorld) :|-: SS (phin 1 :/: SomeWorld)            
+                        ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (phin 2 :/: SomeThirdWorld)      
                     ]
 
 -----------------------------------
@@ -265,59 +309,72 @@ diamondDerivation = [
 
 bidir x y = [[x] ∴ y, [y] ∴ x]
 
+worldTheoryZeroAxiom :: ModalRuleVariants lex b
 worldTheoryZeroAxiom = bidir 
                 ( GammaV 1 :|-: SS (SeqPhi 1) )
                 ( GammaV 1 :|-: SS (SeqPhi 1 :/: TheWorld) )
 
+worldTheoryNegAxiom :: ModalRuleVariants lex b
 worldTheoryNegAxiom = bidir
-                ( GammaV 1 :|-: SS (SeqNeg (SeqPhi 1) :/: SomeWorld) )
-                ( GammaV 1 :|-: SS (SeqNeg (SeqPhi 1 :/: SomeWorld)) )
+                ( GammaV 1 :|-: SS (lneg (SeqPhi 1) :/: SomeWorld) )
+                ( GammaV 1 :|-: SS (lneg (SeqPhi 1 :/: SomeWorld)) )
 
+worldTheoryAndAxiom :: ModalRuleVariants lex b
 worldTheoryAndAxiom = bidir
                 ( GammaV 1 :|-: SS ((SeqPhi 1 :&-: SeqPhi 2) :/: SomeWorld) )
                 ( GammaV 1 :|-: SS ((SeqPhi 1 :/: SomeWorld) :&-: (SeqPhi 2 :/: SomeWorld)) )
 
+worldTheoryOrAxiom :: ModalRuleVariants lex b
 worldTheoryOrAxiom = bidir
                 ( GammaV 1 :|-: SS ((SeqPhi 1 :||-: SeqPhi 2) :/: SomeWorld) )
                 ( GammaV 1 :|-: SS ((SeqPhi 1 :/: SomeWorld) :||-: (SeqPhi 2 :/: SomeWorld)) )
 
+worldTheoryIfAxiom :: ModalRuleVariants lex b
 worldTheoryIfAxiom = bidir
                 ( GammaV 1 :|-: SS ((SeqPhi 1 :->-: SeqPhi 2) :/: SomeWorld) )
                 ( GammaV 1 :|-: SS ((SeqPhi 1 :/: SomeWorld) :->-: (SeqPhi 2 :/: SomeWorld)) )
 
+worldTheoryIffAxiom :: ModalRuleVariants lex b
 worldTheoryIffAxiom = bidir
                 ( GammaV 1 :|-: SS ((SeqPhi 1 :<->-: SeqPhi 2) :/: SomeWorld) )
                 ( GammaV 1 :|-: SS ((SeqPhi 1 :/: SomeWorld) :<->-: (SeqPhi 2 :/: SomeWorld)) )
 
+worldTheoryAllAxiom :: ModalRuleVariants lex b
 worldTheoryAllAxiom = bidir
                 ( GammaV 1 :|-: SS (SeqBind (All "v") (\x -> phi 1 x :/: SomeWorld)))
                 ( GammaV 1 :|-: SS (SeqBind (All "v") (phi 1) :/: SomeWorld))
 
+worldTheorySomeAxiom :: ModalRuleVariants lex b
 worldTheorySomeAxiom = bidir
                 ( GammaV 1 :|-: SS (SeqBind (Some "v") (\x -> phi 1 x :/: SomeWorld)))
                 ( GammaV 1 :|-: SS (SeqBind (Some "v") (phi 1) :/: SomeWorld))
 
+worldTheoryNecAxiom :: ModalRuleVariants lex b
 worldTheoryNecAxiom = bidir
                 ( GammaV 1 :|-: SS (SeqBind (All "v") (\x -> SeqPhi 1 :/: x)))
                 ( GammaV 1 :|-: SS ((SeqNec $ SeqPhi 1) :/: SomeWorld ))
 
+worldTheoryPosAxiom :: ModalRuleVariants lex b
 worldTheoryPosAxiom = bidir
                 ( GammaV 1 :|-: SS (SeqBind (Some "v") (\x -> SeqPhi 1 :/: x)))
                 ( GammaV 1 :|-: SS ((SeqPos $ SeqPhi 1) :/: SomeWorld ))
 
+worldTheoryAtAxiom :: ModalRuleVariants lex b
 worldTheoryAtAxiom = bidir
                 ( GammaV 1 :|-: SS (SeqPhi 1 :/: SomeWorld))
                 ( GammaV 1 :|-: SS ((SeqPhi 1 :/: SomeWorld) :/: SeqSchmIdx 1))
 
-quantifierNegation = bidir ( GammaV 1 :|-: SS (SeqNeg $ SeqBind (All "v") (phi 1)))
-                           ( GammaV 1 :|-: SS (SeqBind (Some "v") (SeqNeg . phi 1)))
-                     ++ bidir ( GammaV 1 :|-: SS (SeqNeg $ SeqBind (Some "v") (phi 1)))
-                              ( GammaV 1 :|-: SS (SeqBind (All "v") (SeqNeg . phi 1)))
+quantifierNegation :: ModalRuleVariants lex b
+quantifierNegation = bidir ( GammaV 1 :|-: SS (lneg $ SeqBind (All "v") (phi 1)))
+                           ( GammaV 1 :|-: SS (SeqBind (Some "v") (lneg . phi 1)))
+                     ++ bidir ( GammaV 1 :|-: SS (lneg $ SeqBind (Some "v") (phi 1)))
+                              ( GammaV 1 :|-: SS (SeqBind (All "v") (lneg . phi 1)))
 
-modalNegation = bidir ( GammaV 1 :|-: SS ((SeqPos $ SeqNeg $ SeqPhi 1)))
-                ( GammaV 1 :|-: SS ((SeqNeg $ SeqNec $ SeqPhi 1)))
-                ++ bidir ( GammaV 1 :|-: SS ((SeqNec $ SeqNeg $ SeqPhi 1)))
-                ( GammaV 1 :|-: SS ((SeqNeg $ SeqPos $ SeqPhi 1)))
+modalNegation :: ModalRuleVariants lex b
+modalNegation = bidir ( GammaV 1 :|-: SS ((pos $ lneg $ phin 1)))
+                ( GammaV 1 :|-: SS ((lneg $ nec $ phin 1)))
+                ++ bidir ( GammaV 1 :|-: SS ((nec $ lneg $ phin 1)))
+                ( GammaV 1 :|-: SS ((lneg $ pos $ phin 1)))
 
 ----------------------------------------
 --  1.2.3 Infinitary Variation Rules  --

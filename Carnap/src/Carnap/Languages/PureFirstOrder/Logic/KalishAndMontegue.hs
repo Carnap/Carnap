@@ -54,7 +54,6 @@ instance Inference FOLogic PureLexiconFOL (Form Bool) where
      premisesOf (SL x) = map liftSequent (premisesOf x)
      premisesOf (DER r) = zipWith gammafy (premises r) [1..]
         where gammafy p n = GammaV n :|-: SS (liftToSequent p)
-     
      premisesOf x     = upperSequents (ruleOf x)
 
      conclusionOf (SL x) = liftSequent (conclusionOf x)

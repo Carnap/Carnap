@@ -295,6 +295,21 @@ instance MaybeStaticVar (StandardVar b)
 -- XXX Note: standard variables are not schematic variables
 instance FirstOrderLex (StandardVar b) 
 
+data IntIndex b a where
+        Index :: Int -> IntIndex b (Term b)
+
+instance Schematizable (IntIndex b) where
+        schematize (Index n) _ = show n
+
+instance UniformlyEq (IntIndex b) where
+        (Index n) =* (Index m) = n == m
+
+instance Monad m => MaybeMonadVar (IntIndex b) m
+
+instance MaybeStaticVar (IntIndex b)
+
+instance FirstOrderLex (IntIndex b)
+
 ----------------------
 --  6. Quantifiers  --
 ----------------------
@@ -317,3 +332,33 @@ instance Monad m => MaybeMonadVar (StandardQuant b c) m
 instance MaybeStaticVar (StandardQuant b c)
 
 instance FirstOrderLex (StandardQuant b c) 
+
+------------------
+--  7. Exotica  --
+------------------
+--
+data Indexer a b c :: (* -> *) -> * -> * where
+        AtIndex :: Indexer a b c lang (Form b -> Term a -> Form c)
+
+instance FirstOrderLex (Indexer a b c lang)
+
+instance UniformlyEq (Indexer a b c lang) where
+        AtIndex =* AtIndex = True
+
+instance Schematizable (Indexer a b c lang) where
+        schematize AtIndex = \(x:y:_) -> "(" ++ x ++ "/" ++ y ++ ")"
+
+instance ReLex (Indexer a b c) where
+        relex AtIndex = AtIndex
+
+data Cons b a where
+        Cons :: Cons b (Term b -> Term b -> Term b)
+
+instance Schematizable (Cons b) where
+        schematize Cons = \(x:y:_) -> x ++ ";" ++ y
+
+instance FirstOrderLex (Cons b)
+
+instance UniformlyEq (Cons b) where
+        Cons =* Cons = True
+

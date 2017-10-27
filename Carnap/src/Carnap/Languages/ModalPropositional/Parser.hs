@@ -1,11 +1,11 @@
 {-# LANGUAGE FlexibleContexts #-}
 module Carnap.Languages.ModalPropositional.Parser
-    (modalPropFormulaParser,worldTheoryPropFormulaParser, absoluteModalPropFormulaParser)
+    (modalPropFormulaParser,worldTheoryPropFormulaParser, absoluteModalPropFormulaParser, absoluteModalPropFormulaPreParser)
 where
 
 import Carnap.Core.Data.AbstractSyntaxDataTypes (Term, Form, FixLang)
 import Carnap.Languages.ModalPropositional.Syntax
-import Carnap.Languages.Util.LanguageClasses (PrismBooleanConnLex, BooleanLanguage, BooleanConstLanguage, ModalLanguage, IndexedPropLanguage, IndexedSchemePropLanguage)
+import Carnap.Languages.Util.LanguageClasses (PrismBooleanConnLex, BooleanLanguage, BooleanConstLanguage, ModalLanguage, IndexedPropLanguage, IndexingLang(..), IndexedSchemePropLanguage)
 import Carnap.Languages.Util.GenericParsers
 import Text.Parsec
 import Text.Parsec.Expr
@@ -64,13 +64,16 @@ modalPropFormulaParser = buildExpressionParser opTable subFormulaParser
     where subFormulaParser = coreSubformulaParser modalPropFormulaParser simpleModalOptions
 
 absoluteModalPropFormulaParser :: Parsec String u AbsoluteModalForm
-absoluteModalPropFormulaParser = formulaParser >>= indexIt
-    where formulaParser = buildExpressionParser opTable subFormulaParser
-          subFormulaParser = coreSubformulaParser formulaParser simpleModalOptions{hasBooleanConstants = True}
-          indexIt :: AbsoluteModalPreForm -> Parsec String u AbsoluteModalForm
+absoluteModalPropFormulaParser = absoluteModalPropFormulaPreParser >>= indexIt
+    where indexIt :: AbsoluteModalPreForm -> Parsec String u AbsoluteModalForm
           indexIt f = do char '/'
                          w <- parseWorld
                          return (f `atWorld` w)
+
+absoluteModalPropFormulaPreParser :: Parsec String u AbsoluteModalPreForm
+absoluteModalPropFormulaPreParser = formulaParser
+    where formulaParser = buildExpressionParser opTable subFormulaParser
+          subFormulaParser = coreSubformulaParser formulaParser simpleModalOptions{hasBooleanConstants = True}
 
 worldTheoryOptions :: ModalPropositionalParserOptions WorldTheoryPropLexicon u Identity
 worldTheoryOptions = simpleModalOptions
@@ -112,6 +115,6 @@ parseWorldVar s = choice [try $ do _ <- string "i_"
                                    return $ worldVar [c]
                          ]
 
-parseWorld :: (IndexingLang lex unindexed indexed, Monad m) => ParsecT String u m (FixLang lex (Term World))
+parseWorld :: (IndexingLang lex (Term World) unindexed indexed, Monad m) => ParsecT String u m (FixLang lex (Term World))
 parseWorld = do digits <- many1 digit
                 return $ world (read digits)

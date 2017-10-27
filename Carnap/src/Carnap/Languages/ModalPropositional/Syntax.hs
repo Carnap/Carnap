@@ -73,66 +73,19 @@ instance Modelable PropFrame PropModality where
         satisfies f Diamond = lift1 $ \f x -> M.getAny $ mconcat (map (M.Any . f) (ac x))
             where ac x = accessibility f ! x
 
-data Index a where
-        Index :: Int -> Index (Term World)
---TODO: semantics?
-
-instance Schematizable Index where
-        schematize (Index n) _ = show n
-
-instance UniformlyEq Index where
-        (Index n) =* (Index m) = n == m
-
-instance Monad m => MaybeMonadVar Index m
-
-instance MaybeStaticVar Index
-
-instance FirstOrderLex Index 
+type Index = IntIndex World
 
 type IndexScheme = SchematicIntFunc World World
 
 type ModalSchematicProp = SchematicIntProp (World -> Bool)
 
-data WorldTheoryIndexer :: (* -> *) -> * -> * where
-        AtIndex :: WorldTheoryIndexer lang (Form (World -> Bool) -> Term World -> Form (World -> Bool))
+type WorldTheoryIndexer = Indexer World (World -> Bool) (World -> Bool)
 
 type IndexVar = StandardVar World
 
-instance FirstOrderLex (WorldTheoryIndexer lex)
+type AbsoluteIndexer = Indexer World (World -> Bool) Bool
 
-instance UniformlyEq (WorldTheoryIndexer lex) where
-        AtIndex =* AtIndex = True
-
-instance Schematizable (WorldTheoryIndexer lex) where
-        schematize AtIndex = \(x:y:_) -> "(" ++ x ++ "/" ++ y ++ ")"
-
-instance ReLex (WorldTheoryIndexer) where
-        relex AtIndex = AtIndex
-
-data AbsoluteIndexer :: (* -> *) -> * -> * where
-        AtAbsIndex :: AbsoluteIndexer lang (Form (World -> Bool) -> Term World -> Form Bool)
-
-instance FirstOrderLex (AbsoluteIndexer lex)
-
-instance UniformlyEq (AbsoluteIndexer lex) where
-        AtAbsIndex =* AtAbsIndex = True
-
-instance Schematizable (AbsoluteIndexer lex) where
-        schematize AtAbsIndex = \(x:y:_) -> "(" ++ x ++ "/" ++ y ++ ")"
-
-instance ReLex (AbsoluteIndexer) where
-        relex AtAbsIndex = AtAbsIndex
-
-data IndexCons a where
-        IndexCons :: IndexCons (Term World -> Term World -> Term World)
-
-instance Schematizable IndexCons where
-        schematize IndexCons = \(x:y:_) -> x ++ ";" ++ y
-
-instance FirstOrderLex IndexCons 
-
-instance UniformlyEq IndexCons where
-        IndexCons =* IndexCons = True
+type IndexCons = Cons World
 
 type IndexQuant = StandardQuant (World -> Bool) World
 
@@ -282,20 +235,16 @@ type AbsoluteModalPreForm = AbsoluteModalPropLanguage (Form (World -> Bool))
 ----------------------------
 --convenience class
 
-class IndexingLang lex indexed unindexed | lex -> indexed unindexed where
-    atWorld :: FixLang lex unindexed -> FixLang lex (Term World) -> FixLang lex indexed
-    world :: Int -> FixLang lex (Term World)
-    worldScheme :: Int -> FixLang lex (Term World)
 
-instance IndexingLang AbsoluteModalPropLexicon (Form Bool) (Form (World -> Bool)) where
-    atWorld x t = FX (Lx2 (Lx1 AtAbsIndex)) :!$: x :!$: t
+instance IndexingLang AbsoluteModalPropLexicon (Term World) (Form Bool) (Form (World -> Bool)) where
+    atWorld x t = FX (Lx2 (Lx1 AtIndex)) :!$: x :!$: t
     world n = FX (Lx2 (Lx2 (Function (Index n) AZero)))
     worldScheme n = FX (Lx2 (Lx4 (Function (SFunc AZero n) AZero)))
 
 worldVar :: String -> WorldTheoryPropLanguage (Term World)
 worldVar s = FX (Lx2 (Lx7 (Function (Var s) AZero)))
 
-instance IndexingLang WorldTheoryPropLexicon (Form (World -> Bool)) (Form (World -> Bool)) where
+instance IndexingLang WorldTheoryPropLexicon (Term World) (Form (World -> Bool)) (Form (World -> Bool)) where
     atWorld x t = FX (Lx2 (Lx1 AtIndex)) :!$: x :!$: t
     world n = FX (Lx2 (Lx2 (Function (Index n) AZero)))
     worldScheme n = FX (Lx2 (Lx4 (Function (SFunc AZero n) AZero)))

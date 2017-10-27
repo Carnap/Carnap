@@ -1,4 +1,4 @@
-{-#LANGUAGE MultiParamTypeClasses, RankNTypes, FlexibleContexts, FlexibleInstances, TypeSynonymInstances, TypeOperators, GADTs, ScopedTypeVariables #-}
+{-#LANGUAGE MultiParamTypeClasses, FunctionalDependencies, RankNTypes, FlexibleContexts, FlexibleInstances, TypeSynonymInstances, TypeOperators, GADTs, ScopedTypeVariables #-}
 module Carnap.Languages.Util.LanguageClasses where
 
 import Carnap.Core.Data.AbstractSyntaxDataTypes
@@ -331,6 +331,28 @@ class (Typeable c, Typeable b, PrismLink (FixLang lex) (Function (IntFunc b c) (
 class QuantLanguage l t where
         lall  :: String -> (t -> l) -> l
         lsome :: String -> (t -> l) -> l
+
+-------------------
+--  1.5 Exotica  --
+-------------------
+
+class IndexingLang lex index indexed unindexed | lex -> indexed unindexed where
+    atWorld :: FixLang lex unindexed -> FixLang lex index -> FixLang lex indexed
+    world :: Int -> FixLang lex index
+    worldScheme :: Int -> FixLang lex index
+
+class (Typeable a, Typeable b, Typeable c, PrismLink (FixLang lex) (Indexer a b c (FixLang lex))) 
+        => PrismIndexing lex a b c where
+
+        _indexer :: Prism' (FixLang lex (Form b -> Term a -> Form c)) ()
+        _indexer = link_indexer . indexer
+
+        link_indexer :: Prism' (FixLang lex (Form b -> Term a -> Form c)) 
+                               (Indexer a b c (FixLang lex) (Form b -> Term a -> Form c))
+        link_indexer = link 
+
+        indexer :: Prism' (Indexer a b c (FixLang lex) (Form b -> Term a -> Form c)) ()
+        indexer = prism' (const AtIndex) (const (Just ()))
 
 --------------------------------------------------------
 --2. Utility Classes

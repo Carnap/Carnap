@@ -82,6 +82,60 @@ instance Show ModalPropRule where
          show (OrID n) = "∨ID" ++ show n
          show (SepCases n) = "SC" ++ show n
 
+instance Inference ModalPropRule CoreLexicon (Form (World -> Bool))where
+         ruleOf Pr       = axiom
+         ruleOf As       = axiom
+         ruleOf Rep      = identityRule
+         ruleOf AndI     = adjunction
+         ruleOf AndO1    = simplificationVariations !! 0
+         ruleOf AndO2    = simplificationVariations !! 1
+         ruleOf AndNI    = negatedConjunctionVariations !! 1
+         ruleOf AndNO    = negatedConjunctionVariations !! 0
+         ruleOf OrI1     = additionVariations !! 0
+         ruleOf OrI2     = additionVariations !! 1
+         ruleOf OrO1     = modusTollendoPonensVariations !! 0
+         ruleOf OrO2     = modusTollendoPonensVariations !! 1
+         ruleOf OrNI     = deMorgansNegatedOr !! 1
+         ruleOf OrNO     = deMorgansNegatedOr !! 0
+         ruleOf IfI1     = materialConditionalVariations !! 0
+         ruleOf IfI2     = materialConditionalVariations !! 1
+         ruleOf IfO1     = modusPonens
+         ruleOf IfO2     = modusTollens
+         ruleOf IfNI     = negatedConditionalVariations !! 1
+         ruleOf IfNO     = negatedConditionalVariations !! 0
+         ruleOf IffI     = conditionalToBiconditional
+         ruleOf IffO1    = biconditionalToConditionalVariations !! 0
+         ruleOf IffO2    = biconditionalToConditionalVariations !! 1
+         ruleOf IffNI    = negatedBiconditionalVariations !! 1
+         ruleOf IffNO    = negatedBiconditionalVariations !! 0
+         ruleOf FalI     = falsumIntroduction
+         ruleOf FalO     = falsumElimination
+         ruleOf DN1      = doubleNegationIntroduction
+         ruleOf DN2      = doubleNegationElimination
+         ruleOf CD1      = explicitConditionalProofVariations !! 0
+         ruleOf CD2      = explicitConditionalProofVariations !! 1
+         ruleOf DD       = identityRule
+         ruleOf ID1      = explicitConstructiveFalsumReductioVariations !! 0
+         ruleOf ID2      = explicitConstructiveFalsumReductioVariations !! 1
+         ruleOf ID3      = explicitNonConstructiveFalsumReductioVariations !! 0
+         ruleOf ID4      = explicitNonConstructiveFalsumReductioVariations !! 1
+         ruleOf AndD     = adjunction
+         ruleOf (OrID n) = eliminationOfCases n
+         ruleOf (SepCases n) = separationOfCases n
+
+         indirectInference (SepCases n) = Just (TypedProof (ProofType 0 n))
+         indirectInference (OrID n) = Just (TypedProof (ProofType n 1))
+         indirectInference (AndD) = Just doubleProof
+         indirectInference DD = Just (TypedProof (ProofType 0 1))
+         indirectInference x 
+            | x `elem` [ID1,ID2,ID3,ID4,CD1,CD2] = Just assumptiveProof
+            | otherwise = Nothing
+
+         isAssumption As = True
+         isAssumption _ = False
+
+         restriction _      = Nothing
+
 ----------------------------------
 --  1. Leibnizian World Theory  --
 ----------------------------------
@@ -121,45 +175,6 @@ instance Show HardegreeWTL where
          show QN4 = "QN"
 
 instance Inference HardegreeWTL WorldTheoryPropLexicon (Form (World -> Bool))where
-         ruleOf (MoP Pr)       = axiom
-         ruleOf (MoP As)       = axiom
-         ruleOf (MoP Rep)      = identityRule
-         ruleOf (MoP AndI)     = adjunction
-         ruleOf (MoP AndO1)    = simplificationVariations !! 0
-         ruleOf (MoP AndO2)    = simplificationVariations !! 1
-         ruleOf (MoP AndNI)    = negatedConjunctionVariations !! 1
-         ruleOf (MoP AndNO)    = negatedConjunctionVariations !! 0
-         ruleOf (MoP OrI1)     = additionVariations !! 0
-         ruleOf (MoP OrI2)     = additionVariations !! 1
-         ruleOf (MoP OrO1)     = modusTollendoPonensVariations !! 0
-         ruleOf (MoP OrO2)     = modusTollendoPonensVariations !! 1
-         ruleOf (MoP OrNI)     = deMorgansNegatedOr !! 1
-         ruleOf (MoP OrNO)     = deMorgansNegatedOr !! 0
-         ruleOf (MoP IfI1)     = materialConditionalVariations !! 0
-         ruleOf (MoP IfI2)     = materialConditionalVariations !! 1
-         ruleOf (MoP IfO1)     = modusPonens
-         ruleOf (MoP IfO2)     = modusTollens
-         ruleOf (MoP IfNI)     = negatedConditionalVariations !! 1
-         ruleOf (MoP IfNO)     = negatedConditionalVariations !! 0
-         ruleOf (MoP IffI)     = conditionalToBiconditional
-         ruleOf (MoP IffO1)    = biconditionalToConditionalVariations !! 0
-         ruleOf (MoP IffO2)    = biconditionalToConditionalVariations !! 1
-         ruleOf (MoP IffNI)    = negatedBiconditionalVariations !! 1
-         ruleOf (MoP IffNO)    = negatedBiconditionalVariations !! 0
-         ruleOf (MoP FalI)     = falsumIntroduction
-         ruleOf (MoP FalO)     = falsumElimination
-         ruleOf (MoP DN1)      = doubleNegationIntroduction
-         ruleOf (MoP DN2)      = doubleNegationElimination
-         ruleOf (MoP CD1)      = explicitConditionalProofVariations !! 0
-         ruleOf (MoP CD2)      = explicitConditionalProofVariations !! 1
-         ruleOf (MoP DD)       = identityRule
-         ruleOf (MoP ID1)      = explicitConstructiveFalsumReductioVariations !! 0
-         ruleOf (MoP ID2)      = explicitConstructiveFalsumReductioVariations !! 1
-         ruleOf (MoP ID3)      = explicitNonConstructiveFalsumReductioVariations !! 0
-         ruleOf (MoP ID4)      = explicitNonConstructiveFalsumReductioVariations !! 1
-         ruleOf (MoP AndD)     = adjunction
-         ruleOf (MoP (OrID n)) = eliminationOfCases n
-         ruleOf (MoP (SepCases n)) = separationOfCases n
          ruleOf WTZero1 = worldTheoryZeroAxiom !! 0
          ruleOf WTZero2 = worldTheoryZeroAxiom !! 1
          ruleOf WTNeg1 = worldTheoryNegAxiom !! 0
@@ -192,16 +207,17 @@ instance Inference HardegreeWTL WorldTheoryPropLexicon (Form (World -> Bool))whe
          ruleOf QN3 = quantifierNegation !! 2
          ruleOf QN4 = quantifierNegation !! 3
 
-         indirectInference (MoP (SepCases n)) = Just (TypedProof (ProofType 0 n))
-         indirectInference (MoP (OrID n)) = Just (TypedProof (ProofType n 1))
-         indirectInference (MoP (AndD)) = Just doubleProof
-         indirectInference (MoP DD) = Just (TypedProof (ProofType 0 1))
+         premisesOf (MoP x) = map liftSequent (premisesOf x)
+         premisesOf x = upperSequents (ruleOf x)
+
+         conclusionOf (MoP x) = liftSequent (conclusionOf x)
+         conclusionOf x = lowerSequent (ruleOf x)
+
+         indirectInference (MoP x) = indirectInference x
          indirectInference WTUG = Just (TypedProof (ProofType 0 1))
          indirectInference WTED1 = Just (TypedProof (ProofType 1 1))
          indirectInference WTED2 = Just (TypedProof (ProofType 1 1))
-         indirectInference x 
-            | x `elem` [MoP ID1,MoP ID2,MoP ID3,MoP ID4,MoP CD1,MoP CD2] = Just assumptiveProof
-            | otherwise = Nothing
+         indirectInference _ = Nothing
 
          isAssumption (MoP As) = True
          isAssumption _ = False
@@ -333,7 +349,6 @@ instance Inference HardegreeL AbsoluteModalPropLexicon (Form Bool) where
          ruleOf (MoPL ID4)      = worldlyExplicitNonConstructiveFalsumReductioVariations !! 1
          ruleOf (MoPL FalI)     = worldlyFalsumIntroduction
          ruleOf (MoPL FalO)     = worldlyFalsumElimination
-         ruleOf (MoPL x)        = liftAbsRule (ruleOf (MoP x))
          ruleOf ND = boxDerivation
          ruleOf DiaIn = diamondIn
          ruleOf BoxOut = boxOut
@@ -343,6 +358,12 @@ instance Inference HardegreeL AbsoluteModalPropLexicon (Form Bool) where
          ruleOf MN4 = liftAbsRule $ modalNegation !! 3
          ruleOf DiaD1 = diamondDerivation !! 0
          ruleOf DiaD2 = diamondDerivation !! 1
+
+         premisesOf (MoPL x) =  map (liftAbsSeq TheWorld . liftSequent) (premisesOf x)
+         premisesOf x = upperSequents (ruleOf x)
+
+         conclusionOf (MoPL x) = liftAbsSeq TheWorld . liftSequent $ conclusionOf x
+         conclusionOf x = lowerSequent (ruleOf x)
 
          indirectInference (MoPL x) = indirectInference (MoP x)
          indirectInference ND = Just (TypedProof (ProofType 0 1))
