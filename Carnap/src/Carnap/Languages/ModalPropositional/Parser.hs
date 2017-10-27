@@ -115,6 +115,6 @@ parseWorldVar s = choice [try $ do _ <- string "i_"
                                    return $ worldVar [c]
                          ]
 
-parseWorld :: (IndexingLang lex (Term World) unindexed indexed, Monad m) => ParsecT String u m (FixLang lex (Term World))
+parseWorld :: (IndexingLang lex (Term World) (Form c) (Form b), Monad m) => ParsecT String u m (FixLang lex (Term World))
 parseWorld = do digits <- many1 digit
                 return $ world (read digits)

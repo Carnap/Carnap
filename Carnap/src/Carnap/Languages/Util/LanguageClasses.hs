@@ -1,8 +1,9 @@
-{-#LANGUAGE MultiParamTypeClasses, FunctionalDependencies, RankNTypes, FlexibleContexts, FlexibleInstances, TypeSynonymInstances, TypeOperators, GADTs, ScopedTypeVariables #-}
+{-#LANGUAGE MultiParamTypeClasses, DataKinds, UndecidableInstances, FunctionalDependencies, RankNTypes, FlexibleContexts, FlexibleInstances, TypeSynonymInstances, TypeOperators, GADTs, ScopedTypeVariables #-}
 module Carnap.Languages.Util.LanguageClasses where
 
 import Carnap.Core.Data.AbstractSyntaxDataTypes
 import Carnap.Core.Data.Util (incArity)
+import Carnap.Core.Util (Nat(Zero))
 import Carnap.Languages.Util.GenericConstructors
 import Data.Typeable
 import Control.Lens (Prism', prism',review,only)
@@ -324,6 +325,21 @@ class (Typeable c, Typeable b, PrismLink (FixLang lex) (Function (IntFunc b c) (
                              (\x -> case x of (Function (Func a' n) a'') | arityInt a == arityInt a' -> Just n
                                               _ -> Nothing)
 
+class (Typeable c, Typeable b, PrismLink (FixLang lex) (Function (SchematicIntFunc b c) (FixLang lex))) 
+        => PrismPolyadicSchematicFunction lex c b where
+
+        _sfuncIdx :: Typeable ret => Arity (Term c) (Term b) n ret -> Prism' (FixLang lex ret) Int
+        _sfuncIdx a = link_PrismPolyadicSchematicFunction . (sfuncIndex a)
+
+        link_PrismPolyadicSchematicFunction :: Typeable ret => Prism' (FixLang lex ret) (Function (SchematicIntFunc b c) (FixLang lex) ret)
+        link_PrismPolyadicSchematicFunction = link 
+
+        sfuncIndex :: Arity (Term c) (Term b) n ret -> Prism' (Function (SchematicIntFunc b c) (FixLang lex) ret) Int
+        sfuncIndex a = prism' (\n -> Function (SFunc a n) a) 
+                             (\x -> case x of (Function (SFunc a' n) a'') | arityInt a == arityInt a' -> Just n
+                                              _ -> Nothing)
+
+
 --------------------------------------------------------
 --1.4. Quantifiers
 --------------------------------------------------------
@@ -359,13 +375,22 @@ class (Typeable b, Typeable c, PrismLink (FixLang lex) (Quantifiers (StandardQua
 --  1.5 Exotica  --
 -------------------
 
-class IndexingLang lex index indexed unindexed | lex -> indexed unindexed where
+class IndexingLang lex index indexed unindexed | lex -> index indexed unindexed where
     atWorld :: FixLang lex unindexed -> FixLang lex index -> FixLang lex indexed
     world :: Int -> FixLang lex index
     worldScheme :: Int -> FixLang lex index
 
+
+instance {-#OVERLAPPABLE#-} 
+        (PrismIndexing lex a b c, PrismIndexedConstant lex a, PrismPolyadicSchematicFunction lex a a
+        ) => IndexingLang lex (Term a) (Form c) (Form b) where
+       atWorld = curry (review $ binaryOpPrism _indexer)
+       world = review _constIdx 
+       worldScheme = review (_sfuncIdx (AZero :: Arity (Term a) (Term a) Zero (Term a)))
+
+
 class (Typeable a, Typeable b, Typeable c, PrismLink (FixLang lex) (Indexer a b c (FixLang lex))) 
-        => PrismIndexing lex a b c where
+        => PrismIndexing lex a b c | lex -> a b c where
 
         _indexer :: Prism' (FixLang lex (Form b -> Term a -> Form c)) ()
         _indexer = link_indexer . indexer
