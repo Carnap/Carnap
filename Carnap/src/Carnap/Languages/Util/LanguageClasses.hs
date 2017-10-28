@@ -260,6 +260,26 @@ class (Typeable c, Typeable b, PrismLink (FixLang lex) (Predicate (IntPred b c) 
 instance {-#OVERLAPPABLE#-} PrismPolyadicPredicate lex c b => PolyadicPredicateLanguage (FixLang lex) (Term c) (Form b) where
         ppn n a = review (_predIdx a) n
 
+class PolyadicSchematicPredicateLanguage lang arg ret where
+        pphin :: Typeable ret' => Int -> Arity arg ret n ret' -> lang ret'
+
+class (Typeable c, Typeable b, PrismLink (FixLang lex) (Predicate (IntPred b c) (FixLang lex))) 
+        => PrismPolyadicSchematicPredicate lex c b where
+
+        _spredIdx :: Typeable ret => Arity (Term c) (Form b) n ret -> Prism' (FixLang lex ret) Int
+        _spredIdx a = link_PrismPolyadicSchematicPredicate . (spredIndex a)
+
+        link_PrismPolyadicSchematicPredicate :: Typeable ret => Prism' (FixLang lex ret) (Predicate (SchematicIntPred b c) (FixLang lex) ret)
+        link_PrismPolyadicSchematicPredicate = link 
+
+        spredIndex :: Arity (Term c) (Form b) n ret -> Prism' (Predicate (SchematicIntPred b c) (FixLang lex) ret) Int
+        spredIndex a = prism' (\n -> Predicate (SPred a n) a) 
+                             (\x -> case x of (Predicate (SPred a' n) a'') | arityInt a == arityInt a' -> Just n
+                                              _ -> Nothing)
+
+instance {-#OVERLAPPABLE#-} PrismPolyadicSchematicPredicate lex c b => PolyadicSchematicPredicateLanguage (FixLang lex) (Term c) (Form b) where
+        pphin n a = review (_spredIdx a) n
+
 class EqLanguage l t where
         equals :: t -> t -> l
 
@@ -348,6 +368,11 @@ class QuantLanguage l t where
         lall  :: String -> (t -> l) -> l
         lsome :: String -> (t -> l) -> l
 
+instance {-#OVERLAPPABLE#-} 
+        (PrismStandardQuant lex b c) => QuantLanguage (FixLang lex (Form b)) (FixLang lex (Term c)) where
+        lall s = review (unaryOpPrism (_all . only s)) . LLam 
+        lsome s = review (unaryOpPrism (_some . only s)) . LLam
+
 class (Typeable b, Typeable c, PrismLink (FixLang lex) (Quantifiers (StandardQuant b c) (FixLang lex))) 
         => PrismStandardQuant lex b c where
 
@@ -377,9 +402,10 @@ class (Typeable b, Typeable c, PrismLink (FixLang lex) (Quantifiers (StandardQua
 
 class IndexingLang lex index indexed unindexed | lex -> index indexed unindexed where
     atWorld :: FixLang lex unindexed -> FixLang lex index -> FixLang lex indexed
+    (./.) :: FixLang lex unindexed -> FixLang lex index -> FixLang lex indexed
+    (./.) = atWorld
     world :: Int -> FixLang lex index
     worldScheme :: Int -> FixLang lex index
-
 
 instance {-#OVERLAPPABLE#-} 
         (PrismIndexing lex a b c, PrismIndexedConstant lex a, PrismPolyadicSchematicFunction lex a a
@@ -387,7 +413,6 @@ instance {-#OVERLAPPABLE#-}
        atWorld = curry (review $ binaryOpPrism _indexer)
        world = review _constIdx 
        worldScheme = review (_sfuncIdx (AZero :: Arity (Term a) (Term a) Zero (Term a)))
-
 
 class (Typeable a, Typeable b, Typeable c, PrismLink (FixLang lex) (Indexer a b c (FixLang lex))) 
         => PrismIndexing lex a b c | lex -> a b c where

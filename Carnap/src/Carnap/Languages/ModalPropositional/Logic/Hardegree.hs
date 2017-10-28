@@ -11,6 +11,7 @@ import Carnap.Languages.ModalPropositional.Syntax
 import Carnap.Languages.ModalPropositional.Parser
 import Carnap.Languages.PurePropositional.Logic.Rules (DerivedRule)
 import Carnap.Languages.Util.GenericConstructors (StandardQuant(..))
+import Carnap.Languages.Util.LanguageClasses
 import Carnap.Calculi.NaturalDeduction.Syntax
 import Carnap.Calculi.NaturalDeduction.Parser
 import Carnap.Calculi.NaturalDeduction.Checker
@@ -359,10 +360,12 @@ instance Inference HardegreeL AbsoluteModalPropLexicon (Form Bool) where
          ruleOf DiaD1 = diamondDerivation !! 0
          ruleOf DiaD2 = diamondDerivation !! 1
 
-         premisesOf (MoPL x) =  map (liftAbsSeq TheWorld . liftSequent) (premisesOf x)
+         premisesOf (MoPL x) | x `elem` [ID1,ID2,ID3,ID4,FalI,FalO] = upperSequents (ruleOf (MoPL x))
+                             | otherwise = map (liftAbsSeq SomeWorld . liftSequent) (premisesOf x)
          premisesOf x = upperSequents (ruleOf x)
 
-         conclusionOf (MoPL x) = liftAbsSeq TheWorld . liftSequent $ conclusionOf x
+         conclusionOf (MoPL x)  | x `elem` [ID1,ID2,ID3,ID4,FalI,FalO] = lowerSequent (ruleOf (MoPL x))
+                                | otherwise = liftAbsSeq SomeWorld (liftSequent $ conclusionOf x)
          conclusionOf x = lowerSequent (ruleOf x)
 
          indirectInference (MoPL x) = indirectInference (MoP x)
@@ -374,13 +377,13 @@ instance Inference HardegreeL AbsoluteModalPropLexicon (Form Bool) where
          isAssumption _ = False
 
          restriction ND = Just (eigenConstraint SomeWorld 
-                                                   (SS ((SeqNec $ SeqPhiA 1) ://: SomeOtherWorld)) 
+                                                   (SS ((SeqNec $ SeqPhiA 1) ./. SomeOtherWorld)) 
                                                    (absgamma 1))
          restriction DiaD1 = Just (eigenConstraint SomeWorld 
-                                                   (SS ((SeqPos $ SeqPhiA 1) ://: SomeOtherWorld) :-: SS (SeqPhiA 2 ://: SomeThirdWorld)) 
+                                                   (SS ((SeqPos $ SeqPhiA 1) ./. SomeOtherWorld) :-: SS (SeqPhiA 2 ./. SomeThirdWorld)) 
                                                    (absgamma 1 :+: absgamma 2))
          restriction DiaD2 = Just (eigenConstraint SomeWorld 
-                                                   (SS ((SeqPos $ SeqPhiA 1) ://: SomeOtherWorld) :-: SS (SeqPhiA 2 ://: SomeThirdWorld)) 
+                                                   (SS ((SeqPos $ SeqPhiA 1) ./. SomeOtherWorld) :-: SS (SeqPhiA 2 ./. SomeThirdWorld)) 
                                                    (absgamma 1 :+: absgamma 2))
          restriction _     = Nothing
         
