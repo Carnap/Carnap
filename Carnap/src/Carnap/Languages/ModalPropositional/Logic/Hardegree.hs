@@ -223,8 +223,8 @@ instance Inference HardegreeWTL WorldTheoryPropLexicon (Form (World -> Bool))whe
          isAssumption (MoP As) = True
          isAssumption _ = False
 
-         restriction WTUG     = Just (eigenConstraint SomeWorld (SS (SeqBind (All "v") $ phi 1)) (wtlgamma 1))
-         restriction WTED1    = Just (eigenConstraint SomeWorld (SS (SeqBind (Some "v") $ phi 1) :-: SS (SeqPhi 1)) (wtlgamma 1 :+: wtlgamma 2))
+         restriction WTUG     = Just (eigenConstraint someWorld (SS (lall "v" $ phi 1)) (wtlgamma 1))
+         restriction WTED1    = Just (eigenConstraint someWorld (SS (lsome "v" $ phi 1) :-: SS (SeqPhi 1)) (wtlgamma 1 :+: wtlgamma 2))
          restriction _      = Nothing
 
 parseHardegreeModalProp :: Parsec String u [ModalPropRule]
@@ -376,14 +376,14 @@ instance Inference HardegreeL AbsoluteModalPropLexicon (Form Bool) where
          isAssumption (MoPL As) = True
          isAssumption _ = False
 
-         restriction ND = Just (eigenConstraint SomeWorld 
-                                                   (SS ((SeqNec $ SeqPhiA 1) ./. SomeOtherWorld)) 
+         restriction ND = Just (eigenConstraint someWorld
+                                                   (SS ((nec $ phin 1) ./. someOtherWorld)) 
                                                    (absgamma 1))
-         restriction DiaD1 = Just (eigenConstraint SomeWorld 
-                                                   (SS ((SeqPos $ SeqPhiA 1) ./. SomeOtherWorld) :-: SS (SeqPhiA 2 ./. SomeThirdWorld)) 
+         restriction DiaD1 = Just (eigenConstraint someWorld
+                                                   (SS ((pos $ phin 1) ./. someOtherWorld) :-: SS (phin 2 ./. someThirdWorld)) 
                                                    (absgamma 1 :+: absgamma 2))
-         restriction DiaD2 = Just (eigenConstraint SomeWorld 
-                                                   (SS ((SeqPos $ SeqPhiA 1) ./. SomeOtherWorld) :-: SS (SeqPhiA 2 ./. SomeThirdWorld)) 
+         restriction DiaD2 = Just (eigenConstraint someWorld
+                                                   (SS ((pos $ phin 1) ./. someOtherWorld) :-: SS (phin 2 ./. someThirdWorld)) 
                                                    (absgamma 1 :+: absgamma 2))
          restriction _     = Nothing
         
