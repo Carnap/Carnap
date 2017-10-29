@@ -21,6 +21,7 @@ import Carnap.Languages.ClassicalSequent.Parser
 import Carnap.Languages.Util.LanguageClasses
 import Carnap.Languages.Util.GenericConstructors
 import Carnap.Languages.PurePropositional.Logic.Rules
+import Carnap.Calculi.NaturalDeduction.Syntax (assertion)
 import Data.Typeable
 import Data.List (intercalate)
 
@@ -107,6 +108,21 @@ eigenConstraint c suc ant sub
           suc' = applySub sub suc
           -- XXX : this is not the most efficient way of checking
           -- imaginable.
+          occursIn x y = not $ (subst x (static 0) y) =* y
+
+globalEigenConstraint c (Left ded) lineno r sub =
+        case foundIn ded 1 of
+            Just (f,n) -> Just $ "the index " ++ show c' ++ " appears not to be fresh - it occurs in " ++ show f ++ " on line " ++ show n
+            Nothing -> case c' of
+                          TheWorld -> Just "the index '0' is never counts as fresh, since it has a special meaning"
+                          _ -> Nothing
+    where c' = applySub sub c
+          foundIn [] n = Nothing
+          foundIn (d:ded') n = case assertion d of
+                                   Just f | n >= lineno -> Nothing
+                                          | c' `occursIn` (liftLang f) -> Just (f, n)
+                                          | otherwise -> foundIn ded' (n + 1)
+                                   Nothing -> foundIn ded' (n + 1)
           occursIn x y = not $ (subst x (static 0) y) =* y
 
 instance Eq (WorldTheorySequentCalc a) where
@@ -254,6 +270,11 @@ boxDerivation =
 boxOut :: ModalRule lex b
 boxOut = 
         [ GammaV 1 :|-: SS (nec (phin 1) ./. someWorld) ]
+        ∴ GammaV 1 :|-: SS (phin 1 ./. someOtherWorld)
+
+diamondOut :: ModalRule lex b
+diamondOut = 
+        [ GammaV 1 :|-: SS (pos (phin 1) ./. someWorld) ]
         ∴ GammaV 1 :|-: SS (phin 1 ./. someOtherWorld)
 
 diamondIn :: ModalRule lex b

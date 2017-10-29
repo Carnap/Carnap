@@ -327,7 +327,8 @@ hardegreeWTLCalc = NaturalDeductionCalc
 --  2. Absolute Modal Logic (S5)  --
 ------------------------------------
 
-data HardegreeL = MoPL ModalPropRule | BoxOut | DiaIn | ND | DiaD1 | DiaD2
+data HardegreeL = MoPL ModalPropRule | BoxOut | DiaOut
+                  | DiaIn | ND | DiaD1 | DiaD2 
                   | MN1 | MN2 | MN3 | MN4
                deriving (Eq)
 
@@ -335,6 +336,7 @@ instance Show HardegreeL where
          show (MoPL p) = show p
          show BoxOut = "□O"
          show DiaIn = "◇I"
+         show DiaOut = "◇O"
          show ND = "□D"
          show DiaD1 = "◇D"
          show DiaD2 = "◇D"
@@ -352,6 +354,7 @@ instance Inference HardegreeL AbsoluteModalPropLexicon (Form Bool) where
          ruleOf (MoPL FalO)     = worldlyFalsumElimination
          ruleOf ND = boxDerivation
          ruleOf DiaIn = diamondIn
+         ruleOf DiaOut = diamondOut
          ruleOf BoxOut = boxOut
          ruleOf MN1 = liftAbsRule $ modalNegation !! 0
          ruleOf MN2 = liftAbsRule $ modalNegation !! 1
@@ -386,6 +389,9 @@ instance Inference HardegreeL AbsoluteModalPropLexicon (Form Bool) where
                                                    (SS ((pos $ phin 1) ./. someOtherWorld) :-: SS (phin 2 ./. someThirdWorld)) 
                                                    (absgamma 1 :+: absgamma 2))
          restriction _     = Nothing
+
+         globalRestriction (Left ded) n DiaOut = Just (globalEigenConstraint someOtherWorld (Left ded) n DiaOut)
+         globalRestriction _ _ _ = Nothing
         
 parseHardegreeL :: Parsec String u [HardegreeL]
 parseHardegreeL = (map MoPL <$> parseHardegreeModalProp) 
@@ -394,6 +400,7 @@ parseHardegreeL = (map MoPL <$> parseHardegreeModalProp)
                         , ("[]D"     , return [ND])
                         , ("DiaD"    , return [DiaD1,DiaD2])
                         , ("<>D"     , return [DiaD1,DiaD2])
+                        , ("<>O"     , return [DiaOut])
                         , ("[]O"     , return [BoxOut])
                         , ("<>I"     , return [DiaIn])
                         , ("MN"      , return [MN1,MN2,MN3,MN4])
