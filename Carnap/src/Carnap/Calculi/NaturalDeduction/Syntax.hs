@@ -227,9 +227,9 @@ data NaturalDeductionCalc r lex sem der = NaturalDeductionCalc
         { ndRenderer :: RenderStyle
         , ndParseProof :: Map String der -> String -> [DeductionLine r lex sem]
         , ndProcessLine :: (Sequentable lex , Inference r lex sem, MonadVar (ClassicalSequentOver lex) (State Int))
-                                => Deduction r lex sem -> Int -> FeedbackLine lex sem
+                                => Deduction r lex sem -> Restrictor r lex -> Int -> FeedbackLine lex sem
         , ndProcessLineMemo :: (Sequentable lex , Inference r lex sem, MonadVar (ClassicalSequentOver lex) (State Int))
-                                => Maybe (ProofMemoRef lex sem -> Deduction r lex sem -> Int -> IO (FeedbackLine lex sem))
+                                => Maybe (ProofMemoRef lex sem -> Deduction r lex sem -> Restrictor r lex -> Int -> IO (FeedbackLine lex sem))
         , ndParseSeq :: Parsec String () (ClassicalSequentOver lex (Sequent sem))
         }
 
@@ -250,6 +250,10 @@ doubleProof = TypedProof (ProofType 0 2)
 
 assumptiveProof = TypedProof (ProofType 1 1)
 
+type Restriction lex = Maybe ([Equation (ClassicalSequentOver lex)] -> Maybe String)
+
+type Restrictor r lex = Int -> r -> Restriction lex
+
 class ( FirstOrder (ClassicalSequentOver lex)
       , ACUI (ClassicalSequentOver lex)) => 
         Inference r lex sem | r -> lex sem where
@@ -263,9 +267,15 @@ class ( FirstOrder (ClassicalSequentOver lex)
         ruleOf :: r -> SequentRule lex sem
         ruleOf r = SequentRule (premisesOf r) (conclusionOf r)
 
-        --restrictions, based on given substitutions
-        restriction :: r -> Maybe ([Equation (ClassicalSequentOver lex)] -> Maybe String)
+        --local restrictions, based only on given substitutions
+        restriction :: r -> Restriction lex 
         restriction _ = Nothing
+
+        --restrictions, based on given substitutions, whole derivation, and position in derivation
+        --XXX: the either here is a bit of a hack. Probably all deductions
+        --should be preprocessed into deduction trees.
+        globalRestriction :: Either (Deduction r lex sem) (DeductionTree r lex sem) -> Restrictor r lex
+        globalRestriction _ _ _ = Nothing
         
         indirectInference :: r -> Maybe IndirectArity
         indirectInference = const Nothing
@@ -280,4 +290,4 @@ class ( FirstOrder (ClassicalSequentOver lex)
 
 --Proof Tree to Sequent Tree
 --
--- Proof Tree to proof skeleton
+-- Proof Tree to proof skeleton)
