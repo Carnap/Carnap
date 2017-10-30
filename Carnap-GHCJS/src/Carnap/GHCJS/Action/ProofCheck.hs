@@ -84,7 +84,7 @@ data Checker r lex sem der = Checker
         , sequent :: Maybe (ClassicalSequentOver lex (Sequent sem))
         , threadRef :: IORef (Maybe ThreadId)
         , proofDisplay :: Maybe Element
-        , proofMemo :: ProofMemoRef lex sem
+        , proofMemo :: ProofMemoRef lex sem r
         }
 
 activateChecker ::  IORef [(String,P.DerivedRule)] -> Document -> Maybe IOGoal -> IO ()

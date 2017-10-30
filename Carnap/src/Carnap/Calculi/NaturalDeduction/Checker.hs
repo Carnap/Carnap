@@ -115,7 +115,7 @@ hoProcessLineHardegreeMemo ::
   , MonadVar (ClassicalSequentOver lex) (State Int)
   , MaybeStaticVar (lex (ClassicalSequentOver lex))
   , Show (ClassicalSequentOver lex (Succedent sem)), Show r
-  ) => ProofMemoRef lex sem -> Deduction r lex sem -> Restrictor r lex -> Int -> IO (FeedbackLine lex sem)
+  ) => ProofMemoRef lex sem r -> Deduction r lex sem -> Restrictor r lex -> Int -> IO (FeedbackLine lex sem)
 hoProcessLineHardegreeMemo ref ded res n = case ded !! (n - 1) of
   --special case to catch QedLines not being cited in justifications
   (QedLine _ _ _) -> return $ Left $ NoResult n
@@ -155,7 +155,7 @@ hoProcessLineMontegueMemo ::
   , MonadVar (ClassicalSequentOver lex) (State Int)
   , MaybeStaticVar (lex (ClassicalSequentOver lex))
   , Show (ClassicalSequentOver lex (Succedent sem)), Show r
-  ) => ProofMemoRef lex sem -> Deduction r lex sem -> Restrictor r lex -> Int -> IO (FeedbackLine lex sem)
+  ) => ProofMemoRef lex sem r -> Deduction r lex sem -> Restrictor r lex -> Int -> IO (FeedbackLine lex sem)
 hoProcessLineMontegueMemo ref ded res n = case ded !! (n - 1) of
   --special case to catch QedLines not being cited in justifications
   (QedLine _ _ _) -> return $ Left $ NoResult n
@@ -195,7 +195,7 @@ hoProcessLineFitchMemo ::
   , MonadVar (ClassicalSequentOver lex) (State Int)
   , MaybeStaticVar (lex (ClassicalSequentOver lex))
   , Show (ClassicalSequentOver lex (Succedent sem)), Show r
-  ) => ProofMemoRef lex sem -> Deduction r lex sem -> Restrictor r lex -> Int -> IO (FeedbackLine lex sem)
+  ) => ProofMemoRef lex sem r -> Deduction r lex sem -> Restrictor r lex -> Int -> IO (FeedbackLine lex sem)
 hoProcessLineFitchMemo ref ded res n = case ded !! (n - 1) of
   (QedLine _ _ _) -> return $ Left $ NoResult n
   _ -> case toProofTreeFitch ded n of
@@ -302,9 +302,12 @@ hoseqFromNode ::
     , MaybeStaticVar (lex (ClassicalSequentOver lex))
     , Typeable sem
     ) =>  Int -> [r] -> [ClassicalSequentOver lex (Sequent sem)] -> ClassicalSequentOver lex (Succedent sem)
-              -> Restrictor r lex
-              -> [Either (ProofErrorMessage lex) [ClassicalSequentOver lex (Sequent sem)]]
-hoseqFromNode lineno rules prems conc res = 
+              -> [Either (ProofErrorMessage lex) 
+                         [( ClassicalSequentOver lex (Sequent sem)
+                          , [Equation (ClassicalSequentOver lex)]
+                          , r
+                          )]]
+hoseqFromNode lineno rules prems conc = 
         do r <- rules
            rps <- permutations (premisesOf r) 
            if length rps /= length prems 
@@ -320,9 +323,22 @@ hoseqFromNode lineno rules prems conc res =
                                    let subbedconc = applySub hosub rconc
                                    let prob = (zipWith (:=:) (map (pureBNF . view lhs) subbedrule) 
                                                              (map (view lhs) prems))
-                                   case hoacuisolve r hosub prob (res lineno r) of 
-                                     Right s -> return $ Right $ map (\x -> antecedentNub $ applySub x subbedconc) s
-                                     Left e -> return $ Left $ renumber lineno e
+                                   case evalState (acuiUnifySys (const False) prob) (0 :: Int) of
+                                       [] -> return $ Left $ renumber lineno $ NoUnify [prob] 0
+                                       subs -> return $ Right $ map (\x -> (antecedentNub $ applySub x subbedconc,x,r)) (map (++ hosub) subs)
+
+
+-- hoacuisolve r sub1 eqs res = 
+--         case evalState (acuiUnifySys (const False) eqs) (0 :: Int) of
+--           [] -> Left $ NoUnify [eqs] 0
+--           subs -> case (restriction r,res) of
+--                     (Just rst, Just rst') -> doCheck rst subs >>= doCheck rst'
+--                     (_, Just rst') -> doCheck rst' subs
+--                     (Just rst,_) -> doCheck rst subs
+--                     (_,_) -> return subs
+                                   -- case hoacuisolve r hosub prob (res lineno r) of 
+                                   --   Right s -> 
+                                   --   Left e -> 
 
 reduceProofTree :: 
     ( Inference r lex sem
@@ -341,10 +357,10 @@ hoReduceProofTree ::
     , StaticVar (ClassicalSequentOver lex)
     , MaybeStaticVar (lex (ClassicalSequentOver lex))
     , Typeable sem
-    ) =>  Restrictor r lex -> ProofTree r lex sem ->  FeedbackLine lex sem
+    ) =>  Restrictor r lex -> ProofTree r lex sem -> FeedbackLine lex sem
 hoReduceProofTree res (Node (ProofLine no cont rules) ts) =  
         do prems <- mapM (hoReduceProofTree res) ts
-           rslt <- reduceResult no $ hoseqFromNode no rules prems cont res
+           (rslt, sub, rule) <- reduceResult no $ hoseqFromNode no rules prems cont 
            -- XXX: we need to rebuild the term here to make sure that there
            -- are no unevaluated substitutions lurking inside under
            -- lambdas, with stale variables in trapped in closures.
@@ -358,18 +374,27 @@ hoReduceProofTreeMemo ::
     , MaybeStaticVar (lex (ClassicalSequentOver lex))
     , Hashable (ProofTree r lex sem)
     , Typeable sem
-    ) =>  ProofMemoRef lex sem -> Restrictor r lex -> ProofTree r lex sem ->  IO (FeedbackLine lex sem)
+    ) =>  ProofMemoRef lex sem r -> Restrictor r lex -> ProofTree r lex sem ->  IO (FeedbackLine lex sem)
 hoReduceProofTreeMemo ref res pt@(Node (ProofLine no cont rules) ts) =  
         do thememo <- readIORef ref
            let thehash = hash pt
            case M.lookup thehash thememo of
-               Just x -> return x
+               Just x -> return $ checkRestrictions x
                _      -> do prems <- mapM (hoReduceProofTreeMemo ref res) ts
                             let x = do prems' <- sequence prems 
-                                       rslt <- reduceResult no $ hoseqFromNode no rules prems' cont res
-                                       return $ rebuild $ evalState (toBNF (rebuild rslt)) (0 :: Int)
+                                       (rslt, sub, rule) <- reduceResult no $ hoseqFromNode no rules prems' cont
+                                       let rslt' = rebuild $ evalState (toBNF (rebuild rslt)) (0 :: Int)
+                                       return (rslt', sub, rule)
                             writeIORef ref (M.insert thehash x thememo)
-                            return x
+                            return $ checkRestrictions x
+    where checkAgainst (Just f) sub = case f sub of
+                                          Nothing -> Right sub
+                                          Just s -> Left $ GenericError s 0
+          checkAgainst Nothing sub = Right sub
+          checkRestrictions x = do (rslt, sub, rule) <- x
+                                   checkAgainst (res no rule) sub
+                                   checkAgainst (restriction rule) sub
+                                   return rslt
 
 fosolve :: 
     ( FirstOrder (ClassicalSequentOver lex)
@@ -396,26 +421,26 @@ acuisolve eqs =
           [] -> Left $ NoUnify [eqs] 0
           subs -> Right subs
 
-hoacuisolve :: 
-    ( Inference r lex sem
-    , ACUI (ClassicalSequentOver lex)
-    , MonadVar (ClassicalSequentOver lex) (State Int)
-    ) =>  r -> [Equation (ClassicalSequentOver lex)] -> [Equation (ClassicalSequentOver lex)] 
-            -> Restriction lex
-            -> Either (ProofErrorMessage lex) [[Equation (ClassicalSequentOver lex)]]
-hoacuisolve r sub1 eqs res = 
-        case evalState (acuiUnifySys (const False) eqs) (0 :: Int) of
-          [] -> Left $ NoUnify [eqs] 0
-          subs -> case (restriction r,res) of
-                    (Just rst, Just rst') -> doCheck rst subs >>= doCheck rst'
-                    (_, Just rst') -> doCheck rst' subs
-                    (Just rst,_) -> doCheck rst subs
-                    (_,_) -> return subs
-    where checkAgainst f (l:ls)  = case f (sub1 ++ l) of
-                                 Nothing -> Right l : checkAgainst f ls
-                                 Just s -> Left s : checkAgainst f ls
-          checkAgainst f []      = []
-          doCheck rst subs = case partitionEithers $ checkAgainst rst subs of
-                                           (s:_,[]) -> Left $ GenericError s 0
-                                           (_,subs') -> Right subs'
+-- hoacuisolve :: 
+--     ( Inference r lex sem
+--     , ACUI (ClassicalSequentOver lex)
+--     , MonadVar (ClassicalSequentOver lex) (State Int)
+--     ) =>  r -> [Equation (ClassicalSequentOver lex)] -> [Equation (ClassicalSequentOver lex)] 
+--             -> Restriction lex
+--             -> Either (ProofErrorMessage lex) [[Equation (ClassicalSequentOver lex)]]
+-- hoacuisolve r sub1 eqs res = 
+--         case evalState (acuiUnifySys (const False) eqs) (0 :: Int) of
+--           [] -> Left $ NoUnify [eqs] 0
+--           subs -> case (restriction r,res) of
+--                     (Just rst, Just rst') -> doCheck rst subs >>= doCheck rst'
+--                     (_, Just rst') -> doCheck rst' subs
+--                     (Just rst,_) -> doCheck rst subs
+--                     (_,_) -> return subs
+--     where checkAgainst f (l:ls)  = case f (sub1 ++ l) of
+--                                  Nothing -> Right l : checkAgainst f ls
+--                                  Just s -> Left s : checkAgainst f ls
+--           checkAgainst f []      = []
+--           doCheck rst subs = case partitionEithers $ checkAgainst rst subs of
+--                                            (s:_,[]) -> Left $ GenericError s 0
+--                                            (_,subs') -> Right subs'
 

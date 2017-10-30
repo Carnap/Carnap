@@ -225,7 +225,11 @@ type SequentTree lex sem = Tree (Int, ClassicalSequentOver lex (Sequent sem))
 
 data RenderStyle = MontegueStyle | FitchStyle
 
-type ProofMemoRef lex sem = IORef (Map Int (FeedbackLine lex sem))
+type ProofMemoRef lex sem r = IORef (Map Int (Either (ProofErrorMessage lex) 
+                                                     ( ClassicalSequentOver lex (Sequent sem)
+                                                     , [Equation (ClassicalSequentOver lex)]
+                                                     , r)
+                                           ))
 
 data NaturalDeductionCalc r lex sem der = NaturalDeductionCalc 
         { ndRenderer :: RenderStyle
@@ -233,7 +237,7 @@ data NaturalDeductionCalc r lex sem der = NaturalDeductionCalc
         , ndProcessLine :: (Sequentable lex , Inference r lex sem, MonadVar (ClassicalSequentOver lex) (State Int))
                                 => Deduction r lex sem -> Restrictor r lex -> Int -> FeedbackLine lex sem
         , ndProcessLineMemo :: (Sequentable lex , Inference r lex sem, MonadVar (ClassicalSequentOver lex) (State Int))
-                                => Maybe (ProofMemoRef lex sem -> Deduction r lex sem -> Restrictor r lex -> Int -> IO (FeedbackLine lex sem))
+                                => Maybe (ProofMemoRef lex sem r -> Deduction r lex sem -> Restrictor r lex -> Int -> IO (FeedbackLine lex sem))
         , ndParseSeq :: Parsec String () (ClassicalSequentOver lex (Sequent sem))
         }
 
