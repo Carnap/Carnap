@@ -272,9 +272,12 @@ foseqFromNode ::
     , MonadVar (ClassicalSequentOver lex) (State Int)
     , Typeable sem
     ) =>  Int -> [r] -> [ClassicalSequentOver lex (Sequent sem)] -> ClassicalSequentOver lex (Succedent sem)
-              -> Restrictor r lex
-              -> [Either (ProofErrorMessage lex) [ClassicalSequentOver lex (Sequent sem)]]
-foseqFromNode lineno rules prems conc res = 
+              -> [Either (ProofErrorMessage lex) 
+                         [( ClassicalSequentOver lex (Sequent sem)
+                          , [Equation (ClassicalSequentOver lex)]
+                          , r
+                          )]]
+foseqFromNode lineno rules prems conc = 
         do rrule <- rules
            rprems <- permutations (premisesOf rrule) 
            return $ oneRule rrule rprems
@@ -292,7 +295,7 @@ foseqFromNode lineno rules prems conc res =
                                (zipWith (:=:) 
                                    (map (view lhs) subbedrule) 
                                    (map (view lhs) prems))
-                            return $ map (\x -> antecedentNub $ applySub x subbedconc) acuisubs
+                            return $ map (\x -> (antecedentNub $ applySub x subbedconc,x,r)) (map (++ fosub) acuisubs)
 
 hoseqFromNode :: 
     ( Inference r lex sem
@@ -335,9 +338,10 @@ reduceProofTree ::
     ) => Restrictor r lex -> ProofTree r lex sem ->  FeedbackLine lex sem
 reduceProofTree res (Node (ProofLine no cont rules) ts) =  
         do prems <- mapM (reduceProofTree res) ts
+           (rslt, sub, rule) <- reduceResult no $ foseqFromNode no rules prems cont
            checkAgainst (res no rule) sub
            checkAgainst (restriction rule) sub
-           reduceResult no $ foseqFromNode no rules prems cont res
+           return rslt
 
 hoReduceProofTree :: 
     ( Inference r lex sem
