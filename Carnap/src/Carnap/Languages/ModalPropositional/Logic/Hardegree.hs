@@ -371,7 +371,7 @@ instance Inference HardegreeL AbsoluteModalPropLexicon (Form Bool) where
                                 | otherwise = liftAbsSeq SomeWorld (liftSequent $ conclusionOf x)
          conclusionOf x = lowerSequent (ruleOf x)
 
-         indirectInference (MoPL x) = indirectInference (MoP x)
+         indirectInference (MoPL x) = indirectInference x
          indirectInference ND = Just (TypedProof (ProofType 0 1))
          indirectInference DiaD1 = Just (TypedProof (ProofType 1 1))
          indirectInference DiaD2 = Just (TypedProof (ProofType 1 1))
@@ -412,6 +412,67 @@ parseHardegreeLProof ders = toDeductionHardegree parseHardegreeL absoluteModalPr
 hardegreeLCalc = NaturalDeductionCalc 
     { ndRenderer = MontegueStyle
     , ndParseProof = parseHardegreeLProof
+    , ndProcessLine = hoProcessLineHardegree
+    , ndProcessLineMemo = Just hoProcessLineHardegreeMemo
+    , ndParseSeq = absoluteModalPropSeqParser
+    }
+
+-----------------------------------
+--  3. Relative Modal Logic (K)  --
+-----------------------------------
+
+data HardegreeK = Rel HardegreeL
+               deriving (Eq)
+
+instance Show HardegreeK where
+         show (Rel x) = show x
+
+parseHardegreeK :: Parsec String u [HardegreeK]
+parseHardegreeK = map Rel <$> parseHardegreeL
+
+parseHardegreeKProof ::  Map String DerivedRule -> String -> [DeductionLine HardegreeK AbsoluteModalPropLexicon (Form Bool)]
+parseHardegreeKProof ders = toDeductionHardegree parseHardegreeK relativeModalPropFormulaParser
+
+instance Inference HardegreeK AbsoluteModalPropLexicon (Form Bool) where
+         ruleOf (Rel ND)     = relativeBoxDerivation
+         ruleOf (Rel DiaIn)  = relativeDiamondIn
+         ruleOf (Rel DiaOut) = relativeDiamondOut
+         ruleOf (Rel BoxOut) = relativeBoxOut
+         ruleOf (Rel DiaD1)  = relativeDiamondDerivation !! 0
+         ruleOf (Rel DiaD2)  = relativeDiamondDerivation !! 1
+         ruleOf (Rel x)      = ruleOf x
+
+         premisesOf (Rel (MoPL x)) | x `elem` [ID1,ID2,ID3,ID4,FalI,FalO] = upperSequents (ruleOf (MoPL x))
+                                   | otherwise = map (liftAbsSeq SomeWorld . liftSequent) (premisesOf x)
+         premisesOf x = upperSequents (ruleOf x)
+
+         conclusionOf (Rel (MoPL x))  | x `elem` [ID1,ID2,ID3,ID4,FalI,FalO] = lowerSequent (ruleOf (MoPL x))
+                                      | otherwise = liftAbsSeq SomeWorld (liftSequent $ conclusionOf x)
+         conclusionOf x = lowerSequent (ruleOf x)
+
+         indirectInference (Rel (MoPL x)) = indirectInference x
+         indirectInference (Rel ND) = Just (TypedProof (ProofType 0 1))
+         indirectInference (Rel DiaD1) = Just (TypedProof (ProofType 1 1))
+         indirectInference (Rel DiaD2) = Just (TypedProof (ProofType 1 1))
+
+         isAssumption (Rel (MoPL As)) = True
+         isAssumption _ = False
+
+
+         globalRestriction _ _ (Rel (MoPL As)) = Nothing
+         globalRestriction _ _ (Rel (MoPL Pr)) = Nothing
+         globalRestriction (Left ded) n (Rel DiaD1) = Just (globalEigenConstraint (someWorld `indexcons` someOtherWorld) (Left ded) n (Rel DiaD1))
+         globalRestriction (Left ded) n (Rel DiaD2) = Just (globalEigenConstraint (someWorld `indexcons` someOtherWorld) (Left ded) n (Rel DiaD2))
+         globalRestriction (Left ded) n (Rel DiaOut) = Just (globalEigenConstraint (someWorld `indexcons` someOtherWorld) (Left ded) n (Rel DiaOut))
+         globalRestriction (Left ded) n (Rel ND) = Just (globalEigenConstraint (someWorld `indexcons` someOtherWorld) (Left ded) n (Rel DiaOut))
+         globalRestriction (Left ded) n (Rel DiaIn) = Just (globalOldConstraint (someWorld `indexcons` someOtherWorld) (Left ded) n (Rel DiaIn))
+         globalRestriction (Left ded) n (Rel BoxOut) = Just (globalOldConstraint (someWorld `indexcons` someOtherWorld) (Left ded) n (Rel BoxOut))
+         globalRestriction (Left ded) n (Rel x) = Just (globalOldConstraint someWorld (Left ded) n (Rel x))
+         globalRestriction _ _ _ = Nothing
+
+hardegreeKCalc = NaturalDeductionCalc 
+    { ndRenderer = MontegueStyle
+    , ndParseProof = parseHardegreeKProof
     , ndProcessLine = hoProcessLineHardegree
     , ndProcessLineMemo = Just hoProcessLineHardegreeMemo
     , ndParseSeq = absoluteModalPropSeqParser

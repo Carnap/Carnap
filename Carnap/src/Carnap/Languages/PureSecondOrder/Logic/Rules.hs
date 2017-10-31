@@ -281,5 +281,3 @@ existentialScheme n = iterate incQuant (SOPQuant (SOPSome ('V' : show n) (AZero)
 schematicContextScheme :: Int -> PolyadicallySOL (Form Bool)
 schematicContextScheme n = iterate incSchemeCtx initCtx !! n
     where initCtx = SOPCtx 1 AZero :!$: (SOPScheme 1 AZero)
-
-

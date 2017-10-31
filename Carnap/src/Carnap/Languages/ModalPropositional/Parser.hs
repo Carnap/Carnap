@@ -1,6 +1,6 @@
 {-# LANGUAGE FlexibleContexts #-}
 module Carnap.Languages.ModalPropositional.Parser
-    (modalPropFormulaParser,worldTheoryPropFormulaParser, absoluteModalPropFormulaParser, absoluteModalPropFormulaPreParser)
+    (modalPropFormulaParser,worldTheoryPropFormulaParser, absoluteModalPropFormulaParser, relativeModalPropFormulaParser, absoluteModalPropFormulaPreParser)
 where
 
 import Carnap.Core.Data.AbstractSyntaxDataTypes (Term, Form, FixLang)

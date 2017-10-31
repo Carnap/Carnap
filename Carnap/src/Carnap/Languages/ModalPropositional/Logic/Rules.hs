@@ -21,9 +21,10 @@ import Carnap.Languages.ClassicalSequent.Parser
 import Carnap.Languages.Util.LanguageClasses
 import Carnap.Languages.Util.GenericConstructors
 import Carnap.Languages.PurePropositional.Logic.Rules
-import Carnap.Calculi.NaturalDeduction.Syntax (assertion)
+import Carnap.Calculi.NaturalDeduction.Syntax (DeductionLine(..),depth,assertion)
 import Data.Typeable
 import Data.List (intercalate)
+import Data.Maybe (catMaybes)
 
 --------------------------------------------------------
 --1 Propositional Sequent Calculus
@@ -125,6 +126,24 @@ globalEigenConstraint c (Left ded) lineno r sub =
                                    Nothing -> foundIn ded' (n + 1)
           occursIn x y = not $ (subst x (static 0) y) =* y
 
+globalOldConstraint idx (Left ded) lineno r sub = 
+          if any (idx' `occursIn`) (catMaybes . map (fmap liftLang . assertion) . oldRelevant [] . take lineno $ ded)
+              then Nothing
+              else Just $ "the index " ++ show idx' ++ " appears not to be old, but this rule needs an old index"
+    where idx' = applySub sub idx
+
+          occursIn x y = not $ (subst x (static 0) y) =* y
+
+          oldRelevant accum [] = accum
+          oldRelevant [] (d:ded)  = oldRelevant [d] ded 
+          oldRelevant (a:accum) (d:ded) = if depth d < depth a 
+                                              then let accum' = filter (witnessAt (depth d)) accum in
+                                                  oldRelevant (d:accum') ded 
+                                              else oldRelevant (d:a:accum) ded 
+
+          witnessAt ldepth (ShowWithLine _ sdepth _ _) = sdepth < ldepth
+          witnessAt ldepth l = depth l <= ldepth 
+
 instance Eq (WorldTheorySequentCalc a) where
         (==) = (=*)
 
@@ -153,16 +172,13 @@ instance PrismStandardQuant WorldTheorySequentCalcLex (World -> Bool) (World)
 instance PrismModality WorldTheorySequentCalcLex (World -> Bool)
 instance PrismIndexing WorldTheorySequentCalcLex World (World -> Bool) (World->Bool) 
 instance PrismIndexedConstant WorldTheorySequentCalcLex World
+instance PrismCons WorldTheorySequentCalcLex World
 instance PrismPolyadicSchematicFunction WorldTheorySequentCalcLex World World
 instance PrismPolyadicSchematicPredicate WorldTheorySequentCalcLex World (World -> Bool) 
 
--- instance PrismBooleanConnLex AbsoluteModalPropSequentCalcLex Bool
 instance PrismPropositionalContext AbsoluteModalPropSequentCalcLex Bool
--- instance PrismBooleanConst AbsoluteModalPropSequentCalcLex Bool
--- instance PrismPropLex AbsoluteModalPropSequentCalcLex Bool
--- instance PrismSchematicProp AbsoluteModalPropSequentCalcLex Bool
--- instance PrismModality AbsoluteModalPropSequentCalcLex Bool
 instance PrismIndexedConstant AbsoluteModalPropSequentCalcLex World
+instance PrismCons AbsoluteModalPropSequentCalcLex World
 instance PrismPolyadicSchematicFunction AbsoluteModalPropSequentCalcLex World World
 instance PrismPolyadicSchematicPredicate AbsoluteModalPropSequentCalcLex Word (World -> Bool) 
 
@@ -223,6 +239,7 @@ type ModalRule lex b =
         , BooleanLanguage (ClassicalSequentOver lex (Form (World -> Bool)))
         , BooleanConstLanguage (ClassicalSequentOver lex (Form (World -> Bool)))
         , IndexedSchemePropLanguage (ClassicalSequentOver lex (Form (World -> Bool)))
+        , PrismCons (ClassicalSequentLexOver lex) World
         , ModalLanguage (ClassicalSequentOver lex (Form (World -> Bool)))
         , IndexingLang (ClassicalSequentLexOver lex) (Term World) (Form b) (Form (World -> Bool))
         ) => SequentRule lex (Form b)
@@ -234,6 +251,7 @@ type QuantModalRule lex b =
         , BooleanLanguage (ClassicalSequentOver lex (Form (World -> Bool)))
         , BooleanConstLanguage (ClassicalSequentOver lex (Form (World -> Bool)))
         , IndexedSchemePropLanguage (ClassicalSequentOver lex (Form (World -> Bool)))
+        , PrismCons (ClassicalSequentLexOver lex) World
         , ModalLanguage (ClassicalSequentOver lex (Form (World -> Bool)))
         , IndexingLang (ClassicalSequentLexOver lex) (Term World) (Form b) (Form (World -> Bool))
         ) => SequentRule lex (Form b)
@@ -267,20 +285,39 @@ boxDerivation =
         [ GammaV 1 :|-: SS (phin 1 ./. someWorld) ]
         ∴ GammaV 1 :|-: SS (nec (phin 1) ./. someOtherWorld)
 
+relativeBoxDerivation :: ModalRule lex b
+relativeBoxDerivation = 
+        [ GammaV 1 :|-: SS (phin 1 ./. (someWorld `indexcons` someOtherWorld)) ]
+        ∴ GammaV 1 :|-: SS (nec (phin 1) ./. someWorld)
+
 boxOut :: ModalRule lex b
 boxOut = 
         [ GammaV 1 :|-: SS (nec (phin 1) ./. someWorld) ]
         ∴ GammaV 1 :|-: SS (phin 1 ./. someOtherWorld)
+
+relativeBoxOut :: ModalRule lex b
+relativeBoxOut = [ GammaV 1 :|-: SS (nec (phin 1) ./. (someWorld `indexcons` someOtherWorld)) ]
+                 ∴ GammaV 1 :|-: SS (phin 1 ./. someWorld)
 
 diamondOut :: ModalRule lex b
 diamondOut = 
         [ GammaV 1 :|-: SS (pos (phin 1) ./. someWorld) ]
         ∴ GammaV 1 :|-: SS (phin 1 ./. someOtherWorld)
 
+relativeDiamondOut :: ModalRule lex b
+relativeDiamondOut =
+        [ GammaV 1 :|-: SS (pos (phin 1) ./. someWorld) ]
+        ∴ GammaV 1 :|-: SS (phin 1 ./. (someWorld `indexcons` someOtherWorld))
+
 diamondIn :: ModalRule lex b
 diamondIn = 
         [ GammaV 1 :|-: SS (phin 1 ./. someWorld) ]
         ∴ GammaV 1 :|-: SS (pos (phin 1) ./. someOtherWorld)
+
+relativeDiamondIn :: ModalRule lex b
+relativeDiamondIn = 
+        [ GammaV 1 :|-: SS (phin 1 ./. (someWorld `indexcons` someOtherWorld)) ]
+        ∴ GammaV 1 :|-: SS (nec (phin 1) ./. someOtherWorld)
 
 ---------------------------
 --  1.2 Variation Rules  --
@@ -290,6 +327,7 @@ type AbsoluteModalRuleVariants lex b =
         , BooleanLanguage (ClassicalSequentOver lex (Form (World -> Bool)))
         , BooleanConstLanguage (ClassicalSequentOver lex (Form (World -> Bool)))
         , IndexedSchemePropLanguage (ClassicalSequentOver lex (Form (World -> Bool)))
+        , PrismCons (ClassicalSequentLexOver lex) World
         , ModalLanguage (ClassicalSequentOver lex (Form (World -> Bool)))
         ) => [SequentRule lex (Form b)]
 
@@ -298,6 +336,7 @@ type ModalRuleVariants lex b =
         , BooleanLanguage (ClassicalSequentOver lex (Form (World -> Bool)))
         , BooleanConstLanguage (ClassicalSequentOver lex (Form (World -> Bool)))
         , IndexedSchemePropLanguage (ClassicalSequentOver lex (Form (World -> Bool)))
+        , PrismCons (ClassicalSequentLexOver lex) World
         , ModalLanguage (ClassicalSequentOver lex (Form (World -> Bool)))
         , IndexingLang (ClassicalSequentLexOver lex) (Term World) (Form b) (Form (World -> Bool))
         ) => [SequentRule lex (Form b)]
@@ -308,6 +347,7 @@ type QuantModalRuleVariants lex b =
         , PolyadicSchematicPredicateLanguage (ClassicalSequentOver lex) (Term World) (Form (World -> Bool))
         , BooleanLanguage (ClassicalSequentOver lex (Form (World -> Bool)))
         , BooleanConstLanguage (ClassicalSequentOver lex (Form (World -> Bool)))
+        , PrismCons (ClassicalSequentLexOver lex) World
         , IndexedSchemePropLanguage (ClassicalSequentOver lex (Form (World -> Bool)))
         , ModalLanguage (ClassicalSequentOver lex (Form (World -> Bool)))
         , IndexingLang (ClassicalSequentLexOver lex) (Term World) (Form b) (Form (World -> Bool))
@@ -366,6 +406,19 @@ diamondDerivation = [
                         , SA (phin 1 ./. someWorld) :|-: SS (phin 1 ./. someWorld)            
                         ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (phin 2 ./. someThirdWorld)      
                     ]
+
+relativeDiamondDerivation :: ModalRuleVariants lex b
+relativeDiamondDerivation = [
+                                [ GammaV 1 :+:  SA (phin 1 ./. someWorld) :|-: SS (phin 2 ./. someThirdWorld) 
+                                , GammaV 2 :|-: SS (pos (phin 1) ./. someWorld)   
+                                , SA (phin 1 ./. (someWorld `indexcons` someOtherWorld)) :|-: SS (phin 1 ./. (someWorld `indexcons` someOtherWorld))
+                                ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (phin 2 ./. someThirdWorld)
+                            ,
+                                [ GammaV 1 :|-: SS (phin 2 ./. someThirdWorld) 
+                                , GammaV 2 :|-: SS (pos (phin 1) ./. someWorld)   
+                                , SA (phin 1 ./. (someWorld `indexcons` someOtherWorld)) :|-: SS (phin 1 ./. (someWorld `indexcons` someOtherWorld))            
+                                ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (phin 2 ./. someThirdWorld)      
+                            ]
 
 -----------------------------------
 --  1.2.1.1 Bidirectional Rules  --
