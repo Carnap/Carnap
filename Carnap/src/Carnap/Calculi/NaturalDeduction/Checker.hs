@@ -335,6 +335,8 @@ reduceProofTree ::
     ) => Restrictor r lex -> ProofTree r lex sem ->  FeedbackLine lex sem
 reduceProofTree res (Node (ProofLine no cont rules) ts) =  
         do prems <- mapM (reduceProofTree res) ts
+           checkAgainst (res no rule) sub
+           checkAgainst (restriction rule) sub
            reduceResult no $ foseqFromNode no rules prems cont res
 
 hoReduceProofTree :: 
