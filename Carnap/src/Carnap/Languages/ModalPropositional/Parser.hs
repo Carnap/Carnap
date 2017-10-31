@@ -5,7 +5,14 @@ where
 
 import Carnap.Core.Data.AbstractSyntaxDataTypes (Term, Form, FixLang)
 import Carnap.Languages.ModalPropositional.Syntax
-import Carnap.Languages.Util.LanguageClasses (PrismBooleanConnLex, BooleanLanguage, BooleanConstLanguage, ModalLanguage, IndexedPropLanguage, IndexingLang(..), IndexedSchemePropLanguage)
+import Carnap.Languages.Util.LanguageClasses (PrismBooleanConnLex,
+                                             BooleanLanguage,
+                                             BooleanConstLanguage,
+                                             ModalLanguage,
+                                             IndexedPropLanguage,
+                                             IndexingLang(..),
+                                             IndexConsLang(..),
+                                             IndexedSchemePropLanguage)
 import Carnap.Languages.Util.GenericParsers
 import Text.Parsec
 import Text.Parsec.Expr
@@ -69,6 +76,14 @@ absoluteModalPropFormulaParser = absoluteModalPropFormulaPreParser >>= indexIt
           indexIt f = do char '/'
                          w <- parseWorld
                          return (f `atWorld` w)
+
+relativeModalPropFormulaParser :: Parsec String u AbsoluteModalForm
+relativeModalPropFormulaParser = absoluteModalPropFormulaPreParser >>= indexIt
+    where indexIt :: AbsoluteModalPreForm -> Parsec String u AbsoluteModalForm
+          indexIt f = do char '/'
+                         (w:ws)<- sepBy1 parseWorld (char '-')
+                         let idx = foldl indexcons w ws
+                         return (f `atWorld` idx)
 
 absoluteModalPropFormulaPreParser :: Parsec String u AbsoluteModalPreForm
 absoluteModalPropFormulaPreParser = formulaParser

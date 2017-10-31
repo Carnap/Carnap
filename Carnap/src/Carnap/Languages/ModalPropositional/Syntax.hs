@@ -226,6 +226,8 @@ type AbsoluteModalPropLanguage = ModalPropLanguageWith AbsoluteModalLexicon
 
 instance CopulaSchema AbsoluteModalPropLanguage
 
+instance PrismCons AbsoluteModalPropLexicon World
+
 type AbsoluteModalForm = AbsoluteModalPropLanguage (Form Bool)
 
 type AbsoluteModalPreForm = AbsoluteModalPropLanguage (Form (World -> Bool))
@@ -234,7 +236,6 @@ type AbsoluteModalPreForm = AbsoluteModalPropLanguage (Form (World -> Bool))
 --  6. Utility Functions  --
 ----------------------------
 --convenience class
-
 
 instance IndexingLang AbsoluteModalPropLexicon (Term World) (Form Bool) (Form (World -> Bool)) where
     atWorld x t = FX (Lx2 (Lx1 AtIndex)) :!$: x :!$: t

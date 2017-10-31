@@ -427,6 +427,12 @@ class (Typeable a, Typeable b, Typeable c, PrismLink (FixLang lex) (Indexer a b 
         indexer :: Prism' (Indexer a b c (FixLang lex) (Form b -> Term a -> Form c)) ()
         indexer = prism' (const AtIndex) (const (Just ()))
 
+class IndexConsLang lang index where
+        indexcons :: lang index -> lang index -> lang index
+
+instance {-#OVERLAPPABLE#-} PrismCons lex b => IndexConsLang (FixLang lex) (Term b) where
+        indexcons = curry $ review (binaryOpPrism _cons)
+
 class (Typeable b, PrismLink (FixLang lex) (Function (Cons b) (FixLang lex))) 
         => PrismCons lex b where
 
