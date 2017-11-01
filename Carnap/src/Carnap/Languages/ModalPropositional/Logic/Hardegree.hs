@@ -459,9 +459,6 @@ instance Inference HardegreeK AbsoluteModalPropLexicon (Form Bool) where
          isAssumption (Rel (MoPL As)) = True
          isAssumption _ = False
 
-
-         globalRestriction _ _ (Rel (MoPL As)) = Nothing
-         globalRestriction _ _ (Rel (MoPL Pr)) = Nothing
          globalRestriction (Left ded) n (Rel DiaD1) = Just (globalEigenConstraint (someWorld `indexcons` someOtherWorld) (Left ded) n (Rel DiaD1))
          globalRestriction (Left ded) n (Rel DiaD2) = Just (globalEigenConstraint (someWorld `indexcons` someOtherWorld) (Left ded) n (Rel DiaD2))
          globalRestriction (Left ded) n (Rel DiaOut) = Just (globalEigenConstraint (someWorld `indexcons` someOtherWorld) (Left ded) n (Rel DiaOut))
