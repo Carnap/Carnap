@@ -339,8 +339,8 @@ reduceProofTree ::
 reduceProofTree res (Node (ProofLine no cont rules) ts) =  
         do prems <- mapM (reduceProofTree res) ts
            (rslt, sub, rule) <- reduceResult no $ foseqFromNode no rules prems cont
-           checkAgainst (res no rule) sub
-           checkAgainst (restriction rule) sub
+           checkAgainst (res no rule) no sub
+           checkAgainst (restriction rule) no sub
            return rslt
 
 hoReduceProofTree :: 
@@ -357,8 +357,8 @@ hoReduceProofTree res (Node (ProofLine no cont rules) ts) =
            -- XXX: we need to rebuild the term here to make sure that there
            -- are no unevaluated substitutions lurking inside under
            -- lambdas, with stale variables in trapped in closures.
-           checkAgainst (res no rule) sub
-           checkAgainst (restriction rule) sub
+           checkAgainst (res no rule) no sub
+           checkAgainst (restriction rule) no sub
            return $ rebuild $ evalState (toBNF (rebuild rslt)) (0 :: Int)
 
 hoReduceProofTreeMemo :: 
@@ -383,8 +383,8 @@ hoReduceProofTreeMemo ref res pt@(Node (ProofLine no cont rules) ts) =
                             writeIORef ref (M.insert thehash x thememo)
                             return $ checkRestrictions x
     where checkRestrictions x = do (rslt, sub, rule) <- x
-                                   checkAgainst (res no rule) sub
-                                   checkAgainst (restriction rule) sub
+                                   checkAgainst (res no rule) no sub
+                                   checkAgainst (restriction rule) no sub
                                    return rslt
 
 fosolve :: 
@@ -412,8 +412,8 @@ acuisolve eqs =
           [] -> Left $ NoUnify [eqs] 0
           subs -> Right subs
 
-checkAgainst (Just f) sub = case f sub of
+checkAgainst (Just f) n sub = case f sub of
                                   Nothing -> Right sub
-                                  Just s -> Left $ GenericError s 0
-checkAgainst Nothing sub = Right sub
+                                  Just s -> Left $ GenericError s n
+checkAgainst Nothing _ sub = Right sub
 

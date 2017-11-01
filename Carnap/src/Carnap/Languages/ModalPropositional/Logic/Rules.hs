@@ -126,11 +126,11 @@ globalEigenConstraint c (Left ded) lineno r sub =
                                    Nothing -> foundIn ded' (n + 1)
           occursIn x y = not $ (subst x (static 0) y) =* y
 
-globalOldConstraint idx (Left ded) lineno r sub = 
-          if any (idx' `occursIn`) (catMaybes . map (fmap liftLang . assertion) . oldRelevant [] . take lineno $ ded)
+globalOldConstraint idxes (Left ded) lineno r sub = 
+          if all (\idx -> any (idx `occursIn`) (catMaybes . map (fmap liftLang . assertion) . oldRelevant [] . take lineno $ ded)) idxes'
               then Nothing
-              else Just $ "the index " ++ show idx' ++ " appears not to be old, but this rule needs an old index"
-    where idx' = applySub sub idx
+              else Just $ "an index in " ++ show idxes' ++ " appears not to be old, but this rule needs old indexes"
+    where idxes' = map (applySub sub) idxes
 
           occursIn x y = not $ (subst x (static 0) y) =* y
 
@@ -317,7 +317,7 @@ diamondIn =
 relativeDiamondIn :: ModalRule lex b
 relativeDiamondIn = 
         [ GammaV 1 :|-: SS (phin 1 ./. (someWorld `indexcons` someOtherWorld)) ]
-        ∴ GammaV 1 :|-: SS (nec (phin 1) ./. someOtherWorld)
+        ∴ GammaV 1 :|-: SS (pos (phin 1) ./. someWorld)
 
 ---------------------------
 --  1.2 Variation Rules  --

@@ -25,6 +25,7 @@ activate cls chunk
     | "HardegreeSL" `elem` cls = actTemplate "proofchecker hardegreeSL Render"
     | "HardegreeWTL" `elem` cls = actTemplate "proofchecker hardegreeWTL Render guides"
     | "HardegreeL" `elem` cls = actTemplate "proofchecker hardegreeL guides" --XXX: Keep render off here until we have nicer rendering of indicies
+    | "HardegreeK" `elem` cls = actTemplate "proofchecker hardegreeK guides" --XXX: Keep render off here until we have nicer rendering of indicies
     | otherwise = RawBlock "html" "<div>No Matching Logic for Derivation</div>"
     where numof = takeWhile (/= ' ')
           (h:t) = formatChunk chunk

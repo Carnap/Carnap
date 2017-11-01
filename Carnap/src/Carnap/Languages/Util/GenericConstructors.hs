@@ -355,7 +355,7 @@ data Cons b a where
         Cons :: Cons b (Term b -> Term b -> Term b)
 
 instance Schematizable (Cons b) where
-        schematize Cons = \(x:y:_) -> x ++ ";" ++ y
+        schematize Cons = \(x:y:_) -> x ++ "-" ++ y
 
 instance FirstOrderLex (Cons b)
 

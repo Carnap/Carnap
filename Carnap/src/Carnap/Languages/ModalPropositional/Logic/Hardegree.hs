@@ -1,7 +1,8 @@
 {-#LANGUAGE FlexibleContexts, FlexibleInstances, MultiParamTypeClasses #-}
 module Carnap.Languages.ModalPropositional.Logic.Hardegree
     ( parseHardegreeWTL,  parseHardegreeWTLProof, HardegreeWTL, hardegreeWTLCalc
-    , parseHardegreeL,  parseHardegreeLProof, HardegreeL, hardegreeLCalc
+    , parseHardegreeL,  parseHardegreeLProof, HardegreeL, hardegreeLCalc 
+    , parseHardegreeK,  parseHardegreeKProof, HardegreeK, hardegreeKCalc 
     ) where
 
 import Data.Map as M (lookup, Map,fromList)
@@ -465,9 +466,13 @@ instance Inference HardegreeK AbsoluteModalPropLexicon (Form Bool) where
          globalRestriction (Left ded) n (Rel DiaD2) = Just (globalEigenConstraint (someWorld `indexcons` someOtherWorld) (Left ded) n (Rel DiaD2))
          globalRestriction (Left ded) n (Rel DiaOut) = Just (globalEigenConstraint (someWorld `indexcons` someOtherWorld) (Left ded) n (Rel DiaOut))
          globalRestriction (Left ded) n (Rel ND) = Just (globalEigenConstraint (someWorld `indexcons` someOtherWorld) (Left ded) n (Rel DiaOut))
-         globalRestriction (Left ded) n (Rel DiaIn) = Just (globalOldConstraint (someWorld `indexcons` someOtherWorld) (Left ded) n (Rel DiaIn))
-         globalRestriction (Left ded) n (Rel BoxOut) = Just (globalOldConstraint (someWorld `indexcons` someOtherWorld) (Left ded) n (Rel BoxOut))
-         globalRestriction (Left ded) n (Rel x) = Just (globalOldConstraint someWorld (Left ded) n (Rel x))
+         globalRestriction (Left ded) n (Rel DiaIn) = Just (globalOldConstraint [someWorld `indexcons` someOtherWorld] (Left ded) n (Rel DiaIn))
+         globalRestriction (Left ded) n (Rel BoxOut) = Just (globalOldConstraint [someWorld `indexcons` someOtherWorld] (Left ded) n (Rel BoxOut))
+         globalRestriction (Left ded) n (Rel (MoPL FalO)) = Just (globalOldConstraint [someOtherWorld,someWorld] (Left ded) n (Rel (MoPL FalO)))
+         globalRestriction (Left ded) n (Rel (MoPL FalI)) = Just (globalOldConstraint [someOtherWorld,someWorld] (Left ded) n (Rel (MoPL FalI)))
+         globalRestriction (Left ded) n x = case indirectInference x of
+                                                Nothing -> Just (globalOldConstraint [someWorld] (Left ded) n x)
+                                                _ -> Nothing
          globalRestriction _ _ _ = Nothing
 
 hardegreeKCalc = NaturalDeductionCalc 
