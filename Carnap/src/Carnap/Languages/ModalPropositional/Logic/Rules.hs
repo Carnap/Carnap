@@ -297,8 +297,8 @@ boxOut =
         ∴ GammaV 1 :|-: SS (phin 1 ./. someOtherWorld)
 
 relativeBoxOut :: ModalRule lex b
-relativeBoxOut = [ GammaV 1 :|-: SS (nec (phin 1) ./. (someWorld `indexcons` someOtherWorld)) ]
-                 ∴ GammaV 1 :|-: SS (phin 1 ./. someWorld)
+relativeBoxOut = [ GammaV 1 :|-: SS (nec (phin 1) ./. someWorld) ]
+                 ∴ GammaV 1 :|-: SS (phin 1 ./. (someWorld `indexcons` someOtherWorld))
 
 diamondOut :: ModalRule lex b
 diamondOut = 
