@@ -9,6 +9,7 @@ data Instructor = GrahamLeachKrouse
                 | SalvatoreFlorio
                 | CharlesPence
                 | DavidSanson
+                | KeshavSingh
     deriving (Show,Read,Eq,Enum,Bounded)
 
 data InstructorMetadata = InstructorMetadata
@@ -23,6 +24,8 @@ instructorData CharlesPence = InstructorMetadata
         { instructorEmail = "charles@charlespence.net" }
 instructorData DavidSanson = InstructorMetadata
         { instructorEmail = "dsanson@gmail.com" }
+instructorData KeshavSingh = InstructorMetadata
+        { instructorEmail = "keshav.singh.phi@gmail.com" }
 
 instructorsList :: [Instructor]
 instructorsList = [minBound .. maxBound]
