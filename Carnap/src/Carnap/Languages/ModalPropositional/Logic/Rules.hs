@@ -111,7 +111,7 @@ eigenConstraint c suc ant sub
           -- imaginable.
           occursIn x y = not $ (subst x (static 0) y) =* y
 
-globalEigenConstraint c (Left ded) lineno r sub =
+globalEigenConstraint c (Left ded) lineno sub =
         case foundIn ded 1 of
             Just (f,n) -> Just $ "the index " ++ show c' ++ " appears not to be fresh - it occurs in " ++ show f ++ " on line " ++ show n
             Nothing -> case c' of
@@ -126,7 +126,7 @@ globalEigenConstraint c (Left ded) lineno r sub =
                                    Nothing -> foundIn ded' (n + 1)
           occursIn x y = not $ (subst x (static 0) y) =* y
 
-globalOldConstraint idxes (Left ded) lineno r sub = 
+globalOldConstraint idxes (Left ded) lineno sub = 
           if all (\idx -> any (\x -> idx =* TheWorld || idx `occursIn`x) 
                     (catMaybes . map (fmap liftLang . assertion) . oldRelevant [] . take lineno $ ded)) idxes'
               then Nothing
@@ -144,6 +144,12 @@ globalOldConstraint idxes (Left ded) lineno r sub =
 
           witnessAt ldepth (ShowWithLine _ sdepth _ _) = sdepth < ldepth
           witnessAt ldepth l = depth l <= ldepth 
+
+globalNewConstraint idxes ded lineno sub = 
+        case globalOldConstraint idxes ded lineno sub of
+            Nothing -> Just $ "an index in " ++ show idxes' ++ " appears not to be new, but this rule needs new indexes"
+            Just s -> Nothing
+    where idxes' = map (applySub sub) idxes
 
 instance Eq (WorldTheorySequentCalc a) where
         (==) = (=*)

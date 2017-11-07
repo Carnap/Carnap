@@ -391,7 +391,7 @@ instance Inference HardegreeL AbsoluteModalPropLexicon (Form Bool) where
                                                    (absgamma 1 :+: absgamma 2))
          restriction _     = Nothing
 
-         globalRestriction (Left ded) n DiaOut = Just (globalEigenConstraint someOtherWorld (Left ded) n DiaOut)
+         globalRestriction (Left ded) n DiaOut = Just (globalEigenConstraint someOtherWorld (Left ded) n)
          globalRestriction _ _ _ = Nothing
         
 parseHardegreeL :: Parsec String u [HardegreeL]
@@ -419,63 +419,129 @@ hardegreeLCalc = NaturalDeductionCalc
     }
 
 -----------------------------------
---  3. Relative Modal Logic (K)  --
+--  3. Relative Modal Logic      --
 -----------------------------------
 
-data HardegreeK = Rel HardegreeL
+--------------------
+--  3.1 System K  --
+--------------------
+
+data HardegreeK = RelK HardegreeL
                deriving (Eq)
 
 instance Show HardegreeK where
-         show (Rel x) = show x
+         show (RelK x) = show x
 
 parseHardegreeK :: Parsec String u [HardegreeK]
-parseHardegreeK = map Rel <$> parseHardegreeL
+parseHardegreeK = map RelK <$> parseHardegreeL
 
 parseHardegreeKProof ::  Map String DerivedRule -> String -> [DeductionLine HardegreeK AbsoluteModalPropLexicon (Form Bool)]
 parseHardegreeKProof ders = toDeductionHardegree parseHardegreeK relativeModalPropFormulaParser
 
 instance Inference HardegreeK AbsoluteModalPropLexicon (Form Bool) where
-         ruleOf (Rel ND)     = relativeBoxDerivation
-         ruleOf (Rel DiaIn)  = relativeDiamondIn
-         ruleOf (Rel DiaOut) = relativeDiamondOut
-         ruleOf (Rel BoxOut) = relativeBoxOut
-         ruleOf (Rel DiaD1)  = relativeDiamondDerivation !! 0
-         ruleOf (Rel DiaD2)  = relativeDiamondDerivation !! 1
-         ruleOf (Rel x)      = ruleOf x
+         ruleOf (RelK ND)     = relativeBoxDerivation
+         ruleOf (RelK DiaIn)  = relativeDiamondIn
+         ruleOf (RelK DiaOut) = relativeDiamondOut
+         ruleOf (RelK BoxOut) = relativeBoxOut
+         ruleOf (RelK DiaD1)  = relativeDiamondDerivation !! 0
+         ruleOf (RelK DiaD2)  = relativeDiamondDerivation !! 1
+         ruleOf (RelK x)      = ruleOf x
 
-         premisesOf (Rel (MoPL x)) | x `elem` [ID1,ID2,ID3,ID4,FalI,FalO] = upperSequents (ruleOf (MoPL x))
+         premisesOf (RelK (MoPL x)) | x `elem` [ID1,ID2,ID3,ID4,FalI,FalO] = upperSequents (ruleOf (MoPL x))
                                    | otherwise = map (liftAbsSeq SomeWorld . liftSequent) (premisesOf x)
          premisesOf x = upperSequents (ruleOf x)
 
-         conclusionOf (Rel (MoPL x))  | x `elem` [ID1,ID2,ID3,ID4,FalI,FalO] = lowerSequent (ruleOf (MoPL x))
+         conclusionOf (RelK (MoPL x))  | x `elem` [ID1,ID2,ID3,ID4,FalI,FalO] = lowerSequent (ruleOf (MoPL x))
                                       | otherwise = liftAbsSeq SomeWorld (liftSequent $ conclusionOf x)
          conclusionOf x = lowerSequent (ruleOf x)
 
-         indirectInference (Rel (MoPL x)) = indirectInference x
-         indirectInference (Rel ND) = Just (TypedProof (ProofType 0 1))
-         indirectInference (Rel DiaD1) = Just (TypedProof (ProofType 1 1))
-         indirectInference (Rel DiaD2) = Just (TypedProof (ProofType 1 1))
+         indirectInference (RelK (MoPL x)) = indirectInference x
+         indirectInference (RelK ND) = Just (TypedProof (ProofType 0 1))
+         indirectInference (RelK DiaD1) = Just (TypedProof (ProofType 1 1))
+         indirectInference (RelK DiaD2) = Just (TypedProof (ProofType 1 1))
          indirectInference _ = Nothing
 
-         isAssumption (Rel (MoPL As)) = True
+         isAssumption (RelK (MoPL As)) = True
          isAssumption _ = False
 
-         globalRestriction (Left ded) n (Rel DiaD1) = Just (globalEigenConstraint (someWorld `indexcons` someOtherWorld) (Left ded) n (Rel DiaD1))
-         globalRestriction (Left ded) n (Rel DiaD2) = Just (globalEigenConstraint (someWorld `indexcons` someOtherWorld) (Left ded) n (Rel DiaD2))
-         globalRestriction (Left ded) n (Rel DiaOut) = Just (globalEigenConstraint (someWorld `indexcons` someOtherWorld) (Left ded) n (Rel DiaOut))
-         globalRestriction (Left ded) n (Rel ND) = Just (globalEigenConstraint (someWorld `indexcons` someOtherWorld) (Left ded) n (Rel DiaOut))
-         globalRestriction (Left ded) n (Rel DiaIn) = Just (globalOldConstraint [someWorld `indexcons` someOtherWorld] (Left ded) n (Rel DiaIn))
-         globalRestriction (Left ded) n (Rel BoxOut) = Just (globalOldConstraint [someWorld `indexcons` someOtherWorld] (Left ded) n (Rel BoxOut))
-         globalRestriction (Left ded) n (Rel (MoPL FalO)) = Just (globalOldConstraint [someOtherWorld,someWorld] (Left ded) n (Rel (MoPL FalO)))
-         globalRestriction (Left ded) n (Rel (MoPL FalI)) = Just (globalOldConstraint [someOtherWorld,someWorld] (Left ded) n (Rel (MoPL FalI)))
+         globalRestriction (Left ded) n (RelK DiaD1) = Just (globalEigenConstraint (someWorld `indexcons` someOtherWorld) (Left ded) n )
+         globalRestriction (Left ded) n (RelK DiaD2) = Just (globalEigenConstraint (someWorld `indexcons` someOtherWorld) (Left ded) n )
+         globalRestriction (Left ded) n (RelK DiaOut) = Just (globalEigenConstraint (someWorld `indexcons` someOtherWorld) (Left ded) n )
+         globalRestriction (Left ded) n (RelK ND) = Just (globalEigenConstraint (someWorld `indexcons` someOtherWorld) (Left ded) n )
+         globalRestriction (Left ded) n (RelK DiaIn) = Just (globalOldConstraint [someWorld `indexcons` someOtherWorld] (Left ded) n )
+         globalRestriction (Left ded) n (RelK BoxOut) = Just (globalOldConstraint [someWorld `indexcons` someOtherWorld] (Left ded) n )
+         globalRestriction (Left ded) n (RelK (MoPL FalO)) = Just (globalOldConstraint [someOtherWorld,someWorld] (Left ded) n )
+         globalRestriction (Left ded) n (RelK (MoPL FalI)) = Just (globalOldConstraint [someOtherWorld,someWorld] (Left ded) n )
          globalRestriction (Left ded) n x = case indirectInference x of
-                                                Nothing -> Just (globalOldConstraint [someWorld] (Left ded) n x)
+                                                Nothing -> Just (globalOldConstraint [someWorld] (Left ded) n)
                                                 _ -> Nothing
          globalRestriction _ _ _ = Nothing
 
 hardegreeKCalc = NaturalDeductionCalc 
     { ndRenderer = MontegueStyle
     , ndParseProof = parseHardegreeKProof
+    , ndProcessLine = hoProcessLineHardegree
+    , ndProcessLineMemo = Just hoProcessLineHardegreeMemo
+    , ndParseSeq = absoluteModalPropSeqParser
+    }
+
+--------------------
+--  3.1 System D  --
+--------------------
+
+data HardegreeD = RelD HardegreeL | DBoxOut | DDiaIn
+               deriving (Eq)
+
+instance Show HardegreeD where
+         show (RelD x) = show x
+         show DBoxOut = "□O(d)"
+         show DDiaIn = "◇I(d)"
+
+parseHardegreeD :: Parsec String u [HardegreeD]
+parseHardegreeD = map RelD <$> parseHardegreeL
+                    <|> parseRuleTable (fromList 
+                        [ ("[]O(d)"      , return [DBoxOut])
+                        , ("<>I(d)"      , return [DDiaI])
+                        ])
+
+parseHardegreeDProof ::  Map String DerivedRule -> String -> [DeductionLine HardegreeD AbsoluteModalPropLexicon (Form Bool)]
+parseHardegreeDProof ders = toDeductionHardegree parseHardegreeD relativeModalPropFormulaParser
+
+instance Inference HardegreeD AbsoluteModalPropLexicon (Form Bool) where
+         ruleOf (DBoxOut) = relativeBoxOut
+         ruleOf (DDiaIn)  = relativeDiamondIn
+         ruleOf (RelD x) = ruleOf (RelK x)
+
+         premisesOf (RelD x) = premisesOf (RelK x)
+         premisesOf x = upperSequents (ruleOf x)
+
+         conclusionOf (RelD  x) = conclusionOf (RelK x)
+         conclusionOf x = lowerSequent (ruleOf x)
+
+         indirectInference (RelD x) = indirectInference (RelK x)
+         indirectInference _ = Nothing
+
+         isAssumption (RelD (MoPL As)) = True
+         isAssumption _ = False
+
+         globalRestriction (Left ded) n DDiaIn = Just (globalNewConstraint [someWorld `indexcons` someOtherWorld] (Left ded) n )
+         globalRestriction (Left ded) n DBoxOut = Just (globalNewConstraint [someWorld `indexcons` someOtherWorld] (Left ded) n )
+         globalRestriction (Left ded) n (RelD DiaD1) = Just (globalEigenConstraint (someWorld `indexcons` someOtherWorld) (Left ded) n )
+         globalRestriction (Left ded) n (RelD DiaD2) = Just (globalEigenConstraint (someWorld `indexcons` someOtherWorld) (Left ded) n )
+         globalRestriction (Left ded) n (RelD DiaOut) = Just (globalEigenConstraint (someWorld `indexcons` someOtherWorld) (Left ded) n )
+         globalRestriction (Left ded) n (RelD ND) = Just (globalEigenConstraint (someWorld `indexcons` someOtherWorld) (Left ded) n )
+         globalRestriction (Left ded) n (RelD DiaIn) = Just (globalOldConstraint [someWorld `indexcons` someOtherWorld] (Left ded) n )
+         globalRestriction (Left ded) n (RelD BoxOut) = Just (globalOldConstraint [someWorld `indexcons` someOtherWorld] (Left ded) n )
+         globalRestriction (Left ded) n (RelD (MoPL FalO)) = Just (globalOldConstraint [someOtherWorld,someWorld] (Left ded) n )
+         globalRestriction (Left ded) n (RelD (MoPL FalI)) = Just (globalOldConstraint [someOtherWorld,someWorld] (Left ded) n )
+         globalRestriction (Left ded) n x = case indirectInference x of
+                                                Nothing -> Just (globalOldConstraint [someWorld] (Left ded) n)
+                                                _ -> Nothing
+         globalRestriction _ _ _ = Nothing
+
+hardegreeDCalc = NaturalDeductionCalc 
+    { ndRenderer = MontegueStyle
+    , ndParseProof = parseHardegreeDProof
     , ndProcessLine = hoProcessLineHardegree
     , ndProcessLineMemo = Just hoProcessLineHardegreeMemo
     , ndParseSeq = absoluteModalPropSeqParser
