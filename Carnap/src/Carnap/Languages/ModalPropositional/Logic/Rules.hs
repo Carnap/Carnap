@@ -306,6 +306,10 @@ relativeBoxOut :: ModalRule lex b
 relativeBoxOut = [ GammaV 1 :|-: SS (nec (phin 1) ./. someWorld) ]
                  ∴ GammaV 1 :|-: SS (phin 1 ./. (someWorld `indexcons` someOtherWorld))
 
+reflexiveBoxOut :: ModalRule lex b
+reflexiveBoxOut = [ GammaV 1 :|-: SS (nec (phin 1) ./. someWorld) ]
+                  ∴ GammaV 1 :|-: SS (phin 1 ./. (someWorld))
+
 diamondOut :: ModalRule lex b
 diamondOut = 
         [ GammaV 1 :|-: SS (pos (phin 1) ./. someWorld) ]
@@ -324,6 +328,11 @@ diamondIn =
 relativeDiamondIn :: ModalRule lex b
 relativeDiamondIn = 
         [ GammaV 1 :|-: SS (phin 1 ./. (someWorld `indexcons` someOtherWorld)) ]
+        ∴ GammaV 1 :|-: SS (pos (phin 1) ./. someWorld)
+
+reflexiveDiamondIn :: ModalRule lex b
+reflexiveDiamondIn = 
+        [ GammaV 1 :|-: SS (phin 1 ./. (someWorld)) ]
         ∴ GammaV 1 :|-: SS (pos (phin 1) ./. someWorld)
 
 ---------------------------

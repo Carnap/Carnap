@@ -486,7 +486,7 @@ hardegreeKCalc = NaturalDeductionCalc
     }
 
 --------------------
---  3.1 System D  --
+--  3.2 System D  --
 --------------------
 
 data HardegreeD = RelD HardegreeL | DBoxOut | DDiaIn
@@ -501,7 +501,7 @@ parseHardegreeD :: Parsec String u [HardegreeD]
 parseHardegreeD = map RelD <$> parseHardegreeL
                     <|> parseRuleTable (fromList 
                         [ ("[]O(d)"      , return [DBoxOut])
-                        , ("<>I(d)"      , return [DDiaI])
+                        , ("<>I(d)"      , return [DDiaIn])
                         ])
 
 parseHardegreeDProof ::  Map String DerivedRule -> String -> [DeductionLine HardegreeD AbsoluteModalPropLexicon (Form Bool)]
@@ -542,6 +542,66 @@ instance Inference HardegreeD AbsoluteModalPropLexicon (Form Bool) where
 hardegreeDCalc = NaturalDeductionCalc 
     { ndRenderer = MontegueStyle
     , ndParseProof = parseHardegreeDProof
+    , ndProcessLine = hoProcessLineHardegree
+    , ndProcessLineMemo = Just hoProcessLineHardegreeMemo
+    , ndParseSeq = absoluteModalPropSeqParser
+    }
+
+--------------------
+--  3.3 System T  --
+--------------------
+
+data HardegreeT = RelT HardegreeL | TBoxOut | TDiaIn
+               deriving (Eq)
+
+instance Show HardegreeT where
+         show (RelT x) = show x
+         show TBoxOut = "□O(t)"
+         show TDiaIn = "◇I(t)"
+
+parseHardegreeT :: Parsec String u [HardegreeT]
+parseHardegreeT = map RelT <$> parseHardegreeL
+                    <|> parseRuleTable (fromList 
+                        [ ("[]O(t)"      , return [TBoxOut])
+                        , ("<>I(t)"      , return [TDiaIn])
+                        ])
+
+parseHardegreeTProof ::  Map String DerivedRule -> String -> [DeductionLine HardegreeT AbsoluteModalPropLexicon (Form Bool)]
+parseHardegreeTProof ders = toDeductionHardegree parseHardegreeT relativeModalPropFormulaParser
+
+instance Inference HardegreeT AbsoluteModalPropLexicon (Form Bool) where
+         ruleOf (TBoxOut) = reflexiveBoxOut
+         ruleOf (TDiaIn)  = reflexiveDiamondIn
+         ruleOf (RelT x) = ruleOf (RelK x)
+
+         premisesOf (RelT x) = premisesOf (RelK x)
+         premisesOf x = upperSequents (ruleOf x)
+
+         conclusionOf (RelT  x) = conclusionOf (RelK x)
+         conclusionOf x = lowerSequent (ruleOf x)
+
+         indirectInference (RelT x) = indirectInference (RelK x)
+         indirectInference _ = Nothing
+
+         isAssumption (RelT (MoPL As)) = True
+         isAssumption _ = False
+
+         globalRestriction (Left ded) n (RelT DiaD1) = Just (globalEigenConstraint (someWorld `indexcons` someOtherWorld) (Left ded) n )
+         globalRestriction (Left ded) n (RelT DiaD2) = Just (globalEigenConstraint (someWorld `indexcons` someOtherWorld) (Left ded) n )
+         globalRestriction (Left ded) n (RelT DiaOut) = Just (globalEigenConstraint (someWorld `indexcons` someOtherWorld) (Left ded) n )
+         globalRestriction (Left ded) n (RelT ND) = Just (globalEigenConstraint (someWorld `indexcons` someOtherWorld) (Left ded) n )
+         globalRestriction (Left ded) n (RelT DiaIn) = Just (globalOldConstraint [someWorld `indexcons` someOtherWorld] (Left ded) n )
+         globalRestriction (Left ded) n (RelT BoxOut) = Just (globalOldConstraint [someWorld `indexcons` someOtherWorld] (Left ded) n )
+         globalRestriction (Left ded) n (RelT (MoPL FalO)) = Just (globalOldConstraint [someOtherWorld,someWorld] (Left ded) n )
+         globalRestriction (Left ded) n (RelT (MoPL FalI)) = Just (globalOldConstraint [someOtherWorld,someWorld] (Left ded) n )
+         globalRestriction (Left ded) n x = case indirectInference x of
+                                                Nothing -> Just (globalOldConstraint [someWorld] (Left ded) n)
+                                                _ -> Nothing
+         globalRestriction _ _ _ = Nothing
+
+hardegreeTCalc = NaturalDeductionCalc 
+    { ndRenderer = MontegueStyle
+    , ndParseProof = parseHardegreeTProof
     , ndProcessLine = hoProcessLineHardegree
     , ndProcessLineMemo = Just hoProcessLineHardegreeMemo
     , ndParseSeq = absoluteModalPropSeqParser
