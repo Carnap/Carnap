@@ -362,3 +362,17 @@ instance FirstOrderLex (Cons b)
 instance UniformlyEq (Cons b) where
         Cons =* Cons = True
 
+data Accessor c b a where
+        Accesses :: Accessor c b (Term b -> Term b -> Form c)
+
+instance Schematizable (Accessor c b) where
+        schematize Accesses = \(t1:t2:_) -> t1 ++ "≺" ++ t2
+
+instance UniformlyEq (Accessor c b) where
+        _ =* _ = True
+
+instance Monad m => MaybeMonadVar (Accessor c b) m
+
+instance MaybeStaticVar (Accessor c b)
+
+instance FirstOrderLex (Accessor c b)

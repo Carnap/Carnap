@@ -446,6 +446,27 @@ class (Typeable b, PrismLink (FixLang lex) (Function (Cons b) (FixLang lex)))
         cons :: Prism' (Function (Cons b) (FixLang lex) (Term b -> Term b -> Term b)) ()
         cons = prism' (const (Function Cons ATwo )) (const (Just ()))
 
+class AccessorLanguage l t where
+        accesses :: t -> t -> l
+
+class (Typeable c, Typeable b, PrismLink (FixLang lex) (Predicate (Accessor b c) (FixLang lex))) 
+        => PrismAccessor lex c b where
+
+        _access :: Prism' (FixLang lex (Term c -> Term c -> Form b)) ()
+        _access = link_Accessor . access
+
+        link_Accessor :: Prism' (FixLang lex (Term c -> Term c -> Form b)) 
+                                    (Predicate (Accessor b c) (FixLang lex) (Term c -> Term c -> Form b))
+        link_Accessor = link 
+
+        access :: Prism' (Predicate (Accessor b c) (FixLang lex) (Term c -> Term c -> Form b)) ()
+        access = prism' (\n -> Predicate Accesses ATwo) 
+                        (\x -> case x of Predicate Accesses ATwo -> Just ()
+                                         _ -> Nothing)
+
+instance {-#OVERLAPPABLE#-} PrismAccessor lex c b => AccessorLanguage (FixLang lex (Form b)) (FixLang lex (Term c)) where
+        accesses = curry $ review (binaryOpPrism _access)
+
 --------------------------------------------------------
 --2. Utility Classes
 --------------------------------------------------------
