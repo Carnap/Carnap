@@ -328,7 +328,6 @@ symmetricBoxOut :: ModalRule lex b
 symmetricBoxOut = [ GammaV 1 :|-: SS (nec (phin 1) ./. (someWorld `indexcons` someOtherWorld)) ]
                   ∴ GammaV 1 :|-: SS (phin 1 ./. someWorld)
 
-
 euclidianBoxOut :: ModalRule lex b
 euclidianBoxOut = [ GammaV 1 :|-: SS (nec (phin 1) ./. (someWorld `indexcons` someOtherWorld)) ]
                   ∴ GammaV 1 :|-: SS (phin 1 ./. (someWorld `indexcons` someThirdWorld))

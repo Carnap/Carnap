@@ -606,3 +606,190 @@ hardegreeTCalc = NaturalDeductionCalc
     , ndProcessLineMemo = Just hoProcessLineHardegreeMemo
     , ndParseSeq = absoluteModalPropSeqParser
     }
+
+--------------------
+--  3.4 System B  --
+--------------------
+
+data HardegreeB = RelB HardegreeL | BBoxOut | BDiaIn
+               deriving (Eq)
+
+instance Show HardegreeB where
+         show (RelB x) = show x
+         show BBoxOut = "□O(b)"
+         show BDiaIn = "◇I(b)"
+
+parseHardegreeB :: Parsec String u [HardegreeB]
+parseHardegreeB = map RelB <$> parseHardegreeL
+                    <|> parseRuleTable (fromList 
+                        [ ("[]O(b)"      , return [BBoxOut])
+                        , ("<>I(b)"      , return [BDiaIn])
+                        ])
+
+parseHardegreeBProof ::  Map String DerivedRule -> String -> [DeductionLine HardegreeB AbsoluteModalPropLexicon (Form Bool)]
+parseHardegreeBProof ders = toDeductionHardegree parseHardegreeB relativeModalPropFormulaParser
+
+instance Inference HardegreeB AbsoluteModalPropLexicon (Form Bool) where
+         ruleOf (BBoxOut) = symmetricBoxOut
+         ruleOf (BDiaIn)  = symmetricDiamondIn
+         ruleOf (RelB x) = ruleOf (RelK x)
+
+         premisesOf (RelB x) = premisesOf (RelK x)
+         premisesOf x = upperSequents (ruleOf x)
+
+         conclusionOf (RelB  x) = conclusionOf (RelB x)
+         conclusionOf x = lowerSequent (ruleOf x)
+
+         indirectInference (RelB x) = indirectInference (RelB x)
+         indirectInference _ = Nothing
+
+         isAssumption (RelB (MoPL As)) = True
+         isAssumption _ = False
+
+         globalRestriction (Left ded) n (BBoxOut) = Just (globalOldConstraint [someWorld `indexcons` someOtherWorld] (Left ded) n )
+         globalRestriction (Left ded) n (BDiaIn) = Just (globalOldConstraint [someWorld `indexcons` someOtherWorld] (Left ded) n )
+         globalRestriction (Left ded) n (RelB DiaD1) = Just (globalEigenConstraint (someWorld `indexcons` someOtherWorld) (Left ded) n )
+         globalRestriction (Left ded) n (RelB DiaD2) = Just (globalEigenConstraint (someWorld `indexcons` someOtherWorld) (Left ded) n )
+         globalRestriction (Left ded) n (RelB DiaOut) = Just (globalEigenConstraint (someWorld `indexcons` someOtherWorld) (Left ded) n )
+         globalRestriction (Left ded) n (RelB ND) = Just (globalEigenConstraint (someWorld `indexcons` someOtherWorld) (Left ded) n )
+         globalRestriction (Left ded) n (RelB DiaIn) = Just (globalOldConstraint [someWorld `indexcons` someOtherWorld] (Left ded) n )
+         globalRestriction (Left ded) n (RelB BoxOut) = Just (globalOldConstraint [someWorld `indexcons` someOtherWorld] (Left ded) n )
+         globalRestriction (Left ded) n (RelB (MoPL FalO)) = Just (globalOldConstraint [someOtherWorld,someWorld] (Left ded) n )
+         globalRestriction (Left ded) n (RelB (MoPL FalI)) = Just (globalOldConstraint [someOtherWorld,someWorld] (Left ded) n )
+         globalRestriction (Left ded) n x = case indirectInference x of
+                                                Nothing -> Just (globalOldConstraint [someWorld] (Left ded) n)
+                                                _ -> Nothing
+         globalRestriction _ _ _ = Nothing
+
+hardegreeBCalc = NaturalDeductionCalc 
+    { ndRenderer = MontegueStyle
+    , ndParseProof = parseHardegreeBProof
+    , ndProcessLine = hoProcessLineHardegree
+    , ndProcessLineMemo = Just hoProcessLineHardegreeMemo
+    , ndParseSeq = absoluteModalPropSeqParser
+    }
+
+--------------------
+--  3.5 System 4  --
+--------------------
+
+data HardegreeFour = RelFour HardegreeL | FourBoxOut | FourDiaIn
+               deriving (Eq)
+
+instance Show HardegreeFour where
+         show (RelFour x) = show x
+         show FourBoxOut = "□O(4)"
+         show FourDiaIn = "◇I(4)"
+
+parseHardegreeFour :: Parsec String u [HardegreeFour]
+parseHardegreeFour = map RelFour <$> parseHardegreeL
+                    <|> parseRuleTable (fromList 
+                        [ ("[]O(4)"      , return [FourBoxOut])
+                        , ("<>I(4)"      , return [FourDiaIn])
+                        ])
+
+parseHardegreeFourProof ::  Map String DerivedRule -> String -> [DeductionLine HardegreeFour AbsoluteModalPropLexicon (Form Bool)]
+parseHardegreeFourProof ders = toDeductionHardegree parseHardegreeFour relativeModalPropFormulaParser
+
+instance Inference HardegreeFour AbsoluteModalPropLexicon (Form Bool) where
+         ruleOf (FourBoxOut) = transitiveBoxOut
+         ruleOf (FourDiaIn)  = transitiveDiamondIn
+         ruleOf (RelFour x) = ruleOf (RelK x)
+
+         premisesOf (RelFour x) = premisesOf (RelK x)
+         premisesOf x = upperSequents (ruleOf x)
+
+         conclusionOf (RelFour  x) = conclusionOf (RelB x)
+         conclusionOf x = lowerSequent (ruleOf x)
+
+         indirectInference (RelFour x) = indirectInference (RelB x)
+         indirectInference _ = Nothing
+
+         isAssumption (RelFour (MoPL As)) = True
+         isAssumption _ = False
+
+         globalRestriction (Left ded) n (FourBoxOut) = Just (globalOldConstraint [(someWorld `indexcons` someOtherWorld)`indexcons`someThirdWorld] (Left ded) n )
+         globalRestriction (Left ded) n (FourDiaIn) = Just (globalOldConstraint [(someWorld `indexcons` someOtherWorld)`indexcons`someThirdWorld] (Left ded) n )
+         globalRestriction (Left ded) n (RelFour DiaD1) = Just (globalEigenConstraint (someWorld `indexcons` someOtherWorld) (Left ded) n )
+         globalRestriction (Left ded) n (RelFour DiaD2) = Just (globalEigenConstraint (someWorld `indexcons` someOtherWorld) (Left ded) n )
+         globalRestriction (Left ded) n (RelFour DiaOut) = Just (globalEigenConstraint (someWorld `indexcons` someOtherWorld) (Left ded) n )
+         globalRestriction (Left ded) n (RelFour ND) = Just (globalEigenConstraint (someWorld `indexcons` someOtherWorld) (Left ded) n )
+         globalRestriction (Left ded) n (RelFour DiaIn) = Just (globalOldConstraint [someWorld `indexcons` someOtherWorld] (Left ded) n )
+         globalRestriction (Left ded) n (RelFour BoxOut) = Just (globalOldConstraint [someWorld `indexcons` someOtherWorld] (Left ded) n )
+         globalRestriction (Left ded) n (RelFour (MoPL FalO)) = Just (globalOldConstraint [someOtherWorld,someWorld] (Left ded) n )
+         globalRestriction (Left ded) n (RelFour (MoPL FalI)) = Just (globalOldConstraint [someOtherWorld,someWorld] (Left ded) n )
+         globalRestriction (Left ded) n x = case indirectInference x of
+                                                Nothing -> Just (globalOldConstraint [someWorld] (Left ded) n)
+                                                _ -> Nothing
+         globalRestriction _ _ _ = Nothing
+
+hardegreeFourCalc = NaturalDeductionCalc 
+    { ndRenderer = MontegueStyle
+    , ndParseProof = parseHardegreeFourProof
+    , ndProcessLine = hoProcessLineHardegree
+    , ndProcessLineMemo = Just hoProcessLineHardegreeMemo
+    , ndParseSeq = absoluteModalPropSeqParser
+    }
+
+--------------------
+--  3.6 System 5  --
+--------------------
+
+
+data HardegreeFive = RelFive HardegreeL | FiveBoxOut | FiveDiaIn
+               deriving (Eq)
+
+instance Show HardegreeFive where
+         show (RelFive x) = show x
+         show FiveBoxOut = "□O(5)"
+         show FiveDiaIn = "◇I(5)"
+
+parseHardegreeFive :: Parsec String u [HardegreeFive]
+parseHardegreeFive = map RelFive <$> parseHardegreeL
+                    <|> parseRuleTable (fromList 
+                        [ ("[]O(5)"      , return [FiveBoxOut])
+                        , ("<>I(5)"      , return [FiveDiaIn])
+                        ])
+
+parseHardegreeFiveProof ::  Map String DerivedRule -> String -> [DeductionLine HardegreeFive AbsoluteModalPropLexicon (Form Bool)]
+parseHardegreeFiveProof ders = toDeductionHardegree parseHardegreeFive relativeModalPropFormulaParser
+
+instance Inference HardegreeFive AbsoluteModalPropLexicon (Form Bool) where
+         ruleOf (FiveBoxOut) = euclidianBoxOut
+         ruleOf (FiveDiaIn)  = euclidianDiamondIn
+         ruleOf (RelFive x) = ruleOf (RelK x)
+
+         premisesOf (RelFive x) = premisesOf (RelK x)
+         premisesOf x = upperSequents (ruleOf x)
+
+         conclusionOf (RelFive  x) = conclusionOf (RelB x)
+         conclusionOf x = lowerSequent (ruleOf x)
+
+         indirectInference (RelFive x) = indirectInference (RelB x)
+         indirectInference _ = Nothing
+
+         isAssumption (RelFive (MoPL As)) = True
+         isAssumption _ = False
+
+         globalRestriction (Left ded) n (FiveBoxOut) = Just (globalOldConstraint [someWorld `indexcons` someOtherWorld, someWorld`indexcons`someThirdWorld] (Left ded) n )
+         globalRestriction (Left ded) n (FiveDiaIn) = Just (globalOldConstraint [someWorld `indexcons` someOtherWorld, someWorld`indexcons`someThirdWorld] (Left ded) n )
+         globalRestriction (Left ded) n (RelFive DiaD1) = Just (globalEigenConstraint (someWorld `indexcons` someOtherWorld) (Left ded) n )
+         globalRestriction (Left ded) n (RelFive DiaD2) = Just (globalEigenConstraint (someWorld `indexcons` someOtherWorld) (Left ded) n )
+         globalRestriction (Left ded) n (RelFive DiaOut) = Just (globalEigenConstraint (someWorld `indexcons` someOtherWorld) (Left ded) n )
+         globalRestriction (Left ded) n (RelFive ND) = Just (globalEigenConstraint (someWorld `indexcons` someOtherWorld) (Left ded) n )
+         globalRestriction (Left ded) n (RelFive DiaIn) = Just (globalOldConstraint [someWorld `indexcons` someOtherWorld] (Left ded) n )
+         globalRestriction (Left ded) n (RelFive BoxOut) = Just (globalOldConstraint [someWorld `indexcons` someOtherWorld] (Left ded) n )
+         globalRestriction (Left ded) n (RelFive (MoPL FalO)) = Just (globalOldConstraint [someOtherWorld,someWorld] (Left ded) n )
+         globalRestriction (Left ded) n (RelFive (MoPL FalI)) = Just (globalOldConstraint [someOtherWorld,someWorld] (Left ded) n )
+         globalRestriction (Left ded) n x = case indirectInference x of
+                                                Nothing -> Just (globalOldConstraint [someWorld] (Left ded) n)
+                                                _ -> Nothing
+         globalRestriction _ _ _ = Nothing
+
+hardegreeFiveCalc = NaturalDeductionCalc 
+    { ndRenderer = MontegueStyle
+    , ndParseProof = parseHardegreeFiveProof
+    , ndProcessLine = hoProcessLineHardegree
+    , ndProcessLineMemo = Just hoProcessLineHardegreeMemo
+    , ndParseSeq = absoluteModalPropSeqParser
+    }
