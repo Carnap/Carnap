@@ -301,6 +301,9 @@ toProofTreeHardegree ded n = case ded !! (n - 1)  of
                    deps' <- mapM (toProofTreeHardegree ded) (dp ++ deps)
                    return $ Node (ProofLine n (SS $ liftToSequent f) r) deps'
                 where checkDep depline = takeRange depline n >>= scan
+                      --For this system, extra subproof deps need to occur
+                      --outside of the subproof, i.e. be available from the
+                      --show line. Arbitrary choice on my part.
                       matchShow = let ded' = drop n ded in
                           case findIndex (\l -> depth l <= d) ded' of
                               Nothing -> Right (length ded)

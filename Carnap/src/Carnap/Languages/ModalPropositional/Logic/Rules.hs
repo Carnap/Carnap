@@ -128,12 +128,22 @@ globalEigenConstraint c (Left ded) lineno sub =
 
 globalOldConstraint idxes (Left ded) lineno sub = 
           if all (\idx -> any (\x -> idx =* TheWorld || idx `occursIn`x) 
-                    (catMaybes . map (fmap liftLang . assertion) . oldRelevant [] . take lineno $ ded)) idxes'
+                    (catMaybes . map (fmap liftLang . assertion) $ 
+                        ((oldRelevant [] $ take lineno ded) ++ fromsp))) idxes'
               then Nothing
               else Just $ "an index in " ++ show idxes' ++ " appears not to be old, but this rule needs old indexes"
     where idxes' = map (applySub sub) idxes
 
           occursIn x y = not $ (subst x (static 0) y) =* y
+
+          --some extra lines that we need to add if we're putting this
+          --constraint on a subproof-closing rule
+          fromsp = case ded !! (lineno - 1) of
+                       ShowWithLine _ d _ _ -> 
+                            case takeWhile (\x -> depth x > d) . drop lineno $ ded of
+                               sp@(h:t) -> filter (witnessAt (depth h)) sp
+                               [] -> []
+                       _ -> []
 
           oldRelevant accum [] = accum
           oldRelevant [] (d:ded)  = oldRelevant [d] ded 

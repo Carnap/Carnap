@@ -467,7 +467,7 @@ instance Inference HardegreeK AbsoluteModalPropLexicon (Form Bool) where
          globalRestriction (Left ded) n (RelK DiaD1) = Just (globalEigenConstraint (someWorld `indexcons` someOtherWorld) (Left ded) n )
          globalRestriction (Left ded) n (RelK DiaD2) = Just (globalEigenConstraint (someWorld `indexcons` someOtherWorld) (Left ded) n )
          globalRestriction (Left ded) n (RelK DiaOut) = Just (globalEigenConstraint (someWorld `indexcons` someOtherWorld) (Left ded) n )
-         globalRestriction (Left ded) n (RelK ND) = Just (globalEigenConstraint (someWorld `indexcons` someOtherWorld) (Left ded) n )
+         globalRestriction (Left ded) n (RelK ND) = Just (globalNewConstraint [someWorld `indexcons` someOtherWorld] (Left ded) n )
          globalRestriction (Left ded) n (RelK DiaIn) = Just (globalOldConstraint [someWorld `indexcons` someOtherWorld] (Left ded) n )
          globalRestriction (Left ded) n (RelK BoxOut) = Just (globalOldConstraint [someWorld `indexcons` someOtherWorld] (Left ded) n )
          globalRestriction (Left ded) n (RelK (MoPL FalO)) = Just (globalOldConstraint [someOtherWorld,someWorld] (Left ded) n )
