@@ -318,7 +318,20 @@ relativeBoxOut = [ GammaV 1 :|-: SS (nec (phin 1) ./. someWorld) ]
 
 reflexiveBoxOut :: ModalRule lex b
 reflexiveBoxOut = [ GammaV 1 :|-: SS (nec (phin 1) ./. someWorld) ]
-                  ∴ GammaV 1 :|-: SS (phin 1 ./. (someWorld))
+                  ∴ GammaV 1 :|-: SS (phin 1 ./. someWorld)
+
+transitiveBoxOut :: ModalRule lex b
+transitiveBoxOut = [ GammaV 1 :|-: SS (nec (phin 1) ./. someWorld) ]
+                  ∴ GammaV 1 :|-: SS (phin 1 ./. ((someWorld `indexcons` someOtherWorld) `indexcons` someThirdWorld))
+
+symmetricBoxOut :: ModalRule lex b
+symmetricBoxOut = [ GammaV 1 :|-: SS (nec (phin 1) ./. (someWorld `indexcons` someOtherWorld)) ]
+                  ∴ GammaV 1 :|-: SS (phin 1 ./. someWorld)
+
+
+euclidianBoxOut :: ModalRule lex b
+euclidianBoxOut = [ GammaV 1 :|-: SS (nec (phin 1) ./. (someWorld `indexcons` someOtherWorld)) ]
+                  ∴ GammaV 1 :|-: SS (phin 1 ./. (someWorld `indexcons` someThirdWorld))
 
 diamondOut :: ModalRule lex b
 diamondOut = 
@@ -329,6 +342,7 @@ relativeDiamondOut :: ModalRule lex b
 relativeDiamondOut =
         [ GammaV 1 :|-: SS (pos (phin 1) ./. someWorld) ]
         ∴ GammaV 1 :|-: SS (phin 1 ./. (someWorld `indexcons` someOtherWorld))
+
 
 diamondIn :: ModalRule lex b
 diamondIn = 
@@ -342,8 +356,21 @@ relativeDiamondIn =
 
 reflexiveDiamondIn :: ModalRule lex b
 reflexiveDiamondIn = 
-        [ GammaV 1 :|-: SS (phin 1 ./. (someWorld)) ]
+        [ GammaV 1 :|-: SS (phin 1 ./. someWorld) ]
         ∴ GammaV 1 :|-: SS (pos (phin 1) ./. someWorld)
+
+transitiveDiamondIn :: ModalRule lex b
+transitiveDiamondIn = 
+        [ GammaV 1 :|-: SS (phin 1 ./. ((someWorld `indexcons` someOtherWorld) `indexcons` someThirdWorld)) ]
+        ∴ GammaV 1 :|-: SS (pos (phin 1) ./. someWorld)
+
+symmetricDiamondIn :: ModalRule lex b
+symmetricDiamondIn = [ GammaV 1 :|-: SS (phin 1 ./. someWorld)]
+                  ∴ GammaV 1 :|-: SS (pos (phin 1) ./. (someWorld `indexcons` someOtherWorld))
+
+euclidianDiamondIn :: ModalRule lex b
+euclidianDiamondIn = [ GammaV 1 :|-: SS (phin 1 ./. (someWorld `indexcons` someThirdWorld))]
+                  ∴ GammaV 1 :|-: SS (pos (phin 1) ./. (someWorld `indexcons` someOtherWorld))
 
 ---------------------------
 --  1.2 Variation Rules  --
