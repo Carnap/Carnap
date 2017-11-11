@@ -642,10 +642,10 @@ instance Inference HardegreeB AbsoluteModalPropLexicon (Form Bool) where
          premisesOf (RelB x) = premisesOf (RelK x)
          premisesOf x = upperSequents (ruleOf x)
 
-         conclusionOf (RelB  x) = conclusionOf (RelB x)
+         conclusionOf (RelB  x) = conclusionOf (RelK x)
          conclusionOf x = lowerSequent (ruleOf x)
 
-         indirectInference (RelB x) = indirectInference (RelB x)
+         indirectInference (RelB x) = indirectInference (RelK x)
          indirectInference _ = Nothing
 
          isAssumption (RelB (MoPL As)) = True
@@ -704,10 +704,10 @@ instance Inference HardegreeFour AbsoluteModalPropLexicon (Form Bool) where
          premisesOf (RelFour x) = premisesOf (RelK x)
          premisesOf x = upperSequents (ruleOf x)
 
-         conclusionOf (RelFour  x) = conclusionOf (RelB x)
+         conclusionOf (RelFour  x) = conclusionOf (RelK x)
          conclusionOf x = lowerSequent (ruleOf x)
 
-         indirectInference (RelFour x) = indirectInference (RelB x)
+         indirectInference (RelFour x) = indirectInference (RelK x)
          indirectInference _ = Nothing
 
          isAssumption (RelFour (MoPL As)) = True
@@ -740,7 +740,6 @@ hardegreeFourCalc = NaturalDeductionCalc
 --  3.6 System 5  --
 --------------------
 
-
 data HardegreeFive = RelFive HardegreeL | FiveBoxOut | FiveDiaIn
                deriving (Eq)
 
@@ -767,10 +766,10 @@ instance Inference HardegreeFive AbsoluteModalPropLexicon (Form Bool) where
          premisesOf (RelFive x) = premisesOf (RelK x)
          premisesOf x = upperSequents (ruleOf x)
 
-         conclusionOf (RelFive  x) = conclusionOf (RelB x)
+         conclusionOf (RelFive  x) = conclusionOf (RelK x)
          conclusionOf x = lowerSequent (ruleOf x)
 
-         indirectInference (RelFive x) = indirectInference (RelB x)
+         indirectInference (RelFive x) = indirectInference (RelK x)
          indirectInference _ = Nothing
 
          isAssumption (RelFive (MoPL As)) = True
@@ -794,6 +793,74 @@ instance Inference HardegreeFive AbsoluteModalPropLexicon (Form Bool) where
 hardegreeFiveCalc = NaturalDeductionCalc 
     { ndRenderer = MontegueStyle
     , ndParseProof = parseHardegreeFiveProof
+    , ndProcessLine = hoProcessLineHardegree
+    , ndProcessLineMemo = Just hoProcessLineHardegreeMemo
+    , ndParseSeq = absoluteModalPropSeqParser
+    }
+
+
+---------------------
+--  3.7 System S5  --
+---------------------
+data HardegreeS5 = RelS5 HardegreeL | S55BoxOut | S55DiaIn | S5TBoxOut | S5TDiaIn
+               deriving (Eq)
+
+instance Show HardegreeS5 where
+         show (RelS5 x) = show x
+         show S55BoxOut = "□O(5)"
+         show S55DiaIn = "◇I(5)"
+         show S5TBoxOut = "□O(t)"
+         show S5TDiaIn = "◇I(t)"
+
+parseHardegreeS5 :: Parsec String u [HardegreeS5]
+parseHardegreeS5 = map RelS5 <$> parseHardegreeL
+                    <|> parseRuleTable (fromList 
+                        [ ("[]O(5)"      , return [S55BoxOut])
+                        , ("<>I(5)"      , return [S55DiaIn])
+                        , ("[]O(t)"      , return [S5TBoxOut])
+                        , ("<>I(t)"      , return [S5TDiaIn])
+                        ])
+
+parseHardegreeS5Proof ::  Map String DerivedRule -> String -> [DeductionLine HardegreeS5 AbsoluteModalPropLexicon (Form Bool)]
+parseHardegreeS5Proof ders = toDeductionHardegree parseHardegreeS5 relativeModalPropFormulaParser
+
+instance Inference HardegreeS5 AbsoluteModalPropLexicon (Form Bool) where
+         ruleOf (S55BoxOut) = euclidianBoxOut
+         ruleOf (S55DiaIn)  = euclidianDiamondIn
+         ruleOf (S5TBoxOut) = reflexiveBoxOut
+         ruleOf (S5TDiaIn)  = reflexiveDiamondIn
+         ruleOf (RelS5 x) = ruleOf (RelK x)
+
+         premisesOf (RelS5 x) = premisesOf (RelK x)
+         premisesOf x = upperSequents (ruleOf x)
+
+         conclusionOf (RelS5  x) = conclusionOf (RelK x)
+         conclusionOf x = lowerSequent (ruleOf x)
+
+         indirectInference (RelS5 x) = indirectInference (RelK x)
+         indirectInference _ = Nothing
+
+         isAssumption (RelS5 (MoPL As)) = True
+         isAssumption _ = False
+
+         globalRestriction (Left ded) n (S55BoxOut) = Just (globalOldConstraint [someWorld `indexcons` someOtherWorld, someWorld`indexcons`someThirdWorld] (Left ded) n )
+         globalRestriction (Left ded) n (S55DiaIn) = Just (globalOldConstraint [someWorld `indexcons` someOtherWorld, someWorld`indexcons`someThirdWorld] (Left ded) n )
+         globalRestriction (Left ded) n (RelS5 DiaD1) = Just (globalEigenConstraint (someWorld `indexcons` someOtherWorld) (Left ded) n )
+         globalRestriction (Left ded) n (RelS5 DiaD2) = Just (globalEigenConstraint (someWorld `indexcons` someOtherWorld) (Left ded) n )
+         globalRestriction (Left ded) n (RelS5 DiaOut) = Just (globalEigenConstraint (someWorld `indexcons` someOtherWorld) (Left ded) n )
+         globalRestriction (Left ded) n (RelS5 ND) = Just (globalEigenConstraint (someWorld `indexcons` someOtherWorld) (Left ded) n )
+         globalRestriction (Left ded) n (RelS5 DiaIn) = Just (globalOldConstraint [someWorld `indexcons` someOtherWorld] (Left ded) n )
+         globalRestriction (Left ded) n (RelS5 BoxOut) = Just (globalOldConstraint [someWorld `indexcons` someOtherWorld] (Left ded) n )
+         globalRestriction (Left ded) n (RelS5 (MoPL FalO)) = Just (globalOldConstraint [someOtherWorld,someWorld] (Left ded) n )
+         globalRestriction (Left ded) n (RelS5 (MoPL FalI)) = Just (globalOldConstraint [someOtherWorld,someWorld] (Left ded) n )
+         globalRestriction (Left ded) n x = case indirectInference x of
+                                                Nothing -> Just (globalOldConstraint [someWorld] (Left ded) n)
+                                                _ -> Nothing
+         globalRestriction _ _ _ = Nothing
+
+hardegreeS5Calc = NaturalDeductionCalc 
+    { ndRenderer = MontegueStyle
+    , ndParseProof = parseHardegreeS5Proof
     , ndProcessLine = hoProcessLineHardegree
     , ndProcessLineMemo = Just hoProcessLineHardegreeMemo
     , ndParseSeq = absoluteModalPropSeqParser

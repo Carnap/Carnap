@@ -83,17 +83,18 @@ courseData KSUSymbolicI2017 = (blankCourse GrahamLeachKrouse "Symbolic Logic I -
     }
 courseData KSUIntroToFormal2017 = (blankCourse GrahamLeachKrouse "Introduction to Formal Logic - PHILO110 - Kansas State University")
     { sourceOf = Just CarnapTextbook
-    , pointsOf = 375
+    , pointsOf = 425
     , duedates = Just $ M.fromList
-        [ ( 1, toTime "11:59 pm CDT, Aug 30, 2017")
-        , ( 2, toTime "11:59 pm CDT, Sep 6, 2017")
-        , ( 3, toTime "11:59 pm CDT, Sep 11, 2017")
-        , ( 4, toTime "11:59 pm CDT, Sep 15, 2017")
-        , ( 5, toTime "11:59 pm CDT, Sep 20, 2017")
-        , ( 6, toTime "11:59 pm CDT, Oct 6, 2017")
-        , ( 7, toTime "11:59 pm CDT, Oct 13, 2017")
-        , ( 8, toTime "11:59 pm CDT, Oct 25, 2017")
-        , ( 9, toTime "11:59 pm CDT, Nov 8, 2017")
+        [ ( 1,  toTime "11:59 pm CDT, Aug 30, 2017")
+        , ( 2,  toTime "11:59 pm CDT, Sep 6, 2017")
+        , ( 3,  toTime "11:59 pm CDT, Sep 11, 2017")
+        , ( 4,  toTime "11:59 pm CDT, Sep 15, 2017")
+        , ( 5,  toTime "11:59 pm CDT, Sep 20, 2017")
+        , ( 6,  toTime "11:59 pm CDT, Oct 6, 2017")
+        , ( 7,  toTime "11:59 pm CDT, Oct 13, 2017")
+        , ( 8,  toTime "11:59 pm CDT, Oct 25, 2017")
+        , ( 9,  toTime "11:59 pm CDT, Nov 8, 2017")
+        , ( 10, toTime "11:59 pm CDT, Nov 13, 2017")
         ]
     }
 courseData KSUModalLogic2017 = (blankCourse GrahamLeachKrouse "Modal Logic (independent study) - Kansas State University")
