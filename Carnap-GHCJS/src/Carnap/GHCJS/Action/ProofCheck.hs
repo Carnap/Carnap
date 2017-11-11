@@ -14,8 +14,10 @@ import Carnap.Languages.PurePropositional.Logic as P
 import Carnap.Languages.PureFirstOrder.Logic as FOL 
     (DerivedRule(..), folCalc, magnusQLCalc, thomasBolducAndZachFOLCalc) 
 import Carnap.Languages.ModalPropositional.Logic as MPL
-    (hardegreeWTLCalc, hardegreeLCalc, hardegreeKCalc)
-import Carnap.Languages.PureSecondOrder.Logic (msolCalc, psolCalc) 
+    ( hardegreeWTLCalc, hardegreeLCalc, hardegreeKCalc, hardegreeTCalc
+    , hardegreeBCalc, hardegreeDCalc, hardegreeFourCalc, hardegreeFiveCalc)
+import Carnap.Languages.PureSecondOrder.Logic 
+    (msolCalc, psolCalc) 
 import Carnap.Languages.PurePropositional.Util (toSchema)
 import Carnap.GHCJS.SharedTypes
 import Text.Parsec (parse)
@@ -103,6 +105,11 @@ activateChecker drs w (Just iog@(IOGoal i o g classes)) -- TODO: need to update 
         | "hardegreeWTL" `elem` classes           = tryParse buildOptions hardegreeWTLCalc propChecker
         | "hardegreeL" `elem` classes             = tryParse buildOptions hardegreeLCalc propChecker
         | "hardegreeK" `elem` classes             = tryParse buildOptions hardegreeKCalc propChecker
+        | "hardegreeD" `elem` classes             = tryParse buildOptions hardegreeDCalc propChecker
+        | "hardegreeT" `elem` classes             = tryParse buildOptions hardegreeTCalc propChecker
+        | "hardegreeB" `elem` classes             = tryParse buildOptions hardegreeBCalc propChecker
+        | "hardegree4" `elem` classes             = tryParse buildOptions hardegreeFourCalc propChecker
+        | "hardegree5" `elem` classes             = tryParse buildOptions hardegreeFiveCalc propChecker
         | otherwise                               = tryParse buildOptions propCalc propChecker
         where tryParse options calc checker = do
                   memo <- newIORef mempty

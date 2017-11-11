@@ -3,6 +3,11 @@ module Carnap.Languages.ModalPropositional.Logic.Hardegree
     ( parseHardegreeWTL,  parseHardegreeWTLProof, HardegreeWTL, hardegreeWTLCalc
     , parseHardegreeL,  parseHardegreeLProof, HardegreeL, hardegreeLCalc 
     , parseHardegreeK,  parseHardegreeKProof, HardegreeK, hardegreeKCalc 
+    , parseHardegreeB,  parseHardegreeBProof, HardegreeB, hardegreeBCalc 
+    , parseHardegreeT,  parseHardegreeTProof, HardegreeT, hardegreeTCalc 
+    , parseHardegreeD,  parseHardegreeDProof, HardegreeD, hardegreeDCalc 
+    , parseHardegreeFour,  parseHardegreeFourProof, HardegreeFour, hardegreeFourCalc 
+    , parseHardegreeFive,  parseHardegreeFiveProof, HardegreeFive, hardegreeFiveCalc 
     ) where
 
 import Data.Map as M (lookup, Map,fromList)
