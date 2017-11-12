@@ -11,7 +11,6 @@ import Control.Lens.Traversal (Traversal')
 import Control.Monad.State
 import Data.Typeable
 
-
 --------------------------------------------------------
 --1. Sequent Data
 --------------------------------------------------------

@@ -322,7 +322,7 @@ reflexiveBoxOut = [ GammaV 1 :|-: SS (nec (phin 1) ./. someWorld) ]
 
 transitiveBoxOut :: ModalRule lex b
 transitiveBoxOut = [ GammaV 1 :|-: SS (nec (phin 1) ./. someWorld) ]
-                  ∴ GammaV 1 :|-: SS (phin 1 ./. ((someWorld `indexcons` someOtherWorld) `indexcons` someThirdWorld))
+                  ∴ GammaV 1 :|-: SS (phin 1 ./. (someWorld `indexcons` someOtherWorld `indexcons` someThirdWorld))
 
 symmetricBoxOut :: ModalRule lex b
 symmetricBoxOut = [ GammaV 1 :|-: SS (nec (phin 1) ./. (someWorld `indexcons` someOtherWorld)) ]
@@ -360,7 +360,7 @@ reflexiveDiamondIn =
 
 transitiveDiamondIn :: ModalRule lex b
 transitiveDiamondIn = 
-        [ GammaV 1 :|-: SS (phin 1 ./. ((someWorld `indexcons` someOtherWorld) `indexcons` someThirdWorld)) ]
+        [ GammaV 1 :|-: SS (phin 1 ./. (someWorld `indexcons` someOtherWorld `indexcons` someThirdWorld)) ]
         ∴ GammaV 1 :|-: SS (pos (phin 1) ./. someWorld)
 
 symmetricDiamondIn :: ModalRule lex b
