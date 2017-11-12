@@ -36,16 +36,13 @@ toDisplaySequence::
 toDisplaySequence pl ded = let feedback = map (pl ded res) [1 .. length ded] in
                                   Feedback (lastTopInd >>= fromFeedback feedback) feedback
                           
-    where isTop  (AssertLine _ _ 0 _) = True
-          isTop  (ShowLine _ 0) = True
-          isTop  (ShowWithLine _ 0 _ _) = True
-          isTop  _ = False
-          lastTopInd = do i <- findIndex isTop (reverse ded)
+    where lastTopInd = do i <- findIndex isTop (reverse ded)
                           return $ length ded - i
           fromFeedback fb n = case fb !! (n - 1) of
             Left _ -> Nothing
-            Right s -> Just s
+            Right s -> if alright fb then Just s else Nothing
           res = globalRestriction (Left ded)
+
 
 toDisplaySequenceMemo :: 
     ( MonadVar (ClassicalSequentOver lex) (State Int)
@@ -56,15 +53,11 @@ toDisplaySequenceMemo pl ded =
         do feedback <- mapM (pl ded res) [1 .. length ded]
            return $ Feedback (lastTopInd >>= fromFeedback feedback) feedback
                           
-    where isTop  (AssertLine _ _ 0 _) = True
-          isTop  (ShowLine _ 0) = True
-          isTop  (ShowWithLine _ 0 _ _) = True
-          isTop  _ = False
-          lastTopInd = do i <- findIndex isTop (reverse ded)
+    where lastTopInd = do i <- findIndex isTop (reverse ded)
                           return $ length ded - i
           fromFeedback fb n = case fb !! (n - 1) of
             Left _ -> Nothing
-            Right s -> Just s
+            Right s -> if alright fb then Just s else Nothing
           res = globalRestriction (Left ded)
 
 toDisplaySequenceStructured:: 
@@ -79,7 +72,7 @@ toDisplaySequenceStructured pl ded@(SubProof (1,m) ls) = let feedback = map (pl 
                            ls -> Just $ (\(Leaf n _) -> n) $ last ls
           fromFeedback fb n = case fb !! (n - 1) of
             Left _ -> Nothing
-            Right s -> Just s
+            Right s -> if alright fb then Just s else Nothing
           res = globalRestriction (Right ded)
 
 
@@ -417,3 +410,12 @@ checkAgainst (Just f) n sub = case f sub of
                                   Just s -> Left $ GenericError s n
 checkAgainst Nothing _ sub = Right sub
 
+isTop  (AssertLine _ _ 0 _) = True
+isTop  (ShowLine _ 0) = True
+isTop  (ShowWithLine _ 0 _ _) = True
+isTop  _ = False
+
+alright [] = True
+alright ((Right _):l) = alright l
+alright ((Left (NoResult _)):l) = alright l
+alright ((Left _):_) = False
