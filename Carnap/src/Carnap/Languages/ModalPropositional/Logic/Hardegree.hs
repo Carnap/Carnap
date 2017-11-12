@@ -752,11 +752,10 @@ instance Show HardegreeFive where
          show FiveDiaIn = "◇I(5)"
 
 parseHardegreeFive :: Parsec String u [HardegreeFive]
-parseHardegreeFive = map RelFive <$> parseHardegreeL
-                    <|> parseRuleTable (fromList 
+parseHardegreeFive = parseRuleTable (fromList 
                         [ ("[]O(5)"      , return [FiveBoxOut])
                         , ("<>I(5)"      , return [FiveDiaIn])
-                        ])
+                        ]) <|> map RelFive <$> parseHardegreeL
 
 parseHardegreeFiveProof ::  Map String DerivedRule -> String -> [DeductionLine HardegreeFive AbsoluteModalPropLexicon (Form Bool)]
 parseHardegreeFiveProof ders = toDeductionHardegree parseHardegreeFive relativeModalPropFormulaParser
