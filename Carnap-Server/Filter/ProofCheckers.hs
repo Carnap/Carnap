@@ -27,7 +27,7 @@ activate cls chunk
     | "HardegreeL" `elem` cls = actTemplate "proofchecker hardegreeL guides" --XXX: Keep render off here until we have nicer rendering of indicies
     | "HardegreeK" `elem` cls = actTemplate "proofchecker hardegreeK guides" --XXX: Keep render off here until we have nicer rendering of indicies
     | "HardegreeT" `elem` cls = actTemplate "proofchecker hardegreeT guides" --XXX: Keep render off here until we have nicer rendering of indicies
-    | "HardegreeB" `elem` cls = actTemplate "proofchecker hardegreeK guides" --XXX: Keep render off here until we have nicer rendering of indicies
+    | "HardegreeB" `elem` cls = actTemplate "proofchecker hardegreeB guides" --XXX: Keep render off here until we have nicer rendering of indicies
     | "HardegreeD" `elem` cls = actTemplate "proofchecker hardegreeD guides" --XXX: Keep render off here until we have nicer rendering of indicies
     | "Hardegree4" `elem` cls = actTemplate "proofchecker hardegree4 guides" --XXX: Keep render off here until we have nicer rendering of indicies
     | "Hardegree5" `elem` cls = actTemplate "proofchecker hardegree5 guides" --XXX: Keep render off here until we have nicer rendering of indicies

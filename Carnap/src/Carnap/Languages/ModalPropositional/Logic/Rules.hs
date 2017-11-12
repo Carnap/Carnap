@@ -127,12 +127,13 @@ globalEigenConstraint c (Left ded) lineno sub =
           occursIn x y = not $ (subst x (static 0) y) =* y
 
 globalOldConstraint idxes (Left ded) lineno sub = 
-          if all (\idx -> any (\x -> idx =* TheWorld || idx `occursIn`x) 
-                    (catMaybes . map (fmap liftLang . assertion) $ 
-                        ((oldRelevant [] $ take lineno ded) ++ fromsp))) idxes'
+          if all (\idx -> idx =* TheWorld || any (\x -> idx `occursIn`x) relevantLines) idxes'
               then Nothing
               else Just $ "an index in " ++ show idxes' ++ " appears not to be old, but this rule needs old indexes"
     where idxes' = map (applySub sub) idxes
+
+          relevantLines = catMaybes . map (fmap liftLang . assertion) $ 
+                            ((oldRelevant [] $ take (lineno - 1) ded) ++ fromsp)
 
           occursIn x y = not $ (subst x (static 0) y) =* y
 

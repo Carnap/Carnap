@@ -503,11 +503,10 @@ instance Show HardegreeD where
          show DDiaIn = "◇I(d)"
 
 parseHardegreeD :: Parsec String u [HardegreeD]
-parseHardegreeD = map RelD <$> parseHardegreeL
-                    <|> parseRuleTable (fromList 
-                        [ ("[]O(d)"      , return [DBoxOut])
-                        , ("<>I(d)"      , return [DDiaIn])
-                        ])
+parseHardegreeD = parseRuleTable (fromList 
+                    [ ("[]O(d)"      , return [DBoxOut])
+                    , ("<>I(d)"      , return [DDiaIn])
+                    ]) <|> map RelD <$> parseHardegreeL
 
 parseHardegreeDProof ::  Map String DerivedRule -> String -> [DeductionLine HardegreeD AbsoluteModalPropLexicon (Form Bool)]
 parseHardegreeDProof ders = toDeductionHardegree parseHardegreeD relativeModalPropFormulaParser
@@ -534,7 +533,7 @@ instance Inference HardegreeD AbsoluteModalPropLexicon (Form Bool) where
          globalRestriction (Left ded) n (RelD DiaD1) = Just (globalEigenConstraint (someWorld `indexcons` someOtherWorld) (Left ded) n )
          globalRestriction (Left ded) n (RelD DiaD2) = Just (globalEigenConstraint (someWorld `indexcons` someOtherWorld) (Left ded) n )
          globalRestriction (Left ded) n (RelD DiaOut) = Just (globalEigenConstraint (someWorld `indexcons` someOtherWorld) (Left ded) n )
-         globalRestriction (Left ded) n (RelD ND) = Just (globalEigenConstraint (someWorld `indexcons` someOtherWorld) (Left ded) n )
+         globalRestriction (Left ded) n (RelD ND) = Just (globalNewConstraint [someWorld `indexcons` someOtherWorld] (Left ded) n )
          globalRestriction (Left ded) n (RelD DiaIn) = Just (globalOldConstraint [someWorld `indexcons` someOtherWorld] (Left ded) n )
          globalRestriction (Left ded) n (RelD BoxOut) = Just (globalOldConstraint [someWorld `indexcons` someOtherWorld] (Left ded) n )
          globalRestriction (Left ded) n (RelD (MoPL FalO)) = Just (globalOldConstraint [someOtherWorld,someWorld] (Left ded) n )
@@ -565,11 +564,10 @@ instance Show HardegreeT where
          show TDiaIn = "◇I(t)"
 
 parseHardegreeT :: Parsec String u [HardegreeT]
-parseHardegreeT = map RelT <$> parseHardegreeL
-                    <|> parseRuleTable (fromList 
-                        [ ("[]O(t)"      , return [TBoxOut])
-                        , ("<>I(t)"      , return [TDiaIn])
-                        ])
+parseHardegreeT = parseRuleTable (fromList 
+                    [ ("[]O(t)"      , return [TBoxOut])
+                    , ("<>I(t)"      , return [TDiaIn])
+                    ]) <|> map RelT <$> parseHardegreeL
 
 parseHardegreeTProof ::  Map String DerivedRule -> String -> [DeductionLine HardegreeT AbsoluteModalPropLexicon (Form Bool)]
 parseHardegreeTProof ders = toDeductionHardegree parseHardegreeT relativeModalPropFormulaParser
@@ -594,7 +592,7 @@ instance Inference HardegreeT AbsoluteModalPropLexicon (Form Bool) where
          globalRestriction (Left ded) n (RelT DiaD1) = Just (globalEigenConstraint (someWorld `indexcons` someOtherWorld) (Left ded) n )
          globalRestriction (Left ded) n (RelT DiaD2) = Just (globalEigenConstraint (someWorld `indexcons` someOtherWorld) (Left ded) n )
          globalRestriction (Left ded) n (RelT DiaOut) = Just (globalEigenConstraint (someWorld `indexcons` someOtherWorld) (Left ded) n )
-         globalRestriction (Left ded) n (RelT ND) = Just (globalEigenConstraint (someWorld `indexcons` someOtherWorld) (Left ded) n )
+         globalRestriction (Left ded) n (RelT ND) = Just (globalNewConstraint [someWorld `indexcons` someOtherWorld] (Left ded) n )
          globalRestriction (Left ded) n (RelT DiaIn) = Just (globalOldConstraint [someWorld `indexcons` someOtherWorld] (Left ded) n )
          globalRestriction (Left ded) n (RelT BoxOut) = Just (globalOldConstraint [someWorld `indexcons` someOtherWorld] (Left ded) n )
          globalRestriction (Left ded) n (RelT (MoPL FalO)) = Just (globalOldConstraint [someOtherWorld,someWorld] (Left ded) n )
@@ -627,13 +625,12 @@ instance Show HardegreeB where
          show BTDiaIn = "◇I(t)"
 
 parseHardegreeB :: Parsec String u [HardegreeB]
-parseHardegreeB = map RelB <$> parseHardegreeL
-                    <|> parseRuleTable (fromList 
-                        [ ("[]O(b)"      , return [BBBoxOut])
-                        , ("<>I(b)"      , return [BBDiaIn])
-                        , ("[]O(t)"      , return [BTBoxOut])
-                        , ("<>I(b)"      , return [BTDiaIn])
-                        ])
+parseHardegreeB = parseRuleTable (fromList 
+                    [ ("[]O(b)"      , return [BBBoxOut])
+                    , ("<>I(b)"      , return [BBDiaIn])
+                    , ("[]O(t)"      , return [BTBoxOut])
+                    , ("<>I(t)"      , return [BTDiaIn])
+                    ]) <|> map RelB <$> parseHardegreeL
 
 parseHardegreeBProof ::  Map String DerivedRule -> String -> [DeductionLine HardegreeB AbsoluteModalPropLexicon (Form Bool)]
 parseHardegreeBProof ders = toDeductionHardegree parseHardegreeB relativeModalPropFormulaParser
@@ -662,7 +659,7 @@ instance Inference HardegreeB AbsoluteModalPropLexicon (Form Bool) where
          globalRestriction (Left ded) n (RelB DiaD1) = Just (globalEigenConstraint (someWorld `indexcons` someOtherWorld) (Left ded) n )
          globalRestriction (Left ded) n (RelB DiaD2) = Just (globalEigenConstraint (someWorld `indexcons` someOtherWorld) (Left ded) n )
          globalRestriction (Left ded) n (RelB DiaOut) = Just (globalEigenConstraint (someWorld `indexcons` someOtherWorld) (Left ded) n )
-         globalRestriction (Left ded) n (RelB ND) = Just (globalEigenConstraint (someWorld `indexcons` someOtherWorld) (Left ded) n )
+         globalRestriction (Left ded) n (RelB ND) = Just (globalNewConstraint [someWorld `indexcons` someOtherWorld] (Left ded) n )
          globalRestriction (Left ded) n (RelB DiaIn) = Just (globalOldConstraint [someWorld `indexcons` someOtherWorld] (Left ded) n )
          globalRestriction (Left ded) n (RelB BoxOut) = Just (globalOldConstraint [someWorld `indexcons` someOtherWorld] (Left ded) n )
          globalRestriction (Left ded) n (RelB (MoPL FalO)) = Just (globalOldConstraint [someOtherWorld,someWorld] (Left ded) n )
@@ -724,7 +721,7 @@ instance Inference HardegreeFour AbsoluteModalPropLexicon (Form Bool) where
          globalRestriction (Left ded) n (RelFour DiaD1) = Just (globalEigenConstraint (someWorld `indexcons` someOtherWorld) (Left ded) n )
          globalRestriction (Left ded) n (RelFour DiaD2) = Just (globalEigenConstraint (someWorld `indexcons` someOtherWorld) (Left ded) n )
          globalRestriction (Left ded) n (RelFour DiaOut) = Just (globalEigenConstraint (someWorld `indexcons` someOtherWorld) (Left ded) n )
-         globalRestriction (Left ded) n (RelFour ND) = Just (globalEigenConstraint (someWorld `indexcons` someOtherWorld) (Left ded) n )
+         globalRestriction (Left ded) n (RelFour ND) = Just (globalNewConstraint [someWorld `indexcons` someOtherWorld] (Left ded) n )
          globalRestriction (Left ded) n (RelFour DiaIn) = Just (globalOldConstraint [someWorld `indexcons` someOtherWorld] (Left ded) n )
          globalRestriction (Left ded) n (RelFour BoxOut) = Just (globalOldConstraint [someWorld `indexcons` someOtherWorld] (Left ded) n )
          globalRestriction (Left ded) n (RelFour (MoPL FalO)) = Just (globalOldConstraint [someOtherWorld,someWorld] (Left ded) n )
@@ -786,7 +783,7 @@ instance Inference HardegreeFive AbsoluteModalPropLexicon (Form Bool) where
          globalRestriction (Left ded) n (RelFive DiaD1) = Just (globalEigenConstraint (someWorld `indexcons` someOtherWorld) (Left ded) n )
          globalRestriction (Left ded) n (RelFive DiaD2) = Just (globalEigenConstraint (someWorld `indexcons` someOtherWorld) (Left ded) n )
          globalRestriction (Left ded) n (RelFive DiaOut) = Just (globalEigenConstraint (someWorld `indexcons` someOtherWorld) (Left ded) n )
-         globalRestriction (Left ded) n (RelFive ND) = Just (globalEigenConstraint (someWorld `indexcons` someOtherWorld) (Left ded) n )
+         globalRestriction (Left ded) n (RelFive ND) = Just (globalNewConstraint [someWorld `indexcons` someOtherWorld] (Left ded) n )
          globalRestriction (Left ded) n (RelFive DiaIn) = Just (globalOldConstraint [someWorld `indexcons` someOtherWorld] (Left ded) n )
          globalRestriction (Left ded) n (RelFive BoxOut) = Just (globalOldConstraint [someWorld `indexcons` someOtherWorld] (Left ded) n )
          globalRestriction (Left ded) n (RelFive (MoPL FalO)) = Just (globalOldConstraint [someOtherWorld,someWorld] (Left ded) n )
@@ -827,8 +824,7 @@ instance Show HardegreeS5 where
          show S54DiaIn = "◇I(4)"
 
 parseHardegreeS5 :: Parsec String u [HardegreeS5]
-parseHardegreeS5 = map RelS5 <$> parseHardegreeL
-                    <|> parseRuleTable (fromList 
+parseHardegreeS5 = parseRuleTable (fromList 
                         [ ("[]O(5)"      , return [S55BoxOut])
                         , ("<>I(5)"      , return [S55DiaIn])
                         , ("[]O(t)"      , return [S5TBoxOut])
@@ -837,7 +833,7 @@ parseHardegreeS5 = map RelS5 <$> parseHardegreeL
                         , ("<>I(b)"      , return [S5BDiaIn])
                         , ("[]O(4)"      , return [S54BoxOut])
                         , ("<>I(4)"      , return [S54DiaIn])
-                        ])
+                        ]) <|> map RelS5 <$> parseHardegreeL
 
 parseHardegreeS5Proof ::  Map String DerivedRule -> String -> [DeductionLine HardegreeS5 AbsoluteModalPropLexicon (Form Bool)]
 parseHardegreeS5Proof ders = toDeductionHardegree parseHardegreeS5 relativeModalPropFormulaParser
@@ -874,7 +870,7 @@ instance Inference HardegreeS5 AbsoluteModalPropLexicon (Form Bool) where
          globalRestriction (Left ded) n (RelS5 DiaD1) = Just (globalEigenConstraint (someWorld `indexcons` someOtherWorld) (Left ded) n )
          globalRestriction (Left ded) n (RelS5 DiaD2) = Just (globalEigenConstraint (someWorld `indexcons` someOtherWorld) (Left ded) n )
          globalRestriction (Left ded) n (RelS5 DiaOut) = Just (globalEigenConstraint (someWorld `indexcons` someOtherWorld) (Left ded) n )
-         globalRestriction (Left ded) n (RelS5 ND) = Just (globalEigenConstraint (someWorld `indexcons` someOtherWorld) (Left ded) n )
+         globalRestriction (Left ded) n (RelS5 ND) = Just (globalNewConstraint [someWorld `indexcons` someOtherWorld] (Left ded) n )
          globalRestriction (Left ded) n (RelS5 DiaIn) = Just (globalOldConstraint [someWorld `indexcons` someOtherWorld] (Left ded) n )
          globalRestriction (Left ded) n (RelS5 BoxOut) = Just (globalOldConstraint [someWorld `indexcons` someOtherWorld] (Left ded) n )
          globalRestriction (Left ded) n (RelS5 (MoPL FalO)) = Just (globalOldConstraint [someOtherWorld,someWorld] (Left ded) n )
@@ -941,7 +937,7 @@ instance Inference HardegreeS4 AbsoluteModalPropLexicon (Form Bool) where
          globalRestriction (Left ded) n (RelS4 DiaD1) = Just (globalEigenConstraint (someWorld `indexcons` someOtherWorld) (Left ded) n )
          globalRestriction (Left ded) n (RelS4 DiaD2) = Just (globalEigenConstraint (someWorld `indexcons` someOtherWorld) (Left ded) n )
          globalRestriction (Left ded) n (RelS4 DiaOut) = Just (globalEigenConstraint (someWorld `indexcons` someOtherWorld) (Left ded) n )
-         globalRestriction (Left ded) n (RelS4 ND) = Just (globalEigenConstraint (someWorld `indexcons` someOtherWorld) (Left ded) n )
+         globalRestriction (Left ded) n (RelS4 ND) = Just (globalNewConstraint [someWorld `indexcons` someOtherWorld] (Left ded) n )
          globalRestriction (Left ded) n (RelS4 DiaIn) = Just (globalOldConstraint [someWorld `indexcons` someOtherWorld] (Left ded) n )
          globalRestriction (Left ded) n (RelS4 BoxOut) = Just (globalOldConstraint [someWorld `indexcons` someOtherWorld] (Left ded) n )
          globalRestriction (Left ded) n (RelS4 (MoPL FalO)) = Just (globalOldConstraint [someOtherWorld,someWorld] (Left ded) n )

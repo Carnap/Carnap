@@ -68,6 +68,7 @@ depth (SeparatorLine dpth) = dpth
 
 assertion (AssertLine f _ _ _) = Just f
 assertion (ShowLine f _) = Just f
+assertion (ShowWithLine f _ _ _) = Just f
 assertion _ = Nothing
 
 isAssumptionLine (AssertLine _ r _ _) = and (map isAssumption r)
