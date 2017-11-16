@@ -34,13 +34,14 @@ getUserR ident = do
             UserData firstname lastname enrolledin _ <- checkUserData k
             (synsubs, transsubs,dersubs, ttsubs) <- subsByIdAndSource enrolledin k
             let isAdmin = ident `elem` map instructorEmail instructorsDataList
-            assignments <- assignmentsOf enrolledin
             let pointsAvailable = show $ pointsOf (courseData enrolledin)
             derivedRules <- getDrList
-            syntable <- problemsToTable enrolledin synsubs
-            transtable <- problemsToTable enrolledin transsubs
-            dertable <- problemsToTable enrolledin dersubs
-            tttable <- problemsToTable enrolledin ttsubs
+            utcToKansas' <- liftIO utcToKansas
+            assignments <- assignmentsOf utcToKansas'  enrolledin
+            syntable <- problemsToTable utcToKansas' enrolledin synsubs
+            transtable <- problemsToTable utcToKansas' enrolledin transsubs
+            dertable <- problemsToTable utcToKansas' enrolledin dersubs
+            tttable <- problemsToTable utcToKansas' enrolledin ttsubs
             score <- totalScore enrolledin synsubs transsubs dersubs ttsubs
             let coursetitle = nameOf (courseData enrolledin)
             defaultLayout $ do
@@ -55,7 +56,7 @@ getUserR ident = do
                             <p> This user does not exist
                        |]
 
-          assignmentsOf theclass = do
+          assignmentsOf localize theclass = do
              asmd <- runDB $ selectList [AssignmentMetadataCourse ==. theclass] []
              return $
                 [whamlet|
@@ -70,13 +71,13 @@ getUserR ident = do
                                     <td>
                                         Problem Set #{show num}
                                     <td>
-                                        #{formatted date}
+                                        #{formatted localize date}
                         $forall a <- map entityVal asmd
                             <tr>
                                 <td>
                                     <a href=@{AssignmentR $ assignmentMetadataFilename a}>
                                         #{assignmentMetadataFilename a}
-                                <td>#{formatted $ assignmentMetadataDuedate a}
+                                <td>#{formatted localize $ assignmentMetadataDuedate a}
                 |]
 
 --------------------------------------------------------
@@ -120,10 +121,12 @@ totalScore theclass a b c d = do
 asUTC :: Text -> UTCTime
 asUTC z = read (unpack z)
 
-toKansasLocal z = ZonedTime (utcToLocalTime centralDaylight z) centralDaylight
-    where centralDaylight = TimeZone (-300) False "CDT"
+utcToKansas = do nyctz <- getCurrentTimeZone 
+                 --XXX: Server is in NYC. Do this dynamically to handle daylight savings, etc.
+                 let kstz = TimeZone (timeZoneMinutes nyctz - 60) False "CDT"
+                 return (\z -> ZonedTime (utcToLocalTime kstz z) kstz)
 
-formatted z = formatTime defaultTimeLocale "%l:%M %P %Z, %a %b %e, %Y" (toKansasLocal z)
+formatted localize z = formatTime defaultTimeLocale "%l:%M %P %Z, %a %b %e, %Y" (localize z)
 
 utcDueDate theclass x = (duedates $ courseData theclass) >>= M.lookup (read $ unpack (takeWhile (/= '.') x) :: Int) 
 
@@ -136,7 +139,7 @@ laterThan t1 t2 = diffUTCTime t1 t2 > 0
 --------------------------------------------------------
 --functions for manipulating html
 
-problemsToTable theclass xs = do 
+problemsToTable localize theclass xs = do 
             rows <- mapM toRow xs
             return $ do B.table B.! class_ "table table-striped" $ do
                             B.col B.! style "width:50px"
@@ -153,7 +156,7 @@ problemsToTable theclass xs = do
                            return $ do
                               B.tr $ do B.td $ B.toHtml (takeWhile (/= ':') $ problem p)
                                         B.td $ B.toHtml (drop 1 . dropWhile (/= ':') $ problem p)
-                                        B.td $ B.toHtml (formatted $ asUTC $ submitted p )
+                                        B.td $ B.toHtml (formatted localize $ asUTC $ submitted p )
                                         B.td $ B.toHtml $ show $ score
 
 tryDelete name = "tryDeleteRule(\"" <> name <> "\")"
