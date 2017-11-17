@@ -6,6 +6,7 @@ import Carnap.Core.Data.AbstractSyntaxDataTypes
 import Carnap.Core.Unification.ACUI
 import Carnap.Core.Unification.Unification
 import Carnap.Core.Data.Util
+import Carnap.Languages.Util.LanguageClasses
 import Control.Lens.Lens (lens)
 import Control.Lens.Traversal (Traversal')
 import Control.Monad.State
@@ -197,6 +198,20 @@ class Typeable a => Concretes lex a where
             Nothing -> pure x
 
 instance Concretes lex (Form Bool)
+
+instance PrismBooleanConnLex lex b => PrismBooleanConnLex (ClassicalSequentLexOver lex) b
+instance PrismPropositionalContext lex b => PrismPropositionalContext (ClassicalSequentLexOver lex) b
+instance PrismBooleanConst lex b => PrismBooleanConst (ClassicalSequentLexOver lex) b
+instance PrismPropLex lex b => PrismPropLex (ClassicalSequentLexOver lex) b
+instance PrismSchematicProp lex b => PrismSchematicProp (ClassicalSequentLexOver lex) b
+instance PrismStandardQuant lex b c => PrismStandardQuant (ClassicalSequentLexOver lex) b c
+instance PrismModality lex b => PrismModality (ClassicalSequentLexOver lex) b
+instance PrismIndexing lex a b c => PrismIndexing (ClassicalSequentLexOver lex) a b c
+instance PrismIndexedConstant lex b => PrismIndexedConstant (ClassicalSequentLexOver lex) b
+instance PrismIntIndex lex b => PrismIntIndex (ClassicalSequentLexOver lex) b
+instance PrismCons lex b => PrismCons (ClassicalSequentLexOver lex) b
+instance PrismPolyadicSchematicFunction lex a b => PrismPolyadicSchematicFunction (ClassicalSequentLexOver lex) a b
+instance PrismPolyadicSchematicPredicate lex a b => PrismPolyadicSchematicPredicate (ClassicalSequentLexOver lex) a b
 
 --------------------------------------------------------
 --3. Sequent Languages

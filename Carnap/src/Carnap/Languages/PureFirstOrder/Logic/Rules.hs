@@ -92,6 +92,9 @@ universalInstantiation = [ GammaV 1 :|-: ss (PBind (All "v") (phi 1))]
 existentialGeneralization = [ GammaV 1 :|-: ss (phi 1 tau)]
                             ∴ GammaV 1 :|-: ss (PBind (Some "v") (phi 1))
 
+existentialInstantiation = [ GammaV 1 :|-: ss (PBind (Some "v") (phi 1))]
+                           ∴ GammaV 1 :|-: ss (phi 1 tau)
+
 ------------------------------------
 --  1.2. Rules with Variations  --
 ------------------------------------

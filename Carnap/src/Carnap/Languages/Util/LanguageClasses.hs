@@ -263,7 +263,7 @@ instance {-#OVERLAPPABLE#-} PrismPolyadicPredicate lex c b => PolyadicPredicateL
 class PolyadicSchematicPredicateLanguage lang arg ret where
         pphin :: Typeable ret' => Int -> Arity arg ret n ret' -> lang ret'
 
-class (Typeable c, Typeable b, PrismLink (FixLang lex) (Predicate (IntPred b c) (FixLang lex))) 
+class (Typeable c, Typeable b, PrismLink (FixLang lex) (Predicate (SchematicIntPred b c) (FixLang lex))) 
         => PrismPolyadicSchematicPredicate lex c b where
 
         _spredIdx :: Typeable ret => Arity (Term c) (Form b) n ret -> Prism' (FixLang lex ret) Int
@@ -324,6 +324,26 @@ class (Typeable b, PrismLink (FixLang lex) (Function (IntConst b) (FixLang lex))
 
 instance {-#OVERLAPPABLE#-} PrismIndexedConstant lex b => IndexedConstantLanguage (FixLang lex (Term b)) where
        cn = review _constIdx
+
+class IndexLanguage l where
+        intIdx :: Int -> l
+
+class (Typeable b, PrismLink (FixLang lex) (Function (IntIndex b) (FixLang lex))) 
+        => PrismIntIndex lex b where
+
+        _intIdx :: Prism' (FixLang lex (Term b)) Int
+        _intIdx = link_IntIndex . intIndex
+
+        link_IntIndex :: Prism' (FixLang lex (Term b)) (Function (IntIndex b) (FixLang lex) (Term b))
+        link_IntIndex = link 
+
+        intIndex :: Prism' (Function (IntIndex b) (FixLang lex) (Term b)) Int
+        intIndex = prism' (\n -> Function (Index n) AZero) 
+                            (\x -> case x of Function (Index n) AZero -> Just n
+                                             _ -> Nothing)
+
+instance {-#OVERLAPPABLE#-} PrismIntIndex lex b => IndexLanguage (FixLang lex (Term b)) where
+       intIdx = review _intIdx
 
 class IndexedSchemeConstantLanguage l where
         taun :: Int -> l
@@ -408,10 +428,10 @@ class IndexingLang lex index indexed unindexed | lex -> index indexed unindexed 
     worldScheme :: Int -> FixLang lex index
 
 instance {-#OVERLAPPABLE#-} 
-        (PrismIndexing lex a b c, PrismIndexedConstant lex a, PrismPolyadicSchematicFunction lex a a
+        (PrismIndexing lex a b c, PrismIntIndex lex a, PrismPolyadicSchematicFunction lex a a
         ) => IndexingLang lex (Term a) (Form c) (Form b) where
        atWorld = curry (review $ binaryOpPrism _indexer)
-       world = review _constIdx 
+       world = review _intIdx
        worldScheme = review (_sfuncIdx (AZero :: Arity (Term a) (Term a) Zero (Term a)))
 
 class (Typeable a, Typeable b, Typeable c, PrismLink (FixLang lex) (Indexer a b c (FixLang lex))) 

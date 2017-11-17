@@ -174,41 +174,6 @@ instance ParsableLex (Form Bool) AbsoluteModalPropLexicon where
 instance ParsableLex (Form (World -> Bool)) AbsoluteModalPropLexicon where
         langParser = absoluteModalPropFormulaPreParser
 
-instance PrismBooleanConnLex CoreCalcLex (World -> Bool)
-instance PrismPropositionalContext CoreCalcLex (World -> Bool)
-instance PrismBooleanConst CoreCalcLex (World -> Bool)
-instance PrismPropLex CoreCalcLex (World -> Bool)
-instance PrismSchematicProp CoreCalcLex (World -> Bool)
-instance PrismModality CoreCalcLex (World -> Bool)
-
-instance PrismBooleanConnLex WorldTheorySequentCalcLex (World -> Bool)
-instance PrismPropositionalContext WorldTheorySequentCalcLex (World -> Bool)
-instance PrismBooleanConst WorldTheorySequentCalcLex (World -> Bool)
-instance PrismPropLex WorldTheorySequentCalcLex (World -> Bool)
-instance PrismSchematicProp WorldTheorySequentCalcLex (World -> Bool)
-instance PrismStandardQuant WorldTheorySequentCalcLex (World -> Bool) (World)
-instance PrismModality WorldTheorySequentCalcLex (World -> Bool)
-instance PrismIndexing WorldTheorySequentCalcLex World (World -> Bool) (World->Bool) 
-instance PrismIndexedConstant WorldTheorySequentCalcLex World
-instance PrismCons WorldTheorySequentCalcLex World
-instance PrismPolyadicSchematicFunction WorldTheorySequentCalcLex World World
-instance PrismPolyadicSchematicPredicate WorldTheorySequentCalcLex World (World -> Bool) 
-
-instance PrismPropositionalContext AbsoluteModalPropSequentCalcLex Bool
-instance PrismIndexedConstant AbsoluteModalPropSequentCalcLex World
-instance PrismCons AbsoluteModalPropSequentCalcLex World
-instance PrismPolyadicSchematicFunction AbsoluteModalPropSequentCalcLex World World
-instance PrismPolyadicSchematicPredicate AbsoluteModalPropSequentCalcLex Word (World -> Bool) 
-
-instance PrismBooleanConnLex AbsoluteModalPropSequentCalcLex (World -> Bool)
-instance PrismPropositionalContext AbsoluteModalPropSequentCalcLex (World -> Bool)
-instance PrismBooleanConst AbsoluteModalPropSequentCalcLex (World -> Bool)
-instance PrismPropLex AbsoluteModalPropSequentCalcLex (World -> Bool)
-instance PrismSchematicProp AbsoluteModalPropSequentCalcLex (World -> Bool)
-instance PrismModality AbsoluteModalPropSequentCalcLex (World -> Bool)
-
-instance PrismIndexing AbsoluteModalPropSequentCalcLex World (World -> Bool) Bool
-
 phi :: PolyadicSchematicPredicateLanguage (FixLang lex) (Term World) (Form (World -> Bool)) => Int -> (FixLang lex) (Term World) -> (FixLang lex) (Form (World -> Bool))
 phi n x = pphin n AOne :!$: x
 
@@ -342,7 +307,6 @@ relativeDiamondOut :: ModalRule lex b
 relativeDiamondOut =
         [ GammaV 1 :|-: SS (pos (phin 1) ./. someWorld) ]
         ∴ GammaV 1 :|-: SS (phin 1 ./. (someWorld `indexcons` someOtherWorld))
-
 
 diamondIn :: ModalRule lex b
 diamondIn = 

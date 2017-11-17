@@ -159,8 +159,7 @@ instance FirstOrder (FixLang (CoreLexicon :|: a)) =>
 
 instance CanonicalForm (PureFirstOrderLanguageWith a (Term Int))
 
-instance IndexedConstantLanguage (PureFirstOrderLanguageWith a (Term Int)) where 
-        cn = PC
+instance PrismIndexedConstant (CoreLexicon :|: a) Int
 
 instance IndexedSchemeConstantLanguage (PureFirstOrderLanguageWith a (Term Int))where
         taun = PT

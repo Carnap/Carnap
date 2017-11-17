@@ -90,22 +90,11 @@ pattern (:->:) x y     = PIf  :!$: x :!$: y
 pattern (:<->:) x y    = PIff :!$: x :!$: y
 pattern PNeg x         = PNot :!$: x
 
-instance BooleanConstLanguage PureForm where
-        lverum = PVerum
-        lfalsum = PFalsum
-
-instance IndexedPropLanguage PureForm where
-        pn = PP
-
 instance PrismPropLex PurePropLexicon Bool
-
 instance PrismBooleanConnLex PurePropLexicon Bool
-
-instance IndexedSchemePropLanguage PureForm where
-        phin = PPhi
-
-instance IndexedPropContextSchemeLanguage (PurePropLanguage (Form Bool)) where 
-        propCtx n x = PCtx n :!$: x
+instance PrismPropositionalContext PurePropLexicon Bool
+instance PrismBooleanConst PurePropLexicon Bool
+instance PrismSchematicProp PurePropLexicon Bool
 
 instance CanonicalForm PureForm
 

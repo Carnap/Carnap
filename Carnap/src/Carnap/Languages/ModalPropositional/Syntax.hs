@@ -102,6 +102,13 @@ type CoreLexicon = Predicate ModalProp
                    :|: Connective ModalPropositionalContext
                    :|: EndLang
 
+instance PrismBooleanConnLex CoreLexicon (World -> Bool)
+instance PrismPropositionalContext CoreLexicon (World -> Bool)
+instance PrismBooleanConst CoreLexicon (World -> Bool)
+instance PrismPropLex CoreLexicon (World -> Bool)
+instance PrismSchematicProp CoreLexicon (World -> Bool)
+instance PrismModality CoreLexicon (World -> Bool)
+
 type ModalPropLexiconWith a = CoreLexicon :|: a :|: EndLang
 
 type ModalPropLanguageWith a = FixLang (ModalPropLexiconWith a)
@@ -134,6 +141,11 @@ pattern MNec x         = MBox :!$: x
 pattern MPos x         = MDiamond :!$: x
 
 instance PrismBooleanConnLex (ModalPropLexiconWith a) (World -> Bool)
+instance PrismPropositionalContext (ModalPropLexiconWith a) (World -> Bool)
+instance PrismBooleanConst (ModalPropLexiconWith a) (World -> Bool)
+instance PrismPropLex (ModalPropLexiconWith a) (World -> Bool)
+instance PrismSchematicProp (ModalPropLexiconWith a) (World -> Bool)
+instance PrismModality (ModalPropLexiconWith a) (World -> Bool)
 
 instance ModalLanguage (ModalPropLanguageWith a (Form (World -> Bool))) where
         nec = MNec
@@ -195,13 +207,6 @@ instance CopulaSchema WorldTheoryPropLanguage where
     lamSchema f (x:xs) = "(λβ_" ++ show h ++ "." ++ show (f (PSV (-1 * h))) ++ intercalate " " (x:xs) ++ ")"
         where h = scopeHeight (LLam f)
 
-instance QuantLanguage 
-        (WorldTheoryPropLanguage (Form (World -> Bool))) 
-        (WorldTheoryPropLanguage (Term World)) 
-         where
-    lall v f = IQuant (All v) :!$: LLam f
-    lsome v f = IQuant (Some v) :!$: LLam f
-
 instance BoundVars WorldTheoryPropLexicon where
         scopeUniqueVar (IQuant (All v)) (LLam f) = worldVar (show $ scopeHeight (LLam f))
         scopeUniqueVar (IQuant (Some v)) (LLam f) = worldVar (show $ scopeHeight (LLam f))
@@ -209,6 +214,13 @@ instance BoundVars WorldTheoryPropLexicon where
         subBoundVar = subst
 
 type WorldTheoryForm = WorldTheoryPropLanguage (Form (World -> Bool))
+
+instance PrismStandardQuant WorldTheoryPropLexicon (World -> Bool) World
+instance PrismIndexing WorldTheoryPropLexicon World (World -> Bool) (World->Bool) 
+instance PrismIntIndex WorldTheoryPropLexicon World
+instance PrismCons WorldTheoryPropLexicon World
+instance PrismPolyadicSchematicFunction WorldTheoryPropLexicon World World
+instance PrismPolyadicSchematicPredicate WorldTheoryPropLexicon World (World -> Bool) 
 
 ----------------------------------------
 --  5. Absolute Modal Logic Language  --
@@ -226,7 +238,10 @@ type AbsoluteModalPropLanguage = ModalPropLanguageWith AbsoluteModalLexicon
 
 instance CopulaSchema AbsoluteModalPropLanguage
 
+instance PrismIndexing AbsoluteModalPropLexicon World (World -> Bool) Bool
+instance PrismIntIndex AbsoluteModalPropLexicon World
 instance PrismCons AbsoluteModalPropLexicon World
+instance PrismPolyadicSchematicFunction AbsoluteModalPropLexicon World World
 
 type AbsoluteModalForm = AbsoluteModalPropLanguage (Form Bool)
 

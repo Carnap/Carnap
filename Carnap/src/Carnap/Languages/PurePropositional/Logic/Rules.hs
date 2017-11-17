@@ -52,11 +52,6 @@ data PropSeqLabel = PropSeqFO | PropSeqACUI
 instance Eq (PropSequentCalc a) where
         (==) = (=*)
 
-instance PrismBooleanConnLex PropSequentCalcLex Bool
-instance PrismPropositionalContext PropSequentCalcLex Bool
-instance PrismBooleanConst PropSequentCalcLex Bool
-instance PrismPropLex PropSequentCalcLex Bool
-instance PrismSchematicProp PropSequentCalcLex Bool
 
 -- instance Combineable PropSequentCalc PropSeqLabel where
 
