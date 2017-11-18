@@ -1,7 +1,8 @@
-{-#LANGUAGE GADTs, FlexibleContexts, PatternSynonyms, TypeSynonymInstances, FlexibleInstances, MultiParamTypeClasses #-}
+{-#LANGUAGE GADTs, RankNTypes, FlexibleContexts, PatternSynonyms, TypeSynonymInstances, FlexibleInstances, MultiParamTypeClasses #-}
 module Carnap.Languages.PureFirstOrder.Logic.Rules where
 
 import Data.List (intercalate)
+import Data.Typeable (Typeable)
 import Text.Parsec
 import Carnap.Core.Data.Util (scopeHeight)
 import Carnap.Core.Unification.Unification (applySub,subst)
@@ -37,8 +38,10 @@ pattern SeqQuant q        = FX (Lx2 (Lx1 (Lx2 (Bind q))))
 pattern SeqSV n           = FX (Lx2 (Lx1 (Lx1 (Lx4 (StaticVar n)))))
 pattern SeqVar c a        = FX (Lx2 (Lx1 (Lx4 (Function c a))))
 pattern SeqTau c a        = FX (Lx2 (Lx1 (Lx5 (Function c a))))
+pattern SeqConst c a      = FX (Lx2 (Lx1 (Lx3 (Function c a))))
 pattern SeqV s            = SeqVar (Var s) AZero
 pattern SeqT n            = SeqTau (SFunc AZero n) AZero
+pattern SeqC n            = SeqConst (Constant n) AZero
 
 instance Eq (FOLSequentCalc a) where
         (==) = (=*)
@@ -46,19 +49,24 @@ instance Eq (FOLSequentCalc a) where
 instance ParsableLex (Form Bool) PureLexiconFOL where
         langParser = folFormulaParser
 
+instance IndexedSchemeConstantLanguage (FOLSequentCalc (Term Int)) where
+        taun = SeqT
+
 folSeqParser = seqFormulaParser :: Parsec String u (FOLSequentCalc (Sequent (Form Bool)))
 
-ss :: PureFOLForm -> FOLSequentCalc (Succedent (Form Bool))
-ss = SS . liftToSequent
-
-sa :: PureFOLForm -> FOLSequentCalc (Antecedent (Form Bool))
-sa = SA . liftToSequent
-
-phi n x = PPhi n AOne AOne :!$: x
-
+tau :: IndexedSchemeConstantLanguage (FixLang lex (Term Int)) => FixLang lex (Term Int)
 tau = taun 1
 
+tau' :: IndexedSchemeConstantLanguage (FixLang lex (Term Int)) => FixLang lex (Term Int)
 tau' = taun 2
+
+phi :: (Typeable b, PolyadicSchematicPredicateLanguage (FixLang lex) (Term Int) (Form b))
+    => Int -> (FixLang lex) (Term Int) -> (FixLang lex) (Form b)
+phi n x = pphin n AOne :!$: x
+
+phi' :: PolyadicSchematicPredicateLanguage (FixLang lex) (Term Int) (Form Bool)
+    => Int -> (FixLang lex) (Term Int) -> (FixLang lex) (Form Bool)
+phi' n x = pphin n AOne :!$: x
 
 data DerivedRule = DerivedRule { conclusion :: PureFOLForm, premises :: [PureFOLForm]}
                deriving (Show, Eq)
@@ -66,9 +74,9 @@ data DerivedRule = DerivedRule { conclusion :: PureFOLForm, premises :: [PureFOL
 eigenConstraint c suc ant sub
     | c' `occursIn` ant' = Just $ "The constant " ++ show c' ++ " appears not to be fresh, given that this line relies on " ++ show ant'
     | c' `occursIn` suc' = Just $ "The constant " ++ show c' ++ " appears not to be fresh in the other premise " ++ show suc'
-    | otherwise = case fromSequent c' of 
-                          PC _ -> Nothing
-                          PT _ -> Nothing
+    | otherwise = case c' of 
+                          SeqC _ -> Nothing
+                          SeqT _ -> Nothing
                           _ -> Just $ "The term " ++ show c' ++ " is not a constant"
     where c'   = applySub sub c
           ant' = applySub sub ant
@@ -81,53 +89,92 @@ eigenConstraint c suc ant sub
 --  1.1. Common Rules  --
 -------------------------
 
-eqReflexivity = [] ∴ Top :|-: ss (tau :==: tau)
+type FirstOrderRule lex b = 
+        ( Typeable b
+        , BooleanLanguage (ClassicalSequentOver lex (Form b))
+        , IndexedSchemeConstantLanguage (ClassicalSequentOver lex (Term Int))
+        , QuantLanguage (ClassicalSequentOver lex (Form b)) (ClassicalSequentOver lex (Term Int)) 
+        , PolyadicSchematicPredicateLanguage (ClassicalSequentOver lex) (Term Int) (Form b)
+        ) => SequentRule lex (Form b)
 
-universalGeneralization = [ GammaV 1 :|-: ss (phi 1 tau)]
-                          ∴ GammaV 1 :|-: ss (PBind (All "v") (phi 1))
+type FirstOrderEqRule lex b = 
+        ( Typeable b
+        , EqLanguage (ClassicalSequentOver lex) (Term Int) (Form b)
+        , IndexedSchemeConstantLanguage (ClassicalSequentOver lex (Term Int))
+        , PolyadicSchematicPredicateLanguage (ClassicalSequentOver lex) (Term Int) (Form b)
+        ) => SequentRule lex (Form b)
 
-universalInstantiation = [ GammaV 1 :|-: ss (PBind (All "v") (phi 1))]
-                         ∴ GammaV 1 :|-: ss (phi 1 tau)
+eqReflexivity :: FirstOrderEqRule lex b
+eqReflexivity = [] ∴ Top :|-: SS (tau `equals` tau)
 
-existentialGeneralization = [ GammaV 1 :|-: ss (phi 1 tau)]
-                            ∴ GammaV 1 :|-: ss (PBind (Some "v") (phi 1))
+universalGeneralization :: FirstOrderRule lex b
+universalGeneralization = [ GammaV 1 :|-: SS (phi 1 (taun 1))]
+                          ∴ GammaV 1 :|-: SS (lall "v" (phi 1))
 
-existentialInstantiation = [ GammaV 1 :|-: ss (PBind (Some "v") (phi 1))]
-                           ∴ GammaV 1 :|-: ss (phi 1 tau)
+universalInstantiation :: FirstOrderRule lex b
+universalInstantiation = [ GammaV 1 :|-: SS (lall "v" (phi 1))]
+                         ∴ GammaV 1 :|-: SS (phi 1 (taun 1))
+
+existentialGeneralization :: FirstOrderRule lex b
+existentialGeneralization = [ GammaV 1 :|-: SS (phi 1 (taun 1))]
+                            ∴ GammaV 1 :|-: SS (lsome "v" (phi 1))
+
+existentialInstantiation :: FirstOrderRule lex b
+existentialInstantiation = [ GammaV 1 :|-: SS (lsome "v" (phi 1))]
+                           ∴ GammaV 1 :|-: SS (phi 1 (taun 1))
 
 ------------------------------------
 --  1.2. Rules with Variations  --
 ------------------------------------
 
+type FirstOrderEqRuleVariants lex b = 
+        ( Typeable b
+        , EqLanguage (ClassicalSequentOver lex) (Term Int) (Form b)
+        , IndexedSchemeConstantLanguage (ClassicalSequentOver lex (Term Int))
+        , PolyadicSchematicPredicateLanguage (ClassicalSequentOver lex) (Term Int) (Form b)
+        ) => [SequentRule lex (Form b)]
+        
+type FirstOrderRuleVariants lex b = 
+        ( Typeable b
+        , BooleanLanguage (ClassicalSequentOver lex (Form b))
+        , IndexedSchemeConstantLanguage (ClassicalSequentOver lex (Term Int))
+        , QuantLanguage (ClassicalSequentOver lex (Form b)) (ClassicalSequentOver lex (Term Int)) 
+        , IndexedSchemePropLanguage (ClassicalSequentOver lex (Form b))
+        , PolyadicSchematicPredicateLanguage (ClassicalSequentOver lex) (Term Int) (Form b)
+        ) => [SequentRule lex (Form b)]
+
+leibnizLawVariations :: FirstOrderEqRuleVariants lex b
 leibnizLawVariations = [
-                           [ GammaV 1 :|-: ss (phi 1 tau)
-                           , GammaV 2 :|-: ss (tau :==: tau')
-                           ] ∴ GammaV 1 :+: GammaV 2 :|-: ss (phi 1 tau')
+                           [ GammaV 1 :|-: SS (phi 1 tau)
+                           , GammaV 2 :|-: SS (tau `equals` tau')
+                           ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (phi 1 tau')
                        , 
-                           [ GammaV 1 :|-: ss (phi 1 tau')
-                           , GammaV 2 :|-: ss (tau :==: tau')
-                           ] ∴ GammaV 1 :+: GammaV 2 :|-: ss (phi 1 tau)
+                           [ GammaV 1 :|-: SS (phi 1 tau')
+                           , GammaV 2 :|-: SS (tau `equals` tau')
+                           ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (phi 1 tau)
                        ]
 
+existentialDerivation :: FirstOrderRuleVariants lex b
 existentialDerivation = [
-                            [ GammaV 1 :+:  sa (phi 1 tau) :|-: ss (phin 1) 
-                            , GammaV 2 :|-: ss (PBind (Some "v") $ phi 1)   
-                            , sa (phi 1 tau) :|-: ss (phi 1 tau)            
-                            ] ∴ GammaV 1 :+: GammaV 2 :|-: ss (phin 1)      
+                            [ GammaV 1 :+:  SA (phi 1 tau) :|-: SS (phin 1) 
+                            , GammaV 2 :|-: SS (lsome "v" $ phi 1)   
+                            , SA (phi 1 tau) :|-: SS (phi 1 tau)            
+                            ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (phin 1)      
                         ,
-                            [ GammaV 1 :|-: ss (phin 1)
-                            , sa (phi 1 tau) :|-: ss (phi 1 tau)
-                            , GammaV 2 :|-: ss (PBind (Some "v") $ phi 1)
-                            ] ∴ GammaV 1 :+: GammaV 2 :|-: ss (phin 1)
+                            [ GammaV 1 :|-: SS (phin 1)
+                            , SA (phi 1 tau) :|-: SS (phi 1 tau)
+                            , GammaV 2 :|-: SS (lsome "v" $ phi 1)
+                            ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (phin 1)
                         ]
 
+quantifierNegation :: FirstOrderRuleVariants lex b
 quantifierNegation = [  
-                        [ GammaV 1 :|-: ss (PNeg $ PBind (Some "v") $ phi 1)] 
-                        ∴ GammaV 1 :|-: ss (PBind (All "v") $ \x -> PNeg $ phi 1 x)
-                     ,  [ GammaV 1 :|-: ss (PBind (Some "v") $ \x -> PNeg $ phi 1 x)] 
-                        ∴ GammaV 1 :|-: ss (PNeg $ PBind (All "v")  $ phi 1)
-                     ,  [ GammaV 1 :|-: ss (PNeg $ PBind (All "v") $ phi 1)] 
-                        ∴ GammaV 1 :|-: ss (PBind (Some "v") $ \x -> PNeg $ phi 1 x)
-                     ,  [ GammaV 1 :|-: ss (PBind (All "v") $ \x -> PNeg $ phi 1 x)] 
-                        ∴ GammaV 1 :|-: ss (PNeg $ PBind (Some "v") $ phi 1)
+                        [ GammaV 1 :|-: SS (lneg $ lsome "v" $ phi 1)] 
+                        ∴ GammaV 1 :|-: SS (lall "v" $ \x -> lneg $ phi 1 x)
+                     ,  [ GammaV 1 :|-: SS (lsome "v" $ \x -> lneg $ phi 1 x)] 
+                        ∴ GammaV 1 :|-: SS (lneg $ lall "v"  $ phi 1)
+                     ,  [ GammaV 1 :|-: SS (lneg $ lall "v" $ phi 1)] 
+                        ∴ GammaV 1 :|-: SS (lsome "v" $ \x -> lneg $ phi 1 x)
+                     ,  [ GammaV 1 :|-: SS (lall "v" $ \x -> lneg $ phi 1 x)] 
+                        ∴ GammaV 1 :|-: SS (lneg $ lsome "v" $ phi 1)
                      ]

@@ -280,8 +280,8 @@ class (Typeable c, Typeable b, PrismLink (FixLang lex) (Predicate (SchematicIntP
 instance {-#OVERLAPPABLE#-} PrismPolyadicSchematicPredicate lex c b => PolyadicSchematicPredicateLanguage (FixLang lex) (Term c) (Form b) where
         pphin n a = review (_spredIdx a) n
 
-class EqLanguage l t where
-        equals :: t -> t -> l
+class EqLanguage lang arg ret where
+        equals :: lang arg -> lang arg -> lang ret 
 
 class (Typeable c, Typeable b, PrismLink (FixLang lex) (Predicate (TermEq b c) (FixLang lex))) 
         => PrismTermEquality lex c b where
@@ -298,7 +298,7 @@ class (Typeable c, Typeable b, PrismLink (FixLang lex) (Predicate (TermEq b c) (
                            (\x -> case x of Predicate TermEq ATwo -> Just ()
                                             _ -> Nothing)
 
-instance {-#OVERLAPPABLE#-} PrismTermEquality lex c b => EqLanguage (FixLang lex (Form b)) (FixLang lex (Term c)) where
+instance {-#OVERLAPPABLE#-} PrismTermEquality lex c b => EqLanguage (FixLang lex) (Term c) (Form b) where
         equals = curry $ review (binaryOpPrism _termEq)
 
 --------------------------------------------------------
@@ -345,9 +345,6 @@ class (Typeable b, PrismLink (FixLang lex) (Function (IntIndex b) (FixLang lex))
 instance {-#OVERLAPPABLE#-} PrismIntIndex lex b => IndexLanguage (FixLang lex (Term b)) where
        intIdx = review _intIdx
 
-class IndexedSchemeConstantLanguage l where
-        taun :: Int -> l
-
 class PolyadicFunctionLanguage lang arg ret where
         pfn :: Typeable ret' => Int -> Arity arg ret n ret' -> lang ret'
 
@@ -365,6 +362,15 @@ class (Typeable c, Typeable b, PrismLink (FixLang lex) (Function (IntFunc b c) (
                              (\x -> case x of (Function (Func a' n) a'') | arityInt a == arityInt a' -> Just n
                                               _ -> Nothing)
 
+instance {-#OVERLAPPABLE#-} PrismPolyadicFunction lex c b => PolyadicFunctionLanguage (FixLang lex) (Term c) (Term b) where
+        pfn n a = review (_funcIdx a) n
+
+class IndexedSchemeConstantLanguage l where
+        taun :: Int -> l
+
+class SchematicPolyadicFunctionLanguage lang arg ret where
+        spfn :: Typeable ret' => Int -> Arity arg ret n ret' -> lang ret'
+
 class (Typeable c, Typeable b, PrismLink (FixLang lex) (Function (SchematicIntFunc b c) (FixLang lex))) 
         => PrismPolyadicSchematicFunction lex c b where
 
@@ -379,6 +385,8 @@ class (Typeable c, Typeable b, PrismLink (FixLang lex) (Function (SchematicIntFu
                              (\x -> case x of (Function (SFunc a' n) a'') | arityInt a == arityInt a' -> Just n
                                               _ -> Nothing)
 
+instance {-#OVERLAPPABLE#-} PrismPolyadicSchematicFunction lex c b => SchematicPolyadicFunctionLanguage (FixLang lex) (Term c) (Term b) where
+        spfn n a = review (_sfuncIdx a) n
 
 --------------------------------------------------------
 --1.4. Quantifiers

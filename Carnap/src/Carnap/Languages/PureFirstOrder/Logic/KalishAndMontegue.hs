@@ -61,8 +61,8 @@ instance Inference FOLogic PureLexiconFOL (Form Bool) where
         where gammas = foldl (:+:) Top (map GammaV [1..length (premises r)])
      conclusionOf x   = lowerSequent (ruleOf x)
 
-     restriction UD     = Just (eigenConstraint (SeqT 1) (ss (PBind (All "v") $ phi 1)) (fogamma 1))
-     restriction ED1    = Just (eigenConstraint (SeqT 1) (ss (PBind (Some "v") $ phi 1) :-: ss (phin 1)) (fogamma 1 :+: fogamma 2))
+     restriction UD     = Just (eigenConstraint (SeqT 1) (SS (lall "v" $ phi' 1)) (fogamma 1))
+     restriction ED1    = Just (eigenConstraint (SeqT 1) (SS (lsome "v" $ phi' 1) :-: SS (phin 1)) (fogamma 1 :+: fogamma 2))
      restriction ED2    = Nothing --Since this one does not use the assumption with a fresh object
      restriction _      = Nothing
 

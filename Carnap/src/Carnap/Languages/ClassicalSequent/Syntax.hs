@@ -212,6 +212,7 @@ instance PrismIntIndex lex b => PrismIntIndex (ClassicalSequentLexOver lex) b
 instance PrismCons lex b => PrismCons (ClassicalSequentLexOver lex) b
 instance PrismPolyadicSchematicFunction lex a b => PrismPolyadicSchematicFunction (ClassicalSequentLexOver lex) a b
 instance PrismPolyadicSchematicPredicate lex a b => PrismPolyadicSchematicPredicate (ClassicalSequentLexOver lex) a b
+instance PrismTermEquality lex a b => PrismTermEquality (ClassicalSequentLexOver lex) a b
 
 --------------------------------------------------------
 --3. Sequent Languages

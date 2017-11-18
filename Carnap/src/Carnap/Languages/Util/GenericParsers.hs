@@ -87,9 +87,9 @@ unaryOpParser ops recur = do n <- listToTry ops
                              return $ n f
 
 equalsParser :: 
-    ( EqLanguage l t
+    ( EqLanguage lang arg ret
     , Monad m
-    ) => ParsecT String u m t -> ParsecT String u m l
+    ) => ParsecT String u m (lang arg) -> ParsecT String u m (lang ret) 
 equalsParser parseTerm = do t1 <- parseTerm
                             spaces
                             _ <- char '='

@@ -66,7 +66,9 @@ type CoreLexicon = P.PurePropLexicon
                    :|: Function (SchematicIntFunc Int Int)
                    :|: EndLang
 
-type PureFirstOrderLanguageWith a = FixLang (CoreLexicon :|: a)
+type PureFirstOrderLexWith a = CoreLexicon :|: a
+
+type PureFirstOrderLanguageWith a = FixLang (PureFirstOrderLexWith a)
 
 pattern PSent n        = FX (Lx1 (Lx1 (Lx1 (Predicate (Prop n) AZero))))
 pattern PSPhi n        = FX (Lx1 (Lx1 (Lx2 (Predicate (SProp n) AZero))))
@@ -107,8 +109,8 @@ instance Schematizable (a (PureFirstOrderLanguageWith a)) =>
     lamSchema f (x:xs) = "(λβ_" ++ show h ++ "." ++ show (f (PSV (-1 * h))) ++ intercalate " " (x:xs) ++ ")"
         where h = scopeHeight (LLam f)
 
-instance FirstOrder (FixLang (CoreLexicon :|: a)) => 
-    BoundVars (CoreLexicon :|: a) where
+instance FirstOrder (FixLang (PureFirstOrderLexWith a)) => 
+    BoundVars (PureFirstOrderLexWith a) where
 
     scopeUniqueVar (PQuant (Some v)) (LLam f) = PV $ show $ scopeHeight (LLam f)
     scopeUniqueVar (PQuant (All v)) (LLam f)  = PV $ show $ scopeHeight (LLam f)
@@ -116,42 +118,24 @@ instance FirstOrder (FixLang (CoreLexicon :|: a)) =>
 
     subBoundVar = subst
 
-instance FirstOrder (FixLang (CoreLexicon :|: a)) => 
-    LangTypes2 (CoreLexicon :|: a) Term Int Form Bool
+instance FirstOrder (FixLang (PureFirstOrderLexWith a)) => 
+    LangTypes2 (PureFirstOrderLexWith a) Term Int Form Bool
 
-termsOf :: FirstOrder (FixLang (CoreLexicon :|: a)) => 
-        Traversal' (FixLang (CoreLexicon :|: a) (Form Bool)) (FixLang (CoreLexicon :|: a) (Term Int))
+termsOf :: FirstOrder (FixLang (PureFirstOrderLexWith a)) => 
+        Traversal' (FixLang (PureFirstOrderLexWith a) (Form Bool)) (FixLang (PureFirstOrderLexWith a) (Term Int))
 termsOf = difChildren2
 
-instance FirstOrder (FixLang (CoreLexicon :|: a)) => 
-    LangTypes2 (CoreLexicon :|: a) Form Bool Term Int
+instance FirstOrder (FixLang (PureFirstOrderLexWith a)) => 
+    LangTypes2 (PureFirstOrderLexWith a) Form Bool Term Int
 
-instance BooleanLanguage (PureFirstOrderLanguageWith a (Form Bool)) where
-    land = (:&:)
-    lneg = PNeg
-    lor  = (:||:)
-    lif  = (:->:)
-    liff = (:<->:)
-
-instance BooleanConstLanguage (PureFirstOrderLanguageWith a (Form Bool)) where
-    lverum = PVerum
-    lfalsum = PFalsum
-
-instance IndexedPropContextSchemeLanguage (PureFirstOrderLanguageWith a (Form Bool)) where 
-        propCtx n x = PCtx n :!$: x
-
-instance QuantLanguage (PureFirstOrderLanguageWith a (Form Bool)) (PureFirstOrderLanguageWith a (Term Int)) where
-    lall  v f = PQuant (All v) :!$: LLam f
-    lsome  v f = PQuant (Some v) :!$: LLam f
-
-instance FirstOrder (FixLang (CoreLexicon :|: a)) => 
-    RelabelVars (CoreLexicon :|: a) Form Bool where
+instance FirstOrder (FixLang (PureFirstOrderLexWith a)) => 
+    RelabelVars (PureFirstOrderLexWith a) Form Bool where
 
     subBinder (PBind (All v) f) y = Just $ PBind (All y) f 
     subBinder (PBind (Some v) f) y = Just $ PBind (Some y) f
     subBinder _ _ = Nothing
 
-instance FirstOrder (FixLang (CoreLexicon :|: a)) => 
+instance FirstOrder (FixLang (PureFirstOrderLexWith a)) => 
     CanonicalForm (PureFirstOrderLanguageWith a (Form Bool)) where
 
     canonical = relabelVars varStream
@@ -159,16 +143,13 @@ instance FirstOrder (FixLang (CoreLexicon :|: a)) =>
 
 instance CanonicalForm (PureFirstOrderLanguageWith a (Term Int))
 
-instance PrismIndexedConstant (CoreLexicon :|: a) Int
-
-instance IndexedSchemeConstantLanguage (PureFirstOrderLanguageWith a (Term Int))where
-        taun = PT
-
-instance IndexedPropLanguage (PureFirstOrderLanguageWith a (Form Bool)) where
-        pn = PSent
-
-instance IndexedSchemePropLanguage (PureFirstOrderLanguageWith a (Form Bool)) where
-        phin = PSPhi
+instance PrismPropLex (PureFirstOrderLexWith a) Bool
+instance PrismIndexedConstant (PureFirstOrderLexWith a) Int
+instance PrismBooleanConnLex (PureFirstOrderLexWith a) Bool
+instance PrismPropositionalContext (PureFirstOrderLexWith a) Bool
+instance PrismBooleanConst (PureFirstOrderLexWith a) Bool
+instance PrismSchematicProp (PureFirstOrderLexWith a) Bool
+instance PrismStandardQuant (PureFirstOrderLexWith a) Bool Int
 
 --equality up to α-equivalence
 instance UniformlyEq (PureFirstOrderLanguageWith a) => Eq (PureFirstOrderLanguageWith a b) where
@@ -230,10 +211,8 @@ type OpenPFOLTerm a = OpenLanguagePFOL a (Term Int)
 
 type PurePFOLTerm = OpenPFOLTerm EndLang
 
-instance PolyadicPredicateLanguage (OpenLanguagePFOL a) (Term Int) (Form Bool) 
-    where ppn n a = PP n a a
-
 instance PrismPolyadicPredicate (OpenLexiconPFOL a) Int Bool
+instance PrismPolyadicSchematicPredicate (OpenLexiconPFOL a) Int Bool
 
 instance Incrementable (OpenLexiconPFOL EndLang) (Term Int) where
     incHead (PP n a b) = Just $ PP n (ASucc a) (ASucc a)
@@ -263,11 +242,8 @@ type PureFOLForm = PureLanguageFOL (Form Bool)
 
 type PureFOLTerm = PureLanguageFOL (Term Int)
 
-instance EqLanguage PureFOLForm PureFOLTerm  where 
-    equals = (:==:)
-
-instance PolyadicFunctionLanguage PureLanguageFOL (Term Int) (Term Int) where 
-    pfn n a = PF n a a
+instance PrismTermEquality PureLexiconFOL Int Bool
+instance PrismPolyadicFunction PureLexiconFOL Int Int
 
 instance Incrementable (OpenLexiconPFOL (PolyadicFunctionSymbolsAndIdentity :|: a)) (Term Int) where
     incHead (PP n a b) = Just $ PP n (ASucc a) (ASucc a)
