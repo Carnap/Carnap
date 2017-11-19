@@ -23,6 +23,7 @@ activate cls chunk
     | "ForallxSLPlus" `elem` cls = actTemplate "proofchecker magnusSLPlus Render"
     | "ForallxQL" `elem` cls = actTemplate "proofchecker magnusQL Render"
     | "HardegreeSL" `elem` cls = actTemplate "proofchecker hardegreeSL Render"
+    | "HardegreePL" `elem` cls = actTemplate "proofchecker hardegreePL Render"
     | "HardegreeWTL" `elem` cls = actTemplate "proofchecker hardegreeWTL Render guides"
     | "HardegreeL" `elem` cls = actTemplate "proofchecker hardegreeL guides" --XXX: Keep render off here until we have nicer rendering of indicies
     | "HardegreeK" `elem` cls = actTemplate "proofchecker hardegreeK guides" --XXX: Keep render off here until we have nicer rendering of indicies

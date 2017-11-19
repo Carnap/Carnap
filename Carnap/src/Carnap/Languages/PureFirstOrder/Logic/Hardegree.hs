@@ -9,7 +9,7 @@ import Carnap.Languages.PureFirstOrder.Parser
 import qualified Carnap.Languages.PurePropositional.Logic as P
 import Carnap.Calculi.NaturalDeduction.Syntax
 import Carnap.Calculi.NaturalDeduction.Parser
-import Carnap.Calculi.NaturalDeduction.Checker (hoProcessLineFitchMemo, hoProcessLineFitch)
+import Carnap.Calculi.NaturalDeduction.Checker (hoProcessLineHardegreeMemo, hoProcessLineHardegree)
 import Carnap.Languages.ClassicalSequent.Syntax
 import Carnap.Languages.Util.LanguageClasses
 import Carnap.Languages.Util.GenericConstructors
@@ -62,12 +62,10 @@ instance Inference HardegreePL PureLexiconFOL (Form Bool) where
          indirectInference UI = Just (TypedProof (ProofType 0 1)) 
          indirectInference _ = Nothing
 
-         restriction _     = Nothing
-
-         globalRestriction (Left ded) n UI = Just (globalOldConstraint [tau'] (Left ded) n )
-         globalRestriction (Left ded) n NEO = Just (globalOldConstraint [tau'] (Left ded) n )
-         globalRestriction (Left ded) n EE = Just (globalNewConstraint [tau'] (Left ded) n )
-         globalRestriction (Left ded) n NUO = Just (globalNewConstraint [tau'] (Left ded) n )
+         globalRestriction (Left ded) n UE = Just (globalOldConstraint [tau] (Left ded) n )
+         globalRestriction (Left ded) n EE = Just (globalNewConstraint [tau] (Left ded) n )
+         globalRestriction (Left ded) n NEO = Just (globalOldConstraint [tau] (Left ded) n )
+         globalRestriction (Left ded) n NUO = Just (globalNewConstraint [tau] (Left ded) n )
          globalRestriction _ _ _ = Nothing
 
          isAssumption (HardegreeSL x) = isAssumption x
@@ -76,16 +74,16 @@ instance Inference HardegreePL PureLexiconFOL (Form Bool) where
 parseHardegreePL ders = try liftProp <|> quantRule
     where liftProp = do r <- P.parseHardegreeSL ders
                         return (map HardegreeSL r)
-          quantRule = do r <- choice (map (try . string) ["∀I", "AI", "∀O", "AO", "∃I", "EI"
+          quantRule = do r <- choice (map (try . string) ["∀I", "AI","UD", "∀O", "AO", "∃I", "EI"
                                                          , "∃O", "EO", "~∃O","-∃O" ,"-EO"
                                                          , "~EO","~∀O","~AO","-∀O","-AO" ])
                          case r of 
-                            r | r `elem` ["∀I","AI"] -> return [UI]
+                            r | r `elem` ["∀I","AI","UD"] -> return [UI]
                               | r `elem` ["∀O","AO"] -> return [UE]
                               | r `elem` ["∃I","EI"] -> return [EI]
                               | r `elem` ["∃O","EO"] -> return [EE]
                               | r `elem` ["~∃O","-∃O" ,"-EO", "~EO"] -> return [NEO]
-                              | r `elem` ["~∀O","~AO","-∀O","-AO"]   -> return [UE]
+                              | r `elem` ["~∀O","~AO","-∀O","-AO"]   -> return [NUO]
 
 parseHardegreePLProof ::  Map String P.DerivedRule -> String -> [DeductionLine HardegreePL PureLexiconFOL (Form Bool)]
 parseHardegreePLProof ders = toDeductionHardegree (parseHardegreePL ders) (hardegreePLFormulaParser)
@@ -93,7 +91,7 @@ parseHardegreePLProof ders = toDeductionHardegree (parseHardegreePL ders) (harde
 hardegreePLCalc = NaturalDeductionCalc
     { ndRenderer = MontegueStyle
     , ndParseProof = parseHardegreePLProof
-    , ndProcessLine = hoProcessLineFitch
-    , ndProcessLineMemo = Just hoProcessLineFitchMemo
+    , ndProcessLine = hoProcessLineHardegree
+    , ndProcessLineMemo = Just hoProcessLineHardegreeMemo
     , ndParseSeq = folSeqParser
     }

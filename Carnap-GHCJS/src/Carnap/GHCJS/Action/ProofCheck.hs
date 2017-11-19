@@ -12,7 +12,8 @@ import Carnap.Languages.PurePropositional.Logic as P
     (DerivedRule(..), logicBookCalc, magnusSLCalc, magnusSLPlusCalc, propCalc, hardegreeSLCalc
     , thomasBolducAndZachTFLCalc) 
 import Carnap.Languages.PureFirstOrder.Logic as FOL 
-    (DerivedRule(..), folCalc, magnusQLCalc, thomasBolducAndZachFOLCalc) 
+    (DerivedRule(..), folCalc, magnusQLCalc
+    , thomasBolducAndZachFOLCalc, hardegreePLCalc) 
 import Carnap.Languages.ModalPropositional.Logic as MPL
     ( hardegreeWTLCalc, hardegreeLCalc, hardegreeKCalc, hardegreeTCalc
     , hardegreeBCalc, hardegreeDCalc, hardegreeFourCalc, hardegreeFiveCalc)
@@ -102,6 +103,7 @@ activateChecker drs w (Just iog@(IOGoal i o g classes)) -- TODO: need to update 
         | "thomasBolducAndZachTFL" `elem` classes = tryParse buildOptions thomasBolducAndZachTFLCalc propChecker
         | "thomasBolducAndZachFOL" `elem` classes = tryParse buildOptions thomasBolducAndZachFOLCalc propChecker
         | "hardegreeSL" `elem` classes            = tryParse buildOptions hardegreeSLCalc propChecker
+        | "hardegreePL" `elem` classes            = tryParse buildOptions hardegreePLCalc propChecker
         | "hardegreeWTL" `elem` classes           = tryParse buildOptions hardegreeWTLCalc propChecker
         | "hardegreeL" `elem` classes             = tryParse buildOptions hardegreeLCalc propChecker
         | "hardegreeK" `elem` classes             = tryParse buildOptions hardegreeKCalc propChecker
