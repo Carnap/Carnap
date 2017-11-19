@@ -1,5 +1,5 @@
 {-#LANGUAGE TypeOperators, FlexibleContexts#-}
-module Carnap.Languages.PureFirstOrder.Parser ( folFormulaParser, mfolFormulaParser, magnusFOLFormulaParser, thomasBolducAndZachFOLFormulaParser ) where
+module Carnap.Languages.PureFirstOrder.Parser ( folFormulaParser, mfolFormulaParser, magnusFOLFormulaParser, thomasBolducAndZachFOLFormulaParser, hardegreePLFormulaParser) where
 
 import Carnap.Core.Data.AbstractSyntaxDataTypes
 import Carnap.Core.Data.AbstractSyntaxClasses (Schematizable)
@@ -70,6 +70,16 @@ magnusFOLParserOptions = PureFirstOrderParserOptions
 thomasBolducAndZachFOLParserOptions :: PureFirstOrderParserOptions PureLexiconFOL u Identity
 thomasBolducAndZachFOLParserOptions = magnusFOLParserOptions { hasBooleanConstants = True }
 
+hardegreeSLParserOptions :: PureFirstOrderParserOptions PureLexiconFOL u Identity
+hardegreeSLParserOptions = PureFirstOrderParserOptions 
+                         { atomicSentenceParser = \x -> parsePredicateSymbolNoParen "ABCDEFGHIJKLMNOPQRSTUVWXYZ" x
+                         , quantifiedSentenceParser' = quantifiedSentenceParser
+                         , freeVarParser = parseFreeVar "tuvwxyz"
+                         , constantParser = Just (parseConstant "abcdefghijklmnopqrs")
+                         , functionParser = Nothing
+                         , hasBooleanConstants = True
+                         }
+
 coreSubformulaParser :: ( BoundVars lex
                         , BooleanLanguage (FixLang lex (Form Bool))
                         , BooleanConstLanguage (FixLang lex (Form Bool))
@@ -92,25 +102,26 @@ coreSubformulaParser fp opts = (parenParser fp <* spaces)
           --Terms
           tparser = try (fparser tparser) <|> cparser <|> vparser
 
+parserFromOptions opts = buildExpressionParser opTable subformulaParser
+    where subformulaParser = coreSubformulaParser (parserFromOptions opts) opts 
+
 magnusFOLFormulaParser :: Parsec String u PureFOLForm
-magnusFOLFormulaParser = buildExpressionParser opTable subformulaParser
-    where subformulaParser = coreSubformulaParser magnusFOLFormulaParser magnusFOLParserOptions
+magnusFOLFormulaParser = parserFromOptions magnusFOLParserOptions
 
 thomasBolducAndZachFOLFormulaParser :: Parsec String u PureFOLForm
-thomasBolducAndZachFOLFormulaParser = buildExpressionParser opTable subformulaParser
-    where subformulaParser = coreSubformulaParser thomasBolducAndZachFOLFormulaParser thomasBolducAndZachFOLParserOptions
+thomasBolducAndZachFOLFormulaParser = parserFromOptions thomasBolducAndZachFOLParserOptions
+
+hardegreePLFormulaParser :: Parsec String u PureFOLForm
+hardegreePLFormulaParser = parserFromOptions thomasBolducAndZachFOLParserOptions
 
 folFormulaParser :: Parsec String u PureFOLForm
-folFormulaParser = buildExpressionParser opTable subformulaParser
-    where subformulaParser = coreSubformulaParser folFormulaParser standardFOLParserOptions
+folFormulaParser = parserFromOptions standardFOLParserOptions
 
 pfolFormulaParser :: Parsec String u PurePFOLForm
-pfolFormulaParser = buildExpressionParser opTable subformulaParser 
-    where subformulaParser = coreSubformulaParser pfolFormulaParser simplePolyadicFOLParserOptions
+pfolFormulaParser = parserFromOptions simplePolyadicFOLParserOptions
 
 mfolFormulaParser :: Parsec String u PureMFOLForm
-mfolFormulaParser = buildExpressionParser opTable subformulaParser 
-    where subformulaParser = coreSubformulaParser mfolFormulaParser simpleMonadicFOLParserOptions
+mfolFormulaParser = parserFromOptions simpleMonadicFOLParserOptions
 
 parseFreeVar :: String -> Parsec String u (PureFirstOrderLanguageWith a (Term Int))
 parseFreeVar s = choice [try $ do _ <- string "x_"

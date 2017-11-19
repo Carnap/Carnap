@@ -381,6 +381,7 @@ instance Inference HardegreeL AbsoluteModalPropLexicon (Form Bool) where
          indirectInference ND = Just (TypedProof (ProofType 0 1))
          indirectInference DiaD1 = Just (TypedProof (ProofType 1 1))
          indirectInference DiaD2 = Just (TypedProof (ProofType 1 1))
+         indirectInference _ = Nothing
 
          isAssumption (MoPL As) = True
          isAssumption _ = False

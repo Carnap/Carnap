@@ -3,6 +3,7 @@ module Carnap.Languages.PureFirstOrder.Logic.Rules where
 
 import Data.List (intercalate)
 import Data.Typeable (Typeable)
+import Data.Maybe (catMaybes)
 import Text.Parsec
 import Carnap.Core.Data.Util (scopeHeight)
 import Carnap.Core.Unification.Unification (applySub,subst)
@@ -14,6 +15,7 @@ import Carnap.Languages.ClassicalSequent.Syntax
 import Carnap.Languages.ClassicalSequent.Parser
 import Carnap.Languages.Util.LanguageClasses
 import Carnap.Languages.Util.GenericConstructors
+import Carnap.Calculi.NaturalDeduction.Syntax (DeductionLine(..),depth,assertion)
 
 --------------------------------------------------------
 --1. FirstOrder Sequent Calculus
@@ -85,6 +87,42 @@ eigenConstraint c suc ant sub
           -- imaginable.
           occursIn x y = not $ (subst x (static 0) y) =* y
 
+globalOldConstraint cs (Left ded) lineno sub = 
+          if all (\c -> any (\x -> c `occursIn`x) relevantLines) cs'
+              then Nothing
+              else Just $ "a constant in " ++ show cs' ++ " appears not to be old, but this rule needs old constants"
+    where cs' = map (applySub sub) cs
+
+          relevantLines = catMaybes . map (fmap liftLang . assertion) $ 
+                            ((oldRelevant [] $ take (lineno - 1) ded) ++ fromsp)
+
+          occursIn x y = not $ (subst x (static 0) y) =* y
+
+          --some extra lines that we need to add if we're putting this
+          --constraint on a subproof-closing rule
+          fromsp = case ded !! (lineno - 1) of
+                       ShowWithLine _ d _ _ -> 
+                            case takeWhile (\x -> depth x > d) . drop lineno $ ded of
+                               sp@(h:t) -> filter (witnessAt (depth h)) sp
+                               [] -> []
+                       _ -> []
+
+          oldRelevant accum [] = accum
+          oldRelevant [] (d:ded)  = oldRelevant [d] ded 
+          oldRelevant (a:accum) (d:ded) = if depth d < depth a 
+                                              then let accum' = filter (witnessAt (depth d)) accum in
+                                                  oldRelevant (d:accum') ded 
+                                              else oldRelevant (d:a:accum) ded 
+
+          witnessAt ldepth (ShowWithLine _ sdepth _ _) = sdepth < ldepth
+          witnessAt ldepth l = depth l <= ldepth 
+
+globalNewConstraint cs ded lineno sub = 
+        case globalOldConstraint cs ded lineno sub of
+            Nothing -> Just $ "an index in " ++ show cs' ++ " appears not to be new, but this rule needs new indexes"
+            Just s -> Nothing
+    where cs' = map (applySub sub) cs
+
 -------------------------
 --  1.1. Common Rules  --
 -------------------------
@@ -122,6 +160,14 @@ existentialGeneralization = [ GammaV 1 :|-: SS (phi 1 (taun 1))]
 existentialInstantiation :: FirstOrderRule lex b
 existentialInstantiation = [ GammaV 1 :|-: SS (lsome "v" (phi 1))]
                            ∴ GammaV 1 :|-: SS (phi 1 (taun 1))
+
+negatedExistentialInstantiation :: FirstOrderRule lex b
+negatedExistentialInstantiation = [ GammaV 1 :|-: SS (lneg $ lsome "v" (phi 1))]
+                                  ∴ GammaV 1 :|-: SS (lneg $ phi 1 (taun 1))
+
+negatedUniversalInstantiation :: FirstOrderRule lex b
+negatedUniversalInstantiation = [ GammaV 1 :|-: SS (lneg $ lall "v" (phi 1))]
+                                ∴ GammaV 1 :|-: SS (lneg $ phi 1 (taun 1))
 
 ------------------------------------
 --  1.2. Rules with Variations  --

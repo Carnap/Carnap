@@ -1,0 +1,99 @@
+{-#LANGUAGE  FlexibleContexts,  FlexibleInstances, MultiParamTypeClasses #-}
+module Carnap.Languages.PureFirstOrder.Logic.Hardegree (hardegreePLCalc,parseHardegreePL) where
+
+import Data.Map as M (lookup, Map,empty)
+import Text.Parsec
+import Carnap.Core.Data.AbstractSyntaxDataTypes (Form)
+import Carnap.Languages.PureFirstOrder.Syntax
+import Carnap.Languages.PureFirstOrder.Parser
+import qualified Carnap.Languages.PurePropositional.Logic as P
+import Carnap.Calculi.NaturalDeduction.Syntax
+import Carnap.Calculi.NaturalDeduction.Parser
+import Carnap.Calculi.NaturalDeduction.Checker (hoProcessLineFitchMemo, hoProcessLineFitch)
+import Carnap.Languages.ClassicalSequent.Syntax
+import Carnap.Languages.Util.LanguageClasses
+import Carnap.Languages.Util.GenericConstructors
+import Carnap.Languages.PureFirstOrder.Logic.Rules
+
+--------------------
+--  1. System PL  --
+--------------------
+-- A system of first-order logic resembling system PL from Hardegree's
+-- Introduction to Modal Logic
+
+data HardegreePL = HardegreeSL P.HardegreeSL | UI | UE | EI | EE 
+                 | QN1 | QN2 | QN3 | QN4
+                 | NUO | NEO
+                 deriving Eq
+
+instance Show HardegreePL where
+        show (HardegreeSL x) = show x
+        show UI          = "UD"
+        show UE          = "∀O"
+        show EI          = "∃I"
+        show EE          = "∃O"
+        show QN1         = "QN"
+        show QN2         = "QN"
+        show QN3         = "QN"
+        show QN4         = "QN"
+        show NUO         = "~∀O"
+        show NEO         = "~∃O"
+
+instance Inference HardegreePL PureLexiconFOL (Form Bool) where
+
+         ruleOf UI   = universalGeneralization
+         ruleOf UE   = universalInstantiation
+         ruleOf EI   = existentialGeneralization
+         ruleOf EE   = existentialInstantiation
+         ruleOf QN1  = quantifierNegation !! 0
+         ruleOf QN2  = quantifierNegation !! 1
+         ruleOf QN3  = quantifierNegation !! 2
+         ruleOf QN4  = quantifierNegation !! 3
+         ruleOf NUO  = negatedUniversalInstantiation
+         ruleOf NEO  = negatedExistentialInstantiation
+
+         premisesOf (HardegreeSL x) = map liftSequent (premisesOf x)
+         premisesOf r = upperSequents (ruleOf r)
+         
+         conclusionOf (HardegreeSL x) = liftSequent (conclusionOf x)
+         conclusionOf r = lowerSequent (ruleOf r)
+
+         indirectInference (HardegreeSL x) = indirectInference x
+         indirectInference UI = Just (TypedProof (ProofType 0 1)) 
+         indirectInference _ = Nothing
+
+         restriction _     = Nothing
+
+         globalRestriction (Left ded) n UI = Just (globalOldConstraint [tau'] (Left ded) n )
+         globalRestriction (Left ded) n NEO = Just (globalOldConstraint [tau'] (Left ded) n )
+         globalRestriction (Left ded) n EE = Just (globalNewConstraint [tau'] (Left ded) n )
+         globalRestriction (Left ded) n NUO = Just (globalNewConstraint [tau'] (Left ded) n )
+         globalRestriction _ _ _ = Nothing
+
+         isAssumption (HardegreeSL x) = isAssumption x
+         isAssumption _ = False
+
+parseHardegreePL ders = try liftProp <|> quantRule
+    where liftProp = do r <- P.parseHardegreeSL ders
+                        return (map HardegreeSL r)
+          quantRule = do r <- choice (map (try . string) ["∀I", "AI", "∀O", "AO", "∃I", "EI"
+                                                         , "∃O", "EO", "~∃O","-∃O" ,"-EO"
+                                                         , "~EO","~∀O","~AO","-∀O","-AO" ])
+                         case r of 
+                            r | r `elem` ["∀I","AI"] -> return [UI]
+                              | r `elem` ["∀O","AO"] -> return [UE]
+                              | r `elem` ["∃I","EI"] -> return [EI]
+                              | r `elem` ["∃O","EO"] -> return [EE]
+                              | r `elem` ["~∃O","-∃O" ,"-EO", "~EO"] -> return [NEO]
+                              | r `elem` ["~∀O","~AO","-∀O","-AO"]   -> return [UE]
+
+parseHardegreePLProof ::  Map String P.DerivedRule -> String -> [DeductionLine HardegreePL PureLexiconFOL (Form Bool)]
+parseHardegreePLProof ders = toDeductionHardegree (parseHardegreePL ders) (hardegreePLFormulaParser)
+
+hardegreePLCalc = NaturalDeductionCalc
+    { ndRenderer = MontegueStyle
+    , ndParseProof = parseHardegreePLProof
+    , ndProcessLine = hoProcessLineFitch
+    , ndProcessLineMemo = Just hoProcessLineFitchMemo
+    , ndParseSeq = folSeqParser
+    }
