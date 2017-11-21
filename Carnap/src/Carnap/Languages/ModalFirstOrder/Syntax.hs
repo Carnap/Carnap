@@ -4,7 +4,7 @@ module Carnap.Languages.ModalFirstOrder.Syntax
 where
 
 import Carnap.Core.Util 
-import Carnap.Languages.ModalPropositional.Syntax (World, ModalPropLexiconWith)
+import Carnap.Languages.ModalPropositional.Syntax (World, ModalPropLexiconWith, AbsoluteModalLexicon)
 import Carnap.Core.Data.AbstractSyntaxDataTypes
 import Carnap.Core.Data.AbstractSyntaxClasses
 import Carnap.Core.Data.Util (scopeHeight)
@@ -55,9 +55,11 @@ type ModalFirstOrderLexOverWith b a = CoreLexiconOver b :|: a
 type ModalFirstOrderLanguageOverWith b a = FixLang (ModalFirstOrderLexOverWith b a)
 
 pattern PQuant q       = FX (Lx1 (Lx2 (Bind q)))
-pattern PVar c a       = FX (Lx1 (Lx4 (Function c a)))
+pattern PVar c a       = FX (Lx1 (Lx5 (Function c a)))
+pattern PPred x arity  = FX (Lx1 (Lx3 (Predicate x arity)))
 pattern PBind q f      = PQuant q :!$: LLam f
 pattern PV s           = PVar (Var s) AZero
+pattern PP n a1 a2     = PPred (Pred a1 n) a2
 
 
 instance FirstOrder (FixLang (ModalFirstOrderLexOverWith b a)) => 
@@ -77,11 +79,11 @@ instance PrismBooleanConst (ModalFirstOrderLexOverWith b a) (World -> Bool)
 instance PrismSchematicProp (ModalFirstOrderLexOverWith b a) (World -> Bool)
 instance PrismStandardQuant (ModalFirstOrderLexOverWith b a) (World -> Bool) Int
 instance PrismModality (ModalFirstOrderLexOverWith b a) (World -> Bool)
+instance PrismPolyadicPredicate (ModalFirstOrderLexOverWith b a) Int (World -> Bool)
 
 --equality up to α-equivalence
 instance UniformlyEq (ModalFirstOrderLanguageOverWith b a) => Eq (ModalFirstOrderLanguageOverWith b a c) where
         (==) = (=*)
-
 
 ---------------------------------
 --  2.1 Simple Modal Extension --
@@ -89,6 +91,7 @@ instance UniformlyEq (ModalFirstOrderLanguageOverWith b a) => Eq (ModalFirstOrde
 
 type SimpleModalFirstOrderLanguageWith a = ModalFirstOrderLanguageOverWith EndLang a
 
+type SimpleModalFirstOrderLexWith a = ModalFirstOrderLexOverWith EndLang a
 
 instance ( Schematizable (a (SimpleModalFirstOrderLanguageWith a))
          , StaticVar (SimpleModalFirstOrderLanguageWith  a)
@@ -109,6 +112,12 @@ instance ( Schematizable (a (SimpleModalFirstOrderLanguageWith a))
 
 type SimpleModalFirstOrderLanguage = SimpleModalFirstOrderLanguageWith EndLang
 
+type SimpleModalFirstOrderLex = SimpleModalFirstOrderLexWith EndLang
+
+instance Incrementable SimpleModalFirstOrderLex (Term Int) where
+    incHead (PP n a b) = Just $ PP n (ASucc a) (ASucc a)
+    incHead _  = Nothing
+
 ----------------------------------
 --  2.2 Indexed Modal Extension --
 ----------------------------------
@@ -117,9 +126,9 @@ type IndexedModalFirstOrderLanguageWith a = ModalFirstOrderLanguageOverWith Abso
 
 type IndexedModalFirstOrderLexWith a = ModalFirstOrderLexOverWith AbsoluteModalLexicon a
 
-instance ( Schematizable (a (SimpleModalFirstOrderLanguageWith a))
-         , StaticVar (SimpleModalFirstOrderLanguageWith  a)
-         ) => CopulaSchema (SimpleModalFirstOrderLanguageWith a) where 
+instance ( Schematizable (a (IndexedModalFirstOrderLanguageWith a))
+         , StaticVar (IndexedModalFirstOrderLanguageWith  a)
+         ) => CopulaSchema (IndexedModalFirstOrderLanguageWith a) where 
 
     appSchema (PQuant (All x)) (LLam f) e = schematize (All x) (show (f $ PV x) : e)
     appSchema (PQuant (Some x)) (LLam f) e = schematize (Some x) (show (f $ PV x) : e)
@@ -130,13 +139,19 @@ instance ( Schematizable (a (SimpleModalFirstOrderLanguageWith a))
     lamSchema f (x:xs) = "(λβ_" ++ show h ++ "." ++ show (f $ static (-1 * h)) ++ intercalate " " (x:xs) ++ ")"
         where h = scopeHeight (LLam f)
 
-instance PrismIndexing (IndexedModalFirstOrderLanguageWith a) World (World -> Bool) Bool
-instance PrismIntIndex (IndexedModalFirstOrderLanguageWith a) World
-instance PrismCons (IndexedModalFirstOrderLanguageWith a) World
-instance PrismPolyadicSchematicFunction (IndexedModalFirstOrderLanguageWith a) World World
+instance PrismIndexing (IndexedModalFirstOrderLexWith a) World (World -> Bool) Bool
+instance PrismIntIndex (IndexedModalFirstOrderLexWith a) World
+instance PrismCons (IndexedModalFirstOrderLexWith a) World
+instance PrismPolyadicSchematicFunction (IndexedModalFirstOrderLexWith a) World World
 
 -------------------------------------
 --  2.2.1 Simplest Indexed Modal Extension --
 -------------------------------------
 
 type IndexedModalFirstOrderLanguage = IndexedModalFirstOrderLanguageWith EndLang
+
+type IndexedModalFirstOrderLex = IndexedModalFirstOrderLexWith EndLang 
+
+instance Incrementable IndexedModalFirstOrderLex (Term Int) where
+    incHead (PP n a b) = Just $ PP n (ASucc a) (ASucc a)
+    incHead _  = Nothing

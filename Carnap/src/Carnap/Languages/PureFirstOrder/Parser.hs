@@ -70,8 +70,8 @@ magnusFOLParserOptions = PureFirstOrderParserOptions
 thomasBolducAndZachFOLParserOptions :: PureFirstOrderParserOptions PureLexiconFOL u Identity
 thomasBolducAndZachFOLParserOptions = magnusFOLParserOptions { hasBooleanConstants = True }
 
-hardegreeSLParserOptions :: PureFirstOrderParserOptions PureLexiconFOL u Identity
-hardegreeSLParserOptions = PureFirstOrderParserOptions 
+hardegreePLParserOptions :: PureFirstOrderParserOptions PureLexiconFOL u Identity
+hardegreePLParserOptions = PureFirstOrderParserOptions 
                          { atomicSentenceParser = \x -> parsePredicateSymbolNoParen "ABCDEFGHIJKLMNOPQRSTUVWXYZ" x
                          , quantifiedSentenceParser' = quantifiedSentenceParser
                          , freeVarParser = parseFreeVar "tuvwxyz"
@@ -112,7 +112,7 @@ thomasBolducAndZachFOLFormulaParser :: Parsec String u PureFOLForm
 thomasBolducAndZachFOLFormulaParser = parserFromOptions thomasBolducAndZachFOLParserOptions
 
 hardegreePLFormulaParser :: Parsec String u PureFOLForm
-hardegreePLFormulaParser = parserFromOptions thomasBolducAndZachFOLParserOptions
+hardegreePLFormulaParser = parserFromOptions hardegreePLParserOptions
 
 folFormulaParser :: Parsec String u PureFOLForm
 folFormulaParser = parserFromOptions standardFOLParserOptions
