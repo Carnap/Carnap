@@ -23,13 +23,6 @@ data MonadicModel = MonadicModel
                   , proposition :: Int -> TruthValue
                   }
 
-instance Modelable MonadicModel PureConn where
-        satisfies _ Iff = lift2 (==)
-        satisfies _ If  = lift2 $ \x y -> (not x || y)
-        satisfies _ Or  = lift2 (||)
-        satisfies _ And = lift2 (&&)
-        satisfies _ Not = lift1 not
-
 instance Modelable MonadicModel PureMonadicPredicate where
         satisfies m (MonPred n) = property m n
 

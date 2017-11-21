@@ -41,8 +41,6 @@ type PureFunction = IntFunc Int Int
 
 type PureEq = TermEq Bool Int
 
-type PureConn = BooleanConn Bool
-
 type PureSchematicPred = SchematicIntPred Bool Int
 
 type PureConstant = IntConst Int
@@ -97,16 +95,17 @@ pattern PC n           = PConst (Constant n) AZero
 pattern PV s           = PVar (Var s) AZero
 pattern PT n           = PTau (SFunc AZero n) AZero
 
-instance Schematizable (a (PureFirstOrderLanguageWith a)) => 
-    CopulaSchema (PureFirstOrderLanguageWith a) where 
+instance ( StaticVar (PureFirstOrderLanguageWith a)
+         , Schematizable (a (PureFirstOrderLanguageWith a))
+         ) => CopulaSchema (PureFirstOrderLanguageWith a) where 
 
     appSchema (PQuant (All x)) (LLam f) e = schematize (All x) (show (f $ PV x) : e)
     appSchema (PQuant (Some x)) (LLam f) e = schematize (Some x) (show (f $ PV x) : e)
     appSchema x y e = schematize x (show y : e)
 
-    lamSchema f [] = "λβ_" ++ show h ++ "." ++ show (f (PSV (-1 * h)))
+    lamSchema f [] = "λβ_" ++ show h ++ "." ++ show (f (static (-1 * h)))
         where h = scopeHeight (LLam f)
-    lamSchema f (x:xs) = "(λβ_" ++ show h ++ "." ++ show (f (PSV (-1 * h))) ++ intercalate " " (x:xs) ++ ")"
+    lamSchema f (x:xs) = "(λβ_" ++ show h ++ "." ++ show (f (static (-1 * h))) ++ intercalate " " (x:xs) ++ ")"
         where h = scopeHeight (LLam f)
 
 instance FirstOrder (FixLang (PureFirstOrderLexWith a)) => 

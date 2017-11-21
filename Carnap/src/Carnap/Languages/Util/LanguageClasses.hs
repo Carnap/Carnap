@@ -193,7 +193,6 @@ instance {-#OVERLAPPABLE#-} PrismBooleanConst lex b => BooleanConstLanguage (Fix
 --1.2.1 Propositional Languages
 --------------------------------------------------------
 --languages with propositions
---TODO: derive IndexedPropLanguage from PrismPropLex
 
 class IndexedPropLanguage l where
         pn :: Int -> l

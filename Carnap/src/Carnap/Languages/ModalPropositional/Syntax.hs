@@ -147,20 +147,6 @@ instance PrismPropLex (ModalPropLexiconWith a) (World -> Bool)
 instance PrismSchematicProp (ModalPropLexiconWith a) (World -> Bool)
 instance PrismModality (ModalPropLexiconWith a) (World -> Bool)
 
-instance ModalLanguage (ModalPropLanguageWith a (Form (World -> Bool))) where
-        nec = MNec
-        pos = MPos
-
-instance BooleanConstLanguage (ModalPropLanguageWith a (Form (World -> Bool))) where
-        lverum = MVerum
-        lfalsum = MFalsum
-
-instance IndexedPropLanguage (ModalPropLanguageWith a (Form (World -> Bool))) where
-        pn = MP
-
-instance IndexedSchemePropLanguage (ModalPropLanguageWith a (Form (World -> Bool))) where
-        phin = MPhi
-
 -------------------------------
 --  3. Basic Modal Language  --
 -------------------------------
@@ -252,15 +238,5 @@ type AbsoluteModalPreForm = AbsoluteModalPropLanguage (Form (World -> Bool))
 ----------------------------
 --convenience class
 
-instance IndexingLang AbsoluteModalPropLexicon (Term World) (Form Bool) (Form (World -> Bool)) where
-    atWorld x t = FX (Lx2 (Lx1 AtIndex)) :!$: x :!$: t
-    world n = FX (Lx2 (Lx2 (Function (Index n) AZero)))
-    worldScheme n = FX (Lx2 (Lx4 (Function (SFunc AZero n) AZero)))
-
 worldVar :: String -> WorldTheoryPropLanguage (Term World)
 worldVar s = FX (Lx2 (Lx7 (Function (Var s) AZero)))
-
-instance IndexingLang WorldTheoryPropLexicon (Term World) (Form (World -> Bool)) (Form (World -> Bool)) where
-    atWorld x t = FX (Lx2 (Lx1 AtIndex)) :!$: x :!$: t
-    world n = FX (Lx2 (Lx2 (Function (Index n) AZero)))
-    worldScheme n = FX (Lx2 (Lx4 (Function (SFunc AZero n) AZero)))

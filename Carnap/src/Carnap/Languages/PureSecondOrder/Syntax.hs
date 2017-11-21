@@ -3,7 +3,6 @@
 module Carnap.Languages.PureSecondOrder.Syntax
 where
 
-
 import Carnap.Core.Util 
 import qualified Carnap.Languages.PureFirstOrder.Syntax as FOL
 import Carnap.Core.Data.AbstractSyntaxDataTypes
