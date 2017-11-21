@@ -48,6 +48,7 @@ type CoreLexiconOver b = ModalPropLexiconWith b
                        :|: Function ModalConstant
                        :|: Function ModalVar
                        :|: Function ModalSchematicFunc
+                       :|: Predicate ModalSchematicPred     
                        :|: EndLang
 
 type ModalFirstOrderLexOverWith b a = CoreLexiconOver b :|: a
@@ -60,7 +61,6 @@ pattern PPred x arity  = FX (Lx1 (Lx3 (Predicate x arity)))
 pattern PBind q f      = PQuant q :!$: LLam f
 pattern PV s           = PVar (Var s) AZero
 pattern PP n a1 a2     = PPred (Pred a1 n) a2
-
 
 instance FirstOrder (FixLang (ModalFirstOrderLexOverWith b a)) => 
     BoundVars (ModalFirstOrderLexOverWith b a) where
@@ -80,6 +80,7 @@ instance PrismSchematicProp (ModalFirstOrderLexOverWith b a) (World -> Bool)
 instance PrismStandardQuant (ModalFirstOrderLexOverWith b a) (World -> Bool) Int
 instance PrismModality (ModalFirstOrderLexOverWith b a) (World -> Bool)
 instance PrismPolyadicPredicate (ModalFirstOrderLexOverWith b a) Int (World -> Bool)
+instance PrismPolyadicSchematicPredicate (ModalFirstOrderLexOverWith b a) Int (World -> Bool)
 
 --equality up to α-equivalence
 instance UniformlyEq (ModalFirstOrderLanguageOverWith b a) => Eq (ModalFirstOrderLanguageOverWith b a c) where
@@ -144,9 +145,9 @@ instance PrismIntIndex (IndexedModalFirstOrderLexWith a) World
 instance PrismCons (IndexedModalFirstOrderLexWith a) World
 instance PrismPolyadicSchematicFunction (IndexedModalFirstOrderLexWith a) World World
 
--------------------------------------
+---------------------------------------------
 --  2.2.1 Simplest Indexed Modal Extension --
--------------------------------------
+---------------------------------------------
 
 type IndexedModalFirstOrderLanguage = IndexedModalFirstOrderLanguageWith EndLang
 

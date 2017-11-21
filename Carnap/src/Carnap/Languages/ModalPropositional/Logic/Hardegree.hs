@@ -1,13 +1,14 @@
 {-#LANGUAGE FlexibleContexts, FlexibleInstances, MultiParamTypeClasses #-}
 module Carnap.Languages.ModalPropositional.Logic.Hardegree
     ( parseHardegreeWTL,  parseHardegreeWTLProof, HardegreeWTL, hardegreeWTLCalc
-    , parseHardegreeL,  parseHardegreeLProof, HardegreeL, hardegreeLCalc 
-    , parseHardegreeK,  parseHardegreeKProof, HardegreeK, hardegreeKCalc 
+    , parseHardegreeL,  parseHardegreeLProof, HardegreeL(..), hardegreeLCalc 
+    , parseHardegreeK,  parseHardegreeKProof, HardegreeK(..), hardegreeKCalc 
     , parseHardegreeB,  parseHardegreeBProof, HardegreeB, hardegreeBCalc 
     , parseHardegreeT,  parseHardegreeTProof, HardegreeT, hardegreeTCalc 
     , parseHardegreeD,  parseHardegreeDProof, HardegreeD, hardegreeDCalc 
     , parseHardegreeFour,  parseHardegreeFourProof, HardegreeFour, hardegreeFourCalc 
     , parseHardegreeFive,  parseHardegreeFiveProof, HardegreeFive, hardegreeFiveCalc 
+    , ModalPropRule(..)
     ) where
 
 import Data.Map as M (lookup, Map,fromList)
@@ -15,6 +16,9 @@ import Text.Parsec
 import Carnap.Core.Data.AbstractSyntaxDataTypes (Form)
 import Carnap.Languages.ModalPropositional.Syntax
 import Carnap.Languages.ModalPropositional.Parser
+import Carnap.Languages.ClassicalSequent.Syntax
+import Carnap.Languages.ClassicalSequent.Parser
+import Carnap.Languages.ModalPropositional.Logic.Rules
 import Carnap.Languages.PurePropositional.Logic.Rules (DerivedRule)
 import Carnap.Languages.Util.GenericConstructors (StandardQuant(..))
 import Carnap.Languages.Util.LanguageClasses
@@ -22,9 +26,6 @@ import Carnap.Calculi.NaturalDeduction.Syntax
 import Carnap.Calculi.NaturalDeduction.Parser
 import Carnap.Calculi.NaturalDeduction.Checker
 import Carnap.Calculi.NaturalDeduction.Util
-import Carnap.Languages.ClassicalSequent.Syntax
-import Carnap.Languages.ClassicalSequent.Parser
-import Carnap.Languages.ModalPropositional.Logic.Rules
 
 --A system for propositional modal logic resembling the world-theory proof system from Gary
 --Hardegree's Modal Logic

@@ -1,5 +1,5 @@
 {-#LANGUAGE TypeOperators, FlexibleContexts#-}
-module Carnap.Languages.ModalFirstOrder.Parser ( hardegreeMPLFormulaParser) where
+module Carnap.Languages.ModalFirstOrder.Parser ( hardegreeMPLFormulaPreParser, hardegreeMPLFormulaParser) where
 
 import Carnap.Core.Data.AbstractSyntaxDataTypes
 import Carnap.Core.Data.AbstractSyntaxClasses (Schematizable)
