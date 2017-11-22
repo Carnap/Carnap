@@ -44,6 +44,11 @@ library
                      , Carnap.Languages.ModalPropositional.Logic
                      , Carnap.Languages.ModalPropositional.Logic.Rules
                      , Carnap.Languages.ModalPropositional.Logic.Hardegree
+                     , Carnap.Languages.ModalFirstOrder.Syntax
+                     , Carnap.Languages.ModalFirstOrder.Parser
+                     , Carnap.Languages.ModalFirstOrder.Logic
+                     , Carnap.Languages.ModalFirstOrder.Logic.Rules
+                     , Carnap.Languages.ModalFirstOrder.Logic.Hardegree
                      , Carnap.Languages.PureFirstOrder.Syntax
                      , Carnap.Languages.PureFirstOrder.Semantics
                      , Carnap.Languages.PureFirstOrder.Parser

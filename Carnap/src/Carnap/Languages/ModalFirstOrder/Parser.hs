@@ -5,7 +5,7 @@ import Carnap.Core.Data.AbstractSyntaxDataTypes
 import Carnap.Core.Data.AbstractSyntaxClasses (Schematizable)
 import Carnap.Languages.ModalPropositional.Syntax
 import Carnap.Languages.ModalFirstOrder.Syntax
-import Carnap.Languages.Util.LanguageClasses (BooleanLanguage, ModalLanguage, PrismModality, BooleanConstLanguage, IndexingLang(..), IndexedPropLanguage(..), QuantLanguage(..))
+import Carnap.Languages.Util.LanguageClasses (BooleanLanguage, ModalLanguage, PrismModality, BooleanConstLanguage, IndexingLang(..), IndexConsLang(..), IndexedPropLanguage(..), QuantLanguage(..))
 import Carnap.Languages.Util.GenericParsers
 import Text.Parsec
 import Text.Parsec.Expr
@@ -64,8 +64,9 @@ hardegreeMPLFormulaParser :: Parsec String u (IndexedModalFirstOrderLanguage (Fo
 hardegreeMPLFormulaParser = hardegreeMPLFormulaPreParser >>= indexIt
     where indexIt :: IndexedModalFirstOrderLanguage (Form (World -> Bool)) -> Parsec String u (IndexedModalFirstOrderLanguage (Form Bool))
           indexIt f = do char '/'
-                         w <- parseWorld
-                         return (f `atWorld` w)
+                         (w:ws)<- sepBy1 parseWorld (char '-')
+                         let idx = foldl indexcons w ws
+                         return (f `atWorld` idx)
 
 hardegreeMPLFormulaPreParser :: Parsec String u (IndexedModalFirstOrderLanguage (Form (World -> Bool)))
 hardegreeMPLFormulaPreParser = buildExpressionParser opTable subFormulaParser

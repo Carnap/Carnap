@@ -11,6 +11,7 @@ import Carnap.Core.Data.AbstractSyntaxClasses
 import Carnap.Core.Data.AbstractSyntaxDataTypes
 import Carnap.Languages.ModalPropositional.Syntax
 import Carnap.Languages.ModalFirstOrder.Syntax
+import Carnap.Languages.PureFirstOrder.Logic.Rules (globalOldConstraint, globalNewConstraint)
 import Carnap.Languages.ClassicalSequent.Syntax
 import Carnap.Languages.ClassicalSequent.Parser
 import Carnap.Languages.ModalFirstOrder.Parser
@@ -33,6 +34,9 @@ pattern SeqT n            = SeqTau (SFunc AZero n) AZero
 pattern SeqSchemIdx c a   = FX (Lx2 (Lx1 (Lx1 (Lx2 (Lx4 (Function c a))))))
 pattern SeqSchmIdx n      = SeqSchemIdx (SFunc AZero n) AZero
 pattern SomeWorld         = SeqSchmIdx 0
+
+instance UniformlyEq (FirstOrderModalSequentCalcOverWith b a) => Eq (FirstOrderModalSequentCalcOverWith b a c) where
+        (==) = (=*)
 
 liftAbsRule (SequentRule p c) = map (liftAbsSeq SomeWorld) p ∴ liftAbsSeq SomeWorld c
 
@@ -61,6 +65,14 @@ someOtherWorld = worldScheme 1
 
 someThirdWorld :: IndexingLang lex (Term World) (Form c) (Form (World -> Bool)) => FixLang lex (Term World)
 someThirdWorld = worldScheme 2
+
+globalOldIdxConstraint cs ded lineno sub = globalOldConstraint (filter (\x -> not (applySub sub x =* world 0)) cs) ded lineno sub
+
+globalNewIdxConstraint cs ded lineno sub = case globalNewConstraint cs ded lineno sub of
+                                               Nothing -> if world 0 `elem` (map (applySub sub) cs)
+                                                              then Just "This rule requires new indicies, but the index 0 is never new"
+                                                              else Nothing
+                                               k -> k
 
 instance ParsableLex (Form (World -> Bool)) IndexedModalFirstOrderLex where
         langParser = hardegreeMPLFormulaPreParser

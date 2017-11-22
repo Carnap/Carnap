@@ -25,13 +25,14 @@ activate cls chunk
     | "HardegreeSL" `elem` cls = actTemplate "proofchecker hardegreeSL Render"
     | "HardegreePL" `elem` cls = actTemplate "proofchecker hardegreePL Render"
     | "HardegreeWTL" `elem` cls = actTemplate "proofchecker hardegreeWTL Render guides"
-    | "HardegreeL" `elem` cls = actTemplate "proofchecker hardegreeL guides" --XXX: Keep render off here until we have nicer rendering of indicies
-    | "HardegreeK" `elem` cls = actTemplate "proofchecker hardegreeK guides" --XXX: Keep render off here until we have nicer rendering of indicies
-    | "HardegreeT" `elem` cls = actTemplate "proofchecker hardegreeT guides" --XXX: Keep render off here until we have nicer rendering of indicies
-    | "HardegreeB" `elem` cls = actTemplate "proofchecker hardegreeB guides" --XXX: Keep render off here until we have nicer rendering of indicies
-    | "HardegreeD" `elem` cls = actTemplate "proofchecker hardegreeD guides" --XXX: Keep render off here until we have nicer rendering of indicies
-    | "Hardegree4" `elem` cls = actTemplate "proofchecker hardegree4 guides" --XXX: Keep render off here until we have nicer rendering of indicies
-    | "Hardegree5" `elem` cls = actTemplate "proofchecker hardegree5 guides" --XXX: Keep render off here until we have nicer rendering of indicies
+    | "HardegreeL"   `elem` cls = actTemplate "proofchecker hardegreeL guides" --XXX: Keep render off here until we have nicer rendering of indicies
+    | "HardegreeK"   `elem` cls = actTemplate "proofchecker hardegreeK guides" --XXX: Keep render off here until we have nicer rendering of indicies
+    | "HardegreeT"   `elem` cls = actTemplate "proofchecker hardegreeT guides" --XXX: Keep render off here until we have nicer rendering of indicies
+    | "HardegreeB"   `elem` cls = actTemplate "proofchecker hardegreeB guides" --XXX: Keep render off here until we have nicer rendering of indicies
+    | "HardegreeD"   `elem` cls = actTemplate "proofchecker hardegreeD guides" --XXX: Keep render off here until we have nicer rendering of indicies
+    | "Hardegree4"   `elem` cls = actTemplate "proofchecker hardegree4 guides" --XXX: Keep render off here until we have nicer rendering of indicies
+    | "Hardegree5"   `elem` cls = actTemplate "proofchecker hardegree5 guides" --XXX: Keep render off here until we have nicer rendering of indicies
+    | "HardegreeMPL" `elem` cls = actTemplate "proofchecker hardegreeMPL guides" --XXX: Keep render off here until we have nicer rendering of indicies
     | otherwise = RawBlock "html" "<div>No Matching Logic for Derivation</div>"
     where numof = takeWhile (/= ' ')
           (h:t) = formatChunk chunk

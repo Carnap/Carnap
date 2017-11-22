@@ -1,6 +1,6 @@
 {-#LANGUAGE  FlexibleContexts,  FlexibleInstances, MultiParamTypeClasses #-}
 module Carnap.Languages.ModalFirstOrder.Logic.Hardegree 
---(hardegreePLCalc,parseHardegreePL) 
+    (hardegreeMPLCalc,parseHardegreeMPL) 
 where
 
 import Text.Parsec
@@ -68,16 +68,16 @@ instance Inference HardegreeMPL IndexedModalFirstOrderLex (Form Bool) where
          globalRestriction (Left ded) n NUO = Just (globalNewConstraint [tau] (Left ded) n )
          --XXX: Would be nice to avoid this boilerplate, via some way of
          --lifting global constraints
-         globalRestriction (Left ded) n (ModalProp (RelK DiaD1)) = Just (globalNewConstraint [someWorld `indexcons` someOtherWorld] (Left ded) n )
-         globalRestriction (Left ded) n (ModalProp (RelK DiaD2)) = Just (globalNewConstraint [someWorld `indexcons` someOtherWorld] (Left ded) n )
-         globalRestriction (Left ded) n (ModalProp (RelK DiaOut)) = Just (globalNewConstraint [someWorld `indexcons` someOtherWorld] (Left ded) n )
-         globalRestriction (Left ded) n (ModalProp (RelK ND)) = Just (globalNewConstraint [someWorld `indexcons` someOtherWorld] (Left ded) n )
-         globalRestriction (Left ded) n (ModalProp (RelK DiaIn)) = Just (globalOldConstraint [someWorld `indexcons` someOtherWorld] (Left ded) n )
-         globalRestriction (Left ded) n (ModalProp (RelK BoxOut)) = Just (globalOldConstraint [someWorld `indexcons` someOtherWorld] (Left ded) n )
-         globalRestriction (Left ded) n (ModalProp (RelK (MoPL FalO))) = Just (globalOldConstraint [someOtherWorld,someWorld] (Left ded) n )
-         globalRestriction (Left ded) n (ModalProp (RelK (MoPL FalI))) = Just (globalOldConstraint [someOtherWorld,someWorld] (Left ded) n )
+         globalRestriction (Left ded) n (ModalProp (RelK DiaD1)) = Just (globalNewIdxConstraint [someWorld `indexcons` someOtherWorld] (Left ded) n )
+         globalRestriction (Left ded) n (ModalProp (RelK DiaD2)) = Just (globalNewIdxConstraint [someWorld `indexcons` someOtherWorld] (Left ded) n )
+         globalRestriction (Left ded) n (ModalProp (RelK DiaOut)) = Just (globalNewIdxConstraint [someWorld `indexcons` someOtherWorld] (Left ded) n )
+         globalRestriction (Left ded) n (ModalProp (RelK ND)) = Just (globalNewIdxConstraint [someWorld `indexcons` someOtherWorld] (Left ded) n )
+         globalRestriction (Left ded) n (ModalProp (RelK DiaIn)) = Just (globalOldIdxConstraint [someWorld `indexcons` someOtherWorld] (Left ded) n )
+         globalRestriction (Left ded) n (ModalProp (RelK BoxOut)) = Just (globalOldIdxConstraint [someWorld `indexcons` someOtherWorld] (Left ded) n )
+         globalRestriction (Left ded) n (ModalProp (RelK (MoPL FalO))) = Just (globalOldIdxConstraint [someOtherWorld,someWorld] (Left ded) n )
+         globalRestriction (Left ded) n (ModalProp (RelK (MoPL FalI))) = Just (globalOldIdxConstraint [someOtherWorld,someWorld] (Left ded) n )
          globalRestriction (Left ded) n x = case indirectInference x of
-                                                Nothing -> Just (globalOldConstraint [someWorld] (Left ded) n)
+                                                Nothing -> Just (globalOldIdxConstraint [someWorld] (Left ded) n)
                                                 _ -> Nothing
          globalRestriction _ _ _ = Nothing
 

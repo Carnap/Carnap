@@ -19,6 +19,8 @@ import Carnap.Languages.ModalPropositional.Logic as MPL
     , hardegreeBCalc, hardegreeDCalc, hardegreeFourCalc, hardegreeFiveCalc)
 import Carnap.Languages.PureSecondOrder.Logic 
     (msolCalc, psolCalc) 
+import Carnap.Languages.ModalFirstOrder.Logic
+    ( hardegreeMPLCalc )
 import Carnap.Languages.PurePropositional.Util (toSchema)
 import Carnap.GHCJS.SharedTypes
 import Text.Parsec (parse)
@@ -93,26 +95,27 @@ data Checker r lex sem der = Checker
 activateChecker ::  IORef [(String,P.DerivedRule)] -> Document -> Maybe IOGoal -> IO ()
 activateChecker _ _ Nothing  = return ()
 activateChecker drs w (Just iog@(IOGoal i o g classes)) -- TODO: need to update non-montegue calculi to take first/higher-order derived rules
-        | "firstOrder" `elem` classes             = tryParse buildOptions folCalc folChecker
-        | "secondOrder" `elem` classes            = tryParse buildOptions msolCalc propChecker
-        | "polyadicSecondOrder" `elem` classes    = tryParse buildOptions psolCalc propChecker
-        | "LogicBook" `elem` classes              = tryParse buildOptions logicBookCalc propChecker
-        | "magnusSL" `elem` classes               = tryParse buildOptions magnusSLCalc propChecker
-        | "magnusSLPlus" `elem` classes           = tryParse buildOptions magnusSLPlusCalc propChecker
-        | "magnusQL" `elem` classes               = tryParse buildOptions magnusQLCalc propChecker
-        | "thomasBolducAndZachTFL" `elem` classes = tryParse buildOptions thomasBolducAndZachTFLCalc propChecker
-        | "thomasBolducAndZachFOL" `elem` classes = tryParse buildOptions thomasBolducAndZachFOLCalc propChecker
-        | "hardegreeSL" `elem` classes            = tryParse buildOptions hardegreeSLCalc propChecker
-        | "hardegreePL" `elem` classes            = tryParse buildOptions hardegreePLCalc propChecker
-        | "hardegreeWTL" `elem` classes           = tryParse buildOptions hardegreeWTLCalc propChecker
-        | "hardegreeL" `elem` classes             = tryParse buildOptions hardegreeLCalc propChecker
-        | "hardegreeK" `elem` classes             = tryParse buildOptions hardegreeKCalc propChecker
-        | "hardegreeD" `elem` classes             = tryParse buildOptions hardegreeDCalc propChecker
-        | "hardegreeT" `elem` classes             = tryParse buildOptions hardegreeTCalc propChecker
-        | "hardegreeB" `elem` classes             = tryParse buildOptions hardegreeBCalc propChecker
-        | "hardegree4" `elem` classes             = tryParse buildOptions hardegreeFourCalc propChecker
-        | "hardegree5" `elem` classes             = tryParse buildOptions hardegreeFiveCalc propChecker
-        | otherwise                               = tryParse buildOptions propCalc propChecker
+        | "firstOrder" `elem` classes               = tryParse buildOptions folCalc folChecker
+        | "secondOrder" `elem` classes              = tryParse buildOptions msolCalc propChecker
+        | "polyadicSecondOrder" `elem` classes      = tryParse buildOptions psolCalc propChecker
+        | "LogicBook" `elem` classes                = tryParse buildOptions logicBookCalc propChecker
+        | "magnusSL" `elem` classes                 = tryParse buildOptions magnusSLCalc propChecker
+        | "magnusSLPlus" `elem` classes             = tryParse buildOptions magnusSLPlusCalc propChecker
+        | "magnusQL" `elem` classes                 = tryParse buildOptions magnusQLCalc propChecker
+        | "thomasBolducAndZachTFL" `elem` classes   = tryParse buildOptions thomasBolducAndZachTFLCalc propChecker
+        | "thomasBolducAndZachFOL" `elem` classes   = tryParse buildOptions thomasBolducAndZachFOLCalc propChecker
+        | "hardegreeSL"  `elem` classes             = tryParse buildOptions hardegreeSLCalc propChecker
+        | "hardegreePL"  `elem` classes             = tryParse buildOptions hardegreePLCalc propChecker
+        | "hardegreeWTL" `elem` classes             = tryParse buildOptions hardegreeWTLCalc propChecker
+        | "hardegreeL"   `elem` classes             = tryParse buildOptions hardegreeLCalc propChecker
+        | "hardegreeK"   `elem` classes             = tryParse buildOptions hardegreeKCalc propChecker
+        | "hardegreeD"   `elem` classes             = tryParse buildOptions hardegreeDCalc propChecker
+        | "hardegreeT"   `elem` classes             = tryParse buildOptions hardegreeTCalc propChecker
+        | "hardegreeB"   `elem` classes             = tryParse buildOptions hardegreeBCalc propChecker
+        | "hardegree4"   `elem` classes             = tryParse buildOptions hardegreeFourCalc propChecker
+        | "hardegree5"   `elem` classes             = tryParse buildOptions hardegreeFiveCalc propChecker
+        | "hardegreeMPL" `elem` classes             = tryParse buildOptions hardegreeMPLCalc folChecker
+        | otherwise                                 = tryParse buildOptions propCalc propChecker
         where tryParse options calc checker = do
                   memo <- newIORef mempty
                   mtref <- newIORef Nothing

@@ -118,10 +118,11 @@ globalOldConstraint cs (Left ded) lineno sub =
           witnessAt ldepth l = depth l <= ldepth 
 
 globalNewConstraint cs ded lineno sub = 
-        case globalOldConstraint cs ded lineno sub of
-            Nothing -> Just $ "an index in " ++ show cs' ++ " appears not to be new, but this rule needs new indexes"
+        case checkNew of
+            Nothing -> Just $ "a constant in " ++ show cs' ++ " appears not to be new, but this rule needs new constants"
             Just s -> Nothing
     where cs' = map (applySub sub) cs
+          checkNew = mapM (\c -> globalOldConstraint [c] ded lineno sub) cs
 
 -------------------------
 --  1.1. Common Rules  --
