@@ -1,3 +1,8 @@
+@font-face{
+    font-family: "Fira Logic";
+    src: url("https://github.com/gleachkr/FiraLogic/blob/master/dist/FiraLogic-Regular.woff?raw=true")
+}
+
 
 .exercise {
     display:inline-block;
@@ -317,4 +322,9 @@
 .ttthSep, .tttdSep {
     border-left:1px solid black;
     padding:2px;
+}
+
+.fonts textarea {
+    text-rendering:optimizeLegibility;
+    font-family:Fira Logic;
 }
