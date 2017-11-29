@@ -1,5 +1,8 @@
 {-#LANGUAGE TypeOperators, FlexibleContexts#-}
-module Carnap.Languages.PureFirstOrder.Parser ( folFormulaParser, mfolFormulaParser, magnusFOLFormulaParser, thomasBolducAndZachFOLFormulaParser, hardegreePLFormulaParser) where
+module Carnap.Languages.PureFirstOrder.Parser 
+( folFormulaParser, folFormulaParserRelaxed, mfolFormulaParser
+, magnusFOLFormulaParser, thomasBolducAndZachFOLFormulaParser
+, hardegreePLFormulaParser) where
 
 import Carnap.Core.Data.AbstractSyntaxDataTypes
 import Carnap.Core.Data.AbstractSyntaxClasses (Schematizable)
@@ -116,6 +119,11 @@ hardegreePLFormulaParser = parserFromOptions hardegreePLParserOptions
 
 folFormulaParser :: Parsec String u PureFOLForm
 folFormulaParser = parserFromOptions standardFOLParserOptions
+
+folFormulaParserRelaxed :: Parsec String u PureFOLForm
+folFormulaParserRelaxed = parserFromOptions (standardFOLParserOptions 
+    { atomicSentenceParser = \x -> (try (atomicSentenceParser standardFOLParserOptions x) <|> parsePredicateSymbolNoParen "FGHIJKLMNO" x) })
+
 
 pfolFormulaParser :: Parsec String u PurePFOLForm
 pfolFormulaParser = parserFromOptions simplePolyadicFOLParserOptions
