@@ -2,7 +2,7 @@
     font-family: "Fira Logic";
     src: url("https://github.com/gleachkr/FiraLogic/blob/master/dist/FiraLogic-Regular.woff?raw=true")
 }
-
+/* FIXME This won't work for firefox---the font will need to be loaded natively */
 
 .exercise {
     display:inline-block;
