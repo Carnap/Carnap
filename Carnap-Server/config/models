@@ -12,13 +12,9 @@ UserData
     firstName Text
     lastName Text
     enrolledIn CourseEnrollment
+    instructorId InstructorMetadataJSONId Maybe
     userId UserId
     UniqueUserData userId
-Comment json -- Adding "json" causes ToJSON and FromJSON instances to be derived.
-    message Text
-    userId UserId Maybe
-    deriving Eq
-    deriving Show
 SyntaxCheckSubmission
     problem Text
     time Text
@@ -61,5 +57,7 @@ AssignmentMetadata
     date UTCTime
     course CourseEnrollment
     UniqueAssignment filename
+InstructorMetadataJSON
+    json ByteString
 
  -- By default this file is used in Model.hs (which is imported by Foundation.hs)

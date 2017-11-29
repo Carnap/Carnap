@@ -60,7 +60,7 @@ getInstructorR ident = do
     case musr of 
         Nothing -> defaultLayout nopage
         (Just (Entity uid _))  -> do
-            UserData firstname lastname enrolledin _ <- checkUserData uid 
+            UserData firstname lastname enrolledin _ _ <- checkUserData uid 
             let classes = case instructorByEmail ident of
                               Just i -> coursesByInstructor i
                               Nothing -> []
@@ -102,7 +102,7 @@ getInstructorR ident = do
                                             <th> Student Name
                                             <th> Total Score
                                         <tbody>
-                                            $forall (u,UserData fn ln _ _) <- usersAndData
+                                            $forall (u,UserData fn ln _ _ _) <- usersAndData
                                                 <tr>
                                                     <td>
                                                         <a href=@{UserR (userIdent u)}>#{userIdent u}

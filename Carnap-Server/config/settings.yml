@@ -35,6 +35,6 @@ database:
 copyright: Copyright 2015-2017 G. Leach-Krouse <gleachkr@ksu.edu> and J. Ehrlich
 
 #uncomment the line below if you want to run without a postgres installation
-#sqlite: true
+sqlite: true
 
 #analytics: UA-YOURCODE

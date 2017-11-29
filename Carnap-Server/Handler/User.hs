@@ -31,7 +31,7 @@ getUserR ident = do
     case musr of 
         Nothing -> defaultLayout nouserPage
         (Just (Entity k _))  -> do
-            UserData firstname lastname enrolledin _ <- checkUserData k
+            UserData firstname lastname enrolledin _ _ <- checkUserData k
             (synsubs, transsubs,dersubs, ttsubs) <- subsByIdAndSource enrolledin k
             let isAdmin = ident `elem` map instructorEmail instructorsDataList
             let pointsAvailable = show $ pointsOf (courseData enrolledin)

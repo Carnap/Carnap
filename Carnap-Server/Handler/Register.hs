@@ -44,7 +44,7 @@ registrationForm userId maybeSandbox = do
             <$> areq textField "first name " Nothing
             <*> areq textField "last name " Nothing
             <*> areq (selectFieldList courses) "enrolled in " Nothing
-    where fixedId x y z = UserData x y z userId
+    where fixedId x y z = UserData x y z Nothing userId 
           courses = map (\c -> (nameOf $ courseData c, c)) $
                         case maybeSandbox of 
                             Just sb ->  sb:regularCourseList 
