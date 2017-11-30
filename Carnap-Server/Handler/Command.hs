@@ -39,8 +39,8 @@ postCommandR = do
 keycheck "" = Nothing
 keycheck s  = Just (read s)
 
-liftSource Book = CarnapTextbook
-liftSource (Assignment s) = CourseAssignment (read s) -- XXX: something safer than "read" would be nice
+liftSource Book = toStrict . encode $ CarnapTextbook
+liftSource (Assignment s) = toStrict . encode $ CourseAssignment (read s) -- XXX: something safer than "read" would be nice
 
 packageRule (SavedDerivedRule dr n _ _) = case (decodeStrict dr :: Maybe DerivedRule) of
                                               Just r -> Just (unpack n, r)

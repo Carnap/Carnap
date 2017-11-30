@@ -3,61 +3,71 @@ User
     password Text Maybe
     UniqueUser ident
     deriving Typeable
-Email
-    email Text
-    userId UserId Maybe
-    verkey Text Maybe
-    UniqueEmail email
+
 UserData
     firstName Text
     lastName Text
-    enrolledIn CourseEnrollment
-    instructorId InstructorMetadataJSONId Maybe
+    enrolledIn CourseId Maybe
+    instructorId InstructorMetadataId Maybe
     userId UserId
     UniqueUserData userId
+
 SyntaxCheckSubmission
     problem Text
     time Text
     userId UserId
-    source ProblemSource
+    source ByteString
     assignmentId AssignmentMetadataId Maybe
     UniqueSyntaxCheckP problem userId source
+
 TranslationSubmission
     problem Text
     time Text
     userId UserId 
-    source ProblemSource
+    source ByteString
     assignmentId AssignmentMetadataId Maybe
     UniqueTranslationP problem userId source
+
 TruthTableSubmission
     problem Text
     time Text
     userId UserId 
-    source ProblemSource
+    source ByteString
     assignmentId AssignmentMetadataId Maybe
     UniqueTruthTableP problem userId source
+
 DerivationSubmission
     problem Text
     derivation Text
     time Text
     userId UserId 
-    source ProblemSource
+    source ByteString
     assignmentId AssignmentMetadataId Maybe
     UniqueDerivationP problem userId source
+
 SavedDerivedRule
     derivedRule ByteString
     name Text
     time Text
     userId UserId
     UniqueDerivedRule name userId
+
 AssignmentMetadata
     filename Text
     description Text Maybe
     duedate UTCTime
     date UTCTime
-    course CourseEnrollment
+    course CourseId
     UniqueAssignment filename
-InstructorMetadataJSON
-    json ByteString
+
+InstructorMetadata
+
+Course
+    title Text
+    instructor InstructorMetadataId
+    textbookProblems ByteString
+    totalPoints Int
+    UniqueCourse title instructor
+    deriving Eq
 
  -- By default this file is used in Model.hs (which is imported by Foundation.hs)

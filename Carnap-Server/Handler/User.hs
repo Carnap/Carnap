@@ -6,11 +6,12 @@ import qualified Text.Blaze.Html5 as B
 import Text.Blaze.Html5.Attributes
 import Carnap.Languages.PurePropositional.Logic (DerivedRule(..))
 import Carnap.GHCJS.SharedTypes
-import Data.Aeson (decodeStrict)
+import Data.Aeson (encode, decodeStrict)
 import Data.Time
 import Util.Data
 import Util.Database
 import qualified Data.Map as M
+import qualified Data.IntMap
 
 deleteUserR :: Text -> Handler Value
 deleteUserR ident = do
@@ -31,22 +32,27 @@ getUserR ident = do
     case musr of 
         Nothing -> defaultLayout nouserPage
         (Just (Entity k _))  -> do
-            UserData firstname lastname enrolledin _ _ <- checkUserData k
-            (synsubs, transsubs,dersubs, ttsubs) <- subsByIdAndSource enrolledin k
-            let isAdmin = ident `elem` map instructorEmail instructorsDataList
-            let pointsAvailable = show $ pointsOf (courseData enrolledin)
+            UserData firstname lastname maybeCourseId maybeInstructorId _ <- checkUserData k
+            (synsubs, transsubs,dersubs, ttsubs) <- subsByIdAndSource maybeCourseId k
+            let isInstructor = case maybeInstructorId of Just _ -> True; _ -> False
             derivedRules <- getDrList
             utcToKansas' <- liftIO utcToKansas
-            assignments <- assignmentsOf utcToKansas'  enrolledin
-            syntable <- problemsToTable utcToKansas' enrolledin synsubs
-            transtable <- problemsToTable utcToKansas' enrolledin transsubs
-            dertable <- problemsToTable utcToKansas' enrolledin dersubs
-            tttable <- problemsToTable utcToKansas' enrolledin ttsubs
-            score <- totalScore enrolledin synsubs transsubs dersubs ttsubs
-            let coursetitle = nameOf (courseData enrolledin)
-            defaultLayout $ do
-                setTitle "Welcome To Your Homepage!"
-                $(widgetFile "user")
+            case maybeCourseId of
+                Just cid ->
+                    do Just c <- runDB $ get cid
+                       let pointsAvailable = courseTotalPoints c
+                           coursetitle = courseTitle c
+                       duedates <- getProblemSets cid
+                       assignments <- assignmentsOf utcToKansas' cid duedates
+                       syntable <- problemsToTable utcToKansas' duedates synsubs
+                       transtable <- problemsToTable utcToKansas' duedates transsubs
+                       dertable <- problemsToTable utcToKansas' duedates dersubs
+                       tttable <- problemsToTable utcToKansas' duedates ttsubs
+                       score <- totalScore duedates synsubs transsubs dersubs ttsubs
+                       defaultLayout $ do
+                           setTitle "Welcome To Your Homepage!"
+                           $(widgetFile "user")
+                Nothing -> defaultLayout noEnrollment
     where tryLookup l x = case lookup x l of
                           Just n -> show n
                           Nothing -> "can't find scores"
@@ -56,8 +62,13 @@ getUserR ident = do
                             <p> This user does not exist
                        |]
 
-          assignmentsOf localize theclass = do
-             asmd <- runDB $ selectList [AssignmentMetadataCourse ==. theclass] []
+          noEnrollment = [whamlet|
+                        <div.container>
+                            <p> This user is not enrolled
+                       |]
+
+          assignmentsOf localize cid duedates = do
+             asmd <- runDB $ selectList [AssignmentMetadataCourse ==. cid] []
              return $
                 [whamlet|
                 <table.table.table-striped>
@@ -65,8 +76,8 @@ getUserR ident = do
                         <th> Assignment
                         <th> Due Date
                     <tbody>
-                        $maybe dd <- duedates $ courseData theclass
-                            $forall (num,date) <- M.toList dd
+                        $maybe dd <- duedates
+                            $forall (num,date) <- Data.IntMap.toList dd
                                 <tr>
                                     <td>
                                         Problem Set #{show num}
@@ -85,9 +96,9 @@ getUserR ident = do
 --------------------------------------------------------
 --functions for calculating grades
 
-toScore theclass p = case assignment p of
+toScore duedates p = case assignment p of
                    Nothing -> 
-                        case utcDueDate theclass (problem p) of                      
+                        case utcDueDate duedates (problem p) of                      
                               Just d -> if asUTC (submitted p) `laterThan` d       
                                             then return (2 :: Int)
                                             else return (5 :: Int)
@@ -102,15 +113,16 @@ toScore theclass p = case assignment p of
                                     else return (5 :: Int)
 
                             
-scoreByIdAndClass theclass uid = 
-        do (a,b,c,d) <- subsByIdAndSource theclass uid
-           totalScore theclass a b c d
+scoreByIdAndClass cid uid = 
+        do (a,b,c,d) <- subsByIdAndSource (Just cid) uid
+           duedates <-  getProblemSets cid
+           totalScore duedates a b c d
 
-totalScore theclass a b c d = do
+totalScore duedates a b c d = do
            (a',b',c',d') <- (,,,) <$> score a <*> score b <*> score c <*> score d
            return $ a' + b' + c' + d'
    where score :: Problem p => [p] -> Handler Int
-         score xs = do xs' <- mapM (toScore theclass) xs
+         score xs = do xs' <- mapM (toScore duedates) xs
                        return $ foldr (+) 0 xs'
 
 --------------------------------------------------------
@@ -128,7 +140,7 @@ utcToKansas = do nyctz <- getCurrentTimeZone
 
 formatted localize z = formatTime defaultTimeLocale "%l:%M %P %Z, %a %b %e, %Y" (localize z)
 
-utcDueDate theclass x = (duedates $ courseData theclass) >>= M.lookup (read $ unpack (takeWhile (/= '.') x) :: Int) 
+utcDueDate duedates x = duedates >>= Data.IntMap.lookup (read $ unpack (takeWhile (/= '.') x) :: Int) 
 
 laterThan :: UTCTime -> UTCTime -> Bool
 laterThan t1 t2 = diffUTCTime t1 t2 > 0
@@ -139,7 +151,7 @@ laterThan t1 t2 = diffUTCTime t1 t2 > 0
 --------------------------------------------------------
 --functions for manipulating html
 
-problemsToTable localize theclass xs = do 
+problemsToTable localize duedates xs = do 
             rows <- mapM toRow xs
             return $ do B.table B.! class_ "table table-striped" $ do
                             B.col B.! style "width:50px"
@@ -152,7 +164,7 @@ problemsToTable localize theclass xs = do
                                 B.th "Submitted"
                                 B.th "Points Earned"
                             B.tbody $ sequence_ rows
-        where toRow p = do score <- toScore theclass p 
+        where toRow p = do score <- toScore duedates p 
                            return $ do
                               B.tr $ do B.td $ B.toHtml (takeWhile (/= ':') $ problem p)
                                         B.td $ B.toHtml (drop 1 . dropWhile (/= ':') $ problem p)
@@ -200,13 +212,12 @@ instance Problem DerivationSubmission where
         submitted (DerivationSubmission _ _ time _ _ _) = time
         assignment (DerivationSubmission _ _ _ _ _ key) = key
 
-subsByIdAndSource course v = 
+subsByIdAndSource Nothing _ = return ([],[],[],[])
+subsByIdAndSource (Just cid) v = 
         do synsubs   <- runDB $ selectList (queryBy SyntaxCheckSubmissionUserId SyntaxCheckSubmissionSource) []
            transsubs <- runDB $ selectList (queryBy TranslationSubmissionUserId TranslationSubmissionSource) []
            dersubs   <- runDB $ selectList (queryBy DerivationSubmissionUserId DerivationSubmissionSource) []
            ttsubs    <- runDB $ selectList (queryBy TruthTableSubmissionUserId TruthTableSubmissionSource) []
            return (map entityVal synsubs, map entityVal transsubs, map entityVal dersubs, map entityVal ttsubs)
-    where queryBy :: EntityField a (Key User) -> EntityField a Util.Data.ProblemSource -> [Filter a]
-          queryBy id src = case sourceOf (courseData course) of
-               Nothing -> [ id ==. v , src ==. CourseAssignment course] 
-               Just c -> [ id ==. v , src ==. CourseAssignment course] ||. [ id ==. v , src ==. c]
+    where queryBy :: EntityField a (Key User) -> EntityField a ByteString -> [Filter a]
+          queryBy id src = [ id ==. v , src ==. (toStrict . encode) (CourseAssignment cid) ] ||. [ id ==. v , src ==. (toStrict . encode) (CarnapTextbook)]

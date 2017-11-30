@@ -37,16 +37,14 @@ deleteInstructorR _ = do
 
 postInstructorR :: Text -> Handler Html
 postInstructorR ident = do
-    let classes = case instructorByEmail ident of
-          Just i -> coursesByInstructor i
-          Nothing -> []
+    classes <- classesByInstructorIdent ident
     ((result,widget),enctype) <- runFormPost (uploadAssignmentForm classes)
     case (result) of 
         (FormSuccess (file, theclass, duedate, textarea, subtime)) ->
             do let fn = fileName file
                let duetime = UTCTime duedate 0
                let info = unTextarea <$> textarea
-               success <- tryInsert $ AssignmentMetadata fn info duetime subtime theclass
+               success <- tryInsert $ AssignmentMetadata fn info duetime subtime (entityKey theclass)
                if success then saveAssignment file 
                           else setMessage "Could not save---this file already exists"
         (FormFailure s) -> setMessage $ "Something went wrong: " ++ toMarkup (show s)
@@ -61,11 +59,9 @@ getInstructorR ident = do
         Nothing -> defaultLayout nopage
         (Just (Entity uid _))  -> do
             UserData firstname lastname enrolledin _ _ <- checkUserData uid 
-            let classes = case instructorByEmail ident of
-                              Just i -> coursesByInstructor i
-                              Nothing -> []
+            classes <- classesByInstructorIdent ident 
             classWidgets <- mapM classWidget classes
-            assignmentMetadata <- concat <$> mapM assignmentsOf classes
+            assignmentMetadata <- concat <$> mapM (assignmentsOf . entityKey) classes
             ((_,assignmentWidget),enctype) <- runFormPost (uploadAssignmentForm classes)
             defaultLayout $ do
                  setTitle $ "Instructor Page for " ++ toMarkup firstname ++ " " ++ toMarkup lastname
@@ -83,18 +79,21 @@ getInstructorR ident = do
 
           tryDelete (AssignmentMetadata fn _ _ _ _) = "tryDeleteAssignment(\"" ++ fn ++ "\")"
 
-          classWidget :: CourseEnrollment -> HandlerT App IO Widget
-          classWidget theclass = 
-                do allUserData <- map entityVal <$> (runDB $ selectList [UserDataEnrolledIn ==. theclass] [])
+          classWidget :: Entity Course -> HandlerT App IO Widget
+          classWidget classent = do
+                   let cid = entityKey classent
+                       course = entityVal classent
+                   allUserData <- map entityVal <$> (runDB $ selectList [UserDataEnrolledIn ==. Just cid] [])
                    let allUids = (map userDataUserId  allUserData)
                    musers <- mapM (\x -> runDB (get x)) allUids
                    let users = catMaybes musers
-                   allScores <- mapM (scoreByIdAndClass theclass) allUids >>= return . zip (map userIdent users)
+                   allScores <- mapM (scoreByIdAndClass cid) allUids >>= return . zip (map userIdent users)
                    let usersAndData = zip users allUserData
+                   (Just course) <- runDB $ get cid
                    return [whamlet|
                             <div.card style="margin-bottom:20px">
                                 <div.card-header>
-                                    #{nameOf $ courseData theclass}
+                                    #{courseTitle course}
                                 <div.card-block>
                                     <table.table.table-striped>
                                         <thead>
@@ -109,7 +108,7 @@ getInstructorR ident = do
                                                     <td>
                                                         #{ln}, #{fn}
                                                     <td>
-                                                        #{tryLookup allScores (userIdent u)}/#{show $ pointsOf $ courseData theclass}
+                                                        #{tryLookup allScores (userIdent u)}/#{show $ courseTotalPoints course}
                           |]
 
 uploadAssignmentForm classes = renderBootstrap3 BootstrapBasicForm $ (,,,,)
@@ -118,7 +117,7 @@ uploadAssignmentForm classes = renderBootstrap3 BootstrapBasicForm $ (,,,,)
             <*> areq (jqueryDayField def) (bfs ("Due Date"::Text)) Nothing
             <*> aopt textareaField (bfs ("Assignment Description"::Text)) Nothing
             <*> lift (liftIO getCurrentTime)
-    where classnames = map (\theclass -> (nameOf $ courseData theclass, theclass)) classes
+    where classnames = map (\theclass -> (courseTitle . entityVal $ theclass, theclass)) classes
 
 saveAssignment file = do
         let assignmentname = unpack $ fileName file

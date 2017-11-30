@@ -11,6 +11,12 @@ import Util.Data
 -- at:
 -- http://www.yesodweb.com/book/persistent/
 
-
 share [mkPersist sqlSettings, mkMigrate "migrateAll"]
     $(persistFileWith lowerCaseSettings "config/models")
+
+instructorList = do entityList <- runDB $ selectList [UserDataInstructorId !=. Nothing] []
+                    return (map entityVal entityList)
+
+instructorIdentList = do instructorEntityList <- runDB $ selectList [UserDataInstructorId !=. Nothing] []
+                         userEntityList <- runDB $ selectList [UserId <-. map (userDataUserId . entityVal) instructorEntityList ] []
+                         return $ map (userIdent . entityVal) userEntityList

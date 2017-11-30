@@ -1,6 +1,9 @@
+{-#LANGUAGE DeriveGeneric #-}
 module Util.Database where
 
 import Import
+import Data.IntMap (IntMap)
+import Data.Aeson (decode)
 
 -- | Try to insert a piece of data into the database, returning False in
 -- case of a clash
@@ -24,3 +27,28 @@ checkUserData uid = do maybeData <- runDB $ getBy $ UniqueUserData uid
                            Just u -> case maybeData of
                               Nothing -> redirect (RegisterR (userIdent u))
                               Just (Entity _ userdata) -> return userdata
+
+-- | given a CourseId, return the associated book problem sets
+getProblemSets cid = do mcourse <- runDB $ get cid
+                        case mcourse of 
+                           Nothing -> return Nothing
+                           Just c -> return . decode . fromStrict . courseTextbookProblems $ c
+
+-- | classes by instructor Ident
+classesByInstructorIdent ident = do centlist <- runDB $ do muent <- getBy $ UniqueUser ident
+                                                           mudent <- case entityKey <$> muent of 
+                                                                          Just uid -> getBy $ UniqueUserData uid
+                                                                          Nothing -> return Nothing
+                                                           case (entityVal <$> mudent) >>= userDataInstructorId of
+                                                               Just instructordata -> selectList [CourseInstructor ==. instructordata ] []
+                                                               Nothing -> return []
+                                    return centlist
+
+data ProblemSource = CarnapTextbook
+                   | CourseAssignment CourseId
+      deriving (Generic,Show,Read,Eq)
+
+type BookProblemSets = Maybe (IntMap UTCTime)
+
+instance ToJSON ProblemSource
+instance FromJSON ProblemSource

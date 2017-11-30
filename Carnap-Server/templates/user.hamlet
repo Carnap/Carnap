@@ -1,7 +1,7 @@
 <div.container>
     <h1> Homepage for #{firstname} #{lastname}
     <p> This is your homepage, where you can keep track of your progress in the course, and find other useful information.
-    $if isAdmin
+    $if isInstructor
         <p> Your instructor page is 
             <a href=@{InstructorR ident}>here
     <h3> Upcoming Problems

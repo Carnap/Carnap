@@ -21,8 +21,9 @@ getAssignmentsR = do adir <- assignmentDir
                                     do setMessage "you need to be logged in to access assignments"
                                        redirect HomeR
                                  Just uid -> checkUserData uid
-                     assignmentMD <- runDB $ selectList 
-                                        [AssignmentMetadataCourse ==. userDataEnrolledIn ud] []
+                     assignmentMD <- case userDataEnrolledIn ud of
+                                         Just cid -> runDB $ selectList [AssignmentMetadataCourse ==. cid] []
+                                         Nothing -> return []
                      defaultLayout
                           [whamlet|
                               <div.container>
