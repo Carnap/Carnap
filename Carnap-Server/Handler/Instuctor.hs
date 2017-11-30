@@ -38,8 +38,9 @@ deleteInstructorR _ = do
 postInstructorR :: Text -> Handler Html
 postInstructorR ident = do
     classes <- classesByInstructorIdent ident
-    ((result,widget),enctype) <- runFormPost (uploadAssignmentForm classes)
-    case (result) of 
+    ((assignmentrslt,_),enctype) <- runFormPost (uploadAssignmentForm classes)
+    ((newclassrslt,_),enctype) <- runFormPost createCourseForm
+    case assignmentrslt of 
         (FormSuccess (file, theclass, duedate, textarea, subtime)) ->
             do let fn = fileName file
                let duetime = UTCTime duedate 0
@@ -48,7 +49,19 @@ postInstructorR ident = do
                if success then saveAssignment file 
                           else setMessage "Could not save---this file already exists"
         (FormFailure s) -> setMessage $ "Something went wrong: " ++ toMarkup (show s)
-        (FormMissing) -> setMessage "Submission data incomplete"
+        FormMissing -> setMessage "Submission data did not include an assignment"
+        _ -> setMessage "something went wrong with the form submission"
+    case newclassrslt of
+        (FormSuccess title) -> do
+            miid <- instructorIdByIdent ident
+            case miid of
+                Just iid -> 
+                    do success <- tryInsert $ Course (unTextarea $ title) iid "" 0
+                       if success then setMessage "Course Created" 
+                                  else setMessage "Could not save---this file already exists"
+                Nothing -> setMessage "you're not an instructor!"
+        (FormFailure s) -> setMessage $ "Something went wrong: " ++ toMarkup (show s)
+        FormMissing -> setMessage "Submission data did not include a new class"
         _ -> setMessage "something went wrong with the form submission"
     redirect $ InstructorR ident
 
@@ -63,6 +76,7 @@ getInstructorR ident = do
             classWidgets <- mapM classWidget classes
             assignmentMetadata <- concat <$> mapM (assignmentsOf . entityKey) classes
             ((_,assignmentWidget),enctype) <- runFormPost (uploadAssignmentForm classes)
+            ((_,createCourseWidget),enctype) <- runFormPost createCourseForm
             defaultLayout $ do
                  setTitle $ "Instructor Page for " ++ toMarkup firstname ++ " " ++ toMarkup lastname
                  $(widgetFile "instructor")
@@ -118,6 +132,8 @@ uploadAssignmentForm classes = renderBootstrap3 BootstrapBasicForm $ (,,,,)
             <*> aopt textareaField (bfs ("Assignment Description"::Text)) Nothing
             <*> lift (liftIO getCurrentTime)
     where classnames = map (\theclass -> (courseTitle . entityVal $ theclass, theclass)) classes
+
+createCourseForm = renderBootstrap3 BootstrapBasicForm $ areq textareaField (bfs ("Title" :: Text)) Nothing
 
 saveAssignment file = do
         let assignmentname = unpack $ fileName file

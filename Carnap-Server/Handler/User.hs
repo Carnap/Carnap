@@ -52,7 +52,14 @@ getUserR ident = do
                        defaultLayout $ do
                            setTitle "Welcome To Your Homepage!"
                            $(widgetFile "user")
-                Nothing -> defaultLayout noEnrollment
+                Nothing -> defaultLayout 
+                                [whamlet|
+                                <div.container>
+                                    <p> This user is not enrolled
+                                    $if isInstructor
+                                        <p> Your instructor page is 
+                                            <a href=@{InstructorR ident}>here
+                               |]
     where tryLookup l x = case lookup x l of
                           Just n -> show n
                           Nothing -> "can't find scores"
@@ -62,10 +69,6 @@ getUserR ident = do
                             <p> This user does not exist
                        |]
 
-          noEnrollment = [whamlet|
-                        <div.container>
-                            <p> This user is not enrolled
-                       |]
 
           assignmentsOf localize cid duedates = do
              asmd <- runDB $ selectList [AssignmentMetadataCourse ==. cid] []

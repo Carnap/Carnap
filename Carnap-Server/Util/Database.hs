@@ -44,6 +44,13 @@ classesByInstructorIdent ident = do centlist <- runDB $ do muent <- getBy $ Uniq
                                                                Nothing -> return []
                                     return centlist
 
+-- | instructorId by ident
+instructorIdByIdent ident = runDB $ do muent <- getBy $ UniqueUser ident
+                                       mudent <- case entityKey <$> muent of 
+                                                      Just uid -> getBy $ UniqueUserData uid
+                                                      Nothing -> return Nothing
+                                       return $ (entityVal <$> mudent) >>= userDataInstructorId
+
 data ProblemSource = CarnapTextbook
                    | CourseAssignment CourseId
       deriving (Generic,Show,Read,Eq)

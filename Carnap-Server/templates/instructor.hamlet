@@ -4,12 +4,6 @@
     <div.card-columns>
     $forall widget <- classWidgets
          ^{widget}
-    <h2> Upload Assignments
-    <div>
-        <form method=post enctype=#{enctype}>
-            ^{assignmentWidget}
-            <div.form-group>
-                <input.btn.btn-primary type=submit value="upload">
     <h2> Uploaded Assignments
     <table class="table">
         <thead>
@@ -29,3 +23,14 @@
                     <td>
                         <button.btn.btn-sm.btn-secondary type="button" onclick=#{tryDelete a}>
                             <i.fa.fa-trash-o>
+    <h2> Create Courses
+    <form method=post enctype=#{enctype}>
+        ^{createCourseWidget}
+        <div.form-group>
+            <input.btn.btn-primary type=submit value="create">
+    <h2> Upload Assignments
+    <div>
+        <form method=post enctype=#{enctype}>
+            ^{assignmentWidget}
+            <div.form-group>
+                <input.btn.btn-primary type=submit value="upload">
