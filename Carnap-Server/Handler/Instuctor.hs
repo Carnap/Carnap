@@ -78,7 +78,10 @@ getInstructorR ident = do
             ((_,assignmentWidget),enctype) <- runFormPost (uploadAssignmentForm classes)
             ((_,createCourseWidget),enctype) <- runFormPost createCourseForm
             defaultLayout $ do
+                 addScript $ StaticR js_bootstrap_bundle_min_js
+                 addScript $ StaticR js_bootstrap_min_js
                  setTitle $ "Instructor Page for " ++ toMarkup firstname ++ " " ++ toMarkup lastname
+
                  $(widgetFile "instructor")
     where assignmentsOf theclass = map entityVal <$> listAssignmentMetadata theclass
           

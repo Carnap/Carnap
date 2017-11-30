@@ -23,14 +23,24 @@
                     <td>
                         <button.btn.btn-sm.btn-secondary type="button" onclick=#{tryDelete a}>
                             <i.fa.fa-trash-o>
-    <h2> Create Courses
-    <form method=post enctype=#{enctype}>
-        ^{createCourseWidget}
-        <div.form-group>
-            <input.btn.btn-primary type=submit value="create">
-    <h2> Upload Assignments
-    <div>
-        <form method=post enctype=#{enctype}>
-            ^{assignmentWidget}
-            <div.form-group>
-                <input.btn.btn-primary type=submit value="upload">
+    <div.card>
+        <div.card-header>
+            <ul.nav.nav-tabs.card-header-tabs role="tablist">
+                <li.nav-item>
+                    <a.nav-link.active data-toggle="tab" href="#create" role="tab">
+                        Create Courses
+                <li.nav-item>
+                    <a.nav-link data-toggle="tab" href="#upload" role="tab">
+                        Upload Assignments
+        <div.card-body style="padding:20px;">
+            <div.tab-content>
+                <div.tab-pane.active id="create" role="tabpanel">
+                    <form method=post enctype=#{enctype}>
+                        ^{createCourseWidget}
+                        <div.form-group>
+                            <input.btn.btn-primary type=submit value="create">
+                <div.tab-pane id="upload" role="tabpanel">
+                    <form method=post enctype=#{enctype}>
+                        ^{assignmentWidget}
+                        <div.form-group>
+                            <input.btn.btn-primary type=submit value="upload">
