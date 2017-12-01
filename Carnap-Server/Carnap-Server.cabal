@@ -29,6 +29,7 @@ library
                      Handler.Register
                      Handler.User
                      Handler.Instuctor
+                     Handler.Admin
                      Handler.Chapter
                      Handler.Book
                      Handler.Command

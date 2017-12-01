@@ -108,7 +108,13 @@ instance Yesod App where
                        || ident' == "gleachkr@gmail.com"
                     then Authorized
                     else Unauthorized "It appears you're not authorized to access this page"
-                    --
+
+    isAuthorized AdminR _ = 
+        do (Entity _ user) <- requireAuth
+           return $ if userIdent user == "gleachkr@gmail.com"
+                    then Authorized
+                    else Unauthorized "Only site administrators may access this page"
+
     -- Routes not requiring authentication
     isAuthorized _ _ = return Authorized
 
