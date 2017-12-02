@@ -1,6 +1,10 @@
 @font-face
-    font-family:street;
-    src:url("@{StaticR fonts_Streetvertising_ttf}");
+    font-family:street
+    src:url("@{StaticR fonts_Streetvertising_ttf}")
+
+@font-face
+    font-family:"Fira Logic"
+    src: url("@{StaticR fonts_FiraLogic_Regular_woff}") format("woff"), url("@{StaticR fonts_FiraLogic_Regular_ttf}") format("ttf")
 
 nav#navbar
     ul 
@@ -16,7 +20,7 @@ nav#navbar
        border-right: 1px solid
        margin-left: 5px
        font-size: 15px
-       font-family: sans-serif;
+       font-family: sans-serif
     ul > li:last-child
        border-right: none
 
