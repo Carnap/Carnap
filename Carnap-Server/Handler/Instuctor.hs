@@ -38,8 +38,8 @@ deleteInstructorR _ = do
 postInstructorR :: Text -> Handler Html
 postInstructorR ident = do
     classes <- classesByInstructorIdent ident
-    ((assignmentrslt,_),enctype) <- runFormPost (uploadAssignmentForm classes)
-    ((newclassrslt,_),enctype) <- runFormPost createCourseForm
+    ((assignmentrslt,_),enctypeUploadAssignment) <- runFormPost (uploadAssignmentForm classes)
+    ((newclassrslt,_),enctypeCreateCourse) <- runFormPost createCourseForm
     case assignmentrslt of 
         (FormSuccess (file, theclass, duedate, textarea, subtime)) ->
             do let fn = fileName file
@@ -75,8 +75,8 @@ getInstructorR ident = do
             classes <- classesByInstructorIdent ident 
             classWidgets <- mapM classWidget classes
             assignmentMetadata <- concat <$> mapM (assignmentsOf . entityKey) classes
-            ((_,assignmentWidget),enctype) <- runFormPost (uploadAssignmentForm classes)
-            ((_,createCourseWidget),enctype) <- runFormPost createCourseForm
+            (assignmentWidget,enctypeUploadAssignment) <- generateFormPost (uploadAssignmentForm classes)
+            (createCourseWidget,enctypeCreateCourse) <- generateFormPost createCourseForm
             defaultLayout $ do
                  addScript $ StaticR js_bootstrap_bundle_min_js
                  addScript $ StaticR js_bootstrap_min_js

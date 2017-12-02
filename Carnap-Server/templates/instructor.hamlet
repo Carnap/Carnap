@@ -35,12 +35,12 @@
         <div.card-body style="padding:20px;">
             <div.tab-content>
                 <div.tab-pane.active id="create" role="tabpanel">
-                    <form method=post enctype=#{enctype}>
+                    <form method=post enctype=#{enctypeCreateCourse}>
                         ^{createCourseWidget}
                         <div.form-group>
                             <input.btn.btn-primary type=submit value="create">
                 <div.tab-pane id="upload" role="tabpanel">
-                    <form method=post enctype=#{enctype}>
+                    <form method=post enctype=#{enctypeUploadAssignment}>
                         ^{assignmentWidget}
                         <div.form-group>
                             <input.btn.btn-primary type=submit value="upload">
