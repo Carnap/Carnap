@@ -50,7 +50,6 @@ postInstructorR ident = do
                           else setMessage "Could not save---this file already exists"
         (FormFailure s) -> setMessage $ "Something went wrong: " ++ toMarkup (show s)
         FormMissing -> setMessage "Submission data did not include an assignment"
-        _ -> setMessage "something went wrong with the form submission"
     case newclassrslt of
         (FormSuccess title) -> do
             miid <- instructorIdByIdent ident
@@ -62,7 +61,6 @@ postInstructorR ident = do
                 Nothing -> setMessage "you're not an instructor!"
         (FormFailure s) -> setMessage $ "Something went wrong: " ++ toMarkup (show s)
         FormMissing -> setMessage "Submission data did not include a new class"
-        _ -> setMessage "something went wrong with the form submission"
     redirect $ InstructorR ident
 
 getInstructorR :: Text -> Handler Html

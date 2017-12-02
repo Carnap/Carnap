@@ -10,6 +10,27 @@ import Data.Time
 import System.FilePath
 import System.Directory (getDirectoryContents,removeFile, doesFileExist)
 
+postAdminR :: Handler Html
+postAdminR = do allUserData <- map entityVal <$> (runDB $ selectList [] [])
+                musers <- mapM (\x -> runDB (get x)) (map userDataUserId  allUserData)
+                ((upgraderslt,upgradeWidget),enctypeUpgrade) <- runFormPost (upgradeToInstructor $ catMaybes musers)
+                case upgraderslt of 
+                     (FormSuccess ident) -> do 
+                            success <- runDB $ do imd <- insert InstructorMetadata
+                                                  muent <- getBy $ UniqueUser ident
+                                                  mudent <- case entityKey <$> muent of
+                                                                Just uid -> getBy $ UniqueUserData uid
+                                                                Nothing -> return Nothing
+                                                  case entityKey <$> mudent of 
+                                                       Nothing -> return False
+                                                       Just udid -> do update udid [UserDataInstructorId =. Just imd]
+                                                                       return True
+                            if success then setMessage $ "user " ++ (toMarkup ident) ++ " upgraded to instructor"
+                                       else setMessage $ "couldn't upgrade user " ++ (toMarkup ident) ++ " to instructor"
+                     (FormFailure s) -> setMessage $ "Something went wrong: " ++ toMarkup (show s)
+                     FormMissing -> setMessage "Submission data incomplete"
+                redirect AdminR --XXX: redirect here to make sure changes are visually reflected
+
 getAdminR :: Handler Html
 getAdminR = do allUserData <- map entityVal <$> (runDB $ selectList [] [])
                let allUids = (map userDataUserId  allUserData)

@@ -14,7 +14,7 @@
 /book/#Int         ChapterR     GET
 /user/#Text        UserR        GET DELETE
 /instructor/#Text  InstructorR  GET POST DELETE
-/master_admin      AdminR       GET
+/master_admin      AdminR       GET POST
 /hash/#Text        HashedR      GET
 /assignments/      AssignmentsR GET
 /assignments/#Text AssignmentR  GET

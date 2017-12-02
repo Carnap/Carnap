@@ -59,6 +59,9 @@ getUserR ident = do
                                     $if isInstructor
                                         <p> Your instructor page is 
                                             <a href=@{InstructorR ident}>here
+
+                                    <a href=@{AuthR LogoutR}>
+                                        Logout
                                |]
     where tryLookup l x = case lookup x l of
                           Just n -> show n
