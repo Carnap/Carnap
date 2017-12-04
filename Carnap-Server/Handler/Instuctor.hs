@@ -8,6 +8,7 @@ import Yesod.Form.Jquery
 import Handler.User (scoreByIdAndClass)
 import Text.Blaze.Html (toMarkup)
 import Data.Time
+import qualified Data.Text as T
 import System.FilePath
 import System.Directory (getDirectoryContents,removeFile, doesFileExist)
 
@@ -71,6 +72,7 @@ getInstructorR ident = do
         (Just (Entity uid _))  -> do
             UserData firstname lastname enrolledin _ _ <- checkUserData uid 
             classes <- classesByInstructorIdent ident 
+            let tags = map (\n -> "id"  ++ (show n)) $ take (length classes) [1 ..]
             classWidgets <- mapM classWidget classes
             assignmentMetadata <- concat <$> mapM (assignmentsOf . entityKey) classes
             (assignmentWidget,enctypeUploadAssignment) <- generateFormPost (uploadAssignmentForm classes)
@@ -79,7 +81,6 @@ getInstructorR ident = do
                  addScript $ StaticR js_bootstrap_bundle_min_js
                  addScript $ StaticR js_bootstrap_min_js
                  setTitle $ "Instructor Page for " ++ toMarkup firstname ++ " " ++ toMarkup lastname
-
                  $(widgetFile "instructor")
     where assignmentsOf theclass = map entityVal <$> listAssignmentMetadata theclass
           
@@ -106,24 +107,20 @@ getInstructorR ident = do
                    let usersAndData = zip users allUserData
                    (Just course) <- runDB $ get cid
                    return [whamlet|
-                            <div.card style="margin-bottom:20px">
-                                <div.card-header>
-                                    #{courseTitle course}
-                                <div.card-block>
-                                    <table.table.table-striped>
-                                        <thead>
-                                            <th> Registered Student
-                                            <th> Student Name
-                                            <th> Total Score
-                                        <tbody>
-                                            $forall (u,UserData fn ln _ _ _) <- usersAndData
-                                                <tr>
-                                                    <td>
-                                                        <a href=@{UserR (userIdent u)}>#{userIdent u}
-                                                    <td>
-                                                        #{ln}, #{fn}
-                                                    <td>
-                                                        #{tryLookup allScores (userIdent u)}/#{show $ courseTotalPoints course}
+                                <table.table.table-striped>
+                                    <thead>
+                                        <th> Registered Student
+                                        <th> Student Name
+                                        <th> Total Score
+                                    <tbody>
+                                        $forall (u,UserData fn ln _ _ _) <- usersAndData
+                                            <tr>
+                                                <td>
+                                                    <a href=@{UserR (userIdent u)}>#{userIdent u}
+                                                <td>
+                                                    #{ln}, #{fn}
+                                                <td>
+                                                    #{tryLookup allScores (userIdent u)}/#{show $ courseTotalPoints course}
                           |]
 
 uploadAssignmentForm classes = renderBootstrap3 BootstrapBasicForm $ (,,,,)

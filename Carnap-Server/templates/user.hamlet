@@ -1,4 +1,5 @@
 <div.container>
+    ^{updateWidget updateForm encTypeUpdate}
     <h1> Homepage for #{firstname} #{lastname}
     <p> This is your homepage, where you can keep track of your progress in the course, and find other useful information.
     $if isInstructor
@@ -15,7 +16,7 @@
                 <div.card-header> Total Points Earned
                 <div.card-block.text-center>
                     <span style="font-size:64pt; color:gray">
-                        #{score}/#{pointsAvailable}
+                        #{score}/#{courseTotalPoints course}
     <div>
     <h3 style="padding-top:10pt"> Completed Problems
     $if (not $ null synsubs)
@@ -35,12 +36,7 @@
             <div.card-header> Truth Tables
             #{tttable}
     <h3> Your Profile
-    <div.card>
-        <div.card-header> Personal Information
-        <div.card-block>
-            <dl.row>
-                <dt.col-sm-3>Course Enrollment
-                <dd.col-sm-9>#{coursetitle}
+    ^{personalInfo ud (Just course)}
     $maybe rules <- derivedRules
         <div.card>
             <div.card-header> Derived Rules

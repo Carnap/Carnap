@@ -1,9 +1,18 @@
 <div.container>
     <h1> Instructor Page for #{firstname} #{lastname}
     <h2> Student Scores
-    <div.card-columns>
-    $forall widget <- classWidgets
-         ^{widget}
+    <div.card>
+        <div.card-header>
+            <ul.nav.nav-tabs.card-header-tabs role="tablist">
+                $forall (theclass,thetag) <- zip classes tags
+                    <li.nav-item>
+                        <a.nav-link data-toggle="tab" href="##{thetag}" role="tab">
+                            #{courseTitle $ entityVal theclass}
+        <div.card-body style="padding:20px;">
+            <div.tab-content>
+                $forall (widget,thetag) <- zip classWidgets tags
+                    <div.tab-pane id="#{thetag}" role="tabpanel">
+                         ^{widget}
     <h2> Uploaded Assignments
     <table class="table">
         <thead>
@@ -38,9 +47,9 @@
                     <form method=post enctype=#{enctypeCreateCourse}>
                         ^{createCourseWidget}
                         <div.form-group>
-                            <input.btn.btn-primary type=submit value="create">
+                            <input.btn.btn-primary type=submit onclick="return confirm('definitely create a new course?')" value="create">
                 <div.tab-pane id="upload" role="tabpanel">
                     <form method=post enctype=#{enctypeUploadAssignment}>
                         ^{assignmentWidget}
                         <div.form-group>
-                            <input.btn.btn-primary type=submit value="upload">
+                            <input.btn.btn-primary  type=submit value="upload">

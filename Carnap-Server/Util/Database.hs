@@ -44,6 +44,13 @@ classesByInstructorIdent ident = do centlist <- runDB $ do muent <- getBy $ Uniq
                                                                Nothing -> return []
                                     return centlist
 
+-- | derived rules by userId
+getDerivedRules uid = do savedRules <- runDB $ selectList 
+                                               [SavedDerivedRuleUserId ==. uid] []
+                         case savedRules of 
+                             [] -> return Nothing
+                             _  -> return $ Just (map entityVal savedRules)
+
 -- | instructorId by ident
 instructorIdByIdent ident = runDB $ do muent <- getBy $ UniqueUser ident
                                        mudent <- case entityKey <$> muent of 

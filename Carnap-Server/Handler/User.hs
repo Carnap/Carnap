@@ -6,12 +6,40 @@ import qualified Text.Blaze.Html5 as B
 import Text.Blaze.Html5.Attributes
 import Carnap.Languages.PurePropositional.Logic (DerivedRule(..))
 import Carnap.GHCJS.SharedTypes
+import Yesod.Form.Bootstrap3
 import Data.Aeson (encode, decodeStrict)
 import Data.Time
 import Util.Data
 import Util.Database
 import qualified Data.Map as M
 import qualified Data.IntMap
+
+postUserR :: Text -> Handler Html
+postUserR ident = do
+    musr <- runDB $ getBy $ UniqueUser ident
+    case musr of 
+        Nothing -> defaultLayout nouserPage
+        (Just (Entity uid _))  -> do
+            ud <- checkUserData uid
+            classes <- runDB $ selectList [] []
+            ((updateRslt,_),_) <- runFormPost (updateUserDataForm ud classes)
+            case updateRslt of 
+                 (FormFailure s) -> setMessage $ "Something went wrong: " ++ B.toMarkup (show s)
+                 FormMissing -> setMessage "Submission data incomplete"
+                 (FormSuccess (mc, fn , ln)) -> runDB $ do
+                         mudent <- getBy $ UniqueUserData uid
+                         case entityKey <$> mudent of 
+                               Nothing -> return ()
+                               Just udid -> do 
+                                    case mc of 
+                                        Nothing -> update udid [ UserDataFirstName =. fn
+                                                              , UserDataLastName =. ln]
+                                        Just c -> update udid [ UserDataFirstName =. fn
+                                                              , UserDataLastName =. ln
+                                                              , UserDataEnrolledIn =. (Just $ entityKey c)]
+                                    return ()
+            redirect (UserR ident)--XXX: redirect here to make sure changes are visually reflected
+
 
 deleteUserR :: Text -> Handler Value
 deleteUserR ident = do
@@ -32,16 +60,16 @@ getUserR ident = do
     case musr of 
         Nothing -> defaultLayout nouserPage
         (Just (Entity k _))  -> do
-            UserData firstname lastname maybeCourseId maybeInstructorId _ <- checkUserData k
+            ud@(UserData firstname lastname maybeCourseId maybeInstructorId _) <- checkUserData k
+            classes <- runDB $ selectList [] []
+            (updateForm,encTypeUpdate) <- generateFormPost (updateUserDataForm ud classes)
             (synsubs, transsubs,dersubs, ttsubs) <- subsByIdAndSource maybeCourseId k
             let isInstructor = case maybeInstructorId of Just _ -> True; _ -> False
-            derivedRules <- getDrList
+            derivedRules <- getDerivedRules k
             utcToKansas' <- liftIO utcToKansas
             case maybeCourseId of
                 Just cid ->
-                    do Just c <- runDB $ get cid
-                       let pointsAvailable = courseTotalPoints c
-                           coursetitle = courseTitle c
+                    do Just course <- runDB $ get cid
                        duedates <- getProblemSets cid
                        assignments <- assignmentsOf utcToKansas' cid duedates
                        syntable <- problemsToTable utcToKansas' duedates synsubs
@@ -50,52 +78,29 @@ getUserR ident = do
                        tttable <- problemsToTable utcToKansas' duedates ttsubs
                        score <- totalScore duedates synsubs transsubs dersubs ttsubs
                        defaultLayout $ do
+                           addScript $ StaticR js_bootstrap_bundle_min_js
+                           addScript $ StaticR js_bootstrap_min_js
                            setTitle "Welcome To Your Homepage!"
                            $(widgetFile "user")
-                Nothing -> defaultLayout 
+                Nothing -> defaultLayout $ do
+                                addScript $ StaticR js_bootstrap_bundle_min_js
+                                addScript $ StaticR js_bootstrap_min_js
                                 [whamlet|
                                 <div.container>
+                                    ^{updateWidget updateForm encTypeUpdate}
                                     <p> This user is not enrolled
                                     $if isInstructor
                                         <p> Your instructor page is 
                                             <a href=@{InstructorR ident}>here
 
+                                    ^{personalInfo ud Nothing}
                                     <a href=@{AuthR LogoutR}>
                                         Logout
                                |]
     where tryLookup l x = case lookup x l of
                           Just n -> show n
                           Nothing -> "can't find scores"
-          
-          nouserPage = [whamlet|
-                        <div.container>
-                            <p> This user does not exist
-                       |]
 
-
-          assignmentsOf localize cid duedates = do
-             asmd <- runDB $ selectList [AssignmentMetadataCourse ==. cid] []
-             return $
-                [whamlet|
-                <table.table.table-striped>
-                    <thead>
-                        <th> Assignment
-                        <th> Due Date
-                    <tbody>
-                        $maybe dd <- duedates
-                            $forall (num,date) <- Data.IntMap.toList dd
-                                <tr>
-                                    <td>
-                                        Problem Set #{show num}
-                                    <td>
-                                        #{formatted localize date}
-                        $forall a <- map entityVal asmd
-                            <tr>
-                                <td>
-                                    <a href=@{AssignmentR $ assignmentMetadataFilename a}>
-                                        #{assignmentMetadataFilename a}
-                                <td>#{formatted localize $ assignmentMetadataDuedate a}
-                |]
 
 --------------------------------------------------------
 --Grading
@@ -117,7 +122,6 @@ toScore duedates p = case assignment p of
                                 if asUTC (submitted p) `laterThan` assignmentMetadataDuedate v
                                     then return (2 :: Int)
                                     else return (5 :: Int)
-
                             
 scoreByIdAndClass cid uid = 
         do (a,b,c,d) <- subsByIdAndSource (Just cid) uid
@@ -151,11 +155,10 @@ utcDueDate duedates x = duedates >>= Data.IntMap.lookup (read $ unpack (takeWhil
 laterThan :: UTCTime -> UTCTime -> Bool
 laterThan t1 t2 = diffUTCTime t1 t2 > 0
 
-
 --------------------------------------------------------
---Blaze utility functions
+--Components 
 --------------------------------------------------------
---functions for manipulating html
+--reusable components
 
 problemsToTable localize duedates xs = do 
             rows <- mapM toRow xs
@@ -179,19 +182,85 @@ problemsToTable localize duedates xs = do
 
 tryDelete name = "tryDeleteRule(\"" <> name <> "\")"
 
+--properly localized assignments for a given class 
+--XXX---should this just be in the hamlet?
+assignmentsOf localize cid duedates = do
+             asmd <- runDB $ selectList [AssignmentMetadataCourse ==. cid] []
+             return $
+                [whamlet|
+                <table.table.table-striped>
+                    <thead>
+                        <th> Assignment
+                        <th> Due Date
+                    <tbody>
+                        $maybe dd <- duedates
+                            $forall (num,date) <- Data.IntMap.toList dd
+                                <tr>
+                                    <td>
+                                        Problem Set #{show num}
+                                    <td>
+                                        #{formatted localize date}
+                        $forall a <- map entityVal asmd
+                            <tr>
+                                <td>
+                                    <a href=@{AssignmentR $ assignmentMetadataFilename a}>
+                                        #{assignmentMetadataFilename a}
+                                <td>#{formatted localize $ assignmentMetadataDuedate a}
+                |]
+
+updateWidget form enc = [whamlet|
+                    <div class="modal fade" id="updateUserData" tabindex="-1" role="dialog" aria-labelledby="updateUserDataLabel" aria-hidden="true">
+                        <div class="modal-dialog" role="document">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title" id="updateUserDataLabel">Update User Data</h5>
+                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                      <span aria-hidden="true">&times;</span>
+                                <div class="modal-body">
+                                    <form method=post enctype=#{enc}>
+                                        ^{form}
+                                        <div.form-group>
+                                            <input.btn.btn-primary type=submit value="update">
+                    |]    
+
+personalInfo (UserData firstname lastname maybeCourseId maybeInstructorId _) mcourse =
+        [whamlet| <div.card>
+                        <div.card-header> Personal Information
+                        <div.card-block>
+                            $maybe course <- mcourse
+                                <dl.row>
+                                    <dt.col-sm-3>Course Enrollment
+                                    <dd.col-sm-9>#{courseTitle course}
+                                <dl.row>
+                                    <dt.col-sm-3>First Name
+                                    <dd.col-sm-9>#{firstname}
+                                <dl.row>
+                                    <dt.col-sm-3>Last Name
+                                    <dd.col-sm-9>#{lastname}
+                                <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#updateUserData">
+                                    Edit
+                            $nothing
+                                <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#updateUserData">
+                                    Edit
+                                |]
+
+updateUserDataForm (UserData firstname lastname maybeCourseId _ _) classes = renderBootstrap3 BootstrapBasicForm $ (,,)
+            <$> aopt (selectFieldList classnames) (bfs ("Class" :: Text)) Nothing
+            <*> areq textField (bfs ("First Name"::Text)) (Just firstname)
+            <*> areq textField (bfs ("Last Name"::Text)) (Just lastname)
+    where classnames = map (\theclass -> (courseTitle . entityVal $ theclass, theclass)) classes
+
+
+nouserPage = [whamlet|
+             <div.container>
+                <p> This user does not exist
+             |]
+
 --------------------------------------------------------
 --Database Handling
 --------------------------------------------------------
 --functions for retrieving database infomration and formatting it
 
-getDrList = do maybeCurrentUserId <- maybeAuthId
-               case maybeCurrentUserId of
-                   Nothing -> return Nothing
-                   Just u -> do savedRules <- runDB $ selectList 
-                                    [SavedDerivedRuleUserId ==. u] []
-                                case savedRules of 
-                                    [] -> return Nothing
-                                    _  -> return $ Just (map entityVal savedRules)
 
 class Problem p where
         problem :: p -> Text
