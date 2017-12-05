@@ -22,15 +22,15 @@
             <th> Course
         <tbody>
             $forall (a,c) <- zip assignmentMetadata assignmentCourses
-                <tr>
-                    <td>
+                <tr id="assignment-#{assignmentMetadataFilename a}">
+                    <td >
                         <a href=@{AssignmentR $ assignmentMetadataFilename a}>
                             #{assignmentMetadataFilename a}
                     <td>#{show $ assignmentMetadataDuedate a}
                     <td>#{show $ assignmentMetadataDate a}
                     <td>#{courseTitle c}
                     <td>
-                        <button.btn.btn-sm.btn-secondary type="button" onclick=#{tryDelete a}>
+                        <button.btn.btn-sm.btn-secondary type="button" onclick="tryDeleteAssignment('#{assignmentMetadataFilename a}')">
                             <i.fa.fa-trash-o>
     <div.card>
         <div.card-header>

@@ -13,8 +13,9 @@ function deleteAssignment (name) {
         contentType: "application/json",
         data: JSON.stringify(name),
         success: function(data) {
+            var el = document.getElementById("assignment-" + name);
+            el.parentElement.removeChild(el);
             window.alert("Deleted the assignment " + name);
-            location.reload();
             },
         error: function(data) {
             window.alert("Error, couldn't delete the assignment " + name)

@@ -96,8 +96,6 @@ getInstructorR ident = do
                         <p> Instructor not found.
                    |]
 
-          tryDelete (AssignmentMetadata fn _ _ _ _) = "tryDeleteAssignment(\"" ++ fn ++ "\")"
-
           classWidget :: Entity Course -> HandlerT App IO Widget
           classWidget classent = do
                    let cid = entityKey classent
