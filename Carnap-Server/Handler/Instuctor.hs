@@ -39,29 +39,29 @@ deleteInstructorR _ = do
 postInstructorR :: Text -> Handler Html
 postInstructorR ident = do
     classes <- classesByInstructorIdent ident
-    ((assignmentrslt,_),enctypeUploadAssignment) <- runFormPost (uploadAssignmentForm classes)
-    ((newclassrslt,_),enctypeCreateCourse) <- runFormPost createCourseForm
+    ((assignmentrslt,_),enctypeUploadAssignment) <- runFormPost (identifyForm "uploadAssignment" $ uploadAssignmentForm classes)
+    ((newclassrslt,_),enctypeCreateCourse) <- runFormPost (identifyForm "createCourse" createCourseForm)
     case assignmentrslt of 
         (FormSuccess (file, theclass, duedate, textarea, subtime)) ->
             do let fn = fileName file
-               let duetime = UTCTime duedate 0
-               let info = unTextarea <$> textarea
+                   duetime = UTCTime duedate 0
+                   info = unTextarea <$> textarea
                success <- tryInsert $ AssignmentMetadata fn info duetime subtime (entityKey theclass)
                if success then saveAssignment file 
                           else setMessage "Could not save---this file already exists"
         (FormFailure s) -> setMessage $ "Something went wrong: " ++ toMarkup (show s)
-        FormMissing -> setMessage "Submission data did not include an assignment"
+        FormMissing -> return ()
     case newclassrslt of
         (FormSuccess (title, startdate, enddate)) -> do
             miid <- instructorIdByIdent ident
             case miid of
                 Just iid -> 
-                    do success <- tryInsert $ Course  title iid "" (UTCTime startdate 0) (UTCTime enddate 0) 0
+                    do success <- tryInsert $ Course title iid "" (UTCTime startdate 0) (UTCTime enddate 0) 0
                        if success then setMessage "Course Created" 
                                   else setMessage "Could not save---this file already exists"
                 Nothing -> setMessage "you're not an instructor!"
         (FormFailure s) -> setMessage $ "Something went wrong: " ++ toMarkup (show s)
-        FormMissing -> setMessage "Submission data did not include a new class"
+        FormMissing -> return ()
     redirect $ InstructorR ident
 
 getInstructorR :: Text -> Handler Html
@@ -75,8 +75,11 @@ getInstructorR ident = do
             let tags = map (\n -> "id"  ++ (show n)) $ take (length classes) [1 ..]
             classWidgets <- mapM classWidget classes
             assignmentMetadata <- concat <$> mapM (assignmentsOf . entityKey) classes
-            (assignmentWidget,enctypeUploadAssignment) <- generateFormPost (uploadAssignmentForm classes)
-            (createCourseWidget,enctypeCreateCourse) <- generateFormPost createCourseForm
+            assignmentCourses <- forM assignmentMetadata $ \c -> do 
+                                    Just e <- runDB $ get (assignmentMetadataCourse c)
+                                    return e
+            (assignmentWidget,enctypeUploadAssignment) <- generateFormPost (identifyForm "uploadAssignment" $ uploadAssignmentForm classes)
+            (createCourseWidget,enctypeCreateCourse) <- generateFormPost (identifyForm "createCourse" createCourseForm)
             defaultLayout $ do
                  addScript $ StaticR js_bootstrap_bundle_min_js
                  addScript $ StaticR js_bootstrap_min_js
