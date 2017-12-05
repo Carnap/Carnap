@@ -50,7 +50,7 @@
                     <tbody>
                         $forall SavedDerivedRule dr name _ _ <- rules
                             $maybe dr' <- decodeStrict dr
-                                <tr>
+                                <tr id="rule-#{name}">
                                     <td>D-#{name}
                                     <td>#{intercalate "," $ map show (premises dr')}
                                     <td>#{show $ conclusion dr'}

@@ -5,8 +5,9 @@ function deleteRule (name) {
         contentType: "application/json",
         data: JSON.stringify(name),
         success: function(data) {
+            var el = document.getElementById("rule-" + name);
+            el.parentElement.removeChild(el);
             window.alert("Deleted the rule " + name);
-            location.reload();
             },
         error: function(data) {
             window.alert("Error, couldn't delete the rule" + name)
