@@ -227,22 +227,19 @@ personalInfo (UserData firstname lastname maybeCourseId maybeInstructorId _) mco
         [whamlet| <div.card>
                         <div.card-header> Personal Information
                         <div.card-block>
-                            $maybe course <- mcourse
-                                <dl.row>
+                            <dl.row>
+                                <dt.col-sm-3>First Name
+                                <dd.col-sm-9>#{firstname}
+                                <dt.col-sm-3>Last Name
+                                <dd.col-sm-9>#{lastname}
+                                $maybe course <- mcourse
                                     <dt.col-sm-3>Course Enrollment
                                     <dd.col-sm-9>#{courseTitle course}
-                                <dl.row>
-                                    <dt.col-sm-3>First Name
-                                    <dd.col-sm-9>#{firstname}
-                                <dl.row>
-                                    <dt.col-sm-3>Last Name
-                                    <dd.col-sm-9>#{lastname}
-                                <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#updateUserData">
-                                    Edit
-                            $nothing
-                                <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#updateUserData">
-                                    Edit
-                                |]
+                                    $maybe desc <- courseDescription course
+                                        <dd.col-sm-9.offset-sm-3>#{desc}
+                            <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#updateUserData">
+                                Edit
+                            |]
 
 updateUserDataForm (UserData firstname lastname maybeCourseId _ _) classes = renderBootstrap3 BootstrapBasicForm $ (,,)
             <$> aopt (selectFieldList classnames) (bfs ("Class" :: Text)) Nothing

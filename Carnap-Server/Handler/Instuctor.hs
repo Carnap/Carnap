@@ -42,21 +42,21 @@ postInstructorR ident = do
     ((assignmentrslt,_),enctypeUploadAssignment) <- runFormPost (identifyForm "uploadAssignment" $ uploadAssignmentForm classes)
     ((newclassrslt,_),enctypeCreateCourse) <- runFormPost (identifyForm "createCourse" createCourseForm)
     case assignmentrslt of 
-        (FormSuccess (file, theclass, duedate, textarea, subtime)) ->
+        (FormSuccess (file, theclass, duedate, assignmentdesc, subtime)) ->
             do let fn = fileName file
                    duetime = UTCTime duedate 0
-                   info = unTextarea <$> textarea
+                   info = unTextarea <$> assignmentdesc
                success <- tryInsert $ AssignmentMetadata fn info duetime subtime (entityKey theclass)
                if success then saveAssignment file 
                           else setMessage "Could not save---this file already exists"
         (FormFailure s) -> setMessage $ "Something went wrong: " ++ toMarkup (show s)
         FormMissing -> return ()
     case newclassrslt of
-        (FormSuccess (title, startdate, enddate)) -> do
+        (FormSuccess (title, coursedesc, startdate, enddate)) -> do
             miid <- instructorIdByIdent ident
             case miid of
                 Just iid -> 
-                    do success <- tryInsert $ Course title iid "" (UTCTime startdate 0) (UTCTime enddate 0) 0
+                    do success <- tryInsert $ Course title (unTextarea <$> coursedesc) iid "" (UTCTime startdate 0) (UTCTime enddate 0) 0
                        if success then setMessage "Course Created" 
                                   else setMessage "Could not save---this file already exists"
                 Nothing -> setMessage "you're not an instructor!"
@@ -132,8 +132,9 @@ uploadAssignmentForm classes = renderBootstrap3 BootstrapBasicForm $ (,,,,)
             <*> lift (liftIO getCurrentTime)
     where classnames = map (\theclass -> (courseTitle . entityVal $ theclass, theclass)) classes
 
-createCourseForm = renderBootstrap3 BootstrapBasicForm $ (,,)
+createCourseForm = renderBootstrap3 BootstrapBasicForm $ (,,,)
             <$> areq textField (bfs ("Title" :: Text)) Nothing
+            <*> aopt textareaField (bfs ("Course Description"::Text)) Nothing
             <*> areq (jqueryDayField def) (bfs ("Start Date"::Text)) Nothing
             <*> areq (jqueryDayField def) (bfs ("End Date"::Text)) Nothing
 

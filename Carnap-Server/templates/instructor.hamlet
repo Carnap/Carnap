@@ -36,20 +36,20 @@
         <div.card-header>
             <ul.nav.nav-tabs.card-header-tabs role="tablist">
                 <li.nav-item>
-                    <a.nav-link.active data-toggle="tab" href="#create" role="tab">
-                        Create Courses
-                <li.nav-item>
-                    <a.nav-link data-toggle="tab" href="#upload" role="tab">
+                    <a.nav-link.active data-toggle="tab" href="#upload" role="tab">
                         Upload Assignments
+                <li.nav-item>
+                    <a.nav-link data-toggle="tab" href="#create" role="tab">
+                        Create Courses
         <div.card-body style="padding:20px;">
             <div.tab-content>
-                <div.tab-pane.active id="create" role="tabpanel">
-                    <form method=post enctype=#{enctypeCreateCourse}>
-                        ^{createCourseWidget}
-                        <div.form-group>
-                            <input.btn.btn-primary type=submit onclick="return confirm('definitely create a new course?')" value="create">
-                <div.tab-pane id="upload" role="tabpanel">
+                <div.tab-pane.active id="upload" role="tabpanel">
                     <form method=post enctype=#{enctypeUploadAssignment}>
                         ^{assignmentWidget}
                         <div.form-group>
                             <input.btn.btn-primary  type=submit value="upload">
+                <div.tab-pane id="create" role="tabpanel">
+                    <form method=post enctype=#{enctypeCreateCourse}>
+                        ^{createCourseWidget}
+                        <div.form-group>
+                            <input.btn.btn-primary type=submit onclick="return confirm('definitely create a new course?')" value="create">

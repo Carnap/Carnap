@@ -64,6 +64,7 @@ InstructorMetadata
 
 Course
     title Text
+    description Text Maybe
     instructor InstructorMetadataId
     textbookProblems ByteString
     startDate UTCTime
