@@ -20,7 +20,7 @@ function deleteAssignment (name) {
         contentType: "application/json",
         data: JSON.stringify(name),
         success: function(data) {
-            var el = $("#assignment-" + $.escapeselector(name));
+            var el = $("#assignment-" + $.escapeSelector(name));
             console.log(el);
             el.remove();
             window.alert("Deleted the assignment " + name);
