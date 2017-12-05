@@ -8,6 +8,8 @@ import Yesod.Form.Jquery
 import Handler.User (scoreByIdAndClass)
 import Text.Blaze.Html (toMarkup)
 import Data.Time
+import Data.Aeson (decode,encode)
+import Data.IntMap (insert,fromList)
 import qualified Data.Text as T
 import System.FilePath
 import System.Directory (getDirectoryContents,removeFile, doesFileExist)
@@ -61,8 +63,9 @@ deleteInstructorR _ = do
 postInstructorR :: Text -> Handler Html
 postInstructorR ident = do
     classes <- classesByInstructorIdent ident
-    ((assignmentrslt,_),enctypeUploadAssignment) <- runFormPost (identifyForm "uploadAssignment" $ uploadAssignmentForm classes)
-    ((newclassrslt,_),enctypeCreateCourse) <- runFormPost (identifyForm "createCourse" createCourseForm)
+    ((assignmentrslt,_),_) <- runFormPost (identifyForm "uploadAssignment" $ uploadAssignmentForm classes)
+    ((newclassrslt,_),_) <- runFormPost (identifyForm "createCourse" createCourseForm)
+    ((frombookrslt,_),_) <- runFormPost (identifyForm "setBookAssignment" $ setBookAssignmentForm classes)
     case assignmentrslt of 
         (FormSuccess (file, theclass, duedate, assignmentdesc, subtime)) ->
             do let fn = fileName file
@@ -84,6 +87,15 @@ postInstructorR ident = do
                 Nothing -> setMessage "you're not an instructor!"
         (FormFailure s) -> setMessage $ "Something went wrong: " ++ toMarkup (show s)
         FormMissing -> return ()
+    case frombookrslt of
+        (FormSuccess (theclass, theassignment, duedate)) -> runDB $ do
+            let assignmentBytes = fromStrict . courseTextbookProblems . entityVal $ theclass
+                duetime = UTCTime duedate 0
+            case decode assignmentBytes :: Maybe (IntMap UTCTime)  of
+                Just assign -> update (entityKey theclass) [CourseTextbookProblems =. (toStrict . encode $ Data.IntMap.insert theassignment duetime assign)]
+                Nothing -> update (entityKey theclass) [CourseTextbookProblems =. (toStrict . encode $ Data.IntMap.fromList [(theassignment, duetime)])]
+        (FormFailure s) -> setMessage $ "Something went wrong: " ++ toMarkup (show s)
+        FormMissing -> return ()
     redirect $ InstructorR ident
 
 getInstructorR :: Text -> Handler Html
@@ -101,6 +113,7 @@ getInstructorR ident = do
                                     Just e <- runDB $ get (assignmentMetadataCourse c)
                                     return e
             (uploadAssignmentWidget,enctypeUploadAssignment) <- generateFormPost (identifyForm "uploadAssignment" $ uploadAssignmentForm classes)
+            (setBookAssignmentWidget,enctypeSetBookAssignment) <- generateFormPost (identifyForm "setBookAssignment" $ setBookAssignmentForm classes)
             (updateAssignmentWidget,enctypeUpdateAssignment) <- generateFormPost (identifyForm "updateAssignment" $ updateAssignmentForm)
             (createCourseWidget,enctypeCreateCourse) <- generateFormPost (identifyForm "createCourse" createCourseForm)
             defaultLayout $ do
@@ -180,6 +193,12 @@ updateAssignmentForm = renderBootstrap3 BootstrapBasicForm $ (,,)
     where fileName :: (Monad m, RenderMessage (HandlerSite m) FormMessage) => Field m Text 
           fileName = hiddenField
 
+setBookAssignmentForm classes = renderBootstrap3 BootstrapBasicForm $ (,,)
+            <$> areq (selectFieldList classnames) (bfs ("Class" :: Text)) Nothing
+            <*> areq (selectFieldList chapters) (bfs ("Problem Set" :: Text))  Nothing
+            <*> areq (jqueryDayField def) (bfs ("Due Date"::Text)) Nothing
+    where chapters = map (\x -> ("Problem Set " ++ pack (show x),x)) [1..15 ] :: [(Text,Int)]
+          classnames = map (\theclass -> (courseTitle . entityVal $ theclass, theclass)) classes
 createCourseForm = renderBootstrap3 BootstrapBasicForm $ (,,,)
             <$> areq textField (bfs ("Title" :: Text)) Nothing
             <*> aopt textareaField (bfs ("Course Description"::Text)) Nothing

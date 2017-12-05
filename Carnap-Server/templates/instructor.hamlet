@@ -25,7 +25,7 @@
         <tbody>
             $forall (a,c) <- zip assignmentMetadata assignmentCourses
                 <tr id="assignment-#{assignmentMetadataFilename a}">
-                    <td >
+                    <td>
                         <a href=@{AssignmentR $ assignmentMetadataFilename a}>
                             #{assignmentMetadataFilename a}
                     $maybe due <- assignmentMetadataDuedate a
@@ -43,14 +43,22 @@
         <div.card-header>
             <ul.nav.nav-tabs.card-header-tabs role="tablist">
                 <li.nav-item>
-                    <a.nav-link.active data-toggle="tab" href="#upload" role="tab">
+                    <a.nav-link.active data-toggle="tab" href="#assignFromTextbook" role="tab">
+                        Assign Textbook Problems
+                <li.nav-item>
+                    <a.nav-link data-toggle="tab" href="#upload" role="tab">
                         Upload Assignments
                 <li.nav-item>
                     <a.nav-link data-toggle="tab" href="#create" role="tab">
                         Create Courses
         <div.card-body style="padding:20px;">
             <div.tab-content>
-                <div.tab-pane.active id="upload" role="tabpanel">
+                <div.tab-pane.active id="assignFromTextbook" role="tabpanel">
+                    <form method=post enctype=#{enctypeSetBookAssignment}>
+                        ^{setBookAssignmentWidget}
+                        <div.form-group>
+                            <input.btn.btn-primary  type=submit value="assign">
+                <div.tab-pane id="upload" role="tabpanel">
                     <form method=post enctype=#{enctypeUploadAssignment}>
                         ^{uploadAssignmentWidget}
                         <div.form-group>
