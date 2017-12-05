@@ -12,6 +12,28 @@ import qualified Data.Text as T
 import System.FilePath
 import System.Directory (getDirectoryContents,removeFile, doesFileExist)
 
+
+putInstructorR :: Text -> Handler Value
+putInstructorR _ = do
+    ((assignmentrslt,_),enctypeUploadAssignment) <- runFormPost (identifyForm "updateAssignment" $ updateAssignmentForm)
+    case assignmentrslt of 
+        (FormSuccess (filename,mdue,mdesc)) -> do
+                         massignent <- runDB $ getBy $ UniqueAssignment filename
+                         case massignent of 
+                               Nothing -> return ()
+                               Just assignent -> runDB $ do maybeDo mdue (\due -> update (entityKey assignent) 
+                                                                            [ AssignmentMetadataDuedate =. (Just $ UTCTime due 0) ])
+                                                            maybeDo mdesc (\desc -> update (entityKey assignent) 
+                                                                            [ AssignmentMetadataDescription =. (Just $ unTextarea desc) ])
+
+                                                        
+                         case mdue of Nothing -> returnJson ([filename,"No Due Date"])
+                                      Just due -> returnJson ([filename,pack $ show $ UTCTime due 0])
+        (FormFailure s) -> returnJson ("error" :: Text)
+        FormMissing -> returnJson ("no form" :: Text)
+    where maybeDo mv f = case mv of Just v -> f v; _ -> return ()
+
+
 deleteInstructorR :: Text -> Handler Value
 deleteInstructorR _ = do
     fn <- requireJsonBody :: Handler Text
@@ -78,7 +100,8 @@ getInstructorR ident = do
             assignmentCourses <- forM assignmentMetadata $ \c -> do 
                                     Just e <- runDB $ get (assignmentMetadataCourse c)
                                     return e
-            (assignmentWidget,enctypeUploadAssignment) <- generateFormPost (identifyForm "uploadAssignment" $ uploadAssignmentForm classes)
+            (uploadAssignmentWidget,enctypeUploadAssignment) <- generateFormPost (identifyForm "uploadAssignment" $ uploadAssignmentForm classes)
+            (updateAssignmentWidget,enctypeUpdateAssignment) <- generateFormPost (identifyForm "updateAssignment" $ updateAssignmentForm)
             (createCourseWidget,enctypeCreateCourse) <- generateFormPost (identifyForm "createCourse" createCourseForm)
             defaultLayout $ do
                  addScript $ StaticR js_bootstrap_bundle_min_js
@@ -124,6 +147,24 @@ getInstructorR ident = do
                                                     #{tryLookup allScores (userIdent u)}/#{show $ courseTotalPoints course}
                           |]
 
+------------------
+--  Components  --
+------------------
+updateWidget form enc = [whamlet|
+                    <div class="modal fade" id="updateAssignmentData" tabindex="-1" role="dialog" aria-labelledby="updateAssignmentDataLabel" aria-hidden="true">
+                        <div class="modal-dialog" role="document">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title" id="updateAssignmentDataLabel">Update User Data</h5>
+                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                      <span aria-hidden="true">&times;</span>
+                                <div class="modal-body">
+                                    <form#updateAssignment enctype=#{enc}>
+                                        ^{form}
+                                        <div.form-group>
+                                            <input.btn.btn-primary type=submit value="update">
+                    |]    
+
 uploadAssignmentForm classes = renderBootstrap3 BootstrapBasicForm $ (,,,,)
             <$> fileAFormReq (bfs ("Assignment" :: Text))
             <*> areq (selectFieldList classnames) (bfs ("Class" :: Text)) Nothing
@@ -131,6 +172,13 @@ uploadAssignmentForm classes = renderBootstrap3 BootstrapBasicForm $ (,,,,)
             <*> aopt textareaField (bfs ("Assignment Description"::Text)) Nothing
             <*> lift (liftIO getCurrentTime)
     where classnames = map (\theclass -> (courseTitle . entityVal $ theclass, theclass)) classes
+
+updateAssignmentForm = renderBootstrap3 BootstrapBasicForm $ (,,)
+            <$> areq fileName "" Nothing
+            <*> aopt (jqueryDayField def) (bfs ("Due Date"::Text)) Nothing
+            <*> aopt textareaField (bfs ("Assignment Description"::Text)) Nothing
+    where fileName :: (Monad m, RenderMessage (HandlerSite m) FormMessage) => Field m Text 
+          fileName = hiddenField
 
 createCourseForm = renderBootstrap3 BootstrapBasicForm $ (,,,)
             <$> areq textField (bfs ("Title" :: Text)) Nothing

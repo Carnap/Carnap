@@ -6,6 +6,13 @@ function tryDeleteAssignment (name) {
         }
     }
 
+function modalEditAssignment (name) {
+    jQuery.noConflict()
+    $("#updateAssignmentData").modal({show:true});
+    $("#updateAssignment input[name=f1]").val(name);
+    console.log($("#updateAssignment input[name=f1]").val());
+}
+
 function deleteAssignment (name) {
     jQuery.ajax({
         url: '@{InstructorR ident}',
@@ -13,8 +20,9 @@ function deleteAssignment (name) {
         contentType: "application/json",
         data: JSON.stringify(name),
         success: function(data) {
-            var el = document.getElementById("assignment-" + name);
-            el.parentElement.removeChild(el);
+            var el = $("#assignment-" + $.escapeselector(name));
+            console.log(el);
+            el.remove();
             window.alert("Deleted the assignment " + name);
             },
         error: function(data) {
@@ -22,3 +30,21 @@ function deleteAssignment (name) {
             },
         });
     };
+
+$("#updateAssignment").submit(function(e) {
+    jQuery.ajax({
+        url: '@{InstructorR ident}',
+        type: 'PUT',
+        data: $("#updateAssignment").serialize(),
+        success: function(data) {
+            var el = $("#assignment-" + $.escapeSelector(data[0]) + " td")[1]
+            console.log(el);
+            console.log(data[1]);
+            el.innerHTML = data[1];
+            },
+        error: function(data) {
+            window.alert("Error, couldn't update the assignment ")
+            },
+        });
+    e.preventDefault();
+})

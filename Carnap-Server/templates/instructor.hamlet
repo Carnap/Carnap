@@ -1,4 +1,5 @@
 <div.container>
+    ^{updateWidget updateAssignmentWidget enctypeUpdateAssignment}
     <h1> Instructor Page for #{firstname} #{lastname}
     <h2> Student Scores
     <div.card>
@@ -36,6 +37,8 @@
                     <td>
                         <button.btn.btn-sm.btn-secondary type="button" onclick="tryDeleteAssignment('#{assignmentMetadataFilename a}')">
                             <i.fa.fa-trash-o>
+                        <button.btn.btn-sm.btn-secondary type="button"  onclick="modalEditAssignment('#{assignmentMetadataFilename a}')">
+                            <i.fa.fa-pencil>
     <div.card>
         <div.card-header>
             <ul.nav.nav-tabs.card-header-tabs role="tablist">
@@ -49,7 +52,7 @@
             <div.tab-content>
                 <div.tab-pane.active id="upload" role="tabpanel">
                     <form method=post enctype=#{enctypeUploadAssignment}>
-                        ^{assignmentWidget}
+                        ^{uploadAssignmentWidget}
                         <div.form-group>
                             <input.btn.btn-primary  type=submit value="upload">
                 <div.tab-pane id="create" role="tabpanel">
