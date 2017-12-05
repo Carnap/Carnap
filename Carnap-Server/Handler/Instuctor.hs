@@ -44,7 +44,7 @@ postInstructorR ident = do
     case assignmentrslt of 
         (FormSuccess (file, theclass, duedate, assignmentdesc, subtime)) ->
             do let fn = fileName file
-                   duetime = UTCTime duedate 0
+                   duetime = UTCTime <$> duedate <*> Just 0
                    info = unTextarea <$> assignmentdesc
                success <- tryInsert $ AssignmentMetadata fn info duetime subtime (entityKey theclass)
                if success then saveAssignment file 
@@ -127,7 +127,7 @@ getInstructorR ident = do
 uploadAssignmentForm classes = renderBootstrap3 BootstrapBasicForm $ (,,,,)
             <$> fileAFormReq (bfs ("Assignment" :: Text))
             <*> areq (selectFieldList classnames) (bfs ("Class" :: Text)) Nothing
-            <*> areq (jqueryDayField def) (bfs ("Due Date"::Text)) Nothing
+            <*> aopt (jqueryDayField def) (bfs ("Due Date"::Text)) Nothing
             <*> aopt textareaField (bfs ("Assignment Description"::Text)) Nothing
             <*> lift (liftIO getCurrentTime)
     where classnames = map (\theclass -> (courseTitle . entityVal $ theclass, theclass)) classes

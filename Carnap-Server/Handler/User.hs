@@ -70,13 +70,13 @@ getUserR ident = do
             case maybeCourseId of
                 Just cid ->
                     do Just course <- runDB $ get cid
-                       duedates <- getProblemSets cid
-                       assignments <- assignmentsOf utcToKansas' cid duedates
-                       syntable <- problemsToTable utcToKansas' duedates synsubs
-                       transtable <- problemsToTable utcToKansas' duedates transsubs
-                       dertable <- problemsToTable utcToKansas' duedates dersubs
-                       tttable <- problemsToTable utcToKansas' duedates ttsubs
-                       score <- totalScore duedates synsubs transsubs dersubs ttsubs
+                       textbookproblems <- getProblemSets cid
+                       assignments <- assignmentsOf utcToKansas' cid textbookproblems
+                       syntable <- problemsToTable utcToKansas' textbookproblems synsubs
+                       transtable <- problemsToTable utcToKansas' textbookproblems transsubs
+                       dertable <- problemsToTable utcToKansas' textbookproblems dersubs
+                       tttable <- problemsToTable utcToKansas' textbookproblems ttsubs
+                       score <- totalScore textbookproblems synsubs transsubs dersubs ttsubs
                        defaultLayout $ do
                            addScript $ StaticR js_bootstrap_bundle_min_js
                            addScript $ StaticR js_bootstrap_min_js
@@ -107,9 +107,9 @@ getUserR ident = do
 --------------------------------------------------------
 --functions for calculating grades
 
-toScore duedates p = case assignment p of
+toScore textbookproblems p = case assignment p of
                    Nothing -> 
-                        case utcDueDate duedates (problem p) of                      
+                        case utcDueDate textbookproblems (problem p) of                      
                               Just d -> if asUTC (submitted p) `laterThan` d       
                                             then return (2 :: Int)
                                             else return (5 :: Int)
@@ -118,21 +118,20 @@ toScore duedates p = case assignment p of
                         mmd <- runDB $ get a
                         case mmd of
                             Nothing -> return (0 :: Int)
-                            Just v -> do
-                                if asUTC (submitted p) `laterThan` assignmentMetadataDuedate v
-                                    then return (2 :: Int)
-                                    else return (5 :: Int)
+                            Just v -> case assignmentMetadataDuedate v of 
+                                        Just due | asUTC (submitted p) `laterThan` due -> return (2 :: Int)
+                                        _ -> return (5 :: Int)
                             
 scoreByIdAndClass cid uid = 
         do (a,b,c,d) <- subsByIdAndSource (Just cid) uid
-           duedates <-  getProblemSets cid
-           totalScore duedates a b c d
+           textbookproblems <-  getProblemSets cid
+           totalScore textbookproblems a b c d
 
-totalScore duedates a b c d = do
+totalScore textbookproblems a b c d = do
            (a',b',c',d') <- (,,,) <$> score a <*> score b <*> score c <*> score d
            return $ a' + b' + c' + d'
    where score :: Problem p => [p] -> Handler Int
-         score xs = do xs' <- mapM (toScore duedates) xs
+         score xs = do xs' <- mapM (toScore textbookproblems) xs
                        return $ foldr (+) 0 xs'
 
 --------------------------------------------------------
@@ -150,7 +149,7 @@ utcToKansas = do nyctz <- getCurrentTimeZone
 
 formatted localize z = formatTime defaultTimeLocale "%l:%M %P %Z, %a %b %e, %Y" (localize z)
 
-utcDueDate duedates x = duedates >>= Data.IntMap.lookup (read $ unpack (takeWhile (/= '.') x) :: Int) 
+utcDueDate textbookproblems x = textbookproblems >>= Data.IntMap.lookup (read $ unpack (takeWhile (/= '.') x) :: Int) 
 
 laterThan :: UTCTime -> UTCTime -> Bool
 laterThan t1 t2 = diffUTCTime t1 t2 > 0
@@ -160,7 +159,7 @@ laterThan t1 t2 = diffUTCTime t1 t2 > 0
 --------------------------------------------------------
 --reusable components
 
-problemsToTable localize duedates xs = do 
+problemsToTable localize textbookproblems xs = do 
             rows <- mapM toRow xs
             return $ do B.table B.! class_ "table table-striped" $ do
                             B.col B.! style "width:50px"
@@ -173,7 +172,7 @@ problemsToTable localize duedates xs = do
                                 B.th "Submitted"
                                 B.th "Points Earned"
                             B.tbody $ sequence_ rows
-        where toRow p = do score <- toScore duedates p 
+        where toRow p = do score <- toScore textbookproblems p 
                            return $ do
                               B.tr $ do B.td $ B.toHtml (takeWhile (/= ':') $ problem p)
                                         B.td $ B.toHtml (drop 1 . dropWhile (/= ':') $ problem p)
@@ -184,7 +183,7 @@ tryDelete name = "tryDeleteRule(\"" <> name <> "\")"
 
 --properly localized assignments for a given class 
 --XXX---should this just be in the hamlet?
-assignmentsOf localize cid duedates = do
+assignmentsOf localize cid textbookproblems = do
              asmd <- runDB $ selectList [AssignmentMetadataCourse ==. cid] []
              return $
                 [whamlet|
@@ -193,7 +192,7 @@ assignmentsOf localize cid duedates = do
                         <th> Assignment
                         <th> Due Date
                     <tbody>
-                        $maybe dd <- duedates
+                        $maybe dd <- textbookproblems
                             $forall (num,date) <- Data.IntMap.toList dd
                                 <tr>
                                     <td>
@@ -205,7 +204,10 @@ assignmentsOf localize cid duedates = do
                                 <td>
                                     <a href=@{AssignmentR $ assignmentMetadataFilename a}>
                                         #{assignmentMetadataFilename a}
-                                <td>#{formatted localize $ assignmentMetadataDuedate a}
+                                $maybe due <- assignmentMetadataDuedate a
+                                    <td>#{formatted localize $ due}
+                                $nothing
+                                    <td>No Due Date
                 |]
 
 updateWidget form enc = [whamlet|
@@ -247,7 +249,6 @@ updateUserDataForm (UserData firstname lastname maybeCourseId _ _) classes = ren
             <*> areq textField (bfs ("Last Name"::Text)) (Just lastname)
     where classnames = map (\theclass -> (courseTitle . entityVal $ theclass, theclass)) classes
 
-
 nouserPage = [whamlet|
              <div.container>
                 <p> This user does not exist
@@ -257,7 +258,6 @@ nouserPage = [whamlet|
 --Database Handling
 --------------------------------------------------------
 --functions for retrieving database infomration and formatting it
-
 
 class Problem p where
         problem :: p -> Text

@@ -55,7 +55,7 @@ SavedDerivedRule
 AssignmentMetadata
     filename Text
     description Text Maybe
-    duedate UTCTime
+    duedate UTCTime Maybe
     date UTCTime
     course CourseId
     UniqueAssignment filename

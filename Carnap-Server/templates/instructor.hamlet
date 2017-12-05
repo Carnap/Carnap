@@ -20,13 +20,17 @@
             <th> Due Date
             <th> Saved on
             <th> Course
+            <th> Actions
         <tbody>
             $forall (a,c) <- zip assignmentMetadata assignmentCourses
                 <tr id="assignment-#{assignmentMetadataFilename a}">
                     <td >
                         <a href=@{AssignmentR $ assignmentMetadataFilename a}>
                             #{assignmentMetadataFilename a}
-                    <td>#{show $ assignmentMetadataDuedate a}
+                    $maybe due <- assignmentMetadataDuedate a
+                        <td>#{show $ due}
+                    $nothing
+                        <td>No Due Date
                     <td>#{show $ assignmentMetadataDate a}
                     <td>#{courseTitle c}
                     <td>
