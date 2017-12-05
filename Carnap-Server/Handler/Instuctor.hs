@@ -52,11 +52,11 @@ postInstructorR ident = do
         (FormFailure s) -> setMessage $ "Something went wrong: " ++ toMarkup (show s)
         FormMissing -> setMessage "Submission data did not include an assignment"
     case newclassrslt of
-        (FormSuccess title) -> do
+        (FormSuccess (title, startdate, enddate)) -> do
             miid <- instructorIdByIdent ident
             case miid of
                 Just iid -> 
-                    do success <- tryInsert $ Course (unTextarea $ title) iid "" 0
+                    do success <- tryInsert $ Course  title iid "" (UTCTime startdate 0) (UTCTime enddate 0) 0
                        if success then setMessage "Course Created" 
                                   else setMessage "Could not save---this file already exists"
                 Nothing -> setMessage "you're not an instructor!"
@@ -131,7 +131,10 @@ uploadAssignmentForm classes = renderBootstrap3 BootstrapBasicForm $ (,,,,)
             <*> lift (liftIO getCurrentTime)
     where classnames = map (\theclass -> (courseTitle . entityVal $ theclass, theclass)) classes
 
-createCourseForm = renderBootstrap3 BootstrapBasicForm $ areq textareaField (bfs ("Title" :: Text)) Nothing
+createCourseForm = renderBootstrap3 BootstrapBasicForm $ (,,)
+            <$> areq textField (bfs ("Title" :: Text)) Nothing
+            <*> areq (jqueryDayField def) (bfs ("Start Date"::Text)) Nothing
+            <*> areq (jqueryDayField def) (bfs ("End Date"::Text)) Nothing
 
 saveAssignment file = do
         let assignmentname = unpack $ fileName file

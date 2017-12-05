@@ -66,6 +66,8 @@ Course
     title Text
     instructor InstructorMetadataId
     textbookProblems ByteString
+    startDate UTCTime
+    endDate UTCTime
     totalPoints Int
     UniqueCourse title instructor
     deriving Eq
