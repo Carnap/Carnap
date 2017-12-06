@@ -76,7 +76,7 @@ parseHardegreePL ders = try liftProp <|> quantRule
                         return (map HardegreeSL r)
           quantRule = do r <- choice (map (try . string) ["∀I", "AI","UD", "∀O", "AO", "∃I", "EI"
                                                          , "∃O", "EO", "~∃O","-∃O" ,"-EO"
-                                                         , "~EO","~∀O","~AO","-∀O","-AO" ])
+                                                         , "~EO","~∀O","~AO","-∀O","-AO","QN"])
                          case r of 
                             r | r `elem` ["∀I","AI","UD"] -> return [UI]
                               | r `elem` ["∀O","AO"] -> return [UE]
@@ -84,6 +84,7 @@ parseHardegreePL ders = try liftProp <|> quantRule
                               | r `elem` ["∃O","EO"] -> return [EE]
                               | r `elem` ["~∃O","-∃O" ,"-EO", "~EO"] -> return [NEO]
                               | r `elem` ["~∀O","~AO","-∀O","-AO"]   -> return [NUO]
+                              | r `elem` ["QN"] -> return [QN1,QN2,QN3,QN4]
 
 parseHardegreePLProof ::  Map String P.DerivedRule -> String -> [DeductionLine HardegreePL PureLexiconFOL (Form Bool)]
 parseHardegreePLProof ders = toDeductionHardegree (parseHardegreePL ders) (hardegreePLFormulaParser)
