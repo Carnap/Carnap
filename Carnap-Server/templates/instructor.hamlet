@@ -1,8 +1,8 @@
 <div.container>
     ^{updateWidget updateAssignmentWidget enctypeUpdateAssignment}
     <h1> Instructor Page for #{firstname} #{lastname}
-    <h2> Student Scores
-    <div.card>
+    <p> This is a page where you can manage students, classes and assignments.
+    <div.card.mb-3>
         <div.card-header>
             <ul.nav.nav-tabs.card-header-tabs role="tablist">
                 $forall (theclass,thetag) <- zip classes tags
@@ -14,31 +14,6 @@
                 $forall (widget,thetag) <- zip classWidgets tags
                     <div.tab-pane id="#{thetag}" role="tabpanel">
                          ^{widget}
-    <h2> Uploaded Assignments
-    <table class="table">
-        <thead>
-            <th> Filename
-            <th> Due Date
-            <th> Saved on
-            <th> Course
-            <th> Actions
-        <tbody>
-            $forall (a,c) <- zip assignmentMetadata assignmentCourses
-                <tr id="assignment-#{assignmentMetadataFilename a}">
-                    <td>
-                        <a href=@{AssignmentR $ assignmentMetadataFilename a}>
-                            #{assignmentMetadataFilename a}
-                    $maybe due <- assignmentMetadataDuedate a
-                        <td>#{show $ due}
-                    $nothing
-                        <td>No Due Date
-                    <td>#{show $ assignmentMetadataDate a}
-                    <td>#{courseTitle c}
-                    <td>
-                        <button.btn.btn-sm.btn-secondary type="button" onclick="tryDeleteAssignment('#{assignmentMetadataFilename a}')">
-                            <i.fa.fa-trash-o>
-                        <button.btn.btn-sm.btn-secondary type="button"  onclick="modalEditAssignment('#{assignmentMetadataFilename a}')">
-                            <i.fa.fa-pencil>
     <div.card>
         <div.card-header>
             <ul.nav.nav-tabs.card-header-tabs role="tablist">
@@ -47,7 +22,7 @@
                         Assign Textbook Problems
                 <li.nav-item>
                     <a.nav-link data-toggle="tab" href="#upload" role="tab">
-                        Upload Assignments
+                        Manage Uploaded Assignments
                 <li.nav-item>
                     <a.nav-link data-toggle="tab" href="#create" role="tab">
                         Create Courses
@@ -59,6 +34,32 @@
                         <div.form-group>
                             <input.btn.btn-primary  type=submit value="assign">
                 <div.tab-pane id="upload" role="tabpanel">
+                    <h2> Uploaded Assignments
+                    <table class="table">
+                        <thead>
+                            <th> Filename
+                            <th> Due Date
+                            <th> Saved on
+                            <th> Course
+                            <th> Actions
+                        <tbody>
+                            $forall (a,c) <- zip assignmentMetadata assignmentCourses
+                                <tr id="assignment-#{assignmentMetadataFilename a}">
+                                    <td>
+                                        <a href=@{AssignmentR $ assignmentMetadataFilename a}>
+                                            #{assignmentMetadataFilename a}
+                                    $maybe due <- assignmentMetadataDuedate a
+                                        <td>#{show $ due}
+                                    $nothing
+                                        <td>No Due Date
+                                    <td>#{show $ assignmentMetadataDate a}
+                                    <td>#{courseTitle c}
+                                    <td>
+                                        <button.btn.btn-sm.btn-secondary type="button" onclick="tryDeleteAssignment('#{assignmentMetadataFilename a}')">
+                                            <i.fa.fa-trash-o>
+                                        <button.btn.btn-sm.btn-secondary type="button"  onclick="modalEditAssignment('#{assignmentMetadataFilename a}')">
+                                            <i.fa.fa-pencil>
+                    <h2> Upload new assignment
                     <form method=post enctype=#{enctypeUploadAssignment}>
                         ^{uploadAssignmentWidget}
                         <div.form-group>

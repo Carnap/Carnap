@@ -9,7 +9,7 @@ import Handler.User (scoreByIdAndClass)
 import Text.Blaze.Html (toMarkup)
 import Data.Time
 import Data.Aeson (decode,encode)
-import Data.IntMap (insert,fromList)
+import Data.IntMap (insert,fromList,toList)
 import qualified Data.Text as T
 import System.FilePath
 import System.Directory (getDirectoryContents,removeFile, doesFileExist)
@@ -34,7 +34,6 @@ putInstructorR _ = do
         (FormFailure s) -> returnJson ("error" :: Text)
         FormMissing -> returnJson ("no form" :: Text)
     where maybeDo mv f = case mv of Just v -> f v; _ -> return ()
-
 
 deleteInstructorR :: Text -> Handler Value
 deleteInstructorR _ = do
@@ -123,42 +122,11 @@ getInstructorR ident = do
                  $(widgetFile "instructor")
     where assignmentsOf theclass = map entityVal <$> listAssignmentMetadata theclass
           
-          tryLookup l x = case lookup x l of
-                          Just n -> show n
-                          Nothing -> "can't find scores"
-          
           nopage = [whamlet|
                     <div.container>
                         <p> Instructor not found.
                    |]
 
-          classWidget :: Entity Course -> HandlerT App IO Widget
-          classWidget classent = do
-                   let cid = entityKey classent
-                       course = entityVal classent
-                   allUserData <- map entityVal <$> (runDB $ selectList [UserDataEnrolledIn ==. Just cid] [])
-                   let allUids = (map userDataUserId  allUserData)
-                   musers <- mapM (\x -> runDB (get x)) allUids
-                   let users = catMaybes musers
-                   allScores <- mapM (scoreByIdAndClass cid) allUids >>= return . zip (map userIdent users)
-                   let usersAndData = zip users allUserData
-                   (Just course) <- runDB $ get cid
-                   return [whamlet|
-                                <table.table.table-striped>
-                                    <thead>
-                                        <th> Registered Student
-                                        <th> Student Name
-                                        <th> Total Score
-                                    <tbody>
-                                        $forall (u,UserData fn ln _ _ _) <- usersAndData
-                                            <tr>
-                                                <td>
-                                                    <a href=@{UserR (userIdent u)}>#{userIdent u}
-                                                <td>
-                                                    #{ln}, #{fn}
-                                                <td>
-                                                    #{tryLookup allScores (userIdent u)}/#{show $ courseTotalPoints course}
-                          |]
 
 ------------------
 --  Components  --
@@ -199,6 +167,7 @@ setBookAssignmentForm classes = renderBootstrap3 BootstrapBasicForm $ (,,)
             <*> areq (jqueryDayField def) (bfs ("Due Date"::Text)) Nothing
     where chapters = map (\x -> ("Problem Set " ++ pack (show x),x)) [1..15 ] :: [(Text,Int)]
           classnames = map (\theclass -> (courseTitle . entityVal $ theclass, theclass)) classes
+
 createCourseForm = renderBootstrap3 BootstrapBasicForm $ (,,,)
             <$> areq textField (bfs ("Title" :: Text)) Nothing
             <*> aopt textareaField (bfs ("Course Description"::Text)) Nothing
@@ -209,6 +178,61 @@ saveAssignment file = do
         let assignmentname = unpack $ fileName file
         path <- assignmentPath assignmentname
         liftIO $ fileMove file path
+
+classWidget :: Entity Course -> HandlerT App IO Widget
+classWidget classent = do
+       let cid = entityKey classent
+           course = entityVal classent
+           mprobs = decode . fromStrict . courseTextbookProblems $ course :: Maybe (IntMap UTCTime)
+       allUserData <- map entityVal <$> (runDB $ selectList [UserDataEnrolledIn ==. Just cid] [])
+       asmd <- runDB $ selectList [AssignmentMetadataCourse ==. cid] []
+       let allUids = (map userDataUserId  allUserData)
+       musers <- mapM (\x -> runDB (get x)) allUids
+       let users = catMaybes musers
+       allScores <- mapM (scoreByIdAndClass cid) allUids >>= return . zip (map userIdent users)
+       let usersAndData = zip users allUserData
+       (Just course) <- runDB $ get cid
+       return [whamlet|
+                    <h2>Assignments
+                    <table.table.table-striped>
+                        <thead>
+                            <th> Assignment
+                            <th> Due Date
+                        <tbody>
+                            $maybe probs <- mprobs
+                                $forall (set,due) <- Data.IntMap.toList probs
+                                    <tr>
+                                        <td>Problem Set #{show set}
+                                        <td>#{show due}
+                        $forall a <- map entityVal asmd
+                            <tr>
+                                <td>
+                                    <a href=@{AssignmentR $ assignmentMetadataFilename a}>
+                                        #{assignmentMetadataFilename a}
+                                $maybe due <- assignmentMetadataDuedate a
+                                    <td>#{show due}
+                                $nothing
+                                    <td>No Due Date
+                    <h2>Students
+                    <table.table.table-striped>
+                        <thead>
+                            <th> Registered Student
+                            <th> Student Name
+                            <th> Total Score
+                        <tbody>
+                            $forall (u,UserData fn ln _ _ _) <- usersAndData
+                                <tr>
+                                    <td>
+                                        <a href=@{UserR (userIdent u)}>#{userIdent u}
+                                    <td>
+                                        #{ln}, #{fn}
+                                    <td>
+                                        #{tryLookup allScores (userIdent u)}/#{show $ courseTotalPoints course}
+              |]
+    where tryLookup l x = case lookup x l of
+                          Just n -> show n
+                          Nothing -> "can't find scores"
+          
 
 -- TODO compare directory contents with database results
 listAssignmentMetadata theclass = do asmd <- runDB $ selectList [AssignmentMetadataCourse ==. theclass] []
