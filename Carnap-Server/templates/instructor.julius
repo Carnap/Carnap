@@ -1,8 +1,9 @@
 $("textarea").addClass("form-control")
 
-function tryDeleteAssignment (name) {
-    if (confirm("Are you sure you want to permanently delete the assignment " + name + ", and all submitted problems from this assignment?")) {
-        deleteAssignment(name);
+function tryDeleteAssignment (json) {
+    var fn = JSON.parse(json).contents;
+    if (confirm("Are you sure you want to permanently delete the assignment " + fn + ", and all submitted problems from this assignment?")) {
+        deleteAssignment(json,fn);
         }
     }
 
@@ -13,20 +14,40 @@ function modalEditAssignment (name) {
     console.log($("#updateAssignment input[name=f1]").val());
 }
 
-function deleteAssignment (name) {
+function deleteAssignment (json,fn) {
     jQuery.ajax({
         url: '@{InstructorR ident}',
         type: 'DELETE',
         contentType: "application/json",
-        data: JSON.stringify(name),
+        data: json,
         success: function(data) {
-            var el = $("#assignment-" + $.escapeSelector(name));
-            console.log(el);
+            var el = $("#assignment-" + $.escapeSelector(fn));
             el.remove();
-            window.alert("Deleted the assignment " + name);
+            window.alert("Deleted the assignment " + fn);
             },
         error: function(data) {
-            window.alert("Error, couldn't delete the assignment " + name)
+            window.alert("Error, couldn't delete the assignment " + fn)
+            },
+        });
+    };
+
+function deleteProblemSet (json) {
+    var cnts = JSON.parse(json).contents;
+    var pn = cnts[1]
+    var course = cnts[0]
+    jQuery.ajax({
+        url: '@{InstructorR ident}',
+        type: 'DELETE',
+        contentType: "application/json",
+        data: json,
+        success: function(data) {
+            var el = $("#problem-set-" + $.escapeSelector(problem) + "-" + pn.toString());
+            console.log(el);
+            el.remove();
+            window.alert("Deleted problem set " + pn.toString());
+            },
+        error: function(data) {
+            window.alert("Error, couldn't delete problem set " + pn.toString())
             },
         });
     };

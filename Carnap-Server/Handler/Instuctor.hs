@@ -1,3 +1,4 @@
+{-#LANGUAGE DeriveGeneric #-}
 module Handler.Instuctor where
 
 import Import
@@ -9,7 +10,7 @@ import Handler.User (scoreByIdAndClass)
 import Text.Blaze.Html (toMarkup)
 import Data.Time
 import Data.Aeson (decode,encode)
-import Data.IntMap (insert,fromList,toList)
+import qualified Data.IntMap (insert,fromList,toList,delete)
 import qualified Data.Text as T
 import System.FilePath
 import System.Directory (getDirectoryContents,removeFile, doesFileExist)
@@ -36,28 +37,46 @@ putInstructorR _ = do
     where maybeDo mv f = case mv of Just v -> f v; _ -> return ()
 
 deleteInstructorR :: Text -> Handler Value
-deleteInstructorR _ = do
-    fn <- requireJsonBody :: Handler Text
-    adir <- assignmentDir 
-    deleted <- runDB $ do mk <- getBy $ UniqueAssignment fn
-                          case mk of
-                              Just (Entity k v) -> do syn <- selectList [SyntaxCheckSubmissionAssignmentId ==. Just k] []
-                                                      ders <- selectList [DerivationSubmissionAssignmentId ==. Just k] []
-                                                      trans <- selectList [TranslationSubmissionAssignmentId ==. Just k] []
-                                                      trutht <- selectList [TruthTableSubmissionAssignmentId ==. Just k] []
-                                                      mapM (delete . entityKey) syn
-                                                      mapM (delete . entityKey) ders
-                                                      mapM (delete . entityKey) trans
-                                                      mapM (delete . entityKey) trutht
-                                                      delete k
-                                                      liftIO $ do fe <- doesFileExist (adir </> unpack fn) 
-                                                                  if fe then removeFile (adir </> unpack fn)
-                                                                        else return ()
-                                                      return True
-                              Nothing -> return False
-    if deleted 
-        then returnJson (fn ++ " deleted")
-        else returnJson ("unable to retrieve metadata for " ++ fn)
+deleteInstructorR ident = do
+    msg <- requireJsonBody :: Handler InstructorDelete
+    case msg of 
+      DeleteAssignment fn ->
+        do adir <- assignmentDir 
+           deleted <- runDB $ do mk <- getBy $ UniqueAssignment fn
+                                 case mk of
+                                     Just (Entity k v) -> do syn <- selectList [SyntaxCheckSubmissionAssignmentId ==. Just k] []
+                                                             ders <- selectList [DerivationSubmissionAssignmentId ==. Just k] []
+                                                             trans <- selectList [TranslationSubmissionAssignmentId ==. Just k] []
+                                                             trutht <- selectList [TruthTableSubmissionAssignmentId ==. Just k] []
+                                                             mapM (delete . entityKey) syn
+                                                             mapM (delete . entityKey) ders
+                                                             mapM (delete . entityKey) trans
+                                                             mapM (delete . entityKey) trutht
+                                                             delete k
+                                                             liftIO $ do fe <- doesFileExist (adir </> unpack fn) 
+                                                                         if fe then removeFile (adir </> unpack fn)
+                                                                               else return ()
+                                                             return True
+                                     Nothing -> return False
+           if deleted 
+               then returnJson (fn ++ " deleted")
+               else returnJson ("unable to retrieve metadata for " ++ fn)
+      DeleteProblems coursename setnum -> 
+            do miid <- instructorIdByIdent ident
+               case miid of
+                   Just iid -> 
+                        do mclass <- runDB $ getBy $ UniqueCourse coursename iid
+                           case mclass of 
+                                Just theclass ->
+                                    do let assignmentBytes = fromStrict . courseTextbookProblems . entityVal $ theclass
+                                       case decode assignmentBytes :: Maybe (IntMap UTCTime)  of
+                                           Just assign -> do runDB $ update (entityKey theclass) 
+                                                                            [CourseTextbookProblems =. (toStrict . encode $ Data.IntMap.delete setnum assign)]
+                                                             returnJson ("Deleted"::Text)
+                                           Nothing -> returnJson ("Yikes. Assignment table corrupted somehow."::Text)
+                                Nothing -> returnJson ("Something went wrong with retriving the course."::Text)
+
+                   Nothing -> returnJson ("You do not appear to be an instructor."::Text)
 
 postInstructorR :: Text -> Handler Html
 postInstructorR ident = do
@@ -107,6 +126,7 @@ getInstructorR ident = do
             classes <- classesByInstructorIdent ident 
             let tags = map (\n -> "id"  ++ (show n)) $ take (length classes) [1 ..]
             classWidgets <- mapM classWidget classes
+            instructorCourses <- classesByInstructorIdent ident
             assignmentMetadata <- concat <$> mapM (assignmentsOf . entityKey) classes
             assignmentCourses <- forM assignmentMetadata $ \c -> do 
                                     Just e <- runDB $ get (assignmentMetadataCourse c)
@@ -121,12 +141,23 @@ getInstructorR ident = do
                  setTitle $ "Instructor Page for " ++ toMarkup firstname ++ " " ++ toMarkup lastname
                  $(widgetFile "instructor")
     where assignmentsOf theclass = map entityVal <$> listAssignmentMetadata theclass
-          
+          mprobsOf course = decode . fromStrict . courseTextbookProblems $ course :: Maybe (IntMap UTCTime)
           nopage = [whamlet|
                     <div.container>
                         <p> Instructor not found.
                    |]
 
+---------------------
+--  Message Types  --
+---------------------
+
+data InstructorDelete = DeleteAssignment Text
+                      | DeleteProblems Text Int
+    deriving Generic
+
+instance ToJSON InstructorDelete
+
+instance FromJSON InstructorDelete
 
 ------------------
 --  Components  --

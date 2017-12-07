@@ -29,12 +29,36 @@
         <div.card-body style="padding:20px;">
             <div.tab-content>
                 <div.tab-pane.active id="assignFromTextbook" role="tabpanel">
+                    <h2>Set due dates
                     <form method=post enctype=#{enctypeSetBookAssignment}>
                         ^{setBookAssignmentWidget}
                         <div.form-group>
                             <input.btn.btn-primary  type=submit value="assign">
+                    <h2>Manage Problem Sets
+                    <table class="table">
+                        <thead>
+                            <th> Problem Set
+                            <th> Due Date
+                            <th> Course
+                            <th> Actions
+                            $forall c <- map entityVal instructorCourses
+                                $maybe probs <- mprobsOf c
+                                    $forall (n,d) <- Data.IntMap.toList probs
+                                        <tr id="problem-set-#{courseTitle c}-#{show n}">
+                                            <td> Problem set #{show n}
+                                            <td> #{show d}
+                                            <td> #{courseTitle c}
+                                            <td>
+                                                <button.btn.btn-sm.btn-secondary type="button" onclick="deleteProblemSet('#{decodeUtf8 $ encode $ DeleteProblems (courseTitle c) n}')">
+                                                    <i.fa.fa-trash-o>
+
                 <div.tab-pane id="upload" role="tabpanel">
-                    <h2> Uploaded Assignments
+                    <h2> Upload new assignment
+                    <form method=post enctype=#{enctypeUploadAssignment}>
+                        ^{uploadAssignmentWidget}
+                        <div.form-group>
+                            <input.btn.btn-primary  type=submit value="upload">
+                    <h2> Edit Assignments
                     <table class="table">
                         <thead>
                             <th> Filename
@@ -55,15 +79,10 @@
                                     <td>#{show $ assignmentMetadataDate a}
                                     <td>#{courseTitle c}
                                     <td>
-                                        <button.btn.btn-sm.btn-secondary type="button" onclick="tryDeleteAssignment('#{assignmentMetadataFilename a}')">
+                                        <button.btn.btn-sm.btn-secondary type="button" onclick="tryDeleteAssignment('#{decodeUtf8 $ encode $ DeleteAssignment (assignmentMetadataFilename a)}')">
                                             <i.fa.fa-trash-o>
                                         <button.btn.btn-sm.btn-secondary type="button"  onclick="modalEditAssignment('#{assignmentMetadataFilename a}')">
                                             <i.fa.fa-pencil>
-                    <h2> Upload new assignment
-                    <form method=post enctype=#{enctypeUploadAssignment}>
-                        ^{uploadAssignmentWidget}
-                        <div.form-group>
-                            <input.btn.btn-primary  type=submit value="upload">
                 <div.tab-pane id="create" role="tabpanel">
                     <form method=post enctype=#{enctypeCreateCourse}>
                         ^{createCourseWidget}
