@@ -41,7 +41,7 @@ function deleteProblemSet (json) {
         contentType: "application/json",
         data: json,
         success: function(data) {
-            var el = $("#problem-set-" + $.escapeSelector(problem) + "-" + pn.toString());
+            var el = $("#problem-set-" + $.escapeSelector(course) + "-" + pn.toString());
             console.log(el);
             el.remove();
             window.alert("Deleted problem set " + pn.toString());
