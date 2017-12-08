@@ -44,19 +44,12 @@ deleteInstructorR ident = do
         do adir <- assignmentDir 
            deleted <- runDB $ do mk <- getBy $ UniqueAssignment fn
                                  case mk of
-                                     Just (Entity k v) -> do syn <- selectList [SyntaxCheckSubmissionAssignmentId ==. Just k] []
-                                                             ders <- selectList [DerivationSubmissionAssignmentId ==. Just k] []
-                                                             trans <- selectList [TranslationSubmissionAssignmentId ==. Just k] []
-                                                             trutht <- selectList [TruthTableSubmissionAssignmentId ==. Just k] []
-                                                             mapM (delete . entityKey) syn
-                                                             mapM (delete . entityKey) ders
-                                                             mapM (delete . entityKey) trans
-                                                             mapM (delete . entityKey) trutht
-                                                             delete k
-                                                             liftIO $ do fe <- doesFileExist (adir </> unpack fn) 
-                                                                         if fe then removeFile (adir </> unpack fn)
-                                                                               else return ()
-                                                             return True
+                                     Just (Entity k v) -> 
+                                        do deleteCascade k
+                                           liftIO $ do fe <- doesFileExist (adir </> unpack fn) 
+                                                       if fe then removeFile (adir </> unpack fn)
+                                                             else return ()
+                                           return True
                                      Nothing -> return False
            if deleted 
                then returnJson (fn ++ " deleted")

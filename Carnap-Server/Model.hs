@@ -11,7 +11,7 @@ import Util.Data
 -- at:
 -- http://www.yesodweb.com/book/persistent/
 
-share [mkPersist sqlSettings, mkMigrate "migrateAll"]
+share [mkPersist sqlSettings, mkDeleteCascade sqlSettings, mkMigrate "migrateAll"]
     $(persistFileWith lowerCaseSettings "config/models")
 
 instructorList = do entityList <- runDB $ selectList [UserDataInstructorId !=. Nothing] []
