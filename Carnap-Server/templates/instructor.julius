@@ -7,6 +7,14 @@ function tryDeleteAssignment (json) {
         }
     }
 
+function tryDeleteCourse (json) {
+    var cn = JSON.parse(json).contents;
+    if (confirm("Are you sure you want to permanently delete the course " + cn 
+        + "? This will unenroll all students, and delete all associated data, including assignments attached to the course.")) {
+        deleteCourse(json,cn);
+        }
+    }
+
 function modalEditAssignment (name) {
     jQuery.noConflict()
     $("#updateAssignmentData").modal({show:true});
@@ -30,6 +38,27 @@ function deleteAssignment (json,fn) {
             },
         });
     };
+
+function deleteCourse (json,cn) {
+    var tag = cn.replace(/ /g,'_')
+    jQuery.ajax({
+        url: '@{InstructorR ident}',
+        type: 'DELETE',
+        contentType: "application/json",
+        data: json,
+        success: function(data) {
+            var el1 = $("#nav-to-course-" + $.escapeSelector(tag));
+            var el2 = $("#course-" + $.escapeSelector(tag));
+            el1.remove();
+            el2.remove();
+            window.alert("Deleted the course " + cn);
+            },
+        error: function(data) {
+            window.alert("Error, couldn't delete the course " + cn)
+            },
+        });
+    };
+
 
 function deleteProblemSet (json) {
     var cnts = JSON.parse(json).contents;

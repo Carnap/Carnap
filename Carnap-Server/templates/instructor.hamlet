@@ -2,18 +2,19 @@
     ^{updateWidget updateAssignmentWidget enctypeUpdateAssignment}
     <h1> Instructor Page for #{firstname} #{lastname}
     <p> This is a page where you can manage students, classes and assignments.
-    <div.card.mb-3>
-        <div.card-header>
-            <ul.nav.nav-tabs.card-header-tabs role="tablist">
-                $forall (theclass,thetag) <- zip classes tags
-                    <li.nav-item>
-                        <a.nav-link data-toggle="tab" href="##{thetag}" role="tab">
-                            #{courseTitle $ entityVal theclass}
-        <div.card-body style="padding:20px;">
-            <div.tab-content>
-                $forall (widget,thetag) <- zip classWidgets tags
-                    <div.tab-pane id="#{thetag}" role="tabpanel">
-                         ^{widget}
+    $if (not $ null classes)
+        <div.card.mb-3>
+            <div.card-header>
+                <ul.nav.nav-tabs.card-header-tabs role="tablist">
+                    $forall (theclass,thetag) <- zip classes tags
+                        <li.nav-item id="nav-to-#{thetag}">
+                            <a.nav-link data-toggle="tab" href="##{thetag}" role="tab">
+                                #{courseTitle $ entityVal theclass}
+            <div.card-body style="padding:20px;">
+                <div.tab-content>
+                    $forall (widget,thetag) <- zip classWidgets tags
+                        <div.tab-pane id="#{thetag}" role="tabpanel">
+                             ^{widget}
     <div.card>
         <div.card-header>
             <ul.nav.nav-tabs.card-header-tabs role="tablist">

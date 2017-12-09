@@ -55,20 +55,32 @@ deleteInstructorR ident = do
                then returnJson (fn ++ " deleted")
                else returnJson ("unable to retrieve metadata for " ++ fn)
       DeleteProblems coursename setnum -> 
-            do miid <- instructorIdByIdent ident
-               case miid of
-                   Just iid -> 
-                        do mclass <- runDB $ getBy $ UniqueCourse coursename iid
-                           case mclass of 
-                                Just (Entity classkey theclass)->
-                                    do case readAssignmentTable <$> courseTextbookProblems theclass  of
-                                           Just assign -> do runDB $ update classkey
-                                                                            [CourseTextbookProblems =. (Just $ BookAssignmentTable $ Data.IntMap.delete setnum assign)]
-                                                             returnJson ("Deleted Assignment"::Text)
-                                           Nothing -> returnJson ("Assignment table Missing, can't delete."::Text)
-                                Nothing -> returnJson ("Something went wrong with retriving the course."::Text)
+        do miid <- instructorIdByIdent ident
+           case miid of
+               Just iid -> 
+                    do mclass <- runDB $ getBy $ UniqueCourse coursename iid
+                       case mclass of 
+                            Just (Entity classkey theclass)->
+                                do case readAssignmentTable <$> courseTextbookProblems theclass  of
+                                       Just assign -> do runDB $ update classkey
+                                                                        [CourseTextbookProblems =. (Just $ BookAssignmentTable $ Data.IntMap.delete setnum assign)]
+                                                         returnJson ("Deleted Assignment"::Text)
+                                       Nothing -> returnJson ("Assignment table Missing, can't delete."::Text)
+                            Nothing -> returnJson ("Something went wrong with retriving the course."::Text)
 
-                   Nothing -> returnJson ("You do not appear to be an instructor."::Text)
+               Nothing -> returnJson ("You do not appear to be an instructor."::Text)
+      DeleteCourse coursename -> 
+        do miid <- instructorIdByIdent ident
+           case miid of
+               Just iid -> 
+                    do mclass <- runDB $ getBy $ UniqueCourse coursename iid
+                       case mclass of 
+                            Just (Entity classkey theclass)-> 
+                                do runDB $ do studentsOf <- selectList [UserDataEnrolledIn ==. Just classkey] []
+                                              mapM (\s -> update (entityKey s) [UserDataEnrolledIn =. Nothing]) studentsOf
+                                              deleteCascade classkey
+                                   returnJson ("Class Deleted"::Text)
+                            Nothing -> returnJson ("No class to delete, for some reason"::Text)
 
 postInstructorR :: Text -> Handler Html
 postInstructorR ident = do
@@ -115,7 +127,7 @@ getInstructorR ident = do
         (Just (Entity uid _))  -> do
             UserData firstname lastname enrolledin _ _ <- checkUserData uid 
             classes <- classesByInstructorIdent ident 
-            let tags = map (\n -> "id"  ++ (show n)) $ take (length classes) [1 ..]
+            let tags = map tagOf classes
             classWidgets <- mapM classWidget classes
             instructorCourses <- classesByInstructorIdent ident
             assignmentMetadata <- concat <$> mapM (assignmentsOf . entityKey) classes
@@ -132,6 +144,7 @@ getInstructorR ident = do
                  setTitle $ "Instructor Page for " ++ toMarkup firstname ++ " " ++ toMarkup lastname
                  $(widgetFile "instructor")
     where assignmentsOf theclass = map entityVal <$> listAssignmentMetadata theclass
+          tagOf = T.append "course-" . T.map (\c -> if c == ' ' then '_' else c) . courseTitle . entityVal
           mprobsOf course = readAssignmentTable <$> courseTextbookProblems course
           nopage = [whamlet|
                     <div.container>
@@ -144,6 +157,7 @@ getInstructorR ident = do
 
 data InstructorDelete = DeleteAssignment Text
                       | DeleteProblems Text Int
+                      | DeleteCourse Text
     deriving Generic
 
 instance ToJSON InstructorDelete
@@ -250,6 +264,8 @@ classWidget classent = do
                                         #{ln}, #{fn}
                                     <td>
                                         #{tryLookup allScores (userIdent u)}/#{show $ courseTotalPoints course}
+                    <button.btn.btn-sm.btn-danger type="button" onclick="tryDeleteCourse('#{decodeUtf8 $ encode $ DeleteCourse (courseTitle course)}')">
+                        Delete Course
               |]
     where tryLookup l x = case lookup x l of
                           Just n -> show n
