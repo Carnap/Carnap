@@ -60,13 +60,12 @@ deleteInstructorR ident = do
                    Just iid -> 
                         do mclass <- runDB $ getBy $ UniqueCourse coursename iid
                            case mclass of 
-                                Just theclass ->
-                                    do let assignmentBytes = fromStrict . courseTextbookProblems . entityVal $ theclass
-                                       case decode assignmentBytes :: Maybe (IntMap UTCTime)  of
-                                           Just assign -> do runDB $ update (entityKey theclass) 
-                                                                            [CourseTextbookProblems =. (toStrict . encode $ Data.IntMap.delete setnum assign)]
-                                                             returnJson ("Deleted"::Text)
-                                           Nothing -> returnJson ("Yikes. Assignment table corrupted somehow."::Text)
+                                Just (Entity classkey theclass)->
+                                    do case readAssignmentTable <$> courseTextbookProblems theclass  of
+                                           Just assign -> do runDB $ update classkey
+                                                                            [CourseTextbookProblems =. (Just $ BookAssignmentTable $ Data.IntMap.delete setnum assign)]
+                                                             returnJson ("Deleted Assignment"::Text)
+                                           Nothing -> returnJson ("Assignment table Missing, can't delete."::Text)
                                 Nothing -> returnJson ("Something went wrong with retriving the course."::Text)
 
                    Nothing -> returnJson ("You do not appear to be an instructor."::Text)
@@ -92,19 +91,18 @@ postInstructorR ident = do
             miid <- instructorIdByIdent ident
             case miid of
                 Just iid -> 
-                    do success <- tryInsert $ Course title (unTextarea <$> coursedesc) iid "" (UTCTime startdate 0) (UTCTime enddate 0) 0
+                    do success <- tryInsert $ Course title (unTextarea <$> coursedesc) iid Nothing (UTCTime startdate 0) (UTCTime enddate 0) 0
                        if success then setMessage "Course Created" 
                                   else setMessage "Could not save---this file already exists"
                 Nothing -> setMessage "you're not an instructor!"
         (FormFailure s) -> setMessage $ "Something went wrong: " ++ toMarkup (show s)
         FormMissing -> return ()
     case frombookrslt of
-        (FormSuccess (theclass, theassignment, duedate)) -> runDB $ do
-            let assignmentBytes = fromStrict . courseTextbookProblems . entityVal $ theclass
-                duetime = UTCTime duedate 0
-            case decode assignmentBytes :: Maybe (IntMap UTCTime)  of
-                Just assign -> update (entityKey theclass) [CourseTextbookProblems =. (toStrict . encode $ Data.IntMap.insert theassignment duetime assign)]
-                Nothing -> update (entityKey theclass) [CourseTextbookProblems =. (toStrict . encode $ Data.IntMap.fromList [(theassignment, duetime)])]
+        (FormSuccess (Entity classkey theclass, theassignment, duedate)) -> runDB $ do
+            let duetime = UTCTime duedate 0
+            case readAssignmentTable <$> courseTextbookProblems theclass of
+                Just assign -> update classkey [CourseTextbookProblems =. (Just $ BookAssignmentTable $ Data.IntMap.insert theassignment duetime assign)]
+                Nothing -> update classkey [CourseTextbookProblems =. (Just $ BookAssignmentTable $ Data.IntMap.fromList [(theassignment, duetime)])]
         (FormFailure s) -> setMessage $ "Something went wrong: " ++ toMarkup (show s)
         FormMissing -> return ()
     redirect $ InstructorR ident
@@ -134,7 +132,7 @@ getInstructorR ident = do
                  setTitle $ "Instructor Page for " ++ toMarkup firstname ++ " " ++ toMarkup lastname
                  $(widgetFile "instructor")
     where assignmentsOf theclass = map entityVal <$> listAssignmentMetadata theclass
-          mprobsOf course = decode . fromStrict . courseTextbookProblems $ course :: Maybe (IntMap UTCTime)
+          mprobsOf course = readAssignmentTable <$> courseTextbookProblems course
           nopage = [whamlet|
                     <div.container>
                         <p> Instructor not found.
@@ -207,7 +205,7 @@ classWidget :: Entity Course -> HandlerT App IO Widget
 classWidget classent = do
        let cid = entityKey classent
            course = entityVal classent
-           mprobs = decode . fromStrict . courseTextbookProblems $ course :: Maybe (IntMap UTCTime)
+           mprobs = readAssignmentTable <$> courseTextbookProblems course :: Maybe (IntMap UTCTime)
        allUserData <- map entityVal <$> (runDB $ selectList [UserDataEnrolledIn ==. Just cid] [])
        asmd <- runDB $ selectList [AssignmentMetadataCourse ==. cid] []
        let allUids = (map userDataUserId  allUserData)

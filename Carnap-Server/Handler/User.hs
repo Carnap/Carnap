@@ -149,7 +149,8 @@ utcToKansas = do nyctz <- getCurrentTimeZone
 
 formatted localize z = formatTime defaultTimeLocale "%l:%M %P %Z, %a %b %e, %Y" (localize z)
 
-utcDueDate textbookproblems x = textbookproblems >>= Data.IntMap.lookup (read $ unpack (takeWhile (/= '.') x) :: Int) 
+utcDueDate textbookproblems x = textbookproblems >>= Data.IntMap.lookup theIndex . readAssignmentTable
+    where theIndex = read . unpack . takeWhile (/= '.') $ x :: Int
 
 laterThan :: UTCTime -> UTCTime -> Bool
 laterThan t1 t2 = diffUTCTime t1 t2 > 0
@@ -193,7 +194,7 @@ assignmentsOf localize cid textbookproblems = do
                         <th> Due Date
                     <tbody>
                         $maybe dd <- textbookproblems
-                            $forall (num,date) <- Data.IntMap.toList dd
+                            $forall (num,date) <- Data.IntMap.toList (readAssignmentTable dd)
                                 <tr>
                                     <td>
                                         Problem Set #{show num}
