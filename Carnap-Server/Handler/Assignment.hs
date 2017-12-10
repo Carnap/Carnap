@@ -83,6 +83,4 @@ fileToHtml path = do Markdown md <- markdownFromFile path
     where allFilters = (makeSynCheckers . makeProofChecker . makeTranslate . makeTruthTables)
                   
 assignmentDir = do master <- getYesod 
-                   if appDevel (appSettings master) 
-                        then return "assignments"
-                        else return "/root/assignments"
+                   return $ (appDataRoot $ appSettings master) </> "assignments"

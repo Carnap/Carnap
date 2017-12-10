@@ -33,9 +33,7 @@ getChapterR n = do cdirp <- chapterDir
                        |]
 
 chapterDir = do master <- getYesod 
-                if appDevel (appSettings master)
-                    then return "book/" 
-                    else return "/root/book/"
+                return $ (appDataRoot $ appSettings master) </> "book/"
 
 content n cdir cdirp = do let matches = filter (\x -> (show n ++ ".pandoc") == dropWhile (not . isDigit) x) cdir
                           case matches of

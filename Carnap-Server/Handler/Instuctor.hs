@@ -280,6 +280,4 @@ assignmentPath f = do dir <- assignmentDir
                       return $ dir </> f
 
 assignmentDir = do master <- getYesod 
-                   if appDevel (appSettings master) 
-                        then return "assignments"
-                        else return "/root/assignments"
+                   return $ (appDataRoot $ appSettings master) </> "assignments"

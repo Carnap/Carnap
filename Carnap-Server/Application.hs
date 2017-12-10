@@ -81,11 +81,11 @@ makeFoundation appSettings = do
 
     --Create the database connection pool
     pool <- flip runLoggingT logFunc $ 
-                if appSqlite appSettings 
-                then createSqlitePool "sqlite.db" 10
-                else createPostgresqlPool
-                    (pgConnStr  $ appDatabaseConf appSettings)
-                    (pgPoolSize $ appDatabaseConf appSettings)
+                case appSqlite appSettings of
+                    Just path -> createSqlitePool path 10
+                    Nothing -> createPostgresqlPool
+                        (pgConnStr  $ appDatabaseConf appSettings)
+                        (pgPoolSize $ appDatabaseConf appSettings)
 
     -- Perform database migration using our application's logging settings.
     runLoggingT (runSqlPool (runMigration migrateAll) pool) logFunc
@@ -114,7 +114,6 @@ makeLogWare foundation =
                             else FromHeader)
         , destination = Logger $ loggerSet $ appLogger foundation
         }
-
 
 -- | Warp settings for the given foundation value.
 warpSettings :: App -> Settings
