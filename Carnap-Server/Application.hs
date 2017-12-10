@@ -81,9 +81,9 @@ makeFoundation appSettings = do
 
     --Create the database connection pool
     pool <- flip runLoggingT logFunc $ 
-                case appSqlite appSettings of
-                    Just path -> createSqlitePool path 10
-                    Nothing -> createPostgresqlPool
+                if appSqlite appSettings 
+                    then createSqlitePool (pack (appDataRoot appSettings </> "sqlite.db")) 10
+                    else createPostgresqlPool
                         (pgConnStr  $ appDatabaseConf appSettings)
                         (pgPoolSize $ appDatabaseConf appSettings)
 

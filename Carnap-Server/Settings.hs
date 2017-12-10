@@ -39,7 +39,7 @@ data AppSettings = AppSettings
     -- ^ Get the IP address from the header when logging. Useful when sitting
     -- behind a reverse proxy.
 
-    , appSqlite                 :: Maybe Text
+    , appSqlite                 :: Bool
     -- ^ Use Sqlite rather than postgres
     , appDataRoot               :: FilePath
     -- ^ root for stored application data
@@ -78,7 +78,7 @@ instance FromJSON AppSettings where
         appPort                   <- o .: "port"
         appIpFromHeader           <- o .: "ip-from-header"
 
-        appSqlite                 <- o .:? "sqlite"
+        appSqlite                 <- o .:  "sqlite"           .!= False
         appDataRoot               <- o .:? "data-root"        .!= "."
         appDetailedRequestLogging <- o .:? "detailed-logging" .!= appDevel
         appShouldLogAll           <- o .:? "should-log-all"   .!= appDevel
