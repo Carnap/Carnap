@@ -41,13 +41,13 @@ deleteInstructorR ident = do
     msg <- requireJsonBody :: Handler InstructorDelete
     case msg of 
       DeleteAssignment fn ->
-        do adir <- assignmentDir 
+        do datadir <- appDataRoot <$> (appSettings <$> getYesod) 
            deleted <- runDB $ do mk <- getBy $ UniqueAssignment fn
                                  case mk of
                                      Just (Entity k v) -> 
                                         do deleteCascade k
-                                           liftIO $ do fe <- doesFileExist (adir </> unpack fn) 
-                                                       if fe then removeFile (adir </> unpack fn)
+                                           liftIO $ do fe <- doesFileExist (datadir </> "assignments" </> unpack fn) 
+                                                       if fe then removeFile (datadir </> "assignments" </> unpack fn)
                                                              else return ()
                                            return True
                                      Nothing -> return False
@@ -212,7 +212,8 @@ createCourseForm = renderBootstrap3 BootstrapBasicForm $ (,,,)
 
 saveAssignment file = do
         let assignmentname = unpack $ fileName file
-        path <- assignmentPath assignmentname
+        datadir <- appDataRoot <$> (appSettings <$> getYesod)
+        let path = datadir </> "assignments" </> assignmentname
         liftIO $ fileMove file path
 
 classWidget :: Entity Course -> HandlerT App IO Widget
@@ -275,9 +276,3 @@ classWidget classent = do
 -- TODO compare directory contents with database results
 listAssignmentMetadata theclass = do asmd <- runDB $ selectList [AssignmentMetadataCourse ==. theclass] []
                                      return asmd
-
-assignmentPath f = do dir <- assignmentDir
-                      return $ dir </> f
-
-assignmentDir = do master <- getYesod 
-                   return $ (appDataRoot $ appSettings master) </> "assignments"

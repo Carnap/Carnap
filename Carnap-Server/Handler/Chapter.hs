@@ -20,9 +20,9 @@ import Control.Monad.State (evalState, evalStateT)
 -- XXX Fair amount of code-duplication between this and Handler/Book.hs. Perhaps merge those modules.
 
 getChapterR :: Int -> Handler Html
-getChapterR n = do cdirp <- chapterDir 
-                   cdir <- lift $ getDirectoryContents cdirp
-                   content <- liftIO $ content n cdir cdirp
+getChapterR n = do datadir <- appDataRoot <$> (appSettings <$> getYesod)
+                   cdir <- lift $ getDirectoryContents (datadir </> "book/")
+                   content <- liftIO $ content n cdir (datadir </> "book/")
                    case content of
                        Right html -> chapterLayout $ layout html
                        Left err -> defaultLayout $ layout (show err)
@@ -31,9 +31,6 @@ getChapterR n = do cdirp <- chapterDir
                             <article>
                                 #{c}
                        |]
-
-chapterDir = do master <- getYesod 
-                return $ (appDataRoot $ appSettings master) </> "book/"
 
 content n cdir cdirp = do let matches = filter (\x -> (show n ++ ".pandoc") == dropWhile (not . isDigit) x) cdir
                           case matches of
