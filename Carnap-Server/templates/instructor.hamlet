@@ -1,5 +1,6 @@
 <div.container>
-    ^{updateWidget updateAssignmentWidget enctypeUpdateAssignment}
+    ^{updateAssignmentModal updateAssignmentWidget enctypeUpdateAssignment}
+    ^{updateCourseModal updateCourseWidget enctypeUpdateCourse}
     <h1> Instructor Page for #{firstname} #{lastname}
     <p> This is a page where you can manage students, classes and assignments.
     $if (not $ null classes)

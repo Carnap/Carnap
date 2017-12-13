@@ -17,23 +17,39 @@ import System.Directory (getDirectoryContents,removeFile, doesFileExist)
 
 
 putInstructorR :: Text -> Handler Value
-putInstructorR _ = do
-    ((assignmentrslt,_),enctypeUploadAssignment) <- runFormPost (identifyForm "updateAssignment" $ updateAssignmentForm)
-    case assignmentrslt of 
-        (FormSuccess (filename,mdue,mdesc)) -> do
-                         massignent <- runDB $ getBy $ UniqueAssignment filename
-                         case massignent of 
-                               Nothing -> return ()
-                               Just assignent -> runDB $ do maybeDo mdue (\due -> update (entityKey assignent) 
-                                                                            [ AssignmentMetadataDuedate =. (Just $ UTCTime due 0) ])
-                                                            maybeDo mdesc (\desc -> update (entityKey assignent) 
-                                                                            [ AssignmentMetadataDescription =. (Just $ unTextarea desc) ])
+putInstructorR ident = do
+        ((assignmentrslt,_),_) <- runFormPost (identifyForm "updateAssignment" $ updateAssignmentForm)
+        ((courserslt,_),_) <- runFormPost (identifyForm "updateCourse" $ updateCourseForm)
+        case (assignmentrslt,courserslt) of 
+            (FormSuccess (filename,mdue,mdesc),_) -> do
+                             massignEnt <- runDB $ getBy $ UniqueAssignment filename
+                             case entityKey <$> massignEnt of 
+                                   Nothing -> return ()
+                                   Just k -> runDB $ do maybeDo mdue (\due -> update k
+                                                          [ AssignmentMetadataDuedate =. (Just $ UTCTime due 0) ])
+                                                        maybeDo mdesc (\desc -> update k
+                                                          [ AssignmentMetadataDescription =. (Just $ unTextarea desc) ])
+                             case mdue of Nothing -> returnJson ([filename,"No Due Date"])
+                                          Just due -> returnJson ([filename,pack $ show $ UTCTime due 0])
+            (_,FormSuccess (coursetitle,mdesc,mstart,mend,mpoints)) -> do
+                             Just instructor <- instructorIdByIdent ident
+                             mcourseEnt <- runDB . getBy . UniqueCourse coursetitle $ instructor
+                             case entityKey <$> mcourseEnt of
+                                 Just k -> do runDB $ do maybeDo mdesc (\desc -> update k
+                                                           [ CourseDescription =. (Just $ unTextarea desc) ])
+                                                         maybeDo mstart (\start -> update k
+                                                           [ CourseStartDate =. UTCTime start 0 ])
+                                                         maybeDo mend (\end-> update k
+                                                           [ CourseEndDate =. UTCTime end 0 ])
+                                                         maybeDo mpoints (\points-> update k
+                                                           [ CourseTotalPoints =. points ])
+                                              returnJson ("updated!"::Text)
+                                 Nothing -> returnJson ("could not find course!"::Text)
 
-                                                        
-                         case mdue of Nothing -> returnJson ([filename,"No Due Date"])
-                                      Just due -> returnJson ([filename,pack $ show $ UTCTime due 0])
-        (FormFailure s) -> returnJson ("error" :: Text)
-        FormMissing -> returnJson ("no form" :: Text)
+            (FormFailure s,FormFailure s') -> returnJson ("errors: " <> concat s <> ", " <> concat s' :: Text)
+            (_,FormFailure s) -> returnJson ("error on course edit: " <> concat s :: Text)
+            (FormFailure s,_) -> returnJson ("error on assignment edit: " <> concat s :: Text)
+            (FormMissing,FormMissing) -> returnJson ("no form" :: Text)
     where maybeDo mv f = case mv of Just v -> f v; _ -> return ()
 
 deleteInstructorR :: Text -> Handler Value
@@ -138,6 +154,7 @@ getInstructorR ident = do
             (setBookAssignmentWidget,enctypeSetBookAssignment) <- generateFormPost (identifyForm "setBookAssignment" $ setBookAssignmentForm classes)
             (updateAssignmentWidget,enctypeUpdateAssignment) <- generateFormPost (identifyForm "updateAssignment" $ updateAssignmentForm)
             (createCourseWidget,enctypeCreateCourse) <- generateFormPost (identifyForm "createCourse" createCourseForm)
+            (updateCourseWidget,enctypeUpdateCourse) <- generateFormPost (identifyForm "updateCourse" $ updateCourseForm)
             defaultLayout $ do
                  addScript $ StaticR js_bootstrap_bundle_min_js
                  addScript $ StaticR js_bootstrap_min_js
@@ -167,7 +184,15 @@ instance FromJSON InstructorDelete
 ------------------
 --  Components  --
 ------------------
-updateWidget form enc = [whamlet|
+uploadAssignmentForm classes = renderBootstrap3 BootstrapBasicForm $ (,,,,)
+            <$> fileAFormReq (bfs ("Assignment" :: Text))
+            <*> areq (selectFieldList classnames) (bfs ("Class" :: Text)) Nothing
+            <*> aopt (jqueryDayField def) (bfs ("Due Date"::Text)) Nothing
+            <*> aopt textareaField (bfs ("Assignment Description"::Text)) Nothing
+            <*> lift (liftIO getCurrentTime)
+    where classnames = map (\theclass -> (courseTitle . entityVal $ theclass, theclass)) classes
+
+updateAssignmentModal form enc = [whamlet|
                     <div class="modal fade" id="updateAssignmentData" tabindex="-1" role="dialog" aria-labelledby="updateAssignmentDataLabel" aria-hidden="true">
                         <div class="modal-dialog" role="document">
                             <div class="modal-content">
@@ -181,14 +206,6 @@ updateWidget form enc = [whamlet|
                                         <div.form-group>
                                             <input.btn.btn-primary type=submit value="update">
                     |]    
-
-uploadAssignmentForm classes = renderBootstrap3 BootstrapBasicForm $ (,,,,)
-            <$> fileAFormReq (bfs ("Assignment" :: Text))
-            <*> areq (selectFieldList classnames) (bfs ("Class" :: Text)) Nothing
-            <*> aopt (jqueryDayField def) (bfs ("Due Date"::Text)) Nothing
-            <*> aopt textareaField (bfs ("Assignment Description"::Text)) Nothing
-            <*> lift (liftIO getCurrentTime)
-    where classnames = map (\theclass -> (courseTitle . entityVal $ theclass, theclass)) classes
 
 updateAssignmentForm = renderBootstrap3 BootstrapBasicForm $ (,,)
             <$> areq fileName "" Nothing
@@ -210,6 +227,30 @@ createCourseForm = renderBootstrap3 BootstrapBasicForm $ (,,,)
             <*> areq (jqueryDayField def) (bfs ("Start Date"::Text)) Nothing
             <*> areq (jqueryDayField def) (bfs ("End Date"::Text)) Nothing
 
+updateCourseModal form enc = [whamlet|
+                    <div class="modal fade" id="updateCourseData" tabindex="-1" role="dialog" aria-labelledby="updateCourseDataLabel" aria-hidden="true">
+                        <div class="modal-dialog" role="document">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title" id="updateCourseDataLabel">Update Course Data</h5>
+                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                      <span aria-hidden="true">&times;</span>
+                                <div class="modal-body">
+                                    <form#updateCourse enctype=#{enc}>
+                                        ^{form}
+                                        <div.form-group>
+                                            <input.btn.btn-primary type=submit value="update">
+                    |]
+
+updateCourseForm = renderBootstrap3 BootstrapBasicForm $ (,,,,)
+            <$> areq courseName "" Nothing
+            <*> aopt textareaField (bfs ("Course Description"::Text)) Nothing
+            <*> aopt (jqueryDayField def) (bfs ("Start Date"::Text)) Nothing
+            <*> aopt (jqueryDayField def) (bfs ("End Date"::Text)) Nothing
+            <*> aopt intField (bfs ("Total Points for Course"::Text)) Nothing
+    where courseName :: (Monad m, RenderMessage (HandlerSite m) FormMessage) => Field m Text 
+          courseName = hiddenField
+
 saveAssignment file = do
         let assignmentname = unpack $ fileName file
         datadir <- appDataRoot <$> (appSettings <$> getYesod)
@@ -230,6 +271,17 @@ classWidget classent = do
        let usersAndData = zip users allUserData
        (Just course) <- runDB $ get cid
        return [whamlet|
+                    <dl.row>
+                        <dt.col-sm-3>Course Title
+                        <dd.col-sm-9>#{courseTitle course}
+                        $maybe desc <- courseDescription course
+                            <dd.col-sm-9.offset-sm-3>#{desc}
+                        <dt.col-sm-3>Points Available
+                        <dd.col-sm-9>#{courseTotalPoints course}
+                        <dt.col-sm-3>Start Date
+                        <dd.col-sm-9>#{show $ courseStartDate course}
+                        <dt.col-sm-3>End Date
+                        <dd.col-sm-9>#{show $ courseEndDate course}
                     <h2>Assignments
                     <table.table.table-striped>
                         <thead>
@@ -267,6 +319,8 @@ classWidget classent = do
                                         #{tryLookup allScores (userIdent u)}/#{show $ courseTotalPoints course}
                     <button.btn.btn-sm.btn-danger type="button" onclick="tryDeleteCourse('#{decodeUtf8 $ encode $ DeleteCourse (courseTitle course)}')">
                         Delete Course
+                    <button.btn.btn-sm.btn-secondary type="button"  onclick="modalEditCourse('#{courseTitle course}')">
+                        Edit Course Information
               |]
     where tryLookup l x = case lookup x l of
                           Just n -> show n

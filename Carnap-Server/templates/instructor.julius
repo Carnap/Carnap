@@ -19,7 +19,12 @@ function modalEditAssignment (name) {
     jQuery.noConflict()
     $("#updateAssignmentData").modal({show:true});
     $("#updateAssignment input[name=f1]").val(name);
-    console.log($("#updateAssignment input[name=f1]").val());
+}
+
+function modalEditCourse (name) {
+    jQuery.noConflict()
+    $("#updateCourseData").modal({show:true});
+    $("#updateCourse input[name=f1]").val(name);
 }
 
 function deleteAssignment (json,fn) {
@@ -88,12 +93,27 @@ $("#updateAssignment").submit(function(e) {
         data: $("#updateAssignment").serialize(),
         success: function(data) {
             var el = $("#assignment-" + $.escapeSelector(data[0]) + " td")[1]
-            console.log(el);
-            console.log(data[1]);
             el.innerHTML = data[1];
+            $("#updateAssignmentData").modal('hide');
             },
         error: function(data) {
             window.alert("Error, couldn't update the assignment ")
+            },
+        });
+    e.preventDefault();
+})
+
+$("#updateCourse").submit(function(e) {
+    jQuery.ajax({
+        url: '@{InstructorR ident}',
+        type: 'PUT',
+        data: $("#updateCourse").serialize(),
+        success: function(data) {
+            $("#updateCourseData").modal('hide');
+            location.reload() /* kinda lazy. Fix eventually. */
+            },
+        error: function(data) {
+            window.alert("Error, couldn't update the course")
             },
         });
     e.preventDefault();
