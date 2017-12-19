@@ -48,7 +48,7 @@
                                     $forall (n,d) <- Data.IntMap.toList probs
                                         <tr id="problem-set-#{courseTitle c}-#{show n}">
                                             <td> Problem set #{show n}
-                                            <td> #{show d}
+                                            <td>#{dateDisplay d c}
                                             <td> #{courseTitle c}
                                             <td>
                                                 <button.btn.btn-sm.btn-secondary type="button" onclick="deleteProblemSet('#{decodeUtf8 $ encode $ DeleteProblems (courseTitle c) n}')">
@@ -75,7 +75,7 @@
                                         <a href=@{AssignmentR $ assignmentMetadataFilename a}>
                                             #{assignmentMetadataFilename a}
                                     $maybe due <- assignmentMetadataDuedate a
-                                        <td>#{show $ due}
+                                        <td>#{dateDisplay due c}
                                     $nothing
                                         <td>No Due Date
                                     <td>#{show $ assignmentMetadataDate a}

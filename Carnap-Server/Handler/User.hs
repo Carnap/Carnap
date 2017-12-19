@@ -9,6 +9,8 @@ import Carnap.GHCJS.SharedTypes
 import Yesod.Form.Bootstrap3
 import Data.Aeson (encode, decodeStrict)
 import Data.Time
+import Data.Time.Zones
+import Data.Time.Zones.All
 import Util.Data
 import Util.Database
 import qualified Data.Map as M
@@ -66,16 +68,15 @@ getUserR ident = do
             (synsubs, transsubs,dersubs, ttsubs) <- subsByIdAndSource maybeCourseId k
             let isInstructor = case maybeInstructorId of Just _ -> True; _ -> False
             derivedRules <- getDerivedRules k
-            utcToKansas' <- liftIO utcToKansas
             case maybeCourseId of
                 Just cid ->
                     do Just course <- runDB $ get cid
                        textbookproblems <- getProblemSets cid
-                       assignments <- assignmentsOf utcToKansas' cid textbookproblems
-                       syntable <- problemsToTable utcToKansas' textbookproblems synsubs
-                       transtable <- problemsToTable utcToKansas' textbookproblems transsubs
-                       dertable <- problemsToTable utcToKansas' textbookproblems dersubs
-                       tttable <- problemsToTable utcToKansas' textbookproblems ttsubs
+                       assignments <- assignmentsOf cid textbookproblems
+                       syntable <- problemsToTable course textbookproblems synsubs
+                       transtable <- problemsToTable course textbookproblems transsubs
+                       dertable <- problemsToTable course textbookproblems dersubs
+                       tttable <- problemsToTable course textbookproblems ttsubs
                        score <- totalScore textbookproblems synsubs transsubs dersubs ttsubs
                        defaultLayout $ do
                            addScript $ StaticR js_bootstrap_bundle_min_js
@@ -139,15 +140,12 @@ totalScore textbookproblems a b c d = do
 --------------------------------------------------------
 --functions for dealing with time and due dates
 
+dateDisplay utc course = case tzByName $ courseTimeZone course of
+                             Just tz  -> show $ utcToZonedTime (timeZoneForUTCTime tz utc) utc
+                             Nothing -> show $ utc
+
 asUTC :: Text -> UTCTime
 asUTC z = read (unpack z)
-
-utcToKansas = do nyctz <- getCurrentTimeZone 
-                 --XXX: Server is in NYC. Do this dynamically to handle daylight savings, etc.
-                 let kstz = TimeZone (timeZoneMinutes nyctz - 60) False "CDT"
-                 return (\z -> ZonedTime (utcToLocalTime kstz z) kstz)
-
-formatted localize z = formatTime defaultTimeLocale "%l:%M %P %Z, %a %b %e, %Y" (localize z)
 
 utcDueDate textbookproblems x = textbookproblems >>= Data.IntMap.lookup theIndex . readAssignmentTable
     where theIndex = read . unpack . takeWhile (/= '.') $ x :: Int
@@ -160,7 +158,7 @@ laterThan t1 t2 = diffUTCTime t1 t2 > 0
 --------------------------------------------------------
 --reusable components
 
-problemsToTable localize textbookproblems xs = do 
+problemsToTable course textbookproblems xs = do 
             rows <- mapM toRow xs
             return $ do B.table B.! class_ "table table-striped" $ do
                             B.col B.! style "width:50px"
@@ -177,15 +175,16 @@ problemsToTable localize textbookproblems xs = do
                            return $ do
                               B.tr $ do B.td $ B.toHtml (takeWhile (/= ':') $ problem p)
                                         B.td $ B.toHtml (drop 1 . dropWhile (/= ':') $ problem p)
-                                        B.td $ B.toHtml (formatted localize $ asUTC $ submitted p )
+                                        B.td $ B.toHtml (dateDisplay (asUTC $ submitted p) course)
                                         B.td $ B.toHtml $ show $ score
 
 tryDelete name = "tryDeleteRule(\"" <> name <> "\")"
 
 --properly localized assignments for a given class 
 --XXX---should this just be in the hamlet?
-assignmentsOf localize cid textbookproblems = do
+assignmentsOf cid textbookproblems = do
              asmd <- runDB $ selectList [AssignmentMetadataCourse ==. cid] []
+             Just course <- runDB $ get cid
              return $
                 [whamlet|
                 <table.table.table-striped>
@@ -199,14 +198,14 @@ assignmentsOf localize cid textbookproblems = do
                                     <td>
                                         Problem Set #{show num}
                                     <td>
-                                        #{formatted localize date}
+                                        #{dateDisplay date course}
                         $forall a <- map entityVal asmd
                             <tr>
                                 <td>
                                     <a href=@{AssignmentR $ assignmentMetadataFilename a}>
                                         #{assignmentMetadataFilename a}
                                 $maybe due <- assignmentMetadataDuedate a
-                                    <td>#{formatted localize $ due}
+                                    <td>#{dateDisplay due course}
                                 $nothing
                                     <td>No Due Date
                 |]

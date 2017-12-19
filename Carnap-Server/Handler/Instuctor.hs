@@ -203,6 +203,7 @@ instance FromJSON InstructorDelete
 ------------------
 --  Components  --
 ------------------
+
 uploadAssignmentForm classes = renderBootstrap3 BootstrapBasicForm $ (,,,,,)
             <$> fileAFormReq (bfs ("Assignment" :: Text))
             <*> areq (selectFieldList classnames) (bfs ("Class" :: Text)) Nothing
@@ -295,17 +296,6 @@ classWidget classent = do
        let usersAndData = zip users allUserData
        (Just course) <- runDB $ get cid
        return [whamlet|
-                    <dl.row>
-                        <dt.col-sm-3>Course Title
-                        <dd.col-sm-9>#{courseTitle course}
-                        $maybe desc <- courseDescription course
-                            <dd.col-sm-9.offset-sm-3>#{desc}
-                        <dt.col-sm-3>Points Available
-                        <dd.col-sm-9>#{courseTotalPoints course}
-                        <dt.col-sm-3>Dates:
-                        <dd.col-sm-9>#{show $ courseStartDate course} - #{show $ courseEndDate course}
-                        <dt.col-sm-3>Time Zone
-                        <dd.col-sm-9>#{decodeUtf8 $ courseTimeZone course}
                     <h2>Assignments
                     <table.table.table-striped>
                         <thead>
@@ -316,14 +306,14 @@ classWidget classent = do
                                 $forall (set,due) <- Data.IntMap.toList probs
                                     <tr>
                                         <td>Problem Set #{show set}
-                                        <td>#{show due}
+                                        <td>#{dateDisplay due course}
                         $forall a <- map entityVal asmd
                             <tr>
                                 <td>
                                     <a href=@{AssignmentR $ assignmentMetadataFilename a}>
                                         #{assignmentMetadataFilename a}
                                 $maybe due <- assignmentMetadataDuedate a
-                                    <td>#{show due}
+                                    <td>#{dateDisplay due course}
                                 $nothing
                                     <td>No Due Date
                     <h2>Students
@@ -341,6 +331,18 @@ classWidget classent = do
                                         #{ln}, #{fn}
                                     <td>
                                         #{tryLookup allScores (userIdent u)}/#{show $ courseTotalPoints course}
+                    <h2>Course Data
+                    <dl.row>
+                        <dt.col-sm-3>Course Title
+                        <dd.col-sm-9>#{courseTitle course}
+                        $maybe desc <- courseDescription course
+                            <dd.col-sm-9.offset-sm-3>#{desc}
+                        <dt.col-sm-3>Points Available
+                        <dd.col-sm-9>#{courseTotalPoints course}
+                        <dt.col-sm-3>Dates
+                        <dd.col-sm-9>#{show $ courseStartDate course} - #{show $ courseEndDate course}
+                        <dt.col-sm-3>Time Zone
+                        <dd.col-sm-9>#{decodeUtf8 $ courseTimeZone course}
                     <button.btn.btn-sm.btn-danger type="button" onclick="tryDeleteCourse('#{decodeUtf8 $ encode $ DeleteCourse (courseTitle course)}')">
                         Delete Course
                     <button.btn.btn-sm.btn-secondary type="button"  onclick="modalEditCourse('#{courseTitle course}')">
@@ -349,7 +351,10 @@ classWidget classent = do
     where tryLookup l x = case lookup x l of
                           Just n -> show n
                           Nothing -> "can't find scores"
-          
+
+dateDisplay utc course = case tzByName $ courseTimeZone course of
+                             Just tz  -> show $ utcToZonedTime (timeZoneForUTCTime tz utc) utc
+                             Nothing -> show $ utc
 
 -- TODO compare directory contents with database results
 listAssignmentMetadata theclass = do asmd <- runDB $ selectList [AssignmentMetadataCourse ==. theclass] []
