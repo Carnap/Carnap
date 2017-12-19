@@ -70,6 +70,7 @@ Course
     startDate UTCTime
     endDate UTCTime
     totalPoints Int
+    timeZone ByteString
     UniqueCourse title instructor
     deriving Eq
 

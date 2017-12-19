@@ -9,6 +9,7 @@ import Yesod.Form.Jquery
 import Handler.User (scoreByIdAndClass)
 import Text.Blaze.Html (toMarkup)
 import Data.Time
+import Data.Time.Zones.DB
 import Data.Aeson (decode,encode)
 import qualified Data.IntMap (insert,fromList,toList,delete)
 import qualified Data.Text as T
@@ -21,7 +22,7 @@ putInstructorR ident = do
         ((assignmentrslt,_),_) <- runFormPost (identifyForm "updateAssignment" $ updateAssignmentForm)
         ((courserslt,_),_) <- runFormPost (identifyForm "updateCourse" $ updateCourseForm)
         case (assignmentrslt,courserslt) of 
-            (FormSuccess (filename,mdue,mdesc),_) -> do
+            (FormSuccess (filename,mdue,mduetime,mdesc),_) -> do
                              massignEnt <- runDB $ getBy $ UniqueAssignment filename
                              case entityKey <$> massignEnt of 
                                    Nothing -> return ()
@@ -105,32 +106,32 @@ postInstructorR ident = do
     ((newclassrslt,_),_) <- runFormPost (identifyForm "createCourse" createCourseForm)
     ((frombookrslt,_),_) <- runFormPost (identifyForm "setBookAssignment" $ setBookAssignmentForm classes)
     case assignmentrslt of 
-        (FormSuccess (file, theclass, duedate, assignmentdesc, subtime)) ->
+        (FormSuccess (file, theclass, duedate,duetime, assignmentdesc, subtime)) ->
             do let fn = fileName file
-                   duetime = UTCTime <$> duedate <*> Just 0
+                   duetime' = UTCTime <$> duedate <*> Just 0
                    info = unTextarea <$> assignmentdesc
-               success <- tryInsert $ AssignmentMetadata fn info duetime subtime (entityKey theclass)
+               success <- tryInsert $ AssignmentMetadata fn info duetime' subtime (entityKey theclass)
                if success then saveAssignment file 
                           else setMessage "Could not save---this file already exists"
         (FormFailure s) -> setMessage $ "Something went wrong: " ++ toMarkup (show s)
         FormMissing -> return ()
     case newclassrslt of
-        (FormSuccess (title, coursedesc, startdate, enddate)) -> do
+        (FormSuccess (title, coursedesc, startdate, enddate,tzlabel)) -> do
             miid <- instructorIdByIdent ident
             case miid of
                 Just iid -> 
-                    do success <- tryInsert $ Course title (unTextarea <$> coursedesc) iid Nothing (UTCTime startdate 0) (UTCTime enddate 0) 0
+                    do success <- tryInsert $ Course title (unTextarea <$> coursedesc) iid Nothing (UTCTime startdate 0) (UTCTime enddate 0) 0 (toTZName tzlabel)
                        if success then setMessage "Course Created" 
                                   else setMessage "Could not save---this file already exists"
                 Nothing -> setMessage "you're not an instructor!"
         (FormFailure s) -> setMessage $ "Something went wrong: " ++ toMarkup (show s)
         FormMissing -> return ()
     case frombookrslt of
-        (FormSuccess (Entity classkey theclass, theassignment, duedate)) -> runDB $ do
-            let duetime = UTCTime duedate 0
+        (FormSuccess (Entity classkey theclass, theassignment, duedate, duetime)) -> runDB $ do
+            let duetime' = UTCTime duedate 0
             case readAssignmentTable <$> courseTextbookProblems theclass of
-                Just assign -> update classkey [CourseTextbookProblems =. (Just $ BookAssignmentTable $ Data.IntMap.insert theassignment duetime assign)]
-                Nothing -> update classkey [CourseTextbookProblems =. (Just $ BookAssignmentTable $ Data.IntMap.fromList [(theassignment, duetime)])]
+                Just assign -> update classkey [CourseTextbookProblems =. (Just $ BookAssignmentTable $ Data.IntMap.insert theassignment duetime' assign)]
+                Nothing -> update classkey [CourseTextbookProblems =. (Just $ BookAssignmentTable $ Data.IntMap.fromList [(theassignment, duetime')])]
         (FormFailure s) -> setMessage $ "Something went wrong: " ++ toMarkup (show s)
         FormMissing -> return ()
     redirect $ InstructorR ident
@@ -184,10 +185,11 @@ instance FromJSON InstructorDelete
 ------------------
 --  Components  --
 ------------------
-uploadAssignmentForm classes = renderBootstrap3 BootstrapBasicForm $ (,,,,)
+uploadAssignmentForm classes = renderBootstrap3 BootstrapBasicForm $ (,,,,,)
             <$> fileAFormReq (bfs ("Assignment" :: Text))
             <*> areq (selectFieldList classnames) (bfs ("Class" :: Text)) Nothing
             <*> aopt (jqueryDayField def) (bfs ("Due Date"::Text)) Nothing
+            <*> aopt timeFieldTypeTime (bfs ("Due Time"::Text)) Nothing
             <*> aopt textareaField (bfs ("Assignment Description"::Text)) Nothing
             <*> lift (liftIO getCurrentTime)
     where classnames = map (\theclass -> (courseTitle . entityVal $ theclass, theclass)) classes
@@ -207,25 +209,29 @@ updateAssignmentModal form enc = [whamlet|
                                             <input.btn.btn-primary type=submit value="update">
                     |]    
 
-updateAssignmentForm = renderBootstrap3 BootstrapBasicForm $ (,,)
+updateAssignmentForm = renderBootstrap3 BootstrapBasicForm $ (,,,)
             <$> areq fileName "" Nothing
             <*> aopt (jqueryDayField def) (bfs ("Due Date"::Text)) Nothing
+            <*> aopt timeFieldTypeTime (bfs ("Due Date"::Text)) Nothing
             <*> aopt textareaField (bfs ("Assignment Description"::Text)) Nothing
     where fileName :: (Monad m, RenderMessage (HandlerSite m) FormMessage) => Field m Text 
           fileName = hiddenField
 
-setBookAssignmentForm classes = renderBootstrap3 BootstrapBasicForm $ (,,)
+setBookAssignmentForm classes = renderBootstrap3 BootstrapBasicForm $ (,,,)
             <$> areq (selectFieldList classnames) (bfs ("Class" :: Text)) Nothing
             <*> areq (selectFieldList chapters) (bfs ("Problem Set" :: Text))  Nothing
             <*> areq (jqueryDayField def) (bfs ("Due Date"::Text)) Nothing
+            <*> areq timeFieldTypeTime (bfs ("Due Time"::Text)) Nothing
     where chapters = map (\x -> ("Problem Set " ++ pack (show x),x)) [1..15 ] :: [(Text,Int)]
           classnames = map (\theclass -> (courseTitle . entityVal $ theclass, theclass)) classes
 
-createCourseForm = renderBootstrap3 BootstrapBasicForm $ (,,,)
+createCourseForm = renderBootstrap3 BootstrapBasicForm $ (,,,,)
             <$> areq textField (bfs ("Title" :: Text)) Nothing
             <*> aopt textareaField (bfs ("Course Description"::Text)) Nothing
             <*> areq (jqueryDayField def) (bfs ("Start Date"::Text)) Nothing
             <*> areq (jqueryDayField def) (bfs ("End Date"::Text)) Nothing
+            <*> areq (selectFieldList zones)    (bfs ("TimeZone"::Text)) Nothing
+    where zones = map (\(x,y,_) -> (decodeUtf8 x,y)) (rights tzDescriptions)
 
 updateCourseModal form enc = [whamlet|
                     <div class="modal fade" id="updateCourseData" tabindex="-1" role="dialog" aria-labelledby="updateCourseDataLabel" aria-hidden="true">
@@ -278,10 +284,10 @@ classWidget classent = do
                             <dd.col-sm-9.offset-sm-3>#{desc}
                         <dt.col-sm-3>Points Available
                         <dd.col-sm-9>#{courseTotalPoints course}
-                        <dt.col-sm-3>Start Date
-                        <dd.col-sm-9>#{show $ courseStartDate course}
-                        <dt.col-sm-3>End Date
-                        <dd.col-sm-9>#{show $ courseEndDate course}
+                        <dt.col-sm-3>Dates:
+                        <dd.col-sm-9>#{show $ courseStartDate course} - #{show $ courseEndDate course}
+                        <dt.col-sm-3>Time Zone
+                        <dd.col-sm-9>#{decodeUtf8 $ courseTimeZone course}
                     <h2>Assignments
                     <table.table.table-striped>
                         <thead>
