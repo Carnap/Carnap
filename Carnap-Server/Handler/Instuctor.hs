@@ -9,7 +9,9 @@ import Yesod.Form.Jquery
 import Handler.User (scoreByIdAndClass)
 import Text.Blaze.Html (toMarkup)
 import Data.Time
+import Data.Time.Zones
 import Data.Time.Zones.DB
+import Data.Time.Zones.All
 import Data.Aeson (decode,encode)
 import qualified Data.IntMap (insert,fromList,toList,delete)
 import qualified Data.Text as T
@@ -106,11 +108,15 @@ postInstructorR ident = do
     ((newclassrslt,_),_) <- runFormPost (identifyForm "createCourse" createCourseForm)
     ((frombookrslt,_),_) <- runFormPost (identifyForm "setBookAssignment" $ setBookAssignmentForm classes)
     case assignmentrslt of 
-        (FormSuccess (file, theclass, duedate,duetime, assignmentdesc, subtime)) ->
+        (FormSuccess (file, Entity classkey theclass, duedate,duetime, assignmentdesc, subtime)) ->
             do let fn = fileName file
-                   duetime' = UTCTime <$> duedate <*> Just 0
+                   (Just tz) = tzByName . courseTimeZone $ theclass
+                   localdue = case (duedate,duetime) of
+                                  (Just date, Just time) -> Just $ LocalTime date time
+                                  (Just date,_)  -> Just $ LocalTime date (TimeOfDay 23 59 59)
+                                  _ -> Nothing
                    info = unTextarea <$> assignmentdesc
-               success <- tryInsert $ AssignmentMetadata fn info duetime' subtime (entityKey theclass)
+               success <- tryInsert $ AssignmentMetadata fn info (localTimeToUTCTZ tz <$> localdue) subtime classkey 
                if success then saveAssignment file 
                           else setMessage "Could not save---this file already exists"
         (FormFailure s) -> setMessage $ "Something went wrong: " ++ toMarkup (show s)
@@ -127,11 +133,15 @@ postInstructorR ident = do
         (FormFailure s) -> setMessage $ "Something went wrong: " ++ toMarkup (show s)
         FormMissing -> return ()
     case frombookrslt of
-        (FormSuccess (Entity classkey theclass, theassignment, duedate, duetime)) -> runDB $ do
-            let duetime' = UTCTime duedate 0
+        (FormSuccess (Entity classkey theclass, theassignment, duedate, mduetime)) -> runDB $ do
+            let (Just tz) = tzByName . courseTimeZone $ theclass
+                localdue = case mduetime of
+                              Just time -> LocalTime duedate time
+                              _ -> LocalTime duedate (TimeOfDay 23 59 59)
+                due = localTimeToUTCTZ tz localdue
             case readAssignmentTable <$> courseTextbookProblems theclass of
-                Just assign -> update classkey [CourseTextbookProblems =. (Just $ BookAssignmentTable $ Data.IntMap.insert theassignment duetime' assign)]
-                Nothing -> update classkey [CourseTextbookProblems =. (Just $ BookAssignmentTable $ Data.IntMap.fromList [(theassignment, duetime')])]
+                Just assign -> update classkey [CourseTextbookProblems =. (Just $ BookAssignmentTable $ Data.IntMap.insert theassignment due assign)]
+                Nothing -> update classkey [CourseTextbookProblems =. (Just $ BookAssignmentTable $ Data.IntMap.fromList [(theassignment, due)])]
         (FormFailure s) -> setMessage $ "Something went wrong: " ++ toMarkup (show s)
         FormMissing -> return ()
     redirect $ InstructorR ident
@@ -221,7 +231,7 @@ setBookAssignmentForm classes = renderBootstrap3 BootstrapBasicForm $ (,,,)
             <$> areq (selectFieldList classnames) (bfs ("Class" :: Text)) Nothing
             <*> areq (selectFieldList chapters) (bfs ("Problem Set" :: Text))  Nothing
             <*> areq (jqueryDayField def) (bfs ("Due Date"::Text)) Nothing
-            <*> areq timeFieldTypeTime (bfs ("Due Time"::Text)) Nothing
+            <*> aopt timeFieldTypeTime (bfs ("Due Time"::Text)) Nothing
     where chapters = map (\x -> ("Problem Set " ++ pack (show x),x)) [1..15 ] :: [(Text,Int)]
           classnames = map (\theclass -> (courseTitle . entityVal $ theclass, theclass)) classes
 

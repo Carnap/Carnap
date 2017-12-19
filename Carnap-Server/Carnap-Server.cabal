@@ -124,6 +124,7 @@ library
                  , hashable
                  , lens
                  , split
+                 , tz
                  , tzdata
                  , Carnap-Client
                  , Carnap
