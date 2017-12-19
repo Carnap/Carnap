@@ -25,11 +25,10 @@ postCommandR = do
                 SubmitTranslation f source key -> submit TranslationSubmission f u (liftSource source) (keycheck key)
                 SubmitTruthTable f source key -> submit TruthTableSubmission  f u (liftSource source) (keycheck key)
                 SubmitDerivation s d source key -> do time <- liftIO getCurrentTime
-                                                      let sub = DerivationSubmission (pack s) (pack d) 
-                                                                        (pack $ show time) u (liftSource source) (keycheck key)
+                                                      let sub = DerivationSubmission (pack s) (pack d) time u (liftSource source) (keycheck key)
                                                       tryInsert sub >>= afterInsert
                 SaveDerivedRule n dr -> do time <- liftIO getCurrentTime
-                                           let save = SavedDerivedRule (toStrict $ encode dr) (pack n) (pack $ show time) u
+                                           let save = SavedDerivedRule (toStrict $ encode dr) (pack n) time u
                                            tryInsert save >>= afterInsert
                 RequestDerivedRulesForUser -> do savedRules <- runDB $ selectList [SavedDerivedRuleUserId ==. u] []
                                                  let packagedRules = catMaybes $ map (packageRule . entityVal) savedRules
@@ -47,7 +46,7 @@ packageRule (SavedDerivedRule dr n _ _) = case (decodeStrict dr :: Maybe Derived
                                               _ -> Nothing
 
 submit typ f u c a = do time <- liftIO getCurrentTime
-                        let sub = typ (pack f) (pack $ show time) u c a
+                        let sub = typ (pack f) time u c a
                         success <- tryInsert sub
                         afterInsert success
 

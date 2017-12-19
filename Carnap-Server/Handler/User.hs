@@ -111,7 +111,7 @@ getUserR ident = do
 toScore textbookproblems p = case assignment p of
                    Nothing -> 
                         case utcDueDate textbookproblems (problem p) of                      
-                              Just d -> if asUTC (submitted p) `laterThan` d       
+                              Just d -> if submitted p `laterThan` d       
                                             then return (2 :: Int)
                                             else return (5 :: Int)
                               Nothing -> return (0 :: Int)
@@ -120,7 +120,7 @@ toScore textbookproblems p = case assignment p of
                         case mmd of
                             Nothing -> return (0 :: Int)
                             Just v -> case assignmentMetadataDuedate v of 
-                                        Just due | asUTC (submitted p) `laterThan` due -> return (2 :: Int)
+                                        Just due | submitted p `laterThan` due -> return (2 :: Int)
                                         _ -> return (5 :: Int)
                             
 scoreByIdAndClass cid uid = 
@@ -143,9 +143,6 @@ totalScore textbookproblems a b c d = do
 dateDisplay utc course = case tzByName $ courseTimeZone course of
                              Just tz  -> show $ utcToZonedTime (timeZoneForUTCTime tz utc) utc
                              Nothing -> show $ utc
-
-asUTC :: Text -> UTCTime
-asUTC z = read (unpack z)
 
 utcDueDate textbookproblems x = textbookproblems >>= Data.IntMap.lookup theIndex . readAssignmentTable
     where theIndex = read . unpack . takeWhile (/= '.') $ x :: Int
@@ -175,7 +172,7 @@ problemsToTable course textbookproblems xs = do
                            return $ do
                               B.tr $ do B.td $ B.toHtml (takeWhile (/= ':') $ problem p)
                                         B.td $ B.toHtml (drop 1 . dropWhile (/= ':') $ problem p)
-                                        B.td $ B.toHtml (dateDisplay (asUTC $ submitted p) course)
+                                        B.td $ B.toHtml (dateDisplay (submitted p) course)
                                         B.td $ B.toHtml $ show $ score
 
 tryDelete name = "tryDeleteRule(\"" <> name <> "\")"
@@ -261,7 +258,7 @@ nouserPage = [whamlet|
 
 class Problem p where
         problem :: p -> Text
-        submitted :: p -> Text
+        submitted :: p -> UTCTime
         assignment :: p -> Maybe AssignmentMetadataId
 
 instance Problem SyntaxCheckSubmission where

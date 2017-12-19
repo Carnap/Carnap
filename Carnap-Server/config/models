@@ -14,7 +14,7 @@ UserData
 
 SyntaxCheckSubmission
     problem Text
-    time Text
+    time UTCTime
     userId UserId
     source ByteString
     assignmentId AssignmentMetadataId Maybe
@@ -22,7 +22,7 @@ SyntaxCheckSubmission
 
 TranslationSubmission
     problem Text
-    time Text
+    time UTCTime
     userId UserId 
     source ByteString
     assignmentId AssignmentMetadataId Maybe
@@ -30,7 +30,7 @@ TranslationSubmission
 
 TruthTableSubmission
     problem Text
-    time Text
+    time UTCTime
     userId UserId 
     source ByteString
     assignmentId AssignmentMetadataId Maybe
@@ -39,7 +39,7 @@ TruthTableSubmission
 DerivationSubmission
     problem Text
     derivation Text
-    time Text
+    time UTCTime
     userId UserId 
     source ByteString
     assignmentId AssignmentMetadataId Maybe
@@ -48,7 +48,7 @@ DerivationSubmission
 SavedDerivedRule
     derivedRule ByteString
     name Text
-    time Text
+    time UTCTime
     userId UserId
     UniqueDerivedRule name userId
 
@@ -70,7 +70,7 @@ Course
     startDate UTCTime
     endDate UTCTime
     totalPoints Int
-    timeZone ByteString
+    timeZone ByteString --timezones are stored as tznames
     UniqueCourse title instructor
     deriving Eq
 
