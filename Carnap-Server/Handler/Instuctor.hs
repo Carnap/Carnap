@@ -26,14 +26,22 @@ putInstructorR ident = do
         case (assignmentrslt,courserslt) of 
             (FormSuccess (filename,mdue,mduetime,mdesc),_) -> do
                              massignEnt <- runDB $ getBy $ UniqueAssignment filename
-                             case entityKey <$> massignEnt of 
+                             case massignEnt of 
                                    Nothing -> return ()
-                                   Just k -> runDB $ do maybeDo mdue (\due -> update k
-                                                          [ AssignmentMetadataDuedate =. (Just $ UTCTime due 0) ])
-                                                        maybeDo mdesc (\desc -> update k
-                                                          [ AssignmentMetadataDescription =. (Just $ unTextarea desc) ])
+                                   Just (Entity k v) -> 
+                                        do let cid = assignmentMetadataCourse v
+                                           runDB $ do 
+                                                      maybeDo mdue (\due -> 
+                                                         do (Just course) <- get cid
+                                                            let (Just tz) = tzByName . courseTimeZone $ course
+                                                                localdue = case mduetime of
+                                                                    (Just time) -> LocalTime due time
+                                                                    _ -> LocalTime due (TimeOfDay 23 59 59)
+                                                            update k [ AssignmentMetadataDuedate =. (Just $ localTimeToUTCTZ tz localdue) ])
+                                                      maybeDo mdesc (\desc -> update k
+                                                         [ AssignmentMetadataDescription =. (Just $ unTextarea desc) ])
                              case mdue of Nothing -> returnJson ([filename,"No Due Date"])
-                                          Just due -> returnJson ([filename,pack $ show $ UTCTime due 0])
+                                          Just due -> returnJson ([filename, pack $ show due])
             (_,FormSuccess (coursetitle,mdesc,mstart,mend,mpoints)) -> do
                              Just instructor <- instructorIdByIdent ident
                              mcourseEnt <- runDB . getBy . UniqueCourse coursetitle $ instructor
