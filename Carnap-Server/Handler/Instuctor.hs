@@ -134,7 +134,8 @@ postInstructorR ident = do
             miid <- instructorIdByIdent ident
             case miid of
                 Just iid -> 
-                    do success <- tryInsert $ Course title (unTextarea <$> coursedesc) iid Nothing (UTCTime startdate 0) (UTCTime enddate 0) 0 (toTZName tzlabel)
+                    do let localize x = localTimeToUTCTZ (tzByLabel tzlabel) (LocalTime x midnight)
+                       success <- tryInsert $ Course title (unTextarea <$> coursedesc) iid Nothing (localize startdate) (localize enddate) 0 (toTZName tzlabel)
                        if success then setMessage "Course Created" 
                                   else setMessage "Could not save---this file already exists"
                 Nothing -> setMessage "you're not an instructor!"
@@ -339,8 +340,10 @@ classWidget classent = do
                             <dd.col-sm-9.offset-sm-3>#{desc}
                         <dt.col-sm-3>Points Available
                         <dd.col-sm-9>#{courseTotalPoints course}
-                        <dt.col-sm-3>Dates
-                        <dd.col-sm-9>#{show $ courseStartDate course} - #{show $ courseEndDate course}
+                        <dt.col-sm-3>Start Date
+                        <dd.col-sm-9>#{dateDisplay (courseStartDate course) course}
+                        <dt.col-sm-3>End Date
+                        <dd.col-sm-9>#{dateDisplay (courseEndDate course) course}
                         <dt.col-sm-3>Time Zone
                         <dd.col-sm-9>#{decodeUtf8 $ courseTimeZone course}
                     <button.btn.btn-sm.btn-danger type="button" onclick="tryDeleteCourse('#{decodeUtf8 $ encode $ DeleteCourse (courseTitle course)}')">
