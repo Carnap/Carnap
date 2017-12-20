@@ -13,7 +13,6 @@ ip-from-header: "_env:IP_FROM_HEADER:false"
 # Optional values with the following production defaults.
 # In development, they default to the inverse.
 #
-# development: false
 # detailed-logging: false
 # should-log-all: false
 # reload-templates: false
@@ -34,7 +33,9 @@ database:
 
 copyright: Copyright 2015-2017 G. Leach-Krouse <gleachkr@ksu.edu> and J. Ehrlich
 
-#uncomment the line below if you want to run without a postgres installation---you can set a path to the sqlite database
+#uncomment the line below if you want to run without a postgres installation
 sqlite: true
+
+data-root: "_env:DATAROOT:/var/lib/carnap"
 
 #analytics: UA-YOURCODE
