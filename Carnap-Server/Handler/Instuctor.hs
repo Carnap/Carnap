@@ -130,7 +130,7 @@ postInstructorR ident = do
         (FormFailure s) -> setMessage $ "Something went wrong: " ++ toMarkup (show s)
         FormMissing -> return ()
     case newclassrslt of
-        (FormSuccess (title, coursedesc, startdate, enddate,tzlabel)) -> do
+        (FormSuccess (title, coursedesc, startdate, enddate, tzlabel)) -> do
             miid <- instructorIdByIdent ident
             case miid of
                 Just iid -> 
