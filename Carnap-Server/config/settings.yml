@@ -8,7 +8,7 @@ ip-from-header: "_env:IP_FROM_HEADER:false"
 
 # Default behavior: determine the application root from the request headers.
 # Uncomment to set an explicit approot
-#approot:        "_env:APPROOT:http://localhost:3000"
+approot:        "_env:APPROOT:carnap.io"
 
 # Optional values with the following production defaults.
 # In development, they default to the inverse.
