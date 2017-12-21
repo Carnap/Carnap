@@ -19,30 +19,29 @@ import           System.IO
 import           Text.Pandoc.Definition
 
 
-makeDiagrams :: Block -> StateT [String] IO (Block)
-makeDiagrams cb@(CodeBlock (_,classes,_) contents)
+makeDiagrams :: FilePath -> Block -> StateT [String] IO (Block)
+makeDiagrams path cb@(CodeBlock (_,classes,_) contents)
     | "diagram" `elem` classes = if "snip" `elem` classes 
                                      then do S.modify (\x -> contents:x)
                                              return $ RawBlock "html" ""
                                      else do snips <- S.get
-                                             svg <- liftIO $ activate classes contents snips
+                                             svg <- liftIO $ activate path classes contents snips
                                              return svg
     | otherwise = return cb
-makeDiagrams x = return x
+makeDiagrams _ x = return x
 
-activate cls cnt snips = do let lns  = lines cnt
-                            let expr = if lns /= [] then head $ lines cnt else []
-                            let snip = if lns /= [] then unlines $ tail $ lines cnt else []
-                            mdia <- compileDiagram expr [] (snip:snips)
-                            case mdia of 
-                               Left s -> return $ RawBlock "html" s
-                               Right s -> return $ RawBlock "html" 
-                                  ("<img src=\"/hash/" ++ s ++ "\">")
+activate path cls cnt snips = 
+        do let lns  = lines cnt
+           let expr = if lns /= [] then head $ lines cnt else []
+           let snip = if lns /= [] then unlines $ tail $ lines cnt else []
+           mdia <- compileDiagram path expr [] (snip:snips)
+           case mdia of 
+              Left s -> return $ RawBlock "html" s
+              Right s -> return $ RawBlock "html" 
+                 ("<img src=\"/hash/" ++ s ++ "\">")
 
-compileDiagram :: String -> [(String,String)] -> [String] -> IO (Either String String)
-compileDiagram expr attrs src = do
-  localbook <- doesDirectoryExist "book"
-  let path = (if localbook then "book/cache/" else "/root/book/cache/") 
+compileDiagram :: FilePath -> String -> [(String,String)] -> [String] -> IO (Either String String)
+compileDiagram path expr attrs src = do
   ensureDir "/tmp/"
 
   let bopts :: DB.BuildOpts SVG V2 Double
@@ -55,7 +54,7 @@ compileDiagram expr attrs src = do
                 & DB.pragmas .~ ["NoMonomorphismRestriction, DeriveDataTypeable"]
                 & DB.diaExpr .~ expr
                 & DB.postProcess .~ (pad 1.1 . centerXY)
-                & DB.decideRegen .~ (DB.hashedRegenerate (\hash opts' -> opts') path)
+                & DB.decideRegen .~ (DB.hashedRegenerate (\hash opts' -> opts') (path </> "cache/") )
 
   res <- DB.buildDiagram bopts
 
@@ -84,5 +83,5 @@ compileDiagram expr attrs src = do
       return $ Right (DB.hashToHexStr hash <.> ".svg")
 
  where
-  mkFile base = "/home/graham/projects/CarnapPrime/Carnap-Server/book/cache/" </> base <.> ".svg"
+  mkFile base = path </> "cache" </> base <.> ".svg"
   ensureDir = createDirectoryIfMissing True 

@@ -35,18 +35,18 @@ getChapterR n = do datadir <- appDataRoot <$> (appSettings <$> getYesod)
 content n cdir cdirp = do let matches = filter (\x -> (show n ++ ".pandoc") == dropWhile (not . isDigit) x) cdir
                           case matches of
                               [] -> do print "no matches"
-                                       fileToHtml ""
-                              (m:ms)  -> fileToHtml (cdirp ++ m)
+                                       fileToHtml cdirp ""
+                              (m:ms)  -> fileToHtml cdirp m
 
-fileToHtml path = do md <- markdownFromFile path
-                     case parseMarkdown yesodDefaultReaderOptions md of
-                         Right pd -> do pd' <- runFilters pd
-                                        return $ Right $ writePandoc yesodDefaultWriterOptions pd'
-                         Left e -> return $ Left e
+fileToHtml path m = do md <- markdownFromFile (path ++ m)
+                       case parseMarkdown yesodDefaultReaderOptions md of
+                           Right pd -> do pd' <- runFilters path pd 
+                                          return $ Right $ writePandoc yesodDefaultWriterOptions pd'
+                           Left e -> return $ Left e
 
-runFilters = let walkNotes y = evalState (walkM makeSideNotes y) 0
-                 walkProblems y = walk (makeSynCheckers . makeProofChecker . makeTranslate . makeTruthTables) y
-                 walkDiagrams y = evalStateT (walkM makeDiagrams y) []
+runFilters path = let walkNotes y = evalState (walkM makeSideNotes y) 0
+                      walkProblems y = walk (makeSynCheckers . makeProofChecker . makeTranslate . makeTruthTables) y
+                      walkDiagrams y = evalStateT (walkM (makeDiagrams path) y) []
                    in walkDiagrams . walkNotes . walkProblems
 
 chapterLayout widget = do

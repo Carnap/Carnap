@@ -6,9 +6,8 @@ import System.Directory (getDirectoryContents, doesDirectoryExist)
 
 
 getBookR :: Handler Html
-getBookR = do cdir <- lift $ do localbook <- doesDirectoryExist "book"
-                                if localbook then getDirectoryContents "book"
-                                             else getDirectoryContents "/root/book"
+getBookR = do datadir <- appDataRoot <$> (appSettings <$> getYesod)
+              cdir <- lift $ getDirectoryContents (datadir </> "book/")
               let ccount = zip (map getTitle $ filter ctitle cdir) [1 ..] 
               let acount = zip3 (map getTitle $ filter atitle  cdir) [1 ..] [length ccount + 1 ..]
               defaultLayout $ do
