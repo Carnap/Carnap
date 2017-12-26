@@ -7,6 +7,7 @@ import Text.Shakespeare.Text
 getInfoR :: Handler Html
 getInfoR = do
     defaultLayout $ do
+        addScript $ StaticR js_popper_min_js
         addScript $ StaticR ghcjs_rts_js
         addScript $ StaticR ghcjs_allactions_lib_js
         addScript $ StaticR ghcjs_allactions_out_js

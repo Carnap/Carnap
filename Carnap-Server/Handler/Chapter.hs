@@ -56,6 +56,7 @@ chapterLayout widget = do
         pc <- widgetToPageContent $ do
             toWidgetHead $(juliusFile "templates/command.julius")
             toWidgetHead [julius|var submission_source="book";|]
+            addScript $ StaticR js_popper_min_js
             addScript $ StaticR ghcjs_rts_js
             addScript $ StaticR ghcjs_allactions_lib_js
             addScript $ StaticR ghcjs_allactions_out_js

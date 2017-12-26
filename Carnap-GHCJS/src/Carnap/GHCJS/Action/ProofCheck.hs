@@ -31,7 +31,7 @@ import Control.Lens.Fold (toListOf,(^?))
 import Lib
 import Carnap.GHCJS.Widget.ProofCheckBox (checkerWith, CheckerOptions(..), Button(..), CheckerFeedbackUpdate(..))
 import Carnap.GHCJS.Widget.RenderDeduction
-import GHCJS.DOM.Element (setInnerHTML,getInnerHTML, setAttribute)
+import GHCJS.DOM.Element (setInnerHTML,getInnerHTML, setAttribute,mouseOver,mouseOut)
 import GHCJS.DOM.HTMLElement (insertAdjacentElement)
 --the import below is needed to make ghc-mod work properly. GHCJS compiles
 --using the generated javascript FFI versions of 2.4.0, but those are
@@ -42,8 +42,9 @@ import GHCJS.DOM.HTMLElement (insertAdjacentElement)
 import GHCJS.DOM.Types
 import GHCJS.DOM.HTMLTextAreaElement (getValue)
 import GHCJS.DOM.Document (createElement, getDefaultView)
+import GHCJS.DOM.EventM (EventM, target, newListener,addListener)
 import GHCJS.DOM.Window (prompt)
-import GHCJS.DOM.Node (appendChild, getParentNode )
+import GHCJS.DOM.Node (appendChild, getParentNode,removeChild)
 --import GHCJS.DOM.EventM
 import Control.Monad (when)
 import Control.Monad.IO.Class (liftIO)
@@ -192,7 +193,7 @@ threadedCheck checker w ref v (g, fd) =
                              Feedback mseq ds <- case ndProcessLineMemo ndcalc of
                                                      Just memoline -> toDisplaySequenceMemo (memoline $ proofMemo checker) ded
                                                      Nothing -> return $ toDisplaySequence (ndProcessLine ndcalc) ded
-                             ul <- genericListToUl wrap w ds
+                             ul <- genericListToUl (wrap fd w) w ds
                              setInnerHTML fd (Just "")
                              appendChild fd (Just ul)
                              case sequent checker of
@@ -264,11 +265,38 @@ trySave drs ref w i = do isFinished <- liftIO $ readIORef ref
 --  Utility Functions  --
 -------------------------
 
-wrap (Left (GenericError s n))  = errDiv "?" s n Nothing
-wrap (Left (NoParse e n))       = errDiv "⚠" "Can't read this line. There may be a typo." n (Just $ show e)
-wrap (Left (NoUnify eqs n))     = errDiv "✗" "Can't match these premises with this conclusion, using this rule" n (Just $ toUniErr eqs)
-wrap (Left (NoResult _))        = "<div>&nbsp;</div>"
-wrap (Right s)                  = "<div>+<div><div>" ++ show s ++ "<div></div></div>"
+wrap fd w elt (Right s)                  = popUpWith fd w elt "+" (show s) Nothing
+wrap fd w elt (Left (GenericError s n))  = popUpWith fd w elt "?" ("Error on line " ++ show n ++ ": " ++ s) Nothing
+wrap fd w elt (Left (NoParse e n))       = popUpWith fd w elt "⚠" ("Can't read line " ++ show n ++ ". There may be a typo.") (Just $ show e)
+wrap fd w elt (Left (NoUnify eqs n))     = popUpWith fd w elt "✗" ("Error on line " ++ show n ++ ". Can't match these premises with this conclusion, using this rule.") (Just $ toUniErr eqs)
+wrap fd w elt (Left (NoResult _))        = setInnerHTML elt (Just "&nbsp;")
+
+popUpWith :: Element -> Document -> Element -> String -> String -> Maybe String -> IO ()
+popUpWith fd w elt label msg details = 
+        do setInnerHTML elt (Just label)
+           (Just outerpopper) <- createElement w (Just "div")
+           (Just innerpopper) <- createElement w (Just "div")
+           setAttribute innerpopper "class" "popper"
+           setInnerHTML innerpopper (Just msg)
+           appendChild outerpopper (Just innerpopper)
+           case details of 
+            Just deets -> do
+               (Just detailpopper) <- createElement w (Just "div")
+               setAttribute detailpopper "class" "details"
+               setInnerHTML detailpopper (Just deets)
+               appendChild innerpopper (Just detailpopper)
+               return ()
+            Nothing -> return ()
+           (Just p) <- getParentNode fd
+           (Just gp) <- getParentNode p
+           appender <- newListener $ appendPopper outerpopper gp
+           remover <- newListener $ removePopper outerpopper gp
+           addListener elt mouseOver appender False
+           addListener elt mouseOut remover False
+    where appendPopper pop targ = do liftIO $ appendChild targ (Just pop) 
+                                     liftIO $ makePopper elt pop
+          removePopper pop targ = do liftIO $ removeChild targ (Just pop)
+                                     return ()
 
 toUniErr eqs = "In order to apply this inference rule, there needs to be a substitution that makes at least one of these sets of pairings match:" 
                 ++ (concat $ map endiv' $ map (concat . map (endiv . show) . reverse) eqs)
@@ -280,12 +308,12 @@ toUniErr eqs = "In order to apply this inference rule, there needs to be a subst
 liftDerivedRules = map $ \(s,r) -> (s,liftDerivedRule r)
     where liftDerivedRule (P.DerivedRule conc prems) = FOL.DerivedRule (liftLang conc) (map liftLang prems)
 
-errDiv :: [Char] -> [Char] -> Int -> Maybe [Char] -> [Char]
+errDiv :: String -> String -> Int -> Maybe String -> String
 errDiv ico msg lineno (Just details) = "<div>" ++ ico ++ "<div><div>Error on line " 
                                        ++ show lineno ++ ": " ++ msg 
-                                       ++ "<div>see details<div>" 
+                                       ++ "<div>" 
                                        ++ details 
-                                       ++ "</div></div></div></div></div>"
+                                       ++ "</div></div></div></div>"
 errDiv ico msg lineno Nothing = "<div>" ++ ico ++ "<div><div>Error on line " 
                               ++ show lineno ++ ": " ++ msg 
                               ++ "</div></div></div>"

@@ -51,25 +51,25 @@ checkerWith options updateres iog@(IOGoal i o g classes) w = do
            addListener i keyUp lineupd False
            syncScroll i o
            --respond to custom initialize events
-           initlistener <- newListener $ genericUpdateResults2 (updateres w ref) g fd
+           initlistener <- newListener $ updateWithValue (\s -> updateres w ref s (g,fd))
            addListener i initialize initlistener False                
            case feedback options of
                Keypress -> do
-                   kblistener <- newListener $ genericUpdateResults2 (updateres w ref) g fd
+                   kblistener <- newListener $ updateWithValue (\s -> updateres w ref s (g,fd))
                    addListener i keyUp kblistener False
                Never -> return ()
                Click -> do 
                    mbt@(Just bt) <- createElement w (Just "button")
                    setInnerHTML bt (Just "Check Proof")         
                    appendChild par mbt
-                   btlistener <- newListener $ genericUpdateResults2 (updateres w ref) g fd
+                   btlistener <- newListener $ updateWithValue (\s -> updateres w ref s (g,fd))
                    addListener bt click btlistener False                
            case submit options of
                Just button -> do 
                    mbt'@(Just bt') <- createElement w (Just "button")
                    setInnerHTML bt' (Just (label button))         
                    appendChild par mbt'
-                   buttonAct <- newListener $ (action button) ref w' i
+                   buttonAct <- newListener $ action button ref w' i
                    addListener bt' click buttonAct False                
                Nothing -> return ()
            mv <- getValue (castToHTMLTextAreaElement i)

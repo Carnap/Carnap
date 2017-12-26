@@ -71,6 +71,5 @@ function klementActivate() {
     makeProof(s,sofar,"W ∨ Y");
     }
 
-
 window.setTimeout(initializeVisible,2000);
 klementActivate();

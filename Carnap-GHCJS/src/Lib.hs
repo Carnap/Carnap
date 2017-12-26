@@ -6,8 +6,8 @@ module Lib
     adjustFirstMatching, decodeHtml, syncScroll, reloadPage, initElements,
     loginCheck,errorPopup, getInOutElts, getInOutGoalElts, withLabel,
     formAndLabel,seqAndLabel, folSeqAndLabel, folFormAndLabel,
-    message, IOGoal(..), genericUpdateResults2, submissionSource, assignmentKey,
-    initialize) where
+    message, IOGoal(..), updateWithValue, submissionSource, assignmentKey,
+    initialize,makePopper) where
 
 import Data.Aeson
 import qualified Data.ByteString.Lazy as BSL
@@ -141,18 +141,18 @@ genericTreeToUl sf w t = treeToElement itemize listify t
 treeToUl :: Show a => Document -> Tree (a, String) -> IO Element
 treeToUl = genericTreeToUl show
 
-genericListToUl :: (a -> String) -> Document -> [a] -> IO Element
+genericListToUl :: (Element -> a -> IO ()) -> Document -> [a] -> IO Element
 genericListToUl f doc l = 
         do elts <- mapM wrapIt l
            (Just ul) <- createElement doc (Just "ul")
            mapM_ (appendChild ul) elts
            return ul
     where wrapIt e = do (Just li) <- createElement doc (Just "li")
-                        setInnerHTML li (Just $ f e)
+                        f li e 
                         return (Just li)
 
 listToUl :: Show a => Document -> [a] -> IO Element
-listToUl = genericListToUl show
+listToUl = genericListToUl (\e a -> setInnerHTML e (Just $ show a))
 
 {-
 This function supports a pattern where we gather a list of elements that
@@ -187,36 +187,13 @@ getInOutGoalElts cls b = do els <- getListOfElementsByClass b "proofchecker"
                        o <- MaybeT $ getNextElementSibling i
                        return $ IOGoal i o g (words cn)
 
-updateResults :: (IsElement e, IsElement e', IsEvent ev) => 
-    (String -> IO e') -> e -> EventM HTMLTextAreaElement ev ()
-updateResults f o = 
+updateWithValue :: IsEvent ev => (String ->  IO ()) -> EventM HTMLTextAreaElement ev ()
+updateWithValue f = 
         do (Just t) <- target :: IsEvent ev' => EventM HTMLTextAreaElement ev' (Maybe HTMLTextAreaElement)
            mv <- TA.getValue t
            case mv of 
                Nothing -> return ()
-               Just v -> do liftIO $ setInnerHTML o (Just "")
-                            v' <- liftIO $ f v
-                            appendChild o (Just v')
-                            return ()
-
-genericUpdateResults2 :: (IsElement e, IsElement e', IsEvent ev) => 
-    (String -> (e, e') -> IO ()) -> e -> e' -> EventM HTMLTextAreaElement ev ()
-genericUpdateResults2 f o o' = 
-        do (Just t) <- target :: IsEvent ev' => EventM HTMLTextAreaElement ev' (Maybe HTMLTextAreaElement)
-           mv <- TA.getValue t
-           case mv of 
-               Nothing -> return ()
-               Just v -> liftIO $ f v (o, o')
-
-updateResults2 :: (IsElement e, IsElement e', IsElement e'', IsElement e''', IsEvent ev) => 
-    (String -> IO (e'', e''')) -> e -> e' -> EventM HTMLTextAreaElement ev ()
-updateResults2 f o o' = genericUpdateResults2 (\v (e1, e2) -> do
-    liftIO $ setInnerHTML e1 (Just "") 
-    liftIO $ setInnerHTML e2 (Just "")                            
-    (v',v'') <- liftIO $ f v                                      
-    appendChild o (Just v')                                       
-    appendChild o' (Just v'')                                     
-    return ()) o o'
+               Just v -> liftIO $ f v
 
 --------------------------------------------------------
 --1.3 Encodings
@@ -331,6 +308,8 @@ foreign import javascript unsafe "(function(){try {var v=submission_source;} cat
 
 foreign import javascript unsafe "(function(){try {var v=assignment_key;} catch (e) {var v=\"\";}; return v})()" assignmentKeyJS :: IO JSString
 
+foreign import javascript unsafe "try {new Popper($1,$2,{placement:\"right\"});} catch (e) {$2.className=\"manualPopper\"};" makePopper :: Element -> Element -> IO ()
+
 submissionSource = do qr <- submissionQueryJS
                       case fromJSString qr of
                           "book" -> return $ Just Book
@@ -367,6 +346,9 @@ keyString = Prelude.error "keyString requires the GHCJS FFI"
 
 alert :: String -> IO ()
 alert = Prelude.error "alert requires the GHCJS FFI"
+
+makePopper :: Element -> Element -> IO ()
+makePopper = Prelude.error "makePopper requires the GHCJS FFI"
 
 currentUrl = Prelude.error "currentUrl requires the GHCJS FFI"
 
