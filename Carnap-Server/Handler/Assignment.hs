@@ -60,6 +60,7 @@ getAssignmentR t = do adir <- assignmentDir
                                                   toWidgetHead $(juliusFile "templates/command.julius")
                                                   toWidgetHead [julius|var submission_source="#{rawJS source}";|]
                                                   toWidgetHead [julius|var assignment_key="#{rawJS $ show key}";|]
+                                                  addScript $ StaticR js_popper_min_js
                                                   addScript $ StaticR ghcjs_rts_js
                                                   addScript $ StaticR ghcjs_allactions_lib_js
                                                   addScript $ StaticR ghcjs_allactions_out_js
@@ -78,7 +79,7 @@ fileToHtml path = do Markdown md <- markdownFromFile path
                      let md' = Markdown (filter ((/=) '\r') md) --remove carrage returns from dos files
                      case parseMarkdown yesodDefaultReaderOptions md' of
                          Right pd -> do let pd' = walk allFilters pd
-                                        return $ Right $ writePandoc yesodDefaultWriterOptions pd'
+                                        return $ Right $ writePandocTrusted yesodDefaultWriterOptions pd'
                          Left e -> return $ Left e
     where allFilters = (makeSynCheckers . makeProofChecker . makeTranslate . makeTruthTables)
                   

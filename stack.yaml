@@ -1,6 +1,8 @@
 flags: {}
 extra-package-dbs: []
-extra-deps: [yesod-markdown-0.11.1]
+extra-deps: 
+    - yesod-markdown-0.11.1
+
 packages:
 - Carnap/
 - Carnap-Server/

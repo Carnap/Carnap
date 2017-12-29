@@ -4,15 +4,17 @@ module Lib
     getListOfElementsByClass, tryParse, treeToElement, genericTreeToUl,
     treeToUl, genericListToUl, listToUl, formToTree, leaves,
     adjustFirstMatching, decodeHtml, syncScroll, reloadPage, initElements,
-    loginCheck,errorPopup, getInOutElts, getInOutGoalElts, withLabel,
+    loginCheck,errorPopup, genInOutElts, getInOutElts,generateExerciseElts, withLabel,
     formAndLabel,seqAndLabel, folSeqAndLabel, folFormAndLabel,
     message, IOGoal(..), updateWithValue, submissionSource, assignmentKey,
     initialize,makePopper) where
 
 import Data.Aeson
+import Data.Maybe (catMaybes)
 import qualified Data.ByteString.Lazy as BSL
 import Data.Text.Encoding
 import Data.Tree as T
+import qualified Data.Map as M
 import Text.Parsec
 import Text.StringLike
 import Text.HTML.TagSoup as TS
@@ -41,6 +43,7 @@ import qualified GHCJS.DOM.HTMLTextAreaElement as TA (getValue)
 import GHCJS.DOM.Document (createElement, getBody)
 import GHCJS.DOM.Node
 import GHCJS.DOM.NodeList
+import qualified GHCJS.DOM.NamedNodeMap as NM
 import GHCJS.DOM.Event
 import GHCJS.DOM.KeyboardEvent
 import GHCJS.DOM.EventM
@@ -95,26 +98,34 @@ syncScroll e1 e2 = do cup1 <- catchup e1 e2
 --------------------------------------------------------
 -- data structures for DOM elements
 
-data IOGoal= IOGoal { inputArea :: Element
-                    , outputArea :: Element
-                    , goalArea :: Element
-                    , classes :: [String]
-                    }
+data IOGoal = IOGoal { inputArea :: Element
+                     , outputArea :: Element
+                     , goalArea :: Element
+                     , content :: String
+                     , exerciseOptions :: M.Map String String
+                     }
 
 
 clearInput :: (MonadIO m) => HTMLInputElement -> m ()
 clearInput i = setValue i (Just "")
 
+
+maybeNodeListToList mnl = case mnl of 
+                            Nothing -> return []
+                            Just nl -> do l <- getLength nl
+                                          if l > 0 then 
+                                              mapM ((fmap . fmap) castToElement . item nl) [0 .. l-1]
+                                          else return []
+
 -- XXX: one might also want to include a "mutable lens" or "mutable traversal"
 --kind of thing: http://stackoverflow.com/questions/18794745/can-i-make-a-lens-with-a-monad-constraint
 getListOfElementsByClass :: IsElement self => self -> String -> IO [Maybe Element]
 getListOfElementsByClass elt c = do mnl <- getElementsByClassName elt c
-                                    case mnl of 
-                                        Nothing -> return []
-                                        Just nl -> do l <- getLength nl
-                                                      if l > 0 then 
-                                                          mapM ((fmap . fmap) castToElement . item nl) [0 .. l-1]
-                                                      else return []
+                                    maybeNodeListToList mnl
+
+getListOfElementsByCarnapType :: IsElement self => self -> String -> IO [Maybe Element]
+getListOfElementsByCarnapType elt s = do mnl <- querySelectorAll elt ("[data-carnap-type=" ++ s ++ "]")
+                                         maybeNodeListToList mnl
 
 tryParse p s = unPack $ parse p "" s 
     where unPack (Right s) = show s
@@ -171,21 +182,33 @@ getInOutElts cls b = do els <- getListOfElementsByClass b cls
                         o <- MaybeT $ getNextElementSibling i
                         return (i ,o ,words cn)
 
-{-
-This function supports a similar pattern where we also gather a third
-element that will carry information about a goal (what to do, and whether it has been achieved)
--}
-getInOutGoalElts :: IsElement self => String -> self -> IO [Maybe IOGoal]
-getInOutGoalElts cls b = do els <- getListOfElementsByClass b "proofchecker"
-                            mapM extract els
-        where extract Nothing = return Nothing
-              extract (Just el ) = 
-                do cn <- getClassName el
-                   runMaybeT $ do
-                       g <- MaybeT $ getFirstElementChild el
-                       i <- MaybeT $ getNextElementSibling g 
-                       o <- MaybeT $ getNextElementSibling i
-                       return $ IOGoal i o g (words cn)
+genInOutElts :: IsElement self => Document -> String -> self -> IO [Maybe (Element, Element, M.Map String String)]
+genInOutElts w ty target = do els <- getListOfElementsByCarnapType target ty
+                              mapM initialize els
+        where initialize Nothing = return Nothing
+              initialize (Just el) = do
+                  setInnerHTML el (Just "")
+                  [Just o, Just i] <- mapM (createElement w . Just) ["div","input"]
+                  setAttribute i "class" "input"
+                  setAttribute o "class" "output"
+                  opts <- getCarnapDataMap el
+                  mapM_ (appendChild el . Just) [i,o]
+                  return $ Just (i,o,opts)
+
+generateExerciseElts :: IsElement self => Document -> String -> self -> IO [Maybe IOGoal]
+generateExerciseElts w ty target = do els <- getListOfElementsByCarnapType target ty 
+                                      mapM initialize els
+        where initialize Nothing = return Nothing
+              initialize (Just el) = do
+                  Just content <- getInnerHTML el
+                  setInnerHTML el (Just "")
+                  [Just g, Just o, Just i] <- mapM (createElement w . Just) ["div","div","textarea"]
+                  setAttribute g "class" "goal"
+                  setAttribute i "class" "input"
+                  setAttribute o "class" "output"
+                  opts <- getCarnapDataMap el
+                  mapM_ (appendChild el . Just) [g,i,o]
+                  return $ Just (IOGoal i o g content opts)
 
 updateWithValue :: IsEvent ev => (String ->  IO ()) -> EventM HTMLTextAreaElement ev ()
 updateWithValue f = 
@@ -194,6 +217,22 @@ updateWithValue f =
            case mv of 
                Nothing -> return ()
                Just v -> liftIO $ f v
+
+getCarnapDataMap :: Element -> IO (M.Map String String)
+getCarnapDataMap elt = do (Just nnmap) <- getAttributes elt
+                          len <- NM.getLength nnmap
+                          if len > 0 then do
+                                mnodes <- mapM (NM.item nnmap) [0 .. len -1]
+                                mnamevals <- mapM toNameVal mnodes
+                                return $ M.fromList . catMaybes $ mnamevals
+                          else return mempty
+
+    where toNameVal (Just node) = do mn <- getNodeName node
+                                     mv <- getNodeValue node
+                                     case (mn,mv) of
+                                         (Just n, Just v) | "data-carnap-" == take 12 n -> return $ Just (Prelude.drop 12 n,v)
+                                         _ -> return Nothing
+          toNameVal _ = return Nothing
 
 --------------------------------------------------------
 --1.3 Encodings
@@ -228,11 +267,11 @@ formToTree f = T.Node f (map formToTree (children f))
 --1.6 Boilerplate
 --------------------------------------------------------
 
-initElements :: (HTMLElement -> IO [a]) -> (Document -> a -> IO b) -> IO ()
+initElements :: (Document -> HTMLElement -> IO [a]) -> (Document -> a -> IO b) -> IO ()
 initElements getter setter = runWebGUI $ \w -> 
             do (Just dom) <- webViewGetDomDocument w
                (Just b) <- getBody dom
-               elts <- getter b
+               elts <- getter dom b
                case elts of 
                     [] -> return ()
                     _ -> mapM_ (setter dom) elts
@@ -262,7 +301,6 @@ withLabel parser = do label <- many (digit <|> char '.')
                       spaces
                       s <- parser
                       return (label,s)
-
 
 --------------------------------------------------------
 --2. FFI Wrappers
@@ -323,6 +361,7 @@ assignmentKey = do k <- assignmentKeyJS
 
 initialize :: EventName t Event
 initialize = EventName $ toJSString "initialize"
+
 
 #else
 

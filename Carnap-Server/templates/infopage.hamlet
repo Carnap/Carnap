@@ -64,14 +64,14 @@
                        \ your changes by mousing over the line-decorations on the
                        \ right hand side.
 
-                    ^{proofcheck 1 "proofchecker NoSub" ":|-:P\\/-P" aristotleTheorem}
+                    ^{proofcheck 1 "prop" "" ":|-:P\\/-P" aristotleTheorem}
 
                 <div.demo>
                     <p>This is a rendering proofbox with a Kalish and Montegue
                        \ System for Propositional Logic, which also visually
                        \ displays the structure of the proof being developed.
 
-                    ^{proofcheck 2 "proofchecker NoSub Render" ":|-:P\\/-P" aristotleTheorem}
+                    ^{proofcheck 2 "prop" "render" ":|-:P\\/-P" aristotleTheorem}
 
 
                 <div.demo>
@@ -79,7 +79,7 @@
                     <p> This is a rendering proofbox with Hardegree's variation
                         \ on a Montegue system.
 
-                    ^{proofcheck 3 "proofchecker hardegreeSL NoSub Render" "P/\\Q->R:|-: P->(Q->R)" adjunctionTheorem}
+                    ^{proofcheck 3 "hardegreeSL" "render" "P/\\Q->R:|-: P->(Q->R)" adjunctionTheorem}
 
                 <div.demo>
 
@@ -87,7 +87,7 @@
                        <i>the Logic Book
                        \ and visually rendering the proof structure in the Fitch style.
 
-                    ^{proofcheck 4 "proofchecker LogicBook NoSub Render" ":|-:(((P->Q)->P)->P)" pierceTheorem}
+                    ^{proofcheck 4 "LogicBook" "render" ":|-:(((P->Q)->P)->P)" pierceTheorem}
 
 
                 <div.demo>
@@ -95,7 +95,7 @@
                        \ for First-Order Logic, displaying a proof of Russell's
                        \ Theorem.
 
-                    ^{proofcheck 5 "proofchecker firstOrder Render NoSub" ":|-:-ExAy(-F(y,y) <-> F(x,y))" russellTheorem}
+                    ^{proofcheck 5 "firstOrder" "render" ":|-:-ExAy(-F(y,y) <-> F(x,y))" russellTheorem}
 
                 <div.demo>
 
@@ -115,9 +115,9 @@
                         \ style of #
                         <i>Forall x
 
-                    ^{proofcheck 6 "proofchecker magnusQL NoSub Render" ":|-:-ExAy(-F(y,y) <-> F(x,y))" russellTheoremForallx}
+                    ^{proofcheck 6 "magnusQL" "render" ":|-:-ExAy(-F(y,y) <-> F(x,y))" russellTheoremForallx}
 
-                    ^{proofcheck 7 "proofchecker thomasBolducAndZachFOL NoSub Render" ":|-:-ExAy(-F(y,y) <-> F(x,y))" russellTheoremCalgary}
+                    ^{proofcheck 7 "thomasBolducAndZachFOL" "render" ":|-:-ExAy(-F(y,y) <-> F(x,y))" russellTheoremCalgary}
                 <div.demo>
 
                     <p> This is a proofbox with a Kalish and Montegue System
@@ -125,7 +125,7 @@
                         \ an instance of the comprehension scheme, using
                         \ a predicate abstraction rule.
 
-                    ^{proofcheck 8 "proofchecker secondOrder NoSub Render" ":|-: EXAx(F(x) /\\ G(x) <-> X(x))" comprehensionTheorem}
+                    ^{proofcheck 8 "secondOrder" "render" ":|-: EXAx(F(x) /\\ G(x) <-> X(x))" comprehensionTheorem}
 
                 <div.demo>
 
@@ -134,7 +134,7 @@
                         \ Second-Order Logic, again making use of a predicate
                         \ abstraction rule.
 
-                    ^{proofcheck 9 "proofchecker polyadicSecondOrder NoSub Render" ":|-: AX2EY2AxAy(X2(x,y)<->Y2(y,x))" inverseTheorem}
+                    ^{proofcheck 9 "polyadicSecondOrder" "render" ":|-: AX2EY2AxAy(X2(x,y)<->Y2(y,x))" inverseTheorem}
 
 
                 <div.demo>

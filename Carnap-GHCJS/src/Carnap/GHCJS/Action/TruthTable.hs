@@ -28,8 +28,8 @@ import Text.Parsec (parse, ParseError)
 truthTableAction :: IO ()
 truthTableAction = initElements getTruthTables activateTruthTables
 
-getTruthTables :: HTMLElement -> IO [Maybe (Element, Element, [String])]
-getTruthTables = getInOutElts "truthtable"
+getTruthTables :: Document -> HTMLElement -> IO [Maybe (Element, Element, [String])]
+getTruthTables d = getInOutElts "truthtable"
 
 activateTruthTables :: Document -> Maybe (Element, Element,[String]) -> IO ()
 activateTruthTables w (Just (i,o,classes))

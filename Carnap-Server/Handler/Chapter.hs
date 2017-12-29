@@ -41,7 +41,7 @@ content n cdir cdirp = do let matches = filter (\x -> (show n ++ ".pandoc") == d
 fileToHtml path m = do md <- markdownFromFile (path ++ m)
                        case parseMarkdown yesodDefaultReaderOptions md of
                            Right pd -> do pd' <- runFilters path pd 
-                                          return $ Right $ writePandoc yesodDefaultWriterOptions pd'
+                                          return $ Right $ writePandocTrusted yesodDefaultWriterOptions pd'
                            Left e -> return $ Left e
 
 runFilters path = let walkNotes y = evalState (walkM makeSideNotes y) 0

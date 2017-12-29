@@ -24,7 +24,7 @@ activate cls l
     | "FOL" `elem` cls = RawBlock "html" $ 
         "<div class=\"exercise\">"
         ++ "<span> exercise " ++ numof l ++ "</span>"
-        ++ case (splitOn ":" l) of
+        ++ case splitOn ":" l of
             [x,y] -> "<div class=\"translate first-order\"><input type =\"text\" value=\""
                                 ++ y ++ "\"><div>" 
                                 ++ show (simpleCipher x) ++ "</div></div></div>"

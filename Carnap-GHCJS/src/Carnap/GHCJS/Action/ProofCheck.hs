@@ -26,7 +26,7 @@ import Carnap.GHCJS.SharedTypes
 import Text.Parsec (parse)
 import Data.IORef (IORef, newIORef,writeIORef, readIORef, modifyIORef)
 import Data.Aeson as A
-import qualified Data.Map as M (fromList,map) 
+import qualified Data.Map as M (lookup,fromList,map) 
 import Control.Lens.Fold (toListOf,(^?))
 import Lib
 import Carnap.GHCJS.Widget.ProofCheckBox (checkerWith, CheckerOptions(..), Button(..), CheckerFeedbackUpdate(..))
@@ -80,8 +80,8 @@ addRules avd v =  case fromJSON v :: Result String of
                                           Success rs -> do print $ show rs
                                                            writeIORef avd rs
 
-getCheckers :: IsElement self => self -> IO [Maybe IOGoal]
-getCheckers = getInOutGoalElts "proofchecker"
+getCheckers :: IsElement self => Document -> self -> IO [Maybe IOGoal]
+getCheckers w = generateExerciseElts w "proofchecker"
 
 data Checker r lex sem der = Checker 
         { rulePost :: IORef [(String,P.DerivedRule)] -> IO [(String,der)]
@@ -95,52 +95,46 @@ data Checker r lex sem der = Checker
 
 activateChecker ::  IORef [(String,P.DerivedRule)] -> Document -> Maybe IOGoal -> IO ()
 activateChecker _ _ Nothing  = return ()
-activateChecker drs w (Just iog@(IOGoal i o g classes)) -- TODO: need to update non-montegue calculi to take first/higher-order derived rules
-        | "firstOrder" `elem` classes               = tryParse buildOptions folCalc folChecker
-        | "secondOrder" `elem` classes              = tryParse buildOptions msolCalc propChecker
-        | "polyadicSecondOrder" `elem` classes      = tryParse buildOptions psolCalc propChecker
-        | "LogicBook" `elem` classes                = tryParse buildOptions logicBookCalc propChecker
-        | "magnusSL" `elem` classes                 = tryParse buildOptions magnusSLCalc propChecker
-        | "magnusSLPlus" `elem` classes             = tryParse buildOptions magnusSLPlusCalc propChecker
-        | "magnusQL" `elem` classes                 = tryParse buildOptions magnusQLCalc propChecker
-        | "thomasBolducAndZachTFL" `elem` classes   = tryParse buildOptions thomasBolducAndZachTFLCalc propChecker
-        | "thomasBolducAndZachFOL" `elem` classes   = tryParse buildOptions thomasBolducAndZachFOLCalc propChecker
-        | "hardegreeSL"  `elem` classes             = tryParse buildOptions hardegreeSLCalc propChecker
-        | "hardegreePL"  `elem` classes             = tryParse buildOptions hardegreePLCalc propChecker
-        | "hardegreeWTL" `elem` classes             = tryParse buildOptions hardegreeWTLCalc propChecker
-        | "hardegreeL"   `elem` classes             = tryParse buildOptions hardegreeLCalc propChecker
-        | "hardegreeK"   `elem` classes             = tryParse buildOptions hardegreeKCalc propChecker
-        | "hardegreeD"   `elem` classes             = tryParse buildOptions hardegreeDCalc propChecker
-        | "hardegreeT"   `elem` classes             = tryParse buildOptions hardegreeTCalc propChecker
-        | "hardegreeB"   `elem` classes             = tryParse buildOptions hardegreeBCalc propChecker
-        | "hardegree4"   `elem` classes             = tryParse buildOptions hardegreeFourCalc propChecker
-        | "hardegree5"   `elem` classes             = tryParse buildOptions hardegreeFiveCalc propChecker
-        | "hardegreeMPL" `elem` classes             = tryParse buildOptions hardegreeMPLCalc folChecker
-        | otherwise                                 = tryParse buildOptions propCalc propChecker
-        where tryParse options calc checker = do
+activateChecker drs w (Just iog@(IOGoal i o g _ opts)) -- TODO: need to update non-montegue calculi to take first/higher-order derived rules
+        | sys == "prop"                      = tryParse propCalc propChecker
+        | sys == "firstOrder"                = tryParse folCalc folChecker
+        | sys == "secondOrder"               = tryParse msolCalc propChecker
+        | sys == "polyadicSecondOrder"       = tryParse psolCalc propChecker
+        | sys == "LogicBook"                 = tryParse logicBookCalc propChecker
+        | sys == "magnusSL"                  = tryParse magnusSLCalc propChecker
+        | sys == "magnusSLPlus"              = tryParse magnusSLPlusCalc propChecker
+        | sys == "magnusQL"                  = tryParse magnusQLCalc propChecker
+        | sys == "thomasBolducAndZachTFL"    = tryParse thomasBolducAndZachTFLCalc propChecker
+        | sys == "thomasBolducAndZachFOL"    = tryParse thomasBolducAndZachFOLCalc propChecker
+        | sys == "hardegreeSL"               = tryParse hardegreeSLCalc propChecker
+        | sys == "hardegreePL"               = tryParse hardegreePLCalc propChecker
+        | sys == "hardegreeWTL"              = tryParse hardegreeWTLCalc propChecker
+        | sys == "hardegreeL"                = tryParse hardegreeLCalc propChecker
+        | sys == "hardegreeK"                = tryParse hardegreeKCalc propChecker
+        | sys == "hardegreeD"                = tryParse hardegreeDCalc propChecker
+        | sys == "hardegreeT"                = tryParse hardegreeTCalc propChecker
+        | sys == "hardegreeB"                = tryParse hardegreeBCalc propChecker
+        | sys == "hardegree4"                = tryParse hardegreeFourCalc propChecker
+        | sys == "hardegree5"                = tryParse hardegreeFiveCalc propChecker
+        | sys == "hardegreeMPL"              = tryParse hardegreeMPLCalc folChecker
+        where sys = case M.lookup "system" opts of
+                        Just s -> s
+                        Nothing -> "prop"
+              tryParse calc checker = do
                   memo <- newIORef mempty
                   mtref <- newIORef Nothing
                   mpd <- if render options then Just <$> makeDisplay else return Nothing
                   let checkSeq ms = threadedCheck (checker calc drs ms mtref mpd memo)
-                  mlabelseq <- if directed options then parseWith calc else return Nothing
-                  case (submit options, mlabelseq) of
-                      (Just b,Just (l,s)) -> checkerWith 
-                                          (options {submit = Just b {action = trySubmit l s }})
-                                          (checkSeq (Just s))
-                                          iog w
-                      (Nothing,Just (l,s)) -> checkerWith 
-                                          options
-                                          (checkSeq (Just s))
-                                          iog w
-                      _ -> checkerWith options (checkSeq Nothing) iog w
-              parseWith calc = do let seqParse = ndParseSeq calc
-                                  (Just gs) <- getInnerHTML g 
-                                  case parse (withLabel seqParse) "" (decodeHtml gs) of
-                                      Left e -> do setInnerHTML g (Just "Couldn't Parse Goal")
+                  mseq <- if directed options then parseGoal calc else return Nothing
+                  checkerWith options (checkSeq mseq) iog w
+              parseGoal calc = do let seqParse = ndParseSeq calc
+                                      (Just seqstring) = M.lookup "goal" opts 
+                                      --XXX: the directed option is set by the existence of a goal, so this match can't fail.
+                                  case parse seqParse "" seqstring of
+                                      Left e -> do setInnerHTML g (Just $ "Couldn't Parse This Goal:" ++ seqstring)
                                                    error "couldn't parse goal"
-                                      Right (l,s) -> do setInnerHTML g (Just $ show s)
-                                                        return (Just (l,s))
-
+                                      Right seq -> do setInnerHTML g (Just $ show seq)
+                                                      return $ Just seq
               makeDisplay = do (Just pd) <- createElement w (Just "div")
                                setAttribute pd "class" "proofDisplay"
                                (Just parent) <- getParentNode o
@@ -151,27 +145,32 @@ activateChecker drs w (Just iog@(IOGoal i o g classes)) -- TODO: need to update 
 
               folChecker = Checker (\ref -> liftDerivedRules <$> readIORef ref)
 
-              standardOptions = 
-                    CheckerOptions { submit = Just Button { label = "Submit Solution"
-                                              , action = \r w e -> return ()
-                                              }
-                                   , render = False
-                                   , directed = True
-                                   , feedback = Keypress
-                                   , initialUpdate = False
-                                   , indentGuides = False
-                                   }
-              buildOptions = execState (mapM processOption options) standardOptions
-                                where processOption (s,f) = when (s `elem` classes) (modify f)
-                                      options = [ ("NoSub", \o -> o {submit = Nothing})
-                                                , ("Render", \o -> o {render = True})
-                                                , ("playground", \o -> o {directed = False, submit = Nothing})
-                                                , ("ruleMaker", \o -> o {directed = False , submit = Just saveButton })
-                                                , ("manualFeedback", \o -> o {feedback = Click})
-                                                , ("noFeedback", \o -> o {feedback = Never})
-                                                , ("guides", \o -> o {indentGuides = True})
-                                                ]
-                                      saveButton = Button {label = "Save Rule" , action = trySave drs}
+              options = CheckerOptions { submit = case (M.lookup "submission" opts, M.lookup "goal" opts) of
+                                                        (Just "saveRule",_) -> Just saveRule
+                                                        (Just s, Just g) | take 7 s == "saveAs:" -> Just $ saveProblem (drop 7 s) g
+                                                        _ -> Nothing
+                                       , feedback = case M.lookup "feedback" opts of
+                                                        Just "manual" -> Click
+                                                        Just "none" -> Never
+                                                        _ -> Keypress
+                                       , directed = case M.lookup "goal" opts of
+                                                        Just _ -> True
+                                                        Nothing -> False
+                                       , initialUpdate = False
+                                       , indentGuides = "guides" `elem` options
+                                       , render = "render" `elem` options
+                                       }
+                                where -- options = [ ("NoSub", \o -> o {submit = Nothing})
+                                      --           , ("Render", \o -> o {render = True})
+                                      --           , ("playground", \o -> o {directed = False, submit = Nothing})
+                                      --           , ("ruleMaker", \o -> o {directed = False , submit = Just saveButton })
+                                      --           , ("manualFeedback", \o -> o {feedback = Click})
+                                      --           , ("noFeedback", \o -> o {feedback = Never})
+                                      --           , ("guides", \o -> o {indentGuides = True})
+                                      --           ]
+                                      saveRule = Button {label = "Save Rule" , action = trySave drs}
+                                      saveProblem l s = Button {label = "Submit Solution" , action = trySubmit l s}
+                                      options = case M.lookup "options" opts of Just s -> words s; Nothing -> []
 
 threadedCheck checker w ref v (g, fd) = 
         do mt <- readIORef (threadRef checker)
@@ -209,7 +208,7 @@ threadedCheck checker w ref v (g, fd) =
 updateGoal s ref g mseq = case mseq of
                          Nothing -> do setAttribute g "class" "goal"
                                        writeIORef ref False
-                         (Just seq) ->  if  seq `seqSubsetUnify` s
+                         (Just seq) -> if seq `seqSubsetUnify` s
                                then do setAttribute g "class" "goal success"
                                        writeIORef ref True
                                else do setAttribute g "class" "goal"
@@ -229,7 +228,7 @@ trySubmit l s ref w i = do isFinished <- liftIO $ readIORef ref
                                      case msource of 
                                         Nothing -> message "Not able to identify problem source"
                                         Just source -> liftIO $ sendJSON 
-                                                        (SubmitDerivation (l ++ ":" ++ show s) v source key) 
+                                                        (SubmitDerivation (l ++ ":" ++ s) v source key) 
                                                         (loginCheck $ "Submitted Derivation for Exercise " ++ l)
                                                         errorPopup
                              else message "not yet finished"

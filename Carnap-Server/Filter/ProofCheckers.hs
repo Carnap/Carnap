@@ -13,34 +13,41 @@ makeProofChecker cb@(CodeBlock (_,classes,_) contents)
 makeProofChecker x = x
 
 activate cls chunk
-    | "Prop" `elem` cls = actTemplate "proofchecker prop"
-    | "Prop_practice" `elem` cls = actTemplate "proofchecker prop NoSub"
-    | "FirstOrder" `elem` cls = actTemplate "proofchecker firstOrder"
-    | "SecondOrder" `elem` cls = actTemplate "proofchecker secondOrder"
-    | "PolySecondOrder" `elem` cls = actTemplate "proofchecker polyadicSecondOrder"
-    | "LogicBook" `elem` cls = actTemplate "proofchecker LogicBook"
-    | "ForallxSL" `elem` cls = actTemplate "proofchecker magnusSL Render"
-    | "ForallxSLPlus" `elem` cls = actTemplate "proofchecker magnusSLPlus Render"
-    | "ForallxQL" `elem` cls = actTemplate "proofchecker magnusQL Render"
-    | "HardegreeSL" `elem` cls = actTemplate "proofchecker hardegreeSL Render"
-    | "HardegreePL" `elem` cls = actTemplate "proofchecker hardegreePL Render"
-    | "HardegreeWTL" `elem` cls = actTemplate "proofchecker hardegreeWTL Render guides fonts"
-    | "HardegreeL"   `elem` cls = actTemplate "proofchecker hardegreeL guides fonts" --XXX: Keep render off here until we have nicer rendering of indicies
-    | "HardegreeK"   `elem` cls = actTemplate "proofchecker hardegreeK guides fonts" --XXX: Keep render off here until we have nicer rendering of indicies
-    | "HardegreeT"   `elem` cls = actTemplate "proofchecker hardegreeT guides fonts" --XXX: Keep render off here until we have nicer rendering of indicies
-    | "HardegreeB"   `elem` cls = actTemplate "proofchecker hardegreeB guides fonts" --XXX: Keep render off here until we have nicer rendering of indicies
-    | "HardegreeD"   `elem` cls = actTemplate "proofchecker hardegreeD guides fonts" --XXX: Keep render off here until we have nicer rendering of indicies
-    | "Hardegree4"   `elem` cls = actTemplate "proofchecker hardegree4 guides fonts" --XXX: Keep render off here until we have nicer rendering of indicies
-    | "Hardegree5"   `elem` cls = actTemplate "proofchecker hardegree5 guides fonts" --XXX: Keep render off here until we have nicer rendering of indicies
-    | "HardegreeMPL" `elem` cls = actTemplate "proofchecker hardegreeMPL guides fonts" --XXX: Keep render off here until we have nicer rendering of indicies
+    | "Prop" `elem` cls = actTemplate "data-carnap-system=\"prop\""
+    | "FirstOrder" `elem` cls = actTemplate "data-carnap-system=\"firstOrder\""
+    | "SecondOrder" `elem` cls = actTemplate "data-carnap-system=\"secondOrder\""
+    | "PolySecondOrder" `elem` cls = actTemplate "data-carnap-system=\"polyadicSecondOrder\""
+    | "LogicBook" `elem` cls = actTemplate "data-carnap-system=\"LogicBook\""
+    | "ForallxSL" `elem` cls = actTemplate "data-carnap-system=\"magnusSL\" data-carnap-options=\"render\""
+    | "ForallxSLPlus" `elem` cls = actTemplate "data-carnap-system=\"magnusSLPlus\" data-carnap-options=\"render\""
+    | "ForallxQL" `elem` cls = actTemplate "data-carnap-system=\"magnusQL\" data-carnap-options=\"render\""
+    | "HardegreeSL" `elem` cls = actTemplate "data-carnap-system=\"hardegreeSL\" data-carnap-options=\"render\""
+    | "HardegreePL" `elem` cls = actTemplate "data-carnap-system=\"hardegreePL\" data-carnap-options=\"render\""
+    | "HardegreeWTL" `elem` cls = actTemplate "data-carnap-system=\"hardegreeWTL\" data-carnap-options=\"render guides fonts\""
+    --XXX: Keep render off below until we have nicer rendering of indicies
+    | "HardegreeL"   `elem` cls = actTemplate "data-carnap-system=\"hardegreeL\" data-carnap-options=\"guides fonts\"" 
+    | "HardegreeK"   `elem` cls = actTemplate "data-carnap-system=\"hardegreeK\" data-carnap-options=\"guides fonts\""
+    | "HardegreeT"   `elem` cls = actTemplate "data-carnap-system=\"hardegreeT\" data-carnap-options=\"guides fonts\""
+    | "HardegreeB"   `elem` cls = actTemplate "data-carnap-system=\"hardegreeB\" data-carnap-options=\"guides fonts\""
+    | "HardegreeD"   `elem` cls = actTemplate "data-carnap-system=\"hardegreeD\" data-carnap-options=\"guides fonts\""
+    | "Hardegree4"   `elem` cls = actTemplate "data-carnap-system=\"hardegree4\" data-carnap-options=\"guides fonts\""
+    | "Hardegree5"   `elem` cls = actTemplate "data-carnap-system=\"hardegree5\" data-carnap-options=\"guides fonts\""
+    | "HardegreeMPL" `elem` cls = actTemplate "data-carnap-system=\"hardegreeMPL\" data-carnap-options=\"guides fonts\""
     | otherwise = RawBlock "html" "<div>No Matching Logic for Derivation</div>"
     where numof = takeWhile (/= ' ')
+          seqof = dropWhile (/= ' ')
           (h:t) = formatChunk chunk
           actTemplate opts = RawBlock "html" $ 
                 "<div class=\"exercise\">"
                 ++ "<span> exercise " ++ numof h ++ "</span>"
-                ++ "<div class=\"" ++ opts ++ "\"><div class=\"goal\">" ++ h ++ "</div>"
-                ++ "<textarea>" ++ unlines t ++ "</textarea><div class=\"output\"></div></div></div>"
+                ++ "<div"
+                ++ " data-carnap-type=\"proofchecker\" "
+                ++ opts 
+                ++ " data-carnap-goal=\"" ++ seqof h ++ "\""
+                ++ " data-carnap-submission=\"saveAs:" ++ numof h ++ "\""
+                ++ ">"
+                ++ unlines t 
+                ++ "</div></div>"
 
 splitIt [] = ([],[])
 splitIt l = case break (== '\n') l of
@@ -63,4 +70,3 @@ toPlayground contents = RawBlock "html" $
 formatChunk = map cleanProof . lines
     where cleanProof l@ (x:xs) = if x == '|' then dropWhile (\y -> isDigit y || (y == '.')) xs
                                              else l
-

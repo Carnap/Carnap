@@ -41,10 +41,9 @@ getRuleR = do derivedRules <- getDrList
                                 $nothing
                                 <div.ruleBuilder>
                                     <h2>The Rule Builder
-                                    <div class="proofchecker ruleMaker">
-                                        <div.goal>
-                                        <textarea>
-                                        <div.output>
+                                    <div data-carnap-type="proofchecker" 
+                                         data-carnap-system="prop" 
+                                         data-carnap-submission="saveRule">
                             |]
 
 ruleLayout widget = do

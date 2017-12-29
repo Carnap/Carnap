@@ -33,19 +33,17 @@ data CheckerOptions = CheckerOptions { submit :: Maybe Button -- What's the subm
                                      }
 
 checkerWith :: CheckerOptions -> (Document -> IORef Bool -> String -> (Element, Element) -> IO ()) -> IOGoal -> Document -> IO ()
-checkerWith options updateres iog@(IOGoal i o g classes) w = do
-           mfeedbackDiv@(Just fd) <- createElement w (Just "div")
-           mnumberDiv@(Just nd) <- createElement w (Just "div")
-           mspinnerDiv@(Just sd) <- createElement w (Just "div")
+checkerWith options updateres iog@(IOGoal i o g content _) w = do
+           [Just fd, Just nd, Just sd] <- mapM (createElement w . Just) ["div","div","div"]
            ref <- newIORef False
+           setInnerHTML i (Just content)
            setAttribute fd "class" "proofFeedback"
            setAttribute nd "class" "numbering"
            setAttribute sd "class" "proofSpinner"
            setInnerHTML sd (Just spinnerHtml)
            mpar@(Just par) <- getParentNode o               
-           appendChild o mnumberDiv
-           appendChild o mfeedbackDiv
-           appendChild g mspinnerDiv
+           mapM_ (appendChild o . Just) [nd, fd]
+           mapM_ (appendChild g . Just) [sd]
            lineupd <- newListener $ updateLines w nd (indentGuides options) --formerly onKey ["Enter","Backspace","Delete"] $
            (Just w') <- getDefaultView w
            addListener i keyUp lineupd False

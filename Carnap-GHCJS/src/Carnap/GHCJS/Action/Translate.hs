@@ -24,8 +24,8 @@ import Control.Monad.IO.Class (MonadIO, liftIO)
 translateAction :: IO ()
 translateAction = initElements getTranslates activateTranslate
 
-getTranslates :: IsElement self => self -> IO [Maybe (Element, Element, [String])]
-getTranslates = getInOutElts "translate"
+getTranslates :: IsElement self => Document -> self -> IO [Maybe (Element, Element, [String])]
+getTranslates d = getInOutElts "translate"
 
 activateTranslate :: Document -> Maybe (Element, Element,[String]) -> IO ()
 activateTranslate w (Just (i,o,classes))

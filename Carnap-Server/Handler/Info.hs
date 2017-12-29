@@ -22,16 +22,15 @@ getInfoR = do
         addScript $ StaticR ghcjs_allactions_runmain_js
 
 -- TODO remove submit option on these.
-proofcheck :: Int -> Text -> Text -> Text -> HtmlUrl url
-proofcheck n cls goal proof = 
+proofcheck :: Int -> Text -> Text -> Text -> Text -> HtmlUrl url
+proofcheck n sys opts goal proof = 
         [hamlet|
         <div class="exercise">
             <span>example #{show n}
-            <div class="#{cls}">
-                <div.goal>#{goal}
-                <textarea>#{proof}
-                <div.output>
+            <div data-carnap-type="proofchecker" data-carnap-options="#{opts}" data-carnap-system="#{sys}" data-carnap-goal="#{goal}">
+                #{strip proof}
         |]
+    where strip = dropWhile (== '\n')
 
 -- XXX function that strips text of indentation and line-numbers.
 aristotleTheorem = [st|
