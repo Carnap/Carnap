@@ -10,6 +10,7 @@ import Carnap.Core.Data.AbstractSyntaxDataTypes
 import Carnap.Core.Data.AbstractSyntaxClasses
 import Carnap.GHCJS.SharedTypes
 import Data.IORef
+import qualified Data.Map as M
 import Data.Tree as T
 import Control.Lens
 import Control.Lens.Plated (children)
@@ -115,29 +116,34 @@ matchMC c f = do con <- parse parseConnective "" c
               mcOf (h :!$: t) = mcOf h
               mcOf h = Right (show h)
 
-getCheckers :: IsElement self => self -> IO [Maybe (Element, Element, [String])]
-getCheckers = getInOutElts "synchecker"
+getCheckers :: IsElement self => Document -> self -> IO [Maybe (Element, Element, M.Map String String)]
+getCheckers d = genInOutElts d "synchecker"
 
-activateChecker :: Document -> Maybe (Element, Element,[String]) -> IO ()
-activateChecker w (Just (i,o,classes))
-                | "match" `elem` classes = activateMatchWith show
-                | "matchclean" `elem` classes = activateMatchWith showClean
-                | otherwise = return () 
+activateChecker :: Document -> Maybe (Element, Element, M.Map String String) -> IO ()
+activateChecker w (Just (i,o,opts)) =
+        case M.lookup "matchtype" opts of
+             (Just "match") -> activateMatchWith show
+             (Just "matchclean") -> activateMatchWith showClean
+             _ -> return () 
     where activateMatchWith :: (PureForm -> String) -> IO ()
-          activateMatchWith sf = 
-             do Just ohtml <- getInnerHTML o
-                case parse formAndLabel "" (decodeHtml ohtml) of
-                    (Right (l,f)) -> 
-                           do mbt@(Just bt) <- createElement w (Just "button") 
-                              setInnerHTML o (Just $ sf f)                   
-                              setInnerHTML bt (Just "submit solution")         
-                              mpar@(Just par) <- getParentNode o               
-                              insertBefore par mbt (Just o)                    
-                              ref <- newIORef (f,[(f,0)], T.Node (f,0) [], 0)  
-                              match <- newListener $ tryMatch o ref w sf
-                              (Just w') <- getDefaultView w                    
-                              submit <- newListener $ trySubmit ref w' l       
-                              addListener i keyUp match False                  
-                              addListener bt click submit False                
-                    (Left e) -> print $ ohtml ++ show e
+          activateMatchWith sf =
+              case (M.lookup "submission" opts, M.lookup "goal" opts) of
+                  (Just s, Just g) | take 7 s == "saveAs:" ->
+                    case parse (purePropFormulaParser standardLetters <* eof) "" g of
+                      (Right f) -> do 
+                         let l = Prelude.drop 7 s
+                         mbt@(Just bt) <- createElement w (Just "button") 
+                         setInnerHTML o (Just $ sf f)                   
+                         setInnerHTML bt (Just "submit solution")         
+                         setAttribute o "class" "tree"
+                         mpar@(Just par) <- getParentNode o               
+                         insertBefore par mbt (Just o)                    
+                         ref <- newIORef (f,[(f,0)], T.Node (f,0) [], 0)  
+                         match <- newListener $ tryMatch o ref w sf
+                         (Just w') <- getDefaultView w                    
+                         submit <- newListener $ trySubmit ref w' l       
+                         addListener i keyUp match False                  
+                         addListener bt click submit False                
+                      (Left e) -> setInnerHTML o (Just $ show e)
+                  _ -> print "syntax check was missing an option"
 activateChecker _ Nothing  = return ()
