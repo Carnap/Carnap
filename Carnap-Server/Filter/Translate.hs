@@ -16,18 +16,27 @@ activate cls l
     | "Prop" `elem` cls = RawBlock "html" $ 
         "<div class=\"exercise\">"
         ++ "<span> exercise " ++ numof l ++ "</span>"
-        ++ case splitOn ":" l of
-            [x,y] -> "<div class=\"translate prop\"><input type =\"text\" value=\""
-                                ++ y ++ "\"><div>" 
-                                ++ show (simpleCipher x) ++ "</div></div></div>"
+        ++ case splitOn ":" (contentof l) of
+            [x,y] -> "<div data-carnap-type='translate'"
+                     ++ " data-carnap-transtype='prop'"
+                     ++ " data-carnap-submission='saveAs:" ++ numof l ++ "'"
+                     ++ " data-carnap-goal='" ++ show (simpleCipher x) ++ "'"
+                     ++ ">"
+                     ++ y 
+                     ++ "</div></div>"
             _ -> "<div>No Matching Translation</div></div>"
     | "FOL" `elem` cls = RawBlock "html" $ 
         "<div class=\"exercise\">"
         ++ "<span> exercise " ++ numof l ++ "</span>"
-        ++ case splitOn ":" l of
-            [x,y] -> "<div class=\"translate first-order\"><input type =\"text\" value=\""
-                                ++ y ++ "\"><div>" 
-                                ++ show (simpleCipher x) ++ "</div></div></div>"
+        ++ case splitOn ":" (contentof l) of
+            [x,y] -> "<div data-carnap-type='translate'"
+                     ++ " data-carnap-transtype='first-order'"
+                     ++ " data-carnap-submission='saveAs:" ++ numof l ++ "'"
+                     ++ " data-carnap-goal='" ++ show (simpleCipher x) ++ "'"
+                     ++ ">"
+                     ++ y 
+                     ++ "</div></div>"
             _ -> "<div>No Matching Translation</div></div>"
     | otherwise = RawBlock "html" "<div>No Matching Translation</div></div>"
     where numof = takeWhile (/= ' ')
+          contentof = dropWhile (== ' ') . dropWhile (/= ' ')

@@ -39,7 +39,7 @@ import GHCJS.DOM
 import GHCJS.DOM.Types
 import GHCJS.DOM.Element
 import GHCJS.DOM.HTMLInputElement
-import qualified GHCJS.DOM.HTMLTextAreaElement as TA (getValue)
+import qualified GHCJS.DOM.HTMLTextAreaElement as TA (setValue,getValue)
 import GHCJS.DOM.Document (createElement, getBody)
 import GHCJS.DOM.Node
 import GHCJS.DOM.NodeList
@@ -188,13 +188,14 @@ genInOutElts w input output ty target =
            mapM initialize els
     where initialize Nothing = return Nothing
           initialize (Just el) = do
-              setInnerHTML el (Just "")
+              Just content <- getInnerHTML el :: IO (Maybe String)
               [Just o, Just i] <- mapM (createElement w . Just) [output,input]
               setAttribute i "class" "input"
               setAttribute o "class" "output"
+              setInnerHTML el (Just "")
               opts <- getCarnapDataMap el
               mapM_ (appendChild el . Just) [i,o]
-              return $ Just (i,o,opts)
+              return $ Just (i, o, M.insert "content" content opts )
 
 generateExerciseElts :: IsElement self => Document -> String -> self -> IO [Maybe IOGoal]
 generateExerciseElts w ty target = do els <- getListOfElementsByCarnapType target ty 

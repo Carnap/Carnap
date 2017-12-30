@@ -4,17 +4,22 @@ module Carnap.GHCJS.Action.Translate (translateAction) where
 import Lib
 import Carnap.Languages.PurePropositional.Syntax (PureForm)
 import Carnap.Languages.PureFirstOrder.Syntax (PureFOLForm)
+import Carnap.Calculi.NaturalDeduction.Syntax (NaturalDeductionCalc(..))
+import Carnap.Languages.PurePropositional.Logic (propCalc)
+import Carnap.Languages.PureFirstOrder.Parser (folFormulaParser)
+import Carnap.Languages.PureFirstOrder.Logic (folCalc)
 import Carnap.Languages.PurePropositional.Parser (purePropFormulaParser,standardLetters)
 import Carnap.Languages.PureFirstOrder.Parser (folFormulaParserRelaxed)
 import Carnap.Languages.PurePropositional.Util (isEquivTo)
 import Carnap.GHCJS.SharedTypes
 import Carnap.GHCJS.SharedFunctions
 import Data.IORef
+import Data.Map as M
 import Text.Parsec 
 import GHCJS.DOM
 import GHCJS.DOM.Types
 import GHCJS.DOM.Element
-import GHCJS.DOM.HTMLInputElement (HTMLInputElement, getValue,castToHTMLInputElement)
+import GHCJS.DOM.HTMLInputElement (HTMLInputElement, setValue, getValue,castToHTMLInputElement)
 import GHCJS.DOM.Document (Document,createElement, getBody, getDefaultView)
 import GHCJS.DOM.Node (appendChild, getParentNode, insertBefore)
 import GHCJS.DOM.KeyboardEvent
@@ -24,23 +29,25 @@ import Control.Monad.IO.Class (MonadIO, liftIO)
 translateAction :: IO ()
 translateAction = initElements getTranslates activateTranslate
 
-getTranslates :: IsElement self => Document -> self -> IO [Maybe (Element, Element, [String])]
-getTranslates d = getInOutElts "translate"
+getTranslates :: IsElement self => Document -> self -> IO [Maybe (Element, Element, Map String String)]
+getTranslates d = genInOutElts d "input" "div" "translate"
 
-activateTranslate :: Document -> Maybe (Element, Element,[String]) -> IO ()
-activateTranslate w (Just (i,o,classes))
-                | "prop" `elem` classes = 
-                    activateWith formAndLabel tryTrans
-                | "first-order" `elem` classes = 
-                    activateWith folFormAndLabel tryFOLTrans
-                | otherwise = return ()
+activateTranslate :: Document -> Maybe (Element, Element, Map String String) -> IO ()
+activateTranslate w (Just (i,o,opts)) = 
+        case M.lookup "transtype" opts of
+            (Just "prop") -> activateWith (purePropFormulaParser standardLetters <* eof) tryTrans
+            (Just "first-order") -> activateWith folFormulaParser tryFOLTrans
+            _ -> return ()
     where activateWith parser translator =
-              do Just ohtml <- getInnerHTML o
-                 case parse parser "" (simpleDecipher $ read $ decodeHtml ohtml) of
-                   (Right (l,f)) -> 
-                        do mbt@(Just bt) <- createElement w (Just "button")
-                           (Just ival) <- getValue (castToHTMLInputElement i)
-                           setInnerHTML o (Just ival :: Maybe String)
+              case (M.lookup "submission" opts, M.lookup "goal" opts) of
+                  (Just s, Just g) | take 7 s == "saveAs:" ->
+                    case parse parser "" (simpleDecipher . read $ g) of
+                      (Right f) -> do 
+                           let l = Prelude.drop 7 s
+                           let (Just content) = M.lookup "content" opts
+                           mbt@(Just bt) <- createElement w (Just "button")
+                           setValue (castToHTMLInputElement i) (Just content)
+                           setInnerHTML o (Just content)
                            setInnerHTML bt (Just "submit solution")         
                            mpar@(Just par) <- getParentNode o               
                            insertBefore par mbt (Just o)
@@ -49,7 +56,8 @@ activateTranslate w (Just (i,o,classes))
                            submit <- newListener $ trySubmit ref l f
                            addListener i keyUp tryTrans False                  
                            addListener bt click submit False                
-                   (Left e) -> print $ ohtml ++ show e                                  
+                      (Left e) -> setInnerHTML o (Just $ show e)
+                  _ -> print "translation was missing an option"
 activateChecker _ Nothing  = return ()
 
 tryTrans :: Element -> IORef Bool -> PureForm -> 
