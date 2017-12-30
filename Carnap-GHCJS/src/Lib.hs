@@ -182,18 +182,19 @@ getInOutElts cls b = do els <- getListOfElementsByClass b cls
                         o <- MaybeT $ getNextElementSibling i
                         return (i ,o ,words cn)
 
-genInOutElts :: IsElement self => Document -> String -> self -> IO [Maybe (Element, Element, M.Map String String)]
-genInOutElts w ty target = do els <- getListOfElementsByCarnapType target ty
-                              mapM initialize els
-        where initialize Nothing = return Nothing
-              initialize (Just el) = do
-                  setInnerHTML el (Just "")
-                  [Just o, Just i] <- mapM (createElement w . Just) ["div","input"]
-                  setAttribute i "class" "input"
-                  setAttribute o "class" "output"
-                  opts <- getCarnapDataMap el
-                  mapM_ (appendChild el . Just) [i,o]
-                  return $ Just (i,o,opts)
+genInOutElts :: IsElement self => Document -> String -> String -> String -> self -> IO [Maybe (Element, Element, M.Map String String)]
+genInOutElts w input output ty target = 
+        do els <- getListOfElementsByCarnapType target ty
+           mapM initialize els
+    where initialize Nothing = return Nothing
+          initialize (Just el) = do
+              setInnerHTML el (Just "")
+              [Just o, Just i] <- mapM (createElement w . Just) [output,input]
+              setAttribute i "class" "input"
+              setAttribute o "class" "output"
+              opts <- getCarnapDataMap el
+              mapM_ (appendChild el . Just) [i,o]
+              return $ Just (i,o,opts)
 
 generateExerciseElts :: IsElement self => Document -> String -> self -> IO [Maybe IOGoal]
 generateExerciseElts w ty target = do els <- getListOfElementsByCarnapType target ty 

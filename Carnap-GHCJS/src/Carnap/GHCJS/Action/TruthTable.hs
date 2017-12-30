@@ -5,6 +5,9 @@ import Lib
 import Carnap.GHCJS.SharedTypes
 import Carnap.Core.Data.AbstractSyntaxDataTypes
 import Carnap.Core.Data.AbstractSyntaxClasses (Schematizable, Modelable(..))
+import Carnap.Calculi.NaturalDeduction.Syntax (NaturalDeductionCalc(..))
+import Carnap.Languages.PurePropositional.Logic (propCalc)
+import Carnap.Languages.PurePropositional.Parser
 import Carnap.Languages.PurePropositional.Util (getIndicies)
 import Carnap.Languages.PurePropositional.Syntax (PureForm)
 import Carnap.Languages.ClassicalSequent.Syntax
@@ -23,37 +26,39 @@ import Data.List (subsequences, nub)
 import Control.Monad.IO.Class (liftIO)
 import Control.Lens (toListOf)
 import Control.Lens.Plated (children)
-import Text.Parsec (parse, ParseError)
+import Text.Parsec (parse, ParseError, eof)
 
 truthTableAction :: IO ()
 truthTableAction = initElements getTruthTables activateTruthTables
 
-getTruthTables :: Document -> HTMLElement -> IO [Maybe (Element, Element, [String])]
-getTruthTables d = getInOutElts "truthtable"
+getTruthTables :: Document -> HTMLElement -> IO [Maybe (Element, Element, Map String String)]
+getTruthTables d = genInOutElts d "div" "div" "truthtable"
 
-activateTruthTables :: Document -> Maybe (Element, Element,[String]) -> IO ()
-activateTruthTables w (Just (i,o,classes))
-        | "simple" `elem` classes  = 
-            checkerWith formAndLabel createSimpleTruthTable
-        | "validity" `elem` classes = 
-            checkerWith seqAndLabel createValidityTruthTable
-        | otherwise = return ()
+activateTruthTables :: Document -> Maybe (Element, Element, Map String String) -> IO ()
+activateTruthTables w (Just (i,o,opts)) = 
+        case M.lookup "tabletype" opts of
+            (Just "simple") -> checkerWith (purePropFormulaParser standardLetters <* eof) createSimpleTruthTable
+            (Just "validity") -> checkerWith (ndParseSeq propCalc) createValidityTruthTable
+            _  -> return ()
     where checkerWith parser ttfunc = 
-           do Just ohtml <- getInnerHTML o
-              case parse parser "" (decodeHtml ohtml) of
-                  (Right (l,f)) -> do
-                      ref <- newIORef False
-                      bt1 <- makeButton "Submit Solution"
-                      bt2 <- makeButton "Check Solution"
-                      gRef <- ttfunc w f (i,o) ref 
-                      -- XXX: idea. Return check rather than gRef, to allow different tt setups their own checking proceedures
-                      setInnerHTML i (Just $ show f)
-                      (Just w') <- getDefaultView w                    
-                      submit <- newListener $ trySubmit ref (show f) w' l
-                      check <- newListener $ checkTable ref gRef w'
-                      addListener bt1 click submit False                
-                      addListener bt2 click check False                
-                  (Left e) -> print $ ohtml ++ show e
+            case (M.lookup "submission" opts, M.lookup "goal" opts) of
+                (Just s, Just g) | take 7 s == "saveAs:" ->
+                  case parse parser "" g of
+                      (Right f) -> do
+                          let l = Prelude.drop 7 s
+                          ref <- newIORef False
+                          bt1 <- makeButton "Submit Solution"
+                          bt2 <- makeButton "Check Solution"
+                          gRef <- ttfunc w f (i,o) ref 
+                          -- XXX: idea. Return check rather than gRef, to allow different tt setups their own checking proceedures
+                          setInnerHTML i (Just $ show f)
+                          (Just w') <- getDefaultView w                    
+                          submit <- newListener $ trySubmit ref (show f) w' l
+                          check <- newListener $ checkTable ref gRef w'
+                          addListener bt1 click submit False                
+                          addListener bt2 click check False                
+                      (Left e) -> setInnerHTML o (Just $ show e) 
+                _ -> print "truth table was missing an option"
           makeButton message = do mbt@(Just bt) <- createElement w (Just "button")
                                   setInnerHTML bt (Just message)
                                   mpar@(Just par) <- getParentNode o

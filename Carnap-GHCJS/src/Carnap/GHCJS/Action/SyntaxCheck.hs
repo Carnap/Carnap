@@ -117,7 +117,7 @@ matchMC c f = do con <- parse parseConnective "" c
               mcOf h = Right (show h)
 
 getCheckers :: IsElement self => Document -> self -> IO [Maybe (Element, Element, M.Map String String)]
-getCheckers d = genInOutElts d "synchecker"
+getCheckers d = genInOutElts d "input" "div" "synchecker"
 
 activateChecker :: Document -> Maybe (Element, Element, M.Map String String) -> IO ()
 activateChecker w (Just (i,o,opts)) =

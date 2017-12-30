@@ -242,27 +242,28 @@
     text-align:center;
 }
 
-.truthtable table{
+[data-carnap-type="truthtable"] table{
     width:auto;
     border-collapse:collapse;
     margin:20px;
 }
 
-.truthtable select {
+[data-carnap-type="truthtable"] select {
     padding:0px;
     margin:0px;
 }
 
-.truthtable th {
+
+[data-carnap-type="truthtable"] th {
     border-bottom:solid black 1px;
 }
 
-.truthtable .valtd {
+[data-carnap-type="truthtable"] .valtd {
     width:20px;
     text-align:center;
 }
 
-.truthtable .completeTT {
+[data-carnap-type="truthtable"] .completeTT {
     background: #CCFFCC;
 }
 

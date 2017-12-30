@@ -13,14 +13,21 @@ makeTruthTables x = x
 
 activate cls cnt
     | "Simple" `elem` cls = RawBlock "html" $ 
-        "<div><div class=\"exercise\">"
+        "<div class=\"exercise\">"
         ++ "<span> exercise " ++ numof cnt ++ "</span>"
-        ++ "<div class=\"truthtable simple\"><div></div><div>" 
-        ++ cnt ++ "</div></div></div></div>"
+        ++ "<div data-carnap-type='truthtable'"
+        ++ " data-carnap-tabletype='simple'"
+        ++ " data-carnap-goal='" ++ contentOf cnt ++ "'"
+        ++ " data-carnap-submission='saveAs:" ++ numof cnt ++ "'"
+        ++ "></div></div>" 
     | "Validity" `elem` cls = RawBlock "html" $ 
-        "<div><div class=\"exercise\">"
+        "<div class=\"exercise\">"
         ++ "<span> exercise " ++ numof cnt ++ "</span>"
-        ++ "<div class=\"truthtable validity\"><div></div><div>" 
-        ++ cnt ++ "</div></div></div></div>"
+        ++ "<div data-carnap-type='truthtable'"
+        ++ " data-carnap-tabletype='validity'"
+        ++ " data-carnap-goal='" ++ contentOf cnt ++ "'"
+        ++ " data-carnap-submission='saveAs:" ++ numof cnt ++ "'"
+        ++ "></div></div>" 
     | otherwise = RawBlock "html" "<div>No Matching TruthTable</div>"
     where numof x = takeWhile (/= ' ') x
+          contentOf x = dropWhile (== ' ') . dropWhile (/= ' ') $  x
