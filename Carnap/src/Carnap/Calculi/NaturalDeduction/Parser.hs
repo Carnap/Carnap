@@ -125,10 +125,13 @@ toProofTreeMontegue ::
     , Typeable sem
     ) => Deduction r lex sem -> Int -> Either (ProofErrorMessage lex) (ProofTree r lex sem)
 toProofTreeMontegue ded n = case ded !! (n - 1)  of
-          (AssertLine f r dpth depairs) -> 
+          (AssertLine f r@(r':_) dpth depairs) -> 
                 do let deps = map fst depairs
                    mapM_ checkDep deps
                    deps' <- mapM (toProofTreeMontegue ded) deps
+                   case indirectInference r' of 
+                        Just _ -> err $ "it appears you're trying to use a rule of indirect inference to make a direct inference, rather than to close a subproof"
+                        Nothing -> return ()
                    return $ Node (ProofLine n (SS $ liftToSequent f) r) deps'
                 where checkDep depline = takeRange depline n >>= scan
           (ShowLine f d) -> 

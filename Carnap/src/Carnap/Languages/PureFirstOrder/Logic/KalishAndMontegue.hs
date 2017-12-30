@@ -68,7 +68,7 @@ instance Inference FOLogic PureLexiconFOL (Form Bool) where
 
      indirectInference (SL x) = indirectInference x
      indirectInference x
-        | x `elem` [ ED1,ED2 ] = Just PolyProof
+        | x `elem` [ ED1,ED2,UD ] = Just PolyProof
         | otherwise = Nothing
 
 parseFOLogic :: Map String DerivedRule -> Parsec String u [FOLogic]

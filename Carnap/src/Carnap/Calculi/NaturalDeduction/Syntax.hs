@@ -253,7 +253,7 @@ data ProofType = ProofType
 
 data IndirectArity = PolyProof --takes an arbitrary number of assertions or subproofs, each ending in one assertion
                    | TypedProof ProofType --takes a subproof with a particular structure, given by a prooftype
-                   | PolyTypedProof Int (ProofType) --takes n subproofs with the structure given by prooftype
+                   | PolyTypedProof Int (ProofType) --takes n subproofs, each with the structure given by prooftype
 
 doubleProof = TypedProof (ProofType 0 2)
 
