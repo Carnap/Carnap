@@ -19,6 +19,11 @@ import Database.Persist.Sqlite              (createSqlitePool)
 import Import
 import Language.Haskell.TH.Syntax           (qLocation)
 import Network.Wai (Middleware)
+import Network.Wai.Middleware.Autohead
+import Network.Wai.Middleware.AcceptOverride
+import Network.Wai.Middleware.RequestLogger
+import Network.Wai.Middleware.Gzip
+import Network.Wai.Middleware.MethodOverride
 import Network.Wai.Handler.Warp             (Settings, defaultSettings,
                                              defaultShouldDisplayException,
                                              runSettings, setHost,
@@ -98,9 +103,11 @@ makeFoundation appSettings = do
 makeApplication :: App -> IO Application
 makeApplication foundation = do
     logWare <- makeLogWare foundation
+    let datadir = appDataRoot (appSettings foundation)
+        zipsettings = GzipPreCompressed (GzipCacheFolder (datadir </> "gzcache/"))
     -- Create the WAI application and apply middlewares
     appPlain <- toWaiAppPlain foundation
-    return $ logWare $ defaultMiddlewaresNoLogging appPlain
+    return $ logWare . acceptOverride . autohead . gzip (def {gzipFiles = zipsettings }) . methodOverride $ appPlain
 
 makeLogWare :: App -> IO Middleware
 makeLogWare foundation =
