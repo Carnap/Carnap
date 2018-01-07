@@ -181,7 +181,7 @@ getInstructorR ident = do
                  setTitle $ "Instructor Page for " ++ toMarkup firstname ++ " " ++ toMarkup lastname
                  $(widgetFile "instructor")
     where assignmentsOf theclass = map entityVal <$> listAssignmentMetadata theclass
-          tagOf = T.append "course-" . T.map (\c -> if c == ' ' then '_' else c) . courseTitle . entityVal
+          tagOf = T.append "course-" . T.map (\c -> if c `elem` [' ',':'] then '_' else c) . courseTitle . entityVal
           mprobsOf course = readAssignmentTable <$> courseTextbookProblems course
           nopage = [whamlet|
                     <div.container>
@@ -242,7 +242,7 @@ setBookAssignmentForm classes = renderBootstrap3 BootstrapBasicForm $ (,,,)
             <*> areq (selectFieldList chapters) (bfs ("Problem Set" :: Text))  Nothing
             <*> areq (jqueryDayField def) (bfs ("Due Date"::Text)) Nothing
             <*> aopt timeFieldTypeTime (bfs ("Due Time"::Text)) Nothing
-    where chapters = map (\x -> ("Problem Set " ++ pack (show x),x)) [1..15 ] :: [(Text,Int)]
+    where chapters = map (\x -> ("Problem Set " ++ pack (show x),x)) [1..17 ] :: [(Text,Int)]
           classnames = map (\theclass -> (courseTitle . entityVal $ theclass, theclass)) classes
 
 createCourseForm = renderBootstrap3 BootstrapBasicForm $ (,,,,)
