@@ -7,7 +7,6 @@ import Text.Blaze.Html5.Attributes
 import Carnap.Languages.PurePropositional.Logic (DerivedRule(..))
 import Carnap.GHCJS.SharedTypes
 import Yesod.Form.Bootstrap3
-import Data.Aeson (encode, decodeStrict)
 import Data.Time
 import Data.Time.Zones
 import Data.Time.Zones.All
@@ -250,43 +249,3 @@ nouserPage = [whamlet|
              <div.container>
                 <p> This user does not exist
              |]
-
---------------------------------------------------------
---Database Handling
---------------------------------------------------------
---functions for retrieving database infomration and formatting it
-
-class Problem p where
-        problem :: p -> Text
-        submitted :: p -> UTCTime
-        assignment :: p -> Maybe AssignmentMetadataId
-
-instance Problem SyntaxCheckSubmission where
-        problem (SyntaxCheckSubmission prob _ _ _ _) = prob
-        submitted (SyntaxCheckSubmission _ time _ _ _) = time
-        assignment (SyntaxCheckSubmission _ _ _ _ key) = key
-
-instance Problem TranslationSubmission where
-        problem (TranslationSubmission prob _ _ _ _) = prob
-        submitted (TranslationSubmission _ time _ _ _) = time
-        assignment (TranslationSubmission _ _ _ _ key) = key
-
-instance Problem TruthTableSubmission where
-        problem (TruthTableSubmission prob _ _ _ _) = prob
-        submitted (TruthTableSubmission _ time _ _ _) = time
-        assignment (TruthTableSubmission _ _ _ _ key) = key
-
-instance Problem DerivationSubmission where
-        problem (DerivationSubmission prob _ _ _ _ _) = prob
-        submitted (DerivationSubmission _ _ time _ _ _) = time
-        assignment (DerivationSubmission _ _ _ _ _ key) = key
-
-subsByIdAndSource Nothing _ = return ([],[],[],[])
-subsByIdAndSource (Just cid) v = 
-        do synsubs   <- runDB $ selectList (queryBy SyntaxCheckSubmissionUserId SyntaxCheckSubmissionSource) []
-           transsubs <- runDB $ selectList (queryBy TranslationSubmissionUserId TranslationSubmissionSource) []
-           dersubs   <- runDB $ selectList (queryBy DerivationSubmissionUserId DerivationSubmissionSource) []
-           ttsubs    <- runDB $ selectList (queryBy TruthTableSubmissionUserId TruthTableSubmissionSource) []
-           return (map entityVal synsubs, map entityVal transsubs, map entityVal dersubs, map entityVal ttsubs)
-    where queryBy :: EntityField a (Key User) -> EntityField a ByteString -> [Filter a]
-          queryBy id src = [ id ==. v , src ==. (toStrict . encode) (CourseAssignment cid) ] ||. [ id ==. v , src ==. (toStrict . encode) (CarnapTextbook)]
