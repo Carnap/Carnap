@@ -62,10 +62,13 @@ intoChunks l = cons $ case splitIt l of (h,t) -> (h,intoChunks t)
     where cons (h,t) = h : t
 
 toPlayground contents = RawBlock "html" $
-        "<div class=\"exercise\">"
-        ++ "<span> playground </span>"
-        ++ "<div class=\"proofchecker playground\"><div class = \"goal\"></div>"
-        ++ "<textarea>" ++ contents ++ "</textarea><div class=\"output\"></div></div></div>"
+                "<div class=\"exercise\">"
+                ++ "<span>playground</span>"
+                ++ "<div"
+                ++ " data-carnap-type=\"proofchecker\""
+                ++ " data-carnap-system=\"prop\"" 
+                ++ ">"
+                ++ "</div></div>"
 
 formatChunk = map cleanProof . lines
     where cleanProof l@ (x:xs) = if x == '|' then dropWhile (\y -> isDigit y || (y == '.')) xs
