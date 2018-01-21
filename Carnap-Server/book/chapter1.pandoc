@@ -243,7 +243,6 @@ we would have a good test for the deductive validity of arguments: we could
 just figure out their logical forms, and then check the form against our
 classification.
 
-
 #Formal Languages
  
 ##Ambiguity
@@ -252,29 +251,24 @@ The project of classifying arguments by their logical form is simple enough.
 But if we try to push it very far, we will meet a serious challenge. Here is an
 example. The following argument  looks quite compelling.
 
-
 > | 1. <span class="premise">A silver medal is better than a bronze medal.</span>
 > | 2. <span class="premise">A gold medal is better than a silver medal.</span>
 > | <span class="conclusion">A gold medal is better than a bronze medal. </span>
-
 
 Moreover, it seems to be good because of its form. For example, the argument
 
 > | 1. <span class="premise">A field goal is better than a safety.</span>
 > | 2. <span class="premise">A touchdown is better than a field goal.</span>
-> | <span class="conclusion">A field goal is better than a safety. </span>
-
+> | <span class="conclusion">A touchdown is better than a safety. </span>
 
 is deductively valid as well. This might lead us to believe that the following
 logical form confers validity on the arguments that have it:
 
-
 > | 1. <span class="premise">$B$ is better than $C$.</span>
-> | 2. <span class="premise">$A$ is better than $B$.</span>
-> | <span class="conclusion">$A$ is better than $C$ </span>
+> | 2. <span class="premise">$A$ is better than $B$.</span> 
+> | <span class="conclusion">$A$ is better than $C$. </span>
 
  But what about this argument?
-
 
 > | 1. <span class="premise">Nothing is better than world peace.</span>
 > | 2. <span class="premise">Cold pizza is better than nothing.</span>

@@ -80,14 +80,13 @@ The JI-Rule
 
 There's just one more rule to take care of. Again, it's helpful to think of
 arithmetic. When we do arithmetic, we (usually) proceed from left to right. So,
-for example, $10 - 10 - 10$ is equal to $-20 = ((10 - 10) - 10)$, not to $10
+for example, $10 - 10 - 10$ is equal to $-10 = ((10 - 10) - 10)$, not to $10
 = (10 - (10 - 10))$.[^1] Call this way of doing subtraction a "lefty rule" for
 subtraction. Operations are grouped "lefty" rather than "righty", meaning you
 do the ones on the left first.
 
 [^1]:: One has a similar "lefty rule" for division. $2 \div 2 \div 2$ is equal
-to $1/2 = ((2 \div 2) \div 2)$, rather than $2 = ((2 \div (2 \div 2))$.
-
+to $1/2 = ((2 \div 2) \div 2)$, rather than $2 = (2 \div (2 \div 2))$.
 
 In logic, we have a similar lefty-rule for each of our junctions: there's
 a lefty-rule for $\land$ and a lefty-rule for $\lor$. So for example
