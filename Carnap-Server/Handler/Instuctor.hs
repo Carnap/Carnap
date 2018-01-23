@@ -15,6 +15,7 @@ import Data.Time.Zones.All
 import Data.Aeson (decode,encode)
 import qualified Data.IntMap (insert,fromList,toList,delete)
 import qualified Data.Text as T
+import qualified Data.List as L
 import System.FilePath
 import System.Directory (getDirectoryContents,removeFile, doesFileExist)
 
@@ -301,13 +302,18 @@ classWidget classent = do
                         <thead>
                             <th> Assignment
                             <th> Due Date
+                            <th> Submissions
+                            <th> High Score
+                            <th> Low Score
+                            <th> Submission Average
                         <tbody>
                             $maybe probs <- mprobs
                                 $forall (set,due) <- Data.IntMap.toList probs
                                     <tr>
                                         <td>Problem Set #{show set}
                                         <td>#{dateDisplay due course}
-                        $forall a <- map entityVal asmd
+                                        ^{analyticsFor (Right (pack (show set))) allScores}
+                        $forall Entity k a <- asmd
                             <tr>
                                 <td>
                                     <a href=@{AssignmentR $ assignmentMetadataFilename a}>
@@ -316,6 +322,7 @@ classWidget classent = do
                                     <td>#{dateDisplay due course}
                                 $nothing
                                     <td>No Due Date
+                                ^{analyticsFor (Left k) allScores}
                     <h2>Students
                     <table.table.table-striped>
                         <thead>
@@ -353,6 +360,27 @@ classWidget classent = do
     where totalByUser uident scores = case lookup uident scores of
                                 Just xs -> show $ foldr (+) 0 (map snd xs)
                                 Nothing -> "can't find scores"
+          analyticsFor assignment scores = 
+                do --list the per-problem scores of each user for this assignment
+                   let thescores = map (\(x,y) -> map snd $ filter (\x -> fst x == assignment) y) scores
+                       --extract data
+                       totalsubmissions = length (filter (/= []) thescores)
+                       thereareany = totalsubmissions > 0
+                       totals = map sum thescores
+                       highscore = if thereareany then show (L.maximum totals) else "N/A"
+                       lowscore = if thereareany then show (L.minimum totals) else "N/A"
+                       average = if thereareany then  show $ sum totals `div` totalsubmissions else "N/A"
+                   [whamlet|
+                          <td>
+                              #{totalsubmissions}
+                          <td>
+                              #{highscore}
+                          <td>
+                              #{lowscore}
+                          <td>
+                              #{average}
+                          |]
+
 
 dateDisplay utc course = case tzByName $ courseTimeZone course of
                              Just tz  -> show $ utcToZonedTime (timeZoneForUTCTime tz utc) utc
