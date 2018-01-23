@@ -10,6 +10,7 @@ import Yesod.Form.Bootstrap3
 import Data.Time
 import Data.Time.Zones
 import Data.Time.Zones.All
+import Data.Aeson (decodeStrict)
 import Util.Data
 import Util.Database
 import qualified Data.Map as M
@@ -122,10 +123,14 @@ toScore textbookproblems p = case assignment p of
                                         Just due | submitted p `laterThan` due -> return (2 :: Int)
                                         _ -> return (5 :: Int)
                             
-scoreByIdAndClass cid uid = 
+scoreByIdAndClassTotal cid uid = 
+        do perprob <- scoreByIdAndClassPerProblem cid uid
+           return $ foldr (+) 0 (map snd perprob)
+
+scoreByIdAndClassPerProblem cid uid = 
         do (a,b,c,d) <- subsByIdAndSource (Just cid) uid
            textbookproblems <-  getProblemSets cid
-           totalScore textbookproblems a b c d
+           scoreList textbookproblems a b c d
 
 totalScore textbookproblems a b c d = do
            (a',b',c',d') <- (,,,) <$> score a <*> score b <*> score c <*> score d
@@ -133,6 +138,19 @@ totalScore textbookproblems a b c d = do
    where score :: Problem p => [p] -> Handler Int
          score xs = do xs' <- mapM (toScore textbookproblems) xs
                        return $ foldr (+) 0 xs'
+
+scoreList textbookproblems a b c d = 
+        do (a',b',c',d') <- (,,,) <$> toScoreList a <*> toScoreList b <*> toScoreList c <*> toScoreList d
+           return $ concat [a',b',c',d']
+   where toScoreList :: Problem p => [p] -> Handler [(Either AssignmentMetadataId Text, Int)]
+         toScoreList xs = mapM (\x -> do score <- toScore textbookproblems x
+                                         return (getLabel x, score)) xs
+         
+         getLabel x = case assignment x of
+                          --get assignment metadata id
+                          Just amid -> Left amid
+                          --otherwise, must be a textbook problem
+                          Nothing -> Right $ takeWhile (/= '.') (problem x) 
 
 --------------------------------------------------------
 --Due dates

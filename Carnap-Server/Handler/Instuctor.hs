@@ -6,7 +6,7 @@ import Util.Data
 import Util.Database
 import Yesod.Form.Bootstrap3
 import Yesod.Form.Jquery
-import Handler.User (scoreByIdAndClass)
+import Handler.User (scoreByIdAndClassPerProblem)
 import Text.Blaze.Html (toMarkup)
 import Data.Time
 import Data.Time.Zones
@@ -17,7 +17,6 @@ import qualified Data.IntMap (insert,fromList,toList,delete)
 import qualified Data.Text as T
 import System.FilePath
 import System.Directory (getDirectoryContents,removeFile, doesFileExist)
-
 
 putInstructorR :: Text -> Handler Value
 putInstructorR ident = do
@@ -293,7 +292,7 @@ classWidget classent = do
        let allUids = (map userDataUserId  allUserData)
        musers <- mapM (\x -> runDB (get x)) allUids
        let users = catMaybes musers
-       allScores <- mapM (scoreByIdAndClass cid) allUids >>= return . zip (map userIdent users)
+       allScores <- zip (map userIdent users) <$> mapM (scoreByIdAndClassPerProblem cid) allUids 
        let usersAndData = zip users allUserData
        (Just course) <- runDB $ get cid
        return [whamlet|
@@ -331,7 +330,7 @@ classWidget classent = do
                                     <td>
                                         #{ln}, #{fn}
                                     <td>
-                                        #{tryLookup allScores (userIdent u)}/#{show $ courseTotalPoints course}
+                                        #{totalByUser (userIdent u) allScores}/#{show $ courseTotalPoints course}
                     <h2>Course Data
                     <dl.row>
                         <dt.col-sm-3>Course Title
@@ -351,9 +350,9 @@ classWidget classent = do
                     <button.btn.btn-sm.btn-secondary type="button"  onclick="modalEditCourse('#{courseTitle course}')">
                         Edit Course Information
               |]
-    where tryLookup l x = case lookup x l of
-                          Just n -> show n
-                          Nothing -> "can't find scores"
+    where totalByUser uident scores = case lookup uident scores of
+                                Just xs -> show $ foldr (+) 0 (map snd xs)
+                                Nothing -> "can't find scores"
 
 dateDisplay utc course = case tzByName $ courseTimeZone course of
                              Just tz  -> show $ utcToZonedTime (timeZoneForUTCTime tz utc) utc
