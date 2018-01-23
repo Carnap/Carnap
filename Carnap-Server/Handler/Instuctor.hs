@@ -219,7 +219,7 @@ updateAssignmentModal form enc = [whamlet|
                         <div class="modal-dialog" role="document">
                             <div class="modal-content">
                                 <div class="modal-header">
-                                    <h5 class="modal-title" id="updateAssignmentDataLabel">Update User Data</h5>
+                                    <h5 class="modal-title" id="updateAssignmentDataLabel">Update Assignment Data</h5>
                                     <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                                       <span aria-hidden="true">&times;</span>
                                 <div class="modal-body">
@@ -232,7 +232,7 @@ updateAssignmentModal form enc = [whamlet|
 updateAssignmentForm = renderBootstrap3 BootstrapBasicForm $ (,,,)
             <$> areq fileName "" Nothing
             <*> aopt (jqueryDayField def) (bfs ("Due Date"::Text)) Nothing
-            <*> aopt timeFieldTypeTime (bfs ("Due Date"::Text)) Nothing
+            <*> aopt timeFieldTypeTime (bfs ("Due Time"::Text)) Nothing
             <*> aopt textareaField (bfs ("Assignment Description"::Text)) Nothing
     where fileName :: (Monad m, RenderMessage (HandlerSite m) FormMessage) => Field m Text 
           fileName = hiddenField
