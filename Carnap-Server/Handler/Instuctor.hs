@@ -364,15 +364,15 @@ classWidget classent = do
                 do --list the per-problem scores of each user for this assignment
                    let thescores = map (\(x,y) -> map snd $ filter (\x -> fst x == assignment) y) scores
                        --extract data
-                       totalsubmissions = length (filter (/= []) thescores)
-                       thereareany = totalsubmissions > 0
-                       totals = map sum thescores
+                       submissions = filter (/= []) thescores
+                       thereareany = length submissions > 0
+                       totals = map sum submissions
                        highscore = if thereareany then show (L.maximum totals) else "N/A"
                        lowscore = if thereareany then show (L.minimum totals) else "N/A"
-                       average = if thereareany then  show $ sum totals `div` totalsubmissions else "N/A"
+                       average = if thereareany then  show $ sum totals `div` length submissions else "N/A"
                    [whamlet|
                           <td>
-                              #{totalsubmissions}
+                              #{length submissions}/#{length thescores}
                           <td>
                               #{highscore}
                           <td>
