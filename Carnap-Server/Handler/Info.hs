@@ -160,3 +160,29 @@ Show P->(Q->R):CD
       P/\Q:&I 2 4
       R:->O 5 6
 |]
+
+axiomFiveTheorem = [st|
+Show <>[]P->[]P  /0   :CD
+  <>[]P          /0   :AS
+  Show []P       /0   :ND
+    Show P       /0-1 :DD
+      []P        /0-2 :<>O 2
+      P          /0-1 :[]O(5) 5
+|]
+
+axiomBTheorem = [st|
+Show <>[]P->P /0   :CD
+  <>[]P       /0   :AS
+  []P         /0-1 :<>O 2
+  P           /0   :[]O(b) 3
+|]
+
+barcanTheorem = [st|
+Show Ax[]Fx->[]AxFx  /0   :CD
+  Ax[]Fx             /0   :AS
+  Show []AxFx        /0   :ND
+    Show AxFx        /0-1 :UD
+      Show Fa        /0-1 :DD
+        []Fa         /0   :AO 2
+        Fa           /0-1 :[]O 6
+|]
