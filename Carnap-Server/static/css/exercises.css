@@ -172,22 +172,22 @@
     padding-left: 5pt;
 }
 
-.montegueDisplay span.rule {
+.montagueDisplay span.rule {
     float:right;
     padding-left:10px;
 }
 
-.montegueDisplay .qed div > span:nth-child(2) {
+.montagueDisplay .qed div > span:nth-child(2) {
     padding-left:5px;
 }
 
-.montegueDisplay .qed div {
+.montagueDisplay .qed div {
     border-left:1px solid black;
     border-bottom:1px solid black;
     height:25px;
 }
 
-.montegueDisplay .subproof > div.qed {
+.montagueDisplay .subproof > div.qed {
     padding-left: 5pt;
 }
 

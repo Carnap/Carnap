@@ -95,7 +95,7 @@ data Checker r lex sem der = Checker
 
 activateChecker ::  IORef [(String,P.DerivedRule)] -> Document -> Maybe IOGoal -> IO ()
 activateChecker _ _ Nothing  = return ()
-activateChecker drs w (Just iog@(IOGoal i o g _ opts)) -- TODO: need to update non-montegue calculi to take first/higher-order derived rules
+activateChecker drs w (Just iog@(IOGoal i o g _ opts)) -- TODO: need to update non-montague calculi to take first/higher-order derived rules
         | sys == "prop"                      = tryParse propCalc propChecker
         | sys == "firstOrder"                = tryParse folCalc folChecker
         | sys == "secondOrder"               = tryParse msolCalc propChecker
@@ -202,7 +202,7 @@ threadedCheck checker w ref v (g, fd) =
            return ()
 
     where renderer = case ndRenderer (checkerCalc checker) of
-                         MontegueStyle -> renderDeductionMontegue
+                         MontagueStyle -> renderDeductionMontague
                          FitchStyle -> renderDeductionFitch
 
 updateGoal s ref g mseq = case mseq of

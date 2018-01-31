@@ -1,5 +1,5 @@
 {-# LANGUAGE FlexibleContexts #-}
-module Carnap.GHCJS.Widget.RenderDeduction (renderDeductionFitch, renderDeductionMontegue) where
+module Carnap.GHCJS.Widget.RenderDeduction (renderDeductionFitch, renderDeductionMontague) where
 
 import Lib
 import Carnap.Core.Data.AbstractSyntaxDataTypes
@@ -37,8 +37,8 @@ renderTreeFitch w = treeToElement asLine asSubproof
           asSubproof l ls = do setAttribute l "class" "subproof"
                                mapM_ (appendChild l . Just) ls
 
---this is for Kalish and Montegue Proofs
-renderTreeMontegue w = treeToElement asLine asSubproof
+--this is for Kalish and Montague Proofs
+renderTreeMontague w = treeToElement asLine asSubproof
     where asLine (n,AssertLine f r _ deps) = do (theWrapper,theLine,theForm,theRule) <- lineBase w n (Just f) (Just (r,deps)) "assertion"
                                                 appendChild theLine (Just theForm)
                                                 appendChild theLine (Just theRule)
@@ -106,8 +106,8 @@ renderDeduction cls render w ded =
 renderDeductionFitch :: (Show t,Schematizable (t1 (FixLang t1)), CopulaSchema (FixLang t1)) => Document -> [DeductionLine t t1 t2] -> IO Element
 renderDeductionFitch = renderDeduction "fitchDisplay" renderTreeFitch
 
-renderDeductionMontegue :: (Show t,Schematizable (t1 (FixLang t1)), CopulaSchema (FixLang t1)) => Document -> [DeductionLine t t1 t2] -> IO Element
-renderDeductionMontegue = renderDeduction "montegueDisplay" renderTreeMontegue
+renderDeductionMontague :: (Show t,Schematizable (t1 (FixLang t1)), CopulaSchema (FixLang t1)) => Document -> [DeductionLine t t1 t2] -> IO Element
+renderDeductionMontague = renderDeduction "montagueDisplay" renderTreeMontague
 
 renderDep (n,m) = if n==m then show n else show n ++ "-" ++ show m
 

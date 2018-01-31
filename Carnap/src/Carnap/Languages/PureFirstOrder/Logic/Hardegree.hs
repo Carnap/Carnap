@@ -90,7 +90,7 @@ parseHardegreePLProof ::  Map String P.DerivedRule -> String -> [DeductionLine H
 parseHardegreePLProof ders = toDeductionHardegree (parseHardegreePL ders) (hardegreePLFormulaParser)
 
 hardegreePLCalc = NaturalDeductionCalc
-    { ndRenderer = MontegueStyle
+    { ndRenderer = MontagueStyle
     , ndParseProof = parseHardegreePLProof
     , ndProcessLine = hoProcessLineHardegree
     , ndProcessLineMemo = Just hoProcessLineHardegreeMemo

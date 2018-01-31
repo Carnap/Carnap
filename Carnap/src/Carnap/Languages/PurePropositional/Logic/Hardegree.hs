@@ -182,7 +182,7 @@ parseHardegreeSLProof :: Map String DerivedRule -> String -> [DeductionLine Hard
 parseHardegreeSLProof ders = toDeductionHardegree (parseHardegreeSL ders) (purePropFormulaParser (standardLetters {hasBooleanConstants = True}))
 
 hardegreeSLCalc = NaturalDeductionCalc 
-    { ndRenderer = MontegueStyle
+    { ndRenderer = MontagueStyle
     , ndParseProof = parseHardegreeSLProof
     , ndProcessLine = processLineHardegree
     , ndProcessLineMemo = Nothing

@@ -323,7 +323,7 @@ parseHardegreeWTLProof ::  Map String DerivedRule -> String -> [DeductionLine Ha
 parseHardegreeWTLProof ders = toDeductionHardegree parseHardegreeWTL worldTheoryPropFormulaParser
 
 hardegreeWTLCalc = NaturalDeductionCalc 
-    { ndRenderer = MontegueStyle
+    { ndRenderer = MontagueStyle
     , ndParseProof = parseHardegreeWTLProof
     , ndProcessLine = hoProcessLineHardegree
     , ndProcessLineMemo = Just hoProcessLineHardegreeMemo
@@ -418,7 +418,7 @@ parseHardegreeLProof ::  Map String DerivedRule -> String -> [DeductionLine Hard
 parseHardegreeLProof ders = toDeductionHardegree parseHardegreeL absoluteModalPropFormulaParser
 
 hardegreeLCalc = NaturalDeductionCalc 
-    { ndRenderer = MontegueStyle
+    { ndRenderer = MontagueStyle
     , ndParseProof = parseHardegreeLProof
     , ndProcessLine = hoProcessLineHardegree
     , ndProcessLineMemo = Just hoProcessLineHardegreeMemo
@@ -485,7 +485,7 @@ instance Inference HardegreeK AbsoluteModalPropLexicon (Form Bool) where
          globalRestriction _ _ _ = Nothing
 
 hardegreeKCalc = NaturalDeductionCalc 
-    { ndRenderer = MontegueStyle
+    { ndRenderer = MontagueStyle
     , ndParseProof = parseHardegreeKProof
     , ndProcessLine = hoProcessLineHardegree
     , ndProcessLineMemo = Just hoProcessLineHardegreeMemo
@@ -546,7 +546,7 @@ instance Inference HardegreeD AbsoluteModalPropLexicon (Form Bool) where
          globalRestriction _ _ _ = Nothing
 
 hardegreeDCalc = NaturalDeductionCalc 
-    { ndRenderer = MontegueStyle
+    { ndRenderer = MontagueStyle
     , ndParseProof = parseHardegreeDProof
     , ndProcessLine = hoProcessLineHardegree
     , ndProcessLineMemo = Just hoProcessLineHardegreeMemo
@@ -605,7 +605,7 @@ instance Inference HardegreeT AbsoluteModalPropLexicon (Form Bool) where
          globalRestriction _ _ _ = Nothing
 
 hardegreeTCalc = NaturalDeductionCalc 
-    { ndRenderer = MontegueStyle
+    { ndRenderer = MontagueStyle
     , ndParseProof = parseHardegreeTProof
     , ndProcessLine = hoProcessLineHardegree
     , ndProcessLineMemo = Just hoProcessLineHardegreeMemo
@@ -672,7 +672,7 @@ instance Inference HardegreeB AbsoluteModalPropLexicon (Form Bool) where
          globalRestriction _ _ _ = Nothing
 
 hardegreeBCalc = NaturalDeductionCalc 
-    { ndRenderer = MontegueStyle
+    { ndRenderer = MontagueStyle
     , ndParseProof = parseHardegreeBProof
     , ndProcessLine = hoProcessLineHardegree
     , ndProcessLineMemo = Just hoProcessLineHardegreeMemo
@@ -734,7 +734,7 @@ instance Inference HardegreeFour AbsoluteModalPropLexicon (Form Bool) where
          globalRestriction _ _ _ = Nothing
 
 hardegreeFourCalc = NaturalDeductionCalc 
-    { ndRenderer = MontegueStyle
+    { ndRenderer = MontagueStyle
     , ndParseProof = parseHardegreeFourProof
     , ndProcessLine = hoProcessLineHardegree
     , ndProcessLineMemo = Just hoProcessLineHardegreeMemo
@@ -795,7 +795,7 @@ instance Inference HardegreeFive AbsoluteModalPropLexicon (Form Bool) where
          globalRestriction _ _ _ = Nothing
 
 hardegreeFiveCalc = NaturalDeductionCalc 
-    { ndRenderer = MontegueStyle
+    { ndRenderer = MontagueStyle
     , ndParseProof = parseHardegreeFiveProof
     , ndProcessLine = hoProcessLineHardegree
     , ndProcessLineMemo = Just hoProcessLineHardegreeMemo
@@ -882,7 +882,7 @@ instance Inference HardegreeS5 AbsoluteModalPropLexicon (Form Bool) where
          globalRestriction _ _ _ = Nothing
 
 hardegreeS5Calc = NaturalDeductionCalc 
-    { ndRenderer = MontegueStyle
+    { ndRenderer = MontagueStyle
     , ndParseProof = parseHardegreeS5Proof
     , ndProcessLine = hoProcessLineHardegree
     , ndProcessLineMemo = Just hoProcessLineHardegreeMemo
@@ -949,7 +949,7 @@ instance Inference HardegreeS4 AbsoluteModalPropLexicon (Form Bool) where
          globalRestriction _ _ _ = Nothing
 
 hardegreeS4Calc = NaturalDeductionCalc 
-    { ndRenderer = MontegueStyle
+    { ndRenderer = MontagueStyle
     , ndParseProof = parseHardegreeS4Proof
     , ndProcessLine = hoProcessLineHardegree
     , ndProcessLineMemo = Just hoProcessLineHardegreeMemo

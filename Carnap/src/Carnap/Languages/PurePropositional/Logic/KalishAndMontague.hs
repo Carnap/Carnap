@@ -1,5 +1,5 @@
 {-#LANGUAGE FlexibleContexts, FlexibleInstances, MultiParamTypeClasses #-}
-module Carnap.Languages.PurePropositional.Logic.KalishAndMontegue
+module Carnap.Languages.PurePropositional.Logic.KalishAndMontague
     (parsePropLogic,  parsePropProof,   PropLogic, propCalc) where
 
 import Data.Map as M (lookup, Map)
@@ -15,7 +15,7 @@ import Carnap.Languages.ClassicalSequent.Parser
 import Carnap.Languages.PurePropositional.Logic.Rules
 
 --A system for propositional logic resembling the proof system from Kalish
---and Montegue's LOGIC, with derived rules
+--and Montague's LOGIC, with derived rules
 
 data PropLogic = MP | MT  | DNE | DNI | DD   | AX 
                     | CP1 | CP2 | ID1 | ID2  | ID3  | ID4 
@@ -109,12 +109,12 @@ parsePropLogic ders = do r <- choice (map (try . string) ["AS","PR","MP","MTP","
                                             Nothing -> parserFail "Looks like you're citing a derived rule that doesn't exist"
 
 parsePropProof :: Map String DerivedRule -> String -> [DeductionLine PropLogic PurePropLexicon (Form Bool)]
-parsePropProof ders = toDeductionMontegue (parsePropLogic ders) (purePropFormulaParser standardLetters)
+parsePropProof ders = toDeductionMontague (parsePropLogic ders) (purePropFormulaParser standardLetters)
 
 propCalc = NaturalDeductionCalc 
-    { ndRenderer = MontegueStyle
+    { ndRenderer = MontagueStyle
     , ndParseProof = parsePropProof
-    , ndProcessLine = processLineMontegue
+    , ndProcessLine = processLineMontague
     , ndProcessLineMemo = Nothing
     , ndParseSeq = propSeqParser
     }

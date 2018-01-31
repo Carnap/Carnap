@@ -88,9 +88,9 @@ toDeduction parseLine = map handle . lines
                     Right n -> n
                     Left e -> 0
 
-toDeductionMontegue :: Parsec String () [r] -> Parsec String () (FixLang lex a) -> String 
+toDeductionMontague :: Parsec String () [r] -> Parsec String () (FixLang lex a) -> String 
     -> [DeductionLine r lex a]
-toDeductionMontegue r f = toDeduction (parseLine r f)
+toDeductionMontague r f = toDeduction (parseLine r f)
         where parseLine r f = try (parseAssertLine r f) 
                                 <|> try (parseShowLine f) 
                                 <|> try (parseQedLine r)
@@ -116,19 +116,19 @@ toDeductionHardegree r f = toDeduction (parseLine r f)
 -- be folded into methods associated with ND data
 
 {- | 
-In a Kalish and Montegue deduction, find the prooftree corresponding to
+In a Kalish and Montague deduction, find the prooftree corresponding to
 *line n* in ded, where proof line numbers start at 1
 -}
-toProofTreeMontegue :: 
+toProofTreeMontague :: 
     ( Inference r lex sem
     , Sequentable lex
     , Typeable sem
     ) => Deduction r lex sem -> Int -> Either (ProofErrorMessage lex) (ProofTree r lex sem)
-toProofTreeMontegue ded n = case ded !! (n - 1)  of
+toProofTreeMontague ded n = case ded !! (n - 1)  of
           (AssertLine f r@(r':_) dpth depairs) -> 
                 do let deps = map fst depairs
                    mapM_ checkDep deps
-                   deps' <- mapM (toProofTreeMontegue ded) deps
+                   deps' <- mapM (toProofTreeMontague ded) deps
                    case indirectInference r' of 
                         Just _ -> err $ "it appears you're trying to use a rule of indirect inference to make a direct inference, rather than to close a subproof"
                         Nothing -> return ()
@@ -139,7 +139,7 @@ toProofTreeMontegue ded n = case ded !! (n - 1)  of
                    let (QedLine r _ depairs) = ded !! m
                    let deps = map fst depairs
                    mapM_ (checkDep $ m + 1) deps 
-                   deps' <- mapM (toProofTreeMontegue ded) deps
+                   deps' <- mapM (toProofTreeMontague ded) deps
                    return $ Node (ProofLine n (SS $ liftToSequent f) r) deps'
                 where --for scanning, we ignore the depth of the QED line
                       checkDep m m' = takeRange m' m >>= scan . init

@@ -20,14 +20,14 @@
                 <a href=#contributing>How can I get involved?
 
     <blockquote.blockquote>
-        <p>“The acceptance or rejection of abstract linguistic forms, just as
-           \ the acceptance or rejection of any other linguistic forms in any branch
-           \ of science, will finally be decided by their efficiency as instruments,
-           \ the ratio of the results achieved to the amount and complexity of the
-           \ efforts required. To decree dogmatic prohibitions of certain linguistic
-           \ forms instead of testing them by their success or failure in practical
-           \ use, is worse than futile; it is positively harmful because it may
-           \ obstruct scientific progress.
+        <p> “The acceptance or rejection of abstract linguistic forms, just as
+            \ the acceptance or rejection of any other linguistic forms in any branch
+            \ of science, will finally be decided by their efficiency as instruments,
+            \ the ratio of the results achieved to the amount and complexity of the
+            \ efforts required. To decree dogmatic prohibitions of certain linguistic
+            \ forms instead of testing them by their success or failure in practical
+            \ use, is worse than futile; it is positively harmful because it may
+            \ obstruct scientific progress.
 
         <p> Let us grant to those who work in any special field of
             \ investigation the freedom to use any form of expression which seems
@@ -41,13 +41,13 @@
 
 
     <section#what>
-        <p>Carnap is a free and open-source Haskell framework for creating and
-           \ exploring formal languages, logics, and semantics. It lets you quickly
-           \ and straightforwardly define languages, construct logics for those
-           \ languages, and stipluate their semantics. Carnap then uses your
-           \ specifications to figure out how to check proofs in a variety of formal
-           \ systems using your logic, how to find the meanings of compound
-           \ expressions, and a whole lot more.
+        <p> Carnap is a free and open-source Haskell framework for creating and
+            \ exploring formal languages, logics, and semantics. It lets you quickly
+            \ and straightforwardly define languages, construct logics for those
+            \ languages, and stipulate their semantics. Carnap then uses your
+            \ specifications to figure out how to check proofs in a variety of formal
+            \ systems using your logic, how to find the meanings of compound
+            \ expressions, and a whole lot more.
 
         <div#demos.hidden>
 
@@ -58,7 +58,7 @@
             <div#demo-slider>
 
                 <div.demo>
-                    <p>This is a proofbox with a Kalish and Montegue System
+                    <p>This is a proofbox with a Kalish and Montague System
                        \ for Propositional Logic. You can directly manipulate the
                        \ proof by typing in the proofbox, and see the effects of
                        \ your changes by mousing over the line-decorations on the
@@ -67,7 +67,7 @@
                     ^{proofcheck 1 "prop" "" ":|-:P\\/-P" aristotleTheorem}
 
                 <div.demo>
-                    <p>This is a rendering proofbox with a Kalish and Montegue
+                    <p>This is a rendering proofbox with a Kalish and Montague
                        \ System for Propositional Logic, which also visually
                        \ displays the structure of the proof being developed.
 
@@ -77,7 +77,7 @@
                 <div.demo>
 
                     <p> This is a rendering proofbox with Hardegree's variation
-                        \ on a Montegue system.
+                        \ on a Montague system.
 
                     ^{proofcheck 3 "hardegreeSL" "render" "P/\\Q->R:|-: P->(Q->R)" adjunctionTheorem}
 
@@ -91,7 +91,7 @@
 
 
                 <div.demo>
-                    <p>This is a proofbox with a Kalish and Montegue System
+                    <p>This is a proofbox with a Kalish and Montague System
                        \ for First-Order Logic, displaying a proof of Russell's
                        \ Theorem.
 
@@ -118,7 +118,7 @@
                     ^{proofcheck 7 "thomasBolducAndZachFOL" "render" ":|-:-ExAy(-F(y,y) <-> F(x,y))" russellTheoremCalgary}
                 <div.demo>
 
-                    <p> This is a proofbox with a Kalish and Montegue System
+                    <p> This is a proofbox with a Kalish and Montague System
                         \ for Monadic Second-Order Logic, showing how to prove
                         \ an instance of the comprehension scheme, using
                         \ a predicate abstraction rule.
@@ -199,7 +199,7 @@
     <section#name>
         <h2>Why “Carnap”?
 
-        <p>Carnap is named after Rudolf Carnap, the philosopher quoted above.
+        <p> Carnap is named after Rudolf Carnap, the philosopher quoted above.
 
         <p> Carnap (the philosopher) famously advocated a tolerant and
             \ experimental approach to logic. Carnap (the program) is pluralistic by
@@ -223,7 +223,7 @@
         <p>Basically, Haskell's type system makes it possible to represent
            \ different lexical categories as datatypes, to combine these lexical
            \ category datatypes into a larger datatype representing a lexicon (using
-           \ something like the method described in 
+           \ something like the method described in #
            \ <a href="http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.101.4131">this paper</a>),
            \ and to define a language as the result of applying different
            \ elements of a lexicon to one another in a grammatical way.
@@ -245,7 +245,7 @@
             \ of snapping together lexical categories), we also end up being able to
             \ manipulate them uniformly. In particular, we can use entirely generic
             \ algorithms for things like variable substitution, semantic evaluation,
-            \ β-normalization, higher-order unification... all the good stuff that
+            \ β-normalization, higher-order unification… all the good stuff that
             \ you need in order to, for example, check proofs for correctness using
             \ only a declaration of acceptable inference rules. As a result, we only
             \ need to write code for these algorithms once; we can then automatically
@@ -279,7 +279,7 @@
         <p>Carnap also powers Kansas State University's <i>Introduction to
             \ Formal Logic</i> and <i>Introduction to Symbolic Logic I</i>, allowing
             \ instructors to write problem sets in pandoc, handling the grading, and
-            \ allowing students to build up a repetoire of derived rules and lemmas
+            \ allowing students to build up a repertoire of derived rules and lemmas
             \ that they can use in their work. If you're interested in teaching your
             \ own logic class using Carnap, please don't hesitate to get in touch.
 
@@ -290,14 +290,14 @@
         <h2>How can I get involved?
 
         <p>If you’d like to support Carnap, please consider starring us on
-           \ <a href="https://github.com/gleachkr/Carnap">github</a>. If you
+           \ <a href="https://github.com/gleachkr/Carnap">Github</a>. If you
            \ have suggestions, feature requests, or bug-reports, you can create
-           \ an issue on github. For general questions, or if you'd like to use
+           \ an issue on Github. For general questions, or if you'd like to use
            \ Carnap in a class you're teaching, just get in touch on
-           \ <a href="https://gitter.im/Carnap-Prover">gitter</a>
+           \ <a href="https://gitter.im/Carnap-Prover">Gitter</a>
            \ on <a href="irc://irc.freenode.net/carnap">irc</a>
            \ or over <a href="mailto:gleachkr@ksu.edu">email</a>.
 
         <p>If you’d like to contribute some code to the project—anything from
-           \ a new unification algorithm to a css tweak or pandoc template—just put
+           \ a new unification algorithm to a CSS tweak or pandoc template—just put
            \ in a pull request!

@@ -1,5 +1,5 @@
 {-#LANGUAGE  FlexibleContexts,  FlexibleInstances, MultiParamTypeClasses #-}
-module Carnap.Languages.PureFirstOrder.Logic.KalishAndMontegue
+module Carnap.Languages.PureFirstOrder.Logic.KalishAndMontague
         (FOLogic(..), parseFOLogic, folCalc)
     where
 
@@ -11,7 +11,7 @@ import Carnap.Languages.PureFirstOrder.Parser
 import qualified Carnap.Languages.PurePropositional.Logic as P
 import Carnap.Calculi.NaturalDeduction.Syntax
 import Carnap.Calculi.NaturalDeduction.Parser
-import Carnap.Calculi.NaturalDeduction.Checker (hoProcessLineMontegue, hoProcessLineMontegueMemo)
+import Carnap.Calculi.NaturalDeduction.Checker (hoProcessLineMontague, hoProcessLineMontagueMemo)
 import Carnap.Languages.ClassicalSequent.Syntax
 import Carnap.Languages.Util.LanguageClasses
 import Carnap.Languages.Util.GenericConstructors
@@ -88,12 +88,12 @@ parseFOLogic ders = try quantRule <|> liftProp
                                                     Nothing -> parserFail "Looks like you're citing a derived rule that doesn't exist"
 
 parseFOLProof ::  Map String DerivedRule -> String -> [DeductionLine FOLogic PureLexiconFOL (Form Bool)]
-parseFOLProof ders = toDeductionMontegue (parseFOLogic ders) folFormulaParser
+parseFOLProof ders = toDeductionMontague (parseFOLogic ders) folFormulaParser
 
 folCalc = NaturalDeductionCalc
-    { ndRenderer = MontegueStyle
+    { ndRenderer = MontagueStyle
     , ndParseProof = parseFOLProof
-    , ndProcessLine = hoProcessLineMontegue
-    , ndProcessLineMemo = Just hoProcessLineMontegueMemo
+    , ndProcessLine = hoProcessLineMontague
+    , ndProcessLineMemo = Just hoProcessLineMontagueMemo
     , ndParseSeq = folSeqParser
     }

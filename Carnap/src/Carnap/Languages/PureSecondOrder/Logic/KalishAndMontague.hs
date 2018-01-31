@@ -1,6 +1,6 @@
 
 {-#LANGUAGE GADTs, FlexibleContexts, PatternSynonyms, TypeSynonymInstances, FlexibleInstances, MultiParamTypeClasses #-}
-module Carnap.Languages.PureSecondOrder.Logic.KalishAndMontegue (psolCalc, msolCalc) where
+module Carnap.Languages.PureSecondOrder.Logic.KalishAndMontague (psolCalc, msolCalc) where
 
 import Carnap.Core.Data.AbstractSyntaxDataTypes
 import Carnap.Languages.PureSecondOrder.Syntax
@@ -11,7 +11,7 @@ import Carnap.Languages.PureSecondOrder.Parser
 import Carnap.Languages.ClassicalSequent.Parser
 import Carnap.Calculi.NaturalDeduction.Syntax
 import Carnap.Calculi.NaturalDeduction.Parser
-import Carnap.Calculi.NaturalDeduction.Checker (hoProcessLineMontegue, hoProcessLineMontegueMemo)
+import Carnap.Calculi.NaturalDeduction.Checker (hoProcessLineMontague, hoProcessLineMontagueMemo)
 import Data.Map (empty)
 import Text.Parsec
 import Carnap.Languages.PureSecondOrder.Logic.Rules
@@ -85,15 +85,15 @@ parseMSOLogic = try soRule <|> liftFO
                               | r == "APP"  -> return [APP]
 
 parseMSOLProof :: String -> [DeductionLine MSOLogic MonadicallySOLLex (Form Bool)]
-parseMSOLProof = toDeductionMontegue parseMSOLogic msolFormulaParser
+parseMSOLProof = toDeductionMontague parseMSOLogic msolFormulaParser
 
 msolSeqParser = seqFormulaParser :: Parsec String () (MSOLSequentCalc (Sequent (Form Bool)))
 
 msolCalc = NaturalDeductionCalc 
-    { ndRenderer = MontegueStyle
+    { ndRenderer = MontagueStyle
     , ndParseProof = const parseMSOLProof -- XXX ignore derived rules for now
-    , ndProcessLine = hoProcessLineMontegue
-    , ndProcessLineMemo = Just hoProcessLineMontegueMemo
+    , ndProcessLine = hoProcessLineMontague
+    , ndProcessLineMemo = Just hoProcessLineMontagueMemo
     , ndParseSeq = msolSeqParser
     }
 
@@ -176,14 +176,14 @@ parsePSOLogic = try soRule <|> liftFO
                               | r == "APP"  -> return [APP_PSOL n]
 
 parsePSOLProof :: String -> [DeductionLine PSOLogic PolyadicallySOLLex (Form Bool)]
-parsePSOLProof = toDeductionMontegue parsePSOLogic psolFormulaParser
+parsePSOLProof = toDeductionMontague parsePSOLogic psolFormulaParser
 
 psolSeqParser = seqFormulaParser :: Parsec String () (PSOLSequentCalc (Sequent (Form Bool)))
 
 psolCalc = NaturalDeductionCalc 
-    { ndRenderer = MontegueStyle
+    { ndRenderer = MontagueStyle
     , ndParseProof = const parsePSOLProof -- XXX ignore derived rules for now
-    , ndProcessLine = hoProcessLineMontegue
-    , ndProcessLineMemo = Just hoProcessLineMontegueMemo
+    , ndProcessLine = hoProcessLineMontague
+    , ndProcessLineMemo = Just hoProcessLineMontagueMemo
     , ndParseSeq = psolSeqParser
     }

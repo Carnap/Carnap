@@ -224,7 +224,7 @@ type SequentTree lex sem = Tree (Int, ClassicalSequentOver lex (Sequent sem))
 --These are intended to wrap up a whole ND system, including some of its
 --superficial features like rendering.
 
-data RenderStyle = MontegueStyle | FitchStyle
+data RenderStyle = MontagueStyle | FitchStyle
 
 type ProofMemoRef lex sem r = IORef (Map Int (Either (ProofErrorMessage lex) 
                                                      ( ClassicalSequentOver lex (Sequent sem)
