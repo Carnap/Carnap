@@ -242,7 +242,7 @@ setBookAssignmentForm classes = renderBootstrap3 BootstrapBasicForm $ (,,,)
             <*> areq (selectFieldList chapters) (bfs ("Problem Set" :: Text))  Nothing
             <*> areq (jqueryDayField def) (bfs ("Due Date"::Text)) Nothing
             <*> aopt timeFieldTypeTime (bfs ("Due Time"::Text)) Nothing
-    where chapters = map (\x -> ("Problem Set " ++ pack (show x),x)) [1..17 ] :: [(Text,Int)]
+    where chapters = map (\x -> ("Problem Set " ++ pack (show x),x)) [1..17] :: [(Text,Int)]
           classnames = map (\theclass -> (courseTitle . entityVal $ theclass, theclass)) classes
 
 createCourseForm = renderBootstrap3 BootstrapBasicForm $ (,,,,)

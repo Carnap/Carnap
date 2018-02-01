@@ -14,7 +14,8 @@ import Data.Aeson (decodeStrict)
 import Util.Data
 import Util.Database
 import qualified Data.Map as M
-import qualified Data.IntMap
+import qualified Data.IntMap as IM
+import Data.IntMap ((!))
 
 postUserR :: Text -> Handler Html
 postUserR ident = do
@@ -161,7 +162,7 @@ dateDisplay utc course = case tzByName $ courseTimeZone course of
                              Just tz  -> show $ utcToZonedTime (timeZoneForUTCTime tz utc) utc
                              Nothing -> show $ utc
 
-utcDueDate textbookproblems x = textbookproblems >>= Data.IntMap.lookup theIndex . readAssignmentTable
+utcDueDate textbookproblems x = textbookproblems >>= IM.lookup theIndex . readAssignmentTable
     where theIndex = read . unpack . takeWhile (/= '.') $ x :: Int
 
 laterThan :: UTCTime -> UTCTime -> Bool
@@ -207,10 +208,11 @@ assignmentsOf cid textbookproblems = do
                         <th> Due Date
                     <tbody>
                         $maybe dd <- textbookproblems
-                            $forall (num,date) <- Data.IntMap.toList (readAssignmentTable dd)
+                            $forall (num,date) <- IM.toList (readAssignmentTable dd)
                                 <tr>
                                     <td>
-                                        Problem Set #{show num}
+                                        <a href=@{ChapterR $ chapterOfProblemSet ! num}>
+                                            Problem Set #{show num}
                                     <td>
                                         #{dateDisplay date course}
                         $forall a <- map entityVal asmd
