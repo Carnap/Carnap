@@ -160,15 +160,7 @@ activateChecker drs w (Just iog@(IOGoal i o g _ opts)) -- TODO: need to update n
                                        , indentGuides = "guides" `elem` options
                                        , render = "render" `elem` options
                                        }
-                                where -- options = [ ("NoSub", \o -> o {submit = Nothing})
-                                      --           , ("Render", \o -> o {render = True})
-                                      --           , ("playground", \o -> o {directed = False, submit = Nothing})
-                                      --           , ("ruleMaker", \o -> o {directed = False , submit = Just saveButton })
-                                      --           , ("manualFeedback", \o -> o {feedback = Click})
-                                      --           , ("noFeedback", \o -> o {feedback = Never})
-                                      --           , ("guides", \o -> o {indentGuides = True})
-                                      --           ]
-                                      saveRule = Button {label = "Save Rule" , action = trySave drs}
+                                where saveRule = Button {label = "Save Rule" , action = trySave drs}
                                       saveProblem l s = Button {label = "Submit Solution" , action = trySubmit l s}
                                       options = case M.lookup "options" opts of Just s -> words s; Nothing -> []
 
