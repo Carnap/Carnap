@@ -86,7 +86,7 @@ splitIt [] = ([],[])
 splitIt l = case break (== '\n') l of
                 (h,t@(_:x:xs)) -> if x == '|'
                                 then let (h',t') = splitIt (x:xs) in
-                                    (h ++ ('\n':h'),t')
+                                     (h ++ ('\n':h'),t')
                                 else (h,x:xs)
                 y -> y
 

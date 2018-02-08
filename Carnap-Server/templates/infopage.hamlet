@@ -98,6 +98,19 @@
                     ^{proofcheck 5 "firstOrder" "render" ":|-:-ExAy(-F(y,y) <-> F(x,y))" russellTheorem}
 
                 <div.demo>
+                    <p> Here’s a proof of the fact that the bisectors of the
+                        \ sides of a triangle always meet at a point (from the
+                        \ assumption that a point is on the bisector of a segment if
+                        \ and only if it’s equidistant from the endpoints of that
+                        \ segment). ‟F(x,y)” abbreviates that ‟x is on y“, ‟g(y,z)”
+                        \ abbreviates ‟the bisector of the segment given by y and z”,
+                        \ and ‟h(x,z)” abbreviates ‟the distance from x to z”.
+                    <p> (Because of the number of variables, this one may take
+                        \ a moment to load initially. Once loaded, it should
+                        \ respond quickly to changes.)
+                    ^{proofcheck 5 "firstOrder" "render" "AxAyAz(F(x,g(y,z)) ↔ h(x,y) = h(x,z)) :|-: AwAxAyAz(F(w,g(x,y))^F(w,g(x,z))→F(w,g(y,z)))" bisectorTheorem}
+
+                <div.demo>
 
                     <p> Here are two more proofs of Russell's theorem, this
                         \ time using a version of system QL,
@@ -143,7 +156,7 @@
                         <a href="http://courses.umass.edu/phil511-gmh/MAIN/IHome-1.htm">Modal Logic.
                     <p> These use #
                         <a href="https://github.com/gleachkr/FiraLogic">Fira Logic
-                        \ for nicer-looking logical symbols and guards to
+                        \ for nicer-looking logical symbols and use guards to
                         \ help visually indicate the scope of each subproof.
 
                     ^{proofcheck 10 "hardegree5" "fonts guides" ":|-:<>[]P->[]P" axiomFiveTheorem}

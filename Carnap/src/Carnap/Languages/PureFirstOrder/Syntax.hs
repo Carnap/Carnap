@@ -39,6 +39,8 @@ type PurePredicate = IntPred Bool Int
 
 type PureFunction = IntFunc Int Int
 
+type PureSchematicFunction = SchematicIntFunc Int Int
+
 type PureEq = TermEq Bool Int
 
 type PureSchematicPred = SchematicIntPred Bool Int
@@ -214,7 +216,8 @@ instance PrismPolyadicPredicate (OpenLexiconPFOL a) Int Bool
 instance PrismPolyadicSchematicPredicate (OpenLexiconPFOL a) Int Bool
 
 instance Incrementable (OpenLexiconPFOL EndLang) (Term Int) where
-    incHead (PP n a b) = Just $ PP n (ASucc a) (ASucc a)
+    incHead (PP n a b)   = Just $ PP n (ASucc a) (ASucc a)
+    incHead (PPhi n a b) = Just $ PPhi n (ASucc a) (ASucc a)
     incHead _  = Nothing
 
 --------------------------------------------------------
@@ -223,6 +226,7 @@ instance Incrementable (OpenLexiconPFOL EndLang) (Term Int) where
 
 type PolyadicFunctionSymbolsAndIdentity = Predicate PureEq 
                                         :|: Function PureFunction 
+                                        :|: Function PureSchematicFunction
                                         :|: EndLang
 
 type PureLexiconFOL = (OpenLexiconPFOL (PolyadicFunctionSymbolsAndIdentity :|: EndLang))
@@ -235,7 +239,9 @@ fogamma n = GammaV n
 pattern PEq            = FX (Lx3 (Lx1 (Predicate TermEq ATwo)))
 pattern (:==:) t1 t2   = PEq :!$: t1 :!$: t2
 pattern PFunc x arity  = FX (Lx3 (Lx2 (Function x arity)))
+pattern PSFunc x arity  = FX (Lx3 (Lx3 (Function x arity)))
 pattern PF n a1 a2     = PFunc (Func a1 n) a2
+pattern PSF n a1 a2    = PSFunc (SFunc a1 n) a2
 
 type PureFOLForm = PureLanguageFOL (Form Bool)
 
@@ -243,8 +249,11 @@ type PureFOLTerm = PureLanguageFOL (Term Int)
 
 instance PrismTermEquality PureLexiconFOL Int Bool
 instance PrismPolyadicFunction PureLexiconFOL Int Int
+instance PrismPolyadicSchematicFunction PureLexiconFOL Int Int
 
 instance Incrementable (OpenLexiconPFOL (PolyadicFunctionSymbolsAndIdentity :|: a)) (Term Int) where
-    incHead (PP n a b) = Just $ PP n (ASucc a) (ASucc a)
-    incHead (PF n a b) = Just $ PF n (ASucc a) (ASucc a)
+    incHead (PP n a b)  = Just $ PP n (ASucc a) (ASucc a)
+    incHead (PF n a b)  = Just $ PF n (ASucc a) (ASucc a)
+    incHead (PSF n a b) = Just $ PSF n (ASucc a) (ASucc a)
+    incHead (PPhi n a b) = Just $ PPhi n (ASucc a) (ASucc a)
     incHead _  = Nothing

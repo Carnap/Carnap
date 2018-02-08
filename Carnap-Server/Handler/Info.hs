@@ -186,3 +186,33 @@ Show Ax[]Fx->[]AxFx  /0   :CD
         []Fa         /0   :AO 2
         Fa           /0-1 :[]O 6
 |]
+
+bisectorTheorem = [st|
+AxAyAz(F(x,g(y,z))↔h(x,y) = h(x,z)) :PR
+Show AwAxAyAz(F(w,g(x,y))∧F(w,g(x,z))→F(w,g(y,z)))
+ Show AxAyAz(F(a,g(x,y))∧F(a,g(x,z))→F(a,g(y,z)))
+  Show AyAz(F(a,g(b,y))∧F(a,g(b,z))→F(a,g(y,z)))
+   Show Az(F(a,g(b,c))∧F(a,g(b,z))→F(a,g(c,z)))
+    Show F(a,g(b,c))∧F(a,g(b,d))→F(a,g(c,d))
+     F(a,g(b,c))∧F(a,g(b,d))             :AS
+     F(a,g(b,c))                         :S 7
+     F(a,g(b,d))                         :S 7
+     AyAz(F(a,g(y,z))<> h(a,y) = h(a,z)) :UI 1
+     Az(F(a,g(b,z))<> h(a,b) = h(a,z))   :UI 10
+     F(a,g(b,c)) ↔ h(a,b) = h(a,c)       :UI 11
+     F(a,g(b,d)) ↔ h(a,b) = h(a,d)       :UI 11
+     F(a,g(b,c)) → h(a,b) = h(a,c)       :BC 12
+     F(a,g(b,d)) → h(a,b) = h(a,d)       :BC 13
+     h(a,b) = h(a,c)                     :MP 8 14
+     h(a,b) = h(a,d)                     :MP 9 15
+     h(a,c) = h(a,d)                     :LL 16 17
+     Az(F(a,g(c,z)) ↔ h(a,c) = h(a,z))   :UI 10
+     F(a,g(c,d)) ↔ h(a,c) = h(a,d)       :UI 19
+     h(a,c) = h(a,d) → F(a,g(c,d))       :BC 20
+     F(a,g(c,d))                         :MP 18 21
+    :CD 22
+   :UD 6
+  :UD 5
+ :UD 4
+:UD 3
+|]

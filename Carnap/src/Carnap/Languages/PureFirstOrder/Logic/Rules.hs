@@ -70,6 +70,10 @@ phi' :: PolyadicSchematicPredicateLanguage (FixLang lex) (Term Int) (Form Bool)
     => Int -> (FixLang lex) (Term Int) -> (FixLang lex) (Form Bool)
 phi' n x = pphin n AOne :!$: x
 
+theta :: SchematicPolyadicFunctionLanguage (FixLang lex) (Term Int) (Term Int)
+    => (FixLang lex) (Term Int) -> (FixLang lex) (Term Int)
+theta x = spfn 1 AOne :!$: x
+
 data DerivedRule = DerivedRule { conclusion :: PureFOLForm, premises :: [PureFOLForm]}
                deriving (Show, Eq)
 
@@ -146,6 +150,9 @@ type FirstOrderEqRule lex b =
 eqReflexivity :: FirstOrderEqRule lex b
 eqReflexivity = [] ∴ Top :|-: SS (tau `equals` tau)
 
+eqSymmetry :: FirstOrderEqRule lex b
+eqSymmetry = [GammaV 1 :|-: SS (tau `equals` tau')] ∴ GammaV 1 :|-: SS (tau `equals` tau')
+
 universalGeneralization :: FirstOrderRule lex b
 universalGeneralization = [ GammaV 1 :|-: SS (phi 1 (taun 1))]
                           ∴ GammaV 1 :|-: SS (lall "v" (phi 1))
@@ -176,9 +183,11 @@ negatedUniversalInstantiation = [ GammaV 1 :|-: SS (lneg $ lall "v" (phi 1))]
 
 type FirstOrderEqRuleVariants lex b = 
         ( Typeable b
+        , BooleanLanguage (ClassicalSequentOver lex (Form b))
         , EqLanguage (ClassicalSequentOver lex) (Term Int) (Form b)
         , IndexedSchemeConstantLanguage (ClassicalSequentOver lex (Term Int))
         , PolyadicSchematicPredicateLanguage (ClassicalSequentOver lex) (Term Int) (Form b)
+        , SchematicPolyadicFunctionLanguage (ClassicalSequentOver lex) (Term Int) (Term Int)
         ) => [SequentRule lex (Form b)]
         
 type FirstOrderRuleVariants lex b = 
@@ -199,6 +208,26 @@ leibnizLawVariations = [
                            [ GammaV 1 :|-: SS (phi 1 tau')
                            , GammaV 2 :|-: SS (tau `equals` tau')
                            ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (phi 1 tau)
+                       ]
+
+antiLeibnizLawVariations :: FirstOrderEqRuleVariants lex b
+antiLeibnizLawVariations = [
+                           [ GammaV 1 :|-: SS (phi 1 tau)
+                           , GammaV 2 :|-: SS (lneg $ phi 1 tau')
+                           ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (lneg $ tau `equals` tau') 
+                       , 
+                           [ GammaV 1 :|-: SS (phi 1 tau)
+                           , GammaV 2 :|-: SS (lneg $ phi 1 tau')
+                           ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (lneg $ tau' `equals` tau) 
+                       ]
+
+euclidsLawVariations :: FirstOrderEqRuleVariants lex b
+euclidsLawVariations = [
+                           [ GammaV 2 :|-: SS (tau `equals` tau')
+                           ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (theta tau `equals` theta tau')
+                       , 
+                           [ GammaV 2 :|-: SS (tau `equals` tau')
+                           ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (theta tau' `equals` theta tau)
                        ]
 
 existentialDerivation :: FirstOrderRuleVariants lex b

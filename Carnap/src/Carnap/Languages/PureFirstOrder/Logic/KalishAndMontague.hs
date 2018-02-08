@@ -22,8 +22,9 @@ import Carnap.Languages.PureFirstOrder.Logic.Rules
 --------------------------------------------------------
 
 data FOLogic =  SL P.PropLogic
-                | UD  | UI  | EG  | ED1  | ED2  | DER DerivedRule
-                | QN1 | QN2 | QN3 | QN4
+                | UD  | UI  | EG   | ED1  | ED2  | DER DerivedRule
+                | QN1 | QN2 | QN3  | QN4  | LL1  | LL2 | EL1 | EL2
+                | ID  | SM  | ALL1 | ALL2
                deriving (Eq)
 
 instance Show FOLogic where
@@ -37,6 +38,14 @@ instance Show FOLogic where
         show QN2     = "QN"
         show QN3     = "QN"
         show QN4     = "QN"
+        show ID      = "Id"
+        show LL1     = "LL"
+        show LL2     = "LL"
+        show ALL1    = "LL"
+        show ALL2    = "LL"
+        show EL1     = "EL"
+        show EL2     = "EL"
+        show SM      = "Sm"
         show (SL x)  = show x
 
 -- TODO use liftSequent to clean this up
@@ -50,6 +59,14 @@ instance Inference FOLogic PureLexiconFOL (Form Bool) where
      ruleOf QN2       = quantifierNegation !! 1
      ruleOf QN3       = quantifierNegation !! 2
      ruleOf QN4       = quantifierNegation !! 3
+     ruleOf LL1       = leibnizLawVariations !! 0
+     ruleOf LL2       = leibnizLawVariations !! 1
+     ruleOf ALL1      = antiLeibnizLawVariations !! 0
+     ruleOf ALL2      = antiLeibnizLawVariations !! 1
+     ruleOf EL1       = euclidsLawVariations !! 0
+     ruleOf EL2       = euclidsLawVariations !! 1
+     ruleOf ID        = eqReflexivity
+     ruleOf SM        = eqSymmetry
 
      premisesOf (SL x) = map liftSequent (premisesOf x)
      premisesOf (DER r) = zipWith gammafy (premises r) [1..]
@@ -75,13 +92,17 @@ parseFOLogic :: Map String DerivedRule -> Parsec String u [FOLogic]
 parseFOLogic ders = try quantRule <|> liftProp
     where liftProp = do r <- P.parsePropLogic M.empty
                         return (map SL r)
-          quantRule = do r <- choice (map (try . string) [ "UI", "UD", "EG", "ED", "QN","D-"])
+          quantRule = do r <- choice (map (try . string) [ "UI", "UD", "EG", "ED", "QN","LL","EL","Id","Sm","D-"])
                          case r of 
                             r | r == "UI" -> return [UI]
                               | r == "UD" -> return [UD]
                               | r == "EG" -> return [EG]
                               | r == "ED" -> return [ED1,ED2]
                               | r == "QN" -> return [QN1,QN2,QN3,QN4]
+                              | r == "LL" -> return [LL1,LL2,ALL1,ALL2]
+                              | r == "Sm" -> return [SM]
+                              | r == "EL" -> return [EL1,EL2]
+                              | r == "Id" -> return [ID]
                               | r == "D-" ->  do rn <- many1 upper
                                                  case M.lookup rn ders of
                                                     Just r  -> return [DER r]
