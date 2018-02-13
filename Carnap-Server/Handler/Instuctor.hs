@@ -126,7 +126,7 @@ postInstructorR ident = do
                    info = unTextarea <$> assignmentdesc
                success <- tryInsert $ AssignmentMetadata fn info (localTimeToUTCTZ tz <$> localdue) subtime classkey 
                if success then saveAssignment file 
-                          else setMessage "Could not save---this file already exists"
+                          else setMessage "A file with this name already exists in Carnap's database. Perhaps you could make the name unique by adding your name or course title?"
         (FormFailure s) -> setMessage $ "Something went wrong: " ++ toMarkup (show s)
         FormMissing -> return ()
     case newclassrslt of
@@ -137,7 +137,7 @@ postInstructorR ident = do
                     do let localize x = localTimeToUTCTZ (tzByLabel tzlabel) (LocalTime x midnight)
                        success <- tryInsert $ Course title (unTextarea <$> coursedesc) iid Nothing (localize startdate) (localize enddate) 0 (toTZName tzlabel)
                        if success then setMessage "Course Created" 
-                                  else setMessage "Could not save---this file already exists"
+                                  else setMessage "Could not save---this course already exists"
                 Nothing -> setMessage "you're not an instructor!"
         (FormFailure s) -> setMessage $ "Something went wrong: " ++ toMarkup (show s)
         FormMissing -> return ()
