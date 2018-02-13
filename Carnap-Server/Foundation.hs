@@ -8,8 +8,8 @@ import Yesod.Auth.GoogleEmail2 as GE (authGoogleEmail, forwardUrl)
 import Yesod.Auth.Dummy            (authDummy)
 import qualified Yesod.Core.Unsafe as Unsafe
 import Yesod.Core.Types            (Logger)
+import Yesod.Form.Jquery
 import Yesod.Default.Util          (addStaticContentExternal)
-import Yesod.Fay
 --import Util.Database
 import qualified Data.CaseInsensitive as CI
 import qualified Data.Text.Encoding as TE
@@ -24,7 +24,6 @@ data App = App
     , appConnPool          :: ConnectionPool -- ^ Database connection pool.
     , appHttpManager       :: Manager
     , appLogger            :: Logger
-    , appFayCommandHandler :: CommandHandler App
     }
 
 -- This is where we define all of the routes in our application. For a full
@@ -146,18 +145,9 @@ instance Yesod App where
 
     makeLogger = return . appLogger
 
-
 instance YesodJquery App where
         urlJqueryJs _ = Right "https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"
         urlJqueryUiJs _ = Right "https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"
-
-instance YesodFay App where
-
-    fayRoute = FaySiteR
-
-    yesodFayCommand render command = do
-        master <- getYesod
-        appFayCommandHandler master render command
 
 -- How to run database actions.
 instance YesodPersist App where

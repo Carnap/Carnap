@@ -34,12 +34,10 @@ import Network.Wai.Middleware.RequestLogger (Destination (Logger),
                                              mkRequestLogger, outputFormat)
 import System.Log.FastLogger                (defaultBufSize, newStdoutLoggerSet,
                                              toLogStr)
-import Yesod.Fay                            (getFaySite)
 
 -- Import all relevant handler modules here.
 -- Don't forget to add new modules to your cabal file!
 import Handler.Common
-import Handler.Fay
 import Handler.Home
 import Handler.Info
 import Handler.Chapter

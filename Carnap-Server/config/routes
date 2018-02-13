@@ -1,6 +1,5 @@
 /static            StaticR      Static  appStatic
 /auth              AuthR        Auth    getAuth
-/fay-command       FaySiteR     FaySite getFaySite
 
 /command           CommandR     POST
 

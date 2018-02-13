@@ -12,7 +12,7 @@ Flag library-only
     Default:       False
 
 library
-    hs-source-dirs:  ., fay-shared, app
+    hs-source-dirs:  ., app
     exposed-modules: Application
                      Foundation
                      SecureStrings
@@ -21,9 +21,7 @@ library
                      Model
                      Settings
                      Settings.StaticFiles
-                     Fay.SharedTypes
                      Handler.Common
-                     Handler.Fay
                      Handler.Home
                      Handler.Info
                      Handler.Register
@@ -75,9 +73,7 @@ library
                  , yesod-auth                    >= 1.4.0      && < 1.5
                  , yesod-static                  >= 1.4.0.3    && < 1.6
                  , yesod-form                    >= 1.4.0      && < 1.5
-                 , yesod-fay                     >= 0.7        && < 0.9
                  , yesod-markdown                >= 0.11
-                 , fay                           >= 0.21.2.1   && < 0.24
                  , classy-prelude                >= 0.10.2
                  , classy-prelude-conduit        >= 0.10.2
                  , classy-prelude-yesod          >= 0.10.2
