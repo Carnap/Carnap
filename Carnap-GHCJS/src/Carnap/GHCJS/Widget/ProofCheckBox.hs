@@ -15,7 +15,7 @@ import GHCJS.DOM.Element (setAttribute, setInnerHTML,keyUp,click)
 import GHCJS.DOM.Document (createElement, getDefaultView)
 import GHCJS.DOM.Node (appendChild, getParentNode)
 import GHCJS.DOM.EventM (EventM, target, newListener,addListener)
-import GHCJS.DOM.HTMLTextAreaElement (castToHTMLTextAreaElement,getValue)
+import GHCJS.DOM.HTMLTextAreaElement (castToHTMLTextAreaElement,setValue,getValue,setSelectionEnd,getSelectionStart)
 
 data Button = Button { label  :: String 
                      , action :: IORef Bool -> Window -> Element -> 
@@ -30,6 +30,7 @@ data CheckerOptions = CheckerOptions { submit :: Maybe Button -- What's the subm
                                      , feedback :: CheckerFeedbackUpdate --what type of feedback should the checker give?
                                      , initialUpdate :: Bool -- Should the checker be updated on load?
                                      , indentGuides :: Bool -- Should the checker display indentation guides?
+                                     , autoIndent :: Bool -- Should the checker indent automatically?
                                      }
 
 checkerWith :: CheckerOptions -> (Document -> IORef Bool -> String -> (Element, Element) -> IO ()) -> IOGoal -> Document -> IO ()
@@ -44,9 +45,7 @@ checkerWith options updateres iog@(IOGoal i o g content _) w = do
            mpar@(Just par) <- getParentNode o               
            mapM_ (appendChild o . Just) [nd, fd]
            mapM_ (appendChild g . Just) [sd]
-           lineupd <- newListener $ updateLines w nd (indentGuides options) --formerly onKey ["Enter","Backspace","Delete"] $
            (Just w') <- getDefaultView w
-           addListener i keyUp lineupd False
            syncScroll i o
            --respond to custom initialize events
            initlistener <- newListener $ updateWithValue (\s -> updateres w ref s (g,fd))
@@ -62,6 +61,11 @@ checkerWith options updateres iog@(IOGoal i o g content _) w = do
                    appendChild par mbt
                    btlistener <- newListener $ updateWithValue (\s -> updateres w ref s (g,fd))
                    addListener bt click btlistener False                
+           case autoIndent options of
+               True -> do
+                   indentlistener <- newListener (onEnter reindent)
+                   addListener i keyUp indentlistener False
+               False -> return ()
            case submit options of
                Just button -> do 
                    mbt'@(Just bt') <- createElement w (Just "button")
@@ -70,6 +74,8 @@ checkerWith options updateres iog@(IOGoal i o g content _) w = do
                    buttonAct <- newListener $ action button ref w' i
                    addListener bt' click buttonAct False                
                Nothing -> return ()
+           lineupd <- newListener $ updateLines w nd (indentGuides options)
+           addListener i keyUp lineupd False
            mv <- getValue (castToHTMLTextAreaElement i)
            case mv of
                Nothing -> setLinesTo w nd (indentGuides options) [" "]
@@ -88,7 +94,20 @@ updateLines w nd hasguides =  do (Just t) <- target :: EventM HTMLTextAreaElemen
                                  case mv of 
                                      Nothing -> return ()
                                      Just v -> liftIO $ setLinesTo w nd hasguides (lines v)
-                                      
+
+reindent :: EventM HTMLTextAreaElement KeyboardEvent ()
+reindent = do (Just t) <- target :: EventM HTMLTextAreaElement KeyboardEvent (Maybe HTMLTextAreaElement)
+              mv <- getValue t
+              case mv of 
+                  Nothing -> return ()
+                  Just v -> do
+                      pos <- getSelectionStart t
+                      let (pre,post) = splitAt pos v
+                          line = last . lines $ pre
+                          ws = takeWhile (`elem` [' ','\t']) line
+                      setValue t $ Just ( pre ++ ws ++ post )
+                      setSelectionEnd t (length (pre ++ ws))
+
 setLinesTo :: (IsElement e) => Document -> e -> Bool -> [String] -> IO ()
 setLinesTo w nd hasguides [] = setLinesTo w nd hasguides [""]
 setLinesTo w nd hasguides lines = do setInnerHTML nd (Just "")

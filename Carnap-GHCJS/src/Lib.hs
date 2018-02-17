@@ -65,7 +65,7 @@ import Carnap.Languages.PurePropositional.Parser (purePropFormulaParser, standar
 --1.1 Events
 --------------------------------------------------------
 
-onKey :: [String] -> EventM HTMLInputElement KeyboardEvent () ->  EventM HTMLInputElement KeyboardEvent ()
+onKey :: [String] -> EventM e KeyboardEvent () ->  EventM e KeyboardEvent ()
 onKey keylist action = do kbe      <- event
                           id       <- getKeyIdentifier kbe 
                           -- XXX: keyIdentifier is deprecated and doesn't work in
@@ -75,7 +75,7 @@ onKey keylist action = do kbe      <- event
                           id'      <- liftIO $ keyString kbe
                           if id `elem` keylist || id' `elem` keylist then do action else return ()
 
-onEnter :: EventM HTMLInputElement KeyboardEvent () ->  EventM HTMLInputElement KeyboardEvent ()
+onEnter :: EventM e KeyboardEvent () ->  EventM e KeyboardEvent ()
 onEnter = onKey ["Enter"]
 
 --------------------------------------------------------
