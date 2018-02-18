@@ -79,7 +79,7 @@ checkerWith options updateres iog@(IOGoal i o g content _) w = do
            mv <- getValue (castToHTMLTextAreaElement i)
            case mv of
                Nothing -> setLinesTo w nd (indentGuides options) [" "]
-               (Just iv) -> do setLinesTo w nd (indentGuides options) (lines iv)
+               (Just iv) -> do setLinesTo w nd (indentGuides options) (altlines iv)
                                if initialUpdate options then updateres w ref iv (g, fd) else return ()
 
 spinnerHtml = renderHtml [shamlet|
@@ -93,7 +93,7 @@ updateLines w nd hasguides =  do (Just t) <- target :: EventM HTMLTextAreaElemen
                                  mv <- getValue t
                                  case mv of 
                                      Nothing -> return ()
-                                     Just v -> liftIO $ setLinesTo w nd hasguides (lines v)
+                                     Just v -> liftIO $ setLinesTo w nd hasguides (altlines v)
 
 reindent :: EventM HTMLTextAreaElement KeyboardEvent ()
 reindent = do (Just t) <- target :: EventM HTMLTextAreaElement KeyboardEvent (Maybe HTMLTextAreaElement)
@@ -135,3 +135,9 @@ setLinesTo w nd hasguides lines = do setInnerHTML nd (Just "")
           differences (x:y:l) = x - y : differences (y:l)
           differences [x]     = [x]
           differences []      = []
+
+--a version of `lines` that pays attention to a trailing newline.
+altlines s = case break (=='\n') s of (l, s') -> l : rec s' 
+        where rec s' = case s' of 
+                          [] -> []
+                          _:s'' -> altlines s''
