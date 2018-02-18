@@ -184,7 +184,7 @@
                         \ system SL.
 
                     <div.exercise>
-                        <span> example 9
+                        <span> example 14
                         <div#klementProof>
                             (W ∨ X), (Y ∨ Z), X → Y, ¬Z ∴ W ∨ Y
 
