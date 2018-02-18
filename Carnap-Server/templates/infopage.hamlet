@@ -108,7 +108,7 @@
                     <p> (Because of the number of variables, this one may take
                         \ a moment to load initially. Once loaded, it should
                         \ respond quickly to changes.)
-                    ^{proofcheck 5 "firstOrder" "render" "AxAyAz(F(x,g(y,z)) ↔ h(x,y) = h(x,z)) :|-: AwAxAyAz(F(w,g(x,y))^F(w,g(x,z))→F(w,g(y,z)))" bisectorTheorem}
+                    ^{proofcheck 6 "firstOrder" "render" "AxAyAz(F(x,g(y,z)) ↔ h(x,y) = h(x,z)) :|-: AwAxAyAz(F(w,g(x,y))^F(w,g(x,z))→F(w,g(y,z)))" bisectorTheorem}
 
                 <div.demo>
 
@@ -126,9 +126,9 @@
                         \ style of #
                         <i>Forall x.
 
-                    ^{proofcheck 6 "magnusQL" "render" ":|-:-ExAy(-F(y,y) <-> F(x,y))" russellTheoremForallx}
+                    ^{proofcheck 7 "magnusQL" "render" ":|-:-ExAy(-F(y,y) <-> F(x,y))" russellTheoremForallx}
 
-                    ^{proofcheck 7 "thomasBolducAndZachFOL" "render" ":|-:-ExAy(-F(y,y) <-> F(x,y))" russellTheoremCalgary}
+                    ^{proofcheck 8 "thomasBolducAndZachFOL" "render" ":|-:-ExAy(-F(y,y) <-> F(x,y))" russellTheoremCalgary}
                 <div.demo>
 
                     <p> This is a proofbox with a Kalish and Montague System
@@ -136,7 +136,7 @@
                         \ an instance of the comprehension scheme, using
                         \ a predicate abstraction rule.
 
-                    ^{proofcheck 8 "secondOrder" "render" ":|-: EXAx(F(x) /\\ G(x) <-> X(x))" comprehensionTheorem}
+                    ^{proofcheck 9 "secondOrder" "render" ":|-: EXAx(F(x) /\\ G(x) <-> X(x))" comprehensionTheorem}
 
                 <div.demo>
 
@@ -145,7 +145,7 @@
                         \ Second-Order Logic, again making use of a predicate
                         \ abstraction rule.
 
-                    ^{proofcheck 9 "polyadicSecondOrder" "render" ":|-: AX2EY2AxAy(X2(x,y)<->Y2(y,x))" inverseTheorem}
+                    ^{proofcheck 10 "polyadicSecondOrder" "render" ":|-: AX2EY2AxAy(X2(x,y)<->Y2(y,x))" inverseTheorem}
 
 
                 <div.demo>
@@ -159,9 +159,9 @@
                         \ for nicer-looking logical symbols and use guards to
                         \ help visually indicate the scope of each subproof.
 
-                    ^{proofcheck 10 "hardegree5" "fonts guides" ":|-:<>[]P->[]P" axiomFiveTheorem}
+                    ^{proofcheck 11 "hardegree5" "fonts guides" ":|-:<>[]P->[]P" axiomFiveTheorem}
 
-                    ^{proofcheck 11 "hardegreeB" "fonts guides" ":|-: <>[]P->P" axiomBTheorem}
+                    ^{proofcheck 12 "hardegreeB" "fonts guides" ":|-: <>[]P->P" axiomBTheorem}
 
                 <div.demo>
 
@@ -169,7 +169,7 @@
                         \ quantified system of modal logic, based on the system
                         \ MPL of Hardegree's <em>Modal Logic</em>.
 
-                    ^{proofcheck 12 "hardegreeMPL" "fonts guides" ":|-: Ax[]Fx->[]AxFx" barcanTheorem}
+                    ^{proofcheck 13 "hardegreeMPL" "fonts guides" ":|-: Ax[]Fx->[]AxFx" barcanTheorem}
 
                 <div.demo>
 
