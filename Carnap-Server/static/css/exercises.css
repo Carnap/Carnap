@@ -95,15 +95,15 @@
 }
 
 @-moz-document url-prefix() {
-[data-carnap-type="proofchecker"] > textarea {
+[data-carnap-type="proofchecker"]:not([data-carnap-options~="resize"]) > textarea {
     padding-top:0px;
     padding-bottom:0px;
     }
-[data-carnap-type="proofchecker"] .output{
+[data-carnap-type="proofchecker"]:not([data-carnap-options~="resize"]) .output{
     padding-top:0px;
     padding-bottom:0px;
     }
-.proofFeedback {
+[data-carnap-type="proofchecker"]:not([data-carnap-options~="resize"]) .proofFeedback {
     top:0pt;
 }
     /* workaround for firefox bug: https://bugzilla.mozilla.org/show_bug.cgi?id=1099204 */

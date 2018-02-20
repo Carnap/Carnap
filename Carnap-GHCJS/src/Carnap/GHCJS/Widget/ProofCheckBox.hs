@@ -123,7 +123,7 @@ resize i = do setAttribute i "style" "width: 0px;height: 0px"
               setAttribute i "style" "resize:none;"
               setAttribute (castToHTMLElement par) 
                     "style" ("width:" ++ (show $ max 400 (w + 50)) ++ "px;" ++ 
-                    "height:" ++ (show $ max 120 h) ++ "px;")
+                    "height:" ++ (show $ max 120 (h + 20)) ++ "px;")
                     
 
 setLinesTo :: (IsElement e) => Document -> e -> Bool -> [String] -> IO ()
