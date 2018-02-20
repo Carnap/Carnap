@@ -7,11 +7,11 @@ you can only make *one* assumption.
 But there are situations where it seems that we ought to make more than one
 assumption. For example, conditionals of the form $P → (Q → R)$ will be
 difficult to prove by assuming only $P$. Such a conditional says that if $P$
-is true, then if, furthermore, $R$ is true, then $Q$ is true. Intuitively,
-this seems to say that $Q$ is true whenever $P$ and $R$ are *both* true. So,
-to prove that conditional, it should be enough to demonstrate that $Q$ is true
-in any hypothetical situation where $P$ and $R$ are true. But this means
-assuming two things: both $P$ and $R$.
+is true, then if, furthermore, $Q$ is true, then $R$ is true. Intuitively,
+this seems to say that $R$ is true whenever $P$ and $Q$ are *both* true. So,
+to prove that conditional, it should be enough to demonstrate that $R$ is true
+in any hypothetical situation where $P$ and $Q$ are true. But this means
+assuming two things: both $P$ and $Q$.
 
 This need for multiple simultaneous assumptions is reflected in ordinary
 informal reasoning.
