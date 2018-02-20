@@ -42,6 +42,7 @@
 /* probably need a subordinate div containing this and the feedback to fix the :hover issue on iOS*/
 [data-carnap-type="proofchecker"] > textarea {
     position: relative;
+    overflow-clip-box: padding-box;
     width: 100%;
     height: 100%;
     font-size:10pt;
@@ -57,6 +58,7 @@
     overflow-wrap:normal;
     word-wrap:normal;
 }
+
 
 [data-carnap-type="proofchecker"] > button {
     display:block;
@@ -77,6 +79,7 @@
     overflow:hidden;
 }
 
+
 .proofFeedback {
     font-size:10pt;
     position:absolute;
@@ -89,6 +92,21 @@
 /* the div containing the feedback mark */
 .proofFeedback li > div {
     width:10px;
+}
+
+@-moz-document url-prefix() {
+[data-carnap-type="proofchecker"] > textarea {
+    padding-top:0px;
+    padding-bottom:0px;
+    }
+[data-carnap-type="proofchecker"] .output{
+    padding-top:0px;
+    padding-bottom:0px;
+    }
+.proofFeedback {
+    top:0pt;
+}
+    /* workaround for firefox bug: https://bugzilla.mozilla.org/show_bug.cgi?id=1099204 */
 }
 
 /* The div containing feedback */

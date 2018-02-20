@@ -177,7 +177,7 @@ Show Ax[]Fx->[]AxFx  /0   :CD
         Fa           /0-1 :[]O 6|]
 
 bisectorTheorem = [st|
-AxAyAz(F(x,g(y,z))↔h(x,y) = h(x,z)) :PR
+AxAyAz(F(x,g(y,z)) ↔ h(x,y) = h(x,z)) :PR
 Show AwAxAyAz(F(w,g(x,y))∧F(w,g(x,z)) → F(w,g(y,z)))
  Show AxAyAz(F(a,g(x,y))∧F(a,g(x,z)) → F(a,g(y,z)))
   Show AyAz(F(a,g(b,y))∧F(a,g(b,z)) → F(a,g(y,z)))
