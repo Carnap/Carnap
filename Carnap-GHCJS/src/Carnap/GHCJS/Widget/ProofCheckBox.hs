@@ -10,8 +10,10 @@ import Text.Hamlet
 import Text.Blaze.Html.Renderer.String
 import Control.Monad.Trans.State.Lazy
 import Control.Monad.IO.Class
+import Control.Monad (when)
+import Control.Concurrent
 import GHCJS.DOM.Types
-import GHCJS.DOM.Element (setAttribute, setInnerHTML,keyUp,click)
+import GHCJS.DOM.Element (setAttribute, setInnerHTML,keyDown,keyUp,click,getScrollWidth,getScrollHeight)
 import GHCJS.DOM.Document (createElement, getDefaultView)
 import GHCJS.DOM.Node (appendChild, getParentNode)
 import GHCJS.DOM.EventM (EventM, target, newListener,addListener)
@@ -31,6 +33,7 @@ data CheckerOptions = CheckerOptions { submit :: Maybe Button -- What's the subm
                                      , initialUpdate :: Bool -- Should the checker be updated on load?
                                      , indentGuides :: Bool -- Should the checker display indentation guides?
                                      , autoIndent :: Bool -- Should the checker indent automatically?
+                                     , autoResize :: Bool -- Should the checker resize automatically?
                                      }
 
 checkerWith :: CheckerOptions -> (Document -> IORef Bool -> String -> (Element, Element) -> IO ()) -> IOGoal -> Document -> IO ()
@@ -61,11 +64,15 @@ checkerWith options updateres iog@(IOGoal i o g content _) w = do
                    appendChild par mbt
                    btlistener <- newListener $ updateWithValue (\s -> updateres w ref s (g,fd))
                    addListener bt click btlistener False                
-           case autoIndent options of
-               True -> do
+           when (autoIndent options) $ do
                    indentlistener <- newListener (onEnter reindent)
                    addListener i keyUp indentlistener False
-               False -> return ()
+           when (autoResize options) $ do
+                   resizelistener <- newListener (do Just t <- target; resize t)
+                   resizelistener' <- newListener (do Just t <- target; resize t)
+                   addListener i keyDown resizelistener False
+                   addListener i initialize resizelistener'  False
+                   resize i
            case submit options of
                Just button -> do 
                    mbt'@(Just bt') <- createElement w (Just "button")
@@ -107,6 +114,17 @@ reindent = do (Just t) <- target :: EventM HTMLTextAreaElement KeyboardEvent (Ma
                           ws = takeWhile (`elem` [' ','\t']) line
                       setValue t $ Just ( pre ++ ws ++ post )
                       setSelectionEnd t (length (pre ++ ws))
+
+resize :: MonadIO m => Element -> m ()
+resize i = do setAttribute i "style" "width: 0px;height: 0px"
+              mpar@(Just par) <- getParentNode i
+              w <- getScrollWidth i
+              h <- getScrollHeight i
+              setAttribute i "style" "resize:none;"
+              setAttribute (castToHTMLElement par) 
+                    "style" ("width:" ++ (show $ max 400 (w + 50)) ++ "px;" ++ 
+                    "height:" ++ (show $ max 120 h) ++ "px;")
+                    
 
 setLinesTo :: (IsElement e) => Document -> e -> Bool -> [String] -> IO ()
 setLinesTo w nd hasguides [] = setLinesTo w nd hasguides [""]

@@ -44,8 +44,7 @@ Show: P\/-P
         P\/-P:ADD 4
     :ID 3 8
     P\/-P:DNE 2
-:DD 10
-|]
+:DD 10|]
 
 pierceTheorem = [st|
   (P->Q)->P:AS
@@ -59,8 +58,7 @@ pierceTheorem = [st|
      P:CE 8 1
      -P:R 2
   P:-E 2-10
-((P->Q)->P)->P:CI 1-11
-|]
+((P->Q)->P)->P:CI 1-11 |]
 
 comprehensionTheorem = [st|
 Show EXAx(F(x)/\G(x)<->X(x))
@@ -76,8 +74,7 @@ Show EXAx(F(x)/\G(x)<->X(x))
        F(c)/\G(c)<->\y[F(y)/\G(y)](c):CB 3 7
    :UD 11
    EXAx(F(x)/\G(x)<->X(x)):EG 2
-:DD 13
-|]
+:DD 13|]
 
 russellTheorem = [st|
 Show -ExAy(-F(y,y) <-> F(x,y))
@@ -95,8 +92,7 @@ Show -ExAy(-F(y,y) <-> F(x,y))
         Show: -ExAy(-F(y,y) <-> F(x,y))
         :ID 6 12
     :ED 13 2 4
-:ID 2 3
-|]
+:ID 2 3|]
 
 russellTheoremForallx = [st|
     ExAy(-Fyy <-> Fxy):AS
@@ -113,8 +109,7 @@ russellTheoremForallx = [st|
        -ExAy(-Fyy <-> Fxy):-I 9-11
     -ExAy(-Fyy <-> Fxy):EE 1 2-12
     ExAy(-Fyy <-> Fxy):R 1
--ExAy(-Fyy <-> Fxy):-I 1-14
-|]
+-ExAy(-Fyy <-> Fxy):-I 1-14|]
 
 russellTheoremCalgary = [st|
     ExAy(-Fyy <-> Fxy):AS
@@ -129,8 +124,7 @@ russellTheoremCalgary = [st|
              !?:!?I 8 9
         !?:TND 4-6 8-10
     !?:EE 1 2-11
--ExAy(-Fyy <-> Fxy):-I 1-12
-|]
+-ExAy(-Fyy <-> Fxy):-I 1-12|]
 
 inverseTheorem = [st|
 Show: AX2EY2∀x∀y(X2(x,y) ↔ Y2(y,x))
@@ -148,8 +142,7 @@ Show: AX2EY2∀x∀y(X2(x,y) ↔ Y2(y,x))
     :UD 12
   :UD 3
   EY2∀x∀y(X2(x,y) ↔ Y2(y,x)):EG2 2
-:UD2 15
-|]
+:UD2 15|]
 
 adjunctionTheorem = [st|
 Show P->(Q->R):CD
@@ -158,8 +151,7 @@ Show P->(Q->R):CD
       Q:AS
       P/\Q->R:PR
       P/\Q:&I 2 4
-      R:->O 5 6
-|]
+      R:->O 5 6|]
 
 axiomFiveTheorem = [st|
 Show <>[]P->[]P  /0   :CD
@@ -167,15 +159,13 @@ Show <>[]P->[]P  /0   :CD
   Show []P       /0   :ND
     Show P       /0-1 :DD
       []P        /0-2 :<>O 2
-      P          /0-1 :[]O(5) 5
-|]
+      P          /0-1 :[]O(5) 5|]
 
 axiomBTheorem = [st|
 Show <>[]P->P /0   :CD
   <>[]P       /0   :AS
   []P         /0-1 :<>O 2
-  P           /0   :[]O(b) 3
-|]
+  P           /0   :[]O(b) 3|]
 
 barcanTheorem = [st|
 Show Ax[]Fx->[]AxFx  /0   :CD
@@ -184,21 +174,20 @@ Show Ax[]Fx->[]AxFx  /0   :CD
     Show AxFx        /0-1 :UD
       Show Fa        /0-1 :DD
         []Fa         /0   :AO 2
-        Fa           /0-1 :[]O 6
-|]
+        Fa           /0-1 :[]O 6|]
 
 bisectorTheorem = [st|
 AxAyAz(F(x,g(y,z))↔h(x,y) = h(x,z)) :PR
-Show AwAxAyAz(F(w,g(x,y))∧F(w,g(x,z))→F(w,g(y,z)))
- Show AxAyAz(F(a,g(x,y))∧F(a,g(x,z))→F(a,g(y,z)))
-  Show AyAz(F(a,g(b,y))∧F(a,g(b,z))→F(a,g(y,z)))
-   Show Az(F(a,g(b,c))∧F(a,g(b,z))→F(a,g(c,z)))
-    Show F(a,g(b,c))∧F(a,g(b,d))→F(a,g(c,d))
+Show AwAxAyAz(F(w,g(x,y))∧F(w,g(x,z)) → F(w,g(y,z)))
+ Show AxAyAz(F(a,g(x,y))∧F(a,g(x,z)) → F(a,g(y,z)))
+  Show AyAz(F(a,g(b,y))∧F(a,g(b,z)) → F(a,g(y,z)))
+   Show Az(F(a,g(b,c))∧F(a,g(b,z)) → F(a,g(c,z)))
+    Show F(a,g(b,c))∧F(a,g(b,d)) → F(a,g(c,d))
      F(a,g(b,c))∧F(a,g(b,d))             :AS
      F(a,g(b,c))                         :S 7
      F(a,g(b,d))                         :S 7
-     AyAz(F(a,g(y,z))<> h(a,y) = h(a,z)) :UI 1
-     Az(F(a,g(b,z))<> h(a,b) = h(a,z))   :UI 10
+     AyAz(F(a,g(y,z)) ↔ h(a,y) = h(a,z)) :UI 1
+     Az(F(a,g(b,z)) ↔ h(a,b) = h(a,z))   :UI 10
      F(a,g(b,c)) ↔ h(a,b) = h(a,c)       :UI 11
      F(a,g(b,d)) ↔ h(a,b) = h(a,d)       :UI 11
      F(a,g(b,c)) → h(a,b) = h(a,c)       :BC 12
@@ -214,5 +203,4 @@ Show AwAxAyAz(F(w,g(x,y))∧F(w,g(x,z))→F(w,g(y,z)))
    :UD 6
   :UD 5
  :UD 4
-:UD 3
-|]
+:UD 3|]

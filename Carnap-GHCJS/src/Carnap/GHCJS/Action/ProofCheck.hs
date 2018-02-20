@@ -160,6 +160,7 @@ activateChecker drs w (Just iog@(IOGoal i o g _ opts)) -- TODO: need to update n
                                        , indentGuides = "guides" `elem` options
                                        , render = "render" `elem` options
                                        , autoIndent = "indent" `elem` options
+                                       , autoResize= "resize" `elem` options
                                        }
                                 where saveRule = Button {label = "Save Rule" , action = trySave drs}
                                       saveProblem l s = Button {label = "Submit Solution" , action = trySubmit l s}
