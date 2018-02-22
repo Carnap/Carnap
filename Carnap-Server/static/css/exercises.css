@@ -1,10 +1,9 @@
 .exercise {
     display:inline-block;
-    min-width:100%;
     position:relative;
     padding:10pt;
     padding-top:15pt;
-    margin:10pt;
+    margin:10pt 10pt 0pt 0pt;
     min-width:100%;
     border: solid 1pt #dddddd;
 }

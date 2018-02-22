@@ -14,7 +14,7 @@ function updateSlider(newelt){
     if (newelt.length > 0) {
         $(".visible").removeClass("visible");
         newelt.addClass("visible");
-        window.setTimeout(initializeVisible,500);
+        window.setTimeout(initializeVisible,0);
         return true;
         }
     else {
