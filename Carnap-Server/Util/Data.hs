@@ -9,6 +9,10 @@ newtype BookAssignmentTable = BookAssignmentTable {readAssignmentTable :: IntMap
     deriving (Show, Read, Eq)
 derivePersistField "BookAssignmentTable"
 
+data SharingScope = Public | InstructorsOnly | InstructorList [Text]
+    deriving (Show, Read, Eq)
+derivePersistField "SharingScope"
+
 chapterOfProblemSet :: IntMap Int
 chapterOfProblemSet = IM.fromList 
     [ (1,1)

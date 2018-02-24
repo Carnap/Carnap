@@ -60,6 +60,14 @@ AssignmentMetadata
     course CourseId
     UniqueAssignment filename
 
+SharedDocument
+    filename Text
+    date UTCTime
+    creator UserId
+    description Text Maybe
+    scope SharingScope
+    UniqueSharedDocument filename
+
 InstructorMetadata
 
 Course
