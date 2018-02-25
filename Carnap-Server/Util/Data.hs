@@ -9,7 +9,7 @@ newtype BookAssignmentTable = BookAssignmentTable {readAssignmentTable :: IntMap
     deriving (Show, Read, Eq)
 derivePersistField "BookAssignmentTable"
 
-data SharingScope = Public | InstructorsOnly | InstructorList [Text]
+data SharingScope = Public | InstructorsOnly | LinkOnly
     deriving (Show, Read, Eq)
 derivePersistField "SharingScope"
 

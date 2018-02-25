@@ -7,6 +7,13 @@ function tryDeleteAssignment (json) {
         }
     }
 
+function tryDeleteDocument (json) {
+    var fn = JSON.parse(json).contents;
+    if (confirm("Are you sure you want to permanently delete the document" + fn + "?")) {
+        deleteDocument(json,fn);
+        }
+    }
+
 function tryDeleteCourse (json) {
     var cn = JSON.parse(json).contents;
     if (confirm("Are you sure you want to permanently delete the course " + cn 
@@ -19,6 +26,12 @@ function modalEditAssignment (name) {
     jQuery.noConflict()
     $("#updateAssignmentData").modal({show:true});
     $("#updateAssignment input[name=f1]").val(name);
+}
+
+function modalEditDocument (name) {
+    jQuery.noConflict()
+    $("#updateDocumentData").modal({show:true});
+    $("#updateDocument input[name=f1]").val(name);
 }
 
 function modalEditCourse (name) {
@@ -35,6 +48,23 @@ function deleteAssignment (json,fn) {
         data: json,
         success: function(data) {
             var el = $("#assignment-" + $.escapeSelector(fn));
+            el.remove();
+            window.alert("Deleted the assignment " + fn);
+            },
+        error: function(data) {
+            window.alert("Error, couldn't delete the assignment " + fn)
+            },
+        });
+    };
+
+function deleteDocument (json,fn) {
+    jQuery.ajax({
+        url: '@{InstructorR ident}',
+        type: 'DELETE',
+        contentType: "application/json",
+        data: json,
+        success: function(data) {
+            var el = $("#document-" + $.escapeSelector(fn));
             el.remove();
             window.alert("Deleted the assignment " + fn);
             },
@@ -110,6 +140,22 @@ $("#updateCourse").submit(function(e) {
         data: $("#updateCourse").serialize(),
         success: function(data) {
             $("#updateCourseData").modal('hide');
+            location.reload() /* kinda lazy. Fix eventually. */
+            },
+        error: function(data) {
+            window.alert("Error, couldn't update the course")
+            },
+        });
+    e.preventDefault();
+})
+
+$("#updateDocument").submit(function(e) {
+    jQuery.ajax({
+        url: '@{InstructorR ident}',
+        type: 'PUT',
+        data: $("#updateDocument").serialize(),
+        success: function(data) {
+            $("#updateDocumentData").modal('hide');
             location.reload() /* kinda lazy. Fix eventually. */
             },
         error: function(data) {

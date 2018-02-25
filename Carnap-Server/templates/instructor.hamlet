@@ -1,4 +1,5 @@
 <div.container>
+    ^{updateDocumentModal updateDocumentWidget enctypeUpdateDocument}
     ^{updateAssignmentModal updateAssignmentWidget enctypeUpdateAssignment}
     ^{updateCourseModal updateCourseWidget enctypeUpdateCourse}
     <h1> Instructor Page for #{firstname} #{lastname}
@@ -28,6 +29,9 @@
                 <li.nav-item>
                     <a.nav-link data-toggle="tab" href="#create" role="tab">
                         Create Courses
+                <li.nav-item>
+                    <a.nav-link data-toggle="tab" href="#shareDocument" role="tab">
+                        Share Document
         <div.card-body style="padding:20px;">
             <div.tab-content>
                 <div.tab-pane.active id="assignFromTextbook" role="tabpanel">
@@ -84,6 +88,31 @@
                                         <button.btn.btn-sm.btn-secondary type="button" onclick="tryDeleteAssignment('#{decodeUtf8 $ encode $ DeleteAssignment (assignmentMetadataFilename a)}')">
                                             <i.fa.fa-trash-o>
                                         <button.btn.btn-sm.btn-secondary type="button"  onclick="modalEditAssignment('#{assignmentMetadataFilename a}')">
+                                            <i.fa.fa-pencil>
+
+                <div.tab-pane id="shareDocument" role="tabpanel">
+                    <h2> Share Document
+                    <form method=post enctype=#{enctypeShareDocument}>
+                        ^{shareDocumentWidget}
+                        <div.form-group>
+                            <input.btn.btn-primary  type=submit value="upload">
+                    <h2> Edit Shared Documents
+                    <table class="table">
+                        <thead>
+                            <th> Filename
+                            <th> Saved on
+                            <th> Sharing Scope
+                            <th> Actions
+                        <tbody>
+                            $forall a <- map entityVal sharedDocuments
+                                <tr id="document-#{sharedDocumentFilename a}">
+                                    <td> #{sharedDocumentFilename a}
+                                    <td> #{show $ sharedDocumentDate a}
+                                    <td> #{show $ sharedDocumentScope a}
+                                    <td>
+                                        <button.btn.btn-sm.btn-secondary type="button" onclick="tryDeleteDocument('#{decodeUtf8 $ encode $ DeleteDocument (sharedDocumentFilename a)}')">
+                                            <i.fa.fa-trash-o>
+                                        <button.btn.btn-sm.btn-secondary type="button"  onclick="modalEditDocument('#{sharedDocumentFilename a}')">
                                             <i.fa.fa-pencil>
                 <div.tab-pane id="create" role="tabpanel">
                     <form method=post enctype=#{enctypeCreateCourse}>
