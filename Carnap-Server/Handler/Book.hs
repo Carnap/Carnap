@@ -3,7 +3,7 @@ module Handler.Book where
 import Import
 import System.Directory (getDirectoryContents, doesDirectoryExist)
 
-
+-- XXX: for uniformity, merge this with ChapterR
 
 getBookR :: Handler Html
 getBookR = do datadir <- appDataRoot <$> (appSettings <$> getYesod)

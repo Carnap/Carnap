@@ -31,8 +31,7 @@ putInstructorR ident = do
                                    Nothing -> return ()
                                    Just (Entity k v) -> 
                                         do let cid = assignmentMetadataCourse v
-                                           runDB $ do 
-                                                      maybeDo mdue (\due -> 
+                                           runDB $ do maybeDo mdue (\due -> 
                                                          do (Just course) <- get cid
                                                             let (Just tz) = tzByName . courseTimeZone $ course
                                                                 localdue = case mduetime of
@@ -160,7 +159,7 @@ postInstructorR ident = do
                                   _ -> Nothing
                    info = unTextarea <$> assignmentdesc
                success <- tryInsert $ AssignmentMetadata fn info (localTimeToUTCTZ tz <$> localdue) subtime classkey 
-               if success then saveTo "assignments" file 
+               if success then saveTo "assignments" (unpack fn) file 
                           else setMessage "A file with this name already exists in Carnap's database. Perhaps you could make the name unique by adding your name or course title?"
         (FormFailure s) -> setMessage $ "Something went wrong: " ++ toMarkup (show s)
         FormMissing -> return ()
@@ -171,7 +170,7 @@ postInstructorR ident = do
                    info = unTextarea <$> docdesc
                    (Just uid) = musr -- FIXME: catch Nothing here
                success <- tryInsert $ SharedDocument fn subtime (entityKey uid) info sharescope
-               if success then saveTo ("shared" </> unpack ident) file 
+               if success then saveTo ("shared" </> unpack ident) (unpack fn) file 
                           else setMessage "You already have a shared document with this name."
         (FormFailure s) -> setMessage $ "Something went wrong: " ++ toMarkup (show s)
         FormMissing -> return ()
@@ -366,13 +365,14 @@ updateCourseForm = renderBootstrap3 BootstrapBasicForm $ (,,,,)
     where courseName :: (Monad m, RenderMessage (HandlerSite m) FormMessage) => Field m Text 
           courseName = hiddenField
 
-saveTo thedir file = do
-        let assignmentname = unpack $ fileName file
+saveTo thedir fn file = do
         datadir <- appDataRoot <$> (appSettings <$> getYesod)
-        let path = datadir </> thedir 
+        let path = datadir </> thedir
         liftIO $ 
             do createDirectoryIfMissing True path
-               fileMove file (path </> assignmentname)
+               e <- doesFileExist (path </> fn)
+               if e then removeFile (path </> fn) else return ()
+               fileMove file (path </> fn)
 
 classWidget :: Entity Course -> HandlerT App IO Widget
 classWidget classent = do

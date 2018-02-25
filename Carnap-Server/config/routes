@@ -18,3 +18,4 @@
 /assignments/      AssignmentsR GET
 /assignments/#Text AssignmentR  GET
 /rules             RuleR        GET
+/shared            DocumentsR   GET

@@ -34,6 +34,7 @@ library
                      Handler.Hashed
                      Handler.Rule
                      Handler.Assignment
+                     Handler.Document
                      Filter.Sidenotes
                      Filter.SynCheckers
                      Filter.ProofCheckers
