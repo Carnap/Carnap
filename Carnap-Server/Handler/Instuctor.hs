@@ -294,7 +294,8 @@ uploadDocumentForm = renderBootstrap3 BootstrapBasicForm $ (,,,)
     where scopes :: [(Text,SharingScope)]
           scopes = [("Everyone (Visible to everyone)", Public)
                    ,("Instructors (Visible to all instructors)", InstructorsOnly)
-                   ,("Link Only (Visible to no one)", LinkOnly)
+                   ,("Link Only (Available, but visible to no one)", LinkOnly)
+                   ,("Private (Unavailable)", LinkOnly)
                    ]
 
 updateDocumentForm = renderBootstrap3 BootstrapBasicForm $ (,,)
@@ -307,7 +308,8 @@ updateDocumentForm = renderBootstrap3 BootstrapBasicForm $ (,,)
           scopes :: [(Text,SharingScope)]
           scopes = [("Everyone (Visible to everyone)", Public)
                    ,("Instructors (Visible to all instructors)", InstructorsOnly)
-                   ,("Link Only (Visible to no one)", LinkOnly)
+                   ,("Link Only (Available, but visible to no one)", LinkOnly)
+                   ,("Private (Unavailable)", LinkOnly)
                    ]
 
 updateDocumentModal form enc = [whamlet|
