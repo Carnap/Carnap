@@ -58,8 +58,12 @@ getDocumentsR = do publicDocuments <- runDB $ selectList [SharedDocumentScope ==
                             <dd.col-sm-9> #{userDataFirstName md} #{userDataLastName md}
                             <dt.col-sm-3> Created on
                             <dd.col-sm-9> #{show $ sharedDocumentDate doc}
+                        <button.btn.btn-sm.btn-secondary type="button" onclick="window.open('@{DocumentDownloadR ident (sharedDocumentFilename doc)}')">
+                            <i.fa.fa-cloud-download>
+
     |]
 
+-- XXX DRY up the boilplate that is shared by getDocumentDownload
 getDocumentR :: Text -> Text -> Handler Html
 getDocumentR ident title = do userdir <- getUserDir ident 
                               let path = userdir </> unpack title
@@ -97,6 +101,31 @@ getDocumentR ident title = do userdir <- getUserDir ident
                             <article>
                                 #{c}
                         |]
+
+getDocumentDownloadR :: Text -> Text -> Handler TypedContent
+getDocumentDownloadR ident title = do userdir <- getUserDir ident 
+                                      let path = userdir </> unpack title
+                                      exists <- lift $ doesFileExist path
+                                      mcreator <- runDB $ getBy $ UniqueUser ident
+                                      case mcreator of
+                                          _ | not exists -> notFound
+                                          Nothing -> notFound
+                                          Just (Entity uid _) -> do
+                                              mdoc <- runDB $ getBy (UniqueSharedDocument title uid)
+                                              case mdoc of
+                                                  Nothing -> notFound
+                                                  Just (Entity key doc) -> do
+                                                      case sharedDocumentScope doc of 
+                                                        Private -> notFound
+                                                        _ -> do
+                                                          addHeader "Content-Disposition" $ concat
+                                                            [ "attachment;"
+                                                            , "filename=\""
+                                                            , sharedDocumentFilename doc
+                                                            , "\""
+                                                            ]
+                                                          sendFile typeOctet path
+
 
 fileToHtml path = do Markdown md <- markdownFromFile path
                      let md' = Markdown (filter ((/=) '\r') md) --remove carrage returns from dos files
