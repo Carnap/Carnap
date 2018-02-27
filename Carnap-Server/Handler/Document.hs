@@ -1,7 +1,15 @@
 module Handler.Document where
 
 import Import
+import System.Directory (doesFileExist,getDirectoryContents)
+import Yesod.Markdown
+import Text.Pandoc.Walk (walkM, walk)
 import Util.Data
+import Util.Database
+import Filter.SynCheckers
+import Filter.ProofCheckers
+import Filter.Translate
+import Filter.TruthTables
 
 getDocumentsR :: Handler Html
 getDocumentsR = do publicDocuments <- runDB $ selectList [SharedDocumentScope ==. Public] []
@@ -30,16 +38,68 @@ getDocumentsR = do publicDocuments <- runDB $ selectList [SharedDocumentScope ==
                                      defaultLayout $ do
                                         setTitle $ "Index of Documents"
                                         $(widgetFile "documentIndex")
+    where documentCards docs idents mds = [whamlet|
+    $forall (doc,mident, mmd) <- zip3 (map entityVal docs) idents mds
+        $maybe ident <- mident
+            $maybe md <- mmd
+                <div.card>
+                    <div.card-header>
+                        <a href=@{DocumentR ident (sharedDocumentFilename doc)}>
+                            #{sharedDocumentFilename doc}
+                    <div.card-block>
+                        <dl.row>
+                            <dt.col-sm-3> Title
+                            <dd.col-sm-9> #{sharedDocumentFilename doc}
+                            $maybe desc <- sharedDocumentDescription doc
+                                <dt.col-sm-3> Description
+                                <dd.col-sm-9> #{desc}
+                            <dt.col-sm-3> Creator
+                            <dd.col-sm-9> #{userDataFirstName md} #{userDataLastName md}
+                            <dt.col-sm-3> Created on
+                            <dd.col-sm-9> #{show $ sharedDocumentDate doc}
+    |]
 
 getDocumentR :: Text -> Text -> Handler Html
-getDocumentR ident title = defaultLayout [whamlet| Nothing yet|]
+getDocumentR ident title = do userdir <- getUserDir ident 
+                              let path = userdir </> unpack title
+                              exists <- lift $ doesFileExist path
+                              mcreator <- runDB $ getBy $ UniqueUser ident
+                              case mcreator of
+                                  _ | not exists -> defaultLayout $ layout ("file for this document not found" :: Text)
+                                  Nothing -> defaultLayout $ layout ("document creator not found" :: Text)
+                                  Just (Entity uid _) -> do
+                                      mdoc <- runDB $ getBy (UniqueSharedDocument title uid)
+                                      case mdoc of
+                                          Nothing -> defaultLayout $ layout ("metadata for this document not found" :: Text)
+                                          Just (Entity key doc) -> do
+                                              ehtml <- lift $ fileToHtml path
+                                              case ehtml of
+                                                  Left err -> defaultLayout $ layout (show err)
+                                                  Right html -> do
+                                                      defaultLayout $ do
+                                                          addScript $ StaticR js_popper_min_js
+                                                          addScript $ StaticR ghcjs_rts_js
+                                                          addScript $ StaticR ghcjs_allactions_lib_js
+                                                          addScript $ StaticR ghcjs_allactions_out_js
+                                                          addStylesheet $ StaticR css_exercises_css
+                                                          addStylesheet $ StaticR css_tree_css
+                                                          addStylesheet $ StaticR css_exercises_css
+                                                          layout html
+                                                          addScript $ StaticR ghcjs_allactions_runmain_js
 
-getIdent uid = do muser <- runDB $ get uid
-                  case muser of
-                      Just usr -> return $ Just (userIdent usr)
-                      Nothing -> return Nothing
+    where layout c = [whamlet|
+                        <div.container>
+                            <article>
+                                #{c}
+                        |]
 
-getUserMD uid = do mmd <- runDB $ getBy $ UniqueUserData uid
-                   case entityVal <$> mmd of
-                       Just md -> return $ Just md
-                       Nothing -> return Nothing
+fileToHtml path = do Markdown md <- markdownFromFile path
+                     let md' = Markdown (filter ((/=) '\r') md) --remove carrage returns from dos files
+                     case parseMarkdown yesodDefaultReaderOptions md' of
+                         Right pd -> do let pd' = walk allFilters pd
+                                        return $ Right $ writePandocTrusted yesodDefaultWriterOptions pd'
+                         Left e -> return $ Left e
+    where allFilters = (makeSynCheckers . makeProofChecker . makeTranslate . makeTruthTables)
+
+getUserDir ident = do master <- getYesod
+                      return $ (appDataRoot $ appSettings master) </> "shared" </> unpack ident

@@ -17,6 +17,12 @@ tryInsert s = runDB $ do munique <- checkUnique s
 fromIdent ident = runDB $ do (Just (Entity k _)) <- getBy $ UniqueUser ident 
                              return k
 
+-- | retrieve an ident from a UserId
+getIdent uid = do muser <- runDB $ get uid
+                  case muser of
+                      Just usr -> return $ Just (userIdent usr)
+                      Nothing -> return Nothing
+
 -- | given a UserId, return the userdata or redirect to
 -- registration
 checkUserData uid = do maybeData <- runDB $ getBy $ UniqueUserData uid
@@ -27,6 +33,12 @@ checkUserData uid = do maybeData <- runDB $ getBy $ UniqueUserData uid
                            Just u -> case maybeData of
                               Nothing -> redirect (RegisterR (userIdent u))
                               Just (Entity _ userdata) -> return userdata
+
+-- | given a UserId, return Just the user data or Nothing
+getUserMD uid = do mmd <- runDB $ getBy $ UniqueUserData uid
+                   case entityVal <$> mmd of
+                       Just md -> return $ Just md
+                       Nothing -> return Nothing
 
 -- | given a CourseId, return the associated book problem sets
 getProblemSets cid = do mcourse <- runDB $ get cid

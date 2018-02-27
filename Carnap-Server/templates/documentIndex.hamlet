@@ -1,37 +1,7 @@
 <div.container>
     <h1>Shared Documents
     <h2>Publicly Shared
-    $forall (doc,mident, mmd) <- zip3 (map entityVal publicDocuments) pubidents pubmd
-        $maybe ident <- mident
-            $maybe md <- mmd
-                <div.card>
-                    <div.card-header>
-                        <a href=@{DocumentR ident (sharedDocumentFilename doc)}>
-                            #{sharedDocumentFilename doc}
-                    <div.card-block>
-                        <dl.row>
-                            <dt.col-sm-3> Title
-                            <dd.col-sm-9> #{sharedDocumentFilename doc}
-                            $maybe desc <- sharedDocumentDescription doc
-                                <dt.col-sm-3> Description
-                                <dd.col-sm-9> #{desc}
-                            <dt.col-sm-3> Creator
-                            <dd.col-sm-9> #{userDataFirstName md} #{userDataLastName md}
+    ^{documentCards publicDocuments pubidents pubmd}
     $maybe privdocs <- privateDocuments
         <h2>Instructors Only
-        $forall (doc,mident, mmd) <- zip3 (map entityVal privdocs) prividents privmd
-            $maybe ident <- mident
-                $maybe md <- mmd
-                    <div.card>
-                        <div.card-header>
-                            <a href=@{DocumentR ident (sharedDocumentFilename doc)}>
-                                #{sharedDocumentFilename doc}
-                        <div.card-block>
-                            <dl.row>
-                                <dt.col-sm-3> Title
-                                <dd.col-sm-9> #{sharedDocumentFilename doc}
-                                $maybe desc <- sharedDocumentDescription doc
-                                    <dt.col-sm-3> Description
-                                    <dd.col-sm-9> #{desc}
-                                <dt.col-sm-3> Creator
-                                <dd.col-sm-9> #{userDataFirstName md} #{userDataLastName md}
+        ^{documentCards privdocs prividents privmd}
