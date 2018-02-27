@@ -4,6 +4,7 @@ import Import
 import System.Directory (doesFileExist,getDirectoryContents)
 import Yesod.Markdown
 import Text.Pandoc.Walk (walkM, walk)
+import Text.Julius (juliusFile,rawJS)
 import Util.Data
 import Util.Database
 import Filter.SynCheckers
@@ -65,27 +66,31 @@ getDocumentR ident title = do userdir <- getUserDir ident
                               exists <- lift $ doesFileExist path
                               mcreator <- runDB $ getBy $ UniqueUser ident
                               case mcreator of
-                                  _ | not exists -> defaultLayout $ layout ("file for this document not found" :: Text)
+                                  _ | not exists -> defaultLayout $ layout ("shared file for this document not found" :: Text)
                                   Nothing -> defaultLayout $ layout ("document creator not found" :: Text)
                                   Just (Entity uid _) -> do
                                       mdoc <- runDB $ getBy (UniqueSharedDocument title uid)
                                       case mdoc of
                                           Nothing -> defaultLayout $ layout ("metadata for this document not found" :: Text)
                                           Just (Entity key doc) -> do
-                                              ehtml <- lift $ fileToHtml path
-                                              case ehtml of
-                                                  Left err -> defaultLayout $ layout (show err)
-                                                  Right html -> do
-                                                      defaultLayout $ do
-                                                          addScript $ StaticR js_popper_min_js
-                                                          addScript $ StaticR ghcjs_rts_js
-                                                          addScript $ StaticR ghcjs_allactions_lib_js
-                                                          addScript $ StaticR ghcjs_allactions_out_js
-                                                          addStylesheet $ StaticR css_exercises_css
-                                                          addStylesheet $ StaticR css_tree_css
-                                                          addStylesheet $ StaticR css_exercises_css
-                                                          layout html
-                                                          addScript $ StaticR ghcjs_allactions_runmain_js
+                                              case sharedDocumentScope doc of 
+                                                Private -> defaultLayout $ layout ("shared file for this document not found" :: Text)
+                                                _ -> do
+                                                  ehtml <- lift $ fileToHtml path
+                                                  case ehtml of
+                                                      Left err -> defaultLayout $ layout (show err)
+                                                      Right html -> do
+                                                          defaultLayout $ do
+                                                              toWidgetHead $(juliusFile "templates/command.julius")
+                                                              addScript $ StaticR js_popper_min_js
+                                                              addScript $ StaticR ghcjs_rts_js
+                                                              addScript $ StaticR ghcjs_allactions_lib_js
+                                                              addScript $ StaticR ghcjs_allactions_out_js
+                                                              addStylesheet $ StaticR css_exercises_css
+                                                              addStylesheet $ StaticR css_tree_css
+                                                              addStylesheet $ StaticR css_exercises_css
+                                                              layout html
+                                                              addScript $ StaticR ghcjs_allactions_runmain_js
 
     where layout c = [whamlet|
                         <div.container>

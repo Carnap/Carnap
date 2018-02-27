@@ -40,7 +40,7 @@ trySubmit ref w l = do (f,forms,_,_) <- liftIO $ readIORef ref
                           [] -> do msource <- liftIO submissionSource
                                    key <- liftIO assignmentKey
                                    case msource of 
-                                        Nothing -> message "Not able to identify problem source"
+                                        Nothing -> message "Not able to identify problem source. Maybe this document has not been assigned?"
                                         Just source -> liftIO $ sendJSON 
                                                          (SubmitSyntaxCheck (l ++ ":" ++ show f) source key) 
                                                          (loginCheck $ "Submitted Syntax-Check for Exercise " ++ l) 

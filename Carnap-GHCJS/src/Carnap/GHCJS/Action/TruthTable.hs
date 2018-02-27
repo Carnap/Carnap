@@ -78,7 +78,7 @@ trySubmit ref s w l = do isDone <- liftIO $ readIORef ref
                             then do msource <- liftIO submissionSource
                                     key <- liftIO assignmentKey
                                     case msource of 
-                                        Nothing -> message "Not able to identify problem source"
+                                        Nothing -> message "Not able to identify problem source. Maybe this document has not been assigned?"
                                         Just source -> liftIO $ sendJSON 
                                                           (SubmitTruthTable (l ++ ":" ++ s) source key) 
                                                           (loginCheck $ "Submitted Truth-Table for Exercise " ++ l) 

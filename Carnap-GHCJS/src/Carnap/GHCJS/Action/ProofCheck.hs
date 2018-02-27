@@ -220,7 +220,7 @@ trySubmit l s ref w i = do isFinished <- liftIO $ readIORef ref
                                      msource <- liftIO submissionSource
                                      key <- liftIO assignmentKey
                                      case msource of 
-                                        Nothing -> message "Not able to identify problem source"
+                                        Nothing -> message "Not able to identify problem source. Perhaps this document has not been assigned?"
                                         Just source -> liftIO $ sendJSON 
                                                         (SubmitDerivation (l ++ ":" ++ s) v source key) 
                                                         (loginCheck $ "Submitted Derivation for Exercise " ++ l)

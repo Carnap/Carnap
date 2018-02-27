@@ -353,7 +353,9 @@ foreign import javascript unsafe "try {new Popper($1,$2,{placement:\"right\"});}
 submissionSource = do qr <- submissionQueryJS
                       case fromJSString qr of
                           "book" -> return $ Just Book
-                          s -> do return $ Just (Assignment s)
+                          "no submission source found" -> return $ Nothing
+                          s | take 11 s == "assignment:" -> return $ Just (Assignment $ Prelude.drop 11 s)
+                          _ -> do errorPopup "Bad submission source"; return Nothing
 
 message s = liftIO (alert s)
 
