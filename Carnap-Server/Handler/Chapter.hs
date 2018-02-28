@@ -17,6 +17,8 @@ import qualified Data.CaseInsensitive as CI
 import qualified Data.Text.Encoding as TE
 import Control.Monad.State (evalState, evalStateT)
 
+-- XXX Fair amount of code-duplication between this and Handler/Book.hs. Perhaps merge those modules.
+
 getChapterR :: Int -> Handler Html
 getChapterR n = do datadir <- appDataRoot <$> (appSettings <$> getYesod)
                    cdir <- lift $ getDirectoryContents (datadir </> "book/")
@@ -39,7 +41,7 @@ content n cdir cdirp = do let matches = filter (\x -> (show n ++ ".pandoc") == d
 fileToHtml path m = do md <- markdownFromFile (path ++ m)
                        case parseMarkdown yesodDefaultReaderOptions md of
                            Right pd -> do pd' <- runFilters path pd 
-                                          return $ Right $ writePandoc yesodDefaultWriterOptions pd'
+                                          return $ Right $ writePandocTrusted yesodDefaultWriterOptions pd'
                            Left e -> return $ Left e
 
 runFilters path = let walkNotes y = evalState (walkM makeSideNotes y) 0
