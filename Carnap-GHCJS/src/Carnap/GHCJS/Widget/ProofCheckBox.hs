@@ -38,16 +38,21 @@ data CheckerOptions = CheckerOptions { submit :: Maybe Button -- What's the subm
 
 checkerWith :: CheckerOptions -> (Document -> IORef Bool -> String -> (Element, Element) -> IO ()) -> IOGoal -> Document -> IO ()
 checkerWith options updateres iog@(IOGoal i o g content _) w = do
-           [Just fd, Just nd, Just sd] <- mapM (createElement w . Just) ["div","div","div"]
+           [Just fd, Just nd, Just sd, Just incompleteAlert] <- mapM (createElement w . Just) ["div","div","div","div"]
            ref <- newIORef False
            setInnerHTML i (Just content)
            setAttribute fd "class" "proofFeedback"
            setAttribute nd "class" "numbering"
            setAttribute sd "class" "proofSpinner"
+           setAttribute incompleteAlert "class" "incompleteAlert"
+           popUpWith g w incompleteAlert "⚠" 
+                ("This proof does not establish that this conclusion follows from these premises."
+                ++ "Make sure that you've only used legitimate premises, and have discharged all assumptions!")
+                Nothing
            setInnerHTML sd (Just spinnerHtml)
            mpar@(Just par) <- getParentNode o               
            mapM_ (appendChild o . Just) [nd, fd]
-           mapM_ (appendChild g . Just) [sd]
+           mapM_ (appendChild g . Just) [sd, incompleteAlert]
            (Just w') <- getDefaultView w
            syncScroll i o
            --respond to custom initialize events
@@ -124,7 +129,6 @@ resize i = do setAttribute i "style" "width: 0px;height: 0px"
               setAttribute (castToHTMLElement par) 
                     "style" ("width:" ++ (show $ max 400 (w + 50)) ++ "px;" ++ 
                     "height:" ++ (show $ max 120 (h + 20)) ++ "px;")
-                    
 
 setLinesTo :: (IsElement e) => Document -> e -> Bool -> [String] -> IO ()
 setLinesTo w nd hasguides [] = setLinesTo w nd hasguides [""]

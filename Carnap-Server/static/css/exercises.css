@@ -232,13 +232,18 @@
     top:-10px;
 }
 
-[data-carnap-type="proofchecker"] .proofSpinner {
+[data-carnap-type="proofchecker"] .proofSpinner,  
+[data-carnap-type="proofchecker"] .incompleteAlert {
     display:none;
 }
 
-[data-carnap-type="proofchecker"] .working .proofSpinner {
+[data-carnap-type="proofchecker"] .working .proofSpinner, 
+[data-carnap-type="proofchecker"] .failure .incompleteAlert
+{
     display:inline-block;
     position:absolute;
+    text-align:center;
+    width:30px;
     right:-30px;
     top:-1px;
 }

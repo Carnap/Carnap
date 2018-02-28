@@ -7,7 +7,7 @@ module Lib
     loginCheck,errorPopup, genInOutElts, getInOutElts,generateExerciseElts, withLabel,
     formAndLabel,seqAndLabel, folSeqAndLabel, folFormAndLabel,
     message, IOGoal(..), updateWithValue, submissionSource, assignmentKey,
-    initialize,makePopper) where
+    initialize,popUpWith) where
 
 import Data.Aeson
 import Data.Maybe (catMaybes)
@@ -235,6 +235,33 @@ getCarnapDataMap elt = do (Just nnmap) <- getAttributes elt
                                          (Just n, Just v) | "data-carnap-" == take 12 n -> return $ Just (Prelude.drop 12 n,v)
                                          _ -> return Nothing
           toNameVal _ = return Nothing
+
+popUpWith :: Element -> Document -> Element -> String -> String -> Maybe String -> IO ()
+popUpWith fd w elt label msg details = 
+        do setInnerHTML elt (Just label)
+           (Just outerpopper) <- createElement w (Just "div")
+           (Just innerpopper) <- createElement w (Just "div")
+           setAttribute innerpopper "class" "popper"
+           setInnerHTML innerpopper (Just msg)
+           appendChild outerpopper (Just innerpopper)
+           case details of 
+            Just deets -> do
+               (Just detailpopper) <- createElement w (Just "div")
+               setAttribute detailpopper "class" "details"
+               setInnerHTML detailpopper (Just deets)
+               appendChild innerpopper (Just detailpopper)
+               return ()
+            Nothing -> return ()
+           (Just p) <- getParentNode fd
+           (Just gp) <- getParentNode p
+           appender <- newListener $ appendPopper outerpopper gp
+           remover <- newListener $ removePopper outerpopper gp
+           addListener elt mouseOver appender False
+           addListener elt mouseOut remover False
+    where appendPopper pop targ = do liftIO $ appendChild targ (Just pop) 
+                                     liftIO $ makePopper elt pop
+          removePopper pop targ = do liftIO $ removeChild targ (Just pop)
+                                     return ()
 
 --------------------------------------------------------
 --1.3 Encodings

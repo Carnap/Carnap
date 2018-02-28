@@ -205,7 +205,7 @@ updateGoal s ref g mseq = case mseq of
                          (Just seq) -> if seq `seqSubsetUnify` s
                                then do setAttribute g "class" "goal success"
                                        writeIORef ref True
-                               else do setAttribute g "class" "goal"
+                               else do setAttribute g "class" "goal failure"
                                        writeIORef ref False
 
 computeRule ref g mseq = case mseq of
@@ -263,33 +263,6 @@ wrap fd w elt (Left (GenericError s n))  = popUpWith fd w elt "?" ("Error on lin
 wrap fd w elt (Left (NoParse e n))       = popUpWith fd w elt "⚠" ("Can't read line " ++ show n ++ ". There may be a typo.") (Just $ show e)
 wrap fd w elt (Left (NoUnify eqs n))     = popUpWith fd w elt "✗" ("Error on line " ++ show n ++ ". Can't match these premises with this conclusion, using this rule.") (Just $ toUniErr eqs)
 wrap fd w elt (Left (NoResult _))        = setInnerHTML elt (Just "&nbsp;")
-
-popUpWith :: Element -> Document -> Element -> String -> String -> Maybe String -> IO ()
-popUpWith fd w elt label msg details = 
-        do setInnerHTML elt (Just label)
-           (Just outerpopper) <- createElement w (Just "div")
-           (Just innerpopper) <- createElement w (Just "div")
-           setAttribute innerpopper "class" "popper"
-           setInnerHTML innerpopper (Just msg)
-           appendChild outerpopper (Just innerpopper)
-           case details of 
-            Just deets -> do
-               (Just detailpopper) <- createElement w (Just "div")
-               setAttribute detailpopper "class" "details"
-               setInnerHTML detailpopper (Just deets)
-               appendChild innerpopper (Just detailpopper)
-               return ()
-            Nothing -> return ()
-           (Just p) <- getParentNode fd
-           (Just gp) <- getParentNode p
-           appender <- newListener $ appendPopper outerpopper gp
-           remover <- newListener $ removePopper outerpopper gp
-           addListener elt mouseOver appender False
-           addListener elt mouseOut remover False
-    where appendPopper pop targ = do liftIO $ appendChild targ (Just pop) 
-                                     liftIO $ makePopper elt pop
-          removePopper pop targ = do liftIO $ removeChild targ (Just pop)
-                                     return ()
 
 toUniErr eqs = "In order to apply this inference rule, there needs to be a substitution that makes at least one of these sets of pairings match:" 
                 ++ (concat $ map endiv' $ map (concat . map (endiv . show) . reverse) eqs)
