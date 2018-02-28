@@ -64,7 +64,6 @@ getAssignmentR t = do adir <- assignmentDir
                                                   addScript $ StaticR ghcjs_rts_js
                                                   addScript $ StaticR ghcjs_allactions_lib_js
                                                   addScript $ StaticR ghcjs_allactions_out_js
-                                                  addStylesheet $ StaticR css_exercises_css
                                                   addStylesheet $ StaticR css_tree_css
                                                   addStylesheet $ StaticR css_exercises_css
                                                   layout html
