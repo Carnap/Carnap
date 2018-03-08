@@ -2,7 +2,7 @@
 module Carnap.GHCJS.Action.ProofCheck (proofCheckAction) where
 
 import Carnap.Calculi.NaturalDeduction.Syntax 
-    (ProofMemoRef, NaturalDeductionCalc(..),RenderStyle(..), Inference(..))
+    (ProofMemoRef, NaturalDeductionCalc(..),RenderStyle(..), Inference(..), RuntimeNaturalDeductionConfig(..))
 import Carnap.Calculi.NaturalDeduction.Checker 
     (ProofErrorMessage(..), Feedback(..), seqSubsetUnify, toDisplaySequenceMemo, toDisplaySequence)
 import Carnap.Core.Data.AbstractSyntaxDataTypes (liftLang, FixLang, CopulaSchema)
@@ -10,7 +10,8 @@ import Carnap.Core.Data.AbstractSyntaxClasses (Schematizable)
 import Carnap.Languages.ClassicalSequent.Syntax
 import Carnap.Languages.PurePropositional.Logic as P 
     (DerivedRule(..), logicBookCalc, magnusSLCalc, magnusSLPlusCalc, propCalc, hardegreeSLCalc
-    , thomasBolducAndZachTFLCalc) 
+    , thomasBolducAndZachTFLCalc)
+import Carnap.Languages.PurePropositional.Logic.Rules (derivedRuleToSequent)
 import Carnap.Languages.PureFirstOrder.Logic as FOL 
     (DerivedRule(..), folCalc, magnusQLCalc
     , thomasBolducAndZachFOLCalc, hardegreePLCalc) 
@@ -83,9 +84,10 @@ addRules avd v =  case fromJSON v :: Result String of
 getCheckers :: IsElement self => Document -> self -> IO [Maybe IOGoal]
 getCheckers w = generateExerciseElts w "proofchecker"
 
-data Checker r lex sem der = Checker 
-        { rulePost :: IORef [(String,P.DerivedRule)] -> IO [(String,der)]
-        , checkerCalc :: NaturalDeductionCalc r lex sem der
+data Checker r lex sem = Checker 
+        { rulePost :: IORef [(String,P.DerivedRule)] -> 
+            IO (RuntimeNaturalDeductionConfig lex sem)
+        , checkerCalc :: NaturalDeductionCalc r lex sem 
         , checkerRules :: IORef [(String,P.DerivedRule)]
         , sequent :: Maybe (ClassicalSequentOver lex (Sequent sem))
         , threadRef :: IORef (Maybe ThreadId)
@@ -98,25 +100,25 @@ activateChecker _ _ Nothing  = return ()
 activateChecker drs w (Just iog@(IOGoal i o g _ opts)) -- TODO: need to update non-montague calculi to take first/higher-order derived rules
         | sys == "prop"                      = tryParse propCalc propChecker
         | sys == "firstOrder"                = tryParse folCalc folChecker
-        | sys == "secondOrder"               = tryParse msolCalc propChecker
-        | sys == "polyadicSecondOrder"       = tryParse psolCalc propChecker
-        | sys == "LogicBook"                 = tryParse logicBookCalc propChecker
-        | sys == "magnusSL"                  = tryParse magnusSLCalc propChecker
-        | sys == "magnusSLPlus"              = tryParse magnusSLPlusCalc propChecker
-        | sys == "magnusQL"                  = tryParse magnusQLCalc propChecker
-        | sys == "thomasBolducAndZachTFL"    = tryParse thomasBolducAndZachTFLCalc propChecker
-        | sys == "thomasBolducAndZachFOL"    = tryParse thomasBolducAndZachFOLCalc propChecker
-        | sys == "hardegreeSL"               = tryParse hardegreeSLCalc propChecker
-        | sys == "hardegreePL"               = tryParse hardegreePLCalc propChecker
-        | sys == "hardegreeWTL"              = tryParse hardegreeWTLCalc propChecker
-        | sys == "hardegreeL"                = tryParse hardegreeLCalc propChecker
-        | sys == "hardegreeK"                = tryParse hardegreeKCalc propChecker
-        | sys == "hardegreeD"                = tryParse hardegreeDCalc propChecker
-        | sys == "hardegreeT"                = tryParse hardegreeTCalc propChecker
-        | sys == "hardegreeB"                = tryParse hardegreeBCalc propChecker
-        | sys == "hardegree4"                = tryParse hardegreeFourCalc propChecker
-        | sys == "hardegree5"                = tryParse hardegreeFiveCalc propChecker
-        | sys == "hardegreeMPL"              = tryParse hardegreeMPLCalc folChecker
+        | sys == "secondOrder"               = tryParse msolCalc noRuntimeOptions
+        | sys == "polyadicSecondOrder"       = tryParse psolCalc noRuntimeOptions
+        | sys == "LogicBook"                 = tryParse logicBookCalc noRuntimeOptions
+        | sys == "magnusSL"                  = tryParse magnusSLCalc noRuntimeOptions
+        | sys == "magnusSLPlus"              = tryParse magnusSLPlusCalc noRuntimeOptions
+        | sys == "magnusQL"                  = tryParse magnusQLCalc noRuntimeOptions
+        | sys == "thomasBolducAndZachTFL"    = tryParse thomasBolducAndZachTFLCalc noRuntimeOptions
+        | sys == "thomasBolducAndZachFOL"    = tryParse thomasBolducAndZachFOLCalc noRuntimeOptions
+        | sys == "hardegreeSL"               = tryParse hardegreeSLCalc noRuntimeOptions
+        | sys == "hardegreePL"               = tryParse hardegreePLCalc noRuntimeOptions
+        | sys == "hardegreeWTL"              = tryParse hardegreeWTLCalc noRuntimeOptions
+        | sys == "hardegreeL"                = tryParse hardegreeLCalc noRuntimeOptions
+        | sys == "hardegreeK"                = tryParse hardegreeKCalc noRuntimeOptions
+        | sys == "hardegreeD"                = tryParse hardegreeDCalc noRuntimeOptions
+        | sys == "hardegreeT"                = tryParse hardegreeTCalc noRuntimeOptions
+        | sys == "hardegreeB"                = tryParse hardegreeBCalc noRuntimeOptions
+        | sys == "hardegree4"                = tryParse hardegreeFourCalc noRuntimeOptions
+        | sys == "hardegree5"                = tryParse hardegreeFiveCalc noRuntimeOptions
+        | sys == "hardegreeMPL"              = tryParse hardegreeMPLCalc noRuntimeOptions
         where sys = case M.lookup "system" opts of
                         Just s -> s
                         Nothing -> "prop"
@@ -141,9 +143,15 @@ activateChecker drs w (Just iog@(IOGoal i o g _ opts)) -- TODO: need to update n
                                insertAdjacentElement (castToHTMLElement parent) "afterend" (Just pd)
                                return pd
 
-              propChecker = Checker readIORef
+              propChecker = Checker $ \ref -> RuntimeNaturalDeductionConfig 
+                                              <$> (M.fromList . map (\(x,y) -> (x,derivedRuleToSequent y)) <$> readIORef ref)
+                                              <*> pure []
 
-              folChecker = Checker (\ref -> liftDerivedRules <$> readIORef ref)
+              folChecker = Checker $ \ref ->  RuntimeNaturalDeductionConfig 
+                                              <$> (M.fromList .  map (\(x,y) -> (x, liftSequent . derivedRuleToSequent $ y)) <$> readIORef ref)
+                                              <*> pure []
+
+              noRuntimeOptions = Checker $ const . pure $ RuntimeNaturalDeductionConfig mempty mempty
 
               options = CheckerOptions { submit = case (M.lookup "submission" opts, M.lookup "goal" opts) of
                                                         (Just "saveRule",_) -> Just saveRule
@@ -173,10 +181,9 @@ threadedCheck checker w ref v (g, fd) =
                Nothing -> return ()
            t' <- forkIO $ do setAttribute g "class" "goal working"
                              threadDelay 500000
-                             rules <- do rlist <- liftIO $ (rulePost checker) (checkerRules checker)
-                                         return $ M.fromList rlist
+                             rtconfig <- liftIO $ (rulePost checker) (checkerRules checker)
                              let ndcalc = checkerCalc checker
-                             let ded = ndParseProof ndcalc rules v
+                             let ded = ndParseProof ndcalc rtconfig v
                              case proofDisplay checker of 
                                Just pd -> 
                                    do renderedProof <- renderer w ded
@@ -231,7 +238,7 @@ trySave drs ref w i = do isFinished <- liftIO $ readIORef ref
                          rules <- liftIO $ readIORef drs
                          if isFinished
                            then do (Just v) <- getValue (castToHTMLTextAreaElement i)
-                                   let Feedback mseq _ = toDisplaySequence (ndProcessLine propCalc) . ndParseProof propCalc (M.fromList rules) $ v
+                                   let Feedback mseq _ = toDisplaySequence (ndProcessLine propCalc) . ndParseProof propCalc (configFrom rules mempty) $ v
                                    case mseq of
                                     Nothing -> message "A rule can't be extracted from this proof"
                                     (Just (a :|-: c)) -> do
@@ -257,6 +264,8 @@ trySave drs ref w i = do isFinished <- liftIO $ readIORef ref
 -------------------------
 --  Utility Functions  --
 -------------------------
+
+configFrom rules prems = RuntimeNaturalDeductionConfig (M.fromList . map (\(x,y) -> (x,derivedRuleToSequent y)) $ rules) prems
 
 wrap fd w elt (Right s)                  = popUpWith fd w elt "+" (show s) Nothing
 wrap fd w elt (Left (GenericError s n))  = popUpWith fd w elt "?" ("Error on line " ++ show n ++ ": " ++ s) Nothing

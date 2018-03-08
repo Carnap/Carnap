@@ -92,6 +92,10 @@ extendedPropSeqParser = parseSeqOver (purePropFormulaParser extendedLetters)
 data DerivedRule = DerivedRule { conclusion :: PureForm, premises :: [PureForm]}
                deriving (Show, Eq)
 
+derivedRuleToSequent (DerivedRule c ps) = antecedent :|-: SS (liftToSequent c)
+    where antecedent = foldr (:+:) Top (map (SA . liftToSequent) ps)
+
+
 -------------------------
 --  1.1 Standard Rules  --
 -------------------------
