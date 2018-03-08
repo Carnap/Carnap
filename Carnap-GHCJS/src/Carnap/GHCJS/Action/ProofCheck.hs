@@ -6,7 +6,7 @@ import Carnap.Calculi.NaturalDeduction.Syntax
 import Carnap.Calculi.NaturalDeduction.Checker 
     (ProofErrorMessage(..), Feedback(..), seqSubsetUnify, toDisplaySequenceMemo, toDisplaySequence)
 import Carnap.Core.Data.AbstractSyntaxDataTypes (liftLang, FixLang, CopulaSchema)
-import Carnap.Core.Data.AbstractSyntaxClasses (Schematizable)
+import Carnap.Core.Data.AbstractSyntaxClasses (Schematizable, Handed(..))
 import Carnap.Languages.ClassicalSequent.Syntax
 import Carnap.Languages.PurePropositional.Logic as P 
     (DerivedRule(..), logicBookCalc, magnusSLCalc, magnusSLPlusCalc, propCalc, hardegreeSLCalc
@@ -51,6 +51,7 @@ import Control.Monad (when)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.State (modify,get,execState)
 import Control.Concurrent
+import Data.Typeable
 
 proofCheckAction :: IO ()
 proofCheckAction = do availableDerived <- newIORef []
@@ -85,8 +86,7 @@ getCheckers :: IsElement self => Document -> self -> IO [Maybe IOGoal]
 getCheckers w = generateExerciseElts w "proofchecker"
 
 data Checker r lex sem = Checker 
-        { rulePost :: IORef [(String,P.DerivedRule)] -> 
-            IO (RuntimeNaturalDeductionConfig lex sem)
+        { rulePost' :: Checker r lex sem -> IO (RuntimeNaturalDeductionConfig lex sem)
         , checkerCalc :: NaturalDeductionCalc r lex sem 
         , checkerRules :: IORef [(String,P.DerivedRule)]
         , sequent :: Maybe (ClassicalSequentOver lex (Sequent sem))
@@ -94,6 +94,8 @@ data Checker r lex sem = Checker
         , proofDisplay :: Maybe Element
         , proofMemo :: ProofMemoRef lex sem r
         }
+
+rulePost x = rulePost' x x 
 
 activateChecker ::  IORef [(String,P.DerivedRule)] -> Document -> Maybe IOGoal -> IO ()
 activateChecker _ _ Nothing  = return ()
@@ -143,13 +145,17 @@ activateChecker drs w (Just iog@(IOGoal i o g _ opts)) -- TODO: need to update n
                                insertAdjacentElement (castToHTMLElement parent) "afterend" (Just pd)
                                return pd
 
-              propChecker = Checker $ \ref -> RuntimeNaturalDeductionConfig 
-                                              <$> (M.fromList . map (\(x,y) -> (x,derivedRuleToSequent y)) <$> readIORef ref)
-                                              <*> pure []
+              propChecker = Checker $ \self -> RuntimeNaturalDeductionConfig 
+                                              <$> (M.fromList . map (\(x,y) -> (x,derivedRuleToSequent y)) <$> readIORef (checkerRules self))
+                                              <*> (pure . toPremiseSeqs . sequent $ self)
 
-              folChecker = Checker $ \ref ->  RuntimeNaturalDeductionConfig 
-                                              <$> (M.fromList .  map (\(x,y) -> (x, liftSequent . derivedRuleToSequent $ y)) <$> readIORef ref)
-                                              <*> pure []
+              folChecker = Checker $ \self ->  RuntimeNaturalDeductionConfig 
+                                              <$> (M.fromList .  map (\(x,y) -> (x, liftSequent . derivedRuleToSequent $ y)) <$> readIORef (checkerRules self))
+                                              <*> (pure . toPremiseSeqs . sequent $ self)
+
+              toPremiseSeqs :: (Concretes lex b, Typeable b) => Maybe (ClassicalSequentOver lex (Sequent b)) -> [ClassicalSequentOver lex (Sequent b)]
+              toPremiseSeqs (Just seq) = map (\x -> SA x :|-: SS x) (toListOf (lhs . concretes) seq)
+              toPremiseSeqs Nothing = []
 
               noRuntimeOptions = Checker $ const . pure $ RuntimeNaturalDeductionConfig mempty mempty
 
@@ -181,9 +187,9 @@ threadedCheck checker w ref v (g, fd) =
                Nothing -> return ()
            t' <- forkIO $ do setAttribute g "class" "goal working"
                              threadDelay 500000
-                             rtconfig <- liftIO $ (rulePost checker) (checkerRules checker)
+                             rtconfig <- liftIO $ rulePost checker
                              let ndcalc = checkerCalc checker
-                             let ded = ndParseProof ndcalc rtconfig v
+                                 ded = ndParseProof ndcalc rtconfig v
                              case proofDisplay checker of 
                                Just pd -> 
                                    do renderedProof <- renderer w ded

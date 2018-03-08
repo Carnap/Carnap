@@ -28,59 +28,11 @@ type PropSequentCalcLex = ClassicalSequentLexOver PurePropLexicon
 --for sequent languages that contain things like quantifiers
 instance CopulaSchema PropSequentCalc
 
--- pattern SeqP x arity      = FX (Lx2 (Lx1 (Predicate x arity)))
--- pattern SeqSP x arity     = FX (Lx2 (Lx2 (Predicate x arity)))
--- pattern SeqCon x arity    = FX (Lx2 (Lx3 (Connective x arity)))
--- pattern LFalsum           = FX (Lx2 (Lx6 (Connective Falsum AZero)))
--- pattern SeqProp n         = SeqP (Prop n) AZero
--- pattern SeqPhi :: Int -> PropSequentCalc (Form Bool)
--- pattern SeqPhi n          = SeqSP (SProp n) AZero
--- pattern SeqAnd            = SeqCon And ATwo
--- pattern SeqOr             = SeqCon Or ATwo
--- pattern SeqIf             = SeqCon If ATwo
--- pattern SeqIff            = SeqCon Iff ATwo
--- pattern SeqNot            = SeqCon Not AOne
--- pattern (:&-:) x y        = SeqAnd :!$: x :!$: y
--- pattern (:||-:) x y       = SeqOr  :!$: x :!$: y
--- pattern (:->-:) x y       = SeqIf  :!$: x :!$: y
--- pattern (:<->-:) x y      = SeqIff :!$: x :!$: y
--- pattern SeqNeg x          = SeqNot :!$: x
-
 data PropSeqLabel = PropSeqFO | PropSeqACUI
         deriving (Eq, Ord, Show)
 
 instance Eq (PropSequentCalc a) where
         (==) = (=*)
-
-
--- instance Combineable PropSequentCalc PropSeqLabel where
-
---     getLabel Top               = PropSeqACUI
---     getLabel (_ :+: _)         = PropSeqACUI
---     getLabel (GammaV _)        = PropSeqACUI
---     --getLabel (SA     _)        = PropSeqACUI
---     getLabel _                 = PropSeqFO
-
---     getAlgo PropSeqFO   = foUnifySys
---     getAlgo PropSeqACUI = acuiUnifySys
-
---     replaceChild (_ :&-: x)   pig 0 = unEveryPig pig :&-: x
---     replaceChild (x :&-: _)   pig 1 = x :&-: unEveryPig pig
---     replaceChild (_ :||-: x)  pig 0 = unEveryPig pig :||-: x
---     replaceChild (x :||-: _)  pig 1 = x :||-: unEveryPig pig
---     replaceChild (_ :->-: x)  pig 0 = unEveryPig pig :->-: x
---     replaceChild (x :->-: _)  pig 1 = x :->-: unEveryPig pig
---     replaceChild (_ :<->-: x) pig 0 = unEveryPig pig :<->-: x
---     replaceChild (x :<->-: _) pig 1 = x :<->-: unEveryPig pig
---     replaceChild (_ :+: x)    pig 0 = unEveryPig pig :+: x
---     replaceChild (x :+: _)    pig 1 = x :+: unEveryPig pig
---     replaceChild (_ :-: x)    pig 0 = unEveryPig pig :-: x
---     replaceChild (x :-: _)    pig 1 = x :-: unEveryPig pig
---     replaceChild (_ :|-: x)   pig 0 = unEveryPig pig :|-: x
---     replaceChild (x :|-: _)   pig 1 = x :|-: unEveryPig pig
---     replaceChild (SeqNeg _)   pig _ = SeqNeg $ unEveryPig pig
---     replaceChild (SS _ )      pig _ = SS $ unEveryPig pig 
---     replaceChild (SA _ )      pig _ = SA $ unEveryPig pig
 
 instance ParsableLex (Form Bool) PurePropLexicon where
         langParser = purePropFormulaParser standardLetters
@@ -94,7 +46,6 @@ data DerivedRule = DerivedRule { conclusion :: PureForm, premises :: [PureForm]}
 
 derivedRuleToSequent (DerivedRule c ps) = antecedent :|-: SS (liftToSequent c)
     where antecedent = foldr (:+:) Top (map (SA . liftToSequent) ps)
-
 
 -------------------------
 --  1.1 Standard Rules  --

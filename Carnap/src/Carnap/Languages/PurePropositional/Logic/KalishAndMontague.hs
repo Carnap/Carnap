@@ -4,6 +4,7 @@ module Carnap.Languages.PurePropositional.Logic.KalishAndMontague
 
 import Data.Map as M (lookup, Map)
 import Text.Parsec
+import Carnap.Core.Unification.Unification (applySub)
 import Carnap.Core.Data.AbstractSyntaxDataTypes (Form)
 import Carnap.Core.Data.AbstractSyntaxClasses
 import Carnap.Languages.PurePropositional.Syntax
@@ -18,7 +19,7 @@ import Carnap.Languages.PurePropositional.Logic.Rules
 --A system for propositional logic resembling the proof system from Kalish
 --and Montague's LOGIC, with derived rules
 
-data PropLogic = MP | MT  | DNE | DNI | DD   | AX 
+data PropLogic = MP | MT  | DNE | DNI | DD   | AS   | PR [(ClassicalSequentOver PurePropLexicon (Sequent (Form Bool)))]
                     | CP1 | CP2 | ID1 | ID2  | ID3  | ID4 
                     | ADJ | S1  | S2  | ADD1 | ADD2 | MTP1 | MTP2 | BC1 | BC2 | CB  
                     | DER (ClassicalSequentOver PurePropLexicon (Sequent (Form Bool)))
@@ -30,7 +31,7 @@ instance Show PropLogic where
         show DNE     = "DNE"
         show DNI     = "DNI"
         show DD      = "DD"
-        show AX      = "PR"
+        show AS      = "AS"
         show CP1     = "CD"
         show CP2     = "CD"
         show ID1     = "ID"
@@ -52,7 +53,8 @@ instance Show PropLogic where
 instance Inference PropLogic PurePropLexicon (Form Bool) where
     ruleOf MP        = modusPonens
     ruleOf MT        = modusTollens
-    ruleOf AX        = axiom
+    ruleOf AS        = axiom
+    ruleOf (PR _)    = axiom
     ruleOf ID1       = constructiveReductioVariations !! 0
     ruleOf ID2       = constructiveReductioVariations !! 1
     ruleOf ID3       = constructiveReductioVariations !! 2
@@ -79,6 +81,11 @@ instance Inference PropLogic PurePropLexicon (Form Bool) where
     conclusionOf (DER r) = multiCutRight r
     conclusionOf r = lowerSequent (ruleOf r)
 
+    restriction (PR prems) = Just (\sub -> if applySub sub (lowerSequent axiom) `elem` prems
+                                               then Nothing
+                                               else Just "This is not one of the premises")
+    restriction _ = Nothing
+
     indirectInference x
         | x `elem` [DD,CP1,CP2,ID1,ID2,ID3,ID4] = Just PolyProof
         | otherwise = Nothing
@@ -86,8 +93,8 @@ instance Inference PropLogic PurePropLexicon (Form Bool) where
 parsePropLogic :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> Parsec String u [PropLogic]
 parsePropLogic rtc = do r <- choice (map (try . string) ["AS","PR","MP","MTP","MT","DD","DNE","DNI", "DN", "S", "ADJ",  "ADD" , "BC", "CB",  "CD", "ID", "D-"])
                         case r of
-                             "AS"   -> return [AX]
-                             "PR"   -> return [AX]
+                             "AS"   -> return [AS]
+                             "PR"   -> return [PR (problemPremises rtc)]
                              "MP"   -> return [MP]
                              "MT"   -> return [MT]
                              "DD"   -> return [DD]
