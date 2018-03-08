@@ -5,6 +5,7 @@ module Carnap.Languages.PureFirstOrder.Logic.KalishAndMontague
 
 import Data.Map as M (lookup, Map,empty)
 import Text.Parsec
+import Carnap.Core.Unification.Unification (applySub)
 import Carnap.Core.Data.AbstractSyntaxDataTypes (Form)
 import Carnap.Languages.PureFirstOrder.Syntax
 import Carnap.Languages.PureFirstOrder.Parser
@@ -15,6 +16,7 @@ import Carnap.Calculi.NaturalDeduction.Checker (hoProcessLineMontague, hoProcess
 import Carnap.Languages.ClassicalSequent.Syntax
 import Carnap.Languages.Util.LanguageClasses
 import Carnap.Languages.Util.GenericConstructors
+import Carnap.Languages.PurePropositional.Logic.Rules (axiom,premConstraint)
 import Carnap.Languages.PureFirstOrder.Logic.Rules
 
 --------------------------------------------------------
@@ -25,9 +27,11 @@ data FOLogic =  SL P.PropLogic
                 | UD  | UI  | EG  | ED1 | ED2 | QN1 | QN2  | QN3  | QN4  
                 | LL1 | LL2 | EL1 | EL2 | ID  | SM  | ALL1 | ALL2
                 | DER (ClassicalSequentOver PureLexiconFOL (Sequent (Form Bool)))
+                | PR [(ClassicalSequentOver PureLexiconFOL (Sequent (Form Bool)))]
                deriving (Eq)
 
 instance Show FOLogic where
+        show (PR _)  = "PR"
         show UD      = "UD"
         show UI      = "UI"
         show EG      = "EG"
@@ -50,6 +54,7 @@ instance Show FOLogic where
 
 -- TODO use liftSequent to clean this up
 instance Inference FOLogic PureLexiconFOL (Form Bool) where
+     ruleOf (PR _)    = axiom
      ruleOf UI        = universalInstantiation
      ruleOf EG        = existentialGeneralization
      ruleOf UD        = universalGeneralization
@@ -79,6 +84,7 @@ instance Inference FOLogic PureLexiconFOL (Form Bool) where
      restriction UD     = Just (eigenConstraint (SeqT 1) (SS (lall "v" $ phi' 1)) (fogamma 1))
      restriction ED1    = Just (eigenConstraint (SeqT 1) (SS (lsome "v" $ phi' 1) :-: SS (phin 1)) (fogamma 1 :+: fogamma 2))
      restriction ED2    = Nothing --Since this one does not use the assumption with a fresh object
+     restriction (PR prems) = Just (premConstraint prems)
      restriction _      = Nothing
 
      indirectInference (SL x) = indirectInference x
@@ -90,9 +96,10 @@ parseFOLogic :: RuntimeNaturalDeductionConfig PureLexiconFOL (Form Bool) -> Pars
 parseFOLogic rtc = try quantRule <|> liftProp
     where liftProp = do r <- P.parsePropLogic (RuntimeNaturalDeductionConfig mempty mempty)
                         return (map SL r)
-          quantRule = do r <- choice (map (try . string) [ "UI", "UD", "EG", "ED", "QN","LL","EL","Id","Sm","D-"])
+          quantRule = do r <- choice (map (try . string) ["PR", "UI", "UD", "EG", "ED", "QN","LL","EL","Id","Sm","D-"])
                          case r of 
-                            r | r == "UI" -> return [UI]
+                            r | r == "PR" -> return [PR $ problemPremises rtc]
+                              | r == "UI" -> return [UI]
                               | r == "UD" -> return [UD]
                               | r == "EG" -> return [EG]
                               | r == "ED" -> return [ED1,ED2]

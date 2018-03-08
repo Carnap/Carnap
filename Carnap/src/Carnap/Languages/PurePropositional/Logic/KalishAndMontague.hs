@@ -4,7 +4,6 @@ module Carnap.Languages.PurePropositional.Logic.KalishAndMontague
 
 import Data.Map as M (lookup, Map)
 import Text.Parsec
-import Carnap.Core.Unification.Unification (applySub)
 import Carnap.Core.Data.AbstractSyntaxDataTypes (Form)
 import Carnap.Core.Data.AbstractSyntaxClasses
 import Carnap.Languages.PurePropositional.Syntax
@@ -48,6 +47,7 @@ instance Show PropLogic where
         show BC1     = "BC"
         show BC2     = "BC"
         show CB      = "CB"
+        show (PR _)  = "PR"
         show (DER _) = "Derived"
 
 instance Inference PropLogic PurePropLexicon (Form Bool) where
@@ -81,9 +81,7 @@ instance Inference PropLogic PurePropLexicon (Form Bool) where
     conclusionOf (DER r) = multiCutRight r
     conclusionOf r = lowerSequent (ruleOf r)
 
-    restriction (PR prems) = Just (\sub -> if applySub sub (lowerSequent axiom) `elem` prems
-                                               then Nothing
-                                               else Just "This is not one of the premises")
+    restriction (PR prems) = Just (premConstraint prems)
     restriction _ = Nothing
 
     indirectInference x

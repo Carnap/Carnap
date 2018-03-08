@@ -47,6 +47,11 @@ data DerivedRule = DerivedRule { conclusion :: PureForm, premises :: [PureForm]}
 derivedRuleToSequent (DerivedRule c ps) = antecedent :|-: SS (liftToSequent c)
     where antecedent = foldr (:+:) Top (map (SA . liftToSequent) ps)
 
+premConstraint prems sub = if theinstance `elem` prems
+                               then Nothing
+                               else Just (show theinstance ++ " is not one of the premises " ++ show prems)
+    where theinstance = pureBNF . applySub sub $ lowerSequent axiom
+
 -------------------------
 --  1.1 Standard Rules  --
 -------------------------
