@@ -5,6 +5,7 @@ module Carnap.Languages.PurePropositional.Logic.KalishAndMontague
 import Data.Map as M (lookup, Map)
 import Text.Parsec
 import Carnap.Core.Data.AbstractSyntaxDataTypes (Form)
+import Carnap.Core.Data.AbstractSyntaxClasses
 import Carnap.Languages.PurePropositional.Syntax
 import Carnap.Languages.PurePropositional.Parser
 import Carnap.Calculi.NaturalDeduction.Syntax
@@ -20,7 +21,7 @@ import Carnap.Languages.PurePropositional.Logic.Rules
 data PropLogic = MP | MT  | DNE | DNI | DD   | AX 
                     | CP1 | CP2 | ID1 | ID2  | ID3  | ID4 
                     | ADJ | S1  | S2  | ADD1 | ADD2 | MTP1 | MTP2 | BC1 | BC2 | CB  
-                    | DER DerivedRule
+                    | DER (ClassicalSequentOver PurePropLexicon (Sequent (Form Bool)))
                deriving (Eq)
 
 instance Show PropLogic where
@@ -72,21 +73,19 @@ instance Inference PropLogic PurePropLexicon (Form Bool) where
     ruleOf BC2       = biconditionalToConditionalVariations !! 1
     ruleOf CB        = conditionalToBiconditional
 
-    premisesOf (DER r) = zipWith gammafy (premises r) [1..]
-        where gammafy p n = GammaV n :|-: SS (liftToSequent p)
+    premisesOf (DER r) = multiCutLeft r
     premisesOf r = upperSequents (ruleOf r)
 
-    conclusionOf (DER r) = gammas :|-: SS (liftToSequent $ conclusion r)
-        where gammas = foldl (:+:) Top (map GammaV [1..length (premises r)])
+    conclusionOf (DER r) = multiCutRight r
     conclusionOf r = lowerSequent (ruleOf r)
 
     indirectInference x
         | x `elem` [DD,CP1,CP2,ID1,ID2,ID3,ID4] = Just PolyProof
         | otherwise = Nothing
 
-parsePropLogic :: Map String DerivedRule -> Parsec String u [PropLogic]
-parsePropLogic ders = do r <- choice (map (try . string) ["AS","PR","MP","MTP","MT","DD","DNE","DNI", "DN", "S", "ADJ",  "ADD" , "BC", "CB",  "CD", "ID", "D-"])
-                         case r of
+parsePropLogic :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> Parsec String u [PropLogic]
+parsePropLogic rtc = do r <- choice (map (try . string) ["AS","PR","MP","MTP","MT","DD","DNE","DNI", "DN", "S", "ADJ",  "ADD" , "BC", "CB",  "CD", "ID", "D-"])
+                        case r of
                              "AS"   -> return [AX]
                              "PR"   -> return [AX]
                              "MP"   -> return [MP]
@@ -104,12 +103,13 @@ parsePropLogic ders = do r <- choice (map (try . string) ["AS","PR","MP","MTP","
                              "BC"   -> return [BC1, BC2]
                              "CB"   -> return [CB]
                              "D-" -> do rn <- many1 upper
-                                        case M.lookup rn ders of
+                                        case M.lookup rn (derivedRules rtc) of
                                             Just r  -> return [DER r]
                                             Nothing -> parserFail "Looks like you're citing a derived rule that doesn't exist"
 
-parsePropProof :: Map String DerivedRule -> String -> [DeductionLine PropLogic PurePropLexicon (Form Bool)]
-parsePropProof ders = toDeductionMontague (parsePropLogic ders) (purePropFormulaParser standardLetters)
+parsePropProof :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) 
+                     -> String -> [DeductionLine PropLogic PurePropLexicon (Form Bool)]
+parsePropProof rtc = toDeductionMontague (parsePropLogic rtc) (purePropFormulaParser standardLetters)
 
 propCalc = NaturalDeductionCalc 
     { ndRenderer = MontagueStyle

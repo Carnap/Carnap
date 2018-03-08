@@ -22,9 +22,9 @@ import Carnap.Languages.PureFirstOrder.Logic.Rules
 --------------------------------------------------------
 
 data FOLogic =  SL P.PropLogic
-                | UD  | UI  | EG   | ED1  | ED2  | DER DerivedRule
-                | QN1 | QN2 | QN3  | QN4  | LL1  | LL2 | EL1 | EL2
-                | ID  | SM  | ALL1 | ALL2
+                | UD  | UI  | EG  | ED1 | ED2 | QN1 | QN2  | QN3  | QN4  
+                | LL1 | LL2 | EL1 | EL2 | ID  | SM  | ALL1 | ALL2
+                | DER (ClassicalSequentOver PureLexiconFOL (Sequent (Form Bool)))
                deriving (Eq)
 
 instance Show FOLogic where
@@ -69,13 +69,11 @@ instance Inference FOLogic PureLexiconFOL (Form Bool) where
      ruleOf SM        = eqSymmetry
 
      premisesOf (SL x) = map liftSequent (premisesOf x)
-     premisesOf (DER r) = zipWith gammafy (premises r) [1..]
-        where gammafy p n = GammaV n :|-: SS (liftToSequent p)
+     premisesOf (DER r) = multiCutLeft r
      premisesOf x     = upperSequents (ruleOf x)
 
      conclusionOf (SL x) = liftSequent (conclusionOf x)
-     conclusionOf (DER r) = gammas :|-: SS (liftToSequent $ conclusion r)
-        where gammas = foldl (:+:) Top (map GammaV [1..length (premises r)])
+     conclusionOf (DER r) = multiCutRight r
      conclusionOf x   = lowerSequent (ruleOf x)
 
      restriction UD     = Just (eigenConstraint (SeqT 1) (SS (lall "v" $ phi' 1)) (fogamma 1))
@@ -88,9 +86,9 @@ instance Inference FOLogic PureLexiconFOL (Form Bool) where
         | x `elem` [ ED1,ED2,UD ] = Just PolyProof
         | otherwise = Nothing
 
-parseFOLogic :: Map String DerivedRule -> Parsec String u [FOLogic]
-parseFOLogic ders = try quantRule <|> liftProp
-    where liftProp = do r <- P.parsePropLogic M.empty
+parseFOLogic :: RuntimeNaturalDeductionConfig PureLexiconFOL (Form Bool) -> Parsec String u [FOLogic]
+parseFOLogic rtc = try quantRule <|> liftProp
+    where liftProp = do r <- P.parsePropLogic (RuntimeNaturalDeductionConfig mempty mempty)
                         return (map SL r)
           quantRule = do r <- choice (map (try . string) [ "UI", "UD", "EG", "ED", "QN","LL","EL","Id","Sm","D-"])
                          case r of 
@@ -104,11 +102,11 @@ parseFOLogic ders = try quantRule <|> liftProp
                               | r == "EL" -> return [EL1,EL2]
                               | r == "Id" -> return [ID]
                               | r == "D-" ->  do rn <- many1 upper
-                                                 case M.lookup rn ders of
+                                                 case M.lookup rn (derivedRules rtc) of
                                                     Just r  -> return [DER r]
                                                     Nothing -> parserFail "Looks like you're citing a derived rule that doesn't exist"
 
-parseFOLProof ::  Map String DerivedRule -> String -> [DeductionLine FOLogic PureLexiconFOL (Form Bool)]
+parseFOLProof ::  RuntimeNaturalDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine FOLogic PureLexiconFOL (Form Bool)]
 parseFOLProof ders = toDeductionMontague (parseFOLogic ders) folFormulaParser
 
 folCalc = NaturalDeductionCalc

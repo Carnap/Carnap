@@ -108,7 +108,7 @@ instance Inference ThomasBolducAndZachTFL PurePropLexicon (Form Bool) where
         isAssumption As = True
         isAssumption _  = False
 
-parseThomasBolducAndZachTFL :: Map String DerivedRule -> Parsec String u [ThomasBolducAndZachTFL]
+parseThomasBolducAndZachTFL :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> Parsec String u [ThomasBolducAndZachTFL]
 parseThomasBolducAndZachTFL ders = do r <- choice (map (try . string) [ "AS","PR","&I","/\\I", "∧I","&E","/\\E","∧E","CI","->I","→I","→E","CE","->E", "→E"
                                                                       , "~I","-I", "¬I","!?I","!?O", "vI","\\/I","∨I", "vE","\\/E", "∨E","BI","<->I", "↔I", "BE", "<->E"
                                                                       , "↔E", "TND"])
@@ -144,7 +144,7 @@ parseThomasBolducAndZachTFL ders = do r <- choice (map (try . string) [ "AS","PR
                                            "↔E"   -> return [BicoElim1, BicoElim2]
                                            "TND"  -> return [Tertium1, Tertium2, Tertium3, Tertium4]
 
-parseThomasBolducAndZachTFLProof :: Map String DerivedRule -> String -> [DeductionLine ThomasBolducAndZachTFL PurePropLexicon (Form Bool)]
+parseThomasBolducAndZachTFLProof :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> String -> [DeductionLine ThomasBolducAndZachTFL PurePropLexicon (Form Bool)]
 parseThomasBolducAndZachTFLProof ders = toDeductionFitch (parseThomasBolducAndZachTFL ders) (purePropFormulaParser $ extendedLetters {hasBooleanConstants = True})
 
 thomasBolducAndZachTFLCalc = NaturalDeductionCalc 

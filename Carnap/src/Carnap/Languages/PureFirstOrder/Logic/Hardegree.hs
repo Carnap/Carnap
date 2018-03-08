@@ -71,8 +71,8 @@ instance Inference HardegreePL PureLexiconFOL (Form Bool) where
          isAssumption (HardegreeSL x) = isAssumption x
          isAssumption _ = False
 
-parseHardegreePL ders = try liftProp <|> quantRule
-    where liftProp = do r <- P.parseHardegreeSL ders
+parseHardegreePL rtc = try liftProp <|> quantRule
+    where liftProp = do r <- P.parseHardegreeSL (RuntimeNaturalDeductionConfig mempty mempty)
                         return (map HardegreeSL r)
           quantRule = do r <- choice (map (try . string) ["∀I", "AI","UD", "∀O", "AO", "∃I", "EI"
                                                          , "∃O", "EO", "~∃O","-∃O" ,"-EO"
@@ -86,7 +86,7 @@ parseHardegreePL ders = try liftProp <|> quantRule
                               | r `elem` ["~∀O","~AO","-∀O","-AO"]   -> return [NUO]
                               | r `elem` ["QN"] -> return [QN1,QN2,QN3,QN4]
 
-parseHardegreePLProof ::  Map String P.DerivedRule -> String -> [DeductionLine HardegreePL PureLexiconFOL (Form Bool)]
+parseHardegreePLProof ::  RuntimeNaturalDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine HardegreePL PureLexiconFOL (Form Bool)]
 parseHardegreePLProof ders = toDeductionHardegree (parseHardegreePL ders) (hardegreePLFormulaParser)
 
 hardegreePLCalc = NaturalDeductionCalc

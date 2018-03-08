@@ -232,9 +232,15 @@ type ProofMemoRef lex sem r = IORef (Map Int (Either (ProofErrorMessage lex)
                                                      , r)
                                            ))
 
-data NaturalDeductionCalc r lex sem der = NaturalDeductionCalc 
+data RuntimeNaturalDeductionConfig lex sem = RuntimeNaturalDeductionConfig
+        { derivedRules :: Map String (ClassicalSequentOver lex (Sequent sem))
+        , problemPremises :: [ClassicalSequentOver lex (Sequent sem)]
+        }
+
+data NaturalDeductionCalc r lex sem = NaturalDeductionCalc 
         { ndRenderer :: RenderStyle
-        , ndParseProof :: Map String der -> String -> [DeductionLine r lex sem]
+        , ndParseProof :: RuntimeNaturalDeductionConfig lex sem
+                            -> String -> [DeductionLine r lex sem]
         , ndProcessLine :: (Sequentable lex , Inference r lex sem, MonadVar (ClassicalSequentOver lex) (State Int))
                                 => Deduction r lex sem -> Restrictor r lex -> Int -> FeedbackLine lex sem
         , ndProcessLineMemo :: (Sequentable lex , Inference r lex sem, MonadVar (ClassicalSequentOver lex) (State Int))

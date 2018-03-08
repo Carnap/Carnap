@@ -110,11 +110,11 @@ instance Inference LogicBookPropLogic PurePropLexicon (Form Bool) where
     isAssumption LBAS = True
     isAssumption _ = False
 
-parseFitchPropLogic :: Map String DerivedRule -> Parsec String u [LogicBookPropLogic]
-parseFitchPropLogic ders = do r <- choice (map (try . string) ["AS","PR","&I","/\\I", "∧I","&E","/\\E","∧E","CI","->I","→I","→E","CE","->E", "→E"
+parseFitchPropLogic :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> Parsec String u [LogicBookPropLogic]
+parseFitchPropLogic _ = do r <- choice (map (try . string) ["AS","PR","&I","/\\I", "∧I","&E","/\\E","∧E","CI","->I","→I","→E","CE","->E", "→E"
                                                               ,"~I","-I", "¬I","~E","-E","¬E" ,"vI","\\/I","∨I", "vE","\\/E", "∨E","BI","<->I", "↔I" 
                                                               , "BE", "<->E", "↔E", "R"])
-                              case r of
+                           case r of
                                   "AS"   -> return [LBAS]
                                   "PR"   -> return [LBAX]
                                   "&I"   -> return [ConjIntro]
@@ -147,7 +147,7 @@ parseFitchPropLogic ders = do r <- choice (map (try . string) ["AS","PR","&I","/
                                   "↔E"   -> return [BicoElim1, BicoElim2]
                                   "R"    -> return [Reiterate]
 
-parseFitchPropProof :: Map String DerivedRule -> String -> [DeductionLine LogicBookPropLogic PurePropLexicon (Form Bool)]
+parseFitchPropProof :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> String -> [DeductionLine LogicBookPropLogic PurePropLexicon (Form Bool)]
 parseFitchPropProof ders = toDeductionFitch (parseFitchPropLogic ders) (purePropFormulaParser extendedLetters)
 
 logicBookCalc = NaturalDeductionCalc 

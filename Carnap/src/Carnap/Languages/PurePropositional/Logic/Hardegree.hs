@@ -123,7 +123,7 @@ instance Inference HardegreeSL PurePropLexicon (Form Bool) where
          isAssumption As = True
          isAssumption _ = False
 
-parseHardegreeSL :: Map String DerivedRule -> Parsec String u [HardegreeSL]
+parseHardegreeSL :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> Parsec String u [HardegreeSL]
 parseHardegreeSL ders = do r <- choice (map (try . string) ["AS","PR","&I","&O","~&I","~&O","/\\I","/\\O","~/\\I","~/\\O","->I","->O","~->I","~->O","→I","→O","~→I","~→O","!?I"
                                                            ,"!?O","vID","\\/ID","vI","vO","~vI","~vO","\\/I","\\/O","~\\/I","~\\/O","<->I","<->O","~<->I"
                                                            ,"~<->O","↔I","↔O","~↔I","~↔O","ID","&D","SC","DN","DD","CD","REP"
@@ -178,7 +178,7 @@ parseHardegreeSL ders = do r <- choice (map (try . string) ["AS","PR","&I","&O",
                              "vID"   -> do ds <- many1 digit
                                            return [OrID (read ds)]
 
-parseHardegreeSLProof :: Map String DerivedRule -> String -> [DeductionLine HardegreeSL PurePropLexicon (Form Bool)]
+parseHardegreeSLProof :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> String -> [DeductionLine HardegreeSL PurePropLexicon (Form Bool)]
 parseHardegreeSLProof ders = toDeductionHardegree (parseHardegreeSL ders) (purePropFormulaParser (standardLetters {hasBooleanConstants = True}))
 
 hardegreeSLCalc = NaturalDeductionCalc 

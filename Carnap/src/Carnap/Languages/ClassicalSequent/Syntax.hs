@@ -7,8 +7,7 @@ import Carnap.Core.Unification.ACUI
 import Carnap.Core.Unification.Unification
 import Carnap.Core.Data.Util
 import Carnap.Languages.Util.LanguageClasses
-import Control.Lens.Lens (lens)
-import Control.Lens.Traversal (Traversal')
+import Control.Lens (lens,toListOf,Traversal')
 import Control.Monad.State
 import Data.Typeable
 
@@ -254,3 +253,11 @@ antecedentNub ::
     ) => ClassicalSequentOver lex (Sequent a) -> ClassicalSequentOver lex (Sequent a)
 antecedentNub (x:|-:y) = (applySub (head subs) (GammaV 1) :|-: y)
     where subs = evalState (acuiUnifySys (const False) [x :=: GammaV 1]) (0 :: Int)
+
+multiCutLeft :: (Typeable a, Concretes lex a) => ClassicalSequentOver lex (Sequent a) -> [ClassicalSequentOver lex (Sequent a)]
+multiCutLeft r = zipWith gammafy (toListOf (lhs . concretes) r) [1..]
+        where gammafy p n = GammaV n :|-: SS p
+
+multiCutRight :: (Typeable a, Concretes lex a) => ClassicalSequentOver lex (Sequent a) -> ClassicalSequentOver lex (Sequent a)
+multiCutRight r = gammas :|-: SS (head . toListOf (rhs . concretes) $ r)
+        where gammas = foldl (:+:) Top (map GammaV [1 .. length (multiCutLeft r)])

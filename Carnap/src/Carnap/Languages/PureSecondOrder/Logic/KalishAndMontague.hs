@@ -73,7 +73,7 @@ instance Inference MSOLogic MonadicallySOLLex (Form Bool) where
 -- XXX Skipping derived rules for now.
 parseMSOLogic :: Parsec String u [MSOLogic]
 parseMSOLogic = try soRule <|> liftFO
-    where liftFO = do r <- parseFOLogic empty
+    where liftFO = do r <- parseFOLogic (RuntimeNaturalDeductionConfig mempty mempty)
                       return (map FO r)
           soRule = do r <- choice (map (try . string) [ "UI", "UD", "EG", "ED", "ABS","APP"])
                       case r of 
@@ -162,7 +162,7 @@ instance Inference PSOLogic PolyadicallySOLLex (Form Bool) where
 -- XXX Skipping derived rules for now.
 parsePSOLogic :: Parsec String u [PSOLogic]
 parsePSOLogic = try soRule <|> liftFO
-    where liftFO = do r <- parseFOLogic empty
+    where liftFO = do r <- parseFOLogic (RuntimeNaturalDeductionConfig mempty mempty)
                       return (map FO_PSOL r)
           soRule = do r <- choice (map (try . string) [ "UI", "UD", "EG", "ED", "ABS","APP"])
                       ds <- many1 digit

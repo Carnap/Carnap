@@ -67,7 +67,7 @@ instance Inference MagnusQL PureLexiconFOL (Form Bool) where
          isAssumption _ = False
 
 parseMagnusQL ders = try liftProp <|> quantRule
-    where liftProp = do r <- P.parseMagnusSL ders
+    where liftProp = do r <- P.parseMagnusSL (RuntimeNaturalDeductionConfig mempty mempty)
                         return (map MagnusSL r)
           quantRule = do r <- choice (map (try . string) ["∀I", "AI", "∀E", "AE", "∃I", "EI", "∃E", "EE", "=I","=E" ])
                          case r of 
@@ -78,7 +78,7 @@ parseMagnusQL ders = try liftProp <|> quantRule
                               | r == "=I" -> return [IDI]
                               | r == "=E" -> return [IDE1,IDE2]
 
-parseMagnusQLProof ::  Map String P.DerivedRule -> String -> [DeductionLine MagnusQL PureLexiconFOL (Form Bool)]
+parseMagnusQLProof :: RuntimeNaturalDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine MagnusQL PureLexiconFOL (Form Bool)]
 parseMagnusQLProof ders = toDeductionFitch (parseMagnusQL ders) magnusFOLFormulaParser
 
 magnusQLCalc = NaturalDeductionCalc

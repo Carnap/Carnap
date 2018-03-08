@@ -98,7 +98,8 @@ parseHardegreeMPL ders = try liftK <|> quantRule
                               | r `elem` ["~∃O","-∃O" ,"-EO", "~EO"] -> return [NEO]
                               | r `elem` ["~∀O","~AO","-∀O","-AO"]   -> return [NUO]
 
-parseHardegreeMPLProof ::  M.Map String DerivedRule -> String -> [DeductionLine HardegreeMPL IndexedModalFirstOrderLex (Form Bool)]
+parseHardegreeMPLProof ::  RuntimeNaturalDeductionConfig IndexedModalFirstOrderLex (Form Bool) -> String 
+                            -> [DeductionLine HardegreeMPL IndexedModalFirstOrderLex (Form Bool)]
 parseHardegreeMPLProof ders = toDeductionHardegree (parseHardegreeMPL ders) (hardegreeMPLFormulaParser)
 
 hardegreeMPLCalc = NaturalDeductionCalc

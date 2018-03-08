@@ -66,8 +66,8 @@ instance Inference ThomasBolducAndZachFOL PureLexiconFOL (Form Bool) where
          isAssumption (ThomasBolducAndZachTFL x) = isAssumption x
          isAssumption _ = False
 
-parseThomasBolducAndZachFOL ders = try liftProp <|> quantRule
-    where liftProp = do r <- P.parseThomasBolducAndZachTFL ders
+parseThomasBolducAndZachFOL _ = try quantRule <|> liftProp
+    where liftProp = do r <- P.parseThomasBolducAndZachTFL (RuntimeNaturalDeductionConfig mempty mempty)
                         return (map ThomasBolducAndZachTFL r)
           quantRule = do r <- choice (map (try . string) ["∀I", "AI", "∀E", "AE", "∃I", "EI", "∃E", "EE", "=I","=E" ])
                          case r of 
@@ -78,7 +78,7 @@ parseThomasBolducAndZachFOL ders = try liftProp <|> quantRule
                               | r == "=I" -> return [IDI]
                               | r == "=E" -> return [IDE1,IDE2]
 
-parseThomasBolducAndZachFOLProof ::  Map String P.DerivedRule -> String -> [DeductionLine ThomasBolducAndZachFOL PureLexiconFOL (Form Bool)]
+parseThomasBolducAndZachFOLProof :: RuntimeNaturalDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine ThomasBolducAndZachFOL PureLexiconFOL (Form Bool)]
 parseThomasBolducAndZachFOLProof ders = toDeductionFitch (parseThomasBolducAndZachFOL ders) (thomasBolducAndZachFOLFormulaParser)
 
 thomasBolducAndZachFOLCalc = NaturalDeductionCalc

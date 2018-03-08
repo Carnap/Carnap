@@ -104,7 +104,7 @@ instance Inference MagnusSL PurePropLexicon (Form Bool) where
         isAssumption As = True
         isAssumption _ = False
 
-parseMagnusSL :: Map String DerivedRule -> Parsec String u [MagnusSL]
+parseMagnusSL :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> Parsec String u [MagnusSL]
 parseMagnusSL ders = do r <- choice (map (try . string) ["AS","PR","&I","/\\I", "∧I","&E","/\\E","∧E","CI","->I","→I","→E","CE","->E", "→E"
                                                          ,"~I","-I", "¬I","~E","-E","¬E" ,"vI","\\/I","∨I", "vE","\\/E", "∨E","BI","<->I", "↔I" 
                                                          , "BE", "<->E", "↔E", "R"])
@@ -141,7 +141,7 @@ parseMagnusSL ders = do r <- choice (map (try . string) ["AS","PR","&I","/\\I", 
                              "↔E"   -> return [BicoElim1, BicoElim2]
                              "R"    -> return [Reiterate]
 
-parseMagnusSLProof :: Map String DerivedRule -> String -> [DeductionLine MagnusSL PurePropLexicon (Form Bool)]
+parseMagnusSLProof :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> String -> [DeductionLine MagnusSL PurePropLexicon (Form Bool)]
 parseMagnusSLProof ders = toDeductionFitch (parseMagnusSL ders) (purePropFormulaParser extendedLetters)
 
 magnusSLCalc = NaturalDeductionCalc 
@@ -213,7 +213,7 @@ instance Inference MagnusSLPlus PurePropLexicon (Form Bool) where
         isAssumption (MSL x) = isAssumption x
         isAssumption _ = False
 
-parseMagnusSLPlus :: Map String DerivedRule -> Parsec String u [MagnusSLPlus]
+parseMagnusSLPlus :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> Parsec String u [MagnusSLPlus]
 parseMagnusSLPlus ders = try basic <|> plus
     where basic = map MSL <$> parseMagnusSL ders
           plus = do r <- choice (map (try . string) ["HYP","DIL","MT", "Comm", "DN", "MC", "↔ex", "<->ex"])
@@ -226,7 +226,7 @@ parseMagnusSLPlus ders = try basic <|> plus
                         "↔ex"   -> return [BiExRep,RepBiEx]
                         "<->ex" -> return [BiExRep,RepBiEx]
 
-parseMagnusSLPlusProof :: Map String DerivedRule -> String -> [DeductionLine MagnusSLPlus PurePropLexicon (Form Bool)]
+parseMagnusSLPlusProof :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> String -> [DeductionLine MagnusSLPlus PurePropLexicon (Form Bool)]
 parseMagnusSLPlusProof ders = toDeductionFitch (parseMagnusSLPlus ders) (purePropFormulaParser extendedLetters)
 
 magnusSLPlusCalc = NaturalDeductionCalc 
