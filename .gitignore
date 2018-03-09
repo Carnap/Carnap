@@ -23,9 +23,8 @@ Sessionx.vim
 *.sqlite3
 yesod-devel
 Carnap-Server/app/SecureStrings.hs
-Carnap-Server/assignments
-Carnap-Server/book/cache
-Carnap-Server/fay/Fay/Yesod.hs
+dataroot
+Carnap-Book/cache
 Carnap-Server/static/tmp/
 Carnap-Server/static/faygen*
 Carnap-GHCJS/test/testpages/
