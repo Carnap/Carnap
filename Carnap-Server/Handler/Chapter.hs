@@ -20,9 +20,9 @@ import Control.Monad.State (evalState, evalStateT)
 -- XXX Fair amount of code-duplication between this and Handler/Book.hs. Perhaps merge those modules.
 
 getChapterR :: Int -> Handler Html
-getChapterR n = do datadir <- appDataRoot <$> (appSettings <$> getYesod)
-                   cdir <- lift $ getDirectoryContents (datadir </> "book/")
-                   content <- liftIO $ content n cdir (datadir </> "book/")
+getChapterR n = do bookdir <- appBookRoot <$> (appSettings <$> getYesod)
+                   cdir <- lift $ getDirectoryContents bookdir
+                   content <- liftIO $ content n cdir bookdir
                    case content of
                        Right html -> chapterLayout $ layout html
                        Left err -> defaultLayout $ layout (show err)

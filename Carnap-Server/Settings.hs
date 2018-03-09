@@ -42,6 +42,8 @@ data AppSettings = AppSettings
     -- ^ Use Sqlite rather than postgres
     , appDataRoot               :: FilePath
     -- ^ root for stored application data
+    , appBookRoot               :: FilePath
+    -- ^ root for the carnap book 
     , appDetailedRequestLogging :: Bool
     -- ^ Use detailed request logging system
     , appShouldLogAll           :: Bool
@@ -79,6 +81,7 @@ instance FromJSON AppSettings where
 
         appSqlite                 <- o .:  "sqlite"           .!= False
         appDataRoot               <- o .:? "data-root"        .!= "."
+        appBookRoot               <- o .:? "book-root"        .!= "."
         appDetailedRequestLogging <- o .:? "detailed-logging" .!= appDevel
         appShouldLogAll           <- o .:? "should-log-all"   .!= appDevel
         appReloadTemplates        <- o .:? "reload-templates" .!= appDevel
