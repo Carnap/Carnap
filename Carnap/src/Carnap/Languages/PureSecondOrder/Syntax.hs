@@ -127,6 +127,7 @@ instance MaybeStaticVar MonadicSOQuant
 
 instance FirstOrderLex MonadicSOQuant
 
+
 -------------------------
 --  1.2 Polyadic Data  --
 -------------------------
@@ -204,37 +205,21 @@ instance FirstOrderLex PolySOLQuant
 --2. Second Order Languages
 --------------------------------------------------------
 
-pattern SOSent n        = FX (Lx1 (Lx1 (Lx1 (Lx1 (Predicate (Prop n) AZero)))))
-pattern SOSPhi n        = FX (Lx1 (Lx1 (Lx1 (Lx2 (Predicate (SProp n) AZero)))))
-pattern SOCon x arity   = FX (Lx1 (Lx1 (Lx1 (Lx3 (Connective x arity)))))
 pattern SOSV n          = FX (Lx1 (Lx1 (Lx1 (Lx4 (StaticVar n)))))
 pattern SODV n          = FX (Lx1 (Lx1 (Lx1 (Lx4 (SubVar n)))))
-pattern SOQuant q       = FX (Lx1 (Lx1 (Lx2 (Bind q))))
 pattern SOConst c a     = FX (Lx1 (Lx1 (Lx3 (Function c a))))
-pattern SOVar c a       = FX (Lx1 (Lx1 (Lx4 (Function c a))))
 pattern SOTau c a       = FX (Lx1 (Lx1 (Lx5 (Function c a))))
+pattern SOC n           = SOConst (Constant n) AZero
+pattern SOT n           = SOTau (SFunc AZero n) AZero
+pattern SOQuant q       = FX (Lx1 (Lx1 (Lx2 (Bind q))))
+pattern SOVar c a       = FX (Lx1 (Lx1 (Lx4 (Function c a))))
 pattern SOPred x arity  = FX (Lx1 (Lx2 (Lx1 (Predicate x arity))))
 pattern SOSPred x arity = FX (Lx1 (Lx2 (Lx2 (Predicate x arity))))
 pattern SOFunc x arity  = FX (Lx1 (Lx3 (Lx2 (Function x arity))))
 pattern SOP n a1 a2     = SOPred (Pred a1 n) a2
 pattern SOPhi n a1 a2   = SOSPred (SPred a1 n) a2
-pattern SOAnd           = SOCon And ATwo
-pattern SOOr            = SOCon Or ATwo
-pattern SOIf            = SOCon If ATwo
-pattern SOIff           = SOCon Iff ATwo
-pattern SONot           = SOCon Not AOne
-pattern SOC n           = SOConst (Constant n) AZero
 pattern SOV s           = SOVar (Var s) AZero
-pattern SOT n           = SOTau (SFunc AZero n) AZero
-pattern SOEq            = FX (Lx1 (Lx3 (Lx1 (Predicate TermEq ATwo))))
-pattern (:==:) t1 t2    = SOEq :!$: t1 :!$: t2
 pattern SOF n a1 a2     = SOFunc (Func a1 n) a2
-pattern SOBind q f      = SOQuant q :!$: LLam f
-pattern (:&:) x y       = SOAnd :!$: x :!$: y
-pattern (:||:) x y      = SOOr  :!$: x :!$: y
-pattern (:->:) x y      = SOIf  :!$: x :!$: y
-pattern (:<->:) x y     = SOIff :!$: x :!$: y
-pattern SONeg x         = SONot :!$: x
 pattern SOMQuant q      = FX (Lx3 (Bind q))
 pattern SOMAbs a        = FX (Lx4 (Abstract a))
 pattern SOMApp a        = FX (Lx5 (Apply a))
@@ -292,33 +277,22 @@ instance BoundVars MonadicallySOLLex where
 
     subBoundVar = subst
 
-instance PolyadicPredicateLanguage MonadicallySOL (Term Int) (Form Bool) 
-    where ppn n a = SOP n a a
+instance Eq (MonadicallySOL a) where
+        (==) = (=*)
 
-instance PolyadicFunctionLanguage MonadicallySOL (Term Int) (Term Int) where 
-    pfn n a = SOF n a a
-
-instance IndexedPropLanguage (MonadicallySOL (Form Bool)) where
-    pn = SOSent
-
-instance IndexedConstantLanguage (MonadicallySOL(Term Int)) where 
-        cn = SOC
-
-instance BooleanLanguage (MonadicallySOL (Form Bool)) where
-    land = (:&:)
-    lneg = SONeg
-    lor  = (:||:)
-    lif  = (:->:)
-    liff = (:<->:)
-
-instance QuantLanguage (MonadicallySOL (Form Bool)) (MonadicallySOL (Term Int)) where
-    lall  v f = SOQuant (All v) :!$: LLam f
-    lsome  v f = SOQuant (Some v) :!$: LLam f
+instance PrismPropLex MonadicallySOLLex Bool
+instance PrismSchematicProp MonadicallySOLLex Bool
+instance PrismIndexedConstant MonadicallySOLLex Int
+instance PrismPolyadicPredicate MonadicallySOLLex Int Bool
+instance PrismPolyadicFunction MonadicallySOLLex Int Int
+instance PrismPolyadicSchematicFunction MonadicallySOLLex Int Int
+instance PrismTermEquality MonadicallySOLLex Int Bool
+instance PrismBooleanConnLex MonadicallySOLLex Bool
+instance PrismStandardQuant MonadicallySOLLex Bool Int
 
 instance QuantLanguage (MonadicallySOL (Form Bool)) (MonadicallySOL (Form (Int -> Bool))) where
     lall  v f = SOMQuant (SOAll v) :!$: LLam f
     lsome  v f = SOMQuant (SOSome v) :!$: LLam f
-
 
 --------------------------------------------------------
 --  2.2 Polyadic SOL
@@ -353,29 +327,6 @@ instance BoundVars PolyadicallySOLLex where
 
     subBoundVar = subst
 
-instance PolyadicPredicateLanguage PolyadicallySOL (Term Int) (Form Bool) 
-    where ppn n a = SOP n a a
-
-instance PolyadicFunctionLanguage PolyadicallySOL (Term Int) (Term Int) where 
-    pfn n a = SOF n a a
-
-instance IndexedPropLanguage (PolyadicallySOL (Form Bool)) where
-    pn = SOSent
-
-instance IndexedConstantLanguage (PolyadicallySOL (Term Int)) where 
-        cn = SOC
-
-instance BooleanLanguage (PolyadicallySOL (Form Bool)) where
-    land = (:&:)
-    lneg = SONeg
-    lor  = (:||:)
-    lif  = (:->:)
-    liff = (:<->:)
-
-instance QuantLanguage (PolyadicallySOL (Form Bool)) (PolyadicallySOL (Term Int)) where
-    lall  v f = SOQuant (All v) :!$: LLam f
-    lsome  v f = SOQuant (Some v) :!$: LLam f
-
 instance CopulaSchema PolyadicallySOL where 
 
     appSchema (SOQuant (All x)) (LLam f) e = schematize (All x) (show (f $ SOV x) : e)
@@ -389,6 +340,19 @@ instance CopulaSchema PolyadicallySOL where
         where h = scopeHeight (LLam f)
     lamSchema f (x:xs) = "(λβ_" ++ show h ++ "." ++ show (f (SOSV (-1 * h))) ++ intercalate " " (x:xs) ++ ")"
         where h = scopeHeight (LLam f)
+
+instance Eq (PolyadicallySOL a) where
+        (==) = (=*)
+
+instance PrismPropLex PolyadicallySOLLex Bool
+instance PrismSchematicProp PolyadicallySOLLex Bool
+instance PrismIndexedConstant PolyadicallySOLLex Int
+instance PrismPolyadicPredicate PolyadicallySOLLex Int Bool
+instance PrismPolyadicFunction PolyadicallySOLLex Int Int
+instance PrismPolyadicSchematicFunction PolyadicallySOLLex Int Int
+instance PrismBooleanConnLex PolyadicallySOLLex Bool
+instance PrismStandardQuant PolyadicallySOLLex Bool Int
+instance PrismTermEquality PolyadicallySOLLex Int Bool
 
 --------------------------------------------------------
 --Notes

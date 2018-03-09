@@ -6,19 +6,24 @@ import Carnap.Core.Data.AbstractSyntaxDataTypes
 import Carnap.Languages.PureSecondOrder.Syntax
 import Carnap.Languages.ClassicalSequent.Syntax
 import Carnap.Languages.Util.GenericConstructors
-import Carnap.Languages.PureFirstOrder.Logic (FOLogic(..),parseFOLogic)
+import Carnap.Languages.PurePropositional.Logic.Rules (axiom, premConstraint)
+import Carnap.Languages.PureFirstOrder.Logic (FOLogic(ED1,ED2,UD,UI,EG),parseFOLogic)
 import Carnap.Languages.PureSecondOrder.Parser
 import Carnap.Languages.ClassicalSequent.Parser
 import Carnap.Calculi.NaturalDeduction.Syntax
 import Carnap.Calculi.NaturalDeduction.Parser
 import Carnap.Calculi.NaturalDeduction.Checker (hoProcessLineMontague, hoProcessLineMontagueMemo)
+import Carnap.Languages.Util.LanguageClasses
+import Carnap.Languages.Util.GenericConstructors
 import Data.Map (empty)
 import Text.Parsec
 import Carnap.Languages.PureSecondOrder.Logic.Rules
 
-data MSOLogic = ABS | APP | SOUI | SOEG | SOUD | SOED1 | SOED2 | FO FOLogic
+data MSOLogic = ABS | APP | SOUI | SOEG | SOUD | SOED1 | SOED2 | FO FOLogic 
+                    | PR [(ClassicalSequentOver MonadicallySOLLex (Sequent (Form Bool)))]
 
 instance Show MSOLogic where
+        show (PR _) = "PR"
         show ABS    = "ABS"
         show APP    = "APP"
         show SOUI   = "UI"
@@ -32,6 +37,7 @@ somgamma :: Int -> ClassicalSequentOver MonadicallySOLLex (Antecedent (Form Bool
 somgamma = GammaV
 
 instance Inference MSOLogic MonadicallySOLLex (Form Bool) where
+        ruleOf (PR _) = [] ∴ SA (phin 1) :|-: SS (phin 1)
         ruleOf ABS    = monadicAbstraction
         ruleOf APP    = monadicApplication
         ruleOf SOUI   = monadicUniversalInstantiation
@@ -46,52 +52,55 @@ instance Inference MSOLogic MonadicallySOLLex (Form Bool) where
         conclusionOf (FO x) = liftSequent (conclusionOf x)
         conclusionOf r = lowerSequent (ruleOf r)
 
-        restriction SOUD     = Just (sopredicateEigenConstraint 
-                                        (liftToSequent $ SOMScheme 1) 
-                                        (ss (SOMBind (SOAll "v") (\x -> SOMCtx 1 :!$: x)))  
-                                        (somgamma 1))
+        restriction (PR prems) = Just (premConstraint prems)
+        restriction SOUD       = Just (sopredicateEigenConstraint 
+                                          (liftToSequent $ SOMScheme 1) 
+                                          (ss (SOMBind (SOAll "v") (\x -> SOMCtx 1 :!$: x)))  
+                                          (somgamma 1))
 
-        restriction SOED1    = Just (sopredicateEigenConstraint
-                                        (liftToSequent $ SOMScheme 1)
-                                        (ss (SOMBind (SOSome "v") (\x -> SOMCtx 1 :!$: x))
-                                            :-: ss phiS)
-                                        (somgamma 1 :+: somgamma 2))
-        restriction (FO UD)  = Just (eigenConstraint stau 
-                                        (ss $ SOBind (All "v") phi) 
-                                        (somgamma 1))
+        restriction SOED1      = Just (sopredicateEigenConstraint
+                                          (liftToSequent $ SOMScheme 1)
+                                          (ss (SOMBind (SOSome "v") (\x -> SOMCtx 1 :!$: x))
+                                              :-: ss phiS)
+                                          (somgamma 1 :+: somgamma 2))
+        restriction (FO UD)    = Just (eigenConstraint stau 
+                                          (ss $ lall "v" phi) 
+                                          (somgamma 1))
             where phi x = SOPhi 1 AOne AOne :!$: x
                   stau = liftToSequent tau
 
         restriction (FO ED1) = Just (eigenConstraint stau 
-                                        ((ss $ SOBind (Some "v") phi) :-: ss phiS) 
+                                        ((ss $ lsome "v" phi) :-: ss phiS) 
                                         (somgamma 1 :+: somgamma 2))
             where phi x = SOPhi 1 AOne AOne :!$: x
                   
                   stau = liftToSequent tau
         restriction _ = Nothing
 
--- XXX Skipping derived rules for now.
-parseMSOLogic :: Parsec String u [MSOLogic]
-parseMSOLogic = try soRule <|> liftFO
+parseMSOLogic :: RuntimeNaturalDeductionConfig MonadicallySOLLex (Form Bool) 
+                    -> Parsec String u [MSOLogic]
+parseMSOLogic rtc = try soRule <|> liftFO
     where liftFO = do r <- parseFOLogic (RuntimeNaturalDeductionConfig mempty mempty)
                       return (map FO r)
-          soRule = do r <- choice (map (try . string) [ "UI", "UD", "EG", "ED", "ABS","APP"])
+          soRule = do r <- choice (map (try . string) ["PR", "UI", "UD", "EG", "ED", "ABS","APP"])
                       case r of 
-                            r | r == "UI"   -> return [FO UI, SOUI]
+                            r | r == "PR"   -> return [PR $ problemPremises rtc]
+                              | r == "UI"   -> return [FO UI, SOUI]
                               | r == "UD"   -> return [SOUD, FO UD]
                               | r == "EG"   -> return [FO EG, SOEG]
                               | r == "ED"   -> return [FO ED1,FO ED2, SOED1, SOED2]
                               | r == "ABS"  -> return [ABS]
                               | r == "APP"  -> return [APP]
 
-parseMSOLProof :: String -> [DeductionLine MSOLogic MonadicallySOLLex (Form Bool)]
-parseMSOLProof = toDeductionMontague parseMSOLogic msolFormulaParser
+parseMSOLProof :: RuntimeNaturalDeductionConfig MonadicallySOLLex (Form Bool) 
+                    -> String -> [DeductionLine MSOLogic MonadicallySOLLex (Form Bool)]
+parseMSOLProof rtc = toDeductionMontague (parseMSOLogic rtc) msolFormulaParser
 
 msolSeqParser = seqFormulaParser :: Parsec String () (MSOLSequentCalc (Sequent (Form Bool)))
 
 msolCalc = NaturalDeductionCalc 
     { ndRenderer = MontagueStyle
-    , ndParseProof = const parseMSOLProof -- XXX ignore derived rules for now
+    , ndParseProof = parseMSOLProof
     , ndProcessLine = hoProcessLineMontague
     , ndProcessLineMemo = Just hoProcessLineMontagueMemo
     , ndParseSeq = msolSeqParser
@@ -103,8 +112,10 @@ data PSOLogic = ABS_PSOL Int   | APP_PSOL Int
               | SOUI_PSOL Int  | SOEG_PSOL Int 
               | SOUD_PSOL Int  | SOED1_PSOL Int 
               | SOED2_PSOL Int | FO_PSOL FOLogic
+              | PPR [(ClassicalSequentOver PolyadicallySOLLex (Sequent (Form Bool)))]
 
 instance Show PSOLogic where
+        show (PPR _)        = "PR"
         show (ABS_PSOL n)   = "ABS" ++ show n
         show (APP_PSOL n)   = "APP" ++ show n
         show (SOUI_PSOL n)  = "UI"  ++ show n
@@ -118,6 +129,7 @@ sogamma :: Int -> ClassicalSequentOver PolyadicallySOLLex (Antecedent (Form Bool
 sogamma = GammaV
 
 instance Inference PSOLogic PolyadicallySOLLex (Form Bool) where
+        ruleOf (PPR _) = [] ∴ SA (phin 1) :|-: SS (phin 1)
         ruleOf (ABS_PSOL n) = polyadicAbstraction n
         ruleOf (APP_PSOL n) = polyadicApplication n
         ruleOf (SOUI_PSOL n) = polyadicUniversalInstantiation n
@@ -132,6 +144,8 @@ instance Inference PSOLogic PolyadicallySOLLex (Form Bool) where
         conclusionOf (FO_PSOL x) = liftSequent (conclusionOf x)
         conclusionOf r = lowerSequent (ruleOf r)
 
+        restriction (PPR prems) = Just (premConstraint prems)
+
         restriction (SOUD_PSOL n)  = Just (psopredicateEigenConstraint 
                                           (liftToSequent $ psolAppScheme (n - 1)) 
                                           -- XXX would be better to use
@@ -145,13 +159,13 @@ instance Inference PSOLogic PolyadicallySOLLex (Form Bool) where
                                            (sogamma 1 :+: sogamma 2))
 
         restriction (FO_PSOL UD)  = Just (eigenConstraint stau 
-                                        (ss' $ SOBind (All "v") phi) 
+                                        (ss' $ lall "v" phi) 
                                         (sogamma 1))
             where phi x = SOPhi 1 AOne AOne :!$: x
                   stau = liftToSequent taup
 
         restriction (FO_PSOL ED1) = Just (eigenConstraint stau 
-                                        ((ss' $ SOBind (Some "v") phi) :-: ss' phiSp) 
+                                        ((ss' $ lsome "v" phi) :-: ss' phiSp) 
                                         (sogamma 1 :+: sogamma 2))
             where phi x = SOPhi 1 AOne AOne :!$: x
                   
@@ -159,30 +173,33 @@ instance Inference PSOLogic PolyadicallySOLLex (Form Bool) where
         restriction _ = Nothing
         --
 
--- XXX Skipping derived rules for now.
-parsePSOLogic :: Parsec String u [PSOLogic]
-parsePSOLogic = try soRule <|> liftFO
+parsePSOLogic :: RuntimeNaturalDeductionConfig PolyadicallySOLLex (Form Bool)
+                    -> Parsec String u [PSOLogic]
+parsePSOLogic rtc = try soRule <|> liftFO
     where liftFO = do r <- parseFOLogic (RuntimeNaturalDeductionConfig mempty mempty)
                       return (map FO_PSOL r)
-          soRule = do r <- choice (map (try . string) [ "UI", "UD", "EG", "ED", "ABS","APP"])
-                      ds <- many1 digit
-                      let n = read ds :: Int
-                      case r of 
-                            r | r == "UI"   -> return [SOUI_PSOL n]
-                              | r == "UD"   -> return [SOUD_PSOL n]
-                              | r == "EG"   -> return [SOEG_PSOL n]
-                              | r == "ED"   -> return [SOED1_PSOL n, SOED2_PSOL n]
-                              | r == "ABS"  -> return [ABS_PSOL n]
-                              | r == "APP"  -> return [APP_PSOL n]
+          soRule = do r <- choice (map (try . string) ["PR", "UI", "UD", "EG", "ED", "ABS","APP"])
+                      if r == "PR" 
+                          then return [PPR $ problemPremises rtc]
+                          else do ds <- many1 digit
+                                  let n = read ds :: Int
+                                  case r of 
+                                        r | r == "UI"   -> return [SOUI_PSOL n]
+                                          | r == "UD"   -> return [SOUD_PSOL n]
+                                          | r == "EG"   -> return [SOEG_PSOL n]
+                                          | r == "ED"   -> return [SOED1_PSOL n, SOED2_PSOL n]
+                                          | r == "ABS"  -> return [ABS_PSOL n]
+                                          | r == "APP"  -> return [APP_PSOL n]
 
-parsePSOLProof :: String -> [DeductionLine PSOLogic PolyadicallySOLLex (Form Bool)]
-parsePSOLProof = toDeductionMontague parsePSOLogic psolFormulaParser
+parsePSOLProof :: RuntimeNaturalDeductionConfig PolyadicallySOLLex (Form Bool) 
+                    -> String -> [DeductionLine PSOLogic PolyadicallySOLLex (Form Bool)]
+parsePSOLProof rtc = toDeductionMontague (parsePSOLogic rtc) psolFormulaParser
 
 psolSeqParser = seqFormulaParser :: Parsec String () (PSOLSequentCalc (Sequent (Form Bool)))
 
 psolCalc = NaturalDeductionCalc 
     { ndRenderer = MontagueStyle
-    , ndParseProof = const parsePSOLProof -- XXX ignore derived rules for now
+    , ndParseProof = parsePSOLProof
     , ndProcessLine = hoProcessLineMontague
     , ndProcessLineMemo = Just hoProcessLineMontagueMemo
     , ndParseSeq = psolSeqParser

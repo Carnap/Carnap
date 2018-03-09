@@ -35,6 +35,9 @@ pattern SeqAbst a         = FX (Lx2 (Lx4 (Abstract a)))
 instance ParsableLex (Form Bool) MonadicallySOLLex where
         langParser = msolFormulaParser
 
+instance Eq (MSOLSequentCalc a) where
+        (==) = (=*)
+
 instance CopulaSchema MSOLSequentCalc where 
 
     appSchema (SeqQuant (All x)) (LLam f) e = 
@@ -98,6 +101,9 @@ psopredicateEigenConstraint c suc ant sub
 -------------------------------------------
 
 type PSOLSequentCalc = ClassicalSequentOver PolyadicallySOLLex
+
+instance Eq (PSOLSequentCalc a) where
+        (==) = (=*)
 
 pattern SeqSOPQuant q     = FX (Lx2 (Lx3 (Bind q)))
 

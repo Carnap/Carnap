@@ -50,7 +50,7 @@ derivedRuleToSequent (DerivedRule c ps) = antecedent :|-: SS (liftToSequent c)
 premConstraint prems sub = if theinstance `elem` prems
                                then Nothing
                                else Just (show theinstance ++ " is not one of the premises " ++ show prems)
-    where theinstance = pureBNF . applySub sub $ lowerSequent axiom
+    where theinstance = pureBNF . applySub sub $ (SA (phin 1) :|-: SS (phin 1))
 
 -------------------------
 --  1.1 Standard Rules  --
@@ -75,8 +75,7 @@ modusTollens = [ GammaV 1 :|-: SS (phin 1 .→. phin 2)
                ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (lneg $ phin 1)
 
 axiom :: BooleanRule lex b
-axiom = [
-        ] ∴ SA (phin 1) :|-: SS (phin 1)
+axiom = [] ∴ SA (phin 1) :|-: SS (phin 1)
 
 identityRule :: BooleanRule lex b
 identityRule = [ GammaV 1 :|-: SS (phin 1) 
