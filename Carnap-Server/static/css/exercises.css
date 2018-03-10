@@ -58,7 +58,6 @@
     word-wrap:normal;
 }
 
-
 [data-carnap-type="proofchecker"] > button {
     display:block;
     position: absolute;
@@ -77,7 +76,6 @@
     font-size:10pt;
     overflow:hidden;
 }
-
 
 .proofFeedback {
     font-size:10pt;
@@ -136,7 +134,6 @@
     margin:5px;
     border:1px solid gray;
 }
-
 
 /* when you hover over the div containing the feedback mark */
 .proofFeedback li > div:hover {
@@ -228,6 +225,7 @@
     width:400px;
     position:absolute;
     padding:5pt;
+    padding-right:40px;
     margin:5pt;
     top:-10px;
 }
@@ -244,7 +242,7 @@
     position:absolute;
     text-align:center;
     width:30px;
-    right:-30px;
+    right:0px;
     top:-1px;
 }
 
