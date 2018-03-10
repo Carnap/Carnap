@@ -2,6 +2,8 @@
 module Carnap.Languages.PurePropositional.Logic.Rules where
 
 import Text.Parsec
+import Data.List
+import Data.Typeable
 import Carnap.Core.Unification.Unification
 import Carnap.Core.Unification.Combination
 import Carnap.Core.Unification.FirstOrder
@@ -14,7 +16,6 @@ import Carnap.Languages.ClassicalSequent.Syntax
 import Carnap.Languages.ClassicalSequent.Parser
 import Carnap.Languages.Util.LanguageClasses
 import Carnap.Languages.Util.GenericConstructors
-import Data.Typeable
 
 --------------------------------------------------------
 --1 Propositional Sequent Calculus
@@ -49,8 +50,11 @@ derivedRuleToSequent (DerivedRule c ps) = antecedent :|-: SS (liftToSequent c)
 
 premConstraint prems sub = if theinstance `elem` prems
                                then Nothing
-                               else Just (show theinstance ++ " is not one of the premises " ++ show prems)
+                               else Just (show (project theinstance) ++ " is not one of the premises " 
+                                                                     ++ intercalate ", " (map (show . project) prems))
     where theinstance = pureBNF . applySub sub $ (SA (phin 1) :|-: SS (phin 1))
+          project :: ClassicalSequentOver lex (Sequent a) -> ClassicalSequentOver lex (Succedent a)
+          project = (\(x :|-: y) -> y)
 
 -------------------------
 --  1.1 Standard Rules  --
