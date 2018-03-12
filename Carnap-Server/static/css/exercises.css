@@ -45,7 +45,6 @@
     width: 100%;
     height: 100%;
     font-size:10pt;
-    top:35px;
     padding:20px;
     min-height:150px;
     padding-left:50pt;
@@ -66,7 +65,7 @@
 
 [data-carnap-type="proofchecker"] .output{
     position: absolute;
-    margin-top:36px;
+    margin-top:30px;
     top:0px;
     bottom:-30px;
     width:100%;
@@ -223,10 +222,8 @@
 
 [data-carnap-type="proofchecker"] .goal {
     width:400px;
-    position:absolute;
     padding:5pt;
     padding-right:40px;
-    margin:5pt;
     top:-10px;
 }
 
