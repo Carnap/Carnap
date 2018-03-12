@@ -38,12 +38,14 @@ data CheckerOptions = CheckerOptions { submit :: Maybe Button -- What's the subm
 
 checkerWith :: CheckerOptions -> (Document -> IORef Bool -> String -> (Element, Element) -> IO ()) -> IOGoal -> Document -> IO ()
 checkerWith options updateres iog@(IOGoal i o g content _) w = do
-           [Just fd, Just nd, Just sd, Just incompleteAlert] <- mapM (createElement w . Just) ["div","div","div","div"]
+           elts <- mapM (createElement w . Just) ["div","div","div","div","div"]
+           let [Just fd, Just nd, Just sd, Just bw, Just incompleteAlert] = elts
            ref <- newIORef False
            setInnerHTML i (Just content)
            setAttribute fd "class" "proofFeedback"
            setAttribute nd "class" "numbering"
            setAttribute sd "class" "proofSpinner"
+           setAttribute bw "class" "buttonWrapper"
            setAttribute incompleteAlert "class" "incompleteAlert"
            popUpWith g w incompleteAlert "⚠" 
                 ("This proof does not establish that this conclusion follows from these premises."
@@ -53,22 +55,12 @@ checkerWith options updateres iog@(IOGoal i o g content _) w = do
            mpar@(Just par) <- getParentNode o               
            mapM_ (appendChild o . Just) [nd, fd]
            mapM_ (appendChild g . Just) [sd, incompleteAlert]
+           appendChild par (Just bw)
            (Just w') <- getDefaultView w
            syncScroll i o
            --respond to custom initialize events
            initlistener <- newListener $ updateWithValue (\s -> updateres w ref s (g,fd))
            addListener i initialize initlistener False                
-           case feedback options of
-               Keypress -> do
-                   kblistener <- newListener $ updateWithValue (\s -> updateres w ref s (g,fd))
-                   addListener i keyUp kblistener False
-               Never -> return ()
-               Click -> do 
-                   mbt@(Just bt) <- createElement w (Just "button")
-                   setInnerHTML bt (Just "Check Proof")         
-                   appendChild par mbt
-                   btlistener <- newListener $ updateWithValue (\s -> updateres w ref s (g,fd))
-                   addListener bt click btlistener False                
            when (autoIndent options) $ do
                    indentlistener <- newListener (onEnter reindent)
                    addListener i keyUp indentlistener False
@@ -82,10 +74,21 @@ checkerWith options updateres iog@(IOGoal i o g content _) w = do
                Just button -> do 
                    mbt'@(Just bt') <- createElement w (Just "button")
                    setInnerHTML bt' (Just (label button))         
-                   appendChild par mbt'
+                   appendChild bw mbt'
                    buttonAct <- newListener $ action button ref w' i
                    addListener bt' click buttonAct False                
                Nothing -> return ()
+           case feedback options of
+               Keypress -> do
+                   kblistener <- newListener $ updateWithValue (\s -> updateres w ref s (g,fd))
+                   addListener i keyUp kblistener False
+               Never -> return ()
+               Click -> do 
+                   mbt@(Just bt) <- createElement w (Just "button")
+                   setInnerHTML bt (Just "Check Proof")         
+                   appendChild bw mbt
+                   btlistener <- newListener $ updateWithValue (\s -> updateres w ref s (g,fd))
+                   addListener bt click btlistener False                
            lineupd <- newListener $ updateLines w nd (indentGuides options)
            addListener i keyUp lineupd False
            mv <- getValue (castToHTMLTextAreaElement i)
