@@ -47,7 +47,7 @@
     font-size:10pt;
     padding:20px;
     min-height:150px;
-    padding-left:50pt;
+    padding-left:40pt;
     padding-right:30pt;
     font-family: monospace;
     line-height:1.2em;
@@ -55,12 +55,20 @@
     white-space:pre;
     overflow-wrap:normal;
     word-wrap:normal;
+    border:1px solid lightgray;
+    outline:none;
 }
 
-[data-carnap-type="proofchecker"] > button {
-    display:block;
-    position: absolute;
-    bottom:-60px;
+[data-carnap-type="proofchecker"] > textarea:focus {
+    border:1px solid black;
+}
+
+[data-carnap-type="proofchecker"] button svg {
+    position:relative;
+    top:3px;
+    width:15px;
+    fill:white;
+    margin-left:7px;
 }
 
 [data-carnap-type="proofchecker"] .output{
@@ -70,11 +78,16 @@
     bottom:-30px;
     width:100%;
     padding:21px;
+    padding-left:11px;
     pointer-events: none;
     font-family: monospace;
     font-size:10pt;
     overflow:hidden;
 }
+
+[data-carnap-type="proofchecker"]:not([data-carnap-options~="resize"]) .output{
+    bottom:25px;
+    }
 
 .proofFeedback {
     font-size:10pt;
@@ -222,9 +235,13 @@
 
 [data-carnap-type="proofchecker"] .goal {
     width:400px;
+    min-height:30px;
     padding:5pt;
     padding-right:40px;
     top:-10px;
+    background:white;
+    border:1px solid lightgray;
+    border-bottom:none;
 }
 
 [data-carnap-type="proofchecker"] .proofSpinner,  
@@ -240,7 +257,22 @@
     text-align:center;
     width:30px;
     right:0px;
-    top:-1px;
+    top:1px;
+}
+
+[data-carnap-type="proofchecker"] .buttonWrapper {
+    position:relative;
+    top:-4px;
+}
+
+[data-carnap-type="proofchecker"] button {
+    background:lightgray;
+    margin:0px;
+    border:1px solid lightgray;
+    color:white;
+    font-weight:bold;
+    font-size:12px;
+    height:30px;
 }
 
 .ttdisplay {

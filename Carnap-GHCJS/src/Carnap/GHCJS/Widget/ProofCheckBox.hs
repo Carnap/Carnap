@@ -51,7 +51,7 @@ checkerWith options updateres iog@(IOGoal i o g content _) w = do
                 ("This proof does not establish that this conclusion follows from these premises."
                 ++ "Perhaps there's an unwarranted assumption being used?")
                 Nothing
-           setInnerHTML sd (Just spinnerHtml)
+           setInnerHTML sd (Just spinnerSVG)
            mpar@(Just par) <- getParentNode o               
            mapM_ (appendChild o . Just) [nd, fd]
            mapM_ (appendChild g . Just) [sd, incompleteAlert]
@@ -72,9 +72,12 @@ checkerWith options updateres iog@(IOGoal i o g content _) w = do
                    resize i
            case submit options of
                Just button -> do 
-                   mbt'@(Just bt') <- createElement w (Just "button")
-                   setInnerHTML bt' (Just (label button))         
-                   appendChild bw mbt'
+                   [Just bt', Just bl, Just cm] <- mapM (createElement w . Just) ["button", "span","span"]
+                   setInnerHTML bl (Just (label button))
+                   setInnerHTML cm (Just checkSVG)
+                   appendChild bt' (Just bl)
+                   appendChild bt' (Just cm)
+                   appendChild bw  (Just bt')
                    buttonAct <- newListener $ action button ref w' i
                    addListener bt' click buttonAct False                
                Nothing -> return ()
@@ -97,11 +100,16 @@ checkerWith options updateres iog@(IOGoal i o g content _) w = do
                (Just iv) -> do setLinesTo w nd (indentGuides options) (altlines iv)
                                if initialUpdate options then updateres w ref iv (g, fd) else return ()
 
-spinnerHtml = renderHtml [shamlet|
+spinnerSVG = renderHtml [shamlet|
 <svg version="1.1" id="loader-1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" width="30px" height="30px" viewBox="0 0 40 40" enable-background="new 0 0 40 40" xml:space="preserve">
     <path opacity="0.2" fill="#000" d="M20.201,5.169c-8.254,0-14.946,6.692-14.946,14.946c0,8.255,6.692,14.946,14.946,14.946 s14.946-6.691,14.946-14.946C35.146,11.861,28.455,5.169,20.201,5.169z M20.201,31.749c-6.425,0-11.634-5.208-11.634-11.634 c0-6.425,5.209-11.634,11.634-11.634c6.425,0,11.633,5.209,11.633,11.634C31.834,26.541,26.626,31.749,20.201,31.749z"/>
     <path fill="#000" d="M26.013,10.047l1.654-2.866c-2.198-1.272-4.743-2.012-7.466-2.012h0v3.312h0 C22.32,8.481,24.301,9.057,26.013,10.047z">
         <animateTransform attributeType="xml" attributeName="transform" type="rotate" from="0 20 20" to="360 20 20" dur="0.5s" repeatCount="indefinite"/>|]
+
+checkSVG = renderHtml [shamlet|
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+    <path d="M256 8C119.033 8 8 119.033 8 256s111.033 248 248 248 248-111.033 248-248S392.967 8 256 8zm0 48c110.532 0 200 89.451 200 200 0 110.532-89.451 200-200 200-110.532 0-200-89.451-200-200 0-110.532 89.451-200 200-200m140.204 130.267l-22.536-22.718c-4.667-4.705-12.265-4.736-16.97-.068L215.346 303.697l-59.792-60.277c-4.667-4.705-12.265-4.736-16.97-.069l-22.719 22.536c-4.705 4.667-4.736 12.265-.068 16.971l90.781 91.516c4.667 4.705 12.265 4.736 16.97.068l172.589-171.204c4.704-4.668 4.734-12.266.067-16.971z"/>
+                      |]
 
 updateLines :: (IsElement e) => Document -> e -> Bool -> EventM HTMLTextAreaElement KeyboardEvent ()
 updateLines w nd hasguides =  do (Just t) <- target :: EventM HTMLTextAreaElement KeyboardEvent (Maybe HTMLTextAreaElement)
