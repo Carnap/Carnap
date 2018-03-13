@@ -107,9 +107,10 @@ spinnerSVG = renderHtml [shamlet|
         <animateTransform attributeType="xml" attributeName="transform" type="rotate" from="0 20 20" to="360 20 20" dur="0.5s" repeatCount="indefinite"/>|]
 
 checkSVG = renderHtml [shamlet|
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-    <path d="M256 8C119.033 8 8 119.033 8 256s111.033 248 248 248 248-111.033 248-248S392.967 8 256 8zm0 48c110.532 0 200 89.451 200 200 0 110.532-89.451 200-200 200-110.532 0-200-89.451-200-200 0-110.532 89.451-200 200-200m140.204 130.267l-22.536-22.718c-4.667-4.705-12.265-4.736-16.97-.068L215.346 303.697l-59.792-60.277c-4.667-4.705-12.265-4.736-16.97-.069l-22.719 22.536c-4.705 4.667-4.736 12.265-.068 16.971l90.781 91.516c4.667 4.705 12.265 4.736 16.97.068l172.589-171.204c4.704-4.668 4.734-12.266.067-16.971z"/>
-                      |]
+<svg version="1.1" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+ <g transform="translate(-46.113 -84.018)">
+  <path d="m106.11 84.018a60 60 0 0 0-60 60 60 60 0 0 0 60 60 60 60 0 0 0 60-60 60 60 0 0 0-60-60zm0 12.095a47.905 47.905 0 0 1 47.905 47.905 47.905 47.905 0 0 1-47.905 47.905 47.905 47.905 0 0 1-47.905-47.905 47.905 47.905 0 0 1 47.905-47.905z"/>
+  <path d="m74.95 141.17 23.653 28.743 38.739-45.778"style="fill:none;stroke-width:15;"/>|]
 
 updateLines :: (IsElement e) => Document -> e -> Bool -> EventM HTMLTextAreaElement KeyboardEvent ()
 updateLines w nd hasguides =  do (Just t) <- target :: EventM HTMLTextAreaElement KeyboardEvent (Maybe HTMLTextAreaElement)
