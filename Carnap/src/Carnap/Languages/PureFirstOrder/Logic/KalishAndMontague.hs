@@ -27,7 +27,7 @@ data FOLogic =  SL P.PropLogic
                 | UD  | UI  | EG  | ED1 | ED2 | QN1 | QN2  | QN3  | QN4  
                 | LL1 | LL2 | EL1 | EL2 | ID  | SM  | ALL1 | ALL2
                 | DER (ClassicalSequentOver PureLexiconFOL (Sequent (Form Bool)))
-                | PR [(ClassicalSequentOver PureLexiconFOL (Sequent (Form Bool)))]
+                | PR (Maybe [(ClassicalSequentOver PureLexiconFOL (Sequent (Form Bool)))])
                deriving (Eq)
 
 instance Show FOLogic where

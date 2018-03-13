@@ -48,9 +48,10 @@ data DerivedRule = DerivedRule { conclusion :: PureForm, premises :: [PureForm]}
 derivedRuleToSequent (DerivedRule c ps) = antecedent :|-: SS (liftToSequent c)
     where antecedent = foldr (:+:) Top (map (SA . liftToSequent) ps)
 
-premConstraint prems sub = if theinstance `elem` prems
-                               then Nothing
-                               else Just (show (project theinstance) ++ " is not one of the premises " 
+premConstraint Nothing _ = Nothing
+premConstraint (Just prems) sub = if theinstance `elem` prems
+                                       then Nothing
+                                       else Just (show (project theinstance) ++ " is not one of the premises " 
                                                                      ++ intercalate ", " (map (show . project) prems))
     where theinstance = pureBNF . applySub sub $ (SA (phin 1) :|-: SS (phin 1))
           project :: ClassicalSequentOver lex (Sequent a) -> ClassicalSequentOver lex (Succedent a)
