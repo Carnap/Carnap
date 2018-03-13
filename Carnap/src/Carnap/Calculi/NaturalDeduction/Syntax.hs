@@ -234,7 +234,7 @@ type ProofMemoRef lex sem r = IORef (Map Int (Either (ProofErrorMessage lex)
 
 data RuntimeNaturalDeductionConfig lex sem = RuntimeNaturalDeductionConfig
         { derivedRules :: Map String (ClassicalSequentOver lex (Sequent sem))
-        , problemPremises :: [ClassicalSequentOver lex (Sequent sem)]
+        , problemPremises :: Maybe [ClassicalSequentOver lex (Sequent sem)]
         }
 
 data NaturalDeductionCalc r lex sem = NaturalDeductionCalc 

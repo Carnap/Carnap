@@ -153,9 +153,9 @@ activateChecker drs w (Just iog@(IOGoal i o g _ opts)) -- TODO: need to update n
                                               <$> (M.fromList .  map (\(x,y) -> (x, liftSequent . derivedRuleToSequent $ y)) <$> readIORef (checkerRules self))
                                               <*> (pure . toPremiseSeqs . sequent $ self)
 
-              toPremiseSeqs :: (Concretes lex b, Typeable b) => Maybe (ClassicalSequentOver lex (Sequent b)) -> [ClassicalSequentOver lex (Sequent b)]
-              toPremiseSeqs (Just seq) = map (\x -> SA x :|-: SS x) (toListOf (lhs . concretes) seq)
-              toPremiseSeqs Nothing = []
+              toPremiseSeqs :: (Concretes lex b, Typeable b) => Maybe (ClassicalSequentOver lex (Sequent b)) -> Maybe [ClassicalSequentOver lex (Sequent b)]
+              toPremiseSeqs (Just seq) = Just . map (\x -> SA x :|-: SS x) $ toListOf (lhs . concretes) seq
+              toPremiseSeqs Nothing = Nothing
 
               noRuntimeOptions = Checker $ const . pure $ RuntimeNaturalDeductionConfig mempty mempty
 

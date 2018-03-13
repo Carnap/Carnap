@@ -20,7 +20,7 @@ import Text.Parsec
 import Carnap.Languages.PureSecondOrder.Logic.Rules
 
 data MSOLogic = ABS | APP | SOUI | SOEG | SOUD | SOED1 | SOED2 | FO FOLogic 
-                    | PR [(ClassicalSequentOver MonadicallySOLLex (Sequent (Form Bool)))]
+                    | PR (Maybe [(ClassicalSequentOver MonadicallySOLLex (Sequent (Form Bool)))])
 
 instance Show MSOLogic where
         show (PR _) = "PR"
@@ -112,7 +112,7 @@ data PSOLogic = ABS_PSOL Int   | APP_PSOL Int
               | SOUI_PSOL Int  | SOEG_PSOL Int 
               | SOUD_PSOL Int  | SOED1_PSOL Int 
               | SOED2_PSOL Int | FO_PSOL FOLogic
-              | PPR [(ClassicalSequentOver PolyadicallySOLLex (Sequent (Form Bool)))]
+              | PPR (Maybe [(ClassicalSequentOver PolyadicallySOLLex (Sequent (Form Bool)))])
 
 instance Show PSOLogic where
         show (PPR _)        = "PR"
