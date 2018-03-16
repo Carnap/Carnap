@@ -36,14 +36,14 @@ data CheckerOptions = CheckerOptions { submit :: Maybe Button -- What's the subm
 
 checkerWith :: CheckerOptions -> (Document -> IORef Bool -> String -> (Element, Element) -> IO ()) -> IOGoal -> Document -> IO ()
 checkerWith options updateres iog@(IOGoal i o g content _) w = do
-           elts <- mapM (createElement w . Just) ["div","div","div","div","div"]
-           let [Just fd, Just nd, Just sd, Just bw, Just incompleteAlert] = elts
+           elts <- mapM (createElement w . Just) ["div","div","div","div"]
+           let [Just fd, Just nd, Just sd, Just incompleteAlert] = elts
+           bw <- buttonWrapper w
            ref <- newIORef False
            setInnerHTML i (Just content)
            setAttribute fd "class" "proofFeedback"
            setAttribute nd "class" "numbering"
            setAttribute sd "class" "proofSpinner"
-           setAttribute bw "class" "buttonWrapper"
            setAttribute incompleteAlert "class" "incompleteAlert"
            popUpWith g w incompleteAlert "⚠" 
                 ("This proof does not establish that this conclusion follows from these premises."
@@ -70,11 +70,7 @@ checkerWith options updateres iog@(IOGoal i o g content _) w = do
                    resize i
            case submit options of
                Just button -> do 
-                   [Just bt', Just bl, Just cm] <- mapM (createElement w . Just) ["button", "span","span"]
-                   setInnerHTML bl (Just (label button))
-                   setInnerHTML cm (Just checkSVG)
-                   appendChild bt' (Just bl)
-                   appendChild bt' (Just cm)
+                   bt' <- doneButton w (label button)
                    appendChild bw  (Just bt')
                    buttonAct <- newListener $ action button ref w' i
                    addListener bt' click buttonAct False                

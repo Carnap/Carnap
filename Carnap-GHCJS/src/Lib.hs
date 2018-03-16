@@ -7,7 +7,7 @@ module Lib
     loginCheck,errorPopup, genInOutElts, getInOutElts,generateExerciseElts, withLabel,
     formAndLabel,seqAndLabel, folSeqAndLabel, folFormAndLabel,
     message, IOGoal(..), updateWithValue, submissionSource, assignmentKey,
-    initialize,popUpWith,spinnerSVG,checkSVG) where
+    initialize,popUpWith,spinnerSVG,doneButton,buttonWrapper) where
 
 import Data.Aeson
 import Data.Maybe (catMaybes)
@@ -313,6 +313,20 @@ loginCheck successMsg serverResponse
      | otherwise      = alert successMsg
 
 errorPopup msg = alert ("Something has gone wrong. Here's the error: " ++ msg)
+
+doneButton w thelabel= 
+            do [Just bt, Just bl, Just cm] <- mapM (createElement w . Just) ["button", "span","span"]
+               setInnerHTML bl (Just thelabel)
+               setInnerHTML cm (Just checkSVG)
+               appendChild bt (Just bl)
+               appendChild bt (Just cm)
+               return bt
+
+buttonWrapper w = do (Just bw) <- createElement w (Just "div")
+                     setAttribute bw "class" "buttonWrapper"
+                     return bw
+
+
 
 --------------------------------------------------------
 --1.7 Parsing
