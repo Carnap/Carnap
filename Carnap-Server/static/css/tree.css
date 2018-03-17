@@ -1,13 +1,19 @@
-
 .target {color:red;}
+
+.tree {font-size:14pt;}
 
 .tree ul {
 	padding-top: 20px; 
     position: relative;
     transform:scale(.9);
-    right:10%;
     width:130%;
     overflow:visible;
+}
+
+.tree > ul {
+	padding: 0px; 
+	margin: 0px; 
+	margin-left: 20px; 
 }
 
 .tree li {
@@ -17,7 +23,7 @@
     white-space:nowrap;
 	list-style-type: none;
 	position: relative;
-	padding: 20px 15px 0 5px;
+	padding: 20px 15px 0px 5px;
 }
 
 /*We will use ::before and ::after to draw the connectors*/
@@ -63,7 +69,7 @@ right connector from last child*/
 /*Time to add downward connectors from parents*/
 .tree ul ul::before{
 	content: '';
-	position: absolute; top: 0; left: 50%;
+	position: absolute; top: 0; left: 40%;
 	border-left: 1px solid #ccc;
 	width: 0; height: 20px;
 }
