@@ -69,25 +69,32 @@
 }
 
 /* FIXME this need to be narrower, and to wrap, for mobile. */
-.translate input {
-    width: 400pt;
-}
 
-[data-carnap-type="synchecker"] > .buttonWrapper {
+[data-carnap-type="synchecker"] > .buttonWrapper, [data-carnap-type="translate"] > .buttonWrapper {
     display:inline-block;
 }
 
-[data-carnap-type="synchecker"] > .buttonWrapper button {
+[data-carnap-type="synchecker"] > .buttonWrapper button, [data-carnap-type="translate"] > .buttonWrapper button {
     display:inline-block;
     border-left:none;
 }
 
-[data-carnap-type="synchecker"] > input {
+[data-carnap-type="synchecker"] > input, [data-carnap-type="translate"] > input {
     font-size:14px;
     padding:5px;
     border:1px solid #A9B7C0;
     outline:none;
     margin:0px;
+}
+
+[data-carnap-type="translate"] > input { width:400px }
+
+[data-carnap-type="translate"] .output { 
+    position:relative;
+    border:1px solid #A9B7C0;
+    padding:10px;
+    font-size:14pt;
+    top:-1px;
 }
 
 [data-carnap-type="synchecker"] .tree {

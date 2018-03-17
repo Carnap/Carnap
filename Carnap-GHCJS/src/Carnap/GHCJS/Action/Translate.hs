@@ -45,12 +45,13 @@ activateTranslate w (Just (i,o,opts)) =
                       (Right f) -> do 
                            let l = Prelude.drop 7 s
                            let (Just content) = M.lookup "content" opts
-                           mbt@(Just bt) <- createElement w (Just "button")
+                           bt <- doneButton w "Submit Solution"
+                           bw <- buttonWrapper w
+                           appendChild bw (Just bt)
                            setValue (castToHTMLInputElement i) (Just content)
                            setInnerHTML o (Just content)
-                           setInnerHTML bt (Just "submit solution")         
                            mpar@(Just par) <- getParentNode o               
-                           insertBefore par mbt (Just o)
+                           insertBefore par (Just bw) (Just o)
                            ref <- newIORef False
                            tryTrans <- newListener $ translator o ref f
                            submit <- newListener $ trySubmit ref l f
@@ -70,10 +71,10 @@ tryTrans o ref f = onEnter $ do (Just t) <- target :: EventM HTMLInputElement Ke
    where checkForm f' 
             | f' == f = do message "perfect match!"
                            writeIORef ref True
-                           setInnerHTML o (Just "success!")
+                           setInnerHTML o (Just "Success!")
             | f' `isEquivTo` f = do message "Logically equivalent to the standard translation"
                                     writeIORef ref True
-                                    setInnerHTML o (Just "success!")
+                                    setInnerHTML o (Just "Success!")
             | otherwise = message "Not quite. Try again!"
 
 tryFOLTrans :: Element -> IORef Bool -> PureFOLForm -> 
@@ -86,7 +87,7 @@ tryFOLTrans o ref f = onEnter $ do (Just t) <- target :: EventM HTMLInputElement
   where checkForm f' 
             | f' == f = do message "perfect match!"
                            writeIORef ref True
-                           setInnerHTML o (Just "success!")
+                           setInnerHTML o (Just "Success!")
             | otherwise = message "Not quite. Try again!"
             -- TODO Add FOL equivalence checking code, insofar as possible.
 
