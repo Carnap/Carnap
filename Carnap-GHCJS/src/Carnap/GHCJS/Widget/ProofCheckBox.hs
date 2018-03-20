@@ -36,11 +36,12 @@ data CheckerOptions = CheckerOptions { submit :: Maybe Button -- What's the subm
 
 checkerWith :: CheckerOptions -> (Document -> IORef Bool -> String -> (Element, Element) -> IO ()) -> IOGoal -> Document -> IO ()
 checkerWith options updateres iog@(IOGoal i o g content _) w = do
-           elts <- mapM (createElement w . Just) ["div","div","div","div"]
-           let [Just fd, Just nd, Just sd, Just incompleteAlert] = elts
+           elts <- mapM (createElement w . Just) ["div","div","div","div","div"]
+           let [Just fd, Just nd, Just sd, Just incompleteAlert, Just aligner] = elts
            bw <- buttonWrapper w
            ref <- newIORef False
            setInnerHTML i (Just content)
+           setAttribute aligner "class" "aligner"
            setAttribute fd "class" "proofFeedback"
            setAttribute nd "class" "numbering"
            setAttribute sd "class" "proofSpinner"
@@ -52,8 +53,9 @@ checkerWith options updateres iog@(IOGoal i o g content _) w = do
            setInnerHTML sd (Just spinnerSVG)
            mpar@(Just par) <- getParentNode o               
            mapM_ (appendChild o . Just) [nd, fd]
+           mapM_ (appendChild aligner . Just) [o, i]
            mapM_ (appendChild g . Just) [sd, incompleteAlert]
-           appendChild par (Just bw)
+           mapM_ (appendChild par . Just) [aligner,bw]
            (Just w') <- getDefaultView w
            syncScroll i o
            --respond to custom initialize events
@@ -81,9 +83,8 @@ checkerWith options updateres iog@(IOGoal i o g content _) w = do
                    addListener i keyUp kblistener False
                Never -> return ()
                Click -> do 
-                   mbt@(Just bt) <- createElement w (Just "button")
-                   setInnerHTML bt (Just "Check Proof")         
-                   appendChild bw mbt
+                   bt <- questionButton w "Check"
+                   appendChild bw (Just bt)
                    btlistener <- newListener $ updateWithValue (\s -> updateres w ref s (g,fd))
                    addListener bt click btlistener False                
            lineupd <- newListener $ updateLines w nd (indentGuides options)
@@ -116,11 +117,12 @@ reindent = do (Just t) <- target :: EventM HTMLTextAreaElement KeyboardEvent (Ma
 
 resize :: MonadIO m => Element -> m ()
 resize i = do setAttribute i "style" "width: 0px;height: 0px"
-              mpar@(Just par) <- getParentNode i
+              (Just par) <- getParentNode i
+              (Just gpar) <- getParentNode par
               w <- getScrollWidth i
               h <- getScrollHeight i
               setAttribute i "style" "resize:none;"
-              setAttribute (castToHTMLElement par) 
+              setAttribute (castToHTMLElement gpar) 
                     "style" ("width:" ++ (show $ max 400 (w + 50)) ++ "px;" ++ 
                     "height:" ++ (show $ max 120 (h + 20)) ++ "px;")
 

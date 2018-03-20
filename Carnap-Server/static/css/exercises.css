@@ -16,14 +16,34 @@
     padding:5px;
 }
 
-.buttonWrapper button:nth-child(1) {
-    background: #A9B7C0;
+.buttonWrapper button {
     margin:0px;
-    border:1px solid #A9B7C0;
+    position:relative;
     color:white;
     font-weight:bold;
     font-size:14px;
     padding-bottom:5px;
+}
+
+.buttonWrapper button:nth-child(1) {
+    background: #557386;
+    border:1px solid #557386;
+}
+
+.buttonWrapper button:nth-child(2) {
+    background: #7B909E;
+    border:1px solid #7B909E;
+}
+
+.buttonWrapper button:nth-child(3) {
+    background: #A9B7C0;
+    border:1px solid #A9B7C0;
+}
+
+.buttonWrapper button:nth-child(4) {
+    background: #D6DCE0;
+    border:1px solid #D6DCE0;
+    color:black;
 }
 
 .buttonWrapper button svg {
@@ -42,6 +62,7 @@
     animation: buttonHover .2s 1;
     background:white;
     color:#A9B7C0;
+    border:1px solid #A9B7C0;
 }
 
 .buttonWrapper button:hover svg {
@@ -49,7 +70,14 @@
     fill:#A9B7C0;
 }
 
-.buttonWrapper button:active svg path {
+.buttonWrapper button:hover svg .filler {
+    animation: buttonHover .2s 1;
+    fill:white;
+    stroke:white;
+}
+
+.buttonWrapper button:active svg .filler {
+    fill:#A9B7C0;
     stroke:#A9B7C0;
 }
 
@@ -57,14 +85,10 @@
     0% {
         background:#a9b7c0;
         color:white;
-        fill:white;
-        stroke:white;
     }
     100% {
         background:white;
         color:#A9B7C0;
-        fill:#A9B7C0;
-        stroke:white;
     }
 }
 
@@ -79,9 +103,10 @@
     border-left:none;
 }
 
-[data-carnap-type="synchecker"] > input, [data-carnap-type="translate"] > input {
+[data-carnap-type="synchecker"] > input, [data-carnap-type="truthtable"] > .input, [data-carnap-type="translate"] > input {
     font-size:14px;
     padding:5px;
+    background:white;
     border:1px solid #A9B7C0;
     outline:none;
     margin:0px;
@@ -125,7 +150,7 @@
 }
 
 /* probably need a subordinate div containing this and the feedback to fix the :hover issue on iOS*/
-[data-carnap-type="proofchecker"] > textarea {
+[data-carnap-type="proofchecker"] textarea {
     position: relative;
     overflow-clip-box: padding-box;
     width: 100%;
@@ -145,15 +170,15 @@
     outline:none;
 }
 
-[data-carnap-type="proofchecker"] > textarea:focus {
+[data-carnap-type="proofchecker"] textarea:focus {
     border:1px solid black;
 }
 
 [data-carnap-type="proofchecker"] .output{
     position: absolute;
-    margin-top:30px;
     top:0px;
-    bottom:-30px;
+    bottom:5px;
+    z-index:1;
     width:100%;
     padding:21px;
     padding-left:11px;
@@ -163,9 +188,7 @@
     overflow:hidden;
 }
 
-[data-carnap-type="proofchecker"]:not([data-carnap-options~="resize"]) .output{
-    bottom:25px;
-    }
+[data-carnap-type="proofchecker"]:not([data-carnap-options~="resize"]) .buttonWrapper{ top:-5px; }
 
 .proofFeedback {
     font-size:10pt;
@@ -182,7 +205,7 @@
 }
 
 @-moz-document url-prefix() {
-[data-carnap-type="proofchecker"]:not([data-carnap-options~="resize"]) > textarea {
+[data-carnap-type="proofchecker"]:not([data-carnap-options~="resize"]) textarea {
     padding-top:0px;
     padding-bottom:0px;
     }
@@ -308,18 +331,22 @@
 }
 
 [data-carnap-type="proofchecker"] .goal {
-    width:400px;
+    position:relative;
     min-height:30px;
     padding:5pt;
+    bottom:-1px;
     padding-right:40px;
-    top:-10px;
     background:white;
     border:1px solid #A9B7C0;
-    border-bottom:none;
 }
 
 [data-carnap-type="proofchecker"] .success {
-    background: #79d277;
+    background: #b9f2b7;
+}
+
+[data-carnap-type="proofchecker"] .aligner {
+    position: relative;
+    height:100%;
 }
 
 [data-carnap-type="proofchecker"] .proofSpinner,  
@@ -340,7 +367,6 @@
 
 [data-carnap-type="proofchecker"] .buttonWrapper {
     position:relative;
-    top:-4px;
 }
 
 [data-carnap-type="proofchecker"] .buttonWrapper button {
@@ -364,10 +390,23 @@
     text-align:center;
 }
 
+[data-carnap-type="truthtable"] .output { 
+    position:relative;
+    border:1px solid #A9B7C0;
+    background:white;
+    font-size:14pt;
+    top:-1px;
+}
+
 [data-carnap-type="truthtable"] table{
     width:auto;
     border-collapse:collapse;
     margin:20px;
+}
+
+[data-carnap-type="truthtable"] .buttonWrapper {
+    position:relative;
+    top:-2px;
 }
 
 [data-carnap-type="truthtable"] select {
