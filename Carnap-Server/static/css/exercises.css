@@ -16,10 +16,121 @@
     padding:5px;
 }
 
-/* FIXME this need to be narrower, and to wrap, for mobile. */
-.translate input {
-    width: 400pt;
+.buttonWrapper button {
+    margin:0px;
+    position:relative;
+    color:white;
+    font-weight:bold;
+    font-size:14px;
+    padding-bottom:5px;
 }
+
+.buttonWrapper button:nth-child(1) {
+    background: #557386;
+    border:1px solid #557386;
+}
+
+.buttonWrapper button:nth-child(2) {
+    background: #7B909E;
+    border:1px solid #7B909E;
+}
+
+.buttonWrapper button:nth-child(3) {
+    background: #A9B7C0;
+    border:1px solid #A9B7C0;
+}
+
+.buttonWrapper button:nth-child(4) {
+    background: #D6DCE0;
+    border:1px solid #D6DCE0;
+    color:black;
+}
+
+.buttonWrapper button svg {
+    position:relative;
+    top:3px;
+    width:16px;
+    margin-left:7px;
+}
+
+.buttonWrapper button svg {
+    fill:white;
+    stroke:white;
+}
+
+.buttonWrapper button:hover {
+    animation: buttonHover .2s 1;
+    background:white;
+    color:#A9B7C0;
+    border:1px solid #A9B7C0;
+}
+
+.buttonWrapper button:hover svg {
+    animation: buttonHover .2s 1;
+    fill:#A9B7C0;
+}
+
+.buttonWrapper button:hover svg .filler {
+    animation: buttonHover .2s 1;
+    fill:white;
+    stroke:white;
+}
+
+.buttonWrapper button:active svg .filler {
+    fill:#A9B7C0;
+    stroke:#A9B7C0;
+}
+
+@keyframes buttonHover {
+    0% {
+        background:#a9b7c0;
+        color:white;
+    }
+    100% {
+        background:white;
+        color:#A9B7C0;
+    }
+}
+
+/* FIXME this need to be narrower, and to wrap, for mobile. */
+
+[data-carnap-type="synchecker"] > .buttonWrapper, [data-carnap-type="translate"] > .buttonWrapper {
+    display:inline-block;
+}
+
+[data-carnap-type="synchecker"] > .buttonWrapper button, [data-carnap-type="translate"] > .buttonWrapper button {
+    display:inline-block;
+    border-left:none;
+}
+
+[data-carnap-type="synchecker"] > input, [data-carnap-type="truthtable"] > .input, [data-carnap-type="translate"] > input {
+    font-size:14px;
+    padding:5px;
+    background:white;
+    border:1px solid #A9B7C0;
+    outline:none;
+    margin:0px;
+}
+
+[data-carnap-type="translate"] > input { width:400px }
+
+[data-carnap-type="translate"] .output { 
+    position:relative;
+    border:1px solid #A9B7C0;
+    padding:10px;
+    font-size:14pt;
+    top:-1px;
+}
+
+[data-carnap-type="synchecker"] .tree {
+    display:inline-block;
+    position:relative;
+    top:-1px;
+    min-width:289px;
+    padding:10pt;
+    border:1px solid #A9B7C0;
+}
+
 
 /* This is what will need to be the locus of responsive resizing */
 [data-carnap-type="proofchecker"] {
@@ -39,16 +150,15 @@
 }
 
 /* probably need a subordinate div containing this and the feedback to fix the :hover issue on iOS*/
-[data-carnap-type="proofchecker"] > textarea {
+[data-carnap-type="proofchecker"] textarea {
     position: relative;
     overflow-clip-box: padding-box;
     width: 100%;
     height: 100%;
     font-size:10pt;
-    top:35px;
     padding:20px;
     min-height:150px;
-    padding-left:50pt;
+    padding-left:40pt;
     padding-right:30pt;
     font-family: monospace;
     line-height:1.2em;
@@ -56,26 +166,29 @@
     white-space:pre;
     overflow-wrap:normal;
     word-wrap:normal;
+    border:1px solid #A9B7C0;
+    outline:none;
 }
 
-[data-carnap-type="proofchecker"] > button {
-    display:block;
-    position: absolute;
-    bottom:-60px;
+[data-carnap-type="proofchecker"] textarea:focus {
+    border:1px solid black;
 }
 
 [data-carnap-type="proofchecker"] .output{
     position: absolute;
-    margin-top:36px;
     top:0px;
-    bottom:-30px;
+    bottom:5px;
+    z-index:1;
     width:100%;
     padding:21px;
+    padding-left:11px;
     pointer-events: none;
     font-family: monospace;
     font-size:10pt;
     overflow:hidden;
 }
+
+[data-carnap-type="proofchecker"]:not([data-carnap-options~="resize"]) .buttonWrapper{ top:-5px; }
 
 .proofFeedback {
     font-size:10pt;
@@ -92,7 +205,7 @@
 }
 
 @-moz-document url-prefix() {
-[data-carnap-type="proofchecker"]:not([data-carnap-options~="resize"]) > textarea {
+[data-carnap-type="proofchecker"]:not([data-carnap-options~="resize"]) textarea {
     padding-top:0px;
     padding-bottom:0px;
     }
@@ -217,17 +330,23 @@
     border-bottom:1px solid black;
 }
 
-[data-carnap-type="proofchecker"] .success {
-    background: #CCFFCC;
+[data-carnap-type="proofchecker"] .goal {
+    position:relative;
+    min-height:30px;
+    padding:5pt;
+    bottom:-1px;
+    padding-right:40px;
+    background:white;
+    border:1px solid #A9B7C0;
 }
 
-[data-carnap-type="proofchecker"] .goal {
-    width:400px;
-    position:absolute;
-    padding:5pt;
-    padding-right:40px;
-    margin:5pt;
-    top:-10px;
+[data-carnap-type="proofchecker"] .success {
+    background: #b9f2b7;
+}
+
+[data-carnap-type="proofchecker"] .aligner {
+    position: relative;
+    height:100%;
 }
 
 [data-carnap-type="proofchecker"] .proofSpinner,  
@@ -243,8 +362,17 @@
     text-align:center;
     width:30px;
     right:0px;
-    top:-1px;
+    top:1px;
 }
+
+[data-carnap-type="proofchecker"] .buttonWrapper {
+    position:relative;
+}
+
+[data-carnap-type="proofchecker"] .buttonWrapper button {
+    border-top:none;
+}
+
 
 .ttdisplay {
     padding-left:10px;
@@ -262,10 +390,23 @@
     text-align:center;
 }
 
+[data-carnap-type="truthtable"] .output { 
+    position:relative;
+    border:1px solid #A9B7C0;
+    background:white;
+    font-size:14pt;
+    top:-1px;
+}
+
 [data-carnap-type="truthtable"] table{
     width:auto;
     border-collapse:collapse;
     margin:20px;
+}
+
+[data-carnap-type="truthtable"] .buttonWrapper {
+    position:relative;
+    top:-2px;
 }
 
 [data-carnap-type="truthtable"] select {
@@ -291,7 +432,7 @@
     padding:2px;
 }
 
-[data-carnap-options~="fonts"] textarea {
+[data-carnap-options~="fonts"] textarea, [data-carnap-options~="fonts"] input {
     text-rendering:optimizeLegibility;
     font-family:"Fira Logic", monospace;
 }

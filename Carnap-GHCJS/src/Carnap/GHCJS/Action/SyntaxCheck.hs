@@ -58,7 +58,7 @@ tryMatch o ref w sf = onEnter $ do (Just t) <- target :: EventM HTMLInputElement
                                    (f,forms,ft, s) <- liftIO $ readIORef ref
                                    setValue t (Just "")
                                    case forms of
-                                       [] -> setInnerHTML o (Just "success! You may now submit your solution")
+                                       [] -> setInnerHTML o (Just "Success! You may now submit your solution")
                                        x:xs -> case matchMC ival (fst x) of
                                            Right b -> if b 
                                                then case children (fst x) of 
@@ -77,7 +77,7 @@ tryMatch o ref w sf = onEnter $ do (Just t) <- target :: EventM HTMLInputElement
                                                  modifyIORef ref (_4 .~ s)
                                                  (_,_,t,_) <- readIORef ref
                                                  redraw (head (cs ++ xs)) t
-              shorten x xs s = case xs of [] -> liftIO $ do setInnerHTML o (Just "success! You may now submit your solution") 
+              shorten x xs s = case xs of [] -> liftIO $ do setInnerHTML o (Just "Success! You may now submit your solution") 
                                                             modifyIORef ref (_2 .~ []) 
                                           _  -> updateGoal x [] xs s 
               resetGoal = do (f,_,_,_) <- liftIO $ readIORef ref
@@ -132,14 +132,17 @@ activateChecker w (Just (i,o,opts)) =
                     case parse (purePropFormulaParser standardLetters <* eof) "" g of
                       (Right f) -> do 
                          let l = Prelude.drop 7 s
-                         mbt@(Just bt) <- createElement w (Just "button") 
-                         setInnerHTML o (Just $ sf f)                   
-                         setInnerHTML bt (Just "submit solution")         
-                         setAttribute o "class" "tree"
+                         bt <- doneButton w "Submit"
+                         bw <- buttonWrapper w
+                         (Just tree) <- createElement w (Just "div")
+                         appendChild bw (Just bt)
+                         appendChild o (Just tree)
+                         setInnerHTML tree (Just $ sf f)                   
+                         setAttribute tree "class" "tree"
                          mpar@(Just par) <- getParentNode o               
-                         insertBefore par mbt (Just o)                    
+                         insertBefore par (Just bw) (Just o)                    
                          ref <- newIORef (f,[(f,0)], T.Node (f,0) [], 0)  
-                         match <- newListener $ tryMatch o ref w sf
+                         match <- newListener $ tryMatch tree ref w sf
                          (Just w') <- getDefaultView w                    
                          submit <- newListener $ trySubmit ref w' l       
                          addListener i keyUp match False                  

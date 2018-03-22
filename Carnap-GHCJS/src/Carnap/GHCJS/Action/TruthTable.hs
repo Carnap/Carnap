@@ -47,9 +47,13 @@ activateTruthTables w (Just (i,o,opts)) =
                       (Right f) -> do
                           let l = Prelude.drop 7 s
                           ref <- newIORef False
-                          bt1 <- makeButton "Submit Solution"
-                          bt2 <- makeButton "Check Solution"
-                          gRef <- ttfunc w f (i,o) ref 
+                          bw <- buttonWrapper w
+                          bt1 <- doneButton w "Submit"
+                          bt2 <- questionButton w "Check"
+                          mapM_ (appendChild bw . Just) [bt1,bt2]
+                          (Just par) <- getParentNode o
+                          appendChild par (Just bw)
+                          gRef <- ttfunc w f (i,o) ref bw 
                           -- XXX: idea. Return check rather than gRef, to allow different tt setups their own checking proceedures
                           setInnerHTML i (Just $ show f)
                           (Just w') <- getDefaultView w                    
@@ -59,11 +63,6 @@ activateTruthTables w (Just (i,o,opts)) =
                           addListener bt2 click check False                
                       (Left e) -> setInnerHTML o (Just $ show e) 
                 _ -> print "truth table was missing an option"
-          makeButton message = do mbt@(Just bt) <- createElement w (Just "button")
-                                  setInnerHTML bt (Just message)
-                                  mpar@(Just par) <- getParentNode o
-                                  appendChild par mbt
-                                  return bt
           checkTable ref gRef w' = do vals <- liftIO $ readIORef gRef
                                       let val = M.foldr (&&) True vals
                                       if val then do alert w' "Success!"
@@ -78,15 +77,15 @@ trySubmit ref s w l = do isDone <- liftIO $ readIORef ref
                             then do msource <- liftIO submissionSource
                                     key <- liftIO assignmentKey
                                     case msource of 
-                                        Nothing -> message "Not able to identify problem source. Maybe this document has not been assigned?"
+                                        Nothing -> message "Not able to identify problem source"
                                         Just source -> liftIO $ sendJSON 
                                                           (SubmitTruthTable (l ++ ":" ++ s) source key) 
                                                           (loginCheck $ "Submitted Truth-Table for Exercise " ++ l) 
                                                           errorPopup
                             else message "not yet finished"
 
-createValidityTruthTable :: Document -> PropSequentCalc (Sequent (Form Bool)) -> (Element,Element) -> IORef Bool -> IO (IORef (Map (Int, Int) Bool))
-createValidityTruthTable w (antced :|-: (SS succed)) (i,o) ref =  
+createValidityTruthTable :: Document -> PropSequentCalc (Sequent (Form Bool)) -> (Element,Element) -> IORef Bool -> Element -> IO (IORef (Map (Int, Int) Bool))
+createValidityTruthTable w (antced :|-: (SS succed)) (i,o) ref bw =  
         do (table, thead, tbody) <- initTable w
            gRef <- makeGridRef (length orderedChildren) (length valuations)
            let validities = Prelude.map (Just . implies) valuations
@@ -95,14 +94,13 @@ createValidityTruthTable w (antced :|-: (SS succed)) (i,o) ref =
            mapM_ (appendChild tbody . Just) (reverse rows)
            setInnerHTML o (Just "")
            (Just w') <- getDefaultView w                    
-           mbt@(Just bt) <- createElement w (Just "button")
-           setInnerHTML bt (Just "counterexample")
+           bt <- exclaimButton w "Counterexample"
            counterexample <- newListener $ tryCounterexample w'
            addListener bt click counterexample False
            appendChild thead (Just head)
            appendChild o (Just table)
            mpar@(Just par) <- getParentNode o
-           appendChild par mbt
+           appendChild bw (Just bt)
            return gRef
     where forms :: [PureForm]
           forms = (Prelude.map fromSequent $ toListOf concretes antced) ++ (Prelude.map fromSequent $ toListOf concretes succed)
@@ -139,8 +137,8 @@ createValidityTruthTable w (antced :|-: (SS succed)) (i,o) ref =
                   mask [] _ = []
                   checkLength l = if length l == length atomIndicies then Just l else Nothing
 
-createSimpleTruthTable :: Document -> PureForm -> (Element,Element) -> IORef Bool -> IO (IORef (Map (Int, Int) Bool))
-createSimpleTruthTable w f (_,o) _ = 
+createSimpleTruthTable :: Document -> PureForm -> (Element,Element) -> IORef Bool -> Element -> IO (IORef (Map (Int, Int) Bool))
+createSimpleTruthTable w f (_,o) _ _ = 
         do (table, thead, tbody) <- initTable w
            gRef <- makeGridRef (length orderedChildren) (length valuations)
            head <- toHead w atomIndicies orderedChildren

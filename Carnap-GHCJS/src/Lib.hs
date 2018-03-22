@@ -1,4 +1,4 @@
-{-# LANGUAGE RankNTypes, FlexibleContexts, DeriveDataTypeable, CPP, JavaScriptFFI #-}
+{-# LANGUAGE RankNTypes, QuasiQuotes, FlexibleContexts, DeriveDataTypeable, CPP, JavaScriptFFI #-}
 module Lib
     (genericSendJSON, sendJSON, onEnter, onKey, clearInput,
     getListOfElementsByClass, tryParse, treeToElement, genericTreeToUl,
@@ -7,7 +7,7 @@ module Lib
     loginCheck,errorPopup, genInOutElts, getInOutElts,generateExerciseElts, withLabel,
     formAndLabel,seqAndLabel, folSeqAndLabel, folFormAndLabel,
     message, IOGoal(..), updateWithValue, submissionSource, assignmentKey,
-    initialize,popUpWith) where
+    initialize,popUpWith,spinnerSVG,doneButton,questionButton,exclaimButton,buttonWrapper) where
 
 import Data.Aeson
 import Data.Maybe (catMaybes)
@@ -18,6 +18,8 @@ import qualified Data.Map as M
 import Text.Parsec
 import Text.StringLike
 import Text.HTML.TagSoup as TS
+import Text.Hamlet
+import Text.Blaze.Html.Renderer.String
 import Control.Lens
 import Control.Lens.Plated (children)
 import Control.Monad.State
@@ -312,6 +314,25 @@ loginCheck successMsg serverResponse
 
 errorPopup msg = alert ("Something has gone wrong. Here's the error: " ++ msg)
 
+svgButtonWith :: String -> Document -> String -> IO Element
+svgButtonWith svg w thelabel =
+            do [Just bt, Just bl, Just cm] <- mapM (createElement w . Just) ["button", "span","span"]
+               setInnerHTML bl (Just thelabel)
+               setInnerHTML cm (Just svg)
+               appendChild bt (Just bl)
+               appendChild bt (Just cm)
+               return bt
+
+doneButton = svgButtonWith checkSVG 
+
+questionButton = svgButtonWith questionSVG
+
+exclaimButton = svgButtonWith exclaimSVG
+
+buttonWrapper w = do (Just bw) <- createElement w (Just "div")
+                     setAttribute bw "class" "buttonWrapper"
+                     return bw
+
 --------------------------------------------------------
 --1.7 Parsing
 --------------------------------------------------------
@@ -331,6 +352,38 @@ withLabel parser = do label <- many (digit <|> char '.')
                       s <- parser
                       return (label,s)
 
+------------------
+--1.8 SVG Data  --
+------------------
+
+spinnerSVG = renderHtml [shamlet|
+                        <svg version="1.1" id="loader-1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" width="30px" height="30px" viewBox="0 0 40 40" enable-background="new 0 0 40 40" xml:space="preserve">
+                            <path opacity="0.2" fill="#000" d="M20.201,5.169c-8.254,0-14.946,6.692-14.946,14.946c0,8.255,6.692,14.946,14.946,14.946 s14.946-6.691,14.946-14.946C35.146,11.861,28.455,5.169,20.201,5.169z M20.201,31.749c-6.425,0-11.634-5.208-11.634-11.634 c0-6.425,5.209-11.634,11.634-11.634c6.425,0,11.633,5.209,11.633,11.634C31.834,26.541,26.626,31.749,20.201,31.749z"/>
+                                <path fill="#000" d="M26.013,10.047l1.654-2.866c-2.198-1.272-4.743-2.012-7.466-2.012h0v3.312h0 C22.32,8.481,24.301,9.057,26.013,10.047z">
+                                        <animateTransform attributeType="xml" attributeName="transform" type="rotate" from="0 20 20" to="360 20 20" dur="0.5s" repeatCount="indefinite"/>|]
+
+checkSVG = renderHtml [shamlet|
+                      <svg version="1.1" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+                       <g transform="translate(-46.113 -84.018)">
+                         <path d="m106.11 84.018a60 60 0 0 0-60 60 60 60 0 0 0 60 60 60 60 0 0 0 60-60 60 60 0 0 0-60-60zm0 12.095a47.905 47.905 0 0 1 47.905 47.905 47.905 47.905 0 0 1-47.905 47.905 47.905 47.905 0 0 1-47.905-47.905 47.905 47.905 0 0 1 47.905-47.905z"/>
+                           <path.filler d="m74.95 141.17 23.653 28.743 38.739-45.778" style="fill:none;stroke-width:15;"/>|]
+
+questionSVG = renderHtml [shamlet|
+                            <svg version="1.1" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+                             <defs>style="fill:none;stroke-width:15;"/&gt;</defs>
+                             <path d="m59.997 0a60 60 0 0 0-60 60 60 60 0 0 0 60 60 60 60 0 0 0 60-60 60 60 0 0 0-60-60zm0 12.095a47.905 47.905 0 0 1 47.905 47.905 47.905 47.905 0 0 1-47.905 47.905 47.905 47.905 0 0 1-47.905-47.905 47.905 47.905 0 0 1 47.905-47.905z"/>
+                             <ellipse cx="58.22" cy="92.034" rx="5.339" ry="5.0847" style="fill:none"/>
+                             <ellipse.filler cx="59.997" cy="93.646" rx="8.8983" ry="8.1355" style="stroke-width:1.1744"/>
+                             <rect.filler x="51.862" y="66.101" width="16.271" height="14.746" ry="0" style="stroke-width:1.0664"/>
+                             <path.filler d="m58.942 24.217c-13.969 0.18878-25.496 10.964-26.601 24.864h12.328c1.0506-7.2042 7.1885-12.579 14.482-12.683 8.1481-0.10463 14.858 6.3652 15.034 14.497 0.17565 8.1314-6.2477 14.884-14.393 15.131-2.7817 0.0785-5.1501 0.07525-7.9299 0.07525v11.066c2.6798 0.76758 5.4622 1.1171 8.2489 1.0361 14.841-0.45005 26.544-12.755 26.224-27.571-0.32052-14.817-12.547-26.606-27.394-26.415z" style="stroke-width:.98886"/>|]
+
+exclaimSVG = renderHtml [shamlet|
+                        <svg version="1.1" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+                         <defs>style="fill:none;stroke-width:15;"/&gt;</defs>
+                         <path d="m59.997 0a60 60 0 0 0-60 60 60 60 0 0 0 60 60 60 60 0 0 0 60-60 60 60 0 0 0-60-60zm0 12.095a47.905 47.905 0 0 1 47.905 47.905 47.905 47.905 0 0 1-47.905 47.905 47.905 47.905 0 0 1-47.905-47.905 47.905 47.905 0 0 1 47.905-47.905z"/>
+                         <ellipse cx="58.22" cy="92.034" rx="5.339" ry="5.0847" style="fill:none"/>
+                         <ellipse.filler cx="59.997" cy="93.646" rx="8.8983" ry="8.1355" style="stroke-width:1.1744"/>
+                         <rect.filler x="51.862" y="21.864" width="16.271" height="58.983" ry="0" style="stroke-width:2.1328"/>|]
 --------------------------------------------------------
 --2. FFI Wrappers
 --------------------------------------------------------
