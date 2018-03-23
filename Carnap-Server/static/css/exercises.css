@@ -382,6 +382,12 @@ body[data-carnap-type="proofchecker"] {
     margin:0px;
 }
 
+
+body[data-carnap-type="proofchecker"] .buttonWrapper { 
+    position:fixed;
+    bottom:0px;
+}
+
 .ttdisplay {
     padding-left:10px;
 }

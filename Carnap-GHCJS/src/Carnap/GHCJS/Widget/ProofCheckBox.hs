@@ -12,7 +12,7 @@ import Control.Monad.IO.Class
 import Control.Monad (when)
 import Control.Concurrent
 import GHCJS.DOM.Types
-import GHCJS.DOM.Element (setAttribute, getInnerHTML, setInnerHTML,keyDown,keyUp,click,getScrollWidth,getScrollHeight)
+import GHCJS.DOM.Element (setAttribute, getAttribute, getInnerHTML, setInnerHTML,keyDown,keyUp,click,getScrollWidth,getScrollHeight)
 import GHCJS.DOM.Document (createElement, getDefaultView, getBody, getHead, getDomain, setDomain,getElementsByTagName)
 import GHCJS.DOM.Window (open,getDocument)
 import GHCJS.DOM.Node (appendChild, getParentNode, cloneNode)
@@ -39,10 +39,10 @@ data CheckerOptions = CheckerOptions { submit :: Maybe Button -- What's the subm
 
 checkerWith :: CheckerOptions -> (Document -> IORef Bool -> String -> (Element, Element) -> IO ()) -> IOGoal -> Document -> IO ()
 checkerWith options updateres iog@(IOGoal i o g content _) w = do
+           ref <- newIORef False
            elts <- mapM (createElement w . Just) ["div","div","div","div","div"]
            let [Just fd, Just nd, Just sd, Just incompleteAlert, Just aligner] = elts
            bw <- buttonWrapper w
-           ref <- newIORef False
            setInnerHTML i (Just content)
            setAttribute aligner "class" "aligner"
            setAttribute fd "class" "proofFeedback"
@@ -91,7 +91,7 @@ checkerWith options updateres iog@(IOGoal i o g content _) w = do
                    btlistener <- newListener $ updateWithValue (\s -> updateres w ref s (g,fd))
                    addListener bt click btlistener False                
            when (popout options) $ do
-               btpop <- doneButton w "Expand"
+               btpop <- expandButton w "Expand"
                appendChild bw (Just btpop)
                thepopout <- newListener $ liftIO $ popoutWith options updateres iog w
                addListener btpop click thepopout False
@@ -106,12 +106,11 @@ checkerWith options updateres iog@(IOGoal i o g content _) w = do
 popoutWith :: CheckerOptions -> (Document -> IORef Bool -> String -> (Element, Element) -> IO ()) -> IOGoal -> Document -> IO ()
 popoutWith options updateres iog@(IOGoal i o g content opts) dom = do
             (Just win) <- getDefaultView dom
-            (Just domain) <- getDomain dom :: IO (Maybe String)
             (Just popwin) <- open win "" "" ""
             (Just popdom) <- getDocument popwin 
-            setDomain popdom (Just domain)
             (Just body) <- getBody popdom
             (Just head) <- getHead popdom
+            (getDomain dom :: IO (Maybe String)) >>= setDomain popdom
             links <- getElementsByTagName dom "link" >>= maybeNodeListToList
             newlinks <- map castToElement . catMaybes <$> mapM (\x -> cloneNode x False) (catMaybes links)
             mapM_ (appendChild head . Just) newlinks
@@ -121,6 +120,10 @@ popoutWith options updateres iog@(IOGoal i o g content opts) dom = do
                                      , popout = False
                                      } 
             (getInnerHTML g :: IO (Maybe String)) >>= setInnerHTML g'
+            (Just par) <- getParentNode i
+            (Just gpar) <- getParentNode par
+            (Just optstring) <- getAttribute (castToElement gpar) "data-carnap-options" :: IO (Maybe String)
+            setAttribute body "data-carnap-options" optstring
             setAttribute body "data-carnap-type" "proofchecker"
             mapM (appendChild body . Just) [g', i', o']
             checkerWith newOptions updateres (IOGoal i' o' g' content opts) popdom

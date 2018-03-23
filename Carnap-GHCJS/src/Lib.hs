@@ -7,7 +7,8 @@ module Lib
     loginCheck,errorPopup, genInOutElts, getInOutElts,generateExerciseElts, withLabel,
     formAndLabel,seqAndLabel, folSeqAndLabel, folFormAndLabel,
     message, IOGoal(..), updateWithValue, submissionSource, assignmentKey,
-    initialize,popUpWith,spinnerSVG,doneButton,questionButton,exclaimButton,buttonWrapper, maybeNodeListToList) where
+    initialize,popUpWith,spinnerSVG,doneButton,questionButton,exclaimButton,
+    expandButton,buttonWrapper, maybeNodeListToList) where
 
 import Data.Aeson
 import Data.Maybe (catMaybes)
@@ -337,6 +338,8 @@ questionButton = svgButtonWith questionSVG
 
 exclaimButton = svgButtonWith exclaimSVG
 
+expandButton = svgButtonWith expandSVG
+
 buttonWrapper w = do (Just bw) <- createElement w (Just "div")
                      setAttribute bw "class" "buttonWrapper"
                      return bw
@@ -384,6 +387,30 @@ questionSVG = renderHtml [shamlet|
                              <ellipse.filler cx="59.997" cy="93.646" rx="8.8983" ry="8.1355" style="stroke-width:1.1744"/>
                              <rect.filler x="51.862" y="66.101" width="16.271" height="14.746" ry="0" style="stroke-width:1.0664"/>
                              <path.filler d="m58.942 24.217c-13.969 0.18878-25.496 10.964-26.601 24.864h12.328c1.0506-7.2042 7.1885-12.579 14.482-12.683 8.1481-0.10463 14.858 6.3652 15.034 14.497 0.17565 8.1314-6.2477 14.884-14.393 15.131-2.7817 0.0785-5.1501 0.07525-7.9299 0.07525v11.066c2.6798 0.76758 5.4622 1.1171 8.2489 1.0361 14.841-0.45005 26.544-12.755 26.224-27.571-0.32052-14.817-12.547-26.606-27.394-26.415z" style="stroke-width:.98886"/>|]
+
+expandSVG = renderHtml [shamlet|
+                        <svg version="1.1" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+                         <defs>style="fill:none;stroke-width:15;"/&gt;</defs>
+                         <path d="m0 0v120h120v-120zm14 14h92v92h-92z"/>
+                         <g transform="translate(140.64 -.21112)">
+                          <rect.filler x="-120.64" y="70.211" width="10" height="30"/>
+                          <rect.filler transform="rotate(90)" x="90.211" y="90.642" width="10" height="30"/>
+                          <rect.filler transform="rotate(45)" x="-19.447" y="114.1" width="10" height="30"/>
+                         <g transform="rotate(90 60.142 59.858)">
+                          <g transform="translate(140.64 -.21112)">
+                           <rect.filler x="-120.64" y="70.211" width="10" height="30"/>
+                           <rect.filler transform="rotate(90)" x="90.211" y="90.642" width="10" height="30"/>
+                           <rect.filler transform="rotate(45)" x="-19.447" y="114.1" width="10" height="30"/>
+                         <g transform="rotate(180 60.142 59.858)">
+                          <g transform="translate(140.64 -.21112)">
+                           <rect.filler x="-120.64" y="70.211" width="10" height="30"/>
+                           <rect.filler transform="rotate(90)" x="90.211" y="90.642" width="10" height="30"/>
+                           <rect.filler transform="rotate(45)" x="-19.447" y="114.1" width="10" height="30"/>
+                         <g transform="rotate(-90 60.142 59.858)">
+                          <g transform="translate(140.64 -.21112)">
+                           <rect.filler x="-120.64" y="70.211" width="10" height="30"/>
+                           <rect.filler transform="rotate(90)" x="90.211" y="90.642" width="10" height="30"/>
+                           <rect.filler transform="rotate(45)" x="-19.447" y="114.1" width="10" height="30"/>|]
 
 exclaimSVG = renderHtml [shamlet|
                         <svg version="1.1" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
