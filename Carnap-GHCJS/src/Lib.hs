@@ -7,7 +7,7 @@ module Lib
     loginCheck,errorPopup, genInOutElts, getInOutElts,generateExerciseElts, withLabel,
     formAndLabel,seqAndLabel, folSeqAndLabel, folFormAndLabel,
     message, IOGoal(..), updateWithValue, submissionSource, assignmentKey,
-    initialize,popUpWith,spinnerSVG,doneButton,questionButton,exclaimButton,buttonWrapper) where
+    initialize,popUpWith,spinnerSVG,doneButton,questionButton,exclaimButton,buttonWrapper, maybeNodeListToList) where
 
 import Data.Aeson
 import Data.Maybe (catMaybes)
@@ -44,6 +44,7 @@ import GHCJS.DOM.HTMLInputElement
 import qualified GHCJS.DOM.HTMLTextAreaElement as TA (setValue,getValue)
 import GHCJS.DOM.Document (createElement, getBody)
 import GHCJS.DOM.Node
+import qualified GHCJS.DOM.HTMLCollection as HC
 import GHCJS.DOM.NodeList
 import qualified GHCJS.DOM.NamedNodeMap as NM
 import GHCJS.DOM.Event
@@ -117,6 +118,13 @@ maybeNodeListToList mnl = case mnl of
                             Just nl -> do l <- getLength nl
                                           if l > 0 then 
                                               mapM ((fmap . fmap) castToElement . item nl) [0 .. l-1]
+                                          else return []
+
+maybeHtmlCollectionToList mhc = case mhc of 
+                            Nothing -> return []
+                            Just hc -> do l <- HC.getLength hc
+                                          if l > 0 then 
+                                              mapM ((fmap . fmap) castToElement . HC.item hc) [0 .. l-1]
                                           else return []
 
 -- XXX: one might also want to include a "mutable lens" or "mutable traversal"

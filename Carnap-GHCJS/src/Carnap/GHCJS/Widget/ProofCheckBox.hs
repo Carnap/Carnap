@@ -5,6 +5,7 @@ module Carnap.GHCJS.Widget.ProofCheckBox (
     CheckerFeedbackUpdate(..),
     Button(..)) where 
 import Lib
+import Data.Maybe (catMaybes)
 import Data.IORef (IORef, newIORef,writeIORef,readIORef)
 import Control.Monad.Trans.State.Lazy
 import Control.Monad.IO.Class
@@ -12,9 +13,9 @@ import Control.Monad (when)
 import Control.Concurrent
 import GHCJS.DOM.Types
 import GHCJS.DOM.Element (setAttribute, getInnerHTML, setInnerHTML,keyDown,keyUp,click,getScrollWidth,getScrollHeight)
-import GHCJS.DOM.Document (createElement, getDefaultView, getBody, getHead, getDomain, setDomain)
+import GHCJS.DOM.Document (createElement, getDefaultView, getBody, getHead, getDomain, setDomain,getElementsByTagName)
 import GHCJS.DOM.Window (open,getDocument)
-import GHCJS.DOM.Node (appendChild, getParentNode)
+import GHCJS.DOM.Node (appendChild, getParentNode, cloneNode)
 import GHCJS.DOM.EventM (EventM, target, newListener,addListener)
 import GHCJS.DOM.HTMLTextAreaElement (castToHTMLTextAreaElement,setValue,getValue,setSelectionEnd,getSelectionStart)
 
@@ -114,9 +115,9 @@ popoutWith options updateres iog@(IOGoal i o g content opts) dom = do
             setDomain popdom (Just domain)
             (Just body) <- getBody popdom
             (Just head) <- getHead popdom
-            (Just styles) <- createElement popdom (Just "link")
-            mapM (uncurry (setAttribute styles)) 
-                [("rel","stylesheet"),("type","text/css"),("href","http://localhost:3000/static/css/exercises.css")]
+            links <- getElementsByTagName dom "link" >>= maybeNodeListToList
+            newlinks <- map castToElement . catMaybes <$> mapM (\x -> cloneNode x False) (catMaybes links)
+            mapM_ (appendChild head . Just) newlinks
             elts <- mapM (createElement popdom . Just) ["div","div","textarea"]
             let [Just g', Just o', Just i'] = elts :: [Maybe Element]
                 newOptions = options { autoResize = False
@@ -128,7 +129,6 @@ popoutWith options updateres iog@(IOGoal i o g content opts) dom = do
             setAttribute g' "class" "goal"
             setAttribute o' "class" "output"
             setAttribute i' "class" "input"
-            appendChild head (Just styles)
             mapM (appendChild body . Just) [g', i', o']
             checkerWith newOptions updateres (IOGoal i' o' g' content opts) popdom
 
