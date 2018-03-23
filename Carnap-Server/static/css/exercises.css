@@ -175,6 +175,7 @@
 }
 
 [data-carnap-type="proofchecker"] .output{
+    box-sizing:border-box;
     position: absolute;
     top:0px;
     bottom:5px;
@@ -189,6 +190,7 @@
 }
 
 [data-carnap-type="proofchecker"]:not([data-carnap-options~="resize"]) .buttonWrapper{ top:-5px; }
+
 
 .proofFeedback {
     font-size:10pt;
@@ -331,6 +333,7 @@
 }
 
 [data-carnap-type="proofchecker"] .goal {
+    box-sizing:border-box;
     position:relative;
     min-height:30px;
     padding:5pt;
@@ -373,6 +376,11 @@
     border-top:none;
 }
 
+body[data-carnap-type="proofchecker"] { 
+    width:100%;
+    padding-bottom:0px;
+    margin:0px;
+}
 
 .ttdisplay {
     padding-left:10px;

@@ -11,8 +11,9 @@ import Control.Monad.IO.Class
 import Control.Monad (when)
 import Control.Concurrent
 import GHCJS.DOM.Types
-import GHCJS.DOM.Element (setAttribute, setInnerHTML,keyDown,keyUp,click,getScrollWidth,getScrollHeight)
-import GHCJS.DOM.Document (createElement, getDefaultView)
+import GHCJS.DOM.Element (setAttribute, getInnerHTML, setInnerHTML,keyDown,keyUp,click,getScrollWidth,getScrollHeight)
+import GHCJS.DOM.Document (createElement, getDefaultView, getBody, getHead, getDomain, setDomain)
+import GHCJS.DOM.Window (open,getDocument)
 import GHCJS.DOM.Node (appendChild, getParentNode)
 import GHCJS.DOM.EventM (EventM, target, newListener,addListener)
 import GHCJS.DOM.HTMLTextAreaElement (castToHTMLTextAreaElement,setValue,getValue,setSelectionEnd,getSelectionStart)
@@ -32,6 +33,7 @@ data CheckerOptions = CheckerOptions { submit :: Maybe Button -- What's the subm
                                      , indentGuides :: Bool -- Should the checker display indentation guides?
                                      , autoIndent :: Bool -- Should the checker indent automatically?
                                      , autoResize :: Bool -- Should the checker resize automatically?
+                                     , popout :: Bool -- Should the checker be able to be put in a new window?
                                      }
 
 checkerWith :: CheckerOptions -> (Document -> IORef Bool -> String -> (Element, Element) -> IO ()) -> IOGoal -> Document -> IO ()
@@ -87,13 +89,48 @@ checkerWith options updateres iog@(IOGoal i o g content _) w = do
                    appendChild bw (Just bt)
                    btlistener <- newListener $ updateWithValue (\s -> updateres w ref s (g,fd))
                    addListener bt click btlistener False                
+           when (popout options) $ do
+               btpop <- doneButton w "Expand"
+               appendChild bw (Just btpop)
+               thepopout <- newListener $ liftIO $ popoutWith options updateres iog w
+               addListener btpop click thepopout False
            lineupd <- newListener $ updateLines w nd (indentGuides options)
            addListener i keyUp lineupd False
-           mv <- getValue (castToHTMLTextAreaElement i)
+           mv <- getInnerHTML i 
+           --XXX: getValue would be more proper here, but requires
+           --a typecase that causes trouble right now. Try again when we
+           --can upgrade ghcjs-dom
            case mv of
                Nothing -> setLinesTo w nd (indentGuides options) [" "]
                (Just iv) -> do setLinesTo w nd (indentGuides options) (altlines iv)
                                if initialUpdate options then updateres w ref iv (g, fd) else return ()
+
+popoutWith :: CheckerOptions -> (Document -> IORef Bool -> String -> (Element, Element) -> IO ()) -> IOGoal -> Document -> IO ()
+popoutWith options updateres iog@(IOGoal i o g content opts) dom = do
+            (Just win) <- getDefaultView dom
+            (Just domain) <- getDomain dom :: IO (Maybe String)
+            (Just popwin) <- open win "" "" ""
+            (Just popdom) <- getDocument popwin 
+            setDomain popdom (Just domain)
+            (Just body) <- getBody popdom
+            (Just head) <- getHead popdom
+            (Just styles) <- createElement popdom (Just "link")
+            mapM (uncurry (setAttribute styles)) 
+                [("rel","stylesheet"),("type","text/css"),("href","http://localhost:3000/static/css/exercises.css")]
+            elts <- mapM (createElement popdom . Just) ["div","div","textarea"]
+            let [Just g', Just o', Just i'] = elts :: [Maybe Element]
+                newOptions = options { autoResize = False
+                                     , initialUpdate = True
+                                     , popout = False
+                                     } 
+            (getInnerHTML g :: IO (Maybe String)) >>= setInnerHTML g'
+            setAttribute body "data-carnap-type" "proofchecker"
+            setAttribute g' "class" "goal"
+            setAttribute o' "class" "output"
+            setAttribute i' "class" "input"
+            appendChild head (Just styles)
+            mapM (appendChild body . Just) [g', i', o']
+            checkerWith newOptions updateres (IOGoal i' o' g' content opts) popdom
 
 updateLines :: (IsElement e) => Document -> e -> Bool -> EventM HTMLTextAreaElement KeyboardEvent ()
 updateLines w nd hasguides =  do (Just t) <- target :: EventM HTMLTextAreaElement KeyboardEvent (Maybe HTMLTextAreaElement)
