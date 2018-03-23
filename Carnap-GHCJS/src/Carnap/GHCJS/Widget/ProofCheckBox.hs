@@ -97,10 +97,7 @@ checkerWith options updateres iog@(IOGoal i o g content _) w = do
                addListener btpop click thepopout False
            lineupd <- newListener $ updateLines w nd (indentGuides options)
            addListener i keyUp lineupd False
-           mv <- getInnerHTML i 
-           --XXX: getValue would be more proper here, but requires
-           --a typecase that causes trouble right now. Try again when we
-           --can upgrade ghcjs-dom
+           mv <- getValue (castToHTMLTextAreaElement i)
            case mv of
                Nothing -> setLinesTo w nd (indentGuides options) [" "]
                (Just iv) -> do setLinesTo w nd (indentGuides options) (altlines iv)
@@ -118,17 +115,13 @@ popoutWith options updateres iog@(IOGoal i o g content opts) dom = do
             links <- getElementsByTagName dom "link" >>= maybeNodeListToList
             newlinks <- map castToElement . catMaybes <$> mapM (\x -> cloneNode x False) (catMaybes links)
             mapM_ (appendChild head . Just) newlinks
-            elts <- mapM (createElement popdom . Just) ["div","div","textarea"]
-            let [Just g', Just o', Just i'] = elts :: [Maybe Element]
-                newOptions = options { autoResize = False
+            [g', o', i'] <- map castToElement . catMaybes <$> mapM (\x -> cloneNode x False) [g,o,i]
+            let newOptions = options { autoResize = False
                                      , initialUpdate = True
                                      , popout = False
                                      } 
             (getInnerHTML g :: IO (Maybe String)) >>= setInnerHTML g'
             setAttribute body "data-carnap-type" "proofchecker"
-            setAttribute g' "class" "goal"
-            setAttribute o' "class" "output"
-            setAttribute i' "class" "input"
             mapM (appendChild body . Just) [g', i', o']
             checkerWith newOptions updateres (IOGoal i' o' g' content opts) popdom
 
