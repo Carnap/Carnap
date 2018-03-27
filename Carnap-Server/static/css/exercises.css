@@ -14,6 +14,7 @@
     top:-13px;
     background-color: #fffff8;
     padding:5px;
+    font-size:15px;
 }
 
 .buttonWrapper button {
@@ -94,6 +95,8 @@
 
 /* FIXME this need to be narrower, and to wrap, for mobile. */
 
+[data-carnap-type="synchecker"], [data-carnap-type="translate"] { line-height:1; }
+
 [data-carnap-type="synchecker"] > .buttonWrapper, [data-carnap-type="translate"] > .buttonWrapper {
     display:inline-block;
 }
@@ -129,6 +132,9 @@
     min-width:289px;
     padding:10pt;
     border:1px solid #A9B7C0;
+    box-sizing:content-box;
+    -webkit-box-sizing:content-box;
+
 }
 
 /* This is what will need to be the locus of responsive resizing */
@@ -167,6 +173,7 @@
     word-wrap:normal;
     border:1px solid #A9B7C0;
     outline:none;
+    z-index:1;
 }
 
 [data-carnap-type="proofchecker"] textarea:focus {
@@ -178,7 +185,7 @@
     position: absolute;
     top:0px;
     bottom:5px;
-    z-index:1;
+    z-index:2;
     width:100%;
     padding:21px;
     padding-left:11px;
@@ -189,6 +196,8 @@
 }
 
 [data-carnap-type="proofchecker"]:not([data-carnap-options~="resize"]) .buttonWrapper{ top:-5px; }
+
+[data-carnap-type="proofchecker"]:not([data-carnap-options~="resize"]) { margin-bottom:0px; }
 
 
 .proofFeedback {
@@ -290,6 +299,7 @@
 .proofDisplay div > span:first-child {
     position:absolute;
     left:20pt;
+    font-size:15px;
 }
 
 .proofDisplay .subproof .subproof {
@@ -380,7 +390,6 @@ body[data-carnap-type="proofchecker"] {
     padding-bottom:0px;
     margin:0px;
 }
-
 
 body[data-carnap-type="proofchecker"] .buttonWrapper { 
     position:fixed;
