@@ -93,7 +93,7 @@ getDocumentR ident title = do userdir <- getUserDir ident
                                                               addStylesheet $ StaticR css_exercises_css
                                                               addStylesheet $ StaticR css_tree_css
                                                               addStylesheet $ StaticR css_exercises_css
-                                                              layout html
+                                                              $(widgetFile "document")
                                                               addScript $ StaticR ghcjs_allactions_runmain_js
 
     where layout c = [whamlet|
@@ -125,7 +125,6 @@ getDocumentDownloadR ident title = do userdir <- getUserDir ident
                                                             , "\""
                                                             ]
                                                           sendFile typeOctet path
-
 
 fileToHtml path = do Markdown md <- markdownFromFile path
                      let md' = Markdown (filter ((/=) '\r') md) --remove carrage returns from dos files

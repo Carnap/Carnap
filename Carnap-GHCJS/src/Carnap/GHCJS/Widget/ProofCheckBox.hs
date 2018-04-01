@@ -88,8 +88,11 @@ checkerWith options updateres iog@(IOGoal i o g content _) w = do
                Click -> do 
                    bt <- questionButton w "Check"
                    appendChild bw (Just bt)
-                   btlistener <- newListener $ updateWithValue (\s -> updateres w ref s (g,fd))
-                   addListener bt click btlistener False                
+                   btlistener <- newListener $ liftIO $
+                                    do miv <-  getValue (castToHTMLTextAreaElement i)
+                                       case miv of Just iv -> updateres w ref iv (g, fd)
+                                                   Nothing -> return ()
+                   addListener bt click btlistener True
            when (popout options) $ do
                btpop <- expandButton w "Expand"
                appendChild bw (Just btpop)

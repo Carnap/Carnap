@@ -18,6 +18,7 @@
 }
 
 .buttonWrapper button {
+    height:2em;
     margin:0px;
     position:relative;
     color:white;
@@ -104,10 +105,12 @@
 [data-carnap-type="synchecker"] > .buttonWrapper button, [data-carnap-type="translate"] > .buttonWrapper button {
     display:inline-block;
     border-left:none;
+    bottom:0px;
 }
 
 [data-carnap-type="synchecker"] > input, [data-carnap-type="truthtable"] > .input, [data-carnap-type="translate"] > input {
     font-size:14px;
+    height:2em;
     padding:5px;
     background:white;
     border:1px solid #A9B7C0;
@@ -115,7 +118,9 @@
     margin:0px;
 }
 
-[data-carnap-type="translate"] > input { width:400px }
+[data-carnap-type="translate"] > input { 
+    width:400px;
+}
 
 [data-carnap-type="translate"] .output { 
     position:relative;
@@ -126,6 +131,7 @@
 }
 
 [data-carnap-type="synchecker"] .tree {
+    background:white;
     display:inline-block;
     position:relative;
     top:-1px;
@@ -244,6 +250,10 @@
     border:1pt solid black;
     padding:5pt;
     color:black;
+}
+
+.popperWrapper {
+    z-index:10;
 }
 
 .details {
@@ -381,7 +391,7 @@
     position:relative;
 }
 
-[data-carnap-type="proofchecker"] .buttonWrapper button {
+div[data-carnap-type="proofchecker"] .buttonWrapper button {
     border-top:none;
 }
 
@@ -394,6 +404,7 @@ body[data-carnap-type="proofchecker"] {
 body[data-carnap-type="proofchecker"] .buttonWrapper { 
     position:fixed;
     bottom:0px;
+    z-index:3;
 }
 
 .ttdisplay {
@@ -454,7 +465,8 @@ body[data-carnap-type="proofchecker"] .buttonWrapper {
     padding:2px;
 }
 
-[data-carnap-options~="fonts"] textarea, [data-carnap-options~="fonts"] input {
-    text-rendering:optimizeLegibility;
+[data-carnap-options~="fonts"] textarea, [data-carnap-options~="fonts"] input, [data-carnap-options~="fonts"] .goal {
+    text-rendering: optimizeLegibility;
+    font-variant-ligatures: historical-ligatures discretionary-ligatures common-ligatures contextual; 
     font-family:"Fira Logic", monospace;
 }

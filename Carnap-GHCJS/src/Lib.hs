@@ -253,6 +253,7 @@ popUpWith fd w elt label msg details =
            (Just outerpopper) <- createElement w (Just "div")
            (Just innerpopper) <- createElement w (Just "div")
            setAttribute innerpopper "class" "popper"
+           setAttribute outerpopper "class" "popperWrapper"
            setInnerHTML innerpopper (Just msg)
            appendChild outerpopper (Just innerpopper)
            case details of 

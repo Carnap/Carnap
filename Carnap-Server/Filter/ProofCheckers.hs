@@ -43,8 +43,8 @@ activate cls extra chunk
           exTemplate opts = actTemplate (unions [fromList extra, fromList opts, fromList fixed]) ("exercise " ++ numof h) (unlines t)
 
 toPlayground cls extra content
-    | "Prop"             `elem` cls = playTemplate [("system","prop")]
-    | "FirstOrder"       `elem` cls = playTemplate [("system","firstOrder")]
+    | "Prop"             `elem` cls = playTemplate [("system", "prop")]
+    | "FirstOrder"       `elem` cls = playTemplate [("system", "firstOrder")]
     | "SecondOrder"      `elem` cls = playTemplate [("system", "secondOrder")]
     | "PolySecondOrder"  `elem` cls = playTemplate [("system", "polyadicSecondOrder")]
     | "LogicBook"        `elem` cls = playTemplate [("system", "LogicBook")]
@@ -66,7 +66,7 @@ toPlayground cls extra content
     | "HardegreeMPL"     `elem` cls = playTemplate [("system", "hardegreeMPL"), ("options", "guides fonts")]
     | otherwise = playTemplate []
     where fixed = [("type","proofchecker")]
-          playTemplate opts = actTemplate (unions [fromList opts, fromList fixed]) "Playground" content
+          playTemplate opts = actTemplate (unions [fromList opts, fromList fixed]) "Playground" (unlines $ formatChunk content)
 
 actTemplate :: Map String String -> String -> String -> Block
 actTemplate opts head content = RawBlock "html" $ 

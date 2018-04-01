@@ -106,7 +106,7 @@
                         <tbody>
                             $forall a <- map entityVal sharedDocuments
                                 <tr id="document-#{sharedDocumentFilename a}">
-                                    <td> 
+                                    <td>
                                         <a href="@{DocumentR ident (sharedDocumentFilename a)}">
                                             #{sharedDocumentFilename a}
                                     <td> #{show $ sharedDocumentDate a}

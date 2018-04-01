@@ -66,7 +66,7 @@ getAssignmentR t = do adir <- assignmentDir
                                                   addScript $ StaticR ghcjs_allactions_out_js
                                                   addStylesheet $ StaticR css_tree_css
                                                   addStylesheet $ StaticR css_exercises_css
-                                                  layout html
+                                                  $(widgetFile "document")
                                                   addScript $ StaticR ghcjs_allactions_runmain_js
     where layout c = [whamlet|
                         <div.container>
