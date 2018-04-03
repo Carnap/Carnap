@@ -420,7 +420,7 @@ classWidget classent = do
                     <table.table.table-striped>
                         <thead>
                             <th> Registered Student
-                            <> Student Name
+                            <th> Student Name
                             <th> Total Score
                         <tbody>
                             $forall (u,UserData fn ln _ _ _) <- usersAndData

@@ -120,7 +120,9 @@ $("#updateAssignment").submit(function(e) {
     jQuery.ajax({
         url: '@{InstructorR ident}',
         type: 'PUT',
-        data: $("#updateAssignment").serialize(),
+        data: new FormData(this),
+        processData: false,
+        contentType: false,
         success: function(data) {
             var el = $("#assignment-" + $.escapeSelector(data[0]) + " td")[1]
             el.innerHTML = data[1];
@@ -137,7 +139,9 @@ $("#updateCourse").submit(function(e) {
     jQuery.ajax({
         url: '@{InstructorR ident}',
         type: 'PUT',
-        data: $("#updateCourse").serialize(),
+        data: new FormData(this),
+        processData: false,
+        contentType: false,
         success: function(data) {
             $("#updateCourseData").modal('hide');
             location.reload() /* kinda lazy. Fix eventually. */
@@ -153,7 +157,9 @@ $("#updateDocument").submit(function(e) {
     jQuery.ajax({
         url: '@{InstructorR ident}',
         type: 'PUT',
-        data: $("#updateDocument").serialize(),
+        data: new FormData(this),
+        processData: false,
+        contentType: false,
         success: function(data) {
             $("#updateDocumentData").modal('hide');
             location.reload() /* kinda lazy. Fix eventually. */
