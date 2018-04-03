@@ -25,7 +25,7 @@ putInstructorR ident = do
         ((courserslt,_),_)     <- runFormPost (identifyForm "updateCourse" $ updateCourseForm)
         ((documentrslt,_),_)   <- runFormPost (identifyForm "updateDocument" $ updateDocumentForm)
         case (assignmentrslt,courserslt,documentrslt) of 
-            (FormSuccess (filename,mdue,mduetime,mdesc),_,_) -> do
+            (FormSuccess (filename,mdue,mduetime,mdesc,mfile),_,_) -> do
                              massignEnt <- runDB $ getBy $ UniqueAssignment filename
                              case massignEnt of 
                                    Nothing -> return ()
@@ -40,6 +40,7 @@ putInstructorR ident = do
                                                             update k [ AssignmentMetadataDuedate =. (Just $ localTimeToUTCTZ tz localdue) ])
                                                       maybeDo mdesc (\desc -> update k
                                                          [ AssignmentMetadataDescription =. (Just $ unTextarea desc) ])
+                                           maybeDo mfile (saveTo "assignments" $ unpack filename)
                              case mdue of Nothing -> returnJson ([filename,"No Due Date"])
                                           Just due -> returnJson ([filename, pack $ show due])
             (_,FormSuccess (coursetitle,mdesc,mstart,mend,mpoints),_) -> do
@@ -56,7 +57,7 @@ putInstructorR ident = do
                                                            [ CourseTotalPoints =. points ])
                                               returnJson ("updated!"::Text)
                                  Nothing -> returnJson ("could not find course!"::Text)
-            (_,_,FormSuccess (filename, mscope, mdesc)) -> do
+            (_,_,FormSuccess (filename, mscope, mdesc,mfile)) -> do
                              musr <- runDB $ getBy $ UniqueUser ident
                              case entityKey <$> musr of
                                  Just k -> do
@@ -67,6 +68,7 @@ putInstructorR ident = do
                                                            [ SharedDocumentDescription =. (Just $ unTextarea desc) ])
                                                           maybeDo mscope (\scope -> update k'
                                                            [ SharedDocumentScope =. scope ])
+                                               maybeDo mfile (saveTo ("shared" </> unpack ident) $ unpack filename)
                                                returnJson ("updated!"::Text)
                                          Nothing -> returnJson ("could not find document!"::Text)
                                  Nothing -> returnJson ("could not find user id!"::Text)
@@ -263,11 +265,12 @@ uploadAssignmentForm classes = renderBootstrap3 BootstrapBasicForm $ (,,,,,)
             <*> lift (liftIO getCurrentTime)
     where classnames = map (\theclass -> (courseTitle . entityVal $ theclass, theclass)) classes
 
-updateAssignmentForm = renderBootstrap3 BootstrapBasicForm $ (,,,)
+updateAssignmentForm = renderBootstrap3 BootstrapBasicForm $ (,,,,)
             <$> areq fileName "" Nothing
             <*> aopt (jqueryDayField def) (bfs ("Due Date"::Text)) Nothing
             <*> aopt timeFieldTypeTime (bfs ("Due Time"::Text)) Nothing
             <*> aopt textareaField (bfs ("Assignment Description"::Text)) Nothing
+            <*> fileAFormOpt (bfs ("Replacement Assignment File" :: Text))
     where fileName :: (Monad m, RenderMessage (HandlerSite m) FormMessage) => Field m Text 
           fileName = hiddenField
 
@@ -298,10 +301,11 @@ uploadDocumentForm = renderBootstrap3 BootstrapBasicForm $ (,,,)
                    ,("Private (Unavailable)", LinkOnly)
                    ]
 
-updateDocumentForm = renderBootstrap3 BootstrapBasicForm $ (,,)
+updateDocumentForm = renderBootstrap3 BootstrapBasicForm $ (,,,)
             <$> areq fileName "" Nothing
             <*> aopt (selectFieldList scopes) (bfs ("Share With " :: Text)) Nothing
             <*> aopt textareaField (bfs ("Description"::Text)) Nothing
+            <*> fileAFormOpt (bfs ("Replacement Assignment File" :: Text)) 
     where fileName :: (Monad m, RenderMessage (HandlerSite m) FormMessage) => Field m Text 
           fileName = hiddenField
 

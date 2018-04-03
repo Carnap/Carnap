@@ -144,7 +144,7 @@ $("#updateCourse").submit(function(e) {
         contentType: false,
         success: function(data) {
             $("#updateCourseData").modal('hide');
-            location.reload() /* kinda lazy. Fix eventually. */
+            location.reload() /* lazy. Fix eventually. */
             },
         error: function(data) {
             window.alert("Error, couldn't update the course")
@@ -162,7 +162,7 @@ $("#updateDocument").submit(function(e) {
         contentType: false,
         success: function(data) {
             $("#updateDocumentData").modal('hide');
-            location.reload() /* kinda lazy. Fix eventually. */
+            location.reload() /* lazy. Fix eventually. */
             },
         error: function(data) {
             window.alert("Error, couldn't update the course")
