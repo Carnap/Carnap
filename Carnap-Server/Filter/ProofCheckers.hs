@@ -40,7 +40,7 @@ activate cls extra chunk
           seqof = dropWhile (/= ' ')
           (h:t) = formatChunk chunk
           fixed = [("type","proofchecker"),("goal",seqof h),("submission","saveAs:" ++ numof h)]
-          exTemplate opts = actTemplate (unions [fromList extra, fromList opts, fromList fixed]) ("exercise " ++ numof h) (unlines t)
+          exTemplate opts = actTemplate (unions [fromList extra, fromList opts, fromList fixed]) ("exercise " ++ numof h) (unlines' t)
 
 toPlayground cls extra content
     | "Prop"             `elem` cls = playTemplate [("system", "prop")]
@@ -66,7 +66,7 @@ toPlayground cls extra content
     | "HardegreeMPL"     `elem` cls = playTemplate [("system", "hardegreeMPL"), ("options", "guides fonts")]
     | otherwise = playTemplate []
     where fixed = [("type","proofchecker")]
-          playTemplate opts = actTemplate (unions [fromList opts, fromList fixed]) "Playground" (unlines $ formatChunk content)
+          playTemplate opts = actTemplate (unions [fromList extra, fromList opts, fromList fixed]) "Playground" (unlines' $ formatChunk content)
 
 actTemplate :: Map String String -> String -> String -> Block
 actTemplate opts head content = RawBlock "html" $ 
@@ -81,6 +81,10 @@ actTemplate opts head content = RawBlock "html" $
 formatChunk = map cleanProof . lines
     where cleanProof l@(x:xs) = if x == '|' then dropWhile (\y -> isDigit y || (y == '.')) xs
                                             else l
+
+unlines' [] = ""
+unlines' (x:[]) = x
+unlines' (x:xs) = x ++ '\n':unlines' xs
 
 splitIt [] = ([],[])
 splitIt l = case break (== '\n') l of
