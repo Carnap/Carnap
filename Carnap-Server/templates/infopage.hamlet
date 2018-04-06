@@ -11,11 +11,11 @@
             <li>
                 <a href=#why> What's Carnap for?
             <li>
+                <a href=#usage>How can I use Carnap?
+            <li>
                 <a href=#name>Why “Carnap”?
             <li>
                 <a href=#how>How does Carnap Work?
-            <li>
-                <a href=#usage>How can I use Carnap?
             <li>
                 <a href=#contributing>How can I get involved?
 
@@ -197,7 +197,6 @@
 
     <section#why>
 
-
         <h2>What's Carnap for?
 
         <p> Carnap is intended for use by educators, students, and researchers
@@ -208,6 +207,32 @@
             \ interested in unorthodox formal systems to rapidly prototype
             \ proof-checking and semantic tools for computer-assisted logical
             \ investigation.
+
+    <section#usage>
+        <h2>How can I use Carnap right now?
+
+        <p>You can use Carnap to teach your own logic class!
+
+        <p> All you need to do is <a href="@{AuthR LoginR}">create an account</a>,
+            \ and then <a href="mailto:gleachkr@ksu.edu">get in touch</a> to
+            \ register as an instructor.
+
+        <p> Once you're an instructor, you can use this site—the one you're on
+            \ right now, carnap.io—to run your class and automatically grade
+            \ homework. You can either assign problems from the free
+            \ <a href="@{BookR}">textbook</a> hosted here, or you can use your own
+            \ textbook and create automatically graded problem-sets for your own
+            \ preferred system. Carnap currently supports truth-tables and
+            \ translation and parsing exercises, as well as deductions
+            \ compatible with formal systems used in Kalish and Montague's
+            \ <em>Logic</em>, Bergmann and Moore's <em>Logic Book</em>,
+            \ Hardegree's <em>Modal Logic</em>, P.D. Magnus' <em>Forall x</em>,
+            \ and the Calgary Remix of <em>Forall x</em>. But the ambition of
+            \ the project is maximum coverage. So if your favorite system isn't
+            \ supported, let us know and we'll see about adding it.
+
+        <p> Some tutorials for potential instructors can be found
+            \ <a href="@{DocumentsR}"> here</a>.
 
     <section#name>
         <h2>Why “Carnap”?
@@ -266,38 +291,8 @@
             \ framework.
 
         <p>So that's the gist of it. If you'd like to learn more about the
-            \ details, you can inspect the code, talk to a developer, or read the
-            \ documentation.
-
-    <section#usage>
-        <h2>How can I use Carnap?
-
-        <p>At the moment, the main application for Carnap is to create
-            \ interactive logic webapps<span class="hidden"> like the ones you see
-            \ above</span>. Webapps for Carnap can be be written in Haskell, and
-            \ translated into JavaScript using the GHCJS compiler. Or, you can write
-            \ a front-end in JavaScript and pass proofs to Carnap as JSON for
-            \ verification.
-
-        <p>The webapps already written using Carnap should be easy to include
-            \ in websites. Since they're compiled down from Haskell to pure
-            \ JavaScript, all you have to do is include the relevant JavaScript file,
-            \ and indicate in your HTML where you want the interactive widgets to go.
-            \ You can even use Carnap without doing any coding at all; Carnap
-            \ integrates with John McFarlane's <a href="pandoc.org">pandoc</a>. So
-            \ you can transform documents written in pandoc markdown into interactive
-            \ websites and lecture slides. In fact, the <a href="@{BookR}">Carnap
-            \ Book</a> was written in this way.
-
-        <p>Carnap also powers Kansas State University's <i>Introduction to
-            \ Formal Logic</i> and <i>Introduction to Symbolic Logic I</i>, allowing
-            \ instructors to write problem sets in pandoc, handling the grading, and
-            \ allowing students to build up a repertoire of derived rules and lemmas
-            \ that they can use in their work. If you're interested in teaching your
-            \ own logic class using Carnap, please don't hesitate to get in touch.
-
-        <p>Other applications (including a command-line tool and a standalone
-            \ desktop application) are in the works.
+            \ details, you can inspect the code, talk to a developer, or take
+            \ a look at <a href="http://eptcs.web.cse.unsw.edu.au/paper.cgi?ThEdu17.5"> this paper</a>.
 
     <section#contributing>
         <h2>How can I get involved?
@@ -305,11 +300,10 @@
         <p>If you’d like to support Carnap, please consider starring us on
            \ <a href="https://github.com/gleachkr/Carnap">Github</a>. If you
            \ have suggestions, feature requests, or bug-reports, you can create
-           \ an issue on Github. For general questions, or if you'd like to use
-           \ Carnap in a class you're teaching, just get in touch on
-           \ <a href="https://gitter.im/Carnap-Prover">Gitter</a>
-           \ on <a href="irc://irc.freenode.net/carnap">irc</a>
-           \ or over <a href="mailto:gleachkr@ksu.edu">email</a>.
+           \ an issue on Github. For general questions or discussion, you can
+           \ also reach us on <a href="https://gitter.im/Carnap-Prover">Gitter</a>,
+           \ on IRC at irc://irc.freenode.net/carnap, or over 
+           \ <a href="mailto:gleachkr@ksu.edu">email</a>.
 
         <p>If you’d like to contribute some code to the project—anything from
            \ a new unification algorithm to a CSS tweak or pandoc template—just put
