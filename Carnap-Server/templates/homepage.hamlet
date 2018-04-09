@@ -5,7 +5,7 @@
 
 
 <div#main.container>
-    <img.float-right.hidden-sm-down src=@{StaticR russell_png}>
+    <img.float-right.hidden-sm-down width=350px src=@{StaticR russell2_png}>
 
     <h2> Background
 
@@ -24,7 +24,7 @@
         \ materials.
 
     <p> If you're just curious about Carnap, you can find some general
-        \ information at on our #
+        \ information on our #
         <a href=@{InfoR}>about
         \ page. If you're interested in the project, and would like to use
         \ Carnap in a class you're teaching, or get involved in some other way,

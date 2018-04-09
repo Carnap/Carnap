@@ -258,7 +258,7 @@
 
         <p> Well, it's a little technical. There are a couple of different tricks involved.
 
-        <p>Basically, Haskell's type system makes it possible to represent
+        <p>Essentially, Haskell's type system makes it possible to represent
            \ different lexical categories as datatypes, to combine these lexical
            \ category datatypes into a larger datatype representing a lexicon (using
            \ something like the method described in #

@@ -15,7 +15,7 @@ getRuleR :: Handler Html
 getRuleR = do derivedRules <- getDrList
               ruleLayout $ [whamlet|
                             <div.container>
-                                <h1> Index of Basic Rules
+                                <h1> Index of Basic Propositional Rules
                                 <table.rules>
                                     <thead> <th> Name </th> <th> Premises </th><th> Conclusion </th>
                                     <tbody>
@@ -33,6 +33,12 @@ getRuleR = do derivedRules <- getDrList
                                         <tr> <td> BC  </td> <td> ψ↔φ </td> <td> ψ→φ  </td>
                                         <tr> <td> BC  </td> <td> ψ↔φ </td> <td> φ→ψ  </td>
                                         <tr> <td> CB  </td> <td> ψ→φ, φ→ψ  </td> <td> φ↔ψ </td>
+                                <h1> Index of Basic Predicate Rules
+                                <table.rules>
+                                    <thead> <th> Name </th> <th> Premises </th><th> Conclusion </th>
+                                    <tbody>
+                                        <tr> <td> UI </td> <td> ∀xφ<sub>x</sub> </td> <td> φ<sub>x</sub>(c) </td
+                                        <tr> <td> EG </td> <td> φ<sub>x</sub>(c) </td> <td> ∃xφ<sub>x</sub> </td>
                                 <h1> Index of Derived Rules
                                 $maybe rules <- derivedRules
                                     <div.derivedRules>
