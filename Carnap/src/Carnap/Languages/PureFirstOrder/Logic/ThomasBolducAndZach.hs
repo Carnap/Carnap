@@ -21,7 +21,7 @@ import Carnap.Languages.PureFirstOrder.Logic.Rules
 -- A system of first-order logic resembling system FOL from the Calcary
 -- Remix of forall x
 
-data ThomasBolducAndZachFOL = ThomasBolducAndZachTFL P.ThomasBolducAndZachTFL | UI | UE | EI | EE1 | EE2 | IDI | IDE1 | IDE2
+data ThomasBolducAndZachFOL = ThomasBolducAndZachTFL P.ThomasBolducAndZachTFL | UI | UE | EI | EE1 | EE2 | IDI | IDE1 | IDE2 | QN1 | QN2 | QN3 | QN4
                     deriving Eq
 
 instance Show ThomasBolducAndZachFOL where
@@ -34,6 +34,10 @@ instance Show ThomasBolducAndZachFOL where
         show IDI         = "=I"
         show IDE1        = "=E"
         show IDE2        = "=E"
+        show QN1         = "CQ"
+        show QN2         = "CQ"
+        show QN3         = "CQ"
+        show QN4         = "CQ"
 
 instance Inference ThomasBolducAndZachFOL PureLexiconFOL (Form Bool) where
 
@@ -43,6 +47,10 @@ instance Inference ThomasBolducAndZachFOL PureLexiconFOL (Form Bool) where
          ruleOf EE1  = existentialDerivation !! 0 
          ruleOf EE2  = existentialDerivation !! 1 
          ruleOf IDI  = eqReflexivity
+         ruleOf QN1  = quantifierNegation !! 0 
+         ruleOf QN2  = quantifierNegation !! 1
+         ruleOf QN3  = quantifierNegation !! 2
+         ruleOf QN4  = quantifierNegation !! 3
 
          ruleOf IDE1  = leibnizLawVariations !! 0
          ruleOf IDE2  = leibnizLawVariations !! 1
@@ -69,7 +77,7 @@ instance Inference ThomasBolducAndZachFOL PureLexiconFOL (Form Bool) where
 parseThomasBolducAndZachFOL _ = try quantRule <|> liftProp
     where liftProp = do r <- P.parseThomasBolducAndZachTFL (RuntimeNaturalDeductionConfig mempty mempty)
                         return (map ThomasBolducAndZachTFL r)
-          quantRule = do r <- choice (map (try . string) ["∀I", "AI", "∀E", "AE", "∃I", "EI", "∃E", "EE", "=I","=E" ])
+          quantRule = do r <- choice (map (try . string) ["∀I", "AI", "∀E", "AE", "∃I", "EI", "∃E", "EE", "=I","=E","CQ" ])
                          case r of 
                             r | r `elem` ["∀I","AI"] -> return [UI]
                               | r `elem` ["∀E","AE"] -> return [UE]
@@ -77,6 +85,7 @@ parseThomasBolducAndZachFOL _ = try quantRule <|> liftProp
                               | r `elem` ["∃E","EE"] -> return [EE1, EE2]
                               | r == "=I" -> return [IDI]
                               | r == "=E" -> return [IDE1,IDE2]
+                              | r == "CQ" -> return [QN1,QN2,QN3,QN4]
 
 parseThomasBolducAndZachFOLProof :: RuntimeNaturalDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine ThomasBolducAndZachFOL PureLexiconFOL (Form Bool)]
 parseThomasBolducAndZachFOLProof ders = toDeductionFitch (parseThomasBolducAndZachFOL ders) (thomasBolducAndZachFOLFormulaParser)
