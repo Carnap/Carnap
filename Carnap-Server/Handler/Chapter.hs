@@ -22,15 +22,30 @@ import Control.Monad.State (evalState, evalStateT)
 getChapterR :: Int -> Handler Html
 getChapterR n = do bookdir <- appBookRoot <$> (appSettings <$> getYesod)
                    cdir <- lift $ getDirectoryContents bookdir
-                   content <- liftIO $ content n cdir bookdir
+                   content <- liftIO $ content n cdir bookdir 
                    case content of
-                       Right html -> chapterLayout $ layout html
-                       Left err -> defaultLayout $ layout (show err)
-    where layout c = [whamlet|
-                        <div.container>
-                            <article>
-                                #{c}
-                       |]
+                       Right html -> chapterLayout  
+                            [whamlet|
+                                <div.container>
+                                    <article>
+                                        #{html}
+                                        <nav.nextAndPrev>
+                                            <p>
+                                                $if (n > 1)
+                                                    <a href="@{ChapterR (n - 1)}">
+                                                        Previous Chapter
+                                                $if ((n > 1) && (n < (length cdir - 3)))
+                                                    <span>∙
+                                                $if (n < (length cdir - 3))
+                                                    <a href="@{ChapterR (n + 1)}">
+                                                        Next Chapter
+                            |]
+                       Left err -> defaultLayout 
+                                      [whamlet|
+                                        <div.container>
+                                            <article>
+                                                #{show err}
+                                       |]
 
 content n cdir cdirp = do let matches = filter (\x -> (show n ++ ".pandoc") == dropWhile (not . isDigit) x) cdir
                           case matches of

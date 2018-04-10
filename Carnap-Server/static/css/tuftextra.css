@@ -63,3 +63,9 @@ ol.example > li:before {
     content:"(" counter(example) ")";
     float:right;
 }
+
+article > nav {
+    padding:10px;
+    font-size:16pt;
+    text-align:center;
+}
