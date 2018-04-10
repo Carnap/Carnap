@@ -270,7 +270,7 @@ updateAssignmentForm = renderBootstrap3 BootstrapBasicForm $ (,,,,)
             <*> aopt (jqueryDayField def) (bfs ("Due Date"::Text)) Nothing
             <*> aopt timeFieldTypeTime (bfs ("Due Time"::Text)) Nothing
             <*> aopt textareaField (bfs ("Assignment Description"::Text)) Nothing
-            <*> fileAFormOpt (bfs ("Replacement Assignment File" :: Text))
+            <*> fileAFormOpt (bfs ("Replacement File" :: Text))
     where fileName :: (Monad m, RenderMessage (HandlerSite m) FormMessage) => Field m Text 
           fileName = hiddenField
 
@@ -305,7 +305,7 @@ updateDocumentForm = renderBootstrap3 BootstrapBasicForm $ (,,,)
             <$> areq fileName "" Nothing
             <*> aopt (selectFieldList scopes) (bfs ("Share With " :: Text)) Nothing
             <*> aopt textareaField (bfs ("Description"::Text)) Nothing
-            <*> fileAFormOpt (bfs ("Replacement Assignment File" :: Text)) 
+            <*> fileAFormOpt (bfs ("Replacement File" :: Text)) 
     where fileName :: (Monad m, RenderMessage (HandlerSite m) FormMessage) => Field m Text 
           fileName = hiddenField
 
