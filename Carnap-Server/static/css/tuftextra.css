@@ -64,7 +64,7 @@ ol.example > li:before {
     float:right;
 }
 
-article > nav {
+nav.nextAndPrev {
     padding:10px;
     font-size:16pt;
     text-align:center;
