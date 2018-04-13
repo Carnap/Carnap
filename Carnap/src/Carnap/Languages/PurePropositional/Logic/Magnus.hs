@@ -65,31 +65,31 @@ instance Show MagnusSL where
         show Pr         = "PR"
 
 instance Inference MagnusSL PurePropLexicon (Form Bool) where
-        ruleOf Reiterate = identityRule
-        ruleOf ConjIntro = adjunction
-        ruleOf ConjElim1 = simplificationVariations !! 0
-        ruleOf ConjElim2 = simplificationVariations !! 1
+        ruleOf Reiterate  = identityRule
+        ruleOf ConjIntro  = adjunction
+        ruleOf ConjElim1  = simplificationVariations !! 0
+        ruleOf ConjElim2  = simplificationVariations !! 1
         ruleOf DisjIntro1 = additionVariations !! 0
         ruleOf DisjIntro2 = additionVariations !! 1 
-        ruleOf DisjElim1 = modusTollendoPonensVariations !! 0
-        ruleOf DisjElim2 = modusTollendoPonensVariations !! 1
+        ruleOf DisjElim1  = modusTollendoPonensVariations !! 0
+        ruleOf DisjElim2  = modusTollendoPonensVariations !! 1
         ruleOf CondIntro1 = conditionalProofVariations !! 0
         ruleOf CondIntro2 = conditionalProofVariations !! 1
-        ruleOf CondElim = modusPonens
+        ruleOf CondElim   = modusPonens
         ruleOf BicoIntro1 = biconditionalProofVariations !! 0
         ruleOf BicoIntro2 = biconditionalProofVariations !! 1
         ruleOf BicoIntro3 = biconditionalProofVariations !! 2
         ruleOf BicoIntro4 = biconditionalProofVariations !! 3
-        ruleOf BicoElim1 = biconditionalPonensVariations !! 0
-        ruleOf BicoElim2 = biconditionalPonensVariations !! 1
+        ruleOf BicoElim1  = biconditionalPonensVariations !! 0
+        ruleOf BicoElim2  = biconditionalPonensVariations !! 1
         ruleOf NegeIntro1 = constructiveReductioVariations !! 0
         ruleOf NegeIntro2 = constructiveReductioVariations !! 1
         ruleOf NegeIntro3 = constructiveReductioVariations !! 2
         ruleOf NegeIntro4 = constructiveReductioVariations !! 3
-        ruleOf NegeElim1 = nonConstructiveReductioVariations !! 0
-        ruleOf NegeElim2 = nonConstructiveReductioVariations !! 1
-        ruleOf NegeElim3 = nonConstructiveReductioVariations !! 2
-        ruleOf NegeElim4 = nonConstructiveReductioVariations !! 3
+        ruleOf NegeElim1  = nonConstructiveReductioVariations !! 0
+        ruleOf NegeElim2  = nonConstructiveReductioVariations !! 1
+        ruleOf NegeElim3  = nonConstructiveReductioVariations !! 2
+        ruleOf NegeElim4  = nonConstructiveReductioVariations !! 3
         ruleOf As  = axiom
         ruleOf Pr  = axiom
 
@@ -166,6 +166,8 @@ data MagnusSLPlus = MSL MagnusSL | Hyp
                   | MCRep        | RepMC
                   | MCRep2       | RepMC2
                   | BiExRep      | RepBiEx
+                  --plus DeMorgans
+                  | DM1 | DM2 | DM3 | DM4
 
 instance Show MagnusSLPlus where
         show (MSL x) = show x
@@ -186,6 +188,10 @@ instance Show MagnusSLPlus where
         show RepMC2  = "MC"
         show BiExRep = "↔ex"
         show RepBiEx = "↔ex"
+        show DM1     = "DeM"
+        show DM2     = "DeM"
+        show DM3     = "DeM"
+        show DM4     = "DeM"
 
 instance Inference MagnusSLPlus PurePropLexicon (Form Bool) where
         ruleOf (MSL x) = ruleOf x
@@ -206,6 +212,10 @@ instance Inference MagnusSLPlus PurePropLexicon (Form Bool) where
         ruleOf RepMC2  = materialConditional !! 3
         ruleOf BiExRep = biconditionalExchange !! 1
         ruleOf RepBiEx = biconditionalExchange !! 2
+        ruleOf DM1    = deMorgansLaws !! 0
+        ruleOf DM2    = deMorgansLaws !! 1
+        ruleOf DM3    = deMorgansLaws !! 2
+        ruleOf DM4    = deMorgansLaws !! 3
 
         indirectInference (MSL x) = indirectInference x
         indirectInference _ = Nothing
@@ -216,7 +226,7 @@ instance Inference MagnusSLPlus PurePropLexicon (Form Bool) where
 parseMagnusSLPlus :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> Parsec String u [MagnusSLPlus]
 parseMagnusSLPlus ders = try basic <|> plus
     where basic = map MSL <$> parseMagnusSL ders
-          plus = do r <- choice (map (try . string) ["HYP","DIL","MT", "Comm", "DN", "MC", "↔ex", "<->ex"])
+          plus = do r <- choice (map (try . string) ["HYP","DIL","MT", "Comm", "DN", "MC", "↔ex", "<->ex", "DeM"])
                     case r of
                         "HYP"   -> return [Hyp]
                         "DIL"   -> return [Dilemma]
@@ -225,6 +235,7 @@ parseMagnusSLPlus ders = try basic <|> plus
                         "MC"    -> return [MCRep,MCRep2,RepMC,RepMC2]
                         "↔ex"   -> return [BiExRep,RepBiEx]
                         "<->ex" -> return [BiExRep,RepBiEx]
+                        "DeM"   -> return [DM1,DM2,DM3,DM4]
 
 parseMagnusSLPlusProof :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> String -> [DeductionLine MagnusSLPlus PurePropLexicon (Form Bool)]
 parseMagnusSLPlusProof ders = toDeductionFitch (parseMagnusSLPlus ders) (purePropFormulaParser extendedLetters)

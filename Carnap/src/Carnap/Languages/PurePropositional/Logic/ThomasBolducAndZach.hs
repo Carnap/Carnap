@@ -78,10 +78,10 @@ instance Show ThomasBolducAndZachTFL where
         show Lem2       = "LEM"
         show Lem3       = "LEM"
         show Lem4       = "LEM"
-        show DeMorgan1  = "DM"
-        show DeMorgan2  = "DM"
-        show DeMorgan3  = "DM"
-        show DeMorgan4  = "DM"
+        show DeMorgan1  = "DeM"
+        show DeMorgan2  = "DeM"
+        show DeMorgan3  = "DeM"
+        show DeMorgan4  = "DeM"
 
 instance Inference ThomasBolducAndZachTFL PurePropLexicon (Form Bool) where
         ruleOf ConjIntro  = adjunction
@@ -139,7 +139,7 @@ parseThomasBolducAndZachTFL :: RuntimeNaturalDeductionConfig PurePropLexicon (Fo
 parseThomasBolducAndZachTFL ders = do r <- choice (map (try . string) [ "AS","PR","&I","/\\I", "∧I","&E","/\\E","∧E", "~I","-I", "¬I"
                                                                       , "~E","-E", "¬E","IP","->I","→I","→E","->E", "→E", "X"
                                                                       , "vI","\\/I","∨I", "vE","\\/E", "∨E","<->I", "↔I","<->E"
-                                                                      , "↔E","DS","MT","R","DNE","LEM","DM"])
+                                                                      , "↔E","DS","MT","R","DNE","LEM","DeM"])
                                       case r of
                                           r | r == "AS"   -> return [As]
                                             | r == "PR"   -> return [Pr]
@@ -160,7 +160,7 @@ parseThomasBolducAndZachTFL ders = do r <- choice (map (try . string) [ "AS","PR
                                             | r == "R"    -> return [Reiterate]
                                             | r == "DNE"  -> return [DoubleNeg]
                                             | r == "LEM"  -> return [Lem1,Lem2,Lem3,Lem4]
-                                            | r == "DM"   -> return [DeMorgan1,DeMorgan2,DeMorgan3,DeMorgan4]
+                                            | r == "DeM"   -> return [DeMorgan1,DeMorgan2,DeMorgan3,DeMorgan4]
 
 parseThomasBolducAndZachTFLProof :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> String -> [DeductionLine ThomasBolducAndZachTFL PurePropLexicon (Form Bool)]
 parseThomasBolducAndZachTFLProof ders = toDeductionFitch (parseThomasBolducAndZachTFL ders) (purePropFormulaParser $ extendedLetters {hasBooleanConstants = True})
