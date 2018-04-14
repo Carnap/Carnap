@@ -32,8 +32,8 @@ data LogicBookPropLogic = ConjIntro
                         | BicoIntro1 | BicoIntro2 
                         | BicoIntro3 | BicoIntro4
                         | BicoElim1  | BicoElim2
-                        | Reiterate  | LBAX
-                        | LBAS
+                        | Reiterate  | LBAS
+                        | Pr (Maybe [(ClassicalSequentOver PurePropLexicon (Sequent (Form Bool)))])
                deriving Eq
 
 instance Show LogicBookPropLogic where
@@ -64,7 +64,7 @@ instance Show LogicBookPropLogic where
         show BicoElim1  = "↔E"
         show BicoElim2  = "↔E"
         show Reiterate  = "R"
-        show LBAX       = "PR"
+        show (Pr _)     = "PR"
         show LBAS       = "AS"
 
 instance Inference LogicBookPropLogic PurePropLexicon (Form Bool) where
@@ -93,7 +93,7 @@ instance Inference LogicBookPropLogic PurePropLexicon (Form Bool) where
     ruleOf BicoIntro2 = biconditionalProofVariations !! 1
     ruleOf BicoIntro3 = biconditionalProofVariations !! 2
     ruleOf BicoIntro4 = biconditionalProofVariations !! 3
-    ruleOf LBAX       = axiom
+    ruleOf (Pr _)     = axiom
     ruleOf LBAS       = axiom
     ruleOf BicoElim1  = biconditionalPonensVariations !! 0
     ruleOf BicoElim2  = biconditionalPonensVariations !! 1
@@ -110,42 +110,27 @@ instance Inference LogicBookPropLogic PurePropLexicon (Form Bool) where
     isAssumption LBAS = True
     isAssumption _ = False
 
+    restriction (Pr prems) = Just (premConstraint prems)
+    restriction _ = Nothing
+
 parseFitchPropLogic :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> Parsec String u [LogicBookPropLogic]
-parseFitchPropLogic _ = do r <- choice (map (try . string) ["AS","PR","&I","/\\I", "∧I","&E","/\\E","∧E","CI","->I","→I","→E","CE","->E", "→E"
+parseFitchPropLogic rtc = do r <- choice (map (try . string) ["AS","PR","&I","/\\I", "∧I","&E","/\\E","∧E","CI","->I","→I","→E","CE","->E", "→E"
                                                               ,"~I","-I", "¬I","~E","-E","¬E" ,"vI","\\/I","∨I", "vE","\\/E", "∨E","BI","<->I", "↔I" 
                                                               , "BE", "<->E", "↔E", "R"])
-                           case r of
-                                  "AS"   -> return [LBAS]
-                                  "PR"   -> return [LBAX]
-                                  "&I"   -> return [ConjIntro]
-                                  "&E"   -> return [ConjElim1, ConjElim2]
-                                  "/\\I" -> return [ConjIntro]
-                                  "/\\E" -> return [ConjElim1, ConjElim2]
-                                  "∧I"   -> return [ConjIntro]
-                                  "∧E"   -> return [ConjElim1, ConjElim2]
-                                  "CI"   -> return [CondIntro1,CondIntro2]
-                                  "CE"   -> return [CondElim]
-                                  "->I"  -> return [CondIntro1,CondIntro2]
-                                  "->E"  -> return [CondElim]
-                                  "→I"   -> return [CondIntro1,CondIntro2]
-                                  "→E"   -> return [CondElim]
-                                  "~I"   -> return [NegeIntro1, NegeIntro2, NegeIntro3, NegeIntro4]
-                                  "~E"   -> return [NegeElim1, NegeElim2, NegeElim3, NegeElim4]
-                                  "¬I"   -> return [NegeIntro1, NegeIntro2, NegeIntro3, NegeIntro4]
-                                  "¬E"   -> return [NegeElim1, NegeElim2, NegeElim3, NegeElim4]
-                                  "-I"   -> return [NegeIntro1, NegeIntro2, NegeIntro3, NegeIntro4]
-                                  "-E"   -> return [NegeElim1, NegeElim2, NegeElim3, NegeElim4]
-                                  "vI"   -> return [DisjIntro1, DisjIntro2]
-                                  "vE"   -> return [DisjElim1, DisjElim2,DisjElim3, DisjElim4]
-                                  "\\/I" -> return [DisjIntro1, DisjIntro2]
-                                  "\\/E" -> return [DisjElim1, DisjElim2,DisjElim3, DisjElim4]
-                                  "BI"   -> return [BicoIntro1, BicoIntro2, BicoIntro3, BicoIntro4]
-                                  "BE"   -> return [BicoElim1, BicoElim2]
-                                  "<->I" -> return [BicoIntro1, BicoIntro2, BicoIntro3, BicoIntro4]
-                                  "<->E" -> return [BicoElim1, BicoElim2]
-                                  "↔I"   -> return [BicoIntro1, BicoIntro2, BicoIntro3, BicoIntro4]
-                                  "↔E"   -> return [BicoElim1, BicoElim2]
-                                  "R"    -> return [Reiterate]
+                             case r of
+                               r | r == "AS" -> return [LBAS]
+                                 | r == "PR" -> return [Pr (problemPremises rtc)]
+                                 | r == "R"    -> return [Reiterate]
+                                 | r `elem` ["&I","/\\I","∧I"] -> return [ConjIntro]
+                                 | r `elem` ["&E","/\\E","∧E"] -> return [ConjElim1, ConjElim2]
+                                 | r `elem` ["CI","->I","→I"] -> return [CondIntro1,CondIntro2]
+                                 | r `elem` ["CE","->E","→E"] -> return [CondElim]
+                                 | r `elem` ["~I","¬I","-I"]  -> return [NegeIntro1, NegeIntro2, NegeIntro3, NegeIntro4]
+                                 | r `elem` ["~E","¬E","-E"]  -> return [NegeElim1, NegeElim2, NegeElim3, NegeElim4]
+                                 | r `elem` ["vI","\\/I"] -> return [DisjIntro1, DisjIntro2]
+                                 | r `elem` ["vE","\\/E"] -> return [DisjElim1, DisjElim2,DisjElim3, DisjElim4]
+                                 | r `elem` ["BI","<->I","↔I"] -> return [BicoIntro1, BicoIntro2, BicoIntro3, BicoIntro4]
+                                 | r `elem` ["BE","<->E","↔E"] -> return [BicoElim1, BicoElim2]
 
 parseFitchPropProof :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> String -> [DeductionLine LogicBookPropLogic PurePropLexicon (Form Bool)]
 parseFitchPropProof ders = toDeductionFitch (parseFitchPropLogic ders) (purePropFormulaParser extendedLetters)

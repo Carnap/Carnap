@@ -103,7 +103,7 @@ activateChecker drs w (Just iog@(IOGoal i o g _ opts)) -- TODO: need to update n
         | sys == "firstOrder"                = tryParse folCalc folChecker
         | sys == "secondOrder"               = tryParse msolCalc noRuntimeOptions
         | sys == "polyadicSecondOrder"       = tryParse psolCalc noRuntimeOptions
-        | sys == "LogicBook"                 = tryParse logicBookCalc noRuntimeOptions
+        | sys == "LogicBook"                 = tryParse logicBookCalc propChecker
         | sys == "magnusSL"                  = tryParse magnusSLCalc propChecker
         | sys == "magnusSLPlus"              = tryParse magnusSLPlusCalc propChecker
         | sys == "magnusQL"                  = tryParse magnusQLCalc folChecker
