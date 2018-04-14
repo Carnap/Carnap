@@ -18,7 +18,7 @@ import Carnap.Languages.PurePropositional.Logic.Rules
 from the Calgary Remix of Forall x book
 -}
 
-data ThomasBolducAndZachTFL = ConjIntro
+data ThomasBolducAndZachTFL = ConjIntro  | As
                             | ConjElim1  | ConjElim2
                             | DisjIntro1 | DisjIntro2
                             | DisjElim1  | DisjElim2
@@ -31,7 +31,6 @@ data ThomasBolducAndZachTFL = ConjIntro
                             | NegeIntro1 | NegeIntro2
                             | NegeElim   | ContElim 
                             | Indirect1  | Indirect2
-                            | As         | Pr
                             | DisSyllo1  | DisSyllo2
                             | ModTollens | Reiterate
                             | DoubleNeg  
@@ -39,6 +38,7 @@ data ThomasBolducAndZachTFL = ConjIntro
                             | Lem3       | Lem4
                             | DeMorgan1  | DeMorgan2
                             | DeMorgan3  | DeMorgan4
+                            | Pr (Maybe [(ClassicalSequentOver PurePropLexicon (Sequent (Form Bool)))])
                             deriving (Eq)
                             --skipping derived rules for now
 
@@ -68,7 +68,7 @@ instance Show ThomasBolducAndZachTFL where
         show BicoElim1  = "↔E"
         show BicoElim2  = "↔E"
         show As         = "AS"
-        show Pr         = "PR"
+        show (Pr _)     = "PR"
         show DisSyllo1  = "DS"
         show DisSyllo2  = "DS"
         show ModTollens = "MT"
@@ -108,7 +108,7 @@ instance Inference ThomasBolducAndZachTFL PurePropLexicon (Form Bool) where
         ruleOf BicoElim1  = biconditionalPonensVariations !! 0
         ruleOf BicoElim2  = biconditionalPonensVariations !! 1
         ruleOf As         = axiom
-        ruleOf Pr         = axiom
+        ruleOf (Pr _)     = axiom
         ruleOf DisSyllo1  = modusTollendoPonensVariations !! 0 
         ruleOf DisSyllo2  = modusTollendoPonensVariations !! 1
         ruleOf ModTollens = modusTollens
@@ -135,14 +135,16 @@ instance Inference ThomasBolducAndZachTFL PurePropLexicon (Form Bool) where
         isAssumption As = True
         isAssumption _  = False
 
+        restriction (Pr prems) = Just (premConstraint prems)
+
 parseThomasBolducAndZachTFL :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> Parsec String u [ThomasBolducAndZachTFL]
-parseThomasBolducAndZachTFL ders = do r <- choice (map (try . string) [ "AS","PR","&I","/\\I", "∧I","&E","/\\E","∧E", "~I","-I", "¬I"
+parseThomasBolducAndZachTFL rtc = do r <- choice (map (try . string) [ "AS","PR","&I","/\\I", "∧I","&E","/\\E","∧E", "~I","-I", "¬I"
                                                                       , "~E","-E", "¬E","IP","->I","→I","→E","->E", "→E", "X"
                                                                       , "vI","\\/I","∨I", "vE","\\/E", "∨E","<->I", "↔I","<->E"
                                                                       , "↔E","DS","MT","R","DNE","LEM","DeM"])
-                                      case r of
+                                     case r of
                                           r | r == "AS"   -> return [As]
-                                            | r == "PR"   -> return [Pr]
+                                            | r == "PR" -> return [Pr (problemPremises rtc)]
                                             | r `elem` ["&I","/\\I","∧I"] -> return [ConjIntro]
                                             | r `elem` ["&E","/\\E","∧E"] -> return [ConjElim1, ConjElim2]
                                             | r `elem` ["~I","¬I","-I"]   -> return [NegeIntro1, NegeIntro2]
@@ -163,7 +165,7 @@ parseThomasBolducAndZachTFL ders = do r <- choice (map (try . string) [ "AS","PR
                                             | r == "DeM"   -> return [DeMorgan1,DeMorgan2,DeMorgan3,DeMorgan4]
 
 parseThomasBolducAndZachTFLProof :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> String -> [DeductionLine ThomasBolducAndZachTFL PurePropLexicon (Form Bool)]
-parseThomasBolducAndZachTFLProof ders = toDeductionFitch (parseThomasBolducAndZachTFL ders) (purePropFormulaParser $ extendedLetters {hasBooleanConstants = True})
+parseThomasBolducAndZachTFLProof rtc = toDeductionFitch (parseThomasBolducAndZachTFL rtc) (purePropFormulaParser $ extendedLetters {hasBooleanConstants = True})
 
 thomasBolducAndZachTFLCalc = NaturalDeductionCalc 
     { ndRenderer = FitchStyle

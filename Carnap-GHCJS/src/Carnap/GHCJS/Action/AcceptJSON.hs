@@ -116,9 +116,9 @@ parsePairProp (wff,jstr) = AssertLine <$> P.parse (purePropFormulaParser extende
                                       <*> (snd <$> P.parse (parseJstr $ parseMagnusSL (RuntimeNaturalDeductionConfig mempty mempty)) "" jstr)
 
 parsePairFOL  (wff,jstr) = AssertLine <$> P.parse magnusFOLFormulaParser "" wff
-                                      <*> (fst <$> P.parse (parseJstr $ parseMagnusQL M.empty) "" jstr)
+                                      <*> (fst <$> P.parse (parseJstr $ parseMagnusQL (RuntimeNaturalDeductionConfig mempty mempty)) "" jstr)
                                       <*> return 0
-                                      <*> (snd <$> P.parse (parseJstr $ parseMagnusQL M.empty) "" jstr)
+                                      <*> (snd <$> P.parse (parseJstr $ parseMagnusQL (RuntimeNaturalDeductionConfig mempty mempty)) "" jstr)
 
 parseJstr r = do rule <- spaces *> r
                  deps <- spaces *> many (try parseIntPair <|> parseInt)

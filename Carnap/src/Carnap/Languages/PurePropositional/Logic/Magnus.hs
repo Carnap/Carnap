@@ -31,7 +31,8 @@ data MagnusSL = Reiterate  | ConjIntro
               | NegeIntro3 | NegeIntro4
               | NegeElim1  | NegeElim2
               | NegeElim3  | NegeElim4
-              | As         | Pr
+              | As         
+              | Pr (Maybe [(ClassicalSequentOver PurePropLexicon (Sequent (Form Bool)))])
               deriving (Eq)
               --skipping derived rules for now
 
@@ -62,7 +63,7 @@ instance Show MagnusSL where
         show BicoElim2  = "↔E"
         show Reiterate  = "R"
         show As         = "AS"
-        show Pr         = "PR"
+        show (Pr _)     = "PR"
 
 instance Inference MagnusSL PurePropLexicon (Form Bool) where
         ruleOf Reiterate  = identityRule
@@ -90,8 +91,8 @@ instance Inference MagnusSL PurePropLexicon (Form Bool) where
         ruleOf NegeElim2  = nonConstructiveReductioVariations !! 1
         ruleOf NegeElim3  = nonConstructiveReductioVariations !! 2
         ruleOf NegeElim4  = nonConstructiveReductioVariations !! 3
-        ruleOf As  = axiom
-        ruleOf Pr  = axiom
+        ruleOf As         = axiom
+        ruleOf (Pr _)     = axiom
 
         indirectInference x
             | x `elem` [CondIntro1,CondIntro2, BicoIntro1, BicoIntro2
@@ -104,45 +105,30 @@ instance Inference MagnusSL PurePropLexicon (Form Bool) where
         isAssumption As = True
         isAssumption _ = False
 
+        restriction (Pr prems) = Just (premConstraint prems)
+        restriction _ = Nothing
+
 parseMagnusSL :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> Parsec String u [MagnusSL]
-parseMagnusSL ders = do r <- choice (map (try . string) ["AS","PR","&I","/\\I", "∧I","&E","/\\E","∧E","CI","->I","→I","→E","CE","->E", "→E"
+parseMagnusSL rtc = do r <- choice (map (try . string) ["AS","PR","&I","/\\I", "∧I","&E","/\\E","∧E","CI","->I","→I","→E","CE","->E", "→E"
                                                          ,"~I","-I", "¬I","~E","-E","¬E" ,"vI","\\/I","∨I", "vE","\\/E", "∨E","BI","<->I", "↔I" 
                                                          , "BE", "<->E", "↔E", "R"])
-                        case r of
-                             "AS"   -> return [As]
-                             "PR"   -> return [Pr]
-                             "&I"   -> return [ConjIntro]
-                             "&E"   -> return [ConjElim1, ConjElim2]
-                             "/\\I" -> return [ConjIntro]
-                             "/\\E" -> return [ConjElim1, ConjElim2]
-                             "∧I"   -> return [ConjIntro]
-                             "∧E"   -> return [ConjElim1, ConjElim2]
-                             "CI"   -> return [CondIntro1,CondIntro2]
-                             "CE"   -> return [CondElim]
-                             "->I"  -> return [CondIntro1,CondIntro2]
-                             "->E"  -> return [CondElim]
-                             "→I"   -> return [CondIntro1,CondIntro2]
-                             "→E"   -> return [CondElim]
-                             "~I"   -> return [NegeIntro1, NegeIntro2, NegeIntro3, NegeIntro4]
-                             "~E"   -> return [NegeElim1, NegeElim2, NegeElim3, NegeElim4]
-                             "¬I"   -> return [NegeIntro1, NegeIntro2, NegeIntro3, NegeIntro4]
-                             "¬E"   -> return [NegeElim1, NegeElim2, NegeElim3, NegeElim4]
-                             "-I"   -> return [NegeIntro1, NegeIntro2, NegeIntro3, NegeIntro4]
-                             "-E"   -> return [NegeElim1, NegeElim2, NegeElim3, NegeElim4]
-                             "vI"   -> return [DisjIntro1, DisjIntro2]
-                             "vE"   -> return [DisjElim1, DisjElim2]
-                             "\\/I" -> return [DisjIntro1, DisjIntro2]
-                             "\\/E" -> return [DisjElim1, DisjElim2]
-                             "BI"   -> return [BicoIntro1, BicoIntro2, BicoIntro3, BicoIntro4]
-                             "BE"   -> return [BicoElim1, BicoElim2]
-                             "<->I" -> return [BicoIntro1, BicoIntro2, BicoIntro3, BicoIntro4]
-                             "<->E" -> return [BicoElim1, BicoElim2]
-                             "↔I"   -> return [BicoIntro1, BicoIntro2, BicoIntro3, BicoIntro4]
-                             "↔E"   -> return [BicoElim1, BicoElim2]
-                             "R"    -> return [Reiterate]
+                       case r of
+                            r | r == "AS" -> return [As]
+                              | r == "PR" -> return [Pr (problemPremises rtc)]
+                              | r == "R"  -> return [Reiterate]
+                              | r `elem` ["&I","/\\I","∧I"] -> return [ConjIntro]
+                              | r `elem` ["&E","/\\E","∧E"] -> return [ConjElim1, ConjElim2]
+                              | r `elem` ["CI","->I","→I"]  -> return [CondIntro1,CondIntro2]
+                              | r `elem` ["CE","->E", "→E"] -> return [CondElim]
+                              | r `elem` ["~I","¬I","-I"]   -> return [NegeIntro1, NegeIntro2, NegeIntro3, NegeIntro4]
+                              | r `elem` ["~E","¬E","-E"]   -> return [NegeElim1, NegeElim2, NegeElim3, NegeElim4]
+                              | r `elem` ["vI","\\/I"]   -> return [DisjIntro1, DisjIntro2]
+                              | r `elem` ["vE","\\/E"]   -> return [DisjElim1, DisjElim2]
+                              | r `elem` ["BI","<->I","↔I"]   -> return [BicoIntro1, BicoIntro2, BicoIntro3, BicoIntro4]
+                              | r `elem` ["BE","<->E","↔E"] -> return [BicoElim1, BicoElim2]
 
 parseMagnusSLProof :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> String -> [DeductionLine MagnusSL PurePropLexicon (Form Bool)]
-parseMagnusSLProof ders = toDeductionFitch (parseMagnusSL ders) (purePropFormulaParser extendedLetters)
+parseMagnusSLProof rtc = toDeductionFitch (parseMagnusSL rtc) (purePropFormulaParser extendedLetters)
 
 magnusSLCalc = NaturalDeductionCalc 
     { ndRenderer = FitchStyle
@@ -223,9 +209,12 @@ instance Inference MagnusSLPlus PurePropLexicon (Form Bool) where
         isAssumption (MSL x) = isAssumption x
         isAssumption _ = False
 
+        restriction (MSL x) = restriction x
+        restriction _ = Nothing
+
 parseMagnusSLPlus :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> Parsec String u [MagnusSLPlus]
-parseMagnusSLPlus ders = try basic <|> plus
-    where basic = map MSL <$> parseMagnusSL ders
+parseMagnusSLPlus rtc = try plus <|> basic 
+    where basic = map MSL <$> parseMagnusSL rtc
           plus = do r <- choice (map (try . string) ["HYP","DIL","MT", "Comm", "DN", "MC", "↔ex", "<->ex", "DeM"])
                     case r of
                         "HYP"   -> return [Hyp]
@@ -238,7 +227,7 @@ parseMagnusSLPlus ders = try basic <|> plus
                         "DeM"   -> return [DM1,DM2,DM3,DM4]
 
 parseMagnusSLPlusProof :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> String -> [DeductionLine MagnusSLPlus PurePropLexicon (Form Bool)]
-parseMagnusSLPlusProof ders = toDeductionFitch (parseMagnusSLPlus ders) (purePropFormulaParser extendedLetters)
+parseMagnusSLPlusProof rtc = toDeductionFitch (parseMagnusSLPlus rtc) (purePropFormulaParser extendedLetters)
 
 magnusSLPlusCalc = NaturalDeductionCalc 
     { ndRenderer = FitchStyle

@@ -18,10 +18,11 @@ import Carnap.Languages.PurePropositional.Logic.Rules
 --A system for propositional logic resembling the proof system from Kalish
 --and Montague's LOGIC, with derived rules
 
-data PropLogic = MP | MT  | DNE | DNI | DD   | AS   | PR (Maybe [(ClassicalSequentOver PurePropLexicon (Sequent (Form Bool)))])
-                    | CP1 | CP2 | ID1 | ID2  | ID3  | ID4 
-                    | ADJ | S1  | S2  | ADD1 | ADD2 | MTP1 | MTP2 | BC1 | BC2 | CB  
-                    | DER (ClassicalSequentOver PurePropLexicon (Sequent (Form Bool)))
+data PropLogic = PR (Maybe [(ClassicalSequentOver PurePropLexicon (Sequent (Form Bool)))])
+               | MP  | MT  | DNE | DNI  | DD   | AS   
+               | CP1 | CP2 | ID1 | ID2  | ID3  | ID4 
+               | ADJ | S1  | S2  | ADD1 | ADD2 | MTP1 | MTP2 | BC1 | BC2 | CB  
+               | DER (ClassicalSequentOver PurePropLexicon (Sequent (Form Bool)))
                deriving (Eq)
 
 instance Show PropLogic where

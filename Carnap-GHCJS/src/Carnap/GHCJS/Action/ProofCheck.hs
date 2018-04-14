@@ -55,7 +55,6 @@ import Data.Typeable
 
 proofCheckAction :: IO ()
 proofCheckAction = do availableDerived <- newIORef []
-                      print "starting"
                       genericSendJSON RequestDerivedRulesForUser (addRules availableDerived) errcb
                       initElements getCheckers (activateChecker availableDerived)
 
@@ -105,11 +104,11 @@ activateChecker drs w (Just iog@(IOGoal i o g _ opts)) -- TODO: need to update n
         | sys == "secondOrder"               = tryParse msolCalc noRuntimeOptions
         | sys == "polyadicSecondOrder"       = tryParse psolCalc noRuntimeOptions
         | sys == "LogicBook"                 = tryParse logicBookCalc noRuntimeOptions
-        | sys == "magnusSL"                  = tryParse magnusSLCalc noRuntimeOptions
-        | sys == "magnusSLPlus"              = tryParse magnusSLPlusCalc noRuntimeOptions
-        | sys == "magnusQL"                  = tryParse magnusQLCalc noRuntimeOptions
-        | sys == "thomasBolducAndZachTFL"    = tryParse thomasBolducAndZachTFLCalc noRuntimeOptions
-        | sys == "thomasBolducAndZachFOL"    = tryParse thomasBolducAndZachFOLCalc noRuntimeOptions
+        | sys == "magnusSL"                  = tryParse magnusSLCalc propChecker
+        | sys == "magnusSLPlus"              = tryParse magnusSLPlusCalc propChecker
+        | sys == "magnusQL"                  = tryParse magnusQLCalc folChecker
+        | sys == "thomasBolducAndZachTFL"    = tryParse thomasBolducAndZachTFLCalc propChecker
+        | sys == "thomasBolducAndZachFOL"    = tryParse thomasBolducAndZachFOLCalc folChecker
         | sys == "hardegreeSL"               = tryParse hardegreeSLCalc noRuntimeOptions
         | sys == "hardegreePL"               = tryParse hardegreePLCalc noRuntimeOptions
         | sys == "hardegreeWTL"              = tryParse hardegreeWTLCalc noRuntimeOptions
