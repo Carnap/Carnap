@@ -23,13 +23,12 @@ data HardegreeSL = AndI | AndO1 | AndO2 | AndNI | AndNO
                  | IffI | IffO1 | IffO2 | IffNI | IffNO
                  | FalI | FalO  | FalNI | CD1   | CD2   | DD    
                  | ID1  | ID2   | ID3   | ID4   | AndD  | DN1 | DN2
-                 | OrID Int 
-                 | SepCases Int
-                 | Pr | As | Rep
+                 | OrID Int | SepCases Int |  As | Rep
+                 | PR (Maybe [(ClassicalSequentOver PurePropLexicon (Sequent (Form Bool)))])
                deriving (Eq)
 
 instance Show HardegreeSL where
-         show Pr     = "PR"
+         show (PR _) = "PR"
          show As     = "As"
          show Rep    = "Rep"
          show AndI   = "&I"  
@@ -70,7 +69,7 @@ instance Show HardegreeSL where
          show (SepCases n) = "SC" ++ show n
 
 instance Inference HardegreeSL PurePropLexicon (Form Bool) where
-         ruleOf Pr       = axiom
+         ruleOf (PR _)   = axiom
          ruleOf As       = axiom
          ruleOf Rep      = identityRule
          ruleOf AndI     = adjunction
@@ -123,63 +122,48 @@ instance Inference HardegreeSL PurePropLexicon (Form Bool) where
          isAssumption As = True
          isAssumption _ = False
 
+         restriction (PR prems) = Just (premConstraint prems)
+         restriction _ = Nothing
+
 parseHardegreeSL :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> Parsec String u [HardegreeSL]
-parseHardegreeSL ders = do r <- choice (map (try . string) ["AS","PR","&I","&O","~&I","~&O","/\\I","/\\O","~/\\I","~/\\O","->I","->O","~->I","~->O","→I","→O","~→I","~→O","!?I"
-                                                           ,"!?O","vID","\\/ID","vI","vO","~vI","~vO","\\/I","\\/O","~\\/I","~\\/O","<->I","<->O","~<->I"
-                                                           ,"~<->O","↔I","↔O","~↔I","~↔O","ID","&D","SC","DN","DD","CD","REP"
-                                                           ])
-                           case r of
-                             "AS"    -> return [As]
-                             "PR"    -> return [Pr]
-                             "REP"   -> return [Rep]
-                             "&I"    -> return [AndI]
-                             "&O"    -> return [AndO1,AndO2]
-                             "~&I"   -> return [AndNI]
-                             "~&O"   -> return [AndNO]
-                             "/\\I"  -> return [AndI]
-                             "/\\O"  -> return [AndO1,AndO2]
-                             "~/\\I" -> return [AndNI]
-                             "~/\\O" -> return [AndNO]
-                             "->I"   -> return [IfI1,IfO2]
-                             "->O"   -> return [IfO1,IfO2]
-                             "~->I"  -> return [IfNI]
-                             "~->O"  -> return [IfNO]
-                             "→I"    -> return [IfO1,IffO2]           
-                             "→O"    -> return [IfI1,IfO2]          
-                             "~→I"   -> return [IfNI]
-                             "~→O"   -> return [IfNO]
-                             "!?I"   -> return [FalI]
-                             "!?O"   -> return [FalO]
-                             "vI"    -> return [OrI1, OrI2]
-                             "vO"    -> return [OrO1, OrO2]
-                             "~vI"   -> return [OrNI]
-                             "~vO"   -> return [OrNO]
-                             "\\/I"  -> return [OrI1, OrI2] 
-                             "\\/O"  -> return [OrO1, OrO2]
-                             "~\\/I" -> return [OrNI]
-                             "~\\/O" -> return [OrNO]
-                             "<->I"  -> return [IffI]       
-                             "<->O"  -> return [IffO1,IffO2]
-                             "~<->I" -> return [IffNI]       
-                             "~<->O" -> return [IffNO]
-                             "↔I"    -> return [IffI]       
-                             "↔O"    -> return [IffO1,IffO2]
-                             "~↔I"   -> return [IffNI]       
-                             "~↔O"   -> return [IffNO]
-                             "ID"    -> return [ID1,ID2,ID3,ID4]
-                             "DN"    -> return [DN1,DN2]
-                             "&D"    -> return [AndD]
-                             "DD"    -> return [DD]
-                             "CD"    -> return [CD1,CD2]
-                             "SC"    -> do ds <- many1 digit
-                                           return [SepCases (read ds)]
-                             "\\/ID" -> do ds <- many1 digit
-                                           return [OrID (read ds)]
-                             "vID"   -> do ds <- many1 digit
-                                           return [OrID (read ds)]
+parseHardegreeSL rtc = do r <- choice (map (try . string) ["AS","PR","&I","&O","~&I","~&O","/\\I","/\\O","~/\\I","~/\\O","->I","->O","~->I","~->O","→I","→O","~→I","~→O","!?I"
+                                                          ,"!?O","vID","\\/ID","vI","vO","~vI","~vO","\\/I","\\/O","~\\/I","~\\/O","<->I","<->O","~<->I"
+                                                          ,"~<->O","↔I","↔O","~↔I","~↔O","ID","&D","SC","DN","DD","CD","REP"
+                                                          ])
+                          case r of
+                               r | r == "AS" -> return [As]
+                                 | r == "PR" -> return [PR (problemPremises rtc)]
+                                 | r == "REP" -> return [Rep]
+                                 | r `elem` ["&I","/\\I"] -> return [AndI]
+                                 | r `elem` ["&O","/\\O"]  -> return [AndO1,AndO2]
+                                 | r `elem` ["~&I","~/\\I"] -> return [AndNI]
+                                 | r `elem` ["~&O","~/\\O"] -> return [AndNO]
+                                 | r `elem` ["->I","→I"]    -> return [IfI1,IfI2]           
+                                 | r `elem` ["->O","→O"]    -> return [IfO1,IfO2]          
+                                 | r `elem` ["~→I","~->I"]  -> return [IfNI]
+                                 | r `elem` ["~->O","~→O"]   -> return [IfNO]
+                                 | r == "!?I" -> return [FalI]
+                                 | r == "!?O" -> return [FalO]
+                                 | r `elem` ["vI","\\/I"]  -> return [OrI1, OrI2] 
+                                 | r `elem` ["vO","\\/O"]  -> return [OrO1, OrO2]
+                                 | r `elem` ["~vI","~\\/I"] -> return [OrNI]
+                                 | r `elem` ["~vO","~\\/O"] -> return [OrNO]
+                                 | r `elem` ["<->I","↔I"]    -> return [IffI]       
+                                 | r `elem` ["<->O","↔O"]    -> return [IffO1,IffO2]
+                                 | r `elem` ["~<->I","~↔I"]   -> return [IffNI]       
+                                 | r `elem` ["~<->O","~↔O"]   -> return [IffNO]
+                                 | r == "ID" -> return [ID1,ID2,ID3,ID4]
+                                 | r == "DN" -> return [DN1,DN2]
+                                 | r == "&D" -> return [AndD]
+                                 | r == "DD"    -> return [DD]
+                                 | r == "CD"    -> return [CD1,CD2]
+                                 | r == "SC" -> do ds <- many1 digit
+                                                   return [SepCases (read ds)]
+                                 | r `elem` ["\\/ID","vID"] -> do ds <- many1 digit
+                                                                  return [OrID (read ds)]
 
 parseHardegreeSLProof :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> String -> [DeductionLine HardegreeSL PurePropLexicon (Form Bool)]
-parseHardegreeSLProof ders = toDeductionHardegree (parseHardegreeSL ders) (purePropFormulaParser (standardLetters {hasBooleanConstants = True}))
+parseHardegreeSLProof rtc = toDeductionHardegree (parseHardegreeSL rtc) (purePropFormulaParser (standardLetters {hasBooleanConstants = True}))
 
 hardegreeSLCalc = NaturalDeductionCalc 
     { ndRenderer = MontagueStyle

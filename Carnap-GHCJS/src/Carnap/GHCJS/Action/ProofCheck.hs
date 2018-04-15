@@ -109,7 +109,7 @@ activateChecker drs w (Just iog@(IOGoal i o g _ opts)) -- TODO: need to update n
         | sys == "magnusQL"                  = tryParse magnusQLCalc folChecker
         | sys == "thomasBolducAndZachTFL"    = tryParse thomasBolducAndZachTFLCalc propChecker
         | sys == "thomasBolducAndZachFOL"    = tryParse thomasBolducAndZachFOLCalc folChecker
-        | sys == "hardegreeSL"               = tryParse hardegreeSLCalc noRuntimeOptions
+        | sys == "hardegreeSL"               = tryParse hardegreeSLCalc propChecker
         | sys == "hardegreePL"               = tryParse hardegreePLCalc noRuntimeOptions
         | sys == "hardegreeWTL"              = tryParse hardegreeWTLCalc noRuntimeOptions
         | sys == "hardegreeL"                = tryParse hardegreeLCalc noRuntimeOptions
