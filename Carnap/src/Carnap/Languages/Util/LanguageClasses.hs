@@ -300,6 +300,27 @@ class (Typeable c, Typeable b, PrismLink (FixLang lex) (Predicate (TermEq b c) (
 instance {-#OVERLAPPABLE#-} PrismTermEquality lex c b => EqLanguage (FixLang lex) (Term c) (Form b) where
         equals = curry $ review (binaryOpPrism _termEq)
 
+class ElemLanguage lang arg ret where
+        isIn :: lang arg -> lang arg -> lang ret 
+
+class (Typeable c, Typeable b, PrismLink (FixLang lex) (Predicate (TermElem b c) (FixLang lex))) 
+        => PrismTermElements lex c b where
+
+        _termElem :: Prism' (FixLang lex (Term c -> Term c -> Form b)) ()
+        _termElem = link_TermElement . termElem
+
+        link_TermElement :: Prism' (FixLang lex (Term c -> Term c -> Form b)) 
+                                    (Predicate (TermElem b c) (FixLang lex) (Term c -> Term c -> Form b))
+        link_TermElement = link 
+
+        termElem :: Prism' (Predicate (TermElem b c) (FixLang lex) (Term c -> Term c -> Form b)) ()
+        termElem = prism' (\n -> Predicate TermElem ATwo) 
+                           (\x -> case x of Predicate TermElem ATwo -> Just ()
+                                            _ -> Nothing)
+
+instance {-#OVERLAPPABLE#-} PrismTermElements lex c b => ElemLanguage (FixLang lex) (Term c) (Form b) where
+        isIn = curry $ review (binaryOpPrism _termElem)
+
 --------------------------------------------------------
 --1.3. Terms
 --------------------------------------------------------

@@ -119,6 +119,21 @@ instance MaybeStaticVar (TermEq c b)
 
 instance FirstOrderLex (TermEq c b)
 
+data TermElem c b a where
+        TermElem :: TermElem c b (Term b -> Term b -> Form c)
+
+instance Schematizable (TermElem c b) where
+        schematize TermElem = \(t1:t2:_) -> t1 ++ "∈" ++ t2
+
+instance UniformlyEq (TermElem c b) where
+        _ =* _ = True
+
+instance Monad m => MaybeMonadVar (TermElem c b) m
+
+instance MaybeStaticVar (TermElem c b)
+
+instance FirstOrderLex (TermElem c b)
+
 ---------------------------
 --  3. Function Symbols  --
 ---------------------------
