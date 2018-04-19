@@ -108,6 +108,16 @@ instance Yesod App where
                     then Authorized
                     else Unauthorized "It appears you're not authorized to access this page"
 
+    isAuthorized (InstructorDownloadR ident _) _ = 
+        do (Entity _ user) <- requireAuth
+           let ident' = userIdent user
+           instructors <- instructorIdentList
+           return $ if (ident' `elem` instructors
+                       && ident' == ident)
+                       || ident' == "gleachkr@gmail.com"
+                    then Authorized
+                    else Unauthorized "It appears you're not authorized to access this page"
+
     isAuthorized AdminR _ = 
         do (Entity _ user) <- requireAuth
            return $ if userIdent user == "gleachkr@gmail.com"
