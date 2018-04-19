@@ -143,6 +143,19 @@ deleteInstructorR ident = do
                    if deleted 
                        then returnJson (fn ++ " deleted")
                        else returnJson ("unable to retrieve metadata for " ++ fn)
+      DropStudent sident ->
+        do sid <- fromIdent sident
+           dropped <- runDB $ do msd <- getBy (UniqueUserData sid)
+                                 case msd of
+                                     Nothing -> return False
+                                     Just (Entity k _) -> 
+                                        do update k [UserDataEnrolledIn =. Nothing]
+                                           return True
+           if dropped then returnJson (sident ++ " dropped")
+                      else returnJson ("couldn't drop " ++ sident)
+
+
+
 
 postInstructorR :: Text -> Handler Html
 postInstructorR ident = do
@@ -246,6 +259,7 @@ data InstructorDelete = DeleteAssignment Text
                       | DeleteProblems Text Int
                       | DeleteCourse Text
                       | DeleteDocument Text
+                      | DropStudent Text
     deriving Generic
 
 instance ToJSON InstructorDelete
@@ -426,15 +440,19 @@ classWidget classent = do
                             <th> Registered Student
                             <th> Student Name
                             <th> Total Score
+                            <th> Action
                         <tbody>
                             $forall (u,UserData fn ln _ _ _) <- usersAndData
-                                <tr>
+                                <tr#student-#{userIdent u}>
                                     <td>
                                         <a href=@{UserR (userIdent u)}>#{userIdent u}
                                     <td>
                                         #{ln}, #{fn}
                                     <td>
                                         #{totalByUser (userIdent u) allScores}/#{show $ courseTotalPoints course}
+                                    <td>
+                                        <button.btn.btn-sm.btn-secondary type="button" onclick="tryDropStudent('#{decodeUtf8 $ encode $ DropStudent $ userIdent u}')">
+                                            <i.fa.fa-trash-o>
                     <h2>Course Data
                     <dl.row>
                         <dt.col-sm-3>Course Title
