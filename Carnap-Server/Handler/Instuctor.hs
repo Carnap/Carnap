@@ -154,9 +154,6 @@ deleteInstructorR ident = do
            if dropped then returnJson (sident ++ " dropped")
                       else returnJson ("couldn't drop " ++ sident)
 
-
-
-
 postInstructorR :: Text -> Handler Html
 postInstructorR ident = do
     classes <- classesByInstructorIdent ident
@@ -224,7 +221,7 @@ getInstructorR ident = do
             UserData firstname lastname enrolledin _ _ <- checkUserData uid 
             classes <- classesByInstructorIdent ident 
             let tags = map tagOf classes
-            classWidgets <- mapM classWidget classes
+            classWidgets <- mapM (classWidget ident) classes
             instructorCourses <- classesByInstructorIdent ident
             assignmentMetadata <- concat <$> mapM (assignmentsOf . entityKey) classes
             sharedDocuments <- runDB $ selectList [SharedDocumentCreator ==. uid] []
@@ -250,6 +247,29 @@ getInstructorR ident = do
                     <div.container>
                         <p> Instructor not found.
                    |]
+
+getInstructorDownloadR :: Text -> Text -> Handler TypedContent
+getInstructorDownloadR ident coursetitle = do
+    musr <- runDB $ getBy $ UniqueUser ident
+    case musr of 
+        Nothing -> notFound
+        (Just (Entity uid usr))  -> do
+            mud <- runDB $ getBy (UniqueUserData uid)
+            case (entityVal <$> mud) >>= userDataInstructorId of
+                Nothing -> notFound
+                Just iid -> do
+                    mcourse <- runDB $ getBy $ UniqueCourse coursetitle iid
+                    case mcourse of 
+                        Nothing -> notFound
+                        Just course -> do
+                            csv <- classCSV course
+                            addHeader "Content-Disposition" $ concat
+                              [ "attachment;"
+                              , "filename=\""
+                              , "export.csv"
+                              , "\""
+                              ]
+                            sendResponse (typeOctet, csv)
 
 ---------------------
 --  Message Types  --
@@ -394,8 +414,8 @@ saveTo thedir fn file = do
                if e then removeFile (path </> fn) else return ()
                fileMove file (path </> fn)
 
-classWidget :: Entity Course -> HandlerT App IO Widget
-classWidget classent = do
+classWidget :: Text -> Entity Course -> HandlerT App IO Widget
+classWidget ident classent = do
        let cid = entityKey classent
            course = entityVal classent
            mprobs = readAssignmentTable <$> courseTextbookProblems course :: Maybe (IntMap UTCTime)
@@ -467,10 +487,12 @@ classWidget classent = do
                         <dd.col-sm-9>#{dateDisplay (courseEndDate course) course}
                         <dt.col-sm-3>Time Zone
                         <dd.col-sm-9>#{decodeUtf8 $ courseTimeZone course}
-                    <button.btn.btn-sm.btn-danger type="button" onclick="tryDeleteCourse('#{decodeUtf8 $ encode $ DeleteCourse (courseTitle course)}')">
-                        Delete Course
                     <button.btn.btn-sm.btn-secondary type="button"  onclick="modalEditCourse('#{courseTitle course}')">
                         Edit Course Information
+                    <button.btn.btn-sm.btn-secondary type="button" onclick="location.href='@{InstructorDownloadR ident (courseTitle course)}';">
+                        Export Grades as .csv
+                    <button.btn.btn-sm.btn-danger type="button" onclick="tryDeleteCourse('#{decodeUtf8 $ encode $ DeleteCourse (courseTitle course)}')">
+                        Delete Course
               |]
     where totalByUser uident scores = case lookup uident scores of
                                 Just xs -> show $ foldr (+) 0 (map snd xs)
@@ -495,7 +517,30 @@ classWidget classent = do
                           <td>
                               #{average}
                           |]
-
+classCSV :: Entity Course -> HandlerT App IO Content
+classCSV classent = do
+       let cid = entityKey classent
+           course = entityVal classent
+           mprobs = readAssignmentTable <$> courseTextbookProblems course :: Maybe (IntMap UTCTime)
+       allUserData <- map entityVal <$> (runDB $ selectList [UserDataEnrolledIn ==. Just cid] [])
+       asmd <- runDB $ selectList [AssignmentMetadataCourse ==. cid] []
+       let allUids = (map userDataUserId  allUserData)
+       musers <- mapM (\x -> runDB (get x)) allUids
+       let users = catMaybes musers
+       allScores <- zip (map userIdent users) <$> mapM (scoreByIdAndClassPerProblem cid) allUids 
+       let usersAndData = zip users allUserData
+       (Just course) <- runDB $ get cid
+       let header = "\"Registered Student\",\"Last Name\", \"First Name\", \"Total Score\",\n"
+           body = concat $ map (\x -> toRow allScores x) usersAndData 
+       return $ toContent $ header ++ body
+    where toRow scores (u,UserData fn ln _ _ _) = "\"" ++ userIdent u ++ "\","
+                                               ++ "\"" ++ ln ++ "\"," 
+                                               ++ "\"" ++ fn ++ "\"," 
+                                               ++ "\"" ++ pack (totalByUser (userIdent u) scores) ++ "\","
+                                               ++ "\n"
+          totalByUser uident scores = case lookup uident scores of
+                                Just xs -> show $ foldr (+) 0 (map snd xs)
+                                Nothing -> "can't find scores"
 
 dateDisplay utc course = case tzByName $ courseTimeZone course of
                              Just tz  -> show $ utcToZonedTime (timeZoneForUTCTime tz utc) utc

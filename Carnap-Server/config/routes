@@ -1,23 +1,24 @@
-/static                         StaticR             Static  appStatic
-/auth                           AuthR               Auth    getAuth
+/static                             StaticR             Static  appStatic
+/auth                               AuthR               Auth    getAuth
 
-/command                        CommandR            POST
+/command                            CommandR            POST
 
-/favicon.ico                    FaviconR            GET
-/robots.txt                     RobotsR             GET
+/favicon.ico                        FaviconR            GET
+/robots.txt                         RobotsR             GET
 
-/                               HomeR               GET
-/about                          InfoR               GET
-/register/#Text                 RegisterR           GET POST
-/book                           BookR               GET
-/book/#Int                      ChapterR            GET
-/user/#Text                     UserR               GET POST DELETE 
-/instructor/#Text               InstructorR         GET PUT POST DELETE 
-/master_admin                   AdminR              GET POST
-/hash/#Text                     HashedR             GET
-/assignments/                   AssignmentsR        GET
-/assignments/#Text              AssignmentR         GET
-/rules                          RuleR               GET
-/shared                         DocumentsR          GET
-/shared/#Text/#Text             DocumentR           GET
-/shared/#Text/#Text/download    DocumentDownloadR   GET
+/                                   HomeR               GET
+/about                              InfoR               GET
+/register/#Text                     RegisterR           GET POST
+/book                               BookR               GET
+/book/#Int                          ChapterR            GET
+/user/#Text                         UserR               GET POST DELETE 
+/instructor/#Text                   InstructorR         GET PUT POST DELETE 
+/instructor/#Text/#Text/download    InstructorDownloadR GET
+/master_admin                       AdminR              GET POST
+/hash/#Text                         HashedR             GET
+/assignments/                       AssignmentsR        GET
+/assignments/#Text                  AssignmentR         GET
+/rules                              RuleR               GET
+/shared                             DocumentsR          GET
+/shared/#Text/#Text                 DocumentR           GET
+/shared/#Text/#Text/download        DocumentDownloadR   GET
