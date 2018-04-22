@@ -321,6 +321,27 @@ class (Typeable c, Typeable b, PrismLink (FixLang lex) (Predicate (TermElem b c)
 instance {-#OVERLAPPABLE#-} PrismTermElements lex c b => ElemLanguage (FixLang lex) (Term c) (Form b) where
         isIn = curry $ review (binaryOpPrism _termElem)
 
+class SubsetLanguage lang arg ret where
+        within :: lang arg -> lang arg -> lang ret 
+
+class (Typeable c, Typeable b, PrismLink (FixLang lex) (Predicate (TermSubset b c) (FixLang lex))) 
+        => PrismTermSubset lex c b where
+
+        _termSubset :: Prism' (FixLang lex (Term c -> Term c -> Form b)) ()
+        _termSubset = link_TermSubset . termSubset
+
+        link_TermSubset :: Prism' (FixLang lex (Term c -> Term c -> Form b)) 
+                                    (Predicate (TermSubset b c) (FixLang lex) (Term c -> Term c -> Form b))
+        link_TermSubset = link 
+
+        termSubset :: Prism' (Predicate (TermSubset b c) (FixLang lex) (Term c -> Term c -> Form b)) ()
+        termSubset = prism' (\n -> Predicate TermSubset ATwo) 
+                            (\x -> case x of Predicate TermSubset ATwo -> Just ()
+                                             _ -> Nothing)
+
+instance {-#OVERLAPPABLE#-} PrismTermSubset lex c b => SubsetLanguage (FixLang lex) (Term c) (Form b) where
+        within = curry $ review (binaryOpPrism _termSubset)
+
 --------------------------------------------------------
 --1.3. Terms
 --------------------------------------------------------

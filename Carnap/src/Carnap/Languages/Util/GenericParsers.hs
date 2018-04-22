@@ -103,10 +103,21 @@ elementParser ::
     ) => ParsecT String u m (lang arg) -> ParsecT String u m (lang ret) 
 elementParser parseTerm = do t1 <- parseTerm
                              spaces
-                             _ <- string "∈" <|> string "(-" <|> string "in"
+                             _ <- string "∈" <|> string "<<" <|> string "<e" <|> string "in"
                              spaces
                              t2 <- parseTerm
                              return $ isIn t1 t2
+
+subsetParser :: 
+    ( SubsetLanguage lang arg ret
+    , Monad m
+    ) => ParsecT String u m (lang arg) -> ParsecT String u m (lang ret) 
+subsetParser parseTerm = do t1 <- parseTerm
+                            spaces
+                            _ <- string "⊆" <|> string "<(" <|> string "<s" <|> string "within"
+                            spaces
+                            t2 <- parseTerm
+                            return $ within t1 t2
 
 --TODO: This would need an optional "^m" following P, if we're going to
 --achive read . show = id; the code overlap with the next function could be
