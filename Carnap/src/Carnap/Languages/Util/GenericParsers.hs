@@ -52,7 +52,6 @@ parsePos = do spaces
               _ <- string "<>" <|> string "◇"
               return pos
 
-
 --------------------------------------------------------
 --Predicates and Sentences
 --------------------------------------------------------
@@ -81,43 +80,29 @@ schemevarParser = try parseNumbered <|> parseUnnumbered
                              n <- number <?> "number"
                              return $ phin n
 
-unaryOpParser :: (Monad m) => [ParsecT String u m (l -> l)] -> ParsecT String u m l ->  ParsecT String u m l
-unaryOpParser ops recur = do n <- listToTry ops
-                             f <- recur
-                             return $ n f
+unaryOpParser :: (Monad m) => [ParsecT String u m (a -> b)] -> ParsecT String u m a ->  ParsecT String u m b
+unaryOpParser ops arg = do n <- listToTry ops
+                           f <- arg
+                           return $ n f
 
-equalsParser :: 
-    ( EqLanguage lang arg ret
-    , Monad m
-    ) => ParsecT String u m (lang arg) -> ParsecT String u m (lang ret) 
-equalsParser parseTerm = do t1 <- parseTerm
-                            spaces
-                            _ <- char '='
-                            spaces
-                            t2 <- parseTerm
-                            return $ equals t1 t2
+binaryInfixOpParser :: (Monad m) => [ParsecT String u m (a -> a -> b)] -> ParsecT String u m a ->  ParsecT String u m b
+binaryInfixOpParser ops arg = do t1 <- arg
+                                 spaces
+                                 op <- listToTry ops
+                                 spaces
+                                 t2 <- arg
+                                 return $ op t1 t2
 
-elementParser :: 
-    ( ElemLanguage lang arg ret
-    , Monad m
-    ) => ParsecT String u m (lang arg) -> ParsecT String u m (lang ret) 
-elementParser parseTerm = do t1 <- parseTerm
-                             spaces
-                             _ <- string "∈" <|> string "<<" <|> string "<e" <|> string "in"
-                             spaces
-                             t2 <- parseTerm
-                             return $ isIn t1 t2
+equalsParser :: (EqLanguage lang arg ret, Monad m) => ParsecT String u m (lang arg) -> ParsecT String u m (lang ret) 
+equalsParser parseTerm = binaryInfixOpParser [char '=' >> return equals] parseTerm
 
-subsetParser :: 
-    ( SubsetLanguage lang arg ret
-    , Monad m
-    ) => ParsecT String u m (lang arg) -> ParsecT String u m (lang ret) 
-subsetParser parseTerm = do t1 <- parseTerm
-                            spaces
-                            _ <- string "⊆" <|> string "<(" <|> string "<s" <|> string "within"
-                            spaces
-                            t2 <- parseTerm
-                            return $ within t1 t2
+elementParser :: ( ElemLanguage lang arg ret , Monad m) => ParsecT String u m (lang arg) -> ParsecT String u m (lang ret) 
+elementParser parseTerm = binaryInfixOpParser ops parseTerm
+    where ops = map (>> return isIn)  [string "∈", string "<<", string "<e", string "in"]
+
+subsetParser :: (SubsetLanguage lang arg ret , Monad m) => ParsecT String u m (lang arg) -> ParsecT String u m (lang ret) 
+subsetParser parseTerm = binaryInfixOpParser ops parseTerm
+    where ops = map (>> return within) [string "⊆", string "<(", string "<s", string "within"]
 
 --TODO: This would need an optional "^m" following P, if we're going to
 --achive read . show = id; the code overlap with the next function could be
