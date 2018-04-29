@@ -197,6 +197,35 @@ instance MaybeStaticVar (SchematicIntFunc b c)
 instance FirstOrderLex (SchematicIntFunc b c) where
         isVarLex _ = True
 
+data ElementarySetOperations b a where
+        Intersection :: ElementarySetOperations b (Term b -> Term b -> Term b)
+        Union :: ElementarySetOperations b (Term b -> Term b -> Term b)
+        RelComplement :: ElementarySetOperations b (Term b -> Term b -> Term b)
+        Powerset :: ElementarySetOperations b (Term b -> Term b)
+
+instance Schematizable (ElementarySetOperations b) where
+        schematize Intersection (x:y:_)  = x ++ "∩" ++ y
+        schematize Intersection _       = "∩"
+        schematize Union (x:y:_)  = x ++ "∪" ++ y
+        schematize Union _       = "∪"
+        schematize RelComplement (x:y:_)  = x ++ "/" ++ y
+        schematize RelComplement _       = "/"
+        schematize Powerset (x:_)  = "Pow(" ++ x ++ ")"
+        schematize Powerset _  = "Pow"
+
+instance UniformlyEq (ElementarySetOperations b) where
+        Intersection =* Intersection = True 
+        Union =* Union = True 
+        RelComplement =* RelComplement = True
+        Powerset =* Powerset = True
+        _ =* _ = False
+
+instance Monad m => MaybeMonadVar (ElementarySetOperations b) m
+
+instance MaybeStaticVar (ElementarySetOperations b)
+
+instance FirstOrderLex (ElementarySetOperations b)
+
 ----------------------
 --  4. Connectives  --
 ----------------------
