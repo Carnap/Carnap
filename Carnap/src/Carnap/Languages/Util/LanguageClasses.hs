@@ -429,6 +429,59 @@ class (Typeable c, Typeable b, PrismLink (FixLang lex) (Function (SchematicIntFu
 instance {-#OVERLAPPABLE#-} PrismPolyadicSchematicFunction lex c b => SchematicPolyadicFunctionLanguage (FixLang lex) (Term c) (Term b) where
         spfn n a = review (_sfuncIdx a) n
 
+class ElementarySetsLanguage l where
+            powerset :: l -> l
+            setIntersect :: l -> l -> l
+            setUnion :: l -> l -> l
+            setComplement :: l -> l -> l
+
+class (Typeable b, PrismLink (FixLang lex) (Function (ElementarySetOperations b) (FixLang lex))) 
+        => PrismElementarySetsLex lex b where
+
+        _powerset :: Prism' (FixLang lex (Term b -> Term b)) ()
+        _powerset = unarylink_ElementarySetsLex . powersetPris 
+
+        _setIntersect :: Prism' (FixLang lex (Term b -> Term b -> Term b)) ()
+        _setIntersect = binarylink_ElementarySetsLex . setIntersectPris 
+
+        _setUnion :: Prism' (FixLang lex (Term b -> Term b -> Term b)) ()
+        _setUnion = binarylink_ElementarySetsLex . setUnionPris 
+
+        _setComplement :: Prism' (FixLang lex (Term b -> Term b -> Term b)) ()
+        _setComplement = binarylink_ElementarySetsLex . setComplementPris 
+
+        binarylink_ElementarySetsLex :: 
+            Prism' (FixLang lex (Term b -> Term b -> Term b)) 
+                   (Function (ElementarySetOperations b) (FixLang lex) (Term b -> Term b -> Term b))
+        binarylink_ElementarySetsLex = link 
+
+        unarylink_ElementarySetsLex :: 
+            Prism' (FixLang lex (Term b -> Term b)) 
+                   (Function (ElementarySetOperations b) (FixLang lex) (Term b -> Term b))
+        unarylink_ElementarySetsLex = link 
+
+        setIntersectPris :: Prism' (Function (ElementarySetOperations b) (FixLang lex) (Term b -> Term b -> Term b)) ()
+        setIntersectPris = prism' (\_ -> Function Union ATwo) 
+                          (\x -> case x of Function Union ATwo -> Just (); _ -> Nothing)
+
+        setUnionPris :: Prism' (Function (ElementarySetOperations b) (FixLang lex) (Term b -> Term b -> Term b)) ()
+        setUnionPris = prism' (\_ -> Function Union ATwo) 
+                         (\x -> case x of Function Union ATwo -> Just (); _ -> Nothing)
+
+        setComplementPris :: Prism' (Function (ElementarySetOperations b) (FixLang lex) (Term b -> Term b -> Term b)) ()
+        setComplementPris = prism' (\_ -> Function RelComplement ATwo) 
+                         (\x -> case x of Function RelComplement ATwo -> Just (); _ -> Nothing)
+
+        powersetPris :: Prism' (Function (ElementarySetOperations b) (FixLang lex) (Term b -> Term b)) ()
+        powersetPris = prism' (\_ -> Function Powerset AOne) 
+                          (\x -> case x of Function Powerset AOne -> Just (); _ -> Nothing)
+
+instance {-#OVERLAPPABLE#-} PrismElementarySetsLex lex b => ElementarySetsLanguage (FixLang lex (Term b)) where
+        powerset = review (unaryOpPrism _powerset)
+        setIntersect = curry $ review (binaryOpPrism _setIntersect)
+        setUnion = curry $ review (binaryOpPrism _setUnion)
+        setComplement = curry $ review (binaryOpPrism _setComplement)
+
 --------------------------------------------------------
 --1.4. Quantifiers
 --------------------------------------------------------
