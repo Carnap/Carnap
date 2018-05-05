@@ -373,24 +373,26 @@ instance FirstOrderLex (IntIndex b)
 --  6. Quantifiers  --
 ----------------------
 
-data StandardQuant b c a where
-        All  :: String -> StandardQuant b c ((Term c -> Form b) -> Form b)
-        Some :: String -> StandardQuant b c ((Term c -> Form b) -> Form b)
+data GenericQuant f g b c a where
+        All  :: String -> GenericQuant f g b c ((f c -> g b) -> g b)
+        Some :: String -> GenericQuant f g b c ((f c -> g b) -> g b)
 
-instance Schematizable (StandardQuant b c) where
+type StandardQuant = GenericQuant Term Form
+
+instance Schematizable (GenericQuant f g b c) where
         schematize (All v) = \(x:_) -> "∀" ++ v ++ x 
         schematize (Some v) = \(x:_) -> "∃" ++ v ++ x 
 
-instance UniformlyEq (StandardQuant b c) where
+instance UniformlyEq (GenericQuant f g b c) where
         (All _) =* (All _) = True
         (Some _) =* (Some _) = True
         _ =* _ = False
 
-instance Monad m => MaybeMonadVar (StandardQuant b c) m
+instance Monad m => MaybeMonadVar (GenericQuant f g b c) m
 
-instance MaybeStaticVar (StandardQuant b c)
+instance MaybeStaticVar (GenericQuant f g b c)
 
-instance FirstOrderLex (StandardQuant b c) 
+instance FirstOrderLex (GenericQuant f g b c) 
 
 ------------------
 --  7. Exotica  --
