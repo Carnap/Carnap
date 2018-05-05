@@ -10,6 +10,11 @@ resolver: lts-6.30
 
 # to build Carnap-GHCJS in ghcjs with this file, run 
 # `stack --stack-yaml stack-ghcjs-yaml build Carnap-GHCJS`
+#
+# XXX: Certain versions of node can create problems at the template-haskell
+# stage. The following have been known to be problematic:
+#
+# v10.0.0
 
 compiler: ghcjs-0.2.0.9006030_ghc-7.10.3
 compiler-check: match-exact
