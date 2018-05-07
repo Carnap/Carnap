@@ -2,7 +2,7 @@
 module Carnap.Languages.PureFirstOrder.Parser 
 ( folFormulaParser, folFormulaParserRelaxed, mfolFormulaParser
 , magnusFOLFormulaParser, thomasBolducAndZachFOLFormulaParser
-, hardegreePLFormulaParser) where
+, hardegreePLFormulaParser, bergmannMoorAndNelsonPDFormulaParser) where
 
 import Carnap.Core.Data.AbstractSyntaxDataTypes
 import Carnap.Core.Data.AbstractSyntaxClasses (Schematizable)
@@ -73,6 +73,18 @@ magnusFOLParserOptions = PureFirstOrderParserOptions
 thomasBolducAndZachFOLParserOptions :: PureFirstOrderParserOptions PureLexiconFOL u Identity
 thomasBolducAndZachFOLParserOptions = magnusFOLParserOptions { hasBooleanConstants = True }
 
+bergmannMoorAndNelsonFOLParserOptions :: PureFirstOrderParserOptions PureLexiconFOL u Identity
+bergmannMoorAndNelsonFOLParserOptions = PureFirstOrderParserOptions 
+                         { atomicSentenceParser = \x -> parsePredicateSymbolNoParen "ABCDEFGHIJKLMNOPQRSTUVWXYZ" x
+                                                        <|> sentenceLetterParser "ABCDEFGHIJKLMNOPQRSTUVWXYZ" 
+                         , quantifiedSentenceParser' = quantifiedSentenceParser
+                         , freeVarParser = parseFreeVar "wxyz"
+                         , constantParser = Just (parseConstant "abcdefghijklmnopqrstuv")
+                         , functionParser = Nothing
+                         , hasBooleanConstants = False
+                         }
+
+
 hardegreePLParserOptions :: PureFirstOrderParserOptions PureLexiconFOL u Identity
 hardegreePLParserOptions = PureFirstOrderParserOptions 
                          { atomicSentenceParser = \x -> parsePredicateSymbolNoParen "ABCDEFGHIJKLMNOPQRSTUVWXYZ" x
@@ -116,6 +128,9 @@ thomasBolducAndZachFOLFormulaParser = parserFromOptions thomasBolducAndZachFOLPa
 
 hardegreePLFormulaParser :: Parsec String u PureFOLForm
 hardegreePLFormulaParser = parserFromOptions hardegreePLParserOptions
+
+bergmannMoorAndNelsonPDFormulaParser :: Parsec String u PureFOLForm
+bergmannMoorAndNelsonPDFormulaParser = parserFromOptions bergmannMoorAndNelsonFOLParserOptions
 
 folFormulaParser :: Parsec String u PureFOLForm
 folFormulaParser = parserFromOptions standardFOLParserOptions
