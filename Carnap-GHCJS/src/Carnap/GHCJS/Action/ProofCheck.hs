@@ -13,8 +13,8 @@ import Carnap.Languages.PurePropositional.Logic as P
     , thomasBolducAndZachTFLCalc)
 import Carnap.Languages.PurePropositional.Logic.Rules (derivedRuleToSequent)
 import Carnap.Languages.PureFirstOrder.Logic as FOL 
-    (DerivedRule(..), folCalc, magnusQLCalc
-    , thomasBolducAndZachFOLCalc, hardegreePLCalc) 
+    (DerivedRule(..), folCalc, magnusQLCalc , thomasBolducAndZachFOLCalc, hardegreePLCalc
+    , logicBookPDCalc) 
 import Carnap.Languages.ModalPropositional.Logic as MPL
     ( hardegreeWTLCalc, hardegreeLCalc, hardegreeKCalc, hardegreeTCalc
     , hardegreeBCalc, hardegreeDCalc, hardegreeFourCalc, hardegreeFiveCalc)
@@ -104,6 +104,7 @@ activateChecker drs w (Just iog@(IOGoal i o g _ opts)) -- TODO: need to update n
         | sys == "secondOrder"               = tryParse msolCalc noRuntimeOptions
         | sys == "polyadicSecondOrder"       = tryParse psolCalc noRuntimeOptions
         | sys == "LogicBook"                 = tryParse logicBookCalc propChecker
+        | sys == "LogicBookPD"               = tryParse logicBookPDCalc folChecker
         | sys == "magnusSL"                  = tryParse magnusSLCalc propChecker
         | sys == "magnusSLPlus"              = tryParse magnusSLPlusCalc propChecker
         | sys == "magnusQL"                  = tryParse magnusQLCalc folChecker
