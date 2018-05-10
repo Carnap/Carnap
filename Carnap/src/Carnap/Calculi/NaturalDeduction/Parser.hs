@@ -224,7 +224,7 @@ toProofTreeFitch ded n = case ded !! (n - 1)  of
                         | n > 1 && dpth <= depth (ded !! (n - 2)) = err "you can't make an assumption unless you are beginning a subproof--maybe you forgot to indent?"
                         | otherwise = return True
                       subproofProcess (ProofType assumptionNumber conclusionNumber) thesp@(first,last)
-                        | (last - first) < (assumptionNumber + conclusionNumber) =
+                        | (last - first) + 1 < assumptionNumber + conclusionNumber =
                                err $ "the subproof on lines " ++ show first ++ " through " ++ show last ++ " doesn't have enough lines to apply this rule"
                         | let firstlines =  map (\x -> ded !! (x - 1)) (take assumptionNumber [first ..]) in 
                             any (not . isAssumptionLine) firstlines  =
