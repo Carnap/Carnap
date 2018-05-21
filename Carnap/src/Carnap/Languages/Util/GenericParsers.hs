@@ -56,7 +56,7 @@ parseComplement :: (ElementarySetsLanguage lang, Monad m) => ParsecT String u m 
 parseComplement = spaces >> string "/" >> spaces >> return setComplement
 
 powersetParser :: (ElementarySetsLanguage lang, Monad m) =>  ParsecT String u m lang -> ParsecT String u m lang
-powersetParser parseTerm = string "P(" *> parseTerm <* string ")" >>= return . powerset
+powersetParser parseTerm = (try (string "P(") <|> string "Pow(") *> parseTerm <* string ")" >>= return . powerset
 
 --------------------------------------------------------
 --Predicates and Sentences

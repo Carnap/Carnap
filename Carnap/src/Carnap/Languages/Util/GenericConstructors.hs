@@ -204,11 +204,11 @@ data ElementarySetOperations b a where
         Powerset :: ElementarySetOperations b (Term b -> Term b)
 
 instance Schematizable (ElementarySetOperations b) where
-        schematize Intersection (x:y:_)  = x ++ "∩" ++ y
+        schematize Intersection (x:y:_)  = "(" ++ x ++ "∩" ++ y ++ ")"
         schematize Intersection _       = "∩"
-        schematize Union (x:y:_)  = x ++ "∪" ++ y
+        schematize Union (x:y:_)  = "(" ++ x ++ "∪" ++ y ++ ")"
         schematize Union _       = "∪"
-        schematize RelComplement (x:y:_)  = x ++ "/" ++ y
+        schematize RelComplement (x:y:_)  = "(" ++ x ++ "/" ++ y ++ ")"
         schematize RelComplement _       = "/"
         schematize Powerset (x:_)  = "Pow(" ++ x ++ ")"
         schematize Powerset _  = "Pow"
