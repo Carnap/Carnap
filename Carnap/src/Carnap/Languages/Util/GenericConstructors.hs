@@ -397,7 +397,7 @@ instance FirstOrderLex (GenericQuant f g b c)
 ------------------
 --  7. Exotica  --
 ------------------
---
+
 data Indexer a b c :: (* -> *) -> * -> * where
         AtIndex :: Indexer a b c lang (Form b -> Term a -> Form c)
 

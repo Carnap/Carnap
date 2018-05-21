@@ -461,8 +461,8 @@ class (Typeable b, PrismLink (FixLang lex) (Function (ElementarySetOperations b)
         unarylink_ElementarySetsLex = link 
 
         setIntersectPris :: Prism' (Function (ElementarySetOperations b) (FixLang lex) (Term b -> Term b -> Term b)) ()
-        setIntersectPris = prism' (\_ -> Function Union ATwo) 
-                          (\x -> case x of Function Union ATwo -> Just (); _ -> Nothing)
+        setIntersectPris = prism' (\_ -> Function Intersection ATwo) 
+                          (\x -> case x of Function Intersection ATwo -> Just (); _ -> Nothing)
 
         setUnionPris :: Prism' (Function (ElementarySetOperations b) (FixLang lex) (Term b -> Term b -> Term b)) ()
         setUnionPris = prism' (\_ -> Function Union ATwo) 

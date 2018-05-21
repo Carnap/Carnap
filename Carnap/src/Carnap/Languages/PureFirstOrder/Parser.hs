@@ -2,7 +2,8 @@
 module Carnap.Languages.PureFirstOrder.Parser 
 ( folFormulaParser, folFormulaParserRelaxed, mfolFormulaParser
 , magnusFOLFormulaParser, thomasBolducAndZachFOLFormulaParser
-, hardegreePLFormulaParser, bergmannMoorAndNelsonPDFormulaParser) where
+, hardegreePLFormulaParser, bergmannMoorAndNelsonPDFormulaParser
+, FirstOrderParserOptions(..), parserFromOptions, parseFreeVar) where
 
 import Carnap.Core.Data.AbstractSyntaxDataTypes
 import Carnap.Core.Data.AbstractSyntaxClasses (Schematizable)
@@ -13,7 +14,7 @@ import Text.Parsec
 import Text.Parsec.Expr
 import Control.Monad.Identity
 
-data PureFirstOrderParserOptions lex u m = PureFirstOrderParserOptions 
+data FirstOrderParserOptions lex u m = FirstOrderParserOptions 
                                          { atomicSentenceParser :: ParsecT String u m (FixLang lex (Term Int)) 
                                             -> ParsecT String u m (FixLang lex (Form Bool))
                                          , quantifiedSentenceParser' :: ParsecT String u m (FixLang lex (Term Int)) 
@@ -26,8 +27,8 @@ data PureFirstOrderParserOptions lex u m = PureFirstOrderParserOptions
                                          , hasBooleanConstants :: Bool
                                          }
 
-standardFOLParserOptions :: PureFirstOrderParserOptions PureLexiconFOL u Identity
-standardFOLParserOptions = PureFirstOrderParserOptions 
+standardFOLParserOptions :: FirstOrderParserOptions PureLexiconFOL u Identity
+standardFOLParserOptions = FirstOrderParserOptions 
                          { atomicSentenceParser = \x -> parsePredicateSymbol "FGHIJKLMNO" x
                                                         <|> sentenceLetterParser "PQRSTUVW"
                                                         <|> equalsParser x 
@@ -38,8 +39,8 @@ standardFOLParserOptions = PureFirstOrderParserOptions
                          , hasBooleanConstants = False
                          }
 
-simplePolyadicFOLParserOptions :: PureFirstOrderParserOptions PureLexiconPFOL u Identity
-simplePolyadicFOLParserOptions = PureFirstOrderParserOptions 
+simplePolyadicFOLParserOptions :: FirstOrderParserOptions PureLexiconPFOL u Identity
+simplePolyadicFOLParserOptions = FirstOrderParserOptions 
                          { atomicSentenceParser = \x -> try (parsePredicateSymbol "FGHIJKLMNO" x)
                                                         <|> sentenceLetterParser "PQRSTUVW"
                          , quantifiedSentenceParser' = quantifiedSentenceParser
@@ -49,8 +50,8 @@ simplePolyadicFOLParserOptions = PureFirstOrderParserOptions
                          , hasBooleanConstants = False
                          }
 
-simpleMonadicFOLParserOptions :: PureFirstOrderParserOptions PureLexiconMFOL u Identity
-simpleMonadicFOLParserOptions = PureFirstOrderParserOptions 
+simpleMonadicFOLParserOptions :: FirstOrderParserOptions PureLexiconMFOL u Identity
+simpleMonadicFOLParserOptions = FirstOrderParserOptions 
                          { atomicSentenceParser = \x -> try (monadicSentenceParser x) <|> sentenceLetterParser "PQRSTUVW"
                          , quantifiedSentenceParser' = quantifiedSentenceParser
                          , freeVarParser = parseFreeVar "vwxyz"
@@ -59,8 +60,8 @@ simpleMonadicFOLParserOptions = PureFirstOrderParserOptions
                          , hasBooleanConstants = False
                          }
 
-magnusFOLParserOptions :: PureFirstOrderParserOptions PureLexiconFOL u Identity
-magnusFOLParserOptions = PureFirstOrderParserOptions 
+magnusFOLParserOptions :: FirstOrderParserOptions PureLexiconFOL u Identity
+magnusFOLParserOptions = FirstOrderParserOptions 
                          { atomicSentenceParser = \x -> parsePredicateSymbolNoParen "ABCDEFGHIJKLMNOPQRSTUVWXYZ" x
                                                         <|> equalsParser x 
                          , quantifiedSentenceParser' = quantifiedSentenceParser
@@ -70,11 +71,11 @@ magnusFOLParserOptions = PureFirstOrderParserOptions
                          , hasBooleanConstants = False
                          }
 
-thomasBolducAndZachFOLParserOptions :: PureFirstOrderParserOptions PureLexiconFOL u Identity
+thomasBolducAndZachFOLParserOptions :: FirstOrderParserOptions PureLexiconFOL u Identity
 thomasBolducAndZachFOLParserOptions = magnusFOLParserOptions { hasBooleanConstants = True }
 
-bergmannMoorAndNelsonFOLParserOptions :: PureFirstOrderParserOptions PureLexiconFOL u Identity
-bergmannMoorAndNelsonFOLParserOptions = PureFirstOrderParserOptions 
+bergmannMoorAndNelsonFOLParserOptions :: FirstOrderParserOptions PureLexiconFOL u Identity
+bergmannMoorAndNelsonFOLParserOptions = FirstOrderParserOptions 
                          { atomicSentenceParser = \x -> try (parsePredicateSymbolNoParen "ABCDEFGHIJKLMNOPQRSTUVWXYZ" x)
                                                         <|> sentenceLetterParser "ABCDEFGHIJKLMNOPQRSTUVWXYZ" 
                          , quantifiedSentenceParser' = quantifiedSentenceParser
@@ -85,8 +86,8 @@ bergmannMoorAndNelsonFOLParserOptions = PureFirstOrderParserOptions
                          }
 
 
-hardegreePLParserOptions :: PureFirstOrderParserOptions PureLexiconFOL u Identity
-hardegreePLParserOptions = PureFirstOrderParserOptions 
+hardegreePLParserOptions :: FirstOrderParserOptions PureLexiconFOL u Identity
+hardegreePLParserOptions = FirstOrderParserOptions 
                          { atomicSentenceParser = \x -> parsePredicateSymbolNoParen "ABCDEFGHIJKLMNOPQRSTUVWXYZ" x
                          , quantifiedSentenceParser' = quantifiedSentenceParser
                          , freeVarParser = parseFreeVar "tuvwxyz"
@@ -100,7 +101,7 @@ coreSubformulaParser :: ( BoundVars lex
                         , BooleanConstLanguage (FixLang lex (Form Bool))
                         , QuantLanguage (FixLang lex (Form Bool)) (FixLang lex (Term Int))
                         ) =>
-    Parsec String u (FixLang lex (Form Bool)) -> PureFirstOrderParserOptions lex u Identity
+    Parsec String u (FixLang lex (Form Bool)) -> FirstOrderParserOptions lex u Identity
         -> Parsec String u (FixLang lex (Form Bool))
 coreSubformulaParser fp opts = (parenParser fp <* spaces)
                              <|> try (unaryOpParser [parseNeg] (coreSubformulaParser fp opts))
@@ -115,7 +116,7 @@ coreSubformulaParser fp opts = (parenParser fp <* spaces)
           --Free variables
           vparser = freeVarParser opts 
           --Terms
-          tparser = try (fparser tparser) <|> cparser <|> vparser
+          tparser = try (fparser tparser) <|> try cparser <|> vparser 
 
 parserFromOptions opts = buildExpressionParser opTable subformulaParser
     where subformulaParser = coreSubformulaParser (parserFromOptions opts) opts 

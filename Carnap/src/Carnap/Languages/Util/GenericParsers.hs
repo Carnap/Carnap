@@ -34,23 +34,29 @@ parseIff :: (BooleanLanguage l, Monad m) => ParsecT String u m (l -> l -> l)
 parseIff = stringsToTry [ "<=>",  "<->", "<>", "↔", "if and only if"] liff
 
 parseNeg :: (BooleanLanguage l, Monad m) => ParsecT String u m (l -> l)
-parseNeg = do spaces
-              _ <- string "-" <|> string "~" <|> string "¬" <|> string "not "
-              return lneg
+parseNeg = do spaces >> (string "-" <|> string "~" <|> string "¬" <|> string "not ") >> return lneg
 
 booleanConstParser :: (BooleanConstLanguage l, Monad m) => ParsecT String u m l
-booleanConstParser = stringsToTry ["!?"] lfalsum
-                   <|> stringsToTry ["T"] lverum --XXX : this might collide with sentence letters
+booleanConstParser = stringsToTry ["!?"] lfalsum <|> stringsToTry ["T"] lverum 
+--XXX : this might collide with sentence letters
 
 parseNec :: (ModalLanguage l, Monad m) => ParsecT String u m (l -> l)
-parseNec = do spaces
-              _ <- string "[]" <|> string "□"
-              return nec
+parseNec = do spaces >> (string "[]" <|> string "□") >> return nec
 
 parsePos :: (ModalLanguage l, Monad m) => ParsecT String u m (l -> l)
-parsePos = do spaces
-              _ <- string "<>" <|> string "◇"
-              return pos
+parsePos = spaces >> (string "<>" <|> string "◇") >> return pos
+
+parseIntersect :: (ElementarySetsLanguage lang, Monad m) => ParsecT String u m (lang -> lang -> lang)
+parseIntersect = spaces >> (string "I" <|> string "∩") >> spaces >> return setIntersect
+
+parseUnion :: (ElementarySetsLanguage lang, Monad m) => ParsecT String u m (lang -> lang -> lang)
+parseUnion = spaces >> (string "U" <|> string "∪") >> spaces >> return setUnion
+
+parseComplement :: (ElementarySetsLanguage lang, Monad m) => ParsecT String u m (lang -> lang -> lang)
+parseComplement = spaces >> string "/" >> spaces >> return setComplement
+
+powersetParser :: (ElementarySetsLanguage lang, Monad m) =>  ParsecT String u m lang -> ParsecT String u m lang
+powersetParser parseTerm = string "P(" *> parseTerm <* string ")" >>= return . powerset
 
 --------------------------------------------------------
 --Predicates and Sentences
@@ -96,7 +102,7 @@ binaryInfixOpParser ops arg = do t1 <- arg
 equalsParser :: (EqLanguage lang arg ret, Monad m) => ParsecT String u m (lang arg) -> ParsecT String u m (lang ret) 
 equalsParser parseTerm = binaryInfixOpParser [char '=' >> return equals] parseTerm
 
-elementParser :: ( ElemLanguage lang arg ret , Monad m) => ParsecT String u m (lang arg) -> ParsecT String u m (lang ret) 
+elementParser :: (ElemLanguage lang arg ret , Monad m) => ParsecT String u m (lang arg) -> ParsecT String u m (lang ret) 
 elementParser parseTerm = binaryInfixOpParser ops parseTerm
     where ops = map (>> return isIn)  [string "∈", string "<<", string "<e", string "in"]
 
@@ -190,9 +196,8 @@ parseConstant s = try parseNumbered <|> parseUnnumbered
 --Structural Elements
 --------------------------------------------------------
 
-parenParser :: 
-    (BooleanLanguage l, Monad m) => ParsecT String u m l -> ParsecT String u m l
-parenParser recur = char '(' *> recur <* char ')'
+parenParser :: Monad m => ParsecT String u m l -> ParsecT String u m l
+parenParser recur = char '(' *> spaces *> recur <* spaces <* char ')'
 
 number :: Monad m => ParsecT String u m Int
 number = do valence <- option "+" (string "-") 
