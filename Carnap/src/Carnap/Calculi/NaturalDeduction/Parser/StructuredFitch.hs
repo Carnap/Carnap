@@ -1,4 +1,4 @@
-{-#LANGUAGE GADTs, TypeOperators, FlexibleContexts #-}
+{-#LANGUAGE FlexibleContexts #-}
 module Carnap.Calculi.NaturalDeduction.Parser.StructuredFitch (toProofTreeStructuredFitch)
 where
 

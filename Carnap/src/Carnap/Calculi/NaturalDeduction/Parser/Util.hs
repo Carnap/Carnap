@@ -1,4 +1,3 @@
-{-#LANGUAGE GADTs, TypeOperators, FlexibleContexts #-}
 module Carnap.Calculi.NaturalDeduction.Parser.Util where
 
 import Text.Parsec
