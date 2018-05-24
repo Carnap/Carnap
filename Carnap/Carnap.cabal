@@ -70,6 +70,7 @@ library
                      , Carnap.Languages.ClassicalSequent.Parser
                      , Carnap.Calculi.NaturalDeduction.Checker
                      , Carnap.Calculi.NaturalDeduction.Parser
+                     , Carnap.Calculi.NaturalDeduction.Parser.Util
                      , Carnap.Calculi.NaturalDeduction.Parser.Montague
                      , Carnap.Calculi.NaturalDeduction.Parser.Fitch
                      , Carnap.Calculi.NaturalDeduction.Parser.Hardegree
