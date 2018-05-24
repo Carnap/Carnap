@@ -84,6 +84,9 @@ isAssumptionLine (AssertLine _ r _ _) = and (map isAssumption r)
 isAssumptionLine (DependentAssertLine _ r _ _ _) = and (map isAssumption r)
 isAssumptionLine _ = False
 
+inScope (DependentAssertLine _ _ _ _ s) = s
+inScope _ = []
+
 ----------------------
 --  1.1 Deductions  --
 ----------------------
