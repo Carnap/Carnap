@@ -482,6 +482,9 @@ instance {-#OVERLAPPABLE#-} PrismElementarySetsLex lex b => ElementarySetsLangua
         setUnion = curry $ review (binaryOpPrism _setUnion)
         setComplement = curry $ review (binaryOpPrism _setComplement)
 
+class SeparationLanguage t f where
+        separation :: String -> t -> (t -> f) -> t
+
 --------------------------------------------------------
 --1.4. Quantifiers
 --------------------------------------------------------
