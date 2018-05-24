@@ -73,6 +73,7 @@ library
                      , Carnap.Calculi.NaturalDeduction.Parser.Util
                      , Carnap.Calculi.NaturalDeduction.Parser.Montague
                      , Carnap.Calculi.NaturalDeduction.Parser.Fitch
+                     , Carnap.Calculi.NaturalDeduction.Parser.Lemmon
                      , Carnap.Calculi.NaturalDeduction.Parser.Hardegree
                      , Carnap.Calculi.NaturalDeduction.Parser.StructuredFitch
                      , Carnap.Calculi.NaturalDeduction.Syntax

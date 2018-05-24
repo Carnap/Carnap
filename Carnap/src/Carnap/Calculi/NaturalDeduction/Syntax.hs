@@ -35,6 +35,13 @@ data DeductionLine r lex a where
             , assertDepth :: Int
             , assertDependencies :: [(Int,Int)]
             } -> DeductionLine r lex a
+        DependentAssertLine ::
+            { dependAsserted :: FixLang lex a
+            , dependAssertRule :: MultiRule r
+            , dependAssertDependencies :: [(Int,Int)]
+            , dependAssertDischarged :: [Int]
+            , dependAssertInScope:: [Int]
+            } -> DeductionLine r lex a
         ShowLine :: 
             { toShow :: FixLang lex a
             , showDepth :: Int
@@ -60,6 +67,7 @@ data DeductionLine r lex a where
             } -> DeductionLine r lex a
 
 depth (AssertLine _ _ dpth _) = dpth
+depth (DependentAssertLine _ _ _ _ _) = 0
 depth (ShowLine _ dpth) = dpth
 depth (ShowWithLine _ dpth _ _) = dpth
 depth (QedLine _ dpth _) = dpth
@@ -67,11 +75,13 @@ depth (PartialLine _ _ dpth) = dpth
 depth (SeparatorLine dpth) = dpth
 
 assertion (AssertLine f _ _ _) = Just f
+assertion (DependentAssertLine f _ _ _ _) = Just f
 assertion (ShowLine f _) = Just f
 assertion (ShowWithLine f _ _ _) = Just f
 assertion _ = Nothing
 
 isAssumptionLine (AssertLine _ r _ _) = and (map isAssumption r)
+isAssumptionLine (DependentAssertLine _ r _ _ _) = and (map isAssumption r)
 isAssumptionLine _ = False
 
 ----------------------
