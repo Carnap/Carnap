@@ -305,10 +305,16 @@ hoseqFromNode ::
                           )]]
 hoseqFromNode lineno rules prems conc = 
         do r <- rules
+           --run a non-deterministic computation over all permutations of
+           --the supplied premises
            rps <- permutations (premisesOf r) 
            if length rps /= length prems 
                 then return $ Left $ GenericError "Wrong number of premises" lineno
                 else do let rconc = conclusionOf r
+                        --create and solve a unification problem: 
+                        --To unify the right-hand-sides of each sequent in
+                        --the rule with the right-hand-side of each sequent
+                        --in the inference.
                         case hosolve (zipWith (:=:) 
                                         (map (view rhs) (rconc:rps)) 
                                         (conc:map (view rhs) prems)) of 
