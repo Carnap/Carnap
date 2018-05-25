@@ -2,18 +2,15 @@
 module Carnap.Languages.PureFirstOrder.Logic.Goldfarb where
 
 import Text.Parsec
-import Control.Lens
+import Control.Lens (view)
 import Carnap.Core.Data.AbstractSyntaxDataTypes (Form)
-import Carnap.Core.Data.AbstractSyntaxClasses
-import Carnap.Languages.PureFirstOrder.Syntax
+import Carnap.Core.Data.AbstractSyntaxClasses (lhs)
+import Carnap.Languages.PureFirstOrder.Syntax (PureLexiconFOL)
 import Carnap.Languages.PureFirstOrder.Parser
 import qualified Carnap.Languages.PurePropositional.Logic.Rules as P
 import Carnap.Calculi.NaturalDeduction.Syntax
-import Carnap.Calculi.NaturalDeduction.Parser
+import Carnap.Calculi.NaturalDeduction.Parser (toDeductionLemmon)
 import Carnap.Calculi.NaturalDeduction.Checker (hoProcessLineLemmonMemo, hoProcessLineLemmon)
-import Carnap.Languages.ClassicalSequent.Syntax
-import Carnap.Languages.Util.LanguageClasses
-import Carnap.Languages.Util.GenericConstructors
 import Carnap.Languages.PureFirstOrder.Logic.Rules
 
 data GoldfarbND = TF | P | D | UI | CQ1 | CQ2
