@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleContexts #-}
 module Carnap.Languages.PureFirstOrder.Util (propForm) where
 
 import Carnap.Core.Data.AbstractSyntaxClasses
@@ -11,7 +12,6 @@ import Control.Lens
 import Data.Maybe
 import Data.List
 
-propForm :: PureLanguageFOL (Form Bool) -> PurePropLanguage (Form Bool)
 propForm f = evalState (propositionalize f) []
     where propositionalize = nonBoolean
             & outside (binaryOpPrism _and) .~ (\(x,y) -> land <$> propositionalize x <*> propositionalize y)
@@ -20,7 +20,6 @@ propForm f = evalState (propositionalize f) []
             & outside (binaryOpPrism _iff) .~ (\(x,y) -> liff <$> propositionalize x <*> propositionalize y)
             & outside (unaryOpPrism _not) .~ (\x -> lneg <$> propositionalize x)
           
-          nonBoolean :: PureLanguageFOL (Form Bool) -> State [PureLanguageFOL (Form Bool)] (PurePropLanguage (Form Bool))
           nonBoolean form = do abbrev <- get
                                case elemIndex form abbrev of
                                    Just n -> return (pn n)
