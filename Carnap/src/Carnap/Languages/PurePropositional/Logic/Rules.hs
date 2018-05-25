@@ -3,6 +3,8 @@ module Carnap.Languages.PurePropositional.Logic.Rules where
 
 import Text.Parsec
 import Data.List
+import Control.Lens (toListOf)
+import Carnap.Calculi.NaturalDeduction.Syntax
 import Data.Typeable
 import Carnap.Core.Unification.Unification
 import Carnap.Core.Unification.Combination
@@ -49,13 +51,18 @@ derivedRuleToSequent (DerivedRule c ps) = antecedent :|-: SS (liftToSequent c)
     where antecedent = foldr (:+:) Top (map (SA . liftToSequent) ps)
 
 premConstraint Nothing _ = Nothing
-premConstraint (Just prems) sub = if theinstance `elem` prems
-                                       then Nothing
-                                       else Just (show (project theinstance) ++ " is not one of the premises " 
-                                                                     ++ intercalate ", " (map (show . project) prems))
+premConstraint (Just prems) sub | theinstance `elem` prems = Nothing
+                                | otherwise = Just (show (project theinstance) ++ " is not one of the premises " 
+                                                                               ++ intercalate ", " (map (show . project) prems))
     where theinstance = pureBNF . applySub sub $ (SA (phin 1) :|-: SS (phin 1))
           project :: ClassicalSequentOver lex (Sequent a) -> ClassicalSequentOver lex (Succedent a)
           project = (\(x :|-: y) -> y)
+
+dischargeConstraint n ded lhs sub | and (map (`elem` lhs') forms ++ map (`elem` forms) lhs') = Nothing
+                                  | otherwise = Just "The premises this line depends on need to be updated."
+    where lhs' = map Just . toListOf concretes . applySub sub $ lhs
+          scope = inScope (ded !! (n - 1))
+          forms = map (\n -> liftToSequent <$> assertion (ded !! (n - 1))) scope
 
 -------------------------
 --  1.1 Standard Rules  --
