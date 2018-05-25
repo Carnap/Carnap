@@ -1011,3 +1011,4 @@ binaryOpPrism prism = prism' construct (destruct prism)
               case eqT :: Maybe ((a,b) :~: (a',b')) of 
                         Just Refl -> preview prism h >> return (t,t')
                         Nothing -> Nothing
+          destruct _ _ = Nothing
