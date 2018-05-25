@@ -14,16 +14,16 @@ import Carnap.Calculi.NaturalDeduction.Parser (toDeductionLemmon)
 import Carnap.Calculi.NaturalDeduction.Checker (hoProcessLineLemmonMemo, hoProcessLineLemmon)
 import Carnap.Languages.PureFirstOrder.Logic.Rules
 
-data GoldfarbND = TF | P | D | UI | CQ1 | CQ2
+data GoldfarbND = TF Int | P | D | UI | CQ1 | CQ2
                   deriving Eq
 
 instance Show GoldfarbND where
-        show TF   = "TF"
-        show P    = "P"
-        show D    = "D"
-        show UI   = "UI"
-        show CQ1  = "CQ"
-        show CQ2  = "CQ"
+        show (TF _)   = "TF"
+        show P        = "P"
+        show D        = "D"
+        show UI       = "UI"
+        show CQ1      = "CQ"
+        show CQ2      = "CQ"
 
 instance Inference GoldfarbND PureLexiconFOL (Form Bool) where
 
@@ -32,11 +32,11 @@ instance Inference GoldfarbND PureLexiconFOL (Form Bool) where
     ruleOf D = P.conditionalProofVariations !! 0
     ruleOf CQ1 = quantifierNegation !! 0
     ruleOf CQ2 = quantifierNegation !! 3
-    ruleOf TF = P.explosion
+    ruleOf (TF n) = P.explosion n
 
-    restriction TF = Just $ tautologicalConstraint 
-                                [phin 1 :: FOLSequentCalc (Form Bool)]
-                                (phin 2 :: FOLSequentCalc (Form Bool))
+    restriction (TF n) = Just $ tautologicalConstraint 
+                                  (map (\m -> phin m :: FOLSequentCalc (Form Bool)) [1 .. n])
+                                  (phin (n + 1) :: FOLSequentCalc (Form Bool))
               
     restriction _ = Nothing
 
@@ -46,13 +46,13 @@ instance Inference GoldfarbND PureLexiconFOL (Form Bool) where
     isAssumption P = True
     isAssumption _ = False
 
-parseGoldfarbND rtc = do r <- choice (map (try . string) ["P","D","CQ","UI","TF"])
-                         case r of 
-                            r | r == "P" -> return [P]
-                              | r == "D" -> return [D]
-                              | r == "CQ" -> return [CQ1,CQ2]
-                              | r == "UI" -> return [UI]
-                              | r == "TF" -> return [TF]
+parseGoldfarbND rtc n = do r <- choice (map (try . string) ["P","D","CQ","UI","TF"])
+                           case r of 
+                              r | r == "P" -> return [P]
+                                | r == "D" -> return [D]
+                                | r == "CQ" -> return [CQ1,CQ2]
+                                | r == "UI" -> return [UI]
+                                | r == "TF" -> return [TF n]
 
 parseGoldfarbNDProof ::  RuntimeNaturalDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine GoldfarbND PureLexiconFOL (Form Bool)]
 parseGoldfarbNDProof ders = toDeductionLemmon (parseGoldfarbND ders) (hardegreePLFormulaParser)

@@ -89,9 +89,9 @@ modusTollens = [ GammaV 1 :|-: SS (phin 1 .→. phin 2)
 axiom :: BooleanRule lex b
 axiom = [] ∴ SA (phin 1) :|-: SS (phin 1)
 
-explosion :: BooleanRule lex b
-explosion = [ GammaV 1 :|-: SS (phin 1) 
-            ] ∴ GammaV 1 :|-: SS (phin 2)
+explosion :: Int -> BooleanRule lex b
+explosion n = map (\m -> GammaV 1 :|-: SS (phin 1)) [1 .. n]
+              ∴ GammaV 1 :|-: SS (phin (n + 1))
 
 identityRule :: BooleanRule lex b
 identityRule = [ GammaV 1 :|-: SS (phin 1) 

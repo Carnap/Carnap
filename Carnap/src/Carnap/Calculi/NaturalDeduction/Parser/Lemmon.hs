@@ -12,7 +12,7 @@ import Carnap.Calculi.NaturalDeduction.Parser.Util
 import Carnap.Languages.ClassicalSequent.Syntax
 import Carnap.Languages.ClassicalSequent.Parser
 
-parseDependentAssertLine :: Parsec String u [r] -> Parsec String u (FixLang lex a) -> Parsec String u (DeductionLine r lex a)
+parseDependentAssertLine :: (Int -> Parsec String u [r]) -> Parsec String u (FixLang lex a) -> Parsec String u (DeductionLine r lex a)
 parseDependentAssertLine r f = do mscope <- optionMaybe scope
                                   let thescope = case mscope of Nothing -> []; Just l -> l
                                   spaces
@@ -24,7 +24,7 @@ lemline r = do mdis <- optionMaybe scope
                let dis = case mdis of Nothing -> []; Just l -> l
                spaces
                deps <- citation `sepEndBy` spaces
-               rule <- r
+               rule <- r (length deps)
                return (dis,deps,rule)
 
 citation :: Parsec String u Int
@@ -32,7 +32,7 @@ citation = char '(' *> (read <$> many1 digit) <* char ')'
 
 scope = char '[' *> parseInts <* char ']'
 
-toDeductionLemmon :: Parsec String () [r] -> Parsec String () (FixLang lex a) -> String 
+toDeductionLemmon :: (Int -> Parsec String () [r]) -> Parsec String () (FixLang lex a) -> String 
     -> Deduction r lex a
 toDeductionLemmon r f = toDeduction (parseDependentAssertLine r f)
 
