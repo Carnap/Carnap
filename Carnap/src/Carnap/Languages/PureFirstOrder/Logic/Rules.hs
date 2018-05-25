@@ -93,11 +93,12 @@ eigenConstraint c suc ant sub
           -- imaginable.
           occursIn x y = not $ (subst x (static 0) y) =* y
 
-tautologicalConstraint prem conc sub
-        | isValid (propForm $ prem' .=>. conc') = Nothing
+tautologicalConstraint (prem:prems) conc sub
+        | isValid (propForm $ foldr (./\.) prem' prems' .=>. conc') = Nothing
         | otherwise = Just $ show conc' ++  " is not a truth functional consequence of " ++ show prem'
-    where prem' = applySub sub prem
-          conc' = applySub sub conc
+    where prem'  = applySub sub prem
+          prems' = map (applySub sub) prems
+          conc'  = applySub sub conc
 
 globalOldConstraint cs (Left ded) lineno sub = 
           if all (\c -> any (\x -> c `occursIn`x) relevantLines) cs'
@@ -135,7 +136,6 @@ globalNewConstraint cs ded lineno sub =
             Just s -> Nothing
     where cs' = map (applySub sub) cs
           checkNew = mapM (\c -> globalOldConstraint [c] ded lineno sub) cs
-
 
 -------------------------
 --  1.1. Common Rules  --

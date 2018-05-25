@@ -35,7 +35,7 @@ instance Inference GoldfarbND PureLexiconFOL (Form Bool) where
     ruleOf TF = P.explosion
 
     restriction TF = Just $ tautologicalConstraint 
-                                (phin 1 :: FOLSequentCalc (Form Bool))
+                                [phin 1 :: FOLSequentCalc (Form Bool)]
                                 (phin 2 :: FOLSequentCalc (Form Bool))
               
     restriction _ = Nothing
