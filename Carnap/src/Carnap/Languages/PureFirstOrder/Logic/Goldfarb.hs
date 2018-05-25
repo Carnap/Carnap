@@ -1,0 +1,59 @@
+{-#LANGUAGE  FlexibleContexts,  FlexibleInstances, MultiParamTypeClasses #-}
+module Carnap.Languages.PureFirstOrder.Logic.Goldfarb where
+
+import Text.Parsec
+import Control.Lens
+import Carnap.Core.Data.AbstractSyntaxDataTypes (Form)
+import Carnap.Core.Data.AbstractSyntaxClasses
+import Carnap.Languages.PureFirstOrder.Syntax
+import Carnap.Languages.PureFirstOrder.Parser
+import qualified Carnap.Languages.PurePropositional.Logic.Rules as P
+import Carnap.Calculi.NaturalDeduction.Syntax
+import Carnap.Calculi.NaturalDeduction.Parser
+import Carnap.Calculi.NaturalDeduction.Checker (hoProcessLineLemmonMemo, hoProcessLineLemmon)
+import Carnap.Languages.ClassicalSequent.Syntax
+import Carnap.Languages.Util.LanguageClasses
+import Carnap.Languages.Util.GenericConstructors
+import Carnap.Languages.PureFirstOrder.Logic.Rules
+
+data GoldfarbND = TF | P | D | UI | CQ1 | CQ2
+                  deriving Eq
+
+instance Show GoldfarbND where
+        show TF   = "TF"
+        show P    = "P"
+        show D    = "D"
+        show UI   = "UI"
+        show CQ1  = "CQ"
+        show CQ2  = "CQ"
+
+instance Inference GoldfarbND PureLexiconFOL (Form Bool) where
+
+    ruleOf UI = universalInstantiation
+    ruleOf P = P.axiom
+    ruleOf D = P.conditionalProofVariations !! 0
+    ruleOf CQ1 = quantifierNegation !! 0
+    ruleOf CQ2 = quantifierNegation !! 3
+
+    globalRestriction (Left ded) n D = Just (P.dischargeConstraint n ded (view lhs $ conclusionOf D))
+
+    isAssumption P = True
+    isAssumption _ = False
+
+parseGoldfarbND rtc = do r <- choice (map (try . string) ["P","D","CQ","UI"])
+                         case r of 
+                            r | r == "P" -> return [P]
+                              | r == "D" -> return [D]
+                              | r == "CQ" -> return [CQ1,CQ2]
+                              | r == "UI" -> return [UI]
+
+parseGoldfarbNDProof ::  RuntimeNaturalDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine GoldfarbND PureLexiconFOL (Form Bool)]
+parseGoldfarbNDProof ders = toDeductionLemmon (parseGoldfarbND ders) (hardegreePLFormulaParser)
+
+goldfarbNDCalc = NaturalDeductionCalc
+    { ndRenderer = MontagueStyle
+    , ndParseProof = parseGoldfarbNDProof
+    , ndProcessLine = hoProcessLineLemmon
+    , ndProcessLineMemo = Just hoProcessLineLemmonMemo
+    , ndParseSeq = folSeqParser
+    }
