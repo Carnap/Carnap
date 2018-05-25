@@ -46,6 +46,8 @@ toProofTreeLemmon ded n = case ded !! (n - 1) of
         do let deps = map fst depairs
            mapM_ checkDep deps
            let inherited = concat $ map (\m -> inScope (ded !! (m - 1))) deps
+           if isAssumption (head r) && not (scope == [n]) then err "Premises introduce exactly their own line numbers as dependencies."
+                                                         else Right True
            if sort scope /= sort (nub inherited \\ dis) 
                then err "There's a mismatch between the stated premises and the undischarged premises inherited from previous lines."
                else Right True
@@ -55,5 +57,5 @@ toProofTreeLemmon ded n = case ded !! (n - 1) of
         where err :: String -> Either (ProofErrorMessage lex) a
               err x = Left $ GenericError x n
 
-              checkDep m = if n <= m then err $ "dependency on line " ++ show m ++ " is later than assertion."
-                                     else Right True
+              checkDep m | n <= m = err $ "dependency on line " ++ show m ++ " is later than assertion."
+                         | otherwise = Right True
