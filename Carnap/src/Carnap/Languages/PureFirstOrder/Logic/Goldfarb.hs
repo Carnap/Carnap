@@ -33,6 +33,7 @@ instance Inference GoldfarbND PureLexiconFOL (Form Bool) where
     ruleOf CQ2 = quantifierNegation !! 3
 
     globalRestriction (Left ded) n D = Just (P.dischargeConstraint n ded (view lhs $ conclusionOf D))
+    globalRestriction _ _ _ = Nothing
 
     isAssumption P = True
     isAssumption _ = False

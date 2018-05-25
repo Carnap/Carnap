@@ -14,16 +14,16 @@ import Carnap.Languages.ClassicalSequent.Parser
 
 parseDependentAssertLine :: Parsec String u [r] -> Parsec String u (FixLang lex a) -> Parsec String u (DeductionLine r lex a)
 parseDependentAssertLine r f = do mscope <- optionMaybe scope
-                                  let scope = case mscope of Nothing -> []; Just l -> l
+                                  let thescope = case mscope of Nothing -> []; Just l -> l
                                   spaces
                                   phi <- f
                                   (dis, deps, rule) <- lemline r
-                                  return $ DependentAssertLine phi rule (map (\x->(x,x)) deps) dis scope
+                                  return $ DependentAssertLine phi rule (map (\x->(x,x)) deps) dis thescope
 
-lemline r = do dis <- scope
+lemline r = do mdis <- optionMaybe scope
+               let dis = case mdis of Nothing -> []; Just l -> l
                spaces
-               deps <- citation `sepBy` spaces
-               spaces
+               deps <- citation `sepEndBy` spaces
                rule <- r
                return (dis,deps,rule)
 
@@ -46,11 +46,7 @@ toProofTreeLemmon ded n = case ded !! (n - 1) of
         do let deps = map fst depairs
            mapM_ checkDep deps
            let inherited = concat $ map (\m -> inScope (ded !! (m - 1))) deps
-           if isAssumption (head r) && not (scope == [n]) then err "Premises introduce exactly their own line numbers as dependencies."
-                                                         else Right True
-           if sort scope /= sort (nub inherited \\ dis) 
-               then err "There's a mismatch between the stated premises and the undischarged premises inherited from previous lines."
-               else Right True
+           checkScope inherited
            deps' <- mapM (toProofTreeLemmon ded) deps
            return $ Node (ProofLine n (SS $ liftToSequent f) r) deps'
 
@@ -59,3 +55,9 @@ toProofTreeLemmon ded n = case ded !! (n - 1) of
 
               checkDep m | n <= m = err $ "dependency on line " ++ show m ++ " is later than assertion."
                          | otherwise = Right True
+
+              checkScope i | isAssumption (head r) = if not (scope == [n]) then err "Premises introduce exactly their own line numbers as dependencies." else Right True
+                           | sort scope /= sort (nub i \\ dis) = err "There's a mismatch between the stated premises and the undischarged premises inherited from previous lines."
+                           | otherwise = Right True
+
+    (PartialLine _ e _) -> Left $ NoParse e n
