@@ -52,7 +52,6 @@ instance Show FOLogic where
         show SM      = "Sm"
         show (SL x)  = show x
 
--- TODO use liftSequent to clean this up
 instance Inference FOLogic PureLexiconFOL (Form Bool) where
      ruleOf (PR _)    = axiom
      ruleOf UI        = universalInstantiation

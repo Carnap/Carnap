@@ -93,11 +93,12 @@ eigenConstraint c suc ant sub
           -- imaginable.
           occursIn x y = not $ (subst x (static 0) y) =* y
 
-tautologicalConstraint (prem:prems) conc sub
-        | isValid (propForm $ foldr (./\.) prem' prems' .=>. conc') = Nothing
-        | otherwise = Just $ show conc' ++  " is not a truth functional consequence of " ++ show prem'
-    where prem'  = applySub sub prem
-          prems' = map (applySub sub) prems
+tautologicalConstraint prems conc sub = case prems' of
+                 []         | isValid (propForm conc') -> Nothing 
+                 (p':ps')   | isValid (propForm $ foldr (./\.) p' ps' .=>. conc') -> Nothing
+                 []         | otherwise -> Just $ show conc' ++  " is not truth-functional validity"
+                 _          | otherwise -> Just $ show conc' ++  " is not a truth functional consequence of " ++ intercalate ", " (map show prems')
+    where prems' = map (applySub sub) prems
           conc'  = applySub sub conc
 
 globalOldConstraint cs (Left ded) lineno sub = 

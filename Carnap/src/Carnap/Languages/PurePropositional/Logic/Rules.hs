@@ -90,8 +90,9 @@ axiom :: BooleanRule lex b
 axiom = [] ∴ SA (phin 1) :|-: SS (phin 1)
 
 explosion :: Int -> BooleanRule lex b
-explosion n = map (\m -> GammaV 1 :|-: SS (phin 1)) [1 .. n]
-              ∴ GammaV 1 :|-: SS (phin (n + 1))
+explosion n = map (\m -> GammaV m :|-: SS (phin m)) [1 .. n]
+              ∴ concAnt :|-: SS (phin (n + 1))
+    where concAnt = foldr (:+:) (SA lverum) (map GammaV [1 .. n])
 
 identityRule :: BooleanRule lex b
 identityRule = [ GammaV 1 :|-: SS (phin 1) 
