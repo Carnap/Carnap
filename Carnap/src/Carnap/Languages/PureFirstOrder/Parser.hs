@@ -140,7 +140,6 @@ folFormulaParserRelaxed :: Parsec String u PureFOLForm
 folFormulaParserRelaxed = parserFromOptions (standardFOLParserOptions 
     { atomicSentenceParser = \x -> (try (atomicSentenceParser standardFOLParserOptions x) <|> parsePredicateSymbolNoParen "FGHIJKLMNO" x) })
 
-
 pfolFormulaParser :: Parsec String u PurePFOLForm
 pfolFormulaParser = parserFromOptions simplePolyadicFOLParserOptions
 

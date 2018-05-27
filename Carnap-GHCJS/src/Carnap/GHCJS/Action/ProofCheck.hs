@@ -13,7 +13,8 @@ import Carnap.Languages.PurePropositional.Logic as P
     , thomasBolducAndZachTFLCalc)
 import Carnap.Languages.PurePropositional.Logic.Rules (derivedRuleToSequent)
 import Carnap.Languages.PureFirstOrder.Logic as FOL 
-    (DerivedRule(..), folCalc, magnusQLCalc , thomasBolducAndZachFOLCalc, hardegreePLCalc
+    ( DerivedRule(..), folCalc, magnusQLCalc , thomasBolducAndZachFOLCalc, hardegreePLCalc
+    , goldfarbNDCalc, goldfarbAltNDCalc, goldfarbNDPlusCalc, goldfarbAltNDPlusCalc
     , logicBookPDCalc) 
 import Carnap.Languages.ModalPropositional.Logic as MPL
     ( hardegreeWTLCalc, hardegreeLCalc, hardegreeKCalc, hardegreeTCalc
@@ -108,6 +109,10 @@ activateChecker drs w (Just iog@(IOGoal i o g _ opts)) -- TODO: need to update n
         | sys == "magnusSL"                  = tryParse magnusSLCalc propChecker
         | sys == "magnusSLPlus"              = tryParse magnusSLPlusCalc propChecker
         | sys == "magnusQL"                  = tryParse magnusQLCalc folChecker
+        | sys == "goldfarbND"                = tryParse goldfarbNDCalc folChecker
+        | sys == "goldfarbAltND"             = tryParse goldfarbAltNDCalc folChecker
+        | sys == "goldfarbNDPlus"            = tryParse goldfarbNDPlusCalc folChecker
+        | sys == "goldfarbAltNDPlus"         = tryParse goldfarbAltNDPlusCalc folChecker
         | sys == "thomasBolducAndZachTFL"    = tryParse thomasBolducAndZachTFLCalc propChecker
         | sys == "thomasBolducAndZachFOL"    = tryParse thomasBolducAndZachFOLCalc folChecker
         | sys == "hardegreeSL"               = tryParse hardegreeSLCalc propChecker

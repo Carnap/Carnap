@@ -17,7 +17,7 @@ import Carnap.Languages.ClassicalSequent.Syntax
 import Carnap.Languages.ClassicalSequent.Parser
 import Carnap.Languages.Util.LanguageClasses
 import Carnap.Languages.Util.GenericConstructors
-import Carnap.Calculi.NaturalDeduction.Syntax (DeductionLine(..),depth,assertion)
+import Carnap.Calculi.NaturalDeduction.Syntax (DeductionLine(..),depth,assertion,discharged,justificationOf)
 
 --------------------------------------------------------
 --1. FirstOrder Sequent Calculus
@@ -101,6 +101,32 @@ tautologicalConstraint prems conc sub = case prems' of
     where prems' = map (applySub sub) prems
           conc'  = applySub sub conc
 
+totallyFreshConstraint n ded t v sub 
+    | any (\x -> v `occursIn`x) relevantLines = Just $ show v ++ " appears not to be fresh on line " ++ show n
+    | tau' /= (liftToSequent v) = Just "the flagged variable isn't the one used for instantiation."
+    | otherwise = Nothing
+    where relevantLines = catMaybes . map assertion $ (take (n - 1) ded)
+          occursIn x y = not $ (subst x (static 0) y) =* y
+          tau' = applySub sub t
+
+flaggedVariableConstraint n ded suc ant getFlag sub =
+        case targetlinenos of
+            [x] | x < min n (length ded) -> checkFlag (ded !! (x - 1))
+            _ -> Just "wrong number of lines discharged"
+
+    where targetlinenos = discharged (ded !! (n - 1))
+          ant' = applySub sub ant
+          suc' = applySub sub suc
+          occursIn x y = not $ (subst x (static 0) y) =* y
+          checkFlag x = case justificationOf x of
+                            Just rs -> case getFlag (head rs) of
+                                Left s -> Just s
+                                Right v'| v' `occursIn` ant' -> Just $ "The term " ++ show v' ++ " occurs in " ++ show ant'
+                                        | v' `occursIn` suc' -> Just $ "The term " ++ show v' ++ " occurs in " ++ show suc'
+                                        | otherwise -> Nothing
+                            _ -> Just "the line cited has no justification"
+                            
+
 globalOldConstraint cs (Left ded) lineno sub = 
           if all (\c -> any (\x -> c `occursIn`x) relevantLines) cs'
               then Nothing
@@ -146,6 +172,7 @@ type FirstOrderRule lex b =
         ( Typeable b
         , BooleanLanguage (ClassicalSequentOver lex (Form b))
         , IndexedSchemeConstantLanguage (ClassicalSequentOver lex (Term Int))
+        , IndexedSchemePropLanguage (ClassicalSequentOver lex (Form b))
         , QuantLanguage (ClassicalSequentOver lex (Form b)) (ClassicalSequentOver lex (Term Int)) 
         , PolyadicSchematicPredicateLanguage (ClassicalSequentOver lex) (Term Int) (Form b)
         ) => SequentRule lex (Form b)
@@ -178,6 +205,15 @@ existentialGeneralization = [ GammaV 1 :|-: SS (phi 1 (taun 1))]
 existentialInstantiation :: FirstOrderRule lex b
 existentialInstantiation = [ GammaV 1 :|-: SS (lsome "v" (phi 1))]
                            ∴ GammaV 1 :|-: SS (phi 1 (taun 1))
+
+existentialAssumption :: FirstOrderRule lex b
+existentialAssumption = [ GammaV 1 :|-: SS (lsome "v" (phi 1))]
+                        ∴ GammaV 1 :+: SA (phi 1 (taun 1)) :|-: SS (phi 1 (taun 1))
+
+existentialAssumptionDischarge :: FirstOrderRule lex b
+existentialAssumptionDischarge = [ GammaV 1 :+: SA (phi 1 (taun 1)) :|-: SS (phi 1 (taun 1))
+                                 , GammaV 2 :+: SA (phi 1 (taun 1)) :|-: SS (phin 1) ]
+                                 ∴ GammaV 2 :|-: SS (phin 1)
 
 negatedExistentialInstantiation :: FirstOrderRule lex b
 negatedExistentialInstantiation = [ GammaV 1 :|-: SS (lneg $ lsome "v" (phi 1))]

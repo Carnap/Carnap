@@ -87,6 +87,13 @@ isAssumptionLine _ = False
 inScope (DependentAssertLine _ _ _ _ s) = s
 inScope _ = []
 
+discharged (DependentAssertLine _ _ _ d _) = d
+discharged _ = []
+
+justificationOf (AssertLine _ r _ _) = Just r 
+justificationOf (DependentAssertLine _ r _ _ _) = Just r
+justificationOf _ = Nothing
+
 ----------------------
 --  1.1 Deductions  --
 ----------------------
@@ -281,6 +288,10 @@ assumptiveProof = TypedProof (ProofType 1 1)
 type Restriction lex = Maybe ([Equation (ClassicalSequentOver lex)] -> Maybe String)
 
 type Restrictor r lex = Int -> r -> Restriction lex
+
+andFurtherRestriction f g sub = case f sub of 
+                                  Nothing -> g sub
+                                  Just e  -> Just e
 
 class ( FirstOrder (ClassicalSequentOver lex)
       , ACUI (ClassicalSequentOver lex)) => 

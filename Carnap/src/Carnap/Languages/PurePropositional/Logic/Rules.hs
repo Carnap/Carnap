@@ -3,6 +3,7 @@ module Carnap.Languages.PurePropositional.Logic.Rules where
 
 import Text.Parsec
 import Data.List
+import Data.Maybe (catMaybes)
 import Control.Lens (toListOf)
 import Carnap.Calculi.NaturalDeduction.Syntax
 import Data.Typeable
@@ -59,10 +60,10 @@ premConstraint (Just prems) sub | theinstance `elem` prems = Nothing
           project = (\(x :|-: y) -> y)
 
 dischargeConstraint n ded lhs sub | and (map (`elem` lhs') forms ++ map (`elem` forms) lhs') = Nothing
-                                  | otherwise = Just "The premises this line depends on need to be updated."
-    where lhs' = map Just . toListOf concretes . applySub sub $ lhs
+                                  | otherwise = Just $ "This line depends on " ++ show lhs' ++ ", but the cited premises are " ++ show forms ++ "."
+    where lhs' = toListOf concretes . applySub sub $ lhs
           scope = inScope (ded !! (n - 1))
-          forms = map (\n -> liftToSequent <$> assertion (ded !! (n - 1))) scope
+          forms = catMaybes . map (\n -> liftToSequent <$> assertion (ded !! (n - 1))) $ scope
 
 -------------------------
 --  1.1 Standard Rules  --
@@ -92,7 +93,7 @@ axiom = [] ∴ SA (phin 1) :|-: SS (phin 1)
 explosion :: Int -> BooleanRule lex b
 explosion n = map (\m -> GammaV m :|-: SS (phin m)) [1 .. n]
               ∴ concAnt :|-: SS (phin (n + 1))
-    where concAnt = foldr (:+:) (SA lverum) (map GammaV [1 .. n])
+    where concAnt = foldr (:+:) Top (map GammaV [1 .. n])
 
 identityRule :: BooleanRule lex b
 identityRule = [ GammaV 1 :|-: SS (phin 1) 

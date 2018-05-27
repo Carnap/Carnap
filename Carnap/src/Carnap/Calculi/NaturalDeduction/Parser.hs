@@ -1,6 +1,6 @@
 module Carnap.Calculi.NaturalDeduction.Parser 
     ( toProofTreeStructuredFitch, toProofTreeHardegree, toProofTreeMontague, toProofTreeLemmon
-    , toProofTreeFitch, toDeductionMontague, toDeductionFitch, toDeductionHardegree, toDeductionLemmon ) where
+    , toProofTreeFitch, toDeductionMontague, toDeductionFitch, toDeductionHardegree, toDeductionLemmon, toDeductionLemmonAlt ) where
 
 import Carnap.Calculi.NaturalDeduction.Parser.Montague
 import Carnap.Calculi.NaturalDeduction.Parser.Hardegree
