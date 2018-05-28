@@ -59,8 +59,8 @@ premConstraint (Just prems) sub | theinstance `elem` prems = Nothing
           project :: ClassicalSequentOver lex (Sequent a) -> ClassicalSequentOver lex (Succedent a)
           project = (\(x :|-: y) -> y)
 
-dischargeConstraint n ded lhs sub | and (map (`elem` lhs') forms ++ map (`elem` forms) lhs') = Nothing
-                                  | otherwise = Just $ "This line depends on " ++ show lhs' ++ ", but the cited premises are " ++ show forms ++ "."
+dischargeConstraint n ded lhs sub | and (map (`elem` forms) lhs') = Nothing
+                                  | otherwise = Just $ "Some of the dependencies in " ++ show lhs' ++ ", are not among the cited premises " ++ show forms ++ "."
     where lhs' = toListOf concretes . applySub sub $ lhs
           scope = inScope (ded !! (n - 1))
           forms = catMaybes . map (\n -> liftToSequent <$> assertion (ded !! (n - 1))) $ scope

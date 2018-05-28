@@ -108,8 +108,8 @@ instance Inference GoldfarbNDPlus PureLexiconFOL (Form Bool) where
     globalRestriction (Left ded) n (EII v) = case parse (parseConstant ['a'..'t'] :: Parsec String u (PureLanguageFOL (Term Int))) "" v  of
                                                  Left e -> Just (const $ Just "couldn't parse flagged term")
                                                  Right v' -> Just (totallyFreshConstraint n ded (taun 1) v')
-    globalRestriction (Left ded) n EIE = Just (P.dischargeConstraint n ded (view lhs $ conclusionOf (EIE))
-                                              `andFurtherRestriction` flaggedVariableConstraint n ded theSuc (fogamma 2) checkEII)
+    globalRestriction (Left ded) n EIE = Just (P.dischargeConstraint n ded (view lhs $ conclusionOf EIE)
+                                              `andFurtherRestriction` flaggedVariableConstraint n ded theSuc checkEII)
         where checkEII (EII v) = case parse (parseConstant ['a'..'t'] :: Parsec String u (PureLanguageFOL (Term Int))) "" v of
                                      Right v' -> Right (liftToSequent v')
                                      Left e -> Left "couldn't parse flagged term"

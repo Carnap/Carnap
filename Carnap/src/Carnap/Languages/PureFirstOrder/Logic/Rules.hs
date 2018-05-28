@@ -17,7 +17,7 @@ import Carnap.Languages.ClassicalSequent.Syntax
 import Carnap.Languages.ClassicalSequent.Parser
 import Carnap.Languages.Util.LanguageClasses
 import Carnap.Languages.Util.GenericConstructors
-import Carnap.Calculi.NaturalDeduction.Syntax (DeductionLine(..),depth,assertion,discharged,justificationOf)
+import Carnap.Calculi.NaturalDeduction.Syntax (DeductionLine(..),depth,assertion,discharged,justificationOf,inScope)
 
 --------------------------------------------------------
 --1. FirstOrder Sequent Calculus
@@ -109,23 +109,23 @@ totallyFreshConstraint n ded t v sub
           occursIn x y = not $ (subst x (static 0) y) =* y
           tau' = applySub sub t
 
-flaggedVariableConstraint n ded suc ant getFlag sub =
+flaggedVariableConstraint n ded suc getFlag sub =
         case targetlinenos of
             [x] | x < min n (length ded) -> checkFlag (ded !! (x - 1))
             _ -> Just "wrong number of lines discharged"
 
     where targetlinenos = discharged (ded !! (n - 1))
-          ant' = applySub sub ant
+          scope = inScope (ded !! (n - 1))
+          forms = catMaybes . map (\n -> liftToSequent <$> assertion (ded !! (n - 1))) $ scope
           suc' = applySub sub suc
           occursIn x y = not $ (subst x (static 0) y) =* y
           checkFlag x = case justificationOf x of
                             Just rs -> case getFlag (head rs) of
                                 Left s -> Just s
-                                Right v'| v' `occursIn` ant' -> Just $ "The term " ++ show v' ++ " occurs in " ++ show ant'
-                                        | v' `occursIn` suc' -> Just $ "The term " ++ show v' ++ " occurs in " ++ show suc'
+                                Right v'| any (\x -> v' `occursIn` x) forms -> Just $ "The term " ++ show v' ++ " occurs in one of the dependencies " ++ show forms
+                                        | v' `occursIn` suc' -> Just $ "The term " ++ show v' ++ " occurs in the conclusion " ++ show suc'
                                         | otherwise -> Nothing
                             _ -> Just "the line cited has no justification"
-                            
 
 globalOldConstraint cs (Left ded) lineno sub = 
           if all (\c -> any (\x -> c `occursIn`x) relevantLines) cs'
