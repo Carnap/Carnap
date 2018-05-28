@@ -22,6 +22,7 @@ stanzas:
       # to. The primary hostname will be used for generating your application
       # root.
       - Carnap.io
+      - 162.243.2.252
 
     # Enable to force Keter to redirect to https
     # Can be added to any stanza
@@ -52,7 +53,7 @@ stanzas:
 
 # Use the following to automatically copy your bundle upon creation via `yesod
 # keter`. Uses `scp` internally, so you can set it to a remote destination
-copy-to: root@162.243.233.227:/opt/keter/incoming/
+copy-to: root@162.243.2.252:/opt/keter/incoming/
 
 # You can pass arguments to `scp` used above. This example limits bandwidth to
 # 1024 Kbit/s and uses port 2222 instead of the default 22
