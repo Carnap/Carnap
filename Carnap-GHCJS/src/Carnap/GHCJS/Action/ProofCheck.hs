@@ -217,6 +217,7 @@ threadedCheck checker w ref v (g, fd) =
     where renderer = case ndRenderer (checkerCalc checker) of
                          MontagueStyle -> renderDeductionMontague
                          FitchStyle -> renderDeductionFitch
+                         LemmonStyle -> renderDeductionLemmon
 
 updateGoal s ref g mseq = case mseq of
                          Nothing -> do setAttribute g "class" "goal"

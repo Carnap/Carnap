@@ -1,5 +1,5 @@
 {-# LANGUAGE FlexibleContexts #-}
-module Carnap.GHCJS.Widget.RenderDeduction (renderDeductionFitch, renderDeductionMontague) where
+module Carnap.GHCJS.Widget.RenderDeduction (renderDeductionFitch, renderDeductionMontague, renderDeductionLemmon) where
 
 import Lib
 import Data.Maybe (catMaybes)
