@@ -2,6 +2,7 @@
 module Carnap.GHCJS.Widget.RenderDeduction (renderDeductionFitch, renderDeductionMontague) where
 
 import Lib
+import Data.Maybe (catMaybes)
 import Carnap.Core.Data.AbstractSyntaxDataTypes
 import Carnap.Core.Data.AbstractSyntaxClasses
 import Carnap.Calculi.NaturalDeduction.Syntax (DeductionLine(..), Deduction(..), depth)
@@ -94,6 +95,24 @@ lineBase w n mf mrd lineclass =
            setAttribute theWrapper "class" lineclass
            return (theWrapper,theLine,theForm,theRule)
 
+renderTreeLemmon w = treeToElement asLine asSubproof
+    where asLine (n,DependentAssertLine f r deps dis scope) = 
+                do [theWrapper,lineNum,theForm,theRule,theScope] <- catMaybes <$> mapM (createElement w . Just) ["div","span","span","span","span"]
+                   setInnerHTML lineNum (Just $ "(" ++ show n ++ ")")
+                   setInnerHTML theScope (Just $ show scope)
+                   setAttribute theRule "class" "rule"
+                   setInnerHTML theRule (Just $ show (head r) ++ "(" ++ intercalate "," (map renderDep deps) ++ ")")
+                   setInnerHTML theForm (Just $ show f)
+                   mapM (appendChild theWrapper. Just) [theScope,lineNum,theForm,theRule]
+                   return theWrapper
+
+          asLine _ = do Just sl <- createElement w (Just "div")
+                        return sl
+
+          asSubproof _ _ = return ()
+                          
+
+
 renderDeduction :: String -> (Document -> Tree (Int, DeductionLine t t1 t2) -> IO Element) -> Document -> [DeductionLine t t1 t2] -> IO Element
 renderDeduction cls render w ded = 
         do let forest = deductionToForest 0 (zip [1..] ded)
@@ -108,6 +127,9 @@ renderDeductionFitch = renderDeduction "fitchDisplay" renderTreeFitch
 
 renderDeductionMontague :: (Show t,Schematizable (t1 (FixLang t1)), CopulaSchema (FixLang t1)) => Document -> [DeductionLine t t1 t2] -> IO Element
 renderDeductionMontague = renderDeduction "montagueDisplay" renderTreeMontague
+
+renderDeductionLemmon :: (Show t,Schematizable (t1 (FixLang t1)), CopulaSchema (FixLang t1)) => Document -> [DeductionLine t t1 t2] -> IO Element
+renderDeductionLemmon = renderDeduction "lemmonDisplay" renderTreeLemmon
 
 renderDep (n,m) = if n==m then show n else show n ++ "-" ++ show m
 
