@@ -9,6 +9,7 @@ import Carnap.Core.Data.Util (scopeHeight)
 import Carnap.Core.Unification.Unification (applySub,subst)
 import Carnap.Core.Data.AbstractSyntaxClasses
 import Carnap.Core.Data.AbstractSyntaxDataTypes
+import Carnap.Languages.PurePropositional.Logic.Rules (exchange)
 import Carnap.Languages.PureFirstOrder.Syntax
 import Carnap.Languages.PureFirstOrder.Parser
 import Carnap.Languages.PureFirstOrder.Util
@@ -291,13 +292,7 @@ existentialDerivation = [
                         ]
 
 quantifierNegation :: FirstOrderRuleVariants lex b
-quantifierNegation = [  
-                        [ GammaV 1 :|-: SS (lneg $ lsome "v" $ phi 1)] 
-                        ∴ GammaV 1 :|-: SS (lall "v" $ \x -> lneg $ phi 1 x)
-                     ,  [ GammaV 1 :|-: SS (lsome "v" $ \x -> lneg $ phi 1 x)] 
-                        ∴ GammaV 1 :|-: SS (lneg $ lall "v"  $ phi 1)
-                     ,  [ GammaV 1 :|-: SS (lneg $ lall "v" $ phi 1)] 
-                        ∴ GammaV 1 :|-: SS (lsome "v" $ \x -> lneg $ phi 1 x)
-                     ,  [ GammaV 1 :|-: SS (lall "v" $ \x -> lneg $ phi 1 x)] 
-                        ∴ GammaV 1 :|-: SS (lneg $ lsome "v" $ phi 1)
-                     ]
+quantifierNegation = exchange (lneg $ lsome "v" $ phi 1) (lall "v" $ lneg . phi 1) 
+                     ++ exchange (lsome "v" $ lneg . phi 1) (lneg $ lall "v" $ phi 1)
+                     ++ exchange (lneg $ lsome "v" $ lneg . phi 1) (lall "v" $ phi 1)
+                     ++ exchange (lsome "v" $ phi 1) (lneg $ lall "v" $ lneg . phi 1)

@@ -20,7 +20,8 @@ import Carnap.Languages.PureFirstOrder.Logic.Rules
 --  1. The basic Goldfarb system  --
 ------------------------------------
 
-data GoldfarbND = TF Int | P | D | UI | UG | CQ1 | CQ2
+data GoldfarbND = TF Int | P   | D   | UI  | UG 
+                | CQ1    | CQ2 | CQ3 | CQ4 | CQ5 | CQ6 | CQ7 | CQ8
                   deriving Eq
 
 instance Show GoldfarbND where
@@ -31,6 +32,12 @@ instance Show GoldfarbND where
         show UI       = "UI"
         show CQ1      = "CQ"
         show CQ2      = "CQ"
+        show CQ3      = "CQ"
+        show CQ4      = "CQ"
+        show CQ5      = "CQ"
+        show CQ6      = "CQ"
+        show CQ7      = "CQ"
+        show CQ8      = "CQ"
 
 instance Inference GoldfarbND PureLexiconFOL (Form Bool) where
 
@@ -39,7 +46,13 @@ instance Inference GoldfarbND PureLexiconFOL (Form Bool) where
     ruleOf P = P.axiom
     ruleOf D = P.explicitConditionalProofVariations !! 0
     ruleOf CQ1 = quantifierNegation !! 0
-    ruleOf CQ2 = quantifierNegation !! 3
+    ruleOf CQ2 = quantifierNegation !! 1
+    ruleOf CQ3 = quantifierNegation !! 2
+    ruleOf CQ4 = quantifierNegation !! 3
+    ruleOf CQ5 = quantifierNegation !! 4
+    ruleOf CQ6 = quantifierNegation !! 5
+    ruleOf CQ7 = quantifierNegation !! 6
+    ruleOf CQ8 = quantifierNegation !! 7
     ruleOf (TF n) = P.explosion n
 
     restriction (TF n) = Just $ tautologicalConstraint 
@@ -58,7 +71,7 @@ parseGoldfarbND rtc n _ = do r <- choice (map (try . string) ["P","D","CQ","UI",
                              case r of 
                                   r | r == "P" -> return [P]
                                     | r == "D" -> return [D]
-                                    | r == "CQ" -> return [CQ1,CQ2]
+                                    | r == "CQ" -> return [CQ1,CQ2,CQ3,CQ4,CQ5,CQ6,CQ7,CQ8]
                                     | r == "UI" -> return [UI]
                                     | r == "UG" -> return [UG]
                                     | r == "TF" -> return [TF n]

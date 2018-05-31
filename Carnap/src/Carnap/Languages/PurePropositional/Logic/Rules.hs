@@ -153,7 +153,6 @@ type BooleanRuleVariants lex b =
 --  1.2.1 Simple Variation  --
 ------------------------------
 
-
 modusTollendoPonensVariations :: BooleanRuleVariants lex b
 modusTollendoPonensVariations = [
                 [ GammaV 1  :|-: SS (lneg $ phin 1) 
@@ -396,25 +395,43 @@ deMorgansNegatedOr = [
 --  1.2.2 Replacement Rules  --
 -------------------------------
 
-replace :: PurePropLanguage (Form Bool) -> PurePropLanguage (Form Bool) -> [SequentRule PurePropLexicon (Form Bool)]
-replace x y = [ [GammaV 1  :|-: ss (propCtx 1 x)] ∴ GammaV 1  :|-: ss (propCtx 1 y)
-              , [GammaV 1  :|-: ss (propCtx 1 y)] ∴ GammaV 1  :|-: ss (propCtx 1 x)]
-    where ss = SS . liftToSequent
+type ReplacementBooleanVariants lex b = 
+        ( Typeable b
+        , BooleanLanguage (ClassicalSequentOver lex (Form b))
+        , BooleanConstLanguage (ClassicalSequentOver lex (Form b))
+        , IndexedSchemePropLanguage (ClassicalSequentOver lex (Form b))
+        , IndexedPropContextSchemeLanguage (ClassicalSequentOver lex (Form b))
+        ) => [SequentRule lex (Form b)]
 
+replace :: ( Typeable b, IndexedPropContextSchemeLanguage (ClassicalSequentOver lex (Form b))
+        ) => ClassicalSequentOver lex (Form b) -> ClassicalSequentOver lex (Form b) -> [SequentRule lex (Form b)]
+replace x y = [ [GammaV 1  :|-: SS (propCtx 1 x)] ∴ GammaV 1  :|-: SS (propCtx 1 y)
+              , [GammaV 1  :|-: SS (propCtx 1 y)] ∴ GammaV 1  :|-: SS (propCtx 1 x)]
+
+exchange :: Typeable b => ClassicalSequentOver lex (Form b) -> ClassicalSequentOver lex (Form b) -> [SequentRule lex (Form b)]
+exchange x y = [ [GammaV 1  :|-: SS x] ∴ GammaV 1  :|-: SS y, [GammaV 1  :|-: SS y] ∴ GammaV 1  :|-: SS x]
+
+andCommutativity :: ReplacementBooleanVariants lex b
 andCommutativity = replace (phin 1 ./\. phin 2) (phin 2 ./\. phin 1)
 
+orCommutativity :: ReplacementBooleanVariants lex b
 orCommutativity = replace (phin 1 .\/. phin 2) (phin 2 .\/. phin 1)
 
+iffCommutativity :: ReplacementBooleanVariants lex b
 iffCommutativity = replace (phin 1 .<=>. phin 2) (phin 2 .<=>. phin 1)
 
+deMorgansLaws :: ReplacementBooleanVariants lex b
 deMorgansLaws = replace (lneg $ phin 1 ./\. phin 2) (lneg (phin 1) .\/. lneg (phin 2))
              ++ replace (lneg $ phin 1 .\/. phin 2) (lneg (phin 1) ./\. lneg (phin 2))
 
+doubleNegation :: ReplacementBooleanVariants lex b
 doubleNegation = replace (lneg $ lneg $ phin 1) (phin 1)
 
+materialConditional :: ReplacementBooleanVariants lex b
 materialConditional = replace (phin 1 .=>. phin 2) (lneg (phin 1) .\/. phin 2)
                    ++ replace (phin 1 .\/. phin 2) (lneg (phin 1) .=>. phin 2)
 
+biconditionalExchange :: ReplacementBooleanVariants lex b
 biconditionalExchange = replace (phin 1 .<=>. phin 2) ((phin 1 .=>. phin 2) ./\. (phin 2 .=>. phin 1))
 
 ----------------------------------------
