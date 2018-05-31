@@ -80,12 +80,13 @@ data DerivedRule = DerivedRule { conclusion :: PureFOLForm, premises :: [PureFOL
                deriving (Show, Eq)
 
 eigenConstraint c suc ant sub
-    | c' `occursIn` ant' = Just $ "The constant " ++ show c' ++ " appears not to be fresh, given that this line relies on " ++ show ant'
-    | c' `occursIn` suc' = Just $ "The constant " ++ show c' ++ " appears not to be fresh in the other premise " ++ show suc'
+    | c' `occursIn` ant' = Just $ "The term " ++ show c' ++ " appears not to be fresh, given that this line relies on " ++ show ant'
+    | c' `occursIn` suc' = Just $ "The term " ++ show c' ++ " appears not to be fresh in the other premise " ++ show suc'
     | otherwise = case c' of 
                           SeqC _ -> Nothing
+                          SeqV _ -> Nothing
                           SeqT _ -> Nothing
-                          _ -> Just $ "The term " ++ show c' ++ " is not a constant"
+                          _ -> Just $ "The term " ++ show c' ++ " is not a constant or variable"
     where c'   = applySub sub c
           ant' = applySub sub ant
           suc' = applySub sub suc

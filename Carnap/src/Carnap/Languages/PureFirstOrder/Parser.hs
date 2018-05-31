@@ -3,7 +3,8 @@ module Carnap.Languages.PureFirstOrder.Parser
 ( folFormulaParser, folFormulaParserRelaxed, mfolFormulaParser
 , magnusFOLFormulaParser, thomasBolducAndZachFOLFormulaParser
 , hardegreePLFormulaParser, bergmannMoorAndNelsonPDFormulaParser
-, FirstOrderParserOptions(..), parserFromOptions, parseFreeVar) where
+, goldfarbNDFormulaParser, FirstOrderParserOptions(..)
+, parserFromOptions, parseFreeVar) where
 
 import Carnap.Core.Data.AbstractSyntaxDataTypes
 import Carnap.Core.Data.AbstractSyntaxClasses (Schematizable)
@@ -85,15 +86,24 @@ bergmannMoorAndNelsonFOLParserOptions = FirstOrderParserOptions
                          , hasBooleanConstants = False
                          }
 
-
 hardegreePLParserOptions :: FirstOrderParserOptions PureLexiconFOL u Identity
 hardegreePLParserOptions = FirstOrderParserOptions 
-                         { atomicSentenceParser = \x -> parsePredicateSymbolNoParen "ABCDEFGHIJKLMNOPQRSTUVWXYZ" x
+                         { atomicSentenceParser = \x -> parsePredicateSymbolNoParen ['A' .. 'Z'] x
                          , quantifiedSentenceParser' = quantifiedSentenceParser
-                         , freeVarParser = parseFreeVar "tuvwxyz"
-                         , constantParser = Just (parseConstant "abcdefghijklmnopqrs")
+                         , freeVarParser = parseFreeVar ['t' .. 'z']
+                         , constantParser = Just (parseConstant ['a' .. 's'])
                          , functionParser = Nothing
                          , hasBooleanConstants = True
+                         }
+
+goldfarbNDParserOptions :: FirstOrderParserOptions PureLexiconFOL u Identity
+goldfarbNDParserOptions = FirstOrderParserOptions 
+                         { atomicSentenceParser = \x -> parsePredicateSymbolNoParen ['A' .. 'Z'] x
+                         , quantifiedSentenceParser' = quantifiedSentenceParser
+                         , freeVarParser = parseFreeVar ['a' .. 'z']
+                         , constantParser = Nothing
+                         , functionParser = Nothing
+                         , hasBooleanConstants = False
                          }
 
 coreSubformulaParser :: ( BoundVars lex
@@ -129,6 +139,9 @@ thomasBolducAndZachFOLFormulaParser = parserFromOptions thomasBolducAndZachFOLPa
 
 hardegreePLFormulaParser :: Parsec String u PureFOLForm
 hardegreePLFormulaParser = parserFromOptions hardegreePLParserOptions
+
+goldfarbNDFormulaParser:: Parsec String u PureFOLForm
+goldfarbNDFormulaParser = parserFromOptions goldfarbNDParserOptions
 
 bergmannMoorAndNelsonPDFormulaParser :: Parsec String u PureFOLForm
 bergmannMoorAndNelsonPDFormulaParser = parserFromOptions bergmannMoorAndNelsonFOLParserOptions

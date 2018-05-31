@@ -64,10 +64,10 @@ parseGoldfarbND rtc n _ = do r <- choice (map (try . string) ["P","D","CQ","UI",
                                     | r == "TF" -> return [TF n]
 
 parseGoldfarbNDProof ::  RuntimeNaturalDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine GoldfarbND PureLexiconFOL (Form Bool)]
-parseGoldfarbNDProof ders = toDeductionLemmon (parseGoldfarbND ders) (hardegreePLFormulaParser)
+parseGoldfarbNDProof ders = toDeductionLemmon (parseGoldfarbND ders) goldfarbNDFormulaParser
 
 parseGoldfarbAltNDProof ::  RuntimeNaturalDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine GoldfarbND PureLexiconFOL (Form Bool)]
-parseGoldfarbAltNDProof ders = toDeductionLemmonAlt (parseGoldfarbND ders) (hardegreePLFormulaParser)
+parseGoldfarbAltNDProof ders = toDeductionLemmonAlt (parseGoldfarbND ders) goldfarbNDFormulaParser
 
 goldfarbNDCalc = NaturalDeductionCalc
     { ndRenderer = LemmonStyle
@@ -105,12 +105,12 @@ instance Inference GoldfarbNDPlus PureLexiconFOL (Form Bool) where
     restriction _ = Nothing
 
     globalRestriction (Left ded) n (ND D) = Just (P.dischargeConstraint n ded (view lhs $ conclusionOf (ND D)))
-    globalRestriction (Left ded) n (EII v) = case parse (parseConstant ['a'..'t'] :: Parsec String u (PureLanguageFOL (Term Int))) "" v  of
+    globalRestriction (Left ded) n (EII v) = case parse (parseFreeVar ['a'..'z'] :: Parsec String u (PureLanguageFOL (Term Int))) "" v  of
                                                  Left e -> Just (const $ Just "couldn't parse flagged term")
                                                  Right v' -> Just (totallyFreshConstraint n ded (taun 1) v')
     globalRestriction (Left ded) n EIE = Just (P.dischargeConstraint n ded (view lhs $ conclusionOf EIE)
                                               `andFurtherRestriction` flaggedVariableConstraint n ded theSuc checkEII)
-        where checkEII (EII v) = case parse (parseConstant ['a'..'t'] :: Parsec String u (PureLanguageFOL (Term Int))) "" v of
+        where checkEII (EII v) = case parse (parseFreeVar ['a'..'z'] :: Parsec String u (PureLanguageFOL (Term Int))) "" v of
                                      Right v' -> Right (liftToSequent v')
                                      Left e -> Left "couldn't parse flagged term"
               checkEII _ = Left "The discharged premise is not justified with EII"
@@ -130,10 +130,10 @@ parseGoldfarbNDPlus rtc n annote = plusRules <|> (map ND <$> parseGoldfarbND rtc
                                           | r == "EIE" -> return [EIE]
 
 parseGoldfarbNDPlusProof ::  RuntimeNaturalDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine GoldfarbNDPlus PureLexiconFOL (Form Bool)]
-parseGoldfarbNDPlusProof rtc = toDeductionLemmon (parseGoldfarbNDPlus rtc) (hardegreePLFormulaParser)
+parseGoldfarbNDPlusProof rtc = toDeductionLemmon (parseGoldfarbNDPlus rtc) goldfarbNDFormulaParser
 
 parseGoldfarbAltNDPlusProof ::  RuntimeNaturalDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine GoldfarbNDPlus PureLexiconFOL (Form Bool)]
-parseGoldfarbAltNDPlusProof rtc = toDeductionLemmonAlt (parseGoldfarbNDPlus rtc) (hardegreePLFormulaParser)
+parseGoldfarbAltNDPlusProof rtc = toDeductionLemmonAlt (parseGoldfarbNDPlus rtc) goldfarbNDFormulaParser
 
 goldfarbNDPlusCalc = NaturalDeductionCalc
     { ndRenderer = LemmonStyle
