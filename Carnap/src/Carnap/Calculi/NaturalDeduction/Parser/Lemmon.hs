@@ -32,20 +32,25 @@ lemline r = do mdis <- optionMaybe scope
 --lemmon justifications as used at Brown
 lemlineAlt r = do (dis,deps,annote) <- lookAhead $ 
                     do many (oneOf ['A' .. 'Z'])
-                       mdeps <- optionMaybe citations
+                       (mdis,mdeps,annote) <- try cite1 <|> try cite2 <|> cite3
                        let deps = case mdeps of Nothing -> []; Just l -> l
-                       mdis <- optionMaybe scope
                        let dis = case mdis of Nothing -> []; Just l -> l
-                       annote <- many (noneOf (' ':['A' .. 'Z']))
                        return (dis,deps,annote)
                   rule <- r (length deps) annote
                   return (dis,deps,rule)
+    where cite1 = (,,) <$> (Just <$> scope) <*> (Just <$> bothCitations) <*> annotation
+          cite2 = (\x y z -> (y,x,z)) <$> (Just <$> bothCitations) <*> (Just <$> scope) <*> annotation
+          cite3 = (,,) <$> optionMaybe scope <*> optionMaybe bothCitations <*> annotation
+          bothCitations = try (citation `sepEndBy` spaces) <|> citations
 
 citation :: Parsec String u Int
 citation = char '(' *> (read <$> many1 digit) <* char ')'
 
 citations :: Parsec String u [Int]
 citations = char '(' *> ((read <$> many1 digit)`sepBy` (char ',' >> spaces)) <* char ')'
+
+annotation :: Parsec String u String
+annotation = many (noneOf (' ':['A' .. 'Z']))
 
 scope = char '[' *> parseInts <* char ']'
 
