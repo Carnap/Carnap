@@ -103,7 +103,9 @@ makeApplication :: App -> IO Application
 makeApplication foundation = do
     logWare <- makeLogWare foundation
     let datadir = appDataRoot (appSettings foundation)
-        zipsettings = GzipPreCompressed (GzipCacheFolder (datadir </> "gzcache/"))
+        zipsettings = if appDevel (appSettings foundation) 
+                        then GzipIgnore
+                        else GzipPreCompressed (GzipCacheFolder (datadir </> "gzcache/"))
     -- Create the WAI application and apply middlewares
     appPlain <- toWaiAppPlain foundation
     return $ logWare . acceptOverride . autohead . gzip (def {gzipFiles = zipsettings }) . methodOverride $ appPlain
