@@ -239,8 +239,9 @@
 
 .manualPopper {
     position:absolute;
-    right:10px;
-    bottom:-20px;
+    right:40px;
+    bottom:20px;
+    z-index:10;
 }
 
 .popper {
@@ -265,16 +266,6 @@
 .equations {
     padding:5px;
     margin:5px;
-    border:1px solid gray;
-}
-
-/* when you hover over the div containing the feedback mark */
-.proofFeedback li > div:hover {
-    color:red;
-}
-
-.proofFeedback .equations {
-    padding:10px;
     border:1px solid gray;
 }
 
@@ -306,12 +297,6 @@
     border-left:1px solid black;
 }
 
-.proofDisplay div > span:first-child {
-    position:absolute;
-    left:20pt;
-    font-size:15px;
-}
-
 .proofDisplay .subproof .subproof {
     margin-left: 5pt;
 }
@@ -320,9 +305,15 @@
     padding-left: 5pt;
 }
 
-.montagueDisplay span.rule {
+.montagueDisplay span.rule, .fitchDisplay span.rule, .lemmonDisplay span.rule{
     float:right;
     padding-left:10px;
+}
+
+.montagueDisplay div > span:first-child, .fitchDisplay div > span:first-child {
+    position:absolute;
+    left:20pt;
+    font-size:15px;
 }
 
 .montagueDisplay .qed div > span:nth-child(2) {
@@ -339,16 +330,23 @@
     padding-left: 5pt;
 }
 
-.fitchDisplay div span:nth-child(3) {
-    float: right;
-}
-
 .fitchDisplay .subproof {
     margin-top:5px;
 }
 
 .fitchDisplay .subproof > div:first-child {
     border-bottom:1px solid black;
+}
+
+.lemmonDisplay div > span:nth-child(1) {
+    position:absolute;
+    left:0px;
+}
+
+.lemmonDisplay div > span:nth-child(2) {
+    padding-left:20px;
+    display:inline-block;
+    width:75px;
 }
 
 [data-carnap-type="proofchecker"] .goal {
