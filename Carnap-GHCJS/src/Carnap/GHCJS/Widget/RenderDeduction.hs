@@ -101,16 +101,19 @@ renderTreeLemmon w = treeToElement asLine asSubproof
                    setInnerHTML lineNum (Just $ "(" ++ show n ++ ")")
                    setInnerHTML theScope (Just $ show scope)
                    setAttribute theRule "class" "rule"
-                   setInnerHTML theRule (Just $ show (head r) ++ "(" ++ intercalate "," (map renderDep deps) ++ ")")
+                   setInnerHTML theRule (Just $ show (head r) ++ showdischarged ++ showdeps)
                    setInnerHTML theForm (Just $ show f)
                    mapM (appendChild theWrapper. Just) [theScope,lineNum,theForm,theRule]
                    return theWrapper
+                   
+                where showdischarged = if dis /= [] then show dis else ""
+
+                      showdeps = if deps /= [] then "(" ++ intercalate "," (map renderDep deps) ++ ")" else "" 
 
           asLine _ = do Just sl <- createElement w (Just "div")
                         return sl
 
           asSubproof _ _ = return ()
-                          
 
 
 renderDeduction :: String -> (Document -> Tree (Int, DeductionLine t t1 t2) -> IO Element) -> Document -> [DeductionLine t t1 t2] -> IO Element
