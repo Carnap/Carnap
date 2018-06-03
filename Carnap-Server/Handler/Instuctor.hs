@@ -25,8 +25,13 @@ putInstructorR ident = do
         ((courserslt,_),_)     <- runFormPost (identifyForm "updateCourse" $ updateCourseForm)
         ((documentrslt,_),_)   <- runFormPost (identifyForm "updateDocument" $ updateDocumentForm)
         case (assignmentrslt,courserslt,documentrslt) of 
-            (FormSuccess (filename,mdue,mduetime,mdesc,mfile),_,_) -> do
-                             massignEnt <- runDB $ getBy $ UniqueAssignment filename
+            (FormSuccess (filename, coursename, mdue, mduetime, mdesc),_,_) -> do
+                             massignEnt <- runDB $ do Just (Entity uid _) <- getBy (UniqueUser ident)
+                                                      Just (Entity _ umd) <- getBy (UniqueUserData uid)
+                                                      let Just imdid = userDataInstructorId umd
+                                                      Just (Entity cid _) <- getBy (UniqueCourse coursename imdid)
+                                                      Just (Entity docid _) <- getBy $ UniqueDocument filename uid
+                                                      getBy $ UniqueAssignment docid cid
                              case massignEnt of 
                                    Nothing -> return ()
                                    Just (Entity k v) -> 
@@ -40,9 +45,8 @@ putInstructorR ident = do
                                                             update k [ AssignmentMetadataDuedate =. (Just $ localTimeToUTCTZ tz localdue) ])
                                                       maybeDo mdesc (\desc -> update k
                                                          [ AssignmentMetadataDescription =. (Just $ unTextarea desc) ])
-                                           maybeDo mfile (saveTo "assignments" $ unpack filename)
-                             case mdue of Nothing -> returnJson ([filename,"No Due Date"])
-                                          Just due -> returnJson ([filename, pack $ show due])
+                             case mdue of Nothing -> returnJson ([coursename, filename,"No Due Date"])
+                                          Just due -> returnJson ([coursename, filename, pack $ show due])
             (_,FormSuccess (coursetitle,mdesc,mstart,mend,mpoints),_) -> do
                              Just instructor <- instructorIdByIdent ident
                              mcourseEnt <- runDB . getBy . UniqueCourse coursetitle $ instructor
@@ -61,13 +65,13 @@ putInstructorR ident = do
                              musr <- runDB $ getBy $ UniqueUser ident
                              case entityKey <$> musr of
                                  Just k -> do
-                                     mdocId <- runDB $ getBy $ UniqueSharedDocument filename k
+                                     mdocId <- runDB $ getBy $ UniqueDocument filename k
                                      case mdocId of
                                          Just (Entity k' _) -> 
                                             do runDB $ do maybeDo mdesc (\desc -> update k'
-                                                           [ SharedDocumentDescription =. (Just $ unTextarea desc) ])
+                                                           [ DocumentDescription =. (Just $ unTextarea desc) ])
                                                           maybeDo mscope (\scope -> update k'
-                                                           [ SharedDocumentScope =. scope ])
+                                                           [ DocumentScope =. scope ])
                                                maybeDo mfile (saveTo ("shared" </> unpack ident) $ unpack filename)
                                                returnJson ("updated!"::Text)
                                          Nothing -> returnJson ("could not find document!"::Text)
@@ -83,20 +87,10 @@ deleteInstructorR :: Text -> Handler Value
 deleteInstructorR ident = do
     msg <- requireJsonBody :: Handler InstructorDelete
     case msg of 
-      DeleteAssignment fn ->
+      DeleteAssignment id ->
         do datadir <- appDataRoot <$> (appSettings <$> getYesod) 
-           deleted <- runDB $ do mk <- getBy $ UniqueAssignment fn
-                                 case mk of
-                                     Just (Entity k v) -> 
-                                        do deleteCascade k
-                                           liftIO $ do fe <- doesFileExist (datadir </> "assignments" </> unpack fn) 
-                                                       if fe then removeFile (datadir </> "assignments" </> unpack fn)
-                                                             else return ()
-                                           return True
-                                     Nothing -> return False
-           if deleted 
-               then returnJson (fn ++ " deleted")
-               else returnJson ("unable to retrieve metadata for " ++ fn)
+           deleted <- runDB $ deleteCascade id
+           returnJson ("Assignment deleted" :: Text)
       DeleteProblems coursename setnum -> 
         do miid <- instructorIdByIdent ident
            case miid of
@@ -131,7 +125,7 @@ deleteInstructorR ident = do
            case musr of
                Nothing -> returnJson ("Could not get user id."::Text)
                Just usr -> do
-                   deleted <- runDB $ do mk <- getBy $ UniqueSharedDocument fn (entityKey usr)
+                   deleted <- runDB $ do mk <- getBy $ UniqueDocument fn (entityKey usr)
                                          case mk of
                                              Just (Entity k v) -> 
                                                 do deleteCascade k
@@ -157,22 +151,22 @@ deleteInstructorR ident = do
 postInstructorR :: Text -> Handler Html
 postInstructorR ident = do
     classes <- classesByInstructorIdent ident
-    ((assignmentrslt,_),_) <- runFormPost (identifyForm "uploadAssignment" $ uploadAssignmentForm classes)
-    ((documentrslt,_),_) <- runFormPost (identifyForm "shareDocument" $ uploadDocumentForm)
+    docs <- documentsByInstructorIdent ident
+    ((assignmentrslt,_),_) <- runFormPost (identifyForm "uploadAssignment" $ uploadAssignmentForm classes docs)
+    ((documentrslt,_),_) <- runFormPost (identifyForm "uploadDocument" $ uploadDocumentForm)
     ((newclassrslt,_),_) <- runFormPost (identifyForm "createCourse" createCourseForm)
     ((frombookrslt,_),_) <- runFormPost (identifyForm "setBookAssignment" $ setBookAssignmentForm classes)
     case assignmentrslt of 
-        (FormSuccess (file, Entity classkey theclass, duedate,duetime, assignmentdesc, subtime)) ->
-            do let fn = fileName file
-                   (Just tz) = tzByName . courseTimeZone $ theclass
+        (FormSuccess (doc, Entity classkey theclass, duedate,duetime, assignmentdesc, subtime)) ->
+            do let (Just tz) = tzByName . courseTimeZone $ theclass
                    localdue = case (duedate,duetime) of
                                   (Just date, Just time) -> Just $ LocalTime date time
                                   (Just date,_)  -> Just $ LocalTime date (TimeOfDay 23 59 59)
                                   _ -> Nothing
                    info = unTextarea <$> assignmentdesc
-               success <- tryInsert $ AssignmentMetadata fn info (localTimeToUTCTZ tz <$> localdue) subtime classkey 
-               if success then saveTo "assignments" (unpack fn) file 
-                          else setMessage "A file with this name already exists in Carnap's database. Perhaps you could make the name unique by adding your name or course title?"
+               success <- tryInsert $ AssignmentMetadata (entityKey doc) info (localTimeToUTCTZ tz <$> localdue) subtime classkey 
+               if success then return ()
+                          else setMessage "This file has already been assigned for this course"
         (FormFailure s) -> setMessage $ "Something went wrong: " ++ toMarkup (show s)
         FormMissing -> return ()
     case documentrslt of 
@@ -181,7 +175,7 @@ postInstructorR ident = do
                let fn = fileName file
                    info = unTextarea <$> docdesc
                    (Just uid) = musr -- FIXME: catch Nothing here
-               success <- tryInsert $ SharedDocument fn subtime (entityKey uid) info sharescope
+               success <- tryInsert $ Document fn subtime (entityKey uid) info sharescope
                if success then saveTo ("shared" </> unpack ident) (unpack fn) file 
                           else setMessage "You already have a shared document with this name."
         (FormFailure s) -> setMessage $ "Something went wrong: " ++ toMarkup (show s)
@@ -220,16 +214,18 @@ getInstructorR ident = do
         (Just (Entity uid _))  -> do
             UserData firstname lastname enrolledin _ _ <- checkUserData uid 
             classes <- classesByInstructorIdent ident 
+            docs <- documentsByInstructorIdent ident 
             let tags = map tagOf classes
             classWidgets <- mapM (classWidget ident) classes
             instructorCourses <- classesByInstructorIdent ident
-            assignmentMetadata <- concat <$> mapM (assignmentsOf . entityKey) classes
-            sharedDocuments <- runDB $ selectList [SharedDocumentCreator ==. uid] []
+            assignmentMetadata <- concat <$> mapM (listAssignmentMetadata . entityKey) classes
+            assignmentDocs <- mapM (runDB . get) (map (assignmentMetadataDocument . entityVal) assignmentMetadata)
+            documents <- runDB $ selectList [DocumentCreator ==. uid] []
             assignmentCourses <- forM assignmentMetadata $ \c -> do 
-                                    Just e <- runDB $ get (assignmentMetadataCourse c)
+                                    Just e <- runDB $ get (assignmentMetadataCourse . entityVal $ c)
                                     return e
-            (uploadAssignmentWidget,enctypeUploadAssignment) <- generateFormPost (identifyForm "uploadAssignment" $ uploadAssignmentForm classes)
-            (shareDocumentWidget,enctypeShareDocument) <- generateFormPost (identifyForm "shareDocument" $ uploadDocumentForm)
+            (uploadAssignmentWidget,enctypeUploadAssignment) <- generateFormPost (identifyForm "uploadAssignment" $ uploadAssignmentForm classes docs)
+            (uploadDocumentWidget,enctypeShareDocument) <- generateFormPost (identifyForm "uploadDocument" $ uploadDocumentForm)
             (setBookAssignmentWidget,enctypeSetBookAssignment) <- generateFormPost (identifyForm "setBookAssignment" $ setBookAssignmentForm classes)
             (updateAssignmentWidget,enctypeUpdateAssignment) <- generateFormPost (identifyForm "updateAssignment" $ updateAssignmentForm)
             (updateDocumentWidget,enctypeUpdateDocument) <- generateFormPost (identifyForm "updateDocument" $ updateDocumentForm)
@@ -240,8 +236,7 @@ getInstructorR ident = do
                  addScript $ StaticR js_bootstrap_min_js
                  setTitle $ "Instructor Page for " ++ toMarkup firstname ++ " " ++ toMarkup lastname
                  $(widgetFile "instructor")
-    where assignmentsOf theclass = map entityVal <$> listAssignmentMetadata theclass
-          tagOf = T.append "course-" . T.map (\c -> if c `elem` [' ',':'] then '_' else c) . courseTitle . entityVal
+    where tagOf = T.append "course-" . T.map (\c -> if c `elem` [' ',':'] then '_' else c) . courseTitle . entityVal
           mprobsOf course = readAssignmentTable <$> courseTextbookProblems course
           nopage = [whamlet|
                     <div.container>
@@ -275,7 +270,7 @@ getInstructorDownloadR ident coursetitle = do
 --  Message Types  --
 ---------------------
 
-data InstructorDelete = DeleteAssignment Text
+data InstructorDelete = DeleteAssignment AssignmentMetadataId
                       | DeleteProblems Text Int
                       | DeleteCourse Text
                       | DeleteDocument Text
@@ -290,23 +285,26 @@ instance FromJSON InstructorDelete
 --  Components  --
 ------------------
 
-uploadAssignmentForm classes = renderBootstrap3 BootstrapBasicForm $ (,,,,,)
-            <$> fileAFormReq (bfs ("Assignment" :: Text))
+uploadAssignmentForm classes docs = renderBootstrap3 BootstrapBasicForm $ (,,,,,)
+            <$> areq (selectFieldList docnames) (bfs ("Document" :: Text)) Nothing
             <*> areq (selectFieldList classnames) (bfs ("Class" :: Text)) Nothing
             <*> aopt (jqueryDayField def) (bfs ("Due Date"::Text)) Nothing
             <*> aopt timeFieldTypeTime (bfs ("Due Time"::Text)) Nothing
             <*> aopt textareaField (bfs ("Assignment Description"::Text)) Nothing
             <*> lift (liftIO getCurrentTime)
     where classnames = map (\theclass -> (courseTitle . entityVal $ theclass, theclass)) classes
+          docnames = map (\thedoc -> (documentFilename . entityVal $ thedoc, thedoc)) docs
 
 updateAssignmentForm = renderBootstrap3 BootstrapBasicForm $ (,,,,)
             <$> areq fileName "" Nothing
+            <*> areq courseName "" Nothing
             <*> aopt (jqueryDayField def) (bfs ("Due Date"::Text)) Nothing
             <*> aopt timeFieldTypeTime (bfs ("Due Time"::Text)) Nothing
             <*> aopt textareaField (bfs ("Assignment Description"::Text)) Nothing
-            <*> fileAFormOpt (bfs ("Replacement File" :: Text))
     where fileName :: (Monad m, RenderMessage (HandlerSite m) FormMessage) => Field m Text 
           fileName = hiddenField
+          courseName :: (Monad m, RenderMessage (HandlerSite m) FormMessage) => Field m Text 
+          courseName = hiddenField
 
 updateAssignmentModal form enc = [whamlet|
                     <div class="modal fade" id="updateAssignmentData" tabindex="-1" role="dialog" aria-labelledby="updateAssignmentDataLabel" aria-hidden="true">
@@ -421,6 +419,7 @@ classWidget ident classent = do
            mprobs = readAssignmentTable <$> courseTextbookProblems course :: Maybe (IntMap UTCTime)
        allUserData <- map entityVal <$> (runDB $ selectList [UserDataEnrolledIn ==. Just cid] [])
        asmd <- runDB $ selectList [AssignmentMetadataCourse ==. cid] []
+       asDocs <- mapM (runDB . get) (map (assignmentMetadataDocument . entityVal) asmd)
        let allUids = (map userDataUserId  allUserData)
        musers <- mapM (\x -> runDB (get x)) allUids
        let users = catMaybes musers
@@ -444,11 +443,11 @@ classWidget ident classent = do
                                         <td>Problem Set #{show set}
                                         <td>#{dateDisplay due course}
                                         ^{analyticsFor (Right (pack (show set))) allScores}
-                        $forall Entity k a <- asmd
+                        $forall (Entity k a, Just d) <- zip asmd asDocs
                             <tr>
                                 <td>
-                                    <a href=@{AssignmentR $ assignmentMetadataFilename a}>
-                                        #{assignmentMetadataFilename a}
+                                    <a href=@{AssignmentR $ documentFilename d}>
+                                        #{documentFilename d}
                                 $maybe due <- assignmentMetadataDuedate a
                                     <td>#{dateDisplay due course}
                                 $nothing

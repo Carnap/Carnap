@@ -199,6 +199,7 @@ tryDelete name = "tryDeleteRule(\"" <> name <> "\")"
 --XXX---should this just be in the hamlet?
 assignmentsOf cid textbookproblems = do
              asmd <- runDB $ selectList [AssignmentMetadataCourse ==. cid] []
+             asDocs <- mapM (runDB . get) (map (assignmentMetadataDocument . entityVal) asmd)
              Just course <- runDB $ get cid
              return $
                 [whamlet|
@@ -215,11 +216,11 @@ assignmentsOf cid textbookproblems = do
                                             Problem Set #{show num}
                                     <td>
                                         #{dateDisplay date course}
-                        $forall a <- map entityVal asmd
+                        $forall (Entity k a, Just d) <- zip asmd asDocs
                             <tr>
                                 <td>
-                                    <a href=@{AssignmentR $ assignmentMetadataFilename a}>
-                                        #{assignmentMetadataFilename a}
+                                    <a href=@{AssignmentR $ read $ show k}>
+                                        #{documentFilename d}
                                 $maybe due <- assignmentMetadataDuedate a
                                     <td>#{dateDisplay due course}
                                 $nothing

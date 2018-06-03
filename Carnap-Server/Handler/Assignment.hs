@@ -13,28 +13,34 @@ import Filter.Translate
 import Filter.TruthTables
 
 getAssignmentsR :: Handler Html
-getAssignmentsR = do adir <- assignmentDir
-                     adirContents <- lift $ getDirectoryContents adir
-                     muid <- maybeAuthId
+getAssignmentsR = do muid <- maybeAuthId
                      ud <- case muid of
                                  Nothing -> 
                                     do setMessage "you need to be logged in to access assignments"
                                        redirect HomeR
                                  Just uid -> checkUserData uid
-                     assignmentMD <- case userDataEnrolledIn ud of
-                                         Just cid -> runDB $ selectList [AssignmentMetadataCourse ==. cid] []
-                                         Nothing -> return []
+                     (course,cid) <- case userDataEnrolledIn ud of
+                                      Just cid -> do Just course <- runDB $ get cid
+                                                     return (course,cid)
+                                      Nothing -> do setMessage "you need to be enrolled in a course to access assignments"
+                                                    redirect HomeR
+                     Entity _ instructor <- udByInstructorId $ courseInstructor course
+                     Just instructorident <- getIdent (userDataUserId instructor)
+                     assignmentMD <- runDB $ selectList [AssignmentMetadataCourse ==. cid] []
+                     adir <- assignmentDir instructorident
+                     adirContents <- lift $ getDirectoryContents adir
+                     asDocs <- mapM (runDB . get) (map (assignmentMetadataDocument . entityVal) assignmentMD)
                      defaultLayout
                           [whamlet|
                               <div.container>
                                   <h1>Assignments
                                   <ul>
-                                      $forall a <- map entityVal assignmentMD
+                                      $forall (Entity _ a, Just d) <- zip assignmentMD asDocs
                                           <li>
                                             <div.assignment>
                                                 <p>
-                                                    <a href=@{AssignmentR $ assignmentMetadataFilename a}>
-                                                        #{assignmentMetadataFilename a}
+                                                    <a href=@{AssignmentR $ documentFilename d}>
+                                                        #{documentFilename d}
                                                 $maybe desc <- assignmentMetadataDescription a
                                                     <p> #{desc}
                                                 $nothing
@@ -42,32 +48,50 @@ getAssignmentsR = do adir <- assignmentDir
                           |]
 
 getAssignmentR :: Text -> Handler Html
-getAssignmentR t = do adir <- assignmentDir
-                      let path = (adir </> unpack t)
-                      exists <- lift $ doesFileExist path
-                      ment <- runDB $ getBy (UniqueAssignment t)
-                      if not exists 
-                        then defaultLayout $ layout ("assignment not found" :: Text)
-                        else case ment of
-                                 Nothing -> defaultLayout $ layout ("metadata for this assignment not found" :: Text)
-                                 Just (Entity key val) -> do 
-                                      ehtml <- lift $ fileToHtml path
-                                      case ehtml of
-                                          Left err -> defaultLayout $ layout (show err)
-                                          Right html -> do
-                                              defaultLayout $ do
-                                                  let source = "assignment:" ++ show (assignmentMetadataCourse val)
-                                                  toWidgetHead $(juliusFile "templates/command.julius")
-                                                  toWidgetHead [julius|var submission_source="#{rawJS source}";|]
-                                                  toWidgetHead [julius|var assignment_key="#{rawJS $ show key}";|]
-                                                  addScript $ StaticR js_popper_min_js
-                                                  addScript $ StaticR ghcjs_rts_js
-                                                  addScript $ StaticR ghcjs_allactions_lib_js
-                                                  addScript $ StaticR ghcjs_allactions_out_js
-                                                  addStylesheet $ StaticR css_tree_css
-                                                  addStylesheet $ StaticR css_exercises_css
-                                                  $(widgetFile "document")
-                                                  addScript $ StaticR ghcjs_allactions_runmain_js
+getAssignmentR filename = 
+                    do muid <- maybeAuthId
+                       ud <- case muid of
+                                     Nothing -> 
+                                        do setMessage "you need to be logged in to access assignments"
+                                           redirect HomeR
+                                     Just uid -> checkUserData uid
+                       (course,cid) <- case userDataEnrolledIn ud of
+                                        Just cid -> do Just course <- runDB $ get cid
+                                                       return (course,cid)
+                                        Nothing -> do setMessage "you need to be enrolled in a course to access assignments"
+                                                      redirect HomeR
+                       Entity _ instructor <- udByInstructorId $ courseInstructor course
+                       Just instructorident <- getIdent (userDataUserId instructor)
+                       mdoc <- runDB $ getBy (UniqueDocument filename (userDataUserId instructor))
+                       case mdoc of 
+                            Nothing -> defaultLayout $ layout ("document record not found" :: Text)
+                            Just (Entity docid doc)-> do
+                               adir <- assignmentDir instructorident
+                               let path = adir </> unpack filename
+                               exists <- lift $ doesFileExist path
+                               ment <- runDB $ getBy $ UniqueAssignment docid cid
+                               if not exists 
+                                 then defaultLayout $ layout ("file not found" :: Text)
+                                 else case ment of
+                                          Nothing -> defaultLayout $ layout ("assignment not found" :: Text)
+                                          Just (Entity key val) -> do 
+                                               ehtml <- lift $ fileToHtml path
+                                               case ehtml of
+                                                   Left err -> defaultLayout $ layout (show err)
+                                                   Right html -> do
+                                                       defaultLayout $ do
+                                                           let source = "assignment:" ++ show (assignmentMetadataCourse val)
+                                                           toWidgetHead $(juliusFile "templates/command.julius")
+                                                           toWidgetHead [julius|var submission_source="#{rawJS source}";|]
+                                                           toWidgetHead [julius|var assignment_key="#{rawJS $ show key}";|]
+                                                           addScript $ StaticR js_popper_min_js
+                                                           addScript $ StaticR ghcjs_rts_js
+                                                           addScript $ StaticR ghcjs_allactions_lib_js
+                                                           addScript $ StaticR ghcjs_allactions_out_js
+                                                           addStylesheet $ StaticR css_tree_css
+                                                           addStylesheet $ StaticR css_exercises_css
+                                                           $(widgetFile "document")
+                                                           addScript $ StaticR ghcjs_allactions_runmain_js
     where layout c = [whamlet|
                         <div.container>
                             <article>
@@ -81,6 +105,6 @@ fileToHtml path = do Markdown md <- markdownFromFile path
                                         return $ Right $ writePandocTrusted yesodDefaultWriterOptions pd'
                          Left e -> return $ Left e
     where allFilters = (makeSynCheckers . makeProofChecker . makeTranslate . makeTruthTables)
-                  
-assignmentDir = do master <- getYesod 
-                   return $ (appDataRoot $ appSettings master) </> "assignments"
+
+assignmentDir ident = do master <- getYesod
+                         return $ (appDataRoot $ appSettings master) </> "shared" </> unpack ident

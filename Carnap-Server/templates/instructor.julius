@@ -29,10 +29,11 @@ function tryDropStudent (json) {
         }
     }
 
-function modalEditAssignment (name) {
+function modalEditAssignment (name,course) {
     jQuery.noConflict()
     $("#updateAssignmentData").modal({show:true});
     $("#updateAssignment input[name=f1]").val(name);
+    $("#updateAssignment input[name=f2]").val(course);
 }
 
 function modalEditDocument (name) {
@@ -147,8 +148,8 @@ $("#updateAssignment").submit(function(e) {
         processData: false,
         contentType: false,
         success: function(data) {
-            var el = $("#assignment-" + $.escapeSelector(data[0]) + " td")[1]
-            el.innerHTML = data[1];
+            var el = $("#assignment-" + $.escapeSelector(data[0]) + "-" + $.escapeSelector(data[1]) + " td")[1]
+            el.innerHTML = data[2];
             $("#updateAssignmentData").modal('hide');
             },
         error: function(data) {

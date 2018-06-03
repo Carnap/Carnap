@@ -45,14 +45,20 @@ getProblemSets cid = do mcourse <- runDB $ get cid
                         return $ mcourse >>= courseTextbookProblems
 
 -- | classes by instructor Ident
-classesByInstructorIdent ident = do centlist <- runDB $ do muent <- getBy $ UniqueUser ident
-                                                           mudent <- case entityKey <$> muent of 
-                                                                          Just uid -> getBy $ UniqueUserData uid
-                                                                          Nothing -> return Nothing
-                                                           case (entityVal <$> mudent) >>= userDataInstructorId of
-                                                               Just instructordata -> selectList [CourseInstructor ==. instructordata ] []
-                                                               Nothing -> return []
-                                    return centlist
+classesByInstructorIdent ident = runDB $ do muent <- getBy $ UniqueUser ident
+                                            mudent <- case entityKey <$> muent of 
+                                                           Just uid -> getBy $ UniqueUserData uid
+                                                           Nothing -> return Nothing
+                                            case (entityVal <$> mudent) >>= userDataInstructorId of
+                                                Just instructordata -> selectList [CourseInstructor ==. instructordata ] []
+                                                Nothing -> return []
+                                 
+
+documentsByInstructorIdent ident = runDB $ do muent <- getBy $ UniqueUser ident
+                                              case entityKey <$> muent of
+                                                  Just uid -> selectList [DocumentCreator ==. uid] []
+                                                  Nothing -> return []
+                                   
 
 -- | derived rules by userId
 getDerivedRules uid = do savedRules <- runDB $ selectList 
@@ -67,6 +73,11 @@ instructorIdByIdent ident = runDB $ do muent <- getBy $ UniqueUser ident
                                                       Just uid -> getBy $ UniqueUserData uid
                                                       Nothing -> return Nothing
                                        return $ (entityVal <$> mudent) >>= userDataInstructorId
+
+-- | user data by InstructorId
+udByInstructorId id = do [uid] <- runDB $ selectList [UserDataInstructorId ==. Just id] []
+                         return uid
+
 
 data ProblemSource = CarnapTextbook
                    | CourseAssignment CourseId

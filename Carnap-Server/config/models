@@ -53,20 +53,21 @@ SavedDerivedRule
     UniqueDerivedRule name userId
 
 AssignmentMetadata
-    filename Text
+    document DocumentId
     description Text Maybe
     duedate UTCTime Maybe
     date UTCTime
     course CourseId
-    UniqueAssignment filename
+    UniqueAssignment document course
 
-SharedDocument
+Document
     filename Text
     date UTCTime
     creator UserId
     description Text Maybe
     scope SharingScope
-    UniqueSharedDocument filename creator
+    UniqueDocument filename creator
+    deriving Eq
 
 InstructorMetadata
 

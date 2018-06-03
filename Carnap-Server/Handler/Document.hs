@@ -13,19 +13,19 @@ import Filter.Translate
 import Filter.TruthTables
 
 getDocumentsR :: Handler Html
-getDocumentsR = do publicDocuments <- runDB $ selectList [SharedDocumentScope ==. Public] []
-                   pubidents <- mapM (getIdent . sharedDocumentCreator . entityVal) publicDocuments
-                   pubmd <- mapM (getUserMD . sharedDocumentCreator . entityVal) publicDocuments
+getDocumentsR = do publicDocuments <- runDB $ selectList [DocumentScope ==. Public] []
+                   pubidents <- mapM (getIdent . documentCreator . entityVal) publicDocuments
+                   pubmd <- mapM (getUserMD . documentCreator . entityVal) publicDocuments
                    muid <- maybeAuthId
                    case muid of
                        Just uid -> do 
                             maybeData <- runDB $ getBy $ UniqueUserData uid
                             case userDataInstructorId <$> entityVal <$> maybeData of 
                                Just id -> do
-                                    docs <- runDB $ selectList [SharedDocumentScope ==. InstructorsOnly] []
+                                    docs <- runDB $ selectList [DocumentScope ==. InstructorsOnly] []
                                     let privateDocuments = Just docs 
-                                    privmd <- mapM (getUserMD . sharedDocumentCreator . entityVal) docs
-                                    prividents <- mapM (getIdent . sharedDocumentCreator . entityVal) docs
+                                    privmd <- mapM (getUserMD . documentCreator . entityVal) docs
+                                    prividents <- mapM (getIdent . documentCreator . entityVal) docs
                                     defaultLayout $ do
                                         setTitle $ "Index of Documents"
                                         $(widgetFile "documentIndex")
@@ -45,20 +45,20 @@ getDocumentsR = do publicDocuments <- runDB $ selectList [SharedDocumentScope ==
             $maybe md <- mmd
                 <div.card>
                     <div.card-header>
-                        <a href=@{DocumentR ident (sharedDocumentFilename doc)}>
-                            #{sharedDocumentFilename doc}
+                        <a href=@{DocumentR ident (documentFilename doc)}>
+                            #{documentFilename doc}
                     <div.card-block>
                         <dl.row>
                             <dt.col-sm-3> Title
-                            <dd.col-sm-9> #{sharedDocumentFilename doc}
-                            $maybe desc <- sharedDocumentDescription doc
+                            <dd.col-sm-9> #{documentFilename doc}
+                            $maybe desc <- documentDescription doc
                                 <dt.col-sm-3> Description
                                 <dd.col-sm-9> #{desc}
                             <dt.col-sm-3> Creator
                             <dd.col-sm-9> #{userDataFirstName md} #{userDataLastName md}
                             <dt.col-sm-3> Created on
-                            <dd.col-sm-9> #{show $ sharedDocumentDate doc}
-                        <button.btn.btn-sm.btn-secondary type="button" onclick="window.open('@{DocumentDownloadR ident (sharedDocumentFilename doc)}')">
+                            <dd.col-sm-9> #{show $ documentDate doc}
+                        <button.btn.btn-sm.btn-secondary type="button" onclick="window.open('@{DocumentDownloadR ident (documentFilename doc)}')">
                             <i.fa.fa-cloud-download>
 
     |]
@@ -73,11 +73,11 @@ getDocumentR ident title = do userdir <- getUserDir ident
                                   _ | not exists -> defaultLayout $ layout ("shared file for this document not found" :: Text)
                                   Nothing -> defaultLayout $ layout ("document creator not found" :: Text)
                                   Just (Entity uid _) -> do
-                                      mdoc <- runDB $ getBy (UniqueSharedDocument title uid)
+                                      mdoc <- runDB $ getBy (UniqueDocument title uid)
                                       case mdoc of
                                           Nothing -> defaultLayout $ layout ("metadata for this document not found" :: Text)
                                           Just (Entity key doc) -> do
-                                              case sharedDocumentScope doc of 
+                                              case documentScope doc of 
                                                 Private -> defaultLayout $ layout ("shared file for this document not found" :: Text)
                                                 _ -> do
                                                   ehtml <- lift $ fileToHtml path
@@ -111,17 +111,17 @@ getDocumentDownloadR ident title = do userdir <- getUserDir ident
                                           _ | not exists -> notFound
                                           Nothing -> notFound
                                           Just (Entity uid _) -> do
-                                              mdoc <- runDB $ getBy (UniqueSharedDocument title uid)
+                                              mdoc <- runDB $ getBy (UniqueDocument title uid)
                                               case mdoc of
                                                   Nothing -> notFound
                                                   Just (Entity key doc) -> do
-                                                      case sharedDocumentScope doc of 
+                                                      case documentScope doc of 
                                                         Private -> notFound
                                                         _ -> do
                                                           addHeader "Content-Disposition" $ concat
                                                             [ "attachment;"
                                                             , "filename=\""
-                                                            , sharedDocumentFilename doc
+                                                            , documentFilename doc
                                                             , "\""
                                                             ]
                                                           sendFile typeOctet path
