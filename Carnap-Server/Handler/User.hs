@@ -43,7 +43,6 @@ postUserR ident = do
                                     return ()
             redirect (UserR ident)--XXX: redirect here to make sure changes are visually reflected
 
-
 deleteUserR :: Text -> Handler Value
 deleteUserR ident = do
     msg <- requireJsonBody :: Handler Text
@@ -219,7 +218,7 @@ assignmentsOf cid textbookproblems = do
                         $forall (Entity k a, Just d) <- zip asmd asDocs
                             <tr>
                                 <td>
-                                    <a href=@{AssignmentR $ read $ show k}>
+                                    <a href=@{AssignmentR $ documentFilename d}>
                                         #{documentFilename d}
                                 $maybe due <- assignmentMetadataDuedate a
                                     <td>#{dateDisplay due course}
