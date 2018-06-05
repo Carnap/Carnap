@@ -592,6 +592,26 @@ class (Typeable c, Typeable b, PrismLink (FixLang lex) (Predicate (Accessor b c)
 instance {-#OVERLAPPABLE#-} PrismAccessor lex c b => AccessorLanguage (FixLang lex (Form b)) (FixLang lex (Term c)) where
         accesses = curry $ review (binaryOpPrism _access)
 
+class SeperatingLang l t where
+        separate :: String -> t -> (t -> l) -> t
+
+class (Typeable b, Typeable c, PrismLink (FixLang lex) (Separation b c (FixLang lex))) 
+        => PrismSeparating lex b c | lex -> b c where
+
+        _separator :: Prism' (FixLang lex (Term b -> (Term b -> Form c) -> Term b)) String
+        _separator = link_separator . separator
+
+        link_separator :: Prism' (FixLang lex (Term b -> (Term b -> Form c) -> Term b)) 
+                               (Separation b c (FixLang lex) (Term b -> (Term b -> Form c) -> Term b))
+        link_separator = link 
+
+        separator :: Prism' (Separation b c (FixLang lex) (Term b -> (Term b -> Form c) -> Term b)) String
+        separator = prism' Separation (\(Separation s) -> Just s)
+
+instance {-#OVERLAPPABLE#-} 
+        (PrismSeparating lex b c) => SeperatingLang (FixLang lex (Form c)) (FixLang lex (Term b))  where
+       separate s t f = (curry (review $ binaryOpPrism (_separator . only s))) t (LLam f)
+
 --------------------------------------------------------
 --2. Utility Classes
 --------------------------------------------------------

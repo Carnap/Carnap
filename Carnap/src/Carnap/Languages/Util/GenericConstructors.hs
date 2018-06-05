@@ -369,21 +369,6 @@ instance MaybeStaticVar (IntIndex b)
 
 instance FirstOrderLex (IntIndex b)
 
-data Separation b c a where
-        Separation :: String -> Separation b c (Term b -> (Term b -> Form a) -> Term b)
-
-instance Schematizable (Separation b c) where
-        schematize (Separation v) (t:f:xs) = concat ["{",v,"∈",t,"|",f,"}"]
-        schematize (Separation v) _ = "{|}"
-
-instance UniformlyEq (Separation b c) where
-        _ =* _ = True
-
-instance Monad m => MaybeMonadVar (Separation b c) m
-
-instance MaybeStaticVar (Separation b c)
-
-instance FirstOrderLex (Separation b c)
 
 ----------------------
 --  6. Quantifiers  --
@@ -453,3 +438,19 @@ instance Monad m => MaybeMonadVar (Accessor c b) m
 instance MaybeStaticVar (Accessor c b)
 
 instance FirstOrderLex (Accessor c b)
+
+data Separation b c :: (* -> *) -> * -> * where
+        Separation :: String -> Separation b c lang (Term b -> (Term b -> Form c) -> Term b)
+
+instance Schematizable (Separation b c lang) where
+        schematize (Separation v) (t:f:xs) = concat ["{",v,"∈",t,"|",f,"}"]
+        schematize (Separation v) _ = "{|}"
+
+instance UniformlyEq (Separation b c lang) where
+        _ =* _ = True
+
+instance Monad m => MaybeMonadVar (Separation b c lang) m
+
+instance MaybeStaticVar (Separation b c lang)
+
+instance FirstOrderLex (Separation b c lang)
