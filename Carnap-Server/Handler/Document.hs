@@ -78,29 +78,34 @@ getDocumentR ident title = do userdir <- getUserDir ident
                                           Nothing -> defaultLayout $ layout ("metadata for this document not found" :: Text)
                                           Just (Entity key doc) -> do
                                               case documentScope doc of 
-                                                Private -> defaultLayout $ layout ("shared file for this document not found" :: Text)
-                                                _ -> do
-                                                  ehtml <- lift $ fileToHtml path
-                                                  case ehtml of
-                                                      Left err -> defaultLayout $ layout (show err)
-                                                      Right html -> do
-                                                          defaultLayout $ do
-                                                              toWidgetHead $(juliusFile "templates/command.julius")
-                                                              addScript $ StaticR js_popper_min_js
-                                                              addScript $ StaticR ghcjs_rts_js
-                                                              addScript $ StaticR ghcjs_allactions_lib_js
-                                                              addScript $ StaticR ghcjs_allactions_out_js
-                                                              addStylesheet $ StaticR css_exercises_css
-                                                              addStylesheet $ StaticR css_tree_css
-                                                              addStylesheet $ StaticR css_exercises_css
-                                                              $(widgetFile "document")
-                                                              addScript $ StaticR ghcjs_allactions_runmain_js
+                                                Private -> do
+                                                  muid <- maybeAuthId
+                                                  case muid of
+                                                      Just uid' | uid == uid' -> returnFile path
+                                                      _ -> defaultLayout $ layout ("shared file for this document not found" :: Text)
+                                                _ -> returnFile path
 
     where layout c = [whamlet|
                         <div.container>
                             <article>
                                 #{c}
                         |]
+          returnFile path = do
+              ehtml <- lift $ fileToHtml path
+              case ehtml of
+                  Left err -> defaultLayout $ layout (show err)
+                  Right html -> do
+                      defaultLayout $ do
+                          toWidgetHead $(juliusFile "templates/command.julius")
+                          addScript $ StaticR js_popper_min_js
+                          addScript $ StaticR ghcjs_rts_js
+                          addScript $ StaticR ghcjs_allactions_lib_js
+                          addScript $ StaticR ghcjs_allactions_out_js
+                          addStylesheet $ StaticR css_exercises_css
+                          addStylesheet $ StaticR css_tree_css
+                          addStylesheet $ StaticR css_exercises_css
+                          $(widgetFile "document")
+                          addScript $ StaticR ghcjs_allactions_runmain_js
 
 getDocumentDownloadR :: Text -> Text -> Handler TypedContent
 getDocumentDownloadR ident title = do userdir <- getUserDir ident 
