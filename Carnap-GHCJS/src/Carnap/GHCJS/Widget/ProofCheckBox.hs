@@ -15,7 +15,7 @@ import GHCJS.DOM.Types
 import GHCJS.DOM.Element (setAttribute, getAttribute, getInnerHTML, setInnerHTML,keyDown,keyUp,click,getScrollWidth,getScrollHeight)
 import GHCJS.DOM.Document (createElement, getDefaultView, getBody, getHead, getDomain, setDomain,getElementsByTagName)
 import GHCJS.DOM.Window (open,getDocument)
-import GHCJS.DOM.Node (appendChild, getParentNode, cloneNode)
+import GHCJS.DOM.Node (appendChild, removeChild, getParentNode, cloneNode)
 import GHCJS.DOM.EventM (EventM, target, newListener,addListener)
 import GHCJS.DOM.HTMLTextAreaElement (castToHTMLTextAreaElement,setValue,getValue,setSelectionEnd,getSelectionStart)
 
@@ -99,7 +99,9 @@ checkerWith options updateres iog@(IOGoal i o g content _) w = do
                thepopout <- newListener $ liftIO $ popoutWith options updateres iog w
                addListener btpop click thepopout False
            lineupd <- newListener $ updateLines w nd (indentGuides options)
+           clearThePoppers <- newListener $ clearPoppers aligner
            addListener i keyUp lineupd False
+           addListener i keyUp clearThePoppers False
            mv <- getValue (castToHTMLTextAreaElement i)
            case mv of
                Nothing -> setLinesTo w nd (indentGuides options) [" "]
@@ -161,6 +163,10 @@ resize i = do setAttribute i "style" "width: 0px;height: 0px"
               setAttribute (castToHTMLElement gpar) 
                     "style" ("width:" ++ (show $ max 400 (w + 50)) ++ "px;" ++ 
                     "height:" ++ (show $ max 120 (h + 20)) ++ "px;")
+
+clearPoppers :: (IsElement e, MonadIO m) => e -> m ()
+clearPoppers target = do mpoppers <- liftIO $ getListOfElementsByClass target "popperWrapper"
+                         mapM_ (liftIO . removeChild target) mpoppers
 
 setLinesTo :: (IsElement e) => Document -> e -> Bool -> [String] -> IO ()
 setLinesTo w nd hasguides [] = setLinesTo w nd hasguides [""]
