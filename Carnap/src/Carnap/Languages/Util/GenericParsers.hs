@@ -110,6 +110,22 @@ subsetParser :: (SubsetLanguage lang arg ret , Monad m) => ParsecT String u m (l
 subsetParser parseTerm = binaryInfixOpParser ops parseTerm
     where ops = map (>> return within) [string "⊆", string "<(", string "<s", string "within"]
 
+separationParser :: 
+    (SeparatingLang (FixLang lex f) (FixLang lex t)
+    , BoundVars lex
+    , Show (FixLang lex t)
+    , Monad m
+    ) => ParsecT String u m (FixLang lex t) -> ParsecT String u m (FixLang lex t) -> ParsecT String u m (FixLang lex f) -> ParsecT String u m (FixLang lex t)
+separationParser parseFreeVar parseTerm formulaParser = 
+        do v <- char '{' *> spaces *> parseFreeVar <* spaces
+           listToTry [string "∈", string "<<", string "<e", string "in"]
+           t <- spaces *> parseTerm <* spaces
+           char '|' <|> char ':'
+           f <- spaces *> formulaParser <* spaces <* char '}'
+           let bf x = subBoundVar v x f
+               --partially applied, returning a function
+           return $ separate (show v) t bf
+
 --TODO: This would need an optional "^m" following P, if we're going to
 --achive read . show = id; the code overlap with the next function could be
 --significantly reduced.

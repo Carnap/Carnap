@@ -482,9 +482,6 @@ instance {-#OVERLAPPABLE#-} PrismElementarySetsLex lex b => ElementarySetsLangua
         setUnion = curry $ review (binaryOpPrism _setUnion)
         setComplement = curry $ review (binaryOpPrism _setComplement)
 
-class SeparationLanguage t f where
-        separation :: String -> t -> (t -> f) -> t
-
 --------------------------------------------------------
 --1.4. Quantifiers
 --------------------------------------------------------
@@ -592,7 +589,7 @@ class (Typeable c, Typeable b, PrismLink (FixLang lex) (Predicate (Accessor b c)
 instance {-#OVERLAPPABLE#-} PrismAccessor lex c b => AccessorLanguage (FixLang lex (Form b)) (FixLang lex (Term c)) where
         accesses = curry $ review (binaryOpPrism _access)
 
-class SeperatingLang l t where
+class SeparatingLang l t where
         separate :: String -> t -> (t -> l) -> t
 
 class (Typeable b, Typeable c, PrismLink (FixLang lex) (Separation b c (FixLang lex))) 
@@ -609,7 +606,7 @@ class (Typeable b, Typeable c, PrismLink (FixLang lex) (Separation b c (FixLang 
         separator = prism' Separation (\(Separation s) -> Just s)
 
 instance {-#OVERLAPPABLE#-} 
-        (PrismSeparating lex b c) => SeperatingLang (FixLang lex (Form c)) (FixLang lex (Term b))  where
+        (PrismSeparating lex b c) => SeparatingLang (FixLang lex (Form c)) (FixLang lex (Term b))  where
        separate s t f = (curry (review $ binaryOpPrism (_separator . only s))) t (LLam f)
 
 --------------------------------------------------------
