@@ -44,10 +44,10 @@ instance CopulaSchema MSOLSequentCalc where
         schematize (All x) (show (f $ seqv x) : e)
     appSchema (SeqQuant (Some x)) (LLam f) e = 
         schematize (Some x) (show (f $ seqv x) : e)
-    appSchema (SeqSOMQuant (SOAll x)) (LLam f) e = 
-        schematize (SOAll x) (show (f $ seqsomv x) : e)
-    appSchema (SeqSOMQuant (SOSome x)) (LLam f) e = 
-        schematize (SOSome x) (show (f $ seqsomv x) : e)
+    appSchema (SeqSOMQuant (Some x)) (LLam f) e = 
+        schematize (All x) (show (f $ seqsomv x) : e)
+    appSchema (SeqSOMQuant (Some x)) (LLam f) e = 
+        schematize (Some x) (show (f $ seqsomv x) : e)
     appSchema (SeqAbst (SOLam v)) (LLam f) e = 
         schematize (SOLam v) (show (f $ seqv v) : e)
     appSchema x y e = schematize x (show y : e)
@@ -143,14 +143,14 @@ monadicAbstraction = [ GammaV 1 :|-: ss (predScheme 0)]
 monadicApplication = [ GammaV 1 :|-: ss (SOMApp SOApp :!$: (SOAbstract (SOLam "v") (\x -> SOPhi 1 AOne AOne :!$: x)) :!$: SOT 0)] 
                      ∴ GammaV 1 :|-: ss (predScheme 0)
 
-monadicUniversalInstantiation = [ GammaV 1 :|-: ss (SOMBind (SOAll "v") (\x -> SOMCtx 1 :!$: x))] 
+monadicUniversalInstantiation = [ GammaV 1 :|-: ss (lall "v" (\x -> SOMCtx 1 :!$: x))] 
                                 ∴ GammaV 1 :|-: ss (SOMCtx 1 :!$: SOMScheme 1)
 
 monadicExistentialGeneralization = [ GammaV 1 :|-: ss (SOMCtx 1 :!$: SOMScheme 1)] 
-                                   ∴ GammaV 1 :|-: ss (SOMBind (SOSome "v") (\x -> SOMCtx 1 :!$: x))
+                                   ∴ GammaV 1 :|-: ss (lsome "v" (\x -> SOMCtx 1 :!$: x))
 
 monadicUniversalDerivation = [ GammaV 1 :|-: ss (SOMCtx 1 :!$: SOMScheme 1)] 
-                             ∴ GammaV 1 :|-: ss (SOMBind (SOAll "v") (\x -> SOMCtx 1 :!$: x))
+                             ∴ GammaV 1 :|-: ss (lall "v" (\x -> SOMCtx 1 :!$: x))
 
 ---------------------
 --  1.3.2 Polyadic --
@@ -182,10 +182,10 @@ polyadicExistentialGeneralization n = [ GammaV 1 :|-: ss' (schematicContextSchem
 
 monadicExistentialDerivation = [
                                     [ GammaV 1 :+: sa (SOMCtx 1 :!$: SOMScheme 1) :|-: ss phiS
-                                    , GammaV 2 :|-: ss (SOMBind (SOSome "v") (\x -> SOMCtx 1 :!$: x))
+                                    , GammaV 2 :|-: ss (lsome "v" (\x -> SOMCtx 1 :!$: x))
                                     ] ∴ GammaV 1 :+: GammaV 2 :|-: ss phiS
                                ,    [ GammaV 1 :|-: ss phiS
-                                    , GammaV 2 :|-: ss (SOMBind (SOSome "v") (\x -> SOMCtx 1 :!$: x))
+                                    , GammaV 2 :|-: ss (lsome "v" (\x -> SOMCtx 1 :!$: x))
                                     ] ∴ GammaV 1 :+: GammaV 2 :|-: ss phiS
                                ]
                                

@@ -106,27 +106,11 @@ instance MaybeStaticVar MonadicSOCtx
 instance FirstOrderLex MonadicSOCtx where
         isVarLex _ = True
 
-data MonadicSOQuant a where
-        SOAll :: String -> 
-            MonadicSOQuant ((Form (Int -> Bool) -> Form Bool) -> Form Bool)
-        SOSome :: String -> 
-            MonadicSOQuant ((Form (Int -> Bool) -> Form Bool) -> Form Bool)
+type MonadicSOQuant = GenericQuant Form Form Bool (Int -> Bool)
 
-instance Schematizable MonadicSOQuant where
-        schematize (SOAll v)  = \(x:_) -> "∀" ++ v ++ x 
-        schematize (SOSome v) = \(x:_) -> "∃" ++ v ++ x 
-
-instance UniformlyEq MonadicSOQuant where
-        (SOAll _) =* (SOAll _) = True
-        (SOSome _) =* (SOSome _) = True
-        _ =* _ = False
-
-instance Monad m => MaybeMonadVar MonadicSOQuant m
-
-instance MaybeStaticVar MonadicSOQuant
-
-instance FirstOrderLex MonadicSOQuant
-
+instance QuantLanguage (MonadicallySOL (Form Bool)) (MonadicallySOL (Form (Int -> Bool))) where
+    lall  v f = SOMQuant (All v) :!$: LLam f
+    lsome  v f = SOMQuant (Some v) :!$: LLam f
 
 -------------------------
 --  1.2 Polyadic Data  --
@@ -253,8 +237,8 @@ instance CopulaSchema MonadicallySOL where
 
     appSchema (SOQuant (All x)) (LLam f) e = schematize (All x) (show (f $ SOV x) : e)
     appSchema (SOQuant (Some x)) (LLam f) e = schematize (Some x) (show (f $ SOV x) : e)
-    appSchema (SOMQuant (SOAll x)) (LLam f) e = schematize (SOAll x) (show (f $ SOMVar x) : e)
-    appSchema (SOMQuant (SOSome x)) (LLam f) e = schematize (SOSome x) (show (f $ SOMVar x) : e)
+    appSchema (SOMQuant (All x)) (LLam f) e = schematize (All x) (show (f $ SOMVar x) : e)
+    appSchema (SOMQuant (Some x)) (LLam f) e = schematize (Some x) (show (f $ SOMVar x) : e)
     appSchema (SOMAbs (SOLam v)) (LLam f) e = schematize (SOLam v) (show (f $ SOV v) : e)
     appSchema x y e = schematize x (show y : e)
 
@@ -289,10 +273,7 @@ instance PrismPolyadicSchematicFunction MonadicallySOLLex Int Int
 instance PrismTermEquality MonadicallySOLLex Int Bool
 instance PrismBooleanConnLex MonadicallySOLLex Bool
 instance PrismStandardQuant MonadicallySOLLex Bool Int
-
-instance QuantLanguage (MonadicallySOL (Form Bool)) (MonadicallySOL (Form (Int -> Bool))) where
-    lall  v f = SOMQuant (SOAll v) :!$: LLam f
-    lsome  v f = SOMQuant (SOSome v) :!$: LLam f
+instance PrismStandardQuant MonadicallySOLLex (Int -> Bool) Int
 
 --------------------------------------------------------
 --  2.2 Polyadic SOL

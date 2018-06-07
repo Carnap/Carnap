@@ -55,12 +55,12 @@ instance Inference MSOLogic MonadicallySOLLex (Form Bool) where
         restriction (PR prems) = Just (premConstraint prems)
         restriction SOUD       = Just (sopredicateEigenConstraint 
                                           (liftToSequent $ SOMScheme 1) 
-                                          (ss (SOMBind (SOAll "v") (\x -> SOMCtx 1 :!$: x)))  
+                                          (ss (lall "v" (\x -> SOMCtx 1 :!$: x)))  
                                           (somgamma 1))
 
         restriction SOED1      = Just (sopredicateEigenConstraint
                                           (liftToSequent $ SOMScheme 1)
-                                          (ss (SOMBind (SOSome "v") (\x -> SOMCtx 1 :!$: x))
+                                          (ss (lsome "v" (\x -> SOMCtx 1 :!$: x))
                                               :-: ss phiS)
                                           (somgamma 1 :+: somgamma 2))
         restriction (FO UD)    = Just (eigenConstraint stau 
