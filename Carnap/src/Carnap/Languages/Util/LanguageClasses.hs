@@ -1,4 +1,4 @@
-{-#LANGUAGE MultiParamTypeClasses, DataKinds, UndecidableInstances, FunctionalDependencies, RankNTypes, FlexibleContexts, FlexibleInstances, TypeSynonymInstances, TypeOperators, GADTs, ScopedTypeVariables #-}
+{-#LANGUAGE MultiParamTypeClasses, ConstraintKinds, DataKinds, UndecidableInstances, FunctionalDependencies, RankNTypes, FlexibleContexts, FlexibleInstances, TypeSynonymInstances, TypeOperators, GADTs, ScopedTypeVariables #-}
 module Carnap.Languages.Util.LanguageClasses where
 
 import Carnap.Core.Data.AbstractSyntaxDataTypes
@@ -490,30 +490,32 @@ class QuantLanguage l t where
         lall  :: String -> (t -> l) -> l
         lsome :: String -> (t -> l) -> l
 
+type PrismStandardQuant lex = PrismGenericQuant lex Term Form
+
 instance {-#OVERLAPPABLE#-} 
-        (PrismStandardQuant lex b c) => QuantLanguage (FixLang lex (Form b)) (FixLang lex (Term c)) where
+        (PrismGenericQuant lex f g b c) => QuantLanguage (FixLang lex (g b)) (FixLang lex (f c)) where
         lall s = review (unaryOpPrism (_all . only s)) . LLam 
         lsome s = review (unaryOpPrism (_some . only s)) . LLam
 
-class (Typeable b, Typeable c, PrismLink (FixLang lex) (Quantifiers (StandardQuant b c) (FixLang lex))) 
-        => PrismStandardQuant lex b c where
+class (Typeable b, Typeable c, Typeable f, Typeable g, PrismLink (FixLang lex) (Quantifiers (GenericQuant f g b c) (FixLang lex))) 
+        => PrismGenericQuant lex f g b c where
 
-        _all :: Prism' (FixLang lex ((Term c -> Form b) -> Form b)) String
+        _all :: Prism' (FixLang lex ((f c -> g b) -> g b)) String
         _all = link_standardQuant . qall
 
-        _some :: Prism' (FixLang lex ((Term c -> Form b) -> Form b)) String
+        _some :: Prism' (FixLang lex ((f c -> g b) -> g b)) String
         _some = link_standardQuant . qsome
 
-        link_standardQuant :: Prism' (FixLang lex ((Term c -> Form b) -> Form b)) 
-                               (Quantifiers (StandardQuant b c) (FixLang lex) ((Term c -> Form b) -> Form b))
+        link_standardQuant :: Prism' (FixLang lex ((f c -> g b) -> g b)) 
+                               (Quantifiers (GenericQuant f g b c) (FixLang lex) ((f c -> g b) -> g b))
         link_standardQuant = link 
 
-        qall :: Prism' (Quantifiers (StandardQuant b c) (FixLang lex) ((Term c -> Form b) -> Form b)) String
+        qall :: Prism' (Quantifiers (GenericQuant f g b c) (FixLang lex) ((f c -> g b) -> g b)) String
         qall = prism' (\s -> Bind (All s))
                       (\x -> case x of (Bind (All s)) -> Just s
                                        _ -> Nothing)
 
-        qsome :: Prism' (Quantifiers (StandardQuant b c) (FixLang lex) ((Term c -> Form b) -> Form b)) String
+        qsome :: Prism' (Quantifiers (GenericQuant f g b c) (FixLang lex) ((f c -> g b) -> g b)) String
         qsome = prism' (\s -> Bind (Some s))
                        (\x -> case x of (Bind (Some s)) -> Just s
                                         _ -> Nothing)

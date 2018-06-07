@@ -273,7 +273,7 @@ instance PrismPolyadicSchematicFunction MonadicallySOLLex Int Int
 instance PrismTermEquality MonadicallySOLLex Int Bool
 instance PrismBooleanConnLex MonadicallySOLLex Bool
 instance PrismStandardQuant MonadicallySOLLex Bool Int
-instance PrismStandardQuant MonadicallySOLLex (Int -> Bool) Int
+instance PrismGenericQuant MonadicallySOLLex Form Form (Int -> Bool) Int
 
 --------------------------------------------------------
 --  2.2 Polyadic SOL
