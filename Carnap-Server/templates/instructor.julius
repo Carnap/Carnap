@@ -1,9 +1,8 @@
 $("textarea").addClass("form-control")
 
-function tryDeleteAssignment (json) {
-    var fn = JSON.parse(json).contents;
-    if (confirm("Are you sure you want to permanently delete the assignment " + fn + ", and all submitted problems from this assignment?")) {
-        deleteAssignment(json,fn);
+function tryDeleteAssignment (json,fn,ct) {
+    if (confirm("Are you sure you want to delete the assignment " + fn + ", and all submitted problems from this assignment?")) {
+        deleteAssignment(json,fn,ct);
         }
     }
 
@@ -48,14 +47,14 @@ function modalEditCourse (name) {
     $("#updateCourse input[name=f1]").val(name);
 }
 
-function deleteAssignment (json,fn) {
+function deleteAssignment (json,fn,ct) {
     jQuery.ajax({
         url: '@{InstructorR ident}',
         type: 'DELETE',
         contentType: "application/json",
         data: json,
         success: function(data) {
-            var el = $("#assignment-" + $.escapeSelector(fn));
+            var el = $("#assignment-" + $.escapeSelector(ct) + "-" + $.escapeSelector(fn));
             el.remove();
             window.alert("Deleted the assignment " + fn);
             },

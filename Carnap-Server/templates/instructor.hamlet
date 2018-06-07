@@ -39,7 +39,7 @@
                     <form method=post enctype=#{enctypeSetBookAssignment}>
                         ^{setBookAssignmentWidget}
                         <div.form-group>
-                            <input.btn.btn-primary  type=submit value="assign">
+                            <input.btn.btn-primary  type=submit value="Assign">
                     <h2>Manage Problem Sets
                     <table class="table">
                         <thead>
@@ -60,10 +60,10 @@
 
                 <div.tab-pane id="assignFromDocument" role="tabpanel">
                     <h2> Assign Document
-                    <form method=post enctype=#{enctypeUploadAssignment}>
-                        ^{uploadAssignmentWidget}
+                    <form method=post enctype=#{enctypeCreateAssignment}>
+                        ^{createAssignmentWidget}
                         <div.form-group>
-                            <input.btn.btn-primary  type=submit value="upload">
+                            <input.btn.btn-primary  type=submit value="Assign">
                     <h2> Edit Assignments
                     <table class="table">
                         <thead>
@@ -85,7 +85,7 @@
                                     <td>#{show $ assignmentMetadataDate a}
                                     <td>#{courseTitle c}
                                     <td>
-                                        <button.btn.btn-sm.btn-secondary type="button" onclick="tryDeleteAssignment('#{decodeUtf8 $ encode $ DeleteAssignment k}')">
+                                        <button.btn.btn-sm.btn-secondary type="button" onclick="tryDeleteAssignment('#{decodeUtf8 $ encode $ DeleteAssignment k}','#{documentFilename d}','#{courseTitle c}')">
                                             <i.fa.fa-trash-o>
                                         <button.btn.btn-sm.btn-secondary type="button"  onclick="modalEditAssignment('#{documentFilename d}','#{courseTitle c}')">
                                             <i.fa.fa-pencil>
@@ -95,7 +95,7 @@
                     <form method=post enctype=#{enctypeShareDocument}>
                         ^{uploadDocumentWidget}
                         <div.form-group>
-                            <input.btn.btn-primary  type=submit value="upload">
+                            <input.btn.btn-primary  type=submit value="Upload">
                     <h2> Edit Uploaded Documents
                     <table class="table">
                         <thead>
@@ -120,4 +120,4 @@
                     <form method=post enctype=#{enctypeCreateCourse}>
                         ^{createCourseWidget}
                         <div.form-group>
-                            <input.btn.btn-primary type=submit onclick="return confirm('definitely create a new course?')" value="create">
+                            <input.btn.btn-primary type=submit onclick="return confirm('definitely create a new course?')" value="Create">
