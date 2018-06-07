@@ -107,4 +107,4 @@ fileToHtml path = do Markdown md <- markdownFromFile path
     where allFilters = (makeSynCheckers . makeProofChecker . makeTranslate . makeTruthTables)
 
 assignmentDir ident = do master <- getYesod
-                         return $ (appDataRoot $ appSettings master) </> "shared" </> unpack ident
+                         return $ (appDataRoot $ appSettings master) </> "documents" </> unpack ident

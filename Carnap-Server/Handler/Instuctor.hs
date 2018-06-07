@@ -72,7 +72,7 @@ putInstructorR ident = do
                                                            [ DocumentDescription =. (Just $ unTextarea desc) ])
                                                           maybeDo mscope (\scope -> update k'
                                                            [ DocumentScope =. scope ])
-                                               maybeDo mfile (saveTo ("shared" </> unpack ident) $ unpack filename)
+                                               maybeDo mfile (saveTo ("documents" </> unpack ident) $ unpack filename)
                                                returnJson ("updated!"::Text)
                                          Nothing -> returnJson ("could not find document!"::Text)
                                  Nothing -> returnJson ("could not find user id!"::Text)
@@ -129,8 +129,8 @@ deleteInstructorR ident = do
                                          case mk of
                                              Just (Entity k v) -> 
                                                 do deleteCascade k
-                                                   liftIO $ do fe <- doesFileExist (datadir </> "shared" </> unpack ident </> unpack fn) 
-                                                               if fe then removeFile (datadir </> "shared" </> unpack ident </> unpack fn)
+                                                   liftIO $ do fe <- doesFileExist (datadir </> "documents" </> unpack ident </> unpack fn) 
+                                                               if fe then removeFile (datadir </> "documents" </> unpack ident </> unpack fn)
                                                                      else return ()
                                                    return True
                                              Nothing -> return False
@@ -176,7 +176,7 @@ postInstructorR ident = do
                    info = unTextarea <$> docdesc
                    (Just uid) = musr -- FIXME: catch Nothing here
                success <- tryInsert $ Document fn subtime (entityKey uid) info sharescope
-               if success then saveTo ("shared" </> unpack ident) (unpack fn) file 
+               if success then saveTo ("documents" </> unpack ident) (unpack fn) file 
                           else setMessage "You already have a shared document with this name."
         (FormFailure s) -> setMessage $ "Something went wrong: " ++ toMarkup (show s)
         FormMissing -> return ()
