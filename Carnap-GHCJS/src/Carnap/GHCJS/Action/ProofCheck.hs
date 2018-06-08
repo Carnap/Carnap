@@ -282,7 +282,18 @@ configFrom rules prems = RuntimeNaturalDeductionConfig (M.fromList . map (\(x,y)
 
 wrap fd w elt (Right s)                  = popUpWith fd w elt "+" (show s) Nothing
 wrap fd w elt (Left (GenericError s n))  = popUpWith fd w elt "?" ("Error on line " ++ show n ++ ": " ++ s) Nothing
-wrap fd w elt (Left (NoParse e n))       = popUpWith fd w elt "⚠" ("Can't read line " ++ show n ++ ". There may be a typo.") (Just $ show e)
+wrap fd w elt (Left (NoParse e n))       = popUpWith fd w elt "⚠" ("Can't read line " ++ show n ++ ". There may be a typo.") (Just . cleanIt . show $ e)
+    where chunks s = case break (== '\"') s of 
+                            (l,[]) -> l:[]
+                            (l,_:s') -> l:chunks s'
+          cleanChunk c = case (readMaybe $ "\"" ++ c ++ "\"") :: Maybe String of 
+                            Just s -> s
+                            Nothing -> c
+          cleanIt = concat . map cleanChunk . chunks 
+
+          readMaybe s = case reads s of
+                          [(x, "")] -> Just x
+                          _ -> Nothing
 wrap fd w elt (Left (NoUnify eqs n))     = popUpWith fd w elt "✗" ("Error on line " ++ show n ++ ". Can't match these premises with this conclusion, using this rule.") (Just $ toUniErr eqs)
 wrap fd w elt (Left (NoResult _))        = setInnerHTML elt (Just "&nbsp;")
 
