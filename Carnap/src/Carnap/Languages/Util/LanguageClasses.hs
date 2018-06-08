@@ -107,23 +107,25 @@ instance {-#OVERLAPPABLE#-} PrismBooleanConnLex lex b => BooleanLanguage (FixLan
 class IndexedPropContextSchemeLanguage l where
             propCtx :: Int -> l -> l
 
-class (Typeable b, PrismLink (FixLang lex) (Connective (PropositionalContext b) (FixLang lex))) 
-        => PrismPropositionalContext lex b where
+class (Typeable b, Typeable c, PrismLink (FixLang lex) (Connective (GenericContext b c) (FixLang lex))) 
+        => PrismGenericContext lex b c where
 
-        _propCtxIdx :: Prism' (FixLang lex (Form b -> Form b)) Int
-        _propCtxIdx = link_PropositionalContext . propCtxIdx
+        _contextIdx :: Prism' (FixLang lex (Form b -> Form c)) Int
+        _contextIdx = link_GenericContext . contextIdx
 
-        link_PropositionalContext :: Prism' (FixLang lex (Form b -> Form b)) 
-                                            (Connective (PropositionalContext b) (FixLang lex) (Form b -> Form b))
-        link_PropositionalContext = link 
+        link_GenericContext :: Prism' (FixLang lex (Form b -> Form c)) 
+                                            (Connective (GenericContext b c) (FixLang lex) (Form b -> Form c))
+        link_GenericContext = link 
 
-        propCtxIdx :: Prism' (Connective (PropositionalContext b) (FixLang lex) (Form b -> Form b)) Int
-        propCtxIdx = prism' (\n -> Connective (PropCtx n) AOne) 
-                            (\x -> case x of Connective (PropCtx n) AOne -> Just n
+        contextIdx :: Prism' (Connective (GenericContext b c) (FixLang lex) (Form b -> Form c)) Int
+        contextIdx = prism' (\n -> Connective (Context n) AOne) 
+                            (\x -> case x of Connective (Context n) AOne -> Just n
                                              _ -> Nothing)
 
+type PrismPropositionalContext lex b = PrismGenericContext lex b b
+
 instance {-#OVERLAPPABLE#-} PrismPropositionalContext lex b => IndexedPropContextSchemeLanguage (FixLang lex (Form b)) where
-        propCtx n = review (unaryOpPrism (_propCtxIdx . only n))
+        propCtx n = review (unaryOpPrism (_contextIdx . only n))
 
 class ModalLanguage l where
         nec :: l -> l

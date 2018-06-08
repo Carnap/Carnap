@@ -301,21 +301,23 @@ instance MaybeStaticVar (Modality b)
 
 instance FirstOrderLex (Modality b)
 
-data PropositionalContext b a where
-        PropCtx :: Int -> PropositionalContext b (Form b -> Form b)
+data GenericContext b c a where
+        Context :: Int -> GenericContext b c (Form b -> Form c)
 
-instance Schematizable (PropositionalContext b) where
-        schematize (PropCtx n) (x:_)  = "Φ_" ++ show n ++ "(" ++ x ++ ")"
+instance Schematizable (GenericContext b c) where
+        schematize (Context n) (x:_)  = "Φ_" ++ show n ++ "(" ++ x ++ ")"
 
-instance UniformlyEq (PropositionalContext b) where
-        (PropCtx n) =* (PropCtx m) = n == m
+instance UniformlyEq (GenericContext b c) where
+        (Context n) =* (Context m) = n == m
 
-instance Monad m => MaybeMonadVar (PropositionalContext b) m
+instance Monad m => MaybeMonadVar (GenericContext b c) m
 
-instance MaybeStaticVar (PropositionalContext b)
+instance MaybeStaticVar (GenericContext b c)
 
-instance FirstOrderLex (PropositionalContext b) where
+instance FirstOrderLex (GenericContext b c) where
         isVarLex _ = True
+
+type PropositionalContext b = GenericContext b b
 
 ----------------
 --  5. Terms  --

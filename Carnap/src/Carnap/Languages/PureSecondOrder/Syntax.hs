@@ -89,22 +89,7 @@ instance MaybeStaticVar MonadicSOScheme
 instance FirstOrderLex MonadicSOScheme where
         isVarLex _ = True
 
--- XXX this is a good candidate for a generic constructor
-data MonadicSOCtx a where
-        MonCtx :: Int -> MonadicSOCtx (Form (Int -> Bool) -> Form Bool)
-
-instance Schematizable MonadicSOCtx where
-        schematize (MonCtx n) = \(x:_) -> "Φ_" ++ show n ++ "(" ++ x ++ ")"
-
-instance UniformlyEq MonadicSOCtx where
-    (MonCtx n) =* (MonCtx m) = n == m
-
-instance Monad m => MaybeMonadVar MonadicSOCtx m
-
-instance MaybeStaticVar MonadicSOCtx
-
-instance FirstOrderLex MonadicSOCtx where
-        isVarLex _ = True
+type MonadicSOCtx = GenericContext (Int -> Bool) Bool
 
 type MonadicSOQuant = GenericQuant Form Form Bool (Int -> Bool)
 
@@ -231,7 +216,7 @@ type MonadicallySOL = FixLang MonadicallySOLLex
 
 pattern SOMVar n        = FX (Lx2 (Predicate (MonVar n) AZero))
 pattern SOMScheme n     = FX (Lx6 (Predicate (MonScheme n) AZero))
-pattern SOMCtx n        = FX (Lx7 (Connective (MonCtx n) AOne))
+pattern SOMCtx n        = FX (Lx7 (Connective (Context n) AOne))
 
 instance CopulaSchema MonadicallySOL where 
 
