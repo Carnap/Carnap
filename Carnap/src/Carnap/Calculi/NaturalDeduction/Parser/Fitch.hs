@@ -32,8 +32,9 @@ parseAssertLineFitch r f = do dpth  <- indent
                            
 parseSeparatorLine :: Parsec String u (DeductionLine r lex a)
 parseSeparatorLine = do dpth <- indent
-                        char '-'
+                        string "--"
                         spaces
+                        eof
                         return $ SeparatorLine dpth
 
 toDeductionFitch :: Parsec String () [r] -> Parsec String () (FixLang lex a) -> String 
