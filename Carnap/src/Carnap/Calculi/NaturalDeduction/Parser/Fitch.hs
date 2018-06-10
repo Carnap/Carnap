@@ -41,7 +41,9 @@ toDeductionFitch :: Parsec String () [r] -> Parsec String () (FixLang lex a) -> 
     -> Deduction r lex a
 toDeductionFitch r f = toDeduction (parseLine r f)
         where parseLine r f = try (parseAssertLineFitch r f) 
-                              <|> parseSeparatorLine
+                              <|> try (parseSeparatorLine)
+                              --XXX: need double "try" here to avoid
+                              --throwing away errors if first parser fails
 
 {- | 
 In a Fitch deduction, find the prooftree corresponding to
