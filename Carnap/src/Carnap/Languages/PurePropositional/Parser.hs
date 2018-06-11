@@ -32,7 +32,7 @@ purePropFormulaParser opts = buildExpressionParser opTable subFormulaParser
                           <|> unaryOpParser [parseNeg] subFormulaParser --negations or modalizations of subformulas
                           <|> try (atomicSentenceParser opts <* spaces)--or atoms
                           <|> if hasBooleanConstants opts then try (booleanConstParser <* spaces) else parserZero
-                          <|> (schemevarParser <* spaces)
+                          <|> ((schemevarParser <* spaces) <?> "")
 
 opTable :: Monad m => [[Operator String u m PureForm]]
 opTable = [[ Prefix (try parseNeg)], 

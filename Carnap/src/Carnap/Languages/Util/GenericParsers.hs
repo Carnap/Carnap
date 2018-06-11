@@ -64,7 +64,7 @@ powersetParser parseTerm = (try (string "P(") <|> string "Pow(") *> parseTerm <*
 
 sentenceLetterParser :: (IndexedPropLanguage l, Monad m) => String ->
     ParsecT String u m l
-sentenceLetterParser s = try parseNumbered <|> parseUnnumbered
+sentenceLetterParser s = (try parseNumbered <|> parseUnnumbered) <?> "a sentence letter"
         where parseUnnumbered = do c <- oneOf s
                                    let Just n = elemIndex c "_ABCDEFGHIJKLMNOPQRSTUVWXYZ"
                                    return $ pn (-1 * n)
@@ -83,7 +83,7 @@ schemevarParser = try parseNumbered <|> parseUnnumbered
                                return $ phin (-1 * (n + 15))
           parseNumbered = do string "Phi" <|> string "φ"
                              char '_'
-                             n <- number <?> "number"
+                             n <- number <?> "a number"
                              return $ phin n
 
 unaryOpParser :: (Monad m) => [ParsecT String u m (a -> b)] -> ParsecT String u m a ->  ParsecT String u m b
@@ -136,7 +136,7 @@ parsePredicateSymbol ::
     , Typeable ret
     , Typeable arg
     ) => String -> ParsecT String u m (FixLang lex arg) -> ParsecT String u m (FixLang lex ret)
-parsePredicateSymbol s parseTerm = try parseNumbered <|> parseUnnumbered
+parsePredicateSymbol s parseTerm = (try parseNumbered <|> parseUnnumbered) <?> "a predicate symbol"
     where parseUnnumbered = do c <- oneOf s
                                let Just n = ucIndex c
                                char '(' *> argParser parseTerm (ppn (-1 * n) AOne)
@@ -151,7 +151,7 @@ parsePredicateSymbolNoParen ::
     , Typeable ret
     , Typeable arg
     ) => String -> ParsecT String u m (FixLang lex arg) -> ParsecT String u m (FixLang lex ret)
-parsePredicateSymbolNoParen s parseTerm = try parseNumbered <|> parseUnnumbered
+parsePredicateSymbolNoParen s parseTerm = (try parseNumbered <|> parseUnnumbered) <?> "a predicate symbol"
     where parseUnnumbered = do c <- oneOf s
                                let Just n = ucIndex c
                                argParserNoParen parseTerm (ppn (-1 * n) AOne)
@@ -167,7 +167,7 @@ quantifiedSentenceParser ::
     ) => ParsecT String u m (FixLang lex t) -> ParsecT String u m (FixLang lex f) 
             -> ParsecT String u m (FixLang lex f)
 quantifiedSentenceParser parseFreeVar formulaParser =
-        do s <- oneOf "AE∀∃"
+        do s <- oneOf "AE∀∃" <?> "a quantifer symbol"
            v <- parseFreeVar
            spaces
            f <- formulaParser
@@ -187,7 +187,7 @@ parseFunctionSymbol ::
     , Typeable ret
     , Typeable arg
     ) => String -> ParsecT String u m (FixLang lex arg) -> ParsecT String u m (FixLang lex ret)
-parseFunctionSymbol s parseTerm = try parseNumbered <|> parseUnnumbered
+parseFunctionSymbol s parseTerm = (try parseNumbered <|> parseUnnumbered) <?> "a function symbol"
     where parseNumbered = do string "f_"
                              n <- number
                              char '(' *> argParser parseTerm (pfn n AOne)
@@ -200,7 +200,7 @@ parseConstant ::
     , Typeable ret
     , Monad m
     ) => String -> ParsecT String u m (FixLang lex ret)
-parseConstant s = try parseNumbered <|> parseUnnumbered
+parseConstant s = (try parseNumbered <|> parseUnnumbered) <?> "a constant"
     where parseUnnumbered = do c <- oneOf s
                                let Just n = lcIndex c
                                return $ cn (-1 * n)
