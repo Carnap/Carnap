@@ -79,13 +79,13 @@ toProofTreeLemmon ded n = case ded !! (n - 1) of
         where err :: String -> Either (ProofErrorMessage lex) a
               err x = Left $ GenericError x n
 
-              checkDep m | n <= m = err $ "dependency on line " ++ show m ++ " is later than assertion."
+              checkDep m | n <= m = err $ "line " ++ show m ++ " is being cited, but is later than this assertion."
                          | otherwise = Right True
 
               checkScope i | isAssumption (head r) && not (scope == i ++ [n]) = err "The dependencies here aren't right. Remember, this rule introduces its own line number as a dependency."
-                           | isAssumption (head r) = if dis /= [] then err "This rule does not allow the discharge of premises." else Right True
-                           | null (globalRestriction (Left []) 0 (head r)) && dis /= [] = err "This rule does not allow the discharge of premises."
-                           | sort scope /= sort (nub i \\ dis) = err "There's a mismatch between the stated dependencies and the undischarged premises inherited from previous lines."
+                           | isAssumption (head r) = if dis /= [] then err "This rule does not allow the elimination of dependencies." else Right True
+                           | null (globalRestriction (Left []) 0 (head r)) && dis /= [] = err "This rule does not allow the elimination of dependencies."
+                           | sort scope /= sort (nub i \\ dis) = err "The dependencies here aren't right. Did you forget mark a dependency as eliminated?."
                            | otherwise = Right True
 
     (PartialLine _ e _) -> Left $ NoParse e n
