@@ -45,6 +45,18 @@ DerivationSubmission
     assignmentId AssignmentMetadataId Maybe
     UniqueDerivationP problem userId source
 
+ProblemSubmission
+    ident Text
+    data ProblemData
+    type ProblemType
+    time UTCTime
+    userId UserId 
+    correct Bool
+    credit Int Maybe
+    source ProblemSource
+    assignmentId AssignmentMetadataId Maybe
+    UniqueProblemSubmission ident userId source
+
 SavedDerivedRule
     derivedRule ByteString
     name Text

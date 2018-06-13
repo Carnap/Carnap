@@ -11,8 +11,7 @@ import GHC.Generics
 import Carnap.Languages.PurePropositional.Logic (DerivedRule(..))
 import Carnap.Languages.PurePropositional.Parser
 
-data ProblemSource = Book
-                   | Assignment String
+data ProblemSource = Book | Assignment String
         deriving (Generic, Show, Read, Eq)
 
 instance ToJSON ProblemSource
