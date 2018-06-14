@@ -61,23 +61,21 @@ getUserR ident = do
     musr <- runDB $ getBy $ UniqueUser ident
     case musr of 
         Nothing -> defaultLayout nouserPage
-        (Just (Entity k _))  -> do
-            ud@(UserData firstname lastname maybeCourseId maybeInstructorId _) <- checkUserData k
+        (Just (Entity uid _))  -> do
+            ud@(UserData firstname lastname maybeCourseId maybeInstructorId _) <- checkUserData uid
             classes <- runDB $ selectList [] []
             (updateForm,encTypeUpdate) <- generateFormPost (updateUserDataForm ud classes)
-            (synsubs, transsubs,dersubs, ttsubs) <- subsByIdAndSource maybeCourseId k
             let isInstructor = case maybeInstructorId of Just _ -> True; _ -> False
-            derivedRules <- getDerivedRules k
+            derivedRules <- getDerivedRules uid
             case maybeCourseId of
                 Just cid ->
                     do Just course <- runDB $ get cid
                        textbookproblems <- getProblemSets cid
                        assignments <- assignmentsOf cid textbookproblems
-                       syntable <- problemsToTable course textbookproblems synsubs
-                       transtable <- problemsToTable course textbookproblems transsubs
-                       dertable <- problemsToTable course textbookproblems dersubs
-                       tttable <- problemsToTable course textbookproblems ttsubs
-                       score <- totalScore textbookproblems synsubs transsubs dersubs ttsubs
+                       let getSubs typ = map entityVal <$> runDB (selectList ([ProblemSubmissionType ==. typ] ++ problemQuery uid cid) [])
+                       subs@[synsubs,transsubs,dersubs,ttsubs] <- mapM getSubs [SyntaxCheck,Translation,Derivation,TruthTable]
+                       [syntable,transtable,dertable,tttable] <- mapM (problemsToTable course textbookproblems) subs
+                       score <- totalScore textbookproblems (concat subs)
                        defaultLayout $ do
                            addScript $ StaticR js_bootstrap_bundle_min_js
                            addScript $ StaticR js_bootstrap_min_js
@@ -91,7 +89,7 @@ getUserR ident = do
                                     ^{updateWidget updateForm encTypeUpdate}
                                     <p> This user is not enrolled
                                     $if isInstructor
-                                        <p> Your instructor page is 
+                                        <p> Your instructor page is #
                                             <a href=@{InstructorR ident}>here
 
                                     ^{personalInfo ud Nothing}
@@ -108,10 +106,10 @@ getUserR ident = do
 --------------------------------------------------------
 --functions for calculating grades
 
-toScore textbookproblems p = case assignment p of
+toScore textbookproblems p = case problemSubmissionAssignmentId p of
                    Nothing -> 
-                        case utcDueDate textbookproblems (problem p) of                      
-                              Just d -> if submitted p `laterThan` d       
+                        case utcDueDate textbookproblems (problemSubmissionIdent p) of                      
+                              Just d -> if problemSubmissionTime p `laterThan` d       
                                             then return (2 :: Int)
                                             else return (5 :: Int)
                               Nothing -> return (0 :: Int)
@@ -120,7 +118,7 @@ toScore textbookproblems p = case assignment p of
                         case mmd of
                             Nothing -> return (0 :: Int)
                             Just v -> case assignmentMetadataDuedate v of 
-                                        Just due | submitted p `laterThan` due -> return (2 :: Int)
+                                        Just due | problemSubmissionTime p `laterThan` due -> return (2 :: Int)
                                         _ -> return (5 :: Int)
                             
 scoreByIdAndClassTotal cid uid = 
@@ -128,29 +126,23 @@ scoreByIdAndClassTotal cid uid =
            return $ foldr (+) 0 (map snd perprob)
 
 scoreByIdAndClassPerProblem cid uid = 
-        do (a,b,c,d) <- subsByIdAndSource (Just cid) uid
+        do (Just course) <- runDB (get cid)
+           textbookproblems <- getProblemSets cid
+           subs <- map entityVal <$> (runDB $ selectList (problemQuery uid cid) [])
            textbookproblems <-  getProblemSets cid
-           scoreList textbookproblems a b c d
+           scoreList textbookproblems subs
 
-totalScore textbookproblems a b c d = do
-           (a',b',c',d') <- (,,,) <$> score a <*> score b <*> score c <*> score d
-           return $ a' + b' + c' + d'
-   where score :: Problem p => [p] -> Handler Int
-         score xs = do xs' <- mapM (toScore textbookproblems) xs
-                       return $ foldr (+) 0 xs'
+totalScore textbookproblems xs = 
+        do xs' <- mapM (toScore textbookproblems) xs
+           return $ foldr (+) 0 xs'
 
-scoreList textbookproblems a b c d = 
-        do (a',b',c',d') <- (,,,) <$> toScoreList a <*> toScoreList b <*> toScoreList c <*> toScoreList d
-           return $ concat [a',b',c',d']
-   where toScoreList :: Problem p => [p] -> Handler [(Either AssignmentMetadataId Text, Int)]
-         toScoreList xs = mapM (\x -> do score <- toScore textbookproblems x
-                                         return (getLabel x, score)) xs
-         
-         getLabel x = case assignment x of
+scoreList textbookproblems = mapM (\x -> do score <- toScore textbookproblems x
+                                            return (getLabel x, score)) 
+   where getLabel x = case problemSubmissionAssignmentId x of
                           --get assignment metadata id
                           Just amid -> Left amid
                           --otherwise, must be a textbook problem
-                          Nothing -> Right $ takeWhile (/= '.') (problem x) 
+                          Nothing -> Right $ takeWhile (/= '.') (problemSubmissionIdent x) 
 
 --------------------------------------------------------
 --Due dates
@@ -172,8 +164,8 @@ laterThan t1 t2 = diffUTCTime t1 t2 > 0
 --------------------------------------------------------
 --reusable components
 
-problemsToTable course textbookproblems xs = do 
-            rows <- mapM toRow xs
+problemsToTable course textbookproblems submissions = do 
+            rows <- mapM toRow submissions
             return $ do B.table B.! class_ "table table-striped" $ do
                             B.col B.! style "width:50px"
                             B.col B.! style "width:100px"
@@ -187,9 +179,9 @@ problemsToTable course textbookproblems xs = do
                             B.tbody $ sequence_ rows
         where toRow p = do score <- toScore textbookproblems p 
                            return $ do
-                              B.tr $ do B.td $ B.toHtml (takeWhile (/= ':') $ problem p)
-                                        B.td $ B.toHtml (drop 1 . dropWhile (/= ':') $ problem p)
-                                        B.td $ B.toHtml (dateDisplay (submitted p) course)
+                              B.tr $ do B.td $ B.toHtml (problemSubmissionIdent p)
+                                        B.td $ B.toHtml (displayProblemData $ problemSubmissionData p)
+                                        B.td $ B.toHtml (dateDisplay (problemSubmissionTime p) course)
                                         B.td $ B.toHtml $ show $ score
 
 tryDelete name = "tryDeleteRule(\"" <> name <> "\")"
