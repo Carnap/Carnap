@@ -3,22 +3,18 @@ module Util.Data where
 import ClassyPrelude.Yesod
 import Data.List ((!!), elemIndex)
 import Data.Time
-import Carnap.GHCJS.SharedTypes(ProblemSource(..))
+import Carnap.GHCJS.SharedTypes(ProblemSource(..),ProblemType(..),ProblemData(..))
 import qualified Data.IntMap as IM (fromList)
 
 derivePersistField "ProblemSource"
 
+derivePersistField "ProblemType"
+
+derivePersistField "ProblemData"
+
 newtype BookAssignmentTable = BookAssignmentTable {readAssignmentTable :: IntMap UTCTime}
     deriving (Show, Read, Eq)
 derivePersistField "BookAssignmentTable"
-
-data ProblemType = Derivation | TruthTable | Translation | SyntaxCheck
-    deriving (Show, Read, Eq)
-derivePersistField "ProblemType"
-
-data ProblemData = DerivationData Text Text | ProblemContent Text
-    deriving (Show, Read, Eq)
-derivePersistField "ProblemData"
 
 data SharingScope = Public | InstructorsOnly | LinkOnly | Private
     deriving (Show, Read, Eq)
