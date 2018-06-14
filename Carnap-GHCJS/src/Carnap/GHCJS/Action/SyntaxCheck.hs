@@ -12,6 +12,7 @@ import Carnap.GHCJS.SharedTypes
 import Data.IORef
 import qualified Data.Map as M
 import Data.Tree as T
+import Data.Text (pack)
 import Control.Lens
 import Control.Lens.Plated (children)
 import Text.Parsec
@@ -33,19 +34,6 @@ import Control.Monad.IO.Class (MonadIO, liftIO)
 
 syntaxCheckAction:: IO ()
 syntaxCheckAction = initElements getCheckers activateChecker
-
-trySubmit :: IORef (PureForm,[(PureForm,Int)], Tree (PureForm,Int),Int) -> Window -> String -> EventM HTMLInputElement e ()
-trySubmit ref w l = do (f,forms,_,_) <- liftIO $ readIORef ref
-                       case forms of 
-                          [] -> do msource <- liftIO submissionSource
-                                   key <- liftIO assignmentKey
-                                   case msource of 
-                                        Nothing -> message "Not able to identify problem source. Maybe this document has not been assigned?"
-                                        Just source -> liftIO $ sendJSON 
-                                                         (SubmitSyntaxCheck (l ++ ":" ++ show f) source key) 
-                                                         (loginCheck $ "Submitted Syntax-Check for Exercise " ++ l) 
-                                                         errorPopup
-                          _  -> message "not yet finished"
 
 -- XXX:this could be cleaner. The basic idea is that we maintain a "stage"
 --in development and use the stages to match formulas in the tree with
@@ -144,9 +132,15 @@ activateChecker w (Just (i,o,opts)) =
                          ref <- newIORef (f,[(f,0)], T.Node (f,0) [], 0)  
                          match <- newListener $ tryMatch tree ref w sf
                          (Just w') <- getDefaultView w                    
-                         submit <- newListener $ trySubmit ref w' l       
+                         submit <- newListener $ submitSyn ref l       
                          addListener i keyUp match False                  
                          addListener bt click submit False                
                       (Left e) -> setInnerHTML o (Just $ show e)
                   _ -> print "syntax check was missing an option"
 activateChecker _ Nothing  = return ()
+
+submitSyn :: IORef (PureForm,[(PureForm,Int)], Tree (PureForm,Int),Int) -> String -> EventM HTMLInputElement e ()
+submitSyn ref l = do (f,forms,_,_) <- liftIO $ readIORef ref
+                     case forms of 
+                        [] -> do trySubmit SyntaxCheck l (ProblemContent (pack $ show f)) 
+                        _  -> message "not yet finished"

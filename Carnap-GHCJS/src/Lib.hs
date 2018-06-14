@@ -8,13 +8,14 @@ module Lib
     formAndLabel,seqAndLabel, folSeqAndLabel, folFormAndLabel,
     message, IOGoal(..), updateWithValue, submissionSource, assignmentKey,
     initialize,popUpWith,spinnerSVG,doneButton,questionButton,exclaimButton,
-    expandButton,buttonWrapper, maybeNodeListToList) where
+    expandButton,buttonWrapper, maybeNodeListToList, trySubmit) where
 
 import Data.Aeson
 import Data.Maybe (catMaybes)
 import qualified Data.ByteString.Lazy as BSL
 import Data.Text.Encoding
 import Data.Tree as T
+import Data.IORef (IORef, readIORef)
 import qualified Data.Map as M
 import Text.Parsec
 import Text.StringLike
@@ -109,10 +110,8 @@ data IOGoal = IOGoal { inputArea :: Element
                      , exerciseOptions :: M.Map String String
                      }
 
-
 clearInput :: (MonadIO m) => HTMLInputElement -> m ()
 clearInput i = setValue i (Just "")
-
 
 maybeNodeListToList mnl = case mnl of 
                             Nothing -> return []
@@ -363,6 +362,16 @@ withLabel parser = do label <- many (digit <|> char '.')
                       spaces
                       s <- parser
                       return (label,s)
+
+trySubmit problemType ident problemData = 
+             do msource <- liftIO submissionSource
+                key <- liftIO assignmentKey
+                case msource of 
+                   Nothing -> message "Not able to identify problem source. Perhaps this document has not been assigned?"
+                   Just source -> liftIO $ sendJSON 
+                                   (Submit problemType ident problemData source key) 
+                                   (loginCheck $ "Submitted Exercise " ++ ident)
+                                   errorPopup
 
 ------------------
 --1.8 SVG Data  --

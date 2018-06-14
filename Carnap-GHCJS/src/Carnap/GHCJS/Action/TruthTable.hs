@@ -22,6 +22,7 @@ import GHCJS.DOM.Node (appendChild, getParentNode, insertBefore)
 import GHCJS.DOM.EventM (newListener, addListener, EventM, target)
 import Data.IORef (newIORef, IORef, readIORef,writeIORef, modifyIORef)
 import Data.Map as M
+import Data.Text (pack)
 import Data.List (subsequences, nub)
 import Control.Monad.IO.Class (liftIO)
 import Control.Lens (toListOf)
@@ -57,7 +58,7 @@ activateTruthTables w (Just (i,o,opts)) =
                           -- XXX: idea. Return check rather than gRef, to allow different tt setups their own checking proceedures
                           setInnerHTML i (Just $ show f)
                           (Just w') <- getDefaultView w                    
-                          submit <- newListener $ trySubmit ref (show f) w' l
+                          submit <- newListener $ submitTruthTable ref (show f) w' l
                           check <- newListener $ checkTable ref gRef w'
                           addListener bt1 click submit False                
                           addListener bt2 click check False                
@@ -71,18 +72,11 @@ activateTruthTables w (Just (i,o,opts)) =
                                              else do alert w' "Something's not quite right"
                                                      setAttribute i "class" "incompleteTT"
 
-trySubmit :: IORef Bool -> String -> Window -> String -> EventM HTMLInputElement e ()
-trySubmit ref s w l = do isDone <- liftIO $ readIORef ref
-                         if isDone 
-                            then do msource <- liftIO submissionSource
-                                    key <- liftIO assignmentKey
-                                    case msource of 
-                                        Nothing -> message "Not able to identify problem source"
-                                        Just source -> liftIO $ sendJSON 
-                                                          (SubmitTruthTable (l ++ ":" ++ s) source key) 
-                                                          (loginCheck $ "Submitted Truth-Table for Exercise " ++ l) 
-                                                          errorPopup
-                            else message "not yet finished"
+submitTruthTable:: IORef Bool -> String -> Window -> String -> EventM HTMLInputElement e ()
+submitTruthTable ref s w l = do isDone <- liftIO $ readIORef ref
+                                if isDone 
+                                   then trySubmit TruthTable l (ProblemContent (pack s))
+                                   else message "not yet finished"
 
 createValidityTruthTable :: Document -> PropSequentCalc (Sequent (Form Bool)) -> (Element,Element) -> IORef Bool -> Element -> IO (IORef (Map (Int, Int) Bool))
 createValidityTruthTable w (antced :|-: (SS succed)) (i,o) ref bw =  

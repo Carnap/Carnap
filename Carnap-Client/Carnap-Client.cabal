@@ -20,12 +20,14 @@ library
       build-depends:       base >= 4.7 && < 5
                          , aeson
                          , parsec
+                         , text
                          , Carnap
 
   else 
       build-depends:       base >= 4.7 && < 5
                          , aeson
                          , parsec
+                         , text
                          , Carnap
 
   default-language:    Haskell2010

@@ -1,25 +1,41 @@
 {-#LANGUAGE DeriveGeneric, OverloadedStrings#-}
 module Carnap.GHCJS.SharedTypes (
-        GHCJSCommand(..), ProblemSource(..)
+        GHCJSCommand(..), ProblemSource(..), ProblemType(..), ProblemData(..)
 ) where
 
 import Prelude
 import Data.Aeson
 import Data.Either
+import Data.Text (Text)
 import Text.Parsec (parse, eof)
 import GHC.Generics
 import Carnap.Languages.PurePropositional.Logic (DerivedRule(..))
 import Carnap.Languages.PurePropositional.Parser
 
 data ProblemSource = Book | Assignment String
-        deriving (Generic, Show, Read, Eq)
+        deriving (Show, Read, Eq, Generic)
 
 instance ToJSON ProblemSource
 
 instance FromJSON ProblemSource
 
+data ProblemType = Derivation | TruthTable | Translation | SyntaxCheck
+    deriving (Show, Read, Eq, Generic)
+
+instance ToJSON ProblemType
+
+instance FromJSON ProblemType
+
+data ProblemData = DerivationData Text Text | ProblemContent Text
+    deriving (Show, Read, Eq, Generic)
+
+instance ToJSON ProblemData
+
+instance FromJSON ProblemData
+
 --XXX: these should be more structured.
 data GHCJSCommand = EchoBack (String, Bool)
+        | Submit ProblemType String ProblemData ProblemSource String
         | SubmitSyntaxCheck String ProblemSource String
         | SubmitTranslation String ProblemSource String
         | SubmitDerivation String String ProblemSource String

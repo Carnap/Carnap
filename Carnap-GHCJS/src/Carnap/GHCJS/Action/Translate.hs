@@ -15,6 +15,7 @@ import Carnap.GHCJS.SharedTypes
 import Carnap.GHCJS.SharedFunctions
 import Data.IORef
 import Data.Map as M
+import Data.Text (pack)
 import Text.Parsec 
 import GHCJS.DOM
 import GHCJS.DOM.Types
@@ -54,7 +55,7 @@ activateTranslate w (Just (i,o,opts)) =
                            insertBefore par (Just bw) (Just o)
                            ref <- newIORef False
                            tryTrans <- newListener $ translator o ref f
-                           submit <- newListener $ trySubmit ref l f
+                           submit <- newListener $ submitTrans ref l f
                            addListener i keyUp tryTrans False                  
                            addListener bt click submit False                
                       (Left e) -> setInnerHTML o (Just $ show e)
@@ -91,14 +92,7 @@ tryFOLTrans o ref f = onEnter $ do (Just t) <- target :: EventM HTMLInputElement
             | otherwise = message "Not quite. Try again!"
             -- TODO Add FOL equivalence checking code, insofar as possible.
 
-trySubmit ref l f = do isFinished <- liftIO $ readIORef ref
-                       if isFinished
-                         then do msource <- liftIO submissionSource
-                                 key <- liftIO assignmentKey
-                                 case msource of 
-                                    Nothing -> message "Not able to identify problem source. Maybe this document has not been assigned?"
-                                    Just source -> liftIO $ sendJSON 
-                                                        (SubmitTranslation (l ++ ":" ++ show f) source key) 
-                                                        (loginCheck $ "Submitted Translation for Exercise " ++ l)
-                                                        errorPopup
-                         else message "not yet finished (remember to press return to check your work before submitting!)"
+submitTrans ref l f = do isFinished <- liftIO $ readIORef ref
+                         if isFinished
+                            then trySubmit Translation l (ProblemContent (pack $ show f))
+                            else message "not yet finished (remember to press return to check your work before submitting!)"

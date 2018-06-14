@@ -28,6 +28,7 @@ import Carnap.GHCJS.SharedTypes
 import Text.Parsec (parse)
 import Data.IORef (IORef, newIORef,writeIORef, readIORef, modifyIORef)
 import Data.Aeson as A
+import Data.Text (pack)
 import qualified Data.Map as M (lookup,fromList,map) 
 import Control.Lens.Fold (toListOf,(^?))
 import Lib
@@ -183,7 +184,7 @@ activateChecker drs w (Just iog@(IOGoal i o g _ opts)) -- TODO: need to update n
                                        , popout = "popout" `elem` options
                                        }
                                 where saveRule = Button {label = "Save" , action = trySave drs}
-                                      saveProblem l s = Button {label = "Submit" , action = trySubmit l s}
+                                      saveProblem l s = Button {label = "Submit" , action = submitDer l s}
                                       options = case M.lookup "options" opts of Just s -> words s; Nothing -> []
 
 threadedCheck checker w ref v (g, fd) = 
@@ -234,18 +235,12 @@ computeRule ref g mseq = case mseq of
                          (Just seq) -> do setInnerHTML g (Just $ show seq)
                                           writeIORef ref True
 
-trySubmit l s ref w i = do isFinished <- liftIO $ readIORef ref
-                           if isFinished
-                             then do (Just v) <- getValue (castToHTMLTextAreaElement i)
-                                     msource <- liftIO submissionSource
-                                     key <- liftIO assignmentKey
-                                     case msource of 
-                                        Nothing -> message "Not able to identify problem source. Perhaps this document has not been assigned?"
-                                        Just source -> liftIO $ sendJSON 
-                                                        (SubmitDerivation (l ++ ":" ++ s) v source key) 
-                                                        (loginCheck $ "Submitted Derivation for Exercise " ++ l)
-                                                        errorPopup
-                             else message "not yet finished"
+submitDer l s ref _ i = do isFinished <- liftIO $ readIORef ref
+                           if isFinished 
+                               then do (Just v) <- getValue (castToHTMLTextAreaElement i)
+                                       trySubmit Derivation l (DerivationData (pack s) (pack v))
+                               else message "not yet finished"
+
 
 trySave drs ref w i = do isFinished <- liftIO $ readIORef ref
                          rules <- liftIO $ readIORef drs
