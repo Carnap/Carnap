@@ -137,6 +137,32 @@ activateChecker drs w (Just iog@(IOGoal i o g _ opts)) -- TODO: need to update n
                   let checkSeq ms = threadedCheck (checker calc drs ms mtref mpd memo)
                   mseq <- if directed options then parseGoal calc else return Nothing
                   checkerWith options (checkSeq mseq) iog w
+                  
+                  where options = CheckerOptions { submit = case (M.lookup "submission" opts, M.lookup "goal" opts) of
+                                                                  (Just "saveRule",_) -> Just saveRule
+                                                                  (Just s, Just g) | take 7 s == "saveAs:" -> Just $ saveProblem (drop 7 s) (theSeq g)
+                                                                  _ -> Nothing
+                                                 , feedback = case M.lookup "feedback" opts of
+                                                                  Just "manual" -> Click
+                                                                  Just "none" -> Never
+                                                                  _ -> Keypress
+                                                 , directed = case M.lookup "goal" opts of
+                                                                  Just _ -> True
+                                                                  Nothing -> False
+                                                 , initialUpdate = False
+                                                 , indentGuides = "guides" `elem` optlist
+                                                 , render = "render" `elem` optlist
+                                                 , autoIndent = "indent" `elem` optlist
+                                                 , autoResize= "resize" `elem` optlist
+                                                 , popout = "popout" `elem` optlist
+                                                 }
+                        saveRule = Button {label = "Save" , action = trySave drs}
+                        saveProblem l s = Button {label = "Submit" , action = submitDer l s}
+                        optlist = case M.lookup "options" opts of Just s -> words s; Nothing -> []
+                        theSeq g = case parse (ndParseSeq calc) "" g of
+                                       Left e -> error "couldn't parse goal"
+                                       Right seq -> seq
+
               parseGoal calc = do let seqParse = ndParseSeq calc
                                       (Just seqstring) = M.lookup "goal" opts 
                                       --XXX: the directed option is set by the existence of a goal, so this match can't fail.
@@ -165,27 +191,6 @@ activateChecker drs w (Just iog@(IOGoal i o g _ opts)) -- TODO: need to update n
 
               noRuntimeOptions = Checker $ const . pure $ RuntimeNaturalDeductionConfig mempty mempty
 
-              options = CheckerOptions { submit = case (M.lookup "submission" opts, M.lookup "goal" opts) of
-                                                        (Just "saveRule",_) -> Just saveRule
-                                                        (Just s, Just g) | take 7 s == "saveAs:" -> Just $ saveProblem (drop 7 s) g
-                                                        _ -> Nothing
-                                       , feedback = case M.lookup "feedback" opts of
-                                                        Just "manual" -> Click
-                                                        Just "none" -> Never
-                                                        _ -> Keypress
-                                       , directed = case M.lookup "goal" opts of
-                                                        Just _ -> True
-                                                        Nothing -> False
-                                       , initialUpdate = False
-                                       , indentGuides = "guides" `elem` options
-                                       , render = "render" `elem` options
-                                       , autoIndent = "indent" `elem` options
-                                       , autoResize= "resize" `elem` options
-                                       , popout = "popout" `elem` options
-                                       }
-                                where saveRule = Button {label = "Save" , action = trySave drs}
-                                      saveProblem l s = Button {label = "Submit" , action = submitDer l s}
-                                      options = case M.lookup "options" opts of Just s -> words s; Nothing -> []
 
 threadedCheck checker w ref v (g, fd) = 
         do mt <- readIORef (threadRef checker)
@@ -235,12 +240,11 @@ computeRule ref g mseq = case mseq of
                          (Just seq) -> do setInnerHTML g (Just $ show seq)
                                           writeIORef ref True
 
-submitDer l s ref _ i = do isFinished <- liftIO $ readIORef ref
-                           if isFinished 
-                               then do (Just v) <- getValue (castToHTMLTextAreaElement i)
-                                       trySubmit Derivation l (DerivationData (pack s) (pack v))
-                               else message "not yet finished"
-
+submitDer l seq ref _ i = do isFinished <- liftIO $ readIORef ref
+                             if isFinished 
+                                 then do (Just v) <- getValue (castToHTMLTextAreaElement i)
+                                         trySubmit Derivation l (DerivationData (pack $ show seq) (pack v))
+                                 else message "not yet finished"
 
 trySave drs ref w i = do isFinished <- liftIO $ readIORef ref
                          rules <- liftIO $ readIORef drs
