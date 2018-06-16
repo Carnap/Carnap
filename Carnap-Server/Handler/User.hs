@@ -24,7 +24,8 @@ postUserR ident = do
         Nothing -> defaultLayout nouserPage
         (Just (Entity uid _))  -> do
             ud <- checkUserData uid
-            classes <- runDB $ selectList [] []
+            time <- liftIO getCurrentTime
+            classes <- runDB $ selectList [CourseStartDate <. time, CourseEndDate >. time] []
             ((updateRslt,_),_) <- runFormPost (updateUserDataForm ud classes)
             case updateRslt of 
                  (FormFailure s) -> setMessage $ "Something went wrong: " ++ B.toMarkup (show s)
@@ -63,7 +64,8 @@ getUserR ident = do
         Nothing -> defaultLayout nouserPage
         (Just (Entity uid _))  -> do
             ud@(UserData firstname lastname maybeCourseId maybeInstructorId _) <- checkUserData uid
-            classes <- runDB $ selectList [] []
+            time <- liftIO getCurrentTime
+            classes <- runDB $ selectList [CourseStartDate <. time, CourseEndDate >. time] []
             (updateForm,encTypeUpdate) <- generateFormPost (updateUserDataForm ud classes)
             let isInstructor = case maybeInstructorId of Just _ -> True; _ -> False
             derivedRules <- getDerivedRules uid

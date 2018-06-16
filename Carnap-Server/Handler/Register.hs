@@ -8,7 +8,8 @@ import Util.Data
 getRegisterR :: Text -> Handler Html
 getRegisterR ident = do
     userId <- fromIdent ident 
-    courseEntities <- runDB $ selectList [] []
+    time <- liftIO getCurrentTime
+    courseEntities <- runDB $ selectList [CourseStartDate <. time, CourseEndDate >. time] []
     (widget,enctype) <- generateFormPost (registrationForm courseEntities userId)
     defaultLayout $ do
         setTitle "Carnap - Registration"
@@ -16,7 +17,8 @@ getRegisterR ident = do
 
 postRegisterR ident = do
         userId <- fromIdent ident
-        courseEntities <- runDB $ selectList [] []
+        time <- liftIO getCurrentTime
+        courseEntities <- runDB $ selectList [CourseStartDate <. time, CourseEndDate >. time] []
         ((result,widget),enctype) <- runFormPost (registrationForm courseEntities userId)
         case result of 
             FormSuccess userdata -> do msuccess <- tryInsert userdata 
