@@ -89,8 +89,9 @@ actTemplate opts head content = RawBlock "html" $
     ++ "</div></div>"
 
 formatChunk = map cleanProof . lines
-    where cleanProof l@(x:xs) = if x == '|' then dropWhile (\y -> isDigit y || (y == '.')) xs
-                                            else l
+    where cleanProof ('|':xs) = dropWhile (\y -> isDigit y || (y == '.')) xs
+          cleanProof l = l
+
 
 unlines' [] = ""
 unlines' (x:[]) = x
