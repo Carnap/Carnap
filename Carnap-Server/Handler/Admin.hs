@@ -34,9 +34,10 @@ postAdminR = do allUserData <- map entityVal <$> (runDB $ selectList [] [])
 getAdminR :: Handler Html
 getAdminR = do allUserData <- map entityVal <$> (runDB $ selectList [] [])
                let allUids = (map userDataUserId  allUserData)
+               courses <- mapM getCoursesWithEnrollment allUserData
                musers <- mapM (\x -> runDB (get x)) allUids
                let users = catMaybes musers
-               usertable <- usersWidget users allUserData
+               usertable <- usersWidget users allUserData courses
                (upgradeWidget,enctypeUpgrade) <- generateFormPost (upgradeToInstructor users)
                defaultLayout [whamlet|
                               <div.container>
@@ -47,14 +48,20 @@ getAdminR = do allUserData <- map entityVal <$> (runDB $ selectList [] [])
                                        <div.form-group>
                                            <input.btn.btn-primary type=submit value="upgrade">
                              |]
+    where getCoursesWithEnrollment ud = case userDataInstructorId ud of 
+                                            Just iid -> do courseEnt <- runDB $ selectList [CourseInstructor ==. iid] []
+                                                           enrollments <- mapM (\c -> runDB $ selectList [UserDataEnrolledIn ==. Just (entityKey c)] []) courseEnt
+                                                           return $ zip courseEnt enrollments
+
+                                            Nothing -> return []
 
 upgradeToInstructor users = renderBootstrap3 BootstrapBasicForm $
                                 areq (selectFieldList userIdents) (bfs ("Upgrade User to Instructor" :: Text)) Nothing
         where userIdents = let idents = map userIdent users in zip idents idents
 
-usersWidget :: [User] -> [UserData] -> HandlerT App IO Widget
-usersWidget us ud = do let usersAndData = zip us ud
-                       return [whamlet|
+usersWidget :: [User] -> [UserData] -> [[(Entity Course,[Entity UserData])]] -> HandlerT App IO Widget
+usersWidget us ud cs = do let usersAndData = zip3 us ud cs
+                          return [whamlet|
                                   <div.card style="margin-bottom:20px">
                                       <div.card-header>
                                           All Users
@@ -64,8 +71,10 @@ usersWidget us ud = do let usersAndData = zip us ud
                                                   <th> Identifier
                                                   <th> Name
                                                   <th> Instructor?
+                                                  <th> Courses
+                                                  <th> Total Students
                                               <tbody>
-                                                  $forall (u,UserData fn ln _ mid _) <- usersAndData
+                                                  $forall (u,UserData fn ln _ mid _,clist) <- usersAndData
                                                       <tr>
                                                           <td>
                                                               <a href=@{UserR (userIdent u)}>#{userIdent u}
@@ -73,8 +82,11 @@ usersWidget us ud = do let usersAndData = zip us ud
                                                               #{ln}, #{fn}
                                                           $maybe _ <- mid
                                                               <td>yes
+                                                              <td>#{length clist}
+                                                              <td>#{length (concat (map snd clist))}
                                                           $nothing
                                                               <td>no
-
+                                                              <td>N/A
+                                                              <td>N/A
                         |]
 
