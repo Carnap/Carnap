@@ -35,7 +35,7 @@ instance FromJSON ProblemData
 
 --XXX: these should be more structured.
 data GHCJSCommand = EchoBack (String, Bool)
-        | Submit ProblemType String ProblemData ProblemSource String
+        | Submit ProblemType String ProblemData ProblemSource Bool (Maybe Int) String 
         | SaveDerivedRule String DerivedRule
         | RequestDerivedRulesForUser
         deriving (Generic, Show)

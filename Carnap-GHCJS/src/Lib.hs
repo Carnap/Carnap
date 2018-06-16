@@ -369,7 +369,7 @@ trySubmit problemType ident problemData =
                 case msource of 
                    Nothing -> message "Not able to identify problem source. Perhaps this document has not been assigned?"
                    Just source -> liftIO $ sendJSON 
-                                   (Submit problemType ident problemData source key) 
+                                   (Submit problemType ident problemData source True Nothing key) 
                                    (loginCheck $ "Submitted Exercise " ++ ident)
                                    errorPopup
 

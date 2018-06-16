@@ -20,10 +20,10 @@ postCommandR = do
            Nothing -> returnJson ("No User" :: String)
            Just uid  -> case cmd of
                 EchoBack (s,b) -> returnJson (reverse s)
-                Submit typ ident dat source key ->  
+                Submit typ ident dat source correct partial key ->  
                     do let key' = case key of "" -> Nothing; s -> Just (read s)
                        time <- liftIO getCurrentTime
-                       let sub = ProblemSubmission (pack ident) dat typ time uid True Nothing source key'
+                       let sub = ProblemSubmission (pack ident) dat typ time uid correct partial source key'
                        success <- tryInsert sub
                        afterInsert success
                 SaveDerivedRule n dr -> do time <- liftIO getCurrentTime
