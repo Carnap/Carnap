@@ -106,5 +106,4 @@ splitIt l = case break (== '\n') l of
                 y -> y
 
 intoChunks [] = []
-intoChunks l = cons $ case splitIt l of (h,t) -> (h,intoChunks t)
-    where cons (h,t) = h : t
+intoChunks l = let (h,t) = splitIt l in h : intoChunks t
