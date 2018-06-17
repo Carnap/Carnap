@@ -164,7 +164,15 @@ postInstructorR ident = do
                                   (Just date,_)  -> Just $ LocalTime date (TimeOfDay 23 59 59)
                                   _ -> Nothing
                    info = unTextarea <$> assignmentdesc
-               success <- tryInsert $ AssignmentMetadata (entityKey doc) info (localTimeToUTCTZ tz <$> localdue) subtime classkey 
+               success <- tryInsert $ AssignmentMetadata 
+                                        { assignmentMetadataDocument = (entityKey doc)
+                                        , assignmentMetadataDescription = info 
+                                        , assignmentMetadataDuedate = (localTimeToUTCTZ tz <$> localdue) 
+                                        , assignmentMetadataVisibleFrom = Nothing
+                                        , assignmentMetadataVisibleTill = Nothing
+                                        , assignmentMetadataDate = subtime
+                                        , assignmentMetadataCourse = classkey
+                                        }
                if success then return ()
                           else setMessage "This file has already been assigned for this course"
         (FormFailure s) -> setMessage $ "Something went wrong: " ++ toMarkup (show s)

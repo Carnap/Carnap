@@ -194,6 +194,7 @@ assignmentsOf cid textbookproblems = do
              asmd <- runDB $ selectList [AssignmentMetadataCourse ==. cid] []
              asDocs <- mapM (runDB . get) (map (assignmentMetadataDocument . entityVal) asmd)
              Just course <- runDB $ get cid
+             time <- liftIO getCurrentTime
              return $
                 [whamlet|
                 <table.table.table-striped>
@@ -210,15 +211,18 @@ assignmentsOf cid textbookproblems = do
                                     <td>
                                         #{dateDisplay date course}
                         $forall (Entity k a, Just d) <- zip asmd asDocs
-                            <tr>
-                                <td>
-                                    <a href=@{AssignmentR $ documentFilename d}>
-                                        #{documentFilename d}
-                                $maybe due <- assignmentMetadataDuedate a
-                                    <td>#{dateDisplay due course}
-                                $nothing
-                                    <td>No Due Date
+                            $if visibleAt time a
+                                    <tr>
+                                        <td>
+                                            <a href=@{AssignmentR $ documentFilename d}>
+                                                #{documentFilename d}
+                                        $maybe due <- assignmentMetadataDuedate a
+                                            <td>#{dateDisplay due course}
+                                        $nothing
+                                            <td>No Due Date
                 |]
+    where visibleAt t a = (assignmentMetadataVisibleTill a < Just t || assignmentMetadataVisibleTill a == Nothing)
+                          && (assignmentMetadataVisibleFrom a > Just t || assignmentMetadataVisibleFrom a == Nothing)
 
 updateWidget form enc = [whamlet|
                     <div class="modal fade" id="updateUserData" tabindex="-1" role="dialog" aria-labelledby="updateUserDataLabel" aria-hidden="true">

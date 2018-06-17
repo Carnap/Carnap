@@ -26,7 +26,12 @@ getAssignmentsR = do muid <- maybeAuthId
                                                     redirect HomeR
                      Entity _ instructor <- udByInstructorId $ courseInstructor course
                      Just instructorident <- getIdent (userDataUserId instructor)
-                     assignmentMD <- runDB $ selectList [AssignmentMetadataCourse ==. cid] []
+                     time <- liftIO getCurrentTime
+                     assignmentMD <- runDB $ selectList 
+                                                ([AssignmentMetadataCourse ==. cid] 
+                                                ++ ([AssignmentMetadataVisibleTill <. Just time] ||. [AssignmentMetadataVisibleTill ==. Nothing])
+                                                ++ ([AssignmentMetadataVisibleFrom >. Just time] ||. [AssignmentMetadataVisibleFrom ==. Nothing]))
+                                                []
                      adir <- assignmentDir instructorident
                      adirContents <- lift $ getDirectoryContents adir
                      asDocs <- mapM (runDB . get) (map (assignmentMetadataDocument . entityVal) assignmentMD)
@@ -75,28 +80,34 @@ getAssignmentR filename =
                                  else case ment of
                                           Nothing -> defaultLayout $ layout ("assignment not found" :: Text)
                                           Just (Entity key val) -> do 
-                                               ehtml <- lift $ fileToHtml path
-                                               case ehtml of
-                                                   Left err -> defaultLayout $ layout (show err)
-                                                   Right html -> do
-                                                       defaultLayout $ do
-                                                           let source = "assignment:" ++ show (assignmentMetadataCourse val)
-                                                           toWidgetHead $(juliusFile "templates/command.julius")
-                                                           toWidgetHead [julius|var submission_source="#{rawJS source}";|]
-                                                           toWidgetHead [julius|var assignment_key="#{rawJS $ show key}";|]
-                                                           addScript $ StaticR js_popper_min_js
-                                                           addScript $ StaticR ghcjs_rts_js
-                                                           addScript $ StaticR ghcjs_allactions_lib_js
-                                                           addScript $ StaticR ghcjs_allactions_out_js
-                                                           addStylesheet $ StaticR css_tree_css
-                                                           addStylesheet $ StaticR css_exercises_css
-                                                           $(widgetFile "document")
-                                                           addScript $ StaticR ghcjs_allactions_runmain_js
+                                               time <- liftIO getCurrentTime
+                                               if visibleAt time val 
+                                                   then do
+                                                       ehtml <- lift $ fileToHtml path
+                                                       case ehtml of
+                                                           Left err -> defaultLayout $ layout (show err)
+                                                           Right html -> do
+                                                               defaultLayout $ do
+                                                                   let source = "assignment:" ++ show (assignmentMetadataCourse val)
+                                                                   toWidgetHead $(juliusFile "templates/command.julius")
+                                                                   toWidgetHead [julius|var submission_source="#{rawJS source}";|]
+                                                                   toWidgetHead [julius|var assignment_key="#{rawJS $ show key}";|]
+                                                                   addScript $ StaticR js_popper_min_js
+                                                                   addScript $ StaticR ghcjs_rts_js
+                                                                   addScript $ StaticR ghcjs_allactions_lib_js
+                                                                   addScript $ StaticR ghcjs_allactions_out_js
+                                                                   addStylesheet $ StaticR css_tree_css
+                                                                   addStylesheet $ StaticR css_exercises_css
+                                                                   $(widgetFile "document")
+                                                                   addScript $ StaticR ghcjs_allactions_runmain_js
+                                                   else defaultLayout $ layout ("assignment not currently available" :: Text)
     where layout c = [whamlet|
                         <div.container>
                             <article>
                                 #{c}
                         |]
+          visibleAt t a = (assignmentMetadataVisibleTill a < Just t || assignmentMetadataVisibleTill a == Nothing)
+                          && (assignmentMetadataVisibleFrom a > Just t || assignmentMetadataVisibleFrom a == Nothing)
 
 fileToHtml path = do Markdown md <- markdownFromFile path
                      let md' = Markdown (filter ((/=) '\r') md) --remove carrage returns from dos files

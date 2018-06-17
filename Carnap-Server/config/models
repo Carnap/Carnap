@@ -68,6 +68,8 @@ AssignmentMetadata
     document DocumentId
     description Text Maybe
     duedate UTCTime Maybe
+    visibleFrom UTCTime Maybe
+    visibleTill UTCTime Maybe
     date UTCTime
     course CourseId
     UniqueAssignment document course
