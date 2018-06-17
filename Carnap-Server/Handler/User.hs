@@ -102,7 +102,6 @@ getUserR ident = do
                           Just n -> show n
                           Nothing -> "can't find scores"
 
-
 --------------------------------------------------------
 --Grading
 --------------------------------------------------------
@@ -152,8 +151,8 @@ scoreList textbookproblems = mapM (\x -> do score <- toScore textbookproblems x
 --functions for dealing with time and due dates
 
 dateDisplay utc course = case tzByName $ courseTimeZone course of
-                             Just tz  -> show $ utcToZonedTime (timeZoneForUTCTime tz utc) utc
-                             Nothing -> show $ utc
+                             Just tz  -> formatTime defaultTimeLocale "%F %R %Z" $ utcToZonedTime (timeZoneForUTCTime tz utc) utc
+                             Nothing -> formatTime defaultTimeLocale "%F %R UTC" $ utc
 
 utcDueDate textbookproblems x = textbookproblems >>= IM.lookup theIndex . readAssignmentTable
     where theIndex = read . unpack . takeWhile (/= '.') $ x :: Int

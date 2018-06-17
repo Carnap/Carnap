@@ -550,8 +550,8 @@ classCSV classent = do
                                 Nothing -> "can't find scores"
 
 dateDisplay utc course = case tzByName $ courseTimeZone course of
-                             Just tz  -> show $ utcToZonedTime (timeZoneForUTCTime tz utc) utc
-                             Nothing -> show $ utc
+                             Just tz  -> formatTime defaultTimeLocale "%F %R %Z" $ utcToZonedTime (timeZoneForUTCTime tz utc) utc
+                             Nothing -> formatTime defaultTimeLocale "%F %R UTC" $ utc
 
 -- TODO compare directory contents with database results
 listAssignmentMetadata theclass = do asmd <- runDB $ selectList [AssignmentMetadataCourse ==. theclass] []
