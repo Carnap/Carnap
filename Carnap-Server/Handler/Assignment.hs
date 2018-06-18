@@ -88,7 +88,7 @@ getAssignmentR filename =
                                                            Left err -> defaultLayout $ layout (show err)
                                                            Right html -> do
                                                                defaultLayout $ do
-                                                                   let source = "assignment:" ++ show (assignmentMetadataCourse val)
+                                                                   let source = "assignment:" ++ show key 
                                                                    toWidgetHead $(juliusFile "templates/command.julius")
                                                                    toWidgetHead [julius|var submission_source="#{rawJS source}";|]
                                                                    toWidgetHead [julius|var assignment_key="#{rawJS $ show key}";|]

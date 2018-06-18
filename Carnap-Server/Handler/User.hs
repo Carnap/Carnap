@@ -1,13 +1,14 @@
 module Handler.User where
 
 import Import
-import Prelude (read)
+import Text.Read (read, readMaybe)
 import qualified Text.Blaze.Html5 as B
 import Text.Blaze.Html5.Attributes
 import Carnap.Languages.PurePropositional.Logic (DerivedRule(..))
 import Carnap.GHCJS.SharedTypes
 import Yesod.Form.Bootstrap3
 import Data.Time
+import Data.List ((!!),elemIndex)
 import Data.Time.Zones
 import Data.Time.Zones.All
 import Data.Aeson (decodeStrict)
@@ -72,11 +73,14 @@ getUserR ident = do
             case maybeCourseId of
                 Just cid ->
                     do Just course <- runDB $ get cid
+                       asmd <- runDB $ selectList [AssignmentMetadataCourse ==. cid] []
+                       asDocs <- mapM (runDB . get) (map (assignmentMetadataDocument . entityVal) asmd)
                        textbookproblems <- getProblemSets cid
-                       assignments <- assignmentsOf cid textbookproblems
-                       let getSubs typ = map entityVal <$> runDB (selectList ([ProblemSubmissionType ==. typ] ++ problemQuery uid cid) [])
+                       assignments <- assignmentsOf course textbookproblems asmd asDocs
+                       pq <- getProblemQuery uid cid
+                       let getSubs typ = map entityVal <$> runDB (selectList ([ProblemSubmissionType ==. typ] ++ pq) [])
                        subs@[synsubs,transsubs,dersubs,ttsubs] <- mapM getSubs [SyntaxCheck,Translation,Derivation,TruthTable]
-                       [syntable,transtable,dertable,tttable] <- mapM (problemsToTable course textbookproblems) subs
+                       [syntable,transtable,dertable,tttable] <- mapM (problemsToTable course textbookproblems asmd asDocs) subs
                        score <- totalScore textbookproblems (concat subs)
                        defaultLayout $ do
                            addScript $ StaticR js_bootstrap_bundle_min_js
@@ -129,7 +133,8 @@ scoreByIdAndClassTotal cid uid =
 scoreByIdAndClassPerProblem cid uid = 
         do (Just course) <- runDB (get cid)
            textbookproblems <- getProblemSets cid
-           subs <- map entityVal <$> (runDB $ selectList (problemQuery uid cid) [])
+           pq <- getProblemQuery uid cid
+           subs <- map entityVal <$> (runDB $ selectList pq [])
            textbookproblems <-  getProblemSets cid
            scoreList textbookproblems subs
 
@@ -165,14 +170,16 @@ laterThan t1 t2 = diffUTCTime t1 t2 > 0
 --------------------------------------------------------
 --reusable components
 
-problemsToTable course textbookproblems submissions = do 
+problemsToTable course textbookproblems asmd asDocs submissions = do 
             rows <- mapM toRow submissions
             return $ do B.table B.! class_ "table table-striped" $ do
+                            B.col B.! style "width:100px"
                             B.col B.! style "width:50px"
                             B.col B.! style "width:100px"
                             B.col B.! style "width:100px"
                             B.col B.! style "width:100px"
                             B.thead $ do
+                                B.th "Source"
                                 B.th "Exercise"
                                 B.th "Content"
                                 B.th "Submitted"
@@ -180,19 +187,26 @@ problemsToTable course textbookproblems submissions = do
                             B.tbody $ sequence_ rows
         where toRow p = do score <- toScore textbookproblems p 
                            return $ do
-                              B.tr $ do B.td $ B.toHtml (problemSubmissionIdent p)
+                              B.tr $ do B.td $ printSource (problemSubmissionSource p)
+                                        B.td $ B.toHtml (problemSubmissionIdent p)
                                         B.td $ B.toHtml (displayProblemData $ problemSubmissionData p)
                                         B.td $ B.toHtml (dateDisplay (problemSubmissionTime p) course)
                                         B.td $ B.toHtml $ show $ score
+              printSource Book = "Textbook"
+              printSource (Assignment s) = 
+                case (readMaybe s) of
+                    Nothing -> "Unknown"
+                    Just k -> case elemIndex k (map entityKey asmd) of
+                        Nothing -> "No existing assignment"
+                        Just n -> case asDocs !! n of
+                            Nothing -> "No document"
+                            Just d -> B.toHtml $ documentFilename d
 
 tryDelete name = "tryDeleteRule(\"" <> name <> "\")"
 
 --properly localized assignments for a given class 
 --XXX---should this just be in the hamlet?
-assignmentsOf cid textbookproblems = do
-             asmd <- runDB $ selectList [AssignmentMetadataCourse ==. cid] []
-             asDocs <- mapM (runDB . get) (map (assignmentMetadataDocument . entityVal) asmd)
-             Just course <- runDB $ get cid
+assignmentsOf course textbookproblems asmd asDocs = do
              time <- liftIO getCurrentTime
              return $
                 [whamlet|

@@ -79,6 +79,9 @@ instructorIdByIdent ident = runDB $ do muent <- getBy $ UniqueUser ident
 udByInstructorId id = do [uid] <- runDB $ selectList [UserDataInstructorId ==. Just id] []
                          return uid
 
-problemQuery uid cid =  [ ProblemSubmissionUserId ==. uid] 
-                            ++ ([ProblemSubmissionSource ==. Assignment (show cid) ] 
-                                ||. [ProblemSubmissionSource ==. Book])
+getProblemQuery uid cid = do asl <- runDB $ map entityKey <$> selectList [AssignmentMetadataCourse ==. cid] []
+                             return $ problemQuery uid asl
+
+problemQuery uid asl = [ ProblemSubmissionUserId ==. uid] 
+                            ++ foldr (||.) [ProblemSubmissionSource ==. Book] (map assignmentQuery asl)
+        where assignmentQuery as = [ProblemSubmissionSource ==. Assignment (show as) ]
