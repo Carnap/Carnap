@@ -82,7 +82,7 @@
                                         <td>#{dateDisplay due c}
                                     $nothing
                                         <td>No Due Date
-                                    <td>#{show $ assignmentMetadataDate a}
+                                    <td>#{dateDisplay (assignmentMetadataDate a) c}
                                     <td>#{courseTitle c}
                                     <td>
                                         <button.btn.btn-sm.btn-secondary type="button" onclick="tryDeleteAssignment('#{decodeUtf8 $ encode $ DeleteAssignment k}','#{documentFilename d}','#{courseTitle c}')">
