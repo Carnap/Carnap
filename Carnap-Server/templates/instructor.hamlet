@@ -69,7 +69,7 @@
                         <thead>
                             <th> Filename
                             <th> Due Date
-                            <th> Saved on
+                            <th> Visible
                             <th> Course
                             <th> Actions
                         <tbody>
@@ -82,7 +82,17 @@
                                         <td>#{dateDisplay due c}
                                     $nothing
                                         <td>No Due Date
-                                    <td>#{dateDisplay (assignmentMetadataDate a) c}
+                                    <td>
+                                        $maybe from <- assignmentMetadataVisibleFrom a
+                                            $maybe till <- assignmentMetadataVisibleTill a
+                                                #{dateDisplay from c}-#{dateDisplay till c}
+                                            $nothing
+                                                #{dateDisplay from c}-∞
+                                        $nothing 
+                                            $maybe till <- assignmentMetadataVisibleTill a
+                                                ∞-#{dateDisplay till c}
+                                            $nothing
+                                                Always
                                     <td>#{courseTitle c}
                                     <td>
                                         <button.btn.btn-sm.btn-secondary type="button" onclick="tryDeleteAssignment('#{decodeUtf8 $ encode $ DeleteAssignment k}','#{documentFilename d}','#{courseTitle c}')">

@@ -129,7 +129,6 @@ function deleteProblemSet (json) {
         data: json,
         success: function(data) {
             var el = $("#problem-set-" + $.escapeSelector(course) + "-" + pn.toString());
-            console.log(el);
             el.remove();
             window.alert("Deleted problem set " + pn.toString());
             },
@@ -147,9 +146,8 @@ $("#updateAssignment").submit(function(e) {
         processData: false,
         contentType: false,
         success: function(data) {
-            var el = $("#assignment-" + $.escapeSelector(data[0]) + "-" + $.escapeSelector(data[1]) + " td")[1]
-            el.innerHTML = data[2];
             $("#updateAssignmentData").modal('hide');
+            location.reload() /*lazy. Fix eventually*/
             },
         error: function(data) {
             window.alert("Error, couldn't update the assignment ")

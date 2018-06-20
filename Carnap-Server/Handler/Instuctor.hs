@@ -25,7 +25,7 @@ putInstructorR ident = do
         ((courserslt,_),_)     <- runFormPost (identifyForm "updateCourse" $ updateCourseForm)
         ((documentrslt,_),_)   <- runFormPost (identifyForm "updateDocument" $ updateDocumentForm)
         case (assignmentrslt,courserslt,documentrslt) of 
-            (FormSuccess (filename, coursename, mdue, mduetime, mdesc),_,_) -> do
+            (FormSuccess (filename, coursename, mdue, mduetime,mfrom,mfromtime,muntil,muntiltime, mdesc),_,_) -> do
                              massignEnt <- runDB $ do Just (Entity uid _) <- getBy (UniqueUser ident)
                                                       Just (Entity _ umd) <- getBy (UniqueUserData uid)
                                                       let Just imdid = userDataInstructorId umd
@@ -33,20 +33,22 @@ putInstructorR ident = do
                                                       Just (Entity docid _) <- getBy $ UniqueDocument filename uid
                                                       getBy $ UniqueAssignment docid cid
                              case massignEnt of 
-                                   Nothing -> return ()
+                                   Nothing -> returnJson ("Could not find assignment!"::Text)
                                    Just (Entity k v) -> 
                                         do let cid = assignmentMetadataCourse v
-                                           runDB $ do maybeDo mdue (\due -> 
-                                                         do (Just course) <- get cid
-                                                            let (Just tz) = tzByName . courseTimeZone $ course
-                                                                localdue = case mduetime of
-                                                                    (Just time) -> LocalTime due time
-                                                                    _ -> LocalTime due (TimeOfDay 23 59 59)
-                                                            update k [ AssignmentMetadataDuedate =. (Just $ localTimeToUTCTZ tz localdue) ])
+                                           runDB $ do (Just course) <- get cid
+                                                      let (Just tz) = tzByName . courseTimeZone $ course
+                                                      let mtimeUpdate mdate mtime field = maybeDo mdate (\date-> 
+                                                             do let localtime = case mtime of
+                                                                        (Just time) -> LocalTime date time
+                                                                        _ -> LocalTime date (TimeOfDay 23 59 59)
+                                                                update k [ field =. (Just $ localTimeToUTCTZ tz localtime) ])
+                                                      mtimeUpdate mdue mduetime AssignmentMetadataDuedate
+                                                      mtimeUpdate mfrom mfromtime AssignmentMetadataVisibleFrom
+                                                      mtimeUpdate muntil muntiltime AssignmentMetadataVisibleTill
                                                       maybeDo mdesc (\desc -> update k
                                                          [ AssignmentMetadataDescription =. (Just $ unTextarea desc) ])
-                             case mdue of Nothing -> returnJson ([coursename, filename,"No Due Date"])
-                                          Just due -> returnJson ([coursename, filename, pack $ show due])
+                                           returnJson ("updated!"::Text)
             (_,FormSuccess (coursetitle,mdesc,mstart,mend,mpoints),_) -> do
                              Just instructor <- instructorIdByIdent ident
                              mcourseEnt <- runDB . getBy . UniqueCourse coursetitle $ instructor
@@ -303,12 +305,51 @@ uploadAssignmentForm classes docs = renderBootstrap3 BootstrapBasicForm $ (,,,,,
     where classnames = map (\theclass -> (courseTitle . entityVal $ theclass, theclass)) classes
           docnames = map (\thedoc -> (documentFilename . entityVal $ thedoc, thedoc)) docs
 
-updateAssignmentForm = renderBootstrap3 BootstrapBasicForm $ (,,,,)
-            <$> areq fileName "" Nothing
-            <*> areq courseName "" Nothing
-            <*> aopt (jqueryDayField def) (bfs ("Due Date"::Text)) Nothing
-            <*> aopt timeFieldTypeTime (bfs ("Due Time"::Text)) Nothing
-            <*> aopt textareaField (bfs ("Assignment Description"::Text)) Nothing
+updateAssignmentForm extra = do 
+            (fileRes,fileView) <- mreq fileName "" Nothing
+            (courseRes, courseView) <- mreq courseName "" Nothing
+            (dueRes,dueView) <- mopt (jqueryDayField def) (withPlaceholder "Date" $ bfs ("Due Date"::Text)) Nothing
+            (duetimeRes, duetimeView) <- mopt timeFieldTypeTime (withPlaceholder "Time" $ bfs ("Due Time"::Text)) Nothing
+            (fromRes,fromView) <- mopt (jqueryDayField def) (withPlaceholder "Date" $ bfs ("Visible From Date"::Text)) Nothing
+            (fromtimeRes, fromtimeView) <- mopt timeFieldTypeTime (withPlaceholder "Time" $ bfs ("Visible From Time"::Text)) Nothing
+            (tillRes, tillView) <- mopt (jqueryDayField def) (withPlaceholder "Date" $ bfs ("Visible Until Date"::Text)) Nothing
+            (tilltimeRes,tilltimeView) <- mopt timeFieldTypeTime (withPlaceholder "Time" $ bfs ("Visible Until Time"::Text)) Nothing
+            (descRes,descView) <- mopt textareaField (bfs ("Assignment Description"::Text)) Nothing
+            let theRes = (,,,,,,,,) <$> fileRes <*> courseRes 
+                                    <*> dueRes <*> duetimeRes 
+                                    <*> fromRes <*> fromtimeRes
+                                    <*> tillRes <*> tilltimeRes
+                                    <*> descRes
+            let widget = do
+                [whamlet|
+                #{extra}
+                ^{fvInput fileView}
+                ^{fvInput courseView}
+                <h7> Due Date
+                <div.row>
+                    <div.form-group.col-md-6>
+                        ^{fvInput dueView}
+                    <div.form-group.col-md-6>
+                        ^{fvInput duetimeView}
+                <h7> Visible From
+                <div.row>
+                    <div.form-group.col-md-6>
+                        ^{fvInput fromView}
+                    <div.form-group.col-md-6>
+                        ^{fvInput fromtimeView}
+                <h7> Visible To
+                <div.row>
+                    <div.form-group.col-md-6>
+                        ^{fvInput tillView}
+                    <div.form-group.col-md-6>
+                        ^{fvInput tilltimeView}
+                <h7> Description
+                <div.row>
+                    <div.form-group.col-md-12>
+                        ^{fvInput descView}
+                |]
+            return (theRes,widget)
+
     where fileName :: (Monad m, RenderMessage (HandlerSite m) FormMessage) => Field m Text 
           fileName = hiddenField
           courseName :: (Monad m, RenderMessage (HandlerSite m) FormMessage) => Field m Text 
