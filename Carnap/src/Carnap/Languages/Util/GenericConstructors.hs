@@ -373,8 +373,26 @@ instance FirstOrderLex (IntIndex b)
 
 
 ----------------------
---  6. Quantifiers  --
+--  6. Binders      --
 ----------------------
+
+data GenericTypedLambda f g b a where
+        TypedLambda :: String -> GenericTypedLambda f g b ((f b -> g c) -> g (b -> c))
+
+instance UniformlyEq (GenericTypedLambda f g b) where
+    (TypedLambda _) =* (TypedLambda _) = True
+
+instance Monad m => MaybeMonadVar (GenericTypedLambda f g b) m
+
+instance MaybeStaticVar (GenericTypedLambda f g b)
+
+instance FirstOrderLex (GenericTypedLambda f g b) 
+
+instance Schematizable (GenericTypedLambda f g b) where
+        schematize (TypedLambda v)  = \(x:_) -> if last x == ']' then "λ" ++ v ++ x
+                                                                        else "λ" ++ v ++ "[" ++ x ++ "]"
+
+type SOLambda = GenericTypedLambda Term Form Int
 
 data GenericQuant f g b c a where
         All  :: String -> GenericQuant f g b c ((f c -> g b) -> g b)

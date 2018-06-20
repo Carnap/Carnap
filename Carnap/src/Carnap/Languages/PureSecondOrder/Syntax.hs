@@ -22,22 +22,6 @@ import Data.List (intercalate)
 --  1.0 Generic Data  --
 ------------------------
 
-data SOLambda a where
-        SOLam :: String -> SOLambda ((Term Int -> Form b) -> Form (Int -> b))
-
-instance UniformlyEq SOLambda where
-    (SOLam _) =* (SOLam _) = True
-
-instance Monad m => MaybeMonadVar SOLambda m
-
-instance MaybeStaticVar SOLambda
-
-instance FirstOrderLex SOLambda
-
-instance Schematizable SOLambda where
-        schematize (SOLam v)  = \(x:_) -> if last x == ']' then "λ" ++ v ++ x
-                                                           else "λ" ++ v ++ "[" ++ x ++ "]"
-
 data SOApplicator a where
         SOApp :: SOApplicator (Form (Int -> b) -> Term Int -> Form b)
 
@@ -224,7 +208,7 @@ instance CopulaSchema MonadicallySOL where
     appSchema (SOQuant (Some x)) (LLam f) e = schematize (Some x) (show (f $ SOV x) : e)
     appSchema (SOMQuant (All x)) (LLam f) e = schematize (All x) (show (f $ SOMVar x) : e)
     appSchema (SOMQuant (Some x)) (LLam f) e = schematize (Some x) (show (f $ SOMVar x) : e)
-    appSchema (SOMAbs (SOLam v)) (LLam f) e = schematize (SOLam v) (show (f $ SOV v) : e)
+    appSchema (SOMAbs (TypedLambda v)) (LLam f) e = schematize (TypedLambda v) (show (f $ SOV v) : e)
     appSchema x y e = schematize x (show y : e)
 
     lamSchema f [] = "λβ_" ++ show h ++ "." ++ show (f (SOSV (-1 * h)))
@@ -259,6 +243,7 @@ instance PrismTermEquality MonadicallySOLLex Int Bool
 instance PrismBooleanConnLex MonadicallySOLLex Bool
 instance PrismStandardQuant MonadicallySOLLex Bool Int
 instance PrismGenericQuant MonadicallySOLLex Form Form Bool (Int -> Bool) 
+instance PrismGenericTypedLambda MonadicallySOLLex Term Form Int
 
 --------------------------------------------------------
 --  2.2 Polyadic SOL
@@ -299,7 +284,7 @@ instance CopulaSchema PolyadicallySOL where
     appSchema (SOQuant (Some x)) (LLam f) e = schematize (Some x) (show (f $ SOV x) : e)
     appSchema (SOPQuant (SOPAll x a)) (LLam f) e = schematize (SOPAll x a) (show (f $ SOPVar x a) : e)
     appSchema (SOPQuant (SOPSome x a)) (LLam f) e = schematize (SOPSome x a) (show (f $ SOPVar x a) : e)
-    appSchema (SOPAbs (SOLam v)) (LLam f) e = schematize (SOLam v) (show (f $ SOV v) : e)
+    appSchema (SOPAbs (TypedLambda v)) (LLam f) e = schematize (TypedLambda v) (show (f $ SOV v) : e)
     appSchema x y e = schematize x (show y : e)
 
     lamSchema f [] = "λβ_" ++ show h ++ "." ++ show (f (SOSV (-1 * h)))
@@ -316,6 +301,7 @@ instance PrismIndexedConstant PolyadicallySOLLex Int
 instance PrismPolyadicPredicate PolyadicallySOLLex Int Bool
 instance PrismPolyadicFunction PolyadicallySOLLex Int Int
 instance PrismPolyadicSchematicFunction PolyadicallySOLLex Int Int
+instance PrismGenericTypedLambda PolyadicallySOLLex Term Form Int
 instance PrismBooleanConnLex PolyadicallySOLLex Bool
 instance PrismStandardQuant PolyadicallySOLLex Bool Int
 instance PrismTermEquality PolyadicallySOLLex Int Bool
@@ -331,8 +317,8 @@ incLam :: Typeable a => Int -> PolyadicallySOL (Form a) -> PolyadicallySOL (Term
     -> PolyadicallySOL (Form (Int -> a))
 incLam n l@((SOPApp SOApp) :!$: l' :!$: t) v = 
         if n > 0 then (SOPApp SOApp) :!$: (incLam (n - 1) l' v) :!$: t
-                 else SOAbstract (SOLam $ show v) (\x -> subBoundVar v x l)
-incLam _ l v = SOAbstract (SOLam $ show v) (\x -> subBoundVar v x l)
+                 else typedLam (show v) (\x -> subBoundVar v x l)
+incLam _ l v = typedLam (show v) (\x -> subBoundVar v x l)
 
 incVar :: Typeable a => PolyadicallySOL (Form a) -> PolyadicallySOL (Form (Int -> a))
 incVar ((SOPApp SOApp) :!$: l :!$: t) = (SOPApp SOApp) :!$: (incVar l) :!$: t

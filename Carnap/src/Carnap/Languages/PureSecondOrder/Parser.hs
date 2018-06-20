@@ -7,7 +7,7 @@ module Carnap.Languages.PureSecondOrder.Parser
 
 import Carnap.Core.Data.AbstractSyntaxDataTypes
 import Carnap.Languages.PureSecondOrder.Syntax
-import Carnap.Languages.Util.LanguageClasses (BooleanLanguage, IndexedPropLanguage(..), QuantLanguage(..), PolyadicPredicateLanguage(..))
+import Carnap.Languages.Util.LanguageClasses (BooleanLanguage, IndexedPropLanguage(..), QuantLanguage(..), PolyadicPredicateLanguage(..), TypedLambdaLanguage(..))
 import Carnap.Languages.Util.GenericParsers
 import Text.Parsec
 import Text.Parsec.Expr
@@ -101,7 +101,7 @@ parseLamApp parseForm parseTerm =
            f <- char '[' *> parseForm <* char ']'
            term <- char '(' *> parseTerm <* char ')'
            let bf x = subBoundVar var x f
-           return (SOMApp SOApp :!$: (SOAbstract (SOLam (show var)) bf) :!$: term)
+           return (SOMApp SOApp :!$: (typedLam (show var) bf) :!$: term)
 
 parseLamAppPSOL parseForm parseTerm = 
         do binders <- many1 binder

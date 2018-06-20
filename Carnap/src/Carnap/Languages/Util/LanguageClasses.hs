@@ -485,7 +485,7 @@ instance {-#OVERLAPPABLE#-} PrismElementarySetsLex lex b => ElementarySetsLangua
         setComplement = curry $ review (binaryOpPrism _setComplement)
 
 --------------------------------------------------------
---1.4. Quantifiers
+--1.4. Binders
 --------------------------------------------------------
 
 class QuantLanguage l t where
@@ -521,6 +521,28 @@ class (Typeable b, Typeable c, Typeable f, Typeable g, PrismLink (FixLang lex) (
         qsome = prism' (\s -> Bind (Some s))
                        (\x -> case x of (Bind (Some s)) -> Just s
                                         _ -> Nothing)
+
+class TypedLambdaLanguage lex f g b where
+        typedLam :: Typeable c => String -> (FixLang lex (f b) -> FixLang lex (g c)) -> FixLang lex (g (b -> c))
+
+class (Typeable b, Typeable f, Typeable g,  PrismLink (FixLang lex) (Abstractors (GenericTypedLambda f g b) (FixLang lex))) 
+        => PrismGenericTypedLambda lex f g b where
+
+        _tlam :: Typeable c => Prism' (FixLang lex ((f b -> g c) -> g (b -> c))) String
+        _tlam = link_typedLambda . tlam
+
+        link_typedLambda :: Typeable c => Prism' (FixLang lex ((f b -> g c) -> g (b -> c))) 
+                               (Abstractors (GenericTypedLambda f g b) (FixLang lex) ((f b -> g c) -> g (b -> c)))
+        link_typedLambda = link 
+
+        tlam :: Typeable c => Prism' (Abstractors (GenericTypedLambda f g b) (FixLang lex) ((f b -> g c) -> g (b -> c))) String
+        tlam = prism' (\s -> Abstract (TypedLambda s))
+                      (\x -> case x of (Abstract (TypedLambda s)) -> Just s
+                                       _ -> Nothing)
+
+instance {-#OVERLAPPABLE#-} 
+        (PrismGenericTypedLambda lex f g b) => TypedLambdaLanguage lex f g b where
+            typedLam s = review (unaryOpPrism (_tlam . only s)) . LLam
 
 -------------------
 --  1.5 Exotica  --

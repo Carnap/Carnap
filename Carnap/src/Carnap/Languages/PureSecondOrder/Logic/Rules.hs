@@ -48,8 +48,8 @@ instance CopulaSchema MSOLSequentCalc where
         schematize (All x) (show (f $ seqsomv x) : e)
     appSchema (SeqSOMQuant (Some x)) (LLam f) e = 
         schematize (Some x) (show (f $ seqsomv x) : e)
-    appSchema (SeqAbst (SOLam v)) (LLam f) e = 
-        schematize (SOLam v) (show (f $ seqv v) : e)
+    appSchema (SeqAbst (TypedLambda v)) (LLam f) e = 
+        schematize (TypedLambda v) (show (f $ seqv v) : e)
     appSchema x y e = schematize x (show y : e)
 
     lamSchema f [] = "λβ_" ++ show h ++ "." ++ show (f $ liftToSequent $ SOSV (-1 * h))
@@ -105,7 +105,7 @@ type PSOLSequentCalc = ClassicalSequentOver PolyadicallySOLLex
 instance Eq (PSOLSequentCalc a) where
         (==) = (=*)
 
-pattern SeqSOPQuant q     = FX (Lx2 (Lx3 (Bind q)))
+pattern SeqSOPQuant q = FX (Lx2 (Lx3 (Bind q)))
 
 instance ParsableLex (Form Bool) PolyadicallySOLLex where
         langParser = psolFormulaParser
@@ -120,8 +120,8 @@ instance CopulaSchema PSOLSequentCalc where
         schematize (SOPAll x a) (show (f $ seqsopv x a) : e)
     appSchema (SeqSOPQuant (SOPSome x a)) (LLam f) e = 
         schematize (SOPSome x a) (show (f $ seqsopv x a) : e)
-    appSchema (SeqAbst (SOLam v)) (LLam f) e = 
-        schematize (SOLam v) (show (f $ seqv v) : e)
+    appSchema (SeqAbst (TypedLambda v)) (LLam f) e = 
+        schematize (TypedLambda v) (show (f $ seqv v) : e)
     appSchema x y e = schematize x (show y : e)
 
     lamSchema f [] = "λβ_" ++ show h ++ "." ++ show (f $ liftToSequent $ SOSV (-1 * h))
@@ -138,9 +138,9 @@ instance CopulaSchema PSOLSequentCalc where
 ---------------------
 
 monadicAbstraction = [ GammaV 1 :|-: ss (predScheme 0)] 
-                     ∴ GammaV 1 :|-: ss (SOMApp SOApp :!$: (SOAbstract (SOLam "v") (\x -> SOPhi 1 AOne AOne :!$: x)) :!$: SOT 0)
+                     ∴ GammaV 1 :|-: ss (SOMApp SOApp :!$: (typedLam "v" (\x -> SOPhi 1 AOne AOne :!$: x)) :!$: SOT 0)
 
-monadicApplication = [ GammaV 1 :|-: ss (SOMApp SOApp :!$: (SOAbstract (SOLam "v") (\x -> SOPhi 1 AOne AOne :!$: x)) :!$: SOT 0)] 
+monadicApplication = [ GammaV 1 :|-: ss (SOMApp SOApp :!$: (typedLam "v" (\x -> SOPhi 1 AOne AOne :!$: x)) :!$: SOT 0)] 
                      ∴ GammaV 1 :|-: ss (predScheme 0)
 
 monadicUniversalInstantiation = [ GammaV 1 :|-: ss (lall "v" (\x -> SOMCtx 1 :!$: x))] 
