@@ -159,19 +159,22 @@ postInstructorR ident = do
     ((newclassrslt,_),_) <- runFormPost (identifyForm "createCourse" createCourseForm)
     ((frombookrslt,_),_) <- runFormPost (identifyForm "setBookAssignment" $ setBookAssignmentForm classes)
     case assignmentrslt of 
-        (FormSuccess (doc, Entity classkey theclass, duedate,duetime, assignmentdesc, subtime)) ->
+        (FormSuccess (doc, Entity classkey theclass, mdue,mduetime,mfrom,mfromtime,mtill,mtilltime, massignmentdesc, subtime)) ->
             do let (Just tz) = tzByName . courseTimeZone $ theclass
-                   localdue = case (duedate,duetime) of
-                                  (Just date, Just time) -> Just $ LocalTime date time
-                                  (Just date,_)  -> Just $ LocalTime date (TimeOfDay 23 59 59)
-                                  _ -> Nothing
-                   info = unTextarea <$> assignmentdesc
+                   localize (mdate,mtime) = case (mdate,mtime) of
+                              (Just date, Just time) -> Just $ LocalTime date time
+                              (Just date,_)  -> Just $ LocalTime date (TimeOfDay 23 59 59)
+                              _ -> Nothing
+                   localdue = localize (mdue,mduetime)
+                   localfrom = localize (mfrom,mfromtime)
+                   localtill = localize (mtill,mtilltime)
+                   info = unTextarea <$> massignmentdesc
                success <- tryInsert $ AssignmentMetadata 
                                         { assignmentMetadataDocument = (entityKey doc)
                                         , assignmentMetadataDescription = info 
                                         , assignmentMetadataDuedate = (localTimeToUTCTZ tz <$> localdue) 
-                                        , assignmentMetadataVisibleFrom = Nothing
-                                        , assignmentMetadataVisibleTill = Nothing
+                                        , assignmentMetadataVisibleFrom = (localTimeToUTCTZ tz <$> localfrom)
+                                        , assignmentMetadataVisibleTill = (localTimeToUTCTZ tz <$> localtill)
                                         , assignmentMetadataDate = subtime
                                         , assignmentMetadataCourse = classkey
                                         }
@@ -295,13 +298,57 @@ instance FromJSON InstructorDelete
 --  Components  --
 ------------------
 
-uploadAssignmentForm classes docs = renderBootstrap3 BootstrapBasicForm $ (,,,,,)
-            <$> areq (selectFieldList docnames) (bfs ("Document" :: Text)) Nothing
-            <*> areq (selectFieldList classnames) (bfs ("Class" :: Text)) Nothing
-            <*> aopt (jqueryDayField def) (bfs ("Due Date"::Text)) Nothing
-            <*> aopt timeFieldTypeTime (bfs ("Due Time"::Text)) Nothing
-            <*> aopt textareaField (bfs ("Assignment Description"::Text)) Nothing
-            <*> lift (liftIO getCurrentTime)
+uploadAssignmentForm classes docs extra = do
+            (fileRes, fileView) <- mreq (selectFieldList docnames) (bfs ("Document" :: Text)) Nothing
+            (classRes, classView) <- mreq (selectFieldList classnames) (bfs ("Class" :: Text)) Nothing
+            (dueRes,dueView) <- mopt (jqueryDayField def) (withPlaceholder "Date" $ bfs ("Due Date"::Text)) Nothing
+            (duetimeRes, duetimeView) <- mopt timeFieldTypeTime (withPlaceholder "Time" $ bfs ("Due Time"::Text)) Nothing
+            (fromRes,fromView) <- mopt (jqueryDayField def) (withPlaceholder "Date" $ bfs ("Visible From Date"::Text)) Nothing
+            (fromtimeRes, fromtimeView) <- mopt timeFieldTypeTime (withPlaceholder "Time" $ bfs ("Visible From Time"::Text)) Nothing
+            (tillRes, tillView) <- mopt (jqueryDayField def) (withPlaceholder "Date" $ bfs ("Visible Until Date"::Text)) Nothing
+            (tilltimeRes,tilltimeView) <- mopt timeFieldTypeTime (withPlaceholder "Time" $ bfs ("Visible Until Time"::Text)) Nothing
+            (descRes,descView) <- mopt textareaField (bfs ("Assignment Description"::Text)) Nothing
+            currentTime <- lift (liftIO getCurrentTime)
+            let theRes = (,,,,,,,,,) <$> fileRes <*> classRes 
+                                     <*> dueRes  <*> duetimeRes 
+                                     <*> fromRes <*> fromtimeRes
+                                     <*> tillRes <*> tilltimeRes
+                                     <*> descRes <*> pure currentTime
+            let widget = do
+                [whamlet|
+                #{extra}
+                <h6>File to Assign
+                <div.row>
+                    <div.form-group.col-md-12>
+                        ^{fvInput fileView}
+                <h6>Assign to
+                <div.row>
+                    <div.form-group.col-md-12>
+                        ^{fvInput classView}
+                <h6> Due Date
+                <div.row>
+                    <div.form-group.col-md-6>
+                        ^{fvInput dueView}
+                    <div.form-group.col-md-6>
+                        ^{fvInput duetimeView}
+                <h6> Visible From
+                <div.row>
+                    <div.form-group.col-md-6>
+                        ^{fvInput fromView}
+                    <div.form-group.col-md-6>
+                        ^{fvInput fromtimeView}
+                <h6> Visible To
+                <div.row>
+                    <div.form-group.col-md-6>
+                        ^{fvInput tillView}
+                    <div.form-group.col-md-6>
+                        ^{fvInput tilltimeView}
+                <h6> Description
+                <div.row>
+                    <div.form-group.col-md-12>
+                        ^{fvInput descView}
+                |]
+            return (theRes,widget)
     where classnames = map (\theclass -> (courseTitle . entityVal $ theclass, theclass)) classes
           docnames = map (\thedoc -> (documentFilename . entityVal $ thedoc, thedoc)) docs
 
@@ -325,25 +372,25 @@ updateAssignmentForm extra = do
                 #{extra}
                 ^{fvInput fileView}
                 ^{fvInput courseView}
-                <h7> Due Date
+                <h6> Due Date
                 <div.row>
                     <div.form-group.col-md-6>
                         ^{fvInput dueView}
                     <div.form-group.col-md-6>
                         ^{fvInput duetimeView}
-                <h7> Visible From
+                <h6> Visible From
                 <div.row>
                     <div.form-group.col-md-6>
                         ^{fvInput fromView}
                     <div.form-group.col-md-6>
                         ^{fvInput fromtimeView}
-                <h7> Visible To
+                <h6> Visible To
                 <div.row>
                     <div.form-group.col-md-6>
                         ^{fvInput tillView}
                     <div.form-group.col-md-6>
                         ^{fvInput tilltimeView}
-                <h7> Description
+                <h6> Description
                 <div.row>
                     <div.form-group.col-md-12>
                         ^{fvInput descView}

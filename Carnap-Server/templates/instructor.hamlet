@@ -60,10 +60,10 @@
 
                 <div.tab-pane id="assignFromDocument" role="tabpanel">
                     <h2> Assign Document
-                    <form method=post enctype=#{enctypeCreateAssignment}>
+                    <form method=post action="#assignFromDocument" enctype=#{enctypeCreateAssignment}>
                         ^{createAssignmentWidget}
                         <div.form-group>
-                            <input.btn.btn-primary  type=submit value="Assign">
+                            <input.btn.btn-primary type=submit value="Assign">
                     <h2> Edit Assignments
                     <table class="table">
                         <thead>
