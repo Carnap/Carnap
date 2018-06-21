@@ -44,7 +44,7 @@ instance CopulaSchema MSOLSequentCalc where
         schematize (All x) (show (f $ seqv x) : e)
     appSchema (SeqQuant (Some x)) (LLam f) e = 
         schematize (Some x) (show (f $ seqv x) : e)
-    appSchema (SeqSOMQuant (Some x)) (LLam f) e = 
+    appSchema (SeqSOMQuant (All x)) (LLam f) e = 
         schematize (All x) (show (f $ seqsomv x) : e)
     appSchema (SeqSOMQuant (Some x)) (LLam f) e = 
         schematize (Some x) (show (f $ seqsomv x) : e)
