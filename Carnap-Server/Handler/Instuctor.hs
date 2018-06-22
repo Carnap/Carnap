@@ -459,11 +459,31 @@ updateDocumentModal form enc = [whamlet|
                                             <input.btn.btn-primary type=submit value="update">
                     |]    
 
-setBookAssignmentForm classes = renderBootstrap3 BootstrapBasicForm $ (,,,)
-            <$> areq (selectFieldList classnames) (bfs ("Class" :: Text)) Nothing
-            <*> areq (selectFieldList chapters) (bfs ("Problem Set" :: Text))  Nothing
-            <*> areq (jqueryDayField def) (bfs ("Due Date"::Text)) Nothing
-            <*> aopt timeFieldTypeTime (bfs ("Due Time"::Text)) Nothing
+setBookAssignmentForm classes extra = do 
+            (classRes, classView) <- mreq (selectFieldList classnames) (bfs ("Class" :: Text)) Nothing
+            (probRes, probView) <- mreq (selectFieldList chapters) (bfs ("Problem Set" :: Text))  Nothing
+            (dueRes, dueView) <- mreq (jqueryDayField def) (withPlaceholder "Date" $ bfs ("Due Date"::Text)) Nothing
+            (duetimeRes, duetimeView) <- mopt timeFieldTypeTime (withPlaceholder "Time" $ bfs ("Due Time"::Text)) Nothing
+            let theRes = (,,,) <$> classRes <*> probRes <*> dueRes <*> duetimeRes
+            let widget = do
+                [whamlet|
+                #{extra}
+                <h6>Assign to
+                <div.row>
+                    <div.form-group.col-md-12>
+                        ^{fvInput classView}
+                <h6> Problem Set
+                <div.row>
+                    <div.form-group.col-md-12>
+                        ^{fvInput probView}
+                <h6> Due Date
+                <div.row>
+                    <div.form-group.col-md-6>
+                        ^{fvInput dueView}
+                    <div.form-group.col-md-6>
+                        ^{fvInput duetimeView}
+                |]
+            return (theRes, widget)
     where chapters = map (\x -> ("Problem Set " ++ pack (show x),x)) [1..17] :: [(Text,Int)]
           classnames = map (\theclass -> (courseTitle . entityVal $ theclass, theclass)) classes
 
