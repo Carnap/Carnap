@@ -111,20 +111,33 @@ getUserR ident = do
 --------------------------------------------------------
 --functions for calculating grades
 
-toScore textbookproblems p = case problemSubmissionAssignmentId p of
-                   Nothing -> 
-                        case utcDueDate textbookproblems (problemSubmissionIdent p) of                      
-                              Just d -> if problemSubmissionTime p `laterThan` d       
-                                            then return (2 :: Int)
-                                            else return (5 :: Int)
-                              Nothing -> return (0 :: Int)
-                   Just a -> do
+toScore textbookproblems p = case ( problemSubmissionAssignmentId p
+                                  , problemSubmissionCorrect p
+                                  ) of
+                   (_,False) -> return extra
+                   (Nothing,True) -> return $
+                        case ( utcDueDate textbookproblems (problemSubmissionIdent p)
+                             , problemSubmissionCredit p) of                      
+                              (Just d, Just c) ->  theGrade d c p + extra
+                              (Just d, Nothing) ->  theGrade d 5 p + extra
+                              (Nothing,_) -> 0
+                   (Just a,True) -> do
                         mmd <- runDB $ get a
                         case mmd of
-                            Nothing -> return (0 :: Int)
-                            Just v -> case assignmentMetadataDuedate v of 
-                                        Just due | problemSubmissionTime p `laterThan` due -> return (2 :: Int)
-                                        _ -> return (5 :: Int)
+                            Nothing -> return 0
+                            Just v -> return $
+                                case ( assignmentMetadataDuedate v
+                                     , problemSubmissionCredit p) of 
+                                        (Just d, Just c) -> theGrade d c p + extra
+                                        (Just d, Nothing) -> theGrade d 5 p + extra
+                                        (Nothing, Just c) -> c + extra
+                                        (Nothing, Nothing) -> 5 + extra
+    where extra = case problemSubmissionExtra p of Nothing -> 0; Just e -> e
+          theGrade :: UTCTime -> Int -> ProblemSubmission -> Int
+          theGrade due points p = if problemSubmissionTime p `laterThan` due 
+                                      then (floor ((fromIntegral points :: Rational) / 2))
+                                      else points
+
                             
 scoreByIdAndClassTotal cid uid = 
         do perprob <- scoreByIdAndClassPerProblem cid uid
