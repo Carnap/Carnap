@@ -132,15 +132,15 @@ activateChecker w (Just (i,o,opts)) =
                          ref <- newIORef (f,[(f,0)], T.Node (f,0) [], 0)  
                          match <- newListener $ tryMatch tree ref w sf
                          (Just w') <- getDefaultView w                    
-                         submit <- newListener $ submitSyn ref l       
+                         submit <- newListener $ submitSyn opts ref l       
                          addListener i keyUp match False                  
                          addListener bt click submit False                
                       (Left e) -> setInnerHTML o (Just $ show e)
                   _ -> print "syntax check was missing an option"
 activateChecker _ Nothing  = return ()
 
-submitSyn :: IORef (PureForm,[(PureForm,Int)], Tree (PureForm,Int),Int) -> String -> EventM HTMLInputElement e ()
-submitSyn ref l = do (f,forms,_,_) <- liftIO $ readIORef ref
-                     case forms of 
-                        [] -> do trySubmit SyntaxCheck l (ProblemContent (pack $ show f)) 
-                        _  -> message "not yet finished"
+submitSyn :: M.Map String String -> IORef (PureForm,[(PureForm,Int)], Tree (PureForm,Int),Int) -> String -> EventM HTMLInputElement e ()
+submitSyn opts ref l = do (f,forms,_,_) <- liftIO $ readIORef ref
+                          case forms of 
+                             [] -> do trySubmit SyntaxCheck opts l (ProblemContent (pack $ show f)) 
+                             _  -> message "not yet finished"

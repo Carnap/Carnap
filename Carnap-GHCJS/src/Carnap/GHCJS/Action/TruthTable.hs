@@ -58,7 +58,7 @@ activateTruthTables w (Just (i,o,opts)) =
                           -- XXX: idea. Return check rather than gRef, to allow different tt setups their own checking proceedures
                           setInnerHTML i (Just $ show f)
                           (Just w') <- getDefaultView w                    
-                          submit <- newListener $ submitTruthTable ref (show f) w' l
+                          submit <- newListener $ submitTruthTable opts ref (show f) w' l
                           check <- newListener $ checkTable ref gRef w'
                           addListener bt1 click submit False                
                           addListener bt2 click check False                
@@ -72,11 +72,11 @@ activateTruthTables w (Just (i,o,opts)) =
                                              else do alert w' "Something's not quite right"
                                                      setAttribute i "class" "incompleteTT"
 
-submitTruthTable:: IORef Bool -> String -> Window -> String -> EventM HTMLInputElement e ()
-submitTruthTable ref s w l = do isDone <- liftIO $ readIORef ref
-                                if isDone 
-                                   then trySubmit TruthTable l (ProblemContent (pack s))
-                                   else message "not yet finished"
+submitTruthTable:: M.Map String String -> IORef Bool -> String -> Window -> String -> EventM HTMLInputElement e ()
+submitTruthTable opts ref s w l = do isDone <- liftIO $ readIORef ref
+                                     if isDone 
+                                        then trySubmit TruthTable opts l (ProblemContent (pack s))
+                                        else message "not yet finished"
 
 createValidityTruthTable :: Document -> PropSequentCalc (Sequent (Form Bool)) -> (Element,Element) -> IORef Bool -> Element -> IO (IORef (Map (Int, Int) Bool))
 createValidityTruthTable w (antced :|-: (SS succed)) (i,o) ref bw =  

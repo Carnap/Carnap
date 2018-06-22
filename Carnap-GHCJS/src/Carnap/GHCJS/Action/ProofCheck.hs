@@ -157,7 +157,7 @@ activateChecker drs w (Just iog@(IOGoal i o g _ opts)) -- TODO: need to update n
                                                  , popout = "popout" `elem` optlist
                                                  }
                         saveRule = Button {label = "Save" , action = trySave drs}
-                        saveProblem l s = Button {label = "Submit" , action = submitDer l s}
+                        saveProblem l s = Button {label = "Submit" , action = submitDer opts l s}
                         optlist = case M.lookup "options" opts of Just s -> words s; Nothing -> []
                         theSeq g = case parse (ndParseSeq calc) "" g of
                                        Left e -> error "couldn't parse goal"
@@ -190,7 +190,6 @@ activateChecker drs w (Just iog@(IOGoal i o g _ opts)) -- TODO: need to update n
               toPremiseSeqs Nothing = Nothing
 
               noRuntimeOptions = Checker $ const . pure $ RuntimeNaturalDeductionConfig mempty mempty
-
 
 threadedCheck checker w ref v (g, fd) = 
         do mt <- readIORef (threadRef checker)
@@ -240,11 +239,11 @@ computeRule ref g mseq = case mseq of
                          (Just seq) -> do setInnerHTML g (Just $ show seq)
                                           writeIORef ref True
 
-submitDer l seq ref _ i = do isFinished <- liftIO $ readIORef ref
-                             if isFinished 
-                                 then do (Just v) <- getValue (castToHTMLTextAreaElement i)
-                                         trySubmit Derivation l (DerivationData (pack $ show seq) (pack v))
-                                 else message "not yet finished"
+submitDer opts l seq ref _ i = do isFinished <- liftIO $ readIORef ref
+                                  if isFinished 
+                                      then do (Just v) <- getValue (castToHTMLTextAreaElement i)
+                                              trySubmit Derivation opts l (DerivationData (pack $ show seq) (pack v))
+                                      else message "not yet finished"
 
 trySave drs ref w i = do isFinished <- liftIO $ readIORef ref
                          rules <- liftIO $ readIORef drs

@@ -17,6 +17,7 @@ import Data.Text.Encoding
 import Data.Tree as T
 import Data.IORef (IORef, readIORef)
 import qualified Data.Map as M
+import Text.Read (readMaybe)
 import Text.Parsec
 import Text.StringLike
 import Text.HTML.TagSoup as TS
@@ -363,13 +364,13 @@ withLabel parser = do label <- many (digit <|> char '.')
                       s <- parser
                       return (label,s)
 
-trySubmit problemType ident problemData = 
+trySubmit problemType opts ident problemData = 
              do msource <- liftIO submissionSource
                 key <- liftIO assignmentKey
                 case msource of 
                    Nothing -> message "Not able to identify problem source. Perhaps this document has not been assigned?"
                    Just source -> liftIO $ sendJSON 
-                                   (Submit problemType ident problemData source True Nothing key) 
+                                   (Submit problemType ident problemData source True (M.lookup "points" opts >>= readMaybe) key) 
                                    (loginCheck $ "Submitted Exercise " ++ ident)
                                    errorPopup
 

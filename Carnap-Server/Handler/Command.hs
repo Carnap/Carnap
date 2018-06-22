@@ -20,7 +20,7 @@ postCommandR = do
            Nothing -> returnJson ("No User" :: String)
            Just uid  -> case cmd of
                 EchoBack (s,b) -> returnJson (reverse s)
-                Submit typ ident dat source correct partial key ->  
+                Submit typ ident dat source correct credit key ->  
                     do time <- liftIO getCurrentTime
                        (mkey, masgn) <- case key of 
                                         "" -> return (Nothing,Nothing)
@@ -38,7 +38,7 @@ postCommandR = do
                                     , problemSubmissionTime = time
                                     , problemSubmissionUserId = uid
                                     , problemSubmissionCorrect = correct
-                                    , problemSubmissionCredit = partial
+                                    , problemSubmissionCredit = credit
                                     , problemSubmissionSource = source
                                     , problemSubmissionAssignmentId = mkey
                                     }

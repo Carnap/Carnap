@@ -55,7 +55,7 @@ activateTranslate w (Just (i,o,opts)) =
                            insertBefore par (Just bw) (Just o)
                            ref <- newIORef False
                            tryTrans <- newListener $ translator o ref f
-                           submit <- newListener $ submitTrans ref l f
+                           submit <- newListener $ submitTrans opts ref l f
                            addListener i keyUp tryTrans False                  
                            addListener bt click submit False                
                       (Left e) -> setInnerHTML o (Just $ show e)
@@ -92,7 +92,7 @@ tryFOLTrans o ref f = onEnter $ do (Just t) <- target :: EventM HTMLInputElement
             | otherwise = message "Not quite. Try again!"
             -- TODO Add FOL equivalence checking code, insofar as possible.
 
-submitTrans ref l f = do isFinished <- liftIO $ readIORef ref
-                         if isFinished
-                            then trySubmit Translation l (ProblemContent (pack $ show f))
-                            else message "not yet finished (remember to press return to check your work before submitting!)"
+submitTrans opts ref l f = do isFinished <- liftIO $ readIORef ref
+                              if isFinished
+                                 then trySubmit Translation opts l (ProblemContent (pack $ show f))
+                                 else message "not yet finished (remember to press return to check your work before submitting!)"
