@@ -39,6 +39,7 @@ postCommandR = do
                                     , problemSubmissionUserId = uid
                                     , problemSubmissionCorrect = correct
                                     , problemSubmissionCredit = credit
+                                    , problemSubmissionExtra = 0
                                     , problemSubmissionSource = source
                                     , problemSubmissionAssignmentId = mkey
                                     }
