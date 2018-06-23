@@ -376,6 +376,23 @@ instance FirstOrderLex (IntIndex b)
 --  6. Binders      --
 ----------------------
 
+data RescopingOperator f g b a where
+        Rescope :: String -> RescopingOperator f g b (f b -> (f b -> g c) -> g c)
+
+instance UniformlyEq (RescopingOperator f g b) where
+    (Rescope _) =* (Rescope _) = True
+
+instance Monad m => MaybeMonadVar (RescopingOperator f g b) m
+
+instance MaybeStaticVar (RescopingOperator f g b)
+
+instance FirstOrderLex (RescopingOperator f g b) 
+
+instance Schematizable (RescopingOperator f g b) where
+        schematize (Rescope v)  = \(t:f:_) -> "(" ++ t ++ "/" ++ v ++ ")" ++ f
+
+type ScopedTermOperator  = RescopingOperator Term Form
+
 data GenericTypedLambda f g b a where
         TypedLambda :: String -> GenericTypedLambda f g b ((f b -> g c) -> g (b -> c))
 
