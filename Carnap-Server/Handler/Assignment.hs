@@ -106,8 +106,8 @@ getAssignmentR filename =
                             <article>
                                 #{c}
                         |]
-          visibleAt t a = (assignmentMetadataVisibleTill a < Just t || assignmentMetadataVisibleTill a == Nothing)
-                          && (assignmentMetadataVisibleFrom a > Just t || assignmentMetadataVisibleFrom a == Nothing)
+          visibleAt t a = (assignmentMetadataVisibleTill a > Just t || assignmentMetadataVisibleTill a == Nothing)
+                          && (assignmentMetadataVisibleFrom a < Just t || assignmentMetadataVisibleFrom a == Nothing)
 
 fileToHtml path = do Markdown md <- markdownFromFile path
                      let md' = Markdown (filter ((/=) '\r') md) --remove carrage returns from dos files
