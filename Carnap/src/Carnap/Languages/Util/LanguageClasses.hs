@@ -537,12 +537,32 @@ class (Typeable b, Typeable f, Typeable g,  PrismLink (FixLang lex) (Abstractors
 
         tlam :: Typeable c => Prism' (Abstractors (GenericTypedLambda f g b) (FixLang lex) ((f b -> g c) -> g (b -> c))) String
         tlam = prism' (\s -> Abstract (TypedLambda s))
-                      (\x -> case x of (Abstract (TypedLambda s)) -> Just s
-                                       _ -> Nothing)
+                      (\x -> case x of (Abstract (TypedLambda s)) -> Just s; _ -> Nothing)
 
 instance {-#OVERLAPPABLE#-} 
         (PrismGenericTypedLambda lex f g b) => TypedLambdaLanguage lex f g b where
             typedLam s = review (unaryOpPrism (_tlam . only s)) . LLam
+
+class RescopingLanguage l t where
+        scope :: String -> t -> (t -> l) -> l
+
+class (Typeable b, Typeable c, Typeable f, Typeable g,  PrismLink (FixLang lex) (RescopingOperator f g b c (FixLang lex))) 
+        => PrismRescoping lex f g b c where
+
+        _rescope :: Prism' (FixLang lex (f b -> (f b -> g c) -> g c)) String
+        _rescope = link_rescope . rescope
+
+        link_rescope :: Prism' (FixLang lex (f b -> (f b -> g c) -> g c)) 
+                               (RescopingOperator f g b c (FixLang lex) (f b -> (f b -> g c) -> g c))
+        link_rescope = link 
+
+        rescope :: Typeable c => Prism' (RescopingOperator f g b c (FixLang lex) (f b -> (f b -> g c) -> g c)) String
+        rescope = prism' (\s -> Rescope s)
+                      (\x -> case x of Rescope s -> Just s; _ -> Nothing)
+
+instance {-#OVERLAPPABLE#-}
+        (PrismRescoping lex f g b c) => RescopingLanguage (FixLang lex (g c)) (FixLang lex (f b)) where
+            scope s t f = curry (review (binaryOpPrism (_rescope . only s))) t (LLam f)
 
 -------------------
 --  1.5 Exotica  --
