@@ -137,7 +137,6 @@ toScore textbookproblems p = case ( problemSubmissionAssignmentId p
           theGrade due points p = if problemSubmissionTime p `laterThan` due 
                                       then (floor ((fromIntegral points :: Rational) / 2))
                                       else points
-
                             
 scoreByIdAndClassTotal cid uid = 
         do perprob <- scoreByIdAndClassPerProblem cid uid

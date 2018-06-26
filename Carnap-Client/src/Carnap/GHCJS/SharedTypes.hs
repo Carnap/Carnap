@@ -1,4 +1,4 @@
-{-#LANGUAGE DeriveGeneric, OverloadedStrings#-}
+{-#LANGUAGE DeriveGeneric, FlexibleInstances, OverloadedStrings#-}
 module Carnap.GHCJS.SharedTypes (
         GHCJSCommand(..), ProblemSource(..), ProblemType(..), ProblemData(..)
 ) where
@@ -26,7 +26,12 @@ instance ToJSON ProblemType
 
 instance FromJSON ProblemType
 
-data ProblemData = DerivationData Text Text | ProblemContent Text
+type TruthTable = [[Maybe Bool]]
+
+data ProblemData = DerivationData Text Text 
+                 | TruthTableData Text TruthTable
+                 | TranslationData Text Text
+                 | ProblemContent Text
     deriving (Show, Read, Eq, Generic)
 
 instance ToJSON ProblemData
