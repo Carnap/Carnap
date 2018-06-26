@@ -68,9 +68,9 @@ activateTruthTables w (Just (i,o,opts)) =
                                       let val = M.foldr (&&) True vals
                                       if val then do alert w' "Success!"
                                                      liftIO $ writeIORef ref True
-                                                     setAttribute i "class" "completeTT"
+                                                     setAttribute i "class" "input completeTT"
                                              else do alert w' "Something's not quite right"
-                                                     setAttribute i "class" "incompleteTT"
+                                                     setAttribute i "class" "input incompleteTT"
 
 submitTruthTable:: M.Map String String -> IORef Bool -> String -> Window -> String -> EventM HTMLInputElement e ()
 submitTruthTable opts ref s w l = do isDone <- liftIO $ readIORef ref
