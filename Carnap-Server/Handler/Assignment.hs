@@ -29,8 +29,8 @@ getAssignmentsR = do muid <- maybeAuthId
                      time <- liftIO getCurrentTime
                      assignmentMD <- runDB $ selectList 
                                                 ([AssignmentMetadataCourse ==. cid] 
-                                                ++ ([AssignmentMetadataVisibleTill <. Just time] ||. [AssignmentMetadataVisibleTill ==. Nothing])
-                                                ++ ([AssignmentMetadataVisibleFrom >. Just time] ||. [AssignmentMetadataVisibleFrom ==. Nothing]))
+                                                ++ ([AssignmentMetadataVisibleTill >. Just time] ||. [AssignmentMetadataVisibleTill ==. Nothing])
+                                                ++ ([AssignmentMetadataVisibleFrom <. Just time] ||. [AssignmentMetadataVisibleFrom ==. Nothing]))
                                                 []
                      adir <- assignmentDir instructorident
                      adirContents <- lift $ getDirectoryContents adir

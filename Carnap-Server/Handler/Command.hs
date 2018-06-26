@@ -48,7 +48,7 @@ postCommandR = do
                                 do success <- tryInsert sub
                                    afterInsert success
                             (Just ak, Just asgn) ->
-                                if assignmentMetadataVisibleTill asgn < Just time
+                                if assignmentMetadataVisibleTill asgn > Just time
                                    || assignmentMetadataVisibleTill asgn == Nothing
                                    then do success <- tryInsert sub
                                            afterInsert success
