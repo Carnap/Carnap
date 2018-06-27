@@ -22,9 +22,9 @@ import GHCJS.DOM.Document (createElement, getBody, getDefaultView)
 import GHCJS.DOM.Node (appendChild, getParentNode, insertBefore)
 import GHCJS.DOM.EventM (newListener, addListener, EventM, target)
 import Data.IORef (newIORef, IORef, readIORef,writeIORef, modifyIORef)
-import Data.Map as M
+import Data.Map as M (Map, lookup, foldr, insert, fromList)
 import Data.Text (pack)
-import Data.List (subsequences, nub)
+import Data.List (subsequences, nub, zip4)
 import Control.Monad.IO.Class (liftIO)
 import Control.Lens (toListOf)
 import Control.Lens.Plated (children)
@@ -84,8 +84,11 @@ createValidityTruthTable w (antced :|-: (SS succed)) (i,o) ref bw =
         do (table, thead, tbody) <- initTable w
            gRef <- makeGridRef (length orderedChildren) (length valuations)
            let validities = Prelude.map (Just . implies) valuations
+           mgivenText <- getInnerHTML o
+           let givens = case mgivenText of Nothing -> [] 
+                                           Just t -> map packText $ lines t
            head <- toHead w atomIndicies orderedChildren
-           rows <- mapM (toRow' gRef) (zip3 valuations [1..] validities)
+           rows <- mapM (toRow' gRef) (zip4 valuations [1..] validities givens)
            mapM_ (appendChild tbody . Just) (reverse rows)
            setInnerHTML o (Just "")
            (Just w') <- getDefaultView w                    
@@ -104,8 +107,8 @@ createValidityTruthTable w (antced :|-: (SS succed)) (i,o) ref bw =
           atomIndicies = nub . sort . concat $ (Prelude.map getIndicies forms) 
           toValuation l = \x -> x `elem` l
           valuations = (Prelude.map toValuation) . subsequences $ reverse atomIndicies
-          orderedChildren =  concat $ Prelude.map (traverseBPT . toBPT. fromSequent) (toListOf concretes antced)
-                             ++ [[Left '⊢']] ++ Prelude.map (traverseBPT . toBPT. fromSequent) (toListOf concretes succed)
+          orderedChildren = concat $ Prelude.map (traverseBPT . toBPT. fromSequent) (toListOf concretes antced)
+                            ++ [[Left '⊢']] ++ Prelude.map (traverseBPT . toBPT. fromSequent) (toListOf concretes succed)
           toRow' = toRow w atomIndicies orderedChildren o
           makeGridRef x y = newIORef (M.fromList [((z,w), True) | z <- [1..x], w <-[1.. y]])
           tryCounterexample w' = do mrow <- liftIO $ prompt w' "enter the truth values for your counterexample row" (Just "")
@@ -137,7 +140,10 @@ createSimpleTruthTable w f (_,o) _ _ =
         do (table, thead, tbody) <- initTable w
            gRef <- makeGridRef (length orderedChildren) (length valuations)
            head <- toHead w atomIndicies orderedChildren
-           rows <- mapM (toRow' gRef) (zip3 valuations [1..] (cycle [Nothing]))
+           mgivenText <- getInnerHTML o
+           let givens = case mgivenText of Nothing -> [] 
+                                           Just t -> map packText $ lines t
+           rows <- mapM (toRow' gRef) (zip4 valuations [1..] (cycle [Nothing]) givens)
            mapM_ (appendChild tbody . Just) (reverse rows)
            setInnerHTML o (Just "")
            appendChild thead (Just head)
@@ -161,12 +167,13 @@ sort (x:xs) = smaller ++ [x] ++ bigger
                   | otherwise = y < x
 sort [] = []
 
-toRow w atomIndicies orderedChildren o gRef (v,n,mval) = 
+toRow w atomIndicies orderedChildren o gRef (v,n,mvalid,given) = 
         do (Just row) <- createElement w (Just "tr")
            (Just sep) <- createElement w (Just "td")
            setAttribute sep "class" "tttdSep"
            valTds <- mapM toValTd atomIndicies
-           childTds <- mapM toChildTd (zip orderedChildren [1..])
+           let expanded = expandRow given orderedChildren
+           childTds <- mapM toChildTd (zip3 orderedChildren [1..] (expanded ++ cycle [Nothing]))
            mapM_ (appendChild row . Just) valTds
            appendChild row (Just sep)
            mapM_ (appendChild row . Just) childTds
@@ -175,32 +182,43 @@ toRow w atomIndicies orderedChildren o gRef (v,n,mval) =
                          setInnerHTML td (Just $ if v i then "T" else "F")
                          setAttribute td "class" "valtd"
                          return td
-          toChildTd (c,m) = do (Just td) <- createElement w (Just "td")
-                               case c of
-                                   Left '⊢' -> case mval of
-                                                (Just tv) -> addDropdown m td tv
-                                                Nothing -> setInnerHTML td (Just "")
-                                   Left c'  -> setInnerHTML td (Just "")
-                                   Right f  -> do let (Form tv) = satisfies v f
-                                                  addDropdown m td tv
-                               return td
-          addDropdown m td bool = do sel <- trueFalseOpts
-                                     appendChild td (Just sel)
-                                     modifyIORef gRef (M.insert (n,m) False)
-                                     onSwitch <- newListener $ switchOnMatch gRef (n,m) bool
-                                     addListener sel change onSwitch False
-                                     return ()
-          trueFalseOpts = do (Just sel) <- createElement w (Just "select")
-                             (Just bl)  <- createElement w (Just "option")
-                             (Just tr)  <- createElement w (Just "option")
-                             (Just fs)  <- createElement w (Just "option")
-                             setInnerHTML bl (Just "-")
-                             setInnerHTML tr (Just "T")
-                             setInnerHTML fs (Just "F")
-                             appendChild sel (Just bl)
-                             appendChild sel (Just tr)
-                             appendChild sel (Just fs)
-                             return sel
+
+          toChildTd (c,m,mg) = do (Just td) <- createElement w (Just "td")
+                                  case c of
+                                      Left '⊢' -> case mvalid of
+                                                   (Just tv) -> addDropdown m td tv mg
+                                                   Nothing -> setInnerHTML td (Just "")
+                                      Left c'  -> setInnerHTML td (Just "")
+                                      Right f  -> do let (Form tv) = satisfies v f
+                                                     addDropdown m td tv mg
+                                  return td
+
+          addDropdown m td bool mg = do sel <- trueFalseOpts mg
+                                        appendChild td (Just sel)
+                                        case mg of 
+                                            Nothing -> modifyIORef gRef (M.insert (n,m) False)
+                                            Just True -> modifyIORef gRef (M.insert (n,m) bool)
+                                            Just False -> modifyIORef gRef (M.insert (n,m) (not bool))
+                                        onSwitch <- newListener $ switchOnMatch gRef (n,m) bool
+                                        addListener sel change onSwitch False
+                                        return ()
+
+          trueFalseOpts mg = do (Just sel) <- createElement w (Just "select")
+                                (Just bl)  <- createElement w (Just "option")
+                                (Just tr)  <- createElement w (Just "option")
+                                (Just fs)  <- createElement w (Just "option")
+                                setInnerHTML bl (Just "-")
+                                setInnerHTML tr (Just "T")
+                                setInnerHTML fs (Just "F")
+                                case mg of
+                                    Nothing -> return ()
+                                    Just True -> setAttribute tr "selected" "selected"
+                                    Just False -> setAttribute fs "selected" "selected"
+                                appendChild sel (Just bl)
+                                appendChild sel (Just tr)
+                                appendChild sel (Just fs)
+                                return sel
+
           switchOnMatch gRef (n,m) tv = do 
                              (Just t) <- target :: EventM HTMLSelectElement Event (Maybe HTMLSelectElement)
                              s <- getValue t 
@@ -250,6 +268,19 @@ unpackRow row = getListOfElementsByTag row "select" >>= mapM toValue
                                   Just "F" -> Just False
                                   _ -> Nothing
           toValue Nothing = return Nothing
+
+packText :: String -> [Maybe Bool]
+packText s = if valid then map toValue s else []
+    where toValue 'T' = Just True
+          toValue 'F' = Just False
+          toValue _ = Nothing
+
+          valid = all (`elem` ['T','F','-']) s
+
+expandRow :: [Maybe Bool] -> [Either a b] -> [Maybe Bool]
+expandRow (x:xs) (Right y:ys) = x : expandRow xs ys
+expandRow (x:xs) (Left y:ys) = Nothing : expandRow (x:xs) ys
+expandRow _ _ = []
 
 traverseBPT :: BPT -> [Either Char PureForm]
 traverseBPT (Leaf f) = [Right f]
