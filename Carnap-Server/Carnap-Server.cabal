@@ -41,6 +41,7 @@ library
                      Filter.Translate
                      Filter.TruthTables
                      Filter.Diagrams
+                     Filter.Util
                      Util.Database
                      Util.Data
 

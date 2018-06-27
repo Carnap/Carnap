@@ -1,9 +1,9 @@
-module Filter.ProofCheckers (makeProofChecker,splitIt, intoChunks,formatChunk) where
+module Filter.ProofCheckers (makeProofChecker) where
 
 import Text.Pandoc
 import Data.List.Split (splitOn)
 import Data.Map (Map, unions, fromList, toList)
-import Data.Char (isDigit)
+import Filter.Util (splitIt, intoChunks,formatChunk,unlines')
 import Prelude
 
 makeProofChecker :: Block -> Block
@@ -88,22 +88,3 @@ actTemplate opts head content = RawBlock "html" $
     ++ content
     ++ "</div></div>"
 
-formatChunk = map cleanProof . lines
-    where cleanProof ('|':xs) = dropWhile (\y -> isDigit y || (y == '.')) xs
-          cleanProof l = l
-
-
-unlines' [] = ""
-unlines' (x:[]) = x
-unlines' (x:xs) = x ++ '\n':unlines' xs
-
-splitIt [] = ([],[])
-splitIt l = case break (== '\n') l of
-                (h,t@(_:x:xs)) -> if x == '|'
-                                then let (h',t') = splitIt (x:xs) in
-                                     (h ++ ('\n':h'),t')
-                                else (h,x:xs)
-                y -> y
-
-intoChunks [] = []
-intoChunks l = let (h,t) = splitIt l in h : intoChunks t
