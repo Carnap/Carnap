@@ -1,14 +1,15 @@
 {-# LANGUAGE RankNTypes, QuasiQuotes, FlexibleContexts, DeriveDataTypeable, CPP, JavaScriptFFI #-}
 module Lib
     (genericSendJSON, sendJSON, onEnter, onKey, clearInput,
-    getListOfElementsByClass, tryParse, treeToElement, genericTreeToUl,
-    treeToUl, genericListToUl, listToUl, formToTree, leaves,
-    adjustFirstMatching, decodeHtml, syncScroll, reloadPage, initElements,
-    loginCheck,errorPopup, genInOutElts, getInOutElts,generateExerciseElts, withLabel,
-    formAndLabel,seqAndLabel, folSeqAndLabel, folFormAndLabel,
-    message, IOGoal(..), updateWithValue, submissionSource, assignmentKey,
-    initialize,popUpWith,spinnerSVG,doneButton,questionButton,exclaimButton,
-    expandButton,buttonWrapper, maybeNodeListToList, trySubmit) where
+    getListOfElementsByClass, getListOfElementsByTag, tryParse,
+    treeToElement, genericTreeToUl, treeToUl, genericListToUl, listToUl,
+    formToTree, leaves, adjustFirstMatching, decodeHtml, syncScroll,
+    reloadPage, initElements, loginCheck,errorPopup, genInOutElts,
+    getInOutElts,generateExerciseElts, withLabel, formAndLabel,seqAndLabel,
+    folSeqAndLabel, folFormAndLabel, message, IOGoal(..), updateWithValue,
+    submissionSource, assignmentKey, initialize, popUpWith, spinnerSVG,
+    doneButton, questionButton, exclaimButton, expandButton, buttonWrapper,
+    maybeNodeListToList, trySubmit) where
 
 import Data.Aeson
 import Data.Maybe (catMaybes)
@@ -131,12 +132,14 @@ maybeHtmlCollectionToList mhc = case mhc of
 -- XXX: one might also want to include a "mutable lens" or "mutable traversal"
 --kind of thing: http://stackoverflow.com/questions/18794745/can-i-make-a-lens-with-a-monad-constraint
 getListOfElementsByClass :: IsElement self => self -> String -> IO [Maybe Element]
-getListOfElementsByClass elt c = do mnl <- getElementsByClassName elt c
-                                    maybeNodeListToList mnl
+getListOfElementsByClass elt c = getElementsByClassName elt c >>= maybeNodeListToList
+
+getListOfElementsByTag :: IsElement self => self -> String -> IO [Maybe Element]
+getListOfElementsByTag elt c = getElementsByTagName elt c >>= maybeNodeListToList
+
 
 getListOfElementsByCarnapType :: IsElement self => self -> String -> IO [Maybe Element]
-getListOfElementsByCarnapType elt s = do mnl <- querySelectorAll elt ("[data-carnap-type=" ++ s ++ "]")
-                                         maybeNodeListToList mnl
+getListOfElementsByCarnapType elt s = querySelectorAll elt ("[data-carnap-type=" ++ s ++ "]") >>= maybeNodeListToList
 
 tryParse p s = unPack $ parse p "" s 
     where unPack (Right s) = show s

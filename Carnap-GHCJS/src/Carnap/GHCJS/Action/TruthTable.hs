@@ -15,7 +15,8 @@ import Carnap.Languages.PurePropositional.Logic (PropSequentCalc)
 import Carnap.Languages.Util.LanguageClasses
 import GHCJS.DOM.Types
 import GHCJS.DOM.Element
-import GHCJS.DOM.HTMLOptionElement (getValue)
+--import GHCJS.DOM.HTMLOptionElement (getValue)
+import GHCJS.DOM.HTMLSelectElement (castToHTMLSelectElement, getValue) 
 import GHCJS.DOM.Window (alert, prompt)
 import GHCJS.DOM.Document (createElement, getBody, getDefaultView)
 import GHCJS.DOM.Node (appendChild, getParentNode, insertBefore)
@@ -54,11 +55,11 @@ activateTruthTables w (Just (i,o,opts)) =
                           mapM_ (appendChild bw . Just) [bt1,bt2]
                           (Just par) <- getParentNode o
                           appendChild par (Just bw)
-                          gRef <- ttfunc w f (i,o) ref bw 
+                          (gRef,rows) <- ttfunc w f (i,o) ref bw 
                           -- XXX: idea. Return check rather than gRef, to allow different tt setups their own checking proceedures
                           setInnerHTML i (Just $ show f)
                           (Just w') <- getDefaultView w                    
-                          submit <- newListener $ submitTruthTable opts ref (show f) w' l
+                          submit <- newListener $ submitTruthTable opts ref rows (show f) w' l
                           check <- newListener $ checkTable ref gRef w'
                           addListener bt1 click submit False                
                           addListener bt2 click check False                
@@ -72,13 +73,14 @@ activateTruthTables w (Just (i,o,opts)) =
                                              else do alert w' "Something's not quite right"
                                                      setAttribute i "class" "input incompleteTT"
 
-submitTruthTable:: M.Map String String -> IORef Bool -> String -> Window -> String -> EventM HTMLInputElement e ()
-submitTruthTable opts ref s w l = do isDone <- liftIO $ readIORef ref
-                                     if isDone 
-                                        then trySubmit TruthTable opts l (ProblemContent (pack s))
-                                        else message "not yet finished"
+submitTruthTable:: M.Map String String -> IORef Bool -> [Element] -> String -> Window -> String -> EventM HTMLInputElement e ()
+submitTruthTable opts ref rows s w l = do isDone <- liftIO $ readIORef ref
+                                          if isDone 
+                                             then do tabulated <- liftIO $ mapM unpackRow rows
+                                                     trySubmit TruthTable opts l (TruthTableData (pack s) tabulated)
+                                             else message "not yet finished"
 
-createValidityTruthTable :: Document -> PropSequentCalc (Sequent (Form Bool)) -> (Element,Element) -> IORef Bool -> Element -> IO (IORef (Map (Int, Int) Bool))
+createValidityTruthTable :: Document -> PropSequentCalc (Sequent (Form Bool)) -> (Element,Element) -> IORef Bool -> Element -> IO (IORef (Map (Int, Int) Bool), [Element])
 createValidityTruthTable w (antced :|-: (SS succed)) (i,o) ref bw =  
         do (table, thead, tbody) <- initTable w
            gRef <- makeGridRef (length orderedChildren) (length valuations)
@@ -95,7 +97,7 @@ createValidityTruthTable w (antced :|-: (SS succed)) (i,o) ref bw =
            appendChild o (Just table)
            mpar@(Just par) <- getParentNode o
            appendChild bw (Just bt)
-           return gRef
+           return (gRef,rows)
     where forms :: [PureForm]
           forms = (Prelude.map fromSequent $ toListOf concretes antced) ++ (Prelude.map fromSequent $ toListOf concretes succed)
           implies v = not (and (Prelude.map (unform . satisfies v) (init forms))) || (unform . satisfies v $ last forms)
@@ -131,7 +133,7 @@ createValidityTruthTable w (antced :|-: (SS succed)) (i,o) ref bw =
                   mask [] _ = []
                   checkLength l = if length l == length atomIndicies then Just l else Nothing
 
-createSimpleTruthTable :: Document -> PureForm -> (Element,Element) -> IORef Bool -> Element -> IO (IORef (Map (Int, Int) Bool))
+createSimpleTruthTable :: Document -> PureForm -> (Element,Element) -> IORef Bool -> Element -> IO (IORef (Map (Int, Int) Bool),[Element])
 createSimpleTruthTable w f (_,o) _ _ = 
         do (table, thead, tbody) <- initTable w
            gRef <- makeGridRef (length orderedChildren) (length valuations)
@@ -141,7 +143,7 @@ createSimpleTruthTable w f (_,o) _ _ =
            setInnerHTML o (Just "")
            appendChild thead (Just head)
            appendChild o (Just table)
-           return gRef
+           return (gRef,rows)
     where atomIndicies = nub . sort . getIndicies $ f
           valuations = (Prelude.map toValuation) . subsequences $ reverse atomIndicies
             where toValuation l = \x -> x `elem` l
@@ -201,9 +203,9 @@ toRow w atomIndicies orderedChildren o gRef (v,n,mval) =
                              appendChild sel (Just fs)
                              return sel
           switchOnMatch gRef (n,m) tv = do 
-                             (Just t) <- target :: EventM HTMLOptionElement Event (Maybe HTMLOptionElement)
+                             (Just t) <- target :: EventM HTMLSelectElement Event (Maybe HTMLSelectElement)
                              s <- getValue t 
-                             if s == "T" 
+                             if s == Just "T" 
                                  then liftIO $ modifyIORef gRef (M.insert (n,m) tv)
                                  else liftIO $ modifyIORef gRef (M.insert (n,m) (not tv))
 
@@ -240,6 +242,15 @@ toBPT f = case children f of
               [a] -> MonNode f (toBPT a)
               [a,b] -> BiNode f (toBPT a) (toBPT b)
               _ -> Leaf f
+
+unpackRow :: Element -> IO [Maybe Bool]
+unpackRow row = getListOfElementsByTag row "select" >>= mapM toValue
+    where toValue (Just e) = do s <- getValue (castToHTMLSelectElement e)
+                                return $ case s of 
+                                  Just "T" -> Just True
+                                  Just "F" -> Just False
+                                  _ -> Nothing
+          toValue Nothing = return Nothing
 
 traverseBPT :: BPT -> [Either Char PureForm]
 traverseBPT (Leaf f) = [Right f]
