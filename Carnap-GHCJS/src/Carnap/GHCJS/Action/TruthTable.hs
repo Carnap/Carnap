@@ -86,9 +86,14 @@ createValidityTruthTable w (antced :|-: (SS succed)) (i,o) ref bw opts =
         do (table, thead, tbody) <- initTable w
            gRef <- makeGridRef (length orderedChildren) (length valuations)
            let validities = Prelude.map (Just . implies) valuations
-           let givens = case M.lookup "content" opts of 
-                               Nothing -> repeat (repeat Nothing)
-                               Just t -> (reverse . map packText $ lines t) ++ repeat (repeat Nothing)
+               givens = case M.lookup "content" opts of 
+                           Nothing -> repeat $ repeat Nothing
+                           Just t -> case (reverse . map packText $ lines t) of
+                                         s | length s == length valuations -> 
+                                           case map (expandRow orderedChildren) s of
+                                               s' | all (\x -> length x == length orderedChildren) s' -> s'
+                                                  | otherwise -> repeat $ repeat Nothing
+                                           | otherwise -> repeat $ repeat Nothing
            head <- toHead w atomIndicies orderedChildren
            rows <- mapM (toRow' gRef) (zip4 valuations [1..] validities givens)
            mapM_ (appendChild tbody . Just) (reverse rows)
@@ -146,7 +151,10 @@ createSimpleTruthTable w f (_,o) _ _ opts =
            let givens = case M.lookup "content" opts of 
                            Nothing -> repeat $ repeat Nothing
                            Just t -> case (reverse . map packText $ lines t) of
-                                         s | length s == length valuations -> s
+                                         s | length s == length valuations -> 
+                                           case map (expandRow orderedChildren) s of
+                                               s' | all (\x -> length x == length orderedChildren) s' -> s'
+                                                  | otherwise -> repeat $ repeat Nothing
                                            | otherwise -> repeat $ repeat Nothing
            rows <- mapM (toRow' gRef) (zip4 valuations [1..] (repeat Nothing) givens)
            mapM_ (appendChild tbody . Just) (reverse rows)
@@ -177,8 +185,7 @@ toRow w atomIndicies orderedChildren o gRef (v,n,mvalid,given) =
            (Just sep) <- createElement w (Just "td")
            setAttribute sep "class" "tttdSep"
            valTds <- mapM toValTd atomIndicies
-           let expanded = expandRow given orderedChildren
-           childTds <- mapM toChildTd (zip3 orderedChildren [1..] expanded)
+           childTds <- mapM toChildTd (zip3 orderedChildren [1..] given)
            mapM_ (appendChild row . Just) valTds
            appendChild row (Just sep)
            mapM_ (appendChild row . Just) childTds
@@ -282,9 +289,11 @@ packText s = if valid then map toValue . filter (/= ' ') $ s else []
 
           valid = all (`elem` ['T','F','-',' ']) s
 
-expandRow :: [Maybe Bool] -> [Either a b] -> [Maybe Bool]
-expandRow (x:xs) (Right y:ys) = x : expandRow xs ys
-expandRow (x:xs) (Left y:ys) = Nothing : expandRow (x:xs) ys
+expandRow :: [Either Char b] -> [Maybe Bool] ->  [Maybe Bool]
+expandRow (Right y:ys)  (x:xs)  = x : expandRow ys xs 
+expandRow (Left '⊢':ys) (x:xs)  = x : expandRow ys xs 
+expandRow (Left y:ys) xs  = Nothing : expandRow ys xs
+expandRow [] (x:xs)       = Nothing : expandRow [] xs
 expandRow _ _ = []
 
 traverseBPT :: BPT -> [Either Char PureForm]
