@@ -58,27 +58,26 @@ activateTruthTables w (Just (i,o,opts)) =
                           (gRef,rows) <- ttfunc w f (i,o) ref bw 
                           -- XXX: idea. Return check rather than gRef, to allow different tt setups their own checking proceedures
                           setInnerHTML i (Just $ show f)
-                          (Just w') <- getDefaultView w                    
-                          submit <- newListener $ submitTruthTable opts ref rows (show f) w' l
-                          check <- newListener $ checkTable ref gRef w'
+                          submit <- newListener $ submitTruthTable opts ref rows (show f) l
+                          check <- newListener $ checkTable ref gRef
                           addListener bt1 click submit False                
                           addListener bt2 click check False                
                       (Left e) -> setInnerHTML o (Just $ show e) 
                 _ -> print "truth table was missing an option"
-          checkTable ref gRef w' = do vals <- liftIO $ readIORef gRef
-                                      let val = M.foldr (&&) True vals
-                                      if val then do alert w' "Success!"
-                                                     liftIO $ writeIORef ref True
-                                                     setAttribute i "class" "input completeTT"
-                                             else do alert w' "Something's not quite right"
-                                                     setAttribute i "class" "input incompleteTT"
+          checkTable ref gRef = do vals <- liftIO $ readIORef gRef
+                                   let val = M.foldr (&&) True vals
+                                   if val then do message "Success!"
+                                                  liftIO $ writeIORef ref True
+                                                  setAttribute i "class" "input completeTT"
+                                          else do message "Something's not quite right"
+                                                  setAttribute i "class" "input incompleteTT"
 
-submitTruthTable:: M.Map String String -> IORef Bool -> [Element] -> String -> Window -> String -> EventM HTMLInputElement e ()
-submitTruthTable opts ref rows s w l = do isDone <- liftIO $ readIORef ref
-                                          if isDone 
-                                             then do tabulated <- liftIO $ mapM unpackRow rows
-                                                     trySubmit TruthTable opts l (TruthTableData (pack s) (reverse tabulated))
-                                             else message "not yet finished"
+submitTruthTable:: M.Map String String -> IORef Bool -> [Element] -> String -> String -> EventM HTMLInputElement e ()
+submitTruthTable opts ref rows s l = do isDone <- liftIO $ readIORef ref
+                                        if isDone 
+                                           then do tabulated <- liftIO $ mapM unpackRow rows
+                                                   trySubmit TruthTable opts l (TruthTableData (pack s) (reverse tabulated))
+                                           else message "not yet finished"
 
 createValidityTruthTable :: Document -> PropSequentCalc (Sequent (Form Bool)) -> (Element,Element) -> IORef Bool -> Element -> IO (IORef (Map (Int, Int) Bool), [Element])
 createValidityTruthTable w (antced :|-: (SS succed)) (i,o) ref bw =  
