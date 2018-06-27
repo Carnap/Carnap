@@ -55,7 +55,7 @@ activateTruthTables w (Just (i,o,opts)) =
                           mapM_ (appendChild bw . Just) [bt1,bt2]
                           (Just par) <- getParentNode o
                           appendChild par (Just bw)
-                          (gRef,rows) <- ttfunc w f (i,o) ref bw 
+                          (gRef,rows) <- ttfunc w f (i,o) ref bw opts
                           -- XXX: idea. Return check rather than gRef, to allow different tt setups their own checking proceedures
                           setInnerHTML i (Just $ show f)
                           submit <- newListener $ submitTruthTable opts ref rows (show f) l
@@ -79,18 +79,19 @@ submitTruthTable opts ref rows s l = do isDone <- liftIO $ readIORef ref
                                                    trySubmit TruthTable opts l (TruthTableData (pack s) (reverse tabulated))
                                            else message "not yet finished"
 
-createValidityTruthTable :: Document -> PropSequentCalc (Sequent (Form Bool)) -> (Element,Element) -> IORef Bool -> Element -> IO (IORef (Map (Int, Int) Bool), [Element])
-createValidityTruthTable w (antced :|-: (SS succed)) (i,o) ref bw =  
+createValidityTruthTable :: Document -> PropSequentCalc (Sequent (Form Bool)) 
+    -> (Element,Element) -> IORef Bool -> Element -> Map String String
+    -> IO (IORef (Map (Int, Int) Bool), [Element])
+createValidityTruthTable w (antced :|-: (SS succed)) (i,o) ref bw opts =
         do (table, thead, tbody) <- initTable w
            gRef <- makeGridRef (length orderedChildren) (length valuations)
            let validities = Prelude.map (Just . implies) valuations
-           mgivenText <- getInnerHTML o
-           let givens = case mgivenText of Nothing -> [] 
-                                           Just t -> map packText $ lines t
+           let givens = case M.lookup "content" opts of 
+                               Nothing -> repeat (repeat Nothing)
+                               Just t -> (map packText $ lines t) ++ repeat (repeat Nothing)
            head <- toHead w atomIndicies orderedChildren
            rows <- mapM (toRow' gRef) (zip4 valuations [1..] validities givens)
            mapM_ (appendChild tbody . Just) (reverse rows)
-           setInnerHTML o (Just "")
            (Just w') <- getDefaultView w                    
            bt <- exclaimButton w "Counterexample"
            counterexample <- newListener $ tryCounterexample w'
@@ -135,15 +136,17 @@ createValidityTruthTable w (antced :|-: (SS succed)) (i,o) ref bw =
                   mask [] _ = []
                   checkLength l = if length l == length atomIndicies then Just l else Nothing
 
-createSimpleTruthTable :: Document -> PureForm -> (Element,Element) -> IORef Bool -> Element -> IO (IORef (Map (Int, Int) Bool),[Element])
-createSimpleTruthTable w f (_,o) _ _ = 
+createSimpleTruthTable :: Document -> PureForm -> (Element,Element) -> IORef Bool 
+    -> Element -> Map String String 
+    -> IO (IORef (Map (Int, Int) Bool),[Element])
+createSimpleTruthTable w f (_,o) _ _ opts = 
         do (table, thead, tbody) <- initTable w
            gRef <- makeGridRef (length orderedChildren) (length valuations)
            head <- toHead w atomIndicies orderedChildren
-           mgivenText <- getInnerHTML o
-           let givens = case mgivenText of Nothing -> [] 
-                                           Just t -> map packText $ lines t
-           rows <- mapM (toRow' gRef) (zip4 valuations [1..] (cycle [Nothing]) givens)
+           let givens = case M.lookup "content" opts of 
+                           Nothing -> repeat $ repeat Nothing
+                           Just t -> (map packText $ lines t) ++ (repeat $ repeat Nothing)
+           rows <- mapM (toRow' gRef) (zip4 valuations [1..] (repeat Nothing) givens)
            mapM_ (appendChild tbody . Just) (reverse rows)
            setInnerHTML o (Just "")
            appendChild thead (Just head)
@@ -173,7 +176,7 @@ toRow w atomIndicies orderedChildren o gRef (v,n,mvalid,given) =
            setAttribute sep "class" "tttdSep"
            valTds <- mapM toValTd atomIndicies
            let expanded = expandRow given orderedChildren
-           childTds <- mapM toChildTd (zip3 orderedChildren [1..] (expanded ++ cycle [Nothing]))
+           childTds <- mapM toChildTd (zip3 orderedChildren [1..] expanded)
            mapM_ (appendChild row . Just) valTds
            appendChild row (Just sep)
            mapM_ (appendChild row . Just) childTds
