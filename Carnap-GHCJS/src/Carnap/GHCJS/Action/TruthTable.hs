@@ -77,7 +77,7 @@ submitTruthTable:: M.Map String String -> IORef Bool -> [Element] -> String -> W
 submitTruthTable opts ref rows s w l = do isDone <- liftIO $ readIORef ref
                                           if isDone 
                                              then do tabulated <- liftIO $ mapM unpackRow rows
-                                                     trySubmit TruthTable opts l (TruthTableData (pack s) tabulated)
+                                                     trySubmit TruthTable opts l (TruthTableData (pack s) (reverse tabulated))
                                              else message "not yet finished"
 
 createValidityTruthTable :: Document -> PropSequentCalc (Sequent (Form Bool)) -> (Element,Element) -> IORef Bool -> Element -> IO (IORef (Map (Int, Int) Bool), [Element])
