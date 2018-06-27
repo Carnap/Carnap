@@ -88,7 +88,7 @@ createValidityTruthTable w (antced :|-: (SS succed)) (i,o) ref bw opts =
            let validities = Prelude.map (Just . implies) valuations
            let givens = case M.lookup "content" opts of 
                                Nothing -> repeat (repeat Nothing)
-                               Just t -> (map packText $ lines t) ++ repeat (repeat Nothing)
+                               Just t -> (reverse . map packText $ lines t) ++ repeat (repeat Nothing)
            head <- toHead w atomIndicies orderedChildren
            rows <- mapM (toRow' gRef) (zip4 valuations [1..] validities givens)
            mapM_ (appendChild tbody . Just) (reverse rows)
@@ -145,7 +145,9 @@ createSimpleTruthTable w f (_,o) _ _ opts =
            head <- toHead w atomIndicies orderedChildren
            let givens = case M.lookup "content" opts of 
                            Nothing -> repeat $ repeat Nothing
-                           Just t -> (map packText $ lines t) ++ (repeat $ repeat Nothing)
+                           Just t -> case (reverse . map packText $ lines t) of
+                                         s | length s == length valuations -> s
+                                           | otherwise -> repeat $ repeat Nothing
            rows <- mapM (toRow' gRef) (zip4 valuations [1..] (repeat Nothing) givens)
            mapM_ (appendChild tbody . Just) (reverse rows)
            setInnerHTML o (Just "")
@@ -273,12 +275,12 @@ unpackRow row = getListOfElementsByTag row "select" >>= mapM toValue
           toValue Nothing = return Nothing
 
 packText :: String -> [Maybe Bool]
-packText s = if valid then map toValue s else []
+packText s = if valid then map toValue . filter (/= ' ') $ s else []
     where toValue 'T' = Just True
           toValue 'F' = Just False
           toValue _ = Nothing
 
-          valid = all (`elem` ['T','F','-']) s
+          valid = all (`elem` ['T','F','-',' ']) s
 
 expandRow :: [Maybe Bool] -> [Either a b] -> [Maybe Bool]
 expandRow (x:xs) (Right y:ys) = x : expandRow xs ys
