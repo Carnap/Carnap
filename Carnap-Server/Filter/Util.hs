@@ -1,7 +1,9 @@
-module Filter.Util (splitIt, intoChunks,formatChunk, unlines') where
+module Filter.Util (splitIt, intoChunks,formatChunk, unlines',sanatizeHtml) where
 
 import Prelude
 import Data.Char (isDigit)
+import Text.Blaze.Html
+import Text.Blaze.Html.Renderer.String
 
 splitIt [] = ([],[])
 splitIt l = case break (== '\n') l of
@@ -21,3 +23,5 @@ formatChunk = map cleanProof . lines
 unlines' [] = ""
 unlines' (x:[]) = x
 unlines' (x:xs) = x ++ '\n':unlines' xs
+
+sanatizeHtml = renderHtml . toHtml

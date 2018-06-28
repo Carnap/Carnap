@@ -45,12 +45,13 @@ activateTranslate w (Just (i,o,opts)) =
                     case parse parser "" (simpleDecipher . read $ g) of
                       (Right f) -> do 
                            let l = Prelude.drop 7 s
-                           let (Just content) = M.lookup "content" opts
+                               (Just content) = M.lookup "content" opts
+                               (Just problem) = M.lookup "problem" opts
                            bt <- doneButton w "Submit Solution"
                            bw <- buttonWrapper w
                            appendChild bw (Just bt)
                            setValue (castToHTMLInputElement i) (Just content)
-                           setInnerHTML o (Just content)
+                           setInnerHTML o (Just problem)
                            mpar@(Just par) <- getParentNode o               
                            insertBefore par (Just bw) (Just o)
                            ref <- newIORef False
