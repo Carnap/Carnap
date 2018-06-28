@@ -142,5 +142,5 @@ activateChecker _ Nothing  = return ()
 submitSyn :: M.Map String String -> IORef (PureForm,[(PureForm,Int)], Tree (PureForm,Int),Int) -> String -> EventM HTMLInputElement e ()
 submitSyn opts ref l = do (f,forms,_,_) <- liftIO $ readIORef ref
                           case forms of 
-                             [] -> do trySubmit SyntaxCheck opts l (ProblemContent (pack $ show f)) 
+                             [] -> do trySubmit SyntaxCheck opts l (ProblemContent (pack $ show f)) True
                              _  -> message "not yet finished"

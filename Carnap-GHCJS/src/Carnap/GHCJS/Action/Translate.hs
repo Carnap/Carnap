@@ -96,5 +96,5 @@ tryFOLTrans o ref f = onEnter $ do (Just t) <- target :: EventM HTMLInputElement
 submitTrans opts i ref l f = do isFinished <- liftIO $ readIORef ref
                                 if isFinished
                                    then do (Just v) <- getValue (castToHTMLInputElement i)
-                                           trySubmit Translation opts l (TranslationData (pack $ show f) (pack v))
+                                           trySubmit Translation opts l (TranslationData (pack $ show f) (pack v)) True
                                    else message "not yet finished (remember to press return to check your work before submitting!)"

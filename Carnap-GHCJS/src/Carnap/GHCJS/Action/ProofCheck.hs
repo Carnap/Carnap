@@ -242,7 +242,7 @@ computeRule ref g mseq = case mseq of
 submitDer opts l seq ref _ i = do isFinished <- liftIO $ readIORef ref
                                   if isFinished 
                                       then do (Just v) <- getValue (castToHTMLTextAreaElement i)
-                                              trySubmit Derivation opts l (DerivationData (pack $ show seq) (pack v))
+                                              trySubmit Derivation opts l (DerivationData (pack $ show seq) (pack v)) True
                                       else message "not yet finished"
 
 trySave drs ref w i = do isFinished <- liftIO $ readIORef ref

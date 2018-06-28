@@ -42,7 +42,8 @@ activateTruthTables w (Just (i,o,opts)) =
             (Just "simple") -> checkerWith (purePropFormulaParser standardLetters <* eof) createSimpleTruthTable
             (Just "validity") -> checkerWith (ndParseSeq propCalc) createValidityTruthTable
             _  -> return ()
-    where checkerWith parser ttfunc = 
+    where optlist = case M.lookup "options" opts of Just s -> words s; Nothing -> []
+          checkerWith parser ttfunc = 
             case (M.lookup "submission" opts, M.lookup "goal" opts) of
                 (Just s, Just g) | take 7 s == "saveAs:" ->
                   case parse parser "" g of
@@ -52,13 +53,15 @@ activateTruthTables w (Just (i,o,opts)) =
                           bw <- buttonWrapper w
                           bt1 <- doneButton w "Submit"
                           bt2 <- questionButton w "Check"
-                          mapM_ (appendChild bw . Just) [bt1,bt2]
+                          if "nocheck" `elem` opts 
+                              then mapM_ (appendChild bw . Just) [bt1]
+                              else mapM_ (appendChild bw . Just) [bt1,bt2]
                           (Just par) <- getParentNode o
                           appendChild par (Just bw)
                           (gRef,rows) <- ttfunc w f (i,o) ref bw opts
                           -- XXX: idea. Return check rather than gRef, to allow different tt setups their own checking proceedures
                           setInnerHTML i (Just $ show f)
-                          submit <- newListener $ submitTruthTable opts ref rows (show f) l
+                          submit <- newListener $ submitTruthTable opts ref gRef rows (show f) l
                           check <- newListener $ checkTable ref gRef
                           addListener bt1 click submit False                
                           addListener bt2 click check False                
@@ -72,12 +75,19 @@ activateTruthTables w (Just (i,o,opts)) =
                                           else do message "Something's not quite right"
                                                   setAttribute i "class" "input incompleteTT"
 
-submitTruthTable:: M.Map String String -> IORef Bool -> [Element] -> String -> String -> EventM HTMLInputElement e ()
-submitTruthTable opts ref rows s l = do isDone <- liftIO $ readIORef ref
-                                        if isDone 
-                                           then do tabulated <- liftIO $ mapM unpackRow rows
-                                                   trySubmit TruthTable opts l (TruthTableData (pack s) (reverse tabulated))
-                                           else message "not yet finished"
+submitTruthTable:: M.Map String String -> IORef Bool ->  IORef (Map (Int, Int) Bool) -> [Element] -> String -> String -> EventM HTMLInputElement e ()
+submitTruthTable opts ref gRef rows s l = do isDone <- liftIO $ readIORef ref
+                                             if isDone 
+                                                then do 
+                                                        trySubmit TruthTable opts l (ProblemContent (pack s)) True
+                                                else if ("exam" `elem` optlist) || ("nocheck" `elem` optlist)
+                                                         then do vals <- liftIO $ readIORef gRef
+                                                                 if M.foldr (&&) True vals 
+                                                                     then trySubmit TruthTable opts l (ProblemContent (pack s)) True
+                                                                     else do tabulated <- liftIO $ mapM unpackRow rows
+                                                                             trySubmit TruthTable opts l (TruthTableData (pack s) (reverse tabulated)) False
+                                                         else message "not yet finished (do you still need to check your answer?)"
+    where optlist = case M.lookup "options" opts of Just s -> words s; Nothing -> []
 
 createValidityTruthTable :: Document -> PropSequentCalc (Sequent (Form Bool)) 
     -> (Element,Element) -> IORef Bool -> Element -> Map String String
