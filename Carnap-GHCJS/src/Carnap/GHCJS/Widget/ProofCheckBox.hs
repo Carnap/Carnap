@@ -25,6 +25,7 @@ data Button = Button { label  :: String
                      }
 
 data CheckerFeedbackUpdate = Keypress | Click | Never
+    deriving Eq
 
 data CheckerOptions = CheckerOptions { submit :: Maybe Button -- What's the submission button, if there is one?
                                      , render :: Bool -- Should the checker render the proof?

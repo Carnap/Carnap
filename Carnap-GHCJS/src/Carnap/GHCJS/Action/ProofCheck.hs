@@ -134,7 +134,7 @@ activateChecker drs w (Just iog@(IOGoal i o g _ opts)) -- TODO: need to update n
                   memo <- newIORef mempty
                   mtref <- newIORef Nothing
                   mpd <- if render options then Just <$> makeDisplay else return Nothing
-                  let checkSeq ms = threadedCheck (checker calc drs ms mtref mpd memo)
+                  let checkSeq ms = threadedCheck options (checker calc drs ms mtref mpd memo)
                   mseq <- if directed options then parseGoal calc else return Nothing
                   checkerWith options (checkSeq mseq) iog w
                   
@@ -191,7 +191,7 @@ activateChecker drs w (Just iog@(IOGoal i o g _ opts)) -- TODO: need to update n
 
               noRuntimeOptions = Checker $ const . pure $ RuntimeNaturalDeductionConfig mempty mempty
 
-threadedCheck checker w ref v (g, fd) = 
+threadedCheck options checker w ref v (g, fd) = 
         do mt <- readIORef (threadRef checker)
            case mt of
                Just t -> killThread t
@@ -214,7 +214,7 @@ threadedCheck checker w ref v (g, fd) =
                              setInnerHTML fd (Just "")
                              appendChild fd (Just ul)
                              case sequent checker of
-                                 Just s -> updateGoal s ref g mseq
+                                 Just s -> updateGoal s ref g mseq (feedback options == Keypress)
                                  Nothing -> computeRule ref g mseq
            writeIORef (threadRef checker) (Just t')
            return ()
@@ -224,14 +224,15 @@ threadedCheck checker w ref v (g, fd) =
                          FitchStyle -> renderDeductionFitch
                          LemmonStyle -> renderDeductionLemmon
 
-updateGoal s ref g mseq = case mseq of
-                         Nothing -> do setAttribute g "class" "goal"
-                                       writeIORef ref False
-                         (Just seq) -> if seq `seqSubsetUnify` s
-                               then do setAttribute g "class" "goal success"
-                                       writeIORef ref True
-                               else do setAttribute g "class" "goal failure"
-                                       writeIORef ref False
+updateGoal s ref g mseq update = 
+        case mseq of
+             Nothing -> do setAttribute g "class" "goal"
+                           writeIORef ref False
+             (Just seq) -> if seq `seqSubsetUnify` s
+                   then do if update then setAttribute g "class" "goal success" else return ()
+                           writeIORef ref True
+                   else do if update then setAttribute g "class" "goal failure" else return ()
+                           writeIORef ref False
 
 computeRule ref g mseq = case mseq of
                          Nothing -> do setInnerHTML g (Just "No Rule Found")
