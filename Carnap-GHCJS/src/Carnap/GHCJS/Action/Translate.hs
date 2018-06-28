@@ -36,10 +36,11 @@ getTranslates d = genInOutElts d "input" "div" "translate"
 activateTranslate :: Document -> Maybe (Element, Element, Map String String) -> IO ()
 activateTranslate w (Just (i,o,opts)) = 
         case M.lookup "transtype" opts of
-            (Just "prop") -> activateWith (purePropFormulaParser standardLetters <* eof) tryTrans
-            (Just "first-order") -> activateWith folFormulaParser tryFOLTrans
+            (Just "prop") -> activateWith (purePropFormulaParser standardLetters <* eof) tryTrans propChecker
+            (Just "first-order") -> activateWith folFormulaParser tryFOLTrans folChecker
             _ -> return ()
-    where activateWith parser translator =
+    where optlist = case M.lookup "options" opts of Just s -> words s; Nothing -> []
+          activateWith parser translator checker =
               case (M.lookup "submission" opts, M.lookup "goal" opts) of
                   (Just s, Just g) | take 7 s == "saveAs:" ->
                     case parse parser "" (simpleDecipher . read $ g) of
@@ -55,9 +56,11 @@ activateTranslate w (Just (i,o,opts)) =
                            mpar@(Just par) <- getParentNode o               
                            insertBefore par (Just bw) (Just o)
                            ref <- newIORef False
-                           tryTrans <- newListener $ translator o ref f
-                           submit <- newListener $ submitTrans opts i ref l f
-                           addListener i keyUp tryTrans False                  
+                           translate <- newListener $ translator o ref f
+                           submit <- newListener $ submitTrans opts i ref l f parser checker
+                           if "nocheck" `elem` optlist 
+                               then return ()
+                               else addListener i keyUp translate False                  
                            addListener bt click submit False                
                       (Left e) -> setInnerHTML o (Just $ show e)
                   _ -> print "translation was missing an option"
@@ -79,6 +82,7 @@ tryTrans o ref f = onEnter $ do (Just t) <- target :: EventM HTMLInputElement Ke
                                     setInnerHTML o (Just "Success!")
             | otherwise = message "Not quite. Try again!"
 
+
 tryFOLTrans :: Element -> IORef Bool -> PureFOLForm -> 
     EventM HTMLInputElement KeyboardEvent ()
 tryFOLTrans o ref f = onEnter $ do (Just t) <- target :: EventM HTMLInputElement KeyboardEvent (Maybe HTMLInputElement)
@@ -93,8 +97,18 @@ tryFOLTrans o ref f = onEnter $ do (Just t) <- target :: EventM HTMLInputElement
             | otherwise = message "Not quite. Try again!"
             -- TODO Add FOL equivalence checking code, insofar as possible.
 
-submitTrans opts i ref l f = do isFinished <- liftIO $ readIORef ref
-                                if isFinished
-                                   then do (Just v) <- getValue (castToHTMLInputElement i)
-                                           trySubmit Translation opts l (TranslationData (pack $ show f) (pack v)) True
-                                   else message "not yet finished (remember to press return to check your work before submitting!)"
+submitTrans opts i ref l f parser checker = 
+        do isFinished <- liftIO $ readIORef ref
+           if isFinished
+               then trySubmit Translation opts l (ProblemContent (pack $ show f)) True
+               else if ("exam" `elem` optlist) || ("nocheck" `elem` optlist)
+                        then do (Just v) <- getValue (castToHTMLInputElement i)
+                                case parse parser "" v of
+                                    Right f' | checker f f' -> trySubmit Translation opts l (ProblemContent (pack $ show f)) True
+                                    _ -> trySubmit Translation opts l (TranslationData (pack $ show f) (pack v)) False
+                        else message "not yet finished (remember to press return to check your work before submitting!)"
+    where optlist = case M.lookup "options" opts of Just s -> words s; Nothing -> []
+
+propChecker f f' = f == f' || f `isEquivTo` f'
+
+folChecker f f' = f == f'
