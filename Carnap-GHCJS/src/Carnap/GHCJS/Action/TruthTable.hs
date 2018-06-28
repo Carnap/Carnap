@@ -78,8 +78,7 @@ activateTruthTables w (Just (i,o,opts)) =
 submitTruthTable:: M.Map String String -> IORef Bool ->  IORef (Map (Int, Int) Bool) -> [Element] -> String -> String -> EventM HTMLInputElement e ()
 submitTruthTable opts ref gRef rows s l = do isDone <- liftIO $ readIORef ref
                                              if isDone 
-                                                then do 
-                                                        trySubmit TruthTable opts l (ProblemContent (pack s)) True
+                                                then trySubmit TruthTable opts l (ProblemContent (pack s)) True
                                                 else if ("exam" `elem` optlist) || ("nocheck" `elem` optlist)
                                                          then do vals <- liftIO $ readIORef gRef
                                                                  if M.foldr (&&) True vals 
