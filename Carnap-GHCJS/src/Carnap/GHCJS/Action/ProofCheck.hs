@@ -134,14 +134,18 @@ activateChecker drs w (Just iog@(IOGoal i o g _ opts)) -- TODO: need to update n
                   memo <- newIORef mempty
                   mtref <- newIORef Nothing
                   mpd <- if render options then Just <$> makeDisplay else return Nothing
-                  let checkSeq ms = threadedCheck options (checker calc drs ms mtref mpd memo)
                   mseq <- if directed options then parseGoal calc else return Nothing
-                  checkerWith options (checkSeq mseq) iog w
+                  let theChecker = checker calc drs mseq mtref mpd memo
+                      checkSeq = threadedCheck options theChecker
+                      saveProblem l s = Button {label = "Submit" , action = submitDer opts theChecker l g s}
+                      options' = options { submit = case (M.lookup "submission" opts, M.lookup "goal" opts) of
+                                                      (Just "saveRule",_) -> Just saveRule
+                                                      (Just s, Just g) | take 7 s == "saveAs:" -> Just $ saveProblem (drop 7 s) (theSeq g)
+                                                      _ -> Nothing
+                                         }
+                  checkerWith options' checkSeq iog w
                   
-                  where options = CheckerOptions { submit = case (M.lookup "submission" opts, M.lookup "goal" opts) of
-                                                                  (Just "saveRule",_) -> Just saveRule
-                                                                  (Just s, Just g) | take 7 s == "saveAs:" -> Just $ saveProblem (drop 7 s) (theSeq g)
-                                                                  _ -> Nothing
+                  where options = CheckerOptions { submit = Nothing
                                                  , feedback = case M.lookup "feedback" opts of
                                                                   Just "manual" -> Click
                                                                   Just "none" -> Never
@@ -157,7 +161,6 @@ activateChecker drs w (Just iog@(IOGoal i o g _ opts)) -- TODO: need to update n
                                                  , popout = "popout" `elem` optlist
                                                  }
                         saveRule = Button {label = "Save" , action = trySave drs}
-                        saveProblem l s = Button {label = "Submit" , action = submitDer opts l s}
                         optlist = case M.lookup "options" opts of Just s -> words s; Nothing -> []
                         theSeq g = case parse (ndParseSeq calc) "" g of
                                        Left e -> error "couldn't parse goal"
@@ -229,9 +232,9 @@ updateGoal s ref g mseq update =
              Nothing -> do setAttribute g "class" "goal"
                            writeIORef ref False
              (Just seq) -> if seq `seqSubsetUnify` s
-                   then do if update then setAttribute g "class" "goal success" else return ()
+                   then do if update then setAttribute g "class" "goal success" else setAttribute g "class" "goal"
                            writeIORef ref True
-                   else do if update then setAttribute g "class" "goal failure" else return ()
+                   else do if update then setAttribute g "class" "goal failure" else setAttribute g "class" "goal"
                            writeIORef ref False
 
 computeRule ref g mseq = case mseq of
@@ -240,11 +243,24 @@ computeRule ref g mseq = case mseq of
                          (Just seq) -> do setInnerHTML g (Just $ show seq)
                                           writeIORef ref True
 
-submitDer opts l seq ref _ i = do isFinished <- liftIO $ readIORef ref
-                                  (Just v) <- getValue (castToHTMLTextAreaElement i)
-                                  if isFinished || "exam" `elem` optlist
-                                      then do trySubmit Derivation opts l (DerivationData (pack $ show seq) (pack v)) isFinished
-                                      else message "not yet finished"
+submitDer opts checker l g seq ref _ i = do isFinished <- liftIO $ readIORef ref
+                                            (Just v) <- getValue (castToHTMLTextAreaElement i)
+                                            liftIO $ if isFinished 
+                                                then trySubmit Derivation opts l (DerivationData (pack $ show seq) (pack v)) True
+                                                else do setAttribute g "class" "goal working"
+                                                        rtconfig <- liftIO $ rulePost checker
+                                                        let ndcalc = checkerCalc checker
+                                                            ded = ndParseProof ndcalc rtconfig v
+                                                        Feedback mseq _ <- case ndProcessLineMemo ndcalc of
+                                                                               Just memoline -> toDisplaySequenceMemo (memoline $ proofMemo checker) ded
+                                                                               Nothing -> return $ toDisplaySequence (ndProcessLine ndcalc) ded
+                                                        setAttribute g "class" "goal"
+                                                        case sequent checker of
+                                                             Nothing -> message "No goal sequent to submit"
+                                                             Just s -> case mseq of 
+                                                                 (Just s') -> trySubmit Derivation opts l (DerivationData (pack $ show seq) (pack v)) (s' `seqSubsetUnify` s)
+                                                                 _ | "exam" `elem` optlist -> trySubmit Derivation opts l (DerivationData (pack $ show seq) (pack v)) False
+                                                                   | otherwise -> message "not yet finished"
     where optlist = case M.lookup "options" opts of Just s -> words s; Nothing -> []
 
 trySave drs ref w i = do isFinished <- liftIO $ readIORef ref
