@@ -447,6 +447,7 @@ body[data-carnap-type="proofchecker"] .buttonWrapper {
 
 [data-carnap-type="truthtable"] th {
     border-bottom:solid black 1px;
+    text-align:center;
 }
 
 [data-carnap-type="truthtable"] .valtd {
