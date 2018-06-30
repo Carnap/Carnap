@@ -53,7 +53,7 @@ activateTruthTables w (Just (i,o,opts)) =
                           bw <- buttonWrapper w
                           bt1 <- doneButton w "Submit"
                           bt2 <- questionButton w "Check"
-                          if "nocheck" `elem` opts 
+                          if "nocheck" `elem` optlist 
                               then mapM_ (appendChild bw . Just) [bt1]
                               else mapM_ (appendChild bw . Just) [bt1,bt2]
                           (Just par) <- getParentNode o
@@ -107,17 +107,21 @@ createValidityTruthTable w (antced :|-: (SS succed)) (i,o) ref bw opts =
            rows <- mapM (toRow' gRef) (zip4 valuations [1..] validities givens)
            mapM_ (appendChild tbody . Just) (reverse rows)
            (Just w') <- getDefaultView w                    
-           bt <- exclaimButton w "Counterexample"
-           counterexample <- newListener $ tryCounterexample w'
-           addListener bt click counterexample False
+           if "nocounterexample" `elem` optlist 
+               then return ()
+               else do bt <- exclaimButton w "Counterexample"
+                       counterexample <- newListener $ tryCounterexample w'
+                       addListener bt click counterexample False
+                       appendChild bw (Just bt)
+                       return ()
            appendChild thead (Just head)
            appendChild o (Just table)
            mpar@(Just par) <- getParentNode o
-           appendChild bw (Just bt)
            return (gRef,rows)
     where forms :: [PureForm]
           forms = (Prelude.map fromSequent $ toListOf concretes antced) ++ (Prelude.map fromSequent $ toListOf concretes succed)
           implies v = not (and (Prelude.map (unform . satisfies v) (init forms))) || (unform . satisfies v $ last forms)
+          optlist = case M.lookup "options" opts of Just s -> words s; Nothing -> []
           unform (Form b) = b
           atomIndicies = nub . sort . concat $ (Prelude.map getIndicies forms) 
           toValuation l = \x -> x `elem` l
