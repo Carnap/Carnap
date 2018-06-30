@@ -217,7 +217,7 @@ threadedCheck options checker w ref v (g, fd) =
                              setInnerHTML fd (Just "")
                              appendChild fd (Just ul)
                              case sequent checker of
-                                 Just s -> updateGoal s ref g mseq (feedback options == Keypress)
+                                 Just s -> updateGoal s ref g mseq
                                  Nothing -> computeRule ref g mseq
            writeIORef (threadRef checker) (Just t')
            return ()
@@ -227,14 +227,14 @@ threadedCheck options checker w ref v (g, fd) =
                          FitchStyle -> renderDeductionFitch
                          LemmonStyle -> renderDeductionLemmon
 
-updateGoal s ref g mseq update = 
+updateGoal s ref g mseq = 
         case mseq of
              Nothing -> do setAttribute g "class" "goal"
                            writeIORef ref False
              (Just seq) -> if seq `seqSubsetUnify` s
-                   then do if update then setAttribute g "class" "goal success" else setAttribute g "class" "goal"
+                   then do setAttribute g "class" "goal success"
                            writeIORef ref True
-                   else do if update then setAttribute g "class" "goal failure" else setAttribute g "class" "goal"
+                   else do setAttribute g "class" "goal failure"
                            writeIORef ref False
 
 computeRule ref g mseq = case mseq of
