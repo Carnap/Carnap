@@ -24,7 +24,7 @@ data Button = Button { label  :: String
                             EventM Element MouseEvent ()
                      }
 
-data CheckerFeedbackUpdate = Keypress | Click | Never
+data CheckerFeedbackUpdate = Keypress | Click | Never | SyntaxOnly
     deriving Eq
 
 data CheckerOptions = CheckerOptions { submit :: Maybe Button -- What's the submission button, if there is one?
@@ -82,9 +82,6 @@ checkerWith options updateres iog@(IOGoal i o g content _) w = do
                    addListener bt' click buttonAct False                
                Nothing -> return ()
            case feedback options of
-               Keypress -> do
-                   kblistener <- newListener $ updateWithValue (\s -> updateres w ref s (g,fd))
-                   addListener i keyUp kblistener False
                Never -> return ()
                Click -> do 
                    bt <- questionButton w "Check"
@@ -94,6 +91,9 @@ checkerWith options updateres iog@(IOGoal i o g content _) w = do
                                        case miv of Just iv -> updateres w ref iv (g, fd)
                                                    Nothing -> return ()
                    addListener bt click btlistener True
+               _ -> do
+                   kblistener <- newListener $ updateWithValue (\s -> updateres w ref s (g,fd))
+                   addListener i keyUp kblistener False
            when (popout options) $ do
                btpop <- expandButton w "Expand"
                appendChild bw (Just btpop)

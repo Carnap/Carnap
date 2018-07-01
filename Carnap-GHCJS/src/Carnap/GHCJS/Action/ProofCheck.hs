@@ -149,6 +149,7 @@ activateChecker drs w (Just iog@(IOGoal i o g _ opts)) -- TODO: need to update n
                                                  , feedback = case M.lookup "feedback" opts of
                                                                   Just "manual" -> Click
                                                                   Just "none" -> Never
+                                                                  Just "syntaxonly" -> SyntaxOnly
                                                                   _ -> Keypress
                                                  , directed = case M.lookup "goal" opts of
                                                                   Just _ -> True
@@ -213,11 +214,13 @@ threadedCheck options checker w ref v (g, fd) =
                              Feedback mseq ds <- case ndProcessLineMemo ndcalc of
                                                      Just memoline -> toDisplaySequenceMemo (memoline $ proofMemo checker) ded
                                                      Nothing -> return $ toDisplaySequence (ndProcessLine ndcalc) ded
-                             ul <- genericListToUl (wrap fd w) w ds
+                             ul <- case feedback options of
+                                       SyntaxOnly -> genericListToUl (syntaxwrap fd w) w ds
+                                       _ -> genericListToUl (wrap fd w) w ds
                              setInnerHTML fd (Just "")
                              appendChild fd (Just ul)
                              case sequent checker of
-                                 Just s -> updateGoal s ref g mseq
+                                 Just s -> updateGoal s ref g mseq options
                                  Nothing -> computeRule ref g mseq
            writeIORef (threadRef checker) (Just t')
            return ()
@@ -227,15 +230,14 @@ threadedCheck options checker w ref v (g, fd) =
                          FitchStyle -> renderDeductionFitch
                          LemmonStyle -> renderDeductionLemmon
 
-updateGoal s ref g mseq = 
-        case mseq of
-             Nothing -> do setAttribute g "class" "goal"
-                           writeIORef ref False
-             (Just seq) -> if seq `seqSubsetUnify` s
-                   then do setAttribute g "class" "goal success"
-                           writeIORef ref True
-                   else do setAttribute g "class" "goal failure"
-                           writeIORef ref False
+updateGoal s ref g mseq options = 
+        case (mseq, feedback options) of
+             (Nothing,_) -> setAttribute g "class" "goal" >> writeIORef ref False
+             (Just seq, SyntaxOnly) -> setAttribute g "class" "goal" >> writeIORef ref (seq `seqSubsetUnify` s)
+             (Just seq, _) -> if (seq `seqSubsetUnify` s) then do setAttribute g "class" "goal success"
+                                                                  writeIORef ref True
+                                                          else do setAttribute g "class" "goal failure"
+                                                                  writeIORef ref False
 
 computeRule ref g mseq = case mseq of
                          Nothing -> do setInnerHTML g (Just "No Rule Found")
@@ -312,6 +314,21 @@ wrap fd w elt (Left (NoParse e n))       = popUpWith fd w elt "⚠" ("Can't read
                           _ -> Nothing
 wrap fd w elt (Left (NoUnify eqs n))     = popUpWith fd w elt "✗" ("Error on line " ++ show n ++ ". Can't match these premises with this conclusion, using this rule.") (Just $ toUniErr eqs)
 wrap fd w elt (Left (NoResult _))        = setInnerHTML elt (Just "&nbsp;")
+
+syntaxwrap fd w elt (Left (NoParse e n))       = popUpWith fd w elt "⚠" ("Can't read line " ++ show n ++ ". There may be a typo.") (Just . cleanIt . show $ e)
+          where chunks s = case break (== '\"') s of 
+                                  (l,[]) -> l:[]
+                                  (l,_:s') -> l:chunks s'
+                cleanChunk c = case (readMaybe $ "\"" ++ c ++ "\"") :: Maybe String of 
+                                  Just s -> s
+                                  Nothing -> c
+                cleanIt = concat . map cleanChunk . chunks 
+      
+                readMaybe s = case reads s of
+                                [(x, "")] -> Just x
+                                _ -> Nothing
+syntaxwrap fd w elt (Left (NoResult _))        = setInnerHTML elt (Just "&nbsp;")
+syntaxwrap fd w elt _        = setInnerHTML elt (Just "-")
 
 toUniErr eqs = "In order to apply this inference rule, there needs to be a substitution that makes at least one of these sets of pairings match:" 
                 ++ (concat $ map endiv' $ map (concat . map (endiv . show) . reverse) eqs)
