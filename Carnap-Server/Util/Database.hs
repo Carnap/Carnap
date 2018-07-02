@@ -3,6 +3,7 @@ module Util.Database where
 
 import Import
 import Data.IntMap (IntMap)
+import System.Directory (doesFileExist,getDirectoryContents)
 import Carnap.GHCJS.SharedTypes(ProblemSource(..))
 import Data.Aeson (encode,decode, decodeStrict)
 
@@ -34,6 +35,44 @@ checkUserData uid = do maybeData <- runDB $ getBy $ UniqueUserData uid
                            Just u -> case maybeData of
                               Nothing -> redirect (RegisterR (userIdent u))
                               Just (Entity _ userdata) -> return userdata
+
+-- | given an ident get the director in which assignments are stored for
+-- the instructor with that ident
+assignmentDir ident = do master <- getYesod
+                         return $ (appDataRoot $ appSettings master) </> "documents" </> unpack ident
+
+-- | given a filename, retrieve the associated assignment for the course
+-- you're currently enrolled in, and the path to the file.
+getAssignmentByFilename filename = 
+        do muid <- maybeAuthId
+           ud <- case muid of
+                         Nothing -> 
+                            do setMessage "you need to be logged in to access assignments"
+                               redirect HomeR
+                         Just uid -> checkUserData uid
+           (course,cid) <- case userDataEnrolledIn ud of
+                            Just cid -> do Just course <- runDB $ get cid
+                                           return (course,cid)
+                            Nothing -> do setMessage "you need to be enrolled in a course to access assignments"
+                                          redirect HomeR
+           Entity _ instructor <- udByInstructorId $ courseInstructor course
+           Just instructorident <- getIdent (userDataUserId instructor)
+           mdoc <- runDB $ getBy (UniqueDocument filename (userDataUserId instructor))
+           case mdoc of 
+                Nothing -> do setMessage "document record not found"
+                              redirect HomeR
+                Just (Entity docid doc)-> do
+                   adir <- assignmentDir instructorident
+                   let path = adir </> unpack filename
+                   exists <- lift $ doesFileExist path
+                   ment <- runDB $ getBy $ UniqueAssignment docid cid
+                   if not exists 
+                     then do setMessage "you need to be enrolled in a course to access assignments"
+                             redirect HomeR
+                     else case ment of
+                              Nothing -> do setMessage "you need to be enrolled in a course to access assignments"
+                                            redirect HomeR
+                              Just ent -> return (ent, path)
 
 -- | given a UserId, return Just the user data or Nothing
 getUserMD uid = do mmd <- runDB $ getBy $ UniqueUserData uid

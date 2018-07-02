@@ -4,8 +4,8 @@ import Import
 import Util.Data
 import Util.Database
 import Yesod.Markdown
-import Text.Julius (juliusFile,rawJS)
 import System.Directory (doesFileExist,getDirectoryContents)
+import Text.Julius (juliusFile,rawJS)
 import Text.Pandoc.Walk (walkM, walk)
 import Filter.SynCheckers
 import Filter.ProofCheckers
@@ -54,53 +54,28 @@ getAssignmentsR = do muid <- maybeAuthId
 
 getAssignmentR :: Text -> Handler Html
 getAssignmentR filename = 
-                    do muid <- maybeAuthId
-                       ud <- case muid of
-                                     Nothing -> 
-                                        do setMessage "you need to be logged in to access assignments"
-                                           redirect HomeR
-                                     Just uid -> checkUserData uid
-                       (course,cid) <- case userDataEnrolledIn ud of
-                                        Just cid -> do Just course <- runDB $ get cid
-                                                       return (course,cid)
-                                        Nothing -> do setMessage "you need to be enrolled in a course to access assignments"
-                                                      redirect HomeR
-                       Entity _ instructor <- udByInstructorId $ courseInstructor course
-                       Just instructorident <- getIdent (userDataUserId instructor)
-                       mdoc <- runDB $ getBy (UniqueDocument filename (userDataUserId instructor))
-                       case mdoc of 
-                            Nothing -> defaultLayout $ layout ("document record not found" :: Text)
-                            Just (Entity docid doc)-> do
-                               adir <- assignmentDir instructorident
-                               let path = adir </> unpack filename
-                               exists <- lift $ doesFileExist path
-                               ment <- runDB $ getBy $ UniqueAssignment docid cid
-                               if not exists 
-                                 then defaultLayout $ layout ("file not found" :: Text)
-                                 else case ment of
-                                          Nothing -> defaultLayout $ layout ("assignment not found" :: Text)
-                                          Just (Entity key val) -> do 
-                                               time <- liftIO getCurrentTime
-                                               if visibleAt time val 
-                                                   then do
-                                                       ehtml <- lift $ fileToHtml path
-                                                       case ehtml of
-                                                           Left err -> defaultLayout $ layout (show err)
-                                                           Right html -> do
-                                                               defaultLayout $ do
-                                                                   let source = "assignment:" ++ show key 
-                                                                   toWidgetHead $(juliusFile "templates/command.julius")
-                                                                   toWidgetHead [julius|var submission_source="#{rawJS source}";|]
-                                                                   toWidgetHead [julius|var assignment_key="#{rawJS $ show key}";|]
-                                                                   addScript $ StaticR js_popper_min_js
-                                                                   addScript $ StaticR ghcjs_rts_js
-                                                                   addScript $ StaticR ghcjs_allactions_lib_js
-                                                                   addScript $ StaticR ghcjs_allactions_out_js
-                                                                   addStylesheet $ StaticR css_tree_css
-                                                                   addStylesheet $ StaticR css_exercises_css
-                                                                   $(widgetFile "document")
-                                                                   addScript $ StaticR ghcjs_allactions_runmain_js
-                                                   else defaultLayout $ layout ("assignment not currently available" :: Text)
+        do (Entity key val, path) <- getAssignmentByFilename filename
+           time <- liftIO getCurrentTime
+           if visibleAt time val 
+               then do
+                   ehtml <- lift $ fileToHtml path
+                   case ehtml of
+                       Left err -> defaultLayout $ layout (show err)
+                       Right html -> do
+                           defaultLayout $ do
+                               let source = "assignment:" ++ show key 
+                               toWidgetHead $(juliusFile "templates/command.julius")
+                               toWidgetHead [julius|var submission_source="#{rawJS source}";|]
+                               toWidgetHead [julius|var assignment_key="#{rawJS $ show key}";|]
+                               addScript $ StaticR js_popper_min_js
+                               addScript $ StaticR ghcjs_rts_js
+                               addScript $ StaticR ghcjs_allactions_lib_js
+                               addScript $ StaticR ghcjs_allactions_out_js
+                               addStylesheet $ StaticR css_tree_css
+                               addStylesheet $ StaticR css_exercises_css
+                               $(widgetFile "document")
+                               addScript $ StaticR ghcjs_allactions_runmain_js
+               else defaultLayout $ layout ("assignment not currently available" :: Text)
     where layout c = [whamlet|
                         <div.container>
                             <article>
@@ -116,6 +91,3 @@ fileToHtml path = do Markdown md <- markdownFromFile path
                                         return $ Right $ writePandocTrusted yesodDefaultWriterOptions pd'
                          Left e -> return $ Left e
     where allFilters = (makeSynCheckers . makeProofChecker . makeTranslate . makeTruthTables)
-
-assignmentDir ident = do master <- getYesod
-                         return $ (appDataRoot $ appSettings master) </> "documents" </> unpack ident
