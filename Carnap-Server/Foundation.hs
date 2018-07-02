@@ -118,6 +118,17 @@ instance Yesod App where
                     then Authorized
                     else Unauthorized "It appears you're not authorized to access this page"
 
+    isAuthorized (ReviewR _) _ = 
+        do (Entity uid user) <- requireAuth
+           mmd <- runDB $ getBy $ UniqueUserData uid
+           case (userDataEnrolledIn =<< (entityVal <$> mmd),  userDataInstructorId =<< (entityVal <$> mmd)) of
+               (Just cid, Just iid) -> 
+                    do Just course <- runDB $ get cid
+                       return $ if iid == courseInstructor course || "gleachkr@gmail.com" == userIdent user
+                                then Authorized
+                                else Unauthorized "It appears you're not authorized to access this page"
+               _ -> return $ Unauthorized "It appears you're not authorized to access this page"
+
     isAuthorized AdminR _ = 
         do (Entity _ user) <- requireAuth
            return $ if userIdent user == "gleachkr@gmail.com"

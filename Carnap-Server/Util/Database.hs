@@ -99,7 +99,6 @@ documentsByInstructorIdent ident = runDB $ do muent <- getBy $ UniqueUser ident
                                                   Just uid -> selectList [DocumentCreator ==. uid] []
                                                   Nothing -> return []
                                    
-
 -- | derived rules by userId
 getDerivedRules uid = do savedRules <- runDB $ selectList 
                                                [SavedDerivedRuleUserId ==. uid] []

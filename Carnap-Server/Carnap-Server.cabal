@@ -33,6 +33,7 @@ library
                      Handler.Command
                      Handler.Hashed
                      Handler.Rule
+                     Handler.Review
                      Handler.Assignment
                      Handler.Document
                      Filter.Sidenotes
