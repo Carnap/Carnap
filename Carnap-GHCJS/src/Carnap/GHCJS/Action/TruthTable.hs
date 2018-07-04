@@ -45,26 +45,29 @@ activateTruthTables w (Just (i,o,opts)) =
     where optlist = case M.lookup "options" opts of Just s -> words s; Nothing -> []
           checkerWith parser ttfunc = 
             case (M.lookup "submission" opts, M.lookup "goal" opts) of
-                (Just s, Just g) | take 7 s == "saveAs:" ->
+                (Just s, Just g) ->
                   case parse parser "" g of
                       (Right f) -> do
-                          let l = Prelude.drop 7 s
                           ref <- newIORef False
                           bw <- buttonWrapper w
-                          bt1 <- doneButton w "Submit"
-                          bt2 <- questionButton w "Check"
-                          if "nocheck" `elem` optlist 
-                              then mapM_ (appendChild bw . Just) [bt1]
-                              else mapM_ (appendChild bw . Just) [bt1,bt2]
+                          (gRef,rows) <- ttfunc w f (i,o) ref bw opts
+                          if take 7 s == "saveAs:" then do
+                              let l = Prelude.drop 7 s
+                              bt1 <- doneButton w "Submit"
+                              appendChild bw (Just bt1)
+                              submit <- newListener $ submitTruthTable opts ref gRef rows (show f) l
+                              addListener bt1 click submit False                
+                          else return ()
+                          if "nocheck" `elem` opts then return () 
+                          else do
+                              bt2 <- questionButton w "Check"
+                              appendChild bw (Just bt2)
+                              check <- newListener $ checkTable ref gRef
+                              addListener bt2 click check False                
                           (Just par) <- getParentNode o
                           appendChild par (Just bw)
-                          (gRef,rows) <- ttfunc w f (i,o) ref bw opts
                           -- XXX: idea. Return check rather than gRef, to allow different tt setups their own checking proceedures
                           setInnerHTML i (Just $ show f)
-                          submit <- newListener $ submitTruthTable opts ref gRef rows (show f) l
-                          check <- newListener $ checkTable ref gRef
-                          addListener bt1 click submit False                
-                          addListener bt2 click check False                
                       (Left e) -> setInnerHTML o (Just $ show e) 
                 _ -> print "truth table was missing an option"
           checkTable ref gRef = do vals <- liftIO $ readIORef gRef

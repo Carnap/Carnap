@@ -16,7 +16,6 @@ import Carnap.Languages.ClassicalSequent.Syntax
 class ParsableLex sem f where
         langParser :: Parsec String u (FixLang f sem)
         
-
 seqFormulaParser :: (Sequentable f, ParsableLex sem f, Typeable sem) => 
     Parsec String u (ClassicalSequentOver f (Sequent sem))
 seqFormulaParser = parseSeqOver langParser 
@@ -50,8 +49,7 @@ splitSequent parser = do lhs <- formlist parser
 
 formlist :: Parsec String u (FixLang f sem) -> 
     Parsec String u [FixLang f sem]
-formlist parser = do spaces
-                     sepEndBy (try parser) comma
+formlist parser = try (spaces *> string "⊤" *> spaces *> return []) <|> (spaces *> sepEndBy (try parser) comma)
     where comma = do spaces
                      char ','
                      spaces

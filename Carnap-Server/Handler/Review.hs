@@ -5,6 +5,7 @@ import Util.Database
 import Text.Read (readMaybe)
 import Yesod.Form.Bootstrap3
 import Carnap.GHCJS.SharedTypes
+import Carnap.GHCJS.SharedFunctions (simpleCipher)
 
 putReviewR :: Text -> Handler Value
 putReviewR filename =
@@ -51,38 +52,55 @@ renderProblem (Entity key val) = do
             uid = problemSubmissionUserId val
             extra = problemSubmissionExtra val
         (updateSubmissionWidget,enctypeUpdateSubmission) <- generateFormPost (identifyForm "updateSubmission" $ updateSubmissionForm extra ident (show uid))
+        let template display = 
+                [whamlet|
+                    <div.card.mb-3>
+                        <div.card-body style="padding:20px">
+                            <h4.card-title>#{ident}
+                            <div.row>
+                                <div.col-sm-8>
+                                    ^{display}
+                                <div.col-sm-4>
+                                    <form.updateSubmission enctype=#{enctypeUpdateSubmission}>
+                                        ^{updateSubmissionWidget}
+                                        <div.form-group>
+                                            <input.btn.btn-primary type=submit value="update">
+                |]
         case (problemSubmissionType val, problemSubmissionData val) of
-            (Derivation, DerivationData content der) ->
+            (Derivation, DerivationData content der) -> template $
                 [whamlet|
-                    <h4>#{ident}
-                    <div>#{content}
-                    <pre>#{der}
-                    <form.updateSubmission enctype=#{enctypeUpdateSubmission}>
-                        ^{updateSubmissionWidget}
-                        <div.form-group>
-                            <input.btn.btn-primary type=submit value="update">
+                    <div data-carnap-system="prop" 
+                         data-carnap-options="resize"
+                         data-carnap-type="proofchecker"
+                         data-carnap-goal="#{content}"
+                         data-carnap-submission="none">
+                         #{der}
                 |]
-            (TruthTable, TruthTableData content tt) -> 
+            (TruthTable, TruthTableData content tt) -> template $
                 [whamlet|
-                    <h4>#{ident}
-                    <div>#{content}
-                    <pre>#{show tt}
-                    <form.updateSubmission enctype=#{enctypeUpdateSubmission}>
-                        ^{updateSubmissionWidget}
-                        <div.form-group>
-                            <input.btn.btn-primary type=submit value="update">
+                    <div data-carnap-type="truthtable"
+                         data-carnap-tabletype="#{checkvalidity content}"
+                         data-carnap-submission="none"
+                         data-carnap-goal="#{content}">
+                         #{renderTT tt}
                 |]
-            (Translation, TranslationData content trans) -> 
+            (Translation, TranslationData content trans) -> template $
                 [whamlet|
-                    <h4>#{ident}
-                    <div>#{content}
-                    <pre>#{trans}
-                    <form.updateSubmission enctype=#{enctypeUpdateSubmission}>
-                        ^{updateSubmissionWidget}
-                        <div.form-group>
-                            <input.btn.btn-primary type=submit value="update">
+                    <div data-carnap-type="translate"
+                         data-carnap-transtype="prop"
+                         data-carnap-goal="#{show (simpleCipher (unpack content))}"
+                         data-carnap-submission="none"
+                         data-carnap-problem="#{content}">
+                         #{trans}
                 |]
             _ -> return ()
+    where renderTT tt = concat $ map renderRow tt
+          renderRow row = map toval row ++ "\n"
+          toval (Just True) = 'T'
+          toval (Just False) = 'F'
+          toval Nothing = '-'
+          checkvalidity ct = if '⊢' `elem` ct then "validity" :: Text else "simple" :: Text
+
 
 updateSubmissionForm extra ident uid = renderBootstrap3 BootstrapBasicForm $ (,,)
             <$> areq hiddenField "" (Just ident)

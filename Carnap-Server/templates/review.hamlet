@@ -1,0 +1,7 @@
+<div.container>
+   <article>
+       $if null problems
+            <p> Nothing to review!
+       $else
+            $forall p <- problems
+                ^{renderProblem p}

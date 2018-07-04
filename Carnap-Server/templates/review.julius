@@ -1,0 +1,16 @@
+$(".updateSubmission").submit(function(e) {
+    jQuery.ajax({
+        url: '@{ReviewR filename}',
+        type: 'PUT',
+        data: new FormData(this),
+        processData: false,
+        contentType: false,
+        success: function(data) {
+            window.alert("updated!")
+            },
+        error: function(data) {
+            window.alert("Error, couldn't update the assignment ")
+            },
+        });
+    e.preventDefault();
+});

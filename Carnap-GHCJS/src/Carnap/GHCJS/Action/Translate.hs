@@ -42,26 +42,28 @@ activateTranslate w (Just (i,o,opts)) =
     where optlist = case M.lookup "options" opts of Just s -> words s; Nothing -> []
           activateWith parser translator checker =
               case (M.lookup "submission" opts, M.lookup "goal" opts) of
-                  (Just s, Just g) | take 7 s == "saveAs:" ->
+                  (Just s, Just g)  ->
                     case parse parser "" (simpleDecipher . read $ g) of
                       (Right f) -> do 
-                           let l = Prelude.drop 7 s
-                               (Just content) = M.lookup "content" opts
+                           let (Just content) = M.lookup "content" opts
                                (Just problem) = M.lookup "problem" opts
-                           bt <- doneButton w "Submit Solution"
                            bw <- buttonWrapper w
-                           appendChild bw (Just bt)
+                           ref <- newIORef False
+                           if take 7 s == "saveAs:" then do
+                              let l = Prelude.drop 7 s
+                              bt <- doneButton w "Submit Solution"
+                              appendChild bw (Just bt)
+                              submit <- newListener $ submitTrans opts i ref l f parser checker
+                              addListener bt click submit False                
+                           else return ()
                            setValue (castToHTMLInputElement i) (Just content)
                            setInnerHTML o (Just problem)
                            mpar@(Just par) <- getParentNode o               
                            insertBefore par (Just bw) (Just o)
-                           ref <- newIORef False
                            translate <- newListener $ translator o ref f
-                           submit <- newListener $ submitTrans opts i ref l f parser checker
                            if "nocheck" `elem` optlist 
                                then return ()
                                else addListener i keyUp translate False                  
-                           addListener bt click submit False                
                       (Left e) -> setInnerHTML o (Just $ show e)
                   _ -> print "translation was missing an option"
 activateChecker _ Nothing  = return ()
