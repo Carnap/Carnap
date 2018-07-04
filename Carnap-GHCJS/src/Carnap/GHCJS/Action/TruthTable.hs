@@ -22,7 +22,7 @@ import GHCJS.DOM.Document (createElement, getBody, getDefaultView)
 import GHCJS.DOM.Node (appendChild, getParentNode, insertBefore)
 import GHCJS.DOM.EventM (newListener, addListener, EventM, target)
 import Data.IORef (newIORef, IORef, readIORef,writeIORef, modifyIORef)
-import Data.Map as M (Map, lookup, foldr, insert, fromList)
+import Data.Map as M (Map, lookup, foldr, insert, fromList, toList)
 import Data.Text (pack)
 import Data.List (subsequences, nub, zip4)
 import Control.Monad.IO.Class (liftIO)
@@ -87,7 +87,7 @@ submitTruthTable opts ref gRef rows s l = do isDone <- liftIO $ readIORef ref
                                                                  if M.foldr (&&) True vals 
                                                                      then trySubmit TruthTable opts l (ProblemContent (pack s)) True
                                                                      else do tabulated <- liftIO $ mapM unpackRow rows
-                                                                             trySubmit TruthTable opts l (TruthTableData (pack s) (reverse tabulated)) False
+                                                                             trySubmit TruthTable opts l (TruthTableDataOpts (pack s) (reverse tabulated) (M.toList opts)) False
                                                          else message "not yet finished (do you still need to check your answer?)"
     where optlist = case M.lookup "options" opts of Just s -> words s; Nothing -> []
 

@@ -107,7 +107,7 @@ submitTrans opts i ref l f parser checker =
                         then do (Just v) <- getValue (castToHTMLInputElement i)
                                 case parse parser "" v of
                                     Right f' | checker f f' -> trySubmit Translation opts l (ProblemContent (pack $ show f)) True
-                                    _ -> trySubmit Translation opts l (TranslationData (pack $ show f) (pack v)) False
+                                    _ -> trySubmit Translation opts l (TranslationDataOpts (pack $ show f) (pack v) (toList opts)) False
                         else message "not yet finished (remember to press return to check your work before submitting!)"
     where optlist = case M.lookup "options" opts of Just s -> words s; Nothing -> []
 

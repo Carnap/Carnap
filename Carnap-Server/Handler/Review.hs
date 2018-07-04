@@ -2,6 +2,7 @@ module Handler.Review (getReviewR, putReviewR) where
 
 import Import
 import Util.Database
+import Data.Map as M (fromList)
 import Text.Read (readMaybe)
 import Yesod.Form.Bootstrap3
 import Carnap.GHCJS.SharedTypes
@@ -76,6 +77,16 @@ renderProblem (Entity key val) = do
                          data-carnap-submission="none">
                          #{der}
                 |]
+            (Derivation, DerivationDataOpts content der opts) -> template $
+                [whamlet|
+                    <div data-carnap-type="proofchecker"
+                         data-carnap-system="#{sys}"
+                         data-carnap-options="resize"
+                         data-carnap-goal="#{content}"
+                         data-carnap-submission="none">
+                         #{der}
+                |]
+                where sys = case lookup "system" (M.fromList opts) of Just s -> s; Nothing -> "prop"
             (TruthTable, TruthTableData content tt) -> template $
                 [whamlet|
                     <div data-carnap-type="truthtable"
@@ -84,6 +95,15 @@ renderProblem (Entity key val) = do
                          data-carnap-goal="#{content}">
                          #{renderTT tt}
                 |]
+            (TruthTable, TruthTableDataOpts content tt opts) -> template $
+                [whamlet|
+                    <div data-carnap-type="truthtable"
+                         data-carnap-tabletype="#{tabletype}"
+                         data-carnap-submission="none"
+                         data-carnap-goal="#{content}">
+                         #{renderTT tt}
+                |]
+                where tabletype = case lookup "tabletype" (M.fromList opts) of Just s -> s; Nothing -> checkvalidity content
             (Translation, TranslationData content trans) -> template $
                 [whamlet|
                     <div data-carnap-type="translate"
@@ -93,13 +113,24 @@ renderProblem (Entity key val) = do
                          data-carnap-problem="#{content}">
                          #{trans}
                 |]
+            (Translation, TranslationDataOpts content trans opts) -> template $
+                [whamlet|
+                    <div data-carnap-type="translate"
+                         data-carnap-transtype="#{transtype}"
+                         data-carnap-goal="#{show (simpleCipher (unpack content))}"
+                         data-carnap-submission="none"
+                         data-carnap-problem="#{problem}">
+                         #{trans}
+                |]
+                where transtype = case lookup "transtype" (M.fromList opts) of Just s -> s; Nothing -> "prop"
+                      problem = case lookup "problem" (M.fromList opts) of Just s -> s ++ " : " ++ (unpack content)
             _ -> return ()
     where renderTT tt = concat $ map renderRow tt
           renderRow row = map toval row ++ "\n"
           toval (Just True) = 'T'
           toval (Just False) = 'F'
           toval Nothing = '-'
-          checkvalidity ct = if '⊢' `elem` ct then "validity" :: Text else "simple" :: Text
+          checkvalidity ct = if '⊢' `elem` ct then "validity" :: String else "simple" :: String
 
 
 updateSubmissionForm extra ident uid = renderBootstrap3 BootstrapBasicForm $ (,,)

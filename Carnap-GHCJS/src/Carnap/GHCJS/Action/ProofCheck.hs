@@ -29,7 +29,7 @@ import Text.Parsec (parse)
 import Data.IORef (IORef, newIORef,writeIORef, readIORef, modifyIORef)
 import Data.Aeson as A
 import Data.Text (pack)
-import qualified Data.Map as M (lookup,fromList,map) 
+import qualified Data.Map as M (lookup,fromList,toList,map) 
 import Control.Lens.Fold (toListOf,(^?))
 import Lib
 import Carnap.GHCJS.Widget.ProofCheckBox (checkerWith, CheckerOptions(..), Button(..), CheckerFeedbackUpdate(..))
@@ -248,7 +248,7 @@ computeRule ref g mseq = case mseq of
 submitDer opts checker l g seq ref _ i = do isFinished <- liftIO $ readIORef ref
                                             (Just v) <- getValue (castToHTMLTextAreaElement i)
                                             liftIO $ if isFinished 
-                                                then trySubmit Derivation opts l (DerivationData (pack $ show seq) (pack v)) True
+                                                then trySubmit Derivation opts l (DerivationDataOpts (pack $ show seq) (pack v) (M.toList opts)) True
                                                 else do setAttribute g "class" "goal working"
                                                         rtconfig <- liftIO $ rulePost checker
                                                         let ndcalc = checkerCalc checker
@@ -260,8 +260,8 @@ submitDer opts checker l g seq ref _ i = do isFinished <- liftIO $ readIORef ref
                                                         case sequent checker of
                                                              Nothing -> message "No goal sequent to submit"
                                                              Just s -> case mseq of 
-                                                                 (Just s') -> trySubmit Derivation opts l (DerivationData (pack $ show seq) (pack v)) (s' `seqSubsetUnify` s)
-                                                                 _ | "exam" `elem` optlist -> trySubmit Derivation opts l (DerivationData (pack $ show seq) (pack v)) False
+                                                                 (Just s') -> trySubmit Derivation opts l (DerivationDataOpts (pack $ show seq) (pack v) (M.toList opts)) (s' `seqSubsetUnify` s)
+                                                                 _ | "exam" `elem` optlist -> trySubmit Derivation opts l (DerivationDataOpts (pack $ show seq) (pack v) (M.toList opts)) False
                                                                    | otherwise -> message "not yet finished"
     where optlist = case M.lookup "options" opts of Just s -> words s; Nothing -> []
 

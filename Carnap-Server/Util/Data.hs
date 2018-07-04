@@ -45,6 +45,9 @@ toTime :: String -> UTCTime
 toTime = parseTimeOrError True defaultTimeLocale "%l:%M %P %Z, %b %e, %Y"
 
 displayProblemData (DerivationData t _)  = t
+displayProblemData (DerivationDataOpts t _ _)  = t
 displayProblemData (TruthTableData t _)  = t
+displayProblemData (TruthTableDataOpts t _ _)  = t
 displayProblemData (TranslationData t _) = t
+displayProblemData (TranslationDataOpts t _ _) = t
 displayProblemData (ProblemContent t)    = t
