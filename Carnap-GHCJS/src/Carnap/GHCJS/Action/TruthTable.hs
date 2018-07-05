@@ -24,7 +24,7 @@ import GHCJS.DOM.EventM (newListener, addListener, EventM, target)
 import Data.IORef (newIORef, IORef, readIORef,writeIORef, modifyIORef)
 import Data.Map as M (Map, lookup, foldr, insert, fromList, toList)
 import Data.Text (pack)
-import Data.List (subsequences, nub, zip4)
+import Data.List (subsequences, nub, zip4,intersperse)
 import Control.Monad.IO.Class (liftIO)
 import Control.Lens (toListOf)
 import Control.Lens.Plated (children)
@@ -129,8 +129,8 @@ createValidityTruthTable w (antced :|-: (SS succed)) (i,o) ref bw opts =
           atomIndicies = nub . sort . concat $ (Prelude.map getIndicies forms) 
           toValuation l = \x -> x `elem` l
           valuations = (Prelude.map toValuation) . subsequences $ reverse atomIndicies
-          orderedChildren = concat $ Prelude.map (traverseBPT . toBPT. fromSequent) (toListOf concretes antced)
-                            ++ [[Left '⊢']] ++ Prelude.map (traverseBPT . toBPT. fromSequent) (toListOf concretes succed)
+          orderedChildren = concat $ intersperse [Left ','] (Prelude.map (traverseBPT . toBPT. fromSequent) (toListOf concretes antced))
+                            ++ [[Left '⊢']] ++ intersperse [Left ','] (Prelude.map (traverseBPT . toBPT. fromSequent) (toListOf concretes succed))
           toRow' = toRow w atomIndicies orderedChildren o
           makeGridRef x y = newIORef (M.fromList [((z,w), True) | z <- [1..x], w <-[1.. y]])
           tryCounterexample w' = do mrow <- liftIO $ prompt w' "enter the truth values for your counterexample row" (Just "")
