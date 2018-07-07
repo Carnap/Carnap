@@ -9,7 +9,7 @@ import Carnap.Core.Data.AbstractSyntaxDataTypes (liftLang, FixLang, CopulaSchema
 import Carnap.Core.Data.AbstractSyntaxClasses (Schematizable, Handed(..))
 import Carnap.Languages.ClassicalSequent.Syntax
 import Carnap.Languages.PurePropositional.Logic as P 
-    (DerivedRule(..), logicBookCalc, magnusSLCalc, magnusSLPlusCalc, propCalc, hardegreeSLCalc
+    (DerivedRule(..), logicBookSD, magnusSLCalc, magnusSLPlusCalc, propCalc, hardegreeSLCalc
     , thomasBolducAndZachTFLCalc)
 import Carnap.Languages.PurePropositional.Logic.Rules (derivedRuleToSequent)
 import Carnap.Languages.PureFirstOrder.Logic as FOL 
@@ -105,7 +105,7 @@ activateChecker drs w (Just iog@(IOGoal i o g _ opts)) -- TODO: need to update n
         | sys == "firstOrder"                = tryParse folCalc folChecker
         | sys == "secondOrder"               = tryParse msolCalc noRuntimeOptions
         | sys == "polyadicSecondOrder"       = tryParse psolCalc noRuntimeOptions
-        | sys == "LogicBook"                 = tryParse logicBookCalc propChecker
+        | sys == "LogicBook"                 = tryParse logicBookSD propChecker
         | sys == "LogicBookPD"               = tryParse logicBookPDCalc folChecker
         | sys == "magnusSL"                  = tryParse magnusSLCalc propChecker
         | sys == "magnusSLPlus"              = tryParse magnusSLPlusCalc propChecker

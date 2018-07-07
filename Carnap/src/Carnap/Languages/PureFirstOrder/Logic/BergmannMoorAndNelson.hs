@@ -60,7 +60,7 @@ instance Inference LogicBookPD PureLexiconFOL (Form Bool) where
          isAssumption _ = False
 
 parseLogicBookPD rtc = try quantRule <|> liftProp 
-    where liftProp = do r <- P.parseFitchPropLogic (RuntimeNaturalDeductionConfig mempty mempty)
+    where liftProp = do r <- P.parseLogicBookSD (RuntimeNaturalDeductionConfig mempty mempty)
                         return (map LogicBookSD r)
           quantRule = do r <- choice (map (try . string) ["∀I", "AI", "∀E", "AE", "∃I", "EI", "∃E", "EE", "PR"])
                          case r of 

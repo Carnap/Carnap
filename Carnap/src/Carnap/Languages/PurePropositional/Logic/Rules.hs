@@ -414,8 +414,20 @@ exchange x y = [ [GammaV 1  :|-: SS x] ∴ GammaV 1  :|-: SS y, [GammaV 1  :|-: 
 andCommutativity :: ReplacementBooleanVariants lex b
 andCommutativity = replace (phin 1 ./\. phin 2) (phin 2 ./\. phin 1)
 
+andAssociativity :: ReplacementBooleanVariants lex b
+andAssociativity = replace ((phin 1 ./\. phin 2) ./\. phin 3) (phin 1 ./\. (phin 2 ./\. phin 3))
+
+andIdempotence :: ReplacementBooleanVariants lex b
+andIdempotence = replace (phin 1 ./\. phin 1) (phin 1)
+
 orCommutativity :: ReplacementBooleanVariants lex b
 orCommutativity = replace (phin 1 .\/. phin 2) (phin 2 .\/. phin 1)
+
+orAssociativity :: ReplacementBooleanVariants lex b
+orAssociativity = replace ((phin 1 .\/. phin 2) .\/. phin 3) (phin 1 .\/. (phin 2 .\/. phin 3))
+
+orIdempotence :: ReplacementBooleanVariants lex b
+orIdempotence = replace (phin 1 .\/. phin 1) (phin 1)
 
 iffCommutativity :: ReplacementBooleanVariants lex b
 iffCommutativity = replace (phin 1 .<=>. phin 2) (phin 2 .<=>. phin 1)
@@ -431,8 +443,21 @@ materialConditional :: ReplacementBooleanVariants lex b
 materialConditional = replace (phin 1 .=>. phin 2) (lneg (phin 1) .\/. phin 2)
                    ++ replace (phin 1 .\/. phin 2) (lneg (phin 1) .=>. phin 2)
 
+contraposition :: ReplacementBooleanVariants lex b
+contraposition = replace (phin 1 .=>. phin 2) (lneg (phin 2) .=>. lneg (phin 1))
+
+exportation :: ReplacementBooleanVariants lex b
+exportation = replace (phin 1 .=>. (phin 2 .=>. phin 3)) ((phin 1 ./\. phin 2) .=>. phin 3)
+
+distribution :: ReplacementBooleanVariants lex b
+distribution = replace (phin 1 ./\. (phin 2 .\/. phin 3)) ((phin 1 ./\. phin 2) .\/. (phin 1 ./\. phin 3)) ++ replace (phin 1 .\/. (phin 2 ./\. phin 3)) ((phin 1 .\/. phin 2) ./\. (phin 1 .\/. phin 3))
+
 biconditionalExchange :: ReplacementBooleanVariants lex b
 biconditionalExchange = replace (phin 1 .<=>. phin 2) ((phin 1 .=>. phin 2) ./\. (phin 2 .=>. phin 1))
+
+biconditionalCases :: ReplacementBooleanVariants lex b
+biconditionalCases = replace (phin 1 .<=>. phin 2) ((phin 1 ./\. phin 2) .\/. (lneg (phin 2) ./\. lneg (phin 1)))
+
 
 ----------------------------------------
 --  1.2.3 Infinitary Variation Rules  --
