@@ -1,6 +1,6 @@
 {-#LANGUAGE FlexibleContexts, FlexibleInstances, MultiParamTypeClasses #-}
 module Carnap.Languages.PurePropositional.Logic.BergmannMoorAndNelson
-    (parseFitchPropLogic, parseFitchPropProof, LogicBookPropLogic,
+    (parseFitchPropLogic, parseFitchPropProof, LogicBookSD,
      logicBookCalc) where
 
 import Data.Map as M (lookup, Map)
@@ -15,10 +15,12 @@ import Carnap.Languages.ClassicalSequent.Syntax
 import Carnap.Languages.ClassicalSequent.Parser
 import Carnap.Languages.PurePropositional.Logic.Rules
 
+
+
 --A system for propositional logic resembling the proof system SD from
 --Bergmann, Moor and Nelson's Logic Book
 
-data LogicBookPropLogic = ConjIntro  
+data LogicBookSD = ConjIntro  
                         | ConjElim1  | ConjElim2
                         | CondIntro1 | CondIntro2
                         | CondElim
@@ -36,7 +38,7 @@ data LogicBookPropLogic = ConjIntro
                         | Pr (Maybe [(ClassicalSequentOver PurePropLexicon (Sequent (Form Bool)))])
                deriving Eq
 
-instance Show LogicBookPropLogic where
+instance Show LogicBookSD where
         show ConjIntro  = "∧I"
         show ConjElim1  = "∧E"
         show ConjElim2  = "∧E"
@@ -67,7 +69,7 @@ instance Show LogicBookPropLogic where
         show (Pr _)     = "PR"
         show LBAS       = "AS"
 
-instance Inference LogicBookPropLogic PurePropLexicon (Form Bool) where
+instance Inference LogicBookSD PurePropLexicon (Form Bool) where
     ruleOf Reiterate  = identityRule
     ruleOf CondElim   = modusPonens
     ruleOf CondIntro1 = conditionalProofVariations !! 0 
@@ -113,7 +115,7 @@ instance Inference LogicBookPropLogic PurePropLexicon (Form Bool) where
     restriction (Pr prems) = Just (premConstraint prems)
     restriction _ = Nothing
 
-parseFitchPropLogic :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> Parsec String u [LogicBookPropLogic]
+parseFitchPropLogic :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> Parsec String u [LogicBookSD]
 parseFitchPropLogic rtc = do r <- choice (map (try . string) ["AS","PR","&I","/\\I", "∧I","&E","/\\E","∧E","CI","->I","→I","→E","CE","->E", "→E"
                                                               ,"~I","-I", "¬I","~E","-E","¬E" ,"vI","\\/I","∨I", "vE","\\/E", "∨E","BI","<->I", "↔I" 
                                                               , "BE", "<->E", "↔E", "R"])
@@ -132,7 +134,7 @@ parseFitchPropLogic rtc = do r <- choice (map (try . string) ["AS","PR","&I","/\
                                  | r `elem` ["BI","<->I","↔I"] -> return [BicoIntro1, BicoIntro2, BicoIntro3, BicoIntro4]
                                  | r `elem` ["BE","<->E","↔E"] -> return [BicoElim1, BicoElim2]
 
-parseFitchPropProof :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> String -> [DeductionLine LogicBookPropLogic PurePropLexicon (Form Bool)]
+parseFitchPropProof :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> String -> [DeductionLine LogicBookSD PurePropLexicon (Form Bool)]
 parseFitchPropProof ders = toDeductionFitch (parseFitchPropLogic ders) (purePropFormulaParser extendedLetters)
 
 logicBookCalc = NaturalDeductionCalc 

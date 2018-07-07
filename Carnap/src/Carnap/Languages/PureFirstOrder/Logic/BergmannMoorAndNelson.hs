@@ -16,7 +16,7 @@ import Carnap.Languages.Util.GenericConstructors
 import Carnap.Languages.PureFirstOrder.Logic.Rules
 import Carnap.Languages.PurePropositional.Logic.Rules (premConstraint,axiom)
 
-data LogicBookPD = LogicBookSD P.LogicBookPropLogic | UI | UE 
+data LogicBookPD = LogicBookSD P.LogicBookSD | UI | UE 
                  | EI | EE1 | EE2 
                  | Pr (Maybe [(ClassicalSequentOver PureLexiconFOL (Sequent (Form Bool)))])
                  deriving Eq
