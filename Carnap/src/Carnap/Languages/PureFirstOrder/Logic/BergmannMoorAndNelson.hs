@@ -16,13 +16,13 @@ import Carnap.Languages.Util.GenericConstructors
 import Carnap.Languages.PureFirstOrder.Logic.Rules
 import Carnap.Languages.PurePropositional.Logic.Rules (premConstraint,axiom)
 
-data LogicBookPD = LogicBookSD P.LogicBookSD | UI | UE 
+data LogicBookPD = SD P.LogicBookSD | UI | UE 
                  | EI | EE1 | EE2 
                  | Pr (Maybe [(ClassicalSequentOver PureLexiconFOL (Sequent (Form Bool)))])
                  deriving Eq
 
 instance Show LogicBookPD where
-        show (LogicBookSD x) = show x
+        show (SD x) = show x
         show UI          = "∀I"
         show UE          = "∀E"
         show EI          = "∃I"
@@ -39,13 +39,13 @@ instance Inference LogicBookPD PureLexiconFOL (Form Bool) where
          ruleOf EE2  = existentialDerivation !! 1 
          ruleOf (Pr _) = axiom
 
-         premisesOf (LogicBookSD x) = map liftSequent (premisesOf x)
+         premisesOf (SD x) = map liftSequent (premisesOf x)
          premisesOf r = upperSequents (ruleOf r)
          
-         conclusionOf (LogicBookSD x) = liftSequent (conclusionOf x)
+         conclusionOf (SD x) = liftSequent (conclusionOf x)
          conclusionOf r = lowerSequent (ruleOf r)
 
-         indirectInference (LogicBookSD x) = indirectInference x
+         indirectInference (SD x) = indirectInference x
          indirectInference x  
             | x `elem` [ EE1,EE2 ] = Just assumptiveProof
             | otherwise = Nothing
@@ -56,12 +56,12 @@ instance Inference LogicBookPD PureLexiconFOL (Form Bool) where
          restriction (Pr prems) = Just (premConstraint prems)
          restriction _ = Nothing
 
-         isAssumption (LogicBookSD x) = isAssumption x
+         isAssumption (SD x) = isAssumption x
          isAssumption _ = False
 
 parseLogicBookPD rtc = try quantRule <|> liftProp 
     where liftProp = do r <- P.parseLogicBookSD (RuntimeNaturalDeductionConfig mempty mempty)
-                        return (map LogicBookSD r)
+                        return (map SD r)
           quantRule = do r <- choice (map (try . string) ["∀I", "AI", "∀E", "AE", "∃I", "EI", "∃E", "EE", "PR"])
                          case r of 
                             r | r `elem` ["∀I","AI"] -> return [UI]
@@ -76,6 +76,59 @@ parseLogicBookPDProof rtc = toDeductionFitch (parseLogicBookPD rtc) bergmannMoor
 logicBookPDCalc = NaturalDeductionCalc
     { ndRenderer = FitchStyle
     , ndParseProof = parseLogicBookPDProof
+    , ndProcessLine = hoProcessLineFitch
+    , ndProcessLineMemo = Just hoProcessLineFitchMemo
+    , ndParseSeq = folSeqParser
+    }
+
+data LogicBookPDPlus = PD LogicBookPD | SDPlus P.LogicBookSDPlus | QN1 | QN2 | QN3 | QN4
+
+instance Show LogicBookPDPlus where
+        show (SDPlus x) = show x
+        show (PD x) = show x
+        show QN1 = "QN"
+        show QN2 = "QN"
+        show QN3 = "QN"
+        show QN4 = "QN"
+
+instance Inference LogicBookPDPlus PureLexiconFOL (Form Bool) where
+
+         ruleOf QN1 = quantifierNegationReplace !! 0
+         ruleOf QN2 = quantifierNegationReplace !! 1
+         ruleOf QN3 = quantifierNegationReplace !! 2
+         ruleOf QN4 = quantifierNegationReplace !! 3
+         ruleOf (PD x) = ruleOf x
+
+         premisesOf (SDPlus x) = map liftSequent (premisesOf x)
+         premisesOf r = upperSequents (ruleOf r)
+         
+         conclusionOf (SDPlus x) = liftSequent (conclusionOf x)
+         conclusionOf r = lowerSequent (ruleOf r)
+
+         indirectInference (SDPlus x) = indirectInference x
+         indirectInference (PD x) = indirectInference x
+         indirectInference _ = Nothing 
+
+         restriction (PD x) = restriction x
+         restriction _ = Nothing
+
+         isAssumption (SDPlus x) = isAssumption x
+         isAssumption (PD x) = isAssumption x
+         isAssumption _ = False
+
+parseLogicBookPDPlus rtc = try liftPD <|> try liftProp <|> qn
+    where liftPD = do r <- parseLogicBookPD rtc
+                      return (map PD r)
+          liftProp = do r <- P.parseLogicBookSDPlus (RuntimeNaturalDeductionConfig mempty mempty)
+                        return (map SDPlus r)
+          qn = string "QN" >> return [QN1, QN2, QN3, QN4]
+
+parseLogicBookPDPlusProof :: RuntimeNaturalDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine LogicBookPDPlus PureLexiconFOL (Form Bool)]
+parseLogicBookPDPlusProof rtc = toDeductionFitch (parseLogicBookPDPlus rtc) bergmannMoorAndNelsonPDFormulaParser --XXX Check parser
+
+logicBookPDPlusCalc = NaturalDeductionCalc
+    { ndRenderer = FitchStyle
+    , ndParseProof = parseLogicBookPDPlusProof
     , ndProcessLine = hoProcessLineFitch
     , ndProcessLineMemo = Just hoProcessLineFitchMemo
     , ndParseSeq = folSeqParser

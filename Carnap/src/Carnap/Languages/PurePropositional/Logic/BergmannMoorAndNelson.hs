@@ -1,7 +1,8 @@
 {-#LANGUAGE FlexibleContexts, FlexibleInstances, MultiParamTypeClasses #-}
 module Carnap.Languages.PurePropositional.Logic.BergmannMoorAndNelson
     (parseLogicBookSD, parseLogicBookSDProof, LogicBookSD,
-     logicBookSD) where
+     logicBookSD, parseLogicBookSDPlus, parseLogicBookSDPlusProof, LogicBookSDPlus,
+     logicBookSDPlus) where
 
 import Data.Map as M (lookup, Map)
 import Text.Parsec
@@ -139,7 +140,7 @@ parseLogicBookSDProof ders = toDeductionFitch (parseLogicBookSD ders) (purePropF
 
 logicBookSD = NaturalDeductionCalc 
     { ndRenderer = FitchStyle
-    , ndParseProof = parseLogicBookSDProof
+    , ndParseProof = parseLogicBookSDPlusProof
     , ndProcessLine = processLineFitch
     , ndProcessLineMemo = Nothing
     , ndParseSeq = extendedPropSeqParser

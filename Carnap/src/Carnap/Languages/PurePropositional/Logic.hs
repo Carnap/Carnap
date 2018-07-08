@@ -1,8 +1,8 @@
 module Carnap.Languages.PurePropositional.Logic 
     ( DerivedRule(..),  PropSequentCalc
-    , parsePropLogic, parseLogicBookSD, parseMagnusSL, parseMagnusSLPlus, parseHardegreeSL, parseThomasBolducAndZachTFL
-    , LogicBookSD, MagnusSL, MagnusSLPlus, PropLogic, HardegreeSL, ThomasBolducAndZachTFL
-    , magnusSLCalc, magnusSLPlusCalc, logicBookSD, propCalc , hardegreeSLCalc, thomasBolducAndZachTFLCalc
+    , parsePropLogic, parseLogicBookSD, parseLogicBookSDPlus, parseMagnusSL, parseMagnusSLPlus, parseHardegreeSL, parseThomasBolducAndZachTFL
+    , LogicBookSD, LogicBookSDPlus, MagnusSL, MagnusSLPlus, PropLogic, HardegreeSL, ThomasBolducAndZachTFL
+    , magnusSLCalc, magnusSLPlusCalc, logicBookSD, logicBookSDPlus, propCalc , hardegreeSLCalc, thomasBolducAndZachTFLCalc
     ) where
 
 import Carnap.Languages.PurePropositional.Logic.Rules (PropSequentCalc,DerivedRule(..))
