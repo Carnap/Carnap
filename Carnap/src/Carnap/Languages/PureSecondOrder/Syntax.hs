@@ -77,10 +77,6 @@ type MonadicSOCtx = GenericContext (Int -> Bool) Bool
 
 type MonadicSOQuant = GenericQuant Form Form Bool (Int -> Bool)
 
-instance QuantLanguage (MonadicallySOL (Form Bool)) (MonadicallySOL (Form (Int -> Bool))) where
-    lall  v f = SOMQuant (All v) :!$: LLam f
-    lsome  v f = SOMQuant (Some v) :!$: LLam f
-
 -------------------------
 --  1.2 Polyadic Data  --
 -------------------------
