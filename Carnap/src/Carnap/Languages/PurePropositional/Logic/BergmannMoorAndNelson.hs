@@ -1,8 +1,8 @@
 {-#LANGUAGE FlexibleContexts, FlexibleInstances, MultiParamTypeClasses #-}
 module Carnap.Languages.PurePropositional.Logic.BergmannMoorAndNelson
     (parseLogicBookSD, parseLogicBookSDProof, LogicBookSD,
-     logicBookSD, parseLogicBookSDPlus, parseLogicBookSDPlusProof, LogicBookSDPlus,
-     logicBookSDPlus) where
+     logicBookSDCalc, parseLogicBookSDPlus, parseLogicBookSDPlusProof, LogicBookSDPlus,
+     logicBookSDPlusCalc) where
 
 import Data.Map as M (lookup, Map)
 import Text.Parsec
@@ -138,7 +138,7 @@ parseLogicBookSD rtc = do r <- choice (map (try . string) ["AS","PR","&I","/\\I"
 parseLogicBookSDProof :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> String -> [DeductionLine LogicBookSD PurePropLexicon (Form Bool)]
 parseLogicBookSDProof ders = toDeductionFitch (parseLogicBookSD ders) (purePropFormulaParser extendedLetters)
 
-logicBookSD = NaturalDeductionCalc 
+logicBookSDCalc = NaturalDeductionCalc 
     { ndRenderer = FitchStyle
     , ndParseProof = parseLogicBookSDPlusProof
     , ndProcessLine = processLineFitch
@@ -263,7 +263,7 @@ parseLogicBookSDPlus rtc = try (map SD <$> parseLogicBookSD rtc) <|> parsePlus
 parseLogicBookSDPlusProof :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> String -> [DeductionLine LogicBookSDPlus PurePropLexicon (Form Bool)]
 parseLogicBookSDPlusProof ders = toDeductionFitch (parseLogicBookSDPlus ders) (purePropFormulaParser extendedLetters)
 
-logicBookSDPlus = NaturalDeductionCalc 
+logicBookSDPlusCalc = NaturalDeductionCalc 
     { ndRenderer = FitchStyle
     , ndParseProof = parseLogicBookSDPlusProof
     , ndProcessLine = processLineFitch

@@ -1,5 +1,5 @@
 {-#LANGUAGE  TypeOperators, FlexibleContexts,  FlexibleInstances, MultiParamTypeClasses #-}
-module Carnap.Languages.PureFirstOrder.Logic.BergmannMoorAndNelson (logicBookPDCalc,parseLogicBookPD) where
+module Carnap.Languages.PureFirstOrder.Logic.BergmannMoorAndNelson (logicBookPDCalc,parseLogicBookPD,logicBookPDPlusCalc,parseLogicBookPDPlus) where
 
 import Data.Map as M (lookup, Map,empty)
 import Text.Parsec

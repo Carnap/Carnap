@@ -9,13 +9,15 @@ import Carnap.Core.Data.AbstractSyntaxDataTypes (liftLang, FixLang, CopulaSchema
 import Carnap.Core.Data.AbstractSyntaxClasses (Schematizable, Handed(..))
 import Carnap.Languages.ClassicalSequent.Syntax
 import Carnap.Languages.PurePropositional.Logic as P 
-    (DerivedRule(..), logicBookSD, magnusSLCalc, magnusSLPlusCalc, propCalc, hardegreeSLCalc
+    (DerivedRule(..), logicBookSDCalc, logicBookSDPlusCalc, magnusSLCalc,
+    magnusSLPlusCalc, propCalc, hardegreeSLCalc
     , thomasBolducAndZachTFLCalc)
 import Carnap.Languages.PurePropositional.Logic.Rules (derivedRuleToSequent)
 import Carnap.Languages.PureFirstOrder.Logic as FOL 
-    ( DerivedRule(..), folCalc, magnusQLCalc , thomasBolducAndZachFOLCalc, hardegreePLCalc
-    , goldfarbNDCalc, goldfarbAltNDCalc, goldfarbNDPlusCalc, goldfarbAltNDPlusCalc
-    , logicBookPDCalc) 
+    ( DerivedRule(..), folCalc, magnusQLCalc , thomasBolducAndZachFOLCalc,
+    hardegreePLCalc , goldfarbNDCalc, goldfarbAltNDCalc,
+    goldfarbNDPlusCalc, goldfarbAltNDPlusCalc , logicBookPDPlusCalc,
+    logicBookPDCalc) 
 import Carnap.Languages.ModalPropositional.Logic as MPL
     ( hardegreeWTLCalc, hardegreeLCalc, hardegreeKCalc, hardegreeTCalc
     , hardegreeBCalc, hardegreeDCalc, hardegreeFourCalc, hardegreeFiveCalc)
@@ -105,8 +107,10 @@ activateChecker drs w (Just iog@(IOGoal i o g _ opts)) -- TODO: need to update n
         | sys == "firstOrder"                = tryParse folCalc folChecker
         | sys == "secondOrder"               = tryParse msolCalc noRuntimeOptions
         | sys == "polyadicSecondOrder"       = tryParse psolCalc noRuntimeOptions
-        | sys == "LogicBook"                 = tryParse logicBookSD propChecker
+        | sys == "LogicBookSD"               = tryParse logicBookSDCalc propChecker
+        | sys == "LogicBookSDPlus"           = tryParse logicBookSDPlusCalc propChecker
         | sys == "LogicBookPD"               = tryParse logicBookPDCalc folChecker
+        | sys == "LogicBookPDPlus"           = tryParse logicBookPDPlusCalc folChecker
         | sys == "magnusSL"                  = tryParse magnusSLCalc propChecker
         | sys == "magnusSLPlus"              = tryParse magnusSLPlusCalc propChecker
         | sys == "magnusQL"                  = tryParse magnusQLCalc folChecker

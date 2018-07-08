@@ -87,7 +87,7 @@
                        <i>the Logic Book
                        \ and visually rendering the proof structure in the Fitch style.
 
-                    ^{proofcheck 4 "LogicBook" "render resize" ":|-:(((P->Q)->P)->P)" pierceTheorem}
+                    ^{proofcheck 4 "LogicBookSD" "render resize" ":|-:(((P->Q)->P)->P)" pierceTheorem}
 
 
                 <div.demo>
@@ -302,7 +302,7 @@
            \ have suggestions, feature requests, or bug-reports, you can create
            \ an issue on Github. For general questions or discussion, you can
            \ also reach us on <a href="https://gitter.im/Carnap-Prover">Gitter</a>,
-           \ on IRC at irc://irc.freenode.net/carnap, or over 
+           \ on IRC at irc://irc.freenode.net/carnap, or over
            \ <a href="mailto:gleachkr@ksu.edu">email</a>.
 
         <p>If you’d like to contribute some code to the project—anything from
