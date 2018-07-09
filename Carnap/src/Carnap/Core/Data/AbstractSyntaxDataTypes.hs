@@ -134,9 +134,8 @@ pattern FX x       = Fx (FRight x)
 --1.2.1 Variable Binding Operators
 --------------------------------------------------------
 
--- XXX why can't these all be subsumed to something more general, again?
 data Quantifiers :: (* -> *) -> (* -> *) -> * -> * where
-    Bind :: quant ((t a -> f b) -> f b) -> Quantifiers quant lang ((t a -> f b) -> f b)
+    Bind :: quant ((t a -> f b) -> g c) -> Quantifiers quant lang ((t a -> f b) -> g c)
 
 data Abstractors :: (* -> *) -> (* -> *) -> * -> * where
     Abstract :: abs ((t a -> t' b) -> t'' (a -> b)) -> Abstractors abs lang ((t a -> t' b) -> t'' (a -> b))
