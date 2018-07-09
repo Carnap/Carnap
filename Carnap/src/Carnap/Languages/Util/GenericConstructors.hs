@@ -371,7 +371,6 @@ instance MaybeStaticVar (IntIndex b)
 
 instance FirstOrderLex (IntIndex b)
 
-
 ----------------------
 --  6. Binders      --
 ----------------------
@@ -392,6 +391,21 @@ instance Schematizable (RescopingOperator f g b c lang) where
         schematize (Rescope v)  = \(t:f:_) -> "(" ++ t ++ "/" ++ v ++ ")" ++ f
 
 type ScopedTermOperator  = RescopingOperator Term Form
+
+data DefiniteDescription b c a where
+        DefinDesc :: String -> DefiniteDescription b c ((Term c -> Form b) -> Term c)
+
+instance Schematizable (DefiniteDescription b c) where
+        schematize (DefinDesc v) = \(x:_) -> "ι" ++ v ++ x 
+
+instance UniformlyEq (DefiniteDescription b c) where
+        (DefinDesc _) =* (DefinDesc _) = True
+
+instance Monad m => MaybeMonadVar (DefiniteDescription b c) m
+
+instance MaybeStaticVar (DefiniteDescription b c)
+
+instance FirstOrderLex (DefiniteDescription b c) 
 
 data GenericTypedLambda f g b a where
         TypedLambda :: String -> GenericTypedLambda f g b ((f b -> g c) -> g (b -> c))

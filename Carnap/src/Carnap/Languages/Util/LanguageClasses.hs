@@ -564,6 +564,28 @@ instance {-#OVERLAPPABLE#-}
         (PrismRescoping lex f g b c) => RescopingLanguage (FixLang lex (g c)) (FixLang lex (f b)) where
             scope s t f = curry (review (binaryOpPrism (_rescope . only s))) t (LLam f)
 
+class DefinDescLanguage l t where
+        ddesc :: String -> (t -> l) -> t
+
+class (Typeable b, Typeable c, PrismLink (FixLang lex) (Quantifiers (DefiniteDescription b c) (FixLang lex))) 
+        => PrismDefiniteDesc lex b c where
+
+        _desc:: Prism' (FixLang lex ((Term c -> Form b) -> Term c)) String
+        _desc = link_definDesc . desc
+
+        link_definDesc :: Prism' (FixLang lex ((Term c -> Form b) -> Term c)) 
+                               (Quantifiers (DefiniteDescription b c) (FixLang lex) ((Term c -> Form b) -> Term c))
+        link_definDesc = link 
+
+        desc :: Prism' (Quantifiers (DefiniteDescription b c) (FixLang lex) ((Term c -> Form b) -> Term c)) String
+        desc = prism' (\s -> Bind (DefinDesc s))
+                      (\x -> case x of (Bind (DefinDesc s)) -> Just s
+                                       _ -> Nothing)
+
+instance {-#OVERLAPPABLE#-}
+        PrismDefiniteDesc lex b c => DefinDescLanguage (FixLang lex (Form b)) (FixLang lex (Term c)) where
+            ddesc s = review (unaryOpPrism (_desc . only s)) . LLam
+
 -------------------
 --  1.5 Exotica  --
 -------------------
