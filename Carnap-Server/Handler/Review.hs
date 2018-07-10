@@ -3,6 +3,7 @@ module Handler.Review (getReviewR, putReviewR) where
 import Import
 import Util.Database
 import Data.Map as M (fromList)
+import Data.List (nub)
 import Text.Read (readMaybe)
 import Yesod.Form.Bootstrap3
 import Carnap.GHCJS.SharedTypes
@@ -28,6 +29,9 @@ getReviewR :: Text -> Handler Html
 getReviewR filename = 
         do (Entity key val, _) <- getAssignmentByFilename filename
            unsortedProblems <- runDB $ selectList [ProblemSubmissionAssignmentId ==. Just key] []
+           uidAndUser  <- runDB $ do let uids = nub $ map (problemSubmissionUserId . entityVal) unsortedProblems
+                                     musers <- mapM get uids
+                                     return $ zip musers uids 
            let problems = sortBy theSorting unsortedProblems
            defaultLayout $ do
                addScript $ StaticR js_popper_min_js
@@ -48,14 +52,27 @@ getReviewR filename =
                                                        | compare h h' /= EQ -> compare h h' 
                                                        | otherwise -> scompare (drop 1 t) (drop 1 t')
 
+selectUser list = 
+        [whamlet|
+            <select#selectStudent class="form-control">
+                <option value="all">All Students
+                $forall (k,v) <- list
+                    $maybe k' <- k
+                        <option value="#{show v}">#{userIdent k'}
+                    $nothing
+                        <option value="#{show v}">unknown
+        |]
+
+
 renderProblem (Entity key val) = do
         let ident = problemSubmissionIdent val
             uid = problemSubmissionUserId val
             extra = problemSubmissionExtra val
         (updateSubmissionWidget,enctypeUpdateSubmission) <- generateFormPost (identifyForm "updateSubmission" $ updateSubmissionForm extra ident (show uid))
-        let template display = 
+        let isGraded = case extra of Just _ -> "graded"; _ -> "ungraded" :: String
+            template display = 
                 [whamlet|
-                    <div.card.mb-3>
+                    <div.card.mb-3.#{isGraded} data-submission-uid="#{show uid}">
                         <div.card-body style="padding:20px">
                             <h4.card-title>#{ident}
                             <div.row>
@@ -132,8 +149,7 @@ renderProblem (Entity key val) = do
           toval Nothing = '-'
           checkvalidity ct = if '⊢' `elem` ct then "validity" :: String else "simple" :: String
 
-
 updateSubmissionForm extra ident uid = renderBootstrap3 BootstrapBasicForm $ (,,)
             <$> areq hiddenField "" (Just ident)
             <*> areq hiddenField "" (Just uid) 
-            <*> areq intField (bfs ("Extra Credit Points"::Text)) extra
+            <*> areq intField (bfs ("Partial Credit Points"::Text)) extra

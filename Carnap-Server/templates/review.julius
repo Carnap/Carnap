@@ -7,10 +7,31 @@ $(".updateSubmission").submit(function(e) {
         contentType: false,
         success: function(data) {
             window.alert("updated!")
+            $(e.target).parents().eq(3).addClass("graded")
             },
         error: function(data) {
             window.alert("Error, couldn't update the assignment ")
             },
         });
     e.preventDefault();
+});
+
+$("#viewUngraded").click( function(){
+    var sheet = document.styleSheets[0];
+    sheet.insertRule(".graded { display:none; }", sheet.cssRules.length)
+    });
+
+$("#viewAll").click( function(){
+    var sheet = document.styleSheets[0];
+    sheet.insertRule(".graded { display:block; }", sheet.cssRules.length)
+    });
+
+$("#selectStudent").change(function(){
+    var uid = $(this).val();
+    if (uid == "all") {
+        $('[data-submission-uid]').removeClass("hidden")
+    } else {
+        $('[data-submission-uid]').addClass("hidden")
+        $('[data-submission-uid="' + uid + '"]').removeClass("hidden")
+    };
 });

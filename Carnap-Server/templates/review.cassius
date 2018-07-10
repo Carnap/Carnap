@@ -4,3 +4,6 @@
     div:nth-child(4)
         display:none;
 
+.hidden
+    display:none;
+
