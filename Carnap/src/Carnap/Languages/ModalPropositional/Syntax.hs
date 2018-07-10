@@ -171,7 +171,7 @@ type WorldTheoryLexicon = WorldTheoryIndexer
                         :|: Function Index
                         :|: Function IndexCons 
                         :|: Function IndexScheme
-                        :|: Quantifiers IndexQuant
+                        :|: Binders IndexQuant
                         :|: Predicate ModalSchematicPred
                         :|: Function IndexVar
                         :|: EndLang

@@ -485,7 +485,7 @@ instance {-#OVERLAPPABLE#-} PrismElementarySetsLex lex b => ElementarySetsLangua
         setComplement = curry $ review (binaryOpPrism _setComplement)
 
 --------------------------------------------------------
---1.4. Binders
+--1.4. Variable Binding Operators
 --------------------------------------------------------
 
 class QuantLanguage l t where
@@ -499,7 +499,7 @@ instance {-#OVERLAPPABLE#-}
         lall s = review (unaryOpPrism (_all . only s)) . LLam 
         lsome s = review (unaryOpPrism (_some . only s)) . LLam
 
-class (Typeable b, Typeable c, Typeable f, Typeable g, PrismLink (FixLang lex) (Quantifiers (GenericQuant f g b c) (FixLang lex))) 
+class (Typeable b, Typeable c, Typeable f, Typeable g, PrismLink (FixLang lex) (Binders (GenericQuant f g b c) (FixLang lex))) 
         => PrismGenericQuant lex f g b c where
 
         _all :: Prism' (FixLang lex ((f c -> g b) -> g b)) String
@@ -509,15 +509,15 @@ class (Typeable b, Typeable c, Typeable f, Typeable g, PrismLink (FixLang lex) (
         _some = link_standardQuant . qsome
 
         link_standardQuant :: Prism' (FixLang lex ((f c -> g b) -> g b)) 
-                               (Quantifiers (GenericQuant f g b c) (FixLang lex) ((f c -> g b) -> g b))
+                               (Binders (GenericQuant f g b c) (FixLang lex) ((f c -> g b) -> g b))
         link_standardQuant = link 
 
-        qall :: Prism' (Quantifiers (GenericQuant f g b c) (FixLang lex) ((f c -> g b) -> g b)) String
+        qall :: Prism' (Binders (GenericQuant f g b c) (FixLang lex) ((f c -> g b) -> g b)) String
         qall = prism' (\s -> Bind (All s))
                       (\x -> case x of (Bind (All s)) -> Just s
                                        _ -> Nothing)
 
-        qsome :: Prism' (Quantifiers (GenericQuant f g b c) (FixLang lex) ((f c -> g b) -> g b)) String
+        qsome :: Prism' (Binders (GenericQuant f g b c) (FixLang lex) ((f c -> g b) -> g b)) String
         qsome = prism' (\s -> Bind (Some s))
                        (\x -> case x of (Bind (Some s)) -> Just s
                                         _ -> Nothing)
@@ -567,17 +567,17 @@ instance {-#OVERLAPPABLE#-}
 class DefinDescLanguage l t where
         ddesc :: String -> (t -> l) -> t
 
-class (Typeable b, Typeable c, PrismLink (FixLang lex) (Quantifiers (DefiniteDescription b c) (FixLang lex))) 
+class (Typeable b, Typeable c, PrismLink (FixLang lex) (Binders (DefiniteDescription b c) (FixLang lex))) 
         => PrismDefiniteDesc lex b c where
 
         _desc:: Prism' (FixLang lex ((Term c -> Form b) -> Term c)) String
         _desc = link_definDesc . desc
 
         link_definDesc :: Prism' (FixLang lex ((Term c -> Form b) -> Term c)) 
-                               (Quantifiers (DefiniteDescription b c) (FixLang lex) ((Term c -> Form b) -> Term c))
+                               (Binders (DefiniteDescription b c) (FixLang lex) ((Term c -> Form b) -> Term c))
         link_definDesc = link 
 
-        desc :: Prism' (Quantifiers (DefiniteDescription b c) (FixLang lex) ((Term c -> Form b) -> Term c)) String
+        desc :: Prism' (Binders (DefiniteDescription b c) (FixLang lex) ((Term c -> Form b) -> Term c)) String
         desc = prism' (\s -> Bind (DefinDesc s))
                       (\x -> case x of (Bind (DefinDesc s)) -> Just s
                                        _ -> Nothing)

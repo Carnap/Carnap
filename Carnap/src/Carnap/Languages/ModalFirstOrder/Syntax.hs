@@ -43,7 +43,7 @@ type ModalQuant = StandardQuant (World -> Bool) Int
 --------------------------------------------------------
 
 type CoreLexiconOver b = ModalPropLexiconWith b
-                       :|: Quantifiers ModalQuant
+                       :|: Binders ModalQuant
                        :|: Predicate ModalPredicate     
                        :|: Function ModalConstant
                        :|: Function ModalVar

@@ -60,7 +60,7 @@ type PureQuant = StandardQuant Bool Int
 --------------------------------------------------------
 
 type CoreLexicon = P.PurePropLexicon
-                   :|: Quantifiers PureQuant
+                   :|: Binders PureQuant
                    :|: Function PureConstant
                    :|: Function PureVar
                    :|: Function (SchematicIntFunc Int Int)

@@ -95,7 +95,7 @@ instance Modelable ([Int], Int -> Bool) BasicTerm where
 --this type can then be indexed with their semantic type
 type ToyLanguage = FixLang (Predicate BasicProp
                        :|: Connective BasicConn
-                       :|: Quantifiers BasicQuant
+                       :|: Binders BasicQuant
                        :|: Function BasicTerm
                        :|: EndLang)
 
@@ -145,7 +145,7 @@ instance CopulaSchema ToyLanguage where
 
 instance BoundVars (Predicate BasicProp
                        :|: Connective BasicConn
-                       :|: Quantifiers BasicQuant
+                       :|: Binders BasicQuant
                        :|: Function BasicTerm
                        :|: EndLang) where
     --XXX: placeholder, not correct
@@ -157,19 +157,19 @@ instance BoundVars (Predicate BasicProp
 
 instance LangTypes2 (Predicate BasicProp
                        :|: Connective BasicConn
-                       :|: Quantifiers BasicQuant
+                       :|: Binders BasicQuant
                        :|: Function BasicTerm
                        :|: EndLang) Form Bool Term Int
 
 instance LangTypes2 (Predicate BasicProp
                        :|: Connective BasicConn
-                       :|: Quantifiers BasicQuant
+                       :|: Binders BasicQuant
                        :|: Function BasicTerm
                        :|: EndLang) Term Int Form Bool
 
 instance RelabelVars (Predicate BasicProp
                        :|: Connective BasicConn
-                       :|: Quantifiers BasicQuant
+                       :|: Binders BasicQuant
                        :|: Function BasicTerm
                        :|: EndLang) Form Bool where
     subBinder (TBind (All x) f) y = Just (TBind (All y) f)

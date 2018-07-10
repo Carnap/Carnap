@@ -185,7 +185,7 @@ pattern SOPBind q f     = SOPQuant q :!$: LLam f
 
 type MonadicallySOLLex = FOL.PureLexiconFOL
                         :|: Predicate MonadicSOVar
-                        :|: Quantifiers MonadicSOQuant
+                        :|: Binders MonadicSOQuant
                         :|: Abstractors SOLambda
                         :|: Applicators SOApplicator
                         :|: Predicate MonadicSOScheme
@@ -247,7 +247,7 @@ instance PrismGenericTypedLambda MonadicallySOLLex Term Form Int
 
 type PolyadicallySOLLex = FOL.PureLexiconFOL
                         :|: Predicate PolySOLVar
-                        :|: Quantifiers PolySOLQuant
+                        :|: Binders PolySOLQuant
                         :|: Abstractors SOLambda
                         :|: Applicators SOApplicator
                         :|: Predicate PolyadicSOScheme

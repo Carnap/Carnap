@@ -14,7 +14,7 @@ module Carnap.Core.Data.AbstractSyntaxDataTypes(
   Lx7, pattern Lx8, pattern Lx9, pattern Lx10, pattern Lx11, pattern FX,
   -- ** Abstract Term Types
   -- *** Variable Binding Operators
-  Quantifiers(Bind),Abstractors(Abstract),Applicators(Apply), BoundVars(..),
+  Binders(Bind),Abstractors(Abstract),Applicators(Apply), BoundVars(..),
   -- *** Non-Binding Operators
   Arity(AZero, ASucc), Predicate(Predicate), Connective(Connective),
   Function(Function), Subnective(Subnective), SubstitutionalVariable(SubVar,StaticVar),
@@ -134,8 +134,8 @@ pattern FX x       = Fx (FRight x)
 --1.2.1 Variable Binding Operators
 --------------------------------------------------------
 
-data Quantifiers :: (* -> *) -> (* -> *) -> * -> * where
-    Bind :: quant ((t a -> f b) -> g c) -> Quantifiers quant lang ((t a -> f b) -> g c)
+data Binders :: (* -> *) -> (* -> *) -> * -> * where
+    Bind :: bind ((t a -> f b) -> g c) -> Binders bind lang ((t a -> f b) -> g c)
 
 data Abstractors :: (* -> *) -> (* -> *) -> * -> * where
     Abstract :: abs ((t a -> t' b) -> t'' (a -> b)) -> Abstractors abs lang ((t a -> t' b) -> t'' (a -> b))
@@ -236,7 +236,7 @@ instance (Schematizable (f a), Schematizable (g a)) => Schematizable ((f :|: g) 
 instance Schematizable (f (Fix f)) => Schematizable (Fix f) where
     schematize (Fx a) = schematize a
 
-instance Schematizable quant => Schematizable (Quantifiers quant lang) where
+instance Schematizable bind => Schematizable (Binders bind lang) where
         schematize (Bind q) arg = schematize q arg --here I assume 'q' stores the users varible name
 
 instance Schematizable abs => Schematizable (Abstractors abs lang) where
@@ -269,7 +269,7 @@ instance (Schematizable (f a), Schematizable (g a)) => Show ((f :|: g) a b) wher
 instance Schematizable (f (Fix f)) => Show (Fix f idx) where
         show (Fx a) = schematize a []
 
-instance Schematizable quant => Show (Quantifiers quant lang a) where
+instance Schematizable bind => Show (Binders bind lang a) where
         show x = schematize x []
 
 instance Schematizable pred => Show (Predicate pred lang a) where
@@ -284,7 +284,7 @@ instance Schematizable func => Show (Function func lang a) where
 instance Schematizable sub => Show (Subnective sub lang a) where
         show x = schematize x []
 
-instance Schematizable quant => Eq (Quantifiers quant lang a) where
+instance Schematizable bind => Eq (Binders bind lang a) where
         x == y = show x == show y
 
 instance Schematizable pred => Eq (Predicate pred lang a) where
@@ -308,7 +308,7 @@ instance (Schematizable (f a), Schematizable (g a)) => Eq ((f :|: g) a b) where
 instance Evaluable (SubstitutionalVariable lang)  where
         eval _ = error "It should not be possible to evaluate a substitutional variable"
 
-instance Evaluable quant => Evaluable (Quantifiers quant lang) where
+instance Evaluable bind => Evaluable (Binders bind lang) where
     eval (Bind q) = eval q
 
 instance Evaluable abs => Evaluable (Abstractors abs lang) where
@@ -350,7 +350,7 @@ instance (Liftable lang, Evaluable lang) => Evaluable (Copula lang) where
 instance Modelable a (SubstitutionalVariable lang)  where
         satisfies _ = eval
 
-instance Modelable m quant => Modelable m (Quantifiers quant lang) where
+instance Modelable m bind => Modelable m (Binders bind lang) where
     satisfies m (Bind q) = satisfies m q
 
 instance Modelable m abs => Modelable m (Abstractors abs lang) where
@@ -434,15 +434,15 @@ instance Monad m => MaybeMonadVar (SubstitutionalVariable idx) (S.StateT Int m)
 instance MaybeStaticVar (SubstitutionalVariable idx) 
         where maybeStatic = Just StaticVar
 
-instance UniformlyEq quant => UniformlyEq (Quantifiers quant lang) where
+instance UniformlyEq bind => UniformlyEq (Binders bind lang) where
         (Bind q) =* (Bind q') = q =* q'
 
-instance (UniformlyEq quant, FirstOrderLex quant) => FirstOrderLex (Quantifiers quant lang) where
+instance (UniformlyEq bind, FirstOrderLex bind) => FirstOrderLex (Binders bind lang) where
         isVarLex (Bind q) = isVarLex q
 
-instance Monad m => MaybeMonadVar (Quantifiers quant lang) m
+instance Monad m => MaybeMonadVar (Binders bind lang) m
 
-instance MaybeStaticVar (Quantifiers quant lang)
+instance MaybeStaticVar (Binders bind lang)
 
 instance UniformlyEq app => UniformlyEq (Applicators app lang) where
         (Apply f) =* (Apply f') = f =* f'
@@ -876,7 +876,7 @@ instance ReLex SubstitutionalVariable where
         relex (SubVar n) = SubVar n
         relex (StaticVar n) = StaticVar n
 
-instance ReLex (Quantifiers quant) where
+instance ReLex (Binders bind ) where
         relex (Bind q) = Bind q
 
 instance ReLex (Abstractors abs) where
