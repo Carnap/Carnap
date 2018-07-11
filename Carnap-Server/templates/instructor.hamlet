@@ -55,7 +55,7 @@
                                             <td>#{dateDisplay d c}
                                             <td> #{courseTitle c}
                                             <td>
-                                                <button.btn.btn-sm.btn-secondary type="button" onclick="deleteProblemSet('#{decodeUtf8 $ encode $ DeleteProblems (courseTitle c) n}')">
+                                                <button.btn.btn-sm.btn-secondary alt="delete" title="delete this problem set" type="button" onclick="deleteProblemSet('#{decodeUtf8 $ encode $ DeleteProblems (courseTitle c) n}')">
                                                     <i.fa.fa-trash-o>
 
                 <div.tab-pane id="assignFromDocument" role="tabpanel">
@@ -95,9 +95,11 @@
                                                 Always
                                     <td>#{courseTitle c}
                                     <td>
-                                        <button.btn.btn-sm.btn-secondary type="button" onclick="tryDeleteAssignment('#{decodeUtf8 $ encode $ DeleteAssignment k}','#{documentFilename d}','#{courseTitle c}')">
+                                        <button.btn.btn-sm.btn-secondary alt="delete" title="delete this assignment" type="button" onclick="tryDeleteAssignment('#{decodeUtf8 $ encode $ DeleteAssignment k}','#{documentFilename d}','#{courseTitle c}')">
                                             <i.fa.fa-trash-o>
-                                        <button.btn.btn-sm.btn-secondary type="button"  onclick="modalEditAssignment('#{documentFilename d}','#{courseTitle c}')">
+                                        <button.btn.btn-sm.btn-secondary alt="edit" title="edit this assignment" type="button"  onclick="modalEditAssignment('#{documentFilename d}','#{courseTitle c}')">
+                                            <i.fa.fa-cog>
+                                        <a.btn.btn-sm.btn-secondary alt="review" title="review and assign partial credit" href=@{ReviewR (documentFilename d)}>
                                             <i.fa.fa-pencil>
 
                 <div.tab-pane id="uploadDocument" role="tabpanel">
@@ -122,9 +124,9 @@
                                     <td> #{show $ documentDate a}
                                     <td> #{show $ documentScope a}
                                     <td>
-                                        <button.btn.btn-sm.btn-secondary type="button" onclick="tryDeleteDocument('#{decodeUtf8 $ encode $ DeleteDocument (documentFilename a)}')">
+                                        <button.btn.btn-sm.btn-secondary type="button" alt="delete" title="permanantly delete this document" onclick="tryDeleteDocument('#{decodeUtf8 $ encode $ DeleteDocument (documentFilename a)}')">
                                             <i.fa.fa-trash-o>
-                                        <button.btn.btn-sm.btn-secondary type="button"  onclick="modalEditDocument('#{documentFilename a}')">
+                                        <button.btn.btn-sm.btn-secondary type="button" alt="edit" title="edit this document" onclick="modalEditDocument('#{documentFilename a}')">
                                             <i.fa.fa-pencil>
                 <div.tab-pane id="create" role="tabpanel">
                     <form method=post enctype=#{enctypeCreateCourse}>
