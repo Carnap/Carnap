@@ -42,13 +42,11 @@ assignmentDir ident = do master <- getYesod
                          return $ (appDataRoot $ appSettings master) </> "documents" </> unpack ident
 
 -- | given a filename, retrieve the associated assignment for the course
--- you're currently enrolled in, and the path to the file.
+-- you're currently enrolled in and the path to the file.
 getAssignmentByFilename filename = 
         do muid <- maybeAuthId
            ud <- case muid of
-                         Nothing -> 
-                            do setMessage "you need to be logged in to access assignments"
-                               redirect HomeR
+                         Nothing -> setMessage "you need to be logged in to access assignments" >> redirect HomeR
                          Just uid -> checkUserData uid
            (course,cid) <- case userDataEnrolledIn ud of
                             Just cid -> do Just course <- runDB $ get cid
@@ -59,10 +57,34 @@ getAssignmentByFilename filename =
            Just instructorident <- getIdent (userDataUserId instructor)
            mdoc <- runDB $ getBy (UniqueDocument filename (userDataUserId instructor))
            case mdoc of 
-                Nothing -> do setMessage "document record not found"
-                              redirect HomeR
+                Nothing -> setMessage "document record not found" >> redirect HomeR
                 Just (Entity docid doc)-> do
                    adir <- assignmentDir instructorident
+                   let path = adir </> unpack filename
+                   exists <- lift $ doesFileExist path
+                   ment <- runDB $ getBy $ UniqueAssignment docid cid
+                   if not exists 
+                     then do setMessage "you need to be enrolled in a course to access assignments"
+                             redirect HomeR
+                     else case ment of
+                              Nothing -> do setMessage "you need to be enrolled in a course to access assignments"
+                                            redirect HomeR
+                              Just ent -> return (ent, path)
+
+getAssignmentByCourseAndFilename coursetitle filename = 
+        do muid <- maybeAuthId
+           let unwrap m = case m of Nothing -> setMessage "you to be a registered instructor with this course title" >> redirect HomeR
+                                    Just m -> return m
+           (iid, uid, cid) <- do uid <- unwrap muid 
+                                 iid <- checkUserData uid >>= unwrap . userDataInstructorId 
+                                 Entity cid _ <- (runDB $ getBy $ UniqueCourse coursetitle iid) >>= unwrap
+                                 return (iid, uid, cid)
+           Just ident <- getIdent uid
+           mdoc <- runDB $ getBy (UniqueDocument filename uid)
+           case mdoc of 
+                Nothing -> setMessage "document record not found" >> redirect HomeR
+                Just (Entity docid doc)-> do
+                   adir <- assignmentDir ident
                    let path = adir </> unpack filename
                    exists <- lift $ doesFileExist path
                    ment <- runDB $ getBy $ UniqueAssignment docid cid
