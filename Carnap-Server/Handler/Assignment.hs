@@ -1,4 +1,4 @@
-module Handler.Assignment (getAssignmentR,getAssignmentsR) where
+module Handler.Assignment (getAssignmentR,getAssignmentsR,getCourseAssignmentR) where
 
 import Import
 import Util.Data
@@ -53,8 +53,13 @@ getAssignmentsR = do muid <- maybeAuthId
                           |]
 
 getAssignmentR :: Text -> Handler Html
-getAssignmentR filename = 
-        do (Entity key val, path) <- getAssignmentByFilename filename
+getAssignmentR filename = getAssignmentByFilename filename >>= uncurry returnAssignment
+
+
+getCourseAssignmentR :: Text -> Text -> Handler Html
+getCourseAssignmentR coursename filename = getAssignmentByCourseAndFilename coursename filename >>= uncurry returnAssignment
+
+returnAssignment (Entity key val) path = do
            time <- liftIO getCurrentTime
            if visibleAt time val 
                then do
