@@ -1,3 +1,12 @@
+$(document).ready(function(){
+    $(document.getElementById(location.hash.substring(1) + "-tab"))[0].click();
+});
+
+$("a[data-toggle='tab']").click(function(){
+    url = this.href
+    window.location.hash = url.substring(url.indexOf('#'))
+})
+
 $("textarea").addClass("form-control")
 
 function tryDeleteAssignment (json,fn,ct) {
@@ -147,7 +156,7 @@ $("#updateAssignment").submit(function(e) {
         contentType: false,
         success: function(data) {
             $("#updateAssignmentData").modal('hide');
-            location.reload() /*lazy. Fix eventually*/
+            location.reload()
             },
         error: function(data) {
             window.alert("Error, couldn't update the assignment ")
@@ -183,7 +192,7 @@ $("#updateDocument").submit(function(e) {
         contentType: false,
         success: function(data) {
             $("#updateDocumentData").modal('hide');
-            location.reload() /* lazy. Fix eventually. */
+            location.reload()
             },
         error: function(data) {
             window.alert("Error, couldn't update the course")

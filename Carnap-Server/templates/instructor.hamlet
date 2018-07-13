@@ -10,7 +10,7 @@
                 <ul.nav.nav-tabs.card-header-tabs role="tablist">
                     $forall (theclass,thetag) <- zip classes tags
                         <li.nav-item id="nav-to-#{thetag}">
-                            <a.nav-link data-toggle="tab" href="##{thetag}" role="tab">
+                            <a.nav-link id="#{thetag}-tab" data-toggle="tab" href="##{thetag}" role="tab">
                                 #{courseTitle $ entityVal theclass}
             <div.card-body style="padding:20px;">
                 <div.tab-content>
@@ -21,16 +21,16 @@
         <div.card-header>
             <ul.nav.nav-tabs.card-header-tabs role="tablist">
                 <li.nav-item>
-                    <a.nav-link.active data-toggle="tab" href="#assignFromTextbook" role="tab">
+                    <a.nav-link.active id="assignFromTextbook-tab" data-toggle="tab" href="#assignFromTextbook" role="tab">
                         Assign Textbook Problems
                 <li.nav-item>
-                    <a.nav-link data-toggle="tab" href="#assignFromDocument" role="tab">
+                    <a.nav-link id="assignFromDocument-tab" data-toggle="tab" href="#assignFromDocument" role="tab">
                         Assign Uploaded Documents
                 <li.nav-item>
-                    <a.nav-link data-toggle="tab" href="#create" role="tab">
+                    <a.nav-link id="create-tab" data-toggle="tab" href="#create" role="tab">
                         Create Courses
                 <li.nav-item>
-                    <a.nav-link data-toggle="tab" href="#uploadDocument" role="tab">
+                    <a.nav-link id="uploadDocument-tab" data-toggle="tab" href="#uploadDocument" role="tab">
                         Manage Uploaded Documents
         <div.card-body style="padding:20px;">
             <div.tab-content>
@@ -57,7 +57,6 @@
                                             <td>
                                                 <button.btn.btn-sm.btn-secondary alt="delete" title="delete this problem set" type="button" onclick="deleteProblemSet('#{decodeUtf8 $ encode $ DeleteProblems (courseTitle c) n}')">
                                                     <i.fa.fa-trash-o>
-
                 <div.tab-pane id="assignFromDocument" role="tabpanel">
                     <h2> Assign Document
                     <form method=post action="#assignFromDocument" enctype=#{enctypeCreateAssignment}>
