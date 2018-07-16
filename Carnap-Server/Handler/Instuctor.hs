@@ -639,23 +639,36 @@ classCSV classent = do
            mprobs = readAssignmentTable <$> courseTextbookProblems course :: Maybe (IntMap UTCTime)
        allUserData <- map entityVal <$> (runDB $ selectList [UserDataEnrolledIn ==. Just cid] [])
        asmd <- runDB $ selectList [AssignmentMetadataCourse ==. cid] []
+       (Just course) <- runDB $ get cid
        let allUids = (map userDataUserId  allUserData)
        musers <- mapM (\x -> runDB (get x)) allUids
        let users = catMaybes musers
-       allScores <- zip (map userIdent users) <$> mapM (scoreByIdAndClassPerProblem cid) allUids 
-       let usersAndData = zip users allUserData
-       (Just course) <- runDB $ get cid
-       let header = "\"Registered Student\",\"Last Name\", \"First Name\", \"Total Score\",\n"
-           body = concat $ map (\x -> toRow allScores x) usersAndData 
+       rawScores <- mapM (scoreByIdAndClassPerProblem cid) allUids >>= mapM (mapM fixLabel)
+       let allScores = zip (map userIdent users) rawScores
+           usersAndData = zip users allUserData
+           scoreHeaders = (L.nub . map fst . concat $ rawScores)
+           header = commaSep $ ["Registered Student", "Last Name", "First Name"] ++ scoreHeaders ++ ["Total Score"]
+           body = concat $ map (\x -> toRow allScores scoreHeaders x) usersAndData 
        return $ toContent $ header ++ body
-    where toRow scores (u,UserData fn ln _ _ _) = "\"" ++ userIdent u ++ "\","
-                                               ++ "\"" ++ ln ++ "\"," 
-                                               ++ "\"" ++ fn ++ "\"," 
-                                               ++ "\"" ++ pack (totalByUser (userIdent u) scores) ++ "\","
-                                               ++ "\n"
+    where toRow scores headers (u,UserData fn ln _ _ _) = commaSep $ [userIdent u, ln, fn] 
+                                                                ++ byAssignment (userIdent u) scores headers 
+                                                                ++ [pack (totalByUser (userIdent u) scores)]
           totalByUser uident scores = case lookup uident scores of
                                 Just xs -> show $ foldr (+) 0 (map snd xs)
                                 Nothing -> "can't find scores"
+          byAssignment uident scores headers = case lookup uident scores of
+                                Nothing -> map (const "-") headers
+                                Just xs -> map (\h -> pack . show . foldr (+) 0 . map snd . filter (\x -> fst x == h) $ xs) headers
+          commaSep l = "\"" ++ intercalate "\",\"" l ++ "\",\n"
+          fixLabel (Left amid,x) = runDB $ do masgn <- get amid
+                                              case masgn of 
+                                                    Nothing -> return $ (pack (show amid),x)
+                                                    Just asgn -> do 
+                                                        mdoc <- get $ assignmentMetadataDocument asgn
+                                                        case mdoc of 
+                                                            Nothing -> return $ (pack (show amid),x)
+                                                            Just doc -> return $ (documentFilename doc,x)
+          fixLabel (Right psn,x) = return ("Problem Set" ++ psn,x)
 
 dateDisplay utc course = case tzByName $ courseTimeZone course of
                              Just tz  -> formatTime defaultTimeLocale "%F %R %Z" $ utcToZonedTime (timeZoneForUTCTime tz utc) utc
