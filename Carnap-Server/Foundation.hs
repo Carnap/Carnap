@@ -175,6 +175,24 @@ instance Yesod App where
 
     makeLogger = return . appLogger
 
+    errorHandler (InternalError e) = do
+        $logErrorS "yesod-core" e
+        fmap toTypedContent $ defaultLayout $ do
+        setTitle "Internal Server Error"
+        [whamlet|
+            <div.container>
+             <h1>Internal Server Error
+             <p>Something has gone wrong on the server. The error is:
+             <pre>#{e}
+             <p>
+                \ If you have time, please consider submitting an error report to
+                \ <a href="mailto:gleachkr@ksu.edu?subject=server error">gleachkr@gmail.com</a>,
+                \ containing the error message above, and a detailed description
+                \ of how the error occured, and if possible, how to reproduce it.
+        |]
+    errorHandler other = defaultErrorHandler other
+
+
 instance YesodJquery App where
         urlJqueryJs _ = Right "https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"
         urlJqueryUiJs _ = Right "https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"
