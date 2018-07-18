@@ -264,7 +264,11 @@ submitDer opts checker l g seq ref _ i = do isFinished <- liftIO $ readIORef ref
                                                         case sequent checker of
                                                              Nothing -> message "No goal sequent to submit"
                                                              Just s -> case mseq of 
-                                                                 (Just s') -> trySubmit Derivation opts l (DerivationDataOpts (pack $ show seq) (pack v) (M.toList opts)) (s' `seqSubsetUnify` s)
+                                                                 (Just s') 
+                                                                   | "exam" `elem` optlist -> trySubmit Derivation opts l (DerivationDataOpts (pack $ show seq) (pack v) (M.toList opts)) (s' `seqSubsetUnify` s)
+                                                                   | otherwise -> if (s' `seqSubsetUnify` s) 
+                                                                                   then trySubmit Derivation opts l (DerivationDataOpts (pack $ show seq) (pack v) (M.toList opts)) True
+                                                                                   else message "not yet finished"
                                                                  _ | "exam" `elem` optlist -> trySubmit Derivation opts l (DerivationDataOpts (pack $ show seq) (pack v) (M.toList opts)) False
                                                                    | otherwise -> message "not yet finished"
     where optlist = case M.lookup "options" opts of Just s -> words s; Nothing -> []

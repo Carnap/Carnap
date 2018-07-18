@@ -51,7 +51,7 @@ checkerWith options updateres iog@(IOGoal i o g content _) w = do
            setAttribute sd "class" "proofSpinner"
            setAttribute incompleteAlert "class" "incompleteAlert"
            popUpWith g w incompleteAlert "⚠" 
-                ("This proof does not establish that this conclusion follows from these premises."
+                ("This proof does not establish that this conclusion follows from these premises. "
                 ++ "Perhaps there's an unwarranted assumption being used?")
                 Nothing
            setInnerHTML sd (Just spinnerSVG)

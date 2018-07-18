@@ -41,21 +41,20 @@ activateTranslate w (Just (i,o,opts)) =
             _ -> return ()
     where optlist = case M.lookup "options" opts of Just s -> words s; Nothing -> []
           activateWith parser translator checker =
-              case (M.lookup "submission" opts, M.lookup "goal" opts) of
-                  (Just s, Just g)  ->
+              case (M.lookup "goal" opts, M.lookup "content" opts, M.lookup "problem" opts) of
+                  (Just g, Just content, Just problem) ->
                     case parse parser "" (simpleDecipher . read $ g) of
                       (Right f) -> do 
-                           let (Just content) = M.lookup "content" opts
-                               (Just problem) = M.lookup "problem" opts
                            bw <- buttonWrapper w
                            ref <- newIORef False
-                           if take 7 s == "saveAs:" then do
-                              let l = Prelude.drop 7 s
-                              bt <- doneButton w "Submit Solution"
-                              appendChild bw (Just bt)
-                              submit <- newListener $ submitTrans opts i ref l f parser checker
-                              addListener bt click submit False                
-                           else return ()
+                           case M.lookup "submission" opts of
+                              Just s | take 7 s == "saveAs:" -> do
+                                  let l = Prelude.drop 7 s
+                                  bt <- doneButton w "Submit Solution"
+                                  appendChild bw (Just bt)
+                                  submit <- newListener $ submitTrans opts i ref l f parser checker
+                                  addListener bt click submit False                
+                              _ -> return ()
                            setValue (castToHTMLInputElement i) (Just content)
                            setInnerHTML o (Just problem)
                            mpar@(Just par) <- getParentNode o               

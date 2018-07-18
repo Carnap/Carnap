@@ -44,21 +44,22 @@ activateTruthTables w (Just (i,o,opts)) =
             _  -> return ()
     where optlist = case M.lookup "options" opts of Just s -> words s; Nothing -> []
           checkerWith parser ttfunc = 
-            case (M.lookup "submission" opts, M.lookup "goal" opts) of
-                (Just s, Just g) ->
+            case M.lookup "goal" opts of
+                Just g ->
                   case parse parser "" g of
-                      (Right f) -> do
+                      Right f -> do
                           ref <- newIORef False
                           bw <- buttonWrapper w
                           (gRef,rows) <- ttfunc w f (i,o) ref bw opts
-                          if take 7 s == "saveAs:" then do
-                              let l = Prelude.drop 7 s
-                              bt1 <- doneButton w "Submit"
-                              appendChild bw (Just bt1)
-                              submit <- newListener $ submitTruthTable opts ref gRef rows (show f) l
-                              addListener bt1 click submit False                
-                          else return ()
-                          if "nocheck" `elem` opts then return () 
+                          case M.lookup "submission" opts of
+                              Just s | take 7 s == "saveAs:" -> do
+                                  let l = Prelude.drop 7 s
+                                  bt1 <- doneButton w "Submit"
+                                  appendChild bw (Just bt1)
+                                  submit <- newListener $ submitTruthTable opts ref gRef rows (show f) l
+                                  addListener bt1 click submit False                
+                              _ -> return ()
+                          if "nocheck" `elem` optlist then return () 
                           else do
                               bt2 <- questionButton w "Check"
                               appendChild bw (Just bt2)
@@ -82,7 +83,7 @@ submitTruthTable:: M.Map String String -> IORef Bool ->  IORef (Map (Int, Int) B
 submitTruthTable opts ref gRef rows s l = do isDone <- liftIO $ readIORef ref
                                              if isDone 
                                                 then trySubmit TruthTable opts l (ProblemContent (pack s)) True
-                                                else if ("exam" `elem` optlist) || ("nocheck" `elem` optlist)
+                                                else if "exam" `elem` optlist
                                                          then do vals <- liftIO $ readIORef gRef
                                                                  if M.foldr (&&) True vals 
                                                                      then trySubmit TruthTable opts l (ProblemContent (pack s)) True

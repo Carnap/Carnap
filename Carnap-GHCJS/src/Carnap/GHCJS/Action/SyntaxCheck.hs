@@ -115,26 +115,29 @@ activateChecker w (Just (i,o,opts)) =
              _ -> return () 
     where activateMatchWith :: (PureForm -> String) -> IO ()
           activateMatchWith sf =
-              case (M.lookup "submission" opts, M.lookup "goal" opts) of
-                  (Just s, Just g) | take 7 s == "saveAs:" ->
+              case M.lookup "goal" opts of
+                  Just g ->
                     case parse (purePropFormulaParser standardLetters <* eof) "" g of
                       (Right f) -> do 
-                         let l = Prelude.drop 7 s
-                         bt <- doneButton w "Submit"
                          bw <- buttonWrapper w
+                         ref <- newIORef (f,[(f,0)], T.Node (f,0) [], 0)  
+                         case M.lookup "submission" opts of
+                              Just s | take 7 s == "saveAs:" -> do
+                                  let l = Prelude.drop 7 s
+                                  bt <- doneButton w "Submit"
+                                  appendChild bw (Just bt)
+                                  submit <- newListener $ submitSyn opts ref l       
+                                  addListener bt click submit False                
+                              _ -> return ()
                          (Just tree) <- createElement w (Just "div")
-                         appendChild bw (Just bt)
                          appendChild o (Just tree)
                          setInnerHTML tree (Just $ sf f)                   
                          setAttribute tree "class" "tree"
                          mpar@(Just par) <- getParentNode o               
                          insertBefore par (Just bw) (Just o)                    
-                         ref <- newIORef (f,[(f,0)], T.Node (f,0) [], 0)  
                          match <- newListener $ tryMatch tree ref w sf
                          (Just w') <- getDefaultView w                    
-                         submit <- newListener $ submitSyn opts ref l       
                          addListener i keyUp match False                  
-                         addListener bt click submit False                
                       (Left e) -> setInnerHTML o (Just $ show e)
                   _ -> print "syntax check was missing an option"
 activateChecker _ Nothing  = return ()
