@@ -1,4 +1,4 @@
-module Handler.Assignment (getAssignmentR,getAssignmentsR,getCourseAssignmentR) where
+module Handler.Assignment (getAssignmentR, getAssignmentsR, getCourseAssignmentR) where
 
 import Import
 import Util.Data
