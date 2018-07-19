@@ -14,7 +14,7 @@
 /user/#Text                         UserR               GET POST DELETE 
 /instructor/#Text                   InstructorR         GET PUT POST DELETE 
 /instructor/#Text/#Text/download    InstructorDownloadR GET
-/master_admin                       AdminR              GET POST
+/master_admin                       AdminR              GET POST DELETE
 /hash/#Text                         HashedR             GET
 /assignments/                       AssignmentsR        GET
 /assignments/#Text                  AssignmentR         GET
