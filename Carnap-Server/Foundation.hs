@@ -108,6 +108,8 @@ instance Yesod App where
                     then Authorized
                     else Unauthorized "It appears you're not authorized to access this page"
 
+    --this is the route for exporting csv for a given class and instructor.
+    --Only allowed for the instructor whose data is being exported
     isAuthorized (InstructorDownloadR ident _) _ = 
         do (Entity _ user) <- requireAuth
            let ident' = userIdent user
@@ -118,26 +120,29 @@ instance Yesod App where
                     then Authorized
                     else Unauthorized "It appears you're not authorized to access this page"
 
+    --this is the route to the review area for a given course and
+    --assignment, and is for instructors only.
     isAuthorized (ReviewR _ _) _ = 
         do (Entity uid user) <- requireAuth
            let ident = userIdent user
            instructors <- instructorIdentList
-           return $ if (ident `elem` instructors
-                       && ident == ident)
+           return $ if (ident `elem` instructors)
                        || ident == "gleachkr@gmail.com"
                     then Authorized
                     else Unauthorized "It appears you're not authorized to access this page"
 
+    --this route is for getting assignments by coursename and filename, and
+    --is for instructors only
     isAuthorized (CourseAssignmentR _ _) _ = 
         do (Entity uid user) <- requireAuth
            let ident = userIdent user
            instructors <- instructorIdentList
-           return $ if (ident `elem` instructors
-                       && ident == ident)
+           return $ if (ident `elem` instructors)
                        || ident == "gleachkr@gmail.com"
                     then Authorized
                     else Unauthorized "It appears you're not authorized to access this page"
 
+    --this is the route to the admin portal
     isAuthorized AdminR _ = 
         do (Entity _ user) <- requireAuth
            return $ if userIdent user == "gleachkr@gmail.com"
