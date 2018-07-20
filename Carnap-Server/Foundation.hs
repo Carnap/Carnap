@@ -13,6 +13,8 @@ import Yesod.Default.Util          (addStaticContentExternal)
 --import Util.Database
 import qualified Data.CaseInsensitive as CI
 import qualified Data.Text.Encoding as TE
+import qualified Data.Text.Encoding.Error as TEE
+import qualified Network.Wai as W
 
 -- | The foundation datatype for your application. This can be a good place to
 -- keep settings and values requiring initialization before your application
@@ -182,19 +184,35 @@ instance Yesod App where
 
     errorHandler (InternalError e) = do
         $logErrorS "yesod-core" e
-        fmap toTypedContent $ defaultLayout $ do
-        setTitle "Internal Server Error"
-        [whamlet|
-            <div.container>
-             <h1>Internal Server Error
-             <p>Something has gone wrong on the server. The error is:
-             <pre>#{e}
-             <p>
-                \ If you have time, please consider submitting an error report to
-                \ <a href="mailto:gleachkr@ksu.edu?subject=server error">gleachkr@gmail.com</a>,
-                \ containing the error message above, and a detailed description
-                \ of how the error occured, and if possible, how to reproduce it.
-        |]
+        selectRep $ do
+            provideRep $ defaultLayout $ do
+                setTitle "Internal Server Error"
+                [whamlet|
+                    <div.container>
+                     <h1>Internal Server Error
+                     <p>Something has gone wrong on the server. The error is:
+                     <pre>#{e}
+                     <p>
+                        \ If you have time, please consider submitting an error report to
+                        \ <a href="mailto:gleachkr@ksu.edu?subject=server error">gleachkr@gmail.com</a>,
+                        \ containing the error message above and
+                        \ a description of how the error occured including,
+                        \ if possible, how to reproduce it.
+                |]
+            provideRep $ return $ object ["message" .= ("Internal Server Error" :: Text), "error" .= e]
+    errorHandler NotFound = selectRep $ do
+        provideRep $ defaultLayout $ do
+            r <- waiRequest
+            let path' = TE.decodeUtf8With TEE.lenientDecode $ W.rawPathInfo r
+            setTitle "Not Found"
+            toWidget [hamlet|
+                <div.container>
+                    <h1>Not Found
+                    <p>The resource requested at the path:
+                    <pre>#{path'}
+                    <p>could not be found.
+            |]
+        provideRep $ return $ object ["message" .= ("Not Found" :: Text)]
     errorHandler other = defaultErrorHandler other
 
 
@@ -208,6 +226,7 @@ instance YesodPersist App where
     runDB action = do
         master <- getYesod
         runSqlPool action $ appConnPool master
+
 instance YesodPersistRunner App where
     getDBRunner = defaultGetDBRunner appConnPool
 
