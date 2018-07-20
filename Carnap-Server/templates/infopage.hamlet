@@ -98,6 +98,12 @@
                     ^{proofcheck 5 "firstOrder" "render resize" ":|-:-ExAy(-F(y,y) <-> F(x,y))" russellTheorem}
 
                 <div.demo>
+                    <p>This is a proof with Goldfarb's Lemmon-style system of
+                       \ natural deduction, from the textbook <em>Deductive Logic</em>.
+
+                    ^{proofcheck 6 "goldfarbNDPlus" "render resize" "ExAy(K(x,y) -> F(x,y)), AxEy(K(x,y)) :|-: ExEyF(x,y)" lemmonTheorem}
+
+                <div.demo>
                     <p> Here’s a proof of the fact that the bisectors of the
                         \ sides of a triangle always meet at a point (from the
                         \ assumption that a point is on the bisector of a segment if
@@ -108,7 +114,7 @@
                     <p> (Because of the number of variables, this one may take
                         \ a moment to load initially. Once loaded, it should
                         \ respond quickly to changes.)
-                    ^{proofcheck 6 "firstOrder" "render resize" "AxAyAz(F(x,g(y,z)) ↔ h(x,y) = h(x,z)) :|-: AwAxAyAz(F(w,g(x,y))^F(w,g(x,z))→F(w,g(y,z)))" bisectorTheorem}
+                    ^{proofcheck 7 "firstOrder" "render resize" "AxAyAz(F(x,g(y,z)) ↔ h(x,y) = h(x,z)) :|-: AwAxAyAz(F(w,g(x,y))^F(w,g(x,z))→F(w,g(y,z)))" bisectorTheorem}
 
                 <div.demo>
 
@@ -126,9 +132,9 @@
                         \ style of #
                         <i>Forall x.
 
-                    ^{proofcheck 7 "magnusQL" "render resize" ":|-:-ExAy(-F(y,y) <-> F(x,y))" russellTheoremForallx}
+                    ^{proofcheck 8 "magnusQL" "render resize" ":|-:-ExAy(-F(y,y) <-> F(x,y))" russellTheoremForallx}
 
-                    ^{proofcheck 8 "thomasBolducAndZachFOL" "render resize" ":|-:-ExAy(-F(y,y) <-> F(x,y))" russellTheoremCalgary}
+                    ^{proofcheck 9 "thomasBolducAndZachFOL" "render resize" ":|-:-ExAy(-F(y,y) <-> F(x,y))" russellTheoremCalgary}
                 <div.demo>
 
                     <p> This is a proofbox with a Kalish and Montague System
@@ -136,7 +142,7 @@
                         \ an instance of the comprehension scheme, using
                         \ a predicate abstraction rule.
 
-                    ^{proofcheck 9 "secondOrder" "render resize" ":|-: EXAx(F(x) /\\ G(x) <-> X(x))" comprehensionTheorem}
+                    ^{proofcheck 10 "secondOrder" "render resize" ":|-: EXAx(F(x) /\\ G(x) <-> X(x))" comprehensionTheorem}
 
                 <div.demo>
 
@@ -145,7 +151,7 @@
                         \ Second-Order Logic, again making use of a predicate
                         \ abstraction rule.
 
-                    ^{proofcheck 10 "polyadicSecondOrder" "render resize" ":|-: AX2EY2AxAy(X2(x,y)<->Y2(y,x))" inverseTheorem}
+                    ^{proofcheck 11 "polyadicSecondOrder" "render resize" ":|-: AX2EY2AxAy(X2(x,y)<->Y2(y,x))" inverseTheorem}
 
 
                 <div.demo>
@@ -159,9 +165,9 @@
                         \ for nicer-looking logical symbols and use guards to
                         \ help visually indicate the scope of each subproof.
 
-                    ^{proofcheck 11 "hardegree5" "fonts guides resize" ":|-:<>[]P->[]P" axiomFiveTheorem}
+                    ^{proofcheck 12 "hardegree5" "fonts guides resize" ":|-:<>[]P->[]P" axiomFiveTheorem}
 
-                    ^{proofcheck 12 "hardegreeB" "fonts guides resize" ":|-: <>[]P->P" axiomBTheorem}
+                    ^{proofcheck 13 "hardegreeB" "fonts guides resize" ":|-: <>[]P->P" axiomBTheorem}
 
                 <div.demo>
 
@@ -169,7 +175,7 @@
                         \ quantified system of modal logic, based on the system
                         \ MPL of Hardegree's <em>Modal Logic</em>.
 
-                    ^{proofcheck 13 "hardegreeMPL" "fonts guides resize" ":|-: Ax[]Fx->[]AxFx" barcanTheorem}
+                    ^{proofcheck 14 "hardegreeMPL" "fonts guides resize" ":|-: Ax[]Fx->[]AxFx" barcanTheorem}
 
                 <div.demo>
 
@@ -184,7 +190,7 @@
                         \ system SL.
 
                     <div.exercise>
-                        <span> example 14
+                        <span> example 15
                         <div#klementProof>
                             (W ∨ X), (Y ∨ Z), X → Y, ¬Z ∴ W ∨ Y
 

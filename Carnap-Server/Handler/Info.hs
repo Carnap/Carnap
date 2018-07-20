@@ -60,6 +60,19 @@ pierceTheorem = [st|
   P:-E 2-10
 ((P->Q)->P)->P:CI 1-11 |]
 
+lemmonTheorem = [st|
+[1]       ExAy(Kxy -> Fxy) P
+[2]       AxEy(Kxy)        P
+[1,3]     Ay(Kay -> Fay)   (1)a EII
+[2]       Ey(Kay)          (2) UI
+[2,5]     Kab              (4)b EII
+[1,3]     Kab -> Fab       (3) UI
+[1,2,3,5] Fab              (5) (6) TF
+[1,2,3,5] EyFay            (7) EG
+[1,2,3,5] ExEyFxy          (8) EG
+[1,2,3]   ExEyFxy          [5](9) EIE
+[1,2]     ExEyFxy          [3](10) EIE|]
+
 comprehensionTheorem = [st|
 Show EXAx(F(x)/\G(x)<->X(x))
    Show Ax(F(x)/\G(x)<->\y[F(y)/\G(y)](x))
