@@ -8,6 +8,7 @@ import Yesod.Form.Bootstrap3
 import Yesod.Form.Jquery
 import Handler.User (scoreByIdAndClassPerProblem)
 import Text.Blaze.Html (toMarkup)
+import Text.Read (readMaybe)
 import Data.Time
 import Data.Time.Zones
 import Data.Time.Zones.DB
@@ -638,12 +639,10 @@ classCSV classent = do
            course = entityVal classent
            mprobs = readAssignmentTable <$> courseTextbookProblems course :: Maybe (IntMap UTCTime)
        allUserData <- map entityVal <$> (runDB $ selectList [UserDataEnrolledIn ==. Just cid] [])
-       asmd <- runDB $ selectList [AssignmentMetadataCourse ==. cid] []
-       (Just course) <- runDB $ get cid
        let allUids = (map userDataUserId  allUserData)
        musers <- mapM (\x -> runDB (get x)) allUids
        let users = catMaybes musers
-       rawScores <- mapM (scoreByIdAndClassPerProblem cid) allUids >>= mapM (mapM fixLabel)
+       rawScores <- mapM (scoreByIdAndClassPerProblem cid) allUids >>= mapM (filterM (forClass classent . fst)) >>= mapM (mapM fixLabel)
        let allScores = zip (map userIdent users) rawScores
            usersAndData = zip users allUserData
            scoreHeaders = (L.nub . map fst . concat $ rawScores)
@@ -660,6 +659,18 @@ classCSV classent = do
                                 Nothing -> map (const "-") headers
                                 Just xs -> map (\h -> pack . show . foldr (+) 0 . map snd . filter (\x -> fst x == h) $ xs) headers
           commaSep l = "\"" ++ intercalate "\",\"" l ++ "\",\n"
+
+          forClass classent (Left amid) = runDB $ do masgn <- get amid
+                                                     case assignmentMetadataCourse <$> masgn of
+                                                         Just cid -> return (cid == entityKey classent)
+                                                         Nothing -> return False
+          forClass classent (Right psn) = case courseTextbookProblems (entityVal classent) of
+                                              Nothing -> return False
+                                              Just (BookAssignmentTable probs) -> 
+                                                case readMaybe (unpack psn) of
+                                                    Just n -> return $ n `member` probs
+                                                    Nothing -> return False
+
           fixLabel (Left amid,x) = runDB $ do masgn <- get amid
                                               case masgn of 
                                                     Nothing -> return $ (pack (show amid),x)
@@ -668,7 +679,7 @@ classCSV classent = do
                                                         case mdoc of 
                                                             Nothing -> return $ (pack (show amid),x)
                                                             Just doc -> return $ (documentFilename doc,x)
-          fixLabel (Right psn,x) = return ("Problem Set" ++ psn,x)
+          fixLabel (Right psn,x) = return ("Problem Set " ++ psn,x)
 
 dateDisplay utc course = case tzByName $ courseTimeZone course of
                              Just tz  -> formatTime defaultTimeLocale "%F %R %Z" $ utcToZonedTime (timeZoneForUTCTime tz utc) utc
