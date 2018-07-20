@@ -213,6 +213,17 @@ instance Yesod App where
                     <p>could not be found.
             |]
         provideRep $ return $ object ["message" .= ("Not Found" :: Text)]
+    errorHandler (PermissionDenied msg) = selectRep $ do
+        provideRep $ defaultLayout $ do
+            setTitle "Permission Denied"
+            toWidget [hamlet|
+                <div.container>
+                     <h1>Permission denied
+                     <p>#{msg}
+             |]
+        provideRep $
+            return $ object $ ["message" .= ("Permission Denied. " <> msg)]
+
     errorHandler other = defaultErrorHandler other
 
 
