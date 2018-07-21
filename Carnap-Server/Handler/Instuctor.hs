@@ -563,7 +563,7 @@ classWidget ident classent = do
                         $forall (Entity k a, Just d) <- zip asmd asDocs
                             <tr>
                                 <td>
-                                    <a href=@{AssignmentR $ documentFilename d}>
+                                    <a href=@{CourseAssignmentR (courseTitle course) (documentFilename d)}>
                                         #{documentFilename d}
                                 $maybe due <- assignmentMetadataDuedate a
                                     <td>#{dateDisplay due course}
