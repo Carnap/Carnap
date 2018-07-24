@@ -62,6 +62,7 @@ toPlayground cls extra content
     | "ForallxSL"        `elem` cls = playTemplate [("system", "magnusSL"), ("options","render")]
     | "ForallxSLPlus"    `elem` cls = playTemplate [("system", "magnusSLPlus"), ("options","render")]
     | "ForallxQL"        `elem` cls = playTemplate [("system", "magnusQL"), ("options","render")]
+    | "TomassiPL"        `elem` cls = playTemplate [("system", "tomassiPL"), ("options","resize")]
     | "GoldfarbND"       `elem` cls = playTemplate [("system", "goldfarbND"),("options","resize")]
     | "GoldfarbAltND"    `elem` cls = playTemplate [("system", "goldfarbAltND"),("options","resize")]
     | "GoldfarbNDPlus"   `elem` cls = playTemplate [("system", "goldfarbNDPlus"),("options","resize")]
