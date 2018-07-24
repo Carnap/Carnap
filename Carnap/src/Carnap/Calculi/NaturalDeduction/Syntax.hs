@@ -273,8 +273,10 @@ data NaturalDeductionCalc r lex sem = NaturalDeductionCalc
 --------------------------------------------------------
 
 data ProofType = ProofType 
-               { assumptionNumber :: Int --the number of initial lines which will, if they are assumptions, be used as premises
-               , conclusionNumber :: Int --the number of final available lines which will be used as premises
+               { assumptionNumber :: Int 
+               --the number of initial lines which must be assumptions (in some proof systems, used as premises for explicit indirect rules)
+               , conclusionNumber :: Int 
+               --the number of final available lines that figure in the rule (in some proof systems, used as premises)
                } --any remaining premises need to be gathered explicitly
 
 data IndirectArity = PolyProof --takes an arbitrary number of assertions or subproofs, each ending in one assertion

@@ -74,6 +74,11 @@ instance Inference TomassiPL PurePropLexicon (Form Bool) where
         globalRestriction (Left ded) n ORE = Just (dischargeConstraint n ded (view lhs $ conclusionOf ORE))
         globalRestriction _ _ _ = Nothing
 
+        indirectInference CP = Just $ TypedProof (ProofType 1 1)
+        indirectInference RAA = Just $ TypedProof (ProofType 1 1)
+        indirectInference ORE = Just $ PolyTypedProof 2 (ProofType 1 1)
+        indirectInference _ = Nothing
+
         isAssumption As = True
         isAssumption (Pr _) = True
         isAssumption _ = False
@@ -98,7 +103,7 @@ parseTomassiPL rtc n _ = do r <- choice (map (try . string) [ "&I", "&E", "MP", 
 
 parseTomassiPLProof :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) 
                      -> String -> [DeductionLine TomassiPL PurePropLexicon (Form Bool)]
-parseTomassiPLProof rtc = toDeductionLemmon (parseTomassiPL rtc) (purePropFormulaParser standardLetters)
+parseTomassiPLProof rtc = toDeductionLemmonTomassi (parseTomassiPL rtc) (purePropFormulaParser standardLetters)
 
 tomassiPLCalc = NaturalDeductionCalc
     { ndRenderer = LemmonStyle

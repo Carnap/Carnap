@@ -43,6 +43,14 @@ lemlineAlt r = do (dis,deps,annote) <- lookAhead $
           cite3 = (,,) <$> optionMaybe scope <*> optionMaybe bothCitations <*> annotation
           bothCitations = try (citation `sepEndBy` spaces) <|> citations
 
+--lemmon justifications used in Tomassi.
+lemlineTomassi r = do indicated <- parseInts
+                      spaces
+                      rule <- r 0 ""
+                      --XXX: discharge of assumptions is done implicitly,
+                      --rather than explicitly flagged in this system
+                      return ([],indicated,rule)
+
 citation :: Parsec String u Int
 citation = char '(' *> (read <$> many1 digit) <* char ')'
 
@@ -61,6 +69,10 @@ toDeductionLemmon r f = toDeduction (parseDependentAssertLine r f lemline)
 toDeductionLemmonAlt :: (Int -> String -> Parsec String () [r]) -> Parsec String () (FixLang lex a) -> String 
     -> Deduction r lex a
 toDeductionLemmonAlt r f = toDeduction (parseDependentAssertLine r f lemlineAlt)
+
+toDeductionLemmonTomassi :: Inference r lex (Form Bool) => (Int -> String -> Parsec String () [r]) -> Parsec String () (FixLang lex a) -> String 
+    -> Deduction r lex a
+toDeductionLemmonTomassi r f = toDeduction (parseDependentAssertLine r f lemlineTomassi)
 
 toProofTreeLemmon :: 
     ( Inference r lex sem
@@ -85,7 +97,12 @@ toProofTreeLemmon ded n = case ded !! (n - 1) of
               checkScope i | isAssumption (head r) && not (scope == i ++ [n]) = err "The dependencies here aren't right. Remember, this rule introduces its own line number as a dependency."
                            | isAssumption (head r) = if dis /= [] then err "This rule does not allow the elimination of dependencies." else Right True
                            | null (globalRestriction (Left []) 0 (head r)) && dis /= [] = err "This rule does not allow the elimination of dependencies."
-                           | sort scope /= sort (nub i \\ dis) = err "The dependencies here aren't right. Did you forget mark a dependency as eliminated?."
+                           | null (indirectInference (head r)) && sort scope /= sort (nub i \\ dis) = err "The dependencies here aren't right. Did you forget mark a dependency as eliminated?."
+                           | length (nub i) - numDischarged (indirectInference (head r)) /= length scope = err "The dependencies here aren't right. Did you forget to add or remove something?"
                            | otherwise = Right True
+
+              numDischarged (Just (TypedProof (ProofType n _ ))) = n
+              numDischarged (Just (PolyTypedProof m (ProofType n _))) = m * n
+              numDischarged _ = 0
 
     (PartialLine _ e _) -> Left $ NoParse e n
