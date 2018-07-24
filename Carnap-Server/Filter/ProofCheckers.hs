@@ -25,6 +25,7 @@ activate cls extra chunk
     | "ForallxSL"        `elem` cls = exTemplate [("system", "magnusSL"), ("options","render")]
     | "ForallxSLPlus"    `elem` cls = exTemplate [("system", "magnusSLPlus"), ("options","render")]
     | "ForallxQL"        `elem` cls = exTemplate [("system", "magnusQL"), ("options","render")]
+    | "TomassiPL"        `elem` cls = exTemplate [("system", "tomassiPL"), ("options","resize")]
     | "GoldfarbND"       `elem` cls = exTemplate [("system", "goldfarbND")]
     | "GoldfarbAltND"    `elem` cls = exTemplate [("system", "goldfarbAltND")]
     | "GoldfarbNDPlus"   `elem` cls = exTemplate [("system", "goldfarbNDPlus")]

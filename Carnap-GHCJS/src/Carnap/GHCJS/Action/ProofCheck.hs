@@ -11,7 +11,7 @@ import Carnap.Languages.ClassicalSequent.Syntax
 import Carnap.Languages.PurePropositional.Logic as P 
     (DerivedRule(..), logicBookSDCalc, logicBookSDPlusCalc, magnusSLCalc,
     magnusSLPlusCalc, propCalc, hardegreeSLCalc
-    , thomasBolducAndZachTFLCalc)
+    , thomasBolducAndZachTFLCalc, tomassiPLCalc)
 import Carnap.Languages.PurePropositional.Logic.Rules (derivedRuleToSequent)
 import Carnap.Languages.PureFirstOrder.Logic as FOL 
     ( DerivedRule(..), folCalc, magnusQLCalc , thomasBolducAndZachFOLCalc,
@@ -120,6 +120,7 @@ activateChecker drs w (Just iog@(IOGoal i o g _ opts)) -- TODO: need to update n
         | sys == "goldfarbAltNDPlus"         = tryParse goldfarbAltNDPlusCalc folChecker
         | sys == "thomasBolducAndZachTFL"    = tryParse thomasBolducAndZachTFLCalc propChecker
         | sys == "thomasBolducAndZachFOL"    = tryParse thomasBolducAndZachFOLCalc folChecker
+        | sys == "tomassiPL"                 = tryParse tomassiPLCalc propChecker
         | sys == "hardegreeSL"               = tryParse hardegreeSLCalc propChecker
         | sys == "hardegreePL"               = tryParse hardegreePLCalc noRuntimeOptions
         | sys == "hardegreeWTL"              = tryParse hardegreeWTLCalc noRuntimeOptions
