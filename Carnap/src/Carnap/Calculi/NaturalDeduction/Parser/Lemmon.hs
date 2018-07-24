@@ -97,7 +97,8 @@ toProofTreeLemmon ded n = case ded !! (n - 1) of
               checkScope i | isAssumption (head r) && not (scope == i ++ [n]) = err "The dependencies here aren't right. Remember, this rule introduces its own line number as a dependency."
                            | isAssumption (head r) = if dis /= [] then err "This rule does not allow the elimination of dependencies." else Right True
                            | null (globalRestriction (Left []) 0 (head r)) && dis /= [] = err "This rule does not allow the elimination of dependencies."
-                           | null (indirectInference (head r)) && sort scope /= sort (nub i \\ dis) = err "The dependencies here aren't right. Did you forget mark a dependency as eliminated?."
+                           | null (indirectInference (head r)) = if sort scope /= sort (nub i \\ dis) then err "The dependencies here aren't right. Did you forget mark a dependency as eliminated?."
+                                                                                                      else Right True
                            | length (nub i) - numDischarged (indirectInference (head r)) /= length scope = err "The dependencies here aren't right. Did you forget to add or remove something?"
                            | otherwise = Right True
 
