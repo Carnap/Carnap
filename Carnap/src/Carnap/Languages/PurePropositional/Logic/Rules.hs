@@ -126,6 +126,10 @@ conditionalToBiconditional = [ GammaV 1  :|-: SS (phin 1 .→. phin 2)
                              , GammaV 2  :|-: SS (phin 2 .→. phin 1) 
                              ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (phin 1 .↔. phin 2)
 
+biconditionalToTwoConditional :: BooleanRule lex b
+biconditionalToTwoConditional = [ GammaV 1  :|-: SS (phin 1 .↔. phin 2)
+                                ] ∴ GammaV 1 :|-: SS ((phin 1 .→. phin 2) .∧. (phin 2 .→. phin 1))
+
 dilemma :: BooleanRule lex b
 dilemma = [ GammaV 1 :|-: SS (phin 1 .∨. phin 2)
           , GammaV 2 :|-: SS (phin 1 .→. phin 3)
@@ -183,6 +187,17 @@ constructiveReductioVariations = [
                 [ GammaV 1  :|-: SS (phin 2) 
                 , GammaV 2  :|-: SS (lneg $ phin 2)
                 ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (lneg $ phin 1)
+            ]
+
+explictConstructiveConjunctionReductioVariations :: BooleanRuleVariants lex b
+explictConstructiveConjunctionReductioVariations = [
+                [ SA (phin 1) :|-: SS (phin 1) 
+                , GammaV 1 :+: SA (phin 1) :|-: SS (phin 2 .∧. (lneg $ phin 2))
+                ] ∴ GammaV 1 :|-: SS (lneg $ phin 1)
+            ,
+                [ SA (phin 1) :|-: SS (phin 1) 
+                , GammaV 1 :|-: SS (phin 2 .∧. (lneg $ phin 2))
+                ] ∴ GammaV 1 :|-: SS (lneg $ phin 1)
             ]
 
 explicitConstructiveFalsumReductioVariations :: BooleanRuleVariants lex b
@@ -478,11 +493,21 @@ eliminationOfCases n = (premAnt n :|-: SS lfalsum
           premAnt m = foldr (:+:) (GammaV 1) (take m $ map (SA . lneg . phin) [1 ..])
           concSuc m = foldr (.∨.) (phin 1) (take (m - 1) $ map phin [2 ..])
 
--- XXX slight variation from Hardegree's rule, which has weird ad-hoc syntax.
+-- XXX slight syntactic variation from Hardegree's rule.
 separationOfCases :: Int -> BooleanRule lex b
 separationOfCases n = (GammaV 0 :|-: SS (premSuc n)
                     : take n (map premiseForm [1 ..]))
                     ∴ concAnt n :|-: SS (phin 0)
     where premSuc m = foldr (.∨.) (phin 1) (take (m - 1) $ map phin [2 ..])
           premiseForm m = GammaV m :+: SA (phin m) :|-: SS (phin 0)
+          concAnt m = foldr (:+:) (GammaV 0) (take m $ map GammaV [1 ..])
+
+explicitSeparationOfCases :: Int -> BooleanRule lex b
+explicitSeparationOfCases n = (GammaV 0 :|-: SS (premSuc n)
+                            : map premiseForm [1 .. n]
+                            ++ map assumptionForm [1 .. n])
+                            ∴ concAnt n :|-: SS (phin 0)
+    where premSuc m = foldr (.∨.) (phin 1) (take (m - 1) $ map phin [2 ..])
+          premiseForm m = GammaV m :+: SA (phin m) :|-: SS (phin 0)
+          assumptionForm m = SA (phin m) :|-: SS (phin m)
           concAnt m = foldr (:+:) (GammaV 0) (take m $ map GammaV [1 ..])

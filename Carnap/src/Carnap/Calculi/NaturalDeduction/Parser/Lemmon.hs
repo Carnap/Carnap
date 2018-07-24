@@ -24,7 +24,7 @@ lemline r = do mdis <- optionMaybe scope
                let dis = case mdis of Nothing -> []; Just l -> l
                spaces
                deps <- citation `sepEndBy` spaces
-               annote <- many (noneOf (' ':['A' .. 'Z']))
+               annote <- annotation
                spaces
                rule <- r (length deps) annote
                return (dis,deps,rule)
@@ -50,7 +50,7 @@ citations :: Parsec String u [Int]
 citations = char '(' *> ((read <$> many1 digit)`sepBy` (char ',' >> spaces)) <* char ')'
 
 annotation :: Parsec String u String
-annotation = many (noneOf (' ':['A' .. 'Z']))
+annotation = many (oneOf ['a' .. 'z'])
 
 scope = char '[' *> parseInts <* char ']'
 
