@@ -99,7 +99,7 @@ toProofTreeLemmon ded n = case ded !! (n - 1) of
                            | null (globalRestriction (Left []) 0 (head r)) && dis /= [] = err "This rule does not allow the elimination of dependencies."
                            | null (indirectInference (head r)) = if sort scope /= sort (nub i \\ dis) then err "The dependencies here aren't right. Did you forget mark a dependency as eliminated?."
                                                                                                       else Right True
-                           | length (nub i) - numDischarged (indirectInference (head r)) /= length scope = err "The dependencies here aren't right. Did you forget to add or remove something?"
+                           | length (nub i) - numDischarged (indirectInference (head r)) /= length scope = err "This is the wrong number of dependencies. Did you forget to add or remove something?"
                            | otherwise = Right True
 
               numDischarged (Just (TypedProof (ProofType n _ ))) = n
