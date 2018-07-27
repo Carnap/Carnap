@@ -54,8 +54,8 @@ instance Inference TomassiPL PurePropLexicon (Form Bool) where
         ruleOf AndE2 = simplificationVariations !! 1
         ruleOf MP = modusPonens
         ruleOf MT = modusTollens
-        ruleOf DNI = doubleNegationElimination
-        ruleOf DNE = doubleNegationIntroduction
+        ruleOf DNI = doubleNegationIntroduction
+        ruleOf DNE = doubleNegationElimination
         ruleOf BCI = conditionalToBiconditional
         ruleOf BCE = biconditionalToTwoConditional
         ruleOf ORI1 = additionVariations !! 0
