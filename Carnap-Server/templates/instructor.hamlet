@@ -96,7 +96,7 @@
                                     <td>
                                         <button.btn.btn-sm.btn-secondary alt="delete" title="delete this assignment" type="button" onclick="tryDeleteAssignment('#{decodeUtf8 $ encode $ DeleteAssignment k}','#{documentFilename d}','#{courseTitle c}')">
                                             <i.fa.fa-trash-o>
-                                        <button.btn.btn-sm.btn-secondary alt="edit" title="edit this assignment" type="button"  onclick="modalEditAssignment('#{documentFilename d}','#{courseTitle c}')">
+                                        <button.btn.btn-sm.btn-secondary alt="edit" title="edit this assignment" type="button"  onclick="modalEditAssignment('#{show k}')">
                                             <i.fa.fa-cog>
                                         <a.btn.btn-sm.btn-secondary alt="review" title="review and assign partial credit" href=@{ReviewR (courseTitle c) (documentFilename d)}>
                                             <i.fa.fa-pencil>
@@ -115,7 +115,7 @@
                             <th> Sharing Scope
                             <th> Actions
                         <tbody>
-                            $forall a <- map entityVal documents
+                            $forall Entity k a <- documents
                                 <tr id="document-#{documentFilename a}">
                                     <td>
                                         <a href="@{DocumentR ident (documentFilename a)}">
@@ -125,7 +125,7 @@
                                     <td>
                                         <button.btn.btn-sm.btn-secondary type="button" alt="delete" title="permanantly delete this document" onclick="tryDeleteDocument('#{decodeUtf8 $ encode $ DeleteDocument (documentFilename a)}')">
                                             <i.fa.fa-trash-o>
-                                        <button.btn.btn-sm.btn-secondary type="button" alt="edit" title="edit this document" onclick="modalEditDocument('#{documentFilename a}')">
+                                        <button.btn.btn-sm.btn-secondary type="button" alt="edit" title="edit this document" onclick="modalEditDocument('#{show k}')">
                                             <i.fa.fa-pencil>
                 <div.tab-pane id="create" role="tabpanel">
                     <form method=post enctype=#{enctypeCreateCourse}>

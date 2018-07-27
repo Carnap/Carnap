@@ -26,16 +26,14 @@ putInstructorR ident = do
         ((courserslt,_),_)     <- runFormPost (identifyForm "updateCourse" $ updateCourseForm)
         ((documentrslt,_),_)   <- runFormPost (identifyForm "updateDocument" $ updateDocumentForm)
         case (assignmentrslt,courserslt,documentrslt) of 
-            (FormSuccess (filename, coursename, mdue, mduetime,mfrom,mfromtime,muntil,muntiltime, mdesc),_,_) -> do
-                             massignEnt <- runDB $ do Just (Entity uid _) <- getBy (UniqueUser ident)
-                                                      Just (Entity _ umd) <- getBy (UniqueUserData uid)
-                                                      let Just imdid = userDataInstructorId umd
-                                                      Just (Entity cid _) <- getBy (UniqueCourse coursename imdid)
-                                                      Just (Entity docid _) <- getBy $ UniqueDocument filename uid
-                                                      getBy $ UniqueAssignment docid cid
-                             case massignEnt of 
-                                   Nothing -> returnJson ("Could not find assignment!"::Text)
-                                   Just (Entity k v) -> 
+            (FormSuccess (idstring, mdue, mduetime,mfrom,mfromtime,muntil,muntiltime, mdesc),_,_) -> do
+                             case readMaybe idstring of 
+                                  Nothing -> returnJson ("Could not read assignment key"::Text)
+                                  Just k -> do 
+                                    mval <- runDB (get k)
+                                    case mval of 
+                                      Nothing -> returnJson ("Could not find assignment!"::Text)
+                                      Just v -> 
                                         do let cid = assignmentMetadataCourse v
                                            runDB $ do (Just course) <- get cid
                                                       let (Just tz) = tzByName . courseTimeZone $ course
@@ -50,10 +48,8 @@ putInstructorR ident = do
                                                       maybeDo mdesc (\desc -> update k
                                                          [ AssignmentMetadataDescription =. (Just $ unTextarea desc) ])
                                            returnJson ("updated!"::Text)
-            (_,FormSuccess (coursetitle,mdesc,mstart,mend,mpoints),_) -> do
-                             Just instructor <- instructorIdByIdent ident
-                             mcourseEnt <- runDB . getBy . UniqueCourse coursetitle $ instructor
-                             case entityKey <$> mcourseEnt of
+            (_,FormSuccess (idstring,mdesc,mstart,mend,mpoints),_) -> do
+                             case readMaybe idstring of
                                  Just k -> do runDB $ do maybeDo mdesc (\desc -> update k
                                                            [ CourseDescription =. (Just $ unTextarea desc) ])
                                                          maybeDo mstart (\start -> update k
@@ -64,21 +60,22 @@ putInstructorR ident = do
                                                            [ CourseTotalPoints =. points ])
                                               returnJson ("updated!"::Text)
                                  Nothing -> returnJson ("could not find course!"::Text)
-            (_,_,FormSuccess (filename, mscope, mdesc,mfile)) -> do
-                             musr <- runDB $ getBy $ UniqueUser ident
-                             case entityKey <$> musr of
-                                 Just k -> do
-                                     mdocId <- runDB $ getBy $ UniqueDocument filename k
-                                     case mdocId of
-                                         Just (Entity k' _) -> 
-                                            do runDB $ do maybeDo mdesc (\desc -> update k'
-                                                           [ DocumentDescription =. (Just $ unTextarea desc) ])
-                                                          maybeDo mscope (\scope -> update k'
-                                                           [ DocumentScope =. scope ])
-                                               maybeDo mfile (saveTo ("documents" </> unpack ident) $ unpack filename)
-                                               returnJson ("updated!"::Text)
-                                         Nothing -> returnJson ("could not find document!"::Text)
-                                 Nothing -> returnJson ("could not find user id!"::Text)
+            (_,_,FormSuccess (idstring, mscope, mdesc,mfile)) -> do
+                             case readMaybe idstring of
+                                 Just k -> do 
+                                    mdoc <- runDB (get k)
+                                    case mdoc of 
+                                        Nothing -> returnJson ("could not find document!"::Text)
+                                        Just doc -> do
+                                           (Just ident) <- getIdent (documentCreator doc) 
+                                           --XXX: shouldn't be possible for a document to exist without a creator
+                                           runDB $ do maybeDo mdesc (\desc -> update k
+                                                        [ DocumentDescription =. (Just $ unTextarea desc) ])
+                                                      maybeDo mscope (\scope -> update k
+                                                        [ DocumentScope =. scope ])
+                                           maybeDo mfile (saveTo ("documents" </> unpack ident) (unpack $ documentFilename doc))
+                                           returnJson ("updated!"::Text)
+                                 Nothing -> returnJson ("could not read document key"::Text)
 
             (FormMissing,FormMissing,FormMissing) -> returnJson ("no form" :: Text)
             (form1,form2,form3) -> returnJson ("errors: " <> errorsOf form1 <> errorsOf form2 <> errorsOf form3)
@@ -156,9 +153,9 @@ postInstructorR ident = do
     classes <- classesByInstructorIdent ident
     docs <- documentsByInstructorIdent ident
     ((assignmentrslt,_),_) <- runFormPost (identifyForm "uploadAssignment" $ uploadAssignmentForm classes docs)
-    ((documentrslt,_),_) <- runFormPost (identifyForm "uploadDocument" $ uploadDocumentForm)
-    ((newclassrslt,_),_) <- runFormPost (identifyForm "createCourse" createCourseForm)
-    ((frombookrslt,_),_) <- runFormPost (identifyForm "setBookAssignment" $ setBookAssignmentForm classes)
+    ((documentrslt,_),_)   <- runFormPost (identifyForm "uploadDocument" $ uploadDocumentForm)
+    ((newclassrslt,_),_)   <- runFormPost (identifyForm "createCourse" createCourseForm)
+    ((frombookrslt,_),_)   <- runFormPost (identifyForm "setBookAssignment" $ setBookAssignmentForm classes)
     case assignmentrslt of 
         (FormSuccess (doc, Entity classkey theclass, mdue,mduetime,mfrom,mfromtime,mtill,mtilltime, massignmentdesc, subtime)) ->
             do let (Just tz) = tzByName . courseTimeZone $ theclass
@@ -354,8 +351,7 @@ uploadAssignmentForm classes docs extra = do
           docnames = map (\thedoc -> (documentFilename . entityVal $ thedoc, thedoc)) docs
 
 updateAssignmentForm extra = do 
-            (fileRes,fileView) <- mreq fileName "" Nothing
-            (courseRes, courseView) <- mreq courseName "" Nothing
+            (assignmentRes,assignmentView) <- mreq assignmentId "" Nothing
             (dueRes,dueView) <- mopt (jqueryDayField def) (withPlaceholder "Date" $ bfs ("Due Date"::Text)) Nothing
             (duetimeRes, duetimeView) <- mopt timeFieldTypeTime (withPlaceholder "Time" $ bfs ("Due Time"::Text)) Nothing
             (fromRes,fromView) <- mopt (jqueryDayField def) (withPlaceholder "Date" $ bfs ("Visible From Date"::Text)) Nothing
@@ -363,16 +359,15 @@ updateAssignmentForm extra = do
             (tillRes, tillView) <- mopt (jqueryDayField def) (withPlaceholder "Date" $ bfs ("Visible Until Date"::Text)) Nothing
             (tilltimeRes,tilltimeView) <- mopt timeFieldTypeTime (withPlaceholder "Time" $ bfs ("Visible Until Time"::Text)) Nothing
             (descRes,descView) <- mopt textareaField (bfs ("Assignment Description"::Text)) Nothing
-            let theRes = (,,,,,,,,) <$> fileRes <*> courseRes 
-                                    <*> dueRes <*> duetimeRes 
-                                    <*> fromRes <*> fromtimeRes
-                                    <*> tillRes <*> tilltimeRes
-                                    <*> descRes
+            let theRes = (,,,,,,,) <$> assignmentRes 
+                                   <*> dueRes <*> duetimeRes 
+                                   <*> fromRes <*> fromtimeRes
+                                   <*> tillRes <*> tilltimeRes
+                                   <*> descRes
             let widget = do
                 [whamlet|
                 #{extra}
-                ^{fvInput fileView}
-                ^{fvInput courseView}
+                ^{fvInput assignmentView}
                 <h6> Due Date
                 <div.row>
                     <div.form-group.col-md-6>
@@ -398,10 +393,8 @@ updateAssignmentForm extra = do
                 |]
             return (theRes,widget)
 
-    where fileName :: (Monad m, RenderMessage (HandlerSite m) FormMessage) => Field m Text 
-          fileName = hiddenField
-          courseName :: (Monad m, RenderMessage (HandlerSite m) FormMessage) => Field m Text 
-          courseName = hiddenField
+    where assignmentId :: (Monad m, RenderMessage (HandlerSite m) FormMessage) => Field m String
+          assignmentId = hiddenField
 
 updateAssignmentModal form enc = [whamlet|
                     <div class="modal fade" id="updateAssignmentData" tabindex="-1" role="dialog" aria-labelledby="updateAssignmentDataLabel" aria-hidden="true">
@@ -431,12 +424,12 @@ uploadDocumentForm = renderBootstrap3 BootstrapBasicForm $ (,,,)
                    ]
 
 updateDocumentForm = renderBootstrap3 BootstrapBasicForm $ (,,,)
-            <$> areq fileName "" Nothing
+            <$> areq docId "" Nothing
             <*> aopt (selectFieldList scopes) (bfs ("Share With " :: Text)) Nothing
             <*> aopt textareaField (bfs ("Description"::Text)) Nothing
             <*> fileAFormOpt (bfs ("Replacement File" :: Text)) 
-    where fileName :: (Monad m, RenderMessage (HandlerSite m) FormMessage) => Field m Text 
-          fileName = hiddenField
+    where docId :: (Monad m, RenderMessage (HandlerSite m) FormMessage) => Field m String
+          docId = hiddenField
 
           scopes :: [(Text,SharingScope)]
           scopes = [("Everyone (Visible to everyone)", Public)
@@ -512,13 +505,13 @@ updateCourseModal form enc = [whamlet|
                     |]
 
 updateCourseForm = renderBootstrap3 BootstrapBasicForm $ (,,,,)
-            <$> areq courseName "" Nothing
+            <$> areq courseId "" Nothing
             <*> aopt textareaField (bfs ("Course Description"::Text)) Nothing
             <*> aopt (jqueryDayField def) (bfs ("Start Date"::Text)) Nothing
             <*> aopt (jqueryDayField def) (bfs ("End Date"::Text)) Nothing
             <*> aopt intField (bfs ("Total Points for Course"::Text)) Nothing
-    where courseName :: (Monad m, RenderMessage (HandlerSite m) FormMessage) => Field m Text 
-          courseName = hiddenField
+    where courseId :: (Monad m, RenderMessage (HandlerSite m) FormMessage) => Field m String
+          courseId = hiddenField
 
 saveTo thedir fn file = do
         datadir <- appDataRoot <$> (appSettings <$> getYesod)
@@ -603,7 +596,7 @@ classWidget ident classent = do
                         <dd.col-sm-9>#{dateDisplay (courseEndDate course) course}
                         <dt.col-sm-3>Time Zone
                         <dd.col-sm-9>#{decodeUtf8 $ courseTimeZone course}
-                    <button.btn.btn-sm.btn-secondary type="button"  onclick="modalEditCourse('#{courseTitle course}')">
+                    <button.btn.btn-sm.btn-secondary type="button"  onclick="modalEditCourse('#{show cid}')">
                         Edit Course Information
                     <button.btn.btn-sm.btn-secondary type="button" onclick="location.href='@{InstructorDownloadR ident (courseTitle course)}';">
                         Export Grades as .csv

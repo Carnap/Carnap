@@ -37,23 +37,22 @@ function tryDropStudent (json) {
         }
     }
 
-function modalEditAssignment (name,course) {
+function modalEditAssignment (id) {
     jQuery.noConflict()
     $("#updateAssignmentData").modal({show:true});
-    $("#updateAssignment input[name=f1]").val(name);
-    $("#updateAssignment input[name=f2]").val(course);
+    $("#updateAssignment input[name=f1]").val(id);
 }
 
-function modalEditDocument (name) {
+function modalEditDocument (id) {
     jQuery.noConflict()
     $("#updateDocumentData").modal({show:true});
-    $("#updateDocument input[name=f1]").val(name);
+    $("#updateDocument input[name=f1]").val(id);
 }
 
-function modalEditCourse (name) {
+function modalEditCourse (id) {
     jQuery.noConflict()
     $("#updateCourseData").modal({show:true});
-    $("#updateCourse input[name=f1]").val(name);
+    $("#updateCourse input[name=f1]").val(id);
 }
 
 function deleteAssignment (json,fn,ct) {
