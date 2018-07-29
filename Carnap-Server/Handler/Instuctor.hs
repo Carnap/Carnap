@@ -179,7 +179,13 @@ postInstructorR ident = do
                let fn = fileName file
                    info = unTextarea <$> docdesc
                    (Just uid) = musr -- FIXME: catch Nothing here
-               success <- tryInsert $ Document fn subtime (entityKey uid) info sharescope
+               success <- tryInsert $ Document
+                                        { documentFilename = fn
+                                        , documentDate = subtime
+                                        , documentCreator = entityKey uid
+                                        , documentDescription = info
+                                        , documentScope = sharescope
+                                        }
                if success then saveTo ("documents" </> unpack ident) (unpack fn) file 
                           else setMessage "You already have a shared document with this name."
         (FormFailure s) -> setMessage $ "Something went wrong: " ++ toMarkup (show s)
@@ -190,7 +196,16 @@ postInstructorR ident = do
             case miid of
                 Just iid -> 
                     do let localize x = localTimeToUTCTZ (tzByLabel tzlabel) (LocalTime x midnight)
-                       success <- tryInsert $ Course title (unTextarea <$> coursedesc) iid Nothing (localize startdate) (localize enddate) 0 (toTZName tzlabel)
+                       success <- tryInsert $ Course 
+                                                { courseTitle = title
+                                                , courseDescription = unTextarea <$> coursedesc
+                                                , courseInstructor = iid
+                                                , courseTextbookProblems = Nothing
+                                                , courseStartDate = localize startdate
+                                                , courseEndDate = localize enddate
+                                                , courseTotalPoints = 0
+                                                , courseTimeZone = toTZName tzlabel
+                                                }
                        if success then setMessage "Course Created" 
                                   else setMessage "Could not save. Course titles must be unique. Consider adding your instutition or the current semester as a suffix."
                 Nothing -> setMessage "you're not an instructor!"
