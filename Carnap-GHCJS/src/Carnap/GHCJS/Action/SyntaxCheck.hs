@@ -40,23 +40,28 @@ syntaxCheckAction = initElements getCheckers activateChecker
 --formulas in the todo list. The labeling makes it possible to identify
 --which formula is in the queue, even when there are several
 --indistinguishable formulas
-tryMatch :: Element -> IORef (PureForm, [(PureForm, Int)], Tree (PureForm, Int), Int) -> Document -> (PureForm -> String) -> EventM HTMLInputElement KeyboardEvent ()
-tryMatch o ref w sf = onEnter $ do (Just t) <- target :: EventM HTMLInputElement KeyboardEvent (Maybe HTMLInputElement)
-                                   (Just ival)  <- getValue t
-                                   (f,forms,ft, s) <- liftIO $ readIORef ref
-                                   setValue t (Just "")
-                                   case forms of
-                                       [] -> setInnerHTML o (Just "Success! You may now submit your solution")
-                                       x:xs -> case matchMC ival (fst x) of
-                                           Right b -> if b 
-                                               then case children (fst x) of 
-                                                       [] -> shorten x xs s
-                                                       children -> updateGoal x (zip children [(s + 1)..]) xs (s + length children + 1)
-                                               else do message $ "Sorry, that's not the main connective. Try again!"
-                                                       resetGoal
-                                           Left e -> case children (fst x) of
-                                                  [] -> shorten x xs s
-                                                  _ -> message "what you've entered doesn't appear to be a connective"
+tryMatch :: Element -> IORef (PureForm, [(PureForm, Int)], Tree (PureForm, Int), Int) 
+            -> Document -> (PureForm -> String) -> M.Map String String 
+            -> EventM HTMLInputElement KeyboardEvent ()
+tryMatch o ref w sf opts = onEnter $ 
+        do (Just t) <- target :: EventM HTMLInputElement KeyboardEvent (Maybe HTMLInputElement)
+           (Just ival)  <- getValue t
+           (f,forms,ft, s) <- liftIO $ readIORef ref
+           setValue t (Just "")
+           case forms of
+               [] -> case M.lookup "submission" opts of
+                          Just s | take 7 s == "saveAs:" -> setInnerHTML o (Just "Success! You may now submit your solution")
+                          _ -> setInnerHTML o (Just "Success!")
+               x:xs -> case matchMC ival (fst x) of
+                   Right b -> if b 
+                       then case children (fst x) of 
+                               [] -> shorten x xs s
+                               children -> updateGoal x (zip children [(s + 1)..]) xs (s + length children + 1)
+                       else do message $ "Sorry, that's not the main connective. Try again!"
+                               resetGoal
+                   Left e -> case children (fst x) of
+                          [] -> shorten x xs s
+                          _ -> message "what you've entered doesn't appear to be a connective"
         where --updates the goal, by adding labeled formulas to the todo ist, 
               --developing the tree with those labeled formulas at the given label, and 
               --advances the stage
@@ -135,7 +140,7 @@ activateChecker w (Just (i,o,opts)) =
                          setAttribute tree "class" "tree"
                          mpar@(Just par) <- getParentNode o               
                          insertBefore par (Just bw) (Just o)                    
-                         match <- newListener $ tryMatch tree ref w sf
+                         match <- newListener $ tryMatch tree ref w sf opts
                          (Just w') <- getDefaultView w                    
                          addListener i keyUp match False                  
                       (Left e) -> setInnerHTML o (Just $ show e)
