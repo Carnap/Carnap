@@ -92,33 +92,26 @@ deleteInstructorR ident = do
            deleted <- runDB $ deleteCascade id
            returnJson ("Assignment deleted" :: Text)
       DeleteProblems coursename setnum -> 
-        do miid <- instructorIdByIdent ident
-           case miid of
-               Just iid -> 
-                    do mclass <- runDB $ getBy $ UniqueCourse coursename iid
-                       case mclass of 
-                            Just (Entity classkey theclass)->
-                                do case readAssignmentTable <$> courseTextbookProblems theclass  of
-                                       Just assign -> do runDB $ update classkey
-                                                                        [CourseTextbookProblems =. (Just $ BookAssignmentTable $ Data.IntMap.delete setnum assign)]
-                                                         returnJson ("Deleted Assignment"::Text)
-                                       Nothing -> returnJson ("Assignment table Missing, can't delete."::Text)
-                            Nothing -> returnJson ("Something went wrong with retriving the course."::Text)
-
-               Nothing -> returnJson ("You do not appear to be an instructor."::Text)
+        do checkCourseOwnership coursename
+           mclass <- runDB $ getBy $ UniqueCourse coursename
+           case mclass of 
+                Just (Entity classkey theclass)->
+                    do case readAssignmentTable <$> courseTextbookProblems theclass  of
+                           Just assign -> do runDB $ update classkey
+                                                            [CourseTextbookProblems =. (Just $ BookAssignmentTable $ Data.IntMap.delete setnum assign)]
+                                             returnJson ("Deleted Assignment"::Text)
+                           Nothing -> returnJson ("Assignment table Missing, can't delete."::Text)
+                Nothing -> returnJson ("Something went wrong with retriving the course."::Text)
       DeleteCourse coursename -> 
-        do miid <- instructorIdByIdent ident
-           case miid of
-               Nothing -> returnJson ("You do not appear to be an instructor."::Text)
-               Just iid -> 
-                    do mclass <- runDB $ getBy $ UniqueCourse coursename iid
-                       case mclass of 
-                            Just (Entity classkey theclass)-> 
-                                do runDB $ do studentsOf <- selectList [UserDataEnrolledIn ==. Just classkey] []
-                                              mapM (\s -> update (entityKey s) [UserDataEnrolledIn =. Nothing]) studentsOf
-                                              deleteCascade classkey
-                                   returnJson ("Class Deleted"::Text)
-                            Nothing -> returnJson ("No class to delete, for some reason"::Text)
+        do checkCourseOwnership coursename
+           mclass <- runDB $ getBy $ UniqueCourse coursename
+           case mclass of 
+                Just (Entity classkey theclass)-> 
+                    do runDB $ do studentsOf <- selectList [UserDataEnrolledIn ==. Just classkey] []
+                                  mapM (\s -> update (entityKey s) [UserDataEnrolledIn =. Nothing]) studentsOf
+                                  deleteCascade classkey
+                       returnJson ("Class Deleted"::Text)
+                Nothing -> returnJson ("No class to delete, for some reason"::Text)
       DeleteDocument fn ->
         do datadir <- appDataRoot <$> (appSettings <$> getYesod) 
            musr <- runDB $ getBy $ UniqueUser ident
@@ -199,7 +192,7 @@ postInstructorR ident = do
                     do let localize x = localTimeToUTCTZ (tzByLabel tzlabel) (LocalTime x midnight)
                        success <- tryInsert $ Course title (unTextarea <$> coursedesc) iid Nothing (localize startdate) (localize enddate) 0 (toTZName tzlabel)
                        if success then setMessage "Course Created" 
-                                  else setMessage "Could not save---this course already exists"
+                                  else setMessage "Could not save. Course titles must be unique. Consider adding your instutition or the current semester as a suffix."
                 Nothing -> setMessage "you're not an instructor!"
         (FormFailure s) -> setMessage $ "Something went wrong: " ++ toMarkup (show s)
         FormMissing -> return ()
@@ -256,26 +249,19 @@ getInstructorR ident = do
 
 getInstructorDownloadR :: Text -> Text -> Handler TypedContent
 getInstructorDownloadR ident coursetitle = do
-    musr <- runDB $ getBy $ UniqueUser ident
-    case musr of 
+    mcourse <- runDB $ getBy $ UniqueCourse coursetitle
+    checkCourseOwnership coursetitle
+    case mcourse of 
         Nothing -> notFound
-        (Just (Entity uid usr))  -> do
-            mud <- runDB $ getBy (UniqueUserData uid)
-            case (entityVal <$> mud) >>= userDataInstructorId of
-                Nothing -> notFound
-                Just iid -> do
-                    mcourse <- runDB $ getBy $ UniqueCourse coursetitle iid
-                    case mcourse of 
-                        Nothing -> notFound
-                        Just course -> do
-                            csv <- classCSV course
-                            addHeader "Content-Disposition" $ concat
-                              [ "attachment;"
-                              , "filename=\""
-                              , "export.csv"
-                              , "\""
-                              ]
-                            sendResponse (typeOctet, csv)
+        Just course -> do
+            csv <- classCSV course
+            addHeader "Content-Disposition" $ concat
+              [ "attachment;"
+              , "filename=\""
+              , "export.csv"
+              , "\""
+              ]
+            sendResponse (typeOctet, csv)
 
 ---------------------
 --  Message Types  --

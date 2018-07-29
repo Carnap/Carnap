@@ -95,7 +95,7 @@ Course
     endDate UTCTime
     totalPoints Int
     timeZone ByteString --timezones are stored as tznames
-    UniqueCourse title instructor
+    UniqueCourse title
     deriving Eq
 
  -- By default this file is used in Model.hs (which is imported by Foundation.hs)
