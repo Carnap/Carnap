@@ -54,47 +54,32 @@ getAssignmentByFilename filename =
                             Nothing -> do setMessage "you need to be enrolled in a course to access assignments"
                                           redirect HomeR
            Entity _ instructor <- udByInstructorId $ courseInstructor course
-           Just instructorident <- getIdent (userDataUserId instructor)
-           mdoc <- runDB $ getBy (UniqueDocument filename (userDataUserId instructor))
-           case mdoc of 
-                Nothing -> setMessage "document record not found" >> redirect HomeR
-                Just (Entity docid doc)-> do
-                   adir <- assignmentDir instructorident
-                   let path = adir </> unpack filename
-                   exists <- lift $ doesFileExist path
-                   ment <- runDB $ getBy $ UniqueAssignment docid cid
-                   if not exists 
-                     then do setMessage "you need to be enrolled in a course to access assignments"
-                             redirect HomeR
-                     else case ment of
-                              Nothing -> do setMessage "you need to be enrolled in a course to access assignments"
-                                            redirect HomeR
-                              Just ent -> return (ent, path)
+           retrieveAssignment filename (userDataUserId instructor) cid
 
 getAssignmentByCourseAndFilename coursetitle filename = 
         do muid <- maybeAuthId
-           let unwrap m = case m of Nothing -> setMessage "you to be a registered instructor with this course title" >> redirect HomeR
+           let unwrap m = case m of Nothing -> permissionDenied "you to be a registered instructor for this course"
                                     Just m -> return m
            (iid, uid, cid) <- do uid <- unwrap muid 
                                  iid <- checkUserData uid >>= unwrap . userDataInstructorId 
                                  Entity cid _ <- (runDB $ getBy $ UniqueCourse coursetitle iid) >>= unwrap
                                  return (iid, uid, cid)
-           Just ident <- getIdent uid
-           mdoc <- runDB $ getBy (UniqueDocument filename uid)
+           retrieveAssignment filename uid cid
+
+retrieveAssignment filename creatorUid cid = do
+           mdoc <- runDB $ getBy (UniqueDocument filename creatorUid)
            case mdoc of 
-                Nothing -> setMessage "document record not found" >> redirect HomeR
-                Just (Entity docid doc)-> do
+                Nothing -> setMessage ("can't find document record with filename " ++ toHtml filename) >> notFound
+                Just (Entity docid doc) -> do
+                   Just ident <- getIdent creatorUid
                    adir <- assignmentDir ident
                    let path = adir </> unpack filename
                    exists <- lift $ doesFileExist path
                    ment <- runDB $ getBy $ UniqueAssignment docid cid
-                   if not exists 
-                     then do setMessage "you need to be enrolled in a course to access assignments"
-                             redirect HomeR
-                     else case ment of
-                              Nothing -> do setMessage "you need to be enrolled in a course to access assignments"
-                                            redirect HomeR
-                              Just ent -> return (ent, path)
+                   case ment of
+                      Just ent | exists -> return (ent, path)
+                               | not exists -> setMessage ("file not found at " ++ toHtml path) >> notFound
+                      _ -> permissionDenied "you need to be enrolled in a course to access assignments"
 
 -- | given a UserId, return Just the user data or Nothing
 getUserMD uid = do mmd <- runDB $ getBy $ UniqueUserData uid
@@ -136,8 +121,11 @@ instructorIdByIdent ident = runDB $ do muent <- getBy $ UniqueUser ident
                                        return $ (entityVal <$> mudent) >>= userDataInstructorId
 
 -- | user data by InstructorId
-udByInstructorId id = do [uid] <- runDB $ selectList [UserDataInstructorId ==. Just id] []
-                         return uid
+udByInstructorId id = do l <- runDB $ selectList [UserDataInstructorId ==. Just id] []
+                         case l of [uid] -> return uid 
+                                   [] -> error $ "couldn't find any user data for instructor " ++ show id
+                                   l -> error $ "Multipe user data for instructor " ++ show id
+
 
 getProblemQuery uid cid = do asl <- runDB $ map entityKey <$> selectList [AssignmentMetadataCourse ==. cid] []
                              return $ problemQuery uid asl
