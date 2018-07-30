@@ -16,8 +16,10 @@ tryInsert s = runDB $ do munique <- checkUnique s
                                              return True
 
 -- | retrieve a UserId = Key User, from the user's ident.
-fromIdent ident = runDB $ do (Just (Entity k _)) <- getBy $ UniqueUser ident 
-                             return k
+fromIdent ident = do mident <- runDB (getBy $ UniqueUser ident)
+                     case mident of 
+                        Nothing -> setMessage ("no user " ++ toHtml ident) >> notFound
+                        Just (Entity k _) -> return k
 
 -- | retrieve an ident from a UserId
 getIdent uid = do muser <- runDB $ get uid
@@ -46,8 +48,8 @@ assignmentDir ident = do master <- getYesod
 getAssignmentByFilename filename = 
         do muid <- maybeAuthId
            ud <- case muid of
-                         Nothing -> setMessage "you need to be logged in to access assignments" >> redirect HomeR
-                         Just uid -> checkUserData uid
+                   Nothing -> setMessage "you need to be logged in to access assignments" >> redirect HomeR
+                   Just uid -> checkUserData uid
            (course,cid) <- case userDataEnrolledIn ud of
                             Just cid -> do Just course <- runDB $ get cid
                                            return (course,cid)
@@ -58,13 +60,24 @@ getAssignmentByFilename filename =
 
 getAssignmentByCourseAndFilename coursetitle filename = 
         do muid <- maybeAuthId
-           case muid of 
-             Nothing -> permissionDenied "you to be a registered instructor for this course"
-             Just uid -> do 
-                mcourse <- runDB $ getBy $ UniqueCourse coursetitle
-                case mcourse of 
-                  Nothing -> setMessage "no class with this title" >> notFound
-                  Just (Entity cid _) -> retrieveAssignment filename uid cid
+           uid <- case muid of 
+                    Nothing -> permissionDenied "you to be a registered instructor for this course"
+                    Just uid -> return uid
+           mcourse <- runDB $ getBy $ UniqueCourse coursetitle
+           case mcourse of 
+             Nothing -> setMessage "no class with this title" >> notFound
+             Just (Entity cid _) -> retrieveAssignment filename uid cid
+
+getAssignmentByOwnerAndFilename ident filename =
+        do muid <- maybeAuthId
+           ud <- case muid of
+                   Nothing -> setMessage "you need to be logged in to access assignments" >> redirect HomeR
+                   Just uid -> checkUserData uid
+           uid <- fromIdent ident
+           case userDataEnrolledIn ud of
+             Nothing -> do setMessage "you need to be enrolled in a course to access assignments" >> redirect HomeR
+             Just cid -> retrieveAssignment filename uid cid
+           
 
 checkCourseOwnership coursetitle = do
            mcourse <- runDB $ getBy $ UniqueCourse coursetitle

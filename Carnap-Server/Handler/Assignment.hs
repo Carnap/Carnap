@@ -55,10 +55,13 @@ getAssignmentsR = do muid <- maybeAuthId
 getAssignmentR :: Text -> Handler Html
 getAssignmentR filename = getAssignmentByFilename filename >>= uncurry returnAssignment
 
-
 getCourseAssignmentR :: Text -> Text -> Handler Html
 getCourseAssignmentR coursename filename = getAssignmentByCourseAndFilename coursename filename >>= uncurry returnAssignment
 
+getAssignmentByOwnerR :: Text -> Text -> Handler Html
+getAssignmentByOwnerR owner filename = getAssignmentByOwnerAndFilename owner filename >>= uncurry returnAssignment
+
+returnAssignment :: Entity AssignmentMetadata -> FilePath -> Handler Html
 returnAssignment (Entity key val) path = do
            time <- liftIO getCurrentTime
            if visibleAt time val 
