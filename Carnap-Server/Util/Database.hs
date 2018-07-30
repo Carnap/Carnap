@@ -58,11 +58,13 @@ getAssignmentByFilename filename =
 
 getAssignmentByCourseAndFilename coursetitle filename = 
         do muid <- maybeAuthId
-           let unwrap m = case m of Nothing -> permissionDenied "you to be a registered instructor for this course"
-                                    Just m -> return m
-           uid <- unwrap muid 
-           Entity cid _ <- (runDB $ getBy $ UniqueCourse coursetitle) >>= unwrap
-           retrieveAssignment filename uid cid
+           case muid of 
+             Nothing -> permissionDenied "you to be a registered instructor for this course"
+             Just uid -> do 
+                mcourse <- runDB $ getBy $ UniqueCourse coursetitle
+                case mcourse of 
+                  Nothing -> setMessage "no class with this title" >> notFound
+                  Just (Entity cid _) -> retrieveAssignment filename uid cid
 
 checkCourseOwnership coursetitle = do
            mcourse <- runDB $ getBy $ UniqueCourse coursetitle
@@ -80,6 +82,7 @@ checkCourseOwnership coursetitle = do
 
 retrieveAssignment filename creatorUid cid = do
            mdoc <- runDB $ getBy (UniqueDocument filename creatorUid)
+           Entity cid _ <- (runDB $ getBy $ UniqueCourse coursetitle) >>= unwrap
            case mdoc of 
                 Nothing -> setMessage ("can't find document record with filename " ++ toHtml filename) >> notFound
                 Just (Entity docid doc) -> do
