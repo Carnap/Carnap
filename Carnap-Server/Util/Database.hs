@@ -82,7 +82,6 @@ checkCourseOwnership coursetitle = do
 
 retrieveAssignment filename creatorUid cid = do
            mdoc <- runDB $ getBy (UniqueDocument filename creatorUid)
-           Entity cid _ <- (runDB $ getBy $ UniqueCourse coursetitle) >>= unwrap
            case mdoc of 
                 Nothing -> setMessage ("can't find document record with filename " ++ toHtml filename) >> notFound
                 Just (Entity docid doc) -> do
