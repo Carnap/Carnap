@@ -45,7 +45,7 @@ assignmentDir ident = do master <- getYesod
 
 -- | given a filename, retrieve the associated assignment for the course
 -- you're currently enrolled in and the path to the file.
-getAssignmentByFilename filename = 
+getAssignment filename = 
         do muid <- maybeAuthId
            ud <- case muid of
                    Nothing -> setMessage "you need to be logged in to access assignments" >> redirect HomeR
@@ -58,7 +58,7 @@ getAssignmentByFilename filename =
            Entity _ instructor <- udByInstructorId $ courseInstructor course
            retrieveAssignment filename (userDataUserId instructor) cid
 
-getAssignmentByCourseAndFilename coursetitle filename = 
+getAssignmentByCourse coursetitle filename = 
         do muid <- maybeAuthId
            uid <- case muid of 
                     Nothing -> permissionDenied "you to be a registered instructor for this course"
@@ -68,7 +68,7 @@ getAssignmentByCourseAndFilename coursetitle filename =
              Nothing -> setMessage "no class with this title" >> notFound
              Just (Entity cid _) -> retrieveAssignment filename uid cid
 
-getAssignmentByOwnerAndFilename ident filename =
+getAssignmentByOwner ident filename =
         do muid <- maybeAuthId
            ud <- case muid of
                    Nothing -> setMessage "you need to be logged in to access assignments" >> redirect HomeR
@@ -77,7 +77,13 @@ getAssignmentByOwnerAndFilename ident filename =
            case userDataEnrolledIn ud of
              Nothing -> do setMessage "you need to be enrolled in a course to access assignments" >> redirect HomeR
              Just cid -> retrieveAssignment filename uid cid
-           
+
+getAssignmentByCourseAndOwner coursetitle ident filename =
+        do uid <- fromIdent ident
+           mcourse <- runDB $ getBy $ UniqueCourse coursetitle
+           case mcourse of
+             Nothing -> do setMessage "no class with this title" >> notFound
+             Just (Entity cid _) -> retrieveAssignment filename uid cid
 
 checkCourseOwnership coursetitle = do
            mcourse <- runDB $ getBy $ UniqueCourse coursetitle

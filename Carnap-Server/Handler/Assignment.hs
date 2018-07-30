@@ -53,13 +53,16 @@ getAssignmentsR = do muid <- maybeAuthId
                           |]
 
 getAssignmentR :: Text -> Handler Html
-getAssignmentR filename = getAssignmentByFilename filename >>= uncurry returnAssignment
+getAssignmentR filename = getAssignment filename >>= uncurry returnAssignment
 
 getCourseAssignmentR :: Text -> Text -> Handler Html
-getCourseAssignmentR coursename filename = getAssignmentByCourseAndFilename coursename filename >>= uncurry returnAssignment
+getCourseAssignmentR coursename filename = getAssignmentByCourse coursename filename >>= uncurry returnAssignment
 
 getAssignmentByOwnerR :: Text -> Text -> Handler Html
-getAssignmentByOwnerR owner filename = getAssignmentByOwnerAndFilename owner filename >>= uncurry returnAssignment
+getAssignmentByOwnerR owner filename = getAssignmentByOwner owner filename >>= uncurry returnAssignment
+
+getAssignmentByCourseAndOwnerR :: Text -> Text -> Text -> Handler Html
+getAssignmentByCourseAndOwnerR coursetitle owner filename = getAssignmentByCourseAndOwner coursetitle owner filename >>= uncurry returnAssignment
 
 returnAssignment :: Entity AssignmentMetadata -> FilePath -> Handler Html
 returnAssignment (Entity key val) path = do

@@ -11,7 +11,7 @@ import Carnap.GHCJS.SharedFunctions (simpleCipher)
 
 putReviewR :: Text -> Text -> Handler Value
 putReviewR coursetitle filename =
-        do (Entity key val, _) <- getAssignmentByCourseAndFilename coursetitle filename
+        do (Entity key val, _) <- getAssignmentByCourse coursetitle filename
            ((theUpdate,_),_) <- runFormPost (identifyForm "updateSubmission" $ updateSubmissionForm Nothing "" "")
            case theUpdate of
                FormSuccess (ident, serializeduid, extra) -> do
@@ -27,7 +27,7 @@ putReviewR coursetitle filename =
 
 getReviewR :: Text -> Text -> Handler Html
 getReviewR coursetitle filename = 
-        do (Entity key val, _) <- getAssignmentByCourseAndFilename coursetitle filename
+        do (Entity key val, _) <- getAssignmentByCourse coursetitle filename
            unsortedProblems <- runDB $ selectList [ProblemSubmissionAssignmentId ==. Just key] []
            uidAndUser  <- runDB $ do let uids = nub $ map (problemSubmissionUserId . entityVal) unsortedProblems
                                      musers <- mapM get uids
