@@ -136,12 +136,13 @@ instance Yesod App where
 
     --this route is for getting assignments by coursename and filename, and
     --is for instructors only
-    isAuthorized (CourseAssignmentR _ _) _ = 
+    isAuthorized (FullAssignmentR courseTitle _ _) _ = 
         do (Entity uid user) <- requireAuth
-           let ident = userIdent user
-           instructors <- instructorIdentList
-           return $ if (ident `elem` instructors)
-                       || ident == "gleachkr@gmail.com"
+           mcourse <- runDB $ getBy (UniqueCourse courseTitle)
+           course <- case mcourse of Just c -> return c; _ -> setMessage "no course with that title" >> notFound
+           instructors <- runDB $ selectList [UserDataInstructorId ==. Just (courseInstructor $ entityVal course)] []
+           return $ if uid `elem` map (userDataUserId . entityVal) instructors 
+                       || userIdent user == "gleachkr@gmail.com"
                     then Authorized
                     else Unauthorized "It appears you're not authorized to access this page"
 

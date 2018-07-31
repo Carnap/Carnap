@@ -534,6 +534,9 @@ classWidget ident classent = do
        allUserData <- map entityVal <$> (runDB $ selectList [UserDataEnrolledIn ==. Just cid] [])
        asmd <- runDB $ selectList [AssignmentMetadataCourse ==. cid] []
        asDocs <- mapM (runDB . get) (map (assignmentMetadataDocument . entityVal) asmd)
+       asDocIdents <- forM asDocs $ \md -> case md of 
+                        Just d -> getIdent . documentCreator $ d
+                        Nothing -> return Nothing
        let allUids = (map userDataUserId  allUserData)
        musers <- mapM (\x -> runDB (get x)) allUids
        let users = catMaybes musers
@@ -557,10 +560,10 @@ classWidget ident classent = do
                                         <td>Problem Set #{show set}
                                         <td>#{dateDisplay due course}
                                         ^{analyticsFor (Right (pack (show set))) allScores}
-                        $forall (Entity k a, Just d) <- zip asmd asDocs
+                        $forall (Entity k a, Just d, Just i) <- zip3 asmd asDocs asDocIdents
                             <tr>
                                 <td>
-                                    <a href=@{CourseAssignmentR (courseTitle course) (documentFilename d)}>
+                                    <a href=@{FullAssignmentR (courseTitle course) i (documentFilename d)}>
                                         #{documentFilename d}
                                 $maybe due <- assignmentMetadataDuedate a
                                     <td>#{dateDisplay due course}

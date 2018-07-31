@@ -16,9 +16,8 @@
 /instructor/#Text/#Text/download    InstructorDownloadR GET
 /master_admin                       AdminR              GET POST DELETE
 /hash/#Text                         HashedR             GET
-/assignments/                       AssignmentsR        GET
 /assignments/#Text                  AssignmentR         GET
-/assignments/#Text/#Text            CourseAssignmentR   GET
+/assignments/#Text/#Text/#Text      FullAssignmentR     GET
 /review/#Text/#Text/#Text           ReviewR             GET PUT
 /rules                              RuleR               GET
 /shared                             DocumentsR          GET

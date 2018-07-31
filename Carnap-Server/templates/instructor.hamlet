@@ -75,7 +75,7 @@
                             $forall (Entity k a, c, Just d, Just i) <- zip4 assignmentMetadata assignmentCourses assignmentDocs assignmentDocIdents
                                 <tr id="assignment-#{courseTitle c}-#{documentFilename d}">
                                     <td>
-                                        <a href=@{CourseAssignmentR (courseTitle c) (documentFilename d)}>
+                                        <a href=@{FullAssignmentR (courseTitle c) i (documentFilename d)}>
                                             #{documentFilename d}
                                     $maybe due <- assignmentMetadataDuedate a
                                         <td>#{dateDisplay due c}

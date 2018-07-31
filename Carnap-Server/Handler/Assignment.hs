@@ -1,4 +1,4 @@
-module Handler.Assignment (getAssignmentR, getAssignmentsR, getCourseAssignmentR) where
+module Handler.Assignment (getAssignmentR, getFullAssignmentR) where
 
 import Import
 import Util.Data
@@ -12,57 +12,14 @@ import Filter.ProofCheckers
 import Filter.Translate
 import Filter.TruthTables
 
-getAssignmentsR :: Handler Html
-getAssignmentsR = do muid <- maybeAuthId
-                     ud <- case muid of
-                                 Nothing -> 
-                                    do setMessage "you need to be logged in to access assignments"
-                                       redirect HomeR
-                                 Just uid -> checkUserData uid
-                     (course,cid) <- case userDataEnrolledIn ud of
-                                      Just cid -> do Just course <- runDB $ get cid
-                                                     return (course,cid)
-                                      Nothing -> do setMessage "you need to be enrolled in a course to access assignments"
-                                                    redirect HomeR
-                     Entity _ instructor <- udByInstructorId $ courseInstructor course
-                     Just instructorident <- getIdent (userDataUserId instructor)
-                     time <- liftIO getCurrentTime
-                     assignmentMD <- runDB $ selectList 
-                                                ([AssignmentMetadataCourse ==. cid] 
-                                                ++ ([AssignmentMetadataVisibleTill >. Just time] ||. [AssignmentMetadataVisibleTill ==. Nothing])
-                                                ++ ([AssignmentMetadataVisibleFrom <. Just time] ||. [AssignmentMetadataVisibleFrom ==. Nothing]))
-                                                []
-                     adir <- assignmentDir instructorident
-                     adirContents <- lift $ getDirectoryContents adir
-                     asDocs <- mapM (runDB . get) (map (assignmentMetadataDocument . entityVal) assignmentMD)
-                     defaultLayout
-                          [whamlet|
-                              <div.container>
-                                  <h1>Assignments
-                                  <ul>
-                                      $forall (Entity _ a, Just d) <- zip assignmentMD asDocs
-                                          <li>
-                                            <div.assignment>
-                                                <p>
-                                                    <a href=@{AssignmentR $ documentFilename d}>
-                                                        #{documentFilename d}
-                                                $maybe desc <- assignmentMetadataDescription a
-                                                    <p> #{desc}
-                                                $nothing
-                                                <p>Due: #{show $ assignmentMetadataDuedate a}
-                          |]
-
 getAssignmentR :: Text -> Handler Html
 getAssignmentR filename = getAssignment filename >>= uncurry returnAssignment
-
-getCourseAssignmentR :: Text -> Text -> Handler Html
-getCourseAssignmentR coursename filename = getAssignmentByCourse coursename filename >>= uncurry returnAssignment
 
 getAssignmentByOwnerR :: Text -> Text -> Handler Html
 getAssignmentByOwnerR owner filename = getAssignmentByOwner owner filename >>= uncurry returnAssignment
 
-getAssignmentByCourseAndOwnerR :: Text -> Text -> Text -> Handler Html
-getAssignmentByCourseAndOwnerR coursetitle owner filename = getAssignmentByCourseAndOwner coursetitle owner filename >>= uncurry returnAssignment
+getFullAssignmentR :: Text -> Text -> Text -> Handler Html
+getFullAssignmentR coursetitle owner filename = getAssignmentByCourseAndOwner coursetitle owner filename >>= uncurry returnAssignment
 
 returnAssignment :: Entity AssignmentMetadata -> FilePath -> Handler Html
 returnAssignment (Entity key val) path = do

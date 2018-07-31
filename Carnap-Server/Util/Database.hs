@@ -82,17 +82,15 @@ getAssignmentByCourseAndOwner coursetitle ident filename =
 
 checkCourseOwnership coursetitle = do
            mcourse <- runDB $ getBy $ UniqueCourse coursetitle
-           muid <- maybeAuthId
-           case muid of 
-             Nothing -> permissionDenied "this doesn't appear to be your course"
-             Just uid -> case mcourse of 
-               Nothing -> setMessage "course not found" >> notFound
-               Just (Entity cid course) -> do
-                 Just user <- runDB (get uid)
-                 classes <- classesByInstructorIdent (userIdent user)
-                 if course `elem` map entityVal classes 
-                     then return () 
-                     else permissionDenied "this doesn't appear to be your course"
+           Entity uid _ <- requireAuth
+           case mcourse of 
+             Nothing -> setMessage "course not found" >> notFound
+             Just (Entity cid course) -> do
+               Just user <- runDB (get uid)
+               classes <- classesByInstructorIdent (userIdent user)
+               if course `elem` map entityVal classes 
+                   then return () 
+                   else permissionDenied "this doesn't appear to be your course"
 
 retrieveAssignment filename creatorUid cid = do
            mdoc <- runDB $ getBy (UniqueDocument filename creatorUid)
