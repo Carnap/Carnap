@@ -9,9 +9,9 @@ import Yesod.Form.Bootstrap3
 import Carnap.GHCJS.SharedTypes
 import Carnap.GHCJS.SharedFunctions (simpleCipher)
 
-putReviewR :: Text -> Text -> Handler Value
-putReviewR coursetitle filename =
-        do (Entity key val, _) <- getAssignmentByCourse coursetitle filename
+putReviewR :: Text -> Text -> Text -> Handler Value
+putReviewR coursetitle owner filename =
+        do (Entity key val, _) <- getAssignmentByCourseAndOwner coursetitle owner filename
            ((theUpdate,_),_) <- runFormPost (identifyForm "updateSubmission" $ updateSubmissionForm Nothing "" "")
            case theUpdate of
                FormSuccess (ident, serializeduid, extra) -> do
@@ -25,9 +25,9 @@ putReviewR coursetitle filename =
                FormMissing -> returnJson ("no form" :: Text)
                (FormFailure s) -> returnJson ("error:" <> concat s :: Text)
 
-getReviewR :: Text -> Text -> Handler Html
-getReviewR coursetitle filename = 
-        do (Entity key val, _) <- getAssignmentByCourse coursetitle filename
+getReviewR :: Text -> Text -> Text -> Handler Html
+getReviewR coursetitle owner filename = 
+        do (Entity key val, _) <- getAssignmentByCourseAndOwner coursetitle owner filename
            unsortedProblems <- runDB $ selectList [ProblemSubmissionAssignmentId ==. Just key] []
            uidAndUser  <- runDB $ do let uids = nub $ map (problemSubmissionUserId . entityVal) unsortedProblems
                                      musers <- mapM get uids

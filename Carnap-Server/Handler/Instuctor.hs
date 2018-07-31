@@ -239,6 +239,9 @@ getInstructorR ident = do
             instructorCourses <- classesByInstructorIdent ident
             assignmentMetadata <- concat <$> mapM (listAssignmentMetadata . entityKey) classes
             assignmentDocs <- mapM (runDB . get) (map (assignmentMetadataDocument . entityVal) assignmentMetadata)
+            assignmentDocIdents <- forM assignmentDocs $ \md -> case md of 
+                                    Just d -> getIdent . documentCreator $ d
+                                    Nothing -> return Nothing
             documents <- runDB $ selectList [DocumentCreator ==. uid] []
             assignmentCourses <- forM assignmentMetadata $ \c -> do 
                                     Just e <- runDB $ get (assignmentMetadataCourse . entityVal $ c)

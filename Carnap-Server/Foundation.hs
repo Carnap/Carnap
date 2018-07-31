@@ -124,7 +124,7 @@ instance Yesod App where
 
     --this is the route to the review area for a given course and
     --assignment, and is for instructors only.
-    isAuthorized (ReviewR _ _) _ = 
+    isAuthorized (ReviewR _ _ _) _ = 
         do (Entity uid user) <- requireAuth
            let ident = userIdent user
            instructors <- instructorIdentList

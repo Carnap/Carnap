@@ -19,7 +19,7 @@
 /assignments/                       AssignmentsR        GET
 /assignments/#Text                  AssignmentR         GET
 /assignments/#Text/#Text            CourseAssignmentR   GET
-/review/#Text/#Text                 ReviewR             GET PUT
+/review/#Text/#Text/#Text           ReviewR             GET PUT
 /rules                              RuleR               GET
 /shared                             DocumentsR          GET
 /shared/#Text/#Text                 DocumentR           GET
