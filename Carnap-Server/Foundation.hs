@@ -124,12 +124,13 @@ instance Yesod App where
 
     --this is the route to the review area for a given course and
     --assignment, and is for instructors only.
-    isAuthorized (ReviewR _ _ _) _ = 
+    isAuthorized (ReviewR courseTitle _ _) _ = 
         do (Entity uid user) <- requireAuth
-           let ident = userIdent user
-           instructors <- instructorIdentList
-           return $ if (ident `elem` instructors)
-                       || ident == "gleachkr@gmail.com"
+           mcourse <- runDB $ getBy (UniqueCourse courseTitle)
+           course <- case mcourse of Just c -> return c; _ -> setMessage "no course with that title" >> notFound
+           instructors <- runDB $ selectList [UserDataInstructorId ==. Just (courseInstructor $ entityVal course)] []
+           return $ if uid `elem` map (userDataUserId . entityVal) instructors 
+                       || userIdent user == "gleachkr@gmail.com"
                     then Authorized
                     else Unauthorized "It appears you're not authorized to access this page"
 

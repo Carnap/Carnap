@@ -59,20 +59,15 @@ getAssignment filename =
            retrieveAssignment filename (userDataUserId instructor) cid
 
 getAssignmentByCourse coursetitle filename = 
-        do muid <- maybeAuthId
-           uid <- case muid of 
-                    Nothing -> permissionDenied "you to be a registered instructor for this course"
-                    Just uid -> return uid
+        do Entity uid _ <- requireAuth
            mcourse <- runDB $ getBy $ UniqueCourse coursetitle
            case mcourse of 
              Nothing -> setMessage "no class with this title" >> notFound
              Just (Entity cid _) -> retrieveAssignment filename uid cid
 
 getAssignmentByOwner ident filename =
-        do muid <- maybeAuthId
-           ud <- case muid of
-                   Nothing -> setMessage "you need to be logged in to access assignments" >> redirect HomeR
-                   Just uid -> checkUserData uid
+        do Entity uid _ <- requireAuth
+           ud <- checkUserData uid
            uid <- fromIdent ident
            case userDataEnrolledIn ud of
              Nothing -> do setMessage "you need to be enrolled in a course to access assignments" >> redirect HomeR
@@ -158,7 +153,6 @@ udByInstructorId id = do l <- runDB $ selectList [UserDataInstructorId ==. Just 
                          case l of [uid] -> return uid 
                                    [] -> error $ "couldn't find any user data for instructor " ++ show id
                                    l -> error $ "Multipe user data for instructor " ++ show id
-
 
 getProblemQuery uid cid = do asl <- runDB $ map entityKey <$> selectList [AssignmentMetadataCourse ==. cid] []
                              return $ problemQuery uid asl
