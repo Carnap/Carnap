@@ -28,6 +28,12 @@ function tryDeleteDocument (json) {
         }
     }
 
+function tryDeleteCoInstructor (json, ln, fn) {
+    if (confirm("Are you sure you want to permanently remove Co-Instructor " + fn + " " + ln + "?")) {
+        deleteCoInstructor(json, ln, fn);
+        }
+    }
+
 function tryDeleteCourse (json) {
     var cn = JSON.parse(json).contents;
     if (confirm("Are you sure you want to permanently delete the course " + cn 
@@ -60,6 +66,23 @@ function modalEditCourse (id) {
     $("#updateCourseData").modal({show:true});
     $("#updateCourse input[name=f1]").val(id);
 }
+
+function deleteCoInstructor (json,ln,fn) {
+    jQuery.ajax({
+        url: '@{InstructorR ident}',
+        type: 'DELETE',
+        contentType: "application/json",
+        data: json,
+        success: function(data) {
+            var el = $("#Co-Instructor-" + $.escapeSelector(ln) + "-" + $.escapeSelector(fn));
+            el.remove();
+            window.alert("Removed Co-Instructor " + fn + " " + ln);
+            },
+        error: function(data) {
+            window.alert("Error, couldn't remove co-instructor " + fn + " " + ln)
+            },
+        });
+    };
 
 function deleteAssignment (json,fn,ct) {
     jQuery.ajax({

@@ -140,6 +140,7 @@ deleteInstructorR ident = do
                                            return True
            if dropped then returnJson (sident ++ " dropped")
                       else returnJson ("couldn't drop " ++ sident)
+      DeleteCoInstructor ciid -> runDB (deleteCascade ciid) >> returnJson ("Deleted" :: Text)
 
 postInstructorR :: Text -> Handler Html
 postInstructorR ident = do
@@ -303,6 +304,7 @@ data InstructorDelete = DeleteAssignment AssignmentMetadataId
                       | DeleteCourse Text
                       | DeleteDocument Text
                       | DropStudent Text
+                      | DeleteCoInstructor CoInstructorId
     deriving Generic
 
 instance ToJSON InstructorDelete
@@ -642,9 +644,11 @@ classWidget ident instructors classent = do
                         $else
                             <dt.col-sm-3>Co-Instructors
                             <dd.col-sm-9>
-                                $forall co <- map entityVal coInstructorUD
-                                    <span>#{userDataFirstName co},
-                                    <span> #{userDataLastName co}
+                                $forall (Entity _ coud, Entity ciid _) <- zip coInstructorUD coInstructors
+                                    <div#Co-Instructor-#{userDataLastName coud}-#{userDataFirstName coud}>
+                                        <i.fa.fa-trash-o style="cursor:pointer" onclick="tryDeleteCoInstructor('#{decodeUtf8 $ encode $ DeleteCoInstructor ciid}','#{userDataLastName coud}', '#{userDataFirstName coud}')">
+                                        <span>#{userDataFirstName coud},
+                                        <span> #{userDataLastName coud}
                     <div.row>
                         <div.col-sm-6 style="padding:5px">
                             <form.form-inline method=post enctype=#{enctypeAddCoInstructor}>
