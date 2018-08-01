@@ -148,7 +148,7 @@ instructorIdByIdent ident = runDB $ do muent <- getBy $ UniqueUser ident
 
 -- | user data by InstructorId
 udByInstructorId id = do l <- runDB $ selectList [UserDataInstructorId ==. Just id] []
-                         case l of [uid] -> return uid 
+                         case l of [ud] -> return ud 
                                    [] -> error $ "couldn't find any user data for instructor " ++ show id
                                    l -> error $ "Multipe user data for instructor " ++ show id
 

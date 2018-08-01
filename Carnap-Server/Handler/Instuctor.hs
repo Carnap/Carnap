@@ -145,10 +145,12 @@ postInstructorR :: Text -> Handler Html
 postInstructorR ident = do
     classes <- classesByInstructorIdent ident
     docs <- documentsByInstructorIdent ident
+    instructors <- runDB $ selectList [UserDataInstructorId !=. Nothing] []
     ((assignmentrslt,_),_) <- runFormPost (identifyForm "uploadAssignment" $ uploadAssignmentForm classes docs)
     ((documentrslt,_),_)   <- runFormPost (identifyForm "uploadDocument" $ uploadDocumentForm)
     ((newclassrslt,_),_)   <- runFormPost (identifyForm "createCourse" createCourseForm)
     ((frombookrslt,_),_)   <- runFormPost (identifyForm "setBookAssignment" $ setBookAssignmentForm classes)
+    ((instructorrslt,_),_) <- runFormPost (identifyForm "addCoinstructor" $ addCoInstructorForm instructors ("" :: String))
     case assignmentrslt of 
         (FormSuccess (doc, Entity classkey theclass, mdue,mduetime,mfrom,mfromtime,mtill,mtilltime, massignmentdesc, subtime)) ->
             do let (Just tz) = tzByName . courseTimeZone $ theclass
@@ -223,6 +225,16 @@ postInstructorR ident = do
                 Nothing -> update classkey [CourseTextbookProblems =. (Just $ BookAssignmentTable $ Data.IntMap.fromList [(theassignment, due)])]
         (FormFailure s) -> setMessage $ "Something went wrong: " ++ toMarkup (show s)
         FormMissing -> return ()
+    case instructorrslt of
+        (FormSuccess (cidstring , Just iid)) ->
+            case readMaybe cidstring of
+                Just cid -> do success <- tryInsert $ CoInstructor iid cid
+                               if success then setMessage "Added Co-Instructor!"
+                                          else setMessage "Co-Instructor seems to already be added"
+                Nothing -> setMessage "Couldn't read cid string"
+        (FormSuccess (_, Nothing)) -> setMessage "iid missing"
+        (FormFailure s) -> setMessage $ "Something went wrong: " ++ toMarkup (show s)
+        FormMissing -> return ()
     redirect $ InstructorR ident
 
 getInstructorR :: Text -> Handler Html
@@ -234,8 +246,9 @@ getInstructorR ident = do
             UserData firstname lastname enrolledin _ _ <- checkUserData uid 
             classes <- classesByInstructorIdent ident 
             docs <- documentsByInstructorIdent ident 
+            instructors <- runDB $ selectList [UserDataInstructorId !=. Nothing] []
             let tags = map tagOf classes
-            classWidgets <- mapM (classWidget ident) classes
+            classWidgets <- mapM (classWidget ident instructors) classes
             instructorCourses <- classesByInstructorIdent ident
             assignmentMetadata <- concat <$> mapM (listAssignmentMetadata . entityKey) classes
             assignmentDocs <- mapM (runDB . get) (map (assignmentMetadataDocument . entityVal) assignmentMetadata)
@@ -517,6 +530,25 @@ updateCourseForm = renderBootstrap3 BootstrapBasicForm $ (,,,,)
     where courseId :: (Monad m, RenderMessage (HandlerSite m) FormMessage) => Field m String
           courseId = hiddenField
 
+addCoInstructorForm instructors cid extra = do
+    (courseRes,courseView) <- mreq courseId "" Nothing
+    (instRes, instView) <- mreq (selectFieldList $ map toItem instructors) (bfs ("Instructor" :: Text)) Nothing
+    let theRes = (,) <$> courseRes <*> instRes
+        widget = do
+            [whamlet|
+            #{extra}
+            ^{fvInput courseView}
+            <div.input-group>
+                ^{fvInput instView}
+            <div.input-group>
+                <input.btn.btn-primary onclick="submitAddInstructor(this,'#{cid}')" value="Add Co-Instructor">
+            |]
+    return (theRes,widget)
+    where courseId :: (Monad m, RenderMessage (HandlerSite m) FormMessage) => Field m String
+          courseId = hiddenField
+
+          toItem (Entity _ i) = (userDataLastName i ++ ", " ++ userDataFirstName i, userDataInstructorId i) 
+
 saveTo thedir fn file = do
         datadir <- appDataRoot <$> (appSettings <$> getYesod)
         let path = datadir </> thedir
@@ -526,12 +558,15 @@ saveTo thedir fn file = do
                if e then removeFile (path </> fn) else return ()
                fileMove file (path </> fn)
 
-classWidget :: Text -> Entity Course -> HandlerT App IO Widget
-classWidget ident classent = do
+classWidget :: Text -> [Entity UserData] -> Entity Course ->  HandlerT App IO Widget
+classWidget ident instructors classent = do
        let cid = entityKey classent
            course = entityVal classent
            mprobs = readAssignmentTable <$> courseTextbookProblems course :: Maybe (IntMap UTCTime)
+       coInstructors <- runDB $ selectList [CoInstructorCourse ==. cid] []
+       coInstructorUD <- mapM udByInstructorId (map (coInstructorIdent . entityVal) coInstructors)
        allUserData <- map entityVal <$> (runDB $ selectList [UserDataEnrolledIn ==. Just cid] [])
+       (addCoInstructorWidget,enctypeAddCoInstructor) <- generateFormPost (identifyForm "addCoinstructor" $ addCoInstructorForm instructors (show cid))
        asmd <- runDB $ selectList [AssignmentMetadataCourse ==. cid] []
        asDocs <- mapM (runDB . get) (map (assignmentMetadataDocument . entityVal) asmd)
        asDocIdents <- forM asDocs $ \md -> case md of 
@@ -603,12 +638,24 @@ classWidget ident classent = do
                         <dd.col-sm-9>#{dateDisplay (courseEndDate course) course}
                         <dt.col-sm-3>Time Zone
                         <dd.col-sm-9>#{decodeUtf8 $ courseTimeZone course}
-                    <button.btn.btn-sm.btn-secondary type="button"  onclick="modalEditCourse('#{show cid}')">
-                        Edit Course Information
-                    <button.btn.btn-sm.btn-secondary type="button" onclick="location.href='@{InstructorDownloadR ident (courseTitle course)}';">
-                        Export Grades as .csv
-                    <button.btn.btn-sm.btn-danger type="button" onclick="tryDeleteCourse('#{decodeUtf8 $ encode $ DeleteCourse (courseTitle course)}')">
-                        Delete Course
+                        $if null coInstructors 
+                        $else
+                            <dt.col-sm-3>Co-Instructors
+                            <dd.col-sm-9>
+                                $forall co <- map entityVal coInstructorUD
+                                    <span>#{userDataFirstName co},
+                                    <span> #{userDataLastName co}
+                    <div.row>
+                        <div.col-sm-6 style="padding:5px">
+                            <form.form-inline method=post enctype=#{enctypeAddCoInstructor}>
+                                ^{addCoInstructorWidget}
+                        <div.col-sm-6 style="padding:5px">
+                            <button.btn.btn-secondary type="button"  onclick="modalEditCourse('#{show cid}')">
+                                Edit Information
+                            <button.btn.btn-secondary type="button" onclick="location.href='@{InstructorDownloadR ident (courseTitle course)}';">
+                                Export Grades
+                            <button.btn.btn-danger type="button" onclick="tryDeleteCourse('#{decodeUtf8 $ encode $ DeleteCourse (courseTitle course)}')">
+                                Delete Course
               |]
     where totalByUser uident scores = case lookup uident scores of
                                 Just xs -> show $ foldr (+) 0 (map snd xs)
@@ -633,6 +680,7 @@ classWidget ident classent = do
                           <td>
                               #{average}
                           |]
+
 classCSV :: Entity Course -> HandlerT App IO Content
 classCSV classent = do
        let cid = entityKey classent

@@ -86,6 +86,11 @@ Document
 
 InstructorMetadata
 
+CoInstructor
+    ident InstructorMetadataId
+    course CourseId
+    UniqueCoInstructor ident course
+
 Course
     title Text
     description Text Maybe

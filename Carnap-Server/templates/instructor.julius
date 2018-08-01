@@ -9,6 +9,12 @@ $("a[data-toggle='tab']").click(function(){
 
 $("textarea").addClass("form-control")
 
+function submitAddInstructor(elt,cid) {
+    var form = elt.form
+    $(form).children("input[name=f1]").val(cid);
+    form.submit()
+    }
+
 function tryDeleteAssignment (json,fn,ct) {
     if (confirm("Are you sure you want to delete the assignment " + fn + ", and all submitted problems from this assignment?")) {
         deleteAssignment(json,fn,ct);
