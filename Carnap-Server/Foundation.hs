@@ -128,7 +128,9 @@ instance Yesod App where
         do (Entity uid user) <- requireAuth
            mcourse <- runDB $ getBy (UniqueCourse courseTitle)
            course <- case mcourse of Just c -> return c; _ -> setMessage "no course with that title" >> notFound
-           instructors <- runDB $ selectList [UserDataInstructorId ==. Just (courseInstructor $ entityVal course)] []
+           coInstructors <-  runDB $ map entityVal <$> selectList [CoInstructorCourse ==. entityKey course] []
+           instructors <- runDB $ selectList ([UserDataInstructorId ==. Just (courseInstructor $ entityVal course)]
+                                             ||. [UserDataInstructorId <-. map (Just . coInstructorIdent) coInstructors]) []
            return $ if uid `elem` map (userDataUserId . entityVal) instructors 
                        || userIdent user == "gleachkr@gmail.com"
                     then Authorized
@@ -140,7 +142,9 @@ instance Yesod App where
         do (Entity uid user) <- requireAuth
            mcourse <- runDB $ getBy (UniqueCourse courseTitle)
            course <- case mcourse of Just c -> return c; _ -> setMessage "no course with that title" >> notFound
-           instructors <- runDB $ selectList [UserDataInstructorId ==. Just (courseInstructor $ entityVal course)] []
+           coInstructors <-  runDB $ map entityVal <$> selectList [CoInstructorCourse ==. entityKey course] []
+           instructors <- runDB $ selectList ([UserDataInstructorId ==. Just (courseInstructor $ entityVal course)]
+                                             ||. [UserDataInstructorId <-. map (Just . coInstructorIdent) coInstructors]) []
            return $ if uid `elem` map (userDataUserId . entityVal) instructors 
                        || userIdent user == "gleachkr@gmail.com"
                     then Authorized
@@ -227,7 +231,6 @@ instance Yesod App where
             return $ object $ ["message" .= ("Permission Denied. " <> msg)]
 
     errorHandler other = defaultErrorHandler other
-
 
 instance YesodJquery App where
         urlJqueryJs _ = Right "https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"

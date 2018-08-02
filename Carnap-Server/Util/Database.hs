@@ -126,14 +126,9 @@ classesByInstructorIdent ident = runDB $ do muent <- getBy $ UniqueUser ident
                                                 Just instructordata -> do 
                                                     owned <- selectList [CourseInstructor ==. instructordata ] []
                                                     coInstructor <- map entityVal <$> selectList [CoInstructorIdent ==. instructordata] []
-                                                    coOwned <- catMaybes <$> mapM (lookup . coInstructorCourse) coInstructor
+                                                    coOwned <- selectList [CourseId <-. (map coInstructorCourse coInstructor)] []
                                                     return (owned ++ coOwned)
                                                 Nothing -> return []
-        where lookup key = do mval <- get key
-                              case mval of 
-                                Just val -> return (Just (Entity key val))
-                                Nothing -> return Nothing
-                                 
 
 documentsByInstructorIdent ident = runDB $ do muent <- getBy $ UniqueUser ident
                                               case entityKey <$> muent of
