@@ -117,14 +117,22 @@ getUserMD uid = do mmd <- runDB $ getBy $ UniqueUserData uid
 getProblemSets cid = do mcourse <- runDB $ get cid
                         return $ mcourse >>= courseTextbookProblems
 
--- | classes by instructor Ident
+-- | class entities by instructor Ident - returns owned and co-instructed classes
 classesByInstructorIdent ident = runDB $ do muent <- getBy $ UniqueUser ident
                                             mudent <- case entityKey <$> muent of 
                                                            Just uid -> getBy $ UniqueUserData uid
                                                            Nothing -> return Nothing
                                             case (entityVal <$> mudent) >>= userDataInstructorId of
-                                                Just instructordata -> selectList [CourseInstructor ==. instructordata ] []
+                                                Just instructordata -> do 
+                                                    owned <- selectList [CourseInstructor ==. instructordata ] []
+                                                    coInstructor <- map entityVal <$> selectList [CoInstructorIdent ==. instructordata] []
+                                                    coOwned <- catMaybes <$> mapM (lookup . coInstructorCourse) coInstructor
+                                                    return (owned ++ coOwned)
                                                 Nothing -> return []
+        where lookup key = do mval <- get key
+                              case mval of 
+                                Just val -> return (Just (Entity key val))
+                                Nothing -> return Nothing
                                  
 
 documentsByInstructorIdent ident = runDB $ do muent <- getBy $ UniqueUser ident
