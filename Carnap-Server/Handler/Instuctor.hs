@@ -260,9 +260,6 @@ getInstructorR ident = do
             instructorCourses <- classesByInstructorIdent ident
             assignmentMetadata <- concat <$> mapM (listAssignmentMetadata . entityKey) classes
             assignmentDocs <- mapM (runDB . get) (map (assignmentMetadataDocument . entityVal) assignmentMetadata)
-            assignmentDocIdents <- forM assignmentDocs $ \md -> case md of 
-                                    Just d -> getIdent . documentCreator $ d
-                                    Nothing -> return Nothing
             documents <- runDB $ selectList [DocumentCreator ==. uid] []
             assignmentCourses <- forM assignmentMetadata $ \c -> do 
                                     Just e <- runDB $ get (assignmentMetadataCourse . entityVal $ c)
@@ -578,9 +575,6 @@ classWidget ident instructors classent = do
        (addCoInstructorWidget,enctypeAddCoInstructor) <- generateFormPost (identifyForm "addCoinstructor" $ addCoInstructorForm instructors (show cid))
        asmd <- runDB $ selectList [AssignmentMetadataCourse ==. cid] []
        asDocs <- mapM (runDB . get) (map (assignmentMetadataDocument . entityVal) asmd)
-       asDocIdents <- forM asDocs $ \md -> case md of 
-                        Just d -> getIdent . documentCreator $ d
-                        Nothing -> return Nothing
        let allUids = (map userDataUserId  allUserData)
        musers <- mapM (\x -> runDB (get x)) allUids
        let users = catMaybes musers
@@ -604,10 +598,10 @@ classWidget ident instructors classent = do
                                         <td>Problem Set #{show set}
                                         <td>#{dateDisplay due course}
                                         ^{analyticsFor (Right (pack (show set))) allScores}
-                        $forall (Entity k a, Just d, Just i) <- zip3 asmd asDocs asDocIdents
+                        $forall (Entity k a, Just d) <- zip asmd asDocs
                             <tr>
                                 <td>
-                                    <a href=@{FullAssignmentR (courseTitle course) i (documentFilename d)}>
+                                    <a href=@{CourseAssignmentR (courseTitle course) (documentFilename d)}>
                                         #{documentFilename d}
                                 $maybe due <- assignmentMetadataDuedate a
                                     <td>#{dateDisplay due course}

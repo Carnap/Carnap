@@ -1,6 +1,6 @@
 $(".updateSubmission").submit(function(e) {
     jQuery.ajax({
-        url: '@{ReviewR coursetitle owner filename}',
+        url: '@{ReviewR coursetitle filename}',
         type: 'PUT',
         data: new FormData(this),
         processData: false,

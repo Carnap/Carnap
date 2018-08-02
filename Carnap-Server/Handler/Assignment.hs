@@ -1,4 +1,4 @@
-module Handler.Assignment (getAssignmentR, getFullAssignmentR) where
+module Handler.Assignment (getAssignmentR, getCourseAssignmentR) where
 
 import Import
 import Util.Data
@@ -15,11 +15,8 @@ import Filter.TruthTables
 getAssignmentR :: Text -> Handler Html
 getAssignmentR filename = getAssignment filename >>= uncurry returnAssignment
 
-getAssignmentByOwnerR :: Text -> Text -> Handler Html
-getAssignmentByOwnerR owner filename = getAssignmentByOwner owner filename >>= uncurry returnAssignment
-
-getFullAssignmentR :: Text -> Text -> Text -> Handler Html
-getFullAssignmentR coursetitle owner filename = getAssignmentByCourseAndOwner coursetitle owner filename >>= uncurry returnAssignment
+getCourseAssignmentR :: Text -> Text -> Handler Html
+getCourseAssignmentR coursetitle filename = getAssignmentByCourse coursetitle filename >>= uncurry returnAssignment
 
 returnAssignment :: Entity AssignmentMetadata -> FilePath -> Handler Html
 returnAssignment (Entity key val) path = do

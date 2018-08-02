@@ -124,7 +124,7 @@ instance Yesod App where
 
     --this is the route to the review area for a given course and
     --assignment, and is for instructors only.
-    isAuthorized (ReviewR courseTitle _ _) _ = 
+    isAuthorized (ReviewR courseTitle _) _ = 
         do (Entity uid user) <- requireAuth
            mcourse <- runDB $ getBy (UniqueCourse courseTitle)
            course <- case mcourse of Just c -> return c; _ -> setMessage "no course with that title" >> notFound
@@ -138,7 +138,7 @@ instance Yesod App where
 
     --this route is for getting assignments by coursename and filename, and
     --is for instructors only
-    isAuthorized (FullAssignmentR courseTitle _ _) _ = 
+    isAuthorized (CourseAssignmentR courseTitle _) _ = 
         do (Entity uid user) <- requireAuth
            mcourse <- runDB $ getBy (UniqueCourse courseTitle)
            course <- case mcourse of Just c -> return c; _ -> setMessage "no course with that title" >> notFound

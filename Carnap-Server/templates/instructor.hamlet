@@ -72,10 +72,10 @@
                             <th> Course
                             <th> Actions
                         <tbody>
-                            $forall (Entity k a, c, Just d, Just i) <- zip4 assignmentMetadata assignmentCourses assignmentDocs assignmentDocIdents
+                            $forall (Entity k a, c, Just d) <- zip3 assignmentMetadata assignmentCourses assignmentDocs
                                 <tr id="assignment-#{courseTitle c}-#{documentFilename d}">
                                     <td>
-                                        <a href=@{FullAssignmentR (courseTitle c) i (documentFilename d)}>
+                                        <a href=@{CourseAssignmentR (courseTitle c) (documentFilename d)}>
                                             #{documentFilename d}
                                     $maybe due <- assignmentMetadataDuedate a
                                         <td>#{dateDisplay due c}
@@ -98,7 +98,7 @@
                                             <i.fa.fa-trash-o>
                                         <button.btn.btn-sm.btn-secondary alt="edit" title="edit this assignment" type="button"  onclick="modalEditAssignment('#{show k}')">
                                             <i.fa.fa-cog>
-                                        <a.btn.btn-sm.btn-secondary alt="review" title="review and assign partial credit" href=@{ReviewR (courseTitle c) i (documentFilename d)}>
+                                        <a.btn.btn-sm.btn-secondary alt="review" title="review and assign partial credit" href=@{ReviewR (courseTitle c) (documentFilename d)}>
                                             <i.fa.fa-pencil>
 
                 <div.tab-pane id="uploadDocument" role="tabpanel">
