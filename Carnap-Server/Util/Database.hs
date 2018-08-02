@@ -50,20 +50,19 @@ getAssignment filename =
            ud <- case muid of
                    Nothing -> setMessage "you need to be logged in to access assignments" >> redirect HomeR
                    Just uid -> checkUserData uid
-           (course,cid) <- case userDataEnrolledIn ud of
+           coursent <- case userDataEnrolledIn ud of
                             Just cid -> do Just course <- runDB $ get cid
-                                           return (course,cid)
+                                           return (Entity cid course)
                             Nothing -> do setMessage "you need to be enrolled in a course to access assignments"
                                           redirect HomeR
-           Entity _ instructor <- udByInstructorId $ courseInstructor course
-           retrieveAssignment filename (userDataUserId instructor) cid
+           retrieveAssignment coursent filename 
 
 getAssignmentByCourse coursetitle filename = 
         do Entity uid _ <- requireAuth
            mcourse <- runDB $ getBy $ UniqueCourse coursetitle
            case mcourse of 
              Nothing -> setMessage "no class with this title" >> notFound
-             Just (Entity cid _) -> retrieveAssignment filename uid cid
+             Just c -> retrieveAssignment c filename 
 
 getAssignmentByOwner ident filename =
         do Entity uid _ <- requireAuth
@@ -71,14 +70,18 @@ getAssignmentByOwner ident filename =
            uid <- fromIdent ident
            case userDataEnrolledIn ud of
              Nothing -> do setMessage "you need to be enrolled in a course to access assignments" >> redirect HomeR
-             Just cid -> retrieveAssignment filename uid cid
+             Just cid -> do 
+               mcourse <- runDB $ get cid 
+               case mcourse of
+                   Nothing -> error ("no course found with cid " ++ show cid)
+                   Just course -> retrieveAssignment (Entity cid course) filename 
 
 getAssignmentByCourseAndOwner coursetitle ident filename =
         do uid <- fromIdent ident
            mcourse <- runDB $ getBy $ UniqueCourse coursetitle
            case mcourse of
              Nothing -> do setMessage "no class with this title" >> notFound
-             Just (Entity cid _) -> retrieveAssignment filename uid cid
+             Just c -> retrieveAssignment c filename 
 
 checkCourseOwnership coursetitle = do
            mcourse <- runDB $ getBy $ UniqueCourse coursetitle
@@ -92,20 +95,29 @@ checkCourseOwnership coursetitle = do
                    then return () 
                    else permissionDenied "this doesn't appear to be your course"
 
-retrieveAssignment filename creatorUid cid = do
-           mdoc <- runDB $ getBy (UniqueDocument filename creatorUid)
-           case mdoc of 
-                Nothing -> setMessage ("can't find document record with filename " ++ toHtml filename) >> notFound
-                Just (Entity docid doc) -> do
-                   Just ident <- getIdent creatorUid
-                   adir <- assignmentDir ident
-                   let path = adir </> unpack filename
-                   exists <- lift $ doesFileExist path
-                   ment <- runDB $ getBy $ UniqueAssignment docid cid
-                   case ment of
-                      Just ent | exists -> return (ent, path)
-                               | not exists -> setMessage ("file not found at " ++ toHtml path) >> notFound
-                      _ -> permissionDenied "you need to be enrolled in a course to access assignments"
+retrieveAssignment (Entity cid course) filename = do
+           coinstructors <- runDB $ map entityVal <$> selectList [CoInstructorCourse ==. cid] []
+           instructorUids <- runDB $ map (userDataUserId . entityVal) 
+                                  <$> selectList  ( [UserDataInstructorId ==. Just (courseInstructor course)] 
+                                                ||. [UserDataInstructorId <-. map (Just . coInstructorIdent) coinstructors]) []
+           docs <- runDB $ selectList [DocumentFilename ==. filename, DocumentCreator <-. instructorUids] []
+           case docs of 
+                [] -> setMessage ("can't find document record with filename " ++ toHtml filename) >> notFound
+                docs -> do
+                   let lookup (Entity k doc)= do 
+                            masgn <- getBy $ UniqueAssignment k cid
+                            case masgn of Nothing -> return Nothing; Just asgn -> return (Just (doc,asgn))
+                   asgns <- runDB $ catMaybes <$> mapM lookup docs
+                   case asgns of
+                      [] -> setMessage ("can't find assignment for this course with filename" ++ toHtml filename) >> notFound
+                      [(doc,asgn)] -> do
+                           Just ident <- getIdent (documentCreator doc)
+                           adir <- assignmentDir ident
+                           let path = adir </> unpack filename
+                           exists <- lift $ doesFileExist path
+                           if exists then return (asgn, path)
+                                     else setMessage ("file not found at " ++ toHtml path) >> notFound
+                      _ -> error "more than one assignment for this course is associated with this filename"
 
 -- | given a UserId, return Just the user data or Nothing
 getUserMD uid = do mmd <- runDB $ getBy $ UniqueUserData uid
@@ -118,17 +130,18 @@ getProblemSets cid = do mcourse <- runDB $ get cid
                         return $ mcourse >>= courseTextbookProblems
 
 -- | class entities by instructor Ident - returns owned and co-instructed classes
-classesByInstructorIdent ident = runDB $ do muent <- getBy $ UniqueUser ident
-                                            mudent <- case entityKey <$> muent of 
-                                                           Just uid -> getBy $ UniqueUserData uid
-                                                           Nothing -> return Nothing
-                                            case (entityVal <$> mudent) >>= userDataInstructorId of
-                                                Just instructordata -> do 
-                                                    owned <- selectList [CourseInstructor ==. instructordata ] []
-                                                    coInstructor <- map entityVal <$> selectList [CoInstructorIdent ==. instructordata] []
-                                                    coOwned <- selectList [CourseId <-. (map coInstructorCourse coInstructor)] []
-                                                    return (owned ++ coOwned)
-                                                Nothing -> return []
+classesByInstructorIdent ident = runDB $ do 
+           muent <- getBy $ UniqueUser ident
+           mudent <- case entityKey <$> muent of 
+                          Just uid -> getBy $ UniqueUserData uid
+                          Nothing -> return Nothing
+           case (entityVal <$> mudent) >>= userDataInstructorId of
+               Just instructordata -> do 
+                   owned <- selectList [CourseInstructor ==. instructordata ] []
+                   coInstructor <- map entityVal <$> selectList [CoInstructorIdent ==. instructordata] []
+                   coOwned <- selectList [CourseId <-. (map coInstructorCourse coInstructor)] []
+                   return (owned ++ coOwned)
+               Nothing -> return []
 
 documentsByInstructorIdent ident = runDB $ do muent <- getBy $ UniqueUser ident
                                               case entityKey <$> muent of

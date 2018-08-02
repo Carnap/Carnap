@@ -163,17 +163,24 @@ postInstructorR ident = do
                    localfrom = localize (mfrom,mfromtime)
                    localtill = localize (mtill,mtilltime)
                    info = unTextarea <$> massignmentdesc
-               success <- tryInsert $ AssignmentMetadata 
-                                        { assignmentMetadataDocument = (entityKey doc)
-                                        , assignmentMetadataDescription = info 
-                                        , assignmentMetadataDuedate = (localTimeToUTCTZ tz <$> localdue) 
-                                        , assignmentMetadataVisibleFrom = (localTimeToUTCTZ tz <$> localfrom)
-                                        , assignmentMetadataVisibleTill = (localTimeToUTCTZ tz <$> localtill)
-                                        , assignmentMetadataDate = subtime
-                                        , assignmentMetadataCourse = classkey
-                                        }
-               if success then return ()
-                          else setMessage "This file has already been assigned for this course"
+                   thename = documentFilename (entityVal doc)
+               asgned <- runDB $ selectList [AssignmentMetadataCourse ==. classkey] []
+               dupes <- runDB $ filter (\x -> documentFilename (entityVal x) == thename) 
+                                <$> selectList [DocumentId <-. map (assignmentMetadataDocument . entityVal) asgned] []
+               if not (null dupes) 
+                   then setMessage "Names for assignments must be unique within a course, and it looks like you already have an assignment with this name"
+                   else do
+                       success <- tryInsert $ AssignmentMetadata 
+                                                { assignmentMetadataDocument = (entityKey doc)
+                                                , assignmentMetadataDescription = info 
+                                                , assignmentMetadataDuedate = (localTimeToUTCTZ tz <$> localdue) 
+                                                , assignmentMetadataVisibleFrom = (localTimeToUTCTZ tz <$> localfrom)
+                                                , assignmentMetadataVisibleTill = (localTimeToUTCTZ tz <$> localtill)
+                                                , assignmentMetadataDate = subtime
+                                                , assignmentMetadataCourse = classkey
+                                                }
+                       if success then return ()
+                                  else setMessage "This file has already been assigned for this course"
         (FormFailure s) -> setMessage $ "Something went wrong: " ++ toMarkup (show s)
         FormMissing -> return ()
     case documentrslt of 
