@@ -29,7 +29,7 @@ function tryDeleteDocument (json) {
     }
 
 function tryDeleteCoInstructor (json, ln, fn) {
-    if (confirm("Are you sure you want to permanently remove Co-Instructor " + fn + " " + ln + "?")) {
+    if (confirm("Are you sure you want to remove Co-Instructor " + fn + " " + ln + "? This will permanently delete all assignments for this course created by this co-instructor, and all student work submitted for those assignments")) {
         deleteCoInstructor(json, ln, fn);
         }
     }

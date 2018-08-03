@@ -140,7 +140,8 @@ deleteInstructorR ident = do
                                            return True
            if dropped then returnJson (sident ++ " dropped")
                       else returnJson ("couldn't drop " ++ sident)
-      DeleteCoInstructor ciid -> runDB (deleteCascade ciid) >> returnJson ("Deleted" :: Text)
+      DeleteCoInstructor ciid -> do
+          runDB (deleteCascade ciid) >> returnJson ("Deleted" :: Text)
 
 postInstructorR :: Text -> Handler Html
 postInstructorR ident = do
@@ -153,8 +154,13 @@ postInstructorR ident = do
     ((frombookrslt,_),_)   <- runFormPost (identifyForm "setBookAssignment" $ setBookAssignmentForm classes)
     ((instructorrslt,_),_) <- runFormPost (identifyForm "addCoinstructor" $ addCoInstructorForm instructors ("" :: String))
     case assignmentrslt of 
-        (FormSuccess (doc, Entity classkey theclass, mdue,mduetime,mfrom,mfromtime,mtill,mtilltime, massignmentdesc, subtime)) ->
-            do let (Just tz) = tzByName . courseTimeZone $ theclass
+        FormSuccess (doc, Entity classkey theclass, mdue,mduetime,mfrom,mfromtime,mtill,mtilltime, massignmentdesc, subtime) ->
+            do Entity uid user <- requireAuth
+               Just iid <- instructorIdByIdent (userIdent user)
+               mciid <- if courseInstructor theclass == iid 
+                            then return Nothing
+                            else runDB $ getBy (UniqueCoInstructor iid classkey)
+               let (Just tz) = tzByName . courseTimeZone $ theclass
                    localize (mdate,mtime) = case (mdate,mtime) of
                               (Just date, Just time) -> Just $ LocalTime date time
                               (Just date,_)  -> Just $ LocalTime date (TimeOfDay 23 59 59)
@@ -163,6 +169,7 @@ postInstructorR ident = do
                    localfrom = localize (mfrom,mfromtime)
                    localtill = localize (mtill,mtilltime)
                    info = unTextarea <$> massignmentdesc
+                   theassigner = mciid
                    thename = documentFilename (entityVal doc)
                asgned <- runDB $ selectList [AssignmentMetadataCourse ==. classkey] []
                dupes <- runDB $ filter (\x -> documentFilename (entityVal x) == thename) 
@@ -171,24 +178,25 @@ postInstructorR ident = do
                    then setMessage "Names for assignments must be unique within a course, and it looks like you already have an assignment with this name"
                    else do
                        success <- tryInsert $ AssignmentMetadata 
-                                                { assignmentMetadataDocument = (entityKey doc)
+                                                { assignmentMetadataDocument = entityKey doc
                                                 , assignmentMetadataDescription = info 
-                                                , assignmentMetadataDuedate = (localTimeToUTCTZ tz <$> localdue) 
-                                                , assignmentMetadataVisibleFrom = (localTimeToUTCTZ tz <$> localfrom)
-                                                , assignmentMetadataVisibleTill = (localTimeToUTCTZ tz <$> localtill)
+                                                , assignmentMetadataAssigner = entityKey <$> theassigner
+                                                , assignmentMetadataDuedate = localTimeToUTCTZ tz <$> localdue
+                                                , assignmentMetadataVisibleFrom = localTimeToUTCTZ tz <$> localfrom
+                                                , assignmentMetadataVisibleTill = localTimeToUTCTZ tz <$> localtill
                                                 , assignmentMetadataDate = subtime
                                                 , assignmentMetadataCourse = classkey
                                                 }
                        if success then return ()
                                   else setMessage "This file has already been assigned for this course"
-        (FormFailure s) -> setMessage $ "Something went wrong: " ++ toMarkup (show s)
+        FormFailure s -> setMessage $ "Something went wrong: " ++ toMarkup (show s)
         FormMissing -> return ()
     case documentrslt of 
-        (FormSuccess (file, sharescope, docdesc, subtime)) ->
+        FormSuccess (file, sharescope, docdesc, subtime) ->
             do musr <- runDB $ getBy $ UniqueUser ident
                let fn = fileName file
                    info = unTextarea <$> docdesc
-                   (Just uid) = musr -- FIXME: catch Nothing here
+                   Just uid = musr -- FIXME: catch Nothing here
                success <- tryInsert $ Document
                                         { documentFilename = fn
                                         , documentDate = subtime
@@ -198,10 +206,10 @@ postInstructorR ident = do
                                         }
                if success then saveTo ("documents" </> unpack ident) (unpack fn) file 
                           else setMessage "You already have a shared document with this name."
-        (FormFailure s) -> setMessage $ "Something went wrong: " ++ toMarkup (show s)
+        FormFailure s -> setMessage $ "Something went wrong: " ++ toMarkup (show s)
         FormMissing -> return ()
     case newclassrslt of
-        (FormSuccess (title, coursedesc, startdate, enddate, tzlabel)) -> do
+        FormSuccess (title, coursedesc, startdate, enddate, tzlabel) -> do
             miid <- instructorIdByIdent ident
             case miid of
                 Just iid -> 
@@ -219,11 +227,11 @@ postInstructorR ident = do
                        if success then setMessage "Course Created" 
                                   else setMessage "Could not save. Course titles must be unique. Consider adding your instutition or the current semester as a suffix."
                 Nothing -> setMessage "you're not an instructor!"
-        (FormFailure s) -> setMessage $ "Something went wrong: " ++ toMarkup (show s)
+        FormFailure s -> setMessage $ "Something went wrong: " ++ toMarkup (show s)
         FormMissing -> return ()
     case frombookrslt of
-        (FormSuccess (Entity classkey theclass, theassignment, duedate, mduetime)) -> runDB $ do
-            let (Just tz) = tzByName . courseTimeZone $ theclass
+        FormSuccess (Entity classkey theclass, theassignment, duedate, mduetime) -> runDB $ do
+            let Just tz = tzByName . courseTimeZone $ theclass
                 localdue = case mduetime of
                               Just time -> LocalTime duedate time
                               _ -> LocalTime duedate (TimeOfDay 23 59 59)
@@ -231,7 +239,7 @@ postInstructorR ident = do
             case readAssignmentTable <$> courseTextbookProblems theclass of
                 Just assign -> update classkey [CourseTextbookProblems =. (Just $ BookAssignmentTable $ Data.IntMap.insert theassignment due assign)]
                 Nothing -> update classkey [CourseTextbookProblems =. (Just $ BookAssignmentTable $ Data.IntMap.fromList [(theassignment, due)])]
-        (FormFailure s) -> setMessage $ "Something went wrong: " ++ toMarkup (show s)
+        FormFailure s -> setMessage $ "Something went wrong: " ++ toMarkup (show s)
         FormMissing -> return ()
     case instructorrslt of
         (FormSuccess (cidstring , Just iid)) ->
@@ -240,8 +248,8 @@ postInstructorR ident = do
                                if success then setMessage "Added Co-Instructor!"
                                           else setMessage "Co-Instructor seems to already be added"
                 Nothing -> setMessage "Couldn't read cid string"
-        (FormSuccess (_, Nothing)) -> setMessage "iid missing"
-        (FormFailure s) -> setMessage $ "Something went wrong: " ++ toMarkup (show s)
+        FormSuccess (_, Nothing) -> setMessage "iid missing"
+        FormFailure s -> setMessage $ "Something went wrong: " ++ toMarkup (show s)
         FormMissing -> return ()
     redirect $ InstructorR ident
 

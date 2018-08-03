@@ -68,6 +68,7 @@ SavedDerivedRule
 AssignmentMetadata
     document DocumentId
     description Text Maybe
+    assigner CoInstructorId Maybe
     duedate UTCTime Maybe
     visibleFrom UTCTime Maybe
     visibleTill UTCTime Maybe
