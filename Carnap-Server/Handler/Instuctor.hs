@@ -659,16 +659,17 @@ classWidget ident instructors classent = do
                                         <span>#{userDataFirstName coud},
                                         <span> #{userDataLastName coud}
                     <div.row>
-                        <div.col-sm-6 style="padding:5px">
+                        <div.col-xl-6.col-lg-12 style="padding:5px">
                             <form.form-inline method=post enctype=#{enctypeAddCoInstructor}>
                                 ^{addCoInstructorWidget}
-                        <div.col-sm-6 style="padding:5px">
-                            <button.btn.btn-secondary type="button"  onclick="modalEditCourse('#{show cid}')">
-                                Edit Information
-                            <button.btn.btn-secondary type="button" onclick="location.href='@{InstructorDownloadR ident (courseTitle course)}';">
-                                Export Grades
-                            <button.btn.btn-danger type="button" onclick="tryDeleteCourse('#{decodeUtf8 $ encode $ DeleteCourse (courseTitle course)}')">
-                                Delete Course
+                        <div.col-xl-6.col-lg-12 style="padding:5px">
+                            <div.float-xl-right>
+                                <button.btn.btn-secondary style="width:160px" type="button"  onclick="modalEditCourse('#{show cid}')">
+                                    Edit Information
+                                <button.btn.btn-secondary style="width:160px" type="button" onclick="location.href='@{InstructorDownloadR ident (courseTitle course)}';">
+                                    Export Grades
+                                <button.btn.btn-danger style="width:160px" type="button" onclick="tryDeleteCourse('#{decodeUtf8 $ encode $ DeleteCourse (courseTitle course)}')">
+                                    Delete Course
               |]
     where totalByUser uident scores = case lookup uident scores of
                                 Just xs -> show $ foldr (+) 0 (map snd xs)
