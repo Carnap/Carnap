@@ -60,7 +60,7 @@ citations = char '(' *> ((read <$> many1 digit)`sepBy` (char ',' >> spaces)) <* 
 annotation :: Parsec String u String
 annotation = many (oneOf ['a' .. 'z'])
 
-scope = char '[' *> parseInts <* char ']'
+scope = (char '[' *> parseInts <* char ']') <|> (char '{' *> parseInts <* char '}')
 
 toDeductionLemmon :: (Int -> String -> Parsec String () [r]) -> Parsec String () (FixLang lex a) -> String 
     -> Deduction r lex a

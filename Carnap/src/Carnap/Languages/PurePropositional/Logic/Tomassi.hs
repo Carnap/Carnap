@@ -36,8 +36,8 @@ instance Show TomassiPL where
         show AndE2 = "&E"
         show MP = "MP"
         show MT = "MT"
-        show DNI = "~I"
-        show DNE = "~E"
+        show DNI = "DNI"
+        show DNE = "DNE"
         show BCI = "↔I"
         show BCE = "↔E"
         show ORI1 = "∨I"
@@ -83,7 +83,7 @@ instance Inference TomassiPL PurePropLexicon (Form Bool) where
         isAssumption (Pr _) = True
         isAssumption _ = False
 
-parseTomassiPL rtc n _ = do r <- choice (map (try . string) [ "&I", "&E", "MP", "MT", "~I", "~E", "↔I", "<->I", "↔E", "<->E"
+parseTomassiPL rtc n _ = do r <- choice (map (try . string) [ "&I", "&E", "MP", "MT", "~I", "DNI", "~E", "DNE", "↔I", "<->I", "↔E", "<->E"
                                                             , "∨I", "\\/I", "∨E", "\\/E", "As", "CP", "RAA", "Pr"])
                             return $ case r of 
                                   r | r == "As" -> [As]
@@ -92,8 +92,8 @@ parseTomassiPL rtc n _ = do r <- choice (map (try . string) [ "&I", "&E", "MP", 
                                     | r == "&E" -> [AndE1, AndE2]
                                     | r == "MP" -> [MP]
                                     | r == "MT" -> [MT]
-                                    | r == "~I" -> [DNI]
-                                    | r == "~E" -> [DNE]
+                                    | r `elem` ["~I","DNI"] -> [DNI]
+                                    | r `elem` ["~E","DNE"] -> [DNE]
                                     | r `elem` ["↔I","<->I"] -> [BCI]
                                     | r `elem` ["↔E","<->E"] -> [BCE]
                                     | r `elem` ["∨I", "\\/I"] -> [ORI1, ORI2]
