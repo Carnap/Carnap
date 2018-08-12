@@ -36,6 +36,7 @@ data CheckerOptions = CheckerOptions { submit :: Maybe Button -- What's the subm
                                      , autoIndent :: Bool -- Should the checker indent automatically?
                                      , autoResize :: Bool -- Should the checker resize automatically?
                                      , popout :: Bool -- Should the checker be able to be put in a new window?
+                                     , hideNumbering :: Bool -- Should the checker hide the line numbering
                                      }
 
 checkerWith :: CheckerOptions -> (Document -> IORef Bool -> String -> (Element, Element) -> IO ()) -> IOGoal -> Document -> IO ()
@@ -55,8 +56,8 @@ checkerWith options updateres iog@(IOGoal i o g content _) w = do
                 ++ "Perhaps there's an unwarranted assumption being used?")
                 Nothing
            setInnerHTML sd (Just spinnerSVG)
-           mpar@(Just par) <- getParentNode o               
-           mapM_ (appendChild o . Just) [nd, fd]
+           mpar@(Just par) <- getParentNode o
+           mapM_ (appendChild o . Just) (if hideNumbering options then [fd] else [nd, fd])
            mapM_ (appendChild aligner . Just) [o, i]
            mapM_ (appendChild g . Just) [sd, incompleteAlert]
            mapM_ (appendChild par . Just) [aligner,bw]

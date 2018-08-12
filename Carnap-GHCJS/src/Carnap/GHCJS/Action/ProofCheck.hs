@@ -165,6 +165,7 @@ activateChecker drs w (Just iog@(IOGoal i o g _ opts)) -- TODO: need to update n
                                                  , autoIndent = "indent" `elem` optlist
                                                  , autoResize= "resize" `elem` optlist
                                                  , popout = "popout" `elem` optlist
+                                                 , hideNumbering = "hideNumbering" `elem` optlist
                                                  }
                         saveRule = Button {label = "Save" , action = trySave drs}
                         optlist = case M.lookup "options" opts of Just s -> words s; Nothing -> []
