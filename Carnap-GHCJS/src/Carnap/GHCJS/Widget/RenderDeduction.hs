@@ -5,7 +5,7 @@ import Lib
 import Data.Maybe (catMaybes)
 import Carnap.Core.Data.AbstractSyntaxDataTypes
 import Carnap.Core.Data.AbstractSyntaxClasses
-import Carnap.Calculi.NaturalDeduction.Syntax (DeductionLine(..), Deduction(..), depth)
+import Carnap.Calculi.NaturalDeduction.Syntax (DeductionLine(..), Deduction(..), depth, LemmonVariant(..))
 import GHCJS.DOM.Types (Document,Element)
 import GHCJS.DOM.Element (setInnerHTML,setAttribute)
 import GHCJS.DOM.Node (appendChild)
@@ -95,11 +95,13 @@ lineBase w n mf mrd lineclass =
            setAttribute theWrapper "class" lineclass
            return (theWrapper,theLine,theForm,theRule)
 
-renderTreeLemmon w = treeToElement asLine asSubproof
+renderTreeLemmon v w = treeToElement asLine asSubproof
     where asLine (n,DependentAssertLine f r deps dis scope) = 
                 do [theWrapper,lineNum,theForm,theRule,theScope] <- catMaybes <$> mapM (createElement w . Just) ["div","span","span","span","span"]
                    setInnerHTML lineNum (Just $ "(" ++ show n ++ ")")
-                   setInnerHTML theScope (Just $ show scope)
+                   case v of
+                       StandardLemmon -> setInnerHTML theScope (Just $ show scope)
+                       TomassiStyle -> setInnerHTML theScope (Just $ "{" ++ intercalate "," (map show scope) ++ "}")
                    setAttribute theRule "class" "rule"
                    setInnerHTML theRule (Just $ show (head r) ++ showdischarged ++ showdeps)
                    setInnerHTML theForm (Just $ show f)
@@ -114,7 +116,6 @@ renderTreeLemmon w = treeToElement asLine asSubproof
                         return sl
 
           asSubproof _ _ = return ()
-
 
 renderDeduction :: String -> (Document -> Tree (Int, DeductionLine t t1 t2) -> IO Element) -> Document -> [DeductionLine t t1 t2] -> IO Element
 renderDeduction cls render w ded = 
@@ -131,8 +132,8 @@ renderDeductionFitch = renderDeduction "fitchDisplay" renderTreeFitch
 renderDeductionMontague :: (Show t,Schematizable (t1 (FixLang t1)), CopulaSchema (FixLang t1)) => Document -> [DeductionLine t t1 t2] -> IO Element
 renderDeductionMontague = renderDeduction "montagueDisplay" renderTreeMontague
 
-renderDeductionLemmon :: (Show t,Schematizable (t1 (FixLang t1)), CopulaSchema (FixLang t1)) => Document -> [DeductionLine t t1 t2] -> IO Element
-renderDeductionLemmon = renderDeduction "lemmonDisplay" renderTreeLemmon
+renderDeductionLemmon ::  (Show t,Schematizable (t1 (FixLang t1)), CopulaSchema (FixLang t1)) => LemmonVariant -> Document -> [DeductionLine t t1 t2] -> IO Element
+renderDeductionLemmon v = renderDeduction "lemmonDisplay" (renderTreeLemmon v)
 
 renderDep (n,m) = if n==m then show n else show n ++ "-" ++ show m
 

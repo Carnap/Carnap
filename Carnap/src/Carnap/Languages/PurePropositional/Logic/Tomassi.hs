@@ -106,7 +106,7 @@ parseTomassiPLProof :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool)
 parseTomassiPLProof rtc = toDeductionLemmonTomassi (parseTomassiPL rtc) (purePropFormulaParser standardLetters)
 
 tomassiPLCalc = NaturalDeductionCalc
-    { ndRenderer = LemmonStyle
+    { ndRenderer = LemmonStyle TomassiStyle
     , ndParseProof = parseTomassiPLProof
     , ndProcessLine = hoProcessLineLemmon
     , ndProcessLineMemo = Just hoProcessLineLemmonMemo
