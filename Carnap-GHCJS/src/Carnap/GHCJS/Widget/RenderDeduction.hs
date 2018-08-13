@@ -96,9 +96,11 @@ lineBase w n mf mrd lineclass =
            return (theWrapper,theLine,theForm,theRule)
 
 renderTreeLemmon v w = treeToElement asLine asSubproof
-    where asLine (n,DependentAssertLine f r deps dis scope) = 
+    where asLine (n,DependentAssertLine f r deps dis scope mnum) = 
                 do [theWrapper,lineNum,theForm,theRule,theScope] <- catMaybes <$> mapM (createElement w . Just) ["div","span","span","span","span"]
-                   setInnerHTML lineNum (Just $ "(" ++ show n ++ ")")
+                   case mnum of
+                       Nothing -> setInnerHTML lineNum (Just $ "(" ++ show n ++ ")")
+                       Just m -> setInnerHTML lineNum (Just $ "(" ++ show m ++ ")")
                    case v of
                        StandardLemmon -> setInnerHTML theScope (Just $ show scope)
                        TomassiStyle -> setInnerHTML theScope (Just $ "{" ++ intercalate "," (map show scope) ++ "}")

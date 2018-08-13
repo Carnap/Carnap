@@ -12,12 +12,20 @@ import Carnap.Calculi.NaturalDeduction.Parser.Util
 import Carnap.Languages.ClassicalSequent.Syntax
 import Carnap.Languages.ClassicalSequent.Parser
 
-parseDependentAssertLine r f j  = do mscope <- optionMaybe scope
-                                     let thescope = case mscope of Nothing -> []; Just l -> l
-                                     spaces
-                                     phi <- f
-                                     (dis, deps, rule) <- j r
-                                     return $ DependentAssertLine phi rule (map (\x->(x,x)) deps) dis thescope
+parseDependentAssertLine withNum r f j  = do mscope <- optionMaybe scope
+                                             let thescope = case mscope of Nothing -> []; Just l -> l
+                                             spaces
+                                             mnum <- if withNum 
+                                                        then (char '(' *> (Just . read <$> many1 digit) <* char ')') <?> "line number"
+                                                        else return Nothing
+                                             spaces
+                                             phi <- f
+                                             (dis, deps, rule) <- j r
+                                             return $ DependentAssertLine phi rule (map (\x->(x,x)) deps) dis thescope mnum
+
+parseDependentAssertLineWithNum = parseDependentAssertLine True
+
+parseDependentAssertLinePlain = parseDependentAssertLine False
 
 --lemmon justifications as given in Goldfarb
 lemline r = do mdis <- optionMaybe scope
@@ -64,15 +72,15 @@ scope = (char '[' *> parseInts <* char ']') <|> (char '{' *> parseInts <* char '
 
 toDeductionLemmon :: (Int -> String -> Parsec String () [r]) -> Parsec String () (FixLang lex a) -> String 
     -> Deduction r lex a
-toDeductionLemmon r f = toDeduction (parseDependentAssertLine r f lemline)
+toDeductionLemmon r f = toDeduction (parseDependentAssertLinePlain r f lemline)
 
 toDeductionLemmonAlt :: (Int -> String -> Parsec String () [r]) -> Parsec String () (FixLang lex a) -> String 
     -> Deduction r lex a
-toDeductionLemmonAlt r f = toDeduction (parseDependentAssertLine r f lemlineAlt)
+toDeductionLemmonAlt r f = toDeduction (parseDependentAssertLinePlain r f lemlineAlt)
 
 toDeductionLemmonTomassi :: Inference r lex (Form Bool) => (Int -> String -> Parsec String () [r]) -> Parsec String () (FixLang lex a) -> String 
     -> Deduction r lex a
-toDeductionLemmonTomassi r f = toDeduction (parseDependentAssertLine r f lemlineTomassi)
+toDeductionLemmonTomassi r f = toDeduction (parseDependentAssertLineWithNum r f lemlineTomassi)
 
 toProofTreeLemmon :: 
     ( Inference r lex sem
@@ -80,9 +88,10 @@ toProofTreeLemmon ::
     , Typeable sem
     ) => Deduction r lex sem -> Int -> Either (ProofErrorMessage lex) (ProofTree r lex sem)
 toProofTreeLemmon ded n = case ded !! (n - 1) of
-    (DependentAssertLine f r depairs dis scope) ->
+    (DependentAssertLine f r depairs dis scope mnum) ->
         do let deps = map fst depairs
            mapM_ checkDep deps
+           checkNum mnum
            let inherited = concat $ map (\m -> inScope (ded !! (m - 1))) deps
            checkScope inherited
            deps' <- mapM (toProofTreeLemmon ded) (deps ++ dis)
@@ -105,5 +114,8 @@ toProofTreeLemmon ded n = case ded !! (n - 1) of
               numDischarged (Just (TypedProof (ProofType n _ ))) = n
               numDischarged (Just (PolyTypedProof m (ProofType n _))) = m * n
               numDischarged _ = 0
+
+              checkNum Nothing = return ()
+              checkNum (Just m) = if m == n then return () else err "This line is numbered incorrectly"
 
     (PartialLine _ e _) -> Left $ NoParse e n

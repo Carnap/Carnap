@@ -466,7 +466,7 @@ checkAgainst Nothing _ sub = Right sub
 isTop  (AssertLine _ _ 0 _) = True
 isTop  (ShowLine _ 0) = True
 isTop  (ShowWithLine _ 0 _ _) = True
-isTop  (DependentAssertLine _ _ _ _ _) = True
+isTop  (DependentAssertLine _ _ _ _ _ _) = True
 isTop  _ = False
 
 alright [] = True

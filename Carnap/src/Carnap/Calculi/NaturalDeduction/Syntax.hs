@@ -41,6 +41,7 @@ data DeductionLine r lex a where
             , dependAssertDependencies :: [(Int,Int)]
             , dependAssertDischarged :: [Int]
             , dependAssertInScope:: [Int]
+            , dependAssertLineNo:: Maybe Int
             } -> DeductionLine r lex a
         ShowLine :: 
             { toShow :: FixLang lex a
@@ -67,7 +68,7 @@ data DeductionLine r lex a where
             } -> DeductionLine r lex a
 
 depth (AssertLine _ _ dpth _) = dpth
-depth (DependentAssertLine _ _ _ _ _) = 0
+depth (DependentAssertLine _ _ _ _ _ _) = 0
 depth (ShowLine _ dpth) = dpth
 depth (ShowWithLine _ dpth _ _) = dpth
 depth (QedLine _ dpth _) = dpth
@@ -75,23 +76,23 @@ depth (PartialLine _ _ dpth) = dpth
 depth (SeparatorLine dpth) = dpth
 
 assertion (AssertLine f _ _ _) = Just f
-assertion (DependentAssertLine f _ _ _ _) = Just f
+assertion (DependentAssertLine f _ _ _ _ _) = Just f
 assertion (ShowLine f _) = Just f
 assertion (ShowWithLine f _ _ _) = Just f
 assertion _ = Nothing
 
 isAssumptionLine (AssertLine _ r _ _) = and (map isAssumption r)
-isAssumptionLine (DependentAssertLine _ r _ _ _) = and (map isAssumption r)
+isAssumptionLine (DependentAssertLine _ r _ _ _ _) = and (map isAssumption r)
 isAssumptionLine _ = False
 
-inScope (DependentAssertLine _ _ _ _ s) = s
+inScope (DependentAssertLine _ _ _ _ s _) = s
 inScope _ = []
 
-discharged (DependentAssertLine _ _ _ d _) = d
+discharged (DependentAssertLine _ _ _ d _ _) = d
 discharged _ = []
 
 justificationOf (AssertLine _ r _ _) = Just r 
-justificationOf (DependentAssertLine _ r _ _ _) = Just r
+justificationOf (DependentAssertLine _ r _ _ _ _) = Just r
 justificationOf _ = Nothing
 
 ----------------------
