@@ -103,7 +103,7 @@ type CoreLexicon = Predicate ModalProp
                    :|: EndLang
 
 instance PrismBooleanConnLex CoreLexicon (World -> Bool)
-instance PrismPropositionalContext CoreLexicon (World -> Bool)
+instance PrismGenericContext CoreLexicon (World -> Bool) (World -> Bool)
 instance PrismBooleanConst CoreLexicon (World -> Bool)
 instance PrismPropLex CoreLexicon (World -> Bool)
 instance PrismSchematicProp CoreLexicon (World -> Bool)
@@ -141,7 +141,7 @@ pattern MNec x         = MBox :!$: x
 pattern MPos x         = MDiamond :!$: x
 
 instance PrismBooleanConnLex (ModalPropLexiconWith a) (World -> Bool)
-instance PrismPropositionalContext (ModalPropLexiconWith a) (World -> Bool)
+instance PrismGenericContext (ModalPropLexiconWith a) (World -> Bool) (World -> Bool)
 instance PrismBooleanConst (ModalPropLexiconWith a) (World -> Bool)
 instance PrismPropLex (ModalPropLexiconWith a) (World -> Bool)
 instance PrismSchematicProp (ModalPropLexiconWith a) (World -> Bool)
@@ -201,7 +201,7 @@ instance BoundVars WorldTheoryPropLexicon where
 
 type WorldTheoryForm = WorldTheoryPropLanguage (Form (World -> Bool))
 
-instance PrismStandardQuant WorldTheoryPropLexicon (World -> Bool) World
+instance PrismGenericQuant WorldTheoryPropLexicon Term Form (World -> Bool) World
 instance PrismIndexing WorldTheoryPropLexicon World (World -> Bool) (World->Bool) 
 instance PrismIntIndex WorldTheoryPropLexicon World
 instance PrismCons WorldTheoryPropLexicon World

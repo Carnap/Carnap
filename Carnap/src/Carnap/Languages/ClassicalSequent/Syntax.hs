@@ -199,11 +199,11 @@ class Typeable a => Concretes lex a where
 instance Concretes lex (Form Bool)
 
 instance PrismBooleanConnLex lex b => PrismBooleanConnLex (ClassicalSequentLexOver lex) b
-instance PrismPropositionalContext lex b => PrismPropositionalContext (ClassicalSequentLexOver lex) b
+instance PrismGenericContext lex b b => PrismGenericContext (ClassicalSequentLexOver lex) b b
 instance PrismBooleanConst lex b => PrismBooleanConst (ClassicalSequentLexOver lex) b
 instance PrismPropLex lex b => PrismPropLex (ClassicalSequentLexOver lex) b
 instance PrismSchematicProp lex b => PrismSchematicProp (ClassicalSequentLexOver lex) b
-instance PrismStandardQuant lex b c => PrismStandardQuant (ClassicalSequentLexOver lex) b c
+instance PrismGenericQuant lex Term Form b c => PrismGenericQuant (ClassicalSequentLexOver lex) Term Form b c
 instance PrismModality lex b => PrismModality (ClassicalSequentLexOver lex) b
 instance PrismIndexing lex a b c => PrismIndexing (ClassicalSequentLexOver lex) a b c
 instance PrismIndexedConstant lex b => PrismIndexedConstant (ClassicalSequentLexOver lex) b

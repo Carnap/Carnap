@@ -137,9 +137,9 @@ instance CopulaSchema VLang where
     lamSchema = error "how did you even do this?"
     liftSchema = error "should not print a lifted value"
 
-instance Monoid (VLang (Term V)) where
-    mempty = VEmpty
-    mappend = VUnion
+-- instance Monoid (VLang (Term V)) where
+--     mempty = VEmpty
+--     mappend = VUnion
 
 instance Eq (VLang a) where
     (==) = (=*)

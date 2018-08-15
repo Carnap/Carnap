@@ -8,4 +8,4 @@ packages:
 - Carnap-Server/
 - Carnap-Client/
 #resolver: lts-6.25
-resolver: lts-6.30
+resolver: lts-11.15

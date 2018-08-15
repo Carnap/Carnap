@@ -17,7 +17,6 @@ library
   exposed-modules:     Carnap.Core.Data.AbstractSyntaxDataTypes
                      , Carnap.Core.Examples.ACUI
                      , Carnap.Core.Data.AbstractSyntaxClasses
-                     , Carnap.Core.Examples.ToyLanguages
                      , Carnap.Core.Unification.FirstOrder
                      , Carnap.Core.Unification.Unification
                      , Carnap.Core.Unification.ACUI

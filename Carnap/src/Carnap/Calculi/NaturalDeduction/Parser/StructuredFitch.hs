@@ -4,6 +4,7 @@ where
 
 import Data.Tree (Tree(Node))
 import Data.List (delete)
+import Data.Typeable
 import Carnap.Calculi.NaturalDeduction.Syntax
 import Carnap.Languages.ClassicalSequent.Syntax
 
@@ -11,6 +12,11 @@ import Carnap.Languages.ClassicalSequent.Syntax
 In an appropriately structured Fitch deduction, find the proof tree
 corresponding to *line n*, where proof numbers start at 1
 -}
+toProofTreeStructuredFitch :: 
+    ( Inference r lex sem
+    , Typeable sem
+    , Sequentable lex
+    ) => DeductionTree r lex sem -> Int -> Either (ProofErrorMessage lex) (ProofTree r lex sem)
 toProofTreeStructuredFitch t n = case t .! n of
           Just (l@(AssertLine f r@(r':_) dpth deps)) -> 
                 do mapM_ checkDep deps 
@@ -21,7 +27,8 @@ toProofTreeStructuredFitch t n = case t .! n of
                                                           return $ Node (ProofLine n (SS $ liftToSequent f) r) deps'
                         _ -> do deps' <- mapM (toProofTreeStructuredFitch t . snd) deps
                                 return $ Node (ProofLine n (SS $ liftToSequent f) r) deps'
-                where checkDep (begin,end) = 
+                where checkDep :: (Int,Int) -> Either (ProofErrorMessage lex) Bool
+                      checkDep (begin,end) = 
                         case indirectInference r' of 
                             Nothing | begin /= end -> err "you appear to be supplying a line range to a rule of direct proof"
                                     | begin `elem` linesFromHere -> Right True
@@ -37,10 +44,12 @@ toProofTreeStructuredFitch t n = case t .! n of
                         case filter (\(x,y) -> x /= y) deps of
                             [thesp@(first,last)] -> case range first last t of
                                 Just (SubProof _ ls) | (last - first) < (assumptionNumber + conclusionNumber) -> err "this subproof doesn't have enough lines to apply this rule"
-                                                     | let firstlines =  map (\x -> t .! x) (take assumptionNumber [first ..]) 
+                                                     | let firstlines :: Inference r lex sem => DeductionTree r lex sem -> [Maybe (DeductionLine r lex sem)]
+                                                           firstlines z =  map (\x -> z .! x) (take assumptionNumber [first ..]) 
                                                            badLine (Just l) = not $ isAssumptionLine l
                                                            badLine Nothing  = True
-                                                           in any badLine firstlines  ->
+                                                           checkLines = any badLine
+                                                           in checkLines (firstlines t) ->
                                                              err $ "this rule requires the first " ++ show assumptionNumber ++ " lines of the subproof to be assumptions"
                                                      | otherwise -> return $  take assumptionNumber [first ..] 
                                                                               ++ take conclusionNumber [last, last - 1 ..] 

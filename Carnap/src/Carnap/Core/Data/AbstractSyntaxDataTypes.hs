@@ -1,4 +1,4 @@
-{-#LANGUAGE TypeFamilies, UndecidableInstances, FlexibleInstances, MultiParamTypeClasses, FunctionalDependencies, AllowAmbiguousTypes, GADTs, KindSignatures, DataKinds, PolyKinds, TypeOperators, ViewPatterns, PatternSynonyms, RankNTypes, FlexibleContexts, ScopedTypeVariables, AutoDeriveTypeable, DefaultSignatures #-}
+{-#LANGUAGE TypeFamilies, UndecidableInstances, FlexibleInstances, MultiParamTypeClasses, FunctionalDependencies, GADTs,  DataKinds, PolyKinds, TypeOperators, PatternSynonyms, RankNTypes, FlexibleContexts, ScopedTypeVariables, DefaultSignatures #-}
 
 module Carnap.Core.Data.AbstractSyntaxDataTypes(
   -- * Abstract Types

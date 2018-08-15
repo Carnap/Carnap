@@ -81,6 +81,7 @@ assertion (ShowLine f _) = Just f
 assertion (ShowWithLine f _ _ _) = Just f
 assertion _ = Nothing
 
+isAssumptionLine :: Inference r lex sem => DeductionLine r lex sem -> Bool
 isAssumptionLine (AssertLine _ r _ _) = and (map isAssumption r)
 isAssumptionLine (DependentAssertLine _ r _ _ _ _) = and (map isAssumption r)
 isAssumptionLine _ = False
@@ -128,6 +129,8 @@ locale k (SubProof (n,m) (l:ls)) | k < n = Nothing
                                  | otherwise = locale k (SubProof (n,m) ls)
 
 --getting a line by number
+
+(.!) :: DeductionTree r lex sem -> Int -> Maybe (DeductionLine r lex sem)
 (Leaf n l) .! m = if n == m then Just l else Nothing
 sp .! m = case locale m sp of
               Just sp' -> sp' .! m
@@ -298,9 +301,7 @@ andFurtherRestriction f g sub = case f sub of
                                   Nothing -> g sub
                                   Just e  -> Just e
 
-class ( FirstOrder (ClassicalSequentOver lex)
-      , ACUI (ClassicalSequentOver lex)) => 
-        Inference r lex sem | r -> lex sem where
+class Inference r lex sem | r -> lex sem where
 
         premisesOf :: r -> [ClassicalSequentOver lex (Sequent sem)]
         premisesOf r = upperSequents (ruleOf r)

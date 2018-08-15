@@ -74,10 +74,10 @@ instance FirstOrder (FixLang (ModalFirstOrderLexOverWith b a)) =>
 instance PrismPropLex (ModalFirstOrderLexOverWith b a) (World -> Bool)
 instance PrismIndexedConstant (ModalFirstOrderLexOverWith b a) Int
 instance PrismBooleanConnLex (ModalFirstOrderLexOverWith b a) (World -> Bool)
-instance PrismPropositionalContext (ModalFirstOrderLexOverWith b a) (World -> Bool)
+instance PrismGenericContext (ModalFirstOrderLexOverWith b a) (World -> Bool) (World -> Bool)
 instance PrismBooleanConst (ModalFirstOrderLexOverWith b a) (World -> Bool)
 instance PrismSchematicProp (ModalFirstOrderLexOverWith b a) (World -> Bool)
-instance PrismStandardQuant (ModalFirstOrderLexOverWith b a) (World -> Bool) Int
+instance PrismGenericQuant (ModalFirstOrderLexOverWith b a) Term Form (World -> Bool) Int
 instance PrismModality (ModalFirstOrderLexOverWith b a) (World -> Bool)
 instance PrismPolyadicPredicate (ModalFirstOrderLexOverWith b a) Int (World -> Bool)
 instance PrismPolyadicSchematicPredicate (ModalFirstOrderLexOverWith b a) Int (World -> Bool)

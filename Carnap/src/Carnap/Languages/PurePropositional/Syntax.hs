@@ -92,7 +92,7 @@ pattern PNeg x         = PNot :!$: x
 
 instance PrismPropLex PurePropLexicon Bool
 instance PrismBooleanConnLex PurePropLexicon Bool
-instance PrismPropositionalContext PurePropLexicon Bool
+instance PrismGenericContext PurePropLexicon Bool Bool
 instance PrismBooleanConst PurePropLexicon Bool
 instance PrismSchematicProp PurePropLexicon Bool
 

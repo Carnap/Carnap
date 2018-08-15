@@ -147,10 +147,10 @@ instance CanonicalForm (PureFirstOrderLanguageWith a (Term Int))
 instance PrismPropLex (PureFirstOrderLexWith a) Bool
 instance PrismIndexedConstant (PureFirstOrderLexWith a) Int
 instance PrismBooleanConnLex (PureFirstOrderLexWith a) Bool
-instance PrismPropositionalContext (PureFirstOrderLexWith a) Bool
+instance PrismGenericContext (PureFirstOrderLexWith a) Bool Bool
 instance PrismBooleanConst (PureFirstOrderLexWith a) Bool
 instance PrismSchematicProp (PureFirstOrderLexWith a) Bool
-instance PrismStandardQuant (PureFirstOrderLexWith a) Bool Int
+instance PrismGenericQuant (PureFirstOrderLexWith a) Term Form Bool Int
 
 --equality up to α-equivalence
 instance UniformlyEq (PureFirstOrderLanguageWith a) => Eq (PureFirstOrderLanguageWith a b) where

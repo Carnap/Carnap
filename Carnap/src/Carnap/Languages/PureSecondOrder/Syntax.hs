@@ -237,7 +237,7 @@ instance PrismPolyadicFunction MonadicallySOLLex Int Int
 instance PrismPolyadicSchematicFunction MonadicallySOLLex Int Int
 instance PrismTermEquality MonadicallySOLLex Int Bool
 instance PrismBooleanConnLex MonadicallySOLLex Bool
-instance PrismStandardQuant MonadicallySOLLex Bool Int
+instance PrismGenericQuant MonadicallySOLLex Term Form Bool Int
 instance PrismGenericQuant MonadicallySOLLex Form Form Bool (Int -> Bool) 
 instance PrismGenericTypedLambda MonadicallySOLLex Term Form Int
 
@@ -299,7 +299,7 @@ instance PrismPolyadicFunction PolyadicallySOLLex Int Int
 instance PrismPolyadicSchematicFunction PolyadicallySOLLex Int Int
 instance PrismGenericTypedLambda PolyadicallySOLLex Term Form Int
 instance PrismBooleanConnLex PolyadicallySOLLex Bool
-instance PrismStandardQuant PolyadicallySOLLex Bool Int
+instance PrismGenericQuant PolyadicallySOLLex Term Form Bool Int
 instance PrismTermEquality PolyadicallySOLLex Int Bool
 
 --------------------------------------------------------
