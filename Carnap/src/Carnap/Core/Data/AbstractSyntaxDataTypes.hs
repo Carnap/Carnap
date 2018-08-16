@@ -4,6 +4,7 @@ module Carnap.Core.Data.AbstractSyntaxDataTypes(
   -- * Abstract Types
   -- $ATintro
   -- ** Language Building Types
+  Flag,
   Term(..), Form(..),
   Copula((:$:), Lam), CopulaSchema(..), MaybeMonadVar(..),MaybeStaticVar(..),
   (:|:)(..), Fix(Fx), FixLang, EndLang, pattern AOne,
