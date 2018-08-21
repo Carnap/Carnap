@@ -44,9 +44,9 @@ tryMatch :: Element -> IORef (PureForm, [(PureForm, Int)], Tree (PureForm, Int),
             -> Document -> (PureForm -> String) -> M.Map String String 
             -> EventM HTMLInputElement KeyboardEvent ()
 tryMatch o ref w sf opts = onEnter $ 
-        do (Just t) <- target :: EventM HTMLInputElement KeyboardEvent (Maybe HTMLInputElement)
-           (Just ival)  <- getValue t
-           (f,forms,ft, s) <- liftIO $ readIORef ref
+        do Just t <- target :: EventM HTMLInputElement KeyboardEvent (Maybe HTMLInputElement)
+           Just ival  <- getValue t
+           (f, forms, ft, stage) <- liftIO $ readIORef ref
            setValue t (Just "")
            case forms of
                [] -> case M.lookup "submission" opts of
@@ -55,24 +55,30 @@ tryMatch o ref w sf opts = onEnter $
                x:xs -> case matchMC ival (fst x) of
                    Right b -> if b 
                        then case children (fst x) of 
-                               [] -> shorten x xs s
-                               children -> updateGoal x (zip children [(s + 1)..]) xs (s + length children + 1)
+                               [] -> shorten x xs stage
+                               children -> updateGoal x (zip children [(stage + 1)..]) xs (stage + length children + 1)
                        else do message $ "Sorry, that's not the main connective. Try again!"
                                resetGoal
                    Left e -> case children (fst x) of
-                          [] -> shorten x xs s
+                          [] -> shorten x xs stage
                           _ -> message "what you've entered doesn't appear to be a connective"
         where --updates the goal, by adding labeled formulas to the todo ist, 
               --developing the tree with those labeled formulas at the given label, and 
               --advances the stage
-              updateGoal x cs xs s = liftIO $ do modifyIORef ref (_2 .~ (cs ++ xs))
-                                                 modifyIORef ref (_3 %~ dev x cs)
-                                                 modifyIORef ref (_4 .~ s)
-                                                 (_,_,t,_) <- readIORef ref
-                                                 redraw (head (cs ++ xs)) t
-              shorten x xs s = case xs of [] -> liftIO $ do setInnerHTML o (Just "Success! You may now submit your solution") 
-                                                            modifyIORef ref (_2 .~ []) 
-                                          _  -> updateGoal x [] xs s 
+              optlist = case M.lookup "options" opts of Just s -> words s; Nothing -> []
+              updateGoal x cs xs stage = 
+                    do liftIO $ modifyIORef ref (_2 .~ (cs ++ xs))
+                       liftIO $ modifyIORef ref (_3 %~ dev x cs)
+                       liftIO $ modifyIORef ref (_4 .~ stage)
+                       (_,_,t,_) <- liftIO $ readIORef ref
+                       if "parseAtoms" `elem` optlist 
+                           then liftIO $ redraw (head (cs ++ xs)) t
+                           else case (cs ++ xs) of
+                                   c:css | children (fst c) == [] -> shorten c css stage
+                                   l -> liftIO $ redraw (head l) t
+              shorten x xs stage = case xs of [] -> liftIO $ do setInnerHTML o (Just "Success! You may now submit your solution") 
+                                                                modifyIORef ref (_2 .~ []) 
+                                              _  -> updateGoal x [] xs stage
               resetGoal = do (f,_,_,_) <- liftIO $ readIORef ref
                              liftIO $ writeIORef ref (f, [(f,0)], T.Node (f,0) [],0)
                              setInnerHTML o (Just $ sf f)

@@ -138,16 +138,16 @@ As in the previous chapter, unpack the parsing trees for the following
 sentences:
 
 ```{.SynChecker .MatchClean}
-2.1  P_1 /\ -P_2 
-2.2  P_1 /\ P_1 -> P_4 \/ P_5
-2.3  ~P_1 \/ ~(P_1 -> P_2 \/ P_5)
-2.4  P_2 \/ P_1 \/ P_1 -> P_4
-2.5  P_1 <-> (P_2 /\ P_4 /\ P_1)
-2.6  ~~P_2 -> P_2
-2.7  ~(~P_2 -> P_2) 
-2.8  (P_1 -> P_2) -> (P_3 \/ P_1)
-2.9  P_3 -> (P_1 -> ~P_2 \/ P_1 \/ (P_2 /\ P_1))
-2.10  (P_1<->P_2) \/ (P_1/\ -P_2) \/ (-P_1 /\ P_2)
+2.1  P /\ -Q
+2.2  P /\ R -> T \/ W
+2.3  ~P \/ ~(P -> Q \/ T)
+2.4  Q \/ P \/ P -> S
+2.5  P <-> (Q /\ S /\ P)
+2.6  ~~Q -> Q
+2.7  ~(~Q -> Q) 
+2.8  (P -> Q) -> (R \/ P)
+2.9  R -> (P -> ~Q \/ P \/ (Q /\ P))
+2.10  (P<->Q) \/ (P/\ -Q) \/ (-P /\ Q)
 ```
 
 #Translation
