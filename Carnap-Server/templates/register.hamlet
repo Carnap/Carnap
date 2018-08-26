@@ -4,7 +4,7 @@
 
         Please enter the following information
         <div>
-            <form method=post action=@{RegisterR ident} enctype=#{enctype}>
+            <form method=post action=@{theaction} enctype=#{enctype}>
                 ^{widget}
                 <div.form-group>
                     <input.btn.btn-primary type=submit value="Register">

@@ -281,11 +281,13 @@ instance YesodAuth App where
                                --if not, redirect to registration
                                Nothing -> 
                                     do musr <- runDB $ get uid
-                                       case musr of 
-                                          (Just (User ident _)) -> redirect (RegisterR ident)
-                                          Nothing -> return ()
+                                       menroll <- lookupSession "enrolling-in"
+                                       case (musr, menroll) of 
+                                          (Just (User ident _), Just theclass) ->  redirect (RegisterEnrollR theclass ident)
+                                          (Just (User ident _), Nothing) ->  redirect (RegisterR ident)
+                                          (Nothing,_) -> return ()
                                --if so, go ahead
-                               Just ud -> return ()
+                               Just ud -> setMessage "Now logged in"
 
     -- appDevel is a custom method added to the settings, which is true
     -- when yesod is running in the development environment and false
