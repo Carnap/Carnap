@@ -5,7 +5,7 @@ import Yesod.Form.Bootstrap3
 import Util.Database
 import Util.Data
 
-getRegister :: ([Entity Course] -> UserId -> Html -> MForm Handler (FormResult UserData, Widget)) -> Route App
+getRegister :: ([Entity Course] -> UserId -> Html -> MForm Handler (FormResult (Maybe UserData), Widget)) -> Route App
     -> Text -> Handler Html
 getRegister theform theaction ident = do
     userId <- fromIdent ident 
@@ -16,7 +16,7 @@ getRegister theform theaction ident = do
         setTitle "Carnap - Registration"
         $(widgetFile "register")
 
-postRegister :: ([Entity Course] -> UserId -> Html -> MForm Handler (FormResult UserData, Widget)) 
+postRegister :: ([Entity Course] -> UserId -> Html -> MForm Handler (FormResult (Maybe UserData), Widget)) 
     -> Text -> Handler Html
 postRegister theform ident = do
         userId <- fromIdent ident
@@ -24,11 +24,15 @@ postRegister theform ident = do
         courseEntities <- runDB $ selectList [CourseStartDate <. time, CourseEndDate >. time] []
         ((result,widget),enctype) <- runFormPost (theform courseEntities userId)
         case result of 
-            FormSuccess userdata -> do msuccess <- tryInsert userdata 
-                                       if msuccess
-                                           then do deleteSession "enrolling-in"
-                                                   redirect (UserR ident)
-                                           else defaultLayout clashPage
+            FormSuccess (Just userdata) -> 
+                do msuccess <- tryInsert userdata 
+                   if msuccess
+                       then do deleteSession "enrolling-in"
+                               redirect (UserR ident)
+                       else defaultLayout clashPage
+            FormSuccess Nothing -> 
+                do setMessage "Class not found - link may be incorrect or expired. Please enroll manually."
+                   redirect (RegisterR ident)
             _ -> defaultLayout errorPage
 
     where errorPage = [whamlet|
@@ -64,22 +68,23 @@ postRegisterR = postRegister registrationForm
 postRegisterEnrollR :: Text -> Text -> Handler Html
 postRegisterEnrollR theclass = postRegister (enrollmentForm theclass) 
 
-registrationForm :: [Entity Course] -> UserId -> Html -> MForm Handler (FormResult UserData, Widget)
+registrationForm :: [Entity Course] -> UserId -> Html -> MForm Handler (FormResult (Maybe UserData), Widget)
 registrationForm courseEntities userId = do
         renderBootstrap3 BootstrapBasicForm $ fixedId
             <$> areq textField "First name " Nothing
             <*> areq textField "Last name " Nothing
             <*> areq (selectFieldList courses) "enrolled in " Nothing
-    where fixedId x y z = UserData x y z Nothing userId 
+    where fixedId x y z = Just $ UserData x y z Nothing userId 
           courses = ("No Course", Nothing) : map (\e -> (courseTitle $ entityVal e, Just $ entityKey e)) courseEntities 
 
-enrollmentForm :: Text -> [Entity Course] -> UserId -> Html -> MForm Handler (FormResult UserData, Widget)
+enrollmentForm :: Text -> [Entity Course] -> UserId -> Html -> MForm Handler (FormResult (Maybe UserData), Widget)
 enrollmentForm classtitle courseEntities userId = do
         renderBootstrap3 BootstrapBasicForm $ fixedId
             <$> areq textField "First name " Nothing
             <*> areq textField "Last name " Nothing
-    where fixedId x y = UserData x y course Nothing userId 
+    where fixedId x y = case course of 
+                    Just c -> Just $ UserData x y (Just c) Nothing userId 
+                    Nothing -> Nothing
           course = case filter (\e -> classtitle == courseTitle (entityVal e)) courseEntities of 
                      [] -> Nothing 
                      e:_ -> Just $ entityKey e
-
