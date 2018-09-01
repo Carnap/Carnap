@@ -171,7 +171,7 @@ montagueNewExistentialConstraint cs ded lineno sub =
         if any (\x -> any (occursIn x) relevantForms) cs' 
             then Just $ "a variable in " ++ show cs' ++ " occurs on or before the show line. This rule requires a variable that does not appear on an earlier line"
             else Nothing
-    where cs' = map (applySub sub) cs
+    where cs' = map (fromSequent . applySub sub) cs
           relevantLines = take lineno ded
           relevantForms = concatMap (toListOf formsOf) (catMaybes $ map assertion relevantLines)
           occursIn x y = not $ (subst x (static 0) y) =* y 
@@ -188,7 +188,7 @@ montagueNewUniversalConstraint cs ded lineno sub =
                                           then Just $ "The variable " ++ show c' ++ " occurs freely somewhere before the show line of this rule"
                                           else Nothing
             _ -> Just $ "The variable " ++ show c' ++ " is not bound in the show line of this rule."
-    where c' = applySub sub (head cs)
+    where c' = fromSequent $ applySub sub (head cs)
           relevantLines = dropWhile (not . isShow) $ reverse $ take lineno ded 
           --XXX: for now we ignore the complication of making sure these
           --are *available* lines.
@@ -199,6 +199,7 @@ montagueNewUniversalConstraint cs ded lineno sub =
           boundVarOf (PV s) f = show (subBinder f s) == show f
           isShow (ShowLine _ d) = d < depth (ded !! (lineno - 1))
           isShow _ = False
+
 
 -------------------------
 --  1.1. Common Rules  --

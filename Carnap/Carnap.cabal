@@ -58,6 +58,7 @@ library
                      , Carnap.Languages.PureFirstOrder.Logic.Rules
                      , Carnap.Languages.PureFirstOrder.Logic.Magnus
                      , Carnap.Languages.PureFirstOrder.Logic.KalishAndMontague
+                     , Carnap.Languages.PureFirstOrder.Logic.StrictMontague
                      , Carnap.Languages.PureFirstOrder.Logic.ThomasBolducAndZach
                      , Carnap.Languages.PureFirstOrder.Logic.BergmannMoorAndNelson
                      , Carnap.Languages.PureFirstOrder.Logic.Hardegree
