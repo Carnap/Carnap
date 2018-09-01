@@ -4,9 +4,10 @@ module Carnap.Languages.PureFirstOrder.Logic.Rules where
 import Data.List (intercalate)
 import Data.Typeable (Typeable)
 import Data.Maybe (catMaybes)
+import Control.Lens (toListOf)
 import Text.Parsec
 import Carnap.Core.Data.Util (scopeHeight)
-import Carnap.Core.Unification.Unification (applySub,subst)
+import Carnap.Core.Unification.Unification (applySub,subst,FirstOrder)
 import Carnap.Core.Data.AbstractSyntaxClasses
 import Carnap.Core.Data.AbstractSyntaxDataTypes
 import Carnap.Languages.PurePropositional.Logic.Rules (exchange, replace)
@@ -165,6 +166,39 @@ globalNewConstraint cs ded lineno sub =
             Just s -> Nothing
     where cs' = map (applySub sub) cs
           checkNew = mapM (\c -> globalOldConstraint [c] ded lineno sub) cs
+
+montagueNewExistentialConstraint cs ded lineno sub = 
+        if any (\x -> any (occursIn x) relevantForms) cs' 
+            then Just $ "a variable in " ++ show cs' ++ " occurs on or before the show line. This rule requires a variable that does not appear on an earlier line"
+            else Nothing
+    where cs' = map (applySub sub) cs
+          relevantLines = take lineno ded
+          relevantForms = concatMap (toListOf formsOf) (catMaybes $ map assertion relevantLines)
+          occursIn x y = not $ (subst x (static 0) y) =* y 
+                         || boundVarOf x y
+          boundVarOf :: (Show (FixLang (PureFirstOrderLexWith a) (Form Bool)), FirstOrder (FixLang (PureFirstOrderLexWith a))) => 
+            FixLang (PureFirstOrderLexWith a) (Term Int) -> FixLang (PureFirstOrderLexWith a) (Form Bool) -> Bool
+          boundVarOf (PV s) f = show (subBinder f s) == show f
+          boundVarOf _ _ = False
+
+montagueNewUniversalConstraint cs ded lineno sub = 
+        case relevantForms of
+            [] -> Just "No show line found for this rule. But this rule requires a preceeding show line"
+            x:xs | boundVarOf c' x -> if any (occursIn c') xs 
+                                          then Just $ "The variable " ++ show c' ++ " occurs freely somewhere before the show line of this rule"
+                                          else Nothing
+            _ -> Just $ "The variable " ++ show c' ++ " is not bound in the show line of this rule."
+    where c' = applySub sub (head cs)
+          relevantLines = dropWhile (not . isShow) $ reverse $ take lineno ded 
+          --XXX: for now we ignore the complication of making sure these
+          --are *available* lines.
+          relevantForms = concatMap (toListOf formsOf) (catMaybes $ map assertion relevantLines)
+          occursIn x y = not $ (subst x (static 0) y) =* y 
+          boundVarOf :: (Show (FixLang (PureFirstOrderLexWith a) (Form Bool)), FirstOrder (FixLang (PureFirstOrderLexWith a))) => 
+            FixLang (PureFirstOrderLexWith a) (Term Int) -> FixLang (PureFirstOrderLexWith a) (Form Bool) -> Bool
+          boundVarOf (PV s) f = show (subBinder f s) == show f
+          isShow (ShowLine _ d) = d < depth (ded !! (lineno - 1))
+          isShow _ = False
 
 -------------------------
 --  1.1. Common Rules  --

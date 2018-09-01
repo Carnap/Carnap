@@ -126,6 +126,10 @@ termsOf :: FirstOrder (FixLang (PureFirstOrderLexWith a)) =>
         Traversal' (FixLang (PureFirstOrderLexWith a) (Form Bool)) (FixLang (PureFirstOrderLexWith a) (Term Int))
 termsOf = difChildren2
 
+formsOf :: FirstOrder (FixLang (PureFirstOrderLexWith a)) => 
+        Traversal' (FixLang (PureFirstOrderLexWith a) (Form Bool)) (FixLang (PureFirstOrderLexWith a) (Form Bool))
+formsOf = simChildren2
+
 instance FirstOrder (FixLang (PureFirstOrderLexWith a)) => 
     LangTypes2 (PureFirstOrderLexWith a) Form Bool Term Int
 
