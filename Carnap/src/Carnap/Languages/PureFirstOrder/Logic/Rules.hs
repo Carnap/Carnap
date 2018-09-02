@@ -169,16 +169,19 @@ globalNewConstraint cs ded lineno sub =
 
 montagueNewExistentialConstraint cs ded lineno sub = 
         if any (\x -> any (occursIn x) relevantForms) cs' 
-            then Just $ "a variable in " ++ show cs' ++ " occurs on or before the show line. This rule requires a variable that does not appear on an earlier line"
+            then Just $ "a variable in " ++ show cs' ++ " occurs before this line. This rule requires a variable not occuring (free or bound) on any earlier line"
             else Nothing
     where cs' = map (fromSequent . applySub sub) cs
-          relevantLines = take lineno ded
-          relevantForms = concatMap (toListOf formsOf) (catMaybes $ map assertion relevantLines)
-          occursIn x y = not $ (subst x (static 0) y) =* y 
+          relevantLines = take (lineno - 1) ded
+          relevantForms = catMaybes $ map assertion relevantLines
+          occursIn x y = not (subst x (static 0) y =* y)
                          || boundVarOf x y
+                         || any (boundVarOf x) (toListOf formsOf y)
           boundVarOf :: (Show (FixLang (PureFirstOrderLexWith a) (Form Bool)), FirstOrder (FixLang (PureFirstOrderLexWith a))) => 
             FixLang (PureFirstOrderLexWith a) (Term Int) -> FixLang (PureFirstOrderLexWith a) (Form Bool) -> Bool
-          boundVarOf (PV s) f = show (subBinder f s) == show f
+          boundVarOf (PV s) f = case subBinder f s of
+                                    Nothing -> False
+                                    Just f' -> show f' == show f
           boundVarOf _ _ = False
 
 montagueNewUniversalConstraint cs ded lineno sub = 
@@ -192,14 +195,15 @@ montagueNewUniversalConstraint cs ded lineno sub =
           relevantLines = dropWhile (not . isShow) $ reverse $ take lineno ded 
           --XXX: for now we ignore the complication of making sure these
           --are *available* lines.
-          relevantForms = concatMap (toListOf formsOf) (catMaybes $ map assertion relevantLines)
-          occursIn x y = not $ (subst x (static 0) y) =* y 
+          relevantForms = catMaybes $ map assertion relevantLines
+          occursIn x y = not (subst x (static 0) y =* y)
           boundVarOf :: (Show (FixLang (PureFirstOrderLexWith a) (Form Bool)), FirstOrder (FixLang (PureFirstOrderLexWith a))) => 
             FixLang (PureFirstOrderLexWith a) (Term Int) -> FixLang (PureFirstOrderLexWith a) (Form Bool) -> Bool
-          boundVarOf (PV s) f = show (subBinder f s) == show f
-          isShow (ShowLine _ d) = d < depth (ded !! (lineno - 1))
+          boundVarOf (PV s) f = case subBinder f s of
+                                    Nothing -> False
+                                    Just f' -> show f' == show f
+          isShow (ShowLine _ d) = d == depth (ded !! (lineno - 1))
           isShow _ = False
-
 
 -------------------------
 --  1.1. Common Rules  --
