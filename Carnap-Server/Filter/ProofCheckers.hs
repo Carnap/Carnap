@@ -14,8 +14,9 @@ makeProofChecker cb@(CodeBlock (_,classes,extra) contents)
 makeProofChecker x = x
 
 activate cls extra chunk
-    | "Prop"             `elem` cls = exTemplate [("system","prop"),("options","resize")]
-    | "FirstOrder"       `elem` cls = exTemplate [("system","firstOrder"),("options","resize")]
+    | "Prop"             `elem` cls = exTemplate [("system", "prop"),("options","resize")]
+    | "FirstOrder"       `elem` cls = exTemplate [("system", "firstOrder"),("options","resize")]
+    | "MontagueFOL"      `elem` cls = exTemplate [("system", "montagueFOL"),("options","resize")]
     | "SecondOrder"      `elem` cls = exTemplate [("system", "secondOrder")]
     | "PolySecondOrder"  `elem` cls = exTemplate [("system", "polyadicSecondOrder")]
     | "LogicBookSD"      `elem` cls = exTemplate [("system", "LogicBookSD")]

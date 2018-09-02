@@ -14,7 +14,7 @@ import Carnap.Languages.PurePropositional.Logic as P
     , thomasBolducAndZachTFLCalc, tomassiPLCalc)
 import Carnap.Languages.PurePropositional.Logic.Rules (derivedRuleToSequent)
 import Carnap.Languages.PureFirstOrder.Logic as FOL 
-    ( DerivedRule(..), folCalc, magnusQLCalc , thomasBolducAndZachFOLCalc,
+    ( DerivedRule(..), folCalc, montagueFolCalc, magnusQLCalc , thomasBolducAndZachFOLCalc,
     hardegreePLCalc , goldfarbNDCalc, goldfarbAltNDCalc,
     goldfarbNDPlusCalc, goldfarbAltNDPlusCalc , logicBookPDPlusCalc,
     logicBookPDCalc) 
@@ -105,6 +105,7 @@ activateChecker _ _ Nothing  = return ()
 activateChecker drs w (Just iog@(IOGoal i o g _ opts)) -- TODO: need to update non-montague calculi to take first/higher-order derived rules
         | sys == "prop"                      = tryParse propCalc propChecker
         | sys == "firstOrder"                = tryParse folCalc folChecker
+        | sys == "montagueFOL"               = tryParse montagueFolCalc folChecker
         | sys == "secondOrder"               = tryParse msolCalc noRuntimeOptions
         | sys == "polyadicSecondOrder"       = tryParse psolCalc noRuntimeOptions
         | sys == "LogicBookSD"               = tryParse logicBookSDCalc propChecker
