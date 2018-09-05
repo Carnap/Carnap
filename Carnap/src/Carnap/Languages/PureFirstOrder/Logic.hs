@@ -1,7 +1,7 @@
 module Carnap.Languages.PureFirstOrder.Logic
         ( FOLogic(..), DerivedRule(..)
-        , parseFOLogic, parseMontagueFOLogic, parseMagnusQL, parseThomasBolducAndZachFOL, parseHardegreePL, parseLogicBookPD
-        , folCalc, montagueFolCalc, magnusQLCalc, thomasBolducAndZachFOLCalc, hardegreePLCalc, logicBookPDCalc, logicBookPDPlusCalc
+        , parseFOLogic, parseMontagueQCCalc, parseMagnusQL, parseThomasBolducAndZachFOL, parseHardegreePL, parseLogicBookPD
+        , folCalc, montagueQCCalc, magnusQLCalc, thomasBolducAndZachFOLCalc, hardegreePLCalc, logicBookPDCalc, logicBookPDPlusCalc
         , goldfarbNDCalc, goldfarbAltNDCalc, goldfarbNDPlusCalc, goldfarbAltNDPlusCalc
         )
     where

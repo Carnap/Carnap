@@ -1,6 +1,6 @@
 {-#LANGUAGE  FlexibleContexts,  FlexibleInstances, MultiParamTypeClasses #-}
 module Carnap.Languages.PureFirstOrder.Logic.StrictMontague
-        (MontagueFOLogic(..), parseMontagueFOLogic, montagueFolCalc)
+        (MontagueQCCalc(..), parseMontagueQCCalc, montagueQCCalc)
     where
 
 import Data.Map as M (lookup, Map,empty)
@@ -23,14 +23,14 @@ import Carnap.Languages.PureFirstOrder.Logic.Rules
 --2. Classical First-Order Logic
 --------------------------------------------------------
 
-data MontagueFOLogic =  SL P.MontagueSC
+data MontagueQCCalc =  SL P.MontagueSC
                 | UD  | UI  | EG  | EI | QN1 | QN2  | QN3  | QN4  
                 | LL1 | LL2 | EL1 | EL2 | ID  | SM  | ALL1 | ALL2
                 | DER (ClassicalSequentOver PureLexiconFOL (Sequent (Form Bool)))
                 | PR (Maybe [(ClassicalSequentOver PureLexiconFOL (Sequent (Form Bool)))])
                deriving (Eq)
 
-instance Show MontagueFOLogic where
+instance Show MontagueQCCalc where
         show (PR _)  = "PR"
         show UD      = "UD"
         show UI      = "UI"
@@ -51,7 +51,7 @@ instance Show MontagueFOLogic where
         show SM      = "Sm"
         show (SL x)  = show x
 
-instance Inference MontagueFOLogic PureLexiconFOL (Form Bool) where
+instance Inference MontagueQCCalc PureLexiconFOL (Form Bool) where
      ruleOf (PR _)    = axiom
      ruleOf UI        = universalInstantiation
      ruleOf EG        = existentialGeneralization
@@ -89,8 +89,8 @@ instance Inference MontagueFOLogic PureLexiconFOL (Form Bool) where
      indirectInference UD  = Just PolyProof
      indirectInference _ = Nothing
 
-parseMontagueFOLogic :: RuntimeNaturalDeductionConfig PureLexiconFOL (Form Bool) -> Parsec String u [MontagueFOLogic]
-parseMontagueFOLogic rtc = try quantRule <|> liftProp
+parseMontagueQCCalc :: RuntimeNaturalDeductionConfig PureLexiconFOL (Form Bool) -> Parsec String u [MontagueQCCalc]
+parseMontagueQCCalc rtc = try quantRule <|> liftProp
     where liftProp = do r <- P.parseMontagueSC (RuntimeNaturalDeductionConfig mempty mempty)
                         return (map SL r)
           quantRule = do r <- choice (map (try . string) ["PR", "UI", "UD", "EG", "EI", "QN","LL","EL","Id","Sm","D-"])
@@ -110,12 +110,12 @@ parseMontagueFOLogic rtc = try quantRule <|> liftProp
                                                     Just r  -> return [DER r]
                                                     Nothing -> parserFail "Looks like you're citing a derived rule that doesn't exist"
 
-parseMontagueFOLProof ::  RuntimeNaturalDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine MontagueFOLogic PureLexiconFOL (Form Bool)]
-parseMontagueFOLProof ders = toDeductionMontague (parseMontagueFOLogic ders) folFormulaParser
+parseMontagueQCProof ::  RuntimeNaturalDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine MontagueQCCalc PureLexiconFOL (Form Bool)]
+parseMontagueQCProof ders = toDeductionMontague (parseMontagueQCCalc ders) folFormulaParser
 
-montagueFolCalc = NaturalDeductionCalc
+montagueQCCalc = NaturalDeductionCalc
     { ndRenderer = MontagueStyle
-    , ndParseProof = parseMontagueFOLProof
+    , ndParseProof = parseMontagueQCProof
     , ndProcessLine = hoProcessLineMontague
     , ndProcessLineMemo = Just hoProcessLineMontagueMemo
     , ndParseSeq = folSeqParser
