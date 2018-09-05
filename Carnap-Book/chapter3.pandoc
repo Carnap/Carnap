@@ -34,7 +34,7 @@ Graphically, you can think of what's happening in this way:
 ```{.diagram .snip}
 toText :: String -> Diagram SVG
 toText s = let ln = fromIntegral (length s) in
-    text s <> rect (ln * 7/10) 1 # lc white
+    text s <> rect (ln * 8/10) 1 # clipBy (rect (ln * 7/10) (9/10))
 ```
 
 <figure>
@@ -44,11 +44,9 @@ rect 20 10 `atop` inf (inf ax1 ax2 c1) (inf ax3 ax4 c2) c3
 
 inf a b c = prems
             ===
-            strut ls
+            (rect (w * 2) 0.05 # fc black)
             ===
-            (rect (w * 2) 0.03 # fc black)
-            ===
-            strut ls
+            strutY 0.5
             ===
             c
     where prems = (a ||| strut unitX ||| b) # center
@@ -56,7 +54,6 @@ inf a b c = prems
                 Nothing -> 0
                 Just v -> fst $ unr2 v
                 --we should get the point here by an absolute displacement from the bottom edge of the premises
-          ls = (unitY * 0.2)
 
 ax1 = toText "P→Q"
 ax2 = toText "Q→R"
