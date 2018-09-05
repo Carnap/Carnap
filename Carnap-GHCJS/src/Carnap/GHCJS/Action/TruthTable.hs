@@ -6,7 +6,7 @@ import Carnap.GHCJS.SharedTypes
 import Carnap.Core.Data.AbstractSyntaxDataTypes
 import Carnap.Core.Data.AbstractSyntaxClasses (Schematizable, Modelable(..))
 import Carnap.Calculi.NaturalDeduction.Syntax (NaturalDeductionCalc(..))
-import Carnap.Languages.PurePropositional.Logic (propCalc)
+import Carnap.Languages.PurePropositional.Logic (montagueSCCalc)
 import Carnap.Languages.PurePropositional.Parser
 import Carnap.Languages.PurePropositional.Util (getIndicies)
 import Carnap.Languages.PurePropositional.Syntax (PureForm)
@@ -40,7 +40,7 @@ activateTruthTables :: Document -> Maybe (Element, Element, Map String String) -
 activateTruthTables w (Just (i,o,opts)) = 
         case M.lookup "tabletype" opts of
             (Just "simple") -> checkerWith (purePropFormulaParser standardLetters <* eof) createSimpleTruthTable
-            (Just "validity") -> checkerWith (ndParseSeq propCalc) createValidityTruthTable
+            (Just "validity") -> checkerWith (ndParseSeq montagueSCCalc) createValidityTruthTable
             _  -> return ()
     where optlist = case M.lookup "options" opts of Just s -> words s; Nothing -> []
           checkerWith parser ttfunc = 

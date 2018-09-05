@@ -38,15 +38,14 @@ stanzas:
     # Uncomment to turn on directory listings.
     # directory-listing: true
 
-  # Redirect plain domain name to www.
-  # - type: redirect
+  - type: redirect
 
-  #   hosts:
-  #     - Carnap-Server.com
-  #   actions:
-  #     - host: www.Carnap-Server.com
-  #       # secure: false
-  #       # port: 80
+    hosts:
+      - www.carnap.io
+    actions:
+      - host: carnap.io
+        secure: true
+        # port: 80
 
     # Uncomment to switch to a non-permanent redirect.
     # status: 303

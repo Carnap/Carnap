@@ -10,7 +10,7 @@ import Carnap.Core.Data.AbstractSyntaxClasses (Schematizable, Handed(..))
 import Carnap.Languages.ClassicalSequent.Syntax
 import Carnap.Languages.PurePropositional.Logic as P 
     (DerivedRule(..), logicBookSDCalc, logicBookSDPlusCalc, magnusSLCalc,
-    magnusSLPlusCalc, propCalc, hardegreeSLCalc
+    magnusSLPlusCalc, montagueSCCalc, hardegreeSLCalc
     , thomasBolducAndZachTFLCalc, tomassiPLCalc)
 import Carnap.Languages.PurePropositional.Logic.Rules (derivedRuleToSequent)
 import Carnap.Languages.PureFirstOrder.Logic as FOL 
@@ -103,7 +103,7 @@ rulePost x = rulePost' x x
 activateChecker ::  IORef [(String,P.DerivedRule)] -> Document -> Maybe IOGoal -> IO ()
 activateChecker _ _ Nothing  = return ()
 activateChecker drs w (Just iog@(IOGoal i o g _ opts)) -- TODO: need to update non-montague calculi to take first/higher-order derived rules
-        | sys == "prop"                      = tryParse propCalc propChecker
+        | sys == "prop"                      = tryParse montagueSCCalc propChecker
         | sys == "firstOrder"                = tryParse folCalc folChecker
         | sys == "montagueFOL"               = tryParse montagueFolCalc folChecker
         | sys == "secondOrder"               = tryParse msolCalc noRuntimeOptions
@@ -280,7 +280,7 @@ trySave drs ref w i = do isFinished <- liftIO $ readIORef ref
                          rules <- liftIO $ readIORef drs
                          if isFinished
                            then do (Just v) <- getValue (castToHTMLTextAreaElement i)
-                                   let Feedback mseq _ = toDisplaySequence (ndProcessLine propCalc) . ndParseProof propCalc (configFrom rules mempty) $ v
+                                   let Feedback mseq _ = toDisplaySequence (ndProcessLine montagueSCCalc) . ndParseProof montagueSCCalc (configFrom rules mempty) $ v
                                    case mseq of
                                     Nothing -> message "A rule can't be extracted from this proof"
                                     (Just (a :|-: c)) -> do

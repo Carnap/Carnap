@@ -59,7 +59,7 @@ import GHCJS.DOM.EventTargetClosures (EventName(..))
 import Carnap.GHCJS.SharedTypes
 import Carnap.Calculi.NaturalDeduction.Syntax (NaturalDeductionCalc(..))
 import Carnap.Languages.PurePropositional.Syntax (PureForm)
-import Carnap.Languages.PurePropositional.Logic (propCalc)
+import Carnap.Languages.PurePropositional.Logic (montagueSCCalc)
 import Carnap.Languages.PureFirstOrder.Parser (folFormulaParser)
 import Carnap.Languages.PureFirstOrder.Logic (folCalc)
 import Carnap.Languages.PurePropositional.Parser (purePropFormulaParser, standardLetters)
@@ -355,7 +355,7 @@ buttonWrapper w = do (Just bw) <- createElement w (Just "div")
 formAndLabel :: Monad m => ParsecT String u m (String, PureForm)
 formAndLabel = withLabel (purePropFormulaParser standardLetters <* eof)
 
-seqAndLabel = withLabel (ndParseSeq propCalc)
+seqAndLabel = withLabel (ndParseSeq montagueSCCalc)
 
 folSeqAndLabel =  withLabel (ndParseSeq folCalc)
 

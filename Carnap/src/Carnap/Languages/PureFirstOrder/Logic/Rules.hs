@@ -186,7 +186,7 @@ montagueNewExistentialConstraint cs ded lineno sub =
 
 montagueNewUniversalConstraint cs ded lineno sub = 
         case relevantForms of
-            [] -> Just "No show line found for this rule. But this rule requires a preceeding show line"
+            [] -> Just "No show line found for this rule. But this rule requires a preceeding show line. Remeber to align opening and closing lines of subproofs."
             x:xs | boundVarOf c' x -> if any (occursIn c') xs 
                                           then Just $ "The variable " ++ show c' ++ " occurs freely somewhere before the show line of this rule"
                                           else Nothing

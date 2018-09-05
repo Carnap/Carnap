@@ -23,7 +23,7 @@ import Carnap.Languages.PureFirstOrder.Logic.Rules
 --2. Classical First-Order Logic
 --------------------------------------------------------
 
-data MontagueFOLogic =  SL P.PropLogic
+data MontagueFOLogic =  SL P.MontagueSC
                 | UD  | UI  | EG  | EI | QN1 | QN2  | QN3  | QN4  
                 | LL1 | LL2 | EL1 | EL2 | ID  | SM  | ALL1 | ALL2
                 | DER (ClassicalSequentOver PureLexiconFOL (Sequent (Form Bool)))
@@ -91,7 +91,7 @@ instance Inference MontagueFOLogic PureLexiconFOL (Form Bool) where
 
 parseMontagueFOLogic :: RuntimeNaturalDeductionConfig PureLexiconFOL (Form Bool) -> Parsec String u [MontagueFOLogic]
 parseMontagueFOLogic rtc = try quantRule <|> liftProp
-    where liftProp = do r <- P.parsePropLogic (RuntimeNaturalDeductionConfig mempty mempty)
+    where liftProp = do r <- P.parseMontagueSC (RuntimeNaturalDeductionConfig mempty mempty)
                         return (map SL r)
           quantRule = do r <- choice (map (try . string) ["PR", "UI", "UD", "EG", "EI", "QN","LL","EL","Id","Sm","D-"])
                          case r of 
