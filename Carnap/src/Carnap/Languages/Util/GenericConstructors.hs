@@ -2,6 +2,7 @@
 module Carnap.Languages.Util.GenericConstructors where
 
 import Carnap.Core.Data.AbstractSyntaxDataTypes
+import Carnap.Core.Data.Optics
 import Carnap.Core.Data.AbstractSyntaxClasses 
 import Data.List (intercalate)
 

@@ -2,6 +2,7 @@
 module Carnap.Languages.Util.LanguageClasses where
 
 import Carnap.Core.Data.AbstractSyntaxDataTypes
+import Carnap.Core.Data.Optics
 import Carnap.Core.Data.Util (incArity)
 import Carnap.Core.Util (Nat(Zero))
 import Carnap.Languages.Util.GenericConstructors

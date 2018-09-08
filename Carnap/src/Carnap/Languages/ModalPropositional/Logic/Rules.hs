@@ -12,6 +12,7 @@ import Carnap.Core.Unification.Combination
 import Carnap.Core.Unification.FirstOrder
 import Carnap.Core.Unification.ACUI
 import Carnap.Core.Data.AbstractSyntaxClasses
+import Carnap.Core.Data.Optics
 import Carnap.Core.Data.AbstractSyntaxDataTypes
 import Carnap.Core.Data.Util (scopeHeight)
 import Carnap.Languages.ModalPropositional.Syntax
