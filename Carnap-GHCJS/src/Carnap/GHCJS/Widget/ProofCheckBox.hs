@@ -12,12 +12,13 @@ import Control.Monad.IO.Class
 import Control.Monad (when)
 import Control.Concurrent
 import GHCJS.DOM.Types
-import GHCJS.DOM.Element (setAttribute, getAttribute, getInnerHTML, setInnerHTML,keyDown,keyUp,click,getScrollWidth,getScrollHeight)
+import GHCJS.DOM.Element (setAttribute, getAttribute, getInnerHTML, setInnerHTML, keyDown, keyUp, click, getScrollWidth, getScrollHeight)
+import GHCJS.DOM.HTMLElement (castToHTMLElement, setSpellcheck)
 import GHCJS.DOM.Document (createElement, getDefaultView, getBody, getHead, getDomain, setDomain,getElementsByTagName)
 import GHCJS.DOM.Window (open,getDocument)
 import GHCJS.DOM.Node (appendChild, removeChild, getParentNode, cloneNode)
 import GHCJS.DOM.EventM (EventM, target, newListener,addListener)
-import GHCJS.DOM.HTMLTextAreaElement (castToHTMLTextAreaElement,setValue,getValue,setSelectionEnd,getSelectionStart)
+import GHCJS.DOM.HTMLTextAreaElement (castToHTMLTextAreaElement, setValue, getValue, setSelectionEnd, getSelectionStart, setAutocapitalize, setAutocorrect)
 
 data Button = Button { label  :: String 
                      , action :: IORef Bool -> Window -> Element -> 
@@ -45,6 +46,9 @@ checkerWith options updateres iog@(IOGoal i o g content _) w = do
            elts <- mapM (createElement w . Just) ["div","div","div","div","div"]
            let [Just fd, Just nd, Just sd, Just incompleteAlert, Just aligner] = elts
            bw <- buttonWrapper w
+           setSpellcheck (castToHTMLElement i) False
+           setAutocapitalize (castToHTMLTextAreaElement i) (Just "off")
+           setAutocorrect (castToHTMLTextAreaElement i) False
            setInnerHTML i (Just content)
            setAttribute aligner "class" "aligner"
            setAttribute fd "class" "proofFeedback"
