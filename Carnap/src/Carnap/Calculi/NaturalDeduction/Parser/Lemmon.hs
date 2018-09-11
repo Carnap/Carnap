@@ -16,7 +16,9 @@ parseDependentAssertLine withNum r f j  = do mscope <- optionMaybe scope
                                              let thescope = case mscope of Nothing -> []; Just l -> l
                                              spaces
                                              mnum <- if withNum 
-                                                        then (char '(' *> (Just . read <$> many1 digit) <* char ')') <?> "line number"
+                                                        then (char '(' *> (Just . read <$> many1 digit) <* char ')') 
+                                                             <|> ((Just . read <$> many1 digit) <* char '.')
+                                                             <?> "line number"
                                                         else return Nothing
                                              spaces
                                              phi <- f
