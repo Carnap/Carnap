@@ -32,6 +32,7 @@ data CheckerOptions = CheckerOptions { submit :: Maybe Button -- What's the subm
                                      , render :: Bool -- Should the checker render the proof?
                                      , directed :: Bool -- Is the checker directed towards a sequent?
                                      , feedback :: CheckerFeedbackUpdate --what type of feedback should the checker give?
+                                     , alternateSymbols :: String -> String
                                      , initialUpdate :: Bool -- Should the checker be updated on load?
                                      , indentGuides :: Bool -- Should the checker display indentation guides?
                                      , autoIndent :: Bool -- Should the checker indent automatically?

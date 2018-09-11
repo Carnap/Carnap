@@ -9,7 +9,7 @@ module Lib
     folSeqAndLabel, folFormAndLabel, message, IOGoal(..), updateWithValue,
     submissionSource, assignmentKey, initialize, popUpWith, spinnerSVG,
     doneButton, questionButton, exclaimButton, expandButton, buttonWrapper,
-    maybeNodeListToList, trySubmit) where
+    maybeNodeListToList, trySubmit, alternateSymbols1) where
 
 import Data.Aeson
 import Data.Maybe (catMaybes)
@@ -376,6 +376,15 @@ trySubmit problemType opts ident problemData correct =
                                    (Submit problemType ident problemData source correct (M.lookup "points" opts >>= readMaybe) key) 
                                    (loginCheck $ "Submitted Exercise " ++ ident)
                                    errorPopup
+
+-----------------------------------
+--  1.7.1 Alternate Symbol Sets  --
+-----------------------------------
+
+alternateSymbols1 = map replace
+    where replace '∧' = '&'
+          replace '¬' = '~'
+          replace c = c
 
 ------------------
 --1.8 SVG Data  --

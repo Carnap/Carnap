@@ -142,7 +142,7 @@ activateChecker drs w (Just iog@(IOGoal i o g _ opts)) -- TODO: need to update n
                   memo <- newIORef mempty
                   mtref <- newIORef Nothing
                   mpd <- if render options then Just <$> makeDisplay else return Nothing
-                  mseq <- if directed options then parseGoal calc else return Nothing
+                  mseq <- if directed options then parseGoal options calc else return Nothing
                   let theChecker = checker calc drs mseq mtref mpd memo
                       checkSeq = threadedCheck options theChecker
                       saveProblem l s = Button {label = "Submit" , action = submitDer opts theChecker l g s}
@@ -163,6 +163,9 @@ activateChecker drs w (Just iog@(IOGoal i o g _ opts)) -- TODO: need to update n
                                                                   Just _ -> True
                                                                   Nothing -> False
                                                  , initialUpdate = False
+                                                 , alternateSymbols = case M.lookup "alternate-symbols" opts of
+                                                                          Just "alt1" -> alternateSymbols1
+                                                                          _ -> id
                                                  , indentGuides = "guides" `elem` optlist
                                                  , render = "render" `elem` optlist
                                                  , autoIndent = "indent" `elem` optlist
@@ -176,14 +179,14 @@ activateChecker drs w (Just iog@(IOGoal i o g _ opts)) -- TODO: need to update n
                                        Left e -> error "couldn't parse goal"
                                        Right seq -> seq
 
-              parseGoal calc = do let seqParse = ndParseSeq calc
-                                      (Just seqstring) = M.lookup "goal" opts 
-                                      --XXX: the directed option is set by the existence of a goal, so this match can't fail.
-                                  case parse seqParse "" seqstring of
-                                      Left e -> do setInnerHTML g (Just $ "Couldn't Parse This Goal:" ++ seqstring)
-                                                   error "couldn't parse goal"
-                                      Right seq -> do setInnerHTML g (Just $ show seq)
-                                                      return $ Just seq
+              parseGoal options calc = do let seqParse = ndParseSeq calc
+                                              (Just seqstring) = M.lookup "goal" opts 
+                                              --XXX: the directed option is set by the existence of a goal, so this match can't fail.
+                                          case parse seqParse "" seqstring of
+                                              Left e -> do setInnerHTML g (Just $ "Couldn't Parse This Goal:" ++ seqstring)
+                                                           error "couldn't parse goal"
+                                              Right seq -> do setInnerHTML g (Just $ alternateSymbols options $ show seq)
+                                                              return $ Just seq
               makeDisplay = do (Just pd) <- createElement w (Just "div")
                                setAttribute pd "class" "proofDisplay"
                                (Just parent) <- getParentNode o
@@ -225,12 +228,12 @@ threadedCheck options checker w ref v (g, fd) =
                                                      Nothing -> return $ toDisplaySequence (ndProcessLine ndcalc) ded
                              ul <- case feedback options of
                                        SyntaxOnly -> genericListToUl (syntaxwrap fd w) w ds
-                                       _ -> genericListToUl (wrap fd w) w ds
+                                       _ -> genericListToUl (wrap fd w options) w ds
                              setInnerHTML fd (Just "")
                              appendChild fd (Just ul)
                              case sequent checker of
                                  Just s -> updateGoal s ref g mseq options
-                                 Nothing -> computeRule ref g mseq
+                                 Nothing -> computeRule ref g mseq options
            writeIORef (threadRef checker) (Just t')
            return ()
 
@@ -248,11 +251,12 @@ updateGoal s ref g mseq options =
                                                           else do setAttribute g "class" "goal failure"
                                                                   writeIORef ref False
 
-computeRule ref g mseq = case mseq of
-                         Nothing -> do setInnerHTML g (Just "No Rule Found")
-                                       writeIORef ref False
-                         (Just seq) -> do setInnerHTML g (Just $ show seq)
-                                          writeIORef ref True
+computeRule ref g mseq options = 
+        case mseq of
+           Nothing -> do setInnerHTML g (Just "No Rule Found")
+                         writeIORef ref False
+           (Just seq) -> do setInnerHTML g (Just $ alternateSymbols options $ show seq)
+                            writeIORef ref True
 
 submitDer opts checker l g seq ref _ i = do isFinished <- liftIO $ readIORef ref
                                             (Just v) <- getValue (castToHTMLTextAreaElement i)
@@ -311,9 +315,9 @@ trySave drs ref w i = do isFinished <- liftIO $ readIORef ref
 
 configFrom rules prems = RuntimeNaturalDeductionConfig (M.fromList . map (\(x,y) -> (x,derivedRuleToSequent y)) $ rules) prems
 
-wrap fd w elt (Right s)                  = popUpWith fd w elt "+" (show s) Nothing
-wrap fd w elt (Left (GenericError s n))  = popUpWith fd w elt "?" ("Error on line " ++ show n ++ ": " ++ s) Nothing
-wrap fd w elt (Left (NoParse e n))       = popUpWith fd w elt "⚠" ("Can't read line " ++ show n ++ ". There may be a typo.") (Just . cleanIt . show $ e)
+wrap fd w options elt (Right s) = popUpWith fd w elt "+" (alternateSymbols options $ show s) Nothing
+wrap fd w _ elt (Left (GenericError s n)) = popUpWith fd w elt "?" ("Error on line " ++ show n ++ ": " ++ s) Nothing
+wrap fd w _ elt (Left (NoParse e n)) = popUpWith fd w elt "⚠" ("Can't read line " ++ show n ++ ". There may be a typo.") (Just . cleanIt . show $ e)
     where chunks s = case break (== '\"') s of 
                             (l,[]) -> l:[]
                             (l,_:s') -> l:chunks s'
@@ -325,8 +329,10 @@ wrap fd w elt (Left (NoParse e n))       = popUpWith fd w elt "⚠" ("Can't read
           readMaybe s = case reads s of
                           [(x, "")] -> Just x
                           _ -> Nothing
-wrap fd w elt (Left (NoUnify eqs n))     = popUpWith fd w elt "✗" ("Error on line " ++ show n ++ ". Can't match these premises with this conclusion, using this rule.") (Just $ toUniErr eqs)
-wrap fd w elt (Left (NoResult _))        = setInnerHTML elt (Just "&nbsp;")
+wrap fd w options elt (Left (NoUnify eqs n)) = 
+        popUpWith fd w elt "✗" ("Error on line " ++ show n ++ ". Can't match these premises with this conclusion, using this rule.") 
+                               (Just $ alternateSymbols options $ toUniErr eqs)
+wrap fd w _ elt (Left (NoResult _)) = setInnerHTML elt (Just "&nbsp;")
 
 syntaxwrap fd w elt (Left (NoParse e n))       = popUpWith fd w elt "⚠" ("Can't read line " ++ show n ++ ". There may be a typo.") (Just . cleanIt . show $ e)
           where chunks s = case break (== '\"') s of 
