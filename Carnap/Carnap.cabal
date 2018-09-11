@@ -1,7 +1,7 @@
 name:                Carnap
 version:             0.1.0.0
 synopsis:            Libraries for the Carnap Proof Assistant
-description:         Please see README.md
+description:         See Carnap.io/about
 license:             GPL-3
 license-file:        LICENSE
 author:              Jake Ehrlich, Graham Leach-Krouse
