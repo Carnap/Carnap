@@ -101,7 +101,7 @@ renderTreeLemmon v w = treeToElement asLine asSubproof
                    case v of
                        TomassiStyle -> 
                             do setInnerHTML theScope (Just $ "{" ++ intercalate "," (map show scope) ++ "}")
-                               setInnerHTML theForm (Just $ rewriteTomassiSym $ show f)
+                               setInnerHTML theForm (Just $ alternateSymbols1 $ show f)
                                case mnum of
                                    Nothing -> setInnerHTML lineNum (Just $ show n ++ ".")
                                    Just m -> setInnerHTML lineNum (Just $ show m ++ ".")
