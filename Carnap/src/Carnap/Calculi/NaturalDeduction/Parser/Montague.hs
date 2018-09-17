@@ -14,7 +14,7 @@ import Carnap.Languages.ClassicalSequent.Parser
 
 parseShowLine :: Parsec String u (FixLang lex a) -> Parsec String u (DeductionLine r lex a)
 parseShowLine f = do dpth <- indent
-                     string "Show" <|> string "show"
+                     try (string "Show") <|> string "show" <|> string "SHOW"
                      optional $ char ':'
                      spaces
                      phi <- f <* eof
