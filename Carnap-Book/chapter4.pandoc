@@ -7,12 +7,12 @@ a conditional statement by *assuming* the assertion on the  left side of the
 conditional, and then using whatever means are available to reach the statement
 on the right side of the conditional. 
 
-Intuitively, when you construct an indirect derivation, what you are doing is
+Intuitively, when you construct a conditional derivation, what you are doing is
 imagining, for a moment, that some statement (your "hypothesis") is true and
-seeing what else would be true in that case. When you figure out something
-that would be true in the situation where your hypothesis is true (your
-"result"), that entitles you to assert "If this hypothesis is true, then this
-result is true as well". 
+seeing what else would be true in that case. When you figure out something that
+would be true in the situation where your hypothesis is true (your "result"),
+that entitles you to assert "If this hypothesis is true, then this result is
+true as well". 
 
 This process may be familiar from, for example, hypothetical questions on exams.
 
