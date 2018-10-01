@@ -50,6 +50,7 @@ checkerWith options updateres iog@(IOGoal i o g content _) w = do
            setSpellcheck (castToHTMLElement i) False
            setAutocapitalize (castToHTMLTextAreaElement i) (Just "off")
            setAutocorrect (castToHTMLTextAreaElement i) False
+           setAttribute i "data-gramm" "false" -- attempt to disable grammarly
            setInnerHTML i (Just content)
            setAttribute aligner "class" "aligner"
            setAttribute fd "class" "proofFeedback"
