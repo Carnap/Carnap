@@ -115,7 +115,7 @@ officially count as a legitimate nested derivation.
 Nested Direct Derivation
 :   
 
-    A Nested Direct Derivation is is a sequence of assertions, aimed at
+    A Nested Direct Derivation is a sequence of assertions, aimed at
     showing some statement φ, each of which is justified, either because
 
     * it is a premise of the argument under consideration;
@@ -138,7 +138,7 @@ line.
 Nested Conditional Derivation
 :   
 
-    A Nested Conditional Derivation is is a sequence of assertions aimed at 
+    A Nested Conditional Derivation is a sequence of assertions aimed at 
     showing some statement φ → ψ, beginning with an assumption that φ, in 
     which every assertion after the first is justified, either because
 
