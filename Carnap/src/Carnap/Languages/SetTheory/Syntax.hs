@@ -56,3 +56,17 @@ type ElementarySetTheoryLang = FixLang ElementarySetTheoryLex
 
 instance PrismElementarySetsLex (ElementarySetTheoryLexOpen a) Int
 instance PrismTermSubset (ElementarySetTheoryLexOpen a) Int Bool
+
+-----------------------------------------
+--  3. Separative First-Order Lexicon  --
+-----------------------------------------
+
+type SetTheorySep = Separation Int Bool
+
+type SeparativeSetTheoryLexOpen a = ElementarySetTheoryLexOpen SetTheorySep
+
+type SeparativeSetTheoryLex = SeparativeSetTheoryLexOpen EndLang
+
+type SeparativeSetTheoryLang = FixLang SeparativeSetTheoryLex
+
+instance PrismSeparating SeparativeSetTheoryLex Int Bool
