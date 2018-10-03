@@ -1,4 +1,4 @@
-{-#LANGUAGE GADTs, RankNTypes, FlexibleContexts, PatternSynonyms, TypeSynonymInstances, FlexibleInstances, MultiParamTypeClasses #-}
+{-#LANGUAGE GADTs, ConstraintKinds, RankNTypes, FlexibleContexts, PatternSynonyms, TypeSynonymInstances, FlexibleInstances, MultiParamTypeClasses #-}
 module Carnap.Languages.PureFirstOrder.Logic.Rules where
 
 import Data.List (intercalate)
@@ -210,20 +210,20 @@ montagueNewUniversalConstraint cs ded lineno sub =
 --  1.1. Common Rules  --
 -------------------------
 
-type FirstOrderRule lex b = 
+type FirstOrderConstraints lex b = 
         ( Typeable b
         , BooleanLanguage (ClassicalSequentOver lex (Form b))
         , IndexedSchemeConstantLanguage (ClassicalSequentOver lex (Term Int))
         , IndexedSchemePropLanguage (ClassicalSequentOver lex (Form b))
         , QuantLanguage (ClassicalSequentOver lex (Form b)) (ClassicalSequentOver lex (Term Int)) 
         , PolyadicSchematicPredicateLanguage (ClassicalSequentOver lex) (Term Int) (Form b)
-        ) => SequentRule lex (Form b)
+        )
+
+type FirstOrderRule lex b = FirstOrderConstraints lex b => SequentRule lex (Form b)
 
 type FirstOrderEqRule lex b = 
-        ( Typeable b
+        ( FirstOrderConstraints lex b
         , EqLanguage (ClassicalSequentOver lex) (Term Int) (Form b)
-        , IndexedSchemeConstantLanguage (ClassicalSequentOver lex (Term Int))
-        , PolyadicSchematicPredicateLanguage (ClassicalSequentOver lex) (Term Int) (Form b)
         ) => SequentRule lex (Form b)
 
 eqReflexivity :: FirstOrderEqRule lex b
@@ -268,23 +268,13 @@ negatedUniversalInstantiation = [ GammaV 1 :|-: SS (lneg $ lall "v" (phi 1))]
 ------------------------------------
 --  1.2. Rules with Variations  --
 ------------------------------------
+        
+type FirstOrderRuleVariants lex b = FirstOrderConstraints lex b => [SequentRule lex (Form b)]
 
 type FirstOrderEqRuleVariants lex b = 
-        ( Typeable b
-        , BooleanLanguage (ClassicalSequentOver lex (Form b))
+        ( FirstOrderConstraints lex b 
         , EqLanguage (ClassicalSequentOver lex) (Term Int) (Form b)
-        , IndexedSchemeConstantLanguage (ClassicalSequentOver lex (Term Int))
-        , PolyadicSchematicPredicateLanguage (ClassicalSequentOver lex) (Term Int) (Form b)
         , SchematicPolyadicFunctionLanguage (ClassicalSequentOver lex) (Term Int) (Term Int)
-        ) => [SequentRule lex (Form b)]
-        
-type FirstOrderRuleVariants lex b = 
-        ( Typeable b
-        , BooleanLanguage (ClassicalSequentOver lex (Form b))
-        , IndexedSchemeConstantLanguage (ClassicalSequentOver lex (Term Int))
-        , QuantLanguage (ClassicalSequentOver lex (Form b)) (ClassicalSequentOver lex (Term Int)) 
-        , IndexedSchemePropLanguage (ClassicalSequentOver lex (Form b))
-        , PolyadicSchematicPredicateLanguage (ClassicalSequentOver lex) (Term Int) (Form b)
         ) => [SequentRule lex (Form b)]
 
 leibnizLawVariations :: FirstOrderEqRuleVariants lex b
