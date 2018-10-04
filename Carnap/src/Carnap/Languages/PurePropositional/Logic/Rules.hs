@@ -4,7 +4,7 @@ module Carnap.Languages.PurePropositional.Logic.Rules where
 import Text.Parsec
 import Data.List
 import Data.Maybe (catMaybes)
-import Control.Lens (toListOf)
+import Control.Lens (toListOf, view)
 import Carnap.Calculi.NaturalDeduction.Syntax
 import Data.Typeable
 import Carnap.Core.Unification.Unification
@@ -56,8 +56,7 @@ premConstraint (Just prems) sub | theinstance `elem` prems = Nothing
                                 | otherwise = Just (show (project theinstance) ++ " is not one of the premises " 
                                                                                ++ intercalate ", " (map (show . project) prems))
     where theinstance = pureBNF . applySub sub $ (SA (phin 1) :|-: SS (phin 1))
-          project :: ClassicalSequentOver lex (Sequent a) -> ClassicalSequentOver lex (Succedent a)
-          project = (\(x :|-: y) -> y)
+          project = view rhs
 
 dischargeConstraint n ded lhs sub | and (map (`elem` forms) lhs') = Nothing
                                   | otherwise = Just $ "Some of the stated dependencies in " ++ show lhs' ++ ", are not among the inferred dependencies " ++ show forms ++ "."
