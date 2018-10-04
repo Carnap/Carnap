@@ -27,7 +27,6 @@ type ElementarySetTheoryConstraint lex b =
         ( FirstOrderConstraints lex b
         , SubsetLanguage (ClassicalSequentOver lex) (Term Int) (Form b)
         , ElemLanguage (ClassicalSequentOver lex) (Term Int) (Form b)
-        , SchematicPolyadicFunctionLanguage (ClassicalSequentOver lex) (Term Int) (Term Int)
         , ElementarySetsLanguage (ClassicalSequentOver lex (Term Int))
         ) 
 
@@ -37,3 +36,13 @@ type ElementarySetTheoryRuleVariants lex b = ElementarySetTheoryConstraint lex b
 
 unpackUnion :: IndexedPropContextSchemeLanguage (ClassicalSequentOver lex (Form b)) => ElementarySetTheoryRuleVariants lex b
 unpackUnion = replace ((tau `isIn` tau') .\/. (tau `isIn` tau'')) (tau `isIn` (tau' `setUnion` tau''))
+
+unpackIntersection :: IndexedPropContextSchemeLanguage (ClassicalSequentOver lex (Form b)) => ElementarySetTheoryRuleVariants lex b
+unpackIntersection = replace ((tau `isIn` tau') ./\. (tau `isIn` tau'')) (tau `isIn` (tau' `setIntersect` tau''))
+
+unpackPowerset :: IndexedPropContextSchemeLanguage (ClassicalSequentOver lex (Form b)) => ElementarySetTheoryRuleVariants lex b
+unpackPowerset = replace (tau `within` tau') (tau `isIn` (powerset tau'))
+
+unpackComplement :: IndexedPropContextSchemeLanguage (ClassicalSequentOver lex (Form b)) => ElementarySetTheoryRuleVariants lex b
+unpackComplement = replace ((tau `isIn` tau')./\. lneg (tau `isIn` tau''))  (tau `isIn` (tau' `setComplement` tau')) ++
+                   replace (lneg (tau `isIn` tau'') ./\. lneg (tau `isIn` tau'))  (tau `isIn` (tau' `setComplement` tau'))
