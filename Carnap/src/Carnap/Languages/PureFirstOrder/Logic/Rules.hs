@@ -56,9 +56,6 @@ instance Eq (FOLSequentCalc a) where
 instance ParsableLex (Form Bool) PureLexiconFOL where
         langParser = folFormulaParser
 
-instance IndexedSchemeConstantLanguage (FOLSequentCalc (Term Int)) where
-        taun = SeqT
-
 folSeqParser = seqFormulaParser :: Parsec String u (FOLSequentCalc (Sequent (Form Bool)))
 
 tau :: IndexedSchemeConstantLanguage (FixLang lex (Term Int)) => FixLang lex (Term Int)
@@ -66,6 +63,9 @@ tau = taun 1
 
 tau' :: IndexedSchemeConstantLanguage (FixLang lex (Term Int)) => FixLang lex (Term Int)
 tau' = taun 2
+
+tau'' :: IndexedSchemeConstantLanguage (FixLang lex (Term Int)) => FixLang lex (Term Int)
+tau'' = taun 3
 
 phi :: (Typeable b, PolyadicSchematicPredicateLanguage (FixLang lex) (Term Int) (Form b))
     => Int -> (FixLang lex) (Term Int) -> (FixLang lex) (Form b)

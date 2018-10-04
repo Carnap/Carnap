@@ -429,6 +429,9 @@ class (Typeable c, Typeable b, PrismLink (FixLang lex) (Function (SchematicIntFu
                              (\x -> case x of (Function (SFunc a' n) a'') | arityInt a == arityInt a' -> Just n
                                               _ -> Nothing)
 
+instance {-#OVERLAPPABLE#-} PrismPolyadicSchematicFunction lex b b => IndexedSchemeConstantLanguage (FixLang lex (Term b)) where
+        taun n = review (_sfuncIdx (AZero :: Arity (Term b) (Term b) Zero (Term b))) n
+
 instance {-#OVERLAPPABLE#-} PrismPolyadicSchematicFunction lex c b => SchematicPolyadicFunctionLanguage (FixLang lex) (Term c) (Term b) where
         spfn n a = review (_sfuncIdx a) n
 
