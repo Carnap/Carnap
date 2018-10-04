@@ -1,4 +1,4 @@
-{-#LANGUAGE GADTs, ConstraintKinds, FlexibleContexts, RankNTypes, PatternSynonyms,  FlexibleInstances, MultiParamTypeClasses #-}
+{-#LANGUAGE GADTs, ScopedTypeVariables, ConstraintKinds, FlexibleContexts, RankNTypes, PatternSynonyms,  FlexibleInstances, MultiParamTypeClasses #-}
 module Carnap.Languages.SetTheory.Logic.Rules where
 
 import Data.Typeable
@@ -21,7 +21,6 @@ import Carnap.Languages.Util.GenericConstructors
 ------------------------
 --  1.1 Simple Rules  --
 ------------------------
---Rules without variants
 
 type ElementarySetTheoryConstraint lex b = 
         ( FirstOrderConstraints lex b
@@ -46,3 +45,19 @@ unpackPowerset = replace (tau `within` tau') (tau `isIn` (powerset tau'))
 unpackComplement :: IndexedPropContextSchemeLanguage (ClassicalSequentOver lex (Form b)) => ElementarySetTheoryRuleVariants lex b
 unpackComplement = replace ((tau `isIn` tau')./\. lneg (tau `isIn` tau''))  (tau `isIn` (tau' `setComplement` tau')) ++
                    replace (lneg (tau `isIn` tau'') ./\. lneg (tau `isIn` tau'))  (tau `isIn` (tau' `setComplement` tau'))
+
+----------------------------
+--  1.2 Separation rules  --
+----------------------------
+
+type SeparationSetTheoryConstraint lex b = 
+        ( FirstOrderConstraints lex b
+        , ElemLanguage (ClassicalSequentOver lex) (Term Int) (Form b)
+        , SeparatingLang (ClassicalSequentOver lex (Form b)) (ClassicalSequentOver lex (Term Int)) 
+        )
+
+type SeparatingSetTheoryVariants lex b = SeparationSetTheoryConstraint lex b => [SequentRule lex (Form b)]
+
+unpackSepration :: forall b. forall lex. IndexedPropContextSchemeLanguage (ClassicalSequentOver lex (Form b)) => SeparatingSetTheoryVariants lex b
+unpackSepration = replace ((seperator tau) ./\. (tau `isIn` tau')) (tau `isIn` separate "v" tau' seperator)
+    where seperator = phi 1 :: ClassicalSequentOver lex (Term Int) -> ClassicalSequentOver lex (Form b)
