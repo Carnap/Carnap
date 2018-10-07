@@ -230,7 +230,7 @@ eqReflexivity :: FirstOrderEqRule lex b
 eqReflexivity = [] ∴ Top :|-: SS (tau `equals` tau)
 
 eqSymmetry :: FirstOrderEqRule lex b
-eqSymmetry = [GammaV 1 :|-: SS (tau `equals` tau')] ∴ GammaV 1 :|-: SS (tau `equals` tau')
+eqSymmetry = [GammaV 1 :|-: SS (tau `equals` tau')] ∴ GammaV 1 :|-: SS (tau' `equals` tau)
 
 universalGeneralization :: FirstOrderRule lex b
 universalGeneralization = [ GammaV 1 :|-: SS (phi 1 (taun 1))]

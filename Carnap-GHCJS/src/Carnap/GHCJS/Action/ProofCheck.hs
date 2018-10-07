@@ -24,6 +24,7 @@ import Carnap.Languages.ModalPropositional.Logic as MPL
     , hardegreeBCalc, hardegreeDCalc, hardegreeFourCalc, hardegreeFiveCalc)
 import Carnap.Languages.PureSecondOrder.Logic 
     (msolCalc, psolCalc) 
+import Carnap.Languages.SetTheory.Logic.KalishAndMontague (estCalc)
 import Carnap.Languages.ModalFirstOrder.Logic
     ( hardegreeMPLCalc )
 import Carnap.Languages.PurePropositional.Util (toSchema)
@@ -108,6 +109,7 @@ activateChecker drs w (Just iog@(IOGoal i o g _ opts)) -- TODO: need to update n
         | sys == "firstOrder"                = tryParse folCalc folChecker
         | sys == "secondOrder"               = tryParse msolCalc noRuntimeOptions
         | sys == "polyadicSecondOrder"       = tryParse psolCalc noRuntimeOptions
+        | sys == "elementarySetTheory"       = tryParse estCalc noRuntimeOptions
         | sys == "montagueSC"                = tryParse montagueSCCalc propChecker
         | sys == "montagueQC"                = tryParse montagueQCCalc folChecker
         | sys == "LogicBookSD"               = tryParse logicBookSDCalc propChecker

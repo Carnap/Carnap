@@ -27,7 +27,7 @@ type SetTheorySubset = TermSubset Bool Int
 
 type SetTheorySchematicPred = SchematicIntPred Bool Int
 
-type OpenLexicon a = CoreLexicon :|: Predicate SetTheoryElem :|: Predicate SetTheoryEq :|:  Function PureSchematicFunction :|: a
+type OpenLexicon a = CoreLexicon :|: Predicate SetTheoryElem :|: Predicate SetTheoryEq :|: Predicate PureSchematicPred :|:  Function PureSchematicFunction :|: a
 --XXX: as an extension of FOL, this falls under all the classes of PureFirstOrderLex a = CoreLexicon :|: a
 
 instance PrismPolyadicSchematicPredicate (OpenLexicon a) Int Bool

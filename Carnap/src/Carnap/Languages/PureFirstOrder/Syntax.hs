@@ -257,8 +257,8 @@ instance PrismPolyadicFunction PureLexiconFOL Int Int
 instance PrismPolyadicSchematicFunction PureLexiconFOL Int Int
 
 instance Incrementable (OpenLexiconPFOL (PolyadicFunctionSymbolsAndIdentity :|: a)) (Term Int) where
-    incHead (PP n a b)  = Just $ PP n (ASucc a) (ASucc a)
-    incHead (PF n a b)  = Just $ PF n (ASucc a) (ASucc a)
-    incHead (PSF n a b) = Just $ PSF n (ASucc a) (ASucc a)
+    incHead (PP n a b)   = Just $ PP n (ASucc a) (ASucc a)
+    incHead (PF n a b)   = Just $ PF n (ASucc a) (ASucc a)
+    incHead (PSF n a b)  = Just $ PSF n (ASucc a) (ASucc a)
     incHead (PPhi n a b) = Just $ PPhi n (ASucc a) (ASucc a)
     incHead _  = Nothing

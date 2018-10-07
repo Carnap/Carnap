@@ -1,6 +1,6 @@
 {-#LANGUAGE  FlexibleContexts,  FlexibleInstances, MultiParamTypeClasses #-}
 module Carnap.Languages.SetTheory.Logic.KalishAndMontague
-        (kalishAndMontagueESTCalc)
+        (estCalc)
     where
 
 import Carnap.Core.Data.AbstractSyntaxDataTypes
@@ -8,7 +8,7 @@ import Carnap.Languages.SetTheory.Syntax
 import Carnap.Languages.ClassicalSequent.Syntax
 import Carnap.Languages.Util.GenericConstructors
 import Carnap.Languages.PurePropositional.Logic.Rules (axiom, premConstraint)
-import Carnap.Languages.PureFirstOrder.Logic (FOLogic(ED1,ED2,UD), parseFOLogic)
+import Carnap.Languages.PureFirstOrder.Logic (FOLogic(ED1,ED2,UD, UI, EG, UD, ED1, ED2, QN1, QN2, QN3, QN4, LL1, LL2, ALL1, ALL2, EL1, EL2, ID, SM, SL), parseFOLogic)
 import Carnap.Languages.PureFirstOrder.Parser
 import Carnap.Languages.SetTheory.Parser
 import Carnap.Languages.ClassicalSequent.Parser
@@ -18,6 +18,7 @@ import Carnap.Calculi.NaturalDeduction.Checker (hoProcessLineMontague, hoProcess
 import Carnap.Languages.Util.LanguageClasses
 import Carnap.Languages.Util.GenericConstructors
 import Text.Parsec
+import Carnap.Languages.PureFirstOrder.Logic.Rules
 import Carnap.Languages.SetTheory.Logic.Rules
 import Carnap.Languages.PureFirstOrder.Logic.Rules (phi, phi',eigenConstraint, tau)
 
@@ -49,11 +50,28 @@ instance Inference ESTLogic ElementarySetTheoryLex (Form Bool) where
      ruleOf DefI2     = unpackIntersection !! 1
      ruleOf DefP2     = unpackPowerset !! 1
      ruleOf DefC2     = unpackComplement !! 1
+     ruleOf (FO UI  ) = universalInstantiation
+     ruleOf (FO EG  ) = existentialGeneralization
+     ruleOf (FO UD  ) = universalGeneralization
+     ruleOf (FO ED1 ) = existentialDerivation !! 0
+     ruleOf (FO ED2 ) = existentialDerivation !! 1
+     ruleOf (FO QN1 ) = quantifierNegation !! 0
+     ruleOf (FO QN2 ) = quantifierNegation !! 1
+     ruleOf (FO QN3 ) = quantifierNegation !! 2
+     ruleOf (FO QN4 ) = quantifierNegation !! 3
+     ruleOf (FO LL1 ) = leibnizLawVariations !! 0
+     ruleOf (FO LL2 ) = leibnizLawVariations !! 1
+     ruleOf (FO ALL1) = antiLeibnizLawVariations !! 0
+     ruleOf (FO ALL2) = antiLeibnizLawVariations !! 1
+     ruleOf (FO EL1 ) = euclidsLawVariations !! 0
+     ruleOf (FO EL2 ) = euclidsLawVariations !! 1
+     ruleOf (FO ID  ) = eqReflexivity
+     ruleOf (FO SM  ) = eqSymmetry
 
-     premisesOf (FO x) = map liftSequent (premisesOf x)
+     premisesOf (FO (SL x)) = map liftSequent (premisesOf x)
      premisesOf r = upperSequents (ruleOf r)
 
-     conclusionOf (FO x) = liftSequent (conclusionOf x)
+     conclusionOf (FO (SL x)) = liftSequent (conclusionOf x)
      conclusionOf r = lowerSequent (ruleOf r)
 
      restriction (PR prems) = Just (premConstraint prems)
@@ -87,7 +105,7 @@ parseESTProof:: RuntimeNaturalDeductionConfig ElementarySetTheoryLex (Form Bool)
                     -> String -> [DeductionLine ESTLogic ElementarySetTheoryLex (Form Bool)]
 parseESTProof rtc = toDeductionMontague (parseESTLogic rtc) elementarySetTheoryParser
 
-kalishAndMontagueESTCalc = NaturalDeductionCalc 
+estCalc = NaturalDeductionCalc 
     { ndRenderer = MontagueStyle
     , ndParseProof = parseESTProof
     , ndProcessLine = hoProcessLineMontague
