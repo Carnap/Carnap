@@ -1,6 +1,6 @@
 {-#LANGUAGE TypeOperators, FlexibleContexts#-}
 module Carnap.Languages.SetTheory.Parser 
-( strictSetTheoryParser) where
+( strictSetTheoryParser, elementarySetTheoryParser) where
 
 import Carnap.Languages.SetTheory.Syntax
 import Carnap.Languages.Util.LanguageClasses (BooleanLanguage, BooleanConstLanguage, IndexedPropLanguage(..), QuantLanguage(..))

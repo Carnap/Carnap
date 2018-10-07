@@ -2,6 +2,8 @@
 module Carnap.Languages.SetTheory.Logic.Rules where
 
 import Data.Typeable
+import Carnap.Core.Data.Util (scopeHeight)
+import Data.List (intercalate)
 import Carnap.Calculi.NaturalDeduction.Syntax
 import Carnap.Core.Unification.Unification
 import Carnap.Core.Unification.Combination
@@ -32,6 +34,22 @@ type ElementarySetTheoryConstraint lex b =
 type ElementarySetTheoryRule lex b = ElementarySetTheoryConstraint lex b => SequentRule lex (Form b)
 
 type ElementarySetTheoryRuleVariants lex b = ElementarySetTheoryConstraint lex b => [SequentRule lex (Form b)]
+
+instance CopulaSchema (ClassicalSequentOver ElementarySetTheoryLex) where 
+
+    appSchema (SeqQuant (All x)) (LLam f) e = schematize (All x) (show (f $ SeqV x) : e)
+    appSchema (SeqQuant (Some x)) (LLam f) e = schematize (Some x) (show (f $ SeqV x) : e)
+    appSchema x y e = schematize x (show y : e)
+
+    lamSchema f [] = "λβ_" ++ show h ++ "." ++ show (f (SeqSV (-1 * h)))
+        where h = scopeHeight (LLam f)
+    lamSchema f (x:xs) = "(λβ_" ++ show h ++ "." ++ show (f (SeqSV (-1 * h))) ++ intercalate " " (x:xs) ++ ")"
+        where h = scopeHeight (LLam f)
+
+instance Eq (ClassicalSequentOver ElementarySetTheoryLex a) where (==) = (=*)
+
+instance ParsableLex (Form Bool) ElementarySetTheoryLex where
+        langParser = elementarySetTheoryParser
 
 unpackUnion :: IndexedPropContextSchemeLanguage (ClassicalSequentOver lex (Form b)) => ElementarySetTheoryRuleVariants lex b
 unpackUnion = replace ((tau `isIn` tau') .\/. (tau `isIn` tau'')) (tau `isIn` (tau' `setUnion` tau''))

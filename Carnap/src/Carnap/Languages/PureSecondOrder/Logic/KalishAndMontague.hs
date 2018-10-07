@@ -15,12 +15,12 @@ import Carnap.Calculi.NaturalDeduction.Parser
 import Carnap.Calculi.NaturalDeduction.Checker (hoProcessLineMontague, hoProcessLineMontagueMemo)
 import Carnap.Languages.Util.LanguageClasses
 import Carnap.Languages.Util.GenericConstructors
-import Data.Map (empty)
 import Text.Parsec
 import Carnap.Languages.PureSecondOrder.Logic.Rules
 
 data MSOLogic = ABS | APP | SOUI | SOEG | SOUD | SOED1 | SOED2 | FO FOLogic 
                     | PR (Maybe [(ClassicalSequentOver MonadicallySOLLex (Sequent (Form Bool)))])
+        deriving (Eq)
 
 instance Show MSOLogic where
         show (PR _) = "PR"
@@ -77,6 +77,11 @@ instance Inference MSOLogic MonadicallySOLLex (Form Bool) where
                   stau = liftToSequent tau
         restriction _ = Nothing
 
+        indirectInference (FO x) = indirectInference x
+        indirectInference x
+            | x `elem` [ SOED1, SOED1, SOUD] = Just PolyProof
+            | otherwise = Nothing
+
 parseMSOLogic :: RuntimeNaturalDeductionConfig MonadicallySOLLex (Form Bool) 
                     -> Parsec String u [MSOLogic]
 parseMSOLogic rtc = try soRule <|> liftFO
@@ -96,14 +101,12 @@ parseMSOLProof :: RuntimeNaturalDeductionConfig MonadicallySOLLex (Form Bool)
                     -> String -> [DeductionLine MSOLogic MonadicallySOLLex (Form Bool)]
 parseMSOLProof rtc = toDeductionMontague (parseMSOLogic rtc) msolFormulaParser
 
-msolSeqParser = seqFormulaParser :: Parsec String () (MSOLSequentCalc (Sequent (Form Bool)))
-
 msolCalc = NaturalDeductionCalc 
     { ndRenderer = MontagueStyle
     , ndParseProof = parseMSOLProof
     , ndProcessLine = hoProcessLineMontague
     , ndProcessLineMemo = Just hoProcessLineMontagueMemo
-    , ndParseSeq = msolSeqParser
+    , ndParseSeq = seqFormulaParser
     }
 
 -------------------------------------------
@@ -171,7 +174,12 @@ instance Inference PSOLogic PolyadicallySOLLex (Form Bool) where
                   
                   stau = liftToSequent taup
         restriction _ = Nothing
-        --
+        
+        indirectInference (FO_PSOL x) = indirectInference x
+        indirectInference (SOED1_PSOL _) = Just PolyProof 
+        indirectInference (SOED2_PSOL _) = Just PolyProof 
+        indirectInference (SOUD_PSOL _)  = Just PolyProof
+        indirectInference _  = Nothing
 
 parsePSOLogic :: RuntimeNaturalDeductionConfig PolyadicallySOLLex (Form Bool)
                     -> Parsec String u [PSOLogic]
@@ -195,12 +203,10 @@ parsePSOLProof :: RuntimeNaturalDeductionConfig PolyadicallySOLLex (Form Bool)
                     -> String -> [DeductionLine PSOLogic PolyadicallySOLLex (Form Bool)]
 parsePSOLProof rtc = toDeductionMontague (parsePSOLogic rtc) psolFormulaParser
 
-psolSeqParser = seqFormulaParser :: Parsec String () (PSOLSequentCalc (Sequent (Form Bool)))
-
 psolCalc = NaturalDeductionCalc 
     { ndRenderer = MontagueStyle
     , ndParseProof = parsePSOLProof
     , ndProcessLine = hoProcessLineMontague
     , ndProcessLineMemo = Just hoProcessLineMontagueMemo
-    , ndParseSeq = psolSeqParser
+    , ndParseSeq = seqFormulaParser
     }
