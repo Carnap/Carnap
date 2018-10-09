@@ -495,7 +495,15 @@ data Separation b c :: (* -> *) -> * -> * where
         Separation :: String -> Separation b c lang (Term b -> (Term b -> Form c) -> Term b)
 
 instance Schematizable (Separation b c lang) where
-        schematize (Separation v) (t:f:xs) = concat ["{",v,"∈",t,"|",f,"}"]
+        schematize (Separation v) (t:f:xs) = concat ["{",v,"∈",t,"|", clean f,"}"]
+            where clean = iter . drop 5 
+                  iter ('β':'_':'-':x:xs) = v ++ iter xs
+                  iter (x:xs) = x : iter xs
+                  iter [] = []
+                  -- XXX Quick and dirty fix for display issue. Should
+                  -- actually make this dependent on the presence of
+                  -- some kind of variable constructor in the language
+
         schematize (Separation v) _ = "{|}"
 
 instance UniformlyEq (Separation b c lang) where
