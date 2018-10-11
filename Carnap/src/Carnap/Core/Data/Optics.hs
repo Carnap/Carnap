@@ -1,7 +1,7 @@
 {-#LANGUAGE  UndecidableInstances, FlexibleInstances, MultiParamTypeClasses, FunctionalDependencies, GADTs, PolyKinds, TypeOperators, RankNTypes, FlexibleContexts, ScopedTypeVariables  #-}
 module Carnap.Core.Data.Optics(
   LangTypes2(..), LangTypes1(..), RelabelVars(..),  PrismLink(..),
-  (:<:)(..), ReLex(..), unaryOpPrism, binaryOpPrism
+  (:<:)(..), ReLex(..), unaryOpPrism, binaryOpPrism, GenericChildren(..),
 ) where
 
 import Carnap.Core.Data.AbstractSyntaxDataTypes
@@ -120,7 +120,11 @@ class (Typeable syn1, Typeable sem1, BoundVars f) => LangTypes1 f syn1 sem1 wher
                                where bv = scopeUniqueVar q (LLam h)
                                      abstractBv f = \x -> (subBoundVar bv x f)
                                      modify h = abstractBv <$> (g $ h $ bv)
-                            _ -> pure phi
+                            Just Refl -> (\x y -> x :!$: LLam y) <$> pure q <*> modify h
+                               where bv = scopeUniqueVar q (LLam h)
+                                     abstractBv f = \x -> (subBoundVar bv x f)
+                                     modify h = abstractBv <$> (g $ h $ bv)
+
         simChildren1 g phi@(h :!$: (t1 :: FixLang f tt)
                              :!$: (t2 :: FixLang f tt2)
                              :!$: (t3 :: FixLang f tt3))=
@@ -139,6 +143,26 @@ class (Typeable syn1, Typeable sem1, BoundVars f) => LangTypes1 f syn1 sem1 wher
                            case ( eqT :: Maybe (tt :~: syn1 sem1)
                                 ) of r1 -> pure h .*$. (handleArg1 r1 g t1)
         simChildren1 g phi = pure phi
+
+class (Typeable a, BoundVars f) => GenericChildren f a where
+
+        genChildren :: Typeable b => Traversal' (FixLang f b) (FixLang f a)
+        genChildren g phi@(q :!$: LLam (h :: FixLang f t -> FixLang f t')) =
+                   case eqT :: Maybe (t' :~: a) of
+                            Just Refl -> (\x y -> x :!$: LLam y) <$> genChildren g q <*> modify h
+                               where bv = scopeUniqueVar q (LLam h)
+                                     abstractBv f = \x -> (subBoundVar bv x f)
+                                     modify h = abstractBv <$> (g $ h $ bv)
+                            _ -> (\x y -> x :!$: LLam y) <$> genChildren g q <*> modify h
+                               where bv = scopeUniqueVar q (LLam h)
+                                     abstractBv f = \x -> (subBoundVar bv x f)
+                                     modify h = abstractBv <$> (genChildren g $ h $ bv)
+        genChildren g phi@(h :!$: (t1 :: FixLang f tt))=
+                           case ( eqT :: Maybe (tt :~: a)
+                                ) of (Just Refl) -> genChildren g h .*$. g t1
+                                     _ -> genChildren g h .*$. genChildren g t1
+        genChildren g phi = pure phi
+
 
 instance {-# OVERLAPPABLE #-} 
         ( BoundVars f
@@ -306,6 +330,7 @@ unaryOpPrism prism = prism' construct (destruct prism)
                         Nothing -> Nothing
           destruct _ _ = Nothing
 
+{-| Similarly, for a binary language item -}
 binaryOpPrism :: (Typeable a, Typeable c, Typeable b) => 
     Prism' (FixLang lex (a -> b -> c)) () -> Prism' (FixLang lex c) (FixLang lex a, FixLang lex b)
 binaryOpPrism prism = prism' construct (destruct prism)

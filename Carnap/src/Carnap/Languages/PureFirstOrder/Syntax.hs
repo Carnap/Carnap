@@ -132,6 +132,9 @@ formsOf :: FirstOrder (FixLang (PureFirstOrderLexWith a)) =>
 formsOf = simChildren2
 
 instance FirstOrder (FixLang (PureFirstOrderLexWith a)) => 
+    GenericChildren (PureFirstOrderLexWith a) (Form Bool)
+
+instance FirstOrder (FixLang (PureFirstOrderLexWith a)) => 
     LangTypes2 (PureFirstOrderLexWith a) Form Bool Term Int
 
 instance FirstOrder (FixLang (PureFirstOrderLexWith a)) => 

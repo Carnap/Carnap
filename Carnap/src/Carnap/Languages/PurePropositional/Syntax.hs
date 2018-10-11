@@ -128,3 +128,5 @@ instance Combineable PurePropLanguage PropLangLabel where
 --------------------------------------------------------
 
 instance LangTypes1 PurePropLexicon Form Bool
+
+instance GenericChildren PurePropLexicon (Form Bool)
