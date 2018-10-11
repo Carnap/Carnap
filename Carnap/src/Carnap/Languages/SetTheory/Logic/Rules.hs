@@ -28,6 +28,7 @@ type ElementarySetTheoryConstraint lex b =
         ( FirstOrderConstraints lex b
         , SubsetLanguage (ClassicalSequentOver lex) (Term Int) (Form b)
         , ElemLanguage (ClassicalSequentOver lex) (Term Int) (Form b)
+        , EqLanguage (ClassicalSequentOver lex) (Term Int) (Form b)
         , ElementarySetsLanguage (ClassicalSequentOver lex (Term Int))
         ) 
 
@@ -63,6 +64,10 @@ unpackPowerset = replace (tau `within` tau') (tau `isIn` (powerset tau'))
 unpackComplement :: IndexedPropContextSchemeLanguage (ClassicalSequentOver lex (Form b)) => ElementarySetTheoryRuleVariants lex b
 unpackComplement = replace ((tau `isIn` tau')./\. lneg (tau `isIn` tau''))  (tau `isIn` (tau' `setComplement` tau')) ++
                    replace (lneg (tau `isIn` tau'') ./\. lneg (tau `isIn` tau'))  (tau `isIn` (tau' `setComplement` tau'))
+
+unpackEquality :: IndexedPropContextSchemeLanguage (ClassicalSequentOver lex (Form b)) => ElementarySetTheoryRuleVariants lex b
+unpackEquality = replace (tau `equals` tau') (lall "v" $ \x -> (x `isIn` tau) .<=>. (x `isIn` tau')) ++
+                replace (tau `equals` tau') (lall "v" $ \x -> (x `isIn` tau') .<=>. (x `isIn` tau))
 
 ----------------------------
 --  1.2 Separation rules  --

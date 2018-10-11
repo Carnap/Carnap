@@ -22,34 +22,47 @@ import Carnap.Languages.PureFirstOrder.Logic.Rules
 import Carnap.Languages.SetTheory.Logic.Rules
 import Carnap.Languages.PureFirstOrder.Logic.Rules (phi, phi',eigenConstraint, tau)
 
-data ESTLogic = DefU1 | DefI1 | DefP1 | DefC1
-              | DefU2 | DefI2 | DefP2 | DefC2
+data ESTLogic = DefU1 | DefI1 | DefP1 | DefC1 | DefC3 | DefID1 | DefID3
+              | DefU2 | DefI2 | DefP2 | DefC2 | DefC4 | DefID2 | DefID4
               | FO FOLogic | PR (Maybe [(ClassicalSequentOver ElementarySetTheoryLex (Sequent (Form Bool)))])
+              | Eq
               deriving (Eq)
 
 instance Show ESTLogic where
         show (PR _)  = "PR"
         show (FO x)  = show x
         show DefU1   = "Def-U"
-        show DefI1   = "Def-I"
-        show DefC1   = "Def-C"
-        show DefP1   = "Def-P"
         show DefU2   = "Def-U"
+        show DefI1   = "Def-I"
         show DefI2   = "Def-I"
+        show DefC1   = "Def-C"
         show DefC2   = "Def-C"
+        show DefC3   = "Def-C"
+        show DefC4   = "Def-C"
+        show DefID1  = "Def-="
+        show DefID2  = "Def-="
+        show DefID3  = "Def-="
+        show DefID4  = "Def-="
+        show DefP1   = "Def-P"
         show DefP2   = "Def-P"
 
 
 instance Inference ESTLogic ElementarySetTheoryLex (Form Bool) where
      ruleOf (PR _)    = axiom
      ruleOf DefU1     = unpackUnion !! 0 
-     ruleOf DefI1     = unpackIntersection !! 0
-     ruleOf DefP1     = unpackPowerset !! 0
-     ruleOf DefC1     = unpackComplement !! 0
      ruleOf DefU2     = unpackUnion !! 1 
+     ruleOf DefI1     = unpackIntersection !! 0
      ruleOf DefI2     = unpackIntersection !! 1
-     ruleOf DefP2     = unpackPowerset !! 1
+     ruleOf DefC1     = unpackComplement !! 0
      ruleOf DefC2     = unpackComplement !! 1
+     ruleOf DefC3     = unpackComplement !! 2
+     ruleOf DefC4     = unpackComplement !! 3
+     ruleOf DefID1    = unpackEquality !! 0
+     ruleOf DefID2    = unpackEquality !! 1
+     ruleOf DefID3    = unpackEquality !! 2
+     ruleOf DefID4    = unpackEquality !! 3
+     ruleOf DefP1     = unpackPowerset !! 0
+     ruleOf DefP2     = unpackPowerset !! 1
      ruleOf (FO UI  ) = universalInstantiation
      ruleOf (FO EG  ) = existentialGeneralization
      ruleOf (FO UD  ) = universalGeneralization
@@ -93,13 +106,14 @@ parseESTLogic :: RuntimeNaturalDeductionConfig ElementarySetTheoryLex (Form Bool
 parseESTLogic rtc = try estRule <|> liftFO
     where liftFO = do r <- parseFOLogic (RuntimeNaturalDeductionConfig mempty mempty)
                       return (map FO r)
-          estRule = do r <- choice (map (try . string) ["PR", "Def-U", "Def-I", "Def-C", "Def-P"])
+          estRule = do r <- choice (map (try . string) ["PR", "Def-U", "Def-I", "Def-C", "Def-P", "Def-="])
                        case r of 
                             r | r == "PR"    -> return [PR $ problemPremises rtc]
                               | r == "Def-U" -> return [DefU1, DefU2]
                               | r == "Def-I" -> return [DefI1, DefI2]
-                              | r == "Def-C" -> return [DefC1, DefC2]
-                              | r == "Def P" -> return [DefP1, DefP2]
+                              | r == "Def-C" -> return [DefC1, DefC2, DefC3, DefC4]
+                              | r == "Def-P" -> return [DefP1, DefP2]
+                              | r == "Def-=" -> return [DefID1, DefID2,DefID3,DefID4]
 
 parseESTProof:: RuntimeNaturalDeductionConfig ElementarySetTheoryLex (Form Bool) 
                     -> String -> [DeductionLine ESTLogic ElementarySetTheoryLex (Form Bool)]
