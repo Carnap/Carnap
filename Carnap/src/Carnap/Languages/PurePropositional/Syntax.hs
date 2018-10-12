@@ -127,6 +127,4 @@ instance Combineable PurePropLanguage PropLangLabel where
 --Optics
 --------------------------------------------------------
 
-instance LangTypes1 PurePropLexicon Form Bool
-
 instance GenericChildren PurePropLexicon (Form Bool)

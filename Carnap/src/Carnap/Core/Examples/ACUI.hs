@@ -128,8 +128,6 @@ pattern ACUISV n = SV n
 pattern VUnFunc s x = Fx4 (Function (ConstUnFunc s) AOne) :!$: x
 pattern VBinFunc s x y = Fx4 (Function (ConstBinFunc s) ATwo) :!$: x :!$: y
 
-instance LangTypes1 VLex Term V
-
 instance BoundVars VLex where
   subBoundVar = undefined
 

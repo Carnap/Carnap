@@ -158,7 +158,7 @@ instance BoundVars ModalPropLexicon
 
 type ModalPropLanguage = FixLang ModalPropLexicon
 
-instance LangTypes1 ModalPropLexicon Form (World -> Bool)
+instance GenericChildren ModalPropLexicon (Form (World -> Bool))
 
 type ModalForm = ModalPropLanguage (Form (World -> Bool))
 

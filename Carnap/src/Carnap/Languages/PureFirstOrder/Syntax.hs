@@ -120,22 +120,16 @@ instance FirstOrder (FixLang (PureFirstOrderLexWith a)) =>
 
     subBoundVar = subst
 
-instance FirstOrder (FixLang (PureFirstOrderLexWith a)) => 
-    LangTypes2 (PureFirstOrderLexWith a) Term Int Form Bool
+instance FirstOrder (FixLang (PureFirstOrderLexWith a)) => GenericChildren (PureFirstOrderLexWith a) (Form Bool)
+instance FirstOrder (FixLang (PureFirstOrderLexWith a)) => GenericChildren (PureFirstOrderLexWith a) (Term Int)
 
 termsOf :: FirstOrder (FixLang (PureFirstOrderLexWith a)) => 
         Traversal' (FixLang (PureFirstOrderLexWith a) (Form Bool)) (FixLang (PureFirstOrderLexWith a) (Term Int))
-termsOf = difChildren2
+termsOf = genChildren
 
 formsOf :: FirstOrder (FixLang (PureFirstOrderLexWith a)) => 
         Traversal' (FixLang (PureFirstOrderLexWith a) (Form Bool)) (FixLang (PureFirstOrderLexWith a) (Form Bool))
-formsOf = simChildren2
-
-instance FirstOrder (FixLang (PureFirstOrderLexWith a)) => 
-    GenericChildren (PureFirstOrderLexWith a) (Form Bool)
-
-instance FirstOrder (FixLang (PureFirstOrderLexWith a)) => 
-    LangTypes2 (PureFirstOrderLexWith a) Form Bool Term Int
+formsOf = genChildren
 
 instance FirstOrder (FixLang (PureFirstOrderLexWith a)) => 
     RelabelVars (PureFirstOrderLexWith a) Form Bool where
@@ -147,8 +141,7 @@ instance FirstOrder (FixLang (PureFirstOrderLexWith a)) =>
 instance FirstOrder (FixLang (PureFirstOrderLexWith a)) => 
     CanonicalForm (PureFirstOrderLanguageWith a (Form Bool)) where
 
-    canonical = relabelVars varStream
-                where varStream = [i ++ j | i <- ["x"], j <- map show [1 ..]]
+    canonical = relabelVars [i ++ j | i <- ["x"], j <- map show [1 ..]]
 
 instance CanonicalForm (PureFirstOrderLanguageWith a (Term Int))
 
