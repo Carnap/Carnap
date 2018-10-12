@@ -7,7 +7,6 @@ import Carnap.Core.Data.Optics
 import Carnap.Languages.PurePropositional.Syntax
 import Carnap.Languages.PureFirstOrder.Syntax
 import Carnap.Languages.Util.LanguageClasses
-import Control.Lens.Plated (universe, plate)
 import Control.Monad.State
 import Control.Lens
 import Data.Maybe

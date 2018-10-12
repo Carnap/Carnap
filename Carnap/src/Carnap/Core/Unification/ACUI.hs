@@ -9,13 +9,10 @@ module Carnap.Core.Unification.ACUI (
   --all minimal solutions to a SAT problem
 import Carnap.Core.Data.AbstractSyntaxClasses
 import Carnap.Core.ModelChecking.SAT
-import Carnap.Core.Data.Optics
 import Carnap.Core.Unification.Unification
 import Carnap.Core.Util
 import Data.Typeable
-import Control.Lens
 import Control.Monad.State
-import Control.Lens.Plated
 import Data.List
 import Data.Function
 import Data.Proxy

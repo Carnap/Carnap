@@ -4,7 +4,6 @@ import Carnap.Core.Data.AbstractSyntaxClasses
 import Carnap.Core.Data.AbstractSyntaxDataTypes
 import Carnap.Languages.PurePropositional.Syntax
 import Carnap.Languages.Util.LanguageClasses
-import Control.Lens.Plated (universe, plate)
 import Control.Lens
 import Data.Maybe
 import Data.List
