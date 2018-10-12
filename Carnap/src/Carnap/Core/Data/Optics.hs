@@ -1,6 +1,6 @@
 {-#LANGUAGE  UndecidableInstances, FlexibleInstances, MultiParamTypeClasses, FunctionalDependencies, GADTs, PolyKinds, TypeOperators, RankNTypes, FlexibleContexts, ScopedTypeVariables  #-}
 module Carnap.Core.Data.Optics(
-  RelabelVars(..),  PrismLink(..), (:<:)(..), ReLex(..), unaryOpPrism, binaryOpPrism, GenericChildren(..)
+  RelabelVars(..),  PrismLink(..), (:<:)(..), ReLex(..), unaryOpPrism, binaryOpPrism, genChildren
 ) where
 
 import Carnap.Core.Data.AbstractSyntaxDataTypes
@@ -15,28 +15,24 @@ import qualified Control.Monad.State.Lazy as S
 (.*$.) :: (Applicative g, Typeable a, Typeable b) => g (FixLang f (a -> b)) -> g (FixLang f a) -> g (FixLang f b)
 x .*$. y = (:!$:) <$> x <*> y
 
---XXX: might be able to increase polymorphism and make a reguar function
---(rather than a class) with scoped type vars
-class (Typeable a, BoundVars f) => GenericChildren f a where
+genChildren :: forall a . forall b . forall f . (BoundVars f, Typeable a, Typeable b) => Traversal' (FixLang f b) (FixLang f a)
+genChildren g phi@(q :!$: LLam (h :: FixLang f t -> FixLang f t')) =
+           case eqT :: Maybe (t' :~: a) of
+                    Just Refl -> (\x y -> x :!$: LLam y) <$> genChildren g q <*> modify h
+                       where bv = scopeUniqueVar q (LLam h)
+                             abstractBv f = \x -> (subBoundVar bv x f)
+                             modify h = abstractBv <$> (g $ h $ bv)
+                    _ -> (\x y -> x :!$: LLam y) <$> genChildren g q <*> modify h
+                       where bv = scopeUniqueVar q (LLam h)
+                             abstractBv f = \x -> (subBoundVar bv x f)
+                             modify h = abstractBv <$> (genChildren g $ h $ bv)
+genChildren g phi@(h :!$: (t1 :: FixLang f tt)) =
+                   case ( eqT :: Maybe (tt :~: a)
+                        ) of (Just Refl) -> genChildren g h .*$. g t1
+                             _ -> genChildren g h .*$. genChildren g t1
+genChildren g phi = pure phi
 
-        genChildren :: Typeable b => Traversal' (FixLang f b) (FixLang f a)
-        genChildren g phi@(q :!$: LLam (h :: FixLang f t -> FixLang f t')) =
-                   case eqT :: Maybe (t' :~: a) of
-                            Just Refl -> (\x y -> x :!$: LLam y) <$> genChildren g q <*> modify h
-                               where bv = scopeUniqueVar q (LLam h)
-                                     abstractBv f = \x -> (subBoundVar bv x f)
-                                     modify h = abstractBv <$> (g $ h $ bv)
-                            _ -> (\x y -> x :!$: LLam y) <$> genChildren g q <*> modify h
-                               where bv = scopeUniqueVar q (LLam h)
-                                     abstractBv f = \x -> (subBoundVar bv x f)
-                                     modify h = abstractBv <$> (genChildren g $ h $ bv)
-        genChildren g phi@(h :!$: (t1 :: FixLang f tt))=
-                           case ( eqT :: Maybe (tt :~: a)
-                                ) of (Just Refl) -> genChildren g h .*$. g t1
-                                     _ -> genChildren g h .*$. genChildren g t1
-        genChildren g phi = pure phi
-
-instance GenericChildren f a  => Plated (FixLang f a) where
+instance (BoundVars f, Typeable a)  => Plated (FixLang f a) where
         plate = genChildren
 
 class Plated (FixLang f (syn sem)) => RelabelVars f syn sem where

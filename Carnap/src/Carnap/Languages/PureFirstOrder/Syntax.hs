@@ -120,9 +120,6 @@ instance FirstOrder (FixLang (PureFirstOrderLexWith a)) =>
 
     subBoundVar = subst
 
-instance FirstOrder (FixLang (PureFirstOrderLexWith a)) => GenericChildren (PureFirstOrderLexWith a) (Form Bool)
-instance FirstOrder (FixLang (PureFirstOrderLexWith a)) => GenericChildren (PureFirstOrderLexWith a) (Term Int)
-
 termsOf :: FirstOrder (FixLang (PureFirstOrderLexWith a)) => 
         Traversal' (FixLang (PureFirstOrderLexWith a) (Form Bool)) (FixLang (PureFirstOrderLexWith a) (Term Int))
 termsOf = genChildren

@@ -156,12 +156,6 @@ instance BoundVars (Predicate BasicProp
         (if x == a then b else x) :==: (if y == a then b else y)
     subBoundVar _ _ phi = phi
 
-instance GenericChildren (Predicate BasicProp
-                       :|: Connective BasicConn
-                       :|: Binders BasicQuant
-                       :|: Function BasicTerm
-                       :|: EndLang) (Form Bool) 
-
 instance RelabelVars (Predicate BasicProp
                        :|: Connective BasicConn
                        :|: Binders BasicQuant

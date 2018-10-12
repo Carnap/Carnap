@@ -158,8 +158,6 @@ instance BoundVars ModalPropLexicon
 
 type ModalPropLanguage = FixLang ModalPropLexicon
 
-instance GenericChildren ModalPropLexicon (Form (World -> Bool))
-
 type ModalForm = ModalPropLanguage (Form (World -> Bool))
 
 instance CopulaSchema ModalPropLanguage

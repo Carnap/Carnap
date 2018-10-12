@@ -122,9 +122,3 @@ instance Combineable PurePropLanguage PropLangLabel where
     replaceChild (x :->: _)   pig 1 = x :->: (unEveryPig pig)
     replaceChild (_ :<->: x)  pig 0 = (unEveryPig pig) :<->: x
     replaceChild (x :<->: _)  pig 1 = x :<->: (unEveryPig pig)
-
---------------------------------------------------------
---Optics
---------------------------------------------------------
-
-instance GenericChildren PurePropLexicon (Form Bool)
