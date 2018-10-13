@@ -98,9 +98,10 @@ pattern PC n           = PConst (Constant n) AZero
 pattern PV s           = PVar (Var s) AZero
 pattern PT n           = PTau (SFunc AZero n) AZero
 
-instance ( StaticVar (PureFirstOrderLanguageWith a)
-         , Schematizable (a (PureFirstOrderLanguageWith a))
-         ) => CopulaSchema (PureFirstOrderLanguageWith a) where 
+instance {-# OVERLAPPABLE #-} 
+        ( StaticVar (PureFirstOrderLanguageWith a)
+        , Schematizable (a (PureFirstOrderLanguageWith a))
+        ) => CopulaSchema (PureFirstOrderLanguageWith a) where 
 
     appSchema (PQuant (All x)) (LLam f) e = schematize (All x) (show (f $ PV x) : e)
     appSchema (PQuant (Some x)) (LLam f) e = schematize (Some x) (show (f $ PV x) : e)

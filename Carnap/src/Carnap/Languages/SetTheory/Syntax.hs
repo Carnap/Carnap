@@ -3,8 +3,10 @@ module Carnap.Languages.SetTheory.Syntax
 where
 
 import Carnap.Core.Util 
-import Control.Monad.State
+import Control.Lens
 import Carnap.Core.Data.AbstractSyntaxDataTypes
+import Carnap.Core.Data.Optics
+import Carnap.Core.Data.Util
 import Carnap.Core.Data.AbstractSyntaxClasses
 import Carnap.Core.Data.Util (scopeHeight)
 import Carnap.Core.Unification.Unification
@@ -69,5 +71,22 @@ type SeparativeSetTheoryLexOpen a = ElementarySetTheoryLexOpen SetTheorySep
 type SeparativeSetTheoryLex = SeparativeSetTheoryLexOpen EndLang
 
 type SeparativeSetTheoryLang = FixLang SeparativeSetTheoryLex
+
+instance CopulaSchema SeparativeSetTheoryLang where 
+
+    appSchema (PQuant (All x)) (LLam f) e = schematize (All x) (show (f $ PV x) : e)
+    appSchema (PQuant (Some x)) (LLam f) e = schematize (Some x) (show (f $ PV x) : e)
+    appSchema t@(x :!$: y) (LLam f) e = case ( castTo x :: Maybe (SeparativeSetTheoryLang (Term Int -> (Term Int -> Form Bool) -> Term Int))
+                                             , castTo (LLam f) :: Maybe (SeparativeSetTheoryLang (Term Int -> Form Bool))) of
+                                            (Just x, Just (LLam f)) -> case x ^? _separator :: Maybe String of
+                                              Just s -> schematize t (show (f $ PV s) : e)
+                                              Nothing -> schematize t (show (LLam f) : e)
+                                            _ -> schematize t (show (LLam f) : e)
+    appSchema x y e = schematize x (show y : e)
+
+    lamSchema f [] = "λβ_" ++ show h ++ "." ++ show (f (static (-1 * h)))
+        where h = scopeHeight (LLam f)
+    lamSchema f (x:xs) = "(λβ_" ++ show h ++ "." ++ show (f (static (-1 * h))) ++ intercalate " " (x:xs) ++ ")"
+        where h = scopeHeight (LLam f)
 
 instance PrismSeparating SeparativeSetTheoryLex Int Bool
