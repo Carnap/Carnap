@@ -1,7 +1,5 @@
 {-#LANGUAGE  FlexibleContexts,  FlexibleInstances, MultiParamTypeClasses #-}
-module Carnap.Languages.SetTheory.Logic.KalishAndMontague
-        (estCalc)
-    where
+module Carnap.Languages.SetTheory.Logic.KalishAndMontague (estCalc, sstCalc) where
 
 import Carnap.Core.Data.AbstractSyntaxDataTypes
 import Carnap.Languages.SetTheory.Syntax
@@ -122,6 +120,93 @@ parseESTProof rtc = toDeductionMontague (parseESTLogic rtc) elementarySetTheoryP
 estCalc = NaturalDeductionCalc 
     { ndRenderer = MontagueStyle
     , ndParseProof = parseESTProof
+    , ndProcessLine = hoProcessLineMontague
+    , ndProcessLineMemo = Just hoProcessLineMontagueMemo
+    , ndParseSeq = seqFormulaParser
+    }
+
+data SSTLogic = EST ESTLogic | DefSep1 | DefSep2
+         | PRS (Maybe [(ClassicalSequentOver SeparativeSetTheoryLex (Sequent (Form Bool)))])
+
+instance Show SSTLogic where 
+        show (PRS _)   = "PR"
+        show DefSep1 = "Def-S"
+        show DefSep2 = "Def-S"
+        show (EST x) = show x
+
+instance Inference SSTLogic SeparativeSetTheoryLex (Form Bool) where
+     ruleOf (PRS _)          = axiom
+     ruleOf DefSep1         = unpackSeparation !! 0
+     ruleOf DefSep2         = unpackSeparation !! 1
+     ruleOf (EST DefU1   )  = unpackUnion !! 0 
+     ruleOf (EST DefU2   )  = unpackUnion !! 1 
+     ruleOf (EST DefI1   )  = unpackIntersection !! 0
+     ruleOf (EST DefI2   )  = unpackIntersection !! 1
+     ruleOf (EST DefC1   )  = unpackComplement !! 0
+     ruleOf (EST DefC2   )  = unpackComplement !! 1
+     ruleOf (EST DefC3   )  = unpackComplement !! 2
+     ruleOf (EST DefC4   )  = unpackComplement !! 3
+     ruleOf (EST DefID1  )  = unpackEquality !! 0
+     ruleOf (EST DefID2  )  = unpackEquality !! 1
+     ruleOf (EST DefID3  )  = unpackEquality !! 2
+     ruleOf (EST DefID4  )  = unpackEquality !! 3
+     ruleOf (EST DefP1   )  = unpackPowerset !! 0
+     ruleOf (EST DefP2   )  = unpackPowerset !! 1
+     ruleOf (EST (FO UI  )) = universalInstantiation
+     ruleOf (EST (FO EG  )) = existentialGeneralization
+     ruleOf (EST (FO UD  )) = universalGeneralization
+     ruleOf (EST (FO ED1 )) = existentialDerivation !! 0
+     ruleOf (EST (FO ED2 )) = existentialDerivation !! 1
+     ruleOf (EST (FO QN1 )) = quantifierNegation !! 0
+     ruleOf (EST (FO QN2 )) = quantifierNegation !! 1
+     ruleOf (EST (FO QN3 )) = quantifierNegation !! 2
+     ruleOf (EST (FO QN4 )) = quantifierNegation !! 3
+     ruleOf (EST (FO LL1 )) = leibnizLawVariations !! 0
+     ruleOf (EST (FO LL2 )) = leibnizLawVariations !! 1
+     ruleOf (EST (FO ALL1)) = antiLeibnizLawVariations !! 0
+     ruleOf (EST (FO ALL2)) = antiLeibnizLawVariations !! 1
+     ruleOf (EST (FO EL1 )) = euclidsLawVariations !! 0
+     ruleOf (EST (FO EL2 )) = euclidsLawVariations !! 1
+     ruleOf (EST (FO ID  )) = eqReflexivity
+     ruleOf (EST (FO SM  )) = eqSymmetry
+
+     premisesOf (EST (FO (SL x))) = map liftSequent (premisesOf x)
+     premisesOf r = upperSequents (ruleOf r)
+
+     conclusionOf (EST (FO (SL x))) = liftSequent (conclusionOf x)
+     conclusionOf r = lowerSequent (ruleOf r)
+
+     restriction (PRS prems) = Just (premConstraint prems)
+     restriction (EST (FO UD))    = Just (eigenConstraint stau (SS (lall "v" $ phi' 1)) (setgamma 1))
+         where stau = liftToSequent tau
+               setgamma :: Int -> ClassicalSequentOver SeparativeSetTheoryLex (Antecedent (Form Bool))
+               setgamma = GammaV
+
+     restriction (EST (FO ED1))   = Just (eigenConstraint stau (SS (lsome "v" $ phi' 1) :-: SS (phin 1)) (setgamma 1 :+: setgamma 2))
+         where stau = liftToSequent tau
+               setgamma :: Int -> ClassicalSequentOver SeparativeSetTheoryLex (Antecedent (Form Bool))
+               setgamma = GammaV
+     restriction _ = Nothing
+
+     indirectInference (EST (FO x)) = indirectInference x
+     indirectInference _ = Nothing
+
+parseSSTLogic :: RuntimeNaturalDeductionConfig SeparativeSetTheoryLex (Form Bool) -> Parsec String u [SSTLogic]
+parseSSTLogic rtc = try sepRule <|> liftEST
+    where liftEST = do r <- parseESTLogic (RuntimeNaturalDeductionConfig mempty mempty)
+                       return (map EST r)
+          sepRule = do r <- choice (map (try . string) ["PR", "Def-S"])
+                       case r of 
+                            r | r == "PR"    -> return [PRS $ problemPremises rtc]
+                              | r == "Def-S" -> return [DefSep1, DefSep2]
+
+parseSSTProof:: RuntimeNaturalDeductionConfig SeparativeSetTheoryLex (Form Bool) 
+                    -> String -> [DeductionLine SSTLogic SeparativeSetTheoryLex (Form Bool)]
+parseSSTProof rtc = toDeductionMontague (parseSSTLogic rtc) separativeSetTheoryParser
+
+sstCalc = NaturalDeductionCalc 
+    { ndRenderer = MontagueStyle
+    , ndParseProof = parseSSTProof
     , ndProcessLine = hoProcessLineMontague
     , ndProcessLineMemo = Just hoProcessLineMontagueMemo
     , ndParseSeq = seqFormulaParser

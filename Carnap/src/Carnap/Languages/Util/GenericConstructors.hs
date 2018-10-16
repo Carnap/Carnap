@@ -510,3 +510,6 @@ instance Monad m => MaybeMonadVar (Separation b c lang) m
 instance MaybeStaticVar (Separation b c lang)
 
 instance FirstOrderLex (Separation b c lang)
+
+instance ReLex (Separation b c) where
+        relex (Separation v) = (Separation v)

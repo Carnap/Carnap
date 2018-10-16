@@ -4,11 +4,13 @@ module Carnap.Languages.SetTheory.Logic.Rules where
 import Data.Typeable
 import Carnap.Core.Data.Util (scopeHeight)
 import Data.List (intercalate)
+import Control.Lens
 import Carnap.Calculi.NaturalDeduction.Syntax
 import Carnap.Core.Unification.Unification
 import Carnap.Core.Unification.Combination
 import Carnap.Core.Unification.FirstOrder
 import Carnap.Core.Unification.ACUI
+import Carnap.Core.Data.Util
 import Carnap.Core.Data.AbstractSyntaxClasses
 import Carnap.Core.Data.AbstractSyntaxDataTypes
 import Carnap.Languages.SetTheory.Syntax
@@ -47,10 +49,32 @@ instance CopulaSchema (ClassicalSequentOver ElementarySetTheoryLex) where
     lamSchema f (x:xs) = "(λβ_" ++ show h ++ "." ++ show (f (SeqSV (-1 * h))) ++ intercalate " " (x:xs) ++ ")"
         where h = scopeHeight (LLam f)
 
+instance CopulaSchema (ClassicalSequentOver SeparativeSetTheoryLex) where 
+
+    appSchema (SeqQuant (All x)) (LLam f) e = schematize (All x) (show (f $ SeqV x) : e)
+    appSchema (SeqQuant (Some x)) (LLam f) e = schematize (Some x) (show (f $ SeqV x) : e)
+    appSchema t@(x :!$: y) (LLam f) e = case ( castTo x :: Maybe (ClassicalSequentOver SeparativeSetTheoryLex (Term Int -> (Term Int -> Form Bool) -> Term Int))
+                                             , castTo (LLam f) :: Maybe (ClassicalSequentOver SeparativeSetTheoryLex (Term Int -> Form Bool))) of
+                                            (Just x, Just (LLam f)) -> case x ^? _separator :: Maybe String of
+                                              Just s -> schematize t (show (f $ SeqV s) : e)
+                                              Nothing -> schematize t (show (LLam f) : e)
+                                            _ -> schematize t (show (LLam f) : e)
+    appSchema x y e = schematize x (show y : e)
+
+    lamSchema f [] = "λβ_" ++ show h ++ "." ++ show (f (static (-1 * h)))
+        where h = scopeHeight (LLam f)
+    lamSchema f (x:xs) = "(λβ_" ++ show h ++ "." ++ show (f (static (-1 * h))) ++ intercalate " " (x:xs) ++ ")"
+        where h = scopeHeight (LLam f)
+
 instance Eq (ClassicalSequentOver ElementarySetTheoryLex a) where (==) = (=*)
+
+instance Eq (ClassicalSequentOver SeparativeSetTheoryLex a) where (==) = (=*)
 
 instance ParsableLex (Form Bool) ElementarySetTheoryLex where
         langParser = elementarySetTheoryParser
+
+instance ParsableLex (Form Bool) SeparativeSetTheoryLex where
+        langParser = separativeSetTheoryParser
 
 unpackUnion :: IndexedPropContextSchemeLanguage (ClassicalSequentOver lex (Form b)) => ElementarySetTheoryRuleVariants lex b
 unpackUnion = replace ((tau `isIn` tau') .\/. (tau `isIn` tau'')) (tau `isIn` (tau' `setUnion` tau''))
@@ -81,6 +105,6 @@ type SeparationSetTheoryConstraint lex b =
 
 type SeparatingSetTheoryVariants lex b = SeparationSetTheoryConstraint lex b => [SequentRule lex (Form b)]
 
-unpackSepration :: forall b. forall lex. IndexedPropContextSchemeLanguage (ClassicalSequentOver lex (Form b)) => SeparatingSetTheoryVariants lex b
-unpackSepration = replace ((seperator tau) ./\. (tau `isIn` tau')) (tau `isIn` separate "v" tau' seperator)
+unpackSeparation :: forall b. forall lex. IndexedPropContextSchemeLanguage (ClassicalSequentOver lex (Form b)) => SeparatingSetTheoryVariants lex b
+unpackSeparation = replace ((seperator tau) ./\. (tau `isIn` tau')) (tau `isIn` separate "v" tau' seperator)
     where seperator = phi 1 :: ClassicalSequentOver lex (Term Int) -> ClassicalSequentOver lex (Form b)
