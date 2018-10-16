@@ -5,7 +5,7 @@ module Carnap.Core.Data.AbstractSyntaxDataTypes(
   -- $ATintro
   -- ** Language Building Types
   Term(..), Form(..),
-  Copula((:$:), Lam), CopulaSchema(..),
+  Copula((:$:), Lam), CopulaSchema(..), defaultLamSchema,
   MaybeMonadVar(..),MaybeStaticVar(..),FirstOrderLex(..),
   (:|:)(..), Fix(Fx), FixLang, EndLang, pattern AOne,
   pattern ATwo, pattern AThree, pattern LLam, pattern (:!$:), pattern Fx1,
@@ -74,6 +74,13 @@ class CopulaSchema lang where
     lamSchema = error "how did you even do this?"
     liftSchema :: Copula lang t -> [String] -> String
     liftSchema = error "should not print a lifted value"
+
+
+defaultLamSchema :: ( Show (FixLang lex t'), StaticVar (FixLang lex), Typeable t, Typeable t') => (FixLang lex t -> FixLang lex t') -> [String] -> String
+defaultLamSchema f [] = "λβ_" ++ show h ++ "." ++ show (f (static (-1 * h)))
+    where h = height (LLam f)
+defaultLamSchema f (x:xs) = "(λβ_" ++ show h ++ "." ++ show (f (static (-1 * h))) ++ intercalate " " (x:xs) ++ ")"
+    where h = height (LLam f)
 
 {-|
 this is type acts a disjoint sum/union of two functors

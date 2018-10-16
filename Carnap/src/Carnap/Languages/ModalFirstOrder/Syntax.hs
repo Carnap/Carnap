@@ -103,10 +103,7 @@ instance ( Schematizable (a (SimpleModalFirstOrderLanguageWith a))
     appSchema (PQuant (Some x)) (LLam f) e = schematize (Some x) (show (f $ PV x) : e)
     appSchema x y e = schematize x (show y : e)
 
-    lamSchema f [] = "λβ_" ++ show h ++ "." ++ show (f $ static (-1 * h))
-        where h = scopeHeight (LLam f)
-    lamSchema f (x:xs) = "(λβ_" ++ show h ++ "." ++ show (f $ static (-1 * h)) ++ intercalate " " (x:xs) ++ ")"
-        where h = scopeHeight (LLam f)
+    lamSchema = defaultLamSchema
 
 -------------------------------------
 --  2.1.1 Simplest Modal Extension --

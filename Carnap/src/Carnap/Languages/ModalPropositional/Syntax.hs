@@ -187,10 +187,7 @@ instance CopulaSchema WorldTheoryPropLanguage where
     appSchema (IQuant (Some x)) (LLam f) e = schematize (Some x) (show (f $ worldVar x) : e)
     appSchema x y e = schematize x (show y : e)
 
-    lamSchema f [] = "λβ_" ++ show h ++ "." ++ show (f (PSV (-1 * h)))
-        where h = scopeHeight (LLam f)
-    lamSchema f (x:xs) = "(λβ_" ++ show h ++ "." ++ show (f (PSV (-1 * h))) ++ intercalate " " (x:xs) ++ ")"
-        where h = scopeHeight (LLam f)
+    lamSchema = defaultLamSchema
 
 instance BoundVars WorldTheoryPropLexicon where
         scopeUniqueVar (IQuant (All v)) (LLam f) = worldVar (show $ scopeHeight (LLam f))

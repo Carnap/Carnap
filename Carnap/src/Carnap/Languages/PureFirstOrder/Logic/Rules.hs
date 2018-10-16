@@ -36,13 +36,9 @@ instance CopulaSchema FOLSequentCalc where
     appSchema (SeqQuant (Some x)) (LLam f) e = schematize (Some x) (show (f $ SeqV x) : e)
     appSchema x y e = schematize x (show y : e)
 
-    lamSchema f [] = "λβ_" ++ show h ++ "." ++ show (f (SeqSV (-1 * h)))
-        where h = scopeHeight (LLam f)
-    lamSchema f (x:xs) = "(λβ_" ++ show h ++ "." ++ show (f (SeqSV (-1 * h))) ++ intercalate " " (x:xs) ++ ")"
-        where h = scopeHeight (LLam f)
+    lamSchema = defaultLamSchema
 
 pattern SeqQuant q        = FX (Lx2 (Lx1 (Lx2 (Bind q))))
-pattern SeqSV n           = FX (Lx2 (Lx1 (Lx1 (Lx4 (StaticVar n)))))
 pattern SeqVar c a        = FX (Lx2 (Lx1 (Lx4 (Function c a))))
 pattern SeqTau c a        = FX (Lx2 (Lx1 (Lx5 (Function c a))))
 pattern SeqConst c a      = FX (Lx2 (Lx1 (Lx3 (Function c a))))
