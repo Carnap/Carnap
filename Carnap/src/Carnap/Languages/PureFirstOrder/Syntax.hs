@@ -71,32 +71,10 @@ type PureFirstOrderLexWith a = CoreLexicon :|: a
 
 type PureFirstOrderLanguageWith a = FixLang (PureFirstOrderLexWith a)
 
-pattern PSent n        = FX (Lx1 (Lx1 (Lx1 (Predicate (Prop n) AZero))))
-pattern PSPhi n        = FX (Lx1 (Lx1 (Lx2 (Predicate (SProp n) AZero))))
-pattern PCon x arity   = FX (Lx1 (Lx1 (Lx3 (Connective x arity))))
-pattern PSV n          = FX (Lx1 (Lx1 (Lx4 (StaticVar n))))
-pattern PDV n          = FX (Lx1 (Lx1 (Lx4 (SubVar n))))
-pattern PCtx n         = FX (Lx1 (Lx1 (Lx5 (Connective (Context n) AOne))))
-pattern PVerum         = FX (Lx1 (Lx1 (Lx6 (Connective (Verum) AZero))))
-pattern PFalsum        = FX (Lx1 (Lx1 (Lx6 (Connective (Falsum) AZero))))
 pattern PQuant q       = FX (Lx1 (Lx2 (Bind q)))
-pattern PConst c a     = FX (Lx1 (Lx3 (Function c a)))
 pattern PVar c a       = FX (Lx1 (Lx4 (Function c a)))
-pattern PTau c a       = FX (Lx1 (Lx5 (Function c a)))
-pattern PAnd           = PCon And ATwo
-pattern POr            = PCon Or ATwo
-pattern PIf            = PCon If ATwo
-pattern PIff           = PCon Iff ATwo
-pattern PNot           = PCon Not AOne
 pattern PBind q f      = PQuant q :!$: LLam f
-pattern (:&:) x y      = PAnd :!$: x :!$: y
-pattern (:||:) x y     = POr  :!$: x :!$: y
-pattern (:->:) x y     = PIf  :!$: x :!$: y
-pattern (:<->:) x y    = PIff :!$: x :!$: y
-pattern PNeg x         = PNot :!$: x
-pattern PC n           = PConst (Constant n) AZero
 pattern PV s           = PVar (Var s) AZero
-pattern PT n           = PTau (SFunc AZero n) AZero
 
 instance {-# OVERLAPPABLE #-} 
         ( StaticVar (PureFirstOrderLanguageWith a)
@@ -235,8 +213,6 @@ type PureLanguageFOL = FixLang PureLexiconFOL
 fogamma :: Int -> ClassicalSequentOver PureLexiconFOL (Antecedent (Form Bool))
 fogamma n = GammaV n
 
-pattern PEq            = FX (Lx3 (Lx1 (Predicate TermEq ATwo)))
-pattern (:==:) t1 t2   = PEq :!$: t1 :!$: t2
 pattern PFunc x arity  = FX (Lx3 (Lx2 (Function x arity)))
 pattern PSFunc x arity  = FX (Lx3 (Lx3 (Function x arity)))
 pattern PF n a1 a2     = PFunc (Func a1 n) a2

@@ -203,19 +203,19 @@ class IndexedPropLanguage l where
 class (Typeable b, PrismLink (FixLang lex) (Predicate (IntProp b) (FixLang lex))) 
         => PrismPropLex lex b where
 
-        propIndex :: Prism' (FixLang lex (Form b)) Int
-        propIndex = link_PrismPropLex . propIndex'
+        _propIndex :: Prism' (FixLang lex (Form b)) Int
+        _propIndex = link_PrismPropLex . propIndex
 
         link_PrismPropLex :: Prism' (FixLang lex (Form b)) (Predicate (IntProp b) (FixLang lex) (Form b))
         link_PrismPropLex = link 
 
-        propIndex' :: Prism' (Predicate (IntProp b) (FixLang lex) (Form b)) Int
-        propIndex' = prism' (\n -> Predicate (Prop n) AZero) 
-                            (\x -> case x of Predicate (Prop n) AZero -> Just n
-                                             _ -> Nothing)
+        propIndex :: Prism' (Predicate (IntProp b) (FixLang lex) (Form b)) Int
+        propIndex = prism' (\n -> Predicate (Prop n) AZero) 
+                           (\x -> case x of Predicate (Prop n) AZero -> Just n
+                                            _ -> Nothing)
 
 instance {-#OVERLAPPABLE#-} PrismPropLex lex b => IndexedPropLanguage (FixLang lex (Form b)) where
-        pn = review propIndex
+        pn = review _propIndex
 
 class IndexedSchemePropLanguage l where
         phin :: Int -> l

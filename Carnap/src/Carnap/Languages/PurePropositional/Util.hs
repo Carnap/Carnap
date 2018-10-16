@@ -59,7 +59,7 @@ dropOutermost s = s
 --------------------------------------------------------
 
 getIndicies :: PurePropLanguage (Form Bool) -> [Int]
-getIndicies = catMaybes . map (preview propIndex) . universe
+getIndicies = catMaybes . map (preview _propIndex) . universe
 
 getValuations :: PurePropLanguage (Form Bool) -> [Int -> Bool]
 getValuations = (map toValuation) . subsequences . getIndicies 
@@ -74,8 +74,7 @@ isEquivTo x y = isValid (x :<->: y)
 --3. Transformations
 --------------------------------------------------------
 
-type PurePropTransform = PurePropLanguage (Form Bool) -> PurePropLanguage (Form Bool)
-
-toSchema :: PurePropTransform
-toSchema (PP n) = (PPhi n)
-toSchema a = (over plate) toSchema a
+toSchema :: PurePropLanguage (Form Bool) -> PurePropLanguage (Form Bool)
+toSchema a = case a ^? _propIndex of
+                 Just n -> phin n
+                 Nothing -> (over plate) toSchema a

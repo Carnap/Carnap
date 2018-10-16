@@ -71,20 +71,13 @@ instance CopulaSchema PurePropLanguage
 
 type PureForm = PurePropLanguage (Form Bool)
 
-pattern PPred x arity  = Fx1 (Predicate x arity)
-pattern PSPred x arity = Fx2 (Predicate x arity)
 pattern PCon x arity   = Fx3 (Connective x arity)
 pattern PSV n          = Fx4 (SubVar n)
-pattern PCtx n         = Fx5 (Connective (Context n) AOne)
-pattern PVerum         = Fx6 (Connective (Verum) AZero)
-pattern PFalsum        = Fx6 (Connective (Falsum) AZero)
 pattern PAnd           = PCon And ATwo
 pattern POr            = PCon Or ATwo
 pattern PIf            = PCon If ATwo
 pattern PIff           = PCon Iff ATwo
 pattern PNot           = PCon Not AOne
-pattern PP n           = PPred (Prop n) AZero
-pattern PPhi n         = PSPred (SProp n) AZero
 pattern (:&:) x y      = PAnd :!$: x :!$: y
 pattern (:||:) x y     = POr  :!$: x :!$: y
 pattern (:->:) x y     = PIf  :!$: x :!$: y
@@ -108,17 +101,17 @@ instance UniformlyOrd PurePropLanguage where
 data PropLangLabel = PropFormLabel
     deriving (Eq, Ord, Show)
 
-instance Combineable PurePropLanguage PropLangLabel where
-    getLabel _ = PropFormLabel
+-- instance Combineable PurePropLanguage PropLangLabel where
+--     getLabel _ = PropFormLabel
 
-    getAlgo PropFormLabel = foUnifySys
+--     getAlgo PropFormLabel = foUnifySys
 
-    replaceChild (PNeg _)     pig _ = PNeg $ unEveryPig pig
-    replaceChild (_ :&: x)    pig 0 = (unEveryPig pig) :&: x
-    replaceChild (x :&: _)    pig 1 = x :&: (unEveryPig pig)
-    replaceChild (_ :||: x)   pig 0 = (unEveryPig pig) :||: x
-    replaceChild (x :||: _)   pig 1 = x :||: (unEveryPig pig)
-    replaceChild (_ :->: x)   pig 0 = (unEveryPig pig) :->: x
-    replaceChild (x :->: _)   pig 1 = x :->: (unEveryPig pig)
-    replaceChild (_ :<->: x)  pig 0 = (unEveryPig pig) :<->: x
-    replaceChild (x :<->: _)  pig 1 = x :<->: (unEveryPig pig)
+--     replaceChild (PNeg _)     pig _ = PNeg $ unEveryPig pig
+--     replaceChild (_ :&: x)    pig 0 = (unEveryPig pig) :&: x
+--     replaceChild (x :&: _)    pig 1 = x :&: (unEveryPig pig)
+--     replaceChild (_ :||: x)   pig 0 = (unEveryPig pig) :||: x
+--     replaceChild (x :||: _)   pig 1 = x :||: (unEveryPig pig)
+--     replaceChild (_ :->: x)   pig 0 = (unEveryPig pig) :->: x
+--     replaceChild (x :->: _)   pig 1 = x :->: (unEveryPig pig)
+--     replaceChild (_ :<->: x)  pig 0 = (unEveryPig pig) :<->: x
+--     replaceChild (x :<->: _)  pig 1 = x :<->: (unEveryPig pig)
