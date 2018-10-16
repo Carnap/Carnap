@@ -10,21 +10,22 @@ import Carnap.Core.Data.Optics (liftLang)
 import Carnap.Core.Data.AbstractSyntaxClasses (Schematizable, Handed(..))
 import Carnap.Languages.ClassicalSequent.Syntax
 import Carnap.Languages.PurePropositional.Logic as P 
-    (DerivedRule(..), logicBookSDCalc, logicBookSDPlusCalc, magnusSLCalc,
-    magnusSLPlusCalc, montagueSCCalc, hardegreeSLCalc
+    ( DerivedRule(..), logicBookSDCalc, logicBookSDPlusCalc, magnusSLCalc
+    , magnusSLPlusCalc, montagueSCCalc, hardegreeSLCalc
     , thomasBolducAndZachTFLCalc, tomassiPLCalc)
 import Carnap.Languages.PurePropositional.Logic.Rules (derivedRuleToSequent)
 import Carnap.Languages.PureFirstOrder.Logic as FOL 
-    ( DerivedRule(..), folCalc, montagueQCCalc, magnusQLCalc , thomasBolducAndZachFOLCalc,
-    hardegreePLCalc , goldfarbNDCalc, goldfarbAltNDCalc,
-    goldfarbNDPlusCalc, goldfarbAltNDPlusCalc , logicBookPDPlusCalc,
-    logicBookPDCalc) 
+    ( DerivedRule(..), folCalc, montagueQCCalc, magnusQLCalc , thomasBolducAndZachFOLCalc
+    , hardegreePLCalc , goldfarbNDCalc, goldfarbAltNDCalc
+    , goldfarbNDPlusCalc, goldfarbAltNDPlusCalc , logicBookPDPlusCalc
+    , logicBookPDCalc) 
 import Carnap.Languages.ModalPropositional.Logic as MPL
     ( hardegreeWTLCalc, hardegreeLCalc, hardegreeKCalc, hardegreeTCalc
     , hardegreeBCalc, hardegreeDCalc, hardegreeFourCalc, hardegreeFiveCalc)
 import Carnap.Languages.PureSecondOrder.Logic 
     (msolCalc, psolCalc) 
-import Carnap.Languages.SetTheory.Logic.KalishAndMontague (estCalc)
+import Carnap.Languages.SetTheory.Logic.KalishAndMontague 
+    (estCalc, sstCalc)
 import Carnap.Languages.ModalFirstOrder.Logic
     ( hardegreeMPLCalc )
 import Carnap.Languages.PurePropositional.Util (toSchema)
@@ -110,6 +111,7 @@ activateChecker drs w (Just iog@(IOGoal i o g _ opts)) -- TODO: need to update n
         | sys == "secondOrder"               = tryParse msolCalc noRuntimeOptions
         | sys == "polyadicSecondOrder"       = tryParse psolCalc noRuntimeOptions
         | sys == "elementarySetTheory"       = tryParse estCalc noRuntimeOptions
+        | sys == "separativeSetTheory"       = tryParse sstCalc noRuntimeOptions
         | sys == "montagueSC"                = tryParse montagueSCCalc propChecker
         | sys == "montagueQC"                = tryParse montagueQCCalc folChecker
         | sys == "LogicBookSD"               = tryParse logicBookSDCalc propChecker
