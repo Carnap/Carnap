@@ -44,10 +44,7 @@ instance CopulaSchema (ClassicalSequentOver ElementarySetTheoryLex) where
     appSchema (SeqQuant (Some x)) (LLam f) e = schematize (Some x) (show (f $ SeqV x) : e)
     appSchema x y e = schematize x (show y : e)
 
-    lamSchema f [] = "λβ_" ++ show h ++ "." ++ show (f (SeqSV (-1 * h)))
-        where h = scopeHeight (LLam f)
-    lamSchema f (x:xs) = "(λβ_" ++ show h ++ "." ++ show (f (SeqSV (-1 * h))) ++ intercalate " " (x:xs) ++ ")"
-        where h = scopeHeight (LLam f)
+    lamSchema = defaultLamSchema
 
 instance CopulaSchema (ClassicalSequentOver SeparativeSetTheoryLex) where 
 
@@ -61,10 +58,7 @@ instance CopulaSchema (ClassicalSequentOver SeparativeSetTheoryLex) where
                                             _ -> schematize t (show (LLam f) : e)
     appSchema x y e = schematize x (show y : e)
 
-    lamSchema f [] = "λβ_" ++ show h ++ "." ++ show (f (static (-1 * h)))
-        where h = scopeHeight (LLam f)
-    lamSchema f (x:xs) = "(λβ_" ++ show h ++ "." ++ show (f (static (-1 * h))) ++ intercalate " " (x:xs) ++ ")"
-        where h = scopeHeight (LLam f)
+    lamSchema = defaultLamSchema
 
 instance Eq (ClassicalSequentOver ElementarySetTheoryLex a) where (==) = (=*)
 

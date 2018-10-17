@@ -52,10 +52,7 @@ instance CopulaSchema MSOLSequentCalc where
         schematize (TypedLambda v) (show (f $ seqv v) : e)
     appSchema x y e = schematize x (show y : e)
 
-    lamSchema f [] = "λβ_" ++ show h ++ "." ++ show (f $ liftToSequent $ SOSV (-1 * h))
-        where h = scopeHeight (LLam f)
-    lamSchema f (x:xs) = "(λβ_" ++ show h ++ "." ++ show (f $ liftToSequent $ SOSV (-1 * h)) ++ intercalate " " (x:xs) ++ ")"
-        where h = scopeHeight (LLam f)
+    lamSchema = defaultLamSchema
 
 -- TODO unify the different kinds of eigenconstrants 
 eigenConstraint c suc ant sub
@@ -124,10 +121,7 @@ instance CopulaSchema PSOLSequentCalc where
         schematize (TypedLambda v) (show (f $ seqv v) : e)
     appSchema x y e = schematize x (show y : e)
 
-    lamSchema f [] = "λβ_" ++ show h ++ "." ++ show (f $ liftToSequent $ SOSV (-1 * h))
-        where h = scopeHeight (LLam f)
-    lamSchema f (x:xs) = "(λβ_" ++ show h ++ "." ++ show (f $ liftToSequent $ SOSV (-1 * h)) ++ intercalate " " (x:xs) ++ ")"
-        where h = scopeHeight (LLam f)
+    lamSchema = defaultLamSchema
 
 ------------------------
 --  1.3 Common Rules  --

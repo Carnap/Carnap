@@ -84,9 +84,6 @@ instance CopulaSchema SeparativeSetTheoryLang where
                                             _ -> schematize t (show (LLam f) : e)
     appSchema x y e = schematize x (show y : e)
 
-    lamSchema f [] = "λβ_" ++ show h ++ "." ++ show (f (static (-1 * h)))
-        where h = scopeHeight (LLam f)
-    lamSchema f (x:xs) = "(λβ_" ++ show h ++ "." ++ show (f (static (-1 * h))) ++ intercalate " " (x:xs) ++ ")"
-        where h = scopeHeight (LLam f)
+    lamSchema = defaultLamSchema
 
 instance PrismSeparating SeparativeSetTheoryLex Int Bool

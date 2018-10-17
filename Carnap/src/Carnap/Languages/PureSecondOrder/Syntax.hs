@@ -154,8 +154,6 @@ instance FirstOrderLex PolySOLQuant
 --2. Second Order Languages
 --------------------------------------------------------
 
-pattern SOSV n          = FX (Lx1 (Lx1 (Lx1 (Lx4 (StaticVar n)))))
-pattern SODV n          = FX (Lx1 (Lx1 (Lx1 (Lx4 (SubVar n)))))
 pattern SOConst c a     = FX (Lx1 (Lx1 (Lx3 (Function c a))))
 pattern SOTau c a       = FX (Lx1 (Lx1 (Lx5 (Function c a))))
 pattern SOC n           = SOConst (Constant n) AZero
@@ -207,10 +205,7 @@ instance CopulaSchema MonadicallySOL where
     appSchema (SOMAbs (TypedLambda v)) (LLam f) e = schematize (TypedLambda v) (show (f $ SOV v) : e)
     appSchema x y e = schematize x (show y : e)
 
-    lamSchema f [] = "λβ_" ++ show h ++ "." ++ show (f (SOSV (-1 * h)))
-        where h = scopeHeight (LLam f)
-    lamSchema f (x:xs) = "(λβ_" ++ show h ++ "." ++ show (f (SOSV (-1 * h))) ++ intercalate " " (x:xs) ++ ")"
-        where h = scopeHeight (LLam f)
+    lamSchema = defaultLamSchema
 
 instance Incrementable MonadicallySOLLex (Term Int) where
     incHead (SOP n a b) = Just $ SOP n (ASucc a) (ASucc a)
@@ -283,10 +278,7 @@ instance CopulaSchema PolyadicallySOL where
     appSchema (SOPAbs (TypedLambda v)) (LLam f) e = schematize (TypedLambda v) (show (f $ SOV v) : e)
     appSchema x y e = schematize x (show y : e)
 
-    lamSchema f [] = "λβ_" ++ show h ++ "." ++ show (f (SOSV (-1 * h)))
-        where h = scopeHeight (LLam f)
-    lamSchema f (x:xs) = "(λβ_" ++ show h ++ "." ++ show (f (SOSV (-1 * h))) ++ intercalate " " (x:xs) ++ ")"
-        where h = scopeHeight (LLam f)
+    lamSchema = defaultLamSchema
 
 instance Eq (PolyadicallySOL a) where
         (==) = (=*)
