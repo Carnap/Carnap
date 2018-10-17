@@ -606,16 +606,16 @@ classWidget ident instructors classent = do
                                         <td>Problem Set #{show set}
                                         <td>#{dateDisplay due course}
                                         ^{analyticsFor (Right (pack (show set))) allScores}
-                        $forall (Entity k a, Just d) <- zip asmd asDocs
-                            <tr>
-                                <td>
-                                    <a href=@{CourseAssignmentR (courseTitle course) (documentFilename d)}>
-                                        #{documentFilename d}
-                                $maybe due <- assignmentMetadataDuedate a
-                                    <td>#{dateDisplay due course}
-                                $nothing
-                                    <td>No Due Date
-                                ^{analyticsFor (Left k) allScores}
+                            $forall (Entity k a, Just d) <- zip asmd asDocs
+                                <tr>
+                                    <td>
+                                        <a href=@{CourseAssignmentR (courseTitle course) (documentFilename d)}>
+                                            #{documentFilename d}
+                                    $maybe due <- assignmentMetadataDuedate a
+                                        <td>#{dateDisplay due course}
+                                    $nothing
+                                        <td>No Due Date
+                                    ^{analyticsFor (Left k) allScores}
                     <h2>Students
                     <table.table.table-striped>
                         <thead>
