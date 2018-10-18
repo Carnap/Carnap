@@ -87,6 +87,9 @@ unpackEquality :: IndexedPropContextSchemeLanguage (ClassicalSequentOver lex (Fo
 unpackEquality = replace (tau `equals` tau') (lall "v" $ \x -> (x `isIn` tau) .<=>. (x `isIn` tau')) ++
                 replace (tau `equals` tau') (lall "v" $ \x -> (x `isIn` tau') .<=>. (x `isIn` tau))
 
+unpackSubset :: IndexedPropContextSchemeLanguage (ClassicalSequentOver lex (Form b)) => ElementarySetTheoryRuleVariants lex b
+unpackSubset = replace (tau `within` tau') (lall "v" $ \x -> (x `isIn` tau) .=>. (x `isIn` tau'))
+
 ----------------------------
 --  1.2 Separation rules  --
 ----------------------------

@@ -20,8 +20,8 @@ import Carnap.Languages.PureFirstOrder.Logic.Rules
 import Carnap.Languages.SetTheory.Logic.Rules
 import Carnap.Languages.PureFirstOrder.Logic.Rules (phi, phi',eigenConstraint, tau)
 
-data ESTLogic = DefU1 | DefI1 | DefP1 | DefC1 | DefC3 | DefID1 | DefID3
-              | DefU2 | DefI2 | DefP2 | DefC2 | DefC4 | DefID2 | DefID4
+data ESTLogic = DefU1   | DefI1 | DefP1 | DefC1 | DefC3 | DefID1 | DefID3 | DefSub1
+              | DefU2   | DefI2 | DefP2 | DefC2 | DefC4 | DefID2 | DefID4 | DefSub2
               | FO FOLogic | PR (Maybe [(ClassicalSequentOver ElementarySetTheoryLex (Sequent (Form Bool)))])
               | Eq
               deriving (Eq)
@@ -43,7 +43,8 @@ instance Show ESTLogic where
         show DefID4  = "Def-="
         show DefP1   = "Def-P"
         show DefP2   = "Def-P"
-
+        show DefSub1 = "Def-S"
+        show DefSub2 = "Def-S"
 
 instance Inference ESTLogic ElementarySetTheoryLex (Form Bool) where
      ruleOf (PR _)    = axiom
@@ -59,6 +60,8 @@ instance Inference ESTLogic ElementarySetTheoryLex (Form Bool) where
      ruleOf DefID2    = unpackEquality !! 1
      ruleOf DefID3    = unpackEquality !! 2
      ruleOf DefID4    = unpackEquality !! 3
+     ruleOf DefSub1   = unpackSubset !! 0
+     ruleOf DefSub2   = unpackSubset !! 1
      ruleOf DefP1     = unpackPowerset !! 0
      ruleOf DefP2     = unpackPowerset !! 1
      ruleOf (FO UI  ) = universalInstantiation
@@ -104,12 +107,13 @@ parseESTLogic :: RuntimeNaturalDeductionConfig ElementarySetTheoryLex (Form Bool
 parseESTLogic rtc = try estRule <|> liftFO
     where liftFO = do r <- parseFOLogic (RuntimeNaturalDeductionConfig mempty mempty)
                       return (map FO r)
-          estRule = do r <- choice (map (try . string) ["PR", "Def-U", "Def-I", "Def-C", "Def-P", "Def-="])
+          estRule = do r <- choice (map (try . string) ["PR", "Def-U", "Def-I", "Def-C", "Def-P", "Def-S", "Def-="])
                        case r of 
                             r | r == "PR"    -> return [PR $ problemPremises rtc]
                               | r == "Def-U" -> return [DefU1, DefU2]
                               | r == "Def-I" -> return [DefI1, DefI2]
                               | r == "Def-C" -> return [DefC1, DefC2, DefC3, DefC4]
+                              | r == "Def-S" -> return [DefSub1, DefSub2]
                               | r == "Def-P" -> return [DefP1, DefP2]
                               | r == "Def-=" -> return [DefID1, DefID2,DefID3,DefID4]
 
@@ -130,45 +134,47 @@ data SSTLogic = EST ESTLogic | DefSep1 | DefSep2
 
 instance Show SSTLogic where 
         show (PRS _)   = "PR"
-        show DefSep1 = "Def-S"
-        show DefSep2 = "Def-S"
+        show DefSep1 = "Def-{}"
+        show DefSep2 = "Def-{}"
         show (EST x) = show x
 
 instance Inference SSTLogic SeparativeSetTheoryLex (Form Bool) where
      ruleOf (PRS _)          = axiom
-     ruleOf DefSep1         = unpackSeparation !! 0
-     ruleOf DefSep2         = unpackSeparation !! 1
-     ruleOf (EST DefU1   )  = unpackUnion !! 0 
-     ruleOf (EST DefU2   )  = unpackUnion !! 1 
-     ruleOf (EST DefI1   )  = unpackIntersection !! 0
-     ruleOf (EST DefI2   )  = unpackIntersection !! 1
-     ruleOf (EST DefC1   )  = unpackComplement !! 0
-     ruleOf (EST DefC2   )  = unpackComplement !! 1
-     ruleOf (EST DefC3   )  = unpackComplement !! 2
-     ruleOf (EST DefC4   )  = unpackComplement !! 3
-     ruleOf (EST DefID1  )  = unpackEquality !! 0
-     ruleOf (EST DefID2  )  = unpackEquality !! 1
-     ruleOf (EST DefID3  )  = unpackEquality !! 2
-     ruleOf (EST DefID4  )  = unpackEquality !! 3
-     ruleOf (EST DefP1   )  = unpackPowerset !! 0
-     ruleOf (EST DefP2   )  = unpackPowerset !! 1
-     ruleOf (EST (FO UI  )) = universalInstantiation
-     ruleOf (EST (FO EG  )) = existentialGeneralization
-     ruleOf (EST (FO UD  )) = universalGeneralization
-     ruleOf (EST (FO ED1 )) = existentialDerivation !! 0
-     ruleOf (EST (FO ED2 )) = existentialDerivation !! 1
-     ruleOf (EST (FO QN1 )) = quantifierNegation !! 0
-     ruleOf (EST (FO QN2 )) = quantifierNegation !! 1
-     ruleOf (EST (FO QN3 )) = quantifierNegation !! 2
-     ruleOf (EST (FO QN4 )) = quantifierNegation !! 3
-     ruleOf (EST (FO LL1 )) = leibnizLawVariations !! 0
-     ruleOf (EST (FO LL2 )) = leibnizLawVariations !! 1
-     ruleOf (EST (FO ALL1)) = antiLeibnizLawVariations !! 0
-     ruleOf (EST (FO ALL2)) = antiLeibnizLawVariations !! 1
-     ruleOf (EST (FO EL1 )) = euclidsLawVariations !! 0
-     ruleOf (EST (FO EL2 )) = euclidsLawVariations !! 1
-     ruleOf (EST (FO ID  )) = eqReflexivity
-     ruleOf (EST (FO SM  )) = eqSymmetry
+     ruleOf DefSep1          = unpackSeparation !! 0
+     ruleOf DefSep2          = unpackSeparation !! 1
+     ruleOf (EST DefU1   )   = unpackUnion !! 0 
+     ruleOf (EST DefU2   )   = unpackUnion !! 1 
+     ruleOf (EST DefI1   )   = unpackIntersection !! 0
+     ruleOf (EST DefI2   )   = unpackIntersection !! 1
+     ruleOf (EST DefC1   )   = unpackComplement !! 0
+     ruleOf (EST DefC2   )   = unpackComplement !! 1
+     ruleOf (EST DefC3   )   = unpackComplement !! 2
+     ruleOf (EST DefC4   )   = unpackComplement !! 3
+     ruleOf (EST DefID1  )   = unpackEquality !! 0
+     ruleOf (EST DefID2  )   = unpackEquality !! 1
+     ruleOf (EST DefID3  )   = unpackEquality !! 2
+     ruleOf (EST DefID4  )   = unpackEquality !! 3
+     ruleOf (EST DefP1   )   = unpackPowerset !! 0
+     ruleOf (EST DefP2   )   = unpackPowerset !! 1
+     ruleOf (EST DefSub1 )   = unpackSubset !! 0
+     ruleOf (EST DefSub2 )   = unpackSubset !! 1
+     ruleOf (EST (FO UI  ))  = universalInstantiation
+     ruleOf (EST (FO EG  ))  = existentialGeneralization
+     ruleOf (EST (FO UD  ))  = universalGeneralization
+     ruleOf (EST (FO ED1 ))  = existentialDerivation !! 0
+     ruleOf (EST (FO ED2 ))  = existentialDerivation !! 1
+     ruleOf (EST (FO QN1 ))  = quantifierNegation !! 0
+     ruleOf (EST (FO QN2 ))  = quantifierNegation !! 1
+     ruleOf (EST (FO QN3 ))  = quantifierNegation !! 2
+     ruleOf (EST (FO QN4 ))  = quantifierNegation !! 3
+     ruleOf (EST (FO LL1 ))  = leibnizLawVariations !! 0
+     ruleOf (EST (FO LL2 ))  = leibnizLawVariations !! 1
+     ruleOf (EST (FO ALL1))  = antiLeibnizLawVariations !! 0
+     ruleOf (EST (FO ALL2))  = antiLeibnizLawVariations !! 1
+     ruleOf (EST (FO EL1 ))  = euclidsLawVariations !! 0
+     ruleOf (EST (FO EL2 ))  = euclidsLawVariations !! 1
+     ruleOf (EST (FO ID  ))  = eqReflexivity
+     ruleOf (EST (FO SM  ))  = eqSymmetry
 
      premisesOf (EST (FO (SL x))) = map liftSequent (premisesOf x)
      premisesOf r = upperSequents (ruleOf r)
@@ -195,10 +201,10 @@ parseSSTLogic :: RuntimeNaturalDeductionConfig SeparativeSetTheoryLex (Form Bool
 parseSSTLogic rtc = try sepRule <|> liftEST
     where liftEST = do r <- parseESTLogic (RuntimeNaturalDeductionConfig mempty mempty)
                        return (map EST r)
-          sepRule = do r <- choice (map (try . string) ["PR", "Def-S"])
+          sepRule = do r <- choice (map (try . string) ["PR", "Def-{}"])
                        case r of 
                             r | r == "PR"    -> return [PRS $ problemPremises rtc]
-                              | r == "Def-S" -> return [DefSep1, DefSep2]
+                              | r == "Def-{}" -> return [DefSep1, DefSep2]
 
 parseSSTProof:: RuntimeNaturalDeductionConfig SeparativeSetTheoryLex (Form Bool) 
                     -> String -> [DeductionLine SSTLogic SeparativeSetTheoryLex (Form Bool)]
