@@ -9,7 +9,7 @@ module Carnap.Languages.PureFirstOrder.Parser
 import Carnap.Core.Data.AbstractSyntaxDataTypes
 import Carnap.Core.Data.AbstractSyntaxClasses (Schematizable)
 import Carnap.Languages.PureFirstOrder.Syntax
-import Carnap.Languages.Util.LanguageClasses (BooleanLanguage, BooleanConstLanguage, IndexedPropLanguage(..), QuantLanguage(..))
+import Carnap.Languages.Util.LanguageClasses (BooleanLanguage, BooleanConstLanguage, StandardVarLanguage, IndexedPropLanguage(..), QuantLanguage(..))
 import Carnap.Languages.Util.GenericParsers
 import Text.Parsec
 import Text.Parsec.Expr
@@ -159,12 +159,12 @@ pfolFormulaParser = parserFromOptions simplePolyadicFOLParserOptions
 mfolFormulaParser :: Parsec String u PureMFOLForm
 mfolFormulaParser = parserFromOptions simpleMonadicFOLParserOptions
 
-parseFreeVar :: String -> Parsec String u (PureFirstOrderLanguageWith a (Term Int))
+parseFreeVar :: StandardVarLanguage (PureFirstOrderLanguageWith a (Term Int)) => String -> Parsec String u (PureFirstOrderLanguageWith a (Term Int))
 parseFreeVar s = choice [try $ do _ <- string "x_"
                                   dig <- many1 digit
-                                  return $ PV $ "x_" ++ dig
+                                  return $ foVar $ "x_" ++ dig
                         ,      do c <- oneOf s
-                                  return $ PV [c]
+                                  return $ foVar [c]
                         ]
 
 monadicSentenceParser :: Parsec String u PureMFOLTerm -> Parsec String u PureMFOLForm

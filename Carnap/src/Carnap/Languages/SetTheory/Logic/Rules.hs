@@ -40,20 +40,20 @@ type ElementarySetTheoryRuleVariants lex b = ElementarySetTheoryConstraint lex b
 
 instance CopulaSchema (ClassicalSequentOver ElementarySetTheoryLex) where 
 
-    appSchema (SeqQuant (All x)) (LLam f) e = schematize (All x) (show (f $ SeqV x) : e)
-    appSchema (SeqQuant (Some x)) (LLam f) e = schematize (Some x) (show (f $ SeqV x) : e)
+    appSchema (SeqQuant (All x)) (LLam f) e = schematize (All x) (show (f $ seqVar x) : e)
+    appSchema (SeqQuant (Some x)) (LLam f) e = schematize (Some x) (show (f $ seqVar x) : e)
     appSchema x y e = schematize x (show y : e)
 
     lamSchema = defaultLamSchema
 
 instance CopulaSchema (ClassicalSequentOver SeparativeSetTheoryLex) where 
 
-    appSchema (SeqQuant (All x)) (LLam f) e = schematize (All x) (show (f $ SeqV x) : e)
-    appSchema (SeqQuant (Some x)) (LLam f) e = schematize (Some x) (show (f $ SeqV x) : e)
+    appSchema (SeqQuant (All x)) (LLam f) e = schematize (All x) (show (f $ seqVar x) : e)
+    appSchema (SeqQuant (Some x)) (LLam f) e = schematize (Some x) (show (f $ seqVar x) : e)
     appSchema t@(x :!$: y) (LLam f) e = case ( castTo x :: Maybe (ClassicalSequentOver SeparativeSetTheoryLex (Term Int -> (Term Int -> Form Bool) -> Term Int))
                                              , castTo (LLam f) :: Maybe (ClassicalSequentOver SeparativeSetTheoryLex (Term Int -> Form Bool))) of
                                             (Just x, Just (LLam f)) -> case x ^? _separator :: Maybe String of
-                                              Just s -> schematize t (show (f $ SeqV s) : e)
+                                              Just s -> schematize t (show (f $ seqVar s) : e)
                                               Nothing -> schematize t (show (LLam f) : e)
                                             _ -> schematize t (show (LLam f) : e)
     appSchema x y e = schematize x (show y : e)

@@ -4,6 +4,7 @@ module Carnap.Languages.PureSecondOrder.Syntax
 where
 
 import Carnap.Core.Util 
+import Carnap.Languages.PureFirstOrder.Syntax (foVar)
 import qualified Carnap.Languages.PureFirstOrder.Syntax as FOL
 import Carnap.Core.Data.AbstractSyntaxDataTypes
 import Carnap.Core.Data.AbstractSyntaxClasses
@@ -198,11 +199,11 @@ pattern SOMCtx n        = FX (Lx7 (Connective (Context n) AOne))
 
 instance CopulaSchema MonadicallySOL where 
 
-    appSchema (SOQuant (All x)) (LLam f) e = schematize (All x) (show (f $ SOV x) : e)
-    appSchema (SOQuant (Some x)) (LLam f) e = schematize (Some x) (show (f $ SOV x) : e)
+    appSchema (SOQuant (All x)) (LLam f) e = schematize (All x) (show (f $ foVar x) : e)
+    appSchema (SOQuant (Some x)) (LLam f) e = schematize (Some x) (show (f $ foVar x) : e)
     appSchema (SOMQuant (All x)) (LLam f) e = schematize (All x) (show (f $ SOMVar x) : e)
     appSchema (SOMQuant (Some x)) (LLam f) e = schematize (Some x) (show (f $ SOMVar x) : e)
-    appSchema (SOMAbs (TypedLambda v)) (LLam f) e = schematize (TypedLambda v) (show (f $ SOV v) : e)
+    appSchema (SOMAbs (TypedLambda v)) (LLam f) e = schematize (TypedLambda v) (show (f $ foVar v) : e)
     appSchema x y e = schematize x (show y : e)
 
     lamSchema = defaultLamSchema
@@ -215,8 +216,8 @@ instance Incrementable MonadicallySOLLex (Term Int) where
 
 instance BoundVars MonadicallySOLLex where
 
-    scopeUniqueVar (SOQuant (Some v)) (LLam f) = SOV $ show $ scopeHeight (LLam f)
-    scopeUniqueVar (SOQuant (All v)) (LLam f)  = SOV $ show $ scopeHeight (LLam f)
+    scopeUniqueVar (SOQuant (Some v)) (LLam f) = foVar $ show $ scopeHeight (LLam f)
+    scopeUniqueVar (SOQuant (All v)) (LLam f)  = foVar $ show $ scopeHeight (LLam f)
     scopeUniqueVar _ _ = undefined
 
     subBoundVar = subst
@@ -235,6 +236,7 @@ instance PrismBooleanConnLex MonadicallySOLLex Bool
 instance PrismStandardQuant MonadicallySOLLex Bool Int
 instance PrismGenericQuant MonadicallySOLLex Form Form Bool (Int -> Bool) 
 instance PrismGenericTypedLambda MonadicallySOLLex Term Form Int
+instance PrismStandardVar MonadicallySOLLex Int
 
 --------------------------------------------------------
 --  2.2 Polyadic SOL
@@ -263,19 +265,19 @@ instance Incrementable PolyadicallySOLLex (Term Int) where
 
 instance BoundVars PolyadicallySOLLex where
 
-    scopeUniqueVar (SOQuant (Some v)) (LLam f) = SOV $ show $ scopeHeight (LLam f)
-    scopeUniqueVar (SOQuant (All v)) (LLam f)  = SOV $ show $ scopeHeight (LLam f)
+    scopeUniqueVar (SOQuant (Some v)) (LLam f) = foVar $ show $ scopeHeight (LLam f)
+    scopeUniqueVar (SOQuant (All v)) (LLam f)  = foVar $ show $ scopeHeight (LLam f)
     scopeUniqueVar _ _ = undefined
 
     subBoundVar = subst
 
 instance CopulaSchema PolyadicallySOL where 
 
-    appSchema (SOQuant (All x)) (LLam f) e = schematize (All x) (show (f $ SOV x) : e)
-    appSchema (SOQuant (Some x)) (LLam f) e = schematize (Some x) (show (f $ SOV x) : e)
+    appSchema (SOQuant (All x)) (LLam f) e = schematize (All x) (show (f $ foVar x) : e)
+    appSchema (SOQuant (Some x)) (LLam f) e = schematize (Some x) (show (f $ foVar x) : e)
     appSchema (SOPQuant (SOPAll x a)) (LLam f) e = schematize (SOPAll x a) (show (f $ SOPVar x a) : e)
     appSchema (SOPQuant (SOPSome x a)) (LLam f) e = schematize (SOPSome x a) (show (f $ SOPVar x a) : e)
-    appSchema (SOPAbs (TypedLambda v)) (LLam f) e = schematize (TypedLambda v) (show (f $ SOV v) : e)
+    appSchema (SOPAbs (TypedLambda v)) (LLam f) e = schematize (TypedLambda v) (show (f $ foVar v) : e)
     appSchema x y e = schematize x (show y : e)
 
     lamSchema = defaultLamSchema
@@ -293,6 +295,7 @@ instance PrismGenericTypedLambda PolyadicallySOLLex Term Form Int
 instance PrismBooleanConnLex PolyadicallySOLLex Bool
 instance PrismStandardQuant PolyadicallySOLLex Bool Int
 instance PrismTermEquality PolyadicallySOLLex Int Bool
+instance PrismStandardVar PolyadicallySOLLex Int
 
 --------------------------------------------------------
 --Notes

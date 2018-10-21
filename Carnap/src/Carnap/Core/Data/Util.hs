@@ -47,7 +47,7 @@ equalizeTypes (x@(Fx _) :: Fix f a) (y@(Fx _) :: Fix f b) = eqT :: Maybe (a :~: 
 castToProxy :: Typeable a => Proxy a -> Fix f b -> Maybe (a :~: b)
 castToProxy (Proxy :: Proxy a) (y@(Fx _) :: Fix f b) = eqT :: Maybe (a :~: b)
 
-castTo :: forall a . forall b . (Typeable a, Typeable b) => Fix f b -> Maybe (Fix f a)
+castTo :: forall a . forall b . forall f . (Typeable a, Typeable b) => Fix f b -> Maybe (Fix f a)
 castTo x = case eqT :: Maybe (a :~: b) of Nothing -> Nothing; Just Refl -> Just x
 
 {-|

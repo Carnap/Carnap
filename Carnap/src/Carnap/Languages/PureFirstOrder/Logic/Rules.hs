@@ -4,7 +4,7 @@ module Carnap.Languages.PureFirstOrder.Logic.Rules where
 import Data.List (intercalate)
 import Data.Typeable (Typeable)
 import Data.Maybe (catMaybes)
-import Control.Lens (toListOf)
+import Control.Lens (toListOf,preview)
 import Text.Parsec
 import Carnap.Core.Data.Util (scopeHeight)
 import Carnap.Core.Unification.Unification (applySub,subst,FirstOrder)
@@ -32,17 +32,15 @@ type FOLSequentCalc = ClassicalSequentOver PureLexiconFOL
 --for sequent languages that contain things like quantifiers
 instance CopulaSchema FOLSequentCalc where 
 
-    appSchema (SeqQuant (All x)) (LLam f) e = schematize (All x) (show (f $ SeqV x) : e)
-    appSchema (SeqQuant (Some x)) (LLam f) e = schematize (Some x) (show (f $ SeqV x) : e)
+    appSchema (SeqQuant (All x)) (LLam f) e = schematize (All x) (show (f $ seqVar x) : e)
+    appSchema (SeqQuant (Some x)) (LLam f) e = schematize (Some x) (show (f $ seqVar x) : e)
     appSchema x y e = schematize x (show y : e)
 
     lamSchema = defaultLamSchema
 
 pattern SeqQuant q        = FX (Lx2 (Lx1 (Lx2 (Bind q))))
-pattern SeqVar c a        = FX (Lx2 (Lx1 (Lx4 (Function c a))))
 pattern SeqTau c a        = FX (Lx2 (Lx1 (Lx5 (Function c a))))
 pattern SeqConst c a      = FX (Lx2 (Lx1 (Lx3 (Function c a))))
-pattern SeqV s            = SeqVar (Var s) AZero
 pattern SeqT n            = SeqTau (SFunc AZero n) AZero
 pattern SeqC n            = SeqConst (Constant n) AZero
 
@@ -53,6 +51,9 @@ instance ParsableLex (Form Bool) PureLexiconFOL where
         langParser = folFormulaParser
 
 folSeqParser = seqFormulaParser :: Parsec String u (FOLSequentCalc (Sequent (Form Bool)))
+
+seqVar :: StandardVarLanguage (FixLang lex (Term Int)) => String -> FixLang lex (Term Int)
+seqVar = var
 
 tau :: IndexedSchemeConstantLanguage (FixLang lex (Term Int)) => FixLang lex (Term Int)
 tau = taun 1
@@ -83,8 +84,8 @@ eigenConstraint c suc ant sub
     | c' `occursIn` suc' = Just $ "The term " ++ show c' ++ " appears not to be fresh in the other premise " ++ show suc'
     | otherwise = case c' of 
                           SeqC _ -> Nothing
-                          SeqV _ -> Nothing
                           SeqT _ -> Nothing
+                          _ | preview _varLabel c' /= Nothing -> Nothing
                           _ -> Just $ "The term " ++ show c' ++ " is not a constant or variable"
     where c'   = applySub sub c
           ant' = applySub sub ant
@@ -174,12 +175,7 @@ montagueNewExistentialConstraint cs ded lineno sub =
           occursIn x y = not (subst x (static 0) y =* y)
                          || boundVarOf x y
                          || any (boundVarOf x) (toListOf formsOf y)
-          boundVarOf :: (Show (FixLang (PureFirstOrderLexWith a) (Form Bool)), FirstOrder (FixLang (PureFirstOrderLexWith a))) => 
-            FixLang (PureFirstOrderLexWith a) (Term Int) -> FixLang (PureFirstOrderLexWith a) (Form Bool) -> Bool
-          boundVarOf (PV s) f = case subBinder f s of
-                                    Nothing -> False
-                                    Just f' -> show f' == show f
-          boundVarOf _ _ = False
+
 
 montagueNewUniversalConstraint cs ded lineno sub = 
         case relevantForms of
@@ -194,11 +190,6 @@ montagueNewUniversalConstraint cs ded lineno sub =
           --are *available* lines.
           relevantForms = catMaybes $ map assertion relevantLines
           occursIn x y = not (subst x (static 0) y =* y)
-          boundVarOf :: (Show (FixLang (PureFirstOrderLexWith a) (Form Bool)), FirstOrder (FixLang (PureFirstOrderLexWith a))) => 
-            FixLang (PureFirstOrderLexWith a) (Term Int) -> FixLang (PureFirstOrderLexWith a) (Form Bool) -> Bool
-          boundVarOf (PV s) f = case subBinder f s of
-                                    Nothing -> False
-                                    Just f' -> show f' == show f
           isShow (ShowLine _ d) = d == depth (ded !! (lineno - 1))
           isShow _ = False
 

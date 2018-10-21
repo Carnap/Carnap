@@ -72,17 +72,15 @@ type PureFirstOrderLexWith a = CoreLexicon :|: a
 type PureFirstOrderLanguageWith a = FixLang (PureFirstOrderLexWith a)
 
 pattern PQuant q       = FX (Lx1 (Lx2 (Bind q)))
-pattern PVar c a       = FX (Lx1 (Lx4 (Function c a)))
 pattern PBind q f      = PQuant q :!$: LLam f
-pattern PV s           = PVar (Var s) AZero
 
 instance {-# OVERLAPPABLE #-} 
         ( StaticVar (PureFirstOrderLanguageWith a)
         , Schematizable (a (PureFirstOrderLanguageWith a))
         ) => CopulaSchema (PureFirstOrderLanguageWith a) where 
 
-    appSchema (PQuant (All x)) (LLam f) e = schematize (All x) (show (f $ PV x) : e)
-    appSchema (PQuant (Some x)) (LLam f) e = schematize (Some x) (show (f $ PV x) : e)
+    appSchema (PQuant (All x)) (LLam f) e = schematize (All x) (show (f $ foVar x) : e)
+    appSchema (PQuant (Some x)) (LLam f) e = schematize (Some x) (show (f $ foVar x) : e)
     appSchema x y e = schematize x (show y : e)
 
     lamSchema = defaultLamSchema
@@ -90,8 +88,8 @@ instance {-# OVERLAPPABLE #-}
 instance FirstOrder (FixLang (PureFirstOrderLexWith a)) => 
     BoundVars (PureFirstOrderLexWith a) where
 
-    scopeUniqueVar (PQuant (Some v)) (LLam f) = PV $ show $ scopeHeight (LLam f)
-    scopeUniqueVar (PQuant (All v)) (LLam f)  = PV $ show $ scopeHeight (LLam f)
+    scopeUniqueVar (PQuant (Some v)) (LLam f) = foVar $ show $ scopeHeight (LLam f)
+    scopeUniqueVar (PQuant (All v)) (LLam f)  = foVar $ show $ scopeHeight (LLam f)
     scopeUniqueVar _ _ = undefined
 
     subBoundVar = subst
@@ -103,6 +101,9 @@ termsOf = genChildren
 formsOf :: FirstOrder (FixLang (PureFirstOrderLexWith a)) => 
         Traversal' (FixLang (PureFirstOrderLexWith a) (Form Bool)) (FixLang (PureFirstOrderLexWith a) (Form Bool))
 formsOf = genChildren
+
+foVar :: StandardVarLanguage (FixLang lex (Term Int))  => String -> FixLang lex (Term Int)
+foVar = var
 
 instance FirstOrder (FixLang (PureFirstOrderLexWith a)) => 
     RelabelVars (PureFirstOrderLexWith a) Form Bool where
@@ -125,7 +126,7 @@ instance PrismPropositionalContext (PureFirstOrderLexWith a) Bool
 instance PrismBooleanConst (PureFirstOrderLexWith a) Bool
 instance PrismSchematicProp (PureFirstOrderLexWith a) Bool
 instance PrismStandardQuant (PureFirstOrderLexWith a) Bool Int
-
+instance PrismStandardVar (PureFirstOrderLexWith a) Int
 --equality up to α-equivalence
 instance UniformlyEq (PureFirstOrderLanguageWith a) => Eq (PureFirstOrderLanguageWith a b) where
         (==) = (=*)

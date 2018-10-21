@@ -217,6 +217,7 @@ instance PrismTermElements lex a b => PrismTermElements (ClassicalSequentLexOver
 instance PrismElementarySetsLex lex b => PrismElementarySetsLex (ClassicalSequentLexOver lex) b
 instance PrismTermSubset lex c b => PrismTermSubset (ClassicalSequentLexOver lex) c b
 instance PrismSeparating lex b c => PrismSeparating (ClassicalSequentLexOver lex) b c
+instance PrismStandardVar lex b => PrismStandardVar (ClassicalSequentLexOver lex) b
 
 --------------------------------------------------------
 --3. Sequent Languages

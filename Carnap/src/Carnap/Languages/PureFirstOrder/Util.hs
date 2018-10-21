@@ -1,5 +1,5 @@
 {-# LANGUAGE FlexibleContexts #-}
-module Carnap.Languages.PureFirstOrder.Util (propForm) where
+module Carnap.Languages.PureFirstOrder.Util (propForm, boundVarOf) where
 
 import Carnap.Core.Data.AbstractSyntaxClasses
 import Carnap.Core.Data.AbstractSyntaxDataTypes
@@ -25,3 +25,6 @@ propForm f = evalState (propositionalize f) []
                                    Just n -> return (pn n)
                                    Nothing -> put (abbrev ++ [form]) >> return (pn $ length abbrev)
                                     
+boundVarOf v f = case preview  _varLabel v >>= subBinder f of
+                            Just f' -> show f' == show f
+                            Nothing -> False 
