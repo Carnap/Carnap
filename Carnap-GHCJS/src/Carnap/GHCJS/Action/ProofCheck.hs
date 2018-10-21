@@ -166,7 +166,9 @@ activateChecker drs w (Just iog@(IOGoal i o g _ opts)) -- TODO: need to update n
                                                  , directed = case M.lookup "goal" opts of
                                                                   Just _ -> True
                                                                   Nothing -> False
-                                                 , initialUpdate = False
+                                                 , initialUpdate = case M.lookup "init" opts of
+                                                                  Just _ -> True
+                                                                  Nothing -> False
                                                  , alternateSymbols = case M.lookup "alternate-symbols" opts of
                                                                           Just "alt1" -> alternateSymbols1
                                                                           _ -> id
