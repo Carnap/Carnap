@@ -349,6 +349,26 @@ instance {-#OVERLAPPABLE#-} PrismTermSubset lex c b => SubsetLanguage (FixLang l
 --1.3. Terms
 --------------------------------------------------------
 
+class StandardVarLanguage t where
+        var :: String -> t
+
+class (Typeable b, PrismLink (FixLang lex) (Function (StandardVar b) (FixLang lex))) 
+        => PrismStandardVar lex b where
+
+        _varLabel :: Prism' (FixLang lex (Term b)) String
+        _varLabel = link_StandardVar . varLabel
+
+        link_StandardVar :: Prism' (FixLang lex (Term b)) (Function (StandardVar b) (FixLang lex) (Term b))
+        link_StandardVar = link 
+
+        varLabel :: Prism' (Function (StandardVar b) (FixLang lex) (Term b)) String
+        varLabel = prism' (\s -> Function (Var s) AZero) 
+                          (\x -> case x of Function (Var s) AZero -> Just s
+                                           _ -> Nothing)
+
+instance {-#OVERLAPPABLE#-} PrismStandardVar lex b => StandardVarLanguage (FixLang lex (Term b)) where
+       var = review _varLabel
+
 class IndexedConstantLanguage l where
         cn :: Int -> l
 
