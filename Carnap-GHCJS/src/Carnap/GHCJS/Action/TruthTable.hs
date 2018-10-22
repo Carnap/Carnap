@@ -26,7 +26,7 @@ import Data.Map as M (Map, lookup, foldr, insert, fromList, toList)
 import Data.Text (pack)
 import Data.List (subsequences, nub, zip4,intersperse)
 import Control.Monad.IO.Class (liftIO)
-import Control.Lens (toListOf)
+import Control.Lens (toListOf, preview)
 import Control.Lens.Plated (children)
 import Text.Parsec (parse, ParseError, eof)
 
@@ -132,7 +132,7 @@ createValidityTruthTable w (antced :|-: (SS succed)) (i,o) ref bw opts =
           valuations = (Prelude.map toValuation) . subsequences $ reverse atomIndicies
           orderedChildren = concat $ intersperse [Left ','] (Prelude.map (traverseBPT . toBPT. fromSequent) (toListOf concretes antced))
                             ++ [[Left '⊢']] ++ intersperse [Left ','] (Prelude.map (traverseBPT . toBPT. fromSequent) (toListOf concretes succed))
-          toRow' = toRow w atomIndicies orderedChildren o
+          toRow' = toRow w opts atomIndicies orderedChildren o 
           makeGridRef x y = newIORef (M.fromList [((z,w), True) | z <- [1..x], w <-[1.. y]])
           tryCounterexample w' = do mrow <- liftIO $ prompt w' "enter the truth values for your counterexample row" (Just "")
                                     case mrow of 
@@ -183,7 +183,7 @@ createSimpleTruthTable w f (_,o) _ _ opts =
           valuations = (Prelude.map toValuation) . subsequences $ reverse atomIndicies
             where toValuation l = \x -> x `elem` l
           orderedChildren =  traverseBPT . toBPT $ f
-          toRow' = toRow w atomIndicies orderedChildren o
+          toRow' = toRow w opts atomIndicies orderedChildren o
           makeGridRef x y = newIORef (M.fromList [((z,w), True) | z <- [1..x], w <-[1.. y]])
 
 --this is a sorting that gets the correct ordering of indicies (reversed on
@@ -197,7 +197,7 @@ sort (x:xs) = smaller ++ [x] ++ bigger
                   | otherwise = y < x
 sort [] = []
 
-toRow w atomIndicies orderedChildren o gRef (v,n,mvalid,given) = 
+toRow w opts atomIndicies orderedChildren o gRef (v,n,mvalid,given) = 
         do (Just row) <- createElement w (Just "tr")
            (Just sep) <- createElement w (Just "td")
            setAttribute sep "class" "tttdSep"
@@ -219,7 +219,10 @@ toRow w atomIndicies orderedChildren o gRef (v,n,mvalid,given) =
                                                    Nothing -> setInnerHTML td (Just "")
                                       Left c'  -> setInnerHTML td (Just "")
                                       Right f  -> do let (Form tv) = satisfies v f
-                                                     addDropdown m td tv mg
+                                                     case preview _propIndex f of
+                                                         Just i -> addDropdown m td tv (if "autoAtoms" `elem` optlist then  (Just $ v i) else mg)
+                                                         Nothing -> addDropdown m td tv mg
+
                                   return td
 
           addDropdown m td bool mg = do sel <- trueFalseOpts mg
@@ -254,6 +257,7 @@ toRow w atomIndicies orderedChildren o gRef (v,n,mvalid,given) =
                              if s == Just "T" 
                                  then liftIO $ modifyIORef gRef (M.insert (n,m) tv)
                                  else liftIO $ modifyIORef gRef (M.insert (n,m) (not tv))
+          optlist = case M.lookup "options" opts of Just s -> words s; Nothing -> []
 
 toHead w atomIndicies orderedChildren = 
         do (Just row) <- createElement w (Just "tr")
