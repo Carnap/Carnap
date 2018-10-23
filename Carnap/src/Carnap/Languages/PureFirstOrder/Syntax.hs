@@ -1,8 +1,9 @@
-{-#LANGUAGE TypeSynonymInstances, UndecidableInstances, FlexibleInstances, MultiParamTypeClasses, GADTs, DataKinds, PolyKinds, TypeOperators, ViewPatterns, PatternSynonyms, RankNTypes, FlexibleContexts, AutoDeriveTypeable #-}
+{-#LANGUAGE UndecidableInstances, FlexibleInstances, MultiParamTypeClasses, GADTs, TypeOperators, PatternSynonyms, FlexibleContexts #-}
 module Carnap.Languages.PureFirstOrder.Syntax 
 where
 
 import Carnap.Core.Util 
+import Carnap.Core.Data.Util 
 import Control.Monad.State
 import qualified Carnap.Languages.PurePropositional.Syntax as P
 import Carnap.Core.Data.AbstractSyntaxDataTypes
@@ -12,7 +13,7 @@ import Carnap.Core.Data.Util (scopeHeight)
 import Carnap.Core.Unification.Unification
 import Carnap.Languages.Util.LanguageClasses
 import Carnap.Languages.ClassicalSequent.Syntax
-import Control.Lens (Traversal')
+import Control.Lens (Traversal', preview)
 import Data.Typeable (Typeable)
 import Data.List (intercalate)
 import Carnap.Languages.Util.GenericConstructors
@@ -79,8 +80,10 @@ instance {-# OVERLAPPABLE #-}
         , Schematizable (a (PureFirstOrderLanguageWith a))
         ) => CopulaSchema (PureFirstOrderLanguageWith a) where 
 
-    appSchema (PQuant (All x)) (LLam f) e = schematize (All x) (show (f $ foVar x) : e)
-    appSchema (PQuant (Some x)) (LLam f) e = schematize (Some x) (show (f $ foVar x) : e)
+    appSchema h@(Fx _) (LLam f) e = case (qtype h >>= preview _all, qtype h >>= preview _some, oftype (LLam f)) of
+                                    (Just x, _, Just (LLam f')) -> schematize (All x) (show (f' $ foVar x) : e)
+                                    (_, Just x, Just (LLam f')) -> schematize (Some x) (show (f' $ foVar x) : e)
+                                    _ -> schematize h (show (LLam f) : e)
     appSchema x y e = schematize x (show y : e)
 
     lamSchema = defaultLamSchema
@@ -94,22 +97,14 @@ instance FirstOrder (FixLang (PureFirstOrderLexWith a)) =>
 
     subBoundVar = subst
 
-termsOf :: FirstOrder (FixLang (PureFirstOrderLexWith a)) => 
-        Traversal' (FixLang (PureFirstOrderLexWith a) (Form Bool)) (FixLang (PureFirstOrderLexWith a) (Term Int))
-termsOf = genChildren
-
-formsOf :: FirstOrder (FixLang (PureFirstOrderLexWith a)) => 
-        Traversal' (FixLang (PureFirstOrderLexWith a) (Form Bool)) (FixLang (PureFirstOrderLexWith a) (Form Bool))
-formsOf = genChildren
-
-foVar :: StandardVarLanguage (FixLang lex (Term Int))  => String -> FixLang lex (Term Int)
-foVar = var
 
 instance FirstOrder (FixLang (PureFirstOrderLexWith a)) => 
     RelabelVars (PureFirstOrderLexWith a) Form Bool where
 
-    subBinder (PBind (All v) f) y = Just $ PBind (All y) f 
-    subBinder (PBind (Some v) f) y = Just $ PBind (Some y) f
+    subBinder (q :!$: LLam f) y = case (qtype q >>= preview _all, qtype q >>= preview _some, oftype (LLam f)) of
+                                    (Just _, _, Just (LLam f')) -> Just $ PBind (All y) f'
+                                    (_, Just _, Just (LLam f')) -> Just $ PBind (Some y) f'
+                                    _ -> Nothing
     subBinder _ _ = Nothing
 
 instance FirstOrder (FixLang (PureFirstOrderLexWith a)) => 
@@ -208,8 +203,6 @@ type PureLexiconFOL = (OpenLexiconPFOL (PolyadicFunctionSymbolsAndIdentity :|: E
 
 type PureLanguageFOL = FixLang PureLexiconFOL
 
-fogamma :: Int -> ClassicalSequentOver PureLexiconFOL (Antecedent (Form Bool))
-fogamma n = GammaV n
 
 pattern PFunc x arity  = FX (Lx3 (Lx2 (Function x arity)))
 pattern PSFunc x arity  = FX (Lx3 (Lx3 (Function x arity)))
@@ -230,3 +223,26 @@ instance Incrementable (OpenLexiconPFOL (PolyadicFunctionSymbolsAndIdentity :|: 
     incHead (PSF n a b)  = Just $ PSF n (ASucc a) (ASucc a)
     incHead (PPhi n a b) = Just $ PPhi n (ASucc a) (ASucc a)
     incHead _  = Nothing
+
+-------------------------
+--  Utility Functions  --
+-------------------------
+--mostly specializing things for the first-order case
+
+fogamma :: Int -> ClassicalSequentOver lex (Antecedent (Form Bool))
+fogamma n = GammaV n
+
+termsOf :: BoundVars lex => FirstOrder (FixLang lex) => Traversal' (FixLang lex (Form Bool)) (FixLang lex (Term Int))
+termsOf = genChildren
+
+formsOf :: BoundVars lex => FirstOrder (FixLang lex) => Traversal' (FixLang lex (Form Bool)) (FixLang lex (Form Bool))
+formsOf = genChildren
+
+foVar :: StandardVarLanguage (FixLang lex (Term Int))  => String -> FixLang lex (Term Int)
+foVar = var
+
+oftype :: Typeable a => FixLang lex a -> Maybe (FixLang lex (Term Int -> Form Bool))
+oftype = castTo
+
+qtype :: Typeable a => FixLang lex a -> Maybe (FixLang lex ((Term Int -> Form Bool)->Form Bool))
+qtype = castTo
