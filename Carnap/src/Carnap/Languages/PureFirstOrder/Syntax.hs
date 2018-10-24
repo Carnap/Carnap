@@ -184,6 +184,7 @@ type PurePFOLTerm = OpenPFOLTerm EndLang
 
 instance PrismPolyadicPredicate (OpenLexiconPFOL a) Int Bool
 instance PrismPolyadicSchematicPredicate (OpenLexiconPFOL a) Int Bool
+instance PrismSubstitutionalVariable PureLexiconFOL
 
 instance Incrementable (OpenLexiconPFOL EndLang) (Term Int) where
     incHead (PP n a b)   = Just $ PP n (ASucc a) (ASucc a)

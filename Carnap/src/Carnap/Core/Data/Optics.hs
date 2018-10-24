@@ -1,6 +1,6 @@
 {-#LANGUAGE  UndecidableInstances, FlexibleInstances, MultiParamTypeClasses, FunctionalDependencies, GADTs, PolyKinds, TypeOperators, RankNTypes, FlexibleContexts, ScopedTypeVariables  #-}
 module Carnap.Core.Data.Optics(
-  RelabelVars(..),  PrismLink(..), (:<:)(..), ReLex(..), unaryOpPrism, binaryOpPrism, genChildren
+  RelabelVars(..),  PrismLink(..), (:<:)(..), ReLex(..), unaryOpPrism, binaryOpPrism, genChildren, PrismSubstitutionalVariable(..) 
 ) where
 
 import Carnap.Core.Data.AbstractSyntaxDataTypes
@@ -172,6 +172,28 @@ instance {-# OVERLAPPABLE #-} (PrismLink (g (FixLang g)) (f (FixLang g)), ReLex 
         lowerLang (FX a) = FX <$> preview (link' . relexIso) a
             where link' :: Typeable a => Prism' (g (FixLang g) a) (f (FixLang g) a)
                   link' = link
+
+class (PrismLink (FixLang lex) (SubstitutionalVariable (FixLang lex))) 
+        => PrismSubstitutionalVariable lex where
+
+        _substIdx :: Typeable t => Prism' (FixLang lex t) Int
+        _substIdx = link_PrismStandardVar . substIdx
+
+        _staticIdx :: Typeable t => Prism' (FixLang lex t) Int
+        _staticIdx = link_PrismStandardVar . staticIdx
+
+        link_PrismStandardVar :: Typeable t => Prism' (FixLang lex t) (SubstitutionalVariable (FixLang lex) t)
+        link_PrismStandardVar = link 
+
+        staticIdx :: Prism' (SubstitutionalVariable (FixLang lex) t) Int
+        staticIdx  = prism' (\n -> StaticVar n) 
+                            (\x -> case x of StaticVar n -> Just n
+                                             _ -> Nothing)
+
+        substIdx :: Prism' (SubstitutionalVariable (FixLang lex) t) Int
+        substIdx  = prism' (\n -> SubVar n) 
+                           (\x -> case x of SubVar n -> Just n
+                                            _ -> Nothing)
 
 {-| Transforms a prism selecting a nullary constructor for a unary language
 item into a prism onto the things that that item is predicated of. e.g.
