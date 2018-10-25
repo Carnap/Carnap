@@ -64,8 +64,6 @@ instance FirstOrderLex Set
 
 instance Monad m => MaybeMonadVar Set m 
 
-instance MaybeStaticVar Set
-
 instance Schematizable Set where
     schematize Singleton (x:_) = "{" ++ x ++ "}"
     schematize Empty  _        = "{}"
@@ -86,8 +84,6 @@ instance FirstOrderLex (Var lang) where
         isVarLex (SomeSet _) = True
 
 instance Monad m => MaybeMonadVar (Var lang) m 
-
-instance MaybeStaticVar (Var lang) 
 
 instance Schematizable (Var lang) where
     schematize (SomeSet s) _ = s
@@ -127,6 +123,8 @@ pattern SV n = Fx3 (SubVar n)
 pattern ACUISV n = SV n
 pattern VUnFunc s x = Fx4 (Function (ConstUnFunc s) AOne) :!$: x
 pattern VBinFunc s x y = Fx4 (Function (ConstBinFunc s) ATwo) :!$: x :!$: y
+
+instance PrismSubstitutionalVariable VLex
 
 instance BoundVars VLex where
   subBoundVar = undefined

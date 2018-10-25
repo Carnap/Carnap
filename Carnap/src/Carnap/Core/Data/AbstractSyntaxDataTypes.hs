@@ -6,7 +6,7 @@ module Carnap.Core.Data.AbstractSyntaxDataTypes(
   -- ** Language Building Types
   Term(..), Form(..),
   Copula((:$:), Lam), CopulaSchema(..), defaultLamSchema,
-  MaybeMonadVar(..),MaybeStaticVar(..),FirstOrderLex(..),
+  MaybeMonadVar(..), StaticVar(..), FirstOrderLex(..),
   (:|:)(..), Fix(Fx), FixLang, EndLang, pattern AOne,
   pattern ATwo, pattern AThree, pattern LLam, pattern (:!$:), pattern Fx1,
   pattern Fx2, pattern Fx3, pattern Fx4, pattern Fx5, pattern Fx6, pattern
@@ -410,10 +410,6 @@ class Monad m => MaybeMonadVar f m where
         maybePig :: Maybe (m (EveryPig f))
         maybePig = Nothing
 
-class MaybeStaticVar f where
-        maybeStatic :: Typeable a => Maybe (Int -> f a)
-        maybeStatic = Nothing
-
 instance UniformlyEq (SubstitutionalVariable idx) where
         (SubVar n) =* (SubVar m) = n == m
         (StaticVar n) =* (StaticVar m) = n == m
@@ -426,9 +422,6 @@ instance FirstOrderLex (SubstitutionalVariable idx) where
 instance {-# OVERLAPPABLE #-} Monad m => MaybeMonadVar f m where
         maybeFresh = Nothing
 
-instance {-# OVERLAPPABLE #-} MaybeStaticVar f where
-        maybeStatic = Nothing
-
 instance Monad m => MaybeMonadVar (SubstitutionalVariable idx) (S.StateT Int m)
         where maybeFresh = Just $ do n <- get
                                      put (n+1)
@@ -438,9 +431,6 @@ instance Monad m => MaybeMonadVar (SubstitutionalVariable idx) (S.StateT Int m)
                                    put (n + 1)
                                    return $ EveryPig (SubVar n)
 
-instance MaybeStaticVar (SubstitutionalVariable idx) 
-        where maybeStatic = Just StaticVar
-
 instance UniformlyEq bind => UniformlyEq (Binders bind lang) where
         (Bind q) =* (Bind q') = q =* q'
 
@@ -448,8 +438,6 @@ instance (UniformlyEq bind, FirstOrderLex bind) => FirstOrderLex (Binders bind l
         isVarLex (Bind q) = isVarLex q
 
 instance Monad m => MaybeMonadVar (Binders bind lang) m
-
-instance MaybeStaticVar (Binders bind lang)
 
 instance UniformlyEq app => UniformlyEq (Applicators app lang) where
         (Apply f) =* (Apply f') = f =* f'
@@ -459,8 +447,6 @@ instance (UniformlyEq app, FirstOrderLex app) => FirstOrderLex (Applicators app 
 
 instance Monad m => MaybeMonadVar (Applicators app lang) m
 
-instance MaybeStaticVar (Applicators app lang)
-
 instance UniformlyEq abs => UniformlyEq (Abstractors abs lang) where
         (Abstract a) =* (Abstract b) = a =* b
 
@@ -468,8 +454,6 @@ instance (UniformlyEq abs, FirstOrderLex abs) => FirstOrderLex (Abstractors abs 
         isVarLex (Abstract a) = isVarLex a
 
 instance Monad m => MaybeMonadVar (Abstractors app lang) m
-
-instance MaybeStaticVar (Abstractors app lang)
 
 instance UniformlyEq pred => UniformlyEq (Predicate pred lang) where
         (Predicate p a) =* (Predicate p' a') =
@@ -480,8 +464,6 @@ instance (UniformlyEq pred, FirstOrderLex pred) => FirstOrderLex (Predicate pred
 
 instance Monad m => MaybeMonadVar (Predicate pred lang) m
 
-instance MaybeStaticVar (Predicate pred lang)
-
 instance UniformlyEq con => UniformlyEq (Connective con lang) where
         (Connective c a) =* (Connective c' a') =
             arityInt a == arityInt a' && c =* c'
@@ -490,8 +472,6 @@ instance (UniformlyEq con, FirstOrderLex con) => FirstOrderLex (Connective con l
         isVarLex (Connective c a) = isVarLex c
 
 instance Monad m => MaybeMonadVar (Connective con lang) m
-
-instance MaybeStaticVar (Connective con lang)
 
 instance UniformlyEq func => UniformlyEq (Function func lang) where
         (Function f a) =* (Function f' a') =
@@ -502,8 +482,6 @@ instance (UniformlyEq func, FirstOrderLex func) => FirstOrderLex (Function func 
 
 instance Monad m => MaybeMonadVar (Function func lang) m
 
-instance MaybeStaticVar (Function func lang)
-
 instance UniformlyEq sub => UniformlyEq (Subnective sub lang) where
         (Subnective s a) =* (Subnective s' a') =
             arityInt a == arityInt a' && s =* s'
@@ -513,8 +491,6 @@ instance FirstOrderLex sub => FirstOrderLex (Subnective sub lang) where
 
 instance Monad m => MaybeMonadVar (Subnective sub lang) m
 
-instance MaybeStaticVar (Subnective sub lang)
-
 instance UniformlyEq (EndLang idx) where
         (=*) = undefined
 
@@ -522,8 +498,6 @@ instance FirstOrderLex (EndLang idx) where
         sameHeadLex = undefined
 
 instance Monad m => MaybeMonadVar (EndLang idx) m
-
-instance MaybeStaticVar (EndLang idx)
 
 instance ( UniformlyEq (f idx)
          , UniformlyEq (g idx)) => UniformlyEq ((f :|: g) idx) where
@@ -555,12 +529,6 @@ instance (MaybeMonadVar (g idx) m, MaybeMonadVar (f idx) m) => MaybeMonadVar ((f
 
                        _ -> Nothing
 
-instance (MaybeStaticVar (g idx), MaybeStaticVar (f idx)) => MaybeStaticVar ((f :|: g) idx) where
-        maybeStatic = case (maybeStatic :: Typeable a => Maybe (Int -> (f idx a)), maybeStatic :: Typeable b => Maybe (Int -> (g idx b))) of
-                         (Just l ,_) -> Just $ \n -> FLeft (l n)
-                         (_, Just r ) -> Just $ \n -> FRight (r n)
-                         _ -> Nothing
-
 instance (UniformlyEq lang, FirstOrderLex lang) => UniformlyEq (Copula lang) where
         (h :$: t ) =* (h' :$: t') = h =* h' && t =* t'
         Lam g =* Lam h = error "sorry, can't directly compare these. Try the fixpoint."
@@ -589,23 +557,18 @@ instance (UniformlyEq (FixLang lex), FirstOrderLex (FixLang lex), StaticVar (Fix
 
 instance Monad m => MaybeMonadVar (Copula lang) m
 
-instance MaybeStaticVar (Copula lang) 
-
 instance {-# OVERLAPPABLE #-} (UniformlyEq ((Copula :|: f) (FixLang f))
-         , MaybeStaticVar ((Copula :|: f) (FixLang f)))
+         , StaticVar (FixLang f))
          => UniformlyEq (FixLang f) where
              (x :!$: y) =* (x' :!$: y') = x =* x' && y =* y'
              x@(LLam (f :: FixLang f t1 -> FixLang f t1')) =* y@(LLam (g :: FixLang f t2 -> FixLang f t2')) = 
-                    case (eqT :: Maybe (t1 :~: t2), maybeStatic :: Maybe (Int -> ((Copula :|: f) (FixLang f) t1))) of
-                            (Just Refl, Just sv) -> (f $ Fx $ sv $ height x) =* (g $ Fx $ sv $ height y)
+                    case (eqT :: Maybe (t1 :~: t2)) of
+                            Just Refl -> (f $ static $ height x) =* (g $ static $ height y)
                             _ -> False
              Fx x =* Fx y = x =* y
              _ =* _ = False
 
-instance (MaybeStaticVar (Copula (Fix (Copula :|: f))), 
-          MaybeStaticVar (f (Fix (Copula :|: f))), 
-          FirstOrderLex ((Copula :|: f) (FixLang f))) 
-            => FirstOrderLex (FixLang f) where
+instance (StaticVar (FixLang f), FirstOrderLex ((Copula :|: f) (FixLang f))) => FirstOrderLex (FixLang f) where
 
         isVarLex (Fx x) = isVarLex x
 
@@ -619,11 +582,6 @@ instance (Monad m, MaybeMonadVar ((Copula :|: f) (FixLang f)) m) => MonadVar (Fi
         freshPig = case maybePig :: Maybe (m (EveryPig ((Copula :|: f) (FixLang f)))) of
                     Just pig -> do p <- pig
                                    return $ EveryPig (Fx (unEveryPig p))
-
-instance MaybeStaticVar ((Copula :|: f) (FixLang f)) => StaticVar (FixLang f) where
-        static = case maybeStatic :: Typeable a => Maybe (Int -> (((Copula :|: f) (FixLang f)) a)) of
-                    Just s -> \n -> Fx (s n)
-                    Nothing -> error "you need static variables in your language for this"
 
 instance {-# OVERLAPPABLE #-} 
         ( StaticVar (FixLang f)

@@ -109,6 +109,7 @@ instance PrismBooleanConst CoreLexicon (World -> Bool)
 instance PrismPropLex CoreLexicon (World -> Bool)
 instance PrismSchematicProp CoreLexicon (World -> Bool)
 instance PrismModality CoreLexicon (World -> Bool)
+instance PrismSubstitutionalVariable CoreLexicon
 
 type ModalPropLexiconWith a = CoreLexicon :|: a :|: EndLang
 
@@ -123,6 +124,7 @@ instance PrismBooleanConst (ModalPropLexiconWith a) (World -> Bool)
 instance PrismPropLex (ModalPropLexiconWith a) (World -> Bool)
 instance PrismSchematicProp (ModalPropLexiconWith a) (World -> Bool)
 instance PrismModality (ModalPropLexiconWith a) (World -> Bool)
+instance PrismSubstitutionalVariable (ModalPropLexiconWith a)
 
 -------------------------------
 --  3. Basic Modal Language  --

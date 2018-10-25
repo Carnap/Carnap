@@ -89,6 +89,7 @@ instance PrismBooleanConnLex PurePropLexicon Bool
 instance PrismPropositionalContext PurePropLexicon Bool
 instance PrismBooleanConst PurePropLexicon Bool
 instance PrismSchematicProp PurePropLexicon Bool
+instance PrismSubstitutionalVariable PurePropLexicon
 
 instance CanonicalForm PureForm
 

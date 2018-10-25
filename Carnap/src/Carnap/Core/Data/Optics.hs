@@ -194,6 +194,9 @@ class (PrismLink (FixLang lex) (SubstitutionalVariable (FixLang lex)))
         substIdx  = prism' (\n -> SubVar n) 
                            (\x -> case x of SubVar n -> Just n
                                             _ -> Nothing)
+                                            
+instance PrismSubstitutionalVariable lex => StaticVar (FixLang lex) where
+        static = review _staticIdx
 
 {-| Transforms a prism selecting a nullary constructor for a unary language
 item into a prism onto the things that that item is predicated of. e.g.

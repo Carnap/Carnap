@@ -35,8 +35,6 @@ instance FirstOrderLex PureMonadicPredicate
 
 instance Monad m => MaybeMonadVar PureMonadicPredicate m
 
-instance MaybeStaticVar PureMonadicPredicate
-
 type PurePredicate = IntPred Bool Int
 
 type PureFunction = IntFunc Int Int
@@ -122,6 +120,7 @@ instance PrismBooleanConst (PureFirstOrderLexWith a) Bool
 instance PrismSchematicProp (PureFirstOrderLexWith a) Bool
 instance PrismStandardQuant (PureFirstOrderLexWith a) Bool Int
 instance PrismStandardVar (PureFirstOrderLexWith a) Int
+instance PrismSubstitutionalVariable (PureFirstOrderLexWith a)
 --equality up to α-equivalence
 instance UniformlyEq (PureFirstOrderLanguageWith a) => Eq (PureFirstOrderLanguageWith a b) where
         (==) = (=*)
@@ -184,7 +183,6 @@ type PurePFOLTerm = OpenPFOLTerm EndLang
 
 instance PrismPolyadicPredicate (OpenLexiconPFOL a) Int Bool
 instance PrismPolyadicSchematicPredicate (OpenLexiconPFOL a) Int Bool
-instance PrismSubstitutionalVariable PureLexiconFOL
 
 instance Incrementable (OpenLexiconPFOL EndLang) (Term Int) where
     incHead (PP n a b)   = Just $ PP n (ASucc a) (ASucc a)

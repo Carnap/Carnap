@@ -101,7 +101,6 @@ hoProcessLineHardegree ::
   , Inference r lex sem
   , Typeable sem
   , MonadVar (ClassicalSequentOver lex) (State Int)
-  , MaybeStaticVar (lex (ClassicalSequentOver lex))
   ) => Deduction r lex sem -> Restrictor r lex -> Int -> FeedbackLine lex sem
 hoProcessLineHardegree ded res n = case ded !! (n - 1) of
   --special case to catch QedLines not being cited in justifications
@@ -114,7 +113,6 @@ hoProcessLineHardegreeMemo ::
   , Inference r lex sem
   , Typeable sem
   , MonadVar (ClassicalSequentOver lex) (State Int)
-  , MaybeStaticVar (lex (ClassicalSequentOver lex))
   , Show (ClassicalSequentOver lex (Succedent sem)), Show r
   ) => ProofMemoRef lex sem r -> Deduction r lex sem -> Restrictor r lex -> Int -> IO (FeedbackLine lex sem)
 hoProcessLineHardegreeMemo ref ded res n = case ded !! (n - 1) of
@@ -141,7 +139,6 @@ hoProcessLineMontague ::
   , Inference r lex sem
   , Typeable sem
   , MonadVar (ClassicalSequentOver lex) (State Int)
-  , MaybeStaticVar (lex (ClassicalSequentOver lex))
   ) => Deduction r lex sem -> Restrictor r lex -> Int -> FeedbackLine lex sem
 hoProcessLineMontague ded res n = case ded !! (n - 1) of
   --special case to catch QedLines not being cited in justifications
@@ -154,7 +151,6 @@ hoProcessLineMontagueMemo ::
   , Inference r lex sem
   , Typeable sem
   , MonadVar (ClassicalSequentOver lex) (State Int)
-  , MaybeStaticVar (lex (ClassicalSequentOver lex))
   , Show (ClassicalSequentOver lex (Succedent sem)), Show r
   ) => ProofMemoRef lex sem r -> Deduction r lex sem -> Restrictor r lex -> Int -> IO (FeedbackLine lex sem)
 hoProcessLineMontagueMemo ref ded res n = case ded !! (n - 1) of
@@ -181,7 +177,6 @@ hoProcessLineFitch ::
   , Typeable sem
   , Inference r lex sem
   , MonadVar (ClassicalSequentOver lex) (State Int)
-  , MaybeStaticVar (lex (ClassicalSequentOver lex))
   ) => Deduction r lex sem -> Restrictor r lex -> Int -> FeedbackLine lex sem
 hoProcessLineFitch ded res n = case ded !! (n - 1) of
   --special case to catch QedLines not being cited in justifications
@@ -194,7 +189,6 @@ hoProcessLineFitchMemo ::
   , Inference r lex sem
   , Typeable sem
   , MonadVar (ClassicalSequentOver lex) (State Int)
-  , MaybeStaticVar (lex (ClassicalSequentOver lex))
   , Show (ClassicalSequentOver lex (Succedent sem)), Show r
   ) => ProofMemoRef lex sem r -> Deduction r lex sem -> Restrictor r lex -> Int -> IO (FeedbackLine lex sem)
 hoProcessLineFitchMemo ref ded res n = case ded !! (n - 1) of
@@ -220,7 +214,6 @@ hoProcessLineLemmon ::
   , Typeable sem
   , Inference r lex sem
   , MonadVar (ClassicalSequentOver lex) (State Int)
-  , MaybeStaticVar (lex (ClassicalSequentOver lex))
   ) => Deduction r lex sem -> Restrictor r lex -> Int -> FeedbackLine lex sem
 hoProcessLineLemmon ded res n = case ded !! (n - 1) of
   --special case to catch QedLines not being cited in justifications
@@ -233,7 +226,6 @@ hoProcessLineLemmonMemo ::
   , Inference r lex sem
   , Typeable sem
   , MonadVar (ClassicalSequentOver lex) (State Int)
-  , MaybeStaticVar (lex (ClassicalSequentOver lex))
   , Show (ClassicalSequentOver lex (Succedent sem)), Show r
   ) => ProofMemoRef lex sem r -> Deduction r lex sem -> Restrictor r lex -> Int -> IO (FeedbackLine lex sem)
 hoProcessLineLemmonMemo ref ded res n = case ded !! (n - 1) of
@@ -259,7 +251,6 @@ processLineStructuredFitchHO ::
   , Inference r lex sem
   , Typeable sem
   , MonadVar (ClassicalSequentOver lex) (State Int)
-  , MaybeStaticVar (lex (ClassicalSequentOver lex))
   ) => DeductionTree r lex sem -> Restrictor r lex -> Int -> FeedbackLine lex sem
 processLineStructuredFitchHO ded res n = case ded .! n of
   --special case to catch QedLines not being cited in justifications
@@ -342,7 +333,6 @@ hoseqFromNode ::
     , MaybeMonadVar (ClassicalSequentOver lex) (State Int)
     , MonadVar (ClassicalSequentOver lex) (State Int)
     , StaticVar (ClassicalSequentOver lex)
-    , MaybeStaticVar (lex (ClassicalSequentOver lex))
     , Typeable sem
     ) =>  Int -> [r] -> [ClassicalSequentOver lex (Sequent sem)] -> ClassicalSequentOver lex (Succedent sem)
               -> [Either (ProofErrorMessage lex) 
@@ -394,7 +384,6 @@ hoReduceProofTree ::
     , MaybeMonadVar (ClassicalSequentOver lex) (State Int)
     , MonadVar (ClassicalSequentOver lex) (State Int)
     , StaticVar (ClassicalSequentOver lex)
-    , MaybeStaticVar (lex (ClassicalSequentOver lex))
     , Typeable sem
     ) =>  Restrictor r lex -> ProofTree r lex sem -> FeedbackLine lex sem
 hoReduceProofTree res (Node (ProofLine no cont rules) ts) =  
@@ -412,7 +401,6 @@ hoReduceProofTreeMemo ::
     , MaybeMonadVar (ClassicalSequentOver lex) (State Int)
     , MonadVar (ClassicalSequentOver lex) (State Int)
     , StaticVar (ClassicalSequentOver lex)
-    , MaybeStaticVar (lex (ClassicalSequentOver lex))
     , Hashable (ProofTree r lex sem)
     , Typeable sem
     ) =>  ProofMemoRef lex sem r -> Restrictor r lex -> ProofTree r lex sem ->  IO (FeedbackLine lex sem)

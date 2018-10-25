@@ -39,8 +39,6 @@ instance FirstOrderLex (Cedent a)
 
 instance Monad m => MaybeMonadVar (Cedent a) m
 
-instance MaybeStaticVar (Cedent a)
-
 instance UniformlyEq (Cedent a) where
         NilAntecedent =* NilAntecedent = True
         NilSuccedent =* NilSuccedent = True
@@ -66,8 +64,6 @@ instance FirstOrderLex (CedentVar a) where
 
 instance Monad m => MaybeMonadVar (CedentVar a) m
 
-instance MaybeStaticVar (CedentVar a)
-
 data Comma :: k -> * -> * where
         AnteComma :: Comma lang (Antecedent a -> Antecedent a -> Antecedent a)
         SuccComma :: Comma lang (Succedent a -> Succedent a-> Succedent a)
@@ -87,8 +83,6 @@ instance FirstOrderLex (Comma a)
 
 instance Monad m => MaybeMonadVar (Comma a) m
 
-instance MaybeStaticVar (Comma a)
-
 data Turnstile :: k -> * -> * where
         Turnstile :: Turnstile lang (Antecedent a -> Succedent a -> Sequent a)
 
@@ -101,8 +95,6 @@ instance UniformlyEq (Turnstile a) where
         Turnstile =* Turnstile = True
 
 instance Monad m => MaybeMonadVar (Turnstile a) m
-
-instance MaybeStaticVar (Turnstile a)
 
 type ClassicalSequentLex = Cedent
                            :|: Comma
@@ -133,8 +125,8 @@ infixr 8 :+:
 
 infixr 8 :-:
 
-instance ( MaybeStaticVar (t (ClassicalSequentOver t))
-         , FirstOrderLex (t (ClassicalSequentOver t))
+instance ( FirstOrderLex (t (ClassicalSequentOver t))
+         , StaticVar (ClassicalSequentOver t)
          ) => ACUI (ClassicalSequentOver t) where
 
         unfoldTerm (x :+: y) = unfoldTerm x ++ unfoldTerm y
@@ -218,6 +210,7 @@ instance PrismElementarySetsLex lex b => PrismElementarySetsLex (ClassicalSequen
 instance PrismTermSubset lex c b => PrismTermSubset (ClassicalSequentLexOver lex) c b
 instance PrismSeparating lex b c => PrismSeparating (ClassicalSequentLexOver lex) b c
 instance PrismStandardVar lex b => PrismStandardVar (ClassicalSequentLexOver lex) b
+instance PrismSubstitutionalVariable lex => PrismSubstitutionalVariable (ClassicalSequentLexOver lex)
 
 --------------------------------------------------------
 --3. Sequent Languages

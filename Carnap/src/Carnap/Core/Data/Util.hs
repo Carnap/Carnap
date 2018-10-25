@@ -95,7 +95,7 @@ closures that might be present in the open formulas
 
 rebuild :: ( FirstOrder (FixLang f) 
            , MonadVar (FixLang f) (State Int)
-           , MaybeStaticVar (f (FixLang f))) => FixLang f a -> FixLang f a
+           , StaticVar (FixLang f)) => FixLang f a -> FixLang f a
 rebuild (x :!$: y) = rebuild x :!$: rebuild y
 rebuild (LLam f) = LLam (\x -> subst sv x $ rebuild (f sv))
     where sv = static $ scopeHeight (LLam f)

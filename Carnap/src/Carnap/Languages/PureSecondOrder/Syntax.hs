@@ -8,6 +8,7 @@ import Carnap.Languages.PureFirstOrder.Syntax (foVar)
 import qualified Carnap.Languages.PureFirstOrder.Syntax as FOL
 import Carnap.Core.Data.AbstractSyntaxDataTypes
 import Carnap.Core.Data.AbstractSyntaxClasses
+import Carnap.Core.Data.Optics
 import Carnap.Core.Data.Util (scopeHeight)
 import Carnap.Core.Unification.Unification
 import Carnap.Languages.Util.LanguageClasses
@@ -35,8 +36,6 @@ instance UniformlyEq SOApplicator where
 
 instance Monad m => MaybeMonadVar SOApplicator m
 
-instance MaybeStaticVar SOApplicator
-
 instance FirstOrderLex SOApplicator
 
 ------------------------
@@ -54,8 +53,6 @@ instance UniformlyEq MonadicSOVar where
 
 instance Monad m => MaybeMonadVar MonadicSOVar m
 
-instance MaybeStaticVar MonadicSOVar
-
 instance FirstOrderLex MonadicSOVar
 
 data MonadicSOScheme a where
@@ -68,8 +65,6 @@ instance UniformlyEq MonadicSOScheme where
     (MonScheme n) =* (MonScheme m) = n == m
 
 instance Monad m => MaybeMonadVar MonadicSOScheme m
-
-instance MaybeStaticVar MonadicSOScheme
 
 instance FirstOrderLex MonadicSOScheme where
         isVarLex _ = True
@@ -92,7 +87,6 @@ instance UniformlyEq PolySOLVar where
     (PolyVar n a) =* (PolyVar m a') = n == m && show a == show a'
 
 instance Monad m => MaybeMonadVar PolySOLVar m 
-instance MaybeStaticVar PolySOLVar
 
 instance FirstOrderLex PolySOLVar
         
@@ -108,8 +102,6 @@ instance UniformlyEq PolyadicSOScheme where
 
 instance Monad m => MaybeMonadVar PolyadicSOScheme m
 
-instance MaybeStaticVar PolyadicSOScheme
-
 instance FirstOrderLex PolyadicSOScheme where
         isVarLex _ = True
 
@@ -124,8 +116,6 @@ instance UniformlyEq PolyadicSOCtx where
     (PolyCtx n a) =* (PolyCtx m b) = n == m && show a == show b
 
 instance Monad m => MaybeMonadVar PolyadicSOCtx m
-
-instance MaybeStaticVar PolyadicSOCtx
 
 instance FirstOrderLex PolyadicSOCtx where
         isVarLex _ = True
@@ -146,8 +136,6 @@ instance UniformlyEq PolySOLQuant where
         _ =* _ = False
 
 instance Monad m => MaybeMonadVar PolySOLQuant m
-
-instance MaybeStaticVar PolySOLQuant
 
 instance FirstOrderLex PolySOLQuant
 
@@ -237,6 +225,7 @@ instance PrismStandardQuant MonadicallySOLLex Bool Int
 instance PrismGenericQuant MonadicallySOLLex Form Form Bool (Int -> Bool) 
 instance PrismGenericTypedLambda MonadicallySOLLex Term Form Int
 instance PrismStandardVar MonadicallySOLLex Int
+instance PrismSubstitutionalVariable MonadicallySOLLex
 
 --------------------------------------------------------
 --  2.2 Polyadic SOL
@@ -296,6 +285,7 @@ instance PrismBooleanConnLex PolyadicallySOLLex Bool
 instance PrismStandardQuant PolyadicallySOLLex Bool Int
 instance PrismTermEquality PolyadicallySOLLex Int Bool
 instance PrismStandardVar PolyadicallySOLLex Int
+instance PrismSubstitutionalVariable PolyadicallySOLLex
 
 --------------------------------------------------------
 --Notes

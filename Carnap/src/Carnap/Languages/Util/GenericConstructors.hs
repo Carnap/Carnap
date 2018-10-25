@@ -23,8 +23,6 @@ instance UniformlyEq (IntProp b) where
 
 instance Monad m => MaybeMonadVar (IntProp b) m
 
-instance MaybeStaticVar (IntProp b)
-
 instance FirstOrderLex (IntProp b) 
 
 data SchematicIntProp b a where
@@ -39,8 +37,6 @@ instance UniformlyEq (SchematicIntProp b) where
         (SProp n) =* (SProp m) = n == m
 
 instance Monad m => MaybeMonadVar (SchematicIntProp b) m
-
-instance MaybeStaticVar (SchematicIntProp b)
 
 instance FirstOrderLex (SchematicIntProp b) where
         isVarLex _ = True
@@ -74,8 +70,6 @@ instance UniformlyEq (IntPred b c) where
 
 instance Monad m => MaybeMonadVar (IntPred b c) m
 
-instance MaybeStaticVar (IntPred b c)
-
 instance FirstOrderLex (IntPred b c)
 
 data SchematicIntPred b c a where
@@ -93,8 +87,6 @@ instance UniformlyEq (SchematicIntPred b c) where
         (SPred a n) =* (SPred a' m) = show a == show a' && n == m
 
 instance Monad m => MaybeMonadVar (SchematicIntPred b c) m
-
-instance MaybeStaticVar (SchematicIntPred b c)
 
 instance FirstOrderLex (SchematicIntPred b c) where
         isVarLex _ = True
@@ -116,8 +108,6 @@ instance UniformlyEq (TermEq c b) where
 
 instance Monad m => MaybeMonadVar (TermEq c b) m
 
-instance MaybeStaticVar (TermEq c b)
-
 instance FirstOrderLex (TermEq c b)
 
 data TermElem c b a where
@@ -131,8 +121,6 @@ instance UniformlyEq (TermElem c b) where
 
 instance Monad m => MaybeMonadVar (TermElem c b) m
 
-instance MaybeStaticVar (TermElem c b)
-
 instance FirstOrderLex (TermElem c b)
 
 data TermSubset c b a where
@@ -145,8 +133,6 @@ instance UniformlyEq (TermSubset c b) where
         _ =* _ = True
 
 instance Monad m => MaybeMonadVar (TermSubset c b) m
-
-instance MaybeStaticVar (TermSubset c b)
 
 instance FirstOrderLex (TermSubset c b)
 
@@ -173,8 +159,6 @@ instance UniformlyEq (IntFunc b c) where
 
 instance Monad m => MaybeMonadVar (IntFunc b c) m
 
-instance MaybeStaticVar (IntFunc b c)
-
 instance FirstOrderLex (IntFunc b c)
 
 data SchematicIntFunc c b a where
@@ -192,8 +176,6 @@ instance UniformlyEq (SchematicIntFunc b c) where
         (SFunc a n) =* (SFunc a' m) = show a == show a' && n == m
 
 instance Monad m => MaybeMonadVar (SchematicIntFunc b c) m
-
-instance MaybeStaticVar (SchematicIntFunc b c)
 
 instance FirstOrderLex (SchematicIntFunc b c) where
         isVarLex _ = True
@@ -222,8 +204,6 @@ instance UniformlyEq (ElementarySetOperations b) where
         _ =* _ = False
 
 instance Monad m => MaybeMonadVar (ElementarySetOperations b) m
-
-instance MaybeStaticVar (ElementarySetOperations b)
 
 instance FirstOrderLex (ElementarySetOperations b)
 
@@ -260,8 +240,6 @@ instance UniformlyEq (BooleanConn b) where
 
 instance Monad m => MaybeMonadVar (BooleanConn b) m
 
-instance MaybeStaticVar (BooleanConn b)
-
 instance FirstOrderLex (BooleanConn b)
 
 data BooleanConst b a where
@@ -278,8 +256,6 @@ instance UniformlyEq (BooleanConst b) where
         _ =* _ = False
 
 instance Monad m => MaybeMonadVar (BooleanConst b) m
-
-instance MaybeStaticVar (BooleanConst b)
 
 instance FirstOrderLex (BooleanConst b)
 
@@ -298,8 +274,6 @@ instance UniformlyEq (Modality b) where
 
 instance Monad m => MaybeMonadVar (Modality b) m
 
-instance MaybeStaticVar (Modality b)
-
 instance FirstOrderLex (Modality b)
 
 data GenericContext b c a where
@@ -312,8 +286,6 @@ instance UniformlyEq (GenericContext b c) where
         (Context n) =* (Context m) = n == m
 
 instance Monad m => MaybeMonadVar (GenericContext b c) m
-
-instance MaybeStaticVar (GenericContext b c)
 
 instance FirstOrderLex (GenericContext b c) where
         isVarLex _ = True
@@ -337,8 +309,6 @@ instance UniformlyEq (IntConst b) where
 
 instance Monad m => MaybeMonadVar (IntConst b) m
 
-instance MaybeStaticVar (IntConst b)
-
 instance FirstOrderLex (IntConst b) 
 
 data StandardVar b a where
@@ -351,8 +321,6 @@ instance UniformlyEq (StandardVar b) where
         (Var n) =* (Var m) = n == m
 
 instance Monad m => MaybeMonadVar (StandardVar b) m
-
-instance MaybeStaticVar (StandardVar b)
 
 -- XXX Note: standard variables are not schematic variables
 instance FirstOrderLex (StandardVar b) 
@@ -368,8 +336,6 @@ instance UniformlyEq (IntIndex b) where
 
 instance Monad m => MaybeMonadVar (IntIndex b) m
 
-instance MaybeStaticVar (IntIndex b)
-
 instance FirstOrderLex (IntIndex b)
 
 ----------------------
@@ -383,8 +349,6 @@ instance UniformlyEq (RescopingOperator f g b c lang) where
     (Rescope _) =* (Rescope _) = True
 
 instance Monad m => MaybeMonadVar (RescopingOperator f g b c lang) m
-
-instance MaybeStaticVar (RescopingOperator f g b c lang)
 
 instance FirstOrderLex (RescopingOperator f g b c lang) 
 
@@ -404,8 +368,6 @@ instance UniformlyEq (DefiniteDescription b c) where
 
 instance Monad m => MaybeMonadVar (DefiniteDescription b c) m
 
-instance MaybeStaticVar (DefiniteDescription b c)
-
 instance FirstOrderLex (DefiniteDescription b c) 
 
 data GenericTypedLambda f g b a where
@@ -415,8 +377,6 @@ instance UniformlyEq (GenericTypedLambda f g b) where
     (TypedLambda _) =* (TypedLambda _) = True
 
 instance Monad m => MaybeMonadVar (GenericTypedLambda f g b) m
-
-instance MaybeStaticVar (GenericTypedLambda f g b)
 
 instance FirstOrderLex (GenericTypedLambda f g b) 
 
@@ -442,8 +402,6 @@ instance UniformlyEq (GenericQuant f g b c) where
         _ =* _ = False
 
 instance Monad m => MaybeMonadVar (GenericQuant f g b c) m
-
-instance MaybeStaticVar (GenericQuant f g b c)
 
 instance FirstOrderLex (GenericQuant f g b c) 
 
@@ -487,8 +445,6 @@ instance UniformlyEq (Accessor c b) where
 
 instance Monad m => MaybeMonadVar (Accessor c b) m
 
-instance MaybeStaticVar (Accessor c b)
-
 instance FirstOrderLex (Accessor c b)
 
 data Separation b c :: (* -> *) -> * -> * where
@@ -506,8 +462,6 @@ instance UniformlyEq (Separation b c lang) where
         _ =* _ = True
 
 instance Monad m => MaybeMonadVar (Separation b c lang) m
-
-instance MaybeStaticVar (Separation b c lang)
 
 instance FirstOrderLex (Separation b c lang)
 

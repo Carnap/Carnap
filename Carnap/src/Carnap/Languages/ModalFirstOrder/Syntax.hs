@@ -82,6 +82,7 @@ instance PrismModality (ModalFirstOrderLexOverWith b a) (World -> Bool)
 instance PrismPolyadicPredicate (ModalFirstOrderLexOverWith b a) Int (World -> Bool)
 instance PrismPolyadicSchematicPredicate (ModalFirstOrderLexOverWith b a) Int (World -> Bool)
 instance PrismStandardVar (ModalFirstOrderLexOverWith b a) Int
+instance PrismSubstitutionalVariable (ModalFirstOrderLexOverWith b a)
 
 --equality up to α-equivalence
 instance UniformlyEq (ModalFirstOrderLanguageOverWith b a) => Eq (ModalFirstOrderLanguageOverWith b a c) where
