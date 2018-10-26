@@ -299,7 +299,6 @@ reduceResult lineno xs = case rights xs of
 
 foseqFromNode :: 
     ( Inference r lex sem
-    , MaybeMonadVar (ClassicalSequentOver lex) (State Int)
     , MonadVar (ClassicalSequentOver lex) (State Int)
     , Typeable sem
     ) =>  Int -> [r] -> [ClassicalSequentOver lex (Sequent sem)] -> ClassicalSequentOver lex (Succedent sem)
@@ -330,7 +329,6 @@ foseqFromNode lineno rules prems conc =
 
 hoseqFromNode :: 
     ( Inference r lex sem
-    , MaybeMonadVar (ClassicalSequentOver lex) (State Int)
     , MonadVar (ClassicalSequentOver lex) (State Int)
     , StaticVar (ClassicalSequentOver lex)
     , Typeable sem
@@ -368,7 +366,6 @@ hoseqFromNode lineno rules prems conc =
 
 reduceProofTree :: 
     ( Inference r lex sem
-    , MaybeMonadVar (ClassicalSequentOver lex) (State Int)
     , MonadVar (ClassicalSequentOver lex) (State Int)
     , Typeable sem
     ) => Restrictor r lex -> ProofTree r lex sem ->  FeedbackLine lex sem
@@ -381,7 +378,6 @@ reduceProofTree res (Node (ProofLine no cont rules) ts) =
 
 hoReduceProofTree :: 
     ( Inference r lex sem
-    , MaybeMonadVar (ClassicalSequentOver lex) (State Int)
     , MonadVar (ClassicalSequentOver lex) (State Int)
     , StaticVar (ClassicalSequentOver lex)
     , Typeable sem
@@ -398,7 +394,6 @@ hoReduceProofTree res (Node (ProofLine no cont rules) ts) =
 
 hoReduceProofTreeMemo :: 
     ( Inference r lex sem
-    , MaybeMonadVar (ClassicalSequentOver lex) (State Int)
     , MonadVar (ClassicalSequentOver lex) (State Int)
     , StaticVar (ClassicalSequentOver lex)
     , Hashable (ProofTree r lex sem)

@@ -34,8 +34,6 @@ instance Schematizable SOApplicator where
 instance UniformlyEq SOApplicator where
     SOApp =* SOApp = True
 
-instance Monad m => MaybeMonadVar SOApplicator m
-
 instance FirstOrderLex SOApplicator
 
 ------------------------
@@ -51,8 +49,6 @@ instance Schematizable MonadicSOVar where
 instance UniformlyEq MonadicSOVar where
     (MonVar n) =* (MonVar m) = n == m
 
-instance Monad m => MaybeMonadVar MonadicSOVar m
-
 instance FirstOrderLex MonadicSOVar
 
 data MonadicSOScheme a where
@@ -63,8 +59,6 @@ instance Schematizable MonadicSOScheme where
 
 instance UniformlyEq MonadicSOScheme where
     (MonScheme n) =* (MonScheme m) = n == m
-
-instance Monad m => MaybeMonadVar MonadicSOScheme m
 
 instance FirstOrderLex MonadicSOScheme where
         isVarLex _ = True
@@ -86,8 +80,6 @@ instance Schematizable PolySOLVar where
 instance UniformlyEq PolySOLVar where
     (PolyVar n a) =* (PolyVar m a') = n == m && show a == show a'
 
-instance Monad m => MaybeMonadVar PolySOLVar m 
-
 instance FirstOrderLex PolySOLVar
         
 data PolyadicSOScheme a where
@@ -99,8 +91,6 @@ instance Schematizable PolyadicSOScheme where
 
 instance UniformlyEq PolyadicSOScheme where
     (PolyScheme n a) =* (PolyScheme m b) = n == m && show a == show b
-
-instance Monad m => MaybeMonadVar PolyadicSOScheme m
 
 instance FirstOrderLex PolyadicSOScheme where
         isVarLex _ = True
@@ -114,8 +104,6 @@ instance Schematizable PolyadicSOCtx where
 
 instance UniformlyEq PolyadicSOCtx where
     (PolyCtx n a) =* (PolyCtx m b) = n == m && show a == show b
-
-instance Monad m => MaybeMonadVar PolyadicSOCtx m
 
 instance FirstOrderLex PolyadicSOCtx where
         isVarLex _ = True
@@ -134,8 +122,6 @@ instance UniformlyEq PolySOLQuant where
         (SOPAll _ a) =* (SOPAll _ a') = show a == show a'
         (SOPSome _ a) =* (SOPSome _ a') = show a == show a'
         _ =* _ = False
-
-instance Monad m => MaybeMonadVar PolySOLQuant m
 
 instance FirstOrderLex PolySOLQuant
 

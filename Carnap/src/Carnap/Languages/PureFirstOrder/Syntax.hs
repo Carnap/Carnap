@@ -33,8 +33,6 @@ instance UniformlyEq PureMonadicPredicate where
 
 instance FirstOrderLex PureMonadicPredicate 
 
-instance Monad m => MaybeMonadVar PureMonadicPredicate m
-
 type PurePredicate = IntPred Bool Int
 
 type PureFunction = IntFunc Int Int

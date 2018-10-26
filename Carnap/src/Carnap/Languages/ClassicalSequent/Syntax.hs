@@ -37,8 +37,6 @@ instance Schematizable (Cedent a) where
 
 instance FirstOrderLex (Cedent a)
 
-instance Monad m => MaybeMonadVar (Cedent a) m
-
 instance UniformlyEq (Cedent a) where
         NilAntecedent =* NilAntecedent = True
         NilSuccedent =* NilSuccedent = True
@@ -62,8 +60,6 @@ instance Schematizable (CedentVar a) where
 instance FirstOrderLex (CedentVar a) where
         isVarLex _ = True
 
-instance Monad m => MaybeMonadVar (CedentVar a) m
-
 data Comma :: k -> * -> * where
         AnteComma :: Comma lang (Antecedent a -> Antecedent a -> Antecedent a)
         SuccComma :: Comma lang (Succedent a -> Succedent a-> Succedent a)
@@ -81,8 +77,6 @@ instance Schematizable (Comma a) where
 
 instance FirstOrderLex (Comma a)
 
-instance Monad m => MaybeMonadVar (Comma a) m
-
 data Turnstile :: k -> * -> * where
         Turnstile :: Turnstile lang (Antecedent a -> Succedent a -> Sequent a)
 
@@ -93,8 +87,6 @@ instance FirstOrderLex (Turnstile a)
 
 instance UniformlyEq (Turnstile a) where
         Turnstile =* Turnstile = True
-
-instance Monad m => MaybeMonadVar (Turnstile a) m
 
 type ClassicalSequentLex = Cedent
                            :|: Comma
