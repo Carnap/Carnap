@@ -75,7 +75,6 @@ class CopulaSchema lang where
     liftSchema :: Copula lang t -> [String] -> String
     liftSchema = error "should not print a lifted value"
 
-
 defaultLamSchema :: ( Show (FixLang lex t'), StaticVar (FixLang lex), Typeable t, Typeable t') => (FixLang lex t -> FixLang lex t') -> [String] -> String
 defaultLamSchema f [] = "λβ_" ++ show h ++ "." ++ show (f (static (-1 * h)))
     where h = height (LLam f)
@@ -574,14 +573,14 @@ instance (StaticVar (FixLang f), FirstOrderLex ((Copula :|: f) (FixLang f))) => 
 
         sameHeadLex (Fx x) (Fx y) = sameHeadLex x y
 
-instance (Monad m, MaybeMonadVar ((Copula :|: f) (FixLang f)) m) => MonadVar (FixLang f) m where
-        fresh = case maybeFresh :: Typeable a => Maybe (m (((Copula :|: f) (FixLang f)) a)) of
-                    Just fsh -> fmap Fx fsh
-                    Nothing -> error "you need substitutional variables in your language for this"
+-- instance (Monad m, MaybeMonadVar ((Copula :|: f) (FixLang f)) m) => MonadVar (FixLang f) m where
+--         fresh = case maybeFresh :: Typeable a => Maybe (m (((Copula :|: f) (FixLang f)) a)) of
+--                     Just fsh -> fmap Fx fsh
+--                     Nothing -> error "you need substitutional variables in your language for this"
 
-        freshPig = case maybePig :: Maybe (m (EveryPig ((Copula :|: f) (FixLang f)))) of
-                    Just pig -> do p <- pig
-                                   return $ EveryPig (Fx (unEveryPig p))
+--         freshPig = case maybePig :: Maybe (m (EveryPig ((Copula :|: f) (FixLang f)))) of
+--                     Just pig -> do p <- pig
+--                                    return $ EveryPig (Fx (unEveryPig p))
 
 instance {-# OVERLAPPABLE #-} 
         ( StaticVar (FixLang f)

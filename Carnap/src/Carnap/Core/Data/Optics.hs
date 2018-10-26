@@ -4,9 +4,11 @@ module Carnap.Core.Data.Optics(
 ) where
 
 import Carnap.Core.Data.AbstractSyntaxDataTypes
+import Carnap.Core.Unification.Unification
 import Control.Lens(Plated(..), Prism'(..), prism', preview, Iso'(..), iso, review, Traversal'(..),transformM)
 import Data.Typeable
-import qualified Control.Monad.State.Lazy as S
+import Control.Monad.State (get, put, State, StateT)
+import Control.Monad.State.Lazy as S
 
 --------------------------------------------------------
 --Traversals
@@ -197,6 +199,15 @@ class (PrismLink (FixLang lex) (SubstitutionalVariable (FixLang lex)))
                                             
 instance PrismSubstitutionalVariable lex => StaticVar (FixLang lex) where
         static = review _staticIdx
+        
+instance (Monad m, PrismSubstitutionalVariable lex) => MonadVar (FixLang lex) (StateT Int m) where
+        fresh = do n <- get
+                   put (n+1)
+                   return $ review _substIdx n
+
+        freshPig = do n <- get 
+                      put (n+1)
+                      return $ EveryPig $ review _substIdx n
 
 {-| Transforms a prism selecting a nullary constructor for a unary language
 item into a prism onto the things that that item is predicated of. e.g.
