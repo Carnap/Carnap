@@ -5,7 +5,7 @@ module Carnap.Languages.PureSecondOrder.Parser
         (msolFormulaParser,psolFormulaParser)
     where
 
-import Carnap.Core.Data.AbstractSyntaxDataTypes
+import Carnap.Core.Data.Types
 import Carnap.Languages.PureFirstOrder.Syntax (foVar)
 import Carnap.Languages.PureSecondOrder.Syntax
 import Carnap.Languages.Util.LanguageClasses (StandardVarLanguage, BooleanLanguage, IndexedPropLanguage(..), QuantLanguage(..), PolyadicPredicateLanguage(..), TypedLambdaLanguage(..))

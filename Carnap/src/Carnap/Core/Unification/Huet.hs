@@ -4,7 +4,7 @@ module Carnap.Core.Unification.Huet
 where
 
 import Carnap.Core.Util
-import Carnap.Core.Data.AbstractSyntaxClasses
+import Carnap.Core.Data.Classes
 import Carnap.Core.Unification.Unification 
 import Data.Typeable
 import Data.List

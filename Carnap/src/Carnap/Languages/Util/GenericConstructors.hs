@@ -1,9 +1,9 @@
 {-#LANGUAGE TypeSynonymInstances, UndecidableInstances, FlexibleInstances, MultiParamTypeClasses, GADTs, DataKinds, PolyKinds, TypeOperators, ViewPatterns, PatternSynonyms, RankNTypes, FlexibleContexts, AutoDeriveTypeable #-}
 module Carnap.Languages.Util.GenericConstructors where
 
-import Carnap.Core.Data.AbstractSyntaxDataTypes
+import Carnap.Core.Data.Types
 import Carnap.Core.Data.Optics
-import Carnap.Core.Data.AbstractSyntaxClasses 
+import Carnap.Core.Data.Classes 
 import Data.List (intercalate)
 
 -----------------------

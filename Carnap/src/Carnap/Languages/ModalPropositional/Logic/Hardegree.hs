@@ -13,7 +13,7 @@ module Carnap.Languages.ModalPropositional.Logic.Hardegree
 
 import Data.Map as M (lookup, Map,fromList)
 import Text.Parsec
-import Carnap.Core.Data.AbstractSyntaxDataTypes (Form)
+import Carnap.Core.Data.Types (Form)
 import Carnap.Languages.ModalPropositional.Syntax
 import Carnap.Languages.ModalPropositional.Parser
 import Carnap.Languages.ClassicalSequent.Syntax

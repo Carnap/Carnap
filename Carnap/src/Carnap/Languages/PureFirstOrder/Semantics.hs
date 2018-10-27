@@ -2,8 +2,8 @@
 module Carnap.Languages.PureFirstOrder.Semantics
 where
 
-import Carnap.Core.Data.AbstractSyntaxDataTypes
-import Carnap.Core.Data.AbstractSyntaxClasses
+import Carnap.Core.Data.Types
+import Carnap.Core.Data.Classes
 import Carnap.Languages.PurePropositional.Syntax (PureConst)
 import Carnap.Languages.PureFirstOrder.Syntax
 import Carnap.Languages.Util.GenericConstructors

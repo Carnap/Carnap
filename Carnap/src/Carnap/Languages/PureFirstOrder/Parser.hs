@@ -6,8 +6,8 @@ module Carnap.Languages.PureFirstOrder.Parser
 , goldfarbNDFormulaParser, FirstOrderParserOptions(..)
 , parserFromOptions, parseFreeVar) where
 
-import Carnap.Core.Data.AbstractSyntaxDataTypes
-import Carnap.Core.Data.AbstractSyntaxClasses (Schematizable)
+import Carnap.Core.Data.Types
+import Carnap.Core.Data.Classes (Schematizable)
 import Carnap.Languages.PureFirstOrder.Syntax
 import Carnap.Languages.Util.LanguageClasses (BooleanLanguage, BooleanConstLanguage, StandardVarLanguage, IndexedPropLanguage(..), QuantLanguage(..))
 import Carnap.Languages.Util.GenericParsers

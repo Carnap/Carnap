@@ -3,8 +3,8 @@ module Carnap.Languages.PureFirstOrder.Logic.Goldfarb where
 
 import Text.Parsec
 import Control.Lens (view)
-import Carnap.Core.Data.AbstractSyntaxDataTypes (Form,Term)
-import Carnap.Core.Data.AbstractSyntaxClasses (lhs)
+import Carnap.Core.Data.Types (Form,Term)
+import Carnap.Core.Data.Classes (lhs)
 import Carnap.Languages.Util.LanguageClasses
 import Carnap.Languages.Util.GenericParsers
 import Carnap.Languages.PureFirstOrder.Syntax (PureLanguageFOL, PureLexiconFOL,fogamma)

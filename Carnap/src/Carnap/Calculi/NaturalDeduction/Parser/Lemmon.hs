@@ -6,7 +6,7 @@ import Data.Tree
 import Data.Typeable
 import Data.List (sort,(\\),nub)
 import Text.Parsec
-import Carnap.Core.Data.AbstractSyntaxDataTypes
+import Carnap.Core.Data.Types
 import Carnap.Calculi.NaturalDeduction.Syntax
 import Carnap.Calculi.NaturalDeduction.Parser.Util
 import Carnap.Languages.ClassicalSequent.Syntax

@@ -6,7 +6,7 @@ module Carnap.Languages.PureFirstOrder.Logic.KalishAndMontague
 import Data.Map as M (lookup, Map,empty)
 import Text.Parsec
 import Carnap.Core.Unification.Unification (applySub)
-import Carnap.Core.Data.AbstractSyntaxDataTypes (Form)
+import Carnap.Core.Data.Types (Form)
 import Carnap.Languages.PureFirstOrder.Syntax
 import Carnap.Languages.PureFirstOrder.Parser
 import qualified Carnap.Languages.PurePropositional.Logic as P

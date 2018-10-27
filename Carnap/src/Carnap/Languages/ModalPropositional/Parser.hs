@@ -3,7 +3,7 @@ module Carnap.Languages.ModalPropositional.Parser
     (modalPropFormulaParser,worldTheoryPropFormulaParser, absoluteModalPropFormulaParser, relativeModalPropFormulaParser, absoluteModalPropFormulaPreParser)
 where
 
-import Carnap.Core.Data.AbstractSyntaxDataTypes (Term, Form, FixLang)
+import Carnap.Core.Data.Types (Term, Form, FixLang)
 import Carnap.Languages.ModalPropositional.Syntax
 import Carnap.Languages.Util.LanguageClasses (PrismBooleanConnLex, PrismModality,
                                              BooleanLanguage,

@@ -6,8 +6,8 @@ import Carnap.Languages.Util.GenericParsers
 import Carnap.Languages.PurePropositional.Parser
 import Carnap.Languages.PurePropositional.Syntax 
 import Carnap.Languages.PurePropositional.Util
-import Carnap.Core.Data.AbstractSyntaxDataTypes
-import Carnap.Core.Data.AbstractSyntaxClasses
+import Carnap.Core.Data.Types
+import Carnap.Core.Data.Classes
 import Carnap.GHCJS.SharedTypes
 import Data.IORef
 import qualified Data.Map as M

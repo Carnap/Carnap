@@ -4,7 +4,7 @@ module Carnap.Languages.PurePropositional.Logic.Magnus
 
 import Data.Map as M (lookup, Map)
 import Text.Parsec
-import Carnap.Core.Data.AbstractSyntaxDataTypes (Form)
+import Carnap.Core.Data.Types (Form)
 import Carnap.Languages.PurePropositional.Syntax
 import Carnap.Languages.PurePropositional.Parser
 import Carnap.Calculi.NaturalDeduction.Syntax

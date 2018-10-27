@@ -3,8 +3,8 @@ module Carnap.GHCJS.Widget.RenderDeduction (renderDeductionFitch, renderDeductio
 
 import Lib
 import Data.Maybe (catMaybes)
-import Carnap.Core.Data.AbstractSyntaxDataTypes
-import Carnap.Core.Data.AbstractSyntaxClasses
+import Carnap.Core.Data.Types
+import Carnap.Core.Data.Classes
 import Carnap.Calculi.NaturalDeduction.Syntax (DeductionLine(..), Deduction(..), depth, LemmonVariant(..))
 import GHCJS.DOM.Types (Document,Element)
 import GHCJS.DOM.Element (setInnerHTML,setAttribute)

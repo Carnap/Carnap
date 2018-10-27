@@ -8,8 +8,8 @@ import Control.Lens (toListOf,preview)
 import Text.Parsec
 import Carnap.Core.Data.Util (scopeHeight)
 import Carnap.Core.Unification.Unification (applySub,subst,FirstOrder)
-import Carnap.Core.Data.AbstractSyntaxClasses
-import Carnap.Core.Data.AbstractSyntaxDataTypes
+import Carnap.Core.Data.Classes
+import Carnap.Core.Data.Types
 import Carnap.Core.Data.Optics
 import Carnap.Languages.PurePropositional.Logic.Rules (exchange, replace)
 import Carnap.Languages.PureFirstOrder.Syntax

@@ -6,8 +6,8 @@ module Carnap.Languages.PurePropositional.Logic.Tomassi
 import Data.Map as M (lookup, Map)
 import Text.Parsec
 import Control.Lens (view)
-import Carnap.Core.Data.AbstractSyntaxDataTypes (Form)
-import Carnap.Core.Data.AbstractSyntaxClasses (lhs)
+import Carnap.Core.Data.Types (Form)
+import Carnap.Core.Data.Classes (lhs)
 import Carnap.Languages.PurePropositional.Syntax
 import Carnap.Languages.PurePropositional.Parser
 import Carnap.Calculi.NaturalDeduction.Syntax

@@ -2,8 +2,8 @@
 module Carnap.Languages.PureSecondOrder.Logic.Rules where
 
 import Carnap.Core.Data.Util (scopeHeight,mapover)
-import Carnap.Core.Data.AbstractSyntaxDataTypes
-import Carnap.Core.Data.AbstractSyntaxClasses
+import Carnap.Core.Data.Types
+import Carnap.Core.Data.Classes
 import Carnap.Core.Unification.Unification
 import Carnap.Languages.PureSecondOrder.Syntax
 import Carnap.Languages.ClassicalSequent.Syntax

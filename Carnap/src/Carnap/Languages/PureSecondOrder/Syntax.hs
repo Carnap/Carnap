@@ -6,8 +6,8 @@ where
 import Carnap.Core.Util 
 import Carnap.Languages.PureFirstOrder.Syntax (foVar)
 import qualified Carnap.Languages.PureFirstOrder.Syntax as FOL
-import Carnap.Core.Data.AbstractSyntaxDataTypes
-import Carnap.Core.Data.AbstractSyntaxClasses
+import Carnap.Core.Data.Types
+import Carnap.Core.Data.Classes
 import Carnap.Core.Data.Optics
 import Carnap.Core.Data.Util (scopeHeight)
 import Carnap.Core.Unification.Unification

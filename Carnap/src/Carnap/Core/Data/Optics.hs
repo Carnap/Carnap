@@ -3,7 +3,7 @@ module Carnap.Core.Data.Optics(
   RelabelVars(..),  PrismLink(..), (:<:)(..), ReLex(..), unaryOpPrism, binaryOpPrism, genChildren, PrismSubstitutionalVariable(..) 
 ) where
 
-import Carnap.Core.Data.AbstractSyntaxDataTypes
+import Carnap.Core.Data.Types
 import Carnap.Core.Unification.Unification
 import Control.Lens(Plated(..), Prism'(..), prism', preview, Iso'(..), iso, review, Traversal'(..),transformM)
 import Data.Typeable

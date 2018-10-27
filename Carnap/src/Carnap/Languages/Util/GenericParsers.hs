@@ -2,7 +2,7 @@
 module Carnap.Languages.Util.GenericParsers
 where
 
-import Carnap.Core.Data.AbstractSyntaxDataTypes
+import Carnap.Core.Data.Types
 import Carnap.Languages.Util.LanguageClasses
 import Text.Parsec
 import Data.Typeable(Typeable)

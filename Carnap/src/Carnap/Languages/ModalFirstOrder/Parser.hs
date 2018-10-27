@@ -1,8 +1,8 @@
 {-#LANGUAGE TypeOperators, FlexibleContexts#-}
 module Carnap.Languages.ModalFirstOrder.Parser ( hardegreeMPLFormulaPreParser, hardegreeMPLFormulaParser) where
 
-import Carnap.Core.Data.AbstractSyntaxDataTypes
-import Carnap.Core.Data.AbstractSyntaxClasses (Schematizable)
+import Carnap.Core.Data.Types
+import Carnap.Core.Data.Classes (Schematizable)
 import Carnap.Languages.PureFirstOrder.Syntax (foVar)
 import Carnap.Languages.ModalPropositional.Syntax
 import Carnap.Languages.ModalFirstOrder.Syntax

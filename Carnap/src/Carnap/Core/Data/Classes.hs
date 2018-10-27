@@ -1,6 +1,5 @@
 {-#LANGUAGE TypeFamilies, UndecidableInstances, FlexibleInstances, MultiParamTypeClasses, FunctionalDependencies, AllowAmbiguousTypes, GADTs, KindSignatures, DataKinds, PolyKinds, TypeOperators, ViewPatterns, PatternSynonyms, RankNTypes, ImpredicativeTypes, FlexibleContexts, ScopedTypeVariables, AutoDeriveTypeable, DefaultSignatures #-}
-module Carnap.Core.Data.AbstractSyntaxClasses
-    where
+module Carnap.Core.Data.Classes where
 
 import Carnap.Core.Util
 import Data.Typeable

@@ -11,8 +11,8 @@ import Carnap.Core.Unification.Combination
 import Carnap.Core.Unification.FirstOrder
 import Carnap.Core.Unification.ACUI
 import Carnap.Core.Data.Util
-import Carnap.Core.Data.AbstractSyntaxClasses
-import Carnap.Core.Data.AbstractSyntaxDataTypes
+import Carnap.Core.Data.Classes
+import Carnap.Core.Data.Types
 import Carnap.Languages.SetTheory.Syntax
 import Carnap.Languages.SetTheory.Parser
 import Carnap.Languages.PurePropositional.Logic.Rules

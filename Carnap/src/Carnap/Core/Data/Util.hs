@@ -7,8 +7,8 @@ mapover, (:~:)(Refl), Buds(..), Blossoms(..), bloom, sbloom, grow, rebuild, cast
 --the data types defined in Core.Data
 
 import Carnap.Core.Util
-import Carnap.Core.Data.AbstractSyntaxDataTypes
-import Carnap.Core.Data.AbstractSyntaxClasses
+import Carnap.Core.Data.Types
+import Carnap.Core.Data.Classes
 import Carnap.Core.Unification.Unification
 import Data.Typeable
 import Data.List (nub)

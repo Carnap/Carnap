@@ -2,7 +2,7 @@ module Carnap.Calculi.NaturalDeduction.Parser.Util where
 
 import Text.Parsec
 import Carnap.Calculi.NaturalDeduction.Syntax
-import Carnap.Core.Data.AbstractSyntaxDataTypes
+import Carnap.Core.Data.Types
 
 --need to handle tabs
 indent  :: Parsec String u Int

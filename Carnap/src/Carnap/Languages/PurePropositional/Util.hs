@@ -1,7 +1,7 @@
 module Carnap.Languages.PurePropositional.Util (showClean,isValid, isEquivTo, toSchema, getIndicies, getValuations) where
 
-import Carnap.Core.Data.AbstractSyntaxClasses
-import Carnap.Core.Data.AbstractSyntaxDataTypes
+import Carnap.Core.Data.Classes
+import Carnap.Core.Data.Types
 import Carnap.Languages.PurePropositional.Syntax
 import Carnap.Languages.Util.LanguageClasses
 import Control.Lens

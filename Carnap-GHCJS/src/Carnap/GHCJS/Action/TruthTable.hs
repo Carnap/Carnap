@@ -3,8 +3,8 @@ module Carnap.GHCJS.Action.TruthTable (truthTableAction) where
 
 import Lib
 import Carnap.GHCJS.SharedTypes
-import Carnap.Core.Data.AbstractSyntaxDataTypes
-import Carnap.Core.Data.AbstractSyntaxClasses (Schematizable, Modelable(..))
+import Carnap.Core.Data.Types
+import Carnap.Core.Data.Classes (Schematizable, Modelable(..))
 import Carnap.Calculi.NaturalDeduction.Syntax (NaturalDeductionCalc(..))
 import Carnap.Languages.PurePropositional.Logic (montagueSCCalc)
 import Carnap.Languages.PurePropositional.Parser

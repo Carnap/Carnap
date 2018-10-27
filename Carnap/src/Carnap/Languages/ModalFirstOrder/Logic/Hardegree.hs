@@ -5,7 +5,7 @@ where
 
 import Text.Parsec
 import qualified Data.Map as M
-import Carnap.Core.Data.AbstractSyntaxDataTypes (Form)
+import Carnap.Core.Data.Types (Form)
 import Carnap.Languages.PurePropositional.Syntax
 import Carnap.Languages.ModalFirstOrder.Syntax
 import Carnap.Languages.ModalFirstOrder.Parser

@@ -14,9 +14,9 @@ cabal-version:       >=1.10
 
 library
   hs-source-dirs:      src
-  exposed-modules:     Carnap.Core.Data.AbstractSyntaxDataTypes
+  exposed-modules:     Carnap.Core.Data.Types
                      , Carnap.Core.Data.Optics
-                     , Carnap.Core.Data.AbstractSyntaxClasses
+                     , Carnap.Core.Data.Classes
                      , Carnap.Core.Examples.ACUI
                      , Carnap.Core.Examples.ToyLanguages
                      , Carnap.Core.Unification.FirstOrder

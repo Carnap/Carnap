@@ -1,6 +1,6 @@
 {-#LANGUAGE TypeFamilies, UndecidableInstances, FlexibleInstances, MultiParamTypeClasses, FunctionalDependencies, AllowAmbiguousTypes, GADTs, KindSignatures, DataKinds, PolyKinds, TypeOperators, ViewPatterns, PatternSynonyms, RankNTypes, FlexibleContexts, ScopedTypeVariables, AutoDeriveTypeable, DefaultSignatures #-}
 
-module Carnap.Core.Data.AbstractSyntaxDataTypes(
+module Carnap.Core.Data.Types(
   -- * Abstract Types
   -- $ATintro
   -- ** Language Building Types
@@ -24,12 +24,12 @@ module Carnap.Core.Data.AbstractSyntaxDataTypes(
 ) where
 
 import Carnap.Core.Util
+import Carnap.Core.Data.Classes
+import Carnap.Core.Unification.Unification
 import Data.Typeable
 import Data.List (intercalate)
-import Carnap.Core.Unification.Unification
 import Control.Lens
 import Control.Monad ((>=>))
-import Carnap.Core.Data.AbstractSyntaxClasses
 import Control.Monad.State (get, put, State)
 import qualified Control.Monad.State.Lazy as S
 
