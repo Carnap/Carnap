@@ -289,23 +289,17 @@ instance Schematizable func => Show (Function func lang a) where
 instance Schematizable sub => Show (Subnective sub lang a) where
         show x = schematize x []
 
-instance Schematizable bind => Eq (Binders bind lang a) where
-        x == y = show x == show y
+instance UniformlyEq bind => Eq (Binders bind lang a) where (==) = (=*)
 
-instance Schematizable pred => Eq (Predicate pred lang a) where
-        x == y = show x == show y
+instance UniformlyEq pred => Eq (Predicate pred lang a) where (==) = (=*) 
 
-instance Schematizable con => Eq (Connective con lang a) where
-        x == y = show x == show y
+instance UniformlyEq con => Eq (Connective con lang a) where (==) = (=*)
 
-instance Schematizable func => Eq (Function func lang a) where
-        x == y = show x == show y
+instance UniformlyEq func => Eq (Function func lang a) where (==) = (=*)
 
-instance Schematizable sub => Eq (Subnective sub lang a) where
-        x == y = show x == show y
+instance UniformlyEq sub => Eq (Subnective sub lang a) where (==) = (=*)
 
-instance (Schematizable (f a), Schematizable (g a)) => Eq ((f :|: g) a b) where
-        x == y = show x == show y
+instance (UniformlyEq (f a), UniformlyEq (g a)) => Eq ((f :|: g) a b) where (==) = (=*)
 
 --------------------------------------------------------
 --3. Evaluation and Modelable
