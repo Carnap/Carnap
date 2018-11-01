@@ -153,6 +153,13 @@
 
                     ^{proofcheck 11 "polyadicSecondOrder" "render resize" ":|-: AX2EY2AxAy(X2(x,y)<->Y2(y,x))" inverseTheorem}
 
+                <div.demo>
+
+                    <p> This is a proof that the powerset of a transitive set
+                        \ is transitive (exercise 3, chapter 3.3 from Velleman's
+                        \ <em>How to Prove It</em>), in a system of elementary set theory.
+
+                    ^{proofcheck 12 "elementarySetTheory" "render resize" "a within P(a) :|-: P(a) within P(P(a)) " transitiveTheorem}
 
                 <div.demo>
 
@@ -165,17 +172,18 @@
                         \ for nicer-looking logical symbols and use guards to
                         \ help visually indicate the scope of each subproof.
 
-                    ^{proofcheck 12 "hardegree5" "fonts guides resize" ":|-:<>[]P->[]P" axiomFiveTheorem}
+                    ^{proofcheck 13 "hardegree5" "fonts guides resize" ":|-:<>[]P->[]P" axiomFiveTheorem}
 
-                    ^{proofcheck 13 "hardegreeB" "fonts guides resize" ":|-: <>[]P->P" axiomBTheorem}
+                    ^{proofcheck 14 "hardegreeB" "fonts guides resize" ":|-: <>[]P->P" axiomBTheorem}
 
                 <div.demo>
 
                     <p> Here's a proof of the Barcan Formula within a naïvely
                         \ quantified system of modal logic, based on the system
-                        \ MPL of Hardegree's <em>Modal Logic</em>.
+                        \ MPL of Hardegree's #
+                        <a href="http://courses.umass.edu/phil511-gmh/MAIN/IHome-1.htm">Modal Logic.
 
-                    ^{proofcheck 14 "hardegreeMPL" "fonts guides resize" ":|-: Ax[]Fx->[]AxFx" barcanTheorem}
+                    ^{proofcheck 15 "hardegreeMPL" "fonts guides resize" ":|-: Ax[]Fx->[]AxFx" barcanTheorem}
 
                 <div.demo>
 
@@ -190,7 +198,7 @@
                         \ system SL.
 
                     <div.exercise>
-                        <span> example 15
+                        <span> example 16
                         <div#klementProof>
                             (W ∨ X), (Y ∨ Z), X → Y, ¬Z ∴ W ∨ Y
 

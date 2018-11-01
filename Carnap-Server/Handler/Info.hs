@@ -217,3 +217,30 @@ Show AwAxAyAz(F(w,g(x,y))∧F(w,g(x,z)) → F(w,g(y,z)))
   :UD 5
  :UD 4
 :UD 3|]
+
+transitiveTheorem = [st|
+Show P(a) within P(P(a))
+ a within P(a):PR
+ Ax(x in a -> x in P(a)):Def-S 2
+ Show Ax(x in P(a) -> x in P(P(a)))
+  Show b in P(a) -> b in P(P(a))
+   b in P(a) :AS
+   b within a:Def-P 6
+   Ax(x in b -> x in a):Def-S 7
+   Show b in P(P(a))
+    Show Ax(x in b -> x in P(a))
+     Show c in b -> c in P(a)
+      c in b :AS
+      c in b -> c in a:UI 8
+      c in a :MP 12 13
+      c in a -> c in P(a) :UI 3
+      c in P(a):MP 14 15
+     :CD 16
+    :UD11
+    b within P(a):Def-S 10
+    b in P(P(a)):Def-P 19
+   :DD 20
+  :CD 9
+ :UD 5
+ P(a) within P(P(a)):Def-S 4
+:DD 24|]
