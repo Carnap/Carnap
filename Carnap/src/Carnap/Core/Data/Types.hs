@@ -1,17 +1,18 @@
 {-#LANGUAGE TypeFamilies, UndecidableInstances, FlexibleInstances, MultiParamTypeClasses, FunctionalDependencies, GADTs,  DataKinds, PolyKinds, TypeOperators, PatternSynonyms, RankNTypes, FlexibleContexts, ScopedTypeVariables, DefaultSignatures #-}
 
-module Carnap.Core.Data.AbstractSyntaxDataTypes(
+module Carnap.Core.Data.Types(
   -- * Abstract Types
   -- $ATintro
   -- ** Language Building Types
   Term(..), Form(..),
-  Copula((:$:), Lam), CopulaSchema(..), MaybeMonadVar(..),MaybeStaticVar(..),
-  (:|:)(..), Fix(Fx), FixLang, EndLang, pattern AOne,
-  pattern ATwo, pattern AThree, pattern LLam, pattern (:!$:), pattern Fx1,
-  pattern Fx2, pattern Fx3, pattern Fx4, pattern Fx5, pattern Fx6, pattern
-  Fx7, pattern Fx8, pattern Fx9, pattern Fx10, pattern Fx11, pattern Lx1,
-  pattern Lx2, pattern Lx3, pattern Lx4, pattern Lx5, pattern Lx6, pattern
-  Lx7, pattern Lx8, pattern Lx9, pattern Lx10, pattern Lx11, pattern FX,
+  Copula((:$:), Lam), CopulaSchema(..), defaultLamSchema,
+  StaticVar(..), FirstOrderLex(..), (:|:)(..), Fix(Fx), FixLang, EndLang,
+  pattern AOne, pattern ATwo, pattern AThree, pattern LLam, pattern (:!$:),
+  pattern Fx1, pattern Fx2, pattern Fx3, pattern Fx4, pattern Fx5, pattern
+  Fx6, pattern Fx7, pattern Fx8, pattern Fx9, pattern Fx10, pattern Fx11,
+  pattern Lx1, pattern Lx2, pattern Lx3, pattern Lx4, pattern Lx5, pattern
+  Lx6, pattern Lx7, pattern Lx8, pattern Lx9, pattern Lx10, pattern Lx11,
+  pattern FX,
   -- ** Abstract Term Types
   -- *** Variable Binding Operators
   Binders(Bind),Abstractors(Abstract),Applicators(Apply), BoundVars(..),
@@ -19,17 +20,16 @@ module Carnap.Core.Data.AbstractSyntaxDataTypes(
   Arity(AZero, ASucc), Predicate(Predicate), Connective(Connective),
   Function(Function), Subnective(Subnective), SubstitutionalVariable(SubVar,StaticVar),
   -- * Generic Programming Utilities
-  LangTypes2(..), LangTypes1(..), RelabelVars(..), FirstOrderLex(..), PrismLink(..), (:<:)(..), ReLex(..),
-  unaryOpPrism, binaryOpPrism, arityInt
+  arityInt
 ) where
 
 import Carnap.Core.Util
+import Carnap.Core.Data.Classes
+import Carnap.Core.Unification.Unification
 import Data.Typeable
 import Data.List (intercalate)
-import Carnap.Core.Unification.Unification
 import Control.Lens
 import Control.Monad ((>=>))
-import Carnap.Core.Data.AbstractSyntaxClasses
 import Control.Monad.State (get, put, State)
 import qualified Control.Monad.State.Lazy as S
 
@@ -74,6 +74,12 @@ class CopulaSchema lang where
     lamSchema = error "how did you even do this?"
     liftSchema :: Copula lang t -> [String] -> String
     liftSchema = error "should not print a lifted value"
+
+defaultLamSchema :: ( Show (FixLang lex t'), StaticVar (FixLang lex), Typeable t, Typeable t') => (FixLang lex t -> FixLang lex t') -> [String] -> String
+defaultLamSchema f [] = "λβ_" ++ show h ++ "." ++ show (f (static (-1 * h)))
+    where h = height (LLam f)
+defaultLamSchema f (x:xs) = "(λβ_" ++ show h ++ "." ++ show (f (static (-1 * h))) ++ intercalate " " (x:xs) ++ ")"
+    where h = height (LLam f)
 
 {-|
 this is type acts a disjoint sum/union of two functors
@@ -192,7 +198,6 @@ pattern AOne = ASucc AZero
 pattern ATwo = ASucc AOne
 pattern AThree = ASucc ATwo
 
-
 arityInt :: Arity arg ret n ret' -> Int
 arityInt AZero = 0
 arityInt (ASucc n) = arityInt n + 1
@@ -284,23 +289,17 @@ instance Schematizable func => Show (Function func lang a) where
 instance Schematizable sub => Show (Subnective sub lang a) where
         show x = schematize x []
 
-instance Schematizable bind => Eq (Binders bind lang a) where
-        x == y = show x == show y
+instance UniformlyEq bind => Eq (Binders bind lang a) where (==) = (=*)
 
-instance Schematizable pred => Eq (Predicate pred lang a) where
-        x == y = show x == show y
+instance UniformlyEq pred => Eq (Predicate pred lang a) where (==) = (=*) 
 
-instance Schematizable con => Eq (Connective con lang a) where
-        x == y = show x == show y
+instance UniformlyEq con => Eq (Connective con lang a) where (==) = (=*)
 
-instance Schematizable func => Eq (Function func lang a) where
-        x == y = show x == show y
+instance UniformlyEq func => Eq (Function func lang a) where (==) = (=*)
 
-instance Schematizable sub => Eq (Subnective sub lang a) where
-        x == y = show x == show y
+instance UniformlyEq sub => Eq (Subnective sub lang a) where (==) = (=*)
 
-instance (Schematizable (f a), Schematizable (g a)) => Eq ((f :|: g) a b) where
-        x == y = show x == show y
+instance (UniformlyEq (f a), UniformlyEq (g a)) => Eq ((f :|: g) a b) where (==) = (=*)
 
 --------------------------------------------------------
 --3. Evaluation and Modelable
@@ -397,16 +396,6 @@ class UniformlyEq f => FirstOrderLex f where
     sameHeadLex :: f a -> f b -> Bool
     sameHeadLex = (=*)
 
-class Monad m => MaybeMonadVar f m where
-        maybeFresh :: Typeable a => Maybe (m (f a))
-        maybeFresh = Nothing
-        maybePig :: Maybe (m (EveryPig f))
-        maybePig = Nothing
-
-class MaybeStaticVar f where
-        maybeStatic :: Typeable a => Maybe (Int -> f a)
-        maybeStatic = Nothing
-
 instance UniformlyEq (SubstitutionalVariable idx) where
         (SubVar n) =* (SubVar m) = n == m
         (StaticVar n) =* (StaticVar m) = n == m
@@ -416,33 +405,11 @@ instance FirstOrderLex (SubstitutionalVariable idx) where
         isVarLex (SubVar _) = True
         isVarLex (StaticVar _) = True
 
-instance {-# OVERLAPPABLE #-} Monad m => MaybeMonadVar f m where
-        maybeFresh = Nothing
-
-instance {-# OVERLAPPABLE #-} MaybeStaticVar f where
-        maybeStatic = Nothing
-
-instance Monad m => MaybeMonadVar (SubstitutionalVariable idx) (S.StateT Int m)
-        where maybeFresh = Just $ do n <- get
-                                     put (n+1)
-                                     return $ SubVar n
-
-              maybePig = Just $ do n <- get
-                                   put (n + 1)
-                                   return $ EveryPig (SubVar n)
-
-instance MaybeStaticVar (SubstitutionalVariable idx) 
-        where maybeStatic = Just StaticVar
-
 instance UniformlyEq bind => UniformlyEq (Binders bind lang) where
         (Bind q) =* (Bind q') = q =* q'
 
 instance (UniformlyEq bind, FirstOrderLex bind) => FirstOrderLex (Binders bind lang) where
         isVarLex (Bind q) = isVarLex q
-
-instance Monad m => MaybeMonadVar (Binders bind lang) m
-
-instance MaybeStaticVar (Binders bind lang)
 
 instance UniformlyEq app => UniformlyEq (Applicators app lang) where
         (Apply f) =* (Apply f') = f =* f'
@@ -450,19 +417,11 @@ instance UniformlyEq app => UniformlyEq (Applicators app lang) where
 instance (UniformlyEq app, FirstOrderLex app) => FirstOrderLex (Applicators app lang) where
         isVarLex (Apply f) = isVarLex f
 
-instance Monad m => MaybeMonadVar (Applicators app lang) m
-
-instance MaybeStaticVar (Applicators app lang)
-
 instance UniformlyEq abs => UniformlyEq (Abstractors abs lang) where
         (Abstract a) =* (Abstract b) = a =* b
 
 instance (UniformlyEq abs, FirstOrderLex abs) => FirstOrderLex (Abstractors abs lang) where
         isVarLex (Abstract a) = isVarLex a
-
-instance Monad m => MaybeMonadVar (Abstractors app lang) m
-
-instance MaybeStaticVar (Abstractors app lang)
 
 instance UniformlyEq pred => UniformlyEq (Predicate pred lang) where
         (Predicate p a) =* (Predicate p' a') =
@@ -471,20 +430,12 @@ instance UniformlyEq pred => UniformlyEq (Predicate pred lang) where
 instance (UniformlyEq pred, FirstOrderLex pred) => FirstOrderLex (Predicate pred lang) where
         isVarLex (Predicate p a) = isVarLex p
 
-instance Monad m => MaybeMonadVar (Predicate pred lang) m
-
-instance MaybeStaticVar (Predicate pred lang)
-
 instance UniformlyEq con => UniformlyEq (Connective con lang) where
         (Connective c a) =* (Connective c' a') =
             arityInt a == arityInt a' && c =* c'
 
 instance (UniformlyEq con, FirstOrderLex con) => FirstOrderLex (Connective con lang) where
         isVarLex (Connective c a) = isVarLex c
-
-instance Monad m => MaybeMonadVar (Connective con lang) m
-
-instance MaybeStaticVar (Connective con lang)
 
 instance UniformlyEq func => UniformlyEq (Function func lang) where
         (Function f a) =* (Function f' a') =
@@ -493,10 +444,6 @@ instance UniformlyEq func => UniformlyEq (Function func lang) where
 instance (UniformlyEq func, FirstOrderLex func) => FirstOrderLex (Function func lang) where
         isVarLex (Function f a) = isVarLex f
 
-instance Monad m => MaybeMonadVar (Function func lang) m
-
-instance MaybeStaticVar (Function func lang)
-
 instance UniformlyEq sub => UniformlyEq (Subnective sub lang) where
         (Subnective s a) =* (Subnective s' a') =
             arityInt a == arityInt a' && s =* s'
@@ -504,19 +451,11 @@ instance UniformlyEq sub => UniformlyEq (Subnective sub lang) where
 instance FirstOrderLex sub => FirstOrderLex (Subnective sub lang) where
         isVarLex (Subnective s a) = isVarLex s
 
-instance Monad m => MaybeMonadVar (Subnective sub lang) m
-
-instance MaybeStaticVar (Subnective sub lang)
-
 instance UniformlyEq (EndLang idx) where
         (=*) = undefined
 
 instance FirstOrderLex (EndLang idx) where
         sameHeadLex = undefined
-
-instance Monad m => MaybeMonadVar (EndLang idx) m
-
-instance MaybeStaticVar (EndLang idx)
 
 instance ( UniformlyEq (f idx)
          , UniformlyEq (g idx)) => UniformlyEq ((f :|: g) idx) where
@@ -533,26 +472,6 @@ instance ( UniformlyEq (f idx), UniformlyEq (g idx),
         sameHeadLex (FLeft x) (FLeft y) = sameHeadLex x y
         sameHeadLex (FRight x) (FRight y) = sameHeadLex x y
         sameHeadLex _ _ = False
-
-instance (MaybeMonadVar (g idx) m, MaybeMonadVar (f idx) m) => MaybeMonadVar ((f :|: g) idx) m where
-        maybeFresh = case (maybeFresh  :: Typeable a => Maybe (m (f idx a)), maybeFresh :: Typeable b => Maybe (m (g idx b))) of
-                         (Just l ,_) -> Just $ fmap FLeft l
-                         (_, Just r ) -> Just $ fmap FRight r
-                         _ -> Nothing
-
-        maybePig = case (maybePig :: Maybe (m (EveryPig (f idx))),  maybePig :: Maybe (m (EveryPig (g idx)))) of
-                       (Just l,_ ) -> Just $ do p <- l
-                                                return $ EveryPig (FLeft (unEveryPig p))
-                       (_, Just r) -> Just $ do p <- r
-                                                return $ EveryPig (FRight (unEveryPig p))
-
-                       _ -> Nothing
-
-instance (MaybeStaticVar (g idx), MaybeStaticVar (f idx)) => MaybeStaticVar ((f :|: g) idx) where
-        maybeStatic = case (maybeStatic :: Typeable a => Maybe (Int -> (f idx a)), maybeStatic :: Typeable b => Maybe (Int -> (g idx b))) of
-                         (Just l ,_) -> Just $ \n -> FLeft (l n)
-                         (_, Just r ) -> Just $ \n -> FRight (r n)
-                         _ -> Nothing
 
 instance (UniformlyEq lang, FirstOrderLex lang) => UniformlyEq (Copula lang) where
         (h :$: t ) =* (h' :$: t') = h =* h' && t =* t'
@@ -580,43 +499,22 @@ instance (UniformlyEq (FixLang lex), FirstOrderLex (FixLang lex), StaticVar (Fix
                 _ -> False
         sameHeadLex _ _ = False
 
-instance Monad m => MaybeMonadVar (Copula lang) m
-
-instance MaybeStaticVar (Copula lang) 
-
 instance {-# OVERLAPPABLE #-} (UniformlyEq ((Copula :|: f) (FixLang f))
-         , MaybeStaticVar ((Copula :|: f) (FixLang f)))
+         , StaticVar (FixLang f))
          => UniformlyEq (FixLang f) where
              (x :!$: y) =* (x' :!$: y') = x =* x' && y =* y'
              x@(LLam (f :: FixLang f t1 -> FixLang f t1')) =* y@(LLam (g :: FixLang f t2 -> FixLang f t2')) = 
-                    case (eqT :: Maybe (t1 :~: t2), maybeStatic :: Maybe (Int -> ((Copula :|: f) (FixLang f) t1))) of
-                            (Just Refl, Just sv) -> (f $ Fx $ sv $ height x) =* (g $ Fx $ sv $ height y)
+                    case (eqT :: Maybe (t1 :~: t2)) of
+                            Just Refl -> (f $ static $ height x) =* (g $ static $ height y)
                             _ -> False
              Fx x =* Fx y = x =* y
              _ =* _ = False
 
-instance (MaybeStaticVar (Copula (Fix (Copula :|: f))), 
-          MaybeStaticVar (f (Fix (Copula :|: f))), 
-          FirstOrderLex ((Copula :|: f) (FixLang f))) 
-            => FirstOrderLex (FixLang f) where
+instance (StaticVar (FixLang f), FirstOrderLex ((Copula :|: f) (FixLang f))) => FirstOrderLex (FixLang f) where
 
         isVarLex (Fx x) = isVarLex x
 
         sameHeadLex (Fx x) (Fx y) = sameHeadLex x y
-
-instance (Monad m, MaybeMonadVar ((Copula :|: f) (FixLang f)) m) => MonadVar (FixLang f) m where
-        fresh = case maybeFresh :: Typeable a => Maybe (m (((Copula :|: f) (FixLang f)) a)) of
-                    Just fsh -> fmap Fx fsh
-                    Nothing -> error "you need substitutional variables in your language for this"
-
-        freshPig = case maybePig :: Maybe (m (EveryPig ((Copula :|: f) (FixLang f)))) of
-                    Just pig -> do p <- pig
-                                   return $ EveryPig (Fx (unEveryPig p))
-
-instance MaybeStaticVar ((Copula :|: f) (FixLang f)) => StaticVar (FixLang f) where
-        static = case maybeStatic :: Typeable a => Maybe (Int -> (((Copula :|: f) (FixLang f)) a)) of
-                    Just s -> \n -> Fx (s n)
-                    Nothing -> error "you need static variables in your language for this"
 
 instance {-# OVERLAPPABLE #-} 
         ( StaticVar (FixLang f)
@@ -689,290 +587,6 @@ instance Typeable a => EtaExpand (FixLang f) (Form a)
 instance Typeable a => EtaExpand (FixLang f) (Term a)
 
 --------------------------------------------------------
---5. Generic Traversals and Prisms
---------------------------------------------------------
-
---------------------------------------------------------
---5.1 Traversals of similar children, plated instances
---------------------------------------------------------
-
-(.*$.) :: (Applicative g, Typeable a, Typeable b) => g (FixLang f (a -> b)) -> g (FixLang f a) -> g (FixLang f b)
-x .*$. y = (:!$:) <$> x <*> y
-
-handleArg1 :: (Applicative g, LangTypes1 f syn1 sem1)
-          => Maybe (tt :~: syn1 sem1) -> (FixLang f (syn1 sem1)
-            -> g (FixLang f (syn1 sem1))) -> FixLang f tt -> g (FixLang f tt)
-handleArg1 (Just Refl) f l = f l
-handleArg1 Nothing     _ l = pure l
-
-handleArg2 :: (Applicative g, LangTypes2 f syn1 sem1 syn2 sem2)
-          => (Maybe (tt :~: syn1 sem1), Maybe (tt :~: syn2 sem2))
-          -> (FixLang f (syn1 sem1) -> g (FixLang f (syn1 sem1)))
-          -> FixLang f tt
-          -> g (FixLang f tt)
-handleArg2 (Just Refl, _) f l = f l
-handleArg2 (_, Just Refl) f l = difChildren2 f l
-handleArg2 (_, _)         _ l = pure l
-
-class (Typeable syn1, Typeable sem1, Typeable syn2, Typeable sem2, BoundVars f) => LangTypes2 f syn1 sem1 syn2 sem2 | f syn1 sem1 -> syn2 sem2 where
-
-        simChildren2 :: Traversal' (FixLang f (syn1 sem1)) (FixLang f (syn1 sem1))
-        simChildren2 g phi@(q :!$: LLam (h :: FixLang f t -> FixLang f t')) =
-                   case ( eqT :: Maybe (t' :~: syn1 sem1)
-                        , eqT :: Maybe (t' :~: syn2 sem2)) of
-                            (Just Refl, _) -> (\x y -> x :!$: LLam y) <$> pure q <*> modify h
-                               where bv = scopeUniqueVar q (LLam h)
-                                     abstractBv f = \x -> (subBoundVar bv x f)
-                                     modify h = abstractBv <$> (g $ h bv)
-                            (_ , Just Refl) -> (\x y -> x :!$: LLam y) <$> pure q <*> modify h
-                               where bv = scopeUniqueVar q (LLam h)
-                                     abstractBv f = \x -> (subBoundVar bv x f)
-                                     modify h = abstractBv <$> (difChildren2 g $ h bv)
-                            _ -> pure phi
-        simChildren2 g phi@(h :!$: (t1 :: FixLang f tt)
-                             :!$: (t2 :: FixLang f tt2)
-                             :!$: (t3 :: FixLang f tt3))=
-                           case ( eqT :: Maybe (tt :~: syn1 sem1)
-                                , eqT :: Maybe (tt :~: syn2 sem2)
-                                , eqT :: Maybe (tt2 :~: syn1 sem1)
-                                , eqT :: Maybe (tt2 :~: syn2 sem2)
-                                , eqT :: Maybe (tt3 :~: syn1 sem1)
-                                , eqT :: Maybe (tt3 :~: syn2 sem2)
-                                ) of (r11, r12, r21, r22, r31, r32) ->
-                                         pure h .*$. (handleArg2 (r11, r12) g t1) .*$. (handleArg2 (r21, r22) g t2) .*$. (handleArg2 (r31, r32) g t3)
-        simChildren2 g phi@(h :!$: (t1 :: FixLang f tt)
-                             :!$: (t2 :: FixLang f tt2))=
-                           case ( eqT :: Maybe (tt :~: syn1 sem1)
-                                , eqT :: Maybe (tt :~: syn2 sem2)
-                                , eqT :: Maybe (tt2 :~: syn1 sem1)
-                                , eqT :: Maybe (tt2 :~: syn2 sem2)
-                                ) of (r11, r12, r21, r22) ->
-                                         pure h .*$. (handleArg2 (r11, r12) g t1) .*$. (handleArg2 (r21, r22) g t2)
-        simChildren2 g phi@(h :!$: (t1 :: FixLang f tt))=
-                           case ( eqT :: Maybe (tt :~: syn1 sem1)
-                                , eqT :: Maybe (tt :~: syn2 sem2)
-                                ) of (r11, r12) ->
-                                         pure h .*$. (handleArg2 (r11, r12) g t1)
-        simChildren2 g phi = pure phi
-
-        difChildren2 :: Traversal' (FixLang f (syn2 sem2)) (FixLang f (syn1 sem1))
-        difChildren2 g phi@(q :!$: LLam (h :: FixLang f t -> FixLang f t')) =
-                   case ( eqT :: Maybe (t' :~: syn1 sem1)
-                        , eqT :: Maybe (t' :~: syn2 sem2)) of
-                            (Just Refl, _) -> (\x y -> x :!$: LLam y) <$> pure q <*> modify h
-                               where bv = scopeUniqueVar q (LLam h)
-                                     abstractBv f = \x -> (subBoundVar bv x f)
-                                     modify h = abstractBv <$> (g $ h $ bv)
-                            (_ , Just Refl) -> (\x y -> x :!$: LLam y) <$> pure q <*> modify h
-                               where bv = scopeUniqueVar q (LLam h)
-                                     abstractBv f = \x -> (subBoundVar bv x f)
-                                     modify h = abstractBv <$> (difChildren2 g $ h $ bv)
-                            _ -> pure phi
-        difChildren2 g phi@(h :!$: (t1 :: FixLang f tt)
-                             :!$: (t2 :: FixLang f tt2)
-                             :!$: (t3 :: FixLang f tt3))=
-                           case ( eqT :: Maybe (tt :~: syn1 sem1)
-                                , eqT :: Maybe (tt :~: syn2 sem2)
-                                , eqT :: Maybe (tt2 :~: syn1 sem1)
-                                , eqT :: Maybe (tt2 :~: syn2 sem2)
-                                , eqT :: Maybe (tt3 :~: syn1 sem1)
-                                , eqT :: Maybe (tt3 :~: syn2 sem2)
-                                ) of (r11, r12, r21, r22, r31, r32) ->
-                                         pure h .*$. (handleArg2 (r11, r12) g t1) .*$. (handleArg2 (r21, r22) g t2) .*$. (handleArg2 (r31, r32) g t3)
-        difChildren2 g phi@(h :!$: (t1 :: FixLang f tt)
-                             :!$: (t2 :: FixLang f tt2))=
-                           case ( eqT :: Maybe (tt :~: syn1 sem1)
-                                , eqT :: Maybe (tt :~: syn2 sem2)
-                                , eqT :: Maybe (tt2 :~: syn1 sem1)
-                                , eqT :: Maybe (tt2 :~: syn2 sem2)
-                                ) of (r11, r12, r21, r22) ->
-                                         pure h .*$. (handleArg2 (r11, r12) g t1) .*$. (handleArg2 (r21, r22) g t2)
-        difChildren2 g phi@(h :!$: (t1 :: FixLang f tt))=
-                           case ( eqT :: Maybe (tt :~: syn1 sem1)
-                                , eqT :: Maybe (tt :~: syn2 sem2)
-                                ) of (r11, r12) ->
-                                         pure h .*$. (handleArg2 (r11, r12) g t1)
-        difChildren2 g phi = pure phi
-
-class (Typeable syn1, Typeable sem1, BoundVars f) => LangTypes1 f syn1 sem1 where
-
-        simChildren1 ::  Traversal' (FixLang f (syn1 sem1)) (FixLang f (syn1 sem1))
-        simChildren1 g phi@(q :!$: LLam (h :: FixLang f t -> FixLang f t')) =
-                   case eqT :: Maybe (t' :~: syn1 sem1) of
-                            Just Refl -> (\x y -> x :!$: LLam y) <$> pure q <*> modify h
-                               where bv = scopeUniqueVar q (LLam h)
-                                     abstractBv f = \x -> (subBoundVar bv x f)
-                                     modify h = abstractBv <$> (g $ h $ bv)
-                            _ -> pure phi
-        simChildren1 g phi@(h :!$: (t1 :: FixLang f tt)
-                             :!$: (t2 :: FixLang f tt2)
-                             :!$: (t3 :: FixLang f tt3))=
-                           case ( eqT :: Maybe (tt :~: syn1 sem1)
-                                , eqT :: Maybe (tt2 :~: syn1 sem1)
-                                , eqT :: Maybe (tt3 :~: syn1 sem1)
-                                ) of (r1,  r2,  r3) ->
-                                         pure h .*$. (handleArg1 r1 g t1) .*$. (handleArg1 r2 g t2) .*$. (handleArg1 r3 g t3)
-        simChildren1 g phi@(h :!$: (t1 :: FixLang f tt)
-                             :!$: (t2 :: FixLang f tt2))=
-                           case ( eqT :: Maybe (tt :~: syn1 sem1)
-                                , eqT :: Maybe (tt2 :~: syn1 sem1)
-                                ) of (r1, r2) ->
-                                         pure h .*$. (handleArg1 r1 g t1) .*$. (handleArg1 r2 g t2)
-        simChildren1 g phi@(h :!$: (t1 :: FixLang f tt))=
-                           case ( eqT :: Maybe (tt :~: syn1 sem1)
-                                ) of r1 -> pure h .*$. (handleArg1 r1 g t1)
-        simChildren1 g phi = pure phi
-
-instance {-# OVERLAPPABLE #-} 
-        ( BoundVars f
-        , Typeable syn1
-        , Typeable sem1
-        , LangTypes2 f syn1 sem1 syn2 sem2) => LangTypes1 f syn1 sem1 where
-
-        simChildren1 = simChildren2
-
-instance LangTypes1 f syn sem  => Plated (FixLang f (syn sem)) where
-        plate = simChildren1
-
-class (Plated (FixLang f (syn sem)), BoundVars f) => RelabelVars f syn sem where
-
-    relabelVars :: [String] -> FixLang f (syn sem) -> FixLang f (syn sem)
-    relabelVars vs phi = S.evalState (transformM trans phi) vs
-        where trans :: FixLang f (syn sem) -> S.State [String] (FixLang f (syn sem))
-              trans x = do l <- S.get
-                           case l of
-                             (label:labels) ->
-                               case subBinder x label of
-                                Just relabeled -> do S.put labels
-                                                     return relabeled
-                                Nothing -> return x
-                             _ -> return x
-
-    subBinder :: FixLang f (syn sem) -> String -> Maybe (FixLang f (syn sem))
-
-    --XXX: could be changed to [[String]], with subBinder also returning an
-    --index, in order to accomodate simultaneous relabelings of several types of variables
-
---------------------------------------------------------
---5.2 Prisms
---------------------------------------------------------
-
-class ReLex f where
-        relex :: f idx a -> f idy a
-
-instance ReLex (Predicate pred) where
-        relex (Predicate p a) = Predicate p a
-
-instance ReLex (Connective con) where
-        relex (Connective p a) = Connective p a
-
-instance ReLex (Function func) where
-        relex (Function p a) = Function p a
-
-instance ReLex (Subnective sub) where
-        relex (Subnective p a) = Subnective p a
-
-instance ReLex SubstitutionalVariable where
-        relex (SubVar n) = SubVar n
-        relex (StaticVar n) = StaticVar n
-
-instance ReLex (Binders bind ) where
-        relex (Bind q) = Bind q
-
-instance ReLex (Abstractors abs) where
-        relex (Abstract abs) = Abstract abs
-
-instance ReLex (Applicators app) where
-        relex (Apply app) = Apply app
-
-instance ReLex EndLang
-
-instance (ReLex f, ReLex g) => ReLex (f :|: g) where
-        relex (FLeft l) = FLeft (relex l)
-        relex (FRight l) = FRight (relex l)
-
-relexIso :: ReLex f => Iso' (f idx a) (f idy a)
-relexIso = iso relex relex
-
-data Flag a f g where
-        Flag :: {checkFlag :: a} -> Flag a f g
-    deriving (Show)
-
-instance {-# OVERLAPPABLE #-} PrismLink f f where
-        link = prism' id Just
-        pflag = Flag True
-
-instance PrismLink ((f :|: g) idx) ((f :|: g) idx) where
-        link = prism' id Just
-        pflag = Flag True
-
-class PrismLink f g where
-        link :: Typeable a => Prism' (f a) (g a) 
-        pflag :: Flag Bool f g --const False indicates that we don't have a prism here
-
-instance {-# OVERLAPPABLE #-} PrismLink f g where
-        link = error "you need to define an instance of PrismLink to do this"
-        pflag = Flag False
-
-_FLeft :: Prism' ((f :|: g) idx a) (f idx a)
-_FLeft = prism' FLeft un
-    where un (FLeft s) = Just s
-          un _ = Nothing
-
-_FRight :: Prism' ((f :|: g) idx a) (g idx a)
-_FRight = prism' FRight un
-    where un (FRight s) = Just s
-          un _ = Nothing
-
-instance {-# OVERLAPPABLE #-} (PrismLink (f idx) h, PrismLink (g idx) h) => PrismLink ((f :|: g) idx) h where
-
-        link 
-            | checkFlag (pflag :: Flag Bool (f idx) h) = _FLeft  . ll
-            | checkFlag (pflag :: Flag Bool (g idx) h) = _FRight . rl
-            | otherwise = error "No instance found for PrismLink"
-            where ll = link :: Typeable a => Prism' (f idx a) (h a)
-                  rl = link :: Typeable a => Prism' (g idx a) (h a)
-
-        pflag = Flag $ checkFlag ((pflag :: Flag Bool (f idx) h)) || checkFlag ((pflag :: Flag Bool (g idx) h))
-
-_Fx :: Typeable a => Prism' (Fix f a) (f (Fix f) a)
-_Fx = prism' Fx un
-    where un (Fx s) = Just s
-
-instance (PrismLink (f (Fix f)) h) => PrismLink (Fix f) h where
-
-        link = _Fx . link
-
-        pflag = Flag $ checkFlag (pflag :: Flag Bool (f (Fix f)) h)
-
-class f :<: g where
-        sublang :: Prism' (FixLang g a) (FixLang f a)
-        sublang = prism' liftLang lowerLang
-        liftLang :: FixLang f a -> FixLang g a
-        liftLang = review sublang
-        lowerLang :: FixLang g a -> Maybe (FixLang f a)
-        lowerLang = preview sublang
-
-instance {-# OVERLAPPABLE #-} (PrismLink (g (FixLang g)) (f (FixLang g)), ReLex f) => f :<: g where
-        liftLang (x :!$: y) = liftLang x :!$: liftLang y 
-        liftLang (LLam f) = LLam $ liftLang . f . unMaybe . lowerLang
-            where unMaybe (Just a) = a
-                  unMaybe Nothing = error "lifted lambda given bad argument"
-        liftLang (FX a) = FX $ review' (link' . relexIso) a
-            where link' :: Typeable a => Prism' (g (FixLang g) a) (f (FixLang g) a)
-                  link' = link
-                  review' :: Prism' b a -> a -> b
-                  review' = review
-
-        lowerLang (x :!$: y) = (:!$:) <$> lowerLang x <*> lowerLang y
-        lowerLang (LLam f) = Just $ LLam (unMaybe . lowerLang . f . liftLang)
-            where unMaybe (Just a) = a
-                  unMaybe Nothing = error "lowered lambda returning bad value"
-        lowerLang (FX a) = FX <$> preview (link' . relexIso) a
-            where link' :: Typeable a => Prism' (g (FixLang g) a) (f (FixLang g) a)
-                  link' = link
-
---------------------------------------------------------
 --6 Utility Functions
 --------------------------------------------------------
 --Auxiluary functions useful for defining the functions and classes that we
@@ -982,32 +596,3 @@ height :: StaticVar (FixLang f) => FixLang f a -> Int
 height (x :!$: y) = max (height x) (height y) + 1 
 height x@(LLam (f :: FixLang f t3 -> FixLang f t3')) =  height (f $ static 0) + 1
 height _ = 0
-
-{-| Transforms a prism selecting a nullary constructor for a unary language
-item into a prism onto the things that that item is predicated of. e.g.
-if you have a NOT in your language, selected by a prism, this would give
-you a prism on to the argument to a negation
--}
-unaryOpPrism :: (Typeable a, Typeable b) => 
-    Prism' (FixLang lex (a -> b)) () -> Prism' (FixLang lex b) (FixLang lex a) 
-unaryOpPrism prism = prism' construct (destruct prism) 
-    where construct a = review prism () :!$: a
-
-          destruct :: Typeable a => Prism' (FixLang lex (a -> b)) () -> FixLang lex b -> Maybe (FixLang lex a)
-          destruct (prism :: Prism' (FixLang lex (a -> b)) ()) b@(h :!$: (t:: FixLang lex t)) =
-              case eqT :: Maybe (a :~: t) of 
-                        Just Refl -> preview prism h >> return t
-                        Nothing -> Nothing
-          destruct _ _ = Nothing
-
-binaryOpPrism :: (Typeable a, Typeable c, Typeable b) => 
-    Prism' (FixLang lex (a -> b -> c)) () -> Prism' (FixLang lex c) (FixLang lex a, FixLang lex b)
-binaryOpPrism prism = prism' construct (destruct prism)
-    where construct (a,b) = review prism () :!$: a :!$: b
-
-          destruct :: (Typeable b, Typeable a) => Prism' (FixLang lex (a -> b -> c)) () -> FixLang lex c -> Maybe (FixLang lex a, FixLang lex b)
-          destruct (prism :: Prism' (FixLang lex (a -> b -> c)) ()) b@(h :!$: (t:: FixLang lex a') :!$: (t':: FixLang lex b')) =
-              case eqT :: Maybe ((a,b) :~: (a',b')) of 
-                        Just Refl -> preview prism h >> return (t,t')
-                        Nothing -> Nothing
-          destruct _ _ = Nothing

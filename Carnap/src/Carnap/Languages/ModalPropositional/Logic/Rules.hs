@@ -11,8 +11,9 @@ import Carnap.Core.Unification.Unification
 import Carnap.Core.Unification.Combination
 import Carnap.Core.Unification.FirstOrder
 import Carnap.Core.Unification.ACUI
-import Carnap.Core.Data.AbstractSyntaxClasses
-import Carnap.Core.Data.AbstractSyntaxDataTypes
+import Carnap.Core.Data.Classes
+import Carnap.Core.Data.Optics
+import Carnap.Core.Data.Types
 import Carnap.Core.Data.Util (scopeHeight)
 import Carnap.Languages.ModalPropositional.Syntax
 import Carnap.Languages.ModalPropositional.Parser
@@ -49,10 +50,7 @@ instance CopulaSchema WorldTheorySequentCalc where
     appSchema (SeqQuant (Some x)) (LLam f) e = schematize (Some x) (show (f $ liftToSequent $ worldVar x) : e)
     appSchema x y e = schematize x (show y : e)
 
-    lamSchema f [] = "λβ_" ++ show h ++ "." ++ show (f (SeqSV (-1 * h)))
-        where h = scopeHeight (LLam f)
-    lamSchema f (x:xs) = "(λβ_" ++ show h ++ "." ++ show (f (SeqSV (-1 * h))) ++ intercalate " " (x:xs) ++ ")"
-        where h = scopeHeight (LLam f)
+    lamSchema = defaultLamSchema
 
 instance CopulaSchema AbsoluteModalPropSequentCalc
 

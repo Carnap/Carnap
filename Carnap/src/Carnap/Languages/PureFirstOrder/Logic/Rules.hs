@@ -1,14 +1,16 @@
-{-#LANGUAGE GADTs, RankNTypes, FlexibleContexts, PatternSynonyms, TypeSynonymInstances, FlexibleInstances, MultiParamTypeClasses #-}
+{-#LANGUAGE GADTs, ConstraintKinds, RankNTypes, FlexibleContexts, PatternSynonyms, TypeSynonymInstances, FlexibleInstances, MultiParamTypeClasses #-}
 module Carnap.Languages.PureFirstOrder.Logic.Rules where
 
 import Data.List (intercalate)
 import Data.Typeable (Typeable)
 import Data.Maybe (catMaybes)
+import Control.Lens (toListOf,preview)
 import Text.Parsec
 import Carnap.Core.Data.Util (scopeHeight)
-import Carnap.Core.Unification.Unification (applySub,subst)
-import Carnap.Core.Data.AbstractSyntaxClasses
-import Carnap.Core.Data.AbstractSyntaxDataTypes
+import Carnap.Core.Unification.Unification (applySub,subst,FirstOrder)
+import Carnap.Core.Data.Classes
+import Carnap.Core.Data.Types
+import Carnap.Core.Data.Optics
 import Carnap.Languages.PurePropositional.Logic.Rules (exchange, replace)
 import Carnap.Languages.PureFirstOrder.Syntax
 import Carnap.Languages.PureFirstOrder.Parser
@@ -30,21 +32,15 @@ type FOLSequentCalc = ClassicalSequentOver PureLexiconFOL
 --for sequent languages that contain things like quantifiers
 instance CopulaSchema FOLSequentCalc where 
 
-    appSchema (SeqQuant (All x)) (LLam f) e = schematize (All x) (show (f $ SeqV x) : e)
-    appSchema (SeqQuant (Some x)) (LLam f) e = schematize (Some x) (show (f $ SeqV x) : e)
+    appSchema (SeqQuant (All x)) (LLam f) e = schematize (All x) (show (f $ seqVar x) : e)
+    appSchema (SeqQuant (Some x)) (LLam f) e = schematize (Some x) (show (f $ seqVar x) : e)
     appSchema x y e = schematize x (show y : e)
 
-    lamSchema f [] = "λβ_" ++ show h ++ "." ++ show (f (SeqSV (-1 * h)))
-        where h = scopeHeight (LLam f)
-    lamSchema f (x:xs) = "(λβ_" ++ show h ++ "." ++ show (f (SeqSV (-1 * h))) ++ intercalate " " (x:xs) ++ ")"
-        where h = scopeHeight (LLam f)
+    lamSchema = defaultLamSchema
 
 pattern SeqQuant q        = FX (Lx2 (Lx1 (Lx2 (Bind q))))
-pattern SeqSV n           = FX (Lx2 (Lx1 (Lx1 (Lx4 (StaticVar n)))))
-pattern SeqVar c a        = FX (Lx2 (Lx1 (Lx4 (Function c a))))
 pattern SeqTau c a        = FX (Lx2 (Lx1 (Lx5 (Function c a))))
 pattern SeqConst c a      = FX (Lx2 (Lx1 (Lx3 (Function c a))))
-pattern SeqV s            = SeqVar (Var s) AZero
 pattern SeqT n            = SeqTau (SFunc AZero n) AZero
 pattern SeqC n            = SeqConst (Constant n) AZero
 
@@ -54,16 +50,19 @@ instance Eq (FOLSequentCalc a) where
 instance ParsableLex (Form Bool) PureLexiconFOL where
         langParser = folFormulaParser
 
-instance IndexedSchemeConstantLanguage (FOLSequentCalc (Term Int)) where
-        taun = SeqT
-
 folSeqParser = seqFormulaParser :: Parsec String u (FOLSequentCalc (Sequent (Form Bool)))
+
+seqVar :: StandardVarLanguage (FixLang lex (Term Int)) => String -> FixLang lex (Term Int)
+seqVar = var
 
 tau :: IndexedSchemeConstantLanguage (FixLang lex (Term Int)) => FixLang lex (Term Int)
 tau = taun 1
 
 tau' :: IndexedSchemeConstantLanguage (FixLang lex (Term Int)) => FixLang lex (Term Int)
 tau' = taun 2
+
+tau'' :: IndexedSchemeConstantLanguage (FixLang lex (Term Int)) => FixLang lex (Term Int)
+tau'' = taun 3
 
 phi :: (Typeable b, PolyadicSchematicPredicateLanguage (FixLang lex) (Term Int) (Form b))
     => Int -> (FixLang lex) (Term Int) -> (FixLang lex) (Form b)
@@ -85,8 +84,8 @@ eigenConstraint c suc ant sub
     | c' `occursIn` suc' = Just $ "The term " ++ show c' ++ " appears not to be fresh in the other premise " ++ show suc'
     | otherwise = case c' of 
                           SeqC _ -> Nothing
-                          SeqV _ -> Nothing
                           SeqT _ -> Nothing
+                          _ | preview _varLabel c' /= Nothing -> Nothing
                           _ -> Just $ "The term " ++ show c' ++ " is not a constant or variable"
     where c'   = applySub sub c
           ant' = applySub sub ant
@@ -166,31 +165,59 @@ globalNewConstraint cs ded lineno sub =
     where cs' = map (applySub sub) cs
           checkNew = mapM (\c -> globalOldConstraint [c] ded lineno sub) cs
 
+montagueNewExistentialConstraint cs ded lineno sub = 
+        if any (\x -> any (occursIn x) relevantForms) cs' 
+            then Just $ "a variable in " ++ show cs' ++ " occurs before this line. This rule requires a variable not occuring (free or bound) on any earlier line"
+            else Nothing
+    where cs' = map (fromSequent . applySub sub) cs
+          relevantLines = take (lineno - 1) ded
+          relevantForms = catMaybes $ map assertion relevantLines
+          occursIn x y = not (subst x (static 0) y =* y)
+                         || boundVarOf x y
+                         || any (boundVarOf x) (toListOf formsOf y)
+
+
+montagueNewUniversalConstraint cs ded lineno sub = 
+        case relevantForms of
+            [] -> Just "No show line found for this rule. But this rule requires a preceeding show line. Remeber to align opening and closing lines of subproofs."
+            x:xs | boundVarOf c' x -> if any (occursIn c') xs 
+                                          then Just $ "The variable " ++ show c' ++ " occurs freely somewhere before the show line of this rule"
+                                          else Nothing
+            _ -> Just $ "The variable " ++ show c' ++ " is not bound in the show line of this rule."
+    where c' = fromSequent $ applySub sub (head cs)
+          relevantLines = dropWhile (not . isShow) $ reverse $ take lineno ded 
+          --XXX: for now we ignore the complication of making sure these
+          --are *available* lines.
+          relevantForms = catMaybes $ map assertion relevantLines
+          occursIn x y = not (subst x (static 0) y =* y)
+          isShow (ShowLine _ d) = d == depth (ded !! (lineno - 1))
+          isShow _ = False
+
 -------------------------
 --  1.1. Common Rules  --
 -------------------------
 
-type FirstOrderRule lex b = 
+type FirstOrderConstraints lex b = 
         ( Typeable b
         , BooleanLanguage (ClassicalSequentOver lex (Form b))
         , IndexedSchemeConstantLanguage (ClassicalSequentOver lex (Term Int))
         , IndexedSchemePropLanguage (ClassicalSequentOver lex (Form b))
         , QuantLanguage (ClassicalSequentOver lex (Form b)) (ClassicalSequentOver lex (Term Int)) 
         , PolyadicSchematicPredicateLanguage (ClassicalSequentOver lex) (Term Int) (Form b)
-        ) => SequentRule lex (Form b)
+        )
+
+type FirstOrderRule lex b = FirstOrderConstraints lex b => SequentRule lex (Form b)
 
 type FirstOrderEqRule lex b = 
-        ( Typeable b
+        ( FirstOrderConstraints lex b
         , EqLanguage (ClassicalSequentOver lex) (Term Int) (Form b)
-        , IndexedSchemeConstantLanguage (ClassicalSequentOver lex (Term Int))
-        , PolyadicSchematicPredicateLanguage (ClassicalSequentOver lex) (Term Int) (Form b)
         ) => SequentRule lex (Form b)
 
 eqReflexivity :: FirstOrderEqRule lex b
 eqReflexivity = [] ∴ Top :|-: SS (tau `equals` tau)
 
 eqSymmetry :: FirstOrderEqRule lex b
-eqSymmetry = [GammaV 1 :|-: SS (tau `equals` tau')] ∴ GammaV 1 :|-: SS (tau `equals` tau')
+eqSymmetry = [GammaV 1 :|-: SS (tau `equals` tau')] ∴ GammaV 1 :|-: SS (tau' `equals` tau)
 
 universalGeneralization :: FirstOrderRule lex b
 universalGeneralization = [ GammaV 1 :|-: SS (phi 1 (taun 1))]
@@ -228,23 +255,13 @@ negatedUniversalInstantiation = [ GammaV 1 :|-: SS (lneg $ lall "v" (phi 1))]
 ------------------------------------
 --  1.2. Rules with Variations  --
 ------------------------------------
+        
+type FirstOrderRuleVariants lex b = FirstOrderConstraints lex b => [SequentRule lex (Form b)]
 
 type FirstOrderEqRuleVariants lex b = 
-        ( Typeable b
-        , BooleanLanguage (ClassicalSequentOver lex (Form b))
+        ( FirstOrderConstraints lex b 
         , EqLanguage (ClassicalSequentOver lex) (Term Int) (Form b)
-        , IndexedSchemeConstantLanguage (ClassicalSequentOver lex (Term Int))
-        , PolyadicSchematicPredicateLanguage (ClassicalSequentOver lex) (Term Int) (Form b)
         , SchematicPolyadicFunctionLanguage (ClassicalSequentOver lex) (Term Int) (Term Int)
-        ) => [SequentRule lex (Form b)]
-        
-type FirstOrderRuleVariants lex b = 
-        ( Typeable b
-        , BooleanLanguage (ClassicalSequentOver lex (Form b))
-        , IndexedSchemeConstantLanguage (ClassicalSequentOver lex (Term Int))
-        , QuantLanguage (ClassicalSequentOver lex (Form b)) (ClassicalSequentOver lex (Term Int)) 
-        , IndexedSchemePropLanguage (ClassicalSequentOver lex (Form b))
-        , PolyadicSchematicPredicateLanguage (ClassicalSequentOver lex) (Term Int) (Form b)
         ) => [SequentRule lex (Form b)]
 
 leibnizLawVariations :: FirstOrderEqRuleVariants lex b

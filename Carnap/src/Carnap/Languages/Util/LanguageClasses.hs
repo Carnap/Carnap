@@ -1,7 +1,8 @@
 {-#LANGUAGE MultiParamTypeClasses, ConstraintKinds, DataKinds, UndecidableInstances, FunctionalDependencies, RankNTypes, FlexibleContexts, FlexibleInstances, TypeSynonymInstances, TypeOperators, GADTs, ScopedTypeVariables #-}
 module Carnap.Languages.Util.LanguageClasses where
 
-import Carnap.Core.Data.AbstractSyntaxDataTypes
+import Carnap.Core.Data.Types
+import Carnap.Core.Data.Optics
 import Carnap.Core.Data.Util (incArity)
 import Carnap.Core.Util (Nat(Zero))
 import Carnap.Languages.Util.GenericConstructors
@@ -202,19 +203,19 @@ class IndexedPropLanguage l where
 class (Typeable b, PrismLink (FixLang lex) (Predicate (IntProp b) (FixLang lex))) 
         => PrismPropLex lex b where
 
-        propIndex :: Prism' (FixLang lex (Form b)) Int
-        propIndex = link_PrismPropLex . propIndex'
+        _propIndex :: Prism' (FixLang lex (Form b)) Int
+        _propIndex = link_PrismPropLex . propIndex
 
         link_PrismPropLex :: Prism' (FixLang lex (Form b)) (Predicate (IntProp b) (FixLang lex) (Form b))
         link_PrismPropLex = link 
 
-        propIndex' :: Prism' (Predicate (IntProp b) (FixLang lex) (Form b)) Int
-        propIndex' = prism' (\n -> Predicate (Prop n) AZero) 
-                            (\x -> case x of Predicate (Prop n) AZero -> Just n
-                                             _ -> Nothing)
+        propIndex :: Prism' (Predicate (IntProp b) (FixLang lex) (Form b)) Int
+        propIndex = prism' (\n -> Predicate (Prop n) AZero) 
+                           (\x -> case x of Predicate (Prop n) AZero -> Just n
+                                            _ -> Nothing)
 
 instance {-#OVERLAPPABLE#-} PrismPropLex lex b => IndexedPropLanguage (FixLang lex (Form b)) where
-        pn = review propIndex
+        pn = review _propIndex
 
 class IndexedSchemePropLanguage l where
         phin :: Int -> l
@@ -348,6 +349,26 @@ instance {-#OVERLAPPABLE#-} PrismTermSubset lex c b => SubsetLanguage (FixLang l
 --1.3. Terms
 --------------------------------------------------------
 
+class StandardVarLanguage t where
+        var :: String -> t
+
+class (Typeable b, PrismLink (FixLang lex) (Function (StandardVar b) (FixLang lex))) 
+        => PrismStandardVar lex b where
+
+        _varLabel :: Prism' (FixLang lex (Term b)) String
+        _varLabel = link_StandardVar . varLabel
+
+        link_StandardVar :: Prism' (FixLang lex (Term b)) (Function (StandardVar b) (FixLang lex) (Term b))
+        link_StandardVar = link 
+
+        varLabel :: Prism' (Function (StandardVar b) (FixLang lex) (Term b)) String
+        varLabel = prism' (\s -> Function (Var s) AZero) 
+                          (\x -> case x of Function (Var s) AZero -> Just s
+                                           _ -> Nothing)
+
+instance {-#OVERLAPPABLE#-} PrismStandardVar lex b => StandardVarLanguage (FixLang lex (Term b)) where
+       var = review _varLabel
+
 class IndexedConstantLanguage l where
         cn :: Int -> l
 
@@ -427,6 +448,9 @@ class (Typeable c, Typeable b, PrismLink (FixLang lex) (Function (SchematicIntFu
         sfuncIndex a = prism' (\n -> Function (SFunc a n) a) 
                              (\x -> case x of (Function (SFunc a' n) a'') | arityInt a == arityInt a' -> Just n
                                               _ -> Nothing)
+
+instance {-#OVERLAPPABLE#-} PrismPolyadicSchematicFunction lex b b => IndexedSchemeConstantLanguage (FixLang lex (Term b)) where
+        taun n = review (_sfuncIdx (AZero :: Arity (Term b) (Term b) Zero (Term b))) n
 
 instance {-#OVERLAPPABLE#-} PrismPolyadicSchematicFunction lex c b => SchematicPolyadicFunctionLanguage (FixLang lex) (Term c) (Term b) where
         spfn n a = review (_sfuncIdx a) n

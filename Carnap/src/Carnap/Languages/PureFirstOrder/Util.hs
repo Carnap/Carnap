@@ -1,12 +1,12 @@
 {-# LANGUAGE FlexibleContexts #-}
-module Carnap.Languages.PureFirstOrder.Util (propForm) where
+module Carnap.Languages.PureFirstOrder.Util (propForm, boundVarOf) where
 
-import Carnap.Core.Data.AbstractSyntaxClasses
-import Carnap.Core.Data.AbstractSyntaxDataTypes
+import Carnap.Core.Data.Classes
+import Carnap.Core.Data.Types
+import Carnap.Core.Data.Optics
 import Carnap.Languages.PurePropositional.Syntax
 import Carnap.Languages.PureFirstOrder.Syntax
 import Carnap.Languages.Util.LanguageClasses
-import Control.Lens.Plated (universe, plate)
 import Control.Monad.State
 import Control.Lens
 import Data.Maybe
@@ -25,3 +25,6 @@ propForm f = evalState (propositionalize f) []
                                    Just n -> return (pn n)
                                    Nothing -> put (abbrev ++ [form]) >> return (pn $ length abbrev)
                                     
+boundVarOf v f = case preview  _varLabel v >>= subBinder f of
+                            Just f' -> show f' == show f
+                            Nothing -> False 

@@ -3,13 +3,12 @@
 module Carnap.Core.Util(
     Nat(Zero, Succ), Vec(VNil, VCons),
     crossWith, bigCrossWith, bigCrossWithH,
-    bigUnionWith, bigUnion,
-    ListComp(..), ordNub
+    ListComp(..)
 ) where
 
 import Data.List
 import qualified Data.Set as Set
-import Control.Lens
+--import Control.Lens
 import Data.Typeable
 import Control.Monad.State
 
@@ -55,24 +54,7 @@ data Vec :: Nat -> * -> * where
     VNil :: Vec Zero arg
     VCons :: arg -> Vec n arg -> Vec (Succ n) arg
 
-class Plated a' => MultiPlated a a' where
-    multiplate :: Simple Traversal a a'
-
-instance Plated a => MultiPlated a a where
-    multiplate = id
-
-bigUnion :: Eq a => [[a]] -> [a]
-bigUnion = bigUnionWith id
-bigUnionWith f xss = foldr union [] (map f xss)
 crossWith f xs ys = [f x y | x <- xs, y <- ys]
 bigCrossWith f xs xss = foldr (crossWith f) xs xss
 bigCrossWithH f (xs:xss) = bigCrossWith f xs xss
 bigCrossWithH _ []       = []
-
-
-ordNub :: (Ord a) => [a] -> [a]
-ordNub l = go Set.empty l
-  where
-    go _ [] = []
-    go s (x:xs) = if x `Set.member` s then go s xs
-                                      else x : go (Set.insert x s) xs

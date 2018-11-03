@@ -3,8 +3,8 @@ module Carnap.GHCJS.Widget.RenderDeduction (renderDeductionFitch, renderDeductio
 
 import Lib
 import Data.Maybe (catMaybes)
-import Carnap.Core.Data.AbstractSyntaxDataTypes
-import Carnap.Core.Data.AbstractSyntaxClasses
+import Carnap.Core.Data.Types
+import Carnap.Core.Data.Classes
 import Carnap.Calculi.NaturalDeduction.Syntax (DeductionLine(..), Deduction(..), depth, LemmonVariant(..))
 import GHCJS.DOM.Types (Document,Element)
 import GHCJS.DOM.Element (setInnerHTML,setAttribute)
@@ -98,15 +98,20 @@ lineBase w n mf mrd lineclass =
 renderTreeLemmon v w = treeToElement asLine asSubproof
     where asLine (n,DependentAssertLine f r deps dis scope mnum) = 
                 do [theWrapper,lineNum,theForm,theRule,theScope] <- catMaybes <$> mapM (createElement w . Just) ["div","span","span","span","span"]
-                   case mnum of
-                       Nothing -> setInnerHTML lineNum (Just $ "(" ++ show n ++ ")")
-                       Just m -> setInnerHTML lineNum (Just $ "(" ++ show m ++ ")")
                    case v of
-                       StandardLemmon -> setInnerHTML theScope (Just $ show scope)
-                       TomassiStyle -> setInnerHTML theScope (Just $ "{" ++ intercalate "," (map show scope) ++ "}")
+                       TomassiStyle -> 
+                            do setInnerHTML theScope (Just $ "{" ++ intercalate "," (map show scope) ++ "}")
+                               setInnerHTML theForm (Just $ alternateSymbols1 $ show f)
+                               case mnum of
+                                   Nothing -> setInnerHTML lineNum (Just $ show n ++ ".")
+                                   Just m -> setInnerHTML lineNum (Just $ show m ++ ".")
+                       _ -> do setInnerHTML theScope (Just $ show scope)
+                               setInnerHTML theForm (Just $ show f)
+                               case mnum of
+                                   Nothing -> setInnerHTML lineNum (Just $ "(" ++ show n ++ ")")
+                                   Just m -> setInnerHTML lineNum (Just $ "(" ++ show m ++ ")")
                    setAttribute theRule "class" "rule"
                    setInnerHTML theRule (Just $ show (head r) ++ showdischarged ++ showdeps)
-                   setInnerHTML theForm (Just $ show f)
                    mapM (appendChild theWrapper. Just) [theScope,lineNum,theForm,theRule]
                    return theWrapper
                    
@@ -118,6 +123,11 @@ renderTreeLemmon v w = treeToElement asLine asSubproof
                         return sl
 
           asSubproof _ _ = return ()
+
+          rewriteTomassiSym = map replace
+            where replace '∧' = '&'
+                  replace '¬' = '~'
+                  replace c   = c
 
 renderDeduction :: String -> (Document -> Tree (Int, DeductionLine t t1 t2) -> IO Element) -> Document -> [DeductionLine t t1 t2] -> IO Element
 renderDeduction cls render w ded = 

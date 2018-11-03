@@ -2,8 +2,9 @@
 
 module Carnap.Core.Examples.ToyLanguages where
 
-import Carnap.Core.Data.AbstractSyntaxDataTypes
-import Carnap.Core.Data.AbstractSyntaxClasses
+import Carnap.Core.Data.Types
+import Carnap.Core.Data.Classes
+import Carnap.Core.Data.Optics
 import Control.Lens (Plated)
 import Data.Typeable (Typeable)
 
@@ -154,18 +155,6 @@ instance BoundVars (Predicate BasicProp
     subBoundVar a@(TVar _) b@(TVar _) (x :==: y) = 
         (if x == a then b else x) :==: (if y == a then b else y)
     subBoundVar _ _ phi = phi
-
-instance LangTypes2 (Predicate BasicProp
-                       :|: Connective BasicConn
-                       :|: Binders BasicQuant
-                       :|: Function BasicTerm
-                       :|: EndLang) Form Bool Term Int
-
-instance LangTypes2 (Predicate BasicProp
-                       :|: Connective BasicConn
-                       :|: Binders BasicQuant
-                       :|: Function BasicTerm
-                       :|: EndLang) Term Int Form Bool
 
 instance RelabelVars (Predicate BasicProp
                        :|: Connective BasicConn

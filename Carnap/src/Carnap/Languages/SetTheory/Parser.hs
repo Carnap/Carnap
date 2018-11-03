@@ -1,6 +1,6 @@
 {-#LANGUAGE TypeOperators, FlexibleContexts#-}
 module Carnap.Languages.SetTheory.Parser 
-( strictSetTheoryParser) where
+( strictSetTheoryParser, elementarySetTheoryParser, separativeSetTheoryParser) where
 
 import Carnap.Languages.SetTheory.Syntax
 import Carnap.Languages.Util.LanguageClasses (BooleanLanguage, BooleanConstLanguage, IndexedPropLanguage(..), QuantLanguage(..))
@@ -31,8 +31,7 @@ elementarySetTheoryOptions = FirstOrderParserOptions
                            , quantifiedSentenceParser' = quantifiedSentenceParser
                            , freeVarParser = parseFreeVar "vwxyz"
                            , constantParser = Just (parseConstant "abcde")
-                           , functionParser = Just (\x -> powersetParser x 
-                                                          <|> setTheoryOpParser 
+                           , functionParser = Just (\x -> setTheoryOpParser 
                                                                 (parenParser x
                                                                  <|> powersetParser x
                                                                  <|> parseFreeVar "vwxyz" 
@@ -42,6 +41,31 @@ elementarySetTheoryOptions = FirstOrderParserOptions
                            }
 
 elementarySetTheoryParser = parserFromOptions elementarySetTheoryOptions
+
+separativeSetTheoryOptions :: FirstOrderParserOptions SeparativeSetTheoryLex u Identity
+separativeSetTheoryOptions = FirstOrderParserOptions
+                           { atomicSentenceParser = \x -> try (elementParser x)
+                                                          <|> try (equalsParser x)
+                                                          <|> subsetParser x
+                           , quantifiedSentenceParser' = quantifiedSentenceParser
+                           , freeVarParser = parseFreeVar "vwxyz"
+                           , constantParser = Just (parseConstant "abcde" <|>
+                                                   separationParser vparser tparser
+                                                        (parserFromOptions separativeSetTheoryOptions))
+                           , functionParser = Just (\x -> setTheoryOpParser 
+                                                                (parenParser x
+                                                                 <|> powersetParser x
+                                                                 <|> vparser
+                                                                 <|> cparser
+                                                                 ))
+                           , hasBooleanConstants = False
+                           }
+    where cparser = case constantParser separativeSetTheoryOptions of Just c -> c
+          fparser = case functionParser separativeSetTheoryOptions of Just f -> f
+          vparser = freeVarParser  separativeSetTheoryOptions 
+          tparser = try (fparser tparser) <|> try cparser <|> vparser 
+
+separativeSetTheoryParser = parserFromOptions separativeSetTheoryOptions
 
 setTheoryOpParser subTerm = buildExpressionParser opTable subTerm
     where opTable = [ [Infix (try parseIntersect) AssocLeft, Infix (try parseUnion) AssocLeft]

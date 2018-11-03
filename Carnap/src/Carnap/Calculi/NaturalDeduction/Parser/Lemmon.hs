@@ -6,7 +6,7 @@ import Data.Tree
 import Data.Typeable
 import Data.List (sort,(\\),nub)
 import Text.Parsec
-import Carnap.Core.Data.AbstractSyntaxDataTypes
+import Carnap.Core.Data.Types
 import Carnap.Calculi.NaturalDeduction.Syntax
 import Carnap.Calculi.NaturalDeduction.Parser.Util
 import Carnap.Languages.ClassicalSequent.Syntax
@@ -16,7 +16,9 @@ parseDependentAssertLine withNum r f j  = do mscope <- optionMaybe scope
                                              let thescope = case mscope of Nothing -> []; Just l -> l
                                              spaces
                                              mnum <- if withNum 
-                                                        then (char '(' *> (Just . read <$> many1 digit) <* char ')') <?> "line number"
+                                                        then (char '(' *> (Just . read <$> many1 digit) <* char ')') 
+                                                             <|> ((Just . read <$> many1 digit) <* char '.')
+                                                             <?> "line number"
                                                         else return Nothing
                                              spaces
                                              phi <- f

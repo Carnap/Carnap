@@ -86,79 +86,57 @@ instance Yesod App where
         withUrlRenderer $(hamletFile "templates/default-layout-wrapper.hamlet")
 
     -- The page to be redirected to when authentication is required.
-    authRoute _ = Just $ AuthR GE.forwardUrl
+    authRoute app = if appDevel (appSettings app) 
+                       then Just $ AuthR LoginR
+                       else Just $ AuthR GE.forwardUrl
 
     -- Routes requiring authentication.
-    isAuthorized (UserR ident) _ = 
-        do (Entity _ user) <- requireAuth
-           let ident' = userIdent user
-           instructors <- instructorIdentList
-           return $ if ident' `elem` instructors
-                        --TODO Improve this to restrict to viewing your own students
-                       || ident' == ident
-                       || ident' == "gleachkr@gmail.com"
-                    then Authorized
-                    else Unauthorized "It appears you're not authorized to access this page"
-
-    isAuthorized (InstructorR ident) _ = 
-        do (Entity _ user) <- requireAuth
-           let ident' = userIdent user
-           instructors <- instructorIdentList
-           return $ if (ident' `elem` instructors
-                       && ident' == ident)
-                       || ident' == "gleachkr@gmail.com"
-                    then Authorized
-                    else Unauthorized "It appears you're not authorized to access this page"
-
-    --this is the route for exporting csv for a given class and instructor.
-    --Only allowed for the instructor whose data is being exported
-    isAuthorized (InstructorDownloadR ident _) _ = 
-        do (Entity _ user) <- requireAuth
-           let ident' = userIdent user
-           instructors <- instructorIdentList
-           return $ if (ident' `elem` instructors
-                       && ident' == ident)
-                       || ident' == "gleachkr@gmail.com"
-                    then Authorized
-                    else Unauthorized "It appears you're not authorized to access this page"
-
-    --this is the route to the review area for a given course and
-    --assignment, and is for instructors only.
-    isAuthorized (ReviewR courseTitle _) _ = 
-        do (Entity uid user) <- requireAuth
-           mcourse <- runDB $ getBy (UniqueCourse courseTitle)
-           course <- case mcourse of Just c -> return c; _ -> setMessage "no course with that title" >> notFound
-           coInstructors <-  runDB $ map entityVal <$> selectList [CoInstructorCourse ==. entityKey course] []
-           instructors <- runDB $ selectList ([UserDataInstructorId ==. Just (courseInstructor $ entityVal course)]
-                                             ||. [UserDataInstructorId <-. map (Just . coInstructorIdent) coInstructors]) []
-           return $ if uid `elem` map (userDataUserId . entityVal) instructors 
-                       || userIdent user == "gleachkr@gmail.com"
-                    then Authorized
-                    else Unauthorized "It appears you're not authorized to access this page"
-
-    --this route is for getting assignments by coursename and filename, and
-    --is for instructors only
-    isAuthorized (CourseAssignmentR courseTitle _) _ = 
-        do (Entity uid user) <- requireAuth
-           mcourse <- runDB $ getBy (UniqueCourse courseTitle)
-           course <- case mcourse of Just c -> return c; _ -> setMessage "no course with that title" >> notFound
-           coInstructors <-  runDB $ map entityVal <$> selectList [CoInstructorCourse ==. entityKey course] []
-           instructors <- runDB $ selectList ([UserDataInstructorId ==. Just (courseInstructor $ entityVal course)]
-                                             ||. [UserDataInstructorId <-. map (Just . coInstructorIdent) coInstructors]) []
-           return $ if uid `elem` map (userDataUserId . entityVal) instructors 
-                       || userIdent user == "gleachkr@gmail.com"
-                    then Authorized
-                    else Unauthorized "It appears you're not authorized to access this page"
-
-    --this is the route to the admin portal
-    isAuthorized AdminR _ = 
-        do (Entity _ user) <- requireAuth
-           return $ if userIdent user == "gleachkr@gmail.com"
-                    then Authorized
-                    else Unauthorized "Only site administrators may access this page"
-
-    -- Routes not requiring authentication
-    isAuthorized _ _ = return Authorized
+    isAuthorized route _ = case route of
+         (UserR ident) -> userOrInstructor ident
+         (RegisterR ident) -> userOrInstructor ident
+         (RegisterEnrollR _ ident) -> userOrInstructor ident
+         (InstructorR ident) -> instructor ident
+         (InstructorDownloadR ident _) -> instructor ident
+         (ReviewR coursetitle _) -> coinstructorOrInstructor coursetitle
+         (CourseAssignmentR coursetitle _) -> coinstructorOrInstructor coursetitle
+         AdminR -> admin
+         _ -> return Authorized
+        where userOrInstructor ident = 
+                do (Entity _ user) <- requireAuth
+                   let ident' = userIdent user
+                   instructors <- instructorIdentList
+                   return $ if ident' `elem` instructors
+                                --TODO Improve this to restrict to viewing your own students
+                               || ident' == ident
+                               || ident' == "gleachkr@gmail.com"
+                            then Authorized
+                            else Unauthorized "It appears you're not authorized to access this page"
+              instructor ident = 
+                 do (Entity _ user) <- requireAuth
+                    let ident' = userIdent user
+                    instructors <- instructorIdentList
+                    return $ if (ident' `elem` instructors
+                                && ident' == ident)
+                                || ident' == "gleachkr@gmail.com"
+                             then Authorized
+                             else Unauthorized "It appears you're not authorized to access this page"
+              coinstructorOrInstructor coursetitle = 
+                  --this is the route to the review area for a given course and
+                  --assignment, and is for instructors only.
+                  do (Entity uid user) <- requireAuth
+                     mcourse <- runDB $ getBy (UniqueCourse coursetitle)
+                     course <- case mcourse of Just c -> return c; _ -> setMessage "no course with that title" >> notFound
+                     coInstructors <-  runDB $ map entityVal <$> selectList [CoInstructorCourse ==. entityKey course] []
+                     instructors <- runDB $ selectList ([UserDataInstructorId ==. Just (courseInstructor $ entityVal course)]
+                                                       ||. [UserDataInstructorId <-. map (Just . coInstructorIdent) coInstructors]) []
+                     return $ if uid `elem` map (userDataUserId . entityVal) instructors 
+                                 || userIdent user == "gleachkr@gmail.com"
+                              then Authorized
+                              else Unauthorized "It appears you're not authorized to access this page"
+              admin = do (Entity _ user) <- requireAuth
+                         return $ if userIdent user == "gleachkr@gmail.com"
+                                  then Authorized
+                                  else Unauthorized "Only site administrators may access this page"
 
     -- This function creates static content files in the static folder
     -- and names them based on a hash of their content. This allows
@@ -281,11 +259,13 @@ instance YesodAuth App where
                                --if not, redirect to registration
                                Nothing -> 
                                     do musr <- runDB $ get uid
-                                       case musr of 
-                                          (Just (User ident _)) -> redirect (RegisterR ident)
-                                          Nothing -> return ()
+                                       menroll <- lookupSession "enrolling-in"
+                                       case (musr, menroll) of 
+                                          (Just (User ident _), Just theclass) ->  redirect (RegisterEnrollR theclass ident)
+                                          (Just (User ident _), Nothing) ->  redirect (RegisterR ident)
+                                          (Nothing,_) -> return ()
                                --if so, go ahead
-                               Just ud -> return ()
+                               Just ud -> setMessage "Now logged in"
 
     -- appDevel is a custom method added to the settings, which is true
     -- when yesod is running in the development environment and false
@@ -321,10 +301,3 @@ instance HasHttpManager App where
 unsafeHandler :: App -> Handler a -> IO a
 unsafeHandler = Unsafe.fakeHandlerGetLogger appLogger
 
--- Note: Some functionality previously present in the scaffolding has been
--- moved to documentation in the Wiki. Following are some hopefully helpful
--- links:
---
--- https://github.com/yesodweb/yesod/wiki/Sending-email
--- https://github.com/yesodweb/yesod/wiki/Serve-static-files-from-a-separate-domain
--- https://github.com/yesodweb/yesod/wiki/i18n-messages-in-the-scaffolding

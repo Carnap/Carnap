@@ -6,7 +6,7 @@ import Carnap.Languages.PureFirstOrder.Syntax
 import Control.Lens.Plated (plate,universe)
 import Control.Lens.Setter (over)
 import Control.Lens.Fold (toListOf)
-import Carnap.Core.Data.AbstractSyntaxDataTypes
+import Carnap.Core.Data.Types
 import Carnap.Languages.Util.GenericConstructors
 import Carnap.Core.Data.Util
 import Data.Set (fromList, size)

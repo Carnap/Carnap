@@ -7,14 +7,12 @@ module Carnap.Core.Unification.ACUI (
 
   --to solve ACUI unification with constants we need to be able to find
   --all minimal solutions to a SAT problem
-import Carnap.Core.Data.AbstractSyntaxClasses
+import Carnap.Core.Data.Classes
 import Carnap.Core.ModelChecking.SAT
 import Carnap.Core.Unification.Unification
 import Carnap.Core.Util
 import Data.Typeable
-import Control.Lens
 import Control.Monad.State
-import Control.Lens.Plated
 import Data.List
 import Data.Function
 import Data.Proxy

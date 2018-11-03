@@ -4,9 +4,11 @@ module Carnap.Languages.PureSecondOrder.Syntax
 where
 
 import Carnap.Core.Util 
+import Carnap.Languages.PureFirstOrder.Syntax (foVar)
 import qualified Carnap.Languages.PureFirstOrder.Syntax as FOL
-import Carnap.Core.Data.AbstractSyntaxDataTypes
-import Carnap.Core.Data.AbstractSyntaxClasses
+import Carnap.Core.Data.Types
+import Carnap.Core.Data.Classes
+import Carnap.Core.Data.Optics
 import Carnap.Core.Data.Util (scopeHeight)
 import Carnap.Core.Unification.Unification
 import Carnap.Languages.Util.LanguageClasses
@@ -32,10 +34,6 @@ instance Schematizable SOApplicator where
 instance UniformlyEq SOApplicator where
     SOApp =* SOApp = True
 
-instance Monad m => MaybeMonadVar SOApplicator m
-
-instance MaybeStaticVar SOApplicator
-
 instance FirstOrderLex SOApplicator
 
 ------------------------
@@ -51,10 +49,6 @@ instance Schematizable MonadicSOVar where
 instance UniformlyEq MonadicSOVar where
     (MonVar n) =* (MonVar m) = n == m
 
-instance Monad m => MaybeMonadVar MonadicSOVar m
-
-instance MaybeStaticVar MonadicSOVar
-
 instance FirstOrderLex MonadicSOVar
 
 data MonadicSOScheme a where
@@ -65,10 +59,6 @@ instance Schematizable MonadicSOScheme where
 
 instance UniformlyEq MonadicSOScheme where
     (MonScheme n) =* (MonScheme m) = n == m
-
-instance Monad m => MaybeMonadVar MonadicSOScheme m
-
-instance MaybeStaticVar MonadicSOScheme
 
 instance FirstOrderLex MonadicSOScheme where
         isVarLex _ = True
@@ -90,9 +80,6 @@ instance Schematizable PolySOLVar where
 instance UniformlyEq PolySOLVar where
     (PolyVar n a) =* (PolyVar m a') = n == m && show a == show a'
 
-instance Monad m => MaybeMonadVar PolySOLVar m 
-instance MaybeStaticVar PolySOLVar
-
 instance FirstOrderLex PolySOLVar
         
 data PolyadicSOScheme a where
@@ -104,10 +91,6 @@ instance Schematizable PolyadicSOScheme where
 
 instance UniformlyEq PolyadicSOScheme where
     (PolyScheme n a) =* (PolyScheme m b) = n == m && show a == show b
-
-instance Monad m => MaybeMonadVar PolyadicSOScheme m
-
-instance MaybeStaticVar PolyadicSOScheme
 
 instance FirstOrderLex PolyadicSOScheme where
         isVarLex _ = True
@@ -121,10 +104,6 @@ instance Schematizable PolyadicSOCtx where
 
 instance UniformlyEq PolyadicSOCtx where
     (PolyCtx n a) =* (PolyCtx m b) = n == m && show a == show b
-
-instance Monad m => MaybeMonadVar PolyadicSOCtx m
-
-instance MaybeStaticVar PolyadicSOCtx
 
 instance FirstOrderLex PolyadicSOCtx where
         isVarLex _ = True
@@ -144,18 +123,12 @@ instance UniformlyEq PolySOLQuant where
         (SOPSome _ a) =* (SOPSome _ a') = show a == show a'
         _ =* _ = False
 
-instance Monad m => MaybeMonadVar PolySOLQuant m
-
-instance MaybeStaticVar PolySOLQuant
-
 instance FirstOrderLex PolySOLQuant
 
 --------------------------------------------------------
 --2. Second Order Languages
 --------------------------------------------------------
 
-pattern SOSV n          = FX (Lx1 (Lx1 (Lx1 (Lx4 (StaticVar n)))))
-pattern SODV n          = FX (Lx1 (Lx1 (Lx1 (Lx4 (SubVar n)))))
 pattern SOConst c a     = FX (Lx1 (Lx1 (Lx3 (Function c a))))
 pattern SOTau c a       = FX (Lx1 (Lx1 (Lx5 (Function c a))))
 pattern SOC n           = SOConst (Constant n) AZero
@@ -200,17 +173,14 @@ pattern SOMCtx n        = FX (Lx7 (Connective (Context n) AOne))
 
 instance CopulaSchema MonadicallySOL where 
 
-    appSchema (SOQuant (All x)) (LLam f) e = schematize (All x) (show (f $ SOV x) : e)
-    appSchema (SOQuant (Some x)) (LLam f) e = schematize (Some x) (show (f $ SOV x) : e)
+    appSchema (SOQuant (All x)) (LLam f) e = schematize (All x) (show (f $ foVar x) : e)
+    appSchema (SOQuant (Some x)) (LLam f) e = schematize (Some x) (show (f $ foVar x) : e)
     appSchema (SOMQuant (All x)) (LLam f) e = schematize (All x) (show (f $ SOMVar x) : e)
     appSchema (SOMQuant (Some x)) (LLam f) e = schematize (Some x) (show (f $ SOMVar x) : e)
-    appSchema (SOMAbs (TypedLambda v)) (LLam f) e = schematize (TypedLambda v) (show (f $ SOV v) : e)
+    appSchema (SOMAbs (TypedLambda v)) (LLam f) e = schematize (TypedLambda v) (show (f $ foVar v) : e)
     appSchema x y e = schematize x (show y : e)
 
-    lamSchema f [] = "λβ_" ++ show h ++ "." ++ show (f (SOSV (-1 * h)))
-        where h = scopeHeight (LLam f)
-    lamSchema f (x:xs) = "(λβ_" ++ show h ++ "." ++ show (f (SOSV (-1 * h))) ++ intercalate " " (x:xs) ++ ")"
-        where h = scopeHeight (LLam f)
+    lamSchema = defaultLamSchema
 
 instance Incrementable MonadicallySOLLex (Term Int) where
     incHead (SOP n a b) = Just $ SOP n (ASucc a) (ASucc a)
@@ -220,8 +190,8 @@ instance Incrementable MonadicallySOLLex (Term Int) where
 
 instance BoundVars MonadicallySOLLex where
 
-    scopeUniqueVar (SOQuant (Some v)) (LLam f) = SOV $ show $ scopeHeight (LLam f)
-    scopeUniqueVar (SOQuant (All v)) (LLam f)  = SOV $ show $ scopeHeight (LLam f)
+    scopeUniqueVar (SOQuant (Some v)) (LLam f) = foVar $ show $ scopeHeight (LLam f)
+    scopeUniqueVar (SOQuant (All v)) (LLam f)  = foVar $ show $ scopeHeight (LLam f)
     scopeUniqueVar _ _ = undefined
 
     subBoundVar = subst
@@ -240,6 +210,8 @@ instance PrismBooleanConnLex MonadicallySOLLex Bool
 instance PrismGenericQuant MonadicallySOLLex Term Form Bool Int
 instance PrismGenericQuant MonadicallySOLLex Form Form Bool (Int -> Bool) 
 instance PrismGenericTypedLambda MonadicallySOLLex Term Form Int
+instance PrismStandardVar MonadicallySOLLex Int
+instance PrismSubstitutionalVariable MonadicallySOLLex
 
 --------------------------------------------------------
 --  2.2 Polyadic SOL
@@ -268,25 +240,22 @@ instance Incrementable PolyadicallySOLLex (Term Int) where
 
 instance BoundVars PolyadicallySOLLex where
 
-    scopeUniqueVar (SOQuant (Some v)) (LLam f) = SOV $ show $ scopeHeight (LLam f)
-    scopeUniqueVar (SOQuant (All v)) (LLam f)  = SOV $ show $ scopeHeight (LLam f)
+    scopeUniqueVar (SOQuant (Some v)) (LLam f) = foVar $ show $ scopeHeight (LLam f)
+    scopeUniqueVar (SOQuant (All v)) (LLam f)  = foVar $ show $ scopeHeight (LLam f)
     scopeUniqueVar _ _ = undefined
 
     subBoundVar = subst
 
 instance CopulaSchema PolyadicallySOL where 
 
-    appSchema (SOQuant (All x)) (LLam f) e = schematize (All x) (show (f $ SOV x) : e)
-    appSchema (SOQuant (Some x)) (LLam f) e = schematize (Some x) (show (f $ SOV x) : e)
+    appSchema (SOQuant (All x)) (LLam f) e = schematize (All x) (show (f $ foVar x) : e)
+    appSchema (SOQuant (Some x)) (LLam f) e = schematize (Some x) (show (f $ foVar x) : e)
     appSchema (SOPQuant (SOPAll x a)) (LLam f) e = schematize (SOPAll x a) (show (f $ SOPVar x a) : e)
     appSchema (SOPQuant (SOPSome x a)) (LLam f) e = schematize (SOPSome x a) (show (f $ SOPVar x a) : e)
-    appSchema (SOPAbs (TypedLambda v)) (LLam f) e = schematize (TypedLambda v) (show (f $ SOV v) : e)
+    appSchema (SOPAbs (TypedLambda v)) (LLam f) e = schematize (TypedLambda v) (show (f $ foVar v) : e)
     appSchema x y e = schematize x (show y : e)
 
-    lamSchema f [] = "λβ_" ++ show h ++ "." ++ show (f (SOSV (-1 * h)))
-        where h = scopeHeight (LLam f)
-    lamSchema f (x:xs) = "(λβ_" ++ show h ++ "." ++ show (f (SOSV (-1 * h))) ++ intercalate " " (x:xs) ++ ")"
-        where h = scopeHeight (LLam f)
+    lamSchema = defaultLamSchema
 
 instance Eq (PolyadicallySOL a) where
         (==) = (=*)
@@ -301,6 +270,8 @@ instance PrismGenericTypedLambda PolyadicallySOLLex Term Form Int
 instance PrismBooleanConnLex PolyadicallySOLLex Bool
 instance PrismGenericQuant PolyadicallySOLLex Term Form Bool Int
 instance PrismTermEquality PolyadicallySOLLex Int Bool
+instance PrismStandardVar PolyadicallySOLLex Int
+instance PrismSubstitutionalVariable PolyadicallySOLLex
 
 --------------------------------------------------------
 --Notes

@@ -1,14 +1,14 @@
 {-#LANGUAGE ImpredicativeTypes, FlexibleContexts, RankNTypes,TypeOperators, ScopedTypeVariables, GADTs, MultiParamTypeClasses #-}
 
 module Carnap.Core.Data.Util (scopeHeight, equalizeTypes, incArity, checkChildren,
-mapover, (:~:)(Refl), Buds(..), Blossoms(..), bloom, sbloom, grow, rebuild, castToProxy) where
+mapover, (:~:)(Refl), Buds(..), Blossoms(..), bloom, sbloom, grow, rebuild, castToProxy, castTo) where
 
 --this module defines utility functions and typeclasses for manipulating
 --the data types defined in Core.Data
 
 import Carnap.Core.Util
-import Carnap.Core.Data.AbstractSyntaxDataTypes
-import Carnap.Core.Data.AbstractSyntaxClasses
+import Carnap.Core.Data.Types
+import Carnap.Core.Data.Classes
 import Carnap.Core.Unification.Unification
 import Data.Typeable
 import Data.List (nub)
@@ -46,6 +46,9 @@ equalizeTypes (x@(Fx _) :: Fix f a) (y@(Fx _) :: Fix f b) = eqT :: Maybe (a :~: 
 
 castToProxy :: Typeable a => Proxy a -> Fix f b -> Maybe (a :~: b)
 castToProxy (Proxy :: Proxy a) (y@(Fx _) :: Fix f b) = eqT :: Maybe (a :~: b)
+
+castTo :: forall a . forall b . forall f . (Typeable a, Typeable b) => Fix f b -> Maybe (Fix f a)
+castTo x = case eqT :: Maybe (a :~: b) of Nothing -> Nothing; Just Refl -> Just x
 
 {-|
 This function replaces the head of a given language item with another head
@@ -92,7 +95,7 @@ closures that might be present in the open formulas
 
 rebuild :: ( FirstOrder (FixLang f) 
            , MonadVar (FixLang f) (State Int)
-           , MaybeStaticVar (f (FixLang f))) => FixLang f a -> FixLang f a
+           , StaticVar (FixLang f)) => FixLang f a -> FixLang f a
 rebuild (x :!$: y) = rebuild x :!$: rebuild y
 rebuild (LLam f) = LLam (\x -> subst sv x $ rebuild (f sv))
     where sv = static $ scopeHeight (LLam f)

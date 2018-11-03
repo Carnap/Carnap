@@ -1,8 +1,9 @@
 {-#LANGUAGE ScopedTypeVariables,  UndecidableInstances, ConstraintKinds, FlexibleContexts, FlexibleInstances,  GADTs,  PolyKinds, TypeOperators,  PatternSynonyms, MultiParamTypeClasses #-}
 module Carnap.Languages.ClassicalSequent.Syntax where
 
-import Carnap.Core.Data.AbstractSyntaxClasses
-import Carnap.Core.Data.AbstractSyntaxDataTypes
+import Carnap.Core.Data.Classes
+import Carnap.Core.Data.Optics
+import Carnap.Core.Data.Types
 import Carnap.Core.Unification.ACUI
 import Carnap.Core.Unification.Unification
 import Carnap.Core.Data.Util
@@ -36,10 +37,6 @@ instance Schematizable (Cedent a) where
 
 instance FirstOrderLex (Cedent a)
 
-instance Monad m => MaybeMonadVar (Cedent a) m
-
-instance MaybeStaticVar (Cedent a)
-
 instance UniformlyEq (Cedent a) where
         NilAntecedent =* NilAntecedent = True
         NilSuccedent =* NilSuccedent = True
@@ -63,10 +60,6 @@ instance Schematizable (CedentVar a) where
 instance FirstOrderLex (CedentVar a) where
         isVarLex _ = True
 
-instance Monad m => MaybeMonadVar (CedentVar a) m
-
-instance MaybeStaticVar (CedentVar a)
-
 data Comma :: k -> * -> * where
         AnteComma :: Comma lang (Antecedent a -> Antecedent a -> Antecedent a)
         SuccComma :: Comma lang (Succedent a -> Succedent a-> Succedent a)
@@ -84,10 +77,6 @@ instance Schematizable (Comma a) where
 
 instance FirstOrderLex (Comma a)
 
-instance Monad m => MaybeMonadVar (Comma a) m
-
-instance MaybeStaticVar (Comma a)
-
 data Turnstile :: k -> * -> * where
         Turnstile :: Turnstile lang (Antecedent a -> Succedent a -> Sequent a)
 
@@ -98,10 +87,6 @@ instance FirstOrderLex (Turnstile a)
 
 instance UniformlyEq (Turnstile a) where
         Turnstile =* Turnstile = True
-
-instance Monad m => MaybeMonadVar (Turnstile a) m
-
-instance MaybeStaticVar (Turnstile a)
 
 type ClassicalSequentLex = Cedent
                            :|: Comma
@@ -132,8 +117,8 @@ infixr 8 :+:
 
 infixr 8 :-:
 
-instance ( MaybeStaticVar (t (ClassicalSequentOver t))
-         , FirstOrderLex (t (ClassicalSequentOver t))
+instance ( FirstOrderLex (t (ClassicalSequentOver t))
+         , StaticVar (ClassicalSequentOver t)
          ) => ACUI (ClassicalSequentOver t) where
 
         unfoldTerm (x :+: y) = unfoldTerm x ++ unfoldTerm y
@@ -212,6 +197,12 @@ instance PrismCons lex b => PrismCons (ClassicalSequentLexOver lex) b
 instance PrismPolyadicSchematicFunction lex a b => PrismPolyadicSchematicFunction (ClassicalSequentLexOver lex) a b
 instance PrismPolyadicSchematicPredicate lex a b => PrismPolyadicSchematicPredicate (ClassicalSequentLexOver lex) a b
 instance PrismTermEquality lex a b => PrismTermEquality (ClassicalSequentLexOver lex) a b
+instance PrismTermElements lex a b => PrismTermElements (ClassicalSequentLexOver lex) a b
+instance PrismElementarySetsLex lex b => PrismElementarySetsLex (ClassicalSequentLexOver lex) b
+instance PrismTermSubset lex c b => PrismTermSubset (ClassicalSequentLexOver lex) c b
+instance PrismSeparating lex b c => PrismSeparating (ClassicalSequentLexOver lex) b c
+instance PrismStandardVar lex b => PrismStandardVar (ClassicalSequentLexOver lex) b
+instance PrismSubstitutionalVariable lex => PrismSubstitutionalVariable (ClassicalSequentLexOver lex)
 
 --------------------------------------------------------
 --3. Sequent Languages

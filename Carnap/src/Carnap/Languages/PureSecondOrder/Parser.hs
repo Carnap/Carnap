@@ -5,9 +5,10 @@ module Carnap.Languages.PureSecondOrder.Parser
         (msolFormulaParser,psolFormulaParser)
     where
 
-import Carnap.Core.Data.AbstractSyntaxDataTypes
+import Carnap.Core.Data.Types
+import Carnap.Languages.PureFirstOrder.Syntax (foVar)
 import Carnap.Languages.PureSecondOrder.Syntax
-import Carnap.Languages.Util.LanguageClasses (BooleanLanguage, IndexedPropLanguage(..), QuantLanguage(..), PolyadicPredicateLanguage(..), TypedLambdaLanguage(..))
+import Carnap.Languages.Util.LanguageClasses (StandardVarLanguage, BooleanLanguage, IndexedPropLanguage(..), QuantLanguage(..), PolyadicPredicateLanguage(..), TypedLambdaLanguage(..))
 import Carnap.Languages.Util.GenericParsers
 import Text.Parsec
 import Text.Parsec.Expr
@@ -37,11 +38,12 @@ coreParserPSOL recur sfrecur = (parenParser recur <* spaces)
       <|> try (psolPredicationParser recur parseSimpleFOTermPSOL)
       <|> unaryOpParser [parseNeg] sfrecur
 
+parseFreeVar :: StandardVarLanguage (FixLang lex (Term Int)) => Parsec String u (FixLang lex (Term Int))
 parseFreeVar = choice [try $ do _ <- string "x_"
                                 dig <- many1 digit
-                                return $ SOV $ "x_" ++ dig
+                                return $ foVar $ "x_" ++ dig
                       ,      do c <- oneOf "vwxyz"
-                                return $ SOV [c]
+                                return $ foVar [c]
                       ]
 
 parseMSOLVar :: Parsec String u (MonadicallySOL (Form (Int -> Bool)))

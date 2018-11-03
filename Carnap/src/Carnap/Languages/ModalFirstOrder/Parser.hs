@@ -1,11 +1,12 @@
 {-#LANGUAGE TypeOperators, FlexibleContexts#-}
 module Carnap.Languages.ModalFirstOrder.Parser ( hardegreeMPLFormulaPreParser, hardegreeMPLFormulaParser) where
 
-import Carnap.Core.Data.AbstractSyntaxDataTypes
-import Carnap.Core.Data.AbstractSyntaxClasses (Schematizable)
+import Carnap.Core.Data.Types
+import Carnap.Core.Data.Classes (Schematizable)
+import Carnap.Languages.PureFirstOrder.Syntax (foVar)
 import Carnap.Languages.ModalPropositional.Syntax
 import Carnap.Languages.ModalFirstOrder.Syntax
-import Carnap.Languages.Util.LanguageClasses (BooleanLanguage, ModalLanguage, PrismModality, BooleanConstLanguage, IndexingLang(..), IndexConsLang(..), IndexedPropLanguage(..), QuantLanguage(..))
+import Carnap.Languages.Util.LanguageClasses (BooleanLanguage, StandardVarLanguage, ModalLanguage, PrismModality, BooleanConstLanguage, IndexingLang(..), IndexConsLang(..), IndexedPropLanguage(..), QuantLanguage(..))
 import Carnap.Languages.Util.GenericParsers
 import Text.Parsec
 import Text.Parsec.Expr
@@ -72,12 +73,12 @@ hardegreeMPLFormulaPreParser :: Parsec String u (IndexedModalFirstOrderLanguage 
 hardegreeMPLFormulaPreParser = buildExpressionParser opTable subFormulaParser
           where subFormulaParser = coreSubformulaParser hardegreeMPLFormulaPreParser hardegreeMPLParserOptions
 
-parseFreeVar :: String -> Parsec String u (ModalFirstOrderLanguageOverWith b a (Term Int))
+parseFreeVar :: StandardVarLanguage ((ModalFirstOrderLanguageOverWith b a (Term Int))) => String -> Parsec String u (ModalFirstOrderLanguageOverWith b a (Term Int))
 parseFreeVar s = choice [try $ do _ <- string "x_"
                                   dig <- many1 digit
-                                  return $ PV $ "x_" ++ dig
+                                  return $ foVar $ "x_" ++ dig
                         ,      do c <- oneOf s
-                                  return $ PV [c]
+                                  return $ foVar [c]
                         ]
 
 opTable :: ( BooleanLanguage (ModalFirstOrderLanguageOverWith b a (Form (World -> Bool)))

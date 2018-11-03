@@ -5,8 +5,10 @@ where
 
 import Carnap.Core.Util 
 import Carnap.Languages.ModalPropositional.Syntax (World, ModalPropLexiconWith, AbsoluteModalLexicon)
-import Carnap.Core.Data.AbstractSyntaxDataTypes
-import Carnap.Core.Data.AbstractSyntaxClasses
+import Carnap.Languages.PureFirstOrder.Syntax (foVar)
+import Carnap.Core.Data.Types
+import Carnap.Core.Data.Optics
+import Carnap.Core.Data.Classes
 import Carnap.Core.Data.Util (scopeHeight)
 import Carnap.Core.Unification.Unification
 import Carnap.Languages.Util.LanguageClasses
@@ -56,17 +58,15 @@ type ModalFirstOrderLexOverWith b a = CoreLexiconOver b :|: a
 type ModalFirstOrderLanguageOverWith b a = FixLang (ModalFirstOrderLexOverWith b a)
 
 pattern PQuant q       = FX (Lx1 (Lx2 (Bind q)))
-pattern PVar c a       = FX (Lx1 (Lx5 (Function c a)))
 pattern PPred x arity  = FX (Lx1 (Lx3 (Predicate x arity)))
 pattern PBind q f      = PQuant q :!$: LLam f
-pattern PV s           = PVar (Var s) AZero
 pattern PP n a1 a2     = PPred (Pred a1 n) a2
 
 instance FirstOrder (FixLang (ModalFirstOrderLexOverWith b a)) => 
     BoundVars (ModalFirstOrderLexOverWith b a) where
 
-    scopeUniqueVar (PQuant (Some v)) (LLam f) = PV $ show $ scopeHeight (LLam f)
-    scopeUniqueVar (PQuant (All v)) (LLam f)  = PV $ show $ scopeHeight (LLam f)
+    scopeUniqueVar (PQuant (Some v)) (LLam f) = foVar $ show $ scopeHeight (LLam f)
+    scopeUniqueVar (PQuant (All v)) (LLam f)  = foVar $ show $ scopeHeight (LLam f)
     scopeUniqueVar _ _ = undefined
 
     subBoundVar = subst
@@ -81,6 +81,8 @@ instance PrismGenericQuant (ModalFirstOrderLexOverWith b a) Term Form (World -> 
 instance PrismModality (ModalFirstOrderLexOverWith b a) (World -> Bool)
 instance PrismPolyadicPredicate (ModalFirstOrderLexOverWith b a) Int (World -> Bool)
 instance PrismPolyadicSchematicPredicate (ModalFirstOrderLexOverWith b a) Int (World -> Bool)
+instance PrismStandardVar (ModalFirstOrderLexOverWith b a) Int
+instance PrismSubstitutionalVariable (ModalFirstOrderLexOverWith b a)
 
 --equality up to α-equivalence
 instance UniformlyEq (ModalFirstOrderLanguageOverWith b a) => Eq (ModalFirstOrderLanguageOverWith b a c) where
@@ -98,14 +100,11 @@ instance ( Schematizable (a (SimpleModalFirstOrderLanguageWith a))
          , StaticVar (SimpleModalFirstOrderLanguageWith  a)
          ) => CopulaSchema (SimpleModalFirstOrderLanguageWith a) where 
 
-    appSchema (PQuant (All x)) (LLam f) e = schematize (All x) (show (f $ PV x) : e)
-    appSchema (PQuant (Some x)) (LLam f) e = schematize (Some x) (show (f $ PV x) : e)
+    appSchema (PQuant (All x)) (LLam f) e = schematize (All x) (show (f $ foVar x) : e)
+    appSchema (PQuant (Some x)) (LLam f) e = schematize (Some x) (show (f $ foVar x) : e)
     appSchema x y e = schematize x (show y : e)
 
-    lamSchema f [] = "λβ_" ++ show h ++ "." ++ show (f $ static (-1 * h))
-        where h = scopeHeight (LLam f)
-    lamSchema f (x:xs) = "(λβ_" ++ show h ++ "." ++ show (f $ static (-1 * h)) ++ intercalate " " (x:xs) ++ ")"
-        where h = scopeHeight (LLam f)
+    lamSchema = defaultLamSchema
 
 -------------------------------------
 --  2.1.1 Simplest Modal Extension --
@@ -131,8 +130,8 @@ instance ( Schematizable (a (IndexedModalFirstOrderLanguageWith a))
          , StaticVar (IndexedModalFirstOrderLanguageWith  a)
          ) => CopulaSchema (IndexedModalFirstOrderLanguageWith a) where 
 
-    appSchema (PQuant (All x)) (LLam f) e = schematize (All x) (show (f $ PV x) : e)
-    appSchema (PQuant (Some x)) (LLam f) e = schematize (Some x) (show (f $ PV x) : e)
+    appSchema (PQuant (All x)) (LLam f) e = schematize (All x) (show (f $ foVar x) : e)
+    appSchema (PQuant (Some x)) (LLam f) e = schematize (Some x) (show (f $ foVar x) : e)
     appSchema x y e = schematize x (show y : e)
 
     lamSchema f [] = "λβ_" ++ show h ++ "." ++ show (f $ static (-1 * h))

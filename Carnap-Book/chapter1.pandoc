@@ -651,8 +651,7 @@ button until you're done with the problem---when you are, the display will say
 
 Once you've entered that connective, the sentence will be broken down into its
 parts---keep going, entering the main connective for each highlighted
-sentence. When you reach a sentence that has no connectives, press return to
-advance to the next branch.
+sentence.
 
 When you're done, and the sentence has been completely broken down, so that
 the display reads "success!", press the submit button to save your work.
@@ -673,14 +672,14 @@ The way to type in the different connectives is given in this table:
 Here's your first set of problems:
 
 ```{.SynChecker .Match}
-1.1   P_1 /\ P_2
-1.2   P_1 \/ P_2
-1.3   P_1 /\ (P_2 -> P_3)
-1.4   P_3 <-> (P_2 \/ ~P_1)
-1.5   (P_2 /\ P_3) <-> (P_1 \/ (P_5 /\ ~P_2))
-1.6   (P_1 -> P_2) \/ (P_2 -> P_1)
-1.7   (P_1 -> (P_2 -> P_3)) -> ((P_1 -> P_2)->(P_1 -> P_3))
-1.8   (P_1 \/ P_2) -> (P_3<-> ~P_1\/P_2)
-1.9   (P_1 /\ (P_2 /\ (P_3 /\ (P_4 /\ P_5))))
-1.10  (P_1<->P_2) \/ (P_1/\ -P_2) \/ (-P_1 /\ P_2)
+1.1   P /\ Q
+1.2   Q \/ R
+1.3   P /\ (R -> Q)
+1.4   R <-> (S \/ ~P)
+1.5   (P /\ R) <-> (P \/ (Q /\ ~S))
+1.6   (R -> S) \/ (P -> Q)
+1.7   (Q -> (R -> S)) -> ((P -> Q)->(P -> R))
+1.8   (R \/ S) -> (P<-> ~Q\/R)
+1.9   (P /\ (P /\ (P /\ (P /\ P))))
+1.10  (R<->S) \/ (P/\ -Q) \/ (-R /\ S)
 ```

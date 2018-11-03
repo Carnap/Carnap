@@ -6,7 +6,7 @@ import Data.Tree
 import Data.Typeable
 import Data.List (findIndex)
 import Text.Parsec
-import Carnap.Core.Data.AbstractSyntaxDataTypes
+import Carnap.Core.Data.Types
 import Carnap.Calculi.NaturalDeduction.Syntax
 import Carnap.Calculi.NaturalDeduction.Parser.Util
 import Carnap.Languages.ClassicalSequent.Syntax
@@ -14,7 +14,7 @@ import Carnap.Languages.ClassicalSequent.Parser
 
 parseShowLine :: Parsec String u (FixLang lex a) -> Parsec String u (DeductionLine r lex a)
 parseShowLine f = do dpth <- indent
-                     string "Show" <|> string "show"
+                     try (string "Show") <|> string "show" <|> string "SHOW"
                      optional $ char ':'
                      spaces
                      phi <- f <* eof

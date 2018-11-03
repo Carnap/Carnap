@@ -8,8 +8,9 @@ module Carnap.Core.Examples.ACUI (
     pattern ACUISV
 ) where
 
-import Carnap.Core.Data.AbstractSyntaxDataTypes
-import Carnap.Core.Data.AbstractSyntaxClasses
+import Carnap.Core.Data.Types
+import Carnap.Core.Data.Classes
+import Carnap.Core.Data.Optics
 import Carnap.Core.Unification.Unification
 import Carnap.Core.Unification.ACUI
 import Carnap.Core.Unification.FirstOrder
@@ -61,10 +62,6 @@ instance UniformlyEq Set where
 
 instance FirstOrderLex Set
 
-instance Monad m => MaybeMonadVar Set m 
-
-instance MaybeStaticVar Set
-
 instance Schematizable Set where
     schematize Singleton (x:_) = "{" ++ x ++ "}"
     schematize Empty  _        = "{}"
@@ -83,10 +80,6 @@ instance UniformlyEq (Var lang) where
 
 instance FirstOrderLex (Var lang) where
         isVarLex (SomeSet _) = True
-
-instance Monad m => MaybeMonadVar (Var lang) m 
-
-instance MaybeStaticVar (Var lang) 
 
 instance Schematizable (Var lang) where
     schematize (SomeSet s) _ = s
@@ -127,7 +120,7 @@ pattern ACUISV n = SV n
 pattern VUnFunc s x = Fx4 (Function (ConstUnFunc s) AOne) :!$: x
 pattern VBinFunc s x y = Fx4 (Function (ConstBinFunc s) ATwo) :!$: x :!$: y
 
-instance LangTypes1 VLex Term V
+instance PrismSubstitutionalVariable VLex
 
 instance BoundVars VLex where
   subBoundVar = undefined

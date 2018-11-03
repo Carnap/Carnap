@@ -1,8 +1,9 @@
 {-#LANGUAGE FunctionalDependencies, FlexibleInstances, MultiParamTypeClasses, GADTs, KindSignatures, TypeOperators, PatternSynonyms, FlexibleContexts, AutoDeriveTypeable #-}
 module Carnap.Languages.ModalPropositional.Syntax where
 
-import Carnap.Core.Data.AbstractSyntaxDataTypes
-import Carnap.Core.Data.AbstractSyntaxClasses
+import Carnap.Core.Data.Types
+import Carnap.Core.Data.Classes
+import Carnap.Core.Data.Optics
 import Carnap.Core.Data.Util (checkChildren)
 import Carnap.Core.Unification.Unification
 import Carnap.Languages.Util.LanguageClasses
@@ -108,6 +109,7 @@ instance PrismBooleanConst CoreLexicon (World -> Bool)
 instance PrismPropLex CoreLexicon (World -> Bool)
 instance PrismSchematicProp CoreLexicon (World -> Bool)
 instance PrismModality CoreLexicon (World -> Bool)
+instance PrismSubstitutionalVariable CoreLexicon
 
 type ModalPropLexiconWith a = CoreLexicon :|: a :|: EndLang
 
@@ -116,36 +118,13 @@ type ModalPropLanguageWith a = FixLang (ModalPropLexiconWith a)
 instance UniformlyEq (ModalPropLanguageWith a) => Eq (ModalPropLanguageWith a b) where
         (==) = (=*)
 
-pattern MPred x arity  = FX (Lx1 (Lx1 (Predicate x arity)))
-pattern MSPred x arity = FX (Lx1 (Lx2 (Predicate x arity)))
-pattern MBCon x arity  = FX (Lx1 (Lx3 (Connective x arity)))
-pattern MMCon x arity  = FX (Lx1 (Lx4 (Connective x arity)))
-pattern MVerum         = FX (Lx1 (Lx5 (Connective (Verum) AZero)))
-pattern MFalsum        = FX (Lx1 (Lx5 (Connective (Falsum) AZero)))
-pattern MSV n          = FX (Lx1 (Lx6 (SubVar n)))
-pattern MAnd           = MBCon And ATwo
-pattern MOr            = MBCon Or ATwo
-pattern MIf            = MBCon If ATwo
-pattern MIff           = MBCon Iff ATwo
-pattern MNot           = MBCon Not AOne
-pattern MBox           = MMCon Box AOne
-pattern MDiamond       = MMCon Diamond AOne
-pattern MP n           = MPred (Prop n) AZero
-pattern MPhi n         = MSPred (SProp n) AZero
-pattern (:&:) x y      = MAnd :!$: x :!$: y
-pattern (:||:) x y     = MOr :!$: x :!$: y
-pattern (:->:) x y     = MIf :!$: x :!$: y
-pattern (:<->:) x y    = MIff :!$: x :!$: y
-pattern MNeg x         = MNot :!$: x
-pattern MNec x         = MBox :!$: x
-pattern MPos x         = MDiamond :!$: x
-
 instance PrismBooleanConnLex (ModalPropLexiconWith a) (World -> Bool)
 instance PrismGenericContext (ModalPropLexiconWith a) (World -> Bool) (World -> Bool)
 instance PrismBooleanConst (ModalPropLexiconWith a) (World -> Bool)
 instance PrismPropLex (ModalPropLexiconWith a) (World -> Bool)
 instance PrismSchematicProp (ModalPropLexiconWith a) (World -> Bool)
 instance PrismModality (ModalPropLexiconWith a) (World -> Bool)
+instance PrismSubstitutionalVariable (ModalPropLexiconWith a)
 
 -------------------------------
 --  3. Basic Modal Language  --
@@ -156,8 +135,6 @@ type ModalPropLexicon = ModalPropLexiconWith EndLang
 instance BoundVars ModalPropLexicon
 
 type ModalPropLanguage = FixLang ModalPropLexicon
-
-instance LangTypes1 ModalPropLexicon Form (World -> Bool)
 
 type ModalForm = ModalPropLanguage (Form (World -> Bool))
 
@@ -181,17 +158,13 @@ type WorldTheoryPropLexicon = ModalPropLexiconWith WorldTheoryLexicon
 type WorldTheoryPropLanguage = ModalPropLanguageWith WorldTheoryLexicon
 
 pattern IQuant q = (FX (Lx2 (Lx5 (Bind q))))
-pattern PSV n  = FX (Lx1 (Lx6 (StaticVar n)))
 
 instance CopulaSchema WorldTheoryPropLanguage where
     appSchema (IQuant (All x)) (LLam f) e = schematize (All x) (show (f $ worldVar x) : e)
     appSchema (IQuant (Some x)) (LLam f) e = schematize (Some x) (show (f $ worldVar x) : e)
     appSchema x y e = schematize x (show y : e)
 
-    lamSchema f [] = "λβ_" ++ show h ++ "." ++ show (f (PSV (-1 * h)))
-        where h = scopeHeight (LLam f)
-    lamSchema f (x:xs) = "(λβ_" ++ show h ++ "." ++ show (f (PSV (-1 * h))) ++ intercalate " " (x:xs) ++ ")"
-        where h = scopeHeight (LLam f)
+    lamSchema = defaultLamSchema
 
 instance BoundVars WorldTheoryPropLexicon where
         scopeUniqueVar (IQuant (All v)) (LLam f) = worldVar (show $ scopeHeight (LLam f))
@@ -207,6 +180,7 @@ instance PrismIntIndex WorldTheoryPropLexicon World
 instance PrismCons WorldTheoryPropLexicon World
 instance PrismPolyadicSchematicFunction WorldTheoryPropLexicon World World
 instance PrismPolyadicSchematicPredicate WorldTheoryPropLexicon World (World -> Bool) 
+instance PrismStandardVar WorldTheoryPropLexicon World
 
 ----------------------------------------
 --  5. Absolute Modal Logic Language  --
@@ -238,5 +212,5 @@ type AbsoluteModalPreForm = AbsoluteModalPropLanguage (Form (World -> Bool))
 ----------------------------
 --convenience class
 
-worldVar :: String -> WorldTheoryPropLanguage (Term World)
-worldVar s = FX (Lx2 (Lx7 (Function (Var s) AZero)))
+worldVar :: StandardVarLanguage (lang (Term World)) => String -> lang (Term World)
+worldVar = var

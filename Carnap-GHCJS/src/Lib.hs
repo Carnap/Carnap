@@ -9,7 +9,7 @@ module Lib
     folSeqAndLabel, folFormAndLabel, message, IOGoal(..), updateWithValue,
     submissionSource, assignmentKey, initialize, popUpWith, spinnerSVG,
     doneButton, questionButton, exclaimButton, expandButton, buttonWrapper,
-    maybeNodeListToList, trySubmit) where
+    maybeNodeListToList, trySubmit, alternateSymbols1) where
 
 import Data.Aeson
 import Data.Maybe (catMaybes)
@@ -59,7 +59,7 @@ import GHCJS.DOM.EventTargetClosures (EventName(..))
 import Carnap.GHCJS.SharedTypes
 import Carnap.Calculi.NaturalDeduction.Syntax (NaturalDeductionCalc(..))
 import Carnap.Languages.PurePropositional.Syntax (PureForm)
-import Carnap.Languages.PurePropositional.Logic (propCalc)
+import Carnap.Languages.PurePropositional.Logic (montagueSCCalc)
 import Carnap.Languages.PureFirstOrder.Parser (folFormulaParser)
 import Carnap.Languages.PureFirstOrder.Logic (folCalc)
 import Carnap.Languages.PurePropositional.Parser (purePropFormulaParser, standardLetters)
@@ -355,7 +355,7 @@ buttonWrapper w = do (Just bw) <- createElement w (Just "div")
 formAndLabel :: Monad m => ParsecT String u m (String, PureForm)
 formAndLabel = withLabel (purePropFormulaParser standardLetters <* eof)
 
-seqAndLabel = withLabel (ndParseSeq propCalc)
+seqAndLabel = withLabel (ndParseSeq montagueSCCalc)
 
 folSeqAndLabel =  withLabel (ndParseSeq folCalc)
 
@@ -376,6 +376,15 @@ trySubmit problemType opts ident problemData correct =
                                    (Submit problemType ident problemData source correct (M.lookup "points" opts >>= readMaybe) key) 
                                    (loginCheck $ "Submitted Exercise " ++ ident)
                                    errorPopup
+
+-----------------------------------
+--  1.7.1 Alternate Symbol Sets  --
+-----------------------------------
+
+alternateSymbols1 = map replace
+    where replace '∧' = '&'
+          replace '¬' = '~'
+          replace c = c
 
 ------------------
 --1.8 SVG Data  --

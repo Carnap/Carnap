@@ -34,7 +34,7 @@ Graphically, you can think of what's happening in this way:
 ```{.diagram .snip}
 toText :: String -> Diagram SVG
 toText s = let ln = fromIntegral (length s) in
-    text s <> rect (ln * 7/10) 1 # lc white
+    text s <> rect (ln * 8/10) 1 # clipBy (rect (ln * 7/10) (9/10))
 ```
 
 <figure>
@@ -44,11 +44,9 @@ rect 20 10 `atop` inf (inf ax1 ax2 c1) (inf ax3 ax4 c2) c3
 
 inf a b c = prems
             ===
-            strut ls
+            (rect (w * 2) 0.05 # fc black)
             ===
-            (rect (w * 2) 0.03 # fc black)
-            ===
-            strut ls
+            strutY 0.5
             ===
             c
     where prems = (a ||| strut unitX ||| b) # center
@@ -56,7 +54,6 @@ inf a b c = prems
                 Nothing -> 0
                 Just v -> fst $ unr2 v
                 --we should get the point here by an absolute displacement from the bottom edge of the premises
-          ls = (unitY * 0.2)
 
 ax1 = toText "P→Q"
 ax2 = toText "Q→R"
@@ -214,12 +211,12 @@ line.
 The result will look like this:
 
 ```
-1.Show φ
+1. Show: φ
 2.    Assertion1 :Justification1
 3.    Assertion2 :Justification2
 4.    Assertion3 :Justification3
 5.    φ          :Justification3
-6 :DD 5
+6. :DD 5
 ```
 
 Though, of course, the number of lines is unimportant, and we'd have real
@@ -240,13 +237,13 @@ found $Q$ on the basis of a direct derivation, by writing $DD~6$. The result
 looks like this:
 
 ```
-1.Show:R
-2.    P    :PR
-3.    P->Q :PR
-4.    Q->R :PR
-5.    Q    :MP 2,3
-6.    R    :MP 4,5
-7.:DD 6
+1. Show: R
+2.     P    :PR
+3.     P->Q :PR
+4.     Q->R :PR
+5.     Q    :MP 2,3
+6.     R    :MP 4,5
+7. :DD 6
 ```
 
 Here is another example. Suppose we are trying to use a direct derivation to
@@ -261,13 +258,13 @@ on line 6, and indicate the justification for this assertion beside it. The
 result looks like this:
 
 ```
-1.Show:R
-2.    P->Q  :PR
-3.    ~P->R :PR
-4.    ~Q    :PR
-5.    ~P    :MT 2,4
-6.    R     :MP 5,3
-7.:DD 6
+1. Show: R
+2.     P->Q  :PR
+3.     ~P->R :PR
+4.     ~Q    :PR
+5.     ~P    :MT 2,4
+6.     R     :MP 5,3
+7. :DD 6
 ```
 
 One more example. Suppose we are trying to use a direct derivation to show that
@@ -279,12 +276,12 @@ assertion on line 4, plus the rule of double negation elimination (which we
 may cite as DNE). The derivation looks like this:
 
 ```
-1.Show:P
-2.    ~P->Q :PR
-3.    ~Q    :PR
-4.    ~~P   :MT 2,3
-5.    P     :DNE 4
-6.:DD 5
+1. Show:P
+2.     ~P->Q :PR
+3.     ~Q    :PR
+4.     ~~P   :MT 2,3
+5.     P     :DNE 4
+6. :DD 5
 ```
 
 ##Problem Set 4

@@ -9,7 +9,7 @@ module Carnap.Core.Unification.Unification (
 
 import Data.Type.Equality
 import Data.Typeable
-import Carnap.Core.Data.AbstractSyntaxClasses
+import Carnap.Core.Data.Classes
 import Carnap.Core.Util
 import Control.Monad.State 
 

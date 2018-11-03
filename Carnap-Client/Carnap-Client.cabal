@@ -1,7 +1,7 @@
 name:                Carnap-Client
 version:             0.1.0.0
 synopsis:            Shared Components for client-server Carnap applications
-description:         Please see README.md
+description:         See Carnap.io/about
 license:             GPL-3
 author:              Graham Leach-Krouse
 maintainer:          gleachkr@gmail.com

@@ -8,7 +8,9 @@
 
 /                                   HomeR               GET
 /about                              InfoR               GET
+/enroll/#Text                       EnrollR             GET
 /register/#Text                     RegisterR           GET POST
+/register/#Text/#Text               RegisterEnrollR     GET POST
 /book                               BookR               GET
 /book/#Int                          ChapterR            GET
 /user/#Text                         UserR               GET POST DELETE 

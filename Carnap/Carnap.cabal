@@ -1,7 +1,7 @@
 name:                Carnap
 version:             0.1.0.0
 synopsis:            Libraries for the Carnap Proof Assistant
-description:         Please see README.md
+description:         See Carnap.io/about
 license:             GPL-3
 license-file:        LICENSE
 author:              Jake Ehrlich, Graham Leach-Krouse
@@ -14,9 +14,11 @@ cabal-version:       >=1.10
 
 library
   hs-source-dirs:      src
-  exposed-modules:     Carnap.Core.Data.AbstractSyntaxDataTypes
-                     , Carnap.Core.Examples.ACUI
-                     , Carnap.Core.Data.AbstractSyntaxClasses
+  exposed-modules:     Carnap.Core.Data.Types
+                     , Carnap.Core.Data.Optics
+                     , Carnap.Core.Data.Classes
+                     /* , Carnap.Core.Examples.ACUI */
+                     /* , Carnap.Core.Examples.ToyLanguages */
                      , Carnap.Core.Unification.FirstOrder
                      , Carnap.Core.Unification.Unification
                      , Carnap.Core.Unification.ACUI
@@ -57,6 +59,7 @@ library
                      , Carnap.Languages.PureFirstOrder.Logic.Rules
                      , Carnap.Languages.PureFirstOrder.Logic.Magnus
                      , Carnap.Languages.PureFirstOrder.Logic.KalishAndMontague
+                     , Carnap.Languages.PureFirstOrder.Logic.StrictMontague
                      , Carnap.Languages.PureFirstOrder.Logic.ThomasBolducAndZach
                      , Carnap.Languages.PureFirstOrder.Logic.BergmannMoorAndNelson
                      , Carnap.Languages.PureFirstOrder.Logic.Hardegree
@@ -68,6 +71,8 @@ library
                      , Carnap.Languages.PureSecondOrder.Logic.KalishAndMontague
                      , Carnap.Languages.SetTheory.Syntax
                      , Carnap.Languages.SetTheory.Parser
+                     , Carnap.Languages.SetTheory.Logic.Rules
+                     , Carnap.Languages.SetTheory.Logic.KalishAndMontague
                      , Carnap.Languages.ClassicalSequent.Syntax
                      , Carnap.Languages.ClassicalSequent.Parser
                      , Carnap.Calculi.NaturalDeduction.Checker

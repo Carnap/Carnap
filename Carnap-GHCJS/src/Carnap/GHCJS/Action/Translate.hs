@@ -5,7 +5,7 @@ import Lib
 import Carnap.Languages.PurePropositional.Syntax (PureForm)
 import Carnap.Languages.PureFirstOrder.Syntax (PureFOLForm)
 import Carnap.Calculi.NaturalDeduction.Syntax (NaturalDeductionCalc(..))
-import Carnap.Languages.PurePropositional.Logic (propCalc)
+import Carnap.Languages.PurePropositional.Logic (montagueSCCalc)
 import Carnap.Languages.PureFirstOrder.Parser (folFormulaParser)
 import Carnap.Languages.PureFirstOrder.Logic (folCalc)
 import Carnap.Languages.PurePropositional.Parser (purePropFormulaParser,standardLetters)

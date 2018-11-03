@@ -21,8 +21,8 @@ import GHCJS.Marshal
 #endif
 import GHCJS.DOM
 import GHCJS.DOM.Types
-import Carnap.Core.Data.AbstractSyntaxDataTypes (Form, FixLang,)
-import Carnap.Core.Data.AbstractSyntaxClasses (Schematizable,UniformlyEq(..))
+import Carnap.Core.Data.Types (Form, FixLang,)
+import Carnap.Core.Data.Classes (Schematizable,UniformlyEq(..))
 import Carnap.Calculi.NaturalDeduction.Syntax
 import Carnap.Calculi.NaturalDeduction.Parser
 import Carnap.Calculi.NaturalDeduction.Checker

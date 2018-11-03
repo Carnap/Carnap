@@ -10,7 +10,7 @@ module Carnap.Core.Unification.Combination (
   , doSubs
 ) where
 
-import Carnap.Core.Data.AbstractSyntaxClasses
+import Carnap.Core.Data.Classes
 import Carnap.Core.Unification.Unification
 import Carnap.Core.Util
 import Control.Monad.State

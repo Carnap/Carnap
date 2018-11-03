@@ -2,7 +2,7 @@
 
 module Carnap.Core.Unification.FirstOrder (founify, foUnifySys) where
 
-import Carnap.Core.Data.AbstractSyntaxClasses
+import Carnap.Core.Data.Classes
 import Carnap.Core.Unification.Unification
 
 (Left x) .<. f = Left (f x)

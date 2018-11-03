@@ -606,16 +606,16 @@ classWidget ident instructors classent = do
                                         <td>Problem Set #{show set}
                                         <td>#{dateDisplay due course}
                                         ^{analyticsFor (Right (pack (show set))) allScores}
-                        $forall (Entity k a, Just d) <- zip asmd asDocs
-                            <tr>
-                                <td>
-                                    <a href=@{CourseAssignmentR (courseTitle course) (documentFilename d)}>
-                                        #{documentFilename d}
-                                $maybe due <- assignmentMetadataDuedate a
-                                    <td>#{dateDisplay due course}
-                                $nothing
-                                    <td>No Due Date
-                                ^{analyticsFor (Left k) allScores}
+                            $forall (Entity k a, Just d) <- zip asmd asDocs
+                                <tr>
+                                    <td>
+                                        <a href=@{CourseAssignmentR (courseTitle course) (documentFilename d)}>
+                                            #{documentFilename d}
+                                    $maybe due <- assignmentMetadataDuedate a
+                                        <td>#{dateDisplay due course}
+                                    $nothing
+                                        <td>No Due Date
+                                    ^{analyticsFor (Left k) allScores}
                     <h2>Students
                     <table.table.table-striped>
                         <thead>
@@ -633,7 +633,8 @@ classWidget ident instructors classent = do
                                     <td>
                                         #{totalByUser (userIdent u) allScores}/#{show $ courseTotalPoints course}
                                     <td>
-                                        <button.btn.btn-sm.btn-secondary type="button" onclick="tryDropStudent('#{decodeUtf8 $ encode $ DropStudent $ userIdent u}')">
+                                        <button.btn.btn-sm.btn-secondary type="button" title="Drop #{fn} #{ln} from class"
+                                            onclick="tryDropStudent('#{decodeUtf8 $ encode $ DropStudent $ userIdent u}')">
                                             <i.fa.fa-trash-o>
                     <h2>Course Data
                     <dl.row>
@@ -649,13 +650,17 @@ classWidget ident instructors classent = do
                         <dd.col-sm-9>#{dateDisplay (courseEndDate course) course}
                         <dt.col-sm-3>Time Zone
                         <dd.col-sm-9>#{decodeUtf8 $ courseTimeZone course}
+                        <dt.col-sm-3>Enrollment Link
+                        <dd.col-sm-9>
+                            <a href="@{EnrollR (courseTitle course)}">@{EnrollR (courseTitle course)}
                         $if null coInstructors 
                         $else
                             <dt.col-sm-3>Co-Instructors
                             <dd.col-sm-9>
                                 $forall (Entity _ coud, Entity ciid _) <- zip coInstructorUD coInstructors
                                     <div#Co-Instructor-#{userDataLastName coud}-#{userDataFirstName coud}>
-                                        <i.fa.fa-trash-o style="cursor:pointer" onclick="tryDeleteCoInstructor('#{decodeUtf8 $ encode $ DeleteCoInstructor ciid}','#{userDataLastName coud}', '#{userDataFirstName coud}')">
+                                        <i.fa.fa-trash-o style="cursor:pointer" title="Remove #{userDataFirstName coud} #{userDataLastName coud} as Co-Instructor"
+                                            onclick="tryDeleteCoInstructor('#{decodeUtf8 $ encode $ DeleteCoInstructor ciid}','#{userDataLastName coud}', '#{userDataFirstName coud}')">
                                         <span>#{userDataFirstName coud},
                                         <span> #{userDataLastName coud}
                     <div.row>

@@ -2,7 +2,7 @@
 module Carnap.Languages.Util.GenericParsers
 where
 
-import Carnap.Core.Data.AbstractSyntaxDataTypes
+import Carnap.Core.Data.Types
 import Carnap.Languages.Util.LanguageClasses
 import Text.Parsec
 import Data.Typeable(Typeable)
@@ -111,7 +111,7 @@ subsetParser parseTerm = binaryInfixOpParser ops parseTerm
     where ops = map (>> return within) [string "⊆", string "<(", string "<s", string "within"]
 
 separationParser :: 
-    (SeparatingLang (FixLang lex f) (FixLang lex t)
+    ( SeparatingLang (FixLang lex f) (FixLang lex t)
     , BoundVars lex
     , Show (FixLang lex t)
     , Monad m

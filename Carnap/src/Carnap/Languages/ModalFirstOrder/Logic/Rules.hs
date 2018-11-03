@@ -7,8 +7,9 @@ import Data.Maybe (catMaybes)
 import Text.Parsec
 import Carnap.Core.Data.Util (scopeHeight)
 import Carnap.Core.Unification.Unification (applySub,subst)
-import Carnap.Core.Data.AbstractSyntaxClasses
-import Carnap.Core.Data.AbstractSyntaxDataTypes
+import Carnap.Core.Data.Classes
+import Carnap.Core.Data.Types
+import Carnap.Core.Data.Optics
 import Carnap.Languages.ModalPropositional.Syntax
 import Carnap.Languages.ModalFirstOrder.Syntax
 import Carnap.Languages.PureFirstOrder.Logic.Rules (globalOldConstraint, globalNewConstraint)
@@ -90,7 +91,4 @@ instance ( Schematizable (a (FirstOrderModalIndexedSequentCalcWith a))
     appSchema (SeqQuant (Some x)) (LLam f) e = schematize (Some x) (show (f $ SeqV x) : e)
     appSchema x y e = schematize x (show y : e)
 
-    lamSchema f [] = "λβ_" ++ show h ++ "." ++ show (f (static (-1 * h)))
-        where h = scopeHeight (LLam f)
-    lamSchema f (x:xs) = "(λβ_" ++ show h ++ "." ++ show (f (static (-1 * h))) ++ intercalate " " (x:xs) ++ ")"
-        where h = scopeHeight (LLam f)
+    lamSchema = defaultLamSchema
