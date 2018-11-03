@@ -47,7 +47,7 @@ equalizeTypes (x@(Fx _) :: Fix f a) (y@(Fx _) :: Fix f b) = eqT :: Maybe (a :~: 
 castToProxy :: Typeable a => Proxy a -> Fix f b -> Maybe (a :~: b)
 castToProxy (Proxy :: Proxy a) (y@(Fx _) :: Fix f b) = eqT :: Maybe (a :~: b)
 
-castTo :: forall a . forall b . forall f . (Typeable a, Typeable b) => Fix f b -> Maybe (Fix f a)
+castTo :: forall a b f. (Typeable a, Typeable b) => Fix f b -> Maybe (Fix f a)
 castTo x = case eqT :: Maybe (a :~: b) of Nothing -> Nothing; Just Refl -> Just x
 
 {-|
@@ -55,7 +55,7 @@ This function replaces the head of a given language item with another head
 that increases the arity of the item.
 -}
 incArity :: (Typeable a, Typeable b) => 
-    (forall c . FixLang l c ->  Maybe (FixLang l (b -> c))) -> 
+    (forall c. FixLang l c ->  Maybe (FixLang l (b -> c))) -> 
     FixLang l (b -> a)  ->  Maybe (FixLang l (b -> b -> a))
 incArity f ((head :: FixLang l (t -> b -> a)) :!$: (tail :: FixLang l t)) = 
         case eqT :: Maybe (t :~: b) of
@@ -73,7 +73,7 @@ checkChildren phi psi = phi /= psi && anyOf cosmos (== phi) psi
 {-|
 this function will, given a suitably polymorphic argument `f`, apply `f` to each of the immediate children of the linguistic expression `le`.
 -}
-mapover :: (forall a . FixLang l a -> FixLang l a) -> FixLang l b -> FixLang l b
+mapover :: (forall a. FixLang l a -> FixLang l a) -> FixLang l b -> FixLang l b
 mapover f le@(x :!$: y) = mapover f x :!$: f y
 mapover f x = x
 

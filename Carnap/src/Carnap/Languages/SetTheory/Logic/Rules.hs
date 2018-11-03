@@ -102,6 +102,6 @@ type SeparationSetTheoryConstraint lex b =
 
 type SeparatingSetTheoryVariants lex b = SeparationSetTheoryConstraint lex b => [SequentRule lex (Form b)]
 
-unpackSeparation :: forall b. forall lex. IndexedPropContextSchemeLanguage (ClassicalSequentOver lex (Form b)) => SeparatingSetTheoryVariants lex b
+unpackSeparation :: forall b lex. IndexedPropContextSchemeLanguage (ClassicalSequentOver lex (Form b)) => SeparatingSetTheoryVariants lex b
 unpackSeparation = replace ((seperator tau) ./\. (tau `isIn` tau')) (tau `isIn` separate "v" tau' seperator)
     where seperator = phi 1 :: ClassicalSequentOver lex (Term Int) -> ClassicalSequentOver lex (Form b)

@@ -17,7 +17,7 @@ import Control.Monad.State.Lazy as S
 (.*$.) :: (Applicative g, Typeable a, Typeable b) => g (FixLang f (a -> b)) -> g (FixLang f a) -> g (FixLang f b)
 x .*$. y = (:!$:) <$> x <*> y
 
-genChildren :: forall a . forall b . forall f . (BoundVars f, Typeable a, Typeable b) => Traversal' (FixLang f b) (FixLang f a)
+genChildren :: forall a b f . (BoundVars f, Typeable a, Typeable b) => Traversal' (FixLang f b) (FixLang f a)
 genChildren g phi@(q :!$: LLam (h :: FixLang f t -> FixLang f t')) =
            case eqT :: Maybe (t' :~: a) of
                     Just Refl -> (\x y -> x :!$: LLam y) <$> genChildren g q <*> modify h
