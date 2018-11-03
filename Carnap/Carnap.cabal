@@ -17,8 +17,8 @@ library
   exposed-modules:     Carnap.Core.Data.Types
                      , Carnap.Core.Data.Optics
                      , Carnap.Core.Data.Classes
-                     /* , Carnap.Core.Examples.ACUI */
-                     /* , Carnap.Core.Examples.ToyLanguages */
+                     -- , Carnap.Core.Examples.ACUI
+                     -- , Carnap.Core.Examples.ToyLanguages
                      , Carnap.Core.Unification.FirstOrder
                      , Carnap.Core.Unification.Unification
                      , Carnap.Core.Unification.ACUI
