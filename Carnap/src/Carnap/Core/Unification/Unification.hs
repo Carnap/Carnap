@@ -28,7 +28,7 @@ instance (UniformlyEq f, UniformlyOrd f) => Ord (AnyPig f) where
 instance UniformlyEq f => Eq (AnyPig f) where
     (AnyPig x) == (AnyPig y) = x =* y
 
-mutatePig :: (forall a . f a -> f a) -> EveryPig f -> EveryPig f
+mutatePig :: (forall a. f a -> f a) -> EveryPig f -> EveryPig f
 mutatePig f x = EveryPig (f (unEveryPig x))
 
 instance Schematizable f => Show (Equation f) where

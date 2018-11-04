@@ -68,9 +68,6 @@ type PureFirstOrderLexWith a = CoreLexicon :|: a
 
 type PureFirstOrderLanguageWith a = FixLang (PureFirstOrderLexWith a)
 
-pattern PQuant q       = FX (Lx1 (Lx2 (Bind q)))
-pattern PBind q f      = PQuant q :!$: LLam f
-
 instance {-# OVERLAPPABLE #-} 
         ( StaticVar (PureFirstOrderLanguageWith a)
         , Schematizable (a (PureFirstOrderLanguageWith a))
@@ -87,8 +84,10 @@ instance {-# OVERLAPPABLE #-}
 instance FirstOrder (FixLang (PureFirstOrderLexWith a)) => 
     BoundVars (PureFirstOrderLexWith a) where
 
-    scopeUniqueVar (PQuant (Some v)) (LLam f) = foVar $ show $ scopeHeight (LLam f)
-    scopeUniqueVar (PQuant (All v)) (LLam f)  = foVar $ show $ scopeHeight (LLam f)
+    scopeUniqueVar q (LLam f) = case castTo $ foVar $ show $ scopeHeight (LLam f) of
+                                    Just x -> x
+                                    Nothing -> error "cast failed in ScopeUniqueVar"
+
     scopeUniqueVar _ _ = undefined
 
     subBoundVar = subst
@@ -98,8 +97,8 @@ instance FirstOrder (FixLang (PureFirstOrderLexWith a)) =>
     RelabelVars (PureFirstOrderLexWith a) Form Bool where
 
     subBinder (q :!$: LLam f) y = case (qtype q >>= preview _all, qtype q >>= preview _some, oftype (LLam f)) of
-                                    (Just _, _, Just (LLam f')) -> Just $ PBind (All y) f'
-                                    (_, Just _, Just (LLam f')) -> Just $ PBind (Some y) f'
+                                    (Just _, _, Just (LLam f')) -> Just $ lall y f'
+                                    (_, Just _, Just (LLam f')) -> Just $ lsome y f'
                                     _ -> Nothing
     subBinder _ _ = Nothing
 
