@@ -2,6 +2,7 @@
 module Carnap.Languages.SetTheory.Logic.KalishAndMontague (estCalc, sstCalc) where
 
 import Carnap.Core.Data.Types
+import Carnap.Languages.PureFirstOrder.Syntax (fogamma)
 import Carnap.Languages.SetTheory.Syntax
 import Carnap.Languages.ClassicalSequent.Syntax
 import Carnap.Languages.Util.GenericConstructors
@@ -89,15 +90,11 @@ instance Inference ESTLogic ElementarySetTheoryLex (Form Bool) where
      conclusionOf r = lowerSequent (ruleOf r)
 
      restriction (PR prems) = Just (premConstraint prems)
-     restriction (FO UD)    = Just (eigenConstraint stau (SS (lall "v" $ phi' 1)) (setgamma 1))
+     restriction (FO UD)    = Just (eigenConstraint stau (SS (lall "v" $ phi' 1)) (fogamma 1))
          where stau = liftToSequent tau
-               setgamma :: Int -> ClassicalSequentOver ElementarySetTheoryLex (Antecedent (Form Bool))
-               setgamma = GammaV
 
-     restriction (FO ED1)   = Just (eigenConstraint stau (SS (lsome "v" $ phi' 1) :-: SS (phin 1)) (setgamma 1 :+: setgamma 2))
+     restriction (FO ED1)   = Just (eigenConstraint stau (SS (lsome "v" $ phi' 1) :-: SS (phin 1)) (fogamma 1 :+: fogamma 2))
          where stau = liftToSequent tau
-               setgamma :: Int -> ClassicalSequentOver ElementarySetTheoryLex (Antecedent (Form Bool))
-               setgamma = GammaV
      restriction _ = Nothing
 
      indirectInference (FO x) = indirectInference x
@@ -187,15 +184,10 @@ instance Inference SSTLogic SeparativeSetTheoryLex (Form Bool) where
      conclusionOf r = lowerSequent (ruleOf r)
 
      restriction (PRS prems) = Just (premConstraint prems)
-     restriction (EST (FO UD))    = Just (eigenConstraint stau (SS (lall "v" $ phi' 1)) (setgamma 1))
+     restriction (EST (FO UD))    = Just (eigenConstraint stau (SS (lall "v" $ phi' 1)) (fogamma 1))
          where stau = liftToSequent tau
-               setgamma :: Int -> ClassicalSequentOver SeparativeSetTheoryLex (Antecedent (Form Bool))
-               setgamma = GammaV
-
-     restriction (EST (FO ED1))   = Just (eigenConstraint stau (SS (lsome "v" $ phi' 1) :-: SS (phin 1)) (setgamma 1 :+: setgamma 2))
+     restriction (EST (FO ED1))   = Just (eigenConstraint stau (SS (lsome "v" $ phi' 1) :-: SS (phin 1)) (fogamma 1 :+: fogamma 2))
          where stau = liftToSequent tau
-               setgamma :: Int -> ClassicalSequentOver SeparativeSetTheoryLex (Antecedent (Form Bool))
-               setgamma = GammaV
      restriction _ = Nothing
 
      indirectInference (EST (FO x)) = indirectInference x
