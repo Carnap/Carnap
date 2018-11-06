@@ -73,10 +73,12 @@ instance {-# OVERLAPPABLE #-}
         , Schematizable (a (PureFirstOrderLanguageWith a))
         ) => CopulaSchema (PureFirstOrderLanguageWith a) where 
 
-    appSchema h@(Fx _) (LLam f) e = case (qtype h >>= preview _all, qtype h >>= preview _some, oftype (LLam f)) of
-                                    (Just x, _, Just (LLam f')) -> schematize (All x) (show (f' $ foVar x) : e)
-                                    (_, Just x, Just (LLam f')) -> schematize (Some x) (show (f' $ foVar x) : e)
-                                    _ -> schematize h (show (LLam f) : e)
+    appSchema q@(Fx _) (LLam f) e = case ( qtype q >>= preview _all >>= \x -> (,) <$> Just x <*> castTo (foVar x)
+                                         , qtype q >>= preview _some >>= \x -> (,) <$> Just x <*> castTo (foVar x)
+                                         ) of
+                                     (Just (x,v), _) -> schematize (All x) (show (f v) : e)
+                                     (_, Just (x,v)) -> schematize (Some x) (show (f v) : e)
+                                     _ -> schematize q (show (LLam f) : e)
     appSchema x y e = schematize x (show y : e)
 
     lamSchema = defaultLamSchema
@@ -96,7 +98,7 @@ instance FirstOrder (FixLang (PureFirstOrderLexWith a)) =>
 instance FirstOrder (FixLang (PureFirstOrderLexWith a)) => 
     RelabelVars (PureFirstOrderLexWith a) Form Bool where
 
-    subBinder (q :!$: LLam f) y = case (qtype q >>= preview _all, qtype q >>= preview _some, oftype (LLam f)) of
+    subBinder (q :!$: LLam f) y =  case (qtype q >>= preview _all, qtype q >>= preview _some, oftype (LLam f)) of
                                     (Just _, _, Just (LLam f')) -> Just $ lall y f'
                                     (_, Just _, Just (LLam f')) -> Just $ lsome y f'
                                     _ -> Nothing

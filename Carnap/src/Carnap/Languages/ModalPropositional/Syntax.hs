@@ -1,13 +1,14 @@
-{-#LANGUAGE FunctionalDependencies, FlexibleInstances, MultiParamTypeClasses, GADTs, KindSignatures, TypeOperators, PatternSynonyms, FlexibleContexts, AutoDeriveTypeable #-}
+{-#LANGUAGE FunctionalDependencies, FlexibleInstances, GADTs, TypeOperators, FlexibleContexts #-}
 module Carnap.Languages.ModalPropositional.Syntax where
 
 import Carnap.Core.Data.Types
 import Carnap.Core.Data.Classes
 import Carnap.Core.Data.Optics
-import Carnap.Core.Data.Util (checkChildren)
+import Carnap.Core.Data.Util (checkChildren, castTo)
 import Carnap.Core.Unification.Unification
 import Carnap.Languages.Util.LanguageClasses
 import Carnap.Core.Data.Util (scopeHeight)
+import Control.Lens (preview)
 import Control.Lens.Plated (transform)
 import Data.Typeable (Typeable)
 import Data.List (intercalate)
@@ -157,18 +158,21 @@ type WorldTheoryPropLexicon = ModalPropLexiconWith WorldTheoryLexicon
 
 type WorldTheoryPropLanguage = ModalPropLanguageWith WorldTheoryLexicon
 
-pattern IQuant q = (FX (Lx2 (Lx5 (Bind q))))
-
 instance CopulaSchema WorldTheoryPropLanguage where
-    appSchema (IQuant (All x)) (LLam f) e = schematize (All x) (show (f $ worldVar x) : e)
-    appSchema (IQuant (Some x)) (LLam f) e = schematize (Some x) (show (f $ worldVar x) : e)
+    appSchema q@(Fx _) (LLam f) e = case ( qtype q >>= preview _all  >>= \x -> (,) <$> Just x <*> castTo (worldVar x)
+                                         , qtype q >>= preview _some >>= \x -> (,) <$> Just x <*> castTo (worldVar x)
+                                         ) of
+                                     (Just (x,v), _) -> schematize (All x) (show (f v) : e)
+                                     (_, Just (x,v)) -> schematize (Some x) (show (f v) : e)
+                                     _ -> schematize q (show (LLam f) : e)
     appSchema x y e = schematize x (show y : e)
 
     lamSchema = defaultLamSchema
 
 instance BoundVars WorldTheoryPropLexicon where
-        scopeUniqueVar (IQuant (All v)) (LLam f) = worldVar (show $ scopeHeight (LLam f))
-        scopeUniqueVar (IQuant (Some v)) (LLam f) = worldVar (show $ scopeHeight (LLam f))
+        scopeUniqueVar q (LLam f) = case castTo $ worldVar (show $ scopeHeight (LLam f)) of
+                                        Just x -> x
+                                        Nothing -> error "cast failed in ScopeUniqueVar"
 
         subBoundVar = subst
 
@@ -210,7 +214,10 @@ type AbsoluteModalPreForm = AbsoluteModalPropLanguage (Form (World -> Bool))
 ----------------------------
 --  6. Utility Functions  --
 ----------------------------
---convenience class
+--convenience functions
 
 worldVar :: StandardVarLanguage (lang (Term World)) => String -> lang (Term World)
 worldVar = var
+
+qtype :: Typeable a => FixLang lex a -> Maybe (FixLang lex ((Term World -> Form (World -> Bool)) -> Form (World -> Bool)))
+qtype = castTo
