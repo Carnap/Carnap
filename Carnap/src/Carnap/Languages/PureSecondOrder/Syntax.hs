@@ -231,8 +231,11 @@ instance Incrementable PolyadicallySOLLex (Term Int) where
 
 instance BoundVars PolyadicallySOLLex where
 
-    scopeUniqueVar (SOQuant (Some v)) (LLam f) = foVar $ show $ scopeHeight (LLam f)
-    scopeUniqueVar (SOQuant (All v)) (LLam f)  = foVar $ show $ scopeHeight (LLam f)
+    scopeUniqueVar (SOQuant (Some v)) (LLam f)       = foVar $ show $ scopeHeight (LLam f)
+    scopeUniqueVar (SOQuant (All v)) (LLam f)        = foVar $ show $ scopeHeight (LLam f)
+    scopeUniqueVar (SOPQuant (SOPAll v a)) (LLam f)  = SOPVar (show $ scopeHeight (LLam f)) a
+    scopeUniqueVar (SOPQuant (SOPSome v a)) (LLam f) = SOPVar (show $ scopeHeight (LLam f)) a
+    scopeUniqueVar (SOPAbs (TypedLambda v)) (LLam f) = foVar $ show $ scopeHeight (LLam f)
     scopeUniqueVar _ _ = undefined
 
     subBoundVar = subst
