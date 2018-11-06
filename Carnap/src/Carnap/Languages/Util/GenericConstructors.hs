@@ -304,6 +304,17 @@ instance UniformlyEq (IntIndex b) where
 
 instance FirstOrderLex (IntIndex b)
 
+data PolyVar g c b a where
+        PolyVar :: String -> Arity c b n t -> PolyVar g c b (g t)
+
+instance Schematizable (PolyVar g c b) where
+        schematize (PolyVar s a) = const s
+
+instance UniformlyEq (PolyVar g c b) where
+    (PolyVar n a) =* (PolyVar m a') = n == m && show a == show a'
+
+instance FirstOrderLex (PolyVar g c b)
+
 ----------------------
 --  6. Binders      --
 ----------------------
