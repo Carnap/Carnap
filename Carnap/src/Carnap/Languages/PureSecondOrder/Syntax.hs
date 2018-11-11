@@ -71,10 +71,10 @@ type MonadicSOQuant = GenericQuant Form Form Bool (Int -> Bool)
 --  1.2 Polyadic Data  --
 -------------------------
 
-type PolySOLVar = PolyVar Form Int Bool 
+type PolySOLVar = PolyVar Int Bool 
         
 data PolyadicSOScheme a where
-        PolyScheme :: Typeable t => Int -> Arity Int Bool n t ->
+        PolyScheme :: Typeable t => Int -> Arity Int Bool t ->
             PolyadicSOScheme (Form t)
 
 instance Schematizable PolyadicSOScheme where
@@ -87,7 +87,7 @@ instance FirstOrderLex PolyadicSOScheme where
         isVarLex _ = True
 
 data PolyadicSOCtx a where
-        PolyCtx :: Typeable t => Int -> Arity Int Bool n t ->
+        PolyCtx :: Typeable t => Int -> Arity Int Bool t ->
             PolyadicSOCtx (Form t -> Form Bool)
 
 instance Schematizable PolyadicSOCtx where
@@ -100,9 +100,9 @@ instance FirstOrderLex PolyadicSOCtx where
         isVarLex _ = True
 
 data PolySOLQuant a where
-        SOPAll :: Typeable t => String -> Arity Int Bool n t ->
+        SOPAll :: Typeable t => String -> Arity Int Bool t ->
             PolySOLQuant ((Form t -> Form Bool) -> Form Bool)
-        SOPSome :: Typeable t => String -> Arity Int Bool n t ->
+        SOPSome :: Typeable t => String -> Arity Int Bool t ->
             PolySOLQuant ((Form t -> Form Bool) -> Form Bool)
 
 instance Schematizable PolySOLQuant where

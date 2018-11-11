@@ -48,7 +48,7 @@ instance Modelable m (SchematicIntProp b) where
 ---------------------
 
 data IntPred b c a where
-        Pred ::  Arity (Term c) (Form b) n ret -> Int -> IntPred b c ret
+        Pred ::  Arity (Term c) (Form b) ret -> Int -> IntPred b c ret
 
 instance Schematizable (IntPred b c) where
         schematize (Pred a n) xs = pred ++ tail 
@@ -67,7 +67,7 @@ instance UniformlyEq (IntPred b c) where
 instance FirstOrderLex (IntPred b c)
 
 data SchematicIntPred b c a where
-        SPred :: Arity (Term c) (Form b) n ret -> Int -> SchematicIntPred b c ret
+        SPred :: Arity (Term c) (Form b) ret -> Int -> SchematicIntPred b c ret
 
 instance Schematizable (SchematicIntPred b c) where
         schematize (SPred a n) xs = 
@@ -127,7 +127,7 @@ instance FirstOrderLex (TermSubset c b)
 ---------------------------
 
 data IntFunc c b a where
-        Func ::  Arity (Term c) (Term b) n ret -> Int -> IntFunc b c ret
+        Func ::  Arity (Term c) (Term b) ret -> Int -> IntFunc b c ret
 
 instance Schematizable (IntFunc b c) where
         schematize (Func a n) xs = pred ++ tail 
@@ -146,7 +146,7 @@ instance UniformlyEq (IntFunc b c) where
 instance FirstOrderLex (IntFunc b c)
 
 data SchematicIntFunc c b a where
-        SFunc ::  Arity (Term c) (Term b) n ret -> Int -> SchematicIntFunc b c ret
+        SFunc ::  Arity (Term c) (Term b) ret -> Int -> SchematicIntFunc b c ret
 
 instance Schematizable (SchematicIntFunc b c) where
         schematize (SFunc a n) xs = 
@@ -304,16 +304,16 @@ instance UniformlyEq (IntIndex b) where
 
 instance FirstOrderLex (IntIndex b)
 
-data PolyVar g c b a where
-        PolyVar :: String -> Arity c b n t -> PolyVar g c b (g t)
+data PolyVar c b a where
+        PolyVar :: String -> Arity c b t -> PolyVar c b (Form t)
 
-instance Schematizable (PolyVar g c b) where
+instance Schematizable (PolyVar c b) where
         schematize (PolyVar s a) = const s
 
-instance UniformlyEq (PolyVar g c b) where
+instance UniformlyEq (PolyVar c b) where
     (PolyVar n a) =* (PolyVar m a') = n == m && show a == show a'
 
-instance FirstOrderLex (PolyVar g c b)
+instance FirstOrderLex (PolyVar c b)
 
 ----------------------
 --  6. Binders      --
