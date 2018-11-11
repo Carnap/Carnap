@@ -266,7 +266,7 @@ instance PrismStandardQuant PolyadicallySOLLex Bool Int
 instance PrismTermEquality PolyadicallySOLLex Int Bool
 instance PrismStandardVar PolyadicallySOLLex Int
 instance PrismSubstitutionalVariable PolyadicallySOLLex
-
+instance PrismPolyVar PolyadicallySOLLex Int Bool 
 --------------------------------------------------------
 --Notes
 --------------------------------------------------------

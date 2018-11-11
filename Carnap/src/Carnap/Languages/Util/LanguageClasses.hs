@@ -368,8 +368,26 @@ class (Typeable b, PrismLink (FixLang lex) (Function (StandardVar b) (FixLang le
                           (\x -> case x of Function (Var s) AZero -> Just s
                                            _ -> Nothing)
 
-class PolyVarLanguage lang arg reg where
-        polyVar :: Typeable ret' => String -> Arity arg ret ret' -> lang ret'
+class PolyVarLanguage lang arg ret where
+        polyVar :: Typeable ret' => String -> Arity arg ret ret' -> lang (Form ret')
+
+class (Typeable c, Typeable b, PrismLink (FixLang lex) (Predicate (PolyVar c b) (FixLang lex))) 
+        => PrismPolyVar lex c b where
+
+        _polyVarIdx :: Typeable ret => Prism' (FixLang lex (Form ret)) (String, Arity c b ret)
+        _polyVarIdx = link_PrismPolyVar . polyVarIdx
+
+        link_PrismPolyVar :: Typeable ret => Prism' (FixLang lex (Form ret)) (Predicate (PolyVar c b) (FixLang lex) (Form ret))
+        link_PrismPolyVar = link 
+
+        polyVarIdx :: Typeable ret => Prism' (Predicate (PolyVar c b) (FixLang lex) (Form ret)) (String, Arity c b ret)
+        polyVarIdx = prism' (\(s,a) -> Predicate (PolyVar s a) AZero)
+                            (\x -> case x of 
+                                    (Predicate (PolyVar s a) AZero) -> (,) <$> pure s <*> cast a
+                                    _ -> Nothing)
+
+instance {-#OVERLAPPABLE#-} PrismPolyVar lex arg ret => PolyVarLanguage (FixLang lex) arg ret where
+        polyVar = curry $ review _polyVarIdx
 
 class IndexedConstantLanguage l where
         cn :: Int -> l
