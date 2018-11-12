@@ -726,6 +726,6 @@ instance {-#OVERLAPPABLE#-}
 --------------------------------------------------------
 
 class Incrementable lex arg where
-        incHead :: FixLang lex a -> Maybe (FixLang lex (arg -> a)) 
+        incHead :: (Typeable a, Typeable arg) => FixLang lex a -> Maybe (FixLang lex (arg -> a)) 
         incBody :: (Typeable b, Typeable arg) => FixLang lex (arg -> b) -> Maybe (FixLang lex (arg -> arg -> b))
         incBody = incArity incHead

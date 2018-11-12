@@ -13,7 +13,7 @@ import Carnap.Core.Data.Util (scopeHeight)
 import Carnap.Core.Unification.Unification
 import Carnap.Languages.Util.LanguageClasses
 import Carnap.Languages.ClassicalSequent.Syntax
-import Control.Lens (Traversal', preview)
+import Control.Lens (Traversal', preview, outside, (.~), (&), Prism')
 import Data.Typeable (Typeable)
 import Data.List (intercalate)
 import Carnap.Languages.Util.GenericConstructors
@@ -167,11 +167,6 @@ type OpenLanguagePFOL a = FixLang (OpenLexiconPFOL a)
 
 type PureLanguagePFOL = FixLang PureLexiconPFOL
 
-pattern PPred x arity  = FX (Lx2 (Lx1 (Predicate x arity)))
-pattern PSPred x arity = FX (Lx2 (Lx2 (Predicate x arity)))
-pattern PP n a1 a2     = PPred (Pred a1 n) a2
-pattern PPhi n a1 a2   = PSPred (SPred a1 n) a2
-
 type OpenPFOLForm a = OpenLanguagePFOL a (Form Bool)
 
 type PurePFOLForm = OpenPFOLForm EndLang
@@ -184,9 +179,13 @@ instance PrismPolyadicPredicate (OpenLexiconPFOL a) Int Bool
 instance PrismPolyadicSchematicPredicate (OpenLexiconPFOL a) Int Bool
 
 instance Incrementable (OpenLexiconPFOL EndLang) (Term Int) where
-    incHead (PP n a b)   = Just $ PP n (ASucc a) (ASucc a)
-    incHead (PPhi n a b) = Just $ PPhi n (ASucc a) (ASucc a)
-    incHead _  = Nothing
+    incHead = const Nothing
+        & outside (_predIdx')  .~ (\(n,a) -> Just $ ppn n (ASucc a))
+        & outside (_spredIdx') .~ (\(n,a) -> Just $ pphin n (ASucc a))
+        where _predIdx' :: Typeable ret => Prism' (FixLang (OpenLexiconPFOL EndLang) ret) (Int, Arity (Term Int) (Form Bool) ret) 
+              _predIdx' = _predIdx
+              _spredIdx' :: Typeable ret => Prism' (FixLang (OpenLexiconPFOL EndLang) ret) (Int, Arity (Term Int) (Form Bool) ret) 
+              _spredIdx' = _spredIdx
 
 --------------------------------------------------------
 --2.3 Polyadic First Order Logic with Polyadic Function Symbols and Identity
@@ -201,12 +200,6 @@ type PureLexiconFOL = (OpenLexiconPFOL (PolyadicFunctionSymbolsAndIdentity :|: E
 
 type PureLanguageFOL = FixLang PureLexiconFOL
 
-
-pattern PFunc x arity  = FX (Lx3 (Lx2 (Function x arity)))
-pattern PSFunc x arity  = FX (Lx3 (Lx3 (Function x arity)))
-pattern PF n a1 a2     = PFunc (Func a1 n) a2
-pattern PSF n a1 a2    = PSFunc (SFunc a1 n) a2
-
 type PureFOLForm = PureLanguageFOL (Form Bool)
 
 type PureFOLTerm = PureLanguageFOL (Term Int)
@@ -215,12 +208,20 @@ instance PrismTermEquality PureLexiconFOL Int Bool
 instance PrismPolyadicFunction PureLexiconFOL Int Int
 instance PrismPolyadicSchematicFunction PureLexiconFOL Int Int
 
-instance Incrementable (OpenLexiconPFOL (PolyadicFunctionSymbolsAndIdentity :|: a)) (Term Int) where
-    incHead (PP n a b)   = Just $ PP n (ASucc a) (ASucc a)
-    incHead (PF n a b)   = Just $ PF n (ASucc a) (ASucc a)
-    incHead (PSF n a b)  = Just $ PSF n (ASucc a) (ASucc a)
-    incHead (PPhi n a b) = Just $ PPhi n (ASucc a) (ASucc a)
-    incHead _  = Nothing
+instance Incrementable PureLexiconFOL (Term Int) where
+    incHead = const Nothing
+        & outside (_predIdx')  .~ (\(n,a) -> Just $ ppn n (ASucc a))
+        & outside (_spredIdx') .~ (\(n,a) -> Just $ pphin n (ASucc a))
+        & outside (_funcIdx')  .~ (\(n,a) -> Just $ pfn n (ASucc a))
+        & outside (_sfuncIdx') .~ (\(n,a) -> Just $ spfn n (ASucc a))
+        where _predIdx' :: Typeable ret => Prism' (PureLanguageFOL ret) (Int, Arity (Term Int) (Form Bool) ret) 
+              _predIdx' = _predIdx
+              _spredIdx' :: Typeable ret => Prism' (PureLanguageFOL ret) (Int, Arity (Term Int) (Form Bool) ret) 
+              _spredIdx' = _spredIdx
+              _funcIdx' :: Typeable ret => Prism' (PureLanguageFOL ret) (Int, Arity (Term Int) (Term Int) ret) 
+              _funcIdx' = _funcIdx
+              _sfuncIdx' :: Typeable ret => Prism' (PureLanguageFOL ret) (Int, Arity (Term Int) (Term Int) ret) 
+              _sfuncIdx' = _sfuncIdx
 
 -------------------------
 --  Utility Functions  --
