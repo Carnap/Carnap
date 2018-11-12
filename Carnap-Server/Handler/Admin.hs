@@ -61,6 +61,7 @@ getAdminR = do allUserData <- runDB $ selectList [] []
                instructors <- catMaybes <$> mapM (\x -> runDB (get x)) allInstructorUids
                students <- catMaybes <$> mapM (\x -> runDB (get x)) allStudentUids
                instructorW <- instructorWidget instructors allInstructorsData
+               emailW <- emailWidget instructors
                unenrolledW <- unenrolledWidget allStudentsData
                (upgradeWidget,enctypeUpgrade) <- generateFormPost (upgradeToInstructor students)
                defaultLayout $ do 
@@ -92,6 +93,7 @@ getAdminR = do allUserData <- runDB $ selectList [] []
                              [whamlet|
                               <div.container>
                                   <h1> Admin Portal
+                                  ^{emailW}
                                   ^{instructorW}
                                   ^{unenrolledW}
                                   <form method=post enctype=#{enctypeUpgrade}>
@@ -124,6 +126,12 @@ unenrolledWidget students = do let unenrolledData = filter (\x -> userDataEnroll
                                                             <td>
                                                                 #{ln}, #{fn}
                                     |]
+
+emailWidget :: [User] -> HandlerT App IO Widget
+emailWidget insts = do let emails = intercalate "," (map userIdent insts)
+                       return [whamlet|
+                          <a href="mailto:gleachkr@gmail.com?bcc=#{emails}">Email Instructors
+                       |]
 
 
 instructorWidget :: [User] -> [Entity UserData] -> HandlerT App IO Widget
