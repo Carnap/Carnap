@@ -60,7 +60,7 @@ putInstructorR ident = do
                                                            [ CourseTotalPoints =. points ])
                                               returnJson ("updated!"::Text)
                                  Nothing -> returnJson ("could not find course!"::Text)
-            (_,_,FormSuccess (idstring, mscope, mdesc,mfile)) -> do
+            (_,_,FormSuccess (idstring, mscope, mdesc,mfile,mtags)) -> do
                              case readMaybe idstring of
                                  Just k -> do 
                                     mdoc <- runDB (get k)
@@ -73,6 +73,11 @@ putInstructorR ident = do
                                                         [ DocumentDescription =. (Just $ unTextarea desc) ])
                                                       maybeDo mscope (\scope -> update k
                                                         [ DocumentScope =. scope ])
+                                                      maybeDo mtags (\tags -> do
+                                                                        oldTags <- selectList [TagBearer ==. k] []
+                                                                        mapM (delete . entityKey) oldTags
+                                                                        forM tags (\tag -> insert $ Tag k tag) 
+                                                                        return ())
                                            maybeDo mfile (saveTo ("documents" </> unpack ident) (unpack $ documentFilename doc))
                                            returnJson ("updated!"::Text)
                                  Nothing -> returnJson ("could not read document key"::Text)
@@ -263,12 +268,17 @@ getInstructorR ident = do
             classes <- classesByInstructorIdent ident 
             docs <- documentsByInstructorIdent ident 
             instructors <- runDB $ selectList [UserDataInstructorId !=. Nothing] []
-            let tags = map tagOf classes
+            let labels = map labelOf classes
             classWidgets <- mapM (classWidget ident instructors) classes
             instructorCourses <- classesByInstructorIdent ident
             assignmentMetadata <- concat <$> mapM (listAssignmentMetadata . entityKey) classes
             assignmentDocs <- mapM (runDB . get) (map (assignmentMetadataDocument . entityVal) assignmentMetadata)
             documents <- runDB $ selectList [DocumentCreator ==. uid] []
+            tagMap <- forM documents $ \doc -> do
+                                     tags <- runDB $ selectList [TagBearer ==. entityKey doc] []
+                                     return (entityKey doc, map (tagName . entityVal) tags)
+            let tagsOf d = lookup d tagMap
+                tagString d = case lookup d tagMap of Just tags -> intercalate "," tags; _ -> ""
             assignmentCourses <- forM assignmentMetadata $ \c -> do 
                                     Just e <- runDB $ get (assignmentMetadataCourse . entityVal $ c)
                                     return e
@@ -281,10 +291,12 @@ getInstructorR ident = do
             (updateCourseWidget,enctypeUpdateCourse) <- generateFormPost (identifyForm "updateCourse" $ updateCourseForm)
             defaultLayout $ do
                  addScript $ StaticR js_bootstrap_bundle_min_js
+                 addScript $ StaticR js_tagsinput_js
                  addScript $ StaticR js_bootstrap_min_js
+                 addStylesheet $ StaticR css_tagsinput_css
                  setTitle $ "Instructor Page for " ++ toMarkup firstname ++ " " ++ toMarkup lastname
                  $(widgetFile "instructor")
-    where tagOf = T.append "course-" . T.map (\c -> if c `elem` [' ',':'] then '_' else c) . courseTitle . entityVal
+    where labelOf = T.append "course-" . T.map (\c -> if c `elem` [' ',':'] then '_' else c) . courseTitle . entityVal
           mprobsOf course = readAssignmentTable <$> courseTextbookProblems course
           nopage = [whamlet|
                     <div.container>
@@ -454,11 +466,12 @@ uploadDocumentForm = renderBootstrap3 BootstrapBasicForm $ (,,,)
                    ,("Private (Unavailable)", Private)
                    ]
 
-updateDocumentForm = renderBootstrap3 BootstrapBasicForm $ (,,,)
+updateDocumentForm = renderBootstrap3 BootstrapBasicForm $ (,,,,)
             <$> areq docId "" Nothing
             <*> aopt (selectFieldList scopes) (bfs ("Share With " :: Text)) Nothing
             <*> aopt textareaField (bfs ("Description"::Text)) Nothing
             <*> fileAFormOpt (bfs ("Replacement File" :: Text)) 
+            <*> aopt tagField "Tags" Nothing
     where docId :: (Monad m, RenderMessage (HandlerSite m) FormMessage) => Field m String
           docId = hiddenField
 
@@ -468,6 +481,17 @@ updateDocumentForm = renderBootstrap3 BootstrapBasicForm $ (,,,)
                    ,("Link Only (Available, but visible to no one)", LinkOnly)
                    ,("Private (Unavailable)", Private)
                    ]
+
+          tagField :: Field Handler [Text]
+          tagField = Field 
+            { fieldParse = \raw _ -> case raw of [a] -> return $ Right $ Just (T.splitOn "," a); 
+                                                 _ -> return $ Right Nothing
+            , fieldView = \idAttr nameAttr _ _ _ -> 
+                     [whamlet|
+                        <input id=#{idAttr} name=#{nameAttr} data-role="tagsinput">
+                     |]
+            , fieldEnctype = UrlEncoded
+            }
 
 updateDocumentModal form enc = [whamlet|
                     <div class="modal fade" id="updateDocumentData" tabindex="-1" role="dialog" aria-labelledby="updateDocumentLabel" aria-hidden="true">

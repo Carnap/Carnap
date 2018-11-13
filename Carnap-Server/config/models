@@ -85,6 +85,12 @@ Document
     UniqueDocument filename creator
     deriving Eq
 
+Tag
+    bearer DocumentId
+    name Text
+    UniqueTag bearer name
+    deriving Eq
+
 InstructorMetadata
 
 CoInstructor

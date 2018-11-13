@@ -8,13 +8,13 @@
         <div.card.mb-3>
             <div.card-header>
                 <ul.nav.nav-tabs.card-header-tabs role="tablist">
-                    $forall (theclass,thetag) <- zip classes tags
+                    $forall (theclass,thetag) <- zip classes labels
                         <li.nav-item id="nav-to-#{thetag}">
                             <a.nav-link id="#{thetag}-tab" data-toggle="tab" href="##{thetag}" role="tab">
                                 #{courseTitle $ entityVal theclass}
             <div.card-body style="padding:20px;">
                 <div.tab-content>
-                    $forall (widget,thetag) <- zip classWidgets tags
+                    $forall (widget,thetag) <- zip classWidgets labels
                         <div.tab-pane id="#{thetag}" role="tabpanel">
                              ^{widget}
     <div.card>
@@ -113,6 +113,7 @@
                             <th> Filename
                             <th> Saved on
                             <th> Sharing Scope
+                            <th> Tags
                             <th> Actions
                         <tbody>
                             $forall Entity k a <- documents
@@ -123,9 +124,13 @@
                                     <td> #{show $ documentDate a}
                                     <td> #{show $ documentScope a}
                                     <td>
+                                        $maybe tags <- tagsOf k
+                                            $forall tag <- tags
+                                                <span.badge.badge-primary>#{tag}
+                                    <td>
                                         <button.btn.btn-sm.btn-secondary type="button" alt="delete" title="permanantly delete this document" onclick="tryDeleteDocument('#{decodeUtf8 $ encode $ DeleteDocument (documentFilename a)}')">
                                             <i.fa.fa-trash-o>
-                                        <button.btn.btn-sm.btn-secondary type="button" alt="edit" title="edit this document" onclick="modalEditDocument('#{show k}')">
+                                        <button.btn.btn-sm.btn-secondary type="button" alt="edit" title="edit this document" onclick="modalEditDocument('#{show k}','#{tagString k}')">
                                             <i.fa.fa-pencil>
                 <div.tab-pane id="create" role="tabpanel">
                     <form method=post enctype=#{enctypeCreateCourse}>

@@ -55,10 +55,12 @@ function modalEditAssignment (id) {
     $("#updateAssignment input[name=f1]").val(id);
 }
 
-function modalEditDocument (id) {
+function modalEditDocument (id,tags) {
     jQuery.noConflict()
     $("#updateDocumentData").modal({show:true});
     $("#updateDocument input[name=f1]").val(id);
+    $("#updateDocument input[name=f5]").tagsinput("removeAll");
+    $("#updateDocument input[name=f5]").tagsinput("add",tags);
 }
 
 function modalEditCourse (id) {
