@@ -40,6 +40,7 @@
                         ^{setBookAssignmentWidget}
                         <div.form-group>
                             <input.btn.btn-primary  type=submit value="Assign">
+                    <hr style="margin-left:-20px;margin-right:-20px">
                     <h2>Manage Problem Sets
                     <table class="table">
                         <thead>
@@ -63,6 +64,7 @@
                         ^{createAssignmentWidget}
                         <div.form-group>
                             <input.btn.btn-primary type=submit value="Assign">
+                    <hr style="margin-left:-20px;margin-right:-20px">
                     <h2> Edit Assignments
                     <table class="table">
                         <thead>
@@ -107,6 +109,8 @@
                         ^{uploadDocumentWidget}
                         <div.form-group>
                             <input.btn.btn-primary  type=submit value="Upload">
+                    <hr>
+                    <hr style="margin-left:-20px;margin-right:-20px">
                     <h2> Edit Uploaded Documents
                     <table class="table">
                         <thead>
@@ -121,7 +125,7 @@
                                     <td>
                                         <a href="@{DocumentR ident (documentFilename a)}">
                                             #{documentFilename a}
-                                    <td> #{show $ documentDate a}
+                                    <td> #{formatTime defaultTimeLocale "%F" $ documentDate a}
                                     <td> #{show $ documentScope a}
                                     <td>
                                         $maybe tags <- tagsOf k
@@ -132,6 +136,8 @@
                                             <i.fa.fa-trash-o>
                                         <button.btn.btn-sm.btn-secondary type="button" alt="edit" title="edit this document" onclick="modalEditDocument('#{show k}','#{tagString k}')">
                                             <i.fa.fa-pencil>
+                                        <button.btn.btn-sm.btn-secondary alt="download" title="download this document" type="button" onclick="window.open('@{DocumentDownloadR ident (documentFilename a)}')">
+                                            <i.fa.fa-cloud-download>
                 <div.tab-pane id="create" role="tabpanel">
                     <form method=post enctype=#{enctypeCreateCourse}>
                         ^{createCourseWidget}
