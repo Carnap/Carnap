@@ -13,7 +13,21 @@ import Filter.Translate
 import Filter.TruthTables
 
 getDocumentsR :: Handler Html
-getDocumentsR = do publicDocuments <- runDB $ selectList [DocumentScope ==. Public] []
+getDocumentsR =  runDB (selectList [] []) >>= documentsList "Index of All Documents"
+
+getDocumentsByTagR :: Text -> Handler Html
+getDocumentsByTagR tag = do documents <- runDB $ do tags <- selectList [TagName ==. tag] []
+                                                    docs <- mapM (get . tagBearer . entityVal) tags
+                                                    return $ zipWith (\(Just d) t -> Entity (tagBearer $ entityVal t) d) docs tags
+                            documentsList (toHtml $ "Documents tagged " <> tag) documents
+
+documentsList :: Html -> [Entity Document] -> Handler Html
+documentsList title documents = do
+                   tagMap <- forM documents $ \doc -> do
+                                            tags <- runDB $ selectList [TagBearer ==. entityKey doc] []
+                                            return (entityKey doc, map (tagName . entityVal) tags)
+                   let tagsOf d = lookup d tagMap
+                   let publicDocuments = filter ((==) Public . documentScope . entityVal) documents
                    pubidents <- mapM (getIdent . documentCreator . entityVal) publicDocuments
                    pubmd <- mapM (getUserMD . documentCreator . entityVal) publicDocuments
                    muid <- maybeAuthId
@@ -22,12 +36,12 @@ getDocumentsR = do publicDocuments <- runDB $ selectList [DocumentScope ==. Publ
                             maybeData <- runDB $ getBy $ UniqueUserData uid
                             case userDataInstructorId <$> entityVal <$> maybeData of 
                                Just id -> do
-                                    docs <- runDB $ selectList [DocumentScope ==. InstructorsOnly] []
-                                    let privateDocuments = Just docs 
+                                    let docs = filter ((==) InstructorsOnly . documentScope . entityVal) documents
+                                        privateDocuments = Just docs 
                                     privmd <- mapM (getUserMD . documentCreator . entityVal) docs
                                     prividents <- mapM (getIdent . documentCreator . entityVal) docs
                                     defaultLayout $ do
-                                        setTitle $ "Index of Documents"
+                                        setTitle title
                                         $(widgetFile "documentIndex")
                                Nothing -> do let privateDocuments = Nothing
                                                  (privmd, prividents) = ([],[])
@@ -39,8 +53,8 @@ getDocumentsR = do publicDocuments <- runDB $ selectList [DocumentScope ==. Publ
                                      defaultLayout $ do
                                         setTitle $ "Index of Documents"
                                         $(widgetFile "documentIndex")
-    where documentCards docs idents mds = [whamlet|
-    $forall (doc,mident, mmd) <- zip3 (map entityVal docs) idents mds
+    where documentCards docs idents mds tagsOf = [whamlet|
+    $forall (Entity k doc,mident, mmd) <- zip3 docs idents mds
         $maybe ident <- mident
             $maybe md <- mmd
                 <div.card>
@@ -58,6 +72,11 @@ getDocumentsR = do publicDocuments <- runDB $ selectList [DocumentScope ==. Publ
                             <dd.col-sm-9> #{userDataFirstName md} #{userDataLastName md}
                             <dt.col-sm-3> Created on
                             <dd.col-sm-9> #{show $ documentDate doc}
+                            $maybe tags <- tagsOf k
+                                <dt.col-sm-3> Tags
+                                <dd.col-sm-9>
+                                        $forall tag <- tags
+                                            <a.badge.badge-primary href="@{DocumentsByTagR tag}">#{tag}
                         <button.btn.btn-sm.btn-secondary type="button" onclick="window.open('@{DocumentDownloadR ident (documentFilename doc)}')">
                             <i.fa.fa-cloud-download>
 

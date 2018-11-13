@@ -19,9 +19,10 @@
 /master_admin                       AdminR              GET POST DELETE
 /hash/#Text                         HashedR             GET
 /assignments/#Text                  AssignmentR         GET
-/assignments/#Text/#Text            CourseAssignmentR     GET
+/assignments/#Text/#Text            CourseAssignmentR   GET
 /review/#Text/#Text                 ReviewR             GET PUT
 /rules                              RuleR               GET
 /shared                             DocumentsR          GET
+/shared/#Text                       DocumentsByTagR     GET
 /shared/#Text/#Text                 DocumentR           GET
 /shared/#Text/#Text/download        DocumentDownloadR   GET

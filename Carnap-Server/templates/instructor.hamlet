@@ -126,7 +126,7 @@
                                     <td>
                                         $maybe tags <- tagsOf k
                                             $forall tag <- tags
-                                                <span.badge.badge-primary>#{tag}
+                                                <a.badge.badge-primary href="@{DocumentsByTagR tag}">#{tag}
                                     <td>
                                         <button.btn.btn-sm.btn-secondary type="button" alt="delete" title="permanantly delete this document" onclick="tryDeleteDocument('#{decodeUtf8 $ encode $ DeleteDocument (documentFilename a)}')">
                                             <i.fa.fa-trash-o>
