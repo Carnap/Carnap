@@ -37,7 +37,7 @@ documentsList title documents = do
                             case userDataInstructorId <$> entityVal <$> maybeData of 
                                Just id -> do
                                     let docs = filter ((==) InstructorsOnly . documentScope . entityVal) documents
-                                        privateDocuments = Just docs 
+                                        privateDocuments = if docs == [] then Nothing else Just docs 
                                     privmd <- mapM (getUserMD . documentCreator . entityVal) docs
                                     prividents <- mapM (getIdent . documentCreator . entityVal) docs
                                     defaultLayout $ do
@@ -46,12 +46,12 @@ documentsList title documents = do
                                Nothing -> do let privateDocuments = Nothing
                                                  (privmd, prividents) = ([],[])
                                              defaultLayout $ do
-                                                 setTitle $ "Index of Documents"
+                                                 setTitle $ title
                                                  $(widgetFile "documentIndex")
                        Nothing -> do let privateDocuments = Nothing
                                          (privmd, prividents) = ([],[])
                                      defaultLayout $ do
-                                        setTitle $ "Index of Documents"
+                                        setTitle $ title
                                         $(widgetFile "documentIndex")
     where documentCards docs idents mds tagsOf = [whamlet|
     $forall (Entity k doc,mident, mmd) <- zip3 docs idents mds
@@ -71,7 +71,7 @@ documentsList title documents = do
                             <dt.col-sm-3> Creator
                             <dd.col-sm-9> #{userDataFirstName md} #{userDataLastName md}
                             <dt.col-sm-3> Created on
-                            <dd.col-sm-9> #{show $ documentDate doc}
+                            <dd.col-sm-9> #{formatTime defaultTimeLocale "%F %R UTC" $ documentDate doc}
                             $maybe tags <- tagsOf k
                                 <dt.col-sm-3> Tags
                                 <dd.col-sm-9>
