@@ -135,7 +135,7 @@
                                         <button.btn.btn-sm.btn-secondary type="button" alt="delete" title="permanantly delete this document" onclick="tryDeleteDocument('#{decodeUtf8 $ encode $ DeleteDocument (documentFilename a)}')">
                                             <i.fa.fa-trash-o>
                                         <button.btn.btn-sm.btn-secondary type="button" alt="edit" title="edit this document" onclick="modalEditDocument('#{show k}','#{tagString k}')">
-                                            <i.fa.fa-pencil>
+                                            <i.fa.fa-cog>
                                         <button.btn.btn-sm.btn-secondary alt="download" title="download this document" type="button" onclick="window.open('@{DocumentDownloadR ident (documentFilename a)}')">
                                             <i.fa.fa-cloud-download>
                 <div.tab-pane id="create" role="tabpanel">
