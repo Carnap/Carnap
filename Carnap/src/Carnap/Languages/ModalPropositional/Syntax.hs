@@ -23,7 +23,8 @@ import Carnap.Languages.Util.GenericConstructors
 --the semantic values in this language are intensions rather than boolean
 --values
 
-type World = Int
+newtype World = World Int
+    deriving (Eq, Ord)
 
 type ModalProp = IntProp (World -> Bool)
 
@@ -39,7 +40,7 @@ instance Evaluable ModalProp where
         eval (Prop n) = Form $ const $ even n
 
 instance Modelable PropFrame ModalProp where
-        satisfies f (Prop n) = Form $ const $  valuation f n
+        satisfies f (Prop n) = Form $ const $  valuation f (World n)
 
 type ModalConn = BooleanConn (World -> Bool)
 
