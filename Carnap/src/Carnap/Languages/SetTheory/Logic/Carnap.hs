@@ -1,5 +1,5 @@
 {-#LANGUAGE  FlexibleContexts,  FlexibleInstances, MultiParamTypeClasses #-}
-module Carnap.Languages.SetTheory.Logic.KalishAndMontague (estCalc, sstCalc) where
+module Carnap.Languages.SetTheory.Logic.Carnap (estCalc, sstCalc) where
 
 import Carnap.Core.Data.Types
 import Carnap.Languages.PureFirstOrder.Syntax (fogamma)

@@ -1,6 +1,6 @@
 
 {-#LANGUAGE GADTs, FlexibleContexts, PatternSynonyms, TypeSynonymInstances, FlexibleInstances, MultiParamTypeClasses #-}
-module Carnap.Languages.PureSecondOrder.Logic.KalishAndMontague (psolCalc, msolCalc) where
+module Carnap.Languages.PureSecondOrder.Logic.Carnap (psolCalc, msolCalc) where
 
 import Carnap.Core.Data.Types
 import Carnap.Languages.PureSecondOrder.Syntax
