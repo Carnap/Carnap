@@ -5,9 +5,8 @@ import Carnap.Calculi.NaturalDeduction.Syntax
     (ProofMemoRef, NaturalDeductionCalc(..),RenderStyle(..), Inference(..), RuntimeNaturalDeductionConfig(..))
 import Carnap.Calculi.NaturalDeduction.Checker 
     (ProofErrorMessage(..), Feedback(..), seqSubsetUnify, toDisplaySequenceMemo, toDisplaySequence)
-import Carnap.Core.Data.Types (FixLang, CopulaSchema)
 import Carnap.Core.Data.Optics (liftLang)
-import Carnap.Core.Data.Classes (Schematizable, Handed(..))
+import Carnap.Core.Data.Classes (Handed(..))
 import Carnap.Languages.ClassicalSequent.Syntax
 import Carnap.Languages.PurePropositional.Logic as P 
     ( DerivedRule(..), propCalc, logicBookSDCalc, logicBookSDPlusCalc, magnusSLCalc
