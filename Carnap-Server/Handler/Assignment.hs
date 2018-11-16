@@ -23,10 +23,11 @@ returnAssignment (Entity key val) path = do
            time <- liftIO getCurrentTime
            if visibleAt time val 
                then do
-                   ehtml <- lift $ fileToHtml path
+                   ehtml <- liftIO $ fileToHtml path
                    case ehtml of
                        Left err -> defaultLayout $ layout (show err)
-                       Right html -> do
+                       Right (Left err) -> defaultLayout $ layout (show err)
+                       Right (Right html) -> do
                            defaultLayout $ do
                                let source = "assignment:" ++ show key 
                                toWidgetHead $(juliusFile "templates/command.julius")

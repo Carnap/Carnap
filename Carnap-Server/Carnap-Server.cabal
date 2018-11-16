@@ -118,6 +118,7 @@ library
                  , diagrams
                  , diagrams-lib
                  , diagrams-svg
+                 , svg-builder
                  , diagrams-builder
                  , filepath
                  , hashable

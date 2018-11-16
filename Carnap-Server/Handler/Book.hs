@@ -7,7 +7,7 @@ import System.Directory (getDirectoryContents, doesDirectoryExist)
 
 getBookR :: Handler Html
 getBookR = do bookdir <- appBookRoot <$> (appSettings <$> getYesod)
-              cdir <- lift $ getDirectoryContents bookdir
+              cdir <- liftIO $ getDirectoryContents bookdir
               let ccount = zip (map getTitle $ filter ctitle cdir) [1 ..] 
               let acount = zip3 (map getTitle $ filter atitle  cdir) [1 ..] [length ccount + 1 ..]
               defaultLayout $ do

@@ -21,10 +21,10 @@ import Control.Monad.State (evalState, evalStateT)
 
 getChapterR :: Int -> Handler Html
 getChapterR n = do bookdir <- appBookRoot <$> (appSettings <$> getYesod)
-                   cdir <- lift $ getDirectoryContents bookdir
+                   cdir <- liftIO $ getDirectoryContents bookdir
                    content <- liftIO $ content n cdir bookdir 
                    case content of
-                       Right html -> chapterLayout  
+                       Right (Right html) -> chapterLayout  
                             [whamlet|
                                 <div.container>
                                     <article>
@@ -40,6 +40,13 @@ getChapterR n = do bookdir <- appBookRoot <$> (appSettings <$> getYesod)
                                                     <a href="@{ChapterR (n + 1)}">
                                                         Next Chapter
                             |]
+
+                       Right (Left err) -> defaultLayout 
+                                      [whamlet|
+                                        <div.container>
+                                            <article>
+                                                #{show err}
+                                       |]
                        Left err -> defaultLayout 
                                       [whamlet|
                                         <div.container>

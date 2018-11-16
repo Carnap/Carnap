@@ -86,7 +86,7 @@ documentsList title documents = do
 getDocumentR :: Text -> Text -> Handler Html
 getDocumentR ident title = do userdir <- getUserDir ident 
                               let path = userdir </> unpack title
-                              exists <- lift $ doesFileExist path
+                              exists <- liftIO $ doesFileExist path
                               mcreator <- runDB $ getBy $ UniqueUser ident
                               case mcreator of
                                   _ | not exists -> defaultLayout $ layout ("shared file for this document not found" :: Text)
@@ -110,10 +110,11 @@ getDocumentR ident title = do userdir <- getUserDir ident
                                 #{c}
                         |]
           returnFile path = do
-              ehtml <- lift $ fileToHtml path
+              ehtml <- liftIO $ fileToHtml path
               case ehtml of
                   Left err -> defaultLayout $ layout (show err)
-                  Right html -> do
+                  Right (Left err) -> defaultLayout $ layout (show err)
+                  Right (Right html) -> do
                       defaultLayout $ do
                           toWidgetHead $(juliusFile "templates/command.julius")
                           addScript $ StaticR js_popper_min_js
@@ -129,7 +130,7 @@ getDocumentR ident title = do userdir <- getUserDir ident
 getDocumentDownloadR :: Text -> Text -> Handler TypedContent
 getDocumentDownloadR ident title = do userdir <- getUserDir ident 
                                       let path = userdir </> unpack title
-                                      exists <- lift $ doesFileExist path
+                                      exists <- liftIO $ doesFileExist path
                                       mcreator <- runDB $ getBy $ UniqueUser ident
                                       case mcreator of
                                           _ | not exists -> notFound

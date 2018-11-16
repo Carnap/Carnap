@@ -114,7 +114,7 @@ retrieveAssignment (Entity cid course) filename = do
                            Just ident <- getIdent (documentCreator doc)
                            adir <- assignmentDir ident
                            let path = adir </> unpack filename
-                           exists <- lift $ doesFileExist path
+                           exists <- liftIO $ doesFileExist path
                            if exists then return (asgn, path)
                                      else setMessage ("file not found at " ++ toHtml path) >> notFound
                       _ -> error "more than one assignment for this course is associated with this filename"

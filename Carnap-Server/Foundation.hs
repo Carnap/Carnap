@@ -159,7 +159,7 @@ instance Yesod App where
 
     -- What messages should be logged. The following includes all messages when
     -- in development, and warnings and errors in production.
-    shouldLog app _source level =
+    shouldLogIO app _source level = return $
         appShouldLogAll (appSettings app)
             || level == LevelWarn
             || level == LevelError
@@ -234,7 +234,7 @@ instance YesodAuth App where
     -- Override the above two destinations when a Referer: header is present
     redirectToReferer _ = True
 
-    authenticate creds = runDB $ do
+    authenticate creds = liftHandler $ runDB $ do
         x <- getBy $ UniqueUser $ credsIdent creds
         case x of
             Just (Entity uid _) -> return $ Authenticated uid
@@ -249,23 +249,24 @@ instance YesodAuth App where
     --redirect manually.
     onLogout = deleteSession credsKey >> deleteSession "_ULT" >> redirect HomeR
 
-    onLogin = do mid <- maybeAuthId
-                 case mid of 
-                    Nothing -> return ()
-                    Just uid -> 
-                        --check to see if data for this user exists
-                        do maybeData <- runDB $ getBy $ UniqueUserData uid
-                           case maybeData of
-                               --if not, redirect to registration
-                               Nothing -> 
-                                    do musr <- runDB $ get uid
-                                       menroll <- lookupSession "enrolling-in"
-                                       case (musr, menroll) of 
-                                          (Just (User ident _), Just theclass) ->  redirect (RegisterEnrollR theclass ident)
-                                          (Just (User ident _), Nothing) ->  redirect (RegisterR ident)
-                                          (Nothing,_) -> return ()
-                               --if so, go ahead
-                               Just ud -> setMessage "Now logged in"
+    onLogin = liftHandler $ do 
+          mid <- maybeAuthId
+          case mid of 
+             Nothing -> return ()
+             Just uid -> 
+                 --check to see if data for this user exists
+                 do maybeData <- runDB $ getBy $ UniqueUserData uid
+                    case maybeData of
+                        --if not, redirect to registration
+                        Nothing -> 
+                             do musr <- runDB $ get uid
+                                menroll <- lookupSession "enrolling-in"
+                                case (musr, menroll) of 
+                                   (Just (User ident _), Just theclass) ->  redirect (RegisterEnrollR theclass ident)
+                                   (Just (User ident _), Nothing) ->  redirect (RegisterR ident)
+                                   (Nothing,_) -> return ()
+                        --if so, go ahead
+                        Just ud -> setMessage "Now logged in"
 
     -- appDevel is a custom method added to the settings, which is true
     -- when yesod is running in the development environment and false
@@ -274,9 +275,7 @@ instance YesodAuth App where
                           then [authDummy]
                           else [authGoogleEmail googleApiKey googleSecret]
 
-    authHttpManager = getHttpManager
-
-    authLayout widget = do
+    authLayout widget = liftHandler $ do
         master <- getYesod
         mmsg <- getMessage
         authmaybe <- maybeAuth

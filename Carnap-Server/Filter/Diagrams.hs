@@ -6,7 +6,7 @@ import           Prelude
 import           Control.Monad.IO.Class          (liftIO)
 import           Control.Monad.State.Lazy as S   (StateT, get, modify)
 import           Data.Char                       (toLower)
-import           Lucid
+import           Graphics.Svg.Core (renderToFile)
 import           Control.Lens ((.~), (&))
 import           Diagrams.Backend.SVG
 import           Diagrams.TwoD.Size
@@ -45,7 +45,15 @@ compileDiagram path expr attrs src = do
   ensureDir "/tmp/"
 
   let bopts :: DB.BuildOpts SVG V2 Double
-      bopts = DB.mkBuildOpts SVG zero (SVGOptions (mkWidth 600) Nothing "")
+      bopts = DB.mkBuildOpts SVG zero 
+                ( SVGOptions 
+                    { _size = (mkWidth 600) 
+                    , _svgDefinitions = Nothing 
+                    , _idPrefix = ""
+                    , _svgAttributes = []
+                    , _generateDoctype = False
+                    }
+                )
                 & DB.snippets .~ src
                 & DB.imports  .~
                 [ "Diagrams.Prelude" 
