@@ -1,7 +1,6 @@
 {-#LANGUAGE FlexibleContexts, FlexibleInstances, MultiParamTypeClasses #-}
-module Carnap.Languages.PurePropositional.Logic.KalishAndMontague
-    (parseMontagueSC,  parseMontagueSCProof, MontagueSC, montagueSCCalc) where
-
+module Carnap.Languages.PurePropositional.Logic.Carnap
+    (parsePropLogic,  parsePropLogicProof, PropLogic, propCalc) where
 import Data.Map as M (lookup, Map)
 import Text.Parsec
 import Carnap.Core.Data.Types (Form)
@@ -15,17 +14,14 @@ import Carnap.Languages.ClassicalSequent.Syntax
 import Carnap.Languages.ClassicalSequent.Parser
 import Carnap.Languages.PurePropositional.Logic.Rules
 
---A system for propositional logic resembling the proof system from Kalish
---and Montague's LOGIC, with derived rules
-
-data MontagueSC = PR (Maybe [(ClassicalSequentOver PurePropLexicon (Sequent (Form Bool)))])
+data PropLogic = PR (Maybe [(ClassicalSequentOver PurePropLexicon (Sequent (Form Bool)))])
                | MP  | MT  | DNE | DNI  | DD   | AS   
-               | CP1 | CP2 | ID1 | ID2  | ID3  | ID4  | ID5  | ID6 | ID7 | ID8
+               | CP1 | CP2 | ID1 | ID2  | ID3  | ID4 
                | ADJ | S1  | S2  | ADD1 | ADD2 | MTP1 | MTP2 | BC1 | BC2 | CB  
                | DER (ClassicalSequentOver PurePropLexicon (Sequent (Form Bool)))
                deriving (Eq)
 
-instance Show MontagueSC where
+instance Show PropLogic where
         show MP      = "MP"
         show MT      = "MT"
         show DNE     = "DNE"
@@ -38,10 +34,6 @@ instance Show MontagueSC where
         show ID2     = "ID"
         show ID3     = "ID"
         show ID4     = "ID"
-        show ID5     = "ID"
-        show ID6     = "ID"
-        show ID7     = "ID"
-        show ID8     = "ID"
         show ADJ     = "ADJ"
         show S1      = "S"
         show S2      = "S"
@@ -55,7 +47,7 @@ instance Show MontagueSC where
         show (PR _)  = "PR"
         show (DER _) = "Derived"
 
-instance Inference MontagueSC PurePropLexicon (Form Bool) where
+instance Inference PropLogic PurePropLexicon (Form Bool) where
     ruleOf MP        = modusPonens
     ruleOf MT        = modusTollens
     ruleOf AS        = axiom
@@ -64,10 +56,6 @@ instance Inference MontagueSC PurePropLexicon (Form Bool) where
     ruleOf ID2       = constructiveReductioVariations !! 1
     ruleOf ID3       = constructiveReductioVariations !! 2
     ruleOf ID4       = constructiveReductioVariations !! 3
-    ruleOf ID5       = nonConstructiveReductioVariations !! 0
-    ruleOf ID6       = nonConstructiveReductioVariations !! 1
-    ruleOf ID7       = nonConstructiveReductioVariations !! 2
-    ruleOf ID8       = nonConstructiveReductioVariations !! 3
     ruleOf DD        = identityRule
     ruleOf DNE       = doubleNegationElimination
     ruleOf DNI       = doubleNegationIntroduction
@@ -97,9 +85,9 @@ instance Inference MontagueSC PurePropLexicon (Form Bool) where
         | x `elem` [DD,CP1,CP2,ID1,ID2,ID3,ID4] = Just PolyProof
         | otherwise = Nothing
 
-parseMontagueSC :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> Parsec String u [MontagueSC]
-parseMontagueSC rtc = do r <- choice (map (try . string) ["AS","PR","MP","MTP","MT","DD","DNE","DNI", "DN", "S", "ADJ",  "ADD" , "BC", "CB",  "CD", "ID", "D-"])
-                         case r of
+parsePropLogic :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> Parsec String u [PropLogic]
+parsePropLogic rtc = do r <- choice (map (try . string) ["AS","PR","MP","MTP","MT","DD","DNE","DNI", "DN", "S", "ADJ",  "ADD" , "BC", "CB",  "CD", "ID", "D-"])
+                        case r of
                              "AS"   -> return [AS]
                              "PR"   -> return [PR (problemPremises rtc)]
                              "MP"   -> return [MP]
@@ -109,7 +97,7 @@ parseMontagueSC rtc = do r <- choice (map (try . string) ["AS","PR","MP","MTP","
                              "DNI"  -> return [DNI]
                              "DN"   -> return [DNE,DNI]
                              "CD"   -> return [CP1,CP2]
-                             "ID"   -> return [ID1,ID2,ID3,ID4,ID5,ID6,ID7,ID8]
+                             "ID"   -> return [ID1,ID2,ID3,ID4]
                              "ADJ"  -> return [ADJ]
                              "S"    -> return [S1, S2]
                              "ADD"  -> return [ADD1, ADD2]
@@ -121,13 +109,13 @@ parseMontagueSC rtc = do r <- choice (map (try . string) ["AS","PR","MP","MTP","
                                             Just r  -> return [DER r]
                                             Nothing -> parserFail "Looks like you're citing a derived rule that doesn't exist"
 
-parseMontagueSCProof :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) 
-                     -> String -> [DeductionLine MontagueSC PurePropLexicon (Form Bool)]
-parseMontagueSCProof rtc = toDeductionMontague (parseMontagueSC rtc) (purePropFormulaParser standardLetters)
+parsePropLogicProof :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) 
+                     -> String -> [DeductionLine PropLogic PurePropLexicon (Form Bool)]
+parsePropLogicProof rtc = toDeductionMontague (parsePropLogic rtc) (purePropFormulaParser standardLetters)
 
-montagueSCCalc = NaturalDeductionCalc 
+propCalc = NaturalDeductionCalc 
     { ndRenderer = MontagueStyle
-    , ndParseProof = parseMontagueSCProof
+    , ndParseProof = parsePropLogicProof
     , ndProcessLine = processLineMontague
     , ndProcessLineMemo = Nothing
     , ndParseSeq = propSeqParser

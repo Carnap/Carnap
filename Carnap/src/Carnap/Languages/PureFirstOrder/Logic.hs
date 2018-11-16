@@ -6,9 +6,9 @@ module Carnap.Languages.PureFirstOrder.Logic
         )
     where
 
+import Carnap.Languages.PureFirstOrder.Logic.Carnap
 import Carnap.Languages.PureFirstOrder.Logic.Magnus
 import Carnap.Languages.PureFirstOrder.Logic.KalishAndMontague
-import Carnap.Languages.PureFirstOrder.Logic.StrictMontague
 import Carnap.Languages.PureFirstOrder.Logic.ThomasBolducAndZach
 import Carnap.Languages.PureFirstOrder.Logic.BergmannMoorAndNelson
 import Carnap.Languages.PureFirstOrder.Logic.Hardegree

@@ -65,5 +65,5 @@ packageRule (SavedDerivedRule dr n _ _) = case (decodeStrict dr :: Maybe Derived
                                               Just r -> Just (unpack n, r)
                                               _ -> Nothing
 
-afterInsert success = if success then returnJson ("submitted!" :: String) 
-                                 else returnJson ("Clash" :: String)
+afterInsert (Just _) = returnJson ("submitted!" :: String) 
+afterInsert Nothing = returnJson ("Clash" :: String)

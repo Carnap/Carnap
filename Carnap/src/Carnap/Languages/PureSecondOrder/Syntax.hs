@@ -71,19 +71,10 @@ type MonadicSOQuant = GenericQuant Form Form Bool (Int -> Bool)
 --  1.2 Polyadic Data  --
 -------------------------
 
-data PolySOLVar a where
-        PolyVar :: String -> Arity Int Bool n t -> PolySOLVar (Form t)
-
-instance Schematizable PolySOLVar where
-        schematize (PolyVar s a) = const s
-
-instance UniformlyEq PolySOLVar where
-    (PolyVar n a) =* (PolyVar m a') = n == m && show a == show a'
-
-instance FirstOrderLex PolySOLVar
+type PolySOLVar = PolyVar Int Bool 
         
 data PolyadicSOScheme a where
-        PolyScheme :: Typeable t => Int -> Arity Int Bool n t ->
+        PolyScheme :: Typeable t => Int -> Arity Int Bool t ->
             PolyadicSOScheme (Form t)
 
 instance Schematizable PolyadicSOScheme where
@@ -96,7 +87,7 @@ instance FirstOrderLex PolyadicSOScheme where
         isVarLex _ = True
 
 data PolyadicSOCtx a where
-        PolyCtx :: Typeable t => Int -> Arity Int Bool n t ->
+        PolyCtx :: Typeable t => Int -> Arity Int Bool t ->
             PolyadicSOCtx (Form t -> Form Bool)
 
 instance Schematizable PolyadicSOCtx where
@@ -109,9 +100,9 @@ instance FirstOrderLex PolyadicSOCtx where
         isVarLex _ = True
 
 data PolySOLQuant a where
-        SOPAll :: Typeable t => String -> Arity Int Bool n t ->
+        SOPAll :: Typeable t => String -> Arity Int Bool t ->
             PolySOLQuant ((Form t -> Form Bool) -> Form Bool)
-        SOPSome :: Typeable t => String -> Arity Int Bool n t ->
+        SOPSome :: Typeable t => String -> Arity Int Bool t ->
             PolySOLQuant ((Form t -> Form Bool) -> Form Bool)
 
 instance Schematizable PolySOLQuant where
@@ -240,8 +231,11 @@ instance Incrementable PolyadicallySOLLex (Term Int) where
 
 instance BoundVars PolyadicallySOLLex where
 
-    scopeUniqueVar (SOQuant (Some v)) (LLam f) = foVar $ show $ scopeHeight (LLam f)
-    scopeUniqueVar (SOQuant (All v)) (LLam f)  = foVar $ show $ scopeHeight (LLam f)
+    scopeUniqueVar (SOQuant (Some v)) (LLam f)       = foVar $ show $ scopeHeight (LLam f)
+    scopeUniqueVar (SOQuant (All v)) (LLam f)        = foVar $ show $ scopeHeight (LLam f)
+    scopeUniqueVar (SOPQuant (SOPAll v a)) (LLam f)  = SOPVar (show $ scopeHeight (LLam f)) a
+    scopeUniqueVar (SOPQuant (SOPSome v a)) (LLam f) = SOPVar (show $ scopeHeight (LLam f)) a
+    scopeUniqueVar (SOPAbs (TypedLambda v)) (LLam f) = foVar $ show $ scopeHeight (LLam f)
     scopeUniqueVar _ _ = undefined
 
     subBoundVar = subst
@@ -272,7 +266,7 @@ instance PrismGenericQuant PolyadicallySOLLex Term Form Bool Int
 instance PrismTermEquality PolyadicallySOLLex Int Bool
 instance PrismStandardVar PolyadicallySOLLex Int
 instance PrismSubstitutionalVariable PolyadicallySOLLex
-
+instance PrismPolyVar PolyadicallySOLLex Int Bool 
 --------------------------------------------------------
 --Notes
 --------------------------------------------------------

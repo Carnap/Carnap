@@ -11,9 +11,9 @@ import Data.Aeson (encode,decode, decodeStrict)
 -- case of a clash
 tryInsert s = runDB $ do munique <- checkUnique s
                          case munique of                  
-                              (Just _) -> return False    
-                              Nothing  -> do insert s
-                                             return True
+                              (Just _) -> return Nothing
+                              Nothing  -> do k <- insert s
+                                             return (Just k)
 
 -- | retrieve a UserId = Key User, from the user's ident.
 fromIdent ident = do mident <- runDB (getBy $ UniqueUser ident)

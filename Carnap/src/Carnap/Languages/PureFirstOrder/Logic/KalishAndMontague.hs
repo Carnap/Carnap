@@ -1,6 +1,6 @@
 {-#LANGUAGE  FlexibleContexts,  FlexibleInstances, MultiParamTypeClasses #-}
 module Carnap.Languages.PureFirstOrder.Logic.KalishAndMontague
-        (FOLogic(..), parseFOLogic, folCalc)
+        (MontagueQCCalc(..), parseMontagueQCCalc, montagueQCCalc)
     where
 
 import Data.Map as M (lookup, Map,empty)
@@ -23,20 +23,19 @@ import Carnap.Languages.PureFirstOrder.Logic.Rules
 --2. Classical First-Order Logic
 --------------------------------------------------------
 
-data FOLogic =  SL P.MontagueSC
-                | UD  | UI  | EG  | ED1 | ED2 | QN1 | QN2  | QN3  | QN4  
+data MontagueQCCalc =  SL P.MontagueSC
+                | UD  | UI  | EG  | EI | QN1 | QN2  | QN3  | QN4  
                 | LL1 | LL2 | EL1 | EL2 | ID  | SM  | ALL1 | ALL2
                 | DER (ClassicalSequentOver PureLexiconFOL (Sequent (Form Bool)))
                 | PR (Maybe [(ClassicalSequentOver PureLexiconFOL (Sequent (Form Bool)))])
                deriving (Eq)
 
-instance Show FOLogic where
+instance Show MontagueQCCalc where
         show (PR _)  = "PR"
         show UD      = "UD"
         show UI      = "UI"
         show EG      = "EG"
-        show ED1     = "ED"
-        show ED2     = "ED"
+        show EI      = "EI"
         show (DER _) = "Derived"
         show QN1     = "QN"
         show QN2     = "QN"
@@ -52,13 +51,12 @@ instance Show FOLogic where
         show SM      = "Sm"
         show (SL x)  = show x
 
-instance Inference FOLogic PureLexiconFOL (Form Bool) where
+instance Inference MontagueQCCalc PureLexiconFOL (Form Bool) where
      ruleOf (PR _)    = axiom
      ruleOf UI        = universalInstantiation
      ruleOf EG        = existentialGeneralization
      ruleOf UD        = universalGeneralization
-     ruleOf ED1       = existentialDerivation !! 0
-     ruleOf ED2       = existentialDerivation !! 1
+     ruleOf EI        = existentialInstantiation
      ruleOf QN1       = quantifierNegation !! 0
      ruleOf QN2       = quantifierNegation !! 1
      ruleOf QN3       = quantifierNegation !! 2
@@ -80,28 +78,28 @@ instance Inference FOLogic PureLexiconFOL (Form Bool) where
      conclusionOf (DER r) = multiCutRight r
      conclusionOf x   = lowerSequent (ruleOf x)
 
-     restriction UD         = Just (eigenConstraint (SeqT 1) (SS (lall "v" $ phi' 1)) (fogamma 1))
-     restriction ED1        = Just (eigenConstraint (SeqT 1) (SS (lsome "v" $ phi' 1) :-: SS (phin 1)) (fogamma 1 :+: fogamma 2))
-     restriction ED2        = Nothing --Since this one does not use the assumption with a fresh object
      restriction (PR prems) = Just (premConstraint prems)
      restriction _          = Nothing
+     
+     globalRestriction (Left ded) n UD = Just (montagueNewUniversalConstraint [tau] ded n)
+     globalRestriction (Left ded) n EI = Just (montagueNewExistentialConstraint [tau] ded n)
+     globalRestriction _ _ _ = Nothing
 
      indirectInference (SL x) = indirectInference x
-     indirectInference x
-        | x `elem` [ ED1,ED2,UD ] = Just PolyProof
-        | otherwise = Nothing
+     indirectInference UD  = Just PolyProof
+     indirectInference _ = Nothing
 
-parseFOLogic :: RuntimeNaturalDeductionConfig PureLexiconFOL (Form Bool) -> Parsec String u [FOLogic]
-parseFOLogic rtc = try quantRule <|> liftProp
+parseMontagueQCCalc :: RuntimeNaturalDeductionConfig PureLexiconFOL (Form Bool) -> Parsec String u [MontagueQCCalc]
+parseMontagueQCCalc rtc = try quantRule <|> liftProp
     where liftProp = do r <- P.parseMontagueSC (RuntimeNaturalDeductionConfig mempty mempty)
                         return (map SL r)
-          quantRule = do r <- choice (map (try . string) ["PR", "UI", "UD", "EG", "ED", "QN","LL","EL","Id","Sm","D-"])
+          quantRule = do r <- choice (map (try . string) ["PR", "UI", "UD", "EG", "EI", "QN","LL","EL","Id","Sm","D-"])
                          case r of 
                             r | r == "PR" -> return [PR $ problemPremises rtc]
                               | r == "UI" -> return [UI]
                               | r == "UD" -> return [UD]
                               | r == "EG" -> return [EG]
-                              | r == "ED" -> return [ED1,ED2]
+                              | r == "EI" -> return [EI]
                               | r == "QN" -> return [QN1,QN2,QN3,QN4]
                               | r == "LL" -> return [LL1,LL2,ALL1,ALL2]
                               | r == "Sm" -> return [SM]
@@ -112,12 +110,12 @@ parseFOLogic rtc = try quantRule <|> liftProp
                                                     Just r  -> return [DER r]
                                                     Nothing -> parserFail "Looks like you're citing a derived rule that doesn't exist"
 
-parseFOLProof ::  RuntimeNaturalDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine FOLogic PureLexiconFOL (Form Bool)]
-parseFOLProof ders = toDeductionMontague (parseFOLogic ders) folFormulaParser
+parseMontagueQCProof ::  RuntimeNaturalDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine MontagueQCCalc PureLexiconFOL (Form Bool)]
+parseMontagueQCProof ders = toDeductionMontague (parseMontagueQCCalc ders) folFormulaParser
 
-folCalc = NaturalDeductionCalc
+montagueQCCalc = NaturalDeductionCalc
     { ndRenderer = MontagueStyle
-    , ndParseProof = parseFOLProof
+    , ndParseProof = parseMontagueQCProof
     , ndProcessLine = hoProcessLineMontague
     , ndProcessLineMemo = Just hoProcessLineMontagueMemo
     , ndParseSeq = folSeqParser

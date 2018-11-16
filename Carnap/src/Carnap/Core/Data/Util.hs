@@ -55,7 +55,7 @@ This function replaces the head of a given language item with another head
 that increases the arity of the item.
 -}
 incArity :: (Typeable a, Typeable b) => 
-    (forall c. FixLang l c ->  Maybe (FixLang l (b -> c))) -> 
+    (forall c. Typeable c => FixLang l c ->  Maybe (FixLang l (b -> c))) -> 
     FixLang l (b -> a)  ->  Maybe (FixLang l (b -> b -> a))
 incArity f ((head :: FixLang l (t -> b -> a)) :!$: (tail :: FixLang l t)) = 
         case eqT :: Maybe (t :~: b) of

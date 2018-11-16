@@ -26,10 +26,10 @@ postRegister theform ident = do
         case result of 
             FormSuccess (Just userdata) -> 
                 do msuccess <- tryInsert userdata 
-                   if msuccess
-                       then do deleteSession "enrolling-in"
-                               redirect (UserR ident)
-                       else defaultLayout clashPage
+                   case msuccess of 
+                        Just _ -> do deleteSession "enrolling-in"
+                                     redirect (UserR ident)
+                        Nothing -> defaultLayout clashPage
             FormSuccess Nothing -> 
                 do setMessage "Class not found - link may be incorrect or expired. Please enroll manually."
                    redirect (RegisterR ident)

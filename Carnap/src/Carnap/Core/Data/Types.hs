@@ -190,32 +190,33 @@ instance Liftable Form where
 -- | think of this as a type constraint. the lang type, model type, and number
 -- must all match up for this type to be inhabited. This lets us do neat
 -- type safty things
-data Arity :: * -> * -> Nat -> * -> * where
-    AZero :: Arity arg ret Zero ret
-    ASucc :: Arity arg ret n ret' -> Arity arg ret (Succ n) (arg -> ret')
+data Arity :: * -> * -> * -> * where
+    AZero :: Arity arg ret ret
+    ASucc :: Arity arg ret ret' -> Arity arg ret (arg -> ret')
+
 
 pattern AOne = ASucc AZero
 pattern ATwo = ASucc AOne
 pattern AThree = ASucc ATwo
 
-arityInt :: Arity arg ret n ret' -> Int
+arityInt :: Arity arg ret ret' -> Int
 arityInt AZero = 0
 arityInt (ASucc n) = arityInt n + 1
 
-instance Show (Arity arg ret n ret') where
+instance Show (Arity arg ret ret') where
         show = show . arityInt
 
 data Predicate :: (* -> *) -> (* -> *) -> * -> * where
-    Predicate :: pred t -> Arity (Term a) (Form b) n t -> Predicate pred lang t
+    Predicate :: pred t -> Arity (Term a) (Form b) t -> Predicate pred lang t
 
 data Connective :: (* -> *) -> (* -> *) -> * -> * where
-    Connective :: con t -> Arity (Form a) (Form b) n t -> Connective con lang t
+    Connective :: con t -> Arity (Form a) (Form b) t -> Connective con lang t
 
 data Function :: (* -> *) -> (* -> *) -> * -> * where
-    Function :: func t -> Arity (Term a) (Term b) n t -> Function func lang t
+    Function :: func t -> Arity (Term a) (Term b) t -> Function func lang t
 
 data Subnective :: (* -> *) -> (* -> *) -> * -> * where
-    Subnective :: sub t -> Arity (Form a) (Term b) n t -> Subnective sub lang t
+    Subnective :: sub t -> Arity (Form a) (Term b) t -> Subnective sub lang t
 
 data SubstitutionalVariable :: (* -> *) -> * -> * where
         SubVar :: Int -> SubstitutionalVariable lang t

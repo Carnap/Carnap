@@ -60,7 +60,7 @@ putInstructorR ident = do
                                                            [ CourseTotalPoints =. points ])
                                               returnJson ("updated!"::Text)
                                  Nothing -> returnJson ("could not find course!"::Text)
-            (_,_,FormSuccess (idstring, mscope, mdesc,mfile)) -> do
+            (_,_,FormSuccess (idstring, mscope, mdesc,mfile,mtags)) -> do
                              case readMaybe idstring of
                                  Just k -> do 
                                     mdoc <- runDB (get k)
@@ -73,6 +73,11 @@ putInstructorR ident = do
                                                         [ DocumentDescription =. (Just $ unTextarea desc) ])
                                                       maybeDo mscope (\scope -> update k
                                                         [ DocumentScope =. scope ])
+                                                      maybeDo mtags (\tags -> do
+                                                                        oldTags <- selectList [TagBearer ==. k] []
+                                                                        mapM (delete . entityKey) oldTags
+                                                                        forM tags (\tag -> insert $ Tag k tag) 
+                                                                        return ())
                                            maybeDo mfile (saveTo ("documents" </> unpack ident) (unpack $ documentFilename doc))
                                            returnJson ("updated!"::Text)
                                  Nothing -> returnJson ("could not read document key"::Text)
@@ -81,7 +86,7 @@ putInstructorR ident = do
             (form1,form2,form3) -> returnJson ("errors: " <> errorsOf form1 <> errorsOf form2 <> errorsOf form3)
                 where errorsOf (FormFailure s) = concat s <> ", " 
                       errorsOf _ = "" 
-    where maybeDo mv f = case mv of Just v -> f v; _ -> return ()
+
 
 deleteInstructorR :: Text -> Handler Value
 deleteInstructorR ident = do
@@ -187,12 +192,12 @@ postInstructorR ident = do
                                                 , assignmentMetadataDate = subtime
                                                 , assignmentMetadataCourse = classkey
                                                 }
-                       if success then return ()
-                                  else setMessage "This file has already been assigned for this course"
+                       case success of Just _ -> return ()
+                                       Nothing -> setMessage "This file has already been assigned for this course"
         FormFailure s -> setMessage $ "Something went wrong: " ++ toMarkup (show s)
         FormMissing -> return ()
     case documentrslt of 
-        FormSuccess (file, sharescope, docdesc, subtime) ->
+        FormSuccess (file, sharescope, docdesc, subtime, mtags) ->
             do musr <- runDB $ getBy $ UniqueUser ident
                let fn = fileName file
                    info = unTextarea <$> docdesc
@@ -204,8 +209,12 @@ postInstructorR ident = do
                                         , documentDescription = info
                                         , documentScope = sharescope
                                         }
-               if success then saveTo ("documents" </> unpack ident) (unpack fn) file 
-                          else setMessage "You already have a shared document with this name."
+               case success of 
+                    Just k -> do saveTo ("documents" </> unpack ident) (unpack fn) file 
+                                 runDB $ maybeDo mtags (\tags -> do
+                                            forM tags (\tag -> insert $ Tag k tag) 
+                                            return ())
+                    Nothing -> setMessage "You already have a shared document with this name."
         FormFailure s -> setMessage $ "Something went wrong: " ++ toMarkup (show s)
         FormMissing -> return ()
     case newclassrslt of
@@ -224,8 +233,8 @@ postInstructorR ident = do
                                                 , courseTotalPoints = 0
                                                 , courseTimeZone = toTZName tzlabel
                                                 }
-                       if success then setMessage "Course Created" 
-                                  else setMessage "Could not save. Course titles must be unique. Consider adding your instutition or the current semester as a suffix."
+                       case success of Just _ -> setMessage "Course Created" 
+                                       Nothing -> setMessage "Could not save. Course titles must be unique. Consider adding your instutition or the current semester as a suffix."
                 Nothing -> setMessage "you're not an instructor!"
         FormFailure s -> setMessage $ "Something went wrong: " ++ toMarkup (show s)
         FormMissing -> return ()
@@ -245,8 +254,8 @@ postInstructorR ident = do
         (FormSuccess (cidstring , Just iid)) ->
             case readMaybe cidstring of
                 Just cid -> do success <- tryInsert $ CoInstructor iid cid
-                               if success then setMessage "Added Co-Instructor!"
-                                          else setMessage "Co-Instructor seems to already be added"
+                               case success of Just _ -> setMessage "Added Co-Instructor!"
+                                               Nothing -> setMessage "Co-Instructor seems to already be added"
                 Nothing -> setMessage "Couldn't read cid string"
         FormSuccess (_, Nothing) -> setMessage "iid missing"
         FormFailure s -> setMessage $ "Something went wrong: " ++ toMarkup (show s)
@@ -263,12 +272,17 @@ getInstructorR ident = do
             classes <- classesByInstructorIdent ident 
             docs <- documentsByInstructorIdent ident 
             instructors <- runDB $ selectList [UserDataInstructorId !=. Nothing] []
-            let tags = map tagOf classes
+            let labels = map labelOf classes
             classWidgets <- mapM (classWidget ident instructors) classes
             instructorCourses <- classesByInstructorIdent ident
             assignmentMetadata <- concat <$> mapM (listAssignmentMetadata . entityKey) classes
             assignmentDocs <- mapM (runDB . get) (map (assignmentMetadataDocument . entityVal) assignmentMetadata)
             documents <- runDB $ selectList [DocumentCreator ==. uid] []
+            tagMap <- forM documents $ \doc -> do
+                                     tags <- runDB $ selectList [TagBearer ==. entityKey doc] []
+                                     return (entityKey doc, map (tagName . entityVal) tags)
+            let tagsOf d = lookup d tagMap
+                tagString d = case lookup d tagMap of Just tags -> intercalate "," tags; _ -> ""
             assignmentCourses <- forM assignmentMetadata $ \c -> do 
                                     Just e <- runDB $ get (assignmentMetadataCourse . entityVal $ c)
                                     return e
@@ -281,10 +295,12 @@ getInstructorR ident = do
             (updateCourseWidget,enctypeUpdateCourse) <- generateFormPost (identifyForm "updateCourse" $ updateCourseForm)
             defaultLayout $ do
                  addScript $ StaticR js_bootstrap_bundle_min_js
+                 addScript $ StaticR js_tagsinput_js
                  addScript $ StaticR js_bootstrap_min_js
+                 addStylesheet $ StaticR css_tagsinput_css
                  setTitle $ "Instructor Page for " ++ toMarkup firstname ++ " " ++ toMarkup lastname
                  $(widgetFile "instructor")
-    where tagOf = T.append "course-" . T.map (\c -> if c `elem` [' ',':'] then '_' else c) . courseTitle . entityVal
+    where labelOf = T.append "course-" . T.map (\c -> if c `elem` [' ',':'] then '_' else c) . courseTitle . entityVal
           mprobsOf course = readAssignmentTable <$> courseTextbookProblems course
           nopage = [whamlet|
                     <div.container>
@@ -442,11 +458,12 @@ updateAssignmentModal form enc = [whamlet|
                                             <input.btn.btn-primary type=submit value="update">
                     |]    
 
-uploadDocumentForm = renderBootstrap3 BootstrapBasicForm $ (,,,)
+uploadDocumentForm = renderBootstrap3 BootstrapBasicForm $ (,,,,)
             <$> fileAFormReq (bfs ("Document" :: Text))
             <*> areq (selectFieldList scopes) (bfs ("Share With " :: Text)) Nothing
             <*> aopt textareaField (bfs ("Description"::Text)) Nothing
             <*> lift (liftIO getCurrentTime)
+            <*> aopt tagField "Tags" Nothing
     where scopes :: [(Text,SharingScope)]
           scopes = [("Everyone (Visible to everyone)", Public)
                    ,("Instructors (Visible to all instructors)", InstructorsOnly)
@@ -454,11 +471,12 @@ uploadDocumentForm = renderBootstrap3 BootstrapBasicForm $ (,,,)
                    ,("Private (Unavailable)", Private)
                    ]
 
-updateDocumentForm = renderBootstrap3 BootstrapBasicForm $ (,,,)
+updateDocumentForm = renderBootstrap3 BootstrapBasicForm $ (,,,,)
             <$> areq docId "" Nothing
             <*> aopt (selectFieldList scopes) (bfs ("Share With " :: Text)) Nothing
             <*> aopt textareaField (bfs ("Description"::Text)) Nothing
             <*> fileAFormOpt (bfs ("Replacement File" :: Text)) 
+            <*> aopt tagField "Tags" Nothing
     where docId :: (Monad m, RenderMessage (HandlerSite m) FormMessage) => Field m String
           docId = hiddenField
 
@@ -468,6 +486,17 @@ updateDocumentForm = renderBootstrap3 BootstrapBasicForm $ (,,,)
                    ,("Link Only (Available, but visible to no one)", LinkOnly)
                    ,("Private (Unavailable)", Private)
                    ]
+
+tagField :: Field Handler [Text]
+tagField = Field 
+    { fieldParse = \raw _ -> case raw of [a] -> return $ Right $ Just (T.splitOn "," a); 
+                                         _ -> return $ Right Nothing
+    , fieldView = \idAttr nameAttr _ _ _ -> 
+             [whamlet|
+                <input id=#{idAttr} name=#{nameAttr} data-role="tagsinput">
+             |]
+    , fieldEnctype = UrlEncoded
+    }
 
 updateDocumentModal form enc = [whamlet|
                     <div class="modal fade" id="updateDocumentData" tabindex="-1" role="dialog" aria-labelledby="updateDocumentLabel" aria-hidden="true">
@@ -751,6 +780,8 @@ classCSV classent = do
 dateDisplay utc course = case tzByName $ courseTimeZone course of
                              Just tz  -> formatTime defaultTimeLocale "%F %R %Z" $ utcToZonedTime (timeZoneForUTCTime tz utc) utc
                              Nothing -> formatTime defaultTimeLocale "%F %R UTC" $ utc
+
+maybeDo mv f = case mv of Just v -> f v; _ -> return ()
 
 -- TODO compare directory contents with database results
 listAssignmentMetadata theclass = do asmd <- runDB $ selectList [AssignmentMetadataCourse ==. theclass] []

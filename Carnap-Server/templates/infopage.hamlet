@@ -246,7 +246,7 @@
             \ supported, let us know and we'll see about adding it.
 
         <p> Some tutorials for potential instructors can be found
-            \ <a href="@{DocumentsR}"> here</a>.
+            \ <a href="@{DocumentsByTagR "Documentation"}"> here</a>.
 
     <section#name>
         <h2>Why “Carnap”?

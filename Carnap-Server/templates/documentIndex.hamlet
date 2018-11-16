@@ -1,7 +1,7 @@
 <div.container>
-    <h1>Shared Documents
+    <h1>#{title}
     <h2>Publicly Shared
-    ^{documentCards publicDocuments pubidents pubmd}
+    ^{documentCards publicDocuments pubidents pubmd tagsOf}
     $maybe privdocs <- privateDocuments
         <h2>Instructors Only
-        ^{documentCards privdocs prividents privmd}
+        ^{documentCards privdocs prividents privmd tagsOf}

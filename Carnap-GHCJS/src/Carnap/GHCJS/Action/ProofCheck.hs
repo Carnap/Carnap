@@ -5,12 +5,11 @@ import Carnap.Calculi.NaturalDeduction.Syntax
     (ProofMemoRef, NaturalDeductionCalc(..),RenderStyle(..), Inference(..), RuntimeNaturalDeductionConfig(..))
 import Carnap.Calculi.NaturalDeduction.Checker 
     (ProofErrorMessage(..), Feedback(..), seqSubsetUnify, toDisplaySequenceMemo, toDisplaySequence)
-import Carnap.Core.Data.Types (FixLang, CopulaSchema)
 import Carnap.Core.Data.Optics (liftLang)
-import Carnap.Core.Data.Classes (Schematizable, Handed(..))
+import Carnap.Core.Data.Classes (Handed(..))
 import Carnap.Languages.ClassicalSequent.Syntax
 import Carnap.Languages.PurePropositional.Logic as P 
-    ( DerivedRule(..), logicBookSDCalc, logicBookSDPlusCalc, magnusSLCalc
+    ( DerivedRule(..), propCalc, logicBookSDCalc, logicBookSDPlusCalc, magnusSLCalc
     , magnusSLPlusCalc, montagueSCCalc, hardegreeSLCalc
     , thomasBolducAndZachTFLCalc, tomassiPLCalc)
 import Carnap.Languages.PurePropositional.Logic.Rules (derivedRuleToSequent)
@@ -24,7 +23,7 @@ import Carnap.Languages.ModalPropositional.Logic as MPL
     , hardegreeBCalc, hardegreeDCalc, hardegreeFourCalc, hardegreeFiveCalc)
 import Carnap.Languages.PureSecondOrder.Logic 
     (msolCalc, psolCalc) 
-import Carnap.Languages.SetTheory.Logic.KalishAndMontague 
+import Carnap.Languages.SetTheory.Logic.Carnap
     (estCalc, sstCalc)
 import Carnap.Languages.ModalFirstOrder.Logic
     ( hardegreeMPLCalc )
@@ -106,7 +105,7 @@ rulePost x = rulePost' x x
 activateChecker ::  IORef [(String,P.DerivedRule)] -> Document -> Maybe IOGoal -> IO ()
 activateChecker _ _ Nothing  = return ()
 activateChecker drs w (Just iog@(IOGoal i o g _ opts)) -- TODO: need to update non-montague calculi to take first/higher-order derived rules
-        | sys == "prop"                      = tryParse montagueSCCalc propChecker
+        | sys == "prop"                      = tryParse propCalc propChecker
         | sys == "firstOrder"                = tryParse folCalc folChecker
         | sys == "secondOrder"               = tryParse msolCalc noRuntimeOptions
         | sys == "polyadicSecondOrder"       = tryParse psolCalc noRuntimeOptions

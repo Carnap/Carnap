@@ -74,14 +74,16 @@ type SeparativeSetTheoryLang = FixLang SeparativeSetTheoryLex
 
 instance CopulaSchema SeparativeSetTheoryLang where 
 
-    appSchema (PQuant (All x)) (LLam f) e = schematize (All x) (show (f $ foVar x) : e)
-    appSchema (PQuant (Some x)) (LLam f) e = schematize (Some x) (show (f $ foVar x) : e)
     appSchema t@(x :!$: y) (LLam f) e = case ( castTo x :: Maybe (SeparativeSetTheoryLang (Term Int -> (Term Int -> Form Bool) -> Term Int))
                                              , castTo (LLam f) :: Maybe (SeparativeSetTheoryLang (Term Int -> Form Bool))) of
                                             (Just x, Just (LLam f)) -> case x ^? _separator :: Maybe String of
                                               Just s -> schematize t (show (f $ foVar s) : e)
                                               Nothing -> schematize t (show (LLam f) : e)
                                             _ -> schematize t (show (LLam f) : e)
+    appSchema h@(Fx _) (LLam f) e = case (qtype h >>= preview _all, qtype h >>= preview _some, oftype (LLam f)) of
+                                    (Just x, _, Just (LLam f')) -> schematize (All x) (show (f' $ foVar x) : e)
+                                    (_, Just x, Just (LLam f')) -> schematize (Some x) (show (f' $ foVar x) : e)
+                                    _ -> schematize h (show (LLam f) : e)
     appSchema x y e = schematize x (show y : e)
 
     lamSchema = defaultLamSchema

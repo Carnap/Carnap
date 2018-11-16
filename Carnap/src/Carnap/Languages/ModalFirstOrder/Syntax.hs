@@ -9,11 +9,12 @@ import Carnap.Languages.PureFirstOrder.Syntax (foVar)
 import Carnap.Core.Data.Types
 import Carnap.Core.Data.Optics
 import Carnap.Core.Data.Classes
-import Carnap.Core.Data.Util (scopeHeight)
+import Carnap.Core.Data.Util (scopeHeight, castTo)
 import Carnap.Core.Unification.Unification
 import Carnap.Languages.Util.LanguageClasses
-import Data.Typeable (Typeable)
 import Carnap.Languages.Util.GenericConstructors
+import Control.Lens (Traversal', preview, outside, (.~), (&), Prism')
+import Data.Typeable (Typeable)
 import Data.List (intercalate)
 
 --------------------------------------------------------
@@ -57,16 +58,12 @@ type ModalFirstOrderLexOverWith b a = CoreLexiconOver b :|: a
 
 type ModalFirstOrderLanguageOverWith b a = FixLang (ModalFirstOrderLexOverWith b a)
 
-pattern PQuant q       = FX (Lx1 (Lx2 (Bind q)))
-pattern PPred x arity  = FX (Lx1 (Lx3 (Predicate x arity)))
-pattern PBind q f      = PQuant q :!$: LLam f
-pattern PP n a1 a2     = PPred (Pred a1 n) a2
-
 instance FirstOrder (FixLang (ModalFirstOrderLexOverWith b a)) => 
     BoundVars (ModalFirstOrderLexOverWith b a) where
 
-    scopeUniqueVar (PQuant (Some v)) (LLam f) = foVar $ show $ scopeHeight (LLam f)
-    scopeUniqueVar (PQuant (All v)) (LLam f)  = foVar $ show $ scopeHeight (LLam f)
+    scopeUniqueVar q (LLam f) = case castTo $ foVar $ show $ scopeHeight (LLam f) of
+                                    Just x -> x
+                                    Nothing -> error "cast failed in ScopeUniqueVar"
     scopeUniqueVar _ _ = undefined
 
     subBoundVar = subst
@@ -81,6 +78,7 @@ instance PrismGenericQuant (ModalFirstOrderLexOverWith b a) Term Form (World -> 
 instance PrismModality (ModalFirstOrderLexOverWith b a) (World -> Bool)
 instance PrismPolyadicPredicate (ModalFirstOrderLexOverWith b a) Int (World -> Bool)
 instance PrismPolyadicSchematicPredicate (ModalFirstOrderLexOverWith b a) Int (World -> Bool)
+instance PrismPolyadicSchematicFunction (ModalFirstOrderLexOverWith b a) Int Int
 instance PrismStandardVar (ModalFirstOrderLexOverWith b a) Int
 instance PrismSubstitutionalVariable (ModalFirstOrderLexOverWith b a)
 
@@ -100,8 +98,12 @@ instance ( Schematizable (a (SimpleModalFirstOrderLanguageWith a))
          , StaticVar (SimpleModalFirstOrderLanguageWith  a)
          ) => CopulaSchema (SimpleModalFirstOrderLanguageWith a) where 
 
-    appSchema (PQuant (All x)) (LLam f) e = schematize (All x) (show (f $ foVar x) : e)
-    appSchema (PQuant (Some x)) (LLam f) e = schematize (Some x) (show (f $ foVar x) : e)
+    appSchema q@(Fx _) (LLam f) e = case ( qtype q >>= preview _all >>= \x -> (,) <$> Just x <*> castTo (foVar x)
+                                         , qtype q >>= preview _some >>= \x -> (,) <$> Just x <*> castTo (foVar x)
+                                         ) of
+                                     (Just (x,v), _) -> schematize (All x) (show (f v) : e)
+                                     (_, Just (x,v)) -> schematize (Some x) (show (f v) : e)
+                                     _ -> schematize q (show (LLam f) : e)
     appSchema x y e = schematize x (show y : e)
 
     lamSchema = defaultLamSchema
@@ -115,8 +117,16 @@ type SimpleModalFirstOrderLanguage = SimpleModalFirstOrderLanguageWith EndLang
 type SimpleModalFirstOrderLex = SimpleModalFirstOrderLexWith EndLang
 
 instance Incrementable SimpleModalFirstOrderLex (Term Int) where
-    incHead (PP n a b) = Just $ PP n (ASucc a) (ASucc a)
-    incHead _  = Nothing
+    incHead = const Nothing
+        & outside (_predIdx')  .~ (\(n,a) -> Just $ ppn n (ASucc a))
+        & outside (_spredIdx') .~ (\(n,a) -> Just $ pphin n (ASucc a))
+        & outside (_sfuncIdx') .~ (\(n,a) -> Just $ spfn n (ASucc a))
+        where _predIdx' :: Typeable ret => Prism' (SimpleModalFirstOrderLanguage ret) (Int, Arity (Term Int) (Form (World -> Bool)) ret) 
+              _predIdx' = _predIdx
+              _spredIdx' :: Typeable ret => Prism' (SimpleModalFirstOrderLanguage ret) (Int, Arity (Term Int) (Form (World -> Bool)) ret) 
+              _spredIdx' = _spredIdx
+              _sfuncIdx' :: Typeable ret => Prism' (SimpleModalFirstOrderLanguage ret) (Int, Arity (Term Int) (Term Int) ret) 
+              _sfuncIdx' = _sfuncIdx
 
 ----------------------------------
 --  2.2 Indexed Modal Extension --
@@ -130,8 +140,12 @@ instance ( Schematizable (a (IndexedModalFirstOrderLanguageWith a))
          , StaticVar (IndexedModalFirstOrderLanguageWith  a)
          ) => CopulaSchema (IndexedModalFirstOrderLanguageWith a) where 
 
-    appSchema (PQuant (All x)) (LLam f) e = schematize (All x) (show (f $ foVar x) : e)
-    appSchema (PQuant (Some x)) (LLam f) e = schematize (Some x) (show (f $ foVar x) : e)
+    appSchema q@(Fx _) (LLam f) e = case ( qtype q >>= preview _all >>= \x -> (,) <$> Just x <*> castTo (foVar x)
+                                         , qtype q >>= preview _some >>= \x -> (,) <$> Just x <*> castTo (foVar x)
+                                         ) of
+                                     (Just (x,v), _) -> schematize (All x) (show (f v) : e)
+                                     (_, Just (x,v)) -> schematize (Some x) (show (f v) : e)
+                                     _ -> schematize q (show (LLam f) : e)
     appSchema x y e = schematize x (show y : e)
 
     lamSchema f [] = "λβ_" ++ show h ++ "." ++ show (f $ static (-1 * h))
@@ -148,10 +162,26 @@ instance PrismPolyadicSchematicFunction (IndexedModalFirstOrderLexWith a) World 
 --  2.2.1 Simplest Indexed Modal Extension --
 ---------------------------------------------
 
+
 type IndexedModalFirstOrderLanguage = IndexedModalFirstOrderLanguageWith EndLang
 
 type IndexedModalFirstOrderLex = IndexedModalFirstOrderLexWith EndLang 
 
 instance Incrementable IndexedModalFirstOrderLex (Term Int) where
-    incHead (PP n a b) = Just $ PP n (ASucc a) (ASucc a)
-    incHead _  = Nothing
+    incHead = const Nothing
+        & outside (_predIdx')  .~ (\(n,a) -> Just $ ppn n (ASucc a))
+        & outside (_spredIdx') .~ (\(n,a) -> Just $ pphin n (ASucc a))
+        & outside (_sfuncIdx') .~ (\(n,a) -> Just $ spfn n (ASucc a))
+        where _predIdx' :: Typeable ret => Prism' (IndexedModalFirstOrderLanguage ret) (Int, Arity (Term Int) (Form (World -> Bool)) ret) 
+              _predIdx' = _predIdx
+              _spredIdx' :: Typeable ret => Prism' (IndexedModalFirstOrderLanguage ret) (Int, Arity (Term Int) (Form (World -> Bool)) ret) 
+              _spredIdx' = _spredIdx
+              _sfuncIdx' :: Typeable ret => Prism' (IndexedModalFirstOrderLanguage ret) (Int, Arity (Term Int) (Term Int) ret) 
+              _sfuncIdx' = _sfuncIdx
+
+-------------------------
+--  Utility Functions  --
+-------------------------
+
+qtype :: Typeable a => FixLang lex a -> Maybe (FixLang lex ((Term Int -> Form (World -> Bool))->Form (World -> Bool)))
+qtype = castTo

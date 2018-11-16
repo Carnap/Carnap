@@ -1,7 +1,8 @@
 {-#LANGUAGE  FlexibleContexts,  FlexibleInstances, MultiParamTypeClasses #-}
-module Carnap.Languages.SetTheory.Logic.KalishAndMontague (estCalc, sstCalc) where
+module Carnap.Languages.SetTheory.Logic.Carnap (estCalc, sstCalc) where
 
 import Carnap.Core.Data.Types
+import Carnap.Languages.PureFirstOrder.Syntax (fogamma)
 import Carnap.Languages.SetTheory.Syntax
 import Carnap.Languages.ClassicalSequent.Syntax
 import Carnap.Languages.Util.GenericConstructors
@@ -89,15 +90,11 @@ instance Inference ESTLogic ElementarySetTheoryLex (Form Bool) where
      conclusionOf r = lowerSequent (ruleOf r)
 
      restriction (PR prems) = Just (premConstraint prems)
-     restriction (FO UD)    = Just (eigenConstraint stau (SS (lall "v" $ phi' 1)) (setgamma 1))
+     restriction (FO UD)    = Just (eigenConstraint stau (SS (lall "v" $ phi' 1)) (fogamma 1))
          where stau = liftToSequent tau
-               setgamma :: Int -> ClassicalSequentOver ElementarySetTheoryLex (Antecedent (Form Bool))
-               setgamma = GammaV
 
-     restriction (FO ED1)   = Just (eigenConstraint stau (SS (lsome "v" $ phi' 1) :-: SS (phin 1)) (setgamma 1 :+: setgamma 2))
+     restriction (FO ED1)   = Just (eigenConstraint stau (SS (lsome "v" $ phi' 1) :-: SS (phin 1)) (fogamma 1 :+: fogamma 2))
          where stau = liftToSequent tau
-               setgamma :: Int -> ClassicalSequentOver ElementarySetTheoryLex (Antecedent (Form Bool))
-               setgamma = GammaV
      restriction _ = Nothing
 
      indirectInference (FO x) = indirectInference x
@@ -129,19 +126,23 @@ estCalc = NaturalDeductionCalc
     , ndParseSeq = seqFormulaParser
     }
 
-data SSTLogic = EST ESTLogic | DefSep1 | DefSep2
+data SSTLogic = EST ESTLogic | DefSep1 | DefSep2 | DefSep3 | DefSep4
          | PRS (Maybe [(ClassicalSequentOver SeparativeSetTheoryLex (Sequent (Form Bool)))])
 
 instance Show SSTLogic where 
         show (PRS _)   = "PR"
         show DefSep1 = "Def-{}"
         show DefSep2 = "Def-{}"
+        show DefSep3 = "Def-{}"
+        show DefSep4 = "Def-{}"
         show (EST x) = show x
 
 instance Inference SSTLogic SeparativeSetTheoryLex (Form Bool) where
      ruleOf (PRS _)          = axiom
      ruleOf DefSep1          = unpackSeparation !! 0
      ruleOf DefSep2          = unpackSeparation !! 1
+     ruleOf DefSep3          = unpackSeparation !! 2
+     ruleOf DefSep4          = unpackSeparation !! 3
      ruleOf (EST DefU1   )   = unpackUnion !! 0 
      ruleOf (EST DefU2   )   = unpackUnion !! 1 
      ruleOf (EST DefI1   )   = unpackIntersection !! 0
@@ -183,15 +184,10 @@ instance Inference SSTLogic SeparativeSetTheoryLex (Form Bool) where
      conclusionOf r = lowerSequent (ruleOf r)
 
      restriction (PRS prems) = Just (premConstraint prems)
-     restriction (EST (FO UD))    = Just (eigenConstraint stau (SS (lall "v" $ phi' 1)) (setgamma 1))
+     restriction (EST (FO UD))    = Just (eigenConstraint stau (SS (lall "v" $ phi' 1)) (fogamma 1))
          where stau = liftToSequent tau
-               setgamma :: Int -> ClassicalSequentOver SeparativeSetTheoryLex (Antecedent (Form Bool))
-               setgamma = GammaV
-
-     restriction (EST (FO ED1))   = Just (eigenConstraint stau (SS (lsome "v" $ phi' 1) :-: SS (phin 1)) (setgamma 1 :+: setgamma 2))
+     restriction (EST (FO ED1))   = Just (eigenConstraint stau (SS (lsome "v" $ phi' 1) :-: SS (phin 1)) (fogamma 1 :+: fogamma 2))
          where stau = liftToSequent tau
-               setgamma :: Int -> ClassicalSequentOver SeparativeSetTheoryLex (Antecedent (Form Bool))
-               setgamma = GammaV
      restriction _ = Nothing
 
      indirectInference (EST (FO x)) = indirectInference x
@@ -204,7 +200,7 @@ parseSSTLogic rtc = try sepRule <|> liftEST
           sepRule = do r <- choice (map (try . string) ["PR", "Def-{}"])
                        case r of 
                             r | r == "PR"    -> return [PRS $ problemPremises rtc]
-                              | r == "Def-{}" -> return [DefSep1, DefSep2]
+                              | r == "Def-{}" -> return [DefSep1, DefSep2, DefSep3, DefSep4]
 
 parseSSTProof:: RuntimeNaturalDeductionConfig SeparativeSetTheoryLex (Form Bool) 
                     -> String -> [DeductionLine SSTLogic SeparativeSetTheoryLex (Form Bool)]

@@ -249,7 +249,7 @@ psolAppScheme n = (SOPApp SOApp :!$: phi n) :!$: SOT n
 seqsomv :: String -> MSOLSequentCalc (Form (Int -> Bool))
 seqsomv x = liftToSequent $ SOMVar x
 
-seqsopv :: Typeable t => String -> Arity Int Bool n t -> PSOLSequentCalc (Form t)
+seqsopv :: Typeable t => String -> Arity Int Bool t -> PSOLSequentCalc (Form t)
 seqsopv x a = liftToSequent $ SOPVar x a
 
 -- | produces a schematic formula abstracting n terms from a given formula
