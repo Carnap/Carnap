@@ -4,7 +4,7 @@ module Carnap.GHCJS.SharedTypes (
 ) where
 
 import Prelude
-import Data.Aeson
+import Data.Aeson (ToJSON(..), FromJSON(..), Value(..), object, (.=), (.:))
 import Data.Either
 import Data.Text (Text)
 import Text.Parsec (parse, eof)
