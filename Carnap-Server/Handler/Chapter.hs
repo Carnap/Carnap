@@ -9,6 +9,7 @@ import Filter.ProofCheckers
 import Filter.Translate
 import Filter.Diagrams
 import Filter.TruthTables
+import Text.Pandoc
 import Text.Pandoc.Walk (walkM, walk)
 import System.Directory (getDirectoryContents)
 import Text.Julius (juliusFile)
@@ -61,10 +62,27 @@ content n cdir cdirp = do let matches = filter (\x -> (show n ++ ".pandoc") == d
                               (m:ms)  -> fileToHtml cdirp m
 
 fileToHtml path m = do md <- markdownFromFile (path ++ m)
-                       case parseMarkdown yesodDefaultReaderOptions md of
+                       case parseMarkdown yesodDefaultReaderOptions { readerExtensions = exts } md of
                            Right pd -> do pd' <- runFilters path pd 
-                                          return $ Right $ writePandocTrusted yesodDefaultWriterOptions pd'
+                                          return $ Right $ writePandocTrusted yesodDefaultWriterOptions { writerExtensions = exts } pd'
                            Left e -> return $ Left e
+    where exts = extensionsFromList 
+                    [ Ext_raw_html
+                    , Ext_markdown_in_html_blocks
+                    , Ext_auto_identifiers
+                    , Ext_tex_math_dollars
+                    , Ext_fenced_code_blocks
+                    , Ext_backtick_code_blocks
+                    , Ext_line_blocks
+                    , Ext_fancy_lists
+                    , Ext_definition_lists
+                    , Ext_example_lists
+                    , Ext_simple_tables
+                    , Ext_multiline_tables
+                    , Ext_footnotes
+                    , Ext_fenced_code_attributes
+                    ]
+
 
 runFilters path = let walkNotes y = evalState (walkM makeSideNotes y) 0
                       walkProblems y = walk (makeSynCheckers . makeProofChecker . makeTranslate . makeTruthTables) y
