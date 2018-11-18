@@ -8,6 +8,10 @@ module Settings where
 
 import ClassyPrelude.Yesod
 import Control.Exception           (throw)
+#if DEVELOPMENT
+#else
+import SecureStrings               (googleApiKey, googleSecret)
+#endif
 import Data.Aeson                  (Result (..), fromJSON, withObject, (.!=), (.:?))
 import Data.FileEmbed              (embedFile)
 import Data.Yaml                   (decodeEither')
