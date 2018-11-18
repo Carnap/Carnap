@@ -8,8 +8,7 @@ module Settings where
 
 import ClassyPrelude.Yesod
 import Control.Exception           (throw)
-import Data.Aeson                  (Result (..), fromJSON, withObject, (.!=),
-                                    (.:?))
+import Data.Aeson                  (Result (..), fromJSON, withObject, (.!=), (.:?))
 import Data.FileEmbed              (embedFile)
 import Data.Yaml                   (decodeEither')
 import Database.Persist.Postgresql (PostgresConf)
@@ -62,15 +61,23 @@ data AppSettings = AppSettings
     -- ^ Google Analytics code
     , appDevel :: Bool
     -- Flag to indicate development mode
+    , appKey :: Text
+    -- API Key from Google
+    , appSecret:: Text
+    -- API Secret from Google
+
     }
 
 instance FromJSON AppSettings where
     parseJSON = withObject "AppSettings" $ \o -> do
-        let appDevel =
 #if DEVELOPMENT
-                True
+        let appDevel = True
+            appKey = ""
+            appSecret = ""
 #else
-                False
+        let appDevel = False
+            appKey = googleApiKey
+            appSecret = googleSecret
 #endif
         appStaticDir              <- o .: "static-dir"
         appDatabaseConf           <- o .: "database"

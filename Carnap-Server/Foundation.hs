@@ -3,7 +3,6 @@ module Foundation where
 import Database.Persist.Sql        (ConnectionPool, runSqlPool)
 import Import.NoFoundation
 import Text.Hamlet                 (hamletFile)
-import SecureStrings               (googleApiKey, googleSecret)
 import Yesod.Auth.GoogleEmail2 as GE (authGoogleEmail, forwardUrl)
 import Yesod.Auth.Dummy            (authDummy)
 import qualified Yesod.Core.Unsafe as Unsafe
@@ -271,9 +270,10 @@ instance YesodAuth App where
     -- appDevel is a custom method added to the settings, which is true
     -- when yesod is running in the development environment and false
     -- otherwise
-    authPlugins app = if appDevel (appSettings app) 
-                          then [authDummy]
-                          else [authGoogleEmail googleApiKey googleSecret]
+    authPlugins app = let settings = appSettings app in 
+                          if appDevel settings 
+                              then [authDummy]
+                              else [authGoogleEmail (appKey settings) (appSecret settings)]
 
     authLayout widget = liftHandler $ do
         master <- getYesod
