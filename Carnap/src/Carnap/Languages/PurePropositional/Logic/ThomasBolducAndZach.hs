@@ -170,7 +170,7 @@ parseThomasBolducAndZachTFLProof rtc = toDeductionFitch (parseThomasBolducAndZac
 thomasBolducAndZachTFLCalc = NaturalDeductionCalc 
     { ndRenderer = FitchStyle
     , ndParseProof = parseThomasBolducAndZachTFLProof
-    , ndProcessLine = processLineFitch
-    , ndProcessLineMemo = Nothing
+    , ndProcessLine = hoProcessLineFitch
+    , ndProcessLineMemo = Just hoProcessLineFitchMemo
     , ndParseSeq = extendedPropSeqParser
     }

@@ -17,7 +17,6 @@ import Carnap.Languages.ClassicalSequent.Parser
 import Carnap.Languages.PurePropositional.Logic.Rules
 
 
-
 --A system for propositional logic resembling the proof system SD from
 --Bergmann, Moor and Nelson's Logic Book
 
@@ -266,7 +265,7 @@ parseLogicBookSDPlusProof ders = toDeductionFitch (parseLogicBookSDPlus ders) (p
 logicBookSDPlusCalc = NaturalDeductionCalc 
     { ndRenderer = FitchStyle
     , ndParseProof = parseLogicBookSDPlusProof
-    , ndProcessLine = processLineFitch
-    , ndProcessLineMemo = Nothing
+    , ndProcessLine = hoProcessLineFitch
+    , ndProcessLineMemo = Just hoProcessLineFitchMemo
     , ndParseSeq = extendedPropSeqParser
     }

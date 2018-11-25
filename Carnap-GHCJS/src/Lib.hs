@@ -9,7 +9,7 @@ module Lib
     folSeqAndLabel, folFormAndLabel, message, IOGoal(..), updateWithValue,
     submissionSource, assignmentKey, initialize, popUpWith, spinnerSVG,
     doneButton, questionButton, exclaimButton, expandButton, buttonWrapper,
-    maybeNodeListToList, trySubmit, alternateSymbols1) where
+    maybeNodeListToList, trySubmit, alternateSymbols1, alternateSymbols2, alternateSymbols3) where
 
 import Data.Aeson
 import Data.Maybe (catMaybes)
@@ -384,6 +384,18 @@ trySubmit problemType opts ident problemData correct =
 alternateSymbols1 = map replace
     where replace '∧' = '&'
           replace '¬' = '~'
+          replace c = c
+
+alternateSymbols2 = map replace
+    where replace '∧' = '&'
+          replace '¬' = '~'
+          replace '→' = '⊃'
+          replace c = c
+
+alternateSymbols3 = map replace
+    where replace '∧' = '∙'
+          replace '¬' = '~'
+          replace '→' = '⊃'
           replace c = c
 
 ------------------
