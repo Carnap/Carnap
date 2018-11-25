@@ -172,6 +172,7 @@ activateChecker drs w (Just iog@(IOGoal i o g _ opts)) -- TODO: need to update n
                                                  , alternateSymbols = case M.lookup "alternate-symbols" opts of
                                                                           Just "alt1" -> alternateSymbols1
                                                                           Just "alt2" -> alternateSymbols2
+                                                                          Just "alt3" -> alternateSymbols3
                                                                           _ -> id
                                                  , indentGuides = "guides" `elem` optlist
                                                  , render = "render" `elem` optlist
