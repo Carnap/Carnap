@@ -136,7 +136,7 @@ instance Inference HausmanSL PurePropLexicon (Form Bool) where
 parseHausmanSL :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> Parsec String u [HausmanSL]
 parseHausmanSL rtc = do r <- choice (map (try . string) [ "MP", "Conj", "MT", "HS", "DS", "Add", "CD", "Simp"
                                                         , "DN", "Contra", "DeM", "Impl", "Exp", "Comm", "Taut", "Assoc"
-                                                        , "Equiv", "Dist", "CP", "IP", "AP"
+                                                        , "Equiv", "Dist", "CP", "IP", "AP","p"
                                                         ])
                         case r of
                            "MP" -> return [MP]
@@ -168,7 +168,7 @@ parseHausmanSLProof rtc = toDeductionFitch (parseHausmanSL rtc) (purePropFormula
 hausmanSLCalc = NaturalDeductionCalc 
     { ndRenderer = FitchStyle
     , ndParseProof = parseHausmanSLProof
-    , ndProcessLine = processLineFitch
-    , ndProcessLineMemo = Nothing
+    , ndProcessLine = hoProcessLineFitch
+    , ndProcessLineMemo = Just hoProcessLineFitchMemo
     , ndParseSeq = extendedPropSeqParser
     }
