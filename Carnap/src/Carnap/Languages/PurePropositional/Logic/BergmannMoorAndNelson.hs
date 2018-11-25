@@ -265,7 +265,7 @@ parseLogicBookSDPlusProof ders = toDeductionFitch (parseLogicBookSDPlus ders) (p
 logicBookSDPlusCalc = NaturalDeductionCalc 
     { ndRenderer = FitchStyle
     , ndParseProof = parseLogicBookSDPlusProof
-    , ndProcessLine = processLineFitch
-    , ndProcessLineMemo = Nothing
+    , ndProcessLine = hoProcessLineFitch
+    , ndProcessLineMemo = Just hoProcessLineFitchMemo
     , ndParseSeq = extendedPropSeqParser
     }
