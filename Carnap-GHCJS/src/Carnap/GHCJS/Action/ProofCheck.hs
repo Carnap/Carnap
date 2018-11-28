@@ -36,7 +36,7 @@ import Data.Text (pack)
 import qualified Data.Map as M (lookup,fromList,toList,map) 
 import Control.Lens.Fold (toListOf,(^?))
 import Lib
-import Carnap.GHCJS.Widget.ProofCheckBox (checkerWith, CheckerOptions(..), Button(..), CheckerFeedbackUpdate(..))
+import Carnap.GHCJS.Widget.ProofCheckBox (checkerWith, CheckerOptions(..), CheckerFeedbackUpdate(..), optionsFromMap, Button(..) )
 import Carnap.GHCJS.Widget.RenderDeduction
 import GHCJS.DOM.Element (setInnerHTML,getInnerHTML, setAttribute,mouseOver,mouseOut)
 import GHCJS.DOM.HTMLElement (insertAdjacentElement)
@@ -157,32 +157,8 @@ activateChecker drs w (Just iog@(IOGoal i o g _ opts)) -- TODO: need to update n
                                          }
                   checkerWith options' checkSeq iog w
                   
-                  where options = CheckerOptions { submit = Nothing
-                                                 , feedback = case M.lookup "feedback" opts of
-                                                                  Just "manual" -> Click
-                                                                  Just "none" -> Never
-                                                                  Just "syntaxonly" -> SyntaxOnly
-                                                                  _ -> Keypress
-                                                 , directed = case M.lookup "goal" opts of
-                                                                  Just _ -> True
-                                                                  Nothing -> False
-                                                 , initialUpdate = case M.lookup "init" opts of
-                                                                  Just _ -> True
-                                                                  Nothing -> False
-                                                 , alternateSymbols = case M.lookup "alternate-symbols" opts of
-                                                                          Just "alt1" -> alternateSymbols1
-                                                                          Just "alt2" -> alternateSymbols2
-                                                                          Just "alt3" -> alternateSymbols3
-                                                                          _ -> id
-                                                 , indentGuides = "guides" `elem` optlist
-                                                 , render = "render" `elem` optlist
-                                                 , autoIndent = "indent" `elem` optlist
-                                                 , autoResize= "resize" `elem` optlist
-                                                 , popout = "popout" `elem` optlist
-                                                 , hideNumbering = "hideNumbering" `elem` optlist
-                                                 }
+                  where options = optionsFromMap opts
                         saveRule = Button {label = "Save" , action = trySave drs}
-                        optlist = case M.lookup "options" opts of Just s -> words s; Nothing -> []
                         theSeq g = case parse (ndParseSeq calc) "" g of
                                        Left e -> error "couldn't parse goal"
                                        Right seq -> seq

@@ -3,9 +3,11 @@ module Carnap.GHCJS.Widget.ProofCheckBox (
     checkerWith, 
     CheckerOptions(..),
     CheckerFeedbackUpdate(..),
+    optionsFromMap,
     Button(..)) where 
 import Lib
 import Data.Maybe (catMaybes)
+import qualified Data.Map as M (lookup) 
 import Data.IORef (IORef, newIORef,writeIORef,readIORef)
 import Control.Monad.Trans.State.Lazy
 import Control.Monad.IO.Class
@@ -28,18 +30,52 @@ data Button = Button { label  :: String
 data CheckerFeedbackUpdate = Keypress | Click | Never | SyntaxOnly
     deriving Eq
 
+data CheckerGuide = MontagueGuide | FitchGuide | HausmanGuide | NoGuide
+
 data CheckerOptions = CheckerOptions { submit :: Maybe Button -- What's the submission button, if there is one?
                                      , render :: Bool -- Should the checker render the proof?
                                      , directed :: Bool -- Is the checker directed towards a sequent?
                                      , feedback :: CheckerFeedbackUpdate --what type of feedback should the checker give?
                                      , alternateSymbols :: String -> String
                                      , initialUpdate :: Bool -- Should the checker be updated on load?
-                                     , indentGuides :: Bool -- Should the checker display indentation guides?
+                                     , indentGuides :: CheckerGuide -- How should the checker display indentation guides?
                                      , autoIndent :: Bool -- Should the checker indent automatically?
                                      , autoResize :: Bool -- Should the checker resize automatically?
                                      , popout :: Bool -- Should the checker be able to be put in a new window?
                                      , hideNumbering :: Bool -- Should the checker hide the line numbering
                                      }
+
+optionsFromMap opts = CheckerOptions { submit = Nothing
+                                      , feedback = case M.lookup "feedback" opts of
+                                                       Just "manual" -> Click
+                                                       Just "none" -> Never
+                                                       Just "syntaxonly" -> SyntaxOnly
+                                                       _ -> Keypress
+                                      , directed = case M.lookup "goal" opts of
+                                                       Just _ -> True
+                                                       Nothing -> False
+                                      , initialUpdate = case M.lookup "init" opts of
+                                                       Just _ -> True
+                                                       Nothing -> False
+                                      , alternateSymbols = case M.lookup "alternate-symbols" opts of
+                                                               Just "alt1" -> alternateSymbols1
+                                                               Just "alt2" -> alternateSymbols2
+                                                               Just "alt3" -> alternateSymbols3
+                                                               _ -> id
+                                      , indentGuides = case M.lookup "guides" opts of
+                                                       Just "montague" -> MontagueGuide
+                                                       Just "fitch"    -> FitchGuide
+                                                       Just "hausman" -> HausmanGuide
+                                                       _ -> if "guides" `elem` optlist 
+                                                                then MontagueGuide
+                                                                else NoGuide
+                                      , render = "render" `elem` optlist
+                                      , autoIndent = "indent" `elem` optlist
+                                      , autoResize= "resize" `elem` optlist
+                                      , popout = "popout" `elem` optlist
+                                      , hideNumbering = "hideNumbering" `elem` optlist
+                                      }
+                where optlist = case M.lookup "options" opts of Just s -> words s; Nothing -> []
 
 checkerWith :: CheckerOptions -> (Document -> IORef Bool -> String -> (Element, Element) -> IO ()) -> IOGoal -> Document -> IO ()
 checkerWith options updateres iog@(IOGoal i o g content _) w = do
@@ -106,14 +142,14 @@ checkerWith options updateres iog@(IOGoal i o g content _) w = do
                appendChild bw (Just btpop)
                thepopout <- newListener $ liftIO $ popoutWith options updateres iog w
                addListener btpop click thepopout False
-           lineupd <- newListener $ updateLines w nd (indentGuides options)
+           lineupd <- newListener $ updateLines w nd options
            clearThePoppers <- newListener $ clearPoppers aligner
            addListener i keyUp lineupd False
            addListener i keyUp clearThePoppers False
            mv <- getValue (castToHTMLTextAreaElement i)
            case mv of
-               Nothing -> setLinesTo w nd (indentGuides options) [" "]
-               (Just iv) -> do setLinesTo w nd (indentGuides options) (altlines iv)
+               Nothing -> setLinesTo w nd options [" "]
+               (Just iv) -> do setLinesTo w nd options (altlines iv)
                                if initialUpdate options then updateres w ref iv (g, fd) else return ()
 
 popoutWith :: CheckerOptions -> (Document -> IORef Bool -> String -> (Element, Element) -> IO ()) -> IOGoal -> Document -> IO ()
@@ -141,12 +177,12 @@ popoutWith options updateres iog@(IOGoal i o g content opts) dom = do
             mapM (appendChild body . Just) [g', i', o']
             checkerWith newOptions updateres (IOGoal i' o' g' content opts) popdom
 
-updateLines :: (IsElement e) => Document -> e -> Bool -> EventM HTMLTextAreaElement KeyboardEvent ()
-updateLines w nd hasguides =  do (Just t) <- target :: EventM HTMLTextAreaElement KeyboardEvent (Maybe HTMLTextAreaElement)
-                                 mv <- getValue t
-                                 case mv of 
+updateLines :: (IsElement e) => Document -> e -> CheckerOptions -> EventM HTMLTextAreaElement KeyboardEvent ()
+updateLines w nd options =  do (Just t) <- target :: EventM HTMLTextAreaElement KeyboardEvent (Maybe HTMLTextAreaElement)
+                               mv <- getValue t
+                               case mv of 
                                      Nothing -> return ()
-                                     Just v -> liftIO $ setLinesTo w nd hasguides (altlines v)
+                                     Just v -> liftIO $ setLinesTo w nd options (altlines v)
 
 reindent :: EventM HTMLTextAreaElement KeyboardEvent ()
 reindent = do (Just t) <- target :: EventM HTMLTextAreaElement KeyboardEvent (Maybe HTMLTextAreaElement)
@@ -176,29 +212,49 @@ clearPoppers :: (IsElement e, MonadIO m) => e -> m ()
 clearPoppers target = do mpoppers <- liftIO $ getListOfElementsByClass target "popperWrapper"
                          mapM_ (liftIO . removeChild target) mpoppers
 
-setLinesTo :: (IsElement e) => Document -> e -> Bool -> [String] -> IO ()
-setLinesTo w nd hasguides [] = setLinesTo w nd hasguides [""]
-setLinesTo w nd hasguides lines = do setInnerHTML nd (Just "")
-                                     overlays <- evalStateT (mapM toLineNo lines) (0,[])
-                                     mapM_ (appendChild nd . Just) overlays
-    where toLineNo :: String -> StateT (Int,[Int]) IO Element
-          toLineNo l = do (no,guidelevels) <- get --line number and guide levels of previous line
-                          (Just overlay) <- liftIO $ createElement w (Just "div")
-                          let (indent,rest) = (takeWhile (== ' ') l, dropWhile (== ' ') l)
-                          let guidelevels'= dropWhile (\x -> (length indent) <= x) guidelevels --remove guides below current indentation
-                          let guidestring = if hasguides 
-                                            then reverse . concat . map (\n -> '│' : replicate (n - 1) ' ') $ differences guidelevels'
-                                            else ""
-                          let prespace  | no < 9  = "   "
-                                        | no < 99  = "  "
-                                        | no < 999  = " "
-                                        | otherwise  = ""
-                          liftIO $ setInnerHTML overlay (Just $ prespace ++ show (no + 1) ++ ". " ++ guidestring)
-                          let guidelevels'' = if take 4 rest `elem` ["show","Show","SHOW"] 
-                                              then length indent : guidelevels' 
-                                              else guidelevels' 
-                          put (no + 1, guidelevels'')
-                          return overlay
+setLinesTo :: (IsElement e) => Document -> e -> CheckerOptions -> [String] -> IO ()
+setLinesTo w nd options [] = setLinesTo w nd options [""]
+setLinesTo w nd options lines = do setInnerHTML nd (Just "")
+                                   let indents = map (length . takeWhile ((==) ' ')) lines
+                                   overlays <- evalStateT (mapM (toLineNo indents) lines) (0,[])
+                                   mapM_ (appendChild nd . Just) overlays
+    where toLineNo :: [Int] -> String -> StateT (Int,[Int]) IO Element
+          toLineNo indents l =
+              do (no,guidelevels) <- get --line number, guide levels of previous line
+                 (Just overlay) <- liftIO $ createElement w (Just "div")
+                 let rest = dropWhile (== ' ') l
+                 let indent = indents !! no
+                     oldindent = if no > 0 then indents !! (no - 1) else 0
+                     nextindent = if no + 1 < length indents then indents !! (no + 1) else 0
+                 let guidelevels' = dropWhile (\x -> indent <= x) guidelevels --remove guides below current indentation
+                 let guidelevels'' = case indentGuides options of
+                                         NoGuide -> []
+                                         MontagueGuide | take 4 rest `elem` ["show","Show","SHOW"] -> indent : guidelevels'
+                                         _ | indent > oldindent -> indent - 1 : guidelevels'
+                                         _ -> guidelevels'
+                 let guidestring = case indentGuides options of
+                                       NoGuide -> ""
+                                       MontagueGuide -> reverse . concat . map (\n -> '│' : replicate (n - 1) ' ') $ differences guidelevels'
+                                       HausmanGuide | indent > oldindent -> 
+                                           reverse . concat 
+                                           $ (\n -> '↱' : replicate (n - 1) ' ') (head $ differences guidelevels'')
+                                             : map (\n -> '│' : replicate (n - 1) ' ') (tail $ differences guidelevels'')
+                                       HausmanGuide | nextindent < indent && not (null guidelevels'') -> 
+                                           (reverse . concat $ map (\n -> '│' : replicate (n - 1) ' ') (differences guidelevels''))
+                                           ++ replicate (length rest + indent - (head guidelevels'')) '_'
+                                       FitchGuide | indent > oldindent -> 
+                                           (reverse . concat $ map (\n -> '│' : replicate (n - 1) ' ') (differences guidelevels''))
+                                           ++ replicate (length rest + indent - (head guidelevels'')) '_'
+                                       _ -> reverse . concat . map (\n -> '│' : replicate (n - 1) ' ') $ differences guidelevels''
+                 let prespace  | no < 9  = "   "
+                               | no < 99  = "  "
+                               | no < 999  = " "
+                               | otherwise  = ""
+                 liftIO $ setInnerHTML overlay (Just $ prespace ++ show (no + 1) ++ "." ++ guidestring)
+                 put (no + 1, guidelevels'')
+                 return overlay
+
+            
 
           differences (x:y:l) = x - y : differences (y:l)
           differences [x]     = [x]
