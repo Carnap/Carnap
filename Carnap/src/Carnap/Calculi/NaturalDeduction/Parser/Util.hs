@@ -18,6 +18,22 @@ parseInts = do ints <- many1 digit `sepEndBy` separator
                return $ map read ints
     where separator = spaces *> optional (string ",") *> spaces 
 
+spanningRule r = do rule <- spaces *> char ':' *> r
+                    deps <- spaces *> parseIntsAndSpans
+                    return (rule, deps)
+
+parseIntsAndSpans :: Parsec String u [(Int,Int)]
+parseIntsAndSpans = (try parseSpan <|> parseInt) `sepBy` separator
+    where parseInt = do i <- many1 digit
+                        spaces
+                        return ((read i, read i) :: (Int,Int))
+          parseSpan = do i1 <- many1 digit
+                         char '-'
+                         i2 <- many1 digit
+                         spaces
+                         return ((read i1, read i2) :: (Int,Int))
+          separator = optional (string ",") *> spaces 
+
 parseAssertLine :: Parsec String u [r] -> Parsec String u (FixLang lex a) 
     -> Parsec String u (DeductionLine r lex a)
 parseAssertLine r f = do dpth  <- indent

@@ -1,5 +1,5 @@
 {-#LANGUAGE FlexibleContexts #-}
-module Carnap.Calculi.NaturalDeduction.Parser.Fitch (toProofTreeFitch, toDeductionFitch)
+module Carnap.Calculi.NaturalDeduction.Parser.Fitch (toProofTreeFitch, toDeductionFitch, toCommentedDeductionFitch)
 where
 
 import Data.Tree
@@ -17,25 +17,16 @@ parseAssertLineFitch :: Parsec String u [r] -> Parsec String u (FixLang lex a)
 parseAssertLineFitch r f = do dpth  <- indent
                               phi <- f
                               rule <- spaces *> char ':' *> r 
-                              intPairs <- many (try parseIntPair <|> parseInt)
+                              intPairs <- spaces *> parseIntsAndSpans
                               return $ AssertLine phi rule dpth intPairs
-        where parseIntPair = do spaces
-                                i1 <- many1 digit
-                                char '-'
-                                i2 <- many1 digit
-                                spaces
-                                return ((read i1, read i2) :: (Int,Int))
-              parseInt= do spaces
-                           i <- many1 digit
-                           spaces
-                           return ((read i, read i) :: (Int,Int))
+
+parseCommentedAssertLineFitch :: Parsec String u [r] -> Parsec String u (FixLang lex a) 
+    -> Parsec String u (DeductionLine r lex a)
+parseCommentedAssertLineFitch r f = parseAssertLineFitch r f <* optional (char '/' >> many anyChar) <* eof
                            
 parseSeparatorLine :: Parsec String u (DeductionLine r lex a)
-parseSeparatorLine = do dpth <- indent
-                        string "--"
-                        spaces
-                        eof
-                        return $ SeparatorLine dpth
+parseSeparatorLine = SeparatorLine <$> indent <* string "--" <* spaces <* eof
+                        
 
 toDeductionFitch :: Parsec String () [r] -> Parsec String () (FixLang lex a) -> String 
     -> Deduction r lex a
@@ -44,6 +35,12 @@ toDeductionFitch r f = toDeduction (parseLine r f)
                               <|> try (parseSeparatorLine)
                               --XXX: need double "try" here to avoid
                               --throwing away errors if first parser fails
+
+toCommentedDeductionFitch :: Parsec String () [r] -> Parsec String () (FixLang lex a) -> String 
+    -> Deduction r lex a
+toCommentedDeductionFitch r f = toDeduction (parseLine r f)
+        where parseLine r f = try (parseCommentedAssertLineFitch r f) 
+                              <|> try (parseSeparatorLine)
 
 {- | 
 In a Fitch deduction, find the prooftree corresponding to

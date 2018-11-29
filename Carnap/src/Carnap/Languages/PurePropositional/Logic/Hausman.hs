@@ -163,7 +163,7 @@ parseHausmanSL rtc = do r <- choice (map (try . string) [ "MP", "Conj", "MT", "H
                            "p" -> return [Pr (problemPremises rtc)]
 
 parseHausmanSLProof :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> String -> [DeductionLine HausmanSL PurePropLexicon (Form Bool)]
-parseHausmanSLProof rtc = toDeductionFitch (parseHausmanSL rtc) (purePropFormulaParser hausmanOpts)
+parseHausmanSLProof rtc = toCommentedDeductionFitch (parseHausmanSL rtc) (purePropFormulaParser hausmanOpts)
 
 hausmanSLCalc = NaturalDeductionCalc 
     { ndRenderer = FitchStyle
