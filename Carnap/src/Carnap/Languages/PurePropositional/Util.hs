@@ -1,4 +1,6 @@
-module Carnap.Languages.PurePropositional.Util (showClean,isValid, isEquivTo, toSchema, getIndicies, getValuations, isBooleanBinary) where
+module Carnap.Languages.PurePropositional.Util 
+(showClean,isValid, isEquivTo, toSchema, getIndicies, getValuations, isBooleanBinary, isAtom) 
+where
 
 import Carnap.Core.Data.Classes
 import Carnap.Core.Data.Types
@@ -86,4 +88,7 @@ toSchema a = case a ^? _propIndex of
 
 isBooleanBinary :: (PrismBooleanConnLex lex b) => FixLang lex (Form b) -> Bool
 isBooleanBinary a = not . null . catMaybes $ map (a ^? ) [binaryOpPrism _and, binaryOpPrism _or, binaryOpPrism _if,binaryOpPrism _iff]
+
+isAtom :: (PrismPropLex lex b) => FixLang lex (Form b) -> Bool
+isAtom a = not ((a ^? _propIndex) == Nothing)
 
