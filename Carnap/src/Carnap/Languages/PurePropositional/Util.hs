@@ -1,7 +1,8 @@
-module Carnap.Languages.PurePropositional.Util (showClean,isValid, isEquivTo, toSchema, getIndicies, getValuations) where
+module Carnap.Languages.PurePropositional.Util (showClean,isValid, isEquivTo, toSchema, getIndicies, getValuations, isBooleanBinary) where
 
 import Carnap.Core.Data.Classes
 import Carnap.Core.Data.Types
+import Carnap.Core.Data.Optics
 import Carnap.Languages.PurePropositional.Syntax
 import Carnap.Languages.Util.LanguageClasses
 import Control.Lens
@@ -68,7 +69,7 @@ getValuations = (map toValuation) . subsequences . getIndicies
 isValid p = and $ map (\v -> unform $ satisfies v p) (getValuations p)
     where unform (Form x) = x
 
-isEquivTo x y = isValid (x :<->: y)
+isEquivTo x y = isValid (x .<=>. y)
 
 --------------------------------------------------------
 --3. Transformations
@@ -78,3 +79,11 @@ toSchema :: PurePropLanguage (Form Bool) -> PurePropLanguage (Form Bool)
 toSchema a = case a ^? _propIndex of
                  Just n -> phin n
                  Nothing -> (over plate) toSchema a
+
+--------------
+--4. Tests  --
+--------------
+
+isBooleanBinary :: (PrismBooleanConnLex lex b) => FixLang lex (Form b) -> Bool
+isBooleanBinary a = not . null . catMaybes $ map (a ^? ) [binaryOpPrism _and, binaryOpPrism _or, binaryOpPrism _if,binaryOpPrism _iff]
+
