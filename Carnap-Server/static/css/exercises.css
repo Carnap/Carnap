@@ -465,7 +465,7 @@ body[data-carnap-type="proofchecker"] .buttonWrapper {
     padding:2px;
 }
 
-[data-carnap-options~="fonts"] textarea, [data-carnap-options~="fonts"] input, [data-carnap-options~="fonts"] .goal {
+[data-carnap-options~="fonts"] textarea,[data-carnap-options~="fonts"] .output, [data-carnap-options~="fonts"] input, [data-carnap-options~="fonts"] .goal {
     text-rendering: optimizeLegibility;
     font-variant-ligatures: historical-ligatures discretionary-ligatures common-ligatures contextual; 
     font-family:"Fira Logic", monospace;
