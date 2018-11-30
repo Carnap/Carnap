@@ -45,7 +45,7 @@ hausmanOpts = extendedLetters
 purePropFormulaParser :: Monad m => PurePropositionalParserOptions u m -> ParsecT String u m PureForm
 purePropFormulaParser opts = buildExpressionParser (opTable opts) subFormulaParser
     --subformulas are either
-    where subFormulaParser = (parenRecur opts) opts purePropFormulaParser --formulas wrapped in parentheses
+    where subFormulaParser = ((parenRecur opts) opts purePropFormulaParser <* spaces) --formulas wrapped in parentheses
                           <|> unaryOpParser [parseNeg] subFormulaParser --negations or modalizations of subformulas
                           <|> try (atomicSentenceParser opts <* spaces)--or atoms
                           <|> if hasBooleanConstants opts then try (booleanConstParser <* spaces) else parserZero
