@@ -392,11 +392,17 @@ alternateSymbols2 = map replace
           replace '→' = '⊃'
           replace c = c
 
-alternateSymbols3 = map replace
-    where replace '∧' = '∙'
-          replace '¬' = '~'
-          replace '→' = '⊃'
-          replace c = c
+alternateSymbols3 s = evalState (mapM replace s) 0
+    where replace '∧' = return '∙'
+          replace '¬' = return '~'
+          replace '→' = return '⊃'
+          replace '(' = do n <- get
+                           put (n + 1)
+                           return $ ['(','[','{'] !! (n `mod` 3)
+          replace ')' = do n <- get
+                           put (n - 1)
+                           return $ [')',']','}'] !! (n - 1 `mod` 3)
+          replace c = return c
 
 ------------------
 --1.8 SVG Data  --
