@@ -61,6 +61,6 @@ hausmanOpTable :: Monad m => [[Operator String u m PureForm]]
 hausmanOpTable = [[ Prefix (try parseNeg)
                   , Infix (try parseOr) AssocNone
                   , Infix (try (parseAsAnd [".", "∧", "∙"])) AssocNone
-                  , Infix (try parseIf) AssocNone
+                  , Infix (try (parseAsIf ["⊃","→",">"])) AssocNone
                   , Infix (try parseIff) AssocNone
                   ]]
