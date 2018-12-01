@@ -6,6 +6,7 @@ import Carnap.Languages.Util.GenericParsers
 import Carnap.Languages.PurePropositional.Parser
 import Carnap.Languages.PurePropositional.Syntax 
 import Carnap.Languages.PurePropositional.Util
+import Carnap.Languages.Util.LanguageClasses
 import Carnap.Core.Data.Types
 import Carnap.Core.Data.Classes
 import Carnap.GHCJS.SharedTypes
@@ -97,15 +98,15 @@ tryMatch o ref w sf opts = onEnter $
 
 parseConnective :: Monad m => ParsecT String u m String
 parseConnective = choice [getAnd, getOr, getIff, getIf, getNeg]
-    where tstringsToTry :: Monad m => [String] -> PurePropLanguage a -> ParsecT String u m String
+    where tstringsToTry :: Monad m => [String] -> PurePropLanguage (Form Bool -> Form Bool -> Form Bool) -> ParsecT String u m String
           tstringsToTry l c = stringsToTry l (show c)
-          getAnd = tstringsToTry ["/\\", "∧", "^", "&", "and"]  PAnd
-          getOr  = tstringsToTry ["\\/", "∨", "v", "|", "or"]  POr
-          getIf  = tstringsToTry [ "=>", "->", ">", "→", "only if"]  PIf
-          getIff = tstringsToTry [ "<=>",  "<->", "<>", "↔", "if and only if"]  PIff
+          getAnd = tstringsToTry ["/\\", "∧", "^", "&", "and"] (review _and ())
+          getOr  = tstringsToTry ["\\/", "∨", "v", "|", "or"] (review _or ())
+          getIf  = tstringsToTry [ "=>", "->", ">", "→", "only if"]  (review _if ())
+          getIff = tstringsToTry [ "<=>",  "<->", "<>", "↔", "if and only if"] (review _iff ())
           getNeg = do spaces
                       _ <- string "-" <|> string "~" <|> string "¬" <|> string "not "
-                      return (show (PNot :: PurePropLanguage (Form Bool-> Form Bool)))
+                      return (show (review _not () :: PurePropLanguage (Form Bool-> Form Bool)))
 
 matchMC :: String -> PureForm -> Either ParseError Bool
 matchMC c f = do con <- parse parseConnective "" c

@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleContexts #-}
 module Carnap.Languages.PurePropositional.Util 
 (showClean,isValid, isEquivTo, toSchema, getIndicies, getValuations, isBooleanBinary, isAtom) 
 where
@@ -19,39 +20,25 @@ showClean :: PurePropLanguage (Form Bool) -> String
 showClean = dropOutermost . preShowClean
 
 preShowClean :: PurePropLanguage (Form Bool) -> String
-preShowClean (x@(_ :||: _) :->: y@(_ :||: _))  = dropBoth   PIf x y
-preShowClean (x@(_ :&: _) :->: y@(_ :||: _))   = dropBoth   PIf x y
-preShowClean (x@(_ :||: _) :->: y@(_ :&: _))   = dropBoth   PIf x y
-preShowClean (x@(_ :&: _) :->: y@(_ :&: _))    = dropBoth   PIf x y
-preShowClean (x@(_ :||: _) :<->: y@(_ :||: _)) = dropBoth   PIff x y
-preShowClean (x@(_ :&: _) :<->: y@(_ :||: _))  = dropBoth   PIff x y
-preShowClean (x@(_ :||: _) :<->: y@(_ :&: _))  = dropBoth   PIff x y
-preShowClean (x@(_ :&: _) :<->: y@(_ :&: _))   = dropBoth   PIff x y
-preShowClean (x :->: y@(_ :||: _))             = dropSecond PIf x y
-preShowClean (x :->: y@(_ :&: _))              = dropSecond PIf x y
-preShowClean (x :<->: y@(_ :||: _))            = dropSecond PIff x y
-preShowClean (x :<->: y@(_ :&: _))             = dropSecond PIff x y
-preShowClean (x@(_ :||: _) :->: y)             = dropFirst PIf x y
-preShowClean (x@(_ :&: _) :->: y)              = dropFirst PIf x y
-preShowClean (x@(_ :&: _) :&: y)               = dropFirst PAnd x y
-preShowClean (x@(_ :||: _) :||: y)             = dropFirst POr x y
-preShowClean (PNeg x)                          = noDrop PNot x
-preShowClean x                                 = show x
+preShowClean = show
+            & outside (binaryOpPrism _if) .~ (\(x,y) -> schematize theIf [dropOn isJunction x, dropOn isJunction y])
+            & outside (binaryOpPrism _iff) .~ (\(x,y) -> schematize theIff [dropOn isJunction x, dropOn isJunction y])
+            & outside (binaryOpPrism _and) .~ (\(x,y) -> schematize theAnd [dropOn isJunction x, preShowClean y])
+            & outside (binaryOpPrism _or) .~ (\(x,y) -> schematize theOr [dropOn isJunction x, preShowClean y])
+    where isAnd x = x ^? (binaryOpPrism _and) /= Nothing
+          isOr x = x ^? (binaryOpPrism _or) /= Nothing
+          dropOn cond x = if cond x then dropParens x else preShowClean x
+          theIf :: PurePropLanguage (Form Bool -> Form Bool -> Form Bool)
+          theIf = review _if ()
+          theIff :: PurePropLanguage (Form Bool -> Form Bool -> Form Bool)
+          theIff = review _iff ()
+          theAnd :: PurePropLanguage (Form Bool -> Form Bool -> Form Bool)
+          theAnd = review _and ()
+          theOr :: PurePropLanguage (Form Bool -> Form Bool -> Form Bool)
+          theOr = review _or ()
     
 dropParens :: PurePropLanguage (Form Bool) -> String
 dropParens =  init . tail . preShowClean
-
-dropBoth :: PurePropLanguage a -> PurePropLanguage (Form Bool) -> PurePropLanguage (Form Bool) -> String
-dropBoth x y z = schematize x [dropParens y, dropParens z]
-
-dropFirst :: PurePropLanguage a -> PurePropLanguage (Form Bool) -> PurePropLanguage (Form Bool) -> String
-dropFirst x y z = schematize x [dropParens y, preShowClean z]
-
-dropSecond :: PurePropLanguage a -> PurePropLanguage (Form Bool) -> PurePropLanguage (Form Bool) -> String
-dropSecond x y z = schematize x [preShowClean y, dropParens z]
-
-noDrop :: PurePropLanguage a -> PurePropLanguage (Form Bool) -> String 
-noDrop x y = schematize x [preShowClean y]
 
 dropOutermost :: String -> String
 dropOutermost s@('(':_) = init . tail $ s
@@ -85,6 +72,9 @@ toSchema a = case a ^? _propIndex of
 --------------
 --4. Tests  --
 --------------
+
+isJunction :: (PrismBooleanConnLex lex b) => FixLang lex (Form b) -> Bool
+isJunction x = not . null . catMaybes $ map (x ^? ) [binaryOpPrism _and, binaryOpPrism _or]
 
 isBooleanBinary :: (PrismBooleanConnLex lex b) => FixLang lex (Form b) -> Bool
 isBooleanBinary a = not . null . catMaybes $ map (a ^? ) [binaryOpPrism _and, binaryOpPrism _or, binaryOpPrism _if,binaryOpPrism _iff]
