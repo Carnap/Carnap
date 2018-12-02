@@ -392,17 +392,32 @@ alternateSymbols2 = map replace
           replace '→' = '⊃'
           replace c = c
 
-alternateSymbols3 s = evalState (mapM replace s) 0
-    where replace '∧' = return '∙'
-          replace '¬' = return '~'
-          replace '→' = return '⊃'
-          replace '(' = do n <- get
-                           put (n + 1)
-                           return $ ['(','[','{'] !! (n `mod` 3)
-          replace ')' = do n <- get
-                           put (n - 1)
-                           return $ [')',']','}'] !! (n - 1 `mod` 3)
-          replace c = return c
+alternateSymbols3 :: String -> String
+alternateSymbols3 x = case runParser altParser 0 "" x of
+                        Left e -> show e
+                        Right s -> s
+    where altParser = do s <- handleCon <|> try handleQuant <|> try handleAtom <|> handleLParen <|> handleRParen <|> fallback
+                         rest <- (eof >> return "") <|> altParser
+                         return $ s ++ rest
+          handleCon = (char '∧' >> return "∙") <|> (char '¬' >> return "~") <|> (char '→' >> return "⊃")
+          handleQuant = do q <- oneOf "∀∃"
+                           v <- anyChar
+                           return $ "(" ++ (if q == '∃' then "∃" else "") ++ [v] ++ ")"
+          handleLParen = do char '('
+                            n <- getState 
+                            putState (n + 1)
+                            return $ ["(","[","{"] !! (n `mod` 3) 
+          handleRParen = do char ')'
+                            n <- getState 
+                            putState (n - 1)
+                            return $ [")","]","}"] !! (n - 1 `mod` 3)
+          handleAtom = do c <- oneOf "ABCDEFGHIJKLMNOPQRSTUVWXYZ" <* char '('
+                          args <- oneOf "abcdefghijklmnopqrstuvwxyz" `sepBy` char ','
+                          char ')'
+                          return $ c:args
+          fallback = do c <- anyChar 
+                        return [c]
+
 
 ------------------
 --1.8 SVG Data  --
