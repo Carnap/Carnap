@@ -3,7 +3,7 @@ module Carnap.Languages.PureFirstOrder.Parser
 ( folFormulaParser, folFormulaParserRelaxed, mfolFormulaParser
 , magnusFOLFormulaParser, thomasBolducAndZachFOLFormulaParser
 , hardegreePLFormulaParser, bergmannMoorAndNelsonPDFormulaParser
-, goldfarbNDFormulaParser, FirstOrderParserOptions(..)
+, goldfarbNDFormulaParser, hausmanPLFormulaParser, FirstOrderParserOptions(..)
 , parserFromOptions, parseFreeVar) where
 
 import Carnap.Core.Data.Types
@@ -11,6 +11,8 @@ import Carnap.Core.Data.Classes (Schematizable)
 import Carnap.Languages.PureFirstOrder.Syntax
 import Carnap.Languages.Util.LanguageClasses (BooleanLanguage, BooleanConstLanguage, StandardVarLanguage, IndexedPropLanguage(..), QuantLanguage(..))
 import Carnap.Languages.Util.GenericParsers
+import Carnap.Languages.PurePropositional.Parser
+import Carnap.Languages.PurePropositional.Util
 import Text.Parsec
 import Text.Parsec.Expr
 import Control.Monad.Identity
@@ -26,6 +28,10 @@ data FirstOrderParserOptions lex u m = FirstOrderParserOptions
                                          , functionParser :: Maybe (ParsecT String u m (FixLang lex (Term Int)) 
                                             -> ParsecT String u m (FixLang lex (Term Int)))
                                          , hasBooleanConstants :: Bool
+                                         , parenRecur :: FirstOrderParserOptions lex u m
+                                            -> (FirstOrderParserOptions lex u m -> ParsecT String u m (FixLang lex (Form Bool))) 
+                                            -> ParsecT String u m (FixLang lex (Form Bool))
+                                         , opTable :: [[Operator String u m (FixLang lex (Form Bool))]]
                                          }
 
 standardFOLParserOptions :: FirstOrderParserOptions PureLexiconFOL u Identity
@@ -38,6 +44,8 @@ standardFOLParserOptions = FirstOrderParserOptions
                          , constantParser = Just (parseConstant "abcde")
                          , functionParser = Just (parseFunctionSymbol "fgh")
                          , hasBooleanConstants = False
+                         , parenRecur = \opt recurWith  -> parenParser (recurWith opt)
+                         , opTable = standardOpTable
                          }
 
 simplePolyadicFOLParserOptions :: FirstOrderParserOptions PureLexiconPFOL u Identity
@@ -49,6 +57,8 @@ simplePolyadicFOLParserOptions = FirstOrderParserOptions
                          , constantParser = Just (parseConstant "abcde")
                          , functionParser = Nothing
                          , hasBooleanConstants = False
+                         , parenRecur = \opt recurWith  -> parenParser (recurWith opt)
+                         , opTable = standardOpTable
                          }
 
 simpleMonadicFOLParserOptions :: FirstOrderParserOptions PureLexiconMFOL u Identity
@@ -59,6 +69,8 @@ simpleMonadicFOLParserOptions = FirstOrderParserOptions
                          , constantParser = Just (parseConstant "abcde")
                          , functionParser = Nothing
                          , hasBooleanConstants = False
+                         , parenRecur = \opt recurWith  -> parenParser (recurWith opt)
+                         , opTable = standardOpTable
                          }
 
 magnusFOLParserOptions :: FirstOrderParserOptions PureLexiconFOL u Identity
@@ -70,6 +82,8 @@ magnusFOLParserOptions = FirstOrderParserOptions
                          , constantParser = Just (parseConstant "abcdefghijklmnopqrstuvw")
                          , functionParser = Nothing
                          , hasBooleanConstants = False
+                         , parenRecur = \opt recurWith  -> parenParser (recurWith opt)
+                         , opTable = standardOpTable
                          }
 
 thomasBolducAndZachFOLParserOptions :: FirstOrderParserOptions PureLexiconFOL u Identity
@@ -84,6 +98,8 @@ bergmannMoorAndNelsonFOLParserOptions = FirstOrderParserOptions
                          , constantParser = Just (parseConstant "abcdefghijklmnopqrstuv")
                          , functionParser = Nothing
                          , hasBooleanConstants = False
+                         , parenRecur = \opt recurWith  -> parenParser (recurWith opt)
+                         , opTable = standardOpTable
                          }
 
 hardegreePLParserOptions :: FirstOrderParserOptions PureLexiconFOL u Identity
@@ -94,6 +110,8 @@ hardegreePLParserOptions = FirstOrderParserOptions
                          , constantParser = Just (parseConstant ['a' .. 's'])
                          , functionParser = Nothing
                          , hasBooleanConstants = True
+                         , parenRecur = \opt recurWith  -> parenParser (recurWith opt)
+                         , opTable = standardOpTable
                          }
 
 goldfarbNDParserOptions :: FirstOrderParserOptions PureLexiconFOL u Identity
@@ -104,16 +122,39 @@ goldfarbNDParserOptions = FirstOrderParserOptions
                          , constantParser = Nothing
                          , functionParser = Nothing
                          , hasBooleanConstants = False
+                         , parenRecur = \opt recurWith  -> parenParser (recurWith opt)
+                         , opTable = standardOpTable
                          }
+
+hausmanPLOptions :: FirstOrderParserOptions PureLexiconFOL u Identity
+hausmanPLOptions = FirstOrderParserOptions 
+                         { atomicSentenceParser = \x -> try (parsePredicateSymbolNoParen "ABCDEFGHIJKLMNOPQRSTUVWXYZ" x)
+                                                        <|> sentenceLetterParser "ABCDEFGHIJKLMNOPQRSTUVWXYZ" 
+                                                        <|> equalsParser x 
+                         , quantifiedSentenceParser' = altQuantifiedSentenceParser
+                         , freeVarParser = parseFreeVar "uvwxyz"
+                         , constantParser = Just (parseConstant "abcdefghijklmnopqrst")
+                         , functionParser = Nothing
+                         , hasBooleanConstants = False
+                         , parenRecur = hausmanDispatch
+                         , opTable = hausmanOpTable
+                         }
+    where hausmanDispatch opt recurWith = hausmanBrace opt recurWith
+                                      <|> hausmanParen opt recurWith
+                                      <|> hausmanBracket opt recurWith
+          hausmanBrace opt recurWith = wrappedWith '{' '}' (recurWith opt {parenRecur = hausmanBracket}) >>= boolean
+          hausmanParen opt recurWith = wrappedWith '(' ')' (recurWith opt {parenRecur = hausmanBrace}) >>= boolean
+          hausmanBracket opt recurWith = wrappedWith '[' ']' (recurWith opt {parenRecur = hausmanParen}) >>= boolean
+          boolean a = if isBoolean a then return a else unexpected "atomic or quantified sentence wrapped in parentheses"
 
 coreSubformulaParser :: ( BoundVars lex
                         , BooleanLanguage (FixLang lex (Form Bool))
                         , BooleanConstLanguage (FixLang lex (Form Bool))
                         , QuantLanguage (FixLang lex (Form Bool)) (FixLang lex (Term Int))
                         ) =>
-    Parsec String u (FixLang lex (Form Bool)) -> FirstOrderParserOptions lex u Identity
+    (FirstOrderParserOptions lex u Identity -> Parsec String u (FixLang lex (Form Bool))) -> FirstOrderParserOptions lex u Identity
         -> Parsec String u (FixLang lex (Form Bool))
-coreSubformulaParser fp opts = (parenParser fp <* spaces)
+coreSubformulaParser fp opts = try ((parenRecur opts) opts fp <* spaces)
                              <|> try (unaryOpParser [parseNeg] (coreSubformulaParser fp opts))
                              <|> try ((quantifiedSentenceParser' opts) vparser (coreSubformulaParser fp opts) <* spaces)
                              <|> (atomicSentenceParser opts tparser <* spaces)
@@ -128,8 +169,8 @@ coreSubformulaParser fp opts = (parenParser fp <* spaces)
           --Terms
           tparser = try (fparser tparser) <|> try cparser <|> vparser 
 
-parserFromOptions opts = buildExpressionParser opTable subformulaParser
-    where subformulaParser = coreSubformulaParser (parserFromOptions opts) opts 
+parserFromOptions opts = buildExpressionParser (opTable opts) subformulaParser
+    where subformulaParser = coreSubformulaParser parserFromOptions opts 
 
 magnusFOLFormulaParser :: Parsec String u PureFOLForm
 magnusFOLFormulaParser = parserFromOptions magnusFOLParserOptions
@@ -145,6 +186,9 @@ goldfarbNDFormulaParser = parserFromOptions goldfarbNDParserOptions
 
 bergmannMoorAndNelsonPDFormulaParser :: Parsec String u PureFOLForm
 bergmannMoorAndNelsonPDFormulaParser = parserFromOptions bergmannMoorAndNelsonFOLParserOptions
+
+hausmanPLFormulaParser :: Parsec String u PureFOLForm
+hausmanPLFormulaParser = parserFromOptions hausmanPLOptions
 
 folFormulaParser :: Parsec String u PureFOLForm
 folFormulaParser = parserFromOptions standardFOLParserOptions
@@ -175,8 +219,3 @@ monadicSentenceParser parseTerm = do _ <- string "P_"
                                      _ <- char ')'
                                      return (PMPred n :!$: t)
 
-opTable :: (BooleanLanguage (PureFirstOrderLanguageWith a (Form Bool)), Monad m)
-    => [[Operator String u m (PureFirstOrderLanguageWith a (Form Bool))]]
-opTable = [[ Prefix (try parseNeg)], 
-          [Infix (try parseOr) AssocLeft, Infix (try parseAnd) AssocLeft],
-          [Infix (try parseIf) AssocNone, Infix (try parseIff) AssocNone]]

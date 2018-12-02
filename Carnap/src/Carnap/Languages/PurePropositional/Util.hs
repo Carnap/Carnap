@@ -1,6 +1,6 @@
 {-# LANGUAGE FlexibleContexts #-}
 module Carnap.Languages.PurePropositional.Util 
-(showClean,isValid, isEquivTo, toSchema, getIndicies, getValuations, isBooleanBinary, isAtom) 
+(showClean,isValid, isEquivTo, toSchema, getIndicies, getValuations, isBooleanBinary, isBooleanUnary, isBoolean, isAtom) 
 where
 
 import Carnap.Core.Data.Classes
@@ -78,6 +78,11 @@ isJunction x = not . null . catMaybes $ map (x ^? ) [binaryOpPrism _and, binaryO
 
 isBooleanBinary :: (PrismBooleanConnLex lex b) => FixLang lex (Form b) -> Bool
 isBooleanBinary a = not . null . catMaybes $ map (a ^? ) [binaryOpPrism _and, binaryOpPrism _or, binaryOpPrism _if,binaryOpPrism _iff]
+
+isBooleanUnary :: (PrismBooleanConnLex lex b) => FixLang lex (Form b) -> Bool
+isBooleanUnary a = case a ^? unaryOpPrism _not of Nothing -> False; Just _ -> True
+
+isBoolean x = isBooleanUnary x || isBooleanBinary x
 
 isAtom :: (PrismPropLex lex b) => FixLang lex (Form b) -> Bool
 isAtom a = not ((a ^? _propIndex) == Nothing)

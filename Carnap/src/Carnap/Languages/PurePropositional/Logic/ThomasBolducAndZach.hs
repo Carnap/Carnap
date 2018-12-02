@@ -165,7 +165,7 @@ parseThomasBolducAndZachTFL rtc = do r <- choice (map (try . string) [ "AS","PR"
                                             | r == "DeM"   -> return [DeMorgan1,DeMorgan2,DeMorgan3,DeMorgan4]
 
 parseThomasBolducAndZachTFLProof :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> String -> [DeductionLine ThomasBolducAndZachTFL PurePropLexicon (Form Bool)]
-parseThomasBolducAndZachTFLProof rtc = toDeductionFitch (parseThomasBolducAndZachTFL rtc) (purePropFormulaParser $ extendedLetters {hasBooleanConstants = True})
+parseThomasBolducAndZachTFLProof rtc = toDeductionFitch (parseThomasBolducAndZachTFL rtc) (purePropFormulaParser $ thomasBolducZachOpts)
 
 thomasBolducAndZachTFLCalc = NaturalDeductionCalc 
     { ndRenderer = FitchStyle

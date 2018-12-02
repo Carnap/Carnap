@@ -163,7 +163,7 @@ parseHardegreeSL rtc = do r <- choice (map (try . string) ["AS","PR","&I","&O","
                                                                   return [OrID (read ds)]
 
 parseHardegreeSLProof :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> String -> [DeductionLine HardegreeSL PurePropLexicon (Form Bool)]
-parseHardegreeSLProof rtc = toDeductionHardegree (parseHardegreeSL rtc) (purePropFormulaParser (standardLetters {hasBooleanConstants = True}))
+parseHardegreeSLProof rtc = toDeductionHardegree (parseHardegreeSL rtc) (purePropFormulaParser hardegreeOpts)
 
 hardegreeSLCalc = NaturalDeductionCalc 
     { ndRenderer = MontagueStyle

@@ -100,7 +100,7 @@ hausmanUniversalConstraint cs ded lineno sub
 parseHausmanPL rtc = try quantRule <|> liftProp 
     where liftProp = do r <- P.parseHausmanSL (RuntimeNaturalDeductionConfig mempty mempty)
                         return (map SL r)
-          quantRule = do r <- choice (map (try . string) ["UG", "UI", "EG", "EI", "QN", "ID", "IR", "PR"])
+          quantRule = do r <- choice (map (try . string) ["UG", "UI", "EG", "EI", "QN", "ID", "IR", "p"])
                          case r of 
                             "UG" -> return [UI]
                             "UI" -> return [UE]
@@ -109,10 +109,10 @@ parseHausmanPL rtc = try quantRule <|> liftProp
                             "QN" -> return [QN1,QN2,QN3,QN4]
                             "ID" -> return [ID1,ID2]
                             "IR" -> return [IR]
-                            "PR" -> return [Pr (problemPremises rtc)]
+                            "p"  -> return [Pr (problemPremises rtc)]
 
 parseHausmanPLProof :: RuntimeNaturalDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine HausmanPL PureLexiconFOL (Form Bool)]
-parseHausmanPLProof rtc = toDeductionFitch (parseHausmanPL rtc) bergmannMoorAndNelsonPDFormulaParser --XXX Check parser
+parseHausmanPLProof rtc = toDeductionFitch (parseHausmanPL rtc) hausmanPLFormulaParser --XXX Check parser
 
 hausmanPLCalc = NaturalDeductionCalc
     { ndRenderer = FitchStyle

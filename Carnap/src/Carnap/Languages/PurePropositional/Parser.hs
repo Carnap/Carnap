@@ -1,5 +1,10 @@
-module Carnap.Languages.PurePropositional.Parser (purePropFormulaParser, standardLetters, extendedLetters, hausmanOpts, PurePropositionalParserOptions(..)) where
+{-# LANGUAGE FlexibleContexts #-}
+module Carnap.Languages.PurePropositional.Parser 
+    ( purePropFormulaParser, standardLetters, extendedLetters, hausmanOpts, thomasBolducZachOpts, hardegreeOpts
+    , standardOpTable, hausmanOpTable
+    ) where
 
+import Carnap.Core.Data.Types
 import Carnap.Languages.PurePropositional.Syntax
 import Carnap.Languages.PurePropositional.Util (isAtom)
 import Carnap.Languages.Util.LanguageClasses (BooleanLanguage, IndexedPropLanguage)
@@ -24,8 +29,14 @@ standardLetters = PurePropositionalParserOptions
                         , parenRecur = \opt recurWith -> parenParser (recurWith opt)
                         }
 
+hardegreeOpts :: Monad m => PurePropositionalParserOptions u m
+hardegreeOpts = standardLetters { hasBooleanConstants = True }
+
 extendedLetters :: Monad m => PurePropositionalParserOptions u m
 extendedLetters = standardLetters { atomicSentenceParser = sentenceLetterParser "ABCDEFGHIJKLMNOPQRSTUVWXYZ" }
+
+thomasBolducZachOpts :: Monad m => PurePropositionalParserOptions u m
+thomasBolducZachOpts = extendedLetters { hasBooleanConstants = True }
 
 hausmanOpts ::  Monad m => PurePropositionalParserOptions u m
 hausmanOpts = extendedLetters 
@@ -51,13 +62,15 @@ purePropFormulaParser opts = buildExpressionParser (opTable opts) subFormulaPars
                           <|> if hasBooleanConstants opts then try (booleanConstParser <* spaces) else parserZero
                           <|> ((schemevarParser <* spaces) <?> "")
 
-standardOpTable :: Monad m => [[Operator String u m PureForm]]
+standardOpTable :: (BooleanLanguage (FixLang lex (Form Bool)), Monad m)
+    => [[Operator String u m (FixLang lex (Form Bool))]]
 standardOpTable = [ [ Prefix (try parseNeg)]
                   , [Infix (try parseOr) AssocLeft, Infix (try parseAnd) AssocLeft]
                   , [Infix (try parseIf) AssocNone, Infix (try parseIff) AssocNone]
                   ]
 
-hausmanOpTable :: Monad m => [[Operator String u m PureForm]]
+hausmanOpTable :: (BooleanLanguage (FixLang lex (Form Bool)), Monad m)
+    => [[Operator String u m (FixLang lex (Form Bool))]]
 hausmanOpTable = [[ Prefix (try parseNeg)
                   , Infix (try parseOr) AssocNone
                   , Infix (try (parseAsAnd [".", "∧", "∙"])) AssocNone
