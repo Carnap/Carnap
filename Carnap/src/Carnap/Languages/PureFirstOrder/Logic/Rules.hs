@@ -176,7 +176,6 @@ montagueNewExistentialConstraint cs ded lineno sub =
                          || boundVarOf x y
                          || any (boundVarOf x) (toListOf formsOf y)
 
-
 montagueNewUniversalConstraint cs ded lineno sub = 
         case relevantForms of
             [] -> Just "No show line found for this rule. But this rule requires a preceeding show line. Remeber to align opening and closing lines of subproofs."
