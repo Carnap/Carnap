@@ -7,6 +7,7 @@ import Carnap.Languages.Util.LanguageClasses (BooleanLanguage, BooleanConstLangu
 import Carnap.Languages.Util.GenericParsers
 import Control.Monad.Identity
 import Carnap.Languages.PureFirstOrder.Parser (FirstOrderParserOptions(..), parserFromOptions, parseFreeVar)
+import Carnap.Languages.PurePropositional.Parser (standardOpTable)
 import Text.Parsec
 import Text.Parsec.Expr
 
@@ -19,6 +20,8 @@ strictSetTheoryOptions = FirstOrderParserOptions
                          , constantParser = Just (parseConstant "abcde")
                          , functionParser = Nothing
                          , hasBooleanConstants = False
+                         , parenRecur = \opt recurWith  -> parenParser (recurWith opt)
+                         , opTable = standardOpTable
                          }
 
 strictSetTheoryParser = parserFromOptions strictSetTheoryOptions
@@ -38,6 +41,8 @@ elementarySetTheoryOptions = FirstOrderParserOptions
                                                                  <|> parseConstant "abcde" 
                                                                  ))
                            , hasBooleanConstants = False
+                           , parenRecur = \opt recurWith  -> parenParser (recurWith opt)
+                           , opTable = standardOpTable
                            }
 
 elementarySetTheoryParser = parserFromOptions elementarySetTheoryOptions
@@ -59,6 +64,8 @@ separativeSetTheoryOptions = FirstOrderParserOptions
                                                                  <|> cparser
                                                                  ))
                            , hasBooleanConstants = False
+                           , parenRecur = \opt recurWith  -> parenParser (recurWith opt)
+                           , opTable = standardOpTable
                            }
     where cparser = case constantParser separativeSetTheoryOptions of Just c -> c
           fparser = case functionParser separativeSetTheoryOptions of Just f -> f
