@@ -1,7 +1,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 module Carnap.Languages.PurePropositional.Parser 
     ( purePropFormulaParser, standardLetters, extendedLetters, hausmanOpts, thomasBolducZachOpts, hardegreeOpts
-    , standardOpTable, hausmanOpTable
+    , standardOpTable, hausmanOpTable, howardSnyderOpts
     ) where
 
 import Carnap.Core.Data.Types
@@ -51,6 +51,15 @@ hausmanOpts = extendedLetters
           hausmanBracket opt recurWith = wrappedWith '[' ']' (recurWith opt {parenRecur = hausmanParen}) >>= noatoms
           noatoms a = if isAtom a then unexpected "atomic sentence wrapped in parentheses" else return a
 
+howardSnyderOpts ::  Monad m => PurePropositionalParserOptions u m
+howardSnyderOpts = extendedLetters 
+                { opTable = hausmanOpTable 
+                , parenRecur = hsDispatch
+                }
+    where noatoms a = if isAtom a then unexpected "atomic sentence wrapped in parentheses" else return a
+          hsDispatch opt rw = (wrappedWith '{' '}' (rw opt) <|> wrappedWith '(' ')' (rw opt) <|> wrappedWith '{' '}' (rw opt)) >>= noatoms
+    
+
 --this parses as much formula as it can, but is happy to return an output if the
 --initial segment of a string is a formula
 purePropFormulaParser :: Monad m => PurePropositionalParserOptions u m -> ParsecT String u m PureForm
@@ -77,3 +86,12 @@ hausmanOpTable = [[ Prefix (try parseNeg)
                   , Infix (try (parseAsIf ["⊃","→",">"])) AssocNone
                   , Infix (try parseIff) AssocNone
                   ]]
+
+howardSnyderOpTable :: (BooleanLanguage (FixLang lex (Form Bool)), Monad m)
+    => [[Operator String u m (FixLang lex (Form Bool))]]
+howardSnyderOpTable = [[ Prefix (try parseNeg)
+                       , Infix (try parseOr) AssocNone
+                       , Infix (try (parseAsAnd [".", "∧", "∙"])) AssocNone
+                       , Infix (try parseIf) AssocNone
+                       , Infix (try parseIff) AssocNone
+                       ]]
