@@ -124,7 +124,8 @@ instance Inference HausmanSL PurePropLexicon (Form Bool) where
     ruleOf (Pr _)     = axiom
 
     indirectInference x
-        | x `elem` [CP1, CP2, IP1, IP2] = Just PolyProof
+        | x `elem` [CP1, CP2] = Just PolyProof
+        | x `elem` [IP1, IP2] = Just assumptiveProof
         | otherwise = Nothing
 
     isAssumption AP = True

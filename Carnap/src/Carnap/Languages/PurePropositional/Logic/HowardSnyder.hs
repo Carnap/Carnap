@@ -18,12 +18,12 @@ import Carnap.Languages.PurePropositional.Logic.Rules
 from HowardSnyder' Logic and Philosophy
 -}
 
-data HowardSnyderSL = MP |  MT | Conj | HS | DS1 | DS2 | Add | CD | Simp1 | Simp2
+data HowardSnyderSL = MP |  MT | Conj | HS | DS1 | DS2 | Add1 | Add2 | CD | Simp1 | Simp2
                | DN1 | DN2  | Contra1 | Contra2 | DeM1 | DeM2 | DeM3 | DeM4
                | Impl1 | Impl2 | Exp1 | Exp2 | Comm1 | Comm2 
                | Taut1 | Taut2 | Taut3 | Taut4 | Assoc1 | Assoc2 | Assoc3 | Assoc4
                | Equiv1 | Equiv2 | Equiv3 | Equiv4 | Dist1 | Dist2 | Dist3 | Dist4
-               | CP1 | CP2 | IP1 | IP2
+               | CP1 | CP2 | IP1 | IP2 | IP3 | IP4
                | AP | Pr (Maybe [(ClassicalSequentOver PurePropLexicon (Sequent (Form Bool)))])
                deriving (Eq)
 
@@ -34,7 +34,8 @@ instance Show HowardSnyderSL where
     show HS = "HS"
     show DS1 = "DS"
     show DS2 = "DS"
-    show Add = "Add"
+    show Add1 = "Add"
+    show Add2 = "Add"
     show CD = "CD"
     show Simp1 = "Simp"
     show Simp2 = "Simp"
@@ -70,8 +71,10 @@ instance Show HowardSnyderSL where
     show Dist4 = "Dist"
     show CP1 = "CP"
     show CP2 = "CP"
-    show IP1 = "IP"
-    show IP2 = "IP"
+    show IP1 = "RAA"
+    show IP2 = "RAA"
+    show IP3 = "RAA"
+    show IP4 = "RAA"
     show AP    = "AP"
     show (Pr _)  = "p"
 
@@ -82,7 +85,8 @@ instance Inference HowardSnyderSL PurePropLexicon (Form Bool) where
     ruleOf HS   = hypotheticalSyllogism
     ruleOf DS1  = modusTollendoPonensVariations !! 0 
     ruleOf DS2  = modusTollendoPonensVariations !! 1
-    ruleOf Add  = additionVariations !! 1 --book only uses this form
+    ruleOf Add1  = additionVariations !! 0 
+    ruleOf Add2  = additionVariations !! 1
     ruleOf CD   = dilemma
     ruleOf Simp1 = simplificationVariations !! 0
     ruleOf Simp2 = simplificationVariations !! 1
@@ -120,11 +124,14 @@ instance Inference HowardSnyderSL PurePropLexicon (Form Bool) where
     ruleOf CP2 = conditionalProofVariations !! 1
     ruleOf IP1 = explictNonConstructiveConjunctionReductioVariations !! 0
     ruleOf IP2 = explictNonConstructiveConjunctionReductioVariations !! 1
+    ruleOf IP3 = explictConstructiveConjunctionReductioVariations !! 0
+    ruleOf IP4 = explictConstructiveConjunctionReductioVariations !! 1
     ruleOf AP         = axiom
     ruleOf (Pr _)     = axiom
 
     indirectInference x
-        | x `elem` [CP1, CP2, IP1, IP2] = Just PolyProof
+        | x `elem` [CP1, CP2] = Just PolyProof
+        | x `elem` [IP1, IP2, IP3, IP4] = Just assumptiveProof
         | otherwise = Nothing
 
     isAssumption AP = True
@@ -134,9 +141,9 @@ instance Inference HowardSnyderSL PurePropLexicon (Form Bool) where
     restriction _ = Nothing
 
 parseHowardSnyderSL :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> Parsec String u [HowardSnyderSL]
-parseHowardSnyderSL rtc = do r <- choice (map (try . string) [ "MP", "Conj", "MT", "HS", "DS", "Add", "CD", "Simp"
+parseHowardSnyderSL rtc = do r <- choice (map (try . string) [ "Assume", "MP", "Conj", "MT", "HS", "DS", "Add", "CD", "Simp"
                                                              , "DN", "Cont", "DeM", "MI", "Ex", "Com", "Re", "As"
-                                                             , "ME", "Dist", "CP", "IP", "Assume","p"
+                                                             , "ME", "Dist", "CP", "RAA", "p"
                                                              ])
                              case r of
                                 "MP" -> return [MP]
@@ -144,7 +151,7 @@ parseHowardSnyderSL rtc = do r <- choice (map (try . string) [ "MP", "Conj", "MT
                                 "MT" -> return [MT]
                                 "HS" -> return [HS]
                                 "DS" -> return [DS1, DS2]
-                                "Add" -> return [Add] 
+                                "Add" -> return [Add1,Add2] 
                                 "CD" -> return [CD]
                                 "Simp" -> return [Simp1, Simp2]
                                 "DN" -> return [DN1, DN2]
@@ -153,12 +160,12 @@ parseHowardSnyderSL rtc = do r <- choice (map (try . string) [ "MP", "Conj", "MT
                                 "MI" -> return [Impl1, Impl2]
                                 "Ex" -> return [Exp1, Exp2]
                                 "Com" -> return [Comm1, Comm2]
-                                "Taut" -> return [Taut1, Taut2, Taut3, Taut4]
+                                "Re" -> return [Taut1, Taut2, Taut3, Taut4]
                                 "As" -> return [Assoc1, Assoc2, Assoc3, Assoc4]
                                 "ME" -> return [Equiv1, Equiv2, Equiv3, Equiv4]
                                 "Dist" -> return [Dist1, Dist2, Dist3, Dist4]
                                 "CP" -> return [CP1,CP2]
-                                "IP" -> return [IP1, IP2]
+                                "RAA" -> return [IP1, IP2, IP3, IP4]
                                 "Assume" -> return [AP]
                                 "p" -> return [Pr (problemPremises rtc)]
 
