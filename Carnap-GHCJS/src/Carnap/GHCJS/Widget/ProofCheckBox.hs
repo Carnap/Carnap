@@ -61,6 +61,7 @@ optionsFromMap opts = CheckerOptions { submit = Nothing
                                                                Just "alt1" -> alternateSymbols1
                                                                Just "alt2" -> alternateSymbols2
                                                                Just "alt3" -> alternateSymbols3
+                                                               Just "alt4" -> alternateSymbols4
                                                                _ -> id
                                       , indentGuides = case M.lookup "guides" opts of
                                                        Just "montague"     -> MontagueGuide

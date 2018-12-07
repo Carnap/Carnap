@@ -9,7 +9,8 @@ module Lib
     folSeqAndLabel, folFormAndLabel, message, IOGoal(..), updateWithValue,
     submissionSource, assignmentKey, initialize, popUpWith, spinnerSVG,
     doneButton, questionButton, exclaimButton, expandButton, buttonWrapper,
-    maybeNodeListToList, trySubmit, alternateSymbols1, alternateSymbols2, alternateSymbols3) where
+    maybeNodeListToList, trySubmit, alternateSymbols1, alternateSymbols2,
+    alternateSymbols3, alternateSymbols4) where
 
 import Data.Aeson
 import Data.Maybe (catMaybes)
@@ -418,6 +419,31 @@ alternateSymbols3 x = case runParser altParser 0 "" x of
           fallback = do c <- anyChar 
                         return [c]
 
+alternateSymbols4 :: String -> String
+alternateSymbols4 x = case runParser altParser 0 "" x of
+                        Left e -> show e
+                        Right s -> s
+    where altParser = do s <- handleCon <|> try handleQuant <|> try handleAtom <|> handleLParen <|> handleRParen <|> fallback
+                         rest <- (eof >> return "") <|> altParser
+                         return $ s ++ rest
+          handleCon = (char '∧' >> return "∙") <|> (char '¬' >> return "~")
+          handleQuant = do q <- oneOf "∀∃"
+                           v <- anyChar
+                           return $ "(" ++ (if q == '∃' then "∃" else "") ++ [v] ++ ")"
+          handleLParen = do char '('
+                            n <- getState 
+                            putState (n + 1)
+                            return $ ["(","[","{"] !! (n `mod` 3) 
+          handleRParen = do char ')'
+                            n <- getState 
+                            putState (n - 1)
+                            return $ [")","]","}"] !! (n - 1 `mod` 3)
+          handleAtom = do c <- oneOf "ABCDEFGHIJKLMNOPQRSTUVWXYZ" <* char '('
+                          args <- oneOf "abcdefghijklmnopqrstuvwxyz" `sepBy` char ','
+                          char ')'
+                          return $ c:args
+          fallback = do c <- anyChar 
+                        return [c]
 
 ------------------
 --1.8 SVG Data  --
