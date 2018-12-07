@@ -30,7 +30,7 @@ data Button = Button { label  :: String
 data CheckerFeedbackUpdate = Keypress | Click | Never | SyntaxOnly
     deriving Eq
 
-data CheckerGuide = MontagueGuide | FitchGuide | HausmanGuide | NoGuide
+data CheckerGuide = MontagueGuide | FitchGuide | HausmanGuide | HowardSnyderGuide | NoGuide
 
 data CheckerOptions = CheckerOptions { submit :: Maybe Button -- What's the submission button, if there is one?
                                      , render :: Bool -- Should the checker render the proof?
@@ -63,9 +63,10 @@ optionsFromMap opts = CheckerOptions { submit = Nothing
                                                                Just "alt3" -> alternateSymbols3
                                                                _ -> id
                                       , indentGuides = case M.lookup "guides" opts of
-                                                       Just "montague" -> MontagueGuide
-                                                       Just "fitch"    -> FitchGuide
-                                                       Just "hausman" -> HausmanGuide
+                                                       Just "montague"     -> MontagueGuide
+                                                       Just "fitch"        -> FitchGuide
+                                                       Just "hausman"      -> HausmanGuide
+                                                       Just "howardSnyder" -> HowardSnyderGuide
                                                        _ -> if "guides" `elem` optlist 
                                                                 then MontagueGuide
                                                                 else NoGuide
@@ -233,6 +234,7 @@ setLinesTo w nd options lines = do setInnerHTML nd (Just "")
                                          _ | indent > oldindent -> indent - 1 : guidelevels'
                                          _ -> guidelevels'
                  let guidestring = case indentGuides options of
+                                       --TODO: clean this up
                                        NoGuide -> ""
                                        MontagueGuide -> reverse . concat . map (\n -> '│' : replicate (n - 1) ' ') $ differences guidelevels'
                                        HausmanGuide | indent > oldindent -> 
@@ -242,6 +244,13 @@ setLinesTo w nd options lines = do setInnerHTML nd (Just "")
                                        HausmanGuide | nextindent < indent && not (null guidelevels'') -> 
                                            (reverse . concat $ map (\n -> '│' : replicate (n - 1) ' ') (differences guidelevels''))
                                            ++ replicate (length rest + indent - (head guidelevels'')) '_'
+                                       HowardSnyderGuide | indent > oldindent -> 
+                                           reverse . concat 
+                                           $ (\n -> "‾│" ++ replicate (n - 1) ' ') (head $ differences guidelevels'')
+                                             : map (\n -> '│' : replicate (n - 1) ' ') (tail $ differences guidelevels'')
+                                       HowardSnyderGuide | nextindent < indent && not (null guidelevels'') -> 
+                                           (reverse . concat $ map (\n -> '│' : replicate (n - 1) ' ') (differences guidelevels''))
+                                           ++ "_"
                                        FitchGuide | indent > oldindent -> 
                                            (reverse . concat $ map (\n -> '│' : replicate (n - 1) ' ') (differences guidelevels''))
                                            ++ replicate (length rest + indent - (head guidelevels'')) '_'
