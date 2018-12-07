@@ -53,12 +53,11 @@ hausmanOpts = extendedLetters
 
 howardSnyderOpts ::  Monad m => PurePropositionalParserOptions u m
 howardSnyderOpts = extendedLetters 
-                { opTable = hausmanOpTable 
+                { opTable = howardSnyderOpTable
                 , parenRecur = hsDispatch
                 }
     where noatoms a = if isAtom a then unexpected "atomic sentence wrapped in parentheses" else return a
-          hsDispatch opt rw = (wrappedWith '{' '}' (rw opt) <|> wrappedWith '(' ')' (rw opt) <|> wrappedWith '{' '}' (rw opt)) >>= noatoms
-    
+          hsDispatch opt rw = (wrappedWith '{' '}' (rw opt) <|> wrappedWith '(' ')' (rw opt) <|> wrappedWith '[' ']' (rw opt)) >>= noatoms
 
 --this parses as much formula as it can, but is happy to return an output if the
 --initial segment of a string is a formula
