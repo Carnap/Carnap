@@ -320,7 +320,10 @@ foseqFromNode lineno rules prems conc =
                                    (map (view rhs) (rconc:rp)) 
                                    (conc:map (view rhs) prems))
                             let subbedrule = map (applySub fosub) rp
-                            let subbedconc = applySub fosub rconc
+                                -- XXX: We use the old rhs rather than building
+                                -- a new one by substitution in order to
+                                -- preserve things like variable labelings
+                            let subbedconc = applySub fosub (set rhs conc rconc )
                             acuisubs <- acuisolve 
                                (zipWith (:=:) 
                                    (map (view lhs) subbedrule) 
@@ -357,7 +360,10 @@ hoseqFromNode lineno rules prems conc =
                             Right hosubs -> 
                                 do hosub <- hosubs
                                    let subbedrule = map (applySub hosub) rps
-                                   let subbedconc = applySub hosub rconc
+                                        -- XXX: We use the old rhs rather than building
+                                        -- a new one by substitution in order to
+                                        -- preserve things like variable labelings
+                                   let subbedconc = applySub hosub (set rhs conc rconc )
                                    let prob = (zipWith (:=:) (map (pureBNF . view lhs) subbedrule) 
                                                              (map (view lhs) prems))
                                    case evalState (acuiUnifySys (const False) prob) (0 :: Int) of
