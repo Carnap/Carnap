@@ -234,41 +234,47 @@ setLinesTo w nd options lines = do setInnerHTML nd (Just "")
                                          MontagueGuide | take 4 rest `elem` ["show","Show","SHOW"] -> indent : guidelevels'
                                          _ | indent > oldindent -> indent - 1 : guidelevels'
                                          _ -> guidelevels'
+                 let numstring | no < 9  = "   " ++ show (no + 1) ++ "."
+                               | no < 99  = "  " ++ show (no + 1) ++ "."
+                               | no < 999  = " " ++ show (no + 1) ++ "."
+                               | otherwise  = "" ++ show (no + 1) ++ "."
                  let guidestring = case indentGuides options of
-                                       --TODO: clean this up
-                                       NoGuide -> ""
-                                       MontagueGuide -> reverse . concat . map (\n -> '│' : replicate (n - 1) ' ') $ differences guidelevels'
+                                       NoGuide -> numstring
+                                       MontagueGuide -> 
+                                           numstring 
+                                           ++ bars (differences guidelevels')
                                        HausmanGuide | indent > oldindent -> 
-                                           reverse . concat 
-                                           $ (\n -> '↱' : replicate (n - 1) ' ') (head $ differences guidelevels'')
-                                             : map (\n -> '│' : replicate (n - 1) ' ') (tail $ differences guidelevels'')
+                                           numstring ++ bars (tail $ differences guidelevels'')
+                                           ++ replicate (head (differences guidelevels'') - 1) ' ' 
+                                           ++ "↱"
                                        HausmanGuide | nextindent < indent && not (null guidelevels'') -> 
-                                           (reverse . concat $ map (\n -> '│' : replicate (n - 1) ' ') (differences guidelevels''))
+                                           numstring
+                                           ++ bars (differences guidelevels'')
                                            ++ replicate (length rest + indent - (head guidelevels'')) '_'
                                        HowardSnyderGuide | indent > oldindent -> 
-                                           reverse . concat 
-                                           $ (\n -> "‾│" ++ replicate (n - 1) ' ') (head $ differences guidelevels'')
-                                             : map (\n -> '│' : replicate (n - 1) ' ') (tail $ differences guidelevels'')
+                                           bars (tail $ differences guidelevels'')
+                                           ++ replicate (head (differences guidelevels'') - 1) ' ' 
+                                           ++ "│‾" ++ tail numstring
                                        HowardSnyderGuide | nextindent < indent && not (null guidelevels'') -> 
-                                           (reverse . concat $ map (\n -> '│' : replicate (n - 1) ' ') (differences guidelevels''))
-                                           ++ "_"
+                                           bars (differences guidelevels'')
+                                           ++ "_" ++ tail numstring
+                                       HowardSnyderGuide  -> 
+                                           bars (differences guidelevels'') 
+                                           ++ numstring 
                                        FitchGuide | indent > oldindent -> 
-                                           (reverse . concat $ map (\n -> '│' : replicate (n - 1) ' ') (differences guidelevels''))
-                                           ++ replicate (length rest + indent - (head guidelevels'')) '_'
-                                       _ -> reverse . concat . map (\n -> '│' : replicate (n - 1) ' ') $ differences guidelevels''
-                 let prespace  | no < 9  = "   "
-                               | no < 99  = "  "
-                               | no < 999  = " "
-                               | otherwise  = ""
-                 liftIO $ setInnerHTML overlay (Just $ prespace ++ show (no + 1) ++ "." ++ guidestring)
+                                           numstring 
+                                           ++ bars (differences guidelevels'')
+                                           ++ replicate (length rest + indent - head guidelevels'') '_'
+                                       _ -> numstring ++ (bars $ differences guidelevels'')
+                 liftIO $ setInnerHTML overlay (Just $ guidestring)
                  put (no + 1, guidelevels'')
                  return overlay
-
-            
 
           differences (x:y:l) = x - y : differences (y:l)
           differences [x]     = [x]
           differences []      = []
+          
+          bars = reverse . concat . map (\n -> '│' : replicate (n - 1) ' ')
 
 --a version of `lines` that pays attention to a trailing newline.
 altlines s = case break (=='\n') s of (l, s') -> l : rec s' 
