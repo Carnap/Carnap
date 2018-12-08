@@ -232,6 +232,7 @@ setLinesTo w nd options lines = do setInnerHTML nd (Just "")
                  let guidelevels'' = case indentGuides options of
                                          NoGuide -> []
                                          MontagueGuide | take 4 rest `elem` ["show","Show","SHOW"] -> indent : guidelevels'
+                                         MontagueGuide -> guidelevels'
                                          _ | indent > oldindent -> indent - 1 : guidelevels'
                                          _ -> guidelevels'
                  let numstring | no < 9  = "   " ++ show (no + 1) ++ "."
