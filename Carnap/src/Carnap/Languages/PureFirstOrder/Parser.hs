@@ -4,7 +4,7 @@ module Carnap.Languages.PureFirstOrder.Parser
 , magnusFOLFormulaParser, thomasBolducAndZachFOLFormulaParser
 , hardegreePLFormulaParser, bergmannMoorAndNelsonPDFormulaParser
 , goldfarbNDFormulaParser, hausmanPLFormulaParser, FirstOrderParserOptions(..)
-, parserFromOptions, parseFreeVar) where
+, parserFromOptions, parseFreeVar, howardSnyderPLFormulaParser) where
 
 import Carnap.Core.Data.Types
 import Carnap.Core.Data.Classes (Schematizable)
@@ -147,6 +147,22 @@ hausmanPLOptions = FirstOrderParserOptions
           hausmanBracket opt recurWith = wrappedWith '[' ']' (recurWith opt {parenRecur = hausmanParen}) >>= boolean
           boolean a = if isBoolean a then return a else unexpected "atomic or quantified sentence wrapped in parentheses"
 
+howardSnyderPLOptions :: FirstOrderParserOptions PureLexiconFOL u Identity
+howardSnyderPLOptions = FirstOrderParserOptions 
+                         { atomicSentenceParser = \x -> try (parsePredicateSymbolNoParen "ABCDEFGHIJKLMNOPQRSTUVWXYZ" x)
+                                                        <|> sentenceLetterParser "ABCDEFGHIJKLMNOPQRSTUVWXYZ" 
+                                                        <|> equalsParser x 
+                         , quantifiedSentenceParser' = altQuantifiedSentenceParser
+                         , freeVarParser = parseFreeVar "uvwxyz"
+                         , constantParser = Just (parseConstant "abcdefghijklmnopqrst")
+                         , functionParser = Nothing
+                         , hasBooleanConstants = False
+                         , parenRecur = hsDispatch
+                         , opTable = howardSnyderOpTable
+                         }
+    where hsDispatch opt rw = (wrappedWith '{' '}' (rw opt) <|> wrappedWith '(' ')' (rw opt) <|> wrappedWith '[' ']' (rw opt)) >>= boolean
+          boolean a = if isBoolean a then return a else unexpected "atomic or quantified sentence wrapped in parentheses"
+
 coreSubformulaParser :: ( BoundVars lex
                         , BooleanLanguage (FixLang lex (Form Bool))
                         , BooleanConstLanguage (FixLang lex (Form Bool))
@@ -189,6 +205,9 @@ bergmannMoorAndNelsonPDFormulaParser = parserFromOptions bergmannMoorAndNelsonFO
 
 hausmanPLFormulaParser :: Parsec String u PureFOLForm
 hausmanPLFormulaParser = parserFromOptions hausmanPLOptions
+
+howardSnyderPLFormulaParser :: Parsec String u PureFOLForm
+howardSnyderPLFormulaParser = parserFromOptions howardSnyderPLOptions
 
 folFormulaParser :: Parsec String u PureFOLForm
 folFormulaParser = parserFromOptions standardFOLParserOptions

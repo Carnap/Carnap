@@ -1,7 +1,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 module Carnap.Languages.PurePropositional.Parser 
     ( purePropFormulaParser, standardLetters, extendedLetters, hausmanOpts, thomasBolducZachOpts, hardegreeOpts
-    , standardOpTable, hausmanOpTable, howardSnyderOpts
+    , standardOpTable, hausmanOpTable, howardSnyderOpTable, howardSnyderOpts, 
     ) where
 
 import Carnap.Core.Data.Types

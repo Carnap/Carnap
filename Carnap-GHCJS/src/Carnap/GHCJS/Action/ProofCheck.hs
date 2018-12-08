@@ -17,7 +17,7 @@ import Carnap.Languages.PureFirstOrder.Logic as FOL
     ( DerivedRule(..), folCalc, montagueQCCalc, magnusQLCalc , thomasBolducAndZachFOLCalc
     , hardegreePLCalc , goldfarbNDCalc, goldfarbAltNDCalc
     , goldfarbNDPlusCalc, goldfarbAltNDPlusCalc , logicBookPDPlusCalc
-    , logicBookPDCalc, hausmanPLCalc) 
+    , logicBookPDCalc, hausmanPLCalc, howardSnyderPLCalc) 
 import Carnap.Languages.ModalPropositional.Logic as MPL
     ( hardegreeWTLCalc, hardegreeLCalc, hardegreeKCalc, hardegreeTCalc
     , hardegreeBCalc, hardegreeDCalc, hardegreeFourCalc, hardegreeFiveCalc)
@@ -120,6 +120,7 @@ activateChecker drs w (Just iog@(IOGoal i o g _ opts)) -- TODO: need to update n
         | sys == "hausmanSL"                 = tryParse hausmanSLCalc propChecker
         | sys == "hausmanPL"                 = tryParse hausmanPLCalc folChecker
         | sys == "howardSnyderSL"            = tryParse howardSnyderSLCalc propChecker
+        | sys == "howardSnyderPL"            = tryParse howardSnyderPLCalc folChecker
         | sys == "magnusSL"                  = tryParse magnusSLCalc propChecker
         | sys == "magnusSLPlus"              = tryParse magnusSLPlusCalc propChecker
         | sys == "magnusQL"                  = tryParse magnusQLCalc folChecker
