@@ -141,7 +141,8 @@ instance Inference HowardSnyderSL PurePropLexicon (Form Bool) where
     restriction _ = Nothing
 
 parseHowardSnyderSL :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> Parsec String u [HowardSnyderSL]
-parseHowardSnyderSL rtc = do r <- choice (map (try . string) [ "Assume", "MP", "Conj", "MT", "HS", "DS", "Add", "CD", "Simp"
+parseHowardSnyderSL rtc = do r <- try (string "Assume" <* char '(' <* (string "CP" <|> string "RAA") <* char ')')
+                                  <|> choice (map (try . string) ["Assume", "MP", "Conj", "MT", "HS", "DS", "Add", "CD", "Simp"
                                                              , "DN", "Cont", "DeM", "MI", "Ex", "Com", "Re", "As"
                                                              , "ME", "Dist", "CP", "RAA", "p"
                                                              ])

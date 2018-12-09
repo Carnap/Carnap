@@ -112,7 +112,7 @@ parseHausmanPL rtc = try quantRule <|> liftProp
                             "p"  -> return [Pr (problemPremises rtc)]
 
 parseHausmanPLProof :: RuntimeNaturalDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine HausmanPL PureLexiconFOL (Form Bool)]
-parseHausmanPLProof rtc = toDeductionFitch (parseHausmanPL rtc) hausmanPLFormulaParser --XXX Check parser
+parseHausmanPLProof rtc = toCommentedDeductionFitch (parseHausmanPL rtc) hausmanPLFormulaParser --XXX Check parser
 
 hausmanPLCalc = NaturalDeductionCalc
     { ndRenderer = FitchStyle

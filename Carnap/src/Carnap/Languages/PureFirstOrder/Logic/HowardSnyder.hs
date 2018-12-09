@@ -115,7 +115,7 @@ parseHowardSnyderPL rtc = try quantRule <|> liftProp
                             "p"  -> return [Pr (problemPremises rtc)]
 
 parseHowardSnyderPLProof :: RuntimeNaturalDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine HowardSnyderPL PureLexiconFOL (Form Bool)]
-parseHowardSnyderPLProof rtc = toDeductionFitch (parseHowardSnyderPL rtc) howardSnyderPLFormulaParser --XXX Check parser
+parseHowardSnyderPLProof rtc = toCommentedDeductionFitch (parseHowardSnyderPL rtc) howardSnyderPLFormulaParser --XXX Check parser
 
 howardSnyderPLCalc = NaturalDeductionCalc
     { ndRenderer = FitchStyle
