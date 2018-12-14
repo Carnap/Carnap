@@ -11,6 +11,7 @@ import Carnap.Calculi.NaturalDeduction.Syntax
 import Carnap.Calculi.NaturalDeduction.Parser
 import Carnap.Calculi.NaturalDeduction.Checker (hoProcessLineFitchMemo, hoProcessLineFitch)
 import Carnap.Languages.ClassicalSequent.Syntax
+import Carnap.Languages.ClassicalSequent.Parser
 import Carnap.Languages.Util.LanguageClasses
 import Carnap.Languages.Util.GenericConstructors
 import Carnap.Languages.PureFirstOrder.Logic.Rules
@@ -71,14 +72,14 @@ parseLogicBookPD rtc = try quantRule <|> liftProp
                               | r == "PR" -> return [Pr (problemPremises rtc)]
 
 parseLogicBookPDProof :: RuntimeNaturalDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine LogicBookPD PureLexiconFOL (Form Bool)]
-parseLogicBookPDProof rtc = toDeductionFitch (parseLogicBookPD rtc) bergmannMoorAndNelsonPDFormulaParser --XXX Check parser
+parseLogicBookPDProof rtc = toCommentedDeductionFitch (parseLogicBookPD rtc) bergmannMoorAndNelsonPDFormulaParser --XXX Check parser
 
 logicBookPDCalc = NaturalDeductionCalc
     { ndRenderer = FitchStyle
     , ndParseProof = parseLogicBookPDProof
     , ndProcessLine = hoProcessLineFitch
     , ndProcessLineMemo = Just hoProcessLineFitchMemo
-    , ndParseSeq = folSeqParser
+    , ndParseSeq = parseSeqOver bergmannMoorAndNelsonPDFormulaParser
     }
 
 data LogicBookPDPlus = PD LogicBookPD | SDPlus P.LogicBookSDPlus | QN1 | QN2 | QN3 | QN4
@@ -116,7 +117,7 @@ instance Inference LogicBookPDPlus PureLexiconFOL (Form Bool) where
          isAssumption (PD x) = isAssumption x
          isAssumption _ = False
 
-parseLogicBookPDPlus rtc = try liftPD <|> try liftProp <|> qn
+parseLogicBookPDPlus rtc = try liftProp <|> try liftPD <|> qn
     where liftPD = do r <- parseLogicBookPD rtc
                       return (map PD r)
           liftProp = do r <- P.parseLogicBookSDPlus (RuntimeNaturalDeductionConfig mempty mempty)
@@ -124,12 +125,12 @@ parseLogicBookPDPlus rtc = try liftPD <|> try liftProp <|> qn
           qn = string "QN" >> return [QN1, QN2, QN3, QN4]
 
 parseLogicBookPDPlusProof :: RuntimeNaturalDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine LogicBookPDPlus PureLexiconFOL (Form Bool)]
-parseLogicBookPDPlusProof rtc = toDeductionFitch (parseLogicBookPDPlus rtc) bergmannMoorAndNelsonPDFormulaParser --XXX Check parser
+parseLogicBookPDPlusProof rtc = toCommentedDeductionFitch (parseLogicBookPDPlus rtc) bergmannMoorAndNelsonPDFormulaParser --XXX Check parser
 
 logicBookPDPlusCalc = NaturalDeductionCalc
     { ndRenderer = FitchStyle
     , ndParseProof = parseLogicBookPDPlusProof
     , ndProcessLine = hoProcessLineFitch
     , ndProcessLineMemo = Just hoProcessLineFitchMemo
-    , ndParseSeq = folSeqParser
+    , ndParseSeq = parseSeqOver bergmannMoorAndNelsonPDFormulaParser
     }

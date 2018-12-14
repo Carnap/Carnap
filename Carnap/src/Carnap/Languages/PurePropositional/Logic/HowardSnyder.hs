@@ -178,5 +178,5 @@ howardSnyderSLCalc = NaturalDeductionCalc
     , ndParseProof = parseHowardSnyderSLProof
     , ndProcessLine = hoProcessLineFitch
     , ndProcessLineMemo = Just hoProcessLineFitchMemo
-    , ndParseSeq = extendedPropSeqParser
+    , ndParseSeq = parseSeqOver (purePropFormulaParser howardSnyderOpts)
     }

@@ -260,7 +260,7 @@ parseLogicBookSDPlus rtc = try (map SD <$> parseLogicBookSD rtc) <|> parsePlus
                                       | r == "Equiv" -> [Equiv1, Equiv2, Equiv3, Equiv4]
 
 parseLogicBookSDPlusProof :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> String -> [DeductionLine LogicBookSDPlus PurePropLexicon (Form Bool)]
-parseLogicBookSDPlusProof ders = toDeductionFitch (parseLogicBookSDPlus ders) (purePropFormulaParser extendedLetters)
+parseLogicBookSDPlusProof ders = toCommentedDeductionFitch (parseLogicBookSDPlus ders) (purePropFormulaParser extendedLetters)
 
 logicBookSDPlusCalc = NaturalDeductionCalc 
     { ndRenderer = FitchStyle

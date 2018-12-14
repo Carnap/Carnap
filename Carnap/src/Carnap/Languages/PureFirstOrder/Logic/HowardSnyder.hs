@@ -15,6 +15,7 @@ import Carnap.Calculi.NaturalDeduction.Syntax
 import Carnap.Calculi.NaturalDeduction.Parser
 import Carnap.Calculi.NaturalDeduction.Checker (hoProcessLineFitchMemo, hoProcessLineFitch)
 import Carnap.Languages.ClassicalSequent.Syntax
+import Carnap.Languages.ClassicalSequent.Parser (parseSeqOver)
 import Carnap.Languages.Util.LanguageClasses
 import Carnap.Languages.Util.GenericConstructors
 import Carnap.Languages.PureFirstOrder.Logic.Rules
@@ -115,12 +116,12 @@ parseHowardSnyderPL rtc = try quantRule <|> liftProp
                             "p"  -> return [Pr (problemPremises rtc)]
 
 parseHowardSnyderPLProof :: RuntimeNaturalDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine HowardSnyderPL PureLexiconFOL (Form Bool)]
-parseHowardSnyderPLProof rtc = toCommentedDeductionFitch (parseHowardSnyderPL rtc) howardSnyderPLFormulaParser --XXX Check parser
+parseHowardSnyderPLProof rtc = toCommentedDeductionFitch (parseHowardSnyderPL rtc) howardSnyderPLFormulaParser
 
 howardSnyderPLCalc = NaturalDeductionCalc
     { ndRenderer = FitchStyle
     , ndParseProof = parseHowardSnyderPLProof
     , ndProcessLine = hoProcessLineFitch
     , ndProcessLineMemo = Just hoProcessLineFitchMemo
-    , ndParseSeq = folSeqParser
+    , ndParseSeq = parseSeqOver howardSnyderPLFormulaParser
     }

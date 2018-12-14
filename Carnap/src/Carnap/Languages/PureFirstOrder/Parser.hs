@@ -93,14 +93,15 @@ bergmannMoorAndNelsonFOLParserOptions :: FirstOrderParserOptions PureLexiconFOL 
 bergmannMoorAndNelsonFOLParserOptions = FirstOrderParserOptions 
                          { atomicSentenceParser = \x -> try (parsePredicateSymbolNoParen "ABCDEFGHIJKLMNOPQRSTUVWXYZ" x)
                                                         <|> sentenceLetterParser "ABCDEFGHIJKLMNOPQRSTUVWXYZ" 
-                         , quantifiedSentenceParser' = quantifiedSentenceParser
+                         , quantifiedSentenceParser' = altAltQuantifiedSentenceParser
                          , freeVarParser = parseFreeVar "wxyz"
                          , constantParser = Just (parseConstant "abcdefghijklmnopqrstuv")
                          , functionParser = Nothing
                          , hasBooleanConstants = False
-                         , parenRecur = \opt recurWith  -> parenParser (recurWith opt)
+                         , parenRecur = \opt recurWith -> parenParser (recurWith opt) >>= boolean
                          , opTable = standardOpTable
                          }
+          where boolean a = if isBoolean a then return a else unexpected "atomic or quantified sentence wrapped in parentheses"
 
 hardegreePLParserOptions :: FirstOrderParserOptions PureLexiconFOL u Identity
 hardegreePLParserOptions = FirstOrderParserOptions 
