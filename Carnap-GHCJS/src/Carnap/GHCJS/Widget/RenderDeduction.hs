@@ -5,6 +5,7 @@ import Lib
 import Data.Maybe (catMaybes)
 import Carnap.Core.Data.Types
 import Carnap.Core.Data.Classes
+import Carnap.GHCJS.Widget.ProofCheckBox
 import Carnap.Calculi.NaturalDeduction.Syntax (DeductionLine(..), Deduction(..), depth, LemmonVariant(..))
 import GHCJS.DOM.Types (Document,Element)
 import GHCJS.DOM.Element (setInnerHTML,setAttribute)
@@ -26,8 +27,8 @@ chunkBy n (x:xs)
     where deep x = depth (snd x) > n
 
 --this is for Fitch proofs
-renderTreeFitch w = treeToElement asLine asSubproof
-    where asLine (n,AssertLine f r _ deps) = do (theWrapper,theLine,theForm,theRule) <- lineBase w n (Just f) (Just (r,deps)) "assertion"
+renderTreeFitch w opts = treeToElement asLine asSubproof
+    where asLine (n,AssertLine f r _ deps) = do (theWrapper,theLine,theForm,theRule) <- lineBase w opts n (Just f) (Just (r,deps)) "assertion"
                                                 appendChild theLine (Just theForm)
                                                 appendChild theLine (Just theRule)
                                                 return theWrapper
@@ -39,13 +40,13 @@ renderTreeFitch w = treeToElement asLine asSubproof
                                mapM_ (appendChild l . Just) ls
 
 --this is for Kalish and Montague Proofs
-renderTreeMontague w = treeToElement asLine asSubproof
-    where asLine (n,AssertLine f r _ deps) = do (theWrapper,theLine,theForm,theRule) <- lineBase w n (Just f) (Just (r,deps)) "assertion"
+renderTreeMontague w opts = treeToElement asLine asSubproof
+    where asLine (n,AssertLine f r _ deps) = do (theWrapper,theLine,theForm,theRule) <- lineBase w opts n (Just f) (Just (r,deps)) "assertion"
                                                 appendChild theLine (Just theForm)
                                                 appendChild theLine (Just theRule)
                                                 return theWrapper
 
-          asLine (n,ShowWithLine f _ r deps) = do (theWrapper,theLine,theForm,theRule) <- lineBase w n (Just f) (Just (r,deps)) "show"
+          asLine (n,ShowWithLine f _ r deps) = do (theWrapper,theLine,theForm,theRule) <- lineBase w opts n (Just f) (Just (r,deps)) "show"
                                                   (Just theHead) <- createElement w (Just "span")
                                                   setInnerHTML theHead (Just $ "Show: ")
                                                   appendChild theLine (Just theHead)
@@ -53,14 +54,14 @@ renderTreeMontague w = treeToElement asLine asSubproof
                                                   appendChild theLine (Just theRule)
                                                   return theWrapper
 
-          asLine (n,ShowLine f _)   = do (theWrapper,theLine,theForm,_) <- lineBase w n (Just f) norule "show"
+          asLine (n,ShowLine f _)   = do (theWrapper,theLine,theForm,_) <- lineBase w opts n (Just f) norule "show"
                                          (Just theHead) <- createElement w (Just "span")
                                          setInnerHTML theHead (Just $ "Show: ")
                                          appendChild theLine (Just theHead)
                                          appendChild theLine (Just theForm)
                                          return theWrapper
 
-          asLine (n,QedLine r _ deps) = do (theWrapper,theLine,_,theRule) <- lineBase w n noform (Just (r,deps)) "qed"
+          asLine (n,QedLine r _ deps) = do (theWrapper,theLine,_,theRule) <- lineBase w opts n noform (Just (r,deps)) "qed"
                                            appendChild theLine (Just theRule)
                                            --appendChild theWrapper (Just theLine)
                                            return theWrapper
@@ -79,8 +80,8 @@ renderTreeMontague w = treeToElement asLine asSubproof
 
 --The basic parts of a line, with Maybes for the fomula and the rule-dependency pair.
 lineBase :: (Show a, Show b) => 
-    Document -> Int -> Maybe a -> Maybe ([b],[(Int,Int)]) -> String -> IO (Element,Element,Element,Element)
-lineBase w n mf mrd lineclass = 
+    Document -> CheckerOptions -> Int -> Maybe a -> Maybe ([b],[(Int,Int)]) -> String -> IO (Element,Element,Element,Element)
+lineBase w opts n mf mrd lineclass = 
         do (Just theWrapper) <- createElement w (Just "div")
            (Just theLine) <- createElement w (Just "div")
            (Just lineNum) <- createElement w (Just "span")
@@ -88,25 +89,25 @@ lineBase w n mf mrd lineclass =
            (Just theRule) <- createElement w (Just "span")
            setInnerHTML lineNum (Just $ show n ++ ".")
            whileJust mrd (\(r,deps) -> setInnerHTML theRule (Just $ show (head r) ++ " " ++ intercalate ", " (map renderDep deps)))
-           whileJust mf (\f -> setInnerHTML theForm (Just $ show f))
+           whileJust mf (\f -> setInnerHTML theForm (Just $ alternateSymbols opts $ show f))
            setAttribute theRule "class" "rule"
            appendChild theWrapper (Just theLine)
            appendChild theLine (Just lineNum)
            setAttribute theWrapper "class" lineclass
            return (theWrapper,theLine,theForm,theRule)
 
-renderTreeLemmon v w = treeToElement asLine asSubproof
+renderTreeLemmon v w opts = treeToElement asLine asSubproof
     where asLine (n,DependentAssertLine f r deps dis scope mnum) = 
                 do [theWrapper,lineNum,theForm,theRule,theScope] <- catMaybes <$> mapM (createElement w . Just) ["div","span","span","span","span"]
                    case v of
                        TomassiStyle -> 
                             do setInnerHTML theScope (Just $ "{" ++ intercalate "," (map show scope) ++ "}")
-                               setInnerHTML theForm (Just $ alternateSymbols1 $ show f)
+                               setInnerHTML theForm (Just $ alternateSymbols opts $ show f)
                                case mnum of
                                    Nothing -> setInnerHTML lineNum (Just $ show n ++ ".")
                                    Just m -> setInnerHTML lineNum (Just $ show m ++ ".")
                        _ -> do setInnerHTML theScope (Just $ show scope)
-                               setInnerHTML theForm (Just $ show f)
+                               setInnerHTML theForm (Just $ alternateSymbols opts $ show f)
                                case mnum of
                                    Nothing -> setInnerHTML lineNum (Just $ "(" ++ show n ++ ")")
                                    Just m -> setInnerHTML lineNum (Just $ "(" ++ show m ++ ")")
@@ -124,27 +125,22 @@ renderTreeLemmon v w = treeToElement asLine asSubproof
 
           asSubproof _ _ = return ()
 
-          rewriteTomassiSym = map replace
-            where replace '∧' = '&'
-                  replace '¬' = '~'
-                  replace c   = c
-
-renderDeduction :: String -> (Document -> Tree (Int, DeductionLine t t1 t2) -> IO Element) -> Document -> [DeductionLine t t1 t2] -> IO Element
-renderDeduction cls render w ded = 
+renderDeduction :: String -> (Document -> CheckerOptions -> Tree (Int, DeductionLine t t1 t2) -> IO Element) -> Document -> CheckerOptions -> [DeductionLine t t1 t2] -> IO Element
+renderDeduction cls render w opts ded = 
         do let forest = deductionToForest 0 (zip [1..] ded)
-           lines <- mapM (render w) forest
+           lines <- mapM (render w opts) forest
            (Just theProof) <- createElement w (Just "div")
            setAttribute theProof "class" cls
            mapM_ (appendChild theProof . Just) lines
            return theProof
 
-renderDeductionFitch :: (Show t,Schematizable (t1 (FixLang t1)), CopulaSchema (FixLang t1)) => Document -> [DeductionLine t t1 t2] -> IO Element
+renderDeductionFitch :: (Show t,Schematizable (t1 (FixLang t1)), CopulaSchema (FixLang t1)) => Document -> CheckerOptions -> [DeductionLine t t1 t2] -> IO Element
 renderDeductionFitch = renderDeduction "fitchDisplay" renderTreeFitch
 
-renderDeductionMontague :: (Show t,Schematizable (t1 (FixLang t1)), CopulaSchema (FixLang t1)) => Document -> [DeductionLine t t1 t2] -> IO Element
+renderDeductionMontague :: (Show t,Schematizable (t1 (FixLang t1)), CopulaSchema (FixLang t1)) => Document -> CheckerOptions -> [DeductionLine t t1 t2] -> IO Element
 renderDeductionMontague = renderDeduction "montagueDisplay" renderTreeMontague
 
-renderDeductionLemmon ::  (Show t,Schematizable (t1 (FixLang t1)), CopulaSchema (FixLang t1)) => LemmonVariant -> Document -> [DeductionLine t t1 t2] -> IO Element
+renderDeductionLemmon ::  (Show t,Schematizable (t1 (FixLang t1)), CopulaSchema (FixLang t1)) => LemmonVariant -> Document -> CheckerOptions -> [DeductionLine t t1 t2] -> IO Element
 renderDeductionLemmon v = renderDeduction "lemmonDisplay" (renderTreeLemmon v)
 
 renderDep (n,m) = if n==m then show n else show n ++ "-" ++ show m

@@ -206,7 +206,7 @@ threadedCheck options checker w ref v (g, fd) =
                                  ded = ndParseProof ndcalc rtconfig v
                              case proofDisplay checker of 
                                Just pd -> 
-                                   do renderedProof <- renderer w ded
+                                   do renderedProof <- renderer w options ded
                                       setInnerHTML pd (Just "")
                                       appendChild pd (Just renderedProof)
                                Nothing -> return Nothing
@@ -225,8 +225,8 @@ threadedCheck options checker w ref v (g, fd) =
            return ()
 
     where renderer = case ndRenderer (checkerCalc checker) of
-                         MontagueStyle -> renderDeductionMontague
-                         FitchStyle -> renderDeductionFitch
+                         MontagueStyle -> renderDeductionMontague 
+                         FitchStyle -> renderDeductionFitch 
                          LemmonStyle v -> renderDeductionLemmon v
 
 updateGoal s ref g mseq options = 

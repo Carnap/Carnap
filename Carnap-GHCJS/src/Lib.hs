@@ -382,16 +382,32 @@ trySubmit problemType opts ident problemData correct =
 --  1.7.1 Alternate Symbol Sets  --
 -----------------------------------
 
+alternateSymbols1 :: String -> String
 alternateSymbols1 = map replace
     where replace '∧' = '&'
           replace '¬' = '~'
           replace c = c
 
-alternateSymbols2 = map replace
-    where replace '∧' = '&'
-          replace '¬' = '~'
-          replace '→' = '⊃'
-          replace c = c
+alternateSymbols2 :: String -> String
+alternateSymbols2 x = case runParser altParser 0 "" x of
+                        Left e -> show e
+                        Right s -> s
+    where altParser = do s <- handleCon <|> try handleQuant <|> try handleAtom <|> fallback
+                         rest <- (eof >> return "") <|> altParser
+                         return $ s ++ rest
+          handleCon = (char '∧' >> return "&") 
+                      <|> (char '¬' >> return "~") 
+                      <|> (char '→' >> return "⊃")
+                      <|> (char '↔' >> return "≡")
+          handleQuant = do q <- oneOf "∀∃"
+                           v <- anyChar
+                           return $ "(" ++ [q] ++ [v] ++ ")"
+          handleAtom = do c <- oneOf "ABCDEFGHIJKLMNOPQRSTUVWXYZ" <* char '('
+                          args <- oneOf "abcdefghijklmnopqrstuvwxyz" `sepBy` char ','
+                          char ')'
+                          return $ c:args
+          fallback = do c <- anyChar 
+                        return [c]
 
 alternateSymbols3 :: String -> String
 alternateSymbols3 x = case runParser altParser 0 "" x of
