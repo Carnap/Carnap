@@ -245,7 +245,7 @@ type SequentTree lex sem = Tree (Int, ClassicalSequentOver lex (Sequent sem))
 --These are intended to wrap up a whole ND system, including some of its
 --superficial features like rendering.
 
-data RenderStyle = MontagueStyle | FitchStyle | LemmonStyle LemmonVariant
+data RenderStyle = MontagueStyle | FitchStyle | LemmonStyle LemmonVariant | NoRender
 
 data LemmonVariant = StandardLemmon | TomassiStyle
 
@@ -269,7 +269,15 @@ data NaturalDeductionCalc r lex sem = NaturalDeductionCalc
         , ndProcessLineMemo :: (Sequentable lex , Inference r lex sem, MonadVar (ClassicalSequentOver lex) (State Int))
                                 => Maybe (ProofMemoRef lex sem r -> Deduction r lex sem -> Restrictor r lex -> Int -> IO (FeedbackLine lex sem))
         , ndParseSeq :: Parsec String () (ClassicalSequentOver lex (Sequent sem))
+        , ndNotation :: String -> String
         }
+
+mkNDCalc :: NaturalDeductionCalc r lex sem
+mkNDCalc = NaturalDeductionCalc 
+    { ndRenderer = NoRender
+    , ndProcessLineMemo = Nothing
+    , ndNotation = id
+    }
 
 --------------------------------------------------------
 --2. Typeclasses for natural deduction

@@ -322,7 +322,7 @@ parseHardegreeWTL = (map MoP <$> parseHardegreeModalProp)
 parseHardegreeWTLProof ::  RuntimeNaturalDeductionConfig WorldTheoryPropLexicon (Form (World -> Bool)) -> String -> [DeductionLine HardegreeWTL WorldTheoryPropLexicon (Form (World -> Bool))]
 parseHardegreeWTLProof ders = toDeductionHardegree parseHardegreeWTL worldTheoryPropFormulaParser
 
-hardegreeWTLCalc = NaturalDeductionCalc 
+hardegreeWTLCalc = mkNDCalc
     { ndRenderer = MontagueStyle
     , ndParseProof = parseHardegreeWTLProof
     , ndProcessLine = hoProcessLineHardegree
@@ -417,7 +417,7 @@ parseHardegreeL = (map MoPL <$> parseHardegreeModalProp)
 parseHardegreeLProof ::  RuntimeNaturalDeductionConfig AbsoluteModalPropLexicon (Form Bool) -> String -> [DeductionLine HardegreeL AbsoluteModalPropLexicon (Form Bool)]
 parseHardegreeLProof ders = toDeductionHardegree parseHardegreeL absoluteModalPropFormulaParser
 
-hardegreeLCalc = NaturalDeductionCalc 
+hardegreeLCalc = mkNDCalc 
     { ndRenderer = MontagueStyle
     , ndParseProof = parseHardegreeLProof
     , ndProcessLine = hoProcessLineHardegree
@@ -484,7 +484,7 @@ instance Inference HardegreeK AbsoluteModalPropLexicon (Form Bool) where
                                                 _ -> Nothing
          globalRestriction _ _ _ = Nothing
 
-hardegreeKCalc = NaturalDeductionCalc 
+hardegreeKCalc = mkNDCalc 
     { ndRenderer = MontagueStyle
     , ndParseProof = parseHardegreeKProof
     , ndProcessLine = hoProcessLineHardegree
@@ -545,7 +545,7 @@ instance Inference HardegreeD AbsoluteModalPropLexicon (Form Bool) where
                                                 _ -> Nothing
          globalRestriction _ _ _ = Nothing
 
-hardegreeDCalc = NaturalDeductionCalc 
+hardegreeDCalc = mkNDCalc 
     { ndRenderer = MontagueStyle
     , ndParseProof = parseHardegreeDProof
     , ndProcessLine = hoProcessLineHardegree
@@ -604,7 +604,7 @@ instance Inference HardegreeT AbsoluteModalPropLexicon (Form Bool) where
                                                 _ -> Nothing
          globalRestriction _ _ _ = Nothing
 
-hardegreeTCalc = NaturalDeductionCalc 
+hardegreeTCalc = mkNDCalc 
     { ndRenderer = MontagueStyle
     , ndParseProof = parseHardegreeTProof
     , ndProcessLine = hoProcessLineHardegree
@@ -671,7 +671,7 @@ instance Inference HardegreeB AbsoluteModalPropLexicon (Form Bool) where
                                                 _ -> Nothing
          globalRestriction _ _ _ = Nothing
 
-hardegreeBCalc = NaturalDeductionCalc 
+hardegreeBCalc = mkNDCalc 
     { ndRenderer = MontagueStyle
     , ndParseProof = parseHardegreeBProof
     , ndProcessLine = hoProcessLineHardegree
@@ -733,7 +733,7 @@ instance Inference HardegreeFour AbsoluteModalPropLexicon (Form Bool) where
                                                 _ -> Nothing
          globalRestriction _ _ _ = Nothing
 
-hardegreeFourCalc = NaturalDeductionCalc 
+hardegreeFourCalc = mkNDCalc 
     { ndRenderer = MontagueStyle
     , ndParseProof = parseHardegreeFourProof
     , ndProcessLine = hoProcessLineHardegree
@@ -794,7 +794,7 @@ instance Inference HardegreeFive AbsoluteModalPropLexicon (Form Bool) where
                                                 _ -> Nothing
          globalRestriction _ _ _ = Nothing
 
-hardegreeFiveCalc = NaturalDeductionCalc 
+hardegreeFiveCalc = mkNDCalc 
     { ndRenderer = MontagueStyle
     , ndParseProof = parseHardegreeFiveProof
     , ndProcessLine = hoProcessLineHardegree
@@ -881,7 +881,7 @@ instance Inference HardegreeS5 AbsoluteModalPropLexicon (Form Bool) where
                                                 _ -> Nothing
          globalRestriction _ _ _ = Nothing
 
-hardegreeS5Calc = NaturalDeductionCalc 
+hardegreeS5Calc = mkNDCalc 
     { ndRenderer = MontagueStyle
     , ndParseProof = parseHardegreeS5Proof
     , ndProcessLine = hoProcessLineHardegree
@@ -948,7 +948,7 @@ instance Inference HardegreeS4 AbsoluteModalPropLexicon (Form Bool) where
                                                 _ -> Nothing
          globalRestriction _ _ _ = Nothing
 
-hardegreeS4Calc = NaturalDeductionCalc 
+hardegreeS4Calc = mkNDCalc 
     { ndRenderer = MontagueStyle
     , ndParseProof = parseHardegreeS4Proof
     , ndProcessLine = hoProcessLineHardegree

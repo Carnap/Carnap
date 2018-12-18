@@ -96,7 +96,7 @@ parseThomasBolducAndZachFOL rtc = try quantRule <|> liftProp
 parseThomasBolducAndZachFOLProof :: RuntimeNaturalDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine ThomasBolducAndZachFOL PureLexiconFOL (Form Bool)]
 parseThomasBolducAndZachFOLProof ders = toDeductionFitch (parseThomasBolducAndZachFOL ders) (thomasBolducAndZachFOLFormulaParser)
 
-thomasBolducAndZachFOLCalc = NaturalDeductionCalc
+thomasBolducAndZachFOLCalc = mkNDCalc
     { ndRenderer = FitchStyle
     , ndParseProof = parseThomasBolducAndZachFOLProof
     , ndProcessLine = hoProcessLineFitch

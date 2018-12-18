@@ -130,7 +130,7 @@ parseMagnusSL rtc = do r <- choice (map (try . string) ["AS","PR","&I","/\\I", "
 parseMagnusSLProof :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> String -> [DeductionLine MagnusSL PurePropLexicon (Form Bool)]
 parseMagnusSLProof rtc = toDeductionFitch (parseMagnusSL rtc) (purePropFormulaParser extendedLetters)
 
-magnusSLCalc = NaturalDeductionCalc 
+magnusSLCalc = mkNDCalc 
     { ndRenderer = FitchStyle
     , ndParseProof = parseMagnusSLProof
     , ndProcessLine = processLineFitch
@@ -229,7 +229,7 @@ parseMagnusSLPlus rtc = try plus <|> basic
 parseMagnusSLPlusProof :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> String -> [DeductionLine MagnusSLPlus PurePropLexicon (Form Bool)]
 parseMagnusSLPlusProof rtc = toDeductionFitch (parseMagnusSLPlus rtc) (purePropFormulaParser extendedLetters)
 
-magnusSLPlusCalc = NaturalDeductionCalc 
+magnusSLPlusCalc = mkNDCalc 
     { ndRenderer = FitchStyle
     , ndParseProof = parseMagnusSLPlusProof
     , ndProcessLine = hoProcessLineFitch

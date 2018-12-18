@@ -74,7 +74,7 @@ parseLogicBookPD rtc = try quantRule <|> liftProp
 parseLogicBookPDProof :: RuntimeNaturalDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine LogicBookPD PureLexiconFOL (Form Bool)]
 parseLogicBookPDProof rtc = toCommentedDeductionFitch (parseLogicBookPD rtc) bergmannMoorAndNelsonPDFormulaParser --XXX Check parser
 
-logicBookPDCalc = NaturalDeductionCalc
+logicBookPDCalc = mkNDCalc
     { ndRenderer = FitchStyle
     , ndParseProof = parseLogicBookPDProof
     , ndProcessLine = hoProcessLineFitch
@@ -127,7 +127,7 @@ parseLogicBookPDPlus rtc = try liftProp <|> try liftPD <|> qn
 parseLogicBookPDPlusProof :: RuntimeNaturalDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine LogicBookPDPlus PureLexiconFOL (Form Bool)]
 parseLogicBookPDPlusProof rtc = toCommentedDeductionFitch (parseLogicBookPDPlus rtc) bergmannMoorAndNelsonPDFormulaParser --XXX Check parser
 
-logicBookPDPlusCalc = NaturalDeductionCalc
+logicBookPDPlusCalc = mkNDCalc
     { ndRenderer = FitchStyle
     , ndParseProof = parseLogicBookPDPlusProof
     , ndProcessLine = hoProcessLineFitch

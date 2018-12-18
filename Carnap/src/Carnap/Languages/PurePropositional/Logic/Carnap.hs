@@ -113,7 +113,7 @@ parsePropLogicProof :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool)
                      -> String -> [DeductionLine PropLogic PurePropLexicon (Form Bool)]
 parsePropLogicProof rtc = toDeductionMontague (parsePropLogic rtc) (purePropFormulaParser standardLetters)
 
-propCalc = NaturalDeductionCalc 
+propCalc = mkNDCalc 
     { ndRenderer = MontagueStyle
     , ndParseProof = parsePropLogicProof
     , ndProcessLine = processLineMontague

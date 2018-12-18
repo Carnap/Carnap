@@ -87,7 +87,7 @@ parseMagnusQL rtc = try quantRule <|> liftProp
 parseMagnusQLProof :: RuntimeNaturalDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine MagnusQL PureLexiconFOL (Form Bool)]
 parseMagnusQLProof rtc = toDeductionFitch (parseMagnusQL rtc) magnusFOLFormulaParser
 
-magnusQLCalc = NaturalDeductionCalc
+magnusQLCalc = mkNDCalc
     { ndRenderer = FitchStyle
     , ndParseProof = parseMagnusQLProof
     , ndProcessLine = hoProcessLineFitch

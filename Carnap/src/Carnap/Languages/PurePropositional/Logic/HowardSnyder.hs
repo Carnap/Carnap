@@ -173,7 +173,7 @@ parseHowardSnyderSL rtc = do r <- try (string "Assume" <* char '(' <* (string "C
 parseHowardSnyderSLProof :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> String -> [DeductionLine HowardSnyderSL PurePropLexicon (Form Bool)]
 parseHowardSnyderSLProof rtc = toCommentedDeductionFitch (parseHowardSnyderSL rtc) (purePropFormulaParser howardSnyderOpts)
 
-howardSnyderSLCalc = NaturalDeductionCalc 
+howardSnyderSLCalc = mkNDCalc 
     { ndRenderer = FitchStyle
     , ndParseProof = parseHowardSnyderSLProof
     , ndProcessLine = hoProcessLineFitch

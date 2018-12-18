@@ -39,32 +39,32 @@ data LogicBookSD = ConjIntro
                deriving Eq
 
 instance Show LogicBookSD where
-        show ConjIntro  = "∧I"
-        show ConjElim1  = "∧E"
-        show ConjElim2  = "∧E"
-        show CondIntro1 = "→I"
-        show CondIntro2 = "→I"
-        show CondElim   = "→E"
-        show NegeIntro1 = "¬I"
-        show NegeIntro2 = "¬I"
-        show NegeIntro3 = "¬I"
-        show NegeIntro4 = "¬I"
-        show NegeElim1  = "¬E" 
-        show NegeElim2  = "¬E"
-        show NegeElim3  = "¬E"
-        show NegeElim4  = "¬E"
+        show ConjIntro  = "&I"
+        show ConjElim1  = "&E"
+        show ConjElim2  = "&E"
+        show CondIntro1 = "⊃I"
+        show CondIntro2 = "⊃I"
+        show CondElim   = "⊃E"
+        show NegeIntro1 = "~I"
+        show NegeIntro2 = "~I"
+        show NegeIntro3 = "~I"
+        show NegeIntro4 = "~I"
+        show NegeElim1  = "~E" 
+        show NegeElim2  = "~E"
+        show NegeElim3  = "~E"
+        show NegeElim4  = "~E"
         show DisjElim1  = "∨E"
         show DisjElim2  = "∨E"
         show DisjElim3  = "∨E"
         show DisjElim4  = "∨E"
         show DisjIntro1 = "∨I"
         show DisjIntro2 = "∨I"
-        show BicoIntro1 = "↔I"
-        show BicoIntro2 = "↔I"
-        show BicoIntro3 = "↔I"
-        show BicoIntro4 = "↔I"
-        show BicoElim1  = "↔E"
-        show BicoElim2  = "↔E"
+        show BicoIntro1 = "≡I"
+        show BicoIntro2 = "≡I"
+        show BicoIntro3 = "≡I"
+        show BicoIntro4 = "≡I"
+        show BicoElim1  = "≡E"
+        show BicoElim2  = "≡E"
         show Reiterate  = "R"
         show (Pr _)     = "PR"
         show LBAS       = "AS"
@@ -116,28 +116,28 @@ instance Inference LogicBookSD PurePropLexicon (Form Bool) where
     restriction _ = Nothing
 
 parseLogicBookSD :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> Parsec String u [LogicBookSD]
-parseLogicBookSD rtc = do r <- choice (map (try . string) ["AS","PR","&I","/\\I", "∧I","&E","/\\E","∧E","CI","->I","→I","→E","CE","->E", "→E"
-                                                              ,"~I","-I", "¬I","~E","-E","¬E" ,"vI","\\/I","∨I", "vE","\\/E", "∨E","BI","<->I", "↔I" 
-                                                              , "BE", "<->E", "↔E", "R"])
+parseLogicBookSD rtc = do r <- choice (map (try . string) ["AS","PR","&I","/\\I", "∧I","&E","/\\E","∧E","CI","->I","→I", "⊃I","→E", "⊃E","CE","->E"
+                                                          , "→E" ,"~I","-I", "¬I","~E","-E","¬E" ,"vI","\\/I","∨I", "vE","\\/E", "∨E","BI","<->I", "↔I"
+                                                          , "≡I" , "BE", "<->E", "↔E", "≡E", "R"])
                           case r of
                             r | r == "AS" -> return [LBAS]
                               | r == "PR" -> return [Pr (problemPremises rtc)]
                               | r == "R"    -> return [Reiterate]
                               | r `elem` ["&I","/\\I","∧I"] -> return [ConjIntro]
                               | r `elem` ["&E","/\\E","∧E"] -> return [ConjElim1, ConjElim2]
-                              | r `elem` ["CI","->I","→I"] -> return [CondIntro1,CondIntro2]
-                              | r `elem` ["CE","->E","→E"] -> return [CondElim]
+                              | r `elem` ["CI","->I","→I","⊃I"] -> return [CondIntro1,CondIntro2]
+                              | r `elem` ["CE","->E","→E","⊃E"] -> return [CondElim]
                               | r `elem` ["~I","¬I","-I"]  -> return [NegeIntro1, NegeIntro2, NegeIntro3, NegeIntro4]
                               | r `elem` ["~E","¬E","-E"]  -> return [NegeElim1, NegeElim2, NegeElim3, NegeElim4]
                               | r `elem` ["vI","\\/I"] -> return [DisjIntro1, DisjIntro2]
                               | r `elem` ["vE","\\/E"] -> return [DisjElim1, DisjElim2,DisjElim3, DisjElim4]
-                              | r `elem` ["BI","<->I","↔I"] -> return [BicoIntro1, BicoIntro2, BicoIntro3, BicoIntro4]
-                              | r `elem` ["BE","<->E","↔E"] -> return [BicoElim1, BicoElim2]
+                              | r `elem` ["BI","<->I","↔I","≡I"] -> return [BicoIntro1, BicoIntro2, BicoIntro3, BicoIntro4]
+                              | r `elem` ["BE","<->E","↔E","≡E"] -> return [BicoElim1, BicoElim2]
 
 parseLogicBookSDProof :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> String -> [DeductionLine LogicBookSD PurePropLexicon (Form Bool)]
 parseLogicBookSDProof ders = toDeductionFitch (parseLogicBookSD ders) (purePropFormulaParser extendedLetters)
 
-logicBookSDCalc = NaturalDeductionCalc 
+logicBookSDCalc = mkNDCalc 
     { ndRenderer = FitchStyle
     , ndParseProof = parseLogicBookSDPlusProof
     , ndProcessLine = processLineFitch
@@ -262,7 +262,7 @@ parseLogicBookSDPlus rtc = try (map SD <$> parseLogicBookSD rtc) <|> parsePlus
 parseLogicBookSDPlusProof :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> String -> [DeductionLine LogicBookSDPlus PurePropLexicon (Form Bool)]
 parseLogicBookSDPlusProof ders = toCommentedDeductionFitch (parseLogicBookSDPlus ders) (purePropFormulaParser extendedLetters)
 
-logicBookSDPlusCalc = NaturalDeductionCalc 
+logicBookSDPlusCalc = mkNDCalc 
     { ndRenderer = FitchStyle
     , ndParseProof = parseLogicBookSDPlusProof
     , ndProcessLine = hoProcessLineFitch

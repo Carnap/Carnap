@@ -118,7 +118,7 @@ parseESTProof:: RuntimeNaturalDeductionConfig ElementarySetTheoryLex (Form Bool)
                     -> String -> [DeductionLine ESTLogic ElementarySetTheoryLex (Form Bool)]
 parseESTProof rtc = toDeductionMontague (parseESTLogic rtc) elementarySetTheoryParser
 
-estCalc = NaturalDeductionCalc 
+estCalc = mkNDCalc 
     { ndRenderer = MontagueStyle
     , ndParseProof = parseESTProof
     , ndProcessLine = hoProcessLineMontague
@@ -206,7 +206,7 @@ parseSSTProof:: RuntimeNaturalDeductionConfig SeparativeSetTheoryLex (Form Bool)
                     -> String -> [DeductionLine SSTLogic SeparativeSetTheoryLex (Form Bool)]
 parseSSTProof rtc = toDeductionMontague (parseSSTLogic rtc) separativeSetTheoryParser
 
-sstCalc = NaturalDeductionCalc 
+sstCalc = mkNDCalc 
     { ndRenderer = MontagueStyle
     , ndParseProof = parseSSTProof
     , ndProcessLine = hoProcessLineMontague
