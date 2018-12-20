@@ -80,6 +80,7 @@ logicBookPDCalc = mkNDCalc
     , ndProcessLine = hoProcessLineFitch
     , ndProcessLineMemo = Just hoProcessLineFitchMemo
     , ndParseSeq = parseSeqOver bergmannMoorAndNelsonPDFormulaParser
+    , ndNotation = ndNotation P.logicBookSDCalc
     }
 
 data LogicBookPDPlus = PD LogicBookPD | SDPlus P.LogicBookSDPlus | QN1 | QN2 | QN3 | QN4
@@ -133,4 +134,5 @@ logicBookPDPlusCalc = mkNDCalc
     , ndProcessLine = hoProcessLineFitch
     , ndProcessLineMemo = Just hoProcessLineFitchMemo
     , ndParseSeq = parseSeqOver bergmannMoorAndNelsonPDFormulaParser
+    , ndNotation = ndNotation P.logicBookSDPlusCalc
     }

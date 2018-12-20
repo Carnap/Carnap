@@ -173,10 +173,37 @@ parseHowardSnyderSL rtc = do r <- try (string "Assume" <* char '(' <* (string "C
 parseHowardSnyderSLProof :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> String -> [DeductionLine HowardSnyderSL PurePropLexicon (Form Bool)]
 parseHowardSnyderSLProof rtc = toCommentedDeductionFitch (parseHowardSnyderSL rtc) (purePropFormulaParser howardSnyderOpts)
 
+howardSnyderSLNotation :: String -> String
+howardSnyderSLNotation x = case runParser altParser 0 "" x of
+                        Left e -> show e
+                        Right s -> s
+    where altParser = do s <- handleChar <|> try handleQuant <|> try handleAtom <|> handleLParen <|> handleRParen <|> fallback
+                         rest <- (eof >> return "") <|> altParser
+                         return $ s ++ rest
+          handleChar = (char '∧' >> return "∙") <|> (char '¬' >> return "~") <|> (char '⊢' >> return "∴")
+          handleQuant = do q <- oneOf "∀∃"
+                           v <- anyChar
+                           return $ "(" ++ (if q == '∃' then "∃" else "") ++ [v] ++ ")"
+          handleLParen = do char '('
+                            n <- getState 
+                            putState (n + 1)
+                            return $ ["(","[","{"] !! (n `mod` 3) 
+          handleRParen = do char ')'
+                            n <- getState 
+                            putState (n - 1)
+                            return $ [")","]","}"] !! (n - 1 `mod` 3)
+          handleAtom = do c <- oneOf "ABCDEFGHIJKLMNOPQRSTUVWXYZ" <* char '('
+                          args <- oneOf "abcdefghijklmnopqrstuvwxyz" `sepBy` char ','
+                          char ')'
+                          return $ c:args
+          fallback = do c <- anyChar 
+                        return [c]
+
 howardSnyderSLCalc = mkNDCalc 
     { ndRenderer = FitchStyle
     , ndParseProof = parseHowardSnyderSLProof
     , ndProcessLine = hoProcessLineFitch
     , ndProcessLineMemo = Just hoProcessLineFitchMemo
     , ndParseSeq = parseSeqOver (purePropFormulaParser howardSnyderOpts)
+    , ndNotation = howardSnyderSLNotation
     }

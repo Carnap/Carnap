@@ -36,7 +36,6 @@ data CheckerOptions = CheckerOptions { submit :: Maybe Button -- What's the subm
                                      , render :: Bool -- Should the checker render the proof?
                                      , directed :: Bool -- Is the checker directed towards a sequent?
                                      , feedback :: CheckerFeedbackUpdate --what type of feedback should the checker give?
-                                     , alternateSymbols :: String -> String
                                      , initialUpdate :: Bool -- Should the checker be updated on load?
                                      , indentGuides :: CheckerGuide -- How should the checker display indentation guides?
                                      , autoIndent :: Bool -- Should the checker indent automatically?
@@ -57,12 +56,6 @@ optionsFromMap opts = CheckerOptions { submit = Nothing
                                       , initialUpdate = case M.lookup "init" opts of
                                                        Just _ -> True
                                                        Nothing -> False
-                                      , alternateSymbols = case M.lookup "alternate-symbols" opts of
-                                                               Just "alt1" -> alternateSymbols1
-                                                               Just "alt2" -> alternateSymbols2
-                                                               Just "alt3" -> alternateSymbols3
-                                                               Just "alt4" -> alternateSymbols4
-                                                               _ -> id
                                       , indentGuides = case M.lookup "guides" opts of
                                                        Just "montague"     -> MontagueGuide
                                                        Just "fitch"        -> FitchGuide

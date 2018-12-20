@@ -172,7 +172,7 @@ activateChecker drs w (Just iog@(IOGoal i o g _ opts)) -- TODO: need to update n
                                           case parse seqParse "" seqstring of
                                               Left e -> do setInnerHTML g (Just $ "Couldn't Parse This Goal:" ++ seqstring)
                                                            error "couldn't parse goal"
-                                              Right seq -> do setInnerHTML g (Just $ alternateSymbols options $ show seq)
+                                              Right seq -> do setInnerHTML g (Just $ ndNotation calc $ show seq)
                                                               return $ Just seq
               makeDisplay = do (Just pd) <- createElement w (Just "div")
                                setAttribute pd "class" "proofDisplay"
@@ -206,7 +206,7 @@ threadedCheck options checker w ref v (g, fd) =
                                  ded = ndParseProof ndcalc rtconfig v
                              case proofDisplay checker of 
                                Just pd -> 
-                                   do renderedProof <- renderer w options ded
+                                   do renderedProof <- renderer w ndcalc ded
                                       setInnerHTML pd (Just "")
                                       appendChild pd (Just renderedProof)
                                Nothing -> return Nothing
@@ -215,21 +215,21 @@ threadedCheck options checker w ref v (g, fd) =
                                                      Nothing -> return $ toDisplaySequence (ndProcessLine ndcalc) ded
                              ul <- case feedback options of
                                        SyntaxOnly -> genericListToUl (syntaxwrap fd w) w ds
-                                       _ -> genericListToUl (wrap fd w options) w ds
+                                       _ -> genericListToUl (wrap fd w ndcalc) w ds
                              setInnerHTML fd (Just "")
                              appendChild fd (Just ul)
                              case sequent checker of
-                                 Just s -> updateGoal s ref g mseq options
-                                 Nothing -> computeRule ref g mseq options
+                                 Just s -> updateGoal s ref g mseq options ndcalc
+                                 Nothing -> computeRule ref g mseq options ndcalc
            writeIORef (threadRef checker) (Just t')
            return ()
 
     where renderer = case ndRenderer (checkerCalc checker) of
                          MontagueStyle -> renderDeductionMontague 
                          FitchStyle -> renderDeductionFitch 
-                         LemmonStyle v -> renderDeductionLemmon v
+                         LemmonStyle _ -> renderDeductionLemmon
 
-updateGoal s ref g mseq options = 
+updateGoal s ref g mseq options _ = 
         case (mseq, feedback options) of
              (Nothing,_) -> setAttribute g "class" "goal" >> writeIORef ref False
              (Just seq, SyntaxOnly) -> setAttribute g "class" "goal" >> writeIORef ref (seq `seqSubsetUnify` s)
@@ -238,11 +238,11 @@ updateGoal s ref g mseq options =
                                                           else do setAttribute g "class" "goal failure"
                                                                   writeIORef ref False
 
-computeRule ref g mseq options = 
+computeRule ref g mseq _ calc = 
         case mseq of
            Nothing -> do setInnerHTML g (Just "No Rule Found")
                          writeIORef ref False
-           (Just seq) -> do setInnerHTML g (Just $ alternateSymbols options $ show seq)
+           (Just seq) -> do setInnerHTML g (Just $ ndNotation calc $ show seq)
                             writeIORef ref True
 
 submitDer opts checker l g seq ref _ i = do isFinished <- liftIO $ readIORef ref
@@ -302,7 +302,7 @@ trySave drs ref w i = do isFinished <- liftIO $ readIORef ref
 
 configFrom rules prems = RuntimeNaturalDeductionConfig (M.fromList . map (\(x,y) -> (x,derivedRuleToSequent y)) $ rules) prems
 
-wrap fd w options elt (Right s) = popUpWith fd w elt "+" (alternateSymbols options $ show s) Nothing
+wrap fd w calc elt (Right s) = popUpWith fd w elt "+" (ndNotation calc $ show s) Nothing
 wrap fd w _ elt (Left (GenericError s n)) = popUpWith fd w elt "?" ("Error on line " ++ show n ++ ": " ++ s) Nothing
 wrap fd w _ elt (Left (NoParse e n)) = popUpWith fd w elt "⚠" ("Can't read line " ++ show n ++ ". There may be a typo.") (Just . cleanIt . show $ e)
     where chunks s = case break (== '\"') s of 
@@ -316,9 +316,9 @@ wrap fd w _ elt (Left (NoParse e n)) = popUpWith fd w elt "⚠" ("Can't read lin
           readMaybe s = case reads s of
                           [(x, "")] -> Just x
                           _ -> Nothing
-wrap fd w options elt (Left (NoUnify eqs n)) = 
+wrap fd w calc elt (Left (NoUnify eqs n)) = 
         popUpWith fd w elt "✗" ("Error on line " ++ show n ++ ". Can't match these premises with this conclusion, using this rule.") 
-                               (Just $ alternateSymbols options $ toUniErr eqs)
+                               (Just $ ndNotation calc $ toUniErr eqs)
 wrap fd w _ elt (Left (NoResult _)) = setInnerHTML elt (Just "&nbsp;")
 
 syntaxwrap fd w elt (Left (NoParse e n))       = popUpWith fd w elt "⚠" ("Can't read line " ++ show n ++ ". There may be a typo.") (Just . cleanIt . show $ e)

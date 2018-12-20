@@ -121,4 +121,5 @@ hausmanPLCalc = mkNDCalc
     , ndProcessLine = hoProcessLineFitch
     , ndProcessLineMemo = Just hoProcessLineFitchMemo
     , ndParseSeq = parseSeqOver hausmanPLFormulaParser
+    , ndNotation = ndNotation P.hausmanSLCalc
     }

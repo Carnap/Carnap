@@ -166,10 +166,37 @@ parseHausmanSL rtc = do r <- choice (map (try . string) [ "MP", "Conj", "MT", "H
 parseHausmanSLProof :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> String -> [DeductionLine HausmanSL PurePropLexicon (Form Bool)]
 parseHausmanSLProof rtc = toCommentedDeductionFitch (parseHausmanSL rtc) (purePropFormulaParser hausmanOpts)
 
+hausmanSLNotation :: String -> String 
+hausmanSLNotation x = case runParser altParser 0 "" x of
+                        Left e -> show e
+                        Right s -> s
+    where altParser = do s <- handleCon <|> try handleQuant <|> try handleAtom <|> handleLParen <|> handleRParen <|> fallback
+                         rest <- (eof >> return "") <|> altParser
+                         return $ s ++ rest
+          handleCon = (char '∧' >> return "∙") <|> (char '¬' >> return "~") <|> (char '→' >> return "⊃")
+          handleQuant = do q <- oneOf "∀∃"
+                           v <- anyChar
+                           return $ "(" ++ (if q == '∃' then "∃" else "") ++ [v] ++ ")"
+          handleLParen = do char '('
+                            n <- getState 
+                            putState (n + 1)
+                            return $ ["(","[","{"] !! (n `mod` 3) 
+          handleRParen = do char ')'
+                            n <- getState 
+                            putState (n - 1)
+                            return $ [")","]","}"] !! (n - 1 `mod` 3)
+          handleAtom = do c <- oneOf "ABCDEFGHIJKLMNOPQRSTUVWXYZ" <* char '('
+                          args <- oneOf "abcdefghijklmnopqrstuvwxyz" `sepBy` char ','
+                          char ')'
+                          return $ c:args
+          fallback = do c <- anyChar 
+                        return [c]
+
 hausmanSLCalc = mkNDCalc 
     { ndRenderer = FitchStyle
     , ndParseProof = parseHausmanSLProof
     , ndProcessLine = hoProcessLineFitch
     , ndProcessLineMemo = Just hoProcessLineFitchMemo
     , ndParseSeq = parseSeqOver (purePropFormulaParser hausmanOpts)
+    , ndNotation = hausmanSLNotation
     }

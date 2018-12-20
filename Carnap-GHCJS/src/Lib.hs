@@ -9,8 +9,7 @@ module Lib
     folSeqAndLabel, folFormAndLabel, message, IOGoal(..), updateWithValue,
     submissionSource, assignmentKey, initialize, popUpWith, spinnerSVG,
     doneButton, questionButton, exclaimButton, expandButton, buttonWrapper,
-    maybeNodeListToList, trySubmit, alternateSymbols1, alternateSymbols2,
-    alternateSymbols3, alternateSymbols4) where
+    maybeNodeListToList, trySubmit ) where
 
 import Data.Aeson
 import Data.Maybe (catMaybes)
@@ -377,89 +376,6 @@ trySubmit problemType opts ident problemData correct =
                                    (Submit problemType ident problemData source correct (M.lookup "points" opts >>= readMaybe) key) 
                                    (loginCheck $ "Submitted Exercise " ++ ident)
                                    errorPopup
-
------------------------------------
---  1.7.1 Alternate Symbol Sets  --
------------------------------------
-
-alternateSymbols1 :: String -> String
-alternateSymbols1 = map replace
-    where replace '∧' = '&'
-          replace '¬' = '~'
-          replace c = c
-
-alternateSymbols2 :: String -> String
-alternateSymbols2 x = case runParser altParser 0 "" x of
-                        Left e -> show e
-                        Right s -> s
-    where altParser = do s <- handleCon <|> try handleQuant <|> try handleAtom <|> fallback
-                         rest <- (eof >> return "") <|> altParser
-                         return $ s ++ rest
-          handleCon = (char '∧' >> return "&") 
-                      <|> (char '¬' >> return "~") 
-                      <|> (char '→' >> return "⊃")
-                      <|> (char '↔' >> return "≡")
-          handleQuant = do q <- oneOf "∀∃"
-                           v <- anyChar
-                           return $ "(" ++ [q] ++ [v] ++ ")"
-          handleAtom = do c <- oneOf "ABCDEFGHIJKLMNOPQRSTUVWXYZ" <* char '('
-                          args <- oneOf "abcdefghijklmnopqrstuvwxyz" `sepBy` char ','
-                          char ')'
-                          return $ c:args
-          fallback = do c <- anyChar 
-                        return [c]
-
-alternateSymbols3 :: String -> String
-alternateSymbols3 x = case runParser altParser 0 "" x of
-                        Left e -> show e
-                        Right s -> s
-    where altParser = do s <- handleCon <|> try handleQuant <|> try handleAtom <|> handleLParen <|> handleRParen <|> fallback
-                         rest <- (eof >> return "") <|> altParser
-                         return $ s ++ rest
-          handleCon = (char '∧' >> return "∙") <|> (char '¬' >> return "~") <|> (char '→' >> return "⊃")
-          handleQuant = do q <- oneOf "∀∃"
-                           v <- anyChar
-                           return $ "(" ++ (if q == '∃' then "∃" else "") ++ [v] ++ ")"
-          handleLParen = do char '('
-                            n <- getState 
-                            putState (n + 1)
-                            return $ ["(","[","{"] !! (n `mod` 3) 
-          handleRParen = do char ')'
-                            n <- getState 
-                            putState (n - 1)
-                            return $ [")","]","}"] !! (n - 1 `mod` 3)
-          handleAtom = do c <- oneOf "ABCDEFGHIJKLMNOPQRSTUVWXYZ" <* char '('
-                          args <- oneOf "abcdefghijklmnopqrstuvwxyz" `sepBy` char ','
-                          char ')'
-                          return $ c:args
-          fallback = do c <- anyChar 
-                        return [c]
-
-alternateSymbols4 :: String -> String
-alternateSymbols4 x = case runParser altParser 0 "" x of
-                        Left e -> show e
-                        Right s -> s
-    where altParser = do s <- handleChar <|> try handleQuant <|> try handleAtom <|> handleLParen <|> handleRParen <|> fallback
-                         rest <- (eof >> return "") <|> altParser
-                         return $ s ++ rest
-          handleChar = (char '∧' >> return "∙") <|> (char '¬' >> return "~") <|> (char '⊢' >> return "∴")
-          handleQuant = do q <- oneOf "∀∃"
-                           v <- anyChar
-                           return $ "(" ++ (if q == '∃' then "∃" else "") ++ [v] ++ ")"
-          handleLParen = do char '('
-                            n <- getState 
-                            putState (n + 1)
-                            return $ ["(","[","{"] !! (n `mod` 3) 
-          handleRParen = do char ')'
-                            n <- getState 
-                            putState (n - 1)
-                            return $ [")","]","}"] !! (n - 1 `mod` 3)
-          handleAtom = do c <- oneOf "ABCDEFGHIJKLMNOPQRSTUVWXYZ" <* char '('
-                          args <- oneOf "abcdefghijklmnopqrstuvwxyz" `sepBy` char ','
-                          char ')'
-                          return $ c:args
-          fallback = do c <- anyChar 
-                        return [c]
 
 ------------------
 --1.8 SVG Data  --

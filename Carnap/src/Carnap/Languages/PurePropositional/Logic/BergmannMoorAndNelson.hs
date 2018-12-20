@@ -137,12 +137,35 @@ parseLogicBookSD rtc = do r <- choice (map (try . string) ["AS","PR","&I","/\\I"
 parseLogicBookSDProof :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> String -> [DeductionLine LogicBookSD PurePropLexicon (Form Bool)]
 parseLogicBookSDProof ders = toDeductionFitch (parseLogicBookSD ders) (purePropFormulaParser extendedLetters)
 
+--TODO: split this up, genericize ingredients
+logicBookNotation :: String -> String 
+logicBookNotation x = case runParser altParser 0 "" x of
+                        Left e -> show e
+                        Right s -> s
+    where altParser = do s <- handleCon <|> try handleQuant <|> try handleAtom <|> fallback
+                         rest <- (eof >> return "") <|> altParser
+                         return $ s ++ rest
+          handleCon = (char '∧' >> return "&") 
+                      <|> (char '¬' >> return "~") 
+                      <|> (char '→' >> return "⊃")
+                      <|> (char '↔' >> return "≡")
+          handleQuant = do q <- oneOf "∀∃"
+                           v <- anyChar
+                           return $ "(" ++ [q] ++ [v] ++ ")"
+          handleAtom = do c <- oneOf "ABCDEFGHIJKLMNOPQRSTUVWXYZ" <* char '('
+                          args <- oneOf "abcdefghijklmnopqrstuvwxyz" `sepBy` char ','
+                          char ')'
+                          return $ c:args
+          fallback = do c <- anyChar 
+                        return [c]
+
 logicBookSDCalc = mkNDCalc 
     { ndRenderer = FitchStyle
     , ndParseProof = parseLogicBookSDPlusProof
     , ndProcessLine = processLineFitch
     , ndProcessLineMemo = Nothing
     , ndParseSeq = extendedPropSeqParser
+    , ndNotation = logicBookNotation
     }
 
 data LogicBookSDPlus = SD LogicBookSD | MT | HS 
@@ -268,4 +291,5 @@ logicBookSDPlusCalc = mkNDCalc
     , ndProcessLine = hoProcessLineFitch
     , ndProcessLineMemo = Just hoProcessLineFitchMemo
     , ndParseSeq = extendedPropSeqParser
+    , ndNotation = logicBookNotation
     }

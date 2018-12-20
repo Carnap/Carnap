@@ -6,7 +6,7 @@ import Data.Maybe (catMaybes)
 import Carnap.Core.Data.Types
 import Carnap.Core.Data.Classes
 import Carnap.GHCJS.Widget.ProofCheckBox
-import Carnap.Calculi.NaturalDeduction.Syntax (DeductionLine(..), Deduction(..), depth, LemmonVariant(..))
+import Carnap.Calculi.NaturalDeduction.Syntax (DeductionLine(..), Deduction(..), depth, RenderStyle(..), LemmonVariant(..), NaturalDeductionCalc(..))
 import GHCJS.DOM.Types (Document,Element)
 import GHCJS.DOM.Element (setInnerHTML,setAttribute)
 import GHCJS.DOM.Node (appendChild)
@@ -79,9 +79,9 @@ renderTreeMontague w opts = treeToElement asLine asSubproof
           norule = Nothing
 
 --The basic parts of a line, with Maybes for the fomula and the rule-dependency pair.
-lineBase :: (Show a, Show b) => 
-    Document -> CheckerOptions -> Int -> Maybe a -> Maybe ([b],[(Int,Int)]) -> String -> IO (Element,Element,Element,Element)
-lineBase w opts n mf mrd lineclass = 
+-- lineBase :: (Show a, Show b) => 
+--     Document -> CheckerOptions -> Int -> Maybe a -> Maybe ([b],[(Int,Int)]) -> String -> IO (Element,Element,Element,Element)
+lineBase w calc n mf mrd lineclass = 
         do (Just theWrapper) <- createElement w (Just "div")
            (Just theLine) <- createElement w (Just "div")
            (Just lineNum) <- createElement w (Just "span")
@@ -89,25 +89,25 @@ lineBase w opts n mf mrd lineclass =
            (Just theRule) <- createElement w (Just "span")
            setInnerHTML lineNum (Just $ show n ++ ".")
            whileJust mrd (\(r,deps) -> setInnerHTML theRule (Just $ show (head r) ++ " " ++ intercalate ", " (map renderDep deps)))
-           whileJust mf (\f -> setInnerHTML theForm (Just $ alternateSymbols opts $ show f))
+           whileJust mf (\f -> setInnerHTML theForm (Just $ ndNotation calc $ show f))
            setAttribute theRule "class" "rule"
            appendChild theWrapper (Just theLine)
            appendChild theLine (Just lineNum)
            setAttribute theWrapper "class" lineclass
            return (theWrapper,theLine,theForm,theRule)
 
-renderTreeLemmon v w opts = treeToElement asLine asSubproof
+renderTreeLemmon w calc = treeToElement asLine asSubproof
     where asLine (n,DependentAssertLine f r deps dis scope mnum) = 
                 do [theWrapper,lineNum,theForm,theRule,theScope] <- catMaybes <$> mapM (createElement w . Just) ["div","span","span","span","span"]
-                   case v of
-                       TomassiStyle -> 
+                   case ndRenderer calc of
+                       LemmonStyle TomassiStyle -> 
                             do setInnerHTML theScope (Just $ "{" ++ intercalate "," (map show scope) ++ "}")
-                               setInnerHTML theForm (Just $ alternateSymbols opts $ show f)
+                               setInnerHTML theForm (Just $ ndNotation calc $ show f)
                                case mnum of
                                    Nothing -> setInnerHTML lineNum (Just $ show n ++ ".")
                                    Just m -> setInnerHTML lineNum (Just $ show m ++ ".")
                        _ -> do setInnerHTML theScope (Just $ show scope)
-                               setInnerHTML theForm (Just $ alternateSymbols opts $ show f)
+                               setInnerHTML theForm (Just $ ndNotation calc $ show f)
                                case mnum of
                                    Nothing -> setInnerHTML lineNum (Just $ "(" ++ show n ++ ")")
                                    Just m -> setInnerHTML lineNum (Just $ "(" ++ show m ++ ")")
@@ -125,23 +125,23 @@ renderTreeLemmon v w opts = treeToElement asLine asSubproof
 
           asSubproof _ _ = return ()
 
-renderDeduction :: String -> (Document -> CheckerOptions -> Tree (Int, DeductionLine t t1 t2) -> IO Element) -> Document -> CheckerOptions -> [DeductionLine t t1 t2] -> IO Element
-renderDeduction cls render w opts ded = 
+renderDeduction :: String -> (Document -> NaturalDeductionCalc r lex sem -> Tree (Int, DeductionLine t t1 t2) -> IO Element) -> Document -> NaturalDeductionCalc r lex sem -> [DeductionLine t t1 t2] -> IO Element
+renderDeduction cls render w calc ded = 
         do let forest = deductionToForest 0 (zip [1..] ded)
-           lines <- mapM (render w opts) forest
+           lines <- mapM (render w calc) forest
            (Just theProof) <- createElement w (Just "div")
            setAttribute theProof "class" cls
            mapM_ (appendChild theProof . Just) lines
            return theProof
 
-renderDeductionFitch :: (Show t,Schematizable (t1 (FixLang t1)), CopulaSchema (FixLang t1)) => Document -> CheckerOptions -> [DeductionLine t t1 t2] -> IO Element
+renderDeductionFitch :: (Show t,Schematizable (t1 (FixLang t1)), CopulaSchema (FixLang t1)) => Document -> NaturalDeductionCalc r lex sem -> [DeductionLine t t1 t2] -> IO Element
 renderDeductionFitch = renderDeduction "fitchDisplay" renderTreeFitch
 
-renderDeductionMontague :: (Show t,Schematizable (t1 (FixLang t1)), CopulaSchema (FixLang t1)) => Document -> CheckerOptions -> [DeductionLine t t1 t2] -> IO Element
+renderDeductionMontague :: (Show t,Schematizable (t1 (FixLang t1)), CopulaSchema (FixLang t1)) => Document -> NaturalDeductionCalc r lex sem -> [DeductionLine t t1 t2] -> IO Element
 renderDeductionMontague = renderDeduction "montagueDisplay" renderTreeMontague
 
-renderDeductionLemmon ::  (Show t,Schematizable (t1 (FixLang t1)), CopulaSchema (FixLang t1)) => LemmonVariant -> Document -> CheckerOptions -> [DeductionLine t t1 t2] -> IO Element
-renderDeductionLemmon v = renderDeduction "lemmonDisplay" (renderTreeLemmon v)
+renderDeductionLemmon ::  (Show t,Schematizable (t1 (FixLang t1)), CopulaSchema (FixLang t1)) => Document -> NaturalDeductionCalc r lex sem -> [DeductionLine t t1 t2] -> IO Element
+renderDeductionLemmon = renderDeduction "lemmonDisplay" renderTreeLemmon
 
 renderDep (n,m) = if n==m then show n else show n ++ "-" ++ show m
 
