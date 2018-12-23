@@ -51,7 +51,7 @@ import GHCJS.DOM.Node
 import qualified GHCJS.DOM.HTMLCollection as HC
 import GHCJS.DOM.NodeList
 import qualified GHCJS.DOM.NamedNodeMap as NM
-import GHCJS.DOM.Event
+import GHCJS.DOM.Event as EV
 import GHCJS.DOM.KeyboardEvent
 import GHCJS.DOM.EventM
 import GHCJS.DOM.EventTarget
@@ -80,7 +80,10 @@ onKey keylist action = do kbe      <- event
                           -- doesn't work in some older browsers, so we keep
                           -- this line around.
                           id'      <- liftIO $ keyString kbe
-                          if id `elem` keylist || id' `elem` keylist then do action else return ()
+                          
+                          if id `elem` keylist || id' `elem` keylist 
+                              then EV.preventDefault kbe >> action 
+                              else return ()
 
 onEnter :: EventM e KeyboardEvent () ->  EventM e KeyboardEvent ()
 onEnter = onKey ["Enter"]

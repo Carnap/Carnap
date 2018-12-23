@@ -105,7 +105,7 @@ checkerWith options updateres iog@(IOGoal i o g content _) w = do
            addListener i initialize initlistener False                
            when (autoIndent options) $ do
                    indentlistener <- newListener (onEnter reindent)
-                   addListener i keyUp indentlistener False
+                   addListener i keyDown indentlistener False
            when (autoResize options) $ do
                    resizelistener <- newListener (do Just t <- target; resize t)
                    resizelistener' <- newListener (do Just t <- target; resize t)
@@ -179,18 +179,26 @@ updateLines w nd options =  do (Just t) <- target :: EventM HTMLTextAreaElement 
                                      Nothing -> return ()
                                      Just v -> liftIO $ setLinesTo w nd options (altlines v)
 
+insertText :: (String -> Int -> String) -> EventM HTMLTextAreaElement KeyboardEvent ()
+insertText f = do (Just t) <- target :: EventM HTMLTextAreaElement KeyboardEvent (Maybe HTMLTextAreaElement)
+                  mv <- getValue t
+                  case mv of 
+                      Nothing -> return ()
+                      Just v -> do
+                          pos <- getSelectionStart t
+                          let (pre,post) = splitAt pos v
+                              insertion = f v pos
+                          setValue t $ Just ( pre ++ insertion ++ post )
+                          setSelectionEnd t (length (pre ++ insertion))
+
 reindent :: EventM HTMLTextAreaElement KeyboardEvent ()
-reindent = do (Just t) <- target :: EventM HTMLTextAreaElement KeyboardEvent (Maybe HTMLTextAreaElement)
-              mv <- getValue t
-              case mv of 
-                  Nothing -> return ()
-                  Just v -> do
-                      pos <- getSelectionStart t
-                      let (pre,post) = splitAt pos v
-                          line = last . lines $ pre
-                          ws = takeWhile (`elem` [' ','\t']) line
-                      setValue t $ Just ( pre ++ ws ++ post )
-                      setSelectionEnd t (length (pre ++ ws))
+reindent = insertText ws
+    where ws v pos = let (pre,post) = splitAt pos v
+                         line = last . lines $ pre
+                         in '\n' : takeWhile (`elem` [' ','\t']) line
+
+insertTab :: EventM HTMLTextAreaElement KeyboardEvent ()
+insertTab = insertText (const (const "    "))
 
 resize :: MonadIO m => Element -> m ()
 resize i = do setAttribute i "style" "width: 0px;height: 0px"
