@@ -39,6 +39,7 @@ data CheckerOptions = CheckerOptions { submit :: Maybe Button -- What's the subm
                                      , initialUpdate :: Bool -- Should the checker be updated on load?
                                      , indentGuides :: CheckerGuide -- How should the checker display indentation guides?
                                      , autoIndent :: Bool -- Should the checker indent automatically?
+                                     , tabIndent :: Bool -- Should the tab button insert an indent?
                                      , autoResize :: Bool -- Should the checker resize automatically?
                                      , popout :: Bool -- Should the checker be able to be put in a new window?
                                      , hideNumbering :: Bool -- Should the checker hide the line numbering
@@ -66,7 +67,8 @@ optionsFromMap opts = CheckerOptions { submit = Nothing
                                                                 else NoGuide
                                       , render = "render" `elem` optlist
                                       , autoIndent = "indent" `elem` optlist
-                                      , autoResize= "resize" `elem` optlist
+                                      , autoResize = "resize" `elem` optlist
+                                      , tabIndent = "tabindent" `elem` optlist
                                       , popout = "popout" `elem` optlist
                                       , hideNumbering = "hideNumbering" `elem` optlist
                                       }
@@ -106,6 +108,9 @@ checkerWith options updateres iog@(IOGoal i o g content _) w = do
            when (autoIndent options) $ do
                    indentlistener <- newListener (onEnter reindent)
                    addListener i keyDown indentlistener False
+           when (tabIndent options) $ do
+                   tablistener <- newListener (onKey ["Tab"] insertTab)
+                   addListener i keyDown tablistener False
            when (autoResize options) $ do
                    resizelistener <- newListener (do Just t <- target; resize t)
                    resizelistener' <- newListener (do Just t <- target; resize t)
