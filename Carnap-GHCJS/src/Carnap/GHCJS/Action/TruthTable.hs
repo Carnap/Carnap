@@ -50,51 +50,50 @@ activateTruthTables w (Just (i,o,opts)) =
                       Right f -> do
                           ref <- newIORef False
                           bw <- buttonWrapper w
-                          (gRef,rows) <- ttfunc w f (i,o) ref bw opts
+                          (check,rows) <- ttfunc w f (i,o) ref bw opts
                           case M.lookup "submission" opts of
                               Just s | take 7 s == "saveAs:" -> do
                                   let l = Prelude.drop 7 s
                                   bt1 <- doneButton w "Submit"
                                   appendChild bw (Just bt1)
-                                  submit <- newListener $ submitTruthTable opts ref gRef rows (show f) l
+                                  submit <- newListener $ submitTruthTable opts ref check rows (show f) l
                                   addListener bt1 click submit False                
                               _ -> return ()
                           if "nocheck" `elem` optlist then return () 
                           else do
                               bt2 <- questionButton w "Check"
                               appendChild bw (Just bt2)
-                              check <- newListener $ checkTable ref gRef
-                              addListener bt2 click check False                
+                              checkIt <- newListener $ checkTable ref check
+                              addListener bt2 click checkIt False                
                           (Just par) <- getParentNode o
                           appendChild par (Just bw)
-                          -- XXX: idea. Return check rather than gRef, to allow different tt setups their own checking proceedures
                           setInnerHTML i (Just $ show f)
                       (Left e) -> setInnerHTML o (Just $ show e) 
                 _ -> print "truth table was missing an option"
-          checkTable ref gRef = do vals <- liftIO $ readIORef gRef
-                                   let val = M.foldr (&&) True vals
-                                   if val then do message "Success!"
-                                                  liftIO $ writeIORef ref True
-                                                  setAttribute i "class" "input completeTT"
-                                          else do message "Something's not quite right"
-                                                  setAttribute i "class" "input incompleteTT"
+          checkTable ref check = do correct <- liftIO $ check
+                                    if correct 
+                                        then do message "Success!"
+                                                liftIO $ writeIORef ref True
+                                                setAttribute i "class" "input completeTT"
+                                        else do message "Something's not quite right"
+                                                setAttribute i "class" "input incompleteTT"
 
-submitTruthTable:: M.Map String String -> IORef Bool ->  IORef (Map (Int, Int) Bool) -> [Element] -> String -> String -> EventM HTMLInputElement e ()
-submitTruthTable opts ref gRef rows s l = do isDone <- liftIO $ readIORef ref
-                                             if isDone 
-                                                then trySubmit TruthTable opts l (ProblemContent (pack s)) True
-                                                else if "exam" `elem` optlist
-                                                         then do vals <- liftIO $ readIORef gRef
-                                                                 if M.foldr (&&) True vals 
-                                                                     then trySubmit TruthTable opts l (ProblemContent (pack s)) True
-                                                                     else do tabulated <- liftIO $ mapM unpackRow rows
-                                                                             trySubmit TruthTable opts l (TruthTableDataOpts (pack s) (reverse tabulated) (M.toList opts)) False
-                                                         else message "not yet finished (do you still need to check your answer?)"
+submitTruthTable:: M.Map String String -> IORef Bool ->  IO Bool -> [Element] -> String -> String -> EventM HTMLInputElement e ()
+submitTruthTable opts ref check rows s l = do isDone <- liftIO $ readIORef ref
+                                              if isDone 
+                                                 then trySubmit TruthTable opts l (ProblemContent (pack s)) True
+                                                 else if "exam" `elem` optlist
+                                                          then do correct <- liftIO check
+                                                                  if correct
+                                                                      then trySubmit TruthTable opts l (ProblemContent (pack s)) True
+                                                                      else do tabulated <- liftIO $ mapM unpackRow rows
+                                                                              trySubmit TruthTable opts l (TruthTableDataOpts (pack s) (reverse tabulated) (M.toList opts)) False
+                                                          else message "not yet finished (do you still need to check your answer?)"
     where optlist = case M.lookup "options" opts of Just s -> words s; Nothing -> []
 
 createValidityTruthTable :: Document -> PropSequentCalc (Sequent (Form Bool)) 
     -> (Element,Element) -> IORef Bool -> Element -> Map String String
-    -> IO (IORef (Map (Int, Int) Bool), [Element])
+    -> IO (IO Bool, [Element])
 createValidityTruthTable w (antced :|-: (SS succed)) (i,o) ref bw opts =
         do (table, thead, tbody) <- initTable w
            gRef <- makeGridRef (length orderedChildren) (length valuations)
@@ -121,7 +120,8 @@ createValidityTruthTable w (antced :|-: (SS succed)) (i,o) ref bw opts =
            appendChild thead (Just head)
            appendChild o (Just table)
            mpar@(Just par) <- getParentNode o
-           return (gRef,rows)
+           let check = M.foldr (&&) True <$> readIORef gRef 
+           return (check ,rows)
     where forms :: [PureForm]
           forms = (Prelude.map fromSequent $ toListOf concretes antced) ++ (Prelude.map fromSequent $ toListOf concretes succed)
           implies v = not (and (Prelude.map (unform . satisfies v) (init forms))) || (unform . satisfies v $ last forms)
@@ -160,7 +160,7 @@ createValidityTruthTable w (antced :|-: (SS succed)) (i,o) ref bw opts =
 
 createSimpleTruthTable :: Document -> PureForm -> (Element,Element) -> IORef Bool 
     -> Element -> Map String String 
-    -> IO (IORef (Map (Int, Int) Bool),[Element])
+    -> IO (IO Bool,[Element])
 createSimpleTruthTable w f (_,o) _ _ opts = 
         do (table, thead, tbody) <- initTable w
            gRef <- makeGridRef (length orderedChildren) (length valuations)
@@ -178,13 +178,40 @@ createSimpleTruthTable w f (_,o) _ _ opts =
            setInnerHTML o (Just "")
            appendChild thead (Just head)
            appendChild o (Just table)
-           return (gRef,rows)
+           let check = M.foldr (&&) True <$> readIORef gRef 
+           return (check,rows)
     where atomIndicies = nub . sort . getIndicies $ f
           valuations = (Prelude.map toValuation) . subsequences $ reverse atomIndicies
             where toValuation l = \x -> x `elem` l
           orderedChildren =  traverseBPT . toBPT $ f
           toRow' = toRow w opts atomIndicies orderedChildren o
           makeGridRef x y = newIORef (M.fromList [((z,w), True) | z <- [1..x], w <-[1.. y]])
+
+-- createPartialTruthTable :: Document -> PureForm -> (Element,Element) -> IORef Bool 
+--     -> Element -> Map String String 
+--     -> IO (IORef (Map (Int, Int) Bool),[Element])
+-- createPartialTruthTable w f (_,o) _ _ opts = 
+--         do (table, thead, tbody) <- initTable w
+--            gRef <- makeRowRef (length orderedChildren)
+--            head <- toHead w atomIndicies orderedChildren
+--            let givens = case M.lookup "content" opts of 
+--                            Nothing -> repeat $ repeat Nothing
+--                            Just t -> let t' = expandRow orderedChildren t in
+--                                            if length t' == length orderedChildren 
+--                                                then t'
+--                                                else repeat Nothing
+--            rows <- toRow' gRef (zip4 valuations [1..] (repeat Nothing) givens)
+--            appendChild tbody (Just rows)
+--            setInnerHTML o (Just "")
+--            appendChild thead (Just head)
+--            appendChild o (Just table)
+--            return (gRef,rows)
+--     where atomIndicies = nub . sort . getIndicies $ f
+--           valuations = (Prelude.map toValuation) . subsequences $ reverse atomIndicies
+--             where toValuation l = \x -> x `elem` l
+--           orderedChildren =  traverseBPT . toBPT $ f
+--           toRow' = toRow w opts atomIndicies orderedChildren o
+--           makeRowRef x = newIORef (M.fromList [(z, True) | z <- [1..x]])
 
 --this is a sorting that gets the correct ordering of indicies (reversed on
 --negative, negative less than positive, postive as usual)
