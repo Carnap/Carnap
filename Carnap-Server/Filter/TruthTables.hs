@@ -14,6 +14,7 @@ makeTruthTables x = x
 activate cls extra chunk
     | "Simple" `elem` cls = RawBlock "html" $ template (opts [("tabletype","simple")])
     | "Validity" `elem` cls = RawBlock "html" $ template (opts [("tabletype","validity")])
+    | "Partial" `elem` cls = RawBlock "html" $ template (opts [("tabletype","partial")])
     | otherwise = RawBlock "html" "<div>No Matching TruthTable</div>"
     where numof x = takeWhile (/= ' ') x
           contentOf x = dropWhile (== ' ') . dropWhile (/= ' ') $  x

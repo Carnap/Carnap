@@ -41,6 +41,7 @@ activateTruthTables w (Just (i,o,opts)) =
         case M.lookup "tabletype" opts of
             (Just "simple") -> checkerWith (purePropFormulaParser standardLetters <* eof) createSimpleTruthTable
             (Just "validity") -> checkerWith (ndParseSeq montagueSCCalc) createValidityTruthTable
+            (Just "partial") -> checkerWith (purePropFormulaParser standardLetters <* eof) createPartialTruthTable
             _  -> return ()
     where optlist = case M.lookup "options" opts of Just s -> words s; Nothing -> []
           checkerWith parser ttfunc = 
@@ -132,7 +133,7 @@ createValidityTruthTable w (antced :|-: (SS succed)) (i,o) ref bw opts =
           valuations = (Prelude.map toValuation) . subsequences $ reverse atomIndicies
           orderedChildren = concat $ intersperse [Left ','] (Prelude.map (traverseBPT . toBPT. fromSequent) (toListOf concretes antced))
                             ++ [[Left '⊢']] ++ intersperse [Left ','] (Prelude.map (traverseBPT . toBPT. fromSequent) (toListOf concretes succed))
-          toRow' = toRow w opts atomIndicies orderedChildren o 
+          toRow' = toRow w opts atomIndicies orderedChildren
           makeGridRef x y = newIORef (M.fromList [((z,w), True) | z <- [1..x], w <-[1.. y]])
           tryCounterexample w' = do mrow <- liftIO $ prompt w' "enter the truth values for your counterexample row" (Just "")
                                     case mrow of 
@@ -175,8 +176,8 @@ createSimpleTruthTable w f (_,o) _ _ opts =
                                            | otherwise -> repeat $ repeat Nothing
            rows <- mapM (toRow' gRef) (zip4 valuations [1..] (repeat Nothing) givens)
            mapM_ (appendChild tbody . Just) (reverse rows)
-           setInnerHTML o (Just "")
            appendChild thead (Just head)
+           setInnerHTML o (Just "")
            appendChild o (Just table)
            let check = M.foldr (&&) True <$> readIORef gRef 
            return (check,rows)
@@ -184,47 +185,10 @@ createSimpleTruthTable w f (_,o) _ _ opts =
           valuations = (Prelude.map toValuation) . subsequences $ reverse atomIndicies
             where toValuation l = \x -> x `elem` l
           orderedChildren =  traverseBPT . toBPT $ f
-          toRow' = toRow w opts atomIndicies orderedChildren o
+          toRow' = toRow w opts atomIndicies orderedChildren
           makeGridRef x y = newIORef (M.fromList [((z,w), True) | z <- [1..x], w <-[1.. y]])
 
--- createPartialTruthTable :: Document -> PureForm -> (Element,Element) -> IORef Bool 
---     -> Element -> Map String String 
---     -> IO (IORef (Map (Int, Int) Bool),[Element])
--- createPartialTruthTable w f (_,o) _ _ opts = 
---         do (table, thead, tbody) <- initTable w
---            gRef <- makeRowRef (length orderedChildren)
---            head <- toHead w atomIndicies orderedChildren
---            let givens = case M.lookup "content" opts of 
---                            Nothing -> repeat $ repeat Nothing
---                            Just t -> let t' = expandRow orderedChildren t in
---                                            if length t' == length orderedChildren 
---                                                then t'
---                                                else repeat Nothing
---            rows <- toRow' gRef (zip4 valuations [1..] (repeat Nothing) givens)
---            appendChild tbody (Just rows)
---            setInnerHTML o (Just "")
---            appendChild thead (Just head)
---            appendChild o (Just table)
---            return (gRef,rows)
---     where atomIndicies = nub . sort . getIndicies $ f
---           valuations = (Prelude.map toValuation) . subsequences $ reverse atomIndicies
---             where toValuation l = \x -> x `elem` l
---           orderedChildren =  traverseBPT . toBPT $ f
---           toRow' = toRow w opts atomIndicies orderedChildren o
---           makeRowRef x = newIORef (M.fromList [(z, True) | z <- [1..x]])
-
---this is a sorting that gets the correct ordering of indicies (reversed on
---negative, negative less than positive, postive as usual)
-sort :: [Int] -> [Int]
-sort (x:xs) = smaller ++ [x] ++ bigger
-    where smaller = sort (Prelude.filter small xs )
-          bigger = sort (Prelude.filter (not . small) xs)
-          small y | x < 0 && y > 0 = False
-                  | x < 0 && y < 0 = x < y
-                  | otherwise = y < x
-sort [] = []
-
-toRow w opts atomIndicies orderedChildren o gRef (v,n,mvalid,given) = 
+toRow w opts atomIndicies orderedChildren gRef (v,n,mvalid,given) = 
         do (Just row) <- createElement w (Just "tr")
            (Just sep) <- createElement w (Just "td")
            setAttribute sep "class" "tttdSep"
@@ -249,10 +213,9 @@ toRow w opts atomIndicies orderedChildren o gRef (v,n,mvalid,given) =
                                                      case preview _propIndex f of
                                                          Just i -> addDropdown m td tv (if "autoAtoms" `elem` optlist then  (Just $ v i) else mg)
                                                          Nothing -> addDropdown m td tv mg
-
                                   return td
 
-          addDropdown m td bool mg = do sel <- trueFalseOpts mg
+          addDropdown m td bool mg = do sel <- trueFalseOpts w mg
                                         appendChild td (Just sel)
                                         case mg of 
                                             Nothing -> modifyIORef gRef (M.insert (n,m) False)
@@ -262,22 +225,6 @@ toRow w opts atomIndicies orderedChildren o gRef (v,n,mvalid,given) =
                                         addListener sel change onSwitch False
                                         return ()
 
-          trueFalseOpts mg = do (Just sel) <- createElement w (Just "select")
-                                (Just bl)  <- createElement w (Just "option")
-                                (Just tr)  <- createElement w (Just "option")
-                                (Just fs)  <- createElement w (Just "option")
-                                setInnerHTML bl (Just "-")
-                                setInnerHTML tr (Just "T")
-                                setInnerHTML fs (Just "F")
-                                case mg of
-                                    Nothing -> return ()
-                                    Just True -> setAttribute tr "selected" "selected"
-                                    Just False -> setAttribute fs "selected" "selected"
-                                appendChild sel (Just bl)
-                                appendChild sel (Just tr)
-                                appendChild sel (Just fs)
-                                return sel
-
           switchOnMatch gRef (n,m) tv = do 
                              (Just t) <- target :: EventM HTMLSelectElement Event (Maybe HTMLSelectElement)
                              s <- getValue t 
@@ -286,29 +233,118 @@ toRow w opts atomIndicies orderedChildren o gRef (v,n,mvalid,given) =
                                  else liftIO $ modifyIORef gRef (M.insert (n,m) (not tv))
           optlist = case M.lookup "options" opts of Just s -> words s; Nothing -> []
 
+createPartialTruthTable :: Document -> PureForm -> (Element,Element) -> IORef Bool 
+    -> Element -> Map String String -> IO (IO Bool,[Element])
+createPartialTruthTable w f (_,o) _ _ opts = 
+        do (table, thead, tbody) <- initTable w
+           rRef <- makeRowRef (length orderedChildren)
+           head <- toPartialHead
+           let givens = case M.lookup "content" opts of 
+                           Nothing -> repeat Nothing
+                           Just t -> let t' = expandRow orderedChildren (packText t) in
+                                           if length t' == length orderedChildren 
+                                               then t'
+                                               else repeat Nothing
+           row <- toPartialRow' rRef valuations givens
+           appendChild tbody (Just row)
+           appendChild thead (Just head)
+           setInnerHTML o (Just "")
+           appendChild o (Just table)
+           return (check rRef,[row])
+    where atomIndicies = nub . sort . getIndicies $ f
+          valuations = (Prelude.map toValuation) . subsequences $ reverse atomIndicies
+            where toValuation l = \x -> x `elem` l
+          orderedChildren =  traverseBPT . toBPT $ f
+          toPartialRow' = toPartialRow w opts orderedChildren
+          makeRowRef x = newIORef (M.fromList [(z, Nothing) | z <- [1..x]])
+          toPartialHead = 
+                do (Just row) <- createElement w (Just "tr")
+                   childThs <- mapM (toChildTh w) orderedChildren
+                   mapM_ (appendChild row . Just) childThs
+                   return row
+          check rRef = do rMap <- readIORef rRef
+                          return $ any (validates rMap) valuations
+          validates rMap v = all (matches rMap v) (zip orderedChildren [1 ..])
+          matches rMap v (Left _,_) = True
+          matches rMap v (Right f,m) = 
+            case M.lookup m rMap of
+                Just (Just tv) -> Form tv == satisfies v f
+                _ -> False
+
+toPartialRow w opts orderedChildren rRef v given = 
+        do (Just row) <- createElement w (Just "tr")
+           childTds <- mapM toChildTd (zip3 orderedChildren [1..] given)
+           mapM_ (appendChild row . Just) childTds
+           return row
+
+    where toChildTd (c,m,mg) = do (Just td) <- createElement w (Just "td")
+                                  case c of
+                                      Left _ -> setInnerHTML td (Just "")
+                                      Right f -> addDropdown m td mg
+                                  return td
+
+          addDropdown m td mg = do sel <- trueFalseOpts w mg
+                                   modifyIORef rRef (M.insert m mg)
+                                   onSwitch <- newListener $ switch rRef m
+                                   addListener sel change onSwitch False
+                                   appendChild td (Just sel)
+                                   return ()
+
+          switch rRef m = do 
+                 (Just t) <- target :: EventM HTMLSelectElement Event (Maybe HTMLSelectElement)
+                 s <- getValue t 
+                 case s of
+                     Just "T" -> liftIO $ modifyIORef rRef (M.insert m (Just True))
+                     Just "F" -> liftIO $ modifyIORef rRef (M.insert m (Just False))
+                     _ -> liftIO $ modifyIORef rRef (M.insert m Nothing)
+
+          optlist = case M.lookup "options" opts of Just s -> words s; Nothing -> []
+--this is a sorting that gets the correct ordering of indicies (reversed on
+--negative, negative less than positive, postive as usual)
+sort :: [Int] -> [Int]
+sort (x:xs) = smaller ++ [x] ++ bigger
+    where smaller = sort (Prelude.filter small xs )
+          bigger = sort (Prelude.filter (not . small) xs)
+          small y | x < 0 && y > 0 = False
+                  | x < 0 && y < 0 = x < y
+                  | otherwise = y < x
+sort [] = []
+
+
+
+trueFalseOpts :: Document -> Maybe Bool -> IO Element
+trueFalseOpts w mg = 
+        do (Just sel) <- createElement w (Just "select")
+           (Just bl)  <- createElement w (Just "option")
+           (Just tr)  <- createElement w (Just "option")
+           (Just fs)  <- createElement w (Just "option")
+           setInnerHTML bl (Just "-")
+           setInnerHTML tr (Just "T")
+           setInnerHTML fs (Just "F")
+           case mg of
+               Nothing -> return ()
+               Just True -> setAttribute tr "selected" "selected"
+               Just False -> setAttribute fs "selected" "selected"
+           appendChild sel (Just bl)
+           appendChild sel (Just tr)
+           appendChild sel (Just fs)
+           return sel
+
+
 toHead w atomIndicies orderedChildren = 
         do (Just row) <- createElement w (Just "tr")
            (Just sep) <- createElement w (Just "th")
            setAttribute sep "class" "ttthSep"
            atomThs <- mapM toAtomTh atomIndicies
-           childThs <- mapM toChildTh orderedChildren
+           childThs <- mapM (toChildTh w) orderedChildren
            mapM_ (appendChild row . Just) atomThs
            appendChild row (Just sep)
            mapM_ (appendChild row . Just) childThs
            return row
-    where toAtomTh i = do (Just td) <- createElement w (Just "th")
-                          setInnerHTML td (Just $ show (pn i :: PureForm))
-                          return td
-          toChildTh c = do (Just td) <- createElement w (Just "th")
-                           case c of
-                               Left '⊢' -> do setInnerHTML td (Just ['⊢'])
-                                              setAttribute td "class" "ttTurstile"
-                               Left c'  -> setInnerHTML td (Just [c'])
-                               Right f  -> setInnerHTML td (Just $ mcOf f)
-                           return td
-          mcOf :: (Schematizable (f (FixLang f)), CopulaSchema (FixLang f)) => FixLang f a -> String
-          mcOf (h :!$: t) = mcOf h
-          mcOf h = show h
+    where toAtomTh i = do (Just th) <- createElement w (Just "th")
+                          setInnerHTML th (Just $ show (pn i :: PureForm))
+                          return th
+
 
 --Binary propositional parsing tree. This could be written more compactly,
 --but this seems conceptually clearer
@@ -356,3 +392,18 @@ initTable w = do (Just table) <- createElement w (Just "table")
                  appendChild table (Just thead)
                  appendChild table (Just tbody)
                  return (table, thead, tbody)
+
+
+mcOf :: (Schematizable (f (FixLang f)), CopulaSchema (FixLang f)) => FixLang f a -> String
+mcOf (h :!$: t) = mcOf h
+mcOf h = show h
+
+toChildTh :: (Schematizable (f (FixLang f)), CopulaSchema (FixLang f)) => Document -> Either Char (FixLang f a) -> IO Element
+toChildTh w c = 
+        do (Just th) <- createElement w (Just "th")
+           case c of
+               Left '⊢' -> do setInnerHTML th (Just ['⊢'])
+                              setAttribute th "class" "ttTurstile"
+               Left c'  -> setInnerHTML th (Just [c'])
+               Right f  -> setInnerHTML th (Just $ mcOf f)
+           return th
