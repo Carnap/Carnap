@@ -130,12 +130,28 @@ parseMagnusSL rtc = do r <- choice (map (try . string) ["AS","PR","&I","/\\I", "
 parseMagnusSLProof :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> String -> [DeductionLine MagnusSL PurePropLexicon (Form Bool)]
 parseMagnusSLProof rtc = toDeductionFitch (parseMagnusSL rtc) (purePropFormulaParser extendedLetters)
 
+magnusNotation :: String -> String 
+magnusNotation x = case runParser altparser 0 "" x of
+                            Left e -> show e
+                            Right s -> s
+    where altparser = do s <- handlecon <|> try handleatom <|> fallback
+                         rest <- (eof >> return "") <|> altparser
+                         return $ s ++ rest
+          handlecon = char '∧' >> return "&"
+          handleatom = do c <- oneOf "ABCDEFGHIJKLMNOPQRSTUVWXYZ" <* char '('
+                          args <- oneOf "abcdefghijklmnopqrstuvwxyz" `sepBy` char ','
+                          char ')'
+                          return $ c:args
+          fallback = do c <- anyChar 
+                        return [c]
+
 magnusSLCalc = mkNDCalc 
     { ndRenderer = FitchStyle
     , ndParseProof = parseMagnusSLProof
     , ndProcessLine = processLineFitch
     , ndProcessLineMemo = Nothing
     , ndParseSeq = extendedPropSeqParser
+    , ndNotation = magnusNotation
     }
 
 {-| A system for propositional logic resembling the proof system SL
@@ -229,11 +245,13 @@ parseMagnusSLPlus rtc = try plus <|> basic
 parseMagnusSLPlusProof :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> String -> [DeductionLine MagnusSLPlus PurePropLexicon (Form Bool)]
 parseMagnusSLPlusProof rtc = toDeductionFitch (parseMagnusSLPlus rtc) (purePropFormulaParser extendedLetters)
 
+
 magnusSLPlusCalc = mkNDCalc 
     { ndRenderer = FitchStyle
     , ndParseProof = parseMagnusSLPlusProof
     , ndProcessLine = hoProcessLineFitch
     , ndProcessLineMemo = Just hoProcessLineFitchMemo
     , ndParseSeq = extendedPropSeqParser
+    , ndNotation = magnusNotation
     }
 

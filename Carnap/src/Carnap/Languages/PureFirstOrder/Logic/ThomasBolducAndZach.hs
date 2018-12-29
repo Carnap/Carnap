@@ -102,4 +102,5 @@ thomasBolducAndZachFOLCalc = mkNDCalc
     , ndProcessLine = hoProcessLineFitch
     , ndProcessLineMemo = Just hoProcessLineFitchMemo
     , ndParseSeq = folSeqParser
+    , ndNotation = ndNotation P.thomasBolducAndZachTFLCalc
     }
