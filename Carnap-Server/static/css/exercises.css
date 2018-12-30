@@ -451,6 +451,10 @@ body[data-carnap-type="proofchecker"] .buttonWrapper {
     text-align:center;
 }
 
+[data-carnap-type="truthtable"] td > span {
+    padding:0 10px 0 10px;
+}
+
 [data-carnap-type="truthtable"] .valtd {
     width:20px;
     text-align:center;

@@ -215,14 +215,22 @@ toRow w opts atomIndicies orderedChildren gRef (v,n,mvalid,given) =
                                                          Nothing -> addDropdown m td tv mg
                                   return td
 
-          addDropdown m td bool mg = do sel <- trueFalseOpts w mg
-                                        appendChild td (Just sel)
-                                        case mg of 
+          addDropdown m td bool mg = do case mg of 
                                             Nothing -> modifyIORef gRef (M.insert (n,m) False)
                                             Just True -> modifyIORef gRef (M.insert (n,m) bool)
                                             Just False -> modifyIORef gRef (M.insert (n,m) (not bool))
-                                        onSwitch <- newListener $ switchOnMatch gRef (n,m) bool
-                                        addListener sel change onSwitch False
+                                        case mg of
+                                            Just val | "strictGivens" `elem` optlist ->
+                                                do Just span <- createElement w (Just "span")
+                                                   if val then setInnerHTML span (Just "T")
+                                                          else setInnerHTML span (Just "F")
+                                                   appendChild td (Just span)
+                                                   return ()
+                                            _ -> 
+                                                do sel <- trueFalseOpts w mg
+                                                   appendChild td (Just sel)
+                                                   onSwitch <- newListener $ switchOnMatch gRef (n,m) bool
+                                                   addListener sel change onSwitch False
                                         return ()
 
           switchOnMatch gRef (n,m) tv = do 
@@ -283,11 +291,17 @@ toPartialRow w opts orderedChildren rRef v given =
                                       Right f -> addDropdown m td mg
                                   return td
 
-          addDropdown m td mg = do sel <- trueFalseOpts w mg
-                                   modifyIORef rRef (M.insert m mg)
-                                   onSwitch <- newListener $ switch rRef m
-                                   addListener sel change onSwitch False
-                                   appendChild td (Just sel)
+          addDropdown m td mg = do modifyIORef rRef (M.insert m mg)
+                                   case mg of
+                                       Just val | "strictGivens" `elem` optlist -> 
+                                            do (Just span) <- createElement w (Just "span")
+                                               if val then setInnerHTML span (Just "T")
+                                                      else setInnerHTML span (Just "F")
+                                               appendChild td (Just span)
+                                       _ -> do sel <- trueFalseOpts w mg
+                                               onSwitch <- newListener $ switch rRef m
+                                               addListener sel change onSwitch False
+                                               appendChild td (Just sel)
                                    return ()
 
           switch rRef m = do 
