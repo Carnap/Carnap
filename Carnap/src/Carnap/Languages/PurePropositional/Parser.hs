@@ -1,7 +1,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 module Carnap.Languages.PurePropositional.Parser 
     ( purePropFormulaParser, standardLetters, extendedLetters, hausmanOpts, thomasBolducZachOpts, hardegreeOpts
-    , standardOpTable, hausmanOpTable, howardSnyderOpTable, howardSnyderOpts, 
+    , standardOpTable, hausmanOpTable, howardSnyderOpTable, howardSnyderOpts, magnusOpts
     ) where
 
 import Carnap.Core.Data.Types
@@ -35,8 +35,13 @@ hardegreeOpts = standardLetters { hasBooleanConstants = True }
 extendedLetters :: Monad m => PurePropositionalParserOptions u m
 extendedLetters = standardLetters { atomicSentenceParser = sentenceLetterParser "ABCDEFGHIJKLMNOPQRSTUVWXYZ" }
 
+magnusOpts :: Monad m => PurePropositionalParserOptions u m
+magnusOpts = extendedLetters { parenRecur = magnusDispatch }
+    where noatoms a = if isAtom a then unexpected "atomic sentence wrapped in parentheses" else return a
+          magnusDispatch opt rw = (wrappedWith '(' ')' (rw opt) <|> wrappedWith '[' ']' (rw opt)) >>= noatoms
+
 thomasBolducZachOpts :: Monad m => PurePropositionalParserOptions u m
-thomasBolducZachOpts = extendedLetters { hasBooleanConstants = True }
+thomasBolducZachOpts = magnusOpts { hasBooleanConstants = True }
 
 hausmanOpts ::  Monad m => PurePropositionalParserOptions u m
 hausmanOpts = extendedLetters 

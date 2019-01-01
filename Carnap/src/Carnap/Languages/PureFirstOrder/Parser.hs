@@ -82,9 +82,11 @@ magnusFOLParserOptions = FirstOrderParserOptions
                          , constantParser = Just (parseConstant "abcdefghijklmnopqrstuvw")
                          , functionParser = Nothing
                          , hasBooleanConstants = False
-                         , parenRecur = \opt recurWith  -> parenParser (recurWith opt)
+                         , parenRecur = magnusDispatch
                          , opTable = standardOpTable
                          }
+    where magnusDispatch opt rw = (wrappedWith '(' ')' (rw opt) <|> wrappedWith '[' ']' (rw opt)) >>= boolean
+          boolean a = if isBoolean a then return a else unexpected "atomic or quantified sentence wrapped in parentheses"
 
 thomasBolducAndZachFOLParserOptions :: FirstOrderParserOptions PureLexiconFOL u Identity
 thomasBolducAndZachFOLParserOptions = magnusFOLParserOptions { hasBooleanConstants = True }

@@ -165,7 +165,7 @@ parseThomasBolducAndZachTFL rtc = do r <- choice (map (try . string) [ "AS","PR"
                                             | r == "DeM"   -> return [DeMorgan1,DeMorgan2,DeMorgan3,DeMorgan4]
 
 parseThomasBolducAndZachTFLProof :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> String -> [DeductionLine ThomasBolducAndZachTFL PurePropLexicon (Form Bool)]
-parseThomasBolducAndZachTFLProof rtc = toDeductionFitch (parseThomasBolducAndZachTFL rtc) (purePropFormulaParser $ thomasBolducZachOpts)
+parseThomasBolducAndZachTFLProof rtc = toDeductionFitch (parseThomasBolducAndZachTFL rtc) (purePropFormulaParser thomasBolducZachOpts)
 
 thomasBolducAndZachNotation :: String -> String 
 thomasBolducAndZachNotation x = case runParser altParser 0 "" x of
@@ -186,6 +186,6 @@ thomasBolducAndZachTFLCalc = mkNDCalc
     , ndParseProof = parseThomasBolducAndZachTFLProof
     , ndProcessLine = hoProcessLineFitch
     , ndProcessLineMemo = Just hoProcessLineFitchMemo
-    , ndParseSeq = extendedPropSeqParser
+    , ndParseSeq = parseSeqOver (purePropFormulaParser thomasBolducZachOpts)
     , ndNotation = thomasBolducAndZachNotation
     }

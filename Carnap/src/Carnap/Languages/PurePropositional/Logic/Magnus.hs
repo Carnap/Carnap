@@ -128,7 +128,7 @@ parseMagnusSL rtc = do r <- choice (map (try . string) ["AS","PR","&I","/\\I", "
                               | r `elem` ["BE","<->E","↔E"] -> return [BicoElim1, BicoElim2]
 
 parseMagnusSLProof :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> String -> [DeductionLine MagnusSL PurePropLexicon (Form Bool)]
-parseMagnusSLProof rtc = toDeductionFitch (parseMagnusSL rtc) (purePropFormulaParser extendedLetters)
+parseMagnusSLProof rtc = toDeductionFitch (parseMagnusSL rtc) (purePropFormulaParser magnusOpts)
 
 magnusNotation :: String -> String 
 magnusNotation x = case runParser altparser 0 "" x of
@@ -150,7 +150,7 @@ magnusSLCalc = mkNDCalc
     , ndParseProof = parseMagnusSLProof
     , ndProcessLine = processLineFitch
     , ndProcessLineMemo = Nothing
-    , ndParseSeq = extendedPropSeqParser
+    , ndParseSeq = parseSeqOver (purePropFormulaParser magnusOpts)
     , ndNotation = magnusNotation
     }
 
@@ -243,7 +243,7 @@ parseMagnusSLPlus rtc = try plus <|> basic
                         "DeM"   -> return [DM1,DM2,DM3,DM4]
 
 parseMagnusSLPlusProof :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> String -> [DeductionLine MagnusSLPlus PurePropLexicon (Form Bool)]
-parseMagnusSLPlusProof rtc = toDeductionFitch (parseMagnusSLPlus rtc) (purePropFormulaParser extendedLetters)
+parseMagnusSLPlusProof rtc = toDeductionFitch (parseMagnusSLPlus rtc) (purePropFormulaParser magnusOpts)
 
 
 magnusSLPlusCalc = mkNDCalc 
@@ -251,7 +251,7 @@ magnusSLPlusCalc = mkNDCalc
     , ndParseProof = parseMagnusSLPlusProof
     , ndProcessLine = hoProcessLineFitch
     , ndProcessLineMemo = Just hoProcessLineFitchMemo
-    , ndParseSeq = extendedPropSeqParser
+    , ndParseSeq = parseSeqOver (purePropFormulaParser magnusOpts)
     , ndNotation = magnusNotation
     }
 
