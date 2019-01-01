@@ -221,16 +221,15 @@ toRow w opts atomIndicies orderedChildren gRef (v,n,mvalid,given) =
                                             Just False -> modifyIORef gRef (M.insert (n,m) (not bool))
                                         case mg of
                                             Just val | "strictGivens" `elem` optlist ->
-                                                do Just span <- createElement w (Just "span")
-                                                   if val then setInnerHTML span (Just "T")
-                                                          else setInnerHTML span (Just "F")
-                                                   appendChild td (Just span)
-                                                   return ()
-                                            _ -> 
-                                                do sel <- trueFalseOpts w mg
-                                                   appendChild td (Just sel)
-                                                   onSwitch <- newListener $ switchOnMatch gRef (n,m) bool
-                                                   addListener sel change onSwitch False
+                                                 do Just span <- createElement w (Just "span")
+                                                    if val then setInnerHTML span (Just "T")
+                                                           else setInnerHTML span (Just "F")
+                                                    appendChild td (Just span)
+                                                    return ()
+                                            _ -> do sel <- trueFalseOpts w mg
+                                                    appendChild td (Just sel)
+                                                    onSwitch <- newListener $ switchOnMatch gRef (n,m) bool
+                                                    addListener sel change onSwitch False
                                         return ()
 
           switchOnMatch gRef (n,m) tv = do 
@@ -298,6 +297,9 @@ toPartialRow w opts orderedChildren rRef v given =
                                                if val then setInnerHTML span (Just "T")
                                                       else setInnerHTML span (Just "F")
                                                appendChild td (Just span)
+                                       Just val | "hiddenGivens" `elem` optlist -> 
+                                            do sel <- trueFalseOpts w Nothing
+                                               appendChild td (Just sel)
                                        _ -> do sel <- trueFalseOpts w mg
                                                onSwitch <- newListener $ switch rRef m
                                                addListener sel change onSwitch False
