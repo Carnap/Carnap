@@ -128,14 +128,30 @@ parseMagnusSL rtc = do r <- choice (map (try . string) ["AS","PR","&I","/\\I", "
                               | r `elem` ["BE","<->E","↔E"] -> return [BicoElim1, BicoElim2]
 
 parseMagnusSLProof :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> String -> [DeductionLine MagnusSL PurePropLexicon (Form Bool)]
-parseMagnusSLProof rtc = toDeductionFitch (parseMagnusSL rtc) (purePropFormulaParser extendedLetters)
+parseMagnusSLProof rtc = toDeductionFitch (parseMagnusSL rtc) (purePropFormulaParser magnusOpts)
 
-magnusSLCalc = NaturalDeductionCalc 
+magnusNotation :: String -> String 
+magnusNotation x = case runParser altparser 0 "" x of
+                            Left e -> show e
+                            Right s -> s
+    where altparser = do s <- handlecon <|> try handleatom <|> fallback
+                         rest <- (eof >> return "") <|> altparser
+                         return $ s ++ rest
+          handlecon = char '∧' >> return "&"
+          handleatom = do c <- oneOf "ABCDEFGHIJKLMNOPQRSTUVWXYZ" <* char '('
+                          args <- oneOf "abcdefghijklmnopqrstuvwxyz" `sepBy` char ','
+                          char ')'
+                          return $ c:args
+          fallback = do c <- anyChar 
+                        return [c]
+
+magnusSLCalc = mkNDCalc 
     { ndRenderer = FitchStyle
     , ndParseProof = parseMagnusSLProof
     , ndProcessLine = processLineFitch
     , ndProcessLineMemo = Nothing
-    , ndParseSeq = extendedPropSeqParser
+    , ndParseSeq = parseSeqOver (purePropFormulaParser magnusOpts)
+    , ndNotation = magnusNotation
     }
 
 {-| A system for propositional logic resembling the proof system SL
@@ -227,13 +243,15 @@ parseMagnusSLPlus rtc = try plus <|> basic
                         "DeM"   -> return [DM1,DM2,DM3,DM4]
 
 parseMagnusSLPlusProof :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> String -> [DeductionLine MagnusSLPlus PurePropLexicon (Form Bool)]
-parseMagnusSLPlusProof rtc = toDeductionFitch (parseMagnusSLPlus rtc) (purePropFormulaParser extendedLetters)
+parseMagnusSLPlusProof rtc = toDeductionFitch (parseMagnusSLPlus rtc) (purePropFormulaParser magnusOpts)
 
-magnusSLPlusCalc = NaturalDeductionCalc 
+
+magnusSLPlusCalc = mkNDCalc 
     { ndRenderer = FitchStyle
     , ndParseProof = parseMagnusSLPlusProof
     , ndProcessLine = hoProcessLineFitch
     , ndProcessLineMemo = Just hoProcessLineFitchMemo
-    , ndParseSeq = extendedPropSeqParser
+    , ndParseSeq = parseSeqOver (purePropFormulaParser magnusOpts)
+    , ndNotation = magnusNotation
     }
 

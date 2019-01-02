@@ -82,7 +82,7 @@ parseGoldfarbNDProof ders = toDeductionLemmon (parseGoldfarbND ders) goldfarbNDF
 parseGoldfarbAltNDProof ::  RuntimeNaturalDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine GoldfarbND PureLexiconFOL (Form Bool)]
 parseGoldfarbAltNDProof ders = toDeductionLemmonAlt (parseGoldfarbND ders) goldfarbNDFormulaParser
 
-goldfarbNDCalc = NaturalDeductionCalc
+goldfarbNDCalc = mkNDCalc
     { ndRenderer = LemmonStyle StandardLemmon
     , ndParseProof = parseGoldfarbNDProof
     , ndProcessLine = hoProcessLineLemmon
@@ -148,7 +148,7 @@ parseGoldfarbNDPlusProof rtc = toDeductionLemmon (parseGoldfarbNDPlus rtc) goldf
 parseGoldfarbAltNDPlusProof ::  RuntimeNaturalDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine GoldfarbNDPlus PureLexiconFOL (Form Bool)]
 parseGoldfarbAltNDPlusProof rtc = toDeductionLemmonAlt (parseGoldfarbNDPlus rtc) goldfarbNDFormulaParser
 
-goldfarbNDPlusCalc = NaturalDeductionCalc
+goldfarbNDPlusCalc = mkNDCalc
     { ndRenderer = LemmonStyle StandardLemmon
     , ndParseProof = parseGoldfarbNDPlusProof
     , ndProcessLine = hoProcessLineLemmon

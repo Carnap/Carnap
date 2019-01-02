@@ -21,17 +21,29 @@ stringsToTry l op = do spaces
 --Operators
 --------------------------------------------------------
 
+parseAsAnd :: (Monad m, BooleanLanguage l) => [String] -> ParsecT String u m (l -> l -> l)
+parseAsAnd s = stringsToTry s land
+
 parseAnd :: (Monad m, BooleanLanguage l) => ParsecT String u m (l -> l -> l)
-parseAnd = stringsToTry ["/\\", "∧", "^", "&", "and"] land
+parseAnd = parseAsAnd ["/\\", "∧", "^", "&", "and"]
+
+parseAsOr :: (Monad m, BooleanLanguage l) => [String] -> ParsecT String u m (l -> l -> l)
+parseAsOr s = stringsToTry s lor
 
 parseOr :: (BooleanLanguage l, Monad m) => ParsecT String u m (l -> l -> l)
-parseOr = stringsToTry ["\\/", "∨", "v", "|", "or"] lor
+parseOr = parseAsOr ["\\/", "∨", "v", "|", "or"] 
+
+parseAsIf :: (Monad m, BooleanLanguage l) => [String] -> ParsecT String u m (l -> l -> l)
+parseAsIf s = stringsToTry s lif
 
 parseIf :: (BooleanLanguage l, Monad m) => ParsecT String u m (l -> l -> l)
-parseIf = stringsToTry [ "=>", "->", ">", "→", "only if"] lif
+parseIf = parseAsIf [ "=>", "->", ">", "→", "only if"]
+
+parseAsIff :: (Monad m, BooleanLanguage l) => [String] -> ParsecT String u m (l -> l -> l)
+parseAsIff s = stringsToTry s liff
 
 parseIff :: (BooleanLanguage l, Monad m) => ParsecT String u m (l -> l -> l)
-parseIff = stringsToTry [ "<=>",  "<->", "<>", "↔", "if and only if"] liff
+parseIff = parseAsIff [ "<=>",  "<->", "<>", "↔", "if and only if"]
 
 parseNeg :: (BooleanLanguage l, Monad m) => ParsecT String u m (l -> l)
 parseNeg = do spaces >> (string "-" <|> string "~" <|> string "¬" <|> string "not ") >> return lneg
@@ -176,6 +188,45 @@ quantifiedSentenceParser parseFreeVar formulaParser =
            return $ if s `elem` "A∀" then lall (show v) bf else lsome (show v) bf
                --which we bind
 
+altQuantifiedSentenceParser :: 
+    ( QuantLanguage (FixLang lex f) (FixLang lex t)
+    , BoundVars lex
+    , Show (FixLang lex t)
+    , Monad m
+    ) => ParsecT String u m (FixLang lex t) -> ParsecT String u m (FixLang lex f) 
+            -> ParsecT String u m (FixLang lex f)
+altQuantifiedSentenceParser parseFreeVar formulaParser =
+        do char '('
+           s <- optionMaybe (oneOf "E∃" <?> "a quantifer symbol")
+           v <- parseFreeVar
+           char ')'
+           spaces
+           f <- formulaParser
+           let bf x = subBoundVar v x f
+               --partially applied, returning a function
+           return $ case s of Just _ -> lsome (show v) bf; Nothing -> lall (show v) bf
+               --which we bind
+
+---XXX:DRY
+altAltQuantifiedSentenceParser :: 
+    ( QuantLanguage (FixLang lex f) (FixLang lex t)
+    , BoundVars lex
+    , Show (FixLang lex t)
+    , Monad m
+    ) => ParsecT String u m (FixLang lex t) -> ParsecT String u m (FixLang lex f) 
+            -> ParsecT String u m (FixLang lex f)
+altAltQuantifiedSentenceParser parseFreeVar formulaParser =
+        do char '('
+           s <- oneOf "AE∀∃" <?> "a quantifer symbol"
+           v <- parseFreeVar
+           char ')'
+           spaces
+           f <- formulaParser
+           let bf x = subBoundVar v x f
+               --partially applied, returning a function
+           return $ if s `elem` "E∃" then lsome (show v) bf else lall (show v) bf
+               --which we bind
+
 --------------------------------------------------------
 --Terms
 --------------------------------------------------------
@@ -212,8 +263,11 @@ parseConstant s = (try parseNumbered <|> parseUnnumbered) <?> "a constant"
 --Structural Elements
 --------------------------------------------------------
 
+wrappedWith :: Monad m => Char -> Char -> ParsecT String u m l -> ParsecT String u m l
+wrappedWith l r recur= char l *> spaces *> recur <* spaces <* char r
+
 parenParser :: Monad m => ParsecT String u m l -> ParsecT String u m l
-parenParser recur = char '(' *> spaces *> recur <* spaces <* char ')'
+parenParser recur = wrappedWith '(' ')' recur
 
 number :: Monad m => ParsecT String u m Int
 number = do valence <- option "+" (string "-") 

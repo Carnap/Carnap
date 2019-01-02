@@ -11,13 +11,13 @@ import Carnap.Languages.ClassicalSequent.Syntax
 import Carnap.Languages.PurePropositional.Logic as P 
     ( DerivedRule(..), propCalc, logicBookSDCalc, logicBookSDPlusCalc, magnusSLCalc
     , magnusSLPlusCalc, montagueSCCalc, hardegreeSLCalc, hausmanSLCalc
-    , thomasBolducAndZachTFLCalc, tomassiPLCalc)
+    , thomasBolducAndZachTFLCalc, tomassiPLCalc, howardSnyderSLCalc)
 import Carnap.Languages.PurePropositional.Logic.Rules (derivedRuleToSequent)
 import Carnap.Languages.PureFirstOrder.Logic as FOL 
     ( DerivedRule(..), folCalc, montagueQCCalc, magnusQLCalc , thomasBolducAndZachFOLCalc
     , hardegreePLCalc , goldfarbNDCalc, goldfarbAltNDCalc
     , goldfarbNDPlusCalc, goldfarbAltNDPlusCalc , logicBookPDPlusCalc
-    , logicBookPDCalc) 
+    , logicBookPDCalc, hausmanPLCalc, howardSnyderPLCalc) 
 import Carnap.Languages.ModalPropositional.Logic as MPL
     ( hardegreeWTLCalc, hardegreeLCalc, hardegreeKCalc, hardegreeTCalc
     , hardegreeBCalc, hardegreeDCalc, hardegreeFourCalc, hardegreeFiveCalc)
@@ -36,7 +36,7 @@ import Data.Text (pack)
 import qualified Data.Map as M (lookup,fromList,toList,map) 
 import Control.Lens.Fold (toListOf,(^?))
 import Lib
-import Carnap.GHCJS.Widget.ProofCheckBox (checkerWith, CheckerOptions(..), Button(..), CheckerFeedbackUpdate(..))
+import Carnap.GHCJS.Widget.ProofCheckBox (checkerWith, CheckerOptions(..), CheckerFeedbackUpdate(..), optionsFromMap, Button(..) )
 import Carnap.GHCJS.Widget.RenderDeduction
 import GHCJS.DOM.Element (setInnerHTML,getInnerHTML, setAttribute,mouseOver,mouseOut)
 import GHCJS.DOM.HTMLElement (insertAdjacentElement)
@@ -118,6 +118,9 @@ activateChecker drs w (Just iog@(IOGoal i o g _ opts)) -- TODO: need to update n
         | sys == "LogicBookPD"               = tryParse logicBookPDCalc folChecker
         | sys == "LogicBookPDPlus"           = tryParse logicBookPDPlusCalc folChecker
         | sys == "hausmanSL"                 = tryParse hausmanSLCalc propChecker
+        | sys == "hausmanPL"                 = tryParse hausmanPLCalc folChecker
+        | sys == "howardSnyderSL"            = tryParse howardSnyderSLCalc propChecker
+        | sys == "howardSnyderPL"            = tryParse howardSnyderPLCalc folChecker
         | sys == "magnusSL"                  = tryParse magnusSLCalc propChecker
         | sys == "magnusSLPlus"              = tryParse magnusSLPlusCalc propChecker
         | sys == "magnusQL"                  = tryParse magnusQLCalc folChecker
@@ -157,32 +160,8 @@ activateChecker drs w (Just iog@(IOGoal i o g _ opts)) -- TODO: need to update n
                                          }
                   checkerWith options' checkSeq iog w
                   
-                  where options = CheckerOptions { submit = Nothing
-                                                 , feedback = case M.lookup "feedback" opts of
-                                                                  Just "manual" -> Click
-                                                                  Just "none" -> Never
-                                                                  Just "syntaxonly" -> SyntaxOnly
-                                                                  _ -> Keypress
-                                                 , directed = case M.lookup "goal" opts of
-                                                                  Just _ -> True
-                                                                  Nothing -> False
-                                                 , initialUpdate = case M.lookup "init" opts of
-                                                                  Just _ -> True
-                                                                  Nothing -> False
-                                                 , alternateSymbols = case M.lookup "alternate-symbols" opts of
-                                                                          Just "alt1" -> alternateSymbols1
-                                                                          Just "alt2" -> alternateSymbols2
-                                                                          Just "alt3" -> alternateSymbols3
-                                                                          _ -> id
-                                                 , indentGuides = "guides" `elem` optlist
-                                                 , render = "render" `elem` optlist
-                                                 , autoIndent = "indent" `elem` optlist
-                                                 , autoResize= "resize" `elem` optlist
-                                                 , popout = "popout" `elem` optlist
-                                                 , hideNumbering = "hideNumbering" `elem` optlist
-                                                 }
+                  where options = optionsFromMap opts
                         saveRule = Button {label = "Save" , action = trySave drs}
-                        optlist = case M.lookup "options" opts of Just s -> words s; Nothing -> []
                         theSeq g = case parse (ndParseSeq calc) "" g of
                                        Left e -> error "couldn't parse goal"
                                        Right seq -> seq
@@ -193,7 +172,7 @@ activateChecker drs w (Just iog@(IOGoal i o g _ opts)) -- TODO: need to update n
                                           case parse seqParse "" seqstring of
                                               Left e -> do setInnerHTML g (Just $ "Couldn't Parse This Goal:" ++ seqstring)
                                                            error "couldn't parse goal"
-                                              Right seq -> do setInnerHTML g (Just $ alternateSymbols options $ show seq)
+                                              Right seq -> do setInnerHTML g (Just $ ndNotation calc $ show seq)
                                                               return $ Just seq
               makeDisplay = do (Just pd) <- createElement w (Just "div")
                                setAttribute pd "class" "proofDisplay"
@@ -227,7 +206,7 @@ threadedCheck options checker w ref v (g, fd) =
                                  ded = ndParseProof ndcalc rtconfig v
                              case proofDisplay checker of 
                                Just pd -> 
-                                   do renderedProof <- renderer w ded
+                                   do renderedProof <- renderer w ndcalc ded
                                       setInnerHTML pd (Just "")
                                       appendChild pd (Just renderedProof)
                                Nothing -> return Nothing
@@ -236,21 +215,21 @@ threadedCheck options checker w ref v (g, fd) =
                                                      Nothing -> return $ toDisplaySequence (ndProcessLine ndcalc) ded
                              ul <- case feedback options of
                                        SyntaxOnly -> genericListToUl (syntaxwrap fd w) w ds
-                                       _ -> genericListToUl (wrap fd w options) w ds
+                                       _ -> genericListToUl (wrap fd w ndcalc) w ds
                              setInnerHTML fd (Just "")
                              appendChild fd (Just ul)
                              case sequent checker of
-                                 Just s -> updateGoal s ref g mseq options
-                                 Nothing -> computeRule ref g mseq options
+                                 Just s -> updateGoal s ref g mseq options ndcalc
+                                 Nothing -> computeRule ref g mseq options ndcalc
            writeIORef (threadRef checker) (Just t')
            return ()
 
     where renderer = case ndRenderer (checkerCalc checker) of
-                         MontagueStyle -> renderDeductionMontague
-                         FitchStyle -> renderDeductionFitch
-                         LemmonStyle v -> renderDeductionLemmon v
+                         MontagueStyle -> renderDeductionMontague 
+                         FitchStyle -> renderDeductionFitch 
+                         LemmonStyle _ -> renderDeductionLemmon
 
-updateGoal s ref g mseq options = 
+updateGoal s ref g mseq options _ = 
         case (mseq, feedback options) of
              (Nothing,_) -> setAttribute g "class" "goal" >> writeIORef ref False
              (Just seq, SyntaxOnly) -> setAttribute g "class" "goal" >> writeIORef ref (seq `seqSubsetUnify` s)
@@ -259,11 +238,11 @@ updateGoal s ref g mseq options =
                                                           else do setAttribute g "class" "goal failure"
                                                                   writeIORef ref False
 
-computeRule ref g mseq options = 
+computeRule ref g mseq _ calc = 
         case mseq of
            Nothing -> do setInnerHTML g (Just "No Rule Found")
                          writeIORef ref False
-           (Just seq) -> do setInnerHTML g (Just $ alternateSymbols options $ show seq)
+           (Just seq) -> do setInnerHTML g (Just $ ndNotation calc $ show seq)
                             writeIORef ref True
 
 submitDer opts checker l g seq ref _ i = do isFinished <- liftIO $ readIORef ref
@@ -323,7 +302,7 @@ trySave drs ref w i = do isFinished <- liftIO $ readIORef ref
 
 configFrom rules prems = RuntimeNaturalDeductionConfig (M.fromList . map (\(x,y) -> (x,derivedRuleToSequent y)) $ rules) prems
 
-wrap fd w options elt (Right s) = popUpWith fd w elt "+" (alternateSymbols options $ show s) Nothing
+wrap fd w calc elt (Right s) = popUpWith fd w elt "+" (ndNotation calc $ show s) Nothing
 wrap fd w _ elt (Left (GenericError s n)) = popUpWith fd w elt "?" ("Error on line " ++ show n ++ ": " ++ s) Nothing
 wrap fd w _ elt (Left (NoParse e n)) = popUpWith fd w elt "⚠" ("Can't read line " ++ show n ++ ". There may be a typo.") (Just . cleanIt . show $ e)
     where chunks s = case break (== '\"') s of 
@@ -337,9 +316,9 @@ wrap fd w _ elt (Left (NoParse e n)) = popUpWith fd w elt "⚠" ("Can't read lin
           readMaybe s = case reads s of
                           [(x, "")] -> Just x
                           _ -> Nothing
-wrap fd w options elt (Left (NoUnify eqs n)) = 
+wrap fd w calc elt (Left (NoUnify eqs n)) = 
         popUpWith fd w elt "✗" ("Error on line " ++ show n ++ ". Can't match these premises with this conclusion, using this rule.") 
-                               (Just $ alternateSymbols options $ toUniErr eqs)
+                               (Just $ ndNotation calc $ toUniErr eqs)
 wrap fd w _ elt (Left (NoResult _)) = setInnerHTML elt (Just "&nbsp;")
 
 syntaxwrap fd w elt (Left (NoParse e n))       = popUpWith fd w elt "⚠" ("Can't read line " ++ show n ++ ". There may be a typo.") (Just . cleanIt . show $ e)

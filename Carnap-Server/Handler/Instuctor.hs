@@ -608,6 +608,7 @@ classWidget ident instructors classent = do
            mprobs = readAssignmentTable <$> courseTextbookProblems course :: Maybe (IntMap UTCTime)
        coInstructors <- runDB $ selectList [CoInstructorCourse ==. cid] []
        coInstructorUD <- mapM udByInstructorId (map (coInstructorIdent . entityVal) coInstructors)
+       theInstructorUD <- entityVal <$> udByInstructorId (courseInstructor course)
        allUserData <- map entityVal <$> (runDB $ selectList [UserDataEnrolledIn ==. Just cid] [])
        (addCoInstructorWidget,enctypeAddCoInstructor) <- generateFormPost (identifyForm "addCoinstructor" $ addCoInstructorForm instructors (show cid))
        asmd <- runDB $ selectList [AssignmentMetadataCourse ==. cid] []
@@ -667,6 +668,8 @@ classWidget ident instructors classent = do
                                             <i.fa.fa-trash-o>
                     <h2>Course Data
                     <dl.row>
+                        <dt.col-sm-3>Primary Instructor
+                        <dd.col-sm-9>#{userDataLastName theInstructorUD}, #{userDataFirstName theInstructorUD}
                         <dt.col-sm-3>Course Title
                         <dd.col-sm-9>#{courseTitle course}
                         $maybe desc <- courseDescription course

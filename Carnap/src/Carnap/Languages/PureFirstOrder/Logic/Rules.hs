@@ -176,7 +176,6 @@ montagueNewExistentialConstraint cs ded lineno sub =
                          || boundVarOf x y
                          || any (boundVarOf x) (toListOf formsOf y)
 
-
 montagueNewUniversalConstraint cs ded lineno sub = 
         case relevantForms of
             [] -> Just "No show line found for this rule. But this rule requires a preceeding show line. Remeber to align opening and closing lines of subproofs."
@@ -218,6 +217,9 @@ eqReflexivity = [] ∴ Top :|-: SS (tau `equals` tau)
 
 eqSymmetry :: FirstOrderEqRule lex b
 eqSymmetry = [GammaV 1 :|-: SS (tau `equals` tau')] ∴ GammaV 1 :|-: SS (tau' `equals` tau)
+
+eqNegSymmetry :: FirstOrderEqRule lex b
+eqNegSymmetry = [GammaV 1 :|-: SS (lneg $ tau `equals` tau')] ∴ GammaV 1 :|-: SS (lneg $ tau' `equals` tau)
 
 universalGeneralization :: FirstOrderRule lex b
 universalGeneralization = [ GammaV 1 :|-: SS (phi 1 (taun 1))]

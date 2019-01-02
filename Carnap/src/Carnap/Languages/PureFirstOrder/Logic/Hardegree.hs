@@ -89,7 +89,7 @@ parseHardegreePL rtc = try liftProp <|> quantRule
 parseHardegreePLProof ::  RuntimeNaturalDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine HardegreePL PureLexiconFOL (Form Bool)]
 parseHardegreePLProof ders = toDeductionHardegree (parseHardegreePL ders) (hardegreePLFormulaParser)
 
-hardegreePLCalc = NaturalDeductionCalc
+hardegreePLCalc = mkNDCalc
     { ndRenderer = MontagueStyle
     , ndParseProof = parseHardegreePLProof
     , ndProcessLine = hoProcessLineHardegree

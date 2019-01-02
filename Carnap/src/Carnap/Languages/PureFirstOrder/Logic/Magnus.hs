@@ -11,6 +11,7 @@ import Carnap.Calculi.NaturalDeduction.Syntax
 import Carnap.Calculi.NaturalDeduction.Parser
 import Carnap.Calculi.NaturalDeduction.Checker (hoProcessLineFitchMemo, hoProcessLineFitch)
 import Carnap.Languages.ClassicalSequent.Syntax
+import Carnap.Languages.ClassicalSequent.Parser
 import Carnap.Languages.Util.LanguageClasses
 import Carnap.Languages.Util.GenericConstructors
 import Carnap.Languages.PureFirstOrder.Logic.Rules
@@ -87,10 +88,11 @@ parseMagnusQL rtc = try quantRule <|> liftProp
 parseMagnusQLProof :: RuntimeNaturalDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine MagnusQL PureLexiconFOL (Form Bool)]
 parseMagnusQLProof rtc = toDeductionFitch (parseMagnusQL rtc) magnusFOLFormulaParser
 
-magnusQLCalc = NaturalDeductionCalc
+magnusQLCalc = mkNDCalc
     { ndRenderer = FitchStyle
     , ndParseProof = parseMagnusQLProof
     , ndProcessLine = hoProcessLineFitch
     , ndProcessLineMemo = Just hoProcessLineFitchMemo
-    , ndParseSeq = folSeqParser
+    , ndParseSeq = parseSeqOver magnusFOLFormulaParser
+    , ndNotation = ndNotation P.magnusSLCalc
     }

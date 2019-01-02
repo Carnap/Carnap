@@ -115,7 +115,7 @@ parseFOLogic rtc = try quantRule <|> liftProp
 parseFOLProof ::  RuntimeNaturalDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine FOLogic PureLexiconFOL (Form Bool)]
 parseFOLProof ders = toDeductionMontague (parseFOLogic ders) folFormulaParser
 
-folCalc = NaturalDeductionCalc
+folCalc = mkNDCalc
     { ndRenderer = MontagueStyle
     , ndParseProof = parseFOLProof
     , ndProcessLine = hoProcessLineMontague

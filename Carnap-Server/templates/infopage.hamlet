@@ -132,9 +132,9 @@
                         \ style of #
                         <i>Forall x.
 
-                    ^{proofcheck 8 "magnusQL" "render resize" ":|-:-ExAy(-F(y,y) <-> F(x,y))" russellTheoremForallx}
+                    ^{proofcheck 8 "magnusQL" "render resize" ":|-:-ExAy(-Fyy <-> Fxy)" russellTheoremForallx}
 
-                    ^{proofcheck 9 "thomasBolducAndZachFOL" "render resize" ":|-:-ExAy(-F(y,y) <-> F(x,y))" russellTheoremCalgary}
+                    ^{proofcheck 9 "thomasBolducAndZachFOL" "render resize" ":|-:-ExAy(-Fyy <-> Fxy)" russellTheoremCalgary}
                 <div.demo>
 
                     <p> This is a proofbox with a Kalish and Montague System

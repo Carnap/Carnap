@@ -101,7 +101,7 @@ parseMSOLProof :: RuntimeNaturalDeductionConfig MonadicallySOLLex (Form Bool)
                     -> String -> [DeductionLine MSOLogic MonadicallySOLLex (Form Bool)]
 parseMSOLProof rtc = toDeductionMontague (parseMSOLogic rtc) msolFormulaParser
 
-msolCalc = NaturalDeductionCalc 
+msolCalc = mkNDCalc 
     { ndRenderer = MontagueStyle
     , ndParseProof = parseMSOLProof
     , ndProcessLine = hoProcessLineMontague
@@ -203,7 +203,7 @@ parsePSOLProof :: RuntimeNaturalDeductionConfig PolyadicallySOLLex (Form Bool)
                     -> String -> [DeductionLine PSOLogic PolyadicallySOLLex (Form Bool)]
 parsePSOLProof rtc = toDeductionMontague (parsePSOLogic rtc) psolFormulaParser
 
-psolCalc = NaturalDeductionCalc 
+psolCalc = mkNDCalc 
     { ndRenderer = MontagueStyle
     , ndParseProof = parsePSOLProof
     , ndProcessLine = hoProcessLineMontague

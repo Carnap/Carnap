@@ -102,7 +102,7 @@ parseHardegreeMPLProof ::  RuntimeNaturalDeductionConfig IndexedModalFirstOrderL
                             -> [DeductionLine HardegreeMPL IndexedModalFirstOrderLex (Form Bool)]
 parseHardegreeMPLProof ders = toDeductionHardegree (parseHardegreeMPL ders) (hardegreeMPLFormulaParser)
 
-hardegreeMPLCalc = NaturalDeductionCalc
+hardegreeMPLCalc = mkNDCalc 
     { ndRenderer = MontagueStyle
     , ndParseProof = parseHardegreeMPLProof
     , ndProcessLine = hoProcessLineHardegree

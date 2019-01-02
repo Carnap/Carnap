@@ -1,6 +1,6 @@
 {-#LANGUAGE FlexibleContexts, FlexibleInstances, MultiParamTypeClasses #-}
-module Carnap.Languages.PurePropositional.Logic.Hausman
-    ( parseHausmanSL, HausmanSL,  hausmanSLCalc) where
+module Carnap.Languages.PurePropositional.Logic.HowardSnyder
+    ( parseHowardSnyderSL, HowardSnyderSL,  howardSnyderSLCalc) where
 
 import Data.Map as M (lookup, Map)
 import Text.Parsec
@@ -15,74 +15,78 @@ import Carnap.Languages.ClassicalSequent.Parser
 import Carnap.Languages.PurePropositional.Logic.Rules
 
 {-| A system for propositional logic resembling the sentential logic system
-from Hausman' Logic and Philosophy
+from HowardSnyder' Logic and Philosophy
 -}
 
-data HausmanSL = MP | Conj | MT | HS | DS1 | DS2 | Add | CD | Simp1 | Simp2
+data HowardSnyderSL = MP |  MT | Conj | HS | DS1 | DS2 | Add1 | Add2 | CD | Simp1 | Simp2
                | DN1 | DN2  | Contra1 | Contra2 | DeM1 | DeM2 | DeM3 | DeM4
                | Impl1 | Impl2 | Exp1 | Exp2 | Comm1 | Comm2 
                | Taut1 | Taut2 | Taut3 | Taut4 | Assoc1 | Assoc2 | Assoc3 | Assoc4
                | Equiv1 | Equiv2 | Equiv3 | Equiv4 | Dist1 | Dist2 | Dist3 | Dist4
-               | CP1 | CP2 | IP1 | IP2
+               | CP1 | CP2 | IP1 | IP2 | IP3 | IP4
                | AP | Pr (Maybe [(ClassicalSequentOver PurePropLexicon (Sequent (Form Bool)))])
                deriving (Eq)
 
-instance Show HausmanSL where
+instance Show HowardSnyderSL where
     show MP = "MP"
     show Conj = "Conj"
     show MT = "MT"
     show HS = "HS"
     show DS1 = "DS"
     show DS2 = "DS"
-    show Add = "Add"
+    show Add1 = "Add"
+    show Add2 = "Add"
     show CD = "CD"
     show Simp1 = "Simp"
     show Simp2 = "Simp"
     show DN1 = "DN"
     show DN2 = "DN"
-    show Contra1 = "Contra"
-    show Contra2 = "Contra"
+    show Contra1 = "Cont"
+    show Contra2 = "Cont"
     show DeM1 = "DeM"
     show DeM2 = "DeM"
     show DeM3 = "DeM"
     show DeM4 = "DeM"
-    show Impl1 = "Impl"
-    show Impl2 = "Impl"
-    show Exp1 = "Exp"
-    show Exp2 = "Exp"
-    show Comm1 = "Comm"
-    show Comm2 = "Comm"
-    show Taut1 = "Taut"
-    show Taut2 = "Taut"
-    show Taut3 = "Taut"
-    show Taut4 = "Taut"
-    show Assoc1 = "Assoc"
-    show Assoc2 = "Assoc"
-    show Assoc3 = "Assoc"
-    show Assoc4 = "Assoc"
-    show Equiv1 = "Equiv"
-    show Equiv2 = "Equiv"
-    show Equiv3 = "Equiv"
-    show Equiv4 = "Equiv"
+    show Impl1 = "MI"
+    show Impl2 = "MI"
+    show Exp1 = "Ex"
+    show Exp2 = "Ex"
+    show Comm1 = "Com"
+    show Comm2 = "Com"
+    show Taut1 = "Re"
+    show Taut2 = "Re"
+    show Taut3 = "Re"
+    show Taut4 = "Re"
+    show Assoc1 = "As"
+    show Assoc2 = "As"
+    show Assoc3 = "As"
+    show Assoc4 = "As"
+    show Equiv1 = "ME"
+    show Equiv2 = "ME"
+    show Equiv3 = "ME"
+    show Equiv4 = "ME"
     show Dist1 = "Dist"
     show Dist2 = "Dist"
     show Dist3 = "Dist"
     show Dist4 = "Dist"
     show CP1 = "CP"
     show CP2 = "CP"
-    show IP1 = "IP"
-    show IP2 = "IP"
+    show IP1 = "RAA"
+    show IP2 = "RAA"
+    show IP3 = "RAA"
+    show IP4 = "RAA"
     show AP    = "AP"
     show (Pr _)  = "p"
 
-instance Inference HausmanSL PurePropLexicon (Form Bool) where
+instance Inference HowardSnyderSL PurePropLexicon (Form Bool) where
     ruleOf MP   = modusPonens
     ruleOf Conj = adjunction
     ruleOf MT   = modusTollens
     ruleOf HS   = hypotheticalSyllogism
     ruleOf DS1  = modusTollendoPonensVariations !! 0 
     ruleOf DS2  = modusTollendoPonensVariations !! 1
-    ruleOf Add  = additionVariations !! 1 --book only uses this form
+    ruleOf Add1  = additionVariations !! 0 
+    ruleOf Add2  = additionVariations !! 1
     ruleOf CD   = dilemma
     ruleOf Simp1 = simplificationVariations !! 0
     ruleOf Simp2 = simplificationVariations !! 1
@@ -120,12 +124,14 @@ instance Inference HausmanSL PurePropLexicon (Form Bool) where
     ruleOf CP2 = conditionalProofVariations !! 1
     ruleOf IP1 = explictNonConstructiveConjunctionReductioVariations !! 0
     ruleOf IP2 = explictNonConstructiveConjunctionReductioVariations !! 1
+    ruleOf IP3 = explictConstructiveConjunctionReductioVariations !! 0
+    ruleOf IP4 = explictConstructiveConjunctionReductioVariations !! 1
     ruleOf AP         = axiom
     ruleOf (Pr _)     = axiom
 
     indirectInference x
         | x `elem` [CP1, CP2] = Just PolyProof
-        | x `elem` [IP1, IP2] = Just assumptiveProof
+        | x `elem` [IP1, IP2, IP3, IP4] = Just assumptiveProof
         | otherwise = Nothing
 
     isAssumption AP = True
@@ -134,46 +140,47 @@ instance Inference HausmanSL PurePropLexicon (Form Bool) where
     restriction (Pr prems) = Just (premConstraint prems)
     restriction _ = Nothing
 
-parseHausmanSL :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> Parsec String u [HausmanSL]
-parseHausmanSL rtc = do r <- choice (map (try . string) [ "MP", "Conj", "MT", "HS", "DS", "Add", "CD", "Simp"
-                                                        , "DN", "Contra", "DeM", "Impl", "Exp", "Comm", "Taut", "Assoc"
-                                                        , "Equiv", "Dist", "CP", "IP", "AP","p"
-                                                        ])
-                        case r of
-                           "MP" -> return [MP]
-                           "Conj" -> return [Conj]
-                           "MT" -> return [MT]
-                           "HS" -> return [HS]
-                           "DS" -> return [DS1, DS2]
-                           "Add" -> return [Add] 
-                           "CD" -> return [CD]
-                           "Simp" -> return [Simp1, Simp2]
-                           "DN" -> return [DN1, DN2]
-                           "Contra" -> return [Contra1, Contra2]
-                           "DeM" -> return [DeM1, DeM2, DeM3, DeM4]
-                           "Impl" -> return [Impl1, Impl2]
-                           "Exp" -> return [Exp1, Exp2]
-                           "Comm" -> return [Comm1, Comm2]
-                           "Taut" -> return [Taut1, Taut2, Taut3, Taut4]
-                           "Assoc" -> return [Assoc1, Assoc2, Assoc3, Assoc4]
-                           "Equiv" -> return [Equiv1, Equiv2, Equiv3, Equiv4]
-                           "Dist" -> return [Dist1, Dist2, Dist3, Dist4]
-                           "CP" -> return [CP1,CP2]
-                           "IP" -> return [IP1, IP2]
-                           "AP" -> return [AP]
-                           "p" -> return [Pr (problemPremises rtc)]
+parseHowardSnyderSL :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> Parsec String u [HowardSnyderSL]
+parseHowardSnyderSL rtc = do r <- try (string "Assume" <* char '(' <* (string "CP" <|> string "RAA") <* char ')')
+                                  <|> choice (map (try . string) ["Assume", "MP", "Conj", "MT", "HS", "DS", "Add", "CD", "Simp"
+                                                             , "DN", "Cont", "DeM", "MI", "Ex", "Com", "Re", "As"
+                                                             , "ME", "Dist", "CP", "RAA", "p"
+                                                             ])
+                             case r of
+                                "MP" -> return [MP]
+                                "Conj" -> return [Conj]
+                                "MT" -> return [MT]
+                                "HS" -> return [HS]
+                                "DS" -> return [DS1, DS2]
+                                "Add" -> return [Add1,Add2] 
+                                "CD" -> return [CD]
+                                "Simp" -> return [Simp1, Simp2]
+                                "DN" -> return [DN1, DN2]
+                                "Cont" -> return [Contra1, Contra2]
+                                "DeM" -> return [DeM1, DeM2, DeM3, DeM4]
+                                "MI" -> return [Impl1, Impl2]
+                                "Ex" -> return [Exp1, Exp2]
+                                "Com" -> return [Comm1, Comm2]
+                                "Re" -> return [Taut1, Taut2, Taut3, Taut4]
+                                "As" -> return [Assoc1, Assoc2, Assoc3, Assoc4]
+                                "ME" -> return [Equiv1, Equiv2, Equiv3, Equiv4]
+                                "Dist" -> return [Dist1, Dist2, Dist3, Dist4]
+                                "CP" -> return [CP1,CP2]
+                                "RAA" -> return [IP1, IP2, IP3, IP4]
+                                "Assume" -> return [AP]
+                                "p" -> return [Pr (problemPremises rtc)]
 
-parseHausmanSLProof :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> String -> [DeductionLine HausmanSL PurePropLexicon (Form Bool)]
-parseHausmanSLProof rtc = toCommentedDeductionFitch (parseHausmanSL rtc) (purePropFormulaParser hausmanOpts)
+parseHowardSnyderSLProof :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> String -> [DeductionLine HowardSnyderSL PurePropLexicon (Form Bool)]
+parseHowardSnyderSLProof rtc = toCommentedDeductionFitch (parseHowardSnyderSL rtc) (purePropFormulaParser howardSnyderOpts)
 
-hausmanSLNotation :: String -> String 
-hausmanSLNotation x = case runParser altParser 0 "" x of
+howardSnyderSLNotation :: String -> String
+howardSnyderSLNotation x = case runParser altParser 0 "" x of
                         Left e -> show e
                         Right s -> s
-    where altParser = do s <- handleCon <|> try handleQuant <|> try handleAtom <|> handleLParen <|> handleRParen <|> fallback
+    where altParser = do s <- handleChar <|> try handleQuant <|> try handleAtom <|> handleLParen <|> handleRParen <|> fallback
                          rest <- (eof >> return "") <|> altParser
                          return $ s ++ rest
-          handleCon = (char '∧' >> return "∙") <|> (char '¬' >> return "~") <|> (char '→' >> return "⊃")
+          handleChar = (char '∧' >> return "∙") <|> (char '¬' >> return "~") <|> (char '⊢' >> return "∴")
           handleQuant = do q <- oneOf "∀∃"
                            v <- anyChar
                            return $ "(" ++ (if q == '∃' then "∃" else "") ++ [v] ++ ")"
@@ -192,11 +199,11 @@ hausmanSLNotation x = case runParser altParser 0 "" x of
           fallback = do c <- anyChar 
                         return [c]
 
-hausmanSLCalc = mkNDCalc 
+howardSnyderSLCalc = mkNDCalc 
     { ndRenderer = FitchStyle
-    , ndParseProof = parseHausmanSLProof
+    , ndParseProof = parseHowardSnyderSLProof
     , ndProcessLine = hoProcessLineFitch
     , ndProcessLineMemo = Just hoProcessLineFitchMemo
-    , ndParseSeq = parseSeqOver (purePropFormulaParser hausmanOpts)
-    , ndNotation = hausmanSLNotation
+    , ndParseSeq = parseSeqOver (purePropFormulaParser howardSnyderOpts)
+    , ndNotation = howardSnyderSLNotation
     }

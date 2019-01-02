@@ -125,7 +125,7 @@ parseMontagueSCProof :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool
                      -> String -> [DeductionLine MontagueSC PurePropLexicon (Form Bool)]
 parseMontagueSCProof rtc = toDeductionMontague (parseMontagueSC rtc) (purePropFormulaParser standardLetters)
 
-montagueSCCalc = NaturalDeductionCalc 
+montagueSCCalc = mkNDCalc 
     { ndRenderer = MontagueStyle
     , ndParseProof = parseMontagueSCProof
     , ndProcessLine = processLineMontague
