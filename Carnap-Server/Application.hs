@@ -23,6 +23,7 @@ import Network.Wai.Middleware.Autohead
 import Network.Wai.Middleware.AcceptOverride
 import Network.Wai.Middleware.RequestLogger
 import Network.Wai.Middleware.Gzip
+import Network.Wai.Middleware.Cors
 import Network.Wai.Middleware.MethodOverride
 import Network.Wai.Handler.Warp             (Settings, defaultSettings,
                                              defaultShouldDisplayException,
@@ -110,7 +111,7 @@ makeApplication foundation = do
                         else GzipPreCompressed (GzipCacheFolder (datadir </> "gzcache/"))
     -- Create the WAI application and apply middlewares
     appPlain <- toWaiAppPlain foundation
-    return $ logWare . acceptOverride . autohead . gzip (def {gzipFiles = zipsettings }) . methodOverride $ appPlain
+    return $ logWare . acceptOverride . autohead . gzip (def {gzipFiles = zipsettings }) . methodOverride . simpleCors $ appPlain
 
 makeLogWare :: App -> IO Middleware
 makeLogWare foundation =
@@ -126,6 +127,7 @@ makeLogWare foundation =
         }
 
 -- | Warp settings for the given foundation value.
+-- behind https.
 warpSettings :: App -> Settings
 warpSettings foundation =
       setPort (appPort $ appSettings foundation)
