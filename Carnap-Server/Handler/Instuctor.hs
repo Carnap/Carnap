@@ -150,13 +150,15 @@ deleteInstructorR ident = do
 
 postInstructorR :: Text -> Handler Html
 postInstructorR ident = do
+    time <- liftIO getCurrentTime
     classes <- classesByInstructorIdent ident
+    let activeClasses = filter (\c -> courseEndDate (entityVal c) > time) classes 
     docs <- documentsByInstructorIdent ident
     instructors <- runDB $ selectList [UserDataInstructorId !=. Nothing] []
-    ((assignmentrslt,_),_) <- runFormPost (identifyForm "uploadAssignment" $ uploadAssignmentForm classes docs)
+    ((assignmentrslt,_),_) <- runFormPost (identifyForm "uploadAssignment" $ uploadAssignmentForm activeClasses docs)
     ((documentrslt,_),_)   <- runFormPost (identifyForm "uploadDocument" $ uploadDocumentForm)
     ((newclassrslt,_),_)   <- runFormPost (identifyForm "createCourse" createCourseForm)
-    ((frombookrslt,_),_)   <- runFormPost (identifyForm "setBookAssignment" $ setBookAssignmentForm classes)
+    ((frombookrslt,_),_)   <- runFormPost (identifyForm "setBookAssignment" $ setBookAssignmentForm activeClasses)
     ((instructorrslt,_),_) <- runFormPost (identifyForm "addCoinstructor" $ addCoInstructorForm instructors ("" :: String))
     case assignmentrslt of 
         FormSuccess (doc, Entity classkey theclass, mdue,mduetime,mfrom,mfromtime,mtill,mtilltime, massignmentdesc, subtime) ->
@@ -270,12 +272,14 @@ getInstructorR ident = do
         (Just (Entity uid _))  -> do
             UserData firstname lastname enrolledin _ _ <- checkUserData uid 
             classes <- classesByInstructorIdent ident 
+            time <- liftIO getCurrentTime
+            let activeClasses = filter (\c -> courseEndDate (entityVal c) > time) classes 
+            let inactiveClasses = filter (\c -> courseEndDate (entityVal c) < time) classes 
             docs <- documentsByInstructorIdent ident 
             instructors <- runDB $ selectList [UserDataInstructorId !=. Nothing] []
-            let labels = map labelOf classes
-            classWidgets <- mapM (classWidget ident instructors) classes
-            instructorCourses <- classesByInstructorIdent ident
-            assignmentMetadata <- concat <$> mapM (listAssignmentMetadata . entityKey) classes
+            let labels = map labelOf activeClasses
+            classWidgets <- mapM (classWidget ident instructors) activeClasses
+            assignmentMetadata <- concat <$> mapM (listAssignmentMetadata . entityKey) activeClasses
             assignmentDocs <- mapM (runDB . get) (map (assignmentMetadataDocument . entityVal) assignmentMetadata)
             documents <- runDB $ selectList [DocumentCreator ==. uid] []
             tagMap <- forM documents $ \doc -> do
@@ -286,9 +290,9 @@ getInstructorR ident = do
             assignmentCourses <- forM assignmentMetadata $ \c -> do 
                                     Just e <- runDB $ get (assignmentMetadataCourse . entityVal $ c)
                                     return e
-            (createAssignmentWidget,enctypeCreateAssignment) <- generateFormPost (identifyForm "uploadAssignment" $ uploadAssignmentForm classes docs)
+            (createAssignmentWidget,enctypeCreateAssignment) <- generateFormPost (identifyForm "uploadAssignment" $ uploadAssignmentForm activeClasses docs)
             (uploadDocumentWidget,enctypeShareDocument) <- generateFormPost (identifyForm "uploadDocument" $ uploadDocumentForm)
-            (setBookAssignmentWidget,enctypeSetBookAssignment) <- generateFormPost (identifyForm "setBookAssignment" $ setBookAssignmentForm classes)
+            (setBookAssignmentWidget,enctypeSetBookAssignment) <- generateFormPost (identifyForm "setBookAssignment" $ setBookAssignmentForm activeClasses)
             (updateAssignmentWidget,enctypeUpdateAssignment) <- generateFormPost (identifyForm "updateAssignment" $ updateAssignmentForm)
             (updateDocumentWidget,enctypeUpdateDocument) <- generateFormPost (identifyForm "updateDocument" $ updateDocumentForm)
             (createCourseWidget,enctypeCreateCourse) <- generateFormPost (identifyForm "createCourse" createCourseForm)

@@ -4,11 +4,11 @@
     ^{updateCourseModal updateCourseWidget enctypeUpdateCourse}
     <h1> Instructor Page for #{firstname} #{lastname}
     <p> This is a page where you can manage students, classes and assignments.
-    $if (not $ null classes)
+    $if (not $ null activeClasses)
         <div.card.mb-3>
             <div.card-header>
                 <ul.nav.nav-tabs.card-header-tabs role="tablist">
-                    $forall (theclass,thetag) <- zip classes labels
+                    $forall (theclass,thetag) <- zip activeClasses labels
                         <li.nav-item id="nav-to-#{thetag}">
                             <a.nav-link id="#{thetag}-tab" data-toggle="tab" href="##{thetag}" role="tab">
                                 #{courseTitle $ entityVal theclass}
@@ -27,8 +27,8 @@
                     <a.nav-link id="assignFromDocument-tab" data-toggle="tab" href="#assignFromDocument" role="tab">
                         Assign Uploaded Documents
                 <li.nav-item>
-                    <a.nav-link id="create-tab" data-toggle="tab" href="#create" role="tab">
-                        Create Courses
+                    <a.nav-link id="manageCourse-tab" data-toggle="tab" href="#manageCourse" role="tab">
+                        Manage Courses
                 <li.nav-item>
                     <a.nav-link id="uploadDocument-tab" data-toggle="tab" href="#uploadDocument" role="tab">
                         Manage Uploaded Documents
@@ -48,7 +48,7 @@
                             <th> Due Date
                             <th> Course
                             <th> Actions
-                            $forall c <- map entityVal instructorCourses
+                            $forall c <- map entityVal activeClasses
                                 $maybe probs <- mprobsOf c
                                     $forall (n,d) <- Data.IntMap.toList probs
                                         <tr id="problem-set-#{courseTitle c}-#{show n}">
@@ -138,8 +138,29 @@
                                             <i.fa.fa-cog>
                                         <button.btn.btn-sm.btn-secondary alt="download" title="download this document" type="button" onclick="window.open('@{DocumentDownloadR ident (documentFilename a)}')">
                                             <i.fa.fa-cloud-download>
-                <div.tab-pane id="create" role="tabpanel">
+                <div.tab-pane id="manageCourse" role="tabpanel">
+                    <h2>Create Course
                     <form method=post enctype=#{enctypeCreateCourse}>
                         ^{createCourseWidget}
                         <div.form-group>
                             <input.btn.btn-primary type=submit onclick="return confirm('definitely create a new course?')" value="Create">
+
+                    <hr style="margin-left:-20px;margin-right:-20px">
+                        <h2>Older Courses
+                        <table class="table">
+                            <thead>
+                                <th> Title
+                                <th> End Date
+                                <th> Actions
+                            <tbody>
+                                $forall Entity cid c <- inactiveClasses
+                                    <tr>
+                                        <td>#{courseTitle c}
+                                        <td>#{dateDisplay (courseEndDate c) c}
+                                        <td>
+                                            <button.btn.btn-sm.btn-secondary type="button" alt="delete" title="permanantly delete this course" onclick="tryDeleteCourse('#{decodeUtf8 $ encode $ DeleteCourse (courseTitle c)}')">
+                                                <i.fa.fa-trash-o>
+                                            <button.btn.btn-sm.btn-secondary type="button" alt="edit" title="edit this course" onclick="modalEditCourse('#{show cid}')">
+                                                <i.fa.fa-cog>
+                                            <button.btn.btn-sm.btn-secondary alt="download" title="download grades from this course" type="button" onclick="location.href='@{InstructorDownloadR ident (courseTitle c)}'">
+                                                <i.fa.fa-cloud-download>
