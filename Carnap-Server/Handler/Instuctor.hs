@@ -277,7 +277,7 @@ getInstructorR ident = do
             let inactiveClasses = filter (\c -> courseEndDate (entityVal c) < time) classes 
             docs <- documentsByInstructorIdent ident 
             instructors <- runDB $ selectList [UserDataInstructorId !=. Nothing] []
-            let labels = map labelOf activeClasses
+            let labels = map labelOf $ take (length activeClasses) [1 ..]
             classWidgets <- mapM (classWidget ident instructors) activeClasses
             assignmentMetadata <- concat <$> mapM (listAssignmentMetadata . entityKey) activeClasses
             assignmentDocs <- mapM (runDB . get) (map (assignmentMetadataDocument . entityVal) assignmentMetadata)
@@ -304,7 +304,7 @@ getInstructorR ident = do
                  addStylesheet $ StaticR css_tagsinput_css
                  setTitle $ "Instructor Page for " ++ toMarkup firstname ++ " " ++ toMarkup lastname
                  $(widgetFile "instructor")
-    where labelOf = T.append "course-" . T.map (\c -> if c `elem` [' ',':'] then '_' else c) . courseTitle . entityVal
+    where labelOf = T.append "course-" . pack . show
           mprobsOf course = readAssignmentTable <$> courseTextbookProblems course
           nopage = [whamlet|
                     <div.container>
