@@ -206,27 +206,28 @@ toRow w opts atomIndicies orderedChildren gRef (v,n,mvalid,given) =
           toChildTd (c,m,mg) = do (Just td) <- createElement w (Just "td")
                                   case c of
                                       Left '⊢' -> case mvalid of
-                                                   (Just tv) -> addDropdown m td tv mg
+                                                   (Just tv) -> addDropdown ("turnstileMark" `elem` optlist) m td tv mg
                                                    Nothing -> setInnerHTML td (Just "")
                                       Left c'  -> setInnerHTML td (Just "")
                                       Right f  -> do let (Form tv) = satisfies v f
                                                      case preview _propIndex f of
-                                                         Just i -> addDropdown m td tv (if "autoAtoms" `elem` optlist then  (Just $ v i) else mg)
-                                                         Nothing -> addDropdown m td tv mg
+                                                         Just i -> addDropdown False m td tv (if "autoAtoms" `elem` optlist then  (Just $ v i) else mg)
+                                                         Nothing -> addDropdown False m td tv mg
                                   return td
 
-          addDropdown m td bool mg = do case mg of 
+          addDropdown turnstileMark m td bool mg = 
+                                     do case mg of 
                                             Nothing -> modifyIORef gRef (M.insert (n,m) False)
                                             Just True -> modifyIORef gRef (M.insert (n,m) bool)
                                             Just False -> modifyIORef gRef (M.insert (n,m) (not bool))
                                         case mg of
                                             Just val | "strictGivens" `elem` optlist ->
                                                  do Just span <- createElement w (Just "span")
-                                                    if val then setInnerHTML span (Just "T")
-                                                           else setInnerHTML span (Just "F")
+                                                    if val then setInnerHTML span (Just $ if turnstileMark then "✓" else "T")
+                                                           else setInnerHTML span (Just $ if turnstileMark then "✗" else "F")
                                                     appendChild td (Just span)
                                                     return ()
-                                            _ -> do sel <- trueFalseOpts w mg
+                                            _ -> do sel <- trueFalseOpts w turnstileMark mg
                                                     appendChild td (Just sel)
                                                     onSwitch <- newListener $ switchOnMatch gRef (n,m) bool
                                                     addListener sel change onSwitch False
@@ -235,7 +236,7 @@ toRow w opts atomIndicies orderedChildren gRef (v,n,mvalid,given) =
           switchOnMatch gRef (n,m) tv = do 
                              (Just t) <- target :: EventM HTMLSelectElement Event (Maybe HTMLSelectElement)
                              s <- getValue t 
-                             if s == Just "T" 
+                             if s `elem` [Just "T", Just "✓"]
                                  then liftIO $ modifyIORef gRef (M.insert (n,m) tv)
                                  else liftIO $ modifyIORef gRef (M.insert (n,m) (not tv))
           optlist = case M.lookup "options" opts of Just s -> words s; Nothing -> []
@@ -298,9 +299,9 @@ toPartialRow w opts orderedChildren rRef v given =
                                                       else setInnerHTML span (Just "F")
                                                appendChild td (Just span)
                                        Just val | "hiddenGivens" `elem` optlist -> 
-                                            do sel <- trueFalseOpts w Nothing
+                                            do sel <- trueFalseOpts w False Nothing
                                                appendChild td (Just sel)
-                                       _ -> do sel <- trueFalseOpts w mg
+                                       _ -> do sel <- trueFalseOpts w False mg
                                                onSwitch <- newListener $ switch rRef m
                                                addListener sel change onSwitch False
                                                appendChild td (Just sel)
@@ -328,15 +329,15 @@ sort [] = []
 
 
 
-trueFalseOpts :: Document -> Maybe Bool -> IO Element
-trueFalseOpts w mg = 
+trueFalseOpts :: Document -> Bool -> Maybe Bool -> IO Element
+trueFalseOpts w turnstileMark mg = 
         do (Just sel) <- createElement w (Just "select")
            (Just bl)  <- createElement w (Just "option")
            (Just tr)  <- createElement w (Just "option")
            (Just fs)  <- createElement w (Just "option")
            setInnerHTML bl (Just "-")
-           setInnerHTML tr (Just "T")
-           setInnerHTML fs (Just "F")
+           setInnerHTML tr (Just $ if turnstileMark then "✓" else "T")
+           setInnerHTML fs (Just $ if turnstileMark then "✗" else "F")
            case mg of
                Nothing -> return ()
                Just True -> setAttribute tr "selected" "selected"
