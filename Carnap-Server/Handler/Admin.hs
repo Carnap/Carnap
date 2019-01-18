@@ -4,6 +4,7 @@ module Handler.Admin where
 import Import
 import Util.Data
 import Util.Database
+import Handler.Instuctor (dateDisplay)
 import Yesod.Form.Bootstrap3
 import Yesod.Form.Jquery
 import Text.Blaze.Html (toMarkup)
@@ -135,15 +136,18 @@ emailWidget insts = do let emails = intercalate "," (map userIdent insts)
 
 
 instructorWidget :: [User] -> [Entity UserData] -> HandlerT App IO Widget
-instructorWidget insts idata = do courses <- mapM getCoursesWithEnrollment (map entityVal idata)
+instructorWidget insts idata = do allcourses <- mapM getCoursesWithEnrollment (map entityVal idata)
+                                  time <- liftIO getCurrentTime
+                                  let active = filter (\(c,e) -> courseEndDate (entityVal c) > time)
+                                      inactive = filter (\(c,e) -> courseEndDate (entityVal c) < time)
                                   return [whamlet|
-                                        $forall (instructor, Entity key (UserData fn ln _ _ _), courses) <- zip3 insts idata courses
+                                        $forall (instructor, Entity key (UserData fn ln _ _ _), courses) <- zip3 insts idata allcourses
                                             <div.card style="margin-bottom:20px">
                                                 <div.card-header>
                                                     <a href=@{UserR (userIdent instructor)}>#{userIdent instructor}
                                                     — #{fn} #{ln}
                                                 <div.card-block>
-                                                      $forall (course, enrollment) <- courses
+                                                      $forall (course, enrollment) <- active courses
                                                           <h3> #{courseTitle (entityVal course)}
                                                           <table.table.table-striped>
                                                             <thead>
@@ -153,15 +157,26 @@ instructorWidget insts idata = do courses <- mapM getCoursesWithEnrollment (map 
                                                                     <tr>
                                                                         <td>
                                                                             #{sln}, #{sfn}
+                                                      <h3>Inactive Classes
+                                                      <table.table.table-striped>
+                                                        <thead>
+                                                          <th> Name
+                                                          <th> End Date
+                                                        <tbody>
+                                                          $forall (course, _) <- inactive courses
+                                                            <tr>
+                                                                <td> #{courseTitle (entityVal course)}
+                                                                <td> #{dateDisplay (courseEndDate (entityVal course)) (entityVal course)}
                                                     <button.btn.btn-sm.btn-danger type="button" onclick="tryDelete('#{userIdent instructor}', '#{decodeUtf8 $ encode $ DowngradeInstructor key}')">
                                                         Downgrade Instructor
                                   |]
-    where getCoursesWithEnrollment ud = case userDataInstructorId ud of 
-                                            Just iid -> do courseEnt <- runDB $ selectList [CourseInstructor ==. iid] []
-                                                           enrollments <- mapM (\c -> runDB $ selectList [UserDataEnrolledIn ==. Just (entityKey c)] []) courseEnt
-                                                           return $ zip courseEnt enrollments
 
-                                            Nothing -> return []
+getCoursesWithEnrollment ud = case userDataInstructorId ud of 
+                                        Just iid -> do courseEnt <- runDB $ selectList [CourseInstructor ==. iid] []
+                                                       enrollments <- mapM (\c -> runDB $ selectList [UserDataEnrolledIn ==. Just (entityKey c)] []) courseEnt
+                                                       return $ zip courseEnt enrollments
+
+                                        Nothing -> return []
 
 data AdminDelete = DowngradeInstructor UserDataId
     deriving Generic

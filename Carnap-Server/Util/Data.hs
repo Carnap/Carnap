@@ -44,6 +44,7 @@ chapterOfProblemSet = IM.fromList
 toTime :: String -> UTCTime
 toTime = parseTimeOrError True defaultTimeLocale "%l:%M %P %Z, %b %e, %Y"
 
+
 displayProblemData (DerivationData t _)  = t
 displayProblemData (DerivationDataOpts t _ _)  = t
 displayProblemData (TruthTableData t _)  = t
