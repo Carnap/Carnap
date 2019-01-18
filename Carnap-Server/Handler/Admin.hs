@@ -172,16 +172,18 @@ instructorWidget instructorPlus =
                                              <tr>
                                                  <td>
                                                      #{sln}, #{sfn}
-                               <h3>Inactive Classes
-                               <table.table.table-striped>
-                                 <thead>
-                                   <th> Name
-                                   <th> End Date
-                                 <tbody>
-                                   $forall (course, _) <- inactive courses
-                                     <tr>
-                                         <td> #{courseTitle (entityVal course)}
-                                         <td> #{dateDisplay (courseEndDate (entityVal course)) (entityVal course)}
+                               $if null $ inactive courses
+                               $else
+                                   <h3>Inactive Classes
+                                   <table.table.table-striped>
+                                     <thead>
+                                       <th> Name
+                                       <th> End Date
+                                     <tbody>
+                                       $forall (course, _) <- inactive courses
+                                         <tr>
+                                             <td> #{courseTitle (entityVal course)}
+                                             <td> #{dateDisplay (courseEndDate (entityVal course)) (entityVal course)}
                              <button.btn.btn-sm.btn-danger type="button" onclick="tryDelete('#{userIdent instructor}', '#{decodeUtf8 $ encode $ DowngradeInstructor key}')">
                                  Downgrade Instructor
            |]
