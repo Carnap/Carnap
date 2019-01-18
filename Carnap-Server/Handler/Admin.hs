@@ -59,11 +59,13 @@ getAdminR = do allUserData <- runDB $ selectList [] []
                    allStudentsData = filter (\x -> userDataInstructorId (entityVal x) == Nothing) allUserData
                    allInstructorUids = map (userDataUserId .entityVal)  allInstructorsData
                    allStudentUids = map (userDataUserId . entityVal) allStudentsData
-               instructors <- catMaybes <$> mapM (\x -> runDB (get x)) allInstructorUids
+               allCoursesByInstructor <- mapM getCoursesWithEnrollment (map entityVal allInstructorsData)
+               allInstructors <- catMaybes <$> mapM (\x -> runDB (get x)) allInstructorUids
+               let instructorsPlus = zip3 allInstructors allInstructorsData allCoursesByInstructor
                students <- catMaybes <$> mapM (\x -> runDB (get x)) allStudentUids
-               instructorW <- instructorWidget instructors allInstructorsData
-               emailW <- emailWidget instructors
-               unenrolledW <- unenrolledWidget allStudentsData
+               instructorW <- instructorWidget instructorsPlus
+               emailW <- emailWidget allInstructors
+               unenrolledW <- unenrolledWidget allStudentsData (concat allCoursesByInstructor)
                (upgradeWidget,enctypeUpgrade) <- generateFormPost (upgradeToInstructor students)
                defaultLayout $ do 
                              toWidgetHead [julius|
@@ -107,26 +109,39 @@ upgradeToInstructor users = renderBootstrap3 BootstrapBasicForm $
                                 areq (selectFieldList userIdents) (bfs ("Upgrade User to Instructor" :: Text)) Nothing
         where userIdents = let idents = map userIdent users in zip idents idents
 
-unenrolledWidget :: [Entity UserData] -> HandlerT App IO Widget
-unenrolledWidget students = do let unenrolledData = filter (\x -> userDataEnrolledIn (entityVal x) == Nothing) students
-                               unenrolled <- catMaybes <$> mapM (\ud -> runDB $ get (userDataUserId (entityVal ud))) unenrolledData
-                               return [whamlet|
-                                    <div.card style="margin-bottom:20px">
-                                        <div.card-header> Unenrolled Students
-                                        <div.card-block>
-                                          <table.table.table-striped>
-                                                <thead>
-                                                    <th> Ident
-                                                    <th> Name
-                                                <tbody>
-                                                    $forall (User ident _, Entity _ (UserData fn ln _ _ _)) <- zip unenrolled unenrolledData
+unenrolledWidget :: [Entity UserData] -> [(Entity Course,[Entity UserData])] -> HandlerT App IO Widget
+unenrolledWidget students courses = do 
+       time <- liftIO getCurrentTime
+       let unenrolledData = filter (\x -> userDataEnrolledIn (entityVal x) == Nothing) students
+           inactive = filter (\(c,e) -> courseEndDate (entityVal c) < time)
+           expiredData = concat . map snd . inactive $ courses
+       unenrolled <- catMaybes <$> mapM (\ud -> runDB $ get (userDataUserId (entityVal ud))) unenrolledData 
+       expired <- catMaybes <$> mapM (\ud -> runDB $ get (userDataUserId (entityVal ud))) expiredData
+       return [whamlet|
+            <div.card style="margin-bottom:20px">
+                <div.card-header> Unenrolled and Expired Students
+                <div.card-block>
+                  <table.table.table-striped>
+                        <thead>
+                            <th> Ident
+                            <th> Name
+                        <tbody>
+                            $forall (User ident _, Entity _ (UserData fn ln _ _ _)) <- zip unenrolled unenrolledData
 
-                                                        <tr>
-                                                            <td>
-                                                                <a href=@{UserR ident}>#{ident}
-                                                            <td>
-                                                                #{ln}, #{fn}
-                                    |]
+                                <tr>
+                                    <td>
+                                        <a href=@{UserR ident}>#{ident}
+                                    <td>
+                                        #{ln}, #{fn}
+                        <tbody>
+                            $forall (User ident _, Entity _ (UserData fn ln _ _ _)) <- zip expired expiredData
+
+                                <tr>
+                                    <td>
+                                        <a href=@{UserR ident}>#{ident}
+                                    <td>
+                                        #{ln}, #{fn}
+            |]
 
 emailWidget :: [User] -> HandlerT App IO Widget
 emailWidget insts = do let emails = intercalate "," (map userIdent insts)
@@ -135,41 +150,41 @@ emailWidget insts = do let emails = intercalate "," (map userIdent insts)
                        |]
 
 
-instructorWidget :: [User] -> [Entity UserData] -> HandlerT App IO Widget
-instructorWidget insts idata = do allcourses <- mapM getCoursesWithEnrollment (map entityVal idata)
-                                  time <- liftIO getCurrentTime
-                                  let active = filter (\(c,e) -> courseEndDate (entityVal c) > time)
-                                      inactive = filter (\(c,e) -> courseEndDate (entityVal c) < time)
-                                  return [whamlet|
-                                        $forall (instructor, Entity key (UserData fn ln _ _ _), courses) <- zip3 insts idata allcourses
-                                            <div.card style="margin-bottom:20px">
-                                                <div.card-header>
-                                                    <a href=@{UserR (userIdent instructor)}>#{userIdent instructor}
-                                                    — #{fn} #{ln}
-                                                <div.card-block>
-                                                      $forall (course, enrollment) <- active courses
-                                                          <h3> #{courseTitle (entityVal course)}
-                                                          <table.table.table-striped>
-                                                            <thead>
-                                                                <th> Name
-                                                            <tbody>
-                                                                $forall UserData sfn sln _ _ _ <- map entityVal enrollment
-                                                                    <tr>
-                                                                        <td>
-                                                                            #{sln}, #{sfn}
-                                                      <h3>Inactive Classes
-                                                      <table.table.table-striped>
-                                                        <thead>
-                                                          <th> Name
-                                                          <th> End Date
-                                                        <tbody>
-                                                          $forall (course, _) <- inactive courses
-                                                            <tr>
-                                                                <td> #{courseTitle (entityVal course)}
-                                                                <td> #{dateDisplay (courseEndDate (entityVal course)) (entityVal course)}
-                                                    <button.btn.btn-sm.btn-danger type="button" onclick="tryDelete('#{userIdent instructor}', '#{decodeUtf8 $ encode $ DowngradeInstructor key}')">
-                                                        Downgrade Instructor
-                                  |]
+instructorWidget :: [(User,Entity UserData,[(Entity Course,[Entity UserData])])] -> HandlerT App IO Widget
+instructorWidget instructorPlus = 
+        do time <- liftIO getCurrentTime
+           let active = filter (\(c,e) -> courseEndDate (entityVal c) > time)
+               inactive = filter (\(c,e) -> courseEndDate (entityVal c) < time)
+           return [whamlet|
+                 $forall (instructor, Entity key (UserData fn ln _ _ _), courses) <- instructorPlus
+                     <div.card style="margin-bottom:20px">
+                         <div.card-header>
+                             <a href=@{UserR (userIdent instructor)}>#{userIdent instructor}
+                             — #{fn} #{ln}
+                         <div.card-block>
+                               $forall (course, enrollment) <- active courses
+                                   <h3> #{courseTitle (entityVal course)}
+                                   <table.table.table-striped>
+                                     <thead>
+                                         <th> Name
+                                     <tbody>
+                                         $forall UserData sfn sln _ _ _ <- map entityVal enrollment
+                                             <tr>
+                                                 <td>
+                                                     #{sln}, #{sfn}
+                               <h3>Inactive Classes
+                               <table.table.table-striped>
+                                 <thead>
+                                   <th> Name
+                                   <th> End Date
+                                 <tbody>
+                                   $forall (course, _) <- inactive courses
+                                     <tr>
+                                         <td> #{courseTitle (entityVal course)}
+                                         <td> #{dateDisplay (courseEndDate (entityVal course)) (entityVal course)}
+                             <button.btn.btn-sm.btn-danger type="button" onclick="tryDelete('#{userIdent instructor}', '#{decodeUtf8 $ encode $ DowngradeInstructor key}')">
+                                 Downgrade Instructor
+           |]
 
 getCoursesWithEnrollment ud = case userDataInstructorId ud of 
                                         Just iid -> do courseEnt <- runDB $ selectList [CourseInstructor ==. iid] []
