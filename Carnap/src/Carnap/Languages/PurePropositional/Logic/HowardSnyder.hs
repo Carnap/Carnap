@@ -191,7 +191,7 @@ howardSnyderSLNotation x = case runParser altParser 0 "" x of
           handleRParen = do char ')'
                             n <- getState 
                             putState (n - 1)
-                            return $ [")","]","}"] !! (n - 1 `mod` 3)
+                            return $ [")","]","}"] !! ((n - 1) `mod` 3)
           handleAtom = do c <- oneOf "ABCDEFGHIJKLMNOPQRSTUVWXYZ" <* char '('
                           args <- oneOf "abcdefghijklmnopqrstuvwxyz" `sepBy` char ','
                           char ')'

@@ -134,7 +134,7 @@ magnusNotation :: String -> String
 magnusNotation x = case runParser altparser 0 "" x of
                             Left e -> show e
                             Right s -> s
-    where altparser = do s <- handlecon <|> try handleatom <|> fallback
+    where altparser = do s <- handlecon <|> try handleatom <|> handleLParen <|> handleRParen <|> fallback
                          rest <- (eof >> return "") <|> altparser
                          return $ s ++ rest
           handlecon = char '∧' >> return "&"
@@ -142,6 +142,14 @@ magnusNotation x = case runParser altparser 0 "" x of
                           args <- oneOf "abcdefghijklmnopqrstuvwxyz" `sepBy` char ','
                           char ')'
                           return $ c:args
+          handleLParen = do char '('
+                            n <- getState 
+                            putState (n + 1)
+                            return $ ["(","["] !! (n `mod` 2) 
+          handleRParen = do char ')'
+                            n <- getState 
+                            putState (n - 1)
+                            return $ [")","]"] !! ((n - 1) `mod` 2)
           fallback = do c <- anyChar 
                         return [c]
 
@@ -244,7 +252,6 @@ parseMagnusSLPlus rtc = try plus <|> basic
 
 parseMagnusSLPlusProof :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> String -> [DeductionLine MagnusSLPlus PurePropLexicon (Form Bool)]
 parseMagnusSLPlusProof rtc = toDeductionFitch (parseMagnusSLPlus rtc) (purePropFormulaParser magnusOpts)
-
 
 magnusSLPlusCalc = mkNDCalc 
     { ndRenderer = FitchStyle
