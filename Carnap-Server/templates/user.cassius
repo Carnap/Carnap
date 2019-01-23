@@ -6,3 +6,8 @@ span.ruleaction > span
 
 .card 
     margin-bottom: 1rem;
+
+.assignment-desc
+    max-width:250px;
+    max-height:200px;
+    overflow-y:scroll;

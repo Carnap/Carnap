@@ -228,6 +228,7 @@ assignmentsOf course textbookproblems asmd asDocs = do
                         <thead>
                             <th> Assignment
                             <th> Due Date
+                            <th> Description
                         <tbody>
                             $maybe dd <- textbookproblems
                                 $forall (num,date) <- IM.toList (readAssignmentTable dd)
@@ -237,6 +238,7 @@ assignmentsOf course textbookproblems asmd asDocs = do
                                                 Problem Set #{show num}
                                         <td>
                                             #{dateDisplay date course}
+                                        <td>-
                             $forall (Entity k a, Just d) <- zip asmd asDocs
                                 $if visibleAt time a
                                         <tr>
@@ -247,6 +249,11 @@ assignmentsOf course textbookproblems asmd asDocs = do
                                                 <td>#{dateDisplay due course}
                                             $nothing
                                                 <td>No Due Date
+                                            $maybe desc <- assignmentMetadataDescription a
+                                                <td>
+                                                    <div.assignment-desc>#{desc}
+                                            $nothing
+                                                <td>-
                 |]
     where visibleAt t a = (assignmentMetadataVisibleTill a > Just t || assignmentMetadataVisibleTill a == Nothing)
                           && (assignmentMetadataVisibleFrom a < Just t || assignmentMetadataVisibleFrom a == Nothing)
