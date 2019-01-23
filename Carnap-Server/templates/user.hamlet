@@ -41,21 +41,22 @@
         <div.card>
             <div.card-header> Derived Rules
             <div.derivedRules>
-                <table.table.table-striped>
-                    <thead>
-                        <th> Name
-                        <th> Premises
-                        <th> Conclusion
-                        <th> Action
-                    <tbody>
-                        $forall SavedDerivedRule dr name _ _ <- rules
-                            $maybe dr' <- decodeStrict dr
-                                <tr id="rule-#{name}">
-                                    <td>D-#{name}
-                                    <td>#{intercalate "," $ map show (premises dr')}
-                                    <td>#{show $ conclusion dr'}
-                                    <td>
-                                        <button.btn.btn-sm.btn-secondary type="button" onclick=#{tryDelete name}>
-                                                <i.fa.fa-trash-o> delete rule
+                <div.table-responsive>
+                    <table.table.table-striped>
+                        <thead>
+                            <th> Name
+                            <th> Premises
+                            <th> Conclusion
+                            <th> Action
+                        <tbody>
+                            $forall SavedDerivedRule dr name _ _ <- rules
+                                $maybe dr' <- decodeStrict dr
+                                    <tr id="rule-#{name}">
+                                        <td>D-#{name}
+                                        <td>#{intercalate "," $ map show (premises dr')}
+                                        <td>#{show $ conclusion dr'}
+                                        <td>
+                                            <button.btn.btn-sm.btn-secondary type="button" onclick=#{tryDelete name}>
+                                                    <i.fa.fa-trash-o> delete rule
     <a href=@{AuthR LogoutR}>
         Logout

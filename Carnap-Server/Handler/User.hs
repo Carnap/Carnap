@@ -184,19 +184,20 @@ laterThan t1 t2 = diffUTCTime t1 t2 > 0
 
 problemsToTable course textbookproblems asmd asDocs submissions = do 
             rows <- mapM toRow submissions
-            return $ do B.table B.! class_ "table table-striped" $ do
-                            B.col B.! style "width:100px"
-                            B.col B.! style "width:50px"
-                            B.col B.! style "width:100px"
-                            B.col B.! style "width:100px"
-                            B.col B.! style "width:100px"
-                            B.thead $ do
-                                B.th "Source"
-                                B.th "Exercise"
-                                B.th "Content"
-                                B.th "Submitted"
-                                B.th "Points Earned"
-                            B.tbody $ sequence_ rows
+            return $ do B.div B.! class_ "table-responsive" $ do
+                            B.table B.! class_ "table table-striped" $ do
+                                B.col B.! style "width:100px"
+                                B.col B.! style "width:50px"
+                                B.col B.! style "width:100px"
+                                B.col B.! style "width:100px"
+                                B.col B.! style "width:100px"
+                                B.thead $ do
+                                    B.th "Source"
+                                    B.th "Exercise"
+                                    B.th "Content"
+                                    B.th "Submitted"
+                                    B.th "Points Earned"
+                                B.tbody $ sequence_ rows
         where toRow p = do score <- toScore textbookproblems p 
                            return $ do
                               B.tr $ do B.td $ printSource (problemSubmissionSource p)
@@ -222,29 +223,30 @@ assignmentsOf course textbookproblems asmd asDocs = do
              time <- liftIO getCurrentTime
              return $
                 [whamlet|
-                <table.table.table-striped>
-                    <thead>
-                        <th> Assignment
-                        <th> Due Date
-                    <tbody>
-                        $maybe dd <- textbookproblems
-                            $forall (num,date) <- IM.toList (readAssignmentTable dd)
-                                <tr>
-                                    <td>
-                                        <a href=@{ChapterR $ chapterOfProblemSet ! num}>
-                                            Problem Set #{show num}
-                                    <td>
-                                        #{dateDisplay date course}
-                        $forall (Entity k a, Just d) <- zip asmd asDocs
-                            $if visibleAt time a
+                <div.table-responsive>
+                    <table.table.table-striped>
+                        <thead>
+                            <th> Assignment
+                            <th> Due Date
+                        <tbody>
+                            $maybe dd <- textbookproblems
+                                $forall (num,date) <- IM.toList (readAssignmentTable dd)
                                     <tr>
                                         <td>
-                                            <a href=@{AssignmentR $ documentFilename d}>
-                                                #{documentFilename d}
-                                        $maybe due <- assignmentMetadataDuedate a
-                                            <td>#{dateDisplay due course}
-                                        $nothing
-                                            <td>No Due Date
+                                            <a href=@{ChapterR $ chapterOfProblemSet ! num}>
+                                                Problem Set #{show num}
+                                        <td>
+                                            #{dateDisplay date course}
+                            $forall (Entity k a, Just d) <- zip asmd asDocs
+                                $if visibleAt time a
+                                        <tr>
+                                            <td>
+                                                <a href=@{AssignmentR $ documentFilename d}>
+                                                    #{documentFilename d}
+                                            $maybe due <- assignmentMetadataDuedate a
+                                                <td>#{dateDisplay due course}
+                                            $nothing
+                                                <td>No Due Date
                 |]
     where visibleAt t a = (assignmentMetadataVisibleTill a > Just t || assignmentMetadataVisibleTill a == Nothing)
                           && (assignmentMetadataVisibleFrom a < Just t || assignmentMetadataVisibleFrom a == Nothing)

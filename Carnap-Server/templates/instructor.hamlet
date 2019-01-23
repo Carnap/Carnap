@@ -42,22 +42,23 @@
                             <input.btn.btn-primary  type=submit value="Assign">
                     <hr style="margin-left:-20px;margin-right:-20px">
                     <h2>Manage Problem Sets
-                    <table class="table">
-                        <thead>
-                            <th> Problem Set
-                            <th> Due Date
-                            <th> Course
-                            <th> Actions
-                            $forall c <- map entityVal activeClasses
-                                $maybe probs <- mprobsOf c
-                                    $forall (n,d) <- Data.IntMap.toList probs
-                                        <tr id="problem-set-#{courseTitle c}-#{show n}">
-                                            <td> Problem set #{show n}
-                                            <td>#{dateDisplay d c}
-                                            <td> #{courseTitle c}
-                                            <td>
-                                                <button.btn.btn-sm.btn-secondary alt="delete" title="delete this problem set" type="button" onclick="deleteProblemSet('#{decodeUtf8 $ encode $ DeleteProblems (courseTitle c) n}')">
-                                                    <i.fa.fa-trash-o>
+                    <div.table-responsive>
+                        <table.table>
+                            <thead>
+                                <th> Problem Set
+                                <th> Due Date
+                                <th> Course
+                                <th> Actions
+                                $forall c <- map entityVal activeClasses
+                                    $maybe probs <- mprobsOf c
+                                        $forall (n,d) <- Data.IntMap.toList probs
+                                            <tr id="problem-set-#{courseTitle c}-#{show n}">
+                                                <td> Problem set #{show n}
+                                                <td>#{dateDisplay d c}
+                                                <td> #{courseTitle c}
+                                                <td>
+                                                    <button.btn.btn-sm.btn-secondary alt="delete" title="delete this problem set" type="button" onclick="deleteProblemSet('#{decodeUtf8 $ encode $ DeleteProblems (courseTitle c) n}')">
+                                                        <i.fa.fa-trash-o>
                 <div.tab-pane id="assignFromDocument" role="tabpanel">
                     <h2> Assign Document
                     <form method=post action="#assignFromDocument" enctype=#{enctypeCreateAssignment}>
@@ -66,42 +67,43 @@
                             <input.btn.btn-primary type=submit value="Assign">
                     <hr style="margin-left:-20px;margin-right:-20px">
                     <h2> Edit Assignments
-                    <table class="table">
-                        <thead>
-                            <th> Filename
-                            <th> Due Date
-                            <th> Visible
-                            <th> Course
-                            <th> Actions
-                        <tbody>
-                            $forall (Entity k a, c, Just d) <- zip3 assignmentMetadata assignmentCourses assignmentDocs
-                                <tr id="assignment-#{courseTitle c}-#{documentFilename d}">
-                                    <td>
-                                        <a href=@{CourseAssignmentR (courseTitle c) (documentFilename d)}>
-                                            #{documentFilename d}
-                                    $maybe due <- assignmentMetadataDuedate a
-                                        <td>#{dateDisplay due c}
-                                    $nothing
-                                        <td>No Due Date
-                                    <td>
-                                        $maybe from <- assignmentMetadataVisibleFrom a
-                                            $maybe till <- assignmentMetadataVisibleTill a
-                                                #{dateDisplay from c}-#{dateDisplay till c}
-                                            $nothing
-                                                #{dateDisplay from c}-∞
-                                        $nothing 
-                                            $maybe till <- assignmentMetadataVisibleTill a
-                                                ∞-#{dateDisplay till c}
-                                            $nothing
-                                                Always
-                                    <td>#{courseTitle c}
-                                    <td>
-                                        <button.btn.btn-sm.btn-secondary alt="delete" title="delete this assignment" type="button" onclick="tryDeleteAssignment('#{decodeUtf8 $ encode $ DeleteAssignment k}','#{documentFilename d}','#{courseTitle c}')">
-                                            <i.fa.fa-trash-o>
-                                        <button.btn.btn-sm.btn-secondary alt="edit" title="edit this assignment" type="button"  onclick="modalEditAssignment('#{show k}')">
-                                            <i.fa.fa-cog>
-                                        <a.btn.btn-sm.btn-secondary alt="review" title="review and assign partial credit" href=@{ReviewR (courseTitle c) (documentFilename d)}>
-                                            <i.fa.fa-pencil>
+                    <div.table-responsive>
+                        <table.table>
+                            <thead>
+                                <th> Filename
+                                <th> Due Date
+                                <th> Visible
+                                <th> Course
+                                <th> Actions
+                            <tbody>
+                                $forall (Entity k a, c, Just d) <- zip3 assignmentMetadata assignmentCourses assignmentDocs
+                                    <tr id="assignment-#{courseTitle c}-#{documentFilename d}">
+                                        <td>
+                                            <a href=@{CourseAssignmentR (courseTitle c) (documentFilename d)}>
+                                                #{documentFilename d}
+                                        $maybe due <- assignmentMetadataDuedate a
+                                            <td>#{dateDisplay due c}
+                                        $nothing
+                                            <td>No Due Date
+                                        <td>
+                                            $maybe from <- assignmentMetadataVisibleFrom a
+                                                $maybe till <- assignmentMetadataVisibleTill a
+                                                    #{dateDisplay from c}-#{dateDisplay till c}
+                                                $nothing
+                                                    #{dateDisplay from c}-∞
+                                            $nothing 
+                                                $maybe till <- assignmentMetadataVisibleTill a
+                                                    ∞-#{dateDisplay till c}
+                                                $nothing
+                                                    Always
+                                        <td>#{courseTitle c}
+                                        <td>
+                                            <button.btn.btn-sm.btn-secondary alt="delete" title="delete this assignment" type="button" onclick="tryDeleteAssignment('#{decodeUtf8 $ encode $ DeleteAssignment k}','#{documentFilename d}','#{courseTitle c}')">
+                                                <i.fa.fa-trash-o>
+                                            <button.btn.btn-sm.btn-secondary alt="edit" title="edit this assignment" type="button"  onclick="modalEditAssignment('#{show k}')">
+                                                <i.fa.fa-cog>
+                                            <a.btn.btn-sm.btn-secondary alt="review" title="review and assign partial credit" href=@{ReviewR (courseTitle c) (documentFilename d)}>
+                                                <i.fa.fa-pencil>
 
                 <div.tab-pane id="uploadDocument" role="tabpanel">
                     <h2> Upload Document
@@ -112,32 +114,33 @@
                     <hr>
                     <hr style="margin-left:-20px;margin-right:-20px">
                     <h2> Edit Uploaded Documents
-                    <table class="table">
-                        <thead>
-                            <th> Filename
-                            <th> Saved on
-                            <th> Sharing Scope
-                            <th> Tags
-                            <th> Actions
-                        <tbody>
-                            $forall Entity k a <- documents
-                                <tr id="document-#{documentFilename a}">
-                                    <td>
-                                        <a href="@{DocumentR ident (documentFilename a)}">
-                                            #{documentFilename a}
-                                    <td> #{formatTime defaultTimeLocale "%F" $ documentDate a}
-                                    <td> #{show $ documentScope a}
-                                    <td>
-                                        $maybe tags <- tagsOf k
-                                            $forall tag <- tags
-                                                <a.badge.badge-primary href="@{DocumentsByTagR tag}">#{tag}
-                                    <td>
-                                        <button.btn.btn-sm.btn-secondary type="button" alt="delete" title="permanantly delete this document" onclick="tryDeleteDocument('#{decodeUtf8 $ encode $ DeleteDocument (documentFilename a)}')">
-                                            <i.fa.fa-trash-o>
-                                        <button.btn.btn-sm.btn-secondary type="button" alt="edit" title="edit this document" onclick="modalEditDocument('#{show k}','#{tagString k}')">
-                                            <i.fa.fa-cog>
-                                        <button.btn.btn-sm.btn-secondary alt="download" title="download this document" type="button" onclick="window.open('@{DocumentDownloadR ident (documentFilename a)}')">
-                                            <i.fa.fa-cloud-download>
+                    <div.table-responsive>
+                        <table.table>
+                            <thead>
+                                <th> Filename
+                                <th> Saved on
+                                <th> Sharing Scope
+                                <th> Tags
+                                <th> Actions
+                            <tbody>
+                                $forall Entity k a <- documents
+                                    <tr id="document-#{documentFilename a}">
+                                        <td>
+                                            <a href="@{DocumentR ident (documentFilename a)}">
+                                                #{documentFilename a}
+                                        <td> #{formatTime defaultTimeLocale "%F" $ documentDate a}
+                                        <td> #{show $ documentScope a}
+                                        <td>
+                                            $maybe tags <- tagsOf k
+                                                $forall tag <- tags
+                                                    <a.badge.badge-primary href="@{DocumentsByTagR tag}">#{tag}
+                                        <td>
+                                            <button.btn.btn-sm.btn-secondary type="button" alt="delete" title="permanantly delete this document" onclick="tryDeleteDocument('#{decodeUtf8 $ encode $ DeleteDocument (documentFilename a)}')">
+                                                <i.fa.fa-trash-o>
+                                            <button.btn.btn-sm.btn-secondary type="button" alt="edit" title="edit this document" onclick="modalEditDocument('#{show k}','#{tagString k}')">
+                                                <i.fa.fa-cog>
+                                            <button.btn.btn-sm.btn-secondary alt="download" title="download this document" type="button" onclick="window.open('@{DocumentDownloadR ident (documentFilename a)}')">
+                                                <i.fa.fa-cloud-download>
                 <div.tab-pane id="manageCourse" role="tabpanel">
                     <h2>Create Course
                     <form method=post enctype=#{enctypeCreateCourse}>
@@ -147,20 +150,21 @@
 
                     <hr style="margin-left:-20px;margin-right:-20px">
                         <h2>Older Courses
-                        <table class="table">
-                            <thead>
-                                <th> Title
-                                <th> End Date
-                                <th> Actions
-                            <tbody>
-                                $forall Entity cid c <- inactiveClasses
-                                    <tr>
-                                        <td>#{courseTitle c}
-                                        <td>#{dateDisplay (courseEndDate c) c}
-                                        <td>
-                                            <button.btn.btn-sm.btn-secondary type="button" alt="delete" title="permanantly delete this course" onclick="tryDeleteCourse('#{decodeUtf8 $ encode $ DeleteCourse (courseTitle c)}')">
-                                                <i.fa.fa-trash-o>
-                                            <button.btn.btn-sm.btn-secondary type="button" alt="edit" title="edit this course" onclick="modalEditCourse('#{show cid}')">
-                                                <i.fa.fa-cog>
-                                            <button.btn.btn-sm.btn-secondary alt="download" title="download grades from this course" type="button" onclick="location.href='@{InstructorDownloadR ident (courseTitle c)}'">
-                                                <i.fa.fa-cloud-download>
+                        <div.table-responsive>
+                            <table.table>
+                                <thead>
+                                    <th> Title
+                                    <th> End Date
+                                    <th> Actions
+                                <tbody>
+                                    $forall Entity cid c <- inactiveClasses
+                                        <tr>
+                                            <td>#{courseTitle c}
+                                            <td>#{dateDisplay (courseEndDate c) c}
+                                            <td>
+                                                <button.btn.btn-sm.btn-secondary type="button" alt="delete" title="permanantly delete this course" onclick="tryDeleteCourse('#{decodeUtf8 $ encode $ DeleteCourse (courseTitle c)}')">
+                                                    <i.fa.fa-trash-o>
+                                                <button.btn.btn-sm.btn-secondary type="button" alt="edit" title="edit this course" onclick="modalEditCourse('#{show cid}')">
+                                                    <i.fa.fa-cog>
+                                                <button.btn.btn-sm.btn-secondary alt="download" title="download grades from this course" type="button" onclick="location.href='@{InstructorDownloadR ident (courseTitle c)}'">
+                                                    <i.fa.fa-cloud-download>
