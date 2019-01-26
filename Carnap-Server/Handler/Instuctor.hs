@@ -670,6 +670,9 @@ classWidget ident instructors classent = do
                                         <button.btn.btn-sm.btn-secondary type="button" title="Drop #{fn} #{ln} from class"
                                             onclick="tryDropStudent('#{decodeUtf8 $ encode $ DropStudent $ userIdent u}')">
                                             <i.fa.fa-trash-o>
+                                        <button.btn.btn-sm.btn-secondary type="button" title="Email #{fn} #{ln}" 
+                                            onclick="location.href='mailto:#{userIdent u}'">
+                                            <i.fa.fa-envelope-o>
                     <h2>Course Data
                     <dl.row>
                         <dt.col-sm-3>Primary Instructor
