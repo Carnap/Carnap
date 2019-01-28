@@ -1,5 +1,10 @@
 <div.container>
     <h1>#{title}
+    <div.card>
+        <div.card-block>
+            <p.card-text> Filter by Tag: 
+                $forall tag <- allTags
+                    <a.badge.badge-primary href="@{DocumentsByTagR tag}">#{tag}
     <h2>Publicly Shared
     ^{documentCards publicDocuments pubidents pubmd tagsOf}
     $maybe privdocs <- privateDocuments

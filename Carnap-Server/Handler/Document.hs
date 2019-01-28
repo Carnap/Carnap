@@ -3,6 +3,7 @@ module Handler.Document where
 import Import
 import System.Directory (doesFileExist,getDirectoryContents)
 import Yesod.Markdown
+import Data.List (nub)
 import Text.Pandoc (writerExtensions,readerExtensions,Extension(..),extensionsFromList)
 import Text.Pandoc.Walk (walkM, walk)
 import Text.Julius (juliusFile,rawJS)
@@ -28,7 +29,8 @@ documentsList title documents = do
                                             tags <- runDB $ selectList [TagBearer ==. entityKey doc] []
                                             return (entityKey doc, map (tagName . entityVal) tags)
                    let tagsOf d = lookup d tagMap
-                   let publicDocuments = filter ((==) Public . documentScope . entityVal) documents
+                       publicDocuments = filter ((==) Public . documentScope . entityVal) documents
+                       allTags = nub . concat . map snd $ tagMap
                    pubidents <- mapM (getIdent . documentCreator . entityVal) publicDocuments
                    pubmd <- mapM (getUserMD . documentCreator . entityVal) publicDocuments
                    muid <- maybeAuthId
