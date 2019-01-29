@@ -1,6 +1,6 @@
 {-#LANGUAGE FlexibleContexts, FlexibleInstances, MultiParamTypeClasses #-}
 module Carnap.Languages.PurePropositional.Logic.Magnus
-    ( parseMagnusSL, parseMagnusSLPlus, MagnusSLPlus, magnusSLPlusCalc, MagnusSL,  magnusSLCalc) where
+    ( parseMagnusSL, parseMagnusSLPlus, MagnusSLPlus(..), magnusSLPlusCalc, MagnusSL(..),  magnusSLCalc) where
 
 import Data.Map as M (lookup, Map)
 import Text.Parsec

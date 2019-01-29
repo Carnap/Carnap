@@ -38,6 +38,7 @@ library
                      , Carnap.Languages.PurePropositional.Logic.Carnap
                      , Carnap.Languages.PurePropositional.Logic.KalishAndMontague
                      , Carnap.Languages.PurePropositional.Logic.BergmannMoorAndNelson
+                     , Carnap.Languages.PurePropositional.Logic.IchikawaJenkins
                      , Carnap.Languages.PurePropositional.Logic.Magnus
                      , Carnap.Languages.PurePropositional.Logic.Hausman
                      , Carnap.Languages.PurePropositional.Logic.HowardSnyder
