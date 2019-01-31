@@ -16,6 +16,7 @@ import Carnap.Languages.ClassicalSequent.Parser
 import Carnap.Languages.PurePropositional.Logic.Rules
 
 newtype IchikawaJenkinsSL = IJ MagnusSLPlus
+    deriving Eq
 
 instance Show IchikawaJenkinsSL where
         show (IJ (MSL CondIntro1)) = "⊃I"

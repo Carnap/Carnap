@@ -1,5 +1,5 @@
 {-#LANGUAGE  TypeOperators, FlexibleContexts,  FlexibleInstances, MultiParamTypeClasses #-}
-module Carnap.Languages.PureFirstOrder.Logic.Magnus (magnusQLCalc,parseMagnusQL) where
+module Carnap.Languages.PureFirstOrder.Logic.Magnus (magnusQLCalc,parseMagnusQL, MagnusQL(..)) where
 
 import Data.Map as M (lookup, Map,empty)
 import Text.Parsec

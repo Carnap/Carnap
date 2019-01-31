@@ -178,6 +178,7 @@ data MagnusSLPlus = MSL MagnusSL | Hyp
                   | BiExRep      | RepBiEx
                   --plus DeMorgans
                   | DM1 | DM2 | DM3 | DM4
+    deriving Eq
 
 instance Show MagnusSLPlus where
         show (MSL x) = show x
