@@ -1,14 +1,17 @@
 module Carnap.Languages.PurePropositional.Logic 
     ( DerivedRule(..),  PropSequentCalc
-    , parsePropLogic, parseMontagueSC, parseLogicBookSD,
-    parseLogicBookSDPlus, parseMagnusSL, parseMagnusSLPlus,
-    parseHardegreeSL, parseThomasBolducAndZachTFL, parseTomassiPL,
-    parseHausmanSL, parseHowardSnyderSL, PropLogic, LogicBookSD, LogicBookSDPlus, MagnusSL,
-    MagnusSLPlus, MontagueSC, HardegreeSL, ThomasBolducAndZachTFL,
-    TomassiPL, HausmanSL, HowardSnyderSL , propCalc, magnusSLCalc,
-    magnusSLPlusCalc, logicBookSDCalc, logicBookSDPlusCalc, montagueSCCalc,
-    hardegreeSLCalc, thomasBolducAndZachTFLCalc, tomassiPLCalc,
-    hausmanSLCalc, howardSnyderSLCalc
+    , parsePropLogic, PropLogic, propCalc
+    , parseMontagueSC, MontagueSC, montagueSCCalc
+    , parseLogicBookSD, LogicBookSD, logicBookSDCalc
+    , parseLogicBookSDPlus,  LogicBookSDPlus, logicBookSDPlusCalc
+    , parseMagnusSL, MagnusSL, magnusSLCalc
+    , parseMagnusSLPlus, MagnusSLPlus, magnusSLPlusCalc
+    , parseHardegreeSL, HardegreeSL, hardegreeSLCalc
+    , parseThomasBolducAndZachTFL, ThomasBolducAndZachTFL, thomasBolducAndZachTFLCalc
+    , parseTomassiPL, TomassiPL, tomassiPLCalc
+    , parseHausmanSL, HausmanSL, hausmanSLCalc
+    , parseHowardSnyderSL, HowardSnyderSL, howardSnyderSLCalc
+    , parseIchikawaJenkinsSL, IchikawaJenkinsSL, ichikawaJenkinsSLCalc
     ) where
 
 import Carnap.Languages.PurePropositional.Logic.Rules (PropSequentCalc,DerivedRule(..))
@@ -21,3 +24,4 @@ import Carnap.Languages.PurePropositional.Logic.KalishAndMontague
 import Carnap.Languages.PurePropositional.Logic.Magnus
 import Carnap.Languages.PurePropositional.Logic.ThomasBolducAndZach
 import Carnap.Languages.PurePropositional.Logic.Tomassi
+import Carnap.Languages.PurePropositional.Logic.IchikawaJenkins

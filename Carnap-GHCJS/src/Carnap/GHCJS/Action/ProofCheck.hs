@@ -11,13 +11,13 @@ import Carnap.Languages.ClassicalSequent.Syntax
 import Carnap.Languages.PurePropositional.Logic as P 
     ( DerivedRule(..), propCalc, logicBookSDCalc, logicBookSDPlusCalc, magnusSLCalc
     , magnusSLPlusCalc, montagueSCCalc, hardegreeSLCalc, hausmanSLCalc
-    , thomasBolducAndZachTFLCalc, tomassiPLCalc, howardSnyderSLCalc)
+    , thomasBolducAndZachTFLCalc, tomassiPLCalc, howardSnyderSLCalc, ichikawaJenkinsSLCalc)
 import Carnap.Languages.PurePropositional.Logic.Rules (derivedRuleToSequent)
 import Carnap.Languages.PureFirstOrder.Logic as FOL 
     ( DerivedRule(..), folCalc, montagueQCCalc, magnusQLCalc , thomasBolducAndZachFOLCalc
     , hardegreePLCalc , goldfarbNDCalc, goldfarbAltNDCalc
     , goldfarbNDPlusCalc, goldfarbAltNDPlusCalc , logicBookPDPlusCalc
-    , logicBookPDCalc, hausmanPLCalc, howardSnyderPLCalc) 
+    , logicBookPDCalc, hausmanPLCalc, howardSnyderPLCalc, ichikawaJenkinsQLCalc) 
 import Carnap.Languages.ModalPropositional.Logic as MPL
     ( hardegreeWTLCalc, hardegreeLCalc, hardegreeKCalc, hardegreeTCalc
     , hardegreeBCalc, hardegreeDCalc, hardegreeFourCalc, hardegreeFiveCalc)
@@ -117,6 +117,8 @@ activateChecker drs w (Just iog@(IOGoal i o g _ opts)) -- TODO: need to update n
         | sys == "LogicBookSDPlus"           = tryParse logicBookSDPlusCalc propChecker
         | sys == "LogicBookPD"               = tryParse logicBookPDCalc folChecker
         | sys == "LogicBookPDPlus"           = tryParse logicBookPDPlusCalc folChecker
+        | sys == "ichikawaJenkinsSL"         = tryParse ichikawaJenkinsSLCalc propChecker
+        | sys == "ichikawaJenkinsQL"         = tryParse ichikawaJenkinsQLCalc folChecker
         | sys == "hausmanSL"                 = tryParse hausmanSLCalc propChecker
         | sys == "hausmanPL"                 = tryParse hausmanPLCalc folChecker
         | sys == "howardSnyderSL"            = tryParse howardSnyderSLCalc propChecker

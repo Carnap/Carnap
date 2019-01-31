@@ -1,8 +1,15 @@
 module Carnap.Languages.PureFirstOrder.Logic
         ( FOLogic(..), DerivedRule(..)
-        , parseFOLogic, parseMontagueQCCalc, parseMagnusQL, parseThomasBolducAndZachFOL, parseHardegreePL, parseLogicBookPD, parseHausmanPL, parseHowardSnyderPL
-        , folCalc, montagueQCCalc, magnusQLCalc, thomasBolducAndZachFOLCalc, hardegreePLCalc, logicBookPDCalc, logicBookPDPlusCalc
-        , goldfarbNDCalc, goldfarbAltNDCalc, goldfarbNDPlusCalc, goldfarbAltNDPlusCalc,  hausmanPLCalc, howardSnyderPLCalc
+        , parseFOLogic, folCalc
+        , parseMontagueQCCalc, montagueQCCalc
+        , parseMagnusQL, magnusQLCalc
+        , parseThomasBolducAndZachFOL, thomasBolducAndZachFOLCalc
+        , parseHardegreePL, hardegreePLCalc
+        , parseLogicBookPD, logicBookPDCalc, logicBookPDPlusCalc
+        , parseHausmanPL, hausmanPLCalc
+        , parseHowardSnyderPL, howardSnyderPLCalc
+        , parseIchikawaJenkinsQL, ichikawaJenkinsQLCalc
+        , goldfarbNDCalc, goldfarbAltNDCalc, goldfarbNDPlusCalc, goldfarbAltNDPlusCalc
         )
     where
 
@@ -15,4 +22,5 @@ import Carnap.Languages.PureFirstOrder.Logic.Hausman
 import Carnap.Languages.PureFirstOrder.Logic.HowardSnyder
 import Carnap.Languages.PureFirstOrder.Logic.Hardegree
 import Carnap.Languages.PureFirstOrder.Logic.Goldfarb
+import Carnap.Languages.PureFirstOrder.Logic.IchikawaJenkins
 import Carnap.Languages.PureFirstOrder.Logic.Rules
