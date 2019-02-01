@@ -107,7 +107,7 @@ For example, the argument $\vdash\forall x(F(x)→F(x))$ is valid:
 So is the argument $\forall x(F(x)\land G(x))\vdash\forall x F(x)$.
 
 ``` 
-1. Show: Ax(F(x)/\G(x))
+1. Show: AxF(x)
 2.    Ax(F(x)/\G(x)):PR
 3.    F(c)/\G(c):UI 2
 4.    F(c):S 3
