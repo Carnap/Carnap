@@ -80,6 +80,9 @@ instance Inference ThomasBolducAndZachFOL PureLexiconFOL (Form Bool) where
          isAssumption (ThomasBolducAndZachTFL x) = isAssumption x
          isAssumption _ = False
 
+         isPremise (Pr _) = True
+         isPremise _ = False
+
 parseThomasBolducAndZachFOL rtc = try quantRule <|> liftProp
     where liftProp = do r <- P.parseThomasBolducAndZachTFL (RuntimeNaturalDeductionConfig mempty mempty)
                         return (map ThomasBolducAndZachTFL r)

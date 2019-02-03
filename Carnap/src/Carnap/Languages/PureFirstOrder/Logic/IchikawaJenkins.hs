@@ -45,6 +45,9 @@ instance Inference IchikawaJenkinsQL PureLexiconFOL (Form Bool) where
     isAssumption (IJSL x) = isAssumption x
     isAssumption _ = False
 
+    isPremise (IJSL x) = isPremise x
+    isPremise _ = False
+
 parseIchikawaJenkinsQL rtc = try quantRule <|> liftProp
     where liftProp = do r <- parseIchikawaJenkinsSL (RuntimeNaturalDeductionConfig mempty mempty)
                         return (map IJSL r)

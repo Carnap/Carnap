@@ -72,6 +72,9 @@ instance Inference MagnusQL PureLexiconFOL (Form Bool) where
          isAssumption (MagnusSL x) = isAssumption x
          isAssumption _ = False
 
+         isPremise (Pr _) = True
+         isPremise _ = False
+
 parseMagnusQL rtc = try quantRule <|> liftProp 
     where liftProp = do r <- P.parseMagnusSL (RuntimeNaturalDeductionConfig mempty mempty)
                         return (map MagnusSL r)

@@ -48,6 +48,9 @@ instance Inference IchikawaJenkinsSL PurePropLexicon (Form Bool) where
         isAssumption (IJ x) = isAssumption x
         isAssumption _ = False
 
+        isPremise (IJ x) = isPremise x
+        isPremise _ = False
+
         restriction (IJ x) = restriction x
         restriction _ = Nothing
 

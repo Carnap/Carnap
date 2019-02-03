@@ -135,6 +135,9 @@ instance Inference ThomasBolducAndZachTFL PurePropLexicon (Form Bool) where
         isAssumption As = True
         isAssumption _  = False
 
+        isPremise (Pr _) = True
+        isPremise _  = False
+
         restriction (Pr prems) = Just (premConstraint prems)
 
 parseThomasBolducAndZachTFL :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> Parsec String u [ThomasBolducAndZachTFL]

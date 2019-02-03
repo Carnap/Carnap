@@ -105,6 +105,9 @@ instance Inference MagnusSL PurePropLexicon (Form Bool) where
         isAssumption As = True
         isAssumption _ = False
 
+        isPremise (Pr _) = True
+        isPremise _ = False
+
         restriction (Pr prems) = Just (premConstraint prems)
         restriction _ = Nothing
 
@@ -230,6 +233,9 @@ instance Inference MagnusSLPlus PurePropLexicon (Form Bool) where
 
         indirectInference (MSL x) = indirectInference x
         indirectInference _ = Nothing
+
+        isPremise (MSL x) = isPremise x
+        isPremise _ = False
 
         isAssumption (MSL x) = isAssumption x
         isAssumption _ = False
