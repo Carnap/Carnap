@@ -6,7 +6,7 @@ import Data.Maybe (catMaybes)
 import Carnap.Core.Data.Types
 import Carnap.Core.Data.Classes
 import Carnap.GHCJS.Widget.ProofCheckBox
-import Carnap.Calculi.NaturalDeduction.Syntax (DeductionLine(..), Deduction(..), depth, RenderStyle(..), LemmonVariant(..), NaturalDeductionCalc(..))
+import Carnap.Calculi.NaturalDeduction.Syntax (DeductionLine(..), Deduction(..), depth, isPremiseLine, RenderStyle(..), Inference, LemmonVariant(..), NaturalDeductionCalc(..))
 import GHCJS.DOM.Types (Document,Element)
 import GHCJS.DOM.Element (setInnerHTML,setAttribute)
 import GHCJS.DOM.Node (appendChild)
@@ -27,8 +27,10 @@ chunkBy n (x:xs)
     where deep x = depth (snd x) > n
 
 --this is for Fitch proofs
-renderTreeFitch w opts = treeToElement asLine asSubproof
-    where asLine (n,AssertLine f r _ deps) = do (theWrapper,theLine,theForm,theRule) <- lineBase w opts n (Just f) (Just (r,deps)) "assertion"
+renderTreeFitch ded w opts = treeToElement asLine asSubproof
+    where asLine (n,AssertLine f r _ deps) = do (theWrapper,theLine,theForm,theRule) <- if n == finalPrem
+                                                                                            then lineBase w opts n (Just f) (Just (r,deps)) "final-premise"
+                                                                                            else lineBase w opts n (Just f) (Just (r,deps)) "assertion"
                                                 appendChild theLine (Just theForm)
                                                 appendChild theLine (Just theRule)
                                                 return theWrapper
@@ -38,6 +40,7 @@ renderTreeFitch w opts = treeToElement asLine asSubproof
 
           asSubproof l ls = do setAttribute l "class" "subproof"
                                mapM_ (appendChild l . Just) ls
+          finalPrem = length (takeWhile (\d -> isPremiseLine d && depth d == 0) ded)
 
 --this is for Kalish and Montague Proofs
 renderTreeMontague w opts = treeToElement asLine asSubproof
@@ -134,13 +137,16 @@ renderDeduction cls render w calc ded =
            mapM_ (appendChild theProof . Just) lines
            return theProof
 
-renderDeductionFitch :: (Show t,Schematizable (t1 (FixLang t1)), CopulaSchema (FixLang t1)) => Document -> NaturalDeductionCalc r lex sem -> [DeductionLine t t1 t2] -> IO Element
-renderDeductionFitch = renderDeduction "fitchDisplay" renderTreeFitch
+renderDeductionFitch :: (Show r,Schematizable (lex (FixLang lex)), CopulaSchema (FixLang lex), Inference r lex sem) => 
+    Document -> NaturalDeductionCalc r lex sem -> [DeductionLine r lex sem] -> IO Element
+renderDeductionFitch w calc ded = renderDeduction "fitchDisplay" (renderTreeFitch ded) w calc ded
 
-renderDeductionMontague :: (Show t,Schematizable (t1 (FixLang t1)), CopulaSchema (FixLang t1)) => Document -> NaturalDeductionCalc r lex sem -> [DeductionLine t t1 t2] -> IO Element
+renderDeductionMontague :: (Show r,Schematizable (lex (FixLang lex)), CopulaSchema (FixLang lex)) => 
+    Document -> NaturalDeductionCalc r lex sem -> [DeductionLine r lex sem] -> IO Element
 renderDeductionMontague = renderDeduction "montagueDisplay" renderTreeMontague
 
-renderDeductionLemmon ::  (Show t,Schematizable (t1 (FixLang t1)), CopulaSchema (FixLang t1)) => Document -> NaturalDeductionCalc r lex sem -> [DeductionLine t t1 t2] -> IO Element
+renderDeductionLemmon ::  (Show t,Schematizable (t1 (FixLang t1)), CopulaSchema (FixLang t1)) => 
+    Document -> NaturalDeductionCalc r lex sem -> [DeductionLine t t1 t2] -> IO Element
 renderDeductionLemmon = renderDeduction "lemmonDisplay" renderTreeLemmon
 
 renderDep (n,m) = if n==m then show n else show n ++ "-" ++ show m

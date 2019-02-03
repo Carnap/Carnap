@@ -60,6 +60,9 @@ instance Inference LogicBookPD PureLexiconFOL (Form Bool) where
          isAssumption (SD x) = isAssumption x
          isAssumption _ = False
 
+         isPremise (Pr _) = True
+         isPremise _ = False
+
 parseLogicBookPD rtc = try quantRule <|> liftProp 
     where liftProp = do r <- P.parseLogicBookSD (RuntimeNaturalDeductionConfig mempty mempty)
                         return (map SD r)

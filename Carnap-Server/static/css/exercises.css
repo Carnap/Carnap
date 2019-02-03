@@ -332,9 +332,18 @@
 
 .fitchDisplay .subproof {
     margin-top:5px;
+    margin-left:5pt;
 }
 
-.fitchDisplay .subproof > div:first-child {
+.fitchDisplay {
+    border-left:1px solid black;
+}
+
+.fitchDisplay > .assertion, .fitchDisplay > .final-premise {
+    padding-left: 5pt;
+}
+
+.fitchDisplay .subproof > div:first-child, .fitchDisplay > .final-premise {
     border-bottom:1px solid black;
 }
 

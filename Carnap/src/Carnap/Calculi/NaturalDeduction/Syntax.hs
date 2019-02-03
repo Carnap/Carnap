@@ -86,6 +86,11 @@ isAssumptionLine (AssertLine _ r _ _) = and (map isAssumption r)
 isAssumptionLine (DependentAssertLine _ r _ _ _ _) = and (map isAssumption r)
 isAssumptionLine _ = False
 
+isPremiseLine :: Inference r lex sem => DeductionLine r lex sem -> Bool
+isPremiseLine (AssertLine _ r _ _) = and (map isPremise r)
+isPremiseLine (DependentAssertLine _ r _ _ _ _) = and (map isPremise r)
+isPremiseLine _ = False
+
 inScope (DependentAssertLine _ _ _ _ s _) = s
 inScope _ = []
 
@@ -335,6 +340,9 @@ class Inference r lex sem | r -> lex sem where
 
         isAssumption :: r -> Bool
         isAssumption = const False
+        
+        isPremise :: r -> Bool
+        isPremise = const False
         --TODO: template for error messages, etc.
 
 --------------------------------------------------------

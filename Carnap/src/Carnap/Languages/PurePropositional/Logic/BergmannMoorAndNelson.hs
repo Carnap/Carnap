@@ -112,6 +112,9 @@ instance Inference LogicBookSD PurePropLexicon (Form Bool) where
     isAssumption LBAS = True
     isAssumption _ = False
 
+    isPremise (Pr _) = True
+    isPremise _ = False
+
     restriction (Pr prems) = Just (premConstraint prems)
     restriction _ = Nothing
 
@@ -261,8 +264,12 @@ instance Inference LogicBookSDPlus PurePropLexicon (Form Bool) where
     isAssumption (SD x) = isAssumption x
     isAssumption _ = False
 
+    isPremise (SD x) = isPremise x
+    isPremise _ = False
+
     restriction (SD x ) = restriction x
     restriction _ = Nothing
+
 
 parseLogicBookSDPlus :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> Parsec String u [LogicBookSDPlus]
 parseLogicBookSDPlus rtc = try (map SD <$> parseLogicBookSD rtc) <|> parsePlus
