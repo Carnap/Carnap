@@ -125,7 +125,7 @@ parseLogicBookSD rtc = do r <- choice (map (try . string) ["AS","PR", "Assumptio
                           case r of
                             'A':'/':rest -> return [AS (" / " ++ rest)]
                             "R" -> return [Reiterate]
-                            r | r `elem` ["A","AS"] -> return [AS ""]
+                            r | r `elem` ["AS"] -> return [AS ""]
                               | r `elem` ["PR", "Assumption"] -> return [Pr (problemPremises rtc)]
                               | r `elem` ["&I","/\\I","∧I"] -> return [ConjIntro]
                               | r `elem` ["&E","/\\E","∧E"] -> return [ConjElim1, ConjElim2]

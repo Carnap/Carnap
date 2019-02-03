@@ -47,18 +47,18 @@ Show: P\/-P
 :DD 10|]
 
 pierceTheorem = [st|
-  (P->Q)->P:AS
-     -P:AS
-        P:AS
-          Q:AS
-          P:R 3
-          -P:R 2
-        Q:-E 4-6
-     P->Q:CI 3-7
-     P:CE 8 1
-     -P:R 2
-  P:-E 2-10
-((P->Q)->P)->P:CI 1-11 |]
+  (P->Q)->P     :A/CI
+     -P         :A/~E
+        P       :A/CI
+          Q     :A/~E
+          P     :3 R
+          -P    :2 R
+        Q       :4-6 -E
+     P->Q       :3-7 CI 
+     P          :8 1 CE 
+     -P         :2 R
+  P             :2-10 -E 
+((P->Q)->P)->P  :1-11 CI |]
 
 lemmonTheorem = [st|
 [1]       ExAy(Kxy -> Fxy) P
@@ -91,17 +91,17 @@ Show EXAx(F(x)/\G(x)<->X(x))
 
 russellTheorem = [st|
 Show -ExAy(-F(y,y) <-> F(x,y))
-    ExAy(-F(y,y)<->F(x,y)):AS
+    ExAy(-F(y,y)<->F(x,y))          :AS
     Show: -ExAy(-F(y,y) <-> F(x,y))
-        Ay(-F(y,y)<->F(c_1,y)):AS
-        -F(c_1,c_1)<->F(c_1,c_1):UI 4
+        Ay(-F(y,y)<->F(c_1,y))      :AS
+        -F(c_1,c_1)<->F(c_1,c_1)    :UI 4
         Show:-F(c_1,c_1)
-            F(c_1,c_1):AS
+            F(c_1,c_1)              :AS
             F(c_1,c_1)->-F(c_1,c_1) :BC 5
-            -F(c_1,c_1) :MP 8 7
+            -F(c_1,c_1)             :MP 8 7
         :ID 7 9
-        -F(c_1,c_1) -> F(c_1,c_1) :BC 5
-        F(c_1,c_1) :MP 11 6
+        -F(c_1,c_1) -> F(c_1,c_1)   :BC 5
+        F(c_1,c_1)                  :MP 11 6
         Show: -ExAy(-F(y,y) <-> F(x,y))
         :ID 6 12
     :ED 13 2 4
