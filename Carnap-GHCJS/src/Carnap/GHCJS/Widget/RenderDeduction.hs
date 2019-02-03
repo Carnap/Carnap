@@ -1,12 +1,12 @@
 {-# LANGUAGE FlexibleContexts #-}
-module Carnap.GHCJS.Widget.RenderDeduction (renderDeductionFitch, renderDeductionMontague, renderDeductionLemmon) where
+module Carnap.GHCJS.Widget.RenderDeduction (renderDeductionFitch, renderDeductionMontague, renderDeductionLemmon, renderNull) where
 
 import Lib
 import Data.Maybe (catMaybes)
 import Carnap.Core.Data.Types
 import Carnap.Core.Data.Classes
 import Carnap.GHCJS.Widget.ProofCheckBox
-import Carnap.Calculi.NaturalDeduction.Syntax (DeductionLine(..), Deduction(..), depth, isPremiseLine, RenderStyle(..), Inference, LemmonVariant(..), NaturalDeductionCalc(..))
+import Carnap.Calculi.NaturalDeduction.Syntax 
 import GHCJS.DOM.Types (Document,Element)
 import GHCJS.DOM.Element (setInnerHTML,setAttribute)
 import GHCJS.DOM.Node (appendChild)
@@ -26,11 +26,12 @@ chunkBy n (x:xs)
     | otherwise = Left x:chunkBy n xs
     where deep x = depth (snd x) > n
 
+
 --this is for Fitch proofs
-renderTreeFitch ded w opts = treeToElement asLine asSubproof
+renderTreeFitch ded w calc = treeToElement asLine asSubproof
     where asLine (n,AssertLine f r _ deps) = do (theWrapper,theLine,theForm,theRule) <- if n == finalPrem
-                                                                                            then lineBase w opts n (Just f) (Just (r,deps)) "final-premise"
-                                                                                            else lineBase w opts n (Just f) (Just (r,deps)) "assertion"
+                                                                                            then lineBase w calc n (Just f) (Just (r,deps)) "final-premise"
+                                                                                            else lineBase w calc n (Just f) (Just (r,deps)) "assertion"
                                                 appendChild theLine (Just theForm)
                                                 appendChild theLine (Just theRule)
                                                 return theWrapper
@@ -43,13 +44,13 @@ renderTreeFitch ded w opts = treeToElement asLine asSubproof
           finalPrem = length (takeWhile (\d -> isPremiseLine d && depth d == 0) ded)
 
 --this is for Kalish and Montague Proofs
-renderTreeMontague w opts = treeToElement asLine asSubproof
-    where asLine (n,AssertLine f r _ deps) = do (theWrapper,theLine,theForm,theRule) <- lineBase w opts n (Just f) (Just (r,deps)) "assertion"
+renderTreeMontague w calc = treeToElement asLine asSubproof
+    where asLine (n,AssertLine f r _ deps) = do (theWrapper,theLine,theForm,theRule) <- lineBase w calc n (Just f) (Just (r,deps)) "assertion"
                                                 appendChild theLine (Just theForm)
                                                 appendChild theLine (Just theRule)
                                                 return theWrapper
 
-          asLine (n,ShowWithLine f _ r deps) = do (theWrapper,theLine,theForm,theRule) <- lineBase w opts n (Just f) (Just (r,deps)) "show"
+          asLine (n,ShowWithLine f _ r deps) = do (theWrapper,theLine,theForm,theRule) <- lineBase w calc n (Just f) (Just (r,deps)) "show"
                                                   (Just theHead) <- createElement w (Just "span")
                                                   setInnerHTML theHead (Just $ "Show: ")
                                                   appendChild theLine (Just theHead)
@@ -57,14 +58,14 @@ renderTreeMontague w opts = treeToElement asLine asSubproof
                                                   appendChild theLine (Just theRule)
                                                   return theWrapper
 
-          asLine (n,ShowLine f _)   = do (theWrapper,theLine,theForm,_) <- lineBase w opts n (Just f) norule "show"
+          asLine (n,ShowLine f _)   = do (theWrapper,theLine,theForm,_) <- lineBase w calc n (Just f) norule "show"
                                          (Just theHead) <- createElement w (Just "span")
                                          setInnerHTML theHead (Just $ "Show: ")
                                          appendChild theLine (Just theHead)
                                          appendChild theLine (Just theForm)
                                          return theWrapper
 
-          asLine (n,QedLine r _ deps) = do (theWrapper,theLine,_,theRule) <- lineBase w opts n noform (Just (r,deps)) "qed"
+          asLine (n,QedLine r _ deps) = do (theWrapper,theLine,_,theRule) <- lineBase w calc n noform (Just (r,deps)) "qed"
                                            appendChild theLine (Just theRule)
                                            --appendChild theWrapper (Just theLine)
                                            return theWrapper
@@ -91,7 +92,10 @@ lineBase w calc n mf mrd lineclass =
            (Just theForm) <- createElement w (Just "span")
            (Just theRule) <- createElement w (Just "span")
            setInnerHTML lineNum (Just $ show n ++ ".")
-           whileJust mrd (\(r,deps) -> setInnerHTML theRule (Just $ show (head r) ++ " " ++ intercalate ", " (map renderDep deps)))
+           let ruleString r deps = case ndRenderer calc of
+                   FitchStyle BergmanMooreAndNelsonStyle -> intercalate ", " (map renderDep deps) ++ " " ++ show (head r)
+                   _ -> show (head r) ++ " " ++ intercalate ", " (map renderDep deps)
+           whileJust mrd (\(r,deps) -> setInnerHTML theRule (Just $ ruleString r deps))
            whileJust mf (\f -> setInnerHTML theForm (Just $ ndNotation calc $ show f))
            setAttribute theRule "class" "rule"
            appendChild theWrapper (Just theLine)
@@ -148,6 +152,10 @@ renderDeductionMontague = renderDeduction "montagueDisplay" renderTreeMontague
 renderDeductionLemmon ::  (Show t,Schematizable (t1 (FixLang t1)), CopulaSchema (FixLang t1)) => 
     Document -> NaturalDeductionCalc r lex sem -> [DeductionLine t t1 t2] -> IO Element
 renderDeductionLemmon = renderDeduction "lemmonDisplay" renderTreeLemmon
+
+renderNull :: Document -> NaturalDeductionCalc r lex sem -> [DeductionLine t t1 t2] -> IO Element
+renderNull w _ _ = do Just e <- createElement w (Just "div")
+                      return e
 
 renderDep (n,m) = if n==m then show n else show n ++ "-" ++ show m
 

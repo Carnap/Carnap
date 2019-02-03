@@ -119,7 +119,7 @@ parseHowardSnyderPLProof :: RuntimeNaturalDeductionConfig PureLexiconFOL (Form B
 parseHowardSnyderPLProof rtc = toCommentedDeductionFitch (parseHowardSnyderPL rtc) howardSnyderPLFormulaParser
 
 howardSnyderPLCalc = mkNDCalc
-    { ndRenderer = FitchStyle
+    { ndRenderer = NoRender
     , ndParseProof = parseHowardSnyderPLProof
     , ndProcessLine = hoProcessLineFitch
     , ndProcessLineMemo = Just hoProcessLineFitchMemo

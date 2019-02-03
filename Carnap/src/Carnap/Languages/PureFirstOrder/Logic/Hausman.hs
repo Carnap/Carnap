@@ -116,7 +116,7 @@ parseHausmanPLProof :: RuntimeNaturalDeductionConfig PureLexiconFOL (Form Bool) 
 parseHausmanPLProof rtc = toCommentedDeductionFitch (parseHausmanPL rtc) hausmanPLFormulaParser --XXX Check parser
 
 hausmanPLCalc = mkNDCalc
-    { ndRenderer = FitchStyle
+    { ndRenderer = NoRender
     , ndParseProof = parseHausmanPLProof
     , ndProcessLine = hoProcessLineFitch
     , ndProcessLineMemo = Just hoProcessLineFitchMemo

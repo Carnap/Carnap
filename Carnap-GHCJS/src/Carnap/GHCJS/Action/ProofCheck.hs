@@ -228,8 +228,9 @@ threadedCheck options checker w ref v (g, fd) =
 
     where renderer = case ndRenderer (checkerCalc checker) of
                          MontagueStyle -> renderDeductionMontague 
-                         FitchStyle -> renderDeductionFitch 
+                         FitchStyle _ -> renderDeductionFitch 
                          LemmonStyle _ -> renderDeductionLemmon
+                         NoRender -> renderNull
 
 updateGoal s ref g mseq options _ = 
         case (mseq, feedback options) of

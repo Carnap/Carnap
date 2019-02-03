@@ -185,7 +185,7 @@ thomasBolducAndZachNotation x = case runParser altParser 0 "" x of
                         return [c]
 
 thomasBolducAndZachTFLCalc = mkNDCalc 
-    { ndRenderer = FitchStyle
+    { ndRenderer = FitchStyle StandardFitch
     , ndParseProof = parseThomasBolducAndZachTFLProof
     , ndProcessLine = hoProcessLineFitch
     , ndProcessLineMemo = Just hoProcessLineFitchMemo

@@ -157,7 +157,7 @@ magnusNotation x = case runParser altparser 0 "" x of
                         return [c]
 
 magnusSLCalc = mkNDCalc 
-    { ndRenderer = FitchStyle
+    { ndRenderer = FitchStyle StandardFitch
     , ndParseProof = parseMagnusSLProof
     , ndProcessLine = processLineFitch
     , ndProcessLineMemo = Nothing
@@ -261,7 +261,7 @@ parseMagnusSLPlusProof :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bo
 parseMagnusSLPlusProof rtc = toDeductionFitch (parseMagnusSLPlus rtc) (purePropFormulaParser magnusOpts)
 
 magnusSLPlusCalc = mkNDCalc 
-    { ndRenderer = FitchStyle
+    { ndRenderer = FitchStyle StandardFitch
     , ndParseProof = parseMagnusSLPlusProof
     , ndProcessLine = hoProcessLineFitch
     , ndProcessLineMemo = Just hoProcessLineFitchMemo

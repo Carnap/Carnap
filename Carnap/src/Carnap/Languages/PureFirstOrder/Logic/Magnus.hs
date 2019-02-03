@@ -92,7 +92,7 @@ parseMagnusQLProof :: RuntimeNaturalDeductionConfig PureLexiconFOL (Form Bool) -
 parseMagnusQLProof rtc = toDeductionFitch (parseMagnusQL rtc) magnusFOLFormulaParser
 
 magnusQLCalc = mkNDCalc
-    { ndRenderer = FitchStyle
+    { ndRenderer = FitchStyle StandardFitch
     , ndParseProof = parseMagnusQLProof
     , ndProcessLine = hoProcessLineFitch
     , ndProcessLineMemo = Just hoProcessLineFitchMemo

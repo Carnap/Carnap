@@ -200,7 +200,7 @@ howardSnyderSLNotation x = case runParser altParser 0 "" x of
                         return [c]
 
 howardSnyderSLCalc = mkNDCalc 
-    { ndRenderer = FitchStyle
+    { ndRenderer = NoRender
     , ndParseProof = parseHowardSnyderSLProof
     , ndProcessLine = hoProcessLineFitch
     , ndProcessLineMemo = Just hoProcessLineFitchMemo

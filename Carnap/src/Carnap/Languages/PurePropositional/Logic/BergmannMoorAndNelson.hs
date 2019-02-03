@@ -34,7 +34,7 @@ data LogicBookSD = ConjIntro
                         | BicoIntro1 | BicoIntro2 
                         | BicoIntro3 | BicoIntro4
                         | BicoElim1  | BicoElim2
-                        | Reiterate  | LBAS
+                        | Reiterate  | AS String
                         | Pr (Maybe [(ClassicalSequentOver PurePropLexicon (Sequent (Form Bool)))])
                deriving Eq
 
@@ -66,8 +66,8 @@ instance Show LogicBookSD where
         show BicoElim1  = "≡E"
         show BicoElim2  = "≡E"
         show Reiterate  = "R"
-        show (Pr _)     = "PR"
-        show LBAS       = "AS"
+        show (Pr _)     = "Assumption"
+        show (AS s)     = "A " ++ s
 
 instance Inference LogicBookSD PurePropLexicon (Form Bool) where
     ruleOf Reiterate  = identityRule
@@ -96,7 +96,7 @@ instance Inference LogicBookSD PurePropLexicon (Form Bool) where
     ruleOf BicoIntro3 = biconditionalProofVariations !! 2
     ruleOf BicoIntro4 = biconditionalProofVariations !! 3
     ruleOf (Pr _)     = axiom
-    ruleOf LBAS       = axiom
+    ruleOf (AS _)     = axiom
     ruleOf BicoElim1  = biconditionalPonensVariations !! 0
     ruleOf BicoElim2  = biconditionalPonensVariations !! 1
 
@@ -109,7 +109,7 @@ instance Inference LogicBookSD PurePropLexicon (Form Bool) where
                    ] = Just doubleProof
         | otherwise = Nothing
 
-    isAssumption LBAS = True
+    isAssumption (AS _) = True
     isAssumption _ = False
 
     isPremise (Pr _) = True
@@ -119,13 +119,14 @@ instance Inference LogicBookSD PurePropLexicon (Form Bool) where
     restriction _ = Nothing
 
 parseLogicBookSD :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> Parsec String u [LogicBookSD]
-parseLogicBookSD rtc = do r <- choice (map (try . string) ["AS","PR","&I","/\\I", "∧I","&E","/\\E","∧E","CI","->I","→I", "⊃I","→E", "⊃E","CE","->E"
+parseLogicBookSD rtc = do r <- choice (map (try . string) ["AS","PR", "Assumption" ,"&I","/\\I", "∧I","&E","/\\E","∧E","CI","->I","→I", "⊃I","→E", "⊃E","CE","->E"
                                                           , "→E" ,"~I","-I", "¬I","~E","-E","¬E" ,"vI","\\/I","∨I", "vE","\\/E", "∨E","BI","<->I", "↔I"
-                                                          , "≡I" , "BE", "<->E", "↔E", "≡E", "R"])
+                                                          , "≡I" , "BE", "<->E", "↔E", "≡E", "R"]) <|> ((++) <$> string "A/" <*> many anyChar)
                           case r of
-                            r | r == "AS" -> return [LBAS]
-                              | r == "PR" -> return [Pr (problemPremises rtc)]
-                              | r == "R"    -> return [Reiterate]
+                            'A':'/':rest -> return [AS (" / " ++ rest)]
+                            "R" -> return [Reiterate]
+                            r | r `elem` ["A","AS"] -> return [AS ""]
+                              | r `elem` ["PR", "Assumption"] -> return [Pr (problemPremises rtc)]
                               | r `elem` ["&I","/\\I","∧I"] -> return [ConjIntro]
                               | r `elem` ["&E","/\\E","∧E"] -> return [ConjElim1, ConjElim2]
                               | r `elem` ["CI","->I","→I","⊃I"] -> return [CondIntro1,CondIntro2]
@@ -138,7 +139,7 @@ parseLogicBookSD rtc = do r <- choice (map (try . string) ["AS","PR","&I","/\\I"
                               | r `elem` ["BE","<->E","↔E","≡E"] -> return [BicoElim1, BicoElim2]
 
 parseLogicBookSDProof :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> String -> [DeductionLine LogicBookSD PurePropLexicon (Form Bool)]
-parseLogicBookSDProof ders = toDeductionFitch (parseLogicBookSD ders) (purePropFormulaParser extendedLetters)
+parseLogicBookSDProof ders = toDeductionFitchAlt (parseLogicBookSD ders) (purePropFormulaParser extendedLetters)
 
 --TODO: split this up, genericize ingredients
 logicBookNotation :: String -> String 
@@ -163,7 +164,7 @@ logicBookNotation x = case runParser altParser 0 "" x of
                         return [c]
 
 logicBookSDCalc = mkNDCalc 
-    { ndRenderer = FitchStyle
+    { ndRenderer = FitchStyle BergmanMooreAndNelsonStyle
     , ndParseProof = parseLogicBookSDPlusProof
     , ndProcessLine = processLineFitch
     , ndProcessLineMemo = Nothing
@@ -290,10 +291,10 @@ parseLogicBookSDPlus rtc = try (map SD <$> parseLogicBookSD rtc) <|> parsePlus
                                       | r == "Equiv" -> [Equiv1, Equiv2, Equiv3, Equiv4]
 
 parseLogicBookSDPlusProof :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> String -> [DeductionLine LogicBookSDPlus PurePropLexicon (Form Bool)]
-parseLogicBookSDPlusProof ders = toCommentedDeductionFitch (parseLogicBookSDPlus ders) (purePropFormulaParser extendedLetters)
+parseLogicBookSDPlusProof ders = toDeductionFitchAlt (parseLogicBookSDPlus ders) (purePropFormulaParser extendedLetters)
 
 logicBookSDPlusCalc = mkNDCalc 
-    { ndRenderer = FitchStyle
+    { ndRenderer = FitchStyle BergmanMooreAndNelsonStyle
     , ndParseProof = parseLogicBookSDPlusProof
     , ndProcessLine = hoProcessLineFitch
     , ndProcessLineMemo = Just hoProcessLineFitchMemo

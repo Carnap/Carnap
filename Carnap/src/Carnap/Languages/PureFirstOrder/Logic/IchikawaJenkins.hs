@@ -68,7 +68,7 @@ parseIchikawaJenkinsQLProof :: RuntimeNaturalDeductionConfig PureLexiconFOL (For
 parseIchikawaJenkinsQLProof rtc = toDeductionFitch (parseIchikawaJenkinsQL rtc) magnusFOLFormulaParser
 
 ichikawaJenkinsQLCalc = mkNDCalc
-    { ndRenderer = FitchStyle
+    { ndRenderer = FitchStyle StandardFitch
     , ndParseProof = parseIchikawaJenkinsQLProof
     , ndProcessLine = hoProcessLineFitch
     , ndProcessLineMemo = Just hoProcessLineFitchMemo

@@ -101,7 +101,7 @@ parseThomasBolducAndZachFOLProof :: RuntimeNaturalDeductionConfig PureLexiconFOL
 parseThomasBolducAndZachFOLProof ders = toDeductionFitch (parseThomasBolducAndZachFOL ders) thomasBolducAndZachFOLFormulaParser
 
 thomasBolducAndZachFOLCalc = mkNDCalc
-    { ndRenderer = FitchStyle
+    { ndRenderer = FitchStyle StandardFitch
     , ndParseProof = parseThomasBolducAndZachFOLProof
     , ndProcessLine = hoProcessLineFitch
     , ndProcessLineMemo = Just hoProcessLineFitchMemo

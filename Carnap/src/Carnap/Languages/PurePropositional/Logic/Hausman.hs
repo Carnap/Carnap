@@ -193,7 +193,7 @@ hausmanSLNotation x = case runParser altParser 0 "" x of
                         return [c]
 
 hausmanSLCalc = mkNDCalc 
-    { ndRenderer = FitchStyle
+    { ndRenderer = NoRender
     , ndParseProof = parseHausmanSLProof
     , ndProcessLine = hoProcessLineFitch
     , ndProcessLineMemo = Just hoProcessLineFitchMemo

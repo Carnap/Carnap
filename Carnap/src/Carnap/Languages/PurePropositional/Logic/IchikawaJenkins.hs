@@ -111,7 +111,7 @@ ichikawaJenkinsNotation x = case runParser altparser 0 "" x of
                         return [c]
 
 ichikawaJenkinsSLCalc = mkNDCalc 
-    { ndRenderer = FitchStyle
+    { ndRenderer = FitchStyle StandardFitch
     , ndParseProof = parseIchikawaJenkinsProof
     , ndProcessLine = hoProcessLineFitch
     , ndProcessLineMemo = Just hoProcessLineFitchMemo
