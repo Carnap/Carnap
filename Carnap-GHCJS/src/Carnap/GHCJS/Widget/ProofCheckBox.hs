@@ -231,6 +231,10 @@ setLinesTo w nd options lines = do setInnerHTML nd (Just "")
               do (no,guidelevels) <- get --line number, guide levels of previous line
                  (Just overlay) <- liftIO $ createElement w (Just "div")
                  let rest = dropWhile (== ' ') l
+                 let initialJustificationString = dropWhile (/= ':') (head lines)
+                     initialPremise l = dropWhile (/= ':') l == initialJustificationString
+                     initialPremises = takeWhile initialPremise lines
+                     finalPremise = min (length initialPremises) (length (takeWhile (== 0) indents))
                  let indent = indents !! no
                      oldindent = if no > 0 then indents !! (no - 1) else 0
                      nextindent = if no + 1 < length indents then indents !! (no + 1) else 0
@@ -241,38 +245,43 @@ setLinesTo w nd options lines = do setInnerHTML nd (Just "")
                                          MontagueGuide -> guidelevels'
                                          _ | indent > oldindent -> indent - 1 : guidelevels'
                                          _ -> guidelevels'
-                 let numstring | no < 9  = "   " ++ show (no + 1) ++ "."
-                               | no < 99  = "  " ++ show (no + 1) ++ "."
-                               | no < 999  = " " ++ show (no + 1) ++ "."
-                               | otherwise  = "" ++ show (no + 1) ++ "."
+                 let numstring | no < 9  = "   " ++ show (no + 1)
+                               | no < 99  = "  " ++ show (no + 1)
+                               | no < 999  = " " ++ show (no + 1)
+                               | otherwise  = "" ++ show (no + 1)
                  let guidestring = case indentGuides options of
-                                       NoGuide -> numstring
+                                       NoGuide -> numstring ++ "."
                                        MontagueGuide -> 
-                                           numstring 
+                                           numstring  ++ "."
                                            ++ bars (differences guidelevels')
                                        HausmanGuide | indent > oldindent -> 
-                                           numstring ++ bars (tail $ differences guidelevels'')
+                                           numstring ++ "." ++ bars (tail $ differences guidelevels'')
                                            ++ replicate (head (differences guidelevels'') - 1) ' ' 
                                            ++ "↱"
                                        HausmanGuide | nextindent < indent && not (null guidelevels'') -> 
-                                           numstring
+                                           numstring ++ "."
                                            ++ bars (differences guidelevels'')
                                            ++ replicate (length rest + indent - (head guidelevels'')) '_'
                                        HowardSnyderGuide | indent > oldindent -> 
                                            bars (tail $ differences guidelevels'')
                                            ++ replicate (head (differences guidelevels'') - 1) ' ' 
-                                           ++ "│‾" ++ tail numstring
+                                           ++ "│‾" ++ tail (numstring ++ ".")
                                        HowardSnyderGuide | nextindent < indent && not (null guidelevels'') -> 
                                            bars (differences guidelevels'')
-                                           ++ "_" ++ tail numstring
+                                           ++ "_" ++ tail (numstring ++ ".")
                                        HowardSnyderGuide  -> 
                                            bars (differences guidelevels'') 
-                                           ++ numstring 
+                                           ++ (numstring ++ ".") 
                                        FitchGuide | indent > oldindent -> 
-                                           numstring 
+                                           numstring ++ "│"
                                            ++ bars (differences guidelevels'')
                                            ++ replicate (length rest + indent - head guidelevels'') '_'
-                                       _ -> numstring ++ (bars $ differences guidelevels'')
+                                       FitchGuide | no + 1 == finalPremise -> 
+                                           numstring ++ "│"
+                                           ++ replicate (length rest + indent) '_'
+                                       FitchGuide -> 
+                                           numstring ++ "│" ++ (bars $ differences guidelevels'')
+                                       _ -> numstring ++ "." ++ (bars $ differences guidelevels'')
                  liftIO $ setInnerHTML overlay (Just $ guidestring)
                  put (no + 1, guidelevels'')
                  return overlay
