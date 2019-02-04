@@ -29,7 +29,7 @@ instance Show LogicBookPD where
         show EI          = "∃I"
         show EE1         = "∃E"
         show EE2         = "∃E"
-        show (Pr _)      = "PR"
+        show (Pr _)      = "Assumption"
 
 instance Inference LogicBookPD PureLexiconFOL (Form Bool) where
 
@@ -66,19 +66,19 @@ instance Inference LogicBookPD PureLexiconFOL (Form Bool) where
 parseLogicBookPD rtc = try quantRule <|> liftProp 
     where liftProp = do r <- P.parseLogicBookSD (RuntimeNaturalDeductionConfig mempty mempty)
                         return (map SD r)
-          quantRule = do r <- choice (map (try . string) ["∀I", "AI", "∀E", "AE", "∃I", "EI", "∃E", "EE", "PR"])
+          quantRule = do r <- choice (map (try . string) ["∀I", "AI", "∀E", "AE", "∃I", "EI", "∃E", "EE", "PR", "Assumption"])
                          case r of 
                             r | r `elem` ["∀I","AI"] -> return [UI]
                               | r `elem` ["∀E","AE"] -> return [UE]
                               | r `elem` ["∃I","EI"] -> return [EI]
                               | r `elem` ["∃E","EE"] -> return [EE1, EE2]
-                              | r == "PR" -> return [Pr (problemPremises rtc)]
+                              | r `elem` [ "PR","Assumption"] -> return [Pr (problemPremises rtc)]
 
 parseLogicBookPDProof :: RuntimeNaturalDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine LogicBookPD PureLexiconFOL (Form Bool)]
 parseLogicBookPDProof rtc = toDeductionFitchAlt (parseLogicBookPD rtc) bergmannMoorAndNelsonPDFormulaParser --XXX Check parser
 
 logicBookPDCalc = mkNDCalc
-    { ndRenderer = FitchStyle StandardFitch
+    { ndRenderer = FitchStyle BergmanMooreAndNelsonStyle
     , ndParseProof = parseLogicBookPDProof
     , ndProcessLine = hoProcessLineFitch
     , ndProcessLineMemo = Just hoProcessLineFitchMemo
@@ -121,7 +121,10 @@ instance Inference LogicBookPDPlus PureLexiconFOL (Form Bool) where
          isAssumption (PD x) = isAssumption x
          isAssumption _ = False
 
-parseLogicBookPDPlus rtc = try liftProp <|> try liftPD <|> qn
+         isPremise (PD x) = isPremise x
+         isPremise _ = False
+
+parseLogicBookPDPlus rtc = try liftPD <|> try liftProp <|> qn
     where liftPD = do r <- parseLogicBookPD rtc
                       return (map PD r)
           liftProp = do r <- P.parseLogicBookSDPlus (RuntimeNaturalDeductionConfig mempty mempty)
