@@ -39,12 +39,16 @@ getTruthTables :: Document -> HTMLElement -> IO [Maybe (Element, Element, Map St
 getTruthTables d = genInOutElts d "div" "div" "truthtable"
 
 activateTruthTables :: Document -> Maybe (Element, Element, Map String String) -> IO ()
-activateTruthTables w (Just (i,o,opts)) = 
+activateTruthTables w (Just (i,o,opts)) = do
+        let (formParser,seqParser) = case M.lookup "system" opts of
+                                         Nothing -> (purePropFormulaParser standardLetters, ndParseSeq montagueSCCalc)
+                                         Just sys -> (getFormParser sys, getSeqParser sys)
         case M.lookup "tabletype" opts of
-            (Just "simple") -> checkerWith (purePropFormulaParser standardLetters <* eof) createSimpleTruthTable
-            (Just "validity") -> checkerWith (ndParseSeq montagueSCCalc) createValidityTruthTable
-            (Just "partial") -> checkerWith (purePropFormulaParser standardLetters <* eof) createPartialTruthTable
+            (Just "simple") -> checkerWith (formParser <* eof) createSimpleTruthTable
+            (Just "validity") -> checkerWith seqParser createValidityTruthTable
+            (Just "partial") -> checkerWith (formParser <* eof) createPartialTruthTable
             _  -> return ()
+
     where optlist = case M.lookup "options" opts of Just s -> words s; Nothing -> []
           checkerWith parser ttfunc = 
             case M.lookup "goal" opts of
@@ -70,7 +74,7 @@ activateTruthTables w (Just (i,o,opts)) =
                               addListener bt2 click checkIt False                
                           (Just par) <- getParentNode o
                           appendChild par (Just bw)
-                          setInnerHTML i (Just $ show f)
+                          setInnerHTML i (Just $ rewrite $ show f)
                       (Left e) -> setInnerHTML o (Just $ show e) 
                 _ -> print "truth table was missing an option"
           checkTable ref check = do correct <- liftIO $ check
@@ -80,6 +84,9 @@ activateTruthTables w (Just (i,o,opts)) =
                                                 setAttribute i "class" "input completeTT"
                                         else do message "Something's not quite right"
                                                 setAttribute i "class" "input incompleteTT"
+          rewrite = case M.lookup "system" opts of
+                        Just s -> getSysNotation s
+                        Nothing -> id
 
 submitTruthTable:: M.Map String String -> IORef Bool ->  IO Bool -> [Element] -> String -> String -> EventM HTMLInputElement e ()
 submitTruthTable opts ref check rows s l = do isDone <- liftIO $ readIORef ref
@@ -423,16 +430,39 @@ rewriteThs opts ths = do s <- map deMaybe <$> mapM getInnerHTML ths
           rewrite = case M.lookup "system" opts of
                         Just s -> getSysNotation s
                         Nothing -> id
-          getSysNotation sys | sys == "prop"                      = ndNotation propCalc 
-                             | sys == "montagueSC"                = ndNotation montagueSCCalc 
-                             | sys == "LogicBookSD"               = ndNotation logicBookSDCalc 
-                             | sys == "LogicBookSDPlus"           = ndNotation logicBookSDPlusCalc 
-                             | sys == "hausmanSL"                 = ndNotation hausmanSLCalc 
-                             | sys == "howardSnyderSL"            = ndNotation howardSnyderSLCalc 
-                             | sys == "magnusSL"                  = ndNotation magnusSLCalc 
-                             | sys == "magnusSLPlus"              = ndNotation magnusSLPlusCalc 
-                             | sys == "thomasBolducAndZachTFL"    = ndNotation thomasBolducAndZachTFLCalc 
-                             | sys == "hardegreeSL"               = ndNotation hardegreeSLCalc 
+
+getSysNotation sys | sys == "prop"                      = ndNotation propCalc 
+                   | sys == "montagueSC"                = ndNotation montagueSCCalc 
+                   | sys == "LogicBookSD"               = ndNotation logicBookSDCalc 
+                   | sys == "LogicBookSDPlus"           = ndNotation logicBookSDPlusCalc 
+                   | sys == "hausmanSL"                 = ndNotation hausmanSLCalc 
+                   | sys == "howardSnyderSL"            = ndNotation howardSnyderSLCalc 
+                   | sys == "magnusSL"                  = ndNotation magnusSLCalc 
+                   | sys == "magnusSLPlus"              = ndNotation magnusSLPlusCalc 
+                   | sys == "thomasBolducAndZachTFL"    = ndNotation thomasBolducAndZachTFLCalc 
+                   | sys == "hardegreeSL"               = ndNotation hardegreeSLCalc 
+
+getFormParser sys | sys == "prop"                      = ndParseForm propCalc 
+                  | sys == "montagueSC"                = ndParseForm montagueSCCalc 
+                  | sys == "LogicBookSD"               = ndParseForm logicBookSDCalc 
+                  | sys == "LogicBookSDPlus"           = ndParseForm logicBookSDPlusCalc 
+                  | sys == "hausmanSL"                 = ndParseForm hausmanSLCalc 
+                  | sys == "howardSnyderSL"            = ndParseForm howardSnyderSLCalc 
+                  | sys == "magnusSL"                  = ndParseForm magnusSLCalc 
+                  | sys == "magnusSLPlus"              = ndParseForm magnusSLPlusCalc 
+                  | sys == "thomasBolducAndZachTFL"    = ndParseForm thomasBolducAndZachTFLCalc 
+                  | sys == "hardegreeSL"               = ndParseForm hardegreeSLCalc 
+
+getSeqParser sys | sys == "prop"                      = ndParseSeq propCalc 
+                 | sys == "montagueSC"                = ndParseSeq montagueSCCalc 
+                 | sys == "LogicBookSD"               = ndParseSeq logicBookSDCalc 
+                 | sys == "LogicBookSDPlus"           = ndParseSeq logicBookSDPlusCalc 
+                 | sys == "hausmanSL"                 = ndParseSeq hausmanSLCalc 
+                 | sys == "howardSnyderSL"            = ndParseSeq howardSnyderSLCalc 
+                 | sys == "magnusSL"                  = ndParseSeq magnusSLCalc 
+                 | sys == "magnusSLPlus"              = ndParseSeq magnusSLPlusCalc 
+                 | sys == "thomasBolducAndZachTFL"    = ndParseSeq thomasBolducAndZachTFLCalc 
+                 | sys == "hardegreeSL"               = ndParseSeq hardegreeSLCalc 
 
 toChildTh :: (Schematizable (f (FixLang f)), CopulaSchema (FixLang f)) => Document -> Either Char (FixLang f a) -> IO Element
 toChildTh w c = 
