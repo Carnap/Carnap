@@ -6,10 +6,8 @@ import Carnap.GHCJS.SharedTypes
 import Carnap.Core.Data.Types
 import Carnap.Core.Data.Classes (Schematizable, Modelable(..))
 import Carnap.Calculi.NaturalDeduction.Syntax (NaturalDeductionCalc(..))
+import Carnap.Languages.PurePropositional.Syntax (PurePropLexicon)
 import Carnap.Languages.PurePropositional.Logic
-     ( DerivedRule(..), propCalc, logicBookSDCalc, logicBookSDPlusCalc, magnusSLCalc
-     , magnusSLPlusCalc, montagueSCCalc, hardegreeSLCalc, hausmanSLCalc
-     , thomasBolducAndZachTFLCalc, tomassiPLCalc, howardSnyderSLCalc)
 import Carnap.Languages.PurePropositional.Parser
 import Carnap.Languages.PurePropositional.Util (getIndicies)
 import Carnap.Languages.PurePropositional.Syntax (PureForm)
@@ -430,39 +428,23 @@ rewriteThs opts ths = do s <- map deMaybe <$> mapM getInnerHTML ths
           rewrite = case M.lookup "system" opts of
                         Just s -> getSysNotation s
                         Nothing -> id
+getSys :: (forall r . NaturalDeductionCalc r PurePropLexicon (Form Bool) -> a) -> String -> a
+getSys f sys | sys == "prop"                      = f propCalc 
+             | sys == "montagueSC"                = f montagueSCCalc 
+             | sys == "LogicBookSD"               = f logicBookSDCalc 
+             | sys == "LogicBookSDPlus"           = f logicBookSDPlusCalc 
+             | sys == "hausmanSL"                 = f hausmanSLCalc 
+             | sys == "howardSnyderSL"            = f howardSnyderSLCalc 
+             | sys == "magnusSL"                  = f magnusSLCalc 
+             | sys == "magnusSLPlus"              = f magnusSLPlusCalc 
+             | sys == "thomasBolducAndZachTFL"    = f thomasBolducAndZachTFLCalc 
+             | sys == "hardegreeSL"               = f hardegreeSLCalc 
 
-getSysNotation sys | sys == "prop"                      = ndNotation propCalc 
-                   | sys == "montagueSC"                = ndNotation montagueSCCalc 
-                   | sys == "LogicBookSD"               = ndNotation logicBookSDCalc 
-                   | sys == "LogicBookSDPlus"           = ndNotation logicBookSDPlusCalc 
-                   | sys == "hausmanSL"                 = ndNotation hausmanSLCalc 
-                   | sys == "howardSnyderSL"            = ndNotation howardSnyderSLCalc 
-                   | sys == "magnusSL"                  = ndNotation magnusSLCalc 
-                   | sys == "magnusSLPlus"              = ndNotation magnusSLPlusCalc 
-                   | sys == "thomasBolducAndZachTFL"    = ndNotation thomasBolducAndZachTFLCalc 
-                   | sys == "hardegreeSL"               = ndNotation hardegreeSLCalc 
+getSysNotation = getSys ndNotation
 
-getFormParser sys | sys == "prop"                      = ndParseForm propCalc 
-                  | sys == "montagueSC"                = ndParseForm montagueSCCalc 
-                  | sys == "LogicBookSD"               = ndParseForm logicBookSDCalc 
-                  | sys == "LogicBookSDPlus"           = ndParseForm logicBookSDPlusCalc 
-                  | sys == "hausmanSL"                 = ndParseForm hausmanSLCalc 
-                  | sys == "howardSnyderSL"            = ndParseForm howardSnyderSLCalc 
-                  | sys == "magnusSL"                  = ndParseForm magnusSLCalc 
-                  | sys == "magnusSLPlus"              = ndParseForm magnusSLPlusCalc 
-                  | sys == "thomasBolducAndZachTFL"    = ndParseForm thomasBolducAndZachTFLCalc 
-                  | sys == "hardegreeSL"               = ndParseForm hardegreeSLCalc 
+getFormParser = getSys ndParseForm 
 
-getSeqParser sys | sys == "prop"                      = ndParseSeq propCalc 
-                 | sys == "montagueSC"                = ndParseSeq montagueSCCalc 
-                 | sys == "LogicBookSD"               = ndParseSeq logicBookSDCalc 
-                 | sys == "LogicBookSDPlus"           = ndParseSeq logicBookSDPlusCalc 
-                 | sys == "hausmanSL"                 = ndParseSeq hausmanSLCalc 
-                 | sys == "howardSnyderSL"            = ndParseSeq howardSnyderSLCalc 
-                 | sys == "magnusSL"                  = ndParseSeq magnusSLCalc 
-                 | sys == "magnusSLPlus"              = ndParseSeq magnusSLPlusCalc 
-                 | sys == "thomasBolducAndZachTFL"    = ndParseSeq thomasBolducAndZachTFLCalc 
-                 | sys == "hardegreeSL"               = ndParseSeq hardegreeSLCalc 
+getSeqParser  = getSys ndParseSeq 
 
 toChildTh :: (Schematizable (f (FixLang f)), CopulaSchema (FixLang f)) => Document -> Either Char (FixLang f a) -> IO Element
 toChildTh w c = 
