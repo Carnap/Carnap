@@ -327,7 +327,6 @@ hardegreeWTLCalc = mkNDCalc
     , ndParseProof = parseHardegreeWTLProof
     , ndProcessLine = hoProcessLineHardegree
     , ndProcessLineMemo = Just hoProcessLineHardegreeMemo
-    , ndParseSeq = worldTheorySeqParser
     }
 
 ------------------------------------

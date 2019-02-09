@@ -130,5 +130,4 @@ montagueSCCalc = mkNDCalc
     , ndParseProof = parseMontagueSCProof
     , ndProcessLine = processLineMontague
     , ndProcessLineMemo = Nothing
-    , ndParseSeq = propSeqParser
     }

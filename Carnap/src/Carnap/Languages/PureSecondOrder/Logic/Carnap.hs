@@ -106,7 +106,6 @@ msolCalc = mkNDCalc
     , ndParseProof = parseMSOLProof
     , ndProcessLine = hoProcessLineMontague
     , ndProcessLineMemo = Just hoProcessLineMontagueMemo
-    , ndParseSeq = seqFormulaParser
     }
 
 -------------------------------------------
@@ -208,5 +207,4 @@ psolCalc = mkNDCalc
     , ndParseProof = parsePSOLProof
     , ndProcessLine = hoProcessLineMontague
     , ndProcessLineMemo = Just hoProcessLineMontagueMemo
-    , ndParseSeq = seqFormulaParser
     }

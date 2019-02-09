@@ -124,5 +124,6 @@ howardSnyderPLCalc = mkNDCalc
     , ndProcessLine = hoProcessLineFitch
     , ndProcessLineMemo = Just hoProcessLineFitchMemo
     , ndParseSeq = parseSeqOver howardSnyderPLFormulaParser
+    , ndParseForm = howardSnyderPLFormulaParser
     , ndNotation = ndNotation P.howardSnyderSLCalc
     }

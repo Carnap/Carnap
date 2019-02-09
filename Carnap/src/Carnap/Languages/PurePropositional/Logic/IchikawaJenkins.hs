@@ -116,5 +116,6 @@ ichikawaJenkinsSLCalc = mkNDCalc
     , ndProcessLine = hoProcessLineFitch
     , ndProcessLineMemo = Just hoProcessLineFitchMemo
     , ndParseSeq = parseSeqOver (purePropFormulaParser magnusOpts)
+    , ndParseForm = purePropFormulaParser magnusOpts
     , ndNotation = ichikawaJenkinsNotation
     }

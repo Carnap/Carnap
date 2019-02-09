@@ -198,5 +198,6 @@ hausmanSLCalc = mkNDCalc
     , ndProcessLine = hoProcessLineFitch
     , ndProcessLineMemo = Just hoProcessLineFitchMemo
     , ndParseSeq = parseSeqOver (purePropFormulaParser hausmanOpts)
+    , ndParseForm = purePropFormulaParser hausmanOpts
     , ndNotation = hausmanSLNotation
     }

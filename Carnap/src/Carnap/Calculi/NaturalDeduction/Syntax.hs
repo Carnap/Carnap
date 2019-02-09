@@ -6,6 +6,7 @@ import Data.Map (Map)
 import Data.IORef (IORef)
 import Data.List (permutations)
 import Data.Hashable
+import Data.Typeable
 import Carnap.Core.Unification.Unification
 --import Carnap.Core.Unification.FirstOrder
 import Carnap.Core.Unification.ACUI
@@ -278,7 +279,8 @@ data NaturalDeductionCalc r lex sem = NaturalDeductionCalc
                                 => Deduction r lex sem -> Restrictor r lex -> Int -> FeedbackLine lex sem
         , ndProcessLineMemo :: (Sequentable lex , Inference r lex sem, MonadVar (ClassicalSequentOver lex) (State Int))
                                 => Maybe (ProofMemoRef lex sem r -> Deduction r lex sem -> Restrictor r lex -> Int -> IO (FeedbackLine lex sem))
-        , ndParseSeq :: Parsec String () (ClassicalSequentOver lex (Sequent sem))
+        , ndParseSeq :: (Sequentable lex, Typeable sem,  ParsableLex sem lex) => Parsec String () (ClassicalSequentOver lex (Sequent sem))
+        , ndParseForm :: ParsableLex sem lex => Parsec String () (FixLang lex sem)
         , ndNotation :: String -> String
         }
 
@@ -287,6 +289,8 @@ mkNDCalc = NaturalDeductionCalc
     { ndRenderer = NoRender
     , ndProcessLineMemo = Nothing
     , ndNotation = id
+    , ndParseForm = langParser
+    , ndParseSeq = parseSeqOver langParser
     }
 
 --------------------------------------------------------

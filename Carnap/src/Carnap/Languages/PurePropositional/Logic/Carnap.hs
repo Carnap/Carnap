@@ -118,5 +118,4 @@ propCalc = mkNDCalc
     , ndParseProof = parsePropLogicProof
     , ndProcessLine = processLineMontague
     , ndProcessLineMemo = Nothing
-    , ndParseSeq = propSeqParser
     }

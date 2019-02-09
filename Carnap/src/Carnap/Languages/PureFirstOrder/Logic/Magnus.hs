@@ -97,5 +97,6 @@ magnusQLCalc = mkNDCalc
     , ndProcessLine = hoProcessLineFitch
     , ndProcessLineMemo = Just hoProcessLineFitchMemo
     , ndParseSeq = parseSeqOver magnusFOLFormulaParser
+    , ndParseForm = magnusFOLFormulaParser
     , ndNotation = ndNotation P.magnusSLCalc
     }

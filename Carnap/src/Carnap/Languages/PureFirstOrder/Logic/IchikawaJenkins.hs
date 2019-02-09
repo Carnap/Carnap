@@ -46,6 +46,7 @@ instance Inference IchikawaJenkinsQL PureLexiconFOL (Form Bool) where
     isAssumption _ = False
 
     isPremise (IJSL x) = isPremise x
+    isPremise (QL x) = isPremise x
     isPremise _ = False
 
 parseIchikawaJenkinsQL rtc = try quantRule <|> liftProp
@@ -73,5 +74,6 @@ ichikawaJenkinsQLCalc = mkNDCalc
     , ndProcessLine = hoProcessLineFitch
     , ndProcessLineMemo = Just hoProcessLineFitchMemo
     , ndParseSeq = parseSeqOver magnusFOLFormulaParser
+    , ndParseForm = magnusFOLFormulaParser
     , ndNotation = ndNotation ichikawaJenkinsSLCalc
     }

@@ -6,7 +6,7 @@ import Text.Parsec
 import Carnap.Core.Data.Types (Form)
 import Carnap.Languages.PureFirstOrder.Syntax
 import Carnap.Languages.PureFirstOrder.Parser
-import qualified Carnap.Languages.PurePropositional.Logic as P
+import Carnap.Languages.PurePropositional.Logic.BergmannMoorAndNelson
 import Carnap.Calculi.NaturalDeduction.Syntax
 import Carnap.Calculi.NaturalDeduction.Parser
 import Carnap.Calculi.NaturalDeduction.Checker (hoProcessLineFitchMemo, hoProcessLineFitch)
@@ -17,7 +17,7 @@ import Carnap.Languages.Util.GenericConstructors
 import Carnap.Languages.PureFirstOrder.Logic.Rules
 import Carnap.Languages.PurePropositional.Logic.Rules (premConstraint,axiom)
 
-data LogicBookPD = SD P.LogicBookSD | UI | UE 
+data LogicBookPD = SD LogicBookSD | UI | UE 
                  | EI | EE1 | EE2 
                  | Pr (Maybe [(ClassicalSequentOver PureLexiconFOL (Sequent (Form Bool)))])
                  deriving Eq
@@ -64,14 +64,15 @@ instance Inference LogicBookPD PureLexiconFOL (Form Bool) where
          isPremise _ = False
 
 parseLogicBookPD rtc = try quantRule <|> liftProp 
-    where liftProp = do r <- P.parseLogicBookSD (RuntimeNaturalDeductionConfig mempty mempty)
+    where liftProp = do r <- parseLogicBookSD (RuntimeNaturalDeductionConfig mempty mempty)
                         return (map SD r)
-          quantRule = do r <- choice (map (try . string) ["∀I", "AI", "∀E", "AE", "∃I", "EI", "∃E", "EE", "PR", "Assumption"])
+          quantRule = do r <- choice (map (try . string) ["∀I", "AI", "∀E", "AE", "∃I", "EI", "∃E", "EE", "PR", "A/EE", "Assumption"])
                          case r of 
                             r | r `elem` ["∀I","AI"] -> return [UI]
                               | r `elem` ["∀E","AE"] -> return [UE]
                               | r `elem` ["∃I","EI"] -> return [EI]
                               | r `elem` ["∃E","EE"] -> return [EE1, EE2]
+                              | r `elem` ["A/EE"] -> return [SD (AS "/∃E")]
                               | r `elem` [ "PR","Assumption"] -> return [Pr (problemPremises rtc)]
 
 parseLogicBookPDProof :: RuntimeNaturalDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine LogicBookPD PureLexiconFOL (Form Bool)]
@@ -83,10 +84,11 @@ logicBookPDCalc = mkNDCalc
     , ndProcessLine = hoProcessLineFitch
     , ndProcessLineMemo = Just hoProcessLineFitchMemo
     , ndParseSeq = parseSeqOver bergmannMoorAndNelsonPDFormulaParser
-    , ndNotation = ndNotation P.logicBookSDCalc
+    , ndParseForm = bergmannMoorAndNelsonPDFormulaParser
+    , ndNotation = ndNotation logicBookSDCalc
     }
 
-data LogicBookPDPlus = PD LogicBookPD | SDPlus P.LogicBookSDPlus | QN1 | QN2 | QN3 | QN4
+data LogicBookPDPlus = PD LogicBookPD | SDPlus LogicBookSDPlus | QN1 | QN2 | QN3 | QN4
 
 instance Show LogicBookPDPlus where
         show (SDPlus x) = show x
@@ -127,7 +129,7 @@ instance Inference LogicBookPDPlus PureLexiconFOL (Form Bool) where
 parseLogicBookPDPlus rtc = try liftPD <|> try liftProp <|> qn
     where liftPD = do r <- parseLogicBookPD rtc
                       return (map PD r)
-          liftProp = do r <- P.parseLogicBookSDPlus (RuntimeNaturalDeductionConfig mempty mempty)
+          liftProp = do r <- parseLogicBookSDPlus (RuntimeNaturalDeductionConfig mempty mempty)
                         return (map SDPlus r)
           qn = string "QN" >> return [QN1, QN2, QN3, QN4]
 
@@ -140,5 +142,6 @@ logicBookPDPlusCalc = mkNDCalc
     , ndProcessLine = hoProcessLineFitch
     , ndProcessLineMemo = Just hoProcessLineFitchMemo
     , ndParseSeq = parseSeqOver bergmannMoorAndNelsonPDFormulaParser
-    , ndNotation = ndNotation P.logicBookSDPlusCalc
+    , ndParseForm = bergmannMoorAndNelsonPDFormulaParser
+    , ndNotation = ndNotation logicBookSDPlusCalc
     }

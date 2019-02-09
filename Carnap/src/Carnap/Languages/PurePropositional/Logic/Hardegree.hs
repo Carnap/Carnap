@@ -170,5 +170,4 @@ hardegreeSLCalc = mkNDCalc
     , ndParseProof = parseHardegreeSLProof
     , ndProcessLine = processLineHardegree
     , ndProcessLineMemo = Nothing
-    , ndParseSeq = propSeqParser
     }

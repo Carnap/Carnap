@@ -11,6 +11,7 @@ import Carnap.Languages.PureFirstOrder.Syntax (PureLanguageFOL, PureLexiconFOL,f
 import Carnap.Languages.PureFirstOrder.Parser
 import qualified Carnap.Languages.PurePropositional.Logic.Rules as P
 import Carnap.Languages.ClassicalSequent.Syntax
+import Carnap.Languages.ClassicalSequent.Parser
 import Carnap.Calculi.NaturalDeduction.Syntax
 import Carnap.Calculi.NaturalDeduction.Parser (toDeductionLemmon,toDeductionLemmonAlt)
 import Carnap.Calculi.NaturalDeduction.Checker (hoProcessLineLemmonMemo, hoProcessLineLemmon)
@@ -87,7 +88,6 @@ goldfarbNDCalc = mkNDCalc
     , ndParseProof = parseGoldfarbNDProof
     , ndProcessLine = hoProcessLineLemmon
     , ndProcessLineMemo = Just hoProcessLineLemmonMemo
-    , ndParseSeq = folSeqParser
     }
 
 goldfarbAltNDCalc = goldfarbNDCalc { ndParseProof = parseGoldfarbAltNDProof }
@@ -153,7 +153,6 @@ goldfarbNDPlusCalc = mkNDCalc
     , ndParseProof = parseGoldfarbNDPlusProof
     , ndProcessLine = hoProcessLineLemmon
     , ndProcessLineMemo = Just hoProcessLineLemmonMemo
-    , ndParseSeq = folSeqParser
     }
 
 goldfarbAltNDPlusCalc = goldfarbNDPlusCalc { ndParseProof = parseGoldfarbAltNDPlusProof }

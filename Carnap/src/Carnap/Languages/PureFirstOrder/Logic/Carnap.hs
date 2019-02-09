@@ -14,6 +14,7 @@ import Carnap.Calculi.NaturalDeduction.Syntax
 import Carnap.Calculi.NaturalDeduction.Parser
 import Carnap.Calculi.NaturalDeduction.Checker (hoProcessLineMontague, hoProcessLineMontagueMemo)
 import Carnap.Languages.ClassicalSequent.Syntax
+import Carnap.Languages.ClassicalSequent.Parser
 import Carnap.Languages.Util.LanguageClasses
 import Carnap.Languages.Util.GenericConstructors
 import Carnap.Languages.PurePropositional.Logic.Rules (axiom,premConstraint)
@@ -120,5 +121,4 @@ folCalc = mkNDCalc
     , ndParseProof = parseFOLProof
     , ndProcessLine = hoProcessLineMontague
     , ndProcessLineMemo = Just hoProcessLineMontagueMemo
-    , ndParseSeq = folSeqParser
     }

@@ -117,5 +117,6 @@ tomassiPLCalc = mkNDCalc
     , ndProcessLine = hoProcessLineLemmon
     , ndProcessLineMemo = Just hoProcessLineLemmonMemo
     , ndParseSeq = propSeqParser
+    , ndParseForm = purePropFormulaParser standardLetters
     , ndNotation = tomassiPLNotation
     }

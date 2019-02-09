@@ -190,5 +190,6 @@ thomasBolducAndZachTFLCalc = mkNDCalc
     , ndProcessLine = hoProcessLineFitch
     , ndProcessLineMemo = Just hoProcessLineFitchMemo
     , ndParseSeq = parseSeqOver (purePropFormulaParser thomasBolducZachOpts)
+    , ndParseForm = purePropFormulaParser thomasBolducZachOpts
     , ndNotation = thomasBolducAndZachNotation
     }

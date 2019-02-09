@@ -123,7 +123,6 @@ estCalc = mkNDCalc
     , ndParseProof = parseESTProof
     , ndProcessLine = hoProcessLineMontague
     , ndProcessLineMemo = Just hoProcessLineMontagueMemo
-    , ndParseSeq = seqFormulaParser
     }
 
 data SSTLogic = EST ESTLogic | DefSep1 | DefSep2 | DefSep3 | DefSep4
@@ -211,5 +210,4 @@ sstCalc = mkNDCalc
     , ndParseProof = parseSSTProof
     , ndProcessLine = hoProcessLineMontague
     , ndProcessLineMemo = Just hoProcessLineMontagueMemo
-    , ndParseSeq = seqFormulaParser
     }

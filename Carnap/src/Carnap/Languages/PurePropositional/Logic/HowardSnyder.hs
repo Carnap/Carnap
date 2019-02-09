@@ -205,5 +205,6 @@ howardSnyderSLCalc = mkNDCalc
     , ndProcessLine = hoProcessLineFitch
     , ndProcessLineMemo = Just hoProcessLineFitchMemo
     , ndParseSeq = parseSeqOver (purePropFormulaParser howardSnyderOpts)
+    , ndParseForm = purePropFormulaParser howardSnyderOpts
     , ndNotation = howardSnyderSLNotation
     }

@@ -162,6 +162,7 @@ magnusSLCalc = mkNDCalc
     , ndProcessLine = processLineFitch
     , ndProcessLineMemo = Nothing
     , ndParseSeq = parseSeqOver (purePropFormulaParser magnusOpts)
+    , ndParseForm = purePropFormulaParser magnusOpts
     , ndNotation = magnusNotation
     }
 
@@ -266,6 +267,7 @@ magnusSLPlusCalc = mkNDCalc
     , ndProcessLine = hoProcessLineFitch
     , ndProcessLineMemo = Just hoProcessLineFitchMemo
     , ndParseSeq = parseSeqOver (purePropFormulaParser magnusOpts)
+    , ndParseForm = purePropFormulaParser magnusOpts
     , ndNotation = magnusNotation
     }
 

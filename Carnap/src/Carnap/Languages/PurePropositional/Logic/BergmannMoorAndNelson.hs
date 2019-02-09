@@ -1,6 +1,6 @@
 {-#LANGUAGE FlexibleContexts, FlexibleInstances, MultiParamTypeClasses #-}
 module Carnap.Languages.PurePropositional.Logic.BergmannMoorAndNelson
-    (parseLogicBookSD, parseLogicBookSDProof, LogicBookSD,
+    (parseLogicBookSD, parseLogicBookSDProof, LogicBookSD(AS),
      logicBookSDCalc, parseLogicBookSDPlus, parseLogicBookSDPlusProof, LogicBookSDPlus,
      logicBookSDPlusCalc) where
 
@@ -123,9 +123,9 @@ parseLogicBookSD rtc = do r <- choice (map (try . string) ["AS","PR", "Assumptio
                                                           , "→E" ,"~I","-I", "¬I","~E","-E","¬E" ,"vI","\\/I","∨I", "vE","\\/E", "∨E","BI","<->I", "↔I"
                                                           , "≡I" , "BE", "<->E", "↔E", "≡E", "R"]) <|> ((++) <$> string "A/" <*> many anyChar)
                           case r of
-                            'A':'/':rest -> return [AS (" / " ++ rest)]
-                            "R" -> return [Reiterate]
                             r | r `elem` ["AS"] -> return [AS ""]
+                              | r `elem` ["A/>I"] -> return [AS "/⊃I"]
+                              | r `elem` ["A/=I"] -> return [AS "/≡I"]
                               | r `elem` ["PR", "Assumption"] -> return [Pr (problemPremises rtc)]
                               | r `elem` ["&I","/\\I","∧I"] -> return [ConjIntro]
                               | r `elem` ["&E","/\\E","∧E"] -> return [ConjElim1, ConjElim2]
@@ -137,6 +137,8 @@ parseLogicBookSD rtc = do r <- choice (map (try . string) ["AS","PR", "Assumptio
                               | r `elem` ["vE","\\/E"] -> return [DisjElim1, DisjElim2,DisjElim3, DisjElim4]
                               | r `elem` ["BI","<->I","↔I","≡I"] -> return [BicoIntro1, BicoIntro2, BicoIntro3, BicoIntro4]
                               | r `elem` ["BE","<->E","↔E","≡E"] -> return [BicoElim1, BicoElim2]
+                            'A':'/':rest -> return [AS (" / " ++ rest)]
+                            "R" -> return [Reiterate]
 
 parseLogicBookSDProof :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> String -> [DeductionLine LogicBookSD PurePropLexicon (Form Bool)]
 parseLogicBookSDProof ders = toDeductionFitchAlt (parseLogicBookSD ders) (purePropFormulaParser extendedLetters)
@@ -169,6 +171,7 @@ logicBookSDCalc = mkNDCalc
     , ndProcessLine = processLineFitch
     , ndProcessLineMemo = Nothing
     , ndParseSeq = extendedPropSeqParser
+    , ndParseForm = purePropFormulaParser extendedLetters
     , ndNotation = logicBookNotation
     }
 
@@ -299,5 +302,6 @@ logicBookSDPlusCalc = mkNDCalc
     , ndProcessLine = hoProcessLineFitch
     , ndProcessLineMemo = Just hoProcessLineFitchMemo
     , ndParseSeq = extendedPropSeqParser
+    , ndParseForm = purePropFormulaParser extendedLetters
     , ndNotation = logicBookNotation
     }
