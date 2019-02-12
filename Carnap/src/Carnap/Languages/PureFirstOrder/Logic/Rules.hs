@@ -47,10 +47,6 @@ pattern SeqC n            = SeqConst (Constant n) AZero
 instance Eq (FOLSequentCalc a) where
         (==) = (=*)
 
-instance ParsableLex (Form Bool) PureLexiconFOL where
-        langParser = folFormulaParser
-
-folSeqParser = seqFormulaParser :: Parsec String u (FOLSequentCalc (Sequent (Form Bool)))
 
 seqVar :: StandardVarLanguage (FixLang lex (Term Int)) => String -> FixLang lex (Term Int)
 seqVar = var

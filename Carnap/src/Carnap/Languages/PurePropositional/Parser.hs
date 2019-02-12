@@ -1,11 +1,12 @@
-{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleContexts, FlexibleInstances, MultiParamTypeClasses #-}
 module Carnap.Languages.PurePropositional.Parser 
     ( purePropFormulaParser, standardLetters, extendedLetters, hausmanOpts, thomasBolducZachOpts, hardegreeOpts
-    , standardOpTable, hausmanOpTable, howardSnyderOpTable, howardSnyderOpts, magnusOpts
+    , standardOpTable, hausmanOpTable, howardSnyderOpTable, howardSnyderOpts, magnusOpts, extendedPropSeqParser
     ) where
 
 import Carnap.Core.Data.Types
 import Carnap.Languages.PurePropositional.Syntax
+import Carnap.Languages.ClassicalSequent.Parser
 import Carnap.Languages.PurePropositional.Util (isAtom)
 import Carnap.Languages.Util.LanguageClasses (BooleanLanguage, IndexedPropLanguage)
 import Carnap.Languages.Util.GenericParsers
@@ -74,6 +75,11 @@ purePropFormulaParser opts = buildExpressionParser (opTable opts) subFormulaPars
                           <|> try (atomicSentenceParser opts <* spaces)--or atoms
                           <|> if hasBooleanConstants opts then try (booleanConstParser <* spaces) else parserZero
                           <|> ((schemevarParser <* spaces) <?> "")
+
+instance ParsableLex (Form Bool) PurePropLexicon where
+        langParser = purePropFormulaParser standardLetters
+
+extendedPropSeqParser = parseSeqOver (purePropFormulaParser extendedLetters)
 
 standardOpTable :: (BooleanLanguage (FixLang lex (Form Bool)), Monad m)
     => [[Operator String u m (FixLang lex (Form Bool))]]

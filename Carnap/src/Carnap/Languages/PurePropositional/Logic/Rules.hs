@@ -16,7 +16,6 @@ import Carnap.Core.Data.Types
 import Carnap.Languages.PurePropositional.Syntax
 import Carnap.Languages.PurePropositional.Parser
 import Carnap.Languages.ClassicalSequent.Syntax
-import Carnap.Languages.ClassicalSequent.Parser
 import Carnap.Languages.Util.LanguageClasses
 import Carnap.Languages.Util.GenericConstructors
 
@@ -37,13 +36,6 @@ data PropSeqLabel = PropSeqFO | PropSeqACUI
 
 instance Eq (PropSequentCalc a) where
         (==) = (=*)
-
-instance ParsableLex (Form Bool) PurePropLexicon where
-        langParser = purePropFormulaParser standardLetters
-
-propSeqParser = seqFormulaParser :: Parsec String u (PropSequentCalc (Sequent (Form Bool)))
-
-extendedPropSeqParser = parseSeqOver (purePropFormulaParser extendedLetters)
 
 data DerivedRule = DerivedRule { conclusion :: PureForm, premises :: [PureForm]}
                deriving (Show, Eq)

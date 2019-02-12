@@ -75,11 +75,6 @@ globalNewIdxConstraint cs ded lineno sub = case globalNewConstraint cs ded linen
                                                               else Nothing
                                                k -> k
 
-instance ParsableLex (Form (World -> Bool)) IndexedModalFirstOrderLex where
-        langParser = hardegreeMPLFormulaPreParser
-
-instance ParsableLex (Form Bool) IndexedModalFirstOrderLex where
-        langParser = hardegreeMPLFormulaParser
 
 indexedModalFOSeqParser = liftAbsSeq (world 0) <$> (seqFormulaParser :: Parsec String u (FirstOrderModalIndexedSequentCalc (Sequent (Form (World -> Bool)))))
 

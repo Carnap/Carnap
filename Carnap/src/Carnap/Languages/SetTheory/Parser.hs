@@ -1,10 +1,12 @@
-{-#LANGUAGE TypeOperators, FlexibleContexts#-}
+{-#LANGUAGE TypeOperators, FlexibleContexts, FlexibleInstances, MultiParamTypeClasses #-}
 module Carnap.Languages.SetTheory.Parser 
 ( strictSetTheoryParser, elementarySetTheoryParser, separativeSetTheoryParser) where
 
+import Carnap.Core.Data.Types
 import Carnap.Languages.SetTheory.Syntax
 import Carnap.Languages.Util.LanguageClasses (BooleanLanguage, BooleanConstLanguage, IndexedPropLanguage(..), QuantLanguage(..))
 import Carnap.Languages.Util.GenericParsers
+import Carnap.Languages.ClassicalSequent.Parser
 import Control.Monad.Identity
 import Carnap.Languages.PureFirstOrder.Parser (FirstOrderParserOptions(..), parserFromOptions, parseFreeVar)
 import Carnap.Languages.PurePropositional.Parser (standardOpTable)
@@ -47,6 +49,9 @@ elementarySetTheoryOptions = FirstOrderParserOptions
 
 elementarySetTheoryParser = parserFromOptions elementarySetTheoryOptions
 
+instance ParsableLex (Form Bool) ElementarySetTheoryLex where
+        langParser = elementarySetTheoryParser
+
 separativeSetTheoryOptions :: FirstOrderParserOptions SeparativeSetTheoryLex u Identity
 separativeSetTheoryOptions = FirstOrderParserOptions
                            { atomicSentenceParser = \x -> try (elementParser x)
@@ -73,6 +78,9 @@ separativeSetTheoryOptions = FirstOrderParserOptions
           tparser = try (fparser tparser) <|> try cparser <|> vparser 
 
 separativeSetTheoryParser = parserFromOptions separativeSetTheoryOptions
+
+instance ParsableLex (Form Bool) SeparativeSetTheoryLex where
+        langParser = separativeSetTheoryParser
 
 setTheoryOpParser subTerm = buildExpressionParser opTable subTerm
     where opTable = [ [Infix (try parseIntersect) AssocLeft, Infix (try parseUnion) AssocLeft]

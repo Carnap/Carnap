@@ -1,9 +1,6 @@
 {-#LANGUAGE GADTs, ScopedTypeVariables, ConstraintKinds, FlexibleContexts, RankNTypes, PatternSynonyms,  FlexibleInstances, MultiParamTypeClasses #-}
 module Carnap.Languages.SetTheory.Logic.Rules where
 
-import Data.Typeable
-import Carnap.Core.Data.Util (scopeHeight)
-import Data.List (intercalate)
 import Control.Lens
 import Carnap.Calculi.NaturalDeduction.Syntax
 import Carnap.Core.Unification.Unification
@@ -18,7 +15,6 @@ import Carnap.Languages.SetTheory.Parser
 import Carnap.Languages.PurePropositional.Logic.Rules
 import Carnap.Languages.PureFirstOrder.Logic.Rules
 import Carnap.Languages.ClassicalSequent.Syntax
-import Carnap.Languages.ClassicalSequent.Parser
 import Carnap.Languages.Util.LanguageClasses
 import Carnap.Languages.Util.GenericConstructors
 
@@ -64,11 +60,6 @@ instance Eq (ClassicalSequentOver ElementarySetTheoryLex a) where (==) = (=*)
 
 instance Eq (ClassicalSequentOver SeparativeSetTheoryLex a) where (==) = (=*)
 
-instance ParsableLex (Form Bool) ElementarySetTheoryLex where
-        langParser = elementarySetTheoryParser
-
-instance ParsableLex (Form Bool) SeparativeSetTheoryLex where
-        langParser = separativeSetTheoryParser
 
 unpackUnion :: IndexedPropContextSchemeLanguage (ClassicalSequentOver lex (Form b)) => ElementarySetTheoryRuleVariants lex b
 unpackUnion = replace ((tau `isIn` tau') .\/. (tau `isIn` tau'')) (tau `isIn` (tau' `setUnion` tau''))

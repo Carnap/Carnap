@@ -10,7 +10,6 @@ import Carnap.Languages.ClassicalSequent.Syntax
 import Carnap.Languages.Util.GenericConstructors
 import Carnap.Languages.Util.LanguageClasses
 import Carnap.Languages.PureSecondOrder.Parser
-import Carnap.Languages.ClassicalSequent.Parser
 import Data.List (intercalate)
 import Data.Typeable (Typeable)
 
@@ -31,9 +30,6 @@ pattern SeqAbst a         = FX (Lx2 (Lx4 (Abstract a)))
 -- pattern SeqSV n           = FX (Lx2 (Lx1 (Lx1 (Lx4 (StaticVar n)))))
 -- pattern SeqVar c a        = FX (Lx2 (Lx1 (Lx4 (Function c a))))
 -- pattern SeqV s            = SeqVar (Var s) AZero
-
-instance ParsableLex (Form Bool) MonadicallySOLLex where
-        langParser = msolFormulaParser
 
 instance Eq (MSOLSequentCalc a) where
         (==) = (=*)
@@ -103,9 +99,6 @@ instance Eq (PSOLSequentCalc a) where
         (==) = (=*)
 
 pattern SeqSOPQuant q = FX (Lx2 (Lx3 (Bind q)))
-
-instance ParsableLex (Form Bool) PolyadicallySOLLex where
-        langParser = psolFormulaParser
 
 instance CopulaSchema PSOLSequentCalc where 
 

@@ -1,8 +1,9 @@
-{-#LANGUAGE TypeOperators, FlexibleContexts#-}
+{-#LANGUAGE TypeOperators, FlexibleContexts, FlexibleInstances, MultiParamTypeClasses#-}
 module Carnap.Languages.ModalFirstOrder.Parser ( hardegreeMPLFormulaPreParser, hardegreeMPLFormulaParser) where
 
 import Carnap.Core.Data.Types
 import Carnap.Core.Data.Classes (Schematizable)
+import Carnap.Languages.ClassicalSequent.Parser
 import Carnap.Languages.PureFirstOrder.Syntax (foVar)
 import Carnap.Languages.ModalPropositional.Syntax
 import Carnap.Languages.ModalFirstOrder.Syntax
@@ -72,6 +73,12 @@ hardegreeMPLFormulaParser = hardegreeMPLFormulaPreParser >>= indexIt
 hardegreeMPLFormulaPreParser :: Parsec String u (IndexedModalFirstOrderLanguage (Form (World -> Bool)))
 hardegreeMPLFormulaPreParser = buildExpressionParser opTable subFormulaParser
           where subFormulaParser = coreSubformulaParser hardegreeMPLFormulaPreParser hardegreeMPLParserOptions
+
+instance ParsableLex (Form (World -> Bool)) IndexedModalFirstOrderLex where
+        langParser = hardegreeMPLFormulaPreParser
+
+instance ParsableLex (Form Bool) IndexedModalFirstOrderLex where
+        langParser = hardegreeMPLFormulaParser
 
 parseFreeVar :: StandardVarLanguage ((ModalFirstOrderLanguageOverWith b a (Term Int))) => String -> Parsec String u (ModalFirstOrderLanguageOverWith b a (Term Int))
 parseFreeVar s = choice [try $ do _ <- string "x_"

@@ -1,4 +1,4 @@
-{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleContexts, FlexibleInstances, MultiParamTypeClasses #-}
 module Carnap.Languages.ModalPropositional.Parser
     (modalPropFormulaParser,worldTheoryPropFormulaParser, absoluteModalPropFormulaParser, relativeModalPropFormulaParser, absoluteModalPropFormulaPreParser)
 where
@@ -13,6 +13,7 @@ import Carnap.Languages.Util.LanguageClasses (PrismBooleanConnLex, PrismModality
                                              IndexingLang(..),
                                              IndexConsLang(..),
                                              IndexedSchemePropLanguage)
+import Carnap.Languages.ClassicalSequent.Parser
 import Carnap.Languages.Util.GenericParsers
 import Text.Parsec
 import Text.Parsec.Expr
@@ -90,6 +91,12 @@ absoluteModalPropFormulaPreParser = formulaParser
     where formulaParser = buildExpressionParser opTable subFormulaParser
           subFormulaParser = coreSubformulaParser formulaParser simpleModalOptions{hasBooleanConstants = True}
 
+instance ParsableLex (Form Bool) AbsoluteModalPropLexicon where
+        langParser = absoluteModalPropFormulaParser
+
+instance ParsableLex (Form (World -> Bool)) AbsoluteModalPropLexicon where
+        langParser = absoluteModalPropFormulaPreParser
+
 worldTheoryOptions :: ModalPropositionalParserOptions WorldTheoryPropLexicon u Identity
 worldTheoryOptions = simpleModalOptions
                    { quantifiedSentenceParser' = Just quantifiedSentenceParser
@@ -100,6 +107,10 @@ worldTheoryOptions = simpleModalOptions
 worldTheoryPropFormulaParser :: Parsec String u WorldTheoryForm
 worldTheoryPropFormulaParser = buildExpressionParser (worldTheoryOpTable worldTheoryOptions) subFormulaParser 
     where subFormulaParser = coreSubformulaParser worldTheoryPropFormulaParser worldTheoryOptions
+
+instance ParsableLex (Form (World -> Bool)) WorldTheoryPropLexicon where
+        langParser = worldTheoryPropFormulaParser
+
 
 opTable :: ( PrismBooleanConnLex (ModalPropLexiconWith a) (World -> Bool), Monad m
            , PrismModality (ModalPropLexiconWith a) (World -> Bool) 

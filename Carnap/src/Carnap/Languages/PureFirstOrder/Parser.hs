@@ -1,4 +1,4 @@
-{-#LANGUAGE TypeOperators, FlexibleContexts#-}
+{-#LANGUAGE TypeOperators, FlexibleContexts, FlexibleInstances, MultiParamTypeClasses#-}
 module Carnap.Languages.PureFirstOrder.Parser 
 ( folFormulaParser, folFormulaParserRelaxed, mfolFormulaParser
 , magnusFOLFormulaParser, thomasBolducAndZachFOLFormulaParser
@@ -8,6 +8,7 @@ module Carnap.Languages.PureFirstOrder.Parser
 
 import Carnap.Core.Data.Types
 import Carnap.Core.Data.Classes (Schematizable)
+import Carnap.Languages.ClassicalSequent.Parser
 import Carnap.Languages.PureFirstOrder.Syntax
 import Carnap.Languages.Util.LanguageClasses (BooleanLanguage, BooleanConstLanguage, StandardVarLanguage, IndexedPropLanguage(..), QuantLanguage(..))
 import Carnap.Languages.Util.GenericParsers
@@ -219,8 +220,12 @@ folFormulaParserRelaxed :: Parsec String u PureFOLForm
 folFormulaParserRelaxed = parserFromOptions (standardFOLParserOptions 
     { atomicSentenceParser = \x -> (try (atomicSentenceParser standardFOLParserOptions x) <|> parsePredicateSymbolNoParen "FGHIJKLMNO" x) })
 
+instance ParsableLex (Form Bool) PureLexiconFOL where
+        langParser = folFormulaParser
+
 pfolFormulaParser :: Parsec String u PurePFOLForm
 pfolFormulaParser = parserFromOptions simplePolyadicFOLParserOptions
+
 
 mfolFormulaParser :: Parsec String u PureMFOLForm
 mfolFormulaParser = parserFromOptions simpleMonadicFOLParserOptions

@@ -4,8 +4,6 @@ module Carnap.Languages.ClassicalSequent.Parser (ParsableLex(..), parseSeqOver, 
 import Text.Parsec
 import Data.Typeable
 import Carnap.Core.Data.Types
-import Carnap.Languages.PurePropositional.Parser
-import Carnap.Languages.PurePropositional.Syntax
 import Carnap.Languages.ClassicalSequent.Syntax
 
 

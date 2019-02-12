@@ -163,14 +163,6 @@ globalNewConstraint idxes ded lineno sub =
 instance Eq (WorldTheorySequentCalc a) where
         (==) = (=*)
 
-instance ParsableLex (Form (World -> Bool)) WorldTheoryPropLexicon where
-        langParser = worldTheoryPropFormulaParser
-
-instance ParsableLex (Form Bool) AbsoluteModalPropLexicon where
-        langParser = absoluteModalPropFormulaParser
-
-instance ParsableLex (Form (World -> Bool)) AbsoluteModalPropLexicon where
-        langParser = absoluteModalPropFormulaPreParser
 
 phi :: PolyadicSchematicPredicateLanguage (FixLang lex) (Term World) (Form (World -> Bool)) => Int -> (FixLang lex) (Term World) -> (FixLang lex) (Form (World -> Bool))
 phi n x = pphin n AOne :!$: x

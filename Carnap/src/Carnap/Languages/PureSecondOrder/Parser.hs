@@ -1,6 +1,4 @@
-{-#LANGUAGE TypeOperators, FlexibleContexts#-}
-
-
+{-#LANGUAGE TypeOperators, FlexibleContexts, FlexibleInstances, MultiParamTypeClasses#-}
 module Carnap.Languages.PureSecondOrder.Parser
         (msolFormulaParser,psolFormulaParser)
     where
@@ -8,6 +6,7 @@ module Carnap.Languages.PureSecondOrder.Parser
 import Carnap.Core.Data.Types
 import Carnap.Languages.PureFirstOrder.Syntax (foVar)
 import Carnap.Languages.PureSecondOrder.Syntax
+import Carnap.Languages.ClassicalSequent.Parser
 import Carnap.Languages.Util.LanguageClasses (StandardVarLanguage, BooleanLanguage, IndexedPropLanguage(..), QuantLanguage(..), PolyadicPredicateLanguage(..), TypedLambdaLanguage(..))
 import Carnap.Languages.Util.GenericParsers
 import Text.Parsec
@@ -17,8 +16,14 @@ import Data.List (elemIndex)
 msolFormulaParser :: Parsec String u (MonadicallySOL (Form Bool))
 msolFormulaParser = buildExpressionParser opTable subFormulaParserMSOL 
 
+instance ParsableLex (Form Bool) MonadicallySOLLex where
+        langParser = msolFormulaParser
+
 psolFormulaParser :: Parsec String u (PolyadicallySOL (Form Bool))
 psolFormulaParser = buildExpressionParser opTablePSOL subFormulaParserPSOL 
+
+instance ParsableLex (Form Bool) PolyadicallySOLLex where
+        langParser = psolFormulaParser
     
 subFormulaParserMSOL = coreParserMSOL msolFormulaParser subFormulaParserMSOL
 
