@@ -26,8 +26,8 @@ are valid, but which are not reversible (while the premise implies the
 conclusion, the conclusion does not imply the premise)
 
 ```{.ProofChecker .FirstOrder}
-0.7 AxF(x)\/AxG(x) :|-:  Ax(F(x)\/G(x))
-0.8 Ex(F(x)/\G(x)) :|-:  ExF(x)/\ExG(x)
+0.8 AxF(x)\/AxG(x) :|-:  Ax(F(x)\/G(x))
+0.9 Ex(F(x)/\G(x)) :|-:  ExF(x)/\ExG(x)
 ```
 
 We can also explore how the quantifiers can "travel over" or "commute" with
@@ -35,8 +35,8 @@ other connectives (the second one here might be a little tricky. Try using the
 QN rule):
 
 ```{.ProofChecker .FirstOrder}
-0.9 Ax(F(x)<->G(x)) :|-: AxF(x)<->AxG(x)
-0.10 ExF(x)->ExG(x) :|-: Ex(F(x)->G(x))
+0.10 Ax(F(x)<->G(x)) :|-: AxF(x)<->AxG(x)
+0.11 ExF(x)->ExG(x) :|-: Ex(F(x)->G(x))
 ```
 
 ##Truth Tables
@@ -44,14 +44,14 @@ QN rule):
 Here are some truth table problems to practice on as well
 
 ```{.TruthTable .Validity}
-0.11 :|-: ((P/\Q)\/R)<->((P\/R)/\(Q\/R))
-0.12 :|-: P\/Q<->P/\Q
-0.13 P\/R :|-: ~P->~~R
-0.14 P :|-: P/\~(P->P)
-0.15 ~P :|-: P<->~(P->P)
-0.16 P->Q :|-: Q->P
-0.17 P->Q :|-: ~Q->~P
-0.18 P->Q, Q<->R :|-: P->R
-0.19 ~P, P<->R :|-: R<->~(P->P)
-0.20 P/\Q<->P\/R :|-:(P/\Q)\/~(P\/R)
+0.12 :|-: ((P/\Q)\/R)<->((P\/R)/\(Q\/R))
+0.13 :|-: P\/Q<->P/\Q
+0.14 P\/R :|-: ~P->~~R
+0.15 P :|-: P/\~(P->P)
+0.16 ~P :|-: P<->~(P->P)
+0.17 P->Q :|-: Q->P
+0.18 P->Q :|-: ~Q->~P
+0.19 P->Q, Q<->R :|-: P->R
+0.20 ~P, P<->R :|-: R<->~(P->P)
+0.21 P/\Q<->P\/R :|-:(P/\Q)\/~(P\/R)
 ```
