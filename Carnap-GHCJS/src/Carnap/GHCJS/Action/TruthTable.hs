@@ -228,10 +228,15 @@ toRow w opts atomIndicies orderedChildren gRef (v,n,mvalid,given) =
                                             Just True -> modifyIORef gRef (M.insert (n,m) bool)
                                             Just False -> modifyIORef gRef (M.insert (n,m) (not bool))
                                         case mg of
-                                            Just val | "strictGivens" `elem` optlist ->
+                                            Just val | "strictGivens" `elem` optlist || "immutable" `elem` optlist ->
                                                  do Just span <- createElement w (Just "span")
                                                     if val then setInnerHTML span (Just $ if turnstileMark then "✓" else "T")
                                                            else setInnerHTML span (Just $ if turnstileMark then "✗" else "F")
+                                                    appendChild td (Just span)
+                                                    return ()
+                                            _ | "immutable" `elem` optlist -> 
+                                                 do Just span <- createElement w (Just "span")
+                                                    setInnerHTML span (Just "-")
                                                     appendChild td (Just span)
                                                     return ()
                                             _ -> do sel <- trueFalseOpts w turnstileMark mg
@@ -300,7 +305,7 @@ toPartialRow w opts orderedChildren rRef v given =
 
           addDropdown m td mg = do modifyIORef rRef (M.insert m mg)
                                    case mg of
-                                       Just val | "strictGivens" `elem` optlist -> 
+                                       Just val | "strictGivens" `elem` optlist || "immutable" `elem` optlist -> 
                                             do (Just span) <- createElement w (Just "span")
                                                if val then setInnerHTML span (Just "T")
                                                       else setInnerHTML span (Just "F")
@@ -308,6 +313,10 @@ toPartialRow w opts orderedChildren rRef v given =
                                        Just val | "hiddenGivens" `elem` optlist -> 
                                             do sel <- trueFalseOpts w False Nothing
                                                appendChild td (Just sel)
+                                       _ | "immutable" `elem` optlist -> 
+                                            do Just span <- createElement w (Just "span")
+                                               setInnerHTML span (Just "-")
+                                               appendChild td (Just span)
                                        _ -> do sel <- trueFalseOpts w False mg
                                                onSwitch <- newListener $ switch rRef m
                                                addListener sel change onSwitch False
