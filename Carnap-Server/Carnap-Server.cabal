@@ -74,6 +74,7 @@ library
                  , yesod                         >=1.6 && <1.7
                  , yesod-core                    >=1.6 && <1.7
                  , yesod-auth                    >=1.6 && <1.7
+                 , yesod-auth-oauth2
                  , yesod-static                  >=1.6 && <1.7
                  , yesod-form                    >=1.6 && <1.7
                  , yesod-markdown                >= 0.12

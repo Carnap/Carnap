@@ -1,11 +1,14 @@
 flags: {}
 extra-package-dbs: []
-extra-deps: [yesod-markdown-0.11.1]
+extra-deps:
+    - yesod-markdown-0.11.1
 packages:
-- Carnap/
-- Carnap-Client/
-- Carnap-GHCJS/
+    - Carnap/
+    - Carnap-Client/
+    - Carnap-GHCJS/
 resolver: lts-6.30
+
+allow-newer: true
 
 
 # to build Carnap-GHCJS in ghcjs with this file, run 

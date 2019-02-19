@@ -3,7 +3,8 @@ module Foundation where
 import Database.Persist.Sql        (ConnectionPool, runSqlPool)
 import Import.NoFoundation
 import Text.Hamlet                 (hamletFile)
-import Yesod.Auth.GoogleEmail2 as GE (authGoogleEmail, forwardUrl)
+import Yesod.Auth.OAuth2.Google
+import Yesod.Auth.OAuth2 (oauth2Url, getUserResponseJSON)
 import Yesod.Auth.Dummy            (authDummy)
 import qualified Yesod.Core.Unsafe as Unsafe
 import Yesod.Core.Types            (Logger)
@@ -12,6 +13,7 @@ import Yesod.Default.Util          (addStaticContentExternal)
 --import Util.Database
 import qualified Data.CaseInsensitive as CI
 import qualified Data.Text.Encoding as TE
+import qualified Data.HashMap.Strict as HM
 import qualified Data.Text.Encoding.Error as TEE
 import qualified Network.Wai as W
 
@@ -87,7 +89,7 @@ instance Yesod App where
     -- The page to be redirected to when authentication is required.
     authRoute app = if appDevel (appSettings app) 
                        then Just $ AuthR LoginR
-                       else Just $ AuthR GE.forwardUrl
+                       else Just $ AuthR (oauth2Url "google")
 
     -- Routes requiring authentication.
     isAuthorized route _ = case route of
@@ -233,7 +235,7 @@ instance YesodAuth App where
     -- Override the above two destinations when a Referer: header is present
     redirectToReferer _ = True
 
-    authenticate creds = liftHandler $ runDB $ do
+    authenticate creds0 = liftHandler $ runDB $ do
         x <- getBy $ UniqueUser $ credsIdent creds
         case x of
             Just (Entity uid _) -> return $ Authenticated uid
@@ -241,6 +243,11 @@ instance YesodAuth App where
                 { userIdent = credsIdent creds
                 , userPassword = Nothing
                 }
+        where creds = fromMaybe creds0 $ do
+                          guard $ credsPlugin creds0 == "google"
+                          Object o <- either (const Nothing) Just (getUserResponseJSON creds0)
+                          String email <- HM.lookup "email" o
+                          Just creds0 { credsIdent = email }
 
     --can't do a straight redirect, since this takes place before logout is
     --completed. Instead, we delete the credentials and the ultDestKey
@@ -272,8 +279,8 @@ instance YesodAuth App where
     -- otherwise
     authPlugins app = let settings = appSettings app in 
                           if appDevel settings 
-                              then [authDummy]
-                              else [authGoogleEmail (appKey settings) (appSecret settings)]
+                              then [ authDummy ]
+                              else [ oauth2GoogleScoped ["email","profile"] (appKey settings) (appSecret settings) ]
 
     authLayout widget = liftHandler $ do
         master <- getYesod
