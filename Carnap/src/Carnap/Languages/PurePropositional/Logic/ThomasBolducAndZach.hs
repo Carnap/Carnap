@@ -94,6 +94,7 @@ instance Inference ThomasBolducAndZachTFL PurePropLexicon (Form Bool) where
         ruleOf Indirect2  = explicitNonConstructiveFalsumReductioVariations !! 1
         ruleOf CondIntro1 = conditionalProofVariations !! 0
         ruleOf CondIntro2 = conditionalProofVariations !! 1
+        ruleOf CondElim   = modusPonens
         ruleOf ContElim   = falsumElimination
         ruleOf DisjIntro1 = additionVariations !! 0
         ruleOf DisjIntro2 = additionVariations !! 1 
@@ -139,6 +140,7 @@ instance Inference ThomasBolducAndZachTFL PurePropLexicon (Form Bool) where
         isPremise _  = False
 
         restriction (Pr prems) = Just (premConstraint prems)
+        restriction _ = Nothing
 
 parseThomasBolducAndZachTFL :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> Parsec String u [ThomasBolducAndZachTFL]
 parseThomasBolducAndZachTFL rtc = do r <- choice (map (try . string) [ "AS","PR","&I","/\\I", "∧I","&E","/\\E","∧E", "~I","-I", "¬I"
