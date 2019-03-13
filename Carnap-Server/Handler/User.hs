@@ -4,7 +4,6 @@ import Import
 import Text.Read (read, readMaybe)
 import qualified Text.Blaze.Html5 as B
 import Text.Blaze.Html5.Attributes
-import Carnap.Languages.PurePropositional.Logic (DerivedRule(..))
 import Carnap.GHCJS.SharedTypes
 import Yesod.Form.Bootstrap3
 import Data.Time

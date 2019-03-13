@@ -3,7 +3,6 @@ module Handler.Rule where
 import Import
 import Text.Julius (juliusFile)
 import Text.Hamlet (hamletFile)
-import Carnap.Languages.PurePropositional.Logic (DerivedRule(..))
 import Carnap.GHCJS.SharedTypes
 import Data.Aeson (decodeStrict)
 import qualified Data.CaseInsensitive as CI

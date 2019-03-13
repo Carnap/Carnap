@@ -19,7 +19,6 @@ import Carnap.Languages.ModalPropositional.Parser
 import Carnap.Languages.ClassicalSequent.Syntax
 import Carnap.Languages.ClassicalSequent.Parser
 import Carnap.Languages.ModalPropositional.Logic.Rules
-import Carnap.Languages.PurePropositional.Logic.Rules (DerivedRule)
 import Carnap.Languages.Util.GenericConstructors (StandardQuant(..))
 import Carnap.Languages.Util.LanguageClasses
 import Carnap.Calculi.NaturalDeduction.Syntax

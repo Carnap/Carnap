@@ -9,15 +9,16 @@ import Carnap.Core.Data.Optics (liftLang)
 import Carnap.Core.Data.Classes (Handed(..))
 import Carnap.Languages.ClassicalSequent.Syntax
 import Carnap.Languages.PurePropositional.Logic as P 
-    ( DerivedRule(..), propCalc, logicBookSDCalc, logicBookSDPlusCalc, magnusSLCalc
+    ( propCalc, logicBookSDCalc, logicBookSDPlusCalc, magnusSLCalc
     , magnusSLPlusCalc, montagueSCCalc, hardegreeSLCalc, hausmanSLCalc
     , thomasBolducAndZachTFLCalc, tomassiPLCalc, howardSnyderSLCalc, ichikawaJenkinsSLCalc)
-import Carnap.Languages.PurePropositional.Logic.Rules (derivedRuleToSequent)
-import Carnap.Languages.PureFirstOrder.Logic as FOL 
-    ( DerivedRule(..), folCalc, montagueQCCalc, magnusQLCalc , thomasBolducAndZachFOLCalc
+import Carnap.Languages.PureFirstOrder.Logic 
+    ( folCalc, montagueQCCalc, magnusQLCalc , thomasBolducAndZachFOLCalc
     , hardegreePLCalc , goldfarbNDCalc, goldfarbAltNDCalc
     , goldfarbNDPlusCalc, goldfarbAltNDPlusCalc , logicBookPDPlusCalc
     , logicBookPDCalc, hausmanPLCalc, howardSnyderPLCalc, ichikawaJenkinsQLCalc) 
+import qualified Carnap.Languages.PureFirstOrder.Logic as FOL
+    ( DerivedRule(..))
 import Carnap.Languages.ModalPropositional.Logic as MPL
     ( hardegreeWTLCalc, hardegreeLCalc, hardegreeKCalc, hardegreeTCalc
     , hardegreeBCalc, hardegreeDCalc, hardegreeFourCalc, hardegreeFiveCalc)
@@ -76,12 +77,12 @@ errcb e = case fromJSON e :: Result String of
 --
 --  Notes: the bug arises only with the custom toJSON instance for
 --  DerivedRule. toJSON and fromJSON seem to work fine for that instance.
-addRules :: IORef [(String, P.DerivedRule)] -> Value -> IO ()
+addRules :: IORef [(String, DerivedRule)] -> Value -> IO ()
 addRules avd v =  case fromJSON v :: Result String of
                     A.Error e -> do print $ "error decoding derived rules: " ++ e
                                     print $ "recieved string: " ++ show v
                     Success s -> do let v' = read s :: Value
-                                    case fromJSON v' :: Result [(String,P.DerivedRule)] of
+                                    case fromJSON v' :: Result [(String,DerivedRule)] of
                                           A.Error e -> do print $ "error decoding derived rules: " ++ e
                                                           print $ "recieved JSON: " ++ show v
                                           Success rs -> do print $ show rs
@@ -93,7 +94,7 @@ getCheckers w = generateExerciseElts w "proofchecker"
 data Checker r lex sem = Checker 
         { rulePost' :: Checker r lex sem -> IO (RuntimeNaturalDeductionConfig lex sem)
         , checkerCalc :: NaturalDeductionCalc r lex sem 
-        , checkerRules :: IORef [(String,P.DerivedRule)]
+        , checkerRules :: IORef [(String,DerivedRule)]
         , sequent :: Maybe (ClassicalSequentOver lex (Sequent sem))
         , threadRef :: IORef (Maybe ThreadId)
         , proofDisplay :: Maybe Element
@@ -102,7 +103,7 @@ data Checker r lex sem = Checker
 
 rulePost x = rulePost' x x 
 
-activateChecker ::  IORef [(String,P.DerivedRule)] -> Document -> Maybe IOGoal -> IO ()
+activateChecker ::  IORef [(String,DerivedRule)] -> Document -> Maybe IOGoal -> IO ()
 activateChecker _ _ Nothing  = return ()
 activateChecker drs w (Just iog@(IOGoal i o g _ opts)) -- TODO: need to update non-montague calculi to take first/higher-order derived rules
         | sys == "prop"                      = tryParse propCalc propChecker
@@ -289,7 +290,7 @@ trySave drs ref w i = do isFinished <- liftIO $ readIORef ref
                                                 mname <- prompt w "What name will you give this rule (use all capital letters!)" (Just "")
                                                 case mname of
                                                     (Just name) -> if allcaps name 
-                                                               then liftIO $ sendJSON (SaveDerivedRule name $ P.DerivedRule conc prems) loginCheck error
+                                                               then liftIO $ sendJSON (SaveDerivedRule name $ DerivedRule conc prems) loginCheck error
                                                                else message "rule name must be all capital letters"
                                                     Nothing -> message "No name entered"
                            else message "not yet finished"
@@ -347,7 +348,7 @@ toUniErr eqs = "In order to apply this inference rule, there needs to be a subst
           endiv' e = "<div class=\"equations\">" ++ e ++ "</div>"
 
 liftDerivedRules = map $ \(s,r) -> (s,liftDerivedRule r)
-    where liftDerivedRule (P.DerivedRule conc prems) = FOL.DerivedRule (liftLang conc) (map liftLang prems)
+    where liftDerivedRule (DerivedRule conc prems) = FOL.DerivedRule (liftLang conc) (map liftLang prems)
 
 errDiv :: String -> String -> Int -> Maybe String -> String
 errDiv ico msg lineno (Just details) = "<div>" ++ ico ++ "<div><div>Error on line " 

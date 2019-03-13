@@ -1,6 +1,6 @@
 {-#LANGUAGE DeriveGeneric, FlexibleInstances, OverloadedStrings#-}
 module Carnap.GHCJS.SharedTypes (
-        GHCJSCommand(..), ProblemSource(..), ProblemType(..), ProblemData(..)
+    GHCJSCommand(..), ProblemSource(..), ProblemType(..), ProblemData(..), DerivedRule(..), derivedRuleToSequent
 ) where
 
 import Prelude
@@ -9,7 +9,8 @@ import Data.Either
 import Data.Text (Text)
 import Text.Parsec (parse, eof)
 import GHC.Generics
-import Carnap.Languages.PurePropositional.Logic (DerivedRule(..))
+import Carnap.Languages.ClassicalSequent.Syntax
+import Carnap.Languages.PurePropositional.Syntax
 import Carnap.Languages.PurePropositional.Parser
 
 data ProblemSource = Book | Assignment String
@@ -42,6 +43,12 @@ data ProblemData = DerivationData Text Text
 instance ToJSON ProblemData
 
 instance FromJSON ProblemData
+
+data DerivedRule = DerivedRule { conclusion :: PureForm, premises :: [PureForm]}
+               deriving (Show, Eq)
+
+derivedRuleToSequent (DerivedRule c ps) = antecedent :|-: SS (liftToSequent c)
+    where antecedent = foldr (:+:) Top (map (SA . liftToSequent) ps)
 
 --XXX: these should be more structured.
 data GHCJSCommand = EchoBack (String, Bool)

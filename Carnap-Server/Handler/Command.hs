@@ -3,7 +3,6 @@ module Handler.Command where
 import Import
 import Carnap.GHCJS.SharedTypes
 -- XXX: It would be nice for this to be more generic
-import Carnap.Languages.PurePropositional.Logic (DerivedRule)
 import Data.Aeson (encode, decodeStrict)
 import Data.Time
 import Util.Database
