@@ -2,6 +2,9 @@ flags: {}
 extra-package-dbs: []
 extra-deps: 
     - yesod-markdown-0.12.4
+    - yesod-auth-oauth2-0.6.1.0
+    - hoauth2-1.8.4
+    - uri-bytestring-aeson-0.1.0.7
 
 packages:
 - Carnap/
