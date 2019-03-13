@@ -17,8 +17,6 @@ import Carnap.Languages.PureFirstOrder.Logic
     , hardegreePLCalc , goldfarbNDCalc, goldfarbAltNDCalc
     , goldfarbNDPlusCalc, goldfarbAltNDPlusCalc , logicBookPDPlusCalc
     , logicBookPDCalc, hausmanPLCalc, howardSnyderPLCalc, ichikawaJenkinsQLCalc) 
-import qualified Carnap.Languages.PureFirstOrder.Logic as FOL
-    ( DerivedRule(..))
 import Carnap.Languages.ModalPropositional.Logic as MPL
     ( hardegreeWTLCalc, hardegreeLCalc, hardegreeKCalc, hardegreeTCalc
     , hardegreeBCalc, hardegreeDCalc, hardegreeFourCalc, hardegreeFiveCalc)
@@ -346,9 +344,6 @@ toUniErr eqs = "In order to apply this inference rule, there needs to be a subst
                 -- structure so that they can be aligned properly
     where endiv e = "<div>" ++ e ++ "</div>"
           endiv' e = "<div class=\"equations\">" ++ e ++ "</div>"
-
-liftDerivedRules = map $ \(s,r) -> (s,liftDerivedRule r)
-    where liftDerivedRule (DerivedRule conc prems) = FOL.DerivedRule (liftLang conc) (map liftLang prems)
 
 errDiv :: String -> String -> Int -> Maybe String -> String
 errDiv ico msg lineno (Just details) = "<div>" ++ ico ++ "<div><div>Error on line " 

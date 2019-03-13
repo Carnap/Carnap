@@ -72,9 +72,6 @@ theta :: SchematicPolyadicFunctionLanguage (FixLang lex) (Term Int) (Term Int)
     => (FixLang lex) (Term Int) -> (FixLang lex) (Term Int)
 theta x = spfn 1 AOne :!$: x
 
-data DerivedRule = DerivedRule { conclusion :: PureFOLForm, premises :: [PureFOLForm]}
-               deriving (Show, Eq)
-
 eigenConstraint c suc ant sub
     | c' `occursIn` ant' = Just $ "The term " ++ show c' ++ " appears not to be fresh, given that this line relies on " ++ show ant'
     | c' `occursIn` suc' = Just $ "The term " ++ show c' ++ " appears not to be fresh in the other premise " ++ show suc'
