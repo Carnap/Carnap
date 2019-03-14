@@ -65,9 +65,8 @@ isEquivTo x y = isValid (x .<=>. y)
 --------------------------------------------------------
 
 toSchema :: PurePropLanguage (Form Bool) -> PurePropLanguage (Form Bool)
-toSchema a = case a ^? _propIndex of
-                 Just n -> phin n
-                 Nothing -> (over plate) toSchema a
+toSchema = transform trans
+    where trans = id & outside (_propIndex) .~ (\n -> phin n)
 
 --------------
 --4. Tests  --
