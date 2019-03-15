@@ -233,7 +233,7 @@ $P\rightarrow Q$---so we write $Q$ on line 5, and a justification ($MP$) to
 the right, with the line numbers of the premises $P$ (line 2) and
 $P\rightarrow Q$ (line 3). We do the same thing, on the basis of premises $Q$
 and $Q\rightarrow R$ to assert $R$ on line $6$. We then label that we have
-found $Q$ on the basis of a direct derivation, by writing $DD~6$. The result
+found $R$ on the basis of a direct derivation, by writing $DD~6$. The result
 looks like this:
 
 ```
