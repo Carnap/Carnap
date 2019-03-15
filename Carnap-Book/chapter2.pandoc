@@ -294,7 +294,7 @@ abbreviation above.
 ####Ex. 3
 #. $(\neg Q\rightarrow R)$
 #. If $\neg Q$, then $R$
-#. If it is not the case that $Q$, then it is not the case that $R$
+#. If it is not the case that $Q$, then $R$
 #. If it is not the case that Carl Cringes, then Ronny Runs
 
 ####Ex. 4
