@@ -80,7 +80,7 @@ formatRules rules = B.table B.! class_ "rules" $ do
             B.th "Premises"
             B.th "Conclusion"
         B.tbody $ mapM_ toRow rules
-    where toRow (SavedDerivedRule dr n _ _) = let (Just dr') = decodeStrict dr in 
+    where toRow (SavedDerivedRule dr n _ _) = let (Just dr') = decodeRule dr in 
                                               B.tr $ do B.td $ B.toHtml $ "D-" ++ n
                                                         B.td $ B.toHtml $ intercalate "," $ map show $ premises dr'
                                                         B.td $ B.toHtml $ show $ conclusion dr'

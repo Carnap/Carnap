@@ -60,7 +60,7 @@ postCommandR = do
                                                  liftIO $ print $ "sending" ++ (show $ toJSON packagedRules)
                                                  returnJson $ show $ toJSON packagedRules
 
-packageRule (SavedDerivedRule dr n _ _) = case (decodeStrict dr :: Maybe DerivedRule) of
+packageRule (SavedDerivedRule dr n _ _) = case decodeRule dr of
                                               Just r -> Just (unpack n, r)
                                               _ -> Nothing
 

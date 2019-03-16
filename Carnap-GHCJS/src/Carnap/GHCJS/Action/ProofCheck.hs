@@ -75,12 +75,12 @@ errcb e = case fromJSON e :: Result String of
 --
 --  Notes: the bug arises only with the custom toJSON instance for
 --  DerivedRule. toJSON and fromJSON seem to work fine for that instance.
-addRules :: IORef [(String, DerivedRule)] -> Value -> IO ()
+addRules :: IORef [(String, PropDerivedRule)] -> Value -> IO ()
 addRules avd v =  case fromJSON v :: Result String of
                     A.Error e -> do print $ "error decoding derived rules: " ++ e
                                     print $ "recieved string: " ++ show v
                     Success s -> do let v' = read s :: Value
-                                    case fromJSON v' :: Result [(String,DerivedRule)] of
+                                    case fromJSON v' :: Result [(String,PropDerivedRule)] of
                                           A.Error e -> do print $ "error decoding derived rules: " ++ e
                                                           print $ "recieved JSON: " ++ show v
                                           Success rs -> do print $ show rs
@@ -92,7 +92,7 @@ getCheckers w = generateExerciseElts w "proofchecker"
 data Checker r lex sem = Checker 
         { rulePost' :: Checker r lex sem -> IO (RuntimeNaturalDeductionConfig lex sem)
         , checkerCalc :: NaturalDeductionCalc r lex sem 
-        , checkerRules :: IORef [(String,DerivedRule)]
+        , checkerRules :: IORef [(String,PropDerivedRule)]
         , sequent :: Maybe (ClassicalSequentOver lex (Sequent sem))
         , threadRef :: IORef (Maybe ThreadId)
         , proofDisplay :: Maybe Element
@@ -101,7 +101,7 @@ data Checker r lex sem = Checker
 
 rulePost x = rulePost' x x 
 
-activateChecker ::  IORef [(String,DerivedRule)] -> Document -> Maybe IOGoal -> IO ()
+activateChecker ::  IORef [(String,PropDerivedRule)] -> Document -> Maybe IOGoal -> IO ()
 activateChecker _ _ Nothing  = return ()
 activateChecker drs w (Just iog@(IOGoal i o g _ opts)) -- TODO: need to update non-montague calculi to take first/higher-order derived rules
         | sys == "prop"                      = tryParse propCalc propChecker

@@ -1,14 +1,16 @@
-{-#LANGUAGE DeriveGeneric, FlexibleInstances, OverloadedStrings#-}
+{-#LANGUAGE DeriveGeneric, StandaloneDeriving, FlexibleContexts, UndecidableInstances, FlexibleInstances, OverloadedStrings#-}
 module Carnap.GHCJS.SharedTypes (
-    GHCJSCommand(..), ProblemSource(..), ProblemType(..), ProblemData(..), DerivedRule(..), derivedRuleToSequent
+    GHCJSCommand(..), ProblemSource(..), ProblemType(..), ProblemData(..), DerivedRule(..), PropDerivedRule, derivedRuleToSequent, decodeRule
 ) where
 
 import Prelude
-import Data.Aeson (ToJSON(..), FromJSON(..), Value(..), object, (.=), (.:))
+import Data.Aeson (ToJSON(..), FromJSON(..), Value(..), object, (.=), (.:), decodeStrict)
 import Data.Either
 import Data.Text (Text)
+import Data.ByteString (ByteString)
 import Text.Parsec (parse, eof)
 import GHC.Generics
+import Carnap.Core.Data.Types (FixLang, Form)
 import Carnap.Languages.ClassicalSequent.Syntax
 import Carnap.Languages.PurePropositional.Syntax
 import Carnap.Languages.PurePropositional.Parser
@@ -44,8 +46,9 @@ instance ToJSON ProblemData
 
 instance FromJSON ProblemData
 
-data DerivedRule = DerivedRule { conclusion :: PureForm, premises :: [PureForm]}
-               deriving (Show, Eq)
+data DerivedRule lex sem = DerivedRule { conclusion :: FixLang lex sem, premises :: [FixLang lex sem]}
+deriving instance Show (FixLang lex sem) => Show (DerivedRule lex sem)
+deriving instance Eq (FixLang lex sem) => Eq (DerivedRule lex sem)
 
 derivedRuleToSequent (DerivedRule c ps) = antecedent :|-: SS (liftToSequent c)
     where antecedent = foldr (:+:) Top (map (SA . liftToSequent) ps)
@@ -53,7 +56,7 @@ derivedRuleToSequent (DerivedRule c ps) = antecedent :|-: SS (liftToSequent c)
 --XXX: these should be more structured.
 data GHCJSCommand = EchoBack (String, Bool)
         | Submit ProblemType String ProblemData ProblemSource Bool (Maybe Int) String 
-        | SaveDerivedRule String DerivedRule
+        | SaveDerivedRule String (DerivedRule PurePropLexicon (Form Bool))
         | RequestDerivedRulesForUser
         deriving (Generic, Show)
 
@@ -61,12 +64,14 @@ instance ToJSON GHCJSCommand
 
 instance FromJSON GHCJSCommand
 
-instance ToJSON DerivedRule where
+instance Show (FixLang lex sem) => ToJSON (DerivedRule lex sem) where
         toJSON (DerivedRule conclusion prems) = 
             object [ "conclusion" .= show conclusion
                    , "premises"   .= map show prems]
 
-instance FromJSON DerivedRule where
+type PropDerivedRule = DerivedRule PurePropLexicon (Form Bool)
+
+instance FromJSON PropDerivedRule where
         parseJSON (Object v) = 
             do c  <- v .: "conclusion"
                ps <- v .: "premises"
@@ -76,3 +81,6 @@ instance FromJSON DerivedRule where
                  _ -> mempty
             where toForm = parse (purePropFormulaParser standardLetters <* eof) ""
         parseJSON _ = mempty
+
+decodeRule :: ByteString -> Maybe PropDerivedRule
+decodeRule = decodeStrict 
