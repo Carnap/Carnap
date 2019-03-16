@@ -1,4 +1,4 @@
-{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleContexts, TypeSynonymInstances, FlexibleInstances, MultiParamTypeClasses #-}
 module Carnap.Languages.PurePropositional.Util 
 (showClean,isValid, isEquivTo, toSchema, getIndicies, getValuations, isBooleanBinary, isBooleanUnary, isBoolean, isAtom) 
 where
@@ -64,9 +64,9 @@ isEquivTo x y = isValid (x .<=>. y)
 --3. Transformations
 --------------------------------------------------------
 
-toSchema :: PurePropLanguage (Form Bool) -> PurePropLanguage (Form Bool)
-toSchema = transform trans
-    where trans = id & outside (_propIndex) .~ (\n -> phin n)
+instance ToSchema PurePropLexicon (Form Bool) where
+    toSchema = transform trans
+        where trans = id & outside (_propIndex) .~ (\n -> phin n)
 
 --------------
 --4. Tests  --

@@ -729,3 +729,6 @@ class Incrementable lex arg where
         incHead :: (Typeable a, Typeable arg) => FixLang lex a -> Maybe (FixLang lex (arg -> a)) 
         incBody :: (Typeable b, Typeable arg) => FixLang lex (arg -> b) -> Maybe (FixLang lex (arg -> arg -> b))
         incBody = incArity incHead
+
+class ToSchema lex sem where
+        toSchema :: FixLang lex sem -> FixLang lex sem
