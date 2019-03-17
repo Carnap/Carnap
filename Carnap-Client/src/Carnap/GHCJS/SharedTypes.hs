@@ -5,7 +5,7 @@ module Carnap.GHCJS.SharedTypes (
 
 import Prelude
 import Data.Aeson (ToJSON(..), FromJSON(..), Value(..), object, (.=), (.:), decodeStrict)
-import Data.Either
+import Text.Read
 import Data.Text (Text)
 import Data.ByteString (ByteString)
 import Text.Parsec (parse, eof)
@@ -71,15 +71,15 @@ instance Show (FixLang lex sem) => ToJSON (DerivedRule lex sem) where
 
 type PropDerivedRule = DerivedRule PurePropLexicon (Form Bool)
 
-instance FromJSON PropDerivedRule where
+instance Read (FixLang lex sem) => FromJSON (DerivedRule lex sem) where
         parseJSON (Object v) = 
             do c  <- v .: "conclusion"
                ps <- v .: "premises"
-               let ps' = map toForm ps 
-               case (toForm c, lefts ps') of 
-                 (Right f, []) -> return $ DerivedRule f (rights ps')
+               let ps' = mapM toForm ps 
+               case (toForm c, ps') of 
+                 (Just f, Just ps'') -> return $ DerivedRule f ps''
                  _ -> mempty
-            where toForm = parse (purePropFormulaParser standardLetters <* eof) ""
+            where toForm x = readMaybe x
         parseJSON _ = mempty
 
 decodeRule :: ByteString -> Maybe PropDerivedRule
