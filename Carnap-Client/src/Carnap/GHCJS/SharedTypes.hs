@@ -1,6 +1,6 @@
 {-#LANGUAGE DeriveGeneric, StandaloneDeriving, FlexibleContexts, UndecidableInstances, FlexibleInstances, OverloadedStrings#-}
 module Carnap.GHCJS.SharedTypes (
-    GHCJSCommand(..), ProblemSource(..), ProblemType(..), ProblemData(..), DerivedRule(..), PropDerivedRule, derivedRuleToSequent, decodeRule
+    GHCJSCommand(..), ProblemSource(..), ProblemType(..), ProblemData(..), DerivedRule(..), derivedRuleToSequent, decodeRule, SomeRule(..)
 ) where
 
 import Prelude
@@ -13,7 +13,10 @@ import GHC.Generics
 import Carnap.Core.Data.Types (FixLang, Form)
 import Carnap.Languages.ClassicalSequent.Syntax
 import Carnap.Languages.PurePropositional.Syntax
+import Carnap.Languages.Util.LanguageClasses
+import Carnap.Languages.PureFirstOrder.Syntax
 import Carnap.Languages.PurePropositional.Parser
+import Carnap.Languages.PureFirstOrder.Parser
 
 data ProblemSource = Book | Assignment String
         deriving (Show, Read, Eq, Generic)
@@ -48,6 +51,7 @@ instance FromJSON ProblemData
 
 data DerivedRule lex sem = DerivedRule { conclusion :: FixLang lex sem, premises :: [FixLang lex sem]}
 deriving instance Show (FixLang lex sem) => Show (DerivedRule lex sem)
+deriving instance Read (FixLang lex sem) => Read (DerivedRule lex sem)
 deriving instance Eq (FixLang lex sem) => Eq (DerivedRule lex sem)
 
 derivedRuleToSequent (DerivedRule c ps) = antecedent :|-: SS (liftToSequent c)
@@ -69,8 +73,6 @@ instance Show (FixLang lex sem) => ToJSON (DerivedRule lex sem) where
             object [ "conclusion" .= show conclusion
                    , "premises"   .= map show prems]
 
-type PropDerivedRule = DerivedRule PurePropLexicon (Form Bool)
-
 instance Read (FixLang lex sem) => FromJSON (DerivedRule lex sem) where
         parseJSON (Object v) = 
             do c  <- v .: "conclusion"
@@ -82,5 +84,13 @@ instance Read (FixLang lex sem) => FromJSON (DerivedRule lex sem) where
             where toForm x = readMaybe x
         parseJSON _ = mempty
 
-decodeRule :: ByteString -> Maybe PropDerivedRule
+decodeRule :: ByteString -> Maybe (DerivedRule PurePropLexicon (Form Bool))
 decodeRule = decodeStrict 
+
+data SomeRule = PropRule (DerivedRule PurePropLexicon (Form Bool))
+              | FOLRule (DerivedRule PureLexiconFOL (Form Bool))
+    deriving (Show, Read, Eq, Generic)
+
+instance ToJSON SomeRule
+
+instance FromJSON SomeRule
