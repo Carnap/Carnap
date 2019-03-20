@@ -116,7 +116,7 @@ Here's another example, this time showing how to prove $P\rightarrow Q, P\righta
 4.    Q      :MP 2 3
 5.    P->~Q  :PR
 6.    ~Q     :MP 2 5
-7. :ID 4 5
+7. :ID 4 6
 ```
 
 Notice something important about this example: the lines that you apply :ID to
