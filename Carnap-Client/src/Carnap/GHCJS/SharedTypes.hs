@@ -58,10 +58,10 @@ derivedRuleToSequent (DerivedRule c ps) = antecedent :|-: SS (liftToSequent c)
     where antecedent = foldr (:+:) Top (map (SA . liftToSequent) ps)
 
 --XXX: these should be more structured.
-data GHCJSCommand = EchoBack (String, Bool)
-        | Submit ProblemType String ProblemData ProblemSource Bool (Maybe Int) String 
-        | SaveDerivedRule String (DerivedRule PurePropLexicon (Form Bool))
-        | RequestDerivedRulesForUser
+data GHCJSCommand = Submit ProblemType String ProblemData ProblemSource Bool (Maybe Int) String 
+                  | SaveDerivedRule String (DerivedRule PurePropLexicon (Form Bool)) --XXX: Remove this.
+                  | SaveRule String SomeRule
+                  | RequestDerivedRulesForUser
         deriving (Generic, Show)
 
 instance ToJSON GHCJSCommand

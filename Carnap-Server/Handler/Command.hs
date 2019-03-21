@@ -18,7 +18,6 @@ postCommandR = do
     case maybeCurrentUserId of 
            Nothing -> returnJson ("No User" :: String)
            Just uid  -> case cmd of
-                EchoBack (s,b) -> returnJson (reverse s)
                 Submit typ ident dat source correct credit key ->  
                     do time <- liftIO getCurrentTime
                        (mkey, masgn) <- case key of 
@@ -55,6 +54,9 @@ postCommandR = do
                 SaveDerivedRule n dr -> do time <- liftIO getCurrentTime
                                            let save = SavedDerivedRule (toStrict $ encode dr) (pack n) time uid
                                            tryInsert save >>= afterInsert
+                SaveRule n r -> do time <- liftIO getCurrentTime
+                                   let save = SavedRule r (pack n) time uid
+                                   tryInsert save >>= afterInsert
                 RequestDerivedRulesForUser -> do savedRules <- runDB $ selectList [SavedDerivedRuleUserId ==. uid] []
                                                  let packagedRules = catMaybes $ map (packageRule . entityVal) savedRules
                                                  liftIO $ print $ "sending" ++ (show $ toJSON packagedRules)
