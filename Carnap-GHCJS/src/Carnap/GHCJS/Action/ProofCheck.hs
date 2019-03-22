@@ -32,6 +32,7 @@ import Text.Parsec (parse)
 import Data.IORef (IORef, newIORef,writeIORef, readIORef, modifyIORef)
 import Data.Aeson as A
 import Data.Text (pack)
+import Data.Maybe (catMaybes)
 import qualified Data.Map as M (lookup,fromList,toList,map) 
 import Control.Lens.Fold (toListOf,(^?))
 import Lib
@@ -75,12 +76,12 @@ errcb e = case fromJSON e :: Result String of
 --
 --  Notes: the bug arises only with the custom toJSON instance for
 --  DerivedRule. toJSON and fromJSON seem to work fine for that instance.
-addRules :: IORef [(String, PropDerivedRule)] -> Value -> IO ()
+addRules :: IORef [(String, SomeRule)] -> Value -> IO ()
 addRules avd v =  case fromJSON v :: Result String of
                     A.Error e -> do print $ "error decoding derived rules: " ++ e
                                     print $ "recieved string: " ++ show v
                     Success s -> do let v' = read s :: Value
-                                    case fromJSON v' :: Result [(String,PropDerivedRule)] of
+                                    case fromJSON v' :: Result [(String,SomeRule)] of
                                           A.Error e -> do print $ "error decoding derived rules: " ++ e
                                                           print $ "recieved JSON: " ++ show v
                                           Success rs -> do print $ show rs
@@ -92,7 +93,7 @@ getCheckers w = generateExerciseElts w "proofchecker"
 data Checker r lex sem = Checker 
         { rulePost' :: Checker r lex sem -> IO (RuntimeNaturalDeductionConfig lex sem)
         , checkerCalc :: NaturalDeductionCalc r lex sem 
-        , checkerRules :: IORef [(String,PropDerivedRule)]
+        , checkerRules :: IORef [(String,SomeRule)]
         , sequent :: Maybe (ClassicalSequentOver lex (Sequent sem))
         , threadRef :: IORef (Maybe ThreadId)
         , proofDisplay :: Maybe Element
@@ -101,7 +102,7 @@ data Checker r lex sem = Checker
 
 rulePost x = rulePost' x x 
 
-activateChecker ::  IORef [(String,PropDerivedRule)] -> Document -> Maybe IOGoal -> IO ()
+activateChecker ::  IORef [(String,SomeRule)] -> Document -> Maybe IOGoal -> IO ()
 activateChecker _ _ Nothing  = return ()
 activateChecker drs w (Just iog@(IOGoal i o g _ opts)) -- TODO: need to update non-montague calculi to take first/higher-order derived rules
         | sys == "prop"                      = tryParse propCalc propChecker
@@ -181,13 +182,23 @@ activateChecker drs w (Just iog@(IOGoal i o g _ opts)) -- TODO: need to update n
                                insertAdjacentElement (castToHTMLElement parent) "afterend" (Just pd)
                                return pd
 
-              propChecker = Checker $ \self -> RuntimeNaturalDeductionConfig 
-                                              <$> (M.fromList . map (\(x,y) -> (x,derivedRuleToSequent y)) <$> readIORef (checkerRules self))
-                                              <*> (pure . toPremiseSeqs . sequent $ self)
+              --XXX:DRY this pattern
+              propChecker = Checker $ \self -> do somerules <- readIORef (checkerRules self)
+                                                  let seqrules = catMaybes $ map readyRule somerules
+                                                      rmap = M.fromList seqrules
+                                                      premseqs = toPremiseSeqs . sequent $ self
+                                                  return $ RuntimeNaturalDeductionConfig rmap premseqs
+                    where readyRule (x, PropRule r) = Just (x, derivedRuleToSequent r)
+                          readyRule _ = Nothing
 
-              folChecker = Checker $ \self ->  RuntimeNaturalDeductionConfig 
-                                              <$> (M.fromList .  map (\(x,y) -> (x, liftSequent . derivedRuleToSequent $ y)) <$> readIORef (checkerRules self))
-                                              <*> (pure . toPremiseSeqs . sequent $ self)
+              folChecker = Checker $ \self -> do somerules <- readIORef (checkerRules self)
+                                                 let seqrules = catMaybes $ map readyRule somerules
+                                                     rmap = M.fromList seqrules
+                                                     premseqs = toPremiseSeqs . sequent $ self
+                                                 return $ RuntimeNaturalDeductionConfig rmap premseqs
+                    where readyRule (x, PropRule r) = Just (x, liftSequent . derivedRuleToSequent $ r)
+                          readyRule (x, FOLRule r) = Just (x, derivedRuleToSequent r)
+                          readyRule _ = Nothing
 
               toPremiseSeqs :: (Concretes lex b, Typeable b) => Maybe (ClassicalSequentOver lex (Sequent b)) -> Maybe [ClassicalSequentOver lex (Sequent b)]
               toPremiseSeqs (Just seq) = Just . map (\x -> SA x :|-: SS x) $ toListOf (lhs . concretes) seq
@@ -272,7 +283,10 @@ submitDer opts checker l g seq ref _ i = do isFinished <- liftIO $ readIORef ref
     where optlist = case M.lookup "options" opts of Just s -> words s; Nothing -> []
 
 trySave drs ref w i = do isFinished <- liftIO $ readIORef ref
-                         rules <- liftIO $ readIORef drs
+                         somerules <- liftIO $ readIORef drs
+                         let readyRule (x, PropRule r) = Just (x, r)
+                             readyRule _ = Nothing
+                             rules = catMaybes $ map readyRule somerules
                          if isFinished
                            then do (Just v) <- getValue (castToHTMLTextAreaElement i)
                                    let Feedback mseq _ = toDisplaySequence (ndProcessLine montagueSCCalc) . ndParseProof montagueSCCalc (configFrom rules mempty) $ v

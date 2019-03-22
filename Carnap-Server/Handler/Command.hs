@@ -57,14 +57,19 @@ postCommandR = do
                 SaveRule n r -> do time <- liftIO getCurrentTime
                                    let save = SavedRule r (pack n) time uid
                                    tryInsert save >>= afterInsert
-                RequestDerivedRulesForUser -> do savedRules <- runDB $ selectList [SavedDerivedRuleUserId ==. uid] []
-                                                 let packagedRules = catMaybes $ map (packageRule . entityVal) savedRules
-                                                 liftIO $ print $ "sending" ++ (show $ toJSON packagedRules)
-                                                 returnJson $ show $ toJSON packagedRules
+                RequestDerivedRulesForUser -> do savedPropRules <- runDB $ selectList [SavedDerivedRuleUserId ==. uid] []
+                                                 savedRules <- runDB $ selectList [SavedRuleUserId ==. uid] []
+                                                 let oldRules = catMaybes $ map (packageOldRule . entityVal) savedPropRules
+                                                     newRules = map (packageNewRule . entityVal) savedRules
+                                                     rules = oldRules ++ newRules
+                                                 liftIO $ print $ "sending" ++ (show $ toJSON rules)
+                                                 returnJson $ show $ toJSON $ rules
 
-packageRule (SavedDerivedRule dr n _ _) = case decodeRule dr of
-                                              Just r -> Just (unpack n, r)
-                                              _ -> Nothing
+packageOldRule (SavedDerivedRule dr n _ _) = case decodeRule dr of
+                                                Just r -> Just (unpack n, PropRule r)
+                                                _ -> Nothing
+
+packageNewRule (SavedRule dr n _ _) = (unpack n, dr)
 
 afterInsert (Just _) = returnJson ("submitted!" :: String) 
 afterInsert Nothing = returnJson ("Clash" :: String)
