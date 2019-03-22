@@ -728,7 +728,7 @@ class ParsableLex sem f where
         langParser :: Parsec String u (FixLang f sem)
 
 instance ParsableLex sem f => Read (FixLang f sem) where
-    readsPrec prec input = case parse (withRemaining langParser) "" input of
+    readsPrec prec input = case parse (withRemaining (spaces *> langParser)) "" input of
             Left _ -> []
             Right result -> [result]
         where withRemaining p = (,) <$> p <*> getInput
