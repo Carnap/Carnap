@@ -302,7 +302,7 @@ trySave drs ref w i = do isFinished <- liftIO $ readIORef ref
                                                 mname <- prompt w "What name will you give this rule (use all capital letters!)" (Just "")
                                                 case mname of
                                                     (Just name) -> if allcaps name 
-                                                               then liftIO $ sendJSON (SaveDerivedRule name $ DerivedRule conc prems) loginCheck error
+                                                               then liftIO $ sendJSON (SaveRule name $ PropRule $ DerivedRule conc prems) loginCheck error
                                                                else message "rule name must be all capital letters"
                                                     Nothing -> message "No name entered"
                            else message "not yet finished"
