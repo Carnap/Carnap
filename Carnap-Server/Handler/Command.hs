@@ -51,9 +51,6 @@ postCommandR = do
                                    then do success <- tryInsert sub
                                            afterInsert success
                                    else returnJson ("Assignment not available" :: String)
-                SaveDerivedRule n dr -> do time <- liftIO getCurrentTime
-                                           let save = SavedDerivedRule (toStrict $ encode dr) (pack n) time uid
-                                           tryInsert save >>= afterInsert
                 SaveRule n r -> do time <- liftIO getCurrentTime
                                    let save = SavedRule r (pack n) time uid
                                    tryInsert save >>= afterInsert

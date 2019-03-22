@@ -59,7 +59,6 @@ derivedRuleToSequent (DerivedRule c ps) = antecedent :|-: SS (liftToSequent c)
 
 --XXX: these should be more structured.
 data GHCJSCommand = Submit ProblemType String ProblemData ProblemSource Bool (Maybe Int) String 
-                  | SaveDerivedRule String (DerivedRule PurePropLexicon (Form Bool)) --XXX: Remove this.
                   | SaveRule String SomeRule
                   | RequestDerivedRulesForUser
         deriving (Generic, Show)
