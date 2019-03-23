@@ -70,7 +70,8 @@ instance FromJSON GHCJSCommand
 instance Show (FixLang lex sem) => ToJSON (DerivedRule lex sem) where
         toJSON (DerivedRule conclusion prems) = 
             object [ "conclusion" .= show conclusion
-                   , "premises"   .= map show prems]
+                   , "premises"   .= map show prems
+                   ]
 
 instance Read (FixLang lex sem) => FromJSON (DerivedRule lex sem) where
         parseJSON (Object v) = 

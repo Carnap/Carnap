@@ -1,13 +1,15 @@
-{-#LANGUAGE FlexibleContexts #-}
+{-#LANGUAGE FlexibleContexts, RankNTypes #-}
 module Carnap.GHCJS.Action.ProofCheck (proofCheckAction) where
 
 import Carnap.Calculi.NaturalDeduction.Syntax 
     (ProofMemoRef, NaturalDeductionCalc(..),RenderStyle(..), Inference(..), RuntimeNaturalDeductionConfig(..))
 import Carnap.Calculi.NaturalDeduction.Checker 
     (ProofErrorMessage(..), Feedback(..), seqSubsetUnify, toDisplaySequenceMemo, toDisplaySequence)
-import Carnap.Core.Data.Optics (liftLang)
+import Carnap.Core.Data.Optics (liftLang, PrismSubstitutionalVariable, PrismLink)
 import Carnap.Core.Data.Classes (Handed(..))
+import Carnap.Core.Data.Types (SubstitutionalVariable)
 import Carnap.Languages.ClassicalSequent.Syntax
+import Carnap.Languages.Util.LanguageClasses (ToSchema(..))
 import Carnap.Languages.PurePropositional.Logic as P 
     ( propCalc, logicBookSDCalc, logicBookSDPlusCalc, magnusSLCalc
     , magnusSLPlusCalc, montagueSCCalc, hardegreeSLCalc, hausmanSLCalc
@@ -26,7 +28,6 @@ import Carnap.Languages.SetTheory.Logic.Carnap
     (estCalc, sstCalc)
 import Carnap.Languages.ModalFirstOrder.Logic
     ( hardegreeMPLCalc )
-import Carnap.Languages.PurePropositional.Util (toSchema)
 import Carnap.GHCJS.SharedTypes
 import Text.Parsec (parse)
 import Data.IORef (IORef, newIORef,writeIORef, readIORef, modifyIORef)
@@ -91,8 +92,10 @@ getCheckers :: IsElement self => Document -> self -> IO [Maybe IOGoal]
 getCheckers w = generateExerciseElts w "proofchecker"
 
 data Checker r lex sem = Checker 
-        { rulePost' :: Checker r lex sem -> IO (RuntimeNaturalDeductionConfig lex sem)
-        , checkerCalc :: NaturalDeductionCalc r lex sem 
+        { checkerToRule :: Maybe (DerivedRule lex sem -> SomeRule)
+        , ruleSave' :: Maybe (Checker r lex sem -> IORef [(String, SomeRule)] -> IORef Bool -> Window -> Element -> EventM Element MouseEvent ())
+        , rulePost' :: Checker r lex sem -> IO (RuntimeNaturalDeductionConfig lex sem)
+        , checkerCalc ::  NaturalDeductionCalc r lex sem 
         , checkerRules :: IORef [(String,SomeRule)]
         , sequent :: Maybe (ClassicalSequentOver lex (Sequent sem))
         , threadRef :: IORef (Maybe ThreadId)
@@ -102,38 +105,42 @@ data Checker r lex sem = Checker
 
 rulePost x = rulePost' x x 
 
+ruleSave x = case ruleSave' x of 
+    Just f -> f x
+    Nothing -> \_ _ _ _ -> liftIO $ message "Can't save: this calculus doesn't have derived rules"
+
 activateChecker ::  IORef [(String,SomeRule)] -> Document -> Maybe IOGoal -> IO ()
 activateChecker _ _ Nothing  = return ()
 activateChecker drs w (Just iog@(IOGoal i o g _ opts)) -- TODO: need to update non-montague calculi to take first/higher-order derived rules
-        | sys == "prop"                      = tryParse propCalc propChecker
-        | sys == "firstOrder"                = tryParse folCalc folChecker
+        | sys == "prop"                      = tryParse propCalc (propChecker (Just trySave))
+        | sys == "firstOrder"                = tryParse folCalc (folChecker (Just trySave))
         | sys == "secondOrder"               = tryParse msolCalc noRuntimeOptions
         | sys == "polyadicSecondOrder"       = tryParse psolCalc noRuntimeOptions
         | sys == "elementarySetTheory"       = tryParse estCalc noRuntimeOptions
         | sys == "separativeSetTheory"       = tryParse sstCalc noRuntimeOptions
-        | sys == "montagueSC"                = tryParse montagueSCCalc propChecker
-        | sys == "montagueQC"                = tryParse montagueQCCalc folChecker
-        | sys == "LogicBookSD"               = tryParse logicBookSDCalc propChecker
-        | sys == "LogicBookSDPlus"           = tryParse logicBookSDPlusCalc propChecker
-        | sys == "LogicBookPD"               = tryParse logicBookPDCalc folChecker
-        | sys == "LogicBookPDPlus"           = tryParse logicBookPDPlusCalc folChecker
-        | sys == "ichikawaJenkinsSL"         = tryParse ichikawaJenkinsSLCalc propChecker
-        | sys == "ichikawaJenkinsQL"         = tryParse ichikawaJenkinsQLCalc folChecker
-        | sys == "hausmanSL"                 = tryParse hausmanSLCalc propChecker
-        | sys == "hausmanPL"                 = tryParse hausmanPLCalc folChecker
-        | sys == "howardSnyderSL"            = tryParse howardSnyderSLCalc propChecker
-        | sys == "howardSnyderPL"            = tryParse howardSnyderPLCalc folChecker
-        | sys == "magnusSL"                  = tryParse magnusSLCalc propChecker
-        | sys == "magnusSLPlus"              = tryParse magnusSLPlusCalc propChecker
-        | sys == "magnusQL"                  = tryParse magnusQLCalc folChecker
-        | sys == "goldfarbND"                = tryParse goldfarbNDCalc folChecker
-        | sys == "goldfarbAltND"             = tryParse goldfarbAltNDCalc folChecker
-        | sys == "goldfarbNDPlus"            = tryParse goldfarbNDPlusCalc folChecker
-        | sys == "goldfarbAltNDPlus"         = tryParse goldfarbAltNDPlusCalc folChecker
-        | sys == "thomasBolducAndZachTFL"    = tryParse thomasBolducAndZachTFLCalc propChecker
-        | sys == "thomasBolducAndZachFOL"    = tryParse thomasBolducAndZachFOLCalc folChecker
-        | sys == "tomassiPL"                 = tryParse tomassiPLCalc propChecker
-        | sys == "hardegreeSL"               = tryParse hardegreeSLCalc propChecker
+        | sys == "montagueSC"                = tryParse montagueSCCalc (propChecker Nothing)
+        | sys == "montagueQC"                = tryParse montagueQCCalc (folChecker Nothing)
+        | sys == "LogicBookSD"               = tryParse logicBookSDCalc (propChecker Nothing)
+        | sys == "LogicBookSDPlus"           = tryParse logicBookSDPlusCalc (propChecker Nothing)
+        | sys == "LogicBookPD"               = tryParse logicBookPDCalc (folChecker Nothing)
+        | sys == "LogicBookPDPlus"           = tryParse logicBookPDPlusCalc (folChecker Nothing)
+        | sys == "ichikawaJenkinsSL"         = tryParse ichikawaJenkinsSLCalc (propChecker Nothing)
+        | sys == "ichikawaJenkinsQL"         = tryParse ichikawaJenkinsQLCalc (folChecker Nothing)
+        | sys == "hausmanSL"                 = tryParse hausmanSLCalc (propChecker Nothing)
+        | sys == "hausmanPL"                 = tryParse hausmanPLCalc (folChecker Nothing)
+        | sys == "howardSnyderSL"            = tryParse howardSnyderSLCalc (propChecker Nothing)
+        | sys == "howardSnyderPL"            = tryParse howardSnyderPLCalc (folChecker Nothing)
+        | sys == "magnusSL"                  = tryParse magnusSLCalc (propChecker Nothing)
+        | sys == "magnusSLPlus"              = tryParse magnusSLPlusCalc (propChecker Nothing)
+        | sys == "magnusQL"                  = tryParse magnusQLCalc (folChecker Nothing)
+        | sys == "goldfarbND"                = tryParse goldfarbNDCalc (folChecker Nothing)
+        | sys == "goldfarbAltND"             = tryParse goldfarbAltNDCalc (folChecker Nothing)
+        | sys == "goldfarbNDPlus"            = tryParse goldfarbNDPlusCalc (folChecker Nothing)
+        | sys == "goldfarbAltNDPlus"         = tryParse goldfarbAltNDPlusCalc (folChecker Nothing)
+        | sys == "thomasBolducAndZachTFL"    = tryParse thomasBolducAndZachTFLCalc (propChecker Nothing)
+        | sys == "thomasBolducAndZachFOL"    = tryParse thomasBolducAndZachFOLCalc (folChecker Nothing)
+        | sys == "tomassiPL"                 = tryParse tomassiPLCalc (propChecker Nothing)
+        | sys == "hardegreeSL"               = tryParse hardegreeSLCalc (propChecker Nothing)
         | sys == "hardegreePL"               = tryParse hardegreePLCalc noRuntimeOptions
         | sys == "hardegreeWTL"              = tryParse hardegreeWTLCalc noRuntimeOptions
         | sys == "hardegreeL"                = tryParse hardegreeLCalc noRuntimeOptions
@@ -155,6 +162,7 @@ activateChecker drs w (Just iog@(IOGoal i o g _ opts)) -- TODO: need to update n
                   let theChecker = checker calc drs mseq mtref mpd memo
                       checkSeq = threadedCheck options theChecker
                       saveProblem l s = Button {label = "Submit" , action = submitDer opts theChecker l g s}
+                      saveRule = Button {label = "Save" , action = ruleSave theChecker drs}
                       options' = options { submit = case (M.lookup "submission" opts, M.lookup "goal" opts) of
                                                       (Just "saveRule",_) -> Just saveRule
                                                       (Just s, Just g) | take 7 s == "saveAs:" -> Just $ saveProblem (drop 7 s) (theSeq g)
@@ -163,7 +171,6 @@ activateChecker drs w (Just iog@(IOGoal i o g _ opts)) -- TODO: need to update n
                   checkerWith options' checkSeq iog w
                   
                   where options = optionsFromMap opts
-                        saveRule = Button {label = "Save" , action = trySave drs}
                         theSeq g = case parse (ndParseSeq calc) "" g of
                                        Left e -> error "couldn't parse goal"
                                        Right seq -> seq
@@ -176,6 +183,7 @@ activateChecker drs w (Just iog@(IOGoal i o g _ opts)) -- TODO: need to update n
                                                            error "couldn't parse goal"
                                               Right seq -> do setInnerHTML g (Just $ ndNotation calc $ show seq)
                                                               return $ Just seq
+                                                              
               makeDisplay = do (Just pd) <- createElement w (Just "div")
                                setAttribute pd "class" "proofDisplay"
                                (Just parent) <- getParentNode o
@@ -183,7 +191,8 @@ activateChecker drs w (Just iog@(IOGoal i o g _ opts)) -- TODO: need to update n
                                return pd
 
               --XXX:DRY this pattern
-              propChecker = Checker $ \self -> do somerules <- readIORef (checkerRules self)
+              propChecker x = Checker (Just PropRule) x
+                                    $ \self -> do somerules <- readIORef (checkerRules self)
                                                   let seqrules = catMaybes $ map readyRule somerules
                                                       rmap = M.fromList seqrules
                                                       premseqs = toPremiseSeqs . sequent $ self
@@ -191,7 +200,8 @@ activateChecker drs w (Just iog@(IOGoal i o g _ opts)) -- TODO: need to update n
                     where readyRule (x, PropRule r) = Just (x, derivedRuleToSequent r)
                           readyRule _ = Nothing
 
-              folChecker = Checker $ \self -> do somerules <- readIORef (checkerRules self)
+              folChecker x = Checker (Just FOLRule) x
+                                   $ \self -> do somerules <- readIORef (checkerRules self)
                                                  let seqrules = catMaybes $ map readyRule somerules
                                                      rmap = M.fromList seqrules
                                                      premseqs = toPremiseSeqs . sequent $ self
@@ -204,7 +214,7 @@ activateChecker drs w (Just iog@(IOGoal i o g _ opts)) -- TODO: need to update n
               toPremiseSeqs (Just seq) = Just . map (\x -> SA x :|-: SS x) $ toListOf (lhs . concretes) seq
               toPremiseSeqs Nothing = Nothing
 
-              noRuntimeOptions = Checker $ const . pure $ RuntimeNaturalDeductionConfig mempty mempty
+              noRuntimeOptions = Checker Nothing Nothing $ const . pure $ RuntimeNaturalDeductionConfig mempty mempty
 
 threadedCheck options checker w ref v (g, fd) = 
         do mt <- readIORef (threadRef checker)
@@ -222,9 +232,7 @@ threadedCheck options checker w ref v (g, fd) =
                                       setInnerHTML pd (Just "")
                                       appendChild pd (Just renderedProof)
                                Nothing -> return Nothing
-                             Feedback mseq ds <- case ndProcessLineMemo ndcalc of
-                                                     Just memoline -> toDisplaySequenceMemo (memoline $ proofMemo checker) ded
-                                                     Nothing -> return $ toDisplaySequence (ndProcessLine ndcalc) ded
+                             Feedback mseq ds <- getFeedback checker ded
                              ul <- case feedback options of
                                        SyntaxOnly -> genericListToUl (syntaxwrap fd w) w ds
                                        _ -> genericListToUl (wrap fd w ndcalc) w ds
@@ -266,9 +274,7 @@ submitDer opts checker l g seq ref _ i = do isFinished <- liftIO $ readIORef ref
                                                         rtconfig <- liftIO $ rulePost checker
                                                         let ndcalc = checkerCalc checker
                                                             ded = ndParseProof ndcalc rtconfig v
-                                                        Feedback mseq _ <- case ndProcessLineMemo ndcalc of
-                                                                               Just memoline -> toDisplaySequenceMemo (memoline $ proofMemo checker) ded
-                                                                               Nothing -> return $ toDisplaySequence (ndProcessLine ndcalc) ded
+                                                        Feedback mseq _ <- getFeedback checker ded
                                                         setAttribute g "class" "goal"
                                                         case sequent checker of
                                                              Nothing -> message "No goal sequent to submit"
@@ -282,30 +288,36 @@ submitDer opts checker l g seq ref _ i = do isFinished <- liftIO $ readIORef ref
                                                                    | otherwise -> message "not yet finished"
     where optlist = case M.lookup "options" opts of Just s -> words s; Nothing -> []
 
-trySave drs ref w i = do isFinished <- liftIO $ readIORef ref
-                         somerules <- liftIO $ readIORef drs
-                         let readyRule (x, PropRule r) = Just (x, r)
-                             readyRule _ = Nothing
-                             rules = catMaybes $ map readyRule somerules
-                         if isFinished
-                           then do (Just v) <- getValue (castToHTMLTextAreaElement i)
-                                   let Feedback mseq _ = toDisplaySequence (ndProcessLine montagueSCCalc) . ndParseProof montagueSCCalc (configFrom rules mempty) $ v
-                                   case mseq of
-                                    Nothing -> message "A rule can't be extracted from this proof"
-                                    (Just (a :|-: c)) -> do
-                                        -- XXX : throw a more transparent error here if necessary
-                                        let prems = map (toSchema . fromSequent) (toListOf concretes a)
-                                        case c ^? concretes of
-                                            Nothing -> error "The formula type couldn't be decoded."
-                                            Just c' -> do
-                                                let conc = (toSchema . fromSequent) c'
-                                                mname <- prompt w "What name will you give this rule (use all capital letters!)" (Just "")
-                                                case mname of
-                                                    (Just name) -> if allcaps name 
-                                                               then liftIO $ sendJSON (SaveRule name $ PropRule $ DerivedRule conc prems) loginCheck error
-                                                               else message "rule name must be all capital letters"
-                                                    Nothing -> message "No name entered"
-                           else message "not yet finished"
+trySave :: (Sequentable lex, Inference r lex sem, ToSchema lex sem, PrismSubstitutionalVariable lex, Concretes lex sem,
+            PrismLink (lex (ClassicalSequentOver lex)) (SubstitutionalVariable (ClassicalSequentOver lex))) =>
+          Checker r lex sem -> IORef [(String, SomeRule)] -> IORef Bool -> Window -> Element -> EventM e MouseEvent ()
+trySave checker drs ref w i = 
+        do isFinished <- liftIO $ readIORef ref
+           somerules <- liftIO $ readIORef drs
+           rtconfig <- liftIO $ rulePost checker
+           if isFinished
+             then do (Just v) <- getValue (castToHTMLTextAreaElement i)
+                     let ndcalc = checkerCalc checker
+                         ded = ndParseProof ndcalc rtconfig v
+                     Feedback mseq _ <- liftIO $ getFeedback checker ded 
+                     case mseq of
+                      Nothing -> message "A rule can't be extracted from this proof"
+                      (Just (a :|-: c)) -> do
+                          -- XXX : throw a more transparent error here if necessary
+                          let prems = map (toSchema . fromSequent) (toListOf concretes a)
+                          case c ^? concretes of
+                              Nothing -> error "The formula type couldn't be decoded."
+                              Just c' -> do
+                                  let conc = (toSchema . fromSequent) c'
+                                  mname <- prompt w "What name will you give this rule (use all capital letters!)" (Just "")
+                                  case (mname,checkerToRule checker)  of
+                                      (Just name, Just toRule) -> 
+                                              if allcaps name 
+                                                 then liftIO $ sendJSON (SaveRule name $ toRule $ DerivedRule conc prems) loginCheck error
+                                                 else message "rule name must be all capital letters"
+                                      (Nothing,_) -> message "No name entered"
+                                      (_,Nothing) -> message "No saved rules for this proof system"
+             else message "not yet finished"
     where loginCheck c | c == "No User" = message "You need to log in before you can save a rule"
                        | c == "Clash"   = message "it appears you've already got a rule with this name"
                        | otherwise      = message "Saved your new rule!" >> reloadPage
@@ -315,6 +327,11 @@ trySave drs ref w i = do isFinished <- liftIO $ readIORef ref
 -------------------------
 --  Utility Functions  --
 -------------------------
+
+getFeedback checker ded = case ndProcessLineMemo calc of
+                                     Just memoline -> toDisplaySequenceMemo (memoline $ proofMemo checker) ded
+                                     Nothing -> return $ toDisplaySequence (ndProcessLine calc) ded
+    where calc = checkerCalc checker
 
 configFrom rules prems = RuntimeNaturalDeductionConfig (M.fromList . map (\(x,y) -> (x,derivedRuleToSequent y)) $ rules) prems
 
