@@ -50,11 +50,10 @@ deleteUserR ident = do
     maybeCurrentUserId <- maybeAuthId
     case maybeCurrentUserId of
         Nothing -> return ()
-        Just u -> runDB $ do kl <- selectKeysList [SavedDerivedRuleUserId ==. u
-                                                  ,SavedDerivedRuleName ==. msg ] []
-                             case kl of
-                                 [] -> return ()
-                                 (targetkey:_) -> delete targetkey
+        Just u -> runDB $ do kl <- selectKeysList [SavedDerivedRuleUserId ==. u ,SavedDerivedRuleName ==. msg ] []
+                             kl' <- selectKeysList [SavedRuleUserId ==. u,SavedRuleName ==. msg ] [] 
+                             case kl of [] -> return (); k:_ -> delete k
+                             case kl' of [] -> return (); k:_ -> delete k
     returnJson (msg ++ " deleted")
 
 getUserR :: Text -> Handler Html
@@ -68,7 +67,8 @@ getUserR ident = do
             classes <- runDB $ selectList [CourseStartDate <. time, CourseEndDate >. time] []
             (updateForm,encTypeUpdate) <- generateFormPost (updateUserDataForm ud classes)
             let isInstructor = case maybeInstructorId of Just _ -> True; _ -> False
-            derivedRules <- getDerivedRules uid
+            derivedRulesOld <- getDerivedRules uid
+            derivedRulesNew <- getRules uid
             case maybeCourseId of
                 Just cid ->
                     do Just course <- runDB $ get cid

@@ -1,6 +1,7 @@
 {-#LANGUAGE DeriveGeneric, StandaloneDeriving, FlexibleContexts, UndecidableInstances, FlexibleInstances, OverloadedStrings#-}
 module Carnap.GHCJS.SharedTypes (
-    GHCJSCommand(..), ProblemSource(..), ProblemType(..), ProblemData(..), DerivedRule(..), derivedRuleToSequent, decodeRule, SomeRule(..)
+    GHCJSCommand(..), ProblemSource(..), ProblemType(..), ProblemData(..), DerivedRule(..)
+    , derivedRuleToSequent, decodeRule, SomeRule(..), inspectPrems, inspectConclusion
 ) where
 
 import Prelude
@@ -90,6 +91,12 @@ decodeRule = decodeStrict
 data SomeRule = PropRule (DerivedRule PurePropLexicon (Form Bool))
               | FOLRule (DerivedRule PureLexiconFOL (Form Bool))
     deriving (Show, Read, Eq, Generic)
+
+inspectPrems (PropRule r) = map show $ premises r
+inspectPrems (FOLRule r) = map show $ premises r
+
+inspectConclusion (PropRule r) = show $ conclusion r
+inspectConclusion (FOLRule r) = show $ conclusion r
 
 instance ToJSON SomeRule
 

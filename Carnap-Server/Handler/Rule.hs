@@ -4,7 +4,7 @@ import Import
 import Text.Julius (juliusFile)
 import Text.Hamlet (hamletFile)
 import Carnap.GHCJS.SharedTypes
-import Data.Aeson (decodeStrict)
+import Util.Database
 import qualified Data.CaseInsensitive as CI
 import qualified Data.Text.Encoding as TE
 import qualified Text.Blaze.Html5 as B
@@ -90,15 +90,15 @@ ruleLayout widget = do
 getPropDrList = do maybeCurrentUserId <- maybeAuthId
                    case maybeCurrentUserId of
                        Nothing -> return Nothing
-                       Just u -> do savedRulesOld <- runDB $ selectList [SavedDerivedRuleUserId ==. u] []
-                                    savedRules <- runDB $ selectList [SavedRuleUserId ==. u] []
-                                    return $ Just $ formatOldPropRules (map entityVal savedRulesOld) ++ formatPropRules (map entityVal savedRules)
+                       Just uid -> do savedRulesOld <- getDerivedRules uid
+                                      savedRules <- getRules uid
+                                      return $ Just $ formatOldPropRules savedRulesOld ++ formatPropRules savedRules
 
 getFOLDrList = do maybeCurrentUserId <- maybeAuthId
                   case maybeCurrentUserId of
                        Nothing -> return Nothing
-                       Just u -> do savedRules <- runDB $ selectList [SavedRuleUserId ==. u] []
-                                    return $ Just $ formatFOLRules (map entityVal savedRules)
+                       Just uid -> Just . formatFOLRules <$> getRules uid
+                                    
 
 formatOldPropRules rules = map toRow rules
     where toRow (SavedDerivedRule dr n _ _) = let (Just dr') = decodeRule dr in 
