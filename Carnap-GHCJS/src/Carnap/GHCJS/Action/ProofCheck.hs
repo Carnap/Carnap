@@ -274,17 +274,17 @@ submitDer opts checker l g seq ref _ i = do isFinished <- liftIO $ readIORef ref
                                                         rtconfig <- liftIO $ rulePost checker
                                                         let ndcalc = checkerCalc checker
                                                             ded = ndParseProof ndcalc rtconfig v
+                                                            submission = DerivationDataOpts (pack $ show seq) (pack v) (M.toList opts)
                                                         Feedback mseq _ <- getFeedback checker ded
                                                         setAttribute g "class" "goal"
                                                         case sequent checker of
                                                              Nothing -> message "No goal sequent to submit"
                                                              Just s -> case mseq of 
                                                                  (Just s') 
-                                                                   | "exam" `elem` optlist -> trySubmit Derivation opts l (DerivationDataOpts (pack $ show seq) (pack v) (M.toList opts)) (s' `seqSubsetUnify` s)
-                                                                   | otherwise -> if (s' `seqSubsetUnify` s) 
-                                                                                   then trySubmit Derivation opts l (DerivationDataOpts (pack $ show seq) (pack v) (M.toList opts)) True
-                                                                                   else message "not yet finished"
-                                                                 _ | "exam" `elem` optlist -> trySubmit Derivation opts l (DerivationDataOpts (pack $ show seq) (pack v) (M.toList opts)) False
+                                                                   | "exam" `elem` optlist -> trySubmit Derivation opts l submission (s' `seqSubsetUnify` s)
+                                                                   | (s' `seqSubsetUnify` s) -> trySubmit Derivation opts l submission True 
+                                                                   | otherwise -> message "not yet finished"
+                                                                 _ | "exam" `elem` optlist -> trySubmit Derivation opts l submission False
                                                                    | otherwise -> message "not yet finished"
     where optlist = case M.lookup "options" opts of Just s -> words s; Nothing -> []
 
@@ -311,10 +311,8 @@ trySave checker drs ref w i =
                                   let conc = (toSchema . fromSequent) c'
                                   mname <- prompt w "What name will you give this rule (use all capital letters!)" (Just "")
                                   case (mname,checkerToRule checker)  of
-                                      (Just name, Just toRule) -> 
-                                              if allcaps name 
-                                                 then liftIO $ sendJSON (SaveRule name $ toRule $ DerivedRule conc prems) loginCheck error
-                                                 else message "rule name must be all capital letters"
+                                      (Just name, Just toRule) | allcaps name -> liftIO $ sendJSON (SaveRule name $ toRule $ DerivedRule conc prems) loginCheck error
+                                      (Just name, Just toRule) -> message "rule name must be all capital letters"
                                       (Nothing,_) -> message "No name entered"
                                       (_,Nothing) -> message "No saved rules for this proof system"
              else message "not yet finished"
