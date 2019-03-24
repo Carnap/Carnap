@@ -39,6 +39,7 @@ standardFOLParserOptions :: FirstOrderParserOptions PureLexiconFOL u Identity
 standardFOLParserOptions = FirstOrderParserOptions 
                          { atomicSentenceParser = \x -> parsePredicateSymbol "FGHIJKLMNO" x
                                                         <|> try (parseSchematicPredicateSymbol x)
+                                                        <|> try schemevarParser
                                                         <|> sentenceLetterParser "PQRSTUVW"
                                                         <|> equalsParser x 
                          , quantifiedSentenceParser' = quantifiedSentenceParser
