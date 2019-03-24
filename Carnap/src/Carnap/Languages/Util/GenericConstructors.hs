@@ -56,7 +56,7 @@ instance Schematizable (IntPred b c) where
                   args = take arity $ xs ++ repeat "_"
                   pred 
                     | n < 0 && n > -27 = ["_ABCDEFGHIJKLMNOPQRSTUVWXYZ" !! (-1 * n)]
-                    | otherwise        = "P^" ++ show a ++ "_" ++ show n 
+                    | otherwise        = "F^" ++ show a ++ "_" ++ show n 
                   tail
                     | arity == 0    = ""
                     | otherwise     = "(" ++ intercalate "," args ++ ")"

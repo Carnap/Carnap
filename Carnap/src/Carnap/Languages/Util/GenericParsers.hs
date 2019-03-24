@@ -138,9 +138,6 @@ separationParser parseFreeVar parseTerm formulaParser =
                --partially applied, returning a function
            return $ separate (show v) t bf
 
---TODO: This would need an optional "^m" following P, if we're going to
---achive read . show = id; the code overlap with the next function could be
---significantly reduced.
 parsePredicateSymbol :: 
     ( PolyadicPredicateLanguage (FixLang lex) arg ret
     , Incrementable lex arg
@@ -152,9 +149,21 @@ parsePredicateSymbol s parseTerm = (try parseNumbered <|> parseUnnumbered) <?> "
     where parseUnnumbered = do c <- oneOf s
                                let Just n = ucIndex c
                                char '(' *> argParser parseTerm (ppn (-1 * n) AOne)
-          parseNumbered = do string "F_"
-                             n <- number
+          parseNumbered = do string "F" >> optionMaybe (char '^' >> number)
+                             n <- char '_' *> number
                              char '(' *> argParser parseTerm (ppn n AOne)
+
+parseSchematicPredicateSymbol :: 
+    ( PolyadicSchematicPredicateLanguage (FixLang lex) arg ret
+    , Incrementable lex arg
+    , Monad m
+    , Typeable ret
+    , Typeable arg
+    ) => ParsecT String u m (FixLang lex arg) -> ParsecT String u m (FixLang lex ret)
+parseSchematicPredicateSymbol parseTerm = parseNumbered <?> "a schematic predicate symbol"
+    where parseNumbered = do string "φ" >> optionMaybe (char '^' >> number)
+                             n <- char '_' *> number
+                             char '(' *> argParser parseTerm (pphin n AOne)
 
 parsePredicateSymbolNoParen :: 
     ( PolyadicPredicateLanguage (FixLang lex) arg ret
@@ -167,8 +176,8 @@ parsePredicateSymbolNoParen s parseTerm = (try parseNumbered <|> parseUnnumbered
     where parseUnnumbered = do c <- oneOf s
                                let Just n = ucIndex c
                                argParserNoParen parseTerm (ppn (-1 * n) AOne)
-          parseNumbered = do string "F_"
-                             n <- number
+          parseNumbered = do string "F" >> optionMaybe (char '^' >> number)
+                             n <- char '_' *> number
                              argParserNoParen parseTerm (ppn n AOne)
 
 quantifiedSentenceParser :: 
@@ -264,7 +273,7 @@ parseConstant s = (try parseNumbered <|> parseUnnumbered) <?> "a constant"
 --------------------------------------------------------
 
 wrappedWith :: Monad m => Char -> Char -> ParsecT String u m l -> ParsecT String u m l
-wrappedWith l r recur= char l *> spaces *> recur <* spaces <* char r
+wrappedWith l r recur = char l *> spaces *> recur <* spaces <* char r
 
 parenParser :: Monad m => ParsecT String u m l -> ParsecT String u m l
 parenParser recur = wrappedWith '(' ')' recur
