@@ -70,12 +70,15 @@ data SchematicIntPred b c a where
         SPred :: Arity (Term c) (Form b) ret -> Int -> SchematicIntPred b c ret
 
 instance Schematizable (SchematicIntPred b c) where
-        schematize (SPred a n) xs = 
-            case read $ show a of
-                0 -> "φ^0_" ++ show n
-                m -> "φ^" ++ show a ++ "_" ++ show n 
-                                        ++ "(" ++ intercalate "," args ++ ")"
-                        where args = take m $ xs ++ repeat "_"
+        schematize (SPred a n) xs = pred ++ tail
+            where arity = read $ show a
+                  args = take arity $ xs ++ repeat "_"
+                  pred 
+                    | n < -5 && n > -13 = ["_φψχθγζξ" !! (-1 * (n + 5))]
+                    | otherwise        = "φ^" ++ show a ++ "_" ++ show n 
+                  tail
+                    | arity == 0    = ""
+                    | otherwise     = "(" ++ intercalate "," args ++ ")"
 
 instance UniformlyEq (SchematicIntPred b c) where
         (SPred a n) =* (SPred a' m) = show a == show a' && n == m

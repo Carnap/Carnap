@@ -160,10 +160,13 @@ parseSchematicPredicateSymbol ::
     , Typeable ret
     , Typeable arg
     ) => ParsecT String u m (FixLang lex arg) -> ParsecT String u m (FixLang lex ret)
-parseSchematicPredicateSymbol parseTerm = parseNumbered <?> "a schematic predicate symbol"
+parseSchematicPredicateSymbol parseTerm = (try parseUnnumbered <|> parseNumbered) <?> "a schematic predicate symbol"
     where parseNumbered = do string "φ" >> optionMaybe (char '^' >> number)
                              n <- char '_' *> number
                              char '(' *> argParser parseTerm (pphin n AOne)
+          parseUnnumbered = do c <- oneOf "φψχθγζξ"
+                               let Just n = elemIndex c "_φψχθγζξ"
+                               char '(' *> argParser parseTerm (pphin (-1 * (n + 5)) AOne)
 
 parsePredicateSymbolNoParen :: 
     ( PolyadicPredicateLanguage (FixLang lex) arg ret
