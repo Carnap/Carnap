@@ -44,8 +44,8 @@ standardFOLParserOptions = FirstOrderParserOptions
                                                         <|> equalsParser x 
                          , quantifiedSentenceParser' = quantifiedSentenceParser
                          , freeVarParser = parseFreeVar "vwxyz"
-                         , constantParser = Just (parseConstant "abcde")
-                         , functionParser = Just (parseFunctionSymbol "fgh")
+                         , constantParser = Just (parseConstant "abcde" <|> parseSchematicConstant) 
+                         , functionParser = Just (\x -> parseFunctionSymbol "fgh" x <|> parseSchematicFunctionSymbol x)
                          , hasBooleanConstants = False
                          , parenRecur = \opt recurWith  -> parenParser (recurWith opt)
                          , opTable = standardOpTable

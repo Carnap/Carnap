@@ -251,12 +251,27 @@ parseFunctionSymbol ::
     , Typeable arg
     ) => String -> ParsecT String u m (FixLang lex arg) -> ParsecT String u m (FixLang lex ret)
 parseFunctionSymbol s parseTerm = (try parseNumbered <|> parseUnnumbered) <?> "a function symbol"
-    where parseNumbered = do string "f_"
+    where parseNumbered = do string "f" >> optionMaybe (char '^' >> number) >> char '_' 
                              n <- number
                              char '(' *> argParser parseTerm (pfn n AOne)
           parseUnnumbered = do c <- oneOf s
                                let Just n = lcIndex c
                                char '(' *> argParser parseTerm (pfn (-1 * n) AOne)
+
+parseSchematicFunctionSymbol ::     
+    ( SchematicPolyadicFunctionLanguage (FixLang lex) arg ret
+    , Incrementable lex arg
+    , Monad m
+    , Typeable ret
+    , Typeable arg
+    ) => ParsecT String u m (FixLang lex arg) -> ParsecT String u m (FixLang lex ret)
+parseSchematicFunctionSymbol parseTerm = (try parseNumbered <|> parseUnnumbered) <?> "a function symbol"
+    where parseNumbered = do string "τ" >> optionMaybe (char '^' >> number) >> char '_'
+                             n <- number
+                             char '(' *> argParser parseTerm (spfn n AOne)
+          parseUnnumbered = do c <- oneOf "τνυ"
+                               let Just n = elemIndex c "_τνυ"
+                               char '(' *> argParser parseTerm (spfn (-1 * (n + 5)) AOne)
 
 parseConstant :: 
     ( IndexedConstantLanguage (FixLang lex ret)
@@ -270,6 +285,19 @@ parseConstant s = (try parseNumbered <|> parseUnnumbered) <?> "a constant"
           parseNumbered  = do _ <- string "c_"
                               n <- number
                               return $ cn n
+
+parseSchematicConstant :: 
+    ( IndexedSchemeConstantLanguage (FixLang lex ret)
+    , Typeable ret
+    , Monad m
+    ) => ParsecT String u m (FixLang lex ret)
+parseSchematicConstant = (try parseNumbered <|> parseUnnumbered) <?> "a constant"
+    where parseUnnumbered = do c <- oneOf "τνυ"
+                               let Just n = elemIndex c "_τνυ"
+                               return $ taun (-1 * n)
+          parseNumbered  = do _ <- string "τ_" >> optionMaybe (string "^0")
+                              n <- number
+                              return $ taun n
 
 --------------------------------------------------------
 --Structural Elements
