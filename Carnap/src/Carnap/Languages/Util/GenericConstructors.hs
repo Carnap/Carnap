@@ -157,6 +157,7 @@ instance Schematizable (SchematicIntFunc b c) where
                   args = take arity $ xs ++ repeat "_"
                   pred 
                     | n < -5 && n > -9 = ["_τνυ" !! (-1 * (n + 5))] 
+                    | arity == 0 && n < 0 && n > -4 = ["_τπμ" !! (-1 * n)] 
                     | arity == 0       = "τ" ++ "_" ++ show n
                     | otherwise        = "τ^" ++ show a ++ "_" ++ show n 
                   tail

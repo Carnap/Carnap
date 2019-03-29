@@ -292,8 +292,8 @@ parseSchematicConstant ::
     , Monad m
     ) => ParsecT String u m (FixLang lex ret)
 parseSchematicConstant = (try parseNumbered <|> parseUnnumbered) <?> "a constant"
-    where parseUnnumbered = do c <- oneOf "τνυ"
-                               let Just n = elemIndex c "_τνυ"
+    where parseUnnumbered = do c <- oneOf "τπμ"
+                               let Just n = elemIndex c "_τπμ"
                                return $ taun (-1 * n)
           parseNumbered  = do _ <- string "τ_" >> optionMaybe (string "^0")
                               n <- number
