@@ -50,7 +50,7 @@ instance ToJSON ProblemData
 
 instance FromJSON ProblemData
 
-data DerivedRule lex sem = DerivedRule { conclusion :: FixLang lex sem, premises :: [FixLang lex sem]}
+data DerivedRule lex sem = DerivedRule { conclusion :: FixLang lex sem, premises :: [FixLang lex sem] }
 deriving instance Show (FixLang lex sem) => Show (DerivedRule lex sem)
 deriving instance Read (FixLang lex sem) => Read (DerivedRule lex sem)
 deriving instance Eq (FixLang lex sem) => Eq (DerivedRule lex sem)
@@ -58,7 +58,6 @@ deriving instance Eq (FixLang lex sem) => Eq (DerivedRule lex sem)
 derivedRuleToSequent (DerivedRule c ps) = antecedent :|-: SS (liftToSequent c)
     where antecedent = foldr (:+:) Top (map (SA . liftToSequent) ps)
 
---XXX: these should be more structured.
 data GHCJSCommand = Submit ProblemType String ProblemData ProblemSource Bool (Maybe Int) String 
                   | SaveRule String SomeRule
                   | RequestDerivedRulesForUser
@@ -88,6 +87,7 @@ instance Read (FixLang lex sem) => FromJSON (DerivedRule lex sem) where
 decodeRule :: ByteString -> Maybe (DerivedRule PurePropLexicon (Form Bool))
 decodeRule = decodeStrict 
 
+--naming convention: _Rule is assocated with _Calc
 data SomeRule = PropRule (DerivedRule PurePropLexicon (Form Bool))
               | FOLRule (DerivedRule PureLexiconFOL (Form Bool))
     deriving (Show, Read, Eq, Generic)
