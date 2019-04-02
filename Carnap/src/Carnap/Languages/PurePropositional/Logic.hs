@@ -1,5 +1,5 @@
 module Carnap.Languages.PurePropositional.Logic 
-    ( DerivedRule(..),  PropSequentCalc
+    ( PropSequentCalc
     , parsePropLogic, PropLogic, propCalc
     , parseMontagueSC, MontagueSC, montagueSCCalc
     , parseLogicBookSD, LogicBookSD, logicBookSDCalc
@@ -14,7 +14,7 @@ module Carnap.Languages.PurePropositional.Logic
     , parseIchikawaJenkinsSL, IchikawaJenkinsSL, ichikawaJenkinsSLCalc
     ) where
 
-import Carnap.Languages.PurePropositional.Logic.Rules (PropSequentCalc,DerivedRule(..))
+import Carnap.Languages.PurePropositional.Logic.Rules (PropSequentCalc)
 import Carnap.Languages.PurePropositional.Logic.BergmannMoorAndNelson
 import Carnap.Languages.PurePropositional.Logic.Carnap
 import Carnap.Languages.PurePropositional.Logic.Hardegree

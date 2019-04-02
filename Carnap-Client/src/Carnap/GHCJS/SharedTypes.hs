@@ -1,16 +1,23 @@
-{-#LANGUAGE DeriveGeneric, FlexibleInstances, OverloadedStrings#-}
+{-#LANGUAGE DeriveGeneric, StandaloneDeriving, FlexibleContexts, UndecidableInstances, FlexibleInstances, OverloadedStrings#-}
 module Carnap.GHCJS.SharedTypes (
-        GHCJSCommand(..), ProblemSource(..), ProblemType(..), ProblemData(..)
+    GHCJSCommand(..), ProblemSource(..), ProblemType(..), ProblemData(..), DerivedRule(..)
+    , derivedRuleToSequent, decodeRule, SomeRule(..), inspectPrems, inspectConclusion
 ) where
 
 import Prelude
-import Data.Aeson (ToJSON(..), FromJSON(..), Value(..), object, (.=), (.:))
-import Data.Either
+import Data.Aeson (ToJSON(..), FromJSON(..), Value(..), object, (.=), (.:), decodeStrict)
+import Text.Read
 import Data.Text (Text)
+import Data.ByteString (ByteString)
 import Text.Parsec (parse, eof)
 import GHC.Generics
-import Carnap.Languages.PurePropositional.Logic (DerivedRule(..))
+import Carnap.Core.Data.Types (FixLang, Form)
+import Carnap.Languages.ClassicalSequent.Syntax
+import Carnap.Languages.PurePropositional.Syntax
+import Carnap.Languages.Util.LanguageClasses
+import Carnap.Languages.PureFirstOrder.Syntax
 import Carnap.Languages.PurePropositional.Parser
+import Carnap.Languages.PureFirstOrder.Parser
 
 data ProblemSource = Book | Assignment String
         deriving (Show, Read, Eq, Generic)
@@ -43,29 +50,54 @@ instance ToJSON ProblemData
 
 instance FromJSON ProblemData
 
---XXX: these should be more structured.
-data GHCJSCommand = EchoBack (String, Bool)
-        | Submit ProblemType String ProblemData ProblemSource Bool (Maybe Int) String 
-        | SaveDerivedRule String DerivedRule
-        | RequestDerivedRulesForUser
+data DerivedRule lex sem = DerivedRule { conclusion :: FixLang lex sem, premises :: [FixLang lex sem] }
+deriving instance Show (FixLang lex sem) => Show (DerivedRule lex sem)
+deriving instance Read (FixLang lex sem) => Read (DerivedRule lex sem)
+deriving instance Eq (FixLang lex sem) => Eq (DerivedRule lex sem)
+
+derivedRuleToSequent (DerivedRule c ps) = antecedent :|-: SS (liftToSequent c)
+    where antecedent = foldr (:+:) Top (map (SA . liftToSequent) ps)
+
+data GHCJSCommand = Submit ProblemType String ProblemData ProblemSource Bool (Maybe Int) String 
+                  | SaveRule String SomeRule
+                  | RequestDerivedRulesForUser
         deriving (Generic, Show)
 
 instance ToJSON GHCJSCommand
 
 instance FromJSON GHCJSCommand
 
-instance ToJSON DerivedRule where
+instance Show (FixLang lex sem) => ToJSON (DerivedRule lex sem) where
         toJSON (DerivedRule conclusion prems) = 
             object [ "conclusion" .= show conclusion
-                   , "premises"   .= map show prems]
+                   , "premises"   .= map show prems
+                   ]
 
-instance FromJSON DerivedRule where
+instance Read (FixLang lex sem) => FromJSON (DerivedRule lex sem) where
         parseJSON (Object v) = 
             do c  <- v .: "conclusion"
                ps <- v .: "premises"
-               let ps' = map toForm ps 
-               case (toForm c, lefts ps') of 
-                 (Right f, []) -> return $ DerivedRule f (rights ps')
+               let ps' = mapM toForm ps 
+               case (toForm c, ps') of 
+                 (Just f, Just ps'') -> return $ DerivedRule f ps''
                  _ -> mempty
-            where toForm = parse (purePropFormulaParser standardLetters <* eof) ""
+            where toForm x = readMaybe x
         parseJSON _ = mempty
+
+decodeRule :: ByteString -> Maybe (DerivedRule PurePropLexicon (Form Bool))
+decodeRule = decodeStrict 
+
+--naming convention: _Rule is assocated with _Calc
+data SomeRule = PropRule (DerivedRule PurePropLexicon (Form Bool))
+              | FOLRule (DerivedRule PureLexiconFOL (Form Bool))
+    deriving (Show, Read, Eq, Generic)
+
+inspectPrems (PropRule r) = map show $ premises r
+inspectPrems (FOLRule r) = map show $ premises r
+
+inspectConclusion (PropRule r) = show $ conclusion r
+inspectConclusion (FOLRule r) = show $ conclusion r
+
+instance ToJSON SomeRule
+
+instance FromJSON SomeRule

@@ -56,7 +56,7 @@ instance Schematizable (IntPred b c) where
                   args = take arity $ xs ++ repeat "_"
                   pred 
                     | n < 0 && n > -27 = ["_ABCDEFGHIJKLMNOPQRSTUVWXYZ" !! (-1 * n)]
-                    | otherwise        = "P^" ++ show a ++ "_" ++ show n 
+                    | otherwise        = "F^" ++ show a ++ "_" ++ show n 
                   tail
                     | arity == 0    = ""
                     | otherwise     = "(" ++ intercalate "," args ++ ")"
@@ -70,12 +70,15 @@ data SchematicIntPred b c a where
         SPred :: Arity (Term c) (Form b) ret -> Int -> SchematicIntPred b c ret
 
 instance Schematizable (SchematicIntPred b c) where
-        schematize (SPred a n) xs = 
-            case read $ show a of
-                0 -> "φ^0_" ++ show n
-                m -> "φ^" ++ show a ++ "_" ++ show n 
-                                        ++ "(" ++ intercalate "," args ++ ")"
-                        where args = take m $ xs ++ repeat "_"
+        schematize (SPred a n) xs = pred ++ tail
+            where arity = read $ show a
+                  args = take arity $ xs ++ repeat "_"
+                  pred 
+                    | n < -5 && n > -13 = ["_φψχθγζξ" !! (-1 * (n + 5))]
+                    | otherwise        = "φ^" ++ show a ++ "_" ++ show n 
+                  tail
+                    | arity == 0    = ""
+                    | otherwise     = "(" ++ intercalate "," args ++ ")"
 
 instance UniformlyEq (SchematicIntPred b c) where
         (SPred a n) =* (SPred a' m) = show a == show a' && n == m
@@ -149,12 +152,17 @@ data SchematicIntFunc c b a where
         SFunc ::  Arity (Term c) (Term b) ret -> Int -> SchematicIntFunc b c ret
 
 instance Schematizable (SchematicIntFunc b c) where
-        schematize (SFunc a n) xs = 
-            case read $ show a of
-                0 -> "τ^0_" ++ show n
-                m -> "τ^" ++ show a ++ "_" ++ show n 
-                                        ++ "(" ++ intercalate "," args ++ ")"
-                        where args = take m $ xs ++ repeat "_"
+        schematize (SFunc a n) xs = pred ++ tail
+            where arity = read $ show a
+                  args = take arity $ xs ++ repeat "_"
+                  pred 
+                    | n < -5 && n > -9 = ["_τνυ" !! (-1 * (n + 5))] 
+                    | arity == 0 && n < 0 && n > -4 = ["_τπμ" !! (-1 * n)] 
+                    | arity == 0       = "τ" ++ "_" ++ show n
+                    | otherwise        = "τ^" ++ show a ++ "_" ++ show n 
+                  tail
+                    | arity == 0    = ""
+                    | otherwise     = "(" ++ intercalate "," args ++ ")"
 
 instance UniformlyEq (SchematicIntFunc b c) where
         (SFunc a n) =* (SFunc a' m) = show a == show a' && n == m

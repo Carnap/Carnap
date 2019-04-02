@@ -148,12 +148,12 @@ documentsByInstructorIdent ident = runDB $ do muent <- getBy $ UniqueUser ident
                                                   Just uid -> selectList [DocumentCreator ==. uid] []
                                                   Nothing -> return []
                                    
--- | derived rules by userId
-getDerivedRules uid = do savedRules <- runDB $ selectList 
-                                               [SavedDerivedRuleUserId ==. uid] []
-                         case savedRules of 
-                             [] -> return Nothing
-                             _  -> return $ Just (map entityVal savedRules)
+-- | old derived rules by userId XXX: legacy, deprecate eventually
+getDerivedRules uid = runDB $ selectList [SavedDerivedRuleUserId ==. uid] [] 
+                      >>= return . map entityVal
+
+getRules uid = runDB $ selectList [SavedRuleUserId ==. uid] [] 
+               >>= return . map entityVal
 
 -- | instructorId by ident
 instructorIdByIdent ident = runDB $ do muent <- getBy $ UniqueUser ident

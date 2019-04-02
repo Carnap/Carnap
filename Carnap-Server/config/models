@@ -65,6 +65,13 @@ SavedDerivedRule
     userId UserId
     UniqueDerivedRule name userId
 
+SavedRule
+    derivedRule SomeRule
+    name Text
+    time UTCTime
+    userId UserId
+    UniqueRule name userId
+
 AssignmentMetadata
     document DocumentId
     description Text Maybe

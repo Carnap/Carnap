@@ -6,8 +6,8 @@ import Carnap.Core.Data.Optics
 import Carnap.Core.Data.Util (incArity)
 import Carnap.Languages.Util.GenericConstructors
 import Data.Typeable
+import Text.Parsec
 import Control.Lens (Prism', prism',review,only)
-
 
 --The convention for variables in this module is that lex is
 --a lexicon, lang is language (without a particular associated syntactic
@@ -724,8 +724,19 @@ instance {-#OVERLAPPABLE#-}
 --------------------------------------------------------
 --2. Utility Classes
 --------------------------------------------------------
+class ParsableLex sem f where
+        langParser :: Parsec String u (FixLang f sem)
+
+instance ParsableLex sem f => Read (FixLang f sem) where
+    readsPrec prec input = case parse (withRemaining (spaces *> langParser)) "" input of
+            Left _ -> []
+            Right result -> [result]
+        where withRemaining p = (,) <$> p <*> getInput
 
 class Incrementable lex arg where
         incHead :: (Typeable a, Typeable arg) => FixLang lex a -> Maybe (FixLang lex (arg -> a)) 
         incBody :: (Typeable b, Typeable arg) => FixLang lex (arg -> b) -> Maybe (FixLang lex (arg -> arg -> b))
         incBody = incArity incHead
+
+class ToSchema lex sem where
+        toSchema :: FixLang lex sem -> FixLang lex sem

@@ -5,7 +5,7 @@ function deleteRule (name) {
         contentType: "application/json",
         data: JSON.stringify(name),
         success: function(data) {
-            var el = documentkgetElementById("rule-" + name);
+            var el = document.getElementById("rule-" + name);
             el.parentElement.removeChild(el);
             window.alert("Deleted the rule " + name);
             },

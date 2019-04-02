@@ -61,7 +61,7 @@ type CoreLexicon = P.PurePropLexicon
                    :|: Binders PureQuant
                    :|: Function PureConstant
                    :|: Function PureVar
-                   :|: Function (SchematicIntFunc Int Int)
+                   :|: Function PureSchematicFunction
                    :|: EndLang
 
 type PureFirstOrderLexWith a = CoreLexicon :|: a

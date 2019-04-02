@@ -21,6 +21,7 @@ library
                          , aeson
                          , parsec
                          , text
+                         , bytestring
                          , Carnap
 
   else 
@@ -28,6 +29,7 @@ library
                          , aeson
                          , parsec
                          , text
+                         , bytestring
                          , Carnap
 
   default-language:    Haskell2010

@@ -1,7 +1,7 @@
 {-#LANGUAGE ImpredicativeTypes, FlexibleContexts, RankNTypes,TypeOperators, ScopedTypeVariables, GADTs, MultiParamTypeClasses #-}
 
 module Carnap.Core.Data.Util (scopeHeight, equalizeTypes, incArity, checkChildren,
-mapover, (:~:)(Refl), Buds(..), Blossoms(..), bloom, sbloom, grow, rebuild, castToProxy, castTo) where
+mapover, maphead, (:~:)(Refl), Buds(..), Blossoms(..), bloom, sbloom, grow, rebuild, castToProxy, castTo) where
 
 --this module defines utility functions and typeclasses for manipulating
 --the data types defined in Core.Data
@@ -71,11 +71,25 @@ checkChildren :: (Eq s, Plated s) => s -> s -> Bool
 checkChildren phi psi = phi /= psi && anyOf cosmos (== phi) psi
 
 {-|
-this function will, given a suitably polymorphic argument `f`, apply `f` to each of the immediate children of the linguistic expression `le`.
+this function will, given a suitably polymorphic argument `f`, apply `f` to each of the immediate children, including the head, of the linguistic expression `le`.
 -}
 mapover :: (forall a. FixLang l a -> FixLang l a) -> FixLang l b -> FixLang l b
 mapover f le@(x :!$: y) = mapover f x :!$: f y
-mapover f x = x
+mapover f x =  f x
+
+{-|
+this function will, given a suitably polymorphic argument `f`, apply `f` to the head of the linguistic expression `le`.
+-}
+maphead :: (forall a. Typeable a => FixLang l a -> FixLang l a) -> FixLang l b -> FixLang l b
+maphead f le@(x :!$: y) = maphead f x :!$: y
+maphead f x@(Fx _) = f x
+
+{-|
+this function will, given a suitably polymorphic argument `f`, apply `f` to the children of the linguistic expression `le`, but not the head.
+-}
+mapbody :: (forall a. Typeable a => FixLang l a -> FixLang l a) -> FixLang l b -> FixLang l b
+mapbody f le@(x :!$: y) = maphead f x :!$: f y
+mapbody f x@(Fx _) = x
 
 {-|
 This function will assign a height to a given linguistic expression,

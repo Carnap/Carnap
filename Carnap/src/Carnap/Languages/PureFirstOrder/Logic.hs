@@ -1,5 +1,5 @@
 module Carnap.Languages.PureFirstOrder.Logic
-        ( FOLogic(..), DerivedRule(..)
+        ( FOLogic(..)
         , parseFOLogic, folCalc
         , parseMontagueQCCalc, montagueQCCalc
         , parseMagnusQL, magnusQLCalc

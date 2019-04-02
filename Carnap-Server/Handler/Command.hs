@@ -3,7 +3,6 @@ module Handler.Command where
 import Import
 import Carnap.GHCJS.SharedTypes
 -- XXX: It would be nice for this to be more generic
-import Carnap.Languages.PurePropositional.Logic (DerivedRule)
 import Data.Aeson (encode, decodeStrict)
 import Data.Time
 import Util.Database
@@ -19,7 +18,6 @@ postCommandR = do
     case maybeCurrentUserId of 
            Nothing -> returnJson ("No User" :: String)
            Just uid  -> case cmd of
-                EchoBack (s,b) -> returnJson (reverse s)
                 Submit typ ident dat source correct credit key ->  
                     do time <- liftIO getCurrentTime
                        (mkey, masgn) <- case key of 
@@ -53,17 +51,22 @@ postCommandR = do
                                    then do success <- tryInsert sub
                                            afterInsert success
                                    else returnJson ("Assignment not available" :: String)
-                SaveDerivedRule n dr -> do time <- liftIO getCurrentTime
-                                           let save = SavedDerivedRule (toStrict $ encode dr) (pack n) time uid
-                                           tryInsert save >>= afterInsert
-                RequestDerivedRulesForUser -> do savedRules <- runDB $ selectList [SavedDerivedRuleUserId ==. uid] []
-                                                 let packagedRules = catMaybes $ map (packageRule . entityVal) savedRules
-                                                 liftIO $ print $ "sending" ++ (show $ toJSON packagedRules)
-                                                 returnJson $ show $ toJSON packagedRules
+                SaveRule n r -> do time <- liftIO getCurrentTime
+                                   let save = SavedRule r (pack n) time uid
+                                   tryInsert save >>= afterInsert
+                RequestDerivedRulesForUser -> do savedPropRules <- runDB $ selectList [SavedDerivedRuleUserId ==. uid] []
+                                                 savedRules <- runDB $ selectList [SavedRuleUserId ==. uid] []
+                                                 let oldRules = catMaybes $ map (packageOldRule . entityVal) savedPropRules
+                                                     newRules = map (packageNewRule . entityVal) savedRules
+                                                     rules = oldRules ++ newRules
+                                                 liftIO $ print $ "sending" ++ (show $ toJSON rules)
+                                                 returnJson $ show $ toJSON $ rules
 
-packageRule (SavedDerivedRule dr n _ _) = case (decodeStrict dr :: Maybe DerivedRule) of
-                                              Just r -> Just (unpack n, r)
-                                              _ -> Nothing
+packageOldRule (SavedDerivedRule dr n _ _) = case decodeRule dr of
+                                                Just r -> Just (unpack n, PropRule r)
+                                                _ -> Nothing
+
+packageNewRule (SavedRule dr n _ _) = (unpack n, dr)
 
 afterInsert (Just _) = returnJson ("submitted!" :: String) 
 afterInsert Nothing = returnJson ("Clash" :: String)

@@ -37,12 +37,6 @@ data PropSeqLabel = PropSeqFO | PropSeqACUI
 instance Eq (PropSequentCalc a) where
         (==) = (=*)
 
-data DerivedRule = DerivedRule { conclusion :: PureForm, premises :: [PureForm]}
-               deriving (Show, Eq)
-
-derivedRuleToSequent (DerivedRule c ps) = antecedent :|-: SS (liftToSequent c)
-    where antecedent = foldr (:+:) Top (map (SA . liftToSequent) ps)
-
 premConstraint Nothing _ = Nothing
 premConstraint (Just prems) sub | theinstance `elem` prems = Nothing
                                 | otherwise = Just (show (project theinstance) ++ " is not one of the premises " 

@@ -5,15 +5,13 @@ import Text.Parsec
 import Data.Typeable
 import Carnap.Core.Data.Types
 import Carnap.Languages.ClassicalSequent.Syntax
+import Carnap.Languages.Util.LanguageClasses
 
 
 --------------------------------------------------------
 --1. The parser
 --------------------------------------------------------
 
-class ParsableLex sem f where
-        langParser :: Parsec String u (FixLang f sem)
-        
 seqFormulaParser :: (Sequentable f, ParsableLex sem f, Typeable sem) => 
     Parsec String u (ClassicalSequentOver f (Sequent sem))
 seqFormulaParser = parseSeqOver langParser 

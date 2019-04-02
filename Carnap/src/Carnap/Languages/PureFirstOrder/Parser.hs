@@ -38,12 +38,14 @@ data FirstOrderParserOptions lex u m = FirstOrderParserOptions
 standardFOLParserOptions :: FirstOrderParserOptions PureLexiconFOL u Identity
 standardFOLParserOptions = FirstOrderParserOptions 
                          { atomicSentenceParser = \x -> parsePredicateSymbol "FGHIJKLMNO" x
+                                                        <|> try (parseSchematicPredicateSymbol x)
+                                                        <|> try schemevarParser
                                                         <|> sentenceLetterParser "PQRSTUVW"
                                                         <|> equalsParser x 
                          , quantifiedSentenceParser' = quantifiedSentenceParser
                          , freeVarParser = parseFreeVar "vwxyz"
-                         , constantParser = Just (parseConstant "abcde")
-                         , functionParser = Just (parseFunctionSymbol "fgh")
+                         , constantParser = Just (parseConstant "abcde" <|> parseSchematicConstant) 
+                         , functionParser = Just (\x -> parseFunctionSymbol "fgh" x <|> parseSchematicFunctionSymbol x)
                          , hasBooleanConstants = False
                          , parenRecur = \opt recurWith  -> parenParser (recurWith opt)
                          , opTable = standardOpTable
