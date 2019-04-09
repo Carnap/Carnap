@@ -1,11 +1,11 @@
 {-#LANGUAGE  UndecidableInstances, FlexibleInstances, MultiParamTypeClasses, FunctionalDependencies, GADTs, PolyKinds, TypeOperators, RankNTypes, FlexibleContexts, ScopedTypeVariables  #-}
 module Carnap.Core.Data.Optics(
-  RelabelVars(..),  PrismLink(..), (:<:)(..), ReLex(..), unaryOpPrism, binaryOpPrism, genChildren, PrismSubstitutionalVariable(..) 
+  RelabelVars(..),  PrismLink(..), (:<:)(..), ReLex(..), unaryOpPrismOn, unaryOpPrism, binaryOpPrismOn, binaryOpPrism, genChildren, PrismSubstitutionalVariable(..), flipt
 ) where
 
 import Carnap.Core.Data.Types
 import Carnap.Core.Unification.Unification
-import Control.Lens(Plated(..), Prism'(..), prism', preview, Iso'(..), iso, review, Traversal'(..),transformM)
+import Control.Lens(Plated(..), Lens'(..), lens, Prism'(..), prism', preview, Iso'(..), iso, review, Traversal'(..),transformM, Iso,iso)
 import Data.Typeable
 import Control.Monad.State (get, put, State, StateT)
 import Control.Monad.State.Lazy as S
@@ -214,28 +214,41 @@ item into a prism onto the things that that item is predicated of. e.g.
 if you have a NOT in your language, selected by a prism, this would give
 you a prism on to the argument to a negation
 -}
-unaryOpPrism :: (Typeable a, Typeable b) => 
-    Prism' (FixLang lex (a -> b)) () -> Prism' (FixLang lex b) (FixLang lex a) 
-unaryOpPrism prism = prism' construct (destruct prism) 
-    where construct a = review prism () :!$: a
+unaryOpPrism :: (Typeable a, Typeable b) => Prism' (FixLang lex (a -> b)) () -> Prism' (FixLang lex b) (FixLang lex a) 
+unaryOpPrism prism = unaryOpPrismOn prism . withUnit
 
-          destruct :: Typeable a => Prism' (FixLang lex (a -> b)) () -> FixLang lex b -> Maybe (FixLang lex a)
-          destruct (prism :: Prism' (FixLang lex (a -> b)) ()) b@(h :!$: (t:: FixLang lex t)) =
+withUnit :: Iso' ((),a) a
+withUnit = iso (\((),x) -> x) (\x -> ((),x)) 
+
+flipt :: Iso' (a,b) (b,a)
+flipt = iso (\(x,y) -> (y,x)) (\(x,y) -> (y,x))
+
+unaryOpPrismOn :: (Typeable a, Typeable b) => 
+    Prism' (FixLang lex (a -> b)) c -> Prism' (FixLang lex b) (c, FixLang lex a) 
+unaryOpPrismOn prism = prism' construct (destruct prism) 
+    where construct (c,a) = review prism c :!$: a
+
+          destruct :: Typeable a => Prism' (FixLang lex (a -> b)) c -> FixLang lex b -> Maybe (c, FixLang lex a)
+          destruct (prism :: Prism' (FixLang lex (a -> b)) c) b@(h :!$: (t:: FixLang lex t)) =
               case eqT :: Maybe (a :~: t) of 
-                        Just Refl -> preview prism h >> return t
+                        Just Refl -> (,) <$> preview prism h <*> Just t
                         Nothing -> Nothing
           destruct _ _ = Nothing
 
 {-| Similarly, for a binary language item -}
 binaryOpPrism :: (Typeable a, Typeable c, Typeable b) => 
     Prism' (FixLang lex (a -> b -> c)) () -> Prism' (FixLang lex c) (FixLang lex a, FixLang lex b)
-binaryOpPrism prism = prism' construct (destruct prism)
-    where construct (a,b) = review prism () :!$: a :!$: b
+binaryOpPrism prism = binaryOpPrismOn prism . withUnit
 
-          destruct :: (Typeable b, Typeable a) => Prism' (FixLang lex (a -> b -> c)) () -> FixLang lex c -> Maybe (FixLang lex a, FixLang lex b)
-          destruct (prism :: Prism' (FixLang lex (a -> b -> c)) ()) b@(h :!$: (t:: FixLang lex a') :!$: (t':: FixLang lex b')) =
+binaryOpPrismOn :: (Typeable a, Typeable c, Typeable b) => 
+    Prism' (FixLang lex (a -> b -> c)) d -> Prism' (FixLang lex c) (d, (FixLang lex a, FixLang lex b))
+binaryOpPrismOn prism = prism' construct (destruct prism)
+    where construct (c,(a,b)) = review prism c :!$: a :!$: b
+
+          destruct :: (Typeable b, Typeable a) => Prism' (FixLang lex (a -> b -> c)) d -> FixLang lex c -> Maybe (d,(FixLang lex a, FixLang lex b))
+          destruct (prism :: Prism' (FixLang lex (a -> b -> c)) d) b@(h :!$: (t:: FixLang lex a') :!$: (t':: FixLang lex b')) =
               case eqT :: Maybe ((a,b) :~: (a',b')) of 
-                        Just Refl -> preview prism h >> return (t,t')
+                        Just Refl -> (,) <$> preview prism h <*> Just (t,t')
                         Nothing -> Nothing
           destruct _ _ = Nothing
 

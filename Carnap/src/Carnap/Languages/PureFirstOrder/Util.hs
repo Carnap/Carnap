@@ -1,5 +1,5 @@
 {-# LANGUAGE FlexibleContexts, TypeSynonymInstances, FlexibleInstances, MultiParamTypeClasses, UndecidableInstances #-}
-module Carnap.Languages.PureFirstOrder.Util (propForm, boundVarOf) where
+module Carnap.Languages.PureFirstOrder.Util (propForm, boundVarOf, toPNF) where
 
 import Carnap.Core.Data.Classes
 import Carnap.Core.Data.Types
@@ -32,6 +32,51 @@ boundVarOf v f = case preview  _varLabel v >>= subBinder f of
                             Just f' -> show f' == show f
                             Nothing -> False 
 
+toPNF = canonical . rewrite stepPNF
+
+stepPNF :: FixLang PureLexiconFOL (Form Bool) -> Maybe (FixLang PureLexiconFOL (Form Bool))
+stepPNF = const Nothing 
+            & outside (binaryOpPrism _and . aside (unaryOpPrismOn _all')) .~
+                (\(f,(v, LLam f')) -> Just $ (lall v $ \x -> f ./\. f' x ))
+            & outside (binaryOpPrism _and . flipt . aside (unaryOpPrismOn _all') . flipt) .~
+                (\((v, LLam f'),f) -> Just $ (lall v $ \x -> f' x ./\. f ))
+            & outside (binaryOpPrism _and . aside (unaryOpPrismOn _some')) .~
+                (\(f,(v, LLam f')) -> Just $ (lsome v $ \x -> f ./\. f' x ))
+            & outside (binaryOpPrism _and . flipt . aside (unaryOpPrismOn _some') . flipt) .~
+                (\((v, LLam f'),f) -> Just $ (lsome v $ \x -> f' x ./\. f ))
+            & outside (binaryOpPrism _or . aside (unaryOpPrismOn _all')) .~
+                (\(f,(v, LLam f')) -> Just $ (lall v $ \x -> f .\/. f' x ))
+            & outside (binaryOpPrism _or . flipt . aside (unaryOpPrismOn _all') . flipt) .~
+                (\((v, LLam f'),f) -> Just $ (lall v $ \x -> f' x .\/. f ))
+            & outside (binaryOpPrism _or . aside (unaryOpPrismOn _some')) .~
+                (\(f,(v, LLam f')) -> Just $ (lsome v $ \x -> f .\/. f' x ))
+            & outside (binaryOpPrism _or . flipt . aside (unaryOpPrismOn _some') . flipt) .~
+                (\((v, LLam f'),f) -> Just $ (lsome v $ \x -> f' x .\/. f ))
+            & outside (binaryOpPrism _if . aside (unaryOpPrismOn _all')) .~
+                (\(f,(v, LLam f')) -> Just $ (lall v $ \x -> f .=>. f' x ))
+            & outside (binaryOpPrism _if . flipt . aside (unaryOpPrismOn _all') . flipt) .~
+                (\((v, LLam f'),f) -> Just $ (lsome v $ \x -> f' x .=>. f ))
+            & outside (binaryOpPrism _if . aside (unaryOpPrismOn _some')) .~
+                (\(f,(v, LLam f')) -> Just $ (lsome v $ \x -> f .=>. f' x ))
+            & outside (binaryOpPrism _if . flipt . aside (unaryOpPrismOn _some') . flipt) .~
+                (\((v, LLam f'),f) -> Just $ (lall v $ \x -> f' x .=>. f ))
+            & outside (binaryOpPrism _iff . aside (unaryOpPrismOn _all')) .~
+                (\(f,(v, LLam f')) -> Just $ (lall v $ \x -> f .=>. f' x ) ./\. (lsome v $ \x -> f' x .=>. f ))
+            & outside (binaryOpPrism _iff . flipt . aside (unaryOpPrismOn _all') . flipt) .~
+                (\((v, LLam f'),f) -> Just $ (lall v $ \x -> f .=>. f' x ) ./\. (lsome v $ \x -> f' x .=>. f ))
+            & outside (binaryOpPrism _iff . aside (unaryOpPrismOn _some')) .~
+                (\(f,(v, LLam f')) -> Just $ (lsome v $ \x -> f .=>. f' x ) ./\. (lall v $ \x -> f' x .=>. f ))
+            & outside (binaryOpPrism _iff . flipt . aside (unaryOpPrismOn _some') . flipt) .~
+                (\((v, LLam f'),f) -> Just $ (lsome v $ \x -> f .=>. f' x ) ./\. (lall v $ \x -> f' x .=>. f ))
+            & outside (unaryOpPrism _not . unaryOpPrismOn _some') .~
+                (\(v, LLam f') -> Just $ (lall v $ \x -> lneg $ f' x ))
+            & outside (unaryOpPrism _not . unaryOpPrismOn _all') .~
+                (\(v, LLam f') -> Just $ (lsome v $ \x -> lneg $ f' x ))
+    where _all' :: Prism' (FixLang PureLexiconFOL ((Term Int -> Form Bool) -> Form Bool)) String
+          _all' = _all
+          _some' :: Prism' (FixLang PureLexiconFOL ((Term Int -> Form Bool) -> Form Bool)) String
+          _some' = _some
+
 --- XXX: This shouldn't require so many annotations. Doesn't need them in
 --GHCi 8.4.2, and probably not in GHC 8.4.2 generally.
 instance (FirstOrderLex (b (FixLang (OpenLexiconPFOL b))), ToSchema (OpenLexiconPFOL b) (Term Int)) => ToSchema (OpenLexiconPFOL b) (Form Bool) where
@@ -49,7 +94,7 @@ instance (FirstOrderLex (b (FixLang (OpenLexiconPFOL b))), ToSchema (OpenLexicon
                        ) => Traversal' (FixLang (OpenLexiconPFOL b) (Form Bool)) (FixLang (OpenLexiconPFOL b) (Term Int))
               terms = genChildren
 
-instance {-# OVERLAPABLE #-} FirstOrderLex (b (FixLang (OpenLexiconPFOL b))) => ToSchema (OpenLexiconPFOL b) (Term Int) where
+instance {-# OVERLAPPABLE #-} FirstOrderLex (b (FixLang (OpenLexiconPFOL b))) => ToSchema (OpenLexiconPFOL b) (Term Int) where
     toSchema = id
 
 instance {-# OVERLAPS #-} ToSchema PureLexiconFOL (Term Int) where
