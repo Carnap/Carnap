@@ -8,6 +8,7 @@ import Carnap.Core.Data.Util (checkChildren, castTo)
 import Carnap.Core.Unification.Unification
 import Carnap.Languages.Util.LanguageClasses
 import Carnap.Core.Data.Util (scopeHeight)
+import Control.Applicative (liftA2)
 import Control.Lens (preview)
 import Control.Lens.Plated (transform)
 import Data.Typeable (Typeable)
@@ -45,11 +46,11 @@ instance Modelable PropFrame ModalProp where
 type ModalConn = BooleanConn (World -> Bool)
 
 instance Evaluable ModalConn where
-        eval Iff = lift2 $ \f g x -> f x == g x
-        eval If  = lift2 $ \f g x -> not (f x) || g x
-        eval Or  = lift2 $ \f g x -> f x || g x
-        eval And = lift2 $ \f g x -> f x && g x
-        eval Not = lift1 $ \f x -> not $ f x
+        eval Iff = liftA2 $ \f g x -> f x == g x
+        eval If  = liftA2 $ \f g x -> not (f x) || g x
+        eval Or  = liftA2 $ \f g x -> f x || g x
+        eval And = liftA2 $ \f g x -> f x && g x
+        eval Not = fmap $ \f x -> not $ f x
 
 type ModalConst = BooleanConst (World -> Bool)
 
@@ -67,13 +68,13 @@ type PropModality = Modality (World -> Bool)
 
 --For the eval frame, we stipulate that the accessibility relation is empty
 instance Evaluable PropModality where
-        eval Box = lift1 $ \f -> const True
-        eval Diamond = lift1 $ \f -> const False
+        eval Box = fmap $ \f -> const True
+        eval Diamond = fmap $ \f -> const False
 
 instance Modelable PropFrame PropModality where
-        satisfies f Box = lift1 $ \f x -> M.getAll $ mconcat (map (M.All . f) (ac x))
+        satisfies f Box = fmap $ \f x -> M.getAll $ mconcat (map (M.All . f) (ac x))
             where ac x = accessibility f ! x
-        satisfies f Diamond = lift1 $ \f x -> M.getAny $ mconcat (map (M.Any . f) (ac x))
+        satisfies f Diamond = fmap $ \f x -> M.getAny $ mconcat (map (M.Any . f) (ac x))
             where ac x = accessibility f ! x
 
 type Index = IntIndex World

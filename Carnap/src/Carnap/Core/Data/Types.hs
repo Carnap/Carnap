@@ -1,4 +1,4 @@
-{-#LANGUAGE TypeFamilies, UndecidableInstances, FlexibleInstances, MultiParamTypeClasses, FunctionalDependencies, GADTs,  DataKinds, PolyKinds, TypeOperators, PatternSynonyms, RankNTypes, FlexibleContexts, ScopedTypeVariables, DefaultSignatures #-}
+{-#LANGUAGE TypeFamilies, UndecidableInstances, FlexibleInstances, MultiParamTypeClasses, FunctionalDependencies, GADTs,  DataKinds, PolyKinds, TypeOperators, PatternSynonyms, RankNTypes, FlexibleContexts, ScopedTypeVariables, DefaultSignatures, DeriveFunctor #-}
 
 module Carnap.Core.Data.Types(
   -- * Abstract Types
@@ -166,22 +166,18 @@ class BoundVars g where
         scopeUniqueVar = error "you need to define a language-specific scopeUniqueVar function"
 
 data Term a = Term a
-    deriving(Eq, Ord, Show)
+    deriving(Eq, Ord, Show, Functor)
 
-instance Evaluable Term where
-    eval (Term x) = x
-
-instance Liftable Term where
-    lift = Term
+instance Applicative Term where
+    pure = Term
+    (Term f) <*> (Term a) = Term (f a)
 
 data Form a = Form a
-    deriving(Eq, Ord, Show)
+    deriving(Eq, Ord, Show, Functor)
 
-instance Evaluable Form where
-    eval (Form x) = x
-
-instance Liftable Form where
-    lift = Form
+instance Applicative Form where
+    pure = Form
+    (Form f) <*> (Form a) = Form (f a)
 
 --------------------------------------------------------
 --1.2.2 Non-Binding Operators

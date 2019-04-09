@@ -32,12 +32,6 @@ class Modelable m f where
 class Liftable f where
     lift :: Typeable a => a -> f a
 
-lift1 :: (Evaluable f, Liftable g, Typeable b) => (a -> b) -> (f a -> g b)
-lift1 f = lift . f . eval
-
-lift2 :: (Evaluable f, Liftable g, Typeable c) => (a -> b -> c) -> (f a -> f b -> g c)
-lift2 f fa fb = lift (f (eval fa) (eval fb))
-
 {-|
 Schematizable data are associated with a way to take a list of strings
 associated with other data and bind them together to produce a new

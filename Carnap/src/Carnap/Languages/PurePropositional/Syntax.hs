@@ -12,6 +12,7 @@ import Carnap.Core.Unification.FirstOrder
 import Carnap.Core.Util
 import Carnap.Languages.Util.LanguageClasses
 import Control.Lens.Plated (transform, children)
+import Control.Applicative
 import Control.Lens.Prism
 import Data.Typeable (Typeable)
 import Carnap.Languages.Util.GenericConstructors
@@ -27,11 +28,11 @@ instance Modelable (Int -> Bool) PureProp where
 type PureConn = BooleanConn Bool
 
 instance Evaluable PureConn where
-        eval Iff = lift2  (==)
-        eval If  = lift2 $ \x y -> (not x || y)
-        eval Or  = lift2  (||)
-        eval And = lift2 (&&)
-        eval Not = lift1 not
+        eval Iff = liftA2 (==) 
+        eval If  = liftA2 $ \x y -> (not x || y)
+        eval Or  = liftA2 (||)
+        eval And = liftA2 (&&) 
+        eval Not = fmap not
 
 instance Modelable (Int -> Bool) PureConn where
     satisfies = const eval

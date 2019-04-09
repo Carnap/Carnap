@@ -34,8 +34,8 @@ instance Modelable MonadicModel PureConst where
         satisfies m Falsum = Form False
 
 instance Modelable MonadicModel PureQuant where
-        satisfies m (All _) = (\f -> Form $ all (eval . f) (domain m))
-        satisfies m (Some _) = (\f -> Form $ any (eval . f) (domain m))
+        satisfies m (All _) = (\f -> pure $ all ((== Form True) . f) (domain m))
+        satisfies m (Some _) = (\f -> pure $ any ((== Form True) . f) (domain m))
 
 instance Modelable MonadicModel PureVar where
         satisfies = error "it doesn't make sense to ask for the semantic value of an unbound variable"
