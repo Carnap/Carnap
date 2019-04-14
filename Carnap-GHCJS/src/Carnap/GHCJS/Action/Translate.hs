@@ -34,10 +34,16 @@ getTranslates :: IsElement self => Document -> self -> IO [Maybe (Element, Eleme
 getTranslates d = genInOutElts d "input" "div" "translate"
 
 activateTranslate :: Document -> Maybe (Element, Element, Map String String) -> IO ()
-activateTranslate w (Just (i,o,opts)) = 
-        case M.lookup "transtype" opts of
-            (Just "prop") -> activateWith (purePropFormulaParser standardLetters <* eof) tryTrans propChecker
-            (Just "first-order") -> activateWith folFormulaParser tryFOLTrans folChecker
+activateTranslate w (Just (i,o,opts)) = do
+        case (M.lookup "transtype" opts, M.lookup "system" opts) of
+            (Just "prop", Nothing) -> activateWith formParser (tryTrans formParser) propChecker
+                where formParser = purePropFormulaParser standardLetters <* eof
+            (Just "prop", Just sys) -> activateWith formParser (tryTrans formParser) propChecker
+                       where formParser = (ndParseForm `ofPropSys` sys) <* eof
+            (Just "first-order", Nothing) -> activateWith formParser (tryFOLTrans formParser) folChecker
+                       where formParser = folFormulaParser <* eof
+            (Just "first-order", Just sys) -> activateWith formParser (tryFOLTrans formParser) folChecker
+                where formParser = (ndParseForm `ofFOLSys` sys) <* eof
             _ -> return ()
     where optlist = case M.lookup "options" opts of Just s -> words s; Nothing -> []
           activateWith parser translator checker =
@@ -67,13 +73,13 @@ activateTranslate w (Just (i,o,opts)) =
                   _ -> print "translation was missing an option"
 activateChecker _ Nothing  = return ()
 
-tryTrans :: Element -> IORef Bool -> PureForm -> 
+tryTrans :: Parsec String () PureForm -> Element -> IORef Bool -> PureForm -> 
     EventM HTMLInputElement KeyboardEvent ()
-tryTrans o ref f = onEnter $ do (Just t) <- target :: EventM HTMLInputElement KeyboardEvent (Maybe HTMLInputElement)
-                                (Just ival)  <- getValue t
-                                case parse (spaces *> purePropFormulaParser standardLetters <* eof) "" ival of
-                                      Right f' -> liftIO $ checkForm f'
-                                      Left e -> message "Sorry, try again---that formula isn't gramatical."
+tryTrans parser o ref f = onEnter $ do (Just t) <- target :: EventM HTMLInputElement KeyboardEvent (Maybe HTMLInputElement)
+                                       (Just ival)  <- getValue t
+                                       case parse (spaces *> parser) "" ival of
+                                             Right f' -> liftIO $ checkForm f'
+                                             Left e -> message "Sorry, try again---that formula isn't gramatical."
    where checkForm f' 
             | f' == f = do message "perfect match!"
                            writeIORef ref True
@@ -84,13 +90,13 @@ tryTrans o ref f = onEnter $ do (Just t) <- target :: EventM HTMLInputElement Ke
             | otherwise = message "Not quite. Try again!"
 
 
-tryFOLTrans :: Element -> IORef Bool -> PureFOLForm -> 
+tryFOLTrans :: Parsec String () PureFOLForm -> Element -> IORef Bool -> PureFOLForm -> 
     EventM HTMLInputElement KeyboardEvent ()
-tryFOLTrans o ref f = onEnter $ do (Just t) <- target :: EventM HTMLInputElement KeyboardEvent (Maybe HTMLInputElement)
-                                   (Just ival)  <- getValue t
-                                   case parse (spaces *> folFormulaParserRelaxed <* eof) "" ival of
-                                          Right f' -> liftIO $ checkForm f'
-                                          Left e -> message "Sorry, try again---that formula isn't gramatical."
+tryFOLTrans parser o ref f = onEnter $ do (Just t) <- target :: EventM HTMLInputElement KeyboardEvent (Maybe HTMLInputElement)
+                                          (Just ival)  <- getValue t
+                                          case parse (spaces *> parser) "" ival of
+                                                 Right f' -> liftIO $ checkForm f'
+                                                 Left e -> message "Sorry, try again---that formula isn't gramatical."
   where checkForm f' 
             | f' == f = do message "perfect match!"
                            writeIORef ref True
