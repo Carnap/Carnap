@@ -9,7 +9,7 @@ module Lib
     folSeqAndLabel, folFormAndLabel, message, IOGoal(..), updateWithValue,
     submissionSource, assignmentKey, initialize, popUpWith, spinnerSVG,
     doneButton, questionButton, exclaimButton, expandButton, buttonWrapper,
-    maybeNodeListToList, trySubmit ) where
+    maybeNodeListToList, trySubmit,ofPropSys, ofFOLSys ) where
 
 import Data.Aeson
 import Data.Maybe (catMaybes)
@@ -57,11 +57,13 @@ import GHCJS.DOM.EventM
 import GHCJS.DOM.EventTarget
 import GHCJS.DOM.EventTargetClosures (EventName(..))
 import Carnap.GHCJS.SharedTypes
+import Carnap.Core.Data.Types (Form)
 import Carnap.Calculi.NaturalDeduction.Syntax (NaturalDeductionCalc(..))
-import Carnap.Languages.PurePropositional.Syntax (PureForm)
-import Carnap.Languages.PurePropositional.Logic (montagueSCCalc)
+import Carnap.Languages.PurePropositional.Syntax (PureForm, PurePropLexicon)
+import Carnap.Languages.PurePropositional.Logic
 import Carnap.Languages.PureFirstOrder.Parser (folFormulaParser)
-import Carnap.Languages.PureFirstOrder.Logic (folCalc)
+import Carnap.Languages.PureFirstOrder.Syntax (PureLexiconFOL)
+import Carnap.Languages.PureFirstOrder.Logic
 import Carnap.Languages.PurePropositional.Parser (purePropFormulaParser, standardLetters)
 
 --------------------------------------------------------
@@ -309,6 +311,35 @@ adjustFirstMatching t pred  f x = evalState (traverseOf t adj x) True where
 
 formToTree :: Plated a => a -> Tree a
 formToTree f = T.Node f (map formToTree (children f))
+
+ofPropSys :: (forall r . NaturalDeductionCalc r PurePropLexicon (Form Bool) -> a) -> String -> a
+ofPropSys f sys | sys == "prop"                      = f propCalc 
+             | sys == "montagueSC"                = f montagueSCCalc 
+             | sys == "LogicBookSD"               = f logicBookSDCalc 
+             | sys == "LogicBookSDPlus"           = f logicBookSDPlusCalc 
+             | sys == "hausmanSL"                 = f hausmanSLCalc 
+             | sys == "howardSnyderSL"            = f howardSnyderSLCalc 
+             | sys == "ichikawaJenkinsSL"         = f ichikawaJenkinsSLCalc
+             | sys == "hausmanSL"                 = f hausmanSLCalc
+             | sys == "magnusSL"                  = f magnusSLCalc 
+             | sys == "magnusSLPlus"              = f magnusSLPlusCalc 
+             | sys == "thomasBolducAndZachTFL"    = f thomasBolducAndZachTFLCalc 
+             | sys == "hardegreeSL"               = f hardegreeSLCalc 
+
+ofFOLSys :: (forall r . NaturalDeductionCalc r PureLexiconFOL (Form Bool) -> a) -> String -> a
+ofFOLSys f sys | sys == "firstOrder"                = f folCalc
+               | sys == "montagueQC"                = f montagueQCCalc 
+               | sys == "LogicBookPD"               = f logicBookPDCalc 
+               | sys == "LogicBookPDPlus"           = f logicBookPDPlusCalc 
+               | sys == "hausmanPL"                 = f hausmanPLCalc 
+               | sys == "howardSnyderPL"            = f howardSnyderPLCalc 
+               | sys == "ichikawaJenkinsQL"         = f ichikawaJenkinsQLCalc
+               | sys == "magnusQL"                  = f magnusQLCalc 
+               | sys == "goldfarbAltND"             = f goldfarbAltNDCalc
+               | sys == "goldfarbNDPlus"            = f goldfarbNDPlusCalc
+               | sys == "goldfarbAltNDPlus"         = f goldfarbAltNDPlusCalc
+               | sys == "thomasBolducAndZachFOL"    = f thomasBolducAndZachFOLCalc 
+               | sys == "hardegreePL"               = f hardegreePLCalc 
 
 --------------------------------------------------------
 --1.6 Boilerplate

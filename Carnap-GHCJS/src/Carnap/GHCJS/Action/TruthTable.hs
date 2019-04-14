@@ -40,7 +40,7 @@ activateTruthTables :: Document -> Maybe (Element, Element, Map String String) -
 activateTruthTables w (Just (i,o,opts)) = do
         let (formParser,seqParser) = case M.lookup "system" opts of
                                          Nothing -> (purePropFormulaParser standardLetters, ndParseSeq montagueSCCalc)
-                                         Just sys -> (getFormParser sys, getSeqParser sys)
+                                         Just sys -> (ndParseForm `ofPropSys` sys, ndParseSeq `ofPropSys` sys)
         case M.lookup "tabletype" opts of
             (Just "simple") -> checkerWith (formParser <* eof) createSimpleTruthTable
             (Just "validity") -> checkerWith seqParser createValidityTruthTable
@@ -83,7 +83,7 @@ activateTruthTables w (Just (i,o,opts)) = do
                                         else do message "Something's not quite right"
                                                 setAttribute i "class" "input incompleteTT"
           rewrite = case M.lookup "system" opts of
-                        Just s -> getSysNotation s
+                        Just s -> ndNotation `ofPropSys` s
                         Nothing -> id
 
 submitTruthTable:: M.Map String String -> IORef Bool ->  IO Bool -> [Element] -> String -> String -> EventM HTMLInputElement e ()
@@ -435,25 +435,8 @@ rewriteThs opts ths = do s <- map deMaybe <$> mapM getInnerHTML ths
           deMaybe Nothing = " "
 
           rewrite = case M.lookup "system" opts of
-                        Just s -> getSysNotation s
+                        Just s -> ndNotation `ofPropSys` s
                         Nothing -> id
-getSys :: (forall r . NaturalDeductionCalc r PurePropLexicon (Form Bool) -> a) -> String -> a
-getSys f sys | sys == "prop"                      = f propCalc 
-             | sys == "montagueSC"                = f montagueSCCalc 
-             | sys == "LogicBookSD"               = f logicBookSDCalc 
-             | sys == "LogicBookSDPlus"           = f logicBookSDPlusCalc 
-             | sys == "hausmanSL"                 = f hausmanSLCalc 
-             | sys == "howardSnyderSL"            = f howardSnyderSLCalc 
-             | sys == "magnusSL"                  = f magnusSLCalc 
-             | sys == "magnusSLPlus"              = f magnusSLPlusCalc 
-             | sys == "thomasBolducAndZachTFL"    = f thomasBolducAndZachTFLCalc 
-             | sys == "hardegreeSL"               = f hardegreeSLCalc 
-
-getSysNotation = getSys ndNotation
-
-getFormParser = getSys ndParseForm 
-
-getSeqParser  = getSys ndParseSeq 
 
 toChildTh :: (Schematizable (f (FixLang f)), CopulaSchema (FixLang f)) => Document -> Either Char (FixLang f a) -> IO Element
 toChildTh w c = 
