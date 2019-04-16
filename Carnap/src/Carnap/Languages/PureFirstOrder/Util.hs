@@ -1,11 +1,12 @@
 {-# LANGUAGE FlexibleContexts, TypeSynonymInstances, FlexibleInstances, MultiParamTypeClasses, UndecidableInstances #-}
-module Carnap.Languages.PureFirstOrder.Util (propForm, boundVarOf, toPNF) where
+module Carnap.Languages.PureFirstOrder.Util (propForm, boundVarOf, toPNF, universalDepth, existentialDepth, comparableMatricies, removeBlock, pnfEquiv) where
 
 import Carnap.Core.Data.Classes
 import Carnap.Core.Data.Types
 import Carnap.Core.Data.Optics
 import Carnap.Core.Data.Util
 import Carnap.Languages.PurePropositional.Syntax
+import Carnap.Languages.PurePropositional.Util
 import Carnap.Languages.PureFirstOrder.Syntax
 import Carnap.Languages.Util.LanguageClasses
 import Carnap.Languages.Util.GenericConstructors
@@ -76,6 +77,41 @@ stepPNF = const Nothing
           _all' = _all
           _some' :: Prism' (FixLang PureLexiconFOL ((Term Int -> Form Bool) -> Form Bool)) String
           _some' = _some
+
+universalDepth = const 0 & outside (unaryOpPrismOn _all') .~ (\(v, LLam f) -> 1 + universalDepth (f $ foVar v))
+    where _all' :: Prism' (FixLang (OpenLexiconPFOL b) ((Term Int -> Form Bool) -> Form Bool)) String
+          _all' = _all
+
+instantiate f t = inst f
+        where inst = const f & outside (unaryOpPrismOn _all) .~ (\(v, LLam g) -> g t)
+                             & outside (unaryOpPrismOn _some) .~ (\(v, LLam g) -> g t)
+
+existentialDepth = const 0 & outside (unaryOpPrismOn _some') .~ (\(v, LLam f) -> 1 + existentialDepth (f $ foVar v))
+    where _some' :: Prism' (FixLang (OpenLexiconPFOL b) ((Term Int -> Form Bool) -> Form Bool)) String
+          _some' = _some
+
+comparableMatricies f g = recur f g (map show [1 ..])
+    where recur f g vars | qdepth f > 0 = do (f',g') <- removeBlock f g vars
+                                             recur f' g' (drop (qdepth f) vars)
+          recur f g v = [(f,g)]
+          qdepth f = max (universalDepth f) (existentialDepth f)
+
+pnfEquiv f g = any (== True) theCases
+    where theCases = do (f',g') <- comparableMatricies (toPNF f) (toPNF g)
+                        return $ isValid (propForm (f' .<=>. g'))
+
+
+removeBlock f g vars | udf > 0 && udf == udg = revar f g (take udf vars) (take udf vars)
+                     | edf > 0 && edf == edg = revar f g (take edf vars) (take edf vars)
+                     | otherwise = []
+    where udf = universalDepth f
+          udg = universalDepth g
+          edf = existentialDepth f
+          edg = existentialDepth g
+          revar f g [] _ = [(f,g)]
+          revar f g fvars gvars = do fv <- fvars
+                                     gv <- gvars
+                                     revar (instantiate f (foVar fv)) (instantiate g (foVar gv)) (fvars \\ [fv]) (gvars \\ [gv])
 
 --- XXX: This shouldn't require so many annotations. Doesn't need them in
 --GHCi 8.4.2, and probably not in GHC 8.4.2 generally.
