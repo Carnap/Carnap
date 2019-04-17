@@ -2,6 +2,7 @@
 module Carnap.Languages.PureFirstOrder.Syntax 
 where
 
+import Text.Read
 import Carnap.Core.Util 
 import Carnap.Core.Data.Util 
 import Control.Monad.State
@@ -86,7 +87,7 @@ instance {-# OVERLAPPABLE #-}
 instance FirstOrder (FixLang (PureFirstOrderLexWith a)) => 
     BoundVars (PureFirstOrderLexWith a) where
 
-    scopeUniqueVar q (LLam f) = case castTo $ foVar $ show $ scopeHeight (LLam f) of
+    scopeUniqueVar q (LLam f) = case castTo $ foVar $ show $ maxVar (f (static 0)) + 1  of
                                     Just x -> x
                                     Nothing -> error "cast failed in ScopeUniqueVar"
 
@@ -228,6 +229,13 @@ instance Incrementable PureLexiconFOL (Term Int) where
 -------------------------
 --mostly specializing things for the first-order case
 
+maxVar :: (PrismStandardVar lex Int, PrismSubstitutionalVariable lex) => FixLang lex a -> Int
+maxVar (x :!$: y) = max (maxVar x) (maxVar y)
+maxVar x@(LLam f) =  maxVar (f $ static 0)
+maxVar t@(Fx _) = case ttype t >>= preview _varLabel >>= readMaybe of
+                   Nothing -> 0
+                   Just x -> x
+
 fogamma :: Int -> ClassicalSequentOver lex (Antecedent (Form Bool))
 fogamma n = GammaV n
 
@@ -245,3 +253,6 @@ oftype = castTo
 
 qtype :: Typeable a => FixLang lex a -> Maybe (FixLang lex ((Term Int -> Form Bool)->Form Bool))
 qtype = castTo
+
+ttype :: Typeable a => FixLang lex a -> Maybe (FixLang lex (Term Int))
+ttype = castTo
