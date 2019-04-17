@@ -1,5 +1,5 @@
 {-# LANGUAGE FlexibleContexts, TypeSynonymInstances, FlexibleInstances, MultiParamTypeClasses, UndecidableInstances #-}
-module Carnap.Languages.PureFirstOrder.Util (propForm, boundVarOf, toPNF, universalDepth, existentialDepth, comparableMatricies, removeBlock, pnfEquiv) where
+module Carnap.Languages.PureFirstOrder.Util (propForm, boundVarOf, toPNF, universalDepth, existentialDepth, comparableMatricies, removeBlock, pnfEquiv, toAllPNF, nonDeterministicStepPNF) where
 
 import Carnap.Core.Data.Classes
 import Carnap.Core.Data.Types
@@ -35,11 +35,13 @@ boundVarOf v f = case preview  _varLabel v >>= subBinder f of
 
 toPNF = canonical . rewrite stepPNF
 
+toAllPNF = map canonical . rewriteM nonDeterministicStepPNF
+
 stepPNF :: FixLang PureLexiconFOL (Form Bool) -> Maybe (FixLang PureLexiconFOL (Form Bool))
 stepPNF = const Nothing 
             & outside (binaryOpPrism _and . aside (unaryOpPrismOn _all')) .~
                 (\(f,(v, LLam f')) -> Just $ (lall v $ \x -> f ./\. f' x ))
-            & outside (binaryOpPrism _and . flipt . aside (unaryOpPrismOn _all') . flipt) .~
+            & outside (binaryOpPrism _and . otherside (unaryOpPrismOn _all')) .~
                 (\((v, LLam f'),f) -> Just $ (lall v $ \x -> f' x ./\. f ))
             & outside (binaryOpPrism _and . aside (unaryOpPrismOn _some')) .~
                 (\(f,(v, LLam f')) -> Just $ (lsome v $ \x -> f ./\. f' x ))
@@ -47,27 +49,27 @@ stepPNF = const Nothing
                 (\((v, LLam f'),f) -> Just $ (lsome v $ \x -> f' x ./\. f ))
             & outside (binaryOpPrism _or . aside (unaryOpPrismOn _all')) .~
                 (\(f,(v, LLam f')) -> Just $ (lall v $ \x -> f .\/. f' x ))
-            & outside (binaryOpPrism _or . flipt . aside (unaryOpPrismOn _all') . flipt) .~
+            & outside (binaryOpPrism _or . otherside (unaryOpPrismOn _all')) .~
                 (\((v, LLam f'),f) -> Just $ (lall v $ \x -> f' x .\/. f ))
             & outside (binaryOpPrism _or . aside (unaryOpPrismOn _some')) .~
                 (\(f,(v, LLam f')) -> Just $ (lsome v $ \x -> f .\/. f' x ))
-            & outside (binaryOpPrism _or . flipt . aside (unaryOpPrismOn _some') . flipt) .~
+            & outside (binaryOpPrism _or . otherside (unaryOpPrismOn _some')) .~
                 (\((v, LLam f'),f) -> Just $ (lsome v $ \x -> f' x .\/. f ))
             & outside (binaryOpPrism _if . aside (unaryOpPrismOn _all')) .~
                 (\(f,(v, LLam f')) -> Just $ (lall v $ \x -> f .=>. f' x ))
-            & outside (binaryOpPrism _if . flipt . aside (unaryOpPrismOn _all') . flipt) .~
+            & outside (binaryOpPrism _if . otherside (unaryOpPrismOn _all')) .~
                 (\((v, LLam f'),f) -> Just $ (lsome v $ \x -> f' x .=>. f ))
             & outside (binaryOpPrism _if . aside (unaryOpPrismOn _some')) .~
                 (\(f,(v, LLam f')) -> Just $ (lsome v $ \x -> f .=>. f' x ))
-            & outside (binaryOpPrism _if . flipt . aside (unaryOpPrismOn _some') . flipt) .~
+            & outside (binaryOpPrism _if . otherside (unaryOpPrismOn _some')) .~
                 (\((v, LLam f'),f) -> Just $ (lall v $ \x -> f' x .=>. f ))
             & outside (binaryOpPrism _iff . aside (unaryOpPrismOn _all')) .~
                 (\(f,(v, LLam f')) -> Just $ (lall v $ \x -> f .=>. f' x ) ./\. (lsome v $ \x -> f' x .=>. f ))
-            & outside (binaryOpPrism _iff . flipt . aside (unaryOpPrismOn _all') . flipt) .~
+            & outside (binaryOpPrism _iff . otherside (unaryOpPrismOn _all')) .~
                 (\((v, LLam f'),f) -> Just $ (lall v $ \x -> f .=>. f' x ) ./\. (lsome v $ \x -> f' x .=>. f ))
             & outside (binaryOpPrism _iff . aside (unaryOpPrismOn _some')) .~
                 (\(f,(v, LLam f')) -> Just $ (lsome v $ \x -> f .=>. f' x ) ./\. (lall v $ \x -> f' x .=>. f ))
-            & outside (binaryOpPrism _iff . flipt . aside (unaryOpPrismOn _some') . flipt) .~
+            & outside (binaryOpPrism _iff . otherside (unaryOpPrismOn _some')) .~
                 (\((v, LLam f'),f) -> Just $ (lsome v $ \x -> f .=>. f' x ) ./\. (lall v $ \x -> f' x .=>. f ))
             & outside (unaryOpPrism _not . unaryOpPrismOn _some') .~
                 (\(v, LLam f') -> Just $ (lall v $ \x -> lneg $ f' x ))
@@ -77,6 +79,45 @@ stepPNF = const Nothing
           _all' = _all
           _some' :: Prism' (FixLang PureLexiconFOL ((Term Int -> Form Bool) -> Form Bool)) String
           _some' = _some
+          otherside p = flipt . aside p . flipt
+
+nonDeterministicStepPNF :: FixLang PureLexiconFOL (Form Bool) -> [Maybe (FixLang PureLexiconFOL (Form Bool))]
+nonDeterministicStepPNF = pure . stepPNF
+    & outside (binaryOpPrism _and . aside (unaryOpPrismOn _all') . otherside (unaryOpPrismOn _some')) .~
+                (\((ve, LLam g),(va, LLam f)) -> 
+                    [ Just $ (lall va $ \x -> lsome ve $ \y -> ( g y ./\. f x))
+                    , Just $ (lsome ve $ \x -> lall va $ \y -> ( g x ./\. f y))
+                    ])
+    & outside (binaryOpPrism _and . aside (unaryOpPrismOn _some') . otherside (unaryOpPrismOn _all')) .~
+                (\((va, LLam g),(ve, LLam f)) -> 
+                    [ Just $ (lall va $ \x -> lsome ve $ \y -> ( g x ./\. f y))
+                    , Just $ (lsome ve $ \x -> lall va $ \y -> ( g y ./\. f x))
+                    ])
+    & outside (binaryOpPrism _or . aside (unaryOpPrismOn _all') . otherside (unaryOpPrismOn _some')) .~
+                (\((ve, LLam g),(va, LLam f)) -> 
+                    [ Just $ (lall va $ \x -> lsome ve $ \y -> ( g y .\/. f x))
+                    , Just $ (lsome ve $ \x -> lall va $ \y -> ( g x .\/. f y))
+                    ])
+    & outside (binaryOpPrism _or . aside (unaryOpPrismOn _some') . otherside (unaryOpPrismOn _all')) .~
+                (\((va, LLam g),(ve, LLam f)) -> 
+                    [ Just $ (lall va $ \x -> lsome ve $ \y -> ( g x .\/. f y))
+                    , Just $ (lsome ve $ \x -> lall va $ \y -> ( g y .\/. f x))
+                    ])
+    & outside (binaryOpPrism _if . aside (unaryOpPrismOn _all') . otherside (unaryOpPrismOn _all')) .~
+                (\((ve, LLam g),(va, LLam f)) -> 
+                    [ Just $ (lall va $ \x -> lsome ve $ \y -> ( g y .=>. f x))
+                    , Just $ (lsome ve $ \x -> lall va $ \y -> ( g x .=>. f y))
+                    ])
+    & outside (binaryOpPrism _if . aside (unaryOpPrismOn _some') . otherside (unaryOpPrismOn _some')) .~
+                (\((va, LLam g),(ve, LLam f)) -> 
+                    [ Just $ (lall va $ \x -> lsome ve $ \y -> ( g x .=>. f y))
+                    , Just $ (lsome ve $ \x -> lall va $ \y -> ( g y .=>. f x))
+                    ])
+    where _all' :: Prism' (FixLang PureLexiconFOL ((Term Int -> Form Bool) -> Form Bool)) String
+          _all' = _all
+          _some' :: Prism' (FixLang PureLexiconFOL ((Term Int -> Form Bool) -> Form Bool)) String
+          _some' = _some
+          otherside p = flipt . aside p . flipt
 
 universalDepth = const 0 & outside (unaryOpPrismOn _all') .~ (\(v, LLam f) -> 1 + universalDepth (f $ foVar v))
     where _all' :: Prism' (FixLang (OpenLexiconPFOL b) ((Term Int -> Form Bool) -> Form Bool)) String
@@ -115,7 +156,9 @@ removeBlock f g vars | udf > 0 && udf == udg = revar f g (take udf vars) (take u
 
 --- XXX: This shouldn't require so many annotations. Doesn't need them in
 --GHCi 8.4.2, and probably not in GHC 8.4.2 generally.
-instance (FirstOrderLex (b (FixLang (OpenLexiconPFOL b))), ToSchema (OpenLexiconPFOL b) (Term Int)) => ToSchema (OpenLexiconPFOL b) (Form Bool) where
+instance ( FirstOrderLex (b (FixLang (OpenLexiconPFOL b)))
+         , ToSchema (OpenLexiconPFOL b) (Term Int)
+         ) => ToSchema (OpenLexiconPFOL b) (Form Bool) where
     toSchema = transform ((maphead trans & outside _propIndex .~ (\n -> phin n)) . (terms %~ toSchema))
         where trans :: ( PrismLink (b (FixLang (OpenLexiconPFOL b))) (Predicate (SchematicIntPred Bool Int) (FixLang (OpenLexiconPFOL b))) 
                        , PrismLink (b (FixLang (OpenLexiconPFOL b))) (Predicate (IntPred Bool Int) (FixLang (OpenLexiconPFOL b)))
