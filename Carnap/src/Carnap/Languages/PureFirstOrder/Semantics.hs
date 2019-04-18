@@ -48,3 +48,50 @@ instance Modelable MonadicModel (PropositionalContext Bool) where
 
 instance Modelable MonadicModel (IntProp Bool) where
         satisfies m (Prop n) = proposition m n
+
+----------------------------------
+--  Polyadic First Order Logic  --
+----------------------------------
+
+data PolyadicModel = PolyadicModel 
+                  { monadicPart :: MonadicModel
+                  , relation :: forall ret. Arity Thing TruthValue ret -> Int -> ret
+                  }
+
+--Helper function for (safely) building a piece of a relation out of a list
+--of lists of things. XXX - note that the order of the lists of things and
+--of the arguments is reversed. So if [a,b,c] is in the list of lists, we
+--have `toRelation l AThree b c a = True`
+toRelation :: [[Thing]] -> Arity Thing TruthValue ret -> ret
+toRelation list AZero = Form . not . null $ list
+toRelation list (ASucc AZero) = \thing -> Form ([thing] `elem` list)
+toRelation list (ASucc a) = \thing -> toRelation (map tail . filter (match thing) $ list) a
+    where match thing (t:ts) = t == thing
+          match thing _ = False
+
+instance Modelable PolyadicModel PurePredicate where
+        satisfies m (Pred a n) = relation m a n
+
+instance Modelable PolyadicModel PureSchematicPred where
+        satisfies = error "it doesn't make sense to ask for the semantic value of a schematic variable (in this case a predicate)"
+
+instance Modelable PolyadicModel PureConstant where
+        satisfies m c = satisfies (monadicPart m) c
+
+instance Modelable PolyadicModel PureConst where
+        satisfies m v = satisfies (monadicPart m) v
+
+instance Modelable PolyadicModel PureQuant where
+        satisfies m q = satisfies (monadicPart m) q
+
+instance Modelable PolyadicModel PureVar where
+        satisfies m = satisfies (monadicPart m)
+
+instance Modelable PolyadicModel (SchematicIntFunc Int Int) where
+        satisfies m = satisfies (monadicPart m)
+
+instance Modelable PolyadicModel (PropositionalContext Bool) where
+        satisfies m = satisfies (monadicPart m)
+
+instance Modelable PolyadicModel (IntProp Bool) where
+        satisfies m p = satisfies (monadicPart m) p
