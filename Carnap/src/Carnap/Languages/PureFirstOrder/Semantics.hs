@@ -76,13 +76,13 @@ instance Modelable PolyadicModel PureSchematicPred where
         satisfies = error "it doesn't make sense to ask for the semantic value of a schematic variable (in this case a predicate)"
 
 instance Modelable PolyadicModel PureConstant where
-        satisfies m c = satisfies (monadicPart m) c
+        satisfies m = satisfies (monadicPart m)
 
 instance Modelable PolyadicModel PureConst where
-        satisfies m v = satisfies (monadicPart m) v
+        satisfies m = satisfies (monadicPart m)
 
 instance Modelable PolyadicModel PureQuant where
-        satisfies m q = satisfies (monadicPart m) q
+        satisfies m = satisfies (monadicPart m)
 
 instance Modelable PolyadicModel PureVar where
         satisfies m = satisfies (monadicPart m)
@@ -94,4 +94,4 @@ instance Modelable PolyadicModel (PropositionalContext Bool) where
         satisfies m = satisfies (monadicPart m)
 
 instance Modelable PolyadicModel (IntProp Bool) where
-        satisfies m p = satisfies (monadicPart m) p
+        satisfies m = satisfies (monadicPart m)
