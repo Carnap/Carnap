@@ -1,5 +1,5 @@
 {-# LANGUAGE FlexibleContexts, TypeSynonymInstances, FlexibleInstances, MultiParamTypeClasses, UndecidableInstances #-}
-module Carnap.Languages.PureFirstOrder.Util (propForm, boundVarOf, toPNF, universalDepth, existentialDepth, comparableMatricies, removeBlock, pnfEquiv, toAllPNF, nonDeterministicStepPNF) where
+module Carnap.Languages.PureFirstOrder.Util (propForm, boundVarOf, toPNF, pnfEquiv, toAllPNF) where
 
 import Carnap.Core.Data.Classes
 import Carnap.Core.Data.Types
@@ -138,8 +138,10 @@ comparableMatricies f g = recur f g (map show [1 ..])
           qdepth f = max (universalDepth f) (existentialDepth f)
 
 pnfEquiv f g = any (== True) theCases
-    where theCases = do (f',g') <- comparableMatricies (toPNF f) (toPNF g)
-                        return $ isValid (propForm (f' .<=>. g'))
+    where theCases = do f' <- toAllPNF f
+                        g' <- toAllPNF g
+                        (f'',g'') <- comparableMatricies f' g'
+                        return $ isValid (propForm (f'' .<=>. g''))
 
 
 removeBlock f g vars | udf > 0 && udf == udg = revar f g (take udf vars) (take udf vars)
