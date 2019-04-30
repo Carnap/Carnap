@@ -37,9 +37,9 @@ data MagnusSL = Reiterate  | ConjIntro
               --skipping derived rules for now
 
 instance Show MagnusSL where
-        show ConjIntro  = "∧I"
-        show ConjElim1  = "∧E"
-        show ConjElim2  = "∧E"
+        show ConjIntro  = "&I"
+        show ConjElim1  = "&E"
+        show ConjElim2  = "&E"
         show CondIntro1 = "→I"
         show CondIntro2 = "→I"
         show CondElim   = "→E"
