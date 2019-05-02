@@ -39,6 +39,7 @@ instance Inference LogicBookPD PureLexiconFOL (Form Bool) where
          ruleOf EE1  = existentialDerivation !! 0 
          ruleOf EE2  = existentialDerivation !! 1 
          ruleOf (Pr _) = axiom
+         ruleOf x@(SD _) = SequentRule (premisesOf x) (conclusionOf x)
 
          premisesOf (SD x) = map liftSequent (premisesOf x)
          premisesOf r = upperSequents (ruleOf r)
