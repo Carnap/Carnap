@@ -87,14 +87,13 @@ instance {-# OVERLAPPABLE #-}
 instance FirstOrder (FixLang (PureFirstOrderLexWith a)) => 
     BoundVars (PureFirstOrderLexWith a) where
 
-    scopeUniqueVar q (LLam f) = case castTo $ foVar $ show $ maxVar (f (static 0)) + 1  of
+    scopeUniqueVar q (LLam f) = case castTo $ foVar $ show $ maxVar (LLam f) + 1 of
                                     Just x -> x
                                     Nothing -> error "cast failed in ScopeUniqueVar"
 
     scopeUniqueVar _ _ = undefined
 
-    subBoundVar = subst
-
+    subBoundVar = saferSubst
 
 instance FirstOrder (FixLang (PureFirstOrderLexWith a)) => 
     RelabelVars (PureFirstOrderLexWith a) Form Bool where

@@ -1,6 +1,6 @@
 {-#LANGUAGE ImpredicativeTypes, FlexibleContexts, RankNTypes,TypeOperators, ScopedTypeVariables, GADTs, MultiParamTypeClasses #-}
 
-module Carnap.Core.Data.Util (scopeHeight, equalizeTypes, incArity, checkChildren,
+module Carnap.Core.Data.Util (scopeHeight, equalizeTypes, incArity, checkChildren, saferSubst,
 mapover, maphead, (:~:)(Refl), Buds(..), Blossoms(..), bloom, sbloom, grow, rebuild, castToProxy, castTo) where
 
 --this module defines utility functions and typeclasses for manipulating
@@ -114,6 +114,16 @@ rebuild (x :!$: y) = rebuild x :!$: rebuild y
 rebuild (LLam f) = LLam (\x -> subst sv x $ rebuild (f sv))
     where sv = static $ scopeHeight (LLam f)
 rebuild t = t
+
+saferSubst :: ( StaticVar (FixLang f)
+              , FirstOrder (FixLang f)
+              ) => FixLang f a -> FixLang f a -> FixLang f b -> FixLang f b
+saferSubst a b c
+    | a =* c = subst a b c
+    | otherwise = case c of 
+       (x :!$: y) -> saferSubst a b x :!$: saferSubst a b y
+       (LLam f) -> if a `occurs` c then LLam $ saferSubst a b . f else LLam f
+       _ -> c
 
 --------------------------------------------------------
 --2. Random Syntax

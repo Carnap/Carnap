@@ -1,7 +1,8 @@
 {-# LANGUAGE FlexibleContexts, TypeSynonymInstances, FlexibleInstances, MultiParamTypeClasses, UndecidableInstances #-}
-module Carnap.Languages.PureFirstOrder.Util (propForm, boundVarOf, toPNF, pnfEquiv, toAllPNF) where
+module Carnap.Languages.PureFirstOrder.Util (propForm, boundVarOf, toPNF, pnfEquiv, toAllPNF, toDenex, stepDenex) where
 
 import Carnap.Core.Data.Classes
+import Carnap.Core.Unification.Unification
 import Carnap.Core.Data.Types
 import Carnap.Core.Data.Optics
 import Carnap.Core.Data.Util
@@ -35,7 +36,42 @@ boundVarOf v f = case preview  _varLabel v >>= subBinder f of
 
 toPNF = canonical . rewrite stepPNF
 
+--rebuild at each step to remove dummy variables lingering in closures
+toDenex = canonical . rewrite (stepDenex . rebuild)
+
 toAllPNF = map canonical . rewriteM nonDeterministicStepPNF
+
+stepDenex :: FixLang PureLexiconFOL (Form Bool) -> Maybe (FixLang PureLexiconFOL (Form Bool))
+stepDenex h = const Nothing
+            & outside (unaryOpPrismOn _all') .~
+                (\(v, LLam f) -> f dummy & (const Nothing
+                    & outside (binaryOpPrism _and) .~ driveInAll v (binaryOpPrism _and) 
+                    & outside (binaryOpPrism _or) .~ driveInAll v (binaryOpPrism _or) 
+                    & outside (binaryOpPrism _if) .~ (\(g,g') -> stepDenex $ lall v $ \x -> (lneg (abst g x) .\/. abst g' x))
+                    & outside (binaryOpPrism _iff) .~ (\(g,g') -> stepDenex $ lall v $ \x -> ((abst g x ./\. abst g' x) .\/. (lneg (abst g x) ./\. lneg (abst g' x))))
+                    & outside (unaryOpPrism _not) .~ (\g -> Just $ lneg $ lsome v $ abst g)
+                ))
+            & outside (unaryOpPrismOn _some') .~
+                (\(v, LLam f) -> f dummy & (const Nothing
+                    & outside (binaryOpPrism _and) .~ driveInSome v (binaryOpPrism _and) 
+                    & outside (binaryOpPrism _or) .~ driveInSome v (binaryOpPrism _or) 
+                    & outside (binaryOpPrism _if) .~ (\(g,g') -> stepDenex $ lsome v $ \x -> (lneg (abst g x) .\/. abst g' x))
+                    & outside (binaryOpPrism _iff) .~ (\(g,g') -> stepDenex $ lsome v $ \x -> ((abst g x ./\. abst g' x) .\/. (lneg (abst g x) ./\. lneg (abst g' x))))
+                    & outside (unaryOpPrism _not) .~ (\g -> Just $ lneg $ lall v $ abst g)
+                )) $ h
+    where _all' :: Prism' (FixLang PureLexiconFOL ((Term Int -> Form Bool) -> Form Bool)) String
+          _all' = _all
+          _some' :: Prism' (FixLang PureLexiconFOL ((Term Int -> Form Bool) -> Form Bool)) String
+          _some' = _some
+          dummy = foVar "!!!"
+          abst f x = subBoundVar dummy x f
+          driveInAll = driveIn lall
+          driveInSome = driveIn lsome
+          driveIn q v p (g,g') = case (dummy `occurs` g, dummy `occurs` g') of
+                                       (True,False) -> Just $ review p (q v (abst g), g')
+                                       (False,True) -> Just $ review p (g, q v (abst g'))
+                                       (False,False) -> Nothing
+                                       _ -> Nothing
 
 stepPNF :: FixLang PureLexiconFOL (Form Bool) -> Maybe (FixLang PureLexiconFOL (Form Bool))
 stepPNF = const Nothing 
@@ -120,7 +156,8 @@ nonDeterministicStepPNF = pure . stepPNF
           otherside p = flipt . aside p . flipt
 
 universalDepth = const 0 & outside (unaryOpPrismOn _all') .~ (\(v, LLam f) -> 1 + universalDepth (f $ foVar v))
-    where _all' :: Prism' (FixLang (OpenLexiconPFOL b) ((Term Int -> Form Bool) -> Form Bool)) String
+    where _all' :: PrismLink (b (FixLang (OpenLexiconPFOL b))) (Binders (GenericQuant Term Form Bool Int) (FixLang (OpenLexiconPFOL b)))
+                    => Prism' (FixLang (OpenLexiconPFOL b) ((Term Int -> Form Bool) -> Form Bool)) String
           _all' = _all
 
 instantiate f t = inst f
@@ -128,7 +165,8 @@ instantiate f t = inst f
                              & outside (unaryOpPrismOn _some) .~ (\(v, LLam g) -> g t)
 
 existentialDepth = const 0 & outside (unaryOpPrismOn _some') .~ (\(v, LLam f) -> 1 + existentialDepth (f $ foVar v))
-    where _some' :: Prism' (FixLang (OpenLexiconPFOL b) ((Term Int -> Form Bool) -> Form Bool)) String
+    where _some' :: PrismLink (b (FixLang (OpenLexiconPFOL b))) (Binders (GenericQuant Term Form Bool Int) (FixLang (OpenLexiconPFOL b)))
+                    => Prism' (FixLang (OpenLexiconPFOL b) ((Term Int -> Form Bool) -> Form Bool)) String
           _some' = _some
 
 comparableMatricies f g = recur f g (map show [1 ..])

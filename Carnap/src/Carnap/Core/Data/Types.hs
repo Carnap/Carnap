@@ -545,14 +545,13 @@ instance {-# OVERLAPPABLE #-}
                                     Nothing -> []
                   recur _ _ terms = terms
 
-        occurs phi psi@(x :!$: y)= occursImproperly phi x || occursImproperly phi y
+        occurs phi psi@(x :!$: y) = occursImproperly phi x || occursImproperly phi y
             where occursImproperly :: FixLang f a -> FixLang f b -> Bool
-                  occursImproperly phi psi@(x :!$: y) = phi =* psi
-                                                         || occursImproperly phi x
-                                                         || occursImproperly phi y
-                  occursImproperly phi psi = phi =* psi
-        --might want a clause for LLam
-        occurs phi psi = False
+                  occursImproperly phi psi = phi =* psi || occurs phi psi
+        occurs phi (LLam f) = occursImproperly phi (f (static 0))
+            where occursImproperly :: FixLang f a -> FixLang f b -> Bool
+                  occursImproperly phi psi = phi =* psi || occurs phi psi
+        occurs _ _ = False
 
         subst a@(Fx _ :: FixLang f t) b@(Fx _ :: FixLang f t') c@(Fx _ :: FixLang f t'')
             | a =* c = case eqT :: Maybe (t' :~: t'') of
@@ -591,5 +590,5 @@ instance Typeable a => EtaExpand (FixLang f) (Term a)
 
 height :: StaticVar (FixLang f) => FixLang f a -> Int
 height (x :!$: y) = max (height x) (height y) + 1 
-height x@(LLam (f :: FixLang f t3 -> FixLang f t3')) =  height (f $ static 0) + 1
+height x@(LLam (f :: FixLang f t3 -> FixLang f t3')) = height (f $ static 0) + 1
 height _ = 0
