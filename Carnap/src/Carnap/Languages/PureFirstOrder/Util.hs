@@ -1,5 +1,5 @@
 {-# LANGUAGE FlexibleContexts, TypeSynonymInstances, FlexibleInstances, MultiParamTypeClasses, UndecidableInstances #-}
-module Carnap.Languages.PureFirstOrder.Util (propForm, boundVarOf, toPNF, pnfEquiv, toAllPNF, toDenex, stepDenex) where
+module Carnap.Languages.PureFirstOrder.Util (propForm, boundVarOf, toPNF, pnfEquiv, toAllPNF, toDenex, stepDenex, skolemize) where
 
 import Carnap.Core.Data.Classes
 import Carnap.Core.Unification.Unification
@@ -180,6 +180,37 @@ pnfEquiv f g = any (== True) theCases
                         g' <- toAllPNF g
                         (f'',g'') <- comparableMatricies f' g'
                         return $ isValid (propForm (f'' .<=>. g''))
+
+skolemize f = evalState (toRaw f) ([], maxIndex + 1)
+    where toRaw :: FixLang PureLexiconFOL (Form Bool) -> State ([String],Int) (FixLang PureLexiconFOL (Form Bool))
+          toRaw g = case (preview (unaryOpPrismOn _all') g, preview (unaryOpPrismOn _some') g) of
+                  (Just (v, LLam f),_) -> do (vars,n) <- get
+                                             put (v:vars,n)
+                                             toRaw (f (foVar v))
+                  (_,Just (v, LLam f)) -> do (vars,n) <- get
+                                             put (vars, n + 1)
+                                             case vars of
+                                                 [] -> toRaw (f (cn n))
+                                                 v:vs -> toRaw (f (newFunc n vs :!$: foVar v))
+                  (Nothing,Nothing) -> return g
+
+          newFunc n [] = pfn n AOne
+          newFunc n (v:vars) = case incBody (newFunc n vars) of
+                                Just f -> f :!$: foVar v
+                                Nothing -> error "skolemization error"
+
+          maxIndex = maximum . catMaybes $ concatMap allIdx $ toListOf termsOf f
+
+          allIdx :: Typeable a => FixLang PureLexiconFOL a -> [Maybe Int]
+          allIdx (h :!$: t) = (preview _funcIdx' >=> pure . fst) t : allIdx h
+          allIdx x = [(preview _funcIdx' >=> pure . fst) x]
+
+          _all' :: Prism' (FixLang PureLexiconFOL ((Term Int -> Form Bool) -> Form Bool)) String
+          _all' = _all
+          _some' :: Prism' (FixLang PureLexiconFOL ((Term Int -> Form Bool) -> Form Bool)) String
+          _some' = _some
+          _funcIdx' :: Typeable ret => Prism' (FixLang PureLexiconFOL ret) (Int, Arity (Term Int) (Term Int) ret)
+          _funcIdx' = _funcIdx
 
 
 removeBlock f g vars | udf > 0 && udf == udg = revar f g (take udf vars) (take udf vars)
