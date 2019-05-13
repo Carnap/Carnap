@@ -183,6 +183,14 @@ explictConstructiveConjunctionReductioVariations = [
                 [ SA (phin 1) :|-: SS (phin 1) 
                 , GammaV 1 :|-: SS (phin 2 .∧. (lneg $ phin 2))
                 ] ∴ GammaV 1 :|-: SS (lneg $ phin 1)
+            ,
+                [ SA (phin 1) :|-: SS (phin 1) 
+                , GammaV 1 :+: SA (phin 1) :|-: SS ((lneg $ phin 2) .∧. phin 2)
+                ] ∴ GammaV 1 :|-: SS (lneg $ phin 1)
+            ,
+                [ SA (phin 1) :|-: SS (phin 1) 
+                , GammaV 1 :|-: SS ((lneg $ phin 2) .∧. phin 2)
+                ] ∴ GammaV 1 :|-: SS (lneg $ phin 1)
             ]
 
 explictNonConstructiveConjunctionReductioVariations :: BooleanRuleVariants lex b

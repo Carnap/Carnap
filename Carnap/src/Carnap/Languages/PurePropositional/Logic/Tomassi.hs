@@ -26,7 +26,7 @@ data TomassiPL =  AndI | AndE1 | AndE2
                | DNI   | DNE
                | BCI   | BCE
                | ORI1  | ORI2 | ORE
-               | As    | CP   | RAA   
+               | As    | CP   | RAA1 | RAA2
                | Pr (Maybe [(ClassicalSequentOver PurePropLexicon (Sequent (Form Bool)))])
                deriving (Eq)
               
@@ -45,7 +45,8 @@ instance Show TomassiPL where
         show ORE = "∨E"
         show As  = "As"
         show CP = "CP"
-        show RAA  = "RAA"
+        show RAA1  = "RAA"
+        show RAA2  = "RAA"
         show (Pr _) = "Pr"
 
 instance Inference TomassiPL PurePropLexicon (Form Bool) where
@@ -64,18 +65,21 @@ instance Inference TomassiPL PurePropLexicon (Form Bool) where
         ruleOf As = axiom
         ruleOf (Pr _) = axiom
         ruleOf CP = explicitConditionalProofVariations !! 0
-        ruleOf RAA = explictConstructiveConjunctionReductioVariations !! 0
+        ruleOf RAA1  = explictConstructiveConjunctionReductioVariations !! 0
+        ruleOf RAA2 = explictConstructiveConjunctionReductioVariations !! 2
 
         restriction (Pr prems) = Just (premConstraint prems)
         restriction _ = Nothing
 
         globalRestriction (Left ded) n CP = Just (dischargeConstraint n ded (view lhs $ conclusionOf CP))
-        globalRestriction (Left ded) n RAA = Just (dischargeConstraint n ded (view lhs $ conclusionOf RAA))
+        globalRestriction (Left ded) n RAA1 = Just (dischargeConstraint n ded (view lhs $ conclusionOf RAA1))
+        globalRestriction (Left ded) n RAA2 = Just (dischargeConstraint n ded (view lhs $ conclusionOf RAA2))
         globalRestriction (Left ded) n ORE = Just (dischargeConstraint n ded (view lhs $ conclusionOf ORE))
         globalRestriction _ _ _ = Nothing
 
         indirectInference CP = Just $ TypedProof (ProofType 1 1)
-        indirectInference RAA = Just $ TypedProof (ProofType 1 1)
+        indirectInference RAA1 = Just $ TypedProof (ProofType 1 1)
+        indirectInference RAA2 = Just $ TypedProof (ProofType 1 1)
         indirectInference ORE = Just $ PolyTypedProof 2 (ProofType 1 1)
         indirectInference _ = Nothing
 
@@ -84,7 +88,7 @@ instance Inference TomassiPL PurePropLexicon (Form Bool) where
         isAssumption _ = False
 
 parseTomassiPL rtc n _ = do r <- choice (map (try . string) [ "&I", "&E", "MP", "MT", "~I", "DNI", "~E", "DNE", "↔I", "<->I", "↔E", "<->E"
-                                                            , "∨I", "\\/I", "∨E", "\\/E", "As", "CP", "RAA", "Pr"])
+                                                            , "∨I", "vI", "\\/I", "∨E", "vE", "\\/E", "As", "CP", "RAA", "Pr"])
                             return $ case r of 
                                   r | r == "As" -> [As]
                                     | r == "Pr" -> [Pr (problemPremises rtc)] 
@@ -96,9 +100,9 @@ parseTomassiPL rtc n _ = do r <- choice (map (try . string) [ "&I", "&E", "MP", 
                                     | r `elem` ["~E","DNE"] -> [DNE]
                                     | r `elem` ["↔I","<->I"] -> [BCI]
                                     | r `elem` ["↔E","<->E"] -> [BCE]
-                                    | r `elem` ["∨I", "\\/I"] -> [ORI1, ORI2]
-                                    | r `elem` ["∨E", "\\/E"] -> [ORE]
-                                    | r == "RAA" -> [RAA]
+                                    | r `elem` ["∨I", "vI", "\\/I"] -> [ORI1, ORI2]
+                                    | r `elem` ["∨E", "vE", "\\/E"] -> [ORE]
+                                    | r == "RAA" -> [RAA1, RAA2]
                                     | r == "CP" -> [CP]
 
 parseTomassiPLProof :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) 
