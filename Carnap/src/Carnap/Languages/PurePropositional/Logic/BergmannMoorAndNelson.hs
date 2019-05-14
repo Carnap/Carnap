@@ -119,18 +119,18 @@ instance Inference LogicBookSD PurePropLexicon (Form Bool) where
     restriction _ = Nothing
 
 parseLogicBookSD :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> Parsec String u [LogicBookSD]
-parseLogicBookSD rtc = do r <- choice (map (try . string) ["AS","PR", "Assumption" ,"&I","/\\I", "∧I","&E","/\\E","∧E","CI","->I","→I", "⊃I","→E", "⊃E","CE","->E"
-                                                          , "→E" ,"~I","-I", "¬I","~E","-E","¬E" ,"vI","\\/I","∨I", "vE","\\/E", "∨E","BI","<->I", "↔I"
+parseLogicBookSD rtc = do r <- choice (map (try . string) ["AS","PR", "Assumption" ,"&I","/\\I", "∧I","&E","/\\E","∧E","CI","->I","→I", ">I", "⊃I","→E", "⊃E","CE","->E"
+                                                          , "→E" , ">E" ,"~I","-I", "¬I","~E","-E","¬E" ,"vI","\\/I","∨I", "vE","\\/E", "∨E","BI","<->I", "↔I"
                                                           , "≡I" , "BE", "<->E", "↔E", "≡E", "R"]) <|> ((++) <$> string "A/" <*> many anyChar)
                           case r of
                             r | r `elem` ["AS"] -> return [AS ""]
-                              | r `elem` ["A/>I"] -> return [AS "/⊃I"]
+                              | r `elem` ["A/>I", "A/->I"] -> return [AS "/⊃I"]
                               | r `elem` ["A/=I"] -> return [AS "/≡I"]
                               | r `elem` ["PR", "Assumption"] -> return [Pr (problemPremises rtc)]
                               | r `elem` ["&I","/\\I","∧I"] -> return [ConjIntro]
                               | r `elem` ["&E","/\\E","∧E"] -> return [ConjElim1, ConjElim2]
-                              | r `elem` ["CI","->I","→I","⊃I"] -> return [CondIntro1,CondIntro2]
-                              | r `elem` ["CE","->E","→E","⊃E"] -> return [CondElim]
+                              | r `elem` ["CI","->I","→I",">I", "⊃I"] -> return [CondIntro1,CondIntro2]
+                              | r `elem` ["CE","->E","→E",">E", "⊃E"] -> return [CondElim]
                               | r `elem` ["~I","¬I","-I"]  -> return [NegeIntro1, NegeIntro2, NegeIntro3, NegeIntro4]
                               | r `elem` ["~E","¬E","-E"]  -> return [NegeElim1, NegeElim2, NegeElim3, NegeElim4]
                               | r `elem` ["vI","\\/I"] -> return [DisjIntro1, DisjIntro2]
