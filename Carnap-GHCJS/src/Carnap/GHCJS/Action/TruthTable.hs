@@ -42,9 +42,9 @@ activateTruthTables w (Just (i,o,opts)) = do
                                          Nothing -> (purePropFormulaParser standardLetters, ndParseSeq montagueSCCalc)
                                          Just sys -> (ndParseForm `ofPropSys` sys, ndParseSeq `ofPropSys` sys)
         case M.lookup "tabletype" opts of
-            (Just "simple") -> checkerWith ((formParser `sepEndBy1` (spaces *> char ',' <* spaces)) <* eof) createSimpleTruthTable
-            (Just "validity") -> checkerWith seqParser createValidityTruthTable
-            (Just "partial") -> checkerWith (formParser <* eof) createPartialTruthTable
+            Just "simple" -> checkerWith ((formParser `sepEndBy1` (spaces *> char ',' <* spaces)) <* eof) createSimpleTruthTable
+            Just "validity" -> checkerWith seqParser createValidityTruthTable
+            Just "partial" -> checkerWith (formParser <* eof) createPartialTruthTable
             _  -> return ()
 
     where checkerWith parser ttbuilder = 
@@ -180,24 +180,22 @@ tryCounterexample w ref i indicies isCounterexample =
               checkLength l = if length l == length indicies then Just l else Nothing
 
 toRow w opts atomIndicies orderedChildren gridRef (v,n,mvalid,given) = 
-        do (Just row) <- createElement w (Just "tr")
-           (Just sep) <- createElement w (Just "td")
+        do Just row <- createElement w (Just "tr")
+           Just sep <- createElement w (Just "td")
            setAttribute sep "class" "tttdSep"
            valTds <- mapM toValTd atomIndicies
            childTds <- mapM toChildTd (zip3 orderedChildren [1..] given)
-           mapM_ (appendChild row . Just) valTds
-           appendChild row (Just sep)
-           mapM_ (appendChild row . Just) childTds
+           mapM_ (appendChild row . Just) (valTds ++ [sep] ++ childTds)
            return row
-    where toValTd i = do (Just td) <- createElement w (Just "td")
+    where toValTd i = do Just td <- createElement w (Just "td")
                          setInnerHTML td (Just $ if v i then "T" else "F")
                          setAttribute td "class" "valtd"
                          return td
 
-          toChildTd (c,m,mg) = do (Just td) <- createElement w (Just "td")
+          toChildTd (c,m,mg) = do Just td <- createElement w (Just "td")
                                   case c of
                                       Left '⊢' -> case mvalid of
-                                                   (Just tv) -> addDropdown ("turnstileMark" `inOpts` opts) m td tv mg
+                                                   Just tv -> addDropdown ("turnstileMark" `inOpts` opts) m td tv mg
                                                    Nothing -> setInnerHTML td (Just "")
                                       Left c'  -> setInnerHTML td (Just "")
                                       Right f  -> do let (Form tv) = satisfies v f
@@ -228,7 +226,7 @@ toRow w opts atomIndicies orderedChildren gridRef (v,n,mvalid,given) =
                                         return ()
 
           switchOnMatch m tv = do 
-                             (Just t) <- target :: EventM HTMLSelectElement Event (Maybe HTMLSelectElement)
+                             Just t <- target :: EventM HTMLSelectElement Event (Maybe HTMLSelectElement)
                              s <- getValue t 
                              if s `elem` [Just "T", Just "✓"]
                                  then liftIO $ modifyIORef gridRef (M.insert (n,m) tv)
@@ -262,7 +260,7 @@ createPartialTruthTable w f (i,o) _ _ opts =
           toPartialRow' = toPartialRow w opts orderedChildren
           makeRowRef x = newIORef (M.fromList [(z, Nothing) | z <- [1..x]])
           toPartialHead = 
-                do (Just row) <- createElement w (Just "tr")
+                do Just row <- createElement w (Just "tr")
                    childThs <- mapM (toChildTh w) orderedChildren >>= rewriteThs opts
                    mapM_ (appendChild row . Just) childThs
                    return row
@@ -276,12 +274,12 @@ createPartialTruthTable w f (i,o) _ _ opts =
                 _ -> False
 
 toPartialRow w opts orderedChildren rRef v given = 
-        do (Just row) <- createElement w (Just "tr")
+        do Just row <- createElement w (Just "tr")
            childTds <- mapM toChildTd (zip3 orderedChildren [1..] given)
            mapM_ (appendChild row . Just) childTds
            return row
 
-    where toChildTd (c,m,mg) = do (Just td) <- createElement w (Just "td")
+    where toChildTd (c,m,mg) = do Just td <- createElement w (Just "td")
                                   case c of
                                       Left _ -> setInnerHTML td (Just "")
                                       Right _ -> addDropdown m td mg
@@ -290,7 +288,7 @@ toPartialRow w opts orderedChildren rRef v given =
           addDropdown m td mg = do modifyIORef rRef (M.insert m mg)
                                    case mg of
                                        Just val | "strictGivens" `inOpts` opts || "immutable" `inOpts` opts -> 
-                                            do (Just span) <- createElement w (Just "span")
+                                            do Just span <- createElement w (Just "span")
                                                setInnerHTML span (Just $ if val then "T" else "F")
                                                appendChild td (Just span)
                                        Just val | "hiddenGivens" `inOpts` opts -> 
@@ -307,7 +305,7 @@ toPartialRow w opts orderedChildren rRef v given =
                                    return ()
 
           switch rRef m = do 
-                 (Just t) <- target :: EventM HTMLSelectElement Event (Maybe HTMLSelectElement)
+                 Just t <- target :: EventM HTMLSelectElement Event (Maybe HTMLSelectElement)
                  tv <- stringToTruthValue <$> getValue t 
                  liftIO $ modifyIORef rRef (M.insert m tv)
 
@@ -318,10 +316,10 @@ toPartialRow w opts orderedChildren rRef v given =
 
 trueFalseOpts :: Document -> Bool -> Maybe Bool -> IO Element
 trueFalseOpts w turnstileMark mg = 
-        do (Just sel) <- createElement w (Just "select")
-           (Just bl)  <- createElement w (Just "option")
-           (Just tr)  <- createElement w (Just "option")
-           (Just fs)  <- createElement w (Just "option")
+        do Just sel <- createElement w (Just "select")
+           Just bl  <- createElement w (Just "option")
+           Just tr  <- createElement w (Just "option")
+           Just fs  <- createElement w (Just "option")
            setInnerHTML bl (Just "-")
            setInnerHTML tr (Just $ if turnstileMark then "✓" else "T")
            setInnerHTML fs (Just $ if turnstileMark then "✗" else "F")
@@ -335,8 +333,8 @@ trueFalseOpts w turnstileMark mg =
            return sel
 
 toHead w opts atomIndicies orderedChildren = 
-        do (Just row) <- createElement w (Just "tr")
-           (Just sep) <- createElement w (Just "th")
+        do Just row <- createElement w (Just "tr")
+           Just sep <- createElement w (Just "th")
            setAttribute sep "class" "ttthSep"
            atomThs <- mapM toAtomTh atomIndicies
            childThs <- mapM (toChildTh w) orderedChildren >>= rewriteThs opts
@@ -344,13 +342,13 @@ toHead w opts atomIndicies orderedChildren =
            appendChild row (Just sep)
            mapM_ (appendChild row . Just) childThs
            return row
-    where toAtomTh i = do (Just th) <- createElement w (Just "th")
+    where toAtomTh i = do Just th <- createElement w (Just "th")
                           setInnerHTML th (Just $ show (pn i :: PureForm))
                           return th
 
 toChildTh :: (Schematizable (f (FixLang f)), CopulaSchema (FixLang f)) => Document -> Either Char (FixLang f a) -> IO Element
 toChildTh w c = 
-        do (Just th) <- createElement w (Just "th")
+        do Just th <- createElement w (Just "th")
            case c of
                Left '⊢' -> do setInnerHTML th (Just ['⊢'])
                               setAttribute th "class" "ttTurstile"
