@@ -95,6 +95,11 @@ submitTruthTable opts ref check rows s l = do isDone <- liftIO $ readIORef ref
                                                                               trySubmit TruthTable opts l (TruthTableDataOpts (pack s) (reverse tabulated) (M.toList opts)) False
                                                           else message "not yet finished (do you still need to check your answer?)"
 
+-------------------------
+--  Full Truth Tables  --
+-------------------------
+
+
 createValidityTruthTable :: Document -> PropSequentCalc (Sequent (Form Bool)) 
     -> (Element,Element) -> IORef Bool -> Element -> Map String String
     -> IO (IO Bool, [Element])
@@ -105,18 +110,17 @@ createValidityTruthTable w (antced :|-: (SS succed)) (i,o) ref bw opts =
                givens = makeGivens opts valuations orderedChildren
            head <- toHead w opts atomIndicies orderedChildren
            rows <- mapM (toRow' gridRef) (zip4 valuations [1..] validities givens)
-           mapM_ (appendChild tbody . Just) (reverse rows)
            if "nocounterexample" `inOpts` opts
                then return ()
                else do bt <- exclaimButton w "Counterexample"
                        Just w' <- getDefaultView w                    
-                       counterexample <- newListener $ tryCounterexample w'
+                       counterexample <- newListener $ tryCounterexample w' ref i atomIndicies (not . implies)
                        addListener bt click counterexample False
                        appendChild bw (Just bt)
                        return ()
+           mapM_ (appendChild tbody . Just) (reverse rows)
            appendChild thead (Just head)
            appendChild o (Just table)
-           mpar@(Just par) <- getParentNode o
            let check = M.foldr (&&) True <$> readIORef gridRef 
            return (check ,rows)
     where forms :: [PureForm]
@@ -128,26 +132,6 @@ createValidityTruthTable w (antced :|-: (SS succed)) (i,o) ref bw opts =
           orderedChildren = concat $ intersperse [Left ','] (Prelude.map (toOrderedChildren . fromSequent) (toListOf concretes antced))
                             ++ [[Left '⊢']] ++ intersperse [Left ','] (Prelude.map (toOrderedChildren. fromSequent) (toListOf concretes succed))
           toRow' = toRow w opts atomIndicies orderedChildren
-          tryCounterexample w' = do mrow <- liftIO $ prompt w' "enter the truth values for your counterexample row" (Just "")
-                                    case mrow of 
-                                        Nothing -> return ()
-                                        Just s -> 
-                                            case checkLength =<< (clean $ Prelude.map charToTruthValue s) of
-                                              Nothing -> alert w' "not a readable row"
-                                              Just l -> do let v = listToVal l
-                                                           let s = not $ implies v
-                                                           if s then do alert w' "Success!"
-                                                                        liftIO $ writeIORef ref True
-                                                                        setAttribute i "class" "completeTT"
-                                                                else do alert w' "Something's not quite right"
-                                                                        setAttribute i "class" "incompleteTT"
-            where clean (Nothing:xs) = Nothing
-                  clean (Just x:xs) = (:) <$> (Just x) <*> (clean xs)
-                  clean [] = Just []
-                  listToVal l = toValuation (mask l atomIndicies)
-                  mask (x:xs) (y:ys) = if x then y:(mask xs ys) else mask xs ys
-                  mask [] _ = []
-                  checkLength l = if length l == length atomIndicies then Just l else Nothing
 
 createSimpleTruthTable :: Document -> PureForm -> (Element,Element) -> IORef Bool 
     -> Element -> Map String String 
@@ -160,7 +144,6 @@ createSimpleTruthTable w f (_,o) _ _ opts =
            rows <- mapM (toRow' gridRef) (zip4 valuations [1..] (repeat Nothing) givens)
            mapM_ (appendChild tbody . Just) (reverse rows)
            appendChild thead (Just head)
-           setInnerHTML o (Just "")
            appendChild o (Just table)
            let check = M.foldr (&&) True <$> readIORef gridRef 
            return (check,rows)
@@ -168,6 +151,29 @@ createSimpleTruthTable w f (_,o) _ _ opts =
           valuations = (Prelude.map toValuation) . subsequences $ reverse atomIndicies
           orderedChildren =  toOrderedChildren f
           toRow' = toRow w opts atomIndicies orderedChildren
+
+tryCounterexample :: Window -> IORef Bool -> Element -> [Int] -> ((Int -> Bool) -> Bool) -> IO ()
+tryCounterexample w ref i indicies isCounterexample = 
+        do mrow <- prompt w "enter the truth values for your counterexample row" (Just "")
+           case mrow of 
+               Nothing -> return ()
+               Just s -> 
+                   case checkLength =<< (clean $ Prelude.map charToTruthValue s) of
+                     Nothing -> alert w "not a readable row"
+                     Just l -> do let v = listToVal l
+                                  let s = isCounterexample v
+                                  if s then do alert w "Success!"
+                                               writeIORef ref True
+                                               setAttribute i "class" "completeTT"
+                                       else do alert w "Something's not quite right"
+                                               setAttribute i "class" "incompleteTT"
+        where clean (Nothing:xs) = Nothing
+              clean (Just x:xs) = (:) <$> (Just x) <*> (clean xs)
+              clean [] = Just []
+              listToVal l = toValuation (mask l indicies)
+              mask (x:xs) (y:ys) = if x then y:(mask xs ys) else mask xs ys
+              mask [] _ = []
+              checkLength l = if length l == length indicies then Just l else Nothing
 
 toRow w opts atomIndicies orderedChildren gridRef (v,n,mvalid,given) = 
         do (Just row) <- createElement w (Just "tr")
@@ -223,6 +229,11 @@ toRow w opts atomIndicies orderedChildren gridRef (v,n,mvalid,given) =
                              if s `elem` [Just "T", Just "✓"]
                                  then liftIO $ modifyIORef gridRef (M.insert (n,m) tv)
                                  else liftIO $ modifyIORef gridRef (M.insert (n,m) (not tv))
+
+----------------------------
+--  Partial Truth Tables  --
+----------------------------
+
 
 createPartialTruthTable :: Document -> PureForm -> (Element,Element) -> IORef Bool 
     -> Element -> Map String String -> IO (IO Bool,[Element])
