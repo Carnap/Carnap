@@ -164,9 +164,9 @@ tryCounterexample w ref i indicies isCounterexample =
                                   let s = isCounterexample v
                                   if s then do alert w "Success!"
                                                writeIORef ref True
-                                               setAttribute i "class" "completeTT"
+                                               setAttribute i "class" "input completeTT"
                                        else do alert w "Something's not quite right"
-                                               setAttribute i "class" "incompleteTT"
+                                               setAttribute i "class" "input incompleteTT"
         where clean (Nothing:xs) = Nothing
               clean (Just x:xs) = (:) <$> (Just x) <*> (clean xs)
               clean [] = Just []
