@@ -98,18 +98,12 @@ submitTruthTable opts ref check rows s l = do isDone <- liftIO $ readIORef ref
 --  Full Truth Tables  --
 -------------------------
 
-
 createValidityTruthTable :: Document -> PropSequentCalc (Sequent (Form Bool)) 
     -> (Element,Element) -> IORef Bool -> Element -> Map String String
     -> IO (IO Bool, [Element])
 createValidityTruthTable w (antced :|-: succed) (i,o) ref bw opts =
-        do (table, thead, tbody) <- initTable w
-           setInnerHTML i (Just . rewriteWith opts . show $ (antced :|-: succed))
-           gridRef <- makeGridRef (length orderedChildren) (length valuations)
-           let validities = Prelude.map (Just . not . isCounterexample) valuations
-               givens = makeGivens opts valuations orderedChildren
-           head <- toHead w opts atomIndicies orderedChildren
-           rows <- mapM (toRow' gridRef) (zip4 valuations [1..] validities givens)
+        do setInnerHTML i (Just . rewriteWith opts . show $ (antced :|-: succed))
+           let validities = map (Just . not . isCounterexample) valuations
            if "nocounterexample" `inOpts` opts
                then return ()
                else do bt <- exclaimButton w "Counterexample"
@@ -118,43 +112,44 @@ createValidityTruthTable w (antced :|-: succed) (i,o) ref bw opts =
                        addListener bt click counterexample False
                        appendChild bw (Just bt)
                        return ()
-           mapM_ (appendChild tbody . Just) (reverse rows)
-           appendChild thead (Just head)
-           appendChild o (Just table)
-           let check = M.foldr (&&) True <$> readIORef gridRef 
-           return (check ,rows)
-    where forms :: [PureForm]
-          forms = antecedList ++ succedList
-          antecedList = Prelude.map fromSequent $ toListOf concretes antced
-          succedList = Prelude.map fromSequent $ toListOf concretes succed
-          isCounterexample v = and (Prelude.map (unform . satisfies v) antecedList ) && and (Prelude.map (not . unform . satisfies v) succedList)
+           assembleTable w opts o orderedChildren valuations atomIndicies
+    where forms = antecedList ++ succedList
+          antecedList = map fromSequent $ toListOf concretes antced
+          succedList = map fromSequent $ toListOf concretes succed
+          isCounterexample v = and (map (unform . satisfies v) antecedList ) 
+                            && and (map (not . unform . satisfies v) succedList)
           unform (Form b) = b
-          atomIndicies = nub . sort . concat $ (Prelude.map getIndicies forms) 
-          valuations = (Prelude.map toValuation) . subsequences $ reverse atomIndicies
-          orderedChildren = concat $ intersperse [Left ','] (Prelude.map (toOrderedChildren . fromSequent) (toListOf concretes antced))
+          atomIndicies = nub . sort . concat $ map getIndicies forms
+          valuations = (map toValuation) . subsequences $ reverse atomIndicies
+          orderedChildren = concat $ intersperse [Left ','] (map (toOrderedChildren . fromSequent) (toListOf concretes antced))
                                   ++ [[Left '⊢']] 
-                                  ++ intersperse [Left ','] (Prelude.map (toOrderedChildren. fromSequent) (toListOf concretes succed))
-          toRow' = toRow w opts atomIndicies orderedChildren
+                                  ++ intersperse [Left ','] (map (toOrderedChildren. fromSequent) (toListOf concretes succed))
 
 createSimpleTruthTable :: Document -> [PureForm] -> (Element,Element) -> IORef Bool 
     -> Element -> Map String String 
     -> IO (IO Bool,[Element])
 createSimpleTruthTable w fs (i,o) _ _ opts = 
-        do (table, thead, tbody) <- initTable w
-           setInnerHTML i (Just . intercalate ", " . map (rewriteWith opts . show) $ fs)
+        do setInnerHTML i (Just . intercalate ", " . map (rewriteWith opts . show) $ fs)
+           assembleTable w opts o orderedChildren valuations atomIndicies
+    where atomIndicies = nub . sort . concat . map getIndicies $ fs
+          valuations = map toValuation . subsequences $ reverse atomIndicies
+          orderedChildren = concat . intersperse [Left ','] . map toOrderedChildren $ fs
+
+assembleTable :: Document -> Map String String -> Element 
+    -> [Either Char PureForm] -> [Int -> Bool] -> [Int] 
+    -> IO (IO Bool, [Element])
+assembleTable w opts o orderedChildren valuations atomIndicies = 
+        do (table, thead, tbody) <- initTable w          
            gridRef <- makeGridRef (length orderedChildren) (length valuations)
            head <- toHead w opts atomIndicies orderedChildren
-           let givens = makeGivens opts valuations orderedChildren
            rows <- mapM (toRow' gridRef) (zip4 valuations [1..] (repeat Nothing) givens)
            mapM_ (appendChild tbody . Just) (reverse rows)
            appendChild thead (Just head)
            appendChild o (Just table)
            let check = M.foldr (&&) True <$> readIORef gridRef 
            return (check,rows)
-    where atomIndicies = nub . sort . concat . map getIndicies $ fs
-          valuations = Prelude.map toValuation . subsequences $ reverse atomIndicies
-          orderedChildren = concat . intersperse [Left ','] . Prelude.map toOrderedChildren $ fs
-          toRow' = toRow w opts atomIndicies orderedChildren
+    where toRow' = toRow w opts atomIndicies orderedChildren
+          givens = makeGivens opts valuations orderedChildren
 
 tryCounterexample :: Window -> IORef Bool -> Element -> [Int] -> ((Int -> Bool) -> Bool) -> IO ()
 tryCounterexample w ref i indicies isCounterexample = 
@@ -162,7 +157,7 @@ tryCounterexample w ref i indicies isCounterexample =
            case mrow of 
                Nothing -> return ()
                Just s -> 
-                   case checkLength =<< (clean $ Prelude.map charToTruthValue s) of
+                   case checkLength =<< (clean $ map charToTruthValue s) of
                      Nothing -> alert w "not a readable row"
                      Just l -> do let v = listToVal l
                                   let s = isCounterexample v
@@ -179,6 +174,10 @@ tryCounterexample w ref i indicies isCounterexample =
               mask [] _ = []
               checkLength l = if length l == length indicies then Just l else Nothing
 
+toRow :: Document -> Map String String -> [Int] 
+    -> [Either Char PureForm] -> IORef (Map (Int,Int) Bool) 
+    -> (Int -> Bool, Int, Maybe Bool, [Maybe Bool])
+    -> IO Element
 toRow w opts atomIndicies orderedChildren gridRef (v,n,mvalid,given) = 
         do Just row <- createElement w (Just "tr")
            Just sep <- createElement w (Just "td")
@@ -236,7 +235,6 @@ toRow w opts atomIndicies orderedChildren gridRef (v,n,mvalid,given) =
 --  Partial Truth Tables  --
 ----------------------------
 
-
 createPartialTruthTable :: Document -> PureForm -> (Element,Element) -> IORef Bool 
     -> Element -> Map String String -> IO (IO Bool,[Element])
 createPartialTruthTable w f (i,o) _ _ opts = 
@@ -255,7 +253,7 @@ createPartialTruthTable w f (i,o) _ _ opts =
            appendChild o (Just table)
            return (check rRef,[row])
     where atomIndicies = nub . sort . getIndicies $ f
-          valuations = (Prelude.map toValuation) . subsequences $ reverse atomIndicies
+          valuations = (map toValuation) . subsequences $ reverse atomIndicies
           orderedChildren =  toOrderedChildren f
           toPartialRow' = toPartialRow w opts orderedChildren
           makeRowRef x = newIORef (M.fromList [(z, Nothing) | z <- [1..x]])
