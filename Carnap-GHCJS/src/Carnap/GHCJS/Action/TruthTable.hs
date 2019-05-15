@@ -24,11 +24,11 @@ import GHCJS.DOM.EventM (newListener, addListener, EventM, target)
 import Data.IORef (newIORef, IORef, readIORef,writeIORef, modifyIORef)
 import Data.Map as M (Map, lookup, foldr, insert, fromList, toList)
 import Data.Text (pack)
-import Data.List (subsequences, nub, zip4, intersperse)
+import Data.List (subsequences, intercalate, nub, zip4, intersperse)
 import Control.Monad.IO.Class (liftIO)
 import Control.Lens (toListOf, preview)
 import Control.Lens.Plated (children)
-import Text.Parsec (parse, eof)
+import Text.Parsec (parse, spaces, sepEndBy1, char, eof)
 
 truthTableAction :: IO ()
 truthTableAction = initElements getTruthTables activateTruthTables
@@ -42,13 +42,12 @@ activateTruthTables w (Just (i,o,opts)) = do
                                          Nothing -> (purePropFormulaParser standardLetters, ndParseSeq montagueSCCalc)
                                          Just sys -> (ndParseForm `ofPropSys` sys, ndParseSeq `ofPropSys` sys)
         case M.lookup "tabletype" opts of
-            (Just "simple") -> checkerWith (formParser <* eof) createSimpleTruthTable
+            (Just "simple") -> checkerWith ((formParser `sepEndBy1` (spaces *> char ',' <* spaces)) <* eof) createSimpleTruthTable
             (Just "validity") -> checkerWith seqParser createValidityTruthTable
             (Just "partial") -> checkerWith (formParser <* eof) createPartialTruthTable
             _  -> return ()
 
-    where 
-          checkerWith parser ttbuilder = 
+    where checkerWith parser ttbuilder = 
             case M.lookup "goal" opts of
                 Just g ->
                   case parse parser "" g of
@@ -73,7 +72,7 @@ activateTruthTables w (Just (i,o,opts)) = do
                               addListener bt2 click checkIt False                
                           Just par <- getParentNode o
                           appendChild par (Just bw)
-                          setInnerHTML i (Just $ rewriteWith opts $ show f)
+                          return ()
                 _ -> print "truth table was missing an option"
           checkTable ref check = do correct <- liftIO $ check
                                     if correct 
@@ -103,10 +102,11 @@ submitTruthTable opts ref check rows s l = do isDone <- liftIO $ readIORef ref
 createValidityTruthTable :: Document -> PropSequentCalc (Sequent (Form Bool)) 
     -> (Element,Element) -> IORef Bool -> Element -> Map String String
     -> IO (IO Bool, [Element])
-createValidityTruthTable w (antced :|-: (SS succed)) (i,o) ref bw opts =
+createValidityTruthTable w (antced :|-: succed) (i,o) ref bw opts =
         do (table, thead, tbody) <- initTable w
+           setInnerHTML i (Just . rewriteWith opts . show $ (antced :|-: succed))
            gridRef <- makeGridRef (length orderedChildren) (length valuations)
-           let validities = Prelude.map (Just . implies) valuations
+           let validities = Prelude.map (Just . not . isCounterexample) valuations
                givens = makeGivens opts valuations orderedChildren
            head <- toHead w opts atomIndicies orderedChildren
            rows <- mapM (toRow' gridRef) (zip4 valuations [1..] validities givens)
@@ -114,7 +114,7 @@ createValidityTruthTable w (antced :|-: (SS succed)) (i,o) ref bw opts =
                then return ()
                else do bt <- exclaimButton w "Counterexample"
                        Just w' <- getDefaultView w                    
-                       counterexample <- newListener $ tryCounterexample w' ref i atomIndicies (not . implies)
+                       counterexample <- newListener $ liftIO $ tryCounterexample w' ref i atomIndicies isCounterexample
                        addListener bt click counterexample False
                        appendChild bw (Just bt)
                        return ()
@@ -124,20 +124,24 @@ createValidityTruthTable w (antced :|-: (SS succed)) (i,o) ref bw opts =
            let check = M.foldr (&&) True <$> readIORef gridRef 
            return (check ,rows)
     where forms :: [PureForm]
-          forms = (Prelude.map fromSequent $ toListOf concretes antced) ++ (Prelude.map fromSequent $ toListOf concretes succed)
-          implies v = not (and (Prelude.map (unform . satisfies v) (init forms))) || (unform . satisfies v $ last forms)
+          forms = antecedList ++ succedList
+          antecedList = Prelude.map fromSequent $ toListOf concretes antced
+          succedList = Prelude.map fromSequent $ toListOf concretes succed
+          isCounterexample v = and (Prelude.map (unform . satisfies v) antecedList ) && and (Prelude.map (not . unform . satisfies v) succedList)
           unform (Form b) = b
           atomIndicies = nub . sort . concat $ (Prelude.map getIndicies forms) 
           valuations = (Prelude.map toValuation) . subsequences $ reverse atomIndicies
           orderedChildren = concat $ intersperse [Left ','] (Prelude.map (toOrderedChildren . fromSequent) (toListOf concretes antced))
-                            ++ [[Left '⊢']] ++ intersperse [Left ','] (Prelude.map (toOrderedChildren. fromSequent) (toListOf concretes succed))
+                                  ++ [[Left '⊢']] 
+                                  ++ intersperse [Left ','] (Prelude.map (toOrderedChildren. fromSequent) (toListOf concretes succed))
           toRow' = toRow w opts atomIndicies orderedChildren
 
-createSimpleTruthTable :: Document -> PureForm -> (Element,Element) -> IORef Bool 
+createSimpleTruthTable :: Document -> [PureForm] -> (Element,Element) -> IORef Bool 
     -> Element -> Map String String 
     -> IO (IO Bool,[Element])
-createSimpleTruthTable w f (_,o) _ _ opts = 
+createSimpleTruthTable w fs (i,o) _ _ opts = 
         do (table, thead, tbody) <- initTable w
+           setInnerHTML i (Just . intercalate ", " . map (rewriteWith opts . show) $ fs)
            gridRef <- makeGridRef (length orderedChildren) (length valuations)
            head <- toHead w opts atomIndicies orderedChildren
            let givens = makeGivens opts valuations orderedChildren
@@ -147,9 +151,9 @@ createSimpleTruthTable w f (_,o) _ _ opts =
            appendChild o (Just table)
            let check = M.foldr (&&) True <$> readIORef gridRef 
            return (check,rows)
-    where atomIndicies = nub . sort . getIndicies $ f
-          valuations = (Prelude.map toValuation) . subsequences $ reverse atomIndicies
-          orderedChildren =  toOrderedChildren f
+    where atomIndicies = nub . sort . concat . map getIndicies $ fs
+          valuations = Prelude.map toValuation . subsequences $ reverse atomIndicies
+          orderedChildren = concat . intersperse [Left ','] . Prelude.map toOrderedChildren $ fs
           toRow' = toRow w opts atomIndicies orderedChildren
 
 tryCounterexample :: Window -> IORef Bool -> Element -> [Int] -> ((Int -> Bool) -> Bool) -> IO ()
@@ -237,8 +241,9 @@ toRow w opts atomIndicies orderedChildren gridRef (v,n,mvalid,given) =
 
 createPartialTruthTable :: Document -> PureForm -> (Element,Element) -> IORef Bool 
     -> Element -> Map String String -> IO (IO Bool,[Element])
-createPartialTruthTable w f (_,o) _ _ opts = 
+createPartialTruthTable w f (i,o) _ _ opts = 
         do (table, thead, tbody) <- initTable w
+           setInnerHTML i (Just . rewriteWith opts . show $ f)
            rRef <- makeRowRef (length orderedChildren)
            head <- toPartialHead
            let toGivens t = expandRow orderedChildren (packText t)
