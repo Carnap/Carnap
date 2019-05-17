@@ -103,24 +103,33 @@ createValidityTruthTable :: Document -> PropSequentCalc (Sequent (Form Bool))
     -> IO (IO Bool, [Element])
 createValidityTruthTable w (antced :|-: succed) (i,o) ref bw opts =
         do setInnerHTML i (Just . rewriteWith opts . show $ (antced :|-: succed))
-           let validities = map (Just . not . isCounterexample) valuations
-           if "nocounterexample" `inOpts` opts
-               then return ()
-               else do bt <- exclaimButton w "Counterexample"
-                       Just w' <- getDefaultView w                    
-                       counterexample <- newListener $ liftIO $ tryCounterexample w' ref i atomIndicies isCounterexample
-                       addListener bt click counterexample False
-                       appendChild bw (Just bt)
-                       return ()
-           assembleTable w opts o orderedChildren valuations atomIndicies
+           admissibleRows <- case M.lookup "counterexample-to" opts of
+                               Just "equivalence" -> do 
+                                    addCounterexample w opts bw i ref atomIndicies isEquivCE "Consistent"
+                                    return $ map (Just . not . isEquivCE) valuations
+                               Just "inconsistency" -> do 
+                                    addCounterexample w opts bw i ref atomIndicies isInconCE "Inequivalent"
+                                    return $ map (Just . not . isInconCE) valuations
+                               Just "validity" -> do 
+                                    addCounterexample w opts bw i ref atomIndicies isValCE "Invalid"
+                                    return $ map (Just . not . isValCE) valuations
+                               _ -> do 
+                                    addCounterexample w opts bw i ref atomIndicies isValCE "Counterexample"
+                                    return $ map (Just . not . isValCE) valuations
+           assembleTable w opts o orderedChildren valuations atomIndicies admissibleRows
+
     where forms = antecedList ++ succedList
           antecedList = map fromSequent $ toListOf concretes antced
           succedList = map fromSequent $ toListOf concretes succed
-          isCounterexample v = and (map (unform . satisfies v) antecedList ) 
-                            && and (map (not . unform . satisfies v) succedList)
-          unform (Form b) = b
+          isValCE v = and (map (unform . satisfies v) antecedList ) 
+                   && and (map (not . unform . satisfies v) succedList)
+          isEquivCE v = and (map (unform . satisfies v) antecedList) 
+                     && not (and succVals || and (map not succVals))
+            where succVals = map (unform . satisfies v) succedList
+          isInconCE v = and (map (unform . satisfies v) antecedList)
+                     && and (map (unform . satisfies v) succedList)
           atomIndicies = nub . sort . concat $ map getIndicies forms
-          valuations = (map toValuation) . subsequences $ reverse atomIndicies
+          valuations = map toValuation . subsequences $ reverse atomIndicies
           orderedChildren = concat $ intersperse [Left ','] (map (toOrderedChildren . fromSequent) (toListOf concretes antced))
                                   ++ [[Left '⊢']] 
                                   ++ intersperse [Left ','] (map (toOrderedChildren. fromSequent) (toListOf concretes succed))
@@ -128,21 +137,32 @@ createValidityTruthTable w (antced :|-: succed) (i,o) ref bw opts =
 createSimpleTruthTable :: Document -> [PureForm] -> (Element,Element) -> IORef Bool 
     -> Element -> Map String String 
     -> IO (IO Bool,[Element])
-createSimpleTruthTable w fs (i,o) _ _ opts = 
+createSimpleTruthTable w fs (i,o) ref bw opts = 
         do setInnerHTML i (Just . intercalate ", " . map (rewriteWith opts . show) $ fs)
-           assembleTable w opts o orderedChildren valuations atomIndicies
-    where atomIndicies = nub . sort . concat . map getIndicies $ fs
+           case M.lookup "counterexample-to" opts of
+                Just "equivalence" -> addCounterexample w opts bw i ref atomIndicies isEquivCE "Inequivalent"
+                Just "inconsistency" -> addCounterexample w opts bw i ref atomIndicies isInconCE "Consistent"
+                Just "tautology" -> addCounterexample w opts bw i ref atomIndicies isTautCE "Non-Tautology"
+                Just "validity" -> addCounterexample w opts bw i ref atomIndicies isTautCE "Invalid"
+                _ -> do addCounterexample w opts bw i ref atomIndicies isTautCE "Counterexample"
+           assembleTable w opts o orderedChildren valuations atomIndicies (repeat Nothing)
+
+    where isTautCE v = and (map (not . unform . satisfies v) fs)
+          isEquivCE v = not (and vals || and (map not vals))
+            where vals = map (not . unform . satisfies v) fs
+          isInconCE v = and (map (unform . satisfies v) fs)
+          atomIndicies = nub . sort . concat . map getIndicies $ fs
           valuations = map toValuation . subsequences $ reverse atomIndicies
           orderedChildren = concat . intersperse [Left ','] . map toOrderedChildren $ fs
 
-assembleTable :: Document -> Map String String -> Element 
-    -> [Either Char PureForm] -> [Int -> Bool] -> [Int] 
+assembleTable :: Document -> Map String String -> Element -> [Either Char PureForm] 
+    -> [Int -> Bool] -> [Int] -> [Maybe Bool]
     -> IO (IO Bool, [Element])
-assembleTable w opts o orderedChildren valuations atomIndicies = 
+assembleTable w opts o orderedChildren valuations atomIndicies admissibleRows = 
         do (table, thead, tbody) <- initTable w          
            gridRef <- makeGridRef (length orderedChildren) (length valuations)
            head <- toHead w opts atomIndicies orderedChildren
-           rows <- mapM (toRow' gridRef) (zip4 valuations [1..] (repeat Nothing) givens)
+           rows <- mapM (toRow' gridRef) (zip4 valuations [1..] admissibleRows givens)
            mapM_ (appendChild tbody . Just) (reverse rows)
            appendChild thead (Just head)
            appendChild o (Just table)
@@ -150,6 +170,18 @@ assembleTable w opts o orderedChildren valuations atomIndicies =
            return (check,rows)
     where toRow' = toRow w opts atomIndicies orderedChildren
           givens = makeGivens opts valuations orderedChildren
+
+addCounterexample :: Document -> Map String String ->  Element -> Element 
+    -> IORef Bool -> [Int] -> ((Int -> Bool) -> Bool) -> String
+    -> IO ()
+addCounterexample w opts bw i ref atomIndicies isCounterexample title
+    | "nocounterexample" `inOpts` opts = return ()
+    | otherwise = do bt <- exclaimButton w title
+                     Just w' <- getDefaultView w                    
+                     counterexample <- newListener $ liftIO $ tryCounterexample w' ref i atomIndicies isCounterexample
+                     addListener bt click counterexample False
+                     appendChild bw (Just bt)
+                     return ()
 
 tryCounterexample :: Window -> IORef Bool -> Element -> [Int] -> ((Int -> Bool) -> Bool) -> IO ()
 tryCounterexample w ref i indicies isCounterexample = 
@@ -452,6 +484,9 @@ mcOf h = show h
 inOpts :: String -> Map String String -> Bool
 inOpts s opts = s `elem` optList
     where optList = case M.lookup "options" opts of Just s -> words s; Nothing -> []
+          
+unform :: Form Bool -> Bool
+unform (Form b) = b
 
 makeGivens :: Map String String -> [Int -> Bool] -> [Either Char (FixLang f a)] -> [[Maybe Bool]]
 makeGivens opts valuations orderedChildren = case M.lookup "content" opts of 
