@@ -24,6 +24,7 @@ import GHCJS.DOM.EventM (newListener, addListener, EventM, target)
 import Data.IORef (newIORef, IORef, readIORef,writeIORef, modifyIORef)
 import Data.Map as M (Map, lookup, foldr, insert, fromList, toList)
 import Data.Text (pack)
+import Data.Either (rights)
 import Data.List (subsequences, intercalate, nub, zip4, intersperse)
 import Control.Monad.IO.Class (liftIO)
 import Control.Lens (toListOf, preview)
@@ -105,10 +106,10 @@ createValidityTruthTable w (antced :|-: succed) (i,o) ref bw opts =
         do setInnerHTML i (Just . rewriteWith opts . show $ (antced :|-: succed))
            admissibleRows <- case M.lookup "counterexample-to" opts of
                                Just "equivalence" -> do 
-                                    addCounterexample w opts bw i ref atomIndicies isEquivCE "Consistent"
+                                    addCounterexample w opts bw i ref atomIndicies isEquivCE "Inequivalent"
                                     return $ map (Just . not . isEquivCE) valuations
                                Just "inconsistency" -> do 
-                                    addCounterexample w opts bw i ref atomIndicies isInconCE "Inequivalent"
+                                    addCounterexample w opts bw i ref atomIndicies isInconCE "Consistent"
                                     return $ map (Just . not . isInconCE) valuations
                                Just "validity" -> do 
                                     addCounterexample w opts bw i ref atomIndicies isValCE "Invalid"
@@ -169,7 +170,7 @@ assembleTable w opts o orderedChildren valuations atomIndicies admissibleRows =
            let check = M.foldr (&&) True <$> readIORef gridRef 
            return (check,rows)
     where toRow' = toRow w opts atomIndicies orderedChildren
-          givens = makeGivens opts valuations orderedChildren
+          givens = makeGivens opts (Just $ length valuations) orderedChildren
 
 addCounterexample :: Document -> Map String String ->  Element -> Element 
     -> IORef Bool -> [Int] -> ((Int -> Bool) -> Bool) -> String
@@ -274,10 +275,6 @@ createPartialTruthTable w f (i,o) _ _ opts =
            setInnerHTML i (Just . rewriteWith opts . show $ f)
            rRef <- makeRowRef (length orderedChildren)
            head <- toPartialHead
-           let toGivens t = expandRow orderedChildren (packText t)
-               givens = case M.lookup "content" opts of 
-                           Just t | length (toGivens t) == length orderedChildren -> toGivens t
-                           _ -> repeat Nothing
            row <- toPartialRow' rRef valuations givens
            appendChild tbody (Just row)
            appendChild thead (Just head)
@@ -287,6 +284,7 @@ createPartialTruthTable w f (i,o) _ _ opts =
     where atomIndicies = nub . sort . getIndicies $ f
           valuations = (map toValuation) . subsequences $ reverse atomIndicies
           orderedChildren =  toOrderedChildren f
+          givens = makeGivens opts Nothing orderedChildren
           toPartialRow' = toPartialRow w opts orderedChildren
           makeRowRef x = newIORef (M.fromList [(z, Nothing) | z <- [1..x]])
           toPartialHead = 
@@ -295,17 +293,24 @@ createPartialTruthTable w f (i,o) _ _ opts =
                    mapM_ (appendChild row . Just) childThs
                    return row
           check rRef = do rMap <- readIORef rRef
-                          return $ any (validates rMap) valuations
+                          let fittingVals = filter (\v -> any (fitsGiven v) givens) valuations
+                          return $ any (validates rMap) fittingVals
           validates rMap v = all (matches rMap v) (zip orderedChildren [1 ..])
+          fitsGiven v given = and (zipWith (~=) (map (unform . satisfies v) forms) given)
+                where forms = rights orderedChildren
+                      (~=) _ Nothing   = True
+                      (~=) v (Just v') = v == v'
           matches rMap v (Left _,_) = True
           matches rMap v (Right f,m) = 
             case M.lookup m rMap of
                 Just (Just tv) -> Form tv == satisfies v f
                 _ -> False
 
-toPartialRow w opts orderedChildren rRef v given = 
+toPartialRow w opts orderedChildren rRef v givens = 
         do Just row <- createElement w (Just "tr")
-           childTds <- mapM toChildTd (zip3 orderedChildren [1..] given)
+           childTds <- mapM toChildTd (zip3 orderedChildren [1..] (last givens)) 
+           --XXX The givens are passed around in reverse order - this is
+           --actually the first row
            mapM_ (appendChild row . Just) childTds
            return row
 
@@ -315,20 +320,23 @@ toPartialRow w opts orderedChildren rRef v given =
                                       Right _ -> addDropdown m td mg
                                   return td
 
-          addDropdown m td mg = do modifyIORef rRef (M.insert m mg)
-                                   case mg of
+          addDropdown m td mg = do case mg of
                                        Just val | "strictGivens" `inOpts` opts || "immutable" `inOpts` opts -> 
                                             do Just span <- createElement w (Just "span")
                                                setInnerHTML span (Just $ if val then "T" else "F")
+                                               modifyIORef rRef (M.insert m mg)
                                                appendChild td (Just span)
                                        Just val | "hiddenGivens" `inOpts` opts -> 
                                             do sel <- trueFalseOpts w False Nothing
+                                               onSwitch <- newListener $ switch rRef m
+                                               addListener sel change onSwitch False
                                                appendChild td (Just sel)
                                        _ | "immutable" `inOpts` opts -> 
                                             do Just span <- createElement w (Just "span")
                                                setInnerHTML span (Just "-")
                                                appendChild td (Just span)
                                        _ -> do sel <- trueFalseOpts w False mg
+                                               modifyIORef rRef (M.insert m mg)
                                                onSwitch <- newListener $ switch rRef m
                                                addListener sel change onSwitch False
                                                appendChild td (Just sel)
@@ -338,7 +346,6 @@ toPartialRow w opts orderedChildren rRef v given =
                  Just t <- target :: EventM HTMLSelectElement Event (Maybe HTMLSelectElement)
                  tv <- stringToTruthValue <$> getValue t 
                  liftIO $ modifyIORef rRef (M.insert m tv)
-
 
 ------------------------
 --  HTML Boilerplate  --
@@ -488,12 +495,15 @@ inOpts s opts = s `elem` optList
 unform :: Form Bool -> Bool
 unform (Form b) = b
 
-makeGivens :: Map String String -> [Int -> Bool] -> [Either Char (FixLang f a)] -> [[Maybe Bool]]
-makeGivens opts valuations orderedChildren = case M.lookup "content" opts of 
+makeGivens :: Map String String -> Maybe Int -> [Either Char (FixLang f a)] -> [[Maybe Bool]]
+makeGivens opts mrows orderedChildren = case M.lookup "content" opts of 
        Nothing -> repeat $ repeat Nothing
-       Just t -> case (reverse . map packText $ lines t) of
-                     s | length s == length valuations -> 
-                       case map (expandRow orderedChildren) s of
-                           s' | all (\x -> length x == length orderedChildren) s' -> s'
-                              | otherwise -> repeat $ repeat Nothing
-                       | otherwise -> repeat $ repeat Nothing
+       Just t -> case (reverse . map packText $ lines t, mrows) of
+                     (s, Just rows) | length s == rows -> checkRowstrings s
+                                    | otherwise -> repeat $ repeat Nothing
+                     (s, Nothing) | length s > 0 -> checkRowstrings s
+                                  | otherwise -> repeat $ repeat Nothing
+    where checkRowstrings rowstrings = 
+            case map (expandRow orderedChildren) rowstrings of
+               s' | all (\x -> length x == length orderedChildren) s' -> s'
+                  | otherwise -> repeat $ repeat Nothing
