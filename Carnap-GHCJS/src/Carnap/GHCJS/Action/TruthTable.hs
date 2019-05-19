@@ -45,7 +45,7 @@ activateTruthTables w (Just (i,o,opts)) = do
         case M.lookup "tabletype" opts of
             Just "simple" -> checkerWith ((formParser `sepEndBy1` (spaces *> char ',' <* spaces)) <* eof) createSimpleTruthTable
             Just "validity" -> checkerWith seqParser createValidityTruthTable
-            Just "partial" -> checkerWith (formParser <* eof) createPartialTruthTable
+            Just "partial" -> checkerWith ((formParser `sepEndBy1` (spaces *> char ',' <* spaces)) <* eof) createPartialTruthTable
             _  -> return ()
 
     where checkerWith parser ttbuilder = 
@@ -129,7 +129,7 @@ createValidityTruthTable w (antced :|-: succed) (i,o) ref bw opts =
             where succVals = map (unform . satisfies v) succedList
           isInconCE v = and (map (unform . satisfies v) antecedList)
                      && and (map (unform . satisfies v) succedList)
-          atomIndicies = nub . sort . concat $ map getIndicies forms
+          atomIndicies = nub . sort . concatMap getIndicies $ forms
           valuations = map toValuation . subsequences $ reverse atomIndicies
           orderedChildren = concat $ intersperse [Left ','] (map (toOrderedChildren . fromSequent) (toListOf concretes antced))
                                   ++ [[Left '⊢']] 
@@ -152,7 +152,7 @@ createSimpleTruthTable w fs (i,o) ref bw opts =
           isEquivCE v = not (and vals || and (map not vals))
             where vals = map (not . unform . satisfies v) fs
           isInconCE v = and (map (unform . satisfies v) fs)
-          atomIndicies = nub . sort . concat . map getIndicies $ fs
+          atomIndicies = nub . sort . concatMap getIndicies $ fs
           valuations = map toValuation . subsequences $ reverse atomIndicies
           orderedChildren = concat . intersperse [Left ','] . map toOrderedChildren $ fs
 
@@ -268,22 +268,21 @@ toRow w opts atomIndicies orderedChildren gridRef (v,n,mvalid,given) =
 --  Partial Truth Tables  --
 ----------------------------
 
-createPartialTruthTable :: Document -> PureForm -> (Element,Element) -> IORef Bool 
+createPartialTruthTable :: Document -> [PureForm] -> (Element,Element) -> IORef Bool 
     -> Element -> Map String String -> IO (IO Bool,[Element])
-createPartialTruthTable w f (i,o) _ _ opts = 
+createPartialTruthTable w fs (i,o) _ _ opts = 
         do (table, thead, tbody) <- initTable w
-           setInnerHTML i (Just . rewriteWith opts . show $ f)
+           setInnerHTML i (Just . intercalate ", " . map (rewriteWith opts . show) $ fs)
            rRef <- makeRowRef (length orderedChildren)
            head <- toPartialHead
            row <- toPartialRow' rRef valuations givens
            appendChild tbody (Just row)
            appendChild thead (Just head)
-           setInnerHTML o (Just "")
            appendChild o (Just table)
            return (check rRef,[row])
-    where atomIndicies = nub . sort . getIndicies $ f
+    where atomIndicies = nub . sort . concatMap getIndicies $ fs
           valuations = (map toValuation) . subsequences $ reverse atomIndicies
-          orderedChildren =  toOrderedChildren f
+          orderedChildren = concat . intersperse [Left ','] . map toOrderedChildren $ fs
           givens = makeGivens opts Nothing orderedChildren
           toPartialRow' = toPartialRow w opts orderedChildren
           makeRowRef x = newIORef (M.fromList [(z, Nothing) | z <- [1..x]])
@@ -296,10 +295,12 @@ createPartialTruthTable w f (i,o) _ _ opts =
                           let fittingVals = filter (\v -> any (fitsGiven v) givens) valuations
                           return $ any (validates rMap) fittingVals
           validates rMap v = all (matches rMap v) (zip orderedChildren [1 ..])
-          fitsGiven v given = and (zipWith (~=) (map (unform . satisfies v) forms) given)
-                where forms = rights orderedChildren
-                      (~=) _ Nothing   = True
-                      (~=) v (Just v') = v == v'
+          fitsGiven v given = and (zipWith (~=) (map (reform v) orderedChildren) given)
+                where reform v (Left c) = Left c
+                      reform v (Right f) = Right (unform . satisfies v $ f)
+                      (~=) _ Nothing           = True
+                      (~=) (Left _) _          = True
+                      (~=) (Right t) (Just t') = t == t'
           matches rMap v (Left _,_) = True
           matches rMap v (Right f,m) = 
             case M.lookup m rMap of
@@ -499,11 +500,11 @@ makeGivens :: Map String String -> Maybe Int -> [Either Char (FixLang f a)] -> [
 makeGivens opts mrows orderedChildren = case M.lookup "content" opts of 
        Nothing -> repeat $ repeat Nothing
        Just t -> case (reverse . map packText $ lines t, mrows) of
-                     (s, Just rows) | length s == rows -> checkRowstrings s
-                                    | otherwise -> repeat $ repeat Nothing
-                     (s, Nothing) | length s > 0 -> checkRowstrings s
-                                  | otherwise -> repeat $ repeat Nothing
-    where checkRowstrings rowstrings = 
+                     (s, Just rows) | length s == rows -> checkRowstrings rows s
+                                    | otherwise -> take rows $ repeat $ repeat Nothing
+                     (s, Nothing) | length s > 0 -> checkRowstrings 1 s
+                                  | otherwise -> [repeat Nothing]
+    where checkRowstrings rows rowstrings = 
             case map (expandRow orderedChildren) rowstrings of
                s' | all (\x -> length x == length orderedChildren) s' -> s'
-                  | otherwise -> repeat $ repeat Nothing
+                  | otherwise -> take rows $ repeat $ repeat Nothing
