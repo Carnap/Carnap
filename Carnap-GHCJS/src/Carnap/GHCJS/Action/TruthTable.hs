@@ -29,7 +29,7 @@ import Data.List (subsequences, intercalate, nub, zip4, intersperse)
 import Control.Monad.IO.Class (liftIO)
 import Control.Lens (toListOf, preview)
 import Control.Lens.Plated (children)
-import Text.Parsec (parse, spaces, sepEndBy1, char, eof)
+import Text.Parsec (parse, spaces, sepEndBy1, char, eof, try, (<|>))
 
 truthTableAction :: IO ()
 truthTableAction = initElements getTruthTables activateTruthTables
@@ -39,16 +39,22 @@ getTruthTables d = genInOutElts d "div" "div" "truthtable"
 
 activateTruthTables :: Document -> Maybe (Element, Element, Map String String) -> IO ()
 activateTruthTables w (Just (i,o,opts)) = do
-        let (formParser,seqParser) = case M.lookup "system" opts of
-                                         Nothing -> (purePropFormulaParser standardLetters, ndParseSeq montagueSCCalc)
-                                         Just sys -> (ndParseForm `ofPropSys` sys, ndParseSeq `ofPropSys` sys)
         case M.lookup "tabletype" opts of
-            Just "simple" -> checkerWith ((formParser `sepEndBy1` (spaces *> char ',' <* spaces)) <* eof) createSimpleTruthTable
+            Just "simple" -> checkerWith (formListParser <* eof) createSimpleTruthTable
             Just "validity" -> checkerWith seqParser createValidityTruthTable
-            Just "partial" -> checkerWith ((formParser `sepEndBy1` (spaces *> char ',' <* spaces)) <* eof) createPartialTruthTable
+            Just "partial" -> checkerWith (formListPairParser <* eof) createPartialTruthTable
             _  -> return ()
 
-    where checkerWith parser ttbuilder = 
+    where (formParser,seqParser) = case M.lookup "system" opts of
+                                         Nothing -> (purePropFormulaParser standardLetters, ndParseSeq montagueSCCalc)
+                                         Just sys -> (ndParseForm `ofPropSys` sys, ndParseSeq `ofPropSys` sys)
+          formListParser = formParser `sepEndBy1` (spaces *> char ',' <* spaces)
+          formListPairParser = do gs <- try (formListParser <* char ':') <|> return []
+                                  spaces
+                                  fs <- formListParser
+                                  return (gs,fs)
+          
+          checkerWith parser ttbuilder = 
             case M.lookup "goal" opts of
                 Just g ->
                   case parse parser "" g of
@@ -81,6 +87,7 @@ activateTruthTables w (Just (i,o,opts)) = do
                                                 liftIO $ writeIORef ref True
                                                 setAttribute i "class" "input completeTT"
                                         else do message "Something's not quite right"
+                                                liftIO $ writeIORef ref False
                                                 setAttribute i "class" "input incompleteTT"
 
 submitTruthTable:: Map String String -> IORef Bool ->  IO Bool -> [Element] -> String -> String -> EventM HTMLInputElement e ()
@@ -268,9 +275,9 @@ toRow w opts atomIndicies orderedChildren gridRef (v,n,mvalid,given) =
 --  Partial Truth Tables  --
 ----------------------------
 
-createPartialTruthTable :: Document -> [PureForm] -> (Element,Element) -> IORef Bool 
+createPartialTruthTable :: Document -> ([PureForm],[PureForm]) -> (Element,Element) -> IORef Bool 
     -> Element -> Map String String -> IO (IO Bool,[Element])
-createPartialTruthTable w fs (i,o) _ _ opts = 
+createPartialTruthTable w (gs,fs) (i,o) _ _ opts = 
         do (table, thead, tbody) <- initTable w
            setInnerHTML i (Just . intercalate ", " . map (rewriteWith opts . show) $ fs)
            rRef <- makeRowRef (length orderedChildren)
@@ -280,16 +287,25 @@ createPartialTruthTable w fs (i,o) _ _ opts =
            appendChild thead (Just head)
            appendChild o (Just table)
            return (check rRef,[row])
-    where atomIndicies = nub . sort . concatMap getIndicies $ fs
+    where atomIndicies = nub . sort . concatMap getIndicies $ fs ++ gs
           valuations = (map toValuation) . subsequences $ reverse atomIndicies
-          orderedChildren = concat . intersperse [Left ','] . map toOrderedChildren $ fs
+          orderedConstraints = concat . intersperse [Left ','] . map toOrderedChildren $ gs
+          orderedSolvables = concat . intersperse [Left ','] . map toOrderedChildren $ fs
+          orderedChildren = orderedConstraints ++ orderedSolvables
           givens = makeGivens opts Nothing orderedChildren
-          toPartialRow' = toPartialRow w opts orderedChildren
+          toPartialRow' = toPartialRow w opts orderedSolvables orderedConstraints 
           makeRowRef x = newIORef (M.fromList [(z, Nothing) | z <- [1..x]])
           toPartialHead = 
                 do Just row <- createElement w (Just "tr")
-                   childThs <- mapM (toChildTh w) orderedChildren >>= rewriteThs opts
-                   mapM_ (appendChild row . Just) childThs
+                   childThs <- mapM (toChildTh w) orderedSolvables >>= rewriteThs opts
+                   case orderedConstraints of 
+                        [] -> mapM_ (appendChild row . Just) childThs
+                        _  -> do Just sep <- createElement w (Just "th")
+                                 setAttribute sep "class" "ttthSep"
+                                 constraintThs <- mapM (toChildTh w) orderedConstraints >>= rewriteThs opts
+                                 mapM_ (appendChild row . Just) constraintThs
+                                 appendChild row (Just sep)
+                                 mapM_ (appendChild row . Just) childThs
                    return row
           check rRef = do rMap <- readIORef rRef
                           let fittingVals = filter (\v -> any (fitsGiven v) givens) valuations
@@ -307,18 +323,46 @@ createPartialTruthTable w fs (i,o) _ _ opts =
                 Just (Just tv) -> Form tv == satisfies v f
                 _ -> False
 
-toPartialRow w opts orderedChildren rRef v givens = 
+toPartialRow w opts orderedSolvables orderedConstraints rRef v givens = 
         do Just row <- createElement w (Just "tr")
-           childTds <- mapM toChildTd (zip3 orderedChildren [1..] (last givens)) 
-           --XXX The givens are passed around in reverse order - this is
-           --actually the first row
-           mapM_ (appendChild row . Just) childTds
+           solveTds <- mapM toChildTd (Prelude.drop sepIndex zipped)
+           case orderedConstraints of
+               [] -> mapM_ (appendChild row . Just) solveTds
+               _ -> do Just sep <- createElement w (Just "td")
+                       setAttribute sep "class" "tttdSep"
+                       constraintTds <- mapM toConstTd (take sepIndex zipped)
+                       mapM_ (appendChild row . Just) constraintTds
+                       appendChild row (Just sep)
+                       mapM_ (appendChild row . Just) solveTds
            return row
 
-    where toChildTd (c,m,mg) = do Just td <- createElement w (Just "td")
+    where sepIndex = length orderedConstraints
+          zipped = zip3 (orderedConstraints ++ orderedSolvables) [1 ..] givenRow
+          givenRow = last givens
+          --XXX The givens are passed around in reverse order - this is
+          --actually the first row
+          toChildTd (c,m,mg) = do Just td <- createElement w (Just "td")
                                   case c of
                                       Left _ -> setInnerHTML td (Just "")
                                       Right _ -> addDropdown m td mg
+                                  return td
+
+          toConstTd (c,m,mg) = do Just td <- createElement w (Just "td")
+                                  case c of
+                                      Left _ -> setInnerHTML td (Just "")
+                                      Right _ -> case mg of
+                                         --TODO: DRY
+                                         Just val -> do Just span <- createElement w (Just "span")
+                                                        setInnerHTML span (Just $ if val then "T" else "F")
+                                                        modifyIORef rRef (M.insert m mg)
+                                                        appendChild td (Just span)
+                                                        return ()
+                                         Nothing ->  do sel <- trueFalseOpts w False mg
+                                                        modifyIORef rRef (M.insert m mg)
+                                                        onSwitch <- newListener $ switch rRef m
+                                                        addListener sel change onSwitch False
+                                                        appendChild td (Just sel)
+                                                        return ()
                                   return td
 
           addDropdown m td mg = do case mg of
