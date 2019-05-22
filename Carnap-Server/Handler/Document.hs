@@ -4,7 +4,7 @@ import Import
 import System.Directory (doesFileExist,getDirectoryContents)
 import Yesod.Markdown
 import Data.List (nub)
-import Text.Pandoc (writerExtensions,readerExtensions,Extension(..),extensionsFromList)
+import Text.Pandoc (writerExtensions,writerWrapText, WrapOption(..), readerExtensions, Extension(..), extensionsFromList)
 import Text.Pandoc.Walk (walkM, walk)
 import Text.Julius (juliusFile,rawJS)
 import Util.Data
@@ -158,7 +158,7 @@ fileToHtml path = do Markdown md <- markdownFromFile path
                      let md' = Markdown (filter ((/=) '\r') md) --remove carrage returns from dos files
                      case parseMarkdown yesodDefaultReaderOptions { readerExtensions = exts } md' of
                          Right pd -> do let pd' = walk allFilters pd
-                                        return $ Right $ writePandocTrusted yesodDefaultWriterOptions { writerExtensions = exts } pd'
+                                        return $ Right $ writePandocTrusted yesodDefaultWriterOptions { writerExtensions = exts, writerWrapText=WrapPreserve } pd'
                          Left e -> return $ Left e
     where allFilters = (makeSynCheckers . makeProofChecker . makeTranslate . makeTruthTables)
           exts = extensionsFromList 
