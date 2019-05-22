@@ -6,6 +6,7 @@ import Data.Map as M (fromList)
 import Data.List (nub)
 import Text.Read (readMaybe)
 import Yesod.Form.Bootstrap3
+import Carnap.Languages.PurePropositional.Syntax
 import Carnap.GHCJS.SharedTypes
 import Carnap.GHCJS.SharedFunctions (simpleCipher)
 
@@ -117,10 +118,18 @@ renderProblem (Entity key val) = do
                     <div data-carnap-type="truthtable"
                          data-carnap-tabletype="#{tabletype}"
                          data-carnap-submission="none"
-                         data-carnap-goal="#{content}">
+                         data-carnap-options="immutable nocheck nocounterexample"
+                         data-carnap-goal="#{formatContent (unpack content)}">
                          #{renderTT tt}
                 |]
                 where tabletype = case lookup "tabletype" (M.fromList opts) of Just s -> s; Nothing -> checkvalidity content
+                      formatContent c = case maybeString of Just s -> s; Nothing -> ""
+                        where maybeString = (show <$> (readMaybe c :: Maybe PureForm))
+                                    `mplus` (intercalate "," . map show <$> (readMaybe c :: Maybe [PureForm]))
+                                    `mplus` case readMaybe c :: Maybe ([PureForm],[PureForm]) of
+                                                      Just (fs,gs) -> Just $ intercalate "," (map show fs) ++ ":" ++ intercalate "," (map show gs)
+                                                      Nothing -> Just c --If it's a sequent, it'll show properly anyway.
+
             (Translation, TranslationData content trans) -> template $
                 [whamlet|
                     <div data-carnap-type="translate"
