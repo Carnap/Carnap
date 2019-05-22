@@ -187,13 +187,15 @@ addCounterexample w opts bw i ref atomIndicies isCounterexample title
     | "nocounterexample" `inOpts` opts = return ()
     | otherwise = do bt <- exclaimButton w title
                      Just w' <- getDefaultView w                    
-                     counterexample <- newListener $ liftIO $ tryCounterexample w' ref i atomIndicies isCounterexample
+                     counterexample <- newListener $ liftIO $ tryCounterexample w' opts ref i atomIndicies isCounterexample
                      addListener bt click counterexample False
                      appendChild bw (Just bt)
                      return ()
 
-tryCounterexample :: Window -> IORef Bool -> Element -> [Int] -> ((Int -> Bool) -> Bool) -> IO ()
-tryCounterexample w ref i indicies isCounterexample = 
+tryCounterexample :: Window -> Map String String -> IORef Bool -> Element 
+    -> [Int] -> ((Int -> Bool) -> Bool) 
+    -> IO ()
+tryCounterexample w opts ref i indicies isCounterexample = 
         do mrow <- prompt w "enter the truth values for your counterexample row" (Just "")
            case mrow of 
                Nothing -> return ()
@@ -202,11 +204,16 @@ tryCounterexample w ref i indicies isCounterexample =
                      Nothing -> alert w "not a readable row"
                      Just l -> do let v = listToVal l
                                   let s = isCounterexample v
-                                  if s then do alert w "Success!"
-                                               writeIORef ref True
-                                               setAttribute i "class" "input completeTT"
-                                       else do alert w "Something's not quite right"
-                                               setAttribute i "class" "input incompleteTT"
+                                  if "exam" `inOpts` opts 
+                                      then do alert w "Counterexample received - If you're confident that it is correct, press Submit to submit it."
+                                              writeIORef ref s
+                                      else if s then 
+                                           do alert w "Success!"
+                                              writeIORef ref True
+                                              setAttribute i "class" "input completeTT"
+                                      else do alert w "Something's not quite right"
+                                              writeIORef ref False
+                                              setAttribute i "class" "input incompleteTT"
         where clean (Nothing:xs) = Nothing
               clean (Just x:xs) = (:) <$> (Just x) <*> (clean xs)
               clean [] = Just []
