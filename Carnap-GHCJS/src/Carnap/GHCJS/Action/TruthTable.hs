@@ -29,7 +29,7 @@ import Data.List (subsequences, intercalate, nub, zip4, intersperse)
 import Control.Monad.IO.Class (liftIO)
 import Control.Lens (toListOf, preview)
 import Control.Lens.Plated (children)
-import Text.Parsec (parse, spaces, sepEndBy1, char, eof, try, (<|>))
+import Text.Parsec (parse, spaces, sepEndBy1, char, eof, optional, try, (<|>))
 
 truthTableAction :: IO ()
 truthTableAction = initElements getTruthTables activateTruthTables
@@ -50,6 +50,7 @@ activateTruthTables w (Just (i,o,opts)) = do
                                          Just sys -> (ndParseForm `ofPropSys` sys, ndParseSeq `ofPropSys` sys)
           formListParser = formParser `sepEndBy1` (spaces *> char ',' <* spaces)
           formListPairParser = do gs <- try (formListParser <* char ':') <|> return []
+                                  optional (char ':')
                                   spaces
                                   fs <- formListParser
                                   return (gs,fs)
@@ -543,7 +544,7 @@ unform (Form b) = b
 makeGivens :: Map String String -> Maybe Int -> [Either Char (FixLang f a)] -> [[Maybe Bool]]
 makeGivens opts mrows orderedChildren = case M.lookup "content" opts of 
        Nothing -> repeat $ repeat Nothing
-       Just t -> case (reverse . map packText $ lines t, mrows) of
+       Just t -> case (reverse . map packText . filter (not . blank) . lines $ t, mrows) of
                      (s, Just rows) | length s == rows -> checkRowstrings rows s
                                     | otherwise -> take rows $ repeat $ repeat Nothing
                      (s, Nothing) | length s > 0 -> checkRowstrings 1 s
@@ -552,3 +553,4 @@ makeGivens opts mrows orderedChildren = case M.lookup "content" opts of
             case map (expandRow orderedChildren) rowstrings of
                s' | all (\x -> length x == length orderedChildren) s' -> s'
                   | otherwise -> take rows $ repeat $ repeat Nothing
+          blank = all (`elem` [' ','\t'])

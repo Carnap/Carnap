@@ -6,7 +6,7 @@ import Util.Database
 import Yesod.Markdown
 import System.Directory (doesFileExist,getDirectoryContents)
 import Text.Julius (juliusFile,rawJS)
-import Text.Pandoc (writerExtensions, readerExtensions, Extension(..), extensionsFromList)
+import Text.Pandoc (writerExtensions,writerWrapText, WrapOption(..), readerExtensions, Extension(..), extensionsFromList)
 import Text.Pandoc.Walk (walkM, walk)
 import Filter.SynCheckers
 import Filter.ProofCheckers
@@ -55,7 +55,7 @@ fileToHtml path = do Markdown md <- markdownFromFile path
                      let md' = Markdown (filter ((/=) '\r') md) --remove carrage returns from dos files
                      case parseMarkdown yesodDefaultReaderOptions { readerExtensions = exts } md' of
                          Right pd -> do let pd' = walk allFilters pd
-                                        return $ Right $ writePandocTrusted yesodDefaultWriterOptions { writerExtensions = exts } pd'
+                                        return $ Right $ writePandocTrusted yesodDefaultWriterOptions { writerExtensions = exts, writerWrapText=WrapPreserve } pd'
                          Left e -> return $ Left e
     where allFilters = (makeSynCheckers . makeProofChecker . makeTranslate . makeTruthTables)
           exts = extensionsFromList 
@@ -74,3 +74,4 @@ fileToHtml path = do Markdown md <- markdownFromFile path
                     , Ext_footnotes
                     , Ext_fenced_code_attributes
                     ]
+            

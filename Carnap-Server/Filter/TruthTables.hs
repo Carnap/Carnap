@@ -27,6 +27,6 @@ activate cls extra chunk
           template opts = "<div class=\"exercise\">"
                           ++ "<span> exercise " ++ numof h ++ "</span><div"
                           ++ concatMap (\(x,y) -> " data-carnap-" ++ x ++ "=\"" ++ y ++ "\"") (toList opts)
-                          ++ "'>" 
+                          ++ ">" 
                           ++ unlines' t
                           ++ "</div></div>" 
