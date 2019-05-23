@@ -1,19 +1,24 @@
+{-# LANGUAGE RankNTypes #-}
 module Carnap.Languages.PurePropositional.Logic 
     ( PropSequentCalc
     , parsePropLogic, PropLogic, propCalc
     , parseMontagueSC, MontagueSC, montagueSCCalc
     , parseLogicBookSD, LogicBookSD, logicBookSDCalc
     , parseLogicBookSDPlus,  LogicBookSDPlus, logicBookSDPlusCalc
-    , parseMagnusSL, MagnusSL, magnusSLCalc
-    , parseMagnusSLPlus, MagnusSLPlus, magnusSLPlusCalc
-    , parseHardegreeSL, HardegreeSL, hardegreeSLCalc
-    , parseThomasBolducAndZachTFL, ThomasBolducAndZachTFL, thomasBolducAndZachTFLCalc
-    , parseTomassiPL, TomassiPL, tomassiPLCalc
-    , parseHausmanSL, HausmanSL, hausmanSLCalc
     , parseHowardSnyderSL, HowardSnyderSL, howardSnyderSLCalc
     , parseIchikawaJenkinsSL, IchikawaJenkinsSL, ichikawaJenkinsSLCalc
+    , parseHausmanSL, HausmanSL, hausmanSLCalc
+    , parseMagnusSL, MagnusSL, magnusSLCalc
+    , parseMagnusSLPlus, MagnusSLPlus, magnusSLPlusCalc
+    , parseThomasBolducAndZachTFL, ThomasBolducAndZachTFL, thomasBolducAndZachTFLCalc
+    , parseTomassiPL, TomassiPL, tomassiPLCalc
+    , parseHardegreeSL, HardegreeSL, hardegreeSLCalc
+    , ofPropSys
     ) where
 
+import Carnap.Calculi.NaturalDeduction.Syntax
+import Carnap.Core.Data.Types
+import Carnap.Languages.PurePropositional.Syntax
 import Carnap.Languages.PurePropositional.Logic.Rules (PropSequentCalc)
 import Carnap.Languages.PurePropositional.Logic.BergmannMoorAndNelson
 import Carnap.Languages.PurePropositional.Logic.Carnap
@@ -25,3 +30,19 @@ import Carnap.Languages.PurePropositional.Logic.Magnus
 import Carnap.Languages.PurePropositional.Logic.ThomasBolducAndZach
 import Carnap.Languages.PurePropositional.Logic.Tomassi
 import Carnap.Languages.PurePropositional.Logic.IchikawaJenkins
+
+ofPropSys :: (forall r . NaturalDeductionCalc r PurePropLexicon (Form Bool) -> a) -> String -> Maybe a
+ofPropSys f sys | sys == "prop"                      = Just $ f propCalc 
+                | sys == "montagueSC"                = Just $ f montagueSCCalc 
+                | sys == "LogicBookSD"               = Just $ f logicBookSDCalc 
+                | sys == "LogicBookSDPlus"           = Just $ f logicBookSDPlusCalc 
+                | sys == "hausmanSL"                 = Just $ f hausmanSLCalc 
+                | sys == "howardSnyderSL"            = Just $ f howardSnyderSLCalc 
+                | sys == "ichikawaJenkinsSL"         = Just $ f ichikawaJenkinsSLCalc
+                | sys == "hausmanSL"                 = Just $ f hausmanSLCalc
+                | sys == "magnusSL"                  = Just $ f magnusSLCalc 
+                | sys == "magnusSLPlus"              = Just $ f magnusSLPlusCalc 
+                | sys == "thomasBolducAndZachTFL"    = Just $ f thomasBolducAndZachTFLCalc 
+                | sys == "tomassiPL"                 = Just $ f tomassiPLCalc
+                | sys == "hardegreeSL"               = Just $ f hardegreeSLCalc 
+                | otherwise                          = Nothing

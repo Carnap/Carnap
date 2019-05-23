@@ -5,7 +5,7 @@ import Lib
 import Carnap.Languages.PurePropositional.Syntax (PureForm)
 import Carnap.Languages.PureFirstOrder.Syntax (PureFOLForm)
 import Carnap.Calculi.NaturalDeduction.Syntax (NaturalDeductionCalc(..))
-import Carnap.Languages.PurePropositional.Logic (montagueSCCalc)
+import Carnap.Languages.PurePropositional.Logic (montagueSCCalc, ofPropSys)
 import Carnap.Languages.PureFirstOrder.Parser (folFormulaParser)
 import Carnap.Languages.PureFirstOrder.Logic (folCalc)
 import Carnap.Languages.PurePropositional.Parser (purePropFormulaParser,standardLetters)
@@ -36,14 +36,14 @@ getTranslates d = genInOutElts d "input" "div" "translate"
 activateTranslate :: Document -> Maybe (Element, Element, Map String String) -> IO ()
 activateTranslate w (Just (i,o,opts)) = do
         case (M.lookup "transtype" opts, M.lookup "system" opts) of
-            (Just "prop", Nothing) -> activateWith formParser (tryTrans formParser) propChecker
-                where formParser = purePropFormulaParser standardLetters <* eof
-            (Just "prop", Just sys) -> activateWith formParser (tryTrans formParser) propChecker
-                       where formParser = (ndParseForm `ofPropSys` sys) <* eof
-            (Just "first-order", Nothing) -> activateWith formParser (tryFOLTrans formParser) folChecker
-                       where formParser = folFormulaParser <* eof
-            (Just "first-order", Just sys) -> activateWith formParser (tryFOLTrans formParser) folChecker
-                where formParser = (ndParseForm `ofFOLSys` sys) <* eof
+            (Just "prop", mparser) -> activateWith formParser (tryTrans formParser) propChecker
+                where formParser = case mparser >>= ofPropSys ndParseForm of
+                                       Nothing -> purePropFormulaParser standardLetters <* eof
+                                       Just theParser -> theParser <* eof
+            (Just "first-order", mparser) -> activateWith formParser (tryFOLTrans formParser) folChecker
+                where formParser = case mparser >>= ofFOLSys ndParseForm of
+                                       Nothing -> folFormulaParser <* eof
+                                       Just theParser -> theParser <* eof
             _ -> return ()
     where optlist = case M.lookup "options" opts of Just s -> words s; Nothing -> []
           activateWith parser translator checker =

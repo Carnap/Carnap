@@ -45,9 +45,9 @@ activateTruthTables w (Just (i,o,opts)) = do
             Just "partial" -> checkerWith (formListPairParser <* eof) createPartialTruthTable
             _  -> return ()
 
-    where (formParser,seqParser) = case M.lookup "system" opts of
+    where (formParser,seqParser) = case M.lookup "system" opts >>= \sys -> (,) <$> ndParseForm `ofPropSys` sys <*> ndParseSeq `ofPropSys` sys of
+                                         Just pair -> pair
                                          Nothing -> (purePropFormulaParser standardLetters, ndParseSeq montagueSCCalc)
-                                         Just sys -> (ndParseForm `ofPropSys` sys, ndParseSeq `ofPropSys` sys)
           formListParser = formParser `sepEndBy1` (spaces *> char ',' <* spaces)
           formListPairParser = do gs <- try (formListParser <* char ':') <|> return []
                                   optional (char ':')
@@ -533,8 +533,8 @@ stringToTruthValue (Just [c]) = charToTruthValue c
 stringToTruthValue _   = Nothing 
 
 rewriteWith :: Map String String -> String -> String
-rewriteWith opts = case M.lookup "system" opts of
-                        Just s -> ndNotation `ofPropSys` s
+rewriteWith opts = case M.lookup "system" opts >>= ofPropSys ndNotation of
+                        Just f -> f
                         Nothing -> id
 
 mcOf :: (Schematizable (f (FixLang f)), CopulaSchema (FixLang f)) => FixLang f a -> String

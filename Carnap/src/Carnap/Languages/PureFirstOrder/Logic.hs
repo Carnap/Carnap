@@ -1,18 +1,23 @@
+{-# LANGUAGE RankNTypes #-}
 module Carnap.Languages.PureFirstOrder.Logic
         ( FOLogic(..)
         , parseFOLogic, folCalc
         , parseMontagueQCCalc, montagueQCCalc
         , parseMagnusQL, magnusQLCalc
         , parseThomasBolducAndZachFOL, thomasBolducAndZachFOLCalc
-        , parseHardegreePL, hardegreePLCalc
         , parseLogicBookPD, logicBookPDCalc, logicBookPDPlusCalc
         , parseHausmanPL, hausmanPLCalc
         , parseHowardSnyderPL, howardSnyderPLCalc
         , parseIchikawaJenkinsQL, ichikawaJenkinsQLCalc
+        , parseHardegreePL, hardegreePLCalc
         , goldfarbNDCalc, goldfarbAltNDCalc, goldfarbNDPlusCalc, goldfarbAltNDPlusCalc
+        , ofFOLSys
         )
     where
 
+import Carnap.Core.Data.Types
+import Carnap.Languages.PureFirstOrder.Syntax
+import Carnap.Calculi.NaturalDeduction.Syntax
 import Carnap.Languages.PureFirstOrder.Logic.Carnap
 import Carnap.Languages.PureFirstOrder.Logic.Magnus
 import Carnap.Languages.PureFirstOrder.Logic.KalishAndMontague
@@ -24,3 +29,19 @@ import Carnap.Languages.PureFirstOrder.Logic.Hardegree
 import Carnap.Languages.PureFirstOrder.Logic.Goldfarb
 import Carnap.Languages.PureFirstOrder.Logic.IchikawaJenkins
 import Carnap.Languages.PureFirstOrder.Logic.Rules
+
+ofFOLSys :: (forall r . NaturalDeductionCalc r PureLexiconFOL (Form Bool) -> a) -> String -> Maybe a
+ofFOLSys f sys | sys == "firstOrder"                = Just $ f folCalc
+               | sys == "montagueQC"                = Just $ f montagueQCCalc 
+               | sys == "magnusQL"                  = Just $ f magnusQLCalc 
+               | sys == "thomasBolducAndZachFOL"    = Just $ f thomasBolducAndZachFOLCalc 
+               | sys == "LogicBookPD"               = Just $ f logicBookPDCalc 
+               | sys == "LogicBookPDPlus"           = Just $ f logicBookPDPlusCalc 
+               | sys == "hausmanPL"                 = Just $ f hausmanPLCalc 
+               | sys == "howardSnyderPL"            = Just $ f howardSnyderPLCalc 
+               | sys == "ichikawaJenkinsQL"         = Just $ f ichikawaJenkinsQLCalc
+               | sys == "hardegreePL"               = Just $ f hardegreePLCalc 
+               | sys == "goldfarbAltND"             = Just $ f goldfarbAltNDCalc
+               | sys == "goldfarbNDPlus"            = Just $ f goldfarbNDPlusCalc
+               | sys == "goldfarbAltNDPlus"         = Just $ f goldfarbAltNDPlusCalc
+               | otherwise                          = Nothing
