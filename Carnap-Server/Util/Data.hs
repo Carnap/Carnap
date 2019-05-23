@@ -1,8 +1,10 @@
 module Util.Data where
 
 import ClassyPrelude.Yesod
+import Carnap.Languages.PurePropositional.Syntax (PureForm)
 import Data.List ((!!), elemIndex)
 import Data.Time
+import Text.Read (readMaybe)
 import Carnap.GHCJS.SharedTypes(ProblemSource(..),ProblemType(..),ProblemData(..), SomeRule(..))
 import qualified Data.IntMap as IM (fromList)
 
@@ -50,7 +52,19 @@ toTime = parseTimeOrError True defaultTimeLocale "%l:%M %P %Z, %b %e, %Y"
 displayProblemData (DerivationData t _)  = t
 displayProblemData (DerivationDataOpts t _ _)  = t
 displayProblemData (TruthTableData t _)  = t
-displayProblemData (TruthTableDataOpts t _ _)  = t
+displayProblemData (TruthTableDataOpts t _ _) = maybe t pack ms
+    where ms = (show <$> (readMaybe s :: Maybe PureForm))
+               `mplus` (intercalate "," . map show <$> (readMaybe s :: Maybe [PureForm]))
+               `mplus` case readMaybe s :: Maybe ([PureForm],[PureForm]) of
+                                 Just (fs,gs) -> Just $ intercalate "," (map show fs) ++ " || " ++ intercalate "," (map show gs)
+                                 Nothing -> Nothing
+          s = unpack t
 displayProblemData (TranslationData t _) = t
 displayProblemData (TranslationDataOpts t _ _) = t
-displayProblemData (ProblemContent t)    = t
+displayProblemData (ProblemContent t) = maybe t pack ms
+    where ms = (show <$> (readMaybe s :: Maybe PureForm))
+               `mplus` (intercalate "," . map show <$> (readMaybe s :: Maybe [PureForm]))
+               `mplus` case readMaybe s :: Maybe ([PureForm],[PureForm]) of
+                                 Just (fs,gs) -> Just $ intercalate "," (map show fs) ++ " || " ++ intercalate "," (map show gs)
+                                 Nothing -> Nothing
+          s = unpack t
