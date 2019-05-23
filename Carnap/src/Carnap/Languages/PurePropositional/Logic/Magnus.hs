@@ -31,7 +31,7 @@ data MagnusSL = Reiterate  | ConjIntro
               | NegeIntro3 | NegeIntro4
               | NegeElim1  | NegeElim2
               | NegeElim3  | NegeElim4
-              | As         
+              | As String         
               | Pr (Maybe [(ClassicalSequentOver PurePropLexicon (Sequent (Form Bool)))])
               deriving (Eq)
               --skipping derived rules for now
@@ -62,7 +62,8 @@ instance Show MagnusSL where
         show BicoElim1  = "↔E"
         show BicoElim2  = "↔E"
         show Reiterate  = "R"
-        show As         = "AS"
+        show (As "")    = "AS"
+        show (As s)     = s
         show (Pr _)     = "PR"
 
 instance Inference MagnusSL PurePropLexicon (Form Bool) where
@@ -91,7 +92,7 @@ instance Inference MagnusSL PurePropLexicon (Form Bool) where
         ruleOf NegeElim2  = nonConstructiveReductioVariations !! 1
         ruleOf NegeElim3  = nonConstructiveReductioVariations !! 2
         ruleOf NegeElim4  = nonConstructiveReductioVariations !! 3
-        ruleOf As         = axiom
+        ruleOf (As _)     = axiom
         ruleOf (Pr _)     = axiom
 
         indirectInference x
@@ -102,7 +103,7 @@ instance Inference MagnusSL PurePropLexicon (Form Bool) where
                        ] = Just doubleProof
             | otherwise = Nothing
 
-        isAssumption As = True
+        isAssumption (As _) = True
         isAssumption _ = False
 
         isPremise (Pr _) = True
@@ -114,9 +115,9 @@ instance Inference MagnusSL PurePropLexicon (Form Bool) where
 parseMagnusSL :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> Parsec String u [MagnusSL]
 parseMagnusSL rtc = do r <- choice (map (try . string) ["AS","PR","&I","/\\I", "∧I","&E","/\\E","∧E","CI","->I","→I","→E","CE","->E", "→E"
                                                          ,"~I","-I", "¬I","~E","-E","¬E" ,"vI","\\/I","∨I", "vE","\\/E", "∨E","BI","<->I", "↔I" 
-                                                         , "BE", "<->E", "↔E", "R"])
+                                                         , "BE", "<->E", "↔E", "R"]) <|> ((++) <$> string "A/" <*> many anyChar)
                        case r of
-                            r | r == "AS" -> return [As]
+                            r | r == "AS" -> return [As ""]
                               | r == "PR" -> return [Pr (problemPremises rtc)]
                               | r == "R"  -> return [Reiterate]
                               | r `elem` ["&I","/\\I","∧I"] -> return [ConjIntro]
@@ -129,6 +130,7 @@ parseMagnusSL rtc = do r <- choice (map (try . string) ["AS","PR","&I","/\\I", "
                               | r `elem` ["vE","\\/E"]   -> return [DisjElim1, DisjElim2]
                               | r `elem` ["BI","<->I","↔I"]   -> return [BicoIntro1, BicoIntro2, BicoIntro3, BicoIntro4]
                               | r `elem` ["BE","<->E","↔E"] -> return [BicoElim1, BicoElim2]
+                            'A':'/':rest -> return [As (rest)]
 
 parseMagnusSLProof :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> String -> [DeductionLine MagnusSL PurePropLexicon (Form Bool)]
 parseMagnusSLProof rtc = toDeductionFitch (parseMagnusSL rtc) (purePropFormulaParser magnusOpts)

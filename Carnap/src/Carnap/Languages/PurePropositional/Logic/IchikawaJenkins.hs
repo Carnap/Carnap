@@ -58,8 +58,9 @@ parseIchikawaJenkinsSL :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bo
 parseIchikawaJenkinsSL rtc = do r <- choice (map (try . string) ["AS","PR","&I","/\\I", "∧I","&E","/\\E","∧E","CI",">I","->I","⊃I","→E","CE",">E", "->E", "⊃E"
                                                          ,"~I","-I", "¬I","~E","-E","¬E" ,"vI","\\/I","∨I", "vE","\\/E", "∨E","BI","<>I","<->I", "≡I" 
                                                          , "BE", "<>E","<->E", "≡E", "R", "HYP","DIL","MT", "Comm", "DN", "MC", "≡ex", "<>ex", "<->ex", "DeM"])
+                                                         <|> ((++) <$> string "A/" <*> many anyChar)
                                 case r of
-                                 r | r == "AS" -> fromMSL [As]
+                                 r | r == "AS" -> fromMSL [As ""]
                                    | r == "PR" -> fromMSL [Pr (problemPremises rtc)]
                                    | r == "R"  -> fromMSL [Reiterate]
                                    | r `elem` ["&I","/\\I","∧I"] -> fromMSL [ConjIntro]
@@ -79,6 +80,7 @@ parseIchikawaJenkinsSL rtc = do r <- choice (map (try . string) ["AS","PR","&I",
                                    | r == "MC"    -> fromMSLPlus [MCRep,MCRep2,RepMC,RepMC2]
                                    | r `elem` ["≡ex", "<>ex", "<->ex"] -> fromMSLPlus [BiExRep,RepBiEx]
                                    | r == "DeM"   -> fromMSLPlus [DM1,DM2,DM3,DM4]
+                                 'A':'/':rest -> fromMSL [As rest]
     where fromMSL = return . map (IJ . MSL)
           fromMSLPlus = return . map IJ
 
