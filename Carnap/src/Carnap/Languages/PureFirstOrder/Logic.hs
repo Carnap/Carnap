@@ -1,4 +1,4 @@
-{-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE RankNTypes, FlexibleContexts #-}
 module Carnap.Languages.PureFirstOrder.Logic
         ( FOLogic(..)
         , parseFOLogic, folCalc
@@ -30,7 +30,8 @@ import Carnap.Languages.PureFirstOrder.Logic.Goldfarb
 import Carnap.Languages.PureFirstOrder.Logic.IchikawaJenkins
 import Carnap.Languages.PureFirstOrder.Logic.Rules
 
-ofFOLSys :: (forall r . NaturalDeductionCalc r PureLexiconFOL (Form Bool) -> a) -> String -> Maybe a
+ofFOLSys :: (forall r . (Show r, Inference r PureLexiconFOL (Form Bool)) => 
+             NaturalDeductionCalc r PureLexiconFOL (Form Bool) -> a) -> String -> Maybe a
 ofFOLSys f sys | sys == "firstOrder"                = Just $ f folCalc
                | sys == "montagueQC"                = Just $ f montagueQCCalc 
                | sys == "magnusQL"                  = Just $ f magnusQLCalc 

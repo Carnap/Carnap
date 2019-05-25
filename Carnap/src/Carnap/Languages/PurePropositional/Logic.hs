@@ -1,4 +1,4 @@
-{-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE RankNTypes, FlexibleContexts #-}
 module Carnap.Languages.PurePropositional.Logic 
     ( PropSequentCalc
     , parsePropLogic, PropLogic, propCalc
@@ -31,7 +31,8 @@ import Carnap.Languages.PurePropositional.Logic.ThomasBolducAndZach
 import Carnap.Languages.PurePropositional.Logic.Tomassi
 import Carnap.Languages.PurePropositional.Logic.IchikawaJenkins
 
-ofPropSys :: (forall r . NaturalDeductionCalc r PurePropLexicon (Form Bool) -> a) -> String -> Maybe a
+ofPropSys :: (forall r . (Show r, Inference r PurePropLexicon (Form Bool)) => 
+              NaturalDeductionCalc r PurePropLexicon (Form Bool) -> a) -> String -> Maybe a
 ofPropSys f sys | sys == "prop"                      = Just $ f propCalc 
                 | sys == "montagueSC"                = Just $ f montagueSCCalc 
                 | sys == "LogicBookSD"               = Just $ f logicBookSDCalc 

@@ -1,4 +1,4 @@
-{-#LANGUAGE GADTs, KindSignatures, TypeOperators, FlexibleContexts, MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances, UndecidableInstances, FunctionalDependencies, RankNTypes#-}
+{-#LANGUAGE GADTs, KindSignatures, TypeOperators, FlexibleContexts, MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances, UndecidableInstances, FunctionalDependencies, RankNTypes, ConstraintKinds #-}
 module Carnap.Calculi.NaturalDeduction.Syntax where
 
 import Data.Tree
@@ -12,6 +12,7 @@ import Carnap.Core.Unification.Unification
 import Carnap.Core.Unification.ACUI
 import Carnap.Core.Data.Types
 import Carnap.Core.Data.Classes
+import Carnap.Core.Data.Optics
 import Carnap.Languages.PurePropositional.Syntax
 import Carnap.Languages.ClassicalSequent.Syntax
 import Carnap.Languages.ClassicalSequent.Parser
@@ -351,6 +352,18 @@ class Inference r lex sem | r -> lex sem where
         isPremise = const False
         --TODO: template for error messages, etc.
 
+type SupportsND r lex sem = ( Show r , Typeable sem, ReLex lex 
+    , Inference r lex sem
+    , Schematizable (lex (FixLang lex))
+    , Schematizable (lex (ClassicalSequentOver lex))
+    , PrismLink (lex (FixLang lex)) (SubstitutionalVariable (FixLang lex))
+    , PrismLink (lex (ClassicalSequentOver lex)) (SubstitutionalVariable (ClassicalSequentOver lex))
+    , FirstOrderLex (lex (ClassicalSequentOver lex))
+    , ParsableLex sem lex
+    , CopulaSchema (FixLang lex)
+    , CopulaSchema (ClassicalSequentOver lex)
+    )
+
 --------------------------------------------------------
 --2. Transformations
 --------------------------------------------------------
@@ -358,3 +371,5 @@ class Inference r lex sem | r -> lex sem where
 --Proof Tree to Sequent Tree
 --
 -- Proof Tree to proof skeleton)
+
+

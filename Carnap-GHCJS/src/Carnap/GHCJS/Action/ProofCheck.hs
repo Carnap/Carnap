@@ -2,26 +2,17 @@
 module Carnap.GHCJS.Action.ProofCheck (proofCheckAction) where
 
 import Carnap.Calculi.NaturalDeduction.Syntax 
-    (ProofMemoRef, NaturalDeductionCalc(..),RenderStyle(..), Inference(..), RuntimeNaturalDeductionConfig(..))
+    (ProofMemoRef, NaturalDeductionCalc(..),RenderStyle(..), Inference(..), RuntimeNaturalDeductionConfig(..), Deduction)
 import Carnap.Calculi.NaturalDeduction.Checker 
     (ProofErrorMessage(..), Feedback(..), seqSubsetUnify, toDisplaySequenceMemo, toDisplaySequence)
 import Carnap.Core.Data.Optics (liftLang, PrismSubstitutionalVariable, PrismLink)
 import Carnap.Core.Data.Classes (Handed(..))
-import Carnap.Core.Data.Types (SubstitutionalVariable)
+import Carnap.Core.Unification.Unification (MonadVar)
 import Carnap.Languages.ClassicalSequent.Syntax
 import Carnap.Languages.Util.LanguageClasses (ToSchema(..))
-import Carnap.Languages.PurePropositional.Logic as P 
-    ( propCalc, logicBookSDCalc, logicBookSDPlusCalc, magnusSLCalc
-    , magnusSLPlusCalc, montagueSCCalc, hardegreeSLCalc, hausmanSLCalc
-    , thomasBolducAndZachTFLCalc, tomassiPLCalc, howardSnyderSLCalc, ichikawaJenkinsSLCalc)
+import Carnap.Languages.PurePropositional.Logic
 import Carnap.Languages.PureFirstOrder.Logic 
-    ( folCalc, montagueQCCalc, magnusQLCalc , thomasBolducAndZachFOLCalc
-    , hardegreePLCalc , goldfarbNDCalc, goldfarbAltNDCalc
-    , goldfarbNDPlusCalc, goldfarbAltNDPlusCalc , logicBookPDPlusCalc
-    , logicBookPDCalc, hausmanPLCalc, howardSnyderPLCalc, ichikawaJenkinsQLCalc) 
-import Carnap.Languages.ModalPropositional.Logic as MPL
-    ( hardegreeWTLCalc, hardegreeLCalc, hardegreeKCalc, hardegreeTCalc
-    , hardegreeBCalc, hardegreeDCalc, hardegreeFourCalc, hardegreeFiveCalc)
+import Carnap.Languages.ModalPropositional.Logic
 import Carnap.Languages.PureSecondOrder.Logic 
     (msolCalc, psolCalc) 
 import Carnap.Languages.SetTheory.Logic.Carnap
@@ -54,9 +45,9 @@ import GHCJS.DOM.EventM (EventM, target, newListener,addListener)
 import GHCJS.DOM.Window (prompt)
 import GHCJS.DOM.Node (appendChild, getParentNode,removeChild)
 --import GHCJS.DOM.EventM
-import Control.Monad (when)
+import Control.Monad (when,mplus)
 import Control.Monad.IO.Class (liftIO)
-import Control.Monad.State (modify,get,execState)
+import Control.Monad.State (modify,get,execState,State)
 import Control.Concurrent
 import Data.Typeable
 
@@ -118,42 +109,14 @@ activateChecker drs w (Just iog@(IOGoal i o g _ opts)) -- TODO: need to update n
         | sys == "polyadicSecondOrder"       = tryParse psolCalc noRuntimeOptions
         | sys == "elementarySetTheory"       = tryParse estCalc noRuntimeOptions
         | sys == "separativeSetTheory"       = tryParse sstCalc noRuntimeOptions
-        | sys == "montagueSC"                = tryParse montagueSCCalc (propChecker Nothing)
-        | sys == "montagueQC"                = tryParse montagueQCCalc (folChecker Nothing)
-        | sys == "LogicBookSD"               = tryParse logicBookSDCalc (propChecker Nothing)
-        | sys == "LogicBookSDPlus"           = tryParse logicBookSDPlusCalc (propChecker Nothing)
-        | sys == "LogicBookPD"               = tryParse logicBookPDCalc (folChecker Nothing)
-        | sys == "LogicBookPDPlus"           = tryParse logicBookPDPlusCalc (folChecker Nothing)
-        | sys == "ichikawaJenkinsSL"         = tryParse ichikawaJenkinsSLCalc (propChecker Nothing)
-        | sys == "ichikawaJenkinsQL"         = tryParse ichikawaJenkinsQLCalc (folChecker Nothing)
-        | sys == "hausmanSL"                 = tryParse hausmanSLCalc (propChecker Nothing)
-        | sys == "hausmanPL"                 = tryParse hausmanPLCalc (folChecker Nothing)
-        | sys == "howardSnyderSL"            = tryParse howardSnyderSLCalc (propChecker Nothing)
-        | sys == "howardSnyderPL"            = tryParse howardSnyderPLCalc (folChecker Nothing)
-        | sys == "magnusSL"                  = tryParse magnusSLCalc (propChecker Nothing)
-        | sys == "magnusSLPlus"              = tryParse magnusSLPlusCalc (propChecker Nothing)
-        | sys == "magnusQL"                  = tryParse magnusQLCalc (folChecker Nothing)
-        | sys == "goldfarbND"                = tryParse goldfarbNDCalc (folChecker Nothing)
-        | sys == "goldfarbAltND"             = tryParse goldfarbAltNDCalc (folChecker Nothing)
-        | sys == "goldfarbNDPlus"            = tryParse goldfarbNDPlusCalc (folChecker Nothing)
-        | sys == "goldfarbAltNDPlus"         = tryParse goldfarbAltNDPlusCalc (folChecker Nothing)
-        | sys == "thomasBolducAndZachTFL"    = tryParse thomasBolducAndZachTFLCalc (propChecker Nothing)
-        | sys == "thomasBolducAndZachFOL"    = tryParse thomasBolducAndZachFOLCalc (folChecker Nothing)
-        | sys == "tomassiPL"                 = tryParse tomassiPLCalc (propChecker Nothing)
-        | sys == "hardegreeSL"               = tryParse hardegreeSLCalc (propChecker Nothing)
-        | sys == "hardegreePL"               = tryParse hardegreePLCalc noRuntimeOptions
-        | sys == "hardegreeWTL"              = tryParse hardegreeWTLCalc noRuntimeOptions
-        | sys == "hardegreeL"                = tryParse hardegreeLCalc noRuntimeOptions
-        | sys == "hardegreeK"                = tryParse hardegreeKCalc noRuntimeOptions
-        | sys == "hardegreeD"                = tryParse hardegreeDCalc noRuntimeOptions
-        | sys == "hardegreeT"                = tryParse hardegreeTCalc noRuntimeOptions
-        | sys == "hardegreeB"                = tryParse hardegreeBCalc noRuntimeOptions
-        | sys == "hardegree4"                = tryParse hardegreeFourCalc noRuntimeOptions
-        | sys == "hardegree5"                = tryParse hardegreeFiveCalc noRuntimeOptions
         | sys == "hardegreeMPL"              = tryParse hardegreeMPLCalc noRuntimeOptions
+        | otherwise = maybe (return ()) id $ ((\it -> tryParse it $ propChecker Nothing) `ofPropSys` sys)
+                                     `mplus` ((\it -> tryParse it $ folChecker Nothing) `ofFOLSys` sys)
+                                     `mplus` ((\it -> tryParse it noRuntimeOptions) `ofModalPropSys` sys)
         where sys = case M.lookup "system" opts of
                         Just s -> s
                         Nothing -> "prop"
+
               tryParse calc checker = do
                   memo <- newIORef mempty
                   mtref <- newIORef Nothing
@@ -288,9 +251,14 @@ submitDer opts checker l g seq ref _ i = do isFinished <- liftIO $ readIORef ref
                                                                    | otherwise -> message "not yet finished"
     where optlist = case M.lookup "options" opts of Just s -> words s; Nothing -> []
 
-trySave :: (Sequentable lex, Inference r lex sem, ToSchema lex sem, PrismSubstitutionalVariable lex, Concretes lex sem,
-            PrismLink (lex (ClassicalSequentOver lex)) (SubstitutionalVariable (ClassicalSequentOver lex))) =>
-          Checker r lex sem -> IORef [(String, SomeRule)] -> IORef Bool -> Window -> Element -> EventM e MouseEvent ()
+trySave :: ( Sequentable lex
+           , Inference r lex sem
+           , ToSchema lex sem
+           , PrismSubstitutionalVariable lex
+           , MonadVar (ClassicalSequentOver lex) (State Int)
+           , Concretes lex sem
+           ) => Checker r lex sem -> IORef [(String, SomeRule)] -> IORef Bool -> Window 
+                -> Element -> EventM e MouseEvent ()
 trySave checker drs ref w i = 
         do isFinished <- liftIO $ readIORef ref
            somerules <- liftIO $ readIORef drs
@@ -326,6 +294,11 @@ trySave checker drs ref w i =
 --  Utility Functions  --
 -------------------------
 
+getFeedback :: ( PrismSubstitutionalVariable lex
+               , MonadVar (ClassicalSequentOver lex) (State Int)
+               , Inference r lex sem
+               , Sequentable lex
+               ) => Checker r lex sem -> Deduction r lex sem -> IO (Feedback lex sem)
 getFeedback checker ded = case ndProcessLineMemo calc of
                                      Just memoline -> toDisplaySequenceMemo (memoline $ proofMemo checker) ded
                                      Nothing -> return $ toDisplaySequence (ndProcessLine calc) ded
