@@ -84,7 +84,7 @@ checkerWith options updateres iog@(IOGoal i o g content _) w = do
            setAutocapitalize (castToHTMLTextAreaElement i) (Just "off")
            setAutocorrect (castToHTMLTextAreaElement i) False
            setAttribute i "data-gramm" "false" -- attempt to disable grammarly
-           setInnerHTML i (Just content)
+           setInnerHTML i (Just (trim content))
            setAttribute aligner "class" "aligner"
            setAttribute fd "class" "proofFeedback"
            setAttribute nd "class" "numbering"
@@ -204,6 +204,9 @@ reindent = insertText ws
 
 insertTab :: EventM HTMLTextAreaElement KeyboardEvent ()
 insertTab = insertText (const (const "    "))
+
+trim :: String -> String
+trim = reverse . dropWhile (`elem` " \t\n") . reverse
 
 resize :: MonadIO m => Element -> m ()
 resize i = do setAttribute i "style" "width: 0px;height: 0px"
