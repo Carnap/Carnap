@@ -25,11 +25,8 @@ import Data.Typeable (Typeable)
 type MSOLSequentCalc = ClassicalSequentOver MonadicallySOLLex
 
 pattern SeqQuant q        = FX (Lx2 (Lx1 (Lx1 (Lx2 (Bind q)))))
-pattern SeqSOMQuant q     = FX (Lx2 (Lx3 (Bind q)))
-pattern SeqAbst a         = FX (Lx2 (Lx4 (Abstract a)))
--- pattern SeqSV n           = FX (Lx2 (Lx1 (Lx1 (Lx4 (StaticVar n)))))
--- pattern SeqVar c a        = FX (Lx2 (Lx1 (Lx4 (Function c a))))
--- pattern SeqV s            = SeqVar (Var s) AZero
+pattern SeqSOMQuant q     = FX (Lx2 (Lx5 (Bind q)))
+pattern SeqAbst a         = FX (Lx2 (Lx2 (Abstract a)))
 
 instance Eq (MSOLSequentCalc a) where
         (==) = (=*)
@@ -98,7 +95,7 @@ type PSOLSequentCalc = ClassicalSequentOver PolyadicallySOLLex
 instance Eq (PSOLSequentCalc a) where
         (==) = (=*)
 
-pattern SeqSOPQuant q = FX (Lx2 (Lx3 (Bind q)))
+pattern SeqSOPQuant q = FX (Lx2 (Lx5 (Bind q)))
 
 instance CopulaSchema PSOLSequentCalc where 
 

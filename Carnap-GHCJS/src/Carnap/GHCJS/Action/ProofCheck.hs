@@ -12,13 +12,10 @@ import Carnap.Languages.ClassicalSequent.Syntax
 import Carnap.Languages.Util.LanguageClasses (ToSchema(..))
 import Carnap.Languages.PurePropositional.Logic
 import Carnap.Languages.PureFirstOrder.Logic 
-import Carnap.Languages.ModalPropositional.Logic
-import Carnap.Languages.PureSecondOrder.Logic 
-    (msolCalc, psolCalc) 
-import Carnap.Languages.SetTheory.Logic.Carnap
-    (estCalc, sstCalc)
-import Carnap.Languages.ModalFirstOrder.Logic
-    ( hardegreeMPLCalc )
+import Carnap.Languages.ModalPropositional.Logic (ofModalPropSys)
+import Carnap.Languages.PureSecondOrder.Logic (ofSecondOrderSys) 
+import Carnap.Languages.SetTheory.Logic.Carnap (ofSetTheorySys)
+import Carnap.Languages.ModalFirstOrder.Logic (hardegreeMPLCalc)
 import Carnap.GHCJS.SharedTypes
 import Text.Parsec (parse)
 import Data.IORef (IORef, newIORef,writeIORef, readIORef, modifyIORef)
@@ -105,13 +102,11 @@ activateChecker _ _ Nothing  = return ()
 activateChecker drs w (Just iog@(IOGoal i o g _ opts)) -- TODO: need to update non-montague calculi to take first/higher-order derived rules
         | sys == "prop"                      = tryParse propCalc (propChecker (Just trySave))
         | sys == "firstOrder"                = tryParse folCalc (folChecker (Just trySave))
-        | sys == "secondOrder"               = tryParse msolCalc noRuntimeOptions
-        | sys == "polyadicSecondOrder"       = tryParse psolCalc noRuntimeOptions
-        | sys == "elementarySetTheory"       = tryParse estCalc noRuntimeOptions
-        | sys == "separativeSetTheory"       = tryParse sstCalc noRuntimeOptions
         | sys == "hardegreeMPL"              = tryParse hardegreeMPLCalc noRuntimeOptions
         | otherwise = maybe (return ()) id $ ((\it -> tryParse it $ propChecker Nothing) `ofPropSys` sys)
                                      `mplus` ((\it -> tryParse it $ folChecker Nothing) `ofFOLSys` sys)
+                                     `mplus` ((\it -> tryParse it noRuntimeOptions) `ofSecondOrderSys` sys)
+                                     `mplus` ((\it -> tryParse it noRuntimeOptions) `ofSetTheorySys` sys)
                                      `mplus` ((\it -> tryParse it noRuntimeOptions) `ofModalPropSys` sys)
         where sys = case M.lookup "system" opts of
                         Just s -> s

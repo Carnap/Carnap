@@ -1,5 +1,5 @@
-{-#LANGUAGE  FlexibleContexts,  FlexibleInstances, MultiParamTypeClasses #-}
-module Carnap.Languages.SetTheory.Logic.Carnap (estCalc, sstCalc) where
+{-#LANGUAGE RankNTypes, FlexibleContexts,  FlexibleInstances, MultiParamTypeClasses #-}
+module Carnap.Languages.SetTheory.Logic.Carnap (estCalc, sstCalc, ofSetTheorySys) where
 
 import Carnap.Core.Data.Types
 import Carnap.Languages.PureFirstOrder.Syntax (fogamma)
@@ -211,3 +211,12 @@ sstCalc = mkNDCalc
     , ndProcessLine = hoProcessLineMontague
     , ndProcessLineMemo = Just hoProcessLineMontagueMemo
     }
+
+ofSetTheorySys :: (forall r sem lex . 
+    SupportsND r (OpenLexicon lex) sem => 
+    NaturalDeductionCalc r (OpenLexicon lex) sem -> a) -> String 
+      -> Maybe a
+ofSetTheorySys f sys 
+        | sys == "elementarySetTheory"       = Just $ f estCalc 
+        | sys == "separativeSetTheory"       = Just $ f sstCalc
+        | otherwise                          = Nothing

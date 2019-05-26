@@ -116,6 +116,21 @@ instance UniformlyEq PolySOLQuant where
 
 instance FirstOrderLex PolySOLQuant
 
+type OpenSOLLex a = FOL.PureLexiconFOL :|: Abstractors SOLambda :|: Applicators SOApplicator :|: a
+
+instance PrismPropLex (OpenSOLLex a) Bool
+instance PrismSchematicProp (OpenSOLLex a) Bool
+instance PrismIndexedConstant (OpenSOLLex a) Int
+instance PrismPolyadicPredicate (OpenSOLLex a) Int Bool
+instance PrismPolyadicFunction (OpenSOLLex a) Int Int
+instance PrismPolyadicSchematicFunction (OpenSOLLex a) Int Int
+instance PrismTermEquality (OpenSOLLex a) Int Bool
+instance PrismBooleanConnLex (OpenSOLLex a) Bool
+instance PrismGenericTypedLambda (OpenSOLLex a) Term Form Int
+instance PrismStandardVar (OpenSOLLex a) Int
+instance PrismSubstitutionalVariable (OpenSOLLex a)
+instance PrismGenericQuant (OpenSOLLex a) Term Form Bool Int
+
 --------------------------------------------------------
 --2. Second Order Languages
 --------------------------------------------------------
@@ -133,32 +148,30 @@ pattern SOP n a1 a2     = SOPred (Pred a1 n) a2
 pattern SOPhi n a1 a2   = SOSPred (SPred a1 n) a2
 pattern SOV s           = SOVar (Var s) AZero
 pattern SOF n a1 a2     = SOFunc (Func a1 n) a2
-pattern SOMQuant q      = FX (Lx3 (Bind q))
-pattern SOMAbs a        = FX (Lx4 (Abstract a))
-pattern SOMApp a        = FX (Lx5 (Apply a))
+pattern SOMQuant q      = FX (Lx5 (Bind q))
+pattern SOMAbs a        = FX (Lx2 (Abstract a))
+pattern SOMApp a        = FX (Lx3 (Apply a))
 pattern SOAbstract l f  = SOMAbs l :!$: LLam f
 pattern SOMBind q f     = SOMQuant q :!$: LLam f
-pattern SOPQuant q      = FX (Lx3 (Bind q))
-pattern SOPAbs a        = FX (Lx4 (Abstract a))
-pattern SOPApp a        = FX (Lx5 (Apply a))
+pattern SOPQuant q      = FX (Lx5 (Bind q))
+pattern SOPAbs a        = FX (Lx2 (Abstract a))
+pattern SOPApp a        = FX (Lx3 (Apply a))
 pattern SOPBind q f     = SOPQuant q :!$: LLam f
 
 --------------------------------------------------------
 --2.1 Monadic Second Order Logic
 --------------------------------------------------------
 
-type MonadicallySOLLex = FOL.PureLexiconFOL
-                        :|: Predicate MonadicSOVar
+type MonadicallySOLLex = OpenSOLLex 
+                        ( Predicate MonadicSOVar
                         :|: Binders MonadicSOQuant
-                        :|: Abstractors SOLambda
-                        :|: Applicators SOApplicator
                         :|: Predicate MonadicSOScheme
                         :|: Connective MonadicSOCtx
-                        :|: EndLang
+                        :|: EndLang )
 
 type MonadicallySOL = FixLang MonadicallySOLLex
 
-pattern SOMVar n        = FX (Lx2 (Predicate (MonVar n) AZero))
+pattern SOMVar n        = FX (Lx4 (Predicate (MonVar n) AZero))
 pattern SOMScheme n     = FX (Lx6 (Predicate (MonScheme n) AZero))
 pattern SOMCtx n        = FX (Lx7 (Connective (Context n) AOne))
 
@@ -190,36 +203,22 @@ instance BoundVars MonadicallySOLLex where
 instance Eq (MonadicallySOL a) where
         (==) = (=*)
 
-instance PrismPropLex MonadicallySOLLex Bool
-instance PrismSchematicProp MonadicallySOLLex Bool
-instance PrismIndexedConstant MonadicallySOLLex Int
-instance PrismPolyadicPredicate MonadicallySOLLex Int Bool
-instance PrismPolyadicFunction MonadicallySOLLex Int Int
-instance PrismPolyadicSchematicFunction MonadicallySOLLex Int Int
-instance PrismTermEquality MonadicallySOLLex Int Bool
-instance PrismBooleanConnLex MonadicallySOLLex Bool
-instance PrismGenericQuant MonadicallySOLLex Term Form Bool Int
 instance PrismGenericQuant MonadicallySOLLex Form Form Bool (Int -> Bool) 
-instance PrismGenericTypedLambda MonadicallySOLLex Term Form Int
-instance PrismStandardVar MonadicallySOLLex Int
-instance PrismSubstitutionalVariable MonadicallySOLLex
 
 --------------------------------------------------------
 --  2.2 Polyadic SOL
 --------------------------------------------------------
 
-type PolyadicallySOLLex = FOL.PureLexiconFOL
-                        :|: Predicate PolySOLVar
+type PolyadicallySOLLex = OpenSOLLex
+                        ( Predicate PolySOLVar
                         :|: Binders PolySOLQuant
-                        :|: Abstractors SOLambda
-                        :|: Applicators SOApplicator
                         :|: Predicate PolyadicSOScheme
                         :|: Connective PolyadicSOCtx
-                        :|: EndLang
+                        :|: EndLang)
 
 type PolyadicallySOL = FixLang PolyadicallySOLLex
 
-pattern SOPVar n a      = FX (Lx2 (Predicate (PolyVar n a) AZero))
+pattern SOPVar n a      = FX (Lx4 (Predicate (PolyVar n a) AZero))
 pattern SOPScheme n a   = FX (Lx6 (Predicate (PolyScheme n a) AZero))
 pattern SOPCtx n a      = FX (Lx7 (Connective (PolyCtx n a) AOne))
 
@@ -254,18 +253,6 @@ instance CopulaSchema PolyadicallySOL where
 instance Eq (PolyadicallySOL a) where
         (==) = (=*)
 
-instance PrismPropLex PolyadicallySOLLex Bool
-instance PrismSchematicProp PolyadicallySOLLex Bool
-instance PrismIndexedConstant PolyadicallySOLLex Int
-instance PrismPolyadicPredicate PolyadicallySOLLex Int Bool
-instance PrismPolyadicFunction PolyadicallySOLLex Int Int
-instance PrismPolyadicSchematicFunction PolyadicallySOLLex Int Int
-instance PrismGenericTypedLambda PolyadicallySOLLex Term Form Int
-instance PrismBooleanConnLex PolyadicallySOLLex Bool
-instance PrismGenericQuant PolyadicallySOLLex Term Form Bool Int
-instance PrismTermEquality PolyadicallySOLLex Int Bool
-instance PrismStandardVar PolyadicallySOLLex Int
-instance PrismSubstitutionalVariable PolyadicallySOLLex
 instance PrismPolyVar PolyadicallySOLLex Int Bool 
 --------------------------------------------------------
 --Notes
