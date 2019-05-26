@@ -59,7 +59,7 @@ instance Inference GoldfarbND PureLexiconFOL (Form Bool) where
     restriction (TF n) = Just $ tautologicalConstraint 
                                   (map (\m -> phin m :: FOLSequentCalc (Form Bool)) [1 .. n])
                                   (phin (n + 1) :: FOLSequentCalc (Form Bool))
-    restriction UG = Just (eigenConstraint (SeqT 1) (SS (lall "v" $ phi' 1)) (fogamma 1))
+    restriction UG = Just (eigenConstraint tau (SS (lall "v" $ phi' 1)) (fogamma 1))
     restriction _ = Nothing
 
     globalRestriction (Left ded) n D = Just (P.dischargeConstraint n ded (view lhs $ conclusionOf D))

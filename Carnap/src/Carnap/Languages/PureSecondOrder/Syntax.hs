@@ -163,7 +163,7 @@ pattern SOPBind q f     = SOPQuant q :!$: LLam f
 --------------------------------------------------------
 
 type MonadicallySOLLex = OpenSOLLex 
-                        ( Predicate MonadicSOVar
+                        (Predicate MonadicSOVar
                         :|: Binders MonadicSOQuant
                         :|: Predicate MonadicSOScheme
                         :|: Connective MonadicSOCtx

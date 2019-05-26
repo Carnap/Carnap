@@ -4,10 +4,10 @@ module Carnap.Languages.PureFirstOrder.Logic.Rules where
 import Data.List (intercalate)
 import Data.Typeable (Typeable)
 import Data.Maybe (catMaybes)
-import Control.Lens (toListOf,preview)
+import Control.Lens (toListOf,preview, Prism')
 import Text.Parsec
-import Carnap.Core.Data.Util (scopeHeight)
-import Carnap.Core.Unification.Unification (applySub,subst,FirstOrder)
+import Carnap.Core.Data.Util 
+import Carnap.Core.Unification.Unification (applySub,occurs,FirstOrder)
 import Carnap.Core.Data.Classes
 import Carnap.Core.Data.Types
 import Carnap.Core.Data.Optics
@@ -20,7 +20,7 @@ import Carnap.Languages.ClassicalSequent.Syntax
 import Carnap.Languages.ClassicalSequent.Parser
 import Carnap.Languages.Util.LanguageClasses
 import Carnap.Languages.Util.GenericConstructors
-import Carnap.Calculi.NaturalDeduction.Syntax (DeductionLine(..),depth,assertion,discharged,justificationOf,inScope)
+import Carnap.Calculi.NaturalDeduction.Syntax (DeductionLine(..),depth,assertion,discharged,justificationOf,inScope,Restriction)
 
 --------------------------------------------------------
 --1. FirstOrder Sequent Calculus
@@ -28,21 +28,21 @@ import Carnap.Calculi.NaturalDeduction.Syntax (DeductionLine(..),depth,assertion
 
 type FOLSequentCalc = ClassicalSequentOver PureLexiconFOL
 
+type OpenFOLSequentCalc a = ClassicalSequentOver (PureFirstOrderLexWith a)
+
 --we write the Copula schema at this level since we may want other schemata
 --for sequent languages that contain things like quantifiers
 instance CopulaSchema FOLSequentCalc where 
 
-    appSchema (SeqQuant (All x)) (LLam f) e = schematize (All x) (show (f $ seqVar x) : e)
-    appSchema (SeqQuant (Some x)) (LLam f) e = schematize (Some x) (show (f $ seqVar x) : e)
+    appSchema q@(Fx _) (LLam f) e = case ( qtype q >>= preview _all >>= \x -> (,) <$> Just x <*> castTo (seqVar x)
+                                         , qtype q >>= preview _some >>= \x -> (,) <$> Just x <*> castTo (seqVar x)
+                                         ) of
+                                     (Just (x,v), _) -> schematize (All x) (show (f v) : e)
+                                     (_, Just (x,v)) -> schematize (Some x) (show (f v) : e)
+                                     _ -> schematize q (show (LLam f) : e)
     appSchema x y e = schematize x (show y : e)
 
     lamSchema = defaultLamSchema
-
-pattern SeqQuant q        = FX (Lx2 (Lx1 (Lx2 (Bind q))))
-pattern SeqTau c a        = FX (Lx2 (Lx1 (Lx5 (Function c a))))
-pattern SeqConst c a      = FX (Lx2 (Lx1 (Lx3 (Function c a))))
-pattern SeqT n            = SeqTau (SFunc AZero n) AZero
-pattern SeqC n            = SeqConst (Constant n) AZero
 
 instance Eq (FOLSequentCalc a) where
         (==) = (=*)
@@ -73,19 +73,17 @@ theta :: SchematicPolyadicFunctionLanguage (FixLang lex) (Term Int) (Term Int)
 theta x = spfn 1 AOne :!$: x
 
 eigenConstraint c suc ant sub
-    | c' `occursIn` ant' = Just $ "The term " ++ show c' ++ " appears not to be fresh, given that this line relies on " ++ show ant'
-    | c' `occursIn` suc' = Just $ "The term " ++ show c' ++ " appears not to be fresh in the other premise " ++ show suc'
-    | otherwise = case c' of 
-                          SeqC _ -> Nothing
-                          SeqT _ -> Nothing
-                          _ | preview _varLabel c' /= Nothing -> Nothing
-                          _ -> Just $ "The term " ++ show c' ++ " is not a constant or variable"
-    where c'   = applySub sub c
-          ant' = applySub sub ant
-          suc' = applySub sub suc
-          -- XXX : this is not the most efficient way of checking
-          -- imaginable.
-          occursIn x y = not $ (subst x (static 0) y) =* y
+    | (applySub sub c) `occurs` (applySub sub ant) = Just $ "The term " ++ show (applySub sub c) ++ " appears not to be fresh, given that this line relies on " ++ show (applySub sub ant)
+    | (applySub sub c) `occurs` (applySub sub suc) = Just $ "The term " ++ show (applySub sub c) ++ " appears not to be fresh in the other premise " ++ show (applySub sub suc)
+    | otherwise = case (applySub sub c) of 
+                          _ | not . null $ preview _sfuncIdx' (applySub sub c) -> Nothing
+                            | not . null $ preview _constIdx (applySub sub c) -> Nothing
+                            | not . null $ preview _varLabel (applySub sub c) -> Nothing
+                          _ -> Just $ "The term " ++ show (applySub sub c) ++ " is not a constant or variable"
+    where _sfuncIdx' :: ( PrismPolyadicSchematicFunction (PureFirstOrderLexWith a) Int Int 
+                        , PrismLink (a (OpenFOLSequentCalc a)) (Function (SchematicIntFunc Int Int) (OpenFOLSequentCalc a)) -- XXX: only for compatibility with older GHCs 
+                        ) => Prism' (OpenFOLSequentCalc a (Term Int)) (Int, Arity (Term Int) (Term Int) (Term Int))
+          _sfuncIdx' = _sfuncIdx
 
 tautologicalConstraint prems conc sub = case prems' of
                  []         | isValid (propForm conc') -> Nothing 
@@ -96,11 +94,10 @@ tautologicalConstraint prems conc sub = case prems' of
           conc'  = applySub sub conc
 
 totallyFreshConstraint n ded t v sub 
-    | any (\x -> v `occursIn`x) relevantLines = Just $ show v ++ " appears not to be fresh on line " ++ show n
+    | any (\x -> v `occurs`x) relevantLines = Just $ show v ++ " appears not to be fresh on line " ++ show n
     | tau' /= (liftToSequent v) = Just "the flagged variable isn't the one used for instantiation."
     | otherwise = Nothing
     where relevantLines = catMaybes . map assertion $ (take (n - 1) ded)
-          occursIn x y = not $ (subst x (static 0) y) =* y
           tau' = applySub sub t
 
 flaggedVariableConstraint n ded suc getFlag sub =
@@ -112,25 +109,22 @@ flaggedVariableConstraint n ded suc getFlag sub =
           scope = inScope (ded !! (n - 1))
           forms = catMaybes . map (\n -> liftToSequent <$> assertion (ded !! (n - 1))) $ scope
           suc' = applySub sub suc
-          occursIn x y = not $ (subst x (static 0) y) =* y
           checkFlag x = case justificationOf x of
                             Just rs -> case getFlag (head rs) of
                                 Left s -> Just s
-                                Right v'| any (\x -> v' `occursIn` x) forms -> Just $ "The term " ++ show v' ++ " occurs in one of the dependencies " ++ show forms
-                                        | v' `occursIn` suc' -> Just $ "The term " ++ show v' ++ " occurs in the conclusion " ++ show suc'
+                                Right v'| any (\x -> v' `occurs` x) forms -> Just $ "The term " ++ show v' ++ " occurs in one of the dependencies " ++ show forms
+                                        | v' `occurs` suc' -> Just $ "The term " ++ show v' ++ " occurs in the conclusion " ++ show suc'
                                         | otherwise -> Nothing
                             _ -> Just "the line cited has no justification"
 
 globalOldConstraint cs (Left ded) lineno sub = 
-          if all (\c -> any (\x -> c `occursIn`x) relevantLines) cs'
+          if all (\c -> any (\x -> c `occurs`x) relevantLines) cs'
               then Nothing
               else Just $ "a constant in " ++ show cs' ++ " appears not to be old, but this rule needs old constants"
     where cs' = map (applySub sub) cs
 
           relevantLines = catMaybes . map (fmap liftLang . assertion) $ 
                             ((oldRelevant [] $ take (lineno - 1) ded) ++ fromsp)
-
-          occursIn x y = not $ (subst x (static 0) y) =* y
 
           --some extra lines that we need to add if we're putting this
           --constraint on a subproof-closing rule
@@ -165,14 +159,14 @@ montagueNewExistentialConstraint cs ded lineno sub =
     where cs' = map (fromSequent . applySub sub) cs
           relevantLines = take (lineno - 1) ded
           relevantForms = catMaybes $ map assertion relevantLines
-          occursIn x y = not (subst x (static 0) y =* y)
+          occursIn x y = occurs x y
                          || boundVarOf x y
                          || any (boundVarOf x) (toListOf formsOf y)
 
 montagueNewUniversalConstraint cs ded lineno sub = 
         case relevantForms of
             [] -> Just "No show line found for this rule. But this rule requires a preceeding show line. Remeber to align opening and closing lines of subproofs."
-            x:xs | boundVarOf c' x -> if any (occursIn c') xs 
+            x:xs | boundVarOf c' x -> if any (occurs c') xs 
                                           then Just $ "The variable " ++ show c' ++ " occurs freely somewhere before the show line of this rule"
                                           else Nothing
             _ -> Just $ "The variable " ++ show c' ++ " is not bound in the show line of this rule."
@@ -181,7 +175,6 @@ montagueNewUniversalConstraint cs ded lineno sub =
           --XXX: for now we ignore the complication of making sure these
           --are *available* lines.
           relevantForms = catMaybes $ map assertion relevantLines
-          occursIn x y = not (subst x (static 0) y =* y)
           isShow (ShowLine _ d) = d == depth (ded !! (lineno - 1))
           isShow _ = False
 

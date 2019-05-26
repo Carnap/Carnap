@@ -313,9 +313,9 @@ doubleProof = TypedProof (ProofType 0 2)
 
 assumptiveProof = TypedProof (ProofType 1 1)
 
-type Restriction lex = Maybe ([Equation (ClassicalSequentOver lex)] -> Maybe String)
+type Restriction lex = [Equation (ClassicalSequentOver lex)] -> Maybe String
 
-type Restrictor r lex = Int -> r -> Restriction lex
+type Restrictor r lex = Int -> r -> Maybe (Restriction lex)
 
 andFurtherRestriction f g sub = case f sub of 
                                   Nothing -> g sub
@@ -333,7 +333,7 @@ class Inference r lex sem | r -> lex sem where
         ruleOf r = SequentRule (premisesOf r) (conclusionOf r)
 
         --local restrictions, based only on given substitutions
-        restriction :: r -> Restriction lex 
+        restriction :: r -> Maybe (Restriction lex)
         restriction _ = Nothing
 
         --restrictions, based on given substitutions, whole derivation, and position in derivation
