@@ -37,7 +37,8 @@ putInstructorR ident = do
                                         do let cid = assignmentMetadataCourse v
                                            runDB $ do (Just course) <- get cid
                                                       let (Just tz) = tzByName . courseTimeZone $ course
-                                                      let mtimeUpdate mdate mtime field = maybeDo mdate (\date-> 
+                                                      let mtimeUpdate Nothing Nothing field = update k [ field =. Nothing ]
+                                                          mtimeUpdate mdate mtime field = maybeDo mdate (\date-> 
                                                              do let localtime = case mtime of
                                                                         (Just time) -> LocalTime date time
                                                                         _ -> LocalTime date (TimeOfDay 23 59 59)
@@ -45,19 +46,16 @@ putInstructorR ident = do
                                                       mtimeUpdate mdue mduetime AssignmentMetadataDuedate
                                                       mtimeUpdate mfrom mfromtime AssignmentMetadataVisibleFrom
                                                       mtimeUpdate muntil muntiltime AssignmentMetadataVisibleTill
-                                                      maybeDo mdesc (\desc -> update k
-                                                         [ AssignmentMetadataDescription =. (Just $ unTextarea desc) ])
+                                                      update k [ AssignmentMetadataDescription =. (unTextarea <$> mdesc) ]
                                            returnJson ("updated!"::Text)
             (_,FormSuccess (idstring,mdesc,mstart,mend,mpoints),_) -> do
                              case readMaybe idstring of
-                                 Just k -> do runDB $ do maybeDo mdesc (\desc -> update k
-                                                           [ CourseDescription =. (Just $ unTextarea desc) ])
+                                 Just k -> do runDB $ do update k [ CourseDescription =. (unTextarea <$> mdesc) ]
                                                          maybeDo mstart (\start -> update k
                                                            [ CourseStartDate =. UTCTime start 0 ])
                                                          maybeDo mend (\end-> update k
                                                            [ CourseEndDate =. UTCTime end 0 ])
-                                                         maybeDo mpoints (\points-> update k
-                                                           [ CourseTotalPoints =. points ])
+                                                         maybeDo mpoints (\points-> update k [ CourseTotalPoints =. points ])
                                               returnJson ("updated!"::Text)
                                  Nothing -> returnJson ("could not find course!"::Text)
             (_,_,FormSuccess (idstring, mscope, mdesc,mfile,mtags)) -> do
@@ -69,10 +67,8 @@ putInstructorR ident = do
                                         Just doc -> do
                                            (Just ident) <- getIdent (documentCreator doc) 
                                            --XXX: shouldn't be possible for a document to exist without a creator
-                                           runDB $ do maybeDo mdesc (\desc -> update k
-                                                        [ DocumentDescription =. (Just $ unTextarea desc) ])
-                                                      maybeDo mscope (\scope -> update k
-                                                        [ DocumentScope =. scope ])
+                                           runDB $ do update k [ DocumentDescription =. (unTextarea <$> mdesc) ]
+                                                      maybeDo mscope (\scope -> update k [ DocumentScope =. scope ])
                                                       maybeDo mtags (\tags -> do
                                                                         oldTags <- selectList [TagBearer ==. k] []
                                                                         mapM (delete . entityKey) oldTags
@@ -86,7 +82,6 @@ putInstructorR ident = do
             (form1,form2,form3) -> returnJson ("errors: " <> errorsOf form1 <> errorsOf form2 <> errorsOf form3)
                 where errorsOf (FormFailure s) = concat s <> ", " 
                       errorsOf _ = "" 
-
 
 deleteInstructorR :: Text -> Handler Value
 deleteInstructorR ident = do
@@ -708,7 +703,7 @@ classWidget ident instructors classent = do
                                 ^{addCoInstructorWidget}
                         <div.col-xl-6.col-lg-12 style="padding:5px">
                             <div.float-xl-right>
-                                <button.btn.btn-secondary style="width:160px" type="button"  onclick="modalEditCourse('#{show cid}')">
+                                <button.btn.btn-secondary style="width:160px" type="button"  onclick="modalEditCourse('#{show cid}','#{maybe "" sanatizeNewlines (unpack <$> courseDescription course)}','#{dateDisplay (courseStartDate course) course}','#{dateDisplay (courseEndDate course) course}',#{courseTotalPoints course})">
                                     Edit Information
                                 <button.btn.btn-secondary style="width:160px" type="button" onclick="location.href='@{InstructorDownloadR ident (courseTitle course)}';">
                                     Export Grades
@@ -792,6 +787,11 @@ dateDisplay utc course = case tzByName $ courseTimeZone course of
                              Nothing -> formatTime defaultTimeLocale "%F %R UTC" $ utc
 
 maybeDo mv f = case mv of Just v -> f v; _ -> return ()
+
+sanatizeNewlines ('\n':xs) = '\\' : 'n' : sanatizeNewlines xs
+sanatizeNewlines ('\r':xs) = sanatizeNewlines xs
+sanatizeNewlines (x:xs) = x : sanatizeNewlines xs
+sanatizeNewlines [] = []
 
 -- TODO compare directory contents with database results
 listAssignmentMetadata theclass = do asmd <- runDB $ selectList [AssignmentMetadataCourse ==. theclass] []
