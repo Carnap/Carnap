@@ -24,7 +24,7 @@ data HowardSnyderSL = MP |  MT | Conj | HS | DS1 | DS2 | Add1 | Add2 | CD | Simp
                | Taut1 | Taut2 | Taut3 | Taut4 | Assoc1 | Assoc2 | Assoc3 | Assoc4
                | Equiv1 | Equiv2 | Equiv3 | Equiv4 | Dist1 | Dist2 | Dist3 | Dist4
                | CP1 | CP2 | IP1 | IP2 | IP3 | IP4
-               | AP | Pr (Maybe [(ClassicalSequentOver PurePropLexicon (Sequent (Form Bool)))])
+               | AP | Pr (Maybe [ClassicalSequentOver PurePropLexicon (Sequent (Form Bool))])
                deriving (Eq)
 
 instance Show HowardSnyderSL where
