@@ -98,7 +98,7 @@
                                             <button.btn.btn-sm.btn-secondary alt="delete" title="delete this assignment" type="button" onclick="tryDeleteAssignment('#{decodeUtf8 $ encode $ DeleteAssignment k}','#{documentFilename d}','#{courseTitle c}')">
                                                 <i.fa.fa-trash-o>
 
-                                            <button.btn.btn-sm.btn-secondary alt="edit" title="edit this assignment" type="button" onclick="modalEditAssignment('#{show k}','#{maybe "" (flip dateDisplay c) (assignmentMetadataDuedate a)}','#{maybe "" (flip dateDisplay c) (assignmentMetadataVisibleFrom a)}','#{maybe "" (flip dateDisplay c) (assignmentMetadataVisibleTill a)}','#{maybe "" sanatizeNewlines (unpack <$> assignmentMetadataDescription a)}')">
+                                            <button.btn.btn-sm.btn-secondary alt="edit" title="edit this assignment" type="button" onclick="modalEditAssignment('#{show k}','#{maybe "" (flip dateDisplay c) (assignmentMetadataDuedate a)}','#{maybe "" (flip dateDisplay c) (assignmentMetadataVisibleFrom a)}','#{maybe "" (flip dateDisplay c) (assignmentMetadataVisibleTill a)}','#{maybe "" sanatizeForJS (unpack <$> assignmentMetadataDescription a)}')">
                                                 <i.fa.fa-cog>
                                             <a.btn.btn-sm.btn-secondary alt="review" title="review and assign partial credit" href=@{ReviewR (courseTitle c) (documentFilename d)}>
                                                 <i.fa.fa-pencil>
@@ -135,7 +135,7 @@
                                         <td>
                                             <button.btn.btn-sm.btn-secondary type="button" alt="delete" title="permanantly delete this document" onclick="tryDeleteDocument('#{decodeUtf8 $ encode $ DeleteDocument (documentFilename a)}')">
                                                 <i.fa.fa-trash-o>
-                                            <button.btn.btn-sm.btn-secondary type="button" alt="edit" title="edit this document" onclick="modalEditDocument('#{show k}','#{maybe "" sanatizeNewlines (unpack <$> documentDescription a)}', '#{tagString k}')">
+                                            <button.btn.btn-sm.btn-secondary type="button" alt="edit" title="edit this document" onclick="modalEditDocument('#{show k}','#{maybe "" sanatizeForJS (unpack <$> documentDescription a)}', '#{tagString k}')">
                                                 <i.fa.fa-cog>
                                             <button.btn.btn-sm.btn-secondary alt="download" title="download this document" type="button" onclick="window.open('@{DocumentDownloadR ident (documentFilename a)}')">
                                                 <i.fa.fa-cloud-download>
@@ -162,7 +162,7 @@
                                             <td>
                                                 <button.btn.btn-sm.btn-secondary type="button" alt="delete" title="permanantly delete this course" onclick="tryDeleteCourse('#{decodeUtf8 $ encode $ DeleteCourse (courseTitle c)}')">
                                                     <i.fa.fa-trash-o>
-                                                <button.btn.btn-sm.btn-secondary type="button" alt="edit" title="edit this course" onclick="modalEditCourse('#{show cid}','#{maybe "" sanatizeNewlines (unpack <$> courseDescription c)}','#{dateDisplay (courseStartDate c) c}','#{dateDisplay (courseEndDate c) c}',#{courseTotalPoints c})">
+                                                <button.btn.btn-sm.btn-secondary type="button" alt="edit" title="edit this course" onclick="modalEditCourse('#{show cid}','#{maybe "" sanatizeForJS (unpack <$> courseDescription c)}','#{dateDisplay (courseStartDate c) c}','#{dateDisplay (courseEndDate c) c}',#{courseTotalPoints c})">
                                                     <i.fa.fa-cog>
                                                 <button.btn.btn-sm.btn-secondary alt="download" title="download grades from this course" type="button" onclick="location.href='@{InstructorDownloadR ident (courseTitle c)}'">
                                                     <i.fa.fa-cloud-download>

@@ -703,7 +703,7 @@ classWidget ident instructors classent = do
                                 ^{addCoInstructorWidget}
                         <div.col-xl-6.col-lg-12 style="padding:5px">
                             <div.float-xl-right>
-                                <button.btn.btn-secondary style="width:160px" type="button"  onclick="modalEditCourse('#{show cid}','#{maybe "" sanatizeNewlines (unpack <$> courseDescription course)}','#{dateDisplay (courseStartDate course) course}','#{dateDisplay (courseEndDate course) course}',#{courseTotalPoints course})">
+                                <button.btn.btn-secondary style="width:160px" type="button"  onclick="modalEditCourse('#{show cid}','#{maybe "" sanatizeForJS (unpack <$> courseDescription course)}','#{dateDisplay (courseStartDate course) course}','#{dateDisplay (courseEndDate course) course}',#{courseTotalPoints course})">
                                     Edit Information
                                 <button.btn.btn-secondary style="width:160px" type="button" onclick="location.href='@{InstructorDownloadR ident (courseTitle course)}';">
                                     Export Grades
@@ -788,10 +788,13 @@ dateDisplay utc course = case tzByName $ courseTimeZone course of
 
 maybeDo mv f = case mv of Just v -> f v; _ -> return ()
 
-sanatizeNewlines ('\n':xs) = '\\' : 'n' : sanatizeNewlines xs
-sanatizeNewlines ('\r':xs) = sanatizeNewlines xs
-sanatizeNewlines (x:xs) = x : sanatizeNewlines xs
-sanatizeNewlines [] = []
+sanatizeForJS ('\n':xs) = '\\' : 'n' : sanatizeForJS xs
+sanatizeForJS ('\\':xs) = '\\' : '\\' : sanatizeForJS xs
+sanatizeForJS ('\'':xs) = '\\' : '\'' : sanatizeForJS xs
+sanatizeForJS ('"':xs)  = '\\' : '"' : sanatizeForJS xs
+sanatizeForJS ('\r':xs) = sanatizeForJS xs
+sanatizeForJS (x:xs) = x : sanatizeForJS xs
+sanatizeForJS [] = []
 
 -- TODO compare directory contents with database results
 listAssignmentMetadata theclass = do asmd <- runDB $ selectList [AssignmentMetadataCourse ==. theclass] []

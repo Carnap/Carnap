@@ -82,10 +82,12 @@ function modalEditDocument (id,desc,tags) {
 
 function modalEditCourse (id,desc,start,end,points) {
     jQuery.noConflict()
+    var sparts = start.split(" ")
+    var eparts = start.split(" ")
     $("#updateCourse input[name=f1]").val(id);
     $("#updateCourse textarea[name=f2]").val(desc);
-    $("#updateCourse input[name=f3]").val(start);
-    $("#updateCourse input[name=f4]").val(end);
+    if (sparts.length > 0) {$("#updateCourse input[name=f3]").val(sparts[0]);}
+    if (eparts.length > 0) {$("#updateCourse input[name=f4]").val(eparts[0]);}
     $("#updateCourse input[name=f5]").val(points);
     $("#updateCourseData").modal({show:true});
 }
