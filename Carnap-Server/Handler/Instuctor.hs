@@ -27,27 +27,27 @@ putInstructorR ident = do
         ((documentrslt,_),_)   <- runFormPost (identifyForm "updateDocument" $ updateDocumentForm)
         case (assignmentrslt,courserslt,documentrslt) of 
             (FormSuccess (idstring, mdue, mduetime,mfrom,mfromtime,muntil,muntiltime, mdesc),_,_) -> do
-                             case readMaybe idstring of 
-                                  Nothing -> returnJson ("Could not read assignment key"::Text)
-                                  Just k -> do 
-                                    mval <- runDB (get k)
-                                    case mval of 
-                                      Nothing -> returnJson ("Could not find assignment!"::Text)
-                                      Just v -> 
-                                        do let cid = assignmentMetadataCourse v
-                                           runDB $ do (Just course) <- get cid
-                                                      let (Just tz) = tzByName . courseTimeZone $ course
-                                                      let mtimeUpdate Nothing Nothing field = update k [ field =. Nothing ]
-                                                          mtimeUpdate mdate mtime field = maybeDo mdate (\date-> 
-                                                             do let localtime = case mtime of
-                                                                        (Just time) -> LocalTime date time
-                                                                        _ -> LocalTime date (TimeOfDay 23 59 59)
-                                                                update k [ field =. (Just $ localTimeToUTCTZ tz localtime) ])
-                                                      mtimeUpdate mdue mduetime AssignmentMetadataDuedate
-                                                      mtimeUpdate mfrom mfromtime AssignmentMetadataVisibleFrom
-                                                      mtimeUpdate muntil muntiltime AssignmentMetadataVisibleTill
-                                                      update k [ AssignmentMetadataDescription =. (unTextarea <$> mdesc) ]
-                                           returnJson ("updated!"::Text)
+                 case readMaybe idstring of 
+                      Nothing -> returnJson ("Could not read assignment key"::Text)
+                      Just k -> do 
+                        mval <- runDB (get k)
+                        case mval of 
+                          Nothing -> returnJson ("Could not find assignment!"::Text)
+                          Just v -> 
+                            do let cid = assignmentMetadataCourse v
+                               runDB $ do (Just course) <- get cid
+                                          let (Just tz) = tzByName . courseTimeZone $ course
+                                          let mtimeUpdate Nothing Nothing field = update k [ field =. Nothing ]
+                                              mtimeUpdate mdate mtime field = maybeDo mdate (\date-> 
+                                                 do let localtime = case mtime of
+                                                            (Just time) -> LocalTime date time
+                                                            _ -> LocalTime date (TimeOfDay 23 59 59)
+                                                    update k [ field =. (Just $ localTimeToUTCTZ tz localtime) ])
+                                          mtimeUpdate mdue mduetime AssignmentMetadataDuedate
+                                          mtimeUpdate mfrom mfromtime AssignmentMetadataVisibleFrom
+                                          mtimeUpdate muntil muntiltime AssignmentMetadataVisibleTill
+                                          update k [ AssignmentMetadataDescription =. (unTextarea <$> mdesc) ]
+                               returnJson ("updated!"::Text)
             (_,FormSuccess (idstring,mdesc,mstart,mend,mpoints),_) -> do
                              case readMaybe idstring of
                                  Just k -> do runDB $ do update k [ CourseDescription =. (unTextarea <$> mdesc) ]

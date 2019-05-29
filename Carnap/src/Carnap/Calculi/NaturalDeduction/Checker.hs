@@ -305,12 +305,12 @@ reduceResult lineno xs = case rights xs of
                            (r:x):rs -> Right r
     where eqsOf (Left (NoUnify eqs _)) = eqs
           errFrom xs = case firstNonUni xs of
-                               Nothing -> NoUnify (concat $ map eqsOf xs) lineno
+                               Nothing -> NoUnify (concatMap eqsOf xs) lineno
                                Just err -> err
 
           firstNonUni [] = Nothing
-          firstNonUni ((Left (NoUnify _ _)):ys) = firstNonUni ys
-          firstNonUni ((Left y):_) = Just y
+          firstNonUni (Left (NoUnify _ _):ys) = firstNonUni ys
+          firstNonUni (Left y:_) = Just y
 
 --Given a list of concrete rules and a list of (schematic-variable-free)
 --premise sequents, and a (schematic-variable-free) conclusion succeedent,
@@ -491,6 +491,6 @@ isTop  (DependentAssertLine _ _ _ _ _ _) = True
 isTop  _ = False
 
 alright [] = True
-alright ((Right _):l) = alright l
-alright ((Left (NoResult _)):l) = alright l
-alright ((Left _):_) = False
+alright (Right _:l) = alright l
+alright (Left (NoResult _):l) = alright l
+alright (Left _:_) = False

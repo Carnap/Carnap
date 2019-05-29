@@ -22,12 +22,12 @@ genChildren g phi@(q :!$: LLam (h :: FixLang f t -> FixLang f t')) =
            case eqT :: Maybe (t' :~: a) of
                     Just Refl -> (\x y -> x :!$: LLam y) <$> genChildren g q <*> modify h
                        where bv = scopeUniqueVar q (LLam h)
-                             abstractBv f = \x -> (subBoundVar bv x f)
-                             modify h = abstractBv <$> (g $ h $ bv)
+                             abstractBv f x = subBoundVar bv x f
+                             modify h = abstractBv <$> g (h bv)
                     _ -> (\x y -> x :!$: LLam y) <$> genChildren g q <*> modify h
                        where bv = scopeUniqueVar q (LLam h)
-                             abstractBv f = \x -> (subBoundVar bv x f)
-                             modify h = abstractBv <$> (genChildren g $ h $ bv)
+                             abstractBv f x = subBoundVar bv x f
+                             modify h = abstractBv <$> genChildren g (h bv)
 genChildren g phi@(h :!$: (t1 :: FixLang f tt)) =
                    case ( eqT :: Maybe (tt :~: a)
                         ) of (Just Refl) -> genChildren g h .*$. g t1
@@ -136,7 +136,7 @@ instance {-# OVERLAPPABLE #-} (PrismLink (f idx) h, PrismLink (g idx) h) => Pris
             where ll = link :: Typeable a => Prism' (f idx a) (h a)
                   rl = link :: Typeable a => Prism' (g idx a) (h a)
 
-        pflag = Flag $ checkFlag ((pflag :: Flag Bool (f idx) h)) || checkFlag ((pflag :: Flag Bool (g idx) h))
+        pflag = Flag $ checkFlag (pflag :: Flag Bool (f idx) h) || checkFlag (pflag :: Flag Bool (g idx) h)
 
 _Fx :: Typeable a => Prism' (Fix f a) (f (Fix f) a)
 _Fx = prism' Fx un
@@ -188,12 +188,12 @@ class (PrismLink (FixLang lex) (SubstitutionalVariable (FixLang lex)))
         link_PrismStandardVar = link 
 
         staticIdx :: Prism' (SubstitutionalVariable (FixLang lex) t) Int
-        staticIdx  = prism' (\n -> StaticVar n) 
+        staticIdx  = prism' StaticVar
                             (\x -> case x of StaticVar n -> Just n
                                              _ -> Nothing)
 
         substIdx :: Prism' (SubstitutionalVariable (FixLang lex) t) Int
-        substIdx  = prism' (\n -> SubVar n) 
+        substIdx  = prism' SubVar
                            (\x -> case x of SubVar n -> Just n
                                             _ -> Nothing)
                                             
@@ -251,4 +251,3 @@ binaryOpPrismOn prism = prism' construct (destruct prism)
                         Just Refl -> (,) <$> preview prism h <*> Just (t,t')
                         Nothing -> Nothing
           destruct _ _ = Nothing
-

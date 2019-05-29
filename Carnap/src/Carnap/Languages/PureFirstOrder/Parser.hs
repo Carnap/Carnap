@@ -110,19 +110,19 @@ bergmannMoorAndNelsonFOLParserOptions = FirstOrderParserOptions
 
 hardegreePLParserOptions :: FirstOrderParserOptions PureLexiconFOL u Identity
 hardegreePLParserOptions = FirstOrderParserOptions 
-                         { atomicSentenceParser = \x -> parsePredicateSymbolNoParen ['A' .. 'Z'] x
+                         { atomicSentenceParser = parsePredicateSymbolNoParen ['A' .. 'Z']
                          , quantifiedSentenceParser' = quantifiedSentenceParser
                          , freeVarParser = parseFreeVar ['t' .. 'z']
                          , constantParser = Just (parseConstant ['a' .. 's'])
                          , functionParser = Nothing
                          , hasBooleanConstants = True
-                         , parenRecur = \opt recurWith  -> parenParser (recurWith opt)
+                         , parenRecur = \opt recurWith -> parenParser (recurWith opt)
                          , opTable = standardOpTable
                          }
 
 goldfarbNDParserOptions :: FirstOrderParserOptions PureLexiconFOL u Identity
 goldfarbNDParserOptions = FirstOrderParserOptions 
-                         { atomicSentenceParser = \x -> parsePredicateSymbolNoParen ['A' .. 'Z'] x
+                         { atomicSentenceParser = parsePredicateSymbolNoParen ['A' .. 'Z']
                          , quantifiedSentenceParser' = quantifiedSentenceParser
                          , freeVarParser = parseFreeVar ['a' .. 'z']
                          , constantParser = Nothing
@@ -176,9 +176,9 @@ coreSubformulaParser :: ( BoundVars lex
                         ) =>
     (FirstOrderParserOptions lex u Identity -> Parsec String u (FixLang lex (Form Bool))) -> FirstOrderParserOptions lex u Identity
         -> Parsec String u (FixLang lex (Form Bool))
-coreSubformulaParser fp opts = try ((parenRecur opts) opts fp <* spaces)
+coreSubformulaParser fp opts = try (parenRecur opts opts fp <* spaces)
                              <|> try (unaryOpParser [parseNeg] (coreSubformulaParser fp opts))
-                             <|> try ((quantifiedSentenceParser' opts) vparser (coreSubformulaParser fp opts) <* spaces)
+                             <|> try (quantifiedSentenceParser' opts vparser (coreSubformulaParser fp opts) <* spaces)
                              <|> (atomicSentenceParser opts tparser <* spaces)
                              <|> if hasBooleanConstants opts then try (booleanConstParser <* spaces) else parserZero
     where cparser = case constantParser opts of Just c -> c
