@@ -180,39 +180,44 @@ laterThan t1 t2 = diffUTCTime t1 t2 > 0
 --Components 
 --------------------------------------------------------
 --reusable components
-
+problemsToTable :: Course -> Maybe BookAssignmentTable -> [Entity AssignmentMetadata] -> [Maybe Document] -> [ProblemSubmission] -> HandlerFor App Html
 problemsToTable course textbookproblems asmd asDocs submissions = do 
             rows <- mapM toRow submissions
-            return $ do B.div B.! class_ "table-responsive" $ do
-                            B.table B.! class_ "table table-striped" $ do
-                                B.col B.! style "width:100px"
-                                B.col B.! style "width:50px"
-                                B.col B.! style "width:100px"
-                                B.col B.! style "width:100px"
-                                B.col B.! style "width:100px"
-                                B.thead $ do
-                                    B.th "Source"
-                                    B.th "Exercise"
-                                    B.th "Content"
-                                    B.th "Submitted"
-                                    B.th "Points Earned"
-                                B.tbody $ sequence_ rows
+            withUrlRenderer [hamlet|
+                   <div.table-responsive>
+                        <table.table.table-striped>
+                            <col style="width:100px">
+                            <col style="width:50px">
+                            <col style="width:100px">
+                            <col style="width:100px">
+                            <col style="width:100px">
+                            <thead>
+                                <th>Source
+                                <th>Exercise
+                                <th>Content
+                                <th>Submitted
+                                <th>Points Earned>
+                                <tbody>
+                                    $forall row <- rows
+                                        ^{row}|]
         where toRow p = do score <- toScore textbookproblems p 
-                           return $ do
-                              B.tr $ do B.td $ printSource (problemSubmissionSource p)
-                                        B.td $ B.toHtml (problemSubmissionIdent p)
-                                        B.td $ B.toHtml (displayProblemData $ problemSubmissionData p)
-                                        B.td $ B.toHtml (dateDisplay (problemSubmissionTime p) course)
-                                        B.td $ B.toHtml $ show $ score
-              printSource Book = "Textbook"
+                           return [hamlet|
+                                  <tr>
+                                    <td>^{printSource (problemSubmissionSource p)}
+                                    <td>#{problemSubmissionIdent p}
+                                    <td>#{displayProblemData $ problemSubmissionData p}
+                                    <td>#{dateDisplay (problemSubmissionTime p) course}
+                                    <td>#{show $ score}|]
+
+              printSource Book = [hamlet|Textbook|]
               printSource (Assignment s) = 
                 case (readMaybe s) of
-                    Nothing -> "Unknown"
+                    Nothing -> [hamlet|Unknown|]
                     Just k -> case elemIndex k (map entityKey asmd) of
-                        Nothing -> "No existing assignment"
-                        Just n -> case asDocs !! n of
-                            Nothing -> "No document"
-                            Just d -> B.toHtml $ documentFilename d
+                            Nothing -> [hamlet|No existing assignment|]
+                            Just n -> case asDocs !! n of
+                                Nothing -> [hamlet|No document|]
+                                Just d -> [hamlet| <a href=@{AssignmentR $ documentFilename d}>#{documentFilename d}|]
 
 tryDelete name = "tryDeleteRule(\"" <> name <> "\")"
 
