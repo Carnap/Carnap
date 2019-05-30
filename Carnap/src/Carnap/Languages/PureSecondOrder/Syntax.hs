@@ -9,12 +9,13 @@ import qualified Carnap.Languages.PureFirstOrder.Syntax as FOL
 import Carnap.Core.Data.Types
 import Carnap.Core.Data.Classes
 import Carnap.Core.Data.Optics
-import Carnap.Core.Data.Util (scopeHeight)
+import Carnap.Core.Data.Util (scopeHeight, castTo)
 import Carnap.Core.Unification.Unification
 import Carnap.Languages.Util.LanguageClasses
 import Data.Typeable (Typeable)
 import Carnap.Languages.Util.GenericConstructors
 import Data.List (intercalate)
+import Control.Lens (preview,Prism')
 
 --------------------------------------------------------
 --  1. Data for Second Order Logic                    --
@@ -25,7 +26,7 @@ import Data.List (intercalate)
 ------------------------
 
 data SOApplicator a where
-        SOApp :: SOApplicator (Form (Int -> b) -> Term Int -> Form b)
+        SOApp :: Typeable b => SOApplicator (Form (Int -> b) -> Term Int -> Form b)
 
 instance Schematizable SOApplicator where
         schematize SOApp  = \(x:y:_) -> if last x == ')' then init x ++ "," ++ y  ++ ")"
@@ -218,7 +219,6 @@ type PolyadicallySOLLex = OpenSOLLex
 
 type PolyadicallySOL = FixLang PolyadicallySOLLex
 
-pattern SOPVar n a      = FX (Lx4 (Predicate (PolyVar n a) AZero))
 pattern SOPScheme n a   = FX (Lx6 (Predicate (PolyScheme n a) AZero))
 pattern SOPCtx n a      = FX (Lx7 (Connective (PolyCtx n a) AOne))
 
@@ -232,8 +232,8 @@ instance BoundVars PolyadicallySOLLex where
 
     scopeUniqueVar (SOQuant (Some v)) (LLam f)       = foVar $ show $ scopeHeight (LLam f)
     scopeUniqueVar (SOQuant (All v)) (LLam f)        = foVar $ show $ scopeHeight (LLam f)
-    scopeUniqueVar (SOPQuant (SOPAll v a)) (LLam f)  = SOPVar (show $ scopeHeight (LLam f)) a
-    scopeUniqueVar (SOPQuant (SOPSome v a)) (LLam f) = SOPVar (show $ scopeHeight (LLam f)) a
+    scopeUniqueVar (SOPQuant (SOPAll v a)) (LLam f)  = polyVar (show $ scopeHeight (LLam f)) a
+    scopeUniqueVar (SOPQuant (SOPSome v a)) (LLam f) = polyVar (show $ scopeHeight (LLam f)) a
     scopeUniqueVar (SOPAbs (TypedLambda v)) (LLam f) = foVar $ show $ scopeHeight (LLam f)
     scopeUniqueVar _ _ = undefined
 
@@ -243,8 +243,8 @@ instance CopulaSchema PolyadicallySOL where
 
     appSchema (SOQuant (All x)) (LLam f) e = schematize (All x) (show (f $ foVar x) : e)
     appSchema (SOQuant (Some x)) (LLam f) e = schematize (Some x) (show (f $ foVar x) : e)
-    appSchema (SOPQuant (SOPAll x a)) (LLam f) e = schematize (SOPAll x a) (show (f $ SOPVar x a) : e)
-    appSchema (SOPQuant (SOPSome x a)) (LLam f) e = schematize (SOPSome x a) (show (f $ SOPVar x a) : e)
+    appSchema (SOPQuant (SOPAll x a)) (LLam f) e = schematize (SOPAll x a) (show (f $ polyVar x a) : e)
+    appSchema (SOPQuant (SOPSome x a)) (LLam f) e = schematize (SOPSome x a) (show (f $ polyVar x a) : e)
     appSchema (SOPAbs (TypedLambda v)) (LLam f) e = schematize (TypedLambda v) (show (f $ foVar v) : e)
     appSchema x y e = schematize x (show y : e)
 
@@ -270,8 +270,9 @@ incLam _ l v = typedLam (show v) (\x -> subBoundVar v x l)
 
 incVar :: Typeable a => PolyadicallySOL (Form a) -> PolyadicallySOL (Form (Int -> a))
 incVar ((SOPApp SOApp) :!$: l :!$: t) = (SOPApp SOApp) :!$: (incVar l) :!$: t
-incVar (SOPVar s a) = SOPVar s (ASucc a)
-incVar _ = error "attempted to increment the variable of a nonvariable predication"
+incVar v = case preview _polyVarIdxSOL v of
+               Just (s,a) -> polyVar s (ASucc a)
+               Nothing -> error "attempted to increment the variable of a nonvariable predication"
 
 incScheme :: Typeable a => PolyadicallySOL (Form a) -> PolyadicallySOL (Form (Int -> a))
 incScheme ((SOPApp SOApp) :!$: l :!$: t) = (SOPApp SOApp) :!$: (incScheme l) :!$: t
@@ -280,14 +281,17 @@ incScheme _ = error "attempted to increment the variable of a nonvariable predic
 
 incQuant :: PolyadicallySOL (Form Bool) -> PolyadicallySOL (Form Bool)
 incQuant ((SOPQuant (SOPAll s a)) :!$: (LLam f)) = 
-    (SOPQuant (SOPAll s (ASucc a))) :!$: (LLam $ \x -> subBoundVar (SOPVar s (ASucc a)) x (f $ SOPVar s a))
+    (SOPQuant (SOPAll s (ASucc a))) :!$: (LLam $ \x -> subBoundVar (polyVar s (ASucc a)) x (f $ polyVar s a))
 incQuant ((SOPQuant (SOPSome s a)) :!$: (LLam f)) = 
-    (SOPQuant (SOPSome s (ASucc a))) :!$: (LLam $ \x -> subBoundVar (SOPVar s (ASucc a)) x (f $ SOPVar s a))
+    (SOPQuant (SOPSome s (ASucc a))) :!$: (LLam $ \x -> subBoundVar (polyVar s (ASucc a)) x (f $ polyVar s a))
 incQuant _ = error "attempted to increment the quantifier of an unquantified sentence"
 
 --increment the context of a higher-order variable
 incVarCtx :: PolyadicallySOL (Form Bool) -> PolyadicallySOL (Form Bool)
-incVarCtx ((SOPCtx n a) :!$: (SOPVar s c)) = (SOPCtx n (ASucc a)) :!$: (SOPVar s (ASucc c))
+incVarCtx ((SOPCtx n a) :!$: v) = 
+        case preview _polyVarIdxSOL v of
+              Just (s, a') -> (SOPCtx n (ASucc a)) :!$: (polyVar s (ASucc a'))
+              _ -> error "attempted to increment the variable context of a non-variable/context predicaton"
 incVarCtx _ = error "attempted to increment the variable context of a non-variable/context predicaton"
 
 --increment the context of a higher-order schematic variable
@@ -296,10 +300,12 @@ incSchemeCtx ((SOPCtx n a) :!$: (SOPScheme s c)) = (SOPCtx n (ASucc a)) :!$: (SO
 incSchemeCtx _ = error "attempted to increment the scheme context of a non-scheme/context predicaton"
 
 --Determine whether a formula is a simple predication with a polyadic variable head
-psolVarHead :: PolyadicallySOL a -> Bool
-psolVarHead ((SOPApp SOApp) :!$: x) = psolVarHead x
+psolVarHead :: Typeable a => PolyadicallySOL a -> Bool
+psolVarHead ((SOPApp SOApp) :!$: v) = 
+        case preview _polyVarIdxSOL v of
+               Just _ -> True
+               Nothing -> False
 psolVarHead (x :!$: _) = psolVarHead x
-psolVarHead (SOPVar _ _) = True
 psolVarHead _ = False
 
 msolVarHead :: MonadicallySOL a -> Bool
@@ -307,6 +313,9 @@ msolVarHead ((SOMApp SOApp) :!$: x) = msolVarHead x
 msolVarHead (x :!$: _) = msolVarHead x
 msolVarHead (SOMVar _) = True
 msolVarHead _ = False
+
+_polyVarIdxSOL :: Typeable ret => Prism' (PolyadicallySOL (Form ret)) (String, Arity Int Bool ret)
+_polyVarIdxSOL = _polyVarIdx
 
 {--
 the idea would be for lambda abstraction to work like this:

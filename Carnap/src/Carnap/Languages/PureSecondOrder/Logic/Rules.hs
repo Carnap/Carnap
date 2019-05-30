@@ -49,8 +49,8 @@ instance CopulaSchema MSOLSequentCalc where
 
 -- TODO unify the different kinds of eigenconstrants 
 eigenConstraint c suc ant sub
-    | c' `occursIn` ant' = Just $ "The constant " ++ show c' ++ " appears not to be fresh, given that this line relies on " ++ show ant'
-    | c' `occursIn` suc' = Just $ "The constant " ++ show c' ++ " appears not to be fresh in the other premise " ++ show suc'
+    | c' `occurs` ant' = Just $ "The constant " ++ show c' ++ " appears not to be fresh, given that this line relies on " ++ show ant'
+    | c' `occurs` suc' = Just $ "The constant " ++ show c' ++ " appears not to be fresh in the other premise " ++ show suc'
     | otherwise = case fromSequent c' of 
                           SOC _ -> Nothing
                           SOT _ -> Nothing
@@ -58,11 +58,10 @@ eigenConstraint c suc ant sub
     where c' = applySub sub c
           ant' = applySub sub ant
           suc' = applySub sub suc
-          occursIn x y = not $ (subst x (static 0) y) =* y
 
 sopredicateEigenConstraint c suc ant sub
-    | c' `occursIn` ant' = Just $ "The predicate " ++ show c' ++ " appears not to be fresh, given that this line relies on " ++ show ant'
-    | c' `occursIn` suc' = Just $ "The predicate " ++ show c' ++ " appears not to be fresh in the other premise " ++ show suc'
+    | c' `occurs` ant' = Just $ "The predicate " ++ show c' ++ " appears not to be fresh, given that this line relies on " ++ show ant'
+    | c' `occurs` suc' = Just $ "The predicate " ++ show c' ++ " appears not to be fresh in the other premise " ++ show suc'
     | otherwise = if msolVarHead (fromSequent c') 
                       then Nothing
                       else Just $ "the expression " ++ show c' ++ " appears not to be a variable predication."
@@ -72,11 +71,10 @@ sopredicateEigenConstraint c suc ant sub
           suc' = applySub sub suc
           -- XXX : this is not the most efficient way of checking
           -- imaginable.
-          occursIn x y = not $ (subst x (static 0) y) =* y
 
 psopredicateEigenConstraint c suc ant sub
-    | c' `occursIn` ant' = Just $ "The predicate " ++ show c' ++ " appears not to be fresh, given that this line relies on " ++ show ant'
-    | c' `occursIn` suc' = Just $ "The predicate " ++ show c' ++ " appears not to be fresh in the other premise " ++ show suc'
+    | c' `occurs` ant' = Just $ "The predicate " ++ show c' ++ " appears not to be fresh, given that this line relies on " ++ show ant'
+    | c' `occurs` suc' = Just $ "The predicate " ++ show c' ++ " appears not to be fresh in the other premise " ++ show suc'
     | otherwise = if psolVarHead (fromSequent c') 
                       then Nothing
                       else Just $ "the expression " ++ show c' ++ " appears not to be a predicate."
@@ -84,7 +82,6 @@ psopredicateEigenConstraint c suc ant sub
     where c'   = applySub sub c
           ant' = applySub sub ant
           suc' = applySub sub suc
-          occursIn x y = not $ (subst x (static 0) y) =* y
 
 -------------------------------------------
 --  1.2 Polyadically Second Order Logic  --
@@ -240,7 +237,7 @@ seqsomv :: String -> MSOLSequentCalc (Form (Int -> Bool))
 seqsomv x = liftToSequent $ SOMVar x
 
 seqsopv :: Typeable t => String -> Arity Int Bool t -> PSOLSequentCalc (Form t)
-seqsopv x a = liftToSequent $ SOPVar x a
+seqsopv x a = polyVar x a
 
 -- | produces a schematic formula abstracting n terms from a given formula
 lambdaScheme :: Int -> PolyadicallySOL (Form Bool)
@@ -258,14 +255,16 @@ lambdaScheme n = ls' n n
 -- | produces a universal instantiation premise instance for n-adic variables
 universalScheme :: Int -> PolyadicallySOL (Form Bool)
 universalScheme n = iterate incQuant (SOPQuant (SOPAll ('V' : show n) (AZero)) :!$: LLam (theNthCtx)) !! n
-    where theNthCtx x = subBoundVar (SOPVar ('X' : show n) AZero) x (iterate incVarCtx initCtx !! n)
-          initCtx = SOPCtx 1 AZero :!$: (SOPVar ('V' : show n) AZero)
+    where theNthCtx x = subBoundVar (polyVar ('X' : show n) initArity) x (iterate incVarCtx initCtx !! n)
+          initCtx = SOPCtx 1 AZero :!$: polyVar ('V' : show n) initArity
+          initArity = AZero :: Arity Int Bool Bool
 
 -- | produces a existential generalization conclusion instance for n-adic variables
 existentialScheme :: Int -> PolyadicallySOL (Form Bool)
 existentialScheme n = iterate incQuant (SOPQuant (SOPSome ('V' : show n) (AZero)) :!$: LLam (theNthCtx)) !! n
-    where theNthCtx x = subBoundVar (SOPVar ('X' : show n) AZero) x (iterate incVarCtx initCtx !! n)
-          initCtx = SOPCtx 1 AZero :!$: (SOPVar ('V' : show n) AZero)
+    where theNthCtx x = subBoundVar (polyVar ('X' : show n) initArity) x (iterate incVarCtx initCtx !! n)
+          initCtx = SOPCtx 1 initArity:!$: polyVar ('V' : show n) initArity
+          initArity = AZero :: Arity Int Bool Bool
 
 -- | produces a universal instantiation conclusion instance for n-adic variables
 schematicContextScheme :: Int -> PolyadicallySOL (Form Bool)

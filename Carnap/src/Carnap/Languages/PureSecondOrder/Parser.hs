@@ -9,6 +9,7 @@ import Carnap.Languages.PureSecondOrder.Syntax
 import Carnap.Languages.ClassicalSequent.Parser
 import Carnap.Languages.Util.LanguageClasses (StandardVarLanguage, BooleanLanguage, IndexedPropLanguage(..), QuantLanguage(..), PolyadicPredicateLanguage(..), TypedLambdaLanguage(..))
 import Carnap.Languages.Util.GenericParsers
+import Carnap.Languages.Util.LanguageClasses
 import Text.Parsec
 import Text.Parsec.Expr
 import Data.List (elemIndex)
@@ -67,11 +68,12 @@ quantifiedSentenceParserPSOL formulaParser = do
         let vstring = v : show arityInt
         spaces
         f <- formulaParser
-        let bf x = subBoundVar (SOPVar vstring AZero) x f
+        let bf x = subBoundVar (polyVar vstring initArity) x f
         let initForm = if s `elem` "A∀" 
-                           then SOPQuant (SOPAll vstring AZero) :!$: (LLam bf) 
-                           else SOPQuant (SOPSome vstring AZero) :!$: (LLam bf)
+                           then SOPQuant (SOPAll vstring initArity) :!$: (LLam bf) 
+                           else SOPQuant (SOPSome vstring initArity) :!$: (LLam bf)
         return $ (iterate incQuant initForm !! arityInt)
+    where initArity = AZero :: Arity Int Bool Bool
 
 parseSimpleFOTerm :: Parsec String u (MonadicallySOL (Term Int))
 parseSimpleFOTerm = try (parseConstant "abcde") <|> parseFreeVar
@@ -133,7 +135,7 @@ psolPredicationParser parseForm parseTerm = try (parsePredicateSymbol "FGHIJKLMN
                            terms <- lookAhead (sepBy1 parseTerm (char ',') <* char ')') -- XXX don't really need to parse terms here.
                            if length terms /= n then unexpected "wrong number of arguments to second order variable"
                                                 else return ()
-                           parseVarTerms (SOPVar (v : show n) AOne)
+                           parseVarTerms (polyVar (v : show n) AOne)
           parseVarTerms v = do t <- parseTerm
                                let partialPred = (SOPApp SOApp :!$: v :!$: t)
                                (char ',' *> parseVarTerms (incVar partialPred))
