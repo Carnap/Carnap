@@ -119,6 +119,8 @@ instance FirstOrderLex PolySOLQuant
 
 type OpenSOLLex a = FOL.PureLexiconFOL :|: Abstractors SOLambda :|: Applicators SOApplicator :|: a
 
+type OpenSOL a = FixLang (OpenSOLLex a)
+
 instance PrismPropLex (OpenSOLLex a) Bool
 instance PrismSchematicProp (OpenSOLLex a) Bool
 instance PrismIndexedConstant (OpenSOLLex a) Int
@@ -136,9 +138,7 @@ instance PrismGenericQuant (OpenSOLLex a) Term Form Bool Int
 --2. Second Order Languages
 --------------------------------------------------------
 
-pattern SOConst c a     = FX (Lx1 (Lx1 (Lx3 (Function c a))))
 pattern SOTau c a       = FX (Lx1 (Lx1 (Lx5 (Function c a))))
-pattern SOC n           = SOConst (Constant n) AZero
 pattern SOT n           = SOTau (SFunc AZero n) AZero
 pattern SOQuant q       = FX (Lx1 (Lx1 (Lx2 (Bind q))))
 pattern SOVar c a       = FX (Lx1 (Lx1 (Lx4 (Function c a))))
@@ -152,12 +152,9 @@ pattern SOF n a1 a2     = SOFunc (Func a1 n) a2
 pattern SOMQuant q      = FX (Lx5 (Bind q))
 pattern SOMAbs a        = FX (Lx2 (Abstract a))
 pattern SOMApp a        = FX (Lx3 (Apply a))
-pattern SOAbstract l f  = SOMAbs l :!$: LLam f
-pattern SOMBind q f     = SOMQuant q :!$: LLam f
 pattern SOPQuant q      = FX (Lx5 (Bind q))
 pattern SOPAbs a        = FX (Lx2 (Abstract a))
 pattern SOPApp a        = FX (Lx3 (Apply a))
-pattern SOPBind q f     = SOPQuant q :!$: LLam f
 
 --------------------------------------------------------
 --2.1 Monadic Second Order Logic

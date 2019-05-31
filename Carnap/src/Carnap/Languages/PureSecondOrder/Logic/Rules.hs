@@ -12,7 +12,7 @@ import Carnap.Languages.Util.LanguageClasses
 import Carnap.Languages.PureSecondOrder.Parser
 import Data.List (intercalate)
 import Data.Typeable (Typeable)
-
+import Control.Lens (preview)
 
 ---------------------------------------
 --  1.Second Order Sequent Calculus  --
@@ -51,10 +51,10 @@ instance CopulaSchema MSOLSequentCalc where
 eigenConstraint c suc ant sub
     | c' `occurs` ant' = Just $ "The constant " ++ show c' ++ " appears not to be fresh, given that this line relies on " ++ show ant'
     | c' `occurs` suc' = Just $ "The constant " ++ show c' ++ " appears not to be fresh in the other premise " ++ show suc'
-    | otherwise = case fromSequent c' of 
-                          SOC _ -> Nothing
+    | otherwise = case fromSequent (applySub sub c) of 
                           SOT _ -> Nothing
-                          _ -> Just $ "The term " ++ show c' ++ " is not a constant"
+                          _ | not . null $ preview _constIdx (applySub sub c) -> Nothing
+                            | otherwise ->  Just $ "The term " ++ show c' ++ " is not a constant"
     where c' = applySub sub c
           ant' = applySub sub ant
           suc' = applySub sub suc
