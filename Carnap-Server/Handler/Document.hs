@@ -4,7 +4,7 @@ import Import
 import System.Directory (doesFileExist,getDirectoryContents)
 import Yesod.Markdown
 import Data.List (nub)
-import Text.Pandoc (writerExtensions,writerWrapText, WrapOption(..), readerExtensions, Extension(..), extensionsFromList)
+import Text.Pandoc (writerExtensions,writerWrapText, WrapOption(..), readerExtensions)
 import Text.Pandoc.Walk (walkM, walk)
 import Text.Julius (juliusFile,rawJS)
 import Util.Data
@@ -156,27 +156,13 @@ getDocumentDownloadR ident title = do userdir <- getUserDir ident
 
 fileToHtml path = do Markdown md <- markdownFromFile path
                      let md' = Markdown (filter ((/=) '\r') md) --remove carrage returns from dos files
-                     case parseMarkdown yesodDefaultReaderOptions { readerExtensions = exts } md' of
+                     case parseMarkdown yesodDefaultReaderOptions { readerExtensions = carnapPandocExtensions } md' of
                          Right pd -> do let pd' = walk allFilters pd
-                                        return $ Right $ writePandocTrusted yesodDefaultWriterOptions { writerExtensions = exts, writerWrapText=WrapPreserve } pd'
+                                        return $ Right $ writePandocTrusted yesodDefaultWriterOptions 
+                                                         { writerExtensions = carnapPandocExtensions
+                                                         , writerWrapText=WrapPreserve } pd'
                          Left e -> return $ Left e
     where allFilters = (makeSynCheckers . makeProofChecker . makeTranslate . makeTruthTables)
-          exts = extensionsFromList 
-                    [ Ext_raw_html
-                    , Ext_markdown_in_html_blocks
-                    , Ext_auto_identifiers
-                    , Ext_tex_math_dollars
-                    , Ext_fenced_code_blocks
-                    , Ext_backtick_code_blocks
-                    , Ext_line_blocks
-                    , Ext_fancy_lists
-                    , Ext_definition_lists
-                    , Ext_example_lists
-                    , Ext_simple_tables
-                    , Ext_multiline_tables
-                    , Ext_footnotes
-                    , Ext_fenced_code_attributes
-                    ]
 
 getUserDir ident = do master <- getYesod
                       return $ (appDataRoot $ appSettings master) </> "documents" </> unpack ident

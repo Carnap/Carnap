@@ -5,6 +5,7 @@ import Carnap.Languages.PurePropositional.Syntax (PureForm)
 import Data.List ((!!), elemIndex)
 import Data.Time
 import Text.Read (readMaybe)
+import Text.Pandoc (Extension(..), extensionsFromList)
 import Carnap.GHCJS.SharedTypes(ProblemSource(..),ProblemType(..),ProblemData(..), SomeRule(..))
 import qualified Data.IntMap as IM (fromList)
 
@@ -45,9 +46,25 @@ chapterOfProblemSet = IM.fromList
     , (17,12)
     ]
 
+carnapPandocExtensions = extensionsFromList 
+        [ Ext_raw_html
+        , Ext_markdown_in_html_blocks
+        , Ext_auto_identifiers
+        , Ext_tex_math_dollars
+        , Ext_fenced_code_blocks
+        , Ext_backtick_code_blocks
+        , Ext_line_blocks
+        , Ext_fancy_lists
+        , Ext_definition_lists
+        , Ext_example_lists
+        , Ext_simple_tables
+        , Ext_multiline_tables
+        , Ext_footnotes
+        , Ext_fenced_code_attributes
+        ]
+
 toTime :: String -> UTCTime
 toTime = parseTimeOrError True defaultTimeLocale "%l:%M %P %Z, %b %e, %Y"
-
 
 displayProblemData (DerivationData t _)  = t
 displayProblemData (DerivationDataOpts t _ _)  = t
