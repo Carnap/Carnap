@@ -1,5 +1,5 @@
 {-# LANGUAGE FlexibleContexts, TypeSynonymInstances, FlexibleInstances, MultiParamTypeClasses, UndecidableInstances #-}
-module Carnap.Languages.PureFirstOrder.Util (propForm, boundVarOf, toPNF, pnfEquiv, toAllPNF, toDenex, stepDenex, skolemize) where
+module Carnap.Languages.PureFirstOrder.Util (propForm, boundVarOf, toPNF, pnfEquiv, toAllPNF, toDenex, stepDenex, skolemize, orientEquations, comparableMatricies) where
 
 import Carnap.Core.Data.Classes
 import Carnap.Core.Unification.Unification
@@ -40,6 +40,11 @@ toPNF = canonical . rewrite stepPNF
 toDenex = canonical . rewrite (stepDenex . rebuild)
 
 toAllPNF = map canonical . rewriteM nonDeterministicStepPNF
+
+orientEquations :: FixLang PureLexiconFOL (Form Bool) -> FixLang PureLexiconFOL (Form Bool)
+orientEquations = transform $ binaryOpPrism _termEq' %~ (\(t1, t2) -> if show t1 < show t2 then (t1, t2) else (t2, t1))
+    where _termEq' :: Prism' (FixLang PureLexiconFOL (Term Int -> Term Int -> Form Bool)) ()
+          _termEq' = _termEq
 
 stepDenex :: FixLang PureLexiconFOL (Form Bool) -> Maybe (FixLang PureLexiconFOL (Form Bool))
 stepDenex h = const Nothing
@@ -169,7 +174,7 @@ existentialDepth = const 0 & outside (unaryOpPrismOn _some') .~ (\(v, LLam f) ->
                     => Prism' (FixLang (OpenLexiconPFOL b) ((Term Int -> Form Bool) -> Form Bool)) String
           _some' = _some
 
-comparableMatricies f g = recur f g (map show [1 ..])
+comparableMatricies f g = recur f g (map ((\x -> 'x':x) . show) $ [1 ..])
     where recur f g vars | qdepth f > 0 = do (f',g') <- removeBlock f g vars
                                              recur f' g' (drop (qdepth f) vars)
           recur f g v = [(f,g)]
@@ -179,7 +184,7 @@ pnfEquiv f g = any (== True) theCases
     where theCases = do f' <- toAllPNF f
                         g' <- toAllPNF g
                         (f'',g'') <- comparableMatricies f' g'
-                        return $ isValid (propForm (f'' .<=>. g''))
+                        return $ isValid (propForm . orientEquations $ f'' .<=>. g'')
 
 skolemize f = evalState (toRaw f) ([], maxIndex + 1)
     where toRaw :: FixLang PureLexiconFOL (Form Bool) -> State ([String],Int) (FixLang PureLexiconFOL (Form Bool))
@@ -212,7 +217,6 @@ skolemize f = evalState (toRaw f) ([], maxIndex + 1)
           _funcIdx' :: Typeable ret => Prism' (FixLang PureLexiconFOL ret) (Int, Arity (Term Int) (Term Int) ret)
           _funcIdx' = _funcIdx
 
-
 removeBlock f g vars | udf > 0 && udf == udg = revar f g (take udf vars) (take udf vars)
                      | edf > 0 && edf == edg = revar f g (take edf vars) (take edf vars)
                      | otherwise = []
@@ -220,10 +224,11 @@ removeBlock f g vars | udf > 0 && udf == udg = revar f g (take udf vars) (take u
           udg = universalDepth g
           edf = existentialDepth f
           edg = existentialDepth g
-          revar f g [] _ = [(f,g)]
-          revar f g fvars gvars = do fv <- fvars
-                                     gv <- gvars
-                                     revar (instantiate f (foVar fv)) (instantiate g (foVar gv)) (fvars \\ [fv]) (gvars \\ [gv])
+          --revar f g [] _ = [(f,g)]
+          revar f g fvars gvars = do fvp <- permutations fvars
+                                     return (instantiateSeq f fvp, instantiateSeq g gvars)
+          instantiateSeq f (v:vs) = instantiateSeq (instantiate f (foVar v)) vs
+          instantiateSeq f [] = f
 
 --- XXX: This shouldn't require so many annotations. Doesn't need them in
 --GHCi 8.4.2, and probably not in GHC 8.4.2 generally.
