@@ -9,7 +9,7 @@ module Lib
     folSeqAndLabel, folFormAndLabel, message, IOGoal(..), updateWithValue,
     submissionSource, assignmentKey, initialize, popUpWith, spinnerSVG,
     doneButton, questionButton, exclaimButton, expandButton, buttonWrapper,
-    maybeNodeListToList, trySubmit, ofFOLSys ) where
+    maybeNodeListToList, trySubmit, inOpts, unform, rewriteWith ) where
 
 import Data.Aeson
 import Data.Maybe (catMaybes)
@@ -57,7 +57,7 @@ import GHCJS.DOM.EventM
 import GHCJS.DOM.EventTarget
 import GHCJS.DOM.EventTargetClosures (EventName(..))
 import Carnap.GHCJS.SharedTypes
-import Carnap.Core.Data.Types (Form)
+import Carnap.Core.Data.Types (Form(..))
 import Carnap.Calculi.NaturalDeduction.Syntax (NaturalDeductionCalc(..))
 import Carnap.Languages.PurePropositional.Syntax (PureForm, PurePropLexicon)
 import Carnap.Languages.PurePropositional.Logic
@@ -69,6 +69,23 @@ import Carnap.Languages.PurePropositional.Parser (purePropFormulaParser, standar
 --------------------------------------------------------
 --1. Utility Functions
 --------------------------------------------------------
+
+---------------------------
+--  1.0 Simple Patterns  --
+---------------------------
+
+
+inOpts :: String -> M.Map String String -> Bool
+inOpts s opts = s `elem` optList
+    where optList = case M.lookup "options" opts of Just s -> words s; Nothing -> []
+          
+unform :: Form Bool -> Bool
+unform (Form b) = b
+
+rewriteWith :: M.Map String String -> String -> String
+rewriteWith opts = case M.lookup "system" opts >>= ofPropSys ndNotation of
+                        Just f -> f
+                        Nothing -> id
 
 --------------------------------------------------------
 --1.1 Events

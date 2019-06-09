@@ -20,6 +20,7 @@ library
                      , Carnap.GHCJS.Action.ProofCheck
                      , Carnap.GHCJS.Action.Translate
                      , Carnap.GHCJS.Action.TruthTable
+                     , Carnap.GHCJS.Action.CounterModel
                      , Carnap.GHCJS.Action.AcceptJSON
   if impl(ghcjs)
       build-depends:       base >= 4.7 && < 5
@@ -28,6 +29,8 @@ library
                          , lens
                          , ghcjs-dom == 0.2.4.0
                          , containers
+                         , diagrams-core
+                         , diagrams-svg
                          , mtl
                          , parsec
                          , Carnap
@@ -45,6 +48,8 @@ library
                          , lens
                          , ghcjs-dom == 0.2.4.0
                          , containers
+                         , diagrams-core
+                         , diagrams-svg
                          , mtl
                          , parsec
                          , Carnap

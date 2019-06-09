@@ -1,6 +1,6 @@
 {-#LANGUAGE ImpredicativeTypes, FlexibleContexts, RankNTypes,TypeOperators, ScopedTypeVariables, GADTs, MultiParamTypeClasses #-}
 
-module Carnap.Core.Data.Util (scopeHeight, equalizeTypes, incArity, checkChildren, saferSubst,
+module Carnap.Core.Data.Util (scopeHeight, equalizeTypes, incArity, withArity, checkChildren, saferSubst,
 mapover, maphead, (:~:)(Refl), Buds(..), Blossoms(..), bloom, sbloom, grow, rebuild, castToProxy, castTo) where
 
 --this module defines utility functions and typeclasses for manipulating
@@ -65,6 +65,19 @@ incArity f ((head :: FixLang l (t -> b -> a)) :!$: (tail :: FixLang l t)) =
 incArity f head = f head
 
 {-|
+This function applies a suitably polymorphic function to the head of an
+expression along with its arity, assuiming it has an arity.
+-}
+withArity :: (Typeable a, Typeable ret', Typeable i) => 
+    (forall ret. Arity i o ret -> FixLang l ret -> b) 
+    -> Arity i o ret' -> FixLang l a -> Maybe b
+withArity f a (head :!$: tail) = withArity f (ASucc a) head 
+withArity f (a :: Arity i o ret') (phi :: FixLang l a) = 
+        case eqT :: Maybe (a :~: ret') of
+            Nothing -> Nothing
+            Just Refl -> Just (f a phi)
+
+{-|
 this function checks to see if phi occurs as a child of psi
 -}
 checkChildren :: (Eq s, Plated s) => s -> s -> Bool
@@ -106,7 +119,6 @@ scopeHeight _ = 0
 This function will rebuild a given linguistic expression, removing any
 closures that might be present in the open formulas
 -}
-
 rebuild :: ( FirstOrder (FixLang f) 
            , MonadVar (FixLang f) (State Int)
            , StaticVar (FixLang f)) => FixLang f a -> FixLang f a

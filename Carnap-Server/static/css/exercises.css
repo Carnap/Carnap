@@ -96,19 +96,26 @@
 
 /* FIXME this need to be narrower, and to wrap, for mobile. */
 
-[data-carnap-type="synchecker"], [data-carnap-type="translate"] { line-height:1; }
+[data-carnap-type="synchecker"], 
+[data-carnap-type="translate"] 
+{ line-height:1; }
 
-[data-carnap-type="synchecker"] > .buttonWrapper, [data-carnap-type="translate"] > .buttonWrapper {
+[data-carnap-type="synchecker"] > .buttonWrapper,
+[data-carnap-type="translate"] > .buttonWrapper {
     display:inline-block;
 }
 
-[data-carnap-type="synchecker"] > .buttonWrapper button, [data-carnap-type="translate"] > .buttonWrapper button {
+[data-carnap-type="synchecker"] > .buttonWrapper button,
+[data-carnap-type="translate"] > .buttonWrapper button {
     display:inline-block;
     border-left:none;
     bottom:0px;
 }
 
-[data-carnap-type="synchecker"] > input, [data-carnap-type="truthtable"] > .input, [data-carnap-type="translate"] > input {
+[data-carnap-type="synchecker"] > input,
+[data-carnap-type="truthtable"] > .input,
+[data-carnap-type="countermodeler"] > .input,
+[data-carnap-type="translate"] > input {
     font-size:14px;
     height:2em;
     padding:5px;
@@ -122,7 +129,10 @@
     width:400px;
 }
 
-[data-carnap-type="translate"] .output { 
+[data-carnap-type="translate"] .output,
+[data-carnap-type="truthtable"] .output,
+[data-carnap-type="countermodeler"] .output
+{ 
     position:relative;
     border:1px solid #A9B7C0;
     padding:10px;
@@ -432,21 +442,14 @@ body[data-carnap-type="proofchecker"] .buttonWrapper {
     text-align:center;
 }
 
-[data-carnap-type="truthtable"] .output { 
-    position:relative;
-    border:1px solid #A9B7C0;
-    background:white;
-    font-size:14pt;
-    top:-1px;
-}
-
 [data-carnap-type="truthtable"] table{
     width:auto;
     border-collapse:collapse;
     margin:20px;
 }
 
-[data-carnap-type="truthtable"] .buttonWrapper {
+[data-carnap-type="truthtable"] .buttonWrapper,
+[data-carnap-type="countermodeler"] .buttonWrapper {
     position:relative;
     top:-2px;
 }
@@ -477,6 +480,11 @@ body[data-carnap-type="proofchecker"] .buttonWrapper {
 .ttthSep, .tttdSep {
     border-left:1px solid black;
     padding:2px;
+}
+
+[data-carnap-type="countermodeler"] label {
+    display: flex;
+    align-items:center;
 }
 
 [data-carnap-options~="fonts"] textarea,[data-carnap-options~="fonts"] .output, [data-carnap-options~="fonts"] input, [data-carnap-options~="fonts"] .goal {

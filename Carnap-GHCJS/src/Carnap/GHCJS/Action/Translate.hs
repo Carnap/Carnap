@@ -5,6 +5,7 @@ import Lib
 import Carnap.Calculi.NaturalDeduction.Syntax (NaturalDeductionCalc(..))
 import Carnap.Core.Data.Types (FixLang)
 import Carnap.Languages.PurePropositional.Logic (ofPropSys)
+import Carnap.Languages.PureFirstOrder.Logic (ofFOLSys)
 import Carnap.Languages.PureFirstOrder.Parser (folFormulaParser)
 import Carnap.Languages.PureFirstOrder.Util (toDenex, pnfEquiv)
 import Carnap.Languages.PurePropositional.Parser (purePropFormulaParser,standardLetters)
@@ -89,7 +90,6 @@ tryTrans parser equiv o ref f = onEnter $
                                 writeIORef ref True
                                 setInnerHTML o (Just "Success!")
             | otherwise = message "Not quite. Try again!"
-
 
 submitTrans opts i ref l f parser checker = 
         do isFinished <- liftIO $ readIORef ref

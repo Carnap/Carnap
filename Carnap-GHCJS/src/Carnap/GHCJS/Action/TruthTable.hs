@@ -532,21 +532,9 @@ stringToTruthValue :: Maybe String -> Maybe Bool
 stringToTruthValue (Just [c]) = charToTruthValue c
 stringToTruthValue _   = Nothing 
 
-rewriteWith :: Map String String -> String -> String
-rewriteWith opts = case M.lookup "system" opts >>= ofPropSys ndNotation of
-                        Just f -> f
-                        Nothing -> id
-
 mcOf :: (Schematizable (f (FixLang f)), CopulaSchema (FixLang f)) => FixLang f a -> String
 mcOf (h :!$: t) = mcOf h
 mcOf h = show h
-
-inOpts :: String -> Map String String -> Bool
-inOpts s opts = s `elem` optList
-    where optList = case M.lookup "options" opts of Just s -> words s; Nothing -> []
-          
-unform :: Form Bool -> Bool
-unform (Form b) = b
 
 makeGivens :: Map String String -> Maybe Int -> [Either Char (FixLang f a)] -> [[Maybe Bool]]
 makeGivens opts mrows orderedChildren = case M.lookup "content" opts of 
