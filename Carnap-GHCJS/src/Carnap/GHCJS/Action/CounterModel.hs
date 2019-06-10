@@ -2,7 +2,7 @@
 module Carnap.GHCJS.Action.CounterModel (counterModelAction) where
 
 import Lib
-import Carnap.Core.Data.Types (Form(..), Term(..), Arity(..), Fix(..))
+import Carnap.Core.Data.Types (Form(..), Term(..), Arity(..), Fix(..), arityInt)
 import Carnap.Core.Data.Classes
 import Carnap.Core.Data.Util
 import Carnap.Languages.Util.LanguageClasses
@@ -86,19 +86,13 @@ createSimpleCounterModeler w fs (i,o) ref bw opts =
            theModel <- initModel
            Just domainLabel <- createElement w (Just "label")
            setInnerHTML domainLabel (Just "Domain: ")
-           Just domainInput <- createElement w (Just "input")
-           appendChild domainLabel (Just domainInput)
+           (domainInput,domainWarn) <- parsingInput w things (domainUpdater theModel)
+           mapM (appendChild domainLabel . Just) [domainInput, domainWarn]
            appendChild o (Just domainLabel)
-           updateDomain <- newListener $ (domainUpdater theModel)
-           addListener domainInput keyUp updateDomain False
            appendRelationInputs w o fs theModel
            return (formsInModel theModel)
-    where domainUpdater mdl = onEnter $ 
-            do Just t <- target :: EventM HTMLInputElement KeyboardEvent (Maybe HTMLInputElement)
-               Just ival <- getValue t :: EventM HTMLInputElement KeyboardEvent (Maybe String)
-               case parse (many1 digit `sepEndBy1` (spaces *> char ',' <* spaces)) "" $ ival of
-                   Left e -> message $ "couldn't parse domain specification:" ++ show e
-                   Right l -> liftIO $ modifyIORef mdl (\m -> m { monadicPart = (monadicPart m) {domain = map (Term . read) l}})
+    where things = parseInt `sepEndBy1` (spaces *> char ',' <* spaces)
+          domainUpdater mdl ts = liftIO $ modifyIORef mdl (\m -> m { monadicPart = (monadicPart m) {domain = ts}})
           formsInModel mdl = do
               m <- readIORef mdl
               return $ all (unform . satisfies m) fs
@@ -115,35 +109,42 @@ appendRelationInputs w o fs mdl = do let sfs = nub . concatMap (toListOf cosmos)
 
 getRelationInput :: Document -> PureFOLForm -> IORef PolyadicModel -> IO (Maybe Element)
 getRelationInput w f mdl = case addRelation f mdl [] of
-                             Nothing -> return Nothing
-                             Just _ -> do Just relationLabel <- createElement w (Just "label")
-                                          setInnerHTML relationLabel (Just $ show (blankTerms f) ++ ": ")
-                                          (relationInput,parseWarn) <- parsingInput w tuples relationUpdater
-                                          appendChild relationLabel (Just relationInput)
-                                          appendChild relationLabel (Just parseWarn)
-                                          return $ Just relationLabel
-    where parseint = Term . read <$> many1 digit
-          tuple = char '[' *> (parseint `sepEndBy` (spaces *> char ',' <* spaces)) <* char ']'
-          tuples = tuple `sepEndBy` (spaces *> char ',' <* spaces)
+                             Just io -> do 
+                                 mlen <- io
+                                 case mlen of 
+                                      Nothing -> return Nothing
+                                      Just n -> do
+                                         Just relationLabel <- createElement w (Just "label")
+                                         setInnerHTML relationLabel (Just $ show (blankTerms f) ++ ": ")
+                                         (relationInput,parseWarn) <- parsingInput w (ntuples n) relationUpdater
+                                         appendChild relationLabel (Just relationInput)
+                                         appendChild relationLabel (Just parseWarn)
+                                         return $ Just relationLabel
+                             _ -> return Nothing
+    where tuple = char '[' *> (parseInt `sepEndBy` (spaces *> char ',' <* spaces)) <* char ']'
+          ntuple n = do t <- tuple; if length t == n then return t else fail ("This extension should be made only of " ++ show n ++ "-tuples")
+          ntuples n = ntuple n `sepEndBy` (spaces *> char ',' <* spaces)
           relationUpdater ext = case addRelation f mdl ext of
-                                     Just io -> liftIO io
+                                     Just io -> liftIO io >> return ()
                                      Nothing -> return ()
 
 blankTerms :: PureFOLForm -> PureFOLForm
 blankTerms f = set termsOf (foVar "_") f
 
-addRelation :: PureFOLForm -> IORef PolyadicModel -> [[Thing]] -> Maybe (IO ())
+addRelation :: PureFOLForm -> IORef PolyadicModel -> [[Thing]] -> Maybe (IO (Maybe Int))
 addRelation f mdl extension = withArity onRel (AZero :: Arity (Term Int) (Form Bool) (Form Bool)) f
     where _predIdx' :: Typeable ret =>  Prism' (PureLanguageFOL ret) (Int, Arity (Term Int) (Form Bool) ret)
           _predIdx' = _predIdx
-          onRel :: Arity (Term Int) (Form Bool) ret -> PureLanguageFOL ret -> IO ()
+          onRel :: Arity (Term Int) (Form Bool) ret -> PureLanguageFOL ret -> IO (Maybe Int)
           onRel _ f@(Fx _) = case preview _predIdx' f of 
-                 Nothing -> return ()
-                 Just (idx,a) -> modifyIORef mdl $ \m -> m
+                 Nothing -> return Nothing
+                 Just (idx,a) -> do
+                     modifyIORef mdl $ \m -> m
                         { relation = \a' n -> if n == idx && show a == show a'
                             then toRelation extension a'
                             else relation m a' n
                         }
+                     return $ Just (arityInt a)
                                     
 
 initModel :: IO (IORef PolyadicModel)
@@ -167,8 +168,9 @@ parsingInput w parser event = do Just theInput <- createElement w (Just "input")
     where doesParse warn = do 
              Just t <- target :: EventM HTMLInputElement KeyboardEvent (Maybe HTMLInputElement)
              Just ival <- getValue t :: EventM HTMLInputElement KeyboardEvent (Maybe String)
-             case parse parser "" ival of
-                 Left e -> liftIO $ setInnerHTML warn "⚠" --XXX: Consider a tooltip here.
+             case parse (parser <* eof) "" ival of
+                 Left e -> liftIO $ setInnerHTML warn (Just "⚠") --XXX: Consider a tooltip here.
                  Right x -> (liftIO $ setInnerHTML warn (Just "")) >> event x
 
-
+parseInt :: Parsec String () Thing
+parseInt = Term . read <$> many1 digit
