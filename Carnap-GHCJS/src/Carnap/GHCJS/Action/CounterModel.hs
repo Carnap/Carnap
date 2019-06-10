@@ -90,6 +90,8 @@ createSimpleCounterModeler w fs (i,o) ref bw opts =
            mapM (appendChild domainLabel . Just) [domainInput, domainWarn]
            appendChild o (Just domainLabel)
            appendRelationInputs w o fs theModel
+           let ts = concatMap (toListOf termsOf) fs
+           appendConstantInputs w o ts theModel
            return (formsInModel theModel)
     where things = parseInt `sepEndBy1` (spaces *> char ',' <* spaces)
           domainUpdater mdl ts = liftIO $ modifyIORef mdl (\m -> m { monadicPart = (monadicPart m) {domain = ts}})
@@ -107,8 +109,32 @@ appendRelationInputs w o fs mdl = do let sfs = nub . concatMap (toListOf cosmos)
                                         Nothing -> return Nothing
                                         Just input -> appendChild o (Just input)
 
+appendConstantInputs :: Document -> Element -> [PureFOLTerm] -> IORef PolyadicModel -> IO ()
+appendConstantInputs w o ts mdl = do let sts = nub . concatMap (toListOf cosmos) $ ts
+                                     mapM_ appendConstantInput sts
+    where appendConstantInput t = do minput <- getConstInput w t mdl
+                                     case minput of 
+                                        Nothing -> return Nothing
+                                        Just input -> appendChild o (Just input)
+
+getConstInput :: Document -> PureFOLTerm -> IORef PolyadicModel -> IO (Maybe Element)
+getConstInput w t mdl = case addConstant t mdl (Term 0) of
+                            Nothing -> return Nothing
+                            Just _ -> do
+                                 Just constLabel <- createElement w (Just "label")
+                                 setInnerHTML constLabel (Just $ show t ++ ": ")
+                                 (constInput,parseWarn) <- parsingInput w parseInt constUpdater
+                                 appendChild constLabel (Just constInput)
+                                 appendChild constLabel (Just parseWarn)
+                                 return $ Just constLabel
+    where constUpdater ext = case addConstant t mdl ext of
+                                 Just io -> liftIO io
+                                 Nothing -> return ()
+
+
 getRelationInput :: Document -> PureFOLForm -> IORef PolyadicModel -> IO (Maybe Element)
 getRelationInput w f mdl = case addRelation f mdl [] of
+                             Nothing -> return Nothing
                              Just io -> do 
                                  mlen <- io
                                  case mlen of 
@@ -120,7 +146,6 @@ getRelationInput w f mdl = case addRelation f mdl [] of
                                          appendChild relationLabel (Just relationInput)
                                          appendChild relationLabel (Just parseWarn)
                                          return $ Just relationLabel
-                             _ -> return Nothing
     where tuple = char '[' *> (parseInt `sepEndBy` (spaces *> char ',' <* spaces)) <* char ']'
           ntuple n = do t <- tuple; if length t == n then return t else fail ("This extension should be made only of " ++ show n ++ "-tuples")
           ntuples n = ntuple n `sepEndBy` (spaces *> char ',' <* spaces)
@@ -145,6 +170,14 @@ addRelation f mdl extension = withArity onRel (AZero :: Arity (Term Int) (Form B
                             else relation m a' n
                         }
                      return $ Just (arityInt a)
+
+addConstant :: PureFOLTerm-> IORef PolyadicModel -> Thing -> Maybe (IO ())
+addConstant t mdl extension = case preview _constIdx t of
+                                  Nothing -> Nothing
+                                  Just idx -> Just $ modifyIORef mdl $ \m -> m
+                                        { monadicPart = (monadicPart m) 
+                                            { name = \n -> if n == idx then extension else name (monadicPart m) n }
+                                        }
                                     
 
 initModel :: IO (IORef PolyadicModel)
