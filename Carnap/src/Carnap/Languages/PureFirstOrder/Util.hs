@@ -1,5 +1,5 @@
 {-# LANGUAGE FlexibleContexts, TypeSynonymInstances, FlexibleInstances, MultiParamTypeClasses, UndecidableInstances #-}
-module Carnap.Languages.PureFirstOrder.Util (propForm, boundVarOf, toPNF, pnfEquiv, toAllPNF, toDenex, stepDenex, skolemize, orientEquations, comparableMatricies) where
+module Carnap.Languages.PureFirstOrder.Util (propForm, boundVarOf, toPNF, pnfEquiv, toAllPNF, toDenex, stepDenex, skolemize, orientEquations, comparableMatricies, universalClosure) where
 
 import Carnap.Core.Data.Classes
 import Carnap.Core.Unification.Unification
@@ -229,6 +229,12 @@ removeBlock f g vars | udf > 0 && udf == udg = revar f g (take udf vars) (take u
                                      return (instantiateSeq f fvp, instantiateSeq g gvars)
           instantiateSeq f (v:vs) = instantiateSeq (instantiate f (foVar v)) vs
           instantiateSeq f [] = f
+
+universalClosure f = case varsOf f of
+                         [] -> f
+                         ls -> foldl bindIn f ls 
+    where bindIn f v = lall (show v) $ \x -> subBoundVar v x f
+          varsOf f = map foVar $ toListOf (termsOf . cosmos . _varLabel) f
 
 --- XXX: This shouldn't require so many annotations. Doesn't need them in
 --GHCi 8.4.2, and probably not in GHC 8.4.2 generally.

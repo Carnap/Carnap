@@ -9,6 +9,7 @@ import Carnap.Languages.Util.LanguageClasses
 import Carnap.Languages.PureFirstOrder.Logic 
 import Carnap.Languages.PureFirstOrder.Semantics
 import Carnap.Languages.PureFirstOrder.Syntax
+import Carnap.Languages.PureFirstOrder.Util (universalClosure)
 import Carnap.Calculi.NaturalDeduction.Syntax (NaturalDeductionCalc(..))
 import GHCJS.DOM.Types
 import GHCJS.DOM.Element
@@ -97,7 +98,7 @@ createSimpleCounterModeler w fs (i,o) ref bw opts =
           domainUpdater mdl ts = liftIO $ modifyIORef mdl (\m -> m { monadicPart = (monadicPart m) {domain = ts}})
           formsInModel mdl = do
               m <- readIORef mdl
-              return $ all (unform . satisfies m) fs
+              return $ all (unform . satisfies m) (map universalClosure fs)
 
 createValidityCounterModeler = undefined
 
