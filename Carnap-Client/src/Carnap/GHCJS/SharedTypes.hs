@@ -37,12 +37,15 @@ type TruthTable = [[Maybe Bool]]
 
 type Options = [(String,String)]
 
+type CounterModelFields = [(String,String)]
+
 data ProblemData = DerivationData Text Text 
                  | DerivationDataOpts Text Text Options
                  | TruthTableData Text TruthTable
                  | TruthTableDataOpts Text TruthTable Options
                  | TranslationData Text Text
                  | TranslationDataOpts Text Text Options
+                 | CounterModelDataOpts Text CounterModelFields Options
                  | ProblemContent Text
     deriving (Show, Read, Eq, Generic)
 

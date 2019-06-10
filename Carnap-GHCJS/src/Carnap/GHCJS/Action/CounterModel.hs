@@ -22,6 +22,7 @@ import GHCJS.DOM.HTMLInputElement (HTMLInputElement, getValue, setValue)
 import Text.Parsec
 import Data.Typeable (Typeable)
 import Data.List (nub)
+import Data.Maybe (catMaybes)
 import Data.Map as M (Map, lookup, foldr, insert, fromList, toList)
 import Data.IORef (newIORef, IORef, readIORef,writeIORef, modifyIORef)
 import Data.List (intercalate)
@@ -67,7 +68,8 @@ activateCounterModeler w (Just (i,o,opts)) = do
                                   let l = Prelude.drop 7 s
                                   bt1 <- doneButton w "Submit"
                                   appendChild bw (Just bt1)
-                                  submit <- newListener $ submitCounterModel opts ref check (show f) l
+                                  fields <- catMaybes <$> getListOfElementsByTag o "label"
+                                  submit <- newListener $ submitCounterModel opts ref check fields (show f) l
                                   addListener bt1 click submit False                
                               _ -> return ()
                           if "nocheck" `inOpts` opts then return () 
@@ -90,10 +92,18 @@ activateCounterModeler w (Just (i,o,opts)) = do
                                                          liftIO $ writeIORef ref False
                                                          setAttribute i "class" "input incompleteCM"
 
-submitCounterModel:: Map String String -> IORef Bool ->  IO Bool -> String -> String -> EventM HTMLInputElement e ()
-submitCounterModel opts ref check s l = do isDone <- liftIO $ readIORef ref
-                                           if isDone then trySubmit CounterModel opts l (ProblemContent (pack s)) True
-                                                     else message "not yet finished (do you still need to check your answer?)"
+submitCounterModel:: Map String String -> IORef Bool ->  IO Bool -> [Element] -> String -> String -> EventM HTMLInputElement e ()
+submitCounterModel opts ref check fields s l = do isDone <- liftIO $ readIORef ref
+                                                  if isDone 
+                                                      then trySubmit CounterModel opts l (ProblemContent (pack s)) True
+                                                      else if "exam" `inOpts` opts
+                                                           then do correct <- liftIO check
+                                                                   if correct
+                                                                       then trySubmit CounterModel opts l (ProblemContent (pack s)) True
+                                                                       else do extracted <- liftIO $ mapM extractField fields
+                                                                               trySubmit CounterModel opts l (CounterModelDataOpts (pack s) extracted (M.toList opts)) False
+                                                           else message "not yet finished (do you still need to check your answer?)"
+
 
 createSimpleCounterModeler :: Document -> [PureFOLForm] -> (Element,Element)
     -> Element -> Map String String 
@@ -137,6 +147,7 @@ prepareModelUI :: Document -> [PureFOLForm] -> (Element,Element) -> IORef Polyad
 prepareModelUI w fs (i,o) mdl bw opts = do
            Just domainLabel <- createElement w (Just "label")
            setInnerHTML domainLabel (Just "Domain: ")
+           setAttribute domainLabel "for" "Domain"
            (domainInput,domainWarn) <- parsingInput w things domainUpdater
            mapM (appendChild domainLabel . Just) [domainInput, domainWarn]
            appendChild o (Just domainLabel)
@@ -160,6 +171,7 @@ getConstInput w t mdl = case addConstant t mdl (Term 0) of
                             Just _ -> do
                                  Just constLabel <- createElement w (Just "label")
                                  setInnerHTML constLabel (Just $ show t ++ ": ")
+                                 setAttribute constLabel "for" (show t)
                                  (constInput,parseWarn) <- parsingInput w parseInt constUpdater
                                  appendChild constLabel (Just constInput)
                                  appendChild constLabel (Just parseWarn)
@@ -179,6 +191,7 @@ getRelationInput w f mdl = case addRelation f mdl [] of
                                       Just n -> do
                                          Just relationLabel <- createElement w (Just "label")
                                          setInnerHTML relationLabel (Just $ show (blankTerms f) ++ ": ")
+                                         setAttribute relationLabel "for" (show (blankTerms f))
                                          (relationInput,parseWarn) <- parsingInput w (ntuples n) relationUpdater
                                          appendChild relationLabel (Just relationInput)
                                          appendChild relationLabel (Just parseWarn)
@@ -241,6 +254,12 @@ parsingInput w parser event = do Just theInput <- createElement w (Just "input")
              case parse (parser <* eof) "" ival of
                  Left e -> liftIO $ setInnerHTML warn (Just "⚠") --XXX: Consider a tooltip here.
                  Right x -> (liftIO $ setInnerHTML warn (Just "")) >> event x
+
+extractField :: Element -> IO (String, String)
+extractField field = do Just fieldName <- getAttribute field "for"
+                        [Just input] <- getListOfElementsByTag field "input"
+                        Just ival <- getValue (castToHTMLInputElement input)
+                        return (fieldName,ival)
 
 parseInt :: Parsec String () Thing
 parseInt = Term . read <$> many1 digit

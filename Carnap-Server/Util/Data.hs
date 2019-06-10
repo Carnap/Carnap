@@ -70,6 +70,10 @@ toTime = parseTimeOrError True defaultTimeLocale "%l:%M %P %Z, %b %e, %Y"
 displayProblemData (DerivationData t _)  = t
 displayProblemData (DerivationDataOpts t _ _)  = t
 displayProblemData (TruthTableData t _)  = t
+displayProblemData (CounterModelDataOpts t _ _) = maybe t pack ms
+    where ms = (show <$> (readMaybe s :: Maybe PureFOLForm))
+               `mplus` (intercalate "," . map show <$> (readMaybe s :: Maybe [PureFOLForm]))
+          s = unpack t
 displayProblemData (TruthTableDataOpts t _ _) = maybe t pack ms
     where ms = (show <$> (readMaybe s :: Maybe PureForm))
                `mplus` (intercalate "," . map show <$> (readMaybe s :: Maybe [PureForm]))

@@ -7,6 +7,7 @@ import Data.List (nub)
 import Text.Read (readMaybe)
 import Yesod.Form.Bootstrap3
 import Carnap.Languages.PurePropositional.Syntax
+import Carnap.Languages.PureFirstOrder.Syntax
 import Carnap.GHCJS.SharedTypes
 import Carnap.GHCJS.SharedFunctions (simpleCipher)
 
@@ -129,6 +130,20 @@ renderProblem (Entity key val) = do
                                     `mplus` case readMaybe c :: Maybe ([PureForm],[PureForm]) of
                                                       Just (fs,gs) -> Just $ intercalate "," (map show fs) ++ ":" ++ intercalate "," (map show gs)
                                                       Nothing -> Just c --If it's a sequent, it'll show properly anyway.
+
+            (CounterModel, CounterModelDataOpts content cm opts) -> template $
+                [whamlet|
+                    <div data-carnap-type="countermodeler"
+                         data-carnap-countermodelertype="#{cmtype}"
+                         data-carnap-submission="none"
+                         data-carnap-options="immutable nocheck nocounterexample"
+                         data-carnap-goal="#{formatContent (unpack content)}">
+                |]
+                where cmtype = case lookup "countermodelertype" (M.fromList opts) of Just s -> s; Nothing -> checkvalidity content
+                      formatContent c = case maybeString of Just s -> s; Nothing -> ""
+                        where maybeString = (show <$> (readMaybe c :: Maybe PureForm))
+                                    `mplus` (intercalate "," . map show <$> (readMaybe c :: Maybe [PureFOLForm]))
+                                    `mplus` Just c --If it's a sequent, it'll show properly anyway.
 
             (Translation, TranslationData content trans) -> template $
                 [whamlet|
