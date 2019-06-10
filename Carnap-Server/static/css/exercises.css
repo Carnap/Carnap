@@ -473,7 +473,8 @@ body[data-carnap-type="proofchecker"] .buttonWrapper {
     text-align:center;
 }
 
-[data-carnap-type="truthtable"] .completeTT {
+[data-carnap-type="truthtable"] .completeTT, 
+[data-carnap-type="countermodeler"] .completeCM {
     background: #CCFFCC;
 }
 
@@ -486,6 +487,7 @@ body[data-carnap-type="proofchecker"] .buttonWrapper {
     display: flex;
     align-items:center;
 }
+
 
 [data-carnap-options~="fonts"] textarea,[data-carnap-options~="fonts"] .output, [data-carnap-options~="fonts"] input, [data-carnap-options~="fonts"] .goal {
     text-rendering: optimizeLegibility;

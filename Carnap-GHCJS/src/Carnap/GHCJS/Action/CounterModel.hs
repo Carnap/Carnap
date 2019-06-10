@@ -10,6 +10,7 @@ import Carnap.Languages.PureFirstOrder.Logic
 import Carnap.Languages.PureFirstOrder.Semantics
 import Carnap.Languages.PureFirstOrder.Syntax
 import Carnap.Languages.PureFirstOrder.Util (universalClosure)
+import Carnap.Languages.ClassicalSequent.Syntax
 import Carnap.Calculi.NaturalDeduction.Syntax (NaturalDeductionCalc(..))
 import GHCJS.DOM.Types
 import GHCJS.DOM.Element
@@ -58,7 +59,7 @@ activateCounterModeler w (Just (i,o,opts)) = do
                       Right f -> do
                           ref <- newIORef False
                           bw <- buttonWrapper w
-                          check <- cmbuilder w f (i,o) ref bw opts
+                          check <- cmbuilder w f (i,o) bw opts
                           if "nocheck" `inOpts` opts then return () 
                           else do
                               bt2 <- questionButton w "Check"
@@ -79,28 +80,33 @@ activateCounterModeler w (Just (i,o,opts)) = do
                                                          liftIO $ writeIORef ref False
                                                          setAttribute i "class" "input incompleteCM"
 
-createSimpleCounterModeler :: Document -> [PureFOLForm] -> (Element,Element) -> IORef Bool 
+createSimpleCounterModeler :: Document -> [PureFOLForm] -> (Element,Element)
     -> Element -> Map String String 
     -> IO (IO Bool)
-createSimpleCounterModeler w fs (i,o) ref bw opts = 
+createSimpleCounterModeler w fs (i,o) bw opts = 
         do setInnerHTML i (Just . intercalate ", " . map (rewriteWith opts . show) $ fs)
            theModel <- initModel
-           Just domainLabel <- createElement w (Just "label")
-           setInnerHTML domainLabel (Just "Domain: ")
-           (domainInput,domainWarn) <- parsingInput w things (domainUpdater theModel)
-           mapM (appendChild domainLabel . Just) [domainInput, domainWarn]
-           appendChild o (Just domainLabel)
-           appendRelationInputs w o fs theModel
-           let ts = concatMap (toListOf termsOf) fs
-           appendConstantInputs w o ts theModel
+           prepareModelUI w fs (i,o) theModel bw opts
            return (formsInModel theModel)
-    where things = parseInt `sepEndBy1` (spaces *> char ',' <* spaces)
-          domainUpdater mdl ts = liftIO $ modifyIORef mdl (\m -> m { monadicPart = (monadicPart m) {domain = ts}})
-          formsInModel mdl = do
+    where formsInModel mdl = do
               m <- readIORef mdl
               return $ all (unform . satisfies m) (map universalClosure fs)
 
-createValidityCounterModeler = undefined
+createValidityCounterModeler :: Document -> ClassicalSequentOver PureLexiconFOL (Sequent (Form Bool)) -> (Element,Element) 
+    -> Element -> Map String String 
+    -> IO (IO Bool)
+createValidityCounterModeler w seq@(antced :|-: succed) (i,o) bw opts = 
+        do setInnerHTML i (Just . show $ seq)
+           theModel <- initModel
+           prepareModelUI w fs (i,o) theModel bw opts
+           return (formsInModel theModel)
+    where ants = map fromSequent $ toListOf concretes antced
+          sucs = map fromSequent $ toListOf concretes succed
+          fs = ants ++ sucs
+          formsInModel mdl = do
+              m <- readIORef mdl
+              return $ all (unform . satisfies m) (map universalClosure ants) 
+                    && all (not . unform . satisfies m) (map universalClosure ants)
 
 appendRelationInputs :: Document -> Element -> [PureFOLForm] -> IORef PolyadicModel -> IO ()
 appendRelationInputs w o fs mdl = do let sfs = nub . concatMap (toListOf cosmos) $ fs
@@ -109,6 +115,21 @@ appendRelationInputs w o fs mdl = do let sfs = nub . concatMap (toListOf cosmos)
                                      case minput of 
                                         Nothing -> return Nothing
                                         Just input -> appendChild o (Just input)
+
+prepareModelUI :: Document -> [PureFOLForm] -> (Element,Element) -> IORef PolyadicModel
+    -> Element -> Map String String 
+    -> IO ()
+prepareModelUI w fs (i,o) mdl bw opts = do
+           Just domainLabel <- createElement w (Just "label")
+           setInnerHTML domainLabel (Just "Domain: ")
+           (domainInput,domainWarn) <- parsingInput w things domainUpdater
+           mapM (appendChild domainLabel . Just) [domainInput, domainWarn]
+           appendChild o (Just domainLabel)
+           appendRelationInputs w o fs mdl
+           let ts = concatMap (toListOf termsOf) fs
+           appendConstantInputs w o ts mdl
+    where domainUpdater ts = liftIO $ modifyIORef mdl (\m -> m { monadicPart = (monadicPart m) {domain = ts}})
+          things = parseInt `sepEndBy1` (spaces *> char ',' <* spaces)
 
 appendConstantInputs :: Document -> Element -> [PureFOLTerm] -> IORef PolyadicModel -> IO ()
 appendConstantInputs w o ts mdl = do let sts = nub . concatMap (toListOf cosmos) $ ts
