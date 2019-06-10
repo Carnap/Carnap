@@ -2,6 +2,7 @@ module Util.Data where
 
 import ClassyPrelude.Yesod
 import Carnap.Languages.PurePropositional.Syntax (PureForm)
+import Carnap.Languages.PureFirstOrder.Syntax (PureFOLForm)
 import Data.List ((!!), elemIndex)
 import Data.Time
 import Text.Read (readMaybe)
@@ -84,4 +85,6 @@ displayProblemData (ProblemContent t) = maybe t pack ms
                `mplus` case readMaybe s :: Maybe ([PureForm],[PureForm]) of
                                  Just (fs,gs) -> Just $ intercalate "," (map show fs) ++ " || " ++ intercalate "," (map show gs)
                                  Nothing -> Nothing
+               `mplus` (show <$> (readMaybe s :: Maybe PureFOLForm))
+               `mplus` (intercalate "," . map show <$> (readMaybe s :: Maybe [PureFOLForm]))
           s = unpack t

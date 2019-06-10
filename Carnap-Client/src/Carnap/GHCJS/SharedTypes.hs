@@ -26,7 +26,7 @@ instance ToJSON ProblemSource
 
 instance FromJSON ProblemSource
 
-data ProblemType = Derivation | TruthTable | Translation | SyntaxCheck
+data ProblemType = Derivation | TruthTable | Translation | SyntaxCheck | CounterModel
     deriving (Show, Read, Eq, Generic)
 
 instance ToJSON ProblemType

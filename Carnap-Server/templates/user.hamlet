@@ -35,6 +35,10 @@
         <div.card>
             <div.card-header> Truth Tables
             #{tttable}
+    $if (not $ null cmsubs)
+        <div.card>
+            <div.card-header> Countermodels
+            #{cmtable}
     <h3> Your Profile
     ^{personalInfo ud (Just course)}
     $if (not (null derivedRulesOld) || not (null derivedRulesNew))

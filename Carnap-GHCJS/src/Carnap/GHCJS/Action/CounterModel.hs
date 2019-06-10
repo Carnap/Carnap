@@ -2,6 +2,7 @@
 module Carnap.GHCJS.Action.CounterModel (counterModelAction) where
 
 import Lib
+import Carnap.GHCJS.SharedTypes
 import Carnap.Core.Data.Types (Form(..), Term(..), Arity(..), Fix(..), arityInt)
 import Carnap.Core.Data.Classes
 import Carnap.Core.Data.Util
@@ -24,6 +25,7 @@ import Data.List (nub)
 import Data.Map as M (Map, lookup, foldr, insert, fromList, toList)
 import Data.IORef (newIORef, IORef, readIORef,writeIORef, modifyIORef)
 import Data.List (intercalate)
+import Data.Text (pack)
 import Control.Monad.IO.Class (liftIO)
 import Control.Lens
 
@@ -60,6 +62,14 @@ activateCounterModeler w (Just (i,o,opts)) = do
                           ref <- newIORef False
                           bw <- buttonWrapper w
                           check <- cmbuilder w f (i,o) bw opts
+                          case M.lookup "submission" opts of
+                              Just s | take 7 s == "saveAs:" -> do
+                                  let l = Prelude.drop 7 s
+                                  bt1 <- doneButton w "Submit"
+                                  appendChild bw (Just bt1)
+                                  submit <- newListener $ submitCounterModel opts ref check (show f) l
+                                  addListener bt1 click submit False                
+                              _ -> return ()
                           if "nocheck" `inOpts` opts then return () 
                           else do
                               bt2 <- questionButton w "Check"
@@ -79,6 +89,11 @@ activateCounterModeler w (Just (i,o,opts)) = do
                                                  else do message "Something's not quite right"
                                                          liftIO $ writeIORef ref False
                                                          setAttribute i "class" "input incompleteCM"
+
+submitCounterModel:: Map String String -> IORef Bool ->  IO Bool -> String -> String -> EventM HTMLInputElement e ()
+submitCounterModel opts ref check s l = do isDone <- liftIO $ readIORef ref
+                                           if isDone then trySubmit CounterModel opts l (ProblemContent (pack s)) True
+                                                     else message "not yet finished (do you still need to check your answer?)"
 
 createSimpleCounterModeler :: Document -> [PureFOLForm] -> (Element,Element)
     -> Element -> Map String String 
