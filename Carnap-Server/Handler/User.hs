@@ -196,7 +196,7 @@ problemsToTable course textbookproblems asmd asDocs submissions = do
                                 <th>Exercise
                                 <th>Content
                                 <th>Submitted
-                                <th>Points Earned>
+                                <th>Points Earned
                                 <tbody>
                                     $forall row <- rows
                                         ^{row}|]
