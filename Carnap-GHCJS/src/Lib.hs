@@ -159,7 +159,6 @@ getListOfElementsByClass elt c = getElementsByClassName elt c >>= maybeNodeListT
 getListOfElementsByTag :: IsElement self => self -> String -> IO [Maybe Element]
 getListOfElementsByTag elt c = getElementsByTagName elt c >>= maybeNodeListToList
 
-
 getListOfElementsByCarnapType :: IsElement self => self -> String -> IO [Maybe Element]
 getListOfElementsByCarnapType elt s = querySelectorAll elt ("[data-carnap-type=" ++ s ++ "]") >>= maybeNodeListToList
 

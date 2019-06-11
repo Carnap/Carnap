@@ -138,6 +138,7 @@ renderProblem (Entity key val) = do
                          data-carnap-submission="none"
                          data-carnap-options="immutable nocheck nocounterexample"
                          data-carnap-goal="#{formatContent (unpack content)}">
+                         #{renderCM cm}
                 |]
                 where cmtype = case lookup "countermodelertype" (M.fromList opts) of Just s -> s; Nothing -> checkvalidity content
                       formatContent c = case maybeString of Just s -> s; Nothing -> ""
@@ -172,6 +173,8 @@ renderProblem (Entity key val) = do
           toval (Just False) = 'F'
           toval Nothing = '-'
           checkvalidity ct = if '⊢' `elem` ct then "validity" :: String else "simple" :: String
+          renderCMPair (l,v) = l ++ ":" ++ v
+          renderCM cm = unlines . map renderCMPair $ cm
 
 updateSubmissionForm extra ident uid = renderBootstrap3 BootstrapBasicForm $ (,,)
             <$> areq hiddenField "" (Just ident)

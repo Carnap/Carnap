@@ -1,4 +1,4 @@
-{-#LANGUAGE FlexibleContexts #-}
+{-#LANGUAGE FlexibleContexts, RankNTypes #-}
 module Carnap.GHCJS.Action.CounterModel (counterModelAction) where
 
 import Lib
@@ -15,7 +15,9 @@ import Carnap.Languages.ClassicalSequent.Syntax
 import Carnap.Calculi.NaturalDeduction.Syntax (NaturalDeductionCalc(..))
 import GHCJS.DOM.Types
 import GHCJS.DOM.Element
-import GHCJS.DOM.Document (createElement, getDefaultView)
+import GHCJS.DOM.Event (initEvent)
+import GHCJS.DOM.EventTarget (dispatchEvent)
+import GHCJS.DOM.Document (createElement, createEvent, getDefaultView)
 import GHCJS.DOM.Node (appendChild, getParentNode, insertBefore)
 import GHCJS.DOM.EventM (newListener, addListener, EventM, target)
 import GHCJS.DOM.HTMLInputElement (HTMLInputElement, getValue, setValue)
@@ -27,6 +29,7 @@ import Data.Map as M (Map, lookup, foldr, insert, fromList, toList)
 import Data.IORef (newIORef, IORef, readIORef,writeIORef, modifyIORef)
 import Data.List (intercalate)
 import Data.Text (pack)
+import Control.Monad (filterM)
 import Control.Monad.IO.Class (liftIO)
 import Control.Lens
 
@@ -63,12 +66,13 @@ activateCounterModeler w (Just (i,o,opts)) = do
                           ref <- newIORef False
                           bw <- buttonWrapper w
                           check <- cmbuilder w f (i,o) bw opts
+                          fields <- catMaybes <$> getListOfElementsByTag o "label"
+                          mapM (setField w fields) (makeGivens opts)
                           case M.lookup "submission" opts of
                               Just s | take 7 s == "saveAs:" -> do
                                   let l = Prelude.drop 7 s
                                   bt1 <- doneButton w "Submit"
                                   appendChild bw (Just bt1)
-                                  fields <- catMaybes <$> getListOfElementsByTag o "label"
                                   submit <- newListener $ submitCounterModel opts ref check fields (show f) l
                                   addListener bt1 click submit False                
                               _ -> return ()
@@ -242,15 +246,18 @@ initModel = newIORef (PolyadicModel
                         }
                      })
 
-parsingInput :: Document -> Parsec String () a -> (a -> EventM HTMLInputElement KeyboardEvent ()) -> IO (Element,Element)
+parsingInput :: Document -> Parsec String () a -> (forall e. IsEvent e => a -> EventM HTMLInputElement e ()) -> IO (Element,Element)
 parsingInput w parser event = do Just theInput <- createElement w (Just "input")
                                  Just theWarning <- createElement w (Just "span")
                                  whenParse <- newListener (doesParse theWarning)
-                                 addListener theInput keyUp whenParse False
+                                 whenParse' <- newListener (doesParse theWarning)
+                                 addListener theInput initialize whenParse False
+                                 addListener theInput keyUp whenParse' False
                                  return (theInput,theWarning)
-    where doesParse warn = do 
-             Just t <- target :: EventM HTMLInputElement KeyboardEvent (Maybe HTMLInputElement)
-             Just ival <- getValue t :: EventM HTMLInputElement KeyboardEvent (Maybe String)
+    where doesParse :: IsEvent e => Element -> EventM HTMLInputElement e ()
+          doesParse warn = do 
+             Just t <- target 
+             Just ival <- getValue t
              case parse (parser <* eof) "" ival of
                  Left e -> liftIO $ setInnerHTML warn (Just "⚠") --XXX: Consider a tooltip here.
                  Right x -> (liftIO $ setInnerHTML warn (Just "")) >> event x
@@ -263,3 +270,23 @@ extractField field = do Just fieldName <- getAttribute field "for"
 
 parseInt :: Parsec String () Thing
 parseInt = Term . read <$> many1 digit
+
+makeGivens :: Map String String -> [(String,String)]
+makeGivens opts = case M.lookup "content" opts of
+                      Nothing -> []
+                      Just t -> map (clean . break (== ':')) . lines $ t
+    where clean (x,y) = (x, tail y)
+
+setField :: Document -> [Element] -> (String,String) -> IO ()
+setField w fields (for,val) = do fors <- mapM (\f -> getAttribute f "for") fields
+                                 let fs = map fst . filter (\f -> snd f == Just for) $ zip fields fors
+                                 case fs of
+                                  [f] -> do inputs <- getListOfElementsByTag f "input"
+                                            case inputs of
+                                                [Just i] -> do setValue (castToHTMLInputElement i) (Just val)
+                                                               Just init <- createEvent w "Event"
+                                                               initEvent init "initialize" True True
+                                                               dispatchEvent i (Just init)
+                                                               return ()
+                                                _ -> print $ "missing or duplicated input for field " ++ for ++ " in countermodel spec"
+                                  _ -> print $ "missing or duplicated field " ++ for ++ "in countermodel spec"
