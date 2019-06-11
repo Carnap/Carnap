@@ -21,6 +21,7 @@ import GHCJS.DOM.Document (createElement, createEvent, getDefaultView)
 import GHCJS.DOM.Node (appendChild, getParentNode, insertBefore)
 import GHCJS.DOM.EventM (newListener, addListener, EventM, target)
 import GHCJS.DOM.HTMLInputElement (HTMLInputElement, getValue, setValue)
+import qualified GHCJS.DOM.HTMLSelectElement as S (getValue, setValue) 
 import Text.Parsec
 import Data.Typeable (Typeable)
 import Data.List (nub)
@@ -137,6 +138,23 @@ createValidityCounterModeler w seq@(antced :|-: succed) (i,o) bw opts =
               return $ all (unform . satisfies m) (map universalClosure ants) 
                     && all (not . unform . satisfies m) (map universalClosure ants)
 
+prepareModelUI :: Document -> [PureFOLForm] -> (Element,Element) -> IORef PolyadicModel
+    -> Element -> Map String String 
+    -> IO ()
+prepareModelUI w fs (i,o) mdl bw opts = do
+           Just domainLabel <- createElement w (Just "label")
+           setInnerHTML domainLabel (Just "Domain: ")
+           (domainInput,domainWarn) <- parsingInput w things domainUpdater
+           setAttribute domainInput "name" "Domain"
+           mapM (appendChild domainLabel . Just) [domainInput, domainWarn]
+           appendChild o (Just domainLabel)
+           appendRelationInputs w o fs mdl
+           appendPropInputs w o fs mdl
+           let ts = concatMap (toListOf termsOf) fs
+           appendConstantInputs w o ts mdl
+    where domainUpdater ts = liftIO $ modifyIORef mdl (\m -> m { monadicPart = (monadicPart m) {domain = ts}})
+          things = parseInt `sepEndBy1` (spaces *> char ',' <* spaces)
+
 appendRelationInputs :: Document -> Element -> [PureFOLForm] -> IORef PolyadicModel -> IO ()
 appendRelationInputs w o fs mdl = do let sfs = nub . concatMap (toListOf cosmos) $ fs
                                      mapM_ appendRelationInput sfs
@@ -144,22 +162,6 @@ appendRelationInputs w o fs mdl = do let sfs = nub . concatMap (toListOf cosmos)
                                      case minput of 
                                         Nothing -> return Nothing
                                         Just input -> appendChild o (Just input)
-
-prepareModelUI :: Document -> [PureFOLForm] -> (Element,Element) -> IORef PolyadicModel
-    -> Element -> Map String String 
-    -> IO ()
-prepareModelUI w fs (i,o) mdl bw opts = do
-           Just domainLabel <- createElement w (Just "label")
-           setInnerHTML domainLabel (Just "Domain: ")
-           setAttribute domainLabel "for" "Domain"
-           (domainInput,domainWarn) <- parsingInput w things domainUpdater
-           mapM (appendChild domainLabel . Just) [domainInput, domainWarn]
-           appendChild o (Just domainLabel)
-           appendRelationInputs w o fs mdl
-           let ts = concatMap (toListOf termsOf) fs
-           appendConstantInputs w o ts mdl
-    where domainUpdater ts = liftIO $ modifyIORef mdl (\m -> m { monadicPart = (monadicPart m) {domain = ts}})
-          things = parseInt `sepEndBy1` (spaces *> char ',' <* spaces)
 
 appendConstantInputs :: Document -> Element -> [PureFOLTerm] -> IORef PolyadicModel -> IO ()
 appendConstantInputs w o ts mdl = do let sts = nub . concatMap (toListOf cosmos) $ ts
@@ -169,14 +171,22 @@ appendConstantInputs w o ts mdl = do let sts = nub . concatMap (toListOf cosmos)
                                         Nothing -> return Nothing
                                         Just input -> appendChild o (Just input)
 
+appendPropInputs :: Document -> Element -> [PureFOLForm] -> IORef PolyadicModel -> IO ()
+appendPropInputs w o fs mdl = do let sfs = nub . concatMap (toListOf cosmos) $ fs
+                                 mapM_ appendPropInput sfs
+    where appendPropInput t = do minput <- getPropInput w t mdl
+                                 case minput of 
+                                    Nothing -> return Nothing
+                                    Just input -> appendChild o (Just input)
+
 getConstInput :: Document -> PureFOLTerm -> IORef PolyadicModel -> IO (Maybe Element)
 getConstInput w t mdl = case addConstant t mdl (Term 0) of
                             Nothing -> return Nothing
                             Just _ -> do
                                  Just constLabel <- createElement w (Just "label")
                                  setInnerHTML constLabel (Just $ show t ++ ": ")
-                                 setAttribute constLabel "for" (show t)
                                  (constInput,parseWarn) <- parsingInput w parseInt constUpdater
+                                 setAttribute constInput "name" (show t)
                                  appendChild constLabel (Just constInput)
                                  appendChild constLabel (Just parseWarn)
                                  return $ Just constLabel
@@ -184,6 +194,31 @@ getConstInput w t mdl = case addConstant t mdl (Term 0) of
                                  Just io -> liftIO io
                                  Nothing -> return ()
 
+getPropInput :: Document -> PureFOLForm -> IORef PolyadicModel -> IO (Maybe Element)
+getPropInput w f mdl = case addProposition f mdl False of
+                            Nothing -> return Nothing
+                            Just _ -> do
+                                 Just propLabel <- createElement w (Just "label")
+                                 setInnerHTML propLabel (Just $ show f ++ ": ")
+                                 [Just propSelect, Just pt ,Just pf] <- mapM (createElement w . Just) ["select","option","option"]
+                                 setInnerHTML pt (Just "True")
+                                 setInnerHTML pf (Just "False")
+                                 setAttribute pf "selected" "selected"
+                                 mapM (appendChild propSelect) [Just pt,Just pf]
+                                 setAttribute propSelect "name" (show f)
+                                 whenChange <- newListener propUpdater
+                                 whenInit <- newListener propUpdater
+                                 addListener propSelect initialize whenInit False
+                                 addListener propSelect change whenChange False
+                                 appendChild propLabel (Just propSelect)
+                                 return $ Just propLabel
+    where propUpdater :: EventM HTMLInputElement Event ()
+          propUpdater = do 
+             Just t <- target
+             sval <- getValue t 
+             case addProposition f mdl (if sval == Just "True" then True else False) of 
+                Just io -> liftIO io
+                Nothing -> return ()
 
 getRelationInput :: Document -> PureFOLForm -> IORef PolyadicModel -> IO (Maybe Element)
 getRelationInput w f mdl = case addRelation f mdl [] of
@@ -195,8 +230,8 @@ getRelationInput w f mdl = case addRelation f mdl [] of
                                       Just n -> do
                                          Just relationLabel <- createElement w (Just "label")
                                          setInnerHTML relationLabel (Just $ show (blankTerms f) ++ ": ")
-                                         setAttribute relationLabel "for" (show (blankTerms f))
                                          (relationInput,parseWarn) <- parsingInput w (ntuples n) relationUpdater
+                                         setAttribute relationInput "name" (show (blankTerms f))
                                          appendChild relationLabel (Just relationInput)
                                          appendChild relationLabel (Just parseWarn)
                                          return $ Just relationLabel
@@ -233,6 +268,13 @@ addConstant t mdl extension = case preview _constIdx t of
                                             { name = \n -> if n == idx then extension else name (monadicPart m) n }
                                         }
                                     
+addProposition :: PureFOLForm -> IORef PolyadicModel -> Bool -> Maybe (IO ())
+addProposition t mdl extension = case preview _propIndex t of
+                                  Nothing -> Nothing
+                                  Just idx -> Just $ modifyIORef mdl $ \m -> m
+                                        { monadicPart = (monadicPart m) 
+                                            { proposition = \n -> if n == idx then Form extension else proposition (monadicPart m) n }
+                                        }
 
 initModel :: IO (IORef PolyadicModel)
 initModel = newIORef (PolyadicModel 
@@ -249,10 +291,10 @@ initModel = newIORef (PolyadicModel
 parsingInput :: Document -> Parsec String () a -> (forall e. IsEvent e => a -> EventM HTMLInputElement e ()) -> IO (Element,Element)
 parsingInput w parser event = do Just theInput <- createElement w (Just "input")
                                  Just theWarning <- createElement w (Just "span")
-                                 whenParse <- newListener (doesParse theWarning)
-                                 whenParse' <- newListener (doesParse theWarning)
-                                 addListener theInput initialize whenParse False
-                                 addListener theInput keyUp whenParse' False
+                                 whenKey <- newListener (doesParse theWarning)
+                                 whenInit <- newListener (doesParse theWarning)
+                                 addListener theInput initialize whenInit False
+                                 addListener theInput keyUp whenKey False
                                  return (theInput,theWarning)
     where doesParse :: IsEvent e => Element -> EventM HTMLInputElement e ()
           doesParse warn = do 
@@ -263,10 +305,17 @@ parsingInput w parser event = do Just theInput <- createElement w (Just "input")
                  Right x -> (liftIO $ setInnerHTML warn (Just "")) >> event x
 
 extractField :: Element -> IO (String, String)
-extractField field = do Just fieldName <- getAttribute field "for"
-                        [Just input] <- getListOfElementsByTag field "input"
-                        Just ival <- getValue (castToHTMLInputElement input)
-                        return (fieldName,ival)
+extractField field = do inputs <- getListOfElementsByTag field "input"
+                        selects <- getListOfElementsByTag field "select"
+                        case (inputs,selects) of
+                            ([Just input],_) -> do 
+                              Just fieldName <- getAttribute input "name"
+                              Just ival <- getValue (castToHTMLInputElement input)
+                              return (fieldName, ival) 
+                            (_,[Just select]) -> do 
+                              Just fieldName <- getAttribute select "name"
+                              Just sval <- S.getValue (castToHTMLSelectElement select)
+                              return (fieldName, sval)
 
 parseInt :: Parsec String () Thing
 parseInt = Term . read <$> many1 digit
@@ -278,15 +327,19 @@ makeGivens opts = case M.lookup "content" opts of
     where clean (x,y) = (x, tail y)
 
 setField :: Document -> [Element] -> (String,String) -> IO ()
-setField w fields (for,val) = do fors <- mapM (\f -> getAttribute f "for") fields
-                                 let fs = map fst . filter (\f -> snd f == Just for) $ zip fields fors
-                                 case fs of
-                                  [f] -> do inputs <- getListOfElementsByTag f "input"
-                                            case inputs of
-                                                [Just i] -> do setValue (castToHTMLInputElement i) (Just val)
-                                                               Just init <- createEvent w "Event"
-                                                               initEvent init "initialize" True True
-                                                               dispatchEvent i (Just init)
-                                                               return ()
-                                                _ -> print $ "missing or duplicated input for field " ++ for ++ " in countermodel spec"
-                                  _ -> print $ "missing or duplicated field " ++ for ++ "in countermodel spec"
+setField w fields (name,val) = do inputs <- concat <$> mapM (\f -> getListOfElementsByTag f "input") fields
+                                  selects <- concat <$> mapM (\f -> getListOfElementsByTag f "select") fields
+                                  names <- mapM (\(Just i) -> getAttribute i "name") (inputs ++ selects)
+                                  let fs = map fst . filter (\f -> snd f == Just name) $ zip (inputs ++ selects) names
+                                  case fs of
+                                   [Just f] -> do tn <- getTagName f
+                                                  case tn of 
+                                                    Just "INPUT" -> setValue (castToHTMLInputElement f) (Just val)
+                                                    Just "SELECT" -> S.setValue (castToHTMLSelectElement f) (Just val)
+                                                    Just s -> print $ "unrecognized tag:" ++ s
+                                                    Nothing -> print "no tagname"
+                                                  Just init <- createEvent w "Event"
+                                                  initEvent init "initialize" True True
+                                                  dispatchEvent f (Just init)
+                                                  return ()
+                                   _ -> print $ "missing or duplicated field " ++ name ++ "in countermodel spec"
