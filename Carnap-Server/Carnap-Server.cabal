@@ -41,6 +41,7 @@ library
                      Filter.ProofCheckers
                      Filter.Translate
                      Filter.TruthTables
+                     Filter.CounterModelers
                      Filter.Diagrams
                      Filter.Util
                      Util.Database

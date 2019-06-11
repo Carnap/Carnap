@@ -12,6 +12,7 @@ import Filter.SynCheckers
 import Filter.ProofCheckers
 import Filter.Translate
 import Filter.TruthTables
+import Filter.CounterModelers
 
 getAssignmentR :: Text -> Handler Html
 getAssignmentR filename = getAssignment filename >>= uncurry returnAssignment
@@ -59,5 +60,4 @@ fileToHtml path = do Markdown md <- markdownFromFile path
                                                         { writerExtensions = carnapPandocExtensions
                                                         , writerWrapText=WrapPreserve } pd'
                          Left e -> return $ Left e
-    where allFilters = (makeSynCheckers . makeProofChecker . makeTranslate . makeTruthTables)
-            
+    where allFilters = (makeSynCheckers . makeProofChecker . makeTranslate . makeTruthTables . makeCounterModelers)

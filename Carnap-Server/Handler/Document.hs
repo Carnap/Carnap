@@ -13,6 +13,7 @@ import Filter.SynCheckers
 import Filter.ProofCheckers
 import Filter.Translate
 import Filter.TruthTables
+import Filter.CounterModelers
 
 getDocumentsR :: Handler Html
 getDocumentsR =  runDB (selectList [] []) >>= documentsList "Index of All Documents"
@@ -162,7 +163,7 @@ fileToHtml path = do Markdown md <- markdownFromFile path
                                                          { writerExtensions = carnapPandocExtensions
                                                          , writerWrapText=WrapPreserve } pd'
                          Left e -> return $ Left e
-    where allFilters = (makeSynCheckers . makeProofChecker . makeTranslate . makeTruthTables)
+    where allFilters = (makeSynCheckers . makeProofChecker . makeTranslate . makeTruthTables . makeCounterModelers)
 
 getUserDir ident = do master <- getYesod
                       return $ (appDataRoot $ appSettings master) </> "documents" </> unpack ident

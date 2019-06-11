@@ -136,7 +136,6 @@ renderProblem (Entity key val) = do
                     <div data-carnap-type="countermodeler"
                          data-carnap-countermodelertype="#{cmtype}"
                          data-carnap-submission="none"
-                         data-carnap-options="immutable nocheck nocounterexample"
                          data-carnap-goal="#{formatContent (unpack content)}">
                          #{renderCM cm}
                 |]
