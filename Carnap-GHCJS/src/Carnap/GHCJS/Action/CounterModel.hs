@@ -26,6 +26,7 @@ import Text.Parsec
 import Data.Typeable (Typeable)
 import Data.List (nub)
 import Data.Maybe (catMaybes)
+import Data.Either (isLeft)
 import Data.Map as M (Map, lookup, foldr, insert, fromList, toList)
 import Data.IORef (newIORef, IORef, readIORef,writeIORef, modifyIORef)
 import Data.List (intercalate)
@@ -81,22 +82,28 @@ activateCounterModeler w (Just (i,o,opts)) = do
                           else do
                               bt2 <- questionButton w "Check"
                               appendChild bw (Just bt2)
-                              checkIt <- newListener $ checkCounterModeler ref check
+                              checkIt <- newListener $ checkCounterModeler ref fields check
                               addListener bt2 click checkIt False                
                           Just par <- getParentNode o
                           appendChild par (Just bw)
                           return ()
                 _ -> print "countermodeler lacks a goal"
 
-          checkCounterModeler ref check = do correct <- liftIO $ check
-                                             liftIO $ writeIORef ref correct
-                                             case correct of 
-                                                Right _ -> do
-                                                    message "Success!"
-                                                    setAttribute i "class" "input completeCM"
-                                                Left err -> do
-                                                    message err
-                                                    setAttribute i "class" "input incompleteCM"
+          checkCounterModeler ref fields check = do correct <- liftIO check
+                                                    validated <- liftIO $ validateModel fields
+                                                    case (correct, validated) of 
+                                                       (Left err,_) -> do
+                                                           liftIO $ writeIORef ref (Left err)
+                                                           message err
+                                                           setAttribute i "class" "input incompleteCM"
+                                                       (_,Left err) -> do
+                                                           liftIO $ writeIORef ref (Left err)
+                                                           message err
+                                                           setAttribute i "class" "input incompleteCM"
+                                                       _ -> do
+                                                           liftIO $ writeIORef ref correct
+                                                           message "Success!"
+                                                           setAttribute i "class" "input completeCM"
 
 submitCounterModel:: Map String String -> IORef (Either String ())->  IO (Either String ())-> [Element] -> String -> String -> EventM HTMLInputElement e ()
 submitCounterModel opts ref check fields s l = do isDone <- liftIO $ readIORef ref
@@ -104,11 +111,11 @@ submitCounterModel opts ref check fields s l = do isDone <- liftIO $ readIORef r
                                                       Right _ -> trySubmit CounterModel opts l (ProblemContent (pack s)) True
                                                       Left err | not ("exam" `inOpts` opts) -> message err
                                                       _ -> do correct <- liftIO check
-                                                              case correct of
-                                                                 Right _ -> trySubmit CounterModel opts l (ProblemContent (pack s)) True
-                                                                 Left _ -> do 
-                                                                      extracted <- liftIO $ mapM extractField fields
-                                                                      trySubmit CounterModel opts l (CounterModelDataOpts (pack s) extracted (M.toList opts)) False
+                                                              validated <- liftIO $ validateModel fields
+                                                              case (correct, validated) of
+                                                                 (Right _, Right _) -> trySubmit CounterModel opts l (ProblemContent (pack s)) True
+                                                                 _ -> do extracted <- liftIO $ mapM extractField fields
+                                                                         trySubmit CounterModel opts l (CounterModelDataOpts (pack s) extracted (M.toList opts)) False
 
 
 createSimpleCounterModeler :: Document -> [PureFOLForm] -> (Element,Element)
@@ -158,6 +165,7 @@ prepareModelUI w fs (i,o) mdl bw opts = do
            setInnerHTML domainLabel (Just "Domain: ")
            (domainInput,domainWarn) <- parsingInput w things domainUpdater
            setAttribute domainInput "name" "Domain"
+           setValue (castToHTMLInputElement domainInput) (Just "0")
            mapM (appendChild domainLabel . Just) [domainInput, domainWarn]
            appendChild o (Just domainLabel)
            appendRelationInputs w o fs mdl
@@ -199,6 +207,7 @@ getConstInput w t mdl = case addConstant t mdl (Term 0) of
                                  setInnerHTML constLabel (Just $ show t ++ ": ")
                                  (constInput,parseWarn) <- parsingInput w parseInt constUpdater
                                  setAttribute constInput "name" (show t)
+                                 setValue (castToHTMLInputElement constInput) (Just "0")
                                  appendChild constLabel (Just constInput)
                                  appendChild constLabel (Just parseWarn)
                                  return $ Just constLabel
@@ -337,6 +346,36 @@ makeGivens opts = case M.lookup "content" opts of
                       Nothing -> []
                       Just t -> map (clean . break (== ':')) . lines $ t
     where clean (x,y) = (x, tail y)
+
+--XXX: a lot of unsafe pattern matching and catMaybe here...
+validateModel :: [Element] -> IO (Either String ())
+validateModel fields = do inputs <- concat <$> mapM (\f -> getListOfElementsByTag f "input") fields
+                          names <- mapM (\(Just i) -> getAttribute i "name") inputs
+                          let [Just domain] = map fst . filter (\f -> snd f == Just "Domain") $ zip inputs names
+                          Just domainString <- getValue (castToHTMLInputElement domain)
+                          case parse (parseInt `sepEndBy1` (spaces *> char ',' <* spaces)) "" domainString of
+                              Left e -> return $ Left $ "Couldn't read domain specification: " ++ show e
+                              Right things -> do
+                                  if null things 
+                                      then return $ Left "The domain cannot be empty"
+                                      else do
+                                          otherStrings <- mapM (getValue . castToHTMLInputElement) (catMaybes inputs)
+                                          let otherContents = zip (map (parse extractor "" . clean) (catMaybes otherStrings)) names
+                                          case filter (isLeft . fst) otherContents of
+                                              (Left err,Just n):_ -> return $ Left $ "Couldn't read specification for " ++ n ++ ": " ++ show err
+                                              [] -> case filter (\(Right ext,_) -> not (ext `subset` things)) otherContents of
+                                                   (_,Just n):_ -> return $ Left $ "The extension of " ++ n ++ " is not contained in the domain."
+                                                   [] -> return $ Right ()
+                       
+    where clean (',':xs) = ' ':clean xs
+          clean ('[':xs) = ' ':clean xs
+          clean (']':xs) = ' ':clean xs
+          clean (y:ys) = y:clean ys
+          clean [] = []
+          extractor = spaces *> (parseInt `sepEndBy` spaces) <* spaces
+          subset (x:xs) y = x `elem` y && xs `subset` y
+          subset [] y = True
+
 
 setField :: Document -> [Element] -> (String,String) -> IO ()
 setField w fields (name,val) = do inputs <- concat <$> mapM (\f -> getListOfElementsByTag f "input") fields
