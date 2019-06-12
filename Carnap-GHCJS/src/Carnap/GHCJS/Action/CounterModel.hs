@@ -64,7 +64,7 @@ activateCounterModeler w (Just (i,o,opts)) = do
                   case parse parser "" g of
                       Left e -> setInnerHTML o (Just $ show e) 
                       Right f -> do
-                          ref <- newIORef False
+                          ref <- newIORef $ Left "Please press submit to check your answer"
                           bw <- buttonWrapper w
                           check <- cmbuilder w f (i,o) bw opts
                           fields <- catMaybes <$> getListOfElementsByTag o "label"
@@ -89,30 +89,31 @@ activateCounterModeler w (Just (i,o,opts)) = do
                 _ -> print "countermodeler lacks a goal"
 
           checkCounterModeler ref check = do correct <- liftIO $ check
-                                             if correct 
-                                                 then do message "Success!"
-                                                         liftIO $ writeIORef ref True
-                                                         setAttribute i "class" "input completeCM"
-                                                 else do message "Something's not quite right"
-                                                         liftIO $ writeIORef ref False
-                                                         setAttribute i "class" "input incompleteCM"
+                                             liftIO $ writeIORef ref correct
+                                             case correct of 
+                                                Right _ -> do
+                                                    message "Success!"
+                                                    setAttribute i "class" "input completeCM"
+                                                Left err -> do
+                                                    message err
+                                                    setAttribute i "class" "input incompleteCM"
 
-submitCounterModel:: Map String String -> IORef Bool ->  IO Bool -> [Element] -> String -> String -> EventM HTMLInputElement e ()
+submitCounterModel:: Map String String -> IORef (Either String ())->  IO (Either String ())-> [Element] -> String -> String -> EventM HTMLInputElement e ()
 submitCounterModel opts ref check fields s l = do isDone <- liftIO $ readIORef ref
-                                                  if isDone 
-                                                      then trySubmit CounterModel opts l (ProblemContent (pack s)) True
-                                                      else if "exam" `inOpts` opts
-                                                           then do correct <- liftIO check
-                                                                   if correct
-                                                                       then trySubmit CounterModel opts l (ProblemContent (pack s)) True
-                                                                       else do extracted <- liftIO $ mapM extractField fields
-                                                                               trySubmit CounterModel opts l (CounterModelDataOpts (pack s) extracted (M.toList opts)) False
-                                                           else message "not yet finished (do you still need to check your answer?)"
+                                                  case isDone of
+                                                      Right _ -> trySubmit CounterModel opts l (ProblemContent (pack s)) True
+                                                      Left err | not ("exam" `inOpts` opts) -> message err
+                                                      _ -> do correct <- liftIO check
+                                                              case correct of
+                                                                 Right _ -> trySubmit CounterModel opts l (ProblemContent (pack s)) True
+                                                                 Left _ -> do 
+                                                                      extracted <- liftIO $ mapM extractField fields
+                                                                      trySubmit CounterModel opts l (CounterModelDataOpts (pack s) extracted (M.toList opts)) False
 
 
 createSimpleCounterModeler :: Document -> [PureFOLForm] -> (Element,Element)
     -> Element -> Map String String 
-    -> IO (IO Bool)
+    -> IO (IO (Either String ()))
 createSimpleCounterModeler w fs (i,o) bw opts = 
         do setInnerHTML i (Just . intercalate ", " . map (rewriteWith opts . show) $ fs)
            theModel <- initModel
@@ -120,11 +121,15 @@ createSimpleCounterModeler w fs (i,o) bw opts =
            return (formsInModel theModel)
     where formsInModel mdl = do
               m <- readIORef mdl
-              return $ all (unform . satisfies m) (map universalClosure fs)
+              let tvs = map (unform . satisfies m . universalClosure) fs
+              if and tvs 
+                  then return $ Right ()
+                  else do let falses = intercalate ", " $ map (show . snd) . filter (not . fst) $ (zip tvs fs)
+                          return $ Left $ "Not all formulas are true. Take another look at: " ++  falses ++ "."
 
 createValidityCounterModeler :: Document -> ClassicalSequentOver PureLexiconFOL (Sequent (Form Bool)) -> (Element,Element) 
     -> Element -> Map String String 
-    -> IO (IO Bool)
+    -> IO (IO (Either String ()))
 createValidityCounterModeler w seq@(antced :|-: succed) (i,o) bw opts = 
         do setInnerHTML i (Just . show $ seq)
            theModel <- initModel
@@ -135,8 +140,15 @@ createValidityCounterModeler w seq@(antced :|-: succed) (i,o) bw opts =
           fs = ants ++ sucs
           formsInModel mdl = do
               m <- readIORef mdl
-              return $ all (unform . satisfies m) (map universalClosure ants) 
-                    && all (not . unform . satisfies m) (map universalClosure ants)
+              let ptvs = map (unform . satisfies m . universalClosure) ants
+                  ctvs = map (unform . satisfies m . universalClosure) sucs
+              if not (and ptvs) 
+                  then do let falses = intercalate ", " $ map (show . snd) . filter (not . fst) $ (zip ptvs ants)
+                          return $ Left $ "not all premises are true. Take another look at: " ++ falses ++ "."
+              else if or ctvs
+                  then do let trues = intercalate ", " $ map (show . snd) . filter fst $ (zip ptvs ants)
+                          return $ Left $ "not all conclusions are false. Take another look at: " ++ trues ++ "."
+              else return $ Right ()
 
 prepareModelUI :: Document -> [PureFOLForm] -> (Element,Element) -> IORef PolyadicModel
     -> Element -> Map String String 
