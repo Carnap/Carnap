@@ -14,6 +14,7 @@ makeCounterModelers x = x
 activate cls extra chunk
     | "Simple" `elem` cls = RawBlock "html" $ template (opts [("countermodelertype","simple")])
     | "Validity" `elem` cls = RawBlock "html" $ template (opts [("countermodelertype","validity")])
+    | "Constraint" `elem` cls = RawBlock "html" $ template (opts [("countermodelertype","constraint")])
     | otherwise = RawBlock "html" "<div>No Matching CounterModeler Type</div>"
     where numof x = takeWhile (/= ' ') x
           contentOf x = dropWhile (== ' ') . dropWhile (/= ' ') $  x
