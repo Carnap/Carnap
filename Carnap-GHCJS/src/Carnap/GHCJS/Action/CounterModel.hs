@@ -195,7 +195,7 @@ prepareModelUI w fs (i,o) mdl bw opts = do
           things = parseInt `sepEndBy1` (spaces *> char ',' <* spaces)
 
 appendRelationInputs :: Document -> Element -> [PureFOLForm] -> IORef PolyadicModel -> IO ()
-appendRelationInputs w o fs mdl = do let sfs = nub . concatMap (toListOf cosmos) $ fs
+appendRelationInputs w o fs mdl = do let sfs = nub . concatMap (map blankTerms . toListOf cosmos) $ fs
                                      mapM_ appendRelationInput sfs
     where appendRelationInput f = do minput <- getRelationInput w f mdl
                                      case minput of 
