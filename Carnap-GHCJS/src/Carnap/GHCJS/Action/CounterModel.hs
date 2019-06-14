@@ -126,14 +126,24 @@ createSimpleCounterModeler w fs (i,o) bw opts =
         do setInnerHTML i (Just . intercalate ", " . map (rewriteWith opts . show) $ fs)
            theModel <- initModel
            prepareModelUI w fs (i,o) theModel bw opts
-           return (formsInModel theModel)
-    where formsInModel mdl = do
+           case M.lookup "counterexample-to" opts of
+               Just "equivalence" -> return (counter theModel equiv)
+               Just "tautology" -> return (counter theModel falsey)
+               Just "inconsistency" -> return (counter theModel truthful)
+               _ -> return (counter theModel truthful)
+    where counter mdl check = do
               m <- readIORef mdl
               let tvs = map (unform . satisfies m . universalClosure) fs
-              if and tvs then return $ Right ()
-              else do 
-                 let falses = intercalate ", " $ map (show . snd) . filter (not . fst) $ (zip tvs fs)
-                 return $ Left $ "Not all formulas are true in this model. Take another look at: " ++  falses ++ "."
+              return $ check tvs
+          truthful tvs | and tvs = Right ()
+                       | otherwise = do let falses = intercalate ", " $ map (show . snd) . filter (not . fst) $ (zip tvs fs)
+                                        Left $ "Not all formulas are true in this model. Take another look at: " ++  falses ++ "."
+          falsey tvs | and (map not tvs) = Right ()
+                     | otherwise = do let trues = intercalate ", " $ map (show . snd) . filter fst $ (zip tvs fs)
+                                      Left $ "Not all formulas are false in this model. Take another look at: " ++  trues ++ "."
+          equiv tvs | and tvs = Left "Not a counterexample to equivalence - all formulas are true in this model."
+                    | and (map not tvs) = Left "Not a counterexample to equivalence - all formulas are false in this model."
+                    | otherwise = Right ()
 
 createConstrainedCounterModeler :: Document -> ([PureFOLForm],[PureFOLForm]) -> (Element,Element)
     -> Element -> Map String String 
@@ -142,16 +152,26 @@ createConstrainedCounterModeler w (cs,fs) (i,o) bw opts =
         do setInnerHTML i (Just . intercalate ", " . map (rewriteWith opts . show) $ fs)
            theModel <- initModel
            prepareModelUI w (cs ++ fs) (i,o) theModel bw opts
-           return (formsInModel theModel)
-    where formsInModel mdl = do
+           case M.lookup "counterexample-to" opts of
+               Just "equivalence" -> return (counter theModel equiv)
+               Just "tautology" -> return (counter theModel falsey)
+               Just "inconsistency" -> return (counter theModel truthful)
+               _ -> return (counter theModel truthful)
+    where counter mdl check = do
               m <- readIORef mdl
               let tvs = map (unform . satisfies m . universalClosure) fs
               let ctvs = map (unform . satisfies m . universalClosure) cs
-              if not (and tvs) then do 
-                 let falses = intercalate ", " $ map (show . snd) . filter (not . fst) $ (zip tvs fs)
-                 return $ Left $ "Not all formulas are true in this model. Take another look at: " ++  falses ++ "."
-              else if not (and ctvs) then return $ Left "Not all the constraints for this problem are satisfied by this model."
-              else return $ Right ()
+              if not (and ctvs) then return $ Left "Not all the constraints for this problem are satisfied by this model."
+                                else return $ check tvs
+          truthful tvs | and tvs = Right ()
+                       | otherwise = do let falses = intercalate ", " $ map (show . snd) . filter (not . fst) $ (zip tvs fs)
+                                        Left $ "Not all formulas are true in this model. Take another look at: " ++  falses ++ "."
+          falsey tvs | and (map not tvs) = Right ()
+                     | otherwise = do let trues = intercalate ", " $ map (show . snd) . filter fst $ (zip tvs fs)
+                                      Left $ "Not all formulas are false in this model. Take another look at: " ++  trues ++ "."
+          equiv tvs | and tvs = Left "Not a counterexample to equivalence - all formulas are true in this model."
+                    | and (map not tvs) = Left "Not a counterexample to equivalence - all formulas are false in this model."
+                    | otherwise = Right ()
 
 createValidityCounterModeler :: Document -> ClassicalSequentOver PureLexiconFOL (Sequent (Form Bool)) -> (Element,Element) 
     -> Element -> Map String String 
@@ -160,21 +180,32 @@ createValidityCounterModeler w seq@(antced :|-: succed) (i,o) bw opts =
         do setInnerHTML i (Just . show $ seq)
            theModel <- initModel
            prepareModelUI w fs (i,o) theModel bw opts
-           return (formsInModel theModel)
+           case M.lookup "counterexample-to" opts of
+               Just "equivalence" -> return (counter theModel equiv)
+               Just "tautology" -> return (counter theModel falsey)
+               Just "validity" -> return (counter theModel falsey)
+               Just "inconsistency" -> return (counter theModel truthful)
+               _ -> return (counter theModel falsey)
     where ants = map fromSequent $ toListOf concretes antced
           sucs = map fromSequent $ toListOf concretes succed
           fs = ants ++ sucs
-          formsInModel mdl = do
+          counter mdl check = do
               m <- readIORef mdl
               let ptvs = map (unform . satisfies m . universalClosure) ants
                   ctvs = map (unform . satisfies m . universalClosure) sucs
               if not (and ptvs) then do 
                  let falses = intercalate ", " $ map (show . snd) . filter (not . fst) $ (zip ptvs ants)
                  return $ Left $ "not all premises are true in this model. Take another look at: " ++ falses ++ "."
-              else if or ctvs then do 
-                 let trues = intercalate ", " $ map (show . snd) . filter fst $ (zip ptvs ants)
-                 return $ Left $ "not all conclusions are false in this model. Take another look at: " ++ trues ++ "."
-              else return $ Right ()
+              else return $ check ctvs
+          truthful tvs | and tvs = Right ()
+                       | otherwise = do let falses = intercalate ", " $ map (show . snd) . filter (not . fst) $ (zip tvs fs)
+                                        Left $ "Not all conclusions are true in this model. Take another look at: " ++  falses ++ "."
+          falsey tvs | and (map not tvs) = Right ()
+                     | otherwise = do let trues = intercalate ", " $ map (show . snd) . filter fst $ (zip tvs fs)
+                                      Left $ "Not all conclusions are false in this model. Take another look at: " ++  trues ++ "."
+          equiv tvs | and tvs = Left "Not a counterexample to equivalence - all conclusions are true in this model."
+                    | and (map not tvs) = Left "Not a counterexample to equivalence - all conclusions are false in this model."
+                    | otherwise = Right ()
 
 prepareModelUI :: Document -> [PureFOLForm] -> (Element,Element) -> IORef PolyadicModel
     -> Element -> Map String String 
