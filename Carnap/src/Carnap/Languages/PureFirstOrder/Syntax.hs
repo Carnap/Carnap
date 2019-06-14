@@ -238,10 +238,10 @@ maxVar t@(Fx _) = case ttype t >>= preview _varLabel >>= readMaybe of
 fogamma :: Int -> ClassicalSequentOver lex (Antecedent (Form Bool))
 fogamma n = GammaV n
 
-termsOf :: BoundVars lex => FirstOrder (FixLang lex) => Traversal' (FixLang lex (Form Bool)) (FixLang lex (Term Int))
+termsOf :: (BoundVars lex, Typeable sem) => FirstOrder (FixLang lex) => Traversal' (FixLang lex sem) (FixLang lex (Term Int))
 termsOf = genChildren
 
-formsOf :: BoundVars lex => FirstOrder (FixLang lex) => Traversal' (FixLang lex (Form Bool)) (FixLang lex (Form Bool))
+formsOf :: (BoundVars lex, Typeable sem) => FirstOrder (FixLang lex) => Traversal' (FixLang lex sem) (FixLang lex (Form Bool))
 formsOf = genChildren
 
 foVar :: StandardVarLanguage (FixLang lex (Term Int))  => String -> FixLang lex (Term Int)
