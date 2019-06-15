@@ -136,10 +136,10 @@ createSimpleCounterModeler w fs (i,o) bw opts =
               let tvs = map (unform . satisfies m . universalClosure) fs
               return $ check tvs
           truthful tvs | and tvs = Right ()
-                       | otherwise = do let falses = intercalate ", " $ map (show . snd) . filter (not . fst) $ (zip tvs fs)
+                       | otherwise = do let falses = intercalate ", " $ map (rewriteWith opts . show . snd) . filter (not . fst) $ (zip tvs fs)
                                         Left $ "Not all formulas are true in this model. Take another look at: " ++  falses ++ "."
           falsey tvs | and (map not tvs) = Right ()
-                     | otherwise = do let trues = intercalate ", " $ map (show . snd) . filter fst $ (zip tvs fs)
+                     | otherwise = do let trues = intercalate ", " $ map (rewriteWith opts . show . snd) . filter fst $ (zip tvs fs)
                                       Left $ "Not all formulas are false in this model. Take another look at: " ++  trues ++ "."
           equiv tvs | and tvs = Left "Not a counterexample to equivalence - all formulas are true in this model."
                     | and (map not tvs) = Left "Not a counterexample to equivalence - all formulas are false in this model."
@@ -164,10 +164,10 @@ createConstrainedCounterModeler w (cs,fs) (i,o) bw opts =
               if not (and ctvs) then return $ Left "Not all the constraints for this problem are satisfied by this model."
                                 else return $ check tvs
           truthful tvs | and tvs = Right ()
-                       | otherwise = do let falses = intercalate ", " $ map (show . snd) . filter (not . fst) $ (zip tvs fs)
+                       | otherwise = do let falses = intercalate ", " $ map (rewriteWith opts . show . snd) . filter (not . fst) $ (zip tvs fs)
                                         Left $ "Not all formulas are true in this model. Take another look at: " ++  falses ++ "."
           falsey tvs | and (map not tvs) = Right ()
-                     | otherwise = do let trues = intercalate ", " $ map (show . snd) . filter fst $ (zip tvs fs)
+                     | otherwise = do let trues = intercalate ", " $ map (rewriteWith opts . show . snd) . filter fst $ (zip tvs fs)
                                       Left $ "Not all formulas are false in this model. Take another look at: " ++  trues ++ "."
           equiv tvs | and tvs = Left "Not a counterexample to equivalence - all formulas are true in this model."
                     | and (map not tvs) = Left "Not a counterexample to equivalence - all formulas are false in this model."
@@ -177,7 +177,7 @@ createValidityCounterModeler :: Document -> ClassicalSequentOver PureLexiconFOL 
     -> Element -> Map String String 
     -> IO (IO (Either String ()))
 createValidityCounterModeler w seq@(antced :|-: succed) (i,o) bw opts = 
-        do setInnerHTML i (Just . show $ seq)
+        do setInnerHTML i (Just . rewriteWith opts . show $ seq)
            theModel <- initModel
            prepareModelUI w fs (i,o) theModel bw opts
            case M.lookup "counterexample-to" opts of
@@ -194,14 +194,14 @@ createValidityCounterModeler w seq@(antced :|-: succed) (i,o) bw opts =
               let ptvs = map (unform . satisfies m . universalClosure) ants
                   ctvs = map (unform . satisfies m . universalClosure) sucs
               if not (and ptvs) then do 
-                 let falses = intercalate ", " $ map (show . snd) . filter (not . fst) $ (zip ptvs ants)
+                 let falses = intercalate ", " $ map (rewriteWith opts . show . snd) . filter (not . fst) $ (zip ptvs ants)
                  return $ Left $ "not all premises are true in this model. Take another look at: " ++ falses ++ "."
               else return $ check ctvs
           truthful tvs | and tvs = Right ()
-                       | otherwise = do let falses = intercalate ", " $ map (show . snd) . filter (not . fst) $ (zip tvs fs)
+                       | otherwise = do let falses = intercalate ", " $ map (rewriteWith opts . show . snd) . filter (not . fst) $ (zip tvs fs)
                                         Left $ "Not all conclusions are true in this model. Take another look at: " ++  falses ++ "."
           falsey tvs | and (map not tvs) = Right ()
-                     | otherwise = do let trues = intercalate ", " $ map (show . snd) . filter fst $ (zip tvs fs)
+                     | otherwise = do let trues = intercalate ", " $ map (rewriteWith opts . show . snd) . filter fst $ (zip tvs fs)
                                       Left $ "Not all conclusions are false in this model. Take another look at: " ++  trues ++ "."
           equiv tvs | and tvs = Left "Not a counterexample to equivalence - all conclusions are true in this model."
                     | and (map not tvs) = Left "Not a counterexample to equivalence - all conclusions are false in this model."
