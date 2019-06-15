@@ -129,6 +129,7 @@ createSimpleCounterModeler w fs (i,o) bw opts =
            case M.lookup "counterexample-to" opts of
                Just "equivalence" -> return (counter theModel equiv)
                Just "tautology" -> return (counter theModel falsey)
+               Just "validity" -> return (counter theModel falsey)
                Just "inconsistency" -> return (counter theModel truthful)
                _ -> return (counter theModel truthful)
     where counter mdl check = do
@@ -155,6 +156,7 @@ createConstrainedCounterModeler w (cs,fs) (i,o) bw opts =
            case M.lookup "counterexample-to" opts of
                Just "equivalence" -> return (counter theModel equiv)
                Just "tautology" -> return (counter theModel falsey)
+               Just "validity" -> return (counter theModel falsey)
                Just "inconsistency" -> return (counter theModel truthful)
                _ -> return (counter theModel truthful)
     where counter mdl check = do

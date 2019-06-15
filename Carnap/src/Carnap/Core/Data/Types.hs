@@ -5,7 +5,7 @@ module Carnap.Core.Data.Types(
   -- $ATintro
   -- ** Language Building Types
   Term(..), Form(..),
-  Copula((:$:), Lam), CopulaSchema(..), defaultLamSchema,
+  Copula(..), CopulaSchema(..), defaultLamSchema,
   StaticVar(..), FirstOrderLex(..), (:|:)(..), Fix(Fx), FixLang, EndLang,
   pattern AOne, pattern ATwo, pattern AThree, pattern LLam, pattern (:!$:),
   pattern Fx1, pattern Fx2, pattern Fx3, pattern Fx4, pattern Fx5, pattern

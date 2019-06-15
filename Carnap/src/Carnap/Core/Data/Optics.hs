@@ -161,6 +161,7 @@ instance {-# OVERLAPPABLE #-} (PrismLink (g (FixLang g)) (f (FixLang g)), ReLex 
         liftLang (LLam f) = LLam $ liftLang . f . unMaybe . lowerLang
             where unMaybe (Just a) = a
                   unMaybe Nothing = error "lifted lambda given bad argument"
+        liftLang (Fx (FLeft (Lift x))) = Fx . FLeft . Lift $ x
         liftLang (FX a) = FX $ review' (link' . relexIso) a
             where link' :: Typeable a => Prism' (g (FixLang g) a) (f (FixLang g) a)
                   link' = link
@@ -171,6 +172,7 @@ instance {-# OVERLAPPABLE #-} (PrismLink (g (FixLang g)) (f (FixLang g)), ReLex 
         lowerLang (LLam f) = Just $ LLam (unMaybe . lowerLang . f . liftLang)
             where unMaybe (Just a) = a
                   unMaybe Nothing = error "lowered lambda returning bad value"
+        lowerLang (Fx (FLeft (Lift x))) = Just . Fx . FLeft . Lift $ x
         lowerLang (FX a) = FX <$> preview (link' . relexIso) a
             where link' :: Typeable a => Prism' (g (FixLang g) a) (f (FixLang g) a)
                   link' = link
