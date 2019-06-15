@@ -20,7 +20,7 @@ import GHCJS.DOM.EventTarget (dispatchEvent)
 import GHCJS.DOM.Document (createElement, createEvent, getDefaultView)
 import GHCJS.DOM.Node (appendChild, getParentNode, insertBefore)
 import GHCJS.DOM.EventM (newListener, addListener, EventM, target)
-import GHCJS.DOM.HTMLInputElement (HTMLInputElement, getValue, setValue)
+import GHCJS.DOM.HTMLTextAreaElement (castToHTMLTextAreaElement, setValue, getValue)
 import qualified GHCJS.DOM.HTMLSelectElement as S (getValue, setValue) 
 import Text.Parsec
 import Data.Typeable (Typeable)
@@ -106,7 +106,7 @@ activateCounterModeler w (Just (i,o,opts)) = do
                                                            message "Success!"
                                                            setAttribute i "class" "input completeCM"
 
-submitCounterModel:: Map String String -> IORef (Either String ())->  IO (Either String ())-> [Element] -> String -> String -> EventM HTMLInputElement e ()
+submitCounterModel:: Map String String -> IORef (Either String ())->  IO (Either String ())-> [Element] -> String -> String -> EventM HTMLTextAreaElement e ()
 submitCounterModel opts ref check fields s l = do isDone <- liftIO $ readIORef ref
                                                   case isDone of
                                                       Right _ -> trySubmit CounterModel opts l (ProblemContent (pack s)) True
@@ -215,7 +215,8 @@ prepareModelUI w fs (i,o) mdl bw opts = do
            setInnerHTML domainLabel (Just "Domain: ")
            (domainInput,domainWarn) <- parsingInput w things domainUpdater
            setAttribute domainInput "name" "Domain"
-           setValue (castToHTMLInputElement domainInput) (Just "0")
+           setAttribute domainInput "rows" "1"
+           setValue (castToHTMLTextAreaElement domainInput) (Just "0")
            mapM (appendChild domainLabel . Just) [domainInput, domainWarn]
            appendChild o (Just domainLabel)
            appendRelationInputs w o fs mdl
@@ -266,7 +267,8 @@ getConstInput w t mdl = case addConstant t mdl (Term 0) of
                                  setInnerHTML constLabel (Just $ show t ++ ": ")
                                  (constInput,parseWarn) <- parsingInput w parseInt constUpdater
                                  setAttribute constInput "name" (show t)
-                                 setValue (castToHTMLInputElement constInput) (Just "0")
+                                 setAttribute constInput "rows" "1"
+                                 setValue (castToHTMLTextAreaElement constInput) (Just "0")
                                  appendChild constLabel (Just constInput)
                                  appendChild constLabel (Just parseWarn)
                                  return $ Just constLabel
@@ -286,6 +288,7 @@ getPropInput w f mdl = case addProposition f mdl False of
                                  setAttribute pf "selected" "selected"
                                  mapM (appendChild propSelect) [Just pt,Just pf]
                                  setAttribute propSelect "name" (show f)
+                                 setAttribute propSelect "rows" "1"
                                  whenChange <- newListener propUpdater
                                  whenInit <- newListener propUpdater
                                  addListener propSelect initialize whenInit False
@@ -312,6 +315,7 @@ getRelationInput w f mdl = case addRelation f mdl [] of
                                          setInnerHTML relationLabel (Just $ show (blankTerms f) ++ ": ")
                                          (relationInput,parseWarn) <- parsingInput w (ntuples n) relationUpdater
                                          setAttribute relationInput "name" (show (blankTerms f))
+                                         setAttribute relationInput "rows" "1"
                                          appendChild relationLabel (Just relationInput)
                                          appendChild relationLabel (Just parseWarn)
                                          return $ Just relationLabel
@@ -331,6 +335,7 @@ getFunctionInput w f mdl = case addFunction f mdl [] of
                                          setInnerHTML functionLabel (Just $ show (blankFuncTerms f) ++ ": ")
                                          (functionInput,parseWarn) <- parsingInput w (ntuples (n + 1)) functionUpdater
                                          setAttribute functionInput "name" (show (blankFuncTerms f))
+                                         setAttribute functionInput "rows" "1"
                                          setAttribute functionInput "class" "functionInput"
                                          appendChild functionLabel (Just functionInput)
                                          appendChild functionLabel (Just parseWarn)
@@ -401,7 +406,7 @@ initModel = newIORef (PolyadicModel
                      })
 
 parsingInput :: Document -> Parsec String () a -> (forall e. IsEvent e => a -> EventM HTMLInputElement e ()) -> IO (Element,Element)
-parsingInput w parser event = do Just theInput <- createElement w (Just "input")
+parsingInput w parser event = do Just theInput <- createElement w (Just "textarea")
                                  Just theWarning <- createElement w (Just "span")
                                  whenKey <- newListener (doesParse theWarning)
                                  whenInit <- newListener (doesParse theWarning)
@@ -417,12 +422,12 @@ parsingInput w parser event = do Just theInput <- createElement w (Just "input")
                  Right x -> (liftIO $ setInnerHTML warn (Just "")) >> event x
 
 extractField :: Element -> IO (String, String)
-extractField field = do inputs <- getListOfElementsByTag field "input"
+extractField field = do inputs <- getListOfElementsByTag field "textarea"
                         selects <- getListOfElementsByTag field "select"
                         case (inputs,selects) of
                             ([Just input],_) -> do 
                               Just fieldName <- getAttribute input "name"
-                              Just ival <- getValue (castToHTMLInputElement input)
+                              Just ival <- getValue (castToHTMLTextAreaElement input)
                               return (fieldName, ival) 
                             (_,[Just select]) -> do 
                               Just fieldName <- getAttribute select "name"
@@ -437,10 +442,10 @@ makeGivens opts = case M.lookup "content" opts of
 
 --XXX: a lot of unsafe pattern matching and catMaybe here...
 validateModel :: [Element] -> IO (Either String ())
-validateModel fields = do inputs <- catMaybes . concat <$> mapM (\f -> getListOfElementsByTag f "input") fields
+validateModel fields = do inputs <- catMaybes . concat <$> mapM (\f -> getListOfElementsByTag f "textarea") fields
                           names <- mapM (\i -> getAttribute i "name") inputs
                           let [domain] = map fst . filter (\f -> snd f == Just "Domain") $ zip inputs names
-                          Just domainString <- getValue (castToHTMLInputElement domain)
+                          Just domainString <- getValue (castToHTMLTextAreaElement domain)
                           case parse (parseInt `sepEndBy1` (spaces *> char ',' <* spaces)) "" domainString of
                               Left e -> return $ Left $ "Couldn't read domain specification: " ++ show e
                               Right things -> do
@@ -449,8 +454,8 @@ validateModel fields = do inputs <- catMaybes . concat <$> mapM (\f -> getListOf
                                       else do
                                           classes <- mapM (\i -> getAttribute i "class") inputs
                                           let funcInputs = map fst . filter (\f -> snd f == Just "functionInput") $ zip inputs classes
-                                          funcStrings <- mapM (getValue . castToHTMLInputElement) funcInputs
-                                          allStrings <- mapM (getValue . castToHTMLInputElement) inputs
+                                          funcStrings <- mapM (getValue . castToHTMLTextAreaElement) funcInputs
+                                          allStrings <- mapM (getValue . castToHTMLTextAreaElement) inputs
                                           let allContents = zip (map (parse extractor "" . clean) (catMaybes allStrings)) names
                                           let funcContents = map (validate things) (catMaybes funcStrings)
                                           case filter (isLeft . fst) allContents of
@@ -487,14 +492,14 @@ validateModel fields = do inputs <- catMaybes . concat <$> mapM (\f -> getListOf
 
 
 setField :: Document -> [Element] -> (String,String) -> IO ()
-setField w fields (name,val) = do inputs <- concat <$> mapM (\f -> getListOfElementsByTag f "input") fields
+setField w fields (name,val) = do inputs <- concat <$> mapM (\f -> getListOfElementsByTag f "textarea") fields
                                   selects <- concat <$> mapM (\f -> getListOfElementsByTag f "select") fields
                                   names <- mapM (\(Just i) -> getAttribute i "name") (inputs ++ selects)
                                   let fs = map fst . filter (\f -> snd f == Just name) $ zip (inputs ++ selects) names
                                   case fs of
                                    [Just f] -> do tn <- getTagName f
                                                   case tn of 
-                                                    Just "INPUT" -> setValue (castToHTMLInputElement f) (Just val)
+                                                    Just "INPUT" -> setValue (castToHTMLTextAreaElement f) (Just val)
                                                     Just "SELECT" -> S.setValue (castToHTMLSelectElement f) (Just val)
                                                     Just s -> print $ "unrecognized tag:" ++ s
                                                     Nothing -> print "no tagname"
