@@ -333,7 +333,7 @@ getFunctionInput w f mdl = case addFunction f mdl [] of
                                       Just n -> do
                                          Just functionLabel <- createElement w (Just "label")
                                          setInnerHTML functionLabel (Just $ show (blankFuncTerms f) ++ ": ")
-                                         (functionInput,parseWarn) <- parsingInput w (ntuples (n + 1)) functionUpdater
+                                         (functionInput,parseWarn) <- parsingInput w (nfunctuples (n + 1)) functionUpdater
                                          setAttribute functionInput "name" (show (blankFuncTerms f))
                                          setAttribute functionInput "rows" "1"
                                          setAttribute functionInput "class" "functionInput"
@@ -474,7 +474,7 @@ validateModel fields = do inputs <- catMaybes . concat <$> mapM (\f -> getListOf
           extractor = spaces *> (parseInt `sepEndBy` spaces) <* spaces
           subset (x:xs) y = x `elem` y && xs `subset` y
           subset [] y = True
-          validate domain funcstring = case parse (tuple `sepEndBy` (spaces *> char ',' <* spaces)) "" funcstring of
+          validate domain funcstring = case parse (functuple `sepEndBy` (spaces *> char ',' <* spaces)) "" funcstring of
                 Left e -> Left $ "Couldn't read one of the function specifications: " ++ show e
                 Right tups | null tups -> Left "a function is unspecified"
                            | not . properList . map init $ tups -> Left "a function has more than one value specified for some input"
@@ -519,10 +519,21 @@ parseInt :: Parsec String () Thing
 parseInt = Term . read <$> many1 digit
 
 tuple :: Parsec String () [Thing]
-tuple = char '[' *> (parseInt `sepEndBy` (spaces *> char ',' <* spaces)) <* char ']'
+tuple = char '[' *> spaces *> (parseInt `sepBy` (spaces *> char ',' <* spaces)) <* spaces <* char ']'
+
+functuple :: Parsec String () [Thing]
+functuple = do args <- char '[' *> spaces *> parseInt `sepBy` (spaces *> char ',' <* spaces)
+               val <- spaces *> char ';' *> spaces *> parseInt <* spaces <* char ']'
+               return (args ++ [val])
 
 ntuple :: Int -> Parsec String () [Thing]
 ntuple n = do t <- tuple; if length t == n then return t else fail ("This extension should be made only of " ++ show n ++ "-tuples")
 
+nfunctuple :: Int -> Parsec String () [Thing]
+nfunctuple n = do t <- functuple; if length t == n then return t else fail ("This extension should be made only of " ++ show n ++ "-tuples")
+
 ntuples :: Int -> Parsec String () [[Thing]]
 ntuples n = ntuple n `sepEndBy` (spaces *> char ',' <* spaces)
+
+nfunctuples :: Int -> Parsec String () [[Thing]]
+nfunctuples n = nfunctuple n `sepEndBy` (spaces *> char ',' <* spaces)
