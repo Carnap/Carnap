@@ -91,9 +91,7 @@ checkCourseOwnership coursetitle = do
              Just (Entity cid course) -> do
                Just user <- runDB (get uid)
                classes <- classesByInstructorIdent (userIdent user)
-               if course `elem` map entityVal classes 
-                   then return () 
-                   else permissionDenied "this doesn't appear to be your course"
+               unless (course `elem` map entityVal classes) (permissionDenied "this doesn't appear to be your course")
 
 retrieveAssignment (Entity cid course) filename = do
            coinstructors <- runDB $ map entityVal <$> selectList [CoInstructorCourse ==. cid] []

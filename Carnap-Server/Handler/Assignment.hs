@@ -23,9 +23,13 @@ getCourseAssignmentR coursetitle filename = getAssignmentByCourse coursetitle fi
 returnAssignment :: Entity AssignmentMetadata -> FilePath -> Handler Html
 returnAssignment (Entity key val) path = do
            time <- liftIO getCurrentTime
-           if visibleAt time val 
+           muid <- maybeAuthId
+           mident <- maybe reject getIdent muid 
+           classes <- maybe reject classesByInstructorIdent mident 
+           if visibleAt time val || assignmentMetadataCourse val `elem` map entityKey classes 
                then do
                    ehtml <- liftIO $ fileToHtml path
+                   unless (visibleAt time val) $ setMessage "Viewing as instructor. Assignment not currently visible to students."
                    case ehtml of
                        Left err -> defaultLayout $ layout (show err)
                        Right (Left err) -> defaultLayout $ layout (show err)
@@ -43,7 +47,7 @@ returnAssignment (Entity key val) path = do
                                addStylesheet $ StaticR css_exercises_css
                                $(widgetFile "document")
                                addScript $ StaticR ghcjs_allactions_runmain_js
-               else defaultLayout $ layout ("assignment not currently available" :: Text)
+               else defaultLayout $ layout ("Assignment not currently set as visible by instructor" :: Text)
     where layout c = [whamlet|
                         <div.container>
                             <article>
@@ -51,6 +55,7 @@ returnAssignment (Entity key val) path = do
                         |]
           visibleAt t a = (assignmentMetadataVisibleTill a > Just t || assignmentMetadataVisibleTill a == Nothing)
                           && (assignmentMetadataVisibleFrom a < Just t || assignmentMetadataVisibleFrom a == Nothing)
+          reject = setMessage "you need to be logged in to access assignments" >> redirect HomeR
 
 fileToHtml path = do Markdown md <- markdownFromFile path
                      let md' = Markdown (filter ((/=) '\r') md) --remove carrage returns from dos files
