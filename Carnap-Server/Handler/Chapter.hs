@@ -10,6 +10,7 @@ import Filter.Translate
 import Filter.Diagrams
 import Filter.TruthTables
 import Filter.CounterModelers
+import Filter.Qualitative
 import Text.Pandoc
 import Text.Pandoc.Walk (walkM, walk)
 import System.Directory (getDirectoryContents)
@@ -86,7 +87,7 @@ fileToHtml path m = do md <- markdownFromFile (path ++ m)
 
 
 runFilters path = let walkNotes y = evalState (walkM makeSideNotes y) 0
-                      walkProblems y = walk (makeSynCheckers . makeProofChecker . makeTranslate . makeTruthTables . makeCounterModelers) y
+                      walkProblems y = walk (makeSynCheckers . makeProofChecker . makeTranslate . makeTruthTables . makeCounterModelers . makeQualitativeProblems) y
                       walkDiagrams y = evalStateT (walkM (makeDiagrams path) y) []
                    in walkDiagrams . walkNotes . walkProblems
 

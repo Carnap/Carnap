@@ -42,6 +42,7 @@ library
                      Filter.Translate
                      Filter.TruthTables
                      Filter.CounterModelers
+                     Filter.Qualitative
                      Filter.Diagrams
                      Filter.Util
                      Util.Database

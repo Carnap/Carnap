@@ -21,6 +21,7 @@ library
                      , Carnap.GHCJS.Action.Translate
                      , Carnap.GHCJS.Action.TruthTable
                      , Carnap.GHCJS.Action.CounterModel
+                     , Carnap.GHCJS.Action.QualitativeProblem
                      , Carnap.GHCJS.Action.AcceptJSON
   if impl(ghcjs)
       build-depends:       base >= 4.7 && < 5
@@ -38,6 +39,7 @@ library
                          , tagsoup
                          , text
                          , bytestring
+                         , hashable
                          , transformers
                          , shakespeare
                          , blaze-html
@@ -57,6 +59,7 @@ library
                          , tagsoup
                          , text
                          , bytestring
+                         , hashable
                          , shakespeare
                          , transformers
                          , blaze-html
