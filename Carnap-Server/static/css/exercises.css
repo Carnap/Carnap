@@ -115,6 +115,7 @@
 [data-carnap-type="synchecker"] > input,
 [data-carnap-type="truthtable"] > .input,
 [data-carnap-type="countermodeler"] > .input,
+[data-carnap-type="qualitative"] > .input,
 [data-carnap-type="translate"] > input {
     font-size:14px;
     height:2em;
@@ -131,8 +132,8 @@
 
 [data-carnap-type="translate"] .output,
 [data-carnap-type="truthtable"] .output,
-[data-carnap-type="countermodeler"] .output
-{ 
+[data-carnap-type="countermodeler"] .output,
+[data-carnap-type="qualitative"] .output { 
     position:relative;
     border:1px solid #A9B7C0;
     padding:10px;
@@ -449,7 +450,8 @@ body[data-carnap-type="proofchecker"] .buttonWrapper {
 }
 
 [data-carnap-type="truthtable"] .buttonWrapper,
-[data-carnap-type="countermodeler"] .buttonWrapper {
+[data-carnap-type="countermodeler"] .buttonWrapper,
+[data-carnap-type="qualitative"] .buttonWrapper {
     position:relative;
     top:-2px;
 }
