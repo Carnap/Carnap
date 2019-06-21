@@ -3,6 +3,7 @@ module Carnap.GHCJS.Action.QualitativeProblem (qualitativeProblemAction) where
 
 import Lib
 import Carnap.GHCJS.SharedFunctions (simpleHash)
+import Carnap.GHCJS.SharedTypes
 import GHCJS.DOM.Types
 import GHCJS.DOM.Element
 import GHCJS.DOM.Node (appendChild, getParentNode)
@@ -13,6 +14,7 @@ import Data.IORef (newIORef, IORef, readIORef, writeIORef)
 import Data.Map as M
 import Data.Hashable
 import Data.Maybe
+import Data.Text (pack)
 import Text.Read (readMaybe)
 
 qualitativeProblemAction :: IO ()
@@ -28,9 +30,11 @@ activateQualitativeProblem w (Just (i,o,opts)) = do
             --Just "shortanswer" -> createShortAnswer w i o opts
             _  -> return ()
 
-submitQualitative :: Map String String -> IORef (Bool, String) -> String -> EventM HTMLTextAreaElement e ()
-submitQualitative opts ref l = do (isDone,val) <- liftIO $ readIORef ref
-                                  if isDone then message "yes!" else message "no."
+submitQualitative :: Map String String -> IORef (Bool, String) -> String -> String -> EventM HTMLTextAreaElement e ()
+submitQualitative opts ref g l = do (isDone,val) <- liftIO $ readIORef ref
+                                    if isDone 
+                                        then trySubmit Qualitative opts l (ProblemContent (pack g)) True
+                                        else message "Not quite right. Try again?"
 
 
 createMultipleChoice :: Document -> Element -> Element -> Map String String -> IO ()
@@ -45,7 +49,7 @@ createMultipleChoice w i o opts = case M.lookup "goal" opts of
                 let l = Prelude.drop 7 s
                 bt1 <- doneButton w "Submit"
                 appendChild bw (Just bt1)
-                submit <- newListener $ submitQualitative opts ref l
+                submit <- newListener $ submitQualitative opts ref g l
                 addListener bt1 click submit False                
             _ -> return ()
         let choices = maybe [] lines $ M.lookup "content" opts

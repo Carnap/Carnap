@@ -26,7 +26,7 @@ instance ToJSON ProblemSource
 
 instance FromJSON ProblemSource
 
-data ProblemType = Derivation | TruthTable | Translation | SyntaxCheck | CounterModel
+data ProblemType = Derivation | TruthTable | Translation | SyntaxCheck | CounterModel | Qualitative
     deriving (Show, Read, Eq, Generic)
 
 instance ToJSON ProblemType
@@ -46,6 +46,7 @@ data ProblemData = DerivationData Text Text
                  | TranslationData Text Text
                  | TranslationDataOpts Text Text Options
                  | CounterModelDataOpts Text CounterModelFields Options
+                 | QualitativeProblemDataOpts Text Text Options
                  | ProblemContent Text
     deriving (Show, Read, Eq, Generic)
 

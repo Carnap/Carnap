@@ -39,6 +39,10 @@
         <div.card>
             <div.card-header> Countermodels
             #{cmtable}
+    $if (not $ null qsubs)
+        <div.card>
+            <div.card-header> Qualitative Problems
+            #{qtable}
     <h3> Your Profile
     ^{personalInfo ud (Just course)}
     $if (not (null derivedRulesOld) || not (null derivedRulesNew))

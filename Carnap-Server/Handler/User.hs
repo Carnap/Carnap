@@ -78,8 +78,8 @@ getUserR ident = do
                        assignments <- assignmentsOf course textbookproblems asmd asDocs
                        pq <- getProblemQuery uid cid
                        let getSubs typ = map entityVal <$> runDB (selectList ([ProblemSubmissionType ==. typ] ++ pq) [])
-                       subs@[synsubs,transsubs,dersubs,ttsubs,cmsubs] <- mapM getSubs [SyntaxCheck,Translation,Derivation,TruthTable,CounterModel]
-                       [syntable,transtable,dertable,tttable,cmtable] <- mapM (problemsToTable course textbookproblems asmd asDocs) subs
+                       subs@[synsubs,transsubs,dersubs,ttsubs,cmsubs,qsubs] <- mapM getSubs [SyntaxCheck,Translation,Derivation,TruthTable,CounterModel,Qualitative]
+                       [syntable,transtable,dertable,tttable,cmtable,qtable] <- mapM (problemsToTable course textbookproblems asmd asDocs) subs
                        score <- totalScore textbookproblems (concat subs)
                        defaultLayout $ do
                            addScript $ StaticR js_bootstrap_bundle_min_js
