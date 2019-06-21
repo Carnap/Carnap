@@ -92,6 +92,7 @@ library
                      , Carnap.Calculi.NaturalDeduction.Parser.StructuredFitch
                      , Carnap.Calculi.NaturalDeduction.Syntax
                      , Carnap.Calculi.NaturalDeduction.Util
+                     , Carnap.Calculi.Tableau.Data
 
   build-depends:       base >= 4.7
                      , lens >= 4.12
