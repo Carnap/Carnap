@@ -94,6 +94,7 @@ library
                      , Carnap.Calculi.NaturalDeduction.Syntax
                      , Carnap.Calculi.NaturalDeduction.Util
                      , Carnap.Calculi.Tableau.Data
+                     , Carnap.Calculi.Tableau.Checker
 
   build-depends:       base >= 4.7
                      , lens >= 4.12

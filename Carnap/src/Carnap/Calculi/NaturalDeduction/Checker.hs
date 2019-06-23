@@ -453,7 +453,6 @@ hoReduceProofTreeMemo ref res pt@(Node (ProofLine no cont rules) ts) =
                                    checkAgainst (restriction rule) no sub
                                    return rslt
 
-
 checkAgainst (Just f) n sub = case f sub of
                                   Nothing -> Right sub
                                   Just s -> Left $ GenericError s n

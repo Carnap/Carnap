@@ -36,7 +36,7 @@ type Tableau lex sem rule = Tree (TableauNode lex sem rule)
 
 data TreeFeedbackNode = Correct | Feedback String
 
-data TreeFeedback = Tree TreeFeedbackNode
+type TreeFeedback = Tree TreeFeedbackNode
 
 data TaubleauCalc lex sem rule = TableauCalc 
            { tbParseForm :: Parsec String () (FixLang lex sem)
