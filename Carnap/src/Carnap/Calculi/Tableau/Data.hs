@@ -5,11 +5,7 @@ import Carnap.Languages.ClassicalSequent.Syntax
 import Data.Tree
 import Text.Parsec
 
-data TaubleauCalc lex sem rule = TableauCalc 
-           { tbParseForm :: Parsec String () (FixLang lex sem)
-           , tbParseRule :: Parsec String () rule
-           --possibly some other stuff here
-           }
+
 
 --a TreeForm is a formula within a truth tree, labeled by its row and whether it is resolved.
 data TreeForm lex sem = TreeForm
@@ -37,3 +33,13 @@ data TableauNode lex sem rule = TableauNode
            }
 
 type Tableau lex sem rule = Tree (TableauNode lex sem rule)
+
+data TreeFeedbackNode = Correct | Feedback String
+
+data TreeFeedback = Tree TreeFeedbackNode
+
+data TaubleauCalc lex sem rule = TableauCalc 
+           { tbParseForm :: Parsec String () (FixLang lex sem)
+           , tbParseRule :: Parsec String () rule
+           --possibly some other stuff here
+           }

@@ -5,6 +5,7 @@ where
 import Data.Tree (Tree(Node))
 import Data.List (delete)
 import Data.Typeable
+import Carnap.Calculi.Util
 import Carnap.Calculi.NaturalDeduction.Syntax
 import Carnap.Languages.ClassicalSequent.Syntax
 

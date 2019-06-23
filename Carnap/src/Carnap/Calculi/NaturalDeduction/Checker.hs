@@ -15,9 +15,8 @@ import Carnap.Core.Data.Types
 import Carnap.Core.Data.Classes
 import Carnap.Core.Data.Util (rebuild)
 import Carnap.Core.Unification.Unification
-import Carnap.Core.Unification.FirstOrder
-import Carnap.Core.Unification.Huet
 import Carnap.Core.Unification.ACUI
+import Carnap.Calculi.Util
 import Carnap.Languages.ClassicalSequent.Syntax
 import Control.Lens
 import Control.Monad.State
@@ -454,30 +453,6 @@ hoReduceProofTreeMemo ref res pt@(Node (ProofLine no cont rules) ts) =
                                    checkAgainst (restriction rule) no sub
                                    return rslt
 
-fosolve :: 
-    ( FirstOrder (ClassicalSequentOver lex)
-    , MonadVar (ClassicalSequentOver lex) (State Int)
-    ) =>  [Equation (ClassicalSequentOver lex)] -> Either (ProofErrorMessage lex) [Equation (ClassicalSequentOver lex)]
-fosolve eqs = case evalState (foUnifySys (const False) eqs) (0 :: Int) of 
-                [] -> Left $ NoUnify [eqs] 0
-                [s] -> Right s
-
-hosolve :: 
-    ( HigherOrder (ClassicalSequentOver lex)
-    , MonadVar (ClassicalSequentOver lex) (State Int)
-    ) => [Equation (ClassicalSequentOver lex)] -> Either (ProofErrorMessage lex) [[Equation (ClassicalSequentOver lex)]]
-hosolve eqs = case evalState (huetUnifySys (const False) eqs) (0 :: Int) of
-                    [] -> Left $ NoUnify [eqs] 0
-                    subs -> Right subs
-
-acuisolve :: 
-    ( ACUI (ClassicalSequentOver lex)
-    , MonadVar (ClassicalSequentOver lex) (State Int)
-    ) => [Equation (ClassicalSequentOver lex)] -> Either (ProofErrorMessage lex) [[Equation (ClassicalSequentOver lex)]]
-acuisolve eqs = 
-        case evalState (acuiUnifySys (const False) eqs) (0 :: Int) of
-          [] -> Left $ NoUnify [eqs] 0
-          subs -> Right subs
 
 checkAgainst (Just f) n sub = case f sub of
                                   Nothing -> Right sub
