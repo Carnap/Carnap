@@ -84,10 +84,10 @@ toDisplaySequenceStructured pl ded@(SubProof (1,m) ls) = let feedback = map (pl 
 
 
 processLineHardegree :: 
-  ( Sequentable lex
-  , Inference r lex sem
+  ( Inference r lex sem
+  , ACUI (ClassicalSequentOver lex)
+  , Sequentable lex
   , Typeable sem
-  , FirstOrderLex (lex (ClassicalSequentOver lex))
   , StaticVar (ClassicalSequentOver lex)
   , MonadVar (ClassicalSequentOver lex) (State Int)
   ) => Deduction r lex sem -> Restrictor r lex -> Int -> FeedbackLine lex sem
@@ -131,7 +131,7 @@ processLineMontague ::
   , Typeable sem
   , MonadVar (ClassicalSequentOver lex) (State Int)
   , StaticVar (ClassicalSequentOver lex)
-  , FirstOrderLex (lex (ClassicalSequentOver lex))
+  , ACUI (ClassicalSequentOver lex)
   ) => Deduction r lex sem -> Restrictor r lex -> Int -> FeedbackLine lex sem
 processLineMontague ded res n = case ded !! (n - 1) of
   --special case to catch QedLines not being cited in justifications
@@ -143,7 +143,7 @@ hoProcessLineMontague ::
   , Sequentable lex
   , Inference r lex sem
   , Typeable sem
-  , FirstOrderLex (lex (ClassicalSequentOver lex))
+  , ACUI (ClassicalSequentOver lex)
   , MonadVar (ClassicalSequentOver lex) (State Int)
   ) => Deduction r lex sem -> Restrictor r lex -> Int -> FeedbackLine lex sem
 hoProcessLineMontague ded res n = case ded !! (n - 1) of
@@ -174,7 +174,6 @@ processLineFitch ::
   , MonadVar (ClassicalSequentOver lex) (State Int)
   , Typeable sem
   , ACUI (ClassicalSequentOver lex)
-  , FirstOrderLex (lex (ClassicalSequentOver lex))
   ) => Deduction r lex sem -> Restrictor r lex -> Int -> FeedbackLine lex sem
 processLineFitch ded res n = case ded !! (n - 1) of
   --special case to catch QedLines not being cited in justifications
@@ -198,7 +197,7 @@ hoProcessLineFitchMemo ::
   ( StaticVar (ClassicalSequentOver lex)
   , Sequentable lex
   , Inference r lex sem
-  , FirstOrderLex (lex (ClassicalSequentOver lex))
+  , ACUI (ClassicalSequentOver lex)
   , Typeable sem
   , MonadVar (ClassicalSequentOver lex) (State Int)
   , Show (ClassicalSequentOver lex (Succedent sem)), Show r
@@ -212,7 +211,7 @@ hoProcessLineFitchMemo ref ded res n = case ded !! (n - 1) of
 processLineLemmon :: 
   ( Sequentable lex
   , Inference r lex sem
-  , FirstOrderLex (lex (ClassicalSequentOver lex))
+  , ACUI (ClassicalSequentOver lex)
   , StaticVar (ClassicalSequentOver lex)
   , MonadVar (ClassicalSequentOver lex) (State Int)
   , Typeable sem
@@ -226,7 +225,7 @@ hoProcessLineLemmon ::
   ( StaticVar (ClassicalSequentOver lex)
   , Sequentable lex
   , Typeable sem
-  , FirstOrderLex (lex (ClassicalSequentOver lex))
+  , ACUI (ClassicalSequentOver lex)
   , Inference r lex sem
   , MonadVar (ClassicalSequentOver lex) (State Int)
   ) => Deduction r lex sem -> Restrictor r lex -> Int -> FeedbackLine lex sem
@@ -240,7 +239,7 @@ hoProcessLineLemmonMemo ::
   , Sequentable lex
   , Inference r lex sem
   , Typeable sem
-  , FirstOrderLex (lex (ClassicalSequentOver lex))
+  , ACUI (ClassicalSequentOver lex)
   , MonadVar (ClassicalSequentOver lex) (State Int)
   , Show (ClassicalSequentOver lex (Succedent sem)), Show r
   ) => ProofMemoRef lex sem r -> Deduction r lex sem -> Restrictor r lex -> Int -> IO (FeedbackLine lex sem)
@@ -254,7 +253,7 @@ processLineStructuredFitch ::
   ( Sequentable lex
   , Inference r lex sem
   , Typeable sem
-  , FirstOrderLex (lex (ClassicalSequentOver lex))
+  , ACUI (ClassicalSequentOver lex)
   , MonadVar (ClassicalSequentOver lex) (State Int)
   , StaticVar (ClassicalSequentOver lex)
   ) => DeductionTree r lex sem -> Restrictor r lex -> Int -> FeedbackLine lex sem
@@ -268,7 +267,7 @@ processLineStructuredFitchHO ::
   , Sequentable lex
   , Inference r lex sem
   , Typeable sem
-  , FirstOrderLex (lex (ClassicalSequentOver lex))
+  , ACUI (ClassicalSequentOver lex)
   , MonadVar (ClassicalSequentOver lex) (State Int)
   ) => DeductionTree r lex sem -> Restrictor r lex -> Int -> FeedbackLine lex sem
 processLineStructuredFitchHO ded res n = case ded .! n of
