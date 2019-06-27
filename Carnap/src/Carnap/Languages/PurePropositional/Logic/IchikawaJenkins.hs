@@ -21,8 +21,7 @@ import Carnap.Languages.Util.LanguageClasses
 --  Natural Deduction  --
 -------------------------
 
-newtype IchikawaJenkinsSL = IJ MagnusSLPlus
-    deriving Eq
+newtype IchikawaJenkinsSL = IJ MagnusSLPlus deriving Eq
 
 instance Show IchikawaJenkinsSL where
         show (IJ (MSL CondIntro1)) = "⊃I"
@@ -169,7 +168,6 @@ parseIchikawaJenkinsSLTableaux = do r <- choice (map (try . string) ["&","¬&","
                                          | r `elem` ["≡","<->","<>","B"] -> Bicond
                                          | r `elem` [ "¬≡","~≡","-≡", "¬<->","~<->","-<->", "¬<>","~<>","-<>", "¬B","~B","-B"] -> NBicond
                                          | r `elem` [ "¬¬","~~","--"] -> DoubleNeg
-
 
 instance CoreInference IchikawaJenkinsSLTableaux PurePropLexicon (Form Bool) where
         corePremisesOf Conj = [SA (phin 1) :+: SA (phin 2) :+: GammaV 1 :|-: Bot]
