@@ -296,8 +296,6 @@ doubleProof = TypedProof (ProofType 0 2)
 
 assumptiveProof = TypedProof (ProofType 1 1)
 
-type Restriction lex = [Equation (ClassicalSequentOver lex)] -> Maybe String
-
 type Restrictor r lex = Int -> r -> Maybe (Restriction lex)
 
 andFurtherRestriction f g sub = case f sub of 
@@ -320,8 +318,7 @@ class Inference r lex sem | r -> lex sem where
         restriction _ = Nothing
 
         --restrictions, based on given substitutions, whole derivation, and position in derivation
-        --XXX: the either here is a bit of a hack. Probably all deductions
-        --should be preprocessed into deduction trees.
+        --XXX: the either here is a bit of a hack
         globalRestriction :: Either (Deduction r lex sem) (DeductionTree r lex sem) -> Restrictor r lex
         globalRestriction _ _ _ = Nothing
         
