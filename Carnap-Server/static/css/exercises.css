@@ -490,6 +490,10 @@ body[data-carnap-type="proofchecker"] .buttonWrapper {
     align-items:center;
 }
 
+[data-carnap-qualitativetype="shortanswer"] textarea { 
+    resize: both;
+    max-width: 100%;
+}
 
 [data-carnap-options~="fonts"] textarea,[data-carnap-options~="fonts"] .output, [data-carnap-options~="fonts"] input, [data-carnap-options~="fonts"] .goal {
     text-rendering: optimizeLegibility;

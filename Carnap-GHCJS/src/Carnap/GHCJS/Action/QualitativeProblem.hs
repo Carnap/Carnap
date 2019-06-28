@@ -4,8 +4,10 @@ module Carnap.GHCJS.Action.QualitativeProblem (qualitativeProblemAction) where
 import Lib
 import Carnap.GHCJS.SharedFunctions (simpleHash)
 import Carnap.GHCJS.SharedTypes
+import GHCJS.DOM.HTMLTextAreaElement (castToHTMLTextAreaElement, setValue, getValue, setSelectionEnd, getSelectionStart, setAutocapitalize, setAutocorrect)
 import GHCJS.DOM.Types
 import GHCJS.DOM.Element
+import GHCJS.DOM.Window (confirm)
 import GHCJS.DOM.Node (appendChild, getParentNode)
 import GHCJS.DOM.Document (createElement)
 import GHCJS.DOM.EventM (newListener, addListener, EventM)
@@ -27,7 +29,7 @@ activateQualitativeProblem :: Document -> Maybe (Element, Element, Map String St
 activateQualitativeProblem w (Just (i,o,opts)) = do
         case M.lookup "qualitativetype" opts of
             Just "multiplechoice" -> createMultipleChoice w i o opts
-            --Just "shortanswer" -> createShortAnswer w i o opts
+            Just "shortanswer" -> createShortAnswer w i o opts
             _  -> return ()
 
 submitQualitative :: Map String String -> IORef (Bool, String) -> String -> String -> EventM HTMLTextAreaElement e ()
@@ -36,6 +38,11 @@ submitQualitative opts ref g l = do (isDone,val) <- liftIO $ readIORef ref
                                         then trySubmit Qualitative opts l (ProblemContent (pack g)) True
                                         else message "Not quite right. Try again?"
 
+submitEssay :: Map String String -> Element -> String -> String -> EventM HTMLTextAreaElement e ()
+submitEssay opts text g l = do manswer <- getValue . castToHTMLTextAreaElement $ text
+                               case manswer of 
+                                    Just answer -> trySubmit Qualitative opts l (QualitativeProblemDataOpts (pack g) (pack answer) (toList opts)) False
+                                    Nothing -> message "It doesn't look like an answer has been written"
 
 createMultipleChoice :: Document -> Element -> Element -> Map String String -> IO ()
 createMultipleChoice w i o opts = case M.lookup "goal" opts of
@@ -83,4 +90,25 @@ createMultipleChoice w i o opts = case M.lookup "goal" opts of
                appendChild wrapper (Just label)
                return (wrapper, b)
 
-
+createShortAnswer :: Document -> Element -> Element -> Map String String -> IO ()
+createShortAnswer w i o opts = case M.lookup "goal" opts of
+    Nothing -> return ()
+    Just g -> do
+        setInnerHTML i (Just g)
+        bw <- buttonWrapper w
+        Just text <- createElement w (Just "textarea")
+        case M.lookup "content" opts of
+            Just t -> setValue (castToHTMLTextAreaElement text) (Just t)
+            _ -> return ()
+        appendChild o (Just text)
+        case M.lookup "submission" opts of
+            Just s | take 7 s == "saveAs:" -> do
+                let l = Prelude.drop 7 s
+                bt1 <- doneButton w "Submit"
+                appendChild bw (Just bt1)
+                submit <- newListener $ submitEssay opts text g l
+                addListener bt1 click submit False                
+            _ -> return ()
+        Just par <- getParentNode o
+        appendChild par (Just bw)
+        return ()

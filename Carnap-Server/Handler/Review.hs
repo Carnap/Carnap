@@ -165,6 +165,15 @@ renderProblem (Entity key val) = do
                 |]
                 where transtype = case lookup "transtype" (M.fromList opts) of Just s -> s; Nothing -> "prop"
                       problem = case lookup "problem" (M.fromList opts) of Just s -> s ++ " : " ++ (unpack content)
+            (Qualitative, QualitativeProblemDataOpts content answer opts) -> template $ 
+                [whamlet|
+                    <div data-carnap-type="qualitative"
+                         data-carnap-qualitativetype="#{qualtype}"
+                         data-carnap-goal="#{unpack content}"
+                         data-carnap-submission="none">
+                         #{answer}
+                |]
+                where qualtype = case lookup "qualitativetype" (M.fromList opts) of Just s -> s; Nothing -> "shortanswer"
             _ -> return ()
     where renderTT tt = concat $ map renderRow tt
           renderRow row = map toval row ++ "\n"
