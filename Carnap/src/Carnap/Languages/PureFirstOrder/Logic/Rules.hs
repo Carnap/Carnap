@@ -20,7 +20,7 @@ import Carnap.Languages.ClassicalSequent.Syntax
 import Carnap.Languages.ClassicalSequent.Parser
 import Carnap.Languages.Util.LanguageClasses
 import Carnap.Languages.Util.GenericConstructors
-import Carnap.Calculi.NaturalDeduction.Syntax (DeductionLine(..),depth,assertion,discharged,justificationOf,inScope,Restriction)
+import Carnap.Calculi.NaturalDeduction.Syntax (DeductionLine(..),depth,assertion,discharged,justificationOf,inScope)
 
 --------------------------------------------------------
 --1. FirstOrder Sequent Calculus

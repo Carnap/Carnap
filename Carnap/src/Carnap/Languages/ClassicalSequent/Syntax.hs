@@ -181,7 +181,7 @@ class Typeable a => Concretes lex a where
             Just Refl -> f x
             Nothing -> pure x
 
-instance Concretes lex (Form Bool)
+instance Typeable a => Concretes lex a
 
 instance PrismBooleanConnLex lex b => PrismBooleanConnLex (ClassicalSequentLexOver lex) b
 instance PrismGenericContext lex b b => PrismGenericContext (ClassicalSequentLexOver lex) b b

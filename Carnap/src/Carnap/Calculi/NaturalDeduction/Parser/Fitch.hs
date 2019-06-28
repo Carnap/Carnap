@@ -7,6 +7,7 @@ import Data.Typeable
 import Data.List (delete, (\\))
 import Text.Parsec
 import Carnap.Core.Data.Types
+import Carnap.Calculi.Util
 import Carnap.Calculi.NaturalDeduction.Syntax
 import Carnap.Calculi.NaturalDeduction.Parser.Util
 import Carnap.Languages.ClassicalSequent.Syntax
