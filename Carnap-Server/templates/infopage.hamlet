@@ -275,9 +275,9 @@
         <p>Essentially, Haskell's type system makes it possible to represent
            \ different lexical categories as datatypes, to combine these lexical
            \ category datatypes into a larger datatype representing a lexicon (using
-           \ something like the method described in #
-           \ <a href="http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.101.4131">this paper</a>),
-           \ and to define a language as the result of applying different
+           \ something like the method described in
+           <a href="http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.101.4131">this paper#
+           \), and to define a language as the result of applying different
            \ elements of a lexicon to one another in a grammatical way.
 
         <p>The upshot is that, using Carnap, you can define a language as the
@@ -306,7 +306,9 @@
 
         <p>So that's the gist of it. If you'd like to learn more about the
             \ details, you can inspect the code, talk to a developer, or take
-            \ a look at <a href="http://eptcs.web.cse.unsw.edu.au/paper.cgi?ThEdu17.5"> this paper</a>.
+            \ a look at
+            <a href="http://eptcs.web.cse.unsw.edu.au/paper.cgi?ThEdu17.5">this paper#
+            \.
 
     <section#contributing>
         <h2>How can I get involved?
@@ -315,9 +317,13 @@
            \ <a href="https://github.com/gleachkr/Carnap">Github</a>. If you
            \ have suggestions, feature requests, or bug-reports, you can create
            \ an issue on Github. For general questions or discussion, you can
-           \ also reach us on <a href="https://gitter.im/Carnap-Prover">Gitter</a>,
+           \ also reach us on
+           <a href="https://gitter.im/Carnap-Prover">Gitter#
+           \, on
+           <a href="https://matrix.to/#/!AqFOGENiPssQgsjxfE:matrix.org?via=matrix.org">Matrix
            \ on IRC at irc://irc.freenode.net/carnap, or over
-           \ <a href="mailto:gleachkr@ksu.edu">email</a>.
+           <a href="mailto:gleachkr@ksu.edu">email#
+           \.
 
         <p>If you’d like to contribute some code to the project—anything from
            \ a new unification algorithm to a CSS tweak or pandoc template—just put
