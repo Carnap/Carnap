@@ -9,6 +9,7 @@ import Carnap.Languages.PurePropositional.Syntax
 import Carnap.Languages.PurePropositional.Parser
 import Carnap.Languages.PurePropositional.Logic.Magnus
 import Carnap.Calculi.Util
+import Carnap.Calculi.Tableau.Data
 import Carnap.Calculi.NaturalDeduction.Syntax
 import Carnap.Calculi.NaturalDeduction.Parser
 import Carnap.Calculi.NaturalDeduction.Checker
@@ -199,3 +200,8 @@ instance CoreInference IchikawaJenkinsSLTableaux PurePropLexicon (Form Bool) whe
         coreConclusionOf Bicond = SA (phin 1 .<=>. phin 2) :+: GammaV 1 :+: GammaV 2 :|-: Bot
         coreConclusionOf NBicond = SA (lneg $ phin 1 .<=>. phin 2) :+: GammaV 1 :+: GammaV 2 :|-: Bot
         coreConclusionOf DoubleNeg = SA (lneg $ lneg $ phin 1)  :+: GammaV 1 :|-: Bot
+
+ichkawaJenkinsSLTableauCalc = TableauCalc 
+    { tbParseForm = purePropFormulaParser magnusOpts
+    , tbParseRule = parseIchikawaJenkinsSLTableaux
+    }
