@@ -22,6 +22,7 @@ library
                      , Carnap.GHCJS.Action.TruthTable
                      , Carnap.GHCJS.Action.CounterModel
                      , Carnap.GHCJS.Action.QualitativeProblem
+                     , Carnap.GHCJS.Action.SequentCheck
                      , Carnap.GHCJS.Action.AcceptJSON
   if impl(ghcjs)
       build-depends:       base >= 4.7 && < 5
