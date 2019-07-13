@@ -22,8 +22,8 @@ sequentCheckAction = runWebGUI $ \w ->
 
 checkSequent :: Value -> IO Value
 checkSequent v = do let Success t = parse parseReply v
-                    print t
-                    return v
+                    print . toInfo . fmap fst $ t
+                    return . toInfo . fmap fst $ t
 
 parseReply :: Value -> Parser (Tree (String,String))
 parseReply = withObject "Sequent Tableau" $ \o -> do
@@ -32,9 +32,12 @@ parseReply = withObject "Sequent Tableau" $ \o -> do
     theforest <- o .: "forest" :: Parser [Value]
     Node (thelabel,therule) <$>  mapM parseReply theforest
 
+toInfo :: Tree String -> Value
+toInfo (Node s ss) = object [ "info" .= s, "forest" .= map toInfo ss]
+
 #ifdef __GHCJS__
 
-foreign import javascript unsafe "checkSequent_ = $2" initializeCallbackJS :: Callback (payload -> succ -> IO ()) -> IO ()
+foreign import javascript unsafe "checkSequent_ = $1" initializeCallbackJS :: Callback (payload -> succ -> IO ()) -> IO ()
 --TODO: unify with other callback code in SequentCheck
 
 foreign import javascript unsafe "$1($2);" simpleCall :: JSVal -> JSVal -> IO ()
