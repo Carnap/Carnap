@@ -1,6 +1,6 @@
 {-#LANGUAGE FlexibleContexts, FlexibleInstances, MultiParamTypeClasses #-}
 module Carnap.Languages.PurePropositional.Logic.IchikawaJenkins
-    ( parseIchikawaJenkinsSL, IchikawaJenkinsSL,  ichikawaJenkinsSLCalc, ichkawaJenkinsSLTableauCalc) where
+    ( parseIchikawaJenkinsSL, IchikawaJenkinsSL,  ichikawaJenkinsSLCalc, ichkawaJenkinsSLTableauCalc, IchikawaJenkinsSLTableaux(..), IchikawaJenkinsSL(..)) where
 
 import Data.Map as M (lookup, Map)
 import Text.Parsec

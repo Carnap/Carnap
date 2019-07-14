@@ -19,6 +19,7 @@ import GHCJS.DOM
 import Carnap.Core.Data.Types
 import Carnap.Core.Data.Optics
 import Carnap.Calculi.Tableau.Data
+import Carnap.Calculi.Tableau.Checker
 import Carnap.Languages.ClassicalSequent.Syntax
 import Carnap.Languages.ClassicalSequent.Parser
 import Carnap.Languages.PurePropositional.Logic.IchikawaJenkins
@@ -33,7 +34,7 @@ checkSequent :: Value -> IO Value
 checkSequent v = do let Success t = parse parseReply v
                     case toTableau ichkawaJenkinsSLTableauCalc t of 
                         Left feedback -> return . toInfo $ feedback
-                        Right tab -> return . toInfo $ fmap (Feedback . show . tableauNodeSeq) tab
+                        Right tab -> return . toInfo . validateTree $ tab
 
 parseReply :: Value -> Parser (Tree (String,String))
 parseReply = withObject "Sequent Tableau" $ \o -> do
