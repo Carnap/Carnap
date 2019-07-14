@@ -301,9 +301,9 @@ psolVarHead :: Typeable a => PolyadicallySOL a -> Bool
 psolVarHead ((SOPApp SOApp) :!$: v) = 
         case preview _polyVarIdxSOL v of
                Just _ -> True
-               Nothing -> False
+               Nothing -> psolVarHead v
 psolVarHead (x :!$: _) = psolVarHead x
-psolVarHead _ = False
+psolVarHead v = False
 
 msolVarHead :: MonadicallySOL a -> Bool
 msolVarHead ((SOMApp SOApp) :!$: x) = msolVarHead x
