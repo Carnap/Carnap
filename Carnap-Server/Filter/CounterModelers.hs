@@ -12,9 +12,9 @@ makeCounterModelers cb@(CodeBlock (_,classes,extra) contents)
 makeCounterModelers x = x
 
 activate cls extra chunk
-    | "Simple" `elem` cls = RawBlock "html" $ template (opts [("countermodelertype","simple")])
-    | "Validity" `elem` cls = RawBlock "html" $ template (opts [("countermodelertype","validity")])
-    | "Constraint" `elem` cls = RawBlock "html" $ template (opts [("countermodelertype","constraint")])
+    | "Simple" `elem` cls = template (opts [("countermodelertype","simple")])
+    | "Validity" `elem` cls = template (opts [("countermodelertype","validity")])
+    | "Constraint" `elem` cls = template (opts [("countermodelertype","constraint")])
     | otherwise = RawBlock "html" "<div>No Matching CounterModeler Type</div>"
     where numof x = takeWhile (/= ' ') x
           contentOf x = dropWhile (== ' ') . dropWhile (/= ' ') $  x
@@ -24,9 +24,11 @@ activate cls extra chunk
                   , ("goal", contentOf h) 
                   , ("submission", "saveAs:" ++ numof h)
                   ]
-          template opts = "<div class=\"exercise\">"
-                          ++ "<span> exercise " ++ numof h ++ "</span><div"
-                          ++ concatMap (\(x,y) -> " data-carnap-" ++ x ++ "=\"" ++ y ++ "\"") (toList opts)
-                          ++ ">" 
-                          ++ unlines' t
-                          ++ "</div></div>" 
+          template opts = Div ("",["exercise"],[]) 
+                            [ Plain 
+                                [Span ("",[],[]) 
+                                    [Str (numof h)]
+                                ]
+                            , Div ("",[],map (\(x,y) -> ("data-carnap-" ++ x,y)) $ toList opts) 
+                                [ Plain [Str $ unlines' t ]]
+                            ]

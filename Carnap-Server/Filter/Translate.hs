@@ -14,8 +14,8 @@ makeTranslate cb@(CodeBlock (_,classes,extra) contents)
 makeTranslate x = x
 
 activate cls extra chunk
-    | "Prop" `elem` cls = RawBlock "html" $ template (opts [("transtype","prop")])
-    | "FOL" `elem` cls = RawBlock "html" $ template (opts [("transtype","first-order")])
+    | "Prop" `elem` cls = template (opts [("transtype","prop")])
+    | "FOL" `elem` cls = template (opts [("transtype","first-order")])
     | otherwise = RawBlock "html" "<div>No Matching Translation</div></div>"
     where numof = takeWhile (/= ' ')
           contentof = dropWhile (== ' ') . dropWhile (/= ' ')
@@ -28,12 +28,13 @@ activate cls extra chunk
                              ]
                     _ -> []
           opts adhoc = unions [fromList extra, fromList fixed, fromList adhoc]
-          template opts = "<div class=\"exercise\">"
-                          ++ "<span> exercise " ++ numof h ++ "</span>"
-                          ++ case splitOn ":" (contentof h) of
-                              [x,y] -> "<div"
-                                       ++ concatMap (\(x,y) -> " data-carnap-" ++ x ++ "=\"" ++ y ++ "\"") (toList opts)
-                                       ++ ">"
-                                       ++ case t of [] -> y; _ -> unlines' t
-                                       ++ "</div></div>"
-                              _ -> "<div>No Matching Translation</div></div>"
+          template opts = Div ("",["exercise"],[])
+                            [ Plain 
+                                [Span ("",[],[]) 
+                                    [Str (numof h)]
+                                ]
+                            , case splitOn ":" (contentof h) of
+                                  [x,y] -> Div ("",[],map (\(x,y) -> ("data-carnap-" ++ x,y)) $ toList opts) 
+                                            [Plain [Str (case t of [] -> y; _ -> unlines' t)]]
+                                  _ -> Div ("",[],[]) [Plain [Str "No matching Translation"]]
+                            ]

@@ -105,12 +105,12 @@ toPlayground cls extra content
           playTemplate opts = actTemplate (unions [fromList extra, fromList opts, fromList fixed]) "Playground" (unlines' $ formatChunk content)
 
 actTemplate :: Map String String -> String -> String -> Block
-actTemplate opts head content = RawBlock "html" $ 
-    "<div class=\"exercise\">"
-    ++ "<span> " ++ head ++ "</span>"
-    ++ "<div"
-    ++ concatMap (\(x,y) -> " data-carnap-" ++ x ++ "=\"" ++ y ++ "\"") (toList opts)
-    ++ ">"
-    ++ content
-    ++ "</div></div>"
+actTemplate opts head content = Div ("",["exercise"],[])
+    [ Plain 
+        [Span ("",[],[]) 
+            [Str head]
+        ]
+    , Div ("",[],map (\(x,y) -> ("data-carnap-" ++ x,y)) $ toList opts) 
+        [Plain [Str content]]
+    ]
 
