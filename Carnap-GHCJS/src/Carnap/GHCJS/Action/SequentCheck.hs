@@ -41,7 +41,9 @@ parseReply = withObject "Sequent Tableau" $ \o -> do
     thelabel   <- o .: "label" :: Parser String
     therule <- o .: "rule" :: Parser String
     theforest <- o .: "forest" :: Parser [Value]
-    Node (thelabel,therule) <$>  mapM parseReply theforest
+    filteredForest <- filter (\(Node (x,y) _) -> x /= "") <$> mapM parseReply theforest
+    --ignore empty nodes
+    return $ Node (thelabel,therule) filteredForest
 
 toTableau :: ( Typeable sem
              , ReLex lex

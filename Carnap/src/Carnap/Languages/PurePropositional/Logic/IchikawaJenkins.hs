@@ -129,10 +129,11 @@ ichikawaJenkinsSLCalc = mkNDCalc
 --  Semantic Tableaux  --
 -------------------------
 
-data IchikawaJenkinsSLTableaux = Conj | NConj | Disj | NDisj | Cond | NCond | Bicond | NBicond | DoubleNeg
+data IchikawaJenkinsSLTableaux = Ax | Conj | NConj | Disj | NDisj | Cond | NCond | Bicond | NBicond | DoubleNeg
     deriving Eq
 
 instance Show IchikawaJenkinsSLTableaux where
+    show Ax = "Ax"
     show Conj = "&"
     show NConj = "¬&"
     show Disj  = "∨"
@@ -158,9 +159,11 @@ parseIchikawaJenkinsSLTableaux = do r <- choice (map (try . string) ["&","¬&","
                                                                 , "<>", "¬<>","~<>","-<>"
                                                                 , "B", "¬B","~B","-B"
                                                                 , "¬¬","~~","--"
+                                                                , "Ax"
                                                                 ])
                                     return $ case r of
                                        r | r == "&" -> Conj
+                                         | r == "Ax" -> Ax
                                          | r `elem` ["¬&","~&","-&"] -> NConj
                                          | r `elem` ["∨","v","\\/"] -> Disj
                                          | r `elem` [ "¬∨","~∨","-∨", "¬\\/","~\\/","-\\/", "¬v","~v","-v"] -> NDisj
@@ -190,6 +193,7 @@ instance CoreInference IchikawaJenkinsSLTableaux PurePropLexicon (Form Bool) whe
                                  , SA (lneg $ phin 1) :+: SA (phin 2) :+: GammaV 2 :|-: Bot
                                  ]
         corePremisesOf DoubleNeg = [ SA (phin 1)  :+: GammaV 1 :|-: Bot ]
+        corePremisesOf Ax = []
 
         coreConclusionOf Conj = SA (phin 1 ./\. phin 2) :+: GammaV 1 :|-: Bot
         coreConclusionOf NConj = SA (lneg $ phin 1 ./\. phin 2 ) :+: GammaV 1 :+: GammaV 2 :|-: Bot
@@ -200,6 +204,7 @@ instance CoreInference IchikawaJenkinsSLTableaux PurePropLexicon (Form Bool) whe
         coreConclusionOf Bicond = SA (phin 1 .<=>. phin 2) :+: GammaV 1 :+: GammaV 2 :|-: Bot
         coreConclusionOf NBicond = SA (lneg $ phin 1 .<=>. phin 2) :+: GammaV 1 :+: GammaV 2 :|-: Bot
         coreConclusionOf DoubleNeg = SA (lneg $ lneg $ phin 1)  :+: GammaV 1 :|-: Bot
+        coreConclusionOf Ax = SA (phin 1) :+: SA (lneg $ phin 1) :+: GammaV 1 :|-: Bot
 
 ichkawaJenkinsSLTableauCalc = TableauCalc 
     { tbParseForm = purePropFormulaParser magnusOpts

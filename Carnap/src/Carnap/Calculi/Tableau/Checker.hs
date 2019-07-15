@@ -88,5 +88,5 @@ schemeTarget ::
     , PrismSubstitutionalVariable lex
     ) => SequentRule lex sem -> FixLang lex sem
 schemeTarget r = case filter (any isVar . universe . fromSequent) . toListOf concretes . lowerSequent $ r of
-                 [f] -> fromSequent f
-                 cs -> error $ "rule lacks a unique target. " ++ (show (length cs)) ++ " Possible targets."
+                 (f:_) -> fromSequent f
+                 [] -> error $ "rule lacks a target."
