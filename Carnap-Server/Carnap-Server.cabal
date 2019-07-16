@@ -36,6 +36,7 @@ library
                      Handler.Review
                      Handler.Assignment
                      Handler.Document
+                     Filter.Randomize
                      Filter.Sidenotes
                      Filter.SynCheckers
                      Filter.ProofCheckers
@@ -132,6 +133,7 @@ library
                  , tzdata
                  , Carnap-Client
                  , Carnap
+                 , random
 
 executable         Carnap-Server
     if flag(library-only)
