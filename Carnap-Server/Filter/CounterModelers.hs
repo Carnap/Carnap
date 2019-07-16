@@ -7,7 +7,7 @@ import Prelude
 
 makeCounterModelers :: Block -> Block
 makeCounterModelers cb@(CodeBlock (_,classes,extra) contents)
-    | "CounterModeler" `elem` classes = Div ("problem",[],[]) $ map (activate classes extra) $ intoChunks contents
+    | "CounterModeler" `elem` classes = Div ("",[],[]) $ map (activate classes extra) $ intoChunks contents
     | otherwise = cb
 makeCounterModelers x = x
 

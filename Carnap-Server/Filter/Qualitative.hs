@@ -9,7 +9,7 @@ import Prelude
 
 makeQualitativeProblems :: Block -> Block
 makeQualitativeProblems cb@(CodeBlock (_,classes,extra) contents)
-    | "QualitativeProblem" `elem` classes = Div ("problem",[],[]) $ map (activate classes extra) $ intoChunks contents
+    | "QualitativeProblem" `elem` classes = Div ("",[],[]) $ map (activate classes extra) $ intoChunks contents
     | otherwise = cb
 makeQualitativeProblems x = x
 

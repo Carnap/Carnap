@@ -7,7 +7,7 @@ import Prelude
 
 makeTruthTables :: Block -> Block
 makeTruthTables cb@(CodeBlock (_,classes,extra) contents)
-    | "TruthTable" `elem` classes = Div ("problem",[],[]) $ map (activate classes extra) $ intoChunks contents
+    | "TruthTable" `elem` classes = Div ("",[],[]) $ map (activate classes extra) $ intoChunks contents
     | otherwise = cb
 makeTruthTables x = x
 
