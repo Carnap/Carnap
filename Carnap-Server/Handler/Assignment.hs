@@ -8,6 +8,7 @@ import Text.Pandoc (writerExtensions,writerWrapText, WrapOption(..), readerExten
 import System.Directory (doesFileExist,getDirectoryContents)
 import Text.Julius (juliusFile,rawJS)
 import Text.Pandoc.Walk (walkM, walk)
+import Filter.Randomize
 import Filter.SynCheckers
 import Filter.ProofCheckers
 import Filter.Translate
@@ -29,7 +30,7 @@ returnAssignment (Entity key val) path = do
            classes <- maybe reject classesByInstructorIdent mident 
            if visibleAt time val || assignmentMetadataCourse val `elem` map entityKey classes 
                then do
-                   ehtml <- liftIO $ fileToHtml path
+                   ehtml <- liftIO $ fileToHtml (hash (show muid ++ path)) path
                    unless (visibleAt time val) $ setMessage "Viewing as instructor. Assignment not currently visible to students."
                    case ehtml of
                        Left err -> defaultLayout $ layout (show err)
@@ -58,12 +59,12 @@ returnAssignment (Entity key val) path = do
                           && (assignmentMetadataVisibleFrom a < Just t || assignmentMetadataVisibleFrom a == Nothing)
           reject = setMessage "you need to be logged in to access assignments" >> redirect HomeR
 
-fileToHtml path = do Markdown md <- markdownFromFile path
-                     let md' = Markdown (filter ((/=) '\r') md) --remove carrage returns from dos files
-                     case parseMarkdown yesodDefaultReaderOptions { readerExtensions = carnapPandocExtensions } md' of
-                         Right pd -> do let pd' = walk allFilters pd
-                                        return $ Right $ writePandocTrusted yesodDefaultWriterOptions 
-                                                        { writerExtensions = carnapPandocExtensions
-                                                        , writerWrapText=WrapPreserve } pd'
-                         Left e -> return $ Left e
-    where allFilters = (makeSynCheckers . makeProofChecker . makeTranslate . makeTruthTables . makeCounterModelers . makeQualitativeProblems)
+fileToHtml salt path = do Markdown md <- markdownFromFile path
+                          let md' = Markdown (filter ((/=) '\r') md) --remove carrage returns from dos files
+                          case parseMarkdown yesodDefaultReaderOptions { readerExtensions = carnapPandocExtensions } md' of
+                              Right pd -> do let pd' = walk allFilters pd
+                                             return $ Right $ writePandocTrusted yesodDefaultWriterOptions 
+                                                             { writerExtensions = carnapPandocExtensions
+                                                             , writerWrapText=WrapPreserve } pd'
+                              Left e -> return $ Left e
+    where allFilters = (randomizeProblems salt . makeSynCheckers . makeProofChecker . makeTranslate . makeTruthTables . makeCounterModelers . makeQualitativeProblems)
