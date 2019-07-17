@@ -144,10 +144,10 @@ instance ( FirstOrderLex (t (ClassicalSequentOver t))
 
         acuiOp a Top = a
         acuiOp a Bot = a
+        acuiOp a SID = a
         acuiOp Top b = b
         acuiOp Bot b = b
         acuiOp SID b = b
-        acuiOp a SID = a
         acuiOp x@(_ :+: _) y   = x :+: y
         acuiOp x y@(_ :+: _)   = x :+: y
         acuiOp x@(_ :-: _) y   = x :-: y

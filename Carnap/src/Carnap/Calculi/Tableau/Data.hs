@@ -27,7 +27,7 @@ type TruthTree lex sem rule = Tree (TreeNode lex sem rule)
 
 data TableauNode lex sem rule = TableauNode
            { tableauNodeSeq :: ClassicalSequentOver lex (Sequent sem)
-           , tableauNodeTarget :: FixLang lex sem
+           , tableauNodeTarget :: Maybe (FixLang lex sem)
            , tableauNodeRule :: Maybe rule
            --this is the rule that develops the node, not the rule that the node is developed by.
            }

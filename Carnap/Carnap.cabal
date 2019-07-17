@@ -45,6 +45,7 @@ library
                      , Carnap.Languages.PurePropositional.Logic.Hardegree
                      , Carnap.Languages.PurePropositional.Logic.ThomasBolducAndZach
                      , Carnap.Languages.PurePropositional.Logic.Tomassi
+                     , Carnap.Languages.PurePropositional.Logic.Gentzen
                      , Carnap.Languages.ModalPropositional.Syntax
                      , Carnap.Languages.ModalPropositional.Parser
                      , Carnap.Languages.ModalPropositional.Logic

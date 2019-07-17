@@ -7,8 +7,10 @@ import Data.Aeson
 import Data.Typeable (Typeable)
 import Data.Aeson.Types
 import Data.Text.Encoding
+import Control.Monad (join)
 import Data.ByteString.Lazy (fromStrict)
-import qualified Text.Parsec as P (parse) 
+import qualified Text.Parsec as P (parse, ParseError) 
+import Control.Lens (view)
 #ifdef __GHCJS__
 import GHCJS.Types
 import GHCJS.Foreign
@@ -17,12 +19,15 @@ import GHCJS.Marshal
 #endif
 import GHCJS.DOM
 import Carnap.Core.Data.Types
+import Carnap.Core.Data.Classes
 import Carnap.Core.Data.Optics
+import Carnap.Calculi.Util
 import Carnap.Calculi.Tableau.Data
 import Carnap.Calculi.Tableau.Checker
 import Carnap.Languages.ClassicalSequent.Syntax
 import Carnap.Languages.ClassicalSequent.Parser
 import Carnap.Languages.PurePropositional.Logic.IchikawaJenkins
+import Carnap.Languages.PurePropositional.Logic.Gentzen
 
 sequentCheckAction ::  IO ()
 sequentCheckAction = runWebGUI $ \w -> 
@@ -32,7 +37,7 @@ sequentCheckAction = runWebGUI $ \w ->
 
 checkSequent :: Value -> IO Value
 checkSequent v = do let Success t = parse parseReply v
-                    case toTableau ichkawaJenkinsSLTableauCalc t of 
+                    case toTableau gentzenPropLKCalc t of 
                         Left feedback -> return . toInfo $ feedback
                         Right tab -> return . toInfo . validateTree $ tab
 
@@ -55,11 +60,10 @@ toTableau calc (Node (l,r) f)
     | Left n <- newNode = Left n
     where parsedLabel = P.parse (parseSeqOver (tbParseForm calc)) "" l
           parsedRule = if r == "" then pure Nothing else P.parse (Just <$> tbParseRule calc) "" r
-          easyTarget = P.parse (tbParseForm calc) "" (takeWhile (not . (`elem` [',',':'])) l) --XXX: just a placeholder for proper target
           parsedForest = map (toTableau calc) f
           cleanTree (Left fs) = fs
           cleanTree (Right fs) = fmap (const Correct) fs
-          newNode = case TableauNode <$> parsedLabel <*> easyTarget <*> parsedRule of
+          newNode = case TableauNode <$> parsedLabel <*> (pure Nothing) <*> parsedRule of
                         Right n -> Right n
                         Left e -> Left (Node (Feedback (show e)) (map cleanTree parsedForest))
 

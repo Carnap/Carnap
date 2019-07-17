@@ -50,7 +50,6 @@ toDisplaySequence pl ded = let feedback = map (pl ded res) [1 .. length ded] in
             Right s -> if alright fb then Just s else Nothing
           res = globalRestriction (Left ded)
 
-
 toDisplaySequenceMemo :: 
     ( MonadVar (ClassicalSequentOver lex) (State Int)
     , Inference r lex sem, Sequentable lex
@@ -81,7 +80,6 @@ toDisplaySequenceStructured pl ded@(SubProof (1,m) ls) = let feedback = map (pl 
             Left _ -> Nothing
             Right s -> if alright fb then Just s else Nothing
           res = globalRestriction (Right ded)
-
 
 processLineHardegree :: 
   ( Inference r lex sem
