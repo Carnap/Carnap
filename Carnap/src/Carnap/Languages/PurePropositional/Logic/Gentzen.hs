@@ -11,13 +11,16 @@ import Carnap.Calculi.Tableau.Data
 import Carnap.Calculi.Util
 import Carnap.Languages.Util.LanguageClasses
 
-data GentzenPropLK = Ax | AndL1 | AndL2 | AndR
-                        | OrR1  | OrR2  | OrL
-                        | CondR | CondL
-                        | NegR  | NegL
+data GentzenPropLK = Ax    | Rep   | Cut
+                   | AndL1 | AndL2 | AndR
+                   | OrR1  | OrR2  | OrL
+                   | CondR | CondL
+                   | NegR  | NegL
 
 instance Show GentzenPropLK where
     show Ax     = "Ax"
+    show Rep    = "Rep"
+    show Cut    = "Cut"
     show AndL1  = "L&1"
     show AndL2  = "L&2"
     show AndR   = "R&"
@@ -30,27 +33,30 @@ instance Show GentzenPropLK where
     show NegL   = "L¬"
 
 parseGentzenPropLK :: Parsec String u GentzenPropLK
-parseGentzenPropLK =  do r <- choice (map (try . string) [ "Ax", "R&","R∧","R/\\"
+parseGentzenPropLK =  do r <- choice (map (try . string) [ "Ax", "Rep", "Cut"
+                                                         , "R&","R∧","R/\\"
                                                          ,"L&1","L∧1","L/\\1"
                                                          ,"L&2","L∧2","L/\\2"
                                                          , "L∨","Lv","L\\/"
                                                          ,"R∨1","Rv1","R\\/1"
                                                          ,"R∨2","Rv2","R\\/2"
-                                                         , "L→","LC","L->"
-                                                         , "R→","RC","R->"
+                                                         , "L→","L->"
+                                                         , "R→","R->"
                                                          , "L¬","L~","L-"
                                                          , "R¬","R~","R-"
                                                          ])
                          return $ case r of
                             r | r == "Ax" -> Ax
+                              | r == "Rep" -> Rep
+                              | r == "Cut" -> Cut
                               | r `elem` ["R&","R∧","R/\\"] -> AndR
                               | r `elem` ["L&1","L∧1","L/\\1"] -> AndL1
                               | r `elem` ["L&2","L∧2","L/\\2"] -> AndL2
                               | r `elem` ["L∨","Lv","L\\/"] -> OrL
                               | r `elem` ["R∨1","Rv1","R\\/1"] -> OrR1
                               | r `elem` ["R∨2","Rv2","R\\/2"] -> OrR2
-                              | r `elem` ["L→","LC","L->"] -> CondL
-                              | r `elem` ["R→","RC","R->"] -> CondR
+                              | r `elem` ["L→","L->"] -> CondL
+                              | r `elem` ["R→","R->"] -> CondR
                               | r `elem` ["L¬","L~","L-"] -> NegL
                               | r `elem` ["R¬","R~","R-"] -> NegR
 
@@ -61,7 +67,7 @@ instance CoreInference GentzenPropLK PurePropLexicon (Form Bool) where
                               , GammaV 2 :|-: SS (phin 2) :-: DeltaV 2
                               ]
         corePremisesOf OrR1 = [ GammaV 1 :|-: DeltaV 1 :-: SS(phin 1)]
-        corePremisesOf OrR1 = [ GammaV 1 :|-: DeltaV 1 :-: SS(phin 2)]
+        corePremisesOf OrR2 = [ GammaV 1 :|-: DeltaV 1 :-: SS(phin 2)]
         corePremisesOf OrL  = [ GammaV 1 :+: SA (phin 1) :|-: DeltaV 1
                               , GammaV 2 :+: SA (phin 1) :|-: DeltaV 2
                               ] 
@@ -71,6 +77,10 @@ instance CoreInference GentzenPropLK PurePropLexicon (Form Bool) where
         corePremisesOf CondR = [ GammaV 1 :+: SA (phin 1) :|-: SS (phin 2) :-: DeltaV 2 ]
         corePremisesOf NegL = [ GammaV 1 :|-: SS (phin 1) :-: DeltaV 1 ]
         corePremisesOf NegR = [ SA (phin 1) :+: GammaV 1 :|-:  DeltaV 1 ]
+        corePremisesOf Rep =  [GammaV 1 :|-: DeltaV 1 ]
+        corePremisesOf Cut =  [ SA (phin 1) :+: GammaV 1 :|-: DeltaV 1 
+                              , GammaV 2 :|-: DeltaV 2 :-: SS (phin 1)
+                              ]
         corePremisesOf Ax = [] 
 
         coreConclusionOf AndL1 = SA (phin 1 ./\. phin 2) :+: GammaV 1 :|-: DeltaV 1
@@ -83,6 +93,8 @@ instance CoreInference GentzenPropLK PurePropLexicon (Form Bool) where
         coreConclusionOf CondR =  GammaV 1 :+: GammaV 2 :|-:  SS (phin 1 .=>. phin 2) :-: DeltaV 1 :-: DeltaV 2
         coreConclusionOf NegL = SA (lneg $ phin 1) :+: GammaV 1 :|-: DeltaV 1
         coreConclusionOf NegR =  GammaV 1 :|-: SS (lneg $ phin 1) :-: DeltaV 1
+        coreConclusionOf Rep =  GammaV 1 :|-: DeltaV 1 
+        coreConclusionOf Cut =  GammaV 1 :+: GammaV 2 :|-: DeltaV 1 :-: DeltaV 2
         coreConclusionOf Ax =  GammaV 1 :+: SA (phin 1) :|-: SS (phin 1) :-: DeltaV 1 
 
 gentzenPropLKCalc :: TableauCalc PurePropLexicon (Form Bool) GentzenPropLK

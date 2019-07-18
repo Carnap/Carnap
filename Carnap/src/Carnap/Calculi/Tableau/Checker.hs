@@ -1,4 +1,4 @@
-{-#LANGUAGE FlexibleContexts #-}
+{-#LANGUAGE FlexibleContexts, StandaloneDeriving, UndecidableInstances #-}
 module Carnap.Calculi.Tableau.Checker where
 
 import Carnap.Core.Data.Types
@@ -21,6 +21,7 @@ validateTree ::
     ( MonadVar (ClassicalSequentOver lex) (State Int)
     , FirstOrderLex (lex (ClassicalSequentOver lex))
     , FirstOrderLex (lex (FixLang lex))
+    , Eq (ClassicalSequentOver lex sem)
     , Schematizable (lex (ClassicalSequentOver lex))
     , CopulaSchema (ClassicalSequentOver lex)
     , BoundVars lex
@@ -42,6 +43,7 @@ validateNode ::
     ( MonadVar (ClassicalSequentOver lex) (State Int)
     , FirstOrderLex (lex (ClassicalSequentOver lex))
     , FirstOrderLex (lex (FixLang lex))
+    , Eq (ClassicalSequentOver lex sem)
     , Schematizable (lex (ClassicalSequentOver lex))
     , CopulaSchema (ClassicalSequentOver lex)
     , BoundVars lex
@@ -54,62 +56,80 @@ validateNode ::
     ) => TableauNode lex sem rule -> [TableauNode lex sem rule] -> [TreeFeedbackNode]
 validateNode n ns = case tableauNodeRule n of
                         Nothing -> return $ Feedback "no rule developing this node"
-                        Just r -> let theTarget = schemeTarget . coreRuleOf $ r
-                                      mainProb = [(getTarget theTarget) :=: (nodeTarget theTarget n)] in
-                            case hosolve mainProb of
-                                Left (NoUnify _ _) -> return $ 
-                                    Feedback $ "Rule applied incorrectly to node: cannot unify " 
-                                            ++ unlines (map show mainProb)
-                                Right subs -> do
-                                    sub <- subs
-                                    case coreRestriction r >>= ($ sub) of
-                                        Just msg -> return $ Feedback msg
-                                        Nothing -> do
-                                          childSeqs <- permutations (map tableauNodeSeq ns)
-                                          let theRule = coreRuleOf r
-                                              subbedChildrenLHS = map (view lhs . applySub sub) (upperSequents theRule)
-                                              subbedChildrenRHS = map (view rhs . applySub sub) (upperSequents theRule)
-                                              subbedParentLHS = view lhs . applySub sub $ lowerSequent theRule
-                                              subbedParentRHS = view rhs . applySub sub $ lowerSequent theRule
-                                              prob = (subbedParentLHS :=: (view lhs . tableauNodeSeq $ n)) 
-                                                   : (subbedParentRHS :=: (view rhs . tableauNodeSeq $ n))
-                                                   : zipWith (:=:) subbedChildrenLHS (map (view lhs) childSeqs)
-                                                   ++ zipWith (:=:) subbedChildrenRHS (map (view rhs) childSeqs)
-                                          case acuisolve prob of
-                                              Left (NoUnify _ _) -> return $ 
-                                                Feedback $ "Rule applied incorrectly to branch, cannot solve:\n\n"
-                                                        ++ unlines (map show prob) 
-                                              Right subs -> return Correct
+                        Just r -> 
+                            do let theTarget = schemeTarget . coreRuleOf $ r
+                               ns' <- permutations ns
+                               let childSeqs = map tableauNodeSeq ns'
+                                   mainProb = case theTarget of
+                                      NoTarget -> []
+                                      RightPrem n f -> [f :=: nodeTargetRight (ns' !! n)]
+                                      LeftPrem n f -> [f :=: nodeTargetLeft (ns' !! n)]
+                                      LeftConc f -> [f :=: nodeTargetLeft n]
+                                      RightConc f -> [f :=: nodeTargetRight n]
+                               case hosolve mainProb of
+                                    Left (NoUnify _ _) -> return $ 
+                                        Feedback $ "Rule applied incorrectly to node: cannot unify " 
+                                                ++ unlines (map show mainProb)
+                                    Right subs -> do
+                                        sub <- subs
+                                        case coreRestriction r >>= ($ sub) of
+                                            Just msg -> return $ Feedback msg
+                                            Nothing -> do
+                                              childSeqs <- permutations (map tableauNodeSeq ns)
+                                              let theRule = coreRuleOf r
+                                                  subbedChildrenLHS = map (view lhs . applySub sub) (upperSequents theRule)
+                                                  subbedChildrenRHS = map (view rhs . applySub sub) (upperSequents theRule)
+                                                  subbedParentLHS = view lhs . applySub sub $ lowerSequent theRule
+                                                  subbedParentRHS = view rhs . applySub sub $ lowerSequent theRule
+                                                  prob = (subbedParentLHS :=: (view lhs . tableauNodeSeq $ n)) 
+                                                       : (subbedParentRHS :=: (view rhs . tableauNodeSeq $ n))
+                                                       : zipWith (:=:) subbedChildrenLHS (map (view lhs) childSeqs)
+                                                       ++ zipWith (:=:) subbedChildrenRHS (map (view rhs) childSeqs)
+                                              case acuisolve prob of
+                                                  Left (NoUnify _ _) -> return $ 
+                                                    Feedback $ "Rule applied incorrectly to branch, cannot solve:\n\n"
+                                                            ++ unlines (map show prob) 
+                                                  Right subs -> return Correct
 
-nodeTarget :: 
+nodeTargetLeft, nodeTargetRight :: 
     ( FirstOrder (ClassicalSequentOver lex)
     , FirstOrderLex (lex (FixLang lex))
     , Typeable sem
     , Sequentable lex
     , BoundVars lex
     , PrismSubstitutionalVariable lex
-    ) => SequentRuleTarget (ClassicalSequentLexOver lex) sem -> TableauNode lex sem rule -> ClassicalSequentOver lex sem
-nodeTarget t n = case tableauNodeTarget n of
+    ) => TableauNode lex sem rule -> ClassicalSequentOver lex sem
+nodeTargetLeft n = case tableauNodeTarget n of
                      Just f -> liftToSequent f
-                     Nothing -> case t of
-                                    --head and last are reversed because `concretes` reverses order, I think
-                                    RightConc _ -> head . toListOf concretes . view rhs . tableauNodeSeq $ n
-                                    LeftConc _ -> last . toListOf concretes . view lhs . tableauNodeSeq $ n
-                                    _ -> error "bad nodeTarget location"
+                     Nothing -> last . toListOf concretes . view lhs . tableauNodeSeq $ n
+nodeTargetRight n = case tableauNodeTarget n of
+                     Just f -> liftToSequent f
+                     Nothing -> head . toListOf concretes . view rhs . tableauNodeSeq $ n
+  --head and last are reversed because `concretes` reverses order, I think
 
+--TODO: Should actually extract a list of irredundant targets
 schemeTarget :: 
     ( FirstOrder (ClassicalSequentOver lex)
+    , Eq (ClassicalSequentOver lex sem)
     , FirstOrderLex (lex (FixLang lex))
     , Typeable sem
     , Sequentable lex
     , BoundVars lex
     , PrismSubstitutionalVariable lex
     ) => SequentRule lex sem -> SequentRuleTarget (ClassicalSequentLexOver lex) sem
-schemeTarget r = case ( filter (any isVar . universe . fromSequent) . toListOf concretes . view lhs . lowerSequent $ r
-                      , filter (any isVar . universe . fromSequent) . toListOf concretes . view rhs . lowerSequent $ r
-                      ) of (f:_,_) -> LeftConc f
-                           (_,f:_) -> RightConc f
-                           _ -> error $ "rule lacks a target."
+schemeTarget r = case getTarget (lowerSequent r) of 
+                    NoTarget -> case filter (\(_,x) -> x /= NoTarget) . map (\(n,x) -> (n,getTarget x)) . zip [1..] $ upperSequents r of
+                                       [] -> NoTarget
+                                       ((n,LeftConc f):_) -> LeftPrem n f
+                                       ((n,RightConc f):_) -> RightPrem n f
+                    target -> target
+    where getTarget seq = 
+            case ( filter (any isVar . universe . fromSequent) . toListOf concretes . view lhs $ seq
+                 , filter (any isVar . universe . fromSequent) . toListOf concretes . view rhs $ seq
+                 ) of (f:_,_) -> LeftConc f
+                      (_,f:_) -> RightConc f
+                      _ -> NoTarget
+
 
 data SequentRuleTarget lex sem = LeftConc (FixLang lex sem) 
                                | RightConc (FixLang lex sem) 
@@ -117,7 +137,4 @@ data SequentRuleTarget lex sem = LeftConc (FixLang lex sem)
                                | RightPrem Int (FixLang lex sem)
                                | NoTarget
 
-getTarget (LeftConc f) = f
-getTarget (RightConc f) = f
-getTarget (LeftPrem _ f) = f
-getTarget (RightPrem _ f) = f
+deriving instance Eq (FixLang lex sem) => Eq (SequentRuleTarget lex sem)
