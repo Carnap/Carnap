@@ -11,8 +11,8 @@ makeSynCheckers cb@(CodeBlock (_,classes,extra) contents)
 makeSynCheckers x = x
 
 activate cls extra cnt
-    | "Match" `elem` cls = RawBlock "html" $ template (opts [("matchtype","match")])
-    | "MatchClean" `elem` cls = RawBlock "html" $ template (opts [("matchtype","matchclean")])
+    | "Match" `elem` cls = template (opts [("matchtype","match")])
+    | "MatchClean" `elem` cls = template (opts [("matchtype","matchclean")])
     | otherwise = RawBlock "html" "<div>No Matching SynChecker</div>"
     where numof x = takeWhile (/= ' ') x
           propof x = dropWhile (== ' ') . dropWhile (/= ' ') $ x
@@ -21,8 +21,10 @@ activate cls extra cnt
                   , ("goal", propof cnt) 
                   , ("submission", "saveAs:" ++ numof cnt)
                   ]
-          template opts = "<div class=\"exercise\">"
-                          ++ "<span> exercise " ++ numof cnt ++ "</span><div"
-                          ++ concatMap (\(x,y) -> " data-carnap-" ++ x ++ "=\"" ++ y ++ "\"") (toList opts)
-                          ++ "'>" 
-                          ++ "</div></div>" 
+          template opts = Div ("",["exercise"],[])
+                            [ Plain 
+                                [Span ("",[],[]) 
+                                    [Str (numof cnt)]
+                                ]
+                            , Div ("",[],map (\(x,y) -> ("data-carnap-" ++ x,y)) $ toList opts) []
+                            ]

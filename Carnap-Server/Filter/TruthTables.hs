@@ -7,14 +7,14 @@ import Prelude
 
 makeTruthTables :: Block -> Block
 makeTruthTables cb@(CodeBlock (_,classes,extra) contents)
-    | "TruthTable" `elem` classes = Div ("problem",[],[]) $ map (activate classes extra) $ intoChunks contents
+    | "TruthTable" `elem` classes = Div ("",[],[]) $ map (activate classes extra) $ intoChunks contents
     | otherwise = cb
 makeTruthTables x = x
 
 activate cls extra chunk
-    | "Simple" `elem` cls = RawBlock "html" $ template (opts [("tabletype","simple")])
-    | "Validity" `elem` cls = RawBlock "html" $ template (opts [("tabletype","validity")])
-    | "Partial" `elem` cls = RawBlock "html" $ template (opts [("tabletype","partial")])
+    | "Simple" `elem` cls = template (opts [("tabletype","simple")])
+    | "Validity" `elem` cls = template (opts [("tabletype","validity")])
+    | "Partial" `elem` cls = template (opts [("tabletype","partial")])
     | otherwise = RawBlock "html" "<div>No Matching Truth Table Type</div>"
     where numof x = takeWhile (/= ' ') x
           contentOf x = dropWhile (== ' ') . dropWhile (/= ' ') $  x
@@ -24,9 +24,11 @@ activate cls extra chunk
                   , ("goal", contentOf h) 
                   , ("submission", "saveAs:" ++ numof h)
                   ]
-          template opts = "<div class=\"exercise\">"
-                          ++ "<span> exercise " ++ numof h ++ "</span><div"
-                          ++ concatMap (\(x,y) -> " data-carnap-" ++ x ++ "=\"" ++ y ++ "\"") (toList opts)
-                          ++ ">" 
-                          ++ unlines' t
-                          ++ "</div></div>" 
+          template opts = Div ("",["exercise"],[])
+                            [ Plain 
+                                [Span ("",[],[]) 
+                                    [Str (numof h)]
+                                ]
+                            ,  Div ("",[],map (\(x,y) -> ("data-carnap-" ++ x,y)) $ toList opts) 
+                                            [Plain [Str (unlines' t)]]
+                            ]

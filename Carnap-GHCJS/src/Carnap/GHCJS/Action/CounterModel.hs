@@ -490,9 +490,6 @@ validateModel fields = do inputs <- catMaybes . concat <$> mapM (\f -> getListOf
                               tup <- tuplesOn (n - 1) dom
                               return $ x:tup
 
-
-
-
 setField :: Document -> [Element] -> (String,String) -> IO ()
 setField w fields (name,val) = do inputs <- concat <$> mapM (\f -> getListOfElementsByTag f "textarea") fields
                                   selects <- concat <$> mapM (\f -> getListOfElementsByTag f "select") fields

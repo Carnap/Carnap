@@ -9,12 +9,12 @@ import Prelude
 
 makeQualitativeProblems :: Block -> Block
 makeQualitativeProblems cb@(CodeBlock (_,classes,extra) contents)
-    | "QualitativeProblem" `elem` classes = Div ("problem",[],[]) $ map (activate classes extra) $ intoChunks contents
+    | "QualitativeProblem" `elem` classes = Div ("",[],[]) $ map (activate classes extra) $ intoChunks contents
     | otherwise = cb
 makeQualitativeProblems x = x
 
 activate cls extra chunk
-    | "MultipleChoice" `elem` cls = RawBlock "html" $ template (opts [("qualitativetype","multiplechoice")])
+    | "MultipleChoice" `elem` cls = template (opts [("qualitativetype","multiplechoice")])
     | otherwise = RawBlock "html" "<div>No Matching Qualitative Problem Type</div>"
     where numof x = takeWhile (/= ' ') x
           contentOf x = dropWhile (== ' ') . dropWhile (/= ' ') $  x
@@ -24,12 +24,18 @@ activate cls extra chunk
                   , ("goal", contentOf h) 
                   , ("submission", "saveAs:" ++ numof h)
                   ]
-          template opts = "<div class=\"exercise\">"
-                          ++ "<span> exercise " ++ numof h ++ "</span><div"
-                          ++ concatMap (\(x,y) -> " data-carnap-" ++ x ++ "=\"" ++ y ++ "\"") (toList opts)
-                          ++ ">" 
-                          ++ unlines' (map (show . withHash) t)
-                          ++ "</div></div>" 
+          template opts = Div ("",["exercise"],[]) 
+                            [ Plain 
+                                [Span ("",[],[]) 
+                                    [Str (numof h)]
+                                ]
+                            --XXX: Need rawblock here to get the linebreaks right.
+                            ,  RawBlock "html" 
+                                   $ "<div" ++ optString ++ ">" 
+                                  ++ unlines' (map (show . withHash) t)
+                                  ++ "</div>"
+                          ]
+                where optString = concatMap (\(x,y) -> " data-carnap-" ++ x ++ "=\"" ++ y ++ "\"") (toList opts)
           withHash s | length s' > 0 = if head s' == '*' then (simpleHash s', tail s') else (simpleHash s',s')
                      | otherwise = (simpleHash s', s')
             where s' = (dropWhile (== ' ') s)
