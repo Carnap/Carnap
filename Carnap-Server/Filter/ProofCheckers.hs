@@ -58,7 +58,7 @@ activate cls extra chunk
           seqof = dropWhile (/= ' ')
           (h:t) = formatChunk chunk
           fixed = [("type","proofchecker"),("goal",seqof h),("submission","saveAs:" ++ numof h)]
-          exTemplate opts = actTemplate (unions [fromList extra, fromList opts, fromList fixed]) ("exercise " ++ numof h) (unlines' t)
+          exTemplate opts = template (unions [fromList extra, fromList opts, fromList fixed]) ("exercise " ++ numof h) (unlines' t)
 
 toPlayground cls extra content
     | "Prop"             `elem` cls = playTemplate [("system", "prop")]
@@ -102,15 +102,19 @@ toPlayground cls extra content
     | "HardegreeMPL"     `elem` cls = playTemplate [("system", "hardegreeMPL"), ("guides", "montague"), ("options", "fonts")]
     | otherwise = playTemplate []
     where fixed = [("type","proofchecker")]
-          playTemplate opts = actTemplate (unions [fromList extra, fromList opts, fromList fixed]) "Playground" (unlines' $ formatChunk content)
+          playTemplate opts = template (unions [fromList extra, fromList opts, fromList fixed]) "Playground" (unlines' $ formatChunk content)
 
-actTemplate :: Map String String -> String -> String -> Block
-actTemplate opts head content = Div ("",["exercise"],[])
+template :: Map String String -> String -> String -> Block
+template opts head content = Div ("",["exercise"],[])
     [ Plain 
         [Span ("",[],[]) 
             [Str head]
         ]
-    , Div ("",[],map (\(x,y) -> ("data-carnap-" ++ x,y)) $ toList opts) 
-        [Plain [Str content]]
+    , RawBlock "html" 
+        --Need rawblock here to get the linebreaks right.
+        $ "<div" ++ optString ++ ">"
+        ++ content
+        ++ "</div>"
     ]
+    where optString = concatMap (\(x,y) -> (" data-carnap-" ++ x ++ "=\"" ++ y ++ "\"")) (toList opts) 
 
