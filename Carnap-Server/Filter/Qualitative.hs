@@ -29,7 +29,7 @@ activate cls extra chunk
                                 [Span ("",[],[]) 
                                     [Str (numof h)]
                                 ]
-                            --Need rawblock here to get the linebreaks right.
+                            --XXX: Need rawblock here to get the linebreaks right.
                             ,  RawBlock "html" 
                                    $ "<div" ++ optString ++ ">" 
                                   ++ unlines' (map (show . withHash) t)
