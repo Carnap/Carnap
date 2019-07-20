@@ -138,6 +138,7 @@ schemeTargets r = redundant targetList []
     where targetList = getTarget (lowerSequent r) : map retarget (zip [0 ..] (map getTarget $ upperSequents r))
           retarget (n,LeftConc f) = LeftPrem n f
           retarget (n,RightConc f) = RightPrem n f
+          retarget (_,NoTarget) = NoTarget
           redundant [] accum = accum
           redundant (NoTarget:potential) accum = redundant potential accum
           redundant (p:potential) accum | any (subform p) accum = redundant potential accum
