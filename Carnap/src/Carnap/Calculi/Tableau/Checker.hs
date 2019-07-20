@@ -21,7 +21,7 @@ validateTree ::
     ( MonadVar (ClassicalSequentOver lex) (State Int)
     , FirstOrderLex (lex (ClassicalSequentOver lex))
     , FirstOrderLex (lex (FixLang lex))
-    , Eq (ClassicalSequentOver lex sem)
+    , Eq (FixLang lex sem)
     , Schematizable (lex (ClassicalSequentOver lex))
     , CopulaSchema (ClassicalSequentOver lex)
     , BoundVars lex
@@ -43,7 +43,7 @@ validateNode ::
     ( MonadVar (ClassicalSequentOver lex) (State Int)
     , FirstOrderLex (lex (ClassicalSequentOver lex))
     , FirstOrderLex (lex (FixLang lex))
-    , Eq (ClassicalSequentOver lex sem)
+    , Eq (FixLang lex sem)
     , Schematizable (lex (ClassicalSequentOver lex))
     , CopulaSchema (ClassicalSequentOver lex)
     , BoundVars lex
@@ -63,12 +63,12 @@ validateNode n ns = case tableauNodeRule n of
                                else do
                                    ns' <- permutations ns
                                    let childSeqs = map tableauNodeSeq ns'
-                                       mainProb = case schemeTarget theRule of
+                                       mainProb = concatMap (\t -> case t of
                                           NoTarget -> []
                                           RightPrem n f -> [f :=: nodeTargetRight (ns' !! n)]
                                           LeftPrem n f -> [f :=: nodeTargetLeft (ns' !! n)]
                                           LeftConc f -> [f :=: nodeTargetLeft n]
-                                          RightConc f -> [f :=: nodeTargetRight n]
+                                          RightConc f -> [f :=: nodeTargetRight n]) (schemeTargets theRule)
                                    case hosolve mainProb of
                                         Left (NoUnify _ _) -> return $ 
                                             Feedback $ "Rule applied incorrectly to node: cannot unify\n\n " 
