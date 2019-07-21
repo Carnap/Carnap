@@ -8,6 +8,9 @@ import Text.Read (readMaybe)
 import Yesod.Form.Bootstrap3
 import Carnap.Languages.PurePropositional.Syntax
 import Carnap.Languages.PureFirstOrder.Syntax
+import Carnap.Languages.PurePropositional.Logic (ofPropSys)
+import Carnap.Languages.PureFirstOrder.Logic (ofFOLSys)
+import Carnap.Calculi.NaturalDeduction.Syntax (NaturalDeductionCalc(..))
 import Carnap.GHCJS.SharedTypes
 import Carnap.GHCJS.SharedFunctions (simpleCipher)
 
@@ -118,13 +121,15 @@ renderProblem (Entity key val) = do
                 [whamlet|
                     <div data-carnap-type="truthtable"
                          data-carnap-tabletype="#{tabletype}"
+                         data-carnap-system="#{ttsystem}"
                          data-carnap-submission="none"
                          data-carnap-options="immutable nocheck nocounterexample"
                          data-carnap-goal="#{formatContent (unpack content)}">
                          #{renderTT tt}
                 |]
                 where tabletype = case lookup "tabletype" (M.fromList opts) of Just s -> s; Nothing -> checkvalidity content
-                      formatContent c = case maybeString of Just s -> s; Nothing -> ""
+                      ttsystem = case lookup "system" (M.fromList opts) of Just s -> s; Nothing -> "prop"
+                      formatContent c = case (ndNotation `ofPropSys` ttsystem) <*> maybeString of Just s -> s; Nothing -> ""
                         where maybeString = (show <$> (readMaybe c :: Maybe PureForm))
                                     `mplus` (intercalate "," . map show <$> (readMaybe c :: Maybe [PureForm]))
                                     `mplus` case readMaybe c :: Maybe ([PureForm],[PureForm]) of
@@ -136,11 +141,13 @@ renderProblem (Entity key val) = do
                     <div data-carnap-type="countermodeler"
                          data-carnap-countermodelertype="#{cmtype}"
                          data-carnap-submission="none"
+                         data-carnap-system="#{cmsystem}"
                          data-carnap-goal="#{formatContent (unpack content)}">
                          #{renderCM cm}
                 |]
                 where cmtype = case lookup "countermodelertype" (M.fromList opts) of Just s -> s; Nothing -> checkvalidity content
-                      formatContent c = case maybeString of Just s -> s; Nothing -> ""
+                      cmsystem = case lookup "system" (M.fromList opts) of Just s -> s; Nothing -> "firstOrder"
+                      formatContent c = case (ndNotation `ofFOLSys` cmsystem) <*> maybeString of Just s ->  s; Nothing -> ""
                         where maybeString = (show <$> (readMaybe c :: Maybe PureForm))
                                     `mplus` (intercalate "," . map show <$> (readMaybe c :: Maybe [PureFOLForm]))
                                     `mplus` Just c --If it's a sequent, it'll show properly anyway.

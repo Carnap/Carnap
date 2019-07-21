@@ -83,9 +83,11 @@ unform :: Form Bool -> Bool
 unform (Form b) = b
 
 rewriteWith :: M.Map String String -> String -> String
-rewriteWith opts = case M.lookup "system" opts >>= ofPropSys ndNotation of
-                        Just f -> f
-                        Nothing -> id
+rewriteWith opts = case rewriter of
+                       Just f -> f
+                       Nothing -> id
+    where rewriter = (M.lookup "system" opts >>= ofPropSys ndNotation)
+             `mplus` (M.lookup "system" opts >>= ofFOLSys ndNotation)
 
 --------------------------------------------------------
 --1.1 Events

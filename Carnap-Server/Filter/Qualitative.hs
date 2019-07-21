@@ -32,12 +32,12 @@ activate cls extra chunk
                                   ]
                               --Need rawblock here to get the linebreaks
                               --right.
-                              ,  RawBlock "html" $ "<div"
-                                    ++ concatMap (\(x,y) -> " data-carnap-" ++ x ++ "=\"" ++ y ++ "\"") (toList opts)
-                                    ++ ">" 
-                                    ++ unlines' (map (show . withHash) t)
-                                    ++ "</div>"
+                              ,  RawBlock "html" 
+                                   $ "<div" ++ optString ++ ">" 
+                                  ++ unlines' (map (show . withHash) t)
+                                  ++ "</div>"
                               ]
+                where optString = concatMap (\(x,y) -> " data-carnap-" ++ x ++ "=\"" ++ y ++ "\"") (toList opts)
           template opts = Div ("",["exercise"],[]) 
                               [ Plain 
                                   [Span ("",[],[]) 
@@ -45,12 +45,12 @@ activate cls extra chunk
                                   ]
                               --Need rawblock here to get the linebreaks
                               --right.
-                              ,  RawBlock "html" $ "<div"
-                                    ++ concatMap (\(x,y) -> " data-carnap-" ++ x ++ "=\"" ++ y ++ "\"") (toList opts)
-                                    ++ ">" 
+                              ,  RawBlock "html" 
+                                     $ "<div" ++ optString ++ ">" 
                                     ++ unlines' t
                                     ++ "</div>"
                               ]
+                where optString = concatMap (\(x,y) -> " data-carnap-" ++ x ++ "=\"" ++ y ++ "\"") (toList opts)
           withHash s | length s' > 0 = if head s' == '*' then (simpleHash s', tail s') else (simpleHash s',s')
                      | otherwise = (simpleHash s', s')
             where s' = (dropWhile (== ' ') s)
