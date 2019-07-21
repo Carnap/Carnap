@@ -51,6 +51,24 @@ standardFOLParserOptions = FirstOrderParserOptions
                          , opTable = standardOpTable
                          }
 
+--These should mirror the way that show values look, since this will be
+--used in the read instance
+maximalFOLParserOptions :: FirstOrderParserOptions PureLexiconFOL u Identity
+maximalFOLParserOptions = FirstOrderParserOptions 
+                         { atomicSentenceParser = \x -> parsePredicateSymbol "ABCDEFGHIJKLMNOPQRSTUVWXYZ" x
+                                                        <|> try (parseSchematicPredicateSymbol x)
+                                                        <|> try schemevarParser
+                                                        <|> sentenceLetterParser "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+                                                        <|> equalsParser x 
+                         , quantifiedSentenceParser' = quantifiedSentenceParser
+                         , freeVarParser = parseFreeVar "vwxyz"
+                         , constantParser = Just (parseConstant "abcdefghijklmnopqrstu" <|> parseSchematicConstant) 
+                         , functionParser = Just (\x -> parseFunctionSymbol "abcdefghijklmnopqrstuvwxyz" x <|> parseSchematicFunctionSymbol x)
+                         , hasBooleanConstants = True
+                         , parenRecur = \opt recurWith  -> parenParser (recurWith opt)
+                         , opTable = standardOpTable
+                         }
+
 simplePolyadicFOLParserOptions :: FirstOrderParserOptions PureLexiconPFOL u Identity
 simplePolyadicFOLParserOptions = FirstOrderParserOptions 
                          { atomicSentenceParser = \x -> try (parsePredicateSymbol "FGHIJKLMNO" x)
@@ -218,6 +236,9 @@ howardSnyderPLFormulaParser = parserFromOptions howardSnyderPLOptions
 folFormulaParser :: Parsec String u PureFOLForm
 folFormulaParser = parserFromOptions standardFOLParserOptions
 
+maxFormulaParser :: Parsec String u PureFOLForm
+maxFormulaParser = parserFromOptions maximalFOLParserOptions
+
 folFormulaParserRelaxed :: Parsec String u PureFOLForm
 folFormulaParserRelaxed = parserFromOptions (standardFOLParserOptions 
     { atomicSentenceParser = \x -> (try (atomicSentenceParser standardFOLParserOptions x) <|> parsePredicateSymbolNoParen "FGHIJKLMNO" x) })
@@ -225,9 +246,16 @@ folFormulaParserRelaxed = parserFromOptions (standardFOLParserOptions
 instance ParsableLex (Form Bool) PureLexiconFOL where
         langParser = folFormulaParser
 
+--XXX: This is necessary to mirror the show instance, while still using the
+--less permissive folFormulaParser as the default for most languages.
+instance {-# OVERLAPPING #-} Read PureFOLForm where
+    readsPrec prec input = case parse (withRemaining (spaces *> maxFormulaParser)) "" input of
+            Left _ -> []
+            Right result -> [result]
+        where withRemaining p = (,) <$> p <*> getInput
+
 pfolFormulaParser :: Parsec String u PurePFOLForm
 pfolFormulaParser = parserFromOptions simplePolyadicFOLParserOptions
-
 
 mfolFormulaParser :: Parsec String u PureMFOLForm
 mfolFormulaParser = parserFromOptions simpleMonadicFOLParserOptions

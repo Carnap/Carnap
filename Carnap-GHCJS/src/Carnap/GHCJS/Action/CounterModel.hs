@@ -118,7 +118,6 @@ submitCounterModel opts ref check fields s l = do isDone <- liftIO $ readIORef r
                                                                  _ -> do extracted <- liftIO $ mapM extractField fields
                                                                          trySubmit CounterModel opts l (CounterModelDataOpts (pack s) extracted (M.toList opts)) False
 
-
 createSimpleCounterModeler :: Document -> [PureFOLForm] -> (Element,Element)
     -> Element -> Map String String 
     -> IO (IO (Either String ()))

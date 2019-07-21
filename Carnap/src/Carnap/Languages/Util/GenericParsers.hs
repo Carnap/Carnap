@@ -37,13 +37,13 @@ parseAsIf :: (Monad m, BooleanLanguage l) => [String] -> ParsecT String u m (l -
 parseAsIf s = stringsToTry s lif
 
 parseIf :: (BooleanLanguage l, Monad m) => ParsecT String u m (l -> l -> l)
-parseIf = parseAsIf [ "=>", "->", ">", "→", "only if"]
+parseIf = parseAsIf [ "=>", "->", ">", "→", "⊃", "only if"]
 
 parseAsIff :: (Monad m, BooleanLanguage l) => [String] -> ParsecT String u m (l -> l -> l)
 parseAsIff s = stringsToTry s liff
 
 parseIff :: (BooleanLanguage l, Monad m) => ParsecT String u m (l -> l -> l)
-parseIff = parseAsIff [ "<=>",  "<->", "<>", "↔", "if and only if"]
+parseIff = parseAsIff [ "<=>",  "<->", "<>", "↔", "≡", "if and only if"]
 
 parseNeg :: (BooleanLanguage l, Monad m) => ParsecT String u m (l -> l)
 parseNeg = do spaces >> (string "-" <|> string "~" <|> string "¬" <|> string "not ") >> return lneg
