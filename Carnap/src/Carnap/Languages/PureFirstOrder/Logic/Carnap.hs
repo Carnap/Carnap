@@ -94,8 +94,7 @@ instance Inference FOLogic PureLexiconFOL (Form Bool) where
 
 parseFOLogic :: RuntimeNaturalDeductionConfig PureLexiconFOL (Form Bool) -> Parsec String u [FOLogic]
 parseFOLogic rtc = try quantRule <|> liftProp
-    where liftProp = do r <- parsePropLogic (RuntimeNaturalDeductionConfig mempty mempty)
-                        return (map SL r)
+    where liftProp = map SL <$> parsePropLogic (RuntimeNaturalDeductionConfig mempty mempty)
           quantRule = do r <- choice (map (try . string) ["PR", "UI", "UD", "EG", "ED", "QN","LL","EL","Id","Sm","D-"])
                          case r of 
                             r | r == "PR" -> return [PR $ problemPremises rtc]

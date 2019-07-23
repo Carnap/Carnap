@@ -80,9 +80,9 @@ eigenConstraint c suc ant sub
                             | not . null $ preview _constIdx (applySub sub c) -> Nothing
                             | not . null $ preview _varLabel (applySub sub c) -> Nothing
                           _ -> Just $ "The term " ++ show (applySub sub c) ++ " is not a constant or variable"
-    where _sfuncIdx' :: ( PrismPolyadicSchematicFunction (PureFirstOrderLexWith a) Int Int 
-                        , PrismLink (a (OpenFOLSequentCalc a)) (Function (SchematicIntFunc Int Int) (OpenFOLSequentCalc a)) -- XXX: only for compatibility with older GHCs 
-                        ) => Prism' (OpenFOLSequentCalc a (Term Int)) (Int, Arity (Term Int) (Term Int) (Term Int))
+    where _sfuncIdx' :: ( PrismPolyadicSchematicFunction lex Int Int 
+                        , PrismLink (lex (ClassicalSequentOver lex)) (Function (SchematicIntFunc Int Int) (ClassicalSequentOver lex)) -- XXX: only for compatibility with older GHCs 
+                        ) => Prism' (ClassicalSequentOver lex (Term Int)) (Int, Arity (Term Int) (Term Int) (Term Int))
           _sfuncIdx' = _sfuncIdx
 
 tautologicalConstraint prems conc sub = case prems' of
