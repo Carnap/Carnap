@@ -1,22 +1,15 @@
 {-# LANGUAGE FlexibleContexts, OverloadedStrings, CPP, JavaScriptFFI #-}
 module Carnap.GHCJS.Action.SequentCheck (sequentCheckAction) where
 
+import Lib
 import Data.Tree
 import Data.Either
 import Data.Aeson
 import Data.Typeable (Typeable)
 import Data.Aeson.Types
-import Data.Text.Encoding
 import Control.Monad (join)
-import Data.ByteString.Lazy (fromStrict)
 import qualified Text.Parsec as P (parse, ParseError) 
 import Control.Lens (view)
-#ifdef __GHCJS__
-import GHCJS.Types
-import GHCJS.Foreign
-import GHCJS.Foreign.Callback
-import GHCJS.Marshal
-#endif
 import GHCJS.DOM
 import Carnap.Core.Data.Types
 import Carnap.Core.Data.Classes
@@ -32,7 +25,8 @@ import Carnap.Languages.PurePropositional.Logic.Gentzen
 sequentCheckAction ::  IO ()
 sequentCheckAction = runWebGUI $ \w -> 
             do (Just dom) <- webViewGetDomDocument w
-               initializeCallback checkSequent
+               initCallbackObj
+               initializeCallback "checkPropSequent" checkSequent
                return ()
 
 checkSequent :: Value -> IO Value
@@ -71,25 +65,3 @@ toInfo :: TreeFeedback -> Value
 toInfo (Node Correct ss) = object [ "info" .= ("Correct" :: String), "forest" .= map toInfo ss]
 toInfo (Node (Feedback e) ss) = object [ "info" .= e, "forest" .= map toInfo ss]
 
-#ifdef __GHCJS__
-
-foreign import javascript unsafe "checkSequent_ = $1" initializeCallbackJS :: Callback (payload -> succ -> IO ()) -> IO ()
---TODO: unify with other callback code in SequentCheck
-
-foreign import javascript unsafe "$1($2);" simpleCall :: JSVal -> JSVal -> IO ()
-
-initializeCallback :: (Value -> IO Value) -> IO ()
-initializeCallback  f = do theCB <- asyncCallback2 (cb f)
-                           initializeCallbackJS theCB
-    where cb f payload succ = do (Just raw) <- fromJSVal payload
-                                 let (Just val) = decode . fromStrict . encodeUtf8 $ raw
-                                 rslt <- f val
-                                 rslt' <- toJSVal rslt
-                                 simpleCall succ rslt'
-
-#else
-
-initializeCallback :: (Value -> IO Value) -> IO ()
-initializeCallback = undefined
-
-#endif

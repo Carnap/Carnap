@@ -7,7 +7,7 @@ module Lib
     reloadPage, initElements, loginCheck,errorPopup, genInOutElts,
     getInOutElts,generateExerciseElts, withLabel, formAndLabel,seqAndLabel,
     folSeqAndLabel, folFormAndLabel, message, IOGoal(..), updateWithValue,
-    submissionSource, assignmentKey, initialize, popUpWith, spinnerSVG,
+    submissionSource, assignmentKey, initialize, initializeCallback,initCallbackObj,  popUpWith, spinnerSVG,
     doneButton, questionButton, exclaimButton, expandButton, buttonWrapper,
     maybeNodeListToList, trySubmit, inOpts, unform, rewriteWith ) where
 
@@ -503,6 +503,14 @@ foreign import javascript unsafe "(function(){try {var v=assignment_key;} catch 
 
 foreign import javascript unsafe "try {new Popper($1,$2,{placement:\"right\"});} catch (e) {$2.className=\"manualPopper\"};" makePopper :: Element -> Element -> IO ()
 
+foreign import javascript unsafe "window.Carnap = {};" initCallbackObj :: IO ()
+--"window.VAR" is apparently best practice for declaring global vars
+
+foreign import javascript unsafe "Carnap[$1]=$2;" initializeCallbackJS :: JSString-> Callback (payload -> succ -> IO ()) -> IO ()
+--TODO: unify with other callback code in SequentCheck
+
+foreign import javascript unsafe "$1($2);" simpleCall :: JSVal -> JSVal -> IO ()
+
 submissionSource = do qr <- submissionQueryJS
                       case fromJSString qr of
                           "book" -> return $ Just Book
@@ -519,11 +527,25 @@ assignmentKey = do k <- assignmentKeyJS
 initialize :: EventName t Event
 initialize = EventName $ toJSString "initialize"
 
+initializeCallback :: String -> (Value -> IO Value) -> IO ()
+initializeCallback s f = do theCB <- asyncCallback2 (cb f)
+                            initializeCallbackJS (toJSString s) theCB
+    where cb f payload succ = do (Just raw) <- fromJSVal payload
+                                 let (Just val) = decode . BSL.fromStrict . encodeUtf8 $ raw
+                                 rslt <- f val
+                                 rslt' <- toJSVal rslt
+                                 simpleCall succ rslt'
 
 #else
 
 initialize :: EventName t Event
 initialize = EventName "initialize"
+
+initializeCallback :: (Value -> IO Value) -> IO ()
+initializeCallback = error "initializeCallback requires the GHCJS FFI"
+
+initCallbackObj :: IO ()
+initCallbackObj = error "initCallbackObj requires the GHCJS FFI"
 
 assignmentKey :: IO String
 assignmentKey = Prelude.error "assignmentKey requires the GHJS FFI"
