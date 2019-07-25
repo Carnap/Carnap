@@ -21,19 +21,27 @@ import Carnap.Languages.ClassicalSequent.Syntax
 import Carnap.Languages.ClassicalSequent.Parser
 import Carnap.Languages.PurePropositional.Logic.IchikawaJenkins
 import Carnap.Languages.PurePropositional.Logic.Gentzen
+import Carnap.Languages.PureFirstOrder.Logic.Gentzen
 
 sequentCheckAction ::  IO ()
 sequentCheckAction = runWebGUI $ \w -> 
             do (Just dom) <- webViewGetDomDocument w
                initCallbackObj
-               initializeCallback "checkPropSequent" checkSequent
+               initializeCallback "checkPropSequent" checkPropSequent
+               initializeCallback "checkFOLSequent" checkFOLSequent
                return ()
 
-checkSequent :: Value -> IO Value
-checkSequent v = do let Success t = parse parseReply v
-                    case toTableau gentzenPropLKCalc t of 
-                        Left feedback -> return . toInfo $ feedback
-                        Right tab -> return . toInfo . validateTree $ tab
+checkPropSequent :: Value -> IO Value
+checkPropSequent v = do let Success t = parse parseReply v
+                        case toTableau gentzenPropLKCalc t of 
+                            Left feedback -> return . toInfo $ feedback
+                            Right tab -> return . toInfo . validateTree $ tab
+
+checkFOLSequent :: Value -> IO Value
+checkFOLSequent v = do let Success t = parse parseReply v
+                       case toTableau gentzenFOLKCalc t of 
+                           Left feedback -> return . toInfo $ feedback
+                           Right tab -> return . toInfo . validateTree $ tab
 
 parseReply :: Value -> Parser (Tree (String,String))
 parseReply = withObject "Sequent Tableau" $ \o -> do

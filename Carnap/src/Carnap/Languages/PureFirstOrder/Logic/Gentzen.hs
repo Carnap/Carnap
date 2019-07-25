@@ -12,6 +12,7 @@ import Carnap.Languages.PureFirstOrder.Syntax
 import Carnap.Languages.PureFirstOrder.Parser
 import Carnap.Languages.PureFirstOrder.Logic.Rules
 import Carnap.Languages.PurePropositional.Logic.Gentzen
+import Carnap.Languages.Util.GenericConstructors
 import Carnap.Calculi.Tableau.Data
 import Carnap.Calculi.Util
 import Carnap.Languages.Util.LanguageClasses
@@ -43,13 +44,13 @@ instance ( BooleanLanguage (ClassicalSequentOver lex (Form Bool))
          , IndexedSchemeConstantLanguage (ClassicalSequentOver lex (Term Int))
          , QuantLanguage (ClassicalSequentOver lex (Form Bool)) (ClassicalSequentOver lex (Term Int)) 
          , PolyadicSchematicPredicateLanguage (ClassicalSequentOver lex) (Term Int) (Form Bool)
-         , PrismPolyadicSchematicFunction lex Int Int 
-         , PrismIndexedConstant lex Int
-         , PrismStandardVar lex Int
+         , PrismPolyadicSchematicFunction (ClassicalSequentLexOver lex) Int Int 
+         , PrismIndexedConstant (ClassicalSequentLexOver lex) Int
+         , PrismStandardVar (ClassicalSequentLexOver lex) Int
          , CopulaSchema (ClassicalSequentOver lex)
          , Schematizable (lex (ClassicalSequentOver lex))
          , FirstOrderLex (lex (ClassicalSequentOver lex))
-         , PrismSubstitutionalVariable lex
+         , PrismSubstitutionalVariable (ClassicalSequentLexOver lex)
          ) => CoreInference GentzenFOLK lex (Form Bool) where
          corePremisesOf (LK x) = corePremisesOf x
          corePremisesOf AllL = [SA (phi 1 (taun 1)) :+: GammaV 1 :|-: DeltaV 1]

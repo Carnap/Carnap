@@ -4,6 +4,7 @@ module Carnap.Calculi.Tableau.Checker where
 import Carnap.Core.Data.Types
 import Carnap.Core.Data.Classes
 import Carnap.Core.Data.Optics
+import Carnap.Core.Data.Util (hasVar)
 import Carnap.Core.Unification.Unification
 import Carnap.Core.Unification.ACUI
 import Carnap.Calculi.Util
@@ -73,25 +74,27 @@ validateNode n ns = case tableauNodeRule n of
                                         Left (NoUnify _ _) -> return $ 
                                             Feedback $ "Rule applied incorrectly to node: cannot unify\n\n " 
                                                     ++ unlines (map show mainProb)
-                                        Right subs -> do
-                                            sub <- subs
-                                            case coreRestriction r >>= ($ sub) of
-                                                Just msg -> return $ Feedback msg
-                                                Nothing -> do
-                                                  childSeqs <- permutations (map tableauNodeSeq ns)
-                                                  let subbedChildrenLHS = map (view lhs . applySub sub) (upperSequents theRule)
-                                                      subbedChildrenRHS = map (view rhs . applySub sub) (upperSequents theRule)
-                                                      subbedParentLHS = view lhs . applySub sub $ lowerSequent theRule
-                                                      subbedParentRHS = view rhs . applySub sub $ lowerSequent theRule
-                                                      prob = (subbedParentLHS :=: (view lhs . tableauNodeSeq $ n)) 
-                                                           : (subbedParentRHS :=: (view rhs . tableauNodeSeq $ n))
-                                                           : zipWith (:=:) subbedChildrenLHS (map (view lhs) childSeqs)
-                                                           ++ zipWith (:=:) subbedChildrenRHS (map (view rhs) childSeqs)
-                                                  case acuisolve prob of
-                                                      Left (NoUnify _ _) -> return $ 
-                                                        Feedback $ "Rule applied incorrectly to branch, cannot solve:\n\n"
-                                                                ++ unlines (map show prob) 
-                                                      Right subs -> return Correct
+                                        Right hosubs -> do
+                                            hosub <- hosubs
+                                            childSeqs <- permutations (map tableauNodeSeq ns)
+                                            let runSub = pureBNF . applySub hosub
+                                                subbedChildrenLHS = map (view lhs . runSub) (upperSequents theRule)
+                                                subbedChildrenRHS = map (view rhs . runSub) (upperSequents theRule)
+                                                subbedParentLHS = view lhs . runSub $ lowerSequent theRule
+                                                subbedParentRHS = view rhs . runSub $ lowerSequent theRule
+                                                prob = (subbedParentLHS :=: (view lhs . tableauNodeSeq $ n)) 
+                                                     : (subbedParentRHS :=: (view rhs . tableauNodeSeq $ n))
+                                                     : zipWith (:=:) subbedChildrenLHS (map (view lhs) childSeqs)
+                                                     ++ zipWith (:=:) subbedChildrenRHS (map (view rhs) childSeqs)
+                                            case acuisolve prob of
+                                                Left (NoUnify _ _) -> return $ 
+                                                  Feedback $ "Rule applied incorrectly to branch, cannot solve:\n\n"
+                                                          ++ unlines (map show prob) 
+                                                Right acuisubs -> do 
+                                                    finalsub <- map (++ hosub) acuisubs
+                                                    case coreRestriction r >>= ($ finalsub) of
+                                                        Just msg -> return $ Feedback msg
+                                                        Nothing -> return Correct
 
 nodeTargetLeft, nodeTargetRight :: 
     ( FirstOrder (ClassicalSequentOver lex)
@@ -149,8 +152,8 @@ schemeTargets r = redundant targetList []
           targetContent (LeftPrem _ f) = fromSequent f
           targetContent (RightPrem _ f) = fromSequent f
 
-getTarget seq = case ( filter (any isVar . universe . fromSequent) . toListOf concretes . view lhs $ seq
-             , filter (any isVar . universe . fromSequent) . toListOf concretes . view rhs $ seq
+getTarget seq = case ( filter (hasVar . fromSequent) . toListOf concretes . view lhs $ seq
+             , filter (hasVar . fromSequent) . toListOf concretes . view rhs $ seq
              ) of (f:_,_) -> LeftConc f
                   (_,f:_) -> RightConc f
                   _ -> NoTarget
