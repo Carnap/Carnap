@@ -64,37 +64,40 @@ validateNode n ns = case tableauNodeRule n of
                                else do
                                    ns' <- permutations ns
                                    let childSeqs = map tableauNodeSeq ns'
-                                       mainProb = concatMap (\t -> case t of
-                                          NoTarget -> []
-                                          RightPrem n f -> [f :=: nodeTargetRight (ns' !! n)]
-                                          LeftPrem n f -> [f :=: nodeTargetLeft (ns' !! n)]
-                                          LeftConc f -> [f :=: nodeTargetLeft n]
-                                          RightConc f -> [f :=: nodeTargetRight n]) (schemeTargets theRule)
-                                   case hosolve mainProb of
-                                        Left (NoUnify _ _) -> return $ 
-                                            Feedback $ "Rule applied incorrectly to node: cannot unify\n\n " 
-                                                    ++ unlines (map show mainProb)
-                                        Right hosubs -> do
-                                            hosub <- hosubs
-                                            childSeqs <- permutations (map tableauNodeSeq ns)
-                                            let runSub = pureBNF . applySub hosub
-                                                subbedChildrenLHS = map (view lhs . runSub) (upperSequents theRule)
-                                                subbedChildrenRHS = map (view rhs . runSub) (upperSequents theRule)
-                                                subbedParentLHS = view lhs . runSub $ lowerSequent theRule
-                                                subbedParentRHS = view rhs . runSub $ lowerSequent theRule
-                                                prob = (subbedParentLHS :=: (view lhs . tableauNodeSeq $ n)) 
-                                                     : (subbedParentRHS :=: (view rhs . tableauNodeSeq $ n))
-                                                     : zipWith (:=:) subbedChildrenLHS (map (view lhs) childSeqs)
-                                                     ++ zipWith (:=:) subbedChildrenRHS (map (view rhs) childSeqs)
-                                            case acuisolve prob of
-                                                Left (NoUnify _ _) -> return $ 
-                                                  Feedback $ "Rule applied incorrectly to branch, cannot solve:\n\n"
-                                                          ++ unlines (map show prob) 
-                                                Right acuisubs -> do 
-                                                    finalsub <- map (++ hosub) acuisubs
-                                                    case coreRestriction r >>= ($ finalsub) of
-                                                        Just msg -> return $ Feedback msg
-                                                        Nothing -> return Correct
+                                       intoEq f x = [f :=: x]
+                                       maybeMainProb = concat <$> mapM (\t -> case t of
+                                          NoTarget -> Just []
+                                          RightPrem n f -> intoEq f <$> nodeTargetRight (ns' !! n)
+                                          LeftPrem n f -> intoEq f <$> nodeTargetLeft (ns' !! n)
+                                          LeftConc f -> intoEq f <$> nodeTargetLeft n
+                                          RightConc f -> intoEq f <$> nodeTargetRight n) (schemeTargets theRule)
+                                   case maybeMainProb of
+                                       Nothing -> return $ Feedback "Missing target for rule"
+                                       Just mainProb -> case hosolve mainProb of
+                                            Left (NoUnify _ _) -> return $ 
+                                                Feedback $ "Rule applied incorrectly to node: cannot unify\n\n " 
+                                                        ++ unlines (map show mainProb)
+                                            Right hosubs -> do
+                                                hosub <- hosubs
+                                                childSeqs <- permutations (map tableauNodeSeq ns)
+                                                let runSub = pureBNF . applySub hosub
+                                                    subbedChildrenLHS = map (view lhs . runSub) (upperSequents theRule)
+                                                    subbedChildrenRHS = map (view rhs . runSub) (upperSequents theRule)
+                                                    subbedParentLHS = view lhs . runSub $ lowerSequent theRule
+                                                    subbedParentRHS = view rhs . runSub $ lowerSequent theRule
+                                                    prob = (subbedParentLHS :=: (view lhs . tableauNodeSeq $ n)) 
+                                                         : (subbedParentRHS :=: (view rhs . tableauNodeSeq $ n))
+                                                         : zipWith (:=:) subbedChildrenLHS (map (view lhs) childSeqs)
+                                                         ++ zipWith (:=:) subbedChildrenRHS (map (view rhs) childSeqs)
+                                                case acuisolve prob of
+                                                    Left (NoUnify _ _) -> return $ 
+                                                      Feedback $ "Rule applied incorrectly to branch, cannot solve:\n\n"
+                                                              ++ unlines (map show prob) 
+                                                    Right acuisubs -> do 
+                                                        finalsub <- map (++ hosub) acuisubs
+                                                        case coreRestriction r >>= ($ finalsub) of
+                                                            Just msg -> return $ Feedback msg
+                                                            Nothing -> return Correct
 
 nodeTargetLeft, nodeTargetRight :: 
     ( FirstOrder (ClassicalSequentOver lex)
@@ -103,13 +106,15 @@ nodeTargetLeft, nodeTargetRight ::
     , Sequentable lex
     , BoundVars lex
     , PrismSubstitutionalVariable lex
-    ) => TableauNode lex sem rule -> ClassicalSequentOver lex sem
-nodeTargetLeft n = case tableauNodeTarget n of
-                     Just f -> liftToSequent f
-                     Nothing -> last . toListOf concretes . view lhs . tableauNodeSeq $ n
-nodeTargetRight n = case tableauNodeTarget n of
-                     Just f -> liftToSequent f
-                     Nothing -> head . toListOf concretes . view rhs . tableauNodeSeq $ n
+    ) => TableauNode lex sem rule -> Maybe (ClassicalSequentOver lex sem)
+nodeTargetLeft n = case (tableauNodeTarget n, toListOf concretes . view lhs . tableauNodeSeq $ n)  of
+                     (Just f,_) -> Just $ liftToSequent f
+                     (Nothing,[]) -> Nothing
+                     (Nothing, l) -> Just $ last l
+nodeTargetRight n = case (tableauNodeTarget n, toListOf concretes . view rhs . tableauNodeSeq $ n) of
+                     (Just f,_) -> Just $ liftToSequent f
+                     (Nothing,[]) -> Nothing
+                     (Nothing, l) -> Just $ head l
   --head and last are reversed because `concretes` reverses order, I think
 
 schemeTarget :: 
