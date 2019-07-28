@@ -8,7 +8,7 @@ import Data.Aeson
 import Data.Typeable (Typeable)
 import Data.Aeson.Types
 import Control.Monad (join)
-import qualified Text.Parsec as P (parse, ParseError) 
+import qualified Text.Parsec as P (parse) 
 import Control.Lens (view)
 import GHCJS.DOM
 import Carnap.Core.Data.Types
@@ -58,18 +58,20 @@ toTableau :: ( Typeable sem
              ) => TableauCalc lex sem rule -> Tree (String,String) -> Either TreeFeedback (Tableau lex sem rule)
 toTableau calc (Node (l,r) f) 
     | all isRight parsedForest && isRight newNode = Node <$> newNode <*> sequence parsedForest
-    | isRight newNode = Left $ Node Correct (map cleanTree parsedForest)
+    | isRight newNode = Left $ Node Waiting (map cleanTree parsedForest)
     | Left n <- newNode = Left n
     where parsedLabel = P.parse (parseSeqOver (tbParseForm calc)) "" l
           parsedRule = if r == "" then pure Nothing else P.parse (Just <$> tbParseRule calc) "" r
           parsedForest = map (toTableau calc) f
           cleanTree (Left fs) = fs
-          cleanTree (Right fs) = fmap (const Correct) fs
+          cleanTree (Right fs) = fmap (const Waiting) fs
           newNode = case TableauNode <$> parsedLabel <*> (pure Nothing) <*> parsedRule of
                         Right n -> Right n
-                        Left e -> Left (Node (Feedback (show e)) (map cleanTree parsedForest))
+                        Left e -> Left (Node (ParseErrorMsg (show e)) (map cleanTree parsedForest))
 
 toInfo :: TreeFeedback -> Value
-toInfo (Node Correct ss) = object [ "info" .= ("Correct" :: String), "forest" .= map toInfo ss]
-toInfo (Node (Feedback e) ss) = object [ "info" .= e, "forest" .= map toInfo ss]
+toInfo (Node Correct ss) = object [ "info" .= ("Correct" :: String), "class" .= ("correct" :: String), "forest" .= map toInfo ss]
+toInfo (Node (Feedback e) ss) = object [ "info" .= e, "class" .= ("feedback" :: String), "forest" .= map toInfo ss]
+toInfo (Node Waiting ss) = object [ "info" .= ("Waiting for parsing to be completed." :: String), "class" .= ("waiting" :: String), "forest" .= map toInfo ss]
+toInfo (Node (ParseErrorMsg e) ss) = object [ "info" .= e, "class" .= ("parse-error" :: String), "forest" .= map toInfo ss]
 

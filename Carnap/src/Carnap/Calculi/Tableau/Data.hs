@@ -34,7 +34,7 @@ data TableauNode lex sem rule = TableauNode
 
 type Tableau lex sem rule = Tree (TableauNode lex sem rule)
 
-data TreeFeedbackNode = Correct | Feedback String
+data TreeFeedbackNode = Correct | Feedback String | Waiting | ParseErrorMsg String 
 
 type TreeFeedback = Tree TreeFeedbackNode
 

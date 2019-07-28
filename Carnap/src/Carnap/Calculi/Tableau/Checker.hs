@@ -38,7 +38,7 @@ validateTree (Node n descendents) = Node (clean $ validateNode n theChildren) (m
           clean (Correct:_) = Correct
           clean [Feedback s] = Feedback s
           clean (Feedback _ :xs) = clean xs
-          clean [] = Feedback "no feedback"
+          clean _ = Feedback "no feedback"
 
 validateNode ::
     ( MonadVar (ClassicalSequentOver lex) (State Int)
