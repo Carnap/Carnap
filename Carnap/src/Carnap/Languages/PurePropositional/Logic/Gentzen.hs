@@ -1,14 +1,19 @@
-{-#LANGUAGE FlexibleContexts, FlexibleInstances, UndecidableInstances, MultiParamTypeClasses #-}
+{-#LANGUAGE RankNTypes, ScopedTypeVariables, FlexibleContexts, FlexibleInstances, UndecidableInstances, MultiParamTypeClasses #-}
 module Carnap.Languages.PurePropositional.Logic.Gentzen
     ( parseGentzenPropLK, gentzenPropLKCalc, GentzenPropLK(..)) where
 
 import Text.Parsec
+import Data.List
 import Carnap.Languages.ClassicalSequent.Syntax
-import Carnap.Core.Data.Types (Form)
+import Carnap.Core.Data.Classes
+import Carnap.Core.Data.Optics
+import Carnap.Core.Data.Types (Form, FirstOrderLex(..))
+import Carnap.Core.Unification.Unification
 import Carnap.Languages.PurePropositional.Syntax
 import Carnap.Languages.PurePropositional.Parser
 import Carnap.Calculi.Tableau.Data
 import Carnap.Calculi.Util
+import Control.Lens
 import Carnap.Languages.Util.LanguageClasses
 
 data GentzenPropLK = Ax    | Rep   | Cut
@@ -16,6 +21,8 @@ data GentzenPropLK = Ax    | Rep   | Cut
                    | OrR1  | OrR2  | OrL
                    | CondR | CondL
                    | NegR  | NegL
+
+newtype GentzenPropLJ = LJ GentzenPropLK
 
 instance Show GentzenPropLK where
     show Ax     = "Ax"
@@ -31,6 +38,9 @@ instance Show GentzenPropLK where
     show CondL  = "L→"
     show NegR   = "R¬" 
     show NegL   = "L¬"
+
+instance Show GentzenPropLJ where
+    show (LJ x) = show x
 
 parseGentzenPropLK :: Parsec String u GentzenPropLK
 parseGentzenPropLK =  do r <- choice (map (try . string) [ "Ax", "Rep", "Cut"
@@ -59,6 +69,8 @@ parseGentzenPropLK =  do r <- choice (map (try . string) [ "Ax", "Rep", "Cut"
                               | r `elem` ["R→","R->"] -> CondR
                               | r `elem` ["L¬","L~","L-"] -> NegL
                               | r `elem` ["R¬","R~","R-"] -> NegR
+
+parseGentzenPropLJ = LJ <$> parseGentzenPropLK
 
 instance ( BooleanLanguage (ClassicalSequentOver lex (Form Bool))
          , BooleanConstLanguage (ClassicalSequentOver lex (Form Bool))
@@ -99,6 +111,23 @@ instance ( BooleanLanguage (ClassicalSequentOver lex (Form Bool))
          coreConclusionOf Rep =  GammaV 1 :|-: DeltaV 1 
          coreConclusionOf Cut =  GammaV 1 :+: GammaV 2 :|-: DeltaV 1 :-: DeltaV 2
          coreConclusionOf Ax =  GammaV 1 :+: SA (phin 1) :|-: SS (phin 1) :-: DeltaV 1 
+
+instance ( BooleanLanguage (ClassicalSequentOver lex (Form Bool))
+         , BooleanConstLanguage (ClassicalSequentOver lex (Form Bool))
+         , IndexedSchemePropLanguage (ClassicalSequentOver lex (Form Bool))
+         , PrismSubstitutionalVariable lex
+         , FirstOrderLex (lex (ClassicalSequentOver lex))
+         , Eq (ClassicalSequentOver lex (Form Bool))
+         ) => CoreInference GentzenPropLJ lex (Form Bool) where
+         corePremisesOf (LJ x) = corePremisesOf x
+
+         coreConclusionOf (LJ x) = coreConclusionOf x
+
+         coreRestriction x = Just $ \sub -> monoConsequent (applySub sub $ coreConclusionOf x)
+             where monoConsequent :: forall lex . Eq (ClassicalSequentOver lex (Form Bool)) => ClassicalSequentOver lex (Sequent (Form Bool)) -> Maybe String
+                   monoConsequent (_:|-:x)= case nub (toListOf concretes x :: [ClassicalSequentOver lex (Form Bool)]) of
+                                              _:_:xs -> Just "LJ requires that the right hand side of each sequent contain at most one formula"
+                                              _ -> Nothing
 
 gentzenPropLKCalc :: TableauCalc PurePropLexicon (Form Bool) GentzenPropLK
 gentzenPropLKCalc = TableauCalc 

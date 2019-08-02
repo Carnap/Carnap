@@ -74,4 +74,3 @@ toInfo (Node Correct ss) = object [ "info" .= ("Correct" :: String), "class" .= 
 toInfo (Node (Feedback e) ss) = object [ "info" .= e, "class" .= ("feedback" :: String), "forest" .= map toInfo ss]
 toInfo (Node Waiting ss) = object [ "info" .= ("Waiting for parsing to be completed." :: String), "class" .= ("waiting" :: String), "forest" .= map toInfo ss]
 toInfo (Node (ParseErrorMsg e) ss) = object [ "info" .= e, "class" .= ("parse-error" :: String), "forest" .= map toInfo ss]
-
