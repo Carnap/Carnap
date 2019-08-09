@@ -15,7 +15,9 @@ splitIt l = case break (== '\n') l of
                 y -> y
 
 intoChunks [] = []
-intoChunks l = let (h,t) = splitIt l in h : intoChunks t
+intoChunks l = case splitIt l of 
+                 ([],t) -> intoChunks t
+                 (h,t) -> h : intoChunks t
 
 formatChunk = map cleanProof . lines
     where cleanProof ('|':xs) = dropWhile (\y -> isDigit y || (y == '.')) xs
