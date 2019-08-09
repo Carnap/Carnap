@@ -11,6 +11,7 @@ splitIt l = case break (== '\n') l of
                                 then let (h',t') = splitIt (x:xs) in
                                      (h ++ ('\n':h'),t')
                                 else (h,x:xs)
+                (h,"\n") -> (h,[])
                 y -> y
 
 intoChunks [] = []
