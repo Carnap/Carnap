@@ -81,6 +81,7 @@ eigenConstraint c suc ant sub
                             | not . null $ preview _varLabel (applySub sub c) -> Nothing
                           _ -> Just $ "The term " ++ show (applySub sub c) ++ " is not a constant or variable"
     where _sfuncIdx' :: ( PrismPolyadicSchematicFunction (PureFirstOrderLexWith a) Int Int 
+                        , Sequentable (PureFirstOrderLexWith a)
                         , PrismLink (a (OpenFOLSequentCalc a)) (Function (SchematicIntFunc Int Int) (OpenFOLSequentCalc a)) -- XXX: only for compatibility with older GHCs 
                         ) => Prism' (OpenFOLSequentCalc a (Term Int)) (Int, Arity (Term Int) (Term Int) (Term Int))
           _sfuncIdx' = _sfuncIdx
