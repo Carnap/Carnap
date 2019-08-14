@@ -10,6 +10,7 @@ import Data.Maybe (catMaybes)
 import qualified Data.Map as M (lookup) 
 import Data.IORef (IORef, newIORef,writeIORef,readIORef)
 import Control.Monad.Trans.State.Lazy
+import Control.Monad.Fail
 import Control.Monad.IO.Class
 import Control.Monad (when)
 import Control.Concurrent
@@ -208,7 +209,7 @@ insertTab = insertText (const (const "    "))
 trim :: String -> String
 trim = reverse . dropWhile (`elem` " \t\n") . reverse
 
-resize :: MonadIO m => Element -> m ()
+resize :: (MonadFail m, MonadIO m) => Element -> m ()
 resize i = do setAttribute i "style" "width: 0px;height: 0px"
               (Just par) <- getParentNode i
               (Just gpar) <- getParentNode par
