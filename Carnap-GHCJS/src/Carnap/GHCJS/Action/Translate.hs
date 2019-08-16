@@ -13,7 +13,7 @@ import Carnap.Languages.PurePropositional.Util (isEquivTo)
 import Carnap.GHCJS.SharedTypes
 import Carnap.GHCJS.SharedFunctions
 import Data.IORef
-import Data.Map as M
+import qualified Data.Map as M
 import Data.Text (pack)
 import Text.Parsec 
 import GHCJS.DOM
@@ -29,12 +29,12 @@ import Control.Monad.IO.Class (MonadIO, liftIO)
 translateAction :: IO ()
 translateAction = initElements getTranslates activateTranslate
 
-getTranslates :: IsElement self => Document -> self -> IO [Maybe (Element, Element, Map String String)]
+getTranslates :: IsElement self => Document -> self -> IO [Maybe (Element, Element, M.Map String String)]
 getTranslates d = genInOutElts d "input" "div" "translate"
 
 type EquivTest lex sem = FixLang lex sem -> FixLang lex sem -> Bool
 
-activateTranslate :: Document -> Maybe (Element, Element, Map String String) -> IO ()
+activateTranslate :: Document -> Maybe (Element, Element, M.Map String String) -> IO ()
 activateTranslate w (Just (i,o,opts)) = do
         case (M.lookup "transtype" opts, M.lookup "system" opts) of
             (Just "prop", mparser) -> activateWith formParser (tryTrans formParser) propChecker
@@ -99,7 +99,7 @@ submitTrans opts i ref l f parser checker =
                         then do (Just v) <- getValue (castToHTMLInputElement i)
                                 case parse parser "" v of
                                     Right f' | checker f f' -> trySubmit Translation opts l (ProblemContent (pack $ show f)) True
-                                    _ | "exam" `elem` optlist -> trySubmit Translation opts l (TranslationDataOpts (pack $ show f) (pack v) (toList opts)) False
+                                    _ | "exam" `elem` optlist -> trySubmit Translation opts l (TranslationDataOpts (pack $ show f) (pack v) (M.toList opts)) False
                                     _ -> message "something is wrong... try again?"
                         else message "not yet finished (remember to press return to check your work before submitting!)"
     where optlist = case M.lookup "options" opts of Just s -> words s; Nothing -> []

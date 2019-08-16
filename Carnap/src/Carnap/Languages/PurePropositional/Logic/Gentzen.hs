@@ -118,6 +118,7 @@ instance ( BooleanLanguage (ClassicalSequentOver lex (Form Bool))
          , PrismSubstitutionalVariable lex
          , FirstOrderLex (lex (ClassicalSequentOver lex))
          , Eq (ClassicalSequentOver lex (Form Bool))
+         , ReLex lex
          ) => CoreInference GentzenPropLJ lex (Form Bool) where
          corePremisesOf (LJ x) = corePremisesOf x
 

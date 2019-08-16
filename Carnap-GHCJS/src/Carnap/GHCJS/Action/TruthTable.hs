@@ -238,7 +238,7 @@ toRow w opts atomIndicies orderedChildren gridRef (v,n,mvalid,given) =
                          setInnerHTML td (Just $ if v i then "T" else "F")
                          setAttribute td "class" "valtd"
                          return td
-
+          toChildTd :: (Either Char PureForm, Int, Maybe Bool) -> IO Element
           toChildTd (c,m,mg) = do Just td <- createElement w (Just "td")
                                   case c of
                                       Left '⊢' -> case mvalid of

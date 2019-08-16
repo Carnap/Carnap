@@ -1,6 +1,6 @@
 {-#LANGUAGE  UndecidableInstances, FlexibleInstances, MultiParamTypeClasses, FunctionalDependencies, GADTs, PolyKinds, TypeOperators, RankNTypes, FlexibleContexts, ScopedTypeVariables  #-}
 module Carnap.Core.Data.Optics(
-  RelabelVars(..),  PrismLink(..), (:<:)(..), ReLex(..), unaryOpPrismOn, unaryOpPrism, binaryOpPrismOn, binaryOpPrism, genChildren, PrismSubstitutionalVariable(..), flipt
+  RelabelVars(..),  PrismLink(..), (:<:)(..), ReLex(..), unaryOpPrismOn, unaryOpPrism, binaryOpPrismOn, binaryOpPrism, genChildren, PrismSubstitutionalVariable(..), flipt, relexIso
 ) where
 
 import Carnap.Core.Data.Types
@@ -101,6 +101,10 @@ data Flag a f g where
         Flag :: {checkFlag :: a} -> Flag a f g
     deriving (Show)
 
+class PrismLink f g where
+        link :: Typeable a => Prism' (f a) (g a) 
+        pflag :: Flag Bool f g --const False indicates that we don't have a prism here
+
 instance {-# OVERLAPPABLE #-} PrismLink f f where
         link = prism' id Just
         pflag = Flag True
@@ -108,10 +112,6 @@ instance {-# OVERLAPPABLE #-} PrismLink f f where
 instance PrismLink ((f :|: g) idx) ((f :|: g) idx) where
         link = prism' id Just
         pflag = Flag True
-
-class PrismLink f g where
-        link :: Typeable a => Prism' (f a) (g a) 
-        pflag :: Flag Bool f g --const False indicates that we don't have a prism here
 
 instance {-# OVERLAPPABLE #-} PrismLink f g where
         link = error "you need to define an instance of PrismLink to do this"
@@ -181,13 +181,13 @@ class (PrismLink (FixLang lex) (SubstitutionalVariable (FixLang lex)))
         => PrismSubstitutionalVariable lex where
 
         _substIdx :: Typeable t => Prism' (FixLang lex t) Int
-        _substIdx = link_PrismStandardVar . substIdx
+        _substIdx = link_PrismSubstitutionalVar . substIdx
 
         _staticIdx :: Typeable t => Prism' (FixLang lex t) Int
-        _staticIdx = link_PrismStandardVar . staticIdx
+        _staticIdx = link_PrismSubstitutionalVar . staticIdx
 
-        link_PrismStandardVar :: Typeable t => Prism' (FixLang lex t) (SubstitutionalVariable (FixLang lex) t)
-        link_PrismStandardVar = link 
+        link_PrismSubstitutionalVar :: Typeable t => Prism' (FixLang lex t) (SubstitutionalVariable (FixLang lex) t)
+        link_PrismSubstitutionalVar = link 
 
         staticIdx :: Prism' (SubstitutionalVariable (FixLang lex) t) Int
         staticIdx  = prism' StaticVar

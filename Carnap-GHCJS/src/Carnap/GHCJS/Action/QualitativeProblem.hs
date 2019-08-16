@@ -11,7 +11,7 @@ import GHCJS.DOM.Document (createElement)
 import GHCJS.DOM.EventM (newListener, addListener, EventM)
 import Control.Monad.IO.Class (liftIO)
 import Data.IORef (newIORef, IORef, readIORef, writeIORef)
-import Data.Map as M
+import qualified Data.Map as M
 import Data.Hashable
 import Data.Maybe
 import Data.Text (pack)
@@ -20,24 +20,23 @@ import Text.Read (readMaybe)
 qualitativeProblemAction :: IO ()
 qualitativeProblemAction = initElements getQualitativeProblems activateQualitativeProblem
 
-getQualitativeProblems :: Document -> HTMLElement -> IO [Maybe (Element, Element, Map String String)]
+getQualitativeProblems :: Document -> HTMLElement -> IO [Maybe (Element, Element, M.Map String String)]
 getQualitativeProblems d = genInOutElts d "div" "div" "qualitative"
 
-activateQualitativeProblem :: Document -> Maybe (Element, Element, Map String String) -> IO ()
+activateQualitativeProblem :: Document -> Maybe (Element, Element, M.Map String String) -> IO ()
 activateQualitativeProblem w (Just (i,o,opts)) = do
         case M.lookup "qualitativetype" opts of
             Just "multiplechoice" -> createMultipleChoice w i o opts
             --Just "shortanswer" -> createShortAnswer w i o opts
             _  -> return ()
 
-submitQualitative :: Map String String -> IORef (Bool, String) -> String -> String -> EventM HTMLTextAreaElement e ()
+submitQualitative :: M.Map String String -> IORef (Bool, String) -> String -> String -> EventM HTMLTextAreaElement e ()
 submitQualitative opts ref g l = do (isDone,val) <- liftIO $ readIORef ref
                                     if isDone 
                                         then trySubmit Qualitative opts l (ProblemContent (pack g)) True
                                         else message "Not quite right. Try again?"
 
-
-createMultipleChoice :: Document -> Element -> Element -> Map String String -> IO ()
+createMultipleChoice :: Document -> Element -> Element -> M.Map String String -> IO ()
 createMultipleChoice w i o opts = case M.lookup "goal" opts of
     Nothing -> return ()
     Just g -> do
