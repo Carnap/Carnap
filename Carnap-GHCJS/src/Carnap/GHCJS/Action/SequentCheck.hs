@@ -69,6 +69,13 @@ toTableau calc (Node (l,r) f)
                         Right n -> Right n
                         Left e -> Left (Node (ParseErrorMsg (show e)) (map cleanTree parsedForest))
 
+fromInfo :: Value -> Parser Bool
+fromInfo = withObject "Info Tree" $ \o -> do
+    theInfo <- o .: "info" :: Parser String
+    theForest <- o .: "forest" :: Parser [Value]
+    processedForest <- mapM fromInfo theForest
+    return $ theInfo == "Correct" && and processedForest
+
 toInfo :: TreeFeedback -> Value
 toInfo (Node Correct ss) = object [ "info" .= ("Correct" :: String), "class" .= ("correct" :: String), "forest" .= map toInfo ss]
 toInfo (Node (Feedback e) ss) = object [ "info" .= e, "class" .= ("feedback" :: String), "forest" .= map toInfo ss]
