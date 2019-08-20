@@ -29,6 +29,7 @@ sequentCheckAction = runWebGUI $ \w ->
                initCallbackObj
                initializeCallback "checkPropSequent" checkPropSequent
                initializeCallback "checkFOLSequent" checkFOLSequent
+               initializeCallback "checkSequentInfo" checkFullSequentInfo
                return ()
 
 checkPropSequent :: Value -> IO Value
@@ -42,6 +43,11 @@ checkFOLSequent v = do let Success t = parse parseReply v
                        case toTableau gentzenFOLKCalc t of 
                            Left feedback -> return . toInfo $ feedback
                            Right tab -> return . toInfo . validateTree $ tab
+
+checkFullSequentInfo :: Value -> IO Value
+checkFullSequentInfo v = do let Success t = parse fromInfo v
+                            if t then return $ object [ "result" .= ("yes" :: String)]
+                                 else return $ object [ "result" .= ("no" :: String)]
 
 parseReply :: Value -> Parser (Tree (String,String))
 parseReply = withObject "Sequent Tableau" $ \o -> do
@@ -74,7 +80,7 @@ fromInfo = withObject "Info Tree" $ \o -> do
     theInfo <- o .: "info" :: Parser String
     theForest <- o .: "forest" :: Parser [Value]
     processedForest <- mapM fromInfo theForest
-    return $ theInfo == "Correct" && and processedForest
+    return $ theInfo `elem` ["Correct", ""] && and processedForest
 
 toInfo :: TreeFeedback -> Value
 toInfo (Node Correct ss) = object [ "info" .= ("Correct" :: String), "class" .= ("correct" :: String), "forest" .= map toInfo ss]
