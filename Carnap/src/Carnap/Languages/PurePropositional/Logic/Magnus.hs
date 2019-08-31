@@ -227,8 +227,8 @@ instance Inference MagnusSLPlus PurePropLexicon (Form Bool) where
         ruleOf RepMC   = materialConditional !! 1
         ruleOf MCRep2  = materialConditional !! 2
         ruleOf RepMC2  = materialConditional !! 3
-        ruleOf BiExRep = biconditionalExchange !! 1
-        ruleOf RepBiEx = biconditionalExchange !! 2
+        ruleOf BiExRep = biconditionalExchange !! 0
+        ruleOf RepBiEx = biconditionalExchange !! 1
         ruleOf DM1    = deMorgansLaws !! 0
         ruleOf DM2    = deMorgansLaws !! 1
         ruleOf DM3    = deMorgansLaws !! 2
