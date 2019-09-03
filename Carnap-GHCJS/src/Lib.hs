@@ -574,4 +574,5 @@ message s = liftIO (alert s)
 
 reloadPage :: IO ()
 reloadPage = Prelude.error "you can't reload the page without the GHCJS FFI"
+
 #endif

@@ -122,12 +122,14 @@ getDocumentR ident title = do userdir <- getUserDir ident
                   Right (Right html) -> do
                       defaultLayout $ do
                           toWidgetHead $(juliusFile "templates/command.julius")
+                          addScript $ StaticR js_proof_js
                           addScript $ StaticR js_popper_min_js
                           addScript $ StaticR ghcjs_rts_js
                           addScript $ StaticR ghcjs_allactions_lib_js
                           addScript $ StaticR ghcjs_allactions_out_js
                           addStylesheet $ StaticR css_exercises_css
                           addStylesheet $ StaticR css_tree_css
+                          addStylesheet $ StaticR css_proof_css
                           addStylesheet $ StaticR css_exercises_css
                           $(widgetFile "document")
                           addScript $ StaticR ghcjs_allactions_runmain_js
