@@ -17,8 +17,6 @@ library
   exposed-modules:     Carnap.Core.Data.Types
                      , Carnap.Core.Data.Optics
                      , Carnap.Core.Data.Classes
-                     -- , Carnap.Core.Examples.ACUI
-                     -- , Carnap.Core.Examples.ToyLanguages
                      , Carnap.Core.Unification.FirstOrder
                      , Carnap.Core.Unification.Unification
                      , Carnap.Core.Unification.ACUI
@@ -44,6 +42,7 @@ library
                      , Carnap.Languages.PurePropositional.Logic.HowardSnyder
                      , Carnap.Languages.PurePropositional.Logic.Hardegree
                      , Carnap.Languages.PurePropositional.Logic.ThomasBolducAndZach
+                     , Carnap.Languages.PurePropositional.Logic.EbelsDuggan
                      , Carnap.Languages.PurePropositional.Logic.Tomassi
                      , Carnap.Languages.PurePropositional.Logic.Gentzen
                      , Carnap.Languages.ModalPropositional.Syntax
@@ -66,6 +65,7 @@ library
                      , Carnap.Languages.PureFirstOrder.Logic.Carnap
                      , Carnap.Languages.PureFirstOrder.Logic.KalishAndMontague
                      , Carnap.Languages.PureFirstOrder.Logic.ThomasBolducAndZach
+                     , Carnap.Languages.PureFirstOrder.Logic.EbelsDuggan
                      , Carnap.Languages.PureFirstOrder.Logic.BergmannMoorAndNelson
                      , Carnap.Languages.PureFirstOrder.Logic.IchikawaJenkins
                      , Carnap.Languages.PureFirstOrder.Logic.Hausman

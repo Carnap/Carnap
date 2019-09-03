@@ -80,6 +80,11 @@ explosion n = map (\m -> GammaV m :|-: SS (phin m)) [1 .. n]
               ∴ concAnt :|-: SS (phin (n + 1))
     where concAnt = foldr (:+:) Top (map GammaV [1 .. n])
 
+exfalso :: BooleanRule lex b
+exfalso = [ GammaV 1 :|-: SS (phin 1)
+          , GammaV 2 :|-: SS (lneg $ phin 1)
+          ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (phin 2)
+
 identityRule :: BooleanRule lex b
 identityRule = [ GammaV 1 :|-: SS (phin 1) 
                ] ∴ GammaV 1 :|-: SS (phin 1)
@@ -461,6 +466,9 @@ doubleNegation = replace (lneg $ lneg $ phin 1) (phin 1)
 materialConditional :: ReplacementBooleanVariants lex b
 materialConditional = replace (phin 1 .=>. phin 2) (lneg (phin 1) .\/. phin 2)
                    ++ replace (phin 1 .\/. phin 2) (lneg (phin 1) .=>. phin 2)
+
+negatedConditional :: ReplacementBooleanVariants lex b
+negatedConditional = replace (lneg $ phin 1 .=>. phin 2) (phin 1 ./\. (lneg $ phin 2))
 
 contraposition :: ReplacementBooleanVariants lex b
 contraposition = replace (phin 1 .=>. phin 2) (lneg (phin 2) .=>. lneg (phin 1))
