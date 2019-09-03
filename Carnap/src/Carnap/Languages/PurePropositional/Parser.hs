@@ -1,7 +1,7 @@
 {-# LANGUAGE FlexibleContexts, FlexibleInstances, MultiParamTypeClasses #-}
 module Carnap.Languages.PurePropositional.Parser 
     ( purePropFormulaParser, standardLetters, extendedLetters, hausmanOpts, thomasBolducZachOpts, hardegreeOpts
-    , standardOpTable, hausmanOpTable, howardSnyderOpTable, howardSnyderOpts, magnusOpts, extendedPropSeqParser
+    , standardOpTable, hausmanOpTable, howardSnyderOpTable, howardSnyderOpts, magnusOpts, ripleyOpts, extendedPropSeqParser
     ) where
 
 import Carnap.Core.Data.Types
@@ -43,6 +43,9 @@ magnusOpts = extendedLetters { parenRecur = magnusDispatch }
 
 thomasBolducZachOpts :: Monad m => PurePropositionalParserOptions u m
 thomasBolducZachOpts = magnusOpts { hasBooleanConstants = True }
+
+ripleyOpts :: Monad m => PurePropositionalParserOptions u m
+ripleyOpts = extendedLetters
 
 hausmanOpts ::  Monad m => PurePropositionalParserOptions u m
 hausmanOpts = extendedLetters 

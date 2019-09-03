@@ -13,6 +13,7 @@ module Carnap.Languages.PurePropositional.Logic
     , parseThomasBolducAndZachTFL, ThomasBolducAndZachTFL, thomasBolducAndZachTFLCalc
     , parseTomassiPL, TomassiPL, tomassiPLCalc
     , parseHardegreeSL, HardegreeSL, hardegreeSLCalc
+    , parseRipleyLNJ, RipleyLNJ, ripleyLNJCalc
     , ofPropSys
     ) where
 
@@ -30,6 +31,7 @@ import Carnap.Languages.PurePropositional.Logic.Magnus
 import Carnap.Languages.PurePropositional.Logic.ThomasBolducAndZach
 import Carnap.Languages.PurePropositional.Logic.Tomassi
 import Carnap.Languages.PurePropositional.Logic.IchikawaJenkins
+import Carnap.Languages.PurePropositional.Logic.Ripley
 
 ofPropSys :: (forall r . (Show r, Inference r PurePropLexicon (Form Bool)) => 
               NaturalDeductionCalc r PurePropLexicon (Form Bool) -> a) -> String -> Maybe a
@@ -46,4 +48,5 @@ ofPropSys f sys | sys == "prop"                      = Just $ f propCalc
                 | sys == "thomasBolducAndZachTFL"    = Just $ f thomasBolducAndZachTFLCalc 
                 | sys == "tomassiPL"                 = Just $ f tomassiPLCalc
                 | sys == "hardegreeSL"               = Just $ f hardegreeSLCalc 
+                | sys == "ripleyLNJ"                 = Just $ f ripleyLNJCalc
                 | otherwise                          = Nothing
