@@ -1,6 +1,7 @@
 {-#LANGUAGE RankNTypes, ScopedTypeVariables, FlexibleContexts, FlexibleInstances, UndecidableInstances, MultiParamTypeClasses #-}
 module Carnap.Languages.PurePropositional.Logic.Gentzen
-    ( parseGentzenPropLK, gentzenPropLKCalc, GentzenPropLK(..)) where
+    ( parseGentzenPropLK, gentzenPropLKCalc, GentzenPropLK()
+    , parseGentzenPropLJ, gentzenPropLJCalc, GentzenPropLJ()) where
 
 import Text.Parsec
 import Data.List
@@ -134,4 +135,10 @@ gentzenPropLKCalc :: TableauCalc PurePropLexicon (Form Bool) GentzenPropLK
 gentzenPropLKCalc = TableauCalc 
     { tbParseForm = langParser
     , tbParseRule = parseGentzenPropLK
+    }
+
+gentzenPropLJCalc :: TableauCalc PurePropLexicon (Form Bool) GentzenPropLJ
+gentzenPropLJCalc = TableauCalc 
+    { tbParseForm = langParser
+    , tbParseRule = parseGentzenPropLJ
     }

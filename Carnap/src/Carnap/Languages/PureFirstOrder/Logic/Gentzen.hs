@@ -1,6 +1,8 @@
 {-#LANGUAGE RankNTypes, ScopedTypeVariables, FlexibleContexts, FlexibleInstances, UndecidableInstances, MultiParamTypeClasses #-}
 module Carnap.Languages.PureFirstOrder.Logic.Gentzen
-    ( parseGentzenFOLK, gentzenFOLKCalc, GentzenFOLK(..)) where
+( parseGentzenFOLK, gentzenFOLKCalc, GentzenFOLK(..)
+, parseGentzenFOLJ, gentzenFOLJCalc, GentzenFOLJ(..)
+) where
 
 import Text.Parsec
 import Data.List
@@ -111,4 +113,10 @@ gentzenFOLKCalc :: TableauCalc PureLexiconFOL (Form Bool) GentzenFOLK
 gentzenFOLKCalc = TableauCalc 
     { tbParseForm = langParser
     , tbParseRule = parseGentzenFOLK
+    }
+
+gentzenFOLJCalc :: TableauCalc PureLexiconFOL (Form Bool) GentzenFOLJ
+gentzenFOLJCalc = TableauCalc 
+    { tbParseForm = langParser
+    , tbParseRule = parseGentzenFOLJ
     }

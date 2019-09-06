@@ -51,6 +51,9 @@ activateChecker :: Document -> Maybe (Element, Element, Map String String) -> IO
 activateChecker _ Nothing  = return ()
 activateChecker w (Just (i, o, opts))
         | sys == "propLK"  = setupWith gentzenPropLKCalc
+        | sys == "propLJ"  = setupWith gentzenPropLJCalc
+        | sys == "foLK"    = setupWith gentzenFOLKCalc
+        | sys == "foLJ"    = setupWith gentzenFOLJCalc
         where sys = case M.lookup "system" opts of
                         Just s -> s
                         Nothing -> "propLK"

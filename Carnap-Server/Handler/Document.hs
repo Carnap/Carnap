@@ -15,6 +15,7 @@ import Filter.Translate
 import Filter.TruthTables
 import Filter.CounterModelers
 import Filter.Qualitative
+import Filter.Sequent
 
 getDocumentsR :: Handler Html
 getDocumentsR =  runDB (selectList [] []) >>= documentsList "Index of All Documents"
@@ -166,7 +167,7 @@ fileToHtml path = do Markdown md <- markdownFromFile path
                                                          { writerExtensions = carnapPandocExtensions
                                                          , writerWrapText=WrapPreserve } pd'
                          Left e -> return $ Left e
-    where allFilters = (makeSynCheckers . makeProofChecker . makeTranslate . makeTruthTables . makeCounterModelers . makeQualitativeProblems)
+    where allFilters = (makeSequent . makeSynCheckers . makeProofChecker . makeTranslate . makeTruthTables . makeCounterModelers . makeQualitativeProblems)
 
 getUserDir ident = do master <- getYesod
                       return $ (appDataRoot $ appSettings master) </> "documents" </> unpack ident

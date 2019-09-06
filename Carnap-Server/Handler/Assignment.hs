@@ -15,6 +15,7 @@ import Filter.Translate
 import Filter.TruthTables
 import Filter.CounterModelers
 import Filter.Qualitative
+import Filter.Sequent
 
 getAssignmentR :: Text -> Handler Html
 getAssignmentR filename = getAssignment filename >>= uncurry returnAssignment
@@ -67,4 +68,4 @@ fileToHtml salt path = do Markdown md <- markdownFromFile path
                                                              { writerExtensions = carnapPandocExtensions
                                                              , writerWrapText=WrapPreserve } pd'
                               Left e -> return $ Left e
-    where allFilters = (randomizeProblems salt . makeSynCheckers . makeProofChecker . makeTranslate . makeTruthTables . makeCounterModelers . makeQualitativeProblems)
+    where allFilters = (randomizeProblems salt . makeSequent . makeSynCheckers . makeProofChecker . makeTranslate . makeTruthTables . makeCounterModelers . makeQualitativeProblems)
