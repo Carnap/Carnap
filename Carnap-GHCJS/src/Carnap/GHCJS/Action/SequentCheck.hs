@@ -40,8 +40,8 @@ sequentCheckAction ::  IO ()
 sequentCheckAction = runWebGUI $ \w -> 
             do (Just dom) <- webViewGetDomDocument w
                initCallbackObj
-               initializeCallback "checkPropSequent" (checkSequent gentzenPropLKCalc)
-               initializeCallback "checkFOLSequent" (checkSequent gentzenFOLKCalc)
+               initializeCallback "checkPropSequent" (checkSequent gentzenPropLKCalc Nothing)
+               initializeCallback "checkFOLSequent" (checkSequent gentzenFOLKCalc Nothing)
                initializeCallback "checkSequentInfo" checkFullSequentInfo
                initElements getCheckers activateChecker
                return ()
@@ -85,9 +85,10 @@ checkOnChange threadRef calc changed = do
                    Nothing -> return ()
         t' <- forkIO $ do
             threadDelay 500000
-            Just changedVal <- toCleanVal changed
-            theInfo <- checkSequent calc changedVal
-            decorate changed theInfo
+            changedParent <- ascendTree changed --may need to update the parent of the changed node if it exists
+            Just changedVal <- toCleanVal changedParent
+            theInfo <- checkSequent calc (Just 3) changedVal 
+            decorate changedParent theInfo
             return ()
         writeIORef threadRef (Just t')
 
@@ -101,14 +102,18 @@ initRoot (Just s) elt = do root <- newRoot (show s)
 
 checkSequent :: ( ReLex lex
                 , SupportsTableau rule lex sem 
-                ) => TableauCalc lex sem rule -> Value -> IO Value
-checkSequent calc v = do print (show v)
-                         case parse parseReply v of
-                             Success t -> case toTableau calc t of 
-                                 Left feedback -> return . toInfo $ feedback
-                                 Right tab -> return . toInfo . validateTree $ tab
-                             Error s -> do print (show v)
-                                           error s
+                ) => TableauCalc lex sem rule -> Maybe Int -> Value  -> IO Value
+checkSequent calc depth v = do print (show v)
+                               case parse parseReply v of
+                                   Success t -> case toTableau calc (trimTree depth t) of 
+                                       Left feedback -> return . toInfo $ feedback
+                                       Right tab -> return . toInfo . trimTree ((\x -> x - 1) <$> depth) . validateTree $ tab
+                                   Error s -> do print (show v)
+                                                 error s
+    where trimTree (Just n) (Node s f) | n > 0 = Node s (map (trimTree (Just $ n - 1)) f)
+                                       | otherwise = Node s []
+          trimTree Nothing t = t
+
 
 checkFullSequentInfo :: Value -> IO Value
 checkFullSequentInfo v = do let Success t = parse fromInfo v
@@ -164,6 +169,8 @@ foreign import javascript unsafe "$1.decorate($2)" decorateJS :: JSVal -> JSVal 
 
 foreign import javascript unsafe "$1.on('changed',$2)" onChangeJS :: JSVal -> Callback(JSVal -> IO ()) -> IO ()
 
+foreign import javascript unsafe "(function() {var rslt; if ($1.parentNode) {rslt=$1.parentNode} else {rslt=$1}; return rslt})()" ascendTree :: JSVal -> IO JSVal
+
 newRoot :: String -> IO JSVal
 newRoot s = newRootJS (toJSString s)
 
@@ -188,5 +195,8 @@ onChange = error "you need the JavaScript FFI to call onChange"
 
 decorate :: JSVal -> Value -> IO ()
 decorate = error "you need the JavaScript FFI to call decorate"
+
+ascendTree :: JSVal -> IO JSVal
+ascendTree = error "you need the JavaScript FFI to call ascendTree"
 
 #endif
