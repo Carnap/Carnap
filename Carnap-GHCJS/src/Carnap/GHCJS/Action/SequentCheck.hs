@@ -8,7 +8,9 @@ import Data.Either
 import Data.Aeson
 import Data.Typeable (Typeable)
 import Data.Aeson.Types
-import Data.IORef (IORef, readIORef, newIORef)
+import Data.IORef (IORef, readIORef, newIORef, writeIORef)
+import qualified Data.ByteString.Lazy as BSL
+import Data.Text.Encoding
 import Control.Monad (join)
 import qualified Text.Parsec as P (parse) 
 import Control.Lens (view)
@@ -38,8 +40,8 @@ sequentCheckAction ::  IO ()
 sequentCheckAction = runWebGUI $ \w -> 
             do (Just dom) <- webViewGetDomDocument w
                initCallbackObj
-               initializeCallback "checkPropSequent" checkPropSequent
-               initializeCallback "checkFOLSequent" checkFOLSequent
+               initializeCallback "checkPropSequent" (checkSequent gentzenPropLKCalc)
+               initializeCallback "checkFOLSequent" (checkSequent gentzenFOLKCalc)
                initializeCallback "checkSequentInfo" checkFullSequentInfo
                initElements getCheckers activateChecker
                return ()
@@ -62,7 +64,7 @@ activateChecker w (Just (i, o, opts))
                   mseq <- parseGoal calc
                   root <- initRoot mseq o
                   threadRef <- newIORef (Nothing :: Maybe ThreadId)
-                  checkOnChange threadRef root calc 
+                  root `onChange` checkOnChange threadRef calc 
 
               parseGoal calc = do 
                   let seqParse = parseSeqOver $ tbParseForm calc
@@ -74,10 +76,20 @@ activateChecker w (Just (i, o, opts))
                                           return $ Just seq
                       Nothing -> return Nothing
 
-checkOnChange :: IORef (Maybe ThreadId) -> JSVal -> TableauCalc lex sem r -> IO ()
-checkOnChange threadRef root calc = return ()
---will need FFI to hook into root.on("changed") with an appropriate
---callback
+checkOnChange :: ( ReLex lex
+                 , SupportsTableau rule lex sem 
+                 ) => IORef (Maybe ThreadId) -> TableauCalc lex sem rule -> JSVal -> IO ()
+checkOnChange threadRef calc changed = do
+        mt <- readIORef threadRef
+        case mt of Just t -> killThread t
+                   Nothing -> return ()
+        t' <- forkIO $ do
+            threadDelay 500000
+            Just changedVal <- toCleanVal changed
+            theInfo <- checkSequent calc changedVal
+            decorate changed theInfo
+            return ()
+        writeIORef threadRef (Just t')
 
 initRoot :: Show a => Maybe a -> Element -> IO JSVal
 initRoot Nothing elt = do root <- newRoot ""
@@ -87,17 +99,16 @@ initRoot (Just s) elt = do root <- newRoot (show s)
                            renderOn elt root
                            return root
 
-checkPropSequent :: Value -> IO Value
-checkPropSequent v = do let Success t = parse parseReply v
-                        case toTableau gentzenPropLKCalc t of 
-                            Left feedback -> return . toInfo $ feedback
-                            Right tab -> return . toInfo . validateTree $ tab
-
-checkFOLSequent :: Value -> IO Value
-checkFOLSequent v = do let Success t = parse parseReply v
-                       case toTableau gentzenFOLKCalc t of 
-                           Left feedback -> return . toInfo $ feedback
-                           Right tab -> return . toInfo . validateTree $ tab
+checkSequent :: ( ReLex lex
+                , SupportsTableau rule lex sem 
+                ) => TableauCalc lex sem rule -> Value -> IO Value
+checkSequent calc v = do print (show v)
+                         case parse parseReply v of
+                             Success t -> case toTableau calc t of 
+                                 Left feedback -> return . toInfo $ feedback
+                                 Right tab -> return . toInfo . validateTree $ tab
+                             Error s -> do print (show v)
+                                           error s
 
 checkFullSequentInfo :: Value -> IO Value
 checkFullSequentInfo v = do let Success t = parse fromInfo v
@@ -149,17 +160,33 @@ foreign import javascript unsafe "(function(){root = new ProofRoot({'label': $1,
 
 foreign import javascript unsafe "$2.renderOn($1)" renderOnJS :: Element -> JSVal -> IO ()
 
+foreign import javascript unsafe "$1.decorate($2)" decorateJS :: JSVal -> JSVal -> IO ()
+
+foreign import javascript unsafe "$1.on('changed',$2)" onChangeJS :: JSVal -> Callback(JSVal -> IO ()) -> IO ()
+
 newRoot :: String -> IO JSVal
 newRoot s = newRootJS (toJSString s)
 
 renderOn :: Element -> JSVal -> IO ()
 renderOn elt root = renderOnJS elt root
 
+onChange :: JSVal -> (JSVal -> IO ()) -> IO ()
+onChange val f = asyncCallback1 f >>= onChangeJS val 
+
+decorate :: JSVal -> Value -> IO ()
+decorate x v = toJSVal v >>= decorateJS x
+
 #else
 
 newRoot s = error "you need the JavaScript FFI to call newRoot"
 
 renderOn :: Element -> JSVal -> IO ()
-renderOn elt root = error "you need the JavaScript FFI to call renderOn"
+renderOn = error "you need the JavaScript FFI to call renderOn"
+
+onChange :: JSVal -> (JSVal -> IO ()) -> IO ()
+onChange = error "you need the JavaScript FFI to call onChange"
+
+decorate :: JSVal -> Value -> IO ()
+decorate = error "you need the JavaScript FFI to call decorate"
 
 #endif

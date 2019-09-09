@@ -1,4 +1,4 @@
-{-#LANGUAGE FlexibleContexts, StandaloneDeriving, UndecidableInstances #-}
+{-#LANGUAGE FlexibleContexts, StandaloneDeriving, UndecidableInstances, ConstraintKinds #-}
 module Carnap.Calculi.Tableau.Checker where
 
 import Carnap.Core.Data.Types
@@ -16,9 +16,7 @@ import Data.Typeable
 import Control.Monad.State
 import Control.Lens
 
---This function should swap out the contents of each node in a tableau for
---appropriate feedback, or an indication that the node is correct.
-validateTree :: 
+type SupportsTableau rule lex sem = 
     ( MonadVar (ClassicalSequentOver lex) (State Int)
     , FirstOrderLex (lex (ClassicalSequentOver lex))
     , FirstOrderLex (lex (FixLang lex))
@@ -32,7 +30,11 @@ validateTree ::
     , CoreInference rule lex sem
     , PrismSubstitutionalVariable lex
     , EtaExpand (ClassicalSequentOver lex) sem
-    ) => Tableau lex sem rule -> TreeFeedback
+    )
+
+--This function should swap out the contents of each node in a tableau for
+--appropriate feedback, or an indication that the node is correct.
+validateTree :: SupportsTableau rule lex sem => Tableau lex sem rule -> TreeFeedback
 validateTree (Node n descendents) = Node (clean $ validateNode n theChildren) (map validateTree descendents)
     where theChildren = map rootLabel descendents
           clean (Correct:_) = Correct
@@ -40,21 +42,7 @@ validateTree (Node n descendents) = Node (clean $ validateNode n theChildren) (m
           clean (Feedback _ :xs) = clean xs
           clean _ = Feedback "no feedback"
 
-validateNode ::
-    ( MonadVar (ClassicalSequentOver lex) (State Int)
-    , FirstOrderLex (lex (ClassicalSequentOver lex))
-    , FirstOrderLex (lex (FixLang lex))
-    , Eq (FixLang lex sem)
-    , Schematizable (lex (ClassicalSequentOver lex))
-    , CopulaSchema (ClassicalSequentOver lex)
-    , BoundVars lex
-    , PrismLink (lex (ClassicalSequentOver lex)) (SubstitutionalVariable (ClassicalSequentOver lex)) -- XXX Not needed in GHC >= 8.4
-    , Typeable sem
-    , Sequentable lex
-    , CoreInference rule lex sem
-    , PrismSubstitutionalVariable lex
-    , EtaExpand (ClassicalSequentOver lex) sem
-    ) => TableauNode lex sem rule -> [TableauNode lex sem rule] -> [TreeFeedbackNode]
+validateNode ::SupportsTableau rule lex sem => TableauNode lex sem rule -> [TableauNode lex sem rule] -> [TreeFeedbackNode]
 validateNode n ns = case tableauNodeRule n of
                         Nothing -> return $ Feedback "no rule developing this node"
                         Just r -> 

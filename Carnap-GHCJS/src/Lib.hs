@@ -7,7 +7,7 @@ module Lib
     reloadPage, initElements, loginCheck,errorPopup, genInOutElts,
     getInOutElts,generateExerciseElts, withLabel, formAndLabel,seqAndLabel,
     folSeqAndLabel, folFormAndLabel, message, IOGoal(..), updateWithValue,
-    submissionSource, assignmentKey, initialize, initializeCallback,initCallbackObj,  popUpWith, spinnerSVG,
+    submissionSource, assignmentKey, initialize, initializeCallback, initCallbackObj, toCleanVal, popUpWith, spinnerSVG,
     doneButton, questionButton, exclaimButton, expandButton, buttonWrapper,
     maybeNodeListToList, trySubmit, inOpts, unform, rewriteWith ) where
 
@@ -487,6 +487,8 @@ keyString e = key e >>= return . fromJSString
 alert :: String -> IO ()
 alert = alert' . toJSString
 
+foreign import javascript unsafe "JSON.parse(JSON.stringify($1))" sanatizeJSVal :: JSVal -> IO JSVal
+
 foreign import javascript unsafe "try {jsonCommand($1,$2,$3)} catch(e) {console.log(e)};" jsonCommand :: JSString -> Callback (JSVal -> IO()) -> Callback (JSVal -> JSVal -> JSVal -> IO()) -> IO ()
 
 foreign import javascript unsafe "$1.key" key :: KeyboardEvent -> IO JSString
@@ -527,14 +529,16 @@ assignmentKey = do k <- assignmentKeyJS
 initialize :: EventName t Event
 initialize = EventName $ toJSString "initialize"
 
+toCleanVal :: JSVal -> IO (Maybe Value)
+toCleanVal x = sanatizeJSVal x >>= fromJSVal
+
 initializeCallback :: String -> (Value -> IO Value) -> IO ()
 initializeCallback s f = do theCB <- asyncCallback2 (cb f)
                             initializeCallbackJS (toJSString s) theCB
-    where cb f payload succ = do (Just raw) <- fromJSVal payload
-                                 let (Just val) = decode . BSL.fromStrict . encodeUtf8 $ raw
-                                 rslt <- f val
-                                 rslt' <- toJSVal rslt
-                                 simpleCall succ rslt'
+    where cb f jsval onSuccess = do Just val <- toCleanVal jsval
+                                    rslt <- f val
+                                    rslt' <- toJSVal rslt
+                                    simpleCall onSuccess rslt'
 
 #else
 
@@ -543,6 +547,9 @@ initialize = EventName "initialize"
 
 initializeCallback :: (Value -> IO Value) -> IO ()
 initializeCallback = error "initializeCallback requires the GHCJS FFI"
+
+toCleanVal :: JSVal -> IO (Maybe Value)
+toCleanVal = error "toCleaVal requires the GHCJS FFI"
 
 initCallbackObj :: IO ()
 initCallbackObj = error "initCallbackObj requires the GHCJS FFI"

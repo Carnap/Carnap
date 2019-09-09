@@ -332,7 +332,10 @@ class Inference r lex sem | r -> lex sem where
         isPremise = const False
         --TODO: template for error messages, etc.
 
-type SupportsND r lex sem = ( Show r , Typeable sem, ReLex lex 
+type SupportsND r lex sem = 
+    ( Show r 
+    , Typeable sem
+    , ReLex lex 
     , Inference r lex sem
     , Schematizable (lex (FixLang lex))
     , Schematizable (lex (ClassicalSequentOver lex))
