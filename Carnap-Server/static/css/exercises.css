@@ -452,6 +452,7 @@ body[data-carnap-type="proofchecker"] .buttonWrapper {
     margin:20px;
 }
 
+[data-carnap-type="sequentchecker"] .buttonWrapper,
 [data-carnap-type="truthtable"] .buttonWrapper,
 [data-carnap-type="countermodeler"] .buttonWrapper,
 [data-carnap-type="qualitative"] .buttonWrapper {

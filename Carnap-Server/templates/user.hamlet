@@ -43,6 +43,10 @@
         <div.card>
             <div.card-header> Qualitative Problems
             #{qtable}
+    $if (not $ null seqsubs)
+        <div.card>
+            <div.card-header> Sequent Calculus Problems
+            #{seqtable}
     <h3> Your Profile
     ^{personalInfo ud (Just course)}
     $if (not (null derivedRulesOld) || not (null derivedRulesNew))

@@ -3,22 +3,26 @@ module Carnap.GHCJS.Action.SequentCheck (sequentCheckAction) where
 
 import Lib
 import Data.Tree
-import Data.Map as M (lookup,Map)
+import Data.Map as M (lookup,Map, toList)
 import Data.Either
 import Data.Aeson
+import Data.Text (pack)
 import Data.Typeable (Typeable)
 import Data.Aeson.Types
 import Data.IORef (IORef, readIORef, newIORef, writeIORef)
-import qualified Data.ByteString.Lazy as BSL
 import Data.Text.Encoding
 import Control.Monad (join)
 import qualified Text.Parsec as P (parse) 
+import Carnap.GHCJS.SharedTypes
 import Control.Lens (view)
 import Control.Concurrent
+import Control.Monad.IO.Class (liftIO)
 import GHCJS.DOM
 import GHCJS.DOM.Types (Element, Document, IsElement, toJSString)
-import GHCJS.DOM.Element (setInnerHTML)
+import GHCJS.DOM.Element (setInnerHTML,click)
+import GHCJS.DOM.Node (appendChild, getParentNode, insertBefore)
 import GHCJS.Types
+import GHCJS.DOM.EventM
 #ifdef __GHCJS__
 import GHCJS.Foreign
 import GHCJS.Foreign.Callback
@@ -35,6 +39,7 @@ import Carnap.Languages.ClassicalSequent.Parser
 import Carnap.Languages.PurePropositional.Logic.IchikawaJenkins
 import Carnap.Languages.PurePropositional.Logic.Gentzen
 import Carnap.Languages.PureFirstOrder.Logic.Gentzen
+import Carnap.GHCJS.SharedTypes
 
 sequentCheckAction ::  IO ()
 sequentCheckAction = runWebGUI $ \w -> 
@@ -64,6 +69,18 @@ activateChecker w (Just (i, o, opts))
                   mseq <- parseGoal calc
                   root <- initRoot mseq o
                   threadRef <- newIORef (Nothing :: Maybe ThreadId)
+                  case M.lookup "submission" opts of
+                     Just s | take 7 s == "saveAs:" -> do
+                         bw <- buttonWrapper w
+                         let l = Prelude.drop 7 s
+                         bt <- doneButton w "Submit Solution"
+                         appendChild bw (Just bt)
+                         submit <- newListener $ liftIO $ submitSeq opts l calc root
+                         addListener bt click submit False                
+                         mpar@(Just par) <- getParentNode o               
+                         appendChild par (Just bw)
+                         return ()
+                     _ -> return ()
                   root `onChange` checkOnChange threadRef calc 
 
               parseGoal calc = do 
@@ -75,6 +92,18 @@ activateChecker w (Just (i, o, opts))
                           Right seq -> do setInnerHTML i (Just $ show seq) --will eventually want the equivalent of ndNotation
                                           return $ Just seq
                       Nothing -> return Nothing
+
+submitSeq opts l calc root = 
+        do Just val <- toCleanVal root
+           case parse parseReply val of
+               Error s -> message "Something is wrong with the proof... Try again?"
+               Success tree@(Node (content,_) _) -> case toTableau calc tree of
+                     Left _ -> message "Something is wrong with the proof... Try again?"
+                     Right tab -> case parse fromInfo . toInfo . validateTree $ tab of
+                          Success rslt | "exam" `elem` optlist || rslt -> trySubmit SequentCalc opts l (SequentCalcData (pack content) tree (toList opts)) rslt
+                          _ -> message "Something is wrong with the proof... Try again?"
+    where optlist = case M.lookup "options" opts of Just s -> words s; Nothing -> []
+
 
 checkOnChange :: ( ReLex lex
                  , SupportsTableau rule lex sem 
@@ -102,14 +131,13 @@ initRoot (Just s) elt = do root <- newRoot (show s)
 
 checkSequent :: ( ReLex lex
                 , SupportsTableau rule lex sem 
-                ) => TableauCalc lex sem rule -> Maybe Int -> Value  -> IO Value
-checkSequent calc depth v = do print (show v)
-                               case parse parseReply v of
-                                   Success t -> case toTableau calc (trimTree depth t) of 
-                                       Left feedback -> return . toInfo $ feedback
-                                       Right tab -> return . toInfo . trimTree ((\x -> x - 1) <$> depth) . validateTree $ tab
-                                   Error s -> do print (show v)
-                                                 error s
+                ) => TableauCalc lex sem rule -> Maybe Int -> Value -> IO Value
+checkSequent calc depth v = case parse parseReply v of
+                               Success t -> case toTableau calc (trimTree depth t) of 
+                                   Left feedback -> return . toInfo $ feedback
+                                   Right tab -> return . toInfo . trimTree ((\x -> x - 1) <$> depth) . validateTree $ tab
+                               Error s -> do print (show v)
+                                             error s
     where trimTree (Just n) (Node s f) | n > 0 = Node s (map (trimTree (Just $ n - 1)) f)
                                        | otherwise = Node s []
           trimTree Nothing t = t

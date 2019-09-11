@@ -84,6 +84,7 @@ displayProblemData (TruthTableDataOpts t _ _) = maybe t pack ms
 displayProblemData (TranslationData t _) = t
 displayProblemData (TranslationDataOpts t _ _) = t
 displayProblemData (QualitativeProblemDataOpts t _ _) = t
+displayProblemData (SequentCalcData t _ _) = t
 displayProblemData (ProblemContent t) = maybe t pack ms
     where ms = (show <$> (readMaybe s :: Maybe PureForm))
                `mplus` (intercalate "," . map show <$> (readMaybe s :: Maybe [PureForm]))

@@ -161,6 +161,11 @@ renderProblem (Entity key val) = do
                          data-carnap-problem="#{content}">
                          #{trans}
                 |]
+
+            (SequentCalc, SequentCalcData content tree opts) -> template $
+                [whamlet|
+                    <div>Review of sequent calculus problems is not yet supported
+                |]
             (Translation, TranslationDataOpts content trans opts) -> template $
                 [whamlet|
                     <div data-carnap-type="translate"
