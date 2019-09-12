@@ -5,6 +5,8 @@ module Carnap.Languages.PurePropositional.Logic.Ripley
 import Data.Map as M (lookup, Map)
 import Text.Parsec
 import Carnap.Core.Data.Types (Form)
+import Carnap.Core.Data.Classes (lhs)
+import Control.Lens (view)
 import Carnap.Languages.PurePropositional.Syntax
 import Carnap.Languages.PurePropositional.Parser
 import Carnap.Calculi.NaturalDeduction.Syntax
@@ -55,9 +57,13 @@ instance Inference RipleyLNJ PurePropLexicon (Form Bool) where
         ruleOf DisjElim   = proofByCasesVariations !! 0
         ruleOf As         = axiom        
 
-        indirectInference x
-           | x `elem` [CondIntro, DisjElim] = Just PolyProof
-           | otherwise = Nothing
+        globalRestriction (Left ded) n CondIntro = Just (dischargeConstraint n ded (view lhs $ conclusionOf CondElim))
+        globalRestriction (Left ded) n DisjElim = Just (dischargeConstraint n ded (view lhs $ conclusionOf DisjElim))
+        globalRestriction _ _ _ = Nothing
+
+        indirectInference CondIntro = Just $ TypedProof (ProofType 1 1)
+        indirectInference DisjElim = Just $ TypedProof (ProofType 2 1)
+        indirectInference _ = Nothing
 
         isAssumption As = True
         isAssumption _  = False
@@ -89,7 +95,7 @@ parseRipleyLNJ rtc n _ = do
 
   
 parseRipleyLNJProof ::  RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> String -> [DeductionLine RipleyLNJ PurePropLexicon (Form Bool)]
-parseRipleyLNJProof rtc = toDeductionLemmon (parseRipleyLNJ rtc) (purePropFormulaParser ripleyOpts)
+parseRipleyLNJProof rtc = toDeductionLemmonImplicit (parseRipleyLNJ rtc) (purePropFormulaParser ripleyOpts)
 
 ripleyLNJCalc :: NaturalDeductionCalc RipleyLNJ PurePropLexicon (Form Bool)
 ripleyLNJCalc = mkNDCalc
