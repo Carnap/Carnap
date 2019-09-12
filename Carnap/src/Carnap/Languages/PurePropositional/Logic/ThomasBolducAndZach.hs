@@ -1,6 +1,6 @@
 {-#LANGUAGE FlexibleContexts, FlexibleInstances, MultiParamTypeClasses #-}
 module Carnap.Languages.PurePropositional.Logic.ThomasBolducAndZach
-    ( parseThomasBolducAndZachTFL, ThomasBolducAndZachTFL,  thomasBolducAndZachTFLCalc) where
+    ( parseThomasBolducAndZachTFL, ThomasBolducAndZachTFL,  thomasBolducAndZachTFLCalc, thomasBolducAndZachNotation) where
 
 import Data.Map as M (lookup, Map)
 import Text.Parsec
