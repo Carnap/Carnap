@@ -1,19 +1,22 @@
 {-# LANGUAGE RankNTypes, QuasiQuotes, FlexibleContexts, DeriveDataTypeable, CPP, JavaScriptFFI #-}
-module Lib
-    (genericSendJSON, sendJSON, onEnter, onKey, clearInput,
-    getListOfElementsByClass, getListOfElementsByTag, tryParse,
-    treeToElement, genericTreeToUl, treeToUl, genericListToUl, listToUl,
-    formToTree, leaves, adjustFirstMatching, decodeHtml, syncScroll,
-    reloadPage, initElements, loginCheck,errorPopup, genInOutElts,
-    getInOutElts,generateExerciseElts, withLabel, formAndLabel,seqAndLabel,
-    folSeqAndLabel, folFormAndLabel, message, IOGoal(..), updateWithValue,
-    submissionSource, assignmentKey, initialize, initializeCallback, initCallbackObj, toCleanVal, popUpWith, spinnerSVG,
-    doneButton, questionButton, exclaimButton, expandButton, buttonWrapper,
-    maybeNodeListToList, trySubmit, inOpts, unform, rewriteWith ) where
+module Lib (genericSendJSON, sendJSON, onEnter, onKey, clearInput,
+           getListOfElementsByClass, getListOfElementsByTag, tryParse,
+           treeToElement, genericTreeToUl, treeToUl, genericListToUl,
+           listToUl, formToTree, leaves, adjustFirstMatching, decodeHtml,
+           decodeJSON, syncScroll, reloadPage, initElements,
+           loginCheck,errorPopup, genInOutElts,
+           getInOutElts,generateExerciseElts, withLabel,
+           formAndLabel,seqAndLabel, folSeqAndLabel, folFormAndLabel,
+           message, IOGoal(..), updateWithValue, submissionSource,
+           assignmentKey, initialize, initializeCallback, initCallbackObj,
+           toCleanVal, popUpWith, spinnerSVG, doneButton, questionButton,
+           exclaimButton, expandButton, buttonWrapper, maybeNodeListToList,
+           trySubmit, inOpts, unform, rewriteWith ) where
 
 import Data.Aeson
 import Data.Maybe (catMaybes)
 import qualified Data.ByteString.Lazy as BSL
+import Data.Text (pack)
 import Data.Text.Encoding
 import Data.Tree as T
 import Data.IORef (IORef, readIORef)
@@ -307,6 +310,9 @@ popUpWith fd w elt label msg details =
 
 decodeHtml :: (StringLike s, Show s) => s -> s
 decodeHtml = TS.fromTagText . head . parseTags
+
+decodeJSON :: String -> Maybe Value
+decodeJSON = decode . BSL.fromStrict . encodeUtf8 . pack
 
 --------------------------------------------------------
 --1.4 Optics

@@ -1,7 +1,7 @@
 {-# LANGUAGE FlexibleContexts, OverloadedStrings, CPP, JavaScriptFFI #-}
 module Carnap.GHCJS.Action.SequentCheck (sequentCheckAction) where
 
-import Lib
+import Lib 
 import Data.Tree
 import Data.Map as M (lookup,Map, toList)
 import Data.Either
@@ -67,7 +67,14 @@ activateChecker w (Just (i, o, opts))
 
               setupWith calc = do
                   mseq <- parseGoal calc
-                  root <- initRoot mseq o
+                  let content = M.lookup "content" opts
+                  root <- case (content >>= decodeJSON, mseq) of
+                              --need the decode here since since some
+                              --characters get html-sanatized when stored
+                              --in the content attribute
+                              (Just val,_) -> let Just c = content in initRoot (decodeHtml c) o
+                              (_, Just seq) -> initRoot ("{\"label\": \"" ++ show seq ++ "\", \"forest\": []}") o
+                              _ -> initRoot "" o
                   threadRef <- newIORef (Nothing :: Maybe ThreadId)
                   case M.lookup "submission" opts of
                      Just s | take 7 s == "saveAs:" -> do
@@ -95,7 +102,7 @@ activateChecker w (Just (i, o, opts))
 
 submitSeq opts l calc root = 
         do Just val <- toCleanVal root
-           case parse parseReply val of
+           case parse parseTreeJSON val of
                Error s -> message "Something is wrong with the proof... Try again?"
                Success tree@(Node (content,_) _) -> case toTableau calc tree of
                      Left _ -> message "Something is wrong with the proof... Try again?"
@@ -103,7 +110,6 @@ submitSeq opts l calc root =
                           Success rslt | "exam" `elem` optlist || rslt -> trySubmit SequentCalc opts l (SequentCalcData (pack content) tree (toList opts)) rslt
                           _ -> message "Something is wrong with the proof... Try again?"
     where optlist = case M.lookup "options" opts of Just s -> words s; Nothing -> []
-
 
 checkOnChange :: ( ReLex lex
                  , SupportsTableau rule lex sem 
@@ -121,18 +127,15 @@ checkOnChange threadRef calc changed = do
             return ()
         writeIORef threadRef (Just t')
 
-initRoot :: Show a => Maybe a -> Element -> IO JSVal
-initRoot Nothing elt = do root <- newRoot ""
-                          renderOn elt root
-                          return root
-initRoot (Just s) elt = do root <- newRoot (show s)
-                           renderOn elt root
-                           return root
+initRoot :: String -> Element -> IO JSVal
+initRoot s elt = do root <- newRoot s
+                    renderOn elt root
+                    return root
 
 checkSequent :: ( ReLex lex
                 , SupportsTableau rule lex sem 
                 ) => TableauCalc lex sem rule -> Maybe Int -> Value -> IO Value
-checkSequent calc depth v = case parse parseReply v of
+checkSequent calc depth v = case parse parseTreeJSON v of
                                Success t -> case toTableau calc (trimTree depth t) of 
                                    Left feedback -> return . toInfo $ feedback
                                    Right tab -> return . toInfo . trimTree ((\x -> x - 1) <$> depth) . validateTree $ tab
@@ -148,12 +151,12 @@ checkFullSequentInfo v = do let Success t = parse fromInfo v
                             if t then return $ object [ "result" .= ("yes" :: String)]
                                  else return $ object [ "result" .= ("no" :: String)]
 
-parseReply :: Value -> Parser (Tree (String,String))
-parseReply = withObject "Sequent Tableau" $ \o -> do
+parseTreeJSON :: Value -> Parser (Tree (String,String))
+parseTreeJSON = withObject "Sequent Tableau" $ \o -> do
     thelabel   <- o .: "label" :: Parser String
     therule <- o .: "rule" :: Parser String
     theforest <- o .: "forest" :: Parser [Value]
-    filteredForest <- filter (\(Node (x,y) _) -> x /= "") <$> mapM parseReply theforest
+    filteredForest <- filter (\(Node (x,y) _) -> x /= "") <$> mapM parseTreeJSON theforest
     --ignore empty nodes
     return $ Node (thelabel,therule) filteredForest
 
@@ -189,7 +192,7 @@ toInfo (Node (ParseErrorMsg e) ss) = object [ "info" .= e, "class" .= ("parse-er
 
 #ifdef __GHCJS__
 
-foreign import javascript unsafe "(function(){root = new ProofRoot({'label': $1,'forest': []}); return root})()" newRootJS :: JSString-> IO JSVal
+foreign import javascript unsafe "(function(){root = new ProofRoot(JSON.parse($1)); return root})()" newRootJS :: JSString-> IO JSVal
 
 foreign import javascript unsafe "$2.renderOn($1)" renderOnJS :: Element -> JSVal -> IO ()
 

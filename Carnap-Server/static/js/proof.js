@@ -21,7 +21,7 @@ class ProofNode {
         if (obj) {
             this.label = obj.label;
             this.rule = obj.rule;
-            obj.forest.map(o => {this.addChild(o)})
+            if (obj.forest) obj.forest.map(o => {this.addChild(o)})
         };
     }
 
