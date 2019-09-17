@@ -2,7 +2,7 @@ module Carnap.Calculi.NaturalDeduction.Parser
     ( toProofTreeStructuredFitch, toProofTreeHardegree, toProofTreeMontague, toProofTreeLemmon
     , toProofTreeFitch, toDeductionMontague, toCommentedDeductionFitch
     , toDeductionFitch, toDeductionFitchAlt, toDeductionHardegree, toDeductionLemmon
-    , toDeductionLemmonAlt, toDeductionLemmonTomassi 
+    , toDeductionLemmonAlt, toDeductionLemmonTomassi, toDeductionLemmonImplicit
     ) where
 
 import Carnap.Calculi.NaturalDeduction.Parser.Montague

@@ -53,13 +53,13 @@ lemlineAlt r = do (dis,deps,annote) <- lookAhead $
           cite3 = (,,) <$> optionMaybe scope <*> optionMaybe bothCitations <*> annotation
           bothCitations = try (citation `sepEndBy` spaces) <|> citations
 
---lemmon justifications used in Tomassi.
-lemlineTomassi r = do indicated <- parseInts
-                      spaces
-                      rule <- r 0 ""
-                      --XXX: discharge of assumptions is done implicitly,
-                      --rather than explicitly flagged in this system
-                      return ([],indicated,rule)
+
+lemlineImplicit r = do indicated <- parseInts
+                       spaces
+                       rule <- r 0 ""
+                       --XXX: discharge of assumptions is done implicitly,
+                       --rather than explicitly flagged in this system
+                       return ([],indicated,rule)
 
 citation :: Parsec String u Int
 citation = char '(' *> (read <$> many1 digit) <* char ')'
@@ -82,7 +82,11 @@ toDeductionLemmonAlt r f = toDeduction (parseDependentAssertLinePlain r f lemlin
 
 toDeductionLemmonTomassi :: Inference r lex (Form Bool) => (Int -> String -> Parsec String () [r]) -> Parsec String () (FixLang lex a) -> String 
     -> Deduction r lex a
-toDeductionLemmonTomassi r f = toDeduction (parseDependentAssertLineWithNum r f lemlineTomassi)
+toDeductionLemmonTomassi r f = toDeduction (parseDependentAssertLineWithNum r f lemlineImplicit)
+
+toDeductionLemmonImplicit :: Inference r lex (Form Bool) => (Int -> String -> Parsec String () [r]) -> Parsec String () (FixLang lex a) -> String 
+    -> Deduction r lex a
+toDeductionLemmonImplicit r f = toDeduction (parseDependentAssertLinePlain r f lemlineImplicit)
 
 toProofTreeLemmon :: 
     ( Inference r lex sem

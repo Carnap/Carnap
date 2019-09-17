@@ -15,7 +15,6 @@ library
     hs-source-dirs:  ., app
     exposed-modules: Application
                      Foundation
-                     SecureStrings
                      Import
                      Import.NoFoundation
                      Model
@@ -48,6 +47,10 @@ library
                      Filter.Util
                      Util.Database
                      Util.Data
+
+    if !flag(dev) && !flag(library-only)
+        exposed-modules:
+            SecureStrings
 
     if flag(dev) || flag(library-only)
         cpp-options:   -DDEVELOPMENT

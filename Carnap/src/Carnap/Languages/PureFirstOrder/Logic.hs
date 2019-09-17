@@ -22,6 +22,7 @@ import Carnap.Languages.PureFirstOrder.Logic.Carnap
 import Carnap.Languages.PureFirstOrder.Logic.Magnus
 import Carnap.Languages.PureFirstOrder.Logic.KalishAndMontague
 import Carnap.Languages.PureFirstOrder.Logic.ThomasBolducAndZach
+import Carnap.Languages.PureFirstOrder.Logic.EbelsDuggan
 import Carnap.Languages.PureFirstOrder.Logic.BergmannMoorAndNelson
 import Carnap.Languages.PureFirstOrder.Logic.Hausman
 import Carnap.Languages.PureFirstOrder.Logic.HowardSnyder
@@ -36,6 +37,7 @@ ofFOLSys f sys | sys == "firstOrder"                = Just $ f folCalc
                | sys == "montagueQC"                = Just $ f montagueQCCalc 
                | sys == "magnusQL"                  = Just $ f magnusQLCalc 
                | sys == "thomasBolducAndZachFOL"    = Just $ f thomasBolducAndZachFOLCalc 
+               | sys == "ebelsDugganFOL"            = Just $ f ebelsDugganFOLCalc
                | sys == "LogicBookPD"               = Just $ f logicBookPDCalc 
                | sys == "LogicBookPDPlus"           = Just $ f logicBookPDPlusCalc 
                | sys == "hausmanPL"                 = Just $ f hausmanPLCalc 

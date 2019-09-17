@@ -42,6 +42,8 @@ activate cls extra chunk
     | "GoldfarbAltNDPlus"`elem` cls = exTemplate [("system", "goldfarbAltNDPlus")]
     | "ZachTFL"          `elem` cls = exTemplate [("system", "thomasBolducAndZachTFL"), ("options","render")]
     | "ZachFOL"          `elem` cls = exTemplate [("system", "thomasBolducAndZachFOL"), ("options","render")]
+    | "EbelsDugganTFL"   `elem` cls = exTemplate [("system", "ebelsDugganTFL"), ("guides", "fitch"), ("options", "fonts resize")]
+    | "EbelsDugganFOL"   `elem` cls = exTemplate [("system", "ebelsDugganFOL"), ("guides", "fitch"), ("options", "fonts resize")]
     | "HardegreeSL"      `elem` cls = exTemplate [("system", "hardegreeSL"),  ("options", "render")]
     | "HardegreePL"      `elem` cls = exTemplate [("system", "hardegreePL"),  ("options", "render")]
     | "HardegreeWTL"     `elem` cls = exTemplate [("system", "hardegreeWTL"), ("guides", "montague"), ("options", "render fonts")]
@@ -89,6 +91,8 @@ toPlayground cls extra content
     | "GoldfarbAltNDPlus"`elem` cls = playTemplate [("system", "goldfarbAltNDPlus"),("options","resize")]
     | "ZachTFL"          `elem` cls = playTemplate [("system", "thomasBolducAndZachTFL"), ("options","render")]
     | "ZachFOL"          `elem` cls = playTemplate [("system", "thomasBolducAndZachFOL"), ("options","render")]
+    | "EbelsDugganTFL"   `elem` cls = playTemplate [("system", "ebelsDugganTFL"), ("guides", "fitch"), ("options", "fonts resize")]
+    | "EbelsDugganFOL"   `elem` cls = playTemplate [("system", "ebelsDugganFOL"), ("guides", "fitch"), ("options", "fonts resize")]
     | "HardegreeSL"      `elem` cls = playTemplate [("system", "hardegreeSL"),  ("options", "render")]
     | "HardegreePL"      `elem` cls = playTemplate [("system", "hardegreePL"),  ("options", "render")]
     | "HardegreeWTL"     `elem` cls = playTemplate [("system", "hardegreeWTL"), ("guides", "montague"), ("options", "render fonts")]
@@ -117,4 +121,3 @@ template opts head content = Div ("",["exercise"],[])
         ++ "</div>"
     ]
     where optString = concatMap (\(x,y) -> (" data-carnap-" ++ x ++ "=\"" ++ y ++ "\"")) (toList opts) 
-
