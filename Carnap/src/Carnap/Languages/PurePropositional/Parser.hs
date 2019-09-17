@@ -45,7 +45,7 @@ thomasBolducZachOpts :: Monad m => PurePropositionalParserOptions u m
 thomasBolducZachOpts = magnusOpts { hasBooleanConstants = True }
 
 ripleyOpts :: Monad m => PurePropositionalParserOptions u m
-ripleyOpts = extendedLetters
+ripleyOpts = extendedLetters { hasBooleanConstants = True }
 
 hausmanOpts ::  Monad m => PurePropositionalParserOptions u m
 hausmanOpts = extendedLetters 

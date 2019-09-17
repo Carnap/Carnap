@@ -19,43 +19,38 @@ import Carnap.Languages.PurePropositional.Logic.Rules
 {-| A system for intuitionistic propositional logic resembling Gentzen's NJ, only Lemmon-style
 -}
 
-data RipleyLNJ = ConjIntro
-               | ConjElimL  | ConjElimR
-               | CondIntro  | CondElim
-               | DisjIntroL | DisjIntroR
-               | DisjElim   
-               | As
---               | BotElim
---               | NegIntro   | NegElim
+data RipleyLNJ = ConjIntro  | ConjElimL    | ConjElimR
+               | CondIntro  | CondIntroVac | CondElim
+               | DisjIntroL | DisjIntroR   | DisjElim   
+               | As         | FalsumElim      
                deriving (Eq)
 
--- For now, holding off on bot, and so on negation. Dunno how to make new rules.
-
 instance Show RipleyLNJ where
-        show ConjIntro  = "∧I"
-        show ConjElimL  = "∧EL"
-        show ConjElimR  = "∧ER"
-        show CondIntro  = "→I"
-        show CondElim   = "→E"
-        show DisjIntroL = "∨IL"
-        show DisjIntroR = "∨IR"
-        show DisjElim   = "∨E"
-        show As         = "AS"
---        show BotElim    = "⊥E"
---        show NegIntro   = "¬I"
---        show NegElim    = "¬E"
+        show ConjIntro    = "∧I"
+        show ConjElimL    = "∧EL"
+        show ConjElimR    = "∧ER"
+        show CondIntro    = "→I"
+        show CondIntroVac = "→Iv"
+        show CondElim     = "→E"
+        show DisjIntroL   = "∨IL"
+        show DisjIntroR   = "∨IR"
+        show DisjElim     = "∨E"
+        show FalsumElim   = "⊥E"
+        show As           = "AS"
 
 
 instance Inference RipleyLNJ PurePropLexicon (Form Bool) where
-        ruleOf ConjIntro  = adjunction
-        ruleOf ConjElimL  = simplificationVariations !! 0
-        ruleOf ConjElimR  = simplificationVariations !! 1
-        ruleOf CondIntro  = conditionalProofVariations !! 0
-        ruleOf CondElim   = modusPonens
-        ruleOf DisjIntroL = additionVariations !! 1
-        ruleOf DisjIntroR = additionVariations !! 0
-        ruleOf DisjElim   = proofByCasesVariations !! 0
-        ruleOf As         = axiom        
+        ruleOf ConjIntro    = adjunction
+        ruleOf ConjElimL    = simplificationVariations !! 0
+        ruleOf ConjElimR    = simplificationVariations !! 1
+        ruleOf CondIntro    = conditionalProofVariations !! 0
+        ruleOf CondIntroVac = conditionalProofVariations !! 1
+        ruleOf CondElim     = modusPonens
+        ruleOf DisjIntroL   = additionVariations !! 1
+        ruleOf DisjIntroR   = additionVariations !! 0
+        ruleOf DisjElim     = proofByCasesVariations !! 0
+        ruleOf FalsumElim   = falsumElimination
+        ruleOf As           = axiom        
 
         globalRestriction (Left ded) n CondIntro = Just (dischargeConstraint n ded (view lhs $ conclusionOf CondElim))
         globalRestriction (Left ded) n DisjElim = Just (dischargeConstraint n ded (view lhs $ conclusionOf DisjElim))
@@ -76,22 +71,25 @@ parseRipleyLNJ rtc n _ = do
                            , "&I" , "/\\I" , "∧I"
                            , "&EL", "/\\EL", "∧EL"
                            , "&ER", "/\\ER", "∧ER"
-                           , "->I", "→I"
+                           , "->I", "→I", "->Iv"
                            , "->E", "→E"
                            , "vIL", "\\/IL", "∨IL"
                            , "vIR", "\\/IR", "∨IR"
                            , "vE" ,"\\/E"  , "∨E"
+                           , "⊥E", "_|_E", "falsumE"
                            ])
                          case r of
                               r | r == "AS"   -> return [As]
                                 | r `elem` ["&I","/\\I","∧I"] -> return [ConjIntro]
                                 | r `elem` ["&EL","/\\EL","∧EL"] -> return [ConjElimL]
                                 | r `elem` ["&ER","/\\ER","∧ER"] -> return [ConjElimR]
-                                | r `elem` ["->I", "→I"] -> return [CondIntro]
+                                | r `elem` ["->I", "→I"] -> return [CondIntro, CondIntroVac]
+                                | r `elem` ["->Iv"] -> return [CondIntroVac]
                                 | r `elem` ["->E","→E"]  -> return [CondElim]
                                 | r `elem` ["∨IL","vIL","\\/IL"] -> return [DisjIntroL]
                                 | r `elem` ["∨IR","vIR","\\/IR"] -> return [DisjIntroR]
                                 | r `elem` ["∨E","vE","\\/E"] -> return [DisjElim]
+                                | r `elem` ["⊥E", "_|_E", "falsumE"] -> return [FalsumElim]
 
   
 parseRipleyLNJProof ::  RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> String -> [DeductionLine RipleyLNJ PurePropLexicon (Form Bool)]
