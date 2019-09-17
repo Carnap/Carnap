@@ -95,7 +95,7 @@ parseRipleyLNJ rtc n _ = do
 
   
 parseRipleyLNJProof ::  RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> String -> [DeductionLine RipleyLNJ PurePropLexicon (Form Bool)]
-parseRipleyLNJProof rtc = toDeductionLemmonImplicit (parseRipleyLNJ rtc) (purePropFormulaParser ripleyOpts)
+parseRipleyLNJProof rtc = toDeductionLemmon (parseRipleyLNJ rtc) (purePropFormulaParser ripleyOpts)
 
 ripleyLNJCalc :: NaturalDeductionCalc RipleyLNJ PurePropLexicon (Form Bool)
 ripleyLNJCalc = mkNDCalc
