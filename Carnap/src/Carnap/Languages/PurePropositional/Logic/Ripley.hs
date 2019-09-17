@@ -43,16 +43,16 @@ instance Inference RipleyLNJ PurePropLexicon (Form Bool) where
         ruleOf ConjIntro    = adjunction
         ruleOf ConjElimL    = simplificationVariations !! 0
         ruleOf ConjElimR    = simplificationVariations !! 1
-        ruleOf CondIntro    = conditionalProofVariations !! 0
-        ruleOf CondIntroVac = conditionalProofVariations !! 1
+        ruleOf CondIntro    = explicitConditionalProofVariations !! 0
+        ruleOf CondIntroVac = explicitConditionalProofVariations !! 1
         ruleOf CondElim     = modusPonens
         ruleOf DisjIntroL   = additionVariations !! 1
         ruleOf DisjIntroR   = additionVariations !! 0
-        ruleOf DisjElim     = proofByCasesVariations !! 0
+        ruleOf DisjElim     = explicitProofByCasesVariations !! 0
         ruleOf FalsumElim   = falsumElimination
         ruleOf As           = axiom        
 
-        globalRestriction (Left ded) n CondIntro = Just (dischargeConstraint n ded (view lhs $ conclusionOf CondElim))
+        globalRestriction (Left ded) n CondIntro = Just (dischargeConstraint n ded (view lhs $ conclusionOf CondIntro))
         globalRestriction (Left ded) n DisjElim = Just (dischargeConstraint n ded (view lhs $ conclusionOf DisjElim))
         globalRestriction _ _ _ = Nothing
 
@@ -71,7 +71,8 @@ parseRipleyLNJ rtc n _ = do
                            , "&I" , "/\\I" , "∧I"
                            , "&EL", "/\\EL", "∧EL"
                            , "&ER", "/\\ER", "∧ER"
-                           , "->I", "→I", "->Iv"
+                           , "->Iv"
+                           , "->I", "→I"
                            , "->E", "→E"
                            , "vIL", "\\/IL", "∨IL"
                            , "vIR", "\\/IR", "∨IR"

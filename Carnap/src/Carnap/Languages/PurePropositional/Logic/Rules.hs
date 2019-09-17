@@ -45,7 +45,7 @@ premConstraint (Just prems) sub | theinstance `elem` prems = Nothing
           project = view rhs
 
 dischargeConstraint n ded lhs sub | and (map (`elem` forms) lhs') = Nothing
-                                  | otherwise = Just $ "Some of the stated dependencies in " ++ show lhs' ++ ", are not among the inferred dependencies " ++ show forms ++ "."
+                                  | otherwise = Just $ "Some of the stated dependencies in " ++ show forms ++ ", are not among the inferred dependencies " ++ show lhs' ++ "."
     where lhs' = toListOf concretes . applySub sub $ lhs
           scope = inScope (ded !! (n - 1))
           forms = catMaybes . map (\n -> liftToSequent <$> assertion (ded !! (n - 1))) $ scope
@@ -312,6 +312,10 @@ proofByCasesVariations = [
                 , GammaV 3 :|-: SS (phin 3)
                 ] ∴ GammaV 1 :+: GammaV 2 :+: GammaV 3 :|-: SS (phin 3)
             ]
+
+explicitProofByCasesVariations :: BooleanRuleVariants lex b
+explicitProofByCasesVariations = map addExplic proofByCasesVariations
+    where addExplic (SequentRule upper lower) = SequentRule (upper ++ [SA (phin 1) :|-: SS (phin 1), SA (phin 2) :|-: SS (phin 2)]) lower
 
 tertiumNonDaturVariations :: BooleanRuleVariants lex b
 tertiumNonDaturVariations = [
