@@ -1,5 +1,5 @@
 {-#LANGUAGE  FlexibleContexts,  FlexibleInstances, MultiParamTypeClasses #-}
-module Carnap.Languages.PureFirstOrder.Logic.ThomasBolducAndZach (thomasBolducAndZachFOLCalc,parseThomasBolducAndZachFOL) where
+module Carnap.Languages.PureFirstOrder.Logic.ThomasBolducAndZach (thomasBolducAndZachFOLCalc,parseThomasBolducAndZachFOL, ThomasBolducAndZachFOL) where
 
 import Data.Map as M (lookup, Map,empty)
 import Text.Parsec
@@ -56,6 +56,7 @@ instance Inference ThomasBolducAndZachFOL PureLexiconFOL (Form Bool) where
          ruleOf QN3    = quantifierNegation !! 2
          ruleOf QN4    = quantifierNegation !! 3
          ruleOf (Pr _) = axiom
+         ruleOf r@(ThomasBolducAndZachTFL _) = premisesOf r ∴ conclusionOf r
 
          ruleOf IDE1  = leibnizLawVariations !! 0
          ruleOf IDE2  = leibnizLawVariations !! 1

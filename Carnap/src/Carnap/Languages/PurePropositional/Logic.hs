@@ -11,6 +11,7 @@ module Carnap.Languages.PurePropositional.Logic
     , parseMagnusSL, MagnusSL, magnusSLCalc
     , parseMagnusSLPlus, MagnusSLPlus, magnusSLPlusCalc
     , parseThomasBolducAndZachTFL, ThomasBolducAndZachTFL, thomasBolducAndZachTFLCalc
+    , parseEbelsDugganTFL, EbelsDugganTFL, ebelsDugganTFLCalc
     , parseTomassiPL, TomassiPL, tomassiPLCalc
     , parseHardegreeSL, HardegreeSL, hardegreeSLCalc
     , parseRipleyLNJ, RipleyLNJ, ripleyLNJCalc
@@ -29,6 +30,7 @@ import Carnap.Languages.PurePropositional.Logic.HowardSnyder
 import Carnap.Languages.PurePropositional.Logic.KalishAndMontague
 import Carnap.Languages.PurePropositional.Logic.Magnus
 import Carnap.Languages.PurePropositional.Logic.ThomasBolducAndZach
+import Carnap.Languages.PurePropositional.Logic.EbelsDuggan
 import Carnap.Languages.PurePropositional.Logic.Tomassi
 import Carnap.Languages.PurePropositional.Logic.IchikawaJenkins
 import Carnap.Languages.PurePropositional.Logic.Ripley
@@ -46,6 +48,7 @@ ofPropSys f sys | sys == "prop"                      = Just $ f propCalc
                 | sys == "magnusSL"                  = Just $ f magnusSLCalc 
                 | sys == "magnusSLPlus"              = Just $ f magnusSLPlusCalc 
                 | sys == "thomasBolducAndZachTFL"    = Just $ f thomasBolducAndZachTFLCalc 
+                | sys == "ebelsDugganTFL"            = Just $ f ebelsDugganTFLCalc 
                 | sys == "tomassiPL"                 = Just $ f tomassiPLCalc
                 | sys == "hardegreeSL"               = Just $ f hardegreeSLCalc 
                 | sys == "ripleyLNJ"                 = Just $ f ripleyLNJCalc
