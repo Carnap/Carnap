@@ -372,7 +372,7 @@
     width:75px;
 }
 
-[data-carnap-type="proofchecker"] .goal 
+[data-carnap-type="proofchecker"] .goal, 
 [data-carnap-type="sequentchecker"] .input
 {
     box-sizing:border-box;
