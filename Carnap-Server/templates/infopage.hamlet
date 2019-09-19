@@ -187,6 +187,15 @@
 
                 <div.demo>
 
+                    <p> Carnap supports proofs written in the sequent calculus, via #
+                        <a href="">ProofJS
+                        \ Among the systems supported are propositional and first
+                        \ order variants of Gentzen's original LK and LJ.
+
+                    ^{sequentcheck 16 "foLK" "" "AxEy(F(x)/\\G(y)):|-:EyAx(F(x)/\\G(y))" sequentDemo}
+
+                <div.demo>
+
                     <p> Carnap also includes a JSON API, making it possible to
                         \ create pure JavaScript GUIs that use Carnap under
                         \ the hood for in-browser proof checking. Here's an example
@@ -198,7 +207,7 @@
                         \ system SL.
 
                     <div.exercise>
-                        <span> example 16
+                        <span> example 17
                         <div#klementProof>
                             (W ∨ X), (Y ∨ Z), X → Y, ¬Z ∴ W ∨ Y
 

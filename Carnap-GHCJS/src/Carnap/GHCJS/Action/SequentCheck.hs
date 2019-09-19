@@ -88,6 +88,15 @@ activateChecker w (Just (i, o, opts))
                          appendChild par (Just bw)
                          return ()
                      _ -> return ()
+                  initialCheck <- newListener $ liftIO $  do 
+                                    forkIO $ do
+                                        threadDelay 500000
+                                        mr <- toCleanVal root
+                                        case mr of
+                                            Just r -> checkSequent calc Nothing r >>= decorate root
+                                            Nothing -> return ()
+                                    return ()
+                  addListener i initialize initialCheck False --initial check in case we preload a tableau
                   root `onChange` checkOnChange threadRef calc 
 
               parseGoal calc = do 
