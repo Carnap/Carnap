@@ -146,7 +146,7 @@ checkSequent :: ( ReLex lex
                 ) => TableauCalc lex sem rule -> Maybe Int -> Value -> IO Value
 checkSequent calc depth v = case parse parseTreeJSON v of
                                Success t -> case toTableau calc (trimTree depth t) of 
-                                   Left feedback -> return . toInfo $ feedback
+                                   Left feedback -> return . toInfo . trimTree ((\x -> x - 1) <$> depth)  $ feedback
                                    Right tab -> return . toInfo . trimTree ((\x -> x - 1) <$> depth) . validateTree $ tab
                                Error s -> do print (show v)
                                              error s
