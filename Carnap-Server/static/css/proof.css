@@ -72,6 +72,8 @@ input {
     min-width:1em;
 }
 
+.correct input { color: black }
+
 .waiting input { color: gray }
 
 .parse-error input, .feedback input { color: red }
