@@ -136,6 +136,9 @@ checkOnChange threadRef calc changed = do
             theInfo <- checkSequent calc (Just 1) changedVal 
             decorate changedParent theParentInfo
             decorate changed theInfo
+            --XXX: we do these separately in order to keep a parse error in
+            --either of the inferences from causing trouble in the
+            --other inference.
             return ()
         writeIORef threadRef (Just t')
 
