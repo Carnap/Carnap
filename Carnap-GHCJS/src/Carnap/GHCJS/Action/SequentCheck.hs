@@ -130,9 +130,12 @@ checkOnChange threadRef calc changed = do
         t' <- forkIO $ do
             threadDelay 500000
             changedParent <- ascendTree changed --may need to update the parent of the changed node if it exists
-            Just changedVal <- toCleanVal changedParent
-            theInfo <- checkSequent calc (Just 3) changedVal 
-            decorate changedParent theInfo
+            Just changedVal <- toCleanVal changed
+            Just changedParentVal <- toCleanVal changedParent
+            theParentInfo <- checkSequent calc (Just 1) changedParentVal 
+            theInfo <- checkSequent calc (Just 1) changedVal 
+            decorate changedParent theParentInfo
+            decorate changed theInfo
             return ()
         writeIORef threadRef (Just t')
 
