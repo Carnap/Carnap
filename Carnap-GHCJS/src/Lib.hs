@@ -1,19 +1,22 @@
 {-# LANGUAGE RankNTypes, QuasiQuotes, FlexibleContexts, DeriveDataTypeable, CPP, JavaScriptFFI #-}
-module Lib
-    (genericSendJSON, sendJSON, onEnter, onKey, clearInput,
-    getListOfElementsByClass, getListOfElementsByTag, tryParse,
-    treeToElement, genericTreeToUl, treeToUl, genericListToUl, listToUl,
-    formToTree, leaves, adjustFirstMatching, decodeHtml, syncScroll,
-    reloadPage, initElements, loginCheck,errorPopup, genInOutElts,
-    getInOutElts,generateExerciseElts, withLabel, formAndLabel,seqAndLabel,
-    folSeqAndLabel, folFormAndLabel, message, IOGoal(..), updateWithValue,
-    submissionSource, assignmentKey, initialize, popUpWith, spinnerSVG,
-    doneButton, questionButton, exclaimButton, expandButton, buttonWrapper,
-    maybeNodeListToList, trySubmit, inOpts, unform, rewriteWith ) where
+module Lib (genericSendJSON, sendJSON, onEnter, onKey, clearInput,
+           getListOfElementsByClass, getListOfElementsByTag, tryParse,
+           treeToElement, genericTreeToUl, treeToUl, genericListToUl,
+           listToUl, formToTree, leaves, adjustFirstMatching, decodeHtml,
+           decodeJSON, syncScroll, reloadPage, initElements,
+           loginCheck,errorPopup, genInOutElts,
+           getInOutElts,generateExerciseElts, withLabel,
+           formAndLabel,seqAndLabel, folSeqAndLabel, folFormAndLabel,
+           message, IOGoal(..), updateWithValue, submissionSource,
+           assignmentKey, initialize, initializeCallback, initCallbackObj,
+           toCleanVal, popUpWith, spinnerSVG, doneButton, questionButton,
+           exclaimButton, expandButton, buttonWrapper, maybeNodeListToList,
+           trySubmit, inOpts, unform, rewriteWith ) where
 
 import Data.Aeson
 import Data.Maybe (catMaybes)
 import qualified Data.ByteString.Lazy as BSL
+import Data.Text (pack)
 import Data.Text.Encoding
 import Data.Tree as T
 import Data.IORef (IORef, readIORef)
@@ -308,6 +311,9 @@ popUpWith fd w elt label msg details =
 decodeHtml :: (StringLike s, Show s) => s -> s
 decodeHtml = TS.fromTagText . head . parseTags
 
+decodeJSON :: String -> Maybe Value
+decodeJSON = decode . BSL.fromStrict . encodeUtf8 . pack
+
 --------------------------------------------------------
 --1.4 Optics
 --------------------------------------------------------
@@ -487,6 +493,8 @@ keyString e = key e >>= return . fromJSString
 alert :: String -> IO ()
 alert = alert' . toJSString
 
+foreign import javascript unsafe "JSON.parse(JSON.stringify($1))" sanatizeJSVal :: JSVal -> IO JSVal
+
 foreign import javascript unsafe "try {jsonCommand($1,$2,$3)} catch(e) {console.log(e)};" jsonCommand :: JSString -> Callback (JSVal -> IO()) -> Callback (JSVal -> JSVal -> JSVal -> IO()) -> IO ()
 
 foreign import javascript unsafe "$1.key" key :: KeyboardEvent -> IO JSString
@@ -502,6 +510,14 @@ foreign import javascript unsafe "(function(){try {var v=submission_source;} cat
 foreign import javascript unsafe "(function(){try {var v=assignment_key;} catch (e) {var v=\"\";}; return v})()" assignmentKeyJS :: IO JSString
 
 foreign import javascript unsafe "try {new Popper($1,$2,{placement:\"right\"});} catch (e) {$2.className=\"manualPopper\"};" makePopper :: Element -> Element -> IO ()
+
+foreign import javascript unsafe "window.Carnap = {};" initCallbackObj :: IO ()
+--"window.VAR" is apparently best practice for declaring global vars
+
+foreign import javascript unsafe "Carnap[$1]=$2;" initializeCallbackJS :: JSString-> Callback (payload -> succ -> IO ()) -> IO ()
+--TODO: unify with other callback code in SequentCheck
+
+foreign import javascript unsafe "$1($2);" simpleCall :: JSVal -> JSVal -> IO ()
 
 submissionSource = do qr <- submissionQueryJS
                       case fromJSString qr of
@@ -519,11 +535,30 @@ assignmentKey = do k <- assignmentKeyJS
 initialize :: EventName t Event
 initialize = EventName $ toJSString "initialize"
 
+toCleanVal :: JSVal -> IO (Maybe Value)
+toCleanVal x = sanatizeJSVal x >>= fromJSVal
+
+initializeCallback :: String -> (Value -> IO Value) -> IO ()
+initializeCallback s f = do theCB <- asyncCallback2 (cb f)
+                            initializeCallbackJS (toJSString s) theCB
+    where cb f jsval onSuccess = do Just val <- toCleanVal jsval
+                                    rslt <- f val
+                                    rslt' <- toJSVal rslt
+                                    simpleCall onSuccess rslt'
 
 #else
 
 initialize :: EventName t Event
 initialize = EventName "initialize"
+
+initializeCallback :: (Value -> IO Value) -> IO ()
+initializeCallback = error "initializeCallback requires the GHCJS FFI"
+
+toCleanVal :: JSVal -> IO (Maybe Value)
+toCleanVal = error "toCleaVal requires the GHCJS FFI"
+
+initCallbackObj :: IO ()
+initCallbackObj = error "initCallbackObj requires the GHCJS FFI"
 
 assignmentKey :: IO String
 assignmentKey = Prelude.error "assignmentKey requires the GHJS FFI"
@@ -552,4 +587,5 @@ message s = liftIO (alert s)
 
 reloadPage :: IO ()
 reloadPage = Prelude.error "you can't reload the page without the GHCJS FFI"
+
 #endif

@@ -7,7 +7,7 @@ import Data.Maybe (catMaybes)
 import Control.Lens (toListOf,preview, Prism')
 import Text.Parsec
 import Carnap.Core.Data.Util 
-import Carnap.Core.Unification.Unification (applySub,occurs,FirstOrder)
+import Carnap.Core.Unification.Unification (applySub,occurs,FirstOrder, Equation)
 import Carnap.Core.Data.Classes
 import Carnap.Core.Data.Types
 import Carnap.Core.Data.Optics
@@ -20,7 +20,7 @@ import Carnap.Languages.ClassicalSequent.Syntax
 import Carnap.Languages.ClassicalSequent.Parser
 import Carnap.Languages.Util.LanguageClasses
 import Carnap.Languages.Util.GenericConstructors
-import Carnap.Calculi.NaturalDeduction.Syntax (DeductionLine(..),depth,assertion,discharged,justificationOf,inScope,Restriction)
+import Carnap.Calculi.NaturalDeduction.Syntax (DeductionLine(..),depth,assertion,discharged,justificationOf,inScope)
 
 --------------------------------------------------------
 --1. FirstOrder Sequent Calculus
@@ -72,6 +72,19 @@ theta :: SchematicPolyadicFunctionLanguage (FixLang lex) (Term Int) (Term Int)
     => (FixLang lex) (Term Int) -> (FixLang lex) (Term Int)
 theta x = spfn 1 AOne :!$: x
 
+eigenConstraint :: 
+    ( PrismStandardVar (ClassicalSequentLexOver lex) Int
+    , PrismIndexedConstant (ClassicalSequentLexOver lex) Int
+    , PrismPolyadicSchematicFunction (ClassicalSequentLexOver lex) Int Int
+    , Schematizable (lex (ClassicalSequentOver lex))
+    , FirstOrderLex (lex (ClassicalSequentOver lex))
+    , CopulaSchema (ClassicalSequentOver lex)
+    , PrismSubstitutionalVariable (ClassicalSequentLexOver lex)
+    ) => ClassicalSequentOver lex (Term Int) 
+         -> ClassicalSequentOver lex (Succedent (Form Bool)) 
+         -> ClassicalSequentOver lex (Antecedent (Form Bool)) 
+         -> [Equation (ClassicalSequentOver lex)]
+         -> Maybe String
 eigenConstraint c suc ant sub
     | (applySub sub c) `occurs` (applySub sub ant) = Just $ "The term " ++ show (applySub sub c) ++ " appears not to be fresh, given that this line relies on " ++ show (applySub sub ant)
     | (applySub sub c) `occurs` (applySub sub suc) = Just $ "The term " ++ show (applySub sub c) ++ " appears not to be fresh in the other premise " ++ show (applySub sub suc)
@@ -80,10 +93,8 @@ eigenConstraint c suc ant sub
                             | not . null $ preview _constIdx (applySub sub c) -> Nothing
                             | not . null $ preview _varLabel (applySub sub c) -> Nothing
                           _ -> Just $ "The term " ++ show (applySub sub c) ++ " is not a constant or variable"
-    where _sfuncIdx' :: ( PrismPolyadicSchematicFunction (PureFirstOrderLexWith a) Int Int 
-                        , Sequentable (PureFirstOrderLexWith a)
-                        , PrismLink (a (OpenFOLSequentCalc a)) (Function (SchematicIntFunc Int Int) (OpenFOLSequentCalc a)) -- XXX: only for compatibility with older GHCs 
-                        ) => Prism' (OpenFOLSequentCalc a (Term Int)) (Int, Arity (Term Int) (Term Int) (Term Int))
+    where _sfuncIdx' :: PrismPolyadicSchematicFunction (ClassicalSequentLexOver lex) Int Int 
+                     => Prism' (ClassicalSequentOver lex (Term Int)) (Int, Arity (Term Int) (Term Int) (Term Int))
           _sfuncIdx' = _sfuncIdx
 
 tautologicalConstraint prems conc sub = case prems' of

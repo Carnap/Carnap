@@ -1,6 +1,6 @@
 {-#LANGUAGE FlexibleContexts, FlexibleInstances, MultiParamTypeClasses #-}
 module Carnap.Languages.PurePropositional.Logic.IchikawaJenkins
-    ( parseIchikawaJenkinsSL, IchikawaJenkinsSL,  ichikawaJenkinsSLCalc) where
+    ( parseIchikawaJenkinsSL, IchikawaJenkinsSL,  ichikawaJenkinsSLCalc, ichkawaJenkinsSLTableauCalc, IchikawaJenkinsSLTableaux(..), IchikawaJenkinsSL(..)) where
 
 import Data.Map as M (lookup, Map)
 import Text.Parsec
@@ -8,15 +8,21 @@ import Carnap.Core.Data.Types (Form)
 import Carnap.Languages.PurePropositional.Syntax
 import Carnap.Languages.PurePropositional.Parser
 import Carnap.Languages.PurePropositional.Logic.Magnus
+import Carnap.Calculi.Util
+import Carnap.Calculi.Tableau.Data
 import Carnap.Calculi.NaturalDeduction.Syntax
 import Carnap.Calculi.NaturalDeduction.Parser
 import Carnap.Calculi.NaturalDeduction.Checker
 import Carnap.Languages.ClassicalSequent.Syntax
 import Carnap.Languages.ClassicalSequent.Parser
 import Carnap.Languages.PurePropositional.Logic.Rules
+import Carnap.Languages.Util.LanguageClasses
 
-newtype IchikawaJenkinsSL = IJ MagnusSLPlus
-    deriving Eq
+-------------------------
+--  Natural Deduction  --
+-------------------------
+
+newtype IchikawaJenkinsSL = IJ MagnusSLPlus deriving Eq
 
 instance Show IchikawaJenkinsSL where
         show (IJ (MSL CondIntro1)) = "⊃I"
@@ -46,16 +52,13 @@ instance Inference IchikawaJenkinsSL PurePropLexicon (Form Bool) where
         indirectInference _ = Nothing
 
         isAssumption (IJ x) = isAssumption x
-        isAssumption _ = False
 
         isPremise (IJ x) = isPremise x
-        isPremise _ = False
 
         restriction (IJ x) = restriction x
-        restriction _ = Nothing
 
 parseIchikawaJenkinsSL :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> Parsec String u [IchikawaJenkinsSL]
-parseIchikawaJenkinsSL rtc = do r <- choice (map (try . string) ["AS","PR","&I","/\\I", "∧I","&E","/\\E","∧E","CI",">I","->I","⊃I","→E","CE",">E", "->E", "⊃E"
+parseIchikawaJenkinsSL rtc = do r <- choice (map (try . string) ["AS","PR","&I","/\\I", "∧I","&E","/\\E","∧E","CI",">I","->I","⊃I","CE",">E", "->E", "⊃E"
                                                          ,"~I","-I", "¬I","~E","-E","¬E" ,"vI","\\/I","∨I", "vE","\\/E", "∨E","BI","<>I","<->I", "≡I" 
                                                          , "BE", "<>E","<->E", "≡E", "R", "HYP","DIL","MT", "Comm", "DN", "MC", "≡ex", "<>ex", "<->ex", "DeM"])
                                                          <|> ((++) <$> string "A/" <*> many anyChar)
@@ -120,4 +123,90 @@ ichikawaJenkinsSLCalc = mkNDCalc
     , ndParseSeq = parseSeqOver (purePropFormulaParser magnusOpts)
     , ndParseForm = purePropFormulaParser magnusOpts
     , ndNotation = ichikawaJenkinsNotation
+    }
+
+-------------------------
+--  Semantic Tableaux  --
+-------------------------
+
+data IchikawaJenkinsSLTableaux = Ax | Conj | NConj | Disj | NDisj | Cond | NCond | Bicond | NBicond | DoubleNeg
+    deriving Eq
+
+instance Show IchikawaJenkinsSLTableaux where
+    show Ax = "Ax"
+    show Conj = "&"
+    show NConj = "¬&"
+    show Disj  = "∨"
+    show NDisj = "¬∨"
+    show Cond = "⊃" 
+    show NCond = "¬⊃"
+    show Bicond = "≡"
+    show NBicond = "¬≡"
+    show DoubleNeg = "¬¬"
+
+parseIchikawaJenkinsSLTableaux :: Parsec String u IchikawaJenkinsSLTableaux
+parseIchikawaJenkinsSLTableaux = do r <- choice (map (try . string) ["&","¬&","~&","-&"
+                                                                ,"∨","¬∨","~∨","-∨"
+                                                                , "v", "¬v","~v","-v"
+                                                                , "\\/", "¬\\/","~\\/","-\\/"
+                                                                , "⊃", "¬⊃","~⊃","-⊃"
+                                                                , "->", "¬->","~->","-->"
+                                                                , "->", "¬->","~->","-->"
+                                                                , ">", "¬>","~>","->"
+                                                                , "C", "¬C","~C","-C"
+                                                                , "≡", "¬≡","~≡","-≡"
+                                                                , "<->", "¬<->","~<->","-<->"
+                                                                , "<>", "¬<>","~<>","-<>"
+                                                                , "B", "¬B","~B","-B"
+                                                                , "¬¬","~~","--"
+                                                                , "Ax"
+                                                                ])
+                                    return $ case r of
+                                       r | r == "&" -> Conj
+                                         | r == "Ax" -> Ax
+                                         | r `elem` ["¬&","~&","-&"] -> NConj
+                                         | r `elem` ["∨","v","\\/"] -> Disj
+                                         | r `elem` [ "¬∨","~∨","-∨", "¬\\/","~\\/","-\\/", "¬v","~v","-v"] -> NDisj
+                                         | r `elem` ["⊃","->",">","C"] -> Cond
+                                         | r `elem` [ "¬⊃","~⊃","-⊃", "¬>","~>","->", "¬->","~->","-->", "¬C","~C","-C"] -> NCond
+                                         | r `elem` ["≡","<->","<>","B"] -> Bicond
+                                         | r `elem` [ "¬≡","~≡","-≡", "¬<->","~<->","-<->", "¬<>","~<>","-<>", "¬B","~B","-B"] -> NBicond
+                                         | r `elem` [ "¬¬","~~","--"] -> DoubleNeg
+
+instance CoreInference IchikawaJenkinsSLTableaux PurePropLexicon (Form Bool) where
+        corePremisesOf Conj = [SA (phin 1) :+: SA (phin 2) :+: GammaV 1 :|-: Bot]
+        corePremisesOf NConj = [ SA (lneg $ phin 1) :+: GammaV 1 :|-: Bot
+                               , SA (lneg $ phin 2) :+: GammaV 2 :|-: Bot
+                               ]
+        corePremisesOf Disj = [ SA (phin 1) :+: GammaV 1 :|-: Bot
+                              , SA (phin 2) :+: GammaV 2 :|-: Bot
+                              ]
+        corePremisesOf NDisj = [SA (lneg $ phin 1) :+: SA (lneg $ phin 2) :+: GammaV 1 :|-: Bot]
+        corePremisesOf Cond = [ SA (lneg $ phin 1) :+: GammaV 1 :|-: Bot
+                              , SA (phin 2) :+: GammaV 2 :|-: Bot
+                              ]
+        corePremisesOf NCond = [SA (phin 1) :+: SA (lneg $ phin 2) :+: GammaV 1 :|-: Bot]
+        corePremisesOf Bicond = [ SA (phin 1) :+: SA (phin 2) :+: GammaV 1 :|-: Bot
+                                , SA (lneg $ phin 1) :+: SA (lneg $ phin 2) :+: GammaV 2 :|-: Bot
+                                ]
+        corePremisesOf NBicond = [ SA (phin 1) :+: SA (lneg $ phin 2) :+: GammaV 1 :|-: Bot
+                                 , SA (lneg $ phin 1) :+: SA (phin 2) :+: GammaV 2 :|-: Bot
+                                 ]
+        corePremisesOf DoubleNeg = [ SA (phin 1)  :+: GammaV 1 :|-: Bot ]
+        corePremisesOf Ax = []
+
+        coreConclusionOf Conj = SA (phin 1 ./\. phin 2) :+: GammaV 1 :|-: Bot
+        coreConclusionOf NConj = SA (lneg $ phin 1 ./\. phin 2 ) :+: GammaV 1 :+: GammaV 2 :|-: Bot
+        coreConclusionOf Disj = SA (phin 1 .\/. phin 2) :+: GammaV 1 :+: GammaV 2 :|-: Bot
+        coreConclusionOf NDisj = SA (lneg $ phin 1 .\/. phin 2) :+: GammaV 1 :|-: Bot
+        coreConclusionOf Cond = SA (phin 1 .=>. phin 2) :+: GammaV 1 :+: GammaV 2 :|-: Bot
+        coreConclusionOf NCond = SA (lneg $ phin 1 .=>. phin 2) :+: GammaV 1 :+: GammaV 2 :|-: Bot
+        coreConclusionOf Bicond = SA (phin 1 .<=>. phin 2) :+: GammaV 1 :+: GammaV 2 :|-: Bot
+        coreConclusionOf NBicond = SA (lneg $ phin 1 .<=>. phin 2) :+: GammaV 1 :+: GammaV 2 :|-: Bot
+        coreConclusionOf DoubleNeg = SA (lneg $ lneg $ phin 1)  :+: GammaV 1 :|-: Bot
+        coreConclusionOf Ax = SA (phin 1) :+: SA (lneg $ phin 1) :+: GammaV 1 :|-: Bot
+
+ichkawaJenkinsSLTableauCalc = TableauCalc 
+    { tbParseForm = purePropFormulaParser magnusOpts
+    , tbParseRule = parseIchikawaJenkinsSLTableaux
     }

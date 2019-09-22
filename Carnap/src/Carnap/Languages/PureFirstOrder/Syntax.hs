@@ -238,6 +238,9 @@ maxVar t@(Fx _) = case ttype t >>= preview _varLabel >>= readMaybe of
 fogamma :: Int -> ClassicalSequentOver lex (Antecedent (Form Bool))
 fogamma n = GammaV n
 
+fodelta:: Int -> ClassicalSequentOver lex (Succedent (Form Bool))
+fodelta n = DeltaV n
+
 termsOf :: (BoundVars lex, Typeable sem) => FirstOrder (FixLang lex) => Traversal' (FixLang lex sem) (FixLang lex (Term Int))
 termsOf = genChildren
 

@@ -13,6 +13,7 @@ import Carnap.Core.Unification.ACUI
 import Carnap.Core.Data.Types
 import Carnap.Core.Data.Classes
 import Carnap.Core.Data.Optics
+import Carnap.Calculi.Util
 import Carnap.Languages.PurePropositional.Syntax
 import Carnap.Languages.ClassicalSequent.Syntax
 import Carnap.Languages.ClassicalSequent.Parser
@@ -183,27 +184,9 @@ availableSubproof m sp@(SubProof r ls) = do loc <- locale m sp
 --  1.3 Error Messages  --
 --------------------------
 
-data ProofErrorMessage :: ((* -> *) -> * -> *) -> * where
-        NoParse :: ParseError -> Int -> ProofErrorMessage lex
-        NoUnify :: [[Equation (ClassicalSequentOver lex)]]  -> Int -> ProofErrorMessage lex
-        GenericError :: String -> Int -> ProofErrorMessage lex
-        NoResult :: Int -> ProofErrorMessage lex --meant for blanks
-
--- TODO These should be combined into a lens
-
-lineNoOfError (NoParse _ n) = n
-lineNoOfError (NoUnify _ n) = n
-lineNoOfError (GenericError _ n) = n
-lineNoOfError (NoResult n) = n
-
-renumber :: Int -> ProofErrorMessage lex -> ProofErrorMessage lex
-renumber m (NoParse x n) = NoParse x m
-renumber m (NoUnify x n) = NoUnify x m
-renumber m (GenericError s n) = GenericError s m
-renumber m (NoResult n) = NoResult m
 
 ------------------
---  1.4 Proofs  --
+--  1.3 Proofs  --
 ------------------
 
 data ProofLine r lex sem where 
@@ -236,7 +219,7 @@ instance Hashable a => Hashable (Tree a) where
         hashWithSalt k (Node x ts) = hashWithSalt k x `hashWithSalt` ts
 
 --------------------
---  1.5 Feedback  --
+--  1.4 Feedback  --
 --------------------
 
 type FeedbackLine lex sem = Either (ProofErrorMessage lex) (ClassicalSequentOver lex (Sequent sem))
@@ -250,7 +233,7 @@ type SequentTree lex sem = Tree (Int, ClassicalSequentOver lex (Sequent sem))
 --inference rules. 
 
 -------------------
---  1.6 Calculi  --
+--  1.5 Calculi  --
 -------------------
 --These are intended to wrap up a whole ND system, including some of its
 --superficial features like rendering.
@@ -313,8 +296,6 @@ doubleProof = TypedProof (ProofType 0 2)
 
 assumptiveProof = TypedProof (ProofType 1 1)
 
-type Restriction lex = [Equation (ClassicalSequentOver lex)] -> Maybe String
-
 type Restrictor r lex = Int -> r -> Maybe (Restriction lex)
 
 andFurtherRestriction f g sub = case f sub of 
@@ -337,8 +318,7 @@ class Inference r lex sem | r -> lex sem where
         restriction _ = Nothing
 
         --restrictions, based on given substitutions, whole derivation, and position in derivation
-        --XXX: the either here is a bit of a hack. Probably all deductions
-        --should be preprocessed into deduction trees.
+        --XXX: the either here is a bit of a hack
         globalRestriction :: Either (Deduction r lex sem) (DeductionTree r lex sem) -> Restrictor r lex
         globalRestriction _ _ _ = Nothing
         
@@ -352,7 +332,10 @@ class Inference r lex sem | r -> lex sem where
         isPremise = const False
         --TODO: template for error messages, etc.
 
-type SupportsND r lex sem = ( Show r , Typeable sem, ReLex lex 
+type SupportsND r lex sem = 
+    ( Show r 
+    , Typeable sem
+    , ReLex lex 
     , Inference r lex sem
     , Schematizable (lex (FixLang lex))
     , Schematizable (lex (ClassicalSequentOver lex))

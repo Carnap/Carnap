@@ -37,6 +37,7 @@ library
                      Handler.Document
                      Filter.Randomize
                      Filter.Sidenotes
+                     Filter.Sequent
                      Filter.SynCheckers
                      Filter.ProofCheckers
                      Filter.Translate

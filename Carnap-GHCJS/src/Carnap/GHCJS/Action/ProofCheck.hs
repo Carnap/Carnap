@@ -116,7 +116,7 @@ activateChecker drs w (Just iog@(IOGoal i o g _ opts)) -- TODO: need to update n
                   memo <- newIORef mempty
                   mtref <- newIORef Nothing
                   mpd <- if render options then Just <$> makeDisplay else return Nothing
-                  mseq <- if directed options then parseGoal options calc else return Nothing
+                  mseq <- if directed options then parseGoal calc else return Nothing
                   let theChecker = checker calc drs mseq mtref mpd memo
                       checkSeq = threadedCheck options theChecker
                       saveProblem l s = Button {label = "Submit" , action = submitDer opts theChecker l g s}
@@ -133,14 +133,14 @@ activateChecker drs w (Just iog@(IOGoal i o g _ opts)) -- TODO: need to update n
                                        Left e -> error "couldn't parse goal"
                                        Right seq -> seq
 
-              parseGoal options calc = do let seqParse = ndParseSeq calc
-                                              (Just seqstring) = M.lookup "goal" opts 
-                                              --XXX: the directed option is set by the existence of a goal, so this match can't fail.
-                                          case parse seqParse "" seqstring of
-                                              Left e -> do setInnerHTML g (Just $ "Couldn't Parse This Goal:" ++ seqstring)
-                                                           error "couldn't parse goal"
-                                              Right seq -> do setInnerHTML g (Just $ ndNotation calc $ show seq)
-                                                              return $ Just seq
+              parseGoal calc = do let seqParse = ndParseSeq calc
+                                      (Just seqstring) = M.lookup "goal" opts 
+                                      --XXX: the directed option is set by the existence of a goal, so this match can't fail.
+                                  case parse seqParse "" seqstring of
+                                      Left e -> do setInnerHTML g (Just $ "Couldn't Parse This Goal:" ++ seqstring)
+                                                   error "couldn't parse goal"
+                                      Right seq -> do setInnerHTML g (Just $ ndNotation calc $ show seq)
+                                                      return $ Just seq
                                                               
               makeDisplay = do (Just pd) <- createElement w (Just "div")
                                setAttribute pd "class" "proofDisplay"
