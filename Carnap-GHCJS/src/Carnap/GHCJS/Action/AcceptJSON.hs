@@ -62,7 +62,6 @@ checkJSON v = do let Success (s,d,c,p) = parse parseReply v
                                   Nothing ->  replyObject False "" fb ""
                         (_,Left e) -> return $ replyObject False "" nilson "couldn't parse conclusion"
 
-
     where serialize (Left e) = Left e
           serialize (Right s) = Right $ show s
           nilson = toJSON ("" :: String)
@@ -158,6 +157,7 @@ instance (Schematizable (FixLang lex), Schematizable (ClassicalSequentOver lex))
 #ifdef __GHCJS__
 
 foreign import javascript unsafe "acceptJSONCallback_ = $1" initializeCallbackJS :: Callback (payload -> succ -> IO ()) -> IO ()
+--TODO: unify with other callback code in SequentCheck
 
 foreign import javascript unsafe "$1($2);" simpleCall :: JSVal -> JSVal -> IO ()
 

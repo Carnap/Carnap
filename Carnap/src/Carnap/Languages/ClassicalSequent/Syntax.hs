@@ -24,7 +24,8 @@ data Succedent a = Succedent a
 data Sequent a = Sequent a
 
 data Cedent :: k -> * -> * where
-        NilAntecedent    :: Typeable a => Cedent lang a 
+        NilCedent :: Typeable a => Cedent lang a
+        NilAntecedent    :: Typeable a => Cedent lang (Antecedent a )
         -- XXX should be `Cedent lang (Antecedent a)`, but first need a way to make this work with getId in the proxy instance
         NilSuccedent     :: Typeable a => Cedent lang (Succedent a)
         SingleAntecedent :: Typeable a => Cedent lang (a -> Antecedent a)
@@ -33,6 +34,7 @@ data Cedent :: k -> * -> * where
 instance Schematizable (Cedent a) where
         schematize NilAntecedent xs = "⊤"
         schematize NilSuccedent xs = "⊥"
+        schematize NilCedent xs = "∅"
         schematize SingleAntecedent (x:xs) = x
         schematize SingleSuccedent (x:xs) = x 
 
@@ -41,6 +43,7 @@ instance FirstOrderLex (Cedent a)
 instance UniformlyEq (Cedent a) where
         NilAntecedent =* NilAntecedent = True
         NilSuccedent =* NilSuccedent = True
+        NilCedent =* NilCedent = True
         SingleAntecedent =* SingleAntecedent = True
         SingleSuccedent =* SingleSuccedent = True
         _ =* _ = False
@@ -101,6 +104,7 @@ type ClassicalSequentOver a = FixLang (ClassicalSequentLexOver a)
 
 pattern Top                 = FX (Lx1 (Lx1 NilAntecedent))
 pattern Bot                 = FX (Lx1 (Lx1 NilSuccedent))
+pattern SID                 = FX (Lx1 (Lx1 NilCedent))
 pattern SA x                = FX (Lx1 (Lx1 SingleAntecedent)) :!$: x
 pattern SS x                = FX (Lx1 (Lx1 SingleSuccedent)) :!$: x
 pattern (:+:) x y           = FX (Lx1 (Lx2 AnteComma)) :!$: x :!$: y
@@ -123,28 +127,40 @@ instance ( FirstOrderLex (t (ClassicalSequentOver t))
          ) => ACUI (ClassicalSequentOver t) where
 
         unfoldTerm (x :+: y) = unfoldTerm x ++ unfoldTerm y
+        unfoldTerm (x :-: y) = unfoldTerm x ++ unfoldTerm y
         unfoldTerm Top       = []
+        unfoldTerm Bot       = []
         unfoldTerm leaf      = [leaf]
 
         isId Top = True
+        isId Bot = True
+        isId SID = True
         isId _   = False
 
         isACUI (SA _) = False
+        isACUI (SS _) = False
         isACUI _      = True
 
-        getId _ = Top
-            -- case (eqT :: Maybe (a :~: Antecedent b)) of
-            --    Just Refl -> Top
-            --    _         -> error "you have to use the right type 1"
+        getId p = SID
 
         acuiOp a Top = a
+        acuiOp a Bot = a
+        acuiOp a SID = a
         acuiOp Top b = b
+        acuiOp Bot b = b
+        acuiOp SID b = b
         acuiOp x@(_ :+: _) y   = x :+: y
         acuiOp x y@(_ :+: _)   = x :+: y
+        acuiOp x@(_ :-: _) y   = x :-: y
+        acuiOp x y@(_ :-: _)   = x :-: y
         acuiOp x@(SA _) y = x :+: y
         acuiOp x y@(SA _) = x :+: y
+        acuiOp x@(SS _) y = x :-: y
+        acuiOp x y@(SS _) = x :-: y
         acuiOp x@(GammaV _) y  = x :+: y
         acuiOp x y@(GammaV _)  = x :+: y
+        acuiOp x@(DeltaV _) y  = x :-: y
+        acuiOp x y@(DeltaV _)  = x :-: y
 
 instance Handed (ClassicalSequentOver lex (Sequent a)) 
                 (ClassicalSequentOver lex (Antecedent a))
@@ -182,10 +198,10 @@ class Typeable a => Concretes lex a where
             Just Refl -> f x
             Nothing -> pure x
 
+instance Typeable a => Concretes lex a
+
 underlyingLex :: Sequentable lex => Prism' (ClassicalSequentOver lex a) (FixLang lex a)
 underlyingLex = sublang
-
-instance Concretes lex (Form Bool)
 
 instance (Sequentable lex, PrismBooleanConnLex lex b) => PrismBooleanConnLex (ClassicalSequentLexOver lex) b where
         unarylink_PrismBooleanConnLex = underlyingLex . unarylink_PrismBooleanConnLex . relexIso

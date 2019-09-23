@@ -116,6 +116,7 @@
 [data-carnap-type="truthtable"] > .input,
 [data-carnap-type="countermodeler"] > .input,
 [data-carnap-type="qualitative"] > .input,
+[data-carnap-type="sequentchecker"] > .input,
 [data-carnap-type="translate"] > input {
     font-size:14px;
     height:2em;
@@ -133,6 +134,7 @@
 [data-carnap-type="translate"] .output,
 [data-carnap-type="truthtable"] .output,
 [data-carnap-type="countermodeler"] .output,
+[data-carnap-type="sequentchecker"] .output,
 [data-carnap-type="qualitative"] .output { 
     position:relative;
     border:1px solid #A9B7C0;
@@ -215,7 +217,6 @@
 [data-carnap-type="proofchecker"]:not([data-carnap-options~="resize"]) .buttonWrapper{ top:-5px; }
 
 [data-carnap-type="proofchecker"]:not([data-carnap-options~="resize"]) { margin-bottom:0px; }
-
 
 .proofFeedback {
     font-size:10pt;
@@ -371,7 +372,8 @@
     width:75px;
 }
 
-[data-carnap-type="proofchecker"] .goal {
+[data-carnap-type="proofchecker"] .goal
+{
     box-sizing:border-box;
     position:relative;
     min-height:30px;
@@ -449,6 +451,7 @@ body[data-carnap-type="proofchecker"] .buttonWrapper {
     margin:20px;
 }
 
+[data-carnap-type="sequentchecker"] .buttonWrapper,
 [data-carnap-type="truthtable"] .buttonWrapper,
 [data-carnap-type="countermodeler"] .buttonWrapper,
 [data-carnap-type="qualitative"] .buttonWrapper {
@@ -489,7 +492,6 @@ body[data-carnap-type="proofchecker"] .buttonWrapper {
     display: flex;
     align-items:center;
 }
-
 
 [data-carnap-options~="fonts"] textarea,[data-carnap-options~="fonts"] .output, [data-carnap-options~="fonts"] input, [data-carnap-options~="fonts"] .goal {
     text-rendering: optimizeLegibility;

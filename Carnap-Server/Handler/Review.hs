@@ -3,6 +3,7 @@ module Handler.Review (getReviewR, putReviewR) where
 import Import
 import Util.Database
 import Data.Map as M (fromList)
+import Data.Tree
 import Data.List (nub)
 import Text.Read (readMaybe)
 import Yesod.Form.Bootstrap3
@@ -40,9 +41,11 @@ getReviewR coursetitle filename =
            let problems = sortBy theSorting unsortedProblems
            defaultLayout $ do
                addScript $ StaticR js_popper_min_js
+               addScript $ StaticR js_proof_js
                addScript $ StaticR ghcjs_rts_js
                addScript $ StaticR ghcjs_allactions_lib_js
                addScript $ StaticR ghcjs_allactions_out_js
+               addStylesheet $ StaticR css_proof_css
                addStylesheet $ StaticR css_exercises_css
                $(widgetFile "review")
                addScript $ StaticR ghcjs_allactions_runmain_js
@@ -161,6 +164,21 @@ renderProblem (Entity key val) = do
                          data-carnap-problem="#{content}">
                          #{trans}
                 |]
+
+            (SequentCalc, SequentCalcData content tree opts) -> template $
+                [whamlet|
+                    <div data-carnap-type="sequentchecker"
+                         data-carnap-system="#{sys}"
+                         data-carnap-options="resize"
+                         data-carnap-goal="#{content}"
+                         data-carnap-submission="none">
+                         #{seqJSON tree}
+                |]
+                where sys = case lookup "system" (M.fromList opts) of Just s -> s; Nothing -> "propLK"
+                      seqJSON (Node (l,r) f) = "{\"label\":\"" ++ l 
+                                             ++ "\",\"rule\":\"" ++ r
+                                             ++ "\",\"forest\":[" ++ concatMap seqJSON f
+                                             ++ "]}"
             (Translation, TranslationDataOpts content trans opts) -> template $
                 [whamlet|
                     <div data-carnap-type="translate"

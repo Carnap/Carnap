@@ -1,0 +1,109 @@
+@font-face {
+    font-family:"Fira Logic";
+    src: url("https://cdn.jsdelivr.net/gh/gleachkr/FiraLogic/dist/FiraLogic-Regular.woff") format("woff"), 
+         url("https://cdn.jsdelivr.net/gh/gleachkr/FiraLogic/dist/FiraLogic-Regular.tff") format("tff")
+}
+
+input {
+    font-family: "Fira Logic", monospace;
+    border-style:none;
+    margin:0px !important;
+    padding:0px;
+    font-size:12pt;
+}
+
+.label input {
+    text-align:center;
+}
+
+.label, .root {
+    display: flex;
+    flex-wrap: nowrap;
+    flex-direction: row;
+    justify-content: center;
+    line-height:1;
+}
+
+.root> *, .label > * {
+    display: inline-block;
+    padding:2px 5px 2px 5px;
+    box-sizing: content-box;
+}
+
+.forest {
+    display: flex;
+    flex-wrap: nowrap;
+    flex-direction: row;
+    justify-content: center;
+    align-items: flex-end;
+}
+
+.node {
+    display: inline-block;
+}
+
+.label > * {
+    border-bottom: 1px solid black;
+}
+
+.label > *:nth-child(1) {
+    flex-grow:1;
+}
+
+.label > *:nth-last-child(1) {
+    flex-grow:1;
+}
+
+.node:nth-child(1) > .label > *:nth-child(1) {
+    border-bottom: none; 
+}
+
+.node:last-child > .label > *:nth-child(3) {
+    border-bottom: none;
+    position:relative;
+    top:.8em;
+}
+
+.node > .label > *:nth-child(1) {
+    min-width:1em;
+}
+
+.node > .label > *:nth-child(3) {
+    min-width:1em;
+}
+
+.correct input { color: black }
+
+.waiting input { color: gray }
+
+.parse-error input, .feedback input { color: red }
+
+.rule input {
+    font-size:8pt;
+    position:absolute;
+    max-width:5em;
+    text-overflow:ellipsis;
+}
+
+.rule input:focus {
+    max-width:none;
+}
+
+.rule > .rulePopper {
+    position:absolute;
+    bottom:25px;
+    visibility:hidden;
+    width: 400px;
+}
+
+.rule > .rulePopper > div {
+    background: white;
+    display:inline-block;
+    border:1px solid black;
+    padding:10px;
+    z-index:1;
+}
+
+.rule:hover > .rulePopper {
+    visibility:visible;
+}

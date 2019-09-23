@@ -6,7 +6,7 @@ license:             GPL-3
 license-file:        LICENSE
 author:              Jake Ehrlich, Graham Leach-Krouse
 maintainer:          gleachkr@gmail.com
-copyright:           2016 Jake Ehrlich, Graham Leach-Krouse
+copyright:           2019 Jake Ehrlich, Graham Leach-Krouse
 category:            Web
 build-type:          Simple
 -- extra-source-files:
@@ -45,6 +45,7 @@ library
                      , Carnap.Languages.PurePropositional.Logic.ThomasBolducAndZach
                      , Carnap.Languages.PurePropositional.Logic.EbelsDuggan
                      , Carnap.Languages.PurePropositional.Logic.Tomassi
+                     , Carnap.Languages.PurePropositional.Logic.Gentzen
                      , Carnap.Languages.ModalPropositional.Syntax
                      , Carnap.Languages.ModalPropositional.Parser
                      , Carnap.Languages.ModalPropositional.Logic
@@ -72,6 +73,7 @@ library
                      , Carnap.Languages.PureFirstOrder.Logic.HowardSnyder
                      , Carnap.Languages.PureFirstOrder.Logic.Hardegree
                      , Carnap.Languages.PureFirstOrder.Logic.Goldfarb
+                     , Carnap.Languages.PureFirstOrder.Logic.Gentzen
                      , Carnap.Languages.PureSecondOrder.Syntax
                      , Carnap.Languages.PureSecondOrder.Parser
                      , Carnap.Languages.PureSecondOrder.Logic
@@ -83,6 +85,7 @@ library
                      , Carnap.Languages.SetTheory.Logic.Carnap
                      , Carnap.Languages.ClassicalSequent.Syntax
                      , Carnap.Languages.ClassicalSequent.Parser
+                     , Carnap.Calculi.Util
                      , Carnap.Calculi.NaturalDeduction.Checker
                      , Carnap.Calculi.NaturalDeduction.Parser
                      , Carnap.Calculi.NaturalDeduction.Parser.Util
@@ -93,6 +96,8 @@ library
                      , Carnap.Calculi.NaturalDeduction.Parser.StructuredFitch
                      , Carnap.Calculi.NaturalDeduction.Syntax
                      , Carnap.Calculi.NaturalDeduction.Util
+                     , Carnap.Calculi.Tableau.Data
+                     , Carnap.Calculi.Tableau.Checker
 
   build-depends:       base >= 4.7
                      , lens >= 4.12

@@ -15,9 +15,8 @@ import Carnap.Core.Data.Types
 import Carnap.Core.Data.Classes
 import Carnap.Core.Data.Util (rebuild)
 import Carnap.Core.Unification.Unification
-import Carnap.Core.Unification.FirstOrder
-import Carnap.Core.Unification.Huet
 import Carnap.Core.Unification.ACUI
+import Carnap.Calculi.Util
 import Carnap.Languages.ClassicalSequent.Syntax
 import Control.Lens
 import Control.Monad.State
@@ -51,7 +50,6 @@ toDisplaySequence pl ded = let feedback = map (pl ded res) [1 .. length ded] in
             Right s -> if alright fb then Just s else Nothing
           res = globalRestriction (Left ded)
 
-
 toDisplaySequenceMemo :: 
     ( MonadVar (ClassicalSequentOver lex) (State Int)
     , Inference r lex sem, Sequentable lex
@@ -83,12 +81,11 @@ toDisplaySequenceStructured pl ded@(SubProof (1,m) ls) = let feedback = map (pl 
             Right s -> if alright fb then Just s else Nothing
           res = globalRestriction (Right ded)
 
-
 processLineHardegree :: 
-  ( Sequentable lex
-  , Inference r lex sem
+  ( Inference r lex sem
+  , ACUI (ClassicalSequentOver lex)
+  , Sequentable lex
   , Typeable sem
-  , FirstOrderLex (lex (ClassicalSequentOver lex))
   , StaticVar (ClassicalSequentOver lex)
   , MonadVar (ClassicalSequentOver lex) (State Int)
   ) => Deduction r lex sem -> Restrictor r lex -> Int -> FeedbackLine lex sem
@@ -132,7 +129,7 @@ processLineMontague ::
   , Typeable sem
   , MonadVar (ClassicalSequentOver lex) (State Int)
   , StaticVar (ClassicalSequentOver lex)
-  , FirstOrderLex (lex (ClassicalSequentOver lex))
+  , ACUI (ClassicalSequentOver lex)
   ) => Deduction r lex sem -> Restrictor r lex -> Int -> FeedbackLine lex sem
 processLineMontague ded res n = case ded !! (n - 1) of
   --special case to catch QedLines not being cited in justifications
@@ -144,7 +141,7 @@ hoProcessLineMontague ::
   , Sequentable lex
   , Inference r lex sem
   , Typeable sem
-  , FirstOrderLex (lex (ClassicalSequentOver lex))
+  , ACUI (ClassicalSequentOver lex)
   , MonadVar (ClassicalSequentOver lex) (State Int)
   ) => Deduction r lex sem -> Restrictor r lex -> Int -> FeedbackLine lex sem
 hoProcessLineMontague ded res n = case ded !! (n - 1) of
@@ -175,7 +172,6 @@ processLineFitch ::
   , MonadVar (ClassicalSequentOver lex) (State Int)
   , Typeable sem
   , ACUI (ClassicalSequentOver lex)
-  , FirstOrderLex (lex (ClassicalSequentOver lex))
   ) => Deduction r lex sem -> Restrictor r lex -> Int -> FeedbackLine lex sem
 processLineFitch ded res n = case ded !! (n - 1) of
   --special case to catch QedLines not being cited in justifications
@@ -199,7 +195,7 @@ hoProcessLineFitchMemo ::
   ( StaticVar (ClassicalSequentOver lex)
   , Sequentable lex
   , Inference r lex sem
-  , FirstOrderLex (lex (ClassicalSequentOver lex))
+  , ACUI (ClassicalSequentOver lex)
   , Typeable sem
   , MonadVar (ClassicalSequentOver lex) (State Int)
   , Show (ClassicalSequentOver lex (Succedent sem)), Show r
@@ -213,7 +209,7 @@ hoProcessLineFitchMemo ref ded res n = case ded !! (n - 1) of
 processLineLemmon :: 
   ( Sequentable lex
   , Inference r lex sem
-  , FirstOrderLex (lex (ClassicalSequentOver lex))
+  , ACUI (ClassicalSequentOver lex)
   , StaticVar (ClassicalSequentOver lex)
   , MonadVar (ClassicalSequentOver lex) (State Int)
   , Typeable sem
@@ -227,7 +223,7 @@ hoProcessLineLemmon ::
   ( StaticVar (ClassicalSequentOver lex)
   , Sequentable lex
   , Typeable sem
-  , FirstOrderLex (lex (ClassicalSequentOver lex))
+  , ACUI (ClassicalSequentOver lex)
   , Inference r lex sem
   , MonadVar (ClassicalSequentOver lex) (State Int)
   ) => Deduction r lex sem -> Restrictor r lex -> Int -> FeedbackLine lex sem
@@ -241,7 +237,7 @@ hoProcessLineLemmonMemo ::
   , Sequentable lex
   , Inference r lex sem
   , Typeable sem
-  , FirstOrderLex (lex (ClassicalSequentOver lex))
+  , ACUI (ClassicalSequentOver lex)
   , MonadVar (ClassicalSequentOver lex) (State Int)
   , Show (ClassicalSequentOver lex (Succedent sem)), Show r
   ) => ProofMemoRef lex sem r -> Deduction r lex sem -> Restrictor r lex -> Int -> IO (FeedbackLine lex sem)
@@ -255,7 +251,7 @@ processLineStructuredFitch ::
   ( Sequentable lex
   , Inference r lex sem
   , Typeable sem
-  , FirstOrderLex (lex (ClassicalSequentOver lex))
+  , ACUI (ClassicalSequentOver lex)
   , MonadVar (ClassicalSequentOver lex) (State Int)
   , StaticVar (ClassicalSequentOver lex)
   ) => DeductionTree r lex sem -> Restrictor r lex -> Int -> FeedbackLine lex sem
@@ -269,7 +265,7 @@ processLineStructuredFitchHO ::
   , Sequentable lex
   , Inference r lex sem
   , Typeable sem
-  , FirstOrderLex (lex (ClassicalSequentOver lex))
+  , ACUI (ClassicalSequentOver lex)
   , MonadVar (ClassicalSequentOver lex) (State Int)
   ) => DeductionTree r lex sem -> Restrictor r lex -> Int -> FeedbackLine lex sem
 processLineStructuredFitchHO ded res n = case ded .! n of
@@ -453,31 +449,6 @@ hoReduceProofTreeMemo ref res pt@(Node (ProofLine no cont rules) ts) =
                                    checkAgainst (res no rule) no sub
                                    checkAgainst (restriction rule) no sub
                                    return rslt
-
-fosolve :: 
-    ( FirstOrder (ClassicalSequentOver lex)
-    , MonadVar (ClassicalSequentOver lex) (State Int)
-    ) =>  [Equation (ClassicalSequentOver lex)] -> Either (ProofErrorMessage lex) [Equation (ClassicalSequentOver lex)]
-fosolve eqs = case evalState (foUnifySys (const False) eqs) (0 :: Int) of 
-                [] -> Left $ NoUnify [eqs] 0
-                [s] -> Right s
-
-hosolve :: 
-    ( HigherOrder (ClassicalSequentOver lex)
-    , MonadVar (ClassicalSequentOver lex) (State Int)
-    ) => [Equation (ClassicalSequentOver lex)] -> Either (ProofErrorMessage lex) [[Equation (ClassicalSequentOver lex)]]
-hosolve eqs = case evalState (huetUnifySys (const False) eqs) (0 :: Int) of
-                    [] -> Left $ NoUnify [eqs] 0
-                    subs -> Right subs
-
-acuisolve :: 
-    ( ACUI (ClassicalSequentOver lex)
-    , MonadVar (ClassicalSequentOver lex) (State Int)
-    ) => [Equation (ClassicalSequentOver lex)] -> Either (ProofErrorMessage lex) [[Equation (ClassicalSequentOver lex)]]
-acuisolve eqs = 
-        case evalState (acuiUnifySys (const False) eqs) (0 :: Int) of
-          [] -> Left $ NoUnify [eqs] 0
-          subs -> Right subs
 
 checkAgainst (Just f) n sub = case f sub of
                                   Nothing -> Right sub

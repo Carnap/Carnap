@@ -15,6 +15,7 @@ import Filter.Translate
 import Filter.TruthTables
 import Filter.CounterModelers
 import Filter.Qualitative
+import Filter.Sequent
 
 getAssignmentR :: Text -> Handler Html
 getAssignmentR filename = getAssignment filename >>= uncurry returnAssignment
@@ -41,10 +42,12 @@ returnAssignment (Entity key val) path = do
                                toWidgetHead $(juliusFile "templates/command.julius")
                                toWidgetHead [julius|var submission_source="#{rawJS source}";|]
                                toWidgetHead [julius|var assignment_key="#{rawJS $ show key}";|]
+                               addScript $ StaticR js_proof_js
                                addScript $ StaticR js_popper_min_js
                                addScript $ StaticR ghcjs_rts_js
                                addScript $ StaticR ghcjs_allactions_lib_js
                                addScript $ StaticR ghcjs_allactions_out_js
+                               addStylesheet $ StaticR css_proof_css
                                addStylesheet $ StaticR css_tree_css
                                addStylesheet $ StaticR css_exercises_css
                                $(widgetFile "document")
@@ -67,4 +70,4 @@ fileToHtml salt path = do Markdown md <- markdownFromFile path
                                                              { writerExtensions = carnapPandocExtensions
                                                              , writerWrapText=WrapPreserve } pd'
                               Left e -> return $ Left e
-    where allFilters = (randomizeProblems salt . makeSynCheckers . makeProofChecker . makeTranslate . makeTruthTables . makeCounterModelers . makeQualitativeProblems)
+    where allFilters = (randomizeProblems salt . makeSequent . makeSynCheckers . makeProofChecker . makeTranslate . makeTruthTables . makeCounterModelers . makeQualitativeProblems)
