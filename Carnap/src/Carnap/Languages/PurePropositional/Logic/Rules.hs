@@ -44,7 +44,7 @@ premConstraint (Just prems) sub | theinstance `elem` prems = Nothing
     where theinstance = pureBNF . applySub sub $ (SA (phin 1) :|-: SS (phin 1))
           project = view rhs
 
-dischargeConstraint n ded lhs sub | and (map (`elem` forms) lhs') = Nothing
+dischargeConstraint n ded lhs sub | all (`elem` forms) lhs' && all (`elem` lhs') forms = Nothing
                                   | otherwise = Just $ "Some of the stated dependencies in " ++ show forms ++ ", are not among the inferred dependencies " ++ show lhs' ++ "."
     where lhs' = toListOf concretes . applySub sub $ lhs
           scope = inScope (ded !! (n - 1))

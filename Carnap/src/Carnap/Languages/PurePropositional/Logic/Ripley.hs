@@ -38,7 +38,6 @@ instance Show RipleyLNJ where
         show FalsumElim   = "⊥E"
         show As           = "AS"
 
-
 instance Inference RipleyLNJ PurePropLexicon (Form Bool) where
         ruleOf ConjIntro    = adjunction
         ruleOf ConjElimL    = simplificationVariations !! 0
@@ -53,6 +52,7 @@ instance Inference RipleyLNJ PurePropLexicon (Form Bool) where
         ruleOf As           = axiom        
 
         globalRestriction (Left ded) n CondIntro = Just (dischargeConstraint n ded (view lhs $ conclusionOf CondIntro))
+        globalRestriction (Left ded) n CondIntroVac = Just (dischargeConstraint n ded (view lhs $ conclusionOf CondIntroVac))
         globalRestriction (Left ded) n DisjElim = Just (dischargeConstraint n ded (view lhs $ conclusionOf DisjElim))
         globalRestriction _ _ _ = Nothing
 

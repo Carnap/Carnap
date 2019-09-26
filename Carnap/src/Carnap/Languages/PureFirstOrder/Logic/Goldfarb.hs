@@ -65,6 +65,9 @@ instance Inference GoldfarbND PureLexiconFOL (Form Bool) where
     globalRestriction (Left ded) n D = Just (P.dischargeConstraint n ded (view lhs $ conclusionOf D))
     globalRestriction _ _ _ = Nothing
 
+    indirectInference D = Just $ TypedProof (ProofType 1 1)
+    indirectInference _ = Nothing
+
     isAssumption P = True
     isAssumption _ = False
 
@@ -130,6 +133,10 @@ instance Inference GoldfarbNDPlus PureLexiconFOL (Form Bool) where
               theSuc = SS (phin 1 :: FOLSequentCalc (Form Bool))
 
     globalRestriction _ _ _ = Nothing
+
+    indirectInference (ND x) = indirectInference x
+    indirectInference EIE = Just $ TypedProof (ProofType 1 1)
+    indirectInference _ = Nothing
 
     isAssumption (ND s)  = isAssumption s
     isAssumption (EII _) = True
