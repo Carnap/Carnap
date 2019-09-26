@@ -219,6 +219,25 @@ reduceResult lineno xs = case rights xs of
           firstNonUni (Left (NoUnify _ _):ys) = firstNonUni ys
           firstNonUni (Left y:_) = Just y
 
+parallelCheckResult :: Inference r lex sem => Restrictor r lex -> Int
+        -> [Either (ProofErrorMessage lex) [( ClassicalSequentOver lex (Sequent sem) , [Equation (ClassicalSequentOver lex)] , r)]]
+        -> [Either (ProofErrorMessage lex) [ClassicalSequentOver lex (Sequent sem)]]
+parallelCheckResult res no rslt = map checkall rslt
+    where checkall arslt = do mixedrslts <- check arslt
+                              case rights mixedrslts of
+                                 [] -> let Left e = head mixedrslts in Left e --need to change type here.
+                                 rs -> Right rs
+
+          check (Left e) = Left e
+          check (Right somerslts) = Right $
+            do (rslt, sub, rule) <- somerslts
+               let l1 = checkAgainst (res no rule) no sub
+                   l2 = checkAgainst (restriction rule) no sub
+               return $ case (l1,l2) of
+                   (Left e, _) -> Left e
+                   (_,Left e) -> Left e
+                   _ -> Right rslt
+
 --Given a list of concrete rules and a list of (schematic-variable-free)
 --premise sequents, and a (schematic-variable-free) conclusion succeedent,
 --return an error or a list of possible (schematic-variable-free) correct
@@ -296,22 +315,17 @@ reduceProofTree, hoReduceProofTree ::
     , MonadVar (ClassicalSequentOver lex) (State Int)
     , StaticVar (ClassicalSequentOver lex)
     , Typeable sem
-    ) => Restrictor r lex -> ProofTree r lex sem ->  FeedbackLine lex sem
+    ) => Restrictor r lex -> ProofTree r lex sem -> FeedbackLine lex sem
 reduceProofTree res (Node (ProofLine no cont rules) ts) =  
         do prems <- mapM (reduceProofTree res) ts
-           (rslt, sub, rule) <- reduceResult no $ foseqFromNode no rules prems cont
-           checkAgainst (res no rule) no sub
-           checkAgainst (restriction rule) no sub
-           return rslt
+           reduceResult no $ parallelCheckResult res no $ foseqFromNode no rules prems cont
 
 hoReduceProofTree res (Node (ProofLine no cont rules) ts) =  
         do prems <- mapM (hoReduceProofTree res) ts
-           (rslt, sub, rule) <- reduceResult no $ hoseqFromNode no rules prems cont 
+           rslt <- reduceResult no $ parallelCheckResult res no $ hoseqFromNode no rules prems cont 
            -- XXX: we need to rebuild the term here to make sure that there
            -- are no unevaluated substitutions lurking inside under
            -- lambdas, with stale variables in trapped in closures.
-           checkAgainst (res no rule) no sub
-           checkAgainst (restriction rule) no sub
            return $ rebuild $ evalState (toBNF (rebuild rslt)) (0 :: Int)
 
 hoReduceProofTreeMemo :: 
@@ -327,18 +341,16 @@ hoReduceProofTreeMemo ref res pt@(Node (ProofLine no cont rules) ts) =
         do thememo <- readIORef ref
            let thehash = hash pt
            case M.lookup thehash thememo of
-               Just x -> return $ checkRestrictions x
-               _      -> do prems <- mapM (hoReduceProofTreeMemo ref res) ts
-                            let x = do prems' <- sequence prems 
-                                       (rslt, sub, rule) <- reduceResult no $ hoseqFromNode no rules prems' cont
-                                       let rslt' = rebuild $ evalState (toBNF (rebuild rslt)) (0 :: Int)
-                                       return (rslt', sub, rule)
-                            writeIORef ref (M.insert thehash x thememo)
-                            return $ checkRestrictions x
-    where checkRestrictions x = do (rslt, sub, rule) <- x
-                                   checkAgainst (res no rule) no sub
-                                   checkAgainst (restriction rule) no sub
-                                   return rslt
+               Just x  -> return $ reduceResult no $ parallelCheckResult res no $ x
+               Nothing -> 
+                    do prems <- mapM (hoReduceProofTreeMemo ref res) ts
+                       case sequence prems of
+                             Left olderror -> return (Left olderror)
+                             Right prems -> 
+                                do let y = do errOrRslts <- hoseqFromNode no rules prems cont
+                                              return $ errOrRslts >>= Right . map (\(r,z,w) -> (rebuild $ evalState (toBNF (rebuild r)) (0 :: Int),z,w))
+                                   writeIORef ref (M.insert thehash y thememo)
+                                   return $ reduceResult no $ parallelCheckResult res no $ y
 
 checkAgainst (Just f) n sub = case f sub of
                                   Nothing -> Right sub
