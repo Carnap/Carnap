@@ -3,7 +3,7 @@ module Lib (genericSendJSON, sendJSON, onEnter, onKey, clearInput,
            getListOfElementsByClass, getListOfElementsByTag, tryParse,
            treeToElement, genericTreeToUl, treeToUl, genericListToUl,
            listToUl, formToTree, leaves, adjustFirstMatching, decodeHtml,
-           decodeJSON, syncScroll, reloadPage, initElements,
+           decodeJSON, cleanString, syncScroll, reloadPage, initElements,
            loginCheck,errorPopup, genInOutElts,
            getInOutElts,generateExerciseElts, withLabel,
            formAndLabel,seqAndLabel, folSeqAndLabel, folFormAndLabel,
@@ -313,6 +313,19 @@ decodeHtml = TS.fromTagText . head . parseTags
 
 decodeJSON :: String -> Maybe Value
 decodeJSON = decode . BSL.fromStrict . encodeUtf8 . pack
+
+--reencodes unicode characters in strings that have been mangled by "show"
+cleanString :: String -> String
+cleanString = concat . map cleanChunk . chunks 
+          where chunks s = case break (== '\"') s of 
+                                  (l,[]) -> l:[]
+                                  (l,_:s') -> l:chunks s'
+                cleanChunk c = case (readMaybe $ "\"" ++ c ++ "\"") :: Maybe String of 
+                                  Just s -> s
+                                  Nothing -> c
+                readMaybe s = case reads s of
+                                [(x, "")] -> Just x
+                                _ -> Nothing
 
 --------------------------------------------------------
 --1.4 Optics

@@ -320,20 +320,9 @@ wrap fd w calc elt (Left (NoUnify eqs n)) =
                                (Just $ ndNotation calc $ toUniErr eqs)
 wrap fd w _ elt (Left (NoResult _)) = setInnerHTML elt (Just "&nbsp;")
 
-syntaxwrap fd w elt (Left (NoParse e n))       = popUpWith fd w elt "⚠" ("Can't read line " ++ show n ++ ". There may be a typo.") (Just . cleanIt . show $ e)
-          where chunks s = case break (== '\"') s of 
-                                  (l,[]) -> l:[]
-                                  (l,_:s') -> l:chunks s'
-                cleanChunk c = case (readMaybe $ "\"" ++ c ++ "\"") :: Maybe String of 
-                                  Just s -> s
-                                  Nothing -> c
-                cleanIt = concat . map cleanChunk . chunks 
-      
-                readMaybe s = case reads s of
-                                [(x, "")] -> Just x
-                                _ -> Nothing
-syntaxwrap fd w elt (Left (NoResult _))        = setInnerHTML elt (Just "&nbsp;")
-syntaxwrap fd w elt _        = setInnerHTML elt (Just "-")
+syntaxwrap fd w elt (Left (NoParse e n)) = popUpWith fd w elt "⚠" ("Can't read line " ++ show n ++ ". There may be a typo.") (Just . cleanString . show $ e)
+syntaxwrap fd w elt (Left (NoResult _))  = setInnerHTML elt (Just "&nbsp;")
+syntaxwrap fd w elt _ = setInnerHTML elt (Just "-")
 
 toUniErr eqs = "In order to apply this inference rule, there needs to be a substitution that makes at least one of these sets of pairings match:" 
                 ++ (concat $ map endiv' $ map (concat . map (endiv . show) . reverse) eqs)

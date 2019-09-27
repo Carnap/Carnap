@@ -190,7 +190,7 @@ toTableau calc (Node (l,r) f)
           cleanTree (Right fs) = fmap (const Waiting) fs
           newNode = case TableauNode <$> parsedLabel <*> (pure Nothing) <*> parsedRule of
                         Right n -> Right n
-                        Left e -> Left (Node (ParseErrorMsg (show e)) (map cleanTree parsedForest))
+                        Left e -> Left (Node (ParseErrorMsg . cleanString . show $ e) (map cleanTree parsedForest))
 
 fromInfo :: Value -> Parser Bool
 fromInfo = withObject "Info Tree" $ \o -> do
