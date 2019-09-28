@@ -1,7 +1,7 @@
 {-#LANGUAGE TypeOperators, FlexibleContexts, FlexibleInstances, MultiParamTypeClasses#-}
 module Carnap.Languages.PureFirstOrder.Parser 
 ( folFormulaParser, folFormulaParserRelaxed, mfolFormulaParser
-, magnusFOLFormulaParser, thomasBolducAndZachFOLFormulaParser
+, magnusFOLFormulaParser, thomasBolducAndZachFOLFormulaParser, thomasBolducAndZachFOL2019FormulaParser
 , hardegreePLFormulaParser, bergmannMoorAndNelsonPDFormulaParser
 , goldfarbNDFormulaParser, hausmanPLFormulaParser, FirstOrderParserOptions(..)
 , parserFromOptions, parseFreeVar, howardSnyderPLFormulaParser) where
@@ -112,6 +112,13 @@ magnusFOLParserOptions = FirstOrderParserOptions
 thomasBolducAndZachFOLParserOptions :: FirstOrderParserOptions PureLexiconFOL u Identity
 thomasBolducAndZachFOLParserOptions = magnusFOLParserOptions { hasBooleanConstants = True }
 
+thomasBolducAndZachFOL2019ParserOptions :: FirstOrderParserOptions PureLexiconFOL u Identity
+thomasBolducAndZachFOL2019ParserOptions = magnusFOLParserOptions { hasBooleanConstants = True
+                                                                 , atomicSentenceParser = 
+                                                                        \x -> parsePredicateSymbol "ABCDEFGHIJKLMNOPQRSTUVWXYZ" x 
+                                                                              <|> equalsParser x
+                                                                 }
+
 bergmannMoorAndNelsonFOLParserOptions :: FirstOrderParserOptions PureLexiconFOL u Identity
 bergmannMoorAndNelsonFOLParserOptions = FirstOrderParserOptions 
                          { atomicSentenceParser = \x -> try (parsePredicateSymbolNoParen "ABCDEFGHIJKLMNOPQRSTUVWXYZ" x)
@@ -217,6 +224,9 @@ magnusFOLFormulaParser = parserFromOptions magnusFOLParserOptions
 
 thomasBolducAndZachFOLFormulaParser :: Parsec String u PureFOLForm
 thomasBolducAndZachFOLFormulaParser = parserFromOptions thomasBolducAndZachFOLParserOptions
+
+thomasBolducAndZachFOL2019FormulaParser :: Parsec String u PureFOLForm
+thomasBolducAndZachFOL2019FormulaParser = parserFromOptions thomasBolducAndZachFOL2019ParserOptions
 
 hardegreePLFormulaParser :: Parsec String u PureFOLForm
 hardegreePLFormulaParser = parserFromOptions hardegreePLParserOptions

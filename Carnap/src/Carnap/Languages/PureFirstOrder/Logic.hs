@@ -5,6 +5,7 @@ module Carnap.Languages.PureFirstOrder.Logic
         , parseMontagueQCCalc, montagueQCCalc
         , parseMagnusQL, magnusQLCalc
         , parseThomasBolducAndZachFOL, thomasBolducAndZachFOLCalc
+        , parseThomasBolducAndZachFOLCore, thomasBolducAndZachFOL2019Calc
         , parseLogicBookPD, logicBookPDCalc, logicBookPDPlusCalc
         , parseHausmanPL, hausmanPLCalc
         , parseHowardSnyderPL, howardSnyderPLCalc
@@ -33,18 +34,19 @@ import Carnap.Languages.PureFirstOrder.Logic.Rules
 
 ofFOLSys :: (forall r . (Show r, Inference r PureLexiconFOL (Form Bool)) => 
              NaturalDeductionCalc r PureLexiconFOL (Form Bool) -> a) -> String -> Maybe a
-ofFOLSys f sys | sys == "firstOrder"                = Just $ f folCalc
-               | sys == "montagueQC"                = Just $ f montagueQCCalc 
-               | sys == "magnusQL"                  = Just $ f magnusQLCalc 
-               | sys == "thomasBolducAndZachFOL"    = Just $ f thomasBolducAndZachFOLCalc 
-               | sys == "ebelsDugganFOL"            = Just $ f ebelsDugganFOLCalc
-               | sys == "LogicBookPD"               = Just $ f logicBookPDCalc 
-               | sys == "LogicBookPDPlus"           = Just $ f logicBookPDPlusCalc 
-               | sys == "hausmanPL"                 = Just $ f hausmanPLCalc 
-               | sys == "howardSnyderPL"            = Just $ f howardSnyderPLCalc 
-               | sys == "ichikawaJenkinsQL"         = Just $ f ichikawaJenkinsQLCalc
-               | sys == "hardegreePL"               = Just $ f hardegreePLCalc 
-               | sys == "goldfarbAltND"             = Just $ f goldfarbAltNDCalc
-               | sys == "goldfarbNDPlus"            = Just $ f goldfarbNDPlusCalc
-               | sys == "goldfarbAltNDPlus"         = Just $ f goldfarbAltNDPlusCalc
-               | otherwise                          = Nothing
+ofFOLSys f sys | sys == "firstOrder"                  = Just $ f folCalc
+               | sys == "montagueQC"                  = Just $ f montagueQCCalc 
+               | sys == "magnusQL"                    = Just $ f magnusQLCalc 
+               | sys == "thomasBolducAndZachFOL"      = Just $ f thomasBolducAndZachFOLCalc 
+               | sys == "thomasBolducAndZachFOL2019"  = Just $ f thomasBolducAndZachFOL2019Calc 
+               | sys == "ebelsDugganFOL"              = Just $ f ebelsDugganFOLCalc
+               | sys == "LogicBookPD"                 = Just $ f logicBookPDCalc 
+               | sys == "LogicBookPDPlus"             = Just $ f logicBookPDPlusCalc 
+               | sys == "hausmanPL"                   = Just $ f hausmanPLCalc 
+               | sys == "howardSnyderPL"              = Just $ f howardSnyderPLCalc 
+               | sys == "ichikawaJenkinsQL"           = Just $ f ichikawaJenkinsQLCalc
+               | sys == "hardegreePL"                 = Just $ f hardegreePLCalc 
+               | sys == "goldfarbAltND"               = Just $ f goldfarbAltNDCalc
+               | sys == "goldfarbNDPlus"              = Just $ f goldfarbNDPlusCalc
+               | sys == "goldfarbAltNDPlus"           = Just $ f goldfarbAltNDPlusCalc
+               | otherwise                            = Nothing

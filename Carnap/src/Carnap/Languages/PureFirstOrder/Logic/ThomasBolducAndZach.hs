@@ -1,5 +1,8 @@
 {-#LANGUAGE  FlexibleContexts,  FlexibleInstances, MultiParamTypeClasses #-}
-module Carnap.Languages.PureFirstOrder.Logic.ThomasBolducAndZach (thomasBolducAndZachFOLCalc,parseThomasBolducAndZachFOL, ThomasBolducAndZachFOL) where
+module Carnap.Languages.PureFirstOrder.Logic.ThomasBolducAndZach 
+    ( thomasBolducAndZachFOLCalc, parseThomasBolducAndZachFOL, ThomasBolducAndZachFOL
+    , thomasBolducAndZachFOL2019Calc, parseThomasBolducAndZachFOLCore, ThomasBolducAndZachFOLCore
+    ) where
 
 import Data.Map as M (lookup, Map,empty)
 import Text.Parsec
@@ -130,11 +133,26 @@ parseThomasBolducAndZachFOL rtc = try (map TFL <$> parseProp) <|> try (map FOL <
           quantRule = parseThomasBolducAndZachFOLCore rtc
           cqRule = string "CQ" >> return [QN1,QN2,QN3,QN4]
 
-parseThomasBolducAndZachFOLCoreProof :: RuntimeNaturalDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine ThomasBolducAndZachFOLCore PureLexiconFOL (Form Bool)]
-parseThomasBolducAndZachFOLCoreProof ders = toDeductionFitch (parseThomasBolducAndZachFOLCore ders) thomasBolducAndZachFOLFormulaParser
+parseThomasBolducAndZachFOL2019Proof :: RuntimeNaturalDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine ThomasBolducAndZachFOLCore PureLexiconFOL (Form Bool)]
+parseThomasBolducAndZachFOL2019Proof ders = toDeductionFitch (parseThomasBolducAndZachFOLCore ders) thomasBolducAndZachFOL2019FormulaParser
 
 parseThomasBolducAndZachFOLProof :: RuntimeNaturalDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine ThomasBolducAndZachFOL PureLexiconFOL (Form Bool)]
 parseThomasBolducAndZachFOLProof ders = toDeductionFitch (parseThomasBolducAndZachFOL ders) thomasBolducAndZachFOLFormulaParser
+
+dropOuterParens s = case (strip s, break (== '⊢') s) of
+      (s'@(_:_:_:_),_) | (head s' == '(') && (last s' == ')') && (balance 0 (inner s') == 0) -> inner s'
+      (_,(a@(_:_),b@(_:_))) -> (dropOuterParens a) ++ " ⊢ " ++ (dropOuterParens $ tail b)
+      _ -> s
+
+    where balance 0 (')':_) = -10
+          balance n [] = n
+          balance n ('(':rest) = balance (n+1) rest 
+          balance n (')':rest) = balance (n-1) rest
+          balance n (_:rest) = balance n rest
+
+          strip = reverse . dropWhile (== ' ') . reverse . dropWhile (== ' ') 
+          inner = init . tail 
+
 
 thomasBolducAndZachFOLCalc = mkNDCalc
     { ndRenderer = FitchStyle StandardFitch
@@ -148,10 +166,10 @@ thomasBolducAndZachFOLCalc = mkNDCalc
 
 thomasBolducAndZachFOL2019Calc = mkNDCalc
     { ndRenderer = FitchStyle StandardFitch
-    , ndParseProof = parseThomasBolducAndZachFOLCoreProof
+    , ndParseProof = parseThomasBolducAndZachFOL2019Proof
     , ndProcessLine = hoProcessLineFitch
     , ndProcessLineMemo = Just hoProcessLineFitchMemo
-    , ndParseSeq = parseSeqOver thomasBolducAndZachFOLFormulaParser
-    , ndParseForm = thomasBolducAndZachFOLFormulaParser
-    , ndNotation = ndNotation P.thomasBolducAndZachTFLCalc
+    , ndParseSeq = parseSeqOver thomasBolducAndZachFOL2019FormulaParser
+    , ndParseForm = thomasBolducAndZachFOL2019FormulaParser
+    , ndNotation = dropOuterParens
     }
