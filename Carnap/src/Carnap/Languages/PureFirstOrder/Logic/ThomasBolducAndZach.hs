@@ -84,9 +84,8 @@ instance Inference ThomasBolducAndZachFOL PureLexiconFOL (Form Bool) where
          isPremise (Pr _) = True
          isPremise _ = False
 
-parseThomasBolducAndZachFOL rtc = try quantRule <|> liftProp
-    where liftProp = do r <- P.parseThomasBolducAndZachTFL (RuntimeNaturalDeductionConfig mempty mempty)
-                        return (map ThomasBolducAndZachTFL r)
+parseThomasBolducAndZachFOL rtc = try quantRule <|> (map ThomasBolducAndZachTFL <$> parseProp)
+    where parseProp = P.parseThomasBolducAndZachTFL (RuntimeNaturalDeductionConfig mempty mempty)
           quantRule = do r <- choice (map (try . string) ["∀I", "AI", "∀E", "AE", "∃I", "EI", "∃E", "EE", "=I","=E","CQ","PR"])
                          case r of 
                             r | r `elem` ["∀I","AI"] -> return [UI]
