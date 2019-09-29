@@ -49,8 +49,7 @@ parseNeg :: (BooleanLanguage l, Monad m) => ParsecT String u m (l -> l)
 parseNeg = do spaces >> (string "-" <|> string "~" <|> string "¬" <|> string "not ") >> return lneg
 
 booleanConstParser :: (BooleanConstLanguage l, Monad m) => ParsecT String u m l
-booleanConstParser = stringsToTry ["!?"] lfalsum <|> stringsToTry ["T"] lverum 
---XXX : this might collide with sentence letters
+booleanConstParser = stringsToTry ["!?","_|_","⊥"] lfalsum <|> stringsToTry ["⊤"] lverum 
 
 parseNec :: (ModalLanguage l, Monad m) => ParsecT String u m (l -> l)
 parseNec = do spaces >> (string "[]" <|> string "□") >> return nec
