@@ -110,12 +110,18 @@ magnusFOLParserOptions = FirstOrderParserOptions
           boolean a = if isBoolean a then return a else unexpected "atomic or quantified sentence wrapped in parentheses"
 
 thomasBolducAndZachFOLParserOptions :: FirstOrderParserOptions PureLexiconFOL u Identity
-thomasBolducAndZachFOLParserOptions = magnusFOLParserOptions { hasBooleanConstants = True }
+thomasBolducAndZachFOLParserOptions = magnusFOLParserOptions { hasBooleanConstants = True
+                                                             , atomicSentenceParser = 
+                                                                    \x -> try (parsePredicateSymbolNoParen "ABCDEFGHIJKLMNOPQRSTUVWXYZ" x)
+                                                                          <|> try (sentenceLetterParser "ABCDEFGHIJKLMNOPQRSTUVWXYZ")
+                                                                          <|> equalsParser x
+                                                             }
 
 thomasBolducAndZachFOL2019ParserOptions :: FirstOrderParserOptions PureLexiconFOL u Identity
 thomasBolducAndZachFOL2019ParserOptions = magnusFOLParserOptions { hasBooleanConstants = True
                                                                  , atomicSentenceParser = 
-                                                                        \x -> parsePredicateSymbol "ABCDEFGHIJKLMNOPQRSTUVWXYZ" x 
+                                                                        \x -> try (parsePredicateSymbol "ABCDEFGHIJKLMNOPQRSTUVWXYZ" x) 
+                                                                              <|> try (sentenceLetterParser "ABCDEFGHIJKLMNOPQRSTUVWXYZ")
                                                                               <|> equalsParser x
                                                                  }
 
