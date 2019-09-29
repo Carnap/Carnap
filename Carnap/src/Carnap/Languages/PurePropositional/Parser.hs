@@ -1,7 +1,7 @@
 {-# LANGUAGE FlexibleContexts, FlexibleInstances, MultiParamTypeClasses #-}
 module Carnap.Languages.PurePropositional.Parser 
     ( purePropFormulaParser, standardLetters, extendedLetters, hausmanOpts, thomasBolducZachOpts, hardegreeOpts
-    , standardOpTable, hausmanOpTable, howardSnyderOpTable, howardSnyderOpts, magnusOpts, extendedPropSeqParser
+    , standardOpTable, calgaryOpTable, hausmanOpTable, howardSnyderOpTable, howardSnyderOpts, magnusOpts, extendedPropSeqParser
     ) where
 
 import Carnap.Core.Data.Types
@@ -42,7 +42,9 @@ magnusOpts = extendedLetters { parenRecur = magnusDispatch }
           magnusDispatch opt rw = (wrappedWith '(' ')' (rw opt) <|> wrappedWith '[' ']' (rw opt)) >>= noatoms
 
 thomasBolducZachOpts :: Monad m => PurePropositionalParserOptions u m
-thomasBolducZachOpts = magnusOpts { hasBooleanConstants = True }
+thomasBolducZachOpts = magnusOpts { hasBooleanConstants = True 
+                                  , opTable = calgaryOpTable
+                                  }
 
 hausmanOpts ::  Monad m => PurePropositionalParserOptions u m
 hausmanOpts = extendedLetters 
@@ -87,6 +89,13 @@ standardOpTable = [ [ Prefix (try parseNeg)]
                   , [Infix (try parseOr) AssocLeft, Infix (try parseAnd) AssocLeft]
                   , [Infix (try parseIf) AssocNone, Infix (try parseIff) AssocNone]
                   ]
+
+calgaryOpTable :: (BooleanLanguage (FixLang lex (Form Bool)), Monad m)
+    => [[Operator String u m (FixLang lex (Form Bool))]]
+calgaryOpTable = [ [ Prefix (try parseNeg)]
+                 , [ Infix (try $ parseAsOr ["\\/", "∨", "|", "or"]) AssocNone, Infix (try parseAnd) AssocNone
+                   , Infix (try parseIf) AssocNone, Infix (try parseIff) AssocNone]
+                 ]
 
 hausmanOpTable :: (BooleanLanguage (FixLang lex (Form Bool)), Monad m)
     => [[Operator String u m (FixLang lex (Form Bool))]]
