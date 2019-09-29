@@ -219,6 +219,20 @@ thomasBolducAndZachNotation x = case runParser altParser 0 "" x of
           fallback = do c <- anyChar 
                         return [c]
 
+dropOuterParens s = case (strip s, break (== '⊢') s) of
+      (s'@(_:_:_:_),_) | (head s' == '(') && (last s' == ')') && (balance 0 (inner s') == 0) -> inner s'
+      (_,(a@(_:_),b@(_:_))) -> (dropOuterParens a) ++ " ⊢ " ++ (dropOuterParens $ tail b)
+      _ -> s
+
+    where balance 0 (')':_) = -1
+          balance n [] = n
+          balance n ('(':rest) = balance (n+1) rest 
+          balance n (')':rest) = balance (n-1) rest
+          balance n (_:rest) = balance n rest
+
+          strip = reverse . dropWhile (== ' ') . reverse . dropWhile (== ' ') 
+          inner = init . tail 
+
 thomasBolducAndZachTFLCalc = mkNDCalc 
     { ndRenderer = FitchStyle StandardFitch
     , ndParseProof = parseThomasBolducAndZachTFLProof
@@ -236,4 +250,5 @@ thomasBolducAndZachTFL2019Calc = mkNDCalc
     , ndProcessLineMemo = Just hoProcessLineFitchMemo
     , ndParseSeq = parseSeqOver (purePropFormulaParser thomasBolducZachOpts)
     , ndParseForm = purePropFormulaParser thomasBolducZachOpts
+    , ndNotation = dropOuterParens
     }

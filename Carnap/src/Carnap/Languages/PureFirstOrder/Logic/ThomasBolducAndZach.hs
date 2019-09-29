@@ -143,21 +143,6 @@ parseThomasBolducAndZachFOLPlus2019Proof ders = toDeductionFitch (parseThomasBol
 parseThomasBolducAndZachFOLProof :: RuntimeNaturalDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine ThomasBolducAndZachFOL PureLexiconFOL (Form Bool)]
 parseThomasBolducAndZachFOLProof ders = toDeductionFitch (parseThomasBolducAndZachFOL ders) thomasBolducAndZachFOLFormulaParser
 
-dropOuterParens s = case (strip s, break (== '⊢') s) of
-      (s'@(_:_:_:_),_) | (head s' == '(') && (last s' == ')') && (balance 0 (inner s') == 0) -> inner s'
-      (_,(a@(_:_),b@(_:_))) -> (dropOuterParens a) ++ " ⊢ " ++ (dropOuterParens $ tail b)
-      _ -> s
-
-    where balance 0 (')':_) = -10
-          balance n [] = n
-          balance n ('(':rest) = balance (n+1) rest 
-          balance n (')':rest) = balance (n-1) rest
-          balance n (_:rest) = balance n rest
-
-          strip = reverse . dropWhile (== ' ') . reverse . dropWhile (== ' ') 
-          inner = init . tail 
-
-
 thomasBolducAndZachFOLCalc = mkNDCalc
     { ndRenderer = FitchStyle StandardFitch
     , ndParseProof = parseThomasBolducAndZachFOLProof
@@ -175,7 +160,8 @@ thomasBolducAndZachFOL2019Calc = mkNDCalc
     , ndProcessLineMemo = Just hoProcessLineFitchMemo
     , ndParseSeq = parseSeqOver thomasBolducAndZachFOL2019FormulaParser
     , ndParseForm = thomasBolducAndZachFOL2019FormulaParser
-    , ndNotation = dropOuterParens
+    , ndNotation = ndNotation P.thomasBolducAndZachTFL2019Calc
+
     }
 
 thomasBolducAndZachFOLPlus2019Calc = mkNDCalc
@@ -185,5 +171,5 @@ thomasBolducAndZachFOLPlus2019Calc = mkNDCalc
     , ndProcessLineMemo = Just hoProcessLineFitchMemo
     , ndParseSeq = parseSeqOver thomasBolducAndZachFOL2019FormulaParser
     , ndParseForm = thomasBolducAndZachFOL2019FormulaParser
-    , ndNotation = dropOuterParens
+    , ndNotation = ndNotation P.thomasBolducAndZachTFL2019Calc
     }

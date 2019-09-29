@@ -47,7 +47,7 @@ ofPropSys f sys | sys == "prop"                          = Just $ f propCalc
                 | sys == "magnusSL"                      = Just $ f magnusSLCalc 
                 | sys == "magnusSLPlus"                  = Just $ f magnusSLPlusCalc 
                 | sys == "thomasBolducAndZachTFL"        = Just $ f thomasBolducAndZachTFLCalc 
-                | sys == "thomasBolducAndZachTFL2019"    = Just $ f thomasBolducAndZachTFLCalc 
+                | sys == "thomasBolducAndZachTFL2019"    = Just $ f thomasBolducAndZachTFL2019Calc
                 | sys == "ebelsDugganTFL"                = Just $ f ebelsDugganTFLCalc 
                 | sys == "tomassiPL"                     = Just $ f tomassiPLCalc
                 | sys == "hardegreeSL"                   = Just $ f hardegreeSLCalc 
