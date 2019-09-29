@@ -121,6 +121,7 @@ thomasBolducAndZachFOLParserOptions = magnusFOLParserOptions { hasBooleanConstan
 
 thomasBolducAndZachFOL2019ParserOptions :: FirstOrderParserOptions PureLexiconFOL u Identity
 thomasBolducAndZachFOL2019ParserOptions = magnusFOLParserOptions { hasBooleanConstants = True
+                                                                 , quantifiedSentenceParser' = lplQuantifiedSentenceParser
                                                                  , freeVarParser = parseFreeVar "stuvxyz"
                                                                  , atomicSentenceParser = 
                                                                         \x -> try (parsePredicateSymbol "ABCDEFGHIJKLMNOPQRSTUVWXYZ" x) 

@@ -199,6 +199,23 @@ quantifiedSentenceParser parseFreeVar formulaParser =
            return $ if s `elem` "A∀" then lall (show v) bf else lsome (show v) bf
                --which we bind
 
+lplQuantifiedSentenceParser :: 
+    ( QuantLanguage (FixLang lex f) (FixLang lex t)
+    , BoundVars lex
+    , Show (FixLang lex t)
+    , Monad m
+    ) => ParsecT String u m (FixLang lex t) -> ParsecT String u m (FixLang lex f) 
+            -> ParsecT String u m (FixLang lex f)
+lplQuantifiedSentenceParser parseFreeVar formulaParser =
+        do s <- oneOf "AE∀∃@3" <?> "a quantifer symbol"
+           v <- parseFreeVar
+           spaces
+           f <- formulaParser
+           let bf x = subBoundVar v x f
+               --partially applied, returning a function
+           return $ if s `elem` "A∀@" then lall (show v) bf else lsome (show v) bf
+               --which we bind
+
 altQuantifiedSentenceParser :: 
     ( QuantLanguage (FixLang lex f) (FixLang lex t)
     , BoundVars lex
