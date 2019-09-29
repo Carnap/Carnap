@@ -2,6 +2,7 @@
 module Carnap.Languages.PureFirstOrder.Logic.ThomasBolducAndZach 
     ( thomasBolducAndZachFOLCalc, parseThomasBolducAndZachFOL, ThomasBolducAndZachFOL
     , thomasBolducAndZachFOL2019Calc, parseThomasBolducAndZachFOLCore, ThomasBolducAndZachFOLCore
+    , thomasBolducAndZachFOLPlus2019Calc
     ) where
 
 import Data.Map as M (lookup, Map,empty)
@@ -128,13 +129,16 @@ parseThomasBolducAndZachFOLCore rtc = try quantRule <|> (map TFLC <$> parseProp)
                               | r == "=E" -> return [IDE1,IDE2]
                               | r == "PR" -> return [Pr (problemPremises rtc)]
 
-parseThomasBolducAndZachFOL rtc = try (map TFL <$> parseProp) <|> try (map FOL <$> quantRule) <|> try cqRule
+parseThomasBolducAndZachFOL rtc = try (map FOL <$> quantRule) <|> try (map TFL <$> parseProp) <|> try cqRule
     where parseProp = P.parseThomasBolducAndZachTFL (RuntimeNaturalDeductionConfig mempty mempty)
           quantRule = parseThomasBolducAndZachFOLCore rtc
           cqRule = string "CQ" >> return [QN1,QN2,QN3,QN4]
 
 parseThomasBolducAndZachFOL2019Proof :: RuntimeNaturalDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine ThomasBolducAndZachFOLCore PureLexiconFOL (Form Bool)]
 parseThomasBolducAndZachFOL2019Proof ders = toDeductionFitch (parseThomasBolducAndZachFOLCore ders) thomasBolducAndZachFOL2019FormulaParser
+
+parseThomasBolducAndZachFOLPlus2019Proof :: RuntimeNaturalDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine ThomasBolducAndZachFOL PureLexiconFOL (Form Bool)]
+parseThomasBolducAndZachFOLPlus2019Proof ders = toDeductionFitch (parseThomasBolducAndZachFOL ders) thomasBolducAndZachFOL2019FormulaParser
 
 parseThomasBolducAndZachFOLProof :: RuntimeNaturalDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine ThomasBolducAndZachFOL PureLexiconFOL (Form Bool)]
 parseThomasBolducAndZachFOLProof ders = toDeductionFitch (parseThomasBolducAndZachFOL ders) thomasBolducAndZachFOLFormulaParser
@@ -167,6 +171,16 @@ thomasBolducAndZachFOLCalc = mkNDCalc
 thomasBolducAndZachFOL2019Calc = mkNDCalc
     { ndRenderer = FitchStyle StandardFitch
     , ndParseProof = parseThomasBolducAndZachFOL2019Proof
+    , ndProcessLine = hoProcessLineFitch
+    , ndProcessLineMemo = Just hoProcessLineFitchMemo
+    , ndParseSeq = parseSeqOver thomasBolducAndZachFOL2019FormulaParser
+    , ndParseForm = thomasBolducAndZachFOL2019FormulaParser
+    , ndNotation = dropOuterParens
+    }
+
+thomasBolducAndZachFOLPlus2019Calc = mkNDCalc
+    { ndRenderer = FitchStyle StandardFitch
+    , ndParseProof = parseThomasBolducAndZachFOLPlus2019Proof
     , ndProcessLine = hoProcessLineFitch
     , ndProcessLineMemo = Just hoProcessLineFitchMemo
     , ndParseSeq = parseSeqOver thomasBolducAndZachFOL2019FormulaParser
