@@ -24,6 +24,8 @@ propForm f = evalState (propositionalize f) []
             & outside (binaryOpPrism _if) .~ (\(x,y) -> lif <$> propositionalize x <*> propositionalize y)
             & outside (binaryOpPrism _iff) .~ (\(x,y) -> liff <$> propositionalize x <*> propositionalize y)
             & outside (unaryOpPrism _not) .~ (\x -> lneg <$> propositionalize x)
+            & outside (_verum) .~ (\_ -> pure lverum)
+            & outside (_falsum) .~ (\_ -> pure lfalsum)
           
           nonBoolean form = do abbrev <- get
                                case elemIndex form abbrev of
