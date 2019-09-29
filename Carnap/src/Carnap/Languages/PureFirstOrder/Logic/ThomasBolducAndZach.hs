@@ -112,6 +112,7 @@ instance Inference ThomasBolducAndZachFOL PureLexiconFOL (Form Bool) where
          restriction _       = Nothing
 
          isAssumption (TFL x) = isAssumption x
+         isAssumption (FOL x) = isAssumption x
          isAssumption _ = False
 
          isPremise (FOL x) = isPremise x
