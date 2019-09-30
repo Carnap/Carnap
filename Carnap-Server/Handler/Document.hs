@@ -147,16 +147,20 @@ getDocumentDownloadR ident title = do userdir <- getUserDir ident
                                               case mdoc of
                                                   Nothing -> notFound
                                                   Just (Entity key doc) -> do
+                                                      let sendIt = do
+                                                              addHeader "Content-Disposition" $ concat
+                                                                [ "attachment;"
+                                                                , "filename=\""
+                                                                , documentFilename doc
+                                                                , "\""
+                                                                ]
+                                                              sendFile typeOctet path
                                                       case documentScope doc of 
-                                                        Private -> notFound
-                                                        _ -> do
-                                                          addHeader "Content-Disposition" $ concat
-                                                            [ "attachment;"
-                                                            , "filename=\""
-                                                            , documentFilename doc
-                                                            , "\""
-                                                            ]
-                                                          sendFile typeOctet path
+                                                        Private -> do
+                                                          muid <- maybeAuthId
+                                                          case muid of Just uid' | uid' == uid -> sendIt
+                                                                       _ -> notFound
+                                                        _ -> sendIt
 
 fileToHtml path = do Markdown md <- markdownFromFile path
                      let md' = Markdown (filter ((/=) '\r') md) --remove carrage returns from dos files
