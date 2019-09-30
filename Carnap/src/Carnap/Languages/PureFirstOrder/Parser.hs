@@ -112,6 +112,7 @@ magnusFOLParserOptions = FirstOrderParserOptions
 thomasBolducAndZachFOLParserOptions :: FirstOrderParserOptions PureLexiconFOL u Identity
 thomasBolducAndZachFOLParserOptions = magnusFOLParserOptions { hasBooleanConstants = True
                                                              , freeVarParser = parseFreeVar "stuvwxyz"
+                                                             , constantParser = Just (parseConstant "abcdefghijklmnopqr")
                                                              , atomicSentenceParser = 
                                                                     \x -> try (parsePredicateSymbolNoParen "ABCDEFGHIJKLMNOPQRSTUVWXYZ" x)
                                                                           <|> try (sentenceLetterParser "ABCDEFGHIJKLMNOPQRSTUVWXYZ")
@@ -122,7 +123,8 @@ thomasBolducAndZachFOLParserOptions = magnusFOLParserOptions { hasBooleanConstan
 thomasBolducAndZachFOL2019ParserOptions :: FirstOrderParserOptions PureLexiconFOL u Identity
 thomasBolducAndZachFOL2019ParserOptions = magnusFOLParserOptions { hasBooleanConstants = True
                                                                  , quantifiedSentenceParser' = lplQuantifiedSentenceParser
-                                                                 , freeVarParser = parseFreeVar "stuvxyz"
+                                                                 , freeVarParser = parseFreeVar "stuvwxyz"
+                                                                 , constantParser = Just (parseConstant "abcdefghijklmnopqr")
                                                                  , atomicSentenceParser = 
                                                                         \x -> try (parsePredicateSymbol "ABCDEFGHIJKLMNOPQRSTUVWXYZ" x) 
                                                                               <|> try (sentenceLetterParser "ABCDEFGHIJKLMNOPQRSTUVWXYZ")
