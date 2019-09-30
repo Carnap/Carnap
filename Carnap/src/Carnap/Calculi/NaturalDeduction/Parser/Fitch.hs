@@ -70,6 +70,7 @@ toProofTreeFitch ded n = case ded !! (n - 1)  of
           l@(AssertLine f r@(r':_) dpth deps) -> 
                 do mapM_ checkDep deps 
                    mapM_ isSP deps
+                   mapM_ notBlank deps
                    if isAssumptionLine l then checkAssumptionLegit else return True
                    dp <- case indirectInference r' of
                         Just (TypedProof prooftype) -> 
@@ -86,7 +87,12 @@ toProofTreeFitch ded n = case ded !! (n - 1)  of
                                                      -- this is a bit of a hack. All indirect rules should have arities.
                    deps' <- mapM (toProofTreeFitch ded) dp
                    return $ Node (ProofLine n (SS $ liftToSequent f) r) deps'
-                where checkDep (begin,end) = 
+                where notBlank (begin,end) = 
+                        case (ded !! (begin - 1), ded !! (end - 1)) of
+                            (SeparatorLine _,_) -> err "You appear to be citing a separator line here. This isn't allowed."
+                            (_,SeparatorLine _) -> err "You appear to be citing a separator line here. This isn't allowed."
+                            _ -> return ()
+                      checkDep (begin,end) = 
                         case indirectInference r' of 
                             Nothing -> if begin /= end 
                                            then err "you appear to be supplying a line range to a rule of direct proof"
