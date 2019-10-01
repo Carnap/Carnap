@@ -169,8 +169,8 @@ instance Inference ThomasBolducAndZachTFL PurePropLexicon (Form Bool) where
 
 parseThomasBolducAndZachTFLCore :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> Parsec String u [ThomasBolducAndZachTFLCore]
 parseThomasBolducAndZachTFLCore rtc = do r <- choice (map (try . string) [ "AS","PR","&I","/\\I", "∧I","&E","/\\E","∧E", "~I","-I", "¬I"
-                                                                      , "~E","-E", "¬E","IP","->I","→I","→E","->E", "→E", "X"
-                                                                      , "vI","\\/I","∨I", "vE","\\/E", "∨E","<->I", "↔I","<->E"
+                                                                      , "~E","-E", "¬E","IP","->I", ">I", "=>I", "→I","->E", "=>E", ">E", "→E", "X"
+                                                                      , "vI","\\/I", "|I", "∨I", "vE","\\/E", "|E", "∨E","<->I", "↔I","<->E"
                                                                       , "↔E","R"])
                                          case r of
                                             r | r == "AS"   -> return [As]
@@ -180,11 +180,11 @@ parseThomasBolducAndZachTFLCore rtc = do r <- choice (map (try . string) [ "AS",
                                               | r `elem` ["~I","¬I","-I"]   -> return [NegeIntro1, NegeIntro2]
                                               | r `elem` ["~E","¬E","-E"]   -> return [NegeElim]
                                               | r == "IP" -> return [Indirect1, Indirect2]
-                                              | r `elem` ["->I", "→I"] -> return [CondIntro1,CondIntro2]
-                                              | r `elem` ["->E","→E"]  -> return [CondElim]
+                                              | r `elem` ["->I", ">I", "=>I", "→I"] -> return [CondIntro1,CondIntro2]
+                                              | r `elem` ["->E", ">E", "=>E", "→E"]  -> return [CondElim]
                                               | r == "X"    -> return [ContElim]
-                                              | r `elem` ["∨I","vI","\\/I"] -> return [DisjIntro1, DisjIntro2]
-                                              | r `elem` ["∨E","vE","\\/E"] -> return [DisjElim1, DisjElim2, DisjElim3, DisjElim4]
+                                              | r `elem` ["∨I","vI", "|I", "\\/I"] -> return [DisjIntro1, DisjIntro2]
+                                              | r `elem` ["∨E","vE", "|E", "\\/E"] -> return [DisjElim1, DisjElim2, DisjElim3, DisjElim4]
                                               | r `elem` ["<->I","↔I"] -> return [BicoIntro1, BicoIntro2, BicoIntro3, BicoIntro4]
                                               | r `elem` ["<->E","↔E"]   -> return [BicoElim1, BicoElim2]
                                               | r == "R" -> return [Reiterate]
