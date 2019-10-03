@@ -14,7 +14,6 @@ data TreeForm lex sem = TreeForm
            , treeFormResolved :: Bool
            }
 
-
 --A tree node is a node in a truth tree, labeled by the rule used to create it.
 data TreeNode lex sem rule = TreeNode 
            { treeNodeForms :: [TreeForm lex sem] 

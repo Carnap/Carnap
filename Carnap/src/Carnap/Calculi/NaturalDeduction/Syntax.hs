@@ -184,7 +184,6 @@ availableSubproof m sp@(SubProof r ls) = do loc <- locale m sp
 --  1.3 Error Messages  --
 --------------------------
 
-
 ------------------
 --  1.3 Proofs  --
 ------------------

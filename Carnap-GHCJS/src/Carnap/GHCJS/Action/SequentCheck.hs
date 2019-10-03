@@ -1,4 +1,4 @@
-{-# LANGUAGE FlexibleContexts, OverloadedStrings, CPP, JavaScriptFFI #-}
+{-# LANGUAGE FlexibleContexts, OverloadedStrings #-}
 module Carnap.GHCJS.Action.SequentCheck (sequentCheckAction) where
 
 import Lib 
@@ -11,23 +11,17 @@ import Data.Typeable (Typeable)
 import Data.Aeson.Types
 import Data.IORef (IORef, readIORef, newIORef, writeIORef)
 import Data.Text.Encoding
-import Control.Monad (join)
 import qualified Text.Parsec as P (parse) 
 import Carnap.GHCJS.SharedTypes
 import Control.Lens (view)
 import Control.Concurrent
 import Control.Monad.IO.Class (liftIO)
 import GHCJS.DOM
-import GHCJS.DOM.Types (Element, Document, IsElement, toJSString)
-import GHCJS.DOM.Element (setInnerHTML,click)
+import GHCJS.DOM.Types (Element, Document, IsElement)
+import GHCJS.DOM.Element (setInnerHTML, click)
 import GHCJS.DOM.Node (appendChild, getParentNode, insertBefore)
 import GHCJS.Types
 import GHCJS.DOM.EventM
-#ifdef __GHCJS__
-import GHCJS.Foreign
-import GHCJS.Foreign.Callback
-import GHCJS.Marshal
-#endif
 import Carnap.Core.Data.Types
 import Carnap.Core.Data.Classes
 import Carnap.Core.Data.Optics
@@ -40,6 +34,7 @@ import Carnap.Languages.PurePropositional.Logic.IchikawaJenkins
 import Carnap.Languages.PurePropositional.Logic.Gentzen
 import Carnap.Languages.PureFirstOrder.Logic.Gentzen
 import Carnap.GHCJS.SharedTypes
+import Carnap.GHCJS.Util.ProofJS
 
 sequentCheckAction ::  IO ()
 sequentCheckAction = runWebGUI $ \w -> 
@@ -47,7 +42,7 @@ sequentCheckAction = runWebGUI $ \w ->
                initCallbackObj
                initializeCallback "checkPropSequent" (checkSequent gentzenPropLKCalc Nothing)
                initializeCallback "checkFOLSequent" (checkSequent gentzenFOLKCalc Nothing)
-               initializeCallback "checkSequentInfo" checkFullSequentInfo
+               initializeCallback "checkSequentInfo" checkFullInfo
                initElements getCheckers activateChecker
                return ()
 
@@ -142,11 +137,6 @@ checkOnChange threadRef calc changed = do
             return ()
         writeIORef threadRef (Just t')
 
-initRoot :: String -> Element -> IO JSVal
-initRoot s elt = do root <- newRoot s
-                    renderOn elt root
-                    return root
-
 checkSequent :: ( ReLex lex
                 , SupportsTableau rule lex sem 
                 ) => TableauCalc lex sem rule -> Maybe Int -> Value -> IO Value
@@ -159,21 +149,6 @@ checkSequent calc depth v = case parse parseTreeJSON v of
     where trimTree (Just n) (Node s f) | n > 0 = Node s (map (trimTree (Just $ n - 1)) f)
                                        | otherwise = Node s []
           trimTree Nothing t = t
-
-
-checkFullSequentInfo :: Value -> IO Value
-checkFullSequentInfo v = do let Success t = parse fromInfo v
-                            if t then return $ object [ "result" .= ("yes" :: String)]
-                                 else return $ object [ "result" .= ("no" :: String)]
-
-parseTreeJSON :: Value -> Parser (Tree (String,String))
-parseTreeJSON = withObject "Sequent Tableau" $ \o -> do
-    thelabel   <- o .: "label" :: Parser String
-    therule <- o .: "rule" :: Parser String
-    theforest <- o .: "forest" :: Parser [Value]
-    filteredForest <- filter (\(Node (x,y) _) -> x /= "") <$> mapM parseTreeJSON theforest
-    --ignore empty nodes
-    return $ Node (thelabel,therule) filteredForest
 
 toTableau :: ( Typeable sem
              , ReLex lex
@@ -205,44 +180,7 @@ toInfo (Node (Feedback e) ss) = object [ "info" .= e, "class" .= ("feedback" :: 
 toInfo (Node Waiting ss) = object [ "info" .= ("Waiting for parsing to be completed." :: String), "class" .= ("waiting" :: String), "forest" .= map toInfo ss]
 toInfo (Node (ParseErrorMsg e) ss) = object [ "info" .= e, "class" .= ("parse-error" :: String), "forest" .= map toInfo ss]
 
-#ifdef __GHCJS__
-
-foreign import javascript unsafe "(function(){root = new ProofRoot(JSON.parse($1)); return root})()" newRootJS :: JSString-> IO JSVal
-
-foreign import javascript unsafe "$2.renderOn($1)" renderOnJS :: Element -> JSVal -> IO ()
-
-foreign import javascript unsafe "$1.decorate($2)" decorateJS :: JSVal -> JSVal -> IO ()
-
-foreign import javascript unsafe "$1.on('changed',$2)" onChangeJS :: JSVal -> Callback(JSVal -> IO ()) -> IO ()
-
-foreign import javascript unsafe "(function() {var rslt; if ($1.parentNode) {rslt=$1.parentNode} else {rslt=$1}; return rslt})()" ascendTree :: JSVal -> IO JSVal
-
-newRoot :: String -> IO JSVal
-newRoot s = newRootJS (toJSString s)
-
-renderOn :: Element -> JSVal -> IO ()
-renderOn elt root = renderOnJS elt root
-
-onChange :: JSVal -> (JSVal -> IO ()) -> IO ()
-onChange val f = asyncCallback1 f >>= onChangeJS val 
-
-decorate :: JSVal -> Value -> IO ()
-decorate x v = toJSVal v >>= decorateJS x
-
-#else
-
-newRoot s = error "you need the JavaScript FFI to call newRoot"
-
-renderOn :: Element -> JSVal -> IO ()
-renderOn = error "you need the JavaScript FFI to call renderOn"
-
-onChange :: JSVal -> (JSVal -> IO ()) -> IO ()
-onChange = error "you need the JavaScript FFI to call onChange"
-
-decorate :: JSVal -> Value -> IO ()
-decorate = error "you need the JavaScript FFI to call decorate"
-
-ascendTree :: JSVal -> IO JSVal
-ascendTree = error "you need the JavaScript FFI to call ascendTree"
-
-#endif
+checkFullInfo :: Value -> IO Value
+checkFullInfo v = do let Success t = parse fromInfo v
+                     if t then return $ object [ "result" .= ("yes" :: String)]
+                          else return $ object [ "result" .= ("no" :: String)]
