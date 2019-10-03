@@ -46,7 +46,7 @@ parseIff :: (BooleanLanguage l, Monad m) => ParsecT String u m (l -> l -> l)
 parseIff = parseAsIff [ "<=>",  "<->", "<>", "↔", "≡", "if and only if"]
 
 parseNeg :: (BooleanLanguage l, Monad m) => ParsecT String u m (l -> l)
-parseNeg = do spaces >> (string "-" <|> string "~" <|> string "¬" <|> string "not ") >> return lneg
+parseNeg = do spaces >> (string "-" <|> string "~" <|> string "¬" <|> string "not") >> spaces >> return lneg
 
 booleanConstParser :: (BooleanConstLanguage l, Monad m) => ParsecT String u m l
 booleanConstParser = stringsToTry ["!?","_|_","⊥"] lfalsum <|> stringsToTry ["⊤"] lverum 
@@ -147,10 +147,10 @@ parsePredicateSymbol ::
 parsePredicateSymbol s parseTerm = (try parseNumbered <|> parseUnnumbered) <?> "a predicate symbol"
     where parseUnnumbered = do c <- oneOf s
                                let Just n = ucIndex c
-                               char '(' *> argParser parseTerm (ppn (-1 * n) AOne)
+                               char '(' *> spaces *> argParser parseTerm (ppn (-1 * n) AOne)
           parseNumbered = do string "F" >> optionMaybe (char '^' >> number)
                              n <- char '_' *> number
-                             char '(' *> argParser parseTerm (ppn n AOne)
+                             char '(' *> spaces *> argParser parseTerm (ppn n AOne)
 
 parseSchematicPredicateSymbol :: 
     ( PolyadicSchematicPredicateLanguage (FixLang lex) arg ret
@@ -162,10 +162,10 @@ parseSchematicPredicateSymbol ::
 parseSchematicPredicateSymbol parseTerm = (try parseUnnumbered <|> parseNumbered) <?> "a schematic predicate symbol"
     where parseNumbered = do string "φ" >> optionMaybe (char '^' >> number)
                              n <- char '_' *> number
-                             char '(' *> argParser parseTerm (pphin n AOne)
+                             char '(' *> spaces *> argParser parseTerm (pphin n AOne)
           parseUnnumbered = do c <- oneOf "φψχθγζξ"
                                let Just n = elemIndex c "_φψχθγζξ"
-                               char '(' *> argParser parseTerm (pphin (-1 * (n + 5)) AOne)
+                               char '(' *> spaces *> argParser parseTerm (pphin (-1 * (n + 5)) AOne)
 
 parsePredicateSymbolNoParen :: 
     ( PolyadicPredicateLanguage (FixLang lex) arg ret
@@ -191,6 +191,7 @@ quantifiedSentenceParser ::
             -> ParsecT String u m (FixLang lex f)
 quantifiedSentenceParser parseFreeVar formulaParser =
         do s <- oneOf "AE∀∃" <?> "a quantifer symbol"
+           spaces
            v <- parseFreeVar
            spaces
            f <- formulaParser
@@ -208,6 +209,7 @@ lplQuantifiedSentenceParser ::
             -> ParsecT String u m (FixLang lex f)
 lplQuantifiedSentenceParser parseFreeVar formulaParser =
         do s <- oneOf "AE∀∃@3" <?> "a quantifer symbol"
+           spaces
            v <- parseFreeVar
            spaces
            f <- formulaParser
@@ -269,10 +271,10 @@ parseFunctionSymbol ::
 parseFunctionSymbol s parseTerm = (try parseNumbered <|> parseUnnumbered) <?> "a function symbol"
     where parseNumbered = do string "f" >> optionMaybe (char '^' >> number) >> char '_' 
                              n <- number
-                             char '(' *> argParser parseTerm (pfn n AOne)
+                             char '(' *> spaces *> argParser parseTerm (pfn n AOne)
           parseUnnumbered = do c <- oneOf s
                                let Just n = lcIndex c
-                               char '(' *> argParser parseTerm (pfn (-1 * n) AOne)
+                               char '(' *> spaces *> argParser parseTerm (pfn (-1 * n) AOne)
 
 parseSchematicFunctionSymbol ::     
     ( SchematicPolyadicFunctionLanguage (FixLang lex) arg ret
@@ -284,10 +286,10 @@ parseSchematicFunctionSymbol ::
 parseSchematicFunctionSymbol parseTerm = (try parseNumbered <|> parseUnnumbered) <?> "a function symbol"
     where parseNumbered = do string "τ" >> optionMaybe (char '^' >> number) >> char '_'
                              n <- number
-                             char '(' *> argParser parseTerm (spfn n AOne)
+                             char '(' *> spaces *> argParser parseTerm (spfn n AOne)
           parseUnnumbered = do c <- oneOf "τνυ"
                                let Just n = elemIndex c "_τνυ"
-                               char '(' *> argParser parseTerm (spfn (-1 * (n + 5)) AOne)
+                               char '(' *> spaces *> argParser parseTerm (spfn (-1 * (n + 5)) AOne)
 
 parseConstant :: 
     ( IndexedConstantLanguage (FixLang lex ret)
@@ -346,7 +348,9 @@ argParser ::
     , Incrementable lex t2
     , Monad m) => ParsecT String u m (FixLang lex t2) -> FixLang lex (t2 -> b) 
             -> ParsecT String u m (FixLang lex b)
-argParser pt p = do t <- pt
+argParser pt p = do spaces
+                    t <- pt
+                    spaces
                     incrementHead pt p t
                         <|> char ')' *> return (p :!$: t)
 
