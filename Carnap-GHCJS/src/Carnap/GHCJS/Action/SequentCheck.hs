@@ -153,7 +153,7 @@ checkSequent calc depth v = case parse parseTreeJSON v of
 toTableau :: ( Typeable sem
              , ReLex lex
              , Sequentable lex
-             ) => TableauCalc lex sem rule -> Tree (String,String) -> Either TreeFeedback (Tableau lex sem rule)
+             ) => TableauCalc lex sem rule -> Tree (String,String) -> Either (TreeFeedback lex) (Tableau lex sem rule)
 toTableau calc (Node (l,r) f) 
     | all isRight parsedForest && isRight newNode = Node <$> newNode <*> sequence parsedForest
     | isRight newNode = Left $ Node Waiting (map cleanTree parsedForest)
@@ -165,7 +165,7 @@ toTableau calc (Node (l,r) f)
           cleanTree (Right fs) = fmap (const Waiting) fs
           newNode = case TableauNode <$> parsedLabel <*> (pure Nothing) <*> parsedRule of
                         Right n -> Right n
-                        Left e -> Left (Node (ParseErrorMsg . cleanString . show $ e) (map cleanTree parsedForest))
+                        Left e -> Left (Node (ProofError $ NoParse e 0) (map cleanTree parsedForest))
 
 fromInfo :: Value -> Parser Bool
 fromInfo = withObject "Info Tree" $ \o -> do
@@ -174,11 +174,15 @@ fromInfo = withObject "Info Tree" $ \o -> do
     processedForest <- mapM fromInfo theForest
     return $ theInfo `elem` ["Correct", ""] && and processedForest
 
-toInfo :: TreeFeedback -> Value
+toInfo :: TreeFeedback lex -> Value
 toInfo (Node Correct ss) = object [ "info" .= ("Correct" :: String), "class" .= ("correct" :: String), "forest" .= map toInfo ss]
-toInfo (Node (Feedback e) ss) = object [ "info" .= e, "class" .= ("feedback" :: String), "forest" .= map toInfo ss]
+toInfo (Node (ProofData s) ss) = object [ "info" .= s, "class" .= ("correct" :: String), "forest" .= map toInfo ss]
 toInfo (Node Waiting ss) = object [ "info" .= ("Waiting for parsing to be completed." :: String), "class" .= ("waiting" :: String), "forest" .= map toInfo ss]
-toInfo (Node (ParseErrorMsg e) ss) = object [ "info" .= e, "class" .= ("parse-error" :: String), "forest" .= map toInfo ss]
+toInfo (Node (ProofError (NoParse e _)) ss) = object [ "info" .= cleanString (show e), "class" .= ("parse-error" :: String), "forest" .= map toInfo ss]
+toInfo (Node (ProofError (GenericError s _)) ss) = object [ "info" .= s, "class" .= ("feedback" :: String), "forest" .= map toInfo ss]
+--TODO: actually display unification feedback
+toInfo (Node (ProofError (NoUnify eqs _)) ss) = object [ "info" .= ("This doesn't follow by this rule" :: String), "class" .= ("feedback" :: String), "forest" .= map toInfo ss]
+toInfo (Node (ProofError (NoResult _)) ss) = object [ "info" .= ("" :: String) , "class" .= ("correct" :: String), "forest" .= map toInfo ss]
 
 checkFullInfo :: Value -> IO Value
 checkFullInfo v = do let Success t = parse fromInfo v

@@ -34,21 +34,22 @@ type SupportsTableau rule lex sem =
 
 --This function should swap out the contents of each node in a tableau for
 --appropriate feedback, or an indication that the node is correct.
-validateTree :: SupportsTableau rule lex sem => Tableau lex sem rule -> TreeFeedback
+validateTree :: SupportsTableau rule lex sem => Tableau lex sem rule -> TreeFeedback lex
 validateTree (Node n descendents) = Node (clean $ validateNode n theChildren) (map validateTree descendents)
     where theChildren = map rootLabel descendents
           clean (Correct:_) = Correct
-          clean [Feedback s] = Feedback s
-          clean (Feedback _ :xs) = clean xs
-          clean _ = Feedback "no feedback"
+          clean (ProofData s:_) = ProofData s
+          clean [ProofError e] = ProofError e
+          clean (ProofError _ :xs) = clean xs
+          clean _ = ProofData "no feedback"
 
-validateNode ::SupportsTableau rule lex sem => TableauNode lex sem rule -> [TableauNode lex sem rule] -> [TreeFeedbackNode]
+validateNode ::SupportsTableau rule lex sem => TableauNode lex sem rule -> [TableauNode lex sem rule] -> [TreeFeedbackNode lex]
 validateNode n ns = case tableauNodeRule n of
-                        Nothing -> return $ Feedback "no rule developing this node"
+                        Nothing -> return $ treeErrMsg "no rule developing this node"
                         Just r -> 
                             do let theRule = coreRuleOf r
                                if length (upperSequents theRule) /= length ns 
-                               then return $ Feedback "wrong number of premises"
+                               then return $ treeErrMsg "wrong number of premises"
                                else do
                                    ns' <- permutations ns
                                    let childSeqs = map tableauNodeSeq ns'
@@ -60,11 +61,9 @@ validateNode n ns = case tableauNodeRule n of
                                           LeftConc f -> intoEq f <$> nodeTargetLeft n
                                           RightConc f -> intoEq f <$> nodeTargetRight n) (schemeTargets theRule)
                                    case maybeMainProb of
-                                       Nothing -> return $ Feedback "Missing target for rule"
+                                       Nothing -> return $ treeErrMsg "Missing target for rule"
                                        Just mainProb -> case hosolve mainProb of
-                                            Left (NoUnify _ _) -> return $ 
-                                                Feedback $ "Rule applied incorrectly to node: cannot unify\n\n " 
-                                                        ++ unlines (map show mainProb)
+                                            Left e -> return $ ProofError e
                                             Right hosubs -> do
                                                 hosub <- hosubs
                                                 childSeqs <- permutations (map tableauNodeSeq ns)
@@ -78,14 +77,13 @@ validateNode n ns = case tableauNodeRule n of
                                                          : zipWith (:=:) subbedChildrenLHS (map (view lhs) childSeqs)
                                                          ++ zipWith (:=:) subbedChildrenRHS (map (view rhs) childSeqs)
                                                 case acuisolve prob of
-                                                    Left (NoUnify _ _) -> return $ 
-                                                      Feedback $ "Rule applied incorrectly to branch, cannot solve:\n\n"
-                                                              ++ unlines (map show prob) 
+                                                    Left e -> return $ ProofError e
                                                     Right acuisubs -> do 
                                                         finalsub <- map (++ hosub) acuisubs
                                                         case coreRestriction r >>= ($ finalsub) of
-                                                            Just msg -> return $ Feedback msg
+                                                            Just msg -> return (treeErrMsg msg)
                                                             Nothing -> return Correct
+
 
 nodeTargetLeft, nodeTargetRight :: 
     ( FirstOrder (ClassicalSequentOver lex)
@@ -150,6 +148,9 @@ getTarget seq = case ( filter (hasVar . fromSequent) . toListOf concretes . view
              ) of (f:_,_) -> LeftConc f
                   (_,f:_) -> RightConc f
                   _ -> NoTarget
+
+treeErrMsg :: String -> TreeFeedbackNode lex
+treeErrMsg s = ProofError (GenericError s 0)
 
 data SequentRuleTarget lex sem = LeftConc (FixLang lex sem) 
                                | RightConc (FixLang lex sem) 
