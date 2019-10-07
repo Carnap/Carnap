@@ -43,7 +43,7 @@ instance Show GentzenPropLK where
 instance Show GentzenPropLJ where
     show (LJ x) = show x
 
-parseGentzenPropLK :: Parsec String u GentzenPropLK
+parseGentzenPropLK :: Parsec String u [GentzenPropLK]
 parseGentzenPropLK =  do r <- choice (map (try . string) [ "Ax", "Rep", "Cut"
                                                          , "R&","R∧","R/\\"
                                                          ,"L&1","L∧1","L/\\1"
@@ -56,7 +56,7 @@ parseGentzenPropLK =  do r <- choice (map (try . string) [ "Ax", "Rep", "Cut"
                                                          , "L¬","L~","L-"
                                                          , "R¬","R~","R-"
                                                          ])
-                         return $ case r of
+                         return $ (\x -> [x]) $ case r of
                             r | r == "Ax" -> Ax
                               | r == "Rep" -> Rep
                               | r == "Cut" -> Cut
@@ -71,7 +71,7 @@ parseGentzenPropLK =  do r <- choice (map (try . string) [ "Ax", "Rep", "Cut"
                               | r `elem` ["L¬","L~","L-"] -> NegL
                               | r `elem` ["R¬","R~","R-"] -> NegR
 
-parseGentzenPropLJ = LJ <$> parseGentzenPropLK
+parseGentzenPropLJ = map LJ <$> parseGentzenPropLK
 
 instance ( BooleanLanguage (ClassicalSequentOver lex (Form Bool))
          , BooleanConstLanguage (ClassicalSequentOver lex (Form Bool))

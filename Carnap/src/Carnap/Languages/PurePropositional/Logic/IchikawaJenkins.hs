@@ -144,7 +144,7 @@ instance Show IchikawaJenkinsSLTableaux where
     show NBicond = "¬≡"
     show DoubleNeg = "¬¬"
 
-parseIchikawaJenkinsSLTableaux :: Parsec String u IchikawaJenkinsSLTableaux
+parseIchikawaJenkinsSLTableaux :: Parsec String u [IchikawaJenkinsSLTableaux]
 parseIchikawaJenkinsSLTableaux = do r <- choice (map (try . string) ["&","¬&","~&","-&"
                                                                 ,"∨","¬∨","~∨","-∨"
                                                                 , "v", "¬v","~v","-v"
@@ -161,7 +161,7 @@ parseIchikawaJenkinsSLTableaux = do r <- choice (map (try . string) ["&","¬&","
                                                                 , "¬¬","~~","--"
                                                                 , "Ax"
                                                                 ])
-                                    return $ case r of
+                                    return $ (\x -> [x]) $ case r of
                                        r | r == "&" -> Conj
                                          | r == "Ax" -> Ax
                                          | r `elem` ["¬&","~&","-&"] -> NConj

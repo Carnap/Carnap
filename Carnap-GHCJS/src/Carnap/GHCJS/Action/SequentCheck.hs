@@ -159,11 +159,10 @@ toTableau calc (Node (l,r) f)
     | isRight newNode = Left $ Node Waiting (map cleanTree parsedForest)
     | Left n <- newNode = Left n
     where parsedLabel = P.parse (parseSeqOver (tbParseForm calc)) "" l
-          parsedRule = if r == "" then pure Nothing else P.parse (Just <$> tbParseRule calc) "" r
+          parsedRules = if r == "" then pure Nothing else P.parse (Just <$> tbParseRule calc) "" r
           parsedForest = map (toTableau calc) f
           cleanTree (Left fs) = fs
           cleanTree (Right fs) = fmap (const Waiting) fs
-          newNode = case TableauNode <$> parsedLabel <*> (pure Nothing) <*> parsedRule of
+          newNode = case TableauNode <$> parsedLabel <*> (pure Nothing) <*> parsedRules of
                         Right n -> Right n
                         Left e -> Left (Node (ProofError $ NoParse e 0) (map cleanTree parsedForest))
-

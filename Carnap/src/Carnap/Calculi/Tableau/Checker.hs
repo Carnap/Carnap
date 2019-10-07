@@ -46,8 +46,9 @@ validateTree (Node n descendents) = Node (clean $ validateNode n theChildren) (m
 validateNode ::SupportsTableau rule lex sem => TableauNode lex sem rule -> [TableauNode lex sem rule] -> [TreeFeedbackNode lex]
 validateNode n ns = case tableauNodeRule n of
                         Nothing -> return $ treeErrMsg "no rule developing this node"
-                        Just r -> 
-                            do let theRule = coreRuleOf r
+                        Just rs -> 
+                            do r <- rs
+                               let theRule = coreRuleOf r
                                if length (upperSequents theRule) /= length ns 
                                then return $ treeErrMsg "wrong number of premises"
                                else do

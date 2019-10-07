@@ -17,7 +17,7 @@ data TreeForm lex sem = TreeForm
 --A tree node is a node in a truth tree, labeled by the rule used to create it.
 data TreeNode lex sem rule = TreeNode 
            { treeNodeForms :: [TreeForm lex sem] 
-           , treeNodeRule :: Maybe rule
+           , treeNodeRule :: Maybe [rule]
            }
 
 
@@ -27,7 +27,7 @@ type TruthTree lex sem rule = Tree (TreeNode lex sem rule)
 data TableauNode lex sem rule = TableauNode
            { tableauNodeSeq :: ClassicalSequentOver lex (Sequent sem)
            , tableauNodeTarget :: Maybe (FixLang lex sem)
-           , tableauNodeRule :: Maybe rule
+           , tableauNodeRule :: Maybe [rule]
            --this is the rule that develops the node, not the rule that the node is developed by.
            }
 
@@ -37,6 +37,6 @@ type Tableau lex sem rule = Tree (TableauNode lex sem rule)
 
 data TableauCalc lex sem rule = TableauCalc 
            { tbParseForm :: Parsec String () (FixLang lex sem)
-           , tbParseRule :: Parsec String () rule
+           , tbParseRule :: Parsec String () [rule]
            --possibly some other stuff here
            }

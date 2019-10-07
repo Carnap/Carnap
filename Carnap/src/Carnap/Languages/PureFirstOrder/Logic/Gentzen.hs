@@ -39,18 +39,18 @@ instance Show GentzenFOLK where
 instance Show GentzenFOLJ where
     show (LJ x) = show x
 
-parseGentzenFOLK :: Parsec String u GentzenFOLK
+parseGentzenFOLK :: Parsec String u [GentzenFOLK]
 parseGentzenFOLK = try folParse <|> liftProp
-        where liftProp = LK <$> parseGentzenPropLK
+        where liftProp = map LK <$> parseGentzenPropLK
               folParse = do r <- choice (map (try . string) [ "LA", "L∀", "RA","R∀", "LE","L∃", "RE", "R∃" ])
-                            return $ case r of
+                            return $ (\x -> [x]) $ case r of
                                r | r `elem` ["LA","L∀"] -> AllL
                                  | r `elem` ["RA","R∀"] -> AllR
                                  | r `elem` ["LE","L∃"] -> ExistL
                                  | r `elem` ["RE","R∃"] -> ExistR
 
-parseGentzenFOLJ :: Parsec String u GentzenFOLJ
-parseGentzenFOLJ = LJ <$> parseGentzenFOLK
+parseGentzenFOLJ :: Parsec String u [GentzenFOLJ]
+parseGentzenFOLJ = map LJ <$> parseGentzenFOLK
 
 instance ( BooleanLanguage (ClassicalSequentOver lex (Form Bool))
          , BooleanConstLanguage (ClassicalSequentOver lex (Form Bool))
