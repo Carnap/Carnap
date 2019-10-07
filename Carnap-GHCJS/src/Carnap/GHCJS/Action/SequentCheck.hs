@@ -167,24 +167,3 @@ toTableau calc (Node (l,r) f)
                         Right n -> Right n
                         Left e -> Left (Node (ProofError $ NoParse e 0) (map cleanTree parsedForest))
 
-fromInfo :: Value -> Parser Bool
-fromInfo = withObject "Info Tree" $ \o -> do
-    theInfo <- o .: "info" :: Parser String
-    theForest <- o .: "forest" :: Parser [Value]
-    processedForest <- mapM fromInfo theForest
-    return $ theInfo `elem` ["Correct", ""] && and processedForest
-
-toInfo :: TreeFeedback lex -> Value
-toInfo (Node Correct ss) = object [ "info" .= ("Correct" :: String), "class" .= ("correct" :: String), "forest" .= map toInfo ss]
-toInfo (Node (ProofData s) ss) = object [ "info" .= s, "class" .= ("correct" :: String), "forest" .= map toInfo ss]
-toInfo (Node Waiting ss) = object [ "info" .= ("Waiting for parsing to be completed." :: String), "class" .= ("waiting" :: String), "forest" .= map toInfo ss]
-toInfo (Node (ProofError (NoParse e _)) ss) = object [ "info" .= cleanString (show e), "class" .= ("parse-error" :: String), "forest" .= map toInfo ss]
-toInfo (Node (ProofError (GenericError s _)) ss) = object [ "info" .= s, "class" .= ("feedback" :: String), "forest" .= map toInfo ss]
---TODO: actually display unification feedback
-toInfo (Node (ProofError (NoUnify eqs _)) ss) = object [ "info" .= ("This doesn't follow by this rule" :: String), "class" .= ("feedback" :: String), "forest" .= map toInfo ss]
-toInfo (Node (ProofError (NoResult _)) ss) = object [ "info" .= ("" :: String) , "class" .= ("correct" :: String), "forest" .= map toInfo ss]
-
-checkFullInfo :: Value -> IO Value
-checkFullInfo v = do let Success t = parse fromInfo v
-                     if t then return $ object [ "result" .= ("yes" :: String)]
-                          else return $ object [ "result" .= ("no" :: String)]
