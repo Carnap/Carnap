@@ -180,10 +180,6 @@ availableSubproof m sp@(SubProof r ls) = do loc <- locale m sp
           preproofs = map removeChildren . filter (\(SubProof (_,n) _) -> n < m) $ clean
           postproofs = map removeChildren . filter (\(SubProof (n,_) _) -> n < m) $ clean
 
---------------------------
---  1.3 Error Messages  --
---------------------------
-
 ------------------
 --  1.3 Proofs  --
 ------------------

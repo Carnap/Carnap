@@ -39,7 +39,6 @@ import Carnap.GHCJS.Util.ProofJS
 sequentCheckAction ::  IO ()
 sequentCheckAction = runWebGUI $ \w -> 
             do (Just dom) <- webViewGetDomDocument w
-               initCallbackObj
                initializeCallback "checkPropSequent" (checkSequent gentzenPropLKCalc Nothing)
                initializeCallback "checkFOLSequent" (checkSequent gentzenFOLKCalc Nothing)
                initializeCallback "checkSequentInfo" checkFullInfo

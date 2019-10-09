@@ -1,12 +1,13 @@
 {-#LANGUAGE FlexibleContexts, FlexibleInstances, MultiParamTypeClasses #-}
 module Carnap.Languages.PurePropositional.Logic.Carnap
-    (parsePropLogic,  parsePropLogicProof, PropLogic, propCalc) where
+    (parsePropLogic,  parsePropLogicProof, PropLogic, propCalc, propTreeCalc) where
 import Data.Map as M (lookup, Map)
 import Text.Parsec
 import Carnap.Core.Data.Types (Form)
 import Carnap.Core.Data.Classes
 import Carnap.Languages.PurePropositional.Syntax
 import Carnap.Languages.PurePropositional.Parser
+import Carnap.Calculi.Tableau.Data
 import Carnap.Calculi.NaturalDeduction.Syntax
 import Carnap.Calculi.NaturalDeduction.Parser
 import Carnap.Calculi.NaturalDeduction.Checker
@@ -118,4 +119,10 @@ propCalc = mkNDCalc
     , ndParseProof = parsePropLogicProof
     , ndProcessLine = processLineMontague
     , ndProcessLineMemo = Nothing
+    }
+
+propTreeCalc :: TableauCalc PurePropLexicon (Form Bool) PropLogic
+propTreeCalc = TableauCalc
+    { tbParseForm = langParser
+    , tbParseRule = parsePropLogic (RuntimeNaturalDeductionConfig mempty mempty)
     }

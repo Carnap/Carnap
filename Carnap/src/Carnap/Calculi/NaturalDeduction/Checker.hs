@@ -6,7 +6,8 @@ hoProcessLineHardegree, hoProcessLineHardegreeMemo,
 processLineStructuredFitch,processLineStructuredFitchHO,
 hoProcessLineFitchMemo, hoProcessLineFitch, hoProcessLineMontague,
 hoProcessLineLemmon,hoProcessLineLemmonMemo,
-hoProcessLineMontagueMemo, hosolve, ProofErrorMessage(..),
+hoProcessLineMontagueMemo, hoReduceProofTree,
+hosolve, ProofErrorMessage(..),
 Feedback(..),seqUnify,seqSubsetUnify) where
 
 import Carnap.Calculi.NaturalDeduction.Syntax
