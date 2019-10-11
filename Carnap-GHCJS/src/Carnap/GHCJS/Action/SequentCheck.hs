@@ -63,10 +63,7 @@ activateChecker w (Just (i, o, opts))
                   mseq <- parseGoal calc
                   let content = M.lookup "content" opts
                   root <- case (content >>= decodeJSON, mseq) of
-                              --need the decode here since since some
-                              --characters get html-sanatized when stored
-                              --in the content attribute
-                              (Just val,_) -> let Just c = content in initRoot (decodeHtml c) o
+                              (Just val,_) -> let Just c = content in initRoot c o
                               (_, Just seq) -> initRoot ("{\"label\": \"" ++ show seq ++ "\", \"forest\": []}") o
                               _ -> initRoot "" o
                   threadRef <- newIORef (Nothing :: Maybe ThreadId)

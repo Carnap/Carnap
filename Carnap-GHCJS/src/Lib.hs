@@ -228,7 +228,7 @@ genInOutElts w input output ty target =
            mapM initialize els
     where initialize Nothing = return Nothing
           initialize (Just el) = do
-              Just content <- getInnerHTML el :: IO (Maybe String)
+              Just content <- getTextContent el :: IO (Maybe String)
               [Just o, Just i] <- mapM (createElement w . Just) [output,input]
               setAttribute i "class" "input"
               setAttribute o "class" "output"
@@ -242,7 +242,7 @@ generateExerciseElts w ty target = do els <- getListOfElementsByCarnapType targe
                                       mapM initialize els
         where initialize Nothing = return Nothing
               initialize (Just el) = do
-                  Just content <- getInnerHTML el
+                  Just content <- getTextContent el
                   setInnerHTML el (Just "")
                   [Just g, Just o, Just i] <- mapM (createElement w . Just) ["div","div","textarea"]
                   setAttribute g "class" "goal"

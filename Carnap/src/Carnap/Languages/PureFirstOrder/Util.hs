@@ -136,6 +136,11 @@ nonDeterministicStepPNF = pure . stepPNF
                     [ Just $ (lall va $ \x -> lsome ve $ \y -> ( g x ./\. f y))
                     , Just $ (lsome ve $ \x -> lall va $ \y -> ( g y ./\. f x))
                     ])
+    & outside (binaryOpPrism _and . aside (unaryOpPrismOn _all') . otherside (unaryOpPrismOn _all')) .~
+                (\((va, LLam g),(va', LLam f)) -> 
+                    [ Just $ (lall va $ \x -> lall va' $ \y -> ( g x ./\. f y))
+                    , Just $ (lall va $ \x -> ( g x ./\. f x))
+                    ])
     & outside (binaryOpPrism _or . aside (unaryOpPrismOn _all') . otherside (unaryOpPrismOn _some')) .~
                 (\((ve, LLam g),(va, LLam f)) -> 
                     [ Just $ (lall va $ \x -> lsome ve $ \y -> ( g y .\/. f x))
@@ -146,6 +151,11 @@ nonDeterministicStepPNF = pure . stepPNF
                     [ Just $ (lall va $ \x -> lsome ve $ \y -> ( g x .\/. f y))
                     , Just $ (lsome ve $ \x -> lall va $ \y -> ( g y .\/. f x))
                     ])
+    & outside (binaryOpPrism _or . aside (unaryOpPrismOn _some') . otherside (unaryOpPrismOn _some')) .~
+                (\((ve', LLam g),(ve, LLam f)) -> 
+                    [ Just $ (lsome ve' $ \x -> lsome ve $ \y -> ( g x .\/. f y))
+                    , Just $ (lsome ve $ \x -> ( g x .\/. f x))
+                    ])
     & outside (binaryOpPrism _if . aside (unaryOpPrismOn _all') . otherside (unaryOpPrismOn _all')) .~
                 (\((ve, LLam g),(va, LLam f)) -> 
                     [ Just $ (lall va $ \x -> lsome ve $ \y -> ( g y .=>. f x))
@@ -155,6 +165,11 @@ nonDeterministicStepPNF = pure . stepPNF
                 (\((va, LLam g),(ve, LLam f)) -> 
                     [ Just $ (lall va $ \x -> lsome ve $ \y -> ( g x .=>. f y))
                     , Just $ (lsome ve $ \x -> lall va $ \y -> ( g y .=>. f x))
+                    ])
+    & outside (binaryOpPrism _if . aside (unaryOpPrismOn _some') . otherside (unaryOpPrismOn _all')) .~
+                (\((ve, LLam g),(va, LLam f)) -> 
+                    [ Just $ (lsome va $ \x -> lsome ve $ \y -> ( g y .=>. f x))
+                    , Just $ (lsome ve $ \x -> ( g x .=>. f x))
                     ])
     where _all' :: Prism' (FixLang PureLexiconFOL ((Term Int -> Form Bool) -> Form Bool)) String
           _all' = _all
