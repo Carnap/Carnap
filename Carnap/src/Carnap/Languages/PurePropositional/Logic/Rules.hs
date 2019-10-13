@@ -158,6 +158,7 @@ modusTollendoPonensVariations = [
                 ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (phin 2)
             ]
 
+
 constructiveReductioVariations :: BooleanRuleVariants lex b
 constructiveReductioVariations = [
                 [ GammaV 1 :+: SA (phin 1) :|-: SS (phin 2) 
@@ -177,6 +178,15 @@ constructiveReductioVariations = [
                 [ GammaV 1  :|-: SS (phin 2) 
                 , GammaV 2  :|-: SS (lneg $ phin 2)
                 ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (lneg $ phin 1)
+            ]
+
+constructiveFalsumReductioVariations :: BooleanRuleVariants lex b
+constructiveFalsumReductioVariations = [
+                [ GammaV 1 :+: SA (phin 1) :|-: SS lfalsum
+                ] ∴ GammaV 1 :|-: SS (lneg $ phin 1)
+            ,
+                [ GammaV 1 :|-: SS lfalsum
+                ] ∴ GammaV 1 :|-: SS (lneg $ phin 1)
             ]
 
 explictConstructiveConjunctionReductioVariations :: BooleanRuleVariants lex b

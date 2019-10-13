@@ -1,7 +1,9 @@
 {-#LANGUAGE RankNTypes, ScopedTypeVariables, FlexibleContexts, FlexibleInstances, UndecidableInstances, MultiParamTypeClasses #-}
 module Carnap.Languages.PurePropositional.Logic.Gentzen
     ( parseGentzenPropLK, gentzenPropLKCalc, GentzenPropLK()
-    , parseGentzenPropLJ, gentzenPropLJCalc, GentzenPropLJ()) where
+    , parseGentzenPropLJ, gentzenPropLJCalc, GentzenPropLJ()
+    , parseGentzenPropNJ, gentzenPropNJCalc, GentzenPropNJ(..)
+    ) where
 
 import Text.Parsec
 import Data.List
@@ -12,7 +14,9 @@ import Carnap.Core.Data.Types (Form, FirstOrderLex(..))
 import Carnap.Core.Unification.Unification
 import Carnap.Languages.PurePropositional.Syntax
 import Carnap.Languages.PurePropositional.Parser
+import Carnap.Languages.PurePropositional.Logic.Rules
 import Carnap.Calculi.Tableau.Data
+import Carnap.Calculi.NaturalDeduction.Syntax
 import Carnap.Calculi.Util
 import Control.Lens
 import Carnap.Languages.Util.LanguageClasses
@@ -24,6 +28,13 @@ data GentzenPropLK = Ax    | Rep   | Cut
                    | NegR  | NegL
 
 newtype GentzenPropLJ = LJ GentzenPropLK
+
+data GentzenPropNJ = AndI     | AndEL | AndER
+                   | OrIL     | OrIR  | OrE Int Int
+                   | IfI Int  | IfE
+                   | NegI Int | NegE  | FalsumE
+                   | As Int
+    deriving Eq
 
 instance Show GentzenPropLK where
     show Ax     = "Ax"
@@ -42,6 +53,20 @@ instance Show GentzenPropLK where
 
 instance Show GentzenPropLJ where
     show (LJ x) = show x
+
+instance Show GentzenPropNJ where
+    show AndI = "&I"
+    show AndEL = "&E"
+    show AndER = "&E"
+    show OrIL = "∨I"
+    show OrIR = "∨I"
+    show (OrE n m) = "∨E (" ++ show n ++ ") (" ++ show m ++ ")"
+    show (IfI n) = "⊃I (" ++ show n ++ ")"
+    show IfE = "⊃E"
+    show (NegI n) = "¬I (" ++ show n ++ ")" 
+    show NegE = "¬E"
+    show FalsumE = "¬E"
+    show (As n) = "(" ++ show n ++ ")"
 
 parseGentzenPropLK :: Parsec String u [GentzenPropLK]
 parseGentzenPropLK =  do r <- choice (map (try . string) [ "Ax", "Rep", "Cut"
@@ -72,6 +97,27 @@ parseGentzenPropLK =  do r <- choice (map (try . string) [ "Ax", "Rep", "Cut"
                               | r `elem` ["R¬","R~","R-"] -> NegR
 
 parseGentzenPropLJ = map LJ <$> parseGentzenPropLK
+
+parseGentzenPropNJ :: Parsec String u [GentzenPropNJ]
+parseGentzenPropNJ = do r <- choice (map (try . string) [ "&I","&E","/\\I", "/\\E", "∨I", "\\/I" , "⊃E",  ">E",  "¬E", "-E"]
+                                    ++ [(\n -> "A" ++ n ) <$> (char '(' *> many1 digit <* char ')')]
+                                    ++ [(\n -> "⊃" ++ n ) <$> ((string ">I" <|> string "⊃I") *> spaces *> char '(' *> many1 digit <* char ')')]
+                                    ++ [(\n -> "¬" ++ n ) <$> ((string "¬I" <|> string "-I") *> spaces *> char '(' *> many1 digit <* char ')')]
+                                    ++ [(\n m -> "∨" ++ n ++ "," ++ m) 
+                                            <$> ((string "∨E" <|> string "\\/E") *> spaces *> char '(' *> many1 digit <* char ')')
+                                            <*> (spaces *> char '(' *> many1 digit <* char ')')])
+                                                                                        
+                        return $ case r of
+                          r | r `elem` ["&I","/\\I"] -> [AndI]
+                            | r `elem` ["&E","/\\E"] -> [AndER, AndEL]
+                            | r `elem` ["∨I","\\/I"] -> [OrIL, OrIR]
+                            | r `elem` ["⊃E",">E"] -> [IfE]
+                            | r `elem` ["¬E","-E"] -> [NegE, FalsumE]
+                            | head r == 'A' -> [As (read (tail r) :: Int)]
+                            | head r == '⊃' -> [IfI (read (tail r) :: Int)]
+                            | head r == '¬' -> [NegI (read (tail r) :: Int)]
+                            | head r == '∨' -> [OrE (read (takeWhile (/= ',') $ tail r) :: Int ) (read (tail . dropWhile (/= ',') . tail $ r ) :: Int)]
+                            | otherwise -> error $ "unrecognized:" ++ r
 
 instance ( BooleanLanguage (ClassicalSequentOver lex (Form Bool))
          , BooleanConstLanguage (ClassicalSequentOver lex (Form Bool))
@@ -130,6 +176,36 @@ instance ( BooleanLanguage (ClassicalSequentOver lex (Form Bool))
                    monoConsequent (_:|-:x)= case nub (toListOf concretes x :: [ClassicalSequentOver lex (Form Bool)]) of
                                               _:_:xs -> Just "LJ requires that the right hand side of each sequent contain at most one formula"
                                               _ -> Nothing
+
+instance ( BooleanLanguage (ClassicalSequentOver lex (Form Bool))
+         , BooleanConstLanguage (ClassicalSequentOver lex (Form Bool))
+         , IndexedSchemePropLanguage (ClassicalSequentOver lex (Form Bool))
+         , PrismSubstitutionalVariable lex
+         , FirstOrderLex (lex (ClassicalSequentOver lex))
+         , Eq (ClassicalSequentOver lex (Form Bool))
+         , ReLex lex
+         ) => CoreInference GentzenPropNJ lex (Form Bool) where
+         coreRuleOf AndI = adjunction
+         coreRuleOf AndEL = simplificationVariations !! 0
+         coreRuleOf AndER = simplificationVariations !! 1
+         coreRuleOf OrIL = additionVariations !! 0
+         coreRuleOf OrIR = additionVariations !! 1
+         coreRuleOf (OrE n m) = proofByCasesVariations !! 0
+         coreRuleOf (IfI n) = conditionalProofVariations !! 0
+         coreRuleOf IfE = modusPonens
+         coreRuleOf (NegI n) = constructiveFalsumReductioVariations !! 0
+         coreRuleOf NegE = falsumIntroduction
+         coreRuleOf FalsumE = falsumElimination
+         coreRuleOf (As n) = axiom
+
+instance Inference GentzenPropNJ PurePropLexicon (Form Bool) where
+        ruleOf x = coreRuleOf x
+
+gentzenPropNJCalc :: TableauCalc PurePropLexicon (Form Bool) GentzenPropNJ
+gentzenPropNJCalc = TableauCalc 
+    { tbParseForm = langParser
+    , tbParseRule = parseGentzenPropNJ
+    }
 
 gentzenPropLKCalc :: TableauCalc PurePropLexicon (Form Bool) GentzenPropLK
 gentzenPropLKCalc = TableauCalc 
