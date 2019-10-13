@@ -99,9 +99,9 @@ parseGentzenPropLK =  do r <- choice (map (try . string) [ "Ax", "Rep", "Cut"
 parseGentzenPropLJ = map LJ <$> parseGentzenPropLK
 
 parseGentzenPropNJ :: Parsec String u [GentzenPropNJ]
-parseGentzenPropNJ = do r <- choice (map (try . string) [ "&I","&E","/\\I", "/\\E", "∨I", "\\/I" , "⊃E",  ">E",  "¬E", "-E"]
+parseGentzenPropNJ = do r <- choice (map (try . string) [ "&I","&E","/\\I", "/\\E", "∨I", "\\/I" , "⊃E", "->E", ">E",  "¬E", "-E"]
                                     ++ [(\n -> "A" ++ n ) <$> (char '(' *> many1 digit <* char ')')]
-                                    ++ [(\n -> "⊃" ++ n ) <$> ((string ">I" <|> string "⊃I") *> spaces *> char '(' *> many1 digit <* char ')')]
+                                    ++ [(\n -> "⊃" ++ n ) <$> ((string "->I" <|> string ">I" <|> string "⊃I") *> spaces *> char '(' *> many1 digit <* char ')')]
                                     ++ [(\n -> "¬" ++ n ) <$> ((string "¬I" <|> string "-I") *> spaces *> char '(' *> many1 digit <* char ')')]
                                     ++ [(\n m -> "∨" ++ n ++ "," ++ m) 
                                             <$> ((string "∨E" <|> string "\\/E") *> spaces *> char '(' *> many1 digit <* char ')')
@@ -111,7 +111,7 @@ parseGentzenPropNJ = do r <- choice (map (try . string) [ "&I","&E","/\\I", "/\\
                           r | r `elem` ["&I","/\\I"] -> [AndI]
                             | r `elem` ["&E","/\\E"] -> [AndER, AndEL]
                             | r `elem` ["∨I","\\/I"] -> [OrIL, OrIR]
-                            | r `elem` ["⊃E",">E"] -> [IfE]
+                            | r `elem` ["⊃E",">E", "->E"] -> [IfE]
                             | r `elem` ["¬E","-E"] -> [NegE, FalsumE]
                             | head r == 'A' -> [As (read (tail r) :: Int)]
                             | head r == '⊃' -> [IfI (read (tail r) :: Int)]
