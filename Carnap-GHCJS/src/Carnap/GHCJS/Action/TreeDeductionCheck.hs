@@ -56,9 +56,17 @@ proofTreeRestriction pt _ (As n) = Just noReps
                    | otherwise = Just "Distinct assumptions are getting the same index"
           allEq ((Node x _):xs) = all (\(Node pl _) -> content pl == content x) xs
 proofTreeRestriction pt _ (IfI n) = Just (usesAssumption n pt (SS . liftToSequent $ phin 1))
+proofTreeRestriction pt _ (IfIVac n) = Just (usesAssumption n pt (SS . liftToSequent $ phin 1))
 proofTreeRestriction pt _ (NegI n) = Just (usesAssumption n pt (SS . liftToSequent $ phin 1))
+proofTreeRestriction pt _ (NegIVac n) = Just (usesAssumption n pt (SS . liftToSequent $ phin 1))
 proofTreeRestriction pt _ (OrE n m) = Just (usesAssumption n pt (SS . liftToSequent $ phin 1)
-                                            `andFurtherRestriction` usesAssumption n pt (SS . liftToSequent $ phin 2))
+                                            `andFurtherRestriction` usesAssumption m pt (SS . liftToSequent $ phin 2))
+proofTreeRestriction pt _ (OrELVac n m) = Just (usesAssumption n pt (SS . liftToSequent $ phin 1)
+                                            `andFurtherRestriction` usesAssumption m pt (SS . liftToSequent $ phin 2))
+proofTreeRestriction pt _ (OrERVac n m) = Just (usesAssumption n pt (SS . liftToSequent $ phin 1)
+                                            `andFurtherRestriction` usesAssumption m pt (SS . liftToSequent $ phin 2))
+proofTreeRestriction pt _ (OrEVac n m) = Just (usesAssumption n pt (SS . liftToSequent $ phin 1)
+                                            `andFurtherRestriction` usesAssumption m pt (SS . liftToSequent $ phin 2))
 proofTreeRestriction pt _ r = Nothing
 
 leavesLabeled :: Int -> ProofTree GentzenPropNJ lex sem -> [ProofTree GentzenPropNJ lex sem]

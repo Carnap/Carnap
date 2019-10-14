@@ -29,10 +29,10 @@ data GentzenPropLK = Ax    | Rep   | Cut
 
 newtype GentzenPropLJ = LJ GentzenPropLK
 
-data GentzenPropNJ = AndI     | AndEL | AndER
-                   | OrIL     | OrIR  | OrE Int Int
-                   | IfI Int  | IfE
-                   | NegI Int | NegE  | FalsumE
+data GentzenPropNJ = AndI     | AndEL       | AndER
+                   | OrIL     | OrIR        | OrE Int Int | OrELVac Int Int | OrERVac Int Int | OrEVac Int Int
+                   | IfI Int  | IfIVac Int  | IfE
+                   | NegI Int | NegIVac Int | NegE  | FalsumE
                    | As Int
     deriving Eq
 
@@ -61,9 +61,14 @@ instance Show GentzenPropNJ where
     show OrIL = "∨I"
     show OrIR = "∨I"
     show (OrE n m) = "∨E (" ++ show n ++ ") (" ++ show m ++ ")"
+    show (OrELVac n m) = "∨E (" ++ show n ++ ") (" ++ show m ++ ")"
+    show (OrERVac n m) = "∨E (" ++ show n ++ ") (" ++ show m ++ ")"
+    show (OrEVac n m) = "∨E (" ++ show n ++ ") (" ++ show m ++ ")"
     show (IfI n) = "⊃I (" ++ show n ++ ")"
+    show (IfIVac n) = "⊃I (" ++ show n ++ ")"
     show IfE = "⊃E"
     show (NegI n) = "¬I (" ++ show n ++ ")" 
+    show (NegIVac n) = "¬I (" ++ show n ++ ")" 
     show NegE = "¬E"
     show FalsumE = "¬E"
     show (As n) = "(" ++ show n ++ ")"
@@ -114,9 +119,11 @@ parseGentzenPropNJ = do r <- choice (map (try . string) [ "&I","&E","/\\I", "/\\
                             | r `elem` ["⊃E",">E", "->E"] -> [IfE]
                             | r `elem` ["¬E","-E"] -> [NegE, FalsumE]
                             | head r == 'A' -> [As (read (tail r) :: Int)]
-                            | head r == '⊃' -> [IfI (read (tail r) :: Int)]
-                            | head r == '¬' -> [NegI (read (tail r) :: Int)]
-                            | head r == '∨' -> [OrE (read (takeWhile (/= ',') $ tail r) :: Int ) (read (tail . dropWhile (/= ',') . tail $ r ) :: Int)]
+                            | head r == '⊃' -> let val = read (tail r) :: Int in [IfI val, IfIVac val]
+                            | head r == '¬' -> let val = read (tail r) :: Int in [NegI val, NegIVac val]
+                            | head r == '∨' -> let val1 = read (takeWhile (/= ',') $ tail r) :: Int
+                                                   val2 = read (tail . dropWhile (/= ',') . tail $ r ) :: Int
+                                                   in [OrE val1 val2, OrELVac val1 val2, OrERVac val1 val2, OrEVac val1 val2]
                             | otherwise -> error $ "unrecognized:" ++ r
 
 instance ( BooleanLanguage (ClassicalSequentOver lex (Form Bool))
@@ -191,9 +198,14 @@ instance ( BooleanLanguage (ClassicalSequentOver lex (Form Bool))
          coreRuleOf OrIL = additionVariations !! 0
          coreRuleOf OrIR = additionVariations !! 1
          coreRuleOf (OrE n m) = proofByCasesVariations !! 0
+         coreRuleOf (OrELVac n m) = proofByCasesVariations !! 1
+         coreRuleOf (OrERVac n m) = proofByCasesVariations !! 2
+         coreRuleOf (OrEVac n m) = proofByCasesVariations !! 3
          coreRuleOf (IfI n) = conditionalProofVariations !! 0
+         coreRuleOf (IfIVac n) = conditionalProofVariations !! 1
          coreRuleOf IfE = modusPonens
          coreRuleOf (NegI n) = constructiveFalsumReductioVariations !! 0
+         coreRuleOf (NegIVac n) = constructiveFalsumReductioVariations !! 1
          coreRuleOf NegE = falsumIntroduction
          coreRuleOf FalsumE = falsumElimination
          coreRuleOf (As n) = axiom
