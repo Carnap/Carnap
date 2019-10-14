@@ -104,7 +104,7 @@ parseGentzenPropLK =  do r <- choice (map (try . string) [ "Ax", "Rep", "Cut"
 parseGentzenPropLJ = map LJ <$> parseGentzenPropLK
 
 parseGentzenPropNJ :: Parsec String u [GentzenPropNJ]
-parseGentzenPropNJ = do r <- choice (map (try . string) [ "&I","&E","/\\I", "/\\E", "∨I", "\\/I" , "⊃E", "->E", ">E",  "¬E", "-E"]
+parseGentzenPropNJ = do r <- choice . map try $ (map string [ "&I","&E","/\\I", "/\\E", "∨I", "\\/I" , "⊃E", "->E", ">E",  "¬E", "-E"]
                                     ++ [(\n -> "A" ++ n ) <$> (char '(' *> many1 digit <* char ')')]
                                     ++ [(\n -> "⊃" ++ n ) <$> ((string "->I" <|> string ">I" <|> string "⊃I") *> spaces *> char '(' *> many1 digit <* char ')')]
                                     ++ [(\n -> "¬" ++ n ) <$> ((string "¬I" <|> string "-I") *> spaces *> char '(' *> many1 digit <* char ')')]
@@ -215,7 +215,7 @@ instance Inference GentzenPropNJ PurePropLexicon (Form Bool) where
 
 gentzenPropNJCalc :: TableauCalc PurePropLexicon (Form Bool) GentzenPropNJ
 gentzenPropNJCalc = TableauCalc 
-    { tbParseForm = langParser
+    { tbParseForm = purePropFormulaParser hardegreeOpts
     , tbParseRule = parseGentzenPropNJ
     }
 

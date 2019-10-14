@@ -42,7 +42,7 @@ data DeductionLine r lex a where
             { dependAsserted :: FixLang lex a
             , dependAssertRule :: MultiRule r
             , dependAssertDependencies :: [(Int,Int)]
-            , dependAssertDischarged :: [Int]
+            , dependAssertDischarged :: Maybe [Int]
             , dependAssertInScope:: [Int]
             , dependAssertLineNo:: Maybe Int
             } -> DeductionLine r lex a
@@ -97,7 +97,7 @@ isPremiseLine _ = False
 inScope (DependentAssertLine _ _ _ _ s _) = s
 inScope _ = []
 
-discharged (DependentAssertLine _ _ _ d _ _) = d
+discharged (DependentAssertLine _ _ _ (Just d) _ _) = d
 discharged _ = []
 
 justificationOf (AssertLine _ r _ _) = Just r 
@@ -180,6 +180,11 @@ availableSubproof m sp@(SubProof r ls) = do loc <- locale m sp
           preproofs = map removeChildren . filter (\(SubProof (_,n) _) -> n < m) $ clean
           postproofs = map removeChildren . filter (\(SubProof (n,_) _) -> n < m) $ clean
 
+--------------------------
+--  1.3 Error Messages  --
+--------------------------
+
+
 ------------------
 --  1.3 Proofs  --
 ------------------
@@ -239,11 +244,11 @@ data LemmonVariant = StandardLemmon | TomassiStyle
 
 data FitchVariant = StandardFitch | BergmanMooreAndNelsonStyle
 
-type ProofMemoRef lex sem r = IORef (Map Int (Either (ProofErrorMessage lex) 
-                                                     ( ClassicalSequentOver lex (Sequent sem)
+type ProofMemoRef lex sem r = IORef (Map Int [Either (ProofErrorMessage lex) 
+                                                     [(ClassicalSequentOver lex (Sequent sem)
                                                      , [Equation (ClassicalSequentOver lex)]
-                                                     , r)
-                                           ))
+                                                     , r)]
+                                           ])
 
 data RuntimeNaturalDeductionConfig lex sem = RuntimeNaturalDeductionConfig
         { derivedRules :: Map String (ClassicalSequentOver lex (Sequent sem))
