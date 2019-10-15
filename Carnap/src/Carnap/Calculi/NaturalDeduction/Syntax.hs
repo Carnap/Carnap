@@ -7,6 +7,7 @@ import Data.IORef (IORef)
 import Data.List (permutations)
 import Data.Hashable
 import Data.Typeable
+import Control.Lens
 import Carnap.Core.Unification.Unification
 --import Carnap.Core.Unification.FirstOrder
 import Carnap.Core.Unification.ACUI
@@ -332,6 +333,10 @@ class Inference r lex sem | r -> lex sem where
         isPremise = const False
         --TODO: template for error messages, etc.
 
+class StructuralInference rule lex struct where
+        structuralRestriction :: struct -> Restrictor rule lex
+        structuralRestriction _ _ _ = Nothing
+
 type SupportsND r lex sem = 
     ( Show r 
     , Typeable sem
@@ -355,4 +360,10 @@ type SupportsND r lex sem =
 --
 -- Proof Tree to proof skeleton)
 
+-----------------
+--  3. Optics  --
+-----------------
 
+leaves :: Traversal' (Tree a) (Tree a)
+leaves f (Node x []) = f (Node x [])
+leaves f (Node x xs) = Node <$> pure x <*> traverse (leaves f) xs

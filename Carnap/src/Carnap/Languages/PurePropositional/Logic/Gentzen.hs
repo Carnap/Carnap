@@ -7,6 +7,7 @@ module Carnap.Languages.PurePropositional.Logic.Gentzen
 
 import Text.Parsec
 import Data.List
+import Data.Tree
 import Carnap.Languages.ClassicalSequent.Syntax
 import Carnap.Core.Data.Classes
 import Carnap.Core.Data.Optics
@@ -212,6 +213,63 @@ instance ( BooleanLanguage (ClassicalSequentOver lex (Form Bool))
 
 instance Inference GentzenPropNJ PurePropLexicon (Form Bool) where
         ruleOf x = coreRuleOf x
+
+instance StructuralInference GentzenPropNJ PurePropLexicon (ProofTree GentzenPropNJ PurePropLexicon (Form Bool)) where
+    structuralRestriction pt _ (As n) = Just noReps
+        where noReps _ | allEq (leavesLabeled n pt) = Nothing
+                       | otherwise = Just "Distinct assumptions are getting the same index"
+              allEq ((Node x _):xs) = all (\(Node pl _) -> content pl == content x) xs
+    structuralRestriction pt _ (IfI n) = Just (usesAssumption n pt assump `andFurtherRestriction` exhaustsAssumptions n pt assump)
+        where assump = SS . liftToSequent $ phin 1
+    structuralRestriction pt _ (IfIVac n) = Just (usesAssumption n pt (SS . liftToSequent $ phin 1))
+    structuralRestriction pt _ (NegI n) = Just (usesAssumption n pt assump `andFurtherRestriction` exhaustsAssumptions n pt assump )
+        where assump = SS . liftToSequent $ phin 1
+    structuralRestriction pt _ (NegIVac n) = Just (usesAssumption n pt (SS . liftToSequent $ phin 1))
+    structuralRestriction pt _ (OrE n m) = Just (usesAssumption n pt (assump 1) 
+                                                `andFurtherRestriction` usesAssumption m pt (assump 2)
+                                                `andFurtherRestriction` exhaustsAssumptions n pt (assump 1)
+                                                `andFurtherRestriction` exhaustsAssumptions m pt (assump 2))
+        where assump n = SS . liftToSequent $ phin n
+    structuralRestriction pt _ (OrERVac n m) = Just (usesAssumption n pt (assump 1) 
+                                                `andFurtherRestriction` usesAssumption m pt (assump 2)
+                                                `andFurtherRestriction` exhaustsAssumptions n pt (assump 1))
+        where assump n = SS . liftToSequent $ phin n
+    structuralRestriction pt _ (OrELVac n m) = Just (usesAssumption n pt (assump 1) 
+                                                `andFurtherRestriction` usesAssumption m pt (assump 2)
+                                                `andFurtherRestriction` exhaustsAssumptions m pt (assump 2))
+        where assump n = SS . liftToSequent $ phin n
+    structuralRestriction pt _ (OrEVac n m) = Just (usesAssumption n pt (assump 1) 
+                                                  `andFurtherRestriction` usesAssumption m pt (assump 2))
+        where assump n = SS . liftToSequent $ phin n
+    structuralRestriction pt _ r = Nothing
+
+leavesLabeled :: Int -> ProofTree GentzenPropNJ lex sem -> [ProofTree GentzenPropNJ lex sem]
+leavesLabeled n pt = filter (\(Node pl _) -> rule pl == [As n]) $ toListOf leaves pt
+
+usesAssumption n pt assump sub = case leavesLabeled n pt of
+              [] -> Nothing
+              (Node x _ : _) | content x /= applySub sub assump -> Just "assumption mismatch"
+                             | otherwise -> Nothing
+
+exhaustsAssumptions n pt assump sub = if all (`elem` (dischargedList pt)) assumpInstances then Nothing
+                                                                                          else Just "This rule will consume an undischarged assumption"
+        where dischargedList (Node r f) = dischargedBy (head (rule r)) ++ concatMap dischargedList f
+
+              dischargedBy (IfI n) = [n]
+              dischargedBy (IfIVac n) = [n]
+              dischargedBy (NegI n) = [n]
+              dischargedBy (NegIVac n) = [n]
+              dischargedBy (OrE n m) = [n,m]
+              dischargedBy (OrELVac n m) = [n,m]
+              dischargedBy (OrERVac n m) = [n,m]
+              dischargedBy (OrEVac n m) = [n,m]
+              dischargedBy _ = []
+
+              theAssump = applySub sub assump
+
+              assumpInstances = concatMap (\(Node pl _) -> case rule pl of [As n] -> [n]; _ -> [])
+                              . filter (\(Node pl _) -> content pl == theAssump) 
+                              $ toListOf leaves pt
 
 gentzenPropNJCalc :: TableauCalc PurePropLexicon (Form Bool) GentzenPropNJ
 gentzenPropNJCalc = TableauCalc 
