@@ -337,6 +337,10 @@ class StructuralInference rule lex struct where
         structuralRestriction :: struct -> Restrictor rule lex
         structuralRestriction _ _ _ = Nothing
 
+class AssumptionNumbers r where
+        introducesAssumptions :: r -> [Int]
+        dischargesAssumptions :: r -> [Int]
+
 type SupportsND r lex sem = 
     ( Show r 
     , Typeable sem

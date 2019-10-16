@@ -243,8 +243,22 @@ instance StructuralInference GentzenPropNJ PurePropLexicon (ProofTree GentzenPro
         where assump n = SS . liftToSequent $ phin n
     structuralRestriction pt _ r = Nothing
 
-leavesLabeled :: Int -> ProofTree GentzenPropNJ lex sem -> [ProofTree GentzenPropNJ lex sem]
-leavesLabeled n pt = filter (\(Node pl _) -> rule pl == [As n]) $ toListOf leaves pt
+instance AssumptionNumbers GentzenPropNJ where
+        introducesAssumptions (As n) = [n]
+        introducesAssumptions _ = []
+
+        dischargesAssumptions (IfI n) = [n]
+        dischargesAssumptions (IfIVac n) = [n]
+        dischargesAssumptions (NegI n) = [n]
+        dischargesAssumptions (NegIVac n) = [n]
+        dischargesAssumptions (OrE n m) = [n,m]
+        dischargesAssumptions (OrELVac n m) = [n,m]
+        dischargesAssumptions (OrERVac n m) = [n,m]
+        dischargesAssumptions (OrEVac n m) = [n,m]
+        dischargesAssumptions _ = []
+
+leavesLabeled :: AssumptionNumbers rule => Int -> ProofTree rule lex sem -> [ProofTree rule lex sem]
+leavesLabeled n pt = filter (\(Node pl _) -> introducesAssumptions (head (rule pl)) == [n]) $ toListOf leaves pt
 
 usesAssumption n pt assump sub = case leavesLabeled n pt of
               [] -> Nothing
@@ -253,21 +267,9 @@ usesAssumption n pt assump sub = case leavesLabeled n pt of
 
 exhaustsAssumptions n pt assump sub = if all (`elem` (dischargedList pt)) assumpInstances then Nothing
                                                                                           else Just "This rule will consume an undischarged assumption"
-        where dischargedList (Node r f) = dischargedBy (head (rule r)) ++ concatMap dischargedList f
-
-              dischargedBy (IfI n) = [n]
-              dischargedBy (IfIVac n) = [n]
-              dischargedBy (NegI n) = [n]
-              dischargedBy (NegIVac n) = [n]
-              dischargedBy (OrE n m) = [n,m]
-              dischargedBy (OrELVac n m) = [n,m]
-              dischargedBy (OrERVac n m) = [n,m]
-              dischargedBy (OrEVac n m) = [n,m]
-              dischargedBy _ = []
-
+        where dischargedList (Node r f) = dischargesAssumptions (head (rule r)) ++ concatMap dischargedList f
               theAssump = applySub sub assump
-
-              assumpInstances = concatMap (\(Node pl _) -> case rule pl of [As n] -> [n]; _ -> [])
+              assumpInstances = concatMap (\(Node pl _) -> case rule pl of [r] -> introducesAssumptions r; _ -> [])
                               . filter (\(Node pl _) -> content pl == theAssump) 
                               $ toListOf leaves pt
 
