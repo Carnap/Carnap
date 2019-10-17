@@ -2,7 +2,8 @@
 module Carnap.Languages.PurePropositional.Logic.Gentzen
     ( parseGentzenPropLK, gentzenPropLKCalc, GentzenPropLK()
     , parseGentzenPropLJ, gentzenPropLJCalc, GentzenPropLJ()
-    , parseGentzenPropNJ, gentzenPropNJCalc, GentzenPropNJ(..)
+    , parseGentzenPropNJ, gentzenPropNJCalc, GentzenPropNJ()
+    , parseGentzenPropNK, gentzenPropNKCalc, GentzenPropNK()
     ) where
 
 import Text.Parsec
@@ -36,6 +37,8 @@ data GentzenPropNJ = AndI     | AndEL       | AndER
                    | NegI Int | NegIVac Int | NegE  | FalsumE
                    | As Int
     deriving Eq
+
+data GentzenPropNK = NJ GentzenPropNJ | LEM
 
 instance Show GentzenPropLK where
     show Ax     = "Ax"
@@ -73,6 +76,10 @@ instance Show GentzenPropNJ where
     show NegE = "¬E"
     show FalsumE = "¬E"
     show (As n) = "(" ++ show n ++ ")"
+
+instance Show GentzenPropNK where
+    show (NJ x) = show x
+    show LEM = "LEM"
 
 parseGentzenPropLK :: Parsec String u [GentzenPropLK]
 parseGentzenPropLK =  do r <- choice (map (try . string) [ "Ax", "Rep", "Cut"
@@ -126,6 +133,9 @@ parseGentzenPropNJ = do r <- choice . map try $ (map string [ "&I","&E","/\\I", 
                                                    val2 = read (tail . dropWhile (/= ',') . tail $ r ) :: Int
                                                    in [OrE val1 val2, OrELVac val1 val2, OrERVac val1 val2, OrEVac val1 val2]
                             | otherwise -> error $ "unrecognized:" ++ r
+
+parseGentzenPropNK :: Parsec String u [GentzenPropNK]
+parseGentzenPropNK = (map NJ <$> parseGentzenPropNJ) <|> (string "LEM" >> return [LEM])
 
 instance ( BooleanLanguage (ClassicalSequentOver lex (Form Bool))
          , BooleanConstLanguage (ClassicalSequentOver lex (Form Bool))
@@ -211,7 +221,21 @@ instance ( BooleanLanguage (ClassicalSequentOver lex (Form Bool))
          coreRuleOf FalsumE = falsumElimination
          coreRuleOf (As n) = axiom
 
+instance ( BooleanLanguage (ClassicalSequentOver lex (Form Bool))
+         , BooleanConstLanguage (ClassicalSequentOver lex (Form Bool))
+         , IndexedSchemePropLanguage (ClassicalSequentOver lex (Form Bool))
+         , PrismSubstitutionalVariable lex
+         , FirstOrderLex (lex (ClassicalSequentOver lex))
+         , Eq (ClassicalSequentOver lex (Form Bool))
+         , ReLex lex
+         ) => CoreInference GentzenPropNK lex (Form Bool) where
+         coreRuleOf (NJ x) = coreRuleOf x
+         coreRuleOf LEM = [] ∴ Top :|-: SS (phin 1 .\/. phin 2)
+
 instance Inference GentzenPropNJ PurePropLexicon (Form Bool) where
+        ruleOf x = coreRuleOf x
+
+instance Inference GentzenPropNK PurePropLexicon (Form Bool) where
         ruleOf x = coreRuleOf x
 
 instance StructuralInference GentzenPropNJ PurePropLexicon (ProofTree GentzenPropNJ PurePropLexicon (Form Bool)) where
@@ -243,6 +267,10 @@ instance StructuralInference GentzenPropNJ PurePropLexicon (ProofTree GentzenPro
         where assump n = SS . liftToSequent $ phin n
     structuralRestriction pt _ r = Nothing
 
+instance StructuralInference GentzenPropNK PurePropLexicon (ProofTree GentzenPropNJ PurePropLexicon (Form Bool)) where
+    structuralRestriction pt y (NJ x) = structuralRestriction pt y x
+    structuralRestriction pt _ r = Nothing
+
 instance AssumptionNumbers GentzenPropNJ where
         introducesAssumptions (As n) = [n]
         introducesAssumptions _ = []
@@ -255,6 +283,13 @@ instance AssumptionNumbers GentzenPropNJ where
         dischargesAssumptions (OrELVac n m) = [n,m]
         dischargesAssumptions (OrERVac n m) = [n,m]
         dischargesAssumptions (OrEVac n m) = [n,m]
+        dischargesAssumptions _ = []
+
+instance AssumptionNumbers GentzenPropNK where
+        introducesAssumptions (NJ x) = introducesAssumptions x
+        introducesAssumptions _ = []
+
+        dischargesAssumptions (NJ x) = dischargesAssumptions x
         dischargesAssumptions _ = []
 
 leavesLabeled :: AssumptionNumbers rule => Int -> ProofTree rule lex sem -> [ProofTree rule lex sem]
@@ -277,6 +312,12 @@ gentzenPropNJCalc :: TableauCalc PurePropLexicon (Form Bool) GentzenPropNJ
 gentzenPropNJCalc = TableauCalc 
     { tbParseForm = purePropFormulaParser hardegreeOpts
     , tbParseRule = parseGentzenPropNJ
+    }
+
+gentzenPropNKCalc :: TableauCalc PurePropLexicon (Form Bool) GentzenPropNK
+gentzenPropNKCalc = TableauCalc 
+    { tbParseForm = purePropFormulaParser hardegreeOpts
+    , tbParseRule = parseGentzenPropNK
     }
 
 gentzenPropLKCalc :: TableauCalc PurePropLexicon (Form Bool) GentzenPropLK
