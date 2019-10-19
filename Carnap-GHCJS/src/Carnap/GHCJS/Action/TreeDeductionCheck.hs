@@ -8,6 +8,7 @@ import Data.Map as M (lookup,Map, toList)
 import Data.IORef (IORef, readIORef, newIORef, writeIORef)
 import Data.Typeable (Typeable)
 import Data.Aeson.Types
+import Data.Text (pack)
 import qualified Text.Parsec as P (parse) 
 import Control.Monad.State (modify,get,execState,State)
 import Control.Lens
@@ -28,7 +29,9 @@ import Carnap.Calculi.NaturalDeduction.Checker
 import Carnap.Calculi.Tableau.Data
 import Carnap.Languages.PurePropositional.Logic.Gentzen
 import Carnap.GHCJS.Util.ProofJS
+import Carnap.GHCJS.SharedTypes
 import GHCJS.DOM.Element (setInnerHTML, click)
+import GHCJS.DOM.Node (appendChild, getParentNode, insertBefore)
 import GHCJS.DOM.Types (Element, Document, IsElement)
 import GHCJS.DOM.EventM
 import GHCJS.DOM
@@ -62,18 +65,18 @@ activateChecker w (Just (i, o, opts))
                                                           ++ "\", \"rule\":\"\", \"forest\": []}") o
                               _ -> initRoot "" o
                   threadRef <- newIORef (Nothing :: Maybe ThreadId)
-                  -- case M.lookup "submission" opts of
-                  --    Just s | take 7 s == "saveAs:" -> do
-                  --        bw <- buttonWrapper w
-                  --        let l = Prelude.drop 7 s
-                  --        bt <- doneButton w "Submit Solution"
-                  --        appendChild bw (Just bt)
-                  --        submit <- newListener $ liftIO $ submitSeq opts l calc root
-                  --        addListener bt click submit False                
-                  --        mpar@(Just par) <- getParentNode o               
-                  --        appendChild par (Just bw)
-                  --        return ()
-                  --    _ -> return ()
+                  case M.lookup "submission" opts of
+                     Just s | take 7 s == "saveAs:" -> do
+                         bw <- buttonWrapper w
+                         let l = Prelude.drop 7 s
+                         bt <- doneButton w "Submit Solution"
+                         appendChild bw (Just bt)
+                         submit <- newListener $ liftIO $ submitTree opts l calc root
+                         addListener bt click submit False                
+                         mpar@(Just par) <- getParentNode o               
+                         appendChild par (Just bw)
+                         return ()
+                     _ -> return ()
                   initialCheck <- newListener $ liftIO $  do 
                                     forkIO $ do
                                         threadDelay 500000
@@ -94,6 +97,17 @@ activateChecker w (Just (i, o, opts))
                           Right seq -> do setInnerHTML i (Just $ show seq) --TODO: will eventually want the equivalent of ndNotation
                                           return $ Just seq
                       Nothing -> return Nothing
+
+submitTree opts l calc root = 
+        do Just val <- toCleanVal root
+           case parse parseTreeJSON val of
+               Error s -> message "Something is wrong with the proof... Try again?"
+               Success tree@(Node (content,_) _) -> case toProofTree calc tree of
+                     Left _ -> message "Something is wrong with the proof... Try again?"
+                     Right prooftree -> case parse fromInfo . toInfo . validateProofTree $ prooftree of
+                          Success rslt | "exam" `elem` optlist || rslt -> trySubmit DeductionTree opts l (DeductionTreeData (pack content) tree (toList opts)) rslt
+                          _ -> message "Something is wrong with the proof... Try again?"
+    where optlist = case M.lookup "options" opts of Just s -> words s; Nothing -> []
 
 checkOnChange :: ( ReLex lex
                  , Sequentable lex
@@ -152,7 +166,7 @@ checkProofTree :: ( ReLex lex
 checkProofTree calc v = case parse parseTreeJSON v of
                            Success t -> case toProofTree calc t of 
                                   Left feedback -> return . toInfo $ feedback
-                                  Right tab -> return . toInfo $ validateProofTree $ tab
+                                  Right tree -> return . toInfo $ validateProofTree $ tree
                            Error s -> do print (show v)
                                          error s
 

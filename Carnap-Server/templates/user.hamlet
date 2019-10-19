@@ -47,6 +47,10 @@
         <div.card>
             <div.card-header> Sequent Calculus Problems
             #{seqtable}
+    $if (not $ null treesubs)
+        <div.card>
+            <div.card-header> Deduction Tree Problems
+            #{treetable}
     <h3> Your Profile
     ^{personalInfo ud (Just course)}
     $if (not (null derivedRulesOld) || not (null derivedRulesNew))
