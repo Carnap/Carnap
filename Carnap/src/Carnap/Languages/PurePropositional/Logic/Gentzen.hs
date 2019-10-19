@@ -238,7 +238,7 @@ instance Inference GentzenPropNJ PurePropLexicon (Form Bool) where
 instance Inference GentzenPropNK PurePropLexicon (Form Bool) where
         ruleOf x = coreRuleOf x
 
-instance StructuralInference GentzenPropNJ PurePropLexicon (ProofTree GentzenPropNJ PurePropLexicon (Form Bool)) where
+instance AssumptionNumbers r => StructuralInference GentzenPropNJ PurePropLexicon (ProofTree r PurePropLexicon (Form Bool)) where
     structuralRestriction pt _ (As n) = Just noReps
         where noReps _ | allEq (leavesLabeled n pt) = Nothing
                        | otherwise = Just "Distinct assumptions are getting the same index"
@@ -267,7 +267,7 @@ instance StructuralInference GentzenPropNJ PurePropLexicon (ProofTree GentzenPro
         where assump n = SS . liftToSequent $ phin n
     structuralRestriction pt _ r = Nothing
 
-instance StructuralInference GentzenPropNK PurePropLexicon (ProofTree GentzenPropNJ PurePropLexicon (Form Bool)) where
+instance AssumptionNumbers r => StructuralInference GentzenPropNK PurePropLexicon (ProofTree r PurePropLexicon (Form Bool)) where
     structuralRestriction pt y (NJ x) = structuralRestriction pt y x
     structuralRestriction pt _ r = Nothing
 
