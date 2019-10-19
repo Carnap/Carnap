@@ -58,7 +58,8 @@ activateChecker w (Just (i, o, opts))
                   let content = M.lookup "content" opts
                   root <- case (content >>= decodeJSON, mseq) of
                               (Just val,_) -> let Just c = content in initRoot c o
-                              (_, Just seq) -> initRoot ("{\"label\": \"" ++ show (view rhs seq) ++ "\", \"forest\": []}") o
+                              (_, Just seq) -> initRoot ("{\"label\": \"" ++ show (view rhs seq) 
+                                                          ++ "\", \"rule\":\"\", \"forest\": []}") o
                               _ -> initRoot "" o
                   threadRef <- newIORef (Nothing :: Maybe ThreadId)
                   -- case M.lookup "submission" opts of
