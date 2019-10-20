@@ -65,18 +65,7 @@ activateChecker w (Just (i, o, opts))
                                                           ++ "\", \"rule\":\"\", \"forest\": []}") o
                               _ -> initRoot "" o
                   threadRef <- newIORef (Nothing :: Maybe ThreadId)
-                  case M.lookup "submission" opts of
-                     Just s | take 7 s == "saveAs:" -> do
-                         bw <- buttonWrapper w
-                         let l = Prelude.drop 7 s
-                         bt <- doneButton w "Submit Solution"
-                         appendChild bw (Just bt)
-                         submit <- newListener $ liftIO $ submitTree opts l calc root
-                         addListener bt click submit False                
-                         mpar@(Just par) <- getParentNode o               
-                         appendChild par (Just bw)
-                         return ()
-                     _ -> return ()
+                  createSubmitButton w (submitTree opts calc root) opts o
                   initialCheck <- newListener $ liftIO $  do 
                                     forkIO $ do
                                         threadDelay 500000
@@ -98,7 +87,7 @@ activateChecker w (Just (i, o, opts))
                                           return $ Just seq
                       Nothing -> return Nothing
 
-submitTree opts l calc root = 
+submitTree opts calc root l = 
         do Just val <- toCleanVal root
            case parse parseTreeJSON val of
                Error s -> message "Something is wrong with the proof... Try again?"
