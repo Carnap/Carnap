@@ -6,7 +6,7 @@ hoProcessLineHardegree, hoProcessLineHardegreeMemo,
 processLineStructuredFitch,processLineStructuredFitchHO,
 hoProcessLineFitchMemo, hoProcessLineFitch, hoProcessLineMontague,
 hoProcessLineLemmon,hoProcessLineLemmonMemo,
-hoProcessLineMontagueMemo, hoReduceProofTree,
+hoProcessLineMontagueMemo, hoReduceProofTree, hoReduceProofTreeMemo,
 hosolve, ProofErrorMessage(..),
 Feedback(..),seqUnify,seqSubsetUnify) where
 
