@@ -37,6 +37,7 @@ data GentzenPropNJ = AndI     | AndEL       | AndER
                    | IfI Int  | IfIVac (Maybe Int)  | IfE
                    | NegI Int | NegIVac (Maybe Int) | NegE  | FalsumE
                    | As Int
+                   | Pr
     deriving Eq
 
 data GentzenPropNK = NJ GentzenPropNJ | LEM
@@ -84,6 +85,7 @@ instance Show GentzenPropNJ where
     show NegE = "¬E"
     show FalsumE = "¬E"
     show (As n) = "(" ++ show n ++ ")"
+    show Pr = "Pr"
 
 instance Show GentzenPropNK where
     show (NJ x) = show x
@@ -142,6 +144,7 @@ parseGentzenPropNJ = choice . map try $
                         , (stringOpts ["∨E","\\/E"] *> spaces *> char '(' *> many1 digit <* char ')') 
                             >>= \s -> return (let val = read s :: Int in [OrELVac Nothing val, OrERVac val Nothing, OrEVac (Just val) Nothing])
                         , stringOpts ["∨E","\\/E"] >> return [OrEVac Nothing Nothing]
+                        , eof >> return [Pr]
                         ]
     where stringOpts = choice . map (try . string)
 
@@ -231,6 +234,7 @@ instance ( BooleanLanguage (ClassicalSequentOver lex (Form Bool))
          coreRuleOf NegE = falsumIntroduction
          coreRuleOf FalsumE = falsumElimination
          coreRuleOf (As _) = axiom
+         coreRuleOf Pr = axiom
 
 instance ( BooleanLanguage (ClassicalSequentOver lex (Form Bool))
          , BooleanConstLanguage (ClassicalSequentOver lex (Form Bool))
@@ -294,6 +298,8 @@ instance AssumptionNumbers r => StructuralInference GentzenPropNK PurePropLexico
 
 instance AssumptionNumbers GentzenPropNJ where
         introducesAssumptions (As n) = [n]
+        introducesAssumptions Pr = [-1] 
+        --XXX: premises introduce assumptions that can't be discharged.
         introducesAssumptions _ = []
 
         dischargesAssumptions (IfI n) = [n]
