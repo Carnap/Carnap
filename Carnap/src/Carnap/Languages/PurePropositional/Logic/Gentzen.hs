@@ -32,9 +32,10 @@ data GentzenPropLK = Ax    | Rep   | Cut
 newtype GentzenPropLJ = LJ GentzenPropLK
 
 data GentzenPropNJ = AndI     | AndEL       | AndER
-                   | OrIL     | OrIR        | OrE Int Int | OrELVac Int Int | OrERVac Int Int | OrEVac Int Int
-                   | IfI Int  | IfIVac Int  | IfE
-                   | NegI Int | NegIVac Int | NegE  | FalsumE
+                   | OrIL     | OrIR        | OrE Int Int | OrELVac (Maybe Int) Int 
+                   | OrERVac Int (Maybe Int)| OrEVac (Maybe Int) (Maybe Int)
+                   | IfI Int  | IfIVac (Maybe Int)  | IfE
+                   | NegI Int | NegIVac (Maybe Int) | NegE  | FalsumE
                    | As Int
     deriving Eq
 
@@ -65,14 +66,21 @@ instance Show GentzenPropNJ where
     show OrIL = "∨I"
     show OrIR = "∨I"
     show (OrE n m) = "∨E (" ++ show n ++ ") (" ++ show m ++ ")"
-    show (OrELVac n m) = "∨E (" ++ show n ++ ") (" ++ show m ++ ")"
-    show (OrERVac n m) = "∨E (" ++ show n ++ ") (" ++ show m ++ ")"
-    show (OrEVac n m) = "∨E (" ++ show n ++ ") (" ++ show m ++ ")"
+    show (OrELVac (Just n) m) = "∨E (" ++ show n ++ ") (" ++ show m ++ ")"
+    show (OrELVac Nothing m) = "∨E (" ++ show m ++ ")"
+    show (OrERVac n (Just m)) = "∨E (" ++ show n ++ ") (" ++ show m ++ ")"
+    show (OrERVac n Nothing) = "∨E (" ++ show n ++ ")"
+    show (OrEVac (Just n) (Just m)) = "∨E (" ++ show n ++ ") (" ++ show m ++ ")"
+    show (OrEVac Nothing (Just m)) = "∨E (" ++ show m ++ ")"
+    show (OrEVac (Just n) Nothing) = "∨E (" ++ show n ++ ")"
+    show (OrEVac Nothing Nothing) = "∨E"
     show (IfI n) = "⊃I (" ++ show n ++ ")"
-    show (IfIVac n) = "⊃I (" ++ show n ++ ")"
+    show (IfIVac (Just n)) = "⊃I (" ++ show n ++ ")"
+    show (IfIVac Nothing) = "⊃I"
     show IfE = "⊃E"
     show (NegI n) = "¬I (" ++ show n ++ ")" 
-    show (NegIVac n) = "¬I (" ++ show n ++ ")" 
+    show (NegIVac (Just n)) = "¬I (" ++ show n ++ ")" 
+    show (NegIVac Nothing) = "¬I"
     show NegE = "¬E"
     show FalsumE = "¬E"
     show (As n) = "(" ++ show n ++ ")"
@@ -112,27 +120,30 @@ parseGentzenPropLK =  do r <- choice (map (try . string) [ "Ax", "Rep", "Cut"
 parseGentzenPropLJ = map LJ <$> parseGentzenPropLK
 
 parseGentzenPropNJ :: Parsec String u [GentzenPropNJ]
-parseGentzenPropNJ = do r <- choice . map try $ (map string [ "&I","&E","/\\I", "/\\E", "∨I", "\\/I" , "⊃E", "->E", ">E",  "¬E", "-E"]
-                                    ++ [(\n -> "A" ++ n ) <$> (char '(' *> many1 digit <* char ')')]
-                                    ++ [(\n -> "⊃" ++ n ) <$> ((string "->I" <|> string ">I" <|> string "⊃I") *> spaces *> char '(' *> many1 digit <* char ')')]
-                                    ++ [(\n -> "¬" ++ n ) <$> ((string "¬I" <|> string "-I") *> spaces *> char '(' *> many1 digit <* char ')')]
-                                    ++ [(\n m -> "∨" ++ n ++ "," ++ m) 
-                                            <$> ((string "∨E" <|> string "\\/E") *> spaces *> char '(' *> many1 digit <* char ')')
-                                            <*> (spaces *> char '(' *> many1 digit <* char ')')])
-                                                                                        
-                        return $ case r of
-                          r | r `elem` ["&I","/\\I"] -> [AndI]
-                            | r `elem` ["&E","/\\E"] -> [AndER, AndEL]
-                            | r `elem` ["∨I","\\/I"] -> [OrIL, OrIR]
-                            | r `elem` ["⊃E",">E", "->E"] -> [IfE]
-                            | r `elem` ["¬E","-E"] -> [NegE, FalsumE]
-                            | head r == 'A' -> [As (read (tail r) :: Int)]
-                            | head r == '⊃' -> let val = read (tail r) :: Int in [IfI val, IfIVac val]
-                            | head r == '¬' -> let val = read (tail r) :: Int in [NegI val, NegIVac val]
-                            | head r == '∨' -> let val1 = read (takeWhile (/= ',') $ tail r) :: Int
-                                                   val2 = read (tail . dropWhile (/= ',') . tail $ r ) :: Int
-                                                   in [OrE val1 val2, OrELVac val1 val2, OrERVac val1 val2, OrEVac val1 val2]
-                            | otherwise -> error $ "unrecognized:" ++ r
+parseGentzenPropNJ = choice . map try $
+                        [ stringOpts ["&I","/\\I"] >> return [AndI]
+                        , stringOpts ["&E","/\\E"] >> return [AndER, AndEL]
+                        , stringOpts  ["∨I","\\/I"] >> return [OrIL, OrIR]
+                        , stringOpts ["⊃E",">E", "->E"] >> return [IfE]
+                        , stringOpts ["¬E","-E"] >> return [NegE, FalsumE]
+                        , char '(' *> many1 digit <* char ')' 
+                            >>= \s -> return [As (read s :: Int)]
+                        , (stringOpts ["->I", ">I","⊃I"] *> spaces *> char '(' *> many1 digit <* char ')') 
+                            >>= \s -> return (let val = read s :: Int in [IfI val, IfIVac (Just val)])
+                        , stringOpts ["->I", ">I","⊃I"] >> return [IfIVac Nothing]
+                        , (stringOpts ["¬I", "-I"] *> spaces *> char '(' *> many1 digit <* char ')') 
+                            >>= \s -> return (let val = read s :: Int in [NegI val, NegIVac (Just val)])
+                        , stringOpts ["¬I", "-I"] >> return [NegIVac Nothing]
+                        , (,) <$> (stringOpts ["∨E","\\/E"] *> spaces *> char '(' *> many1 digit <* char ')')
+                              <*> (spaces *> char '(' *> many1 digit <* char ')')
+                            >>= \(s1,s2) -> return $ let val1 = read s1 :: Int
+                                                         val2 = read s2 :: Int
+                                                     in [OrE val1 val2, OrELVac (Just val1) val2, OrERVac val1 (Just val2), OrEVac (Just val1) (Just val2)]
+                        , (stringOpts ["∨E","\\/E"] *> spaces *> char '(' *> many1 digit <* char ')') 
+                            >>= \s -> return (let val = read s :: Int in [OrELVac Nothing val, OrERVac val Nothing, OrEVac (Just val) Nothing])
+                        , stringOpts ["∨E","\\/E"] >> return [OrEVac Nothing Nothing]
+                        ]
+    where stringOpts = choice . map (try . string)
 
 parseGentzenPropNK :: Parsec String u [GentzenPropNK]
 parseGentzenPropNK = (map NJ <$> parseGentzenPropNJ) <|> (string "LEM" >> return [LEM])
@@ -209,17 +220,17 @@ instance ( BooleanLanguage (ClassicalSequentOver lex (Form Bool))
          coreRuleOf OrIL = additionVariations !! 0
          coreRuleOf OrIR = additionVariations !! 1
          coreRuleOf (OrE n m) = proofByCasesVariations !! 0
-         coreRuleOf (OrELVac n m) = proofByCasesVariations !! 1
-         coreRuleOf (OrERVac n m) = proofByCasesVariations !! 2
-         coreRuleOf (OrEVac n m) = proofByCasesVariations !! 3
-         coreRuleOf (IfI n) = conditionalProofVariations !! 0
-         coreRuleOf (IfIVac n) = conditionalProofVariations !! 1
+         coreRuleOf (OrELVac _ _) = proofByCasesVariations !! 1
+         coreRuleOf (OrERVac _ _) = proofByCasesVariations !! 2
+         coreRuleOf (OrEVac _ _) = proofByCasesVariations !! 3
+         coreRuleOf (IfI _) = conditionalProofVariations !! 0
+         coreRuleOf (IfIVac _) = conditionalProofVariations !! 1
          coreRuleOf IfE = modusPonens
-         coreRuleOf (NegI n) = constructiveFalsumReductioVariations !! 0
-         coreRuleOf (NegIVac n) = constructiveFalsumReductioVariations !! 1
+         coreRuleOf (NegI _) = constructiveFalsumReductioVariations !! 0
+         coreRuleOf (NegIVac _) = constructiveFalsumReductioVariations !! 1
          coreRuleOf NegE = falsumIntroduction
          coreRuleOf FalsumE = falsumElimination
-         coreRuleOf (As n) = axiom
+         coreRuleOf (As _) = axiom
 
 instance ( BooleanLanguage (ClassicalSequentOver lex (Form Bool))
          , BooleanConstLanguage (ClassicalSequentOver lex (Form Bool))
@@ -245,25 +256,35 @@ instance AssumptionNumbers r => StructuralInference GentzenPropNJ PurePropLexico
               allEq ((Node x _):xs) = all (\(Node pl _) -> content pl == content x) xs
     structuralRestriction pt _ (IfI n) = Just (usesAssumption n pt assump `andFurtherRestriction` exhaustsAssumptions n pt assump)
         where assump = SS . liftToSequent $ phin 1
-    structuralRestriction pt _ (IfIVac n) = Just (usesAssumption n pt (SS . liftToSequent $ phin 1))
+    structuralRestriction pt _ (IfIVac (Just n)) = Just (usesAssumption n pt (SS . liftToSequent $ phin 1))
     structuralRestriction pt _ (NegI n) = Just (usesAssumption n pt assump `andFurtherRestriction` exhaustsAssumptions n pt assump )
         where assump = SS . liftToSequent $ phin 1
-    structuralRestriction pt _ (NegIVac n) = Just (usesAssumption n pt (SS . liftToSequent $ phin 1))
+    structuralRestriction pt _ (NegIVac (Just n)) = Just (usesAssumption n pt (SS . liftToSequent $ phin 1))
     structuralRestriction pt _ (OrE n m) = Just (usesAssumption n pt (assump 1) 
                                                 `andFurtherRestriction` usesAssumption m pt (assump 2)
                                                 `andFurtherRestriction` exhaustsAssumptions n pt (assump 1)
                                                 `andFurtherRestriction` exhaustsAssumptions m pt (assump 2))
         where assump n = SS . liftToSequent $ phin n
-    structuralRestriction pt _ (OrERVac n m) = Just (usesAssumption n pt (assump 1) 
+    structuralRestriction pt _ (OrERVac n (Just m)) = Just (usesAssumption n pt (assump 1) 
                                                 `andFurtherRestriction` usesAssumption m pt (assump 2)
                                                 `andFurtherRestriction` exhaustsAssumptions n pt (assump 1))
         where assump n = SS . liftToSequent $ phin n
-    structuralRestriction pt _ (OrELVac n m) = Just (usesAssumption n pt (assump 1) 
+    structuralRestriction pt _ (OrERVac n Nothing) = Just (usesAssumption n pt (assump 1) 
+                                                `andFurtherRestriction` exhaustsAssumptions n pt (assump 1))
+        where assump n = SS . liftToSequent $ phin n
+    structuralRestriction pt _ (OrELVac (Just n) m) = Just (usesAssumption n pt (assump 1) 
                                                 `andFurtherRestriction` usesAssumption m pt (assump 2)
                                                 `andFurtherRestriction` exhaustsAssumptions m pt (assump 2))
         where assump n = SS . liftToSequent $ phin n
-    structuralRestriction pt _ (OrEVac n m) = Just (usesAssumption n pt (assump 1) 
+    structuralRestriction pt _ (OrELVac Nothing m) = Just (usesAssumption m pt (assump 2)
+                                                `andFurtherRestriction` exhaustsAssumptions m pt (assump 2))
+        where assump n = SS . liftToSequent $ phin n
+    structuralRestriction pt _ (OrEVac (Just n) (Just m)) = Just (usesAssumption n pt (assump 1) 
                                                   `andFurtherRestriction` usesAssumption m pt (assump 2))
+        where assump n = SS . liftToSequent $ phin n
+    structuralRestriction pt _ (OrEVac Nothing (Just m)) = Just (usesAssumption m pt (assump 2))
+        where assump n = SS . liftToSequent $ phin n
+    structuralRestriction pt _ (OrEVac (Just n) Nothing) = Just (usesAssumption n pt (assump 1))
         where assump n = SS . liftToSequent $ phin n
     structuralRestriction pt _ r = Nothing
 
@@ -276,13 +297,17 @@ instance AssumptionNumbers GentzenPropNJ where
         introducesAssumptions _ = []
 
         dischargesAssumptions (IfI n) = [n]
-        dischargesAssumptions (IfIVac n) = [n]
+        dischargesAssumptions (IfIVac (Just n)) = [n]
         dischargesAssumptions (NegI n) = [n]
-        dischargesAssumptions (NegIVac n) = [n]
+        dischargesAssumptions (NegIVac (Just n)) = [n]
         dischargesAssumptions (OrE n m) = [n,m]
-        dischargesAssumptions (OrELVac n m) = [n,m]
-        dischargesAssumptions (OrERVac n m) = [n,m]
-        dischargesAssumptions (OrEVac n m) = [n,m]
+        dischargesAssumptions (OrELVac (Just n) m) = [n,m]
+        dischargesAssumptions (OrELVac Nothing m) = [m]
+        dischargesAssumptions (OrERVac n (Just m)) = [n,m]
+        dischargesAssumptions (OrERVac n Nothing) = [n]
+        dischargesAssumptions (OrEVac (Just n) (Just m)) = [n,m]
+        dischargesAssumptions (OrEVac (Just n) Nothing) = [n]
+        dischargesAssumptions (OrEVac Nothing (Just m)) = [m]
         dischargesAssumptions _ = []
 
 instance AssumptionNumbers GentzenPropNK where
