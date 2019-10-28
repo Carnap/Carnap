@@ -66,7 +66,7 @@ activateChecker w (Just (i, o, opts))
                               _ -> initRoot "" o
                   memo <- newIORef mempty
                   threadRef <- newIORef (Nothing :: Maybe ThreadId)
-                  createSubmitButton w (submitTree memo opts calc root) opts o
+                  createSubmitButton w (submitTree memo opts calc root mseq) opts o
                   initialCheck <- newListener $ liftIO $  do 
                                     forkIO $ do
                                         threadDelay 500000
@@ -88,16 +88,18 @@ activateChecker w (Just (i, o, opts))
                                           return $ Just seq
                       Nothing -> return Nothing
 
-submitTree memo opts calc root l = 
+submitTree memo opts calc root (Just seq) l = 
         do Just val <- toCleanVal root
            case parse parseTreeJSON val of
-               Error s -> message "Something is wrong with the proof... Try again?"
-               Success tree@(Node (content,_) _) -> case toProofTree calc tree of
+               Error s -> message $ "Something has gone wrong. Here's the error:" ++ s
+               Success tree -> case toProofTree calc tree of
+                     Left _ | "exam" `elem` optlist -> trySubmit DeductionTree opts l (DeductionTreeData (pack (show seq)) tree (toList opts)) False
                      Left _ -> message "Something is wrong with the proof... Try again?"
                      Right prooftree -> do 
-                          parseAttempt <- parse fromInfo . toInfo <$> validateProofTree (Just memo) prooftree 
-                          case parseAttempt of
-                              Success rslt | "exam" `elem` optlist || rslt -> trySubmit DeductionTree opts l (DeductionTreeData (pack content) tree (toList opts)) rslt
+                          validation <- hoReduceProofTreeMemo memo (structuralRestriction prooftree) prooftree 
+                          case validation of
+                              Right seq' | "exam" `elem` optlist || (seq' `seqSubsetUnify` seq) 
+                                -> trySubmit DeductionTree opts l (DeductionTreeData (pack (show seq)) tree (toList opts)) (seq' `seqSubsetUnify` seq)
                               _ -> message "Something is wrong with the proof... Try again?"
     where optlist = case M.lookup "options" opts of Just s -> words s; Nothing -> []
 
