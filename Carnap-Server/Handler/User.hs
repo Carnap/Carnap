@@ -105,6 +105,16 @@ getUserR ident = do
                           Just n -> show n
                           Nothing -> "can't find scores"
 
+getUserDispatchR :: Handler Html
+getUserDispatchR = maybeAuthId 
+                   >>= maybe (redirect HomeR) 
+                             (getIdent >=> maybe (redirect HomeR) goHome)
+    where goHome ident = do mid <- instructorIdByIdent ident 
+                            case mid of
+                              Nothing -> redirect $ UserR ident
+                              Just _ -> redirect $ InstructorR ident
+
+
 --------------------------------------------------------
 --Grading
 --------------------------------------------------------

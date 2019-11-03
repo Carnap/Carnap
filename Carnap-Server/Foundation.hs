@@ -80,11 +80,13 @@ instance Yesod App where
         -- value passed to hamletToRepHtml cannot be a widget, this allows
         -- you to use normal widget features in default-layout.
         authmaybe <- maybeAuth
+        instructors <- instructorIdentList
         pc <- widgetToPageContent $ do
             addStylesheet $ StaticR css_bootstrap_css
             addStylesheet $ StaticR css_font_awesome_css
             $(widgetFile "default-layout")
         withUrlRenderer $(hamletFile "templates/default-layout-wrapper.hamlet")
+
 
     -- The page to be redirected to when authentication is required.
     authRoute app = if appDevel (appSettings app) 
@@ -229,11 +231,13 @@ instance YesodAuth App where
     type AuthId App = UserId
 
     -- Where to send a user after successful login
-    loginDest _ = HomeR
+    loginDest _ = UserDispatchR
+        
     -- Where to send a user after logout
     logoutDest _ = HomeR
+    
     -- Override the above two destinations when a Referer: header is present
-    redirectToReferer _ = True
+    redirectToReferer _ = False
 
     authenticate creds0 = liftHandler $ runDB $ do
         x <- getBy $ UniqueUser $ credsIdent creds

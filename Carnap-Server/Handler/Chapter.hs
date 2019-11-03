@@ -95,6 +95,7 @@ chapterLayout widget = do
         master <- getYesod
         mmsg <- getMessage
         authmaybe <- maybeAuth
+        instructors <- instructorIdentList
         pc <- widgetToPageContent $ do
             toWidgetHead $(juliusFile "templates/command.julius")
             toWidgetHead [julius|var submission_source="book";|]

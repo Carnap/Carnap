@@ -74,6 +74,7 @@ ruleLayout widget = do
         master <- getYesod
         mmsg <- getMessage
         authmaybe <- maybeAuth
+        instructors <- instructorIdentList
         pc     <- widgetToPageContent $ do
             toWidgetHead $(juliusFile "templates/command.julius")
             addScript $ StaticR ghcjs_rts_js
