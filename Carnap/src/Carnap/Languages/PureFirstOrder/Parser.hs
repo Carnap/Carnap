@@ -124,6 +124,7 @@ thomasBolducAndZachFOL2019ParserOptions :: FirstOrderParserOptions PureLexiconFO
 thomasBolducAndZachFOL2019ParserOptions = magnusFOLParserOptions { hasBooleanConstants = True
                                                                  , quantifiedSentenceParser' = lplQuantifiedSentenceParser
                                                                  , freeVarParser = parseFreeVar "stuvwxyz"
+                                                                 , functionParser = Just (\x -> parseFunctionSymbol "abcdefghijklmnopqr" x)
                                                                  , constantParser = Just (parseConstant "abcdefghijklmnopqr")
                                                                  , atomicSentenceParser = 
                                                                         \x -> try (parsePredicateSymbol "ABCDEFGHIJKLMNOPQRSTUVWXYZ" x) 
