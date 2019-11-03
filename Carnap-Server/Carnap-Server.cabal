@@ -37,6 +37,7 @@ library
                      Handler.Document
                      Filter.Randomize
                      Filter.Sidenotes
+                     Filter.TreeDeduction
                      Filter.Sequent
                      Filter.SynCheckers
                      Filter.ProofCheckers

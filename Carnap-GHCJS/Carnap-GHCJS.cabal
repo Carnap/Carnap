@@ -14,10 +14,12 @@ cabal-version:       >=1.10
 library
   hs-source-dirs:      src
   exposed-modules:     Lib
+                     , Carnap.GHCJS.Util.ProofJS
                      , Carnap.GHCJS.Widget.ProofCheckBox
                      , Carnap.GHCJS.Widget.RenderDeduction
                      , Carnap.GHCJS.Action.SyntaxCheck
                      , Carnap.GHCJS.Action.ProofCheck
+                     , Carnap.GHCJS.Action.TreeDeductionCheck
                      , Carnap.GHCJS.Action.Translate
                      , Carnap.GHCJS.Action.TruthTable
                      , Carnap.GHCJS.Action.CounterModel

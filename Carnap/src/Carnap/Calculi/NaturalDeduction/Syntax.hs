@@ -7,6 +7,7 @@ import Data.IORef (IORef)
 import Data.List (permutations)
 import Data.Hashable
 import Data.Typeable
+import Control.Lens
 import Carnap.Core.Unification.Unification
 --import Carnap.Core.Unification.FirstOrder
 import Carnap.Core.Unification.ACUI
@@ -42,7 +43,7 @@ data DeductionLine r lex a where
             { dependAsserted :: FixLang lex a
             , dependAssertRule :: MultiRule r
             , dependAssertDependencies :: [(Int,Int)]
-            , dependAssertDischarged :: [Int]
+            , dependAssertDischarged :: Maybe [Int]
             , dependAssertInScope:: [Int]
             , dependAssertLineNo:: Maybe Int
             } -> DeductionLine r lex a
@@ -97,7 +98,7 @@ isPremiseLine _ = False
 inScope (DependentAssertLine _ _ _ _ s _) = s
 inScope _ = []
 
-discharged (DependentAssertLine _ _ _ d _ _) = d
+discharged (DependentAssertLine _ _ _ (Just d) _ _) = d
 discharged _ = []
 
 justificationOf (AssertLine _ r _ _) = Just r 
@@ -244,11 +245,11 @@ data LemmonVariant = StandardLemmon | TomassiStyle
 
 data FitchVariant = StandardFitch | BergmanMooreAndNelsonStyle
 
-type ProofMemoRef lex sem r = IORef (Map Int (Either (ProofErrorMessage lex) 
-                                                     ( ClassicalSequentOver lex (Sequent sem)
+type ProofMemoRef lex sem r = IORef (Map Int [Either (ProofErrorMessage lex) 
+                                                     [(ClassicalSequentOver lex (Sequent sem)
                                                      , [Equation (ClassicalSequentOver lex)]
-                                                     , r)
-                                           ))
+                                                     , r)]
+                                           ])
 
 data RuntimeNaturalDeductionConfig lex sem = RuntimeNaturalDeductionConfig
         { derivedRules :: Map String (ClassicalSequentOver lex (Sequent sem))
@@ -332,6 +333,14 @@ class Inference r lex sem | r -> lex sem where
         isPremise = const False
         --TODO: template for error messages, etc.
 
+class StructuralInference rule lex struct where
+        structuralRestriction :: struct -> Restrictor rule lex
+        structuralRestriction _ _ _ = Nothing
+
+class AssumptionNumbers r where
+        introducesAssumptions :: r -> [Int]
+        dischargesAssumptions :: r -> [Int]
+
 type SupportsND r lex sem = 
     ( Show r 
     , Typeable sem
@@ -355,4 +364,10 @@ type SupportsND r lex sem =
 --
 -- Proof Tree to proof skeleton)
 
+-----------------
+--  3. Optics  --
+-----------------
 
+leaves :: Traversal' (Tree a) (Tree a)
+leaves f (Node x []) = f (Node x [])
+leaves f (Node x xs) = Node <$> pure x <*> traverse (leaves f) xs

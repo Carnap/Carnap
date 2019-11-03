@@ -172,13 +172,19 @@ renderProblem (Entity key val) = do
                          data-carnap-options="resize"
                          data-carnap-goal="#{content}"
                          data-carnap-submission="none">
-                         #{seqJSON tree}
+                         #{treeJSON tree}
                 |]
                 where sys = case lookup "system" (M.fromList opts) of Just s -> s; Nothing -> "propLK"
-                      seqJSON (Node (l,r) f) = "{\"label\":\"" ++ l 
-                                             ++ "\",\"rule\":\"" ++ r
-                                             ++ "\",\"forest\":[" ++ concatMap seqJSON f
-                                             ++ "]}"
+            (DeductionTree, DeductionTreeData content tree opts) -> template $
+                [whamlet|
+                    <div data-carnap-type="treedeductionchecker"
+                         data-carnap-system="#{sys}"
+                         data-carnap-options="resize"
+                         data-carnap-goal="#{content}"
+                         data-carnap-submission="none">
+                         #{treeJSON tree}
+                |]
+                where sys = case lookup "system" (M.fromList opts) of Just s -> s; Nothing -> "propNK"
             (Translation, TranslationDataOpts content trans opts) -> template $
                 [whamlet|
                     <div data-carnap-type="translate"
@@ -199,6 +205,10 @@ renderProblem (Entity key val) = do
           checkvalidity ct = if '⊢' `elem` ct then "validity" :: String else "simple" :: String
           renderCMPair (l,v) = l ++ ":" ++ v
           renderCM cm = unlines . map renderCMPair $ cm
+          treeJSON (Node (l,r) f) = "{\"label\":\"" ++ l 
+                                  ++ "\",\"rule\":\"" ++ r
+                                  ++ "\",\"forest\":[" ++ concatMap treeJSON f
+                                  ++ "]}"
 
 updateSubmissionForm extra ident uid = renderBootstrap3 BootstrapBasicForm $ (,,)
             <$> areq hiddenField "" (Just ident)

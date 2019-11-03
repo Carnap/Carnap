@@ -27,7 +27,14 @@ instance ToJSON ProblemSource
 
 instance FromJSON ProblemSource
 
-data ProblemType = Derivation | TruthTable | Translation | SyntaxCheck | CounterModel | Qualitative | SequentCalc
+data ProblemType = Derivation 
+                 | TruthTable 
+                 | Translation 
+                 | SyntaxCheck 
+                 | CounterModel 
+                 | Qualitative 
+                 | SequentCalc 
+                 | DeductionTree
     deriving (Show, Read, Eq, Generic)
 
 instance ToJSON ProblemType
@@ -43,6 +50,7 @@ type CounterModelFields = [(String,String)]
 data ProblemData = DerivationData Text Text 
                  | DerivationDataOpts Text Text Options
                  | SequentCalcData Text (Tree (String,String)) Options
+                 | DeductionTreeData Text (Tree (String,String)) Options
                  | TruthTableData Text TruthTable
                  | TruthTableDataOpts Text TruthTable Options
                  | TranslationData Text Text

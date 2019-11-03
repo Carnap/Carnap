@@ -1,4 +1,4 @@
-{-# LANGUAGE FlexibleContexts, OverloadedStrings, CPP, JavaScriptFFI #-}
+{-# LANGUAGE FlexibleContexts, OverloadedStrings #-}
 module Carnap.GHCJS.Action.SequentCheck (sequentCheckAction) where
 
 import Lib 
@@ -11,23 +11,17 @@ import Data.Typeable (Typeable)
 import Data.Aeson.Types
 import Data.IORef (IORef, readIORef, newIORef, writeIORef)
 import Data.Text.Encoding
-import Control.Monad (join)
 import qualified Text.Parsec as P (parse) 
 import Carnap.GHCJS.SharedTypes
 import Control.Lens (view)
 import Control.Concurrent
 import Control.Monad.IO.Class (liftIO)
 import GHCJS.DOM
-import GHCJS.DOM.Types (Element, Document, IsElement, toJSString)
-import GHCJS.DOM.Element (setInnerHTML,click)
+import GHCJS.DOM.Types (Element, Document, IsElement)
+import GHCJS.DOM.Element (setInnerHTML, click)
 import GHCJS.DOM.Node (appendChild, getParentNode, insertBefore)
 import GHCJS.Types
 import GHCJS.DOM.EventM
-#ifdef __GHCJS__
-import GHCJS.Foreign
-import GHCJS.Foreign.Callback
-import GHCJS.Marshal
-#endif
 import Carnap.Core.Data.Types
 import Carnap.Core.Data.Classes
 import Carnap.Core.Data.Optics
@@ -40,14 +34,14 @@ import Carnap.Languages.PurePropositional.Logic.IchikawaJenkins
 import Carnap.Languages.PurePropositional.Logic.Gentzen
 import Carnap.Languages.PureFirstOrder.Logic.Gentzen
 import Carnap.GHCJS.SharedTypes
+import Carnap.GHCJS.Util.ProofJS
 
 sequentCheckAction ::  IO ()
 sequentCheckAction = runWebGUI $ \w -> 
             do (Just dom) <- webViewGetDomDocument w
-               initCallbackObj
                initializeCallback "checkPropSequent" (checkSequent gentzenPropLKCalc Nothing)
                initializeCallback "checkFOLSequent" (checkSequent gentzenFOLKCalc Nothing)
-               initializeCallback "checkSequentInfo" checkFullSequentInfo
+               initializeCallback "checkSequentInfo" checkFullInfo
                initElements getCheckers activateChecker
                return ()
 
@@ -70,21 +64,11 @@ activateChecker w (Just (i, o, opts))
                   let content = M.lookup "content" opts
                   root <- case (content >>= decodeJSON, mseq) of
                               (Just val,_) -> let Just c = content in initRoot c o
-                              (_, Just seq) -> initRoot ("{\"label\": \"" ++ show seq ++ "\", \"forest\": []}") o
+                              (_, Just seq) -> initRoot ("{\"label\": \"" ++ show seq
+                                                          ++ "\", \"rule\":\"\", \"forest\": []}") o
                               _ -> initRoot "" o
                   threadRef <- newIORef (Nothing :: Maybe ThreadId)
-                  case M.lookup "submission" opts of
-                     Just s | take 7 s == "saveAs:" -> do
-                         bw <- buttonWrapper w
-                         let l = Prelude.drop 7 s
-                         bt <- doneButton w "Submit Solution"
-                         appendChild bw (Just bt)
-                         submit <- newListener $ liftIO $ submitSeq opts l calc root
-                         addListener bt click submit False                
-                         mpar@(Just par) <- getParentNode o               
-                         appendChild par (Just bw)
-                         return ()
-                     _ -> return ()
+                  createSubmitButton w (submitSeq opts calc root) opts o
                   initialCheck <- newListener $ liftIO $  do 
                                     forkIO $ do
                                         threadDelay 500000
@@ -106,7 +90,7 @@ activateChecker w (Just (i, o, opts))
                                           return $ Just seq
                       Nothing -> return Nothing
 
-submitSeq opts l calc root = 
+submitSeq opts calc root l = 
         do Just val <- toCleanVal root
            case parse parseTreeJSON val of
                Error s -> message "Something is wrong with the proof... Try again?"
@@ -139,11 +123,6 @@ checkOnChange threadRef calc changed = do
             return ()
         writeIORef threadRef (Just t')
 
-initRoot :: String -> Element -> IO JSVal
-initRoot s elt = do root <- newRoot s
-                    renderOn elt root
-                    return root
-
 checkSequent :: ( ReLex lex
                 , SupportsTableau rule lex sem 
                 ) => TableauCalc lex sem rule -> Maybe Int -> Value -> IO Value
@@ -157,89 +136,19 @@ checkSequent calc depth v = case parse parseTreeJSON v of
                                        | otherwise = Node s []
           trimTree Nothing t = t
 
-
-checkFullSequentInfo :: Value -> IO Value
-checkFullSequentInfo v = do let Success t = parse fromInfo v
-                            if t then return $ object [ "result" .= ("yes" :: String)]
-                                 else return $ object [ "result" .= ("no" :: String)]
-
-parseTreeJSON :: Value -> Parser (Tree (String,String))
-parseTreeJSON = withObject "Sequent Tableau" $ \o -> do
-    thelabel   <- o .: "label" :: Parser String
-    therule <- o .: "rule" :: Parser String
-    theforest <- o .: "forest" :: Parser [Value]
-    filteredForest <- filter (\(Node (x,y) _) -> x /= "") <$> mapM parseTreeJSON theforest
-    --ignore empty nodes
-    return $ Node (thelabel,therule) filteredForest
-
 toTableau :: ( Typeable sem
              , ReLex lex
              , Sequentable lex
-             ) => TableauCalc lex sem rule -> Tree (String,String) -> Either TreeFeedback (Tableau lex sem rule)
+             ) => TableauCalc lex sem rule -> Tree (String,String) -> Either (TreeFeedback lex) (Tableau lex sem rule)
 toTableau calc (Node (l,r) f) 
     | all isRight parsedForest && isRight newNode = Node <$> newNode <*> sequence parsedForest
     | isRight newNode = Left $ Node Waiting (map cleanTree parsedForest)
     | Left n <- newNode = Left n
     where parsedLabel = P.parse (parseSeqOver (tbParseForm calc)) "" l
-          parsedRule = if r == "" then pure Nothing else P.parse (Just <$> tbParseRule calc) "" r
+          parsedRules = if r == "" then pure Nothing else P.parse (Just <$> tbParseRule calc) "" r
           parsedForest = map (toTableau calc) f
           cleanTree (Left fs) = fs
           cleanTree (Right fs) = fmap (const Waiting) fs
-          newNode = case TableauNode <$> parsedLabel <*> (pure Nothing) <*> parsedRule of
+          newNode = case TableauNode <$> parsedLabel <*> (pure Nothing) <*> parsedRules of
                         Right n -> Right n
-                        Left e -> Left (Node (ParseErrorMsg . cleanString . show $ e) (map cleanTree parsedForest))
-
-fromInfo :: Value -> Parser Bool
-fromInfo = withObject "Info Tree" $ \o -> do
-    theInfo <- o .: "info" :: Parser String
-    theForest <- o .: "forest" :: Parser [Value]
-    processedForest <- mapM fromInfo theForest
-    return $ theInfo `elem` ["Correct", ""] && and processedForest
-
-toInfo :: TreeFeedback -> Value
-toInfo (Node Correct ss) = object [ "info" .= ("Correct" :: String), "class" .= ("correct" :: String), "forest" .= map toInfo ss]
-toInfo (Node (Feedback e) ss) = object [ "info" .= e, "class" .= ("feedback" :: String), "forest" .= map toInfo ss]
-toInfo (Node Waiting ss) = object [ "info" .= ("Waiting for parsing to be completed." :: String), "class" .= ("waiting" :: String), "forest" .= map toInfo ss]
-toInfo (Node (ParseErrorMsg e) ss) = object [ "info" .= e, "class" .= ("parse-error" :: String), "forest" .= map toInfo ss]
-
-#ifdef __GHCJS__
-
-foreign import javascript unsafe "(function(){root = new ProofRoot(JSON.parse($1)); return root})()" newRootJS :: JSString-> IO JSVal
-
-foreign import javascript unsafe "$2.renderOn($1)" renderOnJS :: Element -> JSVal -> IO ()
-
-foreign import javascript unsafe "$1.decorate($2)" decorateJS :: JSVal -> JSVal -> IO ()
-
-foreign import javascript unsafe "$1.on('changed',$2)" onChangeJS :: JSVal -> Callback(JSVal -> IO ()) -> IO ()
-
-foreign import javascript unsafe "(function() {var rslt; if ($1.parentNode) {rslt=$1.parentNode} else {rslt=$1}; return rslt})()" ascendTree :: JSVal -> IO JSVal
-
-newRoot :: String -> IO JSVal
-newRoot s = newRootJS (toJSString s)
-
-renderOn :: Element -> JSVal -> IO ()
-renderOn elt root = renderOnJS elt root
-
-onChange :: JSVal -> (JSVal -> IO ()) -> IO ()
-onChange val f = asyncCallback1 f >>= onChangeJS val 
-
-decorate :: JSVal -> Value -> IO ()
-decorate x v = toJSVal v >>= decorateJS x
-
-#else
-
-newRoot s = error "you need the JavaScript FFI to call newRoot"
-
-renderOn :: Element -> JSVal -> IO ()
-renderOn = error "you need the JavaScript FFI to call renderOn"
-
-onChange :: JSVal -> (JSVal -> IO ()) -> IO ()
-onChange = error "you need the JavaScript FFI to call onChange"
-
-decorate :: JSVal -> Value -> IO ()
-decorate = error "you need the JavaScript FFI to call decorate"
-
-ascendTree :: JSVal -> IO JSVal
-ascendTree = error "you need the JavaScript FFI to call ascendTree"
-
-#endif
+                        Left e -> Left (Node (ProofError $ NoParse e 0) (map cleanTree parsedForest))

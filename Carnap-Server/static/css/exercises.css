@@ -117,6 +117,7 @@
 [data-carnap-type="countermodeler"] > .input,
 [data-carnap-type="qualitative"] > .input,
 [data-carnap-type="sequentchecker"] > .input,
+[data-carnap-type="treedeductionchecker"] > .input,
 [data-carnap-type="translate"] > input {
     font-size:14px;
     height:2em;
@@ -135,6 +136,7 @@
 [data-carnap-type="truthtable"] .output,
 [data-carnap-type="countermodeler"] .output,
 [data-carnap-type="sequentchecker"] .output,
+[data-carnap-type="treedeductionchecker"] .output,
 [data-carnap-type="qualitative"] .output { 
     position:relative;
     border:1px solid #A9B7C0;
@@ -452,6 +454,7 @@ body[data-carnap-type="proofchecker"] .buttonWrapper {
 }
 
 [data-carnap-type="sequentchecker"] .buttonWrapper,
+[data-carnap-type="treedeductionchecker"] .buttonWrapper,
 [data-carnap-type="truthtable"] .buttonWrapper,
 [data-carnap-type="countermodeler"] .buttonWrapper,
 [data-carnap-type="qualitative"] .buttonWrapper {

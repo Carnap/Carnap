@@ -10,8 +10,9 @@ module Lib (genericSendJSON, sendJSON, onEnter, onKey, clearInput,
            message, IOGoal(..), updateWithValue, submissionSource,
            assignmentKey, initialize, initializeCallback, initCallbackObj,
            toCleanVal, popUpWith, spinnerSVG, doneButton, questionButton,
-           exclaimButton, expandButton, buttonWrapper, maybeNodeListToList,
-           trySubmit, inOpts, unform, rewriteWith ) where
+           exclaimButton, expandButton, createSubmitButton, buttonWrapper,
+           maybeNodeListToList, trySubmit, inOpts, unform, rewriteWith
+           ) where
 
 import Data.Aeson
 import Data.Maybe (catMaybes)
@@ -362,6 +363,21 @@ initElements getter setter = runWebGUI $ \w ->
                     [] -> return ()
                     _ -> mapM_ (setter dom) elts
 
+createSubmitButton :: Document -> (String -> IO ()) -> M.Map String String -> Element -> IO ()
+createSubmitButton w submit opts o = 
+      case M.lookup "submission" opts of
+         Just s | take 7 s == "saveAs:" -> do
+             bw <- buttonWrapper w
+             let l = Prelude.drop 7 s
+             bt <- doneButton w "Submit"
+             appendChild bw (Just bt)
+             submitter <- newListener $ liftIO $ submit l
+             addListener bt click submitter False                
+             mpar@(Just par) <- getParentNode o               
+             appendChild par (Just bw)
+             return ()
+         _ -> return ()
+
 loginCheck successMsg serverResponse  
      | serverResponse == "No User" = alert "You need to log in before you can submit anything"
      | serverResponse == "Clash"   = alert "it appears you've already successfully submitted this problem"
@@ -599,6 +615,6 @@ currentUrl = Prelude.error "currentUrl requires the GHCJS FFI"
 message s = liftIO (alert s)
 
 reloadPage :: IO ()
-reloadPage = Prelude.error "you can't reload the page without the GHCJS FFI"
+reloadPage = Prelude.error "reloadPage requires the GHCJS FFI"
 
 #endif

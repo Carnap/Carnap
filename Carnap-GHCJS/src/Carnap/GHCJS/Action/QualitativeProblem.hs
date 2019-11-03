@@ -30,8 +30,8 @@ activateQualitativeProblem w (Just (i,o,opts)) = do
             --Just "shortanswer" -> createShortAnswer w i o opts
             _  -> return ()
 
-submitQualitative :: M.Map String String -> IORef (Bool, String) -> String -> String -> EventM HTMLTextAreaElement e ()
-submitQualitative opts ref g l = do (isDone,val) <- liftIO $ readIORef ref
+submitQualitative :: M.Map String String -> IORef (Bool, String) -> String -> String -> IO ()
+submitQualitative opts ref g l = do (isDone,val) <- readIORef ref
                                     if isDone 
                                         then trySubmit Qualitative opts l (ProblemContent (pack g)) True
                                         else message "Not quite right. Try again?"
@@ -42,21 +42,11 @@ createMultipleChoice w i o opts = case M.lookup "goal" opts of
     Just g -> do
         ref <- newIORef (False,"")
         setInnerHTML i (Just g)
-        bw <- buttonWrapper w
-        case M.lookup "submission" opts of
-            Just s | take 7 s == "saveAs:" -> do
-                let l = Prelude.drop 7 s
-                bt1 <- doneButton w "Submit"
-                appendChild bw (Just bt1)
-                submit <- newListener $ submitQualitative opts ref g l
-                addListener bt1 click submit False                
-            _ -> return ()
+        createSubmitButton w (submitQualitative opts ref g) opts o
         let choices = maybe [] lines $ M.lookup "content" opts
             labeledChoices = zip (Prelude.map getLabel choices) (Prelude.map isGood choices)
         radios <- mapM (toRadio g ref) labeledChoices
         mapM_ (appendChild o . Just . fst) radios
-        Just par <- getParentNode o
-        appendChild par (Just bw)
         return ()
 
     where getLabel s = case readMaybe s :: Maybe (Int, String) of

@@ -104,7 +104,7 @@ lineBase w calc n mf mrd lineclass =
            return (theWrapper,theLine,theForm,theRule)
 
 renderTreeLemmon w calc = treeToElement asLine asSubproof
-    where asLine (n,DependentAssertLine f r deps dis scope mnum) = 
+    where asLine (n,l@(DependentAssertLine f r deps _ scope mnum)) = 
                 do [theWrapper,lineNum,theForm,theRule,theScope] <- catMaybes <$> mapM (createElement w . Just) ["div","span","span","span","span"]
                    case ndRenderer calc of
                        LemmonStyle TomassiStyle -> 
@@ -123,7 +123,7 @@ renderTreeLemmon w calc = treeToElement asLine asSubproof
                    mapM (appendChild theWrapper. Just) [theScope,lineNum,theForm,theRule]
                    return theWrapper
                    
-                where showdischarged = if dis /= [] then show dis else ""
+                where showdischarged = if discharged l /= [] then show (discharged l) else ""
 
                       showdeps = if deps /= [] then "(" ++ intercalate "," (map renderDep deps) ++ ")" else "" 
 
