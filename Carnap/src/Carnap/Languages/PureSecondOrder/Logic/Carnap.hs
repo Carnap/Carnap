@@ -53,33 +53,23 @@ instance Inference MSOLogic MonadicallySOLLex (Form Bool) where
         conclusionOf r = lowerSequent (ruleOf r)
 
         restriction (PR prems) = Just (premConstraint prems)
-        restriction SOUD       = Just (sopredicateEigenConstraint 
-                                          (liftToSequent $ SOMScheme 1) 
-                                          (ss (lall "v" (\x -> SOMCtx 1 :!$: x)))  
-                                          (somgamma 1))
-
-        restriction SOED1      = Just (sopredicateEigenConstraint
-                                          (liftToSequent $ SOMScheme 1)
-                                          (ss (lsome "v" (\x -> SOMCtx 1 :!$: x))
-                                              :-: ss phiS)
-                                          (somgamma 1 :+: somgamma 2))
-        restriction (FO UD)    = Just (eigenConstraint stau 
-                                          (ss $ lall "v" phi) 
-                                          (somgamma 1))
+        restriction SOUD = 
+            Just (sopredicateEigenConstraint (liftToSequent $ SOMScheme 1) (ss (lall "v" (\x -> SOMCtx 1 :!$: x)))  (somgamma 1))
+        restriction x | (x == SOED1) || (x == SOED2) = 
+            Just (sopredicateEigenConstraint (liftToSequent $ SOMScheme 1) (ss (lsome "v" (\x -> SOMCtx 1 :!$: x)) :-: ss phiS) (somgamma 1 :+: somgamma 2))
+        restriction (FO UD) = 
+            Just (eigenConstraint stau (ss $ lall "v" phi) (somgamma 1))
             where phi x = SOPhi 1 AOne AOne :!$: x
                   stau = liftToSequent tau
-
-        restriction (FO ED1) = Just (eigenConstraint stau 
-                                        ((ss $ lsome "v" phi) :-: ss phiS) 
-                                        (somgamma 1 :+: somgamma 2))
+        restriction x | (x == FO ED1) || (x == FO ED2) = 
+            Just (eigenConstraint stau ((ss $ lsome "v" phi) :-: ss phiS) (somgamma 1 :+: somgamma 2))
             where phi x = SOPhi 1 AOne AOne :!$: x
-                  
                   stau = liftToSequent tau
         restriction _ = Nothing
 
         indirectInference (FO x) = indirectInference x
         indirectInference x
-            | x `elem` [ SOED1, SOED1, SOUD] = Just PolyProof
+            | x `elem` [SOED1, SOED2, SOUD] = Just PolyProof
             | otherwise = Nothing
 
 parseMSOLogic :: RuntimeNaturalDeductionConfig MonadicallySOLLex (Form Bool) 
@@ -115,6 +105,7 @@ data PSOLogic = ABS_PSOL Int   | APP_PSOL Int
               | SOUD_PSOL Int  | SOED1_PSOL Int 
               | SOED2_PSOL Int | FO_PSOL FOLogic
               | PPR (Maybe [(ClassicalSequentOver PolyadicallySOLLex (Sequent (Form Bool)))])
+    deriving (Eq)
 
 instance Show PSOLogic where
         show (PPR _)        = "PR"
@@ -148,27 +139,20 @@ instance Inference PSOLogic PolyadicallySOLLex (Form Bool) where
 
         restriction (PPR prems) = Just (premConstraint prems)
 
-        restriction (SOUD_PSOL n)  = Just (psopredicateEigenConstraint 
-                                          (liftToSequent $ psolAppScheme (n - 1)) 
-                                          -- XXX would be better to use
-                                          -- contexts alone in line above
-                                          (ss' $ universalScheme n)  
-                                          (sogamma 1))
-
-        restriction (SOED1_PSOL n)  = Just (psopredicateEigenConstraint 
-                                           (liftToSequent $ psolAppScheme (n - 1)) 
-                                           (ss' $ existentialScheme n)  
-                                           (sogamma 1 :+: sogamma 2))
-
-        restriction (FO_PSOL UD)  = Just (eigenConstraint stau 
-                                        (ss' $ lall "v" phi) 
-                                        (sogamma 1))
+        restriction (SOUD_PSOL n)  = 
+            Just (psopredicateEigenConstraint (liftToSequent $ psolAppScheme (n - 1)) (ss' $ universalScheme n)  (sogamma 1))
+              -- XXX would be better to use
+              -- contexts alone in line above
+        restriction (SOED1_PSOL n) =
+            Just (psopredicateEigenConstraint (liftToSequent $ psolAppScheme (n - 1)) (ss' $ existentialScheme n)  (sogamma 1 :+: sogamma 2))
+        restriction (SOED2_PSOL n) = 
+            Just (psopredicateEigenConstraint (liftToSequent $ psolAppScheme (n - 1)) (ss' $ existentialScheme n)  (sogamma 1 :+: sogamma 2))
+        restriction (FO_PSOL UD)  = 
+            Just (eigenConstraint stau (ss' $ lall "v" phi) (sogamma 1))
             where phi x = SOPhi 1 AOne AOne :!$: x
                   stau = liftToSequent taup
-
-        restriction (FO_PSOL ED1) = Just (eigenConstraint stau 
-                                        ((ss' $ lsome "v" phi) :-: ss' phiSp) 
-                                        (sogamma 1 :+: sogamma 2))
+        restriction x | (x == FO_PSOL ED1) || (x == FO_PSOL ED2) = 
+            Just (eigenConstraint stau ((ss' $ lsome "v" phi) :-: ss' phiSp) (sogamma 1 :+: sogamma 2))
             where phi x = SOPhi 1 AOne AOne :!$: x
                   
                   stau = liftToSequent taup

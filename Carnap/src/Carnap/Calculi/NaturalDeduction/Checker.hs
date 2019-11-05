@@ -14,7 +14,7 @@ import Carnap.Calculi.NaturalDeduction.Syntax
 import Carnap.Calculi.NaturalDeduction.Parser
 import Carnap.Core.Data.Types
 import Carnap.Core.Data.Classes
-import Carnap.Core.Data.Util (rebuild)
+import Carnap.Core.Data.Util (rebuild, stateRebuild)
 import Carnap.Core.Unification.Unification
 import Carnap.Core.Unification.ACUI
 import Carnap.Calculi.Util
@@ -302,7 +302,7 @@ hoseqFromNode lineno rules prems conc =
                                         -- XXX: We use the old rhs rather than building
                                         -- a new one by substitution in order to
                                         -- preserve things like variable labelings
-                                   let subbedconc = applySub hosub (set rhs conc rconc )
+                                   let subbedconc = applySub hosub (set rhs conc rconc)
                                    let prob = (zipWith (:=:) (map (pureBNF . view lhs) subbedrule) 
                                                              (map (view lhs) prems))
                                    case evalState (acuiUnifySys (const False) prob) (0 :: Int) of
@@ -327,7 +327,7 @@ hoReduceProofTree res (Node (ProofLine no cont rules) ts) =
            -- XXX: we need to rebuild the term here to make sure that there
            -- are no unevaluated substitutions lurking inside under
            -- lambdas, with stale variables in trapped in closures.
-           return $ rebuild $ evalState (toBNF (rebuild rslt)) (0 :: Int)
+           return $ evalState (stateRebuild rslt >>= toBNF  >>= stateRebuild) (0 :: Int)
 
 hoReduceProofTreeMemo :: 
     ( Inference r lex sem
@@ -349,7 +349,7 @@ hoReduceProofTreeMemo ref res pt@(Node (ProofLine no cont rules) ts) =
                              Left olderror -> return (Left olderror)
                              Right prems -> 
                                 do let y = do errOrRslts <- hoseqFromNode no rules prems cont
-                                              return $ errOrRslts >>= Right . map (\(r,z,w) -> (rebuild $ evalState (toBNF (rebuild r)) (0 :: Int),z,w))
+                                              return $ errOrRslts >>= Right . map (\(r,z,w) -> (evalState (stateRebuild r >>= toBNF >>= stateRebuild) (0 :: Int),z,w))
                                    writeIORef ref (M.insert thehash y thememo)
                                    return $ reduceResult no $ parallelCheckResult res no $ y
 

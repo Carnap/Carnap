@@ -7,7 +7,7 @@ import Data.Maybe (catMaybes)
 import Control.Lens (toListOf,preview, Prism')
 import Text.Parsec
 import Carnap.Core.Data.Util 
-import Carnap.Core.Unification.Unification (applySub,occurs,FirstOrder, Equation)
+import Carnap.Core.Unification.Unification (applySub,occurs,FirstOrder, Equation, pureBNF)
 import Carnap.Core.Data.Classes
 import Carnap.Core.Data.Types
 import Carnap.Core.Data.Optics
@@ -86,13 +86,15 @@ eigenConstraint ::
          -> [Equation (ClassicalSequentOver lex)]
          -> Maybe String
 eigenConstraint c suc ant sub
-    | (applySub sub c) `occurs` (applySub sub ant) = Just $ "The term " ++ show (applySub sub c) ++ " appears not to be fresh, given that this line relies on " ++ show (applySub sub ant)
-    | (applySub sub c) `occurs` (applySub sub suc) = Just $ "The term " ++ show (applySub sub c) ++ " appears not to be fresh in the other premise " ++ show (applySub sub suc)
+    | (applySub sub c) `occurs` (applySub sub ant) = Just $ "The term " ++ show (applySub sub c) ++ " appears not to be fresh. "
+                                                            ++ "Check the dependencies of this inference for occurances of " ++ show (applySub sub c) ++ "."
+    | (applySub sub c) `occurs` (applySub sub suc) = Just $ "The term " ++ show (applySub sub c) ++ " appears not to be fresh. "
+                                                            ++ "Check the dependencies of this inference for occurances of " ++ show (applySub sub c) ++ "."
     | otherwise = case (applySub sub c) of 
                           _ | not . null $ preview _sfuncIdx' (applySub sub c) -> Nothing
                             | not . null $ preview _constIdx (applySub sub c) -> Nothing
                             | not . null $ preview _varLabel (applySub sub c) -> Nothing
-                          _ -> Just $ "The term " ++ show (applySub sub c) ++ " is not a constant or variable"
+                          _ -> Just $ "The term " ++ show (pureBNF $ applySub sub c) ++ " is not a constant or variable"
     where _sfuncIdx' :: PrismPolyadicSchematicFunction (ClassicalSequentLexOver lex) Int Int 
                      => Prism' (ClassicalSequentOver lex (Term Int)) (Int, Arity (Term Int) (Term Int) (Term Int))
           _sfuncIdx' = _sfuncIdx

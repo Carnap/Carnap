@@ -1,7 +1,7 @@
 {-#LANGUAGE ImpredicativeTypes, FlexibleContexts, RankNTypes,TypeOperators, ScopedTypeVariables, GADTs, MultiParamTypeClasses #-}
 
 module Carnap.Core.Data.Util (scopeHeight, equalizeTypes, incArity, withArity, checkChildren, saferSubst,
-mapover, maphead, hasVar, (:~:)(Refl), Buds(..), Blossoms(..), bloom, sbloom, grow, rebuild, castToProxy, castTo) where
+mapover, maphead, hasVar, (:~:)(Refl), Buds(..), Blossoms(..), bloom, sbloom, grow, rebuild, stateRebuild, castToProxy, castTo) where
 
 --this module defines utility functions and typeclasses for manipulating
 --the data types defined in Core.Data
@@ -131,6 +131,14 @@ rebuild (x :!$: y) = rebuild x :!$: rebuild y
 rebuild (LLam f) = LLam (\x -> subst sv x $ rebuild (f sv))
     where sv = static $ scopeHeight (LLam f)
 rebuild t = t
+
+stateRebuild :: ( FirstOrder (FixLang f) , StaticVar (FixLang f)) => FixLang f a -> State Int (FixLang f a)
+stateRebuild (x :!$: y) = (:!$:) <$> stateRebuild x <*> stateRebuild y
+stateRebuild (LLam f) = do n <- get
+                           put (n + 1)
+                           f' <- stateRebuild $ f (static n)
+                           return $ LLam (\x -> subst (static n) x f')
+stateRebuild t = return t
 
 saferSubst :: ( StaticVar (FixLang f)
               , FirstOrder (FixLang f)

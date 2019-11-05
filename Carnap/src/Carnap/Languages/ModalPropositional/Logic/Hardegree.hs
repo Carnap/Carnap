@@ -231,6 +231,7 @@ instance Inference HardegreeWTL WorldTheoryPropLexicon (Form (World -> Bool))whe
 
          restriction WTUG     = Just (eigenConstraint someWorld (SS (lall "v" $ phi 1)) (wtlgamma 1))
          restriction WTED1    = Just (eigenConstraint someWorld (SS (lsome "v" $ phi 1) :-: SS (SeqPhi 1)) (wtlgamma 1 :+: wtlgamma 2))
+         restriction WTED2    = Just (eigenConstraint someWorld (SS (lsome "v" $ phi 1) :-: SS (SeqPhi 1)) (wtlgamma 1 :+: wtlgamma 2))
          restriction _      = Nothing
 
 parseHardegreeModalProp :: Parsec String u [ModalPropRule]

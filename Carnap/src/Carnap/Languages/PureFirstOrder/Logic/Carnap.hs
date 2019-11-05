@@ -83,7 +83,7 @@ instance Inference FOLogic PureLexiconFOL (Form Bool) where
 
      restriction UD         = Just (eigenConstraint tau (SS (lall "v" $ phi' 1)) (fogamma 1))
      restriction ED1        = Just (eigenConstraint tau (SS (lsome "v" $ phi' 1) :-: SS (phin 1)) (fogamma 1 :+: fogamma 2))
-     restriction ED2        = Nothing --Since this one does not use the assumption with a fresh object
+     restriction ED2        = Just (eigenConstraint tau (SS (lsome "v" $ phi' 1) :-: SS (phin 1)) (fogamma 1 :+: fogamma 2))
      restriction (PR prems) = Just (premConstraint prems)
      restriction _          = Nothing
 

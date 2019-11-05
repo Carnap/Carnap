@@ -400,7 +400,7 @@ instance UniformlyEq (SubstitutionalVariable idx) where
 
 instance FirstOrderLex (SubstitutionalVariable idx) where
         isVarLex (SubVar _) = True
-        isVarLex (StaticVar _) = True
+        isVarLex (StaticVar _) = False
 
 instance UniformlyEq bind => UniformlyEq (Binders bind lang) where
         (Bind q) =* (Bind q') = q =* q'
