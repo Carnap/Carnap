@@ -1,7 +1,7 @@
 {-#LANGUAGE ImpredicativeTypes, FlexibleContexts, RankNTypes,TypeOperators, ScopedTypeVariables, GADTs, MultiParamTypeClasses #-}
 
 module Carnap.Core.Data.Util (scopeHeight, equalizeTypes, incArity, withArity, checkChildren, saferSubst,
-mapover, maphead, hasVar, (:~:)(Refl), Buds(..), Blossoms(..), bloom, sbloom, grow, rebuild, stateRebuild, castToProxy, castTo) where
+mapover, maphead, withHead, hasVar, (:~:)(Refl), Buds(..), Blossoms(..), bloom, sbloom, grow, rebuild, stateRebuild, castToProxy, castTo) where
 
 --this module defines utility functions and typeclasses for manipulating
 --the data types defined in Core.Data
@@ -96,6 +96,10 @@ this function will, given a suitably polymorphic argument `f`, apply `f` to the 
 maphead :: (forall a. Typeable a => FixLang l a -> FixLang l a) -> FixLang l b -> FixLang l b
 maphead f le@(x :!$: y) = maphead f x :!$: y
 maphead f x@(Fx _) = f x
+
+withHead :: (forall a. Typeable a => FixLang l a -> c) -> FixLang l b -> c
+withHead f le@(x :!$: y) = withHead f x
+withHead f x@(Fx _) = f x
 
 {-|
 this function will, given a suitably polymorphic argument `f`, apply `f` to the children of the linguistic expression `le`, but not the head.

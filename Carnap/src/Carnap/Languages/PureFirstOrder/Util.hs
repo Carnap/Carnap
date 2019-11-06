@@ -272,7 +272,22 @@ instance ( FirstOrderLex (b (FixLang (OpenLexiconPFOL b)))
                        ) => Traversal' (FixLang (OpenLexiconPFOL b) (Form Bool)) (FixLang (OpenLexiconPFOL b) (Term Int))
               terms = genChildren
 
-instance {-# OVERLAPPABLE #-} FirstOrderLex (b (FixLang (OpenLexiconPFOL b))) => ToSchema (OpenLexiconPFOL b) (Term Int) where
+instance HasLiterals (OpenLexiconPFOL a) Bool where
+    isAtom a | (a ^? _propIndex) /= Nothing = True
+             | otherwise = withHead (\h -> not . null $ h ^? _predIdx') a
+        where _predIdx' :: Typeable ret => Prism' (OpenLanguagePFOL b ret) (Int, Arity (Term Int) (Form Bool) ret) 
+              _predIdx' = _predIdx
+
+instance {-# OVERLAPS #-} HasLiterals PureLexiconFOL Bool where
+    isAtom a | (a ^? _propIndex) /= Nothing = True
+             | (a ^? binaryOpPrism _termEq') /= Nothing = True
+             | otherwise = withHead (\h -> not . null $ h ^? _predIdx') a
+        where _predIdx' :: Typeable ret => Prism' (PureLanguageFOL ret) (Int, Arity (Term Int) (Form Bool) ret) 
+              _predIdx' = _predIdx
+              _termEq' :: Prism' (PureLanguageFOL (Term Int -> Term Int -> Form Bool)) ()
+              _termEq' = _termEq
+
+instance FirstOrderLex (b (FixLang (OpenLexiconPFOL b))) => ToSchema (OpenLexiconPFOL b) (Term Int) where
     toSchema = id
 
 instance {-# OVERLAPS #-} ToSchema PureLexiconFOL (Term Int) where
@@ -281,3 +296,4 @@ instance {-# OVERLAPS #-} ToSchema PureLexiconFOL (Term Int) where
               trans = id & outside (_funcIdx') .~ (\(n,a) -> spfn n a)
               _funcIdx' :: Typeable ret => Prism' (FixLang PureLexiconFOL ret) (Int, Arity (Term Int) (Term Int) ret) 
               _funcIdx' = _funcIdx
+
