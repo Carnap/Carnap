@@ -1,15 +1,16 @@
-{-# LANGUAGE RankNTypes, FlexibleContexts #-}
+{-# LANGUAGE RankNTypes, FlexibleContexts, ScopedTypeVariables #-}
 module Carnap.GHCJS.Action.Translate (translateAction) where
 
 import Lib
 import Carnap.Calculi.NaturalDeduction.Syntax (NaturalDeductionCalc(..))
-import Carnap.Core.Data.Types (FixLang, Form)
+import Carnap.Core.Data.Optics (genChildren)
+import Carnap.Core.Data.Types (FixLang, Form, BoundVars)
 import Carnap.Languages.PurePropositional.Logic (ofPropSys)
 import Carnap.Languages.PureFirstOrder.Logic (ofFOLSys)
 import Carnap.Languages.PureFirstOrder.Parser (folFormulaParser)
 import Carnap.Languages.PureFirstOrder.Util (toDenex, pnfEquiv)
 import Carnap.Languages.PurePropositional.Parser (purePropFormulaParser,standardLetters)
-import Carnap.Languages.PurePropositional.Util (isEquivTo, isDNF, isCNF, HasLiterals)
+import Carnap.Languages.PurePropositional.Util (isEquivTo, isDNF, isCNF, HasLiterals(..))
 import Carnap.Languages.Util.LanguageClasses
 import Carnap.GHCJS.SharedTypes
 import Carnap.GHCJS.SharedFunctions
@@ -17,15 +18,18 @@ import Data.IORef
 import qualified Data.Map as M
 import Data.Text (pack,Text)
 import Text.Parsec 
+import Text.Read (readMaybe)
+import Data.Maybe (catMaybes)
 import GHCJS.DOM
 import GHCJS.DOM.Types hiding (Text)
-import GHCJS.DOM.Element
+import GHCJS.DOM.Element hiding (drop)
 import GHCJS.DOM.HTMLInputElement (HTMLInputElement, setValue, getValue,castToHTMLInputElement)
 import GHCJS.DOM.Document (Document,createElement, getBody, getDefaultView)
 import GHCJS.DOM.Node (appendChild, getParentNode, insertBefore)
 import GHCJS.DOM.KeyboardEvent
 import GHCJS.DOM.EventM
 import Control.Monad.IO.Class (MonadIO, liftIO)
+import Control.Lens (Prism', toListOf, cosmos, Fold, filtered)
 
 translateAction :: IO ()
 translateAction = initElements getTranslates activateTranslate
@@ -78,15 +82,56 @@ activateTranslate w (Just (i,o,opts)) = do
                   _ -> print "translation was missing an option"
 activateChecker _ Nothing  = return ()
 
-propTests :: (PrismBooleanConnLex lex sem, HasLiterals lex sem) =>
+propTests :: forall sem lex . (PrismBooleanConnLex lex sem, HasLiterals lex sem, BoundVars lex) =>
     [String] -> UnaryTest lex (Form sem)
-propTests testlist f = mconcat $ map ($ f) theTests
+propTests testlist f = case catMaybes $ map ($ f) theTests of 
+                            [] -> Nothing
+                            s:ss -> Just $ "Looks like " ++ (foldl (\x y -> x ++ ", and " ++ y) s ss) ++ "."
     where theTests = map toTest testlist
           toTest "CNF" submission | isCNF submission = Nothing
-                                  | otherwise = Just "Looks like this submission is not in Conjunctive Normal Form"
+                                  | otherwise = Just "this submission is not in Conjunctive Normal Form"
           toTest "DNF" submission | isDNF submission = Nothing
-                                  | otherwise = Just "Looks like this submission is not in Disjunctive Normal Form"
+                                  | otherwise = Just "this submission is not in Disjunctive Normal Form"
+          toTest max submission   | take 7 max == "maxNeg:"  = maxWith 7 max (retype _not') "negations" submission
+                                  | take 7 max == "maxAnd:"  = maxWith 7 max (retype _and') "conjunctions" submission
+                                  | take 7 max == "maxIff:"  = maxWith 7 max (retype _iff') "biconditionals" submission
+                                  | take 6 max == "maxIf:"   = maxWith 6 max (retype _if') "conditionals" submission
+                                  | take 6 max == "maxOr:"   = maxWith 6 max (retype _or') "disjunctions" submission
+                                  | take 7 max == "maxCon:"  = maxWith 7 max (cosmos . _nonAtom) "connectives" submission
+                                  | take 8 max == "maxAtom:" = maxWith 8 max (cosmos . _atom) "atomic sentences" submission
           toTest _ _ = Nothing
+
+          countFold p = length . toListOf p
+          retype p = genChildren . cosmos . p
+
+          maxWith len tag p label submission = 
+                do n <- readMaybe (drop len tag)
+                   let occurs = countFold p submission
+                   if occurs > n 
+                   then Just $ "you have " ++ show occurs ++ " " ++ label ++ ", but should have "
+                             ++ show n ++ " at most"
+                   else Nothing
+
+          _not' :: Prism' (FixLang lex (Form sem -> Form sem)) ()
+          _not' = _not
+
+          _nonAtom :: Fold (FixLang lex (Form sem)) (FixLang lex (Form sem))
+          _nonAtom = filtered (not . isAtom)
+
+          _atom :: Fold (FixLang lex (Form sem)) (FixLang lex (Form sem))
+          _atom = filtered isAtom
+
+          _if' :: Prism' (FixLang lex (Form sem -> Form sem -> Form sem)) ()
+          _if' = _if :: Prism' (FixLang lex (Form sem -> Form sem -> Form sem)) ()
+
+          _or' :: Prism' (FixLang lex (Form sem -> Form sem -> Form sem)) ()
+          _or' = _or :: Prism' (FixLang lex (Form sem -> Form sem -> Form sem)) ()
+
+          _iff' :: Prism' (FixLang lex (Form sem -> Form sem -> Form sem)) ()
+          _iff' = _iff :: Prism' (FixLang lex (Form sem -> Form sem -> Form sem)) ()
+
+          _and' :: Prism' (FixLang lex (Form sem -> Form sem -> Form sem)) ()
+          _and' = _and :: Prism' (FixLang lex (Form sem -> Form sem -> Form sem)) ()
 
 tryTrans :: Eq (FixLang lex sem) => 
     Parsec String () (FixLang lex sem) -> BinaryTest lex sem -> UnaryTest lex sem

@@ -1,4 +1,4 @@
-{-# LANGUAGE FlexibleContexts, TypeSynonymInstances, FlexibleInstances, MultiParamTypeClasses #-}
+{-# LANGUAGE ScopedTypeVariables, FlexibleContexts, RankNTypes, TypeSynonymInstances, FlexibleInstances, MultiParamTypeClasses #-}
 module Carnap.Languages.PurePropositional.Util 
 (showClean,isValid, isEquivTo, toSchema, getIndicies, getValuations,
 isBooleanBinary, isBooleanUnary, isBoolean, isAtom, HasLiterals(..), isCNF,
@@ -13,6 +13,7 @@ import Carnap.Languages.Util.LanguageClasses
 import Control.Lens
 import Data.Maybe
 import Data.List
+import Data.Typeable (Typeable)
 
 --------------------------------------------------------
 --1. Show Clean

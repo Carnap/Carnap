@@ -296,4 +296,3 @@ instance {-# OVERLAPS #-} ToSchema PureLexiconFOL (Term Int) where
               trans = id & outside (_funcIdx') .~ (\(n,a) -> spfn n a)
               _funcIdx' :: Typeable ret => Prism' (FixLang PureLexiconFOL ret) (Int, Arity (Term Int) (Term Int) ret) 
               _funcIdx' = _funcIdx
-
