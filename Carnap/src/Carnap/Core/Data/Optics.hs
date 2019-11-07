@@ -28,10 +28,13 @@ genChildren g phi@(q :!$: LLam (h :: FixLang f t -> FixLang f t')) =
                        where bv = scopeUniqueVar q (LLam h)
                              abstractBv f x = subBoundVar bv x f
                              modify h = abstractBv <$> genChildren g (h bv)
-genChildren g phi@(h :!$: (t1 :: FixLang f tt)) =
-                   case ( eqT :: Maybe (tt :~: a)
-                        ) of (Just Refl) -> genChildren g h .*$. g t1
-                             _ -> genChildren g h .*$. genChildren g t1
+genChildren g phi@(h :!$: (t :: FixLang f tt)) =
+                   case ( eqT :: Maybe ((tt -> b) :~: a)
+                        , eqT :: Maybe (tt:~: a)
+                        ) of (Nothing, Just Refl)  -> genChildren g h .*$. g t
+                             (Just Refl, Nothing)  -> g h .*$. genChildren g t
+                             --XXX: missing care is rule out by occurs check
+                             _    -> genChildren g h .*$. genChildren g t
 genChildren g phi = pure phi
 
 instance (BoundVars f, Typeable a)  => Plated (FixLang f a) where
