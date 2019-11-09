@@ -229,7 +229,7 @@ prepareModelUI w fs (i,o) mdl bw opts = do
           things = parseInt `sepEndBy1` (spaces *> char ',' <* spaces)
 
 appendRelationInputs :: Document -> Element -> [PureFOLForm] -> IORef PolyadicModel -> IO ()
-appendRelationInputs w o fs mdl = do let sfs = nub . concatMap (map blankTerms . toListOf cosmos) $ fs
+appendRelationInputs w o fs mdl = do let sfs = nub . concatMap (map blankTerms . universe) $ fs
                                      mapM_ appendRelationInput sfs
     where appendRelationInput f = do minput <- getRelationInput w f mdl
                                      case minput of 
@@ -237,7 +237,7 @@ appendRelationInputs w o fs mdl = do let sfs = nub . concatMap (map blankTerms .
                                         Just input -> appendChild o (Just input)
 
 appendFunctionInputs :: Document -> Element -> [PureFOLTerm] -> IORef PolyadicModel -> IO ()
-appendFunctionInputs w o fs mdl = do let sfs = nub . concatMap (map blankFuncTerms . toListOf cosmos) $ fs
+appendFunctionInputs w o fs mdl = do let sfs = nub . concatMap (map blankFuncTerms . universe) $ fs
                                      mapM_ appendFunctionInput sfs
     where appendFunctionInput f = do minput <- getFunctionInput w f mdl
                                      case minput of 
@@ -245,7 +245,7 @@ appendFunctionInputs w o fs mdl = do let sfs = nub . concatMap (map blankFuncTer
                                         Just input -> appendChild o (Just input)
 
 appendConstantInputs :: Document -> Element -> [PureFOLTerm] -> IORef PolyadicModel -> IO ()
-appendConstantInputs w o ts mdl = do let sts = nub . concatMap (toListOf cosmos) $ ts
+appendConstantInputs w o ts mdl = do let sts = nub . concatMap universe $ ts
                                      mapM_ appendConstantInput sts
     where appendConstantInput t = do minput <- getConstInput w t mdl
                                      case minput of 
@@ -253,7 +253,7 @@ appendConstantInputs w o ts mdl = do let sts = nub . concatMap (toListOf cosmos)
                                         Just input -> appendChild o (Just input)
 
 appendPropInputs :: Document -> Element -> [PureFOLForm] -> IORef PolyadicModel -> IO ()
-appendPropInputs w o fs mdl = do let sfs = nub . concatMap (toListOf cosmos) $ fs
+appendPropInputs w o fs mdl = do let sfs = nub . concatMap universe $ fs
                                  mapM_ appendPropInput sfs
     where appendPropInput t = do minput <- getPropInput w t mdl
                                  case minput of 
@@ -457,11 +457,11 @@ validateModel fields = do inputs <- catMaybes . concat <$> mapM (\f -> getListOf
                                           let funcInputs = map fst . filter (\f -> snd f == Just "functionInput") $ zip inputs classes
                                           funcStrings <- mapM (getValue . castToHTMLTextAreaElement) funcInputs
                                           allStrings <- mapM (getValue . castToHTMLTextAreaElement) inputs
-                                          let allContents = zip (map (parse extractor "" . clean) (catMaybes allStrings)) names
+                                          let allAllegedThings = zip (map (parse extractor "" . clean) (catMaybes allStrings)) names
                                           let funcContents = map (validate things) (catMaybes funcStrings)
-                                          case filter (isLeft . fst) allContents of
+                                          case filter (isLeft . fst) allAllegedThings of
                                               (Left err,Just n):_ -> return $ Left $ "Couldn't read specification for " ++ n ++ ": " ++ show err
-                                              [] -> case filter (\(Right ext,_) -> not (ext `subset` things)) allContents of
+                                              [] -> case filter (\(Right ext,_) -> not (ext `subset` things)) allAllegedThings of
                                                    (_,Just n):_ -> return $ Left $ "The extension of " ++ n ++ " is not contained in the domain."
                                                    [] -> if not . and . map isRight $ funcContents then return . head . filter isLeft $ funcContents
                                                                                                    else return $ Right ()
@@ -470,6 +470,11 @@ validateModel fields = do inputs <- catMaybes . concat <$> mapM (\f -> getListOf
     where clean (',':xs) = ' ':clean xs
           clean ('[':xs) = ' ':clean xs
           clean (']':xs) = ' ':clean xs
+          clean ('(':xs) = ' ':clean xs
+          clean (')':xs) = ' ':clean xs
+          clean ('<':xs) = ' ':clean xs
+          clean ('>':xs) = ' ':clean xs
+          clean (';':xs) = ' ':clean xs
           clean (y:ys) = y:clean ys
           clean [] = []
           extractor = spaces *> (parseInt `sepEndBy` spaces) <* spaces
@@ -516,13 +521,18 @@ blankFuncTerms f = set termsOf (foVar "_") f
 parseInt :: Parsec String () Thing
 parseInt = Term . read <$> many1 digit
 
+wrappedIn :: Char -> Char -> Parsec String () a -> Parsec String () a
+wrappedIn l r p = char l *> spaces *> p <* spaces <* char r
+
 tuple :: Parsec String () [Thing]
-tuple = char '[' *> spaces *> (parseInt `sepBy` (spaces *> char ',' <* spaces)) <* spaces <* char ']'
+tuple = wrappedIn '[' ']' p <|> wrappedIn '<' '>' p <|> wrappedIn '(' ')' p <|> ((\x->[x]) <$> parseInt)
+    where p = parseInt `sepBy` (spaces *> char ',' <* spaces)
 
 functuple :: Parsec String () [Thing]
-functuple = do args <- char '[' *> spaces *> parseInt `sepBy` (spaces *> char ',' <* spaces)
-               val <- spaces *> char ';' *> spaces *> parseInt <* spaces <* char ']'
-               return (args ++ [val])
+functuple = wrappedIn '[' ']' p <|> wrappedIn '<' '>' p <|> wrappedIn '(' ')' p
+    where p = do args <- parseInt `sepBy` (spaces *> char ',' <* spaces)
+                 val <- spaces *> char ';' *> spaces *> parseInt
+                 return (args ++ [val])
 
 ntuple :: Int -> Parsec String () [Thing]
 ntuple n = do t <- tuple; if length t == n then return t else fail ("This extension should be made only of " ++ show n ++ "-tuples")
