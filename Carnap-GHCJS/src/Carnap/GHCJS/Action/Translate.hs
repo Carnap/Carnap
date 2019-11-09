@@ -4,11 +4,12 @@ module Carnap.GHCJS.Action.Translate (translateAction) where
 import Lib
 import Carnap.Calculi.NaturalDeduction.Syntax (NaturalDeductionCalc(..))
 import Carnap.Core.Data.Optics (genChildren)
-import Carnap.Core.Data.Types (FixLang, Form, BoundVars)
+import Carnap.Core.Data.Types (FixLang, Form, BoundVars, FirstOrderLex)
 import Carnap.Languages.PurePropositional.Logic (ofPropSys)
+import Carnap.Languages.PureFirstOrder.Syntax (PureFirstOrderLexWith)
 import Carnap.Languages.PureFirstOrder.Logic (ofFOLSys)
 import Carnap.Languages.PureFirstOrder.Parser (folFormulaParser)
-import Carnap.Languages.PureFirstOrder.Util (toDenex, pnfEquiv)
+import Carnap.Languages.PureFirstOrder.Util (toDenex, isPNF, pnfEquiv)
 import Carnap.Languages.PurePropositional.Parser (purePropFormulaParser,standardLetters)
 import Carnap.Languages.PurePropositional.Util (isEquivTo, isDNF, isCNF, HasLiterals(..))
 import Carnap.Languages.Util.LanguageClasses
@@ -48,7 +49,7 @@ activateTranslate w (Just (i,o,opts)) = do
                 where formParser = case mparser >>= ofPropSys ndParseForm of
                                        Nothing -> purePropFormulaParser standardLetters
                                        Just theParser -> theParser
-            (Just "first-order", mparser) -> activateWith formParser folChecker (propTests testlist)
+            (Just "first-order", mparser) -> activateWith formParser folChecker (folTests testlist)
                 where formParser = case mparser >>= ofFOLSys ndParseForm of
                                        Nothing -> folFormulaParser
                                        Just theParser -> theParser 
@@ -82,11 +83,26 @@ activateTranslate w (Just (i,o,opts)) = do
                   _ -> print "translation was missing an option"
 activateChecker _ Nothing  = return ()
 
-propTests :: forall sem lex . (PrismBooleanConnLex lex sem, HasLiterals lex sem, BoundVars lex) =>
-    [String] -> UnaryTest lex (Form sem)
+folTests :: forall lex . 
+     ( FirstOrderLex (lex (FixLang (PureFirstOrderLexWith lex)))
+     , HasLiterals (PureFirstOrderLexWith lex) Bool
+     ) => [String] -> UnaryTest (PureFirstOrderLexWith lex) (Form Bool)
+folTests testlist f = case catMaybes $ map ($ f) theTests of 
+                            [] -> Nothing
+                            s:ss -> Just $ foldl (\x y -> x ++ ", and " ++ y) s ss
+    where theTests = map toTest testlist ++ [propTests testlist]
+          toTest "PNF" submission | isPNF submission = Nothing
+                                  | otherwise = Just "this submission is not in Prenex Normal Form"
+          toTest _ _ = Nothing
+
+propTests :: forall sem lex . 
+    ( PrismBooleanConnLex lex sem
+    , HasLiterals lex sem
+    , BoundVars lex
+    ) => [String] -> UnaryTest lex (Form sem)
 propTests testlist f = case catMaybes $ map ($ f) theTests of 
                             [] -> Nothing
-                            s:ss -> Just $ "Looks like " ++ (foldl (\x y -> x ++ ", and " ++ y) s ss) ++ "."
+                            s:ss -> Just $ foldl (\x y -> x ++ ", and " ++ y) s ss
     where theTests = map toTest testlist
           toTest "CNF" submission | isCNF submission = Nothing
                                   | otherwise = Just "this submission is not in Conjunctive Normal Form"
@@ -142,7 +158,7 @@ tryTrans parser equiv tests o ref fs = onEnter $
                    case parse (spaces *> parser) "" ival of
                          Right f -> liftIO $ case tests f of
                                                   Nothing -> checkForm f
-                                                  Just msg -> writeIORef ref False >> message msg
+                                                  Just msg -> writeIORef ref False >> message ("Looks like " ++ msg ++ ".")
                          Left e -> message "Sorry, try again---that formula isn't gramatical."
    where checkForm f' 
             | f' `elem` fs = do message "perfect match!"

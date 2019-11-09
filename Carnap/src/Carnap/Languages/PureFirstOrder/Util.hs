@@ -1,5 +1,8 @@
 {-# LANGUAGE FlexibleContexts, TypeSynonymInstances, FlexibleInstances, MultiParamTypeClasses, UndecidableInstances #-}
-module Carnap.Languages.PureFirstOrder.Util (propForm, boundVarOf, toPNF, pnfEquiv, toAllPNF, toDenex, stepDenex, skolemize, orientEquations, comparableMatricies, universalClosure) where
+module Carnap.Languages.PureFirstOrder.Util 
+(propForm, boundVarOf, toPNF, pnfEquiv, toAllPNF, toDenex, stepDenex,
+skolemize, orientEquations, comparableMatricies, universalClosure,
+quantFree, isPNF) where
 
 import Carnap.Core.Data.Classes
 import Carnap.Core.Unification.Unification
@@ -17,6 +20,11 @@ import Data.Typeable (Typeable)
 import Data.Maybe
 import Data.List
 
+-----------------------
+--1 Transformations  --
+-----------------------
+
+
 propForm f = evalState (propositionalize f) []
     where propositionalize = nonBoolean
             & outside (binaryOpPrism _and) .~ (\(x,y) -> land <$> propositionalize x <*> propositionalize y)
@@ -32,10 +40,6 @@ propForm f = evalState (propositionalize f) []
                                    Just n -> return (pn n)
                                    Nothing -> put (abbrev ++ [form]) >> return (pn $ length abbrev)
                                     
-boundVarOf v f = case preview  _varLabel v >>= subBinder f of
-                            Just f' -> show f' == show f
-                            Nothing -> False 
-
 toPNF = canonical . rewrite stepPNF
 
 --rebuild at each step to remove dummy variables lingering in closures
@@ -252,6 +256,38 @@ universalClosure f = case varsOf f of
                          ls -> foldl bindIn f ls 
     where bindIn f v = lall (show v) $ \x -> subBoundVar v x f
           varsOf f = map foVar $ toListOf (termsOf . cosmos . _varLabel) f
+
+----------------
+--  2. Tests  --
+----------------
+
+boundVarOf v f = case preview  _varLabel v >>= subBinder f of
+                            Just f' -> show f' == show f
+                            Nothing -> False 
+
+isPNF :: FirstOrderLex (a (FixLang (PureFirstOrderLexWith a))) => FixLang (PureFirstOrderLexWith a) (Form Bool) -> Bool
+isPNF = quantFree
+          & outside (unaryOpPrismOn _all') .~ const True
+          & outside (unaryOpPrismOn _some') .~ \(_,LLam f) -> isPNF $ f (static 0)
+    where _all' :: Prism' (FixLang (PureFirstOrderLexWith a) ((Term Int -> Form Bool) -> Form Bool)) String
+          _all' = _all
+          _some' :: Prism' (FixLang (PureFirstOrderLexWith a) ((Term Int -> Form Bool) -> Form Bool)) String
+          _some' = _some
+
+quantFree :: FirstOrderLex (a (FixLang (PureFirstOrderLexWith a))) => FixLang (PureFirstOrderLexWith a) (Form Bool) -> Bool
+quantFree = all notQuant . children
+    where notQuant = const True
+              & outside (unaryOpPrismOn _all') .~ const False
+              & outside (unaryOpPrismOn _some') .~ const False
+
+          _all' :: Prism' (FixLang (PureFirstOrderLexWith a) ((Term Int -> Form Bool) -> Form Bool)) String
+          _all' = _all
+          _some' :: Prism' (FixLang (PureFirstOrderLexWith a) ((Term Int -> Form Bool) -> Form Bool)) String
+          _some' = _some
+
+------------------
+--  3. Classes  --
+------------------
 
 --- XXX: This shouldn't require so many annotations. Doesn't need them in
 --GHCi 8.4.2, and probably not in GHC 8.4.2 generally.

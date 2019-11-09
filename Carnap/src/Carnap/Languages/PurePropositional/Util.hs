@@ -1,7 +1,7 @@
 {-# LANGUAGE ScopedTypeVariables, FlexibleContexts, RankNTypes, TypeSynonymInstances, FlexibleInstances, MultiParamTypeClasses #-}
 module Carnap.Languages.PurePropositional.Util 
 (showClean,isValid, isEquivTo, toSchema, getIndicies, getValuations,
-isBooleanBinary, isBooleanUnary, isBoolean, isAtom, HasLiterals(..), isCNF,
+isBooleanBinary, isBooleanUnary, isBoolean, HasLiterals(..), isCNF,
 isDNF, conjunctiveClause, disjunctiveClause) 
 where
 
