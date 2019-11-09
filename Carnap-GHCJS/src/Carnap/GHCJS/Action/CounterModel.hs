@@ -317,6 +317,7 @@ getRelationInput w f mdl = case addRelation f mdl [] of
                                          (relationInput,parseWarn) <- parsingInput w (ntuples n) relationUpdater
                                          setAttribute relationInput "name" (show (blankTerms f))
                                          setAttribute relationInput "rows" "1"
+                                         setAttribute relationInput "class" "relationInput"
                                          appendChild relationLabel (Just relationInput)
                                          appendChild relationLabel (Just parseWarn)
                                          return $ Just relationLabel
@@ -445,26 +446,33 @@ makeGivens opts = case M.lookup "content" opts of
 validateModel :: [Element] -> IO (Either String ())
 validateModel fields = do inputs <- catMaybes . concat <$> mapM (\f -> getListOfElementsByTag f "textarea") fields
                           names <- mapM (\i -> getAttribute i "name") inputs
-                          let [domain] = map fst . filter (\f -> snd f == Just "Domain") $ zip inputs names
+                          let namedInputs = zip inputs names
+                              [domain] = map fst . filter (\(x,y) -> y == Just "Domain") $ namedInputs
+                              namedSymbols = filter (\(x,y) -> y /= Just "Domain") $ namedInputs
                           Just domainString <- getValue (castToHTMLTextAreaElement domain)
-                          case parse (parseInt `sepEndBy1` (spaces *> char ',' <* spaces)) "" domainString of
+                          case parse (parseInt `sepEndBy1` (spaces *> char ',' <* spaces) <* eof) "" domainString of
                               Left e -> return $ Left $ "Couldn't read domain specification: " ++ show e
                               Right things -> do
                                   if null things 
                                       then return $ Left "The domain cannot be empty"
                                       else do
-                                          classes <- mapM (\i -> getAttribute i "class") inputs
-                                          let funcInputs = map fst . filter (\f -> snd f == Just "functionInput") $ zip inputs classes
-                                          funcStrings <- mapM (getValue . castToHTMLTextAreaElement) funcInputs
-                                          allStrings <- mapM (getValue . castToHTMLTextAreaElement) inputs
+                                          namedClassedSymbols <- mapM (\(e,n) -> (,,) <$> pure e <*> pure n <*> getAttribute e "class") namedSymbols
+                                          let funcInputs = filter (\(e,n,c) -> c == Just "functionInput") $ namedClassedSymbols
+                                              relInputs = filter (\(e,n,c) -> c == Just "relationInput") $ namedClassedSymbols
+                                              getText = getValue . castToHTMLTextAreaElement
+                                          funcStrings <- mapM (\(e,n,_) -> (,,) <$> getText e <*> getBlanks n <*> pure n) funcInputs
+                                          relStrings  <- mapM (\(e,n,_) -> (,,) <$> getText e <*> getBlanks n <*> pure n) relInputs
+                                          allStrings <- mapM getText inputs
                                           let allAllegedThings = zip (map (parse extractor "" . clean) (catMaybes allStrings)) names
-                                          let funcContents = map (validate things) (catMaybes funcStrings)
+                                              funcChecks = map (validateFunc things) funcStrings
+                                              relChecks = map (validateRel things) relStrings
+                                              checks = filter isLeft $ funcChecks ++ relChecks
                                           case filter (isLeft . fst) allAllegedThings of
                                               (Left err,Just n):_ -> return $ Left $ "Couldn't read specification for " ++ n ++ ": " ++ show err
                                               [] -> case filter (\(Right ext,_) -> not (ext `subset` things)) allAllegedThings of
                                                    (_,Just n):_ -> return $ Left $ "The extension of " ++ n ++ " is not contained in the domain."
-                                                   [] -> if not . and . map isRight $ funcContents then return . head . filter isLeft $ funcContents
-                                                                                                   else return $ Right ()
+                                                   [] -> if null checks then return $ Right () 
+                                                                        else return . head . filter isLeft $ checks
 
                        
     where clean (',':xs) = ' ':clean xs
@@ -477,15 +485,24 @@ validateModel fields = do inputs <- catMaybes . concat <$> mapM (\f -> getListOf
           clean (';':xs) = ' ':clean xs
           clean (y:ys) = y:clean ys
           clean [] = []
+          getBlanks (Just n) = pure . length . filter (== '_') $ n
+          getBlanks Nothing = Prelude.error "issue with getting the number of blanks in a name"
           extractor = spaces *> (parseInt `sepEndBy` spaces) <* spaces
           subset (x:xs) y = x `elem` y && xs `subset` y
           subset [] y = True
-          validate domain funcstring = case parse (functuple `sepEndBy` (spaces *> char ',' <* spaces)) "" funcstring of
-                Left e -> Left $ "Couldn't read one of the function specifications: " ++ show e
-                Right tups | null tups -> Left "a function is unspecified"
-                           | not . properList . map init $ tups -> Left "a function has more than one value specified for some input"
+          validateRel domain (_,_,Nothing) = Left $ "Couldn't get one of the relation specifications."
+          validateRel domain (Nothing,_,Just n) = Left $ "Couldn't get the relation specification for " ++ n ++ "."
+          validateRel domain (Just relstring,arity,Just n) = case parse (ntuples arity) "" relstring of
+                Left e -> Left $ "Couldn't read the relation specification for " ++ n ++ ": " ++ show e
+                Right _ -> Right ()
+          validateFunc domain (_,_,Nothing) = Left $ "Couldn't get one of the function specifications."
+          validateFunc domain (Nothing,_,Just n) = Left $ "Couldn't get the function specification for " ++ n ++" ."
+          validateFunc domain (Just funcstring,arity, Just n) = case parse (nfunctuples (arity + 1)) "" funcstring of
+                Left e -> Left $ "Couldn't read the function specification for " ++ n ++ ": " ++ show e
+                Right tups | null tups -> Left $ "the function " ++ n ++ " is unspecified"
+                           | not . properList . map init $ tups -> Left $ "the function " ++ n ++ " has more than one value specified for some input"
                            | let fdom = map init tups in sort fdom == sort (length (head fdom) `tuplesOn` domain) -> Right ()
-                           | otherwise -> Left "a function does not have a value specified for some input"
+                           | otherwise -> Left $ "the function " ++ n ++ " does not have a value specified for some input"
           properList [] = True
           properList (x:xs) = not (x `elem` xs) && properList xs
           tuplesOn 0 dom = []
@@ -541,7 +558,7 @@ nfunctuple :: Int -> Parsec String () [Thing]
 nfunctuple n = do t <- functuple; if length t == n then return t else fail ("This extension should be made only of " ++ show n ++ "-tuples")
 
 ntuples :: Int -> Parsec String () [[Thing]]
-ntuples n = ntuple n `sepEndBy` (spaces *> char ',' <* spaces)
+ntuples n = ntuple n `sepEndBy` (spaces *> char ',' <* spaces) <* eof
 
 nfunctuples :: Int -> Parsec String () [[Thing]]
-nfunctuples n = nfunctuple n `sepEndBy` (spaces *> char ',' <* spaces)
+nfunctuples n = nfunctuple n `sepEndBy` (spaces *> char ',' <* spaces) <* eof
