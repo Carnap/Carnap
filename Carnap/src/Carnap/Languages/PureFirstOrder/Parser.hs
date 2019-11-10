@@ -13,7 +13,8 @@ import Carnap.Languages.PureFirstOrder.Syntax
 import Carnap.Languages.Util.LanguageClasses (BooleanLanguage, BooleanConstLanguage, StandardVarLanguage, IndexedPropLanguage(..), QuantLanguage(..))
 import Carnap.Languages.Util.GenericParsers
 import Carnap.Languages.PurePropositional.Parser
-import Carnap.Languages.PurePropositional.Util
+import Carnap.Languages.PurePropositional.Util (isBoolean)
+import Carnap.Languages.PureFirstOrder.Util (isOpenFormula)
 import Text.Parsec
 import Text.Parsec.Expr
 import Control.Monad.Identity
@@ -29,6 +30,7 @@ data FirstOrderParserOptions lex u m = FirstOrderParserOptions
                                          , functionParser :: Maybe (ParsecT String u m (FixLang lex (Term Int)) 
                                             -> ParsecT String u m (FixLang lex (Term Int)))
                                          , hasBooleanConstants :: Bool
+                                         , finalValidation :: FixLang lex (Form Bool) -> ParsecT String u m ()
                                          , parenRecur :: FirstOrderParserOptions lex u m
                                             -> (FirstOrderParserOptions lex u m -> ParsecT String u m (FixLang lex (Form Bool))) 
                                             -> ParsecT String u m (FixLang lex (Form Bool))
@@ -49,13 +51,14 @@ standardFOLParserOptions = FirstOrderParserOptions
                          , hasBooleanConstants = False
                          , parenRecur = \opt recurWith  -> parenParser (recurWith opt)
                          , opTable = standardOpTable
+                         , finalValidation = const (pure ())
                          }
 
 --These should mirror the way that show values look, since this will be
 --used in the read instance
 maximalFOLParserOptions :: FirstOrderParserOptions PureLexiconFOL u Identity
 maximalFOLParserOptions = FirstOrderParserOptions 
-                         { atomicSentenceParser = \x -> parsePredicateSymbol "ABCDEFGHIJKLMNOPQRSTUVWXYZ" x
+                         { atomicSentenceParser = \x -> try (parsePredicateSymbol "ABCDEFGHIJKLMNOPQRSTUVWXYZ" x)
                                                         <|> try (parseSchematicPredicateSymbol x)
                                                         <|> try schemevarParser
                                                         <|> sentenceLetterParser "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -67,6 +70,7 @@ maximalFOLParserOptions = FirstOrderParserOptions
                          , hasBooleanConstants = True
                          , parenRecur = \opt recurWith  -> parenParser (recurWith opt)
                          , opTable = standardOpTable
+                         , finalValidation = const (pure ())
                          }
 
 simplePolyadicFOLParserOptions :: FirstOrderParserOptions PureLexiconPFOL u Identity
@@ -80,6 +84,7 @@ simplePolyadicFOLParserOptions = FirstOrderParserOptions
                          , hasBooleanConstants = False
                          , parenRecur = \opt recurWith  -> parenParser (recurWith opt)
                          , opTable = standardOpTable
+                         , finalValidation = const (pure ())
                          }
 
 simpleMonadicFOLParserOptions :: FirstOrderParserOptions PureLexiconMFOL u Identity
@@ -92,6 +97,7 @@ simpleMonadicFOLParserOptions = FirstOrderParserOptions
                          , hasBooleanConstants = False
                          , parenRecur = \opt recurWith  -> parenParser (recurWith opt)
                          , opTable = standardOpTable
+                         , finalValidation = const (pure ())
                          }
 
 magnusFOLParserOptions :: FirstOrderParserOptions PureLexiconFOL u Identity
@@ -105,6 +111,7 @@ magnusFOLParserOptions = FirstOrderParserOptions
                          , hasBooleanConstants = False
                          , parenRecur = magnusDispatch
                          , opTable = standardOpTable
+                         , finalValidation = const (pure ())
                          }
     where magnusDispatch opt rw = (wrappedWith '(' ')' (rw opt) <|> wrappedWith '[' ']' (rw opt)) >>= boolean
           boolean a = if isBoolean a then return a else unexpected "atomic or quantified sentence wrapped in parentheses"
@@ -118,6 +125,7 @@ thomasBolducAndZachFOLParserOptions = magnusFOLParserOptions { hasBooleanConstan
                                                                           <|> try (sentenceLetterParser "ABCDEFGHIJKLMNOPQRSTUVWXYZ")
                                                                           <|> equalsParser x
                                                              , opTable = calgaryOpTable
+                                                             , finalValidation = \x -> if isOpenFormula x then unexpected "unbound variable" else return ()
                                                              }
 
 thomasBolducAndZachFOL2019ParserOptions :: FirstOrderParserOptions PureLexiconFOL u Identity
@@ -131,6 +139,7 @@ thomasBolducAndZachFOL2019ParserOptions = magnusFOLParserOptions { hasBooleanCon
                                                                               <|> try (sentenceLetterParser "ABCDEFGHIJKLMNOPQRSTUVWXYZ")
                                                                               <|> equalsParser x
                                                                  , opTable = calgaryOpTable
+                                                                 , finalValidation = \x -> if isOpenFormula x then unexpected "unbound variable" else return ()
                                                                  }
 
 bergmannMoorAndNelsonFOLParserOptions :: FirstOrderParserOptions PureLexiconFOL u Identity
@@ -144,6 +153,7 @@ bergmannMoorAndNelsonFOLParserOptions = FirstOrderParserOptions
                          , hasBooleanConstants = False
                          , parenRecur = \opt recurWith -> parenParser (recurWith opt) >>= boolean
                          , opTable = standardOpTable
+                         , finalValidation = const (pure ())
                          }
           where boolean a = if isBoolean a then return a else unexpected "atomic or quantified sentence wrapped in parentheses"
 
@@ -157,6 +167,7 @@ hardegreePLParserOptions = FirstOrderParserOptions
                          , hasBooleanConstants = True
                          , parenRecur = \opt recurWith -> parenParser (recurWith opt)
                          , opTable = standardOpTable
+                         , finalValidation = const (pure ())
                          }
 
 goldfarbNDParserOptions :: FirstOrderParserOptions PureLexiconFOL u Identity
@@ -169,6 +180,7 @@ goldfarbNDParserOptions = FirstOrderParserOptions
                          , hasBooleanConstants = False
                          , parenRecur = \opt recurWith  -> parenParser (recurWith opt)
                          , opTable = standardOpTable
+                         , finalValidation = const (pure ())
                          }
 
 hausmanPLOptions :: FirstOrderParserOptions PureLexiconFOL u Identity
@@ -183,6 +195,7 @@ hausmanPLOptions = FirstOrderParserOptions
                          , hasBooleanConstants = False
                          , parenRecur = hausmanDispatch
                          , opTable = hausmanOpTable
+                         , finalValidation = const (pure ())
                          }
     where hausmanDispatch opt recurWith = hausmanBrace opt recurWith
                                       <|> hausmanParen opt recurWith
@@ -204,6 +217,7 @@ howardSnyderPLOptions = FirstOrderParserOptions
                          , hasBooleanConstants = False
                          , parenRecur = hsDispatch
                          , opTable = howardSnyderOpTable
+                         , finalValidation = const (pure ())
                          }
     where hsDispatch opt rw = (wrappedWith '{' '}' (rw opt) <|> wrappedWith '(' ')' (rw opt) <|> wrappedWith '[' ']' (rw opt)) >>= boolean
           boolean a = if isBoolean a then return a else unexpected "atomic or quantified sentence wrapped in parentheses"
@@ -230,8 +244,10 @@ coreSubformulaParser fp opts = try (parenRecur opts opts fp <* spaces)
           --Terms
           tparser = try (fparser tparser) <|> try cparser <|> vparser 
 
-parserFromOptions opts = buildExpressionParser (opTable opts) subformulaParser
-    where subformulaParser = coreSubformulaParser parserFromOptions opts 
+parserFromOptions opts = do f <- buildExpressionParser (opTable opts) subformulaParser 
+                            finalValidation opts f
+                            return f
+    where subformulaParser = coreSubformulaParser parserFromOptions (opts {finalValidation = const (return ())})
 
 magnusFOLFormulaParser :: Parsec String u PureFOLForm
 magnusFOLFormulaParser = parserFromOptions magnusFOLParserOptions

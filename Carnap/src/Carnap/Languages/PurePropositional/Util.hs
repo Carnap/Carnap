@@ -75,7 +75,6 @@ instance ToSchema PurePropLexicon (Form Bool) where
 --4. Optics  --
 ---------------
 
-
 conjunctiveClause :: PrismBooleanConnLex lex b => Traversal' (FixLang lex (Form b)) (FixLang lex (Form b))
 conjunctiveClause f s = case s ^? binaryOpPrism _and of
                             Nothing -> f s

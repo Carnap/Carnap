@@ -2,7 +2,7 @@
 module Carnap.Languages.PureFirstOrder.Util 
 (propForm, boundVarOf, toPNF, pnfEquiv, toAllPNF, toDenex, stepDenex,
 skolemize, orientEquations, comparableMatricies, universalClosure,
-quantFree, isPNF) where
+quantFree, isPNF, isOpenFormula) where
 
 import Carnap.Core.Data.Classes
 import Carnap.Core.Unification.Unification
@@ -23,7 +23,6 @@ import Data.List
 -----------------------
 --1 Transformations  --
 -----------------------
-
 
 propForm f = evalState (propositionalize f) []
     where propositionalize = nonBoolean
@@ -260,6 +259,11 @@ universalClosure f = case varsOf f of
 ----------------
 --  2. Tests  --
 ----------------
+
+isOpenFormula :: FirstOrderLex (a (FixLang (PureFirstOrderLexWith a))) => FixLang (PureFirstOrderLexWith a) (Form Bool) -> Bool
+isOpenFormula = anyOf termsOf (\x -> isVar (x ^? _varLabel))
+    where isVar Nothing = False
+          isVar (Just s) = any (not . (`elem` "1234567890")) s
 
 boundVarOf v f = case preview  _varLabel v >>= subBinder f of
                             Just f' -> show f' == show f

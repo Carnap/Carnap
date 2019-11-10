@@ -33,7 +33,7 @@ genChildren g phi@(h :!$: (t :: FixLang f tt)) =
                         , eqT :: Maybe (tt:~: a)
                         ) of (Nothing, Just Refl)  -> genChildren g h .*$. g t
                              (Just Refl, Nothing)  -> g h .*$. genChildren g t
-                             --XXX: missing care is rule out by occurs check
+                             --XXX: missing case is ruled out by occurs check
                              _    -> genChildren g h .*$. genChildren g t
 genChildren g phi = pure phi
 
