@@ -97,6 +97,7 @@ folTests testlist f = case catMaybes $ map ($ f) theTests of
 
 propTests :: forall sem lex . 
     ( PrismBooleanConnLex lex sem
+    , PrismBooleanConst lex sem
     , HasLiterals lex sem
     , BoundVars lex
     ) => [String] -> UnaryTest lex (Form sem)
@@ -108,13 +109,14 @@ propTests testlist f = case catMaybes $ map ($ f) theTests of
                                   | otherwise = Just "this submission is not in Conjunctive Normal Form"
           toTest "DNF" submission | isDNF submission = Nothing
                                   | otherwise = Just "this submission is not in Disjunctive Normal Form"
-          toTest max submission   | take 7 max == "maxNeg:"  = maxWith 7 max (retype _not') "negations" submission
-                                  | take 7 max == "maxAnd:"  = maxWith 7 max (retype _and') "conjunctions" submission
-                                  | take 7 max == "maxIff:"  = maxWith 7 max (retype _iff') "biconditionals" submission
-                                  | take 6 max == "maxIf:"   = maxWith 6 max (retype _if') "conditionals" submission
-                                  | take 6 max == "maxOr:"   = maxWith 6 max (retype _or') "disjunctions" submission
-                                  | take 7 max == "maxCon:"  = maxWith 7 max (cosmos . _nonAtom) "connectives" submission
-                                  | take 8 max == "maxAtom:" = maxWith 8 max (cosmos . _atom) "atomic sentences" submission
+          toTest max submission   | take 7 max == "maxNeg:"   = maxWith 7 max (retype _not') "negations" submission
+                                  | take 7 max == "maxAnd:"   = maxWith 7 max (retype _and') "conjunctions" submission
+                                  | take 7 max == "maxIff:"   = maxWith 7 max (retype _iff') "biconditionals" submission
+                                  | take 6 max == "maxIf:"    = maxWith 6 max (retype _if') "conditionals" submission
+                                  | take 6 max == "maxOr:"    = maxWith 6 max (retype _or') "disjunctions" submission
+                                  | take 7 max == "maxCon:"   = maxWith 7 max (cosmos . _nonAtom) "connectives" submission
+                                  | take 8 max == "maxAtom:"  = maxWith 8 max (cosmos . _atom) "atomic sentences" submission
+                                  | take 9 max == "maxFalse:" = maxWith 9 max (cosmos . _falsum) "falsity constants" submission
           toTest _ _ = Nothing
 
           countFold p = length . toListOf p
@@ -128,26 +130,26 @@ propTests testlist f = case catMaybes $ map ($ f) theTests of
                              ++ show n ++ " at most"
                    else Nothing
 
-          _not' :: Prism' (FixLang lex (Form sem -> Form sem)) ()
-          _not' = _not
-
           _nonAtom :: Fold (FixLang lex (Form sem)) (FixLang lex (Form sem))
           _nonAtom = filtered (not . isAtom)
+
+          _not' :: Prism' (FixLang lex (Form sem -> Form sem)) ()
+          _not' = _not
 
           _atom :: Fold (FixLang lex (Form sem)) (FixLang lex (Form sem))
           _atom = filtered isAtom
 
           _if' :: Prism' (FixLang lex (Form sem -> Form sem -> Form sem)) ()
-          _if' = _if :: Prism' (FixLang lex (Form sem -> Form sem -> Form sem)) ()
+          _if' = _if
 
           _or' :: Prism' (FixLang lex (Form sem -> Form sem -> Form sem)) ()
-          _or' = _or :: Prism' (FixLang lex (Form sem -> Form sem -> Form sem)) ()
+          _or' = _or
 
           _iff' :: Prism' (FixLang lex (Form sem -> Form sem -> Form sem)) ()
-          _iff' = _iff :: Prism' (FixLang lex (Form sem -> Form sem -> Form sem)) ()
+          _iff' = _iff 
 
           _and' :: Prism' (FixLang lex (Form sem -> Form sem -> Form sem)) ()
-          _and' = _and :: Prism' (FixLang lex (Form sem -> Form sem -> Form sem)) ()
+          _and' = _and 
 
 tryTrans :: Eq (FixLang lex sem) => 
     Parsec String () (FixLang lex sem) -> BinaryTest lex sem -> UnaryTest lex sem
@@ -155,7 +157,7 @@ tryTrans :: Eq (FixLang lex sem) =>
 tryTrans parser equiv tests o ref fs = onEnter $ 
                 do (Just t) <- target :: EventM HTMLInputElement KeyboardEvent (Maybe HTMLInputElement)
                    (Just ival)  <- getValue t
-                   case parse (spaces *> parser) "" ival of
+                   case parse (spaces *> parser <* eof) "" ival of
                          Right f -> liftIO $ case tests f of
                                                   Nothing -> checkForm f
                                                   Just msg -> writeIORef ref False >> message ("Looks like " ++ msg ++ ".")
