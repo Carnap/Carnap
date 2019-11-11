@@ -199,10 +199,10 @@ createValidityCounterModeler w seq@(antced :|-: succed) (i,o) bw opts =
                  return $ Left $ "not all premises are true in this model. Take another look at: " ++ falses ++ "."
               else return $ check ctvs
           truthful tvs | and tvs = Right ()
-                       | otherwise = do let falses = intercalate ", " $ map (rewriteWith opts . show . snd) . filter (not . fst) $ (zip tvs fs)
+                       | otherwise = do let falses = intercalate ", " $ map (rewriteWith opts . show . snd) . filter (not . fst) $ (zip tvs sucs)
                                         Left $ "Not all conclusions are true in this model. Take another look at: " ++  falses ++ "."
           falsey tvs | and (map not tvs) = Right ()
-                     | otherwise = do let trues = intercalate ", " $ map (rewriteWith opts . show . snd) . filter fst $ (zip tvs fs)
+                     | otherwise = do let trues = intercalate ", " $ map (rewriteWith opts . show . snd) . filter fst $ (zip tvs sucs)
                                       Left $ "Not all conclusions are false in this model. Take another look at: " ++  trues ++ "."
           equiv tvs | and tvs = Left "Not a counterexample to equivalence - all conclusions are true in this model."
                     | and (map not tvs) = Left "Not a counterexample to equivalence - all conclusions are false in this model."
