@@ -38,9 +38,8 @@ import GHCJS.DOM
 import GHCJS.Types
 
 treeDeductionCheckAction ::  IO ()
-treeDeductionCheckAction = runWebGUI $ \w -> 
-            do (Just dom) <- webViewGetDomDocument w
-               initializeCallback "checkProofTreeInfo" (checkProofTree gentzenPropNJCalc Nothing)
+treeDeductionCheckAction = 
+            do initializeCallback "checkProofTreeInfo" (checkProofTree gentzenPropNJCalc Nothing)
                initElements getCheckers activateChecker
                return ()
 

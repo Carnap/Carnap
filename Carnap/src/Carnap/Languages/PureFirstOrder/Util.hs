@@ -254,7 +254,8 @@ universalClosure f = case varsOf f of
                          [] -> f
                          ls -> foldl bindIn f ls 
     where bindIn f v = lall (show v) $ \x -> subBoundVar v x f
-          varsOf f = map foVar $ toListOf (termsOf . cosmos . _varLabel) f
+          varsOf f = map foVar $ nub . toListOf (termsOf . cosmos . _varLabel . filtered isVar) $ f
+          isVar = any (not . (`elem` "1234567890"))
 
 ----------------
 --  2. Tests  --

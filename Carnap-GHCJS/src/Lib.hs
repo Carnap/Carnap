@@ -11,7 +11,7 @@ module Lib (genericSendJSON, sendJSON, onEnter, onKey, clearInput,
            assignmentKey, initialize, initializeCallback, initCallbackObj,
            toCleanVal, popUpWith, spinnerSVG, doneButton, questionButton,
            exclaimButton, expandButton, createSubmitButton, buttonWrapper,
-           maybeNodeListToList, trySubmit, inOpts, unform, rewriteWith
+           maybeNodeListToList, trySubmit, inOpts, rewriteWith
            ) where
 
 import Data.Aeson
@@ -83,9 +83,6 @@ inOpts :: String -> M.Map String String -> Bool
 inOpts s opts = s `elem` optList
     where optList = case M.lookup "options" opts of Just s -> words s; Nothing -> []
           
-unform :: Form Bool -> Bool
-unform (Form b) = b
-
 rewriteWith :: M.Map String String -> String -> String
 rewriteWith opts = case rewriter of
                        Just f -> f

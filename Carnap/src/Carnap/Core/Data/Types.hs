@@ -165,14 +165,14 @@ class BoundVars g where
         scopeUniqueVar :: Typeable a => FixLang g ((a -> b) -> c) -> FixLang g (a -> b) -> FixLang g a
         scopeUniqueVar = error "you need to define a language-specific scopeUniqueVar function"
 
-data Term a = Term a
+newtype Term a = Term {unterm :: a}
     deriving(Eq, Ord, Show, Functor)
 
 instance Applicative Term where
     pure = Term
     (Term f) <*> (Term a) = Term (f a)
 
-data Form a = Form a
+newtype Form a = Form {unform :: a}
     deriving(Eq, Ord, Show, Functor)
 
 instance Applicative Form where

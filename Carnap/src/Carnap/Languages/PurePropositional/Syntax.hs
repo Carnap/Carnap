@@ -29,9 +29,10 @@ type PureConn = BooleanConn Bool
 
 instance Evaluable PureConn where
         eval Iff = liftA2 (==) 
-        eval If  = liftA2 $ \x y -> (not x || y)
-        eval Or  = liftA2 (||)
-        eval And = liftA2 (&&) 
+        eval If  = \(Form x) y -> if x then y else Form True
+        eval Or  = \(Form x) y -> if x then Form True else y
+        eval And = \(Form x) y -> if x then y else Form False
+        --XXX: we avoid liftA2 here, to preserve laziness
         eval Not = fmap not
 
 instance Modelable (Int -> Bool) PureConn where
