@@ -5,21 +5,15 @@
 
 .ruleBuilder {
     display:inline-block;
-    width:400px;
-    height:500px;
+    position:relative;
+    margin-bottom:2em;
 }
 
-.ruleBuilder .ruleMaker{
-    margin-top:10px;
-}
-
-.ruleBuilder textarea {
-    height: 320px; 
-    width:350px;
-} 
-
-.ruleBuilder .output {
-    width:650px;
+.hrSep {
+   border:0;
+   border-top : 1px solid black;
+   max-width:600px;
+   margin-left:0;
 }
 
 .derivedRules {
