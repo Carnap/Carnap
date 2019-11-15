@@ -88,13 +88,13 @@ parseGamutND rtc = do r <- choice (map (try . string)
                           | r `elem`  ["assumption", "as"] -> return [AS]
 
 parseGamutNDProof :: RuntimeNaturalDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine GamutND PureLexiconFOL (Form Bool)]
-parseGamutNDProof rtc = toDeductionFitch (parseGamutND rtc) (thomasBolducAndZachFOLFormulaParser)
+parseGamutNDProof rtc = toDeductionFitch (parseGamutND rtc) (gamutNDFormulaParser)
 
 gamutNDCalc = mkNDCalc
     { ndRenderer = NoRender
     , ndParseProof = parseGamutNDProof
     , ndProcessLine = hoProcessLineFitch
     , ndProcessLineMemo = Just hoProcessLineFitchMemo
-    , ndParseSeq = parseSeqOver thomasBolducAndZachFOLFormulaParser
-    , ndParseForm = thomasBolducAndZachFOLFormulaParser
+    , ndParseSeq = parseSeqOver gamutNDFormulaParser
+    , ndParseForm = gamutNDFormulaParser
     }

@@ -84,6 +84,17 @@ sentenceLetterParser s = (try parseNumbered <|> parseUnnumbered) <?> "a sentence
                                  n <- number
                                  return $ pn n
 
+lowerCaseSentenceLetterParser :: (IndexedPropLanguage l, Monad m) => String ->
+    ParsecT String u m l
+lowerCaseSentenceLetterParser s = (try parseNumbered <|> parseUnnumbered) <?> "a sentence letter"
+        where parseUnnumbered = do c <- oneOf s
+                                   let Just n = elemIndex c "_abcdefghijklmnopqrstuvwxyz"
+                                   return $ pn (-1 * n)
+              parseNumbered = do char 'p'
+                                 char '_'
+                                 n <- number
+                                 return $ pn n
+
 schemevarParser :: 
     ( IndexedSchemePropLanguage l
     , Monad m
