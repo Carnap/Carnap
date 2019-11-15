@@ -69,6 +69,7 @@ library
                      , Carnap.Languages.PureFirstOrder.Logic.BergmannMoorAndNelson
                      , Carnap.Languages.PureFirstOrder.Logic.IchikawaJenkins
                      , Carnap.Languages.PureFirstOrder.Logic.Hausman
+                     , Carnap.Languages.PureFirstOrder.Logic.Gamut
                      , Carnap.Languages.PureFirstOrder.Logic.HowardSnyder
                      , Carnap.Languages.PureFirstOrder.Logic.Hardegree
                      , Carnap.Languages.PureFirstOrder.Logic.Goldfarb

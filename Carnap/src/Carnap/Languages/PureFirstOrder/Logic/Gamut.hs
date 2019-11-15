@@ -1,4 +1,5 @@
 {-#LANGUAGE  FlexibleContexts,  FlexibleInstances, MultiParamTypeClasses #-}
+module Carnap.Languages.PureFirstOrder.Logic.Gamut (gamutNDCalc, parseGamutND) where
 
 import Text.Parsec
 import Carnap.Core.Data.Types (Form)
@@ -22,15 +23,17 @@ data GamutND = InAnd  | ElimAndL | ElimAndR
              | ElimOr | InOrL    | InOrR 
              | DNE    | EFSQ
              | AS 
+    deriving Eq
 
-instance Show GamultND where
+instance Show GamutND where
         show InAnd      = "I∧"
         show ElimAndL   = "E∧"
         show ElimAndR   = "E∧"
         show ElimIf     = "E→"
         show InIf1      = "I→"
         show InIf2      = "I→"
-        show InNeg      = "I¬"
+        show InNeg1     = "I¬"
+        show InNeg2     = "I¬"
         show ElimNeg    = "E¬"
         show ElimOr     = "E∨"
         show InOrL      = "I∨" 
@@ -53,7 +56,7 @@ instance Inference GamutND PureLexiconFOL (Form Bool) where
         ruleOf InOrL      = additionVariations !! 0
         ruleOf InOrR      = additionVariations !! 1
         ruleOf DNE        = doubleNegationElimination
-        ruleOf EFSQ       = falusmElimination
+        ruleOf EFSQ       = falsumElimination
         ruleOf AS         = axiom
 
         indirectInference x
@@ -62,3 +65,36 @@ instance Inference GamutND PureLexiconFOL (Form Bool) where
 
         isAssumption AS = True
         isAssumption _ = False
+
+
+parseGamutND rtc = do r <- choice (map (try . string) 
+                                [ "I∧" , "I/\\", "I^", "E∧" , "E/\\", "E^"
+                                , "E→" , "E->", "I→" , "I->"
+                                , "I¬" , "I~", "I-", "E¬" , "E~", "E-"
+                                , "E∨" , "E\\/", "Ev",  "I∨" , "I\\/", "Iv"
+                                , "¬¬" , "~~", "--"
+                                , "EFSQ" , "assumption", "as"])
+                      case r of 
+                        r | r `elem` ["I∧" , "I/\\", "I^"] -> return [InAnd]
+                          | r `elem` ["E∧" , "E/\\", "E^"] -> return [ElimAndR, ElimAndL]
+                          | r `elem` ["E→" , "E->"]        -> return [ElimIf]
+                          | r `elem` ["I→" , "I->"]        -> return [InIf1, InIf2]
+                          | r `elem` ["I¬" , "I~", "I-"]   -> return [InNeg1, InNeg2]
+                          | r `elem` ["E¬" , "E~", "E-"]   -> return [ElimNeg]
+                          | r `elem` ["E∨" , "E\\/", "Ev"] -> return [ElimOr]
+                          | r `elem` ["I∨" , "I\\/", "Iv"] -> return [InOrL, InOrR]
+                          | r `elem` ["¬¬" , "~~", "--"]   -> return [DNE]
+                          | r `elem` ["EFSQ"]              -> return [EFSQ]
+                          | r `elem`  ["assumption", "as"] -> return [AS]
+
+parseGamutNDProof :: RuntimeNaturalDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine GamutND PureLexiconFOL (Form Bool)]
+parseGamutNDProof rtc = toDeductionFitch (parseGamutND rtc) (thomasBolducAndZachFOLFormulaParser)
+
+gamutNDCalc = mkNDCalc
+    { ndRenderer = NoRender
+    , ndParseProof = parseGamutNDProof
+    , ndProcessLine = hoProcessLineFitch
+    , ndProcessLineMemo = Just hoProcessLineFitchMemo
+    , ndParseSeq = parseSeqOver thomasBolducAndZachFOLFormulaParser
+    , ndParseForm = thomasBolducAndZachFOLFormulaParser
+    }

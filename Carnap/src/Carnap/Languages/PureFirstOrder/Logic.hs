@@ -26,6 +26,7 @@ import Carnap.Languages.PureFirstOrder.Logic.ThomasBolducAndZach
 import Carnap.Languages.PureFirstOrder.Logic.EbelsDuggan
 import Carnap.Languages.PureFirstOrder.Logic.BergmannMoorAndNelson
 import Carnap.Languages.PureFirstOrder.Logic.Hausman
+import Carnap.Languages.PureFirstOrder.Logic.Gamut
 import Carnap.Languages.PureFirstOrder.Logic.HowardSnyder
 import Carnap.Languages.PureFirstOrder.Logic.Hardegree
 import Carnap.Languages.PureFirstOrder.Logic.Goldfarb
@@ -44,6 +45,7 @@ ofFOLSys f sys | sys == "firstOrder"                      = Just $ f folCalc
                | sys == "LogicBookPD"                     = Just $ f logicBookPDCalc 
                | sys == "LogicBookPDPlus"                 = Just $ f logicBookPDPlusCalc 
                | sys == "hausmanPL"                       = Just $ f hausmanPLCalc 
+               | sys == "gamutND"                         = Just $ f gamutNDCalc
                | sys == "howardSnyderPL"                  = Just $ f howardSnyderPLCalc 
                | sys == "ichikawaJenkinsQL"               = Just $ f ichikawaJenkinsQLCalc
                | sys == "hardegreePL"                     = Just $ f hardegreePLCalc 

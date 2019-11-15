@@ -43,7 +43,6 @@ toDeductionFitch r f = toDeduction (parseLine r f)
                               --XXX: need double "try" here to avoid
                               --throwing away errors if first parser fails
                                
-                               
 toDeductionFitchAlt :: Parsec String () [r] -> Parsec String () (FixLang lex a) -> String 
     -> Deduction r lex a
 toDeductionFitchAlt r f = toDeduction (parseLine r f)
