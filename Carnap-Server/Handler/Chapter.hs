@@ -85,7 +85,6 @@ fileToHtml path m = do md <- markdownFromFile (path ++ m)
                     , Ext_fenced_code_attributes
                     ]
 
-
 runFilters path = let walkNotes y = evalState (walkM makeSideNotes y) 0
                       walkProblems y = walk (makeSynCheckers . makeProofChecker . makeTranslate . makeTruthTables . makeCounterModelers . makeQualitativeProblems) y
                       walkDiagrams y = evalStateT (walkM (makeDiagrams path) y) []
