@@ -2,6 +2,7 @@
 module Carnap.Languages.PureFirstOrder.Logic.Gamut (gamutNDCalc, parseGamutND) where
 
 import Text.Parsec
+import Data.Char
 import Carnap.Core.Data.Types (Form)
 import Carnap.Core.Data.Classes
 import Carnap.Core.Unification.Unification (applySub,subst,FirstOrder)
@@ -90,6 +91,16 @@ parseGamutND rtc = do r <- choice (map (try . string)
 parseGamutNDProof :: RuntimeNaturalDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine GamutND PureLexiconFOL (Form Bool)]
 parseGamutNDProof rtc = toDeductionFitch (parseGamutND rtc) (gamutNDFormulaParser)
 
+gamutNotation :: String -> String
+gamutNotation (x:y:xs) | isUpper x && (y == '(') = x : gamutNotation xs 
+                       | isUpper x = toLower x : y : gamutNotation xs
+                       | x == ')'  = y : gamutNotation xs
+                       | otherwise = x : gamutNotation (y : xs)
+gamutNotation (x:[])   | isUpper x = toLower x:[]
+                       | x == ')'  = []
+gamutNotation x = x
+
+
 gamutNDCalc = mkNDCalc
     { ndRenderer = NoRender
     , ndParseProof = parseGamutNDProof
@@ -97,4 +108,5 @@ gamutNDCalc = mkNDCalc
     , ndProcessLineMemo = Just hoProcessLineFitchMemo
     , ndParseSeq = parseSeqOver gamutNDFormulaParser
     , ndParseForm = gamutNDFormulaParser
+    , ndNotation = gamutNotation
     }
