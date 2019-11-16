@@ -23,7 +23,7 @@ data GamutND = InAnd  | ElimAndL | ElimAndR
              | InNeg1 | InNeg2   | ElimNeg 
              | ElimOr | InOrL    | InOrR 
              | DNE    | EFSQ
-             | AS 
+             | AS     | Rep
     deriving Eq
 
 instance Show GamutND where
@@ -42,6 +42,7 @@ instance Show GamutND where
         show DNE        = "¬¬" 
         show EFSQ       = "EFSQ"
         show AS         = "assumption"
+        show Rep        = "repeat"
 
 instance Inference GamutND PureLexiconFOL (Form Bool) where
         ruleOf InAnd      = adjunction
@@ -54,6 +55,7 @@ instance Inference GamutND PureLexiconFOL (Form Bool) where
         ruleOf InNeg2     = constructiveFalsumReductioVariations !! 1
         ruleOf ElimNeg    = falsumIntroduction
         ruleOf ElimOr     = dilemma
+        ruleOf Rep        = identityRule
         ruleOf InOrL      = additionVariations !! 0
         ruleOf InOrR      = additionVariations !! 1
         ruleOf DNE        = doubleNegationElimination
@@ -61,7 +63,7 @@ instance Inference GamutND PureLexiconFOL (Form Bool) where
         ruleOf AS         = axiom
 
         indirectInference x
-            | x `elem` [InIf1, InIf2, InNeg1, InNeg2] = Just PolyProof
+            | x `elem` [InIf1, InIf2, InNeg1, InNeg2] = Just (ImplicitProof (ProofType 0 1))
             | otherwise = Nothing
 
         isAssumption AS = True
@@ -73,7 +75,7 @@ parseGamutND rtc = do r <- choice (map (try . string)
                                 , "E→" , "E->", "I→" , "I->"
                                 , "I¬" , "I~", "I-", "E¬" , "E~", "E-"
                                 , "E∨" , "E\\/", "Ev",  "I∨" , "I\\/", "Iv"
-                                , "¬¬" , "~~", "--"
+                                , "¬¬" , "~~", "--", "repetition", "rep"
                                 , "EFSQ" , "assumption", "as"])
                       case r of 
                         r | r `elem` ["I∧" , "I/\\", "I^"] -> return [InAnd]
@@ -86,7 +88,8 @@ parseGamutND rtc = do r <- choice (map (try . string)
                           | r `elem` ["I∨" , "I\\/", "Iv"] -> return [InOrL, InOrR]
                           | r `elem` ["¬¬" , "~~", "--"]   -> return [DNE]
                           | r `elem` ["EFSQ"]              -> return [EFSQ]
-                          | r `elem`  ["assumption", "as"] -> return [AS]
+                          | r `elem` ["repetition", "rep"] -> return [Rep]
+                          | r `elem` ["assumption", "as"]  -> return [AS]
 
 parseGamutNDProof :: RuntimeNaturalDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine GamutND PureLexiconFOL (Form Bool)]
 parseGamutNDProof rtc = toDeductionFitch (parseGamutND rtc) (gamutNDFormulaParser)

@@ -100,7 +100,8 @@ calgaryOpTable = [ [ Prefix (try parseNeg)]
 gamutOpTable :: (BooleanLanguage (FixLang lex (Form Bool)), Monad m)
     => [[Operator String u m (FixLang lex (Form Bool))]]
 gamutOpTable = [ [ Prefix (try parseNeg)]
-               , [ Infix (try $ parseAsOr ["\\/", "∨", "|", "or"]) AssocNone, Infix (try parseAnd) AssocNone ]
+               , [ Infix (try $ parseAsOr ["\\/", "∨", "|", "or"]) AssocNone, Infix (try parseAnd) AssocNone 
+                 , Infix (try parseIf) AssocNone]
                ]
 
 hausmanOpTable :: (BooleanLanguage (FixLang lex (Form Bool)), Monad m)

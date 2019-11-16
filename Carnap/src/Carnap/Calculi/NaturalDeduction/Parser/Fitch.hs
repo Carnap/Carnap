@@ -77,6 +77,17 @@ toProofTreeFitch ded n = case ded !! (n - 1)  of
                                  [thesp] -> do thesubprems <- subproofProcess prooftype thesp 
                                                return $ thesubprems ++ map fst (delete thesp deps)
                                  _ -> err "you need to specify exactly one subproof for this rule"
+                        Just (ImplicitProof prooftype) -> 
+                            case filter (\(x,y) -> x /= y) deps of 
+                                [] -> do let thesp = takePrecedingProof
+                                         if null thesp then err "this rule must follow a subproof"
+                                              else do let spRange = (n - (length thesp),n - 1)
+                                                      checkDep spRange
+                                                      isSP spRange
+                                                      notBlank spRange
+                                                      thesubprems <- subproofProcess prooftype spRange
+                                                      return $ thesubprems ++ map fst deps
+                                _ -> err "this rule cannot be used with a line range citation"
                         Just (PolyTypedProof n prooftype) -> 
                             case filter (\(x,y) -> x /= y) deps of 
                                  l | length l == n -> do thesubprems <- mapM (subproofProcess prooftype) l
@@ -137,6 +148,8 @@ toProofTreeFitch ded n = case ded !! (n - 1)  of
               if all (\x -> depth h <= depth x) chunk
                   then Right True
                   else err "it looks like you're citing a subproof that isn't available at this point, since its final line isn't available"
+          takePrecedingProof = reverse . takeWhile (\x -> depth x > depth (ded !! (n - 1))) . reverse . init $ ded
+
           takeRange m' n' = 
               if n' <= m' 
                       then err "Dependency is later than assertion"
@@ -156,8 +169,5 @@ toProofTreeFitch ded n = case ded !! (n - 1)  of
             | any (\x -> depth x < depth begin) (lineRange m n) = err $ "the lines " ++ show m ++ " and " ++ show n ++ " can't have a less indented line between them, if they are a subproof"
             | not (isAssumptionLine begin) = err $ "the subproof beginning on line " ++ show m ++ " needs to start with an assumption"
             | otherwise = Right True
-            -- TODO also impose some "assumption" constraints: subproofs
-            -- must begin with assumptions, and this is the only context
-            -- where an assumption can occur
             where begin = ded !! (m - 1)
                   end = ded !! (n - 1)
