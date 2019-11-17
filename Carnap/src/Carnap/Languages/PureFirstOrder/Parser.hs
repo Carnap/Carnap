@@ -131,8 +131,8 @@ thomasBolducAndZachFOLParserOptions = magnusFOLParserOptions { hasBooleanConstan
 
 gamutNDParserOptions :: FirstOrderParserOptions PureLexiconFOL u Identity
 gamutNDParserOptions = thomasBolducAndZachFOLParserOptions { atomicSentenceParser = 
-                                                                    \x -> try (parsePredicateSymbolNoParen "ABCDEFGHIJKLMNOPQRSTUVWXYZ" x)
-                                                                          <|> try (lowerCaseSentenceLetterParser "abcdefghijklmnopqrstuvwxyz")
+                                                                    \x -> try (parsePredicateSymbolNoParen ['A' .. 'Z'] x)
+                                                                          <|> try (lowerCaseSentenceLetterParser ['a' .. 'z'])
                                                            , opTable = gamutOpTable
                                                            }
 

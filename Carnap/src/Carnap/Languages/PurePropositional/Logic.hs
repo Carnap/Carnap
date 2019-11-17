@@ -26,6 +26,7 @@ import Carnap.Languages.PurePropositional.Logic.BergmannMoorAndNelson
 import Carnap.Languages.PurePropositional.Logic.Carnap
 import Carnap.Languages.PurePropositional.Logic.Hardegree
 import Carnap.Languages.PurePropositional.Logic.Hausman
+import Carnap.Languages.PurePropositional.Logic.Gamut
 import Carnap.Languages.PurePropositional.Logic.HowardSnyder
 import Carnap.Languages.PurePropositional.Logic.KalishAndMontague
 import Carnap.Languages.PurePropositional.Logic.Magnus
@@ -41,6 +42,7 @@ ofPropSys f sys | sys == "prop"                          = Just $ f propCalc
                 | sys == "LogicBookSD"                   = Just $ f logicBookSDCalc 
                 | sys == "LogicBookSDPlus"               = Just $ f logicBookSDPlusCalc 
                 | sys == "hausmanSL"                     = Just $ f hausmanSLCalc 
+                | sys == "gamutPND"                      = Just $ f gamutPNDCalc
                 | sys == "howardSnyderSL"                = Just $ f howardSnyderSLCalc 
                 | sys == "ichikawaJenkinsSL"             = Just $ f ichikawaJenkinsSLCalc
                 | sys == "hausmanSL"                     = Just $ f hausmanSLCalc

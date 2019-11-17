@@ -1,7 +1,7 @@
 {-# LANGUAGE FlexibleContexts, FlexibleInstances, MultiParamTypeClasses #-}
 module Carnap.Languages.PurePropositional.Parser 
     ( purePropFormulaParser, standardLetters, extendedLetters, hausmanOpts, thomasBolducZachOpts, hardegreeOpts
-    , standardOpTable, calgaryOpTable, hausmanOpTable, howardSnyderOpTable, gamutOpTable, howardSnyderOpts, magnusOpts, extendedPropSeqParser
+    , standardOpTable, calgaryOpTable, hausmanOpTable, howardSnyderOpTable, gamutOpTable, gamutOpts, howardSnyderOpts, magnusOpts, extendedPropSeqParser
     ) where
 
 import Carnap.Core.Data.Types
@@ -30,11 +30,20 @@ standardLetters = PurePropositionalParserOptions
                         , parenRecur = \opt recurWith -> parenParser (recurWith opt)
                         }
 
+
+gamutOpts :: Monad m => PurePropositionalParserOptions u m
+gamutOpts = PurePropositionalParserOptions 
+                { atomicSentenceParser = lowerCaseSentenceLetterParser ['a' .. 'z']
+                , hasBooleanConstants = True
+                , opTable = gamutOpTable
+                , parenRecur = \opt recurWith -> parenParser (recurWith opt)
+                }
+
 hardegreeOpts :: Monad m => PurePropositionalParserOptions u m
 hardegreeOpts = standardLetters { hasBooleanConstants = True }
 
 extendedLetters :: Monad m => PurePropositionalParserOptions u m
-extendedLetters = standardLetters { atomicSentenceParser = sentenceLetterParser "ABCDEFGHIJKLMNOPQRSTUVWXYZ" }
+extendedLetters = standardLetters { atomicSentenceParser = sentenceLetterParser ['A' .. 'Z'] }
 
 magnusOpts :: Monad m => PurePropositionalParserOptions u m
 magnusOpts = extendedLetters { parenRecur = magnusDispatch }
