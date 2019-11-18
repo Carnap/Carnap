@@ -76,7 +76,7 @@ parseGamutPND rtc = do r <- choice (map (try . string)
                                 , "I¬" , "I~", "I-", "E¬" , "E~", "E-"
                                 , "E∨" , "E\\/", "Ev",  "I∨" , "I\\/", "Iv"
                                 , "¬¬" , "~~", "--", "repetition", "rep"
-                                , "EFSQ" , "assumption", "as", "pr"])
+                                , "EFSQ" , "assumption", "as"])
                        case r of 
                         r | r `elem` ["I∧" , "I/\\", "I^"] -> return [InAnd]
                           | r `elem` ["E∧" , "E/\\", "E^"] -> return [ElimAndR, ElimAndL]
@@ -90,7 +90,6 @@ parseGamutPND rtc = do r <- choice (map (try . string)
                           | r `elem` ["EFSQ"]              -> return [EFSQ]
                           | r `elem` ["repetition", "rep"] -> return [Rep]
                           | r `elem` ["assumption", "as"]  -> return [AS, PR]
-                          | r `elem` ["pr"]  -> return [PR]
 
 parseGamutPNDProof :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> String -> [DeductionLine GamutPND PurePropLexicon (Form Bool)]
 parseGamutPNDProof rtc = toDeductionFitch (parseGamutPND rtc) (purePropFormulaParser gamutOpts)
