@@ -24,6 +24,7 @@ strictSetTheoryOptions = FirstOrderParserOptions
                          , hasBooleanConstants = False
                          , parenRecur = \opt recurWith  -> parenParser (recurWith opt)
                          , opTable = standardOpTable
+                         , finalValidation = const (pure ())
                          }
 
 strictSetTheoryParser = parserFromOptions strictSetTheoryOptions
@@ -45,6 +46,7 @@ elementarySetTheoryOptions = FirstOrderParserOptions
                            , hasBooleanConstants = False
                            , parenRecur = \opt recurWith  -> parenParser (recurWith opt)
                            , opTable = standardOpTable
+                           , finalValidation = const (pure ())
                            }
 
 elementarySetTheoryParser = parserFromOptions elementarySetTheoryOptions
@@ -71,6 +73,7 @@ separativeSetTheoryOptions = FirstOrderParserOptions
                            , hasBooleanConstants = False
                            , parenRecur = \opt recurWith  -> parenParser (recurWith opt)
                            , opTable = standardOpTable
+                           , finalValidation = const (pure ())
                            }
     where cparser = case constantParser separativeSetTheoryOptions of Just c -> c
           fparser = case functionParser separativeSetTheoryOptions of Just f -> f
