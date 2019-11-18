@@ -426,7 +426,7 @@ toHead w opts atomIndicies orderedChildren =
         do Just row <- createElement w (Just "tr")
            Just sep <- createElement w (Just "th")
            setAttribute sep "class" "ttthSep"
-           atomThs <- mapM toAtomTh atomIndicies
+           atomThs <- mapM toAtomTh atomIndicies >>= rewriteThs opts
            childThs <- mapM (toChildTh w) orderedChildren >>= rewriteThs opts
            mapM_ (appendChild row . Just) atomThs
            appendChild row (Just sep)

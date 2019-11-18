@@ -1,5 +1,5 @@
 {-#LANGUAGE  FlexibleContexts,  FlexibleInstances, MultiParamTypeClasses #-}
-module Carnap.Languages.PurePropositional.Logic.Gamut (GamutPND, gamutPNDCalc, parseGamutPND, gamutNotation) where
+module Carnap.Languages.PurePropositional.Logic.Gamut (GamutPND, gamutPNDCalc, parseGamutPND) where
 
 import Text.Parsec
 import Data.Char
@@ -96,13 +96,9 @@ parseGamutPNDProof :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) 
 parseGamutPNDProof rtc = toDeductionFitch (parseGamutPND rtc) (purePropFormulaParser gamutOpts)
 
 gamutNotation :: String -> String
-gamutNotation (x:y:xs) | isUpper x && (y == '(') = x : gamutNotation xs 
-                       | isUpper x = toLower x : y : gamutNotation xs
-                       | x == ')'  = y : gamutNotation xs
-                       | otherwise = x : gamutNotation (y : xs)
-gamutNotation (x:[])   | isUpper x = toLower x:[]
-                       | x == ')'  = []
-gamutNotation x = x
+gamutNotation (x:xs) | isUpper x = toLower x : gamutNotation xs
+                     | otherwise = x : gamutNotation xs
+gamutNotation [] = []
 
 gamutPNDCalc = mkNDCalc
     { ndRenderer = NoRender

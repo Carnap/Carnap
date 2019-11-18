@@ -74,6 +74,10 @@ parseGamutND rtc = try propRule <|> quantRule
 parseGamutNDProof :: RuntimeNaturalDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine GamutND PureLexiconFOL (Form Bool)]
 parseGamutNDProof rtc = toDeductionFitch (parseGamutND rtc) (gamutNDFormulaParser)
 
+gamutNotation :: String -> String
+gamutNotation (x:xs) = if x `elem` "()," then gamutNotation xs else x : gamutNotation xs
+gamutNotation x = x
+
 gamutNDCalc = mkNDCalc
     { ndRenderer = NoRender
     , ndParseProof = parseGamutNDProof
