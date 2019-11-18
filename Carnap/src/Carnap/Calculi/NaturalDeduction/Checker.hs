@@ -190,7 +190,7 @@ seqUnify s1 s2 = case check of
                      Left _ -> False
                      Right [] -> False
                      Right _ -> True
-            where check = do fosub <- fosolve [view lhs s1 :=: view rhs s2]
+            where check = do fosub <- fosolve [view rhs s1 :=: view rhs s2]
                              acuisolve [view lhs (applySub fosub s1) :=: view lhs (applySub fosub s2)]
 
 -- TODO remove the need for this assumption.
@@ -327,7 +327,7 @@ hoReduceProofTree res (Node (ProofLine no cont rules) ts) =
            -- XXX: we need to rebuild the term here to make sure that there
            -- are no unevaluated substitutions lurking inside under
            -- lambdas, with stale variables in trapped in closures.
-           return $ evalState (stateRebuild rslt >>= toBNF  >>= stateRebuild) (0 :: Int)
+           return $ evalState (stateRebuild rslt >>= toBNF) (0 :: Int)
 
 hoReduceProofTreeMemo :: 
     ( Inference r lex sem
@@ -349,7 +349,7 @@ hoReduceProofTreeMemo ref res pt@(Node (ProofLine no cont rules) ts) =
                              Left olderror -> return (Left olderror)
                              Right prems -> 
                                 do let y = do errOrRslts <- hoseqFromNode no rules prems cont
-                                              return $ errOrRslts >>= Right . map (\(r,z,w) -> (evalState (stateRebuild r >>= toBNF >>= stateRebuild) (0 :: Int),z,w))
+                                              return $ errOrRslts >>= Right . map (\(r,z,w) -> (evalState (stateRebuild r >>= toBNF) (0 :: Int),z,w))
                                    writeIORef ref (M.insert thehash y thememo)
                                    return $ reduceResult no $ parallelCheckResult res no $ y
 
