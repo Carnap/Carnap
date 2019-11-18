@@ -20,7 +20,7 @@ import Carnap.Languages.ClassicalSequent.Syntax
 import Carnap.Languages.ClassicalSequent.Parser
 import Carnap.Languages.Util.LanguageClasses
 import Carnap.Languages.Util.GenericConstructors
-import Carnap.Calculi.NaturalDeduction.Syntax (DeductionLine(..),depth,assertion,discharged,justificationOf,inScope)
+import Carnap.Calculi.NaturalDeduction.Syntax (DeductionLine(..),depth,assertion,discharged,justificationOf,inScope, isAssumptionLine)
 
 --------------------------------------------------------
 --1. FirstOrder Sequent Calculus
@@ -46,7 +46,6 @@ instance CopulaSchema FOLSequentCalc where
 
 instance Eq (FOLSequentCalc a) where
         (==) = (=*)
-
 
 seqVar :: StandardVarLanguage (FixLang lex (Term Int)) => String -> FixLang lex (Term Int)
 seqVar = var
@@ -112,6 +111,14 @@ totallyFreshConstraint n ded t v sub
     | tau' /= (liftToSequent v) = Just "the flagged variable isn't the one used for instantiation."
     | otherwise = Nothing
     where relevantLines = catMaybes . map assertion $ (take (n - 1) ded)
+          tau' = applySub sub t
+
+notAssumedConstraint n ded t sub 
+    | any (\x -> tau' `occurs` (liftToSequent x)) relevantLines = Just $ show tau' ++ " appears not to be fresh in its occurence on line " ++ show n
+    | otherwise = Nothing
+    where relevantLines = catMaybes . map assertion .  filter isAssumptionLine . scopeFilter . take (n - 1) $ ded
+          scopeFilter l = map fst . filter (inScope . snd) $ zip l [1 ..]
+          inScope m = (>= (depth $ ded !! (m - 1))) . minimum . map depth . drop (m - 1) . take n $ ded
           tau' = applySub sub t
 
 flaggedVariableConstraint n ded suc getFlag sub =
@@ -258,6 +265,11 @@ negatedExistentialInstantiation = [ GammaV 1 :|-: SS (lneg $ lsome "v" (phi 1))]
 negatedUniversalInstantiation :: FirstOrderRule lex b
 negatedUniversalInstantiation = [ GammaV 1 :|-: SS (lneg $ lall "v" (phi 1))]
                                 ∴ GammaV 1 :|-: SS (lneg $ phi 1 (taun 1))
+
+conditionalExistentialDerivation :: FirstOrderRule lex b
+conditionalExistentialDerivation = [ GammaV 1 :|-: SS (lsome "v" (phi 1))
+                                   , GammaV 2 :|-: SS (phi 1 (taun 1) .→. phin 1)
+                                   ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (phin 1)
 
 ------------------------------------
 --  1.2. Rules with Variations  --

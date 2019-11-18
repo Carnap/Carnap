@@ -86,9 +86,14 @@ assertion (ShowWithLine f _ _ _) = Just f
 assertion _ = Nothing
 
 isAssumptionLine :: Inference r lex sem => DeductionLine r lex sem -> Bool
-isAssumptionLine (AssertLine _ r _ _) = and (map isAssumption r)
-isAssumptionLine (DependentAssertLine _ r _ _ _ _) = and (map isAssumption r)
+isAssumptionLine (AssertLine _ r _ _) = or (map isAssumption r)
+isAssumptionLine (DependentAssertLine _ r _ _ _ _) = or (map isAssumption r)
 isAssumptionLine _ = False
+
+isOnlyAssumptionLine :: Inference r lex sem => DeductionLine r lex sem -> Bool
+isOnlyAssumptionLine (AssertLine _ r _ _) = and (map isAssumption r)
+isOnlyAssumptionLine (DependentAssertLine _ r _ _ _ _) = and (map isAssumption r)
+isOnlyAssumptionLine _ = False
 
 isPremiseLine :: Inference r lex sem => DeductionLine r lex sem -> Bool
 isPremiseLine (AssertLine _ r _ _) = and (map isPremise r)

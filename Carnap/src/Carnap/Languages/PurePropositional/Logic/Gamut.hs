@@ -22,7 +22,7 @@ data GamutPND = InAnd  | ElimAndL | ElimAndR
               | InNeg1 | InNeg2   | ElimNeg 
               | ElimOr | InOrL    | InOrR 
               | DNE    | EFSQ
-              | AS     | Rep
+              | AS     | PR       | Rep
     deriving Eq
 
 instance Show GamutPND where
@@ -41,6 +41,7 @@ instance Show GamutPND where
         show DNE        = "¬¬" 
         show EFSQ       = "EFSQ"
         show AS         = "assumption"
+        show PR         = "assumption"
         show Rep        = "repeat"
 
 instance Inference GamutPND PurePropLexicon (Form Bool) where
@@ -60,6 +61,7 @@ instance Inference GamutPND PurePropLexicon (Form Bool) where
         ruleOf DNE        = doubleNegationElimination
         ruleOf EFSQ       = falsumElimination
         ruleOf AS         = axiom
+        ruleOf PR         = axiom
 
         indirectInference x
             | x `elem` [InIf1, InIf2, InNeg1, InNeg2] = Just (ImplicitProof (ProofType 0 1))
@@ -74,7 +76,7 @@ parseGamutPND rtc = do r <- choice (map (try . string)
                                 , "I¬" , "I~", "I-", "E¬" , "E~", "E-"
                                 , "E∨" , "E\\/", "Ev",  "I∨" , "I\\/", "Iv"
                                 , "¬¬" , "~~", "--", "repetition", "rep"
-                                , "EFSQ" , "assumption", "as"])
+                                , "EFSQ" , "assumption", "as", "pr"])
                        case r of 
                         r | r `elem` ["I∧" , "I/\\", "I^"] -> return [InAnd]
                           | r `elem` ["E∧" , "E/\\", "E^"] -> return [ElimAndR, ElimAndL]
@@ -87,7 +89,8 @@ parseGamutPND rtc = do r <- choice (map (try . string)
                           | r `elem` ["¬¬" , "~~", "--"]   -> return [DNE]
                           | r `elem` ["EFSQ"]              -> return [EFSQ]
                           | r `elem` ["repetition", "rep"] -> return [Rep]
-                          | r `elem` ["assumption", "as"]  -> return [AS]
+                          | r `elem` ["assumption", "as"]  -> return [AS, PR]
+                          | r `elem` ["pr"]  -> return [PR]
 
 parseGamutPNDProof :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> String -> [DeductionLine GamutPND PurePropLexicon (Form Bool)]
 parseGamutPNDProof rtc = toDeductionFitch (parseGamutPND rtc) (purePropFormulaParser gamutOpts)

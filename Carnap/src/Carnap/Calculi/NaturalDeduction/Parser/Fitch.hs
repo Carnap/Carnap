@@ -70,7 +70,7 @@ toProofTreeFitch ded n = case ded !! (n - 1)  of
                 do mapM_ checkDep deps 
                    mapM_ isSP deps
                    mapM_ notBlank deps
-                   if isAssumptionLine l then checkAssumptionLegit else return True
+                   if isOnlyAssumptionLine l then checkAssumptionLegit else return True
                    dp <- case indirectInference r' of
                         Just (TypedProof prooftype) -> 
                             case filter (\(x,y) -> x /= y) deps of 
@@ -148,7 +148,7 @@ toProofTreeFitch ded n = case ded !! (n - 1)  of
               if all (\x -> depth h <= depth x) chunk
                   then Right True
                   else err "it looks like you're citing a subproof that isn't available at this point, since its final line isn't available"
-          takePrecedingProof = reverse . takeWhile (\x -> depth x > depth (ded !! (n - 1))) . reverse . init $ ded
+          takePrecedingProof = reverse . takeWhile (\x -> depth x > depth (ded !! (n - 1))) . reverse . take (n - 1) $ ded
 
           takeRange m' n' = 
               if n' <= m' 

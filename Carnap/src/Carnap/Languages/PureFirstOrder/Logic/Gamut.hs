@@ -3,7 +3,7 @@ module Carnap.Languages.PureFirstOrder.Logic.Gamut (gamutNDCalc, parseGamutND) w
 
 import Text.Parsec
 import Data.Char
-import Carnap.Core.Data.Types (Form)
+import Carnap.Core.Data.Types (Form, Term)
 import Carnap.Core.Data.Classes
 import Carnap.Core.Unification.Unification (applySub,subst,FirstOrder)
 import Carnap.Languages.PureFirstOrder.Syntax
@@ -20,12 +20,27 @@ import Carnap.Languages.PureFirstOrder.Logic.Rules
 import Carnap.Languages.PurePropositional.Logic.Rules
 
 data GamutND = ND GamutPND
+             | InE
+             | ElimE
+             | InA
+             | ElimA
+
     deriving Eq
 
 instance Show GamutND where
         show (ND x) = show x
+        show InE = "I∃"
+        show ElimE = "E∃"
+        show InA = "I∀"
+        show ElimA = "E∀"
 
 instance Inference GamutND PureLexiconFOL (Form Bool) where
+
+        ruleOf InE = existentialGeneralization
+        ruleOf InA = universalGeneralization
+        ruleOf ElimA = universalInstantiation
+        ruleOf ElimE = conditionalExistentialDerivation
+        ruleOf r = premisesOf r ∴ conclusionOf r
 
         premisesOf (ND x) = map liftSequent (premisesOf x)
         premisesOf r = upperSequents (ruleOf r)
@@ -34,11 +49,27 @@ instance Inference GamutND PureLexiconFOL (Form Bool) where
         conclusionOf r = lowerSequent (ruleOf r)
 
         indirectInference (ND x) = indirectInference x
+        indirectInference _ = Nothing
+
+        restriction InA        = Just (eigenConstraint tau (SS (lall "v" $ phi' 1)) (fogamma 1))
+        restriction ElimE      = Just (eigenConstraint tau (SS (lsome "v" $ phi' 1) :-: SS (phin 1)) (fogamma 1 :+: fogamma 2))
+        restriction _          = Nothing
+
+        globalRestriction (Left ded) n InA   = Just (notAssumedConstraint n ded (taun 1 :: FOLSequentCalc (Term Int)))
+        globalRestriction (Left ded) n ElimE = Just (notAssumedConstraint n ded (taun 1 :: FOLSequentCalc (Term Int)))
+        globalRestriction _ _ _ = Nothing
 
         isAssumption (ND x) = isAssumption x
         isAssumption _ = False
 
-parseGamutND rtc = map ND <$> parseGamutPND rtc
+parseGamutND rtc = try propRule <|> quantRule
+    where propRule = map ND <$> parseGamutPND rtc
+          quantRule = do r <- choice (map (try . string) [ "IA", "I∀", "EA", "E∀", "IE", "I∃", "EE", "E∃" ])
+                         case r of
+                             r | r `elem` [ "IA", "I∀" ] -> return [InA]
+                               | r `elem` [ "EA", "E∀" ] -> return [ElimA]
+                               | r `elem` [ "IE", "I∃" ] -> return [InE]
+                               | r `elem` [ "EE", "E∃" ] -> return [ElimE]
 
 parseGamutNDProof :: RuntimeNaturalDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine GamutND PureLexiconFOL (Form Bool)]
 parseGamutNDProof rtc = toDeductionFitch (parseGamutND rtc) (gamutNDFormulaParser)
