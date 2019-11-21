@@ -42,7 +42,9 @@ createMultipleChoice w i o opts = case M.lookup "goal" opts of
     Just g -> do
         ref <- newIORef (False,"")
         setInnerHTML i (Just g)
-        createSubmitButton w (submitQualitative opts ref g) opts o
+        bw <- createButtonWrapper w o
+        let submit = liftIO . submitQualitative opts ref g
+        createSubmitButton w bw submit opts
         let choices = maybe [] lines $ M.lookup "content" opts
             labeledChoices = zip (Prelude.map getLabel choices) (Prelude.map isGood choices)
         radios <- mapM (toRadio g ref) labeledChoices

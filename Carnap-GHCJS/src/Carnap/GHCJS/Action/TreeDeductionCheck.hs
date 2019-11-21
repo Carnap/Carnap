@@ -65,7 +65,9 @@ activateChecker w (Just (i, o, opts))
                               _ -> initRoot "" o
                   memo <- newIORef mempty
                   threadRef <- newIORef (Nothing :: Maybe ThreadId)
-                  createSubmitButton w (submitTree memo opts calc root mseq) opts o
+                  bw <- createButtonWrapper w o
+                  let submit = liftIO . submitTree memo opts calc root mseq
+                  createSubmitButton w bw submit opts
                   initialCheck <- newListener $ liftIO $  do 
                                     forkIO $ do
                                         threadDelay 500000

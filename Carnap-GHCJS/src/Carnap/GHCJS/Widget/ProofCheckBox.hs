@@ -80,7 +80,7 @@ checkerWith options updateres iog@(IOGoal i o g content _) w = do
            ref <- newIORef False
            elts <- mapM (createElement w . Just) ["div","div","div","div","div"]
            let [Just fd, Just nd, Just sd, Just incompleteAlert, Just aligner] = elts
-           bw <- buttonWrapper w
+           bw <- createButtonWrapper w o
            setSpellcheck (castToHTMLElement i) False
            setAutocapitalize (castToHTMLTextAreaElement i) (Just "off")
            setAutocorrect (castToHTMLTextAreaElement i) False

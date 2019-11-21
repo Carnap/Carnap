@@ -61,16 +61,10 @@ activateTranslate w (Just (i,o,opts)) = do
                   (Just g, Just content, Just problem) ->
                     case parse (parser `sepBy` (spaces >> char ',' >> spaces) <* eof) "" (simpleDecipher . read $ g) of
                       (Right fs) -> do 
-                           bw <- buttonWrapper w
+                           bw <- createButtonWrapper w o
                            ref <- newIORef False
-                           case M.lookup "submission" opts of
-                              Just s | take 7 s == "saveAs:" -> do
-                                  let l = Prelude.drop 7 s
-                                  bt <- doneButton w "Submit Solution"
-                                  appendChild bw (Just bt)
-                                  submit <- newListener $ submitTrans opts i ref l fs parser checker tests
-                                  addListener bt click submit False                
-                              _ -> return ()
+                           let submit = submitTrans opts i ref fs parser checker tests
+                           createSubmitButton w bw submit opts
                            setValue (castToHTMLInputElement i) (Just content)
                            setInnerHTML o (Just problem)
                            mpar@(Just par) <- getParentNode o               
@@ -171,7 +165,7 @@ tryTrans parser equiv tests o ref fs = onEnter $
                                                setInnerHTML o (Just "Success!")
             | otherwise = writeIORef ref False >> message "Not quite. Try again!"
 
-submitTrans opts i ref l fs parser checker tests = 
+submitTrans opts i ref fs parser checker tests l = 
         do isFinished <- liftIO $ readIORef ref
            if isFinished
            then trySubmit Translation opts l (ProblemContent (pack $ show fs)) True

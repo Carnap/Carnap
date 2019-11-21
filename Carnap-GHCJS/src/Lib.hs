@@ -10,7 +10,7 @@ module Lib (genericSendJSON, sendJSON, onEnter, onKey, clearInput,
            message, IOGoal(..), updateWithValue, submissionSource,
            assignmentKey, initialize, initializeCallback, initCallbackObj,
            toCleanVal, popUpWith, spinnerSVG, doneButton, questionButton,
-           exclaimButton, expandButton, createSubmitButton, buttonWrapper,
+           exclaimButton, expandButton, createSubmitButton, createButtonWrapper,
            maybeNodeListToList, trySubmit, inOpts, rewriteWith
            ) where
 
@@ -360,19 +360,15 @@ initElements getter setter = runWebGUI $ \w ->
                     [] -> return ()
                     _ -> mapM_ (setter dom) elts
 
-createSubmitButton :: Document -> (String -> IO ()) -> M.Map String String -> Element -> IO ()
-createSubmitButton w submit opts o = 
+createSubmitButton :: Document -> Element -> (String -> EventM e MouseEvent ()) -> M.Map String String ->  IO ()
+createSubmitButton w bw submit opts = 
       case M.lookup "submission" opts of
          Just s | take 7 s == "saveAs:" -> do
-             bw <- buttonWrapper w
              let l = Prelude.drop 7 s
              bt <- doneButton w "Submit"
              appendChild bw (Just bt)
-             submitter <- newListener $ liftIO $ submit l
+             submitter <- newListener $ submit l
              addListener bt click submitter False                
-             mpar@(Just par) <- getParentNode o               
-             appendChild par (Just bw)
-             return ()
          _ -> return ()
 
 loginCheck successMsg serverResponse  
@@ -399,9 +395,11 @@ exclaimButton = svgButtonWith exclaimSVG
 
 expandButton = svgButtonWith expandSVG
 
-buttonWrapper w = do (Just bw) <- createElement w (Just "div")
-                     setAttribute bw "class" "buttonWrapper"
-                     return bw
+createButtonWrapper w o = do (Just bw) <- createElement w (Just "div")
+                             setAttribute bw "class" "buttonWrapper"
+                             Just par <- getParentNode o
+                             appendChild par (Just bw)
+                             return bw
 
 --------------------------------------------------------
 --1.7 Parsing

@@ -131,16 +131,10 @@ activateChecker w (Just (i,o,opts)) =
                   Just g ->
                     case parse (purePropFormulaParser standardLetters <* eof) "" g of
                       (Right f) -> do 
-                         bw <- buttonWrapper w
+                         bw <- createButtonWrapper w o
                          ref <- newIORef (f,[(f,0)], T.Node (f,0) [], 0)  
-                         case M.lookup "submission" opts of
-                              Just s | take 7 s == "saveAs:" -> do
-                                  let l = Prelude.drop 7 s
-                                  bt <- doneButton w "Submit"
-                                  appendChild bw (Just bt)
-                                  submit <- newListener $ submitSyn opts ref l       
-                                  addListener bt click submit False                
-                              _ -> return ()
+                         let submit = liftIO . submitSyn opts ref
+                         createSubmitButton w bw submit opts
                          (Just tree) <- createElement w (Just "div")
                          appendChild o (Just tree)
                          setInnerHTML tree (Just $ sf f)                   

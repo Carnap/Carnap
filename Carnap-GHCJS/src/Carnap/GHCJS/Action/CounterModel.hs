@@ -67,26 +67,18 @@ activateCounterModeler w (Just (i,o,opts)) = do
                       Left e -> setInnerHTML o (Just $ show e) 
                       Right f -> do
                           ref <- newIORef $ Left "Please press submit to check your answer"
-                          bw <- buttonWrapper w
+                          bw <- createButtonWrapper w o
                           check <- cmbuilder w f (i,o) bw opts
                           fields <- catMaybes <$> getListOfElementsByTag o "label"
                           mapM (setField w fields) (makeGivens opts)
-                          case M.lookup "submission" opts of
-                              Just s | take 7 s == "saveAs:" -> do
-                                  let l = Prelude.drop 7 s
-                                  bt1 <- doneButton w "Submit"
-                                  appendChild bw (Just bt1)
-                                  submit <- newListener $ submitCounterModel opts ref check fields (show f) l
-                                  addListener bt1 click submit False                
-                              _ -> return ()
+                          let submit = submitCounterModel opts ref check fields (show f)
+                          createSubmitButton w bw submit opts
                           if "nocheck" `inOpts` opts then return () 
                           else do
                               bt2 <- questionButton w "Check"
                               appendChild bw (Just bt2)
                               checkIt <- newListener $ checkCounterModeler ref fields check
                               addListener bt2 click checkIt False                
-                          Just par <- getParentNode o
-                          appendChild par (Just bw)
                           return ()
                 _ -> print "countermodeler lacks a goal"
 

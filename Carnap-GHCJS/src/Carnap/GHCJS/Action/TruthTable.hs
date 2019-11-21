@@ -62,24 +62,16 @@ activateTruthTables w (Just (i,o,opts)) = do
                       Left e -> setInnerHTML o (Just $ show e) 
                       Right f -> do
                           ref <- newIORef False
-                          bw <- buttonWrapper w
+                          bw <- createButtonWrapper w o
                           (check,rows) <- ttbuilder w f (i,o) ref bw opts
-                          case M.lookup "submission" opts of
-                              Just s | take 7 s == "saveAs:" -> do
-                                  let l = Prelude.drop 7 s
-                                  bt1 <- doneButton w "Submit"
-                                  appendChild bw (Just bt1)
-                                  submit <- newListener $ submitTruthTable opts ref check rows (show f) l
-                                  addListener bt1 click submit False                
-                              _ -> return ()
+                          let submit = submitTruthTable opts ref check rows (show f)
+                          createSubmitButton w bw submit opts
                           if "nocheck" `inOpts` opts then return () 
                           else do
                               bt2 <- questionButton w "Check"
                               appendChild bw (Just bt2)
                               checkIt <- newListener $ checkTable ref check
                               addListener bt2 click checkIt False                
-                          Just par <- getParentNode o
-                          appendChild par (Just bw)
                           return ()
                 _ -> print "truth table was missing an option"
           checkTable ref check = do correct <- liftIO $ check
