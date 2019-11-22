@@ -66,7 +66,7 @@ activateChecker w (Just (i, o, opts))
                   memo <- newIORef mempty
                   threadRef <- newIORef (Nothing :: Maybe ThreadId)
                   bw <- createButtonWrapper w o
-                  let submit = liftIO . submitTree memo opts calc root mseq
+                  let submit = submitTree memo opts calc root mseq
                   createSubmitButton w bw submit opts
                   initialCheck <- newListener $ liftIO $  do 
                                     forkIO $ do
@@ -90,14 +90,14 @@ activateChecker w (Just (i, o, opts))
                       Nothing -> return Nothing
 
 submitTree memo opts calc root (Just seq) l = 
-        do Just val <- toCleanVal root
+        do Just val <- liftIO $ toCleanVal root
            case parse parseTreeJSON val of
                Error s -> message $ "Something has gone wrong. Here's the error:" ++ s
                Success tree -> case toProofTree calc tree of
                      Left _ | "exam" `elem` optlist -> trySubmit DeductionTree opts l (DeductionTreeData (pack (show seq)) tree (toList opts)) False
                      Left _ -> message "Something is wrong with the proof... Try again?"
                      Right prooftree -> do 
-                          validation <- hoReduceProofTreeMemo memo (structuralRestriction prooftree) prooftree 
+                          validation <- liftIO $ hoReduceProofTreeMemo memo (structuralRestriction prooftree) prooftree 
                           case validation of
                               Right seq' | "exam" `elem` optlist || (seq' `seqSubsetUnify` seq) 
                                 -> trySubmit DeductionTree opts l (DeductionTreeData (pack (show seq)) tree (toList opts)) (seq' `seqSubsetUnify` seq)

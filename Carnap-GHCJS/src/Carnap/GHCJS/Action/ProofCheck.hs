@@ -38,7 +38,7 @@ import GHCJS.DOM.HTMLElement (insertAdjacentElement)
 import GHCJS.DOM.Types
 import GHCJS.DOM.HTMLTextAreaElement (getValue)
 import GHCJS.DOM.Document (createElement, getDefaultView)
-import GHCJS.DOM.EventM (EventM, target, newListener,addListener)
+import GHCJS.DOM.EventM (EventM, eventCurrentTarget, newListener,addListener)
 import GHCJS.DOM.Window (prompt)
 import GHCJS.DOM.Node (appendChild, getParentNode,removeChild)
 --import GHCJS.DOM.EventM
@@ -225,15 +225,15 @@ computeRule ref g mseq _ calc =
                             writeIORef ref True
 
 submitDer opts checker l g seq ref _ i = do isFinished <- liftIO $ readIORef ref
-                                            (Just v) <- getValue (castToHTMLTextAreaElement i)
-                                            liftIO $ if isFinished 
+                                            (Just v) <- liftIO $ getValue (castToHTMLTextAreaElement i)
+                                            if isFinished 
                                                 then trySubmit Derivation opts l (DerivationDataOpts (pack $ show seq) (pack v) (M.toList opts)) True
-                                                else do setAttribute g "class" "goal working"
+                                                else do liftIO $ setAttribute g "class" "goal working"
                                                         rtconfig <- liftIO $ rulePost checker
                                                         let ndcalc = checkerCalc checker
                                                             ded = ndParseProof ndcalc rtconfig v
                                                             submission = DerivationDataOpts (pack $ show seq) (pack v) (M.toList opts)
-                                                        Feedback mseq _ <- getFeedback checker ded
+                                                        Feedback mseq _ <- liftIO $ getFeedback checker ded
                                                         setAttribute g "class" "goal"
                                                         case sequent checker of
                                                              Nothing -> message "No goal sequent to submit"
@@ -274,7 +274,10 @@ trySave checker drs ref w i =
                                   let conc = (toSchema . fromSequent) c'
                                   mname <- prompt w "What name will you give this rule (use all capital letters!)" (Just "")
                                   case (mname,checkerToRule checker)  of
-                                      (Just name, Just toRule) | allcaps name -> liftIO $ sendJSON (SaveRule name $ toRule $ DerivedRule conc prems) loginCheck error
+                                      (Just name, Just toRule) | allcaps name -> do
+                                            Just t <- eventCurrentTarget
+                                            setStatus (castToElement t) Submitted
+                                            liftIO $ sendJSON (SaveRule name $ toRule $ DerivedRule conc prems) loginCheck error
                                       (Just name, Just toRule) -> message "rule name must be all capital letters"
                                       (Nothing,_) -> message "No name entered"
                                       (_,Nothing) -> message "No saved rules for this proof system"

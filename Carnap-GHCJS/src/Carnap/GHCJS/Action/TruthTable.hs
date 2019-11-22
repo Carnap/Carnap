@@ -83,7 +83,7 @@ activateTruthTables w (Just (i,o,opts)) = do
                                                 liftIO $ writeIORef ref False
                                                 setAttribute i "class" "input incompleteTT"
 
-submitTruthTable:: Map String String -> IORef Bool ->  IO Bool -> [Element] -> String -> String -> EventM HTMLInputElement e ()
+submitTruthTable:: IsEvent e => Map String String -> IORef Bool ->  IO Bool -> [Element] -> String -> String -> EventM HTMLInputElement e ()
 submitTruthTable opts ref check rows s l = do isDone <- liftIO $ readIORef ref
                                               if isDone 
                                                  then trySubmit TruthTable opts l (ProblemContent (pack s)) True

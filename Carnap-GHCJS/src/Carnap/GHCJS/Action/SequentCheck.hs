@@ -68,7 +68,7 @@ activateChecker w (Just (i, o, opts))
                               _ -> initRoot "" o
                   threadRef <- newIORef (Nothing :: Maybe ThreadId)
                   bw <- createButtonWrapper w o
-                  let submit = liftIO . submitSeq opts calc root
+                  let submit = submitSeq opts calc root
                   createSubmitButton w bw submit opts
                   initialCheck <- newListener $ liftIO $  do 
                                     forkIO $ do
@@ -92,7 +92,7 @@ activateChecker w (Just (i, o, opts))
                       Nothing -> return Nothing
 
 submitSeq opts calc root l = 
-        do Just val <- toCleanVal root
+        do Just val <- liftIO $ toCleanVal root
            case parse parseTreeJSON val of
                Error s -> message "Something is wrong with the proof... Try again?"
                Success tree@(Node (content,_) _) -> case toTableau calc tree of

@@ -133,7 +133,7 @@ activateChecker w (Just (i,o,opts)) =
                       (Right f) -> do 
                          bw <- createButtonWrapper w o
                          ref <- newIORef (f,[(f,0)], T.Node (f,0) [], 0)  
-                         let submit = liftIO . submitSyn opts ref
+                         let submit = submitSyn opts ref
                          createSubmitButton w bw submit opts
                          (Just tree) <- createElement w (Just "div")
                          appendChild o (Just tree)
@@ -148,7 +148,7 @@ activateChecker w (Just (i,o,opts)) =
                   _ -> print "syntax check was missing an option"
 activateChecker _ Nothing  = return ()
 
-submitSyn :: M.Map String String -> IORef (PureForm,[(PureForm,Int)], Tree (PureForm,Int),Int) -> String -> EventM HTMLInputElement e ()
+submitSyn :: IsEvent e => M.Map String String -> IORef (PureForm,[(PureForm,Int)], Tree (PureForm,Int),Int) -> String -> EventM HTMLInputElement e ()
 submitSyn opts ref l = do (f,forms,_,_) <- liftIO $ readIORef ref
                           case forms of 
                              [] -> do trySubmit SyntaxCheck opts l (ProblemContent (pack $ show f)) True

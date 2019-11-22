@@ -11,7 +11,7 @@ module Lib (genericSendJSON, sendJSON, onEnter, onKey, clearInput,
            assignmentKey, initialize, initializeCallback, initCallbackObj,
            toCleanVal, popUpWith, spinnerSVG, doneButton, questionButton,
            exclaimButton, expandButton, createSubmitButton, createButtonWrapper,
-           maybeNodeListToList, trySubmit, inOpts, rewriteWith
+           maybeNodeListToList, trySubmit, inOpts, rewriteWith, setStatus, ButtonStatus(..)
            ) where
 
 import Data.Aeson
@@ -351,6 +351,8 @@ formToTree f = T.Node f (map formToTree (children f))
 --1.6 Boilerplate
 --------------------------------------------------------
 
+data ButtonStatus = Edited | Submitted
+
 initElements :: (Document -> HTMLElement -> IO [a]) -> (Document -> a -> IO b) -> IO ()
 initElements getter setter = runWebGUI $ \w -> 
             do (Just dom) <- webViewGetDomDocument w
@@ -360,7 +362,7 @@ initElements getter setter = runWebGUI $ \w ->
                     [] -> return ()
                     _ -> mapM_ (setter dom) elts
 
-createSubmitButton :: Document -> Element -> (String -> EventM e MouseEvent ()) -> M.Map String String ->  IO ()
+createSubmitButton :: Document -> Element -> (String -> EventM e MouseEvent ()) -> M.Map String String ->  IO (ButtonStatus -> IO ())
 createSubmitButton w bw submit opts = 
       case M.lookup "submission" opts of
          Just s | take 7 s == "saveAs:" -> do
@@ -369,7 +371,11 @@ createSubmitButton w bw submit opts =
              appendChild bw (Just bt)
              submitter <- newListener $ submit l
              addListener bt click submitter False                
-         _ -> return ()
+             return (setStatus bt)
+         _ -> return (const $ return ())
+
+setStatus b Edited = setAttribute b "carnap-exercise-status" "edited"
+setStatus b Submitted = setAttribute b "carnap-exercise-status" "submitted"
 
 loginCheck successMsg serverResponse  
      | serverResponse == "No User" = alert "You need to log in before you can submit anything"
@@ -425,10 +431,12 @@ trySubmit problemType opts ident problemData correct =
                 key <- liftIO assignmentKey
                 case msource of 
                    Nothing -> message "Not able to identify problem source. Perhaps this document has not been assigned?"
-                   Just source -> liftIO $ sendJSON 
-                                   (Submit problemType ident problemData source correct (M.lookup "points" opts >>= readMaybe) key) 
-                                   (loginCheck $ "Submitted Exercise " ++ ident)
-                                   errorPopup
+                   Just source -> do Just t <- eventCurrentTarget
+                                     setStatus (castToElement t) Submitted
+                                     liftIO $ sendJSON 
+                                           (Submit problemType ident problemData source correct (M.lookup "points" opts >>= readMaybe) key) 
+                                           (loginCheck $ "Submitted Exercise " ++ ident)
+                                           errorPopup
 
 ------------------
 --1.8 SVG Data  --

@@ -98,7 +98,7 @@ activateCounterModeler w (Just (i,o,opts)) = do
                                                            message "Success!"
                                                            setAttribute i "class" "input completeCM"
 
-submitCounterModel:: Map String String -> IORef (Either String ())->  IO (Either String ())-> [Element] -> String -> String -> EventM HTMLTextAreaElement e ()
+submitCounterModel:: IsEvent e => Map String String -> IORef (Either String ())->  IO (Either String ())-> [Element] -> String -> String -> EventM HTMLTextAreaElement e ()
 submitCounterModel opts ref check fields s l = do isDone <- liftIO $ readIORef ref
                                                   case isDone of
                                                       Right _ -> trySubmit CounterModel opts l (ProblemContent (pack s)) True

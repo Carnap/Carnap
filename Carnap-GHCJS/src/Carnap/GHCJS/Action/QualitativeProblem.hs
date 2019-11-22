@@ -30,8 +30,8 @@ activateQualitativeProblem w (Just (i,o,opts)) = do
             --Just "shortanswer" -> createShortAnswer w i o opts
             _  -> return ()
 
-submitQualitative :: M.Map String String -> IORef (Bool, String) -> String -> String -> IO ()
-submitQualitative opts ref g l = do (isDone,val) <- readIORef ref
+submitQualitative :: IsEvent e => M.Map String String -> IORef (Bool, String) -> String -> String -> EventM Element e ()
+submitQualitative opts ref g l = do (isDone,val) <- liftIO $ readIORef ref
                                     if isDone 
                                         then trySubmit Qualitative opts l (ProblemContent (pack g)) True
                                         else message "Not quite right. Try again?"
@@ -43,7 +43,7 @@ createMultipleChoice w i o opts = case M.lookup "goal" opts of
         ref <- newIORef (False,"")
         setInnerHTML i (Just g)
         bw <- createButtonWrapper w o
-        let submit = liftIO . submitQualitative opts ref g
+        let submit = submitQualitative opts ref g
         createSubmitButton w bw submit opts
         let choices = maybe [] lines $ M.lookup "content" opts
             labeledChoices = zip (Prelude.map getLabel choices) (Prelude.map isGood choices)
