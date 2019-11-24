@@ -71,33 +71,35 @@ toProofTreeFitch ded n = case ded !! (n - 1)  of
                    mapM_ isSP deps
                    mapM_ notBlank deps
                    if isOnlyAssumptionLine l then checkAssumptionLegit else return True
-                   dp <- case indirectInference r' of
-                        Just (TypedProof prooftype) -> 
+                   dp <- handleArity (indirectInference r')
+                   deps' <- mapM (toProofTreeFitch ded) dp
+                   return $ Node (ProofLine n (SS $ liftToSequent f) r) deps'
+                where handleArity (Just (TypedProof prooftype)) =
                             case filter (\(x,y) -> x /= y) deps of 
                                  [thesp] -> do thesubprems <- subproofProcess prooftype thesp 
                                                return $ thesubprems ++ map fst (delete thesp deps)
                                  _ -> err "you need to specify exactly one subproof for this rule"
-                        Just (ImplicitProof prooftype) -> 
-                            case filter (\(x,y) -> x /= y) deps of 
-                                [] -> do let thesp = takePrecedingProof
-                                         if null thesp then err "this rule must follow a subproof"
-                                              else do let spRange = (n - (length thesp),n - 1)
-                                                      checkDep spRange
-                                                      isSP spRange
-                                                      notBlank spRange
-                                                      thesubprems <- subproofProcess prooftype spRange
-                                                      return $ thesubprems ++ map fst deps
-                                _ -> err "this rule cannot be used with a line range citation"
-                        Just (PolyTypedProof n prooftype) -> 
-                            case filter (\(x,y) -> x /= y) deps of 
-                                 l | length l == n -> do thesubprems <- mapM (subproofProcess prooftype) l
-                                                         return $ concat thesubprems ++ map fst (deps \\ l)
-                                 _ -> err $ "you need to specify exactly " ++ show n ++ " subproofs for this rule"
-                        _ -> return . map snd $ deps -- XXX subproofs that don't have an arity just use the last line, e.g. the second of their range.
-                                                     -- this is a bit of a hack. All indirect rules should have arities.
-                   deps' <- mapM (toProofTreeFitch ded) dp
-                   return $ Node (ProofLine n (SS $ liftToSequent f) r) deps'
-                where notBlank (begin,end) = 
+                      handleArity (Just (ImplicitProof prooftype))
+                            | not (null (filter (\(x,y) -> x /= y) deps)) = err "this rule cannot be used with a line range citation"
+                            | otherwise = do let thesp = takePrecedingProof
+                                             if null thesp then err "this rule must follow a subproof"
+                                                else do let spRange = (n - (length thesp),n - 1)
+                                                        checkDep spRange
+                                                        isSP spRange
+                                                        notBlank spRange
+                                                        thesubprems <- subproofProcess prooftype spRange
+                                                        return $ thesubprems ++ map fst deps
+                      handleArity (Just (PolyTypedProof n prooftype)) =
+                            let l = filter (\(x,y) -> x /= y) deps in
+                            if length l /= n then err $ "you need to specify exactly " ++ show n ++ " subproofs for this rule"
+                                             else do thesubprems <- mapM (subproofProcess prooftype) l
+                                                     return $ concat thesubprems ++ map fst (deps \\ l)
+                      handleArity (Just (WithAlternate a1 a2)) = either (const $ handleArity $ Just a2) Right (handleArity $ Just a1)
+                                                              -- XXX the above is not ideal for producing error messages
+                      handleArity _ = return . map snd $ deps -- XXX subproofs that don't have an arity just use the last line, e.g. the second of their range.
+                                                              -- this is a bit of a hack. All indirect rules should have arities.
+
+                      notBlank (begin,end) = 
                         case (ded !! (begin - 1), ded !! (end - 1)) of
                             (SeparatorLine _,_) -> err "You appear to be citing a separator line here. This isn't allowed."
                             (_,SeparatorLine _) -> err "You appear to be citing a separator line here. This isn't allowed."

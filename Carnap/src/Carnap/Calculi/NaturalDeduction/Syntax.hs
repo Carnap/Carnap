@@ -298,6 +298,7 @@ data IndirectArity = PolyProof --takes an arbitrary number of assertions or subp
                    | TypedProof ProofType --takes a subproof with a particular structure, given by a prooftype
                    | ImplicitProof ProofType --takes a subproof which is not cited explicitly, as in Gamut
                    | PolyTypedProof Int (ProofType) --takes n subproofs, each with the structure given by prooftype
+                   | WithAlternate IndirectArity IndirectArity --tries the first, and on failure, falls back on the second
 
 doubleProof = TypedProof (ProofType 0 2)
 

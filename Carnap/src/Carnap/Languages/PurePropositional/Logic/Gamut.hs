@@ -64,7 +64,7 @@ instance Inference GamutPND PurePropLexicon (Form Bool) where
         ruleOf PR         = axiom
 
         indirectInference x
-            | x `elem` [InIf1, InIf2, InNeg1, InNeg2] = Just (ImplicitProof (ProofType 0 1))
+            | x `elem` [InIf1, InIf2, InNeg1, InNeg2] = Just (WithAlternate (ImplicitProof (ProofType 0 1)) (TypedProof (ProofType 0 1)))
             | otherwise = Nothing
 
         isAssumption AS = True
