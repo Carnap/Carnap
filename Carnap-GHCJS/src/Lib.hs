@@ -1,5 +1,5 @@
 {-# LANGUAGE RankNTypes, QuasiQuotes, FlexibleContexts, DeriveDataTypeable, CPP, JavaScriptFFI #-}
-module Lib (genericSendJSON, sendJSON, onEnter, onKey, doOnce, clearInput,
+module Lib (genericSendJSON, sendJSON, onEnter, onKey, doOnce, dispatchCustom, clearInput,
            getListOfElementsByClass, getListOfElementsByTag, tryParse,
            treeToElement, genericTreeToUl, treeToUl, genericListToUl,
            listToUl, formToTree, leaves, adjustFirstMatching, decodeHtml,
@@ -8,7 +8,7 @@ module Lib (genericSendJSON, sendJSON, onEnter, onKey, doOnce, clearInput,
            getInOutElts,generateExerciseElts, withLabel,
            formAndLabel,seqAndLabel, folSeqAndLabel, folFormAndLabel,
            message, IOGoal(..), updateWithValue, submissionSource,
-           assignmentKey, initialize, initializeCallback, initCallbackObj,
+           assignmentKey, initialize, mutate, initializeCallback, initCallbackObj,
            toCleanVal, popUpWith, spinnerSVG, doneButton, questionButton,
            exclaimButton, expandButton, createSubmitButton, createButtonWrapper,
            maybeNodeListToList, trySubmit, inOpts, rewriteWith, setStatus, ButtonStatus(..)
@@ -51,7 +51,7 @@ import GHCJS.DOM.Types
 import GHCJS.DOM.Element
 import GHCJS.DOM.HTMLInputElement
 import qualified GHCJS.DOM.HTMLTextAreaElement as TA (setValue,getValue)
-import GHCJS.DOM.Document (createElement, getBody)
+import GHCJS.DOM.Document (createElement, getBody, createEvent)
 import GHCJS.DOM.Node
 import qualified GHCJS.DOM.HTMLCollection as HC
 import GHCJS.DOM.NodeList
@@ -62,12 +62,10 @@ import GHCJS.DOM.EventM
 import GHCJS.DOM.EventTarget
 import GHCJS.DOM.EventTargetClosures (EventName(..))
 import Carnap.GHCJS.SharedTypes
-import Carnap.Core.Data.Types (Form(..))
 import Carnap.Calculi.NaturalDeduction.Syntax (NaturalDeductionCalc(..))
-import Carnap.Languages.PurePropositional.Syntax (PureForm, PurePropLexicon)
+import Carnap.Languages.PurePropositional.Syntax (PureForm)
 import Carnap.Languages.PurePropositional.Logic
 import Carnap.Languages.PureFirstOrder.Parser (folFormulaParser)
-import Carnap.Languages.PureFirstOrder.Syntax (PureLexiconFOL)
 import Carnap.Languages.PureFirstOrder.Logic
 import Carnap.Languages.PurePropositional.Parser (purePropFormulaParser, standardLetters)
 
@@ -116,6 +114,13 @@ doOnce target event bubble handler = do listener <- mfix $ \rec -> newListener  
                                                         handler 
                                                         liftIO $ removeListener target event rec bubble 
                                         addListener target event listener bubble
+
+dispatchCustom :: Document -> Element -> String -> IO ()
+dispatchCustom w e s = do Just custom <- createEvent w "Event"
+                          initEvent custom s True True
+                          dispatchEvent e (Just custom)
+                          return ()
+
 --------------------------------------------------------
 --1.1.2 Common responsive behavior
 --------------------------------------------------------
@@ -573,6 +578,9 @@ assignmentKey = do k <- assignmentKeyJS
 initialize :: EventName t Event
 initialize = EventName $ toJSString "initialize"
 
+mutate :: EventName t Event
+mutate = EventName $ toJSString "mutate"
+
 toCleanVal :: JSVal -> IO (Maybe Value)
 toCleanVal x = sanatizeJSVal x >>= fromJSVal
 
@@ -588,6 +596,9 @@ initializeCallback s f = do theCB <- asyncCallback2 (cb f)
 
 initialize :: EventName t Event
 initialize = EventName "initialize"
+
+mutate :: EventName t Event
+mutate = EventName "mutate"
 
 initializeCallback :: (Value -> IO Value) -> IO ()
 initializeCallback = error "initializeCallback requires the GHCJS FFI"

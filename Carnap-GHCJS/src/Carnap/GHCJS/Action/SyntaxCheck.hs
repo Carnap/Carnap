@@ -134,7 +134,7 @@ activateChecker w (Just (i,o,opts)) =
                          bw <- createButtonWrapper w o
                          ref <- newIORef (f,[(f,0)], T.Node (f,0) [], 0)  
                          let submit = submitSyn opts ref
-                         createSubmitButton w bw submit opts
+                         btStatus <- createSubmitButton w bw submit opts
                          (Just tree) <- createElement w (Just "div")
                          appendChild o (Just tree)
                          setInnerHTML tree (Just $ sf f)                   
@@ -142,7 +142,8 @@ activateChecker w (Just (i,o,opts)) =
                          mpar@(Just par) <- getParentNode o               
                          insertBefore par (Just bw) (Just o)                    
                          match <- newListener $ tryMatch tree ref w sf opts
-                         (Just w') <- getDefaultView w                    
+                         (Just w') <- getDefaultView w
+                         doOnce i keyUp False $ liftIO $ btStatus Edited
                          addListener i keyUp match False                  
                       (Left e) -> setInnerHTML o (Just $ show e)
                   _ -> print "syntax check was missing an option"

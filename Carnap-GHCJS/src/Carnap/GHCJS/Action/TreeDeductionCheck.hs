@@ -67,7 +67,7 @@ activateChecker w (Just (i, o, opts))
                   threadRef <- newIORef (Nothing :: Maybe ThreadId)
                   bw <- createButtonWrapper w o
                   let submit = submitTree memo opts calc root mseq
-                  createSubmitButton w bw submit opts
+                  btStatus <- createSubmitButton w bw submit opts
                   initialCheck <- newListener $ liftIO $  do 
                                     forkIO $ do
                                         threadDelay 500000
@@ -77,6 +77,8 @@ activateChecker w (Just (i, o, opts))
                                             Nothing -> return ()
                                     return ()
                   addListener i initialize initialCheck False --initial check in case we preload a tableau
+                  doOnce i mutate False $ liftIO $ btStatus Edited
+                  root `onChange` (\_ -> dispatchCustom w i "mutate")
                   root `onChange` (\_ -> checkOnChange memo threadRef calc root)
 
               parseGoal calc = do 

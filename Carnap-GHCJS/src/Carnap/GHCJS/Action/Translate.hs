@@ -64,8 +64,9 @@ activateTranslate w (Just (i,o,opts)) = do
                            bw <- createButtonWrapper w o
                            ref <- newIORef False
                            let submit = submitTrans opts i ref fs parser checker tests
-                           createSubmitButton w bw submit opts
+                           btStatus <- createSubmitButton w bw submit opts
                            setValue (castToHTMLInputElement i) (Just content)
+                           doOnce i input False $ liftIO $ btStatus Edited
                            setInnerHTML o (Just problem)
                            mpar@(Just par) <- getParentNode o               
                            insertBefore par (Just bw) (Just o)

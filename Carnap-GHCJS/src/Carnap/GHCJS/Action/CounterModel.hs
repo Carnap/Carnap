@@ -17,7 +17,7 @@ import GHCJS.DOM.Types
 import GHCJS.DOM.Element
 import GHCJS.DOM.Event (initEvent)
 import GHCJS.DOM.EventTarget (dispatchEvent)
-import GHCJS.DOM.Document (createElement, createEvent, getDefaultView)
+import GHCJS.DOM.Document (createElement, createEvent)
 import GHCJS.DOM.Node (appendChild, getParentNode, insertBefore)
 import GHCJS.DOM.EventM (newListener, addListener, EventM, target)
 import GHCJS.DOM.HTMLTextAreaElement (castToHTMLTextAreaElement, setValue, getValue)
@@ -72,7 +72,8 @@ activateCounterModeler w (Just (i,o,opts)) = do
                           fields <- catMaybes <$> getListOfElementsByTag o "label"
                           mapM (setField w fields) (makeGivens opts)
                           let submit = submitCounterModel opts ref check fields (show f)
-                          createSubmitButton w bw submit opts
+                          btStatus <- createSubmitButton w bw submit opts
+                          doOnce o input False $ liftIO $ btStatus Edited
                           if "nocheck" `inOpts` opts then return () 
                           else do
                               bt2 <- questionButton w "Check"
@@ -515,9 +516,7 @@ setField w fields (name,val) = do inputs <- concat <$> mapM (\f -> getListOfElem
                                                     Just "SELECT" -> S.setValue (castToHTMLSelectElement f) (Just val)
                                                     Just s -> print $ "unrecognized tag:" ++ s
                                                     Nothing -> print "no tagname"
-                                                  Just init <- createEvent w "Event"
-                                                  initEvent init "initialize" True True
-                                                  dispatchEvent f (Just init)
+                                                  dispatchCustom w f "initialize"
                                                   return ()
                                    _ -> print $ "missing or duplicated field " ++ name ++ "in countermodel spec"
 

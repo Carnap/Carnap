@@ -44,11 +44,12 @@ createMultipleChoice w i o opts = case M.lookup "goal" opts of
         setInnerHTML i (Just g)
         bw <- createButtonWrapper w o
         let submit = submitQualitative opts ref g
-        createSubmitButton w bw submit opts
+        btStatus <- createSubmitButton w bw submit opts
         let choices = maybe [] lines $ M.lookup "content" opts
             labeledChoices = zip (Prelude.map getLabel choices) (Prelude.map isGood choices)
         radios <- mapM (toRadio g ref) labeledChoices
         mapM_ (appendChild o . Just . fst) radios
+        doOnce o change False $ liftIO $ btStatus Edited
         return ()
 
     where getLabel s = case readMaybe s :: Maybe (Int, String) of
@@ -73,5 +74,3 @@ createMultipleChoice w i o opts = case M.lookup "goal" opts of
                appendChild wrapper (Just input)
                appendChild wrapper (Just label)
                return (wrapper, b)
-
-

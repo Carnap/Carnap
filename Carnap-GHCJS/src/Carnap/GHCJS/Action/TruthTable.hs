@@ -65,7 +65,8 @@ activateTruthTables w (Just (i,o,opts)) = do
                           bw <- createButtonWrapper w o
                           (check,rows) <- ttbuilder w f (i,o) ref bw opts
                           let submit = submitTruthTable opts ref check rows (show f)
-                          createSubmitButton w bw submit opts
+                          btStatus <- createSubmitButton w bw submit opts
+                          doOnce o change False $ liftIO $ btStatus Edited
                           if "nocheck" `inOpts` opts then return () 
                           else do
                               bt2 <- questionButton w "Check"
