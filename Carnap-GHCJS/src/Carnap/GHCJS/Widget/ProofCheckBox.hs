@@ -15,7 +15,7 @@ import Control.Monad.IO.Class
 import Control.Monad (when)
 import Control.Concurrent
 import GHCJS.DOM.Types
-import GHCJS.DOM.Element (setAttribute, getAttribute, getInnerHTML, setInnerHTML, keyDown, keyUp, click, getScrollWidth, getScrollHeight)
+import GHCJS.DOM.Element (setAttribute, getAttribute, getInnerHTML, setInnerHTML, keyDown, keyUp, click, input, getScrollWidth, getScrollHeight)
 import GHCJS.DOM.HTMLElement (castToHTMLElement, setSpellcheck)
 import GHCJS.DOM.Document (createElement, getDefaultView, getBody, getHead, getDomain, setDomain,getElementsByTagName)
 import GHCJS.DOM.Window (open,getDocument)
@@ -123,6 +123,7 @@ checkerWith options updateres iog@(IOGoal i o g content _) w = do
                    bt' <- doneButton w (label button)
                    appendChild bw  (Just bt')
                    buttonAct <- newListener $ action button ref w' i
+                   doOnce i input False $ liftIO $ setStatus bt' Edited
                    addListener bt' click buttonAct False                
                Nothing -> return ()
            case feedback options of

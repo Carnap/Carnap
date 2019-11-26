@@ -1,5 +1,5 @@
 {-# LANGUAGE RankNTypes, QuasiQuotes, FlexibleContexts, DeriveDataTypeable, CPP, JavaScriptFFI #-}
-module Lib (genericSendJSON, sendJSON, onEnter, onKey, clearInput,
+module Lib (genericSendJSON, sendJSON, onEnter, onKey, doOnce, clearInput,
            getListOfElementsByClass, getListOfElementsByTag, tryParse,
            treeToElement, genericTreeToUl, treeToUl, genericListToUl,
            listToUl, formToTree, leaves, adjustFirstMatching, decodeHtml,
@@ -30,6 +30,7 @@ import Text.Hamlet
 import Text.Blaze.Html.Renderer.String
 import Control.Lens
 import Control.Lens.Plated (children)
+import Control.Monad.Fix
 import Control.Monad.State
 import Control.Monad.Trans.Maybe (runMaybeT, MaybeT(..))
 --The following three imports come from ghcjs-base, and break ghc-mod
@@ -110,6 +111,11 @@ onKey keylist action = do kbe      <- event
 onEnter :: EventM e KeyboardEvent () ->  EventM e KeyboardEvent ()
 onEnter = onKey ["Enter"]
 
+doOnce :: (IsEventTarget t, IsEvent e) => t -> EventName t e -> Bool -> EventM t e r ->  IO ()
+doOnce target event bubble handler = do listener <- mfix $ \rec -> newListener  $ do
+                                                        handler 
+                                                        liftIO $ removeListener target event rec bubble 
+                                        addListener target event listener bubble
 --------------------------------------------------------
 --1.1.2 Common responsive behavior
 --------------------------------------------------------
