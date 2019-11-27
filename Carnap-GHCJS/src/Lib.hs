@@ -4,7 +4,7 @@ module Lib (genericSendJSON, sendJSON, onEnter, onKey, doOnce, dispatchCustom, c
            treeToElement, genericTreeToUl, treeToUl, genericListToUl,
            listToUl, formToTree, leaves, adjustFirstMatching, decodeHtml,
            decodeJSON, cleanString, syncScroll, reloadPage, initElements,
-           loginCheck,errorPopup, genInOutElts,
+           errorPopup, genInOutElts,
            getInOutElts,generateExerciseElts, withLabel,
            formAndLabel,seqAndLabel, folSeqAndLabel, folFormAndLabel,
            message, IOGoal(..), updateWithValue, submissionSource,
@@ -385,13 +385,13 @@ createSubmitButton w bw submit opts =
              return (setStatus bt)
          _ -> return (const $ return ())
 
-setStatus b Edited = setAttribute b "carnap-exercise-status" "edited"
-setStatus b Submitted = setAttribute b "carnap-exercise-status" "submitted"
+setStatus b Edited = setAttribute b "data-carnap-exercise-status" "edited"
+setStatus b Submitted = setAttribute b "data-carnap-exercise-status" "submitted"
 
-loginCheck successMsg serverResponse  
+loginCheck callback serverResponse  
      | serverResponse == "No User" = alert "You need to log in before you can submit anything"
      | serverResponse == "Clash"   = alert "it appears you've already successfully submitted this problem"
-     | otherwise      = alert successMsg
+     | otherwise      = callback
 
 errorPopup msg = alert ("Something has gone wrong. Here's the error: " ++ msg)
 
@@ -443,10 +443,10 @@ trySubmit problemType opts ident problemData correct =
                 case msource of 
                    Nothing -> message "Not able to identify problem source. Perhaps this document has not been assigned?"
                    Just source -> do Just t <- eventCurrentTarget
-                                     setStatus (castToElement t) Submitted
+                                     
                                      liftIO $ sendJSON 
                                            (Submit problemType ident problemData source correct (M.lookup "points" opts >>= readMaybe) key) 
-                                           (loginCheck $ "Submitted Exercise " ++ ident)
+                                           (loginCheck $ (alert $ "Submitted Exercise " ++ ident) >> setStatus (castToElement t) Submitted)
                                            errorPopup
 
 ------------------

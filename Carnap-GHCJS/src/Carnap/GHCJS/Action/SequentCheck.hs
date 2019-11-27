@@ -79,7 +79,7 @@ activateChecker w (Just (i, o, opts))
                                             Nothing -> return ()
                                     return ()
                   addListener i initialize initialCheck False --initial check in case we preload a tableau
-                  doOnce i mutate $ liftIO $ btStatus Edited
+                  doOnce i mutate False $ liftIO $ btStatus Edited
                   root `onChange` (\_ -> dispatchCustom w i "mutate")
                   root `onChange` checkOnChange threadRef calc 
 

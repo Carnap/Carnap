@@ -97,6 +97,7 @@ chapterLayout widget = do
         instructors <- instructorIdentList
         pc <- widgetToPageContent $ do
             toWidgetHead $(juliusFile "templates/command.julius")
+            toWidgetHead $(juliusFile "templates/status-warning.julius")
             toWidgetHead [julius|var submission_source="book";|]
             addScript $ StaticR js_popper_min_js
             addScript $ StaticR ghcjs_rts_js

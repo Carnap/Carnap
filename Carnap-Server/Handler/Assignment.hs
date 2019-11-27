@@ -41,6 +41,7 @@ returnAssignment (Entity key val) path = do
                            defaultLayout $ do
                                let source = "assignment:" ++ show key 
                                toWidgetHead $(juliusFile "templates/command.julius")
+                               toWidgetHead $(juliusFile "templates/status-warning.julius")
                                toWidgetHead [julius|var submission_source="#{rawJS source}";|]
                                toWidgetHead [julius|var assignment_key="#{rawJS $ show key}";|]
                                addScript $ StaticR js_proof_js

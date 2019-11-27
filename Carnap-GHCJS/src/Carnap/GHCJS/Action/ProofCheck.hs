@@ -276,15 +276,16 @@ trySave checker drs ref w i =
                                   case (mname,checkerToRule checker)  of
                                       (Just name, Just toRule) | allcaps name -> do
                                             Just t <- eventCurrentTarget
-                                            setStatus (castToElement t) Submitted
-                                            liftIO $ sendJSON (SaveRule name $ toRule $ DerivedRule conc prems) loginCheck error
+                                            liftIO $ sendJSON (SaveRule name $ toRule $ DerivedRule conc prems) 
+                                                              (loginCheck $ setStatus (castToElement t) Submitted) 
+                                                              error
                                       (Just name, Just toRule) -> message "rule name must be all capital letters"
                                       (Nothing,_) -> message "No name entered"
                                       (_,Nothing) -> message "No saved rules for this proof system"
              else message "not yet finished"
-    where loginCheck c | c == "No User" = message "You need to log in before you can save a rule"
-                       | c == "Clash"   = message "it appears you've already got a rule with this name"
-                       | otherwise      = message "Saved your new rule!" >> reloadPage
+    where loginCheck callback c | c == "No User" = message "You need to log in before you can save a rule"
+                                | c == "Clash"   = message "it appears you've already got a rule with this name"
+                                | otherwise      = message "Saved your new rule!" >> callback >> reloadPage
           error c = message ("Something has gone wrong. Here's the error: " ++ c)
           allcaps s = and (map (`elem` "ABCDEFGHIJKLMNOPQRSTUVWXYZ") s)
 
