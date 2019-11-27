@@ -55,7 +55,7 @@ getIndicies :: PurePropLanguage (Form Bool) -> [Int]
 getIndicies = catMaybes . map (preview _propIndex) . universe
 
 getValuations :: PurePropLanguage (Form Bool) -> [Int -> Bool]
-getValuations = (map toValuation) . subsequences . getIndicies 
+getValuations = (map toValuation) . subsequences . nub . getIndicies 
     where toValuation l = \x -> x `elem` l
 
 isValid p = and $ map (\v -> unform $ satisfies v p) (getValuations p)
