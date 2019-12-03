@@ -60,14 +60,18 @@
     stroke:white;
 }
 
-.buttonWrapper button:hover {
+.buttonWrapper button:hover,
+.buttonWrapper button[data-carnap-exercise-status="submitted"]
+{
     animation: buttonHover .2s 1;
     background:white;
     color:#A9B7C0;
     border:1px solid #A9B7C0;
 }
 
-.buttonWrapper button:hover svg {
+.buttonWrapper button:hover svg,
+.buttonWrapper button[data-carnap-exercise-status="submitted"] svg
+{
     animation: buttonHover .2s 1;
     fill:#A9B7C0;
 }
@@ -78,7 +82,8 @@
     stroke:white;
 }
 
-.buttonWrapper button:active svg .filler {
+.buttonWrapper button:active svg .filler,
+.buttonWrapper button[data-carnap-exercise-status="submitted"] svg .filler {
     fill:#A9B7C0;
     stroke:#A9B7C0;
 }
