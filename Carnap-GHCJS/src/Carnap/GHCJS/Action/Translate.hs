@@ -56,10 +56,11 @@ activateTranslate w (Just (i,o,opts)) = do
             _ -> return ()
     where testlist = case M.lookup "tests" opts of Just s -> words s; Nothing -> []
           optlist = case M.lookup "options" opts of Just s -> words s; Nothing -> []
+          getGoal = if "nocipher" `elem` optlist then id else simpleDecipher . read
           activateWith parser checker tests =
               case (M.lookup "goal" opts, M.lookup "content" opts, M.lookup "problem" opts) of
                   (Just g, Just content, Just problem) ->
-                    case parse (parser `sepBy` (spaces >> char ',' >> spaces) <* eof) "" (simpleDecipher . read $ g) of
+                    case parse (parser `sepBy` (spaces >> char ',' >> spaces) <* eof) "" (getGoal g) of
                       (Right fs) -> do 
                            bw <- createButtonWrapper w o
                            ref <- newIORef False
