@@ -51,6 +51,7 @@ function tryDropStudent (json) {
 
 function modalEditAssignment (id,due,visfrom,vistill,desc) {
     jQuery.noConflict()
+    $("#updateAssignment")[0].reset();
     $("#updateAssignment input[name=f1]").val(id);
     var dparts = due.split(" ")
     var fparts = visfrom.split(" ")
@@ -73,6 +74,7 @@ function modalEditAssignment (id,due,visfrom,vistill,desc) {
 
 function modalEditDocument (id,desc,tags) {
     jQuery.noConflict()
+    $("#updateDocument")[0].reset();
     $("#updateDocument input[name=f1]").val(id);
     $("#updateDocument textarea[name=f3]").val(desc)
     $("#updateDocument input[name=f5]").tagsinput("removeAll");
@@ -82,6 +84,7 @@ function modalEditDocument (id,desc,tags) {
 
 function modalEditCourse (id,desc,start,end,points) {
     jQuery.noConflict()
+    $("#updateCourse")[0].reset();
     var sparts = start.split(" ")
     var eparts = end.split(" ")
     $("#updateCourse input[name=f1]").val(id);
