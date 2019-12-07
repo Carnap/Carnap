@@ -72,9 +72,11 @@ function modalEditAssignment (id,due,visfrom,vistill,desc) {
     $("#updateAssignmentData").modal({show:true});
 }
 
-function modalEditDocument (id,desc,tags) {
+function modalEditDocument (id,desc,title,tags) {
     jQuery.noConflict()
     $("#updateDocument")[0].reset();
+    $('#updateDocumentLabel').html("Update " + title);
+    $("#updateDocument")[0].focusedDocument = title;
     $("#updateDocument input[name=f1]").val(id);
     $("#updateDocument textarea[name=f3]").val(desc)
     $("#updateDocument input[name=f5]").tagsinput("removeAll");
@@ -240,6 +242,15 @@ $("#updateCourse").submit(function(e) {
 })
 
 $("#updateDocument").submit(function(e) {
+    if ($("#updateDocument input[name=f4]")[0].files.length > 0 
+        && $("#updateDocument")[0].focusedDocument) {
+        let focus = $("#updateDocument")[0].focusedDocument
+        let upload = $("#updateDocument input[name=f4]")[0].files[0].name
+        if (focus != upload 
+            && !confirm("Really upload? You're replacing the contents of the file " + focus + " with the contents of " + upload + ".")) {
+            return 
+        }
+    }
     jQuery.ajax({
         url: '@{InstructorR ident}',
         type: 'PUT',
