@@ -235,7 +235,7 @@ toRow w opts atomIndicies orderedChildren gridRef (v,n,mvalid,given) =
           toChildTd (c,m,mg) = do Just td <- createElement w (Just "td")
                                   case c of
                                       Left '⊢' -> case mvalid of
-                                                   Just tv -> addDropdown ("turnstileMark" `inOpts` opts) m td tv mg
+                                                   Just tv -> addDropdown ("turnstilemark" `inOpts` opts) m td tv mg
                                                    Nothing -> setInnerHTML td (Just "")
                                       Left c'  -> setInnerHTML td (Just "")
                                       Right f  -> do let (Form tv) = satisfies v f
@@ -257,9 +257,9 @@ toRow w opts atomIndicies orderedChildren gridRef (v,n,mvalid,given) =
                                                     appendChild td (Just span)
                                             _ | "immutable" `inOpts` opts -> 
                                                  do Just span <- createElement w (Just "span")
-                                                    setInnerHTML span (Just "-")
+                                                    setInnerHTML span (Just $ if "nodash" `inOpts` opts then " " else "-")
                                                     appendChild td (Just span)
-                                            _ -> do sel <- trueFalseOpts w turnstileMark mg
+                                            _ -> do sel <- trueFalseOpts w opts turnstileMark mg
                                                     onSwitch <- newListener $ switchOnMatch m bool
                                                     addListener sel change onSwitch False
                                                     appendChild td (Just sel)
@@ -358,7 +358,7 @@ toPartialRow w opts orderedSolvables orderedConstraints rRef v givens =
                                                         modifyIORef rRef (M.insert m mg)
                                                         appendChild td (Just span)
                                                         return ()
-                                         Nothing ->  do sel <- trueFalseOpts w False mg
+                                         Nothing ->  do sel <- trueFalseOpts w opts False mg
                                                         modifyIORef rRef (M.insert m mg)
                                                         onSwitch <- newListener $ switch rRef m
                                                         addListener sel change onSwitch False
@@ -373,15 +373,15 @@ toPartialRow w opts orderedSolvables orderedConstraints rRef v givens =
                                                modifyIORef rRef (M.insert m mg)
                                                appendChild td (Just span)
                                        Just val | "hiddenGivens" `inOpts` opts -> 
-                                            do sel <- trueFalseOpts w False Nothing
+                                            do sel <- trueFalseOpts w opts False Nothing
                                                onSwitch <- newListener $ switch rRef m
                                                addListener sel change onSwitch False
                                                appendChild td (Just sel)
                                        _ | "immutable" `inOpts` opts -> 
                                             do Just span <- createElement w (Just "span")
-                                               setInnerHTML span (Just "-")
+                                               setInnerHTML span (Just $ if "nodash" `inOpts` opts then " " else "-")
                                                appendChild td (Just span)
-                                       _ -> do sel <- trueFalseOpts w False mg
+                                       _ -> do sel <- trueFalseOpts w opts False mg
                                                modifyIORef rRef (M.insert m mg)
                                                onSwitch <- newListener $ switch rRef m
                                                addListener sel change onSwitch False
@@ -397,13 +397,13 @@ toPartialRow w opts orderedSolvables orderedConstraints rRef v givens =
 --  HTML Boilerplate  --
 ------------------------
 
-trueFalseOpts :: Document -> Bool -> Maybe Bool -> IO Element
-trueFalseOpts w turnstileMark mg = 
+trueFalseOpts :: Document -> Map String String -> Bool -> Maybe Bool -> IO Element
+trueFalseOpts w opts turnstileMark mg = 
         do Just sel <- createElement w (Just "select")
            Just bl  <- createElement w (Just "option")
            Just tr  <- createElement w (Just "option")
            Just fs  <- createElement w (Just "option")
-           setInnerHTML bl (Just "-")
+           setInnerHTML bl (Just $ if "nodash" `inOpts` opts then " " else "-")
            setInnerHTML tr (Just $ if turnstileMark then "✓" else "T")
            setInnerHTML fs (Just $ if turnstileMark then "✗" else "F")
            case mg of
