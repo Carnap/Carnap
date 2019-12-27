@@ -320,6 +320,10 @@
     padding-left:10px;
 }
 
+.montagueDisplay span.form, .fitchDisplay span.form, .lemmonDisplay span.form{
+    white-space:pre;
+}
+
 .montagueDisplay div > span:first-child, .fitchDisplay div > span:first-child {
     position:absolute;
     left:20pt;

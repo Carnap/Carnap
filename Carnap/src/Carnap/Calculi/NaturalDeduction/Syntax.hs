@@ -63,7 +63,7 @@ data DeductionLine r lex a where
             , closureDependencies :: [(Int,Int)]
             } -> DeductionLine r lex a
         PartialLine ::
-            { partialLineFormula :: Maybe (FixLang lex a)
+            { partialLineContent :: Either String (FixLang lex a)
             , partialLineError   :: ParseError
             , partialLineDepth   :: Int
             } -> DeductionLine r lex a
