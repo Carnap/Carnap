@@ -41,8 +41,8 @@ instance Modelable MonadicModel PureConn where
     satisfies = const eval
 
 instance Modelable MonadicModel PureQuant where
-        satisfies m (All _) = \f -> pure $ all ((== Form True) . f) (domain m)
-        satisfies m (Some _) = \f -> pure $ any ((== Form True) . f) (domain m)
+        satisfies m (All _) = \f -> Form (all (unform . f) (domain m))
+        satisfies m (Some _) = \f -> Form (any (unform . f) (domain m))
 
 instance Modelable MonadicModel PureVar where
         satisfies = error "it doesn't make sense to ask for the semantic value of an unbound variable"
@@ -67,12 +67,12 @@ data PolyadicModel = PolyadicModel
                   }
 
 --Helper function for (safely) building a piece of a relation out of a list
---of lists of things. XXX - note that the order of the lists of things and
---of the arguments is reversed. So if [a,b,c] is in the list of lists, we
---have `toRelation l AThree b c a = True`
+--of lists of things. 
 toRelation :: [[Thing]] -> Arity Thing TruthValue ret -> ret
 toRelation list AZero = Form . not . null $ list
-toRelation list (ASucc AZero) = \thing -> Form ([thing] `elem` list)
+toRelation list (AOne) = \t -> Form ([t] `elem` list)
+toRelation list (ATwo) = \t t' -> Form ([t,t'] `elem` list)
+toRelation list (AThree) = \t t' t''-> Form ([t,t',t''] `elem` list)
 toRelation list (ASucc a) = \thing -> toRelation (map tail . filter (match thing) $ list) a
     where match thing (t:ts) = t == thing
           match thing _ = False

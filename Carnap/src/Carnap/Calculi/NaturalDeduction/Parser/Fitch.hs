@@ -39,15 +39,14 @@ parseSeparatorLine = SeparatorLine <$> indent <* string "--" <* spaces <* eof
 toDeductionFitch :: Parsec String () [r] -> Parsec String () (FixLang lex a) -> String 
     -> Deduction r lex a
 toDeductionFitch r f = toDeduction (parseLine r f)
-        where parseLine r f = try (parseAssertLineFitch r f) <|> try (parseSeparatorLine)
+        where parseLine r f = try (parseAssertLineFitch r f) <|> try parseSeparatorLine
                               --XXX: need double "try" here to avoid
                               --throwing away errors if first parser fails
-                               
                                
 toDeductionFitchAlt :: Parsec String () [r] -> Parsec String () (FixLang lex a) -> String 
     -> Deduction r lex a
 toDeductionFitchAlt r f = toDeduction (parseLine r f)
-        where parseLine r f = try (parseAssertLineFitchAlt r f) <|> try (parseSeparatorLine)
+        where parseLine r f = try (parseAssertLineFitchAlt r f) <|> try parseSeparatorLine
                               --XXX: need double "try" here to avoid
                               --throwing away errors if first parser fails
 
@@ -55,7 +54,7 @@ toCommentedDeductionFitch :: Parsec String () [r] -> Parsec String () (FixLang l
     -> Deduction r lex a
 toCommentedDeductionFitch r f = toDeduction (parseLine r f)
         where parseLine r f = try (parseCommentedAssertLineFitch r f) 
-                              <|> try (parseSeparatorLine)
+                              <|> try parseSeparatorLine
 
 {- | 
 In a Fitch deduction, find the prooftree corresponding to
@@ -70,23 +69,42 @@ toProofTreeFitch ded n = case ded !! (n - 1)  of
           l@(AssertLine f r@(r':_) dpth deps) -> 
                 do mapM_ checkDep deps 
                    mapM_ isSP deps
-                   if isAssumptionLine l then checkAssumptionLegit else return True
-                   dp <- case indirectInference r' of
-                        Just (TypedProof prooftype) -> 
+                   mapM_ notBlank deps
+                   if isOnlyAssumptionLine l then checkAssumptionLegit else return True
+                   dp <- handleArity (indirectInference r')
+                   deps' <- mapM (toProofTreeFitch ded) dp
+                   return $ Node (ProofLine n (SS $ liftToSequent f) r) deps'
+                where handleArity (Just (TypedProof prooftype)) =
                             case filter (\(x,y) -> x /= y) deps of 
                                  [thesp] -> do thesubprems <- subproofProcess prooftype thesp 
                                                return $ thesubprems ++ map fst (delete thesp deps)
                                  _ -> err "you need to specify exactly one subproof for this rule"
-                        Just (PolyTypedProof n prooftype) -> 
-                            case filter (\(x,y) -> x /= y) deps of 
-                                 l | length l == n -> do thesubprems <- mapM (subproofProcess prooftype) l
-                                                         return $ concat thesubprems ++ map fst (deps \\ l)
-                                 _ -> err $ "you need to specify exactly " ++ show n ++ " subproofs for this rule"
-                        _ -> return . map snd $ deps -- XXX subproofs that don't have an arity just use the last line, e.g. the second of their range.
-                                                     -- this is a bit of a hack. All indirect rules should have arities.
-                   deps' <- mapM (toProofTreeFitch ded) dp
-                   return $ Node (ProofLine n (SS $ liftToSequent f) r) deps'
-                where checkDep (begin,end) = 
+                      handleArity (Just (ImplicitProof prooftype))
+                            | not (null (filter (\(x,y) -> x /= y) deps)) = err "this rule cannot be used with a line range citation"
+                            | otherwise = do let thesp = takePrecedingProof
+                                             if null thesp then err "this rule must follow a subproof"
+                                                else do let spRange = (n - (length thesp),n - 1)
+                                                        checkDep spRange
+                                                        isSP spRange
+                                                        notBlank spRange
+                                                        thesubprems <- subproofProcess prooftype spRange
+                                                        return $ thesubprems ++ map fst deps
+                      handleArity (Just (PolyTypedProof n prooftype)) =
+                            let l = filter (\(x,y) -> x /= y) deps in
+                            if length l /= n then err $ "you need to specify exactly " ++ show n ++ " subproofs for this rule"
+                                             else do thesubprems <- mapM (subproofProcess prooftype) l
+                                                     return $ concat thesubprems ++ map fst (deps \\ l)
+                      handleArity (Just (WithAlternate a1 a2)) = either (const $ handleArity $ Just a2) Right (handleArity $ Just a1)
+                                                              -- XXX the above is not ideal for producing error messages
+                      handleArity _ = return . map snd $ deps -- XXX subproofs that don't have an arity just use the last line, e.g. the second of their range.
+                                                              -- this is a bit of a hack. All indirect rules should have arities.
+
+                      notBlank (begin,end) = 
+                        case (ded !! (begin - 1), ded !! (end - 1)) of
+                            (SeparatorLine _,_) -> err "You appear to be citing a separator line here. This isn't allowed."
+                            (_,SeparatorLine _) -> err "You appear to be citing a separator line here. This isn't allowed."
+                            _ -> return ()
+                      checkDep (begin,end) = 
                         case indirectInference r' of 
                             Nothing -> if begin /= end 
                                            then err "you appear to be supplying a line range to a rule of direct proof"
@@ -132,6 +150,8 @@ toProofTreeFitch ded n = case ded !! (n - 1)  of
               if all (\x -> depth h <= depth x) chunk
                   then Right True
                   else err "it looks like you're citing a subproof that isn't available at this point, since its final line isn't available"
+          takePrecedingProof = reverse . takeWhile (\x -> depth x > depth (ded !! (n - 1))) . reverse . take (n - 1) $ ded
+
           takeRange m' n' = 
               if n' <= m' 
                       then err "Dependency is later than assertion"
@@ -151,8 +171,5 @@ toProofTreeFitch ded n = case ded !! (n - 1)  of
             | any (\x -> depth x < depth begin) (lineRange m n) = err $ "the lines " ++ show m ++ " and " ++ show n ++ " can't have a less indented line between them, if they are a subproof"
             | not (isAssumptionLine begin) = err $ "the subproof beginning on line " ++ show m ++ " needs to start with an assumption"
             | otherwise = Right True
-            -- TODO also impose some "assumption" constraints: subproofs
-            -- must begin with assumptions, and this is the only context
-            -- where an assumption can occur
             where begin = ded !! (m - 1)
                   end = ded !! (n - 1)

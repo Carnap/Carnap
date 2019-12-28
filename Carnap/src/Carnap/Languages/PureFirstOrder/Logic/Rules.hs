@@ -7,7 +7,7 @@ import Data.Maybe (catMaybes)
 import Control.Lens (toListOf,preview, Prism')
 import Text.Parsec
 import Carnap.Core.Data.Util 
-import Carnap.Core.Unification.Unification (applySub,occurs,FirstOrder)
+import Carnap.Core.Unification.Unification (applySub,occurs,FirstOrder, Equation, pureBNF)
 import Carnap.Core.Data.Classes
 import Carnap.Core.Data.Types
 import Carnap.Core.Data.Optics
@@ -20,7 +20,7 @@ import Carnap.Languages.ClassicalSequent.Syntax
 import Carnap.Languages.ClassicalSequent.Parser
 import Carnap.Languages.Util.LanguageClasses
 import Carnap.Languages.Util.GenericConstructors
-import Carnap.Calculi.NaturalDeduction.Syntax (DeductionLine(..),depth,assertion,discharged,justificationOf,inScope)
+import Carnap.Calculi.NaturalDeduction.Syntax (DeductionLine(..),depth,assertion,discharged,justificationOf,inScope, isAssumptionLine)
 
 --------------------------------------------------------
 --1. FirstOrder Sequent Calculus
@@ -47,7 +47,6 @@ instance CopulaSchema FOLSequentCalc where
 instance Eq (FOLSequentCalc a) where
         (==) = (=*)
 
-
 seqVar :: StandardVarLanguage (FixLang lex (Term Int)) => String -> FixLang lex (Term Int)
 seqVar = var
 
@@ -72,17 +71,31 @@ theta :: SchematicPolyadicFunctionLanguage (FixLang lex) (Term Int) (Term Int)
     => (FixLang lex) (Term Int) -> (FixLang lex) (Term Int)
 theta x = spfn 1 AOne :!$: x
 
+eigenConstraint :: 
+    ( PrismStandardVar (ClassicalSequentLexOver lex) Int
+    , PrismIndexedConstant (ClassicalSequentLexOver lex) Int
+    , PrismPolyadicSchematicFunction (ClassicalSequentLexOver lex) Int Int
+    , Schematizable (lex (ClassicalSequentOver lex))
+    , FirstOrderLex (lex (ClassicalSequentOver lex))
+    , CopulaSchema (ClassicalSequentOver lex)
+    , PrismSubstitutionalVariable (ClassicalSequentLexOver lex)
+    ) => ClassicalSequentOver lex (Term Int) 
+         -> ClassicalSequentOver lex (Succedent (Form Bool)) 
+         -> ClassicalSequentOver lex (Antecedent (Form Bool)) 
+         -> [Equation (ClassicalSequentOver lex)]
+         -> Maybe String
 eigenConstraint c suc ant sub
-    | (applySub sub c) `occurs` (applySub sub ant) = Just $ "The term " ++ show (applySub sub c) ++ " appears not to be fresh, given that this line relies on " ++ show (applySub sub ant)
-    | (applySub sub c) `occurs` (applySub sub suc) = Just $ "The term " ++ show (applySub sub c) ++ " appears not to be fresh in the other premise " ++ show (applySub sub suc)
+    | (applySub sub c) `occurs` (applySub sub ant) = Just $ "The term " ++ show (applySub sub c) ++ " appears not to be fresh. "
+                                                            ++ "Check the dependencies of this inference for occurances of " ++ show (applySub sub c) ++ "."
+    | (applySub sub c) `occurs` (applySub sub suc) = Just $ "The term " ++ show (applySub sub c) ++ " appears not to be fresh. "
+                                                            ++ "Check the dependencies of this inference for occurances of " ++ show (applySub sub c) ++ "."
     | otherwise = case (applySub sub c) of 
                           _ | not . null $ preview _sfuncIdx' (applySub sub c) -> Nothing
                             | not . null $ preview _constIdx (applySub sub c) -> Nothing
                             | not . null $ preview _varLabel (applySub sub c) -> Nothing
-                          _ -> Just $ "The term " ++ show (applySub sub c) ++ " is not a constant or variable"
-    where _sfuncIdx' :: ( PrismPolyadicSchematicFunction (PureFirstOrderLexWith a) Int Int 
-                        , PrismLink (a (OpenFOLSequentCalc a)) (Function (SchematicIntFunc Int Int) (OpenFOLSequentCalc a)) -- XXX: only for compatibility with older GHCs 
-                        ) => Prism' (OpenFOLSequentCalc a (Term Int)) (Int, Arity (Term Int) (Term Int) (Term Int))
+                          _ -> Just $ "The term " ++ show (pureBNF $ applySub sub c) ++ " is not a constant or variable"
+    where _sfuncIdx' :: PrismPolyadicSchematicFunction (ClassicalSequentLexOver lex) Int Int 
+                     => Prism' (ClassicalSequentOver lex (Term Int)) (Int, Arity (Term Int) (Term Int) (Term Int))
           _sfuncIdx' = _sfuncIdx
 
 tautologicalConstraint prems conc sub = case prems' of
@@ -98,6 +111,14 @@ totallyFreshConstraint n ded t v sub
     | tau' /= (liftToSequent v) = Just "the flagged variable isn't the one used for instantiation."
     | otherwise = Nothing
     where relevantLines = catMaybes . map assertion $ (take (n - 1) ded)
+          tau' = applySub sub t
+
+notAssumedConstraint n ded t sub 
+    | any (\x -> tau' `occurs` (liftToSequent x)) relevantLines = Just $ show tau' ++ " appears not to be fresh in its occurence on line " ++ show n
+    | otherwise = Nothing
+    where relevantLines = catMaybes . map assertion .  filter isAssumptionLine . scopeFilter . take (n - 1) $ ded
+          scopeFilter l = map fst . filter (inScope . snd) $ zip l [1 ..]
+          inScope m = (>= (depth $ ded !! (m - 1))) . minimum . map depth . drop (m - 1) . take n $ ded
           tau' = applySub sub t
 
 flaggedVariableConstraint n ded suc getFlag sub =
@@ -204,6 +225,11 @@ eqReflexivity = [] ∴ Top :|-: SS (tau `equals` tau)
 eqSymmetry :: FirstOrderEqRule lex b
 eqSymmetry = [GammaV 1 :|-: SS (tau `equals` tau')] ∴ GammaV 1 :|-: SS (tau' `equals` tau)
 
+eqTransitivity :: FirstOrderEqRule lex b
+eqTransitivity = [GammaV 1 :|-: SS (tau `equals` tau')
+                 , GammaV 1 :|-: SS (tau' `equals` tau'')
+                 ] ∴ GammaV 1 :|-: SS (tau `equals` tau'')
+
 eqNegSymmetry :: FirstOrderEqRule lex b
 eqNegSymmetry = [GammaV 1 :|-: SS (lneg $ tau `equals` tau')] ∴ GammaV 1 :|-: SS (lneg $ tau' `equals` tau)
 
@@ -239,6 +265,11 @@ negatedExistentialInstantiation = [ GammaV 1 :|-: SS (lneg $ lsome "v" (phi 1))]
 negatedUniversalInstantiation :: FirstOrderRule lex b
 negatedUniversalInstantiation = [ GammaV 1 :|-: SS (lneg $ lall "v" (phi 1))]
                                 ∴ GammaV 1 :|-: SS (lneg $ phi 1 (taun 1))
+
+conditionalExistentialDerivation :: FirstOrderRule lex b
+conditionalExistentialDerivation = [ GammaV 1 :|-: SS (lsome "v" (phi 1))
+                                   , GammaV 2 :|-: SS (phi 1 (taun 1) .→. phin 1)
+                                   ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (phin 1)
 
 ------------------------------------
 --  1.2. Rules with Variations  --

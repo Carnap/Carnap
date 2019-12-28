@@ -1,19 +1,23 @@
 {-# LANGUAGE RankNTypes, QuasiQuotes, FlexibleContexts, DeriveDataTypeable, CPP, JavaScriptFFI #-}
-module Lib
-    (genericSendJSON, sendJSON, onEnter, onKey, clearInput,
-    getListOfElementsByClass, getListOfElementsByTag, tryParse,
-    treeToElement, genericTreeToUl, treeToUl, genericListToUl, listToUl,
-    formToTree, leaves, adjustFirstMatching, decodeHtml, syncScroll,
-    reloadPage, initElements, loginCheck,errorPopup, genInOutElts,
-    getInOutElts,generateExerciseElts, withLabel, formAndLabel,seqAndLabel,
-    folSeqAndLabel, folFormAndLabel, message, IOGoal(..), updateWithValue,
-    submissionSource, assignmentKey, initialize, popUpWith, spinnerSVG,
-    doneButton, questionButton, exclaimButton, expandButton, buttonWrapper,
-    maybeNodeListToList, trySubmit, inOpts, unform, rewriteWith ) where
+module Lib (genericSendJSON, sendJSON, onEnter, onKey, doOnce, dispatchCustom, clearInput,
+           getListOfElementsByClass, getListOfElementsByTag, tryParse,
+           treeToElement, genericTreeToUl, treeToUl, genericListToUl,
+           listToUl, formToTree, leaves, adjustFirstMatching, decodeHtml,
+           decodeJSON, cleanString, syncScroll, reloadPage, initElements,
+           errorPopup, genInOutElts,
+           getInOutElts,generateExerciseElts, withLabel,
+           formAndLabel,seqAndLabel, folSeqAndLabel, folFormAndLabel,
+           message, IOGoal(..), updateWithValue, submissionSource,
+           assignmentKey, initialize, mutate, initializeCallback, initCallbackObj,
+           toCleanVal, popUpWith, spinnerSVG, doneButton, questionButton,
+           exclaimButton, expandButton, createSubmitButton, createButtonWrapper,
+           maybeNodeListToList, trySubmit, inOpts, rewriteWith, setStatus, ButtonStatus(..)
+           ) where
 
 import Data.Aeson
 import Data.Maybe (catMaybes)
 import qualified Data.ByteString.Lazy as BSL
+import Data.Text (pack)
 import Data.Text.Encoding
 import Data.Tree as T
 import Data.IORef (IORef, readIORef)
@@ -26,6 +30,7 @@ import Text.Hamlet
 import Text.Blaze.Html.Renderer.String
 import Control.Lens
 import Control.Lens.Plated (children)
+import Control.Monad.Fix
 import Control.Monad.State
 import Control.Monad.Trans.Maybe (runMaybeT, MaybeT(..))
 --The following three imports come from ghcjs-base, and break ghc-mod
@@ -46,7 +51,7 @@ import GHCJS.DOM.Types
 import GHCJS.DOM.Element
 import GHCJS.DOM.HTMLInputElement
 import qualified GHCJS.DOM.HTMLTextAreaElement as TA (setValue,getValue)
-import GHCJS.DOM.Document (createElement, getBody)
+import GHCJS.DOM.Document (createElement, getBody, createEvent)
 import GHCJS.DOM.Node
 import qualified GHCJS.DOM.HTMLCollection as HC
 import GHCJS.DOM.NodeList
@@ -57,12 +62,10 @@ import GHCJS.DOM.EventM
 import GHCJS.DOM.EventTarget
 import GHCJS.DOM.EventTargetClosures (EventName(..))
 import Carnap.GHCJS.SharedTypes
-import Carnap.Core.Data.Types (Form(..))
 import Carnap.Calculi.NaturalDeduction.Syntax (NaturalDeductionCalc(..))
-import Carnap.Languages.PurePropositional.Syntax (PureForm, PurePropLexicon)
+import Carnap.Languages.PurePropositional.Syntax (PureForm)
 import Carnap.Languages.PurePropositional.Logic
 import Carnap.Languages.PureFirstOrder.Parser (folFormulaParser)
-import Carnap.Languages.PureFirstOrder.Syntax (PureLexiconFOL)
 import Carnap.Languages.PureFirstOrder.Logic
 import Carnap.Languages.PurePropositional.Parser (purePropFormulaParser, standardLetters)
 
@@ -79,9 +82,6 @@ inOpts :: String -> M.Map String String -> Bool
 inOpts s opts = s `elem` optList
     where optList = case M.lookup "options" opts of Just s -> words s; Nothing -> []
           
-unform :: Form Bool -> Bool
-unform (Form b) = b
-
 rewriteWith :: M.Map String String -> String -> String
 rewriteWith opts = case rewriter of
                        Just f -> f
@@ -108,6 +108,18 @@ onKey keylist action = do kbe      <- event
 
 onEnter :: EventM e KeyboardEvent () ->  EventM e KeyboardEvent ()
 onEnter = onKey ["Enter"]
+
+doOnce :: (IsEventTarget t, IsEvent e) => t -> EventName t e -> Bool -> EventM t e r ->  IO ()
+doOnce target event bubble handler = do listener <- mfix $ \rec -> newListener  $ do
+                                                        handler 
+                                                        liftIO $ removeListener target event rec bubble 
+                                        addListener target event listener bubble
+
+dispatchCustom :: Document -> Element -> String -> IO ()
+dispatchCustom w e s = do Just custom <- createEvent w "Event"
+                          initEvent custom s True True
+                          dispatchEvent e (Just custom)
+                          return ()
 
 --------------------------------------------------------
 --1.1.2 Common responsive behavior
@@ -225,7 +237,7 @@ genInOutElts w input output ty target =
            mapM initialize els
     where initialize Nothing = return Nothing
           initialize (Just el) = do
-              Just content <- getInnerHTML el :: IO (Maybe String)
+              Just content <- getTextContent el :: IO (Maybe String)
               [Just o, Just i] <- mapM (createElement w . Just) [output,input]
               setAttribute i "class" "input"
               setAttribute o "class" "output"
@@ -239,7 +251,7 @@ generateExerciseElts w ty target = do els <- getListOfElementsByCarnapType targe
                                       mapM initialize els
         where initialize Nothing = return Nothing
               initialize (Just el) = do
-                  Just content <- getInnerHTML el
+                  Just content <- getTextContent el
                   setInnerHTML el (Just "")
                   [Just g, Just o, Just i] <- mapM (createElement w . Just) ["div","div","textarea"]
                   setAttribute g "class" "goal"
@@ -308,6 +320,22 @@ popUpWith fd w elt label msg details =
 decodeHtml :: (StringLike s, Show s) => s -> s
 decodeHtml = TS.fromTagText . head . parseTags
 
+decodeJSON :: String -> Maybe Value
+decodeJSON = decode . BSL.fromStrict . encodeUtf8 . pack
+
+--reencodes unicode characters in strings that have been mangled by "show"
+cleanString :: String -> String
+cleanString = concat . map cleanChunk . chunks 
+          where chunks s = case break (== '\"') s of 
+                                  (l,[]) -> l:[]
+                                  (l,_:s') -> l:chunks s'
+                cleanChunk c = case (readMaybe $ "\"" ++ c ++ "\"") :: Maybe String of 
+                                  Just s -> s
+                                  Nothing -> c
+                readMaybe s = case reads s of
+                                [(x, "")] -> Just x
+                                _ -> Nothing
+
 --------------------------------------------------------
 --1.4 Optics
 --------------------------------------------------------
@@ -334,6 +362,8 @@ formToTree f = T.Node f (map formToTree (children f))
 --1.6 Boilerplate
 --------------------------------------------------------
 
+data ButtonStatus = Edited | Submitted
+
 initElements :: (Document -> HTMLElement -> IO [a]) -> (Document -> a -> IO b) -> IO ()
 initElements getter setter = runWebGUI $ \w -> 
             do (Just dom) <- webViewGetDomDocument w
@@ -343,10 +373,25 @@ initElements getter setter = runWebGUI $ \w ->
                     [] -> return ()
                     _ -> mapM_ (setter dom) elts
 
-loginCheck successMsg serverResponse  
+createSubmitButton :: Document -> Element -> (String -> EventM e MouseEvent ()) -> M.Map String String ->  IO (ButtonStatus -> IO ())
+createSubmitButton w bw submit opts = 
+      case M.lookup "submission" opts of
+         Just s | take 7 s == "saveAs:" -> do
+             let l = Prelude.drop 7 s
+             bt <- doneButton w "Submit"
+             appendChild bw (Just bt)
+             submitter <- newListener $ submit l
+             addListener bt click submitter False                
+             return (setStatus bt)
+         _ -> return (const $ return ())
+
+setStatus b Edited = setAttribute b "data-carnap-exercise-status" "edited"
+setStatus b Submitted = setAttribute b "data-carnap-exercise-status" "submitted"
+
+loginCheck callback serverResponse  
      | serverResponse == "No User" = alert "You need to log in before you can submit anything"
      | serverResponse == "Clash"   = alert "it appears you've already successfully submitted this problem"
-     | otherwise      = alert successMsg
+     | otherwise      = callback
 
 errorPopup msg = alert ("Something has gone wrong. Here's the error: " ++ msg)
 
@@ -367,9 +412,11 @@ exclaimButton = svgButtonWith exclaimSVG
 
 expandButton = svgButtonWith expandSVG
 
-buttonWrapper w = do (Just bw) <- createElement w (Just "div")
-                     setAttribute bw "class" "buttonWrapper"
-                     return bw
+createButtonWrapper w o = do (Just bw) <- createElement w (Just "div")
+                             setAttribute bw "class" "buttonWrapper"
+                             Just par <- getParentNode o
+                             appendChild par (Just bw)
+                             return bw
 
 --------------------------------------------------------
 --1.7 Parsing
@@ -395,10 +442,12 @@ trySubmit problemType opts ident problemData correct =
                 key <- liftIO assignmentKey
                 case msource of 
                    Nothing -> message "Not able to identify problem source. Perhaps this document has not been assigned?"
-                   Just source -> liftIO $ sendJSON 
-                                   (Submit problemType ident problemData source correct (M.lookup "points" opts >>= readMaybe) key) 
-                                   (loginCheck $ "Submitted Exercise " ++ ident)
-                                   errorPopup
+                   Just source -> do Just t <- eventCurrentTarget
+                                     
+                                     liftIO $ sendJSON 
+                                           (Submit problemType ident problemData source correct (M.lookup "points" opts >>= readMaybe) key) 
+                                           (loginCheck $ (alert $ "Submitted Exercise " ++ ident) >> setStatus (castToElement t) Submitted)
+                                           errorPopup
 
 ------------------
 --1.8 SVG Data  --
@@ -487,6 +536,8 @@ keyString e = key e >>= return . fromJSString
 alert :: String -> IO ()
 alert = alert' . toJSString
 
+foreign import javascript unsafe "JSON.parse(JSON.stringify($1))" sanatizeJSVal :: JSVal -> IO JSVal
+
 foreign import javascript unsafe "try {jsonCommand($1,$2,$3)} catch(e) {console.log(e)};" jsonCommand :: JSString -> Callback (JSVal -> IO()) -> Callback (JSVal -> JSVal -> JSVal -> IO()) -> IO ()
 
 foreign import javascript unsafe "$1.key" key :: KeyboardEvent -> IO JSString
@@ -502,6 +553,14 @@ foreign import javascript unsafe "(function(){try {var v=submission_source;} cat
 foreign import javascript unsafe "(function(){try {var v=assignment_key;} catch (e) {var v=\"\";}; return v})()" assignmentKeyJS :: IO JSString
 
 foreign import javascript unsafe "try {new Popper($1,$2,{placement:\"right\"});} catch (e) {$2.className=\"manualPopper\"};" makePopper :: Element -> Element -> IO ()
+
+foreign import javascript unsafe "window.Carnap = {};" initCallbackObj :: IO ()
+--"window.VAR" is apparently best practice for declaring global vars
+
+foreign import javascript unsafe "Carnap[$1]=$2;" initializeCallbackJS :: JSString-> Callback (payload -> succ -> IO ()) -> IO ()
+--TODO: unify with other callback code in SequentCheck
+
+foreign import javascript unsafe "$1($2);" simpleCall :: JSVal -> JSVal -> IO ()
 
 submissionSource = do qr <- submissionQueryJS
                       case fromJSString qr of
@@ -519,11 +578,36 @@ assignmentKey = do k <- assignmentKeyJS
 initialize :: EventName t Event
 initialize = EventName $ toJSString "initialize"
 
+mutate :: EventName t Event
+mutate = EventName $ toJSString "mutate"
+
+toCleanVal :: JSVal -> IO (Maybe Value)
+toCleanVal x = sanatizeJSVal x >>= fromJSVal
+
+initializeCallback :: String -> (Value -> IO Value) -> IO ()
+initializeCallback s f = do theCB <- asyncCallback2 (cb f)
+                            initializeCallbackJS (toJSString s) theCB
+    where cb f jsval onSuccess = do Just val <- toCleanVal jsval
+                                    rslt <- f val
+                                    rslt' <- toJSVal rslt
+                                    simpleCall onSuccess rslt'
 
 #else
 
 initialize :: EventName t Event
 initialize = EventName "initialize"
+
+mutate :: EventName t Event
+mutate = EventName "mutate"
+
+initializeCallback :: (Value -> IO Value) -> IO ()
+initializeCallback = error "initializeCallback requires the GHCJS FFI"
+
+toCleanVal :: JSVal -> IO (Maybe Value)
+toCleanVal = error "toCleaVal requires the GHCJS FFI"
+
+initCallbackObj :: IO ()
+initCallbackObj = error "initCallbackObj requires the GHCJS FFI"
 
 assignmentKey :: IO String
 assignmentKey = Prelude.error "assignmentKey requires the GHJS FFI"
@@ -551,5 +635,6 @@ currentUrl = Prelude.error "currentUrl requires the GHCJS FFI"
 message s = liftIO (alert s)
 
 reloadPage :: IO ()
-reloadPage = Prelude.error "you can't reload the page without the GHCJS FFI"
+reloadPage = Prelude.error "reloadPage requires the GHCJS FFI"
+
 #endif

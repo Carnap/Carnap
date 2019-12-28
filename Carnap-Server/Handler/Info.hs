@@ -7,6 +7,7 @@ import Text.Shakespeare.Text
 getInfoR :: Handler Html
 getInfoR = do
     defaultLayout $ do
+        addScript $ StaticR js_proof_js
         addScript $ StaticR js_popper_min_js
         addScript $ StaticR ghcjs_rts_js
         addScript $ StaticR ghcjs_allactions_lib_js
@@ -14,23 +15,28 @@ getInfoR = do
         addScript $ StaticR klement_proofs_js
         addScript $ StaticR klement_syntax_js
         setTitle "Carnap - About"
-        $(widgetFile "infopage")
         addStylesheet $ StaticR css_tree_css
+        addStylesheet $ StaticR css_proof_css
         addStylesheet $ StaticR css_exercises_css
         addStylesheet $ StaticR klement_proofs_css
+        $(widgetFile "infopage")
         -- TODO : split out the stuff specifically relating to exercises
         addScript $ StaticR ghcjs_allactions_runmain_js
 
 -- TODO remove submit option on these.
-proofcheck :: Int -> Text -> Text -> Text -> Text -> HtmlUrl url
-proofcheck n sys opts goal proof = 
+checker :: Int -> Text -> Text -> Text -> Text -> Text -> HtmlUrl url
+checker n thetype sys opts goal proof = 
         [hamlet|
         <div class="exercise">
             <span>example #{show n}
-            <div data-carnap-type="proofchecker" data-carnap-options="#{opts}" data-carnap-system="#{sys}" data-carnap-goal="#{goal}">
+            <div data-carnap-type="#{thetype}" data-carnap-options="#{opts}" data-carnap-system="#{sys}" data-carnap-goal="#{goal}">
                 #{strip proof}
         |]
     where strip = dropWhile (== '\n')
+
+proofcheck n = checker n "proofchecker"
+
+sequentcheck n = checker n "sequentchecker"
 
 -- XXX function that strips text of indentation and line-numbers.
 aristotleTheorem = [st|
@@ -244,3 +250,129 @@ Show P(a) within P(P(a))
  :UD 5
  P(a) within P(P(a)):Def-S 4
 :DD 24|]
+
+sequentDemo = [st|
+ {
+  "label": "AxEy(F(x)/\\G(y)):|-:EyAx(F(x)/\\G(y))",
+  "rule": "RE",
+  "forest": [
+    {
+      "label": "AxEy(F(x)/\\G(y)) :|-: Ax(F(x)/\\G(b)), EyAx(F(x)/\\G(y))",
+      "rule": "LA",
+      "forest": [
+        {
+          "label": "AxEy(F(x)/\\G(y)), Ey(F(a)/\\G(y)) :|-: Ax(F(x)/\\G(b)), EyAx(F(x)/\\G(y))",
+          "rule": "LE",
+          "forest": [
+            {
+              "label": "AxEy(F(x)/\\G(y)), F(a)/\\G(c) :|-: Ax(F(x)/\\G(b)), EyAx(F(x)/\\G(y))",
+              "rule": "L&2",
+              "forest": [
+                {
+                  "label": "G(c), AxEy(F(x)/\\G(y)) :|-: Ax(F(x)/\\G(b)), EyAx(F(x)/\\G(y))",
+                  "rule": "RA",
+                  "forest": [
+                    {
+                      "label": "G(c), AxEy(F(x)/\\G(y)) :|-: F(d)/\\G(b), EyAx(F(x)/\\G(y))",
+                      "rule": "R&",
+                      "forest": [
+                        {
+                          "label": "G(c), AxEy(F(x)/\\G(y)) :|-: F(d), EyAx(F(x)/\\G(y))",
+                          "rule": "LA",
+                          "forest": [
+                            {
+                              "label": "G(c), Ey(F(d)/\\G(y)) :|-: F(d), EyAx(F(x)/\\G(y))",
+                              "rule": "LE",
+                              "forest": [
+                                {
+                                  "label": "G(c), F(d)/\\G(e) :|-: F(d), EyAx(F(x)/\\G(y))",
+                                  "rule": "L&1",
+                                  "forest": [
+                                    {
+                                      "label": "G(c), F(d) :|-: F(d), EyAx(F(x)/\\G(y))",
+                                      "rule": "Ax",
+                                      "forest": [
+                                        {
+                                          "label": "",
+                                          "rule": "",
+                                          "forest": []
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "label": "AxEy(F(x)/\\G(y)), G(c):|-:EyAx(F(x)/\\G(y)), G(b)",
+                          "rule": "RE",
+                          "forest": [
+                            {
+                              "label": "AxEy(F(x)/\\G(y)), G(c):|-:Ax(F(x)/\\G(c)), G(b)",
+                              "rule": "RA",
+                              "forest": [
+                                {
+                                  "label": "G(c), AxEy(F(x)/\\G(y)), :|-:F(a)/\\G(c), G(b)",
+                                  "rule": "LA",
+                                  "forest": [
+                                    {
+                                      "label": "G(c), Ey(F(a)/\\G(y)), :|-:F(a)/\\G(c), G(b)",
+                                      "rule": "LE",
+                                      "forest": [
+                                        {
+                                          "label": "G(c), F(a)/\\G(d) :|-:F(a)/\\G(c), G(b)",
+                                          "rule": "L&1",
+                                          "forest": [
+                                            {
+                                              "label": "G(c), F(a) :|-:F(a)/\\G(c), G(b)",
+                                              "rule": "R&",
+                                              "forest": [
+                                                {
+                                                  "label": "F(a),G(c) :|-:G(c), G(b)",
+                                                  "rule": "Ax",
+                                                  "forest": [
+                                                    {
+                                                      "label": "",
+                                                      "rule": "",
+                                                      "forest": []
+                                                    }
+                                                  ]
+                                                },
+                                                {
+                                                  "label": "G(c), F(a) :|-:F(a), G(b)",
+                                                  "rule": "Ax",
+                                                  "forest": [
+                                                    {
+                                                      "label": "",
+                                                      "rule": "",
+                                                      "forest": []
+                                                    }
+                                                  ]
+                                                }
+                                              ]
+                                            }
+                                          ]
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}             
+|]

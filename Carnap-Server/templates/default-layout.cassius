@@ -8,21 +8,49 @@
 
 nav#navbar
     ul 
+       list-style-type: none
+    > ul 
        line-height: 2em;
        font-size: 16px;
-       list-style-type: none
        margin: 0
-       padding 0
+       padding: 0
        text-align: right
 
-    ul > li 
+    > ul > li 
        display: inline
        border-right: 1px solid
        margin-left: 5px
        font-size: 15px
        font-family: sans-serif
-    ul > li:last-child
+       text-align: left
+       position:relative
+    > ul > li:last-child
        border-right: none
+    li.dropdown::before
+        content:" ▾ "
+        font-size:14px
+    li.dropdown > ul > li
+        margin:0
+        padding:0
+    li.dropdown > ul > li::before
+        content:" ▾ "
+        opacity:0
+    li.dropdown > ul
+        display:none
+        left:-6px
+        border: 1px solid
+        border-top: none
+        width:110%
+        min-width:190px
+        padding:5px
+        margin-top:-.5rem
+        z-index:5
+        position:absolute
+        background:white
+        cursor:pointer
+        font-size:16px
+    li.dropdown:hover > ul, li.dropdown > ul:hover, li.dropdown:focus-within> ul, li.dropdown > ul:focus-within
+        display:block
 
 footer
     color:#999

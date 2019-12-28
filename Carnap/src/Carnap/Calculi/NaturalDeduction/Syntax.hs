@@ -7,6 +7,7 @@ import Data.IORef (IORef)
 import Data.List (permutations)
 import Data.Hashable
 import Data.Typeable
+import Control.Lens
 import Carnap.Core.Unification.Unification
 --import Carnap.Core.Unification.FirstOrder
 import Carnap.Core.Unification.ACUI
@@ -42,7 +43,7 @@ data DeductionLine r lex a where
             { dependAsserted :: FixLang lex a
             , dependAssertRule :: MultiRule r
             , dependAssertDependencies :: [(Int,Int)]
-            , dependAssertDischarged :: [Int]
+            , dependAssertDischarged :: Maybe [Int]
             , dependAssertInScope:: [Int]
             , dependAssertLineNo:: Maybe Int
             } -> DeductionLine r lex a
@@ -62,7 +63,7 @@ data DeductionLine r lex a where
             , closureDependencies :: [(Int,Int)]
             } -> DeductionLine r lex a
         PartialLine ::
-            { partialLineFormula :: Maybe (FixLang lex a)
+            { partialLineContent :: Either String (FixLang lex a)
             , partialLineError   :: ParseError
             , partialLineDepth   :: Int
             } -> DeductionLine r lex a
@@ -85,9 +86,14 @@ assertion (ShowWithLine f _ _ _) = Just f
 assertion _ = Nothing
 
 isAssumptionLine :: Inference r lex sem => DeductionLine r lex sem -> Bool
-isAssumptionLine (AssertLine _ r _ _) = and (map isAssumption r)
-isAssumptionLine (DependentAssertLine _ r _ _ _ _) = and (map isAssumption r)
+isAssumptionLine (AssertLine _ r _ _) = or (map isAssumption r)
+isAssumptionLine (DependentAssertLine _ r _ _ _ _) = or (map isAssumption r)
 isAssumptionLine _ = False
+
+isOnlyAssumptionLine :: Inference r lex sem => DeductionLine r lex sem -> Bool
+isOnlyAssumptionLine (AssertLine _ r _ _) = and (map isAssumption r)
+isOnlyAssumptionLine (DependentAssertLine _ r _ _ _ _) = and (map isAssumption r)
+isOnlyAssumptionLine _ = False
 
 isPremiseLine :: Inference r lex sem => DeductionLine r lex sem -> Bool
 isPremiseLine (AssertLine _ r _ _) = and (map isPremise r)
@@ -97,7 +103,7 @@ isPremiseLine _ = False
 inScope (DependentAssertLine _ _ _ _ s _) = s
 inScope _ = []
 
-discharged (DependentAssertLine _ _ _ d _ _) = d
+discharged (DependentAssertLine _ _ _ (Just d) _ _) = d
 discharged _ = []
 
 justificationOf (AssertLine _ r _ _) = Just r 
@@ -244,11 +250,11 @@ data LemmonVariant = StandardLemmon | TomassiStyle
 
 data FitchVariant = StandardFitch | BergmanMooreAndNelsonStyle
 
-type ProofMemoRef lex sem r = IORef (Map Int (Either (ProofErrorMessage lex) 
-                                                     ( ClassicalSequentOver lex (Sequent sem)
+type ProofMemoRef lex sem r = IORef (Map Int [Either (ProofErrorMessage lex) 
+                                                     [(ClassicalSequentOver lex (Sequent sem)
                                                      , [Equation (ClassicalSequentOver lex)]
-                                                     , r)
-                                           ))
+                                                     , r)]
+                                           ])
 
 data RuntimeNaturalDeductionConfig lex sem = RuntimeNaturalDeductionConfig
         { derivedRules :: Map String (ClassicalSequentOver lex (Sequent sem))
@@ -290,7 +296,9 @@ data ProofType = ProofType
 
 data IndirectArity = PolyProof --takes an arbitrary number of assertions or subproofs, each ending in one assertion
                    | TypedProof ProofType --takes a subproof with a particular structure, given by a prooftype
+                   | ImplicitProof ProofType --takes a subproof which is not cited explicitly, as in Gamut
                    | PolyTypedProof Int (ProofType) --takes n subproofs, each with the structure given by prooftype
+                   | WithAlternate IndirectArity IndirectArity --tries the first, and on failure, falls back on the second
 
 doubleProof = TypedProof (ProofType 0 2)
 
@@ -332,7 +340,18 @@ class Inference r lex sem | r -> lex sem where
         isPremise = const False
         --TODO: template for error messages, etc.
 
-type SupportsND r lex sem = ( Show r , Typeable sem, ReLex lex 
+class StructuralInference rule lex struct where
+        structuralRestriction :: struct -> Restrictor rule lex
+        structuralRestriction _ _ _ = Nothing
+
+class AssumptionNumbers r where
+        introducesAssumptions :: r -> [Int]
+        dischargesAssumptions :: r -> [Int]
+
+type SupportsND r lex sem = 
+    ( Show r 
+    , Typeable sem
+    , ReLex lex 
     , Inference r lex sem
     , Schematizable (lex (FixLang lex))
     , Schematizable (lex (ClassicalSequentOver lex))
@@ -352,4 +371,10 @@ type SupportsND r lex sem = ( Show r , Typeable sem, ReLex lex
 --
 -- Proof Tree to proof skeleton)
 
+-----------------
+--  3. Optics  --
+-----------------
 
+leaves :: Traversal' (Tree a) (Tree a)
+leaves f (Node x []) = f (Node x [])
+leaves f (Node x xs) = Node <$> pure x <*> traverse (leaves f) xs

@@ -78,8 +78,8 @@ getUserR ident = do
                        assignments <- assignmentsOf course textbookproblems asmd asDocs
                        pq <- getProblemQuery uid cid
                        let getSubs typ = map entityVal <$> runDB (selectList ([ProblemSubmissionType ==. typ] ++ pq) [])
-                       subs@[synsubs,transsubs,dersubs,ttsubs,cmsubs,qsubs] <- mapM getSubs [SyntaxCheck,Translation,Derivation,TruthTable,CounterModel,Qualitative]
-                       [syntable,transtable,dertable,tttable,cmtable,qtable] <- mapM (problemsToTable course textbookproblems asmd asDocs) subs
+                       subs@[synsubs,transsubs,dersubs,ttsubs,cmsubs,qsubs,seqsubs,treesubs] <- mapM getSubs [SyntaxCheck,Translation,Derivation,TruthTable,CounterModel,Qualitative,SequentCalc,DeductionTree]
+                       [syntable,transtable,dertable,tttable,cmtable,qtable,seqtable,treetable] <- mapM (problemsToTable course textbookproblems asmd asDocs) subs
                        score <- totalScore textbookproblems (concat subs)
                        defaultLayout $ do
                            addScript $ StaticR js_bootstrap_bundle_min_js
@@ -104,6 +104,16 @@ getUserR ident = do
     where tryLookup l x = case lookup x l of
                           Just n -> show n
                           Nothing -> "can't find scores"
+
+getUserDispatchR :: Handler Html
+getUserDispatchR = maybeAuthId 
+                   >>= maybe (redirect HomeR) 
+                             (getIdent >=> maybe (redirect HomeR) goHome)
+    where goHome ident = do mid <- instructorIdByIdent ident 
+                            case mid of
+                              Nothing -> redirect $ UserR ident
+                              Just _ -> redirect $ InstructorR ident
+
 
 --------------------------------------------------------
 --Grading

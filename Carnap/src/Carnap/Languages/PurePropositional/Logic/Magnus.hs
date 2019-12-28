@@ -84,14 +84,14 @@ instance Inference MagnusSL PurePropLexicon (Form Bool) where
         ruleOf BicoIntro4 = biconditionalProofVariations !! 3
         ruleOf BicoElim1  = biconditionalPonensVariations !! 0
         ruleOf BicoElim2  = biconditionalPonensVariations !! 1
-        ruleOf NegeIntro1 = constructiveReductioVariations !! 0
-        ruleOf NegeIntro2 = constructiveReductioVariations !! 1
-        ruleOf NegeIntro3 = constructiveReductioVariations !! 2
-        ruleOf NegeIntro4 = constructiveReductioVariations !! 3
-        ruleOf NegeElim1  = nonConstructiveReductioVariations !! 0
-        ruleOf NegeElim2  = nonConstructiveReductioVariations !! 1
-        ruleOf NegeElim3  = nonConstructiveReductioVariations !! 2
-        ruleOf NegeElim4  = nonConstructiveReductioVariations !! 3
+        ruleOf NegeIntro1 = explicitConstructiveReductioVariations !! 0
+        ruleOf NegeIntro2 = explicitConstructiveReductioVariations !! 1
+        ruleOf NegeIntro3 = explicitConstructiveReductioVariations !! 2
+        ruleOf NegeIntro4 = explicitConstructiveReductioVariations !! 3
+        ruleOf NegeElim1  = explicitNonConstructiveReductioVariations !! 0
+        ruleOf NegeElim2  = explicitNonConstructiveReductioVariations !! 1
+        ruleOf NegeElim3  = explicitNonConstructiveReductioVariations !! 2
+        ruleOf NegeElim4  = explicitNonConstructiveReductioVariations !! 3
         ruleOf (As _)     = axiom
         ruleOf (Pr _)     = axiom
 
@@ -100,7 +100,7 @@ instance Inference MagnusSL PurePropLexicon (Form Bool) where
                        , BicoIntro3, BicoIntro4 ] = Just PolyProof
             | x `elem` [ NegeIntro1, NegeIntro2 , NegeIntro3, NegeIntro4
                        , NegeElim1, NegeElim2, NegeElim3 , NegeElim4
-                       ] = Just doubleProof
+                       ] = Just (TypedProof (ProofType 1 2))
             | otherwise = Nothing
 
         isAssumption (As _) = True
@@ -227,8 +227,8 @@ instance Inference MagnusSLPlus PurePropLexicon (Form Bool) where
         ruleOf RepMC   = materialConditional !! 1
         ruleOf MCRep2  = materialConditional !! 2
         ruleOf RepMC2  = materialConditional !! 3
-        ruleOf BiExRep = biconditionalExchange !! 1
-        ruleOf RepBiEx = biconditionalExchange !! 2
+        ruleOf BiExRep = biconditionalExchange !! 0
+        ruleOf RepBiEx = biconditionalExchange !! 1
         ruleOf DM1    = deMorgansLaws !! 0
         ruleOf DM2    = deMorgansLaws !! 1
         ruleOf DM3    = deMorgansLaws !! 2

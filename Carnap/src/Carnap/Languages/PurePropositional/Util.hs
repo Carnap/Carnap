@@ -1,6 +1,8 @@
-{-# LANGUAGE FlexibleContexts, TypeSynonymInstances, FlexibleInstances, MultiParamTypeClasses #-}
+{-# LANGUAGE ScopedTypeVariables, FlexibleContexts, RankNTypes, TypeSynonymInstances, FlexibleInstances, MultiParamTypeClasses #-}
 module Carnap.Languages.PurePropositional.Util 
-(showClean,isValid, isEquivTo, toSchema, getIndicies, getValuations, isBooleanBinary, isBooleanUnary, isBoolean, isAtom) 
+(showClean,isValid, isEquivTo, toSchema, getIndicies, getValuations,
+isBooleanBinary, isBooleanUnary, isBoolean, HasLiterals(..), isCNF,
+isDNF, conjunctiveClause, disjunctiveClause) 
 where
 
 import Carnap.Core.Data.Classes
@@ -11,6 +13,7 @@ import Carnap.Languages.Util.LanguageClasses
 import Control.Lens
 import Data.Maybe
 import Data.List
+import Data.Typeable (Typeable)
 
 --------------------------------------------------------
 --1. Show Clean
@@ -52,7 +55,7 @@ getIndicies :: PurePropLanguage (Form Bool) -> [Int]
 getIndicies = catMaybes . map (preview _propIndex) . universe
 
 getValuations :: PurePropLanguage (Form Bool) -> [Int -> Bool]
-getValuations = (map toValuation) . subsequences . getIndicies 
+getValuations = (map toValuation) . subsequences . nub . getIndicies 
     where toValuation l = \x -> x `elem` l
 
 isValid p = and $ map (\v -> unform $ satisfies v p) (getValuations p)
@@ -68,8 +71,22 @@ instance ToSchema PurePropLexicon (Form Bool) where
     toSchema = transform trans
         where trans = id & outside (_propIndex) .~ (\n -> phin n)
 
+---------------
+--4. Optics  --
+---------------
+
+conjunctiveClause :: PrismBooleanConnLex lex b => Traversal' (FixLang lex (Form b)) (FixLang lex (Form b))
+conjunctiveClause f s = case s ^? binaryOpPrism _and of
+                            Nothing -> f s
+                            Just (a,b) -> (./\.) <$> conjunctiveClause f a <*> conjunctiveClause f b
+
+disjunctiveClause :: PrismBooleanConnLex lex b => Traversal' (FixLang lex (Form b)) (FixLang lex (Form b))
+disjunctiveClause f s = case s ^? binaryOpPrism _or of
+                            Nothing -> f s
+                            Just (a,b) -> (./\.) <$> disjunctiveClause f a <*> disjunctiveClause f b
+
 --------------
---4. Tests  --
+--5. Tests  --
 --------------
 
 isJunction :: (PrismBooleanConnLex lex b) => FixLang lex (Form b) -> Bool
@@ -79,10 +96,22 @@ isBooleanBinary :: (PrismBooleanConnLex lex b) => FixLang lex (Form b) -> Bool
 isBooleanBinary a = not . null . catMaybes $ map (a ^? ) [binaryOpPrism _and, binaryOpPrism _or, binaryOpPrism _if,binaryOpPrism _iff]
 
 isBooleanUnary :: (PrismBooleanConnLex lex b) => FixLang lex (Form b) -> Bool
-isBooleanUnary a = case a ^? unaryOpPrism _not of Nothing -> False; Just _ -> True
+isBooleanUnary a = case (a ^? unaryOpPrism _not) of Nothing -> False; _ -> True
 
 isBoolean x = isBooleanUnary x || isBooleanBinary x
 
-isAtom :: (PrismPropLex lex b) => FixLang lex (Form b) -> Bool
-isAtom a = not ((a ^? _propIndex) == Nothing)
+class PrismBooleanConnLex lex sem => HasLiterals lex sem where
+        isLiteral :: FixLang lex (Form sem) -> Bool
+        isLiteral l = case l ^? unaryOpPrism _not of
+                          Just a' -> isAtom a'
+                          Nothing -> isAtom l
+        isAtom :: FixLang lex (Form sem) -> Bool
 
+instance HasLiterals PurePropLexicon Bool where
+    isAtom a = (a ^? _propIndex) /= Nothing
+
+isCNF :: (PrismBooleanConnLex lex b, HasLiterals lex b) => FixLang lex (Form b) -> Bool
+isCNF = all isLiteral . toListOf (conjunctiveClause . disjunctiveClause)
+
+isDNF :: (PrismBooleanConnLex lex b, HasLiterals lex b) => FixLang lex (Form b) -> Bool
+isDNF = all isLiteral . toListOf (disjunctiveClause . conjunctiveClause)

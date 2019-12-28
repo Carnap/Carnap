@@ -32,7 +32,7 @@ parseDependentAssertLinePlain = parseDependentAssertLine False
 
 --lemmon justifications as given in Goldfarb
 lemline r = do mdis <- optionMaybe scope
-               let dis = case mdis of Nothing -> []; Just l -> l
+               let dis = case mdis of Nothing -> Just []; l -> l
                spaces
                deps <- citation `sepEndBy` spaces
                annote <- annotation
@@ -45,7 +45,7 @@ lemlineAlt r = do (dis,deps,annote) <- lookAhead $
                     do many (oneOf ['A' .. 'Z'])
                        (mdis,mdeps,annote) <- try cite1 <|> try cite2 <|> cite3
                        let deps = case mdeps of Nothing -> []; Just l -> l
-                       let dis = case mdis of Nothing -> []; Just l -> l
+                       let dis = case mdis of Nothing -> Just []; l -> l
                        return (dis,deps,annote)
                   rule <- r (length deps) annote
                   return (dis,deps,rule)
@@ -54,13 +54,14 @@ lemlineAlt r = do (dis,deps,annote) <- lookAhead $
           cite3 = (,,) <$> optionMaybe scope <*> optionMaybe bothCitations <*> annotation
           bothCitations = try (citation `sepEndBy` spaces) <|> citations
 
---lemmon justifications used in Tomassi.
-lemlineTomassi r = do indicated <- parseInts
-                      spaces
-                      rule <- r 0 ""
-                      --XXX: discharge of assumptions is done implicitly,
-                      --rather than explicitly flagged in this system
-                      return ([],indicated,rule)
+
+lemlineImplicit r = do indicated <- parseInts
+                       spaces
+                       rule <- r 0 ""
+                       --XXX: discharge of assumptions is done implicitly,
+                       --rather than explicitly flagged in this system.
+                       --Hence "Nothing" is discharged
+                       return (Nothing,indicated,rule)
 
 citation :: Parsec String u Int
 citation = char '(' *> (read <$> many1 digit) <* char ')'
@@ -83,7 +84,11 @@ toDeductionLemmonAlt r f = toDeduction (parseDependentAssertLinePlain r f lemlin
 
 toDeductionLemmonTomassi :: Inference r lex (Form Bool) => (Int -> String -> Parsec String () [r]) -> Parsec String () (FixLang lex a) -> String 
     -> Deduction r lex a
-toDeductionLemmonTomassi r f = toDeduction (parseDependentAssertLineWithNum r f lemlineTomassi)
+toDeductionLemmonTomassi r f = toDeduction (parseDependentAssertLineWithNum r f lemlineImplicit)
+
+toDeductionLemmonImplicit :: Inference r lex (Form Bool) => (Int -> String -> Parsec String () [r]) -> Parsec String () (FixLang lex a) -> String 
+    -> Deduction r lex a
+toDeductionLemmonImplicit r f = toDeduction (parseDependentAssertLinePlain r f lemlineImplicit)
 
 toProofTreeLemmon :: 
     ( Inference r lex sem
@@ -91,13 +96,13 @@ toProofTreeLemmon ::
     , Typeable sem
     ) => Deduction r lex sem -> Int -> Either (ProofErrorMessage lex) (ProofTree r lex sem)
 toProofTreeLemmon ded n = case ded !! (n - 1) of
-    (DependentAssertLine f r depairs dis scope mnum) ->
+    l@(DependentAssertLine f r depairs mdis scope mnum) ->
         do let deps = map fst depairs
            mapM_ checkDep deps
            checkNum mnum
            let inherited = concat $ map (\m -> inScope (ded !! (m - 1))) deps
            checkScope inherited
-           deps' <- mapM (toProofTreeLemmon ded) (deps ++ dis)
+           deps' <- mapM (toProofTreeLemmon ded) (deps ++ discharged l)
            return $ Node (ProofLine n (SS $ liftToSequent f) r) deps'
 
         where err :: String -> Either (ProofErrorMessage lex) a
@@ -107,12 +112,13 @@ toProofTreeLemmon ded n = case ded !! (n - 1) of
                          | otherwise = Right True
 
               checkScope i | isAssumption (head r) && not (scope == i ++ [n]) = err "The dependencies here aren't right. Remember, this rule introduces its own line number as a dependency."
-                           | isAssumption (head r) = if dis /= [] then err "This rule does not allow the elimination of dependencies." else Right True
-                           | null (globalRestriction (Left []) 0 (head r)) && dis /= [] = err "This rule does not allow the elimination of dependencies."
-                           | null (indirectInference (head r)) = if sort scope /= sort (nub i \\ dis) then err "The dependencies here aren't right. Did you forget mark a dependency as eliminated?."
-                                                                                                      else Right True
+                           | isAssumption (head r) = if nodis then Right True else err "This rule does not allow the elimination of dependencies."
+                           | null (globalRestriction (Left []) 0 (head r)) && not nodis = err "This rule does not allow the elimination of dependencies."
                            | length (nub i) - numDischarged (indirectInference (head r)) /= length scope = err "This is the wrong number of dependencies. Did you forget to add or remove something?"
+                           | mdis /= Nothing && sort scope /= sort (nub i \\ discharged l) = err "The dependencies here aren't right. Did you forget mark a dependency as eliminated?."
                            | otherwise = Right True
+
+              nodis = discharged l == []
 
               numDischarged (Just (TypedProof (ProofType n _ ))) = n
               numDischarged (Just (PolyTypedProof m (ProofType n _))) = m * n

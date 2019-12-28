@@ -10,11 +10,12 @@ import Data.Maybe (catMaybes)
 import qualified Data.Map as M (lookup) 
 import Data.IORef (IORef, newIORef,writeIORef,readIORef)
 import Control.Monad.Trans.State.Lazy
+import Control.Monad.Fail
 import Control.Monad.IO.Class
 import Control.Monad (when)
 import Control.Concurrent
 import GHCJS.DOM.Types
-import GHCJS.DOM.Element (setAttribute, getAttribute, getInnerHTML, setInnerHTML, keyDown, keyUp, click, getScrollWidth, getScrollHeight)
+import GHCJS.DOM.Element (setAttribute, getAttribute, getInnerHTML, setInnerHTML, keyDown, keyUp, click, input, getScrollWidth, getScrollHeight)
 import GHCJS.DOM.HTMLElement (castToHTMLElement, setSpellcheck)
 import GHCJS.DOM.Document (createElement, getDefaultView, getBody, getHead, getDomain, setDomain,getElementsByTagName)
 import GHCJS.DOM.Window (open,getDocument)
@@ -79,7 +80,7 @@ checkerWith options updateres iog@(IOGoal i o g content _) w = do
            ref <- newIORef False
            elts <- mapM (createElement w . Just) ["div","div","div","div","div"]
            let [Just fd, Just nd, Just sd, Just incompleteAlert, Just aligner] = elts
-           bw <- buttonWrapper w
+           bw <- createButtonWrapper w o
            setSpellcheck (castToHTMLElement i) False
            setAutocapitalize (castToHTMLTextAreaElement i) (Just "off")
            setAutocorrect (castToHTMLTextAreaElement i) False
@@ -122,6 +123,7 @@ checkerWith options updateres iog@(IOGoal i o g content _) w = do
                    bt' <- doneButton w (label button)
                    appendChild bw  (Just bt')
                    buttonAct <- newListener $ action button ref w' i
+                   doOnce i input False $ liftIO $ setStatus bt' Edited
                    addListener bt' click buttonAct False                
                Nothing -> return ()
            case feedback options of
@@ -208,7 +210,7 @@ insertTab = insertText (const (const "    "))
 trim :: String -> String
 trim = reverse . dropWhile (`elem` " \t\n") . reverse
 
-resize :: MonadIO m => Element -> m ()
+resize :: (MonadFail m, MonadIO m) => Element -> m ()
 resize i = do setAttribute i "style" "width: 0px;height: 0px"
               (Just par) <- getParentNode i
               (Just gpar) <- getParentNode par

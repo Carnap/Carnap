@@ -1,5 +1,8 @@
 {-# LANGUAGE FlexibleContexts, TypeSynonymInstances, FlexibleInstances, MultiParamTypeClasses, UndecidableInstances #-}
-module Carnap.Languages.PureFirstOrder.Util (propForm, boundVarOf, toPNF, pnfEquiv, toAllPNF, toDenex, stepDenex, skolemize, orientEquations, comparableMatricies, universalClosure) where
+module Carnap.Languages.PureFirstOrder.Util 
+(propForm, boundVarOf, toPNF, pnfEquiv, toAllPNF, toDenex, stepDenex,
+skolemize, orientEquations, comparableMatricies, universalClosure,
+quantFree, isPNF, isOpenFormula) where
 
 import Carnap.Core.Data.Classes
 import Carnap.Core.Unification.Unification
@@ -17,6 +20,10 @@ import Data.Typeable (Typeable)
 import Data.Maybe
 import Data.List
 
+-----------------------
+--1 Transformations  --
+-----------------------
+
 propForm f = evalState (propositionalize f) []
     where propositionalize = nonBoolean
             & outside (binaryOpPrism _and) .~ (\(x,y) -> land <$> propositionalize x <*> propositionalize y)
@@ -24,16 +31,14 @@ propForm f = evalState (propositionalize f) []
             & outside (binaryOpPrism _if) .~ (\(x,y) -> lif <$> propositionalize x <*> propositionalize y)
             & outside (binaryOpPrism _iff) .~ (\(x,y) -> liff <$> propositionalize x <*> propositionalize y)
             & outside (unaryOpPrism _not) .~ (\x -> lneg <$> propositionalize x)
+            & outside (_verum) .~ (\_ -> pure lverum)
+            & outside (_falsum) .~ (\_ -> pure lfalsum)
           
           nonBoolean form = do abbrev <- get
                                case elemIndex form abbrev of
                                    Just n -> return (pn n)
                                    Nothing -> put (abbrev ++ [form]) >> return (pn $ length abbrev)
                                     
-boundVarOf v f = case preview  _varLabel v >>= subBinder f of
-                            Just f' -> show f' == show f
-                            Nothing -> False 
-
 toPNF = canonical . rewrite stepPNF
 
 --rebuild at each step to remove dummy variables lingering in closures
@@ -134,6 +139,11 @@ nonDeterministicStepPNF = pure . stepPNF
                     [ Just $ (lall va $ \x -> lsome ve $ \y -> ( g x ./\. f y))
                     , Just $ (lsome ve $ \x -> lall va $ \y -> ( g y ./\. f x))
                     ])
+    & outside (binaryOpPrism _and . aside (unaryOpPrismOn _all') . otherside (unaryOpPrismOn _all')) .~
+                (\((va, LLam g),(va', LLam f)) -> 
+                    [ Just $ (lall va $ \x -> lall va' $ \y -> ( g x ./\. f y))
+                    , Just $ (lall va $ \x -> ( g x ./\. f x))
+                    ])
     & outside (binaryOpPrism _or . aside (unaryOpPrismOn _all') . otherside (unaryOpPrismOn _some')) .~
                 (\((ve, LLam g),(va, LLam f)) -> 
                     [ Just $ (lall va $ \x -> lsome ve $ \y -> ( g y .\/. f x))
@@ -144,6 +154,11 @@ nonDeterministicStepPNF = pure . stepPNF
                     [ Just $ (lall va $ \x -> lsome ve $ \y -> ( g x .\/. f y))
                     , Just $ (lsome ve $ \x -> lall va $ \y -> ( g y .\/. f x))
                     ])
+    & outside (binaryOpPrism _or . aside (unaryOpPrismOn _some') . otherside (unaryOpPrismOn _some')) .~
+                (\((ve', LLam g),(ve, LLam f)) -> 
+                    [ Just $ (lsome ve' $ \x -> lsome ve $ \y -> ( g x .\/. f y))
+                    , Just $ (lsome ve $ \x -> ( g x .\/. f x))
+                    ])
     & outside (binaryOpPrism _if . aside (unaryOpPrismOn _all') . otherside (unaryOpPrismOn _all')) .~
                 (\((ve, LLam g),(va, LLam f)) -> 
                     [ Just $ (lall va $ \x -> lsome ve $ \y -> ( g y .=>. f x))
@@ -153,6 +168,11 @@ nonDeterministicStepPNF = pure . stepPNF
                 (\((va, LLam g),(ve, LLam f)) -> 
                     [ Just $ (lall va $ \x -> lsome ve $ \y -> ( g x .=>. f y))
                     , Just $ (lsome ve $ \x -> lall va $ \y -> ( g y .=>. f x))
+                    ])
+    & outside (binaryOpPrism _if . aside (unaryOpPrismOn _some') . otherside (unaryOpPrismOn _all')) .~
+                (\((ve, LLam g),(va, LLam f)) -> 
+                    [ Just $ (lsome va $ \x -> lsome ve $ \y -> ( g y .=>. f x))
+                    , Just $ (lsome ve $ \x -> ( g x .=>. f x))
                     ])
     where _all' :: Prism' (FixLang PureLexiconFOL ((Term Int -> Form Bool) -> Form Bool)) String
           _all' = _all
@@ -234,7 +254,45 @@ universalClosure f = case varsOf f of
                          [] -> f
                          ls -> foldl bindIn f ls 
     where bindIn f v = lall (show v) $ \x -> subBoundVar v x f
-          varsOf f = map foVar $ toListOf (termsOf . cosmos . _varLabel) f
+          varsOf f = map foVar $ nub . toListOf (termsOf . cosmos . _varLabel . filtered isVar) $ f
+          isVar = any (not . (`elem` "1234567890"))
+
+----------------
+--  2. Tests  --
+----------------
+
+isOpenFormula :: FirstOrderLex (a (FixLang (PureFirstOrderLexWith a))) => FixLang (PureFirstOrderLexWith a) (Form Bool) -> Bool
+isOpenFormula = anyOf termsOf (\x -> isVar (x ^? _varLabel))
+    where isVar Nothing = False
+          isVar (Just s) = any (not . (`elem` "1234567890")) s
+
+boundVarOf v f = case preview  _varLabel v >>= subBinder f of
+                            Just f' -> show f' == show f
+                            Nothing -> False 
+
+isPNF :: FirstOrderLex (a (FixLang (PureFirstOrderLexWith a))) => FixLang (PureFirstOrderLexWith a) (Form Bool) -> Bool
+isPNF = quantFree
+          & outside (unaryOpPrismOn _all') .~ const True
+          & outside (unaryOpPrismOn _some') .~ \(_,LLam f) -> isPNF $ f (static 0)
+    where _all' :: Prism' (FixLang (PureFirstOrderLexWith a) ((Term Int -> Form Bool) -> Form Bool)) String
+          _all' = _all
+          _some' :: Prism' (FixLang (PureFirstOrderLexWith a) ((Term Int -> Form Bool) -> Form Bool)) String
+          _some' = _some
+
+quantFree :: FirstOrderLex (a (FixLang (PureFirstOrderLexWith a))) => FixLang (PureFirstOrderLexWith a) (Form Bool) -> Bool
+quantFree = all notQuant . children
+    where notQuant = const True
+              & outside (unaryOpPrismOn _all') .~ const False
+              & outside (unaryOpPrismOn _some') .~ const False
+
+          _all' :: Prism' (FixLang (PureFirstOrderLexWith a) ((Term Int -> Form Bool) -> Form Bool)) String
+          _all' = _all
+          _some' :: Prism' (FixLang (PureFirstOrderLexWith a) ((Term Int -> Form Bool) -> Form Bool)) String
+          _some' = _some
+
+------------------
+--  3. Classes  --
+------------------
 
 --- XXX: This shouldn't require so many annotations. Doesn't need them in
 --GHCi 8.4.2, and probably not in GHC 8.4.2 generally.
@@ -255,7 +313,22 @@ instance ( FirstOrderLex (b (FixLang (OpenLexiconPFOL b)))
                        ) => Traversal' (FixLang (OpenLexiconPFOL b) (Form Bool)) (FixLang (OpenLexiconPFOL b) (Term Int))
               terms = genChildren
 
-instance {-# OVERLAPPABLE #-} FirstOrderLex (b (FixLang (OpenLexiconPFOL b))) => ToSchema (OpenLexiconPFOL b) (Term Int) where
+instance HasLiterals (OpenLexiconPFOL a) Bool where
+    isAtom a | (a ^? _propIndex) /= Nothing = True
+             | otherwise = withHead (\h -> not . null $ h ^? _predIdx') a
+        where _predIdx' :: Typeable ret => Prism' (OpenLanguagePFOL b ret) (Int, Arity (Term Int) (Form Bool) ret) 
+              _predIdx' = _predIdx
+
+instance {-# OVERLAPS #-} HasLiterals PureLexiconFOL Bool where
+    isAtom a | (a ^? _propIndex) /= Nothing = True
+             | (a ^? binaryOpPrism _termEq') /= Nothing = True
+             | otherwise = withHead (\h -> not . null $ h ^? _predIdx') a
+        where _predIdx' :: Typeable ret => Prism' (PureLanguageFOL ret) (Int, Arity (Term Int) (Form Bool) ret) 
+              _predIdx' = _predIdx
+              _termEq' :: Prism' (PureLanguageFOL (Term Int -> Term Int -> Form Bool)) ()
+              _termEq' = _termEq
+
+instance FirstOrderLex (b (FixLang (OpenLexiconPFOL b))) => ToSchema (OpenLexiconPFOL b) (Term Int) where
     toSchema = id
 
 instance {-# OVERLAPS #-} ToSchema PureLexiconFOL (Term Int) where

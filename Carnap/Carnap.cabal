@@ -6,7 +6,7 @@ license:             GPL-3
 license-file:        LICENSE
 author:              Jake Ehrlich, Graham Leach-Krouse
 maintainer:          gleachkr@gmail.com
-copyright:           2016 Jake Ehrlich, Graham Leach-Krouse
+copyright:           2019 Jake Ehrlich, Graham Leach-Krouse
 category:            Web
 build-type:          Simple
 -- extra-source-files:
@@ -17,8 +17,6 @@ library
   exposed-modules:     Carnap.Core.Data.Types
                      , Carnap.Core.Data.Optics
                      , Carnap.Core.Data.Classes
-                     -- , Carnap.Core.Examples.ACUI
-                     -- , Carnap.Core.Examples.ToyLanguages
                      , Carnap.Core.Unification.FirstOrder
                      , Carnap.Core.Unification.Unification
                      , Carnap.Core.Unification.ACUI
@@ -41,10 +39,13 @@ library
                      , Carnap.Languages.PurePropositional.Logic.IchikawaJenkins
                      , Carnap.Languages.PurePropositional.Logic.Magnus
                      , Carnap.Languages.PurePropositional.Logic.Hausman
+                     , Carnap.Languages.PurePropositional.Logic.Gamut
                      , Carnap.Languages.PurePropositional.Logic.HowardSnyder
                      , Carnap.Languages.PurePropositional.Logic.Hardegree
                      , Carnap.Languages.PurePropositional.Logic.ThomasBolducAndZach
+                     , Carnap.Languages.PurePropositional.Logic.EbelsDuggan
                      , Carnap.Languages.PurePropositional.Logic.Tomassi
+                     , Carnap.Languages.PurePropositional.Logic.Gentzen
                      , Carnap.Languages.ModalPropositional.Syntax
                      , Carnap.Languages.ModalPropositional.Parser
                      , Carnap.Languages.ModalPropositional.Logic
@@ -65,12 +66,15 @@ library
                      , Carnap.Languages.PureFirstOrder.Logic.Carnap
                      , Carnap.Languages.PureFirstOrder.Logic.KalishAndMontague
                      , Carnap.Languages.PureFirstOrder.Logic.ThomasBolducAndZach
+                     , Carnap.Languages.PureFirstOrder.Logic.EbelsDuggan
                      , Carnap.Languages.PureFirstOrder.Logic.BergmannMoorAndNelson
                      , Carnap.Languages.PureFirstOrder.Logic.IchikawaJenkins
                      , Carnap.Languages.PureFirstOrder.Logic.Hausman
+                     , Carnap.Languages.PureFirstOrder.Logic.Gamut
                      , Carnap.Languages.PureFirstOrder.Logic.HowardSnyder
                      , Carnap.Languages.PureFirstOrder.Logic.Hardegree
                      , Carnap.Languages.PureFirstOrder.Logic.Goldfarb
+                     , Carnap.Languages.PureFirstOrder.Logic.Gentzen
                      , Carnap.Languages.PureSecondOrder.Syntax
                      , Carnap.Languages.PureSecondOrder.Parser
                      , Carnap.Languages.PureSecondOrder.Logic

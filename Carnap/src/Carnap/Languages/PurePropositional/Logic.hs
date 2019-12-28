@@ -11,6 +11,8 @@ module Carnap.Languages.PurePropositional.Logic
     , parseMagnusSL, MagnusSL, magnusSLCalc
     , parseMagnusSLPlus, MagnusSLPlus, magnusSLPlusCalc
     , parseThomasBolducAndZachTFL, ThomasBolducAndZachTFL, thomasBolducAndZachTFLCalc
+    , parseThomasBolducAndZachTFLCore, ThomasBolducAndZachTFLCore, thomasBolducAndZachTFL2019Calc
+    , parseEbelsDugganTFL, EbelsDugganTFL, ebelsDugganTFLCalc
     , parseTomassiPL, TomassiPL, tomassiPLCalc
     , parseHardegreeSL, HardegreeSL, hardegreeSLCalc
     , ofPropSys
@@ -24,26 +26,33 @@ import Carnap.Languages.PurePropositional.Logic.BergmannMoorAndNelson
 import Carnap.Languages.PurePropositional.Logic.Carnap
 import Carnap.Languages.PurePropositional.Logic.Hardegree
 import Carnap.Languages.PurePropositional.Logic.Hausman
+import Carnap.Languages.PurePropositional.Logic.Gamut
 import Carnap.Languages.PurePropositional.Logic.HowardSnyder
 import Carnap.Languages.PurePropositional.Logic.KalishAndMontague
 import Carnap.Languages.PurePropositional.Logic.Magnus
 import Carnap.Languages.PurePropositional.Logic.ThomasBolducAndZach
+import Carnap.Languages.PurePropositional.Logic.EbelsDuggan
 import Carnap.Languages.PurePropositional.Logic.Tomassi
 import Carnap.Languages.PurePropositional.Logic.IchikawaJenkins
 
 ofPropSys :: (forall r . (Show r, Inference r PurePropLexicon (Form Bool)) => 
               NaturalDeductionCalc r PurePropLexicon (Form Bool) -> a) -> String -> Maybe a
-ofPropSys f sys | sys == "prop"                      = Just $ f propCalc 
-                | sys == "montagueSC"                = Just $ f montagueSCCalc 
-                | sys == "LogicBookSD"               = Just $ f logicBookSDCalc 
-                | sys == "LogicBookSDPlus"           = Just $ f logicBookSDPlusCalc 
-                | sys == "hausmanSL"                 = Just $ f hausmanSLCalc 
-                | sys == "howardSnyderSL"            = Just $ f howardSnyderSLCalc 
-                | sys == "ichikawaJenkinsSL"         = Just $ f ichikawaJenkinsSLCalc
-                | sys == "hausmanSL"                 = Just $ f hausmanSLCalc
-                | sys == "magnusSL"                  = Just $ f magnusSLCalc 
-                | sys == "magnusSLPlus"              = Just $ f magnusSLPlusCalc 
-                | sys == "thomasBolducAndZachTFL"    = Just $ f thomasBolducAndZachTFLCalc 
-                | sys == "tomassiPL"                 = Just $ f tomassiPLCalc
-                | sys == "hardegreeSL"               = Just $ f hardegreeSLCalc 
-                | otherwise                          = Nothing
+ofPropSys f sys | sys == "prop"                          = Just $ f propCalc 
+                | sys == "montagueSC"                    = Just $ f montagueSCCalc 
+                | sys == "LogicBookSD"                   = Just $ f logicBookSDCalc 
+                | sys == "LogicBookSDPlus"               = Just $ f logicBookSDPlusCalc 
+                | sys == "hausmanSL"                     = Just $ f hausmanSLCalc 
+                | sys == "gamutPND"                      = Just $ f gamutPNDCalc
+                | sys == "gamutIPND"                     = Just $ f gamutIPNDCalc
+                | sys == "gamutMPND"                     = Just $ f gamutMPNDCalc
+                | sys == "howardSnyderSL"                = Just $ f howardSnyderSLCalc 
+                | sys == "ichikawaJenkinsSL"             = Just $ f ichikawaJenkinsSLCalc
+                | sys == "hausmanSL"                     = Just $ f hausmanSLCalc
+                | sys == "magnusSL"                      = Just $ f magnusSLCalc 
+                | sys == "magnusSLPlus"                  = Just $ f magnusSLPlusCalc 
+                | sys == "thomasBolducAndZachTFL"        = Just $ f thomasBolducAndZachTFLCalc 
+                | sys == "thomasBolducAndZachTFL2019"    = Just $ f thomasBolducAndZachTFL2019Calc
+                | sys == "ebelsDugganTFL"                = Just $ f ebelsDugganTFLCalc 
+                | sys == "tomassiPL"                     = Just $ f tomassiPLCalc
+                | sys == "hardegreeSL"                   = Just $ f hardegreeSLCalc 
+                | otherwise                              = Nothing

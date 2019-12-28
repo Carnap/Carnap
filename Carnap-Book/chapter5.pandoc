@@ -1,4 +1,4 @@
-#Nested Derivations
+#Chapter 5: Nested Derivations
 
 Sometimes, a conditional derivation will not be enough to show that a certain
 conditional we want is true. The trouble is that in a conditional derivation,

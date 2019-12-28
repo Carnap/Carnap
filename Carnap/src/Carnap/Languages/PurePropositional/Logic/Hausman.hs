@@ -95,7 +95,7 @@ instance Inference HausmanSL PurePropLexicon (Form Bool) where
     ruleOf DeM3 = deMorgansLaws !! 2
     ruleOf DeM4 = deMorgansLaws !! 3
     ruleOf Impl1 = materialConditional !! 0
-    ruleOf Impl2 = materialConditional !! 0
+    ruleOf Impl2 = materialConditional !! 1
     ruleOf Exp1 = exportation !! 0
     ruleOf Exp2 = exportation !! 1
     ruleOf Comm1 = andCommutativity !! 0

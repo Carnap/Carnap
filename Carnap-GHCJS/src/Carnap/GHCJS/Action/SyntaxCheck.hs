@@ -131,16 +131,10 @@ activateChecker w (Just (i,o,opts)) =
                   Just g ->
                     case parse (purePropFormulaParser standardLetters <* eof) "" g of
                       (Right f) -> do 
-                         bw <- buttonWrapper w
+                         bw <- createButtonWrapper w o
                          ref <- newIORef (f,[(f,0)], T.Node (f,0) [], 0)  
-                         case M.lookup "submission" opts of
-                              Just s | take 7 s == "saveAs:" -> do
-                                  let l = Prelude.drop 7 s
-                                  bt <- doneButton w "Submit"
-                                  appendChild bw (Just bt)
-                                  submit <- newListener $ submitSyn opts ref l       
-                                  addListener bt click submit False                
-                              _ -> return ()
+                         let submit = submitSyn opts ref
+                         btStatus <- createSubmitButton w bw submit opts
                          (Just tree) <- createElement w (Just "div")
                          appendChild o (Just tree)
                          setInnerHTML tree (Just $ sf f)                   
@@ -148,13 +142,14 @@ activateChecker w (Just (i,o,opts)) =
                          mpar@(Just par) <- getParentNode o               
                          insertBefore par (Just bw) (Just o)                    
                          match <- newListener $ tryMatch tree ref w sf opts
-                         (Just w') <- getDefaultView w                    
+                         (Just w') <- getDefaultView w
+                         doOnce i keyUp False $ liftIO $ btStatus Edited
                          addListener i keyUp match False                  
                       (Left e) -> setInnerHTML o (Just $ show e)
                   _ -> print "syntax check was missing an option"
 activateChecker _ Nothing  = return ()
 
-submitSyn :: M.Map String String -> IORef (PureForm,[(PureForm,Int)], Tree (PureForm,Int),Int) -> String -> EventM HTMLInputElement e ()
+submitSyn :: IsEvent e => M.Map String String -> IORef (PureForm,[(PureForm,Int)], Tree (PureForm,Int),Int) -> String -> EventM HTMLInputElement e ()
 submitSyn opts ref l = do (f,forms,_,_) <- liftIO $ readIORef ref
                           case forms of 
                              [] -> do trySubmit SyntaxCheck opts l (ProblemContent (pack $ show f)) True

@@ -7,8 +7,9 @@ import Carnap.Core.Data.Types
 import Carnap.Core.Unification.ACUI
 import Carnap.Core.Unification.Unification
 import Carnap.Core.Data.Util
+import Carnap.Languages.Util.GenericConstructors
 import Carnap.Languages.Util.LanguageClasses
-import Control.Lens (lens,toListOf,Traversal')
+import Control.Lens (lens,toListOf,Traversal', Prism', prism')
 import Control.Monad.State
 import Data.Typeable
 
@@ -23,7 +24,8 @@ data Succedent a = Succedent a
 data Sequent a = Sequent a
 
 data Cedent :: k -> * -> * where
-        NilAntecedent    :: Typeable a => Cedent lang a 
+        NilCedent :: Typeable a => Cedent lang a
+        NilAntecedent    :: Typeable a => Cedent lang (Antecedent a )
         -- XXX should be `Cedent lang (Antecedent a)`, but first need a way to make this work with getId in the proxy instance
         NilSuccedent     :: Typeable a => Cedent lang (Succedent a)
         SingleAntecedent :: Typeable a => Cedent lang (a -> Antecedent a)
@@ -32,6 +34,7 @@ data Cedent :: k -> * -> * where
 instance Schematizable (Cedent a) where
         schematize NilAntecedent xs = "⊤"
         schematize NilSuccedent xs = "⊥"
+        schematize NilCedent xs = "∅"
         schematize SingleAntecedent (x:xs) = x
         schematize SingleSuccedent (x:xs) = x 
 
@@ -40,6 +43,7 @@ instance FirstOrderLex (Cedent a)
 instance UniformlyEq (Cedent a) where
         NilAntecedent =* NilAntecedent = True
         NilSuccedent =* NilSuccedent = True
+        NilCedent =* NilCedent = True
         SingleAntecedent =* SingleAntecedent = True
         SingleSuccedent =* SingleSuccedent = True
         _ =* _ = False
@@ -100,6 +104,7 @@ type ClassicalSequentOver a = FixLang (ClassicalSequentLexOver a)
 
 pattern Top                 = FX (Lx1 (Lx1 NilAntecedent))
 pattern Bot                 = FX (Lx1 (Lx1 NilSuccedent))
+pattern SID                 = FX (Lx1 (Lx1 NilCedent))
 pattern SA x                = FX (Lx1 (Lx1 SingleAntecedent)) :!$: x
 pattern SS x                = FX (Lx1 (Lx1 SingleSuccedent)) :!$: x
 pattern (:+:) x y           = FX (Lx1 (Lx2 AnteComma)) :!$: x :!$: y
@@ -122,28 +127,40 @@ instance ( FirstOrderLex (t (ClassicalSequentOver t))
          ) => ACUI (ClassicalSequentOver t) where
 
         unfoldTerm (x :+: y) = unfoldTerm x ++ unfoldTerm y
+        unfoldTerm (x :-: y) = unfoldTerm x ++ unfoldTerm y
         unfoldTerm Top       = []
+        unfoldTerm Bot       = []
         unfoldTerm leaf      = [leaf]
 
         isId Top = True
+        isId Bot = True
+        isId SID = True
         isId _   = False
 
         isACUI (SA _) = False
+        isACUI (SS _) = False
         isACUI _      = True
 
-        getId _ = Top
-            -- case (eqT :: Maybe (a :~: Antecedent b)) of
-            --    Just Refl -> Top
-            --    _         -> error "you have to use the right type 1"
+        getId p = SID
 
         acuiOp a Top = a
+        acuiOp a Bot = a
+        acuiOp a SID = a
         acuiOp Top b = b
+        acuiOp Bot b = b
+        acuiOp SID b = b
         acuiOp x@(_ :+: _) y   = x :+: y
         acuiOp x y@(_ :+: _)   = x :+: y
+        acuiOp x@(_ :-: _) y   = x :-: y
+        acuiOp x y@(_ :-: _)   = x :-: y
         acuiOp x@(SA _) y = x :+: y
         acuiOp x y@(SA _) = x :+: y
+        acuiOp x@(SS _) y = x :-: y
+        acuiOp x y@(SS _) = x :-: y
         acuiOp x@(GammaV _) y  = x :+: y
         acuiOp x y@(GammaV _)  = x :+: y
+        acuiOp x@(DeltaV _) y  = x :-: y
+        acuiOp x y@(DeltaV _)  = x :-: y
 
 instance Handed (ClassicalSequentOver lex (Sequent a)) 
                 (ClassicalSequentOver lex (Antecedent a))
@@ -183,27 +200,55 @@ class Typeable a => Concretes lex a where
 
 instance Typeable a => Concretes lex a
 
-instance PrismBooleanConnLex lex b => PrismBooleanConnLex (ClassicalSequentLexOver lex) b
-instance PrismGenericContext lex b b => PrismGenericContext (ClassicalSequentLexOver lex) b b
-instance PrismBooleanConst lex b => PrismBooleanConst (ClassicalSequentLexOver lex) b
-instance PrismPropLex lex b => PrismPropLex (ClassicalSequentLexOver lex) b
-instance PrismSchematicProp lex b => PrismSchematicProp (ClassicalSequentLexOver lex) b
-instance PrismGenericQuant lex Term Form b c => PrismGenericQuant (ClassicalSequentLexOver lex) Term Form b c
-instance PrismModality lex b => PrismModality (ClassicalSequentLexOver lex) b
-instance PrismIndexing lex a b c => PrismIndexing (ClassicalSequentLexOver lex) a b c
-instance PrismIndexedConstant lex b => PrismIndexedConstant (ClassicalSequentLexOver lex) b
-instance PrismIntIndex lex b => PrismIntIndex (ClassicalSequentLexOver lex) b
-instance PrismCons lex b => PrismCons (ClassicalSequentLexOver lex) b
-instance PrismPolyadicSchematicFunction lex a b => PrismPolyadicSchematicFunction (ClassicalSequentLexOver lex) a b
-instance PrismPolyadicSchematicPredicate lex a b => PrismPolyadicSchematicPredicate (ClassicalSequentLexOver lex) a b
-instance PrismPolyVar lex a b => PrismPolyVar (ClassicalSequentLexOver lex) a b
-instance PrismTermEquality lex a b => PrismTermEquality (ClassicalSequentLexOver lex) a b
-instance PrismTermElements lex a b => PrismTermElements (ClassicalSequentLexOver lex) a b
-instance PrismElementarySetsLex lex b => PrismElementarySetsLex (ClassicalSequentLexOver lex) b
-instance PrismTermSubset lex c b => PrismTermSubset (ClassicalSequentLexOver lex) c b
-instance PrismSeparating lex b c => PrismSeparating (ClassicalSequentLexOver lex) b c
-instance PrismStandardVar lex b => PrismStandardVar (ClassicalSequentLexOver lex) b
-instance PrismSubstitutionalVariable lex => PrismSubstitutionalVariable (ClassicalSequentLexOver lex)
+underlyingLex :: Sequentable lex => Prism' (ClassicalSequentOver lex a) (FixLang lex a)
+underlyingLex = sublang
+
+instance (Sequentable lex, PrismBooleanConnLex lex b) => PrismBooleanConnLex (ClassicalSequentLexOver lex) b where
+        unarylink_PrismBooleanConnLex = underlyingLex . unarylink_PrismBooleanConnLex . relexIso
+        binarylink_PrismBooleanConnLex = underlyingLex . binarylink_PrismBooleanConnLex . relexIso
+instance (Sequentable lex, PrismGenericContext lex b b) => PrismGenericContext (ClassicalSequentLexOver lex) b b where
+        link_GenericContext = underlyingLex . link_GenericContext . relexIso
+instance (Sequentable lex, PrismBooleanConst lex b) => PrismBooleanConst (ClassicalSequentLexOver lex) b where
+        link_BooleanConst = underlyingLex . link_BooleanConst . relexIso
+instance (Sequentable lex, PrismPropLex lex b) => PrismPropLex (ClassicalSequentLexOver lex) b where
+        link_PrismPropLex = underlyingLex . link_PrismPropLex . relexIso
+instance (Sequentable lex, PrismSchematicProp lex b) => PrismSchematicProp (ClassicalSequentLexOver lex) b where
+        link_PrismSchematicProp = underlyingLex . link_PrismSchematicProp . relexIso
+instance (Sequentable lex, PrismGenericQuant lex Term Form b c) => PrismGenericQuant (ClassicalSequentLexOver lex) Term Form b c where
+        link_standardQuant = underlyingLex . link_standardQuant .relexIso
+instance (Sequentable lex, PrismModality lex b) => PrismModality (ClassicalSequentLexOver lex) b where
+        link_PrismModality = underlyingLex . link_PrismModality . relexIso
+instance (Sequentable lex, PrismIndexing lex a b c) => PrismIndexing (ClassicalSequentLexOver lex) a b c where
+        link_indexer = underlyingLex . link_indexer . relexIso
+instance (Sequentable lex, PrismIndexedConstant lex b) => PrismIndexedConstant (ClassicalSequentLexOver lex) b where
+        link_IndexedConstant = underlyingLex . link_IndexedConstant . relexIso
+instance (Sequentable lex, PrismIntIndex lex b) => PrismIntIndex (ClassicalSequentLexOver lex) b where
+        link_IntIndex = underlyingLex . link_IntIndex . relexIso
+instance (Sequentable lex, PrismCons lex b) => PrismCons (ClassicalSequentLexOver lex) b where
+        link_cons = underlyingLex . link_cons . relexIso
+instance (Sequentable lex, PrismPolyadicSchematicFunction lex a b) => PrismPolyadicSchematicFunction (ClassicalSequentLexOver lex) a b where
+        link_PrismPolyadicSchematicFunction = underlyingLex . link_PrismPolyadicSchematicFunction . relexIso
+instance (Sequentable lex, PrismPolyadicSchematicPredicate lex a b) => PrismPolyadicSchematicPredicate (ClassicalSequentLexOver lex) a b where
+        link_PrismPolyadicSchematicPredicate = underlyingLex . link_PrismPolyadicSchematicPredicate . relexIso
+instance (Sequentable lex, PrismPolyVar lex a b) => PrismPolyVar (ClassicalSequentLexOver lex) a b where
+        link_PrismPolyVar = underlyingLex . link_PrismPolyVar . relexIso
+instance (Sequentable lex, PrismTermEquality lex a b) => PrismTermEquality (ClassicalSequentLexOver lex) a b where
+        link_TermEquality = underlyingLex . link_TermEquality . relexIso
+instance (Sequentable lex, PrismTermElements lex a b) => PrismTermElements (ClassicalSequentLexOver lex) a b where
+        link_TermElement = underlyingLex . link_TermElement . relexIso
+instance (Sequentable lex, PrismElementarySetsLex lex b) => PrismElementarySetsLex (ClassicalSequentLexOver lex) b where
+        unarylink_ElementarySetsLex = underlyingLex . unarylink_ElementarySetsLex . relexIso
+        binarylink_ElementarySetsLex = underlyingLex . binarylink_ElementarySetsLex . relexIso
+instance (Sequentable lex, PrismTermSubset lex c b) => PrismTermSubset (ClassicalSequentLexOver lex) c b where
+        link_TermSubset = underlyingLex . link_TermSubset . relexIso
+instance (Sequentable lex, PrismSeparating lex b c) => PrismSeparating (ClassicalSequentLexOver lex) b c where
+        link_separator = underlyingLex . link_separator . relexIso
+instance (Sequentable lex, PrismStandardVar lex b) => PrismStandardVar (ClassicalSequentLexOver lex) b where
+        link_StandardVar = underlyingLex . link_StandardVar . relexIso
+instance (Sequentable lex, PrismSubstitutionalVariable lex) => PrismSubstitutionalVariable (ClassicalSequentLexOver lex) where
+        link_PrismSubstitutionalVar = underlyingLex . link_PrismSubstitutionalVar . relexIso
+
+
 
 --------------------------------------------------------
 --3. Sequent Languages
@@ -214,6 +259,7 @@ instance PrismSubstitutionalVariable lex => PrismSubstitutionalVariable (Classic
 type Sequentable f = ( PrismLink (EndLang (ClassicalSequentOver f)) (f (ClassicalSequentOver f))
                      , PrismLink (f (ClassicalSequentOver f)) (f (ClassicalSequentOver f))
                      , PrismLink (ClassicalSequentLex (ClassicalSequentOver f)) (f (ClassicalSequentOver f))
+                     , PrismLink (ClassicalSequentLexOver f (ClassicalSequentOver f)) (f (ClassicalSequentOver f))
                      , ReLex f, f :<: (ClassicalSequentLex :|: f :|: EndLang))
 
 liftToSequent :: Sequentable f => FixLang f a -> ClassicalSequentOver f a

@@ -115,12 +115,14 @@ parseLamApp parseForm parseTerm =
 parseLamAppPSOL parseForm parseTerm = 
         do binders <- many1 binder
            f <- char '[' *> parseForm <* char ']'
-           terms <- char '(' *> sepBy1 parseTerm (char ',') <* char ')'
+           terms <- char '(' *> sepBy1 parsePaddedTerm (char ',') <* char ')'
            case together 0 f (reverse binders) terms of
                Just f' -> return f'
                Nothing -> unexpected "wrong number of lambdas"
     where binder = do oneOf "λ\\"
                       parseFreeVar
+
+          parsePaddedTerm = spaces *> parseTerm <* spaces
 
           together n f (v:vs) (t:ts) = together (n+1) (SOPApp SOApp :!$: incLam n f v :!$: t) vs ts
           together n f [] []  = Just f
@@ -131,12 +133,13 @@ psolPredicationParser :: Parsec String u (PolyadicallySOL (Form Bool)) -> Parsec
 psolPredicationParser parseForm parseTerm = try (parsePredicateSymbol "FGHIJKLMNO" parseTerm) <|> parseVarApp <|> parseLamAppPSOL parseForm parseTerm
     where parseVarApp = do v <- oneOf "XYZ"
                            n <- number
-                           char '('
-                           terms <- lookAhead (sepBy1 parseTerm (char ',') <* char ')') -- XXX don't really need to parse terms here.
+                           char '(' *> spaces
+                           terms <- lookAhead (sepBy1 parsePaddedTerm (char ',') <* char ')') -- XXX don't really need to parse terms here.
                            if length terms /= n then unexpected "wrong number of arguments to second order variable"
                                                 else return ()
                            parseVarTerms (polyVar (v : show n) AOne)
-          parseVarTerms v = do t <- parseTerm
+          parsePaddedTerm = spaces *> parseTerm <* spaces
+          parseVarTerms v = do t <- parsePaddedTerm
                                let partialPred = (SOPApp SOApp :!$: v :!$: t)
                                (char ',' *> parseVarTerms (incVar partialPred))
                                     <|> (char ')' *> return partialPred)

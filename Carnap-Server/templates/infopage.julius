@@ -23,7 +23,7 @@ function updateSlider(newelt){
 };
 
 function initializeVisible () {
-    document.querySelectorAll(".visible textarea").forEach(
+    document.querySelectorAll(".visible .input").forEach(
     function (el) {
         el.dispatchEvent(initialize);
     });

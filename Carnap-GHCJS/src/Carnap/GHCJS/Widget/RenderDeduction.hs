@@ -26,15 +26,27 @@ chunkBy n (x:xs)
     | otherwise = Left x:chunkBy n xs
     where deep x = depth (snd x) > n
 
+displayVia calc = Just . ndNotation calc . show
+
+parenWrap s = Just $ "\"" ++ s ++ "\""
 
 --this is for Fitch proofs
 renderTreeFitch ded w calc = treeToElement asLine asSubproof
-    where asLine (n,AssertLine f r _ deps) = do (theWrapper,theLine,theForm,theRule) <- if n == finalPrem
-                                                                                            then lineBase w calc n (Just f) (Just (r,deps)) "final-premise"
-                                                                                            else lineBase w calc n (Just f) (Just (r,deps)) "assertion"
-                                                appendChild theLine (Just theForm)
-                                                appendChild theLine (Just theRule)
-                                                return theWrapper
+    where asLine (n,AssertLine f r _ deps) = 
+                do (theWrapper,theLine,theForm,theRule) <- if n == finalPrem
+                                                           then lineBase w calc n (displayVia calc f) (Just (r,deps)) "final-premise"
+                                                           else lineBase w calc n (displayVia calc f) (Just (r,deps)) "assertion"
+                   appendChild theLine (Just theForm)
+                   appendChild theLine (Just theRule)
+                   return theWrapper
+          asLine (n,PartialLine esf _ _) = 
+                do let content = either parenWrap (displayVia calc) esf
+                   (theWrapper,theLine,theForm,theRule) <- if n == finalPrem
+                                                           then lineBase w calc n content norule "final-premise"
+                                                           else lineBase w calc n content norule "assertion"
+                   appendChild theLine (Just theForm)
+                   appendChild theLine (Just theRule)
+                   return theWrapper
 
           asLine _ = do (Just sl) <- createElement w (Just "div")
                         return sl
@@ -45,12 +57,18 @@ renderTreeFitch ded w calc = treeToElement asLine asSubproof
 
 --this is for Kalish and Montague Proofs
 renderTreeMontague w calc = treeToElement asLine asSubproof
-    where asLine (n,AssertLine f r _ deps) = do (theWrapper,theLine,theForm,theRule) <- lineBase w calc n (Just f) (Just (r,deps)) "assertion"
+    where asLine (n,AssertLine f r _ deps) = do (theWrapper,theLine,theForm,theRule) <- lineBase w calc n (displayVia calc f) (Just (r,deps)) "assertion"
                                                 appendChild theLine (Just theForm)
                                                 appendChild theLine (Just theRule)
                                                 return theWrapper
 
-          asLine (n,ShowWithLine f _ r deps) = do (theWrapper,theLine,theForm,theRule) <- lineBase w calc n (Just f) (Just (r,deps)) "show"
+          asLine (n,PartialLine esf _ _ ) = do let content = either parenWrap (displayVia calc) esf
+                                               (theWrapper,theLine,theForm,theRule) <- lineBase w calc n content norule "assertion"
+                                               appendChild theLine (Just theForm)
+                                               appendChild theLine (Just theRule)
+                                               return theWrapper
+
+          asLine (n,ShowWithLine f _ r deps) = do (theWrapper,theLine,theForm,theRule) <- lineBase w calc n (displayVia calc f) (Just (r,deps)) "show"
                                                   (Just theHead) <- createElement w (Just "span")
                                                   setInnerHTML theHead (Just $ "Show: ")
                                                   appendChild theLine (Just theHead)
@@ -58,7 +76,7 @@ renderTreeMontague w calc = treeToElement asLine asSubproof
                                                   appendChild theLine (Just theRule)
                                                   return theWrapper
 
-          asLine (n,ShowLine f _)   = do (theWrapper,theLine,theForm,_) <- lineBase w calc n (Just f) norule "show"
+          asLine (n,ShowLine f _)   = do (theWrapper,theLine,theForm,_) <- lineBase w calc n (displayVia calc f) norule "show"
                                          (Just theHead) <- createElement w (Just "span")
                                          setInnerHTML theHead (Just $ "Show: ")
                                          appendChild theLine (Just theHead)
@@ -76,16 +94,11 @@ renderTreeMontague w calc = treeToElement asLine asSubproof
           asSubproof l ls = do setAttribute l "class" "subproof"
                                mapM_ (appendChild l . Just) ls
 
-          noform :: Maybe ()
-          noform = Nothing
-
-          norule :: Maybe ([()],[(Int,Int)])
-          norule = Nothing
 
 --The basic parts of a line, with Maybes for the fomula and the rule-dependency pair.
 -- lineBase :: (Show a, Show b) => 
 --     Document -> CheckerOptions -> Int -> Maybe a -> Maybe ([b],[(Int,Int)]) -> String -> IO (Element,Element,Element,Element)
-lineBase w calc n mf mrd lineclass = 
+lineBase w calc n ms mrd lineclass = 
         do (Just theWrapper) <- createElement w (Just "div")
            (Just theLine) <- createElement w (Just "div")
            (Just lineNum) <- createElement w (Just "span")
@@ -96,36 +109,47 @@ lineBase w calc n mf mrd lineclass =
                    FitchStyle BergmanMooreAndNelsonStyle -> intercalate ", " (map renderDep deps) ++ " " ++ show (head r)
                    _ -> show (head r) ++ " " ++ intercalate ", " (map renderDep deps)
            whileJust mrd (\(r,deps) -> setInnerHTML theRule (Just $ ruleString r deps))
-           whileJust mf (\f -> setInnerHTML theForm (Just $ ndNotation calc $ show f))
+           setInnerHTML theForm ms
            setAttribute theRule "class" "rule"
+           setAttribute theForm "class" "form"
            appendChild theWrapper (Just theLine)
            appendChild theLine (Just lineNum)
            setAttribute theWrapper "class" lineclass
            return (theWrapper,theLine,theForm,theRule)
 
 renderTreeLemmon w calc = treeToElement asLine asSubproof
-    where asLine (n,DependentAssertLine f r deps dis scope mnum) = 
+    where asLine (n,l@(DependentAssertLine f r deps _ scope mnum)) = 
                 do [theWrapper,lineNum,theForm,theRule,theScope] <- catMaybes <$> mapM (createElement w . Just) ["div","span","span","span","span"]
+                   setInnerHTML theForm (Just $ ndNotation calc $ show f)
                    case ndRenderer calc of
                        LemmonStyle TomassiStyle -> 
                             do setInnerHTML theScope (Just $ "{" ++ intercalate "," (map show scope) ++ "}")
-                               setInnerHTML theForm (Just $ ndNotation calc $ show f)
                                case mnum of
                                    Nothing -> setInnerHTML lineNum (Just $ show n ++ ".")
                                    Just m -> setInnerHTML lineNum (Just $ show m ++ ".")
                        _ -> do setInnerHTML theScope (Just $ show scope)
-                               setInnerHTML theForm (Just $ ndNotation calc $ show f)
                                case mnum of
                                    Nothing -> setInnerHTML lineNum (Just $ "(" ++ show n ++ ")")
                                    Just m -> setInnerHTML lineNum (Just $ "(" ++ show m ++ ")")
                    setAttribute theRule "class" "rule"
+                   setAttribute theForm "class" "form"
                    setInnerHTML theRule (Just $ show (head r) ++ showdischarged ++ showdeps)
                    mapM (appendChild theWrapper. Just) [theScope,lineNum,theForm,theRule]
                    return theWrapper
                    
-                where showdischarged = if dis /= [] then show dis else ""
+                where showdischarged = if discharged l /= [] then show (discharged l) else ""
 
                       showdeps = if deps /= [] then "(" ++ intercalate "," (map renderDep deps) ++ ")" else "" 
+
+          asLine (n,PartialLine esf _ _) = 
+                do [theWrapper,lineNum,theForm,theRule,theScope] <- catMaybes <$> mapM (createElement w . Just) ["div","span","span","span","span"]
+                   setInnerHTML theScope (Just $ "⚠")
+                   setInnerHTML theForm (either parenWrap (displayVia calc) esf)
+                   setAttribute theRule "class" "rule"
+                   setAttribute theForm "class" "form"
+                   setInnerHTML theRule (Nothing :: Maybe String)
+                   mapM (appendChild theWrapper. Just) [theScope,lineNum,theForm,theRule]
+                   return theWrapper
 
           asLine _ = do Just sl <- createElement w (Just "div")
                         return sl
@@ -162,3 +186,10 @@ renderDep (n,m) = if n==m then show n else show n ++ "-" ++ show m
 whileJust :: Monad m => Maybe a -> (a -> m b) -> m ()
 whileJust (Just m) f = f m >> return ()
 whileJust Nothing _ = return ()
+
+
+noform :: Maybe String
+noform = Nothing
+
+norule :: Maybe ([()],[(Int,Int)])
+norule = Nothing

@@ -62,24 +62,17 @@ activateTruthTables w (Just (i,o,opts)) = do
                       Left e -> setInnerHTML o (Just $ show e) 
                       Right f -> do
                           ref <- newIORef False
-                          bw <- buttonWrapper w
+                          bw <- createButtonWrapper w o
                           (check,rows) <- ttbuilder w f (i,o) ref bw opts
-                          case M.lookup "submission" opts of
-                              Just s | take 7 s == "saveAs:" -> do
-                                  let l = Prelude.drop 7 s
-                                  bt1 <- doneButton w "Submit"
-                                  appendChild bw (Just bt1)
-                                  submit <- newListener $ submitTruthTable opts ref check rows (show f) l
-                                  addListener bt1 click submit False                
-                              _ -> return ()
+                          let submit = submitTruthTable opts ref check rows (show f)
+                          btStatus <- createSubmitButton w bw submit opts
+                          doOnce o change False $ liftIO $ btStatus Edited
                           if "nocheck" `inOpts` opts then return () 
                           else do
                               bt2 <- questionButton w "Check"
                               appendChild bw (Just bt2)
                               checkIt <- newListener $ checkTable ref check
                               addListener bt2 click checkIt False                
-                          Just par <- getParentNode o
-                          appendChild par (Just bw)
                           return ()
                 _ -> print "truth table was missing an option"
           checkTable ref check = do correct <- liftIO $ check
@@ -91,7 +84,7 @@ activateTruthTables w (Just (i,o,opts)) = do
                                                 liftIO $ writeIORef ref False
                                                 setAttribute i "class" "input incompleteTT"
 
-submitTruthTable:: Map String String -> IORef Bool ->  IO Bool -> [Element] -> String -> String -> EventM HTMLInputElement e ()
+submitTruthTable:: IsEvent e => Map String String -> IORef Bool ->  IO Bool -> [Element] -> String -> String -> EventM HTMLInputElement e ()
 submitTruthTable opts ref check rows s l = do isDone <- liftIO $ readIORef ref
                                               if isDone 
                                                  then trySubmit TruthTable opts l (ProblemContent (pack s)) True
@@ -238,11 +231,11 @@ toRow w opts atomIndicies orderedChildren gridRef (v,n,mvalid,given) =
                          setInnerHTML td (Just $ if v i then "T" else "F")
                          setAttribute td "class" "valtd"
                          return td
-
+          toChildTd :: (Either Char PureForm, Int, Maybe Bool) -> IO Element
           toChildTd (c,m,mg) = do Just td <- createElement w (Just "td")
                                   case c of
                                       Left '⊢' -> case mvalid of
-                                                   Just tv -> addDropdown ("turnstileMark" `inOpts` opts) m td tv mg
+                                                   Just tv -> addDropdown ("turnstilemark" `inOpts` opts) m td tv mg
                                                    Nothing -> setInnerHTML td (Just "")
                                       Left c'  -> setInnerHTML td (Just "")
                                       Right f  -> do let (Form tv) = satisfies v f
@@ -264,9 +257,9 @@ toRow w opts atomIndicies orderedChildren gridRef (v,n,mvalid,given) =
                                                     appendChild td (Just span)
                                             _ | "immutable" `inOpts` opts -> 
                                                  do Just span <- createElement w (Just "span")
-                                                    setInnerHTML span (Just "-")
+                                                    setInnerHTML span (Just $ if "nodash" `inOpts` opts then " " else "-")
                                                     appendChild td (Just span)
-                                            _ -> do sel <- trueFalseOpts w turnstileMark mg
+                                            _ -> do sel <- trueFalseOpts w opts turnstileMark mg
                                                     onSwitch <- newListener $ switchOnMatch m bool
                                                     addListener sel change onSwitch False
                                                     appendChild td (Just sel)
@@ -365,7 +358,7 @@ toPartialRow w opts orderedSolvables orderedConstraints rRef v givens =
                                                         modifyIORef rRef (M.insert m mg)
                                                         appendChild td (Just span)
                                                         return ()
-                                         Nothing ->  do sel <- trueFalseOpts w False mg
+                                         Nothing ->  do sel <- trueFalseOpts w opts False mg
                                                         modifyIORef rRef (M.insert m mg)
                                                         onSwitch <- newListener $ switch rRef m
                                                         addListener sel change onSwitch False
@@ -380,15 +373,15 @@ toPartialRow w opts orderedSolvables orderedConstraints rRef v givens =
                                                modifyIORef rRef (M.insert m mg)
                                                appendChild td (Just span)
                                        Just val | "hiddenGivens" `inOpts` opts -> 
-                                            do sel <- trueFalseOpts w False Nothing
+                                            do sel <- trueFalseOpts w opts False Nothing
                                                onSwitch <- newListener $ switch rRef m
                                                addListener sel change onSwitch False
                                                appendChild td (Just sel)
                                        _ | "immutable" `inOpts` opts -> 
                                             do Just span <- createElement w (Just "span")
-                                               setInnerHTML span (Just "-")
+                                               setInnerHTML span (Just $ if "nodash" `inOpts` opts then " " else "-")
                                                appendChild td (Just span)
-                                       _ -> do sel <- trueFalseOpts w False mg
+                                       _ -> do sel <- trueFalseOpts w opts False mg
                                                modifyIORef rRef (M.insert m mg)
                                                onSwitch <- newListener $ switch rRef m
                                                addListener sel change onSwitch False
@@ -404,13 +397,13 @@ toPartialRow w opts orderedSolvables orderedConstraints rRef v givens =
 --  HTML Boilerplate  --
 ------------------------
 
-trueFalseOpts :: Document -> Bool -> Maybe Bool -> IO Element
-trueFalseOpts w turnstileMark mg = 
+trueFalseOpts :: Document -> Map String String -> Bool -> Maybe Bool -> IO Element
+trueFalseOpts w opts turnstileMark mg = 
         do Just sel <- createElement w (Just "select")
            Just bl  <- createElement w (Just "option")
            Just tr  <- createElement w (Just "option")
            Just fs  <- createElement w (Just "option")
-           setInnerHTML bl (Just "-")
+           setInnerHTML bl (Just $ if "nodash" `inOpts` opts then " " else "-")
            setInnerHTML tr (Just $ if turnstileMark then "✓" else "T")
            setInnerHTML fs (Just $ if turnstileMark then "✗" else "F")
            case mg of
@@ -426,7 +419,7 @@ toHead w opts atomIndicies orderedChildren =
         do Just row <- createElement w (Just "tr")
            Just sep <- createElement w (Just "th")
            setAttribute sep "class" "ttthSep"
-           atomThs <- mapM toAtomTh atomIndicies
+           atomThs <- mapM toAtomTh atomIndicies >>= rewriteThs opts
            childThs <- mapM (toChildTh w) orderedChildren >>= rewriteThs opts
            mapM_ (appendChild row . Just) atomThs
            appendChild row (Just sep)

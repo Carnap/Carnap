@@ -83,7 +83,7 @@ instance Inference FOLogic PureLexiconFOL (Form Bool) where
 
      restriction UD         = Just (eigenConstraint tau (SS (lall "v" $ phi' 1)) (fogamma 1))
      restriction ED1        = Just (eigenConstraint tau (SS (lsome "v" $ phi' 1) :-: SS (phin 1)) (fogamma 1 :+: fogamma 2))
-     restriction ED2        = Nothing --Since this one does not use the assumption with a fresh object
+     restriction ED2        = Just (eigenConstraint tau (SS (lsome "v" $ phi' 1) :-: SS (phin 1)) (fogamma 1 :+: fogamma 2))
      restriction (PR prems) = Just (premConstraint prems)
      restriction _          = Nothing
 
@@ -94,8 +94,7 @@ instance Inference FOLogic PureLexiconFOL (Form Bool) where
 
 parseFOLogic :: RuntimeNaturalDeductionConfig PureLexiconFOL (Form Bool) -> Parsec String u [FOLogic]
 parseFOLogic rtc = try quantRule <|> liftProp
-    where liftProp = do r <- parsePropLogic (RuntimeNaturalDeductionConfig mempty mempty)
-                        return (map SL r)
+    where liftProp = map SL <$> parsePropLogic (RuntimeNaturalDeductionConfig mempty mempty)
           quantRule = do r <- choice (map (try . string) ["PR", "UI", "UD", "EG", "ED", "QN","LL","EL","Id","Sm","D-"])
                          case r of 
                             r | r == "PR" -> return [PR $ problemPremises rtc]

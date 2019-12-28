@@ -85,7 +85,6 @@ fileToHtml path m = do md <- markdownFromFile (path ++ m)
                     , Ext_fenced_code_attributes
                     ]
 
-
 runFilters path = let walkNotes y = evalState (walkM makeSideNotes y) 0
                       walkProblems y = walk (makeSynCheckers . makeProofChecker . makeTranslate . makeTruthTables . makeCounterModelers . makeQualitativeProblems) y
                       walkDiagrams y = evalStateT (walkM (makeDiagrams path) y) []
@@ -95,8 +94,10 @@ chapterLayout widget = do
         master <- getYesod
         mmsg <- getMessage
         authmaybe <- maybeAuth
+        instructors <- instructorIdentList
         pc <- widgetToPageContent $ do
             toWidgetHead $(juliusFile "templates/command.julius")
+            toWidgetHead $(juliusFile "templates/status-warning.julius")
             toWidgetHead [julius|var submission_source="book";|]
             addScript $ StaticR js_popper_min_js
             addScript $ StaticR ghcjs_rts_js

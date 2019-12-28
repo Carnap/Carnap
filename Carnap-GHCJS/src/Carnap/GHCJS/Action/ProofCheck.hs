@@ -38,7 +38,7 @@ import GHCJS.DOM.HTMLElement (insertAdjacentElement)
 import GHCJS.DOM.Types
 import GHCJS.DOM.HTMLTextAreaElement (getValue)
 import GHCJS.DOM.Document (createElement, getDefaultView)
-import GHCJS.DOM.EventM (EventM, target, newListener,addListener)
+import GHCJS.DOM.EventM (EventM, eventCurrentTarget, newListener,addListener)
 import GHCJS.DOM.Window (prompt)
 import GHCJS.DOM.Node (appendChild, getParentNode,removeChild)
 --import GHCJS.DOM.EventM
@@ -116,7 +116,7 @@ activateChecker drs w (Just iog@(IOGoal i o g _ opts)) -- TODO: need to update n
                   memo <- newIORef mempty
                   mtref <- newIORef Nothing
                   mpd <- if render options then Just <$> makeDisplay else return Nothing
-                  mseq <- if directed options then parseGoal options calc else return Nothing
+                  mseq <- if directed options then parseGoal calc else return Nothing
                   let theChecker = checker calc drs mseq mtref mpd memo
                       checkSeq = threadedCheck options theChecker
                       saveProblem l s = Button {label = "Submit" , action = submitDer opts theChecker l g s}
@@ -133,14 +133,14 @@ activateChecker drs w (Just iog@(IOGoal i o g _ opts)) -- TODO: need to update n
                                        Left e -> error "couldn't parse goal"
                                        Right seq -> seq
 
-              parseGoal options calc = do let seqParse = ndParseSeq calc
-                                              (Just seqstring) = M.lookup "goal" opts 
-                                              --XXX: the directed option is set by the existence of a goal, so this match can't fail.
-                                          case parse seqParse "" seqstring of
-                                              Left e -> do setInnerHTML g (Just $ "Couldn't Parse This Goal:" ++ seqstring)
-                                                           error "couldn't parse goal"
-                                              Right seq -> do setInnerHTML g (Just $ ndNotation calc $ show seq)
-                                                              return $ Just seq
+              parseGoal calc = do let seqParse = ndParseSeq calc
+                                      (Just seqstring) = M.lookup "goal" opts 
+                                      --XXX: the directed option is set by the existence of a goal, so this match can't fail.
+                                  case parse seqParse "" seqstring of
+                                      Left e -> do setInnerHTML g (Just $ "Couldn't Parse This Goal:" ++ seqstring)
+                                                   error "couldn't parse goal"
+                                      Right seq -> do setInnerHTML g (Just $ ndNotation calc $ show seq)
+                                                      return $ Just seq
                                                               
               makeDisplay = do (Just pd) <- createElement w (Just "div")
                                setAttribute pd "class" "proofDisplay"
@@ -225,15 +225,15 @@ computeRule ref g mseq _ calc =
                             writeIORef ref True
 
 submitDer opts checker l g seq ref _ i = do isFinished <- liftIO $ readIORef ref
-                                            (Just v) <- getValue (castToHTMLTextAreaElement i)
-                                            liftIO $ if isFinished 
+                                            (Just v) <- liftIO $ getValue (castToHTMLTextAreaElement i)
+                                            if isFinished 
                                                 then trySubmit Derivation opts l (DerivationDataOpts (pack $ show seq) (pack v) (M.toList opts)) True
-                                                else do setAttribute g "class" "goal working"
+                                                else do liftIO $ setAttribute g "class" "goal working"
                                                         rtconfig <- liftIO $ rulePost checker
                                                         let ndcalc = checkerCalc checker
                                                             ded = ndParseProof ndcalc rtconfig v
                                                             submission = DerivationDataOpts (pack $ show seq) (pack v) (M.toList opts)
-                                                        Feedback mseq _ <- getFeedback checker ded
+                                                        Feedback mseq _ <- liftIO $ getFeedback checker ded
                                                         setAttribute g "class" "goal"
                                                         case sequent checker of
                                                              Nothing -> message "No goal sequent to submit"
@@ -274,14 +274,18 @@ trySave checker drs ref w i =
                                   let conc = (toSchema . fromSequent) c'
                                   mname <- prompt w "What name will you give this rule (use all capital letters!)" (Just "")
                                   case (mname,checkerToRule checker)  of
-                                      (Just name, Just toRule) | allcaps name -> liftIO $ sendJSON (SaveRule name $ toRule $ DerivedRule conc prems) loginCheck error
+                                      (Just name, Just toRule) | allcaps name -> do
+                                            Just t <- eventCurrentTarget
+                                            liftIO $ sendJSON (SaveRule name $ toRule $ DerivedRule conc prems) 
+                                                              (loginCheck $ setStatus (castToElement t) Submitted) 
+                                                              error
                                       (Just name, Just toRule) -> message "rule name must be all capital letters"
                                       (Nothing,_) -> message "No name entered"
                                       (_,Nothing) -> message "No saved rules for this proof system"
              else message "not yet finished"
-    where loginCheck c | c == "No User" = message "You need to log in before you can save a rule"
-                       | c == "Clash"   = message "it appears you've already got a rule with this name"
-                       | otherwise      = message "Saved your new rule!" >> reloadPage
+    where loginCheck callback c | c == "No User" = message "You need to log in before you can save a rule"
+                                | c == "Clash"   = message "it appears you've already got a rule with this name"
+                                | otherwise      = message "Saved your new rule!" >> callback >> reloadPage
           error c = message ("Something has gone wrong. Here's the error: " ++ c)
           allcaps s = and (map (`elem` "ABCDEFGHIJKLMNOPQRSTUVWXYZ") s)
 
@@ -320,20 +324,9 @@ wrap fd w calc elt (Left (NoUnify eqs n)) =
                                (Just $ ndNotation calc $ toUniErr eqs)
 wrap fd w _ elt (Left (NoResult _)) = setInnerHTML elt (Just "&nbsp;")
 
-syntaxwrap fd w elt (Left (NoParse e n))       = popUpWith fd w elt "⚠" ("Can't read line " ++ show n ++ ". There may be a typo.") (Just . cleanIt . show $ e)
-          where chunks s = case break (== '\"') s of 
-                                  (l,[]) -> l:[]
-                                  (l,_:s') -> l:chunks s'
-                cleanChunk c = case (readMaybe $ "\"" ++ c ++ "\"") :: Maybe String of 
-                                  Just s -> s
-                                  Nothing -> c
-                cleanIt = concat . map cleanChunk . chunks 
-      
-                readMaybe s = case reads s of
-                                [(x, "")] -> Just x
-                                _ -> Nothing
-syntaxwrap fd w elt (Left (NoResult _))        = setInnerHTML elt (Just "&nbsp;")
-syntaxwrap fd w elt _        = setInnerHTML elt (Just "-")
+syntaxwrap fd w elt (Left (NoParse e n)) = popUpWith fd w elt "⚠" ("Can't read line " ++ show n ++ ". There may be a typo.") (Just . cleanString . show $ e)
+syntaxwrap fd w elt (Left (NoResult _))  = setInnerHTML elt (Just "&nbsp;")
+syntaxwrap fd w elt _ = setInnerHTML elt (Just "-")
 
 toUniErr eqs = "In order to apply this inference rule, there needs to be a substitution that makes at least one of these sets of pairings match:" 
                 ++ (concat $ map endiv' $ map (concat . map (endiv . show) . reverse) eqs)

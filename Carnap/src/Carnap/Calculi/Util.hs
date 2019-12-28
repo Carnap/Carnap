@@ -1,6 +1,7 @@
 {-#LANGUAGE KindSignatures, GADTs, FlexibleContexts, MultiParamTypeClasses, FunctionalDependencies #-}
 module Carnap.Calculi.Util where
 
+import Data.Tree
 import Carnap.Core.Data.Types
 import Carnap.Core.Data.Classes
 import Carnap.Core.Unification.Unification
@@ -37,7 +38,10 @@ data ProofErrorMessage :: ((* -> *) -> * -> *) -> * where
         GenericError :: String -> Int -> ProofErrorMessage lex
         NoResult :: Int -> ProofErrorMessage lex --meant for blanks
 
--- TODO These two should be combined into a lens
+data TreeFeedbackNode lex = Correct | Waiting | ProofData String | ProofError (ProofErrorMessage lex)
+
+type TreeFeedback lex = Tree (TreeFeedbackNode lex)
+
 lineNoOfError :: ProofErrorMessage lex -> Int
 lineNoOfError (NoParse _ n) = n
 lineNoOfError (NoUnify _ n) = n

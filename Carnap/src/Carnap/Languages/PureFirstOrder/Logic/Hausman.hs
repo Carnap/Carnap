@@ -1,7 +1,6 @@
-{-#LANGUAGE  TypeOperators, FlexibleContexts,  FlexibleInstances, MultiParamTypeClasses #-}
+{-#LANGUAGE  FlexibleContexts,  FlexibleInstances, MultiParamTypeClasses #-}
 module Carnap.Languages.PureFirstOrder.Logic.Hausman (hausmanPLCalc,parseHausmanPL) where
 
-import Data.Map as M (lookup, Map,empty)
 import Data.Maybe (catMaybes)
 import Control.Lens
 import Text.Parsec

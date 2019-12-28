@@ -95,6 +95,8 @@ instance Inference ESTLogic ElementarySetTheoryLex (Form Bool) where
 
      restriction (FO ED1)   = Just (eigenConstraint stau (SS (lsome "v" $ phi' 1) :-: SS (phin 1)) (fogamma 1 :+: fogamma 2))
          where stau = liftToSequent tau
+     restriction (FO ED2)   = Just (eigenConstraint stau (SS (lsome "v" $ phi' 1) :-: SS (phin 1)) (fogamma 1 :+: fogamma 2))
+         where stau = liftToSequent tau
      restriction _ = Nothing
 
      indirectInference (FO x) = indirectInference x
@@ -186,6 +188,8 @@ instance Inference SSTLogic SeparativeSetTheoryLex (Form Bool) where
      restriction (EST (FO UD))    = Just (eigenConstraint stau (SS (lall "v" $ phi' 1)) (fogamma 1))
          where stau = liftToSequent tau
      restriction (EST (FO ED1))   = Just (eigenConstraint stau (SS (lsome "v" $ phi' 1) :-: SS (phin 1)) (fogamma 1 :+: fogamma 2))
+         where stau = liftToSequent tau
+     restriction (EST (FO ED2))   = Just (eigenConstraint stau (SS (lsome "v" $ phi' 1) :-: SS (phin 1)) (fogamma 1 :+: fogamma 2))
          where stau = liftToSequent tau
      restriction _ = Nothing
 

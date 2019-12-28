@@ -47,7 +47,7 @@ toDeduction parseLine = map handle . lines
         where handle l = 
                 case parse parseLine "" l of
                     Right dl -> dl
-                    Left e -> PartialLine Nothing e (linedepth l)
+                    Left e -> PartialLine (Left $ dropWhile (== ' ') l) e (linedepth l)
               linedepth l = 
                 case parse indent "" l of 
                     Right n -> n

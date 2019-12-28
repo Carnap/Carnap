@@ -6,15 +6,11 @@
                     <a href=@{HomeR}>
                         Carnap
                 <li>
+                    <a href=@{InfoR}>
+                        About
+                <li>
                     <a href=@{BookR}>
                         Book
-                <li>
-                    $maybe (Entity _ user) <- authmaybe
-                        <a href=@{UserR (userIdent user)}>
-                            #{userIdent user}
-                    $nothing
-                        <a href=@{AuthR LoginR}>
-                            Login
 
 <div id="main" role="main">
     $maybe msg <- mmsg

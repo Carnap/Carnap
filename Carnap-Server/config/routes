@@ -13,6 +13,7 @@
 /register/#Text/#Text               RegisterEnrollR     GET POST
 /book                               BookR               GET
 /book/#Int                          ChapterR            GET
+/user                               UserDispatchR       GET
 /user/#Text                         UserR               GET POST DELETE 
 /instructor/#Text                   InstructorR         GET PUT POST DELETE 
 /instructor/#Text/#Text/download    InstructorDownloadR GET

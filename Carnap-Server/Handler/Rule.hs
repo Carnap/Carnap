@@ -57,16 +57,22 @@ getRuleR = do derivedPropRules <- getPropDrList
                                     <h2>The Propositional Rule Builder
                                     <div data-carnap-type="proofchecker" 
                                          data-carnap-system="prop" 
+                                         data-carnap-guides="montague" 
+                                         data-carnap-options="resize" 
                                          data-carnap-submission="saveRule">
+
                                 $maybe folRules <- derivedFOLRules
                                     <div.derivedRules>
                                         <h2> First-Order Rules
                                         #{folRules}
                                 $nothing
+                                    <hr.hrSep>
                                 <div.ruleBuilder>
                                     <h2>The First-Order Rule Builder
                                     <div data-carnap-type="proofchecker" 
                                          data-carnap-system="firstOrder" 
+                                         data-carnap-guides="montague" 
+                                         data-carnap-options="resize" 
                                          data-carnap-submission="saveRule">
                             |]
 
@@ -74,6 +80,7 @@ ruleLayout widget = do
         master <- getYesod
         mmsg <- getMessage
         authmaybe <- maybeAuth
+        instructors <- instructorIdentList
         pc     <- widgetToPageContent $ do
             toWidgetHead $(juliusFile "templates/command.julius")
             addScript $ StaticR ghcjs_rts_js

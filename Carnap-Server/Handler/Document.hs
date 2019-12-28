@@ -15,6 +15,8 @@ import Filter.Translate
 import Filter.TruthTables
 import Filter.CounterModelers
 import Filter.Qualitative
+import Filter.Sequent
+import Filter.TreeDeduction
 
 getDocumentsR :: Handler Html
 getDocumentsR =  runDB (selectList [] []) >>= documentsList "Index of All Documents"
@@ -122,12 +124,13 @@ getDocumentR ident title = do userdir <- getUserDir ident
                   Right (Right html) -> do
                       defaultLayout $ do
                           toWidgetHead $(juliusFile "templates/command.julius")
+                          addScript $ StaticR js_proof_js
                           addScript $ StaticR js_popper_min_js
                           addScript $ StaticR ghcjs_rts_js
                           addScript $ StaticR ghcjs_allactions_lib_js
                           addScript $ StaticR ghcjs_allactions_out_js
-                          addStylesheet $ StaticR css_exercises_css
                           addStylesheet $ StaticR css_tree_css
+                          addStylesheet $ StaticR css_proof_css
                           addStylesheet $ StaticR css_exercises_css
                           $(widgetFile "document")
                           addScript $ StaticR ghcjs_allactions_runmain_js
@@ -145,16 +148,20 @@ getDocumentDownloadR ident title = do userdir <- getUserDir ident
                                               case mdoc of
                                                   Nothing -> notFound
                                                   Just (Entity key doc) -> do
+                                                      let sendIt = do
+                                                              addHeader "Content-Disposition" $ concat
+                                                                [ "attachment;"
+                                                                , "filename=\""
+                                                                , documentFilename doc
+                                                                , "\""
+                                                                ]
+                                                              sendFile typeOctet path
                                                       case documentScope doc of 
-                                                        Private -> notFound
-                                                        _ -> do
-                                                          addHeader "Content-Disposition" $ concat
-                                                            [ "attachment;"
-                                                            , "filename=\""
-                                                            , documentFilename doc
-                                                            , "\""
-                                                            ]
-                                                          sendFile typeOctet path
+                                                        Private -> do
+                                                          muid <- maybeAuthId
+                                                          case muid of Just uid' | uid' == uid -> sendIt
+                                                                       _ -> notFound
+                                                        _ -> sendIt
 
 fileToHtml path = do Markdown md <- markdownFromFile path
                      let md' = Markdown (filter ((/=) '\r') md) --remove carrage returns from dos files
@@ -164,7 +171,7 @@ fileToHtml path = do Markdown md <- markdownFromFile path
                                                          { writerExtensions = carnapPandocExtensions
                                                          , writerWrapText=WrapPreserve } pd'
                          Left e -> return $ Left e
-    where allFilters = (makeSynCheckers . makeProofChecker . makeTranslate . makeTruthTables . makeCounterModelers . makeQualitativeProblems)
+    where allFilters = (makeTreeDeduction . makeSequent . makeSynCheckers . makeProofChecker . makeTranslate . makeTruthTables . makeCounterModelers . makeQualitativeProblems)
 
 getUserDir ident = do master <- getYesod
                       return $ (appDataRoot $ appSettings master) </> "documents" </> unpack ident

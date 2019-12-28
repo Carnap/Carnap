@@ -22,49 +22,42 @@ import Text.Read (readMaybe)
 qualitativeProblemAction :: IO ()
 qualitativeProblemAction = initElements getQualitativeProblems activateQualitativeProblem
 
-getQualitativeProblems :: Document -> HTMLElement -> IO [Maybe (Element, Element, Map String String)]
+getQualitativeProblems :: Document -> HTMLElement -> IO [Maybe (Element, Element, M.Map String String)]
 getQualitativeProblems d = genInOutElts d "div" "div" "qualitative"
 
-activateQualitativeProblem :: Document -> Maybe (Element, Element, Map String String) -> IO ()
+activateQualitativeProblem :: Document -> Maybe (Element, Element, M.Map String String) -> IO ()
 activateQualitativeProblem w (Just (i,o,opts)) = do
         case M.lookup "qualitativetype" opts of
             Just "multiplechoice" -> createMultipleChoice w i o opts
             Just "shortanswer" -> createShortAnswer w i o opts
             _  -> return ()
 
-submitQualitative :: Map String String -> IORef (Bool, String) -> String -> String -> EventM HTMLTextAreaElement e ()
+submitQualitative :: IsEvent e => M.Map String String -> IORef (Bool, String) -> String -> String -> EventM Element e ()
 submitQualitative opts ref g l = do (isDone,val) <- liftIO $ readIORef ref
                                     if isDone 
                                         then trySubmit Qualitative opts l (ProblemContent (pack g)) True
                                         else message "Not quite right. Try again?"
 
-submitEssay :: Map String String -> Element -> String -> String -> EventM HTMLTextAreaElement e ()
+submitEssay :: IsEvent e => M.Map String String -> Element -> String -> String -> EventM HTMLTextAreaElement e ()
 submitEssay opts text g l = do manswer <- getValue . castToHTMLTextAreaElement $ text
                                case manswer of 
                                     Just answer -> trySubmit Qualitative opts l (QualitativeProblemDataOpts (pack g) (pack answer) (toList opts)) False
                                     Nothing -> message "It doesn't look like an answer has been written"
 
-createMultipleChoice :: Document -> Element -> Element -> Map String String -> IO ()
+createMultipleChoice :: Document -> Element -> Element -> M.Map String String -> IO ()
 createMultipleChoice w i o opts = case M.lookup "goal" opts of
     Nothing -> return ()
     Just g -> do
         ref <- newIORef (False,"")
         setInnerHTML i (Just g)
-        bw <- buttonWrapper w
-        case M.lookup "submission" opts of
-            Just s | take 7 s == "saveAs:" -> do
-                let l = Prelude.drop 7 s
-                bt1 <- doneButton w "Submit"
-                appendChild bw (Just bt1)
-                submit <- newListener $ submitQualitative opts ref g l
-                addListener bt1 click submit False                
-            _ -> return ()
+        bw <- createButtonWrapper w o
+        let submit = submitQualitative opts ref g
+        btStatus <- createSubmitButton w bw submit opts
         let choices = maybe [] lines $ M.lookup "content" opts
             labeledChoices = zip (Prelude.map getLabel choices) (Prelude.map isGood choices)
         radios <- mapM (toRadio g ref) labeledChoices
         mapM_ (appendChild o . Just . fst) radios
-        Just par <- getParentNode o
-        appendChild par (Just bw)
+        doOnce o change False $ liftIO $ btStatus Edited
         return ()
 
     where getLabel s = case readMaybe s :: Maybe (Int, String) of
@@ -90,25 +83,23 @@ createMultipleChoice w i o opts = case M.lookup "goal" opts of
                appendChild wrapper (Just label)
                return (wrapper, b)
 
-createShortAnswer :: Document -> Element -> Element -> Map String String -> IO ()
+createShortAnswer :: Document -> Element -> Element -> M.Map String String -> IO ()
 createShortAnswer w i o opts = case M.lookup "goal" opts of
     Nothing -> return ()
     Just g -> do
         setInnerHTML i (Just g)
-        bw <- buttonWrapper w
+        bw <- createButtonWrapper w o
         Just text <- createElement w (Just "textarea")
         case M.lookup "content" opts of
             Just t -> setValue (castToHTMLTextAreaElement text) (Just t)
             _ -> return ()
         appendChild o (Just text)
         case M.lookup "submission" opts of
-            Just s | take 7 s == "saveAs:" -> do
+            Just s | Prelude.take 7 s == "saveAs:" -> do
                 let l = Prelude.drop 7 s
                 bt1 <- doneButton w "Submit"
                 appendChild bw (Just bt1)
                 submit <- newListener $ submitEssay opts text g l
                 addListener bt1 click submit False                
             _ -> return ()
-        Just par <- getParentNode o
-        appendChild par (Just bw)
         return ()

@@ -8,11 +8,21 @@
                     <a href=@{InfoR}>About
                 <li>
                     <a href=@{BookR}>Book
-                <li>
-                    $maybe (Entity _ user) <- authmaybe
-                        <a href=@{UserR (userIdent user)}>
-                            #{userIdent user}
-                    $nothing
+                $maybe (Entity _ user) <- authmaybe
+                    <li.dropdown>
+                            <a href=@{UserDispatchR}>#{userIdent user}
+                            <ul>
+                                $if elem (userIdent user) instructors
+                                    <li>
+                                        <a href=@{DocumentsR}> Shared Documents
+                                    <li>
+                                        <a href=@{InstructorR (userIdent user)}> Instructor Home
+                                <li>
+                                    <a href=@{UserR (userIdent user)}> User Home
+                                <li>
+                                    <a href=@{AuthR LogoutR}> Logout
+                $nothing
+                    <li>
                         <a href=@{AuthR LoginR}>
                             Login
 

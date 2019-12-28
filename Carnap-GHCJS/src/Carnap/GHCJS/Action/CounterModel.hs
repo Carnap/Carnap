@@ -17,7 +17,7 @@ import GHCJS.DOM.Types
 import GHCJS.DOM.Element
 import GHCJS.DOM.Event (initEvent)
 import GHCJS.DOM.EventTarget (dispatchEvent)
-import GHCJS.DOM.Document (createElement, createEvent, getDefaultView)
+import GHCJS.DOM.Document (createElement, createEvent)
 import GHCJS.DOM.Node (appendChild, getParentNode, insertBefore)
 import GHCJS.DOM.EventM (newListener, addListener, EventM, target)
 import GHCJS.DOM.HTMLTextAreaElement (castToHTMLTextAreaElement, setValue, getValue)
@@ -67,26 +67,19 @@ activateCounterModeler w (Just (i,o,opts)) = do
                       Left e -> setInnerHTML o (Just $ show e) 
                       Right f -> do
                           ref <- newIORef $ Left "Please press submit to check your answer"
-                          bw <- buttonWrapper w
+                          bw <- createButtonWrapper w o
                           check <- cmbuilder w f (i,o) bw opts
                           fields <- catMaybes <$> getListOfElementsByTag o "label"
                           mapM (setField w fields) (makeGivens opts)
-                          case M.lookup "submission" opts of
-                              Just s | take 7 s == "saveAs:" -> do
-                                  let l = Prelude.drop 7 s
-                                  bt1 <- doneButton w "Submit"
-                                  appendChild bw (Just bt1)
-                                  submit <- newListener $ submitCounterModel opts ref check fields (show f) l
-                                  addListener bt1 click submit False                
-                              _ -> return ()
+                          let submit = submitCounterModel opts ref check fields (show f)
+                          btStatus <- createSubmitButton w bw submit opts
+                          doOnce o input False $ liftIO $ btStatus Edited
                           if "nocheck" `inOpts` opts then return () 
                           else do
                               bt2 <- questionButton w "Check"
                               appendChild bw (Just bt2)
                               checkIt <- newListener $ checkCounterModeler ref fields check
                               addListener bt2 click checkIt False                
-                          Just par <- getParentNode o
-                          appendChild par (Just bw)
                           return ()
                 _ -> print "countermodeler lacks a goal"
 
@@ -106,7 +99,7 @@ activateCounterModeler w (Just (i,o,opts)) = do
                                                            message "Success!"
                                                            setAttribute i "class" "input completeCM"
 
-submitCounterModel:: Map String String -> IORef (Either String ())->  IO (Either String ())-> [Element] -> String -> String -> EventM HTMLTextAreaElement e ()
+submitCounterModel:: IsEvent e => Map String String -> IORef (Either String ())->  IO (Either String ())-> [Element] -> String -> String -> EventM HTMLTextAreaElement e ()
 submitCounterModel opts ref check fields s l = do isDone <- liftIO $ readIORef ref
                                                   case isDone of
                                                       Right _ -> trySubmit CounterModel opts l (ProblemContent (pack s)) True
@@ -199,10 +192,10 @@ createValidityCounterModeler w seq@(antced :|-: succed) (i,o) bw opts =
                  return $ Left $ "not all premises are true in this model. Take another look at: " ++ falses ++ "."
               else return $ check ctvs
           truthful tvs | and tvs = Right ()
-                       | otherwise = do let falses = intercalate ", " $ map (rewriteWith opts . show . snd) . filter (not . fst) $ (zip tvs fs)
+                       | otherwise = do let falses = intercalate ", " $ map (rewriteWith opts . show . snd) . filter (not . fst) $ (zip tvs sucs)
                                         Left $ "Not all conclusions are true in this model. Take another look at: " ++  falses ++ "."
           falsey tvs | and (map not tvs) = Right ()
-                     | otherwise = do let trues = intercalate ", " $ map (rewriteWith opts . show . snd) . filter fst $ (zip tvs fs)
+                     | otherwise = do let trues = intercalate ", " $ map (rewriteWith opts . show . snd) . filter fst $ (zip tvs sucs)
                                       Left $ "Not all conclusions are false in this model. Take another look at: " ++  trues ++ "."
           equiv tvs | and tvs = Left "Not a counterexample to equivalence - all conclusions are true in this model."
                     | and (map not tvs) = Left "Not a counterexample to equivalence - all conclusions are false in this model."
@@ -229,7 +222,7 @@ prepareModelUI w fs (i,o) mdl bw opts = do
           things = parseInt `sepEndBy1` (spaces *> char ',' <* spaces)
 
 appendRelationInputs :: Document -> Element -> [PureFOLForm] -> IORef PolyadicModel -> IO ()
-appendRelationInputs w o fs mdl = do let sfs = nub . concatMap (map blankTerms . toListOf cosmos) $ fs
+appendRelationInputs w o fs mdl = do let sfs = nub . concatMap (map blankTerms . universe) $ fs
                                      mapM_ appendRelationInput sfs
     where appendRelationInput f = do minput <- getRelationInput w f mdl
                                      case minput of 
@@ -237,7 +230,7 @@ appendRelationInputs w o fs mdl = do let sfs = nub . concatMap (map blankTerms .
                                         Just input -> appendChild o (Just input)
 
 appendFunctionInputs :: Document -> Element -> [PureFOLTerm] -> IORef PolyadicModel -> IO ()
-appendFunctionInputs w o fs mdl = do let sfs = nub . concatMap (map blankFuncTerms . toListOf cosmos) $ fs
+appendFunctionInputs w o fs mdl = do let sfs = nub . concatMap (map blankFuncTerms . universe) $ fs
                                      mapM_ appendFunctionInput sfs
     where appendFunctionInput f = do minput <- getFunctionInput w f mdl
                                      case minput of 
@@ -245,7 +238,7 @@ appendFunctionInputs w o fs mdl = do let sfs = nub . concatMap (map blankFuncTer
                                         Just input -> appendChild o (Just input)
 
 appendConstantInputs :: Document -> Element -> [PureFOLTerm] -> IORef PolyadicModel -> IO ()
-appendConstantInputs w o ts mdl = do let sts = nub . concatMap (toListOf cosmos) $ ts
+appendConstantInputs w o ts mdl = do let sts = nub . concatMap universe $ ts
                                      mapM_ appendConstantInput sts
     where appendConstantInput t = do minput <- getConstInput w t mdl
                                      case minput of 
@@ -253,7 +246,7 @@ appendConstantInputs w o ts mdl = do let sts = nub . concatMap (toListOf cosmos)
                                         Just input -> appendChild o (Just input)
 
 appendPropInputs :: Document -> Element -> [PureFOLForm] -> IORef PolyadicModel -> IO ()
-appendPropInputs w o fs mdl = do let sfs = nub . concatMap (toListOf cosmos) $ fs
+appendPropInputs w o fs mdl = do let sfs = nub . concatMap universe $ fs
                                  mapM_ appendPropInput sfs
     where appendPropInput t = do minput <- getPropInput w t mdl
                                  case minput of 
@@ -317,6 +310,7 @@ getRelationInput w f mdl = case addRelation f mdl [] of
                                          (relationInput,parseWarn) <- parsingInput w (ntuples n) relationUpdater
                                          setAttribute relationInput "name" (show (blankTerms f))
                                          setAttribute relationInput "rows" "1"
+                                         setAttribute relationInput "class" "relationInput"
                                          appendChild relationLabel (Just relationInput)
                                          appendChild relationLabel (Just parseWarn)
                                          return $ Just relationLabel
@@ -445,42 +439,63 @@ makeGivens opts = case M.lookup "content" opts of
 validateModel :: [Element] -> IO (Either String ())
 validateModel fields = do inputs <- catMaybes . concat <$> mapM (\f -> getListOfElementsByTag f "textarea") fields
                           names <- mapM (\i -> getAttribute i "name") inputs
-                          let [domain] = map fst . filter (\f -> snd f == Just "Domain") $ zip inputs names
+                          let namedInputs = zip inputs names
+                              [domain] = map fst . filter (\(x,y) -> y == Just "Domain") $ namedInputs
+                              namedSymbols = filter (\(x,y) -> y /= Just "Domain") $ namedInputs
                           Just domainString <- getValue (castToHTMLTextAreaElement domain)
-                          case parse (parseInt `sepEndBy1` (spaces *> char ',' <* spaces)) "" domainString of
+                          case parse (parseInt `sepEndBy1` (spaces *> char ',' <* spaces) <* eof) "" domainString of
                               Left e -> return $ Left $ "Couldn't read domain specification: " ++ show e
                               Right things -> do
                                   if null things 
                                       then return $ Left "The domain cannot be empty"
                                       else do
-                                          classes <- mapM (\i -> getAttribute i "class") inputs
-                                          let funcInputs = map fst . filter (\f -> snd f == Just "functionInput") $ zip inputs classes
-                                          funcStrings <- mapM (getValue . castToHTMLTextAreaElement) funcInputs
-                                          allStrings <- mapM (getValue . castToHTMLTextAreaElement) inputs
-                                          let allContents = zip (map (parse extractor "" . clean) (catMaybes allStrings)) names
-                                          let funcContents = map (validate things) (catMaybes funcStrings)
-                                          case filter (isLeft . fst) allContents of
+                                          namedClassedSymbols <- mapM (\(e,n) -> (,,) <$> pure e <*> pure n <*> getAttribute e "class") namedSymbols
+                                          let funcInputs = filter (\(e,n,c) -> c == Just "functionInput") $ namedClassedSymbols
+                                              relInputs = filter (\(e,n,c) -> c == Just "relationInput") $ namedClassedSymbols
+                                              getText = getValue . castToHTMLTextAreaElement
+                                          funcStrings <- mapM (\(e,n,_) -> (,,) <$> getText e <*> getBlanks n <*> pure n) funcInputs
+                                          relStrings  <- mapM (\(e,n,_) -> (,,) <$> getText e <*> getBlanks n <*> pure n) relInputs
+                                          allStrings <- mapM getText inputs
+                                          let allAllegedThings = zip (map (parse extractor "" . clean) (catMaybes allStrings)) names
+                                              funcChecks = map (validateFunc things) funcStrings
+                                              relChecks = map (validateRel things) relStrings
+                                              checks = filter isLeft $ funcChecks ++ relChecks
+                                          case filter (isLeft . fst) allAllegedThings of
                                               (Left err,Just n):_ -> return $ Left $ "Couldn't read specification for " ++ n ++ ": " ++ show err
-                                              [] -> case filter (\(Right ext,_) -> not (ext `subset` things)) allContents of
+                                              [] -> case filter (\(Right ext,_) -> not (ext `subset` things)) allAllegedThings of
                                                    (_,Just n):_ -> return $ Left $ "The extension of " ++ n ++ " is not contained in the domain."
-                                                   [] -> if not . and . map isRight $ funcContents then return . head . filter isLeft $ funcContents
-                                                                                                   else return $ Right ()
+                                                   [] -> if null checks then return $ Right () 
+                                                                        else return . head . filter isLeft $ checks
 
                        
     where clean (',':xs) = ' ':clean xs
           clean ('[':xs) = ' ':clean xs
           clean (']':xs) = ' ':clean xs
+          clean ('(':xs) = ' ':clean xs
+          clean (')':xs) = ' ':clean xs
+          clean ('<':xs) = ' ':clean xs
+          clean ('>':xs) = ' ':clean xs
+          clean (';':xs) = ' ':clean xs
           clean (y:ys) = y:clean ys
           clean [] = []
+          getBlanks (Just n) = pure . length . filter (== '_') $ n
+          getBlanks Nothing = Prelude.error "issue with getting the number of blanks in a name"
           extractor = spaces *> (parseInt `sepEndBy` spaces) <* spaces
           subset (x:xs) y = x `elem` y && xs `subset` y
           subset [] y = True
-          validate domain funcstring = case parse (functuple `sepEndBy` (spaces *> char ',' <* spaces)) "" funcstring of
-                Left e -> Left $ "Couldn't read one of the function specifications: " ++ show e
-                Right tups | null tups -> Left "a function is unspecified"
-                           | not . properList . map init $ tups -> Left "a function has more than one value specified for some input"
+          validateRel domain (_,_,Nothing) = Left $ "Couldn't get one of the relation specifications."
+          validateRel domain (Nothing,_,Just n) = Left $ "Couldn't get the relation specification for " ++ n ++ "."
+          validateRel domain (Just relstring,arity,Just n) = case parse (ntuples arity) "" relstring of
+                Left e -> Left $ "Couldn't read the relation specification for " ++ n ++ ": " ++ show e
+                Right _ -> Right ()
+          validateFunc domain (_,_,Nothing) = Left $ "Couldn't get one of the function specifications."
+          validateFunc domain (Nothing,_,Just n) = Left $ "Couldn't get the function specification for " ++ n ++" ."
+          validateFunc domain (Just funcstring,arity, Just n) = case parse (nfunctuples (arity + 1)) "" funcstring of
+                Left e -> Left $ "Couldn't read the function specification for " ++ n ++ ": " ++ show e
+                Right tups | null tups -> Left $ "the function " ++ n ++ " is unspecified"
+                           | not . properList . map init $ tups -> Left $ "the function " ++ n ++ " has more than one value specified for some input"
                            | let fdom = map init tups in sort fdom == sort (length (head fdom) `tuplesOn` domain) -> Right ()
-                           | otherwise -> Left "a function does not have a value specified for some input"
+                           | otherwise -> Left $ "the function " ++ n ++ " does not have a value specified for some input"
           properList [] = True
           properList (x:xs) = not (x `elem` xs) && properList xs
           tuplesOn 0 dom = []
@@ -501,9 +516,7 @@ setField w fields (name,val) = do inputs <- concat <$> mapM (\f -> getListOfElem
                                                     Just "SELECT" -> S.setValue (castToHTMLSelectElement f) (Just val)
                                                     Just s -> print $ "unrecognized tag:" ++ s
                                                     Nothing -> print "no tagname"
-                                                  Just init <- createEvent w "Event"
-                                                  initEvent init "initialize" True True
-                                                  dispatchEvent f (Just init)
+                                                  dispatchCustom w f "initialize"
                                                   return ()
                                    _ -> print $ "missing or duplicated field " ++ name ++ "in countermodel spec"
 
@@ -516,13 +529,18 @@ blankFuncTerms f = set termsOf (foVar "_") f
 parseInt :: Parsec String () Thing
 parseInt = Term . read <$> many1 digit
 
+wrappedIn :: Char -> Char -> Parsec String () a -> Parsec String () a
+wrappedIn l r p = char l *> spaces *> p <* spaces <* char r
+
 tuple :: Parsec String () [Thing]
-tuple = char '[' *> spaces *> (parseInt `sepBy` (spaces *> char ',' <* spaces)) <* spaces <* char ']'
+tuple = wrappedIn '[' ']' p <|> wrappedIn '<' '>' p <|> wrappedIn '(' ')' p <|> ((\x->[x]) <$> parseInt)
+    where p = parseInt `sepBy` (spaces *> char ',' <* spaces)
 
 functuple :: Parsec String () [Thing]
-functuple = do args <- char '[' *> spaces *> parseInt `sepBy` (spaces *> char ',' <* spaces)
-               val <- spaces *> char ';' *> spaces *> parseInt <* spaces <* char ']'
-               return (args ++ [val])
+functuple = wrappedIn '[' ']' p <|> wrappedIn '<' '>' p <|> wrappedIn '(' ')' p
+    where p = do args <- parseInt `sepBy` (spaces *> char ',' <* spaces)
+                 val <- spaces *> char ';' *> spaces *> parseInt
+                 return (args ++ [val])
 
 ntuple :: Int -> Parsec String () [Thing]
 ntuple n = do t <- tuple; if length t == n then return t else fail ("This extension should be made only of " ++ show n ++ "-tuples")
@@ -531,7 +549,7 @@ nfunctuple :: Int -> Parsec String () [Thing]
 nfunctuple n = do t <- functuple; if length t == n then return t else fail ("This extension should be made only of " ++ show n ++ "-tuples")
 
 ntuples :: Int -> Parsec String () [[Thing]]
-ntuples n = ntuple n `sepEndBy` (spaces *> char ',' <* spaces)
+ntuples n = ntuple n `sepEndBy` (spaces *> char ',' <* spaces) <* eof
 
 nfunctuples :: Int -> Parsec String () [[Thing]]
-nfunctuples n = nfunctuple n `sepEndBy` (spaces *> char ',' <* spaces)
+nfunctuples n = nfunctuple n `sepEndBy` (spaces *> char ',' <* spaces) <* eof
