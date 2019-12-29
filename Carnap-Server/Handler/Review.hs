@@ -13,7 +13,7 @@ import Carnap.Languages.PurePropositional.Logic (ofPropSys)
 import Carnap.Languages.PureFirstOrder.Logic (ofFOLSys)
 import Carnap.Calculi.NaturalDeduction.Syntax (NaturalDeductionCalc(..))
 import Carnap.GHCJS.SharedTypes
-import Carnap.GHCJS.SharedFunctions (simpleCipher)
+import Carnap.GHCJS.SharedFunctions (simpleCipher,simpleHash)
 
 putReviewR :: Text -> Text -> Handler Value
 putReviewR coursetitle filename =
@@ -92,44 +92,44 @@ renderProblem (Entity key val) = do
                                             <input.btn.btn-primary type=submit value="update">
                 |]
         case (problemSubmissionType val, problemSubmissionData val) of
-            (Derivation, DerivationData content der) -> template $
+            (Derivation, DerivationData goal der) -> template $
                 [whamlet|
                     <div data-carnap-system="prop" 
                          data-carnap-options="resize"
                          data-carnap-type="proofchecker"
-                         data-carnap-goal="#{content}"
+                         data-carnap-goal="#{goal}"
                          data-carnap-submission="none">
                          #{der}
                 |]
-            (Derivation, DerivationDataOpts content der opts) -> template $
+            (Derivation, DerivationDataOpts goal der opts) -> template $
                 [whamlet|
                     <div data-carnap-type="proofchecker"
                          data-carnap-system="#{sys}"
                          data-carnap-options="resize"
-                         data-carnap-goal="#{content}"
+                         data-carnap-goal="#{goal}"
                          data-carnap-submission="none">
                          #{der}
                 |]
                 where sys = case lookup "system" (M.fromList opts) of Just s -> s; Nothing -> "prop"
-            (TruthTable, TruthTableData content tt) -> template $
+            (TruthTable, TruthTableData goal tt) -> template $
                 [whamlet|
                     <div data-carnap-type="truthtable"
-                         data-carnap-tabletype="#{checkvalidity content}"
+                         data-carnap-tabletype="#{checkvalidity goal}"
                          data-carnap-submission="none"
-                         data-carnap-goal="#{content}">
+                         data-carnap-goal="#{goal}">
                          #{renderTT tt}
                 |]
-            (TruthTable, TruthTableDataOpts content tt opts) -> template $
+            (TruthTable, TruthTableDataOpts goal tt opts) -> template $
                 [whamlet|
                     <div data-carnap-type="truthtable"
                          data-carnap-tabletype="#{tabletype}"
                          data-carnap-system="#{ttsystem}"
                          data-carnap-submission="none"
                          data-carnap-options="immutable nocheck nocounterexample"
-                         data-carnap-goal="#{formatContent (unpack content)}">
+                         data-carnap-goal="#{formatContent (unpack goal)}">
                          #{renderTT tt}
                 |]
-                where tabletype = case lookup "tabletype" (M.fromList opts) of Just s -> s; Nothing -> checkvalidity content
+                where tabletype = case lookup "tabletype" (M.fromList opts) of Just s -> s; Nothing -> checkvalidity goal 
                       ttsystem = case lookup "system" (M.fromList opts) of Just s -> s; Nothing -> "prop"
                       formatContent c = case (ndNotation `ofPropSys` ttsystem) <*> maybeString of Just s -> s; Nothing -> ""
                         where maybeString = (show <$> (readMaybe c :: Maybe PureForm))
@@ -138,72 +138,85 @@ renderProblem (Entity key val) = do
                                                       Just (fs,gs) -> Just $ intercalate "," (map show fs) ++ ":" ++ intercalate "," (map show gs)
                                                       Nothing -> Just c --If it's a sequent, it'll show properly anyway.
 
-            (CounterModel, CounterModelDataOpts content cm opts) -> template $
+            (CounterModel, CounterModelDataOpts goal cm opts) -> template $
                 [whamlet|
                     <div data-carnap-type="countermodeler"
                          data-carnap-countermodelertype="#{cmtype}"
                          data-carnap-submission="none"
                          data-carnap-system="#{cmsystem}"
-                         data-carnap-goal="#{formatContent (unpack content)}">
+                         data-carnap-goal="#{formatContent (unpack goal)}">
                          #{renderCM cm}
                 |]
-                where cmtype = case lookup "countermodelertype" (M.fromList opts) of Just s -> s; Nothing -> checkvalidity content
+                where cmtype = case lookup "countermodelertype" (M.fromList opts) of Just s -> s; Nothing -> checkvalidity goal
                       cmsystem = case lookup "system" (M.fromList opts) of Just s -> s; Nothing -> "firstOrder"
                       formatContent c = case (ndNotation `ofFOLSys` cmsystem) <*> maybeString of Just s ->  s; Nothing -> ""
                         where maybeString = (show <$> (readMaybe c :: Maybe PureForm))
                                     `mplus` (intercalate "," . map show <$> (readMaybe c :: Maybe [PureFOLForm]))
                                     `mplus` Just c --If it's a sequent, it'll show properly anyway.
 
-            (Translation, TranslationData content trans) -> template $
+            (Translation, TranslationData goal trans) -> template $
                 [whamlet|
                     <div data-carnap-type="translate"
                          data-carnap-transtype="prop"
-                         data-carnap-goal="#{show (simpleCipher (unpack content))}"
+                         data-carnap-goal="#{show (simpleCipher (unpack goal))}"
                          data-carnap-submission="none"
-                         data-carnap-problem="#{content}">
+                         data-carnap-problem="#{goal}">
                          #{trans}
                 |]
 
-            (SequentCalc, SequentCalcData content tree opts) -> template $
+            (SequentCalc, SequentCalcData goal tree opts) -> template $
                 [whamlet|
                     <div data-carnap-type="sequentchecker"
                          data-carnap-system="#{sys}"
                          data-carnap-options="resize"
-                         data-carnap-goal="#{content}"
+                         data-carnap-goal="#{goal}"
                          data-carnap-submission="none">
                          #{treeJSON tree}
                 |]
                 where sys = case lookup "system" (M.fromList opts) of Just s -> s; Nothing -> "propLK"
-            (DeductionTree, DeductionTreeData content tree opts) -> template $
+            (DeductionTree, DeductionTreeData goal tree opts) -> template $
                 [whamlet|
                     <div data-carnap-type="treedeductionchecker"
                          data-carnap-system="#{sys}"
                          data-carnap-options="resize"
-                         data-carnap-goal="#{content}"
+                         data-carnap-goal="#{goal}"
                          data-carnap-submission="none">
                          #{treeJSON tree}
                 |]
                 where sys = case lookup "system" (M.fromList opts) of Just s -> s; Nothing -> "propNK"
-            (Translation, TranslationDataOpts content trans opts) -> template $
+            (Translation, TranslationDataOpts goal trans opts) -> template $
                 [whamlet|
                     <div data-carnap-type="translate"
                          data-carnap-transtype="#{transtype}"
-                         data-carnap-goal="#{show (simpleCipher (unpack content))}"
+                         data-carnap-goal="#{show (simpleCipher (unpack goal))}"
                          data-carnap-submission="none"
                          data-carnap-problem="#{problem}">
                          #{trans}
                 |]
                 where transtype = case lookup "transtype" (M.fromList opts) of Just s -> s; Nothing -> "prop"
-                      problem = case lookup "problem" (M.fromList opts) of Just s -> s ++ " : " ++ (unpack content)
-            (Qualitative, QualitativeProblemDataOpts content answer opts) -> template $ 
+                      problem = case lookup "problem" (M.fromList opts) of Just s -> s ++ " : " ++ (unpack goal)
+            (Qualitative, QualitativeProblemDataOpts goal answer opts) -> template $ 
                 [whamlet|
                     <div data-carnap-type="qualitative"
                          data-carnap-qualitativetype="#{qualtype}"
-                         data-carnap-goal="#{unpack content}"
+                         data-carnap-goal="#{unpack goal}"
                          data-carnap-submission="none">
-                         #{answer}
+                         #{content}
                 |]
                 where qualtype = case lookup "qualitativetype" (M.fromList opts) of Just s -> s; Nothing -> "shortanswer"
+                      content = case qualtype of
+                                    "shortanswer" -> unpack answer
+                                    "multiplechoice" -> withChecked
+                      withChecked = case lookup "content" (M.fromList opts) of
+                                        Nothing -> "Error no content"
+                                        Just cnt -> unlines . map processEntry . lines . unpack $ cnt
+                      processEntry l = case readMaybe l :: Maybe (Int, String) of
+                                           Just (h,s) | s == unpack answer -> show (simpleHash ('-':s), s)
+                                           Just (h,s) | h == simpleHash ('-':s) -> show (simpleHash s, s)
+                                           Just (h,s) | h == simpleHash ('+':s) -> show (simpleHash ('*':s), s)
+                                           Just (h,s) -> show (h, s)
+                                           Nothing -> "indeciperable entry"
+
             _ -> return ()
     where renderTT tt = concat $ map renderRow tt
           renderRow row = map toval row ++ "\n"

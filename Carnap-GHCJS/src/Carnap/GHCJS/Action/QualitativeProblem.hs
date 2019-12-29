@@ -34,8 +34,9 @@ activateQualitativeProblem w (Just (i,o,opts)) = do
 
 submitQualitative :: IsEvent e => M.Map String String -> IORef (Bool, String) -> String -> String -> EventM Element e ()
 submitQualitative opts ref g l = do (isDone,val) <- liftIO $ readIORef ref
-                                    if isDone 
-                                        then trySubmit Qualitative opts l (ProblemContent (pack g)) True
+                                    let submission = (QualitativeProblemDataOpts (pack g) (pack val) (toList opts))
+                                    if isDone || ("exam" `inOpts` opts)
+                                        then trySubmit Qualitative opts l submission isDone
                                         else message "Not quite right. Try again?"
 
 submitEssay :: IsEvent e => M.Map String String -> Element -> String -> String -> EventM HTMLTextAreaElement e ()
@@ -61,19 +62,19 @@ createMultipleChoice w i o opts = case M.lookup "goal" opts of
         mapM_ (appendChild o . Just . fst) radios
         doOnce o change False $ liftIO $ btStatus Edited
         return ()
-
-    where optlist = case M.lookup "options" opts of Just s -> words s; Nothing -> []
-          getLabel s = if "nocipher" `elem` optlist 
+        
+    where
+          getLabel s = if "nocipher" `inOpts` opts
                            then dropWhile (`elem` "+-*") s
                            else case readMaybe s :: Maybe (Int, String) of
                                  Just (_,s') -> s'
                                  Nothing -> "indecipherable label"
-          isGood s = if "nociper" `elem` optlist
+          isGood s = if "nocipher" `inOpts` opts
                          then case s of ('*':_) -> True; ('+':_) -> True; _ -> False
                          else case readMaybe s :: Maybe (Int, String) of
                                 Just (h,s') -> h `elem` [simpleHash ('*':s'), simpleHash ('+':s')]
                                 Nothing -> False
-          isChecked s = if "nociper" `elem` optlist
+          isChecked s = if "nocipher" `inOpts` opts
                          then case s of ('-':_) -> True; ('+':_) -> True; _ -> False
                          else case readMaybe s :: Maybe (Int, String) of
                                 Just (h,s') -> h `elem` [simpleHash ('-':s'), simpleHash ('+':s')]
