@@ -54,27 +54,39 @@ createMultipleChoice w i o opts = case M.lookup "goal" opts of
         let submit = submitQualitative opts ref g
         btStatus <- createSubmitButton w bw submit opts
         let choices = maybe [] lines $ M.lookup "content" opts
-            labeledChoices = zip (Prelude.map getLabel choices) (Prelude.map isGood choices)
+            labeledChoices = zip3 (Prelude.map getLabel choices) 
+                                  (Prelude.map isGood choices) 
+                                  (Prelude.map isChecked choices)
         radios <- mapM (toRadio g ref) labeledChoices
         mapM_ (appendChild o . Just . fst) radios
         doOnce o change False $ liftIO $ btStatus Edited
         return ()
 
-    where getLabel s = case readMaybe s :: Maybe (Int, String) of
-                         Just (_,s') -> s'
-                         Nothing -> "indecipherable label"
-          isGood s = case readMaybe s :: Maybe (Int, String) of
-                        Just (h,s') -> h == simpleHash ('*':s')
-                        Nothing -> False
-          toRadio g ref (s,b) = do 
+    where optlist = case M.lookup "options" opts of Just s -> words s; Nothing -> []
+          getLabel s = if "nocipher" `elem` optlist 
+                           then dropWhile (`elem` "+-*") s
+                           else case readMaybe s :: Maybe (Int, String) of
+                                 Just (_,s') -> s'
+                                 Nothing -> "indecipherable label"
+          isGood s = if "nociper" `elem` optlist
+                         then case s of ('*':_) -> True; ('+':_) -> True; _ -> False
+                         else case readMaybe s :: Maybe (Int, String) of
+                                Just (h,s') -> h `elem` [simpleHash ('*':s'), simpleHash ('+':s')]
+                                Nothing -> False
+          isChecked s = if "nociper" `elem` optlist
+                         then case s of ('-':_) -> True; ('+':_) -> True; _ -> False
+                         else case readMaybe s :: Maybe (Int, String) of
+                                Just (h,s') -> h `elem` [simpleHash ('-':s'), simpleHash ('+':s')]
+                                Nothing -> False
+          toRadio g ref (s,b,c) = do 
                Just input <- createElement w (Just "input")
                Just label <- createElement w (Just "label")
                Just wrapper <- createElement w (Just "div")
-               mapM (uncurry $ setAttribute input) 
+               mapM (uncurry $ setAttribute input) $
                      [ ("type","radio")
                      , ("name", g)
                      , ("id", g ++ "-" ++ s)
-                     ]
+                     ] ++ if c then [("checked","checked")] else []
                setInnerHTML label (Just s)
                update <- newListener $ liftIO (writeIORef ref (b,s))
                addListener input click update False

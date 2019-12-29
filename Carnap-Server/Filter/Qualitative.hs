@@ -51,6 +51,6 @@ activate cls extra chunk
                                     ++ "</div>"
                               ]
                 where optString = concatMap (\(x,y) -> " data-carnap-" ++ x ++ "=\"" ++ y ++ "\"") (toList opts)
-          withHash s | length s' > 0 = if head s' == '*' then (simpleHash s', tail s') else (simpleHash s',s')
+          withHash s | length s' > 0 = if head s' `elem` ['*','+','-'] then (simpleHash s', tail s') else (simpleHash s',s')
                      | otherwise = (simpleHash s', s')
             where s' = (dropWhile (== ' ') s)
