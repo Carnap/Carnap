@@ -34,7 +34,7 @@ putReviewR coursetitle filename =
 getReviewR :: Text -> Text -> Handler Html
 getReviewR coursetitle filename = 
         do (Entity key val, _) <- getAssignmentByCourse coursetitle filename
-           unsortedProblems <- runDB $ selectList [ProblemSubmissionAssignmentId ==. Just key] []
+           unsortedProblems <- runDB $ selectList [ProblemSubmissionAssignmentId ==. Just key, ProblemSubmissionCorrect ==. False] []
            uidAndUser  <- runDB $ do let uids = nub $ map (problemSubmissionUserId . entityVal) unsortedProblems
                                      musers <- mapM get uids
                                      return $ zip musers uids 
@@ -70,7 +70,6 @@ selectUser list =
                     $nothing
                         <option value="#{show v}">unknown
         |]
-
 
 renderProblem (Entity key val) = do
         let ident = problemSubmissionIdent val

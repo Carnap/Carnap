@@ -443,7 +443,6 @@ trySubmit problemType opts ident problemData correct =
                 case msource of 
                    Nothing -> message "Not able to identify problem source. Perhaps this document has not been assigned?"
                    Just source -> do Just t <- eventCurrentTarget
-                                     
                                      liftIO $ sendJSON 
                                            (Submit problemType ident problemData source correct (M.lookup "points" opts >>= readMaybe) key) 
                                            (loginCheck $ (alert $ "Submitted Exercise " ++ ident) >> setStatus (castToElement t) Submitted)
