@@ -4,7 +4,6 @@ import Carnap.GHCJS.SharedFunctions (simpleHash)
 import Text.Pandoc
 import Filter.Util (splitIt, intoChunks,formatChunk, unlines')
 import Data.Map (fromList, toList, unions)
-import Data.Hashable
 import Prelude
 
 makeQualitativeProblems :: Block -> Block
