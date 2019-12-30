@@ -83,6 +83,7 @@ createMultipleChoice w i o opts = case M.lookup "goal" opts of
                Just input <- createElement w (Just "input")
                Just label <- createElement w (Just "label")
                Just wrapper <- createElement w (Just "div")
+               if c then writeIORef ref (b,s) else return ()
                mapM (uncurry $ setAttribute input) $
                      [ ("type","radio")
                      , ("name", g)
