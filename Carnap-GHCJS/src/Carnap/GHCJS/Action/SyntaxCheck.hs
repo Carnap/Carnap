@@ -7,6 +7,8 @@ import Carnap.Languages.PurePropositional.Parser
 import Carnap.Languages.PurePropositional.Syntax 
 import Carnap.Languages.PurePropositional.Util
 import Carnap.Languages.Util.LanguageClasses
+import Carnap.Calculi.NaturalDeduction.Syntax (NaturalDeductionCalc(..))
+import Carnap.Languages.PurePropositional.Logic
 import Carnap.Core.Data.Types
 import Carnap.Core.Data.Classes
 import Carnap.GHCJS.SharedTypes
@@ -40,7 +42,7 @@ syntaxCheckAction = initElements getCheckers activateChecker
 --in development and use the stages to match formulas in the tree with
 --formulas in the todo list. The labeling makes it possible to identify
 --which formula is in the queue, even when there are several
---indistinguishable formulas
+--syntactically indistinguishable formulas
 tryMatch :: Element -> IORef (PureForm, [(PureForm, Int)], Tree (PureForm, Int), Int) 
             -> Document -> (PureForm -> String) -> M.Map String String 
             -> EventM HTMLInputElement KeyboardEvent ()
@@ -122,14 +124,16 @@ getCheckers d = genInOutElts d "input" "div" "synchecker"
 activateChecker :: Document -> Maybe (Element, Element, M.Map String String) -> IO ()
 activateChecker w (Just (i,o,opts)) =
         case M.lookup "matchtype" opts of
-             (Just "match") -> activateMatchWith show
-             (Just "matchclean") -> activateMatchWith showClean
+             (Just "match") -> activateMatchWith (rewriteWith opts . show)
+             (Just "matchclean") -> activateMatchWith (rewriteWith opts . showClean)
              _ -> return () 
-    where activateMatchWith :: (PureForm -> String) -> IO ()
+    where formParser = maybe (purePropFormulaParser standardLetters) id (M.lookup "system" opts >>= (ndParseForm `ofPropSys`)) 
+
+          activateMatchWith :: (PureForm -> String) -> IO ()
           activateMatchWith sf =
               case M.lookup "goal" opts of
                   Just g ->
-                    case parse (purePropFormulaParser standardLetters <* eof) "" g of
+                    case parse (formParser <* eof) "" g of
                       (Right f) -> do 
                          bw <- createButtonWrapper w o
                          ref <- newIORef (f,[(f,0)], T.Node (f,0) [], 0)  
