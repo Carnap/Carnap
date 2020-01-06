@@ -245,7 +245,7 @@ instance ( BooleanLanguage (ClassicalSequentOver lex (Form Bool))
          , ReLex lex
          ) => CoreInference GentzenPropNK lex (Form Bool) where
          coreRuleOf (NJ x) = coreRuleOf x
-         coreRuleOf LEM = [] ∴ Top :|-: SS (phin 1 .\/. phin 2)
+         coreRuleOf LEM = [] ∴ Top :|-: SS (phin 1 .\/. (lneg $ phin 1))
 
 instance Inference GentzenPropNJ PurePropLexicon (Form Bool) where
         ruleOf x = coreRuleOf x
