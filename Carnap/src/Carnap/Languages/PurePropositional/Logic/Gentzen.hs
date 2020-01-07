@@ -331,7 +331,7 @@ usesAssumption n pt assump sub = case leavesLabeled n pt of
               (Node x _ : _) | content x /= applySub sub assump -> Just "assumption mismatch"
                              | otherwise -> Nothing
 
-exhaustsAssumptions n pt assump sub = if all (`elem` (dischargedList pt)) assumpInstances then Nothing
+exhaustsAssumptions n pt assump sub = if all (`elem` dischargedList pt) assumpInstances then Nothing
                                                                                           else Just "This rule will consume an undischarged assumption"
         where dischargedList (Node r f) = dischargesAssumptions (head (rule r)) ++ concatMap dischargedList f
               theAssump = applySub sub assump
