@@ -422,7 +422,7 @@ language, whether it is formally valid.
 
 But we are still missing some pieces. In particular, we do not know what the
 rules for $\rightarrow$, and $\leftrightarrow$ are. These two connectives are
-related; the first means "If, \ldots then", while the second means "if and
+related; the first means "If, $\ldots$ then", while the second means "if and
 only if". Since the $\rightarrow$ makes sentences that say that something will
 happen on some condition, it is sometimes called a *conditional*. Since
 $\leftrightarrow$ makes sentences saying that one thing will happen if another

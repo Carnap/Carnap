@@ -364,6 +364,7 @@ unexpected way. For example, consider the following sentence.
     right half of an "if ... then ..." statement. So, "If $\phi$,
     then $\psi$" can be replaced by phrases like
 
+    #. "$\phi$ only if $\psi$"
     #. "$\phi$ only provided that $\psi$"
     #. "$\phi$ only given that  $\psi$"
     #. "$\phi$ only assuming that  $\psi$"

@@ -149,18 +149,18 @@ to do so.
 
 ##Validity
 
-When an argument fails to lead us to the truth, it is because the premises are
-true and the conclusion false. The arguments we are after are the ones that
-cannot fail to lead us to the truth in this way. So we are after arguments in
-which it is impossible for the premises to be true while the conclusion is at
-the same time false. We call these arguments *deductively valid*
+When an argument with true premises fails to lead us to the truth, it is
+because, in spite of the premises being true, the conclusion false. The
+arguments we are after are the ones that cannot fail to lead us to the truth in
+this way. So we are after arguments in which it is impossible for the premises
+to be true while the conclusion is at the same time false. We call these
+arguments *deductively valid*
 
 Deductively Valid
 
-:   An argument is *deductively valid* if either
-
-    1. It is impossible for its premises to be true and its conclusion false. 
-    2. The truth of the premises guarantees the truth of the conclusion. 
+:   An argument is *deductively valid* if it is impossible for its premises to
+be true and its conclusion false. That is to say, the truth of the premises
+guarantees the truth of the conclusion. 
 
 If we have a deductively valid argument for some conclusion, then as far as
 logic goes, all is right with the world. All that remains to be shown is that
@@ -232,10 +232,9 @@ logical form, we say that the argument is *formally valid*.
 
 Formally Valid
 
-:   An argument is *formally valid* if 
-
-    1. It is deductively valid because of its logical form.
-    2. Every argument with the same logical form is deductively valid.
+:   An argument is *formally valid* if it is deductively valid because of its
+logical form. That is to say, every argument with the logical form of the
+argument under consideration is deductively valid.
 
 The basic idea of formal logic is to try to find and classify all of the
 logical forms that make arguments deductively valid. If we could do this, then

@@ -278,9 +278,9 @@ front of a sentence. So the formulas are:
 
 2. Molecular formulas, which can be made by
 
-       i. Sticking two formulas together using $\land,
-          \lor,\rightarrow, \leftrightarrow$, and wrapping in
-          parentheses, for example $(F(a)\land G(x))$ 
+      i. Sticking two formulas together using $\land,
+         \lor,\rightarrow, \leftrightarrow$, and wrapping in
+         parentheses, for example $(F(a)\land G(x))$ 
 
       ii. Putting a negation in front of a formula, for
           example $\neg(Fa\land Gx)$
