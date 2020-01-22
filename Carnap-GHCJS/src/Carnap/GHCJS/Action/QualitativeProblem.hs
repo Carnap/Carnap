@@ -54,6 +54,16 @@ createMultipleChoice w i o opts = case M.lookup "goal" opts of
         bw <- createButtonWrapper w o
         let submit = submitQualitative opts ref g
         btStatus <- createSubmitButton w bw submit opts
+        if "check" `inOpts` opts then do
+              bt2 <- questionButton w "Check"
+              appendChild bw (Just bt2)
+              checkIt <- newListener $ do 
+                              (isDone,_) <- liftIO $ readIORef ref
+                              if isDone 
+                                  then message "Correct!" 
+                                  else message "Not quite right. Try again?"
+              addListener bt2 click checkIt False                
+        else return ()
         let choices = maybe [] lines $ M.lookup "content" opts
             labeledChoices = zip3 (Prelude.map getLabel choices) 
                                   (Prelude.map isGood choices) 
