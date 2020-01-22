@@ -27,6 +27,7 @@ toDeductionHardegree :: Parsec String () [r] -> Parsec String () (FixLang lex a)
 toDeductionHardegree r f = toDeduction (parseLine r f)
         where parseLine r f = try (parseAssertLine r f)
                               <|> try (parseShowWithLine r f)
+                              <|> try (parsePartialLine f)
                               --XXX: need double "try" here to avoid
                               --throwing away errors if first parser fails
 

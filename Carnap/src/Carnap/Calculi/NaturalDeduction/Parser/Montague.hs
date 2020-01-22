@@ -30,8 +30,9 @@ toDeductionMontague :: Parsec String () [r] -> Parsec String () (FixLang lex a) 
     -> Deduction r lex a
 toDeductionMontague r f = toDeduction (parseLine r f)
         where parseLine r f = try (parseAssertLine r f) 
-                                <|> try (parseShowLine f) 
-                                <|> try (parseQedLine r)
+                              <|> try (parseShowLine f) 
+                              <|> try (parseQedLine r) 
+                              <|> try (parsePartialLine f) 
 
 {- | 
 In a Kalish and Montague deduction, find the prooftree corresponding to

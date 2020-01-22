@@ -1,6 +1,7 @@
 module Carnap.Calculi.NaturalDeduction.Parser.Util where
 
 import Text.Parsec
+import Text.Parsec.Error (Message(..),newErrorMessage)
 import Carnap.Calculi.NaturalDeduction.Syntax
 import Carnap.Core.Data.Types
 
@@ -40,6 +41,14 @@ parseAssertLine r f = do dpth  <- indent
                          phi <- f
                          (rule,deps) <- rline r
                          return $ AssertLine phi rule dpth (map (\x -> (x,x)) deps)
+
+parsePartialLine :: Parsec String u (FixLang lex a) -> Parsec String u (DeductionLine r lex a)
+parsePartialLine f = do dpth <- indent
+                        phi <- f
+                        pos <- getPosition
+                        eof
+                        let incompletemsg = newErrorMessage (Expect "rule citation") pos
+                        return $ PartialLine (Right phi) incompletemsg dpth
 
 {- Parse a string line-by-line into a deduction -}
 toDeduction :: Parsec String () (DeductionLine r lex a) -> String -> [DeductionLine r lex a]

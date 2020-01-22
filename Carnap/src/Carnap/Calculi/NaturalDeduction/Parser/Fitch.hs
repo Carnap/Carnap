@@ -39,15 +39,19 @@ parseSeparatorLine = SeparatorLine <$> indent <* string "--" <* spaces <* eof
 toDeductionFitch :: Parsec String () [r] -> Parsec String () (FixLang lex a) -> String 
     -> Deduction r lex a
 toDeductionFitch r f = toDeduction (parseLine r f)
-        where parseLine r f = try (parseAssertLineFitch r f) <|> try parseSeparatorLine
-                              --XXX: need double "try" here to avoid
+        where parseLine r f = try (parseAssertLineFitch r f) 
+                              <|> try parseSeparatorLine
+                              <|> try (parsePartialLine f)
+                              --XXX: need triple "try" here to avoid
                               --throwing away errors if first parser fails
                                
 toDeductionFitchAlt :: Parsec String () [r] -> Parsec String () (FixLang lex a) -> String 
     -> Deduction r lex a
 toDeductionFitchAlt r f = toDeduction (parseLine r f)
-        where parseLine r f = try (parseAssertLineFitchAlt r f) <|> try parseSeparatorLine
-                              --XXX: need double "try" here to avoid
+        where parseLine r f = try (parseAssertLineFitchAlt r f) 
+                              <|> try parseSeparatorLine
+                              <|> try (parsePartialLine f)
+                              --XXX: need triple "try" here to avoid
                               --throwing away errors if first parser fails
 
 toCommentedDeductionFitch :: Parsec String () [r] -> Parsec String () (FixLang lex a) -> String 
@@ -55,6 +59,7 @@ toCommentedDeductionFitch :: Parsec String () [r] -> Parsec String () (FixLang l
 toCommentedDeductionFitch r f = toDeduction (parseLine r f)
         where parseLine r f = try (parseCommentedAssertLineFitch r f) 
                               <|> try parseSeparatorLine
+                              <|> try (parsePartialLine f)
 
 {- | 
 In a Fitch deduction, find the prooftree corresponding to
