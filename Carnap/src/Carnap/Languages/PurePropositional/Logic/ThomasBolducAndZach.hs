@@ -219,19 +219,21 @@ thomasBolducAndZachNotation x = case runParser altParser 0 "" x of
           fallback = do c <- anyChar 
                         return [c]
 
-dropOuterParens s = case (strip s, break (== '⊢') s) of
-      (s'@(_:_:_:_),_) | (head s' == '(') && (last s' == ')') && (balance 0 (inner s') == 0) -> inner s'
-      (_,(a@(_:_),b@(_:_))) -> (dropOuterParens a) ++ " ⊢ " ++ (dropOuterParens $ tail b)
-      _ -> s
+dropOuterParensForm :: String -> String
+dropOuterParensForm s@('(':_) | last s == ')' =  " " ++ (init . tail $ s) ++ " "
+dropOuterParensForm s = s
 
-    where balance 0 (')':_) = -1
-          balance n [] = n
-          balance n ('(':rest) = balance (n+1) rest 
-          balance n (')':rest) = balance (n-1) rest
-          balance n (_:rest) = balance n rest
+dropOuterParens :: String -> String
+dropOuterParens s = case (break (== '⊢') s) of
+      (a,'⊢':b) -> handle a ++ "⊢" ++ handle b
+      (s,_) -> handle s
 
-          strip = reverse . dropWhile (== ' ') . reverse . dropWhile (== ' ') 
-          inner = init . tail 
+    where commaComponents [] = []
+          commaComponents (',':s) = "," : commaComponents s
+          commaComponents (' ':s) = " " : commaComponents s
+          commaComponents s = let (h,t) = break (== ',') s in h : commaComponents t
+
+          handle c = concatMap dropOuterParensForm (commaComponents c)
 
 thomasBolducAndZachTFLCalc = mkNDCalc 
     { ndRenderer = FitchStyle StandardFitch

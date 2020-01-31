@@ -455,7 +455,6 @@ toBPT f = case children f of
               [a,b] -> BiNode f (toBPT a) (toBPT b)
               _ -> Leaf f
 
-
 traverseBPT :: BPT -> [Either Char PureForm]
 traverseBPT (Leaf f) = [Right f]
 traverseBPT (MonNode f a) = [Right f] ++ traverseBPT a
