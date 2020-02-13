@@ -280,12 +280,18 @@ parseFunctionSymbol ::
     , Typeable arg
     ) => String -> ParsecT String u m (FixLang lex arg) -> ParsecT String u m (FixLang lex ret)
 parseFunctionSymbol s parseTerm = (try parseNumbered <|> parseUnnumbered) <?> "a function symbol"
-    where parseNumbered = do string "f" >> optionMaybe (char '^' >> number) >> char '_' 
+    where parseNumbered = do string "f" >> char '^' >> number >> char '_' 
                              n <- number
-                             char '(' *> spaces *> argParser parseTerm (pfn n AOne)
+                             char '(' *> spaces *> argParser parseTerm (pfn (-1 * n) AOne)
           parseUnnumbered = do c <- oneOf s
-                               let Just n = lcIndex c
-                               char '(' *> spaces *> argParser parseTerm (pfn (-1 * n) AOne)
+                               midx <- optionMaybe (char '_' >> number)
+                               let Just n = lcIndex c 
+                                   m = maybe 0 id midx
+                               -- an int K represents the symbol at index
+                               -- (k `mod` 26) with subscript (k `div` 26)
+                               -- we need to compensate for offset, since
+                               -- lcIndex begins at 1
+                               char '(' *> spaces *> argParser parseTerm (pfn (n + (m * 26)) AOne)
 
 parseSchematicFunctionSymbol ::     
     ( SchematicPolyadicFunctionLanguage (FixLang lex) arg ret
@@ -307,13 +313,12 @@ parseConstant ::
     , Typeable ret
     , Monad m
     ) => String -> ParsecT String u m (FixLang lex ret)
-parseConstant s = (try parseNumbered <|> parseUnnumbered) <?> "a constant"
-    where parseUnnumbered = do c <- oneOf s
-                               let Just n = lcIndex c
-                               return $ cn (-1 * n)
-          parseNumbered  = do _ <- string "c_"
-                              n <- number
-                              return $ cn n
+parseConstant s = parse <?> "a constant"
+    where parse = do c <- oneOf s
+                     midx <- optionMaybe (char '_' >> number)
+                     let Just n = lcIndex c 
+                         m = maybe 0 id midx
+                     return $ cn (n  + (m * 26))
 
 parseSchematicConstant :: 
     ( IndexedSchemeConstantLanguage (FixLang lex ret)
@@ -349,7 +354,7 @@ number = do valence <- option "+" (string "-")
 --Helper functions
 --------------------------------------------------------
 
-lcIndex c = elemIndex c "_abcdefghijklmnopqrstuvwxyz"
+lcIndex c = elemIndex c "abcdefghijklmnopqrstuvwxyz"
 
 ucIndex c = elemIndex c "_ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 

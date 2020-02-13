@@ -137,8 +137,9 @@ instance Schematizable (IntFunc b c) where
             where arity = read $ show a
                   args = take arity $ xs ++ repeat "_"
                   pred 
-                    | n < 0 && n > -27 = ["_abcdefghijklmnopqrstuvwxyz" !! (-1 * n)]
-                    | otherwise        = "f^" ++ show a ++ "_" ++ show n 
+                    | n >= 26 = (['a' .. 'z'] !! (n `mod` 26)) : '_' : show (n `div` 26)
+                    | n >= 0 = [['a' .. 'z'] !! n]
+                    | otherwise  = "f^" ++ show a ++ "_" ++ show (-1 * n)
                   tail
                     | arity == 0    = ""
                     | otherwise     = "(" ++ intercalate "," args ++ ")"
@@ -281,8 +282,8 @@ data IntConst b a where
 
 instance Schematizable (IntConst b) where
         schematize (Constant n)   _       
-            | n < 0 && n > -27 = ["_abcdefghijklmnopqrstuvwxyz" !! (-1 * n)]
-            | otherwise = "c_" ++ show n
+            | n >= 26 = (['a' .. 'z'] !! (n `mod` 26)) : '_' : show (n `div` 26)
+            | n >= 0 = [['a' .. 'z'] !! n]
 
 instance UniformlyEq (IntConst b) where
         (Constant n) =* (Constant m) = n == m
