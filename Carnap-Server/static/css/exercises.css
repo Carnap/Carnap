@@ -390,6 +390,10 @@
     background: #b9f2b7;
 }
 
+[data-carnap-type="translate"] .success::after {
+    content:" ✓ ";
+}
+
 [data-carnap-type="proofchecker"] .aligner {
     position: relative;
     height:100%;
