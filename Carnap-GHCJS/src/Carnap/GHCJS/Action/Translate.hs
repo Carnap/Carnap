@@ -161,11 +161,12 @@ tryTrans parser equiv tests o ref fs = onEnter $
    where checkForm f' 
             | f' `elem` fs = do message "perfect match!"
                                 writeIORef ref True
-                                setInnerHTML o (Just "Success!")
+                                setAttribute o "class" "output success"
             | any (\f -> f' `equiv` f) fs = do message "Logically equivalent to a standard translation"
                                                writeIORef ref True
-                                               setInnerHTML o (Just "Success!")
-            | otherwise = writeIORef ref False >> message "Not quite. Try again!"
+                                               setAttribute o "class" "output success"
+            | otherwise = do writeIORef ref False >> message "Not quite. Try again!"
+                             setAttribute o "class" "output"
 
 submitTrans opts i ref fs parser checker tests l = 
         do isFinished <- liftIO $ readIORef ref

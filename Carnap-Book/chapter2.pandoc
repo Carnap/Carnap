@@ -561,9 +561,9 @@ English sentences into our formal language.
 | $R~=~$Randy's wrangling a deal
 | $S~=~$Somebody is going to get rich
 
-Press return to check your translation. If the sentence to be translated is
-replaced by the word "success!", then press submit to submit and save your
-answer.
+Press return to check your translation. If the sentence to be translated turns
+<span style="background:#b9f2b7">green</span>, this means you've succeeded!
+Once you've got a green sentence, press submit to submit and save your answer.
 
 Remember, the keyboard shorthand for our logical symbols is as follows:
 

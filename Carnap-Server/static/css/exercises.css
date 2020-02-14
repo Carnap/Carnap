@@ -385,6 +385,7 @@
     border:1px solid #A9B7C0;
 }
 
+[data-carnap-type="translate"] .success,
 [data-carnap-type="proofchecker"] .success {
     background: #b9f2b7;
 }
@@ -400,8 +401,7 @@
 }
 
 [data-carnap-type="proofchecker"] .working .proofSpinner, 
-[data-carnap-type="proofchecker"] .failure .incompleteAlert
-{
+[data-carnap-type="proofchecker"] .failure .incompleteAlert {
     display:inline-block;
     position:absolute;
     text-align:center;
