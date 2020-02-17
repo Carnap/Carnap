@@ -46,6 +46,7 @@ library
                      , Carnap.Languages.PurePropositional.Logic.EbelsDuggan
                      , Carnap.Languages.PurePropositional.Logic.Tomassi
                      , Carnap.Languages.PurePropositional.Logic.Gentzen
+                     , Carnap.Languages.PurePropositional.Logic.OpenLogic
                      , Carnap.Languages.ModalPropositional.Syntax
                      , Carnap.Languages.ModalPropositional.Parser
                      , Carnap.Languages.ModalPropositional.Logic

@@ -15,10 +15,14 @@ module Carnap.Languages.PurePropositional.Logic
     , parseEbelsDugganTFL, EbelsDugganTFL, ebelsDugganTFLCalc
     , parseTomassiPL, TomassiPL, tomassiPLCalc
     , parseHardegreeSL, HardegreeSL, hardegreeSLCalc
-    , ofPropSys
+    , parseGentzenPropNJ, GentzenPropNJ, gentzenPropNJCalc
+    , parseGentzenPropNK, GentzenPropNK, gentzenPropNKCalc
+    , ofPropSys, ofPropTreeSys
     ) where
 
+import Carnap.Calculi.Util
 import Carnap.Calculi.NaturalDeduction.Syntax
+import Carnap.Calculi.Tableau.Data
 import Carnap.Core.Data.Types
 import Carnap.Languages.PurePropositional.Syntax
 import Carnap.Languages.PurePropositional.Logic.Rules (PropSequentCalc)
@@ -34,6 +38,8 @@ import Carnap.Languages.PurePropositional.Logic.ThomasBolducAndZach
 import Carnap.Languages.PurePropositional.Logic.EbelsDuggan
 import Carnap.Languages.PurePropositional.Logic.Tomassi
 import Carnap.Languages.PurePropositional.Logic.IchikawaJenkins
+import Carnap.Languages.PurePropositional.Logic.Gentzen
+import Carnap.Languages.PurePropositional.Logic.OpenLogic
 
 ofPropSys :: (forall r . (Show r, Inference r PurePropLexicon (Form Bool)) => 
               NaturalDeductionCalc r PurePropLexicon (Form Bool) -> a) -> String -> Maybe a
@@ -56,3 +62,15 @@ ofPropSys f sys | sys == "prop"                          = Just $ f propCalc
                 | sys == "tomassiPL"                     = Just $ f tomassiPLCalc
                 | sys == "hardegreeSL"                   = Just $ f hardegreeSLCalc 
                 | otherwise                              = Nothing
+
+ofPropTreeSys :: (forall r . 
+                    ( Show r
+                    , Inference r PurePropLexicon (Form Bool)
+                    , StructuralInference r PurePropLexicon (ProofTree r PurePropLexicon (Form Bool))
+                 ) => 
+              TableauCalc PurePropLexicon (Form Bool) r -> a) -> String -> Maybe a
+ofPropTreeSys f sys | sys == "propNJ"                     = Just $ f gentzenPropNJCalc 
+                    | sys == "propNK"                     = Just $ f gentzenPropNKCalc 
+                    | sys == "openLogicNK"                = Just $ f olpPropNKCalc 
+                    | otherwise                           = Nothing
+

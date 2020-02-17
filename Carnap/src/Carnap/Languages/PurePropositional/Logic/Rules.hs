@@ -257,6 +257,15 @@ constructiveFalsumReductioVariations = [
                 ] ∴ GammaV 1 :|-: SS (lneg $ phin 1)
             ]
 
+nonConstructiveFalsumReductioVariations :: BooleanRuleVariants lex b
+nonConstructiveFalsumReductioVariations = [
+                [ GammaV 1 :+: SA (lneg $ phin 1) :|-: SS lfalsum
+                ] ∴ GammaV 1 :|-: SS (phin 1)
+            ,
+                [ GammaV 1 :|-: SS lfalsum
+                ] ∴ GammaV 1 :|-: SS (phin 1)
+            ]
+
 explictConstructiveConjunctionReductioVariations :: BooleanRuleVariants lex b
 explictConstructiveConjunctionReductioVariations = [
                 [ SA (phin 1) :|-: SS (phin 1) 

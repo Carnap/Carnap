@@ -348,6 +348,22 @@ class AssumptionNumbers r where
         introducesAssumptions :: r -> [Int]
         dischargesAssumptions :: r -> [Int]
 
+leavesLabeled :: AssumptionNumbers rule => Int -> ProofTree rule lex sem -> [ProofTree rule lex sem]
+leavesLabeled n pt = filter (\(Node pl _) -> introducesAssumptions (head (rule pl)) == [n]) $ toListOf leaves pt
+
+usesAssumption n pt assump sub = case leavesLabeled n pt of
+              [] -> Nothing
+              (Node x _ : _) | content x /= applySub sub assump -> Just "assumption mismatch"
+                             | otherwise -> Nothing
+
+exhaustsAssumptions n pt assump sub = if all (`elem` dischargedList pt) assumpInstances then Nothing
+                                                                                          else Just "This rule will consume an undischarged assumption"
+        where dischargedList (Node r f) = dischargesAssumptions (head (rule r)) ++ concatMap dischargedList f
+              theAssump = applySub sub assump
+              assumpInstances = concatMap (\(Node pl _) -> case rule pl of [r] -> introducesAssumptions r; _ -> [])
+                              . filter (\(Node pl _) -> content pl == theAssump) 
+                              $ toListOf leaves pt
+
 type SupportsND r lex sem = 
     ( Show r 
     , Typeable sem

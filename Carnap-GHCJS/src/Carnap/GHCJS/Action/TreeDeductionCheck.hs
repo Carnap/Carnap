@@ -27,7 +27,7 @@ import Carnap.Calculi.Util
 import Carnap.Calculi.NaturalDeduction.Syntax
 import Carnap.Calculi.NaturalDeduction.Checker
 import Carnap.Calculi.Tableau.Data
-import Carnap.Languages.PurePropositional.Logic.Gentzen
+import Carnap.Languages.PurePropositional.Logic (ofPropTreeSys)
 import Carnap.GHCJS.Util.ProofJS
 import Carnap.GHCJS.SharedTypes
 import GHCJS.DOM.Element (setInnerHTML, click)
@@ -39,18 +39,19 @@ import GHCJS.Types
 
 treeDeductionCheckAction ::  IO ()
 treeDeductionCheckAction = 
-            do initializeCallback "checkProofTreeInfo" (checkProofTree gentzenPropNJCalc Nothing)
+            do initializeCallback "checkProofTreeInfo" njCheck
                initElements getCheckers activateChecker
                return ()
+    where njCheck = maybe (error "can't find PropNJ") id $ (\calc -> checkProofTree calc Nothing) `ofPropTreeSys` "PropNJ" 
 
 getCheckers :: IsElement self => Document -> self -> IO [Maybe (Element, Element, Map String String)]
 getCheckers w = genInOutElts w "div" "div" "treedeductionchecker"
 
 activateChecker :: Document -> Maybe (Element, Element, Map String String) -> IO ()
 activateChecker _ Nothing  = return ()
-activateChecker w (Just (i, o, opts))
-        | sys == "propNK"  = setupWith gentzenPropNKCalc
-        | sys == "propNJ"  = setupWith gentzenPropNJCalc
+activateChecker w (Just (i, o, opts)) = case setupWith `ofPropTreeSys` sys of
+                                            Just io -> io
+                                            Nothing -> error $ "couldn't parse tree system: " ++ sys
         where sys = case M.lookup "system" opts of
                         Just s -> s
                         Nothing -> "propNK"
