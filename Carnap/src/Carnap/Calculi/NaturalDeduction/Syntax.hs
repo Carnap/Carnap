@@ -79,6 +79,10 @@ depth (QedLine _ dpth _) = dpth
 depth (PartialLine _ _ dpth) = dpth
 depth (SeparatorLine dpth) = dpth
 
+dependencies (AssertLine _ _ _ deps) = Just deps
+dependencies (DependentAssertLine _ _ deps _ _ _) = Just deps
+dependencies _ = Nothing
+
 assertion (AssertLine f _ _ _) = Just f
 assertion (DependentAssertLine f _ _ _ _ _) = Just f
 assertion (ShowLine f _) = Just f
@@ -189,7 +193,6 @@ availableSubproof m sp@(SubProof r ls) = do loc <- locale m sp
 --------------------------
 --  1.3 Error Messages  --
 --------------------------
-
 
 ------------------
 --  1.3 Proofs  --

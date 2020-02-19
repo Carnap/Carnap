@@ -50,6 +50,16 @@ dischargeConstraint n ded lhs sub | and (map (`elem` forms) lhs') = Nothing
           scope = inScope (ded !! (n - 1))
           forms = catMaybes . map (\n -> liftToSequent <$> assertion (ded !! (n - 1))) $ scope
 
+fitchAssumptionCheck n ded pairs sub | all (`elem` pairs) allBoundaryAssertions = Nothing
+                                     | otherwise = Just "An assumption on one of the cited subproofs doesn't have the right form for this rule"
+    where checkDistinct = filter (\(i,j) -> i /= j)
+          subproofBoundries = maybe (error "assumption check on non-assertion") checkDistinct $ dependencies (ded !! n)
+          boundaryAssertions (i,j) = (,) <$> assertion (ded !! i - 1) <*> assertion (ded !! j - 1)
+          allBoundaryAssertions = catMaybes $ map boundaryAssertions subproofBoundries
+          pairs' = map (\(p,q) -> (applySub sub p, applySub sub q)) pairs
+
+
+
 -------------------------
 --  1.1 Standard Rules  --
 -------------------------
@@ -322,7 +332,8 @@ conditionalProofVariations :: BooleanRuleVariants lex b
 conditionalProofVariations = [
                 [ GammaV 1 :+: SA (phin 1) :|-: SS (phin 2) 
                 ] ∴ GammaV 1 :|-: SS (phin 1 .→. phin 2) 
-            ,   [ GammaV 1 :|-: SS (phin 2) ] ∴ GammaV 1 :|-: SS (phin 1 .→. phin 2)
+            ,   [ GammaV 1 :|-: SS (phin 2) 
+                ] ∴ GammaV 1 :|-: SS (phin 1 .→. phin 2)
             ]
 
 explicitConditionalProofVariations :: BooleanRuleVariants lex b
