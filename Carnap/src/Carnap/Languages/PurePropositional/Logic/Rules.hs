@@ -50,13 +50,15 @@ dischargeConstraint n ded lhs sub | and (map (`elem` forms) lhs') = Nothing
           scope = inScope (ded !! (n - 1))
           forms = catMaybes . map (\n -> liftToSequent <$> assertion (ded !! (n - 1))) $ scope
 
-fitchAssumptionCheck n ded pairs sub | all (`elem` pairs) allBoundaryAssertions = Nothing
-                                     | otherwise = Just "An assumption on one of the cited subproofs doesn't have the right form for this rule"
+fitchAssumptionCheck n ded pairs sub | not (all (`elem` pairs') allBoundaryAssertions) = Just "Some of the assumptions in the cited subproofs are not of the right form for this rule"
+                                     | not (all (`elem` allBoundaryAssertions) pairs') = Just "Some of the assumptions this rule requires you to make are missing"
+                                     | otherwise = Nothing
     where checkDistinct = filter (\(i,j) -> i /= j)
-          subproofBoundries = maybe (error "assumption check on non-assertion") checkDistinct $ dependencies (ded !! n)
-          boundaryAssertions (i,j) = (,) <$> assertion (ded !! i - 1) <*> assertion (ded !! j - 1)
-          allBoundaryAssertions = catMaybes $ map boundaryAssertions subproofBoundries
+          subproofBoundries = maybe (error "assumption check on non-assertion") checkDistinct $ dependencies (ded !! (n - 1))
+          boundaryAssertions (i,j) = (,) <$> assertion (ded !! (i - 1)) <*> assertion (ded !! (j - 1))
+          allBoundaryAssertions = map (\(p,q) -> (liftToSequent p, liftToSequent q)) $ catMaybes $ map boundaryAssertions subproofBoundries
           pairs' = map (\(p,q) -> (applySub sub p, applySub sub q)) pairs
+
 
 
 

@@ -16,6 +16,7 @@ import Carnap.Calculi.NaturalDeduction.Checker
 import Carnap.Languages.ClassicalSequent.Syntax
 import Carnap.Languages.ClassicalSequent.Parser
 import Carnap.Languages.PurePropositional.Logic.Rules
+import Carnap.Languages.Util.LanguageClasses
 
 {-| A system for propositional logic resembling the basic proof system TFL
 from the Calgary Remix of Forall x book
@@ -96,11 +97,11 @@ instance Inference ThomasBolducAndZachTFLCore PurePropLexicon (Form Bool) where
         ruleOf ConjIntro  = adjunction
         ruleOf ConjElim1  = simplificationVariations !! 0
         ruleOf ConjElim2  = simplificationVariations !! 1
-        ruleOf NegeIntro1 = explicitConstructiveFalsumReductioVariations !! 0
-        ruleOf NegeIntro2 = explicitConstructiveFalsumReductioVariations !! 1
+        ruleOf NegeIntro1 = constructiveFalsumReductioVariations !! 0
+        ruleOf NegeIntro2 = constructiveFalsumReductioVariations !! 1
         ruleOf NegeElim   = falsumIntroduction
-        ruleOf Indirect1  = explicitNonConstructiveFalsumReductioVariations !! 0
-        ruleOf Indirect2  = explicitNonConstructiveFalsumReductioVariations !! 1
+        ruleOf Indirect1  = nonConstructiveFalsumReductioVariations !! 0
+        ruleOf Indirect2  = nonConstructiveFalsumReductioVariations !! 1
         ruleOf CondIntro1 = conditionalProofVariations !! 0
         ruleOf CondIntro2 = conditionalProofVariations !! 1
         ruleOf CondElim   = modusPonens
@@ -124,9 +125,8 @@ instance Inference ThomasBolducAndZachTFLCore PurePropLexicon (Form Bool) where
         indirectInference x
             | x `elem` [ DisjElim1, DisjElim2, DisjElim3, DisjElim4
                        , CondIntro1, CondIntro2 , BicoIntro1, BicoIntro2
-                       , BicoIntro3, BicoIntro4] = Just PolyProof
-            | x `elem` [ NegeIntro1, NegeIntro2
-                       , Indirect1, Indirect2] = Just assumptiveProof
+                       , BicoIntro3, BicoIntro4, NegeIntro1, NegeIntro2
+                       , Indirect1, Indirect2 ] = Just PolyProof
             | otherwise = Nothing
 
         isAssumption As = True
@@ -134,6 +134,22 @@ instance Inference ThomasBolducAndZachTFLCore PurePropLexicon (Form Bool) where
 
         isPremise (Pr _) = True
         isPremise _  = False
+
+        globalRestriction (Left ded) n CondIntro1 = Just $ fitchAssumptionCheck n ded [(phin 1, phin 2)]
+        globalRestriction (Left ded) n CondIntro2 = Just $ fitchAssumptionCheck n ded [(phin 1, phin 2)]
+        globalRestriction (Left ded) n BicoIntro1 = Just $ fitchAssumptionCheck n ded [(phin 1, phin 2), (phin 2, phin 1)]
+        globalRestriction (Left ded) n BicoIntro2 = Just $ fitchAssumptionCheck n ded [(phin 1, phin 2), (phin 2, phin 1)]
+        globalRestriction (Left ded) n BicoIntro3 = Just $ fitchAssumptionCheck n ded [(phin 1, phin 2), (phin 2, phin 1)]
+        globalRestriction (Left ded) n BicoIntro4 = Just $ fitchAssumptionCheck n ded [(phin 1, phin 2), (phin 2, phin 1)]
+        globalRestriction (Left ded) n DisjElim1 = Just $ fitchAssumptionCheck n ded [(phin 1, phin 3), (phin 2, phin 3)]
+        globalRestriction (Left ded) n DisjElim2 = Just $ fitchAssumptionCheck n ded [(phin 1, phin 3), (phin 2, phin 3)]
+        globalRestriction (Left ded) n DisjElim3 = Just $ fitchAssumptionCheck n ded [(phin 1, phin 3), (phin 2, phin 3)]
+        globalRestriction (Left ded) n DisjElim4 = Just $ fitchAssumptionCheck n ded [(phin 1, phin 3), (phin 2, phin 3)]
+        globalRestriction (Left ded) n NegeIntro1 = Just $ fitchAssumptionCheck n ded [(phin 1, lfalsum)]
+        globalRestriction (Left ded) n NegeIntro2 = Just $ fitchAssumptionCheck n ded [(phin 1, lfalsum)]
+        globalRestriction (Left ded) n Indirect1 = Just $ fitchAssumptionCheck n ded [(lneg $ phin 1, lfalsum)]
+        globalRestriction (Left ded) n Indirect2 = Just $ fitchAssumptionCheck n ded [(lneg $ phin 1, lfalsum)]
+        globalRestriction _ _ _ = Nothing
 
         restriction (Pr prems) = Just (premConstraint prems)
         restriction _ = Nothing
