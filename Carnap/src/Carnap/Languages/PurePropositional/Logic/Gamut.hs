@@ -85,7 +85,7 @@ instance Inference GamutMPND PurePropLexicon (Form Bool) where
 
 instance Inference GamutIPND PurePropLexicon (Form Bool) where
         ruleOf (MPND x) = ruleOf x
-        ruleOf EFSQ     = exfalso
+        ruleOf EFSQ     = falsumElimination
 
         indirectInference (MPND x) = indirectInference x
         indirectInference _ = Nothing
