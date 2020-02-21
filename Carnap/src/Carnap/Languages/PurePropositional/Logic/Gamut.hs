@@ -83,6 +83,12 @@ instance Inference GamutMPND PurePropLexicon (Form Bool) where
         isAssumption AS = True
         isAssumption _ = False
 
+        globalRestriction (Left ded) n InIf1 = Just $ fitchAssumptionCheck n ded [(phin 1, phin 2)]
+        globalRestriction (Left ded) n InIf2 = Just $ fitchAssumptionCheck n ded [(phin 1, phin 2)]
+        globalRestriction (Left ded) n InNeg1 = Just $ fitchAssumptionCheck n ded [(phin 1, lfalsum)]
+        globalRestriction (Left ded) n InNeg2 = Just $ fitchAssumptionCheck n ded [(phin 1, lfalsum)]
+        globalRestriction _ _ _ = Nothing
+
 instance Inference GamutIPND PurePropLexicon (Form Bool) where
         ruleOf (MPND x) = ruleOf x
         ruleOf EFSQ     = falsumElimination
@@ -93,6 +99,12 @@ instance Inference GamutIPND PurePropLexicon (Form Bool) where
         isAssumption (MPND x) = isAssumption x
         isAssumption _ = False
 
+        globalRestriction (Left ded) n (MPND InIf1) = Just $ fitchAssumptionCheck n ded [(phin 1, phin 2)]
+        globalRestriction (Left ded) n (MPND InIf2) = Just $ fitchAssumptionCheck n ded [(phin 1, phin 2)]
+        globalRestriction (Left ded) n (MPND InNeg1) = Just $ fitchAssumptionCheck n ded [(phin 1, lfalsum)]
+        globalRestriction (Left ded) n (MPND InNeg2) = Just $ fitchAssumptionCheck n ded [(phin 1, lfalsum)]
+        globalRestriction _ _ _ = Nothing
+
 instance Inference GamutPND PurePropLexicon (Form Bool) where
         ruleOf (IPND x) = ruleOf x
         ruleOf DNE = doubleNegationElimination
@@ -102,6 +114,12 @@ instance Inference GamutPND PurePropLexicon (Form Bool) where
 
         isAssumption (IPND x) = isAssumption x
         isAssumption _ = False
+
+        globalRestriction (Left ded) n (IPND (MPND InIf1)) = Just $ fitchAssumptionCheck n ded [(phin 1, phin 2)]
+        globalRestriction (Left ded) n (IPND (MPND InIf2)) = Just $ fitchAssumptionCheck n ded [(phin 1, phin 2)]
+        globalRestriction (Left ded) n (IPND (MPND InNeg1)) = Just $ fitchAssumptionCheck n ded [(phin 1, lfalsum)]
+        globalRestriction (Left ded) n (IPND (MPND InNeg2)) = Just $ fitchAssumptionCheck n ded [(phin 1, lfalsum)]
+        globalRestriction _ _ _ = Nothing
 
 parseGamutMPND rtc = do r <- choice (map (try . string) 
                                 [ "I∧" , "I/\\", "I^", "E∧" , "E/\\", "E^"
