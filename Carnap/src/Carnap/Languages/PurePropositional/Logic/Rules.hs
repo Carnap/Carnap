@@ -50,17 +50,29 @@ dischargeConstraint n ded lhs sub | and (map (`elem` forms) lhs') = Nothing
           scope = inScope (ded !! (n - 1))
           forms = catMaybes . map (\n -> liftToSequent <$> assertion (ded !! (n - 1))) $ scope
 
-fitchAssumptionCheck n ded pairs sub | not (all (`elem` pairs') allBoundaryAssertions) = Just "Some of the assumptions in the cited subproofs are not of the right form for this rule"
-                                     | not (all (`elem` allBoundaryAssertions) pairs') = Just "Some of the assumptions this rule requires you to make are missing"
-                                     | otherwise = Nothing
-    where checkDistinct = filter (\(i,j) -> i /= j)
-          subproofBoundries = maybe (error "assumption check on non-assertion") checkDistinct $ dependencies (ded !! (n - 1))
+fitchAssumptionCheck n ded pairs sub = checkWithProofType n ded pairs sub theProoftype
+    where checkWithProofType n ded pairs sub (WithAlternate a1 a2) = checkWithProofType n ded pairs sub a1 >> checkWithProofType n ded pairs sub a2
+          checkWithProofType n ded pairs sub pt | not (all (`elem` pairs') allBoundaryAssertions) = Just "Some of the assumptions in the cited subproofs are not of the right form for this rule"
+                                                | not (all (`elem` allBoundaryAssertions) pairs') = Just "Some of the assumptions this rule requires you to make are missing"
+                                                | otherwise = Nothing
+                where subproofBoundries = case pt of 
+                         (ImplicitProof (ProofType _ 1)) -> [(n - (length precedingProof), n - 1)]
+                         (TypedProof (ProofType _ 1)) -> maybe (error "assumption check on non-assertion") checkDistinct $ dependencies callingLine
+                         (PolyTypedProof _ (ProofType _ 1)) -> maybe (error "assumption check on non-assertion") checkDistinct $ dependencies callingLine
+                         PolyProof -> maybe (error "assumption check on non-assertion") checkDistinct $ dependencies callingLine
+                         _ -> error "the fitch assumption check doesn't handle multi-conclusion subproofs"
+                      allBoundaryAssertions = map (\(p,q) -> (liftToSequent p, liftToSequent q)) $ catMaybes $ map boundaryAssertions subproofBoundries
+          checkDistinct = filter (\(i,j) -> i /= j)
+          callingLine = ded !! (n - 1)
           boundaryAssertions (i,j) = (,) <$> assertion (ded !! (i - 1)) <*> assertion (ded !! (j - 1))
-          allBoundaryAssertions = map (\(p,q) -> (liftToSequent p, liftToSequent q)) $ catMaybes $ map boundaryAssertions subproofBoundries
           pairs' = map (\(p,q) -> (applySub sub p, applySub sub q)) pairs
-
-
-
+          precedingProof = takeWhile (\x -> depth x > depth (ded !! (n - 1))) . reverse . take (n - 1) $ ded
+          --XXX: the below is sort of inelegant, since it is not going to
+          --allow the possibility of one "rule" having more than one
+          --assocated prooftype. This is sort of a consequence of the
+          --prior inelegance of not parsing to prooftrees
+          --indeterministically
+          theProoftype = maybe (error "no indirect calling rule") id ((head <$> ruleOfLine callingLine) >>= indirectInference)
 
 -------------------------
 --  1.1 Standard Rules  --
