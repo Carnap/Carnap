@@ -17,6 +17,7 @@ import Carnap.Languages.ClassicalSequent.Parser (parseSeqOver)
 import Carnap.Languages.Util.LanguageClasses
 import Carnap.Languages.Util.GenericConstructors
 import Carnap.Languages.PureFirstOrder.Logic.Rules
+import Carnap.Languages.PurePropositional.Logic.Gamut
 import Carnap.Languages.PurePropositional.Logic.Rules
 
 data GamutND = ND GamutPND
@@ -57,6 +58,10 @@ instance Inference GamutND PureLexiconFOL (Form Bool) where
 
         globalRestriction (Left ded) n InA   = Just (notAssumedConstraint n ded (taun 1 :: FOLSequentCalc (Term Int)))
         globalRestriction (Left ded) n ElimE = Just (notAssumedConstraint n ded (taun 1 :: FOLSequentCalc (Term Int)))
+        globalRestriction (Left ded) n (ND (IPND (MPND InIf1))) = Just $ fitchAssumptionCheck n ded [(phin 1, phin 2)]
+        globalRestriction (Left ded) n (ND (IPND (MPND InIf2))) = Just $ fitchAssumptionCheck n ded [(phin 1, phin 2)]
+        globalRestriction (Left ded) n (ND (IPND (MPND InNeg1))) = Just $ fitchAssumptionCheck n ded [(phin 1, lfalsum)]
+        globalRestriction (Left ded) n (ND (IPND (MPND InNeg2))) = Just $ fitchAssumptionCheck n ded [(phin 1, lfalsum)]
         globalRestriction _ _ _ = Nothing
 
         isAssumption (ND x) = isAssumption x

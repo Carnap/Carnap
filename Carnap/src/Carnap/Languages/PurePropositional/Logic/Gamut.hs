@@ -1,8 +1,8 @@
 {-#LANGUAGE  FlexibleContexts,  FlexibleInstances, MultiParamTypeClasses #-}
 module Carnap.Languages.PurePropositional.Logic.Gamut 
-    ( GamutMPND, gamutMPNDCalc, parseGamutMPND
-    , GamutIPND, gamutIPNDCalc, parseGamutIPND
-    , GamutPND, gamutPNDCalc, parseGamutPND
+    ( GamutMPND(..), gamutMPNDCalc, parseGamutMPND
+    , GamutIPND(..), gamutIPNDCalc, parseGamutIPND
+    , GamutPND(..), gamutPNDCalc, parseGamutPND
     ) where
 
 import Text.Parsec
