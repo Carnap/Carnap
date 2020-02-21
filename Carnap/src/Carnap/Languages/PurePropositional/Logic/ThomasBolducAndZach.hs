@@ -1,7 +1,7 @@
 {-#LANGUAGE FlexibleContexts, FlexibleInstances, MultiParamTypeClasses #-}
 module Carnap.Languages.PurePropositional.Logic.ThomasBolducAndZach
-    ( parseThomasBolducAndZachTFLCore, ThomasBolducAndZachTFLCore
-    , parseThomasBolducAndZachTFL, ThomasBolducAndZachTFL
+    ( parseThomasBolducAndZachTFLCore, ThomasBolducAndZachTFLCore(..)
+    , parseThomasBolducAndZachTFL, ThomasBolducAndZachTFL(..)
     , thomasBolducAndZachTFL2019Calc, thomasBolducAndZachTFLCalc
     , thomasBolducAndZachNotation) where
 
@@ -173,6 +173,22 @@ instance Inference ThomasBolducAndZachTFL PurePropLexicon (Form Bool) where
         indirectInference x
             | x `elem` [Lem1,Lem2,Lem3,Lem4] = Just (PolyTypedProof 2 (ProofType 1 1))
             | otherwise = Nothing
+
+        globalRestriction (Left ded) n (Core CondIntro1) = Just $ fitchAssumptionCheck n ded [(phin 1, phin 2)]
+        globalRestriction (Left ded) n (Core CondIntro2) = Just $ fitchAssumptionCheck n ded [(phin 1, phin 2)]
+        globalRestriction (Left ded) n (Core BicoIntro1) = Just $ fitchAssumptionCheck n ded [(phin 1, phin 2), (phin 2, phin 1)]
+        globalRestriction (Left ded) n (Core BicoIntro2) = Just $ fitchAssumptionCheck n ded [(phin 1, phin 2), (phin 2, phin 1)]
+        globalRestriction (Left ded) n (Core BicoIntro3) = Just $ fitchAssumptionCheck n ded [(phin 1, phin 2), (phin 2, phin 1)]
+        globalRestriction (Left ded) n (Core BicoIntro4) = Just $ fitchAssumptionCheck n ded [(phin 1, phin 2), (phin 2, phin 1)]
+        globalRestriction (Left ded) n (Core DisjElim1) = Just $ fitchAssumptionCheck n ded [(phin 1, phin 3), (phin 2, phin 3)]
+        globalRestriction (Left ded) n (Core DisjElim2) = Just $ fitchAssumptionCheck n ded [(phin 1, phin 3), (phin 2, phin 3)]
+        globalRestriction (Left ded) n (Core DisjElim3) = Just $ fitchAssumptionCheck n ded [(phin 1, phin 3), (phin 2, phin 3)]
+        globalRestriction (Left ded) n (Core DisjElim4) = Just $ fitchAssumptionCheck n ded [(phin 1, phin 3), (phin 2, phin 3)]
+        globalRestriction (Left ded) n (Core NegeIntro1) = Just $ fitchAssumptionCheck n ded [(phin 1, lfalsum)]
+        globalRestriction (Left ded) n (Core NegeIntro2) = Just $ fitchAssumptionCheck n ded [(phin 1, lfalsum)]
+        globalRestriction (Left ded) n (Core Indirect1) = Just $ fitchAssumptionCheck n ded [(lneg $ phin 1, lfalsum)]
+        globalRestriction (Left ded) n (Core Indirect2) = Just $ fitchAssumptionCheck n ded [(lneg $ phin 1, lfalsum)]
+        globalRestriction _ _ _ = Nothing
 
         isAssumption (Core x) = isAssumption x
         isAssumption _  = False

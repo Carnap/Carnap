@@ -19,7 +19,8 @@ import Carnap.Languages.ClassicalSequent.Parser
 import Carnap.Languages.Util.LanguageClasses
 import Carnap.Languages.Util.GenericConstructors
 import Carnap.Languages.PureFirstOrder.Logic.Rules
-import Carnap.Languages.PurePropositional.Logic.Rules (premConstraint,axiom)
+import qualified Carnap.Languages.PurePropositional.Logic.ThomasBolducAndZach as TFL
+import Carnap.Languages.PurePropositional.Logic.Rules (premConstraint, fitchAssumptionCheck, axiom)
 
 --------------------
 --  3. System FOL  --
@@ -82,6 +83,22 @@ instance Inference ThomasBolducAndZachFOLCore PureLexiconFOL (Form Bool) where
          restriction EE2   = Just (eigenConstraint tau ((SS $ lsome "v" $ phi' 1) :-: SS (phin 1)) (fogamma 1 :+: fogamma 2))
          restriction (Pr prems) = Just (premConstraint prems)
          restriction _     = Nothing
+         
+         globalRestriction (Left ded) n (TFLC TFL.CondIntro1) = Just $ fitchAssumptionCheck n ded [(phin 1, phin 2)]
+         globalRestriction (Left ded) n (TFLC TFL.CondIntro2) = Just $ fitchAssumptionCheck n ded [(phin 1, phin 2)]
+         globalRestriction (Left ded) n (TFLC TFL.BicoIntro1) = Just $ fitchAssumptionCheck n ded [(phin 1, phin 2), (phin 2, phin 1)]
+         globalRestriction (Left ded) n (TFLC TFL.BicoIntro2) = Just $ fitchAssumptionCheck n ded [(phin 1, phin 2), (phin 2, phin 1)]
+         globalRestriction (Left ded) n (TFLC TFL.BicoIntro3) = Just $ fitchAssumptionCheck n ded [(phin 1, phin 2), (phin 2, phin 1)]
+         globalRestriction (Left ded) n (TFLC TFL.BicoIntro4) = Just $ fitchAssumptionCheck n ded [(phin 1, phin 2), (phin 2, phin 1)]
+         globalRestriction (Left ded) n (TFLC TFL.DisjElim1) = Just $ fitchAssumptionCheck n ded [(phin 1, phin 3), (phin 2, phin 3)]
+         globalRestriction (Left ded) n (TFLC TFL.DisjElim2) = Just $ fitchAssumptionCheck n ded [(phin 1, phin 3), (phin 2, phin 3)]
+         globalRestriction (Left ded) n (TFLC TFL.DisjElim3) = Just $ fitchAssumptionCheck n ded [(phin 1, phin 3), (phin 2, phin 3)]
+         globalRestriction (Left ded) n (TFLC TFL.DisjElim4) = Just $ fitchAssumptionCheck n ded [(phin 1, phin 3), (phin 2, phin 3)]
+         globalRestriction (Left ded) n (TFLC TFL.NegeIntro1) = Just $ fitchAssumptionCheck n ded [(phin 1, lfalsum)]
+         globalRestriction (Left ded) n (TFLC TFL.NegeIntro2) = Just $ fitchAssumptionCheck n ded [(phin 1, lfalsum)]
+         globalRestriction (Left ded) n (TFLC TFL.Indirect1) = Just $ fitchAssumptionCheck n ded [(lneg $ phin 1, lfalsum)]
+         globalRestriction (Left ded) n (TFLC TFL.Indirect2) = Just $ fitchAssumptionCheck n ded [(lneg $ phin 1, lfalsum)]
+         globalRestriction _ _ _ = Nothing
 
          isAssumption (TFLC x) = isAssumption x
          isAssumption _ = False
@@ -110,6 +127,22 @@ instance Inference ThomasBolducAndZachFOL PureLexiconFOL (Form Bool) where
 
          restriction (FOL x) = restriction x
          restriction _       = Nothing
+
+         globalRestriction (Left ded) n (TFL (TFL.Core TFL.CondIntro1)) = Just $ fitchAssumptionCheck n ded [(phin 1, phin 2)]
+         globalRestriction (Left ded) n (TFL (TFL.Core TFL.CondIntro2)) = Just $ fitchAssumptionCheck n ded [(phin 1, phin 2)]
+         globalRestriction (Left ded) n (TFL (TFL.Core TFL.BicoIntro1)) = Just $ fitchAssumptionCheck n ded [(phin 1, phin 2), (phin 2, phin 1)]
+         globalRestriction (Left ded) n (TFL (TFL.Core TFL.BicoIntro2)) = Just $ fitchAssumptionCheck n ded [(phin 1, phin 2), (phin 2, phin 1)]
+         globalRestriction (Left ded) n (TFL (TFL.Core TFL.BicoIntro3)) = Just $ fitchAssumptionCheck n ded [(phin 1, phin 2), (phin 2, phin 1)]
+         globalRestriction (Left ded) n (TFL (TFL.Core TFL.BicoIntro4)) = Just $ fitchAssumptionCheck n ded [(phin 1, phin 2), (phin 2, phin 1)]
+         globalRestriction (Left ded) n (TFL (TFL.Core TFL.DisjElim1))  = Just $ fitchAssumptionCheck n ded [(phin 1, phin 3), (phin 2, phin 3)]
+         globalRestriction (Left ded) n (TFL (TFL.Core TFL.DisjElim2))  = Just $ fitchAssumptionCheck n ded [(phin 1, phin 3), (phin 2, phin 3)]
+         globalRestriction (Left ded) n (TFL (TFL.Core TFL.DisjElim3))  = Just $ fitchAssumptionCheck n ded [(phin 1, phin 3), (phin 2, phin 3)]
+         globalRestriction (Left ded) n (TFL (TFL.Core TFL.DisjElim4))  = Just $ fitchAssumptionCheck n ded [(phin 1, phin 3), (phin 2, phin 3)]
+         globalRestriction (Left ded) n (TFL (TFL.Core TFL.NegeIntro1)) = Just $ fitchAssumptionCheck n ded [(phin 1, lfalsum)]
+         globalRestriction (Left ded) n (TFL (TFL.Core TFL.NegeIntro2)) = Just $ fitchAssumptionCheck n ded [(phin 1, lfalsum)]
+         globalRestriction (Left ded) n (TFL (TFL.Core TFL.Indirect1))  = Just $ fitchAssumptionCheck n ded [(lneg $ phin 1, lfalsum)]
+         globalRestriction (Left ded) n (TFL (TFL.Core TFL.Indirect2))  = Just $ fitchAssumptionCheck n ded [(lneg $ phin 1, lfalsum)]
+         globalRestriction _ _ _ = Nothing
 
          isAssumption (TFL x) = isAssumption x
          isAssumption (FOL x) = isAssumption x
