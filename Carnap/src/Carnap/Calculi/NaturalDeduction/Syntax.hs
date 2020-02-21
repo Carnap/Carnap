@@ -71,6 +71,12 @@ data DeductionLine r lex a where
             { separatorLineDepth :: Int
             } -> DeductionLine r lex a
 
+ruleOfLine (AssertLine _ r _ _) = Just r
+ruleOfLine (DependentAssertLine _ r _ _ _ _) = Just r
+ruleOfLine (ShowWithLine _ _ r _) = Just r
+ruleOfLine (QedLine r _ _) = Just r
+ruleOfLine _ = Nothing
+
 depth (AssertLine _ _ dpth _) = dpth
 depth (DependentAssertLine _ _ _ _ _ _) = 0
 depth (ShowLine _ dpth) = dpth
