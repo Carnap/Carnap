@@ -475,19 +475,16 @@ for accepting this stipulation is that, by and large, it works. In fact, we
 are committed to it in various ways by our deductive system[^2]
 
 [^2]:: Consider, for example, the material conditional rules, which we can
-       derive: $P\therefore Q\rightarrow P$ and $\neg Q\rightarrow
-       Q\rightarrow P$. These show that the conditional is true whenever its
-       antecedent is false or consequent is true. And the NC rule, $P\land
-       \neg Q\therefore \neg(P\rightarrow Q)$ tells us that the conditional is
-       false whenever the antecedent is true and the conclusion false.
+derive: $\psi\vdash\phi\rightarrow\psi$ and $\neg\phi\vdash
+\phi\rightarrow\psi$. These show that the conditional is true whenever its
+antecedent is false or consequent is true. And the NC rule, $\phi\land \neg
+\psi\vdash\neg(\phi\rightarrow \psi)$ tells us that the conditional is false
+whenever the antecedent is true and the conclusion false.
 
 #. If $P$ is true, and $Q$ is true, then $(P\rightarrow Q)$ must be true.
 #. If $P$ is true, and $Q$ is false, then $(P\rightarrow Q)$ must be false.
 #. If $P$ is false and $Q$ is true, then $(P\rightarrow Q)$ must be true.
-#. If both $P$ and $Q$ are false, then $(P\leftrightarrow Q)$ must be true.
-#. If $P$ is true and $Q$ is true, and $R$ is also true, then
-$(P\leftrightarrow Q)$ must be true, so $((P\leftrightarrow Q)\leftrightarrow
-R)$ must also be true.
+#. If both $P$ and $Q$ are false, then $(P\rightarrow Q)$ must be true.
 
 We can summarize the rules for $\leftrightarrow$ and $\rightarrow$ as follows: 
 

@@ -142,12 +142,12 @@ differences.
 First, we will aim only to show "if $\ldots$ then" statements. Second, we will
 begin each derivation by assuming the statement on the left side of the
 "if $\ldots$ then" statement that we are aiming to show; we will write "AS" to
-justify our assumption. Third, we will consider ourselves finished, box the
-derivation and cancel (i.e. cross out) the show line when we manage to assert
-the statement on the right side of the conditional; we will write the number of
-the line where we asserted the statement on the right side, together with CD,
-to mean "I have shown the conditional statement by means of a conditional
-derivation ending with this line". The result will look like this:
+justify our assumption. Third, we will consider ourselves finished (and
+officially indicate that we are done) when we manage to assert the statement on
+the right side of the conditional; we will write the number of the line where
+we asserted the statement on the right side, together with CD, to mean "I have
+shown the conditional statement by means of a conditional derivation ending
+with this line". The result will look like this:
 
 ```
 1. Show: φ->ψ
