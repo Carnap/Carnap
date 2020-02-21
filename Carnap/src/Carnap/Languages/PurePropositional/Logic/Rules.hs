@@ -535,6 +535,9 @@ andAssociativity = replace ((phin 1 ./\. phin 2) ./\. phin 3) (phin 1 ./\. (phin
 andIdempotence :: ReplacementBooleanVariants lex b
 andIdempotence = replace (phin 1 ./\. phin 1) (phin 1)
 
+andDistributivity :: ReplacementBooleanVariants lex b
+andDistributivity = replace (phin 1 ./\. (phin 2 .\/. phin 3)) ((phin 1 ./\. phin 2) .\/. (phin 1 ./\. phin 3))
+
 orCommutativity :: ReplacementBooleanVariants lex b
 orCommutativity = replace (phin 1 .\/. phin 2) (phin 2 .\/. phin 1)
 
@@ -543,6 +546,9 @@ orAssociativity = replace ((phin 1 .\/. phin 2) .\/. phin 3) (phin 1 .\/. (phin 
 
 orIdempotence :: ReplacementBooleanVariants lex b
 orIdempotence = replace (phin 1 .\/. phin 1) (phin 1)
+
+orDistributivity :: ReplacementBooleanVariants lex b
+orDistributivity = replace (phin 1 .\/. (phin 2 ./\. phin 3)) ((phin 1 .\/. phin 2) ./\. (phin 1 .\/. phin 3))
 
 iffCommutativity :: ReplacementBooleanVariants lex b
 iffCommutativity = replace (phin 1 .<=>. phin 2) (phin 2 .<=>. phin 1)

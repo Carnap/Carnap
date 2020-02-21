@@ -3,6 +3,7 @@ module Carnap.Languages.PurePropositional.Logic.Gamut
     ( GamutMPND(..), gamutMPNDCalc, parseGamutMPND
     , GamutIPND(..), gamutIPNDCalc, parseGamutIPND
     , GamutPND(..), gamutPNDCalc, parseGamutPND
+    , GamutPNDPlus(..), gamutPNDPlusCalc, parseGamutPNDPlus
     ) where
 
 import Text.Parsec
@@ -34,6 +35,12 @@ data GamutIPND = MPND GamutMPND | EFSQ
 data GamutPND = IPND GamutIPND | DNE
     deriving Eq
 
+data GamutPNDPlus = PND GamutPND | LEM | LNC | DN1 | DN2
+                  | LCC  | LCD  | LAC1 | LAC2 | LAD1 | LAD2
+                  | LDD1 | LDD2 | LDC1 | LDC2 | DMOR1 | DMOR2
+                  | DMAND1 | DMAND2 | MT | MTP | NMTP
+    deriving Eq
+
 instance Show GamutMPND where
         show InAnd      = "I∧"
         show ElimAndL   = "E∧"
@@ -58,6 +65,31 @@ instance Show GamutIPND where
 instance Show GamutPND where
         show (IPND x)   = show x
         show DNE        = "¬¬"
+
+instance Show GamutPNDPlus where
+        show (PND x)   = show x
+        show LEM = "LEM"
+        show LNC = "LNC"
+        show DN1 = "DN"
+        show DN2 = "DN"
+        show LCC = "LCC"
+        show LCD = "LCD" 
+        show LAC1 = "LAC"
+        show LAC2 = "LAC"
+        show LAD1 = "LAD"
+        show LAD2 = "LAD"
+        show LDD1 = "LDD"
+        show LDD2 = "LDD"
+        show LDC1 = "LDC"
+        show LDC2 = "LDC"
+        show DMOR1 = "DMOR"
+        show DMOR2 = "DMOR"
+        show DMAND1 = "DMAND"
+        show DMAND2 = "DMAND"
+        show MT = "MT"
+        show MTP = "PDS" 
+        show NMTP = "NDS"
+
 
 instance Inference GamutMPND PurePropLexicon (Form Bool) where
         ruleOf InAnd      = adjunction
@@ -121,6 +153,44 @@ instance Inference GamutPND PurePropLexicon (Form Bool) where
         globalRestriction (Left ded) n (IPND (MPND InNeg2)) = Just $ fitchAssumptionCheck n ded [(phin 1, lfalsum)]
         globalRestriction _ _ _ = Nothing
 
+instance Inference GamutPNDPlus PurePropLexicon (Form Bool) where
+        ruleOf (PND x) = ruleOf x
+        ruleOf LEM = [] ∴ Top :|-: SS (phin 1 .\/. (lneg $ phin 1))
+        ruleOf LNC = [] ∴ Top :|-: SS (lneg (phin 1 ./\. (lneg $ phin 1)))
+        ruleOf DN1 = doubleNegation !! 0
+        ruleOf DN2 = doubleNegation !! 1
+        ruleOf LCC = andCommutativity !! 0
+        ruleOf LCD = orCommutativity !! 0
+        ruleOf LAC1 = andAssociativity !! 0
+        ruleOf LAC2 = andAssociativity !! 1
+        ruleOf LAD1 = orAssociativity !! 0 
+        ruleOf LAD2 = orAssociativity !! 1
+        ruleOf LDD1 = orDistributivity !! 0
+        ruleOf LDD2 = orDistributivity !! 1
+        ruleOf LDC1 = andDistributivity !! 0
+        ruleOf LDC2 = andDistributivity !! 1
+        ruleOf DMOR1 = deMorgansLaws !! 0
+        ruleOf DMOR2 = deMorgansLaws !! 1
+        ruleOf DMAND1 = deMorgansLaws !! 2
+        ruleOf DMAND2 = deMorgansLaws !! 3
+        ruleOf MT = modusTollens
+        ruleOf MTP = modusTollendoPonensVariations !! 0
+        ruleOf NMTP = [ GammaV 1  :|-: SS (phin 1) 
+                , GammaV 2  :|-: SS (lneg $ phin 1 .∧. phin 2)
+                ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (lneg $ phin 2)
+
+        indirectInference (PND x) = indirectInference x
+        indirectInference _ = Nothing
+
+        isAssumption (PND x) = isAssumption x
+        isAssumption _ = False
+
+        globalRestriction (Left ded) n (PND (IPND (MPND InIf1))) = Just $ fitchAssumptionCheck n ded [(phin 1, phin 2)]
+        globalRestriction (Left ded) n (PND (IPND (MPND InIf2))) = Just $ fitchAssumptionCheck n ded [(phin 1, phin 2)]
+        globalRestriction (Left ded) n (PND (IPND (MPND InNeg1))) = Just $ fitchAssumptionCheck n ded [(phin 1, lfalsum)]
+        globalRestriction (Left ded) n (PND (IPND (MPND InNeg2))) = Just $ fitchAssumptionCheck n ded [(phin 1, lfalsum)]
+        globalRestriction _ _ _ = Nothing
+
 parseGamutMPND rtc = do r <- choice (map (try . string) 
                                 [ "I∧" , "I/\\", "I^", "E∧" , "E/\\", "E^"
                                 , "E→" , "E->", "I→" , "I->"
@@ -144,6 +214,25 @@ parseGamutIPND rtc = (map MPND <$> parseGamutMPND rtc) <|> (try (string "EFSQ") 
 parseGamutPND rtc = (map IPND <$> parseGamutIPND rtc) 
                  <|> (choice (map (try . string) ["~~","¬¬","--"]) >> return [DNE])
 
+parseGamutPNDPlus rtc = (map PND <$> parseGamutPND rtc) 
+                 <|> parsePlus
+    where parsePlus = do r <- choice (map (try . string) ["LEM", "LNC", "DN", "LCC", "LCD", "LAC", "LAD", "LDD", "LDC", "DMOR", "DMAND", "MT", "PDS", "NDS"])
+                         case r of
+                           r | r == "LEM"   -> return [LEM]
+                             | r == "LNC"   -> return [LNC]
+                             | r == "DN"    -> return [DN1, DN2]
+                             | r == "LCC"   -> return [LCC]
+                             | r == "LCD"   -> return [LCD]
+                             | r == "LAC"   -> return [LAC1,LAC2]
+                             | r == "LAD"   -> return [LAD1,LAD2]
+                             | r == "LDD"   -> return [LDD1,LDD2]
+                             | r == "LDC"   -> return [LDC1,LDC2]
+                             | r == "DMOR"  -> return [DMOR1,DMOR2]
+                             | r == "DMAND" -> return [DMAND1,DMAND2]
+                             | r == "MT"    -> return [MT]
+                             | r == "PDS"   -> return [MTP]
+                             | r == "NDS"   -> return [NMTP]
+
 parseGamutMPNDProof :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> String -> [DeductionLine GamutMPND PurePropLexicon (Form Bool)]
 parseGamutMPNDProof rtc = toDeductionFitch (parseGamutMPND rtc) (purePropFormulaParser gamutOpts)
 
@@ -152,6 +241,9 @@ parseGamutIPNDProof rtc = toDeductionFitch (parseGamutIPND rtc) (purePropFormula
 
 parseGamutPNDProof :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> String -> [DeductionLine GamutPND PurePropLexicon (Form Bool)]
 parseGamutPNDProof rtc = toDeductionFitch (parseGamutPND rtc) (purePropFormulaParser gamutOpts)
+
+parseGamutPNDPlusProof :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> String -> [DeductionLine GamutPNDPlus PurePropLexicon (Form Bool)]
+parseGamutPNDPlusProof rtc = toDeductionFitch (parseGamutPNDPlus rtc) (purePropFormulaParser gamutOpts)
 
 gamutNotation :: String -> String
 gamutNotation (x:xs) | isUpper x = toLower x : gamutNotation xs
@@ -181,6 +273,16 @@ gamutIPNDCalc = mkNDCalc
 gamutPNDCalc = mkNDCalc
     { ndRenderer = NoRender
     , ndParseProof = parseGamutPNDProof
+    , ndProcessLine = hoProcessLineFitch
+    , ndProcessLineMemo = Just hoProcessLineFitchMemo
+    , ndParseSeq = parseSeqOver (purePropFormulaParser gamutOpts)
+    , ndParseForm = purePropFormulaParser gamutOpts
+    , ndNotation = gamutNotation
+    }
+
+gamutPNDPlusCalc = mkNDCalc
+    { ndRenderer = NoRender
+    , ndParseProof = parseGamutPNDPlusProof
     , ndProcessLine = hoProcessLineFitch
     , ndProcessLineMemo = Just hoProcessLineFitchMemo
     , ndParseSeq = parseSeqOver (purePropFormulaParser gamutOpts)

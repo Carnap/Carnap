@@ -49,6 +49,7 @@ ofPropSys f sys | sys == "prop"                          = Just $ f propCalc
                 | sys == "LogicBookSDPlus"               = Just $ f logicBookSDPlusCalc 
                 | sys == "hausmanSL"                     = Just $ f hausmanSLCalc 
                 | sys == "gamutPND"                      = Just $ f gamutPNDCalc
+                | sys == "gamutPNDPlus"                  = Just $ f gamutPNDPlusCalc
                 | sys == "gamutIPND"                     = Just $ f gamutIPNDCalc
                 | sys == "gamutMPND"                     = Just $ f gamutMPNDCalc
                 | sys == "howardSnyderSL"                = Just $ f howardSnyderSLCalc 
