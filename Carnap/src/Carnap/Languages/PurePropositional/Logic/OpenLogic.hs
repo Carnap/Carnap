@@ -65,7 +65,8 @@ parseOLPPropNK = choice . map try $
                         , stringOpts ["&Elim","/\\Elim", "&E","/\\E"] >> return [AndER, AndEL]
                         , stringOpts  ["∨Intro","\\/Intro","∨I","\\/I"] >> return [OrIL, OrIR]
                         , stringOpts ["⊃Elim",">Elim", "->Elim", "⊃Elim",">E", "->E"] >> return [IfE]
-                        , stringOpts ["¬Elim","-Elim", "¬E","-E"] >> return [NegE, FalsumE]
+                        , stringOpts ["¬Elim","-Elim", "¬E","-E"] >> return [NegE]
+                        , stringOpts ["X"] >> return [FalsumE]
                         , char '(' *> many1 digit <* char ')' 
                             >>= \s -> return [As (read s :: Int)]
                         , (stringOpts ["->Intro", ">Intro","⊃Intro", "->I", ">I","⊃I"] *> spaces *> char '(' *> many1 digit <* char ')') 
@@ -135,11 +136,12 @@ instance AssumptionNumbers r => StructuralInference OLPPropNK PurePropLexicon (P
     structuralRestriction pt _ (IP n) = Just (usesAssumption n pt assump `andFurtherRestriction` exhaustsAssumptions n pt assump )
         where assump = SS . liftToSequent $ phin 1
     structuralRestriction pt _ (IPVac (Just n)) = Just (usesAssumption n pt (SS . liftToSequent $ phin 1))
-    structuralRestriction pt _ (OrE n m) = Just (usesAssumption n pt (assump 1) 
-                                                `andFurtherRestriction` usesAssumption m pt (assump 2)
-                                                `andFurtherRestriction` exhaustsAssumptions n pt (assump 1)
-                                                `andFurtherRestriction` exhaustsAssumptions m pt (assump 2))
-        where assump n = SS . liftToSequent $ phin n
+    structuralRestriction pt _ (OrE n m) = Just $ \sub -> doubleAssumption 1 2 sub >> doubleAssumption 2 1 sub
+        where doubleAssumption j k = usesAssumption n pt (assump j)      `andFurtherRestriction` 
+                                     usesAssumption m pt (assump k)      `andFurtherRestriction` 
+                                     exhaustsAssumptions n pt (assump j) `andFurtherRestriction` 
+                                     exhaustsAssumptions m pt (assump k)
+              assump n = SS . liftToSequent $ phin n
     structuralRestriction pt _ (OrERVac n (Just m)) = Just (usesAssumption n pt (assump 1) 
                                                 `andFurtherRestriction` usesAssumption m pt (assump 2)
                                                 `andFurtherRestriction` exhaustsAssumptions n pt (assump 1))

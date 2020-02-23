@@ -14,7 +14,8 @@ makeTreeDeduction x = x
 activate cls extra chunk
     | "propNK" `elem` cls = template (opts [("system","propNK")])
     | "propNJ" `elem` cls = template (opts [("system","propNJ")])
-    | otherwise = RawBlock "html" "<div>No Matching Tree Deduction Calculus</div>"
+    | "openLogicNK" `elem` cls = template (opts [("system","openLogicNK")])
+    | otherwise = template (opts [])
     where numof = takeWhile (/= ' ')
           (h:t) = formatChunk chunk
           propof = dropWhile (== ' ') . dropWhile (/= ' ')

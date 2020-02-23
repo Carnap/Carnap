@@ -264,11 +264,12 @@ instance AssumptionNumbers r => StructuralInference GentzenPropNJ PurePropLexico
     structuralRestriction pt _ (NegI n) = Just (usesAssumption n pt assump `andFurtherRestriction` exhaustsAssumptions n pt assump )
         where assump = SS . liftToSequent $ phin 1
     structuralRestriction pt _ (NegIVac (Just n)) = Just (usesAssumption n pt (SS . liftToSequent $ phin 1))
-    structuralRestriction pt _ (OrE n m) = Just (usesAssumption n pt (assump 1) 
-                                                `andFurtherRestriction` usesAssumption m pt (assump 2)
-                                                `andFurtherRestriction` exhaustsAssumptions n pt (assump 1)
-                                                `andFurtherRestriction` exhaustsAssumptions m pt (assump 2))
-        where assump n = SS . liftToSequent $ phin n
+    structuralRestriction pt _ (OrE n m) = Just $ \sub -> doubleAssumption 1 2 sub >> doubleAssumption 2 1 sub
+        where doubleAssumption j k = usesAssumption n pt (assump j)      `andFurtherRestriction` 
+                                     usesAssumption m pt (assump k)      `andFurtherRestriction` 
+                                     exhaustsAssumptions n pt (assump j) `andFurtherRestriction` 
+                                     exhaustsAssumptions m pt (assump k)
+              assump n = SS . liftToSequent $ phin n
     structuralRestriction pt _ (OrERVac n (Just m)) = Just (usesAssumption n pt (assump 1) 
                                                 `andFurtherRestriction` usesAssumption m pt (assump 2)
                                                 `andFurtherRestriction` exhaustsAssumptions n pt (assump 1))
