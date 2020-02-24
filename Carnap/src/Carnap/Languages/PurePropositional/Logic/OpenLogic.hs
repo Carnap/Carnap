@@ -21,8 +21,8 @@ import Control.Lens
 import Carnap.Languages.Util.LanguageClasses
 
 data OLPPropNK = AndI     | AndEL       | AndER
-               | OrIL     | OrIR        | OrE Int Int | OrELVac (Maybe Int) Int 
-               | OrERVac Int (Maybe Int)| OrEVac (Maybe Int) (Maybe Int)
+               | OrIL     | OrIR        | OrE Int | OrELVac Int 
+               | OrERVac Int | OrEVac (Maybe Int) 
                | IfI Int  | IfIVac (Maybe Int)  | IfE
                | NegI Int | NegIVac (Maybe Int) | NegE  | FalsumE
                | As Int   | IP Int | IPVac (Maybe Int)
@@ -35,15 +35,11 @@ instance Show OLPPropNK where
     show AndER = "&E"
     show OrIL = "∨I"
     show OrIR = "∨I"
-    show (OrE n m) = "∨E (" ++ show n ++ ") (" ++ show m ++ ")"
-    show (OrELVac (Just n) m) = "∨E (" ++ show n ++ ") (" ++ show m ++ ")"
-    show (OrELVac Nothing m) = "∨E (" ++ show m ++ ")"
-    show (OrERVac n (Just m)) = "∨E (" ++ show n ++ ") (" ++ show m ++ ")"
-    show (OrERVac n Nothing) = "∨E (" ++ show n ++ ")"
-    show (OrEVac (Just n) (Just m)) = "∨E (" ++ show n ++ ") (" ++ show m ++ ")"
-    show (OrEVac Nothing (Just m)) = "∨E (" ++ show m ++ ")"
-    show (OrEVac (Just n) Nothing) = "∨E (" ++ show n ++ ")"
-    show (OrEVac Nothing Nothing) = "∨E"
+    show (OrE n) = "∨E (" ++ show n ++ ")"
+    show (OrELVac m) = "∨E  (" ++ show m ++ ")"
+    show (OrERVac n ) = "∨E (" ++ show n ++ ")"
+    show (OrEVac (Just m)) = "∨E (" ++ show m ++ ")"
+    show (OrEVac Nothing) = "∨E"
     show (IfI n) = "⊃I (" ++ show n ++ ")"
     show (IfIVac (Just n)) = "⊃I (" ++ show n ++ ")"
     show (IfIVac Nothing) = "⊃I"
@@ -78,14 +74,9 @@ parseOLPPropNK = choice . map try $
                         , (stringOpts ["IP"] *> spaces *> char '(' *> many1 digit <* char ')') 
                             >>= \s -> return (let val = read s :: Int in [IP val, IPVac (Just val)])
                         , stringOpts ["IP"] >> return [IPVac Nothing]
-                        , (,) <$> (stringOpts ["∨Elim","\\/Elim", "∨E","\\/E"] *> spaces *> char '(' *> many1 digit <* char ')')
-                              <*> (spaces *> char '(' *> many1 digit <* char ')')
-                            >>= \(s1,s2) -> return $ let val1 = read s1 :: Int
-                                                         val2 = read s2 :: Int
-                                                     in [OrE val1 val2, OrELVac (Just val1) val2, OrERVac val1 (Just val2), OrEVac (Just val1) (Just val2)]
                         , (stringOpts ["∨Elim","\\/Elim", "∨E","\\/E"] *> spaces *> char '(' *> many1 digit <* char ')') 
-                            >>= \s -> return (let val = read s :: Int in [OrELVac Nothing val, OrERVac val Nothing, OrEVac (Just val) Nothing])
-                        , stringOpts ["∨Elim","\\/Elim", "∨E","\\/E"] >> return [OrEVac Nothing Nothing]
+                            >>= \s -> return (let val = read s :: Int in [OrE val, OrELVac val, OrERVac val , OrEVac (Just val)])
+                        , stringOpts ["∨Elim","\\/Elim", "∨E","\\/E"] >> return [OrEVac Nothing]
                         , eof >> return [Pr]
                         ]
     where stringOpts = choice . map (try . string)
@@ -103,10 +94,10 @@ instance ( BooleanLanguage (ClassicalSequentOver lex (Form Bool))
          coreRuleOf AndER = simplificationVariations !! 1
          coreRuleOf OrIL = additionVariations !! 0
          coreRuleOf OrIR = additionVariations !! 1
-         coreRuleOf (OrE n m) = proofByCasesVariations !! 0
-         coreRuleOf (OrELVac _ _) = proofByCasesVariations !! 1
-         coreRuleOf (OrERVac _ _) = proofByCasesVariations !! 2
-         coreRuleOf (OrEVac _ _) = proofByCasesVariations !! 3
+         coreRuleOf (OrE _) = proofByCasesVariations !! 0
+         coreRuleOf (OrELVac _) = proofByCasesVariations !! 1
+         coreRuleOf (OrERVac _) = proofByCasesVariations !! 2
+         coreRuleOf (OrEVac _) = proofByCasesVariations !! 3
          coreRuleOf (IfI _) = conditionalProofVariations !! 0
          coreRuleOf (IfIVac _) = conditionalProofVariations !! 1
          coreRuleOf IfE = modusPonens
@@ -123,10 +114,6 @@ instance Inference OLPPropNK PurePropLexicon (Form Bool) where
         ruleOf x = coreRuleOf x
 
 instance AssumptionNumbers r => StructuralInference OLPPropNK PurePropLexicon (ProofTree r PurePropLexicon (Form Bool)) where
-    structuralRestriction pt _ (As n) = Just noReps
-        where noReps _ | allEq (leavesLabeled n pt) = Nothing
-                       | otherwise = Just "Distinct assumptions are getting the same index"
-              allEq ((Node x _):xs) = all (\(Node pl _) -> content pl == content x) xs
     structuralRestriction pt _ (IfI n) = Just (usesAssumption n pt assump `andFurtherRestriction` exhaustsAssumptions n pt assump)
         where assump = SS . liftToSequent $ phin 1
     structuralRestriction pt _ (IfIVac (Just n)) = Just (usesAssumption n pt (SS . liftToSequent $ phin 1))
@@ -136,32 +123,17 @@ instance AssumptionNumbers r => StructuralInference OLPPropNK PurePropLexicon (P
     structuralRestriction pt _ (IP n) = Just (usesAssumption n pt assump `andFurtherRestriction` exhaustsAssumptions n pt assump )
         where assump = SS . liftToSequent $ phin 1
     structuralRestriction pt _ (IPVac (Just n)) = Just (usesAssumption n pt (SS . liftToSequent $ phin 1))
-    structuralRestriction pt _ (OrE n m) = Just $ \sub -> doubleAssumption 1 2 sub >> doubleAssumption 2 1 sub
-        where doubleAssumption j k = usesAssumption n pt (assump j)      `andFurtherRestriction` 
-                                     usesAssumption m pt (assump k)      `andFurtherRestriction` 
-                                     exhaustsAssumptions n pt (assump j) `andFurtherRestriction` 
-                                     exhaustsAssumptions m pt (assump k)
-              assump n = SS . liftToSequent $ phin n
-    structuralRestriction pt _ (OrERVac n (Just m)) = Just (usesAssumption n pt (assump 1) 
-                                                `andFurtherRestriction` usesAssumption m pt (assump 2)
-                                                `andFurtherRestriction` exhaustsAssumptions n pt (assump 1))
+    structuralRestriction pt _ (OrE n) = Just $ usesAssumptions n pt [assump 1, assump 2]
+                                     `andFurtherRestriction` exhaustsAssumptions n pt (assump 1) 
+                                     `andFurtherRestriction` exhaustsAssumptions n pt (assump 2)
         where assump n = SS . liftToSequent $ phin n
-    structuralRestriction pt _ (OrERVac n Nothing) = Just (usesAssumption n pt (assump 1) 
-                                                `andFurtherRestriction` exhaustsAssumptions n pt (assump 1))
+    structuralRestriction pt _ (OrERVac n) = Just $ usesAssumptions n pt [assump 1, assump 2] 
+                                                `andFurtherRestriction` exhaustsAssumptions n pt (assump 1)
         where assump n = SS . liftToSequent $ phin n
-    structuralRestriction pt _ (OrELVac (Just n) m) = Just (usesAssumption n pt (assump 1) 
-                                                `andFurtherRestriction` usesAssumption m pt (assump 2)
-                                                `andFurtherRestriction` exhaustsAssumptions m pt (assump 2))
+    structuralRestriction pt _ (OrELVac n) = Just $ usesAssumptions n pt [assump 1, assump 2]
+                                                    `andFurtherRestriction` exhaustsAssumptions n pt (assump 2)
         where assump n = SS . liftToSequent $ phin n
-    structuralRestriction pt _ (OrELVac Nothing m) = Just (usesAssumption m pt (assump 2)
-                                                `andFurtherRestriction` exhaustsAssumptions m pt (assump 2))
-        where assump n = SS . liftToSequent $ phin n
-    structuralRestriction pt _ (OrEVac (Just n) (Just m)) = Just (usesAssumption n pt (assump 1) 
-                                                  `andFurtherRestriction` usesAssumption m pt (assump 2))
-        where assump n = SS . liftToSequent $ phin n
-    structuralRestriction pt _ (OrEVac Nothing (Just m)) = Just (usesAssumption m pt (assump 2))
-        where assump n = SS . liftToSequent $ phin n
-    structuralRestriction pt _ (OrEVac (Just n) Nothing) = Just (usesAssumption n pt (assump 1))
+    structuralRestriction pt _ (OrEVac (Just n)) = Just $ usesAssumptions n pt [assump 1, assump 2] 
         where assump n = SS . liftToSequent $ phin n
     structuralRestriction pt _ r = Nothing
 
@@ -177,14 +149,10 @@ instance AssumptionNumbers OLPPropNK where
         dischargesAssumptions (NegIVac (Just n)) = [n]
         dischargesAssumptions (IP n) = [n]
         dischargesAssumptions (IPVac (Just n)) = [n]
-        dischargesAssumptions (OrE n m) = [n,m]
-        dischargesAssumptions (OrELVac (Just n) m) = [n,m]
-        dischargesAssumptions (OrELVac Nothing m) = [m]
-        dischargesAssumptions (OrERVac n (Just m)) = [n,m]
-        dischargesAssumptions (OrERVac n Nothing) = [n]
-        dischargesAssumptions (OrEVac (Just n) (Just m)) = [n,m]
-        dischargesAssumptions (OrEVac (Just n) Nothing) = [n]
-        dischargesAssumptions (OrEVac Nothing (Just m)) = [m]
+        dischargesAssumptions (OrE n) = [n]
+        dischargesAssumptions (OrELVac m) = [m]
+        dischargesAssumptions (OrERVac n ) = [n]
+        dischargesAssumptions (OrEVac (Just n)) = [n]
         dischargesAssumptions _ = []
 
 olpPropNKCalc :: TableauCalc PurePropLexicon (Form Bool) OLPPropNK
