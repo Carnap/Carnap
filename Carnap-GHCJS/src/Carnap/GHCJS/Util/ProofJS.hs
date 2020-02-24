@@ -52,7 +52,7 @@ checkFullInfo v = do let Success t = parse fromInfo v
 
 #ifdef __GHCJS__
 
-foreign import javascript unsafe "(function(){root = new ProofRoot(JSON.parse($1)); return root})()" newRootJS :: JSString-> IO JSVal
+foreign import javascript unsafe "(function(){root = new DeductionRoot(JSON.parse($1)); return root})()" newRootJS :: JSString-> IO JSVal
 
 foreign import javascript unsafe "$2.renderOn($1)" renderOnJS :: Element -> JSVal -> IO ()
 
