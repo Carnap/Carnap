@@ -65,7 +65,7 @@ fitchAssumptionCheck n ded pairs sub = checkWithProofType n ded pairs sub thePro
           checkDistinct = filter (\(i,j) -> i /= j)
           callingLine = ded !! (n - 1)
           boundaryAssertions (i,j) = (,) <$> assertion (ded !! (i - 1)) <*> assertion (ded !! (j - 1))
-          pairs' = map (\(p,q) -> (applySub sub p, applySub sub q)) pairs
+          pairs' = map (\(p,q) -> (pureBNF . applySub sub $ p, pureBNF . applySub sub $ q)) pairs
           precedingProof = takeWhile (\x -> depth x > depth (ded !! (n - 1))) . reverse . take (n - 1) $ ded
           --XXX: the below is sort of inelegant, since it is not going to
           --allow the possibility of one "rule" having more than one
