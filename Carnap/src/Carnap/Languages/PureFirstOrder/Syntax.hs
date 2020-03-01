@@ -95,6 +95,17 @@ instance FirstOrder (FixLang (PureFirstOrderLexWith a)) =>
 
     subBoundVar = saferSubst
 
+instance (ReLex a, FirstOrder (FixLang (ClassicalSequentLexOver (PureFirstOrderLexWith a)))) => 
+    BoundVars (ClassicalSequentLexOver (PureFirstOrderLexWith a)) where
+
+    scopeUniqueVar q (LLam f) = case castTo $ foVar $ show $ maxVar (LLam f) + 1 of
+                                    Just x -> x
+                                    Nothing -> error "cast failed in ScopeUniqueVar"
+
+    scopeUniqueVar _ _ = undefined
+
+    subBoundVar = saferSubst
+
 instance FirstOrder (FixLang (PureFirstOrderLexWith a)) => 
     RelabelVars (PureFirstOrderLexWith a) Form Bool where
 

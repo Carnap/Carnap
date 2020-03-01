@@ -68,6 +68,7 @@ ofPropTreeSys :: (forall r .
                     ( Show r
                     , Inference r PurePropLexicon (Form Bool)
                     , StructuralInference r PurePropLexicon (ProofTree r PurePropLexicon (Form Bool))
+                    , StructuralOverride r (ProofTree r PurePropLexicon (Form Bool))
                  ) => 
               TableauCalc PurePropLexicon (Form Bool) r -> a) -> String -> Maybe a
 ofPropTreeSys f sys | sys == "propNJ"                     = Just $ f gentzenPropNJCalc 

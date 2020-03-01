@@ -297,6 +297,10 @@ instance AssumptionNumbers r => StructuralInference GentzenPropNK PurePropLexico
     structuralRestriction pt y (NJ x) = structuralRestriction pt y x
     structuralRestriction pt _ r = Nothing
 
+instance StructuralOverride GentzenPropNJ (ProofTree r PurePropLexicon (Form Bool))
+
+instance StructuralOverride GentzenPropNK (ProofTree r PurePropLexicon (Form Bool))
+
 instance AssumptionNumbers GentzenPropNJ where
         introducesAssumptions (As n) = [n]
         introducesAssumptions Pr = [-1] 

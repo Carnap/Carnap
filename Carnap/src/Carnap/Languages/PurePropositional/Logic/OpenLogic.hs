@@ -113,7 +113,17 @@ instance ( BooleanLanguage (ClassicalSequentOver lex (Form Bool))
 instance Inference OLPPropNK PurePropLexicon (Form Bool) where
         ruleOf x = coreRuleOf x
 
-instance AssumptionNumbers r => StructuralInference OLPPropNK PurePropLexicon (ProofTree r PurePropLexicon (Form Bool)) where
+instance ( BooleanLanguage (ClassicalSequentOver lex (Form Bool))
+         , BooleanConstLanguage (ClassicalSequentOver lex (Form Bool))
+         , IndexedSchemePropLanguage (ClassicalSequentOver lex (Form Bool))
+         , PrismSubstitutionalVariable lex
+         , PrismSchematicProp lex Bool
+         , FirstOrderLex (lex (ClassicalSequentOver lex))
+         , Eq (ClassicalSequentOver lex (Form Bool))
+         , Eq (ClassicalSequentOver lex (Succedent (Form Bool)))
+         , ReLex lex
+         , AssumptionNumbers r
+         ) => StructuralInference OLPPropNK lex (ProofTree r lex (Form Bool)) where
     structuralRestriction pt _ (IfI n) = Just (usesAssumption n pt assump `andFurtherRestriction` exhaustsAssumptions n pt assump)
         where assump = SS . liftToSequent $ phin 1
     structuralRestriction pt _ (IfIVac (Just n)) = Just (usesAssumption n pt (SS . liftToSequent $ phin 1))
@@ -136,6 +146,8 @@ instance AssumptionNumbers r => StructuralInference OLPPropNK PurePropLexicon (P
     structuralRestriction pt _ (OrEVac (Just n)) = Just $ usesAssumptions n pt [assump 1, assump 2] 
         where assump n = SS . liftToSequent $ phin n
     structuralRestriction pt _ r = Nothing
+
+instance StructuralOverride OLPPropNK (ProofTree r PurePropLexicon (Form Bool))
 
 instance AssumptionNumbers OLPPropNK where
         introducesAssumptions (As n) = [n]

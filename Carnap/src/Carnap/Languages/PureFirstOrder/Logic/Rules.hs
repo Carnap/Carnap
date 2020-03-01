@@ -258,6 +258,16 @@ existentialAssumptionDischarge = [ GammaV 1 :+: SA (phi 1 (taun 1)) :|-: SS (phi
                                  , GammaV 2 :+: SA (phi 1 (taun 1)) :|-: SS (phin 1) ]
                                  ∴ GammaV 2 :|-: SS (phin 1)
 
+weakExistentialDerivation :: FirstOrderRule lex b
+weakExistentialDerivation = [ GammaV 1 :|-: SS (phin 1)
+                            , GammaV 2 :|-: SS (lsome "v" $ phi 1)
+                            ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (phin 1)
+
+parameterExistentialDerivation :: FixLang (ClassicalSequentLexOver lex) (Term Int) -> FirstOrderRule lex b
+parameterExistentialDerivation t = [ GammaV 1 :+:  SA (phi 1 t) :|-: SS (phin 1) 
+                                   , GammaV 2 :|-: SS (lsome "v" $ phi 1)   
+                                   ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (phin 1)      
+
 negatedExistentialInstantiation :: FirstOrderRule lex b
 negatedExistentialInstantiation = [ GammaV 1 :|-: SS (lneg $ lsome "v" (phi 1))]
                                   ∴ GammaV 1 :|-: SS (lneg $ phi 1 (taun 1))

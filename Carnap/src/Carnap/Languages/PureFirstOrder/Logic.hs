@@ -12,13 +12,14 @@ module Carnap.Languages.PureFirstOrder.Logic
         , parseIchikawaJenkinsQL, ichikawaJenkinsQLCalc
         , parseHardegreePL, hardegreePLCalc
         , goldfarbNDCalc, goldfarbAltNDCalc, goldfarbNDPlusCalc, goldfarbAltNDPlusCalc
-        , ofFOLSys
+        , ofFOLSys, ofFOLTreeSys
         )
     where
 
 import Carnap.Core.Data.Types
 import Carnap.Languages.PureFirstOrder.Syntax
 import Carnap.Calculi.NaturalDeduction.Syntax
+import Carnap.Calculi.Tableau.Data
 import Carnap.Languages.PureFirstOrder.Logic.Carnap
 import Carnap.Languages.PureFirstOrder.Logic.Magnus
 import Carnap.Languages.PureFirstOrder.Logic.KalishAndMontague
@@ -31,6 +32,7 @@ import Carnap.Languages.PureFirstOrder.Logic.HowardSnyder
 import Carnap.Languages.PureFirstOrder.Logic.Hardegree
 import Carnap.Languages.PureFirstOrder.Logic.Goldfarb
 import Carnap.Languages.PureFirstOrder.Logic.IchikawaJenkins
+import Carnap.Languages.PureFirstOrder.Logic.OpenLogic
 import Carnap.Languages.PureFirstOrder.Logic.Rules
 
 ofFOLSys :: (forall r . (Show r, Inference r PureLexiconFOL (Form Bool)) => 
@@ -53,3 +55,14 @@ ofFOLSys f sys | sys == "firstOrder"                      = Just $ f folCalc
                | sys == "goldfarbNDPlus"                  = Just $ f goldfarbNDPlusCalc
                | sys == "goldfarbAltNDPlus"               = Just $ f goldfarbAltNDPlusCalc
                | otherwise                                = Nothing
+
+ofFOLTreeSys :: (forall r . 
+                    ( Show r
+                    , Inference r PureLexiconFOL (Form Bool)
+                    , StructuralInference r PureLexiconFOL (ProofTree r PureLexiconFOL (Form Bool))
+                    , StructuralOverride r (ProofTree r PureLexiconFOL (Form Bool))
+                 ) => 
+              TableauCalc PureLexiconFOL (Form Bool) r -> a) -> String -> Maybe a
+ofFOLTreeSys f sys | sys == "openLogicFOLNK"             = Just $ f openLogicFONKCalc 
+                   | otherwise                           = Nothing
+

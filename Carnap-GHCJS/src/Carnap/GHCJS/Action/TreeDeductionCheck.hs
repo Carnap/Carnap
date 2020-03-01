@@ -13,6 +13,7 @@ import qualified Text.Parsec as P (parse)
 import Control.Monad.State (modify,get,execState,State)
 import Control.Lens
 import Control.Concurrent
+import Control.Monad (mplus)
 import Control.Monad.IO.Class (liftIO)
 import Carnap.Core.Unification.Unification (MonadVar,FirstOrder, applySub)
 import Carnap.Core.Unification.ACUI (ACUI)
@@ -28,6 +29,7 @@ import Carnap.Calculi.NaturalDeduction.Syntax
 import Carnap.Calculi.NaturalDeduction.Checker
 import Carnap.Calculi.Tableau.Data
 import Carnap.Languages.PurePropositional.Logic (ofPropTreeSys)
+import Carnap.Languages.PureFirstOrder.Logic (ofFOLTreeSys)
 import Carnap.GHCJS.Util.ProofJS
 import Carnap.GHCJS.SharedTypes
 import GHCJS.DOM.Element (setInnerHTML, click)
@@ -49,9 +51,10 @@ getCheckers w = genInOutElts w "div" "div" "treedeductionchecker"
 
 activateChecker :: Document -> Maybe (Element, Element, Map String String) -> IO ()
 activateChecker _ Nothing  = return ()
-activateChecker w (Just (i, o, opts)) = case setupWith `ofPropTreeSys` sys of
-                                            Just io -> io
-                                            Nothing -> error $ "couldn't parse tree system: " ++ sys
+activateChecker w (Just (i, o, opts)) = case (setupWith `ofPropTreeSys` sys) 
+                                              `mplus` (setupWith `ofFOLTreeSys` sys)
+                                        of Just io -> io
+                                           Nothing -> error $ "couldn't parse tree system: " ++ sys
         where sys = case M.lookup "system" opts of
                         Just s -> s
                         Nothing -> "propNK"
@@ -119,6 +122,7 @@ checkOnChange :: ( ReLex lex
                  , CopulaSchema (ClassicalSequentOver lex)
                  , Typeable sem
                  , Show rule
+                 , StructuralOverride rule (ProofTree rule lex sem)
                  , StructuralInference rule lex (ProofTree rule lex sem)
                  ) => ProofMemoRef lex sem rule -> IORef (Maybe ThreadId) -> TableauCalc lex sem rule -> JSVal -> IO ()
 checkOnChange memo threadRef calc root = do
@@ -136,10 +140,11 @@ checkOnChange memo threadRef calc root = do
 toProofTree :: ( Typeable sem
                , ReLex lex
                , Sequentable lex
+               , StructuralOverride rule (ProofTree rule lex sem)
                , Inference rule lex sem
                ) => TableauCalc lex sem rule -> Tree (String,String) -> Either (TreeFeedback lex) (ProofTree rule lex sem)
 toProofTree calc (Node (l,r) f) 
-    | all isRight parsedForest && isRight newNode = Node <$> newNode <*> sequence parsedForest
+    | all isRight parsedForest && isRight newNode = handleOverride <$> (Node <$> newNode <*> sequence parsedForest)
     | isRight newNode = Left $ Node Waiting (map cleanTree parsedForest)
     | Left n <- newNode = Left n
     where parsedLabel = (SS . liftToSequent) <$> P.parse (tbParseForm calc) "" l
@@ -150,6 +155,9 @@ toProofTree calc (Node (l,r) f)
           newNode = case ProofLine 0 <$> parsedLabel <*> parsedRules of
                         Right l -> Right l
                         Left e -> Left (Node (ProofError $ NoParse e 0) (map cleanTree parsedForest))
+          handleOverride f@(Node l fs) = case structuralOverride f (head (rule l)) of
+                                               Nothing -> f
+                                               Just rs -> Node (l {rule = rs}) fs
 
 checkProofTree :: ( ReLex lex
                   , Sequentable lex
@@ -162,6 +170,7 @@ checkProofTree :: ( ReLex lex
                   , CopulaSchema (ClassicalSequentOver lex)
                   , Typeable sem
                   , Show rule
+                  , StructuralOverride rule (ProofTree rule lex sem)
                   , StructuralInference rule lex (ProofTree rule lex sem)
                   ) => TableauCalc lex sem rule -> Maybe (ProofMemoRef lex sem rule) -> Value -> IO Value
 checkProofTree calc mmemo v = case parse parseTreeJSON v of
