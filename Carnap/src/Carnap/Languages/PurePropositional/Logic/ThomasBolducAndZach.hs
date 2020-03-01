@@ -252,7 +252,10 @@ thomasBolducAndZachNotation x = case runParser altParser 0 "" x of
                         return [c]
 
 dropOuterParensForm :: String -> String
-dropOuterParensForm s@('(':_) | last s == ')' =  " " ++ (init . tail $ s) ++ " "
+dropOuterParensForm s@('(':ss) =  " " ++ (reverse . scan . reverse) ss ++ " "
+    where scan (')':xs) = xs
+          scan (x:xs) = x:scan xs
+          scan [] = []
 dropOuterParensForm s = s
 
 dropOuterParens :: String -> String
