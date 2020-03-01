@@ -366,7 +366,7 @@ leavesLabeled :: AssumptionNumbers rule => Int -> ProofTree rule lex sem -> [Pro
 leavesLabeled n pt = filter (\(Node pl _) -> introducesAssumptions (head (rule pl)) == [n]) $ toListOf leaves pt
 
 usesAssumptions n pt assumps sub = if all test (leavesLabeled n pt) then Nothing else Just "assumption mismatch"
-    where assumps' = map (applySub sub) assumps
+    where assumps' = map (pureBNF . applySub sub) assumps
           test (Node x _) = content x `elem` assumps'
 
 usesAssumption n pt assump = usesAssumptions n pt [assump]

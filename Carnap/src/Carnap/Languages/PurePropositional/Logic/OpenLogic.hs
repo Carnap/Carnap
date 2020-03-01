@@ -61,16 +61,16 @@ parseOLPPropNK = choice . map try $
                         , stringOpts ["&Elim","/\\Elim", "&E","/\\E"] >> return [AndER, AndEL]
                         , stringOpts  ["∨Intro","\\/Intro","∨I","\\/I"] >> return [OrIL, OrIR]
                         , stringOpts ["⊃Elim",">Elim", "->Elim", "⊃Elim",">E", "->E"] >> return [IfE]
-                        , stringOpts ["¬Elim","-Elim", "¬E","-E"] >> return [NegE]
+                        , stringOpts ["¬Elim","-Elim", "~Elim", "¬E","-E", "~E"] >> return [NegE]
                         , stringOpts ["X"] >> return [FalsumE]
                         , char '(' *> many1 digit <* char ')' 
                             >>= \s -> return [As (read s :: Int)]
                         , (stringOpts ["->Intro", ">Intro","⊃Intro", "->I", ">I","⊃I"] *> spaces *> char '(' *> many1 digit <* char ')') 
                             >>= \s -> return (let val = read s :: Int in [IfI val, IfIVac (Just val)])
                         , stringOpts ["->Intro", ">Intro","⊃Intro", "->I", ">I","⊃I"] >> return [IfIVac Nothing]
-                        , (stringOpts ["¬Intro", "-Intro", "¬I", "-I"] *> spaces *> char '(' *> many1 digit <* char ')') 
+                        , (stringOpts ["¬Intro", "-Intro", "~Intro", "¬I", "-I", "~I"] *> spaces *> char '(' *> many1 digit <* char ')') 
                             >>= \s -> return (let val = read s :: Int in [NegI val, NegIVac (Just val)])
-                        , stringOpts ["¬Intro", "-Intro", "¬I", "-I"] >> return [NegIVac Nothing]
+                        , stringOpts ["¬Intro", "-Intro", "~Intro", "¬I", "-I", "~I"] >> return [NegIVac Nothing]
                         , (stringOpts ["IP"] *> spaces *> char '(' *> many1 digit <* char ')') 
                             >>= \s -> return (let val = read s :: Int in [IP val, IPVac (Just val)])
                         , stringOpts ["IP"] >> return [IPVac Nothing]
@@ -118,6 +118,7 @@ instance ( BooleanLanguage (ClassicalSequentOver lex (Form Bool))
          , IndexedSchemePropLanguage (ClassicalSequentOver lex (Form Bool))
          , PrismSubstitutionalVariable lex
          , PrismSchematicProp lex Bool
+         , PrismBooleanConnLex lex Bool
          , FirstOrderLex (lex (ClassicalSequentOver lex))
          , Eq (ClassicalSequentOver lex (Form Bool))
          , Eq (ClassicalSequentOver lex (Succedent (Form Bool)))
@@ -131,8 +132,9 @@ instance ( BooleanLanguage (ClassicalSequentOver lex (Form Bool))
         where assump = SS . liftToSequent $ phin 1
     structuralRestriction pt _ (NegIVac (Just n)) = Just (usesAssumption n pt (SS . liftToSequent $ phin 1))
     structuralRestriction pt _ (IP n) = Just (usesAssumption n pt assump `andFurtherRestriction` exhaustsAssumptions n pt assump )
-        where assump = SS . liftToSequent $ phin 1
-    structuralRestriction pt _ (IPVac (Just n)) = Just (usesAssumption n pt (SS . liftToSequent $ phin 1))
+        where assump = SS . liftToSequent $ lneg (phin 1)
+    structuralRestriction pt _ (IPVac (Just n)) = Just (usesAssumption n pt assump)
+        where assump = SS . liftToSequent $ lneg (phin 1)
     structuralRestriction pt _ (OrE n) = Just $ usesAssumptions n pt [assump 1, assump 2]
                                      `andFurtherRestriction` exhaustsAssumptions n pt (assump 1) 
                                      `andFurtherRestriction` exhaustsAssumptions n pt (assump 2)
