@@ -112,17 +112,19 @@ toProofTreeLemmon ded n = case ded !! (n - 1) of
                          | otherwise = Right True
 
               checkScope i | isAssumption (head r) && not (scope == i ++ [n]) = err "The dependencies here aren't right. Remember, this rule introduces its own line number as a dependency."
-                           | isAssumption (head r) = if nodis then Right True else err "This rule does not allow the elimination of dependencies."
-                           | null (globalRestriction (Left []) 0 (head r)) && not nodis = err "This rule does not allow the elimination of dependencies."
-                           | length (nub i) - numDischarged (indirectInference (head r)) /= length scope = err "This is the wrong number of dependencies. Did you forget to add or remove something?"
+                           | isAssumption (head r) = if nodischarge then Right True else err "This rule does not allow the elimination of dependencies."
+                           | null (globalRestriction (Left []) 0 (head r)) && not nodischarge = err "This rule does not allow the elimination of dependencies."
+                           | length (nub i) - numDischarged /= length scope = err "This is the wrong number of dependencies. Did you forget to add or remove something?"
+                           | numDischarged == 0 && sort scope /= sort (nub i) = err "The dependencies here aren't right. Did you miscopy or forget some inherited dependency?."
                            | mdis /= Nothing && sort scope /= sort (nub i \\ discharged l) = err "The dependencies here aren't right. Did you forget mark a dependency as eliminated?."
                            | otherwise = Right True
 
-              nodis = discharged l == []
+              nodischarge = discharged l == []
 
-              numDischarged (Just (TypedProof (ProofType n _ ))) = n
-              numDischarged (Just (PolyTypedProof m (ProofType n _))) = m * n
-              numDischarged _ = 0
+              numDischarged = case indirectInference (head r) of
+                      Just (TypedProof (ProofType n _ )) -> n
+                      Just (PolyTypedProof m (ProofType n _)) -> m * n
+                      _ -> 0
 
               checkNum Nothing = return ()
               checkNum (Just m) = if m == n then return () else err "This line is numbered incorrectly"
