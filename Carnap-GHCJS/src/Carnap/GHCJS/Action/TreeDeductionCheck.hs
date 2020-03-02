@@ -1,4 +1,4 @@
-{-# LANGUAGE FlexibleContexts, OverloadedStrings, CPP, JavaScriptFFI #-}
+{-# LANGUAGE FlexibleContexts, CPP, JavaScriptFFI #-}
 module Carnap.GHCJS.Action.TreeDeductionCheck (treeDeductionCheckAction) where
 
 import Lib hiding (content)
@@ -13,7 +13,7 @@ import qualified Text.Parsec as P (parse)
 import Control.Monad.State (modify,get,execState,State)
 import Control.Lens
 import Control.Concurrent
-import Control.Monad (mplus)
+import Control.Monad (mplus, (>=>))
 import Control.Monad.IO.Class (liftIO)
 import Carnap.Core.Unification.Unification (MonadVar,FirstOrder, applySub)
 import Carnap.Core.Unification.ACUI (ACUI)
@@ -32,7 +32,7 @@ import Carnap.Languages.PurePropositional.Logic (ofPropTreeSys)
 import Carnap.Languages.PureFirstOrder.Logic (ofFOLTreeSys)
 import Carnap.GHCJS.Util.ProofJS
 import Carnap.GHCJS.SharedTypes
-import GHCJS.DOM.Element (setInnerHTML, click)
+import GHCJS.DOM.Element (setInnerHTML, click, setAttribute)
 import GHCJS.DOM.Node (appendChild, getParentNode, insertBefore)
 import GHCJS.DOM.Types (Element, Document, IsElement)
 import GHCJS.DOM.EventM
@@ -44,7 +44,7 @@ treeDeductionCheckAction =
             do initializeCallback "checkProofTreeInfo" njCheck
                initElements getCheckers activateChecker
                return ()
-    where njCheck = maybe (error "can't find PropNJ") id $ (\calc -> checkProofTree calc Nothing) `ofPropTreeSys` "PropNJ" 
+    where njCheck = maybe (error "can't find PropNJ") id $ (\calc -> checkProofTree calc Nothing >=> return . fst) `ofPropTreeSys` "PropNJ" 
 
 getCheckers :: IsElement self => Document -> self -> IO [Maybe (Element, Element, Map String String)]
 getCheckers w = genInOutElts w "div" "div" "treedeductionchecker"
@@ -60,9 +60,9 @@ activateChecker w (Just (i, o, opts)) = case (setupWith `ofPropTreeSys` sys)
                         Nothing -> "propNK"
 
               setupWith calc = do
-                  mseq <- parseGoal calc
+                  mgoal <- parseGoal calc
                   let content = M.lookup "content" opts
-                  root <- case (content >>= decodeJSON, mseq) of
+                  root <- case (content >>= decodeJSON, mgoal) of
                               (Just val,_) -> let Just c = content in initRoot c o
                               (_, Just seq) -> initRoot ("{\"label\": \"" ++ show (view rhs seq) 
                                                           ++ "\", \"rule\":\"\", \"forest\": []}") o
@@ -70,21 +70,27 @@ activateChecker w (Just (i, o, opts)) = case (setupWith `ofPropTreeSys` sys)
                   memo <- newIORef mempty
                   threadRef <- newIORef (Nothing :: Maybe ThreadId)
                   bw <- createButtonWrapper w o
-                  let submit = submitTree memo opts calc root mseq
+                  let submit = submitTree memo opts calc root mgoal
                   btStatus <- createSubmitButton w bw submit opts
                   initialCheck <- newListener $ liftIO $  do 
                                     forkIO $ do
                                         threadDelay 500000
                                         mr <- toCleanVal root
                                         case mr of
-                                            Just r -> checkProofTree calc (Just memo) r >>= decorate root
+                                            Just r -> do (info,mseq) <- checkProofTree calc (Just memo) r 
+                                                         decorate root info
+                                                         --XXX: reduce duplication here?
+                                                         case (mgoal,mseq) of 
+                                                            (Just goal, Just seq) | seq `seqSubsetUnify` goal -> setAttribute i "class" "input success"
+                                                            (Just goal, Just seq) -> setAttribute i "class" "input failure"
+                                                            _ -> setAttribute i "class" "input"
                                             Nothing -> return ()
                                     return ()
                   addListener i initialize initialCheck False --initial check in case we preload a tableau
                   doOnce i mutate False $ liftIO $ btStatus Edited
                   case M.lookup "init" opts of Just "now" -> dispatchCustom w i "initialize"; _ -> return ()
                   root `onChange` (\_ -> dispatchCustom w i "mutate")
-                  root `onChange` (\_ -> checkOnChange memo threadRef calc root)
+                  root `onChange` (\_ -> checkOnChange memo threadRef calc mgoal i root)
 
               parseGoal calc = do 
                   let seqParse = parseSeqOver $ tbParseForm calc
@@ -122,19 +128,24 @@ checkOnChange :: ( ReLex lex
                  , CopulaSchema (ClassicalSequentOver lex)
                  , Typeable sem
                  , Show rule
+                 , PrismSubstitutionalVariable lex
+                 , FirstOrderLex (lex (ClassicalSequentOver lex))
                  , StructuralOverride rule (ProofTree rule lex sem)
                  , StructuralInference rule lex (ProofTree rule lex sem)
-                 ) => ProofMemoRef lex sem rule -> IORef (Maybe ThreadId) -> TableauCalc lex sem rule -> JSVal -> IO ()
-checkOnChange memo threadRef calc root = do
+                 ) => ProofMemoRef lex sem rule -> IORef (Maybe ThreadId) -> TableauCalc lex sem rule 
+                                                -> Maybe (ClassicalSequentOver lex (Sequent sem)) -> Element -> JSVal -> IO ()
+checkOnChange memo threadRef calc mgoal i root = do
         mt <- readIORef threadRef
         case mt of Just t -> killThread t
                    Nothing -> return ()
         t' <- forkIO $ do
             threadDelay 500000
             Just changedVal <- toCleanVal root
-            theInfo <- checkProofTree calc (Just memo) changedVal 
+            (theInfo, mseq) <- checkProofTree calc (Just memo) changedVal 
             decorate root theInfo
-            return ()
+            case (mgoal,mseq) of (Just goal, Just seq) | seq `seqSubsetUnify` goal -> setAttribute i "class" "input success"
+                                 (Just goal, Just seq) -> setAttribute i "class" "input failure"
+                                 _ -> setAttribute i "class" "input"
         writeIORef threadRef (Just t')
 
 toProofTree :: ( Typeable sem
@@ -172,11 +183,12 @@ checkProofTree :: ( ReLex lex
                   , Show rule
                   , StructuralOverride rule (ProofTree rule lex sem)
                   , StructuralInference rule lex (ProofTree rule lex sem)
-                  ) => TableauCalc lex sem rule -> Maybe (ProofMemoRef lex sem rule) -> Value -> IO Value
+                  ) => TableauCalc lex sem rule -> Maybe (ProofMemoRef lex sem rule) -> Value -> IO (Value, Maybe (ClassicalSequentOver lex (Sequent sem)))
 checkProofTree calc mmemo v = case parse parseTreeJSON v of
                            Success t -> case toProofTree calc t of 
-                                  Left feedback -> return . toInfo $ feedback
-                                  Right tree -> toInfo <$> validateProofTree mmemo tree
+                                  Left feedback -> return (toInfo feedback, Nothing)
+                                  Right tree -> do (val,mseq) <- validateProofTree mmemo tree
+                                                   return (toInfo val, mseq)
                            Error s -> do print (show v)
                                          error s
 
@@ -192,9 +204,11 @@ validateProofTree :: ( ReLex lex
                      , Typeable sem
                      , Show rule
                      , StructuralInference rule lex (ProofTree rule lex sem)
-                     ) => Maybe (ProofMemoRef lex sem rule) -> ProofTree rule lex sem -> IO (TreeFeedback lex)
+                     ) => Maybe (ProofMemoRef lex sem rule) -> ProofTree rule lex sem -> IO (TreeFeedback lex, Maybe (ClassicalSequentOver lex (Sequent sem)))
 validateProofTree mmemo t@(Node _ fs) = do rslt <- case mmemo of Nothing -> return $ hoReduceProofTree (structuralRestriction t) t
                                                                  Just memo -> hoReduceProofTreeMemo memo (structuralRestriction t) t
                                            case rslt of
-                                              Left msg -> Node <$> pure (ProofError msg) <*> mapM (validateProofTree mmemo) fs
-                                              Right seq ->  Node <$> pure (ProofData (show seq)) <*> mapM (validateProofTree mmemo) fs
+                                              Left msg -> (,) <$> (Node <$> pure (ProofError msg) <*> mapM (validateProofTree mmemo >=> return . fst) fs) 
+                                                              <*> pure Nothing
+                                              Right seq ->  (,) <$> (Node <$> pure (ProofData (show seq)) <*> mapM (validateProofTree mmemo >=> return . fst) fs) 
+                                                                <*> pure (Just seq)

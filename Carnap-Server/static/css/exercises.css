@@ -386,11 +386,14 @@
 }
 
 [data-carnap-type="translate"] .success,
-[data-carnap-type="proofchecker"] .success {
+[data-carnap-type="proofchecker"] .success,
+[data-carnap-type="treedeductionchecker"] .success {
     background: #b9f2b7;
 }
 
-[data-carnap-type="translate"] .success::after {
+[data-carnap-type="translate"] .success::after,
+[data-carnap-type="treedeductionchecker"] .success::after
+{
     content:" ✓ ";
 }
 

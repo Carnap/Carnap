@@ -212,10 +212,8 @@ updateGoal s ref g mseq options _ =
         case (mseq, feedback options) of
              (Nothing,_) -> setAttribute g "class" "goal" >> writeIORef ref False
              (Just seq, SyntaxOnly) -> setAttribute g "class" "goal" >> writeIORef ref (seq `seqSubsetUnify` s)
-             (Just seq, _) -> if (seq `seqSubsetUnify` s) then do setAttribute g "class" "goal success"
-                                                                  writeIORef ref True
-                                                          else do setAttribute g "class" "goal failure"
-                                                                  writeIORef ref False
+             (Just seq, _) | seq `seqSubsetUnify` s -> setAttribute g "class" "goal success" >> writeIORef ref True
+             _ -> setAttribute g "class" "goal failure" >> writeIORef ref False
 
 computeRule ref g mseq _ calc = 
         case mseq of
