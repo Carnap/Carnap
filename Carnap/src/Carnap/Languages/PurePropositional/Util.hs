@@ -1,6 +1,6 @@
 {-# LANGUAGE ScopedTypeVariables, FlexibleContexts, RankNTypes, TypeSynonymInstances, FlexibleInstances, MultiParamTypeClasses #-}
 module Carnap.Languages.PurePropositional.Util 
-(showClean,isValid, isEquivTo, toSchema, getIndicies, getValuations,
+(dropOuterParens, showClean,  isValid, isEquivTo, toSchema, getIndicies, getValuations,
 isBooleanBinary, isBooleanUnary, isBoolean, HasLiterals(..), isCNF,
 isDNF, conjunctiveClause, disjunctiveClause) 
 where
@@ -16,8 +16,12 @@ import Data.List
 import Data.Typeable (Typeable)
 
 --------------------------------------------------------
---1. Show Clean
+--1. Rendering
 --------------------------------------------------------
+
+---------------------------------------------------
+--  1.1 Clean formulas with associativity rules  --
+---------------------------------------------------
 
 showClean :: PurePropLanguage (Form Bool) -> String
 showClean = dropOutermost . preShowClean
@@ -46,6 +50,29 @@ dropParens =  init . tail . preShowClean
 dropOutermost :: String -> String
 dropOutermost s@('(':_) = init . tail $ s
 dropOutermost s = s
+
+---------------------------------------------
+--  1.2 Clean outer paretheses in strings  --
+---------------------------------------------
+
+dropOuterParensForm :: String -> String
+dropOuterParensForm s@('(':ss) =  " " ++ (reverse . scan . reverse) ss ++ " "
+    where scan (')':xs) = xs
+          scan (x:xs) = x:scan xs
+          scan [] = []
+dropOuterParensForm s = s
+
+dropOuterParens :: String -> String
+dropOuterParens s = case (break (== '⊢') s) of
+      (a,'⊢':b) -> handle a ++ "⊢" ++ handle b
+      (s,_) -> handle s
+
+    where commaComponents [] = []
+          commaComponents (',':s) = "," : commaComponents s
+          commaComponents (' ':s) = " " : commaComponents s
+          commaComponents s = let (h,t) = break (== ',') s in h : commaComponents t
+
+          handle c = concatMap dropOuterParensForm (commaComponents c)
 
 --------------------------------------------------------
 --2. Truth Tables

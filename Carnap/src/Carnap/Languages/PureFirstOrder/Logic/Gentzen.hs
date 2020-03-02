@@ -110,13 +110,13 @@ instance ( BooleanLanguage (ClassicalSequentOver lex (Form Bool))
                                               _ -> Nothing
 
 gentzenFOLKCalc :: TableauCalc PureLexiconFOL (Form Bool) GentzenFOLK
-gentzenFOLKCalc = TableauCalc 
+gentzenFOLKCalc = mkTBCalc
     { tbParseForm = langParser
     , tbParseRule = parseGentzenFOLK
     }
 
 gentzenFOLJCalc :: TableauCalc PureLexiconFOL (Form Bool) GentzenFOLJ
-gentzenFOLJCalc = TableauCalc 
+gentzenFOLJCalc = mkTBCalc
     { tbParseForm = langParser
     , tbParseRule = parseGentzenFOLJ
     }

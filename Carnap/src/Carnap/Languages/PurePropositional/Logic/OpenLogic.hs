@@ -12,6 +12,7 @@ import Carnap.Core.Data.Optics
 import Carnap.Core.Data.Types (Form, FirstOrderLex(..))
 import Carnap.Core.Unification.Unification
 import Carnap.Languages.PurePropositional.Syntax
+import Carnap.Languages.PurePropositional.Util (dropOuterParens)
 import Carnap.Languages.PurePropositional.Parser
 import Carnap.Languages.PurePropositional.Logic.Rules
 import Carnap.Calculi.Tableau.Data
@@ -170,7 +171,8 @@ instance AssumptionNumbers OLPPropNK where
         dischargesAssumptions _ = []
 
 olpPropNKCalc :: TableauCalc PurePropLexicon (Form Bool) OLPPropNK
-olpPropNKCalc = TableauCalc 
+olpPropNKCalc = mkTBCalc
     { tbParseForm = purePropFormulaParser thomasBolducZachOpts
     , tbParseRule = parseOLPPropNK
+    , tbNotation = dropOuterParens
     }

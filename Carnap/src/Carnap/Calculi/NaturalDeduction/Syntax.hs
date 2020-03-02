@@ -393,7 +393,6 @@ checkAssumptionForm n pt assump sub =
           assump' = pureBNF $ applySub sub (SS assump)
           differentContent x (Node y _) = content x /= content y
 
-
 type SupportsND r lex sem = 
     ( Show r 
     , Typeable sem

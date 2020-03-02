@@ -206,7 +206,7 @@ instance CoreInference IchikawaJenkinsSLTableaux PurePropLexicon (Form Bool) whe
         coreConclusionOf DoubleNeg = SA (lneg $ lneg $ phin 1)  :+: GammaV 1 :|-: Bot
         coreConclusionOf Ax = SA (phin 1) :+: SA (lneg $ phin 1) :+: GammaV 1 :|-: Bot
 
-ichkawaJenkinsSLTableauCalc = TableauCalc 
+ichkawaJenkinsSLTableauCalc = mkTBCalc
     { tbParseForm = purePropFormulaParser magnusOpts
     , tbParseRule = parseIchikawaJenkinsSLTableaux
     }

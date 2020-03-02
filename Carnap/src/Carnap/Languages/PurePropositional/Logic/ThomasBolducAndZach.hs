@@ -10,6 +10,7 @@ import Text.Parsec
 import Carnap.Core.Data.Types (Form)
 import Carnap.Languages.PurePropositional.Syntax
 import Carnap.Languages.PurePropositional.Parser
+import Carnap.Languages.PurePropositional.Util (dropOuterParens)
 import Carnap.Calculi.NaturalDeduction.Syntax
 import Carnap.Calculi.NaturalDeduction.Parser
 import Carnap.Calculi.NaturalDeduction.Checker
@@ -250,25 +251,6 @@ thomasBolducAndZachNotation x = case runParser altParser 0 "" x of
                           return $ c:args
           fallback = do c <- anyChar 
                         return [c]
-
-dropOuterParensForm :: String -> String
-dropOuterParensForm s@('(':ss) =  " " ++ (reverse . scan . reverse) ss ++ " "
-    where scan (')':xs) = xs
-          scan (x:xs) = x:scan xs
-          scan [] = []
-dropOuterParensForm s = s
-
-dropOuterParens :: String -> String
-dropOuterParens s = case (break (== '⊢') s) of
-      (a,'⊢':b) -> handle a ++ "⊢" ++ handle b
-      (s,_) -> handle s
-
-    where commaComponents [] = []
-          commaComponents (',':s) = "," : commaComponents s
-          commaComponents (' ':s) = " " : commaComponents s
-          commaComponents s = let (h,t) = break (== ',') s in h : commaComponents t
-
-          handle c = concatMap dropOuterParensForm (commaComponents c)
 
 thomasBolducAndZachTFLCalc = mkNDCalc 
     { ndRenderer = FitchStyle StandardFitch

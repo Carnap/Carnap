@@ -17,6 +17,7 @@ import Carnap.Languages.PureFirstOrder.Syntax
 import Carnap.Languages.PureFirstOrder.Parser
 import Carnap.Languages.PureFirstOrder.Logic.Rules
 import Carnap.Languages.PurePropositional.Logic.OpenLogic
+import Carnap.Languages.PurePropositional.Util (dropOuterParens)
 import Carnap.Languages.Util.GenericConstructors
 import Carnap.Calculi.NaturalDeduction.Syntax
 import Carnap.Calculi.Tableau.Data
@@ -121,7 +122,8 @@ instance AssumptionNumbers (OpenLogicFONK lex) where
         dischargesAssumptions _ = []
 
 openLogicFONKCalc :: TableauCalc PureLexiconFOL (Form Bool) (OpenLogicFONK PureLexiconFOL) 
-openLogicFONKCalc = TableauCalc 
+openLogicFONKCalc = mkTBCalc
     { tbParseForm = thomasBolducAndZachFOL2019FormulaParser
     , tbParseRule = parseOpenLogicFONK
+    , tbNotation = dropOuterParens
     }

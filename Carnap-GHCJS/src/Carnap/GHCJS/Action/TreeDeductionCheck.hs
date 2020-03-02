@@ -98,7 +98,7 @@ activateChecker w (Just (i, o, opts)) = case (setupWith `ofPropTreeSys` sys)
                       Just s -> case P.parse seqParse "" s of
                           Left e -> do setInnerHTML i (Just $ "Couldn't Parse This Goal:" ++ s)
                                        error "couldn't parse goal"
-                          Right seq -> do setInnerHTML i (Just $ show seq) --TODO: will eventually want the equivalent of ndNotation
+                          Right seq -> do setInnerHTML i (Just . tbNotation calc . show $ seq) --TODO: will eventually want the equivalent of ndNotation
                                           return $ Just seq
                       Nothing -> return Nothing
 
@@ -187,7 +187,7 @@ checkProofTree :: ( ReLex lex
 checkProofTree calc mmemo v = case parse parseTreeJSON v of
                            Success t -> case toProofTree calc t of 
                                   Left feedback -> return (toInfo feedback, Nothing)
-                                  Right tree -> do (val,mseq) <- validateProofTree mmemo tree
+                                  Right tree -> do (val,mseq) <- validateProofTree calc mmemo tree
                                                    return (toInfo val, mseq)
                            Error s -> do print (show v)
                                          error s
@@ -204,11 +204,13 @@ validateProofTree :: ( ReLex lex
                      , Typeable sem
                      , Show rule
                      , StructuralInference rule lex (ProofTree rule lex sem)
-                     ) => Maybe (ProofMemoRef lex sem rule) -> ProofTree rule lex sem -> IO (TreeFeedback lex, Maybe (ClassicalSequentOver lex (Sequent sem)))
-validateProofTree mmemo t@(Node _ fs) = do rslt <- case mmemo of Nothing -> return $ hoReduceProofTree (structuralRestriction t) t
-                                                                 Just memo -> hoReduceProofTreeMemo memo (structuralRestriction t) t
-                                           case rslt of
-                                              Left msg -> (,) <$> (Node <$> pure (ProofError msg) <*> mapM (validateProofTree mmemo >=> return . fst) fs) 
-                                                              <*> pure Nothing
-                                              Right seq ->  (,) <$> (Node <$> pure (ProofData (show seq)) <*> mapM (validateProofTree mmemo >=> return . fst) fs) 
-                                                                <*> pure (Just seq)
+                     ) => TableauCalc lex sem rule -> Maybe (ProofMemoRef lex sem rule) 
+                       -> ProofTree rule lex sem -> IO (TreeFeedback lex, Maybe (ClassicalSequentOver lex (Sequent sem)))
+validateProofTree calc mmemo t@(Node _ fs) = do rslt <- case mmemo of 
+                                                     Nothing -> return $ hoReduceProofTree (structuralRestriction t) t
+                                                     Just memo -> hoReduceProofTreeMemo memo (structuralRestriction t) t
+                                                case rslt of
+                                                     Left msg -> (,) <$> (Node <$> pure (ProofError msg) <*> mapM (validateProofTree calc mmemo >=> return . fst) fs) 
+                                                                     <*> pure Nothing
+                                                     Right seq ->  (,) <$> (Node <$> pure (ProofData (tbNotation calc . show $ seq)) <*> mapM (validateProofTree calc mmemo >=> return . fst) fs) 
+                                                                    <*> pure (Just seq)

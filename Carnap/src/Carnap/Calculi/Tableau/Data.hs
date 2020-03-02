@@ -20,7 +20,6 @@ data TreeNode lex sem rule = TreeNode
            , treeNodeRule :: Maybe [rule]
            }
 
-
 --A truth tree is a rose tree of TreeNodes.
 type TruthTree lex sem rule = Tree (TreeNode lex sem rule)
 
@@ -38,5 +37,7 @@ type Tableau lex sem rule = Tree (TableauNode lex sem rule)
 data TableauCalc lex sem rule = TableauCalc 
            { tbParseForm :: Parsec String () (FixLang lex sem)
            , tbParseRule :: Parsec String () [rule]
-           --possibly some other stuff here
+           , tbNotation :: String -> String
            }
+
+mkTBCalc = TableauCalc { tbNotation = id }

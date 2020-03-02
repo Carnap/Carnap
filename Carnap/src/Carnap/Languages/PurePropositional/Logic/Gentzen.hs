@@ -329,25 +329,25 @@ instance AssumptionNumbers GentzenPropNK where
         dischargesAssumptions _ = []
 
 gentzenPropNJCalc :: TableauCalc PurePropLexicon (Form Bool) GentzenPropNJ
-gentzenPropNJCalc = TableauCalc 
+gentzenPropNJCalc = mkTBCalc
     { tbParseForm = purePropFormulaParser hardegreeOpts
     , tbParseRule = parseGentzenPropNJ
     }
 
 gentzenPropNKCalc :: TableauCalc PurePropLexicon (Form Bool) GentzenPropNK
-gentzenPropNKCalc = TableauCalc 
+gentzenPropNKCalc = mkTBCalc
     { tbParseForm = purePropFormulaParser hardegreeOpts
     , tbParseRule = parseGentzenPropNK
     }
 
 gentzenPropLKCalc :: TableauCalc PurePropLexicon (Form Bool) GentzenPropLK
-gentzenPropLKCalc = TableauCalc 
+gentzenPropLKCalc = mkTBCalc
     { tbParseForm = langParser
     , tbParseRule = parseGentzenPropLK
     }
 
 gentzenPropLJCalc :: TableauCalc PurePropLexicon (Form Bool) GentzenPropLJ
-gentzenPropLJCalc = TableauCalc 
+gentzenPropLJCalc = mkTBCalc
     { tbParseForm = langParser
     , tbParseRule = parseGentzenPropLJ
     }
