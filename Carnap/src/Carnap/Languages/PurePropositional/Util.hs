@@ -70,7 +70,19 @@ dropOuterParens s = case (break (== '⊢') s) of
     where commaComponents [] = []
           commaComponents (',':s) = "," : commaComponents s
           commaComponents (' ':s) = " " : commaComponents s
-          commaComponents s = let (h,t) = break (== ',') s in h : commaComponents t
+          commaComponents s = takeChunk 0 s : commaComponents (dropChunk 0 s)
+
+          takeChunk n ('(':xs) = '(' : takeChunk (n + 1) xs
+          takeChunk n (')':xs) = ')' : takeChunk (n - 1) xs
+          takeChunk 0 (',':xs) = []
+          takeChunk n (x:xs) = x:takeChunk n xs
+          takeChunk n [] = []
+
+          dropChunk n ('(':xs) = dropChunk (n + 1) xs
+          dropChunk n (')':xs) = dropChunk (n - 1) xs
+          dropChunk 0 (',':xs) = ',':xs
+          dropChunk n (x:xs) = dropChunk n xs
+          dropChunk n [] = []
 
           handle c = concatMap dropOuterParensForm (commaComponents c)
 
