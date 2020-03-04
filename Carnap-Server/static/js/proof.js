@@ -157,17 +157,19 @@ class DeductionNode {
             } else if (e.code == "Enter" && e.ctrlKey) {
                 e.preventDefault()
                 this.addChild()
-                try {parentElt.input.focus()} catch {elt.rootElt.input.focus()}
+                try {parentElt.input.focus()} catch {elt.rootElt().input.focus()}
                 if (this.forest.length == 1) elt.rule.focus();
-                else elt.forest.firstChild.elt.input.focus();
+                else elt.forest.firstChild.input.focus();
             } else if (e.code == "Enter") {
                 e.preventDefault();
                 this.parentNode.addChild();
-                elt.parentElement.firstChild.elt.input.focus()
+                elt.parentElement.firstChild.input.focus()
             } else if (e.code == "Backspace" && e.ctrlKey) {
                 this.remove()
-                try {parentElt.input.focus()} catch {elt.rootElt.input.focus()}
-                this.parentNode.trigger("changed", true, this)
+                try {
+                    parentElt.input.focus()
+                    this.parentNode.trigger("changed", true, this)
+                } catch {elt.rootElt().input.focus()}
             } else if (e.code == "KeyZ" && e.ctrlKey && e.shiftKey) {
                 e.preventDefault()
                 this.trigger("redo",true,elt,this.ident)
@@ -181,8 +183,10 @@ class DeductionNode {
                 e.preventDefault()
                 DeductionNode.Clipboard = JSON.stringify(this)
                 this.remove()
-                try {parentElt.input.focus()} catch {elt.rootElt.input.focus()}
-                this.parentNode.trigger("changed", true, this)
+                try {
+                    parentElt.input.focus()
+                    this.parentNode.trigger("changed", true, this)
+                } catch {elt.rootElt().input.focus()}
             } else if (e.code == "KeyV" && e.shiftKey && e.ctrlKey) {
                 e.preventDefault()
                 this.replace(new DeductionNode(JSON.parse(DeductionNode.Clipboard)).scrubIdent())
@@ -355,6 +359,11 @@ class DeductionRoot extends DeductionNode {
             }
         })
     };
+
+    renderOn(target) {
+        var elt = super.renderOn(target)
+        elt.input.setAttribute("required","required")
+    }
 };
 
 class ProofRoot extends DeductionRoot {
