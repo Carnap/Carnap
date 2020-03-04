@@ -64,9 +64,10 @@ activateChecker w (Just (i, o, opts)) = case (setupWith `ofPropTreeSys` sys)
                   let content = M.lookup "content" opts
                   root <- case (content >>= decodeJSON, mgoal) of
                               (Just val,_) -> let Just c = content in initRoot c o
-                              (_, Just seq) -> initRoot ("{\"label\": \"" ++ show (view rhs seq) 
+                              (_, Just seq) | "prepopulate" `inOpts` opts -> 
+                                                initRoot ("{\"label\": \"" ++ show (view rhs seq) 
                                                           ++ "\", \"rule\":\"\", \"forest\": []}") o
-                              _ -> initRoot "" o
+                              _ -> initRoot "{\"label\": \"\", \"rule\":\"\", \"forest\": []}" o
                   memo <- newIORef mempty
                   threadRef <- newIORef (Nothing :: Maybe ThreadId)
                   bw <- createButtonWrapper w o
@@ -83,6 +84,8 @@ activateChecker w (Just (i, o, opts)) = case (setupWith `ofPropTreeSys` sys)
                                                          case (mgoal,mseq) of 
                                                             (Just goal, Just seq) | seq `seqSubsetUnify` goal -> setAttribute i "class" "input success"
                                                             (Just goal, Just seq) -> setAttribute i "class" "input failure"
+                                                            (Nothing, Just seq) -> setInnerHTML i (Just . tbNotation calc . show $ seq)
+                                                            (Nothing, Nothing) -> setInnerHTML i (Just "Awaiting a proof")
                                                             _ -> setAttribute i "class" "input"
                                             Nothing -> return ()
                                     return ()
@@ -98,24 +101,24 @@ activateChecker w (Just (i, o, opts)) = case (setupWith `ofPropTreeSys` sys)
                       Just s -> case P.parse seqParse "" s of
                           Left e -> do setInnerHTML i (Just $ "Couldn't Parse This Goal:" ++ s)
                                        error "couldn't parse goal"
-                          Right seq -> do setInnerHTML i (Just . tbNotation calc . show $ seq) --TODO: will eventually want the equivalent of ndNotation
+                          Right seq -> do setInnerHTML i (Just . tbNotation calc . show $ seq)
                                           return $ Just seq
-                      Nothing -> return Nothing
+                      Nothing -> do setInnerHTML i (Just "Awaiting a proof")
+                                    return Nothing
 
 submitTree memo opts calc root (Just seq) l = 
         do Just val <- liftIO $ toCleanVal root
            case parse parseTreeJSON val of
                Error s -> message $ "Something has gone wrong. Here's the error:" ++ s
                Success tree -> case toProofTree calc tree of
-                     Left _ | "exam" `elem` optlist -> trySubmit DeductionTree opts l (DeductionTreeData (pack (show seq)) tree (toList opts)) False
+                     Left _ | "exam" `inOpts` opts -> trySubmit DeductionTree opts l (DeductionTreeData (pack (show seq)) tree (toList opts)) False
                      Left _ -> message "Something is wrong with the proof... Try again?"
                      Right prooftree -> do 
                           validation <- liftIO $ hoReduceProofTreeMemo memo (structuralRestriction prooftree) prooftree 
                           case validation of
-                              Right seq' | "exam" `elem` optlist || (seq' `seqSubsetUnify` seq) 
+                              Right seq' | "exam" `inOpts` opts || (seq' `seqSubsetUnify` seq) 
                                 -> trySubmit DeductionTree opts l (DeductionTreeData (pack (show seq)) tree (toList opts)) (seq' `seqSubsetUnify` seq)
                               _ -> message "Something is wrong with the proof... Try again?"
-    where optlist = case M.lookup "options" opts of Just s -> words s; Nothing -> []
 
 checkOnChange :: ( ReLex lex
                  , Sequentable lex
@@ -145,6 +148,8 @@ checkOnChange memo threadRef calc mgoal i root = do
             decorate root theInfo
             case (mgoal,mseq) of (Just goal, Just seq) | seq `seqSubsetUnify` goal -> setAttribute i "class" "input success"
                                  (Just goal, Just seq) -> setAttribute i "class" "input failure"
+                                 (Nothing, Just seq) -> setInnerHTML i (Just . tbNotation calc . show $ seq)
+                                 (Nothing, Nothing) -> setInnerHTML i (Just "Awaiting a proof")
                                  _ -> setAttribute i "class" "input"
         writeIORef threadRef (Just t')
 
