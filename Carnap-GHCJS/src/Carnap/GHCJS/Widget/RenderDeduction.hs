@@ -26,7 +26,7 @@ chunkBy n (x:xs)
     | otherwise = Left x:chunkBy n xs
     where deep x = depth (snd x) > n
 
-displayVia calc = Just . ndNotation calc . show
+displayVia calc = Just . dropWhile (== ' ') . ndNotation calc . show
 
 parenWrap s = Just $ "\"" ++ s ++ "\""
 
@@ -120,7 +120,7 @@ lineBase w calc n ms mrd lineclass =
 renderTreeLemmon w calc = treeToElement asLine asSubproof
     where asLine (n,l@(DependentAssertLine f r deps _ scope mnum)) = 
                 do [theWrapper,lineNum,theForm,theRule,theScope] <- catMaybes <$> mapM (createElement w . Just) ["div","span","span","span","span"]
-                   setInnerHTML theForm (Just $ ndNotation calc $ show f)
+                   setInnerHTML theForm (displayVia calc f)
                    case ndRenderer calc of
                        LemmonStyle TomassiStyle -> 
                             do setInnerHTML theScope (Just $ "{" ++ intercalate "," (map show scope) ++ "}")
