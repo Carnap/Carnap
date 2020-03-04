@@ -120,7 +120,7 @@ Truth-Value Rules for $\land$, $\lor$, $\neg$
     #.  If a sentence has $\lor$ as its main connective, it is true when at
     least one half is true. Otherwise, it is false.
     #.  If a sentence as $\neg$ as its main connective, it is true when its
-    main part is true. Otherwise, it is false.
+    main part is false. Otherwise, it is false.
 
 ##Truth Values, Truth Tables, Tautologies
 
