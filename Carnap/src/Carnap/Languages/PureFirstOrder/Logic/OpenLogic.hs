@@ -1,4 +1,4 @@
-{-#LANGUAGE RankNTypes, ScopedTypeVariables, FlexibleContexts, FlexibleInstances, UndecidableInstances, MultiParamTypeClasses #-}
+{-#LANGUAGE RankNTypes, StandaloneDeriving, ScopedTypeVariables, FlexibleContexts, FlexibleInstances, UndecidableInstances, MultiParamTypeClasses #-}
 module Carnap.Languages.PureFirstOrder.Logic.OpenLogic
 ( parseOpenLogicFONK, openLogicFONKCalc, OpenLogicFONK(..)) where
 
@@ -29,6 +29,8 @@ data OpenLogicFONK lex = PropNK OLPPropNK
                 | ExistsI | ExistsE Int | ExistsEVac
                 | ExistsEAnnotated Int (ClassicalSequentOver lex (Term Int))
                 | ExistsEAnnotatedVac Int (ClassicalSequentOver lex (Term Int))
+
+deriving instance Eq (ClassicalSequentOver lex (Term Int)) => Eq (OpenLogicFONK lex)
 
 instance Show (OpenLogicFONK lex) where
     show (PropNK x)                 = show x
@@ -88,7 +90,7 @@ instance ( BooleanLanguage (ClassicalSequentOver lex (Form Bool))
          coreRestriction (ExistsEAnnotatedVac _ t) = Just $ eigenConstraint t (SS (lsome "v" (phi' 1)) :-: fodelta 1) (fogamma 1)
          coreRestriction _ = Nothing
 
-instance AssumptionNumbers r => StructuralInference (OpenLogicFONK PureLexiconFOL) PureLexiconFOL (ProofTree r PureLexiconFOL (Form Bool)) where
+instance (Eq r, AssumptionNumbers r) => StructuralInference (OpenLogicFONK PureLexiconFOL) PureLexiconFOL (ProofTree r PureLexiconFOL (Form Bool)) where
     structuralRestriction pt n (PropNK r) = structuralRestriction pt n r
     --ExistsE always throws an error, since we get it only if the
     --structural override fails
@@ -105,11 +107,9 @@ instance AssumptionNumbers r => StructuralOverride (OpenLogicFONK PureLexiconFOL
                                             t : _ -> Just [ExistsEAnnotated n t, ExistsEAnnotatedVac n t]
     structuralOverride _ _ = Nothing
 
-
 freshParametersAt n pt@(Node root _) = case leavesLabeled n pt of
         [] -> []
         (Node pl _ : _) -> toListOf termsOf (content pl) \\ toListOf termsOf (content root)
-
 
 instance AssumptionNumbers (OpenLogicFONK lex) where
         introducesAssumptions (PropNK r) = introducesAssumptions r

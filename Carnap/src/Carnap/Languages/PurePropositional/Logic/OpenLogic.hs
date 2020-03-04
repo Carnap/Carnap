@@ -123,6 +123,7 @@ instance ( BooleanLanguage (ClassicalSequentOver lex (Form Bool))
          , FirstOrderLex (lex (ClassicalSequentOver lex))
          , Eq (ClassicalSequentOver lex (Form Bool))
          , Eq (ClassicalSequentOver lex (Succedent (Form Bool)))
+         , Eq r
          , ReLex lex
          , AssumptionNumbers r
          ) => StructuralInference OLPPropNK lex (ProofTree r lex (Form Bool)) where

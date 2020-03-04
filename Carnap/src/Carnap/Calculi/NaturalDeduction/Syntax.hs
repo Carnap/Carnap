@@ -365,9 +365,12 @@ class AssumptionNumbers r where
 leavesLabeled :: AssumptionNumbers rule => Int -> ProofTree rule lex sem -> [ProofTree rule lex sem]
 leavesLabeled n pt = filter (\(Node pl _) -> introducesAssumptions (head (rule pl)) == [n]) $ toListOf leaves pt
 
-usesAssumptions n pt assumps sub = if all test (leavesLabeled n pt) then Nothing else Just "assumption mismatch"
+usesAssumptions n pt assumps sub | leaves == [] = Just "This inference seems to be citing an assumption that doesn't exist"
+                                 | not (all test leaves) = Just "A cited assumption doesn't have the right form for this rule."
+                                 | otherwise = Nothing
     where assumps' = map (pureBNF . applySub sub) assumps
           test (Node x _) = content x `elem` assumps'
+          leaves = leavesLabeled n pt
 
 usesAssumption n pt assump = usesAssumptions n pt [assump]
 

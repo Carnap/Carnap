@@ -28,6 +28,7 @@ data GentzenPropLK = Ax    | Rep   | Cut
                    | OrR1  | OrR2  | OrL
                    | CondR | CondL
                    | NegR  | NegL
+    deriving Eq
 
 newtype GentzenPropLJ = LJ GentzenPropLK
 
@@ -40,7 +41,9 @@ data GentzenPropNJ = AndI     | AndEL       | AndER
                    | Pr
     deriving Eq
 
-data GentzenPropNK = NJ GentzenPropNJ | LEM
+data GentzenPropNK = NJ GentzenPropNJ 
+                   | LEM
+    deriving Eq
 
 instance Show GentzenPropLK where
     show Ax     = "Ax"
@@ -90,6 +93,7 @@ instance Show GentzenPropNJ where
 instance Show GentzenPropNK where
     show (NJ x) = show x
     show LEM = "LEM"
+
 
 parseGentzenPropLK :: Parsec String u [GentzenPropLK]
 parseGentzenPropLK =  do r <- choice (map (try . string) [ "Ax", "Rep", "Cut"
@@ -253,7 +257,7 @@ instance Inference GentzenPropNJ PurePropLexicon (Form Bool) where
 instance Inference GentzenPropNK PurePropLexicon (Form Bool) where
         ruleOf x = coreRuleOf x
 
-instance AssumptionNumbers r => StructuralInference GentzenPropNJ PurePropLexicon (ProofTree r PurePropLexicon (Form Bool)) where
+instance (Eq r, AssumptionNumbers r) => StructuralInference GentzenPropNJ PurePropLexicon (ProofTree r PurePropLexicon (Form Bool)) where
     structuralRestriction pt _ (As n) = Just noReps
         where noReps _ | allEq (leavesLabeled n pt) = Nothing
                        | otherwise = Just "Distinct assumptions are getting the same index"
@@ -293,7 +297,7 @@ instance AssumptionNumbers r => StructuralInference GentzenPropNJ PurePropLexico
         where assump n = SS . liftToSequent $ phin n
     structuralRestriction pt _ r = Nothing
 
-instance AssumptionNumbers r => StructuralInference GentzenPropNK PurePropLexicon (ProofTree r PurePropLexicon (Form Bool)) where
+instance (Eq r, AssumptionNumbers r) => StructuralInference GentzenPropNK PurePropLexicon (ProofTree r PurePropLexicon (Form Bool)) where
     structuralRestriction pt y (NJ x) = structuralRestriction pt y x
     structuralRestriction pt _ r = Nothing
 
