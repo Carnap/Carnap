@@ -40,6 +40,7 @@ sequentCheckAction ::  IO ()
 sequentCheckAction = do
                initializeCallback "checkPropSequent" (checkSequent gentzenPropLKCalc Nothing)
                initializeCallback "checkFOLSequent" (checkSequent gentzenFOLKCalc Nothing)
+               initializeCallback "checkIchikawaJenkinsSLTableau" (checkSequent ichikawaJenkinsSLTableauCalc Nothing)
                initializeCallback "checkSequentInfo" checkFullInfo
                initElements getCheckers activateChecker
                return ()

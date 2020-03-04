@@ -1,6 +1,6 @@
 {-#LANGUAGE FlexibleContexts, FlexibleInstances, MultiParamTypeClasses #-}
 module Carnap.Languages.PurePropositional.Logic.IchikawaJenkins
-    ( parseIchikawaJenkinsSL, IchikawaJenkinsSL,  ichikawaJenkinsSLCalc, ichkawaJenkinsSLTableauCalc, IchikawaJenkinsSLTableaux(..), IchikawaJenkinsSL(..)) where
+    ( parseIchikawaJenkinsSL, IchikawaJenkinsSL,  ichikawaJenkinsSLCalc, ichikawaJenkinsSLTableauCalc, IchikawaJenkinsSLTableaux(..), IchikawaJenkinsSL(..)) where
 
 import Data.Map as M (lookup, Map)
 import Text.Parsec
@@ -206,7 +206,7 @@ instance CoreInference IchikawaJenkinsSLTableaux PurePropLexicon (Form Bool) whe
         coreConclusionOf DoubleNeg = SA (lneg $ lneg $ phin 1)  :+: GammaV 1 :|-: Bot
         coreConclusionOf Ax = SA (phin 1) :+: SA (lneg $ phin 1) :+: GammaV 1 :|-: Bot
 
-ichkawaJenkinsSLTableauCalc = mkTBCalc
+ichikawaJenkinsSLTableauCalc = mkTBCalc
     { tbParseForm = purePropFormulaParser magnusOpts
     , tbParseRule = parseIchikawaJenkinsSLTableaux
     }
