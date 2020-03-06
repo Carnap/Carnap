@@ -3,7 +3,7 @@ module Lib (genericSendJSON, sendJSON, onEnter, onKey, doOnce, dispatchCustom, c
            getListOfElementsByClass, getListOfElementsByTag, tryParse,
            treeToElement, genericTreeToUl, treeToUl, genericListToUl,
            listToUl, formToTree, leaves, adjustFirstMatching, decodeHtml,
-           decodeJSON, cleanString, syncScroll, reloadPage, initElements,
+           decodeJSON,toJSONString, cleanString, syncScroll, reloadPage, initElements,
            errorPopup, genInOutElts,
            getInOutElts,generateExerciseElts, withLabel,
            formAndLabel,seqAndLabel, folSeqAndLabel, folFormAndLabel,
@@ -317,6 +317,9 @@ popUpWith fd w elt label msg details =
 --1.3 Encodings
 --------------------------------------------------------
 
+toJSONString :: ToJSON a => a -> JSString
+toJSONString = toJSString . decodeUtf8 . BSL.toStrict . encode
+
 decodeHtml :: (StringLike s, Show s) => s -> s
 decodeHtml = TS.fromTagText . head . parseTags
 
@@ -514,7 +517,7 @@ exclaimSVG = renderHtml [shamlet|
 sendJSON :: ToJSON a => a -> (String -> IO ()) -> (String -> IO ()) -> IO ()
 sendJSON x succ fail = do cb1 <- asyncCallback1 (cb succ)
                           cb2 <- asyncCallback3 (cb3 fail)
-                          jsonCommand (toJSString . decodeUtf8 . BSL.toStrict . encode $ x) cb1 cb2
+                          jsonCommand (toJSONString x) cb1 cb2
     where cb f x = do (Just s) <- fromJSVal x 
                       f s
           cb3 f _ x _  = do (Just s) <- fromJSVal x 
@@ -523,7 +526,7 @@ sendJSON x succ fail = do cb1 <- asyncCallback1 (cb succ)
 genericSendJSON :: ToJSON a => a -> (Value -> IO ()) -> (Value -> IO ()) -> IO ()
 genericSendJSON x succ fail = do cb1 <- asyncCallback1 (cb succ)
                                  cb2 <- asyncCallback3 (cb3 fail)
-                                 jsonCommand (toJSString . decodeUtf8 . BSL.toStrict . encode $ x) cb1 cb2
+                                 jsonCommand (toJSONString x) cb1 cb2
     where cb f x = do (Just v) <- fromJSVal x 
                       f v
           cb3 f _ x _  = do (Just v) <- fromJSVal x 

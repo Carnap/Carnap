@@ -32,9 +32,11 @@ import Carnap.Languages.PurePropositional.Logic (ofPropTreeSys)
 import Carnap.Languages.PureFirstOrder.Logic (ofFOLTreeSys)
 import Carnap.GHCJS.Util.ProofJS
 import Carnap.GHCJS.SharedTypes
-import GHCJS.DOM.Element (setInnerHTML, click, setAttribute)
-import GHCJS.DOM.Node (appendChild, getParentNode, insertBefore)
+import GHCJS.DOM.HTMLElement (getInnerText, castToHTMLElement)
+import GHCJS.DOM.Element (setInnerHTML, click, input, setAttribute)
+import GHCJS.DOM.Node (appendChild,  getParentNode, insertBefore)
 import GHCJS.DOM.Types (Element, Document, IsElement)
+import GHCJS.DOM.Document (createElement, getActiveElement)
 import GHCJS.DOM.EventM
 import GHCJS.DOM
 import GHCJS.Types
@@ -73,6 +75,28 @@ activateChecker w (Just (i, o, opts)) = case (setupWith `ofPropTreeSys` sys)
                   bw <- createButtonWrapper w o
                   let submit = submitTree memo opts calc root mgoal
                   btStatus <- createSubmitButton w bw submit opts
+                  if "displayJSON" `inOpts` opts 
+                      then do
+                          Just displayDiv <- createElement w (Just "div")
+                          setAttribute displayDiv "class" "jsonDisplay"
+                          setAttribute displayDiv "contenteditable" "true"
+                          appendChild o (Just displayDiv)
+                          val <- toCleanVal root
+                          setInnerHTML displayDiv . Just $ toJSONString val
+                          updateRoot <- newListener $ liftIO $ do 
+                                Just json <- getInnerText (castToHTMLElement displayDiv)
+                                replaceRoot root json
+                          addListener displayDiv input updateRoot False
+                          root `onChange` (\_ -> do
+                                   mfocus <- getActiveElement w
+                                   --don't update when the display is
+                                   --focussed, to avoid cursor jumping
+                                   if Just displayDiv /= mfocus then do
+                                       val <- toCleanVal root
+                                       setInnerHTML displayDiv . Just $ toJSONString val
+                                   else return ())
+                          return ()
+                      else return ()
                   initialCheck <- newListener $ liftIO $  do 
                                     forkIO $ do
                                         threadDelay 500000

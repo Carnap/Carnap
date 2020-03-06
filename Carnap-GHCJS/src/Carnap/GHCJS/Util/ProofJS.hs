@@ -62,6 +62,8 @@ foreign import javascript unsafe "$1.on('changed',$2)" onChangeJS :: JSVal -> Ca
 
 foreign import javascript unsafe "(function() {var rslt; if ($1.parentNode) {rslt=$1.parentNode} else {rslt=$1}; return rslt})()" ascendTree :: JSVal -> IO JSVal
 
+foreign import javascript unsafe "try {$1.replace(JSON.parse($2))} catch(e) {console.log(e)};" replaceRoot :: JSVal -> JSString -> IO ()
+
 newRoot :: String -> IO JSVal
 newRoot s = newRootJS (toJSString s)
 
@@ -89,5 +91,8 @@ decorate = error "you need the JavaScript FFI to call decorate"
 
 ascendTree :: JSVal -> IO JSVal
 ascendTree = error "you need the JavaScript FFI to call ascendTree"
+
+replaceRoot :: JSVal -> JSString -> IO ()
+replaceRoot = error "you need the JavaScript FFI to call replaceRoot"
 
 #endif

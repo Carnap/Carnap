@@ -487,6 +487,12 @@ body[data-carnap-type="proofchecker"] .buttonWrapper {
     text-align:center;
 }
 
+[data-carnap-type="treedeductionchecker"] .jsonDisplay {
+    border: 1px dashed;
+    font-size:12px;
+    padding: 1em;
+}
+
 [data-carnap-type="truthtable"] .completeTT, 
 [data-carnap-type="countermodeler"] .completeCM {
     background: #CCFFCC;
