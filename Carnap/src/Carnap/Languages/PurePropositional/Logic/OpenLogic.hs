@@ -57,31 +57,32 @@ instance Show OLPPropNK where
     show Pr = "Pr"
 
 parseOLPPropNK :: Parsec String u [OLPPropNK]
-parseOLPPropNK = choice . map try $
+parseOLPPropNK = parseProp <* spaces <* eof
+    where parseProp = choice . map try $
                         [ stringOpts ["&Intro","/\\Intro", "&I","/\\I"] >> return [AndI]
                         , stringOpts ["&Elim","/\\Elim", "&E","/\\E"] >> return [AndER, AndEL]
                         , stringOpts  ["∨Intro","\\/Intro","∨I","\\/I"] >> return [OrIL, OrIR]
                         , stringOpts ["⊃Elim",">Elim", "->Elim", "⊃Elim",">E", "->E"] >> return [IfE]
                         , stringOpts ["¬Elim","-Elim", "~Elim", "¬E","-E", "~E"] >> return [NegE]
                         , stringOpts ["X"] >> return [FalsumE]
-                        , char '(' *> many1 digit <* char ')' 
+                        , getLabel
                             >>= \s -> return [As (read s :: Int)]
-                        , (stringOpts ["->Intro", ">Intro","⊃Intro", "->I", ">I","⊃I"] *> spaces *> char '(' *> many1 digit <* char ')') 
+                        , (stringOpts ["->Intro", ">Intro","⊃Intro", "->I", ">I","⊃I"] *> spaces *> getLabel) 
                             >>= \s -> return (let val = read s :: Int in [IfI val, IfIVac (Just val)])
                         , stringOpts ["->Intro", ">Intro","⊃Intro", "->I", ">I","⊃I"] >> return [IfIVac Nothing]
-                        , (stringOpts ["¬Intro", "-Intro", "~Intro", "¬I", "-I", "~I"] *> spaces *> char '(' *> many1 digit <* char ')') 
+                        , (stringOpts ["¬Intro", "-Intro", "~Intro", "¬I", "-I", "~I"] *> spaces *> getLabel) 
                             >>= \s -> return (let val = read s :: Int in [NegI val, NegIVac (Just val)])
                         , stringOpts ["¬Intro", "-Intro", "~Intro", "¬I", "-I", "~I"] >> return [NegIVac Nothing]
-                        , (stringOpts ["IP"] *> spaces *> char '(' *> many1 digit <* char ')') 
+                        , (stringOpts ["IP"] *> spaces *> getLabel) 
                             >>= \s -> return (let val = read s :: Int in [IP val, IPVac (Just val)])
                         , stringOpts ["IP"] >> return [IPVac Nothing]
-                        , (stringOpts ["∨Elim","\\/Elim", "∨E","\\/E"] *> spaces *> char '(' *> many1 digit <* char ')') 
+                        , (stringOpts ["∨Elim","\\/Elim", "∨E","\\/E"] *> spaces *> getLabel) 
                             >>= \s -> return (let val = read s :: Int in [OrE val, OrELVac val, OrERVac val , OrEVac (Just val)])
                         , stringOpts ["∨Elim","\\/Elim", "∨E","\\/E"] >> return [OrEVac Nothing]
                         , eof >> return [Pr]
                         ]
-    where stringOpts = choice . map (try . string)
-
+          stringOpts = (choice . map (try . string))
+          getLabel = (char '(' *> many1 digit <* char ')') <|> many1 digit
 instance ( BooleanLanguage (ClassicalSequentOver lex (Form Bool))
          , BooleanConstLanguage (ClassicalSequentOver lex (Form Bool))
          , IndexedSchemePropLanguage (ClassicalSequentOver lex (Form Bool))

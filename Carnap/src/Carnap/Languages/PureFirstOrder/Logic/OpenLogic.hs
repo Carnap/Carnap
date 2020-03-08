@@ -27,6 +27,7 @@ import Carnap.Languages.Util.LanguageClasses
 data OpenLogicFONK lex = PropNK OLPPropNK
                 | AllI | AllE
                 | ExistsI | ExistsE Int | ExistsEVac
+                | EqI     | EqE1 | EqE2
                 | ExistsEAnnotated Int (ClassicalSequentOver lex (Term Int))
                 | ExistsEAnnotatedVac Int (ClassicalSequentOver lex (Term Int))
 
@@ -36,6 +37,9 @@ instance Show (OpenLogicFONK lex) where
     show (PropNK x)                 = show x
     show AllI                       = "∀Intro"
     show AllE                       = "∀Elim"
+    show EqI                        = "=Intro"
+    show EqE1                       = "=Elim"
+    show EqE2                       = "=Elim"
     show ExistsI                    = "∃Intro"
     show (ExistsE n)                = "∃Elim (" ++ show n ++ ")"
     show (ExistsEAnnotated n t)     = "∃Elim (" ++ show n ++ ")"
@@ -43,17 +47,20 @@ instance Show (OpenLogicFONK lex) where
     show (ExistsEVac)               = "∃Elim"
 
 parseOpenLogicFONK :: Parsec String u [OpenLogicFONK lex]
-parseOpenLogicFONK = try folParse <|> liftProp
+parseOpenLogicFONK = (try folParse <|> liftProp) <* spaces <* eof
         where liftProp = map PropNK <$> parseOLPPropNK
               stringOpts = choice . map (try . string)
               folParse = choice . map try $
                     [ stringOpts ["AIntro", "∀Intro", "AI", "∀I"] >> return [AllI]
                     , stringOpts ["AElim", "∀Elim", "AE", "∀E"] >> return [AllE]
                     , stringOpts ["EIntro", "∃Intro", "EI", "∃I"] >> return [ExistsI]
-                    , (stringOpts ["EElim", "∃Elim", "EE", "∃E"] *> spaces *> char '(' *> many1 digit <* char ')') 
+                    , stringOpts ["=Intro", "=I"] >> return [EqI]
+                    , stringOpts ["=Elim", "=E"] >> return [EqE1, EqE2]
+                    , (stringOpts ["EElim", "∃Elim", "EE", "∃E"] *> spaces *> getLabel) 
                             >>= \s -> return (let val = read s :: Int in [ExistsE val])
                     , stringOpts ["EElim", "∃Elim", "EE", "∃E"] >> return [ExistsEVac]
                     ]
+              getLabel = (char '(' *> many1 digit <* char ')') <|> many1 digit
 
 instance Inference (OpenLogicFONK PureLexiconFOL) PureLexiconFOL (Form Bool) where
         ruleOf x = coreRuleOf x
@@ -68,6 +75,7 @@ instance ( BooleanLanguage (ClassicalSequentOver lex (Form Bool))
          , PrismPolyadicSchematicFunction (ClassicalSequentLexOver lex) Int Int 
          , PrismIndexedConstant (ClassicalSequentLexOver lex) Int
          , PrismSubstitutionalVariable lex
+         , PrismTermEquality lex Int Bool
          , PrismStandardVar (ClassicalSequentLexOver lex) Int
          , CopulaSchema (ClassicalSequentOver lex)
          , Schematizable (lex (ClassicalSequentOver lex))
@@ -79,6 +87,9 @@ instance ( BooleanLanguage (ClassicalSequentOver lex (Form Bool))
          coreRuleOf (PropNK x) = coreRuleOf x
          coreRuleOf AllI = universalGeneralization
          coreRuleOf AllE = universalInstantiation
+         coreRuleOf EqI  = eqReflexivity
+         coreRuleOf EqE1 = leibnizLawVariations !! 0
+         coreRuleOf EqE2 = leibnizLawVariations !! 1
          coreRuleOf ExistsI = existentialGeneralization
          coreRuleOf (ExistsE _) = weakExistentialDerivation
          coreRuleOf (ExistsEVac) = weakExistentialDerivation
