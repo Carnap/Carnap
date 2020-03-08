@@ -33,10 +33,11 @@ import Carnap.Languages.PureFirstOrder.Logic (ofFOLTreeSys)
 import Carnap.GHCJS.Util.ProofJS
 import Carnap.GHCJS.SharedTypes
 import GHCJS.DOM.HTMLElement (getInnerText, castToHTMLElement)
-import GHCJS.DOM.Element (setInnerHTML, click, input, setAttribute)
-import GHCJS.DOM.Node (appendChild,  getParentNode, insertBefore)
+import GHCJS.DOM.Element (setInnerHTML, click, keyDown, input, setAttribute)
+import GHCJS.DOM.Node (appendChild, removeChild, getParentNode, insertBefore)
 import GHCJS.DOM.Types (Element, Document, IsElement)
 import GHCJS.DOM.Document (createElement, getActiveElement)
+import GHCJS.DOM.KeyboardEvent
 import GHCJS.DOM.EventM
 import GHCJS.DOM
 import GHCJS.Types
@@ -80,9 +81,23 @@ activateChecker w (Just (i, o, opts)) = case (setupWith `ofPropTreeSys` sys)
                           Just displayDiv <- createElement w (Just "div")
                           setAttribute displayDiv "class" "jsonDisplay"
                           setAttribute displayDiv "contenteditable" "true"
-                          appendChild o (Just displayDiv)
                           val <- toCleanVal root
                           setInnerHTML displayDiv . Just $ toJSONString val
+                          toggleDisplay <- newListener $ do
+                              kbe <- event
+                              isCtrl <- getCtrlKey kbe
+                              code <- liftIO $ keyString kbe
+                              liftIO $ print code
+                              if isCtrl && code == "?" 
+                                  then do
+                                      preventDefault
+                                      mparent <- getParentNode displayDiv
+                                      case mparent of
+                                          Just p -> removeChild o (Just displayDiv)
+                                          _ -> appendChild o (Just displayDiv)
+                                      return ()
+                                  else return ()
+                          addListener o keyDown toggleDisplay False
                           updateRoot <- newListener $ liftIO $ do 
                                 Just json <- getInnerText (castToHTMLElement displayDiv)
                                 replaceRoot root json

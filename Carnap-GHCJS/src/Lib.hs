@@ -11,8 +11,8 @@ module Lib (genericSendJSON, sendJSON, onEnter, onKey, doOnce, dispatchCustom, c
            assignmentKey, initialize, mutate, initializeCallback, initCallbackObj,
            toCleanVal, popUpWith, spinnerSVG, doneButton, questionButton,
            exclaimButton, expandButton, createSubmitButton, createButtonWrapper,
-           maybeNodeListToList, trySubmit, inOpts, rewriteWith, setStatus, ButtonStatus(..)
-           ) where
+           maybeNodeListToList, trySubmit, inOpts, rewriteWith, setStatus, ButtonStatus(..),
+           keyString) where
 
 import Data.Aeson
 import Data.Maybe (catMaybes)
