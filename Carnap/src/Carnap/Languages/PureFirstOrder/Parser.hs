@@ -143,7 +143,8 @@ thomasBolducAndZachFOL2019ParserOptions = magnusFOLParserOptions { hasBooleanCon
                                                                  , atomicSentenceParser = 
                                                                         \x -> try (parsePredicateSymbol "ABCDEFGHIJKLMNOPQRSTUVWXYZ" x) 
                                                                               <|> try (sentenceLetterParser "ABCDEFGHIJKLMNOPQRSTUVWXYZ")
-                                                                              <|> equalsParser x
+                                                                              <|> try (equalsParser x)
+                                                                              <|> inequalityParser x
                                                                  , opTable = calgaryOpTable
                                                                  , finalValidation = \x -> if isOpenFormula x then unexpected "unbound variable" else return ()
                                                                  }

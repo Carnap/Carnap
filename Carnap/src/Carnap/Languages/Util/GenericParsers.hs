@@ -124,6 +124,10 @@ binaryInfixOpParser ops arg = do t1 <- arg
 equalsParser :: (EqLanguage lang arg ret, Monad m) => ParsecT String u m (lang arg) -> ParsecT String u m (lang ret) 
 equalsParser parseTerm = binaryInfixOpParser [char '=' >> return equals] parseTerm
 
+inequalityParser :: (EqLanguage lang arg ret, BooleanLanguage (lang ret), Monad m) => ParsecT String u m (lang arg) -> ParsecT String u m (lang ret) 
+inequalityParser parseTerm = binaryInfixOpParser [string "!=" >> theparser, string "≠" >> theparser] parseTerm
+    where theparser = return (\x y -> lneg (equals x y))
+
 elementParser :: (ElemLanguage lang arg ret , Monad m) => ParsecT String u m (lang arg) -> ParsecT String u m (lang ret) 
 elementParser parseTerm = binaryInfixOpParser ops parseTerm
     where ops = map (>> return isIn)  [string "∈", string "<<", string "<e", string "in"]
