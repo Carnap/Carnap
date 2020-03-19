@@ -152,11 +152,9 @@ scoreByIdAndClassTotal cid uid =
            return $ foldr (+) 0 (map snd perprob)
 
 scoreByIdAndClassPerProblem cid uid = 
-        do (Just course) <- runDB (get cid)
-           textbookproblems <- getProblemSets cid
-           pq <- getProblemQuery uid cid
+        do pq <- getProblemQuery uid cid
            subs <- map entityVal <$> (runDB $ selectList pq [])
-           textbookproblems <-  getProblemSets cid
+           textbookproblems <- getProblemSets cid
            scoreList textbookproblems subs
 
 totalScore textbookproblems xs = 

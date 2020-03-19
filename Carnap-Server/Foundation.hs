@@ -99,7 +99,7 @@ instance Yesod App where
          (RegisterR ident) -> userOrInstructor ident
          (RegisterEnrollR _ ident) -> userOrInstructor ident
          (InstructorR ident) -> instructor ident
-         (InstructorDownloadR ident _) -> instructor ident
+         (InstructorQueryR ident) -> instructor ident
          (ReviewR coursetitle _) -> coinstructorOrInstructor coursetitle
          (CourseAssignmentR coursetitle _) -> coinstructorOrInstructor coursetitle
          AdminR -> admin

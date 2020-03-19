@@ -57,7 +57,7 @@
                                                 <td>#{dateDisplay d c}
                                                 <td> #{courseTitle c}
                                                 <td>
-                                                    <button.btn.btn-sm.btn-secondary alt="delete" title="delete this problem set" type="button" onclick="deleteProblemSet('#{decodeUtf8 $ encode $ DeleteProblems (courseTitle c) n}')">
+                                                    <button.btn.btn-sm.btn-secondary alt="delete" title="delete this problem set" type="button" onclick="deleteProblemSet('#{jsonSerialize $ DeleteProblems (courseTitle c) n}')">
                                                         <i.fa.fa-trash-o>
                 <div.tab-pane id="assignFromDocument" role="tabpanel">
                     <h2> Assign Document
@@ -76,7 +76,7 @@
                                 <th> Course
                                 <th> Actions
                             <tbody>
-                                $forall (Entity k a, c, Just d) <- zip3 assignmentMetadata assignmentCourses assignmentDocs
+                                $forall ((Entity k a, Entity _ c), Just d) <- zip assignmentMetadata assignmentDocs
                                     <tr id="assignment-#{courseTitle c}-#{documentFilename d}">
                                         <td>
                                             <a href=@{CourseAssignmentR (courseTitle c) (documentFilename d)}>
@@ -95,7 +95,7 @@
                                                     Always
                                         <td>#{courseTitle c}
                                         <td>
-                                            <button.btn.btn-sm.btn-secondary alt="delete" title="delete this assignment" type="button" onclick="tryDeleteAssignment('#{decodeUtf8 $ encode $ DeleteAssignment k}','#{documentFilename d}','#{courseTitle c}')">
+                                            <button.btn.btn-sm.btn-secondary alt="delete" title="delete this assignment" type="button" onclick="tryDeleteAssignment('#{jsonSerialize $ DeleteAssignment k}','#{documentFilename d}','#{courseTitle c}')">
                                                 <i.fa.fa-trash-o>
 
                                             <button.btn.btn-sm.btn-secondary alt="edit" title="edit this assignment" type="button" onclick="modalEditAssignment('#{show k}','#{maybe "" (flip dateDisplay c) (assignmentMetadataDuedate a)}','#{maybe "" (flip dateDisplay c) (assignmentMetadataVisibleFrom a)}','#{maybe "" (flip dateDisplay c) (assignmentMetadataVisibleTill a)}','#{maybe "" sanatizeForJS (unpack <$> assignmentMetadataDescription a)}')">
@@ -133,7 +133,7 @@
                                                 $forall tag <- tags
                                                     <a.badge.badge-primary href="@{DocumentsByTagR tag}">#{tag}
                                         <td>
-                                            <button.btn.btn-sm.btn-secondary type="button" alt="delete" title="permanantly delete this document" onclick="tryDeleteDocument('#{decodeUtf8 $ encode $ DeleteDocument (documentFilename a)}')">
+                                            <button.btn.btn-sm.btn-secondary type="button" alt="delete" title="permanantly delete this document" onclick="tryDeleteDocument('#{jsonSerialize $ DeleteDocument (documentFilename a)}')">
                                                 <i.fa.fa-trash-o>
                                             <button.btn.btn-sm.btn-secondary type="button" alt="edit" title="edit this document" onclick="modalEditDocument('#{show k}','#{maybe "" sanatizeForJS (unpack <$> documentDescription a)}','#{documentFilename a}', '#{tagString k}')">
                                                 <i.fa.fa-cog>
@@ -160,9 +160,9 @@
                                             <td>#{courseTitle c}
                                             <td>#{dateDisplay (courseEndDate c) c}
                                             <td>
-                                                <button.btn.btn-sm.btn-secondary type="button" alt="delete" title="permanantly delete this course" onclick="tryDeleteCourse('#{decodeUtf8 $ encode $ DeleteCourse (courseTitle c)}')">
+                                                <button.btn.btn-sm.btn-secondary type="button" alt="delete" title="permanantly delete this course" onclick="tryDeleteCourse('#{jsonSerialize $ DeleteCourse (courseTitle c)}')">
                                                     <i.fa.fa-trash-o>
                                                 <button.btn.btn-sm.btn-secondary type="button" alt="edit" title="edit this course" onclick="modalEditCourse('#{show cid}','#{maybe "" sanatizeForJS (unpack <$> courseDescription c)}','#{dateDisplay (courseStartDate c) c}','#{dateDisplay (courseEndDate c) c}',#{courseTotalPoints c})">
                                                     <i.fa.fa-cog>
-                                                <button.btn.btn-sm.btn-secondary alt="download" title="download grades from this course" type="button" onclick="location.href='@{InstructorDownloadR ident (courseTitle c)}'">
+                                                <button.btn.btn-sm.btn-secondary alt="download" title="download grades from this course" type="button" onclick=exportGrades('#{jsonSerialize cid}')">
                                                     <i.fa.fa-cloud-download>

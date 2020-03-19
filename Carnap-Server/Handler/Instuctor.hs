@@ -5,8 +5,9 @@ import Import
 import Util.Data
 import Util.Database
 import Yesod.Form.Bootstrap3
+import Carnap.GHCJS.SharedTypes(ProblemSource(..))
 import Yesod.Form.Jquery
-import Handler.User (scoreByIdAndClassPerProblem)
+import Handler.User (scoreByIdAndClassTotal, scoreByIdAndClassPerProblem)
 import Text.Blaze.Html (toMarkup)
 import Text.Read (readMaybe)
 import Data.Time
@@ -14,7 +15,7 @@ import Data.Time.Zones
 import Data.Time.Zones.DB
 import Data.Time.Zones.All
 import Data.Aeson (decode,encode)
-import qualified Data.IntMap (insert,fromList,toList,delete)
+import qualified Data.IntMap (keys, insert,fromList,toList,delete)
 import qualified Data.Text as T
 import qualified Data.List as L
 import System.FilePath
@@ -258,6 +259,17 @@ postInstructorR ident = do
         FormFailure s -> setMessage $ "Something went wrong: " ++ toMarkup (show s)
         FormMissing -> return ()
     redirect $ InstructorR ident
+ 
+postInstructorQueryR :: Text -> Handler Value
+postInstructorQueryR ident = do
+    msg <- requireJsonBody :: Handler InstructorQuery
+    case msg of 
+        QueryGrade uid cid -> do
+            score <- scoreByIdAndClassTotal cid uid
+            returnJson score
+        QueryScores uid cid -> do
+            score <- scoreByIdAndClassPerProblem cid uid
+            returnJson score
 
 getInstructorR :: Text -> Handler Html
 getInstructorR ident = do
@@ -274,17 +286,25 @@ getInstructorR ident = do
             instructors <- runDB $ selectList [UserDataInstructorId !=. Nothing] []
             let labels = map labelOf $ take (length activeClasses) [1 ..]
             classWidgets <- mapM (classWidget ident instructors) activeClasses
-            assignmentMetadata <- concat <$> mapM (listAssignmentMetadata . entityKey) activeClasses
-            assignmentDocs <- mapM (runDB . get) (map (assignmentMetadataDocument . entityVal) assignmentMetadata)
+            assignmentMetadata <- concat <$> mapM listAssignmentMetadata activeClasses --Get the metadata
+            assignmentDocs <- mapM (runDB . get) (map (\(Entity _ v, _) -> assignmentMetadataDocument v) assignmentMetadata)
             documents <- runDB $ selectList [DocumentCreator ==. uid] []
+            problemSetLookup <- mapM (\c -> (,) 
+                                    <$> pure (entityKey c) 
+                                    <*> (maybe mempty readAssignmentTable
+                                        <$> (getProblemSets . entityKey $ c))
+                                ) classes
+            let assignmentLookup = zipWith (\(Entity k v,_) (Just d) -> 
+                                                ( k 
+                                                , documentFilename d
+                                                , assignmentMetadataDate v
+                                                , assignmentMetadataCourse v
+                                                )) assignmentMetadata assignmentDocs
             tagMap <- forM documents $ \doc -> do
                                      tags <- runDB $ selectList [TagBearer ==. entityKey doc] []
                                      return (entityKey doc, map (tagName . entityVal) tags)
             let tagsOf d = lookup d tagMap
                 tagString d = case lookup d tagMap of Just tags -> intercalate "," tags; _ -> ""
-            assignmentCourses <- forM assignmentMetadata $ \c -> do 
-                                    Just e <- runDB $ get (assignmentMetadataCourse . entityVal $ c)
-                                    return e
             (createAssignmentWidget,enctypeCreateAssignment) <- generateFormPost (identifyForm "uploadAssignment" $ uploadAssignmentForm activeClasses docs)
             (uploadDocumentWidget,enctypeShareDocument) <- generateFormPost (identifyForm "uploadDocument" $ uploadDocumentForm)
             (setBookAssignmentWidget,enctypeSetBookAssignment) <- generateFormPost (identifyForm "setBookAssignment" $ setBookAssignmentForm activeClasses)
@@ -306,22 +326,6 @@ getInstructorR ident = do
                         <p> Instructor not found.
                    |]
 
-getInstructorDownloadR :: Text -> Text -> Handler TypedContent
-getInstructorDownloadR ident coursetitle = do
-    mcourse <- runDB $ getBy $ UniqueCourse coursetitle
-    checkCourseOwnership coursetitle
-    case mcourse of 
-        Nothing -> notFound
-        Just course -> do
-            csv <- classCSV course
-            addHeader "Content-Disposition" $ concat
-              [ "attachment;"
-              , "filename=\""
-              , "export.csv"
-              , "\""
-              ]
-            sendResponse (typeOctet, csv)
-
 ---------------------
 --  Message Types  --
 ---------------------
@@ -337,6 +341,13 @@ data InstructorDelete = DeleteAssignment AssignmentMetadataId
 instance ToJSON InstructorDelete
 
 instance FromJSON InstructorDelete
+
+data InstructorQuery = QueryGrade UserId CourseId
+                     | QueryScores UserId CourseId
+    deriving Generic
+
+instance ToJSON InstructorQuery
+instance FromJSON InstructorQuery
 
 ------------------
 --  Components  --
@@ -612,62 +623,60 @@ classWidget ident instructors classent = do
        (addCoInstructorWidget,enctypeAddCoInstructor) <- generateFormPost (identifyForm "addCoinstructor" $ addCoInstructorForm instructors (show cid))
        asmd <- runDB $ selectList [AssignmentMetadataCourse ==. cid] []
        asDocs <- mapM (runDB . get) (map (assignmentMetadataDocument . entityVal) asmd)
-       let allUids = (map userDataUserId  allUserData)
+       let allUids = map userDataUserId allUserData
        musers <- mapM (\x -> runDB (get x)) allUids
        let users = catMaybes musers
-       allScores <- zip (map userIdent users) <$> mapM (scoreByIdAndClassPerProblem cid) allUids 
-       let usersAndData = zip users allUserData
+       let numberOfUsers = length allUids
+           usersAndData = zip users allUserData
+           sortedUsersAndData = let lnOf (_,UserData _ ln _ _ _) = ln 
+                                    in sortBy (\x y -> compare (lnOf x) (lnOf y)) usersAndData
        (Just course) <- runDB $ get cid
        return [whamlet|
                     <h2>Assignments
-                    <table.table.table-striped>
-                        <thead>
-                            <th> Assignment
-                            <th> Due Date
-                            <th> Submissions
-                            <th> High Score
-                            <th> Low Score
-                            <th> Submission Average
-                        <tbody>
-                            $maybe probs <- mprobs
-                                $forall (set,due) <- Data.IntMap.toList probs
+                    <div.scrollbox>
+                        <table.table.table-striped>
+                            <thead>
+                                <th> Assignment
+                                <th> Due Date
+                            <tbody>
+                                $maybe probs <- mprobs
+                                    $forall (set,due) <- Data.IntMap.toList probs
+                                        <tr>
+                                            <td>Problem Set #{show set}
+                                            <td>#{dateDisplay due course}
+                                $forall (Entity k a, Just d) <- zip asmd asDocs
                                     <tr>
-                                        <td>Problem Set #{show set}
-                                        <td>#{dateDisplay due course}
-                                        ^{analyticsFor (Right (pack (show set))) allScores}
-                            $forall (Entity k a, Just d) <- zip asmd asDocs
-                                <tr>
-                                    <td>
-                                        <a href=@{CourseAssignmentR (courseTitle course) (documentFilename d)}>
-                                            #{documentFilename d}
-                                    $maybe due <- assignmentMetadataDuedate a
-                                        <td>#{dateDisplay due course}
-                                    $nothing
-                                        <td>No Due Date
-                                    ^{analyticsFor (Left k) allScores}
+                                        <td>
+                                            <a href=@{CourseAssignmentR (courseTitle course) (documentFilename d)}>
+                                                #{documentFilename d}
+                                        $maybe due <- assignmentMetadataDuedate a
+                                            <td>#{dateDisplay due course}
+                                        $nothing
+                                            <td>No Due Date
                     <h2>Students
-                    <table.table.table-striped>
-                        <thead>
-                            <th> Registered Student
-                            <th> Student Name
-                            <th> Total Score
-                            <th> Action
-                        <tbody>
-                            $forall (u,UserData fn ln _ _ _) <- usersAndData
-                                <tr#student-#{userIdent u}>
-                                    <td>
-                                        <a href=@{UserR (userIdent u)}>#{userIdent u}
-                                    <td>
-                                        #{ln}, #{fn}
-                                    <td>
-                                        #{totalByUser (userIdent u) allScores}/#{show $ courseTotalPoints course}
-                                    <td>
-                                        <button.btn.btn-sm.btn-secondary type="button" title="Drop #{fn} #{ln} from class"
-                                            onclick="tryDropStudent('#{decodeUtf8 $ encode $ DropStudent $ userIdent u}')">
-                                            <i.fa.fa-trash-o>
-                                        <button.btn.btn-sm.btn-secondary type="button" title="Email #{fn} #{ln}" 
-                                            onclick="location.href='mailto:#{userIdent u}'">
-                                            <i.fa.fa-envelope-o>
+                    <div.scrollbox data-studentnumber="#{show numberOfUsers}" data-cid="#{jsonSerialize cid}">
+                        <table.table.table-striped >
+                            <thead>
+                                <th> Registered Student
+                                <th> Student Name
+                                <th> Total Score
+                                <th> Action
+                            <tbody>
+                                $forall (u,UserData fn ln _ _ uid) <- sortedUsersAndData
+                                    <tr#student-#{userIdent u}>
+                                        <td>
+                                            <a href=@{UserR (userIdent u)}>#{userIdent u}
+                                        <td>
+                                            #{ln}, #{fn}
+                                        <td.async data-query="#{jsonSerialize $ QueryScores uid cid}" data-fn="#{fn}" data-ln="#{ln}" data-uid="#{jsonSerialize uid}" >
+                                            <span.loading>—
+                                        <td>
+                                            <button.btn.btn-sm.btn-secondary type="button" title="Drop #{fn} #{ln} from class"
+                                                onclick="tryDropStudent('#{jsonSerialize $ DropStudent $ userIdent u}')">
+                                                <i.fa.fa-trash-o>
+                                            <button.btn.btn-sm.btn-secondary type="button" title="Email #{fn} #{ln}" 
+                                                onclick="location.href='mailto:#{userIdent u}'">
+                                                <i.fa.fa-envelope-o>
                     <h2>Course Data
                     <dl.row>
                         <dt.col-sm-3>Primary Instructor
@@ -678,6 +687,10 @@ classWidget ident instructors classent = do
                             <dd.col-sm-9.offset-sm-3>#{desc}
                         <dt.col-sm-3>Points Available
                         <dd.col-sm-9>#{courseTotalPoints course}
+                        <dt.col-sm-3>Number of Students
+                        <dd.col-sm-9>#{numberOfUsers} (Loaded:
+                            <span id="loaded-#{jsonSerialize cid}"> 0#
+                            )
                         <dt.col-sm-3>Start Date
                         <dd.col-sm-9>#{dateDisplay (courseStartDate course) course}
                         <dt.col-sm-3>End Date
@@ -694,7 +707,7 @@ classWidget ident instructors classent = do
                                 $forall (Entity _ coud, Entity ciid _) <- zip coInstructorUD coInstructors
                                     <div#Co-Instructor-#{userDataLastName coud}-#{userDataFirstName coud}>
                                         <i.fa.fa-trash-o style="cursor:pointer" title="Remove #{userDataFirstName coud} #{userDataLastName coud} as Co-Instructor"
-                                            onclick="tryDeleteCoInstructor('#{decodeUtf8 $ encode $ DeleteCoInstructor ciid}','#{userDataLastName coud}', '#{userDataFirstName coud}')">
+                                            onclick="tryDeleteCoInstructor('#{jsonSerialize $ DeleteCoInstructor ciid}','#{userDataLastName coud}', '#{userDataFirstName coud}')">
                                         <span>#{userDataFirstName coud},
                                         <span> #{userDataLastName coud}
                     <div.row>
@@ -705,82 +718,11 @@ classWidget ident instructors classent = do
                             <div.float-xl-right>
                                 <button.btn.btn-secondary style="width:160px" type="button"  onclick="modalEditCourse('#{show cid}','#{maybe "" sanatizeForJS (unpack <$> courseDescription course)}','#{dateDisplay (courseStartDate course) course}','#{dateDisplay (courseEndDate course) course}',#{courseTotalPoints course})">
                                     Edit Information
-                                <button.btn.btn-secondary style="width:160px" type="button" onclick="location.href='@{InstructorDownloadR ident (courseTitle course)}';">
+                                <button.btn.btn-secondary style="width:160px" type="button" onclick="exportGrades('#{jsonSerialize cid}')";">
                                     Export Grades
-                                <button.btn.btn-danger style="width:160px" type="button" onclick="tryDeleteCourse('#{decodeUtf8 $ encode $ DeleteCourse (courseTitle course)}')">
+                                <button.btn.btn-danger style="width:160px" type="button" onclick="tryDeleteCourse('#{jsonSerialize $ DeleteCourse (courseTitle course)}')">
                                     Delete Course
               |]
-    where totalByUser uident scores = case lookup uident scores of
-                                Just xs -> show $ foldr (+) 0 (map snd xs)
-                                Nothing -> "can't find scores"
-          analyticsFor assignment scores = 
-                do --list the per-problem scores of each user for this assignment
-                   let thescores = map (\(x,y) -> map snd $ filter (\x -> fst x == assignment) y) scores
-                       --extract data
-                       submissions = filter (/= []) thescores
-                       thereareany = length submissions > 0
-                       totals = map sum submissions
-                       highscore = if thereareany then show (L.maximum totals) else "N/A"
-                       lowscore = if thereareany then show (L.minimum totals) else "N/A"
-                       average = if thereareany then  show $ sum totals `div` length submissions else "N/A"
-                   [whamlet|
-                          <td>
-                              #{length submissions}/#{length thescores}
-                          <td>
-                              #{highscore}
-                          <td>
-                              #{lowscore}
-                          <td>
-                              #{average}
-                          |]
-
-classCSV :: Entity Course -> HandlerT App IO Content
-classCSV classent = do
-       let cid = entityKey classent
-           course = entityVal classent
-           mprobs = readAssignmentTable <$> courseTextbookProblems course :: Maybe (IntMap UTCTime)
-       allUserData <- map entityVal <$> (runDB $ selectList [UserDataEnrolledIn ==. Just cid] [])
-       let allUids = (map userDataUserId  allUserData)
-       musers <- mapM (\x -> runDB (get x)) allUids
-       let users = catMaybes musers
-       rawScores <- mapM (scoreByIdAndClassPerProblem cid) allUids >>= mapM (filterM (forClass classent . fst)) >>= mapM (mapM fixLabel)
-       let allScores = zip (map userIdent users) rawScores
-           usersAndData = zip users allUserData
-           scoreHeaders = (L.nub . map fst . concat $ rawScores)
-           header = commaSep $ ["Registered Student", "Last Name", "First Name"] ++ scoreHeaders ++ ["Total Score"]
-           body = concat $ map (\x -> toRow allScores scoreHeaders x) usersAndData 
-       return $ toContent $ header ++ body
-    where toRow scores headers (u,UserData fn ln _ _ _) = commaSep $ [userIdent u, ln, fn] 
-                                                                ++ byAssignment (userIdent u) scores headers 
-                                                                ++ [pack (totalByUser (userIdent u) scores)]
-          totalByUser uident scores = case lookup uident scores of
-                                Just xs -> show $ foldr (+) 0 (map snd xs)
-                                Nothing -> "can't find scores"
-          byAssignment uident scores headers = case lookup uident scores of
-                                Nothing -> map (const "-") headers
-                                Just xs -> map (\h -> pack . show . foldr (+) 0 . map snd . filter (\x -> fst x == h) $ xs) headers
-          commaSep l = "\"" ++ intercalate "\",\"" l ++ "\",\n"
-
-          forClass classent (Left amid) = runDB $ do masgn <- get amid
-                                                     case assignmentMetadataCourse <$> masgn of
-                                                         Just cid -> return (cid == entityKey classent)
-                                                         Nothing -> return False
-          forClass classent (Right psn) = case courseTextbookProblems (entityVal classent) of
-                                              Nothing -> return False
-                                              Just (BookAssignmentTable probs) -> 
-                                                case readMaybe (unpack psn) of
-                                                    Just n -> return $ n `member` probs
-                                                    Nothing -> return False
-
-          fixLabel (Left amid,x) = runDB $ do masgn <- get amid
-                                              case masgn of 
-                                                    Nothing -> return $ (pack (show amid),x)
-                                                    Just asgn -> do 
-                                                        mdoc <- get $ assignmentMetadataDocument asgn
-                                                        case mdoc of 
-                                                            Nothing -> return $ (pack (show amid),x)
-                                                            Just doc -> return $ (documentFilename doc,x)
-          fixLabel (Right psn,x) = return ("Problem Set " ++ psn,x)
 
 dateDisplay utc course = case tzByName $ courseTimeZone course of
                              Just tz  -> formatTime defaultTimeLocale "%F %R %Z" $ utcToZonedTime (timeZoneForUTCTime tz utc) utc
@@ -797,5 +739,5 @@ sanatizeForJS (x:xs) = x : sanatizeForJS xs
 sanatizeForJS [] = []
 
 -- TODO compare directory contents with database results
-listAssignmentMetadata theclass = do asmd <- runDB $ selectList [AssignmentMetadataCourse ==. theclass] []
-                                     return asmd
+listAssignmentMetadata theclass = do asmd <- runDB $ selectList [AssignmentMetadataCourse ==. entityKey theclass] []
+                                     return $ map (\a -> (a,theclass)) asmd

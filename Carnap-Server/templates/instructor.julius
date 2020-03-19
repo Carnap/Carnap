@@ -1,14 +1,3 @@
-$(document).ready(function(){
-    $(document.getElementById(location.hash.substring(1) + "-tab"))[0].click();
-});
-
-$("a[data-toggle='tab']").click(function(){
-    url = this.href
-    window.location.hash = url.substring(url.indexOf('#'))
-})
-
-$("textarea").addClass("form-control")
-
 function submitAddInstructor(elt,cid) {
     var form = elt.form
     $(form).children("input[name=f1]").val(cid);
@@ -110,6 +99,19 @@ function deleteCoInstructor (json,ln,fn) {
             },
         error: function(data) {
             window.alert("Error, couldn't remove co-instructor " + fn + " " + ln)
+            },
+        });
+    };
+
+function queryGrade (json, callback) {
+    jQuery.ajax({
+        url: '@{InstructorQueryR ident}',
+        type: 'POST',
+        contentType: "application/json",
+        data: json,
+        success: callback,
+        error: function(data) {
+            console.log("error, couldn't retrieve grade")
             },
         });
     };
@@ -267,3 +269,150 @@ $("#updateDocument").submit(function(e) {
         });
     e.preventDefault();
 })
+
+function consolidateScores (scores) {
+    let consolidated = {}
+    for (const score of scores) {
+        let label
+        if (score[0].Left) {
+            label = assignmentLookup[score[0].Left].title
+        } else {
+            label = "Problem Set " + score[0].Right
+        }
+        consolidated[label] = (consolidated[label] + score[1]) || score[1]
+    }
+    return consolidated
+}
+
+async function exportGrades(cid) {
+    let box = $("*[data-cid='" + cid + "']")[0]
+    let loaded = new Promise(res => box.loadAll(res))
+    await loaded
+    let pcolumns = problemLookup[cid].sort((x,y) => x[1] > y[1])
+                                     .map(x => "Problem Set " + x[0]) || []
+    let acolumns = Object.values(assignmentLookup).sort((x,y) => x.date > y.date)
+                        .filter(x => x.cid == cid)
+                        .map(x => x.title)
+    columns = pcolumns.concat(acolumns)
+    let rows = []
+    for (const k in box.contents) {
+        let scores = consolidateScores(box.contents[k].scores)
+        let row = box.contents[k]
+        let newRow = columns.map(column => {
+            if (scores[column]) {
+                return scores[column]
+            } else { 
+                return 0 
+            }})
+        newRow.unshift(row.fn)
+        newRow.unshift(row.ln)
+        newRow.push(Object.values(scores).reduce((x,y) => x + y, 0))
+        rows.push(newRow)
+    }
+    rows.sort((x,y) => x[0] > y[0])
+    columns.unshift("First Name")
+    columns.unshift("Last Name")
+    columns.push("Total Score")
+    rows.unshift(columns)
+    let csv = rows.map(row => row.reduce((x,y) => x + ", " + y))
+                  .reduce((x,y) => x + "\n" + y)
+    let file = new Blob([csv], {type: "text/csv"})
+    if (window.navigator.msSaveOrOpenBlob) { // IE10+ 
+        window.navigator.msSaveOrOpenBlob(file, "grades.csv");
+    } else { // Others
+        let a = document.createElement("a")
+        let url = URL.createObjectURL(file)
+        a.href = url
+        a.download = "grades.csv"
+        document.body.appendChild(a)
+        a.click()
+        setTimeout(function() {
+            document.body.removeChild(a)
+            window.URL.revokeObjectURL(url)
+        }, 0); 
+    }
+
+}
+
+$(".scrollbox").each((_,elt) => elt.contents = {})
+
+$(".scrollbox").each((_,box) => box.loadAll = async function(done) {
+    for (const elt of this.querySelectorAll(".async")) 
+        if (!box.contents[elt.dataset.uid]) {
+            timer = new Promise(res => setTimeout(_ => elt.update(res),250))
+            await timer
+        }
+    done()
+})
+
+$(".scrollbox > table").timeout = false
+
+var assignmentLookup = (function() {
+    let table = {}
+    JSON.parse(#{jsonSerialize assignmentLookup}).forEach(entry => {
+        table[entry[0]] = {}
+        table[entry[0]].title = entry[1]
+        table[entry[0]].date = entry[2]
+        table[entry[0]].cid = entry[3]
+    })
+    return table
+})()
+
+var problemLookup = (function() {
+    let table = {}
+    JSON.parse(#{jsonSerialize problemSetLookup}).forEach(entry => {
+        table[entry[0]] = entry[1]
+    })
+return table
+})()
+
+function scrollHandler (e) {
+    let scrollbox = e.target
+    clearTimeout(scrollbox.scrollTimeout);
+    scrollbox.scrollTimeout = setTimeout(() => {
+        let tableTop = $(scrollbox).offset().top
+        let tableBottom = tableTop + $(scrollbox).innerHeight()
+        document.querySelectorAll(".async").forEach( 
+        function (el) { 
+            let isAbove = $(el).offset().top < tableBottom; 
+            let isBelow = $(el).offset().top + $(el).outerHeight() > tableTop;
+            if (isBelow && isAbove) el.update();
+        });
+    },500)
+};
+
+$(document).ready(function(){
+    try {$(document.getElementById(location.hash.substring(1) + "-tab"))[0].click();}
+    catch {}
+});
+
+$("a[data-toggle='tab']").click(function(){
+    let url = this.href
+    window.location.hash = url.substring(url.indexOf('#'))
+})
+
+$(".async").each((_,elt) => elt.update = function (callback) {
+    let box = $(this).closest(".scrollbox")[0]
+    this.innerHTML = "loading..."
+    if (!box.contents[this.dataset.uid]) {queryGrade(this.dataset.query,(data) => {
+        box.contents[this.dataset.uid] = {
+            scores: data, 
+            fn: this.dataset.fn,
+            ln: this.dataset.ln
+        }
+        this.innerHTML = data.map(i=>i[1]).reduce((x,y) => x + y, 0);
+        document.getElementById("loaded-" + box.dataset.cid).innerHTML = Object.keys(box.contents).length
+        if (callback) callback()
+    })} else {
+        let data = box.contents[elt.dataset.uid].scores
+        this.innerHTML = data.map(i=>i[1]).reduce((x,y) => x + y, 0);
+        if (callback) callback()
+    };
+    this.update = _ => {}
+});
+
+$("textarea").addClass("form-control")
+
+$(".scrollbox").scroll(scrollHandler);
+
+$(".scrollbox").trigger("scroll")

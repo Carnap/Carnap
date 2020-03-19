@@ -135,7 +135,7 @@ classesByInstructorIdent ident = runDB $ do
                           Nothing -> return Nothing
            case (entityVal <$> mudent) >>= userDataInstructorId of
                Just instructordata -> do 
-                   owned <- selectList [CourseInstructor ==. instructordata ] []
+                   owned <- selectList [CourseInstructor ==. instructordata] []
                    coInstructor <- map entityVal <$> selectList [CoInstructorIdent ==. instructordata] []
                    coOwned <- selectList [CourseId <-. (map coInstructorCourse coInstructor)] []
                    return (owned ++ coOwned)

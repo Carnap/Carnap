@@ -1,0 +1,9 @@
+.scrollbox
+    max-height:640px;
+    overflow:auto;
+    margin-bottom:10px;
+
+    thead
+        position:sticky;
+        top:0;
+        background:white;

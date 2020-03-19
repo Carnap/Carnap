@@ -5,6 +5,7 @@ import Carnap.Languages.PurePropositional.Syntax (PureForm)
 import Carnap.Languages.PureFirstOrder.Syntax (PureFOLForm)
 import Data.List ((!!), elemIndex)
 import Data.Time
+import Data.Aeson (decode,encode)
 import Text.Read (readMaybe)
 import Text.Pandoc (Extension(..), extensionsFromList)
 import Carnap.GHCJS.SharedTypes(ProblemSource(..),ProblemType(..),ProblemData(..), SomeRule(..))
@@ -66,6 +67,8 @@ carnapPandocExtensions = extensionsFromList
 
 toTime :: String -> UTCTime
 toTime = parseTimeOrError True defaultTimeLocale "%l:%M %P %Z, %b %e, %Y"
+
+jsonSerialize = decodeUtf8 . encode
 
 displayProblemData (DerivationData t _)  = t
 displayProblemData (DerivationDataOpts t _ _)  = t
