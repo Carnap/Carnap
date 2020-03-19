@@ -389,6 +389,7 @@ $(document).ready(function(){
 $("a[data-toggle='tab']").click(function(){
     let url = this.href
     window.location.hash = url.substring(url.indexOf('#'))
+    $(".scrollbox").trigger("scroll")
 })
 
 $(".async").each((_,elt) => elt.update = function (callback) {
