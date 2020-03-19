@@ -15,7 +15,8 @@ data IntProp b a where
 
 instance Schematizable (IntProp b) where
         schematize (Prop n)   _ 
-            | n < 0 && n > -27 = ["_ABCDEFGHIJKLMNOPQRSTUVWXYZ" !! (-1 * n)]
+            | n >= 26 = (['A' .. 'Z'] !! (n `mod` 26)) : '_' : show (n `div` 26)
+            | n >= 0 = [['A' .. 'Z'] !! n]
             | otherwise = "P_" ++ show n
 
 instance UniformlyEq (IntProp b) where
@@ -28,7 +29,8 @@ data SchematicIntProp b a where
 
 instance Schematizable (SchematicIntProp b) where
         schematize (SProp n)   _ 
-            | n < -15 && n > -23 = ["_φψχθγζξ" !! (-1 * (n + 15))]
+            | n >= 14 && n <= 21 = ["ζφψχθγξ" !! (n - 14)]
+            | n >= 0 = ("ζφψχθγξ" !! (n `mod` 7)) : '_' : show (n `div` 7)
             | otherwise = "φ_" ++ show n
 
 instance UniformlyEq (SchematicIntProp b) where
@@ -55,8 +57,9 @@ instance Schematizable (IntPred b c) where
             where arity = read $ show a
                   args = take arity $ xs ++ repeat "_"
                   pred 
-                    | n < 0 && n > -27 = ["_ABCDEFGHIJKLMNOPQRSTUVWXYZ" !! (-1 * n)]
-                    | otherwise        = "F^" ++ show a ++ "_" ++ show n 
+                    | n >= 26 = (['A' .. 'Z'] !! (n `mod` 26)) : '_' : show (n `div` 26)
+                    | n >= 0 = [['A' .. 'Z'] !! n]
+                    | otherwise  = "F_" ++ show n
                   tail
                     | arity == 0    = ""
                     | otherwise     = "(" ++ intercalate "," args ++ ")"
@@ -74,11 +77,12 @@ instance Schematizable (SchematicIntPred b c) where
             where arity = read $ show a
                   args = take arity $ xs ++ repeat "_"
                   pred 
-                    | n < -5 && n > -13 = ["_φψχθγζξ" !! (-1 * (n + 5))]
-                    | otherwise        = "φ^" ++ show a ++ "_" ++ show n 
+                    | n >= 0 && n <= 7 = ["ξθγζϚφψχ" !! n]
+                    | n >= 0 = ("ξθγζϚφψχ" !! (n `mod` 8)) : '_' : show (n `div` 8)
+                    | otherwise = "φ_" ++ show n 
                   tail
-                    | arity == 0    = ""
-                    | otherwise     = "(" ++ intercalate "," args ++ ")"
+                    | arity == 0 = ""
+                    | otherwise = "(" ++ intercalate "," args ++ ")"
 
 instance UniformlyEq (SchematicIntPred b c) where
         (SPred a n) =* (SPred a' m) = show a == show a' && n == m
@@ -139,7 +143,7 @@ instance Schematizable (IntFunc b c) where
                   pred 
                     | n >= 26 = (['a' .. 'z'] !! (n `mod` 26)) : '_' : show (n `div` 26)
                     | n >= 0 = [['a' .. 'z'] !! n]
-                    | otherwise  = "f^" ++ show a ++ "_" ++ show (-1 * n)
+                    | otherwise  = "f_" ++ show n 
                   tail
                     | arity == 0    = ""
                     | otherwise     = "(" ++ intercalate "," args ++ ")"
@@ -157,13 +161,15 @@ instance Schematizable (SchematicIntFunc b c) where
             where arity = read $ show a
                   args = take arity $ xs ++ repeat "_"
                   pred 
-                    | n < -5 && n > -9 = ["_τνυ" !! (-1 * (n + 5))] 
-                    | arity == 0 && n < 0 && n > -4 = ["_τπμ" !! (-1 * n)] 
-                    | arity == 0       = "τ" ++ "_" ++ show n
-                    | otherwise        = "τ^" ++ show a ++ "_" ++ show n 
+                    | arity == 0 && n >= 3 = ("τπμ" !! (n `mod` 3)) : '_' : show (n `div` 3)
+                    | arity == 0 && n >= 0 = ["τπμ" !! n]
+                    | n >= 5 && n <= 9 = ["τνυρκ" !! (n - 5)]
+                    | n >= 0 = ("τνυρκ" !! (n `mod` 5)) : '_' : show (n `div` 5)
+                    | otherwise  = "τ_" ++ show n 
                   tail
                     | arity == 0    = ""
                     | otherwise     = "(" ++ intercalate "," args ++ ")"
+
 
 instance UniformlyEq (SchematicIntFunc b c) where
         (SFunc a n) =* (SFunc a' m) = show a == show a' && n == m
@@ -284,6 +290,7 @@ instance Schematizable (IntConst b) where
         schematize (Constant n)   _       
             | n >= 26 = (['a' .. 'z'] !! (n `mod` 26)) : '_' : show (n `div` 26)
             | n >= 0 = [['a' .. 'z'] !! n]
+            | otherwise = "c_" ++ show n
 
 instance UniformlyEq (IntConst b) where
         (Constant n) =* (Constant m) = n == m

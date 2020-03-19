@@ -73,40 +73,32 @@ powersetParser parseTerm = (try (string "P(") <|> string "Pow(") *> parseTerm <*
 --Predicates and Sentences
 --------------------------------------------------------
 
-sentenceLetterParser :: (IndexedPropLanguage l, Monad m) => String ->
-    ParsecT String u m l
-sentenceLetterParser s = (try parseNumbered <|> parseUnnumbered) <?> "a sentence letter"
-        where parseUnnumbered = do c <- oneOf s
-                                   let Just n = elemIndex c "_ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-                                   return $ pn (-1 * n)
-              parseNumbered = do char 'P'
-                                 char '_'
-                                 n <- number
-                                 return $ pn n
+sentenceLetterParser :: (IndexedPropLanguage l, Monad m) 
+    => String -> ParsecT String u m l
+sentenceLetterParser s = parse <?> "a sentence letter"
+    where parse = do c <- oneOf s
+                     midx <- optionMaybe (char '_' >> posnumber)
+                     let Just n = ucIndex c 
+                         m = maybe 0 id midx
+                     return $ pn (n  + (m * 26))
 
-lowerCaseSentenceLetterParser :: (IndexedPropLanguage l, Monad m) => String ->
-    ParsecT String u m l
-lowerCaseSentenceLetterParser s = (try parseNumbered <|> parseUnnumbered) <?> "a sentence letter"
-        where parseUnnumbered = do c <- oneOf s
-                                   let Just n = elemIndex c "_abcdefghijklmnopqrstuvwxyz"
-                                   return $ pn (-1 * n)
-              parseNumbered = do char 'p'
-                                 char '_'
-                                 n <- number
-                                 return $ pn n
+lowerCaseSentenceLetterParser :: (IndexedPropLanguage l, Monad m) 
+    => String -> ParsecT String u m l
+lowerCaseSentenceLetterParser s = parse <?> "a sentence letter"
+    where parse = do c <- oneOf s
+                     midx <- optionMaybe (char '_' >> posnumber)
+                     let Just n = lcIndex c 
+                         m = maybe 0 id midx
+                     return $ pn (n  + (m * 26))
 
-schemevarParser :: 
-    ( IndexedSchemePropLanguage l
-    , Monad m
-    ) => ParsecT String u m l
-schemevarParser = try parseNumbered <|> parseUnnumbered
-    where parseUnnumbered = do c <- oneOf "_φψχθγζξ"
-                               let Just n = elemIndex c "_φψχθγζξ"
-                               return $ phin (-1 * (n + 15))
-          parseNumbered = do string "Phi" <|> string "φ"
-                             char '_'
-                             n <- number <?> "a number"
-                             return $ phin n
+schemevarParser :: (IndexedSchemePropLanguage l , Monad m) 
+    => ParsecT String u m l
+schemevarParser = parse <?> "a schematic sentence letter"
+    where parse = do c <- oneOf "ζφψχθγξ"
+                     midx <- optionMaybe (char '_' >> posnumber)
+                     let Just n = elemIndex c "ζφψχθγξ"
+                         m = maybe 2 id midx
+                     return $ phin (n  + (m * 7))
 
 unaryOpParser :: (Monad m) => [ParsecT String u m (a -> b)] -> ParsecT String u m a ->  ParsecT String u m b
 unaryOpParser ops arg = do n <- listToTry ops
@@ -159,13 +151,13 @@ parsePredicateSymbol ::
     , Typeable ret
     , Typeable arg
     ) => String -> ParsecT String u m (FixLang lex arg) -> ParsecT String u m (FixLang lex ret)
-parsePredicateSymbol s parseTerm = (try parseNumbered <|> parseUnnumbered) <?> "a predicate symbol"
-    where parseUnnumbered = do c <- oneOf s
-                               let Just n = ucIndex c
-                               char '(' *> spaces *> argParser parseTerm (ppn (-1 * n) AOne)
-          parseNumbered = do string "F" >> optionMaybe (char '^' >> number)
-                             n <- char '_' *> number
-                             char '(' *> spaces *> argParser parseTerm (ppn n AOne)
+parsePredicateSymbol s parseTerm = parse <?> "a predicate symbol"
+    where parse = do c <- oneOf s
+                     _ <- optionMaybe (char '^' >> posnumber)
+                     midx <- optionMaybe (char '_' >> posnumber)
+                     let Just n = ucIndex c 
+                         m = maybe 0 id midx
+                     char '(' *> spaces *> argParser parseTerm (ppn (n + (m * 26)) AOne)
 
 parseSchematicPredicateSymbol :: 
     ( PolyadicSchematicPredicateLanguage (FixLang lex) arg ret
@@ -174,13 +166,16 @@ parseSchematicPredicateSymbol ::
     , Typeable ret
     , Typeable arg
     ) => ParsecT String u m (FixLang lex arg) -> ParsecT String u m (FixLang lex ret)
-parseSchematicPredicateSymbol parseTerm = (try parseUnnumbered <|> parseNumbered) <?> "a schematic predicate symbol"
-    where parseNumbered = do string "φ" >> optionMaybe (char '^' >> number)
-                             n <- char '_' *> number
-                             char '(' *> spaces *> argParser parseTerm (pphin n AOne)
-          parseUnnumbered = do c <- oneOf "φψχθγζξ"
-                               let Just n = elemIndex c "_φψχθγζξ"
-                               char '(' *> spaces *> argParser parseTerm (pphin (-1 * (n + 5)) AOne)
+parseSchematicPredicateSymbol parseTerm = parse <?> "a schematic predicate symbol"
+    where parse = do c <- oneOf "ξχθγζϚφψ"
+                     _ <- optionMaybe (char '^' >> posnumber)
+                     midx <- optionMaybe (char '_' >> posnumber)
+                     --these are out of order to make sure that
+                     --the 15th schematic variable is φ,
+                     --corresponding to the 15th sentence letter, P.
+                     let Just n = elemIndex c "ξθγζϚφψχ"
+                         m = maybe 0 id midx
+                     char '(' *> spaces *> argParser parseTerm (pphin (n + (m * 8)) AOne)
 
 parsePredicateSymbolNoParen :: 
     ( PolyadicPredicateLanguage (FixLang lex) arg ret
@@ -189,13 +184,13 @@ parsePredicateSymbolNoParen ::
     , Typeable ret
     , Typeable arg
     ) => String -> ParsecT String u m (FixLang lex arg) -> ParsecT String u m (FixLang lex ret)
-parsePredicateSymbolNoParen s parseTerm = (try parseNumbered <|> parseUnnumbered) <?> "a predicate symbol"
-    where parseUnnumbered = do c <- oneOf s
-                               let Just n = ucIndex c
-                               argParserNoParen parseTerm (ppn (-1 * n) AOne)
-          parseNumbered = do string "F" >> optionMaybe (char '^' >> number)
-                             n <- char '_' *> number
-                             argParserNoParen parseTerm (ppn n AOne)
+parsePredicateSymbolNoParen s parseTerm = parse <?> "a predicate symbol"
+    where parse = do c <- oneOf s
+                     _ <- optionMaybe (char '^' >> posnumber)
+                     midx <- optionMaybe (char '_' >> posnumber)
+                     let Just n = ucIndex c 
+                         m = maybe 0 id midx
+                     argParserNoParen parseTerm (ppn (n + (m * 26)) AOne)
 
 quantifiedSentenceParser :: 
     ( QuantLanguage (FixLang lex f) (FixLang lex t)
@@ -283,19 +278,17 @@ parseFunctionSymbol ::
     , Typeable ret
     , Typeable arg
     ) => String -> ParsecT String u m (FixLang lex arg) -> ParsecT String u m (FixLang lex ret)
-parseFunctionSymbol s parseTerm = (try parseNumbered <|> parseUnnumbered) <?> "a function symbol"
-    where parseNumbered = do string "f" >> char '^' >> number >> char '_' 
-                             n <- number
-                             char '(' *> spaces *> argParser parseTerm (pfn (-1 * n) AOne)
-          parseUnnumbered = do c <- oneOf s
-                               midx <- optionMaybe (char '_' >> number)
-                               let Just n = lcIndex c 
-                                   m = maybe 0 id midx
-                               -- an int K represents the symbol at index
-                               -- (k `mod` 26) with subscript (k `div` 26)
-                               -- we need to compensate for offset, since
-                               -- lcIndex begins at 1
-                               char '(' *> spaces *> argParser parseTerm (pfn (n + (m * 26)) AOne)
+parseFunctionSymbol s parseTerm = parse <?> "a function symbol"
+    where parse = do c <- oneOf s
+                     _ <- optionMaybe (char '^' >> posnumber)
+                     midx <- optionMaybe (char '_' >> posnumber)
+                     let Just n = lcIndex c 
+                         m = maybe 0 id midx
+                     -- an int K represents the symbol at index
+                     -- (k `mod` 26) with subscript (k `div` 26)
+                     -- we need to compensate for offset, since
+                     -- lcIndex begins at 1
+                     char '(' *> spaces *> argParser parseTerm (pfn (n + (m * 26)) AOne)
 
 parseSchematicFunctionSymbol ::     
     ( SchematicPolyadicFunctionLanguage (FixLang lex) arg ret
@@ -304,13 +297,13 @@ parseSchematicFunctionSymbol ::
     , Typeable ret
     , Typeable arg
     ) => ParsecT String u m (FixLang lex arg) -> ParsecT String u m (FixLang lex ret)
-parseSchematicFunctionSymbol parseTerm = (try parseNumbered <|> parseUnnumbered) <?> "a function symbol"
-    where parseNumbered = do string "τ" >> optionMaybe (char '^' >> number) >> char '_'
-                             n <- number
-                             char '(' *> spaces *> argParser parseTerm (spfn n AOne)
-          parseUnnumbered = do c <- oneOf "τνυ"
-                               let Just n = elemIndex c "_τνυ"
-                               char '(' *> spaces *> argParser parseTerm (spfn (-1 * (n + 5)) AOne)
+parseSchematicFunctionSymbol parseTerm = parse <?> "a function symbol"
+    where parse = do c <- oneOf "τνυρκ"
+                     _ <- optionMaybe (char '^' >> posnumber)
+                     midx <- optionMaybe (char '_' >> posnumber)
+                     let Just n = elemIndex c "τνυρκ"
+                         m = maybe 1 id midx
+                     char '(' *> spaces *> argParser parseTerm (spfn (n + (m * 5)) AOne)
 
 parseConstant :: 
     ( IndexedConstantLanguage (FixLang lex ret)
@@ -319,7 +312,7 @@ parseConstant ::
     ) => String -> ParsecT String u m (FixLang lex ret)
 parseConstant s = parse <?> "a constant"
     where parse = do c <- oneOf s
-                     midx <- optionMaybe (char '_' >> number)
+                     midx <- optionMaybe (char '_' >> posnumber)
                      let Just n = lcIndex c 
                          m = maybe 0 id midx
                      return $ cn (n  + (m * 26))
@@ -329,13 +322,12 @@ parseSchematicConstant ::
     , Typeable ret
     , Monad m
     ) => ParsecT String u m (FixLang lex ret)
-parseSchematicConstant = (try parseNumbered <|> parseUnnumbered) <?> "a constant"
-    where parseUnnumbered = do c <- oneOf "τπμ"
-                               let Just n = elemIndex c "_τπμ"
-                               return $ taun (-1 * n)
-          parseNumbered  = do _ <- string "τ_" >> optionMaybe (string "^0")
-                              n <- number
-                              return $ taun n
+parseSchematicConstant = parse <?> "a constant"
+    where parse = do c <- oneOf "τπμ"
+                     midx <- optionMaybe (char '_' >> posnumber)
+                     let Just n = elemIndex c "τπμ" 
+                         m = maybe 0 id midx
+                     return $ taun (n  + (m * 3))
 
 --------------------------------------------------------
 --Structural Elements
@@ -354,13 +346,17 @@ number = do valence <- option "+" (string "-")
                 then return (read ds) 
                 else return (read ds * (-1))
 
+posnumber :: Monad m => ParsecT String u m Int
+posnumber = do ds <- many1 digit
+               return (read ds) 
+
 --------------------------------------------------------
 --Helper functions
 --------------------------------------------------------
 
-lcIndex c = elemIndex c "abcdefghijklmnopqrstuvwxyz"
+lcIndex c = elemIndex c ['a' .. 'z']
 
-ucIndex c = elemIndex c "_ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+ucIndex c = elemIndex c ['A' .. 'Z']
 
 argParser :: 
     ( Typeable b
