@@ -200,8 +200,10 @@ seqSubsetUnify s1 s2 = case check of
                        Left _ -> False
                        Right [] -> False
                        Right _ -> True
-            where check = do fosub <- fosolve [view rhs s1 :=: view rhs s2]
-                             acuisolve [(view lhs (applySub fosub s1) :+: GammaV (0 - 1)) :=: view lhs (applySub fosub s2) ]
+            where check = do fosub <- fosolve [view rhs (rebuild s1) :=: view rhs (rebuild s2)]
+                             acuisolve [(view lhs (rebuild $ applySub fosub s1) :+: GammaV (0 - 1)) :=: view lhs (rebuild $ applySub fosub s2) ]
+                  rebuild x = evalState (stateRebuild x >>= toBNF) (0 :: Int)
+
 
 --------------------------------------------------------
 --Utility Functions
