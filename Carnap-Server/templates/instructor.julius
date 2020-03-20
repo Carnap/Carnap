@@ -306,12 +306,14 @@ async function exportGrades(cid) {
             }})
         newRow.unshift(row.fn)
         newRow.unshift(row.ln)
+        newRow.unshift(row.email)
         newRow.push(Object.values(scores).reduce((x,y) => x + y, 0))
         rows.push(newRow)
     }
     rows.sort((x,y) => x[0] > y[0])
     columns.unshift("First Name")
     columns.unshift("Last Name")
+    columns.unshift("Email Address")
     columns.push("Total Score")
     rows.unshift(columns)
     let csv = rows.map(row => row.reduce((x,y) => x + ", " + y))
@@ -399,7 +401,8 @@ $(".async").each((_,elt) => elt.update = function (callback) {
         box.contents[this.dataset.uid] = {
             scores: data, 
             fn: this.dataset.fn,
-            ln: this.dataset.ln
+            ln: this.dataset.ln,
+            email: this.dataset.email,
         }
         this.innerHTML = data.map(i=>i[1]).reduce((x,y) => x + y, 0);
         document.getElementById("loaded-" + box.dataset.cid).innerHTML = Object.keys(box.contents).length

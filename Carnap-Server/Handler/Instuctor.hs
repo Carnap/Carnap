@@ -654,7 +654,9 @@ classWidget ident instructors classent = do
                                         $nothing
                                             <td>No Due Date
                     <h2>Students
-                    <div.scrollbox data-studentnumber="#{show numberOfUsers}" data-cid="#{jsonSerialize cid}">
+                    <div.scrollbox
+                        data-studentnumber="#{show numberOfUsers}"
+                        data-cid="#{jsonSerialize cid}">
                         <table.table.table-striped >
                             <thead>
                                 <th> Registered Student
@@ -668,7 +670,12 @@ classWidget ident instructors classent = do
                                             <a href=@{UserR (userIdent u)}>#{userIdent u}
                                         <td>
                                             #{ln}, #{fn}
-                                        <td.async data-query="#{jsonSerialize $ QueryScores uid cid}" data-fn="#{fn}" data-ln="#{ln}" data-uid="#{jsonSerialize uid}" >
+                                        <td.async
+                                            data-query="#{jsonSerialize $ QueryScores uid cid}"
+                                            data-email="#{userIdent u}"
+                                            data-fn="#{fn}"
+                                            data-ln="#{ln}"
+                                            data-uid="#{jsonSerialize uid}" >
                                             <span.loading>—
                                         <td>
                                             <button.btn.btn-sm.btn-secondary type="button" title="Drop #{fn} #{ln} from class"
@@ -706,7 +713,9 @@ classWidget ident instructors classent = do
                             <dd.col-sm-9>
                                 $forall (Entity _ coud, Entity ciid _) <- zip coInstructorUD coInstructors
                                     <div#Co-Instructor-#{userDataLastName coud}-#{userDataFirstName coud}>
-                                        <i.fa.fa-trash-o style="cursor:pointer" title="Remove #{userDataFirstName coud} #{userDataLastName coud} as Co-Instructor"
+                                        <i.fa.fa-trash-o 
+                                            style="cursor:pointer" 
+                                            title="Remove #{userDataFirstName coud} #{userDataLastName coud} as Co-Instructor"
                                             onclick="tryDeleteCoInstructor('#{jsonSerialize $ DeleteCoInstructor ciid}','#{userDataLastName coud}', '#{userDataFirstName coud}')">
                                         <span>#{userDataFirstName coud},
                                         <span> #{userDataLastName coud}
@@ -716,11 +725,14 @@ classWidget ident instructors classent = do
                                 ^{addCoInstructorWidget}
                         <div.col-xl-6.col-lg-12 style="padding:5px">
                             <div.float-xl-right>
-                                <button.btn.btn-secondary style="width:160px" type="button"  onclick="modalEditCourse('#{show cid}','#{maybe "" sanatizeForJS (unpack <$> courseDescription course)}','#{dateDisplay (courseStartDate course) course}','#{dateDisplay (courseEndDate course) course}',#{courseTotalPoints course})">
+                                <button.btn.btn-secondary style="width:160px" type="button"
+                                    onclick="modalEditCourse('#{show cid}','#{maybe "" sanatizeForJS (unpack <$> courseDescription course)}','#{dateDisplay (courseStartDate course) course}','#{dateDisplay (courseEndDate course) course}',#{courseTotalPoints course})">
                                     Edit Information
-                                <button.btn.btn-secondary style="width:160px" type="button" onclick="exportGrades('#{jsonSerialize cid}')";">
+                                <button.btn.btn-secondary style="width:160px" type="button"
+                                    onclick="exportGrades('#{jsonSerialize cid}')";">
                                     Export Grades
-                                <button.btn.btn-danger style="width:160px" type="button" onclick="tryDeleteCourse('#{jsonSerialize $ DeleteCourse (courseTitle course)}')">
+                                <button.btn.btn-danger style="width:160px" type="button"
+                                    onclick="tryDeleteCourse('#{jsonSerialize $ DeleteCourse (courseTitle course)}')">
                                     Delete Course
               |]
 
