@@ -304,9 +304,10 @@ async function exportGrades(cid) {
             } else { 
                 return 0 
             }})
-        newRow.unshift(row.fn)
-        newRow.unshift(row.ln)
-        newRow.unshift(row.email)
+            /* quote-enclose and escape contained quotes, CSV specification */
+        newRow.unshift('"' + row.fn.replace(/"/g,'""') + '"')
+        newRow.unshift('"' + row.ln.replace(/"/g,'""') + '"')
+        newRow.unshift('"' + row.email.replace(/"/g,'""') + '"')
         newRow.push(Object.values(scores).reduce((x,y) => x + y, 0))
         rows.push(newRow)
     }
@@ -315,8 +316,9 @@ async function exportGrades(cid) {
     columns.unshift("Last Name")
     columns.unshift("Email Address")
     columns.push("Total Score")
+    columns = columns.map(v => '"' + v.replace(/"/g,'""') + '"')
     rows.unshift(columns)
-    let csv = rows.map(row => row.reduce((x,y) => x + ", " + y))
+    let csv = rows.map(row => row.reduce((x,y) => x + "," + y))
                   .reduce((x,y) => x + "\n" + y)
     let file = new Blob([csv], {type: "text/csv"})
     if (window.navigator.msSaveOrOpenBlob) { // IE10+ 
