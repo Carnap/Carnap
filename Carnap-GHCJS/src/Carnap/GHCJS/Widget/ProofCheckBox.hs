@@ -115,7 +115,7 @@ checkerWith options updateres iog@(IOGoal i o g content _) w = do
            when (autoResize options) $ do
                    resizelistener <- newListener (do Just t <- target; resize t)
                    resizelistener' <- newListener (do Just t <- target; resize t)
-                   addListener i keyDown resizelistener False
+                   addListener i input resizelistener False
                    addListener i initialize resizelistener'  False
                    resize i
            case submit options of
