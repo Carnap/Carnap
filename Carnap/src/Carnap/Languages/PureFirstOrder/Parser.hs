@@ -311,9 +311,10 @@ mfolFormulaParser :: Parsec String u PureMFOLForm
 mfolFormulaParser = parserFromOptions simpleMonadicFOLParserOptions
 
 parseFreeVar :: StandardVarLanguage (PureFirstOrderLanguageWith a (Term Int)) => String -> Parsec String u (PureFirstOrderLanguageWith a (Term Int))
-parseFreeVar s = choice [try $ do _ <- string "x_"
+parseFreeVar s = choice [try $ do c <- oneOf s
+                                  char '_'
                                   dig <- many1 digit
-                                  return $ foVar $ "x_" ++ dig
+                                  return $ foVar $ [c] ++ "_" ++ dig
                         ,      do c <- oneOf s
                                   return $ foVar [c]
                         ]
