@@ -1,4 +1,4 @@
-module Handler.Register (getRegisterR, getRegisterEnrollR, getEnrollR, postRegisterR, postRegisterEnrollR) where
+module Handler.Register (getRegisterR, getRegisterEnrollR, getEnrollR, postEnrollR, postRegisterR, postRegisterEnrollR) where
 
 import Import
 import Yesod.Form.Bootstrap3
@@ -55,8 +55,36 @@ getRegisterR ident = getRegister registrationForm (RegisterR ident) ident
 
 getEnrollR :: Text -> Handler Html
 getEnrollR classname = do setSession "enrolling-in" classname
-                          requireAuth
-                          redirect HomeR
+                          (Entity uid _) <- requireAuth
+                          ud <- checkUserData uid
+                          mclass <- runDB $ getBy (UniqueCourse classname)
+                          case (mclass, userDataEnrolledIn ud) of
+                              (Just (Entity cid course), Just ecid) -> do 
+                                    if cid == ecid then redirect HomeR
+                                                   else defaultLayout (reenrollPage cid course)
+                              (Just (Entity cid course), Nothing) -> setMessage "no user data - please restart registration" >> notFound
+                              (Nothing,_) -> setMessage "no course with that title" >> notFound
+    where reenrollPage cid course = [whamlet|
+                           <div.container>
+                               <p>It looks like you're already enrolled.
+                               <p>Do you want to change your enrollment and join #{courseTitle course}?
+                               <p>
+                                   <form action="" method="post">
+                                       <button name="change-enrollment" value="change">
+                                            Change Enrollment
+                         |]
+
+postEnrollR :: Text -> Handler Html
+postEnrollR classname = do (Entity uid _) <- requireAuth
+                           (mclass, mudent) <- runDB $ (,) <$> getBy (UniqueCourse classname) 
+                                                           <*> getBy (UniqueUserData uid)
+                           case (mclass, mudent) of
+                               (Nothing,_) -> setMessage "no course with that title" >> notFound
+                               (_,Nothing) -> setMessage "no user data (do you need to register?)" >> notFound
+                               (Just (Entity cid course), Just (Entity udid _)) -> do
+                                    runDB $ update udid [UserDataEnrolledIn =. Just cid]
+                                    setMessage $ "Enrollment change complete"
+                                    redirect HomeR
 
 --registration with enrollment built into the path
 getRegisterEnrollR :: Text -> Text -> Handler Html
