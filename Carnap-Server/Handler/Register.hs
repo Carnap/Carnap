@@ -55,19 +55,22 @@ getRegisterR ident = getRegister registrationForm (RegisterR ident) ident
 
 getEnrollR :: Text -> Handler Html
 getEnrollR classname = do setSession "enrolling-in" classname
-                          (Entity uid _) <- requireAuth
+                          (Entity uid user) <- requireAuth
                           ud <- checkUserData uid
                           mclass <- runDB $ getBy (UniqueCourse classname)
                           case (mclass, userDataEnrolledIn ud) of
                               (Just (Entity cid course), Just ecid) -> do 
                                     if cid == ecid then redirect HomeR
-                                                   else defaultLayout (reenrollPage cid course)
+                                                   else defaultLayout (reenrollPage cid course user)
                               (Just (Entity cid course), Nothing) -> setMessage "no user data - please restart registration" >> notFound
                               (Nothing,_) -> setMessage "no course with that title" >> notFound
-    where reenrollPage cid course = [whamlet|
+    where reenrollPage cid course user = [whamlet|
                            <div.container>
-                               <p>It looks like you're already enrolled.
+                               <h2>It looks like you're already enrolled.
                                <p>Do you want to change your enrollment and join #{courseTitle course}?
+                               <p>Changing your enrollment will not cause you to lose any saved work.  You can rejoin your previous class by changing your enrollment settings at the bottom of your #
+                                  <a href=@{UserR (userIdent user)}>user page#
+                                  .
                                <p>
                                    <form action="" method="post">
                                        <button name="change-enrollment" value="change">
