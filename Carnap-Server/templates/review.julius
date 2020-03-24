@@ -6,7 +6,8 @@ $(".updateSubmission").submit(function(e) {
         processData: false,
         contentType: false,
         success: function(data) {
-            window.alert("updated!")
+            if (data.slice(0,5) == "error") window.alert(data.slice(6))
+            else window.alert("updated!")
             $(e.target).parents().eq(3).addClass("graded")
             },
         error: function(data) {

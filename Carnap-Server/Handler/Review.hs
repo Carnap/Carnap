@@ -188,6 +188,8 @@ renderProblem (Entity key val) = do
                 [whamlet|
                     <div data-carnap-type="translate"
                          data-carnap-transtype="#{transtype}"
+                         data-carnap-system="#{sys}"
+                         $nothing
                          data-carnap-goal="#{show (simpleCipher (unpack goal))}"
                          data-carnap-submission="none"
                          data-carnap-problem="#{problem}">
@@ -195,6 +197,9 @@ renderProblem (Entity key val) = do
                 |]
                 where transtype = case lookup "transtype" (M.fromList opts) of Just s -> s; Nothing -> "prop"
                       problem = case lookup "problem" (M.fromList opts) of Just s -> s ++ " : " ++ (unpack goal)
+                      sys = case lookup "system" (M.fromList opts) of 
+                                Just s -> s; 
+                                Nothing -> if transtype == "prop" then "prop" else "firstOrder"
             (Qualitative, QualitativeProblemDataOpts goal answer opts) -> template $ 
                 [whamlet|
                     <div data-carnap-type="qualitative"
@@ -234,4 +239,7 @@ renderProblem (Entity key val) = do
 updateSubmissionForm extra ident uid = renderBootstrap3 BootstrapBasicForm $ (,,)
             <$> areq hiddenField "" (Just ident)
             <*> areq hiddenField "" (Just uid) 
-            <*> areq intField (bfs ("Partial Credit Points"::Text)) extra
+            <*> areq scoreField (bfs ("Partial Credit Points"::Text)) extra
+    where scoreField = check validateScore intField
+          validateScore s | s < 0 = Left ("Added credit must be a positive number." :: Text)
+                          | otherwise = Right s
