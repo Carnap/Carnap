@@ -35,6 +35,7 @@ library
                      Handler.Review
                      Handler.Assignment
                      Handler.Document
+                     Filter.RenderFormulas
                      Filter.Randomize
                      Filter.Sidenotes
                      Filter.TreeDeduction

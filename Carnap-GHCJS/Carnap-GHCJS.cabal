@@ -26,6 +26,7 @@ library
                      , Carnap.GHCJS.Action.QualitativeProblem
                      , Carnap.GHCJS.Action.SequentCheck
                      , Carnap.GHCJS.Action.AcceptJSON
+                     , Carnap.GHCJS.Action.RenderFormulas
   if impl(ghcjs)
       build-depends:       base >= 4.7 && < 5
                          , aeson

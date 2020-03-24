@@ -518,3 +518,11 @@ body[data-carnap-type="proofchecker"] .buttonWrapper {
     font-variant-ligatures: historical-ligatures discretionary-ligatures common-ligatures contextual; 
     font-family:"Fira Logic", monospace;
 }
+
+[data-carnap-render-system] {
+    text-rendering: optimizeLegibility;
+    font-variant-ligatures: historical-ligatures discretionary-ligatures common-ligatures contextual; 
+    font-family:"Fira Logic", monospace;
+    color: black;
+    background: none;
+}

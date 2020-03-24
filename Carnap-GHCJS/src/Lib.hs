@@ -1,6 +1,6 @@
 {-# LANGUAGE RankNTypes, QuasiQuotes, FlexibleContexts, DeriveDataTypeable, CPP, JavaScriptFFI #-}
 module Lib (genericSendJSON, sendJSON, onEnter, onKey, doOnce, dispatchCustom, clearInput,
-           getListOfElementsByClass, getListOfElementsByTag, tryParse,
+           getListOfElementsByClass, getListOfElementsByTag, getCarnapDataMap, tryParse,
            treeToElement, genericTreeToUl, treeToUl, genericListToUl,
            listToUl, formToTree, leaves, adjustFirstMatching, decodeHtml,
            decodeJSON,toJSONString, cleanString, syncScroll, reloadPage, initElements,

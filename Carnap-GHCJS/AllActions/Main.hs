@@ -10,6 +10,7 @@ import Carnap.GHCJS.Action.QualitativeProblem
 import Carnap.GHCJS.Action.SequentCheck
 import Carnap.GHCJS.Action.TreeDeductionCheck
 import Carnap.GHCJS.Action.AcceptJSON
+import Carnap.GHCJS.Action.RenderFormulas
 
 main :: IO ()
 main = do initCallbackObj
@@ -22,3 +23,4 @@ main = do initCallbackObj
           sequentCheckAction
           treeDeductionCheckAction
           acceptJSONAction
+          renderFormulasAction
