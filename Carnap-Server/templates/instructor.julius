@@ -305,9 +305,10 @@ async function exportGrades(cid) {
                 return 0 
             }})
             /* quote-enclose and escape contained quotes, CSV specification */
-        newRow.unshift('"' + row.fn.replace(/"/g,'""') + '"')
-        newRow.unshift('"' + row.ln.replace(/"/g,'""') + '"')
-        newRow.unshift('"' + row.email.replace(/"/g,'""') + '"')
+        function tidy (s) { return s.replace(/"/g,'""').replace(/^ */,"").replace(/ *$/,"") }
+        newRow.unshift('"' + tidy(row.fn) + '"')
+        newRow.unshift('"' + tidy(row.ln) + '"')
+        newRow.unshift('"' + tidy(row.email) + '"')
         newRow.push(Object.values(scores).reduce((x,y) => x + y, 0))
         rows.push(newRow)
     }
