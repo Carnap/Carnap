@@ -71,7 +71,7 @@ activateTranslate w (Just (i,o,opts)) = do
                            setInnerHTML o (Just problem)
                            mpar@(Just par) <- getParentNode o               
                            insertBefore par (Just bw) (Just o)
-                           translate <- newListener $ (tryTrans parser) checker tests o ref fs
+                           translate <- newListener $ tryTrans parser checker tests o ref fs
                            if "nocheck" `elem` optlist 
                                then return ()
                                else addListener i keyUp translate False                  
@@ -175,7 +175,7 @@ submitTrans opts i ref fs parser checker tests l =
            else if ("exam" `inOpts` opts) || ("nocheck" `inOpts` opts) 
                 then do 
                     (Just v) <- getValue (castToHTMLInputElement i)
-                    case parse parser "" v of
+                    case parse (spaces *> parser <* eof) "" v of
                         Right f' | tests f' == Nothing && any (\f -> checker f f') fs -> trySubmit Translation opts l (ProblemContent (serialize fs)) True
                         _ | "exam" `inOpts` opts -> trySubmit Translation opts l (TranslationDataOpts (serialize fs) (pack v) (M.toList opts)) False
                         _ -> message "something is wrong... try again?"
