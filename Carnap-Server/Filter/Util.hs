@@ -1,6 +1,7 @@
-module Filter.Util (splitIt, intoChunks,formatChunk, unlines',sanatizeHtml) where
+module Filter.Util (splitIt, intoChunks,formatChunk, unlines',sanatizeHtml, exerciseWrapper) where
 
 import Prelude
+import Text.Pandoc
 import Data.Char (isDigit)
 import Text.Blaze.Html
 import Text.Blaze.Html.Renderer.String
@@ -28,3 +29,8 @@ unlines' (x:[]) = x
 unlines' (x:xs) = x ++ '\n':unlines' xs
 
 sanatizeHtml = renderHtml . toHtml
+
+exerciseWrapper label content = Div ("exercise-" ++ label,["exercise"],[]) 
+                                    [ Plain [Span ("",[],[]) [Str label]]
+                                    , content
+                                    ]

@@ -4,7 +4,7 @@ import Carnap.GHCJS.SharedFunctions (simpleCipher)
 import Text.Pandoc
 import Data.List.Split (splitOn)
 import Data.Map (fromList,toList,unions)
-import Filter.Util (splitIt, intoChunks,formatChunk, unlines',sanatizeHtml)
+import Filter.Util (splitIt, intoChunks,formatChunk, unlines',sanatizeHtml, exerciseWrapper)
 import Prelude
 
 makeTranslate :: Block -> Block
@@ -28,13 +28,8 @@ activate cls extra chunk
                              ]
                     _ -> []
           opts adhoc = unions [fromList extra, fromList fixed, fromList adhoc]
-          template opts = Div ("",["exercise"],[])
-                            [ Plain 
-                                [Span ("",[],[]) 
-                                    [Str (numof h)]
-                                ]
-                            , case splitOn ":" (contentof h) of
+          template opts = exerciseWrapper (numof h) $ 
+                                case splitOn ":" (contentof h) of
                                   [x,y] -> Div ("",[],map (\(x,y) -> ("data-carnap-" ++ x,y)) $ toList opts) 
                                             [Plain [Str (case t of [] -> y; _ -> unlines' t)]]
                                   _ -> Div ("",[],[]) [Plain [Str "No matching Translation"]]
-                            ]

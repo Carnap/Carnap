@@ -3,7 +3,7 @@ module Filter.ProofCheckers (makeProofChecker) where
 import Text.Pandoc
 import Data.List.Split (splitOn)
 import Data.Map (Map, unions, fromList, toList)
-import Filter.Util (splitIt, intoChunks,formatChunk,unlines')
+import Filter.Util (splitIt, intoChunks,formatChunk,unlines', exerciseWrapper)
 import Prelude
 
 makeProofChecker :: Block -> Block
@@ -125,15 +125,9 @@ toPlayground cls extra content
           playTemplate opts = template (unions [fromList extra, fromList opts, fromList fixed]) "Playground" (unlines' $ formatChunk content)
 
 template :: Map String String -> String -> String -> Block
-template opts head content = Div ("",["exercise"],[])
-    [ Plain 
-        [Span ("",[],[]) 
-            [Str head]
-        ]
-    , RawBlock "html" 
+template opts head content = exerciseWrapper head $ RawBlock "html" 
         --Need rawblock here to get the linebreaks right.
         $ "<div" ++ optString ++ ">"
         ++ content
         ++ "</div>"
-    ]
     where optString = concatMap (\(x,y) -> (" data-carnap-" ++ x ++ "=\"" ++ y ++ "\"")) (toList opts) 

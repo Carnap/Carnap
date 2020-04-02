@@ -2,7 +2,7 @@ module Filter.Qualitative (makeQualitativeProblems) where
 
 import Carnap.GHCJS.SharedFunctions (simpleHash)
 import Text.Pandoc
-import Filter.Util (splitIt, intoChunks,formatChunk, unlines')
+import Filter.Util (splitIt, intoChunks,formatChunk, unlines', exerciseWrapper)
 import Data.Map (fromList, toList, unions)
 import Prelude
 
@@ -24,31 +24,21 @@ activate cls extra chunk
                   , ("goal", contentOf h) 
                   , ("submission", "saveAs:" ++ numof h)
                   ]
-          mctemplate opts = Div ("",["exercise"],[]) 
-                              [ Plain 
-                                  [Span ("",[],[]) 
-                                      [Str (numof h)]
-                                  ]
+          mctemplate opts = exerciseWrapper (numof h) $
                               --Need rawblock here to get the linebreaks
                               --right.
-                              ,  RawBlock "html" 
-                                   $ "<div" ++ optString ++ ">" 
-                                  ++ unlines' (map (show . withHash) t)
-                                  ++ "</div>"
-                              ]
+                              RawBlock "html" 
+                                 $ "<div" ++ optString ++ ">" 
+                                ++ unlines' (map (show . withHash) t)
+                                ++ "</div>"
                 where optString = concatMap (\(x,y) -> " data-carnap-" ++ x ++ "=\"" ++ y ++ "\"") (toList opts)
-          template opts = Div ("",["exercise"],[]) 
-                              [ Plain 
-                                  [Span ("",[],[]) 
-                                      [Str (numof h)]
-                                  ]
+          template opts = exerciseWrapper (numof h) $
                               --Need rawblock here to get the linebreaks
                               --right.
-                              ,  RawBlock "html" 
-                                     $ "<div" ++ optString ++ ">" 
-                                    ++ unlines' t
-                                    ++ "</div>"
-                              ]
+                              RawBlock "html" 
+                                 $ "<div" ++ optString ++ ">" 
+                                ++ unlines' t
+                                ++ "</div>"
                 where optString = concatMap (\(x,y) -> " data-carnap-" ++ x ++ "=\"" ++ y ++ "\"") (toList opts)
           withHash s | length s' > 0 = if head s' `elem` ['*','+','-'] then (simpleHash s', tail s') else (simpleHash s',s')
                      | otherwise = (simpleHash s', s')

@@ -1,7 +1,7 @@
 module Filter.TruthTables (makeTruthTables) where
 
 import Text.Pandoc
-import Filter.Util (splitIt, intoChunks,formatChunk, unlines')
+import Filter.Util (splitIt, intoChunks,formatChunk, unlines', exerciseWrapper)
 import Data.Map (fromList, toList, unions)
 import Prelude
 
@@ -10,6 +10,7 @@ makeTruthTables cb@(CodeBlock (_,classes,extra) contents)
     | "TruthTable" `elem` classes = Div ("",[],[]) $ map (activate classes extra) $ intoChunks contents
     | otherwise = cb
 makeTruthTables x = x
+
 
 activate cls extra chunk
     | "Simple" `elem` cls = template (opts [("tabletype","simple")])
@@ -24,11 +25,6 @@ activate cls extra chunk
                   , ("goal", contentOf h) 
                   , ("submission", "saveAs:" ++ numof h)
                   ]
-          template opts = Div ("",["exercise"],[])
-                            [ Plain 
-                                [Span ("",[],[]) 
-                                    [Str (numof h)]
-                                ]
-                            ,  Div ("",[],map (\(x,y) -> ("data-carnap-" ++ x,y)) $ toList opts) 
-                                            [Plain [Str (unlines' t)]]
-                            ]
+          template opts = exerciseWrapper (numof h) $ Div 
+                                ("",[],map (\(x,y) -> ("data-carnap-" ++ x,y)) $ toList opts) 
+                                [Plain [Str (unlines' t)]]

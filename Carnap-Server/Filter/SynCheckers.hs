@@ -1,6 +1,7 @@
 module Filter.SynCheckers (makeSynCheckers) where
 
 import Text.Pandoc
+import Filter.Util (exerciseWrapper)
 import Data.Map (fromList, toList, unions)
 import Prelude
 
@@ -21,10 +22,6 @@ activate cls extra cnt
                   , ("goal", propof cnt) 
                   , ("submission", "saveAs:" ++ numof cnt)
                   ]
-          template opts = Div ("",["exercise"],[])
-                            [ Plain 
-                                [Span ("",[],[]) 
-                                    [Str (numof cnt)]
-                                ]
-                            , Div ("",[],map (\(x,y) -> ("data-carnap-" ++ x,y)) $ toList opts) []
-                            ]
+          template opts = exerciseWrapper (numof cnt) $ Div 
+                                ("",[],map (\(x,y) -> ("data-carnap-" ++ x,y)) $ toList opts) 
+                                []

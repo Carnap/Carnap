@@ -1,7 +1,7 @@
 module Filter.TreeDeduction (makeTreeDeduction) where
 
 import Text.Pandoc
-import Filter.Util (splitIt, intoChunks,formatChunk, unlines')
+import Filter.Util (splitIt, intoChunks,formatChunk, unlines', exerciseWrapper)
 import Data.Map (fromList, toList, unions)
 import Prelude
 
@@ -25,14 +25,9 @@ activate cls extra chunk
                   , ("submission", "saveAs:" ++ numof h)
                   , ("type", "treedeductionchecker")
                   ]
-          template opts = Div ("",["exercise"],[])
-                            [ Plain 
-                                [Span ("",[],[]) 
-                                    [Str (numof h)]
-                                ]
-                            , Div ("",[],map (\(x,y) -> ("data-carnap-" ++ x,y)) $ toList opts)
-                                            [Plain [Str (unlines' t)]]
-                            ]
+          template opts = exerciseWrapper (numof h) $ Div 
+                                ("",[],map (\(x,y) -> ("data-carnap-" ++ x,y)) $ toList opts)
+                                [Plain [Str (unlines' t)]]
 
 toPlayground cls extra contents
     | "propNK" `elem` cls = template (opts [("system","propNK")])
