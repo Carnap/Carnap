@@ -18,11 +18,19 @@ $(".updateSubmission").submit(function(e) {
 });
 
 $("#viewUngraded").click( function(){
+    $("#viewAll").removeClass("btn-primary")
+    $("#viewAll").addClass("btn-outline-primary")
+    $(this).removeClass("btn-outline-primary")
+    $(this).addClass("btn-primary")
     var sheet = document.styleSheets[0];
     sheet.insertRule(".graded { display:none; }", sheet.cssRules.length)
     });
 
 $("#viewAll").click( function(){
+    $("#viewUngraded").removeClass("btn-primary")
+    $("#viewUngraded").addClass("btn-outline-primary")
+    $(this).removeClass("btn-outline-primary")
+    $(this).addClass("btn-primary")
     var sheet = document.styleSheets[0];
     sheet.insertRule(".graded { display:block; }", sheet.cssRules.length)
     });
