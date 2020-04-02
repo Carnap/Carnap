@@ -70,8 +70,8 @@ examples of such expressions are "that person", "she", "he", and "it". For
 these expressions, we will use lowercase letters "$v,w,x,y,z$", which we will
 call *variables*. If we run out of predicates, constants, or variables, we'll
 also allow ourselves to make new symbols by attaching numbers as subscripts to
-certain predicates, names and variables. So for example, $R_1$, $c_2$, and
-$x_{22}$ are a predicate, a constant, and a variable respectively.
+our predicates, names and variables. So for example, $G_1$, $c_2$, and $x_{22}$
+are a predicate, a constant, and a variable respectively.
 
 Notice that our language does not include any symbols for "compound noun
 phrases", like "Jules and Jim". Suppose we would like to formalize the
