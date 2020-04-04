@@ -77,11 +77,13 @@ renderProblem (Entity key val) = do
             extra = problemSubmissionExtra val
         (updateSubmissionWidget,enctypeUpdateSubmission) <- generateFormPost (identifyForm "updateSubmission" $ updateSubmissionForm extra ident (show uid))
         let isGraded = case extra of Just _ -> "graded"; _ -> "ungraded" :: String
+            manually = case extra of Just _ -> "manually graded"; _ -> "ungraded" :: String
             template display = 
                 [whamlet|
                     <div.card.mb-3.#{isGraded} data-submission-uid="#{show uid}">
                         <div.card-body style="padding:20px">
                             <h4.card-title>#{ident}
+                            <h6>#{manually}
                             <div.row>
                                 <div.col-sm-8>
                                     ^{display}

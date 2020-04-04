@@ -5,7 +5,7 @@
        $else
             <div.card.mb-3 style="padding:20px">
                 <div.row>
-                    <div.col-sm-4>
+                    <div.col-sm-8>
                         <div class="btn-group" role="group">
                           <button type="button" id="viewAll" class="btn btn-primary">Not Auto-Graded
                           <button type="button" id="viewUngraded" class="btn btn-outline-primary">Not Graded
