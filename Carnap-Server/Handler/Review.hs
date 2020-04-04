@@ -83,7 +83,7 @@ renderProblem (Entity key val) = do
                     <div.card.mb-3.#{isGraded} data-submission-uid="#{show uid}">
                         <div.card-body style="padding:20px">
                             <h4.card-title>#{ident}
-                            <h6>#{manually}
+                            <h6.review-status>#{manually}
                             <div.row>
                                 <div.col-sm-8>
                                     ^{display}

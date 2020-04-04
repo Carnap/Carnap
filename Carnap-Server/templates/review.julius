@@ -8,7 +8,8 @@ $(".updateSubmission").submit(function(e) {
         success: function(data) {
             if (data.slice(0,5) == "error") window.alert(data.slice(6))
             else window.alert("updated!")
-            $(e.target).parents().eq(3).addClass("graded")
+            $(e.target).parents().closest(".ungraded").addClass("graded")
+            $(e.target).parents().closest(".ungraded").find(".review-status").html("manually graded")
             },
         error: function(data) {
             window.alert("Error, couldn't update the assignment ")
