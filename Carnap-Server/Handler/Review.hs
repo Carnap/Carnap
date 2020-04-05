@@ -80,23 +80,25 @@ renderProblem (Entity key val) = do
         (updateSubmissionWidget,enctypeUpdateSubmission) <- generateFormPost (identifyForm "updateSubmission" $ updateSubmissionForm extra ident (show uid))
         let isGraded = case extra of Just _ -> "graded"; _ -> "ungraded" :: String
             manually = case extra of Just _ -> "manually graded"; _ -> "ungraded" :: String
-            template display = 
+            template points display = 
                 [whamlet|
                     <div.card.mb-3.#{isGraded} data-submission-uid="#{show uid}">
                         <div.card-body style="padding:20px">
-                            <h4.card-title>#{ident}
-                            <h6.review-status>#{manually}
                             <div.row>
                                 <div.col-sm-8>
+                                    <h4.card-title>#{ident}
                                     ^{display}
                                 <div.col-sm-4>
+                                    <h6.review-status>#{manually}
+                                    <h6.point-value>point value: #{points}
+                                    <hr>
                                     <form.updateSubmission enctype=#{enctypeUpdateSubmission}>
                                         ^{updateSubmissionWidget}
                                         <div.form-group>
                                             <input.btn.btn-primary type=submit value="update">
                 |]
         case (problemSubmissionType val, problemSubmissionData val) of
-            (Derivation, DerivationData goal der) -> template $
+            (Derivation, DerivationData goal der) -> template 5 $
                 [whamlet|
                     <div data-carnap-system="prop" 
                          data-carnap-options="resize"
@@ -105,7 +107,7 @@ renderProblem (Entity key val) = do
                          data-carnap-submission="none">
                          #{der}
                 |]
-            (Derivation, DerivationDataOpts goal der opts) -> template $
+            (Derivation, DerivationDataOpts goal der opts) -> template (pointsFrom opts) $
                 [whamlet|
                     <div data-carnap-type="proofchecker"
                          data-carnap-system="#{sys}"
@@ -115,7 +117,7 @@ renderProblem (Entity key val) = do
                          #{der}
                 |]
                 where sys = case lookup "system" (M.fromList opts) of Just s -> s; Nothing -> "prop"
-            (TruthTable, TruthTableData goal tt) -> template $
+            (TruthTable, TruthTableData goal tt) -> template 5 $
                 [whamlet|
                     <div data-carnap-type="truthtable"
                          data-carnap-tabletype="#{checkvalidity goal}"
@@ -123,7 +125,7 @@ renderProblem (Entity key val) = do
                          data-carnap-goal="#{goal}">
                          #{renderTT tt}
                 |]
-            (TruthTable, TruthTableDataOpts goal tt opts) -> template $
+            (TruthTable, TruthTableDataOpts goal tt opts) -> template (pointsFrom opts) $
                 [whamlet|
                     <div data-carnap-type="truthtable"
                          data-carnap-tabletype="#{tabletype}"
@@ -142,7 +144,7 @@ renderProblem (Entity key val) = do
                                                       Just (fs,gs) -> Just $ intercalate "," (map show fs) ++ ":" ++ intercalate "," (map show gs)
                                                       Nothing -> Just c --If it's a sequent, it'll show properly anyway.
 
-            (CounterModel, CounterModelDataOpts goal cm opts) -> template $
+            (CounterModel, CounterModelDataOpts goal cm opts) -> template (pointsFrom opts) $
                 [whamlet|
                     <div data-carnap-type="countermodeler"
                          data-carnap-countermodelertype="#{cmtype}"
@@ -158,7 +160,7 @@ renderProblem (Entity key val) = do
                                     `mplus` (intercalate "," . map show <$> (readMaybe c :: Maybe [PureFOLForm]))
                                     `mplus` Just c --If it's a sequent, it'll show properly anyway.
 
-            (Translation, TranslationData goal trans) -> template $
+            (Translation, TranslationData goal trans) -> template 5 $
                 [whamlet|
                     <div data-carnap-type="translate"
                          data-carnap-transtype="prop"
@@ -167,28 +169,7 @@ renderProblem (Entity key val) = do
                          data-carnap-problem="#{goal}">
                          #{trans}
                 |]
-
-            (SequentCalc, SequentCalcData goal tree opts) -> template $
-                [whamlet|
-                    <div data-carnap-type="sequentchecker"
-                         data-carnap-system="#{sys}"
-                         data-carnap-options="resize"
-                         data-carnap-goal="#{goal}"
-                         data-carnap-submission="none">
-                         #{treeJSON tree}
-                |]
-                where sys = case lookup "system" (M.fromList opts) of Just s -> s; Nothing -> "propLK"
-            (DeductionTree, DeductionTreeData goal tree opts) -> template $
-                [whamlet|
-                    <div data-carnap-type="treedeductionchecker"
-                         data-carnap-system="#{sys}"
-                         data-carnap-options="resize"
-                         data-carnap-goal="#{goal}"
-                         data-carnap-submission="none">
-                         #{treeJSON tree}
-                |]
-                where sys = case lookup "system" (M.fromList opts) of Just s -> s; Nothing -> "propNK"
-            (Translation, TranslationDataOpts goal trans opts) -> template $
+            (Translation, TranslationDataOpts goal trans opts) -> template (pointsFrom opts) $
                 [whamlet|
                     <div data-carnap-type="translate"
                          data-carnap-transtype="#{transtype}"
@@ -204,7 +185,27 @@ renderProblem (Entity key val) = do
                       sys = case lookup "system" (M.fromList opts) of 
                                 Just s -> s; 
                                 Nothing -> if transtype == "prop" then "prop" else "firstOrder"
-            (Qualitative, QualitativeProblemDataOpts goal answer opts) -> template $ 
+            (SequentCalc, SequentCalcData goal tree opts) -> template (pointsFrom opts) $
+                [whamlet|
+                    <div data-carnap-type="sequentchecker"
+                         data-carnap-system="#{sys}"
+                         data-carnap-options="resize"
+                         data-carnap-goal="#{goal}"
+                         data-carnap-submission="none">
+                         #{treeJSON tree}
+                |]
+                where sys = case lookup "system" (M.fromList opts) of Just s -> s; Nothing -> "propLK"
+            (DeductionTree, DeductionTreeData goal tree opts) -> template (pointsFrom opts) $
+                [whamlet|
+                    <div data-carnap-type="treedeductionchecker"
+                         data-carnap-system="#{sys}"
+                         data-carnap-options="resize"
+                         data-carnap-goal="#{goal}"
+                         data-carnap-submission="none">
+                         #{treeJSON tree}
+                |]
+                where sys = case lookup "system" (M.fromList opts) of Just s -> s; Nothing -> "propNK"
+            (Qualitative, QualitativeProblemDataOpts goal answer opts) -> template (pointsFrom opts) $ 
                 [whamlet|
                     <div data-carnap-type="qualitative"
                          data-carnap-qualitativetype="#{qualtype}"
@@ -227,7 +228,10 @@ renderProblem (Entity key val) = do
                                            Nothing -> "indeciperable entry"
 
             _ -> return ()
-    where renderTT tt = concat $ map renderRow tt
+    where pointsFrom opts = case lookup "points" (M.fromList opts) >>= readMaybe of
+                                Nothing -> 5 :: Int
+                                Just n -> n
+          renderTT tt = concat $ map renderRow tt
           renderRow row = map toval row ++ "\n"
           toval (Just True) = 'T'
           toval (Just False) = 'F'
