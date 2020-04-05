@@ -35,9 +35,9 @@ getReviewR :: Text -> Text -> Handler Html
 getReviewR coursetitle filename = 
         do (Entity key val, _) <- getAssignmentByCourse coursetitle filename
            unsortedProblems <- runDB $ selectList [ProblemSubmissionAssignmentId ==. Just key, ProblemSubmissionCorrect ==. False] []
-           uidAndUser  <- runDB $ do let uids = nub $ map (problemSubmissionUserId . entityVal) unsortedProblems
-                                     musers <- mapM get uids
-                                     return $ zip musers uids 
+           uidAndData <- runDB $ do let uids = nub $ map (problemSubmissionUserId . entityVal) unsortedProblems
+                                    muserdata <- mapM (getBy . UniqueUserData) uids
+                                    return $ zip muserdata uids 
            let problems = sortBy theSorting unsortedProblems
            defaultLayout $ do
                addScript $ StaticR js_popper_min_js
@@ -66,7 +66,9 @@ selectUser list =
                 <option value="all">All Students
                 $forall (k,v) <- list
                     $maybe k' <- k
-                        <option value="#{show v}">#{userIdent k'}
+                        <option value="#{show v}">
+                            #{userDataLastName (entityVal k')}, #
+                            #{userDataFirstName (entityVal k')}
                     $nothing
                         <option value="#{show v}">unknown
         |]

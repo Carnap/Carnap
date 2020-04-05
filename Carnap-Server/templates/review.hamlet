@@ -10,6 +10,6 @@
                           <button type="button" id="viewAll" class="btn btn-primary">Not Auto-Graded
                           <button type="button" id="viewUngraded" class="btn btn-outline-primary">Not Graded
                     <div.col-sm-4>
-                      ^{selectUser uidAndUser}
+                      ^{selectUser uidAndData}
             $forall p <- problems
                 ^{renderProblem p}
