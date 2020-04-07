@@ -102,12 +102,12 @@ parseConnective :: Monad m => ParsecT String u m String
 parseConnective = choice [getAnd, getOr, getIff, getIf, getNeg]
     where tstringsToTry :: Monad m => [String] -> PurePropLanguage (Form Bool -> Form Bool -> Form Bool) -> ParsecT String u m String
           tstringsToTry l c = stringsToTry l (show c)
-          getAnd = tstringsToTry ["/\\", "∧", "^", "&", "and"] (review _and ())
-          getOr  = tstringsToTry ["\\/", "∨", "v", "|", "or"] (review _or ())
-          getIf  = tstringsToTry [ "=>", "->", ">", "→", "only if"]  (review _if ())
-          getIff = tstringsToTry [ "<=>",  "<->", "<>", "↔", "if and only if"] (review _iff ())
+          getAnd = tstringsToTry ["/\\", "∧", "^", "&"] (review _and ())
+          getOr  = tstringsToTry ["\\/", "∨", "v", "|"] (review _or ())
+          getIf  = tstringsToTry [ "=>", "->", ">", "→"]  (review _if ())
+          getIff = tstringsToTry [ "<=>",  "<->", "<>", "↔"] (review _iff ())
           getNeg = do spaces
-                      _ <- string "-" <|> string "~" <|> string "¬" <|> string "not "
+                      _ <- string "-" <|> string "~" <|> string "¬"
                       return (show (review _not () :: PurePropLanguage (Form Bool-> Form Bool)))
 
 matchMC :: String -> PureForm -> Either ParseError Bool
