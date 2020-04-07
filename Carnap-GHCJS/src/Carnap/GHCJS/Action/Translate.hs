@@ -177,6 +177,7 @@ submitTrans opts i ref fs parser checker tests l =
                     (Just v) <- getValue (castToHTMLInputElement i)
                     case parse (spaces *> parser <* eof) "" v of
                         Right f' | tests f' == Nothing && any (\f -> checker f f') fs -> trySubmit Translation opts l (ProblemContent (serialize fs)) True
+                        Left _ | "checksyntax" `inOpts` opts -> message "Can't read this. Please double check syntax before submitting."
                         _ | "exam" `inOpts` opts -> trySubmit Translation opts l (TranslationDataOpts (serialize fs) (pack v) (M.toList opts)) False
                         _ -> message "something is wrong... try again?"
                 else message "not yet finished (remember to press return to check your work before submitting!)"
