@@ -52,7 +52,7 @@ returnAssignment (Entity key val) path = do
                                addScript $ StaticR ghcjs_allactions_out_js
                                addStylesheet $ StaticR css_proof_css
                                addStylesheet $ StaticR css_tree_css
-                               addStylesheet $ StaticR css_examplelists_css
+                               addStylesheet $ StaticR css_bootstrapextra_css
                                addStylesheet $ StaticR css_exercises_css
                                $(widgetFile "document")
                                addScript $ StaticR ghcjs_allactions_runmain_js

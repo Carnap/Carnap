@@ -11,5 +11,7 @@ ol.example {
 }
 
 ol.example > li:before {
-    content:counter(example) ".";
+    content:counter(example) ". ";
 }
+
+blockquote { padding-left:10px }
