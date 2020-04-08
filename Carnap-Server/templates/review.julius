@@ -10,6 +10,7 @@ $(".updateSubmission").submit(function(e) {
             else window.alert("updated!")
             $(e.target).parents().closest(".ungraded").addClass("graded")
             $(e.target).parents().closest(".ungraded").find(".review-status").html("manually graded")
+            $(e.target).parents().closest(".card-body").find(".btn").prop("disabled",true)
             },
         error: function(data) {
             window.alert("Error, couldn't update the assignment ")
@@ -17,6 +18,13 @@ $(".updateSubmission").submit(function(e) {
         });
     e.preventDefault();
 });
+
+$(".updateSubmission [name='f3']").on("input", e => {
+            let submitbtn = $(e.target).parents().closest(".card-body").find(".btn")
+            console.log(submitbtn)
+            submitbtn.prop("disabled",false)
+ })
+
 
 $("#viewUngraded").click( function(){
     $("#viewAll").removeClass("btn-primary")

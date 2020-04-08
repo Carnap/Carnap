@@ -95,7 +95,7 @@ renderProblem (Entity key val) = do
                                     <form.updateSubmission enctype=#{enctypeUpdateSubmission}>
                                         ^{updateSubmissionWidget}
                                         <div.form-group>
-                                            <input.btn.btn-primary type=submit value="update">
+                                            <input.btn.btn-primary type=submit value="update" disabled>
                 |]
         case (problemSubmissionType val, problemSubmissionData val) of
             (Derivation, DerivationData goal der) -> template 5 $
