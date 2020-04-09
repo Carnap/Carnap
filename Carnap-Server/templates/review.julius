@@ -1,3 +1,5 @@
+var initialize = new Event('initialize');
+
 $(".updateSubmission").submit(function(e) {
     jQuery.ajax({
         url: '@{ReviewR coursetitle filename}',
@@ -23,10 +25,24 @@ $(".updateSubmission").submit(function(e) {
 
 $(".updateSubmission [name='f3']").on("input", e => {
             let submitbtn = $(e.target).parents().closest(".card-body").find(".btn")
-            console.log(submitbtn)
             submitbtn.prop("disabled",false)
  })
 
+function initVisible () {
+    let wintop = $(window).scrollTop()
+    let winbottom = wintop + $(window).height()
+    document.querySelectorAll("[data-carnap-type] .input").forEach( 
+    function (el) { 
+        let isAbove = $(el).offset().top < winbottom; 
+        let isBelow = $(el).offset().top + $(el).outerHeight() > wintop;
+        if (isBelow && isAbove) el.dispatchEvent(initialize);
+    })
+};
+
+$(window).scroll(_ => {
+    clearTimeout(window.scrollTimeout);
+    window.scrollTimeout = setTimeout(initVisible,500)
+})
 
 $("#viewUngraded").click( function(){
     $("#viewAll").removeClass("btn-primary")
@@ -55,3 +71,6 @@ $("#selectStudent").change(function(){
         $('[data-submission-uid="' + uid + '"]').removeClass("hidden")
     };
 });
+
+
+$(window).on("load", _ => { window.scrollTimeout = setTimeout(initVisible,3000) })
