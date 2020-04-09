@@ -72,5 +72,4 @@ $("#selectStudent").change(function(){
     };
 });
 
-
 $(window).on("load", _ => { window.scrollTimeout = setTimeout(initVisible,3000) })
