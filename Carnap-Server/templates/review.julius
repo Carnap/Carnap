@@ -7,11 +7,13 @@ $(".updateSubmission").submit(function(e) {
         contentType: false,
         success: function(data) {
             if (data.slice(0,5) == "error") window.alert(data.slice(6))
-            else window.alert("updated!")
-            $(e.target).parents().closest(".ungraded").addClass("graded")
-            $(e.target).parents().closest(".ungraded").find(".review-status").html("manually graded")
-            $(e.target).parents().closest(".card-body").find(".btn").prop("disabled",true)
-            },
+            else {
+                window.alert("updated!")
+                $(e.target).parents().closest(".ungraded").find(".review-status").html("manually graded")
+                let score = $(e.target).parents().closest(".card-body").find("[name='f3']").val()
+                $(e.target).parents().closest(".card-body").find(".points-awarded").html("points added: " + score)
+                $(e.target).parents().closest(".card-body").find(".btn").prop("disabled",true)
+            }},
         error: function(data) {
             window.alert("Error, couldn't update the assignment ")
             },

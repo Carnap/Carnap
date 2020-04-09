@@ -80,6 +80,7 @@ renderProblem (Entity key val) = do
         (updateSubmissionWidget,enctypeUpdateSubmission) <- generateFormPost (identifyForm "updateSubmission" $ updateSubmissionForm extra ident (show uid))
         let isGraded = case extra of Just _ -> "graded"; _ -> "ungraded" :: String
             manually = case extra of Just _ -> "manually graded"; _ -> "ungraded" :: String
+            awarded = case extra of Just n -> show n; _ -> "0" :: String
             template points display = 
                 [whamlet|
                     <div.card.mb-3.#{isGraded} data-submission-uid="#{show uid}">
@@ -91,6 +92,7 @@ renderProblem (Entity key val) = do
                                 <div.col-sm-4>
                                     <h6.review-status>#{manually}
                                     <h6.point-value>point value: #{points}
+                                    <h6.points-awarded>points added: #{awarded}
                                     <hr>
                                     <form.updateSubmission enctype=#{enctypeUpdateSubmission}>
                                         ^{updateSubmissionWidget}
@@ -247,7 +249,7 @@ renderProblem (Entity key val) = do
 updateSubmissionForm extra ident uid = renderBootstrap3 BootstrapBasicForm $ (,,)
             <$> areq hiddenField "" (Just ident)
             <*> areq hiddenField "" (Just uid) 
-            <*> areq scoreField (bfs ("Partial Credit Points"::Text)) extra
+            <*> areq scoreField (bfs ("Partial Credit Points"::Text)) (maybe (Just 0) Just extra)
     where scoreField = check validateScore intField
           validateScore s | s < 0 = Left ("Added credit must be a positive number." :: Text)
                           | otherwise = Right s
