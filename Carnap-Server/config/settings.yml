@@ -31,7 +31,7 @@ database:
   database: "_env:PGDATABASE:carnapdb"
   poolsize: "_env:PGPOOLSIZE:10"
 
-copyright: Copyright 2015-2019 G. Leach-Krouse <gleachkr@ksu.edu> and J. Ehrlich
+copyright: Copyright 2015-2020 G. Leach-Krouse <gleachkr@ksu.edu> and J. Ehrlich
 
 #set to true if you want to run without a postgres installation
 sqlite: true
