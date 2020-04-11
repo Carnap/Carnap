@@ -249,7 +249,9 @@ renderProblem (Entity key val) = do
 updateSubmissionForm extra ident uid = renderBootstrap3 BootstrapBasicForm $ (,,)
             <$> areq hiddenField "" (Just ident)
             <*> areq hiddenField "" (Just uid) 
-            <*> areq scoreField (bfs ("Partial Credit Points"::Text)) (maybe (Just 0) Just extra)
+            <*> areq scoreField scoreInput {fsAttrs = ("autocomplete","off") : fsAttrs scoreInput} 
+                                (maybe (Just 0) Just extra)
     where scoreField = check validateScore intField
           validateScore s | s < 0 = Left ("Added credit must be a positive number." :: Text)
                           | otherwise = Right s
+          scoreInput =  bfs ("Partial Credit Points"::Text)
