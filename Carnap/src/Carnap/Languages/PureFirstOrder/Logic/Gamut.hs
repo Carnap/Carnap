@@ -80,7 +80,14 @@ parseGamutNDProof :: RuntimeNaturalDeductionConfig PureLexiconFOL (Form Bool) ->
 parseGamutNDProof rtc = toDeductionFitch (parseGamutND rtc) (gamutNDFormulaParser)
 
 gamutNotation :: String -> String
-gamutNotation (x:xs) = if x `elem` "()," then gamutNotation xs else x : gamutNotation xs
+gamutNotation (x:xs) = if x `elem` ['A' .. 'Z'] then x : trimParens 0 xs else x : gamutNotation xs
+    where trimParens 0 ('(':xs) = trimParens 1 xs
+          trimParens 1 (')':xs) = gamutNotation xs
+          trimParens 1 (',':xs) = trimParens 1 xs
+          trimParens n ('(':xs) = '(' : trimParens (n + 1) xs
+          trimParens n (')':xs) = ')' : trimParens (n - 1) xs
+          trimParens n (x:xs) = x : trimParens n xs
+          trimParens n [] = []
 gamutNotation x = x
 
 gamutNDCalc = mkNDCalc
