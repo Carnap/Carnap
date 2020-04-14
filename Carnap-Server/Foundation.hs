@@ -101,7 +101,7 @@ instance Yesod App where
          (InstructorR ident) -> instructor ident
          (InstructorQueryR ident) -> instructor ident
          (ReviewR coursetitle _) -> coinstructorOrInstructor coursetitle
-         (CourseAssignmentR coursetitle _) -> coinstructorOrInstructor coursetitle
+         (CourseAssignmentR coursetitle _) -> studentAccessTo coursetitle
          AdminR -> admin
          _ -> return Authorized
         where userOrInstructor ident = 
@@ -123,6 +123,23 @@ instance Yesod App where
                                 || ident' == "gleachkr@gmail.com"
                              then Authorized
                              else Unauthorized "It appears you're not authorized to access this page"
+              studentAccessTo coursetitle = 
+                  --this is the route to assignments accessible by students
+                  --for a given course and to instructors
+                  do (Entity uid user) <- requireAuth
+                     mcourse <- runDB $ getBy (UniqueCourse coursetitle)
+                     (Entity cid course) <- case mcourse of Just c -> return c; _ -> setMessage "no course with that title" >> notFound
+                     mudata <- runDB $ getBy (UniqueUserData uid)
+                     coInstructors <-  runDB $ map entityVal <$> selectList [CoInstructorCourse ==. cid] []
+                     instructors <- runDB $ selectList ([UserDataInstructorId ==. Just (courseInstructor course)]
+                                                       ||. [UserDataInstructorId <-. map (Just . coInstructorIdent) coInstructors]) []
+                     return $ if uid `elem` map (userDataUserId . entityVal) instructors 
+                                 || maybe False 
+                                          (\udata -> userDataEnrolledIn (entityVal udata) == Just cid) 
+                                          mudata
+                                 || userIdent user == "gleachkr@gmail.com"
+                              then Authorized
+                              else Unauthorized $ "It appears you're not authorized to access this page. For access, you need to enroll in the course \"" ++ coursetitle ++ "\". Is this the course you should be enrolled in?"
               coinstructorOrInstructor coursetitle = 
                   --this is the route to the review area for a given course and
                   --assignment, and is for instructors only.

@@ -225,7 +225,7 @@ problemsToTable course textbookproblems asmd asDocs submissions = do
                             Nothing -> [hamlet|No existing assignment|]
                             Just n -> case asDocs !! n of
                                 Nothing -> [hamlet|No document|]
-                                Just d -> [hamlet| <a href=@{AssignmentR $ documentFilename d}>#{documentFilename d}|]
+                                Just d -> [hamlet| <a href=@{CourseAssignmentR (courseTitle course) (documentFilename d)}>#{documentFilename d}|]
 
 tryDelete name = "tryDeleteRule(\"" <> name <> "\")"
 
@@ -255,7 +255,7 @@ assignmentsOf course textbookproblems asmd asDocs = do
                                 $if visibleAt time a
                                         <tr>
                                             <td>
-                                                <a href=@{AssignmentR $ documentFilename d}>
+                                                <a href=@{CourseAssignmentR (courseTitle course) (documentFilename d)}>
                                                     #{documentFilename d}
                                             $maybe due <- assignmentMetadataDuedate a
                                                 <td>#{dateDisplay due course}
