@@ -34,10 +34,10 @@ putReviewR coursetitle filename =
 getReviewR :: Text -> Text -> Handler Html
 getReviewR coursetitle filename = 
         do (Entity key val, _) <- getAssignmentByCourse coursetitle filename
-           unsortedProblems <- runDB $ selectList [ProblemSubmissionAssignmentId ==. Just key, ProblemSubmissionCorrect ==. False] []
+           unsortedProblems <- runDB $ selectList [ProblemSubmissionAssignmentId ==. Just key] []
            uidAndData <- runDB $ do let uids = nub $ map (problemSubmissionUserId . entityVal) unsortedProblems
                                     muserdata <- mapM (getBy . UniqueUserData) uids
-                                    return $ zip muserdata uids 
+                                    return $ sortBy maybeLnSort $ zip muserdata uids 
            let problems = sortBy theSorting unsortedProblems
            defaultLayout $ do
                addScript $ StaticR js_popper_min_js
@@ -49,7 +49,12 @@ getReviewR coursetitle filename =
                addStylesheet $ StaticR css_exercises_css
                $(widgetFile "review")
                addScript $ StaticR ghcjs_allactions_runmain_js
-    where theSorting p p' = scompare s s'
+    where maybeLnSort (Nothing,_) (Nothing,_) = EQ
+          maybeLnSort (Nothing,_) _ = LT
+          maybeLnSort _ (Nothing,_) = GT
+          maybeLnSort (Just ud,_) (Just ud',_) = compare (userDataLastName $ entityVal ud) 
+                                                         (userDataLastName $ entityVal ud')
+          theSorting p p' = scompare s s'
               where s = unpack . problemSubmissionIdent . entityVal $ p
                     s' = unpack . problemSubmissionIdent . entityVal $ p'
                     scompare a a' = case (break (== '.') a, break (== '.') a')  of
@@ -77,11 +82,16 @@ renderProblem (Entity key val) = do
         let ident = problemSubmissionIdent val
             uid = problemSubmissionUserId val
             extra = problemSubmissionExtra val
+            correct = problemSubmissionCorrect val
         (updateSubmissionWidget,enctypeUpdateSubmission) <- generateFormPost (identifyForm "updateSubmission" $ updateSubmissionForm extra ident (show uid))
-        let isGraded = case extra of Just _ -> "graded"; _ -> "ungraded" :: String
-            manually = case extra of Just _ -> "manually graded"; _ -> "ungraded" :: String
+        let isGraded = if correct then "graded"
+                                  else case extra of Just _ -> "graded"; _ -> "ungraded" :: String
+            howGraded = if correct then "automatically graded"
+                                   else case extra of Just _ -> "manually graded"; _ -> "ungraded" :: String
+            credit =  case problemSubmissionCredit val of Just n -> n; _ -> 5
+            score =  if correct then credit else 0
             awarded = case extra of Just n -> show n; _ -> "0" :: String
-            template points display = 
+            template display = 
                 [whamlet|
                     <div.card.mb-3.#{isGraded} data-submission-uid="#{show uid}">
                         <div.card-body style="padding:20px">
@@ -90,8 +100,9 @@ renderProblem (Entity key val) = do
                                     <h4.card-title>#{ident}
                                     ^{display}
                                 <div.col-sm-4>
-                                    <h6.review-status>#{manually}
-                                    <h6.point-value>point value: #{points}
+                                    <h6.review-status>#{howGraded}
+                                    <h6.point-value>point value: #{credit}
+                                    <h6.points-score>submission score: #{score}
                                     <h6.points-awarded>points added: #{awarded}
                                     <hr>
                                     <form.updateSubmission enctype=#{enctypeUpdateSubmission}>
@@ -100,7 +111,7 @@ renderProblem (Entity key val) = do
                                             <input.btn.btn-primary type=submit value="update" disabled>
                 |]
         case (problemSubmissionType val, problemSubmissionData val) of
-            (Derivation, DerivationData goal der) -> template 5 $
+            (Derivation, DerivationData goal der) -> template
                 [whamlet|
                     <div data-carnap-system="prop" 
                          data-carnap-options="resize"
@@ -109,7 +120,7 @@ renderProblem (Entity key val) = do
                          data-carnap-submission="none">
                          #{der}
                 |]
-            (Derivation, DerivationDataOpts goal der opts) -> template (pointsFrom opts) $
+            (Derivation, DerivationDataOpts goal der opts) -> template
                 [whamlet|
                     <div data-carnap-type="proofchecker"
                          data-carnap-system="#{sys}"
@@ -119,7 +130,7 @@ renderProblem (Entity key val) = do
                          #{der}
                 |]
                 where sys = case lookup "system" (M.fromList opts) of Just s -> s; Nothing -> "prop"
-            (TruthTable, TruthTableData goal tt) -> template 5 $
+            (TruthTable, TruthTableData goal tt) -> template
                 [whamlet|
                     <div data-carnap-type="truthtable"
                          data-carnap-tabletype="#{checkvalidity goal}"
@@ -127,7 +138,7 @@ renderProblem (Entity key val) = do
                          data-carnap-goal="#{goal}">
                          #{renderTT tt}
                 |]
-            (TruthTable, TruthTableDataOpts goal tt opts) -> template (pointsFrom opts) $
+            (TruthTable, TruthTableDataOpts goal tt opts) -> template
                 [whamlet|
                     <div data-carnap-type="truthtable"
                          data-carnap-tabletype="#{tabletype}"
@@ -146,7 +157,7 @@ renderProblem (Entity key val) = do
                                                       Just (fs,gs) -> Just $ intercalate "," (map show fs) ++ ":" ++ intercalate "," (map show gs)
                                                       Nothing -> Just c --If it's a sequent, it'll show properly anyway.
 
-            (CounterModel, CounterModelDataOpts goal cm opts) -> template (pointsFrom opts) $
+            (CounterModel, CounterModelDataOpts goal cm opts) -> template
                 [whamlet|
                     <div data-carnap-type="countermodeler"
                          data-carnap-countermodelertype="#{cmtype}"
@@ -162,7 +173,7 @@ renderProblem (Entity key val) = do
                                     `mplus` (intercalate "," . map show <$> (readMaybe c :: Maybe [PureFOLForm]))
                                     `mplus` Just c --If it's a sequent, it'll show properly anyway.
 
-            (Translation, TranslationData goal trans) -> template 5 $
+            (Translation, TranslationData goal trans) -> template
                 [whamlet|
                     <div data-carnap-type="translate"
                          data-carnap-transtype="prop"
@@ -171,7 +182,7 @@ renderProblem (Entity key val) = do
                          data-carnap-problem="#{goal}">
                          #{trans}
                 |]
-            (Translation, TranslationDataOpts goal trans opts) -> template (pointsFrom opts) $
+            (Translation, TranslationDataOpts goal trans opts) -> template
                 [whamlet|
                     <div data-carnap-type="translate"
                          data-carnap-transtype="#{transtype}"
@@ -187,7 +198,7 @@ renderProblem (Entity key val) = do
                       sys = case lookup "system" (M.fromList opts) of 
                                 Just s -> s; 
                                 Nothing -> if transtype == "prop" then "prop" else "firstOrder"
-            (SequentCalc, SequentCalcData goal tree opts) -> template (pointsFrom opts) $
+            (SequentCalc, SequentCalcData goal tree opts) -> template
                 [whamlet|
                     <div data-carnap-type="sequentchecker"
                          data-carnap-system="#{sys}"
@@ -197,7 +208,7 @@ renderProblem (Entity key val) = do
                          #{treeJSON tree}
                 |]
                 where sys = case lookup "system" (M.fromList opts) of Just s -> s; Nothing -> "propLK"
-            (DeductionTree, DeductionTreeData goal tree opts) -> template (pointsFrom opts) $
+            (DeductionTree, DeductionTreeData goal tree opts) -> template
                 [whamlet|
                     <div data-carnap-type="treedeductionchecker"
                          data-carnap-system="#{sys}"
@@ -207,7 +218,7 @@ renderProblem (Entity key val) = do
                          #{treeJSON tree}
                 |]
                 where sys = case lookup "system" (M.fromList opts) of Just s -> s; Nothing -> "propNK"
-            (Qualitative, QualitativeProblemDataOpts goal answer opts) -> template (pointsFrom opts) $ 
+            (Qualitative, QualitativeProblemDataOpts goal answer opts) -> template
                 [whamlet|
                     <div data-carnap-type="qualitative"
                          data-carnap-qualitativetype="#{qualtype}"
@@ -229,11 +240,14 @@ renderProblem (Entity key val) = do
                                            Just (h,s) -> show (h, s)
                                            Nothing -> "indeciperable entry"
 
+            (_, ProblemContent txt) -> template
+                [whamlet|
+                    <div>
+                        <p>Submission: #{txt}
+                        <p>Autograded, no data for review
+                |]
             _ -> return ()
-    where pointsFrom opts = case lookup "points" (M.fromList opts) >>= readMaybe of
-                                Nothing -> 5 :: Int
-                                Just n -> n
-          renderTT tt = concat $ map renderRow tt
+    where renderTT tt = concat $ map renderRow tt
           renderRow row = map toval row ++ "\n"
           toval (Just True) = 'T'
           toval (Just False) = 'F'

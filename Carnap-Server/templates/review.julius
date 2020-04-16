@@ -12,9 +12,11 @@ $(".updateSubmission").submit(function(e) {
             else {
                 window.alert("updated!")
                 $(e.target).parents().closest(".ungraded").find(".review-status").html("manually graded")
+                $(e.target).parents().closest(".ungraded").removeClass("ungraded").addClass("graded")
                 let score = $(e.target).parents().closest(".card-body").find("[name='f3']").val()
                 $(e.target).parents().closest(".card-body").find(".points-awarded").html("points added: " + score)
                 $(e.target).parents().closest(".card-body").find(".btn").prop("disabled",true)
+                $(e.target).parents().closest(".card-body").find(".btn").removeClass("unsaved")
             }},
         error: function(data) {
             window.alert("Error, couldn't update the assignment ")
@@ -26,6 +28,7 @@ $(".updateSubmission").submit(function(e) {
 $(".updateSubmission [name='f3']").on("input", e => {
             let submitbtn = $(e.target).parents().closest(".card-body").find(".btn")
             submitbtn.prop("disabled",false)
+            submitbtn.addClass("unsaved")
  })
 
 function initVisible () {
@@ -35,7 +38,10 @@ function initVisible () {
     function (el) { 
         let isAbove = $(el).offset().top < winbottom; 
         let isBelow = $(el).offset().top + $(el).outerHeight() > wintop;
-        if (isBelow && isAbove) el.dispatchEvent(initialize);
+        if (isBelow && isAbove && !el.initialized) { 
+            el.dispatchEvent(initialize);
+            el.initialized = true
+        }
     })
 };
 
@@ -72,4 +78,12 @@ $("#selectStudent").change(function(){
     };
 });
 
-$(window).on("load", _ => { window.scrollTimeout = setTimeout(initVisible,3000) })
+$(window).on("load", _ => { 
+    window.scrollTimeout = setTimeout(initVisible,3000) 
+    window.addEventListener("beforeunload", function (e) {
+        if ($(".unsaved").length == 0) return undefined;
+        var confirmationMessage = "Warning - there may be unsaved changes to scores. Continue?";
+        (e || window.event).returnValue = confirmationMessage; //Gecko + IE
+        return confirmationMessage; //Gecko + Webkit, Safari, Chrome etc.
+    })
+});

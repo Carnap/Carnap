@@ -7,8 +7,8 @@
                 <div.row>
                     <div.col-sm-8>
                         <div class="btn-group" role="group">
-                          <button type="button" id="viewAll" class="btn btn-primary">Not Auto-Graded
-                          <button type="button" id="viewUngraded" class="btn btn-outline-primary">Not Graded
+                          <button type="button" id="viewAll" class="btn btn-primary">All Problems
+                          <button type="button" id="viewUngraded" class="btn btn-outline-primary">Needing Review
                     <div.col-sm-4>
                       ^{selectUser uidAndData}
             $forall p <- problems
