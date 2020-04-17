@@ -68,7 +68,7 @@ activate cls extra chunk
           seqof = dropWhile (/= ' ')
           (h:t) = formatChunk chunk
           fixed = [("type","proofchecker"),("goal",seqof h),("submission","saveAs:" ++ numof h)]
-          exTemplate opts = template (unions [fromList extra, fromList opts, fromList fixed]) ("exercise " ++ numof h) (unlines' t)
+          exTemplate opts = template (unions [fromList extra, fromList opts, fromList fixed]) (numof h) (unlines' t)
 
 toPlayground cls extra content
     | "Prop"             `elem` cls = playTemplate [("system", "prop")]
