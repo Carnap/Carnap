@@ -81,7 +81,14 @@ AssignmentMetadata
     visibleTill UTCTime Maybe
     date UTCTime
     course CourseId
+    password Text Maybe
     UniqueAssignment document course
+
+AssignmentAccessToken
+    createdAt UTCTime
+    assignment AssignmentMetadataId
+    user UserId
+    UniqueAssignmentAccessToken user assignment
 
 Document
     filename Text

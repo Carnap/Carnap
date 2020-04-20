@@ -20,7 +20,7 @@
 /master_admin                       AdminR              GET POST DELETE
 /hash/#Text                         HashedR             GET
 /assignments/#Text                  AssignmentR         GET
-/assignments/#Text/#Text            CourseAssignmentR   GET
+/assignments/#Text/#Text            CourseAssignmentR   GET POST
 /review/#Text/#Text                 ReviewR             GET PUT
 /rules                              RuleR               GET
 /shared                             DocumentsR          GET

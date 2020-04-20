@@ -189,6 +189,7 @@ postInstructorR ident = do
                                                 , assignmentMetadataVisibleTill = localTimeToUTCTZ tz <$> localtill
                                                 , assignmentMetadataDate = subtime
                                                 , assignmentMetadataCourse = classkey
+                                                , assignmentMetadataPassword = Nothing
                                                 }
                        case success of Just _ -> return ()
                                        Nothing -> setMessage "This file has already been assigned for this course"
