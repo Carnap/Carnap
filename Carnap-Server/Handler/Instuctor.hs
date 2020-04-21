@@ -157,7 +157,7 @@ postInstructorR ident = do
     ((frombookrslt,_),_)   <- runFormPost (identifyForm "setBookAssignment" $ setBookAssignmentForm activeClasses)
     ((instructorrslt,_),_) <- runFormPost (identifyForm "addCoinstructor" $ addCoInstructorForm instructors ("" :: String))
     case assignmentrslt of 
-        FormSuccess (doc, Entity classkey theclass, mdue,mduetime,mfrom,mfromtime,mtill,mtilltime, massignmentdesc, subtime) ->
+        FormSuccess (doc, Entity classkey theclass, mdue,mduetime,mfrom,mfromtime,mtill,mtilltime, massignmentdesc, mpass, mhidden, subtime) ->
             do Entity uid user <- requireAuth
                Just iid <- instructorIdByIdent (userIdent user)
                mciid <- if courseInstructor theclass == iid 
@@ -178,9 +178,11 @@ postInstructorR ident = do
                dupes <- runDB $ filter (\x -> documentFilename (entityVal x) == thename) 
                                 <$> selectList [DocumentId <-. map (assignmentMetadataDocument . entityVal) asgned] []
                if not (null dupes) 
-                   then setMessage "Names for assignments must be unique within a course, and it looks like you already have an assignment with this name"
-                   else do
-                       success <- tryInsert $ AssignmentMetadata 
+                   then 
+                        setMessage "Names for assignments must be unique within a course, and it looks like you already have an assignment with this name"
+                   else if (mpass == Nothing && mhidden == Just True) then 
+                    setMessage "Hidden assignments must be password protected"
+                   else do success <- tryInsert $ AssignmentMetadata 
                                                 { assignmentMetadataDocument = entityKey doc
                                                 , assignmentMetadataDescription = info 
                                                 , assignmentMetadataAssigner = entityKey <$> theassigner
@@ -189,10 +191,14 @@ postInstructorR ident = do
                                                 , assignmentMetadataVisibleTill = localTimeToUTCTZ tz <$> localtill
                                                 , assignmentMetadataDate = subtime
                                                 , assignmentMetadataCourse = classkey
-                                                , assignmentMetadataAvailability = Nothing
+                                                , assignmentMetadataAvailability = 
+                                                    case (mpass,mhidden) of 
+                                                            (Nothing,_) -> Nothing
+                                                            (Just txt, Just True) -> Just (HiddenViaPassword txt)
+                                                            (Just txt, _) -> Just (ViaPassword txt)
                                                 }
-                       case success of Just _ -> return ()
-                                       Nothing -> setMessage "This file has already been assigned for this course"
+                           case success of Just _ -> return ()
+                                           Nothing -> setMessage "This file has already been assigned for this course"
         FormFailure s -> setMessage $ "Something went wrong: " ++ toMarkup (show s)
         FormMissing -> return ()
     case documentrslt of 
@@ -364,12 +370,15 @@ uploadAssignmentForm classes docs extra = do
             (tillRes, tillView) <- mopt (jqueryDayField def) (withPlaceholder "Date" $ bfs ("Visible Until Date"::Text)) Nothing
             (tilltimeRes,tilltimeView) <- mopt timeFieldTypeTime (withPlaceholder "Time" $ bfs ("Visible Until Time"::Text)) Nothing
             (descRes,descView) <- mopt textareaField (bfs ("Assignment Description"::Text)) Nothing
+            (passRes,passView) <- mopt textField (bfs ("Password"::Text)) Nothing
+            (hiddRes,hiddView) <- mopt checkBoxField (bfs ("Hidden"::Text)) Nothing
             currentTime <- lift (liftIO getCurrentTime)
-            let theRes = (,,,,,,,,,) <$> fileRes <*> classRes 
-                                     <*> dueRes  <*> duetimeRes 
-                                     <*> fromRes <*> fromtimeRes
-                                     <*> tillRes <*> tilltimeRes
-                                     <*> descRes <*> pure currentTime
+            let theRes = (,,,,,,,,,,,) <$> fileRes <*> classRes 
+                                       <*> dueRes  <*> duetimeRes 
+                                       <*> fromRes <*> fromtimeRes
+                                       <*> tillRes <*> tilltimeRes
+                                       <*> descRes <*> passRes
+                                       <*> hiddRes <*> pure currentTime
             let widget = do
                 [whamlet|
                 #{extra}
@@ -403,6 +412,19 @@ uploadAssignmentForm classes docs extra = do
                 <div.row>
                     <div.form-group.col-md-12>
                         ^{fvInput descView}
+                <div.row>
+                    <div.col-md-8>
+                         <h6> Password
+                    <div.col-md-4>
+                        <h6> Hide (Requires Password):
+                <div.row>
+                    <div.form-group.col-md-8>
+                        ^{fvInput passView}
+                    <div.form-group.col-md-3>
+                        <span style="position:relative;top:7px">
+                            Hidden:
+                        <div style="display:inline-block;width:20px;position:relative;top:10px">
+                            ^{fvInput hiddView}
                 |]
             return (theRes,widget)
     where classnames = map (\theclass -> (courseTitle . entityVal $ theclass, theclass)) classes
