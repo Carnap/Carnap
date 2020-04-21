@@ -81,7 +81,7 @@ AssignmentMetadata
     visibleTill UTCTime Maybe
     date UTCTime
     course CourseId
-    password Text Maybe
+    availability AvailabilityStatus Maybe
     UniqueAssignment document course
 
 AssignmentAccessToken

@@ -27,6 +27,10 @@ data SharingScope = Public | InstructorsOnly | LinkOnly | Private
     deriving (Show, Read, Eq)
 derivePersistField "SharingScope"
 
+data AvailabilityStatus = ViaPassword Text | HiddenViaPassword Text
+    deriving (Show, Read, Eq)
+derivePersistField "AvailabilityStatus"
+
 chapterOfProblemSet :: IntMap Int
 chapterOfProblemSet = IM.fromList 
     [ (1,1)
