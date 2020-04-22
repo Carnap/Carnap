@@ -177,9 +177,8 @@ postInstructorR ident = do
                asgned <- runDB $ selectList [AssignmentMetadataCourse ==. classkey] []
                dupes <- runDB $ filter (\x -> documentFilename (entityVal x) == thename) 
                                 <$> selectList [DocumentId <-. map (assignmentMetadataDocument . entityVal) asgned] []
-               if not (null dupes) 
-                   then 
-                        setMessage "Names for assignments must be unique within a course, and it looks like you already have an assignment with this name"
+               if not (null dupes) then 
+                    setMessage "Names for assignments must be unique within a course, and it looks like you already have an assignment with this name"
                    else if (mpass == Nothing && mhidden == Just True) then 
                     setMessage "Hidden assignments must be password protected"
                    else do success <- tryInsert $ AssignmentMetadata 

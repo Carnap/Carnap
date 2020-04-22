@@ -267,8 +267,10 @@ assignmentsOf course textbookproblems asmd asDocs = do
                                             $nothing
                                                 <td>-
                 |]
-    where visibleAt t a = (assignmentMetadataVisibleTill a > Just t || assignmentMetadataVisibleTill a == Nothing)
-                          && (assignmentMetadataVisibleFrom a < Just t || assignmentMetadataVisibleFrom a == Nothing)
+    where visibleAt t a = case assignmentMetadataAvailability a of
+                              Just (HiddenViaPassword _) -> False
+                              _ -> (assignmentMetadataVisibleTill a > Just t || assignmentMetadataVisibleTill a == Nothing)
+                                   && (assignmentMetadataVisibleFrom a < Just t || assignmentMetadataVisibleFrom a == Nothing)
 
 updateWidget form enc = [whamlet|
                     <div class="modal fade" id="updateUserData" tabindex="-1" role="dialog" aria-labelledby="updateUserDataLabel" aria-hidden="true">
