@@ -34,6 +34,11 @@ data AvailabilityStatus = ViaPassword Text
     deriving (Show, Read, Eq)
 derivePersistField "AvailabilityStatus"
 
+availabilityPassword (ViaPassword pass) = pass
+availabilityPassword (HiddenViaPassword pass) = pass
+availabilityPassword (ViaPasswordExpiring pass _) = pass
+availabilityPassword (HiddenViaPasswordExpiring pass _) = pass
+
 chapterOfProblemSet :: IntMap Int
 chapterOfProblemSet = IM.fromList 
     [ (1,1)

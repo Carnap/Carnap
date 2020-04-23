@@ -40,8 +40,7 @@ postCourseAssignmentR coursetitle filename = do
                                          setMessage $ "Access Granted"
                                          return ()
                     in case assignmentMetadataAvailability val of
-                            Just (ViaPassword thepwd) | password == thepwd -> insertToken
-                            Just (HiddenViaPassword thepwd) | password == thepwd -> insertToken
+                            Just restrict | password == availabilityPassword restrict -> insertToken
                             _ -> setMessage $ "Incorrect Access Key"
                 FormFailure s -> setMessage $ "Something went wrong: " ++ toMarkup (show s)
                 FormMissing -> setMessage $ "Form Missing"
@@ -64,10 +63,7 @@ returnAssignment (Entity key val) path = do
                        Left err -> defaultLayout $ layout (show err)
                        Right (Left err) -> defaultLayout $ layout (show err)
                        Right (Right html) -> case (assignmentMetadataAvailability val, mtoken) of
-                           (Just (ViaPassword pass), Nothing) -> defaultLayout $ do
-                               (enterPasswordWidget,enctypeEnterPassword) <- generateFormPost (identifyForm "enterPassword" $ enterPasswordForm)
-                               $(widgetFile "passwordEntry") 
-                           (Just (HiddenViaPassword pass), Nothing) -> defaultLayout $ do
+                           (Just _, Nothing) -> defaultLayout $ do
                                (enterPasswordWidget,enctypeEnterPassword) <- generateFormPost (identifyForm "enterPassword" $ enterPasswordForm)
                                $(widgetFile "passwordEntry") 
                            (_,_) -> defaultLayout $ do
