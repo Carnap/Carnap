@@ -27,7 +27,10 @@ data SharingScope = Public | InstructorsOnly | LinkOnly | Private
     deriving (Show, Read, Eq)
 derivePersistField "SharingScope"
 
-data AvailabilityStatus = ViaPassword Text | HiddenViaPassword Text
+data AvailabilityStatus = ViaPassword Text 
+                        | HiddenViaPassword Text
+                        | ViaPasswordExpiring Text Int 
+                        | HiddenViaPasswordExpiring Text Int
     deriving (Show, Read, Eq)
 derivePersistField "AvailabilityStatus"
 

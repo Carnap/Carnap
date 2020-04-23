@@ -157,7 +157,7 @@ postInstructorR ident = do
     ((frombookrslt,_),_)   <- runFormPost (identifyForm "setBookAssignment" $ setBookAssignmentForm activeClasses)
     ((instructorrslt,_),_) <- runFormPost (identifyForm "addCoinstructor" $ addCoInstructorForm instructors ("" :: String))
     case assignmentrslt of 
-        FormSuccess (doc, Entity classkey theclass, mdue,mduetime,mfrom,mfromtime,mtill,mtilltime, massignmentdesc, mpass, mhidden, subtime) ->
+        FormSuccess (doc, Entity classkey theclass, mdue,mduetime,mfrom,mfromtime,mtill,mtilltime, massignmentdesc, mpass, mhidden,mlimit, subtime) ->
             do Entity uid user <- requireAuth
                Just iid <- instructorIdByIdent (userIdent user)
                mciid <- if courseInstructor theclass == iid 
@@ -177,11 +177,10 @@ postInstructorR ident = do
                asgned <- runDB $ selectList [AssignmentMetadataCourse ==. classkey] []
                dupes <- runDB $ filter (\x -> documentFilename (entityVal x) == thename) 
                                 <$> selectList [DocumentId <-. map (assignmentMetadataDocument . entityVal) asgned] []
-               if not (null dupes) then 
-                    setMessage "Names for assignments must be unique within a course, and it looks like you already have an assignment with this name"
-                   else if (mpass == Nothing && mhidden == Just True) then 
-                    setMessage "Hidden assignments must be password protected"
-                   else do success <- tryInsert $ AssignmentMetadata 
+               case mpass of
+                   _ | not (null dupes) -> setMessage "Names for assignments must be unique within a course, and it looks like you already have an assignment with this name"
+                   Nothing | mhidden /= Nothing || mlimit /= Nothing -> setMessage "Hidden and time-limited assignments must be password protected"
+                   _ -> do success <- tryInsert $ AssignmentMetadata 
                                                 { assignmentMetadataDocument = entityKey doc
                                                 , assignmentMetadataDescription = info 
                                                 , assignmentMetadataAssigner = entityKey <$> theassigner
@@ -191,10 +190,12 @@ postInstructorR ident = do
                                                 , assignmentMetadataDate = subtime
                                                 , assignmentMetadataCourse = classkey
                                                 , assignmentMetadataAvailability = 
-                                                    case (mpass,mhidden) of 
-                                                            (Nothing,_) -> Nothing
-                                                            (Just txt, Just True) -> Just (HiddenViaPassword txt)
-                                                            (Just txt, _) -> Just (ViaPassword txt)
+                                                    case (mpass,mhidden,mlimit) of 
+                                                            (Nothing,_,_) -> Nothing
+                                                            (Just txt, Just True, Nothing) -> Just (HiddenViaPassword txt)
+                                                            (Just txt, Just True, Just min) -> Just (HiddenViaPasswordExpiring txt min)
+                                                            (Just txt, _, Just min) -> Just (ViaPasswordExpiring txt min)
+                                                            (Just txt, _, _) -> Just (ViaPassword txt)
                                                 }
                            case success of Just _ -> return ()
                                            Nothing -> setMessage "This file has already been assigned for this course"
@@ -371,13 +372,15 @@ uploadAssignmentForm classes docs extra = do
             (descRes,descView) <- mopt textareaField (bfs ("Assignment Description"::Text)) Nothing
             (passRes,passView) <- mopt textField (bfs ("Password"::Text)) Nothing
             (hiddRes,hiddView) <- mopt checkBoxField (bfs ("Hidden"::Text)) Nothing
+            (limitRes,limitView) <- mopt intField (bfs ("Limit"::Text)) Nothing
             currentTime <- lift (liftIO getCurrentTime)
-            let theRes = (,,,,,,,,,,,) <$> fileRes <*> classRes 
-                                       <*> dueRes  <*> duetimeRes 
-                                       <*> fromRes <*> fromtimeRes
-                                       <*> tillRes <*> tilltimeRes
-                                       <*> descRes <*> passRes
-                                       <*> hiddRes <*> pure currentTime
+            let theRes = (,,,,,,,,,,,,) <$> fileRes <*> classRes 
+                                        <*> dueRes  <*> duetimeRes 
+                                        <*> fromRes <*> fromtimeRes
+                                        <*> tillRes <*> tilltimeRes
+                                        <*> descRes <*> passRes
+                                        <*> hiddRes <*> limitRes
+                                        <*> pure currentTime
             let widget = do
                 [whamlet|
                 #{extra}
@@ -411,19 +414,25 @@ uploadAssignmentForm classes docs extra = do
                 <div.row>
                     <div.form-group.col-md-12>
                         ^{fvInput descView}
+                <h5> Access Control Settings
                 <div.row>
-                    <div.col-md-8>
+                    <div.col-md-6>
                          <h6> Password
+                    <div.col-md-2>
+                        <h6> Hide
                     <div.col-md-4>
-                        <h6> Hide (Requires Password):
+                        <h6> Minutes Available
                 <div.row>
-                    <div.form-group.col-md-8>
+                    <div.form-group.col-md-6>
                         ^{fvInput passView}
-                    <div.form-group.col-md-3>
+                    <div.form-group.col-md-2>
                         <span style="position:relative;top:7px">
                             Hidden:
                         <div style="display:inline-block;width:20px;position:relative;top:10px">
                             ^{fvInput hiddView}
+                    <div.form-group.col-md-4>
+                        ^{fvInput limitView}
+                <p style="color:gray"> Note: all access control options require that you set a password
                 |]
             return (theRes,widget)
     where classnames = map (\theclass -> (courseTitle . entityVal $ theclass, theclass)) classes
