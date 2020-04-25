@@ -98,8 +98,10 @@ displayProblemData (TruthTableDataOpts t _ _) = maybe t pack ms
                                  Just (fs,gs) -> Just $ intercalate "," (map show fs) ++ " || " ++ intercalate "," (map show gs)
                                  Nothing -> Nothing
           s = unpack t
-displayProblemData (TranslationData t _) = t
-displayProblemData (TranslationDataOpts t _ _) = t
+displayProblemData (TranslationData t _) = "-"
+displayProblemData (TranslationDataOpts _ _ opts) = case lookup "problem" opts of
+                                                        Just p -> pack p
+                                                        Nothing -> "-"
 displayProblemData (QualitativeProblemDataOpts t _ _) = t
 displayProblemData (SequentCalcData t _ _) = t
 displayProblemData (DeductionTreeData t _ _) = t

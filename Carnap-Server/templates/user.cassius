@@ -11,3 +11,8 @@ span.ruleaction > span
     max-width:250px;
     max-height:200px;
     overflow-y:scroll;
+
+.problem-display
+    max-width:250px;
+    max-height:50px;
+    overflow-y:scroll;

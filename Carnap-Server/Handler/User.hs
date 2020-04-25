@@ -213,7 +213,8 @@ problemsToTable course textbookproblems asmd asDocs submissions = do
                                   <tr>
                                     <td>^{printSource (problemSubmissionSource p)}
                                     <td>#{problemSubmissionIdent p}
-                                    <td>#{displayProblemData $ problemSubmissionData p}
+                                    <td title="#{displayProblemData $ problemSubmissionData p}">
+                                        <div.problem-display> #{displayProblemData $ problemSubmissionData p}
                                     <td>#{dateDisplay (problemSubmissionTime p) course}
                                     <td>#{show $ score}|]
 
