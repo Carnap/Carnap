@@ -415,7 +415,7 @@ $(".async").each((_,elt) => elt.update = function (callback) {
         this.innerHTML = data.map(i=>i[1]).reduce((x,y) => x + y, 0);
         if (callback) callback()
     };
-    this.update = _ => {}
+    this.update = (newcallback) => { if (newcallback) { newcallback() } }
 });
 
 $("textarea").addClass("form-control")
