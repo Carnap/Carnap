@@ -72,7 +72,7 @@
                             <thead>
                                 <th> Filename
                                 <th> Due Date
-                                <th> Visible
+                                <th> Availability
                                 <th> Course
                                 <th> Actions
                             <tbody>
@@ -93,6 +93,13 @@
                                                     ∞-#{dateDisplay till c}
                                                 $nothing
                                                     Always
+                                            $maybe status <- assignmentMetadataAvailability a
+                                                ,<br> Password: #{availabilityPassword status}
+                                                $if (availabilityHidden status)
+                                                    ,<br> Hidden
+                                                $maybe min <- availabilityMinutes status
+                                                    ,<br> Limit: #{min} minutes
+
                                         <td>#{courseTitle c}
                                         <td>
                                             <button.btn.btn-sm.btn-secondary alt="delete" title="delete this assignment" type="button" onclick="tryDeleteAssignment('#{jsonSerialize $ DeleteAssignment k}','#{documentFilename d}','#{courseTitle c}')">
