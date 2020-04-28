@@ -8,6 +8,7 @@ import Yesod.Form.Bootstrap3
 import Text.Blaze.Html (toMarkup)
 import Text.Pandoc (writerExtensions,writerWrapText, WrapOption(..), readerExtensions)
 import System.Directory (doesFileExist,getDirectoryContents)
+import Data.Time
 import Text.Julius (juliusFile,rawJS)
 import Text.Pandoc.Walk (walkM, walk)
 import Filter.Randomize
@@ -54,7 +55,9 @@ returnAssignment (Entity key val) path = do
            mident <- getIdent uid
            classes <- maybe reject classesByInstructorIdent mident
            mtoken <- runDB $ getBy $ UniqueAssignmentAccessToken uid key
+           time <- liftIO getCurrentTime
            let instructorAccess = assignmentMetadataCourse val `elem` map entityKey classes
+               age (Entity _ tok) = floor (diffUTCTime time (assignmentAccessTokenCreatedAt tok))
            if visibleAt time val || instructorAccess 
                then do
                    ehtml <- liftIO $ fileToHtml (hash (show muid ++ path)) path
@@ -66,6 +69,10 @@ returnAssignment (Entity key val) path = do
                            (Just _, Nothing) -> defaultLayout $ do
                                (enterPasswordWidget,enctypeEnterPassword) <- generateFormPost (identifyForm "enterPassword" $ enterPasswordForm)
                                $(widgetFile "passwordEntry") 
+                           (Just (ViaPasswordExpiring _ min), Just tok) | age tok > 60 * min && not instructorAccess -> 
+                               defaultLayout $ layout ("Assignment time limit exceeded" :: String)
+                           (Just (HiddenViaPasswordExpiring _ min), Just tok) | age tok > 60 * min && not instructorAccess -> 
+                               defaultLayout $ layout ("Assignment time limit exceeded" :: String)
                            (_,_) -> defaultLayout $ do
                                let source = "assignment:" ++ show key 
                                toWidgetHead $(juliusFile "templates/command.julius")
