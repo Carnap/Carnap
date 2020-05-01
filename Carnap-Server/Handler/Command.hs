@@ -16,7 +16,7 @@ postCommandR = do
     maybeCurrentUserId <- maybeAuthId
 
     case maybeCurrentUserId of 
-           Nothing -> returnJson ("No User" :: String)
+           Nothing -> returnJson ("You need to be logged in to submit work." :: String)
            Just uid  -> case cmd of
                 Submit typ ident dat source correct credit key ->  
                     do time <- liftIO getCurrentTime
@@ -45,12 +45,14 @@ postCommandR = do
                             (Nothing,Nothing) -> 
                                 do success <- tryInsert sub
                                    afterInsert success
-                            (Just ak, Just asgn) ->
-                                if assignmentMetadataVisibleTill asgn > Just time
-                                   || assignmentMetadataVisibleTill asgn == Nothing
-                                   then do success <- tryInsert sub
-                                           afterInsert success
-                                   else returnJson ("Assignment not available" :: String)
+                            (Just ak, Just asgn) -> do
+                                let age (Entity _ tok) = floor (diffUTCTime time (assignmentAccessTokenCreatedAt tok))
+                                mtoken <- runDB $ getBy (UniqueAssignmentAccessToken uid ak)
+                                case (mtoken, assignmentMetadataAvailability asgn) of
+                                     (Just tok, Just (ViaPasswordExpiring _ min)) | age tok > 60 * min -> returnJson ("Assignment time limit exceeded" :: String)
+                                     (Just tok, Just (HiddenViaPasswordExpiring _ min)) | age tok > 60 * min -> returnJson ("Assignment time limit exceeded" :: String)
+                                     _ | assignmentMetadataVisibleTill asgn > Just time || assignmentMetadataVisibleTill asgn == Nothing -> tryInsert sub >>= afterInsert
+                                     _ -> returnJson ("Assignment not available" :: String)
                 SaveRule n r -> do time <- liftIO getCurrentTime
                                    let save = SavedRule r (pack n) time uid
                                    tryInsert save >>= afterInsert
@@ -69,4 +71,4 @@ packageOldRule (SavedDerivedRule dr n _ _) = case decodeRule dr of
 packageNewRule (SavedRule dr n _ _) = (unpack n, dr)
 
 afterInsert (Just _) = returnJson ("submitted!" :: String) 
-afterInsert Nothing = returnJson ("Clash" :: String)
+afterInsert Nothing = returnJson ("It appears you've already successfully submitted this problem." :: String)

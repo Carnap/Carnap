@@ -1,11 +1,14 @@
-module Handler.Assignment (getAssignmentR, getCourseAssignmentR) where
+module Handler.Assignment (getAssignmentR, postCourseAssignmentR, getCourseAssignmentR) where
 
 import Import
 import Util.Data
 import Util.Database
 import Yesod.Markdown
+import Yesod.Form.Bootstrap3
+import Text.Blaze.Html (toMarkup)
 import Text.Pandoc (writerExtensions,writerWrapText, WrapOption(..), readerExtensions)
 import System.Directory (doesFileExist,getDirectoryContents)
+import Data.Time
 import Text.Julius (juliusFile,rawJS)
 import Text.Pandoc.Walk (walkM, walk)
 import Filter.Randomize
@@ -25,21 +28,52 @@ getAssignmentR filename = getAssignment filename >>= uncurry returnAssignment
 getCourseAssignmentR :: Text -> Text -> Handler Html
 getCourseAssignmentR coursetitle filename = getAssignmentByCourse coursetitle filename >>= uncurry returnAssignment
 
+postCourseAssignmentR :: Text -> Text -> Handler Html
+postCourseAssignmentR coursetitle filename = do
+            ((Entity key val), _) <- getAssignmentByCourse coursetitle filename
+            muid <- maybeAuthId
+            uid <- maybe reject return muid
+            ((passrslt,_),_) <- runFormPost (identifyForm "enterPassword" $ enterPasswordForm)
+            case passrslt of 
+                FormSuccess password -> 
+                    let insertToken = do currentTime <- liftIO getCurrentTime
+                                         runDB $ insert $ AssignmentAccessToken currentTime key uid
+                                         setMessage $ "Access Granted"
+                                         return ()
+                    in case assignmentMetadataAvailability val of
+                            Just restrict | password == availabilityPassword restrict -> insertToken
+                            _ -> setMessage $ "Incorrect Access Key"
+                FormFailure s -> setMessage $ "Something went wrong: " ++ toMarkup (show s)
+                FormMissing -> setMessage $ "Form Missing"
+            redirect $ CourseAssignmentR coursetitle filename
+
 returnAssignment :: Entity AssignmentMetadata -> FilePath -> Handler Html
 returnAssignment (Entity key val) path = do
            time <- liftIO getCurrentTime
            muid <- maybeAuthId
-           mident <- maybe reject getIdent muid 
-           classes <- maybe reject classesByInstructorIdent mident 
-           if visibleAt time val || assignmentMetadataCourse val `elem` map entityKey classes 
+           uid <- maybe reject return muid
+           mident <- getIdent uid
+           classes <- maybe reject classesByInstructorIdent mident
+           mtoken <- runDB $ getBy $ UniqueAssignmentAccessToken uid key
+           time <- liftIO getCurrentTime
+           let instructorAccess = assignmentMetadataCourse val `elem` map entityKey classes
+               age (Entity _ tok) = floor (diffUTCTime time (assignmentAccessTokenCreatedAt tok))
+           if visibleAt time val || instructorAccess 
                then do
                    ehtml <- liftIO $ fileToHtml (hash (show muid ++ path)) path
                    unless (visibleAt time val) $ setMessage "Viewing as instructor. Assignment not currently visible to students."
                    case ehtml of
                        Left err -> defaultLayout $ layout (show err)
                        Right (Left err) -> defaultLayout $ layout (show err)
-                       Right (Right html) -> do
-                           defaultLayout $ do
+                       Right (Right html) -> case (assignmentMetadataAvailability val, mtoken) of
+                           (Just _, Nothing) -> defaultLayout $ do
+                               (enterPasswordWidget,enctypeEnterPassword) <- generateFormPost (identifyForm "enterPassword" $ enterPasswordForm)
+                               $(widgetFile "passwordEntry") 
+                           (Just (ViaPasswordExpiring _ min), Just tok) | age tok > 60 * min && not instructorAccess -> 
+                               defaultLayout $ layout ("Assignment time limit exceeded" :: String)
+                           (Just (HiddenViaPasswordExpiring _ min), Just tok) | age tok > 60 * min && not instructorAccess -> 
+                               defaultLayout $ layout ("Assignment time limit exceeded" :: String)
+                           (_,_) -> defaultLayout $ do
                                let source = "assignment:" ++ show key 
                                toWidgetHead $(juliusFile "templates/command.julius")
                                toWidgetHead $(juliusFile "templates/status-warning.julius")
@@ -64,7 +98,6 @@ returnAssignment (Entity key val) path = do
                         |]
           visibleAt t a = (assignmentMetadataVisibleTill a > Just t || assignmentMetadataVisibleTill a == Nothing)
                           && (assignmentMetadataVisibleFrom a < Just t || assignmentMetadataVisibleFrom a == Nothing)
-          reject = setMessage "you need to be logged in to access assignments" >> redirect HomeR
 
 fileToHtml salt path = do Markdown md <- markdownFromFile path
                           let md' = Markdown (filter ((/=) '\r') md) --remove carrage returns from dos files
@@ -75,3 +108,8 @@ fileToHtml salt path = do Markdown md <- markdownFromFile path
                                                              , writerWrapText=WrapPreserve } pd'
                               Left e -> return $ Left e
     where allFilters = randomizeProblems salt . makeTreeDeduction . makeSequent . makeSynCheckers . makeProofChecker . makeTranslate . makeTruthTables . makeCounterModelers . makeQualitativeProblems . renderFormulas
+
+enterPasswordForm = renderBootstrap3 BootstrapBasicForm $ id
+            <$> areq textField (bfs ("Access Key" :: Text)) Nothing
+
+reject = setMessage "you need to be logged in to access assignments" >> redirect HomeR

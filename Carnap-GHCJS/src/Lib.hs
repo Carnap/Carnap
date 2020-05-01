@@ -392,9 +392,8 @@ setStatus b Edited = setAttribute b "data-carnap-exercise-status" "edited"
 setStatus b Submitted = setAttribute b "data-carnap-exercise-status" "submitted"
 
 loginCheck callback serverResponse  
-     | serverResponse == "No User" = alert "You need to log in before you can submit anything"
-     | serverResponse == "Clash"   = alert "it appears you've already successfully submitted this problem"
-     | otherwise      = callback
+     | serverResponse == "submitted!" = callback
+     | otherwise = alert serverResponse
 
 errorPopup msg = alert ("Something has gone wrong. Here's the error: " ++ msg)
 
