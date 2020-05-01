@@ -17,39 +17,65 @@ import Carnap.Languages.ClassicalSequent.Parser (parseSeqOver)
 import Carnap.Languages.Util.LanguageClasses
 import Carnap.Languages.Util.GenericConstructors
 import Carnap.Languages.PureFirstOrder.Logic.Rules
-import Carnap.Languages.PurePropositional.Logic.Gamut
+import Carnap.Languages.PurePropositional.Logic.Gamut as G
 import Carnap.Languages.PurePropositional.Logic.Rules
 
-data GamutND = ND GamutPND
-             | InE
-             | ElimE
-             | InA
-             | ElimA
+data GamutNDCore =  InE | ElimE | InA | ElimA
+        deriving Eq
 
+data GamutND = ND GamutPND | Core GamutNDCore
     deriving Eq
 
-instance Show GamutND where
-        show (ND x) = show x
+data GamutNDPlus = NDP GamutPNDPlus 
+             | CoreP GamutNDCore
+             | NC1 | NC2
+             | DC1 | DC2
+             | CP1 | CP2
+             | CV1 | CV2
+             | CV3 | CV4
+             | Ba  | Ce
+             | Da  | Fe
+    deriving Eq
+
+instance Show GamutNDCore where
         show InE = "I∃"
         show ElimE = "E∃"
         show InA = "I∀"
         show ElimA = "E∀"
 
-instance Inference GamutND PureLexiconFOL (Form Bool) where
+instance Show GamutND where
+        show (ND x) = show x
+        show (Core x) = show x
+
+instance Show GamutNDPlus where
+        show (NDP x) = show x
+        show (CoreP x) = show x
+        show NC1 = "NC"
+        show NC2 = "NC"
+        show DC1 = "DC"
+        show DC2 = "DC"
+        show CP1 = "CP" 
+        show CP2 = "CP" 
+        show CV1 = "CV1" 
+        show CV2 = "CV2" 
+        show CV3 = "CV3" 
+        show CV4 = "CV4" 
+        show Ba  = "Ba"
+        show Ce  = "Ce"
+        show Da  = "Da"
+        show Fe  = "Fe"
+
+instance Inference GamutNDCore PureLexiconFOL (Form Bool) where
 
         ruleOf InE = existentialGeneralization
         ruleOf InA = universalGeneralization
         ruleOf ElimA = universalInstantiation
         ruleOf ElimE = conditionalExistentialDerivation
-        ruleOf r = premisesOf r ∴ conclusionOf r
 
-        premisesOf (ND x) = map liftSequent (premisesOf x)
         premisesOf r = upperSequents (ruleOf r)
 
-        conclusionOf (ND x) = liftSequent (conclusionOf x)
         conclusionOf r = lowerSequent (ruleOf r)
 
-        indirectInference (ND x) = indirectInference x
         indirectInference _ = Nothing
 
         restriction InA        = Just (eigenConstraint tau (SS (lall "v" $ phi' 1)) (fogamma 1))
@@ -58,6 +84,28 @@ instance Inference GamutND PureLexiconFOL (Form Bool) where
 
         globalRestriction (Left ded) n InA   = Just (notAssumedConstraint n ded (taun 1 :: FOLSequentCalc (Term Int)))
         globalRestriction (Left ded) n ElimE = Just (notAssumedConstraint n ded (taun 1 :: FOLSequentCalc (Term Int)))
+        globalRestriction _ _ _ = Nothing
+
+        isAssumption _ = False
+
+instance Inference GamutND PureLexiconFOL (Form Bool) where
+        ruleOf (Core x) = ruleOf x
+        ruleOf r = premisesOf r ∴ conclusionOf r
+
+        premisesOf (Core x) = premisesOf x
+        premisesOf (ND x) = map liftSequent (premisesOf x)
+
+        conclusionOf (Core x) = conclusionOf x
+        conclusionOf (ND x) = liftSequent (conclusionOf x)
+
+        indirectInference (ND x) = indirectInference x
+        indirectInference _ = Nothing
+
+        restriction (Core x) = restriction x
+        restriction _          = Nothing
+
+        globalRestriction (Left ded) n (Core InA)   = Just (notAssumedConstraint n ded (taun 1 :: FOLSequentCalc (Term Int)))
+        globalRestriction (Left ded) n (Core ElimE) = Just (notAssumedConstraint n ded (taun 1 :: FOLSequentCalc (Term Int)))
         globalRestriction (Left ded) n (ND (IPND (MPND InIf1))) = Just $ fitchAssumptionCheck n ded [(phin 1, phin 2)]
         globalRestriction (Left ded) n (ND (IPND (MPND InIf2))) = Just $ fitchAssumptionCheck n ded [(phin 1, phin 2)]
         globalRestriction (Left ded) n (ND (IPND (MPND InNeg1))) = Just $ fitchAssumptionCheck n ded [(phin 1, lfalsum)]
@@ -67,17 +115,94 @@ instance Inference GamutND PureLexiconFOL (Form Bool) where
         isAssumption (ND x) = isAssumption x
         isAssumption _ = False
 
+instance Inference GamutNDPlus PureLexiconFOL (Form Bool) where
+        ruleOf (CoreP x) = ruleOf x
+        ruleOf NC1 = negatedConditional !! 0 
+        ruleOf NC2 = negatedConditional !! 1
+        ruleOf DC1 = materialConditional !! 0
+        ruleOf DC2 = materialConditional !! 0
+        ruleOf CP1 = contraposition !! 0
+        ruleOf CP2 = contraposition !! 1
+        ruleOf CV1 = [ GammaV 1 :|-: SS (lsome "v" (\x -> phi 1 x ./\. phi 2 x)) 
+                     ] ∴ GammaV 1 :|-: SS (lsome "v" (\x -> phi 2 x ./\. phi 1 x))
+        ruleOf CV2 = [ GammaV 1 :|-: SS (lneg $ lsome "v" (\x -> phi 1 x ./\. phi 2 x)) 
+                     ] ∴ GammaV 1 :|-: SS (lneg $ lsome "v" (\x -> phi 2 x ./\. phi 1 x))
+        ruleOf CV3 = [ GammaV 1 :|-: SS (lneg $ lsome "v" (\x -> phi 1 x ./\. phi 2 x)) 
+                     ] ∴ GammaV 1 :|-: SS (lall "v" (\x -> phi 1 x .=>. lneg (phi 1 x)))
+        ruleOf CV3 = [ GammaV 1 :|-: SS (lall "v" (\x -> phi 1 x .=>. phi 2 x))
+                     , GammaV 2 :|-: SS (lsome "v" $ phi 1 )
+                     ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (lsome "v" (\x -> phi 1 x ./\. phi 1 x))
+        ruleOf Ba = [ GammaV 1 :|-: SS (lall "v" (\x -> phi 1 x .=>. phi 2 x))
+                    , GammaV 2 :|-: SS (lall "v" (\x -> phi 2 x .=>. phi 3 x))
+                    ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (lall "v" (\x -> phi 1 x .=>. phi 2 x))
+        ruleOf Ce = [ GammaV 1 :|-: SS (lneg $ lsome "v" (\x -> phi 1 x ./\. phi 2 x))
+                    , GammaV 2 :|-: SS (lall "v" (\x -> phi 3 x .=>. phi 1 x))
+                    ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (lneg $ lsome "v" (\x -> phi 3 x ./\. phi 2 x))
+        ruleOf Da = [ GammaV 1 :|-: SS (lall "v" (\x -> phi 1 x .=>. phi 2 x))
+                    , GammaV 2 :|-: SS (lsome "v" (\x -> phi 3 x ./\. phi 1 x))
+                    ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (lsome "v" (\x -> phi 3 x ./\. phi 2 x))
+        ruleOf Fe = [ GammaV 1 :|-: SS (lneg $ lsome "v" (\x -> phi 1 x ./\. phi 2 x))
+                    , GammaV 2 :|-: SS (lsome "v" (\x -> phi 3 x ./\. phi 1 x))
+                    ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (lsome "v" (\x -> phi 3 x ./\. (lneg $ phi 2 x)))
+        ruleOf r = premisesOf r ∴ conclusionOf r
+
+        premisesOf (CoreP x) = premisesOf x
+        premisesOf (NDP x) = map liftSequent (premisesOf x)
+
+        conclusionOf (CoreP x) = conclusionOf x
+        conclusionOf (NDP x) = liftSequent (conclusionOf x)
+
+        indirectInference (NDP x) = indirectInference x
+        indirectInference _ = Nothing
+
+        restriction (CoreP x) = restriction x
+        restriction _          = Nothing
+
+        globalRestriction (Left ded) n (CoreP InA)   = Just (notAssumedConstraint n ded (taun 1 :: FOLSequentCalc (Term Int)))
+        globalRestriction (Left ded) n (CoreP ElimE) = Just (notAssumedConstraint n ded (taun 1 :: FOLSequentCalc (Term Int)))
+        globalRestriction (Left ded) n (NDP (G.PND (IPND (MPND InIf1)))) = Just $ fitchAssumptionCheck n ded [(phin 1, phin 2)]
+        globalRestriction (Left ded) n (NDP (G.PND (IPND (MPND InIf2)))) = Just $ fitchAssumptionCheck n ded [(phin 1, phin 2)]
+        globalRestriction (Left ded) n (NDP (G.PND (IPND (MPND InNeg1)))) = Just $ fitchAssumptionCheck n ded [(phin 1, lfalsum)]
+        globalRestriction (Left ded) n (NDP (G.PND (IPND (MPND InNeg2)))) = Just $ fitchAssumptionCheck n ded [(phin 1, lfalsum)]
+        globalRestriction _ _ _ = Nothing
+
+        isAssumption (NDP x) = isAssumption x
+        isAssumption _ = False
+
+parseGamutNDCore rtc = do r <- choice (map (try . string) [ "IA", "I∀", "EA", "E∀", "IE", "I∃", "EE", "E∃" ])
+                          case r of
+                              r | r `elem` [ "IA", "I∀" ] -> return [InA]
+                                | r `elem` [ "EA", "E∀" ] -> return [ElimA]
+                                | r `elem` [ "IE", "I∃" ] -> return [InE]
+                                | r `elem` [ "EE", "E∃" ] -> return [ElimE]
+
 parseGamutND rtc = try propRule <|> quantRule
     where propRule = map ND <$> parseGamutPND rtc
-          quantRule = do r <- choice (map (try . string) [ "IA", "I∀", "EA", "E∀", "IE", "I∃", "EE", "E∃" ])
-                         case r of
-                             r | r `elem` [ "IA", "I∀" ] -> return [InA]
-                               | r `elem` [ "EA", "E∀" ] -> return [ElimA]
-                               | r `elem` [ "IE", "I∃" ] -> return [InE]
-                               | r `elem` [ "EE", "E∃" ] -> return [ElimE]
+          quantRule = map Core <$> parseGamutNDCore rtc
+
+parseGamutNDPlus rtc = try propRule <|> try quantRule <|> plusRule
+    where propRule = map NDP <$> parseGamutPNDPlus rtc
+          quantRule = map CoreP <$> parseGamutNDCore rtc
+          plusRule = do r <- choice (map (try . string) [ "NC","DC","CP","CV1","CV2","CV3","CV4","Ba","Ce","Da","Fe" ])
+                        case r of
+                             "NC" -> return [NC1,NC2]
+                             "DC" -> return [DC1,DC2]
+                             "CP" -> return [CP1,CP2]
+                             "CV1" -> return [CV1]
+                             "CV2" -> return [CV2]
+                             "CV3" -> return [CV3]
+                             "CV4" -> return [CV4]
+                             "Ba" -> return [Ba]
+                             "Ce" -> return [Ce]
+                             "Da" -> return [Da]
+                             "Fe" -> return [Fe]
 
 parseGamutNDProof :: RuntimeNaturalDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine GamutND PureLexiconFOL (Form Bool)]
 parseGamutNDProof rtc = toDeductionFitch (parseGamutND rtc) (gamutNDFormulaParser)
+
+parseGamutNDPlusProof :: RuntimeNaturalDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine GamutNDPlus PureLexiconFOL (Form Bool)]
+parseGamutNDPlusProof rtc = toDeductionFitch (parseGamutNDPlus rtc) (gamutNDFormulaParser)
+
 
 gamutNotation :: String -> String
 gamutNotation (x:xs) = if x `elem` ['A' .. 'Z'] then x : trimParens 0 xs else x : gamutNotation xs
@@ -93,6 +218,16 @@ gamutNotation x = x
 gamutNDCalc = mkNDCalc
     { ndRenderer = NoRender
     , ndParseProof = parseGamutNDProof
+    , ndProcessLine = hoProcessLineFitch
+    , ndProcessLineMemo = Just hoProcessLineFitchMemo
+    , ndParseSeq = parseSeqOver gamutNDFormulaParser
+    , ndParseForm = gamutNDFormulaParser
+    , ndNotation = gamutNotation
+    }
+
+gamutNDPlusCalc = mkNDCalc
+    { ndRenderer = NoRender
+    , ndParseProof = parseGamutNDPlusProof
     , ndProcessLine = hoProcessLineFitch
     , ndProcessLineMemo = Just hoProcessLineFitchMemo
     , ndParseSeq = parseSeqOver gamutNDFormulaParser
