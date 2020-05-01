@@ -269,7 +269,7 @@ assignmentsOf course textbookproblems asmd asDocs = do
                                                 <td>-
                 |]
     where visibleAt t a = case assignmentMetadataAvailability a of
-                              Just (HiddenViaPassword _) -> False
+                              Just status | availabilityHidden status -> False
                               _ -> (assignmentMetadataVisibleTill a > Just t || assignmentMetadataVisibleTill a == Nothing)
                                    && (assignmentMetadataVisibleFrom a < Just t || assignmentMetadataVisibleFrom a == Nothing)
 
