@@ -48,6 +48,7 @@ ofFOLSys f sys | sys == "firstOrder"                      = Just $ f folCalc
                | sys == "LogicBookPDPlus"                 = Just $ f logicBookPDPlusCalc 
                | sys == "hausmanPL"                       = Just $ f hausmanPLCalc 
                | sys == "gamutND"                         = Just $ f gamutNDCalc
+               | sys == "gamutNDPlus"                     = Just $ f gamutNDPlusCalc
                | sys == "howardSnyderPL"                  = Just $ f howardSnyderPLCalc 
                | sys == "ichikawaJenkinsQL"               = Just $ f ichikawaJenkinsQLCalc
                | sys == "hardegreePL"                     = Just $ f hardegreePLCalc 
@@ -65,4 +66,3 @@ ofFOLTreeSys :: (forall r .
               TableauCalc PureLexiconFOL (Form Bool) r -> a) -> String -> Maybe a
 ofFOLTreeSys f sys | sys == "openLogicFOLNK"             = Just $ f openLogicFONKCalc 
                    | otherwise                           = Nothing
-

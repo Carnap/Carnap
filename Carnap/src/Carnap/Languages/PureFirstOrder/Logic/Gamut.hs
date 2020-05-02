@@ -1,5 +1,5 @@
 {-#LANGUAGE  FlexibleContexts,  FlexibleInstances, MultiParamTypeClasses #-}
-module Carnap.Languages.PureFirstOrder.Logic.Gamut (gamutNDCalc, parseGamutND) where
+module Carnap.Languages.PureFirstOrder.Logic.Gamut (gamutNDCalc, parseGamutND, gamutNDPlusCalc, parseGamutNDPlus) where
 
 import Text.Parsec
 import Data.Char
@@ -148,9 +148,11 @@ instance Inference GamutNDPlus PureLexiconFOL (Form Bool) where
 
         premisesOf (CoreP x) = premisesOf x
         premisesOf (NDP x) = map liftSequent (premisesOf x)
+        premisesOf r = upperSequents (ruleOf r)
 
         conclusionOf (CoreP x) = conclusionOf x
         conclusionOf (NDP x) = liftSequent (conclusionOf x)
+        conclusionOf r = lowerSequent (ruleOf r)
 
         indirectInference (NDP x) = indirectInference x
         indirectInference _ = Nothing
