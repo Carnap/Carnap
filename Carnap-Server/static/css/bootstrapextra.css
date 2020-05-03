@@ -15,3 +15,5 @@ ol.example > li:before {
 }
 
 blockquote { padding-left:10px }
+
+.line-block { margin-bottom:1em }
