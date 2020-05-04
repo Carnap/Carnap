@@ -4,8 +4,8 @@ module Carnap.GHCJS.Action.QualitativeProblem (qualitativeProblemAction) where
 import Lib
 import Carnap.GHCJS.SharedFunctions (simpleHash, simpleDecipher)
 import Carnap.GHCJS.SharedTypes
-import GHCJS.DOM.HTMLTextAreaElement as T (castToHTMLTextAreaElement, setValue, getValue, setSelectionEnd, getSelectionStart, setAutocapitalize, setAutocorrect) 
-import GHCJS.DOM.HTMLInputElement as I (getValue) 
+import GHCJS.DOM.HTMLTextAreaElement as T (setValue, getValue) 
+import GHCJS.DOM.HTMLInputElement as I (getValue, setValue) 
 import GHCJS.DOM.Types
 import GHCJS.DOM.Element
 import GHCJS.DOM.Window (confirm)
@@ -124,6 +124,9 @@ createNumerical w i o opts = case (M.lookup "goal" opts >>= getGoal, M.lookup "p
         bw <- createButtonWrapper w o
         Just input <- createElement w (Just "input")
         appendChild o (Just input)
+        case M.lookup "content" opts of
+            Just t -> I.setValue (castToHTMLInputElement input) (Just t)
+            _ -> return ()
         if "check" `inOpts` opts then do
               bt2 <- questionButton w "Check"
               appendChild bw (Just bt2)
@@ -155,7 +158,7 @@ createShortAnswer w i o opts = case M.lookup "goal" opts of
         bw <- createButtonWrapper w o
         Just text <- createElement w (Just "textarea")
         case M.lookup "content" opts of
-            Just t -> setValue (castToHTMLTextAreaElement text) (Just t)
+            Just t -> T.setValue (castToHTMLTextAreaElement text) (Just t)
             _ -> return ()
         appendChild o (Just text)
         case M.lookup "submission" opts of

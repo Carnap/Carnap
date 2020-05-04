@@ -240,6 +240,18 @@ renderProblem (Entity key val) = do
                                            Just (h,s) -> show (h, s)
                                            Nothing -> "indeciperable entry"
 
+            (Qualitative, QualitativeNumericalData problem answer opts) -> template
+                [whamlet|
+                    <div data-carnap-type="qualitative"
+                         data-carnap-qualitativetype="#{qualtype}"
+                         data-carnap-problem="#{unpack problem}"
+                         data-carnap-goal="#{goal}"
+                         data-carnap-submission="none">
+                         #{show answer}
+                |]
+                where qualtype = case lookup "qualitativetype" (M.fromList opts) of Just s -> s; Nothing -> "shortanswer"
+                      goal = case lookup "goal" (M.fromList opts) of Just s -> s; Nothing -> "no goal?"
+
             (_, ProblemContent txt) -> template
                 [whamlet|
                     <div>
