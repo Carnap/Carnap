@@ -2,9 +2,10 @@
 module Carnap.GHCJS.Action.QualitativeProblem (qualitativeProblemAction) where
 
 import Lib
-import Carnap.GHCJS.SharedFunctions (simpleHash)
+import Carnap.GHCJS.SharedFunctions (simpleHash, simpleDecipher)
 import Carnap.GHCJS.SharedTypes
-import GHCJS.DOM.HTMLTextAreaElement (castToHTMLTextAreaElement, setValue, getValue, setSelectionEnd, getSelectionStart, setAutocapitalize, setAutocorrect)
+import GHCJS.DOM.HTMLTextAreaElement as T (castToHTMLTextAreaElement, setValue, getValue, setSelectionEnd, getSelectionStart, setAutocapitalize, setAutocorrect) 
+import GHCJS.DOM.HTMLInputElement as I (getValue) 
 import GHCJS.DOM.Types
 import GHCJS.DOM.Element
 import GHCJS.DOM.Window (confirm)
@@ -30,6 +31,7 @@ activateQualitativeProblem w (Just (i,o,opts)) = do
         case M.lookup "qualitativetype" opts of
             Just "multiplechoice" -> createMultipleChoice w i o opts
             Just "shortanswer" -> createShortAnswer w i o opts
+            Just "numerical" -> createNumerical w i o opts
             _  -> return ()
 
 submitQualitative :: IsEvent e => M.Map String String -> IORef (Bool, String) -> String -> String -> EventM Element e ()
@@ -39,8 +41,16 @@ submitQualitative opts ref g l = do (isDone,val) <- liftIO $ readIORef ref
                                         then trySubmit Qualitative opts l submission isDone
                                         else message "Not quite right. Try again?"
 
+submitNumerical :: IsEvent e => M.Map String String -> Element -> Int -> String -> String -> EventM Element e ()
+submitNumerical opts input g p l = do Just ival <- liftIO $ I.getValue . castToHTMLInputElement $ input
+                                      case readMaybe ival :: Maybe Int of
+                                        Nothing -> message "Couldn't read the input. Try again?"
+                                        Just val | val == g -> trySubmit Qualitative opts l (QualitativeNumericData (pack p) val (toList opts)) True
+                                        Just val | "exam" `inOpts` opts -> trySubmit Qualitative opts l (QualitativeNumericData (pack p) val (toList opts)) False
+                                        _ -> message "Not quite right. Try again?"
+
 submitEssay :: IsEvent e => M.Map String String -> Element -> String -> String -> EventM HTMLTextAreaElement e ()
-submitEssay opts text g l = do manswer <- getValue . castToHTMLTextAreaElement $ text
+submitEssay opts text g l = do manswer <- T.getValue . castToHTMLTextAreaElement $ text
                                case manswer of 
                                     Just answer -> trySubmit Qualitative opts l (QualitativeProblemDataOpts (pack g) (pack answer) (toList opts)) False
                                     Nothing -> message "It doesn't look like an answer has been written"
@@ -106,6 +116,35 @@ createMultipleChoice w i o opts = case M.lookup "goal" opts of
                appendChild wrapper (Just input)
                appendChild wrapper (Just label)
                return (wrapper, b)
+
+createNumerical :: Document -> Element -> Element -> M.Map String String -> IO ()
+createNumerical w i o opts = case (M.lookup "goal" opts >>= readMaybe, M.lookup "problem" opts )  of
+    (Just g, Just p) -> do
+        setInnerHTML i (Just p)
+        bw <- createButtonWrapper w o
+        -- if "check" `inOpts` opts then do
+        --       bt2 <- questionButton w "Check"
+        --       appendChild bw (Just bt2)
+        --       checkIt <- newListener $ do 
+        --                       Just ival <- liftIO $ getValue input
+        --                       case readMaybe ival :: Int of
+        --                           Nothing -> message "Couldn't read the input. Try again?"
+        --                           Just v | v == g -> message "Correct!"
+        --                           _ -> message "Not quite right. Try again?"
+        --       addListener bt2 click checkIt False                
+        Just input <- createElement w (Just "input")
+        appendChild o (Just input)
+        case M.lookup "submission" opts of
+            Just s | Prelude.take 7 s == "saveAs:" -> do
+                let l = Prelude.drop 7 s
+                bt1 <- doneButton w "Submit"
+                appendChild bw (Just bt1)
+                submit <- newListener $ submitNumerical opts input g p l
+                addListener bt1 click submit False                
+            _ -> return ()
+    _ -> print "numerical answer was missing an option"
+
+    where getGoal = if "nocipher" `inOpts` opts then id else simpleDecipher . read
 
 createShortAnswer :: Document -> Element -> Element -> M.Map String String -> IO ()
 createShortAnswer w i o opts = case M.lookup "goal" opts of
