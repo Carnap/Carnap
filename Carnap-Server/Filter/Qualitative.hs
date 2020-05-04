@@ -1,9 +1,10 @@
 module Filter.Qualitative (makeQualitativeProblems) where
 
-import Carnap.GHCJS.SharedFunctions (simpleHash)
+import Carnap.GHCJS.SharedFunctions (simpleHash, simpleCipher)
 import Text.Pandoc
-import Filter.Util (splitIt, intoChunks,formatChunk, unlines', exerciseWrapper)
+import Filter.Util (splitIt, intoChunks,formatChunk, unlines', exerciseWrapper, sanatizeHtml)
 import Data.Map (fromList, toList, unions)
+import Data.List.Split (splitOn)
 import Prelude
 
 makeQualitativeProblems :: Block -> Block
@@ -13,15 +14,20 @@ makeQualitativeProblems cb@(CodeBlock (_,classes,extra) contents)
 makeQualitativeProblems x = x
 
 activate cls extra chunk
-    | "MultipleChoice" `elem` cls = mctemplate (opts [("qualitativetype","multiplechoice")])
-    | "ShortAnswer" `elem` cls = template (opts [("qualitativetype","shortanswer")])
+    | "MultipleChoice" `elem` cls = mctemplate (opts [("qualitativetype","multiplechoice"), ("goal", contentOf h) ])
+    | "ShortAnswer" `elem` cls = template (opts [("qualitativetype","shortanswer"), ("goal", contentOf h) ])
+    | "Numerical" `elem` cls = case splitOn ":" (contentOf h) of
+                                   [g,p] -> template (opts [ ("qualitativetype","numerical")
+                                                            , ("goal", show (simpleCipher g)) 
+                                                            , ("problem", sanatizeHtml p)
+                                                            ])
+                                   _ -> Div ("",[],[]) [Plain [Str "problem with numerical qualitative problem specification"]]
     | otherwise = RawBlock "html" "<div>No Matching Qualitative Problem Type</div>"
     where numof x = takeWhile (/= ' ') x
           contentOf x = dropWhile (== ' ') . dropWhile (/= ' ') $  x
           (h:t) = formatChunk chunk
           opts adhoc = unions [fromList extra, fromList fixed, fromList adhoc]
           fixed = [ ("type","qualitative")
-                  , ("goal", contentOf h) 
                   , ("submission", "saveAs:" ++ numof h)
                   ]
           mctemplate opts = exerciseWrapper (numof h) $

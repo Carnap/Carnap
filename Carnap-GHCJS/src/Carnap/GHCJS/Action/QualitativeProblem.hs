@@ -45,8 +45,8 @@ submitNumerical :: IsEvent e => M.Map String String -> Element -> Int -> String 
 submitNumerical opts input g p l = do Just ival <- liftIO $ I.getValue . castToHTMLInputElement $ input
                                       case readMaybe ival :: Maybe Int of
                                         Nothing -> message "Couldn't read the input. Try again?"
-                                        Just val | val == g -> trySubmit Qualitative opts l (QualitativeNumericData (pack p) val (toList opts)) True
-                                        Just val | "exam" `inOpts` opts -> trySubmit Qualitative opts l (QualitativeNumericData (pack p) val (toList opts)) False
+                                        Just val | val == g -> trySubmit Qualitative opts l (QualitativeNumericalData (pack p) val (toList opts)) True
+                                        Just val | "exam" `inOpts` opts -> trySubmit Qualitative opts l (QualitativeNumericalData (pack p) val (toList opts)) False
                                         _ -> message "Not quite right. Try again?"
 
 submitEssay :: IsEvent e => M.Map String String -> Element -> String -> String -> EventM HTMLTextAreaElement e ()
@@ -118,22 +118,23 @@ createMultipleChoice w i o opts = case M.lookup "goal" opts of
                return (wrapper, b)
 
 createNumerical :: Document -> Element -> Element -> M.Map String String -> IO ()
-createNumerical w i o opts = case (M.lookup "goal" opts >>= readMaybe, M.lookup "problem" opts )  of
+createNumerical w i o opts = case (M.lookup "goal" opts >>= getGoal, M.lookup "problem" opts )  of
     (Just g, Just p) -> do
         setInnerHTML i (Just p)
         bw <- createButtonWrapper w o
-        -- if "check" `inOpts` opts then do
-        --       bt2 <- questionButton w "Check"
-        --       appendChild bw (Just bt2)
-        --       checkIt <- newListener $ do 
-        --                       Just ival <- liftIO $ getValue input
-        --                       case readMaybe ival :: Int of
-        --                           Nothing -> message "Couldn't read the input. Try again?"
-        --                           Just v | v == g -> message "Correct!"
-        --                           _ -> message "Not quite right. Try again?"
-        --       addListener bt2 click checkIt False                
         Just input <- createElement w (Just "input")
         appendChild o (Just input)
+        if "check" `inOpts` opts then do
+              bt2 <- questionButton w "Check"
+              appendChild bw (Just bt2)
+              checkIt <- newListener $ do 
+                              Just ival <- liftIO $ I.getValue . castToHTMLInputElement $ input
+                              case readMaybe ival :: Maybe Int of
+                                  Nothing -> message "Couldn't read the input. Try again?"
+                                  Just v | v == g -> message "Correct!"
+                                  _ -> message "Not quite right. Try again?"
+              addListener bt2 click checkIt False                
+        else return ()
         case M.lookup "submission" opts of
             Just s | Prelude.take 7 s == "saveAs:" -> do
                 let l = Prelude.drop 7 s
@@ -144,7 +145,7 @@ createNumerical w i o opts = case (M.lookup "goal" opts >>= readMaybe, M.lookup 
             _ -> return ()
     _ -> print "numerical answer was missing an option"
 
-    where getGoal = if "nocipher" `inOpts` opts then id else simpleDecipher . read
+    where getGoal = if "nocipher" `inOpts` opts then readMaybe else readMaybe . simpleDecipher . read
 
 createShortAnswer :: Document -> Element -> Element -> M.Map String String -> IO ()
 createShortAnswer w i o opts = case M.lookup "goal" opts of
