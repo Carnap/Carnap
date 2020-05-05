@@ -111,6 +111,7 @@ displayProblemData (TranslationDataOpts _ _ opts) = case lookup "problem" opts o
                                                         Just p -> pack p
                                                         Nothing -> "-"
 displayProblemData (QualitativeProblemDataOpts t _ _) = t
+displayProblemData (QualitativeNumericalData t _ _) = t
 displayProblemData (SequentCalcData t _ _) = t
 displayProblemData (DeductionTreeData t _ _) = t
 displayProblemData (ProblemContent t) = maybe t pack ms
