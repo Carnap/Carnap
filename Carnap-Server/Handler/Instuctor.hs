@@ -179,7 +179,7 @@ postInstructorR ident = do
                                 <$> selectList [DocumentId <-. map (assignmentMetadataDocument . entityVal) asgned] []
                case mpass of
                    _ | not (null dupes) -> setMessage "Names for assignments must be unique within a course, and it looks like you already have an assignment with this name"
-                   Nothing | mhidden /= Nothing || mlimit /= Nothing -> setMessage "Hidden and time-limited assignments must be password protected"
+                   Nothing | mhidden == Just True || mlimit /= Nothing -> setMessage "Hidden and time-limited assignments must be password protected"
                    _ -> do success <- tryInsert $ AssignmentMetadata 
                                                 { assignmentMetadataDocument = entityKey doc
                                                 , assignmentMetadataDescription = info 
