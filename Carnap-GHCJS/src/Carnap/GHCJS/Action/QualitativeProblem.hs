@@ -41,9 +41,9 @@ submitQualitative opts ref g l = do (isDone,val) <- liftIO $ readIORef ref
                                         then trySubmit Qualitative opts l submission isDone
                                         else message "Not quite right. Try again?"
 
-submitNumerical :: IsEvent e => M.Map String String -> Element -> Int -> String -> String -> EventM Element e ()
+submitNumerical :: IsEvent e => M.Map String String -> Element -> Double -> String -> String -> EventM Element e ()
 submitNumerical opts input g p l = do Just ival <- liftIO $ I.getValue . castToHTMLInputElement $ input
-                                      case readMaybe ival :: Maybe Int of
+                                      case readNumeric ival of
                                         Nothing -> message "Couldn't read the input. Try again?"
                                         Just val | val == g -> trySubmit Qualitative opts l (QualitativeNumericalData (pack p) val (toList opts)) True
                                         Just val | "exam" `inOpts` opts -> trySubmit Qualitative opts l (QualitativeNumericalData (pack p) val (toList opts)) False
@@ -132,7 +132,7 @@ createNumerical w i o opts = case (M.lookup "goal" opts >>= getGoal, M.lookup "p
               appendChild bw (Just bt2)
               checkIt <- newListener $ do 
                               Just ival <- liftIO $ I.getValue . castToHTMLInputElement $ input
-                              case readMaybe ival :: Maybe Int of
+                              case readNumeric ival of
                                   Nothing -> message "Couldn't read the input. Try again?"
                                   Just v | v == g -> message "Correct!"
                                   _ -> message "Not quite right. Try again?"
@@ -148,7 +148,7 @@ createNumerical w i o opts = case (M.lookup "goal" opts >>= getGoal, M.lookup "p
             _ -> return ()
     _ -> print "numerical answer was missing an option"
 
-    where getGoal = if "nocipher" `inOpts` opts then readMaybe else readMaybe . simpleDecipher . read
+    where getGoal = if "nocipher" `inOpts` opts then readNumeric else readNumeric . simpleDecipher . read
 
 createShortAnswer :: Document -> Element -> Element -> M.Map String String -> IO ()
 createShortAnswer w i o opts = case M.lookup "goal" opts of
@@ -170,3 +170,11 @@ createShortAnswer w i o opts = case M.lookup "goal" opts of
                 addListener bt1 click submit False                
             _ -> return ()
         return ()
+
+readNumeric s = case readMaybe s :: Maybe Double of
+                    Just d -> Just d
+                    Nothing -> let (h,t) = break (== '/') s in 
+                                   case (/) <$> (fromIntegral <$> maybeInt h) <*> (fromIntegral <$> maybeInt (tail t))
+                                   of Just d -> Just d
+                                      Nothing -> Nothing
+    where maybeInt = readMaybe :: String -> Maybe Int

@@ -57,7 +57,7 @@ data ProblemData = DerivationData Text Text
                  | TranslationDataOpts Text Text Options
                  | CounterModelDataOpts Text CounterModelFields Options
                  | QualitativeProblemDataOpts Text Text Options
-                 | QualitativeNumericalData Text Int Options
+                 | QualitativeNumericalData Text Double Options
                  | ProblemContent Text
     deriving (Show, Read, Eq, Generic)
 
