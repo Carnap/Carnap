@@ -125,7 +125,7 @@
 [data-carnap-type="treedeductionchecker"] > .input,
 [data-carnap-type="translate"] > input {
     font-size:14px;
-    height:2em;
+    min-height:2em;
     padding:5px;
     background:white;
     border:1px solid #A9B7C0;
