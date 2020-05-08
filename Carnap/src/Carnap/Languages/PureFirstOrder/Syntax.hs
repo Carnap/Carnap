@@ -50,6 +50,8 @@ type PureVar = StandardVar Int
 
 type PureQuant = StandardQuant Bool Int
 
+type PureQuantCtx = QuantifiedContext Bool Int
+
 --------------------------------------------------------
 --2. Pure First Order Languages 
 --------------------------------------------------------
@@ -63,6 +65,7 @@ type CoreLexicon = P.PurePropLexicon
                    :|: Function PureConstant
                    :|: Function PureVar
                    :|: Function PureSchematicFunction
+                   :|: PureQuantCtx
                    :|: EndLang
 
 type PureFirstOrderLexWith a = CoreLexicon :|: a
@@ -129,6 +132,7 @@ instance PrismGenericContext (PureFirstOrderLexWith a) Bool Bool
 instance PrismBooleanConst (PureFirstOrderLexWith a) Bool
 instance PrismSchematicProp (PureFirstOrderLexWith a) Bool
 instance PrismGenericQuant (PureFirstOrderLexWith a) Term Form Bool Int
+instance PrismQuantContext (PureFirstOrderLexWith a) Bool Int
 instance PrismStandardVar (PureFirstOrderLexWith a) Int
 instance PrismSubstitutionalVariable (PureFirstOrderLexWith a)
 --equality up to α-equivalence

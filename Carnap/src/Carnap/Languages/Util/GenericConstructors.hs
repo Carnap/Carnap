@@ -390,6 +390,21 @@ instance UniformlyEq (GenericQuant f g b c) where
 
 instance FirstOrderLex (GenericQuant f g b c) 
 
+data QuantifiedContext b c :: (* -> *) -> * -> * where
+        QuantContext :: Int -> Arity (Term c) (Form b) ret -> QuantifiedContext b c lang (ret -> Form b)
+
+instance Schematizable (QuantifiedContext b c lang) where
+        schematize (QuantContext n a) (x:_)  = "Ψ^" ++ show a ++ "_" ++ show n ++ "(" ++ x ++ ")"
+
+instance UniformlyEq (QuantifiedContext b c lang) where
+        (QuantContext n a) =* (QuantContext m a') = n == m && show a == show a'
+
+instance ReLex (QuantifiedContext b c) where
+        relex (QuantContext n a) = QuantContext n a
+
+instance FirstOrderLex (QuantifiedContext b c lang) where
+        isVarLex _ = True
+
 ------------------
 --  7. Exotica  --
 ------------------

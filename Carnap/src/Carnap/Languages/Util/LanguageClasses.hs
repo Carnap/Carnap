@@ -630,6 +630,26 @@ instance {-#OVERLAPPABLE#-}
         PrismDefiniteDesc lex b c => DefinDescLanguage (FixLang lex (Form b)) (FixLang lex (Term c)) where
             ddesc s = review (unaryOpPrism (_desc . only s)) . LLam
 
+class (Typeable b, Typeable c, PrismLink (FixLang lex) (QuantifiedContext b c (FixLang lex))) 
+        => PrismQuantContext lex b c where
+
+        _qcontext :: Typeable ret => Prism' (FixLang lex (ret -> Form b)) (Int, Arity (Term c) (Form b) ret)
+        _qcontext = link_PrismQuantContext . qcontext
+
+        link_PrismQuantContext :: Typeable ret => Prism' (FixLang lex (ret -> Form b)) (QuantifiedContext b c (FixLang lex) (ret -> Form b))
+        link_PrismQuantContext = link
+
+        qcontext :: Typeable ret => Prism' (QuantifiedContext b c (FixLang lex) (ret -> Form b)) (Int, Arity (Term c) (Form b) ret)
+        qcontext = prism' (\(n,a) -> QuantContext n a)
+                          (\x -> case x of QuantContext n a -> (,) <$> pure n <*> cast a
+                                           _ -> Nothing)
+
+class QuantContextLang lang b c where
+        quantCtx :: Typeable ret => Int -> Arity (Term c) (Form b) ret -> lang ret -> lang (Form b)
+
+instance {-#OVERLAPPABLE#-} (Typeable b, Typeable c, PrismQuantContext lex b c) => QuantContextLang (FixLang lex) b c where
+        quantCtx n a = review (unaryOpPrism (_qcontext . only (n,a)))
+
 -------------------
 --  1.5 Exotica  --
 -------------------

@@ -190,7 +190,6 @@ data Arity :: * -> * -> * -> * where
     AZero :: Arity arg ret ret
     ASucc :: Arity arg ret ret' -> Arity arg ret (arg -> ret')
 
-
 pattern AOne = ASucc AZero
 pattern ATwo = ASucc AOne
 pattern AThree = ASucc ATwo
@@ -198,6 +197,11 @@ pattern AThree = ASucc ATwo
 arityInt :: Arity arg ret ret' -> Int
 arityInt AZero = 0
 arityInt (ASucc n) = arityInt n + 1
+
+instance Eq (Arity arg ret ret') where
+        AZero == AZero = True
+        ASucc n == ASucc n' = n == n'
+
 
 instance Show (Arity arg ret ret') where
         show = show . arityInt

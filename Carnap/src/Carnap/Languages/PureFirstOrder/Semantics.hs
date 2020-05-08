@@ -53,6 +53,9 @@ instance Modelable MonadicModel (SchematicIntFunc Int Int) where
 instance Modelable MonadicModel (PropositionalContext Bool) where
         satisfies = error "it doesn't make sense to ask for the semantic value of a schematic variable (in this case a propositional context)"
 
+instance Modelable MonadicModel (QuantifiedContext Bool Int lang) where
+        satisfies = error "it doesn't make sense to ask for the semantic value of a schematic variable (in this case a quantified context)"
+
 instance Modelable MonadicModel (IntProp Bool) where
         satisfies m (Prop n) = proposition m n
 
@@ -112,6 +115,9 @@ instance Modelable PolyadicModel (SchematicIntFunc Int Int) where
         satisfies m = satisfies (monadicPart m)
 
 instance Modelable PolyadicModel (PropositionalContext Bool) where
+        satisfies m = satisfies (monadicPart m)
+
+instance Modelable PolyadicModel (QuantifiedContext Bool Int lang) where
         satisfies m = satisfies (monadicPart m)
 
 instance Modelable PolyadicModel (IntProp Bool) where

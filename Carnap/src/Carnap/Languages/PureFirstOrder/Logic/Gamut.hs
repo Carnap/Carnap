@@ -3,7 +3,7 @@ module Carnap.Languages.PureFirstOrder.Logic.Gamut (gamutNDCalc, parseGamutND, g
 
 import Text.Parsec
 import Data.Char
-import Carnap.Core.Data.Types (Form, Term)
+import Carnap.Core.Data.Types
 import Carnap.Core.Data.Classes
 import Carnap.Core.Unification.Unification (applySub,subst,FirstOrder)
 import Carnap.Languages.PureFirstOrder.Syntax
@@ -26,10 +26,10 @@ data GamutNDCore =  InE | ElimE | InA | ElimA
 data GamutND = ND GamutPND | Core GamutNDCore
     deriving Eq
 
-data GamutNDPlus = NDP GamutPNDPlus 
+data GamutNDPlus = NDP GamutPND
              | CoreP GamutNDCore
-             | NC1 | NC2
-             | DC1 | DC2
+             -- | NC1 | NC2
+             -- | DC1 | DC2
              | CP1 | CP2
              | CV1 | CV2
              | CV3 | CV4
@@ -50,10 +50,10 @@ instance Show GamutND where
 instance Show GamutNDPlus where
         show (NDP x) = show x
         show (CoreP x) = show x
-        show NC1 = "NC"
-        show NC2 = "NC"
-        show DC1 = "DC"
-        show DC2 = "DC"
+        -- show NC1 = "NC"
+        -- show NC2 = "NC"
+        -- show DC1 = "DC"
+        -- show DC2 = "DC"
         show CP1 = "CP" 
         show CP2 = "CP" 
         show CV1 = "CV1" 
@@ -117,24 +117,27 @@ instance Inference GamutND PureLexiconFOL (Form Bool) where
 
 instance Inference GamutNDPlus PureLexiconFOL (Form Bool) where
         ruleOf (CoreP x) = ruleOf x
-        ruleOf NC1 = negatedConditional !! 0 
-        ruleOf NC2 = negatedConditional !! 1
-        ruleOf DC1 = materialConditional !! 0
-        ruleOf DC2 = materialConditional !! 0
-        ruleOf CP1 = contraposition !! 0
+        -- ruleOf NC1 = negatedConditional !! 0 
+        -- ruleOf NC2 = negatedConditional !! 1
+        -- ruleOf DC1 = materialConditional !! 0
+        -- ruleOf DC2 = materialConditional !! 0
+        -- ruleOf CP1 = [ GammaV 1 :|-: SS (lall "v" (\x -> propCtx 1 $ (phi 1 x .=>. phi 2 x)))]
+        --              ∴ GammaV 1 :|-: SS (lall "v" (\x -> propCtx 1 $ lneg (phi 2 x) .=>. lneg (phi 1 x)))
+        ruleOf CP1 = [ GammaV 1 :|-: SS (quantCtx 1 AOne (LLam (\x -> phi 1 x .=>. phi 2 x)))]
+                     ∴ GammaV 1 :|-: SS (quantCtx 1 AOne (LLam (\x -> lneg (phi 2 x) .=>. lneg (phi 1 x))))
         ruleOf CP2 = contraposition !! 1
         ruleOf CV1 = [ GammaV 1 :|-: SS (lsome "v" (\x -> phi 1 x ./\. phi 2 x)) 
                      ] ∴ GammaV 1 :|-: SS (lsome "v" (\x -> phi 2 x ./\. phi 1 x))
         ruleOf CV2 = [ GammaV 1 :|-: SS (lneg $ lsome "v" (\x -> phi 1 x ./\. phi 2 x)) 
                      ] ∴ GammaV 1 :|-: SS (lneg $ lsome "v" (\x -> phi 2 x ./\. phi 1 x))
         ruleOf CV3 = [ GammaV 1 :|-: SS (lneg $ lsome "v" (\x -> phi 1 x ./\. phi 2 x)) 
-                     ] ∴ GammaV 1 :|-: SS (lall "v" (\x -> phi 1 x .=>. lneg (phi 1 x)))
-        ruleOf CV3 = [ GammaV 1 :|-: SS (lall "v" (\x -> phi 1 x .=>. phi 2 x))
+                     ] ∴ GammaV 1 :|-: SS (lall "v" (\x -> phi 1 x .=>. lneg (phi 2 x)))
+        ruleOf CV4 = [ GammaV 1 :|-: SS (lall "v" (\x -> phi 1 x .=>. phi 2 x))
                      , GammaV 2 :|-: SS (lsome "v" $ phi 1 )
-                     ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (lsome "v" (\x -> phi 1 x ./\. phi 1 x))
+                     ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (lsome "v" (\x -> phi 1 x ./\. phi 2 x))
         ruleOf Ba = [ GammaV 1 :|-: SS (lall "v" (\x -> phi 1 x .=>. phi 2 x))
                     , GammaV 2 :|-: SS (lall "v" (\x -> phi 2 x .=>. phi 3 x))
-                    ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (lall "v" (\x -> phi 1 x .=>. phi 2 x))
+                    ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (lall "v" (\x -> phi 1 x .=>. phi 3 x))
         ruleOf Ce = [ GammaV 1 :|-: SS (lneg $ lsome "v" (\x -> phi 1 x ./\. phi 2 x))
                     , GammaV 2 :|-: SS (lall "v" (\x -> phi 3 x .=>. phi 1 x))
                     ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (lneg $ lsome "v" (\x -> phi 3 x ./\. phi 2 x))
@@ -162,10 +165,10 @@ instance Inference GamutNDPlus PureLexiconFOL (Form Bool) where
 
         globalRestriction (Left ded) n (CoreP InA)   = Just (notAssumedConstraint n ded (taun 1 :: FOLSequentCalc (Term Int)))
         globalRestriction (Left ded) n (CoreP ElimE) = Just (notAssumedConstraint n ded (taun 1 :: FOLSequentCalc (Term Int)))
-        globalRestriction (Left ded) n (NDP (G.PND (IPND (MPND InIf1)))) = Just $ fitchAssumptionCheck n ded [(phin 1, phin 2)]
-        globalRestriction (Left ded) n (NDP (G.PND (IPND (MPND InIf2)))) = Just $ fitchAssumptionCheck n ded [(phin 1, phin 2)]
-        globalRestriction (Left ded) n (NDP (G.PND (IPND (MPND InNeg1)))) = Just $ fitchAssumptionCheck n ded [(phin 1, lfalsum)]
-        globalRestriction (Left ded) n (NDP (G.PND (IPND (MPND InNeg2)))) = Just $ fitchAssumptionCheck n ded [(phin 1, lfalsum)]
+        globalRestriction (Left ded) n (NDP (IPND (MPND InIf1))) = Just $ fitchAssumptionCheck n ded [(phin 1, phin 2)]
+        globalRestriction (Left ded) n (NDP (IPND (MPND InIf2))) = Just $ fitchAssumptionCheck n ded [(phin 1, phin 2)]
+        globalRestriction (Left ded) n (NDP (IPND (MPND InNeg1))) = Just $ fitchAssumptionCheck n ded [(phin 1, lfalsum)]
+        globalRestriction (Left ded) n (NDP (IPND (MPND InNeg2))) = Just $ fitchAssumptionCheck n ded [(phin 1, lfalsum)]
         globalRestriction _ _ _ = Nothing
 
         isAssumption (NDP x) = isAssumption x
@@ -183,12 +186,12 @@ parseGamutND rtc = try propRule <|> quantRule
           quantRule = map Core <$> parseGamutNDCore rtc
 
 parseGamutNDPlus rtc = try propRule <|> try quantRule <|> plusRule
-    where propRule = map NDP <$> parseGamutPNDPlus rtc
+    where propRule = map NDP <$> parseGamutPND rtc
           quantRule = map CoreP <$> parseGamutNDCore rtc
-          plusRule = do r <- choice (map (try . string) [ "NC","DC","CP","CV1","CV2","CV3","CV4","Ba","Ce","Da","Fe" ])
+          plusRule = do r <- choice (map (try . string) [ "CP", "CV1","CV2","CV3","CV4","Ba","Ce","Da","Fe" ])
                         case r of
-                             "NC" -> return [NC1,NC2]
-                             "DC" -> return [DC1,DC2]
+                             -- "NC" -> return [NC1,NC2]
+                             -- "DC" -> return [DC1,DC2]
                              "CP" -> return [CP1,CP2]
                              "CV1" -> return [CV1]
                              "CV2" -> return [CV2]
@@ -204,7 +207,6 @@ parseGamutNDProof rtc = toDeductionFitch (parseGamutND rtc) (gamutNDFormulaParse
 
 parseGamutNDPlusProof :: RuntimeNaturalDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine GamutNDPlus PureLexiconFOL (Form Bool)]
 parseGamutNDPlusProof rtc = toDeductionFitch (parseGamutNDPlus rtc) (gamutNDFormulaParser)
-
 
 gamutNotation :: String -> String
 gamutNotation (x:xs) = if x `elem` ['A' .. 'Z'] then x : trimParens 0 xs else x : gamutNotation xs
