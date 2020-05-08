@@ -137,7 +137,8 @@ rebuild (LLam f) = LLam (\x -> subst sv x $ rebuild (f sv))
 rebuild t = t
 
 stateRebuild :: ( FirstOrder (FixLang f) , StaticVar (FixLang f)) => FixLang f a -> State Int (FixLang f a)
-stateRebuild (x :!$: y) = (:!$:) <$> stateRebuild x <*> stateRebuild y
+stateRebuild (x :!$: y) = do modify (+ 1)
+                             (:!$:) <$> stateRebuild x <*> stateRebuild y
 stateRebuild (LLam f) = do n <- get
                            put (n + 1)
                            f' <- stateRebuild $ f (static n)

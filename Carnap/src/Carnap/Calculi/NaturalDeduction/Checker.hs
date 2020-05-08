@@ -304,7 +304,7 @@ hoseqFromNode lineno rules prems conc =
                                         -- XXX: We use the old rhs rather than building
                                         -- a new one by substitution in order to
                                         -- preserve things like variable labelings
-                                   let subbedconc =  applySub hosub (set rhs conc rconc)
+                                   let subbedconc = applySub hosub (set rhs conc rconc)
                                    let prob = (zipWith (:=:) (map (pureBNF . view lhs) subbedrule) 
                                                              (map (view lhs) prems))
                                    case evalState (acuiUnifySys (const False) prob) (0 :: Int) of
