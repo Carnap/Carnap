@@ -171,10 +171,13 @@ createShortAnswer w i o opts = case M.lookup "goal" opts of
             _ -> return ()
         return ()
 
-readNumeric s = case readMaybe s :: Maybe Double of
-                    Just d -> Just d
-                    Nothing -> let (h,t) = break (== '/') s in 
-                                   case (/) <$> (fromIntegral <$> maybeInt h) <*> (fromIntegral <$> maybeInt (tail t))
-                                   of Just d -> Just d
-                                      Nothing -> Nothing
-    where maybeInt = readMaybe :: String -> Maybe Int
+readNumeric s = readIt ('0': dropWhile (== ' ') s)
+    where readIt s' = case readMaybe s' :: Maybe Double of
+                        Just d -> Just d
+                        Nothing -> asFrac $ break (== '/') s'
+
+          asFrac (h,[]) = Nothing
+          asFrac (h,t) | readMaybe (tail t) == Just (0 :: Int) = Nothing --no dividing by zero please
+                       | otherwise = fromRational <$> maybeRational (h ++ " % " ++ tail t)
+
+          maybeRational = readMaybe :: String -> Maybe Rational
