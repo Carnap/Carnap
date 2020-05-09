@@ -62,7 +62,7 @@ abstractEq (AnyPig (v :: f a)) (AnyPig (v' :: f b)) (t :=:t') =
         case eqT :: Maybe (a :~: b) of
             Just Refl -> return $ (lam $ \x -> subst v x t) :=: (lam $ \x -> subst v' x t')
             Nothing -> mzero
-
+ 
 -- XXX : This needs to take place in a fresh variable monad. Should use
 --a new type of fresh variable for fresh unification variables, in order to
 --avoid issues with substitution.
@@ -103,7 +103,6 @@ guillotine x = basket (AnyPig x) []
             where basket (AnyPig x) pigs = case matchApp x of
                       Just (ExtApp h t) -> basket (AnyPig h) ((AnyPig t):pigs)
                       Nothing -> return (AnyPig x,pigs)
-
 
 --recursively performs a surgery on a term (either a projection term or the
 --body of the rhs), eventually replacing every part of the term with an
@@ -218,7 +217,6 @@ eqLMatch (x :=: y) =
                         (lam $ \z -> subst v z x') :=:
                         (lam $ \z -> subst v z y') 
                    
-
 eqLNF :: (HigherOrder f, MonadVar f (State Int)) => Equation f -> (State Int) (Equation f)
 eqLNF ((x :: f a):=:y) =  do x' <- toLNF x
                              y' <- toLNF y

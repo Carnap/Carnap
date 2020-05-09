@@ -380,8 +380,10 @@ data GenericQuant f g b c a where
 type StandardQuant = GenericQuant Term Form
 
 instance Schematizable (GenericQuant f g b c) where
-        schematize (All v) = \(x:_) -> "∀" ++ v ++ x 
-        schematize (Some v) = \(x:_) -> "∃" ++ v ++ x 
+        schematize (All v) (x:_) = "∀" ++ v ++ x 
+        schematize (All v) [] = "∀" ++ v
+        schematize (Some v) (x:_) = "∃" ++ v ++ x 
+        schematize (Some v) [] = "∃" ++ v
 
 instance UniformlyEq (GenericQuant f g b c) where
         (All _) =* (All _) = True
@@ -395,6 +397,7 @@ data QuantifiedContext b c :: (* -> *) -> * -> * where
 
 instance Schematizable (QuantifiedContext b c lang) where
         schematize (QuantContext n a) (x:_)  = "Ψ^" ++ show a ++ "_" ++ show n ++ "(" ++ x ++ ")"
+        schematize (QuantContext n a) []  = "Ψ^" ++ show a ++ "_" ++ show n
 
 instance UniformlyEq (QuantifiedContext b c lang) where
         (QuantContext n a) =* (QuantContext m a') = n == m && show a == show a'
