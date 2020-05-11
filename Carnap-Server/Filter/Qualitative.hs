@@ -24,7 +24,7 @@ activate cls extra chunk
                                    _ -> Div ("",[],[]) [Plain [Str "problem with numerical qualitative problem specification"]]
     | otherwise = RawBlock "html" "<div>No Matching Qualitative Problem Type</div>"
     where numof x = takeWhile (/= ' ') x
-          contentOf x = dropWhile (== ' ') . dropWhile (/= ' ') $  x
+          contentOf x = sanatizeHtml . dropWhile (== ' ') . dropWhile (/= ' ') $  x
           (h:t) = formatChunk chunk
           opts adhoc = unions [fromList extra, fromList fixed, fromList adhoc]
           fixed = [ ("type","qualitative")
