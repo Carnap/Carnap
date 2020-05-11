@@ -35,7 +35,8 @@ data GamutIPND = MPND GamutMPND | EFSQ
 data GamutPND = IPND GamutIPND | DNE
     deriving Eq
 
-data GamutPNDPlus = PND GamutPND | LEM | LNC | DN1 | DN2
+data GamutPNDPlus = PND GamutPND 
+                  | LEM | LNC | DN1 | DN2
                   | LCC  | LCD  | LAC1 | LAC2 | LAD1 | LAD2
                   | LDD1 | LDD2 | LDC1 | LDC2 | DMOR1 | DMOR2
                   | DMAND1 | DMAND2 | MT | MTP | NMTP

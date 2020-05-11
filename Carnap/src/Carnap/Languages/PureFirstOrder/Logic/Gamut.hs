@@ -18,7 +18,7 @@ import Carnap.Languages.Util.LanguageClasses
 import Carnap.Languages.Util.GenericConstructors
 import Carnap.Languages.PureFirstOrder.Logic.Rules
 import Carnap.Languages.PurePropositional.Logic.Gamut as G
-import Carnap.Languages.PurePropositional.Logic.Rules
+import Carnap.Languages.PurePropositional.Logic.Rules (fitchAssumptionCheck)
 
 data GamutNDCore =  InE | ElimE | InA | ElimA
         deriving Eq
@@ -26,10 +26,10 @@ data GamutNDCore =  InE | ElimE | InA | ElimA
 data GamutND = ND GamutPND | Core GamutNDCore
     deriving Eq
 
-data GamutNDPlus = NDP GamutPND
+data GamutNDPlus = NDP GamutPNDPlus
              | CoreP GamutNDCore
-             -- | NC1 | NC2
-             -- | DC1 | DC2
+             | NC1 | NC2
+             | DC1 | DC2
              | CP1 | CP2
              | CV1 | CV2
              | CV3 | CV4
@@ -50,10 +50,10 @@ instance Show GamutND where
 instance Show GamutNDPlus where
         show (NDP x) = show x
         show (CoreP x) = show x
-        -- show NC1 = "NC"
-        -- show NC2 = "NC"
-        -- show DC1 = "DC"
-        -- show DC2 = "DC"
+        show NC1 = "NC"
+        show NC2 = "NC"
+        show DC1 = "DC"
+        show DC2 = "DC"
         show CP1 = "CP" 
         show CP2 = "CP" 
         show CV1 = "CV1" 
@@ -117,15 +117,28 @@ instance Inference GamutND PureLexiconFOL (Form Bool) where
 
 instance Inference GamutNDPlus PureLexiconFOL (Form Bool) where
         ruleOf (CoreP x) = ruleOf x
-        -- ruleOf NC1 = negatedConditional !! 0 
-        -- ruleOf NC2 = negatedConditional !! 1
-        -- ruleOf DC1 = materialConditional !! 0
-        -- ruleOf DC2 = materialConditional !! 0
-        -- ruleOf CP1 = [ GammaV 1 :|-: SS (lall "v" (\x -> propCtx 1 $ (phi 1 x .=>. phi 2 x)))]
-        --              ∴ GammaV 1 :|-: SS (lall "v" (\x -> propCtx 1 $ lneg (phi 2 x) .=>. lneg (phi 1 x)))
-        ruleOf CP1 = [ GammaV 1 :|-: SS (quantCtx 1 AOne (LLam (\x -> phi 1 x .=>. phi 2 x)))]
-                     ∴ GammaV 1 :|-: SS (quantCtx 1 AOne (LLam (\x -> lneg (phi 2 x) .=>. lneg (phi 1 x))))
+        ruleOf NC1 = negatedConditional !! 0 
+        ruleOf NC2 = negatedConditional !! 1
+        ruleOf DC1 = materialConditional !! 0
+        ruleOf DC2 = materialConditional !! 0
+        ruleOf CP1 = contraposition !! 0
         ruleOf CP2 = contraposition !! 1
+        ruleOf (NDP DN1) = doubleNegation !! 0
+        ruleOf (NDP DN2) = doubleNegation !! 1
+        ruleOf (NDP LCC) = andCommutativity !! 0
+        ruleOf (NDP LCD) = orCommutativity !! 0
+        ruleOf (NDP LAC1) = andAssociativity !! 0
+        ruleOf (NDP LAC2) = andAssociativity !! 1
+        ruleOf (NDP LAD1) = orAssociativity !! 0 
+        ruleOf (NDP LAD2) = orAssociativity !! 1
+        ruleOf (NDP LDD1) = orDistributivity !! 0
+        ruleOf (NDP LDD2) = orDistributivity !! 1
+        ruleOf (NDP LDC1) = andDistributivity !! 0
+        ruleOf (NDP LDC2) = andDistributivity !! 1
+        ruleOf (NDP DMOR1) = deMorgansLaws !! 0
+        ruleOf (NDP DMOR2) = deMorgansLaws !! 1
+        ruleOf (NDP DMAND1) = deMorgansLaws !! 2
+        ruleOf (NDP DMAND2) = deMorgansLaws !! 3
         ruleOf CV1 = [ GammaV 1 :|-: SS (lsome "v" (\x -> phi 1 x ./\. phi 2 x)) 
                      ] ∴ GammaV 1 :|-: SS (lsome "v" (\x -> phi 2 x ./\. phi 1 x))
         ruleOf CV2 = [ GammaV 1 :|-: SS (lneg $ lsome "v" (\x -> phi 1 x ./\. phi 2 x)) 
@@ -150,10 +163,16 @@ instance Inference GamutNDPlus PureLexiconFOL (Form Bool) where
         ruleOf r = premisesOf r ∴ conclusionOf r
 
         premisesOf (CoreP x) = premisesOf x
+        premisesOf (NDP r) | r `elem` replacements = upperSequents (ruleOf (NDP r))
+            where replacements = [ DN1, DN2, LCC, LCD, LAC1, LAC2, LAD1, LAD2
+                                 , LDD1, LDD2, LDC1, LDC2, DMOR1, DMOR2, DMAND1, DMAND2]
         premisesOf (NDP x) = map liftSequent (premisesOf x)
         premisesOf r = upperSequents (ruleOf r)
 
         conclusionOf (CoreP x) = conclusionOf x
+        conclusionOf (NDP r) | r `elem` replacements = lowerSequent (ruleOf (NDP r))
+            where replacements = [ DN1, DN2, LCC, LCD, LAC1, LAC2, LAD1, LAD2
+                                 , LDD1, LDD2, LDC1, LDC2, DMOR1, DMOR2, DMAND1, DMAND2]
         conclusionOf (NDP x) = liftSequent (conclusionOf x)
         conclusionOf r = lowerSequent (ruleOf r)
 
@@ -165,10 +184,10 @@ instance Inference GamutNDPlus PureLexiconFOL (Form Bool) where
 
         globalRestriction (Left ded) n (CoreP InA)   = Just (notAssumedConstraint n ded (taun 1 :: FOLSequentCalc (Term Int)))
         globalRestriction (Left ded) n (CoreP ElimE) = Just (notAssumedConstraint n ded (taun 1 :: FOLSequentCalc (Term Int)))
-        globalRestriction (Left ded) n (NDP (IPND (MPND InIf1))) = Just $ fitchAssumptionCheck n ded [(phin 1, phin 2)]
-        globalRestriction (Left ded) n (NDP (IPND (MPND InIf2))) = Just $ fitchAssumptionCheck n ded [(phin 1, phin 2)]
-        globalRestriction (Left ded) n (NDP (IPND (MPND InNeg1))) = Just $ fitchAssumptionCheck n ded [(phin 1, lfalsum)]
-        globalRestriction (Left ded) n (NDP (IPND (MPND InNeg2))) = Just $ fitchAssumptionCheck n ded [(phin 1, lfalsum)]
+        globalRestriction (Left ded) n (NDP (PND (IPND (MPND InIf1)))) = Just $ fitchAssumptionCheck n ded [(phin 1, phin 2)]
+        globalRestriction (Left ded) n (NDP (PND (IPND (MPND InIf2)))) = Just $ fitchAssumptionCheck n ded [(phin 1, phin 2)]
+        globalRestriction (Left ded) n (NDP (PND (IPND (MPND InNeg1)))) = Just $ fitchAssumptionCheck n ded [(phin 1, lfalsum)]
+        globalRestriction (Left ded) n (NDP (PND (IPND (MPND InNeg2)))) = Just $ fitchAssumptionCheck n ded [(phin 1, lfalsum)]
         globalRestriction _ _ _ = Nothing
 
         isAssumption (NDP x) = isAssumption x
@@ -186,12 +205,12 @@ parseGamutND rtc = try propRule <|> quantRule
           quantRule = map Core <$> parseGamutNDCore rtc
 
 parseGamutNDPlus rtc = try propRule <|> try quantRule <|> plusRule
-    where propRule = map NDP <$> parseGamutPND rtc
+    where propRule = map NDP <$> parseGamutPNDPlus rtc
           quantRule = map CoreP <$> parseGamutNDCore rtc
-          plusRule = do r <- choice (map (try . string) [ "CP", "CV1","CV2","CV3","CV4","Ba","Ce","Da","Fe" ])
+          plusRule = do r <- choice (map (try . string) ["NC","DC","CP","CV1","CV2","CV3","CV4","Ba","Ce","Da","Fe" ])
                         case r of
-                             -- "NC" -> return [NC1,NC2]
-                             -- "DC" -> return [DC1,DC2]
+                             "NC" -> return [NC1,NC2]
+                             "DC" -> return [DC1,DC2]
                              "CP" -> return [CP1,CP2]
                              "CV1" -> return [CV1]
                              "CV2" -> return [CV2]
