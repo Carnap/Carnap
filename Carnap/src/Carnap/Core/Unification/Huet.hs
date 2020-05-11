@@ -90,7 +90,11 @@ generate ((x :: f a) :=: y) = --accumulator for projection terms
                 (Nothing, Nothing) -> 
                     do (AnyPig (headX :: f t1), projterms) <- guillotine x
                        projvars <- M.lift $ toVars projterms
-                       let vbranches = map (M.lift . project projvars) projvars
+                       --on the next line, we pass in the projterms to give
+                       --evidence of the types of the projvars, so that we
+                       --can apply the projvars to appropriate terms before
+                       --rebinding
+                       let vbranches = map (project projvars) $ zip projvars projterms
                        let hbranch = imitate projvars (AnyPig y)
                        (AnyPig (newTerm :: f t5)) <- hbranch `mplus` foldr mplus mzero vbranches 
                        gappyX <- M.lift $ safesubst headX x
@@ -110,26 +114,35 @@ guillotine x = basket (AnyPig x) []
 --
 --Note that the projection term will not be of the same type as the return
 --value. Hence, we need an AnyPig here.
-project :: (MonadVar f (State Int), HigherOrder f) => [AnyPig f] -> AnyPig f ->  State Int (AnyPig f)
-project pvs (AnyPig term) = 
-        do body <- handleBody pvs term
-           projection <- bindAll (reverse pvs) (AnyPig body)
-           return projection
+project :: (MonadVar f (State Int), HigherOrder f) => [AnyPig f] -> (AnyPig f,AnyPig f) ->  LogicT (State Int) (AnyPig f)
+project pvs (AnyPig (var :: f vt), AnyPig (term :: f tt)) = 
+        case eqT :: Maybe (vt :~: tt) of
+            Just Refl -> do pigbodies <- M.lift $ handleBodyAbs pvs var term []
+                            projections <- M.lift $ mapM (bindAll (reverse pvs)) pigbodies
+                            foldr mplus mzero (map return projections)
+            Nothing -> error "var/term mismatch"
 
 imitate :: (MonadVar f (State Int), HigherOrder f) => [AnyPig f] -> AnyPig f ->  LogicT (State Int) (AnyPig f)
 imitate pvs (AnyPig term) 
     | isVar term = mzero
     | otherwise = 
-        do body <- M.lift $ handleBody pvs term
+        do body <- M.lift $ handleBodyApp pvs term
            imitation <- M.lift $ bindAll (reverse pvs) (AnyPig body)
            return imitation 
 
-handleBody :: (MonadVar f (State Int), HigherOrder f, Typeable a) => [AnyPig f] -> f a ->  State Int (f a)
-handleBody projvars term = case matchApp term of
+handleBodyApp :: (MonadVar f (State Int), HigherOrder f, Typeable a) => [AnyPig f] -> f a ->  State Int (f a)
+handleBodyApp projvars term = case matchApp term of
    Nothing -> return term
-   (Just (ExtApp h t)) -> do newInit <- handleBody projvars h
+   (Just (ExtApp h t)) -> do newInit <- handleBodyApp projvars h
                              freshArg <- genFreshArg projvars newInit
                              return $ newInit .$. freshArg
+
+handleBodyAbs :: (MonadVar f (State Int), HigherOrder f, EtaExpand f a, Typeable a) 
+    => [AnyPig f] -> f a -> f a -> [AnyPig f] ->  State Int [AnyPig f]
+handleBodyAbs projvars var term acc = case castLam term of
+   Nothing -> return (AnyPig var:acc)
+   (Just (ExtLam f Refl)) -> do freshArg <- genFreshArg projvars term
+                                handleBodyAbs projvars (var .$. freshArg) (f freshArg) (AnyPig var:acc)
 
 toVars :: (MonadVar f m) => [AnyPig f] -> m [AnyPig f]
 toVars (AnyPig (x :: f t):xs) = do y :: f t <- fresh 
