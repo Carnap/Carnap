@@ -66,50 +66,48 @@ activateCounterModeler w (Just (i,o,opts)) = do
                   case parse parser "" g of
                       Left e -> setInnerHTML o (Just $ show e) 
                       Right f -> do
-                          ref <- newIORef $ Left "Please press submit to check your answer"
                           bw <- createButtonWrapper w o
                           check <- cmbuilder w f (i,o) bw opts
                           fields <- catMaybes <$> getListOfElementsByTag o "label"
                           mapM (setField w fields) (makeGivens opts)
-                          let submit = submitCounterModel opts ref check fields (show f)
+                          let submit = submitCounterModel opts i check fields (show f)
                           btStatus <- createSubmitButton w bw submit opts
                           doOnce o input False $ liftIO $ btStatus Edited
                           if "nocheck" `inOpts` opts then return () 
                           else do
                               bt2 <- questionButton w "Check"
                               appendChild bw (Just bt2)
-                              checkIt <- newListener $ checkCounterModeler ref fields check
+                              checkIt <- newListener $ checkCounterModeler fields check
                               addListener bt2 click checkIt False                
                           return ()
                 _ -> print "countermodeler lacks a goal"
 
-          checkCounterModeler ref fields check = do validated <- liftIO $ validateModel fields
-                                                    correct <- liftIO check
-                                                    case (correct, validated) of 
-                                                       (_,Left err) -> do
-                                                           liftIO $ writeIORef ref (Left err)
-                                                           message err
-                                                           setAttribute i "class" "input incompleteCM"
-                                                       (Left err,_) -> do
-                                                           liftIO $ writeIORef ref (Left err)
-                                                           message err
-                                                           setAttribute i "class" "input incompleteCM"
-                                                       _ -> do
-                                                           liftIO $ writeIORef ref correct
-                                                           message "Success!"
-                                                           setAttribute i "class" "input completeCM"
+          checkCounterModeler fields check = do validated <- liftIO $ validateModel fields
+                                                correct <- liftIO check
+                                                case (correct, validated) of 
+                                                   (_,Left err) -> do
+                                                       message err
+                                                       setAttribute i "class" "input incompleteCM"
+                                                   (Left err,_) -> do
+                                                       message err
+                                                       setAttribute i "class" "input incompleteCM"
+                                                   _ -> do
+                                                       message "Success!"
+                                                       setAttribute i "class" "input completeCM"
 
-submitCounterModel:: IsEvent e => Map String String -> IORef (Either String ())->  IO (Either String ())-> [Element] -> String -> String -> EventM HTMLTextAreaElement e ()
-submitCounterModel opts ref check fields s l = do isDone <- liftIO $ readIORef ref
-                                                  case isDone of
-                                                      Right _ -> trySubmit CounterModel opts l (ProblemContent (pack s)) True
-                                                      Left err | not ("exam" `inOpts` opts) -> message err
-                                                      _ -> do correct <- liftIO check
-                                                              validated <- liftIO $ validateModel fields
-                                                              case (correct, validated) of
-                                                                 (Right _, Right _) -> trySubmit CounterModel opts l (ProblemContent (pack s)) True
-                                                                 _ -> do extracted <- liftIO $ mapM extractField fields
-                                                                         trySubmit CounterModel opts l (CounterModelDataOpts (pack s) extracted (M.toList opts)) False
+submitCounterModel:: IsEvent e => Map String String -> Element -> IO (Either String ())-> [Element] -> String -> String -> EventM HTMLTextAreaElement e ()
+submitCounterModel opts i check fields s l = do correct <- liftIO check
+                                                validated <- liftIO $ validateModel fields
+                                                extracted <- liftIO $ mapM extractField fields
+                                                case (correct, validated) of
+                                                   (Right _, Right _) -> trySubmit CounterModel opts l (CounterModelDataOpts (pack s) extracted (M.toList opts)) True
+                                                   _ | "exam" `inOpts` opts -> do trySubmit CounterModel opts l (CounterModelDataOpts (pack s) extracted (M.toList opts)) False
+                                                   (_,Left err) -> do
+                                                         message err
+                                                         setAttribute i "class" "input incompleteCM"
+                                                   (Left err,_) -> do
+                                                         message err
+                                                         setAttribute i "class" "input incompleteCM"
 
 createSimpleCounterModeler :: Document -> [PureFOLForm] -> (Element,Element)
     -> Element -> Map String String 
