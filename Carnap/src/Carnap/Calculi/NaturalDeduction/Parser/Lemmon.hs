@@ -54,7 +54,6 @@ lemlineAlt r = do (dis,deps,annote) <- lookAhead $
           cite3 = (,,) <$> optionMaybe scope <*> optionMaybe bothCitations <*> annotation
           bothCitations = try (citation `sepEndBy` spaces) <|> citations
 
-
 lemlineImplicit r = do indicated <- parseInts
                        spaces
                        rule <- r 0 ""
