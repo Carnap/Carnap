@@ -45,7 +45,7 @@ premConstraint (Just prems) sub | theinstance `elem` prems = Nothing
           project = view rhs
 
 dischargeConstraint n ded lhs sub | and (map (`elem` forms) lhs') = Nothing
-                                  | otherwise = Just $ "Some of the stated dependencies in " ++ show lhs' ++ ", are not among the inferred dependencies " ++ show forms ++ "."
+                                  | otherwise = Just $ "Some of the stated dependencies in " ++ show forms ++ ", are not among the inferred dependencies " ++ show lhs' ++  "."
     where lhs' = toListOf concretes . applySub sub $ lhs
           scope = inScope (ded !! (n - 1))
           forms = catMaybes . map (\n -> liftToSequent <$> assertion (ded !! (n - 1))) $ scope
