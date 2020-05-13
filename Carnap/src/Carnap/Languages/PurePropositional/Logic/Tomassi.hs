@@ -1,7 +1,7 @@
 {-#LANGUAGE FlexibleContexts, FlexibleInstances, MultiParamTypeClasses #-}
 
 module Carnap.Languages.PurePropositional.Logic.Tomassi
-    (parseTomassiPL, parseTomassiPLProof, tomassiPLCalc, TomassiPL) where
+    (parseTomassiPL, parseTomassiPLProof, tomassiPLCalc, TomassiPL(..), tomassiPLNotation) where
 
 import Data.Map as M (lookup, Map)
 import Text.Parsec

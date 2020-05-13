@@ -4,7 +4,7 @@ module Carnap.Languages.PureFirstOrder.Parser
 , magnusFOLFormulaParser, thomasBolducAndZachFOLFormulaParser, gamutNDFormulaParser
 , thomasBolducAndZachFOL2019FormulaParser
 , hardegreePLFormulaParser, bergmannMoorAndNelsonPDFormulaParser
-, goldfarbNDFormulaParser, hausmanPLFormulaParser, FirstOrderParserOptions(..)
+, goldfarbNDFormulaParser, tomassiQLFormulaParser, hausmanPLFormulaParser, FirstOrderParserOptions(..)
 , parserFromOptions, parseFreeVar, howardSnyderPLFormulaParser) where
 
 import Carnap.Core.Data.Types
@@ -214,6 +214,21 @@ hausmanPLOptions = FirstOrderParserOptions
           hausmanBracket opt recurWith = wrappedWith '[' ']' (recurWith opt {parenRecur = hausmanParen}) >>= boolean
           boolean a = if isBoolean a then return a else unexpected "atomic or quantified sentence wrapped in parentheses"
 
+tomassiQLOptions :: FirstOrderParserOptions PureLexiconFOL u Identity
+tomassiQLOptions = FirstOrderParserOptions
+                    { atomicSentenceParser = \x -> try (parsePredicateSymbolNoParen "ABCDEFGHIJKLMNOPQRSTUVWXYZ" x)
+                                                   <|> parsePredicateSymbol "ABCDEFGHIJKLMNOPQRSTUVWXYZ" x
+                                                   <|> equalsParser x
+                    , quantifiedSentenceParser' = quantifiedSentenceParser
+                    , freeVarParser = parseFreeVar "uvwxyz"
+                    , constantParser = Just (parseConstant "abcdefghijklmnopqrst")
+                    , functionParser = Nothing
+                    , hasBooleanConstants = False
+                    , parenRecur = \opt recurWith  -> parenParser (recurWith opt)
+                    , opTable = standardOpTable
+                    , finalValidation = const (pure ())
+                    }
+
 howardSnyderPLOptions :: FirstOrderParserOptions PureLexiconFOL u Identity
 howardSnyderPLOptions = FirstOrderParserOptions 
                          { atomicSentenceParser = \x -> try (parsePredicateSymbolNoParen "ABCDEFGHIJKLMNOPQRSTUVWXYZ" x)
@@ -284,6 +299,9 @@ hausmanPLFormulaParser = parserFromOptions hausmanPLOptions
 
 howardSnyderPLFormulaParser :: Parsec String u PureFOLForm
 howardSnyderPLFormulaParser = parserFromOptions howardSnyderPLOptions
+
+tomassiQLFormulaParser :: Parsec String u PureFOLForm
+tomassiQLFormulaParser = parserFromOptions tomassiQLOptions
 
 folFormulaParser :: Parsec String u PureFOLForm
 folFormulaParser = parserFromOptions standardFOLParserOptions

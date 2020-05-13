@@ -30,7 +30,6 @@ standardLetters = PurePropositionalParserOptions
                         , parenRecur = \opt recurWith -> parenParser (recurWith opt)
                         }
 
-
 gamutOpts :: Monad m => PurePropositionalParserOptions u m
 gamutOpts = PurePropositionalParserOptions 
                 { atomicSentenceParser = lowerCaseSentenceLetterParser ['a' .. 'z']
