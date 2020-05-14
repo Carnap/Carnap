@@ -35,6 +35,10 @@ data GamutNDPlus = NDP GamutPNDPlus
              | CV3 | CV4
              | Ba  | Ce
              | Da  | Fe
+             | PassEO1 | PassEO2 
+             | PassAO1 | PassAO2
+             | PassEA1 | PassEA2 
+             | PassAA1 | PassAA2
     deriving Eq
 
 instance Show GamutNDCore where
@@ -64,6 +68,14 @@ instance Show GamutNDPlus where
         show Ce  = "Ce"
         show Da  = "Da"
         show Fe  = "Fe"
+        show PassEO1 = "PASS"
+        show PassEO2 = "PASS"
+        show PassAO1 = "PASS"
+        show PassAO2 = "PASS"
+        show PassEA1 = "PASS"
+        show PassEA2 = "PASS"
+        show PassAA1 = "PASS"
+        show PassAA2 = "PASS"
 
 instance Inference GamutNDCore PureLexiconFOL (Form Bool) where
 
@@ -160,6 +172,14 @@ instance Inference GamutNDPlus PureLexiconFOL (Form Bool) where
         ruleOf Fe = [ GammaV 1 :|-: SS (lneg $ lsome "v" (\x -> phi 1 x ./\. phi 2 x))
                     , GammaV 2 :|-: SS (lsome "v" (\x -> phi 3 x ./\. phi 1 x))
                     ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (lsome "v" (\x -> phi 3 x ./\. (lneg $ phi 2 x)))
+        ruleOf PassEO1 = rulesOfPassage !! 0
+        ruleOf PassEO2 = rulesOfPassage !! 1
+        ruleOf PassAO1 = rulesOfPassage !! 2
+        ruleOf PassAO2 = rulesOfPassage !! 3
+        ruleOf PassEA1 = rulesOfPassage !! 4
+        ruleOf PassEA2 = rulesOfPassage !! 5
+        ruleOf PassAA1 = rulesOfPassage !! 6
+        ruleOf PassAA2 = rulesOfPassage !! 7
         ruleOf r = premisesOf r ∴ conclusionOf r
 
         premisesOf (CoreP x) = premisesOf x
@@ -207,19 +227,20 @@ parseGamutND rtc = try propRule <|> quantRule
 parseGamutNDPlus rtc = try propRule <|> try quantRule <|> plusRule
     where propRule = map NDP <$> parseGamutPNDPlus rtc
           quantRule = map CoreP <$> parseGamutNDCore rtc
-          plusRule = do r <- choice (map (try . string) ["NC","DC","CP","CV1","CV2","CV3","CV4","Ba","Ce","Da","Fe" ])
-                        case r of
-                             "NC" -> return [NC1,NC2]
-                             "DC" -> return [DC1,DC2]
-                             "CP" -> return [CP1,CP2]
-                             "CV1" -> return [CV1]
-                             "CV2" -> return [CV2]
-                             "CV3" -> return [CV3]
-                             "CV4" -> return [CV4]
-                             "Ba" -> return [Ba]
-                             "Ce" -> return [Ce]
-                             "Da" -> return [Da]
-                             "Fe" -> return [Fe]
+          plusRule = do r <- choice (map (try . string) ["NC","DC","CP","CV1","CV2","CV3","CV4","Ba","Ce","Da","Fe", "PASS" ])
+                        return $ case r of
+                             "NC" -> [NC1,NC2]
+                             "DC" -> [DC1,DC2]
+                             "CP" -> [CP1,CP2]
+                             "CV1" -> [CV1]
+                             "CV2" -> [CV2]
+                             "CV3" -> [CV3]
+                             "CV4" -> [CV4]
+                             "Ba" -> [Ba]
+                             "Ce" -> [Ce]
+                             "Da" -> [Da]
+                             "Fe" -> [Fe]
+                             "PASS" -> [PassEO1, PassEO2, PassAO1, PassAO2, PassEA1, PassEA2, PassAA1, PassAA2]
 
 parseGamutNDProof :: RuntimeNaturalDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine GamutND PureLexiconFOL (Form Bool)]
 parseGamutNDProof rtc = toDeductionFitch (parseGamutND rtc) (gamutNDFormulaParser)

@@ -7,7 +7,7 @@ module Carnap.Core.Data.Types(
   Term(..), Form(..),
   Copula(..), CopulaSchema(..), defaultLamSchema,
   StaticVar(..), FirstOrderLex(..), (:|:)(..), Fix(Fx), FixLang, EndLang,
-  pattern AOne, pattern ATwo, pattern AThree, pattern LLam, pattern (:!$:),
+  pattern AOne, pattern ATwo, pattern AThree, pattern AFour, pattern LLam, pattern (:!$:),
   pattern Fx1, pattern Fx2, pattern Fx3, pattern Fx4, pattern Fx5, pattern
   Fx6, pattern Fx7, pattern Fx8, pattern Fx9, pattern Fx10, pattern Fx11,
   pattern Lx1, pattern Lx2, pattern Lx3, pattern Lx4, pattern Lx5, pattern
@@ -193,6 +193,7 @@ data Arity :: * -> * -> * -> * where
 pattern AOne = ASucc AZero
 pattern ATwo = ASucc AOne
 pattern AThree = ASucc ATwo
+pattern AFour = ASucc AThree
 
 arityInt :: Arity arg ret ret' -> Int
 arityInt AZero = 0

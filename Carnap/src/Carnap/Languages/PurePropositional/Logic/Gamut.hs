@@ -91,7 +91,6 @@ instance Show GamutPNDPlus where
         show MTP = "PDS" 
         show NMTP = "NDS"
 
-
 instance Inference GamutMPND PurePropLexicon (Form Bool) where
         ruleOf InAnd      = adjunction
         ruleOf ElimAndL   = simplificationVariations !! 0
@@ -218,21 +217,21 @@ parseGamutPND rtc = (map IPND <$> parseGamutIPND rtc)
 parseGamutPNDPlus rtc = (map PND <$> parseGamutPND rtc) 
                  <|> parsePlus
     where parsePlus = do r <- choice (map (try . string) ["LEM", "LNC", "DN", "LCC", "LCD", "LAC", "LAD", "LDD", "LDC", "DMOR", "DMAND", "MT", "PDS", "NDS"])
-                         case r of
-                           r | r == "LEM"   -> return [LEM]
-                             | r == "LNC"   -> return [LNC]
-                             | r == "DN"    -> return [DN1, DN2]
-                             | r == "LCC"   -> return [LCC]
-                             | r == "LCD"   -> return [LCD]
-                             | r == "LAC"   -> return [LAC1,LAC2]
-                             | r == "LAD"   -> return [LAD1,LAD2]
-                             | r == "LDD"   -> return [LDD1,LDD2]
-                             | r == "LDC"   -> return [LDC1,LDC2]
-                             | r == "DMOR"  -> return [DMOR1,DMOR2]
-                             | r == "DMAND" -> return [DMAND1,DMAND2]
-                             | r == "MT"    -> return [MT]
-                             | r == "PDS"   -> return [MTP]
-                             | r == "NDS"   -> return [NMTP]
+                         return $ case r of
+                           r | r == "LEM"   -> [LEM]
+                             | r == "LNC"   -> [LNC]
+                             | r == "DN"    -> [DN1, DN2]
+                             | r == "LCC"   -> [LCC]
+                             | r == "LCD"   -> [LCD]
+                             | r == "LAC"   -> [LAC1,LAC2]
+                             | r == "LAD"   -> [LAD1,LAD2]
+                             | r == "LDD"   -> [LDD1,LDD2]
+                             | r == "LDC"   -> [LDC1,LDC2]
+                             | r == "DMOR"  -> [DMOR1,DMOR2]
+                             | r == "DMAND" -> [DMAND1,DMAND2]
+                             | r == "MT"    -> [MT]
+                             | r == "PDS"   -> [MTP]
+                             | r == "NDS"   -> [NMTP]
 
 parseGamutMPNDProof :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> String -> [DeductionLine GamutMPND PurePropLexicon (Form Bool)]
 parseGamutMPNDProof rtc = toDeductionFitch (parseGamutMPND rtc) (purePropFormulaParser gamutOpts)

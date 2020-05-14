@@ -67,6 +67,10 @@ phi3 :: (Typeable b, PolyadicSchematicPredicateLanguage (FixLang lex) (Term Int)
     => Int -> (FixLang lex) (Term Int) -> (FixLang lex) (Term Int) -> (FixLang lex) (Term Int) -> (FixLang lex) (Form b)
 phi3 n x y z = pphin n AThree :!$: x :!$: y :!$: z
 
+phi4 :: (Typeable b, PolyadicSchematicPredicateLanguage (FixLang lex) (Term Int) (Form b))
+    => Int -> (FixLang lex) (Term Int) -> (FixLang lex) (Term Int) -> (FixLang lex) (Term Int) -> (FixLang lex) (Term Int) -> (FixLang lex) (Form b)
+phi4 n x y z w = pphin n AFour :!$: x :!$: y :!$: z :!$: w
+
 lbind f = LLam $ \x -> LLam $ \y -> LLam $ \z -> f x y z
 
 phi' :: PolyadicSchematicPredicateLanguage (FixLang lex) (Term Int) (Form Bool)
@@ -441,3 +445,13 @@ biconditionalExchange = firstOrderReplace (lbind $ \x y z -> phi3 1 x y z .<=>. 
 biconditionalCases :: QuantContextLang (ClassicalSequentOver lex) b Int => FirstOrderRuleVariants lex b
 biconditionalCases = firstOrderReplace (lbind $ \x y z -> phi3 1 x y z .<=>. phi3 2 x y z) 
                                        (lbind $ \x y z -> (phi3 1 x y z ./\. phi3 2 x y z) .\/. (lneg (phi3 2 x y z) ./\. lneg (phi3 1 x y z)))
+
+rulesOfPassage :: QuantContextLang (ClassicalSequentOver lex) b Int => FirstOrderRuleVariants lex b
+rulesOfPassage = firstOrderReplace (lbind $ \x y z -> lsome "v" $ \w -> phi4 1 x y z w .\/. phi3 2 x y z) 
+                                   (lbind $ \x y z -> lsome "v" (\w -> phi4 1 x y z w) .\/. phi3 2 x y z)
+                 ++ firstOrderReplace (lbind $ \x y z -> lall "v" $ \w -> phi4 1 x y z w .\/. phi3 2 x y z) 
+                                   (lbind $ \x y z -> lall "v" (\w -> phi4 1 x y z w) .\/. phi3 2 x y z)
+                 ++ firstOrderReplace (lbind $ \x y z -> lsome "v" $ \w -> phi4 1 x y z w ./\. phi3 2 x y z) 
+                                   (lbind $ \x y z -> lsome "v" (\w -> phi4 1 x y z w) ./\. phi3 2 x y z)
+                 ++ firstOrderReplace (lbind $ \x y z -> lall "v" $ \w -> phi4 1 x y z w ./\. phi3 2 x y z) 
+                                   (lbind $ \x y z -> lall "v" (\w -> phi4 1 x y z w) ./\. phi3 2 x y z)
