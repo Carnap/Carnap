@@ -115,5 +115,7 @@ tomassiQLCalc = mkNDCalc
     , ndParseProof = parseTomassiQLProof
     , ndProcessLine = hoProcessLineLemmon
     , ndProcessLineMemo = Just hoProcessLineLemmonMemo
+    , ndParseForm = tomassiQLFormulaParser
+    , ndParseSeq = parseSeqOver tomassiQLFormulaParser
     , ndNotation = tomassiPLNotation
     }

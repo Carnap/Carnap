@@ -224,10 +224,11 @@ tomassiQLOptions = FirstOrderParserOptions
                     , constantParser = Just (parseConstant "abcdefghijklmnopqrst")
                     , functionParser = Nothing
                     , hasBooleanConstants = False
-                    , parenRecur = \opt recurWith  -> parenParser (recurWith opt)
+                    , parenRecur = tomassiDispatch
                     , opTable = standardOpTable
                     , finalValidation = const (pure ())
                     }
+    where tomassiDispatch opt rw = (wrappedWith '(' ')' (rw opt) <|> wrappedWith '[' ']' (rw opt))
 
 howardSnyderPLOptions :: FirstOrderParserOptions PureLexiconFOL u Identity
 howardSnyderPLOptions = FirstOrderParserOptions 

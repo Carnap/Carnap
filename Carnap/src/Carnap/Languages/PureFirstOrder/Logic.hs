@@ -11,6 +11,7 @@ module Carnap.Languages.PureFirstOrder.Logic
         , parseHowardSnyderPL, howardSnyderPLCalc
         , parseIchikawaJenkinsQL, ichikawaJenkinsQLCalc
         , parseHardegreePL, hardegreePLCalc
+        , parseTomassiQL, tomassiQLCalc
         , goldfarbNDCalc, goldfarbAltNDCalc, goldfarbNDPlusCalc, goldfarbAltNDPlusCalc
         , ofFOLSys, ofFOLTreeSys
         )
@@ -31,6 +32,7 @@ import Carnap.Languages.PureFirstOrder.Logic.Gamut
 import Carnap.Languages.PureFirstOrder.Logic.HowardSnyder
 import Carnap.Languages.PureFirstOrder.Logic.Hardegree
 import Carnap.Languages.PureFirstOrder.Logic.Goldfarb
+import Carnap.Languages.PureFirstOrder.Logic.Tomassi
 import Carnap.Languages.PureFirstOrder.Logic.IchikawaJenkins
 import Carnap.Languages.PureFirstOrder.Logic.OpenLogic
 import Carnap.Languages.PureFirstOrder.Logic.Rules
@@ -55,6 +57,7 @@ ofFOLSys f sys | sys == "firstOrder"                      = Just $ f folCalc
                | sys == "goldfarbAltND"                   = Just $ f goldfarbAltNDCalc
                | sys == "goldfarbNDPlus"                  = Just $ f goldfarbNDPlusCalc
                | sys == "goldfarbAltNDPlus"               = Just $ f goldfarbAltNDPlusCalc
+               | sys == "tomassiQL"                       = Just $ f tomassiQLCalc
                | otherwise                                = Nothing
 
 ofFOLTreeSys :: (forall r . 
