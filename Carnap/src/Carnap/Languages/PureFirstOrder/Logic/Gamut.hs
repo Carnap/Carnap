@@ -39,6 +39,8 @@ data GamutNDPlus = NDP GamutPNDPlus
              | PassAO1 | PassAO2
              | PassEA1 | PassEA2 
              | PassAA1 | PassAA2
+             | DMAll1  | DMAll2
+             | DMSome1 | DMSome2
     deriving Eq
 
 instance Show GamutNDCore where
@@ -76,6 +78,10 @@ instance Show GamutNDPlus where
         show PassEA2 = "PASS"
         show PassAA1 = "PASS"
         show PassAA2 = "PASS"
+        show DMAll1 = "DMALL"
+        show DMAll2 = "DMALL"
+        show DMSome1 = "DMSOME"
+        show DMSome2 = "DMSOME"
 
 instance Inference GamutNDCore PureLexiconFOL (Form Bool) where
 
@@ -180,6 +186,10 @@ instance Inference GamutNDPlus PureLexiconFOL (Form Bool) where
         ruleOf PassEA2 = rulesOfPassage !! 5
         ruleOf PassAA1 = rulesOfPassage !! 6
         ruleOf PassAA2 = rulesOfPassage !! 7
+        ruleOf DMAll1 = quantifierNegationReplace !! 0
+        ruleOf DMAll2 = quantifierNegationReplace !! 1
+        ruleOf DMSome1 = quantifierNegationReplace !! 2
+        ruleOf DMSome2 = quantifierNegationReplace !! 3
         ruleOf r = premisesOf r ∴ conclusionOf r
 
         premisesOf (CoreP x) = premisesOf x
@@ -227,7 +237,7 @@ parseGamutND rtc = try propRule <|> quantRule
 parseGamutNDPlus rtc = try propRule <|> try quantRule <|> plusRule
     where propRule = map NDP <$> parseGamutPNDPlus rtc
           quantRule = map CoreP <$> parseGamutNDCore rtc
-          plusRule = do r <- choice (map (try . string) ["NC","DC","CP","CV1","CV2","CV3","CV4","Ba","Ce","Da","Fe", "PASS" ])
+          plusRule = do r <- choice (map (try . string) ["NC","DC","CP","CV1","CV2","CV3","CV4","Ba","Ce","Da","Fe", "PASS", "DMSOME", "DMALL" ])
                         return $ case r of
                              "NC" -> [NC1,NC2]
                              "DC" -> [DC1,DC2]
@@ -241,6 +251,8 @@ parseGamutNDPlus rtc = try propRule <|> try quantRule <|> plusRule
                              "Da" -> [Da]
                              "Fe" -> [Fe]
                              "PASS" -> [PassEO1, PassEO2, PassAO1, PassAO2, PassEA1, PassEA2, PassAA1, PassAA2]
+                             "DMALL" -> [DMAll1, DMAll2]
+                             "DMSOME" -> [DMSome1, DMSome2]
 
 parseGamutNDProof :: RuntimeNaturalDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine GamutND PureLexiconFOL (Form Bool)]
 parseGamutNDProof rtc = toDeductionFitch (parseGamutND rtc) (gamutNDFormulaParser)
