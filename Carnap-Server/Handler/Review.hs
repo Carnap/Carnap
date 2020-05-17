@@ -5,6 +5,7 @@ import Util.Database
 import Data.Map as M (fromList)
 import Data.Tree
 import Data.List (nub)
+import Filter.Util (sanatizeHtml)
 import Text.Read (readMaybe)
 import Yesod.Form.Bootstrap3
 import Carnap.Languages.PurePropositional.Syntax
@@ -94,6 +95,7 @@ renderProblem uidanduser (Entity key val) = do
             credit =  case problemSubmissionCredit val of Just n -> n; _ -> 5
             score =  if correct then credit else 0
             awarded = case extra of Just n -> show n; _ -> "0" :: String
+            mailto theuser = userIdent (sanatizeHtml theuser) ++ "?subject=[Carnap-" ++ sanatizeHtml ident ++ "]"
             template display = 
                 [whamlet|
                     <div.card.mb-3.#{isGraded} data-submission-uid="#{show uid}">
@@ -115,7 +117,7 @@ renderProblem uidanduser (Entity key val) = do
                                             <input.btn.btn-primary type=submit value="update" disabled>
                                     <hr>
                                     $maybe user' <- user
-                                        <a href="mailto:#{userIdent user'}">
+                                        <a href="mailto:#{mailto user'}">
                                             <i.fa.fa-envelope-o>
                                             email student
                 |]
