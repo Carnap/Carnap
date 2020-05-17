@@ -35,9 +35,11 @@ getReviewR :: Text -> Text -> Handler Html
 getReviewR coursetitle filename = 
         do (Entity key val, _) <- getAssignmentByCourse coursetitle filename
            unsortedProblems <- runDB $ selectList [ProblemSubmissionAssignmentId ==. Just key] []
-           uidAndData <- runDB $ do let uids = nub $ map (problemSubmissionUserId . entityVal) unsortedProblems
-                                    muserdata <- mapM (getBy . UniqueUserData) uids
-                                    return $ sortBy maybeLnSort $ zip muserdata uids 
+           (uidAndData, uidAndUser) <- runDB $ do 
+                                            let uids = nub $ map (problemSubmissionUserId . entityVal) unsortedProblems
+                                            muserdata <- mapM (getBy . UniqueUserData) uids
+                                            musers <- mapM get uids
+                                            return (sortBy maybeLnSort $ zip muserdata uids, zip uids musers)
            let problems = sortBy theSorting unsortedProblems
            defaultLayout $ do
                addScript $ StaticR js_popper_min_js
@@ -78,11 +80,12 @@ selectUser list =
                         <option value="#{show v}">unknown
         |]
 
-renderProblem (Entity key val) = do
+renderProblem uidanduser (Entity key val) = do
         let ident = problemSubmissionIdent val
             uid = problemSubmissionUserId val
             extra = problemSubmissionExtra val
             correct = problemSubmissionCorrect val
+            Just user = lookup uid uidanduser
         (updateSubmissionWidget,enctypeUpdateSubmission) <- generateFormPost (identifyForm "updateSubmission" $ updateSubmissionForm extra ident (show uid))
         let isGraded = if correct then "graded"
                                   else case extra of Just _ -> "graded"; _ -> "ungraded" :: String
@@ -95,10 +98,11 @@ renderProblem (Entity key val) = do
                 [whamlet|
                     <div.card.mb-3.#{isGraded} data-submission-uid="#{show uid}">
                         <div.card-body style="padding:20px">
-                            <div.row>
+                            <div.d-flex.flex-wrap-reverse>
                                 <div.col-sm-8>
                                     <h4.card-title>#{ident}
-                                    ^{display}
+                                    <div style="overflow-x:scroll">
+                                        ^{display}
                                 <div.col-sm-4>
                                     <h6.review-status>#{howGraded}
                                     <h6.point-value>point value: #{credit}
@@ -109,6 +113,11 @@ renderProblem (Entity key val) = do
                                         ^{updateSubmissionWidget}
                                         <div.form-group>
                                             <input.btn.btn-primary type=submit value="update" disabled>
+                                    <hr>
+                                    $maybe user' <- user
+                                        <a href="mailto:#{userIdent user'}">
+                                            <i.fa.fa-envelope-o>
+                                            email student
                 |]
         case (problemSubmissionType val, problemSubmissionData val) of
             (Derivation, DerivationData goal der) -> template
