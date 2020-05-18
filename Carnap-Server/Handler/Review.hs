@@ -95,7 +95,7 @@ renderProblem uidanduser (Entity key val) = do
             credit =  case problemSubmissionCredit val of Just n -> n; _ -> 5
             score =  if correct then credit else 0
             awarded = case extra of Just n -> show n; _ -> "0" :: String
-            mailto theuser = userIdent (sanatizeHtml theuser) ++ "?subject=[Carnap-" ++ sanatizeHtml ident ++ "]"
+            mailto theuser = sanatizeHtml (userIdent theuser) ++ "?subject=[Carnap-" ++ sanatizeHtml ident ++ "]"
             template display = 
                 [whamlet|
                     <div.card.mb-3.#{isGraded} data-submission-uid="#{show uid}">
