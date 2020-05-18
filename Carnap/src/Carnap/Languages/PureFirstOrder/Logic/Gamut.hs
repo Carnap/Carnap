@@ -39,6 +39,10 @@ data GamutNDPlus = NDP GamutPNDPlus
              | PassAO1 | PassAO2
              | PassEA1 | PassEA2 
              | PassAA1 | PassAA2
+             | RevPassEO1 | RevPassEO2 
+             | RevPassAO1 | RevPassAO2
+             | RevPassEA1 | RevPassEA2 
+             | RevPassAA1 | RevPassAA2
              | DMAll1  | DMAll2
              | DMSome1 | DMSome2
     deriving Eq
@@ -78,6 +82,14 @@ instance Show GamutNDPlus where
         show PassEA2 = "PASS"
         show PassAA1 = "PASS"
         show PassAA2 = "PASS"
+        show RevPassEO1 = "PASS" 
+        show RevPassEO2 = "PASS" 
+        show RevPassAO1 = "PASS" 
+        show RevPassAO2 = "PASS"
+        show RevPassEA1 = "PASS" 
+        show RevPassEA2 = "PASS" 
+        show RevPassAA1 = "PASS" 
+        show RevPassAA2 = "PASS"
         show DMAll1 = "DMALL"
         show DMAll2 = "DMALL"
         show DMSome1 = "DMSOME"
@@ -186,6 +198,14 @@ instance Inference GamutNDPlus PureLexiconFOL (Form Bool) where
         ruleOf PassEA2 = rulesOfPassage !! 5
         ruleOf PassAA1 = rulesOfPassage !! 6
         ruleOf PassAA2 = rulesOfPassage !! 7
+        ruleOf RevPassEO1 = rulesOfPassage !! 8
+        ruleOf RevPassEO2 = rulesOfPassage !! 9
+        ruleOf RevPassAO1 = rulesOfPassage !! 10
+        ruleOf RevPassAO2 = rulesOfPassage !! 11
+        ruleOf RevPassEA1 = rulesOfPassage !! 12
+        ruleOf RevPassEA2 = rulesOfPassage !! 13
+        ruleOf RevPassAA1 = rulesOfPassage !! 14
+        ruleOf RevPassAA2 = rulesOfPassage !! 15
         ruleOf DMAll1 = quantifierNegationReplace !! 0
         ruleOf DMAll2 = quantifierNegationReplace !! 1
         ruleOf DMSome1 = quantifierNegationReplace !! 2
@@ -250,7 +270,8 @@ parseGamutNDPlus rtc = try propRule <|> try quantRule <|> plusRule
                              "Ce" -> [Ce]
                              "Da" -> [Da]
                              "Fe" -> [Fe]
-                             "PASS" -> [PassEO1, PassEO2, PassAO1, PassAO2, PassEA1, PassEA2, PassAA1, PassAA2]
+                             "PASS" -> [ PassEO1, PassEO2, PassAO1, PassAO2, PassEA1, PassEA2, PassAA1, PassAA2
+                                       , RevPassEO1, RevPassEO2, RevPassAO1, RevPassAO2, RevPassEA1, RevPassEA2, RevPassAA1, RevPassAA2]
                              "DMALL" -> [DMAll1, DMAll2]
                              "DMSOME" -> [DMSome1, DMSome2]
 
