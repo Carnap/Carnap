@@ -25,6 +25,6 @@ activate cls extra chunk
                   , ("goal", contentOf h) 
                   , ("submission", "saveAs:" ++ numof h)
                   ]
-          template opts = exerciseWrapper (numof h) $ Div 
+          template opts = exerciseWrapper (toList opts) (numof h) $ Div 
                                 ("",[],map (\(x,y) -> ("data-carnap-" ++ x,y)) $ toList opts) 
                                 [Plain [Str (unlines' t)]]

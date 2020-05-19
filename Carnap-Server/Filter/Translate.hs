@@ -28,7 +28,7 @@ activate cls extra chunk
                              ]
                     _ -> []
           opts adhoc = unions [fromList extra, fromList fixed, fromList adhoc]
-          template opts = exerciseWrapper (numof h) $ 
+          template opts = exerciseWrapper (toList opts) (numof h) $ 
                                 case splitOn ":" (contentof h) of
                                   [x,y] -> Div ("",[],map (\(x,y) -> ("data-carnap-" ++ x,y)) $ toList opts) 
                                             [Plain [Str (case t of [] -> y; _ -> unlines' t)]]

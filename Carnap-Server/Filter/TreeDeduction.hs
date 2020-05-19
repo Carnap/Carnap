@@ -25,7 +25,7 @@ activate cls extra chunk
                   , ("submission", "saveAs:" ++ numof h)
                   , ("type", "treedeductionchecker")
                   ]
-          template opts = exerciseWrapper (numof h) $ Div 
+          template opts = exerciseWrapper (toList opts) (numof h) $ Div 
                                 ("",[],map (\(x,y) -> ("data-carnap-" ++ x,y)) $ toList opts)
                                 [Plain [Str (unlines' t)]]
 

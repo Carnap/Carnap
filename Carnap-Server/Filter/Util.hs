@@ -30,7 +30,7 @@ unlines' (x:xs) = x ++ '\n':unlines' xs
 
 sanatizeHtml = renderHtml . toHtml
 
-exerciseWrapper label content = Div ("exercise-" ++ label,["exercise"],[]) 
-                                    [ Plain [Span ("",[],[]) [Str label]]
-                                    , content
-                                    ]
+exerciseWrapper opts label content = Div ("exercise-" ++ label,["exercise"],[]) (spans:[content])
+    where spans = case lookup "points" opts of
+                      Nothing -> Plain [Span ("",[],[]) [Str label]]
+                      Just pts -> Plain [Span ("",[],[]) [Str label], Span ("",[],[]) [Str $ pts ++ " pts"] ] 

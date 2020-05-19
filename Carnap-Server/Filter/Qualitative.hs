@@ -30,7 +30,7 @@ activate cls extra chunk
           fixed = [ ("type","qualitative")
                   , ("submission", "saveAs:" ++ numof h)
                   ]
-          mctemplate opts = exerciseWrapper (numof h) $
+          mctemplate opts = exerciseWrapper (toList opts) (numof h) $
                               --Need rawblock here to get the linebreaks
                               --right.
                               RawBlock "html" 
@@ -38,7 +38,7 @@ activate cls extra chunk
                                 ++ unlines' (map (show . withHash) t)
                                 ++ "</div>"
                 where optString = concatMap (\(x,y) -> " data-carnap-" ++ x ++ "=\"" ++ y ++ "\"") (toList opts)
-          template opts = exerciseWrapper (numof h) $
+          template opts = exerciseWrapper (toList opts) (numof h) $
                               --Need rawblock here to get the linebreaks
                               --right.
                               RawBlock "html" 

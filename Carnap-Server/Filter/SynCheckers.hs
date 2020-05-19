@@ -22,6 +22,6 @@ activate cls extra cnt
                   , ("goal", propof cnt) 
                   , ("submission", "saveAs:" ++ numof cnt)
                   ]
-          template opts = exerciseWrapper (numof cnt) $ Div 
+          template opts = exerciseWrapper (toList opts) (numof cnt) $ Div 
                                 ("",[],map (\(x,y) -> ("data-carnap-" ++ x,y)) $ toList opts) 
                                 []

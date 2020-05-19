@@ -129,7 +129,7 @@ toPlayground cls extra content
           playTemplate opts = template (unions [fromList extra, fromList opts, fromList fixed]) "Playground" (unlines' $ formatChunk content)
 
 template :: Map String String -> String -> String -> Block
-template opts head content = exerciseWrapper head $ RawBlock "html" 
+template opts head content = exerciseWrapper (toList opts) head $ RawBlock "html" 
         --Need rawblock here to get the linebreaks right.
         $ "<div" ++ optString ++ ">"
         ++ content
