@@ -150,7 +150,7 @@ instance Inference GamutNDPlus PureLexiconFOL (Form Bool) where
         ruleOf NC1 = negatedConditional !! 0 
         ruleOf NC2 = negatedConditional !! 1
         ruleOf DC1 = materialConditional !! 0
-        ruleOf DC2 = materialConditional !! 0
+        ruleOf DC2 = materialConditional !! 1
         ruleOf CP1 = contraposition !! 0
         ruleOf CP2 = contraposition !! 1
         ruleOf (NDP DN1) = doubleNegation !! 0
