@@ -1,6 +1,8 @@
-module Handler.Review (getReviewR, putReviewR) where
+{-#LANGUAGE DeriveGeneric #-}
+module Handler.Review (getReviewR, putReviewR, deleteReviewR) where
 
 import Import
+import Util.Data
 import Util.Database
 import Data.Map as M (fromList)
 import Data.Tree
@@ -15,6 +17,14 @@ import Carnap.Languages.PureFirstOrder.Logic (ofFOLSys)
 import Carnap.Calculi.NaturalDeduction.Syntax (NaturalDeductionCalc(..))
 import Carnap.GHCJS.SharedTypes
 import Carnap.GHCJS.SharedFunctions (simpleCipher,simpleHash)
+
+deleteReviewR :: Text -> Text -> Handler Value
+deleteReviewR coursetitle filename = do
+        msg <- requireJsonBody :: Handler ReviewDelete
+        case msg of
+            DeleteProblem key -> do
+                runDB $ delete key
+                returnJson ("Problem deleted." :: Text)
 
 putReviewR :: Text -> Text -> Handler Value
 putReviewR coursetitle filename =
@@ -120,6 +130,10 @@ renderProblem uidanduser (Entity key val) = do
                                         <a href="mailto:#{mailto user'}">
                                             <i.fa.fa-envelope-o>
                                             email student
+                                        <br>
+                                        <a href="#" onclick="tryDeleteProblem(event,'#{jsonSerialize $ DeleteProblem key}')">
+                                            <i.fa.fa-trash-o>
+                                            delete problem
                 |]
         case (problemSubmissionType val, problemSubmissionData val) of
             (Derivation, DerivationData goal der) -> template
@@ -292,3 +306,11 @@ updateSubmissionForm extra ident uid = renderBootstrap3 BootstrapBasicForm $ (,,
           validateScore s | s < 0 = Left ("Added credit must be a positive number." :: Text)
                           | otherwise = Right s
           scoreInput =  bfs ("Partial Credit Points"::Text)
+
+data ReviewDelete = DeleteProblem ProblemSubmissionId
+   deriving Generic
+
+instance ToJSON ReviewDelete
+
+instance FromJSON ReviewDelete
+

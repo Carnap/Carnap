@@ -1,5 +1,25 @@
 var initialize = new Event('initialize');
 
+function tryDeleteProblem (e, json) {
+    if (confirm("Are you sure you want to delete this problem? After deletion, the student will be able to resubmit.")) {
+        deleteProblem(e, json);
+    }
+}
+
+function deleteProblem (e, json) {
+    jQuery.ajax({
+        url: '@{ReviewR coursetitle filename}',
+        type: 'DELETE',
+        contentType: "application/json",
+        data: json,
+        success: function(data) { 
+            window.alert(data); 
+            $(e.target).parents().closest(".card").remove();
+        },
+        error: function(data) { window.alert("Error, couldn't delete the problem") },
+        });
+    };
+
 $(".updateSubmission").submit(function(e) {
     jQuery.ajax({
         url: '@{ReviewR coursetitle filename}',

@@ -21,7 +21,7 @@
 /hash/#Text                         HashedR             GET
 /assignments/#Text                  AssignmentR         GET
 /assignments/#Text/#Text            CourseAssignmentR   GET POST
-/review/#Text/#Text                 ReviewR             GET PUT
+/review/#Text/#Text                 ReviewR             GET PUT DELETE
 /rules                              RuleR               GET
 /shared                             DocumentsR          GET
 /shared/#Text                       DocumentsByTagR     GET
