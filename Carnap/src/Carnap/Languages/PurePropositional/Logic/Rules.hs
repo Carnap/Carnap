@@ -52,20 +52,31 @@ dischargeConstraint n ded lhs sub | and (map (`elem` forms) lhs') = Nothing
 
 fitchAssumptionCheck n ded pairs sub = checkWithProofType n ded pairs sub theProoftype
     where checkWithProofType n ded pairs sub (WithAlternate a1 a2) = checkWithProofType n ded pairs sub a1 >> checkWithProofType n ded pairs sub a2
-          checkWithProofType n ded pairs sub pt | not (all (`elem` pairs') allBoundaryAssertions) = Just "Some of the assumptions in the cited subproofs are not of the right form for this rule"
-                                                | not (all (`elem` allBoundaryAssertions) pairs') = Just "Some of the assumptions this rule requires you to make are missing"
+          checkWithProofType n ded pairs sub pt | not (all (`among` pairs') allBoundaryAssertions) = Just $ "Some of the assumptions " ++ show allBoundaryAssertions ++ "in the cited subproofs are not of the right form for this rule" ++ show pairs'
+                                                | not (all (`among` allBoundaryAssertions) pairs') = Just $ "Some of the assumptions " ++ show pairs' ++ "this rule requires you to make are missing fromm the boundary conditions" ++ show allBoundaryAssertions
                                                 | otherwise = Nothing
                 where subproofBoundries = case pt of 
-                         (ImplicitProof (ProofType _ 1)) -> [(n - (length precedingProof), n - 1)]
-                         (TypedProof (ProofType _ 1)) -> maybe (error "assumption check on non-assertion") checkDistinct $ dependencies callingLine
-                         (PolyTypedProof _ (ProofType _ 1)) -> maybe (error "assumption check on non-assertion") checkDistinct $ dependencies callingLine
-                         PolyProof -> maybe (error "assumption check on non-assertion") checkDistinct $ dependencies callingLine
-                         _ -> error "the fitch assumption check doesn't handle multi-conclusion subproofs"
-                      allBoundaryAssertions = map (\(p,q) -> (liftToSequent p, liftToSequent q)) $ catMaybes $ map boundaryAssertions subproofBoundries
+                         --pending further refinement to the ProofType
+                         --system, we ignore t, since this indicates how
+                         --many assumptions are actually used in generating
+                         --the unification problem, and that may differ
+                         --from the number of assumptions (AFAIK, always 1)
+                         --that are present in a fitch subproof. If that
+                         --turns out to be false, then probably another
+                         --prooftype is appropriate, and would feed
+                         --something othher than 1 into fromBoundary
+                         (ImplicitProof (ProofType t b)) -> [fromBoundary 1 b (n - (length precedingProof), n - 1)]
+                         (TypedProof (ProofType t b)) -> maybe (error "assumption check on non-assertion") (map (fromBoundary 1 b) . checkDistinct) $ dependencies callingLine
+                         (PolyTypedProof _ (ProofType t b)) -> maybe (error "assumption check on non-assertion") (map (fromBoundary 1 b) . checkDistinct) $ dependencies callingLine
+                         PolyProof -> maybe (error "assumption check on non-assertion") (map (fromBoundary 1 1) . checkDistinct) $ dependencies callingLine
+                      allBoundaryAssertions = map (\(p,q) -> (map liftToSequent p, map liftToSequent q)) $ catMaybes $ map boundaryAssertions subproofBoundries
           checkDistinct = filter (\(i,j) -> i /= j)
+          fromBoundary t b (t',b') = (take t [t' ..], take b [b', b' -1 ..])
           callingLine = ded !! (n - 1)
-          boundaryAssertions (i,j) = (,) <$> assertion (ded !! (i - 1)) <*> assertion (ded !! (j - 1))
-          pairs' = map (\(p,q) -> (pureBNF . applySub sub $ p, pureBNF . applySub sub $ q)) pairs
+          boundaryAssertions (l1,l2) = (,) <$> mapM assertionAt l1 <*> mapM assertionAt l2
+          boundaryAssertions _ = Nothing
+          assertionAt n = assertion (ded !! (n - 1))
+          pairs' = map (\(p,q) -> (map (pureBNF . applySub sub) p, map (pureBNF . applySub sub) q)) pairs
           precedingProof = takeWhile (\x -> depth x > depth (ded !! (n - 1))) . reverse . take (n - 1) $ ded
           --XXX: the below is sort of inelegant, since it is not going to
           --allow the possibility of one "rule" having more than one
@@ -73,6 +84,10 @@ fitchAssumptionCheck n ded pairs sub = checkWithProofType n ded pairs sub thePro
           --prior inelegance of not parsing to prooftrees
           --indeterministically
           theProoftype = maybe (error "no indirect calling rule") id ((head <$> ruleOfLine callingLine) >>= indirectInference)
+          setEq x y = all (`elem` x) y && all (`elem` y) x
+          pairEq (a,b) (c,d) = a `setEq` c && b `setEq` d
+          among x (y:ys) = x `pairEq` y || x `among` ys
+          among x [] = False
 
 -------------------------
 --  1.1 Standard Rules  --
