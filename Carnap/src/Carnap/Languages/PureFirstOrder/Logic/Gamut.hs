@@ -20,7 +20,7 @@ import Carnap.Languages.PureFirstOrder.Logic.Rules
 import Carnap.Languages.PurePropositional.Logic.Gamut as G
 import Carnap.Languages.PurePropositional.Logic.Rules (fitchAssumptionCheck)
 
-data GamutNDCore =  InE | ElimE | InA | ElimA
+data GamutNDCore =  InE | ElimE | InA | ElimA | InEq | ElimEq1 | ElimEq2
         deriving Eq
 
 data GamutND = ND GamutPND | Core GamutNDCore
@@ -52,6 +52,9 @@ instance Show GamutNDCore where
         show ElimE = "E∃"
         show InA = "I∀"
         show ElimA = "E∀"
+        show InEq = "I="
+        show ElimEq1 = "E="
+        show ElimEq2 = "E="
 
 instance Show GamutND where
         show (ND x) = show x
@@ -101,6 +104,9 @@ instance Inference GamutNDCore PureLexiconFOL (Form Bool) where
         ruleOf InA = universalGeneralization
         ruleOf ElimA = universalInstantiation
         ruleOf ElimE = conditionalExistentialDerivation
+        ruleOf InEq = eqReflexivity
+        ruleOf ElimEq1 = leibnizLawVariations !! 0
+        ruleOf ElimEq2 = leibnizLawVariations !! 1
 
         premisesOf r = upperSequents (ruleOf r)
 
@@ -227,6 +233,7 @@ instance Inference GamutNDPlus PureLexiconFOL (Form Bool) where
         conclusionOf r = lowerSequent (ruleOf r)
 
         indirectInference (NDP x) = indirectInference x
+        indirectInference (CoreP x) = indirectInference x
         indirectInference _ = Nothing
 
         restriction (CoreP x) = restriction x
@@ -243,12 +250,14 @@ instance Inference GamutNDPlus PureLexiconFOL (Form Bool) where
         isAssumption (NDP x) = isAssumption x
         isAssumption _ = False
 
-parseGamutNDCore rtc = do r <- choice (map (try . string) [ "IA", "I∀", "EA", "E∀", "IE", "I∃", "EE", "E∃" ])
+parseGamutNDCore rtc = do r <- choice (map (try . string) [ "IA", "I∀", "EA", "E∀", "IE", "I∃", "EE", "E∃", "I=", "E=" ])
                           case r of
                               r | r `elem` [ "IA", "I∀" ] -> return [InA]
                                 | r `elem` [ "EA", "E∀" ] -> return [ElimA]
                                 | r `elem` [ "IE", "I∃" ] -> return [InE]
                                 | r `elem` [ "EE", "E∃" ] -> return [ElimE]
+                                | r `elem` [ "I=" ] -> return [InEq]
+                                | r `elem` [ "E=" ] -> return [ElimEq1, ElimEq2]
 
 parseGamutND rtc = try propRule <|> quantRule
     where propRule = map ND <$> parseGamutPND rtc
