@@ -52,8 +52,8 @@ dischargeConstraint n ded lhs sub | and (map (`elem` forms) lhs') = Nothing
 
 fitchAssumptionCheck n ded pairs sub = checkWithProofType n ded pairs sub theProoftype
     where checkWithProofType n ded pairs sub (WithAlternate a1 a2) = checkWithProofType n ded pairs sub a1 >> checkWithProofType n ded pairs sub a2
-          checkWithProofType n ded pairs sub pt | not (all (`among` pairs') allBoundaryAssertions) = Just $ "Some of the assumptions " ++ show allBoundaryAssertions ++ "in the cited subproofs are not of the right form for this rule" ++ show pairs'
-                                                | not (all (`among` allBoundaryAssertions) pairs') = Just $ "Some of the assumptions " ++ show pairs' ++ "this rule requires you to make are missing fromm the boundary conditions" ++ show allBoundaryAssertions
+          checkWithProofType n ded pairs sub pt | not (all (`among` pairs') allBoundaryAssertions) = Just $ "Some of the assumptions in the cited subproofs are not of the right form for this rule."
+                                                | not (all (`among` allBoundaryAssertions) pairs') = Just $ "Some of the assumptions this rule requires you to make are missing fromm the boundary conditions."
                                                 | otherwise = Nothing
                 where subproofBoundries = case pt of 
                          --pending further refinement to the ProofType
