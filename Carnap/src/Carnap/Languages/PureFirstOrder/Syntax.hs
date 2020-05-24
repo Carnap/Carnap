@@ -211,7 +211,11 @@ type PolyadicFunctionSymbolsAndIdentity = Predicate PureEq
                                         :|: Function PureSchematicFunction
                                         :|: EndLang
 
-type PureLexiconFOL = (OpenLexiconPFOL (PolyadicFunctionSymbolsAndIdentity :|: EndLang))
+type OpenLexiconFOL a = OpenLexiconPFOL (PolyadicFunctionSymbolsAndIdentity :|: a)
+
+type OpenLanguageFOL a = FixLang (OpenLexiconFOL a)
+
+type PureLexiconFOL = OpenLexiconFOL EndLang
 
 type PureLanguageFOL = FixLang PureLexiconFOL
 
@@ -219,23 +223,23 @@ type PureFOLForm = PureLanguageFOL (Form Bool)
 
 type PureFOLTerm = PureLanguageFOL (Term Int)
 
-instance PrismTermEquality PureLexiconFOL Int Bool
-instance PrismPolyadicFunction PureLexiconFOL Int Int
-instance PrismPolyadicSchematicFunction PureLexiconFOL Int Int
+instance PrismTermEquality (OpenLexiconFOL a) Int Bool
+instance PrismPolyadicFunction (OpenLexiconFOL a) Int Int
+instance PrismPolyadicSchematicFunction (OpenLexiconFOL a) Int Int
 
-instance Incrementable PureLexiconFOL (Term Int) where
+instance {-#OVERLAPPABLE#-} Incrementable (OpenLexiconFOL a) (Term Int) where
     incHead = const Nothing
         & outside (_predIdx')  .~ (\(n,a) -> Just $ ppn n (ASucc a))
         & outside (_spredIdx') .~ (\(n,a) -> Just $ pphin n (ASucc a))
         & outside (_funcIdx')  .~ (\(n,a) -> Just $ pfn n (ASucc a))
         & outside (_sfuncIdx') .~ (\(n,a) -> Just $ spfn n (ASucc a))
-        where _predIdx' :: Typeable ret => Prism' (PureLanguageFOL ret) (Int, Arity (Term Int) (Form Bool) ret) 
+        where _predIdx' :: Typeable ret => Prism' (OpenLanguageFOL a ret) (Int, Arity (Term Int) (Form Bool) ret) 
               _predIdx' = _predIdx
-              _spredIdx' :: Typeable ret => Prism' (PureLanguageFOL ret) (Int, Arity (Term Int) (Form Bool) ret) 
+              _spredIdx' :: Typeable ret => Prism' (OpenLanguageFOL a ret) (Int, Arity (Term Int) (Form Bool) ret) 
               _spredIdx' = _spredIdx
-              _funcIdx' :: Typeable ret => Prism' (PureLanguageFOL ret) (Int, Arity (Term Int) (Term Int) ret) 
+              _funcIdx' :: Typeable ret => Prism' (OpenLanguageFOL a ret) (Int, Arity (Term Int) (Term Int) ret) 
               _funcIdx' = _funcIdx
-              _sfuncIdx' :: Typeable ret => Prism' (PureLanguageFOL ret) (Int, Arity (Term Int) (Term Int) ret) 
+              _sfuncIdx' :: Typeable ret => Prism' (OpenLanguageFOL a ret) (Int, Arity (Term Int) (Term Int) ret) 
               _sfuncIdx' = _sfuncIdx
 
 -------------------------

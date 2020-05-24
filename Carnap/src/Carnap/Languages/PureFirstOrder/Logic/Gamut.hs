@@ -1,5 +1,5 @@
 {-#LANGUAGE  FlexibleContexts,  FlexibleInstances, MultiParamTypeClasses #-}
-module Carnap.Languages.PureFirstOrder.Logic.Gamut (gamutNDCalc, parseGamutND, gamutNDPlusCalc, parseGamutNDPlus) where
+module Carnap.Languages.PureFirstOrder.Logic.Gamut (gamutNDCalc, parseGamutND, gamutNDPlusCalc, parseGamutNDPlus, GamutNDCore(..), GamutNDPlus(..), gamutNotation) where
 
 import Text.Parsec
 import Data.Char

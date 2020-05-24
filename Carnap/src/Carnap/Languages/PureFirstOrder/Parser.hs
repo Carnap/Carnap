@@ -1,8 +1,8 @@
 {-#LANGUAGE TypeOperators, FlexibleContexts, FlexibleInstances, MultiParamTypeClasses#-}
 module Carnap.Languages.PureFirstOrder.Parser 
 ( folFormulaParser, folFormulaParserRelaxed, mfolFormulaParser
-, magnusFOLFormulaParser, thomasBolducAndZachFOLFormulaParser, gamutNDFormulaParser
-, thomasBolducAndZachFOL2019FormulaParser
+, magnusFOLFormulaParser, thomasBolducAndZachFOLFormulaParser
+, gamutNDFormulaParser, thomasBolducAndZachFOL2019FormulaParser
 , hardegreePLFormulaParser, bergmannMoorAndNelsonPDFormulaParser
 , goldfarbNDFormulaParser, tomassiQLFormulaParser, hausmanPLFormulaParser, FirstOrderParserOptions(..)
 , parserFromOptions, parseFreeVar, howardSnyderPLFormulaParser) where
