@@ -77,14 +77,14 @@ instance Inference MagnusQL PureLexiconFOL (Form Bool) where
          globalRestriction (Left ded) n (MagnusSL BicoIntro2) = Just $ fitchAssumptionCheck n ded [([phin 1], [phin 2]), ([phin 2], [phin 1])]
          globalRestriction (Left ded) n (MagnusSL BicoIntro3) = Just $ fitchAssumptionCheck n ded [([phin 1], [phin 2]), ([phin 2], [phin 1])]
          globalRestriction (Left ded) n (MagnusSL BicoIntro4) = Just $ fitchAssumptionCheck n ded [([phin 1], [phin 2]), ([phin 2], [phin 1])]
-         globalRestriction (Left ded) n (MagnusSL NegeIntro1) = Just $ fitchAssumptionCheck n ded [([lneg $ phin 1], [phin 2, lneg $ phin 2])]  
-         globalRestriction (Left ded) n (MagnusSL NegeIntro2) = Just $ fitchAssumptionCheck n ded [([lneg $ phin 1], [phin 2, lneg $ phin 2])]  
-         globalRestriction (Left ded) n (MagnusSL NegeIntro3) = Just $ fitchAssumptionCheck n ded [([lneg $ phin 1], [phin 2, lneg $ phin 2])]  
-         globalRestriction (Left ded) n (MagnusSL NegeIntro4) = Just $ fitchAssumptionCheck n ded [([lneg $ phin 1], [phin 2, lneg $ phin 2])]  
-         globalRestriction (Left ded) n (MagnusSL NegeElim1) = Just $ fitchAssumptionCheck n ded [([phin 1], [phin 2, lneg $ phin 2])] 
-         globalRestriction (Left ded) n (MagnusSL NegeElim2) = Just $ fitchAssumptionCheck n ded [([phin 1], [phin 2, lneg $ phin 2])] 
-         globalRestriction (Left ded) n (MagnusSL NegeElim3) = Just $ fitchAssumptionCheck n ded [([phin 1], [phin 2, lneg $ phin 2])] 
-         globalRestriction (Left ded) n (MagnusSL NegeElim4) = Just $ fitchAssumptionCheck n ded [([phin 1], [phin 2, lneg $ phin 2])] 
+         globalRestriction (Left ded) n (MagnusSL NegeIntro1) = Just $ fitchAssumptionCheck n ded [([phin 1], [phin 2, lneg $ phin 2])]  
+         globalRestriction (Left ded) n (MagnusSL NegeIntro2) = Just $ fitchAssumptionCheck n ded [([phin 1], [phin 2, lneg $ phin 2])]  
+         globalRestriction (Left ded) n (MagnusSL NegeIntro3) = Just $ fitchAssumptionCheck n ded [([phin 1], [phin 2, lneg $ phin 2])]  
+         globalRestriction (Left ded) n (MagnusSL NegeIntro4) = Just $ fitchAssumptionCheck n ded [([phin 1], [phin 2, lneg $ phin 2])]  
+         globalRestriction (Left ded) n (MagnusSL NegeElim1) = Just $ fitchAssumptionCheck n ded [([lneg $ phin 1], [phin 2, lneg $ phin 2])] 
+         globalRestriction (Left ded) n (MagnusSL NegeElim2) = Just $ fitchAssumptionCheck n ded [([lneg $ phin 1], [phin 2, lneg $ phin 2])] 
+         globalRestriction (Left ded) n (MagnusSL NegeElim3) = Just $ fitchAssumptionCheck n ded [([lneg $ phin 1], [phin 2, lneg $ phin 2])] 
+         globalRestriction (Left ded) n (MagnusSL NegeElim4) = Just $ fitchAssumptionCheck n ded [([lneg $ phin 1], [phin 2, lneg $ phin 2])] 
          globalRestriction _ _ _ = Nothing
 
          isAssumption (MagnusSL x) = isAssumption x
