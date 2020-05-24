@@ -54,6 +54,7 @@ gamutNDDescParserOptions =  FirstOrderParserOptions { atomicSentenceParser =
                                                                <|> equalsParser x
                                                     , opTable = gamutOpTable
                                                     , constantParser = Just (parseConstant "abcdefghijklmnopqr")
+                                                    , functionParser = Just (\x -> parseFunctionSymbol "abcdefghijklmnopqrst" x)
                                                     , parenRecur = magnusDispatch
                                                     , freeVarParser = parseFreeVar "stuvwxyz"
                                                     , quantifiedSentenceParser' = quantifiedSentenceParser

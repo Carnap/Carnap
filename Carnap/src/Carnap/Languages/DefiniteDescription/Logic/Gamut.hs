@@ -1,5 +1,5 @@
 {-#LANGUAGE  FlexibleContexts, RankNTypes, FlexibleInstances, MultiParamTypeClasses #-}
-module Carnap.Languages.DefiniteDescription.Logic.Gamut (gamutNDDescCalc, parseGamutNDDesc) where
+module Carnap.Languages.DefiniteDescription.Logic.Gamut (gamutNDDescCalc, parseGamutNDDesc, ofDefiniteDescSys) where
 
 import Carnap.Core.Data.Types
 import Carnap.Core.Data.Classes
