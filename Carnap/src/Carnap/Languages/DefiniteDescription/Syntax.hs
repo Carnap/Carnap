@@ -24,11 +24,50 @@ type FregeanDescription = DefiniteDescription Bool Int --"fregean" because every
 --  2. Definite Description Languages  --
 -----------------------------------------
 
-type FregeanDescLex = OpenLexiconFOL (Binders FregeanDescription :|: EndLang)
-
-instance PrismDefiniteDesc FregeanDescLex Bool Int
+type FregeanDescLex = PureLexiconFOL :|: Binders FregeanDescription :|: EndLang
 
 type FregeanDescLang = FixLang FregeanDescLex
+
+instance PrismDefiniteDesc FregeanDescLex Bool Int
+instance PrismPropLex FregeanDescLex Bool
+instance PrismSchematicProp FregeanDescLex Bool
+instance PrismIndexedConstant FregeanDescLex Int
+instance PrismPolyadicPredicate FregeanDescLex Int Bool
+instance PrismPolyadicSchematicPredicate FregeanDescLex Int Bool
+instance PrismPolyadicFunction FregeanDescLex Int Int
+instance PrismPolyadicSchematicFunction FregeanDescLex Int Int
+instance PrismTermEquality FregeanDescLex Int Bool
+instance PrismBooleanConnLex FregeanDescLex Bool
+instance PrismBooleanConst FregeanDescLex Bool
+instance PrismGenericTypedLambda FregeanDescLex Term Form Int
+instance PrismStandardVar FregeanDescLex Int
+instance PrismSubstitutionalVariable FregeanDescLex
+instance PrismGenericQuant FregeanDescLex Term Form Bool Int
+
+instance Incrementable FregeanDescLex (Term Int) where
+    incHead = const Nothing
+        & outside (_predIdx')  .~ (\(n,a) -> Just $ ppn n (ASucc a))
+        & outside (_spredIdx') .~ (\(n,a) -> Just $ pphin n (ASucc a))
+        & outside (_funcIdx')  .~ (\(n,a) -> Just $ pfn n (ASucc a))
+        & outside (_sfuncIdx') .~ (\(n,a) -> Just $ spfn n (ASucc a))
+        where _predIdx' :: Typeable ret => Prism' (FregeanDescLang ret) (Int, Arity (Term Int) (Form Bool) ret) 
+              _predIdx' = _predIdx
+              _spredIdx' :: Typeable ret => Prism' (FregeanDescLang ret) (Int, Arity (Term Int) (Form Bool) ret) 
+              _spredIdx' = _spredIdx
+              _funcIdx' :: Typeable ret => Prism' (FregeanDescLang ret) (Int, Arity (Term Int) (Term Int) ret) 
+              _funcIdx' = _funcIdx
+              _sfuncIdx' :: Typeable ret => Prism' (FregeanDescLang ret) (Int, Arity (Term Int) (Term Int) ret) 
+              _sfuncIdx' = _sfuncIdx
+
+instance BoundVars FregeanDescLex where
+
+    scopeUniqueVar q (LLam f) = case castTo $ foVar $ show $ maxVar (LLam f) + 1 of
+                                    Just x -> x
+                                    Nothing -> error "cast failed in ScopeUniqueVar"
+
+    scopeUniqueVar _ _ = undefined
+
+    subBoundVar = saferSubst
 
 type FregeanDescSeq = ClassicalSequentOver FregeanDescLex
 

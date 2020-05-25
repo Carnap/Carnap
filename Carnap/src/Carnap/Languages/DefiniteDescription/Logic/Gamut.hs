@@ -1,14 +1,15 @@
-{-#LANGUAGE  FlexibleContexts, RankNTypes, FlexibleInstances, MultiParamTypeClasses #-}
+{-#LANGUAGE  FlexibleContexts, RankNTypes, FlexibleInstances, MultiParamTypeClasses, TypeOperators #-}
 module Carnap.Languages.DefiniteDescription.Logic.Gamut (gamutNDDescCalc, parseGamutNDDesc, ofDefiniteDescSys) where
 
 import Carnap.Core.Data.Types
+import Carnap.Core.Data.Optics
 import Carnap.Core.Data.Classes
 import Carnap.Languages.Util.LanguageClasses
 import Carnap.Languages.DefiniteDescription.Syntax
 import Carnap.Languages.DefiniteDescription.Parser
 import Carnap.Languages.PurePropositional.Logic.Gamut
 import Carnap.Languages.PureFirstOrder.Logic.Gamut
-import Carnap.Languages.PureFirstOrder.Syntax (fogamma, OpenLexiconFOL)
+import Carnap.Languages.PureFirstOrder.Syntax (fogamma, PureLexiconFOL)
 import Carnap.Languages.PureFirstOrder.Logic.Rules
 import Carnap.Languages.PurePropositional.Logic.Rules (fitchAssumptionCheck)
 import Carnap.Languages.ClassicalSequent.Syntax
@@ -72,8 +73,9 @@ gamutNDDescCalc = mkNDCalc
     }
 
 ofDefiniteDescSys :: (forall r sem lex . 
-    SupportsND r (OpenLexiconFOL lex) sem => 
-    NaturalDeductionCalc r (OpenLexiconFOL lex) sem -> a) -> String 
+    ( SupportsND r (PureLexiconFOL :|: lex) sem
+    , PrismSubstitutionalVariable (PureLexiconFOL :|: lex)
+    ) => NaturalDeductionCalc r (PureLexiconFOL :|: lex) sem -> a) -> String 
       -> Maybe a
 ofDefiniteDescSys f sys 
         | sys == "gamutNDDesc"       = Just $ f gamutNDDescCalc

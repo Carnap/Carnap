@@ -293,10 +293,12 @@ parseGamutNDPlusProof rtc = toDeductionFitch (parseGamutNDPlus rtc) (gamutNDForm
 gamutNotation :: String -> String
 gamutNotation (x:xs) = if x `elem` ['A' .. 'Z'] then x : trimParens 0 xs else x : gamutNotation xs
     where trimParens 0 ('(':xs) = trimParens 1 xs
+          trimParens 0 xs = gamutNotation xs
           trimParens 1 (')':xs) = gamutNotation xs
           trimParens 1 (',':xs) = trimParens 1 xs
           trimParens n ('(':xs) = '(' : trimParens (n + 1) xs
           trimParens n (')':xs) = ')' : trimParens (n - 1) xs
+          trimParens n (x:xs) | x `elem` ['A' .. 'Z'] = x : trimParens n (trimParens 0 xs)
           trimParens n (x:xs) = x : trimParens n xs
           trimParens n [] = []
 gamutNotation x = x

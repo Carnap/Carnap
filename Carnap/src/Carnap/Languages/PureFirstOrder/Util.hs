@@ -261,7 +261,7 @@ universalClosure f = case varsOf f of
 --  2. Tests  --
 ----------------
 
-isOpenFormula :: FirstOrderLex (a (FixLang (PureFirstOrderLexWith a))) => FixLang (PureFirstOrderLexWith a) (Form Bool) -> Bool
+isOpenFormula :: (PrismStandardVar lex Int, PrismSubstitutionalVariable lex, BoundVars lex, FirstOrderLex (FixLang lex)) => FixLang lex (Form Bool) -> Bool
 isOpenFormula = anyOf termsOf (\x -> isVar (x ^? _varLabel))
     where isVar Nothing = False
           isVar (Just s) = any (not . (`elem` "1234567890")) s
