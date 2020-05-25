@@ -352,7 +352,7 @@ data DefiniteDescription b c a where
         DefinDesc :: String -> DefiniteDescription b c ((Term c -> Form b) -> Term c)
 
 instance Schematizable (DefiniteDescription b c) where
-        schematize (DefinDesc v) = \(x:_) -> "ι" ++ v ++ x 
+        schematize (DefinDesc v) = \(x:_) -> "℩" ++ v ++ x 
 
 instance UniformlyEq (DefiniteDescription b c) where
         (DefinDesc _) =* (DefinDesc _) = True

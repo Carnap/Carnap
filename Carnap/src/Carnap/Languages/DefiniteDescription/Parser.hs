@@ -42,7 +42,7 @@ coreSubformulaParser fp opts = try (parenRecur opts opts fp <* spaces)
           --coreSubformulaParser to make sure that we discharge class
           --constraints using the given constraints)
           tparser recur = try (descriptionParser recur) <|> try (fparser (tparser recur)) <|> try cparser <|> vparser 
-          descriptionParser recur = do s <- oneOf "iι"
+          descriptionParser recur = do s <- oneOf "iι℩"
                                        v <- vparser
                                        f <- recur
                                        let bf x = subBoundVar v x f

@@ -19,13 +19,25 @@ import Carnap.Calculi.NaturalDeduction.Parser
 import Carnap.Calculi.NaturalDeduction.Checker (hoProcessLineFitchMemo, hoProcessLineFitch)
 import Text.Parsec
 
-data GamutNDDesc = GNDP GamutNDPlus
+data GamutNDDesc = GNDP GamutNDPlus | InDD1 | InDD2 | ElimDD1 | ElimDD2
     deriving Eq
 
 instance Show GamutNDDesc where
         show (GNDP x) = show x
+        show InDD1 = "Iι"
+        show InDD2 = "Iι"
+        show ElimDD1 = "Eι"
+        show ElimDD2 = "Eι"
 
 instance Inference GamutNDDesc FregeanDescLex (Form Bool) where
+        ruleOf InDD1 = [GammaV 1 :|-: SS (lsome "v" $ \x -> lall "w" $ \y -> phi' 1 y .<=>. (y `equals` x))
+                       ] ∴ GammaV 1 :|-: SS (phi 1 (ddesc "v" (phi' 1)))
+        ruleOf InDD2 = [GammaV 1 :|-: SS (lsome "v" $ \x -> lall "w" $ \y -> phi' 1 y .<=>. (x `equals` y))
+                       ] ∴ GammaV 1 :|-: SS (phi 1 (ddesc "v" (phi' 1)))
+        ruleOf ElimDD1 = [GammaV 1 :|-: SS (lneg $ ddesc "v" (phi' 1) `equals` ddesc "v" (\x -> (lfalsum :: FregeanDescSeq (Form Bool))))
+                         ] ∴ GammaV 1 :|-: SS (lsome "v" $ \x -> lall "w" $ \y -> phi' 1 y .<=>. (y `equals` x))
+        ruleOf ElimDD2 = [GammaV 1 :|-: SS (lneg $ ddesc "v" (phi' 1) `equals` ddesc "v" (\x -> (lfalsum :: FregeanDescSeq (Form Bool))))
+                         ] ∴ GammaV 1 :|-: SS (lsome "v" $ \x -> lall "w" $ \y -> phi' 1 y .<=>. (x `equals` y))
         ruleOf r = premisesOf r ∴ conclusionOf r
 
         premisesOf (GNDP x) = map liftSequent (premisesOf x)
@@ -56,8 +68,12 @@ instance Inference GamutNDDesc FregeanDescLex (Form Bool) where
         isAssumption (GNDP x) = isAssumption x
         isAssumption _ = False
 
-parseGamutNDDesc rtc = try ndRule
+parseGamutNDDesc rtc = try ndRule <|> descRule
     where ndRule = map GNDP <$> parseGamutNDPlus (RuntimeNaturalDeductionConfig mempty mempty)
+          descRule = do r <- choice (map (try . string) ["Ii","Ei"])
+                        return $ case r of
+                            "Ii" -> [InDD1, InDD2]
+                            "Ei" -> [ElimDD1, ElimDD2]
 
 parseGamutNDDescProof :: RuntimeNaturalDeductionConfig FregeanDescLex (Form Bool) -> String -> [DeductionLine GamutNDDesc FregeanDescLex (Form Bool)]
 parseGamutNDDescProof rtc = toDeductionFitch (parseGamutNDDesc rtc) (gamutNDDescFormulaParser)
