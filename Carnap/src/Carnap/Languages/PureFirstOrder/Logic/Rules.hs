@@ -462,3 +462,6 @@ rulesOfPassage = firstOrderReplace (lbind $ \x y z -> lsome "v" $ \w -> phi4 1 x
                                    (lbind $ \x y z ->  phi3 1 x y z ./\. lsome "v" (\w -> phi4 2 x y z w))
                  ++ firstOrderReplace (lbind $ \x y z -> lall "v" $ \w -> phi3 1 x y z ./\. phi4 2 x y z w) 
                                    (lbind $ \x y z -> phi3 1 x y z ./\. lall "v" (\w -> phi4 2 x y z w))
+
+eqSymmetryReplacement :: (QuantContextLang (ClassicalSequentOver lex) b Int , EqLanguage (ClassicalSequentOver lex) (Term Int) (Form b)) => FirstOrderRuleVariants lex b 
+eqSymmetryReplacement = firstOrderReplace (lbind $ \x y z -> x `equals` y) (lbind $ \x y z -> y `equals` x)

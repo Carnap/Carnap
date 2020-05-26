@@ -43,6 +43,7 @@ instance PrismGenericTypedLambda FregeanDescLex Term Form Int
 instance PrismStandardVar FregeanDescLex Int
 instance PrismSubstitutionalVariable FregeanDescLex
 instance PrismGenericQuant FregeanDescLex Term Form Bool Int
+instance PrismQuantContext FregeanDescLex Bool Int
 
 instance Incrementable FregeanDescLex (Term Int) where
     incHead = const Nothing
