@@ -4,7 +4,8 @@
 
 @font-face
     font-family:"Fira Logic"
-    src: url("@{StaticR fonts_FiraLogic_Regular_woff}") format("woff"), url("@{StaticR fonts_FiraLogic_Regular_ttf}") format("ttf")
+    src: url("https://cdn.jsdelivr.net/gh/gleachkr/FiraLogic@0.1.1/dist/FiraLogic-Regular.woff") format("woff"), 
+         url("https://cdn.jsdelivr.net/gh/gleachkr/FiraLogic@0.1.1/dist/FiraLogic-Regular.tff") format("tff")
 
 nav#navbar
     ul 
