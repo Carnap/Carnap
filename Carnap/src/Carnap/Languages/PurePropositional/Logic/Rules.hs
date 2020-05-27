@@ -170,6 +170,12 @@ hypotheticalSyllogism = [ GammaV 1 :|-: SS (phin 1 .→. phin 2)
                         , GammaV 2 :|-: SS (phin 2 .→. phin 3)
                         ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (phin 1 .→. phin 3)
 
+proofByCases :: BooleanRule lex b
+proofByCases = [ GammaV 1 :|-: SS (phin 1 .→. phin 3)
+               , GammaV 2 :|-: SS (phin 2 .→. phin 3)
+               , GammaV 3 :|-: SS (phin 1 .\/. phin 2)
+               ] ∴ GammaV 1 :+: GammaV 2 :+: GammaV 3 :|-: SS (phin 3)
+
 ---------------------------
 --  1.2 Variation Rules  --
 ---------------------------
@@ -476,6 +482,17 @@ biconditionalPonensVariations = [
                 ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (phin 1)
             ]
 
+biconditionalTollensVariations :: BooleanRuleVariants lex b
+biconditionalTollensVariations = [
+                [ GammaV 1  :|-: SS (phin 1 .↔. phin 2)
+                , GammaV 2  :|-: SS (lneg $ phin 1)
+                ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (lneg $ phin 2)
+            ,
+                [ GammaV 1  :|-: SS (phin 1 .↔. phin 2)
+                , GammaV 2  :|-: SS (lneg $ phin 2)
+                ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (lneg $ phin 1)
+            ]
+
 materialConditionalVariations :: BooleanRuleVariants lex b
 materialConditionalVariations =  [
                 [ GammaV 1 :|-: SS (phin 1)
@@ -581,6 +598,10 @@ materialConditional = replace (phin 1 .=>. phin 2) (lneg (phin 1) .\/. phin 2)
 
 negatedConditional :: ReplacementBooleanVariants lex b
 negatedConditional = replace (lneg $ phin 1 .=>. phin 2) (phin 1 ./\. (lneg $ phin 2))
+
+negatedBiconditional :: ReplacementBooleanVariants lex b
+negatedBiconditional = replace (lneg $ phin 1 .<=>. phin 2) (phin 1 .<=>. (lneg $ phin 2))
+                    ++ replace (lneg $ phin 1 .<=>. phin 2) ((lneg $ phin 1) .<=>. phin 2)
 
 contraposition :: ReplacementBooleanVariants lex b
 contraposition = replace (phin 1 .=>. phin 2) (lneg (phin 2) .=>. lneg (phin 1))
