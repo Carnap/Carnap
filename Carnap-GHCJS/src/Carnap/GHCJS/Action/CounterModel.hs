@@ -9,6 +9,8 @@ import Carnap.Core.Data.Util
 import Carnap.Core.Data.Optics (PrismSubstitutionalVariable, PrismLink, ReLex)
 import Carnap.Languages.Util.LanguageClasses
 import Carnap.Languages.PureFirstOrder.Logic 
+import Carnap.Languages.DefiniteDescription.Logic.Gamut
+import Carnap.Languages.DefiniteDescription.Semantics
 import Carnap.Languages.PureFirstOrder.Semantics
 import Carnap.Languages.PureFirstOrder.Syntax
 import Carnap.Languages.PureFirstOrder.Util (universalClosure)
@@ -32,7 +34,7 @@ import Data.Map as M (Map, lookup, foldr, insert, fromList, toList)
 import Data.IORef (newIORef, IORef, readIORef,writeIORef, modifyIORef)
 import Data.List (intercalate)
 import Data.Text (pack)
-import Control.Monad (filterM)
+import Control.Monad (filterM, mplus)
 import Control.Monad.IO.Class (liftIO)
 import Control.Lens
 
@@ -69,26 +71,29 @@ getCounterModelers d = genInOutElts d "div" "div" "countermodeler"
 activateCounterModeler :: Document -> Maybe (Element, Element, Map String String) -> IO ()
 activateCounterModeler w (Just (i,o,opts)) = do
         case M.lookup "countermodelertype" opts of
-            Just "simple" -> checkerWith (formListParser <* eof) createSimpleCounterModeler
-            Just "constraint" -> checkerWith (formListPairParser <* eof) createConstrainedCounterModeler
-            Just "validity" -> checkerWith (seqParser <* eof) createValidityCounterModeler
+            Just "simple" -> maybe (return ()) id $ (checkerWith formListParser createSimpleCounterModeler `ofFOLSys` sys)
+                                            `mplus` (checkerWith formListParser createSimpleCounterModeler `ofDefiniteDescSys` sys)
+                                            `mplus` (checkerWith formListParser createSimpleCounterModeler `ofFOLSys` "firstOrder")
+            Just "constraint" -> maybe (return ()) id $ (checkerWith formListPairParser createConstrainedCounterModeler `ofFOLSys` sys)
+                                                `mplus` (checkerWith formListPairParser createConstrainedCounterModeler `ofDefiniteDescSys` sys)
+                                                `mplus` (checkerWith formListPairParser createConstrainedCounterModeler `ofFOLSys` "firstOrder")
+            Just "validity" -> maybe (return ()) id $ (checkerWith ndParseSeq createValidityCounterModeler `ofFOLSys` sys)
+                                              `mplus` (checkerWith ndParseSeq createValidityCounterModeler `ofDefiniteDescSys` sys)
+                                              `mplus` (checkerWith ndParseSeq createValidityCounterModeler `ofFOLSys` "firstOrder")
             _  -> return ()
-    where (formParser,seqParser) = case M.lookup "system" opts >>= \sys -> (,) <$> ndParseForm `ofFOLSys` sys <*> ndParseSeq `ofFOLSys` sys of
-                                         Just pair -> pair
-                                         Nothing -> let Just fp = ndParseForm `ofFOLSys` "firstOrder"
-                                                        Just sp = ndParseSeq `ofFOLSys` "firstOrder"
-                                                        in (fp,sp)
-          formListParser = formParser `sepEndBy1` (spaces *> char ',' <* spaces)
-          formListPairParser = do gs <- try (formListParser <* char ':') <|> return []
-                                  optional (char ':')
-                                  spaces
-                                  fs <- formListParser
-                                  return (gs,fs)
+    where sys = case M.lookup "system" opts of Just s -> s; Nothing -> "firstOrder"
+          formListParser calc = ndParseForm calc `sepEndBy1` (spaces *> char ',' <* spaces)
+          formListPairParser calc = 
+            do gs <- try (formListParser calc <* char ':') <|> return []
+               optional (char ':')
+               spaces
+               fs <- formListParser calc
+               return (gs,fs)
           
-          checkerWith parser cmbuilder = 
+          checkerWith parserof cmbuilder calc = 
             case M.lookup "goal" opts of
                 Just g ->
-                  case parse parser "" g of
+                  case parse (parserof calc <* eof) "" g of
                       Left e -> setInnerHTML o (Just $ show e) 
                       Right f -> do
                           bw <- createButtonWrapper w o

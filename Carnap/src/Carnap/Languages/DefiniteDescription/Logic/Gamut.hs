@@ -91,11 +91,8 @@ gamutNDDescCalc = mkNDCalc
     , ndNotation = gamutNotation
     }
 
-ofDefiniteDescSys :: (forall r sem lex . 
-    ( SupportsND r (PureLexiconFOL :|: lex) sem
-    , PrismSubstitutionalVariable (PureLexiconFOL :|: lex)
-    ) => NaturalDeductionCalc r (PureLexiconFOL :|: lex) sem -> a) -> String 
-      -> Maybe a
+ofDefiniteDescSys :: (forall r .  ( Inference r FregeanDescLex (Form Bool), Show r) => 
+    NaturalDeductionCalc r FregeanDescLex (Form Bool) -> a) -> String -> Maybe a
 ofDefiniteDescSys f sys 
         | sys == "gamutNDDesc"       = Just $ f gamutNDDescCalc
         | otherwise                  = Nothing

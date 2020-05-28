@@ -70,6 +70,8 @@ instance BoundVars FregeanDescLex where
 
     subBoundVar = saferSubst
 
+instance Eq (FregeanDescLang sem) where (==) = (=*)
+
 type FregeanDescSeq = ClassicalSequentOver FregeanDescLex
 
 instance CopulaSchema FregeanDescLang where 
