@@ -1,11 +1,12 @@
-{-#LANGUAGE FlexibleContexts, RankNTypes #-}
+{-#LANGUAGE FlexibleContexts, RankNTypes, ConstraintKinds #-}
 module Carnap.GHCJS.Action.CounterModel (counterModelAction) where
 
 import Lib
 import Carnap.GHCJS.SharedTypes
-import Carnap.Core.Data.Types (Form(..), Term(..), Arity(..), Fix(..), arityInt)
+import Carnap.Core.Data.Types (Form(..), Term(..), Arity(..), Fix(..), FixLang, arityInt, FixLang, BoundVars, FirstOrderLex, CopulaSchema, EndLang)
 import Carnap.Core.Data.Classes
 import Carnap.Core.Data.Util
+import Carnap.Core.Data.Optics (PrismSubstitutionalVariable, PrismLink, ReLex)
 import Carnap.Languages.Util.LanguageClasses
 import Carnap.Languages.PureFirstOrder.Logic 
 import Carnap.Languages.PureFirstOrder.Semantics
@@ -34,6 +35,30 @@ import Data.Text (pack)
 import Control.Monad (filterM)
 import Control.Monad.IO.Class (liftIO)
 import Control.Lens
+
+type ModelingLanguage lex = 
+        ( Modelable PolyadicModel (FixLang lex)
+        , Modelable PolyadicModel (lex (FixLang lex))
+        , BoundVars lex
+        , PrismStandardVar lex Int
+        , PrismSubstitutionalVariable lex
+        , FirstOrderLex (lex (FixLang lex))
+        , PrismPropLex lex Bool
+        , PrismIndexedConstant lex Int
+        , PrismPolyadicFunction lex Int Int
+        , PrismPolyadicPredicate lex Int Bool
+        , PrismGenericQuant lex Term Form Bool Int
+        , CopulaSchema (FixLang lex)
+        , CopulaSchema (ClassicalSequentOver lex)
+        , Schematizable (lex (ClassicalSequentOver lex))
+        , PrismLink (EndLang (ClassicalSequentOver lex)) (lex (ClassicalSequentOver lex))
+        , PrismLink (ClassicalSequentLex (ClassicalSequentOver lex)) (lex (ClassicalSequentOver lex))
+        , PrismLink (lex (ClassicalSequentOver lex)) (lex (ClassicalSequentOver lex))
+        , Schematizable (lex (FixLang lex))
+        , ReLex lex
+        , Eq (FixLang lex (Form Bool))
+        , Eq (FixLang lex (Term Int))
+        )
 
 counterModelAction :: IO ()
 counterModelAction = initElements getCounterModelers activateCounterModeler
@@ -109,7 +134,8 @@ submitCounterModel opts i check fields s l = do correct <- liftIO check
                                                          message err
                                                          setAttribute i "class" "input incompleteCM"
 
-createSimpleCounterModeler :: Document -> [PureFOLForm] -> (Element,Element)
+createSimpleCounterModeler :: ModelingLanguage lex =>
+    Document -> [FixLang lex (Form Bool)] -> (Element,Element)
     -> Element -> Map String String 
     -> IO (IO (Either String ()))
 createSimpleCounterModeler w fs (i,o) bw opts = 
@@ -136,7 +162,7 @@ createSimpleCounterModeler w fs (i,o) bw opts =
                     | and (map not tvs) = Left "Not a counterexample to equivalence - all formulas are false in this model."
                     | otherwise = Right ()
 
-createConstrainedCounterModeler :: Document -> ([PureFOLForm],[PureFOLForm]) -> (Element,Element)
+createConstrainedCounterModeler :: ModelingLanguage lex => Document -> ([FixLang lex (Form Bool)],[FixLang lex (Form Bool)]) -> (Element,Element)
     -> Element -> Map String String 
     -> IO (IO (Either String ()))
 createConstrainedCounterModeler w (cs,fs) (i,o) bw opts = 
@@ -165,7 +191,7 @@ createConstrainedCounterModeler w (cs,fs) (i,o) bw opts =
                     | and (map not tvs) = Left "Not a counterexample to equivalence - all formulas are false in this model."
                     | otherwise = Right ()
 
-createValidityCounterModeler :: Document -> ClassicalSequentOver PureLexiconFOL (Sequent (Form Bool)) -> (Element,Element) 
+createValidityCounterModeler :: ModelingLanguage lex => Document -> ClassicalSequentOver lex (Sequent (Form Bool)) -> (Element,Element) 
     -> Element -> Map String String 
     -> IO (IO (Either String ()))
 createValidityCounterModeler w seq@(antced :|-: succed) (i,o) bw opts = 
@@ -199,7 +225,7 @@ createValidityCounterModeler w seq@(antced :|-: succed) (i,o) bw opts =
                     | and (map not tvs) = Left "Not a counterexample to equivalence - all conclusions are false in this model."
                     | otherwise = Right ()
 
-prepareModelUI :: Document -> [PureFOLForm] -> (Element,Element) -> IORef PolyadicModel
+prepareModelUI :: ModelingLanguage lex => Document -> [FixLang lex (Form Bool)] -> (Element,Element) -> IORef PolyadicModel
     -> Element -> Map String String 
     -> IO ()
 prepareModelUI w fs (i,o) mdl bw opts = do
@@ -219,7 +245,7 @@ prepareModelUI w fs (i,o) mdl bw opts = do
     where domainUpdater ts = liftIO $ modifyIORef mdl (\m -> m { monadicPart = (monadicPart m) {domain = ts}})
           things = parseInt `sepEndBy1` (spaces *> char ',' <* spaces)
 
-appendRelationInputs :: Document -> Element -> [PureFOLForm] -> IORef PolyadicModel -> IO ()
+appendRelationInputs :: ModelingLanguage lex => Document -> Element -> [FixLang lex (Form Bool)] -> IORef PolyadicModel -> IO ()
 appendRelationInputs w o fs mdl = do let sfs = nub . concatMap (map blankTerms . universe) $ fs
                                      mapM_ appendRelationInput sfs
     where appendRelationInput f = do minput <- getRelationInput w f mdl
@@ -227,7 +253,7 @@ appendRelationInputs w o fs mdl = do let sfs = nub . concatMap (map blankTerms .
                                         Nothing -> return Nothing
                                         Just input -> appendChild o (Just input)
 
-appendFunctionInputs :: Document -> Element -> [PureFOLTerm] -> IORef PolyadicModel -> IO ()
+appendFunctionInputs :: ModelingLanguage lex => Document -> Element -> [FixLang lex (Term Int)] -> IORef PolyadicModel -> IO ()
 appendFunctionInputs w o fs mdl = do let sfs = nub . concatMap (map blankFuncTerms . universe) $ fs
                                      mapM_ appendFunctionInput sfs
     where appendFunctionInput f = do minput <- getFunctionInput w f mdl
@@ -235,7 +261,7 @@ appendFunctionInputs w o fs mdl = do let sfs = nub . concatMap (map blankFuncTer
                                         Nothing -> return Nothing
                                         Just input -> appendChild o (Just input)
 
-appendConstantInputs :: Document -> Element -> [PureFOLTerm] -> IORef PolyadicModel -> IO ()
+appendConstantInputs :: ModelingLanguage lex => Document -> Element -> [FixLang lex (Term Int)] -> IORef PolyadicModel -> IO ()
 appendConstantInputs w o ts mdl = do let sts = nub . concatMap universe $ ts
                                      mapM_ appendConstantInput sts
     where appendConstantInput t = do minput <- getConstInput w t mdl
@@ -243,7 +269,7 @@ appendConstantInputs w o ts mdl = do let sts = nub . concatMap universe $ ts
                                         Nothing -> return Nothing
                                         Just input -> appendChild o (Just input)
 
-appendPropInputs :: Document -> Element -> [PureFOLForm] -> IORef PolyadicModel -> IO ()
+appendPropInputs :: ModelingLanguage lex => Document -> Element -> [FixLang lex (Form Bool)] -> IORef PolyadicModel -> IO ()
 appendPropInputs w o fs mdl = do let sfs = nub . concatMap universe $ fs
                                  mapM_ appendPropInput sfs
     where appendPropInput t = do minput <- getPropInput w t mdl
@@ -251,7 +277,7 @@ appendPropInputs w o fs mdl = do let sfs = nub . concatMap universe $ fs
                                     Nothing -> return Nothing
                                     Just input -> appendChild o (Just input)
 
-getConstInput :: Document -> PureFOLTerm -> IORef PolyadicModel -> IO (Maybe Element)
+getConstInput :: ModelingLanguage lex => Document -> FixLang lex (Term Int) -> IORef PolyadicModel -> IO (Maybe Element)
 getConstInput w t mdl = case addConstant t mdl (Term 0) of
                             Nothing -> return Nothing
                             Just _ -> do
@@ -268,7 +294,7 @@ getConstInput w t mdl = case addConstant t mdl (Term 0) of
                                  Just io -> liftIO io
                                  Nothing -> return ()
 
-getPropInput :: Document -> PureFOLForm -> IORef PolyadicModel -> IO (Maybe Element)
+getPropInput :: ModelingLanguage lex => Document -> FixLang lex (Form Bool) -> IORef PolyadicModel -> IO (Maybe Element)
 getPropInput w f mdl = case addProposition f mdl False of
                             Nothing -> return Nothing
                             Just _ -> do
@@ -295,7 +321,7 @@ getPropInput w f mdl = case addProposition f mdl False of
                 Just io -> liftIO io
                 Nothing -> return ()
 
-getRelationInput :: Document -> PureFOLForm -> IORef PolyadicModel -> IO (Maybe Element)
+getRelationInput :: ModelingLanguage lex => Document -> FixLang lex (Form Bool) -> IORef PolyadicModel -> IO (Maybe Element)
 getRelationInput w f mdl = case addRelation f mdl [] of
                              Nothing -> return Nothing
                              Just io -> do 
@@ -316,7 +342,7 @@ getRelationInput w f mdl = case addRelation f mdl [] of
                                      Just io -> liftIO io >> return ()
                                      Nothing -> return ()
 
-getFunctionInput :: Document -> PureFOLTerm -> IORef PolyadicModel -> IO (Maybe Element)
+getFunctionInput :: ModelingLanguage lex => Document -> FixLang lex (Term Int)-> IORef PolyadicModel -> IO (Maybe Element)
 getFunctionInput w f mdl = case addFunction f mdl [] of
                              Nothing -> return Nothing
                              Just io -> do 
@@ -337,12 +363,11 @@ getFunctionInput w f mdl = case addFunction f mdl [] of
                                      Just io -> liftIO io >> return ()
                                      Nothing -> return ()
 
-
-addRelation :: PureFOLForm -> IORef PolyadicModel -> [[Thing]] -> Maybe (IO (Maybe Int))
+addRelation :: ModelingLanguage lex => FixLang lex (Form Bool) -> IORef PolyadicModel -> [[Thing]] -> Maybe (IO (Maybe Int))
 addRelation f mdl extension = withArity onRel (AZero :: Arity (Term Int) (Form Bool) (Form Bool)) f
-    where _predIdx' :: Typeable ret =>  Prism' (PureLanguageFOL ret) (Int, Arity (Term Int) (Form Bool) ret)
+    where _predIdx' :: (ModelingLanguage lex, Typeable ret) =>  Prism' (FixLang lex ret) (Int, Arity (Term Int) (Form Bool) ret)
           _predIdx' = _predIdx
-          onRel :: Arity (Term Int) (Form Bool) ret -> PureLanguageFOL ret -> IO (Maybe Int)
+          onRel :: ModelingLanguage lex => Arity (Term Int) (Form Bool) ret -> FixLang lex ret -> IO (Maybe Int)
           onRel _ f@(Fx _) = case preview _predIdx' f of 
                  Nothing -> return Nothing
                  Just (idx,a) -> do
@@ -353,11 +378,11 @@ addRelation f mdl extension = withArity onRel (AZero :: Arity (Term Int) (Form B
                         }
                      return $ Just (arityInt a)
 
-addFunction :: PureFOLTerm-> IORef PolyadicModel -> [[Thing]] -> Maybe (IO (Maybe Int))
+addFunction :: ModelingLanguage lex => FixLang lex (Term Int) -> IORef PolyadicModel -> [[Thing]] -> Maybe (IO (Maybe Int))
 addFunction f mdl extension = withArity onFunc (AZero :: Arity (Term Int) (Term Int) (Term Int)) f
-    where _funcIdx' :: Typeable ret =>  Prism' (PureLanguageFOL ret) (Int, Arity (Term Int) (Term Int) ret)
+    where _funcIdx' :: (ModelingLanguage lex, Typeable ret) =>  Prism' (FixLang lex ret) (Int, Arity (Term Int) (Term Int) ret)
           _funcIdx' = _funcIdx
-          onFunc :: Arity (Term Int) (Term Int) ret -> PureLanguageFOL ret -> IO (Maybe Int)
+          onFunc :: ModelingLanguage lex => Arity (Term Int) (Term Int) ret -> FixLang lex ret -> IO (Maybe Int)
           onFunc _ f@(Fx _) = case preview _funcIdx' f of 
                  Nothing -> return Nothing
                  Just (idx,a) -> do
@@ -370,7 +395,7 @@ addFunction f mdl extension = withArity onFunc (AZero :: Arity (Term Int) (Term 
           toMap n = fromList . map (splitTup n) 
           splitTup n tup = (take n tup, head (Prelude.drop n tup))
 
-addConstant :: PureFOLTerm-> IORef PolyadicModel -> Thing -> Maybe (IO ())
+addConstant :: ModelingLanguage lex => FixLang lex (Term Int) -> IORef PolyadicModel -> Thing -> Maybe (IO ())
 addConstant t mdl extension = case preview _constIdx t of
                                   Nothing -> Nothing
                                   Just idx -> Just $ modifyIORef mdl $ \m -> m
@@ -378,7 +403,7 @@ addConstant t mdl extension = case preview _constIdx t of
                                             { name = \n -> if n == idx then extension else name (monadicPart m) n }
                                         }
                                     
-addProposition :: PureFOLForm -> IORef PolyadicModel -> Bool -> Maybe (IO ())
+addProposition :: ModelingLanguage lex => FixLang lex (Form Bool)-> IORef PolyadicModel -> Bool -> Maybe (IO ())
 addProposition t mdl extension = case preview _propIndex t of
                                   Nothing -> Nothing
                                   Just idx -> Just $ modifyIORef mdl $ \m -> m
@@ -518,10 +543,10 @@ setField w fields (name,val) = do inputs <- concat <$> mapM (\f -> getListOfElem
                                                   return ()
                                    _ -> print $ "missing or duplicated field " ++ name ++ "in countermodel spec"
 
-blankTerms :: PureFOLForm -> PureFOLForm
+blankTerms :: ModelingLanguage lex => FixLang lex (Form Bool) -> FixLang lex (Form Bool)
 blankTerms f = set termsOf (foVar "_") f
 
-blankFuncTerms :: PureFOLTerm -> PureFOLTerm
+blankFuncTerms :: ModelingLanguage lex => FixLang lex (Term Int) -> FixLang lex (Term Int)
 blankFuncTerms f = set termsOf (foVar "_") f
 
 parseInt :: Parsec String () Thing

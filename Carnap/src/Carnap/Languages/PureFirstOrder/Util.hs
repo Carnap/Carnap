@@ -250,6 +250,10 @@ removeBlock f g vars | udf > 0 && udf == udg = revar f g (take udf vars) (take u
           instantiateSeq f (v:vs) = instantiateSeq (instantiate f (foVar v)) vs
           instantiateSeq f [] = f
 
+universalClosure :: ( PrismStandardVar lex Int, PrismSubstitutionalVariable lex, BoundVars lex
+                    , FirstOrderLex (lex (FixLang lex)), CopulaSchema (FixLang lex), Schematizable (lex (FixLang lex))
+                    , QuantLanguage (FixLang lex (Form Bool)) (FixLang lex (Term Int))
+                    ) => FixLang lex (Form Bool)-> FixLang lex (Form Bool)
 universalClosure f = case varsOf f of
                          [] -> f
                          ls -> foldl bindIn f ls 
