@@ -263,7 +263,7 @@ foseqFromNode lineno rules prems conc =
            rprems <- permutations (premisesOf rrule) 
            return $ oneRule rrule rprems
     where oneRule r rp = do if length rp /= length prems 
-                                then Left $ GenericError "Wrong number of premises" lineno
+                                then Left $ GenericError "Dependencies are of the wrong number or form" lineno
                                 else Right ""
                             let rconc = conclusionOf r
                             fosub <- fosolve 
@@ -287,7 +287,7 @@ hoseqFromNode lineno rules prems conc =
            --the supplied premises
            rps <- permutations (premisesOf r) 
            if length rps /= length prems 
-                then return $ Left $ GenericError "Wrong number of premises" lineno
+                then return $ Left $ GenericError "Dependencies are of the wrong number or form" lineno
                 else do let rconc = conclusionOf r
                         --create and solve a unification problem: 
                         --To unify the right-hand-sides of each sequent in

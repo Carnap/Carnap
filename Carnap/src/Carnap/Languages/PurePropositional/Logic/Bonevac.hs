@@ -3,6 +3,7 @@ module Carnap.Languages.PurePropositional.Logic.Bonevac
     (parseBonevacSL,  parseBonevacSLProof, BonevacSL, bonevacSLCalc) where
 
 import Data.Map as M (lookup, Map)
+import Data.Char
 import Text.Parsec
 import Carnap.Core.Data.Types (Form)
 import Carnap.Languages.PurePropositional.Syntax
@@ -18,7 +19,8 @@ import Carnap.Languages.PurePropositional.Logic.Rules
 --Bonevac's Deduction
 
 data BonevacSL = As | AndE1 | AndE2 | AndI 
-               | NegE | NegI | ID1 | ID2 | ID3 | ID4
+               | NegE | NegI  
+               | ID1 | ID2 | ID3 | ID4 | ID5 | ID6 | ID7 | ID8 
                | IfE1 | IfE2  | IfI1 | IfI2
                | IffI | CB1 | CB2 | IffE1 | IffE2 | IffE3 | IffE4
                | OrI1 | OrI2 | OrE1 | OrE2 | OrE3
@@ -29,7 +31,7 @@ data BonevacSL = As | AndE1 | AndE2 | AndI
                | CondDisj1 | CondDisj2
                | CommAnd | AssAnd1 | AssAnd2
                | CommOr  | AssOr1  | AssOr2
-               | EFQ | AIP | ACP | R
+               | EFQ | AIP | ACP | R | DP
                deriving (Eq)
 
 instance Show BonevacSL where
@@ -43,6 +45,10 @@ instance Show BonevacSL where
     show ID2        = ""
     show ID3        = ""
     show ID4        = ""
+    show ID5        = ""
+    show ID6        = ""
+    show ID7        = ""
+    show ID8        = ""
     show IfE1      = "→E"
     show IfE2      = "→E*"
     show IfI1       = ""
@@ -81,6 +87,7 @@ instance Show BonevacSL where
     show AIP       = "AIP"
     show ACP       = "ACP"
     show R         = "R"
+    show DP        = ""
 
 instance Inference BonevacSL PurePropLexicon (Form Bool) where
           ruleOf As        = axiom
@@ -89,10 +96,18 @@ instance Inference BonevacSL PurePropLexicon (Form Bool) where
           ruleOf AndI      = adjunction
           ruleOf NegE      = doubleNegationElimination
           ruleOf NegI      = doubleNegationIntroduction
+          ruleOf ID1       = constructiveReductioVariations !! 0
+          ruleOf ID2       = constructiveReductioVariations !! 1
+          ruleOf ID3       = constructiveReductioVariations !! 2
+          ruleOf ID4       = constructiveReductioVariations !! 3
+          ruleOf ID5       = nonConstructiveReductioVariations !! 0
+          ruleOf ID6       = nonConstructiveReductioVariations !! 1
+          ruleOf ID7       = nonConstructiveReductioVariations !! 2
+          ruleOf ID8       = nonConstructiveReductioVariations !! 3
           ruleOf IfE1      = modusPonens
           ruleOf IfE2      = modusTollens
-          ruleOf IfI1      = conditionalProofVariations !! 0
-          ruleOf IfI2      = conditionalProofVariations !! 1
+          ruleOf IfI1      = explicitConditionalProofVariations !! 0
+          ruleOf IfI2      = explicitConditionalProofVariations !! 1
           ruleOf IffI      = conditionalToBiconditional
           ruleOf CB1       = biconditionalToConditionalVariations !! 0
           ruleOf CB2       = biconditionalToConditionalVariations !! 1
@@ -127,11 +142,12 @@ instance Inference BonevacSL PurePropLexicon (Form Bool) where
           ruleOf AIP       = axiom
           ruleOf ACP       = axiom
           ruleOf R         = identityRule
+          ruleOf DP        = identityRule
 
-          -- TODO fix this up so that these rules use ProofTypes with variable
-          -- arities.
+          indirectInference  AIP = Just (DeferredTo (TypedProof (ProofType 0 2)))
+          indirectInference  ACP = Just (DeferredTo (TypedProof (ProofType 1 1)))
           indirectInference x 
-             | x `elem` [ID1,ID2,ID3,ID4,IfI1,IfI2] = Just assumptiveProof
+             | x `elem` [DP,ID1,ID2,ID3,ID4,ID5,ID6,ID7,ID8,IfI1,IfI2] = Just (DeferTo 1)
              | otherwise = Nothing
 
           isAssumption As = True
@@ -144,16 +160,16 @@ instance Inference BonevacSL PurePropLexicon (Form Bool) where
 parseBonevacSL :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> Parsec String u [BonevacSL]
 parseBonevacSL rtc = do ms <- optionMaybe (spaces >> eof)
                         case ms of 
-                           Just _ -> return [ID1,ID2,ID3,ID4,IfI1,IfI2]
+                           Just _ -> return [DP, ID1,ID2,ID3,ID4,ID5,ID6,ID7,ID8,IfI1,IfI2]
                            Nothing -> do
-                                r <- choice (map (try . string) ["A","&I","/\\I", "^I","&E","/\\E", "^E","~~","--","¬¬","DN","R"
-                                                                ,"->E", "→E", "MP","->E*", "→E*", "MT","<->I","↔I"
-                                                                ,"AIP","ACP","-><->", "→↔","<->E", "↔E","<->E*", "↔E*"
-                                                                ,"vI", "\\/I", "∨I","vE", "\\/E", "∨E", "CD","vE*", "\\/E*"
-                                                                , "∨E*", "DS","!","~&", "-&", "~/\\","-/\\","~^", "-&", "¬∧", "¬&"
-                                                                ,"~v", "-v", "~\\/", "-\\/", "¬∨","~->", "-->", "¬→","~<->", "-<->"
+                                r <- choice (map (try . string) ["AIP" ,"ACP" , "A","&I","/\\I", "^I","&E","/\\E", "^E"
+                                                                ,"~~","--","¬¬","DN","R" , "->E*", "→E*", "MT","->E", "→E"
+                                                                , "MP", "<->I","↔I" , "-><->", "→↔","<->E*", "↔E*","<->E", "↔E"
+                                                                , "vI", "\\/I", "vE*", "\\/E*" , "∨E*", "DS", "∨I","vE", "\\/E"
+                                                                , "∨E", "CD","!","~&", "-&", "~/\\","-/\\","~^", "-&", "¬∧", "¬&"
+                                                                , "~v", "-v", "~\\/", "-\\/", "¬∨","~->", "-->", "¬→","~<->", "-<->"
                                                                 , "¬↔","->v", "->\\/", "→∨","&C","/\\C", "^C", "∧C"
-                                                                ,"&A","/\\A", "^A", "∧A","vC","\\/C", "∨C","vA","\\/A", "∨A"])
+                                                                , "&A","/\\A", "^A", "∧A","vC","\\/C", "∨C","vA","\\/A", "∨A"])
                                 return $ case r of
                                      r | r == "A" -> [As]
                                        | r `elem` ["&I","/\\I", "^I"] -> [AndI]
@@ -183,11 +199,19 @@ parseBonevacSL rtc = do ms <- optionMaybe (spaces >> eof)
                                        | r `elem` ["vA","\\/A", "∨A"] -> [AssOr1,AssOr2]
 
 parseBonevacSLProof :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> String -> [DeductionLine BonevacSL PurePropLexicon (Form Bool)]
-parseBonevacSLProof rtc = toDeductionHardegree (parseBonevacSL rtc) (purePropFormulaParser hardegreeOpts)
+parseBonevacSLProof rtc = toDeductionHardegree (parseBonevacSL rtc) (purePropFormulaParser bonevacOpts)
+
+bonevacNotation :: String -> String
+bonevacNotation (x:xs) | isUpper x = toLower x : bonevacNotation xs
+                       | otherwise = x : bonevacNotation xs
+bonevacNotation [] = []
 
 bonevacSLCalc = mkNDCalc 
     { ndRenderer = MontagueStyle
     , ndParseProof = parseBonevacSLProof
     , ndProcessLine = processLineHardegree
     , ndProcessLineMemo = Nothing
+    , ndParseSeq = parseSeqOver (purePropFormulaParser bonevacOpts)
+    , ndParseForm = purePropFormulaParser bonevacOpts
+    , ndNotation = bonevacNotation
     }

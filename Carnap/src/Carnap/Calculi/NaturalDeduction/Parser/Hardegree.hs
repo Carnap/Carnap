@@ -53,7 +53,11 @@ toProofTreeHardegree ded n = case ded !! (n - 1)  of
                    mapM_ checkDep deps
                    dp <- case indirectInference r' of
                             Just (TypedProof prooftype) -> subproofProcess prooftype (n + 1) m
-                            Nothing -> subproofProcess (ProofType 0 . length $ premisesOf r') (n + 1) m --Hardegree allows this, and it's rather nice in his notation
+                            Just (DeferTo k) | length ded < (n + 1) -> err "Waiting on context to determine proof type"
+                                             | otherwise -> case ruleOfLine (ded !! ((n - 1) + k)) >>= indirectInference . head of
+                                                                (Just (DeferredTo (TypedProof prooftype))) -> subproofProcess prooftype (n + 1) m
+                                                                _ -> subproofProcess (ProofType 0 . length $ premisesOf r') (n + 1) m
+                            _ -> subproofProcess (ProofType 0 . length $ premisesOf r') (n + 1) m --Hardegree allows this, and it's rather nice in his notation
                    deps' <- mapM (toProofTreeHardegree ded) (dp ++ deps)
                    return $ Node (ProofLine n (SS $ liftToSequent f) r) deps'
                 where checkDep depline = takeRange depline n >>= scan
