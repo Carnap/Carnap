@@ -7,7 +7,6 @@ import Carnap.Core.Data.Classes
 import Carnap.Languages.PurePropositional.Syntax (PureConst,PureConn)
 import Carnap.Languages.PureFirstOrder.Syntax
 import Carnap.Languages.Util.GenericConstructors
-import Control.Applicative
 import Data.Map as M (lookup,Map,filterWithKey,mapKeys)
 
 type Thing = Term Int

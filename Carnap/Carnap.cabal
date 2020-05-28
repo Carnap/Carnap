@@ -89,6 +89,7 @@ library
                      , Carnap.Languages.SetTheory.Logic.Rules
                      , Carnap.Languages.SetTheory.Logic.Carnap
                      , Carnap.Languages.DefiniteDescription.Syntax
+                     , Carnap.Languages.DefiniteDescription.Semantics
                      , Carnap.Languages.DefiniteDescription.Parser
                      , Carnap.Languages.DefiniteDescription.Logic.Gamut
                      , Carnap.Languages.ClassicalSequent.Syntax
