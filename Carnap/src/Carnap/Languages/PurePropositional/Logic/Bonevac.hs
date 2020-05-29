@@ -150,6 +150,11 @@ instance Inference BonevacSL PurePropLexicon (Form Bool) where
              | x `elem` [DP,ID1,ID2,ID3,ID4,ID5,ID6,ID7,ID8,IfI1,IfI2] = Just (DeferTo 1)
              | otherwise = Nothing
 
+          globalRestriction (Left ded) n As = Just $ \_ -> if all (== Just [As]) . map ruleOfLine . take n $ ded 
+                                                             then Nothing
+                                                             else Just "assumptions can occur only at the top of the proof"
+          globalRestriction _ _ _ = Nothing
+
           isAssumption As = True
           isAssumption AIP = True
           isAssumption ACP = True
