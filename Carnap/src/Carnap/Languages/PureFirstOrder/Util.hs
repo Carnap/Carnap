@@ -1,4 +1,4 @@
-{-# LANGUAGE FlexibleContexts, TypeSynonymInstances, FlexibleInstances, MultiParamTypeClasses, UndecidableInstances #-}
+{-# LANGUAGE FlexibleContexts, TypeSynonymInstances, FlexibleInstances, MultiParamTypeClasses, UndecidableInstances, ConstraintKinds #-}
 module Carnap.Languages.PureFirstOrder.Util 
 (propForm, boundVarOf, toPNF, pnfEquiv, toAllPNF, toDenex, stepDenex,
 skolemize, orientEquations, comparableMatricies, universalClosure,
@@ -24,6 +24,22 @@ import Data.List
 --1 Transformations  --
 -----------------------
 
+type FirstOrderTransformable lex = 
+    ( PrismStandardVar lex Int, PrismSubstitutionalVariable lex
+    , BoundVars lex
+    , FirstOrderLex (lex (FixLang lex)), CopulaSchema (FixLang lex), Schematizable (lex (FixLang lex))
+    , QuantLanguage (FixLang lex (Form Bool)) (FixLang lex (Term Int))
+    , PrismGenericQuant lex Term Form Bool Int
+    , PrismTermEquality lex Int Bool
+    , PrismBooleanConnLex lex Bool
+    , PrismBooleanConst lex Bool
+    , PrismPolyadicFunction lex Int Int
+    , PrismIndexedConstant lex Int
+    , Incrementable lex (Term Int)
+    , CanonicalForm (FixLang lex (Form Bool))
+    , Eq (FixLang lex (Form Bool))
+    )
+
 propForm f = evalState (propositionalize f) []
     where propositionalize = nonBoolean
             & outside (binaryOpPrism _and) .~ (\(x,y) -> land <$> propositionalize x <*> propositionalize y)
@@ -39,19 +55,22 @@ propForm f = evalState (propositionalize f) []
                                    Just n -> return (pn n)
                                    Nothing -> put (abbrev ++ [form]) >> return (pn $ length abbrev)
                                     
+toPNF :: FirstOrderTransformable lex => FixLang lex (Form Bool) -> FixLang lex (Form Bool)
 toPNF = canonical . rewrite stepPNF
 
 --rebuild at each step to remove dummy variables lingering in closures
+toDenex :: FirstOrderTransformable lex => FixLang lex (Form Bool) -> FixLang lex (Form Bool)
 toDenex = canonical . rewrite (stepDenex . rebuild)
 
+toAllPNF :: FirstOrderTransformable lex => FixLang lex (Form Bool) -> [FixLang lex (Form Bool)]
 toAllPNF = map canonical . rewriteM nonDeterministicStepPNF
 
-orientEquations :: FixLang PureLexiconFOL (Form Bool) -> FixLang PureLexiconFOL (Form Bool)
+orientEquations :: FirstOrderTransformable lex => FixLang lex (Form Bool) -> FixLang lex (Form Bool)
 orientEquations = transform $ binaryOpPrism _termEq' %~ (\(t1, t2) -> if show t1 < show t2 then (t1, t2) else (t2, t1))
-    where _termEq' :: Prism' (FixLang PureLexiconFOL (Term Int -> Term Int -> Form Bool)) ()
+    where _termEq' :: FirstOrderTransformable lex => Prism' (FixLang lex (Term Int -> Term Int -> Form Bool)) ()
           _termEq' = _termEq
 
-stepDenex :: FixLang PureLexiconFOL (Form Bool) -> Maybe (FixLang PureLexiconFOL (Form Bool))
+stepDenex :: FirstOrderTransformable lex => FixLang lex (Form Bool) -> Maybe (FixLang lex (Form Bool))
 stepDenex h = const Nothing
             & outside (unaryOpPrismOn _all') .~
                 (\(v, LLam f) -> f dummy & (const Nothing
@@ -69,9 +88,9 @@ stepDenex h = const Nothing
                     & outside (binaryOpPrism _iff) .~ (\(g,g') -> stepDenex $ lsome v $ \x -> ((abst g x ./\. abst g' x) .\/. (lneg (abst g x) ./\. lneg (abst g' x))))
                     & outside (unaryOpPrism _not) .~ (\g -> Just $ lneg $ lall v $ abst g)
                 )) $ h
-    where _all' :: Prism' (FixLang PureLexiconFOL ((Term Int -> Form Bool) -> Form Bool)) String
+    where _all' :: FirstOrderTransformable lex => Prism' (FixLang lex ((Term Int -> Form Bool) -> Form Bool)) String
           _all' = _all
-          _some' :: Prism' (FixLang PureLexiconFOL ((Term Int -> Form Bool) -> Form Bool)) String
+          _some' :: FirstOrderTransformable lex => Prism' (FixLang lex ((Term Int -> Form Bool) -> Form Bool)) String
           _some' = _some
           dummy = foVar "!!!"
           abst f x = subBoundVar dummy x f
@@ -83,7 +102,7 @@ stepDenex h = const Nothing
                                        (False,False) -> Nothing
                                        _ -> Nothing
 
-stepPNF :: FixLang PureLexiconFOL (Form Bool) -> Maybe (FixLang PureLexiconFOL (Form Bool))
+stepPNF :: FirstOrderTransformable lex => FixLang lex (Form Bool) -> Maybe (FixLang lex (Form Bool))
 stepPNF = const Nothing 
             & outside (binaryOpPrism _and . aside (unaryOpPrismOn _all')) .~
                 (\(f,(v, LLam f')) -> Just $ (lall v $ \x -> f ./\. f' x ))
@@ -121,13 +140,13 @@ stepPNF = const Nothing
                 (\(v, LLam f') -> Just $ (lall v $ \x -> lneg $ f' x ))
             & outside (unaryOpPrism _not . unaryOpPrismOn _all') .~
                 (\(v, LLam f') -> Just $ (lsome v $ \x -> lneg $ f' x ))
-    where _all' :: Prism' (FixLang PureLexiconFOL ((Term Int -> Form Bool) -> Form Bool)) String
+    where _all' :: FirstOrderTransformable lex => Prism' (FixLang lex ((Term Int -> Form Bool) -> Form Bool)) String
           _all' = _all
-          _some' :: Prism' (FixLang PureLexiconFOL ((Term Int -> Form Bool) -> Form Bool)) String
+          _some' :: FirstOrderTransformable lex => Prism' (FixLang lex ((Term Int -> Form Bool) -> Form Bool)) String
           _some' = _some
           otherside p = flipt . aside p . flipt
 
-nonDeterministicStepPNF :: FixLang PureLexiconFOL (Form Bool) -> [Maybe (FixLang PureLexiconFOL (Form Bool))]
+nonDeterministicStepPNF :: FirstOrderTransformable lex => FixLang lex (Form Bool) -> [Maybe (FixLang lex (Form Bool))]
 nonDeterministicStepPNF = pure . stepPNF
     & outside (binaryOpPrism _and . aside (unaryOpPrismOn _all') . otherside (unaryOpPrismOn _some')) .~
                 (\((ve, LLam g),(va, LLam f)) -> 
@@ -174,24 +193,24 @@ nonDeterministicStepPNF = pure . stepPNF
                     [ Just $ (lsome va $ \x -> lsome ve $ \y -> ( g y .=>. f x))
                     , Just $ (lsome ve $ \x -> ( g x .=>. f x))
                     ])
-    where _all' :: Prism' (FixLang PureLexiconFOL ((Term Int -> Form Bool) -> Form Bool)) String
+    where _all' :: FirstOrderTransformable lex => Prism' (FixLang lex ((Term Int -> Form Bool) -> Form Bool)) String
           _all' = _all
-          _some' :: Prism' (FixLang PureLexiconFOL ((Term Int -> Form Bool) -> Form Bool)) String
+          _some' :: FirstOrderTransformable lex => Prism' (FixLang lex ((Term Int -> Form Bool) -> Form Bool)) String
           _some' = _some
           otherside p = flipt . aside p . flipt
 
+universalDepth :: FirstOrderTransformable lex => FixLang lex (Form Bool) -> Int
 universalDepth = const 0 & outside (unaryOpPrismOn _all') .~ (\(v, LLam f) -> 1 + universalDepth (f $ foVar v))
-    where _all' :: PrismLink (b (FixLang (OpenLexiconPFOL b))) (Binders (GenericQuant Term Form Bool Int) (FixLang (OpenLexiconPFOL b)))
-                    => Prism' (FixLang (OpenLexiconPFOL b) ((Term Int -> Form Bool) -> Form Bool)) String
+    where _all' :: FirstOrderTransformable lex => Prism' (FixLang lex ((Term Int -> Form Bool) -> Form Bool)) String
           _all' = _all
 
 instantiate f t = inst f
         where inst = const f & outside (unaryOpPrismOn _all) .~ (\(v, LLam g) -> g t)
                              & outside (unaryOpPrismOn _some) .~ (\(v, LLam g) -> g t)
 
+existentialDepth :: FirstOrderTransformable lex => FixLang lex (Form Bool) -> Int
 existentialDepth = const 0 & outside (unaryOpPrismOn _some') .~ (\(v, LLam f) -> 1 + existentialDepth (f $ foVar v))
-    where _some' :: PrismLink (b (FixLang (OpenLexiconPFOL b))) (Binders (GenericQuant Term Form Bool Int) (FixLang (OpenLexiconPFOL b)))
-                    => Prism' (FixLang (OpenLexiconPFOL b) ((Term Int -> Form Bool) -> Form Bool)) String
+    where _some' :: FirstOrderTransformable lex => Prism' (FixLang lex ((Term Int -> Form Bool) -> Form Bool)) String
           _some' = _some
 
 comparableMatricies f g = recur f g (map ((\x -> 'x':x) . show) $ [1 ..])
@@ -200,6 +219,7 @@ comparableMatricies f g = recur f g (map ((\x -> 'x':x) . show) $ [1 ..])
           recur f g v = [(f,g)]
           qdepth f = max (universalDepth f) (existentialDepth f)
 
+pnfEquiv :: FirstOrderTransformable lex => FixLang lex (Form Bool) -> FixLang lex (Form Bool) -> Bool
 pnfEquiv f g = any (== True) theCases
     where theCases = do f' <- toAllPNF f
                         g' <- toAllPNF g
@@ -207,7 +227,7 @@ pnfEquiv f g = any (== True) theCases
                         return $ isValid (propForm . orientEquations $ f'' .<=>. g'')
 
 skolemize f = evalState (toRaw f) ([], maxIndex + 1)
-    where toRaw :: FixLang PureLexiconFOL (Form Bool) -> State ([String],Int) (FixLang PureLexiconFOL (Form Bool))
+    where toRaw :: FirstOrderTransformable lex => FixLang lex (Form Bool) -> State ([String],Int) (FixLang lex (Form Bool))
           toRaw g = case (preview (unaryOpPrismOn _all') g, preview (unaryOpPrismOn _some') g) of
                   (Just (v, LLam f),_) -> do (vars,n) <- get
                                              put (v:vars,n)
@@ -226,17 +246,19 @@ skolemize f = evalState (toRaw f) ([], maxIndex + 1)
 
           maxIndex = maximum . catMaybes $ concatMap allIdx $ toListOf termsOf f
 
-          allIdx :: Typeable a => FixLang PureLexiconFOL a -> [Maybe Int]
+          allIdx :: (FirstOrderTransformable lex, Typeable a) => FixLang lex a -> [Maybe Int]
           allIdx (h :!$: t) = (preview _funcIdx' >=> pure . fst) t : allIdx h
           allIdx x = [(preview _funcIdx' >=> pure . fst) x]
 
-          _all' :: Prism' (FixLang PureLexiconFOL ((Term Int -> Form Bool) -> Form Bool)) String
+          _all' :: FirstOrderTransformable lex => Prism' (FixLang lex ((Term Int -> Form Bool) -> Form Bool)) String
           _all' = _all
-          _some' :: Prism' (FixLang PureLexiconFOL ((Term Int -> Form Bool) -> Form Bool)) String
+          _some' :: FirstOrderTransformable lex =>  Prism' (FixLang lex ((Term Int -> Form Bool) -> Form Bool)) String
           _some' = _some
-          _funcIdx' :: Typeable ret => Prism' (FixLang PureLexiconFOL ret) (Int, Arity (Term Int) (Term Int) ret)
+          _funcIdx' :: (FirstOrderTransformable lex, Typeable ret) => Prism' (FixLang lex ret) (Int, Arity (Term Int) (Term Int) ret)
           _funcIdx' = _funcIdx
 
+removeBlock :: FirstOrderTransformable lex => FixLang lex (Form Bool) -> FixLang lex (Form Bool) -> [String] 
+                -> [(FixLang lex (Form Bool), FixLang lex (Form Bool))]
 removeBlock f g vars | udf > 0 && udf == udg = revar f g (take udf vars) (take udf vars)
                      | edf > 0 && edf == edg = revar f g (take edf vars) (take edf vars)
                      | otherwise = []
@@ -274,24 +296,26 @@ boundVarOf v f = case preview  _varLabel v >>= subBinder f of
                             Just f' -> show f' == show f
                             Nothing -> False 
 
-isPNF :: FirstOrderLex (a (FixLang (PureFirstOrderLexWith a))) => FixLang (PureFirstOrderLexWith a) (Form Bool) -> Bool
+isPNF :: (PrismGenericQuant lex Term Form Bool Int, PrismSubstitutionalVariable lex, BoundVars lex, FirstOrderLex (lex (FixLang lex))) 
+    => FixLang lex (Form Bool) -> Bool
 isPNF = quantFree
           & outside (unaryOpPrismOn _all') .~ const True
           & outside (unaryOpPrismOn _some') .~ \(_,LLam f) -> isPNF $ f (static 0)
-    where _all' :: Prism' (FixLang (PureFirstOrderLexWith a) ((Term Int -> Form Bool) -> Form Bool)) String
+    where _all' :: PrismGenericQuant lex Term Form Bool Int => Prism' (FixLang lex ((Term Int -> Form Bool) -> Form Bool)) String
           _all' = _all
-          _some' :: Prism' (FixLang (PureFirstOrderLexWith a) ((Term Int -> Form Bool) -> Form Bool)) String
+          _some' :: PrismGenericQuant lex Term Form Bool Int => Prism' (FixLang lex ((Term Int -> Form Bool) -> Form Bool)) String
           _some' = _some
 
-quantFree :: FirstOrderLex (a (FixLang (PureFirstOrderLexWith a))) => FixLang (PureFirstOrderLexWith a) (Form Bool) -> Bool
+quantFree :: (PrismGenericQuant lex Term Form Bool Int, PrismSubstitutionalVariable lex, BoundVars lex, FirstOrderLex (lex (FixLang lex))) 
+    => FixLang lex (Form Bool) -> Bool
 quantFree = all notQuant . children
     where notQuant = const True
               & outside (unaryOpPrismOn _all') .~ const False
               & outside (unaryOpPrismOn _some') .~ const False
 
-          _all' :: Prism' (FixLang (PureFirstOrderLexWith a) ((Term Int -> Form Bool) -> Form Bool)) String
+          _all' :: PrismGenericQuant lex Term Form Bool Int => Prism' (FixLang lex ((Term Int -> Form Bool) -> Form Bool)) String
           _all' = _all
-          _some' :: Prism' (FixLang (PureFirstOrderLexWith a) ((Term Int -> Form Bool) -> Form Bool)) String
+          _some' :: PrismGenericQuant lex Term Form Bool Int => Prism' (FixLang lex ((Term Int -> Form Bool) -> Form Bool)) String
           _some' = _some
 
 ------------------

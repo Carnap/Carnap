@@ -3,12 +3,14 @@ module Carnap.GHCJS.Action.Translate (translateAction) where
 
 import Lib
 import Carnap.Calculi.NaturalDeduction.Syntax (NaturalDeductionCalc(..))
-import Carnap.Core.Data.Optics (genChildren)
-import Carnap.Core.Data.Types (FixLang, Form, BoundVars, FirstOrderLex)
+import Carnap.Core.Data.Optics (genChildren, PrismSubstitutionalVariable)
+import Carnap.Core.Data.Types (FixLang, Form, Term, BoundVars, FirstOrderLex)
 import Carnap.Languages.PurePropositional.Logic (ofPropSys)
 import Carnap.Languages.PureFirstOrder.Syntax (PureFirstOrderLexWith)
 import Carnap.Languages.PureFirstOrder.Logic (ofFOLSys)
+import Carnap.Languages.DefiniteDescription.Logic.Gamut
 import Carnap.Languages.PureFirstOrder.Parser (folFormulaParser)
+import Carnap.Languages.DefiniteDescription.Parser (descFormulaParser)
 import Carnap.Languages.PureFirstOrder.Util (toDenex, isPNF, pnfEquiv)
 import Carnap.Languages.PurePropositional.Parser (purePropFormulaParser,standardLetters)
 import Carnap.Languages.PurePropositional.Util (isEquivTo, isDNF, isCNF, HasLiterals(..))
@@ -53,6 +55,10 @@ activateTranslate w (Just (i,o,opts)) = do
                 where formParser = case mparser >>= ofFOLSys ndParseForm of
                                        Nothing -> folFormulaParser
                                        Just theParser -> theParser 
+            (Just "description", mparser) -> activateWith formParser folChecker (folTests testlist)
+                where formParser = case mparser >>= ofDefiniteDescSys ndParseForm of
+                                       Nothing -> descFormulaParser
+                                       Just theParser -> theParser 
             _ -> return ()
     where testlist = case M.lookup "tests" opts of Just s -> words s; Nothing -> []
           optlist = case M.lookup "options" opts of Just s -> words s; Nothing -> []
@@ -80,9 +86,13 @@ activateTranslate w (Just (i,o,opts)) = do
 activateChecker _ Nothing  = return ()
 
 folTests :: forall lex . 
-     ( FirstOrderLex (lex (FixLang (PureFirstOrderLexWith lex)))
-     , HasLiterals (PureFirstOrderLexWith lex) Bool
-     ) => [String] -> UnaryTest (PureFirstOrderLexWith lex) (Form Bool)
+     ( HasLiterals lex Bool
+     , PrismGenericQuant lex Term Form Bool Int
+     , PrismBooleanConst lex Bool
+     , PrismSubstitutionalVariable lex
+     , BoundVars lex
+     , FirstOrderLex (lex (FixLang lex))
+     )=> [String] -> UnaryTest lex (Form Bool)
 folTests testlist f = case catMaybes $ map ($ f) theTests of 
                             [] -> Nothing
                             s:ss -> Just $ foldl (\x y -> x ++ ", and " ++ y) s ss
