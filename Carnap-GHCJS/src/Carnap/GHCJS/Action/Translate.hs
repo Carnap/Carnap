@@ -11,6 +11,7 @@ import Carnap.Languages.PureFirstOrder.Logic (ofFOLSys)
 import Carnap.Languages.DefiniteDescription.Logic.Gamut
 import Carnap.Languages.PureFirstOrder.Parser (folFormulaParser)
 import Carnap.Languages.DefiniteDescription.Parser (descFormulaParser)
+import Carnap.Languages.DefiniteDescription.Util (descEquivPNF)
 import Carnap.Languages.PureFirstOrder.Util (toDenex, isPNF, pnfEquiv)
 import Carnap.Languages.PurePropositional.Parser (purePropFormulaParser,standardLetters)
 import Carnap.Languages.PurePropositional.Util (isEquivTo, isDNF, isCNF, HasLiterals(..))
@@ -55,7 +56,7 @@ activateTranslate w (Just (i,o,opts)) = do
                 where formParser = case mparser >>= ofFOLSys ndParseForm of
                                        Nothing -> folFormulaParser
                                        Just theParser -> theParser 
-            (Just "description", mparser) -> activateWith formParser folChecker (folTests testlist)
+            (Just "description", mparser) -> activateWith formParser descChecker (folTests testlist)
                 where formParser = case mparser >>= ofDefiniteDescSys ndParseForm of
                                        Nothing -> descFormulaParser
                                        Just theParser -> theParser 
@@ -200,3 +201,5 @@ submitTrans opts i ref fs parser checker tests l =
 propChecker f g = f == g || f `isEquivTo` g
 
 folChecker f g = f == g || toDenex f `pnfEquiv` toDenex g
+
+descChecker f g = f == g || toDenex f `descEquivPNF` toDenex g

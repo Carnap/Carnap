@@ -2,7 +2,7 @@
 module Carnap.Languages.PureFirstOrder.Util 
 (propForm, boundVarOf, toPNF, pnfEquiv, toAllPNF, toDenex, stepDenex,
 skolemize, orientEquations, comparableMatricies, universalClosure,
-quantFree, isPNF, isOpenFormula) where
+quantFree, isPNF, isOpenFormula, FirstOrderTransformable) where
 
 import Carnap.Core.Data.Classes
 import Carnap.Core.Unification.Unification
