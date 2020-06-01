@@ -1,7 +1,8 @@
 {-# LANGUAGE FlexibleContexts, FlexibleInstances, MultiParamTypeClasses #-}
 module Carnap.Languages.PurePropositional.Parser 
     ( purePropFormulaParser, standardLetters, extendedLetters, hausmanOpts, thomasBolducZachOpts, hardegreeOpts
-    , standardOpTable, calgaryOpTable, hausmanOpTable, howardSnyderOpTable, gamutOpTable, gamutOpts, howardSnyderOpts, magnusOpts, extendedPropSeqParser
+    , standardOpTable, calgaryOpTable, hausmanOpTable, howardSnyderOpTable, gamutOpTable, gamutOpts, bonevacOpts
+    , howardSnyderOpts, magnusOpts, extendedPropSeqParser
     ) where
 
 import Carnap.Core.Data.Types
@@ -34,6 +35,14 @@ gamutOpts :: Monad m => PurePropositionalParserOptions u m
 gamutOpts = PurePropositionalParserOptions 
                 { atomicSentenceParser = lowerCaseSentenceLetterParser ['a' .. 'z']
                 , hasBooleanConstants = True
+                , opTable = gamutOpTable
+                , parenRecur = \opt recurWith -> parenParser (recurWith opt)
+                }
+
+bonevacOpts :: Monad m => PurePropositionalParserOptions u m
+bonevacOpts = PurePropositionalParserOptions 
+                { atomicSentenceParser = lowerCaseSentenceLetterParser ['a' .. 'z']
+                , hasBooleanConstants = False
                 , opTable = gamutOpTable
                 , parenRecur = \opt recurWith -> parenParser (recurWith opt)
                 }

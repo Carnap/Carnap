@@ -1,7 +1,7 @@
 @font-face {
     font-family:"Fira Logic";
-    src: url("https://cdn.jsdelivr.net/gh/gleachkr/FiraLogic/dist/FiraLogic-Regular.woff") format("woff"), 
-         url("https://cdn.jsdelivr.net/gh/gleachkr/FiraLogic/dist/FiraLogic-Regular.tff") format("tff")
+    src: url("https://cdn.jsdelivr.net/gh/gleachkr/FiraLogic@0.1.1/dist/FiraLogic-Regular.woff") format("woff"), 
+         url("https://cdn.jsdelivr.net/gh/gleachkr/FiraLogic@0.1.1/dist/FiraLogic-Regular.tff") format("tff")
 }
 
 input {

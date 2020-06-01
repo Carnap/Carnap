@@ -42,6 +42,7 @@ library
                      , Carnap.Languages.PurePropositional.Logic.Gamut
                      , Carnap.Languages.PurePropositional.Logic.HowardSnyder
                      , Carnap.Languages.PurePropositional.Logic.Hardegree
+                     , Carnap.Languages.PurePropositional.Logic.Bonevac
                      , Carnap.Languages.PurePropositional.Logic.ThomasBolducAndZach
                      , Carnap.Languages.PurePropositional.Logic.EbelsDuggan
                      , Carnap.Languages.PurePropositional.Logic.Tomassi
@@ -87,6 +88,11 @@ library
                      , Carnap.Languages.SetTheory.Parser
                      , Carnap.Languages.SetTheory.Logic.Rules
                      , Carnap.Languages.SetTheory.Logic.Carnap
+                     , Carnap.Languages.DefiniteDescription.Syntax
+                     , Carnap.Languages.DefiniteDescription.Semantics
+                     , Carnap.Languages.DefiniteDescription.Util
+                     , Carnap.Languages.DefiniteDescription.Parser
+                     , Carnap.Languages.DefiniteDescription.Logic.Gamut
                      , Carnap.Languages.ClassicalSequent.Syntax
                      , Carnap.Languages.ClassicalSequent.Parser
                      , Carnap.Calculi.Util

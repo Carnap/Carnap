@@ -15,7 +15,8 @@ makeTranslate x = x
 
 activate cls extra chunk
     | "Prop" `elem` cls = template (opts [("transtype","prop")])
-    | "FOL" `elem` cls = template (opts [("transtype","first-order")])
+    | "FOL"  `elem` cls = template (opts [("transtype","first-order")])
+    | "Desc" `elem` cls = template (opts [("transtype","description")])
     | otherwise = RawBlock "html" "<div>No Matching Translation</div></div>"
     where numof = takeWhile (/= ' ')
           contentof = dropWhile (== ' ') . dropWhile (/= ' ')

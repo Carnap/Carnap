@@ -1,5 +1,5 @@
 {-#LANGUAGE  FlexibleContexts,  FlexibleInstances, MultiParamTypeClasses #-}
-module Carnap.Languages.PureFirstOrder.Logic.Gamut (gamutNDCalc, parseGamutND, gamutNDPlusCalc, parseGamutNDPlus) where
+module Carnap.Languages.PureFirstOrder.Logic.Gamut (gamutNDCalc, parseGamutND, gamutNDPlusCalc, parseGamutNDPlus, GamutNDCore(..), GamutNDPlus(..), gamutNotation) where
 
 import Text.Parsec
 import Data.Char
@@ -20,7 +20,7 @@ import Carnap.Languages.PureFirstOrder.Logic.Rules
 import Carnap.Languages.PurePropositional.Logic.Gamut as G
 import Carnap.Languages.PurePropositional.Logic.Rules (fitchAssumptionCheck)
 
-data GamutNDCore =  InE | ElimE | InA | ElimA
+data GamutNDCore =  InE | ElimE | InA | ElimA | InEq | ElimEq1 | ElimEq2
         deriving Eq
 
 data GamutND = ND GamutPND | Core GamutNDCore
@@ -52,6 +52,9 @@ instance Show GamutNDCore where
         show ElimE = "E∃"
         show InA = "I∀"
         show ElimA = "E∀"
+        show InEq = "I="
+        show ElimEq1 = "E="
+        show ElimEq2 = "E="
 
 instance Show GamutND where
         show (ND x) = show x
@@ -101,6 +104,9 @@ instance Inference GamutNDCore PureLexiconFOL (Form Bool) where
         ruleOf InA = universalGeneralization
         ruleOf ElimA = universalInstantiation
         ruleOf ElimE = conditionalExistentialDerivation
+        ruleOf InEq = eqReflexivity
+        ruleOf ElimEq1 = leibnizLawVariations !! 0
+        ruleOf ElimEq2 = leibnizLawVariations !! 1
 
         premisesOf r = upperSequents (ruleOf r)
 
@@ -136,10 +142,10 @@ instance Inference GamutND PureLexiconFOL (Form Bool) where
 
         globalRestriction (Left ded) n (Core InA)   = Just (notAssumedConstraint n ded (taun 1 :: FOLSequentCalc (Term Int)))
         globalRestriction (Left ded) n (Core ElimE) = Just (notAssumedConstraint n ded (taun 1 :: FOLSequentCalc (Term Int)))
-        globalRestriction (Left ded) n (ND (IPND (MPND InIf1))) = Just $ fitchAssumptionCheck n ded [(phin 1, phin 2)]
-        globalRestriction (Left ded) n (ND (IPND (MPND InIf2))) = Just $ fitchAssumptionCheck n ded [(phin 1, phin 2)]
-        globalRestriction (Left ded) n (ND (IPND (MPND InNeg1))) = Just $ fitchAssumptionCheck n ded [(phin 1, lfalsum)]
-        globalRestriction (Left ded) n (ND (IPND (MPND InNeg2))) = Just $ fitchAssumptionCheck n ded [(phin 1, lfalsum)]
+        globalRestriction (Left ded) n (ND (IPND (MPND InIf1))) = Just $ fitchAssumptionCheck n ded [([phin 1], [phin 2])]
+        globalRestriction (Left ded) n (ND (IPND (MPND InIf2))) = Just $ fitchAssumptionCheck n ded [([phin 1], [phin 2])]
+        globalRestriction (Left ded) n (ND (IPND (MPND InNeg1))) = Just $ fitchAssumptionCheck n ded [([phin 1], [lfalsum])]
+        globalRestriction (Left ded) n (ND (IPND (MPND InNeg2))) = Just $ fitchAssumptionCheck n ded [([phin 1], [lfalsum])]
         globalRestriction _ _ _ = Nothing
 
         isAssumption (ND x) = isAssumption x
@@ -227,6 +233,7 @@ instance Inference GamutNDPlus PureLexiconFOL (Form Bool) where
         conclusionOf r = lowerSequent (ruleOf r)
 
         indirectInference (NDP x) = indirectInference x
+        indirectInference (CoreP x) = indirectInference x
         indirectInference _ = Nothing
 
         restriction (CoreP x) = restriction x
@@ -234,21 +241,23 @@ instance Inference GamutNDPlus PureLexiconFOL (Form Bool) where
 
         globalRestriction (Left ded) n (CoreP InA)   = Just (notAssumedConstraint n ded (taun 1 :: FOLSequentCalc (Term Int)))
         globalRestriction (Left ded) n (CoreP ElimE) = Just (notAssumedConstraint n ded (taun 1 :: FOLSequentCalc (Term Int)))
-        globalRestriction (Left ded) n (NDP (PND (IPND (MPND InIf1)))) = Just $ fitchAssumptionCheck n ded [(phin 1, phin 2)]
-        globalRestriction (Left ded) n (NDP (PND (IPND (MPND InIf2)))) = Just $ fitchAssumptionCheck n ded [(phin 1, phin 2)]
-        globalRestriction (Left ded) n (NDP (PND (IPND (MPND InNeg1)))) = Just $ fitchAssumptionCheck n ded [(phin 1, lfalsum)]
-        globalRestriction (Left ded) n (NDP (PND (IPND (MPND InNeg2)))) = Just $ fitchAssumptionCheck n ded [(phin 1, lfalsum)]
+        globalRestriction (Left ded) n (NDP (PND (IPND (MPND InIf1)))) = Just $ fitchAssumptionCheck n ded [([phin 1], [phin 2])]
+        globalRestriction (Left ded) n (NDP (PND (IPND (MPND InIf2)))) = Just $ fitchAssumptionCheck n ded [([phin 1], [phin 2])]
+        globalRestriction (Left ded) n (NDP (PND (IPND (MPND InNeg1)))) = Just $ fitchAssumptionCheck n ded [([phin 1], [lfalsum])]
+        globalRestriction (Left ded) n (NDP (PND (IPND (MPND InNeg2)))) = Just $ fitchAssumptionCheck n ded [([phin 1], [lfalsum])]
         globalRestriction _ _ _ = Nothing
 
         isAssumption (NDP x) = isAssumption x
         isAssumption _ = False
 
-parseGamutNDCore rtc = do r <- choice (map (try . string) [ "IA", "I∀", "EA", "E∀", "IE", "I∃", "EE", "E∃" ])
+parseGamutNDCore rtc = do r <- choice (map (try . string) [ "IA", "I∀", "EA", "E∀", "IE", "I∃", "EE", "E∃", "I=", "E=" ])
                           case r of
                               r | r `elem` [ "IA", "I∀" ] -> return [InA]
                                 | r `elem` [ "EA", "E∀" ] -> return [ElimA]
                                 | r `elem` [ "IE", "I∃" ] -> return [InE]
                                 | r `elem` [ "EE", "E∃" ] -> return [ElimE]
+                                | r `elem` [ "I=" ] -> return [InEq]
+                                | r `elem` [ "E=" ] -> return [ElimEq1, ElimEq2]
 
 parseGamutND rtc = try propRule <|> quantRule
     where propRule = map ND <$> parseGamutPND rtc
@@ -284,10 +293,12 @@ parseGamutNDPlusProof rtc = toDeductionFitch (parseGamutNDPlus rtc) (gamutNDForm
 gamutNotation :: String -> String
 gamutNotation (x:xs) = if x `elem` ['A' .. 'Z'] then x : trimParens 0 xs else x : gamutNotation xs
     where trimParens 0 ('(':xs) = trimParens 1 xs
+          trimParens 0 xs = gamutNotation xs
           trimParens 1 (')':xs) = gamutNotation xs
           trimParens 1 (',':xs) = trimParens 1 xs
           trimParens n ('(':xs) = '(' : trimParens (n + 1) xs
           trimParens n (')':xs) = ')' : trimParens (n - 1) xs
+          trimParens n (x:xs) | x `elem` ['A' .. 'Z'] = x : trimParens n (trimParens 0 xs)
           trimParens n (x:xs) = x : trimParens n xs
           trimParens n [] = []
 gamutNotation x = x

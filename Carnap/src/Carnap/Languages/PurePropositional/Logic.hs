@@ -15,6 +15,7 @@ module Carnap.Languages.PurePropositional.Logic
     , parseEbelsDugganTFL, EbelsDugganTFL, ebelsDugganTFLCalc
     , parseTomassiPL, TomassiPL, tomassiPLCalc
     , parseHardegreeSL, HardegreeSL, hardegreeSLCalc
+    , parseBonevacSL, BonevacSL, bonevacSLCalc
     , parseGentzenPropNJ, GentzenPropNJ, gentzenPropNJCalc
     , parseGentzenPropNK, GentzenPropNK, gentzenPropNKCalc
     , ofPropSys, ofPropTreeSys
@@ -29,6 +30,7 @@ import Carnap.Languages.PurePropositional.Logic.Rules (PropSequentCalc)
 import Carnap.Languages.PurePropositional.Logic.BergmannMoorAndNelson
 import Carnap.Languages.PurePropositional.Logic.Carnap
 import Carnap.Languages.PurePropositional.Logic.Hardegree
+import Carnap.Languages.PurePropositional.Logic.Bonevac
 import Carnap.Languages.PurePropositional.Logic.Hausman
 import Carnap.Languages.PurePropositional.Logic.Gamut
 import Carnap.Languages.PurePropositional.Logic.HowardSnyder
@@ -62,6 +64,7 @@ ofPropSys f sys | sys == "prop"                          = Just $ f propCalc
                 | sys == "ebelsDugganTFL"                = Just $ f ebelsDugganTFLCalc 
                 | sys == "tomassiPL"                     = Just $ f tomassiPLCalc
                 | sys == "hardegreeSL"                   = Just $ f hardegreeSLCalc 
+                | sys == "bonevacSL"                     = Just $ f bonevacSLCalc 
                 | otherwise                              = Nothing
 
 ofPropTreeSys :: (forall r . 

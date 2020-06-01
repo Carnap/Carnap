@@ -249,6 +249,8 @@ instance (Sequentable lex, PrismStandardVar lex b) => PrismStandardVar (Classica
         link_StandardVar = underlyingLex . link_StandardVar . relexIso
 instance (Sequentable lex, PrismSubstitutionalVariable lex) => PrismSubstitutionalVariable (ClassicalSequentLexOver lex) where
         link_PrismSubstitutionalVar = underlyingLex . link_PrismSubstitutionalVar . relexIso
+instance (Sequentable lex, PrismDefiniteDesc lex b c) => PrismDefiniteDesc (ClassicalSequentLexOver lex) b c where
+        link_definDesc = underlyingLex . link_definDesc . relexIso
 
 
 

@@ -115,10 +115,10 @@ instance Inference GamutMPND PurePropLexicon (Form Bool) where
         isAssumption AS = True
         isAssumption _ = False
 
-        globalRestriction (Left ded) n InIf1 = Just $ fitchAssumptionCheck n ded [(phin 1, phin 2)]
-        globalRestriction (Left ded) n InIf2 = Just $ fitchAssumptionCheck n ded [(phin 1, phin 2)]
-        globalRestriction (Left ded) n InNeg1 = Just $ fitchAssumptionCheck n ded [(phin 1, lfalsum)]
-        globalRestriction (Left ded) n InNeg2 = Just $ fitchAssumptionCheck n ded [(phin 1, lfalsum)]
+        globalRestriction (Left ded) n InIf1 = Just $ fitchAssumptionCheck n ded [([phin 1], [phin 2])]
+        globalRestriction (Left ded) n InIf2 = Just $ fitchAssumptionCheck n ded [([phin 1], [phin 2])]
+        globalRestriction (Left ded) n InNeg1 = Just $ fitchAssumptionCheck n ded [([phin 1], [lfalsum])]
+        globalRestriction (Left ded) n InNeg2 = Just $ fitchAssumptionCheck n ded [([phin 1], [lfalsum])]
         globalRestriction _ _ _ = Nothing
 
 instance Inference GamutIPND PurePropLexicon (Form Bool) where
@@ -131,10 +131,10 @@ instance Inference GamutIPND PurePropLexicon (Form Bool) where
         isAssumption (MPND x) = isAssumption x
         isAssumption _ = False
 
-        globalRestriction (Left ded) n (MPND InIf1) = Just $ fitchAssumptionCheck n ded [(phin 1, phin 2)]
-        globalRestriction (Left ded) n (MPND InIf2) = Just $ fitchAssumptionCheck n ded [(phin 1, phin 2)]
-        globalRestriction (Left ded) n (MPND InNeg1) = Just $ fitchAssumptionCheck n ded [(phin 1, lfalsum)]
-        globalRestriction (Left ded) n (MPND InNeg2) = Just $ fitchAssumptionCheck n ded [(phin 1, lfalsum)]
+        globalRestriction (Left ded) n (MPND InIf1) = Just $ fitchAssumptionCheck n ded [([phin 1], [phin 2])]
+        globalRestriction (Left ded) n (MPND InIf2) = Just $ fitchAssumptionCheck n ded [([phin 1], [phin 2])]
+        globalRestriction (Left ded) n (MPND InNeg1) = Just $ fitchAssumptionCheck n ded [([phin 1], [lfalsum])]
+        globalRestriction (Left ded) n (MPND InNeg2) = Just $ fitchAssumptionCheck n ded [([phin 1], [lfalsum])]
         globalRestriction _ _ _ = Nothing
 
 instance Inference GamutPND PurePropLexicon (Form Bool) where
@@ -147,10 +147,10 @@ instance Inference GamutPND PurePropLexicon (Form Bool) where
         isAssumption (IPND x) = isAssumption x
         isAssumption _ = False
 
-        globalRestriction (Left ded) n (IPND (MPND InIf1)) = Just $ fitchAssumptionCheck n ded [(phin 1, phin 2)]
-        globalRestriction (Left ded) n (IPND (MPND InIf2)) = Just $ fitchAssumptionCheck n ded [(phin 1, phin 2)]
-        globalRestriction (Left ded) n (IPND (MPND InNeg1)) = Just $ fitchAssumptionCheck n ded [(phin 1, lfalsum)]
-        globalRestriction (Left ded) n (IPND (MPND InNeg2)) = Just $ fitchAssumptionCheck n ded [(phin 1, lfalsum)]
+        globalRestriction (Left ded) n (IPND (MPND InIf1)) = Just $ fitchAssumptionCheck n ded [([phin 1], [phin 2])]
+        globalRestriction (Left ded) n (IPND (MPND InIf2)) = Just $ fitchAssumptionCheck n ded [([phin 1], [phin 2])]
+        globalRestriction (Left ded) n (IPND (MPND InNeg1)) = Just $ fitchAssumptionCheck n ded [([phin 1], [lfalsum])]
+        globalRestriction (Left ded) n (IPND (MPND InNeg2)) = Just $ fitchAssumptionCheck n ded [([phin 1], [lfalsum])]
         globalRestriction _ _ _ = Nothing
 
 instance Inference GamutPNDPlus PurePropLexicon (Form Bool) where
@@ -185,10 +185,10 @@ instance Inference GamutPNDPlus PurePropLexicon (Form Bool) where
         isAssumption (PND x) = isAssumption x
         isAssumption _ = False
 
-        globalRestriction (Left ded) n (PND (IPND (MPND InIf1))) = Just $ fitchAssumptionCheck n ded [(phin 1, phin 2)]
-        globalRestriction (Left ded) n (PND (IPND (MPND InIf2))) = Just $ fitchAssumptionCheck n ded [(phin 1, phin 2)]
-        globalRestriction (Left ded) n (PND (IPND (MPND InNeg1))) = Just $ fitchAssumptionCheck n ded [(phin 1, lfalsum)]
-        globalRestriction (Left ded) n (PND (IPND (MPND InNeg2))) = Just $ fitchAssumptionCheck n ded [(phin 1, lfalsum)]
+        globalRestriction (Left ded) n (PND (IPND (MPND InIf1))) = Just $ fitchAssumptionCheck n ded [([phin 1], [phin 2])]
+        globalRestriction (Left ded) n (PND (IPND (MPND InIf2))) = Just $ fitchAssumptionCheck n ded [([phin 1], [phin 2])]
+        globalRestriction (Left ded) n (PND (IPND (MPND InNeg1))) = Just $ fitchAssumptionCheck n ded [([phin 1], [lfalsum])]
+        globalRestriction (Left ded) n (PND (IPND (MPND InNeg2))) = Just $ fitchAssumptionCheck n ded [([phin 1], [lfalsum])]
         globalRestriction _ _ _ = Nothing
 
 parseGamutMPND rtc = do r <- choice (map (try . string) 
