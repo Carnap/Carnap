@@ -175,7 +175,7 @@ instance ( BooleanLanguage (ClassicalSequentOver lex (Form Bool))
          corePremisesOf CondR = [ GammaV 1 :+: SA (phin 1) :|-: SS (phin 2) :-: DeltaV 2 ]
          corePremisesOf NegL = [ GammaV 1 :|-: SS (phin 1) :-: DeltaV 1 ]
          corePremisesOf NegR = [ SA (phin 1) :+: GammaV 1 :|-:  DeltaV 1 ]
-         corePremisesOf Rep =  [GammaV 1 :|-: DeltaV 1 ]
+         corePremisesOf Rep =  [ GammaV 1 :|-: DeltaV 1 ]
          corePremisesOf Cut =  [ SA (phin 1) :+: GammaV 1 :|-: DeltaV 1 
                                , GammaV 2 :|-: DeltaV 2 :-: SS (phin 1)
                                ]
