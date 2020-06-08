@@ -147,7 +147,7 @@ thomasBolducAndZachFOL2019ParserOptions = magnusFOLParserOptions { hasBooleanCon
                                                                               <|> try (sentenceLetterParser "ABCDEFGHIJKLMNOPQRSTUVWXYZ")
                                                                               <|> try (equalsParser x)
                                                                               <|> inequalityParser x
-                                                                 , opTable = calgaryOpTable
+                                                                 , opTable = calgary2019OpTable
                                                                  , finalValidation = \x -> if isOpenFormula x then unexpected "unbound variable" else return ()
                                                                  }
 

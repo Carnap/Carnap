@@ -1,8 +1,8 @@
 {-# LANGUAGE FlexibleContexts, FlexibleInstances, MultiParamTypeClasses #-}
 module Carnap.Languages.PurePropositional.Parser 
-    ( purePropFormulaParser, standardLetters, extendedLetters, hausmanOpts, thomasBolducZachOpts, hardegreeOpts
-    , standardOpTable, calgaryOpTable, hausmanOpTable, howardSnyderOpTable, gamutOpTable, gamutOpts, bonevacOpts
-    , howardSnyderOpts, magnusOpts, extendedPropSeqParser
+    ( purePropFormulaParser, standardLetters, extendedLetters, hausmanOpts, thomasBolducZachOpts, thomasBolducZach2019Opts
+    , hardegreeOpts, standardOpTable, calgaryOpTable, calgary2019OpTable, hausmanOpTable, howardSnyderOpTable, gamutOpTable
+    , gamutOpts, bonevacOpts, howardSnyderOpts, magnusOpts, extendedPropSeqParser
     ) where
 
 import Carnap.Core.Data.Types
@@ -63,6 +63,9 @@ thomasBolducZachOpts = magnusOpts { hasBooleanConstants = True
                                   , opTable = calgaryOpTable
                                   }
 
+thomasBolducZach2019Opts :: Monad m => PurePropositionalParserOptions u m
+thomasBolducZach2019Opts = thomasBolducZachOpts { opTable = calgary2019OpTable }
+
 hausmanOpts ::  Monad m => PurePropositionalParserOptions u m
 hausmanOpts = extendedLetters 
                 { opTable = hausmanOpTable 
@@ -111,6 +114,13 @@ calgaryOpTable :: (BooleanLanguage (FixLang lex (Form Bool)), Monad m)
     => [[Operator String u m (FixLang lex (Form Bool))]]
 calgaryOpTable = [ [ Prefix (try parseNeg)]
                  , [ Infix (try $ parseAsOr ["\\/", "∨", "|", "or"]) AssocNone, Infix (try parseAnd) AssocNone
+                   , Infix (try parseIf) AssocNone, Infix (try parseIff) AssocNone]
+                 ]
+
+calgary2019OpTable :: (BooleanLanguage (FixLang lex (Form Bool)), Monad m)
+    => [[Operator String u m (FixLang lex (Form Bool))]]
+calgary2019OpTable = [ [ Prefix (try parseNeg)]
+                 , [ Infix (try $ parseAsOr ["\\/", "∨", "|", "or"]) AssocLeft, Infix (try parseAnd) AssocLeft
                    , Infix (try parseIf) AssocNone, Infix (try parseIff) AssocNone]
                  ]
 

@@ -236,7 +236,7 @@ parseThomasBolducAndZachTFLProof :: RuntimeNaturalDeductionConfig PurePropLexico
 parseThomasBolducAndZachTFLProof rtc = toDeductionFitch (parseThomasBolducAndZachTFL rtc) (purePropFormulaParser thomasBolducZachOpts)
 
 parseThomasBolducAndZachTFL2019Proof :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> String -> [DeductionLine ThomasBolducAndZachTFLCore PurePropLexicon (Form Bool)]
-parseThomasBolducAndZachTFL2019Proof rtc = toDeductionFitch (parseThomasBolducAndZachTFLCore rtc) (purePropFormulaParser thomasBolducZachOpts)
+parseThomasBolducAndZachTFL2019Proof rtc = toDeductionFitch (parseThomasBolducAndZachTFLCore rtc) (purePropFormulaParser thomasBolducZach2019Opts)
 
 thomasBolducAndZachNotation :: String -> String 
 thomasBolducAndZachNotation x = case runParser altParser 0 "" x of
@@ -267,7 +267,7 @@ thomasBolducAndZachTFL2019Calc = mkNDCalc
     , ndParseProof = parseThomasBolducAndZachTFL2019Proof
     , ndProcessLine = hoProcessLineFitch
     , ndProcessLineMemo = Just hoProcessLineFitchMemo
-    , ndParseSeq = parseSeqOver (purePropFormulaParser thomasBolducZachOpts)
-    , ndParseForm = purePropFormulaParser thomasBolducZachOpts
+    , ndParseSeq = parseSeqOver (purePropFormulaParser thomasBolducZach2019Opts)
+    , ndParseForm = purePropFormulaParser thomasBolducZach2019Opts
     , ndNotation = dropOuterParens
     }
