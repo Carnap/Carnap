@@ -33,6 +33,7 @@ import Carnap.Languages.PurePropositional.Logic.Hardegree
 import Carnap.Languages.PurePropositional.Logic.Bonevac
 import Carnap.Languages.PurePropositional.Logic.Hausman
 import Carnap.Languages.PurePropositional.Logic.Gamut
+import Carnap.Languages.PurePropositional.Logic.Goldfarb
 import Carnap.Languages.PurePropositional.Logic.HowardSnyder
 import Carnap.Languages.PurePropositional.Logic.KalishAndMontague
 import Carnap.Languages.PurePropositional.Logic.Magnus
@@ -54,6 +55,7 @@ ofPropSys f sys | sys == "prop"                          = Just $ f propCalc
                 | sys == "gamutPNDPlus"                  = Just $ f gamutPNDPlusCalc
                 | sys == "gamutIPND"                     = Just $ f gamutIPNDCalc
                 | sys == "gamutMPND"                     = Just $ f gamutMPNDCalc
+                | sys == "goldfarbPropND"                = Just $ f goldfarbPropNDCalc
                 | sys == "howardSnyderSL"                = Just $ f howardSnyderSLCalc 
                 | sys == "ichikawaJenkinsSL"             = Just $ f ichikawaJenkinsSLCalc
                 | sys == "hausmanSL"                     = Just $ f hausmanSLCalc

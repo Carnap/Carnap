@@ -171,10 +171,14 @@ hypotheticalSyllogism = [ GammaV 1 :|-: SS (phin 1 .→. phin 2)
                         ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (phin 1 .→. phin 3)
 
 proofByCases :: BooleanRule lex b
-proofByCases = [ GammaV 1 :|-: SS (phin 1 .→. phin 3)
-               , GammaV 2 :|-: SS (phin 2 .→. phin 3)
-               , GammaV 3 :|-: SS (phin 1 .\/. phin 2)
-               ] ∴ GammaV 1 :+: GammaV 2 :+: GammaV 3 :|-: SS (phin 3)
+proofByCases = [ GammaV 1 :|-: SS (phin 1 .→. phin 2)
+               , GammaV 2 :|-: SS ((lneg $ phin 1) .→. phin 2)
+               ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (phin 2)
+
+conditionalReductio :: BooleanRule lex b 
+conditionalReductio = [ GammaV 1 :|-: SS (phin 1 .→. phin 2)
+               , GammaV 2 :|-: SS (phin 1 .→. (lneg $ phin 2))
+               ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (lneg $ phin 2)
 
 ---------------------------
 --  1.2 Variation Rules  --
@@ -519,6 +523,15 @@ negatedConjunctionVariations = [
                 [ GammaV 1 :|-: SS (phin 1 .→. lneg (phin 2))
                 ] ∴ GammaV 1 :|-: SS (lneg $ phin 1 .∧. phin 2)
             ]
+            
+negatedDisjunctionVariations :: BooleanRuleVariants lex b
+negatedDisjunctionVariations = [
+                [ GammaV 1 :|-: SS (lneg $ phin 1 .∨. phin 2)
+                ] ∴ GammaV 1 :|-: SS (lneg $ phin 1)
+            ,
+                [ GammaV 1 :|-: SS (lneg $ phin 1 .∨. phin 2)
+                ] ∴ GammaV 1 :|-: SS (lneg $ phin 2)
+            ]
 
 negatedBiconditionalVariations :: BooleanRuleVariants lex b
 negatedBiconditionalVariations = [
@@ -538,6 +551,8 @@ deMorgansNegatedOr = [
                 ] ∴ GammaV 1 :|-: SS (lneg $ phin 1 .∨. phin 2)
             ]
 
+
+
 -------------------------------
 --  1.2.2 Replacement Rules  --
 -------------------------------
@@ -549,6 +564,17 @@ type ReplacementBooleanVariants lex b =
         , IndexedSchemePropLanguage (ClassicalSequentOver lex (Form b))
         , IndexedPropContextSchemeLanguage (ClassicalSequentOver lex (Form b))
         ) => [SequentRule lex (Form b)]
+
+biconditionalInterchange :: ReplacementBooleanVariants lex b
+biconditionalInterchange = [
+                [ GammaV 1 :|-: SS (phin 1 .↔. phin 2)
+                , GammaV 2 :|-: SS (propCtx 1 (phin 1))
+                ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (propCtx 1 (phin 2))
+            ,
+                [ GammaV 1 :|-: SS (phin 1 .↔. phin 2)
+                , GammaV 2 :|-: SS (propCtx 1 (phin 2))
+                ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (propCtx 1 (phin 1))
+            ]
 
 replace :: ( Typeable b, IndexedPropContextSchemeLanguage (ClassicalSequentOver lex (Form b))
         ) => ClassicalSequentOver lex (Form b) -> ClassicalSequentOver lex (Form b) -> [SequentRule lex (Form b)]
