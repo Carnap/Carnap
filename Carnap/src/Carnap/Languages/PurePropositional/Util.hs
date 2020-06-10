@@ -2,13 +2,14 @@
 module Carnap.Languages.PurePropositional.Util 
 (dropOuterParens, showClean,  isValid, isEquivTo, toSchema, getIndicies, getValuations,
 isBooleanBinary, isBooleanUnary, isBoolean, HasLiterals(..), isCNF,
-isDNF, conjunctiveClause, disjunctiveClause) 
+isDNF, isContradictionFree, conjunctiveClause, disjunctiveClause) 
 where
 
 import Carnap.Core.Data.Classes
 import Carnap.Core.Data.Types
 import Carnap.Core.Data.Optics
 import Carnap.Languages.PurePropositional.Syntax
+import Carnap.Languages.ClassicalSequent.Syntax
 import Carnap.Languages.Util.LanguageClasses
 import Control.Lens
 import Data.Maybe
@@ -128,14 +129,20 @@ disjunctiveClause f s = case s ^? binaryOpPrism _or of
 --5. Tests  --
 --------------
 
-isJunction :: (PrismBooleanConnLex lex b) => FixLang lex (Form b) -> Bool
+isContradictionFree :: (PrismBooleanConnLex lex b, Eq (FixLang lex (Form b))) => [FixLang lex (Form b)] -> Bool
+isContradictionFree [] = True
+isContradictionFree (x:xs) = case x ^? unaryOpPrism _not of
+                                 Just y -> not (y `elem` xs) && not (lneg x `elem` xs) && isContradictionFree xs
+                                 Nothing -> not (lneg x `elem` xs) && isContradictionFree xs
+
+isJunction :: PrismBooleanConnLex lex b => FixLang lex (Form b) -> Bool
 isJunction x = not . null . catMaybes $ map (x ^? ) [binaryOpPrism _and, binaryOpPrism _or]
 
-isBooleanBinary :: (PrismBooleanConnLex lex b) => FixLang lex (Form b) -> Bool
+isBooleanBinary :: PrismBooleanConnLex lex b => FixLang lex (Form b) -> Bool
 isBooleanBinary a = not . null . catMaybes $ map (a ^? ) [binaryOpPrism _and, binaryOpPrism _or, binaryOpPrism _if,binaryOpPrism _iff]
 
-isBooleanUnary :: (PrismBooleanConnLex lex b) => FixLang lex (Form b) -> Bool
-isBooleanUnary a = case (a ^? unaryOpPrism _not) of Nothing -> False; _ -> True
+isBooleanUnary :: PrismBooleanConnLex lex b => FixLang lex (Form b) -> Bool
+isBooleanUnary a = case a ^? unaryOpPrism _not of Nothing -> False; _ -> True
 
 isBoolean x = isBooleanUnary x || isBooleanBinary x
 
@@ -147,6 +154,9 @@ class PrismBooleanConnLex lex sem => HasLiterals lex sem where
         isAtom :: FixLang lex (Form sem) -> Bool
 
 instance HasLiterals PurePropLexicon Bool where
+    isAtom a = (a ^? _propIndex) /= Nothing
+
+instance HasLiterals (ClassicalSequentLexOver PurePropLexicon) Bool where
     isAtom a = (a ^? _propIndex) /= Nothing
 
 isCNF :: (PrismBooleanConnLex lex b, HasLiterals lex b) => FixLang lex (Form b) -> Bool

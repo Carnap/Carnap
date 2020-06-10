@@ -1,10 +1,11 @@
-{-#LANGUAGE FlexibleContexts, FlexibleInstances, MultiParamTypeClasses #-}
+{-#LANGUAGE RankNTypes, ScopedTypeVariables, FlexibleContexts, FlexibleInstances, MultiParamTypeClasses #-}
 module Carnap.Languages.PurePropositional.Logic.IchikawaJenkins
     ( parseIchikawaJenkinsSL, IchikawaJenkinsSL,  ichikawaJenkinsSLCalc, ichikawaJenkinsSLTableauCalc, IchikawaJenkinsSLTableaux(..), IchikawaJenkinsSL(..)) where
 
 import Data.Map as M (lookup, Map)
 import Text.Parsec
 import Carnap.Core.Data.Types (Form)
+import Carnap.Core.Unification.Unification
 import Carnap.Languages.PurePropositional.Syntax
 import Carnap.Languages.PurePropositional.Parser
 import Carnap.Languages.PurePropositional.Logic.Magnus
@@ -15,8 +16,10 @@ import Carnap.Calculi.NaturalDeduction.Parser
 import Carnap.Calculi.NaturalDeduction.Checker
 import Carnap.Languages.ClassicalSequent.Syntax
 import Carnap.Languages.ClassicalSequent.Parser
+import Carnap.Languages.PurePropositional.Util
 import Carnap.Languages.PurePropositional.Logic.Rules
 import Carnap.Languages.Util.LanguageClasses
+import Control.Lens
 
 -------------------------
 --  Natural Deduction  --
@@ -129,13 +132,14 @@ ichikawaJenkinsSLCalc = mkNDCalc
 --  Semantic Tableaux  --
 -------------------------
 
-data IchikawaJenkinsSLTableaux = Ax1 | Ax2 | Conj | NConj | Disj | NDisj | Cond | NCond | Bicond | NBicond | DoubleNeg | Struct
+data IchikawaJenkinsSLTableaux = Ax1 | Ax2 | Conj | NConj | Disj | NDisj | Cond | NCond | Bicond | NBicond | DoubleNeg | Struct | Lit
     deriving Eq
 
 instance Show IchikawaJenkinsSLTableaux where
     show Ax1= "Ax"
     show Ax2= "Ax"
     show Struct = "St"
+    show Lit = "Lit"
     show Conj = "&"
     show NConj = "¬&"
     show Disj  = "∨"
@@ -161,7 +165,7 @@ parseIchikawaJenkinsSLTableaux = do r <- choice (map (try . string) ["&","¬&","
                                                                 , "<>", "¬<>","~<>","-<>"
                                                                 , "B", "¬B","~B","-B"
                                                                 , "¬¬","~~","--"
-                                                                , "Ax", "St"
+                                                                , "Ax", "St", "Lit"
                                                                 ])
                                     return $ case r of
                                        r | r == "&" -> [Conj]
@@ -175,6 +179,7 @@ parseIchikawaJenkinsSLTableaux = do r <- choice (map (try . string) ["&","¬&","
                                          | r `elem` [ "¬≡","~≡","-≡", "¬<->","~<->","-<->", "¬<>","~<>","-<>", "¬B","~B","-B"] -> [NBicond]
                                          | r `elem` [ "¬¬","~~","--"] -> [DoubleNeg]
                                          | r `elem` [ "St" ] -> [Struct]
+                                         | r `elem` [ "Lit" ] -> [Lit]
 
 instance CoreInference IchikawaJenkinsSLTableaux PurePropLexicon (Form Bool) where
         corePremisesOf Conj = [SA (phin 1) :+: SA (phin 2) :+: GammaV 1 :|-: Bot]
@@ -197,6 +202,7 @@ instance CoreInference IchikawaJenkinsSLTableaux PurePropLexicon (Form Bool) whe
                                  ]
         corePremisesOf DoubleNeg = [ SA (phin 1)  :+: GammaV 1 :|-: Bot ]
         corePremisesOf Struct = [ GammaV 1 :|-: DeltaV 1 ]
+        corePremisesOf Lit = []
         corePremisesOf Ax1 = []
         corePremisesOf Ax2 = []
 
@@ -212,6 +218,19 @@ instance CoreInference IchikawaJenkinsSLTableaux PurePropLexicon (Form Bool) whe
         coreConclusionOf Ax1 = SA (phin 1) :+: SA (lneg $ phin 1) :+: GammaV 1 :|-: Bot
         coreConclusionOf Ax2 = SA (phin 1) :+: SA (lneg $ phin 1) :+: GammaV 1 :|-: Bot
         coreConclusionOf Struct = GammaV 1 :|-: DeltaV 1
+        coreConclusionOf Lit = GammaV 1 :|-: DeltaV 1
+
+        coreRestriction Lit = Just $ \sub -> allLiterals (applySub sub $ coreConclusionOf Lit)
+             where allLiterals :: forall lex . ( PrismBooleanConnLex (ClassicalSequentLexOver lex) Bool
+                                               , Eq (ClassicalSequentOver lex (Form Bool))
+                                               , HasLiterals (ClassicalSequentLexOver lex) Bool
+                                               ) => ClassicalSequentOver lex (Sequent (Form Bool)) -> Maybe String
+                   allLiterals (x:|-:_)= let theForms = toListOf concretes x :: [ClassicalSequentOver lex (Form Bool)]
+                                         in if all isLiteral theForms && isContradictionFree theForms
+                                            then Nothing
+                                            else Just "To complete a branch with the literal rule, the sequent must consist entirely of literals and must be contradiction-free"
+
+        coreRestriction _ = Nothing
 
 ichikawaJenkinsSLTableauCalc = mkTBCalc
     { tbParseForm = purePropFormulaParser magnusOpts
