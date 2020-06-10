@@ -4,9 +4,10 @@ import Import
 import System.Directory (doesFileExist,getDirectoryContents)
 import Yesod.Markdown
 import Data.List (nub)
-import Text.Pandoc (writerExtensions,writerWrapText, WrapOption(..), readerExtensions)
+import Text.Pandoc (writerExtensions,writerWrapText, WrapOption(..), readerExtensions, Pandoc(..), lookupMeta, MetaValue(..),Inline(..))
 import Text.Pandoc.Walk (walkM, walk)
 import Text.Julius (juliusFile,rawJS)
+import Text.Hamlet (hamletFile)
 import Util.Data
 import Util.Database
 import Filter.SynCheckers
@@ -18,6 +19,8 @@ import Filter.Qualitative
 import Filter.Sequent
 import Filter.TreeDeduction
 import Filter.RenderFormulas
+import qualified Data.CaseInsensitive as CI
+import qualified Data.Text.Encoding as TE
 
 getDocumentsR :: Handler Html
 getDocumentsR =  runDB (selectList [] []) >>= documentsList "Index of All Documents"
@@ -121,9 +124,13 @@ getDocumentR ident title = do userdir <- getUserDir ident
               ehtml <- liftIO $ fileToHtml path
               case ehtml of
                   Left err -> defaultLayout $ layout (show err)
-                  Right (Left err) -> defaultLayout $ layout (show err)
-                  Right (Right html) -> do
-                      defaultLayout $ do
+                  Right (Left err,_) -> defaultLayout $ layout (show err)
+                  Right (Right html, meta) -> do
+                      let mcss = case lookupMeta "css" meta of 
+                                    Just (MetaInlines [Str href]) -> Just href
+                                    _ -> Nothing
+                      let theLayout = maybe defaultLayout customLayout mcss
+                      theLayout $ do
                           toWidgetHead $(juliusFile "templates/command.julius")
                           addScript $ StaticR js_proof_js
                           addScript $ StaticR js_popper_min_js
@@ -168,12 +175,20 @@ getDocumentDownloadR ident title = do userdir <- getUserDir ident
 fileToHtml path = do Markdown md <- markdownFromFile path
                      let md' = Markdown (filter ((/=) '\r') md) --remove carrage returns from dos files
                      case parseMarkdown yesodDefaultReaderOptions { readerExtensions = carnapPandocExtensions } md' of
-                         Right pd -> do let pd' = walk allFilters pd
-                                        return $ Right $ writePandocTrusted yesodDefaultWriterOptions 
-                                                         { writerExtensions = carnapPandocExtensions
-                                                         , writerWrapText=WrapPreserve } pd'
+                         Right pd -> do let pd'@(Pandoc meta _)= walk allFilters pd
+                                        return $ Right $ (write pd', meta)
                          Left e -> return $ Left e
     where allFilters = makeTreeDeduction . makeSequent . makeSynCheckers . makeProofChecker . makeTranslate . makeTruthTables . makeCounterModelers . makeQualitativeProblems . renderFormulas
+          write = writePandocTrusted yesodDefaultWriterOptions { writerExtensions = carnapPandocExtensions, writerWrapText=WrapPreserve }
 
 getUserDir ident = do master <- getYesod
                       return $ (appDataRoot $ appSettings master) </> "documents" </> unpack ident
+
+customLayout css widget = do
+        master <- getYesod
+        mmsg <- getMessage
+        authmaybe <- maybeAuth
+        instructors <- instructorIdentList
+        let customLayoutCss = css
+        pc <- widgetToPageContent $(widgetFile "default-layout")
+        withUrlRenderer $(hamletFile "templates/custom-layout-wrapper.hamlet")

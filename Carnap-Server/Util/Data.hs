@@ -85,6 +85,7 @@ carnapPandocExtensions = extensionsFromList
         , Ext_fenced_code_attributes
         , Ext_inline_code_attributes
         , Ext_shortcut_reference_links
+        , Ext_yaml_metadata_block
         ]
 
 toTime :: String -> UTCTime
