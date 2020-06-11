@@ -6,7 +6,7 @@ import Util.Database
 import Yesod.Markdown
 import Yesod.Form.Bootstrap3
 import Text.Blaze.Html (toMarkup)
-import Text.Pandoc (writerExtensions,writerWrapText, WrapOption(..), readerExtensions)
+import Text.Pandoc (writerExtensions,writerWrapText, WrapOption(..), readerExtensions, Pandoc(..), lookupMeta)
 import System.Directory (doesFileExist,getDirectoryContents)
 import Data.Time
 import Text.Julius (juliusFile,rawJS)
@@ -21,6 +21,7 @@ import Filter.Qualitative
 import Filter.Sequent
 import Filter.TreeDeduction
 import Filter.RenderFormulas
+import Util.Handler
 
 getAssignmentR :: Text -> Handler Html
 getAssignmentR filename = getAssignment filename >>= uncurry returnAssignment
@@ -63,51 +64,58 @@ returnAssignment (Entity key val) path = do
                    ehtml <- liftIO $ fileToHtml (hash (show muid ++ path)) path
                    unless (visibleAt time val) $ setMessage "Viewing as instructor. Assignment not currently visible to students."
                    case ehtml of
-                       Left err -> defaultLayout $ layout (show err)
-                       Right (Left err) -> defaultLayout $ layout (show err)
-                       Right (Right html) -> case (assignmentMetadataAvailability val, mtoken) of
+                       Left err -> defaultLayout $ minimalLayout (show err)
+                       Right (Left err,_) -> defaultLayout $ minimalLayout (show err)
+                       Right (Right html,meta) -> case (assignmentMetadataAvailability val, mtoken) of
                            (Just _, Nothing) -> defaultLayout $ do
-                               (enterPasswordWidget,enctypeEnterPassword) <- generateFormPost (identifyForm "enterPassword" $ enterPasswordForm)
-                               $(widgetFile "passwordEntry") 
+                                (enterPasswordWidget,enctypeEnterPassword) <- generateFormPost (identifyForm "enterPassword" $ enterPasswordForm)
+                                $(widgetFile "passwordEntry") 
                            (Just (ViaPasswordExpiring _ min), Just tok) | age tok > 60 * min && not instructorAccess -> 
-                               defaultLayout $ layout ("Assignment time limit exceeded" :: String)
+                                defaultLayout $ minimalLayout ("Assignment time limit exceeded" :: String)
                            (Just (HiddenViaPasswordExpiring _ min), Just tok) | age tok > 60 * min && not instructorAccess -> 
-                               defaultLayout $ layout ("Assignment time limit exceeded" :: String)
-                           (_,_) -> defaultLayout $ do
-                               let source = "assignment:" ++ show key 
-                               toWidgetHead $(juliusFile "templates/command.julius")
-                               toWidgetHead $(juliusFile "templates/status-warning.julius")
-                               toWidgetHead [julius|var submission_source="#{rawJS source}";|]
-                               toWidgetHead [julius|var assignment_key="#{rawJS $ show key}";|]
-                               addScript $ StaticR js_proof_js
-                               addScript $ StaticR js_popper_min_js
-                               addScript $ StaticR ghcjs_rts_js
-                               addScript $ StaticR ghcjs_allactions_lib_js
-                               addScript $ StaticR ghcjs_allactions_out_js
-                               addStylesheet $ StaticR css_proof_css
-                               addStylesheet $ StaticR css_tree_css
-                               addStylesheet $ StaticR css_bootstrapextra_css
-                               addStylesheet $ StaticR css_exercises_css
-                               $(widgetFile "document")
-                               addScript $ StaticR ghcjs_allactions_runmain_js
-               else defaultLayout $ layout ("Assignment not currently set as visible by instructor" :: Text)
-    where layout c = [whamlet|
-                        <div.container>
-                            <article>
-                                #{c}
-                        |]
-          visibleAt t a = (assignmentMetadataVisibleTill a > Just t || assignmentMetadataVisibleTill a == Nothing)
+                                defaultLayout $ minimalLayout ("Assignment time limit exceeded" :: String)
+                           (_,_) -> do 
+                                mcss <- retrieveCss (lookupMeta "css" meta)
+                                let theLayout = maybe defaultLayout customLayout mcss
+                                let source = "assignment:" ++ show key 
+                                theLayout $ do
+                                    toWidgetHead $(juliusFile "templates/command.julius")
+                                    toWidgetHead $(juliusFile "templates/status-warning.julius")
+                                    toWidgetHead [julius|var submission_source="#{rawJS source}";|]
+                                    toWidgetHead [julius|var assignment_key="#{rawJS $ show key}";|]
+                                    addScript $ StaticR js_proof_js
+                                    addScript $ StaticR js_popper_min_js
+                                    addScript $ StaticR ghcjs_rts_js
+                                    addScript $ StaticR ghcjs_allactions_lib_js
+                                    addScript $ StaticR ghcjs_allactions_out_js
+                                    addStylesheet $ StaticR css_proof_css
+                                    addStylesheet $ StaticR css_tree_css
+                                    addStylesheet $ StaticR css_exercises_css
+                                    when (mcss == Nothing) (addStylesheet $ StaticR css_bootstrapextra_css)
+                                    $(widgetFile "document")
+                                    addScript $ StaticR ghcjs_allactions_runmain_js
+               else defaultLayout $ minimalLayout ("Assignment not currently set as visible by instructor" :: Text)
+    where visibleAt t a = (assignmentMetadataVisibleTill a > Just t || assignmentMetadataVisibleTill a == Nothing)
                           && (assignmentMetadataVisibleFrom a < Just t || assignmentMetadataVisibleFrom a == Nothing)
 
 fileToHtml salt path = do Markdown md <- markdownFromFile path
                           let md' = Markdown (filter ((/=) '\r') md) --remove carrage returns from dos files
                           case parseMarkdown yesodDefaultReaderOptions { readerExtensions = carnapPandocExtensions } md' of
-                              Right pd -> do let pd' = walk allFilters pd
-                                             return $ Right $ writePandocTrusted yesodDefaultWriterOptions 
-                                                             { writerExtensions = carnapPandocExtensions
-                                                             , writerWrapText=WrapPreserve } pd'
+                              Right pd -> do let pd'@(Pandoc meta _) = walk (allFilters salt) pd
+                                             return $ Right $ (write pd', meta)
                               Left e -> return $ Left e
-    where allFilters = randomizeProblems salt . makeTreeDeduction . makeSequent . makeSynCheckers . makeProofChecker . makeTranslate . makeTruthTables . makeCounterModelers . makeQualitativeProblems . renderFormulas
+        where write = writePandocTrusted yesodDefaultWriterOptions { writerExtensions = carnapPandocExtensions, writerWrapText=WrapPreserve }
+
+allFilters salt = randomizeProblems salt 
+                  . makeTreeDeduction 
+                  . makeSequent 
+                  . makeSynCheckers 
+                  . makeProofChecker 
+                  . makeTranslate 
+                  . makeTruthTables 
+                  . makeCounterModelers 
+                  . makeQualitativeProblems 
+                  . renderFormulas
 
 enterPasswordForm = renderBootstrap3 BootstrapBasicForm $ id
             <$> areq textField (bfs ("Access Key" :: Text)) Nothing

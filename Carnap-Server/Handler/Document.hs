@@ -4,12 +4,12 @@ import Import
 import System.Directory (doesFileExist,getDirectoryContents)
 import Yesod.Markdown
 import Data.List (nub)
-import Text.Pandoc (writerExtensions,writerWrapText, WrapOption(..), readerExtensions, Pandoc(..), lookupMeta, MetaValue(..),Inline(..))
+import Text.Pandoc (writerExtensions,writerWrapText, WrapOption(..), readerExtensions, Pandoc(..), lookupMeta)
 import Text.Pandoc.Walk (walkM, walk)
 import Text.Julius (juliusFile,rawJS)
-import Text.Hamlet (hamletFile)
 import Util.Data
 import Util.Database
+import Util.Handler
 import Filter.SynCheckers
 import Filter.ProofCheckers
 import Filter.Translate
@@ -19,8 +19,6 @@ import Filter.Qualitative
 import Filter.Sequent
 import Filter.TreeDeduction
 import Filter.RenderFormulas
-import qualified Data.CaseInsensitive as CI
-import qualified Data.Text.Encoding as TE
 
 getDocumentsR :: Handler Html
 getDocumentsR =  runDB (selectList [] []) >>= documentsList "Index of All Documents"
@@ -120,8 +118,8 @@ getDocumentR ident title = do (Entity key doc, path, creatorid) <- retrieveDoc i
                           addScript $ StaticR ghcjs_allactions_out_js
                           addStylesheet $ StaticR css_tree_css
                           addStylesheet $ StaticR css_proof_css
-                          when (mcss == Nothing) (addStylesheet $ StaticR css_bootstrapextra_css)
                           addStylesheet $ StaticR css_exercises_css
+                          when (mcss == Nothing) (addStylesheet $ StaticR css_bootstrapextra_css)
                           $(widgetFile "document")
                           addScript $ StaticR ghcjs_allactions_runmain_js
 
@@ -168,35 +166,11 @@ getUserDir ident = do master <- getYesod
                       return $ (appDataRoot $ appSettings master) </> "documents" </> unpack ident
 
 allFilters = makeTreeDeduction 
-                       . makeSequent 
-                       . makeSynCheckers 
-                       . makeProofChecker 
-                       . makeTranslate 
-                       . makeTruthTables 
-                       . makeCounterModelers 
-                       . makeQualitativeProblems 
-                       . renderFormulas
-
-minimalLayout c = [whamlet|
-                  <div.container>
-                      <article>
-                          #{c}
-                  |]
-
-retrieveCss metaval = case metaval of 
-                        Just (MetaInlines ils) -> return $ Just (catMaybes (map fromStr ils))
-                        Just (MetaList list) -> do mcsses <- mapM retrieveCss (map Just list) 
-                                                   return . Just . concat . catMaybes $ mcsses
-                        Nothing -> return Nothing
-                        x -> setMessage (toHtml ("bad css metadata: " ++ show x)) >> return Nothing
-    where fromStr (Str x) = Just x
-          fromStr _ = Nothing
-
-customLayout css widget = do
-        master <- getYesod
-        mmsg <- getMessage
-        authmaybe <- maybeAuth
-        instructors <- instructorIdentList
-        let customLayoutCss = css
-        pc <- widgetToPageContent $(widgetFile "default-layout")
-        withUrlRenderer $(hamletFile "templates/custom-layout-wrapper.hamlet")
+             . makeSequent 
+             . makeSynCheckers 
+             . makeProofChecker 
+             . makeTranslate 
+             . makeTruthTables 
+             . makeCounterModelers 
+             . makeQualitativeProblems 
+             . renderFormulas

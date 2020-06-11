@@ -48,6 +48,7 @@ library
                      Filter.Qualitative
                      Filter.Diagrams
                      Filter.Util
+                     Util.Handler
                      Util.Database
                      Util.Data
 
