@@ -90,45 +90,26 @@ documentsList title documents = do
                                             <a.badge.badge-primary href="@{DocumentsByTagR tag}">#{tag}
                         <button.btn.btn-sm.btn-secondary type="button" onclick="window.open('@{DocumentDownloadR ident (documentFilename doc)}')">
                             <i.fa.fa-cloud-download>
-
     |]
 
 -- XXX DRY up the boilplate that is shared by getDocumentDownload
 getDocumentR :: Text -> Text -> Handler Html
-getDocumentR ident title = do userdir <- getUserDir ident 
-                              let path = userdir </> unpack title
-                              exists <- liftIO $ doesFileExist path
-                              mcreator <- runDB $ getBy $ UniqueUser ident
-                              case mcreator of
-                                  _ | not exists -> defaultLayout $ layout ("shared file for this document not found" :: Text)
-                                  Nothing -> defaultLayout $ layout ("document creator not found" :: Text)
-                                  Just (Entity uid _) -> do
-                                      mdoc <- runDB $ getBy (UniqueDocument title uid)
-                                      case mdoc of
-                                          Nothing -> defaultLayout $ layout ("metadata for this document not found" :: Text)
-                                          Just (Entity key doc) -> do
-                                              case documentScope doc of 
-                                                Private -> do
-                                                  muid <- maybeAuthId
-                                                  case muid of
-                                                      Just uid' | uid == uid' -> returnFile path
-                                                      _ -> defaultLayout $ layout ("shared file for this document not found" :: Text)
-                                                _ -> returnFile path
+getDocumentR ident title = do (Entity key doc, path, creatorid) <- retrieveDoc ident title
+                              case documentScope doc of 
+                                 Private -> do
+                                   muid <- maybeAuthId
+                                   case muid of
+                                       Just uid' | creatorid == uid' -> returnFile path
+                                       _ -> setMessage "shared file for this document not found" >> notFound
+                                 _ -> returnFile path
 
-    where layout c = [whamlet|
-                        <div.container>
-                            <article>
-                                #{c}
-                        |]
-          returnFile path = do
+    where returnFile path = do
               ehtml <- liftIO $ fileToHtml path
               case ehtml of
-                  Left err -> defaultLayout $ layout (show err)
-                  Right (Left err,_) -> defaultLayout $ layout (show err)
+                  Left err -> defaultLayout $ minimalLayout (show err)
+                  Right (Left err,_) -> defaultLayout $ minimalLayout (show err)
                   Right (Right html, meta) -> do
-                      let mcss = case lookupMeta "css" meta of 
-                                    Just (MetaInlines [Str href]) -> Just href
-                                    _ -> Nothing
+                      mcss <- retrieveCss (lookupMeta "css" meta)
                       let theLayout = maybe defaultLayout customLayout mcss
                       theLayout $ do
                           toWidgetHead $(juliusFile "templates/command.julius")
@@ -139,38 +120,41 @@ getDocumentR ident title = do userdir <- getUserDir ident
                           addScript $ StaticR ghcjs_allactions_out_js
                           addStylesheet $ StaticR css_tree_css
                           addStylesheet $ StaticR css_proof_css
-                          addStylesheet $ StaticR css_bootstrapextra_css
+                          when (mcss == Nothing) (addStylesheet $ StaticR css_bootstrapextra_css)
                           addStylesheet $ StaticR css_exercises_css
                           $(widgetFile "document")
                           addScript $ StaticR ghcjs_allactions_runmain_js
 
 getDocumentDownloadR :: Text -> Text -> Handler TypedContent
-getDocumentDownloadR ident title = do userdir <- getUserDir ident 
-                                      let path = userdir </> unpack title
-                                      exists <- liftIO $ doesFileExist path
-                                      mcreator <- runDB $ getBy $ UniqueUser ident
-                                      case mcreator of
-                                          _ | not exists -> notFound
-                                          Nothing -> notFound
-                                          Just (Entity uid _) -> do
-                                              mdoc <- runDB $ getBy (UniqueDocument title uid)
-                                              case mdoc of
-                                                  Nothing -> notFound
-                                                  Just (Entity key doc) -> do
-                                                      let sendIt = do
-                                                              addHeader "Content-Disposition" $ concat
-                                                                [ "attachment;"
-                                                                , "filename=\""
-                                                                , documentFilename doc
-                                                                , "\""
-                                                                ]
-                                                              sendFile typeOctet path
-                                                      case documentScope doc of 
-                                                        Private -> do
-                                                          muid <- maybeAuthId
-                                                          case muid of Just uid' | uid' == uid -> sendIt
-                                                                       _ -> notFound
-                                                        _ -> sendIt
+getDocumentDownloadR ident title = do (Entity key doc, path, creatoruid) <- retrieveDoc ident title
+                                      let sendIt = do
+                                              addHeader "Content-Disposition" $ concat
+                                                [ "attachment;"
+                                                , "filename=\""
+                                                , documentFilename doc
+                                                , "\""
+                                                ]
+                                              sendFile typeOctet path
+                                      case documentScope doc of 
+                                        Private -> do
+                                          muid <- maybeAuthId
+                                          case muid of Just uid' | uid' == creatoruid -> sendIt
+                                                       _ -> notFound
+                                        _ -> sendIt
+
+retrieveDoc :: Text -> Text -> Handler (Entity Document, FilePath, UserId)
+retrieveDoc ident title = do userdir <- getUserDir ident 
+                             let path = userdir </> unpack title
+                             exists <- liftIO $ doesFileExist path
+                             mcreator <- runDB $ getBy $ UniqueUser ident
+                             case mcreator of
+                                 _ | not exists -> setMessage "shared file for this document not found" >> notFound
+                                 Nothing -> setMessage "document creator not found" >> notFound
+                                 Just (Entity creatoruid _) -> do
+                                     mdoc <- runDB $ getBy (UniqueDocument title creatoruid)
+                                     case mdoc of
+                                         Nothing -> setMessage "metadata for this document not found" >> notFound
+                                         Just doc -> return (doc, path, creatoruid)
 
 fileToHtml path = do Markdown md <- markdownFromFile path
                      let md' = Markdown (filter ((/=) '\r') md) --remove carrage returns from dos files
@@ -178,11 +162,35 @@ fileToHtml path = do Markdown md <- markdownFromFile path
                          Right pd -> do let pd'@(Pandoc meta _)= walk allFilters pd
                                         return $ Right $ (write pd', meta)
                          Left e -> return $ Left e
-    where allFilters = makeTreeDeduction . makeSequent . makeSynCheckers . makeProofChecker . makeTranslate . makeTruthTables . makeCounterModelers . makeQualitativeProblems . renderFormulas
-          write = writePandocTrusted yesodDefaultWriterOptions { writerExtensions = carnapPandocExtensions, writerWrapText=WrapPreserve }
+    where write = writePandocTrusted yesodDefaultWriterOptions { writerExtensions = carnapPandocExtensions, writerWrapText = WrapPreserve }
 
 getUserDir ident = do master <- getYesod
                       return $ (appDataRoot $ appSettings master) </> "documents" </> unpack ident
+
+allFilters = makeTreeDeduction 
+                       . makeSequent 
+                       . makeSynCheckers 
+                       . makeProofChecker 
+                       . makeTranslate 
+                       . makeTruthTables 
+                       . makeCounterModelers 
+                       . makeQualitativeProblems 
+                       . renderFormulas
+
+minimalLayout c = [whamlet|
+                  <div.container>
+                      <article>
+                          #{c}
+                  |]
+
+retrieveCss metaval = case metaval of 
+                        Just (MetaInlines ils) -> return $ Just (catMaybes (map fromStr ils))
+                        Just (MetaList list) -> do mcsses <- mapM retrieveCss (map Just list) 
+                                                   return . Just . concat . catMaybes $ mcsses
+                        Nothing -> return Nothing
+                        x -> setMessage (toHtml ("bad css metadata: " ++ show x)) >> return Nothing
+    where fromStr (Str x) = Just x
+          fromStr _ = Nothing
 
 customLayout css widget = do
         master <- getYesod

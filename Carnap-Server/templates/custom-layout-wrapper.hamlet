@@ -14,7 +14,8 @@ $newline never
 
     <meta name="viewport" content="width=device-width,initial-scale=1">
 
-    <link rel="stylesheet" href="#{customLayoutCss}" type="text/css" media="screen" title="no title" charset="utf-8">
+    $forall href <- customLayoutCss
+        <link rel="stylesheet" href="#{href}" type="text/css" media="screen" title="no title" charset="utf-8">
 
     ^{pageHead pc}
 
