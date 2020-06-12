@@ -117,7 +117,7 @@ instance Inference BonevacSL PurePropLexicon (Form Bool) where
           ruleOf IffE4     = biconditionalTollensVariations !! 1
           ruleOf OrI1      = additionVariations !! 0
           ruleOf OrI2      = additionVariations !! 1
-          ruleOf OrE1      = proofByCases
+          ruleOf OrE1      = dilemma
           ruleOf OrE2      = modusTollendoPonensVariations !! 0 
           ruleOf OrE3      = modusTollendoPonensVariations !! 1
           ruleOf NegAndI   = deMorgansLaws !! 0
