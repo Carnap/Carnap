@@ -178,7 +178,7 @@ proofByCases = [ GammaV 1 :|-: SS (phin 1 .→. phin 2)
 conditionalReductio :: BooleanRule lex b 
 conditionalReductio = [ GammaV 1 :|-: SS (phin 1 .→. phin 2)
                , GammaV 2 :|-: SS (phin 1 .→. (lneg $ phin 2))
-               ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (lneg $ phin 2)
+               ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (lneg $ phin 1)
 
 ---------------------------
 --  1.2 Variation Rules  --
