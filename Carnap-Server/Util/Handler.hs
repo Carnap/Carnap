@@ -24,6 +24,24 @@ retrieveCss metaval = case metaval of
     where fromStr (Str x) = Just x
           fromStr _ = Nothing
 
+serveDoc :: (Document -> FilePath -> Handler a) -> Document -> FilePath -> UserId -> Handler a
+serveDoc sendIt doc path creatoruid = case documentScope doc of 
+                                Private -> do
+                                  muid <- maybeAuthId
+                                  case muid of Just uid' | uid' == creatoruid -> sendIt doc path
+                                               _ -> notFound
+                                _ -> sendIt doc path
+
+asFile :: Document -> FilePath -> Handler TypedContent
+asFile doc path = do addHeader "Content-Disposition" $ concat
+                        [ "attachment;"
+                        , "filename=\"", documentFilename doc, "\""
+                        ]
+                     sendFile typeOctet path
+
+asCss :: Document -> FilePath -> Handler TypedContent
+asCss _ path = sendFile typeCss path
+
 customLayout css widget = do
         master <- getYesod
         mmsg <- getMessage

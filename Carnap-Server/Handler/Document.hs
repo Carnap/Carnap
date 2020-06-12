@@ -7,6 +7,7 @@ import Data.List (nub)
 import Text.Pandoc (writerExtensions,writerWrapText, WrapOption(..), readerExtensions, Pandoc(..), lookupMeta)
 import Text.Pandoc.Walk (walkM, walk)
 import Text.Julius (juliusFile,rawJS)
+import System.FilePath
 import Util.Data
 import Util.Database
 import Util.Handler
@@ -97,9 +98,17 @@ getDocumentR ident title = do (Entity key doc, path, creatorid) <- retrieveDoc i
                                  Private -> do
                                    muid <- maybeAuthId
                                    case muid of
-                                       Just uid' | creatorid == uid' -> returnFile path
+                                       Just uid' | creatorid /= uid' -> setMessage "shared file for this document not found" >> notFound
+                                       Just uid' | takeExtension path == ".css" -> serveDoc asCss doc path creatorid >> notFound 
+                                            --serveDoc bypasses the
+                                            --remaining handlers, so the
+                                            --not-found here is
+                                            --a placeholder that is never
+                                            --reached
+                                       Just uid' -> returnFile path
                                        _ -> setMessage "shared file for this document not found" >> notFound
-                                 _ -> returnFile path
+                                 _ | takeExtension path == ".css" -> serveDoc asCss doc path creatorid >> notFound
+                                   | otherwise -> returnFile path
 
     where returnFile path = do
               ehtml <- liftIO $ fileToHtml path
@@ -125,20 +134,7 @@ getDocumentR ident title = do (Entity key doc, path, creatorid) <- retrieveDoc i
 
 getDocumentDownloadR :: Text -> Text -> Handler TypedContent
 getDocumentDownloadR ident title = do (Entity key doc, path, creatoruid) <- retrieveDoc ident title
-                                      let sendIt = do
-                                              addHeader "Content-Disposition" $ concat
-                                                [ "attachment;"
-                                                , "filename=\""
-                                                , documentFilename doc
-                                                , "\""
-                                                ]
-                                              sendFile typeOctet path
-                                      case documentScope doc of 
-                                        Private -> do
-                                          muid <- maybeAuthId
-                                          case muid of Just uid' | uid' == creatoruid -> sendIt
-                                                       _ -> notFound
-                                        _ -> sendIt
+                                      serveDoc asFile doc path creatoruid
 
 retrieveDoc :: Text -> Text -> Handler (Entity Document, FilePath, UserId)
 retrieveDoc ident title = do userdir <- getUserDir ident 
