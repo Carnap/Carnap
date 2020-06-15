@@ -43,6 +43,7 @@ import Carnap.Languages.PurePropositional.Logic.Tomassi
 import Carnap.Languages.PurePropositional.Logic.IchikawaJenkins
 import Carnap.Languages.PurePropositional.Logic.Gentzen
 import Carnap.Languages.PurePropositional.Logic.OpenLogic
+import Carnap.Languages.PurePropositional.Logic.Gallow
 
 ofPropSys :: (forall r . (Show r, Inference r PurePropLexicon (Form Bool)) => 
               NaturalDeductionCalc r PurePropLexicon (Form Bool) -> a) -> String -> Maybe a
@@ -61,6 +62,8 @@ ofPropSys f sys | sys == "prop"                          = Just $ f propCalc
                 | sys == "hausmanSL"                     = Just $ f hausmanSLCalc
                 | sys == "magnusSL"                      = Just $ f magnusSLCalc 
                 | sys == "magnusSLPlus"                  = Just $ f magnusSLPlusCalc 
+                | sys == "gallowSL"                      = Just $ f gallowSLCalc
+                | sys == "gallowSLPlus"                  = Just $ f gallowSLPlusCalc
                 | sys == "thomasBolducAndZachTFL"        = Just $ f thomasBolducAndZachTFLCalc 
                 | sys == "thomasBolducAndZachTFL2019"    = Just $ f thomasBolducAndZachTFL2019Calc
                 | sys == "ebelsDugganTFL"                = Just $ f ebelsDugganTFLCalc 

@@ -1,6 +1,6 @@
 {-#LANGUAGE FlexibleContexts, FlexibleInstances, MultiParamTypeClasses #-}
 module Carnap.Languages.PurePropositional.Logic.Gallow 
-    ( gallowSLCalc, gallowSLCoreCalc ) where
+    ( gallowSLCalc, gallowSLPlusCalc ) where
 
 import Text.Parsec
 import Carnap.Core.Data.Types (Form)
@@ -96,23 +96,24 @@ parseGallowSLProof rtc = toDeductionFitch (parseGallowSL rtc) (purePropFormulaPa
 
 parseGallowSLCore :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> Parsec String u [GallowSLCore]
 parseGallowSLCore rtc = do r <- choice (map (try . string) [ "AS","PR","&I","/\\I", "∧I","&E","/\\E","∧E", "~I","-I", "¬I"
-                                                       , "~E","-E", "¬E","IP","->I", ">I", "=>I", "→I","->E", "=>E", ">E", "→E", "X"
+                                                       , "~E","-E", "¬E","->I", ">I", "=>I", "→I","->E", "=>E", ">E", "→E"
                                                        , "vI","\\/I", "|I", "∨I", "vE","\\/E", "|E", "∨E","<->I", "↔I","<->E"
-                                                       , "↔E","R"])
+                                                       , "↔E", "R", "⊥I", "!?I", "_|_I", "⊥E", "!?E", "_|_E"])
                            return $ map GallowSLCore $ coreSort r rtc
 
 parseGallowSL :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> Parsec String u [GallowSL]
-parseGallowSL rtc = do r <- choice (map (try . string) [ "AS", "DS", "MT", "DNE", "LEM", "DeM", "PR","&I","/\\I", "∧I","&E","/\\E","∧E", "~I","-I", "¬I"
-                                                       , "~E","-E", "¬E","IP","->I", ">I", "=>I", "→I","->E", "=>E", ">E", "→E", "X"
-                                                       , "vI","\\/I", "|I", "∨I", "vE","\\/E", "|E", "∨E","<->I", "↔I","<->E"
-                                                       , "↔E","R"])
-                       return $ map GallowSL $ case r of
-                               r | r == "DS"   -> [DisSyllo1,DisSyllo2]
-                                 | r == "MT"   -> [ModTollens]
-                                 | r == "DNE"  -> [DoubleNeg]
-                                 | r == "LEM"  -> [Lem1,Lem2,Lem3,Lem4]
-                                 | r == "DeM"  -> [DeMorgan1,DeMorgan2,DeMorgan3,DeMorgan4]
-                                 | otherwise   -> map Core (coreSort r rtc)
+parseGallowSL rtc = try parseCore <|> parseRest
+        where recore (GallowSLCore r) = GallowSL (Core r)
+              parseCore = map recore <$> parseGallowSLCore rtc
+              parseRest = do r <- choice (map (try . string) [ "AS", "DS", "MT", "DNE", "LEM", "DeM"])
+                             return $ map GallowSL $ case r of
+                                     r | r == "DS"   -> [DisSyllo1,DisSyllo2]
+                                       | r == "MT"   -> [ModTollens]
+                                       | r == "DNE"  -> [DoubleNeg]
+                                       | r == "LEM"  -> [Lem1,Lem2,Lem3,Lem4]
+                                       | r == "DeM"  -> [DeMorgan1,DeMorgan2,DeMorgan3,DeMorgan4]
+                                       | otherwise   -> map Core (coreSort r rtc)
+              
 
 coreSort r rtc = case r of
           r | r == "AS"   ->  [As]
@@ -131,7 +132,7 @@ coreSort r rtc = case r of
             | r `elem` ["<->E","↔E"]   ->  [BicoElim1, BicoElim2]
             | r == "R" ->  [Reiterate]
 
-gallowSLCoreCalc = mkNDCalc 
+gallowSLCalc = mkNDCalc 
     { ndRenderer = FitchStyle StandardFitch
     , ndParseProof = parseGallowSLCoreProof
     , ndProcessLine = hoProcessLineFitch
@@ -141,7 +142,7 @@ gallowSLCoreCalc = mkNDCalc
     , ndNotation = dropOuterParens
     }
 
-gallowSLCalc = mkNDCalc 
+gallowSLPlusCalc = mkNDCalc 
     { ndRenderer = FitchStyle StandardFitch
     , ndParseProof = parseGallowSLProof
     , ndProcessLine = hoProcessLineFitch
