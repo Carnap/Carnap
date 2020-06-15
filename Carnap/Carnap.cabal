@@ -40,6 +40,7 @@ library
                      , Carnap.Languages.PurePropositional.Logic.Magnus
                      , Carnap.Languages.PurePropositional.Logic.Hausman
                      , Carnap.Languages.PurePropositional.Logic.Gamut
+                     , Carnap.Languages.PurePropositional.Logic.Gallow
                      , Carnap.Languages.PurePropositional.Logic.Goldfarb
                      , Carnap.Languages.PurePropositional.Logic.HowardSnyder
                      , Carnap.Languages.PurePropositional.Logic.Hardegree
