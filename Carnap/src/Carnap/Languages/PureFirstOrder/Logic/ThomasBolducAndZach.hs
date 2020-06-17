@@ -195,7 +195,6 @@ thomasBolducAndZachFOL2019Calc = mkNDCalc
     , ndParseSeq = parseSeqOver thomasBolducAndZachFOL2019FormulaParser
     , ndParseForm = thomasBolducAndZachFOL2019FormulaParser
     , ndNotation = ndNotation P.thomasBolducAndZachTFL2019Calc
-
     }
 
 thomasBolducAndZachFOLPlus2019Calc = mkNDCalc

@@ -74,8 +74,8 @@ instance Inference BonevacQL PureLexiconFOL (Form Bool) where
 parseBonevacQL :: RuntimeNaturalDeductionConfig PureLexiconFOL (Form Bool) -> Parsec String u [BonevacQL]
 parseBonevacQL rtc = do ms <- optionMaybe (spaces >> eof)
                         case ms of
-                            Just _ -> return (UP : map SL [DP, ID1,ID2,ID3,ID4,ID5,ID6,ID7,ID8,IfI1,IfI2])
-                            Nothing -> try parseSL <|> parseQL
+                            Just _ -> return (map SL [DP, ID1,ID2,ID3,ID4,ID5,ID6,ID7,ID8,IfI1,IfI2] ++ [UP])
+                            Nothing -> try parseQL <|> parseSL
     where parseSL = map SL <$> parseBonevacSL (RuntimeNaturalDeductionConfig mempty mempty)
           parseQL = do r <- choice (map (try . string) ["∀E", "AE", "∃I", "EI", "∃E", "EE", "=I","=E","PR"])
                        return $ case r of 
