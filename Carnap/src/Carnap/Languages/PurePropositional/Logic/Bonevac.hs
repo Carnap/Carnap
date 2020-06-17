@@ -1,6 +1,6 @@
 {-#LANGUAGE FlexibleContexts, FlexibleInstances, MultiParamTypeClasses #-}
 module Carnap.Languages.PurePropositional.Logic.Bonevac
-    (parseBonevacSL,  parseBonevacSLProof, BonevacSL, bonevacSLCalc) where
+    (parseBonevacSL,  parseBonevacSLProof, BonevacSL(..), bonevacSLCalc) where
 
 import Data.Map as M (lookup, Map)
 import Data.Char

@@ -78,6 +78,7 @@ library
                      , Carnap.Languages.PureFirstOrder.Logic.Tomassi
                      , Carnap.Languages.PureFirstOrder.Logic.HowardSnyder
                      , Carnap.Languages.PureFirstOrder.Logic.Hardegree
+                     , Carnap.Languages.PureFirstOrder.Logic.Bonevac
                      , Carnap.Languages.PureFirstOrder.Logic.Goldfarb
                      , Carnap.Languages.PureFirstOrder.Logic.Gentzen
                      , Carnap.Languages.PureFirstOrder.Logic.OpenLogic
