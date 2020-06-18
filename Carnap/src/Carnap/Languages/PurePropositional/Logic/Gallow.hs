@@ -1,6 +1,6 @@
 {-#LANGUAGE FlexibleContexts, FlexibleInstances, MultiParamTypeClasses #-}
 module Carnap.Languages.PurePropositional.Logic.Gallow 
-    ( gallowSLCalc, gallowSLPlusCalc ) where
+    ( gallowSLCalc, gallowSLPlusCalc, GallowSLCore(..), GallowSL(..), parseGallowSL, parseGallowSLCore) where
 
 import Text.Parsec
 import Carnap.Core.Data.Types (Form)
@@ -17,8 +17,10 @@ import Carnap.Languages.PurePropositional.Logic.Rules
 import Carnap.Languages.Util.LanguageClasses
 
 data GallowSLCore = GallowSLCore ThomasBolducAndZachTFLCore 
+      deriving Eq
 
 data GallowSL = GallowSL ThomasBolducAndZachTFL 
+      deriving Eq
 
 instance Show GallowSLCore where
         show (GallowSLCore NegeElim)   = "⊥I"
