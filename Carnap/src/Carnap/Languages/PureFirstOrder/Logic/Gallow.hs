@@ -161,18 +161,18 @@ parseGallowPL rtc = try (map PL <$> quantRule) <|> try (map SL <$> parseProp) <|
           cqRule = string "CQ" >> return [QN1,QN2,QN3,QN4]
 
 parseGallowPLProof :: RuntimeNaturalDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine GallowPLCore PureLexiconFOL (Form Bool)]
-parseGallowPLProof ders = toDeductionFitch (parseGallowPLCore ders) thomasBolducAndZachFOL2019FormulaParser
+parseGallowPLProof ders = toDeductionFitch (parseGallowPLCore ders) gallowPLFormulaParser
 
 parseGallowPLPlusProof :: RuntimeNaturalDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine GallowPL PureLexiconFOL (Form Bool)]
-parseGallowPLPlusProof ders = toDeductionFitch (parseGallowPL ders) thomasBolducAndZachFOL2019FormulaParser
+parseGallowPLPlusProof ders = toDeductionFitch (parseGallowPL ders) gallowPLFormulaParser
 
 gallowPLCalc = mkNDCalc
     { ndRenderer = FitchStyle StandardFitch
     , ndParseProof = parseGallowPLProof
     , ndProcessLine = hoProcessLineFitch
     , ndProcessLineMemo = Just hoProcessLineFitchMemo
-    , ndParseSeq = parseSeqOver thomasBolducAndZachFOLFormulaParser
-    , ndParseForm = thomasBolducAndZachFOLFormulaParser
+    , ndParseSeq = parseSeqOver gallowPLFormulaParser
+    , ndParseForm = gallowPLFormulaParser
     , ndNotation = ndNotation P.thomasBolducAndZachTFLCalc
     }
 
@@ -181,7 +181,7 @@ gallowPLPlusCalc = mkNDCalc
     , ndParseProof = parseGallowPLPlusProof
     , ndProcessLine = hoProcessLineFitch
     , ndProcessLineMemo = Just hoProcessLineFitchMemo
-    , ndParseSeq = parseSeqOver thomasBolducAndZachFOLFormulaParser
-    , ndParseForm = thomasBolducAndZachFOLFormulaParser
+    , ndParseSeq = parseSeqOver gallowPLFormulaParser
+    , ndParseForm = gallowPLFormulaParser
     , ndNotation = ndNotation P.thomasBolducAndZachTFLCalc
     }

@@ -1,7 +1,7 @@
 {-#LANGUAGE TypeOperators, FlexibleContexts, FlexibleInstances, MultiParamTypeClasses#-}
 module Carnap.Languages.PureFirstOrder.Parser 
 ( folFormulaParser, folFormulaParserRelaxed, mfolFormulaParser
-, magnusFOLFormulaParser, thomasBolducAndZachFOLFormulaParser
+, magnusFOLFormulaParser, gallowPLFormulaParser, thomasBolducAndZachFOLFormulaParser
 , gamutNDFormulaParser, thomasBolducAndZachFOL2019FormulaParser
 , hardegreePLFormulaParser, bergmannMoorAndNelsonPDFormulaParser
 , goldfarbNDFormulaParser, tomassiQLFormulaParser, hausmanPLFormulaParser, FirstOrderParserOptions(..)
@@ -128,6 +128,16 @@ thomasBolducAndZachFOLParserOptions = magnusFOLParserOptions { hasBooleanConstan
                                                              , opTable = calgaryOpTable
                                                              , finalValidation = \x -> if isOpenFormula x then unexpected "unbound variable" else return ()
                                                              }
+
+gallowPLParserOptions :: FirstOrderParserOptions PureLexiconFOL u Identity
+gallowPLParserOptions = magnusFOLParserOptions { freeVarParser = parseFreeVar "wxyz"
+                                             , constantParser = Just (parseConstant "abcdefghijklmnopqrstuv")
+                                             , atomicSentenceParser = 
+                                                    \x -> try (parsePredicateSymbolNoParen "ABCDEFGHIJKLMNOPQRSTUVWXYZ" x)
+                                                          <|> try (sentenceLetterParser "ABCDEFGHIJKLMNOPQRSTUVWXYZ")
+                                             , opTable = calgaryOpTable
+                                             , finalValidation = \x -> if isOpenFormula x then unexpected "unbound variable" else return ()
+                                             }
 
 gamutNDParserOptions :: FirstOrderParserOptions PureLexiconFOL u Identity
 gamutNDParserOptions = thomasBolducAndZachFOLParserOptions { atomicSentenceParser = 
@@ -276,6 +286,9 @@ parserFromOptions opts = do f <- buildExpressionParser (opTable opts) subformula
 
 magnusFOLFormulaParser :: Parsec String u PureFOLForm
 magnusFOLFormulaParser = parserFromOptions magnusFOLParserOptions
+
+gallowPLFormulaParser :: Parsec String u PureFOLForm
+gallowPLFormulaParser = parserFromOptions gallowPLParserOptions
 
 thomasBolducAndZachFOLFormulaParser :: Parsec String u PureFOLForm
 thomasBolducAndZachFOLFormulaParser = parserFromOptions thomasBolducAndZachFOLParserOptions
