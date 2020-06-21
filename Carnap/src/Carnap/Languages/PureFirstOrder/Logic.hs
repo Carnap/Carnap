@@ -12,6 +12,7 @@ module Carnap.Languages.PureFirstOrder.Logic
         , parseIchikawaJenkinsQL, ichikawaJenkinsQLCalc
         , parseHardegreePL, hardegreePLCalc
         , parseTomassiQL, tomassiQLCalc
+        , gallowPLCalc, gallowPLPlusCalc
         , goldfarbNDCalc, goldfarbAltNDCalc, goldfarbNDPlusCalc, goldfarbAltNDPlusCalc
         , ofFOLSys, ofFOLTreeSys
         )
@@ -24,6 +25,7 @@ import Carnap.Calculi.Tableau.Data
 import Carnap.Languages.PureFirstOrder.Logic.Carnap
 import Carnap.Languages.PureFirstOrder.Logic.Magnus
 import Carnap.Languages.PureFirstOrder.Logic.KalishAndMontague
+import Carnap.Languages.PureFirstOrder.Logic.Gallow
 import Carnap.Languages.PureFirstOrder.Logic.ThomasBolducAndZach
 import Carnap.Languages.PureFirstOrder.Logic.EbelsDuggan
 import Carnap.Languages.PureFirstOrder.Logic.BergmannMoorAndNelson
@@ -52,6 +54,8 @@ ofFOLSys f sys | sys == "firstOrder"                      = Just $ f folCalc
                | sys == "hausmanPL"                       = Just $ f hausmanPLCalc 
                | sys == "gamutND"                         = Just $ f gamutNDCalc
                | sys == "gamutNDPlus"                     = Just $ f gamutNDPlusCalc
+               | sys == "gallowPL"                        = Just $ f gallowPLCalc
+               | sys == "gallowPLPlus"                    = Just $ f gallowPLPlusCalc
                | sys == "howardSnyderPL"                  = Just $ f howardSnyderPLCalc 
                | sys == "ichikawaJenkinsQL"               = Just $ f ichikawaJenkinsQLCalc
                | sys == "hardegreePL"                     = Just $ f hardegreePLCalc 
