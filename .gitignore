@@ -30,3 +30,8 @@ Carnap-Server/static/tmp/
 Carnap-Server/static/faygen*
 Carnap-GHCJS/test/testpages/
 client_session_key.aes
+
+dist-newstyle/
+TAGS
+tags
+client-build.done
