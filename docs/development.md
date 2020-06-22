@@ -24,7 +24,7 @@ version in nixos-20.03 works, which is why we do this.
 
 Next, install Haskell software (get rid of your existing ones first):
 ```
-$ nix-env -iA nixpkgs.haskell.compiler.ghcjs nixpkgs.stack nixpkgs.cabal-install
+$ nix-env -iA nixpkgs.haskell.compiler.ghcjs nixpkgs.haskell.compiler.ghc865 nixpkgs.stack nixpkgs.cabal-install
 ```
 
 ## Building Carnap front end (WIP)
