@@ -13,7 +13,7 @@ globally but this is not ready yet).
 
 Install it from [the website](https://nixos.org/download.html) with
 ```
-$ sh <(curl https://nixos.org/nix/install) --no-daemon --no-channel-add
+$ sh <(curl -L https://nixos.org/nix/install) --no-daemon --no-channel-add
 $ # Follow the instructions output by the installer.
 $ nix-channel --add https://nixos.org/channels/nixos-20.03 nixpkgs
 $ nix-channel --update
