@@ -56,6 +56,7 @@ link-js: Carnap-Server/static/ghcjs/allactions/runmain.js \
 
 run-server:
 > mkdir -p Carnap-Book/cache
+> mkdir -p dataroot
 > cd Carnap-Server
 > APPROOT="http://localhost:3000" DATAROOT="../dataroot" BOOKROOT="../Carnap-Book/" ${STACK} exec Carnap-Server
 
