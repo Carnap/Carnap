@@ -94,8 +94,8 @@ instance Inference BonevacSL PurePropLexicon (Form Bool) where
           ruleOf AndE1     = simplificationVariations !! 0
           ruleOf AndE2     = simplificationVariations !! 1
           ruleOf AndI      = adjunction
-          ruleOf NegE      = doubleNegationElimination
-          ruleOf NegI      = doubleNegationIntroduction
+          ruleOf NegE      = doubleNegation !! 0
+          ruleOf NegI      = doubleNegation !! 1
           ruleOf ID1       = constructiveReductioVariations !! 0
           ruleOf ID2       = constructiveReductioVariations !! 1
           ruleOf ID3       = constructiveReductioVariations !! 2
