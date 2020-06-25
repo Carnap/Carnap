@@ -192,20 +192,6 @@ problemsToTable :: Course -> Maybe BookAssignmentTable -> [Entity AssignmentMeta
 problemsToTable course textbookproblems asmd asDocs submissions = do 
             rows <- mapM toRow submissions
             withUrlRenderer [hamlet|
-                   <div.table-responsive>
-                        <table.table.table-striped>
-                            <col style="width:100px">
-                            <col style="width:50px">
-                            <col style="width:100px">
-                            <col style="width:100px">
-                            <col style="width:100px">
-                            <thead>
-                                <th>Source
-                                <th>Exercise
-                                <th>Content
-                                <th>Submitted
-                                <th>Points Earned
-                                <tbody>
                                     $forall row <- rows
                                         ^{row}|]
         where toRow p = do score <- toScore textbookproblems p 
@@ -216,7 +202,8 @@ problemsToTable course textbookproblems asmd asDocs submissions = do
                                     <td title="#{displayProblemData $ problemSubmissionData p}">
                                         <div.problem-display> #{displayProblemData $ problemSubmissionData p}
                                     <td>#{dateDisplay (problemSubmissionTime p) course}
-                                    <td>#{show $ score}|]
+                                    <td>#{show $ score}
+                                    <td>#{show $ problemSubmissionType p}|]
 
               printSource Book = [hamlet|Textbook|]
               printSource (Assignment s) = 
@@ -227,6 +214,7 @@ problemsToTable course textbookproblems asmd asDocs submissions = do
                             Just n -> case asDocs !! n of
                                 Nothing -> [hamlet|No document|]
                                 Just d -> [hamlet| <a href=@{CourseAssignmentR (courseTitle course) (documentFilename d)}>#{documentFilename d}|]
+
 
 tryDelete name = "tryDeleteRule(\"" <> name <> "\")"
 
