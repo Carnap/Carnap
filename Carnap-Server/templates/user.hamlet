@@ -29,13 +29,21 @@
                 <col style="width:50px">
                 <col style="width:50px">
                 <thead>
-                    <th>Source
-                    <th>Exercise
+                    <th style="cursor:pointer" onclick="sortUsersByCol(0)">
+                        Source
+                        <i class="fa fa-sort" aria-hidden="true"></i>
+                    <th style="cursor:pointer" onclick="sortUsersByCol(1)">
+                        Exercise
+                        <i class="fa fa-sort" aria-hidden="true"></i>
                     <th>Content
-                    <th>Submitted
+                    <th style="cursor:pointer" onclick="sortUsersByCol(3)">
+                        Submitted
+                        <i class="fa fa-sort" aria-hidden="true"></i>
                     <th>Points
-                    <th>Type
-                    <tbody>
+                    <th style="cursor:pointer" onclick="sortUsersByCol(5)">
+                        Type
+                        <i class="fa fa-sort" aria-hidden="true"></i>
+                    <tbody#problemTableBody>
                         #{syntable}
                         #{transtable}
                         #{dertable}
