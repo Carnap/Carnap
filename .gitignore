@@ -35,3 +35,4 @@ dist-newstyle/
 TAGS
 tags
 client-build.done
+cabal-update.done

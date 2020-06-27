@@ -1,10 +1,14 @@
+# Carnap
+
+Carnap is an open source logic textbook and homework system.
+
 ## Developing Carnap
 
 Carnap consists of two components: a native Haskell project, Carnap-Server
 managed using `stack`, and a client side codebase including GHCJS, managed with
 `cabal`.
 
-## Setup with Nix
+### Setup with Nix
 
 The easiest way to set up your environment for building Carnap is to use `nix`.
 It must be noted that this method is not 'correct' (theoretically we should
@@ -27,25 +31,45 @@ Next, install Haskell software (get rid of your existing ones first):
 $ nix-env -iA nixpkgs.haskell.compiler.ghcjs nixpkgs.haskell.compiler.ghc865 nixpkgs.stack nixpkgs.cabal-install
 ```
 
-## Building Carnap front end (WIP)
+### Building Carnap front end
+
+*NOTE*: This takes about 10GB of memory to do. If you don't have that amount
+free, consider setting up a swap file or closing some programs.
+
+Also, note that we do not automatically run `cabal update` for you after the
+initial run.
 
 ```
 $ make build-client
 ```
 
-## Building Carnap-Server in development
+### Building Carnap-Server in development
+
+This will automatically build the client then the server. You can also run
+`make all` or just `make`.
 
 ```
 $ make build-server-dev
 ```
 
-## Running Carnap-Server in development
+### Running Carnap-Server in development
 
 ```
 $ make run-server
 ```
 
-# Common Issues
+### Building Carnap-Server in production
+
+```
+$ make build-server
+```
+
+### Common Issues
+
+General build weirdness can often be resolved with `make clean` which deletes
+all the intermediate results and forces a full rebuild next time.
+
+#### Missing `ghcjs_allactions_*.js`
 
 ```
 Carnap-Server> [21 of 38] Compiling Handler.Info

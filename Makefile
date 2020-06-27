@@ -24,11 +24,14 @@ client_source_files = $(shell find ./Carnap ./Carnap-Client ./Carnap-GHCJS -name
 
 all: build-server-dev
 
+cabal-update.done:
+> cabal update
+> touch cabal-update.done
+
 # XXX: slightly evil workaround for ridiculous paths from Cabal such as
 # ./dist-newstyle/build/x86_64-linux/ghcjs-8.6.0.1/Carnap-GHCJS-0.1.0.0/x/AllActions/build/AllActions/AllActions.jsexe
 # that we should not generate. I give up. Just track completion ourselves.
-client-build.done: $(client_source_files)
-> cabal update
+client-build.done: cabal-update.done ${client_source_files}
 > cabal new-build all
 > touch client-build.done
 > $(MAKE) link-js
@@ -45,7 +48,7 @@ clean:
 > ${STACK} clean --full
 > cabal new-clean
 > rm -rf './${JS_LINKS_DIR}/'*
-> rm client-build.done
+> rm ./*.done
 
 Carnap-Server/static/ghcjs/allactions/%:
 > $(call link_jsexe,$*)
