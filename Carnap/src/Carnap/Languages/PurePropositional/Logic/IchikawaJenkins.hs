@@ -216,7 +216,7 @@ instance CoreInference IchikawaJenkinsSLTableaux PurePropLexicon (Form Bool) whe
         coreConclusionOf NBicond = SA (lneg $ phin 1 .<=>. phin 2) :+: GammaV 1 :+: GammaV 2 :|-: Bot
         coreConclusionOf DoubleNeg = SA (lneg $ lneg $ phin 1)  :+: GammaV 1 :|-: Bot
         coreConclusionOf Ax1 = SA (phin 1) :+: SA (lneg $ phin 1) :+: GammaV 1 :|-: Bot
-        coreConclusionOf Ax2 = SA (phin 1) :+: SA (lneg $ phin 1) :+: GammaV 1 :|-: Bot
+        coreConclusionOf Ax2 = SA (lneg $ phin 1) :+: SA (phin 1) :+: GammaV 1 :|-: Bot
         coreConclusionOf Struct = GammaV 1 :|-: DeltaV 1
         coreConclusionOf Lit = GammaV 1 :|-: DeltaV 1
 
