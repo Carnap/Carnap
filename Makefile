@@ -12,8 +12,6 @@ endif
 
 .PHONY: clean build-client build-server build-server-dev run-server link-js
 
-PROJECT_NAME := Carnap-Server
-
 # workaround for https://github.com/commercialhaskell/stack/issues/793
 STACK := LC_ALL=C.utf-8 stack
 
@@ -22,12 +20,14 @@ JS_LINKS_DIR := Carnap-Server/static/ghcjs/allactions
 jsexe_path = $(shell realpath --relative-to ${JS_LINKS_DIR} ${JSEXE})
 link_jsexe = ln -sf ${jsexe_path}/$(1) ${JS_LINKS_DIR}
 
+client_source_files = $(shell find ./Carnap ./Carnap-Client ./Carnap-GHCJS -name '*.hs' -type f -print)
+
 all: build-server-dev
 
 # XXX: slightly evil workaround for ridiculous paths from Cabal such as
 # ./dist-newstyle/build/x86_64-linux/ghcjs-8.6.0.1/Carnap-GHCJS-0.1.0.0/x/AllActions/build/AllActions/AllActions.jsexe
 # that we should not generate. I give up. Just track completion ourselves.
-client-build.done:
+client-build.done: $(client_source_files)
 > cabal update
 > cabal new-build all
 > touch client-build.done
