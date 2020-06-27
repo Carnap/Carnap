@@ -188,7 +188,7 @@ P\rightarrow (\neg S\rightarrow R)$, we can derive:
 12. :CD 6
 ```
 
-For the argument $(P\rightarrow R)\rightarrow S~.~ P\rightarrow Q~.~ Q\rightarrow R \vdash S$, we can derive:
+For the argument $(P\rightarrow R)\rightarrow S~,~ P\rightarrow Q~,~ Q\rightarrow R \vdash S$, we can derive:
 
 ```
 1. Show: S
