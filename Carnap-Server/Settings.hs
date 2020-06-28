@@ -8,10 +8,6 @@ module Settings where
 
 import ClassyPrelude.Yesod
 import Control.Exception           (throw)
-#if DEVELOPMENT
-#else
-import SecureStrings               (googleApiKey, googleSecret)
-#endif
 import Data.Aeson                  (Result (..), fromJSON, withObject, (.!=), (.:?))
 import Data.FileEmbed              (embedFile)
 import Data.Yaml                   (decodeEither')
@@ -76,12 +72,8 @@ instance FromJSON AppSettings where
     parseJSON = withObject "AppSettings" $ \o -> do
 #if DEVELOPMENT
         let appDevel = True
-            appKey = ""
-            appSecret = ""
 #else
         let appDevel = False
-            appKey = googleApiKey
-            appSecret = googleSecret
 #endif
         appStaticDir              <- o .: "static-dir"
         appDatabaseConf           <- o .: "database"
@@ -101,6 +93,8 @@ instance FromJSON AppSettings where
 
         appCopyright              <- o .: "copyright"
         appAnalytics              <- o .:? "analytics"
+        appKey                    <- o .:? "google-api-key"   .!= ""
+        appSecret                 <- o .:? "google-secret"    .!= ""
 
         return AppSettings {..}
 

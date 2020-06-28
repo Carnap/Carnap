@@ -39,4 +39,7 @@ sqlite: true
 data-root: "_env:DATAROOT:/var/lib/carnap"
 book-root: "_env:BOOKROOT:/var/lib/carnap/book/"
 
+google-api-key: "_env:GOOGLEKEY"
+google-secret: "_env:GOOGLESECRET"
+
 #analytics: UA-YOURCODE

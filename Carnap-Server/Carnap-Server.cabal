@@ -52,10 +52,6 @@ library
                      Util.Database
                      Util.Data
 
-    if !flag(dev) && !flag(library-only)
-        exposed-modules:
-            SecureStrings
-
     if flag(dev) || flag(library-only)
         cpp-options:   -DDEVELOPMENT
         ghc-options:   -Wall -fwarn-tabs -O0
