@@ -23,7 +23,7 @@ Sessionx.vim
 *.sqlite3
 *.lock
 yesod-devel
-Carnap-Server/app/SecureStrings.hs
+Carnap-Server/config/settings.yml
 dataroot
 Carnap-Book/cache
 Carnap-Server/static/tmp/
