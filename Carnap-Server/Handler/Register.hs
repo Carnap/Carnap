@@ -38,14 +38,12 @@ postRegister theform ident = do
     where errorPage = [whamlet|
                         <div.container>
                             <p> Looks like something went wrong with that form
-
                             <p>
                                 <a href=@{RegisterR ident}>Try again?
                       |]
           clashPage = [whamlet|
                         <div.container>
                             <p> Looks like you're already registered.
-
                             <p>
                                 <a href=@{UserR ident}>Go to your user page?
                       |]
@@ -55,16 +53,18 @@ getRegisterR ident = getRegister registrationForm (RegisterR ident) ident
 
 getEnrollR :: Text -> Handler Html
 getEnrollR classname = do setSession "enrolling-in" classname
-                          (Entity uid user) <- requireAuth
-                          ud <- checkUserData uid
+                          Entity uid user <- requireAuth
                           mclass <- runDB $ getBy (UniqueCourse classname)
-                          case (mclass, userDataEnrolledIn ud) of
-                              (Just (Entity cid course), Just ecid) -> do 
-                                    if cid == ecid then redirect HomeR
-                                                   else defaultLayout (reenrollPage cid course user)
-                              (Just (Entity cid course), Nothing) -> setMessage "no user data - please restart registration" >> notFound
-                              (Nothing,_) -> setMessage "no course with that title" >> notFound
-    where reenrollPage cid course user = [whamlet|
+                          mud <- runDB $ getBy $ UniqueUserData uid
+                          case mud of
+                              Nothing -> redirect (RegisterEnrollR classname (userIdent user))
+                              Just (Entity udid ud) -> case (mclass, userDataEnrolledIn ud) of
+                                  (Just (Entity cid course), Just ecid) -> do 
+                                        if cid == ecid then redirect HomeR
+                                                       else defaultLayout (reenrollPage course user)
+                                  (Just (Entity cid course), Nothing) -> do defaultLayout (confirm course)
+                                  (Nothing,_) -> setMessage "no course with that title" >> notFound
+    where reenrollPage course user = [whamlet|
                            <div.container>
                                <h2>It looks like you're already enrolled.
                                <p>Do you want to change your enrollment and join #{courseTitle course}?
@@ -76,6 +76,14 @@ getEnrollR classname = do setSession "enrolling-in" classname
                                        <button name="change-enrollment" value="change">
                                             Change Enrollment
                          |]
+          confirm course = [whamlet|
+                                   <div.container>
+                                       <p>Do you want to join #{courseTitle course}?
+                                       <p>
+                                           <form action="" method="post">
+                                               <button name="change-enrollment" value="change">
+                                                    Join #{courseTitle course}
+                                |]
 
 postEnrollR :: Text -> Handler Html
 postEnrollR classname = do (Entity uid _) <- requireAuth
