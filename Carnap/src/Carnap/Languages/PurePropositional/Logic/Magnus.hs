@@ -257,14 +257,14 @@ instance Inference MagnusSLPlus PurePropLexicon (Form Bool) where
         globalRestriction (Left ded) n (MSL BicoIntro2)  = Just $ fitchAssumptionCheck n ded [([phin 1], [phin 2]), ([phin 2], [phin 1])]
         globalRestriction (Left ded) n (MSL BicoIntro3)  = Just $ fitchAssumptionCheck n ded [([phin 1], [phin 2]), ([phin 2], [phin 1])]
         globalRestriction (Left ded) n (MSL BicoIntro4)  = Just $ fitchAssumptionCheck n ded [([phin 1], [phin 2]), ([phin 2], [phin 1])]
-        globalRestriction (Left ded) n (MSL NegeIntro1)  = Just $ fitchAssumptionCheck n ded [([lneg $ phin 1], [phin 2, lneg $ phin 2])]  
-        globalRestriction (Left ded) n (MSL NegeIntro2)  = Just $ fitchAssumptionCheck n ded [([lneg $ phin 1], [phin 2, lneg $ phin 2])]  
-        globalRestriction (Left ded) n (MSL NegeIntro3)  = Just $ fitchAssumptionCheck n ded [([lneg $ phin 1], [phin 2, lneg $ phin 2])]  
-        globalRestriction (Left ded) n (MSL NegeIntro4)  = Just $ fitchAssumptionCheck n ded [([lneg $ phin 1], [phin 2, lneg $ phin 2])]  
-        globalRestriction (Left ded) n (MSL NegeElim1)  = Just $ fitchAssumptionCheck n ded [([phin 1], [phin 2, lneg $ phin 2])] 
-        globalRestriction (Left ded) n (MSL NegeElim2)  = Just $ fitchAssumptionCheck n ded [([phin 1], [phin 2, lneg $ phin 2])] 
-        globalRestriction (Left ded) n (MSL NegeElim3)  = Just $ fitchAssumptionCheck n ded [([phin 1], [phin 2, lneg $ phin 2])] 
-        globalRestriction (Left ded) n (MSL NegeElim4)  = Just $ fitchAssumptionCheck n ded [([phin 1], [phin 2, lneg $ phin 2])] 
+        globalRestriction (Left ded) n (MSL NegeIntro1)  = Just $ fitchAssumptionCheck n ded [([phin 1], [phin 2, lneg $ phin 2])]  
+        globalRestriction (Left ded) n (MSL NegeIntro2)  = Just $ fitchAssumptionCheck n ded [([phin 1], [phin 2, lneg $ phin 2])]  
+        globalRestriction (Left ded) n (MSL NegeIntro3)  = Just $ fitchAssumptionCheck n ded [([phin 1], [phin 2, lneg $ phin 2])]  
+        globalRestriction (Left ded) n (MSL NegeIntro4)  = Just $ fitchAssumptionCheck n ded [([phin 1], [phin 2, lneg $ phin 2])]  
+        globalRestriction (Left ded) n (MSL NegeElim1)  = Just $ fitchAssumptionCheck n ded [([lneg $ phin 1], [phin 2, lneg $ phin 2])] 
+        globalRestriction (Left ded) n (MSL NegeElim2)  = Just $ fitchAssumptionCheck n ded [([lneg $ phin 1], [phin 2, lneg $ phin 2])] 
+        globalRestriction (Left ded) n (MSL NegeElim3)  = Just $ fitchAssumptionCheck n ded [([lneg $ phin 1], [phin 2, lneg $ phin 2])] 
+        globalRestriction (Left ded) n (MSL NegeElim4)  = Just $ fitchAssumptionCheck n ded [([lneg $ phin 1], [phin 2, lneg $ phin 2])] 
         globalRestriction _ _ _ = Nothing
 
         indirectInference (MSL x) = indirectInference x
