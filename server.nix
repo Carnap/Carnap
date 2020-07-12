@@ -15,7 +15,7 @@
 
             Carnap        = oldpkgs.callPackage ./Carnap/Carnap.nix { };
             Carnap-Client = oldpkgs.callPackage ./Carnap-Client/Carnap-Client.nix { };
-            Carnap-Server = doJailbreak (overrideCabal
+            Carnap-Server = overrideCabal
                               (oldpkgs.callPackage ./Carnap-Server/Carnap-Server.nix { })
                               (old: {
                                 preConfigure = ''
@@ -25,7 +25,7 @@
                                   ln -sf ${client-ghcjs.out}/bin/AllActions.jsexe/lib.js static/ghcjs/allactions/
                                   '';
                                 extraLibraries = [ client-ghcjs ];
-                              }));
+                              });
           };
         };
       };
