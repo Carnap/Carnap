@@ -4,7 +4,7 @@ module Handler.Admin where
 import Import
 import Util.Data
 import Util.Database
-import Handler.Instuctor (dateDisplay)
+import Handler.Instructor (dateDisplay)
 import Yesod.Form.Bootstrap3
 import Yesod.Form.Jquery
 import Text.Blaze.Html (toMarkup)

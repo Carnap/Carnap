@@ -48,7 +48,7 @@ import Handler.Command
 import Handler.Hashed
 import Handler.Register
 import Handler.Rule
-import Handler.Instuctor
+import Handler.Instructor
 import Handler.Admin
 import Handler.Assignment
 import Handler.Document

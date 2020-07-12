@@ -1,3 +1,4 @@
+{-# LANGUAGE LambdaCase #-}
 module Handler.User where
 
 import Import
@@ -69,23 +70,31 @@ getUserR ident = do
             let isInstructor = case maybeInstructorId of Just _ -> True; _ -> False
             derivedRulesOld <- getDerivedRules uid
             derivedRulesNew <- getRules uid
-            case maybeCourseId of
-                Just cid ->
-                    do Just course <- runDB $ get cid
+
+            maybeCourse <- case maybeCourseId of
+                              Just cid -> do runDB $ get cid
+                              Nothing  -> return Nothing
+            case maybeCourse of
+                Just course -> do
+                       -- safety: `Nothing` case unreachable since `maybeCourse` will be `Nothing` also
+                       let Just cid = maybeCourseId
                        asmd <- runDB $ selectList [AssignmentMetadataCourse ==. cid] []
                        asDocs <- mapM (runDB . get) (map (assignmentMetadataDocument . entityVal) asmd)
                        textbookproblems <- getProblemSets cid
                        assignments <- assignmentsOf course textbookproblems asmd asDocs
                        pq <- getProblemQuery uid cid
                        let getSubs typ = map entityVal <$> runDB (selectList ([ProblemSubmissionType ==. typ] ++ pq) [])
-                       subs@[synsubs,transsubs,dersubs,ttsubs,cmsubs,qsubs,seqsubs,treesubs] <- mapM getSubs [SyntaxCheck,Translation,Derivation,TruthTable,CounterModel,Qualitative,SequentCalc,DeductionTree]
-                       [syntable,transtable,dertable,tttable,cmtable,qtable,seqtable,treetable] <- mapM (problemsToTable course textbookproblems asmd asDocs) subs
-                       score <- totalScore textbookproblems (concat subs)
-                       defaultLayout $ do
-                           addScript $ StaticR js_bootstrap_bundle_min_js
-                           addScript $ StaticR js_bootstrap_min_js
-                           setTitle "Welcome To Your Homepage!"
-                           $(widgetFile "user")
+                       subs <- mapM getSubs [SyntaxCheck,Translation,Derivation,TruthTable,CounterModel,Qualitative,SequentCalc,DeductionTree]
+                       mapM (problemsToTable course textbookproblems asmd asDocs) subs
+                           >>= \case
+                              [syntable,transtable,dertable,tttable,cmtable,qtable,seqtable,treetable] -> do
+                                   score <- totalScore textbookproblems (concat subs)
+                                   defaultLayout $ do
+                                       addScript $ StaticR js_bootstrap_bundle_min_js
+                                       addScript $ StaticR js_bootstrap_min_js
+                                       setTitle "Welcome To Your Homepage!"
+                                       $(widgetFile "user")
+                              _ -> liftIO $ fail "incorrect number of tables: this should never happen"
                 Nothing -> defaultLayout $ do
                                 addScript $ StaticR js_bootstrap_bundle_min_js
                                 addScript $ StaticR js_bootstrap_min_js

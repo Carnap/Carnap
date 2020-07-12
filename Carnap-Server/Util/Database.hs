@@ -51,8 +51,11 @@ getAssignment filename =
                    Nothing -> setMessage "you need to be logged in to access assignments" >> redirect HomeR
                    Just uid -> checkUserData uid
            coursent <- case userDataEnrolledIn ud of
-                            Just cid -> do Just course <- runDB $ get cid
-                                           return (Entity cid course)
+                            Just cid -> do
+                               maybeCourse <- runDB $ get cid
+                               case maybeCourse of
+                                  Just course -> return (Entity cid course)
+                                  Nothing     -> setMessage "failed to retrieve course" >> notFound
                             Nothing -> do setMessage "you need to be enrolled in a course to access assignments"
                                           redirect HomeR
            retrieveAssignment coursent filename 
@@ -83,13 +86,19 @@ getAssignmentByCourseAndOwner coursetitle ident filename =
              Nothing -> do setMessage "no class with this title" >> notFound
              Just c -> retrieveAssignment c filename 
 
+checkCourseOwnership :: (YesodAuthPersist master,
+                         PersistUniqueRead (YesodPersistBackend master),
+                         PersistQueryRead (YesodPersistBackend master),
+                         BaseBackend (YesodPersistBackend master) ~ SqlBackend,
+                         AuthId master ~ Key User, AuthEntity master ~ User) =>
+                        Text -> HandlerFor master ()
 checkCourseOwnership coursetitle = do
            mcourse <- runDB $ getBy $ UniqueCourse coursetitle
            Entity uid _ <- requireAuth
            case mcourse of 
              Nothing -> setMessage "course not found" >> notFound
              Just (Entity cid course) -> do
-               Just user <- runDB (get uid)
+               user <- runDB (get uid) >>= maybe (permissionDenied "failed to get user") pure
                classes <- classesByInstructorIdent (userIdent user)
                unless (course `elem` map entityVal classes) (permissionDenied "this doesn't appear to be your course")
 
@@ -107,14 +116,18 @@ retrieveAssignment (Entity cid course) filename = do
                             case masgn of Nothing -> return Nothing; Just asgn -> return (Just (doc,asgn))
                    asgns <- runDB $ catMaybes <$> mapM lookup docs
                    case asgns of
-                      [] -> setMessage ("can't find assignment for this course with filename" ++ toHtml filename) >> notFound
+                      [] -> setMessage ("can't find assignment for this course with filename " ++ toHtml filename) >> notFound
                       [(doc,asgn)] -> do
-                           Just ident <- getIdent (documentCreator doc)
-                           adir <- assignmentDir ident
-                           let path = adir </> unpack filename
-                           exists <- liftIO $ doesFileExist path
-                           if exists then return (asgn, path)
-                                     else setMessage ("file not found at " ++ toHtml path) >> notFound
+                           maybeIdent <- getIdent (documentCreator doc)
+                           case maybeIdent of
+                              Just ident -> do
+                                 adir <- assignmentDir ident
+                                 let path = adir </> unpack filename
+                                 exists <- liftIO $ doesFileExist path
+                                 if exists then return (asgn, path)
+                                           else setMessage ("file not found at " ++ toHtml path) >> notFound
+                              Nothing ->
+                                 setMessage ("failed to get document creator for " ++ toHtml filename) >> notFound
                       _ -> error "more than one assignment for this course is associated with this filename"
 
 -- | given a UserId, return Just the user data or Nothing
