@@ -25,7 +25,7 @@ library
                      Handler.Info
                      Handler.Register
                      Handler.User
-                     Handler.Instuctor
+                     Handler.Instructor
                      Handler.Admin
                      Handler.Chapter
                      Handler.Book
@@ -84,25 +84,25 @@ library
                  , yesod-static                  >=1.6 && <1.7
                  , yesod-form                    >=1.6 && <1.7
                  , yesod-markdown                >= 0.12
-                 , classy-prelude                >=1.4 && <1.5
-                 , classy-prelude-conduit        >=1.4 && <1.5
-                 , classy-prelude-yesod          >=1.4 && <1.5
+                 , classy-prelude                >=1.4 && <1.6
+                 , classy-prelude-conduit        >=1.4 && <1.6
+                 , classy-prelude-yesod          >=1.4 && <1.6
                  , bytestring                    >=0.9 && <0.11
                  , text                          >=0.11 && <2.0
-                 , persistent                    >=2.8 && <2.9
-                 , persistent-postgresql         >=2.8 && <2.9
+                 , persistent                    >=2.8 && <2.10
+                 , persistent-postgresql         >=2.8 && <2.10
                  , persistent-sqlite
                  , persistent-template           >= 2.5        && < 2.9
                  , template-haskell
                  , shakespeare                   >= 2.0        && < 2.1
                  , monad-control                 >= 0.3        && < 1.1
                  , wai-extra                     >= 3.0        && < 3.1
-                 , yaml                          >= 0.8        && < 0.9
+                 , yaml                          >= 0.8        && < 0.12
                  , http-conduit                  >= 2.3        && < 2.4
                  , directory                     >= 1.1        && < 1.4
-                 , warp                          >= 3.0        && < 3.3
+                 , warp                          >= 3.0        && < 3.4
                  , data-default
-                 , aeson                         >= 0.6        && < 1.4
+                 , aeson                         >= 0.6        && < 1.5
                  , conduit                       >= 1.0        && < 2.0
                  , monad-logger                  >= 0.3        && < 0.4
                  , fast-logger                   >= 2.2        && < 2.5

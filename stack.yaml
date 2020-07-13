@@ -1,14 +1,18 @@
 flags: {}
 extra-package-dbs: []
-extra-deps: 
-    - yesod-markdown-0.12.4
-    - yesod-auth-oauth2-0.6.1.0
-    - hoauth2-1.8.4
-    - uri-bytestring-aeson-0.1.0.7
+extra-deps:
+    - yesod-markdown-0.12.6.3
+    - yesod-auth-oauth2-0.6.1.2
+    - hoauth2-1.8.9
+    - uri-bytestring-aeson-0.1.0.8
+    - diagrams-builder-0.8.0.5
+    - haskell-src-exts-simple-1.22.0.0
+    - haskell-src-exts-1.22.0
 
 packages:
 - Carnap/
 - Carnap-Server/
 - Carnap-Client/
 #resolver: lts-6.25
-resolver: lts-12.16
+#resolver: lts-12.26
+resolver: lts-14.27

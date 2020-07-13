@@ -1,5 +1,5 @@
 {-#LANGUAGE DeriveGeneric #-}
-module Handler.Instuctor where
+module Handler.Instructor where
 
 import Import
 import Util.Data
@@ -36,7 +36,7 @@ putInstructorR ident = do
                           Nothing -> returnJson ("Could not find assignment!"::Text)
                           Just v -> 
                             do let cid = assignmentMetadataCourse v
-                               runDB $ do (Just course) <- get cid
+                               runDB $ do course <- get cid >>= maybe (liftIO $ fail "could not get course") pure
                                           let (Just tz) = tzByName . courseTimeZone $ course
                                           let mtimeUpdate Nothing Nothing field = update k [ field =. Nothing ]
                                               mtimeUpdate mdate mtime field = maybeDo mdate (\date-> 
@@ -66,17 +66,20 @@ putInstructorR ident = do
                                     case mdoc of 
                                         Nothing -> returnJson ("could not find document!"::Text)
                                         Just doc -> do
-                                           (Just ident) <- getIdent (documentCreator doc) 
+                                           maybeIdent <- getIdent $ documentCreator doc
                                            --XXX: shouldn't be possible for a document to exist without a creator
-                                           runDB $ do update k [ DocumentDescription =. (unTextarea <$> mdesc) ]
-                                                      maybeDo mscope (\scope -> update k [ DocumentScope =. scope ])
-                                                      maybeDo mtags (\tags -> do
-                                                                        oldTags <- selectList [TagBearer ==. k] []
-                                                                        mapM (delete . entityKey) oldTags
-                                                                        forM tags (\tag -> insert $ Tag k tag) 
-                                                                        return ())
-                                           maybeDo mfile (saveTo ("documents" </> unpack ident) (unpack $ documentFilename doc))
-                                           returnJson ("updated!"::Text)
+                                           case maybeIdent of
+                                             Just ident -> do
+                                                 runDB $ do update k [ DocumentDescription =. (unTextarea <$> mdesc) ]
+                                                            maybeDo mscope (\scope -> update k [ DocumentScope =. scope ])
+                                                            maybeDo mtags (\tags -> do
+                                                                              oldTags <- selectList [TagBearer ==. k] []
+                                                                              mapM (delete . entityKey) oldTags
+                                                                              forM tags (\tag -> insert $ Tag k tag) 
+                                                                              return ())
+                                                 maybeDo mfile (saveTo ("documents" </> unpack ident) (unpack $ documentFilename doc))
+                                                 returnJson ("updated!"::Text)
+                                             Nothing -> returnJson ("document did not have a creator. This is a bug."::Text)
                                  Nothing -> returnJson ("could not read document key"::Text)
 
             (FormMissing,FormMissing,FormMissing) -> returnJson ("no form" :: Text)
@@ -159,7 +162,8 @@ postInstructorR ident = do
     case assignmentrslt of 
         FormSuccess (doc, Entity classkey theclass, mdue,mduetime,mfrom,mfromtime,mtill,mtilltime, massignmentdesc, mpass, mhidden,mlimit, subtime) ->
             do Entity uid user <- requireAuth
-               Just iid <- instructorIdByIdent (userIdent user)
+               iid <- instructorIdByIdent (userIdent user)
+                        >>= maybe (setMessage "failed to retrieve instructor" >> notFound) pure
                mciid <- if courseInstructor theclass == iid 
                             then return Nothing
                             else runDB $ getBy (UniqueCoInstructor iid classkey)
@@ -661,7 +665,8 @@ classWidget ident instructors classent = do
            usersAndData = zip users allUserData
            sortedUsersAndData = let lnOf (_,UserData _ ln _ _ _) = ln 
                                     in sortBy (\x y -> compare (lnOf x) (lnOf y)) usersAndData
-       (Just course) <- runDB $ get cid
+       course <- runDB $ get cid
+                  >>= maybe (setMessage "failed to get course" >> notFound) pure
        return [whamlet|
                     <h2>Assignments
                     <div.scrollbox>
