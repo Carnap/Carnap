@@ -30,7 +30,7 @@ import GHCJS.DOM.Element
 import GHCJS.DOM.Types
 import GHCJS.DOM.HTMLInputElement (HTMLInputElement, getValue, setValue)
 import GHCJS.DOM.Document (Document,createElement, getBody, getDefaultView)
-import GHCJS.DOM.Node (appendChild, getParentNode, insertBefore)
+import GHCJS.DOM.Node (appendChild, getParentNode, getParentElement, insertBefore)
 import GHCJS.DOM.KeyboardEvent
 import GHCJS.DOM.EventM
 import Control.Monad.IO.Class (MonadIO, liftIO)
@@ -52,9 +52,10 @@ tryMatch o ref w sf opts = onEnter $
            (f, forms, ft, stage) <- liftIO $ readIORef ref
            setValue t (Just "")
            case forms of
-               [] -> case M.lookup "submission" opts of
-                          Just s | take 7 s == "saveAs:" -> setInnerHTML o (Just "Success! You may now submit your solution")
-                          _ -> setInnerHTML o (Just "Success!")
+               [] -> do Just wrap1<- getParentElement o
+                        Just wrap2 <- getParentElement wrap1
+                        liftIO $ redraw Nothing ft
+                        setAttribute wrap2 "class" "success"
                x:xs -> case matchMC ival (fst x) of
                    Right b -> if b 
                        then case children (fst x) of 
@@ -65,21 +66,25 @@ tryMatch o ref w sf opts = onEnter $
                    Left e -> case children (fst x) of
                           [] -> shorten x xs stage
                           _ -> message "what you've entered doesn't appear to be a connective"
-        where --updates the goal, by adding labeled formulas to the todo ist, 
+        where optlist = case M.lookup "options" opts of Just s -> words s; Nothing -> []
+              --updates the goal, by adding labeled formulas to the todo ist, 
               --developing the tree with those labeled formulas at the given label, and 
               --advances the stage
-              optlist = case M.lookup "options" opts of Just s -> words s; Nothing -> []
               updateGoal x cs xs stage = 
                     do liftIO $ modifyIORef ref (_2 .~ (cs ++ xs))
                        liftIO $ modifyIORef ref (_3 %~ dev x cs)
                        liftIO $ modifyIORef ref (_4 .~ stage)
                        (_,_,t,_) <- liftIO $ readIORef ref
                        if "parseAtoms" `elem` optlist 
-                           then liftIO $ redraw (head (cs ++ xs)) t
+                           then liftIO $ redraw (Just (head (cs ++ xs))) t
                            else case (cs ++ xs) of
                                    c:css | children (fst c) == [] -> shorten c css stage
-                                   l -> liftIO $ redraw (head l) t
-              shorten x xs stage = case xs of [] -> liftIO $ do setInnerHTML o (Just "Success! You may now submit your solution") 
+                                   l -> liftIO $ redraw (Just (head l)) t
+              shorten x xs stage = case xs of [] -> liftIO $ do Just wrap1 <- getParentElement o
+                                                                Just wrap2 <- getParentElement wrap1
+                                                                (_,_,t,_) <- readIORef ref
+                                                                redraw Nothing t
+                                                                setAttribute wrap2 "class" "success"
                                                                 modifyIORef ref (_2 .~ []) 
                                               _  -> updateGoal x [] xs stage
               resetGoal = do (f,_,_,_) <- liftIO $ readIORef ref
@@ -88,15 +93,16 @@ tryMatch o ref w sf opts = onEnter $
               dev x xs = adjustFirstMatching leaves (== T.Node x []) (dev' xs)
               dev' xs (T.Node x _) = T.Node x (map nodify xs)
               nodify x = T.Node x []
-              redraw x t = do setInnerHTML o (Just "")
-                              let t' = fmap (\y -> (y, "")) t
-                              let t'' = adjustFirstMatching leaves (== T.Node (x, "") []) (const (T.Node (x, "target") [])) t'
-                              let t''' = fmap  (\((x,_),s) -> (x,s)) t''
-                              te <- genericTreeToUl sf w t'''
-                              ul@(Just ul') <- createElement w (Just "ul")
-                              appendChild ul' (Just te)
-                              appendChild o ul
-                              return ()
+              redraw mx t = do setInnerHTML o (Just "")
+                               let t' = fmap (\y -> (y, "")) t
+                               let t'' = case mx of Just x -> adjustFirstMatching leaves (== T.Node (x, "") []) (const (T.Node (x, "target") [])) t'
+                                                    Nothing -> t'
+                               let t''' = fmap  (\((x,_),s) -> (x,s)) t''
+                               te <- genericTreeToUl sf w t'''
+                               ul@(Just ul') <- createElement w (Just "ul")
+                               appendChild ul' (Just te)
+                               appendChild o ul
+                               return ()
 
 parseConnective :: Monad m => ParsecT String u m String
 parseConnective = choice [getAnd, getOr, getIff, getIf, getNeg]

@@ -652,9 +652,11 @@ Once you've entered that connective, the sentence will be broken down into its
 parts---keep going, entering the main connective for each highlighted
 sentence.
 
-When you're done, and the sentence has been completely broken down, so that
-the display reads "success!", press the submit button to save your work.
-You'll then be able to see the completed problem in your user page.
+When you're done, and the sentence has been completely broken down, the display
+will turn <span style="background:#b9f2b7">green</span>, and display a check
+mark. This means you've succeeded! Once you've got a <span style="background:#b9f2b7">green</span> 
+light, press submit to submit and save your answer. You'll then be able to see
+the completed problem in your user page.
 
 The way to type in the different connectives is given in this table:
 
