@@ -33,8 +33,8 @@ import Carnap.Languages.PureFirstOrder.Logic (ofFOLTreeSys)
 import Carnap.GHCJS.Util.ProofJS
 import Carnap.GHCJS.SharedTypes
 import GHCJS.DOM.HTMLElement (getInnerText, castToHTMLElement)
-import GHCJS.DOM.Element (setInnerHTML, click, keyDown, input, setAttribute)
-import GHCJS.DOM.Node (appendChild, removeChild, getParentNode, insertBefore)
+import GHCJS.DOM.Element (setInnerHTML, click, keyDown, input, setAttribute )
+import GHCJS.DOM.Node (appendChild, removeChild, getParentNode, insertBefore, getParentElement)
 import GHCJS.DOM.Types (Element, Document, IsElement)
 import GHCJS.DOM.Document (createElement, getActiveElement)
 import GHCJS.DOM.KeyboardEvent
@@ -119,13 +119,8 @@ activateChecker w (Just (i, o, opts)) = case (setupWith `ofPropTreeSys` sys)
                                         case mr of
                                             Just r -> do (info,mseq) <- checkProofTree calc (Just memo) r 
                                                          decorate root info
-                                                         --XXX: reduce duplication here?
-                                                         case (mgoal,mseq) of 
-                                                            (Just goal, Just seq) | seq `seqSubsetUnify` goal -> setAttribute i "class" "input success"
-                                                            (Just goal, Just seq) -> setAttribute i "class" "input failure"
-                                                            (Nothing, Just seq) -> setInnerHTML i (Just . tbNotation calc . show $ seq)
-                                                            (Nothing, Nothing) -> setInnerHTML i (Just "Awaiting a proof")
-                                                            _ -> setAttribute i "class" "input"
+                                                         Just wrap <- getParentElement i
+                                                         updateInfo calc mgoal mseq wrap
                                             Nothing -> return ()
                                     return ()
                   addListener i initialize initialCheck False --initial check in case we preload a tableau
@@ -144,6 +139,12 @@ activateChecker w (Just (i, o, opts)) = case (setupWith `ofPropTreeSys` sys)
                                           return $ Just seq
                       Nothing -> do setInnerHTML i (Just "Awaiting a proof")
                                     return Nothing
+
+updateInfo _ (Just goal) (Just seq) wrap | seq `seqSubsetUnify` goal = setAttribute wrap "class" "success"
+updateInfo _ (Just goal) (Just seq) wrap = setAttribute wrap "class" "failure"
+updateInfo calc Nothing (Just seq) wrap = setInnerHTML wrap (Just . tbNotation calc . show $ seq)
+updateInfo _ Nothing Nothing wrap  = setInnerHTML wrap (Just "Awaiting a proof")
+updateInfo _ _ _ wrap = setAttribute wrap "class" ""
 
 submitTree memo opts calc root (Just seq) l = 
         do Just val <- liftIO $ toCleanVal root
@@ -185,11 +186,8 @@ checkOnChange memo threadRef calc mgoal i root = do
             Just changedVal <- toCleanVal root
             (theInfo, mseq) <- checkProofTree calc (Just memo) changedVal 
             decorate root theInfo
-            case (mgoal,mseq) of (Just goal, Just seq) | seq `seqSubsetUnify` goal -> setAttribute i "class" "input success"
-                                 (Just goal, Just seq) -> setAttribute i "class" "input failure"
-                                 (Nothing, Just seq) -> setInnerHTML i (Just . tbNotation calc . show $ seq)
-                                 (Nothing, Nothing) -> setInnerHTML i (Just "Awaiting a proof")
-                                 _ -> setAttribute i "class" "input"
+            Just wrap <- getParentElement i
+            updateInfo calc mgoal mseq wrap
         writeIORef threadRef (Just t')
 
 toProofTree :: ( Typeable sem

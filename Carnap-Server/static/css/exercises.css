@@ -387,16 +387,21 @@
     border:1px solid #A9B7C0;
 }
 
-[data-carnap-type="translate"] .success,
-[data-carnap-type="proofchecker"] .success,
-[data-carnap-type="treedeductionchecker"] .success {
+[data-carnap-type="translate"].success > .output,
+[data-carnap-type="proofchecker"].success > .goal,
+[data-carnap-type="treedeductionchecker"].success > .input,
+[data-carnap-type="truthtable"].success > .input, 
+[data-carnap-type="countermodeler"].success > .input {
     background: #b9f2b7;
 }
 
-[data-carnap-type="translate"] .success::after,
-[data-carnap-type="treedeductionchecker"] .success::after
-{
+[data-carnap-type="translate"].success > .output::after,
+[data-carnap-type="treedeductionchecker"].success > .input::after,
+[data-carnap-type="countermodeler"].success > .input::after,
+[data-carnap-type="truthtable"].success > .input::after {
+    float: right;
     content:" ✓ ";
+    font-size:16px;
 }
 
 [data-carnap-type="proofchecker"] .aligner {
@@ -404,13 +409,22 @@
     height:100%;
 }
 
+[data-carnap-type="proofchecker"] .checkMark,
 [data-carnap-type="proofchecker"] .proofSpinner,  
 [data-carnap-type="proofchecker"] .incompleteAlert {
     display:none;
 }
 
+[data-carnap-type="proofchecker"].success .checkMark,
+[data-carnap-type="proofchecker"].failure .incompleteAlert {
+    padding:5pt;
+    font-size:16px;
+}
+
+[data-carnap-type="proofchecker"].success .checkMark,
 [data-carnap-type="proofchecker"] .working .proofSpinner, 
-[data-carnap-type="proofchecker"] .failure .incompleteAlert {
+[data-carnap-type="proofchecker"].failure .incompleteAlert {
+    font-size:16px;
     display:inline-block;
     position:absolute;
     text-align:center;
@@ -493,11 +507,6 @@ body[data-carnap-type="proofchecker"] .buttonWrapper {
     border: 1px dashed;
     font-size:12px;
     padding: 1em;
-}
-
-[data-carnap-type="truthtable"] .completeTT, 
-[data-carnap-type="countermodeler"] .completeCM {
-    background: #CCFFCC;
 }
 
 .ttthSep, .tttdSep {

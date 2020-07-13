@@ -29,7 +29,7 @@ import GHCJS.DOM.Types hiding (Text)
 import GHCJS.DOM.Element hiding (drop)
 import GHCJS.DOM.HTMLInputElement (HTMLInputElement, setValue, getValue,castToHTMLInputElement)
 import GHCJS.DOM.Document (Document,createElement, getBody, getDefaultView)
-import GHCJS.DOM.Node (appendChild, getParentNode, insertBefore)
+import GHCJS.DOM.Node (appendChild, getParentNode, insertBefore, getParentElement)
 import GHCJS.DOM.KeyboardEvent
 import GHCJS.DOM.EventM
 import Control.Monad.IO.Class (MonadIO, liftIO)
@@ -78,7 +78,8 @@ activateTranslate w (Just (i,o,opts)) = do
                            setInnerHTML o (Just problem)
                            mpar@(Just par) <- getParentNode o               
                            insertBefore par (Just bw) (Just o)
-                           translate <- newListener $ tryTrans parser checker tests o ref fs
+                           Just wrapper <- getParentElement o
+                           translate <- newListener $ tryTrans parser checker tests wrapper ref fs
                            if "nocheck" `elem` optlist 
                                then return ()
                                else addListener i keyUp translate False                  
@@ -161,9 +162,9 @@ propTests testlist f = case catMaybes $ map ($ f) theTests of
 tryTrans :: Eq (FixLang lex sem) => 
     Parsec String () (FixLang lex sem) -> BinaryTest lex sem -> UnaryTest lex sem
     -> Element -> IORef Bool -> [FixLang lex sem] -> EventM HTMLInputElement KeyboardEvent ()
-tryTrans parser equiv tests o ref fs = onEnter $ 
-                do (Just t) <- target :: EventM HTMLInputElement KeyboardEvent (Maybe HTMLInputElement)
-                   (Just ival)  <- getValue t
+tryTrans parser equiv tests wrapper ref fs = onEnter $ 
+                do Just t <- target :: EventM HTMLInputElement KeyboardEvent (Maybe HTMLInputElement)
+                   Just ival  <- getValue t
                    case parse (spaces *> parser <* eof) "" ival of
                          Right f -> liftIO $ case tests f of
                                                   Nothing -> checkForm f
@@ -172,12 +173,12 @@ tryTrans parser equiv tests o ref fs = onEnter $
    where checkForm f' 
             | f' `elem` fs = do message "perfect match!"
                                 writeIORef ref True
-                                setAttribute o "class" "output success"
+                                setAttribute wrapper "class" "success"
             | any (\f -> f' `equiv` f) fs = do message "Logically equivalent to a standard translation"
                                                writeIORef ref True
-                                               setAttribute o "class" "output success"
+                                               setAttribute wrapper "class" "success"
             | otherwise = do writeIORef ref False >> message "Not quite. Try again!"
-                             setAttribute o "class" "output"
+                             setAttribute wrapper "class" ""
 
 submitTrans opts i ref fs parser checker tests l = 
         do isFinished <- liftIO $ readIORef ref

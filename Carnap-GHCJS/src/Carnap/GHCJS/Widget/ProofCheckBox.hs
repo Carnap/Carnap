@@ -78,8 +78,8 @@ optionsFromMap opts = CheckerOptions { submit = Nothing
 checkerWith :: CheckerOptions -> (Document -> IORef Bool -> String -> (Element, Element) -> IO ()) -> IOGoal -> Document -> IO ()
 checkerWith options updateres iog@(IOGoal i o g content _) w = do
            ref <- newIORef False
-           elts <- mapM (createElement w . Just) ["div","div","div","div","div"]
-           let [Just fd, Just nd, Just sd, Just incompleteAlert, Just aligner] = elts
+           elts <- mapM (createElement w . Just) ["div","div","div","div","div","div"]
+           let [Just fd, Just nd, Just sd, Just sucd, Just incompleteAlert, Just aligner] = elts
            bw <- createButtonWrapper w o
            setSpellcheck (castToHTMLElement i) False
            setAutocapitalize (castToHTMLTextAreaElement i) (Just "off")
@@ -90,16 +90,18 @@ checkerWith options updateres iog@(IOGoal i o g content _) w = do
            setAttribute fd "class" "proofFeedback"
            setAttribute nd "class" "numbering"
            setAttribute sd "class" "proofSpinner"
+           setAttribute sucd "class" "checkMark"
            setAttribute incompleteAlert "class" "incompleteAlert"
            popUpWith g w incompleteAlert "⚠" 
                 ("This proof does not establish that this conclusion follows from these premises. "
                 ++ "Perhaps there's an unwarranted assumption being used?")
                 Nothing
            setInnerHTML sd (Just spinnerSVG)
+           setInnerHTML sucd (Just "✓")
            mpar@(Just par) <- getParentNode o
            mapM_ (appendChild o . Just) (if hideNumbering options then [fd] else [nd, fd])
            mapM_ (appendChild aligner . Just) [o, i]
-           mapM_ (appendChild g . Just) [sd, incompleteAlert]
+           mapM_ (appendChild g . Just) [sd, sucd, incompleteAlert]
            mapM_ (appendChild par . Just) [aligner,bw]
            (Just w') <- getDefaultView w
            syncScroll i o

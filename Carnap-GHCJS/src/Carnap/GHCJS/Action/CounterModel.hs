@@ -21,7 +21,7 @@ import GHCJS.DOM.Element
 import GHCJS.DOM.Event (initEvent)
 import GHCJS.DOM.EventTarget (dispatchEvent)
 import GHCJS.DOM.Document (createElement, createEvent)
-import GHCJS.DOM.Node (appendChild, getParentNode, insertBefore)
+import GHCJS.DOM.Node (appendChild, getParentNode, getParentElement, insertBefore)
 import GHCJS.DOM.EventM (newListener, addListener, EventM, target)
 import GHCJS.DOM.HTMLTextAreaElement (castToHTMLTextAreaElement, setValue, getValue)
 import qualified GHCJS.DOM.HTMLSelectElement as S (getValue, setValue) 
@@ -114,30 +114,32 @@ activateCounterModeler w (Just (i,o,opts)) = do
 
           checkCounterModeler fields check = do validated <- liftIO $ validateModel fields
                                                 correct <- liftIO check
+                                                Just wrap <- liftIO $ getParentElement i
                                                 case (correct, validated) of 
                                                    (_,Left err) -> do
                                                        message err
-                                                       setAttribute i "class" "input incompleteCM"
+                                                       setAttribute wrap "class" "success"
                                                    (Left err,_) -> do
                                                        message err
-                                                       setAttribute i "class" "input incompleteCM"
+                                                       setAttribute wrap "class" "failure"
                                                    _ -> do
                                                        message "Success!"
-                                                       setAttribute i "class" "input completeCM"
+                                                       setAttribute wrap "class" "success"
 
 submitCounterModel:: IsEvent e => Map String String -> Element -> IO (Either String ())-> [Element] -> String -> String -> EventM HTMLTextAreaElement e ()
 submitCounterModel opts i check fields s l = do correct <- liftIO check
                                                 validated <- liftIO $ validateModel fields
                                                 extracted <- liftIO $ mapM extractField fields
+                                                Just wrap <- liftIO $ getParentElement i
                                                 case (correct, validated) of
                                                    (Right _, Right _) -> trySubmit CounterModel opts l (CounterModelDataOpts (pack s) extracted (M.toList opts)) True
                                                    _ | "exam" `inOpts` opts -> do trySubmit CounterModel opts l (CounterModelDataOpts (pack s) extracted (M.toList opts)) False
                                                    (_,Left err) -> do
                                                          message err
-                                                         setAttribute i "class" "input incompleteCM"
+                                                         setAttribute wrap "class" "success"
                                                    (Left err,_) -> do
                                                          message err
-                                                         setAttribute i "class" "input incompleteCM"
+                                                         setAttribute wrap "class" "failure"
 
 createSimpleCounterModeler :: ModelingLanguage lex =>
     Document -> [FixLang lex (Form Bool)] -> (Element,Element)

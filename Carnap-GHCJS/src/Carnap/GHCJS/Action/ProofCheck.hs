@@ -28,7 +28,7 @@ import Control.Lens.Fold (toListOf,(^?))
 import Lib
 import Carnap.GHCJS.Widget.ProofCheckBox (checkerWith, CheckerOptions(..), CheckerFeedbackUpdate(..), optionsFromMap, Button(..) )
 import Carnap.GHCJS.Widget.RenderDeduction
-import GHCJS.DOM.Element (setInnerHTML,getInnerHTML, setAttribute,mouseOver,mouseOut)
+import GHCJS.DOM.Element (setInnerHTML, getInnerHTML, setAttribute, mouseOver, mouseOut)
 import GHCJS.DOM.HTMLElement (insertAdjacentElement)
 --the import below is needed to make ghc-mod work properly. GHCJS compiles
 --using the generated javascript FFI versions of 2.4.0, but those are
@@ -39,9 +39,9 @@ import GHCJS.DOM.HTMLElement (insertAdjacentElement)
 import GHCJS.DOM.Types
 import GHCJS.DOM.HTMLTextAreaElement (getValue)
 import GHCJS.DOM.Document (createElement, getDefaultView)
-import GHCJS.DOM.EventM (EventM, eventCurrentTarget, newListener,addListener)
+import GHCJS.DOM.EventM (EventM, eventCurrentTarget, newListener, addListener)
 import GHCJS.DOM.Window (prompt)
-import GHCJS.DOM.Node (appendChild, getParentNode,removeChild)
+import GHCJS.DOM.Node (appendChild, getParentNode, removeChild, getParentElement)
 --import GHCJS.DOM.EventM
 import Control.Monad (when,mplus)
 import Control.Monad.IO.Class (liftIO)
@@ -136,7 +136,7 @@ activateChecker drs w (Just iog@(IOGoal i o g _ opts)) -- TODO: need to update n
                                        Right seq -> seq
 
               parseGoal calc = do let seqParse = ndParseSeq calc
-                                      (Just seqstring) = M.lookup "goal" opts 
+                                      Just seqstring = M.lookup "goal" opts 
                                       --XXX: the directed option is set by the existence of a goal, so this match can't fail.
                                   case parse seqParse "" seqstring of
                                       Left e -> do setInnerHTML g (Just $ "Couldn't Parse This Goal:" ++ seqstring)
@@ -146,7 +146,7 @@ activateChecker drs w (Just iog@(IOGoal i o g _ opts)) -- TODO: need to update n
                                                               
               makeDisplay = do (Just pd) <- createElement w (Just "div")
                                setAttribute pd "class" "proofDisplay"
-                               (Just parent) <- getParentNode o
+                               Just parent <- getParentNode o
                                insertAdjacentElement (castToHTMLElement parent) "afterend" (Just pd)
                                return pd
 
@@ -198,8 +198,9 @@ threadedCheck options checker w ref v (g, fd) =
                                        _ -> genericListToUl (wrap fd w ndcalc) w ds
                              setInnerHTML fd (Just "")
                              appendChild fd (Just ul)
+                             Just wrapper <- getParentElement g
                              case sequent checker of
-                                 Just s -> updateGoal s ref g mseq options ndcalc
+                                 Just s -> updateGoal s ref g wrapper mseq options ndcalc
                                  Nothing -> computeRule ref g mseq options ndcalc
            writeIORef (threadRef checker) (Just t')
            return ()
@@ -210,12 +211,12 @@ threadedCheck options checker w ref v (g, fd) =
                          LemmonStyle _ -> renderDeductionLemmon
                          NoRender -> renderNull
 
-updateGoal s ref g mseq options _ = 
+updateGoal s ref g wrapper mseq options _ = 
         case (mseq, feedback options) of
-             (Nothing,_) -> setAttribute g "class" "goal" >> writeIORef ref False
-             (Just seq, SyntaxOnly) -> setAttribute g "class" "goal" >> writeIORef ref (seq `seqSubsetUnify` s)
-             (Just seq, _) | seq `seqSubsetUnify` s -> setAttribute g "class" "goal success" >> writeIORef ref True
-             _ -> setAttribute g "class" "goal failure" >> writeIORef ref False
+             (Nothing,_) -> setAttribute g "class" "goal" >> setAttribute wrapper "class" "" >> writeIORef ref False
+             (Just seq, SyntaxOnly) -> setAttribute g "class" "goal" >> setAttribute wrapper "class" "" >> writeIORef ref (seq `seqSubsetUnify` s)
+             (Just seq, _) | seq `seqSubsetUnify` s -> setAttribute g "class" "goal success" >> setAttribute wrapper "class" "success" >> writeIORef ref True
+             _ -> setAttribute g "class" "goal" >> setAttribute wrapper "class" "failure" >> writeIORef ref False
 
 computeRule ref g mseq _ calc = 
         case mseq of

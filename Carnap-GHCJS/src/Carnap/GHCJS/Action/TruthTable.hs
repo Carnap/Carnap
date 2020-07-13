@@ -19,7 +19,7 @@ import GHCJS.DOM.Element
 import GHCJS.DOM.HTMLSelectElement (castToHTMLSelectElement, getValue) 
 import GHCJS.DOM.Window (alert, prompt)
 import GHCJS.DOM.Document (createElement, getDefaultView)
-import GHCJS.DOM.Node (appendChild, getParentNode, insertBefore)
+import GHCJS.DOM.Node (appendChild, getParentNode, getParentElement, insertBefore)
 import GHCJS.DOM.EventM (newListener, addListener, EventM, target)
 import Data.IORef (newIORef, IORef, readIORef,writeIORef, modifyIORef)
 import Data.Map as M (Map, lookup, foldr, insert, fromList, toList)
@@ -76,13 +76,14 @@ activateTruthTables w (Just (i,o,opts)) = do
                           return ()
                 _ -> print "truth table was missing an option"
           checkTable ref check = do correct <- liftIO $ check
+                                    Just wrap <- liftIO $ getParentElement i
                                     if correct 
                                         then do message "Success!"
                                                 liftIO $ writeIORef ref True
-                                                setAttribute i "class" "input completeTT"
+                                                setAttribute wrap "class" "success"
                                         else do message "Something's not quite right"
                                                 liftIO $ writeIORef ref False
-                                                setAttribute i "class" "input incompleteTT"
+                                                setAttribute wrap  "class" "failure"
 
 submitTruthTable:: IsEvent e => Map String String -> IORef Bool ->  IO Bool -> [Element] -> String -> String -> EventM HTMLInputElement e ()
 submitTruthTable opts ref check rows s l = do isDone <- liftIO $ readIORef ref
@@ -197,16 +198,17 @@ tryCounterexample w opts ref i indicies isCounterexample =
                      Nothing -> alert w "not a readable row"
                      Just l -> do let v = listToVal l
                                   let s = isCounterexample v
+                                  Just wrap <- getParentElement i
                                   if "exam" `inOpts` opts 
                                       then do alert w "Counterexample received - If you're confident that it is correct, press Submit to submit it."
                                               writeIORef ref s
                                       else if s then 
                                            do alert w "Success!"
                                               writeIORef ref True
-                                              setAttribute i "class" "input completeTT"
+                                              setAttribute wrap "class" "success"
                                       else do alert w "Something's not quite right"
                                               writeIORef ref False
-                                              setAttribute i "class" "input incompleteTT"
+                                              setAttribute wrap "class" "failure"
         where clean (Nothing:xs) = Nothing
               clean (Just x:xs) = (:) <$> (Just x) <*> (clean xs)
               clean [] = Just []
