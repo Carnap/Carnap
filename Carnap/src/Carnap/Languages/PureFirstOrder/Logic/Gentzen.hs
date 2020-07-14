@@ -82,6 +82,8 @@ instance ( BooleanLanguage (ClassicalSequentOver lex (Form Bool))
          coreRestriction ExistL = Just $ eigenConstraint (taun 1) (fodelta 1) (SA (lsome "v" (phi' 1)) :+: fogamma 1)
          coreRestriction _ = Nothing
 
+instance SpecifiedUnificationType GentzenFOLK
+
 instance ( BooleanLanguage (ClassicalSequentOver lex (Form Bool))
          , BooleanConstLanguage (ClassicalSequentOver lex (Form Bool))
          , IndexedSchemePropLanguage (ClassicalSequentOver lex (Form Bool))
@@ -108,6 +110,8 @@ instance ( BooleanLanguage (ClassicalSequentOver lex (Form Bool))
                    monoConsequent (_:|-:x)= case nub (toListOf concretes x :: [ClassicalSequentOver lex (Form Bool)]) of
                                               _:_:xs -> Just "LJ requires that the right hand side of each sequent contain at most one formula"
                                               _ -> Nothing
+
+instance SpecifiedUnificationType GentzenFOLJ
 
 gentzenFOLKCalc :: TableauCalc PureLexiconFOL (Form Bool) GentzenFOLK
 gentzenFOLKCalc = mkTBCalc

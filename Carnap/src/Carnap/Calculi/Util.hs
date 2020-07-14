@@ -31,6 +31,12 @@ class CoreInference r lex sem | r lex -> sem where
         coreRestriction :: r -> Maybe (Restriction lex)
         coreRestriction _ = Nothing
 
+class SpecifiedUnificationType r where
+        unificationType :: r -> UnificationType
+        unificationType _ = ACUIUnification
+
+data UnificationType = AssociativeUnification | ACUIUnification
+
 type Restriction lex = [Equation (ClassicalSequentOver lex)] -> Maybe String
 
 data ProofErrorMessage :: ((* -> *) -> * -> *) -> * where

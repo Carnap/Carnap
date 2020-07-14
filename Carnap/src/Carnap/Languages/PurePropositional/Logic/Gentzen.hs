@@ -195,6 +195,8 @@ instance ( BooleanLanguage (ClassicalSequentOver lex (Form Bool))
          coreConclusionOf Cut =  GammaV 1 :+: GammaV 2 :|-: DeltaV 1 :-: DeltaV 2
          coreConclusionOf Ax =  GammaV 1 :+: SA (phin 1) :|-: SS (phin 1) :-: DeltaV 1 
 
+instance SpecifiedUnificationType GentzenPropLK
+
 instance ( BooleanLanguage (ClassicalSequentOver lex (Form Bool))
          , BooleanConstLanguage (ClassicalSequentOver lex (Form Bool))
          , IndexedSchemePropLanguage (ClassicalSequentOver lex (Form Bool))
@@ -212,6 +214,8 @@ instance ( BooleanLanguage (ClassicalSequentOver lex (Form Bool))
                    monoConsequent (_:|-:x)= case nub (toListOf concretes x :: [ClassicalSequentOver lex (Form Bool)]) of
                                               _:_:xs -> Just "LJ requires that the right hand side of each sequent contain at most one formula"
                                               _ -> Nothing
+
+instance SpecifiedUnificationType GentzenPropLJ
 
 instance ( BooleanLanguage (ClassicalSequentOver lex (Form Bool))
          , BooleanConstLanguage (ClassicalSequentOver lex (Form Bool))
@@ -239,6 +243,7 @@ instance ( BooleanLanguage (ClassicalSequentOver lex (Form Bool))
          coreRuleOf FalsumE = falsumElimination
          coreRuleOf (As _) = axiom
          coreRuleOf Pr = axiom
+
 
 instance ( BooleanLanguage (ClassicalSequentOver lex (Form Bool))
          , BooleanConstLanguage (ClassicalSequentOver lex (Form Bool))

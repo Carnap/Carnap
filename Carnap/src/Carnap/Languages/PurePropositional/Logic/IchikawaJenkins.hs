@@ -233,6 +233,10 @@ instance CoreInference IchikawaJenkinsSLTableaux PurePropLexicon (Form Bool) whe
 
         coreRestriction _ = Nothing
 
+instance SpecifiedUnificationType IchikawaJenkinsSLTableaux where
+    unificationType Struct = ACUIUnification
+    unificationType _ = AssociativeUnification
+
 ichikawaJenkinsSLTableauCalc = mkTBCalc
     { tbParseForm = purePropFormulaParser magnusOpts
     , tbParseRule = parseIchikawaJenkinsSLTableaux

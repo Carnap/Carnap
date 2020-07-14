@@ -131,6 +131,7 @@ instance ( FirstOrderLex (t (ClassicalSequentOver t))
         auUnfold (x :-: y) = acuiUnfold x ++ acuiUnfold y
         auUnfold Top       = []
         auUnfold Bot       = []
+        auUnfold SID       = []
         auUnfold leaf      = [leaf]
 
         isIdAU Top = True
@@ -171,6 +172,7 @@ instance ( FirstOrderLex (t (ClassicalSequentOver t))
         acuiUnfold (x :-: y) = acuiUnfold x ++ acuiUnfold y
         acuiUnfold Top       = []
         acuiUnfold Bot       = []
+        acuiUnfold SID       = []
         acuiUnfold leaf      = [leaf]
 
         isIdACUI Top = True

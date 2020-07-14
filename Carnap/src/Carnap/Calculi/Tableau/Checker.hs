@@ -23,6 +23,7 @@ type SupportsTableau rule lex sem =
     , Eq (FixLang lex sem)
     , Schematizable (lex (ClassicalSequentOver lex))
     , CopulaSchema (ClassicalSequentOver lex)
+    , SpecifiedUnificationType rule
     , BoundVars lex
     , PrismLink (lex (ClassicalSequentOver lex)) (SubstitutionalVariable (ClassicalSequentOver lex)) -- XXX Not needed in GHC >= 8.4
     , Typeable sem
@@ -68,6 +69,9 @@ validateNode n ns = case tableauNodeRule n of
                                             Right hosubs -> do
                                                 hosub <- hosubs
                                                 childSeqs <- permutations (map tableauNodeSeq ns)
+                                                let structsolver = case unificationType r of
+                                                                       AssociativeUnification -> ausolve
+                                                                       ACUIUnification -> acuisolve
                                                 let runSub = pureBNF . applySub hosub
                                                     subbedChildrenLHS = map (view lhs . runSub) (upperSequents theRule)
                                                     subbedChildrenRHS = map (view rhs . runSub) (upperSequents theRule)
@@ -77,14 +81,13 @@ validateNode n ns = case tableauNodeRule n of
                                                          : (subbedParentRHS :=: (view rhs . tableauNodeSeq $ n))
                                                          : zipWith (:=:) subbedChildrenLHS (map (view lhs) childSeqs)
                                                          ++ zipWith (:=:) subbedChildrenRHS (map (view rhs) childSeqs)
-                                                case acuisolve prob of
+                                                case structsolver prob of
                                                     Left e -> return $ ProofError e
-                                                    Right acuisubs -> do 
-                                                        finalsub <- map (++ hosub) acuisubs
+                                                    Right structsubs -> do 
+                                                        finalsub <- map (++ hosub) structsubs
                                                         case coreRestriction r >>= ($ finalsub) of
                                                             Just msg -> return (treeErrMsg msg)
                                                             Nothing -> return Correct
-
 
 nodeTargetLeft, nodeTargetRight :: 
     ( FirstOrder (ClassicalSequentOver lex)
