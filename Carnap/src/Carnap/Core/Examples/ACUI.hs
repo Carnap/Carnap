@@ -138,18 +138,18 @@ instance Eq (VLang a) where
     (==) = (=*)
 
 instance ACUI VLang where
-    unfoldTerm (VUnion x y) = unfoldTerm x ++ unfoldTerm y
-    unfoldTerm VEmpty       = []
-    unfoldTerm leaf         = [leaf]
+    acuiUnfold (VUnion x y) = acuiUnfold x ++ acuiUnfold y
+    acuiUnfold VEmpty       = []
+    acuiUnfold leaf         = [leaf]
 
-    isId VEmpty = True
-    isId _      = False
+    isIdACUI VEmpty = True
+    isIdACUI _      = False
 
     isACUI (VUnFunc _ _)    = False
     isACUI (VBinFunc _ _ _) = False
     isACUI _                = True
 
-    getId (Proxy :: Proxy a) = case eqT :: Maybe (a :~: (Term V)) of
+    acuiId (Proxy :: Proxy a) = case eqT :: Maybe (a :~: (Term V)) of
                                    Just Refl -> VEmpty
                                    _         -> error "you have to use the right type"
 

@@ -4,6 +4,7 @@ module Carnap.Languages.ClassicalSequent.Syntax where
 import Carnap.Core.Data.Classes
 import Carnap.Core.Data.Optics
 import Carnap.Core.Data.Types
+import Carnap.Core.Unification.AU
 import Carnap.Core.Unification.ACUI
 import Carnap.Core.Unification.Unification
 import Carnap.Core.Data.Util
@@ -26,7 +27,7 @@ data Sequent a = Sequent a
 data Cedent :: k -> * -> * where
         NilCedent :: Typeable a => Cedent lang a
         NilAntecedent    :: Typeable a => Cedent lang (Antecedent a )
-        -- XXX should be `Cedent lang (Antecedent a)`, but first need a way to make this work with getId in the proxy instance
+        -- XXX should be `Cedent lang (Antecedent a)`, but first need a way to make this work with acuiId in the proxy instance
         NilSuccedent     :: Typeable a => Cedent lang (Succedent a)
         SingleAntecedent :: Typeable a => Cedent lang (a -> Antecedent a)
         SingleSuccedent  :: Typeable a => Cedent lang (a -> Succedent a)
@@ -124,24 +125,64 @@ infixr 8 :-:
 
 instance ( FirstOrderLex (t (ClassicalSequentOver t))
          , StaticVar (ClassicalSequentOver t)
+         ) => AU (ClassicalSequentOver t) where
+
+        auUnfold (x :+: y) = acuiUnfold x ++ acuiUnfold y
+        auUnfold (x :-: y) = acuiUnfold x ++ acuiUnfold y
+        auUnfold Top       = []
+        auUnfold Bot       = []
+        auUnfold leaf      = [leaf]
+
+        isIdAU Top = True
+        isIdAU Bot = True
+        isIdAU SID = True
+        isIdAU _   = False
+
+        isAU (SA _) = False
+        isAU (SS _) = False
+        isAU _      = True
+
+        auId p = SID
+
+        auOp a Top = a
+        auOp a Bot = a
+        auOp a SID = a
+        auOp Top b = b
+        auOp Bot b = b
+        auOp SID b = b
+        auOp x@(_ :+: _) y   = x :+: y
+        auOp x y@(_ :+: _)   = x :+: y
+        auOp x@(_ :-: _) y   = x :-: y
+        auOp x y@(_ :-: _)   = x :-: y
+        auOp x@(SA _) y = x :+: y
+        auOp x y@(SA _) = x :+: y
+        auOp x@(SS _) y = x :-: y
+        auOp x y@(SS _) = x :-: y
+        auOp x@(GammaV _) y  = x :+: y
+        auOp x y@(GammaV _)  = x :+: y
+        auOp x@(DeltaV _) y  = x :-: y
+        auOp x y@(DeltaV _)  = x :-: y
+
+instance ( FirstOrderLex (t (ClassicalSequentOver t))
+         , StaticVar (ClassicalSequentOver t)
          ) => ACUI (ClassicalSequentOver t) where
 
-        unfoldTerm (x :+: y) = unfoldTerm x ++ unfoldTerm y
-        unfoldTerm (x :-: y) = unfoldTerm x ++ unfoldTerm y
-        unfoldTerm Top       = []
-        unfoldTerm Bot       = []
-        unfoldTerm leaf      = [leaf]
+        acuiUnfold (x :+: y) = acuiUnfold x ++ acuiUnfold y
+        acuiUnfold (x :-: y) = acuiUnfold x ++ acuiUnfold y
+        acuiUnfold Top       = []
+        acuiUnfold Bot       = []
+        acuiUnfold leaf      = [leaf]
 
-        isId Top = True
-        isId Bot = True
-        isId SID = True
-        isId _   = False
+        isIdACUI Top = True
+        isIdACUI Bot = True
+        isIdACUI SID = True
+        isIdACUI _   = False
 
         isACUI (SA _) = False
         isACUI (SS _) = False
         isACUI _      = True
 
-        getId p = SID
+        acuiId p = SID
 
         acuiOp a Top = a
         acuiOp a Bot = a

@@ -122,18 +122,6 @@ mapAll f = map (emap f)
 (Left x) .<. f = Left (f x)
 x .<. _ = x
 
--- XXX: Depricated in favor of FirstOrder.hs
-{- 
-founify :: FirstOrder f => [Equation f] -> [Equation f] -> Either (UError f) [Equation f]
-founify [] ss = Right ss
-founify ((x :=: y):es) ss
-    | isVar x && occurs x y       = Left $ OccursError x y
-    | isVar x && not (occurs x y) = founify (mapAll (subst x y) es) ((x :=: y):ss)
-    | isVar y                     = founify ((y :=: x):es) ss
-    | sameHead x y                = founify (es ++ decompose x y) ss .<. SubError x y
-    | otherwise                   = Left $ MatchError x y
--}
-
 applySub :: FirstOrder f => [Equation f] -> f a -> f a
 applySub []             y = y
 applySub ((v :=: x):ss) y = applySub ss (subst v x y)

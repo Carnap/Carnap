@@ -18,14 +18,13 @@ import Data.Function
 import Data.Proxy
 
 class FirstOrder f => ACUI f where
-  --only if this returns true are ther other functions valid
-  isACUI :: f a -> Bool
-  isId :: f a -> Bool --this one can be called weather acui or not
-  getId :: Typeable a => Proxy a -> f a --given a valid term give the
+  isACUI :: f a -> Bool --only if this returns true are ther other functions valid
+  isIdACUI :: f a -> Bool --this one can be called whether acui or not
+  acuiId :: Typeable a => Proxy a -> f a
   acuiOp :: f a -> f a -> f a
-  unfoldTerm :: f a -> [f a]
+  acuiUnfold :: f a -> [f a]
 
-isConst a = not (isVar a || isId a)
+isConst a = not (isVar a || isIdACUI a)
 
 --a simiplair equation type we can work with here
 data SimpleEquation a = a :==: a
@@ -47,10 +46,9 @@ inhomogenous varConst (l :==: r) = zip consts eqs
           eqs = map (\c -> eqfilter (\x -> isVar' varConst x || x =* c) (l :==: r)) consts
 
 --returns true if term maps to 'true' in the SAT problem
-isTrue varConst a = isConst' varConst a && not (isId a)
+isTrue varConst a = isConst' varConst a && not (isIdACUI a)
 --returns true if a term maps to 'false' in a the SAT problem
-isFalse a = isId a
-
+isFalse a = isIdACUI a
 
 --converts a SimpleEquation [f a] into a sat problem
 --toSatProblem :: (ACUI f a) => SimpleEquation [f a] -> ListSat (f a)
@@ -121,7 +119,7 @@ minimals sols | null minsols = trivialSol sols
 
 --simplifies a term by removing all empties
 --simplify :: ACUI f => f a -> f a
---simplify e = refoldTerms (unfoldTerm e)
+--simplify e = refoldTerms (acuiUnfold e)
 
 --uses vget to get the term being solved for and converts a solution
 --into a substitution
@@ -131,7 +129,7 @@ conv vget sol = vget >>= \var -> return $ map (convVar var) sol
                                  (AnyPig (term' :: f b))
                                      | isPos term -> case eqT :: Maybe (a :~: b) of
                                                          Just Refl -> term' :=: var
-                                     | otherwise  -> term' :=: getId Proxy
+                                     | otherwise  -> term' :=: acuiId Proxy
 
 subadd :: forall f. (ACUI f) => [Equation f] -> [Equation f] -> [Equation f]
 subadd a b = like ++ unlike
@@ -175,13 +173,13 @@ solveInHomoEq varConst c eq = do
 --finds all solutions to a = b
 acuiUnify :: (MonadVar f m, ACUI f, Typeable a, EtaExpand f a) => (forall a. f a -> Bool) -> f a -> f a -> m [[Equation f]]
 acuiUnify varConst a b = do
-    let l = unfoldTerm a
-    let r = unfoldTerm b
-    let homo = homogenous varConst (l :==: r)
-    homosol <- solveHomoEq varConst homo --solve the homogenous equation
-    let inhomos = inhomogenous varConst (l :==: r) --find all inhomogenous equations
-    inhomosolss <- mapM (uncurry $ solveInHomoEq varConst) inhomos --solve each one
-    return $ bigCrossWith subadd [homosol] inhomosolss
+        let l = acuiUnfold a
+        let r = acuiUnfold b
+        let homo = homogenous varConst (l :==: r)
+        homosol <- solveHomoEq varConst homo --solve the homogenous equation
+        let inhomos = inhomogenous varConst (l :==: r) --find all inhomogenous equations
+        inhomosolss <- mapM (uncurry $ solveInHomoEq varConst) inhomos --solve each one
+        return $ bigCrossWith subadd [homosol] inhomosolss
 
 acuiUnifySys :: (MonadVar f m, ACUI f) => (forall a. f a -> Bool) -> [Equation f] -> m [[Equation f]]
 acuiUnifySys _ [] = return [[]]

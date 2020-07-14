@@ -8,6 +8,7 @@ import Carnap.Core.Unification.Unification
 import Carnap.Core.Unification.FirstOrder
 import Carnap.Core.Unification.Huet
 import Carnap.Core.Unification.ACUI
+import Carnap.Core.Unification.AU
 import Carnap.Languages.ClassicalSequent.Syntax
 import Control.Monad.State
 import Text.Parsec (ParseError)
@@ -78,3 +79,13 @@ acuisolve eqs =
         case evalState (acuiUnifySys (const False) eqs) (0 :: Int) of
           [] -> Left $ NoUnify [eqs] 0
           subs -> Right subs
+
+ausolve :: 
+    ( AU (ClassicalSequentOver lex)
+    , MonadVar (ClassicalSequentOver lex) (State Int)
+    ) => [Equation (ClassicalSequentOver lex)] -> Either (ProofErrorMessage lex) [[Equation (ClassicalSequentOver lex)]]
+ausolve eqs = 
+        case evalState (auMatchSys (const False) eqs) (0 :: Int) of
+          [] -> Left $ NoUnify [eqs] 0
+          subs -> Right subs
+

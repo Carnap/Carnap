@@ -20,6 +20,7 @@ library
                      , Carnap.Core.Unification.FirstOrder
                      , Carnap.Core.Unification.Unification
                      , Carnap.Core.Unification.ACUI
+                     , Carnap.Core.Unification.AU
                      , Carnap.Core.Unification.Huet
                      , Carnap.Core.Unification.Combination
                      , Carnap.Core.ModelChecking.SAT
