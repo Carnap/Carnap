@@ -172,9 +172,9 @@ instance Inference LogicBookPDE PureLexiconFOL (Form Bool) where
          indirectInference (PDtoPDE x) = indirectInference x
          indirectInference _ = Nothing 
 
-         restriction (PDtoPDE x) = restriction x
          restriction (PDtoPDE UE) = Just (closedTerm [tau])
          restriction (PDtoPDE EI) = Just (closedTerm [tau])
+         restriction (PDtoPDE x) = restriction x
          restriction IE1 = Just (closedTerm [tau, tau'])
          restriction IE2 = Just (closedTerm [tau, tau'])
          restriction _ = Nothing

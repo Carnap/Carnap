@@ -288,12 +288,12 @@ universalClosure f = case varsOf f of
 ----------------
 
 isOpenTerm :: (PrismStandardVar lex Int, PrismSubstitutionalVariable lex, BoundVars lex, FirstOrderLex (FixLang lex)) => FixLang lex (Term Int) -> Bool
-isOpenTerm = anyOf termsOf (\x -> isVar (x ^? _varLabel))
+isOpenTerm = anyOf cosmos (\x -> isVar (x ^? _varLabel))
     where isVar Nothing = False
           isVar (Just s) = any (not . (`elem` "1234567890")) s
 
 isOpenFormula :: (PrismStandardVar lex Int, PrismSubstitutionalVariable lex, BoundVars lex, FirstOrderLex (FixLang lex)) => FixLang lex (Form Bool) -> Bool
-isOpenFormula = anyOf termsOf (\x -> isVar (x ^? _varLabel))
+isOpenFormula = anyOf (termsOf . cosmos) (\x -> isVar (x ^? _varLabel))
     where isVar Nothing = False
           isVar (Just s) = any (not . (`elem` "1234567890")) s
 
