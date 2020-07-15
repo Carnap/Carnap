@@ -51,6 +51,7 @@ ofFOLSys f sys | sys == "firstOrder"                      = Just $ f folCalc
                | sys == "ebelsDugganFOL"                  = Just $ f ebelsDugganFOLCalc
                | sys == "LogicBookPD"                     = Just $ f logicBookPDCalc 
                | sys == "LogicBookPDPlus"                 = Just $ f logicBookPDPlusCalc 
+               | sys == "LogicBookPDE"                    = Just $ f logicBookPDECalc 
                | sys == "hausmanPL"                       = Just $ f hausmanPLCalc 
                | sys == "gamutND"                         = Just $ f gamutNDCalc
                | sys == "gamutNDPlus"                     = Just $ f gamutNDPlusCalc

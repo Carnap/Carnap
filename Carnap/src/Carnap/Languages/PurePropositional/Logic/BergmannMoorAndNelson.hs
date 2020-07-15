@@ -6,6 +6,7 @@ module Carnap.Languages.PurePropositional.Logic.BergmannMoorAndNelson
 
 import Data.Map as M (lookup, Map)
 import Text.Parsec
+import Data.List (intercalate)
 import Carnap.Core.Data.Types (Form)
 import Carnap.Languages.PurePropositional.Syntax
 import Carnap.Languages.PurePropositional.Parser
@@ -160,9 +161,16 @@ logicBookNotation x = case runParser altParser 0 "" x of
                            v <- anyChar
                            return $ "(" ++ [q] ++ [v] ++ ")"
           handleAtom = do c <- oneOf "ABCDEFGHIJKLMNOPQRSTUVWXYZ" <* char '('
-                          args <- oneOf "abcdefghijklmnopqrstuvwxyz" `sepBy` char ','
+                          args <- handleTerm `sepBy` char ','
                           char ')'
-                          return $ c:args
+                          return $ c : concat args
+          handleTerm = try handleFunc <|> handleConst
+          handleFunc = do c <- oneOf "abcdefghijklmnopqrstuvwxyz" <* char '('
+                          args <- handleTerm `sepBy` char ','
+                          char ')'
+                          return $ [c,'('] ++ intercalate "," args ++ ")"
+          handleConst = do c <- oneOf "abcdefghijklmnopqrstuvwxyz" 
+                           return [c]
           fallback = do c <- anyChar 
                         return [c]
 
@@ -274,7 +282,6 @@ instance Inference LogicBookSDPlus PurePropLexicon (Form Bool) where
 
     restriction (SD x ) = restriction x
     restriction _ = Nothing
-
 
 parseLogicBookSDPlus :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> Parsec String u [LogicBookSDPlus]
 parseLogicBookSDPlus rtc = try (map SD <$> parseLogicBookSD rtc) <|> parsePlus
