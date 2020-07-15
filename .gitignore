@@ -30,3 +30,12 @@ Carnap-Server/static/tmp/
 Carnap-Server/static/faygen*
 Carnap-GHCJS/test/testpages/
 client_session_key.aes
+
+dist-ghcjs/
+dist-newstyle/
+tags
+TAGS
+client-out
+server-out
+result
+cabal.project.local

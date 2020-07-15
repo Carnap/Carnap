@@ -8,7 +8,6 @@ mkDerivation {
   libraryHaskellDepends = [
     base containers hashable lens logict mtl parsec transformers
   ];
-  doCheck = false;
   testHaskellDepends = [ base shakespeare text ];
   description = "Libraries for the Carnap Proof Assistant";
   license = stdenv.lib.licenses.gpl3;

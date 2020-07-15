@@ -1,24 +1,74 @@
-{ ghcjs ? "ghcjs",
-  ghc ? "ghc865",
+{ ghcjsVer ? "ghcjs",
+  ghcVer ? "ghc865",
 }:
 let
   nixpkgs = import (builtins.fetchTarball {
-        name = "nixpkgs-20.03-2020-06-28";
-        url = "https://github.com/NixOS/nixpkgs/archive/f8248ab6d9e69ea9c07950d73d48807ec595e923.zip";
+        name   = "nixpkgs-20.03-2020-06-28";
+        url    = "https://github.com/NixOS/nixpkgs/archive/f8248ab6d9e69ea9c07950d73d48807ec595e923.zip";
         sha256 = "009i9j6mbq6i481088jllblgdnci105b2q4mscprdawg3knlyahk";
       }) {
+        config = {
+          # yes, packages are broken, but we fix them ;-)
+          allowBroken = true;
+        };
         overlays = [
-          (import ./client.nix { inherit ghcjs; })
-          (import ./server.nix { inherit ghcjs ghc; })
+          (import ./client.nix { inherit ghcjsVer; })
+          (import ./server.nix { inherit ghcjsVer ghcVer; })
         ];
       };
+
+  workOnMulti = import ./nix/work-on-multi.nix {
+    inherit nixpkgs;
+    # put whatever tools you want in the shell environments here
+    generalDevTools = _: {
+      inherit (nixpkgs) cabal2nix;
+      inherit (nixpkgs.haskell.packages."${ghcVer}")
+        Cabal
+        cabal-install
+        ghcid
+        hasktags;
+    };
+  };
+
   in rec {
     inherit (nixpkgs) haskell;
-    client = nixpkgs.haskell.packages."${ghcjs}".Carnap-GHCJS;
-    server = nixpkgs.haskell.packages."${ghc}".Carnap-Server;
-    shell  = nixpkgs.haskell.packages."${ghc}".shellFor {
-      withHoogle = true;
-      packages = p: [ client server ];
-      buildInputs = with nixpkgs.haskell; [ packages.${ghc}.cabal-install packages.${ghcjs}.ghc ];
+    client = nixpkgs.haskell.packages."${ghcjsVer}".Carnap-GHCJS;
+    server = nixpkgs.haskell.packages."${ghcVer}".Carnap-Server;
+
+    # a ghc-based shell for development of Carnap and Carnap-Server
+    # Carnap-GHCJS currently broken on ghc, see `server.nix` for details
+    ghcShell = workOnMulti {
+      envPackages = [
+        "Carnap"
+        "Carnap-Server"
+        "Carnap-Client"
+        # "Carnap-GHCJS"
+      ];
+      env = with nixpkgs.haskell.packages."${ghcVer}"; {
+        # enable hoogle in the environment
+        ghc = ghc.override {
+          override = self: super: {
+            withPackages = super.ghc.withHoogle;
+          };
+        };
+        inherit Carnap Carnap-Client Carnap-Server /* Carnap-GHCJS */ mkDerivation;
+      };
+    };
+
+    ghcjsShell = workOnMulti {
+      envPackages = [
+        "Carnap"
+        "Carnap-Client"
+        "Carnap-GHCJS"
+      ];
+      env = with nixpkgs.haskell.packages."${ghcjsVer}"; {
+        # enable hoogle in the environment
+        ghc = ghc.override {
+          override = self: super: {
+            withPackages = super.ghc.withHoogle;
+          };
+        };
+        inherit Carnap Carnap-Client Carnap-GHCJS mkDerivation;
+      };
     };
   }
