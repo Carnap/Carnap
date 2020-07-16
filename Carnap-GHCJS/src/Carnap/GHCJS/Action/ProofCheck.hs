@@ -104,7 +104,7 @@ activateChecker drs w (Just iog@(IOGoal i o g _ opts)) -- TODO: need to update n
         | sys == "prop"                      = tryParse propCalc (propChecker (Just trySave))
         | sys == "firstOrder"                = tryParse folCalc (folChecker (Just trySave))
         | sys == "hardegreeMPL"              = tryParse hardegreeMPLCalc noRuntimeOptions
-        | otherwise = maybe (return ()) id $ ((\it -> tryParse it $ propChecker Nothing) `ofPropSys` sys)
+        | otherwise = maybe noSystem id $ ((\it -> tryParse it $ propChecker Nothing) `ofPropSys` sys)
                                      `mplus` ((\it -> tryParse it $ folChecker Nothing) `ofFOLSys` sys)
                                      `mplus` ((\it -> tryParse it noRuntimeOptions) `ofSecondOrderSys` sys)
                                      `mplus` ((\it -> tryParse it noRuntimeOptions) `ofSetTheorySys` sys)
@@ -113,6 +113,9 @@ activateChecker drs w (Just iog@(IOGoal i o g _ opts)) -- TODO: need to update n
         where sys = case M.lookup "system" opts of
                         Just s -> s
                         Nothing -> "prop"
+
+              noSystem = do setInnerHTML g (Just $ "Can't find a formal system named " ++ sys)
+                            error $ "couldn't find formal system:" ++ sys
 
               tryParse calc checker = do
                   memo <- newIORef mempty
