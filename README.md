@@ -182,6 +182,8 @@ accordingly disabled (also, for performance reasons).
 
 ### Suggested Nix Resources
 
+Blog post on Carnap's nix implementation: https://lfcode.ca/blog/nix-and-haskell
+
 Tutorial some of the Nix here is loosely based on:
 https://github.com/Gabriel439/haskell-nix
 
