@@ -4,7 +4,7 @@
 let
   nixpkgs = import (builtins.fetchTarball {
         name   = "nixpkgs-20.03-2020-06-28";
-        url    = "https://github.com/NixOS/nixpkgs/archive/f8248ab6d9e69ea9c07950d73d48807ec595e923.zip";
+        url    = "https://github.com/NixOS/nixpkgs/archive/f8248ab6d9e69ea9c07950d73d48807ec595e923.tar.gz";
         sha256 = "009i9j6mbq6i481088jllblgdnci105b2q4mscprdawg3knlyahk";
       }) {
         config = {
@@ -31,7 +31,7 @@ let
   };
 
   in rec {
-    inherit (nixpkgs) haskell;
+    inherit nixpkgs;
     client = nixpkgs.haskell.packages."${ghcjsVer}".Carnap-GHCJS;
     server = nixpkgs.haskell.packages."${ghcVer}".Carnap-Server;
 

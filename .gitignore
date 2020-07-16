@@ -39,3 +39,4 @@ client-out
 server-out
 result
 cabal.project.local
+.cabal-fake-client-out/
