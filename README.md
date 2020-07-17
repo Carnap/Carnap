@@ -1,6 +1,18 @@
 # Carnap
 
-Carnap is a web-based system for logic textbooks.
+Carnap is a free and open-source Haskell framework for creating and exploring
+formal languages, logics, and semantics. It lets you quickly and
+straightforwardly define languages, construct logics for those languages, and
+stipulate their semantics. Carnap then uses your specifications to figure out
+how to check proofs in a variety of formal systems using your logic, how to
+find the meanings of compound expressions, and a whole lot more.
+
+Carnap's primary application at the moment is powering
+[Carnap.io](https://carnap.io), a website supporting online logic instruction
+and learning. For demos and more information, head over to
+[Carnap.io/about](https://carnap.io/about). This README should help you if you
+want to set up a development environment for building the server-side and
+client-side components used on carnap.io.
 
 ## Development
 
@@ -13,11 +25,10 @@ NixOps) and implement CI.
 
 Carnap has a GHCJS (client side) and a GHC (server side) part.
 
-Carnap-Server depends on the client side being available at `client-out` or
-otherwise linked into its static folder.  This is accomplished automatically
-when we are building Nix packages for production, but this dependency is not
-automatically managed during development and you thus have to build the client
-side JavaScript before building the server.
+Building Carnap-Server depends on the client side components being available at
+`client-out` or otherwise linked into its static folder. This will be handled
+automatically by the approaches to building the client listed below, but the
+client needs to be built before the server.
 
 Nix does not support incremental package builds, so the suggested development
 workflow is to use `cabal` in a shell. A `Makefile` has been provided to make
@@ -149,7 +160,6 @@ nixpkgs = import (builtins.fetchTarball {
       }) { /* ... */ };
 in {}
 # ...
-
 ```
 
 ### Files in nix/
@@ -172,10 +182,10 @@ Every instance of `doJailbreak` is disabling version checking in Cabal. Most of
 the time this works fine, but it indicates bugs in the packages' Cabal
 version restrictions.
 
-Carnap currently uses a very old ghcjs-dom from 2016, which is largely fine on
-web but requires webkitgtk24x-gtk3 which is obsolete and has been removed from
-Nix in late 2019. It is thus currently not possible to build Carnap front end
-natively pending this update.
+Carnap currently uses an older ghcjs-dom from 2016, which is largely fine on
+web but requires webkitgtk24x-gtk3, which was been removed from Nix in late
+2019. It is thus currently not possible to build the Carnap front end natively
+(i.e. for embedding in non-browser applications) pending this update.
 
 A bunch of packages have broken unit tests on ghcjs. All tests on ghcjs are
 accordingly disabled (also, for performance reasons).
@@ -198,4 +208,3 @@ https://github.com/NixOS/nixpkgs/tree/nixos-20.03/pkgs/development/haskell-modul
 
 Basic information about the builder and e.g. how to build manually:
 https://nixos.wiki/wiki/Nixpkgs/Create_and_debug_packages
-
