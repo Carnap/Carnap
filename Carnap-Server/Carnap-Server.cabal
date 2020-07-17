@@ -12,6 +12,9 @@ Flag library-only
     Default:       False
 
 library
+    if impl(ghcjs)
+        buildable: False
+
     hs-source-dirs:  ., app
     exposed-modules: Application
                      Foundation
@@ -139,6 +142,8 @@ library
                  , random
 
 executable         Carnap-Server
+    if impl(ghcjs)
+        buildable: False
     if flag(library-only)
         Buildable: False
 
@@ -149,6 +154,8 @@ executable         Carnap-Server
     ghc-options:       -threaded -rtsopts -with-rtsopts=-N
 
 test-suite test
+    if impl(ghcjs)
+        buildable: False
     type:              exitcode-stdio-1.0
     main-is:           Spec.hs
     other-modules:     Handler.CommonSpec
@@ -175,7 +182,7 @@ test-suite test
 
     build-depends: base
                  , Carnap-Server
-                 , yesod-test 
+                 , yesod-test
                  , yesod-core
                  , yesod
                  , persistent

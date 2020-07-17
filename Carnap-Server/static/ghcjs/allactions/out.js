@@ -1,1 +1,1 @@
-../../../../dist/AllActions.jsexe/out.js
+../../../../client-out/bin/AllActions.jsexe/out.js

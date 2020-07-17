@@ -1,4 +1,4 @@
+compiler:  ghcjs
 packages: ./Carnap
           ./Carnap-Client
-          ./Carnap-Server
-
+          ./Carnap-GHCJS
