@@ -12,6 +12,7 @@ let
           allowBroken = true;
         };
         overlays = [
+          (import ./nix/gitignore.nix { })
           (import ./client.nix { inherit ghcjsVer; })
           (import ./server.nix { inherit ghcjsVer ghcVer; })
         ];

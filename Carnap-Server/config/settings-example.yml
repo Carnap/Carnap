@@ -34,12 +34,14 @@ database:
 copyright: Copyright 2015-2020 G. Leach-Krouse <gleachkr@ksu.edu> and J. Ehrlich
 
 #set to true if you want to run without a postgres installation
-sqlite: true
+sqlite: "_env:SQLITE:true"
 
 data-root: "_env:DATAROOT:/var/lib/carnap"
 book-root: "_env:BOOKROOT:/var/lib/carnap/book/"
 
+# Google API keys for Google based login
 google-api-key: "_env:GOOGLEKEY"
 google-secret: "_env:GOOGLESECRET"
 
-#analytics: UA-YOURCODE
+# UA-YOURCODE e.g. UA-12345
+analytics: "_env:GOOGLEANALYTICS"

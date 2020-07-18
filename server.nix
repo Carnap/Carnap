@@ -38,22 +38,35 @@
             # for client development with ghc
             # Carnap-GHCJS  = oldpkgs.callPackage ./Carnap-GHCJS/Carnap-GHCJS.nix { };
             Carnap-Server = overrideCabal
-                              (oldpkgs.callPackage ./Carnap-Server/Carnap-Server.nix { })
-                              (old: {
-                                preConfigure = ''
-                                  echo "symlinking js in $(pwd)"
-                                  ln -sf ${client-ghcjs.out}/bin/AllActions.jsexe/all.js static/ghcjs/allactions/
-                                  ln -sf ${client-ghcjs.out}/bin/AllActions.jsexe/out.js static/ghcjs/allactions/
-                                  ln -sf ${client-ghcjs.out}/bin/AllActions.jsexe/lib.js static/ghcjs/allactions/
-                                  ln -sf ${client-ghcjs.out}/bin/AllActions.jsexe/runmain.js static/ghcjs/allactions/
-                                  '';
-                                extraLibraries = [ client-ghcjs ];
-                                # Carnap-Server has no tests/they are broken
-                                doCheck = false;
-                                # remove once updated past ghc865
-                                # https://github.com/haskell/haddock/issues/979
-                                doHaddock = false;
-                              });
+              (oldpkgs.callPackage ./Carnap-Server/Carnap-Server.nix { })
+              (old: let book = ./Carnap-Book; in {
+                src = gitignoreSource ./Carnap-Server;
+                preConfigure = ''
+                  mkdir -p $out/share
+                  echo ":: Installing ${book} in $out/share/Carnap-Book"
+                  cp -r ${book} $out/share/Carnap-Book
+                  echo ":: Copying static files"
+                  cp -r static $out/share/static
+
+                  echo ":: Symlinking js in $(pwd)"
+                  ln -sf ${client-ghcjs.out}/bin/AllActions.jsexe/all.js $out/share/static/ghcjs/allactions/
+                  ln -sf ${client-ghcjs.out}/bin/AllActions.jsexe/out.js $out/share/static/ghcjs/allactions/
+                  ln -sf ${client-ghcjs.out}/bin/AllActions.jsexe/lib.js $out/share/static/ghcjs/allactions/
+                  ln -sf ${client-ghcjs.out}/bin/AllActions.jsexe/runmain.js $out/share/static/ghcjs/allactions/
+                  echo ":: Adding a universal settings file"
+                  cp config/settings-example.yml config/settings.yml
+                  sed -i "s#/var/lib/carnap/book/#$out/share/Carnap-Book/#" config/settings.yml
+                  sed -i "s#_env:STATIC_DIR:static#_env:STATIC_DIR:$out/share/static#" config/settings.yml
+                  cat config/settings.yml
+                  '';
+                extraLibraries = [ client-ghcjs ];
+                buildDepends = [ book ];
+                # Carnap-Server has no tests/they are broken
+                doCheck = false;
+                # remove once updated past ghc865
+                # https://github.com/haskell/haddock/issues/979
+                doHaddock = false;
+              });
           };
         };
       };
