@@ -13,6 +13,19 @@
             haskell-src-exts-simple = doJailbreak oldpkgs.haskell-src-exts-simple;
             diagrams-builder = doJailbreak oldpkgs.diagrams-builder;
 
+            # updates pango, glib, cairo to a version including
+            # https://github.com/gtk2hs/gtk2hs/commit/1cf2f9bff2427d39986e32880d1383cfff49ab0e
+            # remove once nixpkgs.haskell.packages.ghc865.glib version >= 0.13.8.1
+            # i.e. most likely when we update past nixpkgs-20.03 (pending nixpkgs
+            # unstable having a working ghcjs) as pango-0.13.8.1 is in unstable
+            # already
+            # I checked this with:
+            # $ nix-instantiate '<nixpkgs-unstable>' -A haskell.packages.ghc865.pango
+            # /nix/store/aqvkx9yd2s5m0svki3fr84klq6fyw6dw-pango-0.13.8.1.drv
+            glib = oldpkgs.callPackage ./nix/glib.nix { inherit (self) glib; };
+            pango = oldpkgs.callPackage ./nix/pango.nix { inherit (self) pango; };
+            cairo = oldpkgs.callPackage ./nix/cairo.nix { inherit (self) cairo; };
+
             # ghcjs-dom-0.2.4.0 (released 2016)
             # using `ghc` native dependencies
             # currently broken: ghcjs-dom needs to be updated to a newer
