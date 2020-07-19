@@ -15,7 +15,6 @@ mkDerivation {
     shakespeare tagsoup text transformers
   ];
   executableHaskellDepends = [ base ];
-  testHaskellDepends = [ base Carnap ghcjs-dom ];
   description = "GHCJS-compiled Components for Carnap Proof Assistant";
   license = stdenv.lib.licenses.gpl3;
 }

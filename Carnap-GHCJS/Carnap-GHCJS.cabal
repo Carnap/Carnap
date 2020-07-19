@@ -35,8 +35,6 @@ library
                          , lens
                          , ghcjs-dom == 0.2.4.0
                          , containers
-                         , diagrams-core
-                         , diagrams-svg
                          , mtl
                          , parsec
                          , Carnap
