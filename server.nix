@@ -1,4 +1,4 @@
-{ ghcjsVer, ghcVer, withHoogle ? true }:
+{ ghcjsVer, ghcVer, withHoogle ? true, profiling ? false }:
   self: super:
   let
     inherit (super.haskell.lib)
@@ -67,6 +67,8 @@
                   cat config/settings.yml
                   '';
                 extraLibraries = [ client-ghcjs ];
+                enableExecutableProfiling = profiling;
+                enableLibraryProfiling = profiling;
                 buildDepends = [ book ];
                 # Carnap-Server has no tests/they are broken
                 doCheck = false;

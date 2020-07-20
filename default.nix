@@ -1,5 +1,6 @@
 { ghcjsVer ? "ghcjs",
   ghcVer ? "ghc865",
+  profiling ? false,
 }:
 let
   nixpkgs = import (builtins.fetchTarball {
@@ -14,7 +15,7 @@ let
         overlays = [
           (import ./nix/gitignore.nix { })
           (import ./client.nix { inherit ghcjsVer; })
-          (import ./server.nix { inherit ghcjsVer ghcVer; })
+          (import ./server.nix { inherit ghcjsVer ghcVer profiling; })
         ];
       };
 
