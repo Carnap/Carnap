@@ -18,16 +18,20 @@ jobs:
   docker-build:
     runs-on: ubuntu-latest
     env:
-      IMG_REF: "docker.pkg.github.com/${GITHUB_REPOSITORY}:${GITHUB_SHA}"
+      IMG_REF: "docker.pkg.github.com/${GITHUB_REPOSITORY}/carnap:${GITHUB_SHA}"
+      # GitHub Actions has a broken default for this
+      XDG_RUNTIME_DIR: "${HOME}/run"
     steps:
+    - run: 'mkdir -p "${XDG_RUNTIME_DIR}"'
+    - run: "echo url: docker://$(echo ${IMG_REF} | envsubst | tr 'A-Z' 'a-z')"
     - uses: actions/checkout@v2
     - uses: cachix/install-nix-action@v10
       with:
         nix_path: nixpkgs=channel:nixos-unstable
-    - run: nix-shell -p skopeo --run "skopeo login -u lf- -p ${{ secrets.GH_PACKAGES_TOKEN }}"
+    - run: nix-shell -p skopeo --run "skopeo login docker.pkg.github.com -u lf- -p ${{ secrets.GH_PACKAGES_TOKEN }}"
     - uses: cachix/cachix-action@v6
       with:
         name: jade-carnap
         signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
-    - run: nix-shell -p skopeo --run "skopeo copy docker-image://$(nix-build release.nix --arg hasKvm false -A docker --no-out-link) docker://${IMG_REF}"
+    - run: nix-shell -p skopeo --run "skopeo copy docker-archive:$(nix-build release.nix --arg hasKvm false -A docker --no-out-link) docker://$(echo ${IMG_REF} | envsubst | tr 'A-Z' 'a-z')"
 
