@@ -26,5 +26,5 @@ jobs:
       with:
         name: jade-carnap
         signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
-    - run: nix-build release.nix --attr hasKvm false -A docker
+    - run: nix-build release.nix --arg hasKvm false -A docker
 
