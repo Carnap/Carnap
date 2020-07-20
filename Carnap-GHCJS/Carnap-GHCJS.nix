@@ -1,7 +1,6 @@
 { mkDerivation, aeson, base, blaze-html, bytestring, Carnap
-, Carnap-Client, containers, diagrams-core, diagrams-svg, ghcjs-dom
-, hashable, lens, mtl, parsec, shakespeare, stdenv, tagsoup, text
-, transformers
+, Carnap-Client, containers, ghcjs-dom, hashable, lens, mtl, parsec
+, shakespeare, stdenv, tagsoup, text, transformers
 }:
 mkDerivation {
   pname = "Carnap-GHCJS";
@@ -11,11 +10,10 @@ mkDerivation {
   isExecutable = true;
   libraryHaskellDepends = [
     aeson base blaze-html bytestring Carnap Carnap-Client containers
-    diagrams-core diagrams-svg ghcjs-dom hashable lens mtl parsec
-    shakespeare tagsoup text transformers
+    ghcjs-dom hashable lens mtl parsec shakespeare tagsoup text
+    transformers
   ];
   executableHaskellDepends = [ base ];
-  testHaskellDepends = [ base Carnap ghcjs-dom ];
   description = "GHCJS-compiled Components for Carnap Proof Assistant";
   license = stdenv.lib.licenses.gpl3;
 }
