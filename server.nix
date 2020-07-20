@@ -1,9 +1,12 @@
 { ghcjsVer, ghcVer, withHoogle ? true }:
   self: super:
-  let overrideCabal = super.haskell.lib.overrideCabal;
-      dontCheck = super.haskell.lib.dontCheck;
-      doJailbreak = super.haskell.lib.doJailbreak;
-      client-ghcjs = self.haskell.packages.${ghcjsVer}.Carnap-GHCJS;
+  let
+    inherit (super.haskell.lib)
+      overrideCabal
+      dontCheck
+      doJailbreak
+      withGitignore;
+    client-ghcjs = self.haskell.packages.${ghcjsVer}.Carnap-GHCJS;
   in {
     haskell = super.haskell // {
       packages = super.haskell.packages // {
@@ -33,14 +36,18 @@
             # ghcjs-dom = oldpkgs.callPackage ./nix/ghcjs-dom.nix { };
 
             # dontCheck: https://github.com/gleachkr/Carnap/issues/123
-            Carnap        = dontCheck (oldpkgs.callPackage ./Carnap/Carnap.nix { });
-            Carnap-Client = oldpkgs.callPackage ./Carnap-Client/Carnap-Client.nix { };
+            Carnap        = withGitignore
+                (dontCheck (oldpkgs.callPackage ./Carnap/Carnap.nix { }));
+            Carnap-Client = withGitignore
+                (oldpkgs.callPackage ./Carnap-Client/Carnap-Client.nix { });
+
             # for client development with ghc
-            # Carnap-GHCJS  = oldpkgs.callPackage ./Carnap-GHCJS/Carnap-GHCJS.nix { };
-            Carnap-Server = overrideCabal
+            # Carnap-GHCJS  = withGitignore
+            #    (oldpkgs.callPackage ./Carnap-GHCJS/Carnap-GHCJS.nix { });
+
+            Carnap-Server = withGitignore (overrideCabal
               (oldpkgs.callPackage ./Carnap-Server/Carnap-Server.nix { })
               (old: let book = ./Carnap-Book; in {
-                src = gitignoreSource ./Carnap-Server;
                 preConfigure = ''
                   mkdir -p $out/share
                   echo ":: Installing ${book} in $out/share/Carnap-Book"
@@ -66,7 +73,7 @@
                 # remove once updated past ghc865
                 # https://github.com/haskell/haddock/issues/979
                 doHaddock = false;
-              });
+              }));
           };
         };
       };

@@ -27,7 +27,8 @@ let
         Cabal
         cabal-install
         ghcid
-        hasktags;
+        hasktags
+        yesod-bin;
     };
   };
 
