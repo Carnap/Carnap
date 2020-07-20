@@ -17,14 +17,17 @@ jobs:
 
   docker-build:
     runs-on: ubuntu-latest
+    env:
+      IMG_REF: "docker.pkg.github.com/${GITHUB_REPOSITORY}:${GITHUB_SHA}"
     steps:
     - uses: actions/checkout@v2
     - uses: cachix/install-nix-action@v10
       with:
         nix_path: nixpkgs=channel:nixos-unstable
+    - run: nix-shell -p skopeo --run "skopeo login -u lf- -p ${{ secrets.GH_PACKAGES_TOKEN }}"
     - uses: cachix/cachix-action@v6
       with:
         name: jade-carnap
         signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
-    - run: nix-build release.nix --arg hasKvm false -A docker
+    - run: nix-shell -p skopeo --run "skopeo copy docker-image://$(nix-build release.nix --arg hasKvm false -A docker --no-out-link) docker://${IMG_REF}"
 
