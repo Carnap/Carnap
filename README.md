@@ -9,14 +9,23 @@ find the meanings of compound expressions, and a whole lot more.
 
 Carnap's primary application at the moment is powering
 [Carnap.io](https://carnap.io), a website supporting online logic instruction
-and learning. For demos and more information, head over to
-[Carnap.io/about](https://carnap.io/about). This README should help you if you
-want to set up a development environment for building the server-side and
-client-side components used on carnap.io.
+and learning. If  you'd like to seem some demos and more general information,
+head over to [Carnap.io/about](https://carnap.io/about). If you'd like to learn
+more about using the server as an instructor, head over to the documentation
+collection at
+[Carnap.io/shared/Documentation](https://carnap.io/shared/Documentation)
+
+If you're interested in contributing to software development or modifying the
+software, read on. This README wll help you set up a development environment
+for building the server-side and client-side components used on carnap.io.
 
 ## Development
 
 ### General information
+
+The current development environment is based on [Nix](https://nixOS.org). For
+general background on Nix, take a look at
+[nixos.org/learn.html](https://nixos.org/learn.html) or [nix.dev](https://nix.dev).
 
 Nix is used to speed up builds and avoid having to compile dependencies,
 instead using cached built versions from nixpkgs. It also makes it easy to
@@ -41,6 +50,9 @@ Install Nix with your *non-root* user account:
 ```
 $ bash <(curl -L https://nixos.org/nix/install)
 ```
+
+macOS 10.15 (Catalina) users may need to follow additional steps, documented at
+[nixos.org/nix/manual/#sect-macos-installation](https://nixos.org/nix/manual/#sect-macos-installation).
 
 You can significantly speed up builds by using binaries for Carnap dependencies
 from @lf-'s [Cachix](https://cachix.org/) instance. To use it:
@@ -85,7 +97,13 @@ $ make shell-ghc
 [nix-shell:Carnap]$ make run
 ```
 
-Manually:
+You should then be able to access your development server at
+`http://localhost:3000`
+
+To perform the process manually, first make sure to copy
+`Carnap-Server/config/settings-example.yml` to
+`Carnap-Server/config/settings.yml`, and to create a data directory (in the
+below, called `dataroot`). Then run:
 
 ```
 $ nix-shell -A ghcShell

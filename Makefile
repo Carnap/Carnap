@@ -5,7 +5,10 @@ help:
 	@echo "Supported actions: run, shell-ghc, build-ghc, shell-ghcjs, build-ghcjs, tags"
 
 run:
-	cd Carnap-Server; APPROOT="http://localhost:3000" DATAROOT="../dataroot" \
+	cd Carnap-Server
+	cp -n config/setting-example.yml config/settings.yml
+	mkdir -p ../dataroot
+	APPROOT="http://localhost:3000" DATAROOT="../dataroot" \
 		BOOKROOT="../Carnap-Book/" \
 		cabal run -f dev Carnap-Server
 
