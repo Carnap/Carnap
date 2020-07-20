@@ -14,4 +14,3 @@ jobs:
         signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
     # this pulls in client also
     - run: nix-build -A server
-    - run: nix-shell --run "echo OK"
