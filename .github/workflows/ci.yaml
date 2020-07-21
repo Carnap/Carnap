@@ -28,7 +28,7 @@ jobs:
     - uses: cachix/install-nix-action@v10
       with:
         nix_path: nixpkgs=channel:nixos-unstable
-    - run: nix-shell -p skopeo --run "skopeo login docker.pkg.github.com -u lf- -p ${{ secrets.GH_PACKAGES_TOKEN }}"
+    - run: nix-shell -p skopeo --run "skopeo login docker.pkg.github.com -u ${{ github.repository_owner }} -p ${{ secrets.GITHUB_TOKEN }}"
     - uses: cachix/cachix-action@v6
       with:
         name: jade-carnap
