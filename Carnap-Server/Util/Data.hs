@@ -3,12 +3,16 @@ module Util.Data where
 import ClassyPrelude.Yesod
 import Carnap.Languages.PurePropositional.Syntax (PureForm)
 import Carnap.Languages.PureFirstOrder.Syntax (PureFOLForm)
+import Carnap.Languages.PureFirstOrder.Logic
+import Carnap.Languages.PurePropositional.Logic
 import Data.List ((!!), elemIndex)
 import Data.Time
+import qualified Data.Map as M
 import Data.Aeson (decode,encode)
 import Text.Read (readMaybe)
 import Text.Pandoc (Extension(..), extensionsFromList)
 import Carnap.GHCJS.SharedTypes(ProblemSource(..),ProblemType(..),ProblemData(..), SomeRule(..))
+import Carnap.GHCJS.SharedFunctions(inOpts, rewriteWith)
 import qualified Data.IntMap as IM (fromList)
 
 derivePersistField "ProblemSource"
@@ -93,28 +97,35 @@ toTime = parseTimeOrError True defaultTimeLocale "%l:%M %P %Z, %b %e, %Y"
 
 jsonSerialize = decodeUtf8 . encode
 
+rewriteText opts = pack . rewriteWith opts . unpack
+
 displayProblemData (DerivationData t _)  = t
-displayProblemData (DerivationDataOpts t _ _)  = t
+displayProblemData (DerivationDataOpts t _ opts') = rewriteText opts t
+    where opts = M.fromList opts'
 displayProblemData (TruthTableData t _)  = t
-displayProblemData (CounterModelDataOpts t _ _) = maybe t pack ms
-    where ms = (show <$> (readMaybe s :: Maybe PureFOLForm))
-               `mplus` (intercalate "," . map show <$> (readMaybe s :: Maybe [PureFOLForm]))
+displayProblemData (CounterModelDataOpts t _ opts') = maybe (rewriteText opts t) pack ms
+    where opts = M.fromList opts'
+          ms = (rewriteWith opts . show <$> (readMaybe s :: Maybe PureFOLForm))
+               `mplus` (intercalate "," . map (rewriteWith opts . show) <$> (readMaybe s :: Maybe [PureFOLForm]))
           s = unpack t
-displayProblemData (TruthTableDataOpts t _ _) = maybe t pack ms
-    where ms = (show <$> (readMaybe s :: Maybe PureForm))
-               `mplus` (intercalate "," . map show <$> (readMaybe s :: Maybe [PureForm]))
+displayProblemData (TruthTableDataOpts t _ opts') = maybe (rewriteText opts t) pack  ms
+    where opts = M.fromList opts'
+          ms = (rewriteWith opts . show <$> (readMaybe s :: Maybe PureForm))
+               `mplus` (intercalate "," . map (rewriteWith opts . show) <$> (readMaybe s :: Maybe [PureForm]))
                `mplus` case readMaybe s :: Maybe ([PureForm],[PureForm]) of
-                                 Just (fs,gs) -> Just $ intercalate "," (map show fs) ++ " || " ++ intercalate "," (map show gs)
                                  Nothing -> Nothing
+                                 Just (fs,gs) -> Just $ intercalate "," (map (rewriteWith opts . show) fs) 
+                                                      ++ " || " 
+                                                      ++ intercalate "," (map (rewriteWith opts . show) gs)
           s = unpack t
 displayProblemData (TranslationData t _) = "-"
 displayProblemData (TranslationDataOpts _ _ opts) = case lookup "problem" opts of
                                                         Just p -> pack p
                                                         Nothing -> "-"
-displayProblemData (QualitativeProblemDataOpts t _ _) = t
+displayProblemData (QualitativeProblemDataOpts t _ opts) = t
 displayProblemData (QualitativeNumericalData t _ _) = t
-displayProblemData (SequentCalcData t _ _) = t
-displayProblemData (DeductionTreeData t _ _) = t
+displayProblemData (SequentCalcData t _ opts) = t
+displayProblemData (DeductionTreeData t _ opts) = t
 displayProblemData (ProblemContent t) = maybe t pack ms
     where ms = (show <$> (readMaybe s :: Maybe PureForm))
                `mplus` (intercalate "," . map show <$> (readMaybe s :: Maybe [PureForm]))

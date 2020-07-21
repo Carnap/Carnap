@@ -87,14 +87,12 @@ activateTruthTables w (Just (i,o,opts)) = do
 
 submitTruthTable:: IsEvent e => Map String String -> IORef Bool ->  IO Bool -> [Element] -> String -> String -> EventM HTMLInputElement e ()
 submitTruthTable opts ref check rows s l = do isDone <- liftIO $ readIORef ref
+                                              tabulated <- liftIO $ mapM unpackRow rows
                                               if isDone 
-                                                 then trySubmit TruthTable opts l (ProblemContent (pack s)) True
+                                                 then trySubmit TruthTable opts l (TruthTableDataOpts (pack s) (reverse tabulated) (M.toList opts)) True
                                                  else if "exam" `inOpts` opts
                                                           then do correct <- liftIO check
-                                                                  if correct
-                                                                      then trySubmit TruthTable opts l (ProblemContent (pack s)) True
-                                                                      else do tabulated <- liftIO $ mapM unpackRow rows
-                                                                              trySubmit TruthTable opts l (TruthTableDataOpts (pack s) (reverse tabulated) (M.toList opts)) False
+                                                                  trySubmit TruthTable opts l (TruthTableDataOpts (pack s) (reverse tabulated) (M.toList opts)) correct
                                                           else message "not yet finished (do you still need to check your answer?)"
 
 -------------------------
@@ -134,7 +132,7 @@ createValidityTruthTable w (antced :|-: succed) (i,o) ref bw opts =
           atomIndicies = nub . sort . concatMap getIndicies $ forms
           valuations = map toValuation . subsequences $ reverse atomIndicies
           orderedChildren = concat $ intersperse [Left ','] (map (toOrderedChildren . fromSequent) (toListOf concretes antced))
-                                  ++ [[Left '⊢']] 
+                                  ++ (if "double-turnstile" `inOpts` opts then [[Left '⊨']] else [[Left '⊢']])
                                   ++ intersperse [Left ','] (map (toOrderedChildren. fromSequent) (toListOf concretes succed))
 
 createSimpleTruthTable :: Document -> [PureForm] -> (Element,Element) -> IORef Bool 
@@ -236,7 +234,7 @@ toRow w opts atomIndicies orderedChildren gridRef (v,n,mvalid,given) =
           toChildTd :: (Either Char PureForm, Int, Maybe Bool) -> IO Element
           toChildTd (c,m,mg) = do Just td <- createElement w (Just "td")
                                   case c of
-                                      Left '⊢' -> case mvalid of
+                                      Left c' | c' `elem` ['⊢','⊨'] -> case mvalid of
                                                    Just tv -> addDropdown ("turnstilemark" `inOpts` opts) m td tv mg
                                                    Nothing -> setInnerHTML td (Just "")
                                       Left c'  -> setInnerHTML td (Just "")
@@ -435,9 +433,10 @@ toChildTh :: (Schematizable (f (FixLang f)), CopulaSchema (FixLang f)) => Docume
 toChildTh w c = 
         do Just th <- createElement w (Just "th")
            case c of
-               Left '⊢' -> do setInnerHTML th (Just ['⊢'])
-                              setAttribute th "class" "ttTurstile"
-               Left c'  -> setInnerHTML th (Just [c'])
+               Left c'  -> do if c' `elem` ['⊢','⊨'] 
+                                  then setAttribute th "class" "ttTurstile" 
+                                  else return ()
+                              setInnerHTML th (Just [c'])
                Right f  -> setInnerHTML th (Just $ mcOf f)
            return th
 
@@ -491,6 +490,7 @@ packText s = if valid then map charToTruthValue . filter (/= ' ') $ s else []
 expandRow :: [Either Char b] -> [Maybe Bool] ->  [Maybe Bool]
 expandRow (Right y:ys)  (x:xs)  = x : expandRow ys xs 
 expandRow (Left '⊢':ys) (x:xs)  = x : expandRow ys xs 
+expandRow (Left '⊨':ys) (x:xs)  = x : expandRow ys xs 
 expandRow (Left y:ys) xs  = Nothing : expandRow ys xs
 expandRow [] (x:xs)       = Nothing : expandRow [] xs
 expandRow _ _ = []

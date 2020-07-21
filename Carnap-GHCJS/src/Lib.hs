@@ -62,6 +62,7 @@ import GHCJS.DOM.EventM
 import GHCJS.DOM.EventTarget
 import GHCJS.DOM.EventTargetClosures (EventName(..))
 import Carnap.GHCJS.SharedTypes
+import Carnap.GHCJS.SharedFunctions
 import Carnap.Calculi.NaturalDeduction.Syntax (NaturalDeductionCalc(..))
 import Carnap.Languages.PurePropositional.Syntax (PureForm)
 import Carnap.Languages.PurePropositional.Logic
@@ -77,17 +78,6 @@ import Carnap.Languages.PurePropositional.Parser (purePropFormulaParser, standar
 --  1.0 Simple Patterns  --
 ---------------------------
 
-
-inOpts :: String -> M.Map String String -> Bool
-inOpts s opts = s `elem` optList
-    where optList = case M.lookup "options" opts of Just s -> words s; Nothing -> []
-          
-rewriteWith :: M.Map String String -> String -> String
-rewriteWith opts = case rewriter of
-                       Just f -> f
-                       Nothing -> id
-    where rewriter = (M.lookup "system" opts >>= ofPropSys ndNotation)
-             `mplus` (M.lookup "system" opts >>= ofFOLSys ndNotation)
 
 --------------------------------------------------------
 --1.1 Events
