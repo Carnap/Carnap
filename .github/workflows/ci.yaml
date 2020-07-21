@@ -35,6 +35,8 @@ jobs:
     - uses: cachix/cachix-action@v6
       with:
         name: jade-carnap
+        # the docker image artifacts are really big and not terribly useful for deployment
+        skipPush: true
         signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
     - run: nix-shell -p skopeo --run "skopeo copy docker-archive:$(nix-build release.nix --arg hasKvm false -A docker --no-out-link) docker://$(echo ${IMG_REF} | envsubst | tr 'A-Z' 'a-z')"
 
