@@ -443,7 +443,7 @@ biconditionalExchange = firstOrderReplace (lbind $ \x y z -> phi3 1 x y z .<=>. 
 
 biconditionalCases :: QuantContextLang (ClassicalSequentOver lex) b Int => FirstOrderRuleVariants lex b
 biconditionalCases = firstOrderReplace (lbind $ \x y z -> phi3 1 x y z .<=>. phi3 2 x y z) 
-                                       (lbind $ \x y z -> (phi3 1 x y z ./\. phi3 2 x y z) .\/. (lneg (phi3 2 x y z) ./\. lneg (phi3 1 x y z)))
+                                       (lbind $ \x y z -> (phi3 1 x y z ./\. phi3 2 x y z) .\/. (lneg (phi3 1 x y z) ./\. lneg (phi3 2 x y z)))
 
 rulesOfPassage :: QuantContextLang (ClassicalSequentOver lex) b Int => FirstOrderRuleVariants lex b
 rulesOfPassage = firstOrderReplace (lbind $ \x y z -> lsome "v" $ \w -> phi4 1 x y z w .\/. phi3 2 x y z) 

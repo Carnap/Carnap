@@ -642,7 +642,7 @@ biconditionalExchange :: ReplacementBooleanVariants lex b
 biconditionalExchange = replace (phin 1 .<=>. phin 2) ((phin 1 .=>. phin 2) ./\. (phin 2 .=>. phin 1))
 
 biconditionalCases :: ReplacementBooleanVariants lex b
-biconditionalCases = replace (phin 1 .<=>. phin 2) ((phin 1 ./\. phin 2) .\/. (lneg (phin 2) ./\. lneg (phin 1)))
+biconditionalCases = replace (phin 1 .<=>. phin 2) ((phin 1 ./\. phin 2) .\/. (lneg (phin 1) ./\. lneg (phin 2)))
 
 ----------------------------------------
 --  1.2.3 Infinitary Variation Rules  --
