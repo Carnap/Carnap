@@ -76,9 +76,8 @@ returnAssignment (Entity key val) path = do
                                 defaultLayout $ minimalLayout ("Assignment time limit exceeded" :: String)
                            (_,_) -> do 
                                 mcss <- retrieveCss (lookupMeta "css" meta)
-                                let theLayout = maybe defaultLayout customLayout mcss
                                 let source = "assignment:" ++ show key 
-                                theLayout $ do
+                                defaultLayout $ do
                                     toWidgetHead $(juliusFile "templates/command.julius")
                                     toWidgetHead $(juliusFile "templates/status-warning.julius")
                                     toWidgetHead [julius|var submission_source="#{rawJS source}";|]
@@ -91,7 +90,9 @@ returnAssignment (Entity key val) path = do
                                     addStylesheet $ StaticR css_proof_css
                                     addStylesheet $ StaticR css_tree_css
                                     addStylesheet $ StaticR css_exercises_css
-                                    when (mcss == Nothing) (addStylesheet $ StaticR css_bootstrapextra_css)
+                                    case mcss of 
+                                        Nothing -> mapM addStylesheet [StaticR css_bootstrapextra_css]
+                                        Just ss -> mapM (addStylesheetRemote . pack) ss
                                     $(widgetFile "document")
                                     addScript $ StaticR ghcjs_allactions_runmain_js
                else defaultLayout $ minimalLayout ("Assignment not currently set as visible by instructor" :: Text)

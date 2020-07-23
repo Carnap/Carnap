@@ -117,8 +117,7 @@ getDocumentR ident title = do (Entity key doc, path, creatorid) <- retrieveDoc i
                   Right (Left err,_) -> defaultLayout $ minimalLayout (show err)
                   Right (Right html, meta) -> do
                       mcss <- retrieveCss (lookupMeta "css" meta)
-                      let theLayout = maybe defaultLayout customLayout mcss
-                      theLayout $ do
+                      defaultLayout $ do
                           toWidgetHead $(juliusFile "templates/command.julius")
                           addScript $ StaticR js_proof_js
                           addScript $ StaticR js_popper_min_js
@@ -128,7 +127,9 @@ getDocumentR ident title = do (Entity key doc, path, creatorid) <- retrieveDoc i
                           addStylesheet $ StaticR css_tree_css
                           addStylesheet $ StaticR css_proof_css
                           addStylesheet $ StaticR css_exercises_css
-                          when (mcss == Nothing) (addStylesheet $ StaticR css_bootstrapextra_css)
+                          case mcss of 
+                              Nothing -> mapM addStylesheet [StaticR css_bootstrapextra_css]
+                              Just ss -> mapM (addStylesheetRemote . pack) ss
                           $(widgetFile "document")
                           addScript $ StaticR ghcjs_allactions_runmain_js
 

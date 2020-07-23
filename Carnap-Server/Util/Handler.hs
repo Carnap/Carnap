@@ -41,12 +41,3 @@ asFile doc path = do addHeader "Content-Disposition" $ concat
 
 asCss :: Document -> FilePath -> Handler TypedContent
 asCss _ path = sendFile typeCss path
-
-customLayout css widget = do
-        master <- getYesod
-        mmsg <- getMessage
-        authmaybe <- maybeAuth
-        instructors <- instructorIdentList
-        let customLayoutCss = css
-        pc <- widgetToPageContent $(widgetFile "default-layout")
-        withUrlRenderer $(hamletFile "templates/custom-layout-wrapper.hamlet")
