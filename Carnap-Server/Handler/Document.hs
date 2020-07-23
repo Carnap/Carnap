@@ -98,18 +98,18 @@ getDocumentR ident title = do (Entity key doc, path, creatorid) <- retrieveDoc i
                                  Private -> do
                                    muid <- maybeAuthId
                                    case muid of
+                                       Nothing -> setMessage "shared file for this document not found" >> notFound
                                        Just uid' | creatorid /= uid' -> setMessage "shared file for this document not found" >> notFound
-                                       Just uid' | takeExtension path == ".css" -> serveDoc asCss doc path creatorid >> notFound 
-                                       Just uid' | takeExtension path == ".js" -> serveDoc asCss doc path creatorid >> notFound 
-                                            --serveDoc bypasses the
-                                            --remaining handlers, so the
-                                            --not-found here is
-                                            --a placeholder that is never
-                                            --reached
-                                       Just uid' -> returnFile path
-                                       _ -> setMessage "shared file for this document not found" >> notFound
+                                                 | takeExtension path == ".css" -> serveDoc asCss doc path creatorid >> notFound 
+                                                 | takeExtension path == ".js" -> serveDoc asCss doc path creatorid >> notFound 
+                                                 | otherwise -> returnFile path
+                                                --serveDoc bypasses the
+                                                --remaining handlers, so the
+                                                --not-found here is
+                                                --a placeholder that is never
+                                                --reached
                                  _ | takeExtension path == ".css" -> serveDoc asCss doc path creatorid >> notFound
-                                 _ | takeExtension path == ".js" -> serveDoc asJs doc path creatorid >> notFound
+                                   | takeExtension path == ".js" -> serveDoc asJs doc path creatorid >> notFound
                                    | otherwise -> returnFile path
 
     where returnFile path = do
