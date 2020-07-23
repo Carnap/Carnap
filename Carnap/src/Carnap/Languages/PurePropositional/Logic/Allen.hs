@@ -99,16 +99,16 @@ instance Inference AllenSL PurePropLexicon (Form Bool) where
         ruleOf NegeElim2  = explicitNonConstructiveReductioVariations !! 1
         ruleOf NegeElim3  = explicitNonConstructiveReductioVariations !! 2
         ruleOf NegeElim4  = explicitNonConstructiveReductioVariations !! 3
-        ruleOf Reductio1 = explicitConstructiveReductioVariations !! 0
-        ruleOf Reductio2 = explicitConstructiveReductioVariations !! 1
-        ruleOf Reductio3 = explicitConstructiveReductioVariations !! 2
-        ruleOf Reductio4 = explicitConstructiveReductioVariations !! 3
+        ruleOf Reductio1  = explicitConstructiveReductioVariations !! 0
+        ruleOf Reductio2  = explicitConstructiveReductioVariations !! 1
+        ruleOf Reductio3  = explicitConstructiveReductioVariations !! 2
+        ruleOf Reductio4  = explicitConstructiveReductioVariations !! 3
         ruleOf Reductio5  = explicitNonConstructiveReductioVariations !! 0
         ruleOf Reductio6  = explicitNonConstructiveReductioVariations !! 1
         ruleOf Reductio7  = explicitNonConstructiveReductioVariations !! 2
         ruleOf Reductio8  = explicitNonConstructiveReductioVariations !! 3
-        ruleOf DNRep   = doubleNegation !! 0
-        ruleOf RepDN   = doubleNegation !! 1
+        ruleOf DNRep      = doubleNegation !! 0
+        ruleOf RepDN      = doubleNegation !! 1
         ruleOf (As _)     = axiom
         ruleOf (Pr _)     = axiom
 
@@ -153,7 +153,7 @@ instance Inference AllenSL PurePropLexicon (Form Bool) where
 parseAllenSL :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> Parsec String u [AllenSL]
 parseAllenSL rtc = do r <- choice (map (try . string) ["AS","PR","&I","/\\I", "∧I","&E","/\\E","∧E","CI","->I","→I","→E","CE","->E", "→E"
                                                          ,"~I","-I", "¬I","~E","-E","¬E" ,"vI","\\/I","∨I", "vE","\\/E", "∨E","BI","<->I", "↔I" 
-                                                         , "BE", "<->E", "↔E", "R", "DN", "RAA"]) <|> ((++) <$> string "A/" <*> many anyChar)
+                                                         , "BE", "<->E", "↔E", "RAA", "R", "DN"]) <|> ((++) <$> string "A/" <*> many anyChar)
                       case r of
                             r | r == "AS" -> return [As ""]
                               | r == "PR" -> return [Pr (problemPremises rtc)]
@@ -201,8 +201,8 @@ allenNotation x = case runParser altparser 0 "" x of
 allenSLCalc = mkNDCalc 
     { ndRenderer = FitchStyle StandardFitch
     , ndParseProof = parseAllenSLProof
-    , ndProcessLine = processLineFitch
-    , ndProcessLineMemo = Nothing
+    , ndProcessLine = hoProcessLineFitch
+    , ndProcessLineMemo = Just hoProcessLineFitchMemo
     , ndParseSeq = parseSeqOver (purePropFormulaParser magnusOpts)
     , ndParseForm = purePropFormulaParser magnusOpts
     , ndNotation = allenNotation
@@ -289,6 +289,7 @@ parseAllenSLPlus rtc = try plus <|> basic
                     case r of
                         "HYP"   -> return [Hyp]
                         "DIL"   -> return [Dilemma]
+                        "MT"    -> return [MT]
                         "MC"    -> return [MCRep,MCRep2,RepMC,RepMC2]
                         "DeM"   -> return [DM1,DM2,DM3,DM4]
 
