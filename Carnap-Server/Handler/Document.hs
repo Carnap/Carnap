@@ -100,6 +100,7 @@ getDocumentR ident title = do (Entity key doc, path, creatorid) <- retrieveDoc i
                                    case muid of
                                        Just uid' | creatorid /= uid' -> setMessage "shared file for this document not found" >> notFound
                                        Just uid' | takeExtension path == ".css" -> serveDoc asCss doc path creatorid >> notFound 
+                                       Just uid' | takeExtension path == ".js" -> serveDoc asCss doc path creatorid >> notFound 
                                             --serveDoc bypasses the
                                             --remaining handlers, so the
                                             --not-found here is
@@ -108,6 +109,7 @@ getDocumentR ident title = do (Entity key doc, path, creatorid) <- retrieveDoc i
                                        Just uid' -> returnFile path
                                        _ -> setMessage "shared file for this document not found" >> notFound
                                  _ | takeExtension path == ".css" -> serveDoc asCss doc path creatorid >> notFound
+                                 _ | takeExtension path == ".js" -> serveDoc asJs doc path creatorid >> notFound
                                    | otherwise -> returnFile path
 
     where returnFile path = do
@@ -116,7 +118,8 @@ getDocumentR ident title = do (Entity key doc, path, creatorid) <- retrieveDoc i
                   Left err -> defaultLayout $ minimalLayout (show err)
                   Right (Left err,_) -> defaultLayout $ minimalLayout (show err)
                   Right (Right html, meta) -> do
-                      mcss <- retrieveCss (lookupMeta "css" meta)
+                      mcss <- retrievePandocVal (lookupMeta "css" meta)
+                      mjs <- retrievePandocVal (lookupMeta "js" meta)
                       defaultLayout $ do
                           toWidgetHead $(juliusFile "templates/command.julius")
                           addScript $ StaticR js_proof_js
@@ -124,6 +127,7 @@ getDocumentR ident title = do (Entity key doc, path, creatorid) <- retrieveDoc i
                           addScript $ StaticR ghcjs_rts_js
                           addScript $ StaticR ghcjs_allactions_lib_js
                           addScript $ StaticR ghcjs_allactions_out_js
+                          maybe (pure [()]) (mapM (addScriptRemote . pack))  mjs
                           addStylesheet $ StaticR css_tree_css
                           addStylesheet $ StaticR css_proof_css
                           addStylesheet $ StaticR css_exercises_css

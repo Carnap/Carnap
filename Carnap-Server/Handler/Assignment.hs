@@ -75,7 +75,7 @@ returnAssignment (Entity key val) path = do
                            (Just (HiddenViaPasswordExpiring _ min), Just tok) | age tok > 60 * min && not instructorAccess -> 
                                 defaultLayout $ minimalLayout ("Assignment time limit exceeded" :: String)
                            (_,_) -> do 
-                                mcss <- retrieveCss (lookupMeta "css" meta)
+                                mcss <- retrievePandocVal (lookupMeta "css" meta)
                                 let source = "assignment:" ++ show key 
                                 defaultLayout $ do
                                     toWidgetHead $(juliusFile "templates/command.julius")
