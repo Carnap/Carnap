@@ -9,6 +9,7 @@ import Text.Blaze.Html (toMarkup)
 import Text.Pandoc (writerExtensions,writerWrapText, WrapOption(..), readerExtensions, Pandoc(..), lookupMeta)
 import System.Directory (doesFileExist,getDirectoryContents)
 import Data.Time
+import Data.Time.Clock.POSIX
 import Text.Julius (juliusFile,rawJS)
 import Text.Pandoc.Walk (walkM, walk)
 import Filter.Randomize
@@ -76,6 +77,7 @@ returnAssignment coursetitle filename (Entity key val) path = do
            time <- liftIO getCurrentTime
            let instructorAccess = assignmentMetadataCourse val `elem` map entityKey classes
                age (Entity _ tok) = floor (diffUTCTime time (assignmentAccessTokenCreatedAt tok))
+               creation (Entity _ tok) = round $ (utcTimeToPOSIXSeconds $ assignmentAccessTokenCreatedAt tok) * 1000 --milliseconds to match JS
            if visibleAt time val || instructorAccess 
                then do
                    ehtml <- liftIO $ fileToHtml (hash (show muid ++ path)) path
@@ -91,7 +93,7 @@ returnAssignment coursetitle filename (Entity key val) path = do
                                 defaultLayout $ minimalLayout ("Assignment time limit exceeded" :: String)
                            (Just (HiddenViaPasswordExpiring _ min), Just tok) | age tok > 60 * min && not instructorAccess -> 
                                 defaultLayout $ minimalLayout ("Assignment time limit exceeded" :: String)
-                           (_,_) -> do 
+                           (mavail,_) -> do 
                                 mcss <- retrievePandocVal (lookupMeta "css" meta)
                                 let source = "assignment:" ++ show key 
                                 defaultLayout $ do
@@ -99,6 +101,13 @@ returnAssignment coursetitle filename (Entity key val) path = do
                                     toWidgetHead $(juliusFile "templates/status-warning.julius")
                                     toWidgetHead [julius|var submission_source="#{rawJS source}";|]
                                     toWidgetHead [julius|var assignment_key="#{rawJS $ show key}";|]
+                                    case (mavail >>= availabilityMinutes,mtoken) of
+                                        (Just min, Just tok) -> toWidgetHead [julius| 
+                                                                                var availability_minutes = #{rawJS $ show min};
+                                                                                var token_time = #{rawJS $ show $ creation tok};
+                                                                              |]
+                                        (_,_) -> return ()
+
                                     toWidgetHead $(juliusFile "templates/assignment-state.julius")
                                     addScript $ StaticR js_proof_js
                                     addScript $ StaticR js_popper_min_js
