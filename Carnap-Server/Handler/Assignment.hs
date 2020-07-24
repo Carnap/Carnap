@@ -77,7 +77,7 @@ returnAssignment coursetitle filename (Entity key val) path = do
            time <- liftIO getCurrentTime
            let instructorAccess = assignmentMetadataCourse val `elem` map entityKey classes
                age (Entity _ tok) = floor (diffUTCTime time (assignmentAccessTokenCreatedAt tok))
-               creation (Entity _ tok) = round $ (utcTimeToPOSIXSeconds $ assignmentAccessTokenCreatedAt tok) * 1000 --milliseconds to match JS
+               creation (Entity _ tok) = round $ utcTimeToPOSIXSeconds (assignmentAccessTokenCreatedAt tok) * 1000 --milliseconds to match JS
            if visibleAt time val || instructorAccess 
                then do
                    ehtml <- liftIO $ fileToHtml (hash (show muid ++ path)) path
