@@ -95,10 +95,12 @@ returnAssignment coursetitle filename (Entity key val) path = do
                                 defaultLayout $ minimalLayout ("Assignment time limit exceeded" :: String)
                            (mavail,_) -> do 
                                 mcss <- retrievePandocVal (lookupMeta "css" meta)
+                                mjs <- retrievePandocVal (lookupMeta "js" meta)
                                 let source = "assignment:" ++ show key 
                                 defaultLayout $ do
                                     toWidgetHead $(juliusFile "templates/command.julius")
                                     toWidgetHead $(juliusFile "templates/status-warning.julius")
+                                    toWidgetHead $(juliusFile "templates/assignment-state.julius")
                                     toWidgetHead [julius|var submission_source="#{rawJS source}";|]
                                     toWidgetHead [julius|var assignment_key="#{rawJS $ show key}";|]
                                     case (mavail >>= availabilityMinutes,mtoken) of
@@ -107,8 +109,6 @@ returnAssignment coursetitle filename (Entity key val) path = do
                                                                                 var token_time = #{rawJS $ show $ creation tok};
                                                                               |]
                                         (_,_) -> return ()
-
-                                    toWidgetHead $(juliusFile "templates/assignment-state.julius")
                                     addScript $ StaticR js_proof_js
                                     addScript $ StaticR js_popper_min_js
                                     addScript $ StaticR ghcjs_rts_js
@@ -121,8 +121,9 @@ returnAssignment coursetitle filename (Entity key val) path = do
                                         Nothing -> mapM addStylesheet [StaticR css_bootstrapextra_css]
                                         Just ss -> mapM (addStylesheetRemote . pack) ss
                                     $(widgetFile "document")
-                                    addScript $ StaticR ghcjs_allactions_runmain_js
                                     toWidgetBody [julius|getAssignmentState();|]
+                                    addScript $ StaticR ghcjs_allactions_runmain_js
+                                    maybe (pure [()]) (mapM (addScriptRemote . pack)) mjs >> return ()
                else defaultLayout $ minimalLayout ("Assignment not currently set as visible by instructor" :: Text)
     where visibleAt t a = (assignmentMetadataVisibleTill a > Just t || assignmentMetadataVisibleTill a == Nothing)
                           && (assignmentMetadataVisibleFrom a < Just t || assignmentMetadataVisibleFrom a == Nothing)
