@@ -1,0 +1,28 @@
+function putAssignmentState (val) {
+    jQuery.ajax({
+        url: '@{CourseAssignmentStateR coursetitle filename}',
+        type: 'PUT',
+        contentType: "application/json",
+        data: JSON.stringify(val),
+        success: function(data) {
+            console.log("assignment state updated to: " + data)
+            },
+        error: function(data) {
+            window.alert("Possible network error: couldn't save assignment state")
+            },
+        });
+    };
+
+function getAssignmentState () {
+    jQuery.ajax({
+        url: '@{CourseAssignmentStateR coursetitle filename}',
+        type: 'GET',
+        contentType: "application/json",
+        success: function(data) {
+            console.log(data)
+            },
+        error: function(data) {
+            window.alert("Possible network error: couldn't retrieve assignment state")
+            },
+        });
+    };

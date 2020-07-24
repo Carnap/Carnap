@@ -1,4 +1,4 @@
-module Handler.Assignment (getAssignmentR, postCourseAssignmentR, getCourseAssignmentR) where
+module Handler.Assignment (postCourseAssignmentR, getCourseAssignmentR, getCourseAssignmentStateR, putCourseAssignmentStateR) where
 
 import Import
 import Util.Data
@@ -23,11 +23,28 @@ import Filter.TreeDeduction
 import Filter.RenderFormulas
 import Util.Handler
 
-getAssignmentR :: Text -> Handler Html
-getAssignmentR filename = getAssignment filename >>= uncurry returnAssignment
-
 getCourseAssignmentR :: Text -> Text -> Handler Html
-getCourseAssignmentR coursetitle filename = getAssignmentByCourse coursetitle filename >>= uncurry returnAssignment
+getCourseAssignmentR coursetitle filename = getAssignmentByCourse coursetitle filename 
+                                            >>= uncurry (returnAssignment coursetitle filename)
+
+putCourseAssignmentStateR :: Text -> Text -> Handler Value
+putCourseAssignmentStateR coursetitle filename = do
+        msg <- requireJsonBody :: Handler Value
+        muid <- maybeAuthId
+        uid <- maybe reject return muid
+        ((Entity aid _), _) <- getAssignmentByCourse coursetitle filename
+        runDB $ upsert (AssignmentState msg uid aid) [AssignmentStateValue =. msg]
+        returnJson msg
+
+getCourseAssignmentStateR :: Text -> Text -> Handler Value
+getCourseAssignmentStateR coursetitle filename = do
+        muid <- maybeAuthId
+        uid <- maybe reject return muid
+        ((Entity aid _), _) <- getAssignmentByCourse coursetitle filename
+        mstate <- runDB $ getBy (UniqueAssignmentState uid aid)
+        case mstate of
+            Just (Entity _ state) -> returnJson (assignmentStateValue state)
+            Nothing -> returnJson ("" :: Text)
 
 postCourseAssignmentR :: Text -> Text -> Handler Html
 postCourseAssignmentR coursetitle filename = do
@@ -48,8 +65,8 @@ postCourseAssignmentR coursetitle filename = do
                 FormMissing -> setMessage $ "Form Missing"
             redirect $ CourseAssignmentR coursetitle filename
 
-returnAssignment :: Entity AssignmentMetadata -> FilePath -> Handler Html
-returnAssignment (Entity key val) path = do
+returnAssignment :: Text -> Text -> Entity AssignmentMetadata -> FilePath -> Handler Html
+returnAssignment coursetitle filename (Entity key val) path = do
            time <- liftIO getCurrentTime
            muid <- maybeAuthId
            uid <- maybe reject return muid
@@ -80,6 +97,7 @@ returnAssignment (Entity key val) path = do
                                 defaultLayout $ do
                                     toWidgetHead $(juliusFile "templates/command.julius")
                                     toWidgetHead $(juliusFile "templates/status-warning.julius")
+                                    toWidgetHead $(juliusFile "templates/assignment-state.julius")
                                     toWidgetHead [julius|var submission_source="#{rawJS source}";|]
                                     toWidgetHead [julius|var assignment_key="#{rawJS $ show key}";|]
                                     addScript $ StaticR js_proof_js

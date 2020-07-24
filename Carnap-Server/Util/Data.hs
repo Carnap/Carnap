@@ -8,12 +8,14 @@ import Carnap.Languages.PurePropositional.Logic
 import Data.List ((!!), elemIndex)
 import Data.Time
 import qualified Data.Map as M
-import Data.Aeson (decode,encode)
+import Data.Aeson (decode,encode,Value(..))
 import Text.Read (readMaybe)
 import Text.Pandoc (Extension(..), extensionsFromList)
 import Carnap.GHCJS.SharedTypes(ProblemSource(..),ProblemType(..),ProblemData(..), SomeRule(..))
 import Carnap.GHCJS.SharedFunctions(inOpts, rewriteWith)
 import qualified Data.IntMap as IM (fromList)
+
+derivePersistField "Value"
 
 derivePersistField "ProblemSource"
 

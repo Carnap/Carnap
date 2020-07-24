@@ -58,6 +58,12 @@ ProblemSubmission
     assignmentId AssignmentMetadataId Maybe
     UniqueProblemSubmission ident userId source
 
+AssignmentState
+    value Value
+    userId UserId
+    assignmentId AssignmentMetadataId
+    UniqueAssignmentState userId assignmentId
+
 SavedDerivedRule
     derivedRule ByteString
     name Text
