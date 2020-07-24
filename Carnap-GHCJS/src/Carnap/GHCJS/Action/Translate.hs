@@ -71,7 +71,7 @@ activateTranslate w (Just (i,o,opts)) = do
                       (Right fs) -> do 
                            bw <- createButtonWrapper w o
                            ref <- newIORef False
-                           let submit = submitTrans opts i ref fs parser checker tests
+                           let submit = submitTrans w opts i ref fs parser checker tests
                            btStatus <- createSubmitButton w bw submit opts
                            setValue (castToHTMLInputElement i) (Just content)
                            doOnce i input False $ liftIO $ btStatus Edited
@@ -180,20 +180,20 @@ tryTrans parser equiv tests wrapper ref fs = onEnter $
             | otherwise = do writeIORef ref False >> message "Not quite. Try again!"
                              setAttribute wrapper "class" ""
 
-submitTrans opts i ref fs parser checker tests l = 
+submitTrans w opts i ref fs parser checker tests l = 
         do isFinished <- liftIO $ readIORef ref
            (Just v) <- getValue (castToHTMLInputElement i)
            if isFinished
-           then trySubmit Translation opts l (TranslationDataOpts (serialize fs) (pack v) (M.toList opts)) True
+           then trySubmit w Translation opts l (TranslationDataOpts (serialize fs) (pack v) (M.toList opts)) True
            else if ("exam" `inOpts` opts) || ("nocheck" `inOpts` opts) 
                 then do 
                     case parse (spaces *> parser <* eof) "" v of
                         Right f' | tests f' == Nothing && any (\f -> checker f f') fs -> 
-                            trySubmit Translation opts l (TranslationDataOpts (serialize fs) (pack v) (M.toList opts)) True
+                            trySubmit w Translation opts l (TranslationDataOpts (serialize fs) (pack v) (M.toList opts)) True
                         Left _ | "checksyntax" `inOpts` opts -> 
                             message "Can't read this. Please double check syntax before submitting."
                         _ | "exam" `inOpts` opts -> 
-                            trySubmit Translation opts l (TranslationDataOpts (serialize fs) (pack v) (M.toList opts)) False
+                            trySubmit w Translation opts l (TranslationDataOpts (serialize fs) (pack v) (M.toList opts)) False
                         _ -> message "something is wrong... try again?"
                 else message "not yet finished (remember to press return to check your work before submitting!)"
     where serialize :: Show a => [a] -> Text

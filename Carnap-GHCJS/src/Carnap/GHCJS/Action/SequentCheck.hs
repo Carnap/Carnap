@@ -69,7 +69,7 @@ activateChecker w (Just (i, o, opts))
                               _ -> initRoot "" o
                   threadRef <- newIORef (Nothing :: Maybe ThreadId)
                   bw <- createButtonWrapper w o
-                  let submit = submitSeq opts calc root
+                  let submit = submitSeq w opts calc root
                   btStatus <- createSubmitButton w bw submit opts
                   initialCheck <- newListener $ liftIO $ do 
                                     forkIO $ do
@@ -95,14 +95,14 @@ activateChecker w (Just (i, o, opts))
                                           return $ Just seq
                       Nothing -> return Nothing
 
-submitSeq opts calc root l = 
+submitSeq w opts calc root l = 
         do Just val <- liftIO $ toCleanVal root
            case parse parseTreeJSON val of
                Error s -> message "Something is wrong with the proof... Try again?"
                Success tree@(Node (content,_) _) -> case toTableau calc tree of
                      Left _ -> message "Something is wrong with the proof... Try again?"
                      Right tab -> case parse fromInfo . toInfo . validateTree $ tab of
-                          Success rslt | "exam" `elem` optlist || rslt -> trySubmit SequentCalc opts l (SequentCalcData (pack content) tree (toList opts)) rslt
+                          Success rslt | "exam" `elem` optlist || rslt -> trySubmit w SequentCalc opts l (SequentCalcData (pack content) tree (toList opts)) rslt
                           _ -> message "Something is wrong with the proof... Try again?"
     where optlist = case M.lookup "options" opts of Just s -> words s; Nothing -> []
 

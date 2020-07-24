@@ -24,7 +24,7 @@ import GHCJS.DOM.EventM (EventM, target, newListener,addListener)
 import GHCJS.DOM.HTMLTextAreaElement (castToHTMLTextAreaElement, setValue, getValue, setSelectionEnd, getSelectionStart, setAutocapitalize, setAutocorrect)
 
 data Button = Button { label  :: String 
-                     , action :: IORef Bool -> Window -> Element -> 
+                     , action :: IORef Bool -> Document -> Element -> 
                             EventM Element MouseEvent ()
                      }
 
@@ -103,7 +103,6 @@ checkerWith options updateres iog@(IOGoal i o g content _) w = do
            mapM_ (appendChild aligner . Just) [o, i]
            mapM_ (appendChild g . Just) [sd, sucd, incompleteAlert]
            mapM_ (appendChild par . Just) [aligner,bw]
-           (Just w') <- getDefaultView w
            syncScroll i o
            --respond to custom initialize events
            initlistener <- newListener $ updateWithValue (\s -> updateres w ref s (g,fd))
@@ -124,8 +123,8 @@ checkerWith options updateres iog@(IOGoal i o g content _) w = do
                Just button -> do 
                    bt' <- doneButton w (label button)
                    appendChild bw  (Just bt')
-                   buttonAct <- newListener $ action button ref w' i
-                   doOnce i input False $ liftIO $ setStatus bt' Edited
+                   buttonAct <- newListener $ action button ref w i
+                   doOnce i input False $ liftIO $ setStatus w bt' Edited
                    addListener bt' click buttonAct False                
                Nothing -> return ()
            case feedback options of

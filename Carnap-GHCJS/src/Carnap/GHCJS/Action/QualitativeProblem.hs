@@ -34,26 +34,26 @@ activateQualitativeProblem w (Just (i,o,opts)) = do
             Just "numerical" -> createNumerical w i o opts
             _  -> return ()
 
-submitQualitative :: IsEvent e => M.Map String String -> IORef (Bool, String) -> String -> String -> EventM Element e ()
-submitQualitative opts ref g l = do (isDone,val) <- liftIO $ readIORef ref
-                                    let submission = (QualitativeProblemDataOpts (pack g) (pack val) (toList opts))
-                                    if isDone || ("exam" `inOpts` opts)
-                                        then trySubmit Qualitative opts l submission isDone
-                                        else message "Not quite right. Try again?"
+submitQualitative :: IsEvent e => Document -> M.Map String String -> IORef (Bool, String) -> String -> String -> EventM Element e ()
+submitQualitative w opts ref g l = do (isDone,val) <- liftIO $ readIORef ref
+                                      let submission = (QualitativeProblemDataOpts (pack g) (pack val) (toList opts))
+                                      if isDone || ("exam" `inOpts` opts)
+                                          then trySubmit w Qualitative opts l submission isDone
+                                          else message "Not quite right. Try again?"
 
-submitNumerical :: IsEvent e => M.Map String String -> Element -> Double -> String -> String -> EventM Element e ()
-submitNumerical opts input g p l = do Just ival <- liftIO $ I.getValue . castToHTMLInputElement $ input
-                                      case readNumeric ival of
-                                        Nothing -> message "Couldn't read the input. Try again?"
-                                        Just val | val == g -> trySubmit Qualitative opts l (QualitativeNumericalData (pack p) val (toList opts)) True
-                                        Just val | "exam" `inOpts` opts -> trySubmit Qualitative opts l (QualitativeNumericalData (pack p) val (toList opts)) False
-                                        _ -> message "Not quite right. Try again?"
+submitNumerical :: IsEvent e => Document -> M.Map String String -> Element -> Double -> String -> String -> EventM Element e ()
+submitNumerical w opts input g p l = do Just ival <- liftIO $ I.getValue . castToHTMLInputElement $ input
+                                        case readNumeric ival of
+                                          Nothing -> message "Couldn't read the input. Try again?"
+                                          Just val | val == g -> trySubmit w Qualitative opts l (QualitativeNumericalData (pack p) val (toList opts)) True
+                                          Just val | "exam" `inOpts` opts -> trySubmit w Qualitative opts l (QualitativeNumericalData (pack p) val (toList opts)) False
+                                          _ -> message "Not quite right. Try again?"
 
-submitEssay :: IsEvent e => M.Map String String -> Element -> String -> String -> EventM HTMLTextAreaElement e ()
-submitEssay opts text g l = do manswer <- T.getValue . castToHTMLTextAreaElement $ text
-                               case manswer of 
-                                    Just answer -> trySubmit Qualitative opts l (QualitativeProblemDataOpts (pack g) (pack answer) (toList opts)) False
-                                    Nothing -> message "It doesn't look like an answer has been written"
+submitEssay :: IsEvent e => Document -> M.Map String String -> Element -> String -> String -> EventM HTMLTextAreaElement e ()
+submitEssay w opts text g l = do manswer <- T.getValue . castToHTMLTextAreaElement $ text
+                                 case manswer of 
+                                      Just answer -> trySubmit w Qualitative opts l (QualitativeProblemDataOpts (pack g) (pack answer) (toList opts)) False
+                                      Nothing -> message "It doesn't look like an answer has been written"
 
 createMultipleChoice :: Document -> Element -> Element -> M.Map String String -> IO ()
 createMultipleChoice w i o opts = case M.lookup "goal" opts of
@@ -62,7 +62,7 @@ createMultipleChoice w i o opts = case M.lookup "goal" opts of
         ref <- newIORef (False,"")
         setInnerHTML i (Just g)
         bw <- createButtonWrapper w o
-        let submit = submitQualitative opts ref g
+        let submit = submitQualitative w opts ref g
         btStatus <- createSubmitButton w bw submit opts
         if "check" `inOpts` opts then do
               bt2 <- questionButton w "Check"
@@ -143,7 +143,7 @@ createNumerical w i o opts = case (M.lookup "goal" opts >>= getGoal, M.lookup "p
                 let l = Prelude.drop 7 s
                 bt1 <- doneButton w "Submit"
                 appendChild bw (Just bt1)
-                submit <- newListener $ submitNumerical opts input g p l
+                submit <- newListener $ submitNumerical w opts input g p l
                 addListener bt1 click submit False                
             _ -> return ()
     _ -> print "numerical answer was missing an option"
@@ -166,7 +166,7 @@ createShortAnswer w i o opts = case M.lookup "goal" opts of
                 let l = Prelude.drop 7 s
                 bt1 <- doneButton w "Submit"
                 appendChild bw (Just bt1)
-                submit <- newListener $ submitEssay opts text g l
+                submit <- newListener $ submitEssay w opts text g l
                 addListener bt1 click submit False                
             _ -> return ()
         return ()

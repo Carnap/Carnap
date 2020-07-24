@@ -64,7 +64,7 @@ activateTruthTables w (Just (i,o,opts)) = do
                           ref <- newIORef False
                           bw <- createButtonWrapper w o
                           (check,rows) <- ttbuilder w f (i,o) ref bw opts
-                          let submit = submitTruthTable opts ref check rows (show f)
+                          let submit = submitTruthTable w opts ref check rows (show f)
                           btStatus <- createSubmitButton w bw submit opts
                           doOnce o change False $ liftIO $ btStatus Edited
                           if "nocheck" `inOpts` opts then return () 
@@ -85,15 +85,15 @@ activateTruthTables w (Just (i,o,opts)) = do
                                                 liftIO $ writeIORef ref False
                                                 setAttribute wrap  "class" "failure"
 
-submitTruthTable:: IsEvent e => Map String String -> IORef Bool ->  IO Bool -> [Element] -> String -> String -> EventM HTMLInputElement e ()
-submitTruthTable opts ref check rows s l = do isDone <- liftIO $ readIORef ref
-                                              tabulated <- liftIO $ mapM unpackRow rows
-                                              if isDone 
-                                                 then trySubmit TruthTable opts l (TruthTableDataOpts (pack s) (reverse tabulated) (M.toList opts)) True
-                                                 else if "exam" `inOpts` opts
-                                                          then do correct <- liftIO check
-                                                                  trySubmit TruthTable opts l (TruthTableDataOpts (pack s) (reverse tabulated) (M.toList opts)) correct
-                                                          else message "not yet finished (do you still need to check your answer?)"
+submitTruthTable:: IsEvent e => Document -> Map String String -> IORef Bool ->  IO Bool -> [Element] -> String -> String -> EventM HTMLInputElement e ()
+submitTruthTable w opts ref check rows s l = do isDone <- liftIO $ readIORef ref
+                                                tabulated <- liftIO $ mapM unpackRow rows
+                                                if isDone 
+                                                   then trySubmit w TruthTable opts l (TruthTableDataOpts (pack s) (reverse tabulated) (M.toList opts)) True
+                                                   else if "exam" `inOpts` opts
+                                                            then do correct <- liftIO check
+                                                                    trySubmit w TruthTable opts l (TruthTableDataOpts (pack s) (reverse tabulated) (M.toList opts)) correct
+                                                            else message "not yet finished (do you still need to check your answer?)"
 
 -------------------------
 --  Full Truth Tables  --

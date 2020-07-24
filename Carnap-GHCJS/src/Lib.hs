@@ -375,11 +375,12 @@ createSubmitButton w bw submit opts =
              appendChild bw (Just bt)
              submitter <- newListener $ submit l
              addListener bt click submitter False                
-             return (setStatus bt)
+             return (setStatus w bt)
          _ -> return (const $ return ())
 
-setStatus b Edited = setAttribute b "data-carnap-exercise-status" "edited"
-setStatus b Submitted = setAttribute b "data-carnap-exercise-status" "submitted"
+setStatus w b Edited = setAttribute b "data-carnap-exercise-status" "edited"
+setStatus w b Submitted = do dispatchCustom w b "problem-submission"
+                             setAttribute b "data-carnap-exercise-status" "submitted"
 
 loginCheck callback serverResponse  
      | serverResponse == "submitted!" = callback
@@ -429,7 +430,7 @@ withLabel parser = do label <- many (digit <|> char '.')
                       s <- parser
                       return (label,s)
 
-trySubmit problemType opts ident problemData correct = 
+trySubmit w problemType opts ident problemData correct = 
              do msource <- liftIO submissionSource
                 key <- liftIO assignmentKey
                 case msource of 
@@ -437,7 +438,7 @@ trySubmit problemType opts ident problemData correct =
                    Just source -> do Just t <- eventCurrentTarget
                                      liftIO $ sendJSON 
                                            (Submit problemType ident problemData source correct (M.lookup "points" opts >>= readMaybe) key) 
-                                           (loginCheck $ (alert $ "Submitted Exercise " ++ ident) >> setStatus (castToElement t) Submitted)
+                                           (loginCheck $ (alert $ "Submitted Exercise " ++ ident) >> setStatus w (castToElement t) Submitted)
                                            errorPopup
 
 ------------------
