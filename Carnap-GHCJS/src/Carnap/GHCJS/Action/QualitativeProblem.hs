@@ -18,6 +18,7 @@ import Data.Map as M
 import Data.Hashable
 import Data.Maybe
 import Data.Text (pack)
+import System.Random (randomIO)
 import Text.Read (readMaybe)
 
 qualitativeProblemAction :: IO ()
@@ -79,7 +80,9 @@ createMultipleChoice w i o opts = case M.lookup "goal" opts of
                                   (Prelude.map isGood choices) 
                                   (Prelude.map isChecked choices)
         radios <- mapM (toRadio g ref) labeledChoices
-        mapM_ (appendChild o . Just . fst) radios
+        Just form <- createElement w (Just "form")
+        appendChild o (Just form)
+        mapM_ (appendChild form . Just . fst) radios
         doOnce o change False $ liftIO $ btStatus Edited
         return ()
         
@@ -103,16 +106,18 @@ createMultipleChoice w i o opts = case M.lookup "goal" opts of
                Just input <- createElement w (Just "input")
                Just label <- createElement w (Just "label")
                Just wrapper <- createElement w (Just "div")
+               tag <- randomIO :: IO Int
+               let theId = g ++ "-" ++ s ++ "-" ++ show tag
                if c then writeIORef ref (b,s) else return ()
                mapM (uncurry $ setAttribute input) $
                      [ ("type","radio")
                      , ("name", g)
-                     , ("id", g ++ "-" ++ s)
+                     , ("id", theId)
                      ] ++ if c then [("checked","checked")] else []
                setInnerHTML label (Just s)
                update <- newListener $ liftIO (writeIORef ref (b,s))
                addListener input click update False
-               setAttribute label "for" (g ++ "-" ++ s)
+               setAttribute label "for" theId
                appendChild wrapper (Just input)
                appendChild wrapper (Just label)
                return (wrapper, b)
