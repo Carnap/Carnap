@@ -7,7 +7,7 @@ function putAssignmentState (val) {
         contentType: "application/json",
         data: JSON.stringify(val),
         success: function(data) {
-            console.log("assignment state updated to: " + data);
+            console.log("assignment state updated to: " + JSON.stringify(data));
             AssignmentState = data;
         },
         error: function(data) {
