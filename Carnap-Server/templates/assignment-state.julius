@@ -22,7 +22,7 @@ function getAssignmentState () {
         type: 'GET',
         contentType: "application/json",
         success: function(data) { 
-            console.log("received assignment state: " + data)
+            console.log("received assignment state: " + JSON.stringify(data))
             AssignmentState = data 
         },
         error: function(data) {
