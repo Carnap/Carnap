@@ -1,6 +1,6 @@
 module Main where
 
-import Lib (initCallbackObj)
+import Lib (initCallbackObj, allDone)
 import Carnap.GHCJS.Action.SyntaxCheck
 import Carnap.GHCJS.Action.ProofCheck
 import Carnap.GHCJS.Action.Translate
@@ -24,3 +24,4 @@ main = do initCallbackObj
           treeDeductionCheckAction
           acceptJSONAction
           renderFormulasAction
+          allDone

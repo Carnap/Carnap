@@ -1,18 +1,18 @@
 {-# LANGUAGE RankNTypes, QuasiQuotes, FlexibleContexts, DeriveDataTypeable, CPP, JavaScriptFFI #-}
-module Lib (genericSendJSON, sendJSON, onEnter, onKey, doOnce, dispatchCustom, clearInput,
-           getListOfElementsByClass, getListOfElementsByTag, getCarnapDataMap, tryParse,
-           treeToElement, genericTreeToUl, treeToUl, genericListToUl,
-           listToUl, formToTree, leaves, adjustFirstMatching, decodeHtml,
-           decodeJSON,toJSONString, cleanString, syncScroll, reloadPage, initElements,
-           errorPopup, genInOutElts,
-           getInOutElts,generateExerciseElts, withLabel,
-           formAndLabel,seqAndLabel, folSeqAndLabel, folFormAndLabel,
-           message, IOGoal(..), updateWithValue, submissionSource,
-           assignmentKey, initialize, mutate, initializeCallback, initCallbackObj,
-           toCleanVal, popUpWith, spinnerSVG, doneButton, questionButton,
-           exclaimButton, expandButton, createSubmitButton, createButtonWrapper,
-           maybeNodeListToList, trySubmit, inOpts, rewriteWith, setStatus, ButtonStatus(..),
-           keyString) where
+module Lib ( genericSendJSON, sendJSON, onEnter, onKey, doOnce, dispatchCustom, allDone
+           , clearInput, getListOfElementsByClass, getListOfElementsByTag, getCarnapDataMap, tryParse
+           , treeToElement, genericTreeToUl, treeToUl, genericListToUl
+           , listToUl, formToTree, leaves, adjustFirstMatching, decodeHtml
+           , decodeJSON,toJSONString, cleanString, syncScroll, reloadPage, initElements
+           , errorPopup, genInOutElts
+           , getInOutElts,generateExerciseElts, withLabel
+           , formAndLabel,seqAndLabel, folSeqAndLabel, folFormAndLabel
+           , message, IOGoal(..), updateWithValue, submissionSource
+           , assignmentKey, initialize, mutate, initializeCallback, initCallbackObj
+           , toCleanVal, popUpWith, spinnerSVG, doneButton, questionButton
+           , exclaimButton, expandButton, createSubmitButton, createButtonWrapper
+           , maybeNodeListToList, trySubmit, inOpts, rewriteWith, setStatus, ButtonStatus(..)
+           , keyString) where
 
 import Data.Aeson
 import Data.Maybe (catMaybes)
@@ -105,11 +105,16 @@ doOnce target event bubble handler = do listener <- mfix $ \rec -> newListener  
                                                         liftIO $ removeListener target event rec bubble 
                                         addListener target event listener bubble
 
-dispatchCustom :: Document -> Element -> String -> IO ()
+dispatchCustom :: IsEventTarget t => Document -> t -> String -> IO ()
 dispatchCustom w e s = do Just custom <- createEvent w "Event"
                           initEvent custom s True True
                           dispatchEvent e (Just custom)
                           return ()
+
+allDone :: IO ()
+allDone = runWebGUI $ \w -> 
+    do Just dom <- webViewGetDomDocument w
+       dispatchCustom dom dom "carnap-loaded"
 
 --------------------------------------------------------
 --1.1.2 Common responsive behavior
@@ -359,8 +364,8 @@ data ButtonStatus = Edited | Submitted
 
 initElements :: (Document -> HTMLElement -> IO [a]) -> (Document -> a -> IO b) -> IO ()
 initElements getter setter = runWebGUI $ \w -> 
-            do (Just dom) <- webViewGetDomDocument w
-               (Just b) <- getBody dom
+            do Just dom <- webViewGetDomDocument w
+               Just b <- getBody dom
                elts <- getter dom b
                case elts of 
                     [] -> return ()
