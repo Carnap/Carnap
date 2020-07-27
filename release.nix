@@ -21,14 +21,14 @@
               });
         }).buildImage;
   in {
-    inherit server;
+    inherit server nixpkgs;
 
     docker = buildImage {
       name = "Carnap";
       tag = "latest";
 
       # no base image, make a minimized image
-      contents = [ (nixpkgs.haskell.lib.justStaticExecutables server) ];
+      contents = [ server ];
       runAsRoot = ''
         #!${nixpkgs.runtimeShell}
         echo runAsRoot::

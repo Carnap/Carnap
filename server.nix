@@ -5,6 +5,7 @@
       overrideCabal
       dontCheck
       doJailbreak
+      justStaticExecutables
       withGitignore;
     client-ghcjs = self.haskell.packages.${ghcjsVer}.Carnap-GHCJS;
   in {
@@ -45,7 +46,7 @@
             # Carnap-GHCJS  = withGitignore
             #    (oldpkgs.callPackage ./Carnap-GHCJS/Carnap-GHCJS.nix { });
 
-            Carnap-Server = withGitignore (overrideCabal
+            Carnap-Server = justStaticExecutables (withGitignore ((overrideCabal
               (oldpkgs.callPackage ./Carnap-Server/Carnap-Server.nix { })
               (old: let book = ./Carnap-Book; in {
                 preConfigure = ''
@@ -63,16 +64,32 @@
                   cp config/settings-example.yml config/settings.yml
                   cat config/settings.yml
                   '';
+
                 extraLibraries = [ client-ghcjs ];
                 enableExecutableProfiling = profiling;
                 enableLibraryProfiling = profiling;
                 buildDepends = [ book ];
+
+                isExecutable = true;
                 # Carnap-Server has no tests/they are broken
                 doCheck = false;
                 # remove once updated past ghc865
                 # https://github.com/haskell/haddock/issues/979
+                # (additionally disabled by justStaticExecutables)
                 doHaddock = false;
-              }));
+              })).overrideAttrs (drv: {
+                # inspired by https://github.com/NixOS/nixpkgs/blob/91340ae/pkgs/development/tools/pandoc/default.nix
+                # reduce closure size by deleting references to the pandoc
+                # binary. pandoc depends transitively on all installed haskell
+                # packages.  Bad for docker image size (4GB+).
+                disallowedReferences = [ newpkgs.pandoc ];
+                postInstall = ''
+                  echo 'deleting reference to pandoc'
+                  remove-references-to \
+                    -t ${newpkgs.pandoc} \
+                    $out/bin/Carnap-Server
+                '';
+              })));
           };
         };
       };
