@@ -28,7 +28,7 @@
       tag = "latest";
 
       # no base image, make a minimized image
-      contents = [ server ];
+      contents = [ (nixpkgs.haskell.lib.justStaticExecutables server) ];
       runAsRoot = ''
         #!${nixpkgs.runtimeShell}
         echo runAsRoot::
