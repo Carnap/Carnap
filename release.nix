@@ -20,6 +20,12 @@
                 pkgs = nixpkgs // { qemu_kvm = nixpkgs.callPackage ./nix/wrapped-qemu.nix { }; };
               });
         }).buildImage;
+
+      dockerEntrypoint = nixpkgs.writeScriptBin "entrypoint.sh" ''
+        #!${nixpkgs.runtimeShell}
+        ln -sf ${server.out}/share/* /data/
+        Carnap-Server
+        '';
   in {
     inherit server nixpkgs;
 
@@ -28,16 +34,15 @@
       tag = "latest";
 
       # no base image, make a minimized image
-      contents = [ server ];
+      contents = [ dockerEntrypoint nixpkgs.runtimeShellPackage server ];
       runAsRoot = ''
         #!${nixpkgs.runtimeShell}
         echo runAsRoot::
         mkdir -p /data
-        cp -r ${server.out}/share/* /data
       '';
 
       config = {
-        Cmd = [ "/bin/Carnap-Server" ];
+        Cmd = [ dockerEntrypoint ];
         WorkingDir = "/data";
         Volumes = {
           "/data" = {};
