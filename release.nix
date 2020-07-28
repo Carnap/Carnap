@@ -23,8 +23,12 @@
 
       dockerEntrypoint = nixpkgs.writeScriptBin "entrypoint.sh" ''
         #!${nixpkgs.runtimeShell}
-        ln -sf ${server.out}/share/* /data/
-        Carnap-Server
+        # this all needs to be mutable because yesod + diagrams-builder put
+        # stuff dynamically under every single one of our "static" directories
+        # >:(
+        cp -r ${server.out}/share/* /data/
+        mkdir -p /data/data
+        exec Carnap-Server
         '';
   in {
     inherit server nixpkgs;
@@ -34,7 +38,12 @@
       tag = "latest";
 
       # no base image, make a minimized image
-      contents = [ dockerEntrypoint nixpkgs.runtimeShellPackage server ];
+      contents = [
+        dockerEntrypoint
+        nixpkgs.coreutils
+        nixpkgs.runtimeShellPackage
+        server
+      ];
       runAsRoot = ''
         #!${nixpkgs.runtimeShell}
         echo runAsRoot::
@@ -42,8 +51,15 @@
       '';
 
       config = {
-        Cmd = [ dockerEntrypoint ];
+        Cmd = [ "entrypoint.sh" ];
         WorkingDir = "/data";
+        Env = [
+          "DATAROOT=/data/data"
+          "BOOKROOT=/data/book/"
+        ];
+        ExposedPorts = {
+          "3000" = {};
+        };
         Volumes = {
           "/data" = {};
         };
