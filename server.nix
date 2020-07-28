@@ -53,16 +53,17 @@
                 preConfigure = ''
                   mkdir -p $out/share
                   echo ":: Copying Carnap-Server data"
-                  cp -r {config,static} $out/share
                   cp -r ${book} $out/share/book
 
-                  echo ":: Symlinking js in $(pwd)"
-                  ln -sf ${client-ghcjs.out}/bin/AllActions.jsexe/all.js static/ghcjs/allactions/
-                  ln -sf ${client-ghcjs.out}/bin/AllActions.jsexe/out.js static/ghcjs/allactions/
-                  ln -sf ${client-ghcjs.out}/bin/AllActions.jsexe/lib.js static/ghcjs/allactions/
-                  ln -sf ${client-ghcjs.out}/bin/AllActions.jsexe/runmain.js static/ghcjs/allactions/
+                  echo ":: Copying js in $(pwd)"
+                  find static/ghcjs/allactions/ -type l -delete
+                  cp ${client-ghcjs.out}/bin/AllActions.jsexe/all.js static/ghcjs/allactions/
+                  cp ${client-ghcjs.out}/bin/AllActions.jsexe/out.js static/ghcjs/allactions/
+                  cp ${client-ghcjs.out}/bin/AllActions.jsexe/lib.js static/ghcjs/allactions/
+                  cp ${client-ghcjs.out}/bin/AllActions.jsexe/runmain.js static/ghcjs/allactions/
                   echo ":: Adding a universal settings file"
                   cp config/settings-example.yml config/settings.yml
+                  cp -r {config,static} $out/share
                   cat config/settings.yml
                   '';
 
@@ -84,25 +85,33 @@
                 # reduce closure size by deleting references to the pandoc
                 # binary. pandoc depends transitively on all installed haskell
                 # packages.  Bad for docker image size (4GB+).
-                disallowedReferences = [
-                  newpkgs.warp
-                  newpkgs.yesod-core
-                  newpkgs.pandoc
-                  newpkgs.pandoc-types
+                disallowedReferences = with newpkgs; [
+                  warp
+                  yesod-core
+                  pandoc
+                  pandoc-types
+                  HTTP
+                  tzdata
                 ];
-                postInstall = ''
+                postInstall = with newpkgs; ''
                   echo 'deleting reference to stuff with bins'
                   remove-references-to \
-                    -t ${newpkgs.warp} \
+                    -t ${warp} \
                     $out/bin/Carnap-Server
                   remove-references-to \
-                    -t ${newpkgs.yesod-core} \
+                    -t ${yesod-core} \
                     $out/bin/Carnap-Server
                   remove-references-to \
-                    -t ${newpkgs.pandoc} \
+                    -t ${pandoc} \
                     $out/bin/Carnap-Server
                   remove-references-to \
-                    -t ${newpkgs.pandoc-types} \
+                    -t ${pandoc-types} \
+                    $out/bin/Carnap-Server
+                  remove-references-to \
+                    -t ${HTTP} \
+                    $out/bin/Carnap-Server
+                  remove-references-to \
+                    -t ${tzdata} \
                     $out/bin/Carnap-Server
                 '';
               })));
