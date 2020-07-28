@@ -4,6 +4,7 @@
     inherit (super.haskell.lib)
       overrideCabal
       dontCheck
+      disableSharedExecutables
       doJailbreak
       justStaticExecutables
       withGitignore;
@@ -69,6 +70,7 @@
                 enableExecutableProfiling = profiling;
                 enableLibraryProfiling = profiling;
                 buildDepends = [ book ];
+                executableSystemDepends = [ self.diagrams-builder ];
 
                 isExecutable = true;
                 # Carnap-Server has no tests/they are broken
@@ -82,11 +84,25 @@
                 # reduce closure size by deleting references to the pandoc
                 # binary. pandoc depends transitively on all installed haskell
                 # packages.  Bad for docker image size (4GB+).
-                disallowedReferences = [ newpkgs.pandoc ];
+                disallowedReferences = [
+                  newpkgs.warp
+                  newpkgs.yesod-core
+                  newpkgs.pandoc
+                  newpkgs.pandoc-types
+                ];
                 postInstall = ''
-                  echo 'deleting reference to pandoc'
+                  echo 'deleting reference to stuff with bins'
+                  remove-references-to \
+                    -t ${newpkgs.warp} \
+                    $out/bin/Carnap-Server
+                  remove-references-to \
+                    -t ${newpkgs.yesod-core} \
+                    $out/bin/Carnap-Server
                   remove-references-to \
                     -t ${newpkgs.pandoc} \
+                    $out/bin/Carnap-Server
+                  remove-references-to \
+                    -t ${newpkgs.pandoc-types} \
                     $out/bin/Carnap-Server
                 '';
               })));
