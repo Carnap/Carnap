@@ -27,6 +27,7 @@
         # stuff dynamically under every single one of our "static" directories
         # >:(
         cp -r ${server.out}/share/* /data/
+        mkdir -p /data/book/cache
         mkdir -p /data/data
         exec Carnap-Server
         '';
