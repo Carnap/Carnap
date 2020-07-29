@@ -1,5 +1,5 @@
 name: Automatically build Carnap and Carnap-GHCJS
-on: [push]
+on: [push, pull_request]
 jobs:
   build:
     runs-on: ${{ matrix.os }}
@@ -14,11 +14,15 @@ jobs:
     - uses: cachix/cachix-action@v6
       with:
         name: jade-carnap
+        # skip pushing to cachix if this is NOT a push to a branch (i.e. it is a PR)
+        skipPush: '${{ github.event_name != "push" }}'
         signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
     # this pulls in client also
     - run: nix-build -A server
 
   docker-build:
+    # only build deployable images on master branch
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
     env:
       IMG_REF: "docker.pkg.github.com/${GITHUB_REPOSITORY}/carnap:${GITHUB_SHA}"
