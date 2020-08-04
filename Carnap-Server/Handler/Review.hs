@@ -14,6 +14,10 @@ import Carnap.Languages.PurePropositional.Syntax
 import Carnap.Languages.PureFirstOrder.Syntax
 import Carnap.Languages.PurePropositional.Logic (ofPropSys)
 import Carnap.Languages.PureFirstOrder.Logic (ofFOLSys)
+import Carnap.Languages.SetTheory.Logic.Carnap (ofSetTheorySys)
+import Carnap.Languages.PureSecondOrder.Logic (ofSecondOrderSys)
+import Carnap.Languages.ModalPropositional.Logic (ofModalPropSys)
+import Carnap.Languages.DefiniteDescription.Logic.Gamut (ofDefiniteDescSys)
 import Carnap.Calculi.NaturalDeduction.Syntax (NaturalDeductionCalc(..))
 import Carnap.GHCJS.SharedTypes
 import Carnap.GHCJS.SharedFunctions (simpleCipher,simpleHash)
@@ -150,11 +154,17 @@ renderProblem uidanduser (Entity key val) = do
                     <div data-carnap-type="proofchecker"
                          data-carnap-system="#{sys}"
                          data-carnap-options="resize"
-                         data-carnap-goal="#{goal}"
+                         data-carnap-goal="#{formatContent (unpack goal)}"
                          data-carnap-submission="none">
                          #{der}
                 |]
                 where sys = case lookup "system" (M.fromList opts) of Just s -> s; Nothing -> "prop"
+                      formatContent c = maybe c id $ (ndNotation `ofPropSys` sys) 
+                                             `mplus` (ndNotation `ofFOLSys` sys)
+                                             `mplus` (ndNotation `ofSecondOrderSys` sys)
+                                             `mplus` (ndNotation `ofSetTheorySys` sys)
+                                             `mplus` (ndNotation `ofDefiniteDescSys` sys)
+                                             `mplus` (ndNotation `ofModalPropSys` sys) <*> Just c
             (TruthTable, TruthTableData goal tt) -> template
                 [whamlet|
                     <div data-carnap-type="truthtable"
@@ -212,14 +222,17 @@ renderProblem uidanduser (Entity key val) = do
                     <div data-carnap-type="translate"
                          data-carnap-transtype="#{transtype}"
                          data-carnap-system="#{sys}"
-                         $nothing
-                         data-carnap-goal="#{show (simpleCipher (unpack goal))}"
+                         data-carnap-goal="#{show (simpleCipher (formatContent (unpack goal)))}"
                          data-carnap-submission="none"
                          data-carnap-problem="#{problem}">
                          #{trans}
                 |]
                 where transtype = case lookup "transtype" (M.fromList opts) of Just s -> s; Nothing -> "prop"
-                      problem = case lookup "problem" (M.fromList opts) of Just s -> s ++ " : " ++ (unpack goal)
+                      formatContent c = case transtype of
+                                            "prop" -> maybe c id $ ndNotation `ofPropSys` sys <*> Just c
+                                            "first-order" -> maybe c id $ ndNotation `ofFOLSys` sys <*> Just c
+                                            "description" -> maybe c id $ ndNotation `ofDefiniteDescSys` sys <*> Just c
+                      problem = case lookup "problem" (M.fromList opts) of Just s -> s ++ " : " ++ (formatContent $ unpack goal)
                       sys = case lookup "system" (M.fromList opts) of 
                                 Just s -> s; 
                                 Nothing -> if transtype == "prop" then "prop" else "firstOrder"
