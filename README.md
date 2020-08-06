@@ -61,7 +61,7 @@ from @lf-'s [Cachix](https://cachix.org/) instance. To use it:
 $ # Install Cachix:
 $ nix-env -iA cachix -f https://cachix.org/api/v1/install
 $ # Use the Carnap Cachix
-$ cachix use jade-carnap
+$ cachix use carnap
 ```
 
 Then build as normal.
@@ -128,15 +128,54 @@ $ nix-shell -A ghcjsShell
 $ cabal --project-file=cabal-ghcjs.project --builddir=dist-ghcjs new-build all
 ```
 
+## Deployment
+
+### Docker
+
+There is experimental Docker support for Carnap. Currently, diagrams support is
+broken, which impacts some chapters of the Carnap textbook.
+
+Images are available via the GitHub container registry at
+`docker.pkg.github.com/carnap/carnap/carnap:latest`.
+
+Note that Carnap docker images are about 3GB uncompressed and about 500MB to
+download.
+
+If you'd like to build an image locally for development/testing, run:
+
+```
+nix-build release.nix -A docker -o docker-out
+```
+
+then load it into the docker daemon with:
+
+```
+docker image load -i docker-out
+```
+
+It will be available under the image name `carnap:latest`.
+
+To run Carnap under docker:
+
+```
+docker run --rm -v carnap_data:/data -e APPROOT=http://your-app-root.com
+```
+
+For production deployment, set the environment variable SQLITE=false and supply
+`PGUSER`, `PGPASS`, `PGHOST`, and if required, `PGPORT` and `PGDATABASE` for
+your postgresql database instance.
+
+The docker building setup does not require KVM support in the host kernel, and
+if you wish to build your images on a machine without it, run nix-build with
+the added argument `--arg hasKvm false`.
+
 ## Maintainer information
 
-### Pushing to Cachix
+### CI requirements
 
-This will likely be obviated in the future by doing this step in CI.
-
-```
-$ nix-build -A server | cachix push jade-carnap
-```
+CI requires that a Cachix signing key for the Cachix cache be supplied in the
+`CACHIX_SIGNING_KEY` Secret in the GitHub repository settings for artifacts to
+be pushed to Cachix.
 
 ### Generate the `.nix` files in a subproject
 

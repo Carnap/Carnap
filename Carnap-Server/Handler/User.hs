@@ -11,7 +11,6 @@ import Data.Time
 import Data.List ((!!),elemIndex)
 import Data.Time.Zones
 import Data.Time.Zones.All
-import Data.Aeson (decodeStrict)
 import Util.Data
 import Util.Database
 import qualified Data.Map as M
@@ -303,12 +302,13 @@ personalInfo (UserData firstname lastname maybeCourseId maybeInstructorId _) mco
                                 Edit
                             |]
 
-updateUserDataForm (UserData firstname lastname maybeCourseId _ _) classes = renderBootstrap3 BootstrapBasicForm $ (,,)
+updateUserDataForm (UserData firstname lastname _ _ _) classes = renderBootstrap3 BootstrapBasicForm $ (,,)
             <$> aopt (selectFieldList classnames) (bfs ("Class" :: Text)) Nothing
             <*> areq textField (bfs ("First Name"::Text)) (Just firstname)
             <*> areq textField (bfs ("Last Name"::Text)) (Just lastname)
     where classnames = map (\theclass -> (courseTitle . entityVal $ theclass, theclass)) classes
 
+nouserPage :: WidgetT site m ()
 nouserPage = [whamlet|
              <div.container>
                 <p> This user does not exist
