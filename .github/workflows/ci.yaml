@@ -13,10 +13,16 @@ jobs:
         nix_path: nixpkgs=channel:nixos-unstable
     - uses: cachix/cachix-action@v6
       with:
-        name: jade-carnap
+        name: carnap
         # skip pushing to cachix if this is NOT a push to a branch (i.e. it is a PR)
         skipPush: ${{ github.event_name != 'push' }}
         signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
+    - uses: cachix/cachix-action@v6
+      with:
+        name: jade-carnap
+        # temporarily use the jade-carnap cachix instance while we haven't got
+        # a full build on the carnap one
+        skipPush: true
     # this pulls in client also
     - run: nix-build -A server
 
@@ -38,9 +44,14 @@ jobs:
     - run: nix-shell -p skopeo --run "skopeo login docker.pkg.github.com -u ${{ github.repository_owner }} -p ${{ secrets.GITHUB_TOKEN }}"
     - uses: cachix/cachix-action@v6
       with:
-        name: jade-carnap
+        name: carnap
         # the docker image artifacts are really big and not terribly useful for deployment
         skipPush: true
         signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
+    - uses: cachix/cachix-action@v6
+      with:
+        name: jade-carnap
+        # temporary, as above
+        skipPush: true
     - run: nix-shell -p skopeo --run "skopeo copy docker-archive:$(nix-build release.nix --arg hasKvm false -A docker --no-out-link) docker://$(echo ${IMG_REF} | envsubst | tr 'A-Z' 'a-z')"
 
