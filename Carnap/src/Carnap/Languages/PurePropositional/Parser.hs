@@ -99,7 +99,7 @@ purePropFormulaParser opts = buildExpressionParser (opTable opts) subFormulaPars
                           <|> ((schemevarParser <* spaces) <?> "")
 
 instance ParsableLex (Form Bool) PurePropLexicon where
-        langParser = purePropFormulaParser standardLetters
+        langParser = purePropFormulaParser extendedLetters { hasBooleanConstants = True }
 
 extendedPropSeqParser = parseSeqOver (purePropFormulaParser extendedLetters)
 
