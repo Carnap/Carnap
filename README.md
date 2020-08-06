@@ -61,7 +61,7 @@ from @lf-'s [Cachix](https://cachix.org/) instance. To use it:
 $ # Install Cachix:
 $ nix-env -iA cachix -f https://cachix.org/api/v1/install
 $ # Use the Carnap Cachix
-$ cachix use jade-carnap
+$ cachix use carnap
 ```
 
 Then build as normal.
@@ -136,7 +136,7 @@ There is experimental Docker support for Carnap. Currently, diagrams support is
 broken, which impacts some chapters of the Carnap textbook.
 
 Images are available via the GitHub container registry at
-`docker.pkg.github.com/gleachkr/carnap/carnap:GITREVISION`.
+`docker.pkg.github.com/carnap/carnap/carnap:latest`.
 
 Note that Carnap docker images are about 3GB uncompressed and about 500MB to
 download.
