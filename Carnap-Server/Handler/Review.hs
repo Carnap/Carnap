@@ -20,7 +20,7 @@ import Carnap.Languages.ModalPropositional.Logic (ofModalPropSys)
 import Carnap.Languages.DefiniteDescription.Logic.Gamut (ofDefiniteDescSys)
 import Carnap.Calculi.NaturalDeduction.Syntax (NaturalDeductionCalc(..))
 import Carnap.GHCJS.SharedTypes
-import Carnap.GHCJS.SharedFunctions (simpleCipher,simpleHash)
+import Carnap.GHCJS.SharedFunctions (simpleCipher,simpleHash,inOpts)
 
 deleteReviewR :: Text -> Text -> Handler Value
 deleteReviewR coursetitle filename = do
@@ -178,13 +178,20 @@ renderProblem uidanduser (Entity key val) = do
                     <div data-carnap-type="truthtable"
                          data-carnap-tabletype="#{tabletype}"
                          data-carnap-system="#{ttsystem}"
+                         data-carnap-truemark="#{trueMark}"
+                         data-carnap-falsemark="#{falseMark}"
                          data-carnap-submission="none"
-                         data-carnap-options="immutable nocheck nocounterexample"
+                         data-carnap-value=#{renderTT tt}
+                         data-carnap-options="#{reviewOptions}"
                          data-carnap-goal="#{formatContent (unpack goal)}">
                          #{renderTT tt}
                 |]
                 where tabletype = case lookup "tabletype" (M.fromList opts) of Just s -> s; Nothing -> checkvalidity goal 
                       ttsystem = case lookup "system" (M.fromList opts) of Just s -> s; Nothing -> "prop"
+                      trueMark = case lookup "truemark" (M.fromList opts) of Just s -> s; Nothing -> "T"
+                      falseMark = case lookup "falsemark" (M.fromList opts) of Just s -> s; Nothing -> "F"
+                      reviewOptions :: String
+                      reviewOptions = "immutable nocheck nocounterexample" ++ if "turnstilemark" `inOpts` M.fromList opts then " turnstilemark" else ""
                       formatContent c = case (ndNotation `ofPropSys` ttsystem) <*> maybeString of Just s -> s; Nothing -> ""
                         where maybeString = (show <$> (readMaybe c :: Maybe PureForm))
                                     `mplus` (intercalate "," . map show <$> (readMaybe c :: Maybe [PureForm]))

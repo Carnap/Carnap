@@ -234,7 +234,7 @@ toRow w opts atomIndicies orderedChildren gridRef (v,n,mvalid,given) =
            mapM_ (appendChild row . Just) (valTds ++ [sep] ++ childTds)
            return row
     where toValTd i = do Just td <- createElement w (Just "td")
-                         setInnerHTML td (Just $ if v i then "T" else "F")
+                         setInnerHTML td (Just $ if v i then trueMark opts else falseMark opts)
                          setAttribute td "class" "valtd"
                          return td
           toChildTd :: (Either Char PureForm, Int, Maybe Bool) -> IO Element
@@ -259,8 +259,8 @@ toRow w opts atomIndicies orderedChildren gridRef (v,n,mvalid,given) =
                                         case mg of
                                             Just val | "strictGivens" `inOpts` opts || "immutable" `inOpts` opts ->
                                                  do Just span <- createElement w (Just "span")
-                                                    if val then setInnerHTML span (Just $ if turnstileMark then "✓" else "T")
-                                                           else setInnerHTML span (Just $ if turnstileMark then "✗" else "F")
+                                                    if val then setInnerHTML span (Just $ if turnstileMark then "✓" else trueMark opts)
+                                                           else setInnerHTML span (Just $ if turnstileMark then "✗" else falseMark opts)
                                                     appendChild td (Just span)
                                             _ | "immutable" `inOpts` opts -> 
                                                  do Just span <- createElement w (Just "span")
@@ -275,7 +275,7 @@ toRow w opts atomIndicies orderedChildren gridRef (v,n,mvalid,given) =
           switchOnMatch m tv = do 
                              Just t <- target :: EventM HTMLSelectElement Event (Maybe HTMLSelectElement)
                              sel <- getValue t 
-                             case stringToTruthValue sel of
+                             case stringToTruthValue opts sel of
                                  Just True -> liftIO $ modifyIORef gridRef (M.insert (m,n) (tv, Just True))
                                  Just False -> liftIO $ modifyIORef gridRef (M.insert (m,n) (not tv, Just False))
                                  Nothing -> liftIO $ modifyIORef gridRef (M.insert (m,n) (False, Nothing))
@@ -371,7 +371,7 @@ toPartialRow w opts orderedSolvables orderedConstraints rRef v givens =
                                       Right _ -> case mg of
                                          --TODO: DRY
                                          Just val -> do Just span <- createElement w (Just "span")
-                                                        setInnerHTML span (Just $ if val then "T" else "F")
+                                                        setInnerHTML span (Just $ if val then trueMark opts else falseMark opts)
                                                         modifyIORef rRef (M.insert m mg)
                                                         appendChild td (Just span)
                                                         return ()
@@ -386,7 +386,7 @@ toPartialRow w opts orderedSolvables orderedConstraints rRef v givens =
           addDropdown m td mg = do case mg of
                                        Just val | "strictGivens" `inOpts` opts || "immutable" `inOpts` opts -> 
                                             do Just span <- createElement w (Just "span")
-                                               setInnerHTML span (Just $ if val then "T" else "F")
+                                               setInnerHTML span (Just $ if val then trueMark opts else falseMark opts)
                                                modifyIORef rRef (M.insert m mg)
                                                appendChild td (Just span)
                                        Just val | "hiddenGivens" `inOpts` opts -> 
@@ -407,7 +407,7 @@ toPartialRow w opts orderedSolvables orderedConstraints rRef v givens =
 
           switch rRef m = do 
                  Just t <- target :: EventM HTMLSelectElement Event (Maybe HTMLSelectElement)
-                 tv <- stringToTruthValue <$> getValue t 
+                 tv <- stringToTruthValue opts <$> getValue t 
                  liftIO $ modifyIORef rRef (M.insert m tv)
 
 ------------------------
@@ -421,8 +421,8 @@ trueFalseOpts w opts turnstileMark mg =
            Just tr  <- createElement w (Just "option")
            Just fs  <- createElement w (Just "option")
            setInnerHTML bl (Just $ if "nodash" `inOpts` opts then " " else "-")
-           setInnerHTML tr (Just $ if turnstileMark then "✓" else "T")
-           setInnerHTML fs (Just $ if turnstileMark then "✗" else "F")
+           setInnerHTML tr (Just $ if turnstileMark then "✓" else trueMark opts)
+           setInnerHTML fs (Just $ if turnstileMark then "✗" else falseMark opts)
            case mg of
                Nothing -> return ()
                Just True -> setAttribute tr "selected" "selected"
@@ -548,9 +548,20 @@ charToTruthValue 'F' = Just False
 charToTruthValue '✗' = Just False
 charToTruthValue _   = Nothing 
 
-stringToTruthValue :: Maybe String -> Maybe Bool
-stringToTruthValue (Just [c]) = charToTruthValue c
-stringToTruthValue _   = Nothing 
+trueMark opts = case M.lookup "truemark" opts of 
+                    Just [c] -> [c]
+                    _ -> "T"
+
+falseMark opts = case M.lookup "falsemark" opts of 
+                    Just [c] -> [c]
+                    _ -> "F"
+
+stringToTruthValue :: Map String String -> Maybe String -> Maybe Bool
+stringToTruthValue opts (Just "✓") = Just True
+stringToTruthValue opts (Just "✗") = Just False
+stringToTruthValue opts (Just c) | c == trueMark opts = Just True
+stringToTruthValue opts (Just c) | c == falseMark opts = Just False
+stringToTruthValue _ _   = Nothing 
 
 mcOf :: (Schematizable (f (FixLang f)), CopulaSchema (FixLang f)) => FixLang f a -> String
 mcOf (h :!$: t) = mcOf h
