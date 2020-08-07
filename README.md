@@ -55,7 +55,8 @@ macOS 10.15 (Catalina) users may need to follow additional steps, documented at
 [nixos.org/nix/manual/#sect-macos-installation](https://nixos.org/nix/manual/#sect-macos-installation).
 
 You can significantly speed up builds by using binaries for Carnap dependencies
-from @lf-'s [Cachix](https://cachix.org/) instance. To use it:
+from Carnap's [Cachix](https://cachix.org/) instance, which has support for
+both Linux and macOS. To use it:
 
 ```
 $ # Install Cachix:
@@ -126,6 +127,21 @@ Manually:
 ```
 $ nix-shell -A ghcjsShell
 $ cabal --project-file=cabal-ghcjs.project --builddir=dist-ghcjs new-build all
+```
+
+### Haskell IDE Engine
+
+The Nix infrastructure for Carnap supports providing the Haskell IDE Engine for
+development environments. To use it:
+
+```
+# Operated by Infinisil: https://github.com/Infinisil/all-hies
+# Recommended for build time reasons
+$ cachix use all-hies
+
+$ make shell-ghc USE_HIE=true
+# or
+$ make shell-ghcjs USE_HIE=true
 ```
 
 ## Deployment

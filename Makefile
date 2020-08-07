@@ -1,25 +1,26 @@
 .PHONY: shell-ghc build-ghc build-ghc tags
 TARGET := all
+USE_HIE := false
 
 help:
 	@echo "Supported actions: run, shell-ghc, build-ghc, shell-ghcjs, build-ghcjs, tags"
 
 run:
-	cd Carnap-Server
-	cp -n config/setting-example.yml config/settings.yml
-	mkdir -p ../dataroot
+	cd Carnap-Server && \
+	cp -n config/settings-example.yml config/settings.yml && \
+	mkdir -p ../dataroot && \
 	APPROOT="http://localhost:3000" DATAROOT="../dataroot" \
 		BOOKROOT="../Carnap-Book/" \
 		cabal run -f dev Carnap-Server
 
 shell-ghc:
-	nix-shell -A ghcShell
+	nix-shell -A ghcShell --arg useHie $(USE_HIE)
 
 build-ghc:
 	cabal new-build -f dev $(TARGET)
 
 shell-ghcjs:
-	nix-shell -A ghcjsShell
+	nix-shell -A ghcjsShell --arg useHie $(USE_HIE)
 
 build-ghcjs:
 	cabal --project-file=cabal-ghcjs.project --builddir=dist-ghcjs new-build $(TARGET)
