@@ -95,7 +95,7 @@ purePropFormulaParser opts = buildExpressionParser (opTable opts) subFormulaPars
     where subFormulaParser = ((parenRecur opts) opts purePropFormulaParser <* spaces) --formulas wrapped in parentheses
                           <|> unaryOpParser [parseNeg] subFormulaParser --negations or modalizations of subformulas
                           <|> try (atomicSentenceParser opts <* spaces)--or atoms
-                          <|> if hasBooleanConstants opts then try (booleanConstParser <* spaces) else parserZero
+                          <|> (if hasBooleanConstants opts then try (booleanConstParser <* spaces) else parserZero)
                           <|> ((schemevarParser <* spaces) <?> "")
 
 instance ParsableLex (Form Bool) PurePropLexicon where
