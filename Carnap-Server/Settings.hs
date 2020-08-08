@@ -13,8 +13,9 @@ import Data.FileEmbed              (embedFile)
 import Data.Yaml                   (decodeEither')
 import Database.Persist.Postgresql (PostgresConf)
 import Language.Haskell.TH.Syntax  (Exp, Name, Q)
+import TH.RelativePaths            (pathRelativeToCabalPackage)
 import Network.Wai.Handler.Warp    (HostPreference)
-import Yesod.Default.Config2       (applyEnvValue, configSettingsYml)
+import Yesod.Default.Config2       (applyEnvValue)
 import Yesod.Default.Util          (WidgetFileSettings, widgetFileNoReload,
                                     widgetFileReload)
 
@@ -122,7 +123,7 @@ widgetFile = (if appReloadTemplates compileTimeAppSettings
 
 -- | Raw bytes at compile time of @config/settings.yml@
 configSettingsYmlBS :: ByteString
-configSettingsYmlBS = $(embedFile configSettingsYml)
+configSettingsYmlBS = $(embedFile =<< pathRelativeToCabalPackage "config/settings.yml")
 
 -- | @config/settings.yml@, parsed to a @Value@.
 configSettingsYmlValue :: Value

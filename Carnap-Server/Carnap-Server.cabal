@@ -97,6 +97,7 @@ library
                  , persistent-sqlite
                  , persistent-template           >= 2.5        && < 2.9
                  , template-haskell
+                 , th-utilities
                  , shakespeare                   >= 2.0        && < 2.1
                  , monad-control                 >= 0.3        && < 1.1
                  , wai-extra                     >= 3.0        && < 3.1
