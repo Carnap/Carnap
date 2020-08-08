@@ -144,6 +144,10 @@ $ make shell-ghc USE_HIE=true
 $ make shell-ghcjs USE_HIE=true
 ```
 
+Then, `hie` will be available in that shell environment. Note that
+`Carnap-Server/config/settings.yml` needs to be present for Carnap-Server to
+work in HIE (just copy it from the example settings file).
+
 ## Deployment
 
 ### Docker
