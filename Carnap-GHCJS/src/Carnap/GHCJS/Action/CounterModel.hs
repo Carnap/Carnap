@@ -118,7 +118,7 @@ activateCounterModeler w (Just (i,o,opts)) = do
                                                 case (correct, validated) of 
                                                    (_,Left err) -> do
                                                        message err
-                                                       setAttribute wrap "class" "success"
+                                                       setAttribute wrap "class" "failure"
                                                    (Left err,_) -> do
                                                        message err
                                                        setAttribute wrap "class" "failure"
