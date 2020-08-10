@@ -91,11 +91,14 @@ submitTruthTable w opts ref check values s l =
         do isDone <- liftIO $ readIORef ref
            correct <- liftIO check
            tabulated <- liftIO $ serializeTT values
-           if (isDone && correct)
-              then trySubmit w TruthTable opts l (TruthTableDataOpts (pack s) tabulated (M.toList opts)) True
-              else if "exam" `inOpts` opts
-                       then trySubmit w TruthTable opts l (TruthTableDataOpts (pack s) tabulated (M.toList opts)) correct
-                       else message "not yet finished (do you still need to check your answer?)"
+           if isDone then trySubmit w TruthTable opts l (ProblemContent (pack s)) True 
+                     --XXX: wait until we have a good way of saving
+                     --counterexamples to save the problem in the above
+                     --case. Otherwise you could confusingly save a failing
+                     --truth table as correct.
+                     else if "exam" `inOpts` opts
+                             then trySubmit w TruthTable opts l (TruthTableDataOpts (pack s) tabulated (M.toList opts)) correct
+                             else message "not yet finished (do you still need to check your answer?)"
 
 -------------------------
 --  Full Truth Tables  --
