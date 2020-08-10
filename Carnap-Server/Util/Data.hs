@@ -100,6 +100,9 @@ carnapPandocExtensions = extensionsFromList
 toTime :: String -> UTCTime
 toTime = parseTimeOrError True defaultTimeLocale "%l:%M %P %Z, %b %e, %Y"
 
+laterThan :: UTCTime -> UTCTime -> Bool
+laterThan t1 t2 = diffUTCTime t1 t2 > 0
+
 jsonSerialize = decodeUtf8 . encode
 
 rewriteText opts = pack . rewriteWith opts . unpack

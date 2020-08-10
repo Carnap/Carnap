@@ -56,6 +56,7 @@ getReviewR coursetitle filename =
                                             musers <- mapM get uids
                                             return (sortBy maybeLnSort $ zip muserdata uids, zip uids musers)
            let problems = sortBy theSorting unsortedProblems
+               due = assignmentMetadataDuedate val
            defaultLayout $ do
                addScript $ StaticR js_popper_min_js
                addScript $ StaticR js_proof_js
@@ -95,19 +96,23 @@ selectUser list =
                         <option value="#{show v}">unknown
         |]
 
-renderProblem uidanduser (Entity key val) = do
+renderProblem due uidanduser (Entity key val) = do
         let ident = problemSubmissionIdent val
             uid = problemSubmissionUserId val
             extra = problemSubmissionExtra val
             correct = problemSubmissionCorrect val
             Just user = lookup uid uidanduser
+            late = maybe False (problemSubmissionTime val `laterThan`) due
         (updateSubmissionWidget,enctypeUpdateSubmission) <- generateFormPost (identifyForm "updateSubmission" $ updateSubmissionForm extra ident (show uid))
         let isGraded = if correct then "graded"
                                   else case extra of Just _ -> "graded"; _ -> "ungraded" :: String
             howGraded = if correct then "automatically graded"
                                    else case extra of Just _ -> "manually graded"; _ -> "ungraded" :: String
             credit =  case problemSubmissionCredit val of Just n -> n; _ -> 5
-            score =  if correct then credit else 0
+            lateIndicator = if late then "(late)" else "" :: String
+            score | correct && not late = credit
+                  | correct = (floor ((fromIntegral credit :: Rational) / 2))
+                  | otherwise = 0
             awarded = case extra of Just n -> show n; _ -> "0" :: String
             mailto theuser = sanatizeHtml (userIdent theuser) ++ "?subject=[Carnap-" ++ sanatizeHtml ident ++ "]"
             template display = 
@@ -122,7 +127,7 @@ renderProblem uidanduser (Entity key val) = do
                                 <div.col-sm-4>
                                     <h6.review-status>#{howGraded}
                                     <h6.point-value>point value: #{credit}
-                                    <h6.points-score>submission score: #{score}
+                                    <h6.points-score>submission score: #{score} #{lateIndicator}
                                     <h6.points-awarded>points added: #{awarded}
                                     <hr>
                                     <form.updateSubmission enctype=#{enctypeUpdateSubmission}>
