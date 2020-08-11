@@ -190,7 +190,7 @@ parseHurleySL rtc = do ms <- optionMaybe ((spaces >> eof >> return ()) <|>  (str
                                          "AIP" -> [AIP]
 
 parseHurleySLProof :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> String -> [DeductionLine HurleySL PurePropLexicon (Form Bool)]
-parseHurleySLProof rtc = toDeductionFitch (parseHurleySL rtc) (purePropFormulaParser hurleyOpts)
+parseHurleySLProof rtc = toDeductionFitchAlt (parseHurleySL rtc) (purePropFormulaParser hurleyOpts)
 
 --XXX: similar to hausman, but with ≡ for iff
 hurleySLNotation :: String -> String 
