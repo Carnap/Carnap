@@ -31,7 +31,7 @@ data Button = Button { label  :: String
 data CheckerFeedbackUpdate = Keypress | Click | Never | SyntaxOnly
     deriving Eq
 
-data CheckerGuide = MontagueGuide | FitchGuide | HausmanGuide | HowardSnyderGuide | NoGuide
+data CheckerGuide = MontagueGuide | FitchGuide | HausmanGuide | HowardSnyderGuide | HurleyGuide | NoGuide
 
 data CheckerOptions = CheckerOptions { submit :: Maybe Button -- What's the submission button, if there is one?
                                      , render :: Bool -- Should the checker render the proof?
@@ -61,6 +61,7 @@ optionsFromMap opts = CheckerOptions { submit = Nothing
                                       , indentGuides = case M.lookup "guides" opts of
                                                        Just "montague"     -> MontagueGuide
                                                        Just "fitch"        -> FitchGuide
+                                                       Just "hurley"       -> HurleyGuide
                                                        Just "hausman"      -> HausmanGuide
                                                        Just "howardSnyder" -> HowardSnyderGuide
                                                        _ -> if "guides" `elem` optlist 
@@ -257,9 +258,8 @@ setLinesTo w nd options lines = do setInnerHTML nd (Just "")
                                | otherwise  = "" ++ show (no + 1)
                  let guidestring = case indentGuides options of
                                        NoGuide -> numstring ++ "."
-                                       MontagueGuide -> 
-                                           numstring  ++ "."
-                                           ++ bars (differences guidelevels')
+                                       HurleyGuide | indent == 0 -> numstring ++ "."
+                                       HurleyGuide -> "   " ++ bars (differences guidelevels'') ++ show (no + 1) ++ "."
                                        HausmanGuide | indent > oldindent -> 
                                            numstring ++ "." ++ bars (tail $ differences guidelevels'')
                                            ++ replicate (head (differences guidelevels'') - 1) ' ' 
