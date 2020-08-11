@@ -44,6 +44,7 @@ library
                      , Carnap.Languages.PurePropositional.Logic.Goldfarb
                      , Carnap.Languages.PurePropositional.Logic.HowardSnyder
                      , Carnap.Languages.PurePropositional.Logic.Hardegree
+                     , Carnap.Languages.PurePropositional.Logic.Hurley
                      , Carnap.Languages.PurePropositional.Logic.Bonevac
                      , Carnap.Languages.PurePropositional.Logic.ThomasBolducAndZach
                      , Carnap.Languages.PurePropositional.Logic.EbelsDuggan

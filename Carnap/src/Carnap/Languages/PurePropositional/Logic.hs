@@ -16,6 +16,7 @@ module Carnap.Languages.PurePropositional.Logic
     , parseTomassiPL, TomassiPL, tomassiPLCalc
     , parseHardegreeSL, HardegreeSL, hardegreeSLCalc
     , parseBonevacSL, BonevacSL, bonevacSLCalc
+    , parseHurleySL, HurleySL, hurleySLCalc
     , parseGentzenPropNJ, GentzenPropNJ, gentzenPropNJCalc
     , parseGentzenPropNK, GentzenPropNK, gentzenPropNKCalc
     , ofPropSys, ofPropTreeSys
@@ -45,6 +46,7 @@ import Carnap.Languages.PurePropositional.Logic.Gentzen
 import Carnap.Languages.PurePropositional.Logic.OpenLogic
 import Carnap.Languages.PurePropositional.Logic.Gallow
 import Carnap.Languages.PurePropositional.Logic.Allen
+import Carnap.Languages.PurePropositional.Logic.Hurley
 
 ofPropSys :: (forall r . (Show r, Inference r PurePropLexicon (Form Bool)) => 
               NaturalDeductionCalc r PurePropLexicon (Form Bool) -> a) -> String -> Maybe a
@@ -73,6 +75,7 @@ ofPropSys f sys | sys == "prop"                          = Just $ f propCalc
                 | sys == "tomassiPL"                     = Just $ f tomassiPLCalc
                 | sys == "hardegreeSL"                   = Just $ f hardegreeSLCalc 
                 | sys == "bonevacSL"                     = Just $ f bonevacSLCalc 
+                | sys == "hurleySL"                      = Just $ f hurleySLCalc 
                 | otherwise                              = Nothing
 
 ofPropTreeSys :: (forall r . 

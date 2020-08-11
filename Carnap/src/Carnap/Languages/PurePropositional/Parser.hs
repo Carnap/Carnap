@@ -2,7 +2,7 @@
 module Carnap.Languages.PurePropositional.Parser 
     ( purePropFormulaParser, standardLetters, extendedLetters, hausmanOpts, thomasBolducZachOpts, thomasBolducZach2019Opts
     , hardegreeOpts, standardOpTable, calgaryOpTable, calgary2019OpTable, hausmanOpTable, howardSnyderOpTable, gamutOpTable
-    , gamutOpts, bonevacOpts, howardSnyderOpts, magnusOpts, extendedPropSeqParser
+    , gamutOpts, bonevacOpts, howardSnyderOpts, hurleyOpts, magnusOpts, extendedPropSeqParser
     ) where
 
 import Carnap.Core.Data.Types
@@ -65,6 +65,14 @@ thomasBolducZachOpts = magnusOpts { hasBooleanConstants = True
 
 thomasBolducZach2019Opts :: Monad m => PurePropositionalParserOptions u m
 thomasBolducZach2019Opts = thomasBolducZachOpts { opTable = calgary2019OpTable }
+
+hurleyOpts ::  Monad m => PurePropositionalParserOptions u m
+hurleyOpts = extendedLetters 
+                { opTable = hausmanOpTable 
+                , parenRecur = hurleyDispatch
+                }
+    where hurleyDispatch opt rw = (wrappedWith '{' '}' (rw opt) <|> wrappedWith '(' ')' (rw opt) <|> wrappedWith '[' ']' (rw opt)) >>= noatoms
+          noatoms a = if isAtom a then unexpected "atomic sentence wrapped in parentheses" else return a
 
 hausmanOpts ::  Monad m => PurePropositionalParserOptions u m
 hausmanOpts = extendedLetters 

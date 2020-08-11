@@ -53,7 +53,7 @@ dischargeConstraint n ded lhs sub | and (map (`elem` forms) lhs') = Nothing
 fitchAssumptionCheck n ded pairs sub = checkWithProofType n ded pairs sub theProoftype
     where checkWithProofType n ded pairs sub (WithAlternate a1 a2) = checkWithProofType n ded pairs sub a1 >> checkWithProofType n ded pairs sub a2
           checkWithProofType n ded pairs sub pt | not (all (`among` pairs') allBoundaryAssertions) = Just $ "Some of the assumptions in the cited subproofs are not of the right form for this rule."
-                                                | not (all (`among` allBoundaryAssertions) pairs') = Just $ "Some of the assumptions this rule requires you to make are missing fromm the boundary conditions."
+                                                | not (all (`among` allBoundaryAssertions) pairs') = Just $ "Some of the assumptions this rule requires you to make are missing from the boundary conditions."
                                                 | otherwise = Nothing
                 where subproofBoundries = case pt of 
                          --pending further refinement to the ProofType
@@ -64,7 +64,7 @@ fitchAssumptionCheck n ded pairs sub = checkWithProofType n ded pairs sub thePro
                          --that are present in a fitch subproof. If that
                          --turns out to be false, then probably another
                          --prooftype is appropriate, and would feed
-                         --something othher than 1 into fromBoundary
+                         --something other than 1 into fromBoundary
                          (ImplicitProof (ProofType t b)) -> [fromBoundary 1 b (n - (length precedingProof), n - 1)]
                          (TypedProof (ProofType t b)) -> maybe (error "assumption check on non-assertion") (map (fromBoundary 1 b) . checkDistinct) $ dependencies callingLine
                          (PolyTypedProof _ (ProofType t b)) -> maybe (error "assumption check on non-assertion") (map (fromBoundary 1 b) . checkDistinct) $ dependencies callingLine
@@ -164,6 +164,11 @@ dilemma = [ GammaV 1 :|-: SS (phin 1 .∨. phin 2)
           , GammaV 2 :|-: SS (phin 1 .→. phin 3)
           , GammaV 3 :|-: SS (phin 2 .→. phin 3)
           ] ∴ GammaV 1 :+: GammaV 2 :+: GammaV 3 :|-: SS (phin 3)
+
+conjunctionDilemma :: BooleanRule lex b
+conjunctionDilemma = [ GammaV 1 :|-: SS (phin 1 .∨. phin 2)
+                     , GammaV 2 :|-: SS ((phin 1 .→. phin 3) .∧. (phin 2 .→. phin 3))
+                     ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (phin 3)
 
 hypotheticalSyllogism :: BooleanRule lex b
 hypotheticalSyllogism = [ GammaV 1 :|-: SS (phin 1 .→. phin 2)
@@ -303,6 +308,21 @@ constructiveFalsumReductioVariations = [
                 ] ∴ GammaV 1 :|-: SS (lneg $ phin 1)
             ,
                 [ GammaV 1 :|-: SS lfalsum
+                ] ∴ GammaV 1 :|-: SS (lneg $ phin 1)
+            ]
+
+constructiveConjunctionReductioVariations :: BooleanRuleVariants lex b
+constructiveConjunctionReductioVariations = [
+                [ GammaV 1 :+: SA (phin 1) :|-: SS (phin 2 .∧. (lneg $ phin 2))
+                ] ∴ GammaV 1 :|-: SS (lneg $ phin 1)
+            ,
+                [ GammaV 1 :|-: SS (phin 2 .∧. (lneg $ phin 2))
+                ] ∴ GammaV 1 :|-: SS (lneg $ phin 1)
+            ,
+                [ GammaV 1 :+: SA (phin 1) :|-: SS ((lneg $ phin 2) .∧. phin 2)
+                ] ∴ GammaV 1 :|-: SS (lneg $ phin 1)
+            ,
+                [ GammaV 1 :|-: SS ((lneg $ phin 2) .∧. phin 2)
                 ] ∴ GammaV 1 :|-: SS (lneg $ phin 1)
             ]
 
@@ -550,8 +570,6 @@ deMorgansNegatedOr = [
                 [ GammaV 1 :|-: SS (lneg (phin 1) .∧. lneg (phin 2))
                 ] ∴ GammaV 1 :|-: SS (lneg $ phin 1 .∨. phin 2)
             ]
-
-
 
 -------------------------------
 --  1.2.2 Replacement Rules  --
