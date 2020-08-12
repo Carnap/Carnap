@@ -47,6 +47,8 @@ type Options = [(String,String)]
 
 type CounterModelFields = [(String,String)]
 
+type QualitativeSelections = [(String,Bool)]
+
 data ProblemData = DerivationData Text Text 
                  | DerivationDataOpts Text Text Options
                  | SequentCalcData Text (Tree (String,String)) Options
@@ -58,6 +60,7 @@ data ProblemData = DerivationData Text Text
                  | CounterModelDataOpts Text CounterModelFields Options
                  | QualitativeProblemDataOpts Text Text Options
                  | QualitativeNumericalData Text Double Options
+                 | QualitativeMultipleSelection Text QualitativeSelections Options
                  | ProblemContent Text
     deriving (Show, Read, Eq, Generic)
 

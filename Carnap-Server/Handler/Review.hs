@@ -284,9 +284,31 @@ renderProblem due uidanduser (Entity key val) = do
                                         Nothing -> "Error no content"
                                         Just cnt -> unlines . map processEntry . lines . unpack $ cnt
                       processEntry l = case readMaybe l :: Maybe (Int, String) of
+                                           Just (h,s) | s == unpack answer && h == simpleHash ('+':s) -> show (simpleHash ('+':s), s)
+                                           Just (h,s) | s == unpack answer && h == simpleHash ('*':s) -> show (simpleHash ('+':s), s)
                                            Just (h,s) | s == unpack answer -> show (simpleHash ('-':s), s)
                                            Just (h,s) | h == simpleHash ('-':s) -> show (simpleHash s, s)
                                            Just (h,s) | h == simpleHash ('+':s) -> show (simpleHash ('*':s), s)
+                                           Just (h,s) -> show (h, s)
+                                           Nothing -> "indeciperable entry"
+            (Qualitative, QualitativeMultipleSelection goal answer opts) -> template
+                [whamlet|
+                    <div data-carnap-type="qualitative"
+                         data-carnap-qualitativetype="multipleselection"
+                         data-carnap-goal="#{unpack goal}"
+                         data-carnap-submission="none">
+                         #{content}
+                |]
+                where content = case lookup "content" (M.fromList opts) of
+                                        Nothing -> "Error no content"
+                                        Just cnt -> unlines . map processEntry . lines . unpack $ cnt
+                      tryMaybe (Just True) = True
+                      tryMaybe _ = False
+                      processEntry l = case readMaybe l :: Maybe (Int, String) of
+                                           Just (h,s) | h == simpleHash ('*':s) && tryMaybe (lookup s answer) -> show (simpleHash ('+':s), s)
+                                           Just (h,s) | h == simpleHash ('+':s) && not (tryMaybe (lookup s answer)) -> show (simpleHash ('*':s), s)
+                                           Just (h,s) | h == simpleHash s && not (tryMaybe (lookup s answer)) -> show (simpleHash ('-':s), s)
+                                           Just (h,s) | h == simpleHash ('-':s) && tryMaybe (lookup s answer) -> show (simpleHash s, s)
                                            Just (h,s) -> show (h, s)
                                            Nothing -> "indeciperable entry"
 
