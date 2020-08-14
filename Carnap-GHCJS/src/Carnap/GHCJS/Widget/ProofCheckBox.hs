@@ -258,6 +258,9 @@ setLinesTo w nd options lines = do setInnerHTML nd (Just "")
                                | otherwise  = "" ++ show (no + 1)
                  let guidestring = case indentGuides options of
                                        NoGuide -> numstring ++ "."
+                                       MontagueGuide -> 
+                                           numstring  ++ "."
+                                           ++ bars (differences guidelevels')
                                        HurleyGuide | indent == 0 -> numstring ++ "."
                                        HurleyGuide -> "   " ++ bars (differences guidelevels'') ++ show (no + 1) ++ "."
                                        HausmanGuide | indent > oldindent -> 
