@@ -24,14 +24,14 @@ import GHCJS.DOM.EventM (EventM, target, newListener,addListener)
 import GHCJS.DOM.HTMLTextAreaElement (castToHTMLTextAreaElement, setValue, getValue, setSelectionEnd, getSelectionStart, setAutocapitalize, setAutocorrect)
 
 data Button = Button { label  :: String 
-                     , action :: IORef Bool -> Window -> Element -> 
+                     , action :: IORef Bool -> Document -> Element -> 
                             EventM Element MouseEvent ()
                      }
 
 data CheckerFeedbackUpdate = Keypress | Click | Never | SyntaxOnly
     deriving Eq
 
-data CheckerGuide = MontagueGuide | FitchGuide | HausmanGuide | HowardSnyderGuide | NoGuide
+data CheckerGuide = MontagueGuide | FitchGuide | HausmanGuide | HowardSnyderGuide | HurleyGuide | NoGuide
 
 data CheckerOptions = CheckerOptions { submit :: Maybe Button -- What's the submission button, if there is one?
                                      , render :: Bool -- Should the checker render the proof?
@@ -61,6 +61,7 @@ optionsFromMap opts = CheckerOptions { submit = Nothing
                                       , indentGuides = case M.lookup "guides" opts of
                                                        Just "montague"     -> MontagueGuide
                                                        Just "fitch"        -> FitchGuide
+                                                       Just "hurley"       -> HurleyGuide
                                                        Just "hausman"      -> HausmanGuide
                                                        Just "howardSnyder" -> HowardSnyderGuide
                                                        _ -> if "guides" `elem` optlist 
@@ -103,7 +104,6 @@ checkerWith options updateres iog@(IOGoal i o g content _) w = do
            mapM_ (appendChild aligner . Just) [o, i]
            mapM_ (appendChild g . Just) [sd, sucd, incompleteAlert]
            mapM_ (appendChild par . Just) [aligner,bw]
-           (Just w') <- getDefaultView w
            syncScroll i o
            --respond to custom initialize events
            initlistener <- newListener $ updateWithValue (\s -> updateres w ref s (g,fd))
@@ -124,8 +124,8 @@ checkerWith options updateres iog@(IOGoal i o g content _) w = do
                Just button -> do 
                    bt' <- doneButton w (label button)
                    appendChild bw  (Just bt')
-                   buttonAct <- newListener $ action button ref w' i
-                   doOnce i input False $ liftIO $ setStatus bt' Edited
+                   buttonAct <- newListener $ action button ref w i
+                   doOnce i input False $ liftIO $ setStatus w bt' Edited
                    addListener bt' click buttonAct False                
                Nothing -> return ()
            case feedback options of
@@ -258,9 +258,8 @@ setLinesTo w nd options lines = do setInnerHTML nd (Just "")
                                | otherwise  = "" ++ show (no + 1)
                  let guidestring = case indentGuides options of
                                        NoGuide -> numstring ++ "."
-                                       MontagueGuide -> 
-                                           numstring  ++ "."
-                                           ++ bars (differences guidelevels')
+                                       HurleyGuide | indent == 0 -> numstring ++ "."
+                                       HurleyGuide -> "   " ++ bars (differences guidelevels'') ++ show (no + 1) ++ "."
                                        HausmanGuide | indent > oldindent -> 
                                            numstring ++ "." ++ bars (tail $ differences guidelevels'')
                                            ++ replicate (head (differences guidelevels'') - 1) ' ' 

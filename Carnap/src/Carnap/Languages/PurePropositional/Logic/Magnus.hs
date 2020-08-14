@@ -286,6 +286,7 @@ parseMagnusSLPlus rtc = try plus <|> basic
                     case r of
                         "HYP"   -> return [Hyp]
                         "DIL"   -> return [Dilemma]
+                        "MT"    -> return [MT]
                         "Comm"  -> return [AndComm,CommAnd,OrComm,CommOr,IffComm,CommIff]
                         "DN"    -> return [DNRep,RepDN]
                         "MC"    -> return [MCRep,MCRep2,RepMC,RepMC2]

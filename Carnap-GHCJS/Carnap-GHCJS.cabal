@@ -46,6 +46,7 @@ library
                          , shakespeare
                          , transformers
                          , blaze-html
+                         , random
 
   else
       build-depends:       base >= 4.7 && < 5
@@ -64,6 +65,7 @@ library
                          , shakespeare
                          , transformers
                          , blaze-html
+                         , random
 
   default-language:    Haskell2010
 

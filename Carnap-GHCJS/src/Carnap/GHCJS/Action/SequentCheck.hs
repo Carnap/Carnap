@@ -1,4 +1,4 @@
-{-# LANGUAGE FlexibleContexts, OverloadedStrings #-}
+{-# LANGUAGE FlexibleContexts #-}
 module Carnap.GHCJS.Action.SequentCheck (sequentCheckAction) where
 
 import Lib 
@@ -17,10 +17,11 @@ import Control.Lens (view)
 import Control.Concurrent
 import Control.Monad.IO.Class (liftIO)
 import GHCJS.DOM
-import GHCJS.DOM.Types (Element, Document, IsElement)
-import GHCJS.DOM.Element (setInnerHTML, click)
-import GHCJS.DOM.Node (appendChild, getParentNode, insertBefore)
 import GHCJS.Types
+import GHCJS.Marshal
+import GHCJS.DOM.Types (Element, Document, IsElement)
+import GHCJS.DOM.Element (setInnerHTML, click, setAttribute)
+import GHCJS.DOM.Node (appendChild, getParentNode, insertBefore, getParentElement)
 import GHCJS.DOM.EventM
 import Carnap.Core.Data.Types
 import Carnap.Core.Data.Classes
@@ -69,21 +70,22 @@ activateChecker w (Just (i, o, opts))
                               _ -> initRoot "" o
                   threadRef <- newIORef (Nothing :: Maybe ThreadId)
                   bw <- createButtonWrapper w o
-                  let submit = submitSeq opts calc root
+                  let submit = submitSeq w opts calc root
                   btStatus <- createSubmitButton w bw submit opts
                   initialCheck <- newListener $ liftIO $ do 
-                                    forkIO $ do
-                                        threadDelay 500000
-                                        mr <- toCleanVal root
-                                        case mr of
-                                            Just r -> checkSequent calc Nothing r >>= decorate root
-                                            Nothing -> return ()
-                                    return ()
+                                    t <- forkIO $ do
+                                            threadDelay 500000
+                                            mr <- toCleanVal root
+                                            case mr of
+                                                Just r -> checkSequent calc Nothing r >>= decorate root
+                                                Nothing -> return ()
+                                    writeIORef threadRef (Just t)
+                                    updateGoal root i
                   addListener i initialize initialCheck False --initial check in case we preload a tableau
                   doOnce i mutate False $ liftIO $ btStatus Edited
                   case M.lookup "init" opts of Just "now" -> dispatchCustom w i "initialize"; _ -> return ()
                   root `onChange` (\_ -> dispatchCustom w i "mutate")
-                  root `onChange` checkOnChange threadRef calc 
+                  root `onChange` checkOnChange calc root i threadRef 
 
               parseGoal calc = do 
                   let seqParse = parseSeqOver $ tbParseForm calc
@@ -95,21 +97,21 @@ activateChecker w (Just (i, o, opts))
                                           return $ Just seq
                       Nothing -> return Nothing
 
-submitSeq opts calc root l = 
+submitSeq w opts calc root l = 
         do Just val <- liftIO $ toCleanVal root
            case parse parseTreeJSON val of
                Error s -> message "Something is wrong with the proof... Try again?"
                Success tree@(Node (content,_) _) -> case toTableau calc tree of
                      Left _ -> message "Something is wrong with the proof... Try again?"
                      Right tab -> case parse fromInfo . toInfo . validateTree $ tab of
-                          Success rslt | "exam" `elem` optlist || rslt -> trySubmit SequentCalc opts l (SequentCalcData (pack content) tree (toList opts)) rslt
+                          Success rslt | "exam" `elem` optlist || rslt -> trySubmit w SequentCalc opts l (SequentCalcData (pack content) tree (toList opts)) rslt
                           _ -> message "Something is wrong with the proof... Try again?"
     where optlist = case M.lookup "options" opts of Just s -> words s; Nothing -> []
 
 checkOnChange :: ( ReLex lex
                  , SupportsTableau rule lex sem 
-                 ) => IORef (Maybe ThreadId) -> TableauCalc lex sem rule -> JSVal -> IO ()
-checkOnChange threadRef calc changed = do
+                 ) => TableauCalc lex sem rule -> JSVal -> Element -> IORef (Maybe ThreadId) ->  JSVal -> IO ()
+checkOnChange calc root i threadRef changed = do
         mt <- readIORef threadRef
         case mt of Just t -> killThread t
                    Nothing -> return ()
@@ -125,8 +127,15 @@ checkOnChange threadRef calc changed = do
             --XXX: we do these separately in order to keep a parse error in
             --either of the inferences from causing trouble in the
             --other inference.
-            return ()
+            updateGoal root i
         writeIORef threadRef (Just t')
+
+updateGoal :: JSVal -> Element -> IO ()
+updateGoal root i = do Just wrap <- liftIO $ getParentElement i
+                       Just info <- valToInfo root >>= fromJSVal 
+                       case parse fromInfo info of
+                           Success True -> setAttribute wrap "class" "success"
+                           _ -> setAttribute wrap "class" "failure"
 
 checkSequent :: ( ReLex lex
                 , SupportsTableau rule lex sem 

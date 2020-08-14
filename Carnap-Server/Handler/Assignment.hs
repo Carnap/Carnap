@@ -1,4 +1,4 @@
-module Handler.Assignment (getAssignmentR, postCourseAssignmentR, getCourseAssignmentR) where
+module Handler.Assignment (postCourseAssignmentR, getCourseAssignmentR, getCourseAssignmentStateR, putCourseAssignmentStateR) where
 
 import Import
 import Util.Data
@@ -9,6 +9,7 @@ import Text.Blaze.Html (toMarkup)
 import Text.Pandoc (writerExtensions,writerWrapText, WrapOption(..), readerExtensions, Pandoc(..), lookupMeta)
 import System.Directory (doesFileExist,getDirectoryContents)
 import Data.Time
+import Data.Time.Clock.POSIX
 import Text.Julius (juliusFile,rawJS)
 import Text.Pandoc.Walk (walkM, walk)
 import Filter.Randomize
@@ -23,11 +24,28 @@ import Filter.TreeDeduction
 import Filter.RenderFormulas
 import Util.Handler
 
-getAssignmentR :: Text -> Handler Html
-getAssignmentR filename = getAssignment filename >>= uncurry returnAssignment
-
 getCourseAssignmentR :: Text -> Text -> Handler Html
-getCourseAssignmentR coursetitle filename = getAssignmentByCourse coursetitle filename >>= uncurry returnAssignment
+getCourseAssignmentR coursetitle filename = getAssignmentByCourse coursetitle filename 
+                                            >>= uncurry (returnAssignment coursetitle filename)
+
+putCourseAssignmentStateR :: Text -> Text -> Handler Value
+putCourseAssignmentStateR coursetitle filename = do
+        msg <- requireJsonBody :: Handler Value
+        muid <- maybeAuthId
+        uid <- maybe reject return muid
+        ((Entity aid _), _) <- getAssignmentByCourse coursetitle filename
+        runDB $ upsert (AssignmentState msg uid aid) [AssignmentStateValue =. msg]
+        returnJson msg
+
+getCourseAssignmentStateR :: Text -> Text -> Handler Value
+getCourseAssignmentStateR coursetitle filename = do
+        muid <- maybeAuthId
+        uid <- maybe reject return muid
+        ((Entity aid _), _) <- getAssignmentByCourse coursetitle filename
+        mstate <- runDB $ getBy (UniqueAssignmentState uid aid)
+        case mstate of
+            Just (Entity _ state) -> returnJson (assignmentStateValue state)
+            Nothing -> returnJson ("" :: Text)
 
 postCourseAssignmentR :: Text -> Text -> Handler Html
 postCourseAssignmentR coursetitle filename = do
@@ -48,8 +66,8 @@ postCourseAssignmentR coursetitle filename = do
                 FormMissing -> setMessage $ "Form Missing"
             redirect $ CourseAssignmentR coursetitle filename
 
-returnAssignment :: Entity AssignmentMetadata -> FilePath -> Handler Html
-returnAssignment (Entity key val) path = do
+returnAssignment :: Text -> Text -> Entity AssignmentMetadata -> FilePath -> Handler Html
+returnAssignment coursetitle filename (Entity key val) path = do
            time <- liftIO getCurrentTime
            muid <- maybeAuthId
            uid <- maybe reject return muid
@@ -59,6 +77,7 @@ returnAssignment (Entity key val) path = do
            time <- liftIO getCurrentTime
            let instructorAccess = assignmentMetadataCourse val `elem` map entityKey classes
                age (Entity _ tok) = floor (diffUTCTime time (assignmentAccessTokenCreatedAt tok))
+               creation (Entity _ tok) = round $ utcTimeToPOSIXSeconds (assignmentAccessTokenCreatedAt tok) * 1000 --milliseconds to match JS
            if visibleAt time val || instructorAccess 
                then do
                    ehtml <- liftIO $ fileToHtml (hash (show muid ++ path)) path
@@ -74,15 +93,22 @@ returnAssignment (Entity key val) path = do
                                 defaultLayout $ minimalLayout ("Assignment time limit exceeded" :: String)
                            (Just (HiddenViaPasswordExpiring _ min), Just tok) | age tok > 60 * min && not instructorAccess -> 
                                 defaultLayout $ minimalLayout ("Assignment time limit exceeded" :: String)
-                           (_,_) -> do 
-                                mcss <- retrieveCss (lookupMeta "css" meta)
-                                let theLayout = maybe defaultLayout customLayout mcss
+                           (mavail,_) -> do 
+                                mcss <- retrievePandocVal (lookupMeta "css" meta)
+                                mjs <- retrievePandocVal (lookupMeta "js" meta)
                                 let source = "assignment:" ++ show key 
-                                theLayout $ do
+                                defaultLayout $ do
                                     toWidgetHead $(juliusFile "templates/command.julius")
                                     toWidgetHead $(juliusFile "templates/status-warning.julius")
+                                    toWidgetHead $(juliusFile "templates/assignment-state.julius")
                                     toWidgetHead [julius|var submission_source="#{rawJS source}";|]
                                     toWidgetHead [julius|var assignment_key="#{rawJS $ show key}";|]
+                                    case (mavail >>= availabilityMinutes,mtoken) of
+                                        (Just min, Just tok) -> toWidgetHead [julius| 
+                                                                                var availability_minutes = #{rawJS $ show min};
+                                                                                var token_time = #{rawJS $ show $ creation tok};
+                                                                              |]
+                                        (_,_) -> return ()
                                     addScript $ StaticR js_proof_js
                                     addScript $ StaticR js_popper_min_js
                                     addScript $ StaticR ghcjs_rts_js
@@ -91,9 +117,13 @@ returnAssignment (Entity key val) path = do
                                     addStylesheet $ StaticR css_proof_css
                                     addStylesheet $ StaticR css_tree_css
                                     addStylesheet $ StaticR css_exercises_css
-                                    when (mcss == Nothing) (addStylesheet $ StaticR css_bootstrapextra_css)
+                                    case mcss of 
+                                        Nothing -> mapM addStylesheet [StaticR css_bootstrapextra_css]
+                                        Just ss -> mapM (addStylesheetRemote . pack) ss
                                     $(widgetFile "document")
+                                    toWidgetBody [julius|getAssignmentState();|]
                                     addScript $ StaticR ghcjs_allactions_runmain_js
+                                    maybe (pure [()]) (mapM (addScriptRemote . pack)) mjs >> return ()
                else defaultLayout $ minimalLayout ("Assignment not currently set as visible by instructor" :: Text)
     where visibleAt t a = (assignmentMetadataVisibleTill a > Just t || assignmentMetadataVisibleTill a == Nothing)
                           && (assignmentMetadataVisibleFrom a < Just t || assignmentMetadataVisibleFrom a == Nothing)

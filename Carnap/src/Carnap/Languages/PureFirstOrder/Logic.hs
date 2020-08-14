@@ -6,7 +6,7 @@ module Carnap.Languages.PureFirstOrder.Logic
         , parseMagnusQL, magnusQLCalc
         , parseThomasBolducAndZachFOL, thomasBolducAndZachFOLCalc
         , parseThomasBolducAndZachFOLCore, thomasBolducAndZachFOL2019Calc, thomasBolducAndZachFOLPlus2019Calc
-        , parseLogicBookPD, logicBookPDCalc, logicBookPDPlusCalc
+        , parseLogicBookPD, logicBookPDCalc, logicBookPDPlusCalc, logicBookPDEPlusCalc
         , parseHausmanPL, hausmanPLCalc
         , parseHowardSnyderPL, howardSnyderPLCalc
         , parseIchikawaJenkinsQL, ichikawaJenkinsQLCalc
@@ -52,6 +52,7 @@ ofFOLSys f sys | sys == "firstOrder"                      = Just $ f folCalc
                | sys == "LogicBookPD"                     = Just $ f logicBookPDCalc 
                | sys == "LogicBookPDPlus"                 = Just $ f logicBookPDPlusCalc 
                | sys == "LogicBookPDE"                    = Just $ f logicBookPDECalc 
+               | sys == "LogicBookPDEPlus"                = Just $ f logicBookPDEPlusCalc 
                | sys == "hausmanPL"                       = Just $ f hausmanPLCalc 
                | sys == "gamutND"                         = Just $ f gamutNDCalc
                | sys == "gamutNDPlus"                     = Just $ f gamutNDPlusCalc

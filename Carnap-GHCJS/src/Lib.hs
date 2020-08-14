@@ -1,18 +1,18 @@
 {-# LANGUAGE RankNTypes, QuasiQuotes, FlexibleContexts, DeriveDataTypeable, CPP, JavaScriptFFI #-}
-module Lib (genericSendJSON, sendJSON, onEnter, onKey, doOnce, dispatchCustom, clearInput,
-           getListOfElementsByClass, getListOfElementsByTag, getCarnapDataMap, tryParse,
-           treeToElement, genericTreeToUl, treeToUl, genericListToUl,
-           listToUl, formToTree, leaves, adjustFirstMatching, decodeHtml,
-           decodeJSON,toJSONString, cleanString, syncScroll, reloadPage, initElements,
-           errorPopup, genInOutElts,
-           getInOutElts,generateExerciseElts, withLabel,
-           formAndLabel,seqAndLabel, folSeqAndLabel, folFormAndLabel,
-           message, IOGoal(..), updateWithValue, submissionSource,
-           assignmentKey, initialize, mutate, initializeCallback, initCallbackObj,
-           toCleanVal, popUpWith, spinnerSVG, doneButton, questionButton,
-           exclaimButton, expandButton, createSubmitButton, createButtonWrapper,
-           maybeNodeListToList, trySubmit, inOpts, rewriteWith, setStatus, ButtonStatus(..),
-           keyString) where
+module Lib ( genericSendJSON, sendJSON, onEnter, onKey, doOnce, dispatchCustom, allDone
+           , clearInput, getListOfElementsByClass, getListOfElementsByTag, getCarnapDataMap, tryParse
+           , treeToElement, genericTreeToUl, treeToUl, genericListToUl
+           , listToUl, formToTree, leaves, adjustFirstMatching, decodeHtml
+           , decodeJSON,toJSONString, cleanString, syncScroll, reloadPage, initElements
+           , errorPopup, genInOutElts
+           , getInOutElts,generateExerciseElts, withLabel
+           , formAndLabel,seqAndLabel, folSeqAndLabel, folFormAndLabel
+           , message, IOGoal(..), updateWithValue, submissionSource
+           , assignmentKey, initialize, mutate, initializeCallback, initCallbackObj
+           , toCleanVal, popUpWith, spinnerSVG, doneButton, questionButton
+           , exclaimButton, expandButton, createSubmitButton, createButtonWrapper
+           , maybeNodeListToList, trySubmit, inOpts, rewriteWith, setStatus, ButtonStatus(..)
+           , keyString) where
 
 import Data.Aeson
 import Data.Maybe (catMaybes)
@@ -62,6 +62,7 @@ import GHCJS.DOM.EventM
 import GHCJS.DOM.EventTarget
 import GHCJS.DOM.EventTargetClosures (EventName(..))
 import Carnap.GHCJS.SharedTypes
+import Carnap.GHCJS.SharedFunctions
 import Carnap.Calculi.NaturalDeduction.Syntax (NaturalDeductionCalc(..))
 import Carnap.Languages.PurePropositional.Syntax (PureForm)
 import Carnap.Languages.PurePropositional.Logic
@@ -77,17 +78,6 @@ import Carnap.Languages.PurePropositional.Parser (purePropFormulaParser, standar
 --  1.0 Simple Patterns  --
 ---------------------------
 
-
-inOpts :: String -> M.Map String String -> Bool
-inOpts s opts = s `elem` optList
-    where optList = case M.lookup "options" opts of Just s -> words s; Nothing -> []
-          
-rewriteWith :: M.Map String String -> String -> String
-rewriteWith opts = case rewriter of
-                       Just f -> f
-                       Nothing -> id
-    where rewriter = (M.lookup "system" opts >>= ofPropSys ndNotation)
-             `mplus` (M.lookup "system" opts >>= ofFOLSys ndNotation)
 
 --------------------------------------------------------
 --1.1 Events
@@ -115,11 +105,16 @@ doOnce target event bubble handler = do listener <- mfix $ \rec -> newListener  
                                                         liftIO $ removeListener target event rec bubble 
                                         addListener target event listener bubble
 
-dispatchCustom :: Document -> Element -> String -> IO ()
+dispatchCustom :: IsEventTarget t => Document -> t -> String -> IO ()
 dispatchCustom w e s = do Just custom <- createEvent w "Event"
                           initEvent custom s True True
                           dispatchEvent e (Just custom)
                           return ()
+
+allDone :: IO ()
+allDone = runWebGUI $ \w -> 
+    do Just dom <- webViewGetDomDocument w
+       dispatchCustom dom dom "carnap-loaded"
 
 --------------------------------------------------------
 --1.1.2 Common responsive behavior
@@ -369,8 +364,8 @@ data ButtonStatus = Edited | Submitted
 
 initElements :: (Document -> HTMLElement -> IO [a]) -> (Document -> a -> IO b) -> IO ()
 initElements getter setter = runWebGUI $ \w -> 
-            do (Just dom) <- webViewGetDomDocument w
-               (Just b) <- getBody dom
+            do Just dom <- webViewGetDomDocument w
+               Just b <- getBody dom
                elts <- getter dom b
                case elts of 
                     [] -> return ()
@@ -385,11 +380,12 @@ createSubmitButton w bw submit opts =
              appendChild bw (Just bt)
              submitter <- newListener $ submit l
              addListener bt click submitter False                
-             return (setStatus bt)
+             return (setStatus w bt)
          _ -> return (const $ return ())
 
-setStatus b Edited = setAttribute b "data-carnap-exercise-status" "edited"
-setStatus b Submitted = setAttribute b "data-carnap-exercise-status" "submitted"
+setStatus w b Edited = setAttribute b "data-carnap-exercise-status" "edited"
+setStatus w b Submitted = do dispatchCustom w b "problem-submission"
+                             setAttribute b "data-carnap-exercise-status" "submitted"
 
 loginCheck callback serverResponse  
      | serverResponse == "submitted!" = callback
@@ -439,7 +435,7 @@ withLabel parser = do label <- many (digit <|> char '.')
                       s <- parser
                       return (label,s)
 
-trySubmit problemType opts ident problemData correct = 
+trySubmit w problemType opts ident problemData correct = 
              do msource <- liftIO submissionSource
                 key <- liftIO assignmentKey
                 case msource of 
@@ -447,7 +443,7 @@ trySubmit problemType opts ident problemData correct =
                    Just source -> do Just t <- eventCurrentTarget
                                      liftIO $ sendJSON 
                                            (Submit problemType ident problemData source correct (M.lookup "points" opts >>= readMaybe) key) 
-                                           (loginCheck $ (alert $ "Submitted Exercise " ++ ident) >> setStatus (castToElement t) Submitted)
+                                           (loginCheck $ (alert $ "Submitted Exercise " ++ ident) >> setStatus w (castToElement t) Submitted)
                                            errorPopup
 
 ------------------

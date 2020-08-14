@@ -189,9 +189,6 @@ dateDisplay utc course = case tzByName $ courseTimeZone course of
 utcDueDate textbookproblems x = textbookproblems >>= IM.lookup theIndex . readAssignmentTable
     where theIndex = read . unpack . takeWhile (/= '.') $ x :: Int
 
-laterThan :: UTCTime -> UTCTime -> Bool
-laterThan t1 t2 = diffUTCTime t1 t2 > 0
-
 --------------------------------------------------------
 --Components 
 --------------------------------------------------------
@@ -222,7 +219,6 @@ problemsToTable course textbookproblems asmd asDocs submissions = do
                             Just n -> case asDocs !! n of
                                 Nothing -> [hamlet|No document|]
                                 Just d -> [hamlet| <a href=@{CourseAssignmentR (courseTitle course) (documentFilename d)}>#{documentFilename d}|]
-
 
 tryDelete name = "tryDeleteRule(\"" <> name <> "\")"
 

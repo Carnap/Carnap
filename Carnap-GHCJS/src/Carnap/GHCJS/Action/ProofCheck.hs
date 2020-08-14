@@ -82,7 +82,7 @@ getCheckers w = generateExerciseElts w "proofchecker"
 
 data Checker r lex sem = Checker 
         { checkerToRule :: Maybe (DerivedRule lex sem -> SomeRule)
-        , ruleSave' :: Maybe (Checker r lex sem -> IORef [(String, SomeRule)] -> IORef Bool -> Window -> Element -> EventM Element MouseEvent ())
+        , ruleSave' :: Maybe (Checker r lex sem -> IORef [(String, SomeRule)] -> IORef Bool -> Document -> Element -> EventM Element MouseEvent ())
         , rulePost' :: Checker r lex sem -> IO (RuntimeNaturalDeductionConfig lex sem)
         , checkerCalc ::  NaturalDeductionCalc r lex sem 
         , checkerRules :: IORef [(String,SomeRule)]
@@ -124,7 +124,7 @@ activateChecker drs w (Just iog@(IOGoal i o g _ opts)) -- TODO: need to update n
                   mseq <- if directed options then parseGoal calc else return Nothing
                   let theChecker = checker calc drs mseq mtref mpd memo
                       checkSeq = threadedCheck options theChecker
-                      saveProblem l s = Button {label = "Submit" , action = submitDer opts theChecker l g s}
+                      saveProblem l s = Button {label = "Submit" , action = submitDer w opts theChecker l g s}
                       saveRule = Button {label = "Save" , action = ruleSave theChecker drs}
                       options' = options { submit = case (M.lookup "submission" opts, M.lookup "goal" opts) of
                                                       (Just "saveRule",_) -> Just saveRule
@@ -228,26 +228,27 @@ computeRule ref g mseq _ calc =
            (Just seq) -> do setInnerHTML g (Just $ ndNotation calc $ show seq)
                             writeIORef ref True
 
-submitDer opts checker l g seq ref _ i = do isFinished <- liftIO $ readIORef ref
-                                            (Just v) <- liftIO $ getValue (castToHTMLTextAreaElement i)
-                                            if isFinished 
-                                                then trySubmit Derivation opts l (DerivationDataOpts (pack $ show seq) (pack v) (M.toList opts)) True
-                                                else do liftIO $ setAttribute g "class" "goal working"
-                                                        rtconfig <- liftIO $ rulePost checker
-                                                        let ndcalc = checkerCalc checker
-                                                            ded = ndParseProof ndcalc rtconfig v
-                                                            submission = DerivationDataOpts (pack $ show seq) (pack v) (M.toList opts)
-                                                        Feedback mseq _ <- liftIO $ getFeedback checker ded
-                                                        setAttribute g "class" "goal"
-                                                        case sequent checker of
-                                                             Nothing -> message "No goal sequent to submit"
-                                                             Just s -> case mseq of 
-                                                                 (Just s') 
-                                                                   | "exam" `elem` optlist -> trySubmit Derivation opts l submission (s' `seqSubsetUnify` s)
-                                                                   | (s' `seqSubsetUnify` s) -> trySubmit Derivation opts l submission True 
-                                                                   | otherwise -> message "not yet finished"
-                                                                 _ | "exam" `elem` optlist -> trySubmit Derivation opts l submission False
-                                                                   | otherwise -> message "not yet finished"
+submitDer w opts checker l g seq ref _ i = do 
+        isFinished <- liftIO $ readIORef ref
+        (Just v) <- liftIO $ getValue (castToHTMLTextAreaElement i)
+        if isFinished 
+            then trySubmit w Derivation opts l (DerivationDataOpts (pack $ show seq) (pack v) (M.toList opts)) True
+            else do liftIO $ setAttribute g "class" "goal working"
+                    rtconfig <- liftIO $ rulePost checker
+                    let ndcalc = checkerCalc checker
+                        ded = ndParseProof ndcalc rtconfig v
+                        submission = DerivationDataOpts (pack $ show seq) (pack v) (M.toList opts)
+                    Feedback mseq _ <- liftIO $ getFeedback checker ded
+                    setAttribute g "class" "goal"
+                    case sequent checker of
+                         Nothing -> message "No goal sequent to submit"
+                         Just s -> case mseq of 
+                             (Just s') 
+                               | "exam" `elem` optlist -> trySubmit w Derivation opts l submission (s' `seqSubsetUnify` s)
+                               | (s' `seqSubsetUnify` s) -> trySubmit w Derivation opts l submission True 
+                               | otherwise -> message "not yet finished"
+                             _ | "exam" `elem` optlist -> trySubmit w Derivation opts l submission False
+                               | otherwise -> message "not yet finished"
     where optlist = case M.lookup "options" opts of Just s -> words s; Nothing -> []
 
 trySave :: ( Sequentable lex
@@ -256,12 +257,13 @@ trySave :: ( Sequentable lex
            , PrismSubstitutionalVariable lex
            , MonadVar (ClassicalSequentOver lex) (State Int)
            , Concretes lex sem
-           ) => Checker r lex sem -> IORef [(String, SomeRule)] -> IORef Bool -> Window 
+           ) => Checker r lex sem -> IORef [(String, SomeRule)] -> IORef Bool -> Document
                 -> Element -> EventM e MouseEvent ()
 trySave checker drs ref w i = 
         do isFinished <- liftIO $ readIORef ref
            somerules <- liftIO $ readIORef drs
            rtconfig <- liftIO $ rulePost checker
+           Just view <- getDefaultView w
            if isFinished
              then do (Just v) <- getValue (castToHTMLTextAreaElement i)
                      let ndcalc = checkerCalc checker
@@ -276,12 +278,12 @@ trySave checker drs ref w i =
                               Nothing -> error "The formula type couldn't be decoded."
                               Just c' -> do
                                   let conc = (toSchema . fromSequent) c'
-                                  mname <- prompt w "What name will you give this rule (use all capital letters!)" (Just "")
+                                  mname <- prompt view "What name will you give this rule (use all capital letters!)" (Just "")
                                   case (mname,checkerToRule checker)  of
                                       (Just name, Just toRule) | allcaps name -> do
                                             Just t <- eventCurrentTarget
                                             liftIO $ sendJSON (SaveRule name $ toRule $ DerivedRule conc prems) 
-                                                              (loginCheck $ setStatus (castToElement t) Submitted) 
+                                                              (loginCheck $ setStatus w (castToElement t) Submitted) 
                                                               error
                                       (Just name, Just toRule) -> message "rule name must be all capital letters"
                                       (Nothing,_) -> message "No name entered"
