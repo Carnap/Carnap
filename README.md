@@ -86,7 +86,7 @@ $ nix-build -j4 -A server -o server-out
 
 ### Get a GHC based development shell
 
-This requires a [client be built using Nix](#Build-the-front-end) if you want
+This requires that the [client has already built using Nix](#Build-the-front-end) if you want
 to build Carnap-Server in this shell with Cabal.
 
 Using `make` aliases:
