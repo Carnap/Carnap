@@ -158,12 +158,17 @@ renderProblem due uidanduser (Entity key val) = do
                 [whamlet|
                     <div data-carnap-type="proofchecker"
                          data-carnap-system="#{sys}"
-                         data-carnap-options="resize"
+                         data-carnap-options="#{reviewOptions}"
+                         data-carnap-guides="#{guides}"
                          data-carnap-goal="#{formatContent (unpack goal)}"
                          data-carnap-submission="none">
                          #{der}
                 |]
-                where sys = case lookup "system" (M.fromList opts) of Just s -> s; Nothing -> "prop"
+                where reviewOptions :: String
+                      reviewOptions = "resize" ++ if "render" `inOpts` M.fromList opts then " render" else ""
+                                               ++ if "guides" `inOpts` M.fromList opts then " guides" else ""
+                      sys = case lookup "system" (M.fromList opts) of Just s -> s; Nothing -> "prop"
+                      guides = case lookup "guides" (M.fromList opts) of Just s -> s; Nothing -> "none"
                       formatContent c = maybe c id $ (ndNotation `ofPropSys` sys) 
                                              `mplus` (ndNotation `ofFOLSys` sys)
                                              `mplus` (ndNotation `ofSecondOrderSys` sys)
