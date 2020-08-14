@@ -176,7 +176,7 @@ logicBookNotation x = case runParser altParser 0 "" x of
 
 logicBookSDCalc = mkNDCalc 
     { ndRenderer = FitchStyle BergmanMooreAndNelsonStyle
-    , ndParseProof = parseLogicBookSDPlusProof
+    , ndParseProof = parseLogicBookSDProof
     , ndProcessLine = processLineFitch
     , ndProcessLineMemo = Nothing
     , ndParseSeq = extendedPropSeqParser
