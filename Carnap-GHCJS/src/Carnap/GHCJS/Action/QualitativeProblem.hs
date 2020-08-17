@@ -87,7 +87,8 @@ createMultipleSelection w i o opts = case M.lookup "goal" opts of
             labeledChoices = zip3 (Prelude.map (getLabel opts) choices) 
                                   (Prelude.map (isGood opts) choices) 
                                   (Prelude.map (isChecked opts) choices)
-        boxes <- mapM (toCheckbox g ref) labeledChoices
+        tag <- show <$> (randomIO :: IO Int)
+        boxes <- mapM (toCheckbox (g ++ "-" ++ tag) ref) labeledChoices
         Just form <- createElement w (Just "form")
         appendChild o (Just form)
         mapM_ (appendChild form . Just . fst) boxes
@@ -103,7 +104,7 @@ createMultipleSelection w i o opts = case M.lookup "goal" opts of
                Just input <- createElement w (Just "input")
                Just label <- createElement w (Just "label")
                Just wrapper <- createElement w (Just "div")
-               tag <- randomIO :: IO Int
+               tag <- show <$> (randomIO :: IO Int)
                let theId = g ++ "-" ++ s ++ "-" ++ show tag
                updateRef ref (s,b,c)
                mapM (uncurry $ setAttribute input) $
@@ -143,7 +144,9 @@ createMultipleChoice w i o opts = case M.lookup "goal" opts of
             labeledChoices = zip3 (Prelude.map (getLabel opts) choices) 
                                   (Prelude.map (isGood opts) choices) 
                                   (Prelude.map (isChecked opts) choices)
-        radios <- mapM (toRadio g ref) labeledChoices
+
+        tag <- show <$> (randomIO :: IO Int)
+        radios <- mapM (toRadio (g ++ "-" ++ tag) ref) labeledChoices
         Just form <- createElement w (Just "form")
         appendChild o (Just form)
         mapM_ (appendChild form . Just . fst) radios
@@ -154,8 +157,8 @@ createMultipleChoice w i o opts = case M.lookup "goal" opts of
                Just input <- createElement w (Just "input")
                Just label <- createElement w (Just "label")
                Just wrapper <- createElement w (Just "div")
-               tag <- randomIO :: IO Int
-               let theId = g ++ "-" ++ s ++ "-" ++ show tag
+               tag <- show <$> (randomIO :: IO Int)
+               let theId = g ++ "-" ++ s ++ "-" ++ tag
                if c then writeIORef ref (b,s) else return ()
                mapM (uncurry $ setAttribute input) $
                      [ ("type","radio")
