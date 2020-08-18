@@ -103,7 +103,7 @@ freshConstantConstraint c prems ded lineno sub
           theLines = catMaybes . map (fmap liftLang . assertion) . take (lineno - 1) $ ded
 
 existentiallyFreshConstraint c ded lineno sub
-        | any (\x -> c' `occurs` x) theLines = Just $ "it appears that the variable " ++ show c' ++ " appears on a previous line justified by EI"
+        | any (\x -> c' `occurs` x) theLines = Just $ "it appears that the constant " ++ show c' ++ " appears on a previous line justified by EI"
         | otherwise = Nothing
     where c' = applySub sub c
           theLines = catMaybes . map (fmap liftLang . assertion) . filter (maybe False (any isEI) . ruleOfLine) . take (lineno - 1) $ ded
@@ -138,7 +138,7 @@ parseHurleyPL rtc = do ms <- optionMaybe ((spaces >> eof >> return ()) <|>  (str
                             Nothing -> try quantRule <|> liftProp 
     where liftProp = do r <- P.parseHurleySL (RuntimeNaturalDeductionConfig mempty mempty)
                         return (map SL r)
-          quantRule = do r <- choice (map (try . string) ["UI","UG","EG","EI", "Id"])
+          quantRule = do r <- choice (map (try . string) ["UI","UG","EG","EI","Id"])
                          case r of 
                             r | r `elem` ["UI"] -> return [UI]
                               | r `elem` ["UG"] -> return [UG]
