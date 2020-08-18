@@ -215,7 +215,7 @@ hurleyPLOptions = FirstOrderParserOptions
                          { atomicSentenceParser = \x -> try (parsePredicateSymbolNoParen "ABCDEFGHIJKLMNOPQRSTUVWXYZ" x)
                                                         <|> sentenceLetterParser "ABCDEFGHIJKLMNOPQRSTUVWXYZ" 
                                                         <|> equalsParser x 
-                         , quantifiedSentenceParser' = altAltQuantifiedSentenceParser
+                         , quantifiedSentenceParser' = altQuantifiedSentenceParser
                          , freeVarParser = parseFreeVar "xyz"
                          , constantParser = Just (parseConstant "abcdefghijklmnopqrstuvw")
                          , functionParser = Nothing

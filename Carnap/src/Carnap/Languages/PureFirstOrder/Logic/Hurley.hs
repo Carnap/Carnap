@@ -78,7 +78,7 @@ instance Inference HurleyPL PureLexiconFOL (Form Bool) where
         indirectInference (SL x) = indirectInference x
         indirectInference x = Nothing
 
-        restriction UG = Just (isConstantConstraint tau)
+        restriction UG = Just (isVarConstraint tau)
         restriction (EI _) = Just (isConstantConstraint tau)
         restriction (Pr prems) = Just (premConstraint prems)
         restriction _ = Nothing
@@ -111,14 +111,25 @@ existentiallyFreshConstraint c ded lineno sub
           isEI _ = False
 
 assumptivelyFreshConstraint c ded lineno sub
-        | any (\x -> c' `occurs` x) theLines = Just $ "it appears that the variable " ++ show c' ++ " appears in a previous assumption"
+        | any (\x -> c' `occurs` x) theLines = Just $ "it appears that the variable " ++ show c' ++ " appears in an open assumption"
         | otherwise = Nothing
     where c' = applySub sub c
-          theLines = catMaybes . map (fmap liftLang . assertion) . filter (maybe False (any isAssumption) . ruleOfLine) . take (lineno - 1) $ ded
+          theLines = catMaybes . map (fmap liftLang . assertion) . filter (maybe False (any isAssumption) . ruleOfLine) $ oldRelevant [] . reverse . take (lineno - 1) $ ded
+
+          oldRelevant accum [] = accum
+          oldRelevant [] (d:ded)  = oldRelevant [d] ded 
+          oldRelevant (a:accum) (d:ded) = if depth d > depth a 
+                                              then oldRelevant (a:accum) ded 
+                                              else oldRelevant (d:a:accum) ded 
 
 isConstantConstraint c sub
         | not . null $ preview _constIdx c' =  Nothing
-        | otherwise = Just $ "it appears that the term" ++ show c' ++ " is not a constant. But this rule requires it to be a constant."
+        | otherwise = Just $ "it appears that the term " ++ show c' ++ "  is not a constant. But this rule requires it to be a constant."
+    where c' = applySub sub c 
+
+isVarConstraint c sub
+        | not . null $ preview _varLabel c' =  Nothing
+        | otherwise = Just $ "it appears that the term " ++ show c' ++ "  is not a variable. But this rule requires it to be a variable."
     where c' = applySub sub c 
 
 parseHurleyPL rtc = do ms <- optionMaybe ((spaces >> eof >> return ()) <|>  (string "/" >> many anyChar >> return ()))
@@ -127,10 +138,12 @@ parseHurleyPL rtc = do ms <- optionMaybe ((spaces >> eof >> return ()) <|>  (str
                             Nothing -> try quantRule <|> liftProp 
     where liftProp = do r <- P.parseHurleySL (RuntimeNaturalDeductionConfig mempty mempty)
                         return (map SL r)
-          quantRule = do r <- choice (map (try . string) ["UI","UG","EG","Id"])
+          quantRule = do r <- choice (map (try . string) ["UI","UG","EG","EI", "Id"])
                          case r of 
                             r | r `elem` ["UI"] -> return [UI]
                               | r `elem` ["UG"] -> return [UG]
+                              | r `elem` ["EG"] -> return [EG]
+                              | r `elem` ["EI"] -> return [EI (problemPremises rtc)]
                               | r `elem` ["QN"] -> return [QN1,QN2,QN3,QN4,QN5,QN6,QN7,QN8]
                               | r `elem` ["ID"] -> return [Id1,Id2,Id3,Id4]
 
