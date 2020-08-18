@@ -219,7 +219,6 @@ hurleySLNotation x = case runParser altParser 0 "" x of
           fallback = do c <- anyChar 
                         return [c]
 
-
 hurleySLCalc = mkNDCalc 
     { ndRenderer = NoRender
     , ndParseProof = parseHurleySLProof

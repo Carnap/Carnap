@@ -17,7 +17,6 @@ import Carnap.Languages.ClassicalSequent.Syntax
 import Carnap.Languages.ClassicalSequent.Parser
 import Carnap.Languages.PurePropositional.Logic.Rules
 
-
 --A system for propositional logic resembling the proof system SD from
 --Bergmann, Moor and Nelson's Logic Book
 

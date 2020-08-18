@@ -4,8 +4,8 @@ module Carnap.Languages.PureFirstOrder.Parser
 , magnusFOLFormulaParser, gallowPLFormulaParser, thomasBolducAndZachFOLFormulaParser
 , gamutNDFormulaParser, thomasBolducAndZachFOL2019FormulaParser
 , hardegreePLFormulaParser, bergmannMoorAndNelsonPDFormulaParser, bergmannMoorAndNelsonPDEFormulaParser
-, goldfarbNDFormulaParser, tomassiQLFormulaParser, hausmanPLFormulaParser, FirstOrderParserOptions(..)
-, parserFromOptions, parseFreeVar, howardSnyderPLFormulaParser) where
+, goldfarbNDFormulaParser, tomassiQLFormulaParser, hurleyPLFormulaParser, hausmanPLFormulaParser
+, FirstOrderParserOptions(..), parserFromOptions, parseFreeVar, howardSnyderPLFormulaParser) where
 
 import Carnap.Core.Data.Types
 import Carnap.Core.Data.Classes (Schematizable)
@@ -210,6 +210,23 @@ goldfarbNDParserOptions = FirstOrderParserOptions
                          , finalValidation = const (pure ())
                          }
 
+hurleyPLOptions :: FirstOrderParserOptions PureLexiconFOL u Identity
+hurleyPLOptions = FirstOrderParserOptions
+                         { atomicSentenceParser = \x -> try (parsePredicateSymbolNoParen "ABCDEFGHIJKLMNOPQRSTUVWXYZ" x)
+                                                        <|> sentenceLetterParser "ABCDEFGHIJKLMNOPQRSTUVWXYZ" 
+                                                        <|> equalsParser x 
+                         , quantifiedSentenceParser' = altAltQuantifiedSentenceParser
+                         , freeVarParser = parseFreeVar "xyz"
+                         , constantParser = Just (parseConstant "abcdefghijklmnopqrstuvw")
+                         , functionParser = Nothing
+                         , hasBooleanConstants = False
+                         , parenRecur = hurleyDispatch
+                         , opTable = hausmanOpTable
+                         , finalValidation = const (pure ())
+                         }
+    where hurleyDispatch opt rw = (wrappedWith '{' '}' (rw opt) <|> wrappedWith '(' ')' (rw opt) <|> wrappedWith '[' ']' (rw opt)) >>= boolean
+          boolean a = if isBoolean a then return a else unexpected "atomic or quantified sentence wrapped in parentheses"
+
 hausmanPLOptions :: FirstOrderParserOptions PureLexiconFOL u Identity
 hausmanPLOptions = FirstOrderParserOptions 
                          { atomicSentenceParser = \x -> try (parsePredicateSymbolNoParen "ABCDEFGHIJKLMNOPQRSTUVWXYZ" x)
@@ -321,6 +338,9 @@ bergmannMoorAndNelsonPDEFormulaParser = parserFromOptions bergmannMoorAndNelsonP
 
 hausmanPLFormulaParser :: Parsec String u PureFOLForm
 hausmanPLFormulaParser = parserFromOptions hausmanPLOptions
+
+hurleyPLFormulaParser :: Parsec String u PureFOLForm
+hurleyPLFormulaParser = parserFromOptions hurleyPLOptions
 
 howardSnyderPLFormulaParser :: Parsec String u PureFOLForm
 howardSnyderPLFormulaParser = parserFromOptions howardSnyderPLOptions

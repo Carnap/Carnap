@@ -80,6 +80,7 @@ library
                      , Carnap.Languages.PureFirstOrder.Logic.Gallow
                      , Carnap.Languages.PureFirstOrder.Logic.Tomassi
                      , Carnap.Languages.PureFirstOrder.Logic.HowardSnyder
+                     , Carnap.Languages.PureFirstOrder.Logic.Hurley
                      , Carnap.Languages.PureFirstOrder.Logic.Hardegree
                      , Carnap.Languages.PureFirstOrder.Logic.Bonevac
                      , Carnap.Languages.PureFirstOrder.Logic.Goldfarb
