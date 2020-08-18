@@ -20,7 +20,7 @@ import Carnap.Languages.PurePropositional.Logic.Rules
 --Hurley's "Concise Introduction to Logic"
 
 data HurleySL  = MP | MT | DS1 | DS2 | HS | CD 
-               | Simp1 | Simp2 | Conj | Add1 | Add2
+               | Simp | Conj | Add
                --the rest are rules of replacement
                | DM1 | DM2 | DM3  | DM4
                | ComOr | ComAnd
@@ -44,11 +44,9 @@ instance Show HurleySL where
         show DS2 = "DS"
         show HS = "HS"
         show CD = "CD"
-        show Simp1 = "Simp"
-        show Simp2 = "Simp"
+        show Simp = "Simp"
         show Conj = "Conj"
-        show Add1 = "Add"
-        show Add2 = "Add"
+        show Add = "Add"
         show DM1 = "DM"
         show DM2 = "DM"
         show DM3 = "DM"
@@ -94,11 +92,9 @@ instance Inference HurleySL PurePropLexicon (Form Bool) where
         ruleOf DS2 = modusTollendoPonensVariations !! 1
         ruleOf HS = hypotheticalSyllogism
         ruleOf CD = conjunctionDilemma
-        ruleOf Simp1 = simplificationVariations !! 0
-        ruleOf Simp2 = simplificationVariations !! 1
+        ruleOf Simp = simplificationVariations !! 0
         ruleOf Conj = adjunction
-        ruleOf Add1 = additionVariations !! 0
-        ruleOf Add2 = additionVariations !! 1
+        ruleOf Add = additionVariations !! 1
         ruleOf DM1 = deMorgansLaws !! 0
         ruleOf DM2 = deMorgansLaws !! 1
         ruleOf DM3 = deMorgansLaws !! 2
@@ -171,9 +167,9 @@ parseHurleySL rtc = do ms <- optionMaybe ((spaces >> eof >> return ()) <|>  (str
                                          "DS" -> [DS1,DS2]
                                          "HS" -> [HS]
                                          "CD" -> [CD]
-                                         "Simp" -> [Simp1,Simp2]
+                                         "Simp" -> [Simp]
                                          "Conj" -> [Conj]
-                                         "Add" -> [Add1,Add2]
+                                         "Add" -> [Add]
                                          "DM" -> [DM1,DM2,DM3,DM4]
                                          "Com" -> [ComOr,ComAnd]
                                          "Assoc" -> [AssocOr1,AssocOr2,AssocAnd1,AssocAnd2]
