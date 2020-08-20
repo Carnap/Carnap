@@ -24,6 +24,7 @@ type SupportsTableau rule lex sem =
     , Schematizable (lex (ClassicalSequentOver lex))
     , CopulaSchema (ClassicalSequentOver lex)
     , SpecifiedUnificationType rule
+    , CopulaSchema (FixLang lex)
     , BoundVars lex
     , PrismLink (lex (ClassicalSequentOver lex)) (SubstitutionalVariable (ClassicalSequentOver lex)) -- XXX Not needed in GHC >= 8.4
     , Typeable sem
@@ -44,7 +45,7 @@ validateTree (Node n descendents) = Node (clean $ validateNode n theChildren) (m
           clean (ProofError _ :xs) = clean xs
           clean _ = ProofData "no feedback"
 
-validateNode ::SupportsTableau rule lex sem => TableauNode lex sem rule -> [TableauNode lex sem rule] -> [TreeFeedbackNode lex]
+validateNode :: SupportsTableau rule lex sem => TableauNode lex sem rule -> [TableauNode lex sem rule] -> [TreeFeedbackNode lex]
 validateNode n ns = case tableauNodeRule n of
                         Nothing -> return $ treeErrMsg "no rule developing this node"
                         Just rs -> 
@@ -55,33 +56,31 @@ validateNode n ns = case tableauNodeRule n of
                                else do
                                    ns' <- permutations ns
                                    let childSeqs = map tableauNodeSeq ns'
-                                       intoEq f x = [f :=: x]
-                                       maybeMainProb = concat <$> mapM (\t -> case t of
-                                          NoTarget -> Just []
-                                          RightPrem n f -> intoEq f <$> nodeTargetRight (ns' !! n)
-                                          LeftPrem n f -> intoEq f <$> nodeTargetLeft (ns' !! n)
-                                          LeftConc f -> intoEq f <$> nodeTargetLeft n
-                                          RightConc f -> intoEq f <$> nodeTargetRight n) (schemeTargets theRule)
-                                   case maybeMainProb of
-                                       Nothing -> return $ treeErrMsg "Missing target for rule"
-                                       Just mainProb -> case hosolve mainProb of
-                                            Left e -> return $ ProofError e
-                                            Right hosubs -> do
-                                                hosub <- hosubs
-                                                childSeqs <- permutations (map tableauNodeSeq ns)
-                                                let structsolver = case unificationType r of
+                                       thePairs = (lowerSequent theRule, n) : zip (upperSequents theRule) ns'
+                                       addTarget (scheme,node) = (node, getTargets scheme)
+                                       targetedPairs = map addTarget thePairs
+                                   if any (not . lengthCheck) targetedPairs
+                                       then return $ treeErrMsg "Missing target for rule"
+                                       else do 
+                                           let mainProb = concat . map (uncurry toEqs) $ targetedPairs
+                                           case hosolve mainProb of
+                                              Left e -> return $ ProofError e
+                                              Right hosubs -> do
+                                                  hosub <- hosubs
+                                                  childSeqs <- permutations (map tableauNodeSeq ns)
+                                                  let structsolver = case unificationType r of
                                                                        AssociativeUnification -> ausolve
                                                                        ACUIUnification -> acuisolve
-                                                let runSub = pureBNF . applySub hosub
-                                                    subbedChildrenLHS = map (view lhs . runSub) (upperSequents theRule)
-                                                    subbedChildrenRHS = map (view rhs . runSub) (upperSequents theRule)
-                                                    subbedParentLHS = view lhs . runSub $ lowerSequent theRule
-                                                    subbedParentRHS = view rhs . runSub $ lowerSequent theRule
-                                                    prob = (subbedParentLHS :=: (view lhs . tableauNodeSeq $ n)) 
-                                                         : (subbedParentRHS :=: (view rhs . tableauNodeSeq $ n))
-                                                         : zipWith (:=:) subbedChildrenLHS (map (view lhs) childSeqs)
-                                                         ++ zipWith (:=:) subbedChildrenRHS (map (view rhs) childSeqs)
-                                                case structsolver prob of
+                                                  let runSub = pureBNF . applySub hosub
+                                                      subbedChildrenLHS = map (view lhs . runSub) (upperSequents theRule)
+                                                      subbedChildrenRHS = map (view rhs . runSub) (upperSequents theRule)
+                                                      subbedParentLHS = view lhs . runSub $ lowerSequent theRule
+                                                      subbedParentRHS = view rhs . runSub $ lowerSequent theRule
+                                                      prob = (subbedParentLHS :=: (view lhs . tableauNodeSeq $ n)) 
+                                                           : (subbedParentRHS :=: (view rhs . tableauNodeSeq $ n))
+                                                           : zipWith (:=:) subbedChildrenLHS (map (view lhs) childSeqs)
+                                                           ++ zipWith (:=:) subbedChildrenRHS (map (view rhs) childSeqs)
+                                                  case structsolver prob of
                                                     Left e -> return $ ProofError e
                                                     Right structsubs -> do 
                                                         finalsub <- map (++ hosub) structsubs
@@ -89,77 +88,68 @@ validateNode n ns = case tableauNodeRule n of
                                                             Just msg -> return (treeErrMsg msg)
                                                             Nothing -> return Correct
 
-nodeTargetLeft, nodeTargetRight :: 
-    ( FirstOrder (ClassicalSequentOver lex)
-    , FirstOrderLex (lex (FixLang lex))
-    , Typeable sem
-    , Sequentable lex
-    , BoundVars lex
-    , PrismSubstitutionalVariable lex
-    ) => TableauNode lex sem rule -> Maybe (ClassicalSequentOver lex sem)
-nodeTargetLeft n = case (tableauNodeTarget n, toListOf concretes . view lhs . tableauNodeSeq $ n)  of
-                     (Just f,_) -> Just $ liftToSequent f
-                     (Nothing,[]) -> Nothing
-                     (Nothing, l) -> Just $ last l
-nodeTargetRight n = case (tableauNodeTarget n, toListOf concretes . view rhs . tableauNodeSeq $ n) of
-                     (Just f,_) -> Just $ liftToSequent f
-                     (Nothing,[]) -> Nothing
-                     (Nothing, l) -> Just $ head l
-  --head and last are reversed because `concretes` reverses order, I think
+getTargets ::  ClassicalSequentOver lex (Sequent sem) -> [SequentRuleTarget (ClassicalSequentLexOver lex) sem]
+getTargets seq = let (linit,lremainder) = getInitTargetsLeft 1 ([], toListOf lhs seq)
+                     (rinit,rremainder) = getInitTargetsRight 1 ([], toListOf rhs seq)
+                     in linit ++ rinit ++ getTailTargetsLeft (-1) (reverse lremainder) ++ getTailTargetsRight (-1) (reverse rremainder)
 
-schemeTarget :: 
-    ( FirstOrder (ClassicalSequentOver lex)
-    , Eq (ClassicalSequentOver lex sem)
-    , FirstOrderLex (lex (FixLang lex))
-    , Typeable sem
-    , Sequentable lex
-    , BoundVars lex
-    , PrismSubstitutionalVariable lex
-    ) => SequentRule lex sem -> SequentRuleTarget (ClassicalSequentLexOver lex) sem
-schemeTarget r = case getTarget (lowerSequent r) of 
-                    NoTarget -> case filter (\(_,x) -> x /= NoTarget) . map (\(n,x) -> (n,getTarget x)) . zip [0..] $ upperSequents r of
-                                       [] -> NoTarget
-                                       ((n,LeftConc f):_) -> LeftPrem n f
-                                       ((n,RightConc f):_) -> RightPrem n f
-                    target -> target
+getInitTargetsRight :: Int -> ([SequentRuleTarget (ClassicalSequentLexOver lex) sem], [ClassicalSequentOver lex (Succedent sem)]) 
+                    -> ([SequentRuleTarget (ClassicalSequentLexOver lex) sem], [ClassicalSequentOver lex (Succedent sem)])
+getInitTargetsRight n (acc, SS f : fs) = getInitTargetsRight (n+1) (RightTarget f n: acc, fs)
+getInitTargetsRight n (acc, fs) = (acc, fs)
 
-schemeTargets :: 
-    ( FirstOrder (ClassicalSequentOver lex)
-    , Eq (FixLang lex sem)
-    , FirstOrderLex (lex (FixLang lex))
-    , Typeable sem
-    , Sequentable lex
-    , BoundVars lex
-    , PrismSubstitutionalVariable lex
-    ) => SequentRule lex sem -> [SequentRuleTarget (ClassicalSequentLexOver lex) sem]
-schemeTargets r = redundant targetList []
-    where targetList = getTarget (lowerSequent r) : map retarget (zip [0 ..] (map getTarget $ upperSequents r))
-          retarget (n,LeftConc f) = LeftPrem n f
-          retarget (n,RightConc f) = RightPrem n f
-          retarget (_,NoTarget) = NoTarget
-          redundant [] accum = accum
-          redundant (NoTarget:potential) accum = redundant potential accum
-          redundant (p:potential) accum | any (subform p) accum = redundant potential accum
-                                        | otherwise = redundant potential  $ p : filter (not . flip subform p) accum
-          subform x y = targetContent x `elem` universe (targetContent y)
-          targetContent (LeftConc f) = fromSequent f
-          targetContent (RightConc f) = fromSequent f
-          targetContent (LeftPrem _ f) = fromSequent f
-          targetContent (RightPrem _ f) = fromSequent f
+getInitTargetsLeft ::  Int -> ([SequentRuleTarget (ClassicalSequentLexOver lex) sem], [ClassicalSequentOver lex (Antecedent sem)]) 
+                    -> ([SequentRuleTarget (ClassicalSequentLexOver lex) sem], [ClassicalSequentOver lex (Antecedent sem)])
+getInitTargetsLeft n (acc, SA f : fs) = getInitTargetsLeft (n+1) (LeftTarget f n: acc, fs)
+getInitTargetsLeft n (acc, fs) = (acc, fs)
 
-getTarget seq = case ( filter (hasVar . fromSequent) . toListOf concretes . view lhs $ seq
-             , filter (hasVar . fromSequent) . toListOf concretes . view rhs $ seq
-             ) of (f:_,_) -> LeftConc f
-                  (_,f:_) -> RightConc f
-                  _ -> NoTarget
+getTailTargetsLeft ::  Int -> [ClassicalSequentOver lex (Antecedent sem)] -> [SequentRuleTarget (ClassicalSequentLexOver lex) sem]
+getTailTargetsLeft n (SA f:fs) = LeftTarget f n : getTailTargetsLeft (n - 1) fs
+getTailTargetsLeft n _ = []
+
+getTailTargetsRight :: Int -> [ClassicalSequentOver lex (Succedent sem)] -> [SequentRuleTarget (ClassicalSequentLexOver lex) sem]
+getTailTargetsRight n (SS f:fs)  = RightTarget f n: getTailTargetsRight (n - 1) fs
+getTailTargetsRight n _ = []
+
+lengthCheck (node,targets) = (minLengthLeft targets <= length (toListOf lhs (tableauNodeSeq node)))
+                          && (minLengthRight targets <= length (toListOf rhs (tableauNodeSeq node))) 
+
+--TODO: Beef this up to allow manual targeting
+toEqs :: SupportsTableau rule lex sem => TableauNode lex sem rule -> [SequentRuleTarget (ClassicalSequentLexOver lex) sem] -> [Equation (ClassicalSequentOver lex)]
+toEqs node target = 
+    case target of
+          (LeftTarget f n : ts)  | n > 0 -> intoEq f (theLHS !! (n - 1)) : toEqs node ts
+          (LeftTarget f n : ts)  | 0 > n -> intoEq f (reverseLHS !! (abs n - 1)) : toEqs node ts
+          (RightTarget f n : ts) | n > 0 -> intoEq f (theRHS !! (n - 1)) : toEqs node ts
+          (RightTarget f n : ts) | 0 > n -> intoEq f (reverseRHS !! (abs n - 1)) : toEqs node ts
+          (NoTarget : ts) -> toEqs node ts
+          [] -> []
+
+    where theLHS = toListOf (lhs . concretes) (tableauNodeSeq node)
+          theRHS = toListOf (rhs . concretes) (tableauNodeSeq node) 
+          reverseLHS = reverse theLHS
+          reverseRHS = reverse theRHS
+          intoEq f x = f :=: x
+
+--the minimum length of a cedent given a set of Conc targets
+minLengthLeft targets = minInit targets + abs (minTail targets)
+    where minInit (LeftTarget _ n : ts) | n > 0 = max n (minInit ts)
+          minInit _ = 0
+          minTail (LeftTarget _ n : ts) | n < 0 = min n (minTail ts)
+          minTail _ = 0
+
+minLengthRight targets = minInit targets + abs (minTail targets)
+    where minInit (RightTarget _ n : ts) | n > 0 = max n (minInit ts)
+          minInit _ = 0
+          minTail (RightTarget _ n : ts) | n < 0 = min n (minTail ts)
+          minTail _ = 0
 
 treeErrMsg :: String -> TreeFeedbackNode lex
 treeErrMsg s = ProofError (GenericError s 0)
 
-data SequentRuleTarget lex sem = LeftConc (FixLang lex sem) 
-                               | RightConc (FixLang lex sem) 
-                               | LeftPrem Int (FixLang lex sem)
-                               | RightPrem Int (FixLang lex sem)
+data SequentRuleTarget lex sem = LeftTarget (FixLang lex sem) Int --the Int gives the position of the target in the left cedent of the sequent
+                               | RightTarget (FixLang lex sem) Int
                                | NoTarget
 
 deriving instance Eq (FixLang lex sem) => Eq (SequentRuleTarget lex sem)
+deriving instance Show (FixLang lex sem) => Show (SequentRuleTarget lex sem)
