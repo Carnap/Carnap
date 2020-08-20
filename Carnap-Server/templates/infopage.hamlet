@@ -101,7 +101,7 @@
                     <p>This is a proof with Goldfarb's Lemmon-style system of
                        \ natural deduction, from the textbook <em>Deductive Logic</em>.
 
-                    ^{proofcheck 6 "goldfarbNDPlus" "render resize" "ExAy(K(x,y) -> F(x,y)), AxEy(K(x,y)) :|-: ExEyF(x,y)" lemmonTheorem}
+                    ^{proofcheck 6 "goldfarbNDPlus" "render resize" "ExAy(Kxy -> Fxy), AxEyKxy :|-: ExEyFxy" lemmonTheorem}
 
                 <div.demo>
                     <p> Here’s a proof of the fact that the bisectors of the

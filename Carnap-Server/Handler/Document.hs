@@ -98,16 +98,18 @@ getDocumentR ident title = do (Entity key doc, path, creatorid) <- retrieveDoc i
                                  Private -> do
                                    muid <- maybeAuthId
                                    case muid of
+                                       Nothing -> setMessage "shared file for this document not found" >> notFound
                                        Just uid' | creatorid /= uid' -> setMessage "shared file for this document not found" >> notFound
-                                       Just uid' | takeExtension path == ".css" -> serveDoc asCss doc path creatorid >> notFound 
-                                            --serveDoc bypasses the
-                                            --remaining handlers, so the
-                                            --not-found here is
-                                            --a placeholder that is never
-                                            --reached
-                                       Just uid' -> returnFile path
-                                       _ -> setMessage "shared file for this document not found" >> notFound
+                                                 | takeExtension path == ".css" -> serveDoc asCss doc path creatorid >> notFound 
+                                                 | takeExtension path == ".js" -> serveDoc asCss doc path creatorid >> notFound 
+                                                 | otherwise -> returnFile path
+                                                --serveDoc bypasses the
+                                                --remaining handlers, so the
+                                                --not-found here is
+                                                --a placeholder that is never
+                                                --reached
                                  _ | takeExtension path == ".css" -> serveDoc asCss doc path creatorid >> notFound
+                                   | takeExtension path == ".js" -> serveDoc asJs doc path creatorid >> notFound
                                    | otherwise -> returnFile path
 
     where returnFile path = do
@@ -116,19 +118,22 @@ getDocumentR ident title = do (Entity key doc, path, creatorid) <- retrieveDoc i
                   Left err -> defaultLayout $ minimalLayout (show err)
                   Right (Left err,_) -> defaultLayout $ minimalLayout (show err)
                   Right (Right html, meta) -> do
-                      mcss <- retrieveCss (lookupMeta "css" meta)
-                      let theLayout = maybe defaultLayout customLayout mcss
-                      theLayout $ do
+                      mcss <- retrievePandocVal (lookupMeta "css" meta)
+                      mjs <- retrievePandocVal (lookupMeta "js" meta)
+                      defaultLayout $ do
                           toWidgetHead $(juliusFile "templates/command.julius")
                           addScript $ StaticR js_proof_js
                           addScript $ StaticR js_popper_min_js
                           addScript $ StaticR ghcjs_rts_js
                           addScript $ StaticR ghcjs_allactions_lib_js
                           addScript $ StaticR ghcjs_allactions_out_js
+                          maybe (pure [()]) (mapM (addScriptRemote . pack))  mjs
                           addStylesheet $ StaticR css_tree_css
                           addStylesheet $ StaticR css_proof_css
                           addStylesheet $ StaticR css_exercises_css
-                          when (mcss == Nothing) (addStylesheet $ StaticR css_bootstrapextra_css)
+                          case mcss of 
+                              Nothing -> mapM addStylesheet [StaticR css_bootstrapextra_css]
+                              Just ss -> mapM (addStylesheetRemote . pack) ss
                           $(widgetFile "document")
                           addScript $ StaticR ghcjs_allactions_runmain_js
 

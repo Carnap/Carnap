@@ -12,4 +12,4 @@
                     <div.col-sm-4>
                       ^{selectUser uidAndData}
             $forall p <- problems
-                ^{renderProblem uidAndUser p}
+                ^{renderProblem due uidAndUser p}

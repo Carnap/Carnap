@@ -3,9 +3,9 @@ module Carnap.Languages.PureFirstOrder.Parser
 ( folFormulaParser, folFormulaParserRelaxed, mfolFormulaParser
 , magnusFOLFormulaParser, gallowPLFormulaParser, thomasBolducAndZachFOLFormulaParser
 , gamutNDFormulaParser, thomasBolducAndZachFOL2019FormulaParser
-, hardegreePLFormulaParser, bergmannMoorAndNelsonPDFormulaParser
-, goldfarbNDFormulaParser, tomassiQLFormulaParser, hausmanPLFormulaParser, FirstOrderParserOptions(..)
-, parserFromOptions, parseFreeVar, howardSnyderPLFormulaParser) where
+, hardegreePLFormulaParser, bergmannMoorAndNelsonPDFormulaParser, bergmannMoorAndNelsonPDEFormulaParser
+, goldfarbNDFormulaParser, tomassiQLFormulaParser, hurleyPLFormulaParser, hausmanPLFormulaParser
+, FirstOrderParserOptions(..), parserFromOptions, parseFreeVar, howardSnyderPLFormulaParser) where
 
 import Carnap.Core.Data.Types
 import Carnap.Core.Data.Classes (Schematizable)
@@ -176,6 +176,14 @@ bergmannMoorAndNelsonFOLParserOptions = FirstOrderParserOptions
                          }
           where boolean a = if isBoolean a then return a else unexpected "atomic or quantified sentence wrapped in parentheses"
 
+bergmannMoorAndNelsonPLEParserOptions :: FirstOrderParserOptions PureLexiconFOL u Identity
+bergmannMoorAndNelsonPLEParserOptions = bergmannMoorAndNelsonFOLParserOptions 
+                        { functionParser = Just (\x -> parseFunctionSymbol "abcdefghijklmnopqrst" x)
+                        , atomicSentenceParser = \x -> try (parsePredicateSymbolNoParen "ABCDEFGHIJKLMNOPQRSTUVWXYZ" x)
+                                                        <|> try (sentenceLetterParser "ABCDEFGHIJKLMNOPQRSTUVWXYZ")
+                                                        <|> equalsParser x
+                        }
+
 hardegreePLParserOptions :: FirstOrderParserOptions PureLexiconFOL u Identity
 hardegreePLParserOptions = FirstOrderParserOptions 
                          { atomicSentenceParser = parsePredicateSymbolNoParen ['A' .. 'Z']
@@ -201,6 +209,23 @@ goldfarbNDParserOptions = FirstOrderParserOptions
                          , opTable = standardOpTable
                          , finalValidation = const (pure ())
                          }
+
+hurleyPLOptions :: FirstOrderParserOptions PureLexiconFOL u Identity
+hurleyPLOptions = FirstOrderParserOptions
+                         { atomicSentenceParser = \x -> try (parsePredicateSymbolNoParen "ABCDEFGHIJKLMNOPQRSTUVWXYZ" x)
+                                                        <|> sentenceLetterParser "ABCDEFGHIJKLMNOPQRSTUVWXYZ" 
+                                                        <|> equalsParser x 
+                         , quantifiedSentenceParser' = altQuantifiedSentenceParser
+                         , freeVarParser = parseFreeVar "xyz"
+                         , constantParser = Just (parseConstant "abcdefghijklmnopqrstuvw")
+                         , functionParser = Nothing
+                         , hasBooleanConstants = False
+                         , parenRecur = hurleyDispatch
+                         , opTable = hausmanOpTable
+                         , finalValidation = const (pure ())
+                         }
+    where hurleyDispatch opt rw = (wrappedWith '{' '}' (rw opt) <|> wrappedWith '(' ')' (rw opt) <|> wrappedWith '[' ']' (rw opt)) >>= boolean
+          boolean a = if isBoolean a then return a else unexpected "atomic or quantified sentence wrapped in parentheses"
 
 hausmanPLOptions :: FirstOrderParserOptions PureLexiconFOL u Identity
 hausmanPLOptions = FirstOrderParserOptions 
@@ -308,8 +333,14 @@ goldfarbNDFormulaParser = parserFromOptions goldfarbNDParserOptions
 bergmannMoorAndNelsonPDFormulaParser :: Parsec String u PureFOLForm
 bergmannMoorAndNelsonPDFormulaParser = parserFromOptions bergmannMoorAndNelsonFOLParserOptions
 
+bergmannMoorAndNelsonPDEFormulaParser :: Parsec String u PureFOLForm
+bergmannMoorAndNelsonPDEFormulaParser = parserFromOptions bergmannMoorAndNelsonPLEParserOptions
+
 hausmanPLFormulaParser :: Parsec String u PureFOLForm
 hausmanPLFormulaParser = parserFromOptions hausmanPLOptions
+
+hurleyPLFormulaParser :: Parsec String u PureFOLForm
+hurleyPLFormulaParser = parserFromOptions hurleyPLOptions
 
 howardSnyderPLFormulaParser :: Parsec String u PureFOLForm
 howardSnyderPLFormulaParser = parserFromOptions howardSnyderPLOptions

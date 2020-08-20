@@ -6,7 +6,7 @@ module Carnap.Languages.PureFirstOrder.Logic
         , parseMagnusQL, magnusQLCalc
         , parseThomasBolducAndZachFOL, thomasBolducAndZachFOLCalc
         , parseThomasBolducAndZachFOLCore, thomasBolducAndZachFOL2019Calc, thomasBolducAndZachFOLPlus2019Calc
-        , parseLogicBookPD, logicBookPDCalc, logicBookPDPlusCalc
+        , parseLogicBookPD, logicBookPDCalc, logicBookPDPlusCalc, logicBookPDEPlusCalc
         , parseHausmanPL, hausmanPLCalc
         , parseHowardSnyderPL, howardSnyderPLCalc
         , parseIchikawaJenkinsQL, ichikawaJenkinsQLCalc
@@ -32,6 +32,7 @@ import Carnap.Languages.PureFirstOrder.Logic.BergmannMoorAndNelson
 import Carnap.Languages.PureFirstOrder.Logic.Hausman
 import Carnap.Languages.PureFirstOrder.Logic.Gamut
 import Carnap.Languages.PureFirstOrder.Logic.HowardSnyder
+import Carnap.Languages.PureFirstOrder.Logic.Hurley
 import Carnap.Languages.PureFirstOrder.Logic.Hardegree
 import Carnap.Languages.PureFirstOrder.Logic.Bonevac
 import Carnap.Languages.PureFirstOrder.Logic.Goldfarb
@@ -51,15 +52,19 @@ ofFOLSys f sys | sys == "firstOrder"                      = Just $ f folCalc
                | sys == "ebelsDugganFOL"                  = Just $ f ebelsDugganFOLCalc
                | sys == "LogicBookPD"                     = Just $ f logicBookPDCalc 
                | sys == "LogicBookPDPlus"                 = Just $ f logicBookPDPlusCalc 
+               | sys == "LogicBookPDE"                    = Just $ f logicBookPDECalc 
+               | sys == "LogicBookPDEPlus"                = Just $ f logicBookPDEPlusCalc 
                | sys == "hausmanPL"                       = Just $ f hausmanPLCalc 
                | sys == "gamutND"                         = Just $ f gamutNDCalc
                | sys == "gamutNDPlus"                     = Just $ f gamutNDPlusCalc
                | sys == "gallowPL"                        = Just $ f gallowPLCalc
                | sys == "gallowPLPlus"                    = Just $ f gallowPLPlusCalc
                | sys == "howardSnyderPL"                  = Just $ f howardSnyderPLCalc 
+               | sys == "hurleyPL"                        = Just $ f hurleyPLCalc 
                | sys == "ichikawaJenkinsQL"               = Just $ f ichikawaJenkinsQLCalc
                | sys == "hardegreePL"                     = Just $ f hardegreePLCalc 
                | sys == "bonevacQL"                       = Just $ f bonevacQLCalc
+               | sys == "goldfarbND"                      = Just $ f goldfarbNDCalc
                | sys == "goldfarbAltND"                   = Just $ f goldfarbAltNDCalc
                | sys == "goldfarbNDPlus"                  = Just $ f goldfarbNDPlusCalc
                | sys == "goldfarbAltNDPlus"               = Just $ f goldfarbAltNDPlusCalc

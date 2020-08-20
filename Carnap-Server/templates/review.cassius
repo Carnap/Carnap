@@ -7,3 +7,5 @@
 .hidden
     display:none;
 
+.proofDisplay
+    z-index:0;

@@ -391,6 +391,7 @@
 [data-carnap-type="synchecker"].success .tree,
 [data-carnap-type="proofchecker"].success > .goal,
 [data-carnap-type="treedeductionchecker"].success > .input,
+[data-carnap-type="sequentchecker"].success > .input,
 [data-carnap-type="truthtable"].success > .input, 
 [data-carnap-type="countermodeler"].success > .input {
     background: #b9f2b7;
@@ -400,6 +401,7 @@
 [data-carnap-type="synchecker"].success .tree::after,
 [data-carnap-type="treedeductionchecker"].success > .input::after,
 [data-carnap-type="countermodeler"].success > .input::after,
+[data-carnap-type="sequentchecker"].success > .input::after,
 [data-carnap-type="truthtable"].success > .input::after {
     float: right;
     content:" ✓ ";

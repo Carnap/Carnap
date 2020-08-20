@@ -15,6 +15,7 @@ makeQualitativeProblems x = x
 
 activate cls extra chunk
     | "MultipleChoice" `elem` cls = mctemplate (opts [("qualitativetype","multiplechoice"), ("goal", contentOf h) ])
+    | "MultipleSelection" `elem` cls = mctemplate (opts [("qualitativetype","multipleselection"), ("goal", contentOf h) ])
     | "ShortAnswer" `elem` cls = template (opts [("qualitativetype","shortanswer"), ("goal", contentOf h) ])
     | "Numerical" `elem` cls = case splitOn ":" (contentOf h) of
                                    [g,p] -> template (opts [ ("qualitativetype","numerical")

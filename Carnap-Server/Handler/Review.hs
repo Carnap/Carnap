@@ -14,9 +14,13 @@ import Carnap.Languages.PurePropositional.Syntax
 import Carnap.Languages.PureFirstOrder.Syntax
 import Carnap.Languages.PurePropositional.Logic (ofPropSys)
 import Carnap.Languages.PureFirstOrder.Logic (ofFOLSys)
+import Carnap.Languages.SetTheory.Logic.Carnap (ofSetTheorySys)
+import Carnap.Languages.PureSecondOrder.Logic (ofSecondOrderSys)
+import Carnap.Languages.ModalPropositional.Logic (ofModalPropSys)
+import Carnap.Languages.DefiniteDescription.Logic.Gamut (ofDefiniteDescSys)
 import Carnap.Calculi.NaturalDeduction.Syntax (NaturalDeductionCalc(..))
 import Carnap.GHCJS.SharedTypes
-import Carnap.GHCJS.SharedFunctions (simpleCipher,simpleHash)
+import Carnap.GHCJS.SharedFunctions (simpleCipher,simpleHash,inOpts)
 
 deleteReviewR :: Text -> Text -> Handler Value
 deleteReviewR coursetitle filename = do
@@ -52,6 +56,7 @@ getReviewR coursetitle filename =
                                             musers <- mapM get uids
                                             return (sortBy maybeLnSort $ zip muserdata uids, zip uids musers)
            let problems = sortBy theSorting unsortedProblems
+               due = assignmentMetadataDuedate val
            defaultLayout $ do
                addScript $ StaticR js_popper_min_js
                addScript $ StaticR js_proof_js
@@ -91,19 +96,23 @@ selectUser list =
                         <option value="#{show v}">unknown
         |]
 
-renderProblem uidanduser (Entity key val) = do
+renderProblem due uidanduser (Entity key val) = do
         let ident = problemSubmissionIdent val
             uid = problemSubmissionUserId val
             extra = problemSubmissionExtra val
             correct = problemSubmissionCorrect val
             Just user = lookup uid uidanduser
+            late = maybe False (problemSubmissionTime val `laterThan`) due
         (updateSubmissionWidget,enctypeUpdateSubmission) <- generateFormPost (identifyForm "updateSubmission" $ updateSubmissionForm extra ident (show uid))
         let isGraded = if correct then "graded"
                                   else case extra of Just _ -> "graded"; _ -> "ungraded" :: String
             howGraded = if correct then "automatically graded"
                                    else case extra of Just _ -> "manually graded"; _ -> "ungraded" :: String
             credit =  case problemSubmissionCredit val of Just n -> n; _ -> 5
-            score =  if correct then credit else 0
+            lateIndicator = if late then "(late)" else "" :: String
+            score | correct && not late = credit
+                  | correct = (floor ((fromIntegral credit :: Rational) / 2))
+                  | otherwise = 0
             awarded = case extra of Just n -> show n; _ -> "0" :: String
             mailto theuser = sanatizeHtml (userIdent theuser) ++ "?subject=[Carnap-" ++ sanatizeHtml ident ++ "]"
             template display = 
@@ -118,7 +127,7 @@ renderProblem uidanduser (Entity key val) = do
                                 <div.col-sm-4>
                                     <h6.review-status>#{howGraded}
                                     <h6.point-value>point value: #{credit}
-                                    <h6.points-score>submission score: #{score}
+                                    <h6.points-score>submission score: #{score} #{lateIndicator}
                                     <h6.points-awarded>points added: #{awarded}
                                     <hr>
                                     <form.updateSubmission enctype=#{enctypeUpdateSubmission}>
@@ -149,12 +158,23 @@ renderProblem uidanduser (Entity key val) = do
                 [whamlet|
                     <div data-carnap-type="proofchecker"
                          data-carnap-system="#{sys}"
-                         data-carnap-options="resize"
-                         data-carnap-goal="#{goal}"
+                         data-carnap-options="#{reviewOptions}"
+                         data-carnap-guides="#{guides}"
+                         data-carnap-goal="#{formatContent (unpack goal)}"
                          data-carnap-submission="none">
                          #{der}
                 |]
-                where sys = case lookup "system" (M.fromList opts) of Just s -> s; Nothing -> "prop"
+                where reviewOptions :: String
+                      reviewOptions = "resize" ++ if "render" `inOpts` M.fromList opts then " render" else ""
+                                               ++ if "guides" `inOpts` M.fromList opts then " guides" else ""
+                      sys = case lookup "system" (M.fromList opts) of Just s -> s; Nothing -> "prop"
+                      guides = case lookup "guides" (M.fromList opts) of Just s -> s; Nothing -> "none"
+                      formatContent c = maybe c id $ (ndNotation `ofPropSys` sys) 
+                                             `mplus` (ndNotation `ofFOLSys` sys)
+                                             `mplus` (ndNotation `ofSecondOrderSys` sys)
+                                             `mplus` (ndNotation `ofSetTheorySys` sys)
+                                             `mplus` (ndNotation `ofDefiniteDescSys` sys)
+                                             `mplus` (ndNotation `ofModalPropSys` sys) <*> Just c
             (TruthTable, TruthTableData goal tt) -> template
                 [whamlet|
                     <div data-carnap-type="truthtable"
@@ -168,13 +188,20 @@ renderProblem uidanduser (Entity key val) = do
                     <div data-carnap-type="truthtable"
                          data-carnap-tabletype="#{tabletype}"
                          data-carnap-system="#{ttsystem}"
+                         data-carnap-truemark="#{trueMark}"
+                         data-carnap-falsemark="#{falseMark}"
                          data-carnap-submission="none"
-                         data-carnap-options="immutable nocheck nocounterexample"
+                         data-carnap-value=#{renderTT tt}
+                         data-carnap-options="#{reviewOptions}"
                          data-carnap-goal="#{formatContent (unpack goal)}">
                          #{renderTT tt}
                 |]
                 where tabletype = case lookup "tabletype" (M.fromList opts) of Just s -> s; Nothing -> checkvalidity goal 
                       ttsystem = case lookup "system" (M.fromList opts) of Just s -> s; Nothing -> "prop"
+                      trueMark = case lookup "truemark" (M.fromList opts) of Just s -> s; Nothing -> "T"
+                      falseMark = case lookup "falsemark" (M.fromList opts) of Just s -> s; Nothing -> "F"
+                      reviewOptions :: String
+                      reviewOptions = "immutable nocheck nocounterexample" ++ if "turnstilemark" `inOpts` M.fromList opts then " turnstilemark" else ""
                       formatContent c = case (ndNotation `ofPropSys` ttsystem) <*> maybeString of Just s -> s; Nothing -> ""
                         where maybeString = (show <$> (readMaybe c :: Maybe PureForm))
                                     `mplus` (intercalate "," . map show <$> (readMaybe c :: Maybe [PureForm]))
@@ -212,14 +239,17 @@ renderProblem uidanduser (Entity key val) = do
                     <div data-carnap-type="translate"
                          data-carnap-transtype="#{transtype}"
                          data-carnap-system="#{sys}"
-                         $nothing
-                         data-carnap-goal="#{show (simpleCipher (unpack goal))}"
+                         data-carnap-goal="#{show (simpleCipher (formatContent (unpack goal)))}"
                          data-carnap-submission="none"
                          data-carnap-problem="#{problem}">
                          #{trans}
                 |]
                 where transtype = case lookup "transtype" (M.fromList opts) of Just s -> s; Nothing -> "prop"
-                      problem = case lookup "problem" (M.fromList opts) of Just s -> s ++ " : " ++ (unpack goal)
+                      formatContent c = case transtype of
+                                            "prop" -> maybe c id $ ndNotation `ofPropSys` sys <*> Just c
+                                            "first-order" -> maybe c id $ ndNotation `ofFOLSys` sys <*> Just c
+                                            "description" -> maybe c id $ ndNotation `ofDefiniteDescSys` sys <*> Just c
+                      problem = case lookup "problem" (M.fromList opts) of Just s -> s ++ " : " ++ (formatContent $ unpack goal)
                       sys = case lookup "system" (M.fromList opts) of 
                                 Just s -> s; 
                                 Nothing -> if transtype == "prop" then "prop" else "firstOrder"
@@ -259,9 +289,31 @@ renderProblem uidanduser (Entity key val) = do
                                         Nothing -> "Error no content"
                                         Just cnt -> unlines . map processEntry . lines . unpack $ cnt
                       processEntry l = case readMaybe l :: Maybe (Int, String) of
+                                           Just (h,s) | s == unpack answer && h == simpleHash ('+':s) -> show (simpleHash ('+':s), s)
+                                           Just (h,s) | s == unpack answer && h == simpleHash ('*':s) -> show (simpleHash ('+':s), s)
                                            Just (h,s) | s == unpack answer -> show (simpleHash ('-':s), s)
                                            Just (h,s) | h == simpleHash ('-':s) -> show (simpleHash s, s)
                                            Just (h,s) | h == simpleHash ('+':s) -> show (simpleHash ('*':s), s)
+                                           Just (h,s) -> show (h, s)
+                                           Nothing -> "indeciperable entry"
+            (Qualitative, QualitativeMultipleSelection goal answer opts) -> template
+                [whamlet|
+                    <div data-carnap-type="qualitative"
+                         data-carnap-qualitativetype="multipleselection"
+                         data-carnap-goal="#{unpack goal}"
+                         data-carnap-submission="none">
+                         #{content}
+                |]
+                where content = case lookup "content" (M.fromList opts) of
+                                        Nothing -> "Error no content"
+                                        Just cnt -> unlines . map processEntry . lines . unpack $ cnt
+                      tryMaybe (Just True) = True
+                      tryMaybe _ = False
+                      processEntry l = case readMaybe l :: Maybe (Int, String) of
+                                           Just (h,s) | h == simpleHash ('*':s) && tryMaybe (lookup s answer) -> show (simpleHash ('+':s), s)
+                                           Just (h,s) | h == simpleHash ('+':s) && not (tryMaybe (lookup s answer)) -> show (simpleHash ('*':s), s)
+                                           Just (h,s) | h == simpleHash s && not (tryMaybe (lookup s answer)) -> show (simpleHash ('-':s), s)
+                                           Just (h,s) | h == simpleHash ('-':s) && tryMaybe (lookup s answer) -> show (simpleHash s, s)
                                            Just (h,s) -> show (h, s)
                                            Nothing -> "indeciperable entry"
 

@@ -15,12 +15,12 @@ minimalLayout c = [whamlet|
                           #{c}
                   |]
 
-retrieveCss metaval = case metaval of 
+retrievePandocVal metaval = case metaval of 
                         Just (MetaInlines ils) -> return $ Just (catMaybes (map fromStr ils))
-                        Just (MetaList list) -> do mcsses <- mapM retrieveCss (map Just list) 
+                        Just (MetaList list) -> do mcsses <- mapM retrievePandocVal (map Just list) 
                                                    return . Just . concat . catMaybes $ mcsses
                         Nothing -> return Nothing
-                        x -> setMessage (toHtml ("bad css metadata: " ++ show x)) >> return Nothing
+                        x -> setMessage (toHtml ("bad yaml metadata: " ++ show x)) >> return Nothing
     where fromStr (Str x) = Just x
           fromStr _ = Nothing
 
@@ -42,11 +42,5 @@ asFile doc path = do addHeader "Content-Disposition" $ concat
 asCss :: Document -> FilePath -> Handler TypedContent
 asCss _ path = sendFile typeCss path
 
-customLayout css widget = do
-        master <- getYesod
-        mmsg <- getMessage
-        authmaybe <- maybeAuth
-        instructors <- instructorIdentList
-        let customLayoutCss = css
-        pc <- widgetToPageContent $(widgetFile "default-layout")
-        withUrlRenderer $(hamletFile "templates/custom-layout-wrapper.hamlet")
+asJs :: Document -> FilePath -> Handler TypedContent
+asJs _ path = sendFile typeJavascript path

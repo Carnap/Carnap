@@ -86,11 +86,28 @@ parseGoldfarbNDProof ders = toDeductionLemmon (parseGoldfarbND ders) goldfarbNDF
 parseGoldfarbAltNDProof ::  RuntimeNaturalDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine GoldfarbND PureLexiconFOL (Form Bool)]
 parseGoldfarbAltNDProof ders = toDeductionLemmonAlt (parseGoldfarbND ders) goldfarbNDFormulaParser
 
+dropPredParens :: String -> String 
+dropPredParens x = case runParser altParser 0 "" x of
+                        Left e -> show e
+                        Right s -> s
+    where altParser = do s <- try handleAtom <|> fallback
+                         rest <- (eof >> return "") <|> altParser
+                         return $ s ++ rest
+          handleAtom = do c <- oneOf "ABCDEFGHIJKLMNOPQRSTUVWXYZ" <* char '('
+                          args <- oneOf "abcdefghijklmnopqrstuvwxyz" `sepBy` char ','
+                          char ')'
+                          return $ c:args
+          fallback = do c <- anyChar 
+                        return [c]
+
 goldfarbNDCalc = mkNDCalc
     { ndRenderer = LemmonStyle StandardLemmon
     , ndParseProof = parseGoldfarbNDProof
     , ndProcessLine = hoProcessLineLemmon
     , ndProcessLineMemo = Just hoProcessLineLemmonMemo
+    , ndParseForm = goldfarbNDFormulaParser
+    , ndParseSeq = parseSeqOver goldfarbNDFormulaParser
+    , ndNotation = dropPredParens --Goldfarb's full notation is actually a bit weirder
     }
 
 goldfarbAltNDCalc = goldfarbNDCalc { ndParseProof = parseGoldfarbAltNDProof }
@@ -159,7 +176,10 @@ goldfarbNDPlusCalc = mkNDCalc
     { ndRenderer = LemmonStyle StandardLemmon
     , ndParseProof = parseGoldfarbNDPlusProof
     , ndProcessLine = hoProcessLineLemmon
+    , ndParseForm = goldfarbNDFormulaParser
+    , ndParseSeq = parseSeqOver goldfarbNDFormulaParser
     , ndProcessLineMemo = Just hoProcessLineLemmonMemo
+    , ndNotation = dropPredParens --Goldfarb's full notation is actually a bit weirder
     }
 
 goldfarbAltNDPlusCalc = goldfarbNDPlusCalc { ndParseProof = parseGoldfarbAltNDPlusProof }

@@ -74,7 +74,7 @@ activateChecker w (Just (i, o, opts)) = case (setupWith `ofPropTreeSys` sys)
                   memo <- newIORef mempty
                   threadRef <- newIORef (Nothing :: Maybe ThreadId)
                   bw <- createButtonWrapper w o
-                  let submit = submitTree memo opts calc root mgoal
+                  let submit = submitTree w memo opts calc root mgoal
                   btStatus <- createSubmitButton w bw submit opts
                   if "displayJSON" `inOpts` opts 
                       then do
@@ -146,18 +146,18 @@ updateInfo calc Nothing (Just seq) wrap = setInnerHTML wrap (Just . tbNotation c
 updateInfo _ Nothing Nothing wrap  = setInnerHTML wrap (Just "Awaiting a proof")
 updateInfo _ _ _ wrap = setAttribute wrap "class" ""
 
-submitTree memo opts calc root (Just seq) l = 
+submitTree w memo opts calc root (Just seq) l = 
         do Just val <- liftIO $ toCleanVal root
            case parse parseTreeJSON val of
                Error s -> message $ "Something has gone wrong. Here's the error:" ++ s
                Success tree -> case toProofTree calc tree of
-                     Left _ | "exam" `inOpts` opts -> trySubmit DeductionTree opts l (DeductionTreeData (pack (show seq)) tree (toList opts)) False
+                     Left _ | "exam" `inOpts` opts -> trySubmit w DeductionTree opts l (DeductionTreeData (pack (show seq)) tree (toList opts)) False
                      Left _ -> message "Something is wrong with the proof... Try again?"
                      Right prooftree -> do 
                           validation <- liftIO $ hoReduceProofTreeMemo memo (structuralRestriction prooftree) prooftree 
                           case validation of
                               Right seq' | "exam" `inOpts` opts || (seq' `seqSubsetUnify` seq) 
-                                -> trySubmit DeductionTree opts l (DeductionTreeData (pack (show seq)) tree (toList opts)) (seq' `seqSubsetUnify` seq)
+                                -> trySubmit w DeductionTree opts l (DeductionTreeData (pack (show seq)) tree (toList opts)) (seq' `seqSubsetUnify` seq)
                               _ -> message "Something is wrong with the proof... Try again?"
 
 checkOnChange :: ( ReLex lex

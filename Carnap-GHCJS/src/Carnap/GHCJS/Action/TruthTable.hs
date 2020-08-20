@@ -1,4 +1,4 @@
-{-# LANGUAGE RankNTypes, FlexibleContexts #-}
+{-# LANGUAGE RankNTypes, FlexibleContexts, TypeSynonymInstances, FlexibleInstances #-}
 module Carnap.GHCJS.Action.TruthTable (truthTableAction) where
 
 import Lib
@@ -25,7 +25,7 @@ import Data.IORef (newIORef, IORef, readIORef,writeIORef, modifyIORef)
 import Data.Map as M (Map, lookup, foldr, insert, fromList, toList)
 import Data.Text (pack)
 import Data.Either (rights)
-import Data.List (subsequences, intercalate, nub, zip4, intersperse)
+import Data.List (sort, sortOn, subsequences, intercalate, nub, zip4, intersperse)
 import Control.Monad.IO.Class (liftIO)
 import Control.Lens (toListOf, preview)
 import Control.Lens.Plated (children)
@@ -63,8 +63,8 @@ activateTruthTables w (Just (i,o,opts)) = do
                       Right f -> do
                           ref <- newIORef False
                           bw <- createButtonWrapper w o
-                          (check,rows) <- ttbuilder w f (i,o) ref bw opts
-                          let submit = submitTruthTable opts ref check rows (show f)
+                          (check,valref)<- ttbuilder w f (i,o) ref bw opts
+                          let submit = submitTruthTable w opts ref check valref (show f)
                           btStatus <- createSubmitButton w bw submit opts
                           doOnce o change False $ liftIO $ btStatus Edited
                           if "nocheck" `inOpts` opts then return () 
@@ -85,25 +85,32 @@ activateTruthTables w (Just (i,o,opts)) = do
                                                 liftIO $ writeIORef ref False
                                                 setAttribute wrap  "class" "failure"
 
-submitTruthTable:: IsEvent e => Map String String -> IORef Bool ->  IO Bool -> [Element] -> String -> String -> EventM HTMLInputElement e ()
-submitTruthTable opts ref check rows s l = do isDone <- liftIO $ readIORef ref
-                                              if isDone 
-                                                 then trySubmit TruthTable opts l (ProblemContent (pack s)) True
-                                                 else if "exam" `inOpts` opts
-                                                          then do correct <- liftIO check
-                                                                  if correct
-                                                                      then trySubmit TruthTable opts l (ProblemContent (pack s)) True
-                                                                      else do tabulated <- liftIO $ mapM unpackRow rows
-                                                                              trySubmit TruthTable opts l (TruthTableDataOpts (pack s) (reverse tabulated) (M.toList opts)) False
-                                                          else message "not yet finished (do you still need to check your answer?)"
+submitTruthTable:: (SerializableAsTruthTable ref, IsEvent e) => 
+    Document -> Map String String -> IORef Bool ->  IO Bool -> ref -> String -> String -> EventM HTMLInputElement e ()
+submitTruthTable w opts ref check values s l = 
+        do isDone <- liftIO $ readIORef ref
+           correct <- liftIO check
+           tabulated <- liftIO $ serializeTT values
+           if isDone then trySubmit w TruthTable opts l (ProblemContent (pack s)) True 
+                     --XXX: wait until we have a good way of saving
+                     --counterexamples to save the problem in the above
+                     --case. Otherwise you could confusingly save a failing
+                     --truth table as correct.
+                     else if "exam" `inOpts` opts
+                             then trySubmit w TruthTable opts l (TruthTableDataOpts (pack s) tabulated (M.toList opts)) correct
+                             else message "not yet finished (do you still need to check your answer?)"
 
 -------------------------
 --  Full Truth Tables  --
 -------------------------
 
+type GridRef = IORef (Map (Int,Int) (Bool, Maybe Bool))
+
+type ContractableGridRef = (GridRef, [Either Char PureForm])
+
 createValidityTruthTable :: Document -> PropSequentCalc (Sequent (Form Bool)) 
     -> (Element,Element) -> IORef Bool -> Element -> Map String String
-    -> IO (IO Bool, [Element])
+    -> IO (IO Bool, ContractableGridRef)
 createValidityTruthTable w (antced :|-: succed) (i,o) ref bw opts =
         do setInnerHTML i (Just . rewriteWith opts . show $ (antced :|-: succed))
            admissibleRows <- case M.lookup "counterexample-to" opts of
@@ -131,15 +138,15 @@ createValidityTruthTable w (antced :|-: succed) (i,o) ref bw opts =
             where succVals = map (unform . satisfies v) succedList
           isInconCE v = and (map (unform . satisfies v) antecedList)
                      && and (map (unform . satisfies v) succedList)
-          atomIndicies = nub . sort . concatMap getIndicies $ forms
+          atomIndicies = nub . sortIdx . concatMap getIndicies $ forms
           valuations = map toValuation . subsequences $ reverse atomIndicies
           orderedChildren = concat $ intersperse [Left ','] (map (toOrderedChildren . fromSequent) (toListOf concretes antced))
-                                  ++ [[Left '⊢']] 
+                                  ++ (if "double-turnstile" `inOpts` opts then [[Left '⊨']] else [[Left '⊢']])
                                   ++ intersperse [Left ','] (map (toOrderedChildren. fromSequent) (toListOf concretes succed))
 
 createSimpleTruthTable :: Document -> [PureForm] -> (Element,Element) -> IORef Bool 
     -> Element -> Map String String 
-    -> IO (IO Bool,[Element])
+    -> IO (IO Bool,ContractableGridRef)
 createSimpleTruthTable w fs (i,o) ref bw opts = 
         do setInnerHTML i (Just . intercalate ", " . map (rewriteWith opts . show) $ fs)
            case M.lookup "counterexample-to" opts of
@@ -154,13 +161,13 @@ createSimpleTruthTable w fs (i,o) ref bw opts =
           isEquivCE v = not (and vals || and (map not vals))
             where vals = map (not . unform . satisfies v) fs
           isInconCE v = and (map (unform . satisfies v) fs)
-          atomIndicies = nub . sort . concatMap getIndicies $ fs
+          atomIndicies = nub . sortIdx . concatMap getIndicies $ fs
           valuations = map toValuation . subsequences $ reverse atomIndicies
           orderedChildren = concat . intersperse [Left ','] . map toOrderedChildren $ fs
 
 assembleTable :: Document -> Map String String -> Element -> [Either Char PureForm] 
     -> [Int -> Bool] -> [Int] -> [Maybe Bool]
-    -> IO (IO Bool, [Element])
+    -> IO (IO Bool, ContractableGridRef)
 assembleTable w opts o orderedChildren valuations atomIndicies admissibleRows = 
         do (table, thead, tbody) <- initTable w          
            gridRef <- makeGridRef (length orderedChildren) (length valuations)
@@ -169,8 +176,8 @@ assembleTable w opts o orderedChildren valuations atomIndicies admissibleRows =
            mapM_ (appendChild tbody . Just) (reverse rows)
            appendChild thead (Just head)
            appendChild o (Just table)
-           let check = M.foldr (&&) True <$> readIORef gridRef 
-           return (check,rows)
+           let check = M.foldr (\(v2,_) v1 -> v1 && v2) True <$> readIORef gridRef 
+           return (check,(gridRef,orderedChildren))
     where toRow' = toRow w opts atomIndicies orderedChildren
           givens = makeGivens opts (Just $ length valuations) orderedChildren
 
@@ -218,7 +225,7 @@ tryCounterexample w opts ref i indicies isCounterexample =
               checkLength l = if length l == length indicies then Just l else Nothing
 
 toRow :: Document -> Map String String -> [Int] 
-    -> [Either Char PureForm] -> IORef (Map (Int,Int) Bool) 
+    -> [Either Char PureForm] -> GridRef
     -> (Int -> Bool, Int, Maybe Bool, [Maybe Bool])
     -> IO Element
 toRow w opts atomIndicies orderedChildren gridRef (v,n,mvalid,given) = 
@@ -230,13 +237,13 @@ toRow w opts atomIndicies orderedChildren gridRef (v,n,mvalid,given) =
            mapM_ (appendChild row . Just) (valTds ++ [sep] ++ childTds)
            return row
     where toValTd i = do Just td <- createElement w (Just "td")
-                         setInnerHTML td (Just $ if v i then "T" else "F")
+                         setInnerHTML td (Just $ if v i then trueMark opts else falseMark opts)
                          setAttribute td "class" "valtd"
                          return td
           toChildTd :: (Either Char PureForm, Int, Maybe Bool) -> IO Element
           toChildTd (c,m,mg) = do Just td <- createElement w (Just "td")
                                   case c of
-                                      Left '⊢' -> case mvalid of
+                                      Left c' | c' `elem` ['⊢','⊨'] -> case mvalid of
                                                    Just tv -> addDropdown ("turnstilemark" `inOpts` opts) m td tv mg
                                                    Nothing -> setInnerHTML td (Just "")
                                       Left c'  -> setInnerHTML td (Just "")
@@ -247,15 +254,16 @@ toRow w opts atomIndicies orderedChildren gridRef (v,n,mvalid,given) =
                                   return td
 
           addDropdown turnstileMark m td bool mg = 
-                                     do case mg of 
-                                            Nothing -> modifyIORef gridRef (M.insert (n,m) False)
-                                            Just True -> modifyIORef gridRef (M.insert (n,m) bool)
-                                            Just False -> modifyIORef gridRef (M.insert (n,m) (not bool))
+                                     do 
+                                        case mg of 
+                                            Nothing -> modifyIORef gridRef (M.insert (m,n) (False, Nothing))
+                                            Just True -> modifyIORef gridRef (M.insert (m,n) (bool, Just True))
+                                            Just False -> modifyIORef gridRef (M.insert (m,n) (not bool, Just False))
                                         case mg of
                                             Just val | "strictGivens" `inOpts` opts || "immutable" `inOpts` opts ->
                                                  do Just span <- createElement w (Just "span")
-                                                    if val then setInnerHTML span (Just $ if turnstileMark then "✓" else "T")
-                                                           else setInnerHTML span (Just $ if turnstileMark then "✗" else "F")
+                                                    if val then setInnerHTML span (Just $ if turnstileMark then "✓" else trueMark opts)
+                                                           else setInnerHTML span (Just $ if turnstileMark then "✗" else falseMark opts)
                                                     appendChild td (Just span)
                                             _ | "immutable" `inOpts` opts -> 
                                                  do Just span <- createElement w (Just "span")
@@ -269,17 +277,22 @@ toRow w opts atomIndicies orderedChildren gridRef (v,n,mvalid,given) =
 
           switchOnMatch m tv = do 
                              Just t <- target :: EventM HTMLSelectElement Event (Maybe HTMLSelectElement)
-                             s <- getValue t 
-                             if s `elem` [Just "T", Just "✓"]
-                                 then liftIO $ modifyIORef gridRef (M.insert (n,m) tv)
-                                 else liftIO $ modifyIORef gridRef (M.insert (n,m) (not tv))
+                             sel <- getValue t 
+                             case stringToTruthValue opts sel of
+                                 Just True -> liftIO $ modifyIORef gridRef (M.insert (m,n) (tv, Just True))
+                                 Just False -> liftIO $ modifyIORef gridRef (M.insert (m,n) (not tv, Just False))
+                                 Nothing -> liftIO $ modifyIORef gridRef (M.insert (m,n) (False, Nothing))
 
 ----------------------------
 --  Partial Truth Tables  --
 ----------------------------
 
+type RowRef = IORef (Map Int (Maybe Bool))
+
+type ContractableRowRef = (IORef (Map Int (Maybe Bool)), [Either Char PureForm])
+
 createPartialTruthTable :: Document -> ([PureForm],[PureForm]) -> (Element,Element) -> IORef Bool 
-    -> Element -> Map String String -> IO (IO Bool,[Element])
+    -> Element -> Map String String -> IO (IO Bool, ContractableRowRef)
 createPartialTruthTable w (gs,fs) (i,o) _ _ opts = 
         do (table, thead, tbody) <- initTable w
            setInnerHTML i (Just . intercalate ", " . map (rewriteWith opts . show) $ fs)
@@ -289,15 +302,20 @@ createPartialTruthTable w (gs,fs) (i,o) _ _ opts =
            appendChild tbody (Just row)
            appendChild thead (Just head)
            appendChild o (Just table)
-           return (check rRef,[row])
-    where atomIndicies = nub . sort . concatMap getIndicies $ fs ++ gs
+           return (check rRef,(rRef,orderedChildren))
+    where atomIndicies = nub . sortIdx . concatMap getIndicies $ fs ++ gs
           valuations = (map toValuation) . subsequences $ reverse atomIndicies
           orderedConstraints = concat . intersperse [Left ','] . map toOrderedChildren $ gs
           orderedSolvables = concat . intersperse [Left ','] . map toOrderedChildren $ fs
           orderedChildren = orderedConstraints ++ orderedSolvables
-          givens = makeGivens opts Nothing orderedChildren
+          blank = all (`elem` [' ','\t'])
+          givens = case map packText . filter (not . blank) . lines <$> M.lookup "content" opts of
+                       Just (r:rs) | length (expandRow orderedSolvables r) == length orderedSolvables
+                            -> map (\r' -> map (const Nothing) orderedConstraints ++ r') (makeGivens opts Nothing orderedSolvables)
+                            --XXX:workaround for issue with missing data in
+                            --saved partial truthtables with givens.
+                       _ -> makeGivens opts Nothing orderedChildren
           toPartialRow' = toPartialRow w opts orderedSolvables orderedConstraints 
-          makeRowRef x = newIORef (M.fromList [(z, Nothing) | z <- [1..x]])
           toPartialHead = 
                 do Just row <- createElement w (Just "tr")
                    childThs <- mapM (toChildTh w) orderedSolvables >>= rewriteThs opts
@@ -356,7 +374,7 @@ toPartialRow w opts orderedSolvables orderedConstraints rRef v givens =
                                       Right _ -> case mg of
                                          --TODO: DRY
                                          Just val -> do Just span <- createElement w (Just "span")
-                                                        setInnerHTML span (Just $ if val then "T" else "F")
+                                                        setInnerHTML span (Just $ if val then trueMark opts else falseMark opts)
                                                         modifyIORef rRef (M.insert m mg)
                                                         appendChild td (Just span)
                                                         return ()
@@ -371,7 +389,7 @@ toPartialRow w opts orderedSolvables orderedConstraints rRef v givens =
           addDropdown m td mg = do case mg of
                                        Just val | "strictGivens" `inOpts` opts || "immutable" `inOpts` opts -> 
                                             do Just span <- createElement w (Just "span")
-                                               setInnerHTML span (Just $ if val then "T" else "F")
+                                               setInnerHTML span (Just $ if val then trueMark opts else falseMark opts)
                                                modifyIORef rRef (M.insert m mg)
                                                appendChild td (Just span)
                                        Just val | "hiddenGivens" `inOpts` opts -> 
@@ -392,7 +410,7 @@ toPartialRow w opts orderedSolvables orderedConstraints rRef v givens =
 
           switch rRef m = do 
                  Just t <- target :: EventM HTMLSelectElement Event (Maybe HTMLSelectElement)
-                 tv <- stringToTruthValue <$> getValue t 
+                 tv <- stringToTruthValue opts <$> getValue t 
                  liftIO $ modifyIORef rRef (M.insert m tv)
 
 ------------------------
@@ -406,8 +424,8 @@ trueFalseOpts w opts turnstileMark mg =
            Just tr  <- createElement w (Just "option")
            Just fs  <- createElement w (Just "option")
            setInnerHTML bl (Just $ if "nodash" `inOpts` opts then " " else "-")
-           setInnerHTML tr (Just $ if turnstileMark then "✓" else "T")
-           setInnerHTML fs (Just $ if turnstileMark then "✗" else "F")
+           setInnerHTML tr (Just $ if turnstileMark then "✓" else trueMark opts)
+           setInnerHTML fs (Just $ if turnstileMark then "✗" else falseMark opts)
            case mg of
                Nothing -> return ()
                Just True -> setAttribute tr "selected" "selected"
@@ -435,9 +453,10 @@ toChildTh :: (Schematizable (f (FixLang f)), CopulaSchema (FixLang f)) => Docume
 toChildTh w c = 
         do Just th <- createElement w (Just "th")
            case c of
-               Left '⊢' -> do setInnerHTML th (Just ['⊢'])
-                              setAttribute th "class" "ttTurstile"
-               Left c'  -> setInnerHTML th (Just [c'])
+               Left c'  -> do if c' `elem` ['⊢','⊨'] 
+                                  then setAttribute th "class" "ttTurstile" 
+                                  else return ()
+                              setInnerHTML th (Just [c'])
                Right f  -> setInnerHTML th (Just $ mcOf f)
            return th
 
@@ -468,21 +487,17 @@ toOrderedChildren = traverseBPT . toBPT
 --  Utility Functions  --
 -------------------------
 
---this is a sorting that gets the correct ordering of indicies (reversed on
---negative, negative less than positive, postive as usual)
-sort :: [Int] -> [Int]
-sort (x:xs) = smaller ++ [x] ++ bigger
-    where smaller = sort (Prelude.filter small xs )
-          bigger = sort (Prelude.filter (not . small) xs)
+--this is a sorting that gets the correct ordering of atomic sentence
+--indicies (reversed on negative, negative less than positive, postive as
+--usual)
+sortIdx :: [Int] -> [Int]
+sortIdx (x:xs) = smaller ++ [x] ++ bigger
+    where smaller = sortIdx (Prelude.filter small xs )
+          bigger = sortIdx (Prelude.filter (not . small) xs)
           small y | x < 0 && y > 0 = False
                   | x < 0 && y < 0 = x < y
                   | otherwise = y < x
-sort [] = []
-
-unpackRow :: Element -> IO [Maybe Bool]
-unpackRow row = getListOfElementsByTag row "select" >>= mapM toValue
-    where toValue (Just e) = do stringToTruthValue <$> getValue (castToHTMLSelectElement e)
-          toValue Nothing = return Nothing
+sortIdx [] = []
 
 packText :: String -> [Maybe Bool]
 packText s = if valid then map charToTruthValue . filter (/= ' ') $ s else []
@@ -491,9 +506,18 @@ packText s = if valid then map charToTruthValue . filter (/= ' ') $ s else []
 expandRow :: [Either Char b] -> [Maybe Bool] ->  [Maybe Bool]
 expandRow (Right y:ys)  (x:xs)  = x : expandRow ys xs 
 expandRow (Left '⊢':ys) (x:xs)  = x : expandRow ys xs 
+expandRow (Left '⊨':ys) (x:xs)  = x : expandRow ys xs 
 expandRow (Left y:ys) xs  = Nothing : expandRow ys xs
 expandRow [] (x:xs)       = Nothing : expandRow [] xs
 expandRow _ _ = []
+
+contractRow :: [Either Char b] -> [Maybe Bool] ->  [Maybe Bool]
+contractRow (Right y:ys)  (x:xs)  = x : contractRow ys xs 
+contractRow (Left '⊢':ys) (x:xs)  = x : contractRow ys xs 
+contractRow (Left '⊨':ys) (x:xs)  = x : contractRow ys xs 
+contractRow (Left y:ys) (x:xs)  = contractRow ys xs
+contractRow [] (x:xs)       = contractRow [] xs
+contractRow _ _ = []
 
 initTable :: Document -> IO (Element, Element, Element)
 initTable w = do (Just table) <- createElement w (Just "table")
@@ -506,8 +530,11 @@ initTable w = do (Just table) <- createElement w (Just "table")
 toValuation :: [Int] -> (Int -> Bool)
 toValuation = flip elem
 
-makeGridRef :: Int -> Int -> IO (IORef (Map (Int,Int) Bool))
-makeGridRef x y = newIORef (M.fromList [((z,w), True) | z <- [1..x], w <-[1.. y]])
+makeGridRef :: Int -> Int -> IO GridRef
+makeGridRef x y = newIORef (M.fromList [((z,w), (True, Nothing)) | z <- [1..x], w <-[1..y]])
+
+makeRowRef :: Int -> IO RowRef
+makeRowRef x = newIORef (M.fromList [(z, Nothing) | z <- [1..x]])
 
 rewriteThs :: Map String String -> [Element] -> IO [Element]
 rewriteThs opts ths = do s <- map deMaybe <$> mapM getInnerHTML ths
@@ -519,16 +546,43 @@ rewriteThs opts ths = do s <- map deMaybe <$> mapM getInnerHTML ths
 
 charToTruthValue :: Char -> Maybe Bool
 charToTruthValue 'T' = Just True
+charToTruthValue '✓' = Just True
 charToTruthValue 'F' = Just False
+charToTruthValue '✗' = Just False
 charToTruthValue _   = Nothing 
 
-stringToTruthValue :: Maybe String -> Maybe Bool
-stringToTruthValue (Just [c]) = charToTruthValue c
-stringToTruthValue _   = Nothing 
+trueMark opts = case M.lookup "truemark" opts of 
+                    Just [c] -> [c]
+                    _ -> "T"
+
+falseMark opts = case M.lookup "falsemark" opts of 
+                    Just [c] -> [c]
+                    _ -> "F"
+
+stringToTruthValue :: Map String String -> Maybe String -> Maybe Bool
+stringToTruthValue opts (Just "✓") = Just True
+stringToTruthValue opts (Just "✗") = Just False
+stringToTruthValue opts (Just c) | c == trueMark opts = Just True
+stringToTruthValue opts (Just c) | c == falseMark opts = Just False
+stringToTruthValue _ _   = Nothing 
 
 mcOf :: (Schematizable (f (FixLang f)), CopulaSchema (FixLang f)) => FixLang f a -> String
 mcOf (h :!$: t) = mcOf h
 mcOf h = show h
+
+class SerializableAsTruthTable a where serializeTT :: a -> IO [[Maybe Bool]]
+
+instance SerializableAsTruthTable ContractableGridRef where 
+        serializeTT (m,c) = do gridAsList <- toList <$> readIORef m
+                               let rowNums = sort . nub . map (\((_,y),_) -> y) $ gridAsList
+                                   rows = map (\n -> filter (\((_,y),_) -> y == n) gridAsList) rowNums
+                                   sortRow r = map (\((_,_),(_,v)) -> v) . sortOn (\((x,_),_) -> x) $ r
+                               return . reverse . map (contractRow c . sortRow) $ rows
+
+instance SerializableAsTruthTable ContractableRowRef where
+        serializeTT (m,c) = do rowAsList<- toList <$> readIORef m
+                               let sortRow r = map (\(_,v) -> v) . sortOn (\(x,_) -> x) $ r
+                               return . (\x->[x]) . contractRow c . sortRow $ rowAsList
 
 makeGivens :: Map String String -> Maybe Int -> [Either Char (FixLang f a)] -> [[Maybe Bool]]
 makeGivens opts mrows orderedChildren = case M.lookup "content" opts of 

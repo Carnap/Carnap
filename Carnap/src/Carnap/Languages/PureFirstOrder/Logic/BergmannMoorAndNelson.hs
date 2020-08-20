@@ -1,9 +1,14 @@
 {-#LANGUAGE  TypeOperators, FlexibleContexts,  FlexibleInstances, MultiParamTypeClasses #-}
-module Carnap.Languages.PureFirstOrder.Logic.BergmannMoorAndNelson (logicBookPDCalc,parseLogicBookPD,logicBookPDPlusCalc,parseLogicBookPDPlus) where
+module Carnap.Languages.PureFirstOrder.Logic.BergmannMoorAndNelson 
+    ( logicBookPDCalc, parseLogicBookPD
+    , logicBookPDPlusCalc, parseLogicBookPDPlus
+    , logicBookPDECalc,parseLogicBookPDE
+    , logicBookPDEPlusCalc, parseLogicBookPDEPlus) where
 
 import Data.Map as M (lookup, Map,empty)
 import Text.Parsec
-import Carnap.Core.Data.Types (Form)
+import Carnap.Core.Data.Types (Form, Term)
+import Carnap.Core.Unification.Unification
 import Carnap.Languages.PureFirstOrder.Syntax
 import Carnap.Languages.PureFirstOrder.Parser
 import Carnap.Languages.PurePropositional.Logic.BergmannMoorAndNelson
@@ -15,6 +20,7 @@ import Carnap.Languages.ClassicalSequent.Parser
 import Carnap.Languages.Util.LanguageClasses
 import Carnap.Languages.Util.GenericConstructors
 import Carnap.Languages.PureFirstOrder.Logic.Rules
+import Carnap.Languages.PureFirstOrder.Util
 import Carnap.Languages.PurePropositional.Logic.Rules (premConstraint,axiom)
 
 data LogicBookPD = SD LogicBookSD | UI | UE 
@@ -89,11 +95,11 @@ logicBookPDCalc = mkNDCalc
     , ndNotation = ndNotation logicBookSDCalc
     }
 
-data LogicBookPDPlus = PD LogicBookPD | SDPlus LogicBookSDPlus | QN1 | QN2 | QN3 | QN4
+data LogicBookPDPlus = PDtoPDP LogicBookPD | SDPlus LogicBookSDPlus | QN1 | QN2 | QN3 | QN4
 
 instance Show LogicBookPDPlus where
         show (SDPlus x) = show x
-        show (PD x) = show x
+        show (PDtoPDP x) = show x
         show QN1 = "QN"
         show QN2 = "QN"
         show QN3 = "QN"
@@ -105,7 +111,8 @@ instance Inference LogicBookPDPlus PureLexiconFOL (Form Bool) where
          ruleOf QN2 = quantifierNegationReplace !! 1
          ruleOf QN3 = quantifierNegationReplace !! 2
          ruleOf QN4 = quantifierNegationReplace !! 3
-         ruleOf (PD x) = ruleOf x
+         ruleOf (PDtoPDP x) = ruleOf x
+         ruleOf r@(SDPlus x) = premisesOf r ∴ conclusionOf r
 
          premisesOf (SDPlus x) = map liftSequent (premisesOf x)
          premisesOf r = upperSequents (ruleOf r)
@@ -114,24 +121,22 @@ instance Inference LogicBookPDPlus PureLexiconFOL (Form Bool) where
          conclusionOf r = lowerSequent (ruleOf r)
 
          indirectInference (SDPlus x) = indirectInference x
-         indirectInference (PD x) = indirectInference x
+         indirectInference (PDtoPDP x) = indirectInference x
          indirectInference _ = Nothing 
 
-         restriction (PD x) = restriction x
+         restriction (PDtoPDP x) = restriction x
          restriction _ = Nothing
 
          isAssumption (SDPlus x) = isAssumption x
-         isAssumption (PD x) = isAssumption x
+         isAssumption (PDtoPDP x) = isAssumption x
          isAssumption _ = False
 
-         isPremise (PD x) = isPremise x
+         isPremise (PDtoPDP x) = isPremise x
          isPremise _ = False
 
 parseLogicBookPDPlus rtc = try liftPD <|> try liftProp <|> qn
-    where liftPD = do r <- parseLogicBookPD rtc
-                      return (map PD r)
-          liftProp = do r <- parseLogicBookSDPlus (RuntimeNaturalDeductionConfig mempty mempty)
-                        return (map SDPlus r)
+    where liftPD = map PDtoPDP <$> parseLogicBookPD rtc
+          liftProp =  map SDPlus <$> parseLogicBookSDPlus (RuntimeNaturalDeductionConfig mempty mempty)
           qn = string "QN" >> return [QN1, QN2, QN3, QN4]
 
 parseLogicBookPDPlusProof :: RuntimeNaturalDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine LogicBookPDPlus PureLexiconFOL (Form Bool)]
@@ -144,5 +149,112 @@ logicBookPDPlusCalc = mkNDCalc
     , ndProcessLineMemo = Just hoProcessLineFitchMemo
     , ndParseSeq = parseSeqOver bergmannMoorAndNelsonPDFormulaParser
     , ndParseForm = bergmannMoorAndNelsonPDFormulaParser
+    , ndNotation = ndNotation logicBookSDPlusCalc
+    }
+
+data LogicBookPDE = PDtoPDE LogicBookPD | II | IE1 | IE2
+                  deriving Eq
+
+instance Show LogicBookPDE where
+        show (PDtoPDE x) = show x
+        show II  = "=I"
+        show IE1 = "=E"
+        show IE2 = "=E"
+
+instance Inference LogicBookPDE PureLexiconFOL (Form Bool) where
+         ruleOf II = [] ∴ Top :|-: SS (lall "v" equality)
+            where equality :: ClassicalSequentOver PureLexiconFOL (Term Int) -> ClassicalSequentOver PureLexiconFOL (Form Bool)
+                  equality x = x `equals` x
+         ruleOf IE1 = leibnizLawVariations !! 0
+         ruleOf IE2 = leibnizLawVariations !! 1
+         ruleOf (PDtoPDE x) = ruleOf x
+
+         premisesOf r = upperSequents (ruleOf r)
+         
+         conclusionOf r = lowerSequent (ruleOf r)
+
+         indirectInference (PDtoPDE x) = indirectInference x
+         indirectInference _ = Nothing 
+
+         restriction (PDtoPDE UE) = Just (closedTerm [tau])
+         restriction (PDtoPDE EI) = Just (closedTerm [tau])
+         restriction (PDtoPDE x) = restriction x
+         restriction IE1 = Just (closedTerm [tau, tau'])
+         restriction IE2 = Just (closedTerm [tau, tau'])
+         restriction _ = Nothing
+
+         isAssumption (PDtoPDE x) = isAssumption x
+         isAssumption _ = False
+
+         isPremise (PDtoPDE x) = isPremise x
+         isPremise _ = False
+
+closedTerm :: [ClassicalSequentOver PureLexiconFOL (Term Int)] -> [Equation (ClassicalSequentOver PureLexiconFOL)] -> Maybe String
+closedTerm [] sub = Nothing
+closedTerm (x:xs) sub 
+    | isOpenTerm (applySub sub x) = Just $ "the term " ++ show (applySub sub x) ++ " appears not to be closed."
+    | otherwise = closedTerm xs sub
+
+parseLogicBookPDE rtc = try liftPD <|> parseEq
+    where liftPD = map PDtoPDE <$> parseLogicBookPD rtc
+          parseEq = try (string "=E" >> return [IE1,IE2]) <|> (string "=I" >> return [II])
+
+parseLogicBookPDEProof :: RuntimeNaturalDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine LogicBookPDE PureLexiconFOL (Form Bool)]
+parseLogicBookPDEProof rtc = toDeductionFitchAlt (parseLogicBookPDE rtc) bergmannMoorAndNelsonPDEFormulaParser
+
+logicBookPDECalc = mkNDCalc
+    { ndRenderer = FitchStyle BergmanMooreAndNelsonStyle
+    , ndParseProof = parseLogicBookPDEProof
+    , ndProcessLine = hoProcessLineFitch
+    , ndProcessLineMemo = Just hoProcessLineFitchMemo
+    , ndParseSeq = parseSeqOver bergmannMoorAndNelsonPDEFormulaParser
+    , ndParseForm = bergmannMoorAndNelsonPDEFormulaParser
+    , ndNotation = ndNotation logicBookSDPlusCalc
+    }
+
+data LogicBookPDEPlus = PDPtoPDEP  LogicBookPDPlus | PDEtoPDEP LogicBookPDE
+
+instance Show LogicBookPDEPlus where
+        show (PDPtoPDEP x) = show x
+        show (PDEtoPDEP x) = show x
+
+instance Inference LogicBookPDEPlus PureLexiconFOL (Form Bool) where
+         ruleOf (PDPtoPDEP x) = ruleOf x
+         ruleOf (PDEtoPDEP x) = ruleOf x
+
+         premisesOf r = upperSequents (ruleOf r)
+         
+         conclusionOf r = lowerSequent (ruleOf r)
+
+         indirectInference (PDPtoPDEP x) = indirectInference x
+         indirectInference (PDEtoPDEP x) = indirectInference x
+         indirectInference _ = Nothing 
+
+         restriction (PDEtoPDEP x) = restriction x
+         restriction (PDPtoPDEP x) = restriction x
+         restriction _ = Nothing
+
+         isAssumption (PDEtoPDEP x) = isAssumption x
+         isAssumption (PDPtoPDEP x) = isAssumption x
+         isAssumption _ = False
+
+         isPremise (PDEtoPDEP x) = isPremise x
+         isPremise (PDPtoPDEP x) = isPremise x
+         isPremise _ = False
+
+parseLogicBookPDEPlus rtc = try liftPDE <|> liftPDP
+    where liftPDP = map PDPtoPDEP <$> parseLogicBookPDPlus rtc
+          liftPDE = map PDEtoPDEP <$> parseLogicBookPDE rtc
+
+parseLogicBookPDEPlusProof :: RuntimeNaturalDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine LogicBookPDEPlus PureLexiconFOL (Form Bool)]
+parseLogicBookPDEPlusProof rtc = toDeductionFitchAlt (parseLogicBookPDEPlus rtc) bergmannMoorAndNelsonPDEFormulaParser
+
+logicBookPDEPlusCalc = mkNDCalc
+    { ndRenderer = FitchStyle BergmanMooreAndNelsonStyle
+    , ndParseProof = parseLogicBookPDEPlusProof
+    , ndProcessLine = hoProcessLineFitch
+    , ndProcessLineMemo = Just hoProcessLineFitchMemo
+    , ndParseSeq = parseSeqOver bergmannMoorAndNelsonPDEFormulaParser
+    , ndParseForm = bergmannMoorAndNelsonPDEFormulaParser
     , ndNotation = ndNotation logicBookSDPlusCalc
     }

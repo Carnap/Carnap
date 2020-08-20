@@ -2,7 +2,7 @@
 module Carnap.Languages.PureFirstOrder.Util 
 (propForm, boundVarOf, toPNF, pnfEquiv, toAllPNF, toDenex, stepDenex,
 skolemize, orientEquations, comparableMatricies, universalClosure,
-quantFree, isPNF, isOpenFormula, FirstOrderTransformable) where
+quantFree, isPNF, isOpenFormula, isOpenTerm, FirstOrderTransformable) where
 
 import Carnap.Core.Data.Classes
 import Carnap.Core.Unification.Unification
@@ -287,8 +287,13 @@ universalClosure f = case varsOf f of
 --  2. Tests  --
 ----------------
 
+isOpenTerm :: (PrismStandardVar lex Int, PrismSubstitutionalVariable lex, BoundVars lex, FirstOrderLex (FixLang lex)) => FixLang lex (Term Int) -> Bool
+isOpenTerm = anyOf cosmos (\x -> isVar (x ^? _varLabel))
+    where isVar Nothing = False
+          isVar (Just s) = any (not . (`elem` "1234567890")) s
+
 isOpenFormula :: (PrismStandardVar lex Int, PrismSubstitutionalVariable lex, BoundVars lex, FirstOrderLex (FixLang lex)) => FixLang lex (Form Bool) -> Bool
-isOpenFormula = anyOf termsOf (\x -> isVar (x ^? _varLabel))
+isOpenFormula = anyOf (termsOf . cosmos) (\x -> isVar (x ^? _varLabel))
     where isVar Nothing = False
           isVar (Just s) = any (not . (`elem` "1234567890")) s
 
