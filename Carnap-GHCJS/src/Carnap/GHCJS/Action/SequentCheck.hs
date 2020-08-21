@@ -80,11 +80,11 @@ activateChecker w (Just (i, o, opts))
                                             case mr of
                                                 Just r -> checkSequent calc Nothing r >>= decorate root
                                                 Nothing -> return ()
+                                            updateGoal root i
                                     writeIORef threadRef (Just t)
-                                    updateGoal root i
                   addListener i initialize initialCheck False --initial check in case we preload a tableau
-                  doOnce i mutate False $ liftIO $ btStatus Edited
                   case M.lookup "init" opts of Just "now" -> dispatchCustom w i "initialize"; _ -> return ()
+                  doOnce i mutate False $ liftIO $ btStatus Edited
                   root `onChange` (\_ -> dispatchCustom w i "mutate")
                   root `onChange` checkOnChange calc root i threadRef 
 
