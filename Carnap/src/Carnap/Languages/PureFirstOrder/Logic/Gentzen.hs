@@ -74,9 +74,9 @@ instance ( BooleanLanguage (ClassicalSequentOver lex (Form Bool))
 
          coreConclusionOf (LK x) = coreConclusionOf x
          coreConclusionOf AllL = SA (lall "v" (phi 1)) :+: GammaV 1 :|-: DeltaV 1
-         coreConclusionOf AllR =  GammaV 1 :|-: SS (lall "v" (phi 1)) :-: DeltaV 1
+         coreConclusionOf AllR =  GammaV 1 :|-: DeltaV 1 :-: SS (lall "v" (phi 1))
          coreConclusionOf ExistL = SA (lsome "v" (phi 1)) :+: GammaV 1 :|-: DeltaV 1
-         coreConclusionOf ExistR =  GammaV 1 :|-: SS (lsome "v" (phi 1)) :-: DeltaV 1
+         coreConclusionOf ExistR =  GammaV 1 :|-: DeltaV 1 :-: SS (lsome "v" (phi 1))
 
          coreRestriction AllR = Just $ eigenConstraint (taun 1) (SS (lall "v" (phi' 1)) :-: fodelta 1) (fogamma 1)
          coreRestriction ExistL = Just $ eigenConstraint (taun 1) (fodelta 1) (SA (lsome "v" (phi' 1)) :+: fogamma 1)

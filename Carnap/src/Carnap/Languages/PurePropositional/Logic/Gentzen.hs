@@ -23,7 +23,7 @@ import Carnap.Calculi.Util
 import Control.Lens
 import Carnap.Languages.Util.LanguageClasses
 
-data GentzenPropLK = Ax    | Rep   | Cut
+data GentzenPropLK = Ax    | Rep   | Cut 
                    | AndL1 | AndL2 | AndR
                    | OrR1  | OrR2  | OrL
                    | CondR | CondL
@@ -49,11 +49,11 @@ instance Show GentzenPropLK where
     show Ax     = "Ax"
     show Rep    = "Rep"
     show Cut    = "Cut"
-    show AndL1  = "L&1"
-    show AndL2  = "L&2"
+    show AndL1  = "L&"
+    show AndL2  = "L&"
     show AndR   = "R&"
-    show OrR1   = "R∨1" 
-    show OrR2   = "R∨2"
+    show OrR1   = "R∨" 
+    show OrR2   = "R∨"
     show OrL    = "L∨"
     show CondR  = "R→"
     show CondL  = "L→"
@@ -107,20 +107,18 @@ parseGentzenPropLK =  do r <- choice (map (try . string) [ "Ax", "Rep", "Cut"
                                                          , "L¬","L~","L-"
                                                          , "R¬","R~","R-"
                                                          ])
-                         return $ (\x -> [x]) $ case r of
-                            r | r == "Ax" -> Ax
-                              | r == "Rep" -> Rep
-                              | r == "Cut" -> Cut
-                              | r `elem` ["R&","R∧","R/\\"] -> AndR
-                              | r `elem` ["L&1","L∧1","L/\\1"] -> AndL1
-                              | r `elem` ["L&2","L∧2","L/\\2"] -> AndL2
-                              | r `elem` ["L∨","Lv","L\\/"] -> OrL
-                              | r `elem` ["R∨1","Rv1","R\\/1"] -> OrR1
-                              | r `elem` ["R∨2","Rv2","R\\/2"] -> OrR2
-                              | r `elem` ["L→","L->"] -> CondL
-                              | r `elem` ["R→","R->"] -> CondR
-                              | r `elem` ["L¬","L~","L-"] -> NegL
-                              | r `elem` ["R¬","R~","R-"] -> NegR
+                         return $ case r of
+                            r | r == "Ax" -> [Ax]
+                              | r == "Rep" -> [Rep]
+                              | r == "Cut" -> [Cut]
+                              | r `elem` ["R&","R∧","R/\\"] -> [AndR]
+                              | r `elem` ["L&","L∧","L/\\"] -> [AndL1, AndL2]
+                              | r `elem` ["L∨","Lv","L\\/"] -> [OrL]
+                              | r `elem` ["R∨1","Rv1","R\\/1"] -> [OrR1, OrR2]
+                              | r `elem` ["L→","L->"] -> [CondL]
+                              | r `elem` ["R→","R->"] -> [CondR]
+                              | r `elem` ["L¬","L~","L-"] -> [NegL]
+                              | r `elem` ["R¬","R~","R-"] -> [NegR]
 
 parseGentzenPropLJ = map LJ <$> parseGentzenPropLK
 
@@ -158,41 +156,41 @@ instance ( BooleanLanguage (ClassicalSequentOver lex (Form Bool))
          , BooleanConstLanguage (ClassicalSequentOver lex (Form Bool))
          , IndexedSchemePropLanguage (ClassicalSequentOver lex (Form Bool))
          ) => CoreInference GentzenPropLK lex (Form Bool) where
-         corePremisesOf AndL1 = [ GammaV 1 :+: SA (phin 1) :|-: DeltaV 1]
-         corePremisesOf AndL2 = [ GammaV 1 :+: SA (phin 2) :|-: DeltaV 1]
-         corePremisesOf AndR = [ GammaV 1 :|-: SS (phin 1) :-: DeltaV 1
-                               , GammaV 2 :|-: SS (phin 2) :-: DeltaV 2
+         corePremisesOf AndL1 = [ SA (phin 1) :+: GammaV 1  :|-: DeltaV 1]
+         corePremisesOf AndL2 = [ SA (phin 2) :+: GammaV 1  :|-: DeltaV 1]
+         corePremisesOf AndR = [ GammaV 1 :|-: DeltaV 1 :-: SS (phin 1) 
+                               , GammaV 1 :|-: DeltaV 1 :-: SS (phin 2)
                                ]
-         corePremisesOf OrR1 = [ GammaV 1 :|-: SS(phin 1) :-: DeltaV 1 ]
-         corePremisesOf OrR2 = [ GammaV 1 :|-: SS(phin 2) :-: DeltaV 1 ]
-         corePremisesOf OrL  = [ GammaV 1 :+: SA (phin 1) :|-: DeltaV 1
-                               , GammaV 2 :+: SA (phin 1) :|-: DeltaV 2
+         corePremisesOf OrR1 = [ GammaV 1 :|-: DeltaV 1 :-: SS(phin 1) ]
+         corePremisesOf OrR2 = [ GammaV 1 :|-: DeltaV 1 :-: SS(phin 2) ]
+         corePremisesOf OrL  = [ SA (phin 1) :+: GammaV 1 :|-: DeltaV 1
+                               , SA (phin 1) :+: GammaV 1 :|-: DeltaV 1
                                ] 
-         corePremisesOf CondL = [ GammaV 1 :|-: SS (phin 1) :-: DeltaV 1
-                                , GammaV 2 :+: SA (phin 2) :|-: DeltaV 2
+         corePremisesOf CondL = [ GammaV 1 :|-: DeltaV 1 :-: SS (phin 1) 
+                                , SA (phin 2) :+: GammaV 1 :|-: DeltaV 1
                                 ]
-         corePremisesOf CondR = [ GammaV 1 :+: SA (phin 1) :|-: SS (phin 2) :-: DeltaV 2 ]
+         corePremisesOf CondR = [ GammaV 1 :+: SA (phin 1) :|-: SS (phin 2) :-: DeltaV 1 ]
          corePremisesOf NegL = [ GammaV 1 :|-: SS (phin 1) :-: DeltaV 1 ]
          corePremisesOf NegR = [  GammaV 1 :+: SA (phin 1) :|-:  DeltaV 1 ]
          corePremisesOf Rep =  [ GammaV 1 :|-: DeltaV 1 ]
-         corePremisesOf Cut =  [  GammaV 1 :+: SA (phin 1) :|-: DeltaV 1 
-                               , GammaV 2 :|-: SS (phin 1) :-: DeltaV 2
+         corePremisesOf Cut =  [  SA (phin 1) :+: GammaV 1 :|-: DeltaV 1 
+                               , GammaV 2 :|-: DeltaV 2 :-: SS (phin 1)
                                ]
          corePremisesOf Ax = [] 
 
-         coreConclusionOf AndL1 = GammaV 1 :+: SA (phin 1 ./\. phin 2) :|-: DeltaV 1
-         coreConclusionOf AndL2 =  GammaV 1 :+: SA (phin 1 ./\. phin 2):|-: DeltaV 1
-         coreConclusionOf AndR = GammaV 1 :+: GammaV 2 :|-: SS (phin 1 ./\. phin 2) :-: DeltaV 1 :-: DeltaV 2
-         coreConclusionOf OrR1 =  GammaV 1 :|-: SS (phin 1 .\/. phin 2) :-: DeltaV 1
-         coreConclusionOf OrR2 = GammaV 1 :|-: SS (phin 1 .\/. phin 2) :-: DeltaV 1
-         coreConclusionOf OrL =   GammaV 1 :+: GammaV 2 :+: SA (phin 1 .\/. phin 2) :|-:  DeltaV 1 :-: DeltaV 2
-         coreConclusionOf CondL =  GammaV 1 :+: GammaV 2 :+: SA (phin 1 .=>. phin 2):|-:  DeltaV 1 :-: DeltaV 2
-         coreConclusionOf CondR =  GammaV 1 :+: GammaV 2 :|-:  SS (phin 1 .=>. phin 2) :-: DeltaV 1 :-: DeltaV 2
-         coreConclusionOf NegL =   GammaV 1 :+: SA (lneg $ phin 1) :|-: DeltaV 1
-         coreConclusionOf NegR =  GammaV 1 :|-: SS (lneg $ phin 1) :-: DeltaV 1
-         coreConclusionOf Rep =  GammaV 1 :|-: DeltaV 1 
+         coreConclusionOf AndL1 = SA (phin 1 ./\. phin 2) :+: GammaV 1 :|-: DeltaV 1
+         coreConclusionOf AndL2 =  SA (phin 1 ./\. phin 2) :+: GammaV 1 :|-: DeltaV 1
+         coreConclusionOf AndR = GammaV 1 :|-: DeltaV 1 :-: SS (phin 1 ./\. phin 2)
+         coreConclusionOf OrR1 =  GammaV 1 :|-: DeltaV 1 :-: SS (phin 1 .\/. phin 2)
+         coreConclusionOf OrR2 = GammaV 1 :|-:  DeltaV 1 :-: SS (phin 1 .\/. phin 2)
+         coreConclusionOf OrL =   SA (phin 1 .\/. phin 2) :+: GammaV 1 :|-:  DeltaV 1 
+         coreConclusionOf CondL =  SA (phin 1 .=>. phin 2) :+: GammaV 1 :|-:  DeltaV 1 
+         coreConclusionOf CondR =  GammaV 1  :|-: DeltaV 1 :-: SS (phin 1 .=>. phin 2)
+         coreConclusionOf NegL =   SA (lneg $ phin 1) :+: GammaV 1  :|-: DeltaV 1
+         coreConclusionOf NegR =  GammaV 1 :|-:   DeltaV 1 :-: SS (lneg $ phin 1)
+         coreConclusionOf Rep =  GammaV 2 :+: GammaV 1 :|-: DeltaV 1 :-: DeltaV 2
          coreConclusionOf Cut =  GammaV 1 :+: GammaV 2 :|-: DeltaV 1 :-: DeltaV 2
-         coreConclusionOf Ax =  GammaV 1 :+: SA (phin 1) :|-: SS (phin 1) :-: DeltaV 1 
+         coreConclusionOf Ax =  SA (phin 1) :+: GammaV 1 :|-: DeltaV 1 :-: SS (phin 1)
 
 instance SpecifiedUnificationType GentzenPropLK
 
