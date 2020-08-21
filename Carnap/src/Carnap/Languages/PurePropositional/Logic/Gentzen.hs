@@ -97,11 +97,9 @@ instance Show GentzenPropNK where
 parseGentzenPropLK :: Parsec String u [GentzenPropLK]
 parseGentzenPropLK =  do r <- choice (map (try . string) [ "Ax", "Rep", "Cut"
                                                          , "R&","R∧","R/\\"
-                                                         ,"L&1","L∧1","L/\\1"
-                                                         ,"L&2","L∧2","L/\\2"
+                                                         ,"L&","L∧","L/\\"
                                                          , "L∨","Lv","L\\/"
-                                                         ,"R∨1","Rv1","R\\/1"
-                                                         ,"R∨2","Rv2","R\\/2"
+                                                         ,"R∨","Rv","R\\/"
                                                          , "L→","L->"
                                                          , "R→","R->"
                                                          , "L¬","L~","L-"
@@ -114,7 +112,7 @@ parseGentzenPropLK =  do r <- choice (map (try . string) [ "Ax", "Rep", "Cut"
                               | r `elem` ["R&","R∧","R/\\"] -> [AndR]
                               | r `elem` ["L&","L∧","L/\\"] -> [AndL1, AndL2]
                               | r `elem` ["L∨","Lv","L\\/"] -> [OrL]
-                              | r `elem` ["R∨1","Rv1","R\\/1"] -> [OrR1, OrR2]
+                              | r `elem` ["R∨","Rv","R\\/"] -> [OrR1, OrR2]
                               | r `elem` ["L→","L->"] -> [CondL]
                               | r `elem` ["R→","R->"] -> [CondR]
                               | r `elem` ["L¬","L~","L-"] -> [NegL]
