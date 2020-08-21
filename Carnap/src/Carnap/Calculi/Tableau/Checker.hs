@@ -60,7 +60,7 @@ validateNode n ns = case tableauNodeRule n of
                                        addTarget (scheme,node) = (node, getTargets scheme)
                                        targetedPairs = map addTarget thePairs
                                    if any (not . lengthCheck) targetedPairs
-                                       then return $ treeErrMsg "Missing target for rule"
+                                       then return $ treeErrMsg $ "Missing target for rule"
                                        else do 
                                            let mainProb = concat . map (uncurry toEqs) $ targetedPairs
                                            case hosolve mainProb of
@@ -89,8 +89,8 @@ validateNode n ns = case tableauNodeRule n of
                                                             Nothing -> return Correct
 
 getTargets ::  ClassicalSequentOver lex (Sequent sem) -> [SequentRuleTarget (ClassicalSequentLexOver lex) sem]
-getTargets seq = let (linit,lremainder) = getInitTargetsLeft 1 ([], toListOf lhs seq)
-                     (rinit,rremainder) = getInitTargetsRight 1 ([], toListOf rhs seq)
+getTargets seq = let (linit,lremainder) = getInitTargetsLeft 1 ([], cedentUnfold $ view lhs seq)
+                     (rinit,rremainder) = getInitTargetsRight 1 ([], cedentUnfold $ view rhs seq)
                      in linit ++ rinit ++ getTailTargetsLeft (-1) (reverse lremainder) ++ getTailTargetsRight (-1) (reverse rremainder)
 
 getInitTargetsRight :: Int -> ([SequentRuleTarget (ClassicalSequentLexOver lex) sem], [ClassicalSequentOver lex (Succedent sem)]) 
@@ -111,8 +111,9 @@ getTailTargetsRight :: Int -> [ClassicalSequentOver lex (Succedent sem)] -> [Seq
 getTailTargetsRight n (SS f:fs)  = RightTarget f n: getTailTargetsRight (n - 1) fs
 getTailTargetsRight n _ = []
 
-lengthCheck (node,targets) = (minLengthLeft targets <= length (toListOf lhs (tableauNodeSeq node)))
-                          && (minLengthRight targets <= length (toListOf rhs (tableauNodeSeq node))) 
+lengthCheck :: SupportsTableau rule lex sem => (TableauNode lex sem rule, [SequentRuleTarget (ClassicalSequentLexOver lex) sem]) -> Bool
+lengthCheck (node,targets) = (minLengthLeft targets <= length (cedentUnfold $ view lhs (tableauNodeSeq node)))
+                          && (minLengthRight targets <= length (cedentUnfold $ view rhs (tableauNodeSeq node))) 
 
 --TODO: Beef this up to allow manual targeting
 toEqs :: SupportsTableau rule lex sem => TableauNode lex sem rule -> [SequentRuleTarget (ClassicalSequentLexOver lex) sem] -> [Equation (ClassicalSequentOver lex)]
@@ -125,8 +126,8 @@ toEqs node target =
           (NoTarget : ts) -> toEqs node ts
           [] -> []
 
-    where theLHS = toListOf (lhs . concretes) (tableauNodeSeq node)
-          theRHS = toListOf (rhs . concretes) (tableauNodeSeq node) 
+    where theLHS = toListOf (lhs . concretes) $ tableauNodeSeq node
+          theRHS = toListOf (rhs . concretes) $ tableauNodeSeq node
           reverseLHS = reverse theLHS
           reverseRHS = reverse theRHS
           intoEq f x = f :=: x
@@ -134,15 +135,19 @@ toEqs node target =
 --the minimum length of a cedent given a set of Conc targets
 minLengthLeft targets = minInit targets + abs (minTail targets)
     where minInit (LeftTarget _ n : ts) | n > 0 = max n (minInit ts)
-          minInit _ = 0
+          minInit (_:xs) = minInit xs
+          minInit [] = 0
           minTail (LeftTarget _ n : ts) | n < 0 = min n (minTail ts)
-          minTail _ = 0
+          minTail (_:xs) = minTail xs
+          minTail [] = 0
 
 minLengthRight targets = minInit targets + abs (minTail targets)
     where minInit (RightTarget _ n : ts) | n > 0 = max n (minInit ts)
-          minInit _ = 0
+          minInit (_:xs) = minInit xs
+          minInit [] = 0
           minTail (RightTarget _ n : ts) | n < 0 = min n (minTail ts)
-          minTail _ = 0
+          minTail (_:xs) = minTail xs
+          minTail [] = 0
 
 treeErrMsg :: String -> TreeFeedbackNode lex
 treeErrMsg s = ProofError (GenericError s 0)
