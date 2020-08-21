@@ -5,8 +5,6 @@ import Carnap.Languages.ClassicalSequent.Syntax
 import Data.Tree
 import Text.Parsec
 
-
-
 --a TreeForm is a formula within a truth tree, labeled by its row and whether it is resolved.
 data TreeForm lex sem = TreeForm
            { treeForm :: FixLang lex sem

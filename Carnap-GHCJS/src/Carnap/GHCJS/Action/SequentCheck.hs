@@ -72,6 +72,7 @@ activateChecker w (Just (i, o, opts))
                   bw <- createButtonWrapper w o
                   let submit = submitSeq w opts calc root
                   btStatus <- createSubmitButton w bw submit opts
+                  if "displayJSON" `inOpts` opts then attachDisplay w o root else return ()
                   initialCheck <- newListener $ liftIO $ do 
                                     t <- forkIO $ do
                                             threadDelay 500000

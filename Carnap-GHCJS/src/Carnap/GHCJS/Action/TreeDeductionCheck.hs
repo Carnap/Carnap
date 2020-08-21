@@ -32,12 +32,9 @@ import Carnap.Languages.PurePropositional.Logic (ofPropTreeSys)
 import Carnap.Languages.PureFirstOrder.Logic (ofFOLTreeSys)
 import Carnap.GHCJS.Util.ProofJS
 import Carnap.GHCJS.SharedTypes
-import GHCJS.DOM.HTMLElement (getInnerText, castToHTMLElement)
-import GHCJS.DOM.Element (setInnerHTML, click, keyDown, input, setAttribute )
-import GHCJS.DOM.Node (appendChild, removeChild, getParentNode, insertBefore, getParentElement)
+import GHCJS.DOM.Element (setInnerHTML, click, keyDown, setAttribute )
+import GHCJS.DOM.Node (getParentElement)
 import GHCJS.DOM.Types (Element, Document, IsElement)
-import GHCJS.DOM.Document (createElement, getActiveElement)
-import GHCJS.DOM.KeyboardEvent
 import GHCJS.DOM.EventM
 import GHCJS.DOM
 import GHCJS.Types
@@ -76,42 +73,7 @@ activateChecker w (Just (i, o, opts)) = case (setupWith `ofPropTreeSys` sys)
                   bw <- createButtonWrapper w o
                   let submit = submitTree w memo opts calc root mgoal
                   btStatus <- createSubmitButton w bw submit opts
-                  if "displayJSON" `inOpts` opts 
-                      then do
-                          Just displayDiv <- createElement w (Just "div")
-                          setAttribute displayDiv "class" "jsonDisplay"
-                          setAttribute displayDiv "contenteditable" "true"
-                          val <- toCleanVal root
-                          setInnerHTML displayDiv . Just $ toJSONString val
-                          toggleDisplay <- newListener $ do
-                              kbe <- event
-                              isCtrl <- getCtrlKey kbe
-                              code <- liftIO $ keyString kbe
-                              liftIO $ print code
-                              if isCtrl && code == "?" 
-                                  then do
-                                      preventDefault
-                                      mparent <- getParentNode displayDiv
-                                      case mparent of
-                                          Just p -> removeChild o (Just displayDiv)
-                                          _ -> appendChild o (Just displayDiv)
-                                      return ()
-                                  else return ()
-                          addListener o keyDown toggleDisplay False
-                          updateRoot <- newListener $ liftIO $ do 
-                                Just json <- getInnerText (castToHTMLElement displayDiv)
-                                replaceRoot root json
-                          addListener displayDiv input updateRoot False
-                          root `onChange` (\_ -> do
-                                   mfocus <- getActiveElement w
-                                   --don't update when the display is
-                                   --focussed, to avoid cursor jumping
-                                   if Just displayDiv /= mfocus then do
-                                       val <- toCleanVal root
-                                       setInnerHTML displayDiv . Just $ toJSONString val
-                                   else return ())
-                          return ()
-                      else return ()
+                  if "displayJSON" `inOpts` opts then attachDisplay w o root else return ()
                   initialCheck <- newListener $ liftIO $  do 
                                     forkIO $ do
                                         threadDelay 500000

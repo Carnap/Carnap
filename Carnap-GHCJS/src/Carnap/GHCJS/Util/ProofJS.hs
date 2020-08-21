@@ -1,10 +1,11 @@
 {-# LANGUAGE FlexibleContexts, OverloadedStrings, CPP, JavaScriptFFI #-}
 module Carnap.GHCJS.Util.ProofJS where
 
-import Lib (cleanString)
+import Lib (cleanString, toJSONString, toCleanVal, keyString)
 import Data.Aeson
 import Data.Aeson.Types
 import Data.Tree
+import Control.Monad.IO.Class (liftIO)
 import Carnap.Calculi.Util
 #ifdef __GHCJS__
 import GHCJS.Foreign
@@ -12,7 +13,13 @@ import GHCJS.Foreign.Callback
 import GHCJS.Marshal
 #endif
 import GHCJS.Types
-import GHCJS.DOM.Types (Element, toJSString)
+import GHCJS.DOM.HTMLElement (getInnerText, castToHTMLElement)
+import GHCJS.DOM.Element (setInnerHTML, setAttribute, keyDown, input)
+import GHCJS.DOM.Node (appendChild, removeChild, getParentNode, insertBefore, getParentElement)
+import GHCJS.DOM.Document (createElement, getActiveElement)
+import GHCJS.DOM.EventM
+import GHCJS.DOM.KeyboardEvent
+import GHCJS.DOM.Types (Element, toJSString, Document)
 
 initRoot :: String -> Element -> IO JSVal
 initRoot s elt = do root <- newRoot s
@@ -49,6 +56,43 @@ checkFullInfo :: Value -> IO Value
 checkFullInfo v = do let Success t = parse fromInfo v
                      if t then return $ object [ "result" .= ("yes" :: String)]
                           else return $ object [ "result" .= ("no" :: String)]
+
+attachDisplay :: Document -> Element -> JSVal -> IO ()
+attachDisplay w elt root = do
+          Just displayDiv <- createElement w (Just ("div" :: String))
+          setAttribute displayDiv ("class" :: String) ("jsonDisplay" :: String)
+          setAttribute displayDiv ("contenteditable" :: String) ("true" :: String)
+          val <- toCleanVal root
+          setInnerHTML displayDiv . Just $ toJSONString val
+          toggleDisplay <- newListener $ do
+              kbe <- event
+              isCtrl <- getCtrlKey kbe
+              code <- liftIO $ keyString kbe
+              liftIO $ print code
+              if isCtrl && code == "?" 
+                  then do
+                      preventDefault
+                      mparent <- getParentNode displayDiv
+                      case mparent of
+                          Just p -> removeChild elt (Just displayDiv)
+                          _ -> appendChild elt (Just displayDiv)
+                      return ()
+                  else return ()
+          addListener elt keyDown toggleDisplay False
+          updateRoot <- newListener $ liftIO $ do 
+                Just json <- getInnerText (castToHTMLElement displayDiv)
+                replaceRoot root json
+          addListener displayDiv input updateRoot False
+          root `onChange` (\_ -> do
+                   mfocus <- getActiveElement w
+                   --don't update when the display is
+                   --focussed, to avoid cursor jumping
+                   if Just displayDiv /= mfocus then do
+                       val <- toCleanVal root
+                       setInnerHTML displayDiv . Just $ toJSONString val
+                   else return ())
+          return ()
+
 
 #ifdef __GHCJS__
 
