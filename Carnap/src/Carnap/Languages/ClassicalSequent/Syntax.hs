@@ -123,87 +123,69 @@ infixr 8 :+:
 
 infixr 8 :-:
 
+cedentUnfold (x :+: y) = cedentUnfold x ++ cedentUnfold y
+cedentUnfold (x :-: y) = cedentUnfold x ++ cedentUnfold y
+cedentUnfold Top       = []
+cedentUnfold Bot       = []
+cedentUnfold SID       = []
+cedentUnfold leaf      = [leaf]
+
+cedentId Top = True
+cedentId Bot = True
+cedentId SID = True
+cedentId _   = False
+
+
+isCedentForm (SS _) = True
+isCedentForm (SA _) = True
+isCedentForm _ = False
+
+cedentOp a Top = a
+cedentOp a Bot = a
+cedentOp a SID = a
+cedentOp Top b = b
+cedentOp Bot b = b
+cedentOp SID b = b
+cedentOp x@(_ :+: _) y   = x :+: y
+cedentOp x y@(_ :+: _)   = x :+: y
+cedentOp x@(_ :-: _) y   = x :-: y
+cedentOp x y@(_ :-: _)   = x :-: y
+cedentOp x@(SA _) y = x :+: y
+cedentOp x y@(SA _) = x :+: y
+cedentOp x@(SS _) y = x :-: y
+cedentOp x y@(SS _) = x :-: y
+cedentOp x@(GammaV _) y  = x :+: y
+cedentOp x y@(GammaV _)  = x :+: y
+cedentOp x@(DeltaV _) y  = x :-: y
+cedentOp x y@(DeltaV _)  = x :-: y
+
 instance ( FirstOrderLex (t (ClassicalSequentOver t))
          , StaticVar (ClassicalSequentOver t)
          ) => AU (ClassicalSequentOver t) where
 
-        auUnfold (x :+: y) = acuiUnfold x ++ acuiUnfold y
-        auUnfold (x :-: y) = acuiUnfold x ++ acuiUnfold y
-        auUnfold Top       = []
-        auUnfold Bot       = []
-        auUnfold SID       = []
-        auUnfold leaf      = [leaf]
+        auUnfold  = cedentUnfold
 
-        isIdAU Top = True
-        isIdAU Bot = True
-        isIdAU SID = True
-        isIdAU _   = False
+        isIdAU = cedentId
 
-        isAU (SA _) = False
-        isAU (SS _) = False
-        isAU _      = True
+        isAU  = not . isCedentForm 
 
         auId p = SID
 
-        auOp a Top = a
-        auOp a Bot = a
-        auOp a SID = a
-        auOp Top b = b
-        auOp Bot b = b
-        auOp SID b = b
-        auOp x@(_ :+: _) y   = x :+: y
-        auOp x y@(_ :+: _)   = x :+: y
-        auOp x@(_ :-: _) y   = x :-: y
-        auOp x y@(_ :-: _)   = x :-: y
-        auOp x@(SA _) y = x :+: y
-        auOp x y@(SA _) = x :+: y
-        auOp x@(SS _) y = x :-: y
-        auOp x y@(SS _) = x :-: y
-        auOp x@(GammaV _) y  = x :+: y
-        auOp x y@(GammaV _)  = x :+: y
-        auOp x@(DeltaV _) y  = x :-: y
-        auOp x y@(DeltaV _)  = x :-: y
+        auOp = cedentOp
 
 instance ( FirstOrderLex (t (ClassicalSequentOver t))
          , StaticVar (ClassicalSequentOver t)
          ) => ACUI (ClassicalSequentOver t) where
 
-        acuiUnfold (x :+: y) = acuiUnfold x ++ acuiUnfold y
-        acuiUnfold (x :-: y) = acuiUnfold x ++ acuiUnfold y
-        acuiUnfold Top       = []
-        acuiUnfold Bot       = []
-        acuiUnfold SID       = []
-        acuiUnfold leaf      = [leaf]
+        acuiUnfold = cedentUnfold
 
-        isIdACUI Top = True
-        isIdACUI Bot = True
-        isIdACUI SID = True
-        isIdACUI _   = False
+        isIdACUI = cedentId
 
-        isACUI (SA _) = False
-        isACUI (SS _) = False
-        isACUI _      = True
+        isACUI  = not . isCedentForm
 
         acuiId p = SID
 
-        acuiOp a Top = a
-        acuiOp a Bot = a
-        acuiOp a SID = a
-        acuiOp Top b = b
-        acuiOp Bot b = b
-        acuiOp SID b = b
-        acuiOp x@(_ :+: _) y   = x :+: y
-        acuiOp x y@(_ :+: _)   = x :+: y
-        acuiOp x@(_ :-: _) y   = x :-: y
-        acuiOp x y@(_ :-: _)   = x :-: y
-        acuiOp x@(SA _) y = x :+: y
-        acuiOp x y@(SA _) = x :+: y
-        acuiOp x@(SS _) y = x :-: y
-        acuiOp x y@(SS _) = x :-: y
-        acuiOp x@(GammaV _) y  = x :+: y
-        acuiOp x y@(GammaV _)  = x :+: y
-        acuiOp x@(DeltaV _) y  = x :-: y
-        acuiOp x y@(DeltaV _)  = x :-: y
+        acuiOp = cedentOp
 
 instance Handed (ClassicalSequentOver lex (Sequent a)) 
                 (ClassicalSequentOver lex (Antecedent a))
