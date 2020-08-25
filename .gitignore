@@ -41,3 +41,4 @@ result
 cabal.project.local
 .cabal-fake-client-out/
 docker-out
+.vscode/
