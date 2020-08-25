@@ -210,11 +210,11 @@ instance CoreInference IchikawaJenkinsSLTableaux PurePropLexicon (Form Bool) whe
         coreConclusionOf Conj = GammaV 1 :+: SA (phin 1 ./\. phin 2) :|-: Bot
         coreConclusionOf NConj = GammaV 1 :+: SA (lneg $ phin 1 ./\. phin 2 ) :|-: Bot
         coreConclusionOf Disj = GammaV 1 :+: SA (phin 1 .\/. phin 2) :|-: Bot
-        coreConclusionOf NDisj = GammaV 1 :+: SA (lneg $ phin 2 .\/. phin 1) :|-: Bot
+        coreConclusionOf NDisj = GammaV 1 :+: SA (lneg $ phin 1 .\/. phin 2) :|-: Bot
         coreConclusionOf Cond = GammaV 1 :+: SA (phin 1 .=>. phin 2) :|-: Bot
         coreConclusionOf NCond = GammaV 1 :+: SA (lneg $ phin 1 .=>. phin 2) :|-: Bot
-        coreConclusionOf Bicond = GammaV 1 :+: SA (phin 2 .<=>. phin 1) :|-: Bot
-        coreConclusionOf NBicond = GammaV 1 :+: SA (lneg $ phin 2 .<=>. phin 1) :|-: Bot
+        coreConclusionOf Bicond = GammaV 1 :+: SA (phin 1 .<=>. phin 2) :|-: Bot
+        coreConclusionOf NBicond = GammaV 1 :+: SA (lneg $ phin 1 .<=>. phin 2) :|-: Bot
         coreConclusionOf DoubleNeg = GammaV 1 :+: SA (lneg $ lneg $ phin 1)  :|-: Bot
         coreConclusionOf Ax1 = GammaV 1 :+: SA (phin 1) :+: SA (lneg $ phin 1) :|-: Bot
         coreConclusionOf Ax2 = GammaV 1 :+: SA (lneg $ phin 1) :+: SA (phin 1) :|-: Bot
