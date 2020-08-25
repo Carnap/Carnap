@@ -182,9 +182,9 @@ instance ( BooleanLanguage (ClassicalSequentOver lex (Form Bool))
          coreConclusionOf OrR1 =  GammaV 1 :|-: DeltaV 1 :-: SS (phin 1 .\/. phin 2)
          coreConclusionOf OrR2 = GammaV 1 :|-:  DeltaV 1 :-: SS (phin 1 .\/. phin 2)
          coreConclusionOf OrL =   SA (phin 1 .\/. phin 2) :+: GammaV 1 :|-:  DeltaV 1 
-         coreConclusionOf CondL =  SA (phin 1 .=>. phin 2) :+: GammaV 1 :+: :|-:  DeltaV 1 
+         coreConclusionOf CondL =  SA (phin 1 .=>. phin 2) :+: GammaV 1 :+: GammaV 2 :|-:  DeltaV 1 :-: DeltaV 2
          coreConclusionOf CondR =  GammaV 1  :|-: DeltaV 1 :-: SS (phin 1 .=>. phin 2)
-         coreConclusionOf NegL =   SA (lneg $ phin 1) :+: GammaV 1 :+: GammaV 2 :|-: DeltaV 1 :-: DeltaV 2
+         coreConclusionOf NegL =   SA (lneg $ phin 1) :+: GammaV 1 :|-: DeltaV 1 
          coreConclusionOf NegR =  GammaV 1 :|-:   DeltaV 1 :-: SS (lneg $ phin 1)
          coreConclusionOf Rep =  GammaV 2 :+: GammaV 1 :|-: DeltaV 1 :-: DeltaV 2
          coreConclusionOf Cut =  GammaV 1 :+: GammaV 2 :|-: DeltaV 1 :-: DeltaV 2
