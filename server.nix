@@ -21,6 +21,8 @@ newpkgs: oldpkgs: {
   # newer versions in any *released* version yet
   hoauth2 = oldpkgs.callHackage "hoauth2" "1.8.9" { };
 
+  persistent-template = oldpkgs.callHackage "persistent-template" "2.7.4" { };
+
   # update to fix a possible security bug: https://github.com/thoughtbot/yesod-auth-oauth2/issues/132
   yesod-auth-oauth2 = oldpkgs.callHackageDirect {
     pkg = "yesod-auth-oauth2";
