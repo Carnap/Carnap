@@ -1,8 +1,11 @@
+{-# LANGUAGE OverloadedStrings #-}
 module Filter.TruthTables (makeTruthTables) where
 
 import Text.Pandoc
-import Filter.Util (splitIt, intoChunks,formatChunk, unlines', exerciseWrapper)
-import Data.Map (fromList, toList, unions)
+import Filter.Util (toDataCarnap, contentOf, intoChunks, formatChunk, unlines', exerciseWrapper)
+import qualified Data.Text as T
+import Data.Text (Text)
+import Data.Map (Map, fromList, toList, unions)
 import Prelude
 
 makeTruthTables :: Block -> Block
@@ -12,19 +15,20 @@ makeTruthTables cb@(CodeBlock (_,classes,extra) contents)
 makeTruthTables x = x
 
 
+activate :: [Text] -> [(Text, Text)] -> Text -> Block
 activate cls extra chunk
     | "Simple" `elem` cls = template (opts [("tabletype","simple")])
     | "Validity" `elem` cls = template (opts [("tabletype","validity")])
     | "Partial" `elem` cls = template (opts [("tabletype","partial")])
     | otherwise = RawBlock "html" "<div>No Matching Truth Table Type</div>"
-    where numof x = takeWhile (/= ' ') x
-          contentOf x = dropWhile (== ' ') . dropWhile (/= ' ') $  x
+    where numof x = T.takeWhile (/= ' ') x
           (h:t) = formatChunk chunk
           opts adhoc = unions [fromList extra, fromList fixed, fromList adhoc]
           fixed = [ ("type","truthtable")
-                  , ("goal", contentOf h) 
-                  , ("submission", "saveAs:" ++ numof h)
+                  , ("goal", contentOf h)
+                  , ("submission", T.concat ["saveAs:", numof h])
                   ]
-          template opts = exerciseWrapper (toList opts) (numof h) $ Div 
-                                ("",[],map (\(x,y) -> ("data-carnap-" ++ x,y)) $ toList opts) 
+          template :: Map Text Text -> Block
+          template myOpts = exerciseWrapper (toList myOpts) (numof h) $ Div
+                                ("",[], map toDataCarnap $ toList myOpts)
                                 [Plain [Str (unlines' t)]]

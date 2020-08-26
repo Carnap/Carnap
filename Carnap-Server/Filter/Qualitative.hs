@@ -1,10 +1,12 @@
+{-# LANGUAGE OverloadedStrings #-}
 module Filter.Qualitative (makeQualitativeProblems) where
 
 import Carnap.GHCJS.SharedFunctions (simpleHash, simpleCipher)
 import Text.Pandoc
-import Filter.Util (splitIt, intoChunks,formatChunk, unlines', exerciseWrapper, sanatizeHtml)
+import Filter.Util (numof, contentOf, intoChunks,formatChunk, unlines', exerciseWrapper, sanitizeHtml)
 import Data.Map (fromList, toList, unions)
-import Data.List.Split (splitOn)
+import qualified Data.Text as T
+import Data.Text (Text)
 import Prelude
 
 makeQualitativeProblems :: Block -> Block
@@ -13,40 +15,36 @@ makeQualitativeProblems cb@(CodeBlock (_,classes,extra) contents)
     | otherwise = cb
 makeQualitativeProblems x = x
 
+activate :: [Text] -> [(Text, Text)] -> Text -> Block
 activate cls extra chunk
-    | "MultipleChoice" `elem` cls = mctemplate (opts [("qualitativetype","multiplechoice"), ("goal", contentOf h) ])
-    | "MultipleSelection" `elem` cls = mctemplate (opts [("qualitativetype","multipleselection"), ("goal", contentOf h) ])
-    | "ShortAnswer" `elem` cls = template (opts [("qualitativetype","shortanswer"), ("goal", contentOf h) ])
-    | "Numerical" `elem` cls = case splitOn ":" (contentOf h) of
+    | "MultipleChoice" `elem` cls = mctemplate (opts [("qualitativetype","multiplechoice"), ("goal", safeContentOf h) ])
+    | "MultipleSelection" `elem` cls = mctemplate (opts [("qualitativetype","multipleselection"), ("goal", safeContentOf h) ])
+    | "ShortAnswer" `elem` cls = template (opts [("qualitativetype", "shortanswer"), ("goal", safeContentOf h) ])
+    | "Numerical" `elem` cls = case T.splitOn ":" (safeContentOf h) of
                                    [g,p] -> template (opts [ ("qualitativetype","numerical")
-                                                            , ("goal", show (simpleCipher g)) 
-                                                            , ("problem", sanatizeHtml p)
+                                                            , ("goal", T.pack $ show (simpleCipher $ T.unpack g))
+                                                            , ("problem", sanitizeHtml p)
                                                             ])
                                    _ -> Div ("",[],[]) [Plain [Str "problem with numerical qualitative problem specification"]]
     | otherwise = RawBlock "html" "<div>No Matching Qualitative Problem Type</div>"
-    where numof x = takeWhile (/= ' ') x
-          contentOf x = sanatizeHtml . dropWhile (== ' ') . dropWhile (/= ' ') $  x
+    where safeContentOf = sanitizeHtml . contentOf
           (h:t) = formatChunk chunk
           opts adhoc = unions [fromList extra, fromList fixed, fromList adhoc]
           fixed = [ ("type","qualitative")
-                  , ("submission", "saveAs:" ++ numof h)
+                  , ("submission", T.concat ["saveAs:", numof h])
                   ]
-          mctemplate opts = exerciseWrapper (toList opts) (numof h) $
+          mctemplate myOpts = exerciseWrapper (toList myOpts) (numof h) $
                               --Need rawblock here to get the linebreaks
                               --right.
-                              RawBlock "html" 
-                                 $ "<div" ++ optString ++ ">" 
-                                ++ unlines' (map (show . withHash) t)
-                                ++ "</div>"
-                where optString = concatMap (\(x,y) -> " data-carnap-" ++ x ++ "=\"" ++ y ++ "\"") (toList opts)
-          template opts = exerciseWrapper (toList opts) (numof h) $
+                              RawBlock "html" $ T.concat
+                              ["<div", optString myOpts, ">"
+                               , unlines' (map (T.pack . show . withHash . T.unpack) t)
+                               , "</div>"]
+          template myOpts = exerciseWrapper (toList myOpts) (numof h) $
                               --Need rawblock here to get the linebreaks
                               --right.
-                              RawBlock "html" 
-                                 $ "<div" ++ optString ++ ">" 
-                                ++ unlines' t
-                                ++ "</div>"
-                where optString = concatMap (\(x,y) -> " data-carnap-" ++ x ++ "=\"" ++ y ++ "\"") (toList opts)
+                              RawBlock "html" $ T.concat [ "<div", optString myOpts, ">", unlines' t, "</div>" ]
+          optString myOpts = T.concat $ map (\(x,y) -> T.concat [" data-carnap-", x, "=\"", y, "\""]) (toList myOpts)
           withHash s | length s' > 0 = if head s' `elem` ['*','+','-'] then (simpleHash s', tail s') else (simpleHash s',s')
                      | otherwise = (simpleHash s', s')
             where s' = (dropWhile (== ' ') s)
