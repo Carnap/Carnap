@@ -1,4 +1,4 @@
-{ ghcjsVer, withHoogle ? true, profiling ? false }:
+{ client, withHoogle ? true, profiling ? false }:
 { nixpkgs }:
 let
   inherit (nixpkgs.haskell.lib)
@@ -8,25 +8,25 @@ let
     doJailbreak
     justStaticExecutables
     withGitignore;
-  client-ghcjs = nixpkgs.haskell.packages.${ghcjsVer}.Carnap-GHCJS;
 in
 newpkgs: oldpkgs: {
-  # broken dependencies in nixpkgs :(
-  haskell-src-exts-simple = doJailbreak oldpkgs.haskell-src-exts-simple;
+  # multiple issues: grumpy about haskell-src-exts versions
+  # also, cabal-jailbreak does not erase bounds for feature-gated dependencies ;-;
+  # I want to kill it 😭
   diagrams-builder = doJailbreak oldpkgs.diagrams-builder;
+  # fix build of diagrams-builder by downgrading to 1.4.x
+  diagrams-postscript = doJailbreak (oldpkgs.callHackage "diagrams-postscript" "1.4.1" { });
 
-  # updates pango, glib, cairo to a version including
-  # https://github.com/gtk2hs/gtk2hs/commit/1cf2f9bff2427d39986e32880d1383cfff49ab0e
-  # remove once nixpkgs.haskell.packages.ghc865.glib version >= 0.13.8.1
-  # i.e. most likely when we update past nixpkgs-20.03 (pending nixpkgs
-  # unstable having a working ghcjs) as pango-0.13.8.1 is in unstable
-  # already
-  # I checked this with:
-  # $ nix-instantiate '<nixpkgs-unstable>' -A haskell.packages.ghc865.pango
-  # /nix/store/aqvkx9yd2s5m0svki3fr84klq6fyw6dw-pango-0.13.8.1.drv
-  glib = oldpkgs.callPackage ./nix/glib.nix { inherit (nixpkgs) glib; };
-  pango = oldpkgs.callPackage ./nix/pango.nix { inherit (nixpkgs) pango; };
-  cairo = oldpkgs.callPackage ./nix/cairo.nix { inherit (nixpkgs) cairo; };
+  # downgrade to 1.8.x because yesod-auth-oauth2 has not fixed support for
+  # newer versions in any *released* version yet
+  hoauth2 = oldpkgs.callHackage "hoauth2" "1.8.9" { };
+
+  # update to fix a possible security bug: https://github.com/thoughtbot/yesod-auth-oauth2/issues/132
+  yesod-auth-oauth2 = oldpkgs.callHackageDirect {
+    pkg = "yesod-auth-oauth2";
+    ver = "0.6.1.3";
+    sha256 = "1bikn9kfw6mrsais4z1nk07aa7i7hyrcs411kbbfgc7n74k6sd5b";
+  } { };
 
   # ghcjs-dom-0.2.4.0 (released 2016)
   # using `ghc` native dependencies
@@ -54,20 +54,19 @@ newpkgs: oldpkgs: {
 
         echo ":: Copying js in $(pwd)"
         find static/ghcjs/allactions/ -type l -delete
-        cp ${client-ghcjs.out}/bin/AllActions.jsexe/all.js static/ghcjs/allactions/
-        cp ${client-ghcjs.out}/bin/AllActions.jsexe/out.js static/ghcjs/allactions/
-        cp ${client-ghcjs.out}/bin/AllActions.jsexe/lib.js static/ghcjs/allactions/
-        cp ${client-ghcjs.out}/bin/AllActions.jsexe/runmain.js static/ghcjs/allactions/
+        cp ${client.out}/bin/AllActions.jsexe/all.js static/ghcjs/allactions/
+        cp ${client.out}/bin/AllActions.jsexe/out.js static/ghcjs/allactions/
+        cp ${client.out}/bin/AllActions.jsexe/lib.js static/ghcjs/allactions/
+        cp ${client.out}/bin/AllActions.jsexe/runmain.js static/ghcjs/allactions/
         echo ":: Adding a universal settings file"
         cp config/settings-example.yml config/settings.yml
         cp -r {config,static} $out/share
         cat config/settings.yml
         '';
 
-      extraLibraries = [ client-ghcjs ];
       enableExecutableProfiling = profiling;
       enableLibraryProfiling = profiling;
-      buildDepends = [ book ];
+      buildDepends = [ book client ];
       executableSystemDepends = [ nixpkgs.diagrams-builder ];
 
       isExecutable = true;

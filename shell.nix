@@ -1,5 +1,7 @@
-args@{ghcjs ? false, ...}:
+args@{ghcjs ? false, hls ? !ghcjs, ...}:
 let
-  inherit (import ./default.nix (removeAttrs args [ "ghcjs" ])) ghcShell ghcjsShell;
+  importArgs = args // { inherit hls; };
+  def = import ./default.nix importArgs;
+  inherit (def) ghcShell ghcjsShell;
 in
 if ghcjs then ghcjsShell else ghcShell

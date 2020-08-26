@@ -92,8 +92,8 @@ library
                  , classy-prelude-yesod          >=1.4 && <1.6
                  , bytestring                    >=0.9 && <0.11
                  , text                          >=0.11 && <2.0
-                 , persistent                    >=2.8 && <2.10
-                 , persistent-postgresql         >=2.8 && <2.10
+                 , persistent                    >=2.8
+                 , persistent-postgresql         >=2.8
                  , persistent-sqlite
                  , persistent-template           >= 2.5        && < 2.9
                  , template-haskell
@@ -109,7 +109,7 @@ library
                  , aeson                         >= 0.6        && < 1.5
                  , conduit                       >= 1.0        && < 2.0
                  , monad-logger                  >= 0.3        && < 0.4
-                 , fast-logger                   >= 2.2        && < 2.5
+                 , fast-logger                   >= 2.2
                  , wai-logger                    >= 2.2        && < 2.4
                  , wai-cors
                  , file-embed
