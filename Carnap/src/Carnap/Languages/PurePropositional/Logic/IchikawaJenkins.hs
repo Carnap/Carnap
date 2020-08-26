@@ -183,41 +183,41 @@ parseIchikawaJenkinsSLTableaux = do r <- choice (map (try . string) ["&","¬&","
                                          | r `elem` [ "Lit" ] -> [Lit]
 
 instance CoreInference IchikawaJenkinsSLTableaux PurePropLexicon (Form Bool) where
-        corePremisesOf Conj = [SA (phin 1) :+: SA (phin 2) :+: GammaV 1 :|-: Bot]
-        corePremisesOf NConj = [ SA (lneg $ phin 1) :+: GammaV 1 :|-: Bot
-                               , SA (lneg $ phin 2) :+: GammaV 1 :|-: Bot
+        corePremisesOf Conj = [ GammaV 1 :+: SA (phin 1) :+: SA (phin 2) :|-: Bot]
+        corePremisesOf NConj = [ GammaV 1 :+: SA (lneg $ phin 1)  :|-: Bot
+                               , GammaV 1 :+:  SA (lneg $ phin 2)  :|-: Bot
                                ]
-        corePremisesOf Disj = [ SA (phin 1) :+: GammaV 1 :|-: Bot
-                              , SA (phin 2) :+: GammaV 1 :|-: Bot
+        corePremisesOf Disj = [ GammaV 1 :+: SA (phin 1) :|-: Bot
+                              , GammaV 1 :+: SA (phin 2) :|-: Bot
                               ]
-        corePremisesOf NDisj = [SA (lneg $ phin 1) :+: SA (lneg $ phin 2) :+: GammaV 1 :|-: Bot]
-        corePremisesOf Cond = [ SA (lneg $ phin 1) :+: GammaV 1 :|-: Bot
-                              , SA (phin 2) :+: GammaV 1 :|-: Bot
+        corePremisesOf NDisj = [ GammaV 1 :+: SA (lneg $ phin 1) :+: SA (lneg $ phin 2) :|-: Bot]
+        corePremisesOf Cond = [ GammaV 1 :+: SA (lneg $ phin 1)  :|-: Bot
+                              , GammaV 1 :+: SA (phin 2) :|-: Bot
                               ]
-        corePremisesOf NCond = [SA (phin 1) :+: SA (lneg $ phin 2) :+: GammaV 1 :|-: Bot]
-        corePremisesOf Bicond = [ SA (phin 1) :+: SA (phin 2) :+: GammaV 1 :|-: Bot
-                                , SA (lneg $ phin 1) :+: SA (lneg $ phin 2) :+: GammaV 1 :|-: Bot
+        corePremisesOf NCond = [ GammaV 1 :+: SA (phin 1) :+: SA (lneg $ phin 2) :|-: Bot]
+        corePremisesOf Bicond = [ GammaV 1 :+: SA (phin 1) :+: SA (phin 2)  :|-: Bot
+                                , GammaV 1 :+: SA (lneg $ phin 1) :+: SA (lneg $ phin 2) :|-: Bot
                                 ]
-        corePremisesOf NBicond = [ SA (phin 1) :+: SA (lneg $ phin 2) :+: GammaV 1 :|-: Bot
-                                 , SA (lneg $ phin 1) :+: SA (phin 2) :+: GammaV 1 :|-: Bot
+        corePremisesOf NBicond = [ GammaV 1 :+: SA (phin 1) :+: SA (lneg $ phin 2) :|-: Bot
+                                 , GammaV 1 :+: SA (lneg $ phin 1) :+: SA (phin 2) :|-: Bot
                                  ]
-        corePremisesOf DoubleNeg = [ SA (phin 1)  :+: GammaV 1 :|-: Bot ]
+        corePremisesOf DoubleNeg = [ GammaV 1 :+: SA (phin 1) :|-: Bot ]
         corePremisesOf Struct = [ GammaV 1 :|-: DeltaV 1 ]
         corePremisesOf Lit = []
         corePremisesOf Ax1 = []
         corePremisesOf Ax2 = []
 
-        coreConclusionOf Conj = SA (phin 1 ./\. phin 2) :+: GammaV 1 :|-: Bot
-        coreConclusionOf NConj = SA (lneg $ phin 1 ./\. phin 2 ) :+: GammaV 1 :|-: Bot
-        coreConclusionOf Disj = SA (phin 1 .\/. phin 2) :+: GammaV 1 :|-: Bot
-        coreConclusionOf NDisj = SA (lneg $ phin 2 .\/. phin 1) :+: GammaV 1 :|-: Bot
-        coreConclusionOf Cond = SA (phin 1 .=>. phin 2) :+: GammaV 1 :|-: Bot
-        coreConclusionOf NCond = SA (lneg $ phin 1 .=>. phin 2) :+: GammaV 1 :|-: Bot
-        coreConclusionOf Bicond = SA (phin 2 .<=>. phin 1) :+: GammaV 1 :|-: Bot
-        coreConclusionOf NBicond = SA (lneg $ phin 2 .<=>. phin 1) :+: GammaV 1 :|-: Bot
-        coreConclusionOf DoubleNeg = SA (lneg $ lneg $ phin 1)  :+: GammaV 1 :|-: Bot
-        coreConclusionOf Ax1 = SA (phin 1) :+: SA (lneg $ phin 1) :+: GammaV 1 :|-: Bot
-        coreConclusionOf Ax2 = SA (lneg $ phin 1) :+: SA (phin 1) :+: GammaV 1 :|-: Bot
+        coreConclusionOf Conj = GammaV 1 :+: SA (phin 1 ./\. phin 2) :|-: Bot
+        coreConclusionOf NConj = GammaV 1 :+: SA (lneg $ phin 1 ./\. phin 2 ) :|-: Bot
+        coreConclusionOf Disj = GammaV 1 :+: SA (phin 1 .\/. phin 2) :|-: Bot
+        coreConclusionOf NDisj = GammaV 1 :+: SA (lneg $ phin 1 .\/. phin 2) :|-: Bot
+        coreConclusionOf Cond = GammaV 1 :+: SA (phin 1 .=>. phin 2) :|-: Bot
+        coreConclusionOf NCond = GammaV 1 :+: SA (lneg $ phin 1 .=>. phin 2) :|-: Bot
+        coreConclusionOf Bicond = GammaV 1 :+: SA (phin 1 .<=>. phin 2) :|-: Bot
+        coreConclusionOf NBicond = GammaV 1 :+: SA (lneg $ phin 1 .<=>. phin 2) :|-: Bot
+        coreConclusionOf DoubleNeg = GammaV 1 :+: SA (lneg $ lneg $ phin 1)  :|-: Bot
+        coreConclusionOf Ax1 = GammaV 1 :+: SA (phin 1) :+: SA (lneg $ phin 1) :|-: Bot
+        coreConclusionOf Ax2 = GammaV 1 :+: SA (lneg $ phin 1) :+: SA (phin 1) :|-: Bot
         coreConclusionOf Struct = GammaV 1 :|-: DeltaV 1
         coreConclusionOf Lit = GammaV 1 :|-: DeltaV 1
 
