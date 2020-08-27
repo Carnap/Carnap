@@ -112,6 +112,7 @@ Tag
     deriving Eq
 
 InstructorMetadata
+    deriving Show
 
 CoInstructor
     ident InstructorMetadataId

@@ -42,12 +42,12 @@ documentsList title documents = do
                    pubmd <- mapM (getUserMD . documentCreator . entityVal) publicDocuments
                    muid <- maybeAuthId
                    case muid of
-                       Just uid -> do 
+                       Just uid -> do
                             maybeData <- runDB $ getBy $ UniqueUserData uid
-                            case userDataInstructorId <$> entityVal <$> maybeData of 
+                            case userDataInstructorId <$> entityVal <$> maybeData of
                                Just id -> do
                                     let docs = filter ((==) InstructorsOnly . documentScope . entityVal) documents
-                                        privateDocuments = if docs == [] then Nothing else Just docs 
+                                        privateDocuments = if docs == [] then Nothing else Just docs
                                     privmd <- mapM (getUserMD . documentCreator . entityVal) docs
                                     prividents <- mapM (getIdent . documentCreator . entityVal) docs
                                     defaultLayout $ do
@@ -94,14 +94,14 @@ documentsList title documents = do
 -- XXX DRY up the boilplate that is shared by getDocumentDownload
 getDocumentR :: Text -> Text -> Handler Html
 getDocumentR ident title = do (Entity key doc, path, creatorid) <- retrieveDoc ident title
-                              case documentScope doc of 
+                              case documentScope doc of
                                  Private -> do
                                    muid <- maybeAuthId
                                    case muid of
                                        Nothing -> setMessage "shared file for this document not found" >> notFound
                                        Just uid' | creatorid /= uid' -> setMessage "shared file for this document not found" >> notFound
-                                                 | takeExtension path == ".css" -> serveDoc asCss doc path creatorid >> notFound 
-                                                 | takeExtension path == ".js" -> serveDoc asCss doc path creatorid >> notFound 
+                                                 | takeExtension path == ".css" -> serveDoc asCss doc path creatorid >> notFound
+                                                 | takeExtension path == ".js" -> serveDoc asCss doc path creatorid >> notFound
                                                  | otherwise -> returnFile path
                                                 --serveDoc bypasses the
                                                 --remaining handlers, so the
@@ -127,13 +127,13 @@ getDocumentR ident title = do (Entity key doc, path, creatorid) <- retrieveDoc i
                           addScript $ StaticR ghcjs_rts_js
                           addScript $ StaticR ghcjs_allactions_lib_js
                           addScript $ StaticR ghcjs_allactions_out_js
-                          maybe (pure [()]) (mapM (addScriptRemote . pack))  mjs
+                          maybe (pure [()]) (mapM (addScriptRemote))  mjs
                           addStylesheet $ StaticR css_tree_css
                           addStylesheet $ StaticR css_proof_css
                           addStylesheet $ StaticR css_exercises_css
-                          case mcss of 
+                          case mcss of
                               Nothing -> mapM addStylesheet [StaticR css_bootstrapextra_css]
-                              Just ss -> mapM (addStylesheetRemote . pack) ss
+                              Just ss -> mapM addStylesheetRemote ss
                           $(widgetFile "document")
                           addScript $ StaticR ghcjs_allactions_runmain_js
 
@@ -142,7 +142,7 @@ getDocumentDownloadR ident title = do (Entity key doc, path, creatoruid) <- retr
                                       serveDoc asFile doc path creatoruid
 
 retrieveDoc :: Text -> Text -> Handler (Entity Document, FilePath, UserId)
-retrieveDoc ident title = do userdir <- getUserDir ident 
+retrieveDoc ident title = do userdir <- getUserDir ident
                              let path = userdir </> unpack title
                              exists <- liftIO $ doesFileExist path
                              mcreator <- runDB $ getBy $ UniqueUser ident
@@ -166,12 +166,12 @@ fileToHtml path = do Markdown md <- markdownFromFile path
 getUserDir ident = do master <- getYesod
                       return $ (appDataRoot $ appSettings master) </> "documents" </> unpack ident
 
-allFilters = makeTreeDeduction 
-             . makeSequent 
-             . makeSynCheckers 
-             . makeProofChecker 
-             . makeTranslate 
-             . makeTruthTables 
-             . makeCounterModelers 
-             . makeQualitativeProblems 
+allFilters = makeTreeDeduction
+             . makeSequent
+             . makeSynCheckers
+             . makeProofChecker
+             . makeTranslate
+             . makeTruthTables
+             . makeCounterModelers
+             . makeQualitativeProblems
              . renderFormulas

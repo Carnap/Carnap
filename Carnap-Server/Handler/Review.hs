@@ -7,7 +7,7 @@ import Util.Database
 import Data.Map as M (fromList)
 import Data.Tree
 import Data.List (nub)
-import Filter.Util (sanatizeHtml)
+import Filter.Util (sanitizeHtml)
 import Text.Read (readMaybe)
 import Yesod.Form.Bootstrap3
 import Carnap.Languages.PurePropositional.Syntax
@@ -114,7 +114,7 @@ renderProblem due uidanduser (Entity key val) = do
                   | correct = (floor ((fromIntegral credit :: Rational) / 2))
                   | otherwise = 0
             awarded = case extra of Just n -> show n; _ -> "0" :: String
-            mailto theuser = sanatizeHtml (userIdent theuser) ++ "?subject=[Carnap-" ++ sanatizeHtml ident ++ "]"
+            mailto theuser = sanitizeHtml (userIdent theuser) ++ "?subject=[Carnap-" ++ sanitizeHtml ident ++ "]"
             template display = 
                 [whamlet|
                     <div.card.mb-3.#{isGraded} data-submission-uid="#{show uid}">
