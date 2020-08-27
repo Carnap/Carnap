@@ -48,13 +48,15 @@ let
 
   inherit (nixpkgs) lib;
 
-  devtools = with nixpkgs.haskell.packages."${ghcVer}"; ([
+  devtools = { isGhcjs }: with nixpkgs.haskell.packages."${ghcVer}"; ([
     Cabal
     cabal-install
     ghcid
     hasktags
     yesod-bin
-  ] ++ (lib.optional hls haskell-language-server)
+    # hls is disabled for ghcjs shells because it probably will not work on
+    # pure-ghcjs components.
+  ] ++ (lib.optional (hls && !isGhcjs) haskell-language-server)
   ) ++ (with nixpkgs; [
     cabal2nix
   ]);
@@ -68,17 +70,17 @@ let
     ghcShell = nixpkgs.haskell.packages."${ghcVer}".shellFor {
       packages = p: [ p.Carnap p.Carnap-Client p.Carnap-Server ];
       withHoogle = true;
-      buildInputs = devtools;
+      buildInputs = devtools { isGhcjs = false; };
       # does nothing if hie is disabled
       shellHook = ''
         export HIE_HOOGLE_DATABASE=$(realpath "$(dirname "$(realpath "$(which hoogle)")")/../share/doc/hoogle/default.hoo")
       '';
     };
 
-    ghcjsShell = nixpkgs.haskell.packages."${ghcjsVer}".shellFor {
+    ghcjsShell = nixpkgs-stable.haskell.packages."${ghcjsVer}".shellFor {
       packages = p: [ p.Carnap p.Carnap-Client p.Carnap-GHCJS ];
       withHoogle = true;
-      buildInputs = devtools;
+      buildInputs = devtools { isGhcjs = true; };
       shellHook = ''
         export HIE_HOOGLE_DATABASE=$(realpath "$(dirname "$(realpath "$(which hoogle)")")/../share/doc/hoogle/default.hoo")
       '';

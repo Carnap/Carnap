@@ -27,6 +27,11 @@ The current development environment is based on [Nix](https://nixOS.org). For
 general background on Nix, take a look at
 [nixos.org/learn.html](https://nixos.org/learn.html) or [nix.dev](https://nix.dev).
 
+Building on Windows natively is not supported, however, Carnap works well in
+the [Windows Subsystem for Linux](https://aka.ms/wsl), and has been tested and
+confirmed working in [WSL 2](https://aka.ms/wsl2). The steps for Linux work
+as-written in WSL 2.
+
 Nix is used to speed up builds and avoid having to compile dependencies,
 instead using cached built versions from nixpkgs. It also makes it easy to
 [Dockerize](https://nixos.org/nixpkgs/manual/#sec-pkgs-dockerTools) (see also
@@ -41,7 +46,11 @@ client needs to be built before the server.
 
 Nix does not support incremental package builds, so the suggested development
 workflow is to use `cabal` in a shell. A `Makefile` has been provided to make
-this easier.
+this easier by shortening the commands needed to be typed.
+
+In this documentation, lines starting with `$` mean that the part after the `$`
+is run in a shell natively on your system. Lines starting with `[nix-shell]$`
+are intended to be run in a `nix-shell` shell, which will have that prompt.
 
 ### Nix setup
 
@@ -67,16 +76,25 @@ $ cachix use carnap
 
 Then build as normal.
 
+A quick aside (for those who are curious about what these commands are doing):
+Nix, by default, reads `shell.nix` if you call it through `nix-shell`, and
+`default.nix` if you call it with nix-build or others. That's why there are
+attribute names being used with `-A` for the `nix-build` commands, but not for
+`nix-shell`.
+
 ### Build the front end
 
 This builds the Carnap-GHCJS package under `ghcjs` along with its dependencies.
-(note: takes about 9-10GB of RAM at the final linking stage)
+(note: takes about 9-10GB of RAM at the final linking stage). This is often
+faster than building it with Cabal if you only intend to work on Carnap-Server,
+since the CI build server produces cached built versions of the client side
+components, allowing the build step to be skipped.
 
 ```
 $ nix-build -j4 -A client -o client-out
 ```
 
-### Build Carnap-Server
+### Build Carnap-Server for deployment
 
 This will also automatically build the client and any dependencies if
 necessary.
@@ -85,10 +103,15 @@ necessary.
 $ nix-build -j4 -A server -o server-out
 ```
 
-### Get a GHC based development shell
+### Get a shell with GHC, for server development
 
-This requires a [client be built using Nix](#Build-the-front-end) if you want
-to build Carnap-Server in this shell with Cabal.
+This creates a shell in an environment providing the required dependencies for
+Carnap-Server, along with development tools such as `cabal`, `ghc` and others
+appropriate for server side development. Nix shells use versions of Haskell
+components and tools isolated from those available on the host system.
+
+This requires a client be built, either [using Nix](#Build-the-front-end) or
+using Cabal (see below).
 
 Using `make` aliases:
 
@@ -107,46 +130,73 @@ To perform the process manually, first make sure to copy
 below, called `dataroot`). Then run:
 
 ```
-$ nix-shell -A ghcShell
+$ nix-shell
 [nix-shell:Carnap]$ cabal new-build -f dev all
 [nix-shell:Carnap]$ cd Carnap-Server
 [nix-shell:Carnap-Server]$ APPROOT="http://localhost:3000" DATAROOT="../dataroot" BOOKROOT="../Carnap-Book/" cabal run -f dev Carnap-Server
 ```
 
-### Get a GHCJS based development shell
+### Get a shell with GHCJS, for client side development
+
+As in the section above, this will make a shell with Haskell development tools
+and the required dependencies to work on Carnap components. This one provides
+the GHCJS tooling and dependencies for the client side.
 
 Using `make` aliases:
 
 ```
 $ make shell-ghcjs
-[nix-shell:~/dev/Carnap]$ make build-ghcjs
+[nix-shell:Carnap]$ make build-ghcjs
 ```
 
 Manually:
 
 ```
-$ nix-shell -A ghcjsShell
+$ nix-shell --arg ghcjs true
 $ cabal --project-file=cabal-ghcjs.project --builddir=dist-ghcjs new-build all
 ```
 
-### Haskell IDE Engine
+### Haskell Language Server
 
-The Nix infrastructure for Carnap supports providing the Haskell IDE Engine for
-development environments. To use it:
+The Nix infrastructure for Carnap provides the Haskell Language Server by
+default for development on Carnap-Server, allowing for completion, type
+information and more. It is not yet working on the exclusively-GHCJS-built
+components.
 
+To use it:
+
+Make the following shell script somewhere in `$PATH`, called `hls-nix`:
+
+```sh
+#!/bin/sh
+
+nix-shell --run "haskell-language-server-wrapper $@"
 ```
-# Operated by Infinisil: https://github.com/Infinisil/all-hies
-# Recommended for build time reasons
-$ cachix use all-hies
 
-$ make shell-ghc USE_HIE=true
-# or
-$ make shell-ghcjs USE_HIE=true
+Then, configure per the [information in the
+README](https://github.com/haskell/haskell-language-server). For example, for
+neovim with `Coc`, the following configuration should be put in the file
+brought up by `:CocConfig`:
+
+```json
+{
+"languageserver": {
+  "haskell": {
+    "command": "hls-nix",
+    "args": ["--lsp"],
+    "rootPatterns": ["*.cabal", "stack.yaml", "cabal.project", "package.yaml", "hie.yaml"],
+    "filetypes": ["haskell", "lhaskell"]
+  }
+}
+}
 ```
 
-Then, `hie` will be available in that shell environment. Note that
-`Carnap-Server/config/settings.yml` needs to be present for Carnap-Server to
-work in HIE (just copy it from the example settings file).
+NOTE: we are using the `hls-nix` wrapper script as the command here, so HLS
+picks up the dependencies for Carnap-Server from Nix since it is run in a
+`nix-shell`.
+
+NOTE: `Carnap-Server/config/settings.yml` needs to be present for Carnap-Server to
+work in HLS (just copy it from the example settings file).
 
 ## Deployment
 

@@ -1,6 +1,5 @@
-.PHONY: shell-ghc build-ghc build-ghc tags
+.PHONY: help shell-ghc build-ghc shell-ghcjs build-ghcjs tags
 TARGET := all
-USE_HIE := false
 
 help:
 	@echo "Supported actions: run, shell-ghc, build-ghc, shell-ghcjs, build-ghcjs, tags"
@@ -14,15 +13,22 @@ run:
 		cabal run -f dev Carnap-Server
 
 shell-ghc:
-	nix-shell -A ghcShell --arg useHie $(USE_HIE)
+	nix-shell
 
 build-ghc:
+ifeq ($(origin NIX_STORE),undefined)
+	$(error It seems like this is not being run in a nix shell. Try `make shell-ghc` first.)
+endif
 	cabal new-build -f dev $(TARGET)
 
 shell-ghcjs:
-	nix-shell -A ghcjsShell --arg useHie $(USE_HIE)
+	nix-shell --arg ghcjs true
 
+# I don't think I can easily enter a shell for the user if they forget unfortunately :(
 build-ghcjs:
+ifeq ($(origin NIX_STORE),undefined)
+	$(error It seems like this is not being run in a nix shell. Try `make shell-ghcjs` first.)
+endif
 	cabal --project-file=cabal-ghcjs.project --builddir=dist-ghcjs new-build $(TARGET)
 	# make a fake nix output directory so we don't have to change the symlinks from a nix-built
 	# client (allowing people working only on the server to download a client from nix cache)
