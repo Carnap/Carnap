@@ -59,6 +59,7 @@ let
   ] ++ (lib.optional (hls && !isGhcjs) haskell-language-server)
   ) ++ (with nixpkgs; [
     cabal2nix
+    niv
   ]);
 
   in rec {

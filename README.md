@@ -257,37 +257,21 @@ $ cd Carnap-Client; cabal2nix . > Carnap-Client.nix
 
 ### Updating nixpkgs
 
-`nixpkgs` is pinned in this project in order to ensure builds are reproducible.
-It should be updated manually on occasion.
+The version of nixpkgs used is pinned to a fixed git commit to ensure that no
+unexpected issues happen with our builds. Occasionally it should be updated,
+then Carnap build reattempted. Currently we use a system of two versions of
+nixpkgs, `nixpkgs` and `nixpkgs-stable`, with `nixpkgs` used for Carnap-Server,
+having the latest packages including haskell-language-server, and
+`nixpkgs-stable` providing a working ghcjs (since it is supposedly broken in
+the latest nixpkgs). `nixpkgs-stable` as of the time of this writing is pinned
+to `nixos-20.03` whereas `nixpkgs` is on `nixpkgs-unstable`, a
+tested-but-rolling-release build.
 
-```
---- Get the latest version ---
-» git ls-remote https://github.com/NixOS/nixpkgs nixos-20.03
-1a92d0abfcdbafc5c6e2fdc24abf2cc5e011ad5a        refs/heads/nixos-20.03
-^--- take this sha1 and put it in the URL:
-     https://github.com/NixOS/nixpkgs/archive/YOUR-SHA1.zip
+We now use [niv](https://github.com/nmattia/niv) to manage our nixpkgs
+versions. It is available from either development shell.
 
---- Prefetch it in the nix store to get its checksum. ---
-» nix-prefetch-url https://github.com/NixOS/nixpkgs/archive/1a92d0abfcdbafc5c6e2fdc24abf2cc5e011ad5a.zip --name nixpkgs-20.03-2020-07-15
-[30.5 MiB DL]
-path is '/nix/store/4hmbsfcwh31j3m309a4gq6jj7whhc277-nixpkgs-20.03-2020-07-15'
-1pfgb0r7yykw97n8gx0ga6m5nphxicd4b7mc0d5k863bp7q4cnw5
-^--- use this sha256 in default.nix
-```
-
-Then, update the name, url and sha256 `nixpkgs` import in `default.nix`:
-
-```nix
-# ...
-let
-nixpkgs = import (builtins.fetchTarball {
-        name   = "nixpkgs-20.03-2020-07-15";
-        url    = "https://github.com/NixOS/nixpkgs/archive/1a92d0abfcdbafc5c6e2fdc24abf2cc5e011ad5a.zip";
-        sha256 = "1pfgb0r7yykw97n8gx0ga6m5nphxicd4b7mc0d5k863bp7q4cnw5";
-      }) { /* ... */ };
-in {}
-# ...
-```
+Run `niv update nixpkgs` or `niv update nixpkgs-stable` to update the
+respective pinned nixpkgs versions to the latest in their branch.
 
 ### Files in nix/
 
