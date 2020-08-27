@@ -1,4 +1,4 @@
-{-#LANGUAGE FlexibleInstances, MultiParamTypeClasses, GADTs, TypeOperators, PatternSynonyms, RankNTypes, FlexibleContexts, AutoDeriveTypeable, StandaloneDeriving, DeriveGeneric #-}
+{-#LANGUAGE FlexibleInstances, MultiParamTypeClasses, GADTs, TypeOperators, PatternSynonyms, RankNTypes, FlexibleContexts, StandaloneDeriving, DeriveGeneric #-}
 
 module Carnap.Languages.PurePropositional.Syntax where
 
