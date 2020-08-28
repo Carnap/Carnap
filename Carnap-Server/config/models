@@ -111,6 +111,8 @@ Tag
     UniqueTag bearer name
     deriving Eq
 
+-- the below `deriving Show` is load-bearing: it mitigates
+-- https://github.com/yesodweb/persistent/issues/1047
 InstructorMetadata
     deriving Show
 

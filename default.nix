@@ -72,18 +72,11 @@ let
       packages = p: [ p.Carnap p.Carnap-Client p.Carnap-Server ];
       withHoogle = true;
       buildInputs = devtools { isGhcjs = false; };
-      # does nothing if hie is disabled
-      shellHook = ''
-        export HIE_HOOGLE_DATABASE=$(realpath "$(dirname "$(realpath "$(which hoogle)")")/../share/doc/hoogle/default.hoo")
-      '';
     };
 
     ghcjsShell = nixpkgs-stable.haskell.packages."${ghcjsVer}".shellFor {
       packages = p: [ p.Carnap p.Carnap-Client p.Carnap-GHCJS ];
       withHoogle = true;
       buildInputs = devtools { isGhcjs = true; };
-      shellHook = ''
-        export HIE_HOOGLE_DATABASE=$(realpath "$(dirname "$(realpath "$(which hoogle)")")/../share/doc/hoogle/default.hoo")
-      '';
     };
   }
