@@ -12,6 +12,7 @@ import Data.Time
 import Data.Time.Clock.POSIX
 import Text.Julius (juliusFile,rawJS)
 import Text.Pandoc.Walk (walkM, walk)
+import TH.RelativePaths (pathRelativeToCabalPackage)
 import Filter.Randomize
 import Filter.SynCheckers
 import Filter.ProofCheckers
@@ -98,9 +99,9 @@ returnAssignment coursetitle filename (Entity key val) path = do
                                 mjs <- retrievePandocVal (lookupMeta "js" meta)
                                 let source = "assignment:" ++ show key
                                 defaultLayout $ do
-                                    toWidgetHead $(juliusFile "templates/command.julius")
-                                    toWidgetHead $(juliusFile "templates/status-warning.julius")
-                                    toWidgetHead $(juliusFile "templates/assignment-state.julius")
+                                    toWidgetHead $(juliusFile =<< pathRelativeToCabalPackage "templates/command.julius")
+                                    toWidgetHead $(juliusFile =<< pathRelativeToCabalPackage "templates/status-warning.julius")
+                                    toWidgetHead $(juliusFile =<< pathRelativeToCabalPackage "templates/assignment-state.julius")
                                     toWidgetHead [julius|var submission_source="#{rawJS source}";|]
                                     toWidgetHead [julius|var assignment_key="#{rawJS $ show key}";|]
                                     case (mavail >>= availabilityMinutes,mtoken) of

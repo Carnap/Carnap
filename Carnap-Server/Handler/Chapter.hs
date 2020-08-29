@@ -16,6 +16,7 @@ import Text.Pandoc.Walk (walkM, walk)
 import System.Directory (getDirectoryContents)
 import Text.Julius (juliusFile)
 import Text.Hamlet (hamletFile)
+import TH.RelativePaths (pathRelativeToCabalPackage)
 import qualified Data.CaseInsensitive as CI
 import qualified Data.Text.Encoding as TE
 import Control.Monad.State (evalState, evalStateT)
@@ -25,9 +26,9 @@ import Control.Monad.State (evalState, evalStateT)
 getChapterR :: Int -> Handler Html
 getChapterR n = do bookdir <- appBookRoot <$> (appSettings <$> getYesod)
                    cdir <- liftIO $ getDirectoryContents bookdir
-                   content <- liftIO $ content n cdir bookdir 
+                   content <- liftIO $ content n cdir bookdir
                    case content of
-                       Right (Right html) -> chapterLayout  
+                       Right (Right html) -> chapterLayout
                             [whamlet|
                                 <div.container>
                                     <article>
@@ -44,13 +45,13 @@ getChapterR n = do bookdir <- appBookRoot <$> (appSettings <$> getYesod)
                                                         Next Chapter
                             |]
 
-                       Right (Left err) -> defaultLayout 
+                       Right (Left err) -> defaultLayout
                                       [whamlet|
                                         <div.container>
                                             <article>
                                                 #{show err}
                                        |]
-                       Left err -> defaultLayout 
+                       Left err -> defaultLayout
                                       [whamlet|
                                         <div.container>
                                             <article>
@@ -65,10 +66,10 @@ content n cdir cdirp = do let matches = filter (\x -> (show n ++ ".pandoc") == d
 
 fileToHtml path m = do md <- markdownFromFile (path ++ m)
                        case parseMarkdown yesodDefaultReaderOptions { readerExtensions = exts } md of
-                           Right pd -> do pd' <- runFilters path pd 
+                           Right pd -> do pd' <- runFilters path pd
                                           return $ Right $ writePandocTrusted yesodDefaultWriterOptions { writerExtensions = exts } pd'
                            Left e -> return $ Left e
-    where exts = extensionsFromList 
+    where exts = extensionsFromList
                     [ Ext_raw_html
                     , Ext_markdown_in_html_blocks
                     , Ext_auto_identifiers
@@ -96,8 +97,8 @@ chapterLayout widget = do
         authmaybe <- maybeAuth
         instructors <- instructorIdentList
         pc <- widgetToPageContent $ do
-            toWidgetHead $(juliusFile "templates/command.julius")
-            toWidgetHead $(juliusFile "templates/status-warning.julius")
+            toWidgetHead $(juliusFile =<< pathRelativeToCabalPackage "templates/command.julius")
+            toWidgetHead $(juliusFile =<< pathRelativeToCabalPackage "templates/status-warning.julius")
             toWidgetHead [julius|var submission_source="book";|]
             addScript $ StaticR js_popper_min_js
             addScript $ StaticR ghcjs_rts_js
@@ -109,4 +110,4 @@ chapterLayout widget = do
             addStylesheet $ StaticR css_exercises_css
             $(widgetFile "default-layout")
             addScript $ StaticR ghcjs_allactions_runmain_js
-        withUrlRenderer $(hamletFile "templates/default-layout-wrapper.hamlet")
+        withUrlRenderer $(hamletFile =<< pathRelativeToCabalPackage "templates/default-layout-wrapper.hamlet")
