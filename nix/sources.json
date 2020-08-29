@@ -1,14 +1,26 @@
 {
-    "niv": {
-        "branch": "master",
-        "description": "Easy dependency management for Nix projects",
-        "homepage": "https://github.com/nmattia/niv",
-        "owner": "nmattia",
-        "repo": "niv",
-        "rev": "89ae775e9dfc2571f912156dd2f8627e14d4d507",
-        "sha256": "0ssw6byyn79fpyzswi28s5b85x66xh4xsfhmcfl5mkdxxpmyy0ns",
+    "jose-jwt": {
+        "branch": "priv2pub",
+        "description": "Haskell implementation of JOSE/JWT standards",
+        "homepage": null,
+        "owner": "lf-",
+        "repo": "jose-jwt",
+        "rev": "67c07d4c4fe17c3196f1ee86ab0133c9986284a4",
+        "sha256": "0bnw3r7zhfpmsykp9zs1yllra5220vr51hhq7lmawidqllj9k2r3",
         "type": "tarball",
-        "url": "https://github.com/nmattia/niv/archive/89ae775e9dfc2571f912156dd2f8627e14d4d507.tar.gz",
+        "url": "https://github.com/lf-/jose-jwt/archive/67c07d4c4fe17c3196f1ee86ab0133c9986284a4.tar.gz",
+        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
+    },
+    "lti13": {
+        "branch": "main",
+        "description": null,
+        "homepage": "",
+        "owner": "lf-",
+        "repo": "lti13",
+        "rev": "8896cb18f4dbd276fb48d744c25dccb99f1d586b",
+        "sha256": "0jk94nqsq0450vkvzfn9wwj5mfyjvdrncc1b5iya3bfybn8n4jwv",
+        "type": "tarball",
+        "url": "https://github.com/lf-/lti13/archive/8896cb18f4dbd276fb48d744c25dccb99f1d586b.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "nixpkgs": {
@@ -17,10 +29,10 @@
         "homepage": null,
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "fcd447bfed52b95d8e63314c0e8ab3c01649dfdc",
-        "sha256": "013gvrhxvn3qpfjf0vjb3nymw8h4zmdgnvz46dvfp8cgvv0603s4",
+        "rev": "ca3fa9c32a45f028f480ab8ec26cc4bd8ce800ad",
+        "sha256": "06brxwypbsp1y2m9ppprkwsjg60jjp6bs2mmx7s8imk32pw86vi9",
         "type": "tarball",
-        "url": "https://github.com/NixOS/nixpkgs/archive/fcd447bfed52b95d8e63314c0e8ab3c01649dfdc.tar.gz",
+        "url": "https://github.com/NixOS/nixpkgs/archive/ca3fa9c32a45f028f480ab8ec26cc4bd8ce800ad.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "nixpkgs-stable": {

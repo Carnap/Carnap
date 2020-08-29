@@ -3,6 +3,7 @@ module Handler.Rule where
 import Import
 import Text.Julius (juliusFile)
 import Text.Hamlet (hamletFile)
+import TH.RelativePaths (pathRelativeToCabalPackage)
 import Carnap.GHCJS.SharedTypes
 import Util.Database
 import qualified Data.CaseInsensitive as CI
@@ -55,10 +56,10 @@ getRuleR = do derivedPropRules <- getPropDrList
                                 $nothing
                                 <div.ruleBuilder>
                                     <h2>The Propositional Rule Builder
-                                    <div data-carnap-type="proofchecker" 
-                                         data-carnap-system="prop" 
-                                         data-carnap-guides="montague" 
-                                         data-carnap-options="resize" 
+                                    <div data-carnap-type="proofchecker"
+                                         data-carnap-system="prop"
+                                         data-carnap-guides="montague"
+                                         data-carnap-options="resize"
                                          data-carnap-submission="saveRule">
 
                                 $maybe folRules <- derivedFOLRules
@@ -69,10 +70,10 @@ getRuleR = do derivedPropRules <- getPropDrList
                                     <hr.hrSep>
                                 <div.ruleBuilder>
                                     <h2>The First-Order Rule Builder
-                                    <div data-carnap-type="proofchecker" 
-                                         data-carnap-system="firstOrder" 
-                                         data-carnap-guides="montague" 
-                                         data-carnap-options="resize" 
+                                    <div data-carnap-type="proofchecker"
+                                         data-carnap-system="firstOrder"
+                                         data-carnap-guides="montague"
+                                         data-carnap-options="resize"
                                          data-carnap-submission="saveRule">
                             |]
 
@@ -82,7 +83,7 @@ ruleLayout widget = do
         authmaybe <- maybeAuth
         instructors <- instructorIdentList
         pc     <- widgetToPageContent $ do
-            toWidgetHead $(juliusFile "templates/command.julius")
+            toWidgetHead $(juliusFile =<< pathRelativeToCabalPackage "templates/command.julius")
             addScript $ StaticR ghcjs_rts_js
             addScript $ StaticR ghcjs_allactions_lib_js
             addScript $ StaticR ghcjs_allactions_out_js
@@ -105,10 +106,10 @@ getFOLDrList = do maybeCurrentUserId <- maybeAuthId
                   case maybeCurrentUserId of
                        Nothing -> return Nothing
                        Just uid -> Just . formatFOLRules <$> getRules uid
-                                    
+
 
 formatOldPropRules rules = map toRow rules
-    where toRow (SavedDerivedRule dr n _ _) = let (Just dr') = decodeRule dr in 
+    where toRow (SavedDerivedRule dr n _ _) = let (Just dr') = decodeRule dr in
                                               B.tr $ do B.td $ B.toHtml $ "D-" ++ n
                                                         B.td $ B.toHtml $ intercalate "," $ map show $ premises dr'
                                                         B.td $ B.toHtml $ show $ conclusion dr'

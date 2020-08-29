@@ -2,56 +2,65 @@
 module Handler.Admin where
 
 import Import
-import Util.Data
-import Util.Database
 import Handler.Instructor (dateDisplay)
 import Yesod.Form.Bootstrap3
-import Yesod.Form.Jquery
 import Text.Blaze.Html (toMarkup)
-import Data.Aeson (decode,encode)
-import Data.Time
-import System.FilePath
-import System.Directory (getDirectoryContents,removeFile, doesFileExist)
+import qualified Data.Text as T
+import TH.RelativePaths (pathRelativeToCabalPackage)
+import Text.Julius (juliusFile)
+import Data.Aeson (encode)
+import Util.Data (jsonSerialize)
 
 deleteAdminR :: Handler Value
 deleteAdminR = do
-        msg <- requireJsonBody :: Handler AdminDelete
+        msg <- requireCheckJsonBody :: Handler DeleteMsg
         case msg of
             DowngradeInstructor uid -> do
                 mud <- runDB $ get uid
-                case mud of 
+                case mud of
                     Just ud -> case userDataInstructorId ud of
                                    Just iid -> do runDB $ do cids <- map entityKey <$> selectList [CourseInstructor ==. iid] []
                                                              students <- concat <$> mapM (\cid -> selectList [UserDataEnrolledIn ==. Just cid] []) cids
-                                                             mapM (\student -> update (entityKey student) [UserDataEnrolledIn =. Nothing]) students
+                                                             mapM_ (\student -> update (entityKey student) [UserDataEnrolledIn =. Nothing]) students
                                                              update uid [UserDataInstructorId =. Nothing]
                                                              deleteCascade iid
                                                   returnJson ("Downgraded!" :: Text)
                                    Nothing -> returnJson ("Not an instructor" :: Text)
-            _ -> returnJson ("Bad Message" :: Text)
+                    Nothing -> returnJson ("Instructor doesn't exist?" :: Text)
+            LtiDelete key -> do
+                runDB $ delete key
+                returnJson ("Deleted" :: Text)
 
 postAdminR :: Handler Html
 postAdminR = do allUserData <- runDB $ selectList [] []
                 let allStudentsData = filter (\x -> userDataInstructorId (entityVal x) == Nothing) allUserData
                     allStudentUids = map (userDataUserId . entityVal) allStudentsData
                 students <- catMaybes <$> mapM (\x -> runDB (get x)) allStudentUids
-                ((upgraderslt,upgradeWidget),enctypeUpgrade) <- runFormPost (upgradeToInstructor students)
-                case upgraderslt of 
-                     (FormSuccess ident) -> do 
+                ((upgraderslt,_upgradeWidget),_enctypeUpgrade) <- runFormPost $ identifyForm "upgradeToInstructor" (upgradeToInstructor students)
+                ((ltirslt, _), _) <- runFormPost $ identifyForm "ltiConfig" $ ltiConfigForm
+                case upgraderslt of
+                     FormSuccess ident -> do
                             success <- runDB $ do imd <- insert InstructorMetadata
                                                   muent <- getBy $ UniqueUser ident
                                                   mudent <- case entityKey <$> muent of
                                                                 Just uid -> getBy $ UniqueUserData uid
                                                                 Nothing -> return Nothing
-                                                  case entityKey <$> mudent of 
+                                                  case entityKey <$> mudent of
                                                        Nothing -> return False
                                                        Just udid -> do update udid [UserDataInstructorId =. Just imd]
                                                                        return True
                             if success then setMessage $ "user " ++ (toMarkup ident) ++ " upgraded to instructor"
                                        else setMessage $ "couldn't upgrade user " ++ (toMarkup ident) ++ " to instructor"
-                     (FormFailure s) -> setMessage $ "Something went wrong: " ++ toMarkup (show s)
-                     FormMissing -> setMessage "Submission data incomplete"
+                     FormFailure s -> showFailure s
+                     FormMissing -> return ()
+                case ltirslt of
+                    FormSuccess (iss, cid, oidcEndp, jwksUrl) -> do
+                        runDB $ insert_ $ LtiPlatformInfo iss cid oidcEndp $ T.unpack jwksUrl
+                        setMessage "Successful"
+                    FormFailure s -> showFailure s
+                    FormMissing -> return ()
                 redirect AdminR --XXX: redirect here to make sure changes are visually reflected
+    where showFailure s = setMessage $ "Something went wrong: " ++ toMarkup (show s)
 
 getAdminR :: Handler Html
 getAdminR = do allUserData <- runDB $ selectList [] []
@@ -66,56 +75,42 @@ getAdminR = do allUserData <- runDB $ selectList [] []
                instructorW <- instructorWidget instructorsPlus
                emailW <- emailWidget allInstructors
                unenrolledW <- unenrolledWidget allStudentsData (concat allCoursesByInstructor)
-               (upgradeWidget,enctypeUpgrade) <- generateFormPost (upgradeToInstructor students)
-               defaultLayout $ do 
-                             toWidgetHead [julius|
-                                function tryDelete (ident, json) {
-                                    if (ident == prompt("Are you sure you want to downgrade this instructor?\nAll their data will be lost. Enter their ident to confirm.")) {
-                                       adminDelete(json);
-                                    } else { 
-                                       alert("Wrong Ident!");
-                                    }
-                                };
+               (upgradeWidget,enctypeUpgrade) <- generateFormPost (identifyForm "upgradeToInstructor" $ upgradeToInstructor students)
+               (ltiWidget,enctypeLti) <- generateFormPost (identifyForm "ltiConfig" $ ltiConfigForm)
+               ltiConfigsW <- ltiConfigsWidget
+               defaultLayout $ do
+                   toWidgetHead $(juliusFile =<< pathRelativeToCabalPackage "templates/admin.julius")
+                   [whamlet|
+                    <div.container>
+                        <h1> Admin Portal
+                        ^{emailW}
+                        ^{instructorW}
+                        ^{unenrolledW}
+                        <form method=post enctype=#{enctypeUpgrade}>
+                            ^{upgradeWidget}
+                             <div.form-group>
+                                 <input.btn.btn-primary type=submit value="Upgrade">
+                        <hr>
+                        <h3> LTI 1.3 Configuration
+                        <form method="post" enctype=#{enctypeLti}>
+                            ^{ltiWidget}
+                            <div.form-group>
+                                <input.btn.btn-primary type=submit value="Create new platform">
+                        ^{ltiConfigsW}
+                   |]
 
-                                function adminDelete (json) {
-                                    jQuery.ajax({
-                                        url: '@{AdminR}',
-                                        type: 'DELETE',
-                                        contentType: "application/json",
-                                        data: json,
-                                        success: function(data) {
-                                            window.alert(data);
-                                            location.reload()
-                                            },
-                                        error: function(data) {
-                                            window.alert("Error, couldn't delete")
-                                            },
-                                    });
-                                };
-                             |]
-                             [whamlet|
-                              <div.container>
-                                  <h1> Admin Portal
-                                  ^{emailW}
-                                  ^{instructorW}
-                                  ^{unenrolledW}
-                                  <form method=post enctype=#{enctypeUpgrade}>
-                                      ^{upgradeWidget}
-                                       <div.form-group>
-                                           <input.btn.btn-primary type=submit value="upgrade">
-                             |]
-
+upgradeToInstructor :: [User] -> Html -> MForm (HandlerFor App) (FormResult Text, WidgetFor App ())
 upgradeToInstructor users = renderBootstrap3 BootstrapBasicForm $
                                 areq (selectFieldList userIdents) (bfs ("Upgrade User to Instructor" :: Text)) Nothing
         where userIdents = let idents = map userIdent users in zip idents idents
 
-unenrolledWidget :: [Entity UserData] -> [(Entity Course,[Entity UserData])] -> HandlerT App IO Widget
-unenrolledWidget students courses = do 
+unenrolledWidget :: [Entity UserData] -> [(Entity Course,[Entity UserData])] -> HandlerFor App Widget
+unenrolledWidget students courses = do
        time <- liftIO getCurrentTime
        let unenrolledData = filter (\x -> userDataEnrolledIn (entityVal x) == Nothing) students
-           inactive = filter (\(c,e) -> courseEndDate (entityVal c) < time)
+           inactive = filter (\(c,_) -> courseEndDate (entityVal c) < time)
            expiredData = concat . map snd . inactive $ courses
-       unenrolled <- catMaybes <$> mapM (\ud -> runDB $ get (userDataUserId (entityVal ud))) unenrolledData 
+       unenrolled <- catMaybes <$> mapM (\ud -> runDB $ get (userDataUserId (entityVal ud))) unenrolledData
        expired <- catMaybes <$> mapM (\ud -> runDB $ get (userDataUserId (entityVal ud))) expiredData
        return [whamlet|
             <div.card style="margin-bottom:20px">
@@ -143,18 +138,18 @@ unenrolledWidget students courses = do
                                         #{ln}, #{fn}
             |]
 
-emailWidget :: [User] -> HandlerT App IO Widget
+emailWidget :: [User] -> HandlerFor App Widget
 emailWidget insts = do let emails = intercalate "," (map userIdent insts)
                        return [whamlet|
                           <a href="mailto:gleachkr@gmail.com?bcc=#{emails}">Email Instructors
                        |]
 
 
-instructorWidget :: [(User,Entity UserData,[(Entity Course,[Entity UserData])])] -> HandlerT App IO Widget
-instructorWidget instructorPlus = 
+instructorWidget :: [(User,Entity UserData,[(Entity Course,[Entity UserData])])] -> HandlerFor App Widget
+instructorWidget instructorPlus =
         do time <- liftIO getCurrentTime
-           let active = filter (\(c,e) -> courseEndDate (entityVal c) > time)
-               inactive = filter (\(c,e) -> courseEndDate (entityVal c) < time)
+           let active = filter (\(c,_) -> courseEndDate (entityVal c) > time)
+               inactive = filter (\(c,_) -> courseEndDate (entityVal c) < time)
            return [whamlet|
                  $forall (instructor, Entity key (UserData fn ln _ _ _), courses) <- instructorPlus
                      <div.card style="margin-bottom:20px">
@@ -188,16 +183,51 @@ instructorWidget instructorPlus =
                                  Downgrade Instructor
            |]
 
-getCoursesWithEnrollment ud = case userDataInstructorId ud of 
-                                        Just iid -> do courseEnt <- runDB $ selectList [CourseInstructor ==. iid] []
-                                                       enrollments <- mapM (\c -> runDB $ selectList [UserDataEnrolledIn ==. Just (entityKey c)] []) courseEnt
-                                                       return $ zip courseEnt enrollments
+getCoursesWithEnrollment :: UserData -> HandlerFor App [(Entity Course, [Entity UserData])]
+getCoursesWithEnrollment ud =
+    case userDataInstructorId ud of
+        Just iid -> do courseEnt <- runDB $ selectList [CourseInstructor ==. iid] []
+                       enrollments <- mapM (\c -> runDB $ selectList [UserDataEnrolledIn ==. Just (entityKey c)] []) courseEnt
+                       return $ zip courseEnt enrollments
 
-                                        Nothing -> return []
+        Nothing -> return []
 
-data AdminDelete = DowngradeInstructor UserDataId
+ltiConfigForm :: Html -> MForm (HandlerFor App) (FormResult (Text, Text, Text, Text), WidgetFor App ())
+ltiConfigForm = renderBootstrap3 BootstrapBasicForm $ (,,,)
+    <$> areq textField (bfs ("Issuer" :: Text)) Nothing
+    <*> areq textField (bfs ("client_id" :: Text)) Nothing
+    <*> areq textField (bfs ("OIDC Auth Endpoint" :: Text)) Nothing
+    <*> areq textField (bfs ("JWKs URL" :: Text)) Nothing
+
+ltiConfigsWidget :: HandlerFor App Widget
+ltiConfigsWidget = do
+    ltiConfigs <- runDB $ selectList ([] :: [Filter LtiPlatformInfo]) []
+    return [whamlet|
+            <h4>Configured LTI Platforms
+            <table.table.table-striped>
+                <thead>
+                    <th> iss
+                    <th> client_id
+                    <th> OIDC Auth Endpoint
+                    <th> JWK URL
+                    <th> Actions
+                <tbody>
+                    $forall Entity k (LtiPlatformInfo iss cid endpoint jwksUrl) <- ltiConfigs
+                        <tr>
+                            <td> #{iss}
+                            <td> #{cid}
+                            <td> #{endpoint}
+                            <td> #{jwksUrl}
+                            <td>
+                                <button.btn.btn-sm.btn-secondary type="button" alt="edit"
+                                    title="Delete" onclick="ltiDelete('#{jsonSerialize $ LtiDelete k}')">
+                                    <i.fa.fa-trash-o>
+        |]
+
+data DeleteMsg = DowngradeInstructor UserDataId
+               | LtiDelete (Key LtiPlatformInfo)
     deriving Generic
 
-instance ToJSON AdminDelete
+instance ToJSON DeleteMsg
+instance FromJSON DeleteMsg
 
-instance FromJSON AdminDelete

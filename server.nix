@@ -1,4 +1,4 @@
-{ client, persistent, withHoogle ? true, profiling ? false }:
+{ client, jose-jwt, lti13, persistent, withHoogle ? true, profiling ? false }:
 { nixpkgs }:
 let
   inherit (nixpkgs.haskell.lib)
@@ -29,6 +29,10 @@ newpkgs: oldpkgs: {
     sha256 = "1bikn9kfw6mrsais4z1nk07aa7i7hyrcs411kbbfgc7n74k6sd5b";
   } { };
 
+  # failing tests on macOS for some reason:
+  # https://github.com/ubc-carnap-team/Carnap/runs/1074093219?check_suite_focus=true
+  tz = dontCheck oldpkgs.tz;
+
   # Use the version from https://github.com/yesodweb/persistent/pull/1106
   # using overrideSrc to maintain dependency relations and nix's fixes/overrides for these
   persistent = overrideSrc oldpkgs.persistent { src = (persistent + "/persistent"); };
@@ -48,6 +52,21 @@ newpkgs: oldpkgs: {
   # version such that it uses a modern webkitgtk
   # ghcjs-dom = oldpkgs.callPackage ./nix/ghcjs-dom.nix { };
 
+  # they wrote a spec that calls out to Google. It does not work in a nix
+  # builder.
+  oidc-client = dontCheck oldpkgs.oidc-client;
+
+  # required because it has https://github.com/tekul/jose-jwt/pull/29
+  # needed for lti13
+  jose-jwt = oldpkgs.callCabal2nix "jose-jwt" jose-jwt { };
+
+  lti13 = oldpkgs.callCabal2nix "lti13" (lti13 + "/lti13") { };
+  yesod-auth-lti13 = oldpkgs.callCabal2nixWithOptions
+      "yesod-auth-lti13"
+      (lti13 + "/yesod-auth-lti13")
+      "-f -example"
+      { };
+
   # dontCheck: https://github.com/gleachkr/Carnap/issues/123
   Carnap        = withGitignore
       (dontCheck (oldpkgs.callPackage ./Carnap/Carnap.nix { }));
@@ -59,7 +78,7 @@ newpkgs: oldpkgs: {
   #    (oldpkgs.callPackage ./Carnap-GHCJS/Carnap-GHCJS.nix { });
 
   Carnap-Server = justStaticExecutables (withGitignore ((overrideCabal
-    (oldpkgs.callPackage ./Carnap-Server/Carnap-Server.nix { })
+    (oldpkgs.callCabal2nix "Carnap-Server" ./Carnap-Server { })
     (old: let book = ./Carnap-Book; in {
       preConfigure = ''
         mkdir -p $out/share

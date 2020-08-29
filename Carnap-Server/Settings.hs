@@ -27,9 +27,8 @@ data AppSettings = AppSettings
     -- ^ Directory from which to serve static files.
     , appDatabaseConf           :: PostgresConf
     -- ^ Configuration settings for accessing the database.
-    , appRoot                   :: Maybe Text
-    -- ^ Base for all generated URLs. If @Nothing@, determined
-    -- from the request headers.
+    , appRoot                   :: Text
+    -- ^ Base for generated URLs. Includes protocol!
     , appHost                   :: HostPreference
     -- ^ Host/interface the server should bind to.
     , appPort                   :: Int
@@ -43,7 +42,7 @@ data AppSettings = AppSettings
     , appDataRoot               :: FilePath
     -- ^ root for stored application data
     , appBookRoot               :: FilePath
-    -- ^ root for the carnap book 
+    -- ^ root for the carnap book
     , appDetailedRequestLogging :: Bool
     -- ^ Use detailed request logging system
     , appShouldLogAll           :: Bool
@@ -78,7 +77,7 @@ instance FromJSON AppSettings where
 #endif
         appStaticDir              <- o .: "static-dir"
         appDatabaseConf           <- o .: "database"
-        appRoot                   <- o .:? "approot"
+        appRoot                   <- o .: "approot"
         appHost                   <- fromString <$> o .: "host"
         appPort                   <- o .: "port"
         appIpFromHeader           <- o .: "ip-from-header"
