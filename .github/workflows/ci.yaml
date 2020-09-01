@@ -23,7 +23,8 @@ jobs:
         # temporarily use the jade-carnap cachix instance while we haven't got
         # a full build on the carnap one
         skipPush: true
-    # this pulls in client also
+    # run it in serial because we are getting attacked by the OOM killer lol
+    - run: nix-build -A client
     - run: nix-build -A server
 
   docker-build:
@@ -53,5 +54,6 @@ jobs:
         name: jade-carnap
         # temporary, as above
         skipPush: true
+    - run: nix-build -A client
     - run: nix-shell -p skopeo --run "skopeo copy docker-archive:$(nix-build release.nix --arg hasKvm false -A docker --no-out-link) docker://$(echo ${IMG_REF} | envsubst | tr 'A-Z' 'a-z')"
 

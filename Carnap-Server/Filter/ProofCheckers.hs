@@ -1,9 +1,11 @@
+{-# LANGUAGE OverloadedStrings #-}
 module Filter.ProofCheckers (makeProofChecker) where
 
 import Text.Pandoc
-import Data.List.Split (splitOn)
 import Data.Map (Map, unions, fromList, toList)
-import Filter.Util (splitIt, intoChunks,formatChunk,unlines', exerciseWrapper)
+import qualified Data.Text as T
+import Data.Text (Text)
+import Filter.Util (numof, intoChunks, formatChunk, unlines', exerciseWrapper)
 import Prelude
 
 makeProofChecker :: Block -> Block
@@ -13,6 +15,7 @@ makeProofChecker cb@(CodeBlock (_,classes,extra) contents)
     | otherwise = cb
 makeProofChecker x = x
 
+activate :: [Text] -> [(Text, Text)] -> Text -> Block
 activate cls extra chunk
     | "Prop"             `elem` cls = exTemplate [("system", "prop"),("guides","montague"),("options","resize")]
     | "FirstOrder"       `elem` cls = exTemplate [("system", "firstOrder"),("guides","montague"),("options","resize")]
@@ -80,12 +83,12 @@ activate cls extra chunk
     | "Hardegree5"       `elem` cls = exTemplate [("system", "hardegree5"), ("guides", "montague"),   ("options", "fonts")]
     | "HardegreeMPL"     `elem` cls = exTemplate [("system", "hardegreeMPL"), ("guides", "montague"), ("options", "fonts")]
     | otherwise = exTemplate []
-    where numof = takeWhile (/= ' ')
-          seqof = dropWhile (/= ' ')
+    where seqof = T.dropWhile (/= ' ')
           (h:t) = formatChunk chunk
-          fixed = [("type","proofchecker"),("goal",seqof h),("submission","saveAs:" ++ numof h)]
+          fixed = [("type","proofchecker"),("goal",seqof h),("submission", T.concat ["saveAs:", numof h])]
           exTemplate opts = template (unions [fromList extra, fromList opts, fromList fixed]) (numof h) (unlines' t)
 
+toPlayground :: [Text] -> [(Text, Text)] -> Text -> Block
 toPlayground cls extra content
     | "Prop"             `elem` cls = playTemplate [("system", "prop")]
     | "FirstOrder"       `elem` cls = playTemplate [("system", "firstOrder")]
@@ -156,10 +159,8 @@ toPlayground cls extra content
     where fixed = [("type","proofchecker")]
           playTemplate opts = template (unions [fromList extra, fromList opts, fromList fixed]) "Playground" (unlines' $ formatChunk content)
 
-template :: Map String String -> String -> String -> Block
-template opts head content = exerciseWrapper (toList opts) head $ RawBlock "html" 
+template :: Map Text Text -> Text -> Text -> Block
+template opts header content = exerciseWrapper (toList opts) header $ RawBlock "html"
         --Need rawblock here to get the linebreaks right.
-        $ "<div" ++ optString ++ ">"
-        ++ content
-        ++ "</div>"
-    where optString = concatMap (\(x,y) -> (" data-carnap-" ++ x ++ "=\"" ++ y ++ "\"")) (toList opts) 
+        $ T.concat ["<div", optString, ">", content, "</div>"]
+    where optString = T.concat $ map (\(x,y) -> (T.concat [" data-carnap-", x, "=\"", y, "\""])) (toList opts)

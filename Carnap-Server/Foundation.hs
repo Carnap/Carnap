@@ -10,6 +10,7 @@ import qualified Yesod.Core.Unsafe as Unsafe
 import Yesod.Core.Types            (Logger)
 import Yesod.Form.Jquery
 import Yesod.Default.Util          (addStaticContentExternal)
+import TH.RelativePaths            (pathRelativeToCabalPackage)
 --import Util.Database
 import qualified Data.CaseInsensitive as CI
 import qualified Data.Text.Encoding as TE
@@ -41,7 +42,7 @@ data App = App
 -- This function also generates the following type synonyms:
 -- type Handler = HandlerT App IO
 -- type Widget = WidgetT App IO ()
-mkYesodData "App" $(parseRoutesFile "config/routes")
+mkYesodData "App" $(parseRoutesFile =<< pathRelativeToCabalPackage "config/routes")
 
 -- | A convenient synonym for creating forms.
 type Form x = Html -> MForm (HandlerT App IO) (FormResult x, Widget)
@@ -85,7 +86,7 @@ instance Yesod App where
             addStylesheet $ StaticR css_bootstrap_css
             addStylesheet $ StaticR css_font_awesome_css
             $(widgetFile "default-layout")
-        withUrlRenderer $(hamletFile "templates/default-layout-wrapper.hamlet")
+        withUrlRenderer $(hamletFile =<< pathRelativeToCabalPackage "templates/default-layout-wrapper.hamlet")
 
 
     -- The page to be redirected to when authentication is required.
@@ -104,7 +105,7 @@ instance Yesod App where
          (CourseAssignmentR coursetitle _) -> studentAccessTo coursetitle
          AdminR -> admin
          _ -> return Authorized
-        where userOrInstructor ident = 
+        where userOrInstructor ident =
                 do (Entity _ user) <- requireAuth
                    let ident' = userIdent user
                    instructors <- instructorIdentList
@@ -114,7 +115,7 @@ instance Yesod App where
                                || ident' == "gleachkr@gmail.com"
                             then Authorized
                             else Unauthorized "It appears you're not authorized to access this page"
-              instructor ident = 
+              instructor ident =
                  do (Entity _ user) <- requireAuth
                     let ident' = userIdent user
                     instructors <- instructorIdentList
@@ -123,7 +124,7 @@ instance Yesod App where
                                 || ident' == "gleachkr@gmail.com"
                              then Authorized
                              else Unauthorized "It appears you're not authorized to access this page"
-              studentAccessTo coursetitle = 
+              studentAccessTo coursetitle =
                   --this is the route to assignments accessible by students
                   --for a given course and to instructors
                   do (Entity uid user) <- requireAuth
@@ -133,14 +134,14 @@ instance Yesod App where
                      coInstructors <-  runDB $ map entityVal <$> selectList [CoInstructorCourse ==. cid] []
                      instructors <- runDB $ selectList ([UserDataInstructorId ==. Just (courseInstructor course)]
                                                        ||. [UserDataInstructorId <-. map (Just . coInstructorIdent) coInstructors]) []
-                     return $ if uid `elem` map (userDataUserId . entityVal) instructors 
-                                 || maybe False 
-                                          (\udata -> userDataEnrolledIn (entityVal udata) == Just cid) 
+                     return $ if uid `elem` map (userDataUserId . entityVal) instructors
+                                 || maybe False
+                                          (\udata -> userDataEnrolledIn (entityVal udata) == Just cid)
                                           mudata
                                  || userIdent user == "gleachkr@gmail.com"
                               then Authorized
                               else Unauthorized $ "It appears you're not authorized to access this page. For access, you need to enroll in the course \"" ++ coursetitle ++ "\". Is this the course you should be enrolled in?"
-              coinstructorOrInstructor coursetitle = 
+              coinstructorOrInstructor coursetitle =
                   --this is the route to the review area for a given course and
                   --assignment, and is for instructors only.
                   do (Entity uid user) <- requireAuth
@@ -149,7 +150,7 @@ instance Yesod App where
                      coInstructors <-  runDB $ map entityVal <$> selectList [CoInstructorCourse ==. entityKey course] []
                      instructors <- runDB $ selectList ([UserDataInstructorId ==. Just (courseInstructor $ entityVal course)]
                                                        ||. [UserDataInstructorId <-. map (Just . coInstructorIdent) coInstructors]) []
-                     return $ if uid `elem` map (userDataUserId . entityVal) instructors 
+                     return $ if uid `elem` map (userDataUserId . entityVal) instructors
                                  || userIdent user == "gleachkr@gmail.com"
                               then Authorized
                               else Unauthorized "It appears you're not authorized to access this page"
@@ -250,10 +251,10 @@ instance YesodAuth App where
 
     -- Where to send a user after successful login
     loginDest _ = UserDispatchR
-        
+
     -- Where to send a user after logout
     logoutDest _ = HomeR
-    
+
     -- Override the above two destinations when a Referer: header is present
     redirectToReferer _ = False
 
@@ -277,19 +278,19 @@ instance YesodAuth App where
     --redirect manually.
     onLogout = deleteSession credsKey >> deleteSession "_ULT" >> redirect HomeR
 
-    onLogin = liftHandler $ do 
+    onLogin = liftHandler $ do
           mid <- maybeAuthId
-          case mid of 
+          case mid of
              Nothing -> return ()
-             Just uid -> 
+             Just uid ->
                  --check to see if data for this user exists
                  do maybeData <- runDB $ getBy $ UniqueUserData uid
                     case maybeData of
                         --if not, redirect to registration
-                        Nothing -> 
+                        Nothing ->
                              do musr <- runDB $ get uid
                                 menroll <- lookupSession "enrolling-in"
-                                case (musr, menroll) of 
+                                case (musr, menroll) of
                                    (Just (User ident _), Just theclass) ->  redirect (RegisterEnrollR theclass ident)
                                    (Just (User ident _), Nothing) ->  redirect (RegisterR ident)
                                    (Nothing,_) -> return ()
@@ -299,8 +300,8 @@ instance YesodAuth App where
     -- appDevel is a custom method added to the settings, which is true
     -- when yesod is running in the development environment and false
     -- otherwise
-    authPlugins app = let settings = appSettings app in 
-                          if appDevel settings 
+    authPlugins app = let settings = appSettings app in
+                          if appDevel settings
                               then [ authDummy ]
                               else [ oauth2GoogleScoped ["email","profile"] (appKey settings) (appSecret settings) ]
 
@@ -311,7 +312,7 @@ instance YesodAuth App where
         pc <- widgetToPageContent $ do
             addStylesheet $ StaticR css_bootstrap_css
             $(widgetFile "auth-layout")
-        withUrlRenderer $(hamletFile "templates/default-layout-wrapper.hamlet")
+        withUrlRenderer $(hamletFile =<< pathRelativeToCabalPackage "templates/default-layout-wrapper.hamlet")
 
 instance YesodAuthPersist App
 
