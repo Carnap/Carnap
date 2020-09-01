@@ -4,6 +4,7 @@ module Handler.Instructor where
 import Import
 import Util.Data
 import Util.Database
+import Control.Monad (fail)
 import Yesod.Form.Bootstrap3
 import Carnap.GHCJS.SharedTypes(ProblemSource(..))
 import Yesod.Form.Jquery
@@ -26,20 +27,20 @@ putInstructorR ident = do
         ((assignmentrslt,_),_) <- runFormPost (identifyForm "updateAssignment" $ updateAssignmentForm)
         ((courserslt,_),_)     <- runFormPost (identifyForm "updateCourse" $ updateCourseForm)
         ((documentrslt,_),_)   <- runFormPost (identifyForm "updateDocument" $ updateDocumentForm)
-        case (assignmentrslt,courserslt,documentrslt) of 
+        case (assignmentrslt,courserslt,documentrslt) of
             (FormSuccess (idstring, mdue, mduetime,mfrom,mfromtime,muntil,muntiltime, mdesc),_,_) -> do
-                 case readMaybe idstring of 
+                 case readMaybe idstring of
                       Nothing -> returnJson ("Could not read assignment key"::Text)
-                      Just k -> do 
+                      Just k -> do
                         mval <- runDB (get k)
-                        case mval of 
+                        case mval of
                           Nothing -> returnJson ("Could not find assignment!"::Text)
-                          Just v -> 
+                          Just v ->
                             do let cid = assignmentMetadataCourse v
                                runDB $ do course <- get cid >>= maybe (liftIO $ fail "could not get course") pure
                                           let (Just tz) = tzByName . courseTimeZone $ course
                                           let mtimeUpdate Nothing Nothing field = update k [ field =. Nothing ]
-                                              mtimeUpdate mdate mtime field = maybeDo mdate (\date-> 
+                                              mtimeUpdate mdate mtime field = maybeDo mdate (\date->
                                                  do let localtime = case mtime of
                                                             (Just time) -> LocalTime date time
                                                             _ -> LocalTime date (TimeOfDay 23 59 59)
@@ -61,9 +62,9 @@ putInstructorR ident = do
                                  Nothing -> returnJson ("could not find course!"::Text)
             (_,_,FormSuccess (idstring, mscope, mdesc,mfile,mtags)) -> do
                              case readMaybe idstring of
-                                 Just k -> do 
+                                 Just k -> do
                                     mdoc <- runDB (get k)
-                                    case mdoc of 
+                                    case mdoc of
                                         Nothing -> returnJson ("could not find document!"::Text)
                                         Just doc -> do
                                            maybeIdent <- getIdent $ documentCreator doc
@@ -75,7 +76,7 @@ putInstructorR ident = do
                                                             maybeDo mtags (\tags -> do
                                                                               oldTags <- selectList [TagBearer ==. k] []
                                                                               mapM (delete . entityKey) oldTags
-                                                                              forM tags (\tag -> insert $ Tag k tag) 
+                                                                              forM tags (\tag -> insert $ Tag k tag)
                                                                               return ())
                                                  maybeDo mfile (saveTo ("documents" </> unpack ident) (unpack $ documentFilename doc))
                                                  returnJson ("updated!"::Text)
@@ -84,21 +85,21 @@ putInstructorR ident = do
 
             (FormMissing,FormMissing,FormMissing) -> returnJson ("no form" :: Text)
             (form1,form2,form3) -> returnJson ("errors: " <> errorsOf form1 <> errorsOf form2 <> errorsOf form3)
-                where errorsOf (FormFailure s) = concat s <> ", " 
-                      errorsOf _ = "" 
+                where errorsOf (FormFailure s) = concat s <> ", "
+                      errorsOf _ = ""
 
 deleteInstructorR :: Text -> Handler Value
 deleteInstructorR ident = do
     msg <- requireJsonBody :: Handler InstructorDelete
-    case msg of 
+    case msg of
       DeleteAssignment id ->
-        do datadir <- appDataRoot <$> (appSettings <$> getYesod) 
+        do datadir <- appDataRoot <$> (appSettings <$> getYesod)
            deleted <- runDB $ deleteCascade id
            returnJson ("Assignment deleted" :: Text)
-      DeleteProblems coursename setnum -> 
+      DeleteProblems coursename setnum ->
         do checkCourseOwnership coursename
            mclass <- runDB $ getBy $ UniqueCourse coursename
-           case mclass of 
+           case mclass of
                 Just (Entity classkey theclass)->
                     do case readAssignmentTable <$> courseTextbookProblems theclass  of
                            Just assign -> do runDB $ update classkey
@@ -106,32 +107,32 @@ deleteInstructorR ident = do
                                              returnJson ("Deleted Assignment"::Text)
                            Nothing -> returnJson ("Assignment table Missing, can't delete."::Text)
                 Nothing -> returnJson ("Something went wrong with retriving the course."::Text)
-      DeleteCourse coursename -> 
+      DeleteCourse coursename ->
         do checkCourseOwnership coursename
            mclass <- runDB $ getBy $ UniqueCourse coursename
-           case mclass of 
-                Just (Entity classkey theclass)-> 
+           case mclass of
+                Just (Entity classkey theclass)->
                     do runDB $ do studentsOf <- selectList [UserDataEnrolledIn ==. Just classkey] []
                                   mapM (\s -> update (entityKey s) [UserDataEnrolledIn =. Nothing]) studentsOf
                                   deleteCascade classkey
                        returnJson ("Class Deleted"::Text)
                 Nothing -> returnJson ("No class to delete, for some reason"::Text)
       DeleteDocument fn ->
-        do datadir <- appDataRoot <$> (appSettings <$> getYesod) 
+        do datadir <- appDataRoot <$> (appSettings <$> getYesod)
            musr <- runDB $ getBy $ UniqueUser ident
            case musr of
                Nothing -> returnJson ("Could not get user id."::Text)
                Just usr -> do
                    deleted <- runDB $ do mk <- getBy $ UniqueDocument fn (entityKey usr)
                                          case mk of
-                                             Just (Entity k v) -> 
+                                             Just (Entity k v) ->
                                                 do deleteCascade k
-                                                   liftIO $ do fe <- doesFileExist (datadir </> "documents" </> unpack ident </> unpack fn) 
+                                                   liftIO $ do fe <- doesFileExist (datadir </> "documents" </> unpack ident </> unpack fn)
                                                                if fe then removeFile (datadir </> "documents" </> unpack ident </> unpack fn)
                                                                      else return ()
                                                    return True
                                              Nothing -> return False
-                   if deleted 
+                   if deleted
                        then returnJson (fn ++ " deleted")
                        else returnJson ("unable to retrieve metadata for " ++ fn)
       DropStudent sident ->
@@ -139,7 +140,7 @@ deleteInstructorR ident = do
            dropped <- runDB $ do msd <- getBy (UniqueUserData sid)
                                  case msd of
                                      Nothing -> return False
-                                     Just (Entity k _) -> 
+                                     Just (Entity k _) ->
                                         do update k [UserDataEnrolledIn =. Nothing]
                                            return True
            if dropped then returnJson (sident ++ " dropped")
@@ -151,7 +152,7 @@ postInstructorR :: Text -> Handler Html
 postInstructorR ident = do
     time <- liftIO getCurrentTime
     classes <- classesByInstructorIdent ident
-    let activeClasses = filter (\c -> courseEndDate (entityVal c) > time) classes 
+    let activeClasses = filter (\c -> courseEndDate (entityVal c) > time) classes
     docs <- documentsByInstructorIdent ident
     instructors <- runDB $ selectList [UserDataInstructorId !=. Nothing] []
     ((assignmentrslt,_),_) <- runFormPost (identifyForm "uploadAssignment" $ uploadAssignmentForm activeClasses docs)
@@ -159,12 +160,12 @@ postInstructorR ident = do
     ((newclassrslt,_),_)   <- runFormPost (identifyForm "createCourse" createCourseForm)
     ((frombookrslt,_),_)   <- runFormPost (identifyForm "setBookAssignment" $ setBookAssignmentForm activeClasses)
     ((instructorrslt,_),_) <- runFormPost (identifyForm "addCoinstructor" $ addCoInstructorForm instructors ("" :: String))
-    case assignmentrslt of 
+    case assignmentrslt of
         FormSuccess (doc, Entity classkey theclass, mdue,mduetime,mfrom,mfromtime,mtill,mtilltime, massignmentdesc, mpass, mhidden,mlimit, subtime) ->
             do Entity uid user <- requireAuth
                iid <- instructorIdByIdent (userIdent user)
                         >>= maybe (setMessage "failed to retrieve instructor" >> notFound) pure
-               mciid <- if courseInstructor theclass == iid 
+               mciid <- if courseInstructor theclass == iid
                             then return Nothing
                             else runDB $ getBy (UniqueCoInstructor iid classkey)
                let (Just tz) = tzByName . courseTimeZone $ theclass
@@ -179,22 +180,22 @@ postInstructorR ident = do
                    theassigner = mciid
                    thename = documentFilename (entityVal doc)
                asgned <- runDB $ selectList [AssignmentMetadataCourse ==. classkey] []
-               dupes <- runDB $ filter (\x -> documentFilename (entityVal x) == thename) 
+               dupes <- runDB $ filter (\x -> documentFilename (entityVal x) == thename)
                                 <$> selectList [DocumentId <-. map (assignmentMetadataDocument . entityVal) asgned] []
                case mpass of
                    _ | not (null dupes) -> setMessage "Names for assignments must be unique within a course, and it looks like you already have an assignment with this name"
                    Nothing | mhidden == Just True || mlimit /= Nothing -> setMessage "Hidden and time-limited assignments must be password protected"
-                   _ -> do success <- tryInsert $ AssignmentMetadata 
+                   _ -> do success <- tryInsert $ AssignmentMetadata
                                                 { assignmentMetadataDocument = entityKey doc
-                                                , assignmentMetadataDescription = info 
+                                                , assignmentMetadataDescription = info
                                                 , assignmentMetadataAssigner = entityKey <$> theassigner
                                                 , assignmentMetadataDuedate = localTimeToUTCTZ tz <$> localdue
                                                 , assignmentMetadataVisibleFrom = localTimeToUTCTZ tz <$> localfrom
                                                 , assignmentMetadataVisibleTill = localTimeToUTCTZ tz <$> localtill
                                                 , assignmentMetadataDate = subtime
                                                 , assignmentMetadataCourse = classkey
-                                                , assignmentMetadataAvailability = 
-                                                    case (mpass,mhidden,mlimit) of 
+                                                , assignmentMetadataAvailability =
+                                                    case (mpass,mhidden,mlimit) of
                                                             (Nothing,_,_) -> Nothing
                                                             (Just txt, Just True, Nothing) -> Just (HiddenViaPassword txt)
                                                             (Just txt, Just True, Just min) -> Just (HiddenViaPasswordExpiring txt min)
@@ -205,7 +206,7 @@ postInstructorR ident = do
                                            Nothing -> setMessage "This file has already been assigned for this course"
         FormFailure s -> setMessage $ "Something went wrong: " ++ toMarkup (show s)
         FormMissing -> return ()
-    case documentrslt of 
+    case documentrslt of
         FormSuccess (file, sharescope, docdesc, subtime, mtags) ->
             do musr <- runDB $ getBy $ UniqueUser ident
                let fn = fileName file
@@ -218,10 +219,10 @@ postInstructorR ident = do
                                         , documentDescription = info
                                         , documentScope = sharescope
                                         }
-               case success of 
-                    Just k -> do saveTo ("documents" </> unpack ident) (unpack fn) file 
+               case success of
+                    Just k -> do saveTo ("documents" </> unpack ident) (unpack fn) file
                                  runDB $ maybeDo mtags (\tags -> do
-                                            forM tags (\tag -> insert $ Tag k tag) 
+                                            forM tags (\tag -> insert $ Tag k tag)
                                             return ())
                     Nothing -> setMessage "You already have a shared document with this name."
         FormFailure s -> setMessage $ "Something went wrong: " ++ toMarkup (show s)
@@ -230,9 +231,9 @@ postInstructorR ident = do
         FormSuccess (title, coursedesc, startdate, enddate, tzlabel) -> do
             miid <- instructorIdByIdent ident
             case miid of
-                Just iid -> 
+                Just iid ->
                     do let localize x = localTimeToUTCTZ (tzByLabel tzlabel) (LocalTime x midnight)
-                       success <- tryInsert $ Course 
+                       success <- tryInsert $ Course
                                                 { courseTitle = title
                                                 , courseDescription = unTextarea <$> coursedesc
                                                 , courseInstructor = iid
@@ -242,7 +243,7 @@ postInstructorR ident = do
                                                 , courseTotalPoints = 0
                                                 , courseTimeZone = toTZName tzlabel
                                                 }
-                       case success of Just _ -> setMessage "Course Created" 
+                       case success of Just _ -> setMessage "Course Created"
                                        Nothing -> setMessage "Could not save. Course titles must be unique. Consider adding your instutition or the current semester as a suffix."
                 Nothing -> setMessage "you're not an instructor!"
         FormFailure s -> setMessage $ "Something went wrong: " ++ toMarkup (show s)
@@ -270,11 +271,11 @@ postInstructorR ident = do
         FormFailure s -> setMessage $ "Something went wrong: " ++ toMarkup (show s)
         FormMissing -> return ()
     redirect $ InstructorR ident
- 
+
 postInstructorQueryR :: Text -> Handler Value
 postInstructorQueryR ident = do
     msg <- requireJsonBody :: Handler InstructorQuery
-    case msg of 
+    case msg of
         QueryGrade uid cid -> do
             score <- scoreByIdAndClassTotal cid uid
             returnJson score
@@ -285,28 +286,28 @@ postInstructorQueryR ident = do
 getInstructorR :: Text -> Handler Html
 getInstructorR ident = do
     musr <- runDB $ getBy $ UniqueUser ident
-    case musr of 
+    case musr of
         Nothing -> defaultLayout nopage
         (Just (Entity uid _))  -> do
-            UserData firstname lastname enrolledin _ _ <- checkUserData uid 
-            classes <- classesByInstructorIdent ident 
+            UserData firstname lastname enrolledin _ _ <- checkUserData uid
+            classes <- classesByInstructorIdent ident
             time <- liftIO getCurrentTime
-            let activeClasses = filter (\c -> courseEndDate (entityVal c) > time) classes 
-            let inactiveClasses = filter (\c -> courseEndDate (entityVal c) < time) classes 
-            docs <- documentsByInstructorIdent ident 
+            let activeClasses = filter (\c -> courseEndDate (entityVal c) > time) classes
+            let inactiveClasses = filter (\c -> courseEndDate (entityVal c) < time) classes
+            docs <- documentsByInstructorIdent ident
             instructors <- runDB $ selectList [UserDataInstructorId !=. Nothing] []
             let labels = map labelOf $ take (length activeClasses) [1 ..]
             classWidgets <- mapM (classWidget ident instructors) activeClasses
             assignmentMetadata <- concat <$> mapM listAssignmentMetadata activeClasses --Get the metadata
             assignmentDocs <- mapM (runDB . get) (map (\(Entity _ v, _) -> assignmentMetadataDocument v) assignmentMetadata)
             documents <- runDB $ selectList [DocumentCreator ==. uid] []
-            problemSetLookup <- mapM (\c -> (,) 
-                                    <$> pure (entityKey c) 
+            problemSetLookup <- mapM (\c -> (,)
+                                    <$> pure (entityKey c)
                                     <*> (maybe mempty readAssignmentTable
                                         <$> (getProblemSets . entityKey $ c))
                                 ) classes
-            let assignmentLookup = zipWith (\(Entity k v,_) (Just d) -> 
-                                                ( k 
+            let assignmentLookup = zipWith (\(Entity k v,_) (Just d) ->
+                                                ( k
                                                 , documentFilename d
                                                 , assignmentMetadataDate v
                                                 , assignmentMetadataCourse v
@@ -378,8 +379,8 @@ uploadAssignmentForm classes docs extra = do
             (hiddRes,hiddView) <- mopt checkBoxField (bfs ("Hidden"::Text)) Nothing
             (limitRes,limitView) <- mopt intField (bfs ("Limit"::Text)) Nothing
             currentTime <- lift (liftIO getCurrentTime)
-            let theRes = (,,,,,,,,,,,,) <$> fileRes <*> classRes 
-                                        <*> dueRes  <*> duetimeRes 
+            let theRes = (,,,,,,,,,,,,) <$> fileRes <*> classRes
+                                        <*> dueRes  <*> duetimeRes
                                         <*> fromRes <*> fromtimeRes
                                         <*> tillRes <*> tilltimeRes
                                         <*> descRes <*> passRes
@@ -442,7 +443,7 @@ uploadAssignmentForm classes docs extra = do
     where classnames = map (\theclass -> (courseTitle . entityVal $ theclass, theclass)) classes
           docnames = map (\thedoc -> (documentFilename . entityVal $ thedoc, thedoc)) docs
 
-updateAssignmentForm extra = do 
+updateAssignmentForm extra = do
             (assignmentRes,assignmentView) <- mreq assignmentId "" Nothing
             (dueRes,dueView) <- mopt (jqueryDayField def) (withPlaceholder "Date" $ bfs ("Due Date"::Text)) Nothing
             (duetimeRes, duetimeView) <- mopt timeFieldTypeTime (withPlaceholder "Time" $ bfs ("Due Time"::Text)) Nothing
@@ -451,8 +452,8 @@ updateAssignmentForm extra = do
             (tillRes, tillView) <- mopt (jqueryDayField def) (withPlaceholder "Date" $ bfs ("Visible Until Date"::Text)) Nothing
             (tilltimeRes,tilltimeView) <- mopt timeFieldTypeTime (withPlaceholder "Time" $ bfs ("Visible Until Time"::Text)) Nothing
             (descRes,descView) <- mopt textareaField (bfs ("Assignment Description"::Text)) Nothing
-            let theRes = (,,,,,,,) <$> assignmentRes 
-                                   <*> dueRes <*> duetimeRes 
+            let theRes = (,,,,,,,) <$> assignmentRes
+                                   <*> dueRes <*> duetimeRes
                                    <*> fromRes <*> fromtimeRes
                                    <*> tillRes <*> tilltimeRes
                                    <*> descRes
@@ -501,7 +502,7 @@ updateAssignmentModal form enc = [whamlet|
                                         ^{form}
                                         <div.form-group>
                                             <input.btn.btn-primary type=submit value="update">
-                    |]    
+                    |]
 
 uploadDocumentForm = renderBootstrap3 BootstrapBasicForm $ (,,,,)
             <$> fileAFormReq (bfs ("Document" :: Text))
@@ -520,7 +521,7 @@ updateDocumentForm = renderBootstrap3 BootstrapBasicForm $ (,,,,)
             <$> areq docId "" Nothing
             <*> aopt (selectFieldList scopes) (bfs ("Share With " :: Text)) Nothing
             <*> aopt textareaField (bfs ("Description"::Text)) Nothing
-            <*> fileAFormOpt (bfs ("Replacement File" :: Text)) 
+            <*> fileAFormOpt (bfs ("Replacement File" :: Text))
             <*> aopt tagField "Tags" Nothing
     where docId :: (Monad m, RenderMessage (HandlerSite m) FormMessage) => Field m String
           docId = hiddenField
@@ -533,10 +534,10 @@ updateDocumentForm = renderBootstrap3 BootstrapBasicForm $ (,,,,)
                    ]
 
 tagField :: Field Handler [Text]
-tagField = Field 
-    { fieldParse = \raw _ -> case raw of [a] -> return $ Right $ Just (T.splitOn "," a); 
+tagField = Field
+    { fieldParse = \raw _ -> case raw of [a] -> return $ Right $ Just (T.splitOn "," a);
                                          _ -> return $ Right Nothing
-    , fieldView = \idAttr nameAttr _ _ _ -> 
+    , fieldView = \idAttr nameAttr _ _ _ ->
              [whamlet|
                 <input id=#{idAttr} name=#{nameAttr} data-role="tagsinput">
              |]
@@ -556,9 +557,9 @@ updateDocumentModal form enc = [whamlet|
                                         ^{form}
                                         <div.form-group>
                                             <input.btn.btn-primary type=submit value="update">
-                    |]    
+                    |]
 
-setBookAssignmentForm classes extra = do 
+setBookAssignmentForm classes extra = do
             (classRes, classView) <- mreq (selectFieldList classnames) (bfs ("Class" :: Text)) Nothing
             (probRes, probView) <- mreq (selectFieldList chapters) (bfs ("Problem Set" :: Text))  Nothing
             (dueRes, dueView) <- mreq (jqueryDayField def) (withPlaceholder "Date" $ bfs ("Due Date"::Text)) Nothing
@@ -635,12 +636,12 @@ addCoInstructorForm instructors cid extra = do
     where courseId :: (Monad m, RenderMessage (HandlerSite m) FormMessage) => Field m String
           courseId = hiddenField
 
-          toItem (Entity _ i) = (userDataLastName i ++ ", " ++ userDataFirstName i, userDataInstructorId i) 
+          toItem (Entity _ i) = (userDataLastName i ++ ", " ++ userDataFirstName i, userDataInstructorId i)
 
 saveTo thedir fn file = do
         datadir <- appDataRoot <$> (appSettings <$> getYesod)
         let path = datadir </> thedir
-        liftIO $ 
+        liftIO $
             do createDirectoryIfMissing True path
                e <- doesFileExist (path </> fn)
                if e then removeFile (path </> fn) else return ()
@@ -663,7 +664,7 @@ classWidget ident instructors classent = do
        let users = catMaybes musers
        let numberOfUsers = length allUids
            usersAndData = zip users allUserData
-           sortedUsersAndData = let lnOf (_,UserData _ ln _ _ _) = ln 
+           sortedUsersAndData = let lnOf (_,UserData _ ln _ _ _) = ln
                                     in sortBy (\x y -> compare (lnOf x) (lnOf y)) usersAndData
        course <- runDB $ get cid
                   >>= maybe (setMessage "failed to get course" >> notFound) pure
@@ -717,7 +718,7 @@ classWidget ident instructors classent = do
                                             <button.btn.btn-sm.btn-secondary type="button" title="Drop #{fn} #{ln} from class"
                                                 onclick="tryDropStudent('#{jsonSerialize $ DropStudent $ userIdent u}')">
                                                 <i.fa.fa-trash-o>
-                                            <button.btn.btn-sm.btn-secondary type="button" title="Email #{fn} #{ln}" 
+                                            <button.btn.btn-sm.btn-secondary type="button" title="Email #{fn} #{ln}"
                                                 onclick="location.href='mailto:#{userIdent u}'">
                                                 <i.fa.fa-envelope-o>
                     <h2>Course Data
@@ -743,14 +744,14 @@ classWidget ident instructors classent = do
                         <dt.col-sm-3>Enrollment Link
                         <dd.col-sm-9>
                             <a href="@{EnrollR (courseTitle course)}">@{EnrollR (courseTitle course)}
-                        $if null coInstructors 
+                        $if null coInstructors
                         $else
                             <dt.col-sm-3>Co-Instructors
                             <dd.col-sm-9>
                                 $forall (Entity _ coud, Entity ciid _) <- zip coInstructorUD coInstructors
                                     <div#Co-Instructor-#{userDataLastName coud}-#{userDataFirstName coud}>
-                                        <i.fa.fa-trash-o 
-                                            style="cursor:pointer" 
+                                        <i.fa.fa-trash-o
+                                            style="cursor:pointer"
                                             title="Remove #{userDataFirstName coud} #{userDataLastName coud} as Co-Instructor"
                                             onclick="tryDeleteCoInstructor('#{jsonSerialize $ DeleteCoInstructor ciid}','#{userDataLastName coud}', '#{userDataFirstName coud}')">
                                         <span>#{userDataFirstName coud},

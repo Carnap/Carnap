@@ -2,6 +2,7 @@
 module Handler.User where
 
 import Import
+import Control.Monad (fail)
 import Text.Read (read, readMaybe)
 import qualified Text.Blaze.Html5 as B
 import Text.Blaze.Html5.Attributes
@@ -20,22 +21,22 @@ import Data.IntMap ((!))
 postUserR :: Text -> Handler Html
 postUserR ident = do
     musr <- runDB $ getBy $ UniqueUser ident
-    case musr of 
+    case musr of
         Nothing -> defaultLayout nouserPage
         (Just (Entity uid _))  -> do
             ud <- checkUserData uid
             time <- liftIO getCurrentTime
             classes <- runDB $ selectList [CourseStartDate <. time, CourseEndDate >. time] []
             ((updateRslt,_),_) <- runFormPost (updateUserDataForm ud classes)
-            case updateRslt of 
+            case updateRslt of
                  (FormFailure s) -> setMessage $ "Something went wrong: " ++ B.toMarkup (show s)
                  FormMissing -> setMessage "Submission data incomplete"
                  (FormSuccess (mc, fn , ln)) -> runDB $ do
                          mudent <- getBy $ UniqueUserData uid
-                         case entityKey <$> mudent of 
+                         case entityKey <$> mudent of
                                Nothing -> return ()
-                               Just udid -> do 
-                                    case mc of 
+                               Just udid -> do
+                                    case mc of
                                         Nothing -> update udid [ UserDataFirstName =. fn
                                                               , UserDataLastName =. ln]
                                         Just c -> update udid [ UserDataFirstName =. fn
@@ -51,7 +52,7 @@ deleteUserR ident = do
     case maybeCurrentUserId of
         Nothing -> return ()
         Just u -> runDB $ do kl <- selectKeysList [SavedDerivedRuleUserId ==. u ,SavedDerivedRuleName ==. msg ] []
-                             kl' <- selectKeysList [SavedRuleUserId ==. u,SavedRuleName ==. msg ] [] 
+                             kl' <- selectKeysList [SavedRuleUserId ==. u,SavedRuleName ==. msg ] []
                              case kl of [] -> return (); k:_ -> delete k
                              case kl' of [] -> return (); k:_ -> delete k
     returnJson (msg ++ " deleted")
@@ -59,7 +60,7 @@ deleteUserR ident = do
 getUserR :: Text -> Handler Html
 getUserR ident = do
     musr <- runDB $ getBy $ UniqueUser ident
-    case musr of 
+    case musr of
         Nothing -> defaultLayout nouserPage
         (Just (Entity uid _))  -> do
             ud@(UserData firstname lastname maybeCourseId maybeInstructorId _) <- checkUserData uid
@@ -114,10 +115,10 @@ getUserR ident = do
                           Nothing -> "can't find scores"
 
 getUserDispatchR :: Handler Html
-getUserDispatchR = maybeAuthId 
-                   >>= maybe (redirect HomeR) 
+getUserDispatchR = maybeAuthId
+                   >>= maybe (redirect HomeR)
                              (getIdent >=> maybe (redirect HomeR) goHome)
-    where goHome ident = do mid <- instructorIdByIdent ident 
+    where goHome ident = do mid <- instructorIdByIdent ident
                             case mid of
                               Nothing -> redirect $ UserR ident
                               Just _ -> redirect $ InstructorR ident
@@ -134,7 +135,7 @@ toScore textbookproblems p = case ( problemSubmissionAssignmentId p
                    (_,False) -> return extra
                    (Nothing,True) -> return $
                         case ( utcDueDate textbookproblems (problemSubmissionIdent p)
-                             , problemSubmissionCredit p) of                      
+                             , problemSubmissionCredit p) of
                               (Just d, Just c) ->  theGrade d c p + extra
                               (Just d, Nothing) ->  theGrade d 5 p + extra
                               (Nothing,_) -> 0
@@ -144,38 +145,38 @@ toScore textbookproblems p = case ( problemSubmissionAssignmentId p
                             Nothing -> return 0
                             Just v -> return $
                                 case ( assignmentMetadataDuedate v
-                                     , problemSubmissionCredit p) of 
+                                     , problemSubmissionCredit p) of
                                         (Just d, Just c) -> theGrade d c p + extra
                                         (Just d, Nothing) -> theGrade d 5 p + extra
                                         (Nothing, Just c) -> c + extra
                                         (Nothing, Nothing) -> 5 + extra
     where extra = case problemSubmissionExtra p of Nothing -> 0; Just e -> e
           theGrade :: UTCTime -> Int -> ProblemSubmission -> Int
-          theGrade due points p = if problemSubmissionTime p `laterThan` due 
+          theGrade due points p = if problemSubmissionTime p `laterThan` due
                                       then (floor ((fromIntegral points :: Rational) / 2))
                                       else points
-                            
-scoreByIdAndClassTotal cid uid = 
+
+scoreByIdAndClassTotal cid uid =
         do perprob <- scoreByIdAndClassPerProblem cid uid
            return $ foldr (+) 0 (map snd perprob)
 
-scoreByIdAndClassPerProblem cid uid = 
+scoreByIdAndClassPerProblem cid uid =
         do pq <- getProblemQuery uid cid
            subs <- map entityVal <$> (runDB $ selectList pq [])
            textbookproblems <- getProblemSets cid
            scoreList textbookproblems subs
 
-totalScore textbookproblems xs = 
+totalScore textbookproblems xs =
         do xs' <- mapM (toScore textbookproblems) xs
            return $ foldr (+) 0 xs'
 
 scoreList textbookproblems = mapM (\x -> do score <- toScore textbookproblems x
-                                            return (getLabel x, score)) 
+                                            return (getLabel x, score))
    where getLabel x = case problemSubmissionAssignmentId x of
                           --get assignment metadata id
                           Just amid -> Left amid
                           --otherwise, must be a textbook problem
-                          Nothing -> Right $ takeWhile (/= '.') (problemSubmissionIdent x) 
+                          Nothing -> Right $ takeWhile (/= '.') (problemSubmissionIdent x)
 
 --------------------------------------------------------
 --Due dates
@@ -190,16 +191,16 @@ utcDueDate textbookproblems x = textbookproblems >>= IM.lookup theIndex . readAs
     where theIndex = read . unpack . takeWhile (/= '.') $ x :: Int
 
 --------------------------------------------------------
---Components 
+--Components
 --------------------------------------------------------
 --reusable components
 problemsToTable :: Course -> Maybe BookAssignmentTable -> [Entity AssignmentMetadata] -> [Maybe Document] -> [ProblemSubmission] -> HandlerFor App Html
-problemsToTable course textbookproblems asmd asDocs submissions = do 
+problemsToTable course textbookproblems asmd asDocs submissions = do
             rows <- mapM toRow submissions
             withUrlRenderer [hamlet|
                                     $forall row <- rows
                                         ^{row}|]
-        where toRow p = do score <- toScore textbookproblems p 
+        where toRow p = do score <- toScore textbookproblems p
                            return [hamlet|
                                   <tr>
                                     <td>^{printSource (problemSubmissionSource p)}
@@ -211,7 +212,7 @@ problemsToTable course textbookproblems asmd asDocs submissions = do
                                     <td>#{show $ problemSubmissionType p}|]
 
               printSource Book = [hamlet|Textbook|]
-              printSource (Assignment s) = 
+              printSource (Assignment s) =
                 case (readMaybe s) of
                     Nothing -> [hamlet|Unknown|]
                     Just k -> case elemIndex k (map entityKey asmd) of
@@ -222,7 +223,7 @@ problemsToTable course textbookproblems asmd asDocs submissions = do
 
 tryDelete name = "tryDeleteRule(\"" <> name <> "\")"
 
---properly localized assignments for a given class 
+--properly localized assignments for a given class
 --XXX---should this just be in the hamlet?
 assignmentsOf course textbookproblems asmd asDocs = do
              time <- liftIO getCurrentTime
@@ -278,7 +279,7 @@ updateWidget form enc = [whamlet|
                                         ^{form}
                                         <div.form-group>
                                             <input.btn.btn-primary type=submit value="update">
-                    |]    
+                    |]
 
 personalInfo (UserData firstname lastname maybeCourseId maybeInstructorId _) mcourse =
         [whamlet| <div.card>

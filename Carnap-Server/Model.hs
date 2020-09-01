@@ -1,10 +1,14 @@
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module Model where
 
 import ClassyPrelude.Yesod
 import Database.Persist.Quasi
 import Util.Data
+import TH.RelativePaths (pathRelativeToCabalPackage)
 import Carnap.GHCJS.SharedTypes(ProblemSource(..),ProblemType(..),ProblemData(..), SomeRule(..))
 
 -- You can define all of your database entities in the entities file.
@@ -13,7 +17,7 @@ import Carnap.GHCJS.SharedTypes(ProblemSource(..),ProblemType(..),ProblemData(..
 -- http://www.yesodweb.com/book/persistent/
 
 share [mkPersist sqlSettings, mkDeleteCascade sqlSettings, mkMigrate "migrateAll"]
-    $(persistFileWith lowerCaseSettings "config/models")
+    $(persistFileWith lowerCaseSettings =<< (pathRelativeToCabalPackage "config/models"))
 
 instructorIdentList = do instructorEntityList <- runDB $ selectList [UserDataInstructorId !=. Nothing] []
                          userEntityList <- runDB $ selectList [UserId <-. map (userDataUserId . entityVal) instructorEntityList ] []

@@ -1,122 +1,115 @@
-{ ghcjsVer, ghcVer, withHoogle ? true, profiling ? false }:
-  self: super:
-  let
-    inherit (super.haskell.lib)
-      overrideCabal
-      dontCheck
-      disableSharedExecutables
-      doJailbreak
-      justStaticExecutables
-      withGitignore;
-    client-ghcjs = self.haskell.packages.${ghcjsVer}.Carnap-GHCJS;
-  in {
-    haskell = super.haskell // {
-      packages = super.haskell.packages // {
-        "${ghcVer}" = super.haskell.packages."${ghcVer}".override {
-          overrides = newpkgs: oldpkgs: {
-            # broken dependencies in nixpkgs :(
-            haskell-src-exts-simple = doJailbreak oldpkgs.haskell-src-exts-simple;
-            diagrams-builder = doJailbreak oldpkgs.diagrams-builder;
+{ client, withHoogle ? true, profiling ? false }:
+{ nixpkgs }:
+let
+  inherit (nixpkgs.haskell.lib)
+    overrideCabal
+    dontCheck
+    disableSharedExecutables
+    doJailbreak
+    justStaticExecutables
+    withGitignore;
+in
+newpkgs: oldpkgs: {
+  # multiple issues: grumpy about haskell-src-exts versions
+  # also, cabal-jailbreak does not erase bounds for feature-gated dependencies ;-;
+  # I want to kill it 😭
+  diagrams-builder = doJailbreak oldpkgs.diagrams-builder;
+  # fix build of diagrams-builder by downgrading to 1.4.x
+  diagrams-postscript = doJailbreak (oldpkgs.callHackage "diagrams-postscript" "1.4.1" { });
 
-            # updates pango, glib, cairo to a version including
-            # https://github.com/gtk2hs/gtk2hs/commit/1cf2f9bff2427d39986e32880d1383cfff49ab0e
-            # remove once nixpkgs.haskell.packages.ghc865.glib version >= 0.13.8.1
-            # i.e. most likely when we update past nixpkgs-20.03 (pending nixpkgs
-            # unstable having a working ghcjs) as pango-0.13.8.1 is in unstable
-            # already
-            # I checked this with:
-            # $ nix-instantiate '<nixpkgs-unstable>' -A haskell.packages.ghc865.pango
-            # /nix/store/aqvkx9yd2s5m0svki3fr84klq6fyw6dw-pango-0.13.8.1.drv
-            glib = oldpkgs.callPackage ./nix/glib.nix { inherit (self) glib; };
-            pango = oldpkgs.callPackage ./nix/pango.nix { inherit (self) pango; };
-            cairo = oldpkgs.callPackage ./nix/cairo.nix { inherit (self) cairo; };
+  # downgrade to 1.8.x because yesod-auth-oauth2 has not fixed support for
+  # newer versions in any *released* version yet
+  hoauth2 = oldpkgs.callHackage "hoauth2" "1.8.9" { };
 
-            # ghcjs-dom-0.2.4.0 (released 2016)
-            # using `ghc` native dependencies
-            # currently broken: ghcjs-dom needs to be updated to a newer
-            # version such that it uses a modern webkitgtk
-            # ghcjs-dom = oldpkgs.callPackage ./nix/ghcjs-dom.nix { };
+  # update to fix a possible security bug: https://github.com/thoughtbot/yesod-auth-oauth2/issues/132
+  yesod-auth-oauth2 = oldpkgs.callHackageDirect {
+    pkg = "yesod-auth-oauth2";
+    ver = "0.6.1.3";
+    sha256 = "1bikn9kfw6mrsais4z1nk07aa7i7hyrcs411kbbfgc7n74k6sd5b";
+  } { };
 
-            # dontCheck: https://github.com/gleachkr/Carnap/issues/123
-            Carnap        = withGitignore
-                (dontCheck (oldpkgs.callPackage ./Carnap/Carnap.nix { }));
-            Carnap-Client = withGitignore
-                (oldpkgs.callPackage ./Carnap-Client/Carnap-Client.nix { });
+  # ghcjs-dom-0.2.4.0 (released 2016)
+  # using `ghc` native dependencies
+  # currently broken: ghcjs-dom needs to be updated to a newer
+  # version such that it uses a modern webkitgtk
+  # ghcjs-dom = oldpkgs.callPackage ./nix/ghcjs-dom.nix { };
 
-            # for client development with ghc
-            # Carnap-GHCJS  = withGitignore
-            #    (oldpkgs.callPackage ./Carnap-GHCJS/Carnap-GHCJS.nix { });
+  # dontCheck: https://github.com/gleachkr/Carnap/issues/123
+  Carnap        = withGitignore
+      (dontCheck (oldpkgs.callPackage ./Carnap/Carnap.nix { }));
+  Carnap-Client = withGitignore
+      (oldpkgs.callPackage ./Carnap-Client/Carnap-Client.nix { });
 
-            Carnap-Server = justStaticExecutables (withGitignore ((overrideCabal
-              (oldpkgs.callPackage ./Carnap-Server/Carnap-Server.nix { })
-              (old: let book = ./Carnap-Book; in {
-                preConfigure = ''
-                  mkdir -p $out/share
-                  echo ":: Copying Carnap-Server data"
-                  cp -r ${book} $out/share/book
+  # for client development with ghc
+  # Carnap-GHCJS  = withGitignore
+  #    (oldpkgs.callPackage ./Carnap-GHCJS/Carnap-GHCJS.nix { });
 
-                  echo ":: Copying js in $(pwd)"
-                  find static/ghcjs/allactions/ -type l -delete
-                  cp ${client-ghcjs.out}/bin/AllActions.jsexe/all.js static/ghcjs/allactions/
-                  cp ${client-ghcjs.out}/bin/AllActions.jsexe/out.js static/ghcjs/allactions/
-                  cp ${client-ghcjs.out}/bin/AllActions.jsexe/lib.js static/ghcjs/allactions/
-                  cp ${client-ghcjs.out}/bin/AllActions.jsexe/runmain.js static/ghcjs/allactions/
-                  echo ":: Adding a universal settings file"
-                  cp config/settings-example.yml config/settings.yml
-                  cp -r {config,static} $out/share
-                  cat config/settings.yml
-                  '';
+  Carnap-Server = justStaticExecutables (withGitignore ((overrideCabal
+    (oldpkgs.callPackage ./Carnap-Server/Carnap-Server.nix { })
+    (old: let book = ./Carnap-Book; in {
+      preConfigure = ''
+        mkdir -p $out/share
+        echo ":: Copying Carnap-Server data"
+        cp -r ${book} $out/share/book
 
-                extraLibraries = [ client-ghcjs ];
-                enableExecutableProfiling = profiling;
-                enableLibraryProfiling = profiling;
-                buildDepends = [ book ];
-                executableSystemDepends = [ self.diagrams-builder ];
+        echo ":: Copying js in $(pwd)"
+        find static/ghcjs/allactions/ -type l -delete
+        cp ${client.out}/bin/AllActions.jsexe/all.js static/ghcjs/allactions/
+        cp ${client.out}/bin/AllActions.jsexe/out.js static/ghcjs/allactions/
+        cp ${client.out}/bin/AllActions.jsexe/lib.js static/ghcjs/allactions/
+        cp ${client.out}/bin/AllActions.jsexe/runmain.js static/ghcjs/allactions/
+        echo ":: Adding a universal settings file"
+        cp config/settings-example.yml config/settings.yml
+        cp -r {config,static} $out/share
+        cat config/settings.yml
+        '';
 
-                isExecutable = true;
-                # Carnap-Server has no tests/they are broken
-                doCheck = false;
-                # remove once updated past ghc865
-                # https://github.com/haskell/haddock/issues/979
-                # (additionally disabled by justStaticExecutables)
-                doHaddock = false;
-              })).overrideAttrs (drv: {
-                # inspired by https://github.com/NixOS/nixpkgs/blob/91340ae/pkgs/development/tools/pandoc/default.nix
-                # reduce closure size by deleting references to the pandoc
-                # binary. pandoc depends transitively on all installed haskell
-                # packages.  Bad for docker image size (4GB+).
-                disallowedReferences = with newpkgs; [
-                  warp
-                  yesod-core
-                  pandoc
-                  pandoc-types
-                  HTTP
-                  tzdata
-                ];
-                postInstall = with newpkgs; ''
-                  echo 'deleting reference to stuff with bins'
-                  remove-references-to \
-                    -t ${warp} \
-                    $out/bin/Carnap-Server
-                  remove-references-to \
-                    -t ${yesod-core} \
-                    $out/bin/Carnap-Server
-                  remove-references-to \
-                    -t ${pandoc} \
-                    $out/bin/Carnap-Server
-                  remove-references-to \
-                    -t ${pandoc-types} \
-                    $out/bin/Carnap-Server
-                  remove-references-to \
-                    -t ${HTTP} \
-                    $out/bin/Carnap-Server
-                  remove-references-to \
-                    -t ${tzdata} \
-                    $out/bin/Carnap-Server
-                '';
-              })));
-          };
-        };
-      };
-    };
-  }
+      enableExecutableProfiling = profiling;
+      enableLibraryProfiling = profiling;
+      buildDepends = [ book client ];
+      executableSystemDepends = [ nixpkgs.diagrams-builder ];
+
+      isExecutable = true;
+      # Carnap-Server has no tests/they are broken
+      doCheck = false;
+      # remove once updated past ghc865
+      # https://github.com/haskell/haddock/issues/979 (additionally disabled by
+      # justStaticExecutables)
+      doHaddock = false;
+    })).overrideAttrs (drv: {
+      # inspired by
+      # https://github.com/NixOS/nixpkgs/blob/91340ae/pkgs/development/tools/pandoc/default.nix
+      # reduce closure size by deleting references to the pandoc binary. pandoc
+      # depends transitively on all installed haskell packages.  Bad for docker
+      # image size (4GB+).
+      disallowedReferences = with newpkgs; [
+        warp
+        yesod-core
+        pandoc
+        pandoc-types
+        HTTP
+        tzdata
+      ];
+      postInstall = with newpkgs; ''
+        echo 'deleting reference to stuff with bins'
+        remove-references-to \
+          -t ${warp} \
+          $out/bin/Carnap-Server
+        remove-references-to \
+          -t ${yesod-core} \
+          $out/bin/Carnap-Server
+        remove-references-to \
+          -t ${pandoc} \
+          $out/bin/Carnap-Server
+        remove-references-to \
+          -t ${pandoc-types} \
+          $out/bin/Carnap-Server
+        remove-references-to \
+          -t ${HTTP} \
+          $out/bin/Carnap-Server
+        remove-references-to \
+          -t ${tzdata} \
+          $out/bin/Carnap-Server
+      '';
+    })));
+}

@@ -1,7 +1,9 @@
 module Settings.StaticFiles where
 
-import Settings     (appStaticDir, compileTimeAppSettings)
-import Yesod.Static (staticFiles)
+import Prelude
+import Settings         (appStaticDir, compileTimeAppSettings)
+import TH.RelativePaths (pathRelativeToCabalPackage)
+import Yesod.Static     (staticFiles)
 
 -- This generates easy references to files in the static directory at compile time,
 -- giving you compile-time verification that referenced files exist.
@@ -15,7 +17,8 @@ import Yesod.Static (staticFiles)
 -- If the identifier is not available, you may use:
 --
 --     StaticFile ["js", "script.js"] []
-staticFiles (appStaticDir compileTimeAppSettings)
+pathRelativeToCabalPackage (appStaticDir compileTimeAppSettings)
+  >>= staticFiles
 
 -- XXX:for whatever reason, recompiling with the below seems to get it to reload
 -- the static file cache. You an then switch back to compileTimeAppSettings

@@ -7,8 +7,8 @@
 , monad-logger, mtl, pandoc, pandoc-types, persistent
 , persistent-postgresql, persistent-sqlite, persistent-template
 , random, resourcet, safe, shakespeare, split, stdenv, svg-builder
-, template-haskell, text, time, transformers, tz, tzdata
-, unordered-containers, vector, wai, wai-cors, wai-extra
+, template-haskell, text, th-utilities, time, transformers, tz
+, tzdata, unordered-containers, vector, wai, wai-cors, wai-extra
 , wai-logger, warp, yaml, yesod, yesod-auth, yesod-auth-oauth2
 , yesod-core, yesod-form, yesod-markdown, yesod-static, yesod-test
 }:
@@ -26,10 +26,10 @@ mkDerivation {
     file-embed filepath hashable http-conduit lens linear lucid
     monad-control monad-logger mtl pandoc pandoc-types persistent
     persistent-postgresql persistent-sqlite persistent-template random
-    safe shakespeare split svg-builder template-haskell text time
-    transformers tz tzdata unordered-containers vector wai wai-cors
-    wai-extra wai-logger warp yaml yesod yesod-auth yesod-auth-oauth2
-    yesod-core yesod-form yesod-markdown yesod-static
+    safe shakespeare split svg-builder template-haskell text
+    th-utilities time transformers tz tzdata unordered-containers
+    vector wai wai-cors wai-extra wai-logger warp yaml yesod yesod-auth
+    yesod-auth-oauth2 yesod-core yesod-form yesod-markdown yesod-static
   ];
   executableHaskellDepends = [ base ];
   testHaskellDepends = [

@@ -1,0 +1,45 @@
+cradle:
+  multi:
+    # broken, some c preprocessor error
+    - path: "./Carnap-Server/test"
+      config:
+        cradle:
+          none:
+    # broken, "failed to parse result of calling cabal"
+    - path: "./Carnap/test"
+      config:
+        cradle:
+          none:
+    - path: "./Carnap/Setup.hs"
+      config:
+        cradle:
+          none:
+    # these two are not intended to be used with ghc anyway, they are for ghci
+    - path: "./Carnap-Server/app/DevelMain.hs"
+      config:
+        cradle:
+          none:
+    - path: "./Carnap-Server/app/devel.hs"
+      config:
+        cradle:
+          none:
+    # not ignored by default
+    - path: "./dist-ghcjs"
+      config:
+        cradle:
+          none:
+    # broken for now, I think it is unlikely this will work until we fix
+    # Carnap-GHCJS dependencies preventing it building on ghc
+    - path: "./Carnap-GHCJS"
+      config:
+        cradle:
+          none:
+    - path: "./Carnap-Server/app/main.hs"
+      config:
+        cradle:
+          cabal:
+            component: "exe:Carnap-Server"
+    - path: "./"
+      config:
+        cradle:
+          cabal:

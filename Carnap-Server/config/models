@@ -23,7 +23,7 @@ SyntaxCheckSubmission
 TranslationSubmission
     problem Text
     time UTCTime
-    userId UserId 
+    userId UserId
     source ByteString
     assignmentId AssignmentMetadataId Maybe
     UniqueTranslationP problem userId source
@@ -31,7 +31,7 @@ TranslationSubmission
 TruthTableSubmission
     problem Text
     time UTCTime
-    userId UserId 
+    userId UserId
     source ByteString
     assignmentId AssignmentMetadataId Maybe
     UniqueTruthTableP problem userId source
@@ -40,7 +40,7 @@ DerivationSubmission
     problem Text
     derivation Text
     time UTCTime
-    userId UserId 
+    userId UserId
     source ByteString
     assignmentId AssignmentMetadataId Maybe
     UniqueDerivationP problem userId source
@@ -50,7 +50,7 @@ ProblemSubmission
     data ProblemData
     type ProblemType
     time UTCTime
-    userId UserId 
+    userId UserId
     correct Bool
     credit Int Maybe
     extra Int Maybe
@@ -111,7 +111,10 @@ Tag
     UniqueTag bearer name
     deriving Eq
 
+-- the below `deriving Show` is load-bearing: it mitigates
+-- https://github.com/yesodweb/persistent/issues/1047
 InstructorMetadata
+    deriving Show
 
 CoInstructor
     ident InstructorMetadataId

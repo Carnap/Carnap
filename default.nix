@@ -1,77 +1,82 @@
 { ghcjsVer ? "ghcjs",
-  ghcVer ? "ghc865",
+  ghcVer ? "ghc884",
   profiling ? false,
+  hls ? false,
 }:
 let
-  nixpkgs = import (builtins.fetchTarball {
-        name   = "nixpkgs-20.03-2020-06-28";
-        url    = "https://github.com/NixOS/nixpkgs/archive/f8248ab6d9e69ea9c07950d73d48807ec595e923.tar.gz";
-        sha256 = "009i9j6mbq6i481088jllblgdnci105b2q4mscprdawg3knlyahk";
-      }) {
-        config = {
-          # yes, packages are broken, but we fix them ;-)
-          allowBroken = true;
-        };
-        overlays = [
-          (import ./nix/gitignore.nix { })
-          (import ./client.nix { inherit ghcjsVer; })
-          (import ./server.nix { inherit ghcjsVer ghcVer profiling; })
-        ];
-      };
+  sources = import ./nix/sources.nix;
 
-  workOnMulti = import ./nix/work-on-multi.nix {
-    inherit nixpkgs;
-    # put whatever tools you want in the shell environments here
-    generalDevTools = _: {
-      inherit (nixpkgs) cabal2nix;
-      inherit (nixpkgs.haskell.packages."${ghcVer}")
-        Cabal
-        cabal-install
-        ghcid
-        hasktags
-        yesod-bin;
+  # We have this bifurcated setup because of a nixpkgs bug causing ghcjs to not
+  # work on unstable:
+  # https://github.com/NixOS/nixpkgs/issues/95931
+  # However! We also want to provide a haskell-language-server, which landed in
+  # nixpkgs after 20.03. So, the server is on unstable and the client side is
+  # on 20.03. Duplication: likely pretty much just ghc.
+  nixpkgs-stable = import sources.nixpkgs-stable {
+      config = {
+        # yes, packages are broken, but we fix them ;-)
+        allowBroken = true;
+      };
+      overlays = [
+        (import ./nix/gitignore.nix { })
+        (import ./nix/compose-haskell-overlays.nix {
+          ghcVer = ghcjsVer;
+          overlays = [
+            (import ./client.nix { })
+          ];
+        })
+      ];
     };
-  };
+
+  client = nixpkgs-stable.haskell.packages."${ghcjsVer}".Carnap-GHCJS;
+
+  nixpkgs = import sources.nixpkgs {
+      config = {
+        # yes, packages are broken, but we fix them ;-)
+        allowBroken = true;
+      };
+      overlays = [
+        (import ./nix/gitignore.nix { })
+        (import ./nix/compose-haskell-overlays.nix {
+          inherit ghcVer;
+          overlays = [
+            (import ./server.nix { inherit profiling client; })
+          ];
+        })
+      ];
+    };
+
+  inherit (nixpkgs) lib;
+
+  devtools = { isGhcjs }: with nixpkgs.haskell.packages."${ghcVer}"; ([
+    Cabal
+    cabal-install
+    ghcid
+    hasktags
+    yesod-bin
+    # hls is disabled for ghcjs shells because it probably will not work on
+    # pure-ghcjs components.
+  ] ++ (lib.optional (hls && !isGhcjs) haskell-language-server)
+  ) ++ (with nixpkgs; [
+    cabal2nix
+    niv
+  ]);
 
   in rec {
-    inherit nixpkgs;
-    client = nixpkgs.haskell.packages."${ghcjsVer}".Carnap-GHCJS;
+    inherit nixpkgs nixpkgs-stable client;
     server = nixpkgs.haskell.packages."${ghcVer}".Carnap-Server;
 
     # a ghc-based shell for development of Carnap and Carnap-Server
     # Carnap-GHCJS currently broken on ghc, see `server.nix` for details
-    ghcShell = workOnMulti {
-      envPackages = [
-        "Carnap"
-        "Carnap-Server"
-        "Carnap-Client"
-        # "Carnap-GHCJS"
-      ];
-      env = with nixpkgs.haskell.packages."${ghcVer}"; {
-        # enable hoogle in the environment
-        ghc = ghc.override {
-          override = self: super: {
-            withPackages = super.ghc.withHoogle;
-          };
-        };
-        inherit Carnap Carnap-Client Carnap-Server /* Carnap-GHCJS */ mkDerivation;
-      };
+    ghcShell = nixpkgs.haskell.packages."${ghcVer}".shellFor {
+      packages = p: [ p.Carnap p.Carnap-Client p.Carnap-Server ];
+      withHoogle = true;
+      buildInputs = devtools { isGhcjs = false; };
     };
 
-    ghcjsShell = workOnMulti {
-      envPackages = [
-        "Carnap"
-        "Carnap-Client"
-        "Carnap-GHCJS"
-      ];
-      env = with nixpkgs.haskell.packages."${ghcjsVer}"; {
-        # enable hoogle in the environment
-        ghc = ghc.override {
-          override = self: super: {
-            withPackages = super.ghc.withHoogle;
-          };
-        };
-        inherit Carnap Carnap-Client Carnap-GHCJS mkDerivation;
-      };
+    ghcjsShell = nixpkgs-stable.haskell.packages."${ghcjsVer}".shellFor {
+      packages = p: [ p.Carnap p.Carnap-Client p.Carnap-GHCJS ];
+      withHoogle = true;
+      buildInputs = devtools { isGhcjs = true; };
     };
   }
