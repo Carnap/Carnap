@@ -19,6 +19,7 @@
               (nixpkgs.callPackage (nixpkgs.path + "/pkgs/build-support/vm") {
                 pkgs = nixpkgs // { qemu_kvm = nixpkgs.callPackage ./nix/wrapped-qemu.nix { }; };
               });
+          writePython3 = nixpkgs.writers.writePython3;
         }).buildImage;
 
       dockerEntrypoint = nixpkgs.writeScriptBin "entrypoint.sh" ''
