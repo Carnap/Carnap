@@ -16,7 +16,7 @@ collection at
 [Carnap.io/shared/Documentation](https://carnap.io/shared/Documentation)
 
 If you're interested in contributing to software development or modifying the
-software, read on. This README wll help you set up a development environment
+software, read on. This README will help you set up a development environment
 for building the server-side and client-side components used on carnap.io.
 
 ## Development
