@@ -138,9 +138,12 @@ rebuild t = t
 
 stateRebuild :: ( FirstOrder (FixLang f) , StaticVar (FixLang f)) => FixLang f a -> State Int (FixLang f a)
 stateRebuild (x :!$: y) = do modify (+ 1)
-                             (:!$:) <$> stateRebuild x <*> stateRebuild y
+                             x' <- stateRebuild x
+                             modify (+ 1)
+                             y' <- stateRebuild y
+                             return $ x' :!$: y'
 stateRebuild (LLam f) = do n <- get
-                           put (n + 1)
+                           modify (+ 1)
                            f' <- stateRebuild $ f (static n)
                            return $ LLam (\x -> subst (static n) x f')
 stateRebuild t = return t
