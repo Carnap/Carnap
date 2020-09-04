@@ -3,12 +3,11 @@ module Handler.Register (getRegisterR, getRegisterEnrollR, getEnrollR, postEnrol
 import Import
 import Yesod.Form.Bootstrap3
 import Util.Database
-import Util.Data
 
 getRegister :: ([Entity Course] -> UserId -> Html -> MForm Handler (FormResult (Maybe UserData), Widget)) -> Route App
     -> Text -> Handler Html
 getRegister theform theaction ident = do
-    userId <- fromIdent ident 
+    userId <- fromIdent ident
     time <- liftIO getCurrentTime
     courseEntities <- runDB $ selectList [CourseStartDate <. time, CourseEndDate >. time] []
     (widget,enctype) <- generateFormPost (theform courseEntities userId)
@@ -16,21 +15,21 @@ getRegister theform theaction ident = do
         setTitle "Carnap - Registration"
         $(widgetFile "register")
 
-postRegister :: ([Entity Course] -> UserId -> Html -> MForm Handler (FormResult (Maybe UserData), Widget)) 
+postRegister :: ([Entity Course] -> UserId -> Html -> MForm Handler (FormResult (Maybe UserData), Widget))
     -> Text -> Handler Html
 postRegister theform ident = do
         userId <- fromIdent ident
         time <- liftIO getCurrentTime
         courseEntities <- runDB $ selectList [CourseStartDate <. time, CourseEndDate >. time] []
-        ((result,widget),enctype) <- runFormPost (theform courseEntities userId)
-        case result of 
-            FormSuccess (Just userdata) -> 
-                do msuccess <- tryInsert userdata 
-                   case msuccess of 
+        ((result, _), _) <- runFormPost (theform courseEntities userId)
+        case result of
+            FormSuccess (Just userdata) ->
+                do msuccess <- tryInsert userdata
+                   case msuccess of
                         Just _ -> do deleteSession "enrolling-in"
                                      redirect (UserR ident)
                         Nothing -> defaultLayout clashPage
-            FormSuccess Nothing -> 
+            FormSuccess Nothing ->
                 do setMessage "Class not found - link may be incorrect or expired. Please enroll manually."
                    redirect (RegisterR ident)
             _ -> defaultLayout errorPage
@@ -58,11 +57,11 @@ getEnrollR classname = do setSession "enrolling-in" classname
                           mud <- runDB $ getBy $ UniqueUserData uid
                           case mud of
                               Nothing -> redirect (RegisterEnrollR classname (userIdent user))
-                              Just (Entity udid ud) -> case (mclass, userDataEnrolledIn ud) of
-                                  (Just (Entity cid course), Just ecid) -> do 
+                              Just (Entity _ ud) -> case (mclass, userDataEnrolledIn ud) of
+                                  (Just (Entity cid course), Just ecid) -> do
                                         if cid == ecid then redirect HomeR
                                                        else defaultLayout (reenrollPage course user)
-                                  (Just (Entity cid course), Nothing) -> do defaultLayout (confirm course)
+                                  (Just (Entity _ course), Nothing) -> do defaultLayout (confirm course)
                                   (Nothing,_) -> setMessage "no course with that title" >> notFound
     where reenrollPage course user = [whamlet|
                            <div.container>
@@ -87,12 +86,12 @@ getEnrollR classname = do setSession "enrolling-in" classname
 
 postEnrollR :: Text -> Handler Html
 postEnrollR classname = do (Entity uid _) <- requireAuth
-                           (mclass, mudent) <- runDB $ (,) <$> getBy (UniqueCourse classname) 
+                           (mclass, mudent) <- runDB $ (,) <$> getBy (UniqueCourse classname)
                                                            <*> getBy (UniqueUserData uid)
                            case (mclass, mudent) of
                                (Nothing,_) -> setMessage "no course with that title" >> notFound
                                (_,Nothing) -> setMessage "no user data (do you need to register?)" >> notFound
-                               (Just (Entity cid course), Just (Entity udid _)) -> do
+                               (Just (Entity cid _), Just (Entity udid _)) -> do
                                     runDB $ update udid [UserDataEnrolledIn =. Just cid]
                                     setMessage $ "Enrollment change complete"
                                     redirect HomeR
@@ -105,25 +104,32 @@ postRegisterR :: Text -> Handler Html
 postRegisterR = postRegister registrationForm
 
 postRegisterEnrollR :: Text -> Text -> Handler Html
-postRegisterEnrollR theclass = postRegister (enrollmentForm theclass) 
+postRegisterEnrollR theclass = postRegister (enrollmentForm theclass)
 
 registrationForm :: [Entity Course] -> UserId -> Html -> MForm Handler (FormResult (Maybe UserData), Widget)
 registrationForm courseEntities userId = do
-        renderBootstrap3 BootstrapBasicForm $ fixedId
+        renderBootstrap3 BootstrapBasicForm $ fixedId userId
             <$> areq textField "First name " Nothing
             <*> areq textField "Last name " Nothing
             <*> areq (selectFieldList courses) "enrolled in " Nothing
-    where fixedId x y z = Just $ UserData x y z Nothing userId 
-          courses = ("No Course", Nothing) : map (\e -> (courseTitle $ entityVal e, Just $ entityKey e)) courseEntities 
+    where courses = ("No Course", Nothing) : map (\e -> (courseTitle $ entityVal e, Just $ entityKey e)) courseEntities
+
+fixedId :: Key User -> Text -> Text -> Maybe (Key Course) -> Maybe UserData
+fixedId userId fname lname ckey = Just $ UserData {
+                  userDataFirstName = fname
+                , userDataLastName = lname
+                , userDataEnrolledIn = ckey
+                , userDataInstructorId = Nothing
+                , userDataIsAdmin = False
+                , userDataUserId = userId
+            }
 
 enrollmentForm :: Text -> [Entity Course] -> UserId -> Html -> MForm Handler (FormResult (Maybe UserData), Widget)
 enrollmentForm classtitle courseEntities userId = do
-        renderBootstrap3 BootstrapBasicForm $ fixedId
+        renderBootstrap3 BootstrapBasicForm $ fixedId'
             <$> areq textField "First name " Nothing
             <*> areq textField "Last name " Nothing
-    where fixedId x y = case course of 
-                    Just c -> Just $ UserData x y (Just c) Nothing userId 
-                    Nothing -> Nothing
-          course = case filter (\e -> classtitle == courseTitle (entityVal e)) courseEntities of 
-                     [] -> Nothing 
+    where fixedId' fname lname = fixedId userId fname lname course
+          course = case filter (\e -> classtitle == courseTitle (entityVal e)) courseEntities of
+                     [] -> Nothing
                      e:_ -> Just $ entityKey e

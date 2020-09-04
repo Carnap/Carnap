@@ -14,10 +14,11 @@
 /book                               BookR                    GET
 /book/#Int                          ChapterR                 GET
 /user                               UserDispatchR            GET
-/user/#Text                         UserR                    GET POST DELETE 
-/instructor/#Text                   InstructorR              GET PUT POST DELETE 
+/user/#Text                         UserR                    GET POST DELETE
+/instructor/#Text                   InstructorR              GET PUT POST DELETE
 /instructor/#Text/query             InstructorQueryR         POST
 /master_admin                       AdminR                   GET POST DELETE
+/admin_promote                      AdminPromoteR            GET POST
 /hash/#Text                         HashedR                  GET
 /assignments/#Text/#Text            CourseAssignmentR        GET POST
 /assignments/#Text/#Text/state      CourseAssignmentStateR   GET PUT

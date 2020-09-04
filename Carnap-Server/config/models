@@ -9,6 +9,7 @@ UserData
     lastName Text
     enrolledIn CourseId Maybe
     instructorId InstructorMetadataId Maybe
+    isAdmin Bool default=false
     userId UserId
     UniqueUserData userId
 
