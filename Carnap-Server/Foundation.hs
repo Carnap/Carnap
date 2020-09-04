@@ -105,29 +105,33 @@ instance Yesod App where
          (CourseAssignmentR coursetitle _) -> studentAccessTo coursetitle
          AdminR -> admin
          _ -> return Authorized
-        where userOrInstructor ident =
-                do (Entity _ user) <- requireAuth
+        where superAdmin = appSuperAdmin . appSettings <$> getYesod
+              userOrInstructor ident =
+                do sa <- superAdmin
+                   (Entity _ user) <- requireAuth
                    let ident' = userIdent user
                    instructors <- instructorIdentList
                    return $ if ident' `elem` instructors
                                 --TODO Improve this to restrict to viewing your own students
                                || ident' == ident
-                               || ident' == "gleachkr@gmail.com"
+                               || ident' == sa
                             then Authorized
                             else Unauthorized "It appears you're not authorized to access this page"
               instructor ident =
-                 do (Entity _ user) <- requireAuth
+                 do sa <- superAdmin
+                    (Entity _ user) <- requireAuth
                     let ident' = userIdent user
                     instructors <- instructorIdentList
                     return $ if (ident' `elem` instructors
                                 && ident' == ident)
-                                || ident' == "gleachkr@gmail.com"
+                                || ident' == sa
                              then Authorized
                              else Unauthorized "It appears you're not authorized to access this page"
               studentAccessTo coursetitle =
                   --this is the route to assignments accessible by students
                   --for a given course and to instructors
-                  do (Entity uid user) <- requireAuth
+                  do sa <- superAdmin
+                     (Entity uid user) <- requireAuth
                      mcourse <- runDB $ getBy (UniqueCourse coursetitle)
                      (Entity cid course) <- case mcourse of Just c -> return c; _ -> setMessage "no course with that title" >> notFound
                      mudata <- runDB $ getBy (UniqueUserData uid)
@@ -138,24 +142,26 @@ instance Yesod App where
                                  || maybe False
                                           (\udata -> userDataEnrolledIn (entityVal udata) == Just cid)
                                           mudata
-                                 || userIdent user == "gleachkr@gmail.com"
+                                 || userIdent user == sa
                               then Authorized
                               else Unauthorized $ "It appears you're not authorized to access this page. For access, you need to enroll in the course \"" ++ coursetitle ++ "\". Is this the course you should be enrolled in?"
               coinstructorOrInstructor coursetitle =
                   --this is the route to the review area for a given course and
                   --assignment, and is for instructors only.
-                  do (Entity uid user) <- requireAuth
+                  do sa <- superAdmin
+                     (Entity uid user) <- requireAuth
                      mcourse <- runDB $ getBy (UniqueCourse coursetitle)
                      course <- case mcourse of Just c -> return c; _ -> setMessage "no course with that title" >> notFound
                      coInstructors <-  runDB $ map entityVal <$> selectList [CoInstructorCourse ==. entityKey course] []
                      instructors <- runDB $ selectList ([UserDataInstructorId ==. Just (courseInstructor $ entityVal course)]
                                                        ||. [UserDataInstructorId <-. map (Just . coInstructorIdent) coInstructors]) []
                      return $ if uid `elem` map (userDataUserId . entityVal) instructors
-                                 || userIdent user == "gleachkr@gmail.com"
+                                 || userIdent user == sa
                               then Authorized
                               else Unauthorized "It appears you're not authorized to access this page"
-              admin = do (Entity _ user) <- requireAuth
-                         return $ if userIdent user == "gleachkr@gmail.com"
+              admin = do sa <- superAdmin
+                         (Entity _ user) <- requireAuth
+                         return $ if userIdent user == sa
                                   then Authorized
                                   else Unauthorized "Only site administrators may access this page"
 

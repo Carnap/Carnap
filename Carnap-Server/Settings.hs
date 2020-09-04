@@ -55,7 +55,8 @@ data AppSettings = AppSettings
     , appSkipCombining          :: Bool
     -- ^ Perform no stylesheet/script combining
 
-    -- Example app-specific configuration values.
+    , appSuperAdmin             :: Text
+    -- ^ Account @ident@ that will be assumed to have full access always
     , appCopyright              :: Text
     -- ^ Copyright text to appear in the footer of the page
     , appAnalytics              :: Maybe Text
@@ -92,7 +93,8 @@ instance FromJSON AppSettings where
         appMutableStatic          <- o .:? "mutable-static"   .!= appDevel
         appSkipCombining          <- o .:? "skip-combining"   .!= appDevel
 
-        appCopyright              <- o .: "copyright"
+        appSuperAdmin             <- o .:  "super-admin"
+        appCopyright              <- o .:  "copyright"
         appAnalytics              <- o .:? "analytics"
         appKey                    <- o .:? "google-api-key"   .!= ""
         appSecret                 <- o .:? "google-secret"    .!= ""

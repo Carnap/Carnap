@@ -144,9 +144,10 @@ unenrolledWidget students courses = do
             |]
 
 emailWidget :: [User] -> HandlerT App IO Widget
-emailWidget insts = do let emails = intercalate "," (map userIdent insts)
+emailWidget insts = do superAdmin <- appSuperAdmin . appSettings <$> getYesod
+                       let emails = intercalate "," (map userIdent insts)
                        return [whamlet|
-                          <a href="mailto:gleachkr@gmail.com?bcc=#{emails}">Email Instructors
+                          <a href="mailto:#{superAdmin}?bcc=#{emails}">Email Instructors
                        |]
 
 
