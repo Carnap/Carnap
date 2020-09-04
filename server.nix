@@ -1,12 +1,13 @@
-{ client, withHoogle ? true, profiling ? false }:
+{ client, persistent, withHoogle ? true, profiling ? false }:
 { nixpkgs }:
 let
   inherit (nixpkgs.haskell.lib)
-    overrideCabal
-    dontCheck
     disableSharedExecutables
     doJailbreak
+    dontCheck
     justStaticExecutables
+    overrideSrc
+    overrideCabal
     withGitignore;
 in
 newpkgs: oldpkgs: {
@@ -27,6 +28,19 @@ newpkgs: oldpkgs: {
     ver = "0.6.1.3";
     sha256 = "1bikn9kfw6mrsais4z1nk07aa7i7hyrcs411kbbfgc7n74k6sd5b";
   } { };
+
+  # Use the version from https://github.com/yesodweb/persistent/pull/1106
+  # using overrideSrc to maintain dependency relations and nix's fixes/overrides for these
+  persistent = overrideSrc oldpkgs.persistent { src = (persistent + "/persistent"); };
+  persistent-sqlite = overrideSrc oldpkgs.persistent-sqlite { src = (persistent + "/persistent-sqlite"); };
+  # this one we have to recreate from scratch anyway because they added a dependency
+  persistent-postgresql = dontCheck (oldpkgs.callCabal2nix "persistent-postgresql" (persistent + "/persistent-postgresql") { });
+  persistent-template = overrideSrc oldpkgs.persistent-template { src = (persistent + "/persistent-template"); };
+  persistent-qq = overrideSrc oldpkgs.persistent-qq { src = (persistent + "/persistent-qq"); };
+  persistent-test = overrideSrc oldpkgs.persistent-test { src = (persistent + "/persistent-test"); };
+  # too tight an upper version bound on persistent
+  yesod-persistent = doJailbreak oldpkgs.yesod-persistent;
+  yesod-auth = doJailbreak oldpkgs.yesod-auth;
 
   # ghcjs-dom-0.2.4.0 (released 2016)
   # using `ghc` native dependencies
