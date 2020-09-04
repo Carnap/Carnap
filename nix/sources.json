@@ -34,5 +34,17 @@
         "type": "tarball",
         "url": "https://github.com/NixOS/nixpkgs/archive/f8248ab6d9e69ea9c07950d73d48807ec595e923.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
+    },
+    "persistent": {
+        "branch": "stockStrategyForShowRead",
+        "description": "Persistence interface for Haskell allowing multiple storage methods.",
+        "homepage": "",
+        "owner": "yesodweb",
+        "repo": "persistent",
+        "rev": "1cdadc10405e9e3b1e0e73e2c1d6ec84eed69a53",
+        "sha256": "0x50ix83k7v9r0g20g2dww295h864xrc5rrv5yk7pd3wvkz7mkv7",
+        "type": "tarball",
+        "url": "https://github.com/yesodweb/persistent/archive/1cdadc10405e9e3b1e0e73e2c1d6ec84eed69a53.tar.gz",
+        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     }
 }

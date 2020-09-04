@@ -40,7 +40,7 @@ let
         (import ./nix/compose-haskell-overlays.nix {
           inherit ghcVer;
           overlays = [
-            (import ./server.nix { inherit profiling client; })
+            (import ./server.nix { inherit profiling client; inherit (sources) persistent; })
           ];
         })
       ];

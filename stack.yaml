@@ -10,6 +10,16 @@ extra-deps:
     - th-utilities-0.2.4.0@sha256:ba19cd8441aa43dbaed40e9055bb5a7cbd7cf9e154f5253c6bf9293af8b1f96b,1869
     - haskell-src-exts-simple-1.22.0.0
     - haskell-src-exts-1.22.0
+    - git: https://github.com/yesodweb/persistent.git
+      commit: 1cdadc10405e9e3b1e0e73e2c1d6ec84eed69a53
+      subdirs:
+          - persistent
+          - persistent-sqlite
+          - persistent-postgresql
+          - persistent-template
+          - persistent-qq
+# :(
+allow-newer: true
 
 packages:
 - Carnap/
