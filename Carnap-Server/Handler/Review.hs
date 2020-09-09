@@ -109,9 +109,10 @@ renderProblem due uidanduser (Entity key val) = do
             howGraded = if correct then "automatically graded"
                                    else case extra of Just _ -> "manually graded"; _ -> "ungraded" :: String
             credit =  case problemSubmissionCredit val of Just n -> n; _ -> 5
+            latescore = maybe (floor ((fromIntegral credit :: Rational) / 2)) id (problemSubmissionLateCredit val)
             lateIndicator = if late then "(late)" else "" :: String
             score | correct && not late = credit
-                  | correct = (floor ((fromIntegral credit :: Rational) / 2))
+                  | correct = latescore
                   | otherwise = 0
             awarded = case extra of Just n -> show n; _ -> "0" :: String
             mailto theuser = sanitizeHtml (userIdent theuser) ++ "?subject=[Carnap-" ++ sanitizeHtml ident ++ "]"
