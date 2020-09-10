@@ -64,7 +64,7 @@ content n cdir cdirp = do let matches = filter (\x -> (show n ++ ".pandoc") == d
                                        fileToHtml cdirp ""
                               (m:ms)  -> fileToHtml cdirp m
 
-fileToHtml path m = do md <- markdownFromFile (path ++ m)
+fileToHtml path m = do md <- markdownFromFile (path </> m)
                        case parseMarkdown yesodDefaultReaderOptions { readerExtensions = exts } md of
                            Right pd -> do pd' <- runFilters path pd
                                           return $ Right $ writePandocTrusted yesodDefaultWriterOptions { writerExtensions = exts } pd'
