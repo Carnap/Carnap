@@ -60,9 +60,11 @@ submitNumerical w opts input g p l = do Just ival <- liftIO $ I.getValue . castT
 
 submitEssay :: IsEvent e => Document -> M.Map String String -> Element -> String -> String -> EventM HTMLTextAreaElement e ()
 submitEssay w opts text g l = do manswer <- T.getValue . castToHTMLTextAreaElement $ text
-                                 case manswer of 
-                                      Just answer -> trySubmit w Qualitative opts l (QualitativeProblemDataOpts (pack g) (pack answer) (toList opts)) False
-                                      Nothing -> message "It doesn't look like an answer has been written"
+                                 let credit = M.lookup "give-credit" opts
+                                 case (manswer,credit) of 
+                                      (Just answer,Just "onSubmission") -> trySubmit w Qualitative opts l (QualitativeProblemDataOpts (pack g) (pack answer) (toList opts)) True
+                                      (Just answer,_) -> trySubmit w Qualitative opts l (QualitativeProblemDataOpts (pack g) (pack answer) (toList opts)) False
+                                      (Nothing,_) -> message "It doesn't look like an answer has been written"
 
 createMultipleSelection :: Document -> Element -> Element -> M.Map String String -> IO ()
 createMultipleSelection w i o opts = case M.lookup "goal" opts of
