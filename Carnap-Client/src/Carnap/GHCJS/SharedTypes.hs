@@ -76,7 +76,7 @@ deriving instance Eq (FixLang lex sem) => Eq (DerivedRule lex sem)
 derivedRuleToSequent (DerivedRule c ps) = antecedent :|-: SS (liftToSequent c)
     where antecedent = foldr (:+:) Top (map (SA . liftToSequent) ps)
 
-data GHCJSCommand = Submit ProblemType String ProblemData ProblemSource Bool (Maybe Int) String 
+data GHCJSCommand = Submit ProblemType String ProblemData ProblemSource Bool (Maybe Int) (Maybe Int) String 
                   | SaveRule String SomeRule
                   | RequestDerivedRulesForUser
         deriving (Generic, Show)

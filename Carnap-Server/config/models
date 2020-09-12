@@ -53,6 +53,7 @@ ProblemSubmission
     userId UserId
     correct Bool
     credit Int Maybe
+    lateCredit Int Maybe
     extra Int Maybe
     source ProblemSource
     assignmentId AssignmentMetadataId Maybe

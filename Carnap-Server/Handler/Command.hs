@@ -18,7 +18,7 @@ postCommandR = do
     case maybeCurrentUserId of 
            Nothing -> returnJson ("You need to be logged in to submit work." :: String)
            Just uid  -> case cmd of
-                Submit typ ident dat source correct credit key ->  
+                Submit typ ident dat source correct credit late key ->  
                     do time <- liftIO getCurrentTime
                        (mkey, masgn) <- case key of 
                                         "" -> return (Nothing,Nothing)
@@ -37,6 +37,7 @@ postCommandR = do
                                     , problemSubmissionUserId = uid
                                     , problemSubmissionCorrect = correct
                                     , problemSubmissionCredit = credit
+                                    , problemSubmissionLateCredit = late
                                     , problemSubmissionExtra = Nothing
                                     , problemSubmissionSource = source
                                     , problemSubmissionAssignmentId = mkey
