@@ -31,10 +31,10 @@ newtype GentzenFOLJ = LJ GentzenFOLK
 
 instance Show GentzenFOLK where
     show (LK x) = show x
-    show AllL   = "L∀"
-    show AllR   = "R∀"
-    show ExistL = "L∃"
-    show ExistR = "R∃"
+    show AllL   = "∀L"
+    show AllR   = "∀R"
+    show ExistL = "∃L"
+    show ExistR = "∃R"
 
 instance Show GentzenFOLJ where
     show (LJ x) = show x
@@ -42,12 +42,12 @@ instance Show GentzenFOLJ where
 parseGentzenFOLK :: Parsec String u [GentzenFOLK]
 parseGentzenFOLK = try folParse <|> liftProp
         where liftProp = map LK <$> parseGentzenPropLK
-              folParse = do r <- choice (map (try . string) [ "LA", "L∀", "RA","R∀", "LE","L∃", "RE", "R∃" ])
+              folParse = do r <- choice (map (try . string) [ "AL", "∀L", "AR","∀R", "EL","∃L", "ER", "∃R" ])
                             return $ (\x -> [x]) $ case r of
-                               r | r `elem` ["LA","L∀"] -> AllL
-                                 | r `elem` ["RA","R∀"] -> AllR
-                                 | r `elem` ["LE","L∃"] -> ExistL
-                                 | r `elem` ["RE","R∃"] -> ExistR
+                               r | r `elem` ["AL","∀L"] -> AllL
+                                 | r `elem` ["AR","∀R"] -> AllR
+                                 | r `elem` ["EL","∃L"] -> ExistL
+                                 | r `elem` ["ER","∃R"] -> ExistR
 
 parseGentzenFOLJ :: Parsec String u [GentzenFOLJ]
 parseGentzenFOLJ = map LJ <$> parseGentzenFOLK

@@ -23,7 +23,7 @@ import Carnap.Calculi.Util
 import Control.Lens
 import Carnap.Languages.Util.LanguageClasses
 
-data GentzenPropLK = Ax    | Rep   | Cut 
+data GentzenPropLK = Ax    | Cut   | XL | XR | CL | CR | WL | WR
                    | AndL1 | AndL2 | AndR
                    | OrR1  | OrR2  | OrL
                    | CondR | CondL
@@ -47,18 +47,23 @@ data GentzenPropNK = NJ GentzenPropNJ
 
 instance Show GentzenPropLK where
     show Ax     = "Ax"
-    show Rep    = "Rep"
     show Cut    = "Cut"
-    show AndL1  = "L&"
-    show AndL2  = "L&"
-    show AndR   = "R&"
-    show OrR1   = "R∨" 
-    show OrR2   = "R∨"
-    show OrL    = "L∨"
-    show CondR  = "R→"
-    show CondL  = "L→"
-    show NegR   = "R¬" 
-    show NegL   = "L¬"
+    show AndL1  = "&L"
+    show AndL2  = "&L"
+    show AndR   = "&R"
+    show OrR1   = "∨R" 
+    show OrR2   = "∨R"
+    show OrL    = "∨L"
+    show CondR  = "→R"
+    show CondL  = "→R"
+    show NegR   = "¬R" 
+    show NegL   = "¬L"
+    show XL     = "XL"
+    show XR     = "XR"
+    show CL     = "CL"
+    show CR     = "CR"
+    show WL     = "WL"
+    show WR     = "WR"
 
 instance Show GentzenPropLJ where
     show (LJ x) = show x
@@ -95,28 +100,34 @@ instance Show GentzenPropNK where
     show LEM = "LEM"
 
 parseGentzenPropLK :: Parsec String u [GentzenPropLK]
-parseGentzenPropLK =  do r <- choice (map (try . string) [ "Ax", "Rep", "Cut"
-                                                         , "R&","R∧","R/\\"
-                                                         ,"L&","L∧","L/\\"
-                                                         , "L∨","Lv","L\\/"
-                                                         ,"R∨","Rv","R\\/"
-                                                         , "L→","L->"
-                                                         , "R→","R->"
-                                                         , "L¬","L~","L-"
-                                                         , "R¬","R~","R-"
+parseGentzenPropLK =  do r <- choice (map (try . string) [ "Ax", "Cut"
+                                                         , "WL","WR","XL","XR","CL","CR"
+                                                         , "&R","∧R","/\\R"
+                                                         ,"&L","∧L","/\\L"
+                                                         , "∨L","vL","\\/L"
+                                                         ,"∨R","vR","\\/R"
+                                                         , "→L","->L"
+                                                         , "→R","->R"
+                                                         , "¬R","~L","-L"
+                                                         , "¬R","~R","-R"
                                                          ])
                          return $ case r of
                             r | r == "Ax" -> [Ax]
-                              | r == "Rep" -> [Rep]
+                              | r == "XL" -> [XL]
+                              | r == "WL" -> [WL]
+                              | r == "CL" -> [CL]
+                              | r == "XR" -> [XR]
+                              | r == "WR" -> [WR]
+                              | r == "CR" -> [CR]
                               | r == "Cut" -> [Cut]
-                              | r `elem` ["R&","R∧","R/\\"] -> [AndR]
-                              | r `elem` ["L&","L∧","L/\\"] -> [AndL1, AndL2]
-                              | r `elem` ["L∨","Lv","L\\/"] -> [OrL]
-                              | r `elem` ["R∨","Rv","R\\/"] -> [OrR1, OrR2]
-                              | r `elem` ["L→","L->"] -> [CondL]
-                              | r `elem` ["R→","R->"] -> [CondR]
-                              | r `elem` ["L¬","L~","L-"] -> [NegL]
-                              | r `elem` ["R¬","R~","R-"] -> [NegR]
+                              | r `elem` ["&R","∧R","/\\R"] -> [AndR]
+                              | r `elem` ["&L","∧L","/\\L"] -> [AndL1, AndL2]
+                              | r `elem` ["∨L","vL","\\/L"] -> [OrL]
+                              | r `elem` ["∨R","vR","\\/R"] -> [OrR1, OrR2]
+                              | r `elem` ["→L","->L"] -> [CondL]
+                              | r `elem` ["→R","->R"] -> [CondR]
+                              | r `elem` ["¬L","~L","-L"] -> [NegL]
+                              | r `elem` ["¬R","~R","-R"] -> [NegR]
 
 parseGentzenPropLJ = map LJ <$> parseGentzenPropLK
 
@@ -170,7 +181,12 @@ instance ( BooleanLanguage (ClassicalSequentOver lex (Form Bool))
          corePremisesOf CondR = [ GammaV 1 :+: SA (phin 1) :|-: SS (phin 2) :-: DeltaV 1 ]
          corePremisesOf NegL = [ GammaV 1 :|-: SS (phin 1) :-: DeltaV 1 ]
          corePremisesOf NegR = [  GammaV 1 :+: SA (phin 1) :|-:  DeltaV 1 ]
-         corePremisesOf Rep =  [ GammaV 1 :|-: DeltaV 1 ]
+         corePremisesOf CL  =   [ GammaV 1 :|-: DeltaV 1 ]
+         corePremisesOf CR  =   [ GammaV 1 :|-: DeltaV 1 ]
+         corePremisesOf XL  =  [ GammaV 1 :|-: DeltaV 1 ]
+         corePremisesOf XR  =  [ GammaV 1 :|-: DeltaV 1 ]
+         corePremisesOf WL  =  [ GammaV 1 :|-: DeltaV 1 ]
+         corePremisesOf WR  =  [ GammaV 1 :|-: DeltaV 1 ]
          corePremisesOf Cut =  [  SA (phin 1) :+: GammaV 1 :|-: DeltaV 1 
                                , GammaV 2 :|-: DeltaV 2 :-: SS (phin 1)
                                ]
@@ -186,9 +202,14 @@ instance ( BooleanLanguage (ClassicalSequentOver lex (Form Bool))
          coreConclusionOf CondR =  GammaV 1  :|-: DeltaV 1 :-: SS (phin 1 .=>. phin 2)
          coreConclusionOf NegL =   SA (lneg $ phin 1) :+: GammaV 1 :|-: DeltaV 1 
          coreConclusionOf NegR =  GammaV 1 :|-:   DeltaV 1 :-: SS (lneg $ phin 1)
-         coreConclusionOf Rep =  GammaV 2 :+: GammaV 1 :|-: DeltaV 1 :-: DeltaV 2
+         coreConclusionOf CL =   GammaV 1 :|-: DeltaV 1 
+         coreConclusionOf CR =   GammaV 1 :|-: DeltaV 1
+         coreConclusionOf XL =   GammaV 1 :|-: DeltaV 1
+         coreConclusionOf XR =   GammaV 1 :|-: DeltaV 1
+         coreConclusionOf WR =   GammaV 1 :|-: DeltaV 1 :-: DeltaV 2
+         coreConclusionOf WL =   GammaV 2 :+: GammaV 1 :|-: DeltaV 1 
          coreConclusionOf Cut =  GammaV 1 :+: GammaV 2 :|-: DeltaV 1 :-: DeltaV 2
-         coreConclusionOf Ax =  SA (phin 1) :+: GammaV 1 :|-: DeltaV 1 :-: SS (phin 1)
+         coreConclusionOf Ax =  SA (phin 1) :|-: SS (phin 1)
 
 instance SpecifiedUnificationType GentzenPropLK
 
