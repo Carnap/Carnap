@@ -1,6 +1,6 @@
 {-#LANGUAGE RankNTypes, StandaloneDeriving, ScopedTypeVariables, FlexibleContexts, FlexibleInstances, UndecidableInstances, MultiParamTypeClasses #-}
 module Carnap.Languages.PureFirstOrder.Logic.OpenLogic
-( parseOpenLogicFONK, openLogicFONKCalc, OpenLogicFONK(..)) where
+( parseOpenLogicFONK, openLogicFONKCalc, OpenLogicFONK(..), olpFOLKCalc, olpFOLJCalc) where
 
 import Text.Parsec
 import Data.List
@@ -16,6 +16,7 @@ import Carnap.Core.Data.Optics
 import Carnap.Languages.PureFirstOrder.Syntax
 import Carnap.Languages.PureFirstOrder.Parser
 import Carnap.Languages.PureFirstOrder.Logic.Rules
+import Carnap.Languages.PureFirstOrder.Logic.Gentzen
 import Carnap.Languages.PurePropositional.Logic.OpenLogic
 import Carnap.Languages.PurePropositional.Util (dropOuterParens)
 import Carnap.Languages.Util.GenericConstructors
@@ -138,3 +139,9 @@ openLogicFONKCalc = mkTBCalc
     , tbParseRule = parseOpenLogicFONK
     , tbNotation = dropOuterParens
     }
+
+olpFOLKCalc :: TableauCalc PureLexiconFOL (Form Bool) GentzenFOLK
+olpFOLKCalc = gentzenFOLKCalc { tbParseForm = thomasBolducAndZachFOL2019FormulaParser }
+
+olpFOLJCalc :: TableauCalc PureLexiconFOL (Form Bool) GentzenFOLJ
+olpFOLJCalc = gentzenFOLJCalc { tbParseForm = thomasBolducAndZachFOL2019FormulaParser }

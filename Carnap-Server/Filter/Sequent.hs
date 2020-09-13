@@ -18,8 +18,12 @@ activate :: [Text] -> [(Text, Text)] -> Text -> Block
 activate cls extra chunk
     | "propLK" `elem` cls = template (opts [("system","propLK")])
     | "propLJ" `elem` cls = template (opts [("system","propLJ")])
+    | "openLogicPropLK" `elem` cls = template (opts [("system","openLogicPropLK")])
+    | "openLogicPropLJ" `elem` cls = template (opts [("system","openLogicPropLJ")])
     | "foLK" `elem` cls = template (opts [("system","foLK")])
     | "foLJ" `elem` cls = template (opts [("system","foLJ")])
+    | "openLogicFOLK" `elem` cls = template (opts [("system","openLogicFOLK")])
+    | "openLogicFOLJ" `elem` cls = template (opts [("system","openLogicFOLJ")])
     | otherwise = RawBlock "html" "<div>No Matching Sequent Calculus</div>"
     where (h:t) = formatChunk chunk
           opts adhoc = unions [fromList extra, fromList fixed, fromList adhoc]

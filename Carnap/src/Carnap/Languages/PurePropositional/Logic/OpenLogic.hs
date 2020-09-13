@@ -1,6 +1,6 @@
 {-#LANGUAGE RankNTypes, ScopedTypeVariables, FlexibleContexts, FlexibleInstances, UndecidableInstances, MultiParamTypeClasses #-}
 module Carnap.Languages.PurePropositional.Logic.OpenLogic
-    ( parseOLPPropNK, olpPropNKCalc, OLPPropNK()
+    ( parseOLPPropNK, olpPropLKCalc, olpPropLJCalc, olpPropNKCalc, OLPPropNK()
     ) where
 
 import Text.Parsec
@@ -15,6 +15,7 @@ import Carnap.Languages.PurePropositional.Syntax
 import Carnap.Languages.PurePropositional.Util (dropOuterParens)
 import Carnap.Languages.PurePropositional.Parser
 import Carnap.Languages.PurePropositional.Logic.Rules
+import Carnap.Languages.PurePropositional.Logic.Gentzen
 import Carnap.Calculi.Tableau.Data
 import Carnap.Calculi.NaturalDeduction.Syntax
 import Carnap.Calculi.Util
@@ -174,7 +175,13 @@ instance AssumptionNumbers OLPPropNK where
 
 olpPropNKCalc :: TableauCalc PurePropLexicon (Form Bool) OLPPropNK
 olpPropNKCalc = mkTBCalc
-    { tbParseForm = purePropFormulaParser thomasBolducZachOpts
+    { tbParseForm = purePropFormulaParser thomasBolducZach2019Opts
     , tbParseRule = parseOLPPropNK
     , tbNotation = dropOuterParens
     }
+
+olpPropLKCalc :: TableauCalc PurePropLexicon (Form Bool) GentzenPropLK
+olpPropLKCalc = gentzenPropLKCalc { tbParseForm = purePropFormulaParser thomasBolducZach2019Opts }
+
+olpPropLJCalc :: TableauCalc PurePropLexicon (Form Bool) GentzenPropLJ
+olpPropLJCalc = gentzenPropLJCalc { tbParseForm = purePropFormulaParser thomasBolducZach2019Opts }

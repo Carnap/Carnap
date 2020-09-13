@@ -15,6 +15,7 @@ import qualified Text.Parsec as P (parse)
 import Carnap.GHCJS.SharedTypes
 import Control.Lens (view)
 import Control.Concurrent
+import Control.Monad (mplus)
 import Control.Monad.IO.Class (liftIO)
 import GHCJS.DOM
 import GHCJS.Types
@@ -33,12 +34,15 @@ import Carnap.Languages.ClassicalSequent.Syntax
 import Carnap.Languages.ClassicalSequent.Parser
 import Carnap.Languages.PurePropositional.Logic.IchikawaJenkins
 import Carnap.Languages.PurePropositional.Logic.Gentzen
+import Carnap.Languages.PurePropositional.Logic
+import Carnap.Languages.PureFirstOrder.Logic
 import Carnap.Languages.PureFirstOrder.Logic.Gentzen
 import Carnap.GHCJS.SharedTypes
 import Carnap.GHCJS.Util.ProofJS
 
 sequentCheckAction ::  IO ()
 sequentCheckAction = do
+               ---TODO: rewrite to use of____SeqSys, rather than doing this ad hoc.
                initializeCallback "checkPropSequent" (checkSequent gentzenPropLKCalc Nothing)
                initializeCallback "checkFOLSequent" (checkSequent gentzenFOLKCalc Nothing)
                initializeCallback "checkIchikawaJenkinsSLTableau" (checkSequent ichikawaJenkinsSLTableauCalc Nothing)
@@ -51,14 +55,14 @@ getCheckers w = genInOutElts w "div" "div" "sequentchecker"
 
 activateChecker :: Document -> Maybe (Element, Element, Map String String) -> IO ()
 activateChecker _ Nothing  = return ()
-activateChecker w (Just (i, o, opts))
-        | sys == "propLK"  = setupWith gentzenPropLKCalc
-        | sys == "propLJ"  = setupWith gentzenPropLJCalc
-        | sys == "foLK"    = setupWith gentzenFOLKCalc
-        | sys == "foLJ"    = setupWith gentzenFOLJCalc
+activateChecker w (Just (i, o, opts))= maybe noSystem id ((setupWith `ofPropSeqSys` sys) 
+                                                  `mplus` (setupWith `ofFOLSeqSys` sys))
         where sys = case M.lookup "system" opts of
                         Just s -> s
                         Nothing -> "propLK"
+
+              noSystem = do setInnerHTML o (Just $ "Can't find a sequent calculus system named " ++ sys)
+                            error $ "couldn't find formal system:" ++ sys
 
               setupWith calc = do
                   mseq <- parseGoal calc

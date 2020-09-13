@@ -19,7 +19,7 @@ module Carnap.Languages.PurePropositional.Logic
     , parseHurleySL, HurleySL, hurleySLCalc
     , parseGentzenPropNJ, GentzenPropNJ, gentzenPropNJCalc
     , parseGentzenPropNK, GentzenPropNK, gentzenPropNKCalc
-    , ofPropSys, ofPropTreeSys
+    , ofPropSys, ofPropTreeSys, ofPropSeqSys
     ) where
 
 import Carnap.Calculi.Util
@@ -90,3 +90,14 @@ ofPropTreeSys f sys | sys == "propNJ"                     = Just $ f gentzenProp
                     | sys == "openLogicNK"                = Just $ f olpPropNKCalc 
                     | otherwise                           = Nothing
 
+ofPropSeqSys :: (forall r . 
+                    ( Show r
+                    , CoreInference r PurePropLexicon (Form Bool)
+                    , SpecifiedUnificationType r
+                 ) => 
+              TableauCalc PurePropLexicon (Form Bool) r -> a) -> String -> Maybe a
+ofPropSeqSys f sys | sys == "propLJ"                     = Just $ f gentzenPropLJCalc 
+                   | sys == "propLK"                     = Just $ f gentzenPropLKCalc 
+                   | sys == "openLogicPropLK"            = Just $ f olpPropLKCalc 
+                   | sys == "openLogicPropLJ"            = Just $ f olpPropLJCalc 
+                   | otherwise                           = Nothing

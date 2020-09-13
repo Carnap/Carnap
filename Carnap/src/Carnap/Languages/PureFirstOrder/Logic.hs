@@ -14,11 +14,12 @@ module Carnap.Languages.PureFirstOrder.Logic
         , parseTomassiQL, tomassiQLCalc
         , gallowPLCalc, gallowPLPlusCalc
         , goldfarbNDCalc, goldfarbAltNDCalc, goldfarbNDPlusCalc, goldfarbAltNDPlusCalc
-        , ofFOLSys, ofFOLTreeSys
+        , ofFOLSys, ofFOLTreeSys, ofFOLSeqSys
         )
     where
 
 import Carnap.Core.Data.Types
+import Carnap.Calculi.Util
 import Carnap.Languages.PureFirstOrder.Syntax
 import Carnap.Calculi.NaturalDeduction.Syntax
 import Carnap.Calculi.Tableau.Data
@@ -38,6 +39,7 @@ import Carnap.Languages.PureFirstOrder.Logic.Bonevac
 import Carnap.Languages.PureFirstOrder.Logic.Goldfarb
 import Carnap.Languages.PureFirstOrder.Logic.Tomassi
 import Carnap.Languages.PureFirstOrder.Logic.IchikawaJenkins
+import Carnap.Languages.PureFirstOrder.Logic.Gentzen
 import Carnap.Languages.PureFirstOrder.Logic.OpenLogic
 import Carnap.Languages.PureFirstOrder.Logic.Rules
 
@@ -80,3 +82,15 @@ ofFOLTreeSys :: (forall r .
               TableauCalc PureLexiconFOL (Form Bool) r -> a) -> String -> Maybe a
 ofFOLTreeSys f sys | sys == "openLogicFOLNK"             = Just $ f openLogicFONKCalc 
                    | otherwise                           = Nothing
+
+ofFOLSeqSys :: (forall r . 
+                    ( Show r
+                    , CoreInference r PureLexiconFOL (Form Bool)
+                    , SpecifiedUnificationType r
+                 ) => 
+              TableauCalc PureLexiconFOL (Form Bool) r -> a) -> String -> Maybe a
+ofFOLSeqSys f sys | sys == "folLJ"                    = Just $ f gentzenFOLKCalc 
+                  | sys == "folLK"                    = Just $ f gentzenFOLJCalc 
+                  | sys == "openLogicFOLK"            = Just $ f olpFOLKCalc 
+                  | sys == "openLogicFOLJ"            = Just $ f olpFOLJCalc 
+                  | otherwise                         = Nothing
