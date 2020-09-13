@@ -167,49 +167,49 @@ instance ( BooleanLanguage (ClassicalSequentOver lex (Form Bool))
          ) => CoreInference GentzenPropLK lex (Form Bool) where
          corePremisesOf AndL1 = [ SA (phin 1) :+: GammaV 1  :|-: DeltaV 1]
          corePremisesOf AndL2 = [ SA (phin 2) :+: GammaV 1  :|-: DeltaV 1]
-         corePremisesOf AndR = [ GammaV 1 :|-: DeltaV 1 :-: SS (phin 1) 
-                               , GammaV 1 :|-: DeltaV 1 :-: SS (phin 2)
-                               ]
-         corePremisesOf OrR1 = [ GammaV 1 :|-: DeltaV 1 :-: SS(phin 1) ]
-         corePremisesOf OrR2 = [ GammaV 1 :|-: DeltaV 1 :-: SS(phin 2) ]
-         corePremisesOf OrL  = [ SA (phin 1) :+: GammaV 1 :|-: DeltaV 1
-                               , SA (phin 1) :+: GammaV 1 :|-: DeltaV 1
-                               ] 
-         corePremisesOf CondL = [ GammaV 1 :|-: DeltaV 1 :-: SS (phin 1) 
+         corePremisesOf AndR  = [ GammaV 1 :|-: DeltaV 1 :-: SS (phin 1)
+                                , GammaV 1 :|-: DeltaV 1 :-: SS (phin 2)
+                                ]
+         corePremisesOf OrR1  = [ GammaV 1 :|-: DeltaV 1 :-: SS(phin 1) ]
+         corePremisesOf OrR2  = [ GammaV 1 :|-: DeltaV 1 :-: SS(phin 2) ]
+         corePremisesOf OrL   = [ SA (phin 1) :+: GammaV 1 :|-: DeltaV 1
+                                , SA (phin 2) :+: GammaV 1 :|-: DeltaV 1
+                                ] 
+         corePremisesOf CondL = [ GammaV 1 :|-: DeltaV 1 :-: SS (phin 1)
                                 , SA (phin 2) :+: GammaV 2 :|-: DeltaV 2
                                 ]
-         corePremisesOf CondR = [ GammaV 1 :+: SA (phin 1) :|-: SS (phin 2) :-: DeltaV 1 ]
-         corePremisesOf NegL = [ GammaV 1 :|-: SS (phin 1) :-: DeltaV 1 ]
-         corePremisesOf NegR = [  GammaV 1 :+: SA (phin 1) :|-:  DeltaV 1 ]
-         corePremisesOf CL  =   [ GammaV 1 :|-: DeltaV 1 ]
-         corePremisesOf CR  =   [ GammaV 1 :|-: DeltaV 1 ]
-         corePremisesOf XL  =  [ GammaV 1 :|-: DeltaV 1 ]
-         corePremisesOf XR  =  [ GammaV 1 :|-: DeltaV 1 ]
-         corePremisesOf WL  =  [ GammaV 1 :|-: DeltaV 1 ]
-         corePremisesOf WR  =  [ GammaV 1 :|-: DeltaV 1 ]
-         corePremisesOf Cut =  [  SA (phin 1) :+: GammaV 1 :|-: DeltaV 1 
-                               , GammaV 2 :|-: DeltaV 2 :-: SS (phin 1)
-                               ]
-         corePremisesOf Ax = [] 
+         corePremisesOf CondR = [ SA (phin 1) :+: GammaV 1 :|-:  DeltaV 1 :-: SS (phin 2)]
+         corePremisesOf NegL  = [ GammaV 1 :|-:  DeltaV 1 :-: SS (phin 1)]
+         corePremisesOf NegR  = [ SA (phin 1) :+: GammaV 1 :|-:  DeltaV 1 ]
+         corePremisesOf CL    = [ GammaV 1 :|-: DeltaV 1 ]
+         corePremisesOf CR    = [ GammaV 1 :|-: DeltaV 1 ]
+         corePremisesOf XL    = [ GammaV 1 :|-: DeltaV 1 ]
+         corePremisesOf XR    = [ GammaV 1 :|-: DeltaV 1 ]
+         corePremisesOf WL    = [ GammaV 1 :|-: DeltaV 1 ]
+         corePremisesOf WR    = [ GammaV 1 :|-: DeltaV 1 ]
+         corePremisesOf Cut   = [ SA (phin 1) :+: GammaV 1 :|-: DeltaV 1
+                                , GammaV 2 :|-: DeltaV 2 :-: SS (phin 1)
+                                ]
+         corePremisesOf Ax    = []
 
          coreConclusionOf AndL1 = SA (phin 1 ./\. phin 2) :+: GammaV 1 :|-: DeltaV 1
-         coreConclusionOf AndL2 =  SA (phin 1 ./\. phin 2) :+: GammaV 1 :|-: DeltaV 1
-         coreConclusionOf AndR = GammaV 1 :|-: DeltaV 1 :-: SS (phin 1 ./\. phin 2)
-         coreConclusionOf OrR1 =  GammaV 1 :|-: DeltaV 1 :-: SS (phin 1 .\/. phin 2)
-         coreConclusionOf OrR2 = GammaV 1 :|-:  DeltaV 1 :-: SS (phin 1 .\/. phin 2)
-         coreConclusionOf OrL =   SA (phin 1 .\/. phin 2) :+: GammaV 1 :|-:  DeltaV 1 
-         coreConclusionOf CondL =  SA (phin 1 .=>. phin 2) :+: GammaV 1 :+: GammaV 2 :|-:  DeltaV 1 :-: DeltaV 2
-         coreConclusionOf CondR =  GammaV 1  :|-: DeltaV 1 :-: SS (phin 1 .=>. phin 2)
-         coreConclusionOf NegL =   SA (lneg $ phin 1) :+: GammaV 1 :|-: DeltaV 1 
-         coreConclusionOf NegR =  GammaV 1 :|-:   DeltaV 1 :-: SS (lneg $ phin 1)
-         coreConclusionOf CL =   GammaV 1 :|-: DeltaV 1 
-         coreConclusionOf CR =   GammaV 1 :|-: DeltaV 1
-         coreConclusionOf XL =   GammaV 1 :|-: DeltaV 1
-         coreConclusionOf XR =   GammaV 1 :|-: DeltaV 1
-         coreConclusionOf WR =   GammaV 1 :|-: DeltaV 1 :-: DeltaV 2
-         coreConclusionOf WL =   GammaV 2 :+: GammaV 1 :|-: DeltaV 1 
-         coreConclusionOf Cut =  GammaV 1 :+: GammaV 2 :|-: DeltaV 1 :-: DeltaV 2
-         coreConclusionOf Ax =  SA (phin 1) :|-: SS (phin 1)
+         coreConclusionOf AndL2 = SA (phin 1 ./\. phin 2) :+: GammaV 1 :|-: DeltaV 1
+         coreConclusionOf AndR  = GammaV 1 :|-: DeltaV 1 :-: SS (phin 1 ./\. phin 2)
+         coreConclusionOf OrR1  = GammaV 1 :|-: DeltaV 1 :-: SS (phin 1 .\/. phin 2)
+         coreConclusionOf OrR2  = GammaV 1 :|-: DeltaV 1 :-: SS (phin 1 .\/. phin 2)
+         coreConclusionOf OrL   = SA (phin 1 .\/. phin 2) :+: GammaV 1 :|-:  DeltaV 1
+         coreConclusionOf CondL = SA (phin 1 .=>. phin 2) :+: GammaV 1 :+: GammaV 2 :|-:  DeltaV 1 :-: DeltaV 2
+         coreConclusionOf CondR = GammaV 1  :|-: DeltaV 1 :-: SS (phin 1 .=>. phin 2)
+         coreConclusionOf NegL  = SA (lneg $ phin 1) :+: GammaV 1 :|-: DeltaV 1
+         coreConclusionOf NegR  = GammaV 1 :|-:   DeltaV 1 :-: SS (lneg $ phin 1)
+         coreConclusionOf CL    = GammaV 1 :|-: DeltaV 1
+         coreConclusionOf CR    = GammaV 1 :|-: DeltaV 1
+         coreConclusionOf XL    = GammaV 1 :|-: DeltaV 1
+         coreConclusionOf XR    = GammaV 1 :|-: DeltaV 1
+         coreConclusionOf WR    = GammaV 1 :|-: DeltaV 1 :-: DeltaV 2
+         coreConclusionOf WL    = GammaV 2 :+: GammaV 1 :|-: DeltaV 1
+         coreConclusionOf Cut   = GammaV 1 :+: GammaV 2 :|-: DeltaV 1 :-: DeltaV 2
+         coreConclusionOf Ax    = SA (phin 1) :|-: SS (phin 1)
 
 instance SpecifiedUnificationType GentzenPropLK
 
