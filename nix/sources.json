@@ -1,28 +1,4 @@
 {
-    "jose-jwt": {
-        "branch": "priv2pub",
-        "description": "Haskell implementation of JOSE/JWT standards",
-        "homepage": null,
-        "owner": "lf-",
-        "repo": "jose-jwt",
-        "rev": "67c07d4c4fe17c3196f1ee86ab0133c9986284a4",
-        "sha256": "0bnw3r7zhfpmsykp9zs1yllra5220vr51hhq7lmawidqllj9k2r3",
-        "type": "tarball",
-        "url": "https://github.com/lf-/jose-jwt/archive/67c07d4c4fe17c3196f1ee86ab0133c9986284a4.tar.gz",
-        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
-    },
-    "lti13": {
-        "branch": "main",
-        "description": null,
-        "homepage": "",
-        "owner": "lf-",
-        "repo": "lti13",
-        "rev": "8896cb18f4dbd276fb48d744c25dccb99f1d586b",
-        "sha256": "0jk94nqsq0450vkvzfn9wwj5mfyjvdrncc1b5iya3bfybn8n4jwv",
-        "type": "tarball",
-        "url": "https://github.com/lf-/lti13/archive/8896cb18f4dbd276fb48d744c25dccb99f1d586b.tar.gz",
-        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
-    },
     "nixpkgs": {
         "branch": "nixpkgs-unstable",
         "description": "Nix Packages collection",

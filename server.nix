@@ -1,4 +1,4 @@
-{ client, jose-jwt, lti13, persistent, withHoogle ? true, profiling ? false }:
+{ client, persistent, withHoogle ? true, profiling ? false }:
 { nixpkgs }:
 let
   inherit (nixpkgs.haskell.lib)
@@ -56,16 +56,17 @@ newpkgs: oldpkgs: {
   # builder.
   oidc-client = dontCheck oldpkgs.oidc-client;
 
-  # required because it has https://github.com/tekul/jose-jwt/pull/29
-  # needed for lti13
-  jose-jwt = oldpkgs.callCabal2nix "jose-jwt" jose-jwt { };
-
-  lti13 = oldpkgs.callCabal2nix "lti13" (lti13 + "/lti13") { };
-  yesod-auth-lti13 = oldpkgs.callCabal2nixWithOptions
-      "yesod-auth-lti13"
-      (lti13 + "/yesod-auth-lti13")
-      "-f -example"
-      { };
+  # lti13 and yesod-auth-lti13 are not in nixpkgs yet
+  lti13 = oldpkgs.callHackageDirect {
+    pkg = "lti13";
+    ver = "0.1.1.0";
+    sha256 = "09n22ccqm5b3jcdnlng501pzgji4fl84z3gsnq2qx1c66ynmmgb5";
+  } { };
+  yesod-auth-lti13 = oldpkgs.callHackageDirect {
+    pkg = "yesod-auth-lti13";
+    ver = "0.1.1.0";
+    sha256 = "0qml65119lvlyn7ihfxmnsri5lia8y9mr4rjf0v14d8cgx8yk95p";
+  } { };
 
   # dontCheck: https://github.com/gleachkr/Carnap/issues/123
   Carnap        = withGitignore
