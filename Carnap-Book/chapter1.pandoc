@@ -150,11 +150,11 @@ to do so.
 ##Validity
 
 When an argument with true premises fails to lead us to the truth, it is
-because, in spite of the premises being true, the conclusion false. The
-arguments we are after are the ones that cannot fail to lead us to the truth in
-this way. So we are after arguments in which it is impossible for the premises
-to be true while the conclusion is at the same time false. We call these
-arguments *deductively valid*
+because, in spite of the premises being true, the conclusion may still be
+false. The arguments we are after are the ones that cannot fail to lead us to
+the truth in this way. So we are after arguments in which it is impossible for
+the premises to be true while the conclusion is at the same time false. We call
+these arguments *deductively valid*
 
 Deductively Valid
 
