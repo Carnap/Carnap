@@ -1,7 +1,7 @@
 @font-face {
     font-family:"Fira Logic";
-    src: url("https://cdn.jsdelivr.net/gh/gleachkr/FiraLogic@0.1.1/dist/FiraLogic-Regular.woff") format("woff"), 
-         url("https://cdn.jsdelivr.net/gh/gleachkr/FiraLogic@0.1.1/dist/FiraLogic-Regular.tff") format("tff")
+    src: url("https://cdn.jsdelivr.net/gh/gleachkr/FiraLogic/dist/FiraLogic-Regular.woff") format("woff"), 
+         url("https://cdn.jsdelivr.net/gh/gleachkr/FiraLogic/dist/FiraLogic-Regular.tff") format("tff")
 }
 
 input {
@@ -89,12 +89,9 @@ input {
 
 .rule input:not(:valid) { background:#eeeeee; }
 
-.root input:not(:valid) { background:#eeeeee; }
-
 .proofJSPopper {
     position:absolute;
     visibility:hidden;
-    width:400px;
     left:0px;
     z-index:1;
     font-size:12pt;
@@ -105,6 +102,10 @@ input {
 .proofJSPopper > div {
     background: white;
     display:inline-block;
+    width:-moz-max-content;
+    width:-webkit-max-content;
+    width:max-content;
+    max-width:400px;
     border:1px solid black;
     padding:10px;
     margin-left:5px;

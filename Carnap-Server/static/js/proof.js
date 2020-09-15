@@ -363,12 +363,14 @@ class DeductionRoot extends DeductionNode {
     renderOn(target) {
         var elt = super.renderOn(target)
         elt.input.setAttribute("required","required")
+        return elt
     }
 };
 
 class ProofRoot extends DeductionRoot {
     renderOn(target) {
         var elt = super.renderOn(target)
+        elt.input.setAttribute("required","notrequired")
         elt.input.setAttribute("readonly","readonly")
     }
 };
