@@ -19,7 +19,7 @@ import GHCJS.DOM.Node (appendChild, removeChild, getParentNode, insertBefore, ge
 import GHCJS.DOM.Document (createElement, getActiveElement)
 import GHCJS.DOM.EventM
 import GHCJS.DOM.KeyboardEvent
-import GHCJS.DOM.Types (Element, toJSString, Document)
+import GHCJS.DOM.Types (Element, toJSString, fromJSString, Document)
 
 initRoot :: String -> Element -> IO JSVal
 initRoot s elt = do root <- newRoot s
@@ -96,13 +96,15 @@ attachDisplay w elt root = do
 
 #ifdef __GHCJS__
 
-foreign import javascript unsafe "(function(){root = new DeductionRoot(JSON.parse($1)); return root})()" newRootJS :: JSString-> IO JSVal
+foreign import javascript unsafe "(function(){root = new ProofRoot(JSON.parse($1)); return root})()" newRootJS :: JSString-> IO JSVal
 
 foreign import javascript unsafe "$2.renderOn($1)" renderOnJS :: Element -> JSVal -> IO ()
 
 foreign import javascript unsafe "$1.decorate($2)" decorateJS :: JSVal -> JSVal -> IO ()
 
 foreign import javascript unsafe "$1.toInfo()" valToInfo :: JSVal -> IO JSVal
+
+foreign import javascript unsafe "$1.label" rootLabelJS :: JSVal -> IO JSString
 
 foreign import javascript unsafe "$1.on('changed',$2)" onChangeJS :: JSVal -> Callback(JSVal -> IO ()) -> IO ()
 
@@ -115,6 +117,9 @@ newRoot s = newRootJS (toJSString s)
 
 renderOn :: Element -> JSVal -> IO ()
 renderOn elt root = renderOnJS elt root
+
+getRootLabel :: JSVal -> IO String
+getRootLabel root = fromJSString <$> rootLabelJS root
 
 onChange :: JSVal -> (JSVal -> IO ()) -> IO ()
 onChange val f = asyncCallback1 f >>= onChangeJS val 

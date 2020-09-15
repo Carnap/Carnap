@@ -72,9 +72,10 @@ activateChecker w (Just (i, o, opts))= maybe noSystem id ((setupWith `ofPropSeqS
                               (_, Just seq) -> initRoot ("{\"label\": \"" ++ show seq
                                                           ++ "\", \"rule\":\"\", \"forest\": []}") o
                               _ -> initRoot "" o
+                  initialLabel <- getRootLabel root
                   threadRef <- newIORef (Nothing :: Maybe ThreadId)
                   bw <- createButtonWrapper w o
-                  let submit = submitSeq w opts calc root
+                  let submit = submitSeq w opts calc root initialLabel
                   btStatus <- createSubmitButton w bw submit opts
                   if "displayJSON" `inOpts` opts then attachDisplay w o root else return ()
                   initialCheck <- newListener $ liftIO $ do 
@@ -84,13 +85,13 @@ activateChecker w (Just (i, o, opts))= maybe noSystem id ((setupWith `ofPropSeqS
                                             case mr of
                                                 Just r -> checkSequent calc Nothing r >>= decorate root
                                                 Nothing -> return ()
-                                            updateGoal root i
+                                            updateGoal root initialLabel i
                                     writeIORef threadRef (Just t)
                   addListener i initialize initialCheck False --initial check in case we preload a tableau
                   case M.lookup "init" opts of Just "now" -> dispatchCustom w i "initialize"; _ -> return ()
                   doOnce i mutate False $ liftIO $ btStatus Edited
                   root `onChange` (\_ -> dispatchCustom w i "mutate")
-                  root `onChange` checkOnChange calc root i threadRef 
+                  root `onChange` checkOnChange calc root initialLabel i threadRef 
 
               parseGoal calc = do 
                   let seqParse = parseSeqOver $ tbParseForm calc
@@ -102,21 +103,23 @@ activateChecker w (Just (i, o, opts))= maybe noSystem id ((setupWith `ofPropSeqS
                                           return $ Just seq
                       Nothing -> return Nothing
 
-submitSeq w opts calc root l = 
+submitSeq w opts calc root initialLabel l = 
         do Just val <- liftIO $ toCleanVal root
+           currentLabel <- liftIO $ getRootLabel root
            case parse parseTreeJSON val of
                Error s -> message "Something is wrong with the proof... Try again?"
                Success tree@(Node (content,_) _) -> case toTableau calc tree of
                      Left _ -> message "Something is wrong with the proof... Try again?"
                      Right tab -> case parse fromInfo . toInfo . validateTree $ tab of
+                          Success rslt | initialLabel /= currentLabel -> message "The endsequent doesn't match the goal... Try again?"
                           Success rslt | "exam" `elem` optlist || rslt -> trySubmit w SequentCalc opts l (SequentCalcData (pack content) tree (toList opts)) rslt
                           _ -> message "Something is wrong with the proof... Try again?"
     where optlist = case M.lookup "options" opts of Just s -> words s; Nothing -> []
 
 checkOnChange :: ( ReLex lex
                  , SupportsTableau rule lex sem 
-                 ) => TableauCalc lex sem rule -> JSVal -> Element -> IORef (Maybe ThreadId) ->  JSVal -> IO ()
-checkOnChange calc root i threadRef changed = do
+                 ) => TableauCalc lex sem rule -> JSVal -> String -> Element -> IORef (Maybe ThreadId) ->  JSVal -> IO ()
+checkOnChange calc root initialLabel i threadRef changed = do
         mt <- readIORef threadRef
         case mt of Just t -> killThread t
                    Nothing -> return ()
@@ -132,15 +135,18 @@ checkOnChange calc root i threadRef changed = do
             --XXX: we do these separately in order to keep a parse error in
             --either of the inferences from causing trouble in the
             --other inference.
-            updateGoal root i
+            updateGoal root initialLabel i
         writeIORef threadRef (Just t')
 
-updateGoal :: JSVal -> Element -> IO ()
-updateGoal root i = do Just wrap <- liftIO $ getParentElement i
-                       Just info <- valToInfo root >>= fromJSVal 
-                       case parse fromInfo info of
-                           Success True -> setAttribute wrap "class" "success"
-                           _ -> setAttribute wrap "class" "failure"
+updateGoal :: JSVal -> String -> Element -> IO ()
+updateGoal root initialLabel i = 
+        do Just wrap <- liftIO $ getParentElement i
+           Just info <- valToInfo root >>= fromJSVal 
+           currentLabel <- getRootLabel root
+           case parse fromInfo info of
+               Success True | currentLabel == initialLabel -> setAttribute wrap "class" "success" 
+               --the equality check here is a precation against cheating by DOM manipulation
+               _ -> setAttribute wrap "class" "failure"
 
 checkSequent :: ( ReLex lex
                 , SupportsTableau rule lex sem 
