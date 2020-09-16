@@ -26,6 +26,11 @@ initRoot s elt = do root <- newRoot s
                     renderOn elt root
                     return root
 
+initMutRoot :: String -> Element -> IO JSVal
+initMutRoot s elt = do root <- newMutRoot s
+                       renderOn elt root
+                       return root
+
 parseTreeJSON :: Value -> Parser (Tree (String,String))
 parseTreeJSON = withObject "Sequent Tableau" $ \o -> do
     thelabel   <- o .: "label" :: Parser String
@@ -98,6 +103,8 @@ attachDisplay w elt root = do
 
 foreign import javascript unsafe "(function(){root = new ProofRoot(JSON.parse($1)); return root})()" newRootJS :: JSString-> IO JSVal
 
+foreign import javascript unsafe "(function(){root = new DeductionRoot(JSON.parse($1)); return root})()" newMutRootJS :: JSString-> IO JSVal
+
 foreign import javascript unsafe "$2.renderOn($1)" renderOnJS :: Element -> JSVal -> IO ()
 
 foreign import javascript unsafe "$1.decorate($2)" decorateJS :: JSVal -> JSVal -> IO ()
@@ -115,6 +122,9 @@ foreign import javascript unsafe "try {$1.replace(JSON.parse($2))} catch(e) {con
 newRoot :: String -> IO JSVal
 newRoot s = newRootJS (toJSString s)
 
+newMutRoot :: String -> IO JSVal
+newMutRoot s = newMutRootJS (toJSString s)
+
 renderOn :: Element -> JSVal -> IO ()
 renderOn elt root = renderOnJS elt root
 
@@ -130,6 +140,8 @@ decorate x v = toJSVal v >>= decorateJS x
 #else
 
 newRoot s = error "you need the JavaScript FFI to call newRoot"
+
+newMutRoot s = error "you need the JavaScript FFI to call newMutRoot"
 
 renderOn :: Element -> JSVal -> IO ()
 renderOn = error "you need the JavaScript FFI to call renderOn"

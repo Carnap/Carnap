@@ -68,11 +68,13 @@ activateChecker w (Just (i, o, opts))= maybe noSystem id ((setupWith `ofPropSeqS
                   mseq <- parseGoal calc
                   let content = M.lookup "content" opts
                   root <- case (content >>= decodeJSON, mseq) of
-                              (Just val,_) -> let Just c = content in initRoot c o
+                              (Just val,Just seq) -> let Just c = content in initRoot c o
+                              (Just val,Nothing) -> let Just c = content in initMutRoot c o
                               (_, Just seq) -> initRoot ("{\"label\": \"" ++ show seq
                                                           ++ "\", \"rule\":\"\", \"forest\": []}") o
-                              _ -> initRoot "" o
+                              _ -> initMutRoot "{\"label\": \"⊢\", \"rule\":\"\", \"forest\": []}" o
                   initialLabel <- getRootLabel root
+                  let hasGoal = not (null mseq)
                   threadRef <- newIORef (Nothing :: Maybe ThreadId)
                   bw <- createButtonWrapper w o
                   let submit = submitSeq w opts calc root initialLabel
@@ -85,13 +87,14 @@ activateChecker w (Just (i, o, opts))= maybe noSystem id ((setupWith `ofPropSeqS
                                             case mr of
                                                 Just r -> checkSequent calc Nothing r >>= decorate root
                                                 Nothing -> return ()
-                                            updateGoal root initialLabel i
+                                            if hasGoal then updateGoal root initialLabel i --TODO: should check against seq rather than initialValue
+                                                       else calculateResult calc root i
                                     writeIORef threadRef (Just t)
                   addListener i initialize initialCheck False --initial check in case we preload a tableau
                   case M.lookup "init" opts of Just "now" -> dispatchCustom w i "initialize"; _ -> return ()
                   doOnce i mutate False $ liftIO $ btStatus Edited
                   root `onChange` (\_ -> dispatchCustom w i "mutate")
-                  root `onChange` checkOnChange calc root initialLabel i threadRef 
+                  root `onChange` checkOnChange calc root hasGoal initialLabel i threadRef 
 
               parseGoal calc = do 
                   let seqParse = parseSeqOver $ tbParseForm calc
@@ -118,8 +121,8 @@ submitSeq w opts calc root initialLabel l =
 
 checkOnChange :: ( ReLex lex
                  , SupportsTableau rule lex sem 
-                 ) => TableauCalc lex sem rule -> JSVal -> String -> Element -> IORef (Maybe ThreadId) ->  JSVal -> IO ()
-checkOnChange calc root initialLabel i threadRef changed = do
+                 ) => TableauCalc lex sem rule -> JSVal -> Bool -> String -> Element -> IORef (Maybe ThreadId) ->  JSVal -> IO ()
+checkOnChange calc root hasGoal initialLabel i threadRef changed = do
         mt <- readIORef threadRef
         case mt of Just t -> killThread t
                    Nothing -> return ()
@@ -135,7 +138,8 @@ checkOnChange calc root initialLabel i threadRef changed = do
             --XXX: we do these separately in order to keep a parse error in
             --either of the inferences from causing trouble in the
             --other inference.
-            updateGoal root initialLabel i
+            if hasGoal then updateGoal root initialLabel i 
+                       else calculateResult calc root i
         writeIORef threadRef (Just t')
 
 updateGoal :: JSVal -> String -> Element -> IO ()
@@ -147,6 +151,20 @@ updateGoal root initialLabel i =
                Success True | currentLabel == initialLabel -> setAttribute wrap "class" "success" 
                --the equality check here is a precation against cheating by DOM manipulation
                _ -> setAttribute wrap "class" "failure"
+
+calculateResult :: (ReLex lex
+                   , SupportsTableau rule lex sem
+                   ) => TableauCalc lex sem rule -> JSVal -> Element -> IO ()
+calculateResult calc root i = 
+        do Just wrap <- liftIO $ getParentElement i
+           Just info <- valToInfo root >>= fromJSVal 
+           currentLabel <- getRootLabel root
+           case parse fromInfo info of
+               Success True -> case P.parse seqParse "" currentLabel of
+                                  Left e -> do setInnerHTML i $ Just $ "Parse Error:" ++ show e
+                                  Right seq -> do setInnerHTML i (Just $ show seq)
+               _ -> setInnerHTML i $ Just "No proven endsequent detected"
+    where seqParse = parseSeqOver $ tbParseForm calc
 
 checkSequent :: ( ReLex lex
                 , SupportsTableau rule lex sem 

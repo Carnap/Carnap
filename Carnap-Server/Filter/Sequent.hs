@@ -11,6 +11,7 @@ import Prelude
 makeSequent :: Block -> Block
 makeSequent cb@(CodeBlock (_,classes,extra) contents)
     | "Sequent" `elem` classes = Div ("",[],[]) $ map (activate classes extra) $ intoChunks contents
+    | "SequentPlayground" `elem` classes = Div ("",[],[]) $ [toPlayground classes extra contents]
     | otherwise = cb
 makeSequent x = x
 
@@ -34,3 +35,20 @@ activate cls extra chunk
           template myOpts = exerciseWrapper (toList myOpts) (numof h) $ Div
                                 ("",[], map toDataCarnap $ toList myOpts)
                                 [Plain [Str (unlines' t)]]
+
+toPlayground :: [Text] -> [(Text, Text)] -> Text -> Block
+toPlayground cls extra content
+    | "propLK" `elem` cls = template (opts [("system","propLK")])
+    | "propLJ" `elem` cls = template (opts [("system","propLJ")])
+    | "openLogicPropLK" `elem` cls = template (opts [("system","openLogicPropLK")])
+    | "openLogicPropLJ" `elem` cls = template (opts [("system","openLogicPropLJ")])
+    | "foLK" `elem` cls = template (opts [("system","foLK")])
+    | "foLJ" `elem` cls = template (opts [("system","foLJ")])
+    | "openLogicFOLK" `elem` cls = template (opts [("system","openLogicFOLK")])
+    | "openLogicFOLJ" `elem` cls = template (opts [("system","openLogicFOLJ")])
+    | otherwise = RawBlock "html" "<div>No Matching Sequent Calculus</div>"
+    where opts adhoc = unions [fromList extra, fromList fixed, fromList adhoc]
+          fixed = [ ("type", "sequentchecker") ]
+          template myOpts = exerciseWrapper (toList myOpts) "Playground" $ Div
+                                ("",[], map toDataCarnap $ toList myOpts)
+                                [Plain [Str (unlines' $ formatChunk content)]]
