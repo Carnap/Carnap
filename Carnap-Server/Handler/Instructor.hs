@@ -665,7 +665,7 @@ classWidget ident instructors classent = do
        let numberOfUsers = length allUids
            usersAndData = zip users allUserData
            sortedUsersAndData = let lnOf (_,UserData _ ln _ _ _) = ln
-                                    in sortBy (\x y -> compare (lnOf x) (lnOf y)) usersAndData
+                                    in sortBy (\x y -> compare (toLower . lnOf $ x) (toLower . lnOf $ y)) usersAndData
        course <- runDB $ get cid
                   >>= maybe (setMessage "failed to get course" >> notFound) pure
        return [whamlet|
