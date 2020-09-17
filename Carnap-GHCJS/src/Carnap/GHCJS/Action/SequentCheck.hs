@@ -83,11 +83,8 @@ activateChecker w (Just (i, o, opts))= maybe noSystem id ((setupWith `ofPropSeqS
                   initialCheck <- newListener $ liftIO $ do 
                                     t <- forkIO $ do
                                             threadDelay 500000
-                                            mr <- toCleanVal root
-                                            case mr of
-                                                Just r -> checkSequent calc Nothing r >>= decorate root
-                                                Nothing -> return ()
-                                            if hasGoal then updateGoal root initialLabel i --TODO: should check against seq rather than initialValue
+                                            renewRoot root calc
+                                            if hasGoal then updateGoal calc root initialLabel i --TODO: should check against seq rather than initialValue
                                                        else calculateResult calc root i
                                     writeIORef threadRef (Just t)
                   addListener i initialize initialCheck False --initial check in case we preload a tableau
@@ -115,7 +112,7 @@ submitSeq w opts calc root initialLabel l =
                      Left _ -> message "Something is wrong with the proof... Try again?"
                      Right tab -> case parse fromInfo . toInfo . validateTree $ tab of
                           Success rslt | initialLabel /= currentLabel -> message "The endsequent doesn't match the goal... Try again?"
-                          Success rslt | "exam" `elem` optlist || rslt -> trySubmit w SequentCalc opts l (SequentCalcData (pack content) tree (toList opts)) rslt
+                          Success (Just rslt) | "exam" `elem` optlist || rslt -> trySubmit w SequentCalc opts l (SequentCalcData (pack content) tree (toList opts)) rslt
                           _ -> message "Something is wrong with the proof... Try again?"
     where optlist = case M.lookup "options" opts of Just s -> words s; Nothing -> []
 
@@ -134,22 +131,32 @@ checkOnChange calc root hasGoal initialLabel i threadRef changed = do
             theParentInfo <- checkSequent calc (Just 1) changedParentVal 
             theInfo <- checkSequent calc (Just 1) changedVal 
             decorate changedParent theParentInfo
-            decorate changed theInfo
+            if isEmptyLeaf changedVal then decorate changed blankInfo --blank out the info of empty leaves
+                                      else decorate changed theInfo
             --XXX: we do these separately in order to keep a parse error in
             --either of the inferences from causing trouble in the
             --other inference.
-            if hasGoal then updateGoal root initialLabel i 
+            if hasGoal then updateGoal calc root initialLabel i 
                        else calculateResult calc root i
         writeIORef threadRef (Just t')
 
-updateGoal :: JSVal -> String -> Element -> IO ()
-updateGoal root initialLabel i = 
+updateGoal :: (ReLex lex
+              , SupportsTableau rule lex sem
+              ) => TableauCalc lex sem rule -> JSVal -> String -> Element -> IO ()
+updateGoal calc root initialLabel i = 
         do Just wrap <- liftIO $ getParentElement i
            Just info <- valToInfo root >>= fromJSVal 
            currentLabel <- getRootLabel root
            case parse fromInfo info of
-               Success True | currentLabel == initialLabel -> setAttribute wrap "class" "success" 
+               Success (Just True) | currentLabel == initialLabel -> setAttribute wrap "class" "success" 
                --the equality check here is a precation against cheating by DOM manipulation
+               Success Nothing -> do print "detected global edit"
+                                     renewRoot root calc
+                                     Just newinfo <- valToInfo root >>= fromJSVal 
+                                     case parse fromInfo newinfo of
+                                         Success (Just True) -> setAttribute wrap "class" "success"
+                                         Success Nothing -> setInnerHTML i $ Just "Error: didn't handle global edit"
+                                         _ -> setAttribute wrap "class" "failure" 
                _ -> setAttribute wrap "class" "failure"
 
 calculateResult :: (ReLex lex
@@ -160,11 +167,20 @@ calculateResult calc root i =
            Just info <- valToInfo root >>= fromJSVal 
            currentLabel <- getRootLabel root
            case parse fromInfo info of
-               Success True -> case P.parse seqParse "" currentLabel of
-                                  Left e -> do setInnerHTML i $ Just $ "Parse Error:" ++ show e
-                                  Right seq -> do setInnerHTML i (Just $ show seq)
-               _ -> setInnerHTML i $ Just "No proven endsequent detected"
+               Success (Just True) -> displayLabel currentLabel
+               Success Nothing -> do print "detected global edit"
+                                     renewRoot root calc
+                                     Just newinfo <- valToInfo root >>= fromJSVal 
+                                     case parse fromInfo newinfo of
+                                         Success (Just True) -> displayLabel currentLabel
+                                         Success Nothing -> setInnerHTML i $ Just "Error: didn't handle global edit"
+                                         _ -> wrong
+               _ -> wrong
     where seqParse = parseSeqOver $ tbParseForm calc
+          wrong = setInnerHTML i $ Just "No proven endsequent detected"
+          displayLabel lbl = case P.parse seqParse "" lbl of
+                               Left e -> do setInnerHTML i $ Just $ "Parse Error:" ++ show e
+                               Right seq -> do setInnerHTML i (Just $ show seq)
 
 checkSequent :: ( ReLex lex
                 , SupportsTableau rule lex sem 
@@ -195,3 +211,9 @@ toTableau calc (Node (l,r) f)
           newNode = case TableauNode <$> parsedLabel <*> (pure Nothing) <*> parsedRules of
                         Right n -> Right n
                         Left e -> Left (Node (ProofError $ NoParse e 0) (map cleanTree parsedForest))
+
+renewRoot root calc = do
+    mr <- toCleanVal root
+    case mr of
+        Just r -> checkSequent calc Nothing r >>= decorate root
+        Nothing -> print "couldn't clean root"

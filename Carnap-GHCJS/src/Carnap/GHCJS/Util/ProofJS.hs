@@ -40,6 +40,19 @@ parseTreeJSON = withObject "Sequent Tableau" $ \o -> do
     --ignore empty nodes
     return $ Node (thelabel,therule) filteredForest
 
+isEmptyLeaf :: Value -> Bool
+isEmptyLeaf v = case parse parser v of
+                    Success True -> True
+                    _ -> False
+    where parser = withObject "Sequent Tableau" $ \o -> do
+                      thelabel   <- o .: "label" :: Parser String
+                      therule <- o .: "rule" :: Parser String
+                      theforest <- o .: "forest" :: Parser [Value]
+                      return $ null thelabel && null therule && null theforest 
+
+blankInfo :: Value
+blankInfo = object [ "info" .= ("" :: String), "class" .= ("" :: String), "forest" .= ([] :: [Value]) ]
+
 toInfo :: TreeFeedback lex -> Value
 toInfo (Node Correct ss) = object [ "info" .= ("Correct" :: String), "class" .= ("correct" :: String), "forest" .= map toInfo ss]
 toInfo (Node (ProofData s) ss) = object [ "info" .= s, "class" .= ("correct" :: String), "forest" .= map toInfo ss]
@@ -50,17 +63,22 @@ toInfo (Node (ProofError (GenericError s _)) ss) = object [ "info" .= s, "class"
 toInfo (Node (ProofError (NoUnify eqs _)) ss) = object [ "info" .= ("This doesn't follow by this rule" :: String), "class" .= ("feedback" :: String), "forest" .= map toInfo ss]
 toInfo (Node (ProofError (NoResult _)) ss) = object [ "info" .= ("" :: String) , "class" .= ("correct" :: String), "forest" .= map toInfo ss]
 
-fromInfo :: Value -> Parser Bool
+fromInfo :: Value -> Parser (Maybe Bool)
 fromInfo = withObject "Info Tree" $ \o -> do
     theInfo <- o .: "class" :: Parser String
     theForest <- o .: "forest" :: Parser [Value]
     processedForest <- mapM fromInfo theForest
-    return $ theInfo `elem` ["correct", ""] && and processedForest
+    return $ case theInfo of
+        "correct" -> foldl (\x y -> (&&) <$> x <*> y) (Just True) processedForest
+        "" | null theForest-> foldl (\x y -> (&&) <$> x <*> y) (Just True) processedForest
+        "" -> Nothing --a global edit must have occured
+        _ -> Just False
 
 checkFullInfo :: Value -> IO Value
 checkFullInfo v = do let Success t = parse fromInfo v
-                     if t then return $ object [ "result" .= ("yes" :: String)]
-                          else return $ object [ "result" .= ("no" :: String)]
+                     case t of
+                         Just True -> return $ object [ "result" .= ("yes" :: String)]
+                         _ -> return $ object [ "result" .= ("no" :: String)]
 
 attachDisplay :: Document -> Element -> JSVal -> IO ()
 attachDisplay w elt root = do
