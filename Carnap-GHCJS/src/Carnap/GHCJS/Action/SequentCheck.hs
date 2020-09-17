@@ -70,7 +70,7 @@ activateChecker w (Just (i, o, opts))= maybe noSystem id ((setupWith `ofPropSeqS
                   root <- case (content >>= decodeJSON, mseq) of
                               (Just val,Just seq) -> let Just c = content in initRoot c o
                               (Just val,Nothing) -> let Just c = content in initMutRoot c o
-                              (_, Just seq) -> initRoot ("{\"label\": \"" ++ show seq
+                              (_, Just seq) -> initRoot ("{\"label\": \"" ++ (tbNotation calc . show $ seq)
                                                           ++ "\", \"rule\":\"\", \"forest\": []}") o
                               _ -> initMutRoot "{\"label\": \"⊢\", \"rule\":\"\", \"forest\": []}" o
                   initialLabel <- getRootLabel root
@@ -99,7 +99,7 @@ activateChecker w (Just (i, o, opts))= maybe noSystem id ((setupWith `ofPropSeqS
                       Just s -> case P.parse seqParse "" s of
                           Left e -> do setInnerHTML i (Just $ "Couldn't Parse This Goal:" ++ s)
                                        error "couldn't parse goal"
-                          Right seq -> do setInnerHTML i (Just $ show seq) --will eventually want the equivalent of ndNotation
+                          Right seq -> do setInnerHTML i (Just . tbNotation calc . show $ seq) --will eventually want the equivalent of ndNotation
                                           return $ Just seq
                       Nothing -> return Nothing
 
@@ -130,12 +130,12 @@ checkOnChange calc root hasGoal initialLabel i threadRef changed = do
             Just changedParentVal <- toCleanVal changedParent
             theParentInfo <- checkSequent calc (Just 1) changedParentVal 
             theInfo <- checkSequent calc (Just 1) changedVal 
-            decorate changedParent theParentInfo
-            if isEmptyLeaf changedVal then decorate changed blankInfo --blank out the info of empty leaves
-                                      else decorate changed theInfo
             --XXX: we do these separately in order to keep a parse error in
             --either of the inferences from causing trouble in the
             --other inference.
+            decorate changedParent theParentInfo
+            if isEmptyLeaf changedVal then decorate changed blankInfo --blank out the info of empty leaves
+                                      else decorate changed theInfo
             if hasGoal then updateGoal calc root initialLabel i 
                        else calculateResult calc root i
         writeIORef threadRef (Just t')
@@ -180,7 +180,7 @@ calculateResult calc root i =
           wrong = setInnerHTML i $ Just "No proven endsequent detected"
           displayLabel lbl = case P.parse seqParse "" lbl of
                                Left e -> do setInnerHTML i $ Just $ "Parse Error:" ++ show e
-                               Right seq -> do setInnerHTML i (Just $ show seq)
+                               Right seq -> do setInnerHTML i (Just . tbNotation calc . show $ seq)
 
 checkSequent :: ( ReLex lex
                 , SupportsTableau rule lex sem 
