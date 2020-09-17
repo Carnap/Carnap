@@ -181,7 +181,13 @@ olpPropNKCalc = mkTBCalc
     }
 
 olpPropLKCalc :: TableauCalc PurePropLexicon (Form Bool) GentzenPropLK
-olpPropLKCalc = gentzenPropLKCalc { tbParseForm = purePropFormulaParser thomasBolducZach2019Opts }
+olpPropLKCalc = gentzenPropLKCalc 
+    { tbParseForm = purePropFormulaParser thomasBolducZach2019Opts 
+    , tbNotation = filter (/= '⊤') . dropOuterParens
+    }
 
 olpPropLJCalc :: TableauCalc PurePropLexicon (Form Bool) GentzenPropLJ
-olpPropLJCalc = gentzenPropLJCalc { tbParseForm = purePropFormulaParser thomasBolducZach2019Opts }
+olpPropLJCalc = gentzenPropLJCalc 
+    { tbParseForm = purePropFormulaParser thomasBolducZach2019Opts 
+    , tbNotation = filter (/= '⊤') . dropOuterParens
+    }

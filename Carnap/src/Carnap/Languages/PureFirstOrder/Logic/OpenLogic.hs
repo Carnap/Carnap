@@ -141,7 +141,13 @@ openLogicFONKCalc = mkTBCalc
     }
 
 olpFOLKCalc :: TableauCalc PureLexiconFOL (Form Bool) GentzenFOLK
-olpFOLKCalc = gentzenFOLKCalc { tbParseForm = thomasBolducAndZachFOL2019FormulaParser }
+olpFOLKCalc = gentzenFOLKCalc 
+    { tbParseForm = thomasBolducAndZachFOL2019FormulaParser 
+    , tbNotation = dropOuterParens
+    }
 
 olpFOLJCalc :: TableauCalc PureLexiconFOL (Form Bool) GentzenFOLJ
-olpFOLJCalc = gentzenFOLJCalc { tbParseForm = thomasBolducAndZachFOL2019FormulaParser }
+olpFOLJCalc = gentzenFOLJCalc 
+    { tbParseForm = thomasBolducAndZachFOL2019FormulaParser 
+    , tbNotation = dropOuterParens
+    }
