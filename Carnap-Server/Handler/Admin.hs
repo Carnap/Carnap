@@ -139,7 +139,7 @@ postAdminPromoteR =
                         defaultLayout $ [whamlet|
                              Promoted, you can now <a href=@{AdminR}>manage the site
                         |]
-                    Nothing -> permissionDenied "user data missing??"
+                    Nothing -> permissionDenied "User data missing. This may mean you haven't assigned yourself a name yet."
             _ -> invalidArgs ["form failed"]
 
 upgradeToInstructor :: [User] -> Html -> MForm (HandlerFor App) (FormResult Text, WidgetFor App ())
