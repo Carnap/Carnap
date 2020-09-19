@@ -18,7 +18,7 @@ import qualified Data.Text.Encoding as TE
 import qualified Data.HashMap.Strict as HM
 import qualified Data.Text.Encoding.Error as TEE
 import qualified Network.Wai as W
-import Yesod.Auth.LTI13 (PlatformInfo(..), YesodAuthLTI13(..), authLTI13)
+import Yesod.Auth.LTI13 (authLTI13WithWidget, PlatformInfo(..), YesodAuthLTI13(..))
 import Data.Time (NominalDiffTime)
 import Data.Time.Clock (addUTCTime)
 import Control.Monad (MonadFail(fail))
@@ -373,9 +373,11 @@ instance YesodAuth App where
     -- otherwise
     authPlugins app = let settings = appSettings app in
                           if appDevel settings
-                              then [ authDummy, authLTI13 ]
+                              then [ authDummy, lti13 ]
                               else [ oauth2GoogleScoped ["email","profile"] (appKey settings) (appSecret settings),
-                                     authLTI13 ]
+                                     lti13 ]
+        where
+            lti13 = authLTI13WithWidget (\_ -> fromString "")
 
     authLayout widget = liftHandler $ do
         master <- getYesod

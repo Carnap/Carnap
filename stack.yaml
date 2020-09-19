@@ -18,8 +18,8 @@ extra-deps:
           - persistent-postgresql
           - persistent-template
           - persistent-qq
-    - lti13-0.1.1.0
-    - yesod-auth-lti13-0.1.1.0
+    - lti13-0.1.2.1
+    - yesod-auth-lti13-0.1.2.1
 
 # :( persistent bug fix requires a git version, which means we have to turn off
 # version checking in every yesod project
