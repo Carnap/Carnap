@@ -4,7 +4,7 @@ import Database.Persist.Sql        (ConnectionPool, runSqlPool)
 import Import.NoFoundation
 import Text.Hamlet                 (hamletFile)
 import Yesod.Auth.OAuth2.Google
-import Yesod.Auth.OAuth2 (oauth2Url, getUserResponseJSON)
+import Yesod.Auth.OAuth2 (getUserResponseJSON)
 import Yesod.Auth.Dummy            (authDummy)
 import qualified Yesod.Core.Unsafe as Unsafe
 import Yesod.Core.Types            (Logger)
@@ -13,10 +13,16 @@ import Yesod.Default.Util          (addStaticContentExternal)
 import TH.RelativePaths            (pathRelativeToCabalPackage)
 --import Util.Database
 import qualified Data.CaseInsensitive as CI
+import qualified Data.Text as T
 import qualified Data.Text.Encoding as TE
 import qualified Data.HashMap.Strict as HM
 import qualified Data.Text.Encoding.Error as TEE
 import qualified Network.Wai as W
+import Yesod.Auth.LTI13 (authLTI13WithWidget, PlatformInfo(..), YesodAuthLTI13(..))
+import Data.Time (NominalDiffTime)
+import Data.Time.Clock (addUTCTime)
+import Control.Monad (MonadFail(fail))
+import Web.Cookie (sameSiteNone, SetCookie(setCookieSameSite))
 
 -- | The foundation datatype for your application. This can be a good place to
 -- keep settings and values requiring initialization before your application
@@ -45,23 +51,32 @@ data App = App
 mkYesodData "App" $(parseRoutesFile =<< pathRelativeToCabalPackage "config/routes")
 
 -- | A convenient synonym for creating forms.
-type Form x = Html -> MForm (HandlerT App IO) (FormResult x, Widget)
+type Form x = Html -> MForm (HandlerFor App) (FormResult x, Widget)
+
+-- | Allows sessions to be started cross-site
+crossSiteSessions :: IO (Maybe SessionBackend) -> IO (Maybe SessionBackend)
+crossSiteSessions = (fmap . fmap . fmap) secureSessionCookies sslOnlySessions
+    where
+        sameSite cookie = cookie { setCookieSameSite = Just sameSiteNone }
+        secureSessionCookies = customizeSessionCookies sameSite
 
 -- Please see the documentation for the Yesod typeclass. There are a number
 -- of settings which can be configured by overriding methods here.
 instance Yesod App where
     -- Controls the base of generated URLs. For more information on modifying,
     -- see: https://github.com/yesodweb/yesod/wiki/Overriding-approot
-    approot = ApprootRequest $ \app req ->
-        case appRoot $ appSettings app of
-            Nothing -> getApprootText guessApproot app req
-            Just root -> root
+    approot = ApprootMaster $ appRoot . appSettings
 
     -- Store session data on the client in encrypted cookies,
     -- default session idle timeout is 120 minutes
-    makeSessionBackend app = Just <$> defaultClientSessionBackend
+    --
+    -- Set crossSiteSessions, allowing LTI in iframes, only if our approot is secure.
+    makeSessionBackend app = (onlyIfHttps crossSiteSessions)
+        $ Just <$> defaultClientSessionBackend
             120    -- timeout in minutes
             ((appDataRoot $ appSettings app) </> "client_session_key.aes")
+        where isHttps = "https" `T.isPrefixOf` (appRoot $ appSettings app)
+              onlyIfHttps f = if isHttps then f else id
 
     -- Yesod Middleware allows you to run code before and after each handler function.
     -- The defaultYesodMiddleware adds the response header "Vary: Accept, Accept-Language" and performs authorization checks.
@@ -90,9 +105,7 @@ instance Yesod App where
 
 
     -- The page to be redirected to when authentication is required.
-    authRoute app = if appDevel (appSettings app) 
-                       then Just $ AuthR LoginR
-                       else Just $ AuthR (oauth2Url "google")
+    authRoute _ = Just $ AuthR LoginR
 
     -- Routes requiring authentication.
     isAuthorized route _ = case route of
@@ -246,6 +259,62 @@ instance YesodPersist App where
 instance YesodPersistRunner App where
     getDBRunner = defaultGetDBRunner appConnPool
 
+instance YesodAuthLTI13 App where
+    retrieveOrInsertJwks new = liftHandler $ runDB $ do
+        -- maybe not thread safe but this process happens only once
+        jwks <- (selectList ([]::[Filter AuthJwk]) [])
+        if jwks == []
+            then do
+                new' <- liftIO new
+                insert_ $ AuthJwk new'
+                return new'
+            else do
+                let (Entity _ jwk1):rest = jwks
+                when (rest /= []) ($logWarn "we should not have multiple jwk blobs in our database but we do!")
+                return $ authJwkValue jwk1
+
+    checkSeenNonce nonce = liftHandler $ runDB $ do
+            now <- liftIO $ getCurrentTime
+            deleteOld now
+            rec <- getBy $ UniqueNonce nonce
+            case rec of
+                Nothing -> do
+                    insert_ $ AuthNonce nonce now
+                    return False
+                Just _ -> return True
+        where
+            deleteOld now = do
+                let olderThan = addUTCTime deleteThreshold now
+                deleteWhere [AuthNonceSeenAt <. olderThan]
+            -- retain old nonces for 30 days
+            deleteThreshold = (-86400 * 30) :: NominalDiffTime
+
+    retrievePlatformInfo (issuer, maybeCid) = liftHandler $ runDB $ do
+        dbPInfo <- case maybeCid of
+            -- if we have a cid we can select uniquely
+            Just cid ->
+                get $ LtiPlatformInfoKey issuer cid
+            -- if we do not, we need to assert that we only get one
+            Nothing ->
+                (selectList [LtiPlatformInfoIssuer ==. issuer] [LimitTo 2])
+                    >>= (\((Entity {entityVal = itm}):rest) ->
+                        if rest == [] then
+                            return $ Just itm
+                        else
+                            liftIO $ fail "multiple client ids for the given issuer"
+                        )
+        LtiPlatformInfo {..} <- case dbPInfo of
+            -- TODO: this may be poor error handling
+            Nothing -> liftIO $ fail "issuer not registered"
+            Just pinfo -> return pinfo
+        return $ PlatformInfo {
+            platformIssuer = ltiPlatformInfoIssuer
+          , platformClientId = ltiPlatformInfoClientId
+          , platformOidcAuthEndpoint = ltiPlatformInfoOidcAuthEndpoint
+          , jwksUrl = ltiPlatformInfoJwksUrl
+            }
+
+
 instance YesodAuth App where
     type AuthId App = UserId
 
@@ -266,6 +335,8 @@ instance YesodAuth App where
                 { userIdent = credsIdent creds
                 , userPassword = Nothing
                 }
+        -- translate identifier into email for display for Google users
+        -- TODO: make a prettier display for LTI users
         where creds = fromMaybe creds0 $ do
                           guard $ credsPlugin creds0 == "google"
                           Object o <- either (const Nothing) Just (getUserResponseJSON creds0)
@@ -295,20 +366,22 @@ instance YesodAuth App where
                                    (Just (User ident _), Nothing) ->  redirect (RegisterR ident)
                                    (Nothing,_) -> return ()
                         --if so, go ahead
-                        Just ud -> setMessage "Now logged in"
+                        Just _ -> setMessage "Now logged in"
 
     -- appDevel is a custom method added to the settings, which is true
     -- when yesod is running in the development environment and false
     -- otherwise
     authPlugins app = let settings = appSettings app in
                           if appDevel settings
-                              then [ authDummy ]
-                              else [ oauth2GoogleScoped ["email","profile"] (appKey settings) (appSecret settings) ]
+                              then [ authDummy, lti13 ]
+                              else [ oauth2GoogleScoped ["email","profile"] (appKey settings) (appSecret settings),
+                                     lti13 ]
+        where
+            lti13 = authLTI13WithWidget (\_ -> fromString "")
 
     authLayout widget = liftHandler $ do
         master <- getYesod
         mmsg <- getMessage
-        authmaybe <- maybeAuth
         pc <- widgetToPageContent $ do
             addStylesheet $ StaticR css_bootstrap_css
             $(widgetFile "auth-layout")

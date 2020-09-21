@@ -12,6 +12,23 @@ UserData
     userId UserId
     UniqueUserData userId
 
+AuthJwk
+    value ByteString
+    deriving Eq
+
+AuthNonce
+    value ByteString
+    seenAt UTCTime
+    UniqueNonce value
+
+LtiPlatformInfo
+    issuer Text
+    clientId Text
+    oidcAuthEndpoint Text
+    jwksUrl String
+    Primary issuer clientId
+    deriving Eq Show
+
 SyntaxCheckSubmission
     problem Text
     time UTCTime

@@ -5,6 +5,9 @@ help:
 	@echo "Supported actions: run, shell-ghc, build-ghc, shell-ghcjs, build-ghcjs, tags"
 
 run:
+ifeq ($(origin NIX_STORE),undefined)
+	nix-shell --run 'make run'
+else
 	cd Carnap-Server && \
 	cp -n config/settings-example.yml config/settings.yml && \
 	mkdir -p ../dataroot && \
@@ -12,15 +15,17 @@ run:
 	APPROOT="http://localhost:3000" DATAROOT="../dataroot" \
 		BOOKROOT="../Carnap-Book/" \
 		cabal run -f dev Carnap-Server
+endif
 
 shell-ghc:
 	nix-shell
 
 build-ghc:
 ifeq ($(origin NIX_STORE),undefined)
-	$(error It seems like this is not being run in a nix shell. Try `make shell-ghc` first)
-endif
+	nix-shell --run 'make build-ghc'
+else
 	cabal new-build -f dev $(TARGET)
+endif
 
 shell-ghcjs:
 	nix-shell --arg ghcjs true
@@ -28,14 +33,15 @@ shell-ghcjs:
 # I don't think I can easily enter a shell for the user if they forget unfortunately :(
 build-ghcjs:
 ifeq ($(origin NIX_STORE),undefined)
-	$(error It seems like this is not being run in a nix shell. Try `make shell-ghcjs` first)
-endif
+	nix-shell --run 'make build-ghcjs'
+else
 	cabal --project-file=cabal-ghcjs.project --builddir=dist-ghcjs new-build $(TARGET)
 	# make a fake nix output directory so we don't have to change the symlinks from a nix-built
 	# client (allowing people working only on the server to download a client from nix cache)
 	mkdir -p .cabal-fake-client-out/bin
 	ln -rsf dist-ghcjs/build/*/ghcjs-*/Carnap-GHCJS-*/x/AllActions/build/AllActions/AllActions.jsexe .cabal-fake-client-out/bin/
 	ln -sfn .cabal-fake-client-out client-out
+endif
 
 tags:
 	hasktags -R .

@@ -1,23 +1,24 @@
+@charset "UTF-8";
 @font-face
     font-family:street
     src:url("@{StaticR fonts_Streetvertising_ttf}")
 
 @font-face
     font-family:"Fira Logic"
-    src: url("https://cdn.jsdelivr.net/gh/gleachkr/FiraLogic@0.1.1/dist/FiraLogic-Regular.woff") format("woff"), 
+    src: url("https://cdn.jsdelivr.net/gh/gleachkr/FiraLogic@0.1.1/dist/FiraLogic-Regular.woff") format("woff"),
          url("https://cdn.jsdelivr.net/gh/gleachkr/FiraLogic@0.1.1/dist/FiraLogic-Regular.tff") format("tff")
 
 nav#navbar
-    ul 
+    ul
        list-style-type: none
-    > ul 
+    > ul
        line-height: 2em;
        font-size: 16px;
        margin: 0
        padding: 0
        text-align: right
 
-    > ul > li 
+    > ul > li
        display: inline
        border-right: 1px solid
        margin-left: 5px
@@ -66,6 +67,6 @@ div#message
     padding:20px
     z-index: 2
 
-a#opentower 
+a#opentower
     font-family:street;
     color:gray;

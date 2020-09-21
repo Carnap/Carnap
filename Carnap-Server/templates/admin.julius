@@ -1,0 +1,39 @@
+function tryDelete (ident, json) {
+  if (ident == prompt("Are you sure you want to downgrade this instructor?\nAll their data will be lost. Enter their ident to confirm.")) {
+     adminDelete(json);
+  } else {
+     alert("Wrong Ident!");
+  }
+};
+
+function adminDelete (json) {
+    jQuery.ajax({
+        url: '@{AdminR}',
+        type: 'DELETE',
+        contentType: "application/json",
+        data: json,
+        success: function(data) {
+            window.alert(data);
+            location.reload();
+            },
+        error: function(data) {
+            window.alert("Error, couldn't delete")
+        },
+    });
+};
+
+function ltiDelete(json) {
+    jQuery.ajax({
+        url: '@{AdminR}',
+        type: 'DELETE',
+        contentType: 'application/json',
+        data: json,
+        success: function (data) {
+            window.alert(data);
+            location.reload();
+        },
+        error: function (data) {
+            window.alert('Failed to delete');
+        }
+    });
+}

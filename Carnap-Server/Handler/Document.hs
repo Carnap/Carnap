@@ -7,6 +7,7 @@ import Data.List (nub)
 import Text.Pandoc (writerExtensions,writerWrapText, WrapOption(..), readerExtensions, Pandoc(..), lookupMeta)
 import Text.Pandoc.Walk (walkM, walk)
 import Text.Julius (juliusFile,rawJS)
+import TH.RelativePaths (pathRelativeToCabalPackage)
 import System.FilePath
 import Util.Data
 import Util.Database
@@ -121,7 +122,7 @@ getDocumentR ident title = do (Entity key doc, path, creatorid) <- retrieveDoc i
                       mcss <- retrievePandocVal (lookupMeta "css" meta)
                       mjs <- retrievePandocVal (lookupMeta "js" meta)
                       defaultLayout $ do
-                          toWidgetHead $(juliusFile "templates/command.julius")
+                          toWidgetHead $(juliusFile =<< pathRelativeToCabalPackage "templates/command.julius")
                           addScript $ StaticR js_proof_js
                           addScript $ StaticR js_popper_min_js
                           addScript $ StaticR ghcjs_rts_js

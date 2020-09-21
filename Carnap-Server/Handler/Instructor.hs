@@ -489,20 +489,22 @@ updateAssignmentForm extra = do
     where assignmentId :: (Monad m, RenderMessage (HandlerSite m) FormMessage) => Field m String
           assignmentId = hiddenField
 
-updateAssignmentModal form enc = [whamlet|
-                    <div class="modal fade" id="updateAssignmentData" tabindex="-1" role="dialog" aria-labelledby="updateAssignmentDataLabel" aria-hidden="true">
-                        <div class="modal-dialog" role="document">
-                            <div class="modal-content">
-                                <div class="modal-header">
-                                    <h5 class="modal-title" id="updateAssignmentDataLabel">Update Assignment Data</h5>
-                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                                      <span aria-hidden="true">&times;</span>
-                                <div class="modal-body">
-                                    <form#updateAssignment enctype=#{enc}>
-                                        ^{form}
-                                        <div.form-group>
-                                            <input.btn.btn-primary type=submit value="update">
-                    |]
+updateAssignmentModal :: WidgetFor App () -> Enctype -> WidgetFor App ()
+updateAssignmentModal form enc =
+    [whamlet|
+        <div class="modal fade" id="updateAssignmentData" tabindex="-1" role="dialog" aria-labelledby="updateAssignmentDataLabel" aria-hidden="true">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="updateAssignmentDataLabel">Update Assignment Data</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                          <span aria-hidden="true">&times;</span>
+                    <div class="modal-body">
+                        <form#updateAssignment enctype=#{enc}>
+                            ^{form}
+                            <div.form-group>
+                                <input.btn.btn-primary type=submit value="update">
+    |]
 
 uploadDocumentForm = renderBootstrap3 BootstrapBasicForm $ (,,,,)
             <$> fileAFormReq (bfs ("Document" :: Text))
