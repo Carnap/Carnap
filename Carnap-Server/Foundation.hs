@@ -109,27 +109,39 @@ instance Yesod App where
 
     -- Routes requiring authentication.
     isAuthorized route _ = case route of
-         (UserR ident) -> userOrInstructor ident
-         (RegisterR ident) -> userOrInstructor ident
-         (RegisterEnrollR _ ident) -> userOrInstructor ident
+         (UserR ident) -> userOrInstructorOf ident
+         (RegisterR ident) -> userOrInstructorOf ident
+         (RegisterEnrollR _ ident) -> userOrInstructorOf ident
          (InstructorR ident) -> instructor ident
          (InstructorQueryR ident) -> instructor ident
          (ReviewR coursetitle _) -> coinstructorOrInstructor coursetitle
-         (CourseAssignmentR coursetitle _) -> studentAccessTo coursetitle
+         (CourseAssignmentR coursetitle _) -> enrolledIn coursetitle
          AdminR -> admin
          _ -> return Authorized
-        where userOrInstructor ident =
-                do (Entity _ user) <- requireAuth
+        where retrieveInstructors cid course = runDB $ do
+                     coInstructors <- map entityVal <$> selectList [CoInstructorCourse ==. cid] []
+                     selectList ([UserDataInstructorId ==. Just (courseInstructor course)]
+                                ||. [UserDataInstructorId <-. map (Just . coInstructorIdent) coInstructors]) []
+              userOrInstructorOf ident =
+                do Entity uid user <- requireAuth
+                   musr <- runDB (getBy $ UniqueUser ident)
+                   Entity uid' _ <- maybe notFound return musr
                    let ident' = userIdent user
-                   instructors <- instructorIdentList
-                   return $ if ident' `elem` instructors
-                                --TODO Improve this to restrict to viewing your own students
+                   mud <- runDB $ getBy (UniqueUserData uid')
+                   instructors <- case (entityVal <$> mud) >>= userDataEnrolledIn of
+                                      Nothing -> return []
+                                      Just cid -> do 
+                                            mcourse <- runDB $ get cid
+                                            case mcourse of
+                                                Nothing -> return []
+                                                Just course -> retrieveInstructors cid course
+                   return $ if uid `elem` map (userDataUserId . entityVal) instructors
                                || ident' == ident
                                || ident' == "gleachkr@gmail.com"
                             then Authorized
                             else Unauthorized "It appears you're not authorized to access this page"
               instructor ident =
-                 do (Entity _ user) <- requireAuth
+                 do Entity _ user <- requireAuth
                     let ident' = userIdent user
                     instructors <- instructorIdentList
                     return $ if (ident' `elem` instructors
@@ -137,32 +149,29 @@ instance Yesod App where
                                 || ident' == "gleachkr@gmail.com"
                              then Authorized
                              else Unauthorized "It appears you're not authorized to access this page"
-              studentAccessTo coursetitle =
+              enrolledIn coursetitle =
                   --this is the route to assignments accessible by students
                   --for a given course and to instructors
                   do (Entity uid user) <- requireAuth
                      mcourse <- runDB $ getBy (UniqueCourse coursetitle)
                      (Entity cid course) <- case mcourse of Just c -> return c; _ -> setMessage "no course with that title" >> notFound
                      mudata <- runDB $ getBy (UniqueUserData uid)
-                     coInstructors <-  runDB $ map entityVal <$> selectList [CoInstructorCourse ==. cid] []
-                     instructors <- runDB $ selectList ([UserDataInstructorId ==. Just (courseInstructor course)]
-                                                       ||. [UserDataInstructorId <-. map (Just . coInstructorIdent) coInstructors]) []
+                     instructors <- retrieveInstructors cid course
                      return $ if uid `elem` map (userDataUserId . entityVal) instructors
                                  || maybe False
                                           (\udata -> userDataEnrolledIn (entityVal udata) == Just cid)
                                           mudata
                                  || userIdent user == "gleachkr@gmail.com"
                               then Authorized
-                              else Unauthorized $ "It appears you're not authorized to access this page. For access, you need to enroll in the course \"" ++ coursetitle ++ "\". Is this the course you should be enrolled in?"
+                              else Unauthorized $ "It appears you're not authorized to access this page. For access, you need to enroll in the course \"" 
+                                                   ++ coursetitle ++ "\". Is this the course you should be enrolled in?"
               coinstructorOrInstructor coursetitle =
                   --this is the route to the review area for a given course and
                   --assignment, and is for instructors only.
                   do (Entity uid user) <- requireAuth
                      mcourse <- runDB $ getBy (UniqueCourse coursetitle)
-                     course <- case mcourse of Just c -> return c; _ -> setMessage "no course with that title" >> notFound
-                     coInstructors <-  runDB $ map entityVal <$> selectList [CoInstructorCourse ==. entityKey course] []
-                     instructors <- runDB $ selectList ([UserDataInstructorId ==. Just (courseInstructor $ entityVal course)]
-                                                       ||. [UserDataInstructorId <-. map (Just . coInstructorIdent) coInstructors]) []
+                     (Entity cid course) <- case mcourse of Just c -> return c; _ -> setMessage "no course with that title" >> notFound
+                     instructors <- retrieveInstructors cid course
                      return $ if uid `elem` map (userDataUserId . entityVal) instructors
                                  || userIdent user == "gleachkr@gmail.com"
                               then Authorized
