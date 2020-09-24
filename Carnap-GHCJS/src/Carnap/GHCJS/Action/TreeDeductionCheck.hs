@@ -63,11 +63,11 @@ activateChecker w (Just (i, o, opts)) = case (setupWith `ofPropTreeSys` sys)
                   mgoal <- parseGoal calc
                   let content = M.lookup "content" opts
                   root <- case (content >>= decodeJSON, mgoal) of
-                              (Just val,_) -> let Just c = content in initRoot c o
+                              (Just val,_) -> let Just c = content in initMutRoot c o
                               (_, Just seq) | "prepopulate" `inOpts` opts -> 
-                                                initRoot ("{\"label\": \"" ++ show (view rhs seq) 
+                                                initMutRoot ("{\"label\": \"" ++ show (view rhs seq) 
                                                           ++ "\", \"rule\":\"\", \"forest\": []}") o
-                              _ -> initRoot "{\"label\": \"\", \"rule\":\"\", \"forest\": []}" o
+                              _ -> initMutRoot "{\"label\": \"\", \"rule\":\"\", \"forest\": []}" o
                   memo <- newIORef mempty
                   threadRef <- newIORef (Nothing :: Maybe ThreadId)
                   bw <- createButtonWrapper w o
@@ -81,8 +81,7 @@ activateChecker w (Just (i, o, opts)) = case (setupWith `ofPropTreeSys` sys)
                                         case mr of
                                             Just r -> do (info,mseq) <- checkProofTree calc (Just memo) r 
                                                          decorate root info
-                                                         Just wrap <- getParentElement i
-                                                         updateInfo calc mgoal mseq wrap
+                                                         updateInfo calc mgoal mseq i
                                             Nothing -> return ()
                                     return ()
                   addListener i initialize initialCheck False --initial check in case we preload a tableau
@@ -102,11 +101,14 @@ activateChecker w (Just (i, o, opts)) = case (setupWith `ofPropTreeSys` sys)
                       Nothing -> do setInnerHTML i (Just "Awaiting a proof")
                                     return Nothing
 
-updateInfo _ (Just goal) (Just seq) wrap | seq `seqSubsetUnify` goal = setAttribute wrap "class" "success"
-updateInfo _ (Just goal) (Just seq) wrap = setAttribute wrap "class" "failure"
-updateInfo calc Nothing (Just seq) wrap = setInnerHTML wrap (Just . tbNotation calc . show $ seq)
-updateInfo _ Nothing Nothing wrap  = setInnerHTML wrap (Just "Awaiting a proof")
-updateInfo _ _ _ wrap = setAttribute wrap "class" ""
+updateInfo _ (Just goal) (Just seq) i = 
+        do wrap <- getParentElement i
+           maybe (return ()) (\w -> setAttribute w "class" rslt) wrap
+    where rslt = if seq `seqSubsetUnify` goal then "success" else "failure"
+updateInfo calc Nothing (Just seq) i = setInnerHTML i (Just . tbNotation calc . show $ seq)
+updateInfo _ Nothing Nothing i = setInnerHTML i (Just "Awaiting a proof")
+updateInfo _ _ _ i = do wrap <- getParentElement i
+                        maybe (return ()) (\w -> setAttribute w "class" "") wrap
 
 submitTree w memo opts calc root (Just seq) l = 
         do Just val <- liftIO $ toCleanVal root
@@ -148,8 +150,7 @@ checkOnChange memo threadRef calc mgoal i root = do
             Just changedVal <- toCleanVal root
             (theInfo, mseq) <- checkProofTree calc (Just memo) changedVal 
             decorate root theInfo
-            Just wrap <- getParentElement i
-            updateInfo calc mgoal mseq wrap
+            updateInfo calc mgoal mseq i
         writeIORef threadRef (Just t')
 
 toProofTree :: ( Typeable sem
