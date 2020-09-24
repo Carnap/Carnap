@@ -124,8 +124,7 @@ instance Yesod App where
                                 ||. [UserDataInstructorId <-. map (Just . coInstructorIdent) coInstructors]) []
               userOrInstructorOf ident =
                 do Entity uid user <- requireAuth
-                   musr <- runDB (getBy $ UniqueUser ident)
-                   Entity uid' _ <- maybe notFound return musr
+                   Entity uid' _ <- runDB (getBy $ UniqueUser ident) >>= maybe notFound return
                    let ident' = userIdent user
                    mud <- runDB $ getBy (UniqueUserData uid')
                    instructors <- case (entityVal <$> mud) >>= userDataEnrolledIn of
