@@ -462,7 +462,7 @@ helpful to be rather minimalistic about what we use to represent the assertions
 and connectives of our language. 
 
 Let us use, to represent assertions in our language, single capital letters
-$P,Q, R,..., Z$. If we need more, let's make them by adding a little subscript
+$P,Q, R,..., W$. If we need more, let's make them by adding a little subscript
 to letters that we already have: $P_1, P_2,...$. That way, we will have as many
 assertion letters as we need. Let's also abbreviate the connectives of our
 language. Let's use just the five connectives from before, and write
@@ -479,7 +479,7 @@ we need to be careful. It must be clear how to extract the structure of
 a sentence from how we write it. In order to be sure that this is possible, we
 must adhere to the following two rules in building sentences:
 
-1. Every sentence letter "$P, Q, R, ..., Z, P_1, Q_1, R_1, ..., Z_1, P_2,...$"
+1. Every sentence letter "$P, Q, R, ..., W, P_1, Q_1, R_1, ..., W_1, P_2,...$"
    is a grammatical assertion.
 2. We may build a grammatical assertion:
     a.  by taking two grammatical assertions we already have, putting an
