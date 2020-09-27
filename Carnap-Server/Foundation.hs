@@ -21,7 +21,6 @@ import qualified Network.Wai as W
 import Yesod.Auth.LTI13 (authLTI13WithWidget, PlatformInfo(..), YesodAuthLTI13(..))
 import Data.Time (NominalDiffTime)
 import Data.Time.Clock (addUTCTime)
-import Control.Monad (MonadFail(fail))
 import Web.Cookie (sameSiteNone, SetCookie(setCookieSameSite))
 
 -- | The foundation datatype for your application. This can be a good place to
@@ -314,18 +313,16 @@ instance YesodAuthLTI13 App where
             Just cid ->
                 get $ LtiPlatformInfoKey issuer cid
             -- if we do not, we need to assert that we only get one
-            Nothing ->
-                (selectList [LtiPlatformInfoIssuer ==. issuer] [LimitTo 2])
-                    >>= (\((Entity {entityVal = itm}):rest) ->
-                        if rest == [] then
-                            return $ Just itm
-                        else
-                            liftIO $ fail "multiple client ids for the given issuer"
-                        )
-        LtiPlatformInfo {..} <- case dbPInfo of
-            -- TODO: this may be poor error handling
-            Nothing -> liftIO $ fail "issuer not registered"
-            Just pinfo -> return pinfo
+            Nothing -> do
+                records <- selectList [LtiPlatformInfoIssuer ==. issuer] [LimitTo 2]
+                return $ do
+                    guard $ length records == 1
+                    let (Entity _ itm) : _ = records
+                    return itm
+        LtiPlatformInfo {..} <- maybe
+                (permissionDenied "LTI issuer not recognized or is duplicated")
+                pure
+                dbPInfo
         return $ PlatformInfo {
             platformIssuer = ltiPlatformInfoIssuer
           , platformClientId = ltiPlatformInfoClientId
