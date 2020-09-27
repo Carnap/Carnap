@@ -108,29 +108,40 @@ instance Yesod App where
 
     -- Routes requiring authentication.
     isAuthorized route _ = case route of
-         (UserR ident) -> userOrInstructor ident
-         (RegisterR ident) -> userOrInstructor ident
-         (RegisterEnrollR _ ident) -> userOrInstructor ident
+         (UserR ident) -> userOrInstructorOf ident
+         (RegisterR ident) -> userOrInstructorOf ident
+         (RegisterEnrollR _ ident) -> userOrInstructorOf ident
          (InstructorR ident) -> instructor ident
          (InstructorQueryR ident) -> instructor ident
          (ReviewR coursetitle _) -> coinstructorOrInstructor coursetitle
-         (CourseAssignmentR coursetitle _) -> studentAccessTo coursetitle
+         (CourseAssignmentR coursetitle _) -> enrolledIn coursetitle
          AdminR -> admin
          AdminPromoteR -> noAdmins
          _ -> return Authorized
-        where userOrInstructor ident =
-                do (Entity uid user) <- requireAuth
+        where retrieveInstructors cid course = runDB $ do
+                     coInstructors <- map entityVal <$> selectList [CoInstructorCourse ==. cid] []
+                     selectList ([UserDataInstructorId ==. Just (courseInstructor course)]
+                                ||. [UserDataInstructorId <-. map (Just . coInstructorIdent) coInstructors]) []
+              userOrInstructorOf ident =
+                do Entity uid user <- requireAuth
+                   Entity uid' _ <- runDB (getBy $ UniqueUser ident) >>= maybe notFound return
                    let ident' = userIdent user
-                   instructors <- instructorIdentList
+                   mud <- runDB $ getBy (UniqueUserData uid')
+                   instructors <- case (entityVal <$> mud) >>= userDataEnrolledIn of
+                                      Nothing -> return []
+                                      Just cid -> do 
+                                            mcourse <- runDB $ get cid
+                                            case mcourse of
+                                                Nothing -> return []
+                                                Just course -> retrieveInstructors cid course
                    userIsAdmin <- isAdmin uid
-                   return $ if ident' `elem` instructors
-                                --TODO Improve this to restrict to viewing your own students
+                   return $ if uid `elem` map (userDataUserId . entityVal) instructors
                                || ident' == ident
                                || userIsAdmin
                             then Authorized
                             else Unauthorized "It appears you're not authorized to access this page"
               instructor ident =
-                 do (Entity uid user) <- requireAuth
+                 do Entity uid user <- requireAuth
                     let ident' = userIdent user
                     instructors <- instructorIdentList
                     userIsAdmin <- isAdmin uid
@@ -139,17 +150,15 @@ instance Yesod App where
                                 || userIsAdmin
                              then Authorized
                              else Unauthorized "It appears you're not authorized to access this page"
-              studentAccessTo coursetitle =
+              enrolledIn coursetitle =
                   --this is the route to assignments accessible by students
                   --for a given course and to instructors
-                  do (Entity uid _) <- requireAuth
+                  do uid  <- requireAuthId
                      mcourse <- runDB $ getBy (UniqueCourse coursetitle)
                      (Entity cid course) <- case mcourse of Just c -> return c; _ -> setMessage "no course with that title" >> notFound
                      mudata <- runDB $ getBy (UniqueUserData uid)
-                     coInstructors <- runDB $ map entityVal <$> selectList [CoInstructorCourse ==. cid] []
-                     instructors <- runDB $ selectList ([UserDataInstructorId ==. Just (courseInstructor course)]
-                                                       ||. [UserDataInstructorId <-. map (Just . coInstructorIdent) coInstructors]) []
                      userIsAdmin <- isAdmin uid
+                     instructors <- retrieveInstructors cid course
                      return $ if uid `elem` map (userDataUserId . entityVal) instructors
                                  || maybe False
                                           (\udata -> userDataEnrolledIn (entityVal udata) == Just cid)
@@ -162,12 +171,10 @@ instance Yesod App where
               coinstructorOrInstructor coursetitle =
                   --this is the route to the review area for a given course and
                   --assignment, and is for instructors only.
-                  do (Entity uid _) <- requireAuth
+                  do uid <- requireAuthId
                      mcourse <- runDB $ getBy (UniqueCourse coursetitle)
-                     course <- case mcourse of Just c -> return c; _ -> setMessage "no course with that title" >> notFound
-                     coInstructors <-  runDB $ map entityVal <$> selectList [CoInstructorCourse ==. entityKey course] []
-                     instructors <- runDB $ selectList ([UserDataInstructorId ==. Just (courseInstructor $ entityVal course)]
-                                                       ||. [UserDataInstructorId <-. map (Just . coInstructorIdent) coInstructors]) []
+                     (Entity cid course) <- case mcourse of Just c -> return c; _ -> setMessage "no course with that title" >> notFound
+                     instructors <- retrieveInstructors cid course
                      userIsAdmin <- isAdmin uid
                      return $ if uid `elem` map (userDataUserId . entityVal) instructors
                                  || userIsAdmin
@@ -181,7 +188,7 @@ instance Yesod App where
               -- only allow promoting the user if there are no other site administrators
               -- otherwise they can add other admins on /master_admin
               noAdmins =
-                  do _ <- requireAuth
+                  do _ <- requireAuthId
                      adminCount <- runDB $ count [UserDataIsAdmin ==. True]
                      return $ if adminCount == 0
                               then Authorized
@@ -189,7 +196,6 @@ instance Yesod App where
               isAdmin uid = runDB $ do
                   res <- getBy $ UniqueUserData uid
                   return $ maybe False (userDataIsAdmin . entityVal) res
-
 
     -- This function creates static content files in the static folder
     -- and names them based on a hash of their content. This allows
@@ -418,4 +424,5 @@ instance HasHttpManager App where
 
 unsafeHandler :: App -> Handler a -> IO a
 unsafeHandler = Unsafe.fakeHandlerGetLogger appLogger
+
 
