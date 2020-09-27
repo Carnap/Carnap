@@ -102,11 +102,8 @@ getAdminR = do allUserData <- runDB $ selectList [] []
 
 getAdminPromoteR :: Handler Html
 getAdminPromoteR =
-    do aid <- maybeAuthId
-       aid' <- case aid of
-            Just a -> return $ a
-            Nothing -> permissionDenied "not logged in"
-       (promoteW, enctypePromote) <- generateFormPost $ promoteToAdmin (show aid')
+    do aid <- maybeAuthId >>= maybe (permissionDenied "not logged in") return 
+       (promoteW, enctypePromote) <- generateFormPost $ promoteToAdmin (show aid)
        defaultLayout $ do
            [whamlet|
             <div.container>
@@ -125,11 +122,8 @@ promoteToAdmin ident = renderBootstrap3 BootstrapBasicForm $
 
 postAdminPromoteR :: Handler Html
 postAdminPromoteR =
-    do aid <- maybeAuthId
-       aid' <- case aid of
-            Just a -> return $ a
-            Nothing -> permissionDenied "not logged in"
-       ((promoteResult, _), _) <- runFormPost $ promoteToAdmin (show aid')
+    do aid <- maybeAuthId >>= maybe (permissionDenied "not logged in") return
+       ((promoteResult, _), _) <- runFormPost $ promoteToAdmin (show aid)
        case readMay <$> promoteResult of
             FormSuccess (Just uid) -> do
                userdata <- runDB $ getBy $ UniqueUserData uid
@@ -137,7 +131,8 @@ postAdminPromoteR =
                     Just (Entity key _) -> do
                         runDB $ update key [UserDataIsAdmin =. True]
                         defaultLayout $ [whamlet|
-                             Promoted, you can now <a href=@{AdminR}>manage the site
+                             Congratulations! You've been promoted. You can now #
+                             <a href=@{AdminR}>manage the site
                         |]
                     Nothing -> permissionDenied "User data missing. This may mean you haven't assigned yourself a name yet."
             _ -> invalidArgs ["form failed"]
@@ -186,7 +181,6 @@ emailWidget insts = do let emails = intercalate "," (map userIdent insts)
                        return [whamlet|
                           <a href="mailto:gleachkr@gmail.com?bcc=#{emails}">Email Instructors
                        |]
-
 
 instructorWidget :: [(User,Entity UserData,[(Entity Course,[Entity UserData])])] -> HandlerFor App Widget
 instructorWidget instructorPlus =
