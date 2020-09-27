@@ -32,16 +32,14 @@ getCourseAssignmentR coursetitle filename = getAssignmentByCourse coursetitle fi
 putCourseAssignmentStateR :: Text -> Text -> Handler Value
 putCourseAssignmentStateR coursetitle filename = do
         msg <- requireJsonBody :: Handler Value
-        muid <- maybeAuthId
-        uid <- maybe reject return muid
+        uid <- maybeAuthId >>= maybe reject return
         ((Entity aid _), _) <- getAssignmentByCourse coursetitle filename
         runDB $ upsert (AssignmentState msg uid aid) [AssignmentStateValue =. msg]
         returnJson msg
 
 getCourseAssignmentStateR :: Text -> Text -> Handler Value
 getCourseAssignmentStateR coursetitle filename = do
-        muid <- maybeAuthId
-        uid <- maybe reject return muid
+        uid <- maybeAuthId >>= maybe reject return
         ((Entity aid _), _) <- getAssignmentByCourse coursetitle filename
         mstate <- runDB $ getBy (UniqueAssignmentState uid aid)
         case mstate of
@@ -51,8 +49,7 @@ getCourseAssignmentStateR coursetitle filename = do
 postCourseAssignmentR :: Text -> Text -> Handler Html
 postCourseAssignmentR coursetitle filename = do
             ((Entity key val), _) <- getAssignmentByCourse coursetitle filename
-            muid <- maybeAuthId
-            uid <- maybe reject return muid
+            uid <- maybeAuthId >>= maybe reject return 
             ((passrslt,_),_) <- runFormPost (identifyForm "enterPassword" $ enterPasswordForm)
             case passrslt of
                 FormSuccess password ->
@@ -69,11 +66,8 @@ postCourseAssignmentR coursetitle filename = do
 
 returnAssignment :: Text -> Text -> Entity AssignmentMetadata -> FilePath -> Handler Html
 returnAssignment coursetitle filename (Entity key val) path = do
-           time <- liftIO getCurrentTime
-           muid <- maybeAuthId
-           uid <- maybe reject return muid
+           uid <- maybeAuthId >>= maybe reject return
            Entity _ userdata <- runDB (getBy $ UniqueUserData uid) >>= maybe reject return  
-           mident <- getIdent uid
            mtoken <- runDB $ getBy $ UniqueAssignmentAccessToken uid key
            time <- liftIO getCurrentTime
            let instructorAccess = userDataInstructorId userdata /= Nothing --instructors who shouldn't access the course are already blocked by yesod-auth
@@ -81,7 +75,7 @@ returnAssignment coursetitle filename (Entity key val) path = do
                creation (Entity _ tok) = round $ utcTimeToPOSIXSeconds (assignmentAccessTokenCreatedAt tok) * 1000 --milliseconds to match JS
            if visibleAt time val || instructorAccess
                then do
-                   ehtml <- liftIO $ fileToHtml (hash (show muid ++ path)) path
+                   ehtml <- liftIO $ fileToHtml (hash (show uid ++ path)) path
                    unless (visibleAt time val) $ setMessage "Viewing as instructor. Assignment not currently visible to students."
                    case ehtml of
                        Left err -> defaultLayout $ minimalLayout (show err)
@@ -151,4 +145,4 @@ allFilters salt = randomizeProblems salt
 enterPasswordForm = renderBootstrap3 BootstrapBasicForm $ id
             <$> areq textField (bfs ("Access Key" :: Text)) Nothing
 
-reject = setMessage "you need to be logged in to access assignments" >> redirect HomeR
+reject = setMessage "you need to be logged in and fully registered to access assignments" >> redirect HomeR
