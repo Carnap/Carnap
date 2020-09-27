@@ -89,8 +89,8 @@ ofFOLSeqSys :: (forall r .
                     , SpecifiedUnificationType r
                  ) => 
               TableauCalc PureLexiconFOL (Form Bool) r -> a) -> String -> Maybe a
-ofFOLSeqSys f sys | sys == "folLJ"                    = Just $ f gentzenFOLKCalc 
-                  | sys == "folLK"                    = Just $ f gentzenFOLJCalc 
+ofFOLSeqSys f sys | sys == "foLJ"                     = Just $ f gentzenFOLKCalc 
+                  | sys == "foLK"                     = Just $ f gentzenFOLJCalc 
                   | sys == "openLogicFOLK"            = Just $ f olpFOLKCalc 
                   | sys == "openLogicFOLJ"            = Just $ f olpFOLJCalc 
                   | otherwise                         = Nothing
