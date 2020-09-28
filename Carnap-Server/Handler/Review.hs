@@ -258,7 +258,7 @@ renderProblem due uidanduser (Entity key val) = do
                 [whamlet|
                     <div data-carnap-type="sequentchecker"
                          data-carnap-system="#{sys}"
-                         data-carnap-options="resize"
+                         data-carnap-options="displayJSON"
                          data-carnap-goal="#{goal}"
                          data-carnap-submission="none">
                          #{treeJSON tree}
@@ -268,7 +268,7 @@ renderProblem due uidanduser (Entity key val) = do
                 [whamlet|
                     <div data-carnap-type="treedeductionchecker"
                          data-carnap-system="#{sys}"
-                         data-carnap-options="resize"
+                         data-carnap-options="displayJSON"
                          data-carnap-goal="#{goal}"
                          data-carnap-submission="none">
                          #{treeJSON tree}
@@ -347,7 +347,8 @@ renderProblem due uidanduser (Entity key val) = do
           renderCM cm = unlines . map renderCMPair $ cm
           treeJSON (Node (l,r) f) = "{\"label\":\"" ++ l 
                                   ++ "\",\"rule\":\"" ++ r
-                                  ++ "\",\"forest\":[" ++ concatMap treeJSON f
+                                  ++ "\",\"forest\":[" 
+                                  ++ intercalate "," (map treeJSON f)
                                   ++ "]}"
 
 updateSubmissionForm extra ident uid = renderBootstrap3 BootstrapBasicForm $ (,,)
