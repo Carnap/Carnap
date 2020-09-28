@@ -126,8 +126,8 @@ instance Yesod App where
                 do Entity uid user <- requireAuth
                    Entity uid' _ <- runDB (getBy $ UniqueUser ident) >>= maybe notFound return
                    let ident' = userIdent user
-                   mud <- runDB $ getBy (UniqueUserData uid')
-                   instructors <- case (entityVal <$> mud) >>= userDataEnrolledIn of
+                   mudata <- runDB $ getBy (UniqueUserData uid')
+                   instructors <- case (entityVal <$> mudata) >>= userDataEnrolledIn of
                                       Nothing -> return []
                                       Just cid -> do 
                                             mcourse <- runDB $ get cid
@@ -155,9 +155,9 @@ instance Yesod App where
                   --for a given course and to instructors
                   do uid  <- requireAuthId
                      mcourse <- runDB $ getBy (UniqueCourse coursetitle)
-                     (Entity cid course) <- case mcourse of Just c -> return c; _ -> setMessage "no course with that title" >> notFound
+                     Entity cid course <- case mcourse of Just c -> return c; _ -> setMessage "no course with that title" >> notFound
                      mudata <- runDB $ getBy (UniqueUserData uid)
-                     userIsAdmin <- isAdmin uid
+                     let userIsAdmin = maybe False (userDataIsAdmin . entityVal) mudata
                      instructors <- retrieveInstructors cid course
                      return $ if uid `elem` map (userDataUserId . entityVal) instructors
                                  || maybe False
@@ -173,14 +173,14 @@ instance Yesod App where
                   --assignment, and is for instructors only.
                   do uid <- requireAuthId
                      mcourse <- runDB $ getBy (UniqueCourse coursetitle)
-                     (Entity cid course) <- case mcourse of Just c -> return c; _ -> setMessage "no course with that title" >> notFound
+                     Entity cid course <- case mcourse of Just c -> return c; _ -> setMessage "no course with that title" >> notFound
                      instructors <- retrieveInstructors cid course
                      userIsAdmin <- isAdmin uid
                      return $ if uid `elem` map (userDataUserId . entityVal) instructors
                                  || userIsAdmin
                               then Authorized
                               else Unauthorized "It appears you're not authorized to access this page"
-              admin = do (Entity uid _) <- requireAuth
+              admin = do Entity uid _ <- requireAuth
                          userIsAdmin <- isAdmin uid
                          return $ if userIsAdmin
                                   then Authorized
