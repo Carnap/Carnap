@@ -171,5 +171,5 @@
                                                     <i.fa.fa-trash-o>
                                                 <button.btn.btn-sm.btn-secondary type="button" alt="edit" title="edit this course" onclick="modalEditCourse('#{show cid}','#{maybe "" sanitizeForJS (unpack <$> courseDescription c)}','#{dateDisplay (courseStartDate c) c}','#{dateDisplay (courseEndDate c) c}',#{courseTotalPoints c})">
                                                     <i.fa.fa-cog>
-                                                <button.btn.btn-sm.btn-secondary alt="download" title="download grades from this course" type="button" onclick=exportGrades('#{jsonSerialize cid}')">
-                                                    <i.fa.fa-cloud-download>
+                                                <!-- <button.btn.btn-sm.btn-secondary alt="download" title="download grades from this course" type="button" onclick=exportGrades('#{jsonSerialize cid}')"> -->
+                                                <!--     <i.fa.fa-cloud-download> FIXME-->
