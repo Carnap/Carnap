@@ -88,7 +88,7 @@
                                                     #{dateDisplay from c}-#{dateDisplay till c}
                                                 $nothing
                                                     #{dateDisplay from c}-∞
-                                            $nothing 
+                                            $nothing
                                                 $maybe till <- assignmentMetadataVisibleTill a
                                                     ∞-#{dateDisplay till c}
                                                 $nothing
@@ -105,7 +105,7 @@
                                             <button.btn.btn-sm.btn-secondary alt="delete" title="delete this assignment" type="button" onclick="tryDeleteAssignment('#{jsonSerialize $ DeleteAssignment k}','#{documentFilename d}','#{courseTitle c}')">
                                                 <i.fa.fa-trash-o>
 
-                                            <button.btn.btn-sm.btn-secondary alt="edit" title="edit this assignment" type="button" onclick="modalEditAssignment('#{show k}','#{maybe "" (flip dateDisplay c) (assignmentMetadataDuedate a)}','#{maybe "" (flip dateDisplay c) (assignmentMetadataVisibleFrom a)}','#{maybe "" (flip dateDisplay c) (assignmentMetadataVisibleTill a)}','#{maybe "" sanatizeForJS (unpack <$> assignmentMetadataDescription a)}')">
+                                            <button.btn.btn-sm.btn-secondary alt="edit" title="edit this assignment" type="button" onclick="modalEditAssignment('#{show k}','#{maybe "" (flip dateDisplay c) (assignmentMetadataDuedate a)}','#{maybe "" (flip dateDisplay c) (assignmentMetadataVisibleFrom a)}','#{maybe "" (flip dateDisplay c) (assignmentMetadataVisibleTill a)}','#{maybe "" sanitizeForJS (unpack <$> assignmentMetadataDescription a)}')">
                                                 <i.fa.fa-cog>
                                             <a.btn.btn-sm.btn-secondary alt="review" title="review and assign partial credit" href=@{ReviewR (courseTitle c) (documentFilename d)}>
                                                 <i.fa.fa-pencil>
@@ -142,7 +142,7 @@
                                         <td>
                                             <button.btn.btn-sm.btn-secondary type="button" alt="delete" title="permanantly delete this document" onclick="tryDeleteDocument('#{jsonSerialize $ DeleteDocument (documentFilename a)}')">
                                                 <i.fa.fa-trash-o>
-                                            <button.btn.btn-sm.btn-secondary type="button" alt="edit" title="edit this document" onclick="modalEditDocument('#{show k}','#{maybe "" sanatizeForJS (unpack <$> documentDescription a)}','#{documentFilename a}', '#{tagString k}')">
+                                            <button.btn.btn-sm.btn-secondary type="button" alt="edit" title="edit this document" onclick="modalEditDocument('#{show k}','#{maybe "" sanitizeForJS (unpack <$> documentDescription a)}','#{documentFilename a}', '#{tagString k}')">
                                                 <i.fa.fa-cog>
                                             <button.btn.btn-sm.btn-secondary alt="download" title="download this document" type="button" onclick="window.open('@{DocumentDownloadR ident (documentFilename a)}')">
                                                 <i.fa.fa-cloud-download>
@@ -169,7 +169,7 @@
                                             <td>
                                                 <button.btn.btn-sm.btn-secondary type="button" alt="delete" title="permanantly delete this course" onclick="tryDeleteCourse('#{jsonSerialize $ DeleteCourse (courseTitle c)}')">
                                                     <i.fa.fa-trash-o>
-                                                <button.btn.btn-sm.btn-secondary type="button" alt="edit" title="edit this course" onclick="modalEditCourse('#{show cid}','#{maybe "" sanatizeForJS (unpack <$> courseDescription c)}','#{dateDisplay (courseStartDate c) c}','#{dateDisplay (courseEndDate c) c}',#{courseTotalPoints c})">
+                                                <button.btn.btn-sm.btn-secondary type="button" alt="edit" title="edit this course" onclick="modalEditCourse('#{show cid}','#{maybe "" sanitizeForJS (unpack <$> courseDescription c)}','#{dateDisplay (courseStartDate c) c}','#{dateDisplay (courseEndDate c) c}',#{courseTotalPoints c})">
                                                     <i.fa.fa-cog>
                                                 <button.btn.btn-sm.btn-secondary alt="download" title="download grades from this course" type="button" onclick=exportGrades('#{jsonSerialize cid}')">
                                                     <i.fa.fa-cloud-download>

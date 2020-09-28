@@ -5,7 +5,6 @@ import Import
 import Control.Monad (fail)
 import Text.Read (read, readMaybe)
 import qualified Text.Blaze.Html5 as B
-import Text.Blaze.Html5.Attributes
 import Carnap.GHCJS.SharedTypes
 import Yesod.Form.Bootstrap3
 import Data.Time
@@ -14,7 +13,6 @@ import Data.Time.Zones
 import Data.Time.Zones.All
 import Util.Data
 import Util.Database
-import qualified Data.Map as M
 import qualified Data.IntMap as IM
 import Data.IntMap ((!))
 
@@ -46,8 +44,8 @@ postUserR ident = do
             redirect (UserR ident)--XXX: redirect here to make sure changes are visually reflected
 
 deleteUserR :: Text -> Handler Value
-deleteUserR ident = do
-    msg <- requireJsonBody :: Handler Text
+deleteUserR _ = do
+    msg <- requireCheckJsonBody :: Handler Text
     maybeCurrentUserId <- maybeAuthId
     case maybeCurrentUserId of
         Nothing -> return ()
@@ -63,7 +61,12 @@ getUserR ident = do
     case musr of
         Nothing -> defaultLayout nouserPage
         (Just (Entity uid _))  -> do
-            ud@(UserData firstname lastname maybeCourseId maybeInstructorId _) <- checkUserData uid
+            ud@UserData {
+                  userDataEnrolledIn = maybeCourseId
+                , userDataInstructorId = maybeInstructorId
+                , userDataFirstName = firstname
+                , userDataLastName = lastname
+                } <- checkUserData uid
             time <- liftIO getCurrentTime
             classes <- runDB $ selectList [CourseStartDate <. time, CourseEndDate >. time] []
             (updateForm,encTypeUpdate) <- generateFormPost (updateUserDataForm ud classes)
@@ -110,9 +113,6 @@ getUserR ident = do
                                     <a href=@{AuthR LogoutR}>
                                         Logout
                                |]
-    where tryLookup l x = case lookup x l of
-                          Just n -> show n
-                          Nothing -> "can't find scores"
 
 getUserDispatchR :: Handler Html
 getUserDispatchR = maybeAuthId
@@ -129,6 +129,10 @@ getUserDispatchR = maybeAuthId
 --------------------------------------------------------
 --functions for calculating grades
 
+toScore
+    :: Maybe BookAssignmentTable
+    -> ProblemSubmission
+    -> HandlerFor App Int
 toScore textbookproblems p = case ( problemSubmissionAssignmentId p
                                   , problemSubmissionCorrect p
                                   ) of
@@ -152,25 +156,29 @@ toScore textbookproblems p = case ( problemSubmissionAssignmentId p
                                         (Nothing, Nothing) -> 5 + extra
     where extra = case problemSubmissionExtra p of Nothing -> 0; Just e -> e
           theGrade :: UTCTime -> Int -> ProblemSubmission -> Int
-          theGrade due points p = case problemSubmissionLateCredit p of
-                                      Nothing | problemSubmissionTime p `laterThan` due -> floor ((fromIntegral points :: Rational) / 2)
-                                      Just n  | problemSubmissionTime p `laterThan` due -> n
+          theGrade due points p' = case problemSubmissionLateCredit p' of
+                                      Nothing | problemSubmissionTime p' `laterThan` due -> floor ((fromIntegral points :: Rational) / 2)
+                                      Just n  | problemSubmissionTime p' `laterThan` due -> n
                                       _ -> points
 
+scoreByIdAndClassTotal :: Key Course -> Key User -> HandlerFor App Int
 scoreByIdAndClassTotal cid uid =
         do perprob <- scoreByIdAndClassPerProblem cid uid
            return $ foldr (+) 0 (map snd perprob)
 
+scoreByIdAndClassPerProblem :: Key Course -> Key User -> HandlerFor App [(Either (Key AssignmentMetadata) Text, Int)]
 scoreByIdAndClassPerProblem cid uid =
         do pq <- getProblemQuery uid cid
            subs <- map entityVal <$> (runDB $ selectList pq [])
            textbookproblems <- getProblemSets cid
            scoreList textbookproblems subs
 
+totalScore :: (Traversable t, MonoFoldable (t Int), Num (Element (t Int))) => Maybe BookAssignmentTable -> t ProblemSubmission -> HandlerFor App (Element (t Int))
 totalScore textbookproblems xs =
         do xs' <- mapM (toScore textbookproblems) xs
            return $ foldr (+) 0 xs'
 
+scoreList :: Traversable t => Maybe BookAssignmentTable -> t ProblemSubmission -> HandlerFor App (t (Either (Key AssignmentMetadata) Text, Int))
 scoreList textbookproblems = mapM (\x -> do score <- toScore textbookproblems x
                                             return (getLabel x, score))
    where getLabel x = case problemSubmissionAssignmentId x of
@@ -184,10 +192,12 @@ scoreList textbookproblems = mapM (\x -> do score <- toScore textbookproblems x
 --------------------------------------------------------
 --functions for dealing with time and due dates
 
-dateDisplay utc course = case tzByName $ courseTimeZone course of
-                             Just tz  -> formatTime defaultTimeLocale "%F %R %Z" $ utcToZonedTime (timeZoneForUTCTime tz utc) utc
+dateDisplay :: UTCTime -> Course -> String
+dateDisplay inUtc course = case tzByName $ courseTimeZone course of
+                             Just tz  -> formatTime defaultTimeLocale "%F %R %Z" $ utcToZonedTime (timeZoneForUTCTime tz inUtc) inUtc
                              Nothing -> formatTime defaultTimeLocale "%F %R UTC" $ utc
 
+utcDueDate :: (IsSequence t, Element t ~ Char) => Maybe BookAssignmentTable -> t -> Maybe UTCTime
 utcDueDate textbookproblems x = textbookproblems >>= IM.lookup theIndex . readAssignmentTable
     where theIndex = read . unpack . takeWhile (/= '.') $ x :: Int
 
@@ -222,10 +232,12 @@ problemsToTable course textbookproblems asmd asDocs submissions = do
                                 Nothing -> [hamlet|No document|]
                                 Just d -> [hamlet| <a href=@{CourseAssignmentR (courseTitle course) (documentFilename d)}>#{documentFilename d}|]
 
+tryDelete :: (Semigroup a, IsString a) => a -> a
 tryDelete name = "tryDeleteRule(\"" <> name <> "\")"
 
 --properly localized assignments for a given class
 --XXX---should this just be in the hamlet?
+assignmentsOf :: Course -> Maybe BookAssignmentTable -> [Entity AssignmentMetadata] -> [Maybe Document] -> HandlerFor App (WidgetFor App ())
 assignmentsOf course textbookproblems asmd asDocs = do
              time <- liftIO getCurrentTime
              return $
@@ -246,7 +258,7 @@ assignmentsOf course textbookproblems asmd asDocs = do
                                         <td>
                                             #{dateDisplay date course}
                                         <td>-
-                            $forall (Entity k a, Just d) <- zip asmd asDocs
+                            $forall (Entity _ a, Just d) <- zip asmd asDocs
                                 $if visibleAt time a
                                         <tr>
                                             <td>
@@ -267,6 +279,7 @@ assignmentsOf course textbookproblems asmd asDocs = do
                               _ -> (assignmentMetadataVisibleTill a > Just t || assignmentMetadataVisibleTill a == Nothing)
                                    && (assignmentMetadataVisibleFrom a < Just t || assignmentMetadataVisibleFrom a == Nothing)
 
+updateWidget :: WidgetFor App () -> Enctype -> WidgetFor App ()
 updateWidget form enc = [whamlet|
                     <div class="modal fade" id="updateUserData" tabindex="-1" role="dialog" aria-labelledby="updateUserDataLabel" aria-hidden="true">
                         <div class="modal-dialog" role="document">
@@ -282,7 +295,8 @@ updateWidget form enc = [whamlet|
                                             <input.btn.btn-primary type=submit value="update">
                     |]
 
-personalInfo (UserData firstname lastname maybeCourseId maybeInstructorId _) mcourse =
+personalInfo :: UserData -> Maybe Course -> WidgetFor site ()
+personalInfo (UserData {userDataFirstName = firstname, userDataLastName = lastname}) mcourse =
         [whamlet| <div.card>
                         <div.card-header> Personal Information
                         <div.card-block>
@@ -300,13 +314,19 @@ personalInfo (UserData firstname lastname maybeCourseId maybeInstructorId _) mco
                                 Edit
                             |]
 
-updateUserDataForm (UserData firstname lastname _ _ _) classes = renderBootstrap3 BootstrapBasicForm $ (,,)
+updateUserDataForm
+    :: UserData
+    -> [Entity Course]
+    -> B.Markup
+    -> MForm (HandlerFor App) (FormResult (Maybe (Entity Course), Text, Text), WidgetFor App ())
+updateUserDataForm UserData {userDataFirstName=firstname, userDataLastName=lastname} classes =
+    renderBootstrap3 BootstrapBasicForm $ (,,)
             <$> aopt (selectFieldList classnames) (bfs ("Class" :: Text)) Nothing
             <*> areq textField (bfs ("First Name"::Text)) (Just firstname)
             <*> areq textField (bfs ("Last Name"::Text)) (Just lastname)
     where classnames = map (\theclass -> (courseTitle . entityVal $ theclass, theclass)) classes
 
-nouserPage :: WidgetT site m ()
+nouserPage :: WidgetFor site ()
 nouserPage = [whamlet|
              <div.container>
                 <p> This user does not exist

@@ -21,7 +21,6 @@ import qualified Network.Wai as W
 import Yesod.Auth.LTI13 (authLTI13WithWidget, PlatformInfo(..), YesodAuthLTI13(..))
 import Data.Time (NominalDiffTime)
 import Data.Time.Clock (addUTCTime)
-import Control.Monad (MonadFail(fail))
 import Web.Cookie (sameSiteNone, SetCookie(setCookieSameSite))
 
 -- | The foundation datatype for your application. This can be a good place to
@@ -117,6 +116,7 @@ instance Yesod App where
          (ReviewR coursetitle _) -> coinstructorOrInstructor coursetitle
          (CourseAssignmentR coursetitle _) -> enrolledIn coursetitle
          AdminR -> admin
+         AdminPromoteR -> noAdmins
          _ -> return Authorized
         where retrieveInstructors cid course = runDB $ do
                      coInstructors <- map entityVal <$> selectList [CoInstructorCourse ==. cid] []
@@ -126,60 +126,76 @@ instance Yesod App where
                 do Entity uid user <- requireAuth
                    Entity uid' _ <- runDB (getBy $ UniqueUser ident) >>= maybe notFound return
                    let ident' = userIdent user
-                   mud <- runDB $ getBy (UniqueUserData uid')
-                   instructors <- case (entityVal <$> mud) >>= userDataEnrolledIn of
+                   mudata <- runDB $ getBy (UniqueUserData uid')
+                   instructors <- case (entityVal <$> mudata) >>= userDataEnrolledIn of
                                       Nothing -> return []
                                       Just cid -> do 
                                             mcourse <- runDB $ get cid
                                             case mcourse of
                                                 Nothing -> return []
                                                 Just course -> retrieveInstructors cid course
+                   userIsAdmin <- isAdmin uid
                    return $ if uid `elem` map (userDataUserId . entityVal) instructors
                                || ident' == ident
-                               || ident' == "gleachkr@gmail.com"
+                               || userIsAdmin
                             then Authorized
                             else Unauthorized "It appears you're not authorized to access this page"
               instructor ident =
-                 do Entity _ user <- requireAuth
+                 do Entity uid user <- requireAuth
                     let ident' = userIdent user
                     instructors <- instructorIdentList
+                    userIsAdmin <- isAdmin uid
                     return $ if (ident' `elem` instructors
                                 && ident' == ident)
-                                || ident' == "gleachkr@gmail.com"
+                                || userIsAdmin
                              then Authorized
                              else Unauthorized "It appears you're not authorized to access this page"
               enrolledIn coursetitle =
                   --this is the route to assignments accessible by students
                   --for a given course and to instructors
-                  do (Entity uid user) <- requireAuth
+                  do uid  <- requireAuthId
                      mcourse <- runDB $ getBy (UniqueCourse coursetitle)
-                     (Entity cid course) <- case mcourse of Just c -> return c; _ -> setMessage "no course with that title" >> notFound
+                     Entity cid course <- case mcourse of Just c -> return c; _ -> setMessage "no course with that title" >> notFound
                      mudata <- runDB $ getBy (UniqueUserData uid)
+                     let userIsAdmin = maybe False (userDataIsAdmin . entityVal) mudata
                      instructors <- retrieveInstructors cid course
                      return $ if uid `elem` map (userDataUserId . entityVal) instructors
                                  || maybe False
                                           (\udata -> userDataEnrolledIn (entityVal udata) == Just cid)
                                           mudata
-                                 || userIdent user == "gleachkr@gmail.com"
+                                 || userIsAdmin
                               then Authorized
-                              else Unauthorized $ "It appears you're not authorized to access this page. For access, you need to enroll in the course \"" 
-                                                   ++ coursetitle ++ "\". Is this the course you should be enrolled in?"
+                              else Unauthorized $ "It appears you're not authorized to access this page. " ++
+                                                  "For access, you need to enroll in the course \"" ++ coursetitle ++
+                                                  "\". Is this the course you should be enrolled in?"
               coinstructorOrInstructor coursetitle =
                   --this is the route to the review area for a given course and
                   --assignment, and is for instructors only.
-                  do (Entity uid user) <- requireAuth
+                  do uid <- requireAuthId
                      mcourse <- runDB $ getBy (UniqueCourse coursetitle)
-                     (Entity cid course) <- case mcourse of Just c -> return c; _ -> setMessage "no course with that title" >> notFound
+                     Entity cid course <- case mcourse of Just c -> return c; _ -> setMessage "no course with that title" >> notFound
                      instructors <- retrieveInstructors cid course
+                     userIsAdmin <- isAdmin uid
                      return $ if uid `elem` map (userDataUserId . entityVal) instructors
-                                 || userIdent user == "gleachkr@gmail.com"
+                                 || userIsAdmin
                               then Authorized
                               else Unauthorized "It appears you're not authorized to access this page"
-              admin = do (Entity _ user) <- requireAuth
-                         return $ if userIdent user == "gleachkr@gmail.com"
+              admin = do Entity uid _ <- requireAuth
+                         userIsAdmin <- isAdmin uid
+                         return $ if userIsAdmin
                                   then Authorized
                                   else Unauthorized "Only site administrators may access this page"
-
+              -- only allow promoting the user if there are no other site administrators
+              -- otherwise they can add other admins on /master_admin
+              noAdmins =
+                  do _ <- requireAuthId
+                     adminCount <- runDB $ count [UserDataIsAdmin ==. True]
+                     return $ if adminCount == 0
+                              then Authorized
+                              else Unauthorized "There are already site administrators on this site"
+              isAdmin uid = runDB $ do
+                  res <- getBy $ UniqueUserData uid
+                  return $ maybe False (userDataIsAdmin . entityVal) res
 
     -- This function creates static content files in the static folder
     -- and names them based on a hash of their content. This allows
@@ -303,18 +319,16 @@ instance YesodAuthLTI13 App where
             Just cid ->
                 get $ LtiPlatformInfoKey issuer cid
             -- if we do not, we need to assert that we only get one
-            Nothing ->
-                (selectList [LtiPlatformInfoIssuer ==. issuer] [LimitTo 2])
-                    >>= (\((Entity {entityVal = itm}):rest) ->
-                        if rest == [] then
-                            return $ Just itm
-                        else
-                            liftIO $ fail "multiple client ids for the given issuer"
-                        )
-        LtiPlatformInfo {..} <- case dbPInfo of
-            -- TODO: this may be poor error handling
-            Nothing -> liftIO $ fail "issuer not registered"
-            Just pinfo -> return pinfo
+            Nothing -> do
+                records <- selectList [LtiPlatformInfoIssuer ==. issuer] [LimitTo 2]
+                return $ do
+                    guard $ length records == 1
+                    let (Entity _ itm) : _ = records
+                    return itm
+        LtiPlatformInfo {..} <- maybe
+                (permissionDenied "LTI issuer not recognized or is duplicated")
+                pure
+                dbPInfo
         return $ PlatformInfo {
             platformIssuer = ltiPlatformInfoIssuer
           , platformClientId = ltiPlatformInfoClientId
@@ -410,4 +424,5 @@ instance HasHttpManager App where
 
 unsafeHandler :: App -> Handler a -> IO a
 unsafeHandler = Unsafe.fakeHandlerGetLogger appLogger
+
 

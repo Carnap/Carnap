@@ -1,10 +1,11 @@
 {-#LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE OverloadedStrings #-}
 module Handler.Admin where
 
 import Import
 import Handler.Instructor (dateDisplay)
 import Yesod.Form.Bootstrap3
-import Text.Blaze.Html (toMarkup)
+import Text.Blaze.Html (Markup, toMarkup)
 import qualified Data.Text as T
 import TH.RelativePaths (pathRelativeToCabalPackage)
 import Text.Julius (juliusFile)
@@ -89,7 +90,7 @@ getAdminR = do allUserData <- runDB $ selectList [] []
                         <form method=post enctype=#{enctypeUpgrade}>
                             ^{upgradeWidget}
                              <div.form-group>
-                                 <input.btn.btn-primary type=submit value="Upgrade">
+                                 <input.btn.btn-primary type=submit value="Upgrade Instructor">
                         <hr>
                         <h3> LTI 1.3 Configuration
                         <form method="post" enctype=#{enctypeLti}>
@@ -98,6 +99,43 @@ getAdminR = do allUserData <- runDB $ selectList [] []
                                 <input.btn.btn-primary type=submit value="Create new platform">
                         ^{ltiConfigsW}
                    |]
+
+getAdminPromoteR :: Handler Html
+getAdminPromoteR =
+    do aid <- maybeAuthId >>= maybe (permissionDenied "not logged in") return 
+       (promoteW, enctypePromote) <- generateFormPost $ promoteToAdmin (show aid)
+       defaultLayout $ do
+           [whamlet|
+            <div.container>
+                <h1> Become an administrator
+                <form method=post enctype=#{enctypePromote}>
+                    ^{promoteW}
+                    <div.form-group>
+                        <input.btn.btn-primary type=submit value="Promote me">
+           |]
+
+promoteToAdmin
+    :: String -> Markup -> MForm (HandlerFor App) (FormResult String, WidgetFor App ())
+promoteToAdmin ident = renderBootstrap3 BootstrapBasicForm $
+        areq userId "" (Just ident)
+    where userId = hiddenField
+
+postAdminPromoteR :: Handler Html
+postAdminPromoteR =
+    do aid <- maybeAuthId >>= maybe (permissionDenied "not logged in") return
+       ((promoteResult, _), _) <- runFormPost $ promoteToAdmin (show aid)
+       case readMay <$> promoteResult of
+            FormSuccess (Just uid) -> do
+               userdata <- runDB $ getBy $ UniqueUserData uid
+               case userdata of
+                    Just (Entity key _) -> do
+                        runDB $ update key [UserDataIsAdmin =. True]
+                        defaultLayout $ [whamlet|
+                             Congratulations! You've been promoted. You can now #
+                             <a href=@{AdminR}>manage the site
+                        |]
+                    Nothing -> permissionDenied "User data missing. This may mean you haven't assigned yourself a name yet."
+            _ -> invalidArgs ["form failed"]
 
 upgradeToInstructor :: [User] -> Html -> MForm (HandlerFor App) (FormResult Text, WidgetFor App ())
 upgradeToInstructor users = renderBootstrap3 BootstrapBasicForm $
@@ -121,7 +159,7 @@ unenrolledWidget students courses = do
                             <th> Ident
                             <th> Name
                         <tbody>
-                            $forall (User ident _, Entity _ (UserData fn ln _ _ _)) <- zip unenrolled unenrolledData
+                            $forall (User ident _, Entity _ (UserData {userDataFirstName = fn, userDataLastName = ln})) <- zip unenrolled unenrolledData
 
                                 <tr>
                                     <td>
@@ -129,7 +167,7 @@ unenrolledWidget students courses = do
                                     <td>
                                         #{ln}, #{fn}
                         <tbody>
-                            $forall (User ident _, Entity _ (UserData fn ln _ _ _)) <- zip expired expiredData
+                            $forall (User ident _, Entity _ (UserData {userDataFirstName = fn, userDataLastName = ln})) <- zip expired expiredData
 
                                 <tr>
                                     <td>
@@ -144,14 +182,13 @@ emailWidget insts = do let emails = intercalate "," (map userIdent insts)
                           <a href="mailto:gleachkr@gmail.com?bcc=#{emails}">Email Instructors
                        |]
 
-
 instructorWidget :: [(User,Entity UserData,[(Entity Course,[Entity UserData])])] -> HandlerFor App Widget
 instructorWidget instructorPlus =
         do time <- liftIO getCurrentTime
            let active = filter (\(c,_) -> courseEndDate (entityVal c) > time)
                inactive = filter (\(c,_) -> courseEndDate (entityVal c) < time)
            return [whamlet|
-                 $forall (instructor, Entity key (UserData fn ln _ _ _), courses) <- instructorPlus
+                 $forall (instructor, Entity key (UserData {userDataFirstName = fn, userDataLastName = ln}), courses) <- instructorPlus
                      <div.card style="margin-bottom:20px">
                          <div.card-header>
                              <a href=@{UserR (userIdent instructor)}>#{userIdent instructor}
@@ -163,7 +200,7 @@ instructorWidget instructorPlus =
                                      <thead>
                                          <th> Name
                                      <tbody>
-                                         $forall UserData sfn sln _ _ _ <- map entityVal enrollment
+                                         $forall UserData {userDataFirstName = sfn, userDataLastName = sln} <- map entityVal enrollment
                                              <tr>
                                                  <td>
                                                      #{sln}, #{sfn}
