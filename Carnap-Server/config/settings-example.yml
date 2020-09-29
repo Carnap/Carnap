@@ -9,6 +9,9 @@ ip-from-header: "_env:IP_FROM_HEADER:false"
 # App root, including protocol.
 approot:        "_env:APPROOT:https://carnap.io"
 
+#Optional value for serving static files from a separate subdomain
+#static-root:    "_env:STATICROOT:https://static.carnap.io/static"
+
 # Optional values with the following production defaults.
 # In development, they default to the inverse.
 #
