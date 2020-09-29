@@ -106,6 +106,11 @@ instance Yesod App where
     -- The page to be redirected to when authentication is required.
     authRoute _ = Just $ AuthR LoginR
 
+    urlParamRenderOverride app (StaticR s) _ = case appStaticRoot $ appSettings app of
+        Nothing -> Nothing
+        Just r -> Just $ uncurry (joinPath app r) $ renderRoute s
+    urlParamRenderOverride _ _ _ = Nothing
+
     -- Routes requiring authentication.
     isAuthorized route _ = case route of
          (UserR ident) -> userOrInstructorOf ident
@@ -335,7 +340,6 @@ instance YesodAuthLTI13 App where
           , platformOidcAuthEndpoint = ltiPlatformInfoOidcAuthEndpoint
           , jwksUrl = ltiPlatformInfoJwksUrl
             }
-
 
 instance YesodAuth App where
     type AuthId App = UserId
