@@ -253,7 +253,7 @@ class DeductionNode {
             this.parentNode.forest.splice(this.parentNode.forest.indexOf(this),1);
             this.parentNode.forest.map(n => n.trigger("siblingsChanged"))
             if (this.parentNode.forest.length == 0) this.parentNode.rule = ""
-        }
+        } else { alert("can't remove a node without parents") }
     };
 
     toJSON() {
@@ -373,4 +373,6 @@ class ProofRoot extends DeductionRoot {
         elt.input.setAttribute("required","notrequired")
         elt.input.setAttribute("readonly","readonly")
     }
+
+    addParent () { alert("Can't add a parent to a read-only root node") }
 };
