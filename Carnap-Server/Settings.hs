@@ -29,6 +29,8 @@ data AppSettings = AppSettings
     -- ^ Configuration settings for accessing the database.
     , appRoot                   :: Text
     -- ^ Base for generated URLs. Includes protocol!
+    , appStaticRoot             :: Maybe Text
+    -- ^ Base for static URLs. Includes protocol!
     , appHost                   :: HostPreference
     -- ^ Host/interface the server should bind to.
     , appPort                   :: Int
@@ -84,6 +86,7 @@ instance FromJSON AppSettings where
 
         appSqlite                 <- o .:  "sqlite"           .!= False
         appDataRoot               <- o .:? "data-root"        .!= "."
+        appStaticRoot             <- o .:? "static-root"
         appBookRoot               <- o .:? "book-root"        .!= "."
         appDetailedRequestLogging <- o .:? "detailed-logging" .!= appDevel
         appShouldLogAll           <- o .:? "should-log-all"   .!= appDevel

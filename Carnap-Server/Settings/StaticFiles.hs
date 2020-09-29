@@ -14,7 +14,7 @@ import Yesod.Static     (staticFiles)
 --
 --     js_script_js
 --
--- If the identifier is not available, you may use:
+--- If the identifier is not available, you may use:
 --
 --     StaticFile ["js", "script.js"] []
 pathRelativeToCabalPackage (appStaticDir compileTimeAppSettings)
