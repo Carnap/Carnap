@@ -1,7 +1,8 @@
 { }:
 { nixpkgs }:
 let
-  inherit (nixpkgs.haskell.lib) dontCheck withGitignore;
+  inherit (nixpkgs.lib) gitignoreSource;
+  inherit (nixpkgs.haskell.lib) dontCheck justStaticExecutables;
 in newpkgs: oldpkgs: {
   # most tests are broken on ghcjs even if packages themselves work
   # we also disable library profiling for compile perf
@@ -18,11 +19,9 @@ in newpkgs: oldpkgs: {
   # ghcjs-dom-0.2.4.0 (released 2016)
   ghcjs-dom = oldpkgs.callPackage ./nix/ghcjs-dom-ghcjs.nix { };
 
-  Carnap = withGitignore (oldpkgs.callPackage ./Carnap/Carnap.nix { });
+  Carnap = dontCheck (oldpkgs.callCabal2nix "Carnap" (gitignoreSource ./Carnap) { });
 
-  Carnap-Client = withGitignore
-      (oldpkgs.callPackage ./Carnap-Client/Carnap-Client.nix { });
+  Carnap-Client = oldpkgs.callCabal2nix "Carnap-Client" (gitignoreSource ./Carnap-Client) { };
 
-  Carnap-GHCJS = withGitignore
-      (oldpkgs.callPackage ./Carnap-GHCJS/Carnap-GHCJS.nix { });
+  Carnap-GHCJS = justStaticExecutables (oldpkgs.callCabal2nix "Carnap-GHCJS" (gitignoreSource ./Carnap-GHCJS) { });
 }
