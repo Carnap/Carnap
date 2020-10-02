@@ -47,7 +47,6 @@ getServeR base components = do app <- getYesod
                       mcss <- retrievePandocVal (lookupMeta "css" meta)
                       mjs <- retrievePandocVal (lookupMeta "js" meta)
                       defaultLayout $ do
-                          toWidgetHead $(juliusFile =<< pathRelativeToCabalPackage "templates/command.julius")
                           addScript $ StaticR js_proof_js
                           addScript $ StaticR js_popper_min_js
                           addScript $ StaticR ghcjs_rts_js
