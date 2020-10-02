@@ -28,3 +28,4 @@
 /shared/#Text                       DocumentsByTagR          GET
 /shared/#Text/#Text                 DocumentR                GET
 /shared/#Text/#Text/download        DocumentDownloadR        GET
+/srv/#Text/*[Text]                  ServeR                   GET

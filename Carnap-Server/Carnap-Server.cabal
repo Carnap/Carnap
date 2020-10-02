@@ -38,6 +38,7 @@ library
                      Handler.Review
                      Handler.Assignment
                      Handler.Document
+                     Handler.Serve
                      Filter.RenderFormulas
                      Filter.Randomize
                      Filter.Sidenotes
