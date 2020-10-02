@@ -31,6 +31,12 @@ getServeR base components = do app <- getYesod
                                case () of
                                    () | takeExtension path == ".css" -> sendFile typeCss path >> notFound
                                       | takeExtension path == ".js" -> sendFile typeJavascript path >> notFound
+                                      | takeExtension path == ".png" -> sendFile typePng path >> notFound
+                                      | takeExtension path == ".html" -> sendFile typeHtml path >> notFound
+                                      | takeExtension path == ".jpg" -> sendFile typeJpeg path >> notFound
+                                      | takeExtension path == ".jpeg" -> sendFile typeJpeg path >> notFound
+                                      | takeExtension path == ".gif" -> sendFile typeGif path >> notFound
+                                      | takeExtension path == ".svg" -> sendFile typeGif path >> notFound
                                       | otherwise -> returnFile path
     where returnFile path = do
               ehtml <- liftIO $ fileToHtml allFilters path
