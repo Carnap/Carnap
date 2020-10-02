@@ -3,15 +3,13 @@ module Handler.Assignment (postCourseAssignmentR, getCourseAssignmentR, getCours
 import Import
 import Util.Data
 import Util.Database
-import Yesod.Markdown
 import Yesod.Form.Bootstrap3
 import Text.Blaze.Html (toMarkup)
-import Text.Pandoc (writerExtensions,writerWrapText, WrapOption(..), readerExtensions, Pandoc(..), lookupMeta)
+import Text.Pandoc (lookupMeta)
 import System.Directory (doesFileExist,getDirectoryContents)
 import Data.Time
 import Data.Time.Clock.POSIX
 import Text.Julius (juliusFile,rawJS)
-import Text.Pandoc.Walk (walkM, walk)
 import TH.RelativePaths (pathRelativeToCabalPackage)
 import Filter.Randomize
 import Filter.SynCheckers
@@ -75,7 +73,7 @@ returnAssignment coursetitle filename (Entity key val) path = do
                creation (Entity _ tok) = round $ utcTimeToPOSIXSeconds (assignmentAccessTokenCreatedAt tok) * 1000 --milliseconds to match JS
            if visibleAt time val || instructorAccess
                then do
-                   ehtml <- liftIO $ fileToHtml (hash (show uid ++ path)) path
+                   ehtml <- liftIO $ fileToHtml (allFilters (hash (show uid ++ path))) path
                    unless (visibleAt time val) $ setMessage "Viewing as instructor. Assignment not currently visible to students."
                    case ehtml of
                        Left err -> defaultLayout $ minimalLayout (show err)
@@ -122,14 +120,6 @@ returnAssignment coursetitle filename (Entity key val) path = do
                else defaultLayout $ minimalLayout ("Assignment not currently set as visible by instructor" :: Text)
     where visibleAt t a = (assignmentMetadataVisibleTill a > Just t || assignmentMetadataVisibleTill a == Nothing)
                           && (assignmentMetadataVisibleFrom a < Just t || assignmentMetadataVisibleFrom a == Nothing)
-
-fileToHtml salt path = do Markdown md <- markdownFromFile path
-                          let md' = Markdown (filter ((/=) '\r') md) --remove carrage returns from dos files
-                          case parseMarkdown yesodDefaultReaderOptions { readerExtensions = carnapPandocExtensions } md' of
-                              Right pd -> do let pd'@(Pandoc meta _) = walk (allFilters salt) pd
-                                             return $ Right $ (write pd', meta)
-                              Left e -> return $ Left e
-        where write = writePandocTrusted yesodDefaultWriterOptions { writerExtensions = carnapPandocExtensions, writerWrapText=WrapPreserve }
 
 allFilters salt = randomizeProblems salt
                   . makeTreeDeduction

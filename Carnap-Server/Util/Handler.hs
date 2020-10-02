@@ -3,7 +3,9 @@ module Util.Handler where
 import Import
 import qualified Data.CaseInsensitive as CI
 import qualified Data.Text.Encoding as TE
-import Text.Pandoc (MetaValue(..),Inline(..))
+import Yesod.Markdown
+import Text.Pandoc (MetaValue(..),Inline(..), writerExtensions,writerWrapText, WrapOption(..), readerExtensions, Pandoc(..))
+import Text.Pandoc.Walk (walkM, walk)
 import Text.Julius (juliusFile,rawJS)
 import Text.Hamlet (hamletFile)
 import Util.Data
@@ -23,6 +25,14 @@ retrievePandocVal metaval = case metaval of
                         x -> setMessage (toHtml ("bad yaml metadata: " ++ show x)) >> return Nothing
     where fromStr (Str x) = Just x
           fromStr _ = Nothing
+
+fileToHtml filters path = do Markdown md <- markdownFromFile path
+                             let md' = Markdown (filter ((/=) '\r') md) --remove carrage returns from dos files
+                             case parseMarkdown yesodDefaultReaderOptions { readerExtensions = carnapPandocExtensions } md' of
+                                 Right pd -> do let pd'@(Pandoc meta _)= walk filters pd
+                                                return $ Right $ (write pd', meta)
+                                 Left e -> return $ Left e
+    where write = writePandocTrusted yesodDefaultWriterOptions { writerExtensions = carnapPandocExtensions, writerWrapText = WrapPreserve }
 
 serveDoc :: (Document -> FilePath -> Handler a) -> Document -> FilePath -> UserId -> Handler a
 serveDoc sendIt doc path creatoruid = case documentScope doc of 

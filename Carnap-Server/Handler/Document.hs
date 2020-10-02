@@ -4,8 +4,7 @@ import Import
 import System.Directory (doesFileExist,getDirectoryContents)
 import Yesod.Markdown
 import Data.List (nub)
-import Text.Pandoc (writerExtensions,writerWrapText, WrapOption(..), readerExtensions, Pandoc(..), lookupMeta)
-import Text.Pandoc.Walk (walkM, walk)
+import Text.Pandoc (lookupMeta)
 import Text.Julius (juliusFile,rawJS)
 import TH.RelativePaths (pathRelativeToCabalPackage)
 import System.FilePath
@@ -114,7 +113,7 @@ getDocumentR ident title = do (Entity key doc, path, creatorid) <- retrieveDoc i
                                    | otherwise -> returnFile path
 
     where returnFile path = do
-              ehtml <- liftIO $ fileToHtml path
+              ehtml <- liftIO $ fileToHtml allFilters path
               case ehtml of
                   Left err -> defaultLayout $ minimalLayout (show err)
                   Right (Left err,_) -> defaultLayout $ minimalLayout (show err)
@@ -155,14 +154,6 @@ retrieveDoc ident title = do userdir <- getUserDir ident
                                      case mdoc of
                                          Nothing -> setMessage "metadata for this document not found" >> notFound
                                          Just doc -> return (doc, path, creatoruid)
-
-fileToHtml path = do Markdown md <- markdownFromFile path
-                     let md' = Markdown (filter ((/=) '\r') md) --remove carrage returns from dos files
-                     case parseMarkdown yesodDefaultReaderOptions { readerExtensions = carnapPandocExtensions } md' of
-                         Right pd -> do let pd'@(Pandoc meta _)= walk allFilters pd
-                                        return $ Right $ (write pd', meta)
-                         Left e -> return $ Left e
-    where write = writePandocTrusted yesodDefaultWriterOptions { writerExtensions = carnapPandocExtensions, writerWrapText = WrapPreserve }
 
 getUserDir ident = do master <- getYesod
                       return $ (appDataRoot $ appSettings master) </> "documents" </> unpack ident
