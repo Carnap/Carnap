@@ -10,48 +10,28 @@ find the meanings of compound expressions, and a whole lot more.
 Carnap's primary application at the moment is powering
 [Carnap.io](https://carnap.io), a website supporting online logic instruction
 and learning. If  you'd like to seem some demos and more general information,
-head over to [Carnap.io/about](https://carnap.io/about). If you'd like to learn
-more about using the server as an instructor, head over to the documentation
-collection at
-[Carnap.io/shared/Documentation](https://carnap.io/shared/Documentation)
+head over to [Carnap.io/about](https://carnap.io/about).
+
+If you'd like to learn more about using the server as an instructor, head over
+to the documentation collection at
+[Carnap.io/shared/Documentation](https://carnap.io/shared/Documentation).
+
+Documentation about administration-focused topics such as deployment and server
+configuration is available on the
+[Carnap-Documentation](https://github.com/Carnap/Carnap-Documentation)
+repository.
+
+If you'd like to discuss development and administration of Carnap instances in
+real time, we have a chat room on
+[Matrix](https://matrix.to/#/!AqFOGENiPssQgsjxfE:matrix.org?via=matrix.org) or
+[freenode (#carnap)](irc://irc.freenode.net/carnap).
+
+There is also a mailing list, primarily focused on instructor support, on
+[Google Groups](https://groups.google.com/g/carnap-users).
 
 If you're interested in contributing to software development or modifying the
 software, read on. This README will help you set up a development environment
 for building the server-side and client-side components used on carnap.io.
-
-## LTI Setup (for Learning Management System administrators)
-
-Carnap supports [LTI 1.3](http://www.imsglobal.org/spec/lti/v1p3/) for login,
-allowing it to be placed directly in a Canvas course. No previous versions
-superseded by LTI 1.3 including LTI 1.0, 1.1, or 2.0 are supported.
-
-Various major LMS implementations including Moodle and Canvas support LTI 1.3
-natively.
-
-Carnap.io's configuration parameters are:
-
-* `oidc_initiation_url`: https://carnap.io/auth/page/lti13/initiate
-* `target_link_uri`: https://carnap.io
-* Public JWK URL: https://carnap.io/auth/page/lti13/jwks
-* Redirect URLs: https://carnap.io/auth/page/lti13/authenticate
-
-A JSON file for easy configuration via Canvas is provided at
-[./carnap-lti-canvas.json](./carnap-lti-canvas.json).
-
-After this configuration is set up, it must be configured on the Carnap
-instance administration page at `/master_admin`. For setup with the public
-Carnap instance at Carnap.io, [contact Graham](mailto:gleachkr@ksu.edu) with
-the following details from your LMS:
-
-* Public JWKs URL
-* Authorization Redirect URL
-* Client ID
-
-For more details on Canvas setup with LTI 1.3, see:
-
-* [Technical documentation](https://canvas.instructure.com/doc/api/file.lti_dev_key_config.html).
-  This is also a nice general overview of the protocol.
-* [Configuring an LTI key](https://community.canvaslms.com/t5/Admin-Guide/How-do-I-configure-an-LTI-key-for-an-account/ta-p/140)
 
 ## Development
 
@@ -128,7 +108,9 @@ components, allowing the build step to be skipped.
 $ nix-build -j4 -A client -o client-out
 ```
 
-### Build Carnap-Server for deployment
+### Build a release version of Carnap-Server with Nix
+
+This package is what is included in the Docker image.
 
 This will also automatically build the client and any dependencies if
 necessary.
@@ -190,6 +172,26 @@ $ nix-shell --arg ghcjs true
 $ cabal --project-file=cabal-ghcjs.project --builddir=dist-ghcjs new-build all
 ```
 
+### Building Docker images
+
+If you'd like to build an image locally for development/testing, run:
+
+```
+nix-build release.nix -A docker -o docker-out
+```
+
+then load it into the docker daemon with:
+
+```
+docker image load -i docker-out
+```
+
+It will be available under the image name `carnap:latest`.
+
+The docker building setup does not require KVM support in the host kernel, and
+if you wish to build your images on a machine without it, run nix-build with
+the added argument `--arg hasKvm false`.
+
 ### Haskell Language Server
 
 The Nix infrastructure for Carnap provides the Haskell Language Server by
@@ -232,47 +234,6 @@ picks up the dependencies for Carnap-Server from Nix since it is run in a
 NOTE: `Carnap-Server/config/settings.yml` needs to be present for Carnap-Server to
 work in HLS (just copy it from the example settings file).
 
-## Deployment
-
-### Docker
-
-There is experimental Docker support for Carnap. Currently, diagrams support is
-broken, which impacts some chapters of the Carnap textbook.
-
-Images are available via the GitHub container registry at
-`docker.pkg.github.com/carnap/carnap/carnap:latest`.
-
-Note that Carnap docker images are about 3GB uncompressed and about 500MB to
-download.
-
-If you'd like to build an image locally for development/testing, run:
-
-```
-nix-build release.nix -A docker -o docker-out
-```
-
-then load it into the docker daemon with:
-
-```
-docker image load -i docker-out
-```
-
-It will be available under the image name `carnap:latest`.
-
-To run Carnap under docker:
-
-```
-docker run --rm -v carnap_data:/data -e APPROOT=http://your-app-root.com
-```
-
-For production deployment, set the environment variable SQLITE=false and supply
-`PGUSER`, `PGPASS`, `PGHOST`, and if required, `PGPORT` and `PGDATABASE` for
-your postgresql database instance.
-
-The docker building setup does not require KVM support in the host kernel, and
-if you wish to build your images on a machine without it, run nix-build with
-the added argument `--arg hasKvm false`.
-
 ## Maintainer information
 
 ### CI requirements
@@ -280,14 +241,6 @@ the added argument `--arg hasKvm false`.
 CI requires that a Cachix signing key for the Cachix cache be supplied in the
 `CACHIX_SIGNING_KEY` Secret in the GitHub repository settings for artifacts to
 be pushed to Cachix.
-
-### Generate the `.nix` files in a subproject
-
-For example:
-
-```
-$ cd Carnap-Client; cabal2nix . > Carnap-Client.nix
-```
 
 ### Updating nixpkgs
 
@@ -306,20 +259,6 @@ versions. It is available from either development shell.
 
 Run `niv update nixpkgs` or `niv update nixpkgs-stable` to update the
 respective pinned nixpkgs versions to the latest in their branch.
-
-### Files in nix/
-
-If you need to get a package from Hackage, use `cabal2nix`:
-
-```
-$ cabal2nix cabal://ghcjs-dom-0.2.4.0 | tee ghcjs-dom.nix
-$ # or for ghcjs
-$ cabal2nix --compiler ghcjs cabal://ghcjs-dom-0.2.4.0 | tee ghcjs-dom-ghcjs.nix
-```
-
-There is also `work-on-multi.nix` which provides shells for working on
-multi-piece Haskell projects. It's from reflex-platform, but freed from its
-dependencies on that project and simplified slightly.
 
 ### Issues
 
@@ -341,9 +280,6 @@ Blog post on Carnap's nix implementation: https://lfcode.ca/blog/nix-and-haskell
 
 Tutorial some of the Nix here is loosely based on:
 https://github.com/Gabriel439/haskell-nix
-
-`reflex-platform` documentation that inspired our shell setup:
-https://github.com/reflex-frp/reflex-platform/blob/develop/docs/project-development.rst
 
 User's guide to the Haskell infrastructure:
 https://nixos.org/nixpkgs/manual/#users-guide-to-the-haskell-infrastructure

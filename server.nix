@@ -1,14 +1,14 @@
 { client, persistent, withHoogle ? true, profiling ? false }:
 { nixpkgs }:
 let
+  inherit (nixpkgs.lib) gitignoreSource;
   inherit (nixpkgs.haskell.lib)
     disableSharedExecutables
     doJailbreak
     dontCheck
     justStaticExecutables
     overrideSrc
-    overrideCabal
-    withGitignore;
+    overrideCabal;
 in
 newpkgs: oldpkgs: {
   # multiple issues: grumpy about haskell-src-exts versions
@@ -46,12 +46,6 @@ newpkgs: oldpkgs: {
   yesod-persistent = doJailbreak oldpkgs.yesod-persistent;
   yesod-auth = doJailbreak oldpkgs.yesod-auth;
 
-  # ghcjs-dom-0.2.4.0 (released 2016)
-  # using `ghc` native dependencies
-  # currently broken: ghcjs-dom needs to be updated to a newer
-  # version such that it uses a modern webkitgtk
-  # ghcjs-dom = oldpkgs.callPackage ./nix/ghcjs-dom.nix { };
-
   # they wrote a spec that calls out to Google. It does not work in a nix
   # builder.
   oidc-client = dontCheck oldpkgs.oidc-client;
@@ -69,17 +63,11 @@ newpkgs: oldpkgs: {
   } { };
 
   # dontCheck: https://github.com/gleachkr/Carnap/issues/123
-  Carnap        = withGitignore
-      (dontCheck (oldpkgs.callPackage ./Carnap/Carnap.nix { }));
-  Carnap-Client = withGitignore
-      (oldpkgs.callPackage ./Carnap-Client/Carnap-Client.nix { });
+  Carnap        = dontCheck (oldpkgs.callCabal2nix "Carnap" (gitignoreSource ./Carnap) { });
+  Carnap-Client = oldpkgs.callCabal2nix "Carnap-Client" (gitignoreSource ./Carnap-Client) { };
 
-  # for client development with ghc
-  # Carnap-GHCJS  = withGitignore
-  #    (oldpkgs.callPackage ./Carnap-GHCJS/Carnap-GHCJS.nix { });
-
-  Carnap-Server = justStaticExecutables (withGitignore ((overrideCabal
-    (oldpkgs.callCabal2nix "Carnap-Server" ./Carnap-Server { })
+  Carnap-Server = justStaticExecutables ((overrideCabal
+    (oldpkgs.callCabal2nix "Carnap-Server" (gitignoreSource ./Carnap-Server) { })
     (old: let book = ./Carnap-Book; in {
       preConfigure = ''
         mkdir -p $out/share
@@ -145,5 +133,5 @@ newpkgs: oldpkgs: {
           -t ${tzdata} \
           $out/bin/Carnap-Server
       '';
-    })));
+    }));
 }
