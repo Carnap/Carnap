@@ -26,9 +26,9 @@ import Filter.RenderFormulas
 getServeR :: Text -> [Text] -> Handler Html
 getServeR base components = do app <- getYesod
                                let root = appDataRoot $ appSettings app
-                                   path = case components of 
-                                            [] -> FP.joinPath (unpack root:"srv":unpack base:["index.md"])
-                                            _ -> FP.joinPath (unpack root:"srv":unpack base:map unpack components)
+                               path <- case components of 
+                                         [] -> redirect $ ServeR base [pack "index.md"]
+                                         _ -> return $ FP.joinPath (unpack root:"srv":unpack base:map unpack components)
                                liftIO (doesFileExist path) >>= \exists -> if exists then return () else notFound
                                case () of
                                    () | takeExtension path == ".css" -> sendFile typeCss path >> notFound
