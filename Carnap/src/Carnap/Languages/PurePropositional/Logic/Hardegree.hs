@@ -1,12 +1,13 @@
 {-#LANGUAGE FlexibleContexts, FlexibleInstances, MultiParamTypeClasses #-}
 module Carnap.Languages.PurePropositional.Logic.Hardegree
-    (parseHardegreeSL,  parseHardegreeSLProof, HardegreeSL, hardegreeSLCalc) where
+    (parseHardegreeSL,  parseHardegreeSLProof, HardegreeSL, hardegreeSLCalc, hardegreeNotation) where
 
 import Data.Map as M (lookup, Map)
 import Text.Parsec
 import Carnap.Core.Data.Types (Form)
 import Carnap.Languages.PurePropositional.Syntax
 import Carnap.Languages.PurePropositional.Parser
+import Carnap.Languages.PurePropositional.Util (dropOuterParens)
 import Carnap.Calculi.NaturalDeduction.Syntax
 import Carnap.Calculi.NaturalDeduction.Parser
 import Carnap.Calculi.NaturalDeduction.Checker
@@ -165,9 +166,16 @@ parseHardegreeSL rtc = do r <- choice (map (try . string) ["AS","PR","&I","&O","
 parseHardegreeSLProof :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> String -> [DeductionLine HardegreeSL PurePropLexicon (Form Bool)]
 parseHardegreeSLProof rtc = toDeductionHardegree (parseHardegreeSL rtc) (purePropFormulaParser hardegreeOpts)
 
+hardegreeNotation = map fixSym . dropOuterParens 
+    where fixSym '∧' = '&'
+          fixSym '¬' = '~'
+          fixSym '⊥' = '⨳'
+          fixSym x = x
+
 hardegreeSLCalc = mkNDCalc 
     { ndRenderer = MontagueStyle
     , ndParseProof = parseHardegreeSLProof
     , ndProcessLine = processLineHardegree
     , ndProcessLineMemo = Nothing
+    , ndNotation  = hardegreeNotation
     }

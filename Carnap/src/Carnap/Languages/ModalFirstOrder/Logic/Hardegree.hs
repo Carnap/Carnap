@@ -18,6 +18,7 @@ import Carnap.Languages.Util.GenericConstructors
 import Carnap.Languages.PureFirstOrder.Logic.Rules
 import Carnap.Languages.ModalFirstOrder.Logic.Rules
 import Carnap.Languages.ModalPropositional.Logic.Hardegree
+import Carnap.Languages.PurePropositional.Logic.Hardegree (hardegreeNotation)
 
 data HardegreeMPLOver a = ModalProp a | UI | UE | EI | EE 
                  | QN1 | QN2 | QN3 | QN4
@@ -108,4 +109,5 @@ hardegreeMPLCalc = mkNDCalc
     , ndProcessLine = hoProcessLineHardegree
     , ndProcessLineMemo = Just hoProcessLineHardegreeMemo
     , ndParseSeq = indexedModalFOSeqParser
+    , ndNotation  = hardegreeNotation
     }

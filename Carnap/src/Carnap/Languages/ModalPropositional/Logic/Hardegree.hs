@@ -18,6 +18,7 @@ import Carnap.Languages.ModalPropositional.Syntax
 import Carnap.Languages.ModalPropositional.Parser
 import Carnap.Languages.ClassicalSequent.Syntax
 import Carnap.Languages.ClassicalSequent.Parser
+import Carnap.Languages.PurePropositional.Logic.Hardegree (hardegreeNotation)
 import Carnap.Languages.ModalPropositional.Logic.Rules
 import Carnap.Languages.Util.GenericConstructors (StandardQuant(..))
 import Carnap.Languages.Util.LanguageClasses
@@ -327,6 +328,7 @@ hardegreeWTLCalc = mkNDCalc
     , ndParseProof = parseHardegreeWTLProof
     , ndProcessLine = hoProcessLineHardegree
     , ndProcessLineMemo = Just hoProcessLineHardegreeMemo
+    , ndNotation  = hardegreeNotation
     }
 
 ------------------------------------
@@ -422,6 +424,7 @@ hardegreeLCalc = mkNDCalc
     , ndProcessLine = hoProcessLineHardegree
     , ndProcessLineMemo = Just hoProcessLineHardegreeMemo
     , ndParseSeq = absoluteModalPropSeqParser
+    , ndNotation  = hardegreeNotation
     }
 
 -----------------------------------
@@ -489,6 +492,7 @@ hardegreeKCalc = mkNDCalc
     , ndProcessLine = hoProcessLineHardegree
     , ndProcessLineMemo = Just hoProcessLineHardegreeMemo
     , ndParseSeq = absoluteModalPropSeqParser
+    , ndNotation  = hardegreeNotation
     }
 
 --------------------
@@ -550,6 +554,7 @@ hardegreeDCalc = mkNDCalc
     , ndProcessLine = hoProcessLineHardegree
     , ndProcessLineMemo = Just hoProcessLineHardegreeMemo
     , ndParseSeq = absoluteModalPropSeqParser
+    , ndNotation  = hardegreeNotation
     }
 
 --------------------
@@ -609,6 +614,7 @@ hardegreeTCalc = mkNDCalc
     , ndProcessLine = hoProcessLineHardegree
     , ndProcessLineMemo = Just hoProcessLineHardegreeMemo
     , ndParseSeq = absoluteModalPropSeqParser
+    , ndNotation  = hardegreeNotation
     }
 
 --------------------
@@ -676,6 +682,7 @@ hardegreeBCalc = mkNDCalc
     , ndProcessLine = hoProcessLineHardegree
     , ndProcessLineMemo = Just hoProcessLineHardegreeMemo
     , ndParseSeq = absoluteModalPropSeqParser
+    , ndNotation  = hardegreeNotation
     }
 
 --------------------
@@ -738,6 +745,7 @@ hardegreeFourCalc = mkNDCalc
     , ndProcessLine = hoProcessLineHardegree
     , ndProcessLineMemo = Just hoProcessLineHardegreeMemo
     , ndParseSeq = absoluteModalPropSeqParser
+    , ndNotation  = hardegreeNotation
     }
 
 --------------------
@@ -799,6 +807,7 @@ hardegreeFiveCalc = mkNDCalc
     , ndProcessLine = hoProcessLineHardegree
     , ndProcessLineMemo = Just hoProcessLineHardegreeMemo
     , ndParseSeq = absoluteModalPropSeqParser
+    , ndNotation  = hardegreeNotation
     }
 
 
@@ -886,6 +895,7 @@ hardegreeS5Calc = mkNDCalc
     , ndProcessLine = hoProcessLineHardegree
     , ndProcessLineMemo = Just hoProcessLineHardegreeMemo
     , ndParseSeq = absoluteModalPropSeqParser
+    , ndNotation  = hardegreeNotation
     }
 
 ---------------------
@@ -953,4 +963,5 @@ hardegreeS4Calc = mkNDCalc
     , ndProcessLine = hoProcessLineHardegree
     , ndProcessLineMemo = Just hoProcessLineHardegreeMemo
     , ndParseSeq = absoluteModalPropSeqParser
+    , ndNotation  = hardegreeNotation
     }

@@ -7,6 +7,7 @@ import Carnap.Core.Data.Types (Form)
 import Carnap.Languages.PureFirstOrder.Syntax
 import Carnap.Languages.PureFirstOrder.Parser
 import qualified Carnap.Languages.PurePropositional.Logic as P
+import Carnap.Languages.PurePropositional.Logic.Hardegree (hardegreeNotation)
 import Carnap.Calculi.NaturalDeduction.Syntax
 import Carnap.Calculi.NaturalDeduction.Parser
 import Carnap.Calculi.NaturalDeduction.Checker (hoProcessLineHardegreeMemo, hoProcessLineHardegree)
@@ -94,5 +95,6 @@ hardegreePLCalc = mkNDCalc
     { ndRenderer = MontagueStyle
     , ndParseProof = parseHardegreePLProof
     , ndProcessLine = hoProcessLineHardegree
+    , ndNotation = hardegreeNotation
     , ndProcessLineMemo = Just hoProcessLineHardegreeMemo
     }
