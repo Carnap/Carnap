@@ -27,8 +27,8 @@ getServeR :: Text -> [Text] -> Handler Html
 getServeR base components = do app <- getYesod
                                let root = appDataRoot $ appSettings app
                                    path = case components of 
-                                            [] -> FP.joinPath (unpack root:unpack base:["index.md"])
-                                            _ -> FP.joinPath (unpack root:unpack base:map unpack components)
+                                            [] -> FP.joinPath (unpack root:"srv":unpack base:["index.md"])
+                                            _ -> FP.joinPath (unpack root:"srv":unpack base:map unpack components)
                                liftIO (doesFileExist path) >>= \exists -> if exists then return () else notFound
                                case () of
                                    () | takeExtension path == ".css" -> sendFile typeCss path >> notFound
