@@ -75,14 +75,14 @@ absoluteModalPropFormulaParser :: Parsec String u AbsoluteModalForm
 absoluteModalPropFormulaParser = absoluteModalPropFormulaPreParser >>= indexIt
     where indexIt :: AbsoluteModalPreForm -> Parsec String u AbsoluteModalForm
           indexIt f = do char '/'
-                         w <- parseWorld
+                         w <- parseWorld <* spaces
                          return (f `atWorld` w)
 
 relativeModalPropFormulaParser :: Parsec String u AbsoluteModalForm
 relativeModalPropFormulaParser = absoluteModalPropFormulaPreParser >>= indexIt
     where indexIt :: AbsoluteModalPreForm -> Parsec String u AbsoluteModalForm
           indexIt f = do char '/'
-                         (w:ws)<- sepBy1 parseWorld (char '-')
+                         (w:ws)<- sepBy1 parseWorld (char '-') <* spaces
                          let idx = foldl indexcons w ws
                          return (f `atWorld` idx)
 

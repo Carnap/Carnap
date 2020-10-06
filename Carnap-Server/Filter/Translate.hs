@@ -17,9 +17,10 @@ makeTranslate x = x
 
 activate :: [Text] -> [(Text, Text)] -> Text -> Block
 activate cls extra chunk
-    | "Prop" `elem` cls = template (opts [("transtype","prop")])
-    | "FOL"  `elem` cls = template (opts [("transtype","first-order")])
-    | "Desc" `elem` cls = template (opts [("transtype","description")])
+    | "Prop"  `elem` cls = template (opts [("transtype","prop")])
+    | "FOL"   `elem` cls = template (opts [("transtype","first-order")])
+    | "Desc"  `elem` cls = template (opts [("transtype","description")])
+    | "Exact" `elem` cls = template (opts [("transtype","exact")])
     | otherwise = RawBlock "html" "<div>No Matching Translation</div></div>"
     where (h:t) = formatChunk chunk
           fixed = case T.splitOn ":" (contentOf h) of
