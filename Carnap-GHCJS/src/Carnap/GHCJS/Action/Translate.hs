@@ -6,6 +6,9 @@ import Carnap.Calculi.NaturalDeduction.Syntax (NaturalDeductionCalc(..))
 import Carnap.Core.Data.Optics (genChildren, PrismSubstitutionalVariable)
 import Carnap.Core.Data.Types (FixLang, Form, Term, BoundVars, FirstOrderLex)
 import Carnap.Languages.PurePropositional.Logic (ofPropSys)
+import Carnap.Languages.ModalPropositional.Logic (ofModalPropSys)
+import Carnap.Languages.PureSecondOrder.Logic (ofSecondOrderSys) 
+import Carnap.Languages.SetTheory.Logic.Carnap (ofSetTheorySys)
 import Carnap.Languages.PureFirstOrder.Syntax (PureFirstOrderLexWith)
 import Carnap.Languages.PureFirstOrder.Logic (ofFOLSys)
 import Carnap.Languages.DefiniteDescription.Logic.Gamut
@@ -32,6 +35,7 @@ import GHCJS.DOM.Document (Document,createElement, getBody, getDefaultView)
 import GHCJS.DOM.Node (appendChild, getParentNode, insertBefore, getParentElement)
 import GHCJS.DOM.KeyboardEvent
 import GHCJS.DOM.EventM
+import Control.Monad (mplus)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Control.Lens (Prism', toListOf, cosmos, Fold, filtered)
 
@@ -49,21 +53,26 @@ activateTranslate :: Document -> Maybe (Element, Element, M.Map String String) -
 activateTranslate w (Just (i,o,opts)) = do
         case (M.lookup "transtype" opts, M.lookup "system" opts) of
             (Just "prop", mparser) -> activateWith formParser propChecker (propTests testlist)
-                where formParser = case mparser >>= ofPropSys ndParseForm of
-                                       Nothing -> purePropFormulaParser standardLetters
-                                       Just theParser -> theParser
+                where formParser = maybe (purePropFormulaParser standardLetters) id (mparser >>= ofPropSys ndParseForm)
             (Just "first-order", mparser) -> activateWith formParser folChecker (folTests testlist)
-                where formParser = case mparser >>= ofFOLSys ndParseForm of
-                                       Nothing -> folFormulaParser
-                                       Just theParser -> theParser 
+                where formParser =  maybe folFormulaParser id (mparser >>= ofFOLSys ndParseForm)
             (Just "description", mparser) -> activateWith formParser descChecker (folTests testlist)
-                where formParser = case mparser >>= ofDefiniteDescSys ndParseForm of
-                                       Nothing -> descFormulaParser
-                                       Just theParser -> theParser 
+                where formParser = maybe descFormulaParser id (mparser >>= ofDefiniteDescSys ndParseForm)
+            (Just "exact", mparser) -> maybe noSystem id $  ((\it -> activateWith (ndParseForm it) exactChecker (propTests testlist)) `ofPropSys` sys)
+                                                    `mplus` ((\it -> activateWith (ndParseForm it) exactChecker (folTests testlist)) `ofFOLSys` sys)
+                                                    `mplus` ((\it -> activateWith (ndParseForm it) exactChecker (folTests testlist)) `ofDefiniteDescSys` sys)
+                                                    `mplus` ((\it -> activateWith (ndParseForm it) exactChecker noTests) `ofSecondOrderSys` sys)
+                                                    `mplus` ((\it -> activateWith (ndParseForm it) exactChecker noTests) `ofSetTheorySys` sys)
+                                                    `mplus` ((\it -> activateWith (ndParseForm it) exactChecker noTests) `ofModalPropSys` sys)
             _ -> return ()
     where testlist = case M.lookup "tests" opts of Just s -> words s; Nothing -> []
+          noTests _ = Nothing
           optlist = case M.lookup "options" opts of Just s -> words s; Nothing -> []
           getGoal = if "nocipher" `elem` optlist then id else simpleDecipher . read
+          sys = case M.lookup "system" opts of
+                        Just s -> s
+                        Nothing -> "prop"
+          noSystem = setInnerHTML o (Just $ "Can't find a formal system named " ++ sys)
           activateWith parser checker tests =
               case (M.lookup "goal" opts, M.lookup "content" opts, M.lookup "problem" opts) of
                   (Just g, Just content, Just problem) ->
@@ -204,3 +213,5 @@ propChecker f g = f == g || f `isEquivTo` g
 folChecker f g = f == g || toDenex f `pnfEquiv` toDenex g
 
 descChecker f g = f == g || toDenex f `descEquivPNF` toDenex g
+
+exactChecker f g = f == g

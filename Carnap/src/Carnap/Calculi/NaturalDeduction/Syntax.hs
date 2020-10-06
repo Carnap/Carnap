@@ -407,6 +407,7 @@ type SupportsND r lex sem =
     , Schematizable (lex (ClassicalSequentOver lex))
     , PrismLink (lex (FixLang lex)) (SubstitutionalVariable (FixLang lex))
     , PrismLink (lex (ClassicalSequentOver lex)) (SubstitutionalVariable (ClassicalSequentOver lex))
+    , FirstOrderLex (lex (FixLang lex))
     , FirstOrderLex (lex (ClassicalSequentOver lex))
     , ParsableLex sem lex
     , CopulaSchema (FixLang lex)

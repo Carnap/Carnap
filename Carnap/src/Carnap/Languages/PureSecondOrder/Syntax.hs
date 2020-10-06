@@ -133,6 +133,8 @@ instance PrismGenericTypedLambda (OpenSOLLex a) Term Form Int
 instance PrismStandardVar (OpenSOLLex a) Int
 instance PrismSubstitutionalVariable (OpenSOLLex a)
 instance PrismGenericQuant (OpenSOLLex a) Term Form Bool Int
+instance UniformlyEq (OpenSOL a) => Eq (OpenSOL a b) where
+        (==) = (=*)
 
 --------------------------------------------------------
 --2. Second Order Languages
@@ -198,9 +200,6 @@ instance BoundVars MonadicallySOLLex where
 
     subBoundVar = subst
 
-instance Eq (MonadicallySOL a) where
-        (==) = (=*)
-
 instance PrismGenericQuant MonadicallySOLLex Form Form Bool (Int -> Bool) 
 
 --------------------------------------------------------
@@ -246,9 +245,6 @@ instance CopulaSchema PolyadicallySOL where
     appSchema x y e = schematize x (show y : e)
 
     lamSchema = defaultLamSchema
-
-instance Eq (PolyadicallySOL a) where
-        (==) = (=*)
 
 instance PrismPolyVar PolyadicallySOLLex Int Bool 
 --------------------------------------------------------
