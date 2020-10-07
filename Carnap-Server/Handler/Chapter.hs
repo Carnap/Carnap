@@ -7,7 +7,6 @@ import Filter.Sidenotes
 import Filter.SynCheckers
 import Filter.ProofCheckers
 import Filter.Translate
-import Filter.Diagrams
 import Filter.TruthTables
 import Filter.CounterModelers
 import Filter.Qualitative
@@ -66,7 +65,7 @@ content n cdir cdirp = do let matches = filter (\x -> (show n ++ ".pandoc") == d
 
 fileToHtml path m = do md <- markdownFromFile (path </> m)
                        case parseMarkdown yesodDefaultReaderOptions { readerExtensions = exts } md of
-                           Right pd -> do pd' <- runFilters path pd
+                           Right pd -> do let pd' = applyFilters pd
                                           return $ Right $ writePandocTrusted yesodDefaultWriterOptions { writerExtensions = exts } pd'
                            Left e -> return $ Left e
     where exts = extensionsFromList
@@ -86,10 +85,9 @@ fileToHtml path m = do md <- markdownFromFile (path </> m)
                     , Ext_fenced_code_attributes
                     ]
 
-runFilters path = let walkNotes y = evalState (walkM makeSideNotes y) 0
-                      walkProblems y = walk (makeSynCheckers . makeProofChecker . makeTranslate . makeTruthTables . makeCounterModelers . makeQualitativeProblems) y
-                      walkDiagrams y = evalStateT (walkM (makeDiagrams path) y) []
-                   in walkDiagrams . walkNotes . walkProblems
+applyFilters= let walkNotes y = evalState (walkM makeSideNotes y) 0
+                  walkProblems y = walk (makeSynCheckers . makeProofChecker . makeTranslate . makeTruthTables . makeCounterModelers . makeQualitativeProblems) y
+                  in walkNotes . walkProblems
 
 chapterLayout widget = do
         master <- getYesod

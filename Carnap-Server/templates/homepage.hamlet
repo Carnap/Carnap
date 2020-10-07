@@ -5,7 +5,7 @@
 
 
 <div#main.container>
-    <img.float-right.hidden-sm-down width=350px src=@{StaticR russell2_png}>
+    <img.float-right.hidden-sm-down width=350px src=@{StaticR img_russell2_png}>
 
     <h2> Background
 

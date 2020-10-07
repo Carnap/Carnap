@@ -165,35 +165,7 @@ The general idea for applying our tools can be summed up in this way.
 
 <figure>
 
-```diagram
-dia
-
---a labeled arrow function would be nice
-
-import Diagrams.TwoD.Arrow
-
-dia = atPoints (trailVertices (rect 16 4))
-        [node2,node4,node3,node1] 
-        # connectOutside' arrowOpts  (4 :: Int) (2 :: Int) 
-        # connectOutside' arrowOpts  (3 :: Int) (4 :: Int) 
-        # connectOutside' arrowOpts' (1 :: Int) (2 :: Int) 
-        # connectOutside' arrowOpts  (1 :: Int) (3 :: Int) 
-        <> rect 29 8 
-
-arrowOpts  = with & gaps .~ small
-
-arrowOpts' = with & gaps .~ small 
-                  & shaftStyle %~ dashingG [0.25,0.25] 0
-
-node1 = toText "English Premises" # named (1 :: Int)
-node2 = toText "English Conclusions" # named (2 :: Int)
-node3 = toText "Formal Premises" # named (3 :: Int)
-node4 = toText "Formal Conclusions" # named (4 :: Int)
-
-toText :: String -> Diagram SVG
-toText s = let ln = fromIntegral (length s) in
-    text s <> rect (ln * 6/10) 1.2 # lc white # fc white
-```
+![](/static/img/translations.svg)
 
 </figure>
 

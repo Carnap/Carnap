@@ -147,236 +147,39 @@ The Method of Composing Truth-Values
 
 ####Ex. 3
 
-```{.diagram .snip}
-import Data.Tree
-import Data.Maybe (fromMaybe)
-import Diagrams.TwoD.Layout.Tree
-
-renderIt = renderIt' 40
-
-renderIt' x t =
-  renderTree id (~~)
-  (symmLayout' (with & slWidth  .~ fromMaybe (0,0) . extentX
-                     & slHeight .~ fromMaybe (0,0) . extentY
-                     & slHSep    .~ 4
-                     & slVSep    .~ 4)
-     t) # centerXY # pad 1.1 <> rect x 25
-
-toText :: String -> Diagram SVG
-toText s = let ln = fromIntegral (length s) in
-    text s <> rect (ln * 7/10) 1 # lc white # fc white
-```
-
 Suppose we know that $P$ and $Q$ are true and that $R$ is false, and we wish
 to know whether $(((P\lor \neg Q)\land (P\lor \neg R))\lor ((P\land R)\land
 (P\lor \neg R)))$ is true.
 
 First, we find the main connective, splitting the sentence into: 
 
-<figure>
-
-```diagram
-renderIt it
-
-it = Node (toText "(((P ∨ ¬Q)∧(P ∨ ¬R))∨((P ∧ R)∧(P ∨ ¬R)))") 
-      [ Node (toText "((P ∨ ¬Q)∧(P ∨ ¬R))") []
-      , Node (toText "((P ∧ R)∧(P ∨ ¬R))") []
-      ]
-
-```
-
-</figure>
+<figure>![](/static/img/ttparse2.svg)</figure>
 
 We repeat this procedure, finding main connectives and subdividing, finally getting:
 
-<figure>
-
-```diagram
-renderIt it
-
-it = Node (toText "(((P ∨ ¬Q)∧(P ∨ ¬R))∨((P ∧ R)∧(P ∨ ¬R)))") 
-      [ Node (toText "((P ∨ ¬Q)∧(P ∨ ¬R))") 
-          [ Node (toText "(P∨¬Q)") 
-             [ Node (toText "P") []
-             , Node (toText "¬Q")
-                 [Node (toText "Q") []]
-             ]
-          , Node (toText "(P∨¬R)") 
-             [ Node (toText "P") []
-             , Node (toText "¬R") 
-                 [Node (toText "R") []]
-             ]
-          ]
-      , Node (toText "((P ∧ R)∧(P ∨ ¬R))") 
-            [ Node (toText "(P ∧ R)") 
-                [ Node (toText "P") []
-                , Node (toText "R") []
-                ]
-            , Node (toText "(P∨¬R)") 
-                [ Node (toText "P") []
-                , Node (toText "¬R") 
-                    [Node (toText "R") []]
-                ]
-            ]
-        
-      ]
-```
-
-</figure>
+<figure>![](/static/img/ttparse2.svg)</figure>
 
 We've now completed step 1. Step 2 tells us to write out appropriate truth
 values at the bottom of the tree. Since we know that $P$ and $Q$ are true, and
 $R$ is false (we assumed this at the outset), we write these next to the
 appropriate sentence letters:
 
-<figure>
-
-```diagram
-renderIt' 50 it
-
-it = Node (toText "(((P ∨ ¬Q)∧(P ∨ ¬R))∨((P ∧ R)∧(P ∨ ¬R)))") 
-      [ Node (toText "((P ∨ ¬Q)∧(P ∨ ¬R))") 
-          [ Node (toText "(P∨¬Q)") 
-             [ Node (toText "P=T") []
-             , Node (toText "¬Q")
-                 [Node (toText "Q=T") []]
-             ]
-          , Node (toText "(P∨¬R)") 
-             [ Node (toText "P=T") []
-             , Node (toText "¬R") 
-                 [Node (toText "R=F") []]
-             ]
-          ]
-      , Node (toText "((P ∧ R)∧(P ∨ ¬R))") 
-            [ Node (toText "(P ∧ R)") 
-                [ Node (toText "P=T") []
-                , Node (toText "R=F") []
-                ]
-            , Node (toText "(P∨¬R)") 
-                [ Node (toText "P=T") []
-                , Node (toText "¬R") 
-                    [Node (toText "R=F") []]
-                ]
-            ]
-        
-      ]
-```
-
-</figure>
+<figure>![](/static/img/ttparse3.svg)</figure>
 	
 We're now done with step 2. We now repeat step 3 (applying the rules for $\land,\lor$ and $\neg$ until we are done. Since we now know the truth values of all of the parts of several of the sentences on our tree, we can compute the truth values of those sentences using the rules for $\land, \lor$ and $\neg$. We compute those values and write them in:
 
-<figure>
-
-```diagram
-renderIt' 50 it
-
-it = Node (toText "(((P ∨ ¬Q)∧(P ∨ ¬R))∨((P ∧ R)∧(P ∨ ¬R)))") 
-      [ Node (toText "((P ∨ ¬Q)∧(P ∨ ¬R))") 
-          [ Node (toText "(P∨¬Q)") 
-             [ Node (toText "P=T") []
-             , Node (toText "¬Q=F")
-                 [Node (toText "Q=T") []]
-             ]
-          , Node (toText "(P∨¬R)") 
-             [ Node (toText "P=T") []
-             , Node (toText "¬R=T") 
-                 [Node (toText "R=F") []]
-             ]
-          ]
-      , Node (toText "((P ∧ R)∧(P ∨ ¬R))") 
-            [ Node (toText "(P ∧ R)=F") 
-                [ Node (toText "P=T") []
-                , Node (toText "R=F") []
-                ]
-            , Node (toText "(P∨¬R)") 
-                [ Node (toText "P=T") []
-                , Node (toText "¬R=T") 
-                    [Node (toText "R=F") []]
-                ]
-            ]
-        
-      ]
-```
-
-</figure>
+<figure>![](/static/img/ttparse4.svg)</figure>
 
 Since we now know the truth values of the parts of the sentences in the second
 row from the top, we can write those in too:
 
-<figure>
-
-```diagram
-renderIt' 50 it
-
-it = Node (toText "(((P ∨ ¬Q)∧(P ∨ ¬R))∨((P ∧ R)∧(P ∨ ¬R)))") 
-      [ Node (toText "((P ∨ ¬Q)∧(P ∨ ¬R))") 
-          [ Node (toText "(P∨¬Q)=T") 
-             [ Node (toText "P=T") []
-             , Node (toText "¬Q=F")
-                 [Node (toText "Q=T") []]
-             ]
-          , Node (toText "(P∨¬R)=T") 
-             [ Node (toText "P=T") []
-             , Node (toText "¬R=T") 
-                 [Node (toText "R=F") []]
-             ]
-          ]
-      , Node (toText "((P ∧ R)∧(P ∨ ¬R))") 
-            [ Node (toText "(P ∧ R)=F") 
-                [ Node (toText "P=T") []
-                , Node (toText "R=F") []
-                ]
-            , Node (toText "(P∨¬R)=T") 
-                [ Node (toText "P=T") []
-                , Node (toText "¬R=T") 
-                    [Node (toText "R=F") []]
-                ]
-            ]
-        
-      ]
-```
-
-</figure>
+<figure>![](/static/img/ttparse5.svg)</figure>
 	
 And that means that $(((P\lor \neg Q)\land (P\lor \neg R))\lor ((P\land
 R)\land (P\lor \neg R)))$ was built using $\lor$ out of one true and one false
 sentence. So, the whole sentence is true:
 
-<figure>
-
-```diagram
-renderIt' 50 it
-
-it = Node (toText "(((P ∨ ¬Q)∧(P ∨ ¬R))∨((P ∧ R)∧(P ∨ ¬R)))=T") 
-      [ Node (toText "((P ∨ ¬Q)∧(P ∨ ¬R))=T") 
-          [ Node (toText "(P∨¬Q)=T") 
-             [ Node (toText "P=T") []
-             , Node (toText "¬Q=F")
-                 [Node (toText "Q=T") []]
-             ]
-          , Node (toText "(P∨¬R)=T") 
-             [ Node (toText "P=T") []
-             , Node (toText "¬R=T") 
-                 [Node (toText "R=F") []]
-             ]
-          ]
-      , Node (toText "((P ∧ R)∧(P ∨ ¬R))=F") 
-            [ Node (toText "(P ∧ R)=F") 
-                [ Node (toText "P=T") []
-                , Node (toText "R=F") []
-                ]
-            , Node (toText "(P∨¬R)=T") 
-                [ Node (toText "P=T") []
-                , Node (toText "¬R=T") 
-                    [Node (toText "R=F") []]
-                ]
-            ]
-        
-      ]
-```
-
-</figure>
+<figure>![](/static/img/ttparse6.svg)</figure>
 
 This is interesting, but there is one problem in using this method to
 determine whether a sentence is true (we will eventually extend the same

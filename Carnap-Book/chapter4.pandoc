@@ -35,30 +35,7 @@ able to predict what will happen if we make a certain move.
 You probably realize that in this situation:
 
 <figure>
-
-```diagram
-(tictactoeh # center) `atop` (tictactoev # center) `atop` lowerrx `atop` lowerlx `atop` lowero `atop` uppero
-
-lineh = rect 1 0.01 # fc black
-linev = rotate (1/4 @@ turn) lineh
-
-tictactoeh = lineh === (strut $ unitY * 0.3) === lineh
-tictactoev = linev ||| (strut $ unitX * 0.3) ||| linev
-
-centerx = scale (1/4) $ rotate (1/8 @@ turn) (lineh `atop` linev)
-centero = scale (1/8) unitCircle 
-movedown x = strut (unitY * 0.5) === x
-moveright x = strut (unitX * 0.5) ||| x
-moveleft x = beside (unit_X) (strut (unitX * 0.5)) x
-moveup x = beside (unitY) (strut (unitY * 0.5)) x
-lowerx = movedown centerx
-lowerlx = moveright lowerx
-lowerrx =  moveleft lowerx
-lowero = strut (unitY * 0.42) === centero
-uppero = beside (unitY) (strut (unitY * 0.42)) centero
-
-```
-
+![](/static/img/tictactoe.svg)
 </figure>
 
 where it is $X$'s turn, *if* $X$ makes a move in the middle spot, then $X$ can

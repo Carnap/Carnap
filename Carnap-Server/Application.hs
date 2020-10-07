@@ -46,7 +46,6 @@ import Handler.Chapter
 import Handler.Book
 import Handler.User
 import Handler.Command
-import Handler.Hashed
 import Handler.Register
 import Handler.Rule
 import Handler.Instructor

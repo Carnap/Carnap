@@ -31,40 +31,8 @@ be true (by Fact 1). And, we also know that $R\rightarrow T$ must be true (by
 Fact 2). So, we know that $P\rightarrow T$ must be true (by Fact 3).
 Graphically, you can think of what's happening in this way:
 
-```{.diagram .snip}
-toText :: String -> Diagram SVG
-toText s = let ln = fromIntegral (length s) in
-    text s <> rect (ln * 8/10) 1 # clipBy (rect (ln * 7/10) (9/10))
-```
-
 <figure>
-
-```diagram
-rect 20 10 `atop` inf (inf ax1 ax2 c1) (inf ax3 ax4 c2) c3
-
-inf a b c = prems
-            ===
-            (rect (w * 2) 0.05 # fc black)
-            ===
-            strutY 0.5
-            ===
-            c
-    where prems = (a ||| strut unitX ||| b) # center
-          w = case maxRayTraceV (p2 (0,-0.3)) unitX prems of
-                Nothing -> 0
-                Just v -> fst $ unr2 v
-                --we should get the point here by an absolute displacement from the bottom edge of the premises
-
-ax1 = toText "P→Q"
-ax2 = toText "Q→R"
-c1  = toText "P→R"
-ax3 = toText "R→S"
-ax4 = toText "S→T"
-c2  = toText "R→T"
-c3  = toText "P→T"
-
-```
-
+![](/static/img/argument.svg)
 </figure>
 
 When the premises on the top are all true, our knowledge of valid arguments

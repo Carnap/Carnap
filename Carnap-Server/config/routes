@@ -19,7 +19,6 @@
 /instructor/#Text/query             InstructorQueryR         POST
 /master_admin                       AdminR                   GET POST DELETE
 /admin_promote                      AdminPromoteR            GET POST
-/hash/#Text                         HashedR                  GET
 /assignments/#Text/#Text            CourseAssignmentR        GET POST
 /assignments/#Text/#Text/state      CourseAssignmentStateR   GET PUT
 /review/#Text/#Text                 ReviewR                  GET PUT DELETE
