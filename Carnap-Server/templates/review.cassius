@@ -4,8 +4,11 @@
     div:nth-child(4)
         display:none;
 
-.hidden
+.hidden-student
     display:none;
+
+.hidden-graded
+    display:none
 
 .proofDisplay
     z-index:0;

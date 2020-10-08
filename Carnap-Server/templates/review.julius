@@ -1,4 +1,5 @@
 var initialize = new Event('initialize');
+var gradedVisible = true
 
 function tryDeleteProblem (e, json) {
     if (confirm("Are you sure you want to delete this problem? After deletion, the student will be able to resubmit.")) {
@@ -75,26 +76,26 @@ $("#viewUngraded").click( function(){
     $("#viewAll").addClass("btn-outline-primary")
     $(this).removeClass("btn-outline-primary")
     $(this).addClass("btn-primary")
-    var sheet = document.styleSheets[0];
-    sheet.insertRule(".graded { display:none; }", sheet.cssRules.length)
-    });
+    $(".graded").addClass("hidden-graded")
+    gradedVisible = false
+});
 
 $("#viewAll").click( function(){
     $("#viewUngraded").removeClass("btn-primary")
     $("#viewUngraded").addClass("btn-outline-primary")
     $(this).removeClass("btn-outline-primary")
     $(this).addClass("btn-primary")
-    var sheet = document.styleSheets[0];
-    sheet.insertRule(".graded { display:block; }", sheet.cssRules.length)
-    });
+    $(".graded").removeClass("hidden-graded")
+    gradedVisible = true
+});
 
 $("#selectStudent").change(function(){
     var uid = $(this).val();
     if (uid == "all") {
-        $('[data-submission-uid]').removeClass("hidden")
+        $('[data-submission-uid]').removeClass("hidden-student")
     } else {
-        $('[data-submission-uid]').addClass("hidden")
-        $('[data-submission-uid="' + uid + '"]').removeClass("hidden")
+        $('[data-submission-uid]').addClass("hidden-student")
+        $('[data-submission-uid="' + uid + '"]').removeClass("hidden-student")
     };
 });
 
