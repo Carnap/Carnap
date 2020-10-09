@@ -76,7 +76,7 @@ activateTranslate w (Just (i,o,opts)) = do
           activateWith parser checker tests =
               case (M.lookup "goal" opts, M.lookup "content" opts, M.lookup "problem" opts) of
                   (Just g, Just content, Just problem) ->
-                    case parse (parser `sepBy` (spaces >> char ',' >> spaces) <* eof) "" (getGoal g) of
+                    case parse (spaces *> parser `sepBy` (spaces >> char ',' >> spaces) <* eof) "" (getGoal g) of
                       (Right fs) -> do 
                            bw <- createButtonWrapper w o
                            ref <- newIORef False
