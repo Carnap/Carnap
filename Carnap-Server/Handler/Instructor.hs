@@ -189,6 +189,9 @@ postInstructorR ident = do
                                                 , assignmentMetadataDuedate = localTimeToUTCTZ tz <$> localdue
                                                 , assignmentMetadataVisibleFrom = localTimeToUTCTZ tz <$> localfrom
                                                 , assignmentMetadataVisibleTill = localTimeToUTCTZ tz <$> localtill
+                                                , assignmentMetadataGradeRelease = Nothing
+                                                , assignmentMetadataPointValue = Nothing
+                                                , assignmentMetadataTotalProblems = Nothing
                                                 , assignmentMetadataDate = subtime
                                                 , assignmentMetadataCourse = classkey
                                                 , assignmentMetadataAvailability =
@@ -239,6 +242,8 @@ postInstructorR ident = do
                                                 , courseEndDate = localize enddate
                                                 , courseTotalPoints = 0
                                                 , courseTimeZone = toTZName tzlabel
+                                                , courseTextBook = Nothing
+                                                , courseEnrollmentOpen = True
                                                 }
                        case success of Just _ -> setMessage "Course Created"
                                        Nothing -> setMessage "Could not save. Course titles must be unique. Consider adding your instutition or the current semester as a suffix."

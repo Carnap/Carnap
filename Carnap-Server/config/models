@@ -7,6 +7,7 @@ User
 UserData
     firstName Text
     lastName Text
+    email Text Maybe
     enrolledIn CourseId Maybe
     instructorId InstructorMetadataId Maybe
     isAdmin Bool default=false
@@ -104,9 +105,12 @@ AssignmentMetadata
     duedate UTCTime Maybe
     visibleFrom UTCTime Maybe
     visibleTill UTCTime Maybe
+    gradeRelease UTCTime Maybe
     date UTCTime
     course CourseId
     availability AvailabilityStatus Maybe
+    pointValue Int Maybe
+    totalProblems Int Maybe
     UniqueAssignment document course
 
 AssignmentAccessToken
@@ -148,6 +152,8 @@ Course
     startDate UTCTime
     endDate UTCTime
     totalPoints Int
+    textBook AssignmentMetadataId Maybe
+    enrollmentOpen Bool default=true
     timeZone ByteString --timezones are stored as tznames
     UniqueCourse title
     deriving Eq

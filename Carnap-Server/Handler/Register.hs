@@ -48,7 +48,7 @@ postRegister theform ident = do
                       |]
 
 getRegisterR :: Text -> Handler Html
-getRegisterR ident = getRegister registrationForm (RegisterR ident) ident
+getRegisterR ident = getRegister (registrationForm ident) (RegisterR ident) ident
 
 getEnrollR :: Text -> Handler Html
 getEnrollR classname = do setSession "enrolling-in" classname
@@ -98,38 +98,39 @@ postEnrollR classname = do (Entity uid _) <- requireAuth
 
 --registration with enrollment built into the path
 getRegisterEnrollR :: Text -> Text -> Handler Html
-getRegisterEnrollR theclass ident = getRegister (enrollmentForm theclass) (RegisterEnrollR theclass ident) ident
+getRegisterEnrollR theclass ident = getRegister (enrollmentForm theclass ident) (RegisterEnrollR theclass ident) ident
 
 postRegisterR :: Text -> Handler Html
-postRegisterR = postRegister registrationForm
+postRegisterR ident = postRegister (registrationForm ident) ident
 
 postRegisterEnrollR :: Text -> Text -> Handler Html
-postRegisterEnrollR theclass = postRegister (enrollmentForm theclass)
+postRegisterEnrollR theclass ident = postRegister (enrollmentForm theclass ident) ident
 
-registrationForm :: [Entity Course] -> UserId -> Html -> MForm Handler (FormResult (Maybe UserData), Widget)
-registrationForm courseEntities userId = do
-        renderBootstrap3 BootstrapBasicForm $ fixedId userId
+registrationForm :: Text -> [Entity Course] -> UserId -> Html -> MForm Handler (FormResult (Maybe UserData), Widget)
+registrationForm ident courseEntities userId = do
+        renderBootstrap3 BootstrapBasicForm $ fixedId userId ident
             <$> areq textField "First name " Nothing
             <*> areq textField "Last name " Nothing
             <*> areq (selectFieldList courses) "enrolled in " Nothing
     where courses = ("No Course", Nothing) : map (\e -> (courseTitle $ entityVal e, Just $ entityKey e)) courseEntities
 
-fixedId :: Key User -> Text -> Text -> Maybe (Key Course) -> Maybe UserData
-fixedId userId fname lname ckey = Just $ UserData {
-                  userDataFirstName = fname
+fixedId :: Key User -> Text -> Text -> Text -> Maybe (Key Course) -> Maybe UserData
+fixedId userId ident fname lname ckey = Just $ UserData 
+                { userDataFirstName = fname
+                , userDataEmail = Just ident
                 , userDataLastName = lname
                 , userDataEnrolledIn = ckey
                 , userDataInstructorId = Nothing
                 , userDataIsAdmin = False
                 , userDataUserId = userId
-            }
+                }
 
-enrollmentForm :: Text -> [Entity Course] -> UserId -> Html -> MForm Handler (FormResult (Maybe UserData), Widget)
-enrollmentForm classtitle courseEntities userId = do
+enrollmentForm :: Text -> Text -> [Entity Course] -> UserId ->  Html -> MForm Handler (FormResult (Maybe UserData), Widget)
+enrollmentForm classtitle ident courseEntities userId = do
         renderBootstrap3 BootstrapBasicForm $ fixedId'
             <$> areq textField "First name " Nothing
             <*> areq textField "Last name " Nothing
-    where fixedId' fname lname = fixedId userId fname lname course
+    where fixedId' fname lname = fixedId userId ident fname lname course
           course = case filter (\e -> classtitle == courseTitle (entityVal e)) courseEntities of
                      [] -> Nothing
                      e:_ -> Just $ entityKey e
