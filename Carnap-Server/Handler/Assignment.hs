@@ -66,9 +66,13 @@ returnAssignment :: Text -> Text -> Entity AssignmentMetadata -> FilePath -> Han
 returnAssignment coursetitle filename (Entity key val) path = do
            uid <- maybeAuthId >>= maybe reject return
            Entity _ userdata <- runDB (getBy $ UniqueUserData uid) >>= maybe reject return  
+           maccess <- runDB $ getBy $ UniqueAccomodation (assignmentMetadataCourse val) uid
            mtoken <- runDB $ getBy $ UniqueAssignmentAccessToken uid key
            time <- liftIO getCurrentTime
-           let instructorAccess = userDataInstructorId userdata /= Nothing --instructors who shouldn't access the course are already blocked by yesod-auth
+           let accomodationFactor = maybe 1 (accomodationTimeFactor . entityVal) maccess
+               accomodationMinutes = maybe 0 (accomodationTimeExtraMinutes . entityVal) maccess
+               testTime min = floor ((fromIntegral min) * accomodationFactor) + accomodationMinutes
+               instructorAccess = userDataInstructorId userdata /= Nothing --instructors who shouldn't access the course are already blocked by yesod-auth
                age (Entity _ tok) = floor (diffUTCTime time (assignmentAccessTokenCreatedAt tok))
                creation (Entity _ tok) = round $ utcTimeToPOSIXSeconds (assignmentAccessTokenCreatedAt tok) * 1000 --milliseconds to match JS
            if visibleAt time val || instructorAccess
@@ -82,9 +86,9 @@ returnAssignment coursetitle filename (Entity key val) path = do
                            (Just _, Nothing) -> defaultLayout $ do
                                 (enterPasswordWidget,enctypeEnterPassword) <- generateFormPost (identifyForm "enterPassword" $ enterPasswordForm)
                                 $(widgetFile "passwordEntry")
-                           (Just (ViaPasswordExpiring _ min), Just tok) | age tok > 60 * min && not instructorAccess ->
+                           (Just (ViaPasswordExpiring _ min), Just tok) | age tok > 60 * (testTime min) && not instructorAccess ->
                                 defaultLayout $ minimalLayout ("Assignment time limit exceeded" :: String)
-                           (Just (HiddenViaPasswordExpiring _ min), Just tok) | age tok > 60 * min && not instructorAccess ->
+                           (Just (HiddenViaPasswordExpiring _ min), Just tok) | age tok > 60 * (testTime min) && not instructorAccess ->
                                 defaultLayout $ minimalLayout ("Assignment time limit exceeded" :: String)
                            (mavail,_) -> do
                                 mcss <- retrievePandocVal (lookupMeta "css" meta)
@@ -98,7 +102,7 @@ returnAssignment coursetitle filename (Entity key val) path = do
                                     toWidgetHead [julius|var assignment_key="#{rawJS $ show key}";|]
                                     case (mavail >>= availabilityMinutes,mtoken) of
                                         (Just min, Just tok) -> toWidgetHead [julius|
-                                                                                var availability_minutes = #{rawJS $ show min};
+                                                                                var availability_minutes = #{rawJS $ show (testTime min)};
                                                                                 var token_time = #{rawJS $ show $ creation tok};
                                                                               |]
                                         (_,_) -> return ()
