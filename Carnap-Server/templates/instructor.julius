@@ -93,6 +93,7 @@ function modalEditAccomodation (cid,uid,json) {
     $("#updateAccomodation input[name=f2]").val(uid);
     $("#updateAccomodation input[name=f3]").prop('disabled',true);
     $("#updateAccomodation input[name=f4]").prop('disabled',true);
+    $("#updateAccomodation input[name=f5]").prop('disabled',true);
     jQuery.ajax({
         url: '@{InstructorQueryR ident}',
         type: 'POST',
@@ -101,8 +102,10 @@ function modalEditAccomodation (cid,uid,json) {
         success: function(data) {
             $("#updateAccomodation input[name=f3]").val(data[0]);
             $("#updateAccomodation input[name=f4]").val(data[1]);
+            $("#updateAccomodation input[name=f5]").val(data[2]);
             $("#updateAccomodation input[name=f3]").prop('disabled',false);
             $("#updateAccomodation input[name=f4]").prop('disabled',false);
+            $("#updateAccomodation input[name=f5]").prop('disabled',false);
             },
         error: function(data) {
             console.log("error, couldn't retrieve accessibility data")

@@ -79,12 +79,17 @@ putInstructorR _ = do
                                                  returnJson ("updated!" :: Text)
                                              Nothing -> returnJson ("document did not have a creator. This is a bug."::Text)
                                  Nothing -> returnJson ("could not read document key"::Text)
-            (_,_,_,FormSuccess (cidstring, uidstring, mextramin, mfactor)) -> do
+            (_,_,_,FormSuccess (cidstring, uidstring, mextramin, mfactor,mextrahours)) -> do
                             case (readMaybe cidstring, readMaybe uidstring) of
-                                (Just cid, Just uid) -> do runDB $ upsertBy (UniqueAccomodation cid uid)
-                                                                         (Accomodation cid uid (maybe 1 id mfactor) (maybe 0 id mextramin) 0)
-                                                                         (maybe [] (\min -> [AccomodationTimeExtraMinutes =. min]) mextramin 
-                                                                          ++ maybe [] (\fac -> [AccomodationTimeFactor =. fac]) mfactor)
+                                (Just cid, Just uid) -> do runDB $ upsertBy 
+                                                                (UniqueAccomodation cid uid)
+                                                                (Accomodation cid uid 
+                                                                   (maybe 1 id mfactor) 
+                                                                   (maybe 0 id mextramin) 
+                                                                   (maybe 0 id mextrahours))
+                                                                (maybe [] (\min -> [AccomodationTimeExtraMinutes =. min]) mextramin ++ 
+                                                                 maybe [] (\fac -> [AccomodationTimeFactor =. fac]) mfactor ++ 
+                                                                 maybe [] (\hours-> [AccomodationDateExtraHours =. hours]) mextrahours)
                                                            returnJson ("updated!" :: Text)
                                 (Nothing,_) -> returnJson ("unreadable courseId" :: Text)
                                 (_,Nothing) -> returnJson ("unreadable userId" :: Text)
@@ -296,8 +301,11 @@ postInstructorQueryR _ = do
         QueryAccomodation uid cid -> do
             maccomodation <- runDB $ getBy $ UniqueAccomodation cid uid
             case maccomodation of
-                Nothing -> returnJson (0 :: Int, 1 :: Double)
-                Just (Entity _ acc) -> returnJson (accomodationTimeExtraMinutes acc,accomodationTimeFactor acc)
+                Nothing -> returnJson (0 :: Int, 1 :: Double, 0 :: Int)
+                Just (Entity _ acc) -> returnJson ( accomodationTimeExtraMinutes acc
+                                                  , accomodationTimeFactor acc
+                                                  , accomodationDateExtraHours acc
+                                                  )
 
 getInstructorR :: Text -> Handler Html
 getInstructorR ident = do
@@ -691,13 +699,14 @@ updateCourseForm = renderBootstrap3 BootstrapBasicForm $ (,,,,)
 updateAccomodationForm
     :: Markup
     -> MForm (HandlerFor App) ((FormResult
-                     (String, String, Maybe Int, Maybe Double),
+                     (String, String, Maybe Int, Maybe Double, Maybe Int),
                    WidgetFor App ()))
-updateAccomodationForm = renderBootstrap3 BootstrapBasicForm $ (,,,)
+updateAccomodationForm = renderBootstrap3 BootstrapBasicForm $ (,,,,)
             <$> areq courseId "" Nothing
             <*> areq userId "" Nothing
-            <*> aopt intField (bfs ("Minutes Extra Time"::Text)) Nothing
-            <*> aopt doubleField (bfs ("Extension Factor"::Text)) Nothing
+            <*> aopt intField (bfs ("Minutes Added to Timed Assignments"::Text)) Nothing
+            <*> aopt doubleField (bfs ("Timed Assignment Extension Factor"::Text)) Nothing
+            <*> aopt intField (bfs ("Hours added to Due Date"::Text)) Nothing
     where courseId = hiddenField
           userId = hiddenField
 

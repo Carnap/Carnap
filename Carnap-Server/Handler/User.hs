@@ -84,14 +84,16 @@ getUserR ident = do
                        asmd <- runDB $ selectList [AssignmentMetadataCourse ==. cid] []
                        asDocs <- mapM (runDB . get) (map (assignmentMetadataDocument . entityVal) asmd)
                        textbookproblems <- getProblemSets cid
-                       assignments <- assignmentsOf course textbookproblems asmd asDocs
+                       extension <- (runDB $ getBy $ UniqueAccomodation cid uid)
+                                    >>= return . maybe 0 (accomodationDateExtraHours . entityVal)
+                       assignments <- assignmentsOf extension course textbookproblems asmd asDocs
                        pq <- getProblemQuery uid cid
                        let getSubs typ = map entityVal <$> runDB (selectList ([ProblemSubmissionType ==. typ] ++ pq) [])
                        subs <- mapM getSubs [SyntaxCheck,Translation,Derivation,TruthTable,CounterModel,Qualitative,SequentCalc,DeductionTree]
-                       mapM (problemsToTable course textbookproblems asmd asDocs) subs
+                       mapM (problemsToTable course extension textbookproblems asmd asDocs) subs
                            >>= \case
                               [syntable,transtable,dertable,tttable,cmtable,qtable,seqtable,treetable] -> do
-                                   score <- totalScore textbookproblems (concat subs)
+                                   score <- totalScore extension textbookproblems (concat subs)
                                    defaultLayout $ do
                                        addScript $ StaticR js_bootstrap_bundle_min_js
                                        addScript $ StaticR js_bootstrap_min_js
@@ -130,36 +132,38 @@ getUserDispatchR = maybeAuthId
 --functions for calculating grades
 
 toScore
-    :: Maybe BookAssignmentTable
+    :: Int
+    -> Maybe BookAssignmentTable
     -> ProblemSubmission
     -> HandlerFor App Int
-toScore textbookproblems p = case ( problemSubmissionAssignmentId p
-                                  , problemSubmissionCorrect p
-                                  ) of
-                   (_,False) -> return extra
-                   (Nothing,True) -> return $
-                        case ( utcDueDate textbookproblems (problemSubmissionIdent p)
-                             , problemSubmissionCredit p) of
-                              (Just d, Just c) ->  theGrade d c p + extra
-                              (Just d, Nothing) ->  theGrade d 5 p + extra
-                              (Nothing,_) -> 0
-                   (Just a,True) -> do
-                        mmd <- runDB $ get a
-                        case mmd of
-                            Nothing -> return 0
-                            Just v -> return $
-                                case ( assignmentMetadataDuedate v
-                                     , problemSubmissionCredit p) of
-                                        (Just d, Just c) -> theGrade d c p + extra
-                                        (Just d, Nothing) -> theGrade d 5 p + extra
-                                        (Nothing, Just c) -> c + extra
-                                        (Nothing, Nothing) -> 5 + extra
+toScore extension textbookproblems p = 
+        case (problemSubmissionAssignmentId p, problemSubmissionCorrect p) of
+               (_,False) -> return extra
+               (Nothing,True) -> return $
+                    case ( utcDueDate textbookproblems (problemSubmissionIdent p)
+                         , problemSubmissionCredit p) of
+                          (Just d, Just c) ->  theGrade d c p + extra
+                          (Just d, Nothing) ->  theGrade d 5 p + extra
+                          (Nothing,_) -> 0
+               (Just a,True) -> do
+                    mmd <- runDB $ get a
+                    case mmd of
+                        Nothing -> return 0
+                        Just v -> return $
+                            case ( assignmentMetadataDuedate v
+                                 , problemSubmissionCredit p) of
+                                    (Just d, Just c) -> theGrade d c p + extra
+                                    (Just d, Nothing) -> theGrade d 5 p + extra
+                                    (Nothing, Just c) -> c + extra
+                                    (Nothing, Nothing) -> 5 + extra
     where extra = case problemSubmissionExtra p of Nothing -> 0; Just e -> e
+          extensionUTC = fromIntegral (3600 * extension) :: NominalDiffTime
           theGrade :: UTCTime -> Int -> ProblemSubmission -> Int
-          theGrade due points p' = case problemSubmissionLateCredit p' of
-                                      Nothing | problemSubmissionTime p' `laterThan` due -> floor ((fromIntegral points :: Rational) / 2)
-                                      Just n  | problemSubmissionTime p' `laterThan` due -> n
-                                      _ -> points
+          theGrade due points p' = 
+            case problemSubmissionLateCredit p' of
+                  Nothing | problemSubmissionTime p' `laterThan` (extensionUTC `addUTCTime` due) -> floor ((fromIntegral points :: Rational) / 2)
+                  Just n  | problemSubmissionTime p' `laterThan` (extensionUTC `addUTCTime` due) -> n
+                  _ -> points
 
 scoreByIdAndClassTotal :: Key Course -> Key User -> HandlerFor App Int
 scoreByIdAndClassTotal cid uid =
@@ -171,16 +175,20 @@ scoreByIdAndClassPerProblem cid uid =
         do pq <- getProblemQuery uid cid
            subs <- map entityVal <$> (runDB $ selectList pq [])
            textbookproblems <- getProblemSets cid
-           scoreList textbookproblems subs
+           extension <- (runDB $ getBy $ UniqueAccomodation cid uid) 
+                        >>= return . maybe 0 (accomodationDateExtraHours . entityVal)
+           scoreList extension textbookproblems subs
 
-totalScore :: (Traversable t, MonoFoldable (t Int), Num (Element (t Int))) => Maybe BookAssignmentTable -> t ProblemSubmission -> HandlerFor App (Element (t Int))
-totalScore textbookproblems xs =
-        do xs' <- mapM (toScore textbookproblems) xs
+totalScore :: (Traversable t, MonoFoldable (t Int), Num (Element (t Int))) => 
+    Int -> Maybe BookAssignmentTable -> t ProblemSubmission -> HandlerFor App (Element (t Int))
+totalScore extension textbookproblems xs =
+        do xs' <- mapM (toScore extension textbookproblems) xs
            return $ foldr (+) 0 xs'
 
-scoreList :: Traversable t => Maybe BookAssignmentTable -> t ProblemSubmission -> HandlerFor App (t (Either (Key AssignmentMetadata) Text, Int))
-scoreList textbookproblems = mapM (\x -> do score <- toScore textbookproblems x
-                                            return (getLabel x, score))
+scoreList :: Traversable t => Int -> Maybe BookAssignmentTable -> t ProblemSubmission 
+    -> HandlerFor App (t (Either (Key AssignmentMetadata) Text, Int))
+scoreList extension textbookproblems = mapM (\x -> do score <- toScore extension textbookproblems x
+                                                      return (getLabel x, score))
    where getLabel x = case problemSubmissionAssignmentId x of
                           --get assignment metadata id
                           Just amid -> Left amid
@@ -205,13 +213,15 @@ utcDueDate textbookproblems x = textbookproblems >>= IM.lookup theIndex . readAs
 --Components
 --------------------------------------------------------
 --reusable components
-problemsToTable :: Course -> Maybe BookAssignmentTable -> [Entity AssignmentMetadata] -> [Maybe Document] -> [ProblemSubmission] -> HandlerFor App Html
-problemsToTable course textbookproblems asmd asDocs submissions = do
+problemsToTable :: Course -> Int -> Maybe BookAssignmentTable 
+    -> [Entity AssignmentMetadata] -> [Maybe Document] -> [ProblemSubmission] 
+    -> HandlerFor App Html
+problemsToTable course extension textbookproblems asmd asDocs submissions = do
             rows <- mapM toRow submissions
             withUrlRenderer [hamlet|
                                     $forall row <- rows
                                         ^{row}|]
-        where toRow p = do score <- toScore textbookproblems p
+        where toRow p = do score <- toScore extension textbookproblems p
                            return [hamlet|
                                   <tr>
                                     <td>^{printSource (problemSubmissionSource p)}
@@ -237,8 +247,8 @@ tryDelete name = "tryDeleteRule(\"" <> name <> "\")"
 
 --properly localized assignments for a given class
 --XXX---should this just be in the hamlet?
-assignmentsOf :: Course -> Maybe BookAssignmentTable -> [Entity AssignmentMetadata] -> [Maybe Document] -> HandlerFor App (WidgetFor App ())
-assignmentsOf course textbookproblems asmd asDocs = do
+assignmentsOf :: Int -> Course -> Maybe BookAssignmentTable -> [Entity AssignmentMetadata] -> [Maybe Document] -> HandlerFor App (WidgetFor App ())
+assignmentsOf extension course textbookproblems asmd asDocs = do
              time <- liftIO getCurrentTime
              return $
                 [whamlet|
@@ -256,8 +266,8 @@ assignmentsOf course textbookproblems asmd asDocs = do
                                             <a href=@{ChapterR $ chapterOfProblemSet ! num}>
                                                 Problem Set #{show num}
                                         <td>
-                                            #{dateDisplay date course}
-                                        <td>-
+                                            #{dateDisplay (addUTCTime extensionUTC date) course}
+                                        <td>
                             $forall (Entity _ a, Just d) <- zip asmd asDocs
                                 $if visibleAt time a
                                         <tr>
@@ -274,7 +284,8 @@ assignmentsOf course textbookproblems asmd asDocs = do
                                             $nothing
                                                 <td>-
                 |]
-    where visibleAt t a = case assignmentMetadataAvailability a of
+    where extensionUTC = fromIntegral (3600 * extension) :: NominalDiffTime
+          visibleAt t a = case assignmentMetadataAvailability a of
                               Just status | availabilityHidden status -> False
                               _ -> (assignmentMetadataVisibleTill a > Just t || assignmentMetadataVisibleTill a == Nothing)
                                    && (assignmentMetadataVisibleFrom a < Just t || assignmentMetadataVisibleFrom a == Nothing)
