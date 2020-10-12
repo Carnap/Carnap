@@ -23,8 +23,9 @@ putInstructorR _ = do
         ((assignmentrslt,_),_) <- runFormPost (identifyForm "updateAssignment" $ updateAssignmentForm)
         ((courserslt,_),_)     <- runFormPost (identifyForm "updateCourse" $ updateCourseForm)
         ((documentrslt,_),_)   <- runFormPost (identifyForm "updateDocument" $ updateDocumentForm)
-        case (assignmentrslt,courserslt,documentrslt) of
-            (FormSuccess (idstring, mdue, mduetime,mfrom,mfromtime,muntil,muntiltime, mdesc),_,_) -> do
+        ((accomodationrslt,_),_)   <- runFormPost (identifyForm "updateAccomodation" $ updateAccomodationForm)
+        case (assignmentrslt,courserslt,documentrslt,accomodationrslt) of
+            (FormSuccess (idstring, mdue, mduetime,mfrom,mfromtime,muntil,muntiltime, mdesc),_,_,_) -> do
                  case readMaybe idstring of
                       Nothing -> returnJson ("Could not read assignment key"::Text)
                       Just k -> do
@@ -46,7 +47,7 @@ putInstructorR _ = do
                                           mtimeUpdate muntil muntiltime AssignmentMetadataVisibleTill
                                           update k [ AssignmentMetadataDescription =. (unTextarea <$> mdesc) ]
                                returnJson ("updated!"::Text)
-            (_,FormSuccess (idstring,mdesc,mstart,mend,mpoints),_) -> do
+            (_,FormSuccess (idstring,mdesc,mstart,mend,mpoints),_,_) -> do
                              case readMaybe idstring of
                                  Just k -> do runDB $ do update k [ CourseDescription =. (unTextarea <$> mdesc) ]
                                                          maybeDo mstart (\start -> update k
@@ -56,7 +57,7 @@ putInstructorR _ = do
                                                          maybeDo mpoints (\points-> update k [ CourseTotalPoints =. points ])
                                               returnJson ("updated!"::Text)
                                  Nothing -> returnJson ("could not find course!"::Text)
-            (_,_,FormSuccess (idstring, mscope, mdesc,mfile,mtags)) -> do
+            (_,_,FormSuccess (idstring, mscope, mdesc,mfile,mtags),_) -> do
                              case readMaybe idstring of
                                  Just k -> do
                                     mdoc <- runDB (get k)
@@ -75,12 +76,20 @@ putInstructorR _ = do
                                                                               forM_ tags (\tag -> insert_ $ Tag k tag)
                                                                               return ())
                                                  maybeDo mfile (saveTo ("documents" </> unpack ident) (unpack $ documentFilename doc))
-                                                 returnJson ("updated!"::Text)
+                                                 returnJson ("updated!" :: Text)
                                              Nothing -> returnJson ("document did not have a creator. This is a bug."::Text)
                                  Nothing -> returnJson ("could not read document key"::Text)
-
-            (FormMissing,FormMissing,FormMissing) -> returnJson ("no form" :: Text)
-            (form1,form2,form3) -> returnJson ("errors: " <> errorsOf form1 <> errorsOf form2 <> errorsOf form3)
+            (_,_,_,FormSuccess (cidstring, uidstring, mextramin, mfactor)) -> do
+                            case (readMaybe cidstring, readMaybe uidstring) of
+                                (Just cid, Just uid) -> do runDB $ upsertBy (UniqueAccomodation cid uid)
+                                                                         (Accomodation cid uid (maybe 1 id mfactor) (maybe 0 id mextramin) 0)
+                                                                         (maybe [] (\min -> [AccomodationTimeExtraMinutes =. min]) mextramin 
+                                                                          ++ maybe [] (\fac -> [AccomodationTimeFactor =. fac]) mfactor)
+                                                           returnJson ("updated!" :: Text)
+                                (Nothing,_) -> returnJson ("unreadable courseId" :: Text)
+                                (_,Nothing) -> returnJson ("unreadable userId" :: Text)
+            (FormMissing,FormMissing,FormMissing,FormMissing) -> returnJson ("no form" :: Text)
+            (form1,form2,form3,form4) -> returnJson ("errors: " <> errorsOf form1 <> errorsOf form2 <> errorsOf form3 <> errorsOf form4)
                 where errorsOf (FormFailure s) = concat s <> ", "
                       errorsOf _ = ""
 
@@ -284,6 +293,11 @@ postInstructorQueryR _ = do
         QueryScores uid cid -> do
             score <- scoreByIdAndClassPerProblem cid uid
             returnJson score
+        QueryAccomodation uid cid -> do
+            maccomodation <- runDB $ getBy $ UniqueAccomodation cid uid
+            case maccomodation of
+                Nothing -> returnJson (0 :: Int, 1 :: Double)
+                Just (Entity _ acc) -> returnJson (accomodationTimeExtraMinutes acc,accomodationTimeFactor acc)
 
 getInstructorR :: Text -> Handler Html
 getInstructorR ident = do
@@ -323,6 +337,7 @@ getInstructorR ident = do
             (uploadDocumentWidget,enctypeShareDocument) <- generateFormPost (identifyForm "uploadDocument" $ uploadDocumentForm)
             (setBookAssignmentWidget,enctypeSetBookAssignment) <- generateFormPost (identifyForm "setBookAssignment" $ setBookAssignmentForm activeClasses)
             (updateAssignmentWidget,enctypeUpdateAssignment) <- generateFormPost (identifyForm "updateAssignment" $ updateAssignmentForm)
+            (updateAccomodationWidget,enctypeUpdateAccomodation) <- generateFormPost (identifyForm "updateAccomodation" $ updateAccomodationForm)
             (updateDocumentWidget,enctypeUpdateDocument) <- generateFormPost (identifyForm "updateDocument" $ updateDocumentForm)
             (createCourseWidget,enctypeCreateCourse) <- generateFormPost (identifyForm "createCourse" createCourseForm)
             (updateCourseWidget,enctypeUpdateCourse) <- generateFormPost (identifyForm "updateCourse" updateCourseForm)
@@ -358,6 +373,7 @@ instance FromJSON InstructorDelete
 
 data InstructorQuery = QueryGrade UserId CourseId
                      | QueryScores UserId CourseId
+                     | QueryAccomodation UserId CourseId
     deriving Generic
 
 instance ToJSON InstructorQuery
@@ -672,6 +688,39 @@ updateCourseForm = renderBootstrap3 BootstrapBasicForm $ (,,,,)
             <*> aopt intField (bfs ("Total Points for Course"::Text)) Nothing
     where courseId = hiddenField
 
+updateAccomodationForm
+    :: Markup
+    -> MForm (HandlerFor App) ((FormResult
+                     (String, String, Maybe Int, Maybe Double),
+                   WidgetFor App ()))
+updateAccomodationForm = renderBootstrap3 BootstrapBasicForm $ (,,,)
+            <$> areq courseId "" Nothing
+            <*> areq userId "" Nothing
+            <*> aopt intField (bfs ("Minutes Extra Time"::Text)) Nothing
+            <*> aopt doubleField (bfs ("Extension Factor"::Text)) Nothing
+    where courseId = hiddenField
+          userId = hiddenField
+
+--XXX: Lot of repetition to DRY in these modals.
+updateAccomodationModal
+    :: WidgetFor App ()
+    -> Enctype
+    -> WidgetFor App ()
+updateAccomodationModal form enc = [whamlet|
+                    <div class="modal fade" id="updateAccomodationData" tabindex="-1" role="dialog" aria-labelledby="updateAccomodationDataLabel" aria-hidden="true">
+                        <div class="modal-dialog" role="document">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title" id="updateAccomodationDataLabel">Update Course Data</h5>
+                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                      <span aria-hidden="true">&times;</span>
+                                <div class="modal-body">
+                                    <form#updateAccomodation enctype=#{enc}>
+                                        ^{form}
+                                        <div.form-group>
+                                            <input.btn.btn-primary type=submit value="update">
+                    |]
+
 addCoInstructorForm
     :: [Entity UserData]
     -> String
@@ -785,6 +834,9 @@ classWidget _ instructors classent = do
                                             <button.btn.btn-sm.btn-secondary type="button" title="Email #{fn} #{ln}"
                                                 onclick="location.href='mailto:#{userIdent u}'">
                                                 <i.fa.fa-envelope-o>
+                                            <button.btn.btn-sm.btn-secondary type="button" title="Adjust Accessibility Settings for #{fn} #{ln}"
+                                                onclick="modalEditAccomodation('#{show cid}','#{show uid}','#{jsonSerialize $ QueryAccomodation uid cid}')">
+                                                <i.fa.fa-clock-o>
                     <h2>Course Data
                     <dl.row>
                         <dt.col-sm-3>Primary Instructor

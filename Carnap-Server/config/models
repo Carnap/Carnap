@@ -17,7 +17,7 @@ UserData
 Accomodation
     forCourse CourseId
     forUser UserId
-    timeFactor Rational
+    timeFactor Double
     timeExtraMinutes Int
     dateExtraHours Int
     UniqueAccomodation forCourse forUser
