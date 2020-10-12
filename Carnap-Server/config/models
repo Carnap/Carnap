@@ -14,6 +14,14 @@ UserData
     userId UserId
     UniqueUserData userId
 
+Accomodation
+    forCourse CourseId
+    forUser UserId
+    timeFactor Rational
+    timeExtraMinutes Int
+    dateExtraHours Int
+    UniqueAccomodation forCourse forUser
+
 AuthJwk
     value ByteString
     deriving Eq
