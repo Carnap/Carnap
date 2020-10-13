@@ -704,8 +704,8 @@ updateAccommodationForm
 updateAccommodationForm = renderBootstrap3 BootstrapBasicForm $ (,,,,)
             <$> areq courseId "" Nothing
             <*> areq userId "" Nothing
-            <*> aopt intField (bfs ("Minutes Added to Timed Assignments"::Text)) Nothing
-            <*> aopt doubleField (bfs ("Timed Assignment Extension Factor"::Text)) Nothing
+            <*> aopt intField (bfs ("Minutes Added to Timed Assignment Duration"::Text)) Nothing
+            <*> aopt doubleField (bfs ("Timed Assignment Duration Multiplied By"::Text)) Nothing
             <*> aopt intField (bfs ("Hours added to Due Date"::Text)) Nothing
     where courseId = hiddenField
           userId = hiddenField
