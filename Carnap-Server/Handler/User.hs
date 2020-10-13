@@ -260,13 +260,13 @@ assignmentsOf extension course textbookproblems asmd asDocs = do
                             <th> Description
                         <tbody>
                             $maybe dd <- textbookproblems
-                                $forall (num,date) <- IM.toList (readAssignmentTable dd)
+                                $forall (num,due) <- IM.toList (readAssignmentTable dd)
                                     <tr>
                                         <td>
                                             <a href=@{ChapterR $ chapterOfProblemSet ! num}>
                                                 Problem Set #{show num}
                                         <td>
-                                            #{dateDisplay (addUTCTime extensionUTC date) course}
+                                            #{dateDisplay (addUTCTime extensionUTC due) course}
                                         <td>
                             $forall (Entity _ a, Just d) <- zip asmd asDocs
                                 $if visibleAt time a
@@ -275,7 +275,7 @@ assignmentsOf extension course textbookproblems asmd asDocs = do
                                                 <a href=@{CourseAssignmentR (courseTitle course) (documentFilename d)}>
                                                     #{documentFilename d}
                                             $maybe due <- assignmentMetadataDuedate a
-                                                <td>#{dateDisplay due course}
+                                                <td>#{dateDisplay (addUTCTime extensionUTC due) course}
                                             $nothing
                                                 <td>No Due Date
                                             $maybe desc <- assignmentMetadataDescription a
