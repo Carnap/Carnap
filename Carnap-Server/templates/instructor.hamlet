@@ -2,7 +2,7 @@
     ^{updateDocumentModal updateDocumentWidget enctypeUpdateDocument}
     ^{updateAssignmentModal updateAssignmentWidget enctypeUpdateAssignment}
     ^{updateCourseModal updateCourseWidget enctypeUpdateCourse}
-    ^{updateAccomodationModal updateAccomodationWidget enctypeUpdateAccomodation}
+    ^{updateAccommodationModal updateAccommodationWidget enctypeUpdateAccommodation}
     <h1> Instructor Page for #{firstname} #{lastname}
     <p> This is a page where you can manage students, classes and assignments.
     $if (not $ null activeClasses)

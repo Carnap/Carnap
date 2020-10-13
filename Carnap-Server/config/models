@@ -14,13 +14,13 @@ UserData
     userId UserId
     UniqueUserData userId
 
-Accomodation
+Accommodation
     forCourse CourseId
     forUser UserId
     timeFactor Double
     timeExtraMinutes Int
     dateExtraHours Int
-    UniqueAccomodation forCourse forUser
+    UniqueAccommodation forCourse forUser
 
 AuthJwk
     value ByteString

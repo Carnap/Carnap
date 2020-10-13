@@ -66,12 +66,12 @@ returnAssignment :: Text -> Text -> Entity AssignmentMetadata -> FilePath -> Han
 returnAssignment coursetitle filename (Entity key val) path = do
            uid <- maybeAuthId >>= maybe reject return
            Entity _ userdata <- runDB (getBy $ UniqueUserData uid) >>= maybe reject return  
-           maccess <- runDB $ getBy $ UniqueAccomodation (assignmentMetadataCourse val) uid
+           maccess <- runDB $ getBy $ UniqueAccommodation (assignmentMetadataCourse val) uid
            mtoken <- runDB $ getBy $ UniqueAssignmentAccessToken uid key
            time <- liftIO getCurrentTime
-           let accomodationFactor = maybe 1 (accomodationTimeFactor . entityVal) maccess
-               accomodationMinutes = maybe 0 (accomodationTimeExtraMinutes . entityVal) maccess
-               testTime min = floor ((fromIntegral min) * accomodationFactor) + accomodationMinutes
+           let accommodationFactor = maybe 1 (accommodationTimeFactor . entityVal) maccess
+               accommodationMinutes = maybe 0 (accommodationTimeExtraMinutes . entityVal) maccess
+               testTime min = floor ((fromIntegral min) * accommodationFactor) + accommodationMinutes
                instructorAccess = userDataInstructorId userdata /= Nothing --instructors who shouldn't access the course are already blocked by yesod-auth
                age (Entity _ tok) = floor (diffUTCTime time (assignmentAccessTokenCreatedAt tok))
                creation (Entity _ tok) = round $ utcTimeToPOSIXSeconds (assignmentAccessTokenCreatedAt tok) * 1000 --milliseconds to match JS

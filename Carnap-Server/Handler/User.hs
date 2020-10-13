@@ -84,8 +84,8 @@ getUserR ident = do
                        asmd <- runDB $ selectList [AssignmentMetadataCourse ==. cid] []
                        asDocs <- mapM (runDB . get) (map (assignmentMetadataDocument . entityVal) asmd)
                        textbookproblems <- getProblemSets cid
-                       extension <- (runDB $ getBy $ UniqueAccomodation cid uid)
-                                    >>= return . maybe 0 (accomodationDateExtraHours . entityVal)
+                       extension <- (runDB $ getBy $ UniqueAccommodation cid uid)
+                                    >>= return . maybe 0 (accommodationDateExtraHours . entityVal)
                        assignments <- assignmentsOf extension course textbookproblems asmd asDocs
                        pq <- getProblemQuery uid cid
                        let getSubs typ = map entityVal <$> runDB (selectList ([ProblemSubmissionType ==. typ] ++ pq) [])
@@ -175,8 +175,8 @@ scoreByIdAndClassPerProblem cid uid =
         do pq <- getProblemQuery uid cid
            subs <- map entityVal <$> (runDB $ selectList pq [])
            textbookproblems <- getProblemSets cid
-           extension <- (runDB $ getBy $ UniqueAccomodation cid uid) 
-                        >>= return . maybe 0 (accomodationDateExtraHours . entityVal)
+           extension <- (runDB $ getBy $ UniqueAccommodation cid uid) 
+                        >>= return . maybe 0 (accommodationDateExtraHours . entityVal)
            scoreList extension textbookproblems subs
 
 totalScore :: (Traversable t, MonoFoldable (t Int), Num (Element (t Int))) => 

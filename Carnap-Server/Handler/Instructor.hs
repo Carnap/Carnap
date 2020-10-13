@@ -23,8 +23,8 @@ putInstructorR _ = do
         ((assignmentrslt,_),_) <- runFormPost (identifyForm "updateAssignment" $ updateAssignmentForm)
         ((courserslt,_),_)     <- runFormPost (identifyForm "updateCourse" $ updateCourseForm)
         ((documentrslt,_),_)   <- runFormPost (identifyForm "updateDocument" $ updateDocumentForm)
-        ((accomodationrslt,_),_)   <- runFormPost (identifyForm "updateAccomodation" $ updateAccomodationForm)
-        case (assignmentrslt,courserslt,documentrslt,accomodationrslt) of
+        ((accommodationrslt,_),_)   <- runFormPost (identifyForm "updateAccommodation" $ updateAccommodationForm)
+        case (assignmentrslt,courserslt,documentrslt,accommodationrslt) of
             (FormSuccess (idstring, mdue, mduetime,mfrom,mfromtime,muntil,muntiltime, mdesc),_,_,_) -> do
                  case readMaybe idstring of
                       Nothing -> returnJson ("Could not read assignment key"::Text)
@@ -82,14 +82,14 @@ putInstructorR _ = do
             (_,_,_,FormSuccess (cidstring, uidstring, mextramin, mfactor,mextrahours)) -> do
                             case (readMaybe cidstring, readMaybe uidstring) of
                                 (Just cid, Just uid) -> do runDB $ upsertBy 
-                                                                (UniqueAccomodation cid uid)
-                                                                (Accomodation cid uid 
+                                                                (UniqueAccommodation cid uid)
+                                                                (Accommodation cid uid 
                                                                    (maybe 1 id mfactor) 
                                                                    (maybe 0 id mextramin) 
                                                                    (maybe 0 id mextrahours))
-                                                                (maybe [] (\min -> [AccomodationTimeExtraMinutes =. min]) mextramin ++ 
-                                                                 maybe [] (\fac -> [AccomodationTimeFactor =. fac]) mfactor ++ 
-                                                                 maybe [] (\hours-> [AccomodationDateExtraHours =. hours]) mextrahours)
+                                                                (maybe [] (\min -> [AccommodationTimeExtraMinutes =. min]) mextramin ++ 
+                                                                 maybe [] (\fac -> [AccommodationTimeFactor =. fac]) mfactor ++ 
+                                                                 maybe [] (\hours-> [AccommodationDateExtraHours =. hours]) mextrahours)
                                                            returnJson ("updated!" :: Text)
                                 (Nothing,_) -> returnJson ("unreadable courseId" :: Text)
                                 (_,Nothing) -> returnJson ("unreadable userId" :: Text)
@@ -298,13 +298,13 @@ postInstructorQueryR _ = do
         QueryScores uid cid -> do
             score <- scoreByIdAndClassPerProblem cid uid
             returnJson score
-        QueryAccomodation uid cid -> do
-            maccomodation <- runDB $ getBy $ UniqueAccomodation cid uid
-            case maccomodation of
+        QueryAccommodation uid cid -> do
+            maccommodation <- runDB $ getBy $ UniqueAccommodation cid uid
+            case maccommodation of
                 Nothing -> returnJson (0 :: Int, 1 :: Double, 0 :: Int)
-                Just (Entity _ acc) -> returnJson ( accomodationTimeExtraMinutes acc
-                                                  , accomodationTimeFactor acc
-                                                  , accomodationDateExtraHours acc
+                Just (Entity _ acc) -> returnJson ( accommodationTimeExtraMinutes acc
+                                                  , accommodationTimeFactor acc
+                                                  , accommodationDateExtraHours acc
                                                   )
 
 getInstructorR :: Text -> Handler Html
@@ -345,7 +345,7 @@ getInstructorR ident = do
             (uploadDocumentWidget,enctypeShareDocument) <- generateFormPost (identifyForm "uploadDocument" $ uploadDocumentForm)
             (setBookAssignmentWidget,enctypeSetBookAssignment) <- generateFormPost (identifyForm "setBookAssignment" $ setBookAssignmentForm activeClasses)
             (updateAssignmentWidget,enctypeUpdateAssignment) <- generateFormPost (identifyForm "updateAssignment" $ updateAssignmentForm)
-            (updateAccomodationWidget,enctypeUpdateAccomodation) <- generateFormPost (identifyForm "updateAccomodation" $ updateAccomodationForm)
+            (updateAccommodationWidget,enctypeUpdateAccommodation) <- generateFormPost (identifyForm "updateAccommodation" $ updateAccommodationForm)
             (updateDocumentWidget,enctypeUpdateDocument) <- generateFormPost (identifyForm "updateDocument" $ updateDocumentForm)
             (createCourseWidget,enctypeCreateCourse) <- generateFormPost (identifyForm "createCourse" createCourseForm)
             (updateCourseWidget,enctypeUpdateCourse) <- generateFormPost (identifyForm "updateCourse" updateCourseForm)
@@ -381,7 +381,7 @@ instance FromJSON InstructorDelete
 
 data InstructorQuery = QueryGrade UserId CourseId
                      | QueryScores UserId CourseId
-                     | QueryAccomodation UserId CourseId
+                     | QueryAccommodation UserId CourseId
     deriving Generic
 
 instance ToJSON InstructorQuery
@@ -696,12 +696,12 @@ updateCourseForm = renderBootstrap3 BootstrapBasicForm $ (,,,,)
             <*> aopt intField (bfs ("Total Points for Course"::Text)) Nothing
     where courseId = hiddenField
 
-updateAccomodationForm
+updateAccommodationForm
     :: Markup
     -> MForm (HandlerFor App) ((FormResult
                      (String, String, Maybe Int, Maybe Double, Maybe Int),
                    WidgetFor App ()))
-updateAccomodationForm = renderBootstrap3 BootstrapBasicForm $ (,,,,)
+updateAccommodationForm = renderBootstrap3 BootstrapBasicForm $ (,,,,)
             <$> areq courseId "" Nothing
             <*> areq userId "" Nothing
             <*> aopt intField (bfs ("Minutes Added to Timed Assignments"::Text)) Nothing
@@ -711,20 +711,20 @@ updateAccomodationForm = renderBootstrap3 BootstrapBasicForm $ (,,,,)
           userId = hiddenField
 
 --XXX: Lot of repetition to DRY in these modals.
-updateAccomodationModal
+updateAccommodationModal
     :: WidgetFor App ()
     -> Enctype
     -> WidgetFor App ()
-updateAccomodationModal form enc = [whamlet|
-                    <div class="modal fade" id="updateAccomodationData" tabindex="-1" role="dialog" aria-labelledby="updateAccomodationDataLabel" aria-hidden="true">
+updateAccommodationModal form enc = [whamlet|
+                    <div class="modal fade" id="updateAccommodationData" tabindex="-1" role="dialog" aria-labelledby="updateAccommodationDataLabel" aria-hidden="true">
                         <div class="modal-dialog" role="document">
                             <div class="modal-content">
                                 <div class="modal-header">
-                                    <h5 class="modal-title" id="updateAccomodationDataLabel">Update Course Data</h5>
+                                    <h5 class="modal-title" id="updateAccommodationDataLabel">Update Course Data</h5>
                                     <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                                       <span aria-hidden="true">&times;</span>
                                 <div class="modal-body">
-                                    <form#updateAccomodation enctype=#{enc}>
+                                    <form#updateAccommodation enctype=#{enc}>
                                         ^{form}
                                         <div.form-group>
                                             <input.btn.btn-primary type=submit value="update">
@@ -844,7 +844,7 @@ classWidget _ instructors classent = do
                                                 onclick="location.href='mailto:#{userIdent u}'">
                                                 <i.fa.fa-envelope-o>
                                             <button.btn.btn-sm.btn-secondary type="button" title="Adjust Accessibility Settings for #{fn} #{ln}"
-                                                onclick="modalEditAccomodation('#{show cid}','#{show uid}','#{jsonSerialize $ QueryAccomodation uid cid}')">
+                                                onclick="modalEditAccommodation('#{show cid}','#{show uid}','#{jsonSerialize $ QueryAccommodation uid cid}')">
                                                 <i.fa.fa-clock-o>
                     <h2>Course Data
                     <dl.row>

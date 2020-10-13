@@ -86,32 +86,32 @@ function modalEditCourse (id,desc,start,end,points) {
     $("#updateCourseData").modal({show:true});
 }
 
-function modalEditAccomodation (cid,uid,json) {
+function modalEditAccommodation (cid,uid,json) {
     jQuery.noConflict()
-    $("#updateAccomodation")[0].reset();
-    $("#updateAccomodation input[name=f1]").val(cid);
-    $("#updateAccomodation input[name=f2]").val(uid);
-    $("#updateAccomodation input[name=f3]").prop('disabled',true);
-    $("#updateAccomodation input[name=f4]").prop('disabled',true);
-    $("#updateAccomodation input[name=f5]").prop('disabled',true);
+    $("#updateAccommodation")[0].reset();
+    $("#updateAccommodation input[name=f1]").val(cid);
+    $("#updateAccommodation input[name=f2]").val(uid);
+    $("#updateAccommodation input[name=f3]").prop('disabled',true);
+    $("#updateAccommodation input[name=f4]").prop('disabled',true);
+    $("#updateAccommodation input[name=f5]").prop('disabled',true);
     jQuery.ajax({
         url: '@{InstructorQueryR ident}',
         type: 'POST',
         contentType: "application/json",
         data: json,
         success: function(data) {
-            $("#updateAccomodation input[name=f3]").val(data[0]);
-            $("#updateAccomodation input[name=f4]").val(data[1]);
-            $("#updateAccomodation input[name=f5]").val(data[2]);
-            $("#updateAccomodation input[name=f3]").prop('disabled',false);
-            $("#updateAccomodation input[name=f4]").prop('disabled',false);
-            $("#updateAccomodation input[name=f5]").prop('disabled',false);
+            $("#updateAccommodation input[name=f3]").val(data[0]);
+            $("#updateAccommodation input[name=f4]").val(data[1]);
+            $("#updateAccommodation input[name=f5]").val(data[2]);
+            $("#updateAccommodation input[name=f3]").prop('disabled',false);
+            $("#updateAccommodation input[name=f4]").prop('disabled',false);
+            $("#updateAccommodation input[name=f5]").prop('disabled',false);
             },
         error: function(data) {
             console.log("error, couldn't retrieve accessibility data")
             },
         });
-    $("#updateAccomodationData").modal({show:true});
+    $("#updateAccommodationData").modal({show:true});
 }
 
 function deleteCoInstructor (json,ln,fn) {
@@ -271,7 +271,7 @@ $("#updateCourse").submit(function(e) {
     e.preventDefault();
 })
 
-$("#updateAccomodation").submit(function(e) {
+$("#updateAccommodation").submit(function(e) {
     jQuery.ajax({
         url: '@{InstructorR ident}',
         type: 'PUT',
@@ -279,7 +279,7 @@ $("#updateAccomodation").submit(function(e) {
         processData: false,
         contentType: false,
         success: function(data) { 
-            $("#updateAccomodationData").modal('hide'); 
+            $("#updateAccommodationData").modal('hide'); 
             },
         error: function(data) {
             window.alert("Error, couldn't update the accomodation")
