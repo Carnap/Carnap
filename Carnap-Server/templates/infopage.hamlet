@@ -257,8 +257,8 @@
             \ the project is maximum coverage. So if your favorite system isn't
             \ supported, let us know and we'll see about adding it.
 
-        <p> Some tutorials for potential instructors can be found
-            \ <a href="@{DocumentsByTagR "Documentation"}"> here</a>.
+        <p> Documentation for potential instructors can be found
+            \ <a href="@{ServeR "doc" ["index.md"]}"> here</a>.
 
     <section#name>
         <h2>Why “Carnap”?
