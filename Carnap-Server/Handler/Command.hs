@@ -61,6 +61,7 @@ postCommandR = do
                                      _ | assignmentMetadataVisibleTill asgn > Just time || assignmentMetadataVisibleTill asgn == Nothing 
                                             -> tryInsert sub >>= afterInsert
                                      _      -> returnJson ("Assignment not available" :: String)
+                SaveRule n r | null n -> returnJson ("The rule needs a nonempty name." :: String)
                 SaveRule n r -> do time <- liftIO getCurrentTime
                                    let save = SavedRule r (pack n) time uid
                                    tryInsert save >>= afterInsert
