@@ -73,7 +73,7 @@ function modalEditDocument (id,desc,title,tags) {
     $("#updateDocumentData").modal({show:true});
 }
 
-function modalEditCourse (id,desc,start,end,points) {
+function modalEditCourse (id,desc,start,end,points,isopen) {
     jQuery.noConflict()
     $("#updateCourse")[0].reset();
     var sparts = start.split(" ")
@@ -83,6 +83,7 @@ function modalEditCourse (id,desc,start,end,points) {
     if (sparts.length > 0) {$("#updateCourse input[name=f3]").val(sparts[0]);}
     if (eparts.length > 0) {$("#updateCourse input[name=f4]").val(eparts[0]);}
     $("#updateCourse input[name=f5]").val(points);
+    $("#updateCourse input[name=f6]").prop("checked",isopen);
     $("#updateCourseData").modal({show:true});
 }
 

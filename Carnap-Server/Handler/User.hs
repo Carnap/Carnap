@@ -335,7 +335,8 @@ updateUserDataForm UserData {userDataFirstName=firstname, userDataLastName=lastn
             <$> aopt (selectFieldList classnames) (bfs ("Class" :: Text)) Nothing
             <*> areq textField (bfs ("First Name"::Text)) (Just firstname)
             <*> areq textField (bfs ("Last Name"::Text)) (Just lastname)
-    where classnames = map (\theclass -> (courseTitle . entityVal $ theclass, theclass)) classes
+    where openClasses = filter (\(Entity _ course) -> courseEnrollmentOpen course) classes
+          classnames = map (\theclass -> (courseTitle . entityVal $ theclass, theclass)) openClasses
 
 nouserPage :: WidgetFor site ()
 nouserPage = [whamlet|

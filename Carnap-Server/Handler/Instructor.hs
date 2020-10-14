@@ -47,14 +47,17 @@ putInstructorR _ = do
                                           mtimeUpdate muntil muntiltime AssignmentMetadataVisibleTill
                                           update k [ AssignmentMetadataDescription =. (unTextarea <$> mdesc) ]
                                returnJson ("updated!"::Text)
-            (_,FormSuccess (idstring,mdesc,mstart,mend,mpoints),_,_) -> do
+            (_,FormSuccess (idstring,mdesc,mstart,mend,mpoints,mopen),_,_) -> do
                              case readMaybe idstring of
                                  Just k -> do runDB $ do update k [ CourseDescription =. (unTextarea <$> mdesc) ]
                                                          maybeDo mstart (\start -> update k
                                                            [ CourseStartDate =. UTCTime start 0 ])
                                                          maybeDo mend (\end-> update k
                                                            [ CourseEndDate =. UTCTime end 0 ])
-                                                         maybeDo mpoints (\points-> update k [ CourseTotalPoints =. points ])
+                                                         maybeDo mpoints (\points-> update k 
+                                                           [ CourseTotalPoints =. points ])
+                                                         maybeDo mopen (\open -> update k
+                                                           [ CourseEnrollmentOpen =. open])
                                               returnJson ("updated!"::Text)
                                  Nothing -> returnJson ("could not find course!"::Text)
             (_,_,FormSuccess (idstring, mscope, mdesc,mfile,mtags),_) -> do
@@ -686,15 +689,23 @@ updateCourseModal form enc = [whamlet|
 updateCourseForm
     :: Markup
     -> MForm (HandlerFor App) ((FormResult
-                     (String, Maybe Textarea, Maybe Day, Maybe Day, Maybe Int),
+                     (String, Maybe Textarea, Maybe Day, Maybe Day, Maybe Int, Maybe Bool),
                    WidgetFor App ()))
-updateCourseForm = renderBootstrap3 BootstrapBasicForm $ (,,,,)
+updateCourseForm = renderBootstrap3 BootstrapBasicForm $ (,,,,,)
             <$> areq courseId "" Nothing
             <*> aopt textareaField (bfs ("Course Description"::Text)) Nothing
             <*> aopt (jqueryDayField def) (bfs ("Start Date"::Text)) Nothing
             <*> aopt (jqueryDayField def) (bfs ("End Date"::Text)) Nothing
             <*> aopt intField (bfs ("Total Points for Course"::Text)) Nothing
+            <*> aopt checkBoxField checkFieldSettings Nothing
     where courseId = hiddenField
+          checkFieldSettings = FieldSettings 
+            { fsLabel = "Enrollment Open?"
+            , fsTooltip = Nothing
+            , fsId = Nothing
+            , fsName = Nothing
+            , fsAttrs = [("style","margin-left:10px")]
+            }
 
 updateAccommodationForm
     :: Markup
@@ -866,6 +877,12 @@ classWidget _ instructors classent = do
                         <dd.col-sm-9>#{dateDisplay (courseEndDate dbCourse) dbCourse}
                         <dt.col-sm-3>Time Zone
                         <dd.col-sm-9>#{decodeUtf8 $ courseTimeZone dbCourse}
+                        <dt.col-sm-3>Enrollment Status
+                        <dd.col-sm-9>
+                            $if courseEnrollmentOpen dbCourse
+                                Open
+                            $else
+                                Closed
                         <dt.col-sm-3>Enrollment Link
                         <dd.col-sm-9>
                             <a href="@{EnrollR (courseTitle dbCourse)}">@{EnrollR (courseTitle dbCourse)}
@@ -888,7 +905,7 @@ classWidget _ instructors classent = do
                         <div.col-xl-6.col-lg-12 style="padding:5px">
                             <div.float-xl-right>
                                 <button.btn.btn-secondary style="width:160px" type="button"
-                                    onclick="modalEditCourse('#{show cid}','#{maybe "" sanitizeForJS (unpack <$> courseDescription dbCourse)}','#{dateDisplay (courseStartDate dbCourse) dbCourse}','#{dateDisplay (courseEndDate dbCourse) dbCourse}',#{courseTotalPoints dbCourse})">
+                                    onclick="modalEditCourse('#{show cid}','#{maybe "" sanitizeForJS (unpack <$> courseDescription dbCourse)}','#{dateDisplay (courseStartDate dbCourse) dbCourse}','#{dateDisplay (courseEndDate dbCourse) dbCourse}',#{courseTotalPoints dbCourse},#{toLower (show (courseEnrollmentOpen dbCourse))})">
                                     Edit Information
                                 <button.btn.btn-secondary style="width:160px" type="button"
                                     onclick="exportGrades('#{jsonSerialize cid}')";">
