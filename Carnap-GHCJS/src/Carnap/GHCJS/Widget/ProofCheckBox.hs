@@ -31,7 +31,7 @@ data Button = Button { label  :: String
 data CheckerFeedbackUpdate = Keypress | Click | Never | SyntaxOnly
     deriving Eq
 
-data CheckerGuide = MontagueGuide | FitchGuide | HausmanGuide | HowardSnyderGuide | HurleyGuide | NoGuide
+data CheckerGuide = MontagueGuide | FitchGuide | HausmanGuide | HowardSnyderGuide | HurleyGuide | IndentGuide | NoGuide
 
 data CheckerOptions = CheckerOptions { submit :: Maybe Button -- What's the submission button, if there is one?
                                      , render :: Bool -- Should the checker render the proof?
@@ -61,6 +61,7 @@ optionsFromMap opts = CheckerOptions { submit = Nothing
                                       , indentGuides = case M.lookup "guides" opts of
                                                        Just "montague"     -> MontagueGuide
                                                        Just "fitch"        -> FitchGuide
+                                                       Just "indent"       -> IndentGuide
                                                        Just "hurley"       -> HurleyGuide
                                                        Just "hausman"      -> HausmanGuide
                                                        Just "howardSnyder" -> HowardSnyderGuide
@@ -262,7 +263,8 @@ setLinesTo w nd options lines = do setInnerHTML nd (Just "")
                                            numstring  ++ "."
                                            ++ bars (differences guidelevels')
                                        HurleyGuide | indent == 0 -> numstring ++ "."
-                                       HurleyGuide -> "   " ++ bars (differences guidelevels'') ++ show (no + 1) ++ "."
+                                       HurleyGuide -> 
+                                           "   " ++ bars (differences guidelevels'') ++ show (no + 1) ++ "."
                                        HausmanGuide | indent > oldindent -> 
                                            numstring ++ "." ++ bars (tail $ differences guidelevels'')
                                            ++ replicate (head (differences guidelevels'') - 1) ' ' 
@@ -271,6 +273,7 @@ setLinesTo w nd options lines = do setInnerHTML nd (Just "")
                                            numstring ++ "."
                                            ++ bars (differences guidelevels'')
                                            ++ replicate (length rest + indent - (head guidelevels'')) '_'
+                                       HausmanGuide -> numstring ++ "." ++ (bars $ differences guidelevels'')
                                        HowardSnyderGuide | indent > oldindent -> 
                                            bars (tail $ differences guidelevels'')
                                            ++ replicate (head (differences guidelevels'') - 1) ' ' 
@@ -282,15 +285,14 @@ setLinesTo w nd options lines = do setInnerHTML nd (Just "")
                                            bars (differences guidelevels'') 
                                            ++ (numstring ++ ".") 
                                        FitchGuide | indent > oldindent -> 
-                                           numstring ++ "│"
-                                           ++ bars (differences guidelevels'')
+                                           numstring ++ "│" ++ bars (differences guidelevels'')
                                            ++ replicate (length rest + indent - head guidelevels'') '_'
                                        FitchGuide | no + 1 == finalPremise -> 
                                            numstring ++ "│"
                                            ++ replicate (length rest + indent) '_'
                                        FitchGuide -> 
                                            numstring ++ "│" ++ (bars $ differences guidelevels'')
-                                       _ -> numstring ++ "." ++ (bars $ differences guidelevels'')
+                                       IndentGuide -> numstring ++ "." ++ (bars $ differences guidelevels'')
                  liftIO $ setInnerHTML overlay (Just $ guidestring)
                  put (no + 1, guidelevels'')
                  return overlay
