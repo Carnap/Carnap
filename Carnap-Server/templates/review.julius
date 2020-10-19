@@ -39,6 +39,7 @@ $(".updateSubmission").submit(function(e) {
                 $(e.target).parents().closest(".card-body").find(".points-awarded").html("points added: " + score)
                 $(e.target).parents().closest(".card-body").find(".btn").prop("disabled",true)
                 $(e.target).parents().closest(".card-body").find(".btn").removeClass("unsaved")
+                initVisible()
             }},
         error: function(data) {
             window.alert("Error, couldn't update the assignment ")
@@ -79,6 +80,7 @@ $("#viewUngraded").click( function(){
     $(this).addClass("btn-primary")
     $(".graded").addClass("hidden-graded")
     gradedVisible = false
+    initVisible()
 });
 
 $("#viewAll").click( function(){
@@ -88,6 +90,7 @@ $("#viewAll").click( function(){
     $(this).addClass("btn-primary")
     $(".graded").removeClass("hidden-graded")
     gradedVisible = true
+    initVisible()
 });
 
 $("#selectStudent").change(function(){
