@@ -48,7 +48,7 @@ bonevacOpts = PurePropositionalParserOptions
                 }
 
 hardegreeOpts :: Monad m => PurePropositionalParserOptions u m
-hardegreeOpts = standardLetters { hasBooleanConstants = True }
+hardegreeOpts = extendedLetters { hasBooleanConstants = True }
 
 extendedLetters :: Monad m => PurePropositionalParserOptions u m
 extendedLetters = standardLetters { atomicSentenceParser = sentenceLetterParser ['A' .. 'Z'] }
