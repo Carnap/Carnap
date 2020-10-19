@@ -304,11 +304,12 @@ hoseqFromNode lineno rules prems conc =
                                         -- a new one by substitution in order to
                                         -- preserve things like variable labelings
                                    let subbedconc = applySub hosub (set rhs conc rconc)
-                                   let prob = (zipWith (:=:) (map (pureBNF . view lhs) subbedrule) 
+                                   let prob = (zipWith (:=:) (evalState (mapM (\x -> stateRebuild (view lhs x) >>= toBNF) subbedrule) (0 :: Int))
                                                              (map (view lhs) prems))
                                    case evalState (acuiUnifySys (const False) prob) (0 :: Int) of
                                        [] -> return $ Left $ renumber lineno $ NoUnify [prob] 0
                                        subs -> return $ Right $ map (\x -> (antecedentNub $ applySub x subbedconc,x,r)) (map (++ hosub) subs)
+
 
 reduceProofTree, hoReduceProofTree :: 
     ( Inference r lex sem
