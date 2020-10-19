@@ -91,11 +91,25 @@ parseHardegreePL rtc = try liftProp <|> quantRule
 parseHardegreePLProof ::  RuntimeNaturalDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine HardegreePL PureLexiconFOL (Form Bool)]
 parseHardegreePLProof ders = toDeductionHardegree (parseHardegreePL ders) hardegreePLFormulaParser
 
+hardegreePLNotation :: String -> String 
+hardegreePLNotation x = case runParser altParser 0 "" x of
+                        Left e -> show e
+                        Right s -> hardegreeNotation s
+    where altParser = do s <- try handleAtom <|> fallback
+                         rest <- (eof >> return "") <|> altParser
+                         return $ s ++ rest
+          handleAtom = do c <- oneOf "ABCDEFGHIJKLMNOPQRSTUVWXYZ" <* char '('
+                          args <- oneOf "abcdefghijklmnopqrstuvwxyz" `sepBy` char ','
+                          char ')'
+                          return $ c:args
+          fallback = do c <- anyChar 
+                        return [c]
+
 hardegreePLCalc = mkNDCalc
     { ndRenderer = MontagueStyle
     , ndParseProof = parseHardegreePLProof
     , ndProcessLine = hoProcessLineHardegree
-    , ndNotation = hardegreeNotation
+    , ndNotation = hardegreePLNotation
     , ndParseSeq = parseSeqOver hardegreePLFormulaParser
     , ndParseForm = hardegreePLFormulaParser
     , ndProcessLineMemo = Just hoProcessLineHardegreeMemo
