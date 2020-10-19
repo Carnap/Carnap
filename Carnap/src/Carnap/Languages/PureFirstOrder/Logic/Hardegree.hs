@@ -89,12 +89,14 @@ parseHardegreePL rtc = try liftProp <|> quantRule
                               | r `elem` ["QN"] -> return [QN1,QN2,QN3,QN4]
 
 parseHardegreePLProof ::  RuntimeNaturalDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine HardegreePL PureLexiconFOL (Form Bool)]
-parseHardegreePLProof ders = toDeductionHardegree (parseHardegreePL ders) (hardegreePLFormulaParser)
+parseHardegreePLProof ders = toDeductionHardegree (parseHardegreePL ders) hardegreePLFormulaParser
 
 hardegreePLCalc = mkNDCalc
     { ndRenderer = MontagueStyle
     , ndParseProof = parseHardegreePLProof
     , ndProcessLine = hoProcessLineHardegree
     , ndNotation = hardegreeNotation
+    , ndParseSeq = parseSeqOver hardegreePLFormulaParser
+    , ndParseForm = hardegreePLFormulaParser
     , ndProcessLineMemo = Just hoProcessLineHardegreeMemo
     }

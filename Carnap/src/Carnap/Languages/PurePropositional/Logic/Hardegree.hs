@@ -178,4 +178,6 @@ hardegreeSLCalc = mkNDCalc
     , ndProcessLine = processLineHardegree
     , ndProcessLineMemo = Nothing
     , ndNotation  = hardegreeNotation
+    , ndParseSeq = parseSeqOver (purePropFormulaParser hardegreeOpts)
+    , ndParseForm = purePropFormulaParser hardegreeOpts
     }
