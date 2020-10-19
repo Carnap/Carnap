@@ -32,6 +32,7 @@ $(".updateSubmission").submit(function(e) {
             if (data.slice(0,5) == "error") window.alert(data.slice(6))
             else {
                 window.alert("updated!")
+                if (!gradedVisible) { $(e.target).parents().closest(".ungraded").addClass("hidden-graded") }
                 $(e.target).parents().closest(".ungraded").find(".review-status").html("manually graded")
                 $(e.target).parents().closest(".ungraded").removeClass("ungraded").addClass("graded")
                 let score = $(e.target).parents().closest(".card-body").find("[name='f3']").val()
