@@ -86,17 +86,23 @@ parseGoldfarbNDProof ders = toDeductionLemmon (parseGoldfarbND ders) goldfarbNDF
 parseGoldfarbAltNDProof ::  RuntimeNaturalDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine GoldfarbND PureLexiconFOL (Form Bool)]
 parseGoldfarbAltNDProof ders = toDeductionLemmonAlt (parseGoldfarbND ders) goldfarbNDFormulaParser
 
-dropPredParens :: String -> String 
-dropPredParens x = case runParser altParser 0 "" x of
+goldfarbNDNotation :: String -> String 
+goldfarbNDNotation x = case runParser altParser 0 "" x of
                         Left e -> show e
                         Right s -> s
-    where altParser = do s <- try handleAtom <|> fallback
+    where altParser = do s <- try handleAtom <|> try handleQuant <|> try handleCon <|> fallback
                          rest <- (eof >> return "") <|> altParser
                          return $ s ++ rest
           handleAtom = do c <- oneOf "ABCDEFGHIJKLMNOPQRSTUVWXYZ" <* char '('
                           args <- oneOf "abcdefghijklmnopqrstuvwxyz" `sepBy` char ','
                           char ')'
                           return $ c:args
+          handleQuant = do q <- oneOf "∀∃"
+                           v <- anyChar
+                           return $ "(" ++ [q] ++ [v] ++ ")"
+          handleCon = (char '∧' >> return "∙") <|> (char '¬' >> return "-") 
+                                               <|> (char '→' >> return "⊃") 
+                                               <|> (char '↔' >> return "≡")
           fallback = do c <- anyChar 
                         return [c]
 
@@ -107,7 +113,7 @@ goldfarbNDCalc = mkNDCalc
     , ndProcessLineMemo = Just hoProcessLineLemmonMemo
     , ndParseForm = goldfarbNDFormulaParser
     , ndParseSeq = parseSeqOver goldfarbNDFormulaParser
-    , ndNotation = dropPredParens --Goldfarb's full notation is actually a bit weirder
+    , ndNotation = goldfarbNDNotation 
     }
 
 goldfarbAltNDCalc = goldfarbNDCalc { ndParseProof = parseGoldfarbAltNDProof }
@@ -179,7 +185,7 @@ goldfarbNDPlusCalc = mkNDCalc
     , ndParseForm = goldfarbNDFormulaParser
     , ndParseSeq = parseSeqOver goldfarbNDFormulaParser
     , ndProcessLineMemo = Just hoProcessLineLemmonMemo
-    , ndNotation = dropPredParens --Goldfarb's full notation is actually a bit weirder
+    , ndNotation = goldfarbNDNotation 
     }
 
 goldfarbAltNDPlusCalc = goldfarbNDPlusCalc { ndParseProof = parseGoldfarbAltNDPlusProof }

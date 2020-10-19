@@ -112,10 +112,16 @@ parseGoldfarbPropND rtc n _ = do r <- choice (map (try . string) [ "NDE", "MP", 
 parseGoldfarbPropNDProof ::  RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> String -> [DeductionLine GoldfarbPropND PurePropLexicon (Form Bool)]
 parseGoldfarbPropNDProof ders = toDeductionLemmon (parseGoldfarbPropND ders) (purePropFormulaParser gamutOpts)
 
-goldfarbPropNDNotation :: String -> String
-goldfarbPropNDNotation (x:xs) | isUpper x = toLower x : goldfarbPropNDNotation xs
-                              | otherwise = x : goldfarbPropNDNotation xs
-goldfarbPropNDNotation [] = []
+goldfarbPropNDNotation :: String -> String 
+goldfarbPropNDNotation x = case runParser altParser 0 "" x of
+                        Left e -> show e
+                        Right s -> s
+    where altParser = do s <- handleCon <|> fallback
+                         rest <- (eof >> return "") <|> altParser
+                         return $ s ++ rest
+          handleCon = (char '∧' >> return "∙") <|> (char '¬' >> return "-") <|> (char '→' >> return "⊃") <|> (char '↔' >> return "≡")
+          fallback = do c <- anyChar 
+                        return [toLower c]
 
 goldfarbPropNDCalc = mkNDCalc
     { ndRenderer = LemmonStyle StandardLemmon
