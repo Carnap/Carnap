@@ -49,6 +49,7 @@ ofFOLSys f sys | sys == "firstOrder"                      = Just $ f folCalc
                | sys == "montagueQC"                      = Just $ f montagueQCCalc 
                | sys == "magnusQL"                        = Just $ f magnusQLCalc 
                | sys == "thomasBolducAndZachFOL"          = Just $ f thomasBolducAndZachFOLCalc 
+               | sys == "thomasBolducAndZachFOLCore"      = Just $ f thomasBolducAndZachFOLCoreCalc 
                | sys == "thomasBolducAndZachFOL2019"      = Just $ f thomasBolducAndZachFOL2019Calc 
                | sys == "thomasBolducAndZachFOLPlus2019"  = Just $ f thomasBolducAndZachFOLPlus2019Calc 
                | sys == "ebelsDugganFOL"                  = Just $ f ebelsDugganFOLCalc

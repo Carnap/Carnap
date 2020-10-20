@@ -1,6 +1,6 @@
 {-#LANGUAGE  FlexibleContexts,  FlexibleInstances, MultiParamTypeClasses #-}
 module Carnap.Languages.PureFirstOrder.Logic.ThomasBolducAndZach 
-    ( thomasBolducAndZachFOLCalc, parseThomasBolducAndZachFOL, ThomasBolducAndZachFOL
+    ( thomasBolducAndZachFOLCoreCalc, thomasBolducAndZachFOLCalc, parseThomasBolducAndZachFOL, ThomasBolducAndZachFOL
     , thomasBolducAndZachFOL2019Calc, parseThomasBolducAndZachFOLCore, ThomasBolducAndZachFOLCore
     , thomasBolducAndZachFOLPlus2019Calc
     ) where
@@ -177,9 +177,22 @@ parseThomasBolducAndZachFOLPlus2019Proof ders = toDeductionFitch (parseThomasBol
 parseThomasBolducAndZachFOLProof :: RuntimeNaturalDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine ThomasBolducAndZachFOL PureLexiconFOL (Form Bool)]
 parseThomasBolducAndZachFOLProof ders = toDeductionFitch (parseThomasBolducAndZachFOL ders) thomasBolducAndZachFOLFormulaParser
 
+parseThomasBolducAndZachFOLCoreProof :: RuntimeNaturalDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine ThomasBolducAndZachFOLCore PureLexiconFOL (Form Bool)]
+parseThomasBolducAndZachFOLCoreProof ders = toDeductionFitch (parseThomasBolducAndZachFOLCore ders) thomasBolducAndZachFOLFormulaParser
+
 thomasBolducAndZachFOLCalc = mkNDCalc
     { ndRenderer = FitchStyle StandardFitch
     , ndParseProof = parseThomasBolducAndZachFOLProof
+    , ndProcessLine = hoProcessLineFitch
+    , ndProcessLineMemo = Just hoProcessLineFitchMemo
+    , ndParseSeq = parseSeqOver thomasBolducAndZachFOLFormulaParser
+    , ndParseForm = thomasBolducAndZachFOLFormulaParser
+    , ndNotation = ndNotation P.thomasBolducAndZachTFLCalc
+    }
+
+thomasBolducAndZachFOLCoreCalc = mkNDCalc
+    { ndRenderer = FitchStyle StandardFitch
+    , ndParseProof = parseThomasBolducAndZachFOLCoreProof
     , ndProcessLine = hoProcessLineFitch
     , ndProcessLineMemo = Just hoProcessLineFitchMemo
     , ndParseSeq = parseSeqOver thomasBolducAndZachFOLFormulaParser

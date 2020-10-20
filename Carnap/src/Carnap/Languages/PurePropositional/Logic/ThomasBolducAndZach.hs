@@ -2,7 +2,7 @@
 module Carnap.Languages.PurePropositional.Logic.ThomasBolducAndZach
     ( parseThomasBolducAndZachTFLCore, ThomasBolducAndZachTFLCore(..)
     , parseThomasBolducAndZachTFL, ThomasBolducAndZachTFL(..)
-    , thomasBolducAndZachTFL2019Calc, thomasBolducAndZachTFLCalc
+    , thomasBolducAndZachTFL2019Calc, thomasBolducAndZachTFLCalc, thomasBolducAndZachTFLCoreCalc
     , thomasBolducAndZachNotation) where
 
 import Data.Map as M (lookup, Map)
@@ -232,6 +232,9 @@ parseThomasBolducAndZachTFL rtc = try parseExt <|> (map Core <$> parseThomasBold
                                  | r == "LEM"  -> return [Lem1,Lem2,Lem3,Lem4]
                                  | r == "DeM"   -> return [DeMorgan1,DeMorgan2,DeMorgan3,DeMorgan4]
 
+parseThomasBolducAndZachTFLCoreProof :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> String -> [DeductionLine ThomasBolducAndZachTFLCore PurePropLexicon (Form Bool)]
+parseThomasBolducAndZachTFLCoreProof rtc = toDeductionFitch (parseThomasBolducAndZachTFLCore rtc) (purePropFormulaParser thomasBolducZachOpts) 
+
 parseThomasBolducAndZachTFLProof :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> String -> [DeductionLine ThomasBolducAndZachTFL PurePropLexicon (Form Bool)]
 parseThomasBolducAndZachTFLProof rtc = toDeductionFitch (parseThomasBolducAndZachTFL rtc) (purePropFormulaParser thomasBolducZachOpts)
 
@@ -251,6 +254,16 @@ thomasBolducAndZachNotation x = case runParser altParser 0 "" x of
                           return $ c:args
           fallback = do c <- anyChar 
                         return [c]
+
+thomasBolducAndZachTFLCoreCalc = mkNDCalc 
+    { ndRenderer = FitchStyle StandardFitch
+    , ndParseProof = parseThomasBolducAndZachTFLCoreProof
+    , ndProcessLine = hoProcessLineFitch
+    , ndProcessLineMemo = Just hoProcessLineFitchMemo
+    , ndParseSeq = parseSeqOver (purePropFormulaParser thomasBolducZachOpts)
+    , ndParseForm = purePropFormulaParser thomasBolducZachOpts
+    , ndNotation = thomasBolducAndZachNotation
+    }
 
 thomasBolducAndZachTFLCalc = mkNDCalc 
     { ndRenderer = FitchStyle StandardFitch

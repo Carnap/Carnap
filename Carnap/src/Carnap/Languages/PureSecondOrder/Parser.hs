@@ -145,5 +145,3 @@ psolPredicationParser parseForm parseTerm = try (parsePredicateSymbol "FGHIJKLMN
                                let partialPred = (SOPApp SOApp :!$: v :!$: t)
                                (char ',' *> parseVarTerms (incVar partialPred))
                                     <|> (char ')' *> return partialPred)
-
-
