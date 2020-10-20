@@ -45,17 +45,19 @@ coreParserPSOL recur sfrecur = (parenParser recur <* spaces)
       <|> unaryOpParser [parseNeg] sfrecur
 
 parseFreeVar :: StandardVarLanguage (FixLang lex (Term Int)) => Parsec String u (FixLang lex (Term Int))
-parseFreeVar = choice [try $ do _ <- string "x_"
+parseFreeVar = choice [try $ do c <- oneOf "vwxyz" 
+                                char '_'
                                 dig <- many1 digit
-                                return $ foVar $ "x_" ++ dig
+                                return $ foVar $ [c] ++ "_" ++ dig
                       ,      do c <- oneOf "vwxyz"
                                 return $ foVar [c]
                       ]
 
 parseMSOLVar :: Parsec String u (MonadicallySOL (Form (Int -> Bool)))
-parseMSOLVar = choice [try $ do _ <- string "X_"
+parseMSOLVar = choice [try $ do c <- oneOf "XYZ"
+                                char '_'
                                 dig <- many1 digit
-                                return $ SOMVar $ "X_" ++ dig
+                                return $ SOMVar $ [c] ++ "_" ++ dig
                       ,      do c <- oneOf "XYZ"
                                 return $ SOMVar [c]
                       ]
