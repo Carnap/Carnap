@@ -52,7 +52,10 @@ postCourseAssignmentR coursetitle filename = do
             case passrslt of
                 FormSuccess password ->
                     let insertToken = do currentTime <- liftIO getCurrentTime
-                                         runDB $ insert $ AssignmentAccessToken currentTime key uid
+                                         mtoken <- runDB $ insertUnique $ AssignmentAccessToken currentTime key uid
+                                         case mtoken of 
+                                                Nothing -> $logWarn "couldn't insert access token. Double POST?"
+                                                _ -> return ()
                                          setMessage $ "Access Granted"
                                          return ()
                     in case assignmentMetadataAvailability val of
