@@ -30,7 +30,7 @@
                 <col style="width:100px">
                 <col style="width:50px">
                 <col style="width:50px">
-                <thead>
+                <thead#problem-table-head>
                     <th style="cursor:pointer" onclick="sortUsersByCol(0)">
                         Source
                         <i class="fa fa-sort" aria-hidden="true"></i>
@@ -45,8 +45,8 @@
                     <th style="cursor:pointer" onclick="sortUsersByCol(5)">
                         Type
                         <i class="fa fa-sort" aria-hidden="true"></i>
-                    <tbody#problemTableBody>
-                        #{subtable}
+                <tbody#problem-table-body>
+                    #{subtable}
     <h3> Your Profile
     ^{personalInfo ud (Just course)}
     $if (not (null derivedRulesOld) || not (null derivedRulesNew))

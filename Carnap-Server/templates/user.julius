@@ -22,18 +22,22 @@ function tryDeleteRule (name) {
     }
 
 function sortUsersByCol(num) {
-    let body = document.getElementById("problemTableBody")
+    let body = document.getElementById("problem-table-body")
+    let head = document.getElementById("problem-table-head")
     let rows = Array.from(body.children)
+    let headers = head.getElementsByTagName("th")
+    headers[num].upsorted = (headers[num].upsorted * -1) || 1
+    let upsort = headers[num].upsorted
     let sortedRows = rows.sort((a,b) => {
         let val1 = a.children[num].innerHTML.split('.')
         let val2 = b.children[num].innerHTML.split('.')
-        if (val1.length > val2.length) { return 1 }
-        else if (val2.length > val1.length) { return -1 }
+        if (val1.length > val2.length) { return 1 * upsort }
+        else if (val2.length > val1.length) { return -1 * upsort }
         else {for (let idx = 0; idx < val1.length; idx++) {
-            if (val1[idx].length > val2[idx].length) { return 1 }
-            else if (val2[idx].length > val1[idx].length) { return -1 }
-            else if (val1[idx] > val2[idx]) { return 1 }
-            else if (val2[idx] > val1[idx]) { return -1 }
+            if (val1[idx].length > val2[idx].length) { return 1 * upsort}
+            else if (val2[idx].length > val1[idx].length) { return -1 * upsort}
+            else if (val1[idx] > val2[idx]) { return 1 * upsort }
+            else if (val2[idx] > val1[idx]) { return -1 * upsort }
             }
         } 
         return 0
