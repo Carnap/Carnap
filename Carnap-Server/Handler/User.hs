@@ -87,19 +87,14 @@ getUserR ident = do
                        extension <- (runDB $ getBy $ UniqueAccommodation cid uid)
                                     >>= return . maybe 0 (accommodationDateExtraHours . entityVal)
                        assignments <- assignmentsOf extension course textbookproblems asmd asDocs
-                       pq <- getProblemQuery uid cid
-                       let getSubs typ = map entityVal <$> runDB (selectList ([ProblemSubmissionType ==. typ] ++ pq) [])
-                       subs <- mapM getSubs [SyntaxCheck,Translation,Derivation,TruthTable,CounterModel,Qualitative,SequentCalc,DeductionTree]
-                       mapM (problemsToTable course extension textbookproblems asmd asDocs) subs
-                           >>= \case
-                              [syntable,transtable,dertable,tttable,cmtable,qtable,seqtable,treetable] -> do
-                                   score <- totalScore extension textbookproblems (concat subs)
-                                   defaultLayout $ do
-                                       addScript $ StaticR js_bootstrap_bundle_min_js
-                                       addScript $ StaticR js_bootstrap_min_js
-                                       setTitle "Welcome To Your Homepage!"
-                                       $(widgetFile "user")
-                              _ -> liftIO $ fail "incorrect number of tables: this should never happen"
+                       let pq = problemQuery uid (map entityKey asmd) 
+                       subs <- map entityVal <$> runDB (selectList pq [])
+                       subtable <- problemsToTable course extension textbookproblems asmd asDocs subs
+                       defaultLayout $ do
+                           addScript $ StaticR js_bootstrap_bundle_min_js
+                           addScript $ StaticR js_bootstrap_min_js
+                           setTitle "Welcome To Your Homepage!"
+                           $(widgetFile "user")
                 Nothing -> defaultLayout $ do
                                 addScript $ StaticR js_bootstrap_bundle_min_js
                                 addScript $ StaticR js_bootstrap_min_js
@@ -124,7 +119,6 @@ getUserDispatchR = maybeAuthId
                             case mid of
                               Nothing -> redirect $ UserR ident
                               Just _ -> redirect $ InstructorR ident
-
 
 --------------------------------------------------------
 --Grading
@@ -229,7 +223,7 @@ problemsToTable course extension textbookproblems asmd asDocs submissions = do
                                     <td title="#{displayProblemData $ problemSubmissionData p}">
                                         <div.problem-display> #{displayProblemData $ problemSubmissionData p}
                                     <td>#{dateDisplay (problemSubmissionTime p) course}
-                                    <td>#{show $ score}
+                                    <td.score-column>#{show $ score}
                                     <td>#{show $ problemSubmissionType p}|]
 
               printSource Book = [hamlet|Textbook|]

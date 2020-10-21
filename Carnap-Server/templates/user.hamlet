@@ -16,7 +16,9 @@
                 <div.card-header> Total Points Earned
                 <div.card-block.text-center>
                     <span style="font-size:64pt; color:gray">
-                        #{score}/#{courseTotalPoints course}
+                        <span#score-numerator>-#
+                        <span>/#
+                        <span#score-denominator>#{courseTotalPoints course}
     <div>
     <h3 style="padding-top:10pt"> Completed Problems
     <div.card>
@@ -44,14 +46,7 @@
                         Type
                         <i class="fa fa-sort" aria-hidden="true"></i>
                     <tbody#problemTableBody>
-                        #{syntable}
-                        #{transtable}
-                        #{dertable}
-                        #{tttable}
-                        #{cmtable}
-                        #{qtable}
-                        #{seqtable}
-                        #{treetable}
+                        #{subtable}
     <h3> Your Profile
     ^{personalInfo ud (Just course)}
     $if (not (null derivedRulesOld) || not (null derivedRulesNew))

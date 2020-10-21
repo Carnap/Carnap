@@ -183,5 +183,5 @@ getProblemQuery uid cid = do asl <- runDB $ map entityKey <$> selectList [Assign
                              return $ problemQuery uid asl
 
 problemQuery uid asl = [ProblemSubmissionUserId ==. uid] 
-                    ++ ([ProblemSubmissionSource ==. Book] ||. [ProblemSubmissionSource <-. assignmentList])
-        where assignmentList = map (\x -> Assignment (show x)) asl
+                    ++ ([ProblemSubmissionSource ==. Book] ||. [ProblemSubmissionAssignmentId <-. assignmentList])
+        where assignmentList = map Just asl

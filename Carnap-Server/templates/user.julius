@@ -40,3 +40,12 @@ function sortUsersByCol(num) {
     })
     sortedRows.forEach(el => body.appendChild(el))
 }
+
+function calcTotalScore() {
+    let rows = Array.from(document.getElementsByClassName("score-column"))
+    let values = rows.map(x => parseInt(x.innerHTML))
+    let total = values.reduce((acc,val) => {return acc + val})
+    document.getElementById("score-numerator").innerHTML = total
+}
+
+$(document).ready(_ => calcTotalScore())
