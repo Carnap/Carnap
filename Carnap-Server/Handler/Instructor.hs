@@ -25,7 +25,7 @@ putInstructorR _ = do
         ((documentrslt,_),_)   <- runFormPost (identifyForm "updateDocument" $ updateDocumentForm)
         ((accommodationrslt,_),_)   <- runFormPost (identifyForm "updateAccommodation" $ updateAccommodationForm)
         case (assignmentrslt,courserslt,documentrslt,accommodationrslt) of
-            (FormSuccess (idstring, mdue, mduetime,mfrom,mfromtime,muntil,muntiltime, mdesc),_,_,_) -> do
+            (FormSuccess (idstring, mdue, mduetime,mfrom,mfromtime,muntil,muntiltime,mrelease,mreleasetime,mdesc),_,_,_) -> do
                  case readMaybe idstring of
                       Nothing -> returnJson ("Could not read assignment key"::Text)
                       Just k -> do
@@ -45,6 +45,7 @@ putInstructorR _ = do
                                           mtimeUpdate mdue mduetime AssignmentMetadataDuedate
                                           mtimeUpdate mfrom mfromtime AssignmentMetadataVisibleFrom
                                           mtimeUpdate muntil muntiltime AssignmentMetadataVisibleTill
+                                          mtimeUpdate mrelease mreleasetime AssignmentMetadataGradeRelease
                                           update k [ AssignmentMetadataDescription =. (unTextarea <$> mdesc) ]
                                returnJson ("updated!"::Text)
             (_,FormSuccess (idstring,mdesc,mstart,mend,mpoints,mopen),_,_) -> do
@@ -495,7 +496,7 @@ updateAssignmentForm
     :: Markup
     -> MForm (HandlerFor App) ((FormResult
                      (String, Maybe Day, Maybe TimeOfDay, Maybe Day, Maybe TimeOfDay,
-                      Maybe Day, Maybe TimeOfDay, Maybe Textarea),
+                      Maybe Day, Maybe TimeOfDay, Maybe Day, Maybe TimeOfDay, Maybe Textarea),
                    WidgetFor App ()))
 updateAssignmentForm extra = do
             (assignmentRes,assignmentView) <- mreq assignmentId "" Nothing
@@ -505,11 +506,14 @@ updateAssignmentForm extra = do
             (fromtimeRes, fromtimeView) <- mopt timeFieldTypeTime (withPlaceholder "Time" $ bfs ("Visible From Time"::Text)) Nothing
             (tillRes, tillView) <- mopt (jqueryDayField def) (withPlaceholder "Date" $ bfs ("Visible Until Date"::Text)) Nothing
             (tilltimeRes,tilltimeView) <- mopt timeFieldTypeTime (withPlaceholder "Time" $ bfs ("Visible Until Time"::Text)) Nothing
+            (releaseRes,releaseView) <- mopt (jqueryDayField def) (withPlaceholder "Date" $ bfs ("Release Grades After Date"::Text)) Nothing
+            (releasetimeRes,releasetimeView) <- mopt timeFieldTypeTime (withPlaceholder "Time" $ bfs ("Release Grades After Time"::Text)) Nothing
             (descRes,descView) <- mopt textareaField (bfs ("Assignment Description"::Text)) Nothing
-            let theRes = (,,,,,,,) <$> assignmentRes
+            let theRes = (,,,,,,,,,) <$> assignmentRes
                                    <*> dueRes <*> duetimeRes
                                    <*> fromRes <*> fromtimeRes
                                    <*> tillRes <*> tilltimeRes
+                                   <*> releaseRes <*> releasetimeRes
                                    <*> descRes
             let widget = do
                 [whamlet|
@@ -533,6 +537,12 @@ updateAssignmentForm extra = do
                         ^{fvInput tillView}
                     <div.form-group.col-md-6>
                         ^{fvInput tilltimeView}
+                <h6> Release Grades After
+                <div.row>
+                    <div.form-group.col-md-6>
+                        ^{fvInput releaseView}
+                    <div.form-group.col-md-6>
+                        ^{fvInput releasetimeView}
                 <h6> Description
                 <div.row>
                     <div.form-group.col-md-12>
