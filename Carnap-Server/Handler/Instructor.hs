@@ -174,8 +174,8 @@ postInstructorR ident = do
     ((newclassrslt,_),_)   <- runFormPost (identifyForm "createCourse" createCourseForm)
     ((frombookrslt,_),_)   <- runFormPost (identifyForm "setBookAssignment" $ setBookAssignmentForm activeClasses)
     ((instructorrslt,_),_) <- runFormPost (identifyForm "addCoinstructor" $ addCoInstructorForm instructors ("" :: String))
-    case assignmentrslt of
-        FormSuccess (doc, Entity classkey theclass, mdue,mduetime,mfrom,mfromtime,mtill,mtilltime, massignmentdesc, mpass, mhidden,mlimit, subtime) ->
+    case assignmentrslt of --XXX Should be passing a sensible data structure here, not a tuple
+        FormSuccess (doc, Entity classkey theclass, mdue, mduetime, mfrom, mfromtime, mtill, mtilltime, mrelease, mreleasetime, massignmentdesc, mpass, mhidden, mlimit, subtime) ->
             do Entity _ user <- requireAuth
                iid <- instructorIdByIdent (userIdent user)
                         >>= maybe (setMessage "failed to retrieve instructor" >> notFound) pure
@@ -190,6 +190,7 @@ postInstructorR ident = do
                    localdue = localize (mdue,mduetime)
                    localfrom = localize (mfrom,mfromtime)
                    localtill = localize (mtill,mtilltime)
+                   localrelease = localize (mrelease,mreleasetime)
                    info = unTextarea <$> massignmentdesc
                    theassigner = mciid
                    thename = documentFilename (entityVal doc)
@@ -206,7 +207,7 @@ postInstructorR ident = do
                                                 , assignmentMetadataDuedate = localTimeToUTCTZ tz <$> localdue
                                                 , assignmentMetadataVisibleFrom = localTimeToUTCTZ tz <$> localfrom
                                                 , assignmentMetadataVisibleTill = localTimeToUTCTZ tz <$> localtill
-                                                , assignmentMetadataGradeRelease = Nothing
+                                                , assignmentMetadataGradeRelease = localTimeToUTCTZ tz <$> localrelease
                                                 , assignmentMetadataPointValue = Nothing
                                                 , assignmentMetadataTotalProblems = Nothing
                                                 , assignmentMetadataDate = subtime
@@ -400,7 +401,7 @@ uploadAssignmentForm
     -> Markup
     -> MForm (HandlerFor App) ((FormResult
                      (Entity Document, Entity Course, Maybe Day, Maybe TimeOfDay,
-                      Maybe Day, Maybe TimeOfDay, Maybe Day, Maybe TimeOfDay,
+                      Maybe Day, Maybe TimeOfDay, Maybe Day, Maybe TimeOfDay, Maybe Day, Maybe TimeOfDay,
                       Maybe Textarea, Maybe Text, Maybe Bool, Maybe Int, UTCTime),
                    WidgetFor App ()))
 uploadAssignmentForm classes docs extra = do
@@ -412,18 +413,21 @@ uploadAssignmentForm classes docs extra = do
             (fromtimeRes, fromtimeView) <- mopt timeFieldTypeTime (withPlaceholder "Time" $ bfs ("Visible From Time"::Text)) Nothing
             (tillRes, tillView) <- mopt (jqueryDayField def) (withPlaceholder "Date" $ bfs ("Visible Until Date"::Text)) Nothing
             (tilltimeRes,tilltimeView) <- mopt timeFieldTypeTime (withPlaceholder "Time" $ bfs ("Visible Until Time"::Text)) Nothing
+            (releaseRes,releaseView) <- mopt (jqueryDayField def) (withPlaceholder "Date" $ bfs ("Release Grades After Date"::Text)) Nothing
+            (releasetimeRes,releasetimeView) <- mopt timeFieldTypeTime (withPlaceholder "Time" $ bfs ("Release Grades After Time"::Text)) Nothing
             (descRes,descView) <- mopt textareaField (bfs ("Assignment Description"::Text)) Nothing
             (passRes,passView) <- mopt textField (bfs ("Password"::Text)) Nothing
             (hiddRes,hiddView) <- mopt checkBoxField (bfs ("Hidden"::Text)) Nothing
             (limitRes,limitView) <- mopt intField (bfs ("Limit"::Text)) Nothing
             currentTime <- lift (liftIO getCurrentTime)
-            let theRes = (,,,,,,,,,,,,) <$> fileRes <*> classRes
-                                        <*> dueRes  <*> duetimeRes
-                                        <*> fromRes <*> fromtimeRes
-                                        <*> tillRes <*> tilltimeRes
-                                        <*> descRes <*> passRes
-                                        <*> hiddRes <*> limitRes
-                                        <*> pure currentTime
+            let theRes = (,,,,,,,,,,,,,,) <$> fileRes <*> classRes
+                                          <*> dueRes  <*> duetimeRes
+                                          <*> fromRes <*> fromtimeRes
+                                          <*> tillRes <*> tilltimeRes
+                                          <*> releaseRes <*> releasetimeRes
+                                          <*> descRes <*> passRes
+                                          <*> hiddRes <*> limitRes
+                                          <*> pure currentTime
             let widget = do
                 [whamlet|
                 #{extra}
@@ -453,6 +457,12 @@ uploadAssignmentForm classes docs extra = do
                         ^{fvInput tillView}
                     <div.form-group.col-md-6>
                         ^{fvInput tilltimeView}
+                <h6> Release Grades After
+                <div.row>
+                    <div.form-group.col-md-6>
+                        ^{fvInput releaseView}
+                    <div.form-group.col-md-6>
+                        ^{fvInput releasetimeView}
                 <h6> Description
                 <div.row>
                     <div.form-group.col-md-12>

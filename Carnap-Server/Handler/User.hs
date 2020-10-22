@@ -235,7 +235,7 @@ problemsToTable course extension textbookproblems asmd asDocs submissions = do
                         >>= (\k -> headMay $ filter (\md -> entityKey md == k) asmd)
                         >>= assignmentMetadataGradeRelease . entityVal
                         of Nothing -> True
-                           Just d -> d `laterThan` time
+                           Just d -> time `laterThan` d
 
               printSource Book = [hamlet|Textbook|]
               printSource (Assignment s) = 

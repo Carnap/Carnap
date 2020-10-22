@@ -93,13 +93,15 @@
                                                 $maybe till <- assignmentMetadataVisibleTill a
                                                     ∞-#{dateDisplay till c}
                                                 $nothing
-                                                    Always
+                                                    Always Available
                                             $maybe status <- assignmentMetadataAvailability a
                                                 ,<br> Password: #{availabilityPassword status}
                                                 $if (availabilityHidden status)
                                                     ,<br> Hidden
                                                 $maybe min <- availabilityMinutes status
                                                     ,<br> Limit: #{min} minutes
+                                            $maybe release <- assignmentMetadataGradeRelease a
+                                                ,<br> Release: #{dateDisplay release c}
 
                                         <td>#{courseTitle c}
                                         <td>
