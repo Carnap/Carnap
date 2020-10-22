@@ -25,7 +25,7 @@ putInstructorR _ = do
         ((documentrslt,_),_)   <- runFormPost (identifyForm "updateDocument" $ updateDocumentForm)
         ((accommodationrslt,_),_)   <- runFormPost (identifyForm "updateAccommodation" $ updateAccommodationForm)
         case (assignmentrslt,courserslt,documentrslt,accommodationrslt) of
-            (FormSuccess (idstring, mdue, mduetime,mfrom,mfromtime,muntil,muntiltime,mrelease,mreleasetime,mdesc),_,_,_) -> do
+            (FormSuccess (idstring, mdue, mduetime,mfrom,mfromtime,muntil,muntiltime,mrelease,mreleasetime,mdesc,mpass,mhidden,mlimit),_,_,_) -> do
                  case readMaybe idstring of
                       Nothing -> returnJson ("Could not read assignment key"::Text)
                       Just k -> do
@@ -36,6 +36,12 @@ putInstructorR _ = do
                             do let cid = assignmentMetadataCourse v
                                runDB $ do course <- get cid >>= maybe (liftIO $ fail "could not get course") pure
                                           let (Just tz) = tzByName . courseTimeZone $ course
+                                          let maccess = case (mpass,mhidden,mlimit) of
+                                                (Nothing,_,_) -> Nothing
+                                                (Just txt, Just True, Nothing) -> Just (HiddenViaPassword txt)
+                                                (Just txt, Just True, Just mins) -> Just (HiddenViaPasswordExpiring txt mins)
+                                                (Just txt, _, Just mins) -> Just (ViaPasswordExpiring txt mins)
+                                                (Just txt, _, _) -> Just (ViaPassword txt)
                                           let mtimeUpdate Nothing Nothing field = update k [ field =. Nothing ]
                                               mtimeUpdate mdate mtime field = maybeDo mdate (\date->
                                                  do let localtime = case mtime of
@@ -46,7 +52,8 @@ putInstructorR _ = do
                                           mtimeUpdate mfrom mfromtime AssignmentMetadataVisibleFrom
                                           mtimeUpdate muntil muntiltime AssignmentMetadataVisibleTill
                                           mtimeUpdate mrelease mreleasetime AssignmentMetadataGradeRelease
-                                          update k [ AssignmentMetadataDescription =. (unTextarea <$> mdesc) ]
+                                          maybeDo maccess (\access -> update k [ AssignmentMetadataAvailability =. Just access ])
+                                          update k [ AssignmentMetadataDescription =. unTextarea <$> mdesc]
                                returnJson ("updated!"::Text)
             (_,FormSuccess (idstring,mdesc,mstart,mend,mpoints,mopen),_,_) -> do
                              case readMaybe idstring of
@@ -495,8 +502,9 @@ uploadAssignmentForm classes docs extra = do
 updateAssignmentForm
     :: Markup
     -> MForm (HandlerFor App) ((FormResult
-                     (String, Maybe Day, Maybe TimeOfDay, Maybe Day, Maybe TimeOfDay,
-                      Maybe Day, Maybe TimeOfDay, Maybe Day, Maybe TimeOfDay, Maybe Textarea),
+                     ( String, Maybe Day, Maybe TimeOfDay, Maybe Day, Maybe TimeOfDay
+                     , Maybe Day, Maybe TimeOfDay, Maybe Day, Maybe TimeOfDay, Maybe Textarea
+                     , Maybe Text, Maybe Bool, Maybe Int),
                    WidgetFor App ()))
 updateAssignmentForm extra = do
             (assignmentRes,assignmentView) <- mreq assignmentId "" Nothing
@@ -509,12 +517,16 @@ updateAssignmentForm extra = do
             (releaseRes,releaseView) <- mopt (jqueryDayField def) (withPlaceholder "Date" $ bfs ("Release Grades After Date"::Text)) Nothing
             (releasetimeRes,releasetimeView) <- mopt timeFieldTypeTime (withPlaceholder "Time" $ bfs ("Release Grades After Time"::Text)) Nothing
             (descRes,descView) <- mopt textareaField (bfs ("Assignment Description"::Text)) Nothing
-            let theRes = (,,,,,,,,,) <$> assignmentRes
+            (passRes,passView) <- mopt textField (bfs ("Password"::Text)) Nothing
+            (hiddRes,hiddView) <- mopt checkBoxField (bfs ("Hidden"::Text)) Nothing
+            (limitRes,limitView) <- mopt intField (bfs ("Limit"::Text)) Nothing
+            let theRes = (,,,,,,,,,,,,) <$> assignmentRes
                                    <*> dueRes <*> duetimeRes
                                    <*> fromRes <*> fromtimeRes
                                    <*> tillRes <*> tilltimeRes
                                    <*> releaseRes <*> releasetimeRes
-                                   <*> descRes
+                                   <*> descRes <*> passRes
+                                   <*> hiddRes <*> limitRes
             let widget = do
                 [whamlet|
                 #{extra}
@@ -547,6 +559,24 @@ updateAssignmentForm extra = do
                 <div.row>
                     <div.form-group.col-md-12>
                         ^{fvInput descView}
+                <h6> Access Control Settings
+                <div.row>
+                    <div.col-md-6>
+                         <h6> Password
+                    <div.col-md-2>
+                        <h6> Hide
+                    <div.col-md-4>
+                        <h6> Minutes Available
+                <div.row>
+                    <div.form-group.col-md-6>
+                        ^{fvInput passView}
+                    <div.form-group.col-md-2>
+                        <span style="position:relative;top:7px">
+                        <div style="display:inline-block;width:20px;position:relative;top:10px">
+                            ^{fvInput hiddView}
+                    <div.form-group.col-md-4>
+                        ^{fvInput limitView}
+                <p style="color:gray"> Note: all access control options require that you set a password
                 |]
             return (theRes,widget)
 

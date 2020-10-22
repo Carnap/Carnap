@@ -38,13 +38,14 @@ function tryDropStudent (json) {
         }
     }
 
-function modalEditAssignment (id,due,visfrom,vistill,desc) {
+function modalEditAssignment (id,due,visfrom,vistill,release,desc,pass,hide,min) {
     jQuery.noConflict()
     $("#updateAssignment")[0].reset();
     $("#updateAssignment input[name=f1]").val(id);
     var dparts = due.split(" ")
     var fparts = visfrom.split(" ")
     var tparts = vistill.split(" ")
+    var rparts = release.split(" ")
     if (dparts.length > 1) {
         $("#updateAssignment input[name=f2]").val(dparts[0]);
         $("#updateAssignment input[name=f3]").val(dparts[1]);
@@ -57,7 +58,14 @@ function modalEditAssignment (id,due,visfrom,vistill,desc) {
         $("#updateAssignment input[name=f6]").val(tparts[0]);
         $("#updateAssignment input[name=f7]").val(tparts[1]);
         };
-    $("#updateAssignment textarea[name=f8]").val(desc);
+    if (rparts.length > 1) {
+        $("#updateAssignment input[name=f8]").val(rparts[0]);
+        $("#updateAssignment input[name=f9]").val(rparts[1]);
+        };
+    $("#updateAssignment textarea[name=f10]").val(desc);
+    $("#updateAssignment input[name=f11]").val(pass);
+    $("#updateAssignment input[name=f12]").prop("checked", hide == "True");
+    $("#updateAssignment input[name=f13]").val(min)
     $("#updateAssignmentData").modal({show:true});
 }
 
