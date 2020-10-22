@@ -47,7 +47,7 @@ function sortUsersByCol(num) {
 
 function calcTotalScore() {
     let rows = Array.from(document.getElementsByClassName("score-column"))
-    let values = rows.map(x => parseInt(x.innerHTML))
+    let values = rows.map(x => parseInt(x.innerHTML)).filter(x => x == x) /* this last bit filters out NaN */
     let total = values.reduce((acc,val) => {return acc + val})
     document.getElementById("score-numerator").innerHTML = total
 }

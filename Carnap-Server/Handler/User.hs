@@ -211,23 +211,34 @@ problemsToTable :: Course -> Int -> Maybe BookAssignmentTable
     -> [Entity AssignmentMetadata] -> [Maybe Document] -> [ProblemSubmission] 
     -> HandlerFor App Html
 problemsToTable course extension textbookproblems asmd asDocs submissions = do
-            rows <- mapM toRow submissions
+            time <- liftIO getCurrentTime
+            rows <- mapM (toRow time) submissions
             withUrlRenderer [hamlet|
                                     $forall row <- rows
                                         ^{row}|]
-        where toRow p = do score <- toScore extension textbookproblems p
-                           return [hamlet|
+        where toRow time p = do score <- if isReleased time (problemSubmissionSource p)
+                                             then show <$> toScore extension textbookproblems p
+                                             else return "-"
+                                return [hamlet|
                                   <tr>
                                     <td>^{printSource (problemSubmissionSource p)}
                                     <td>#{problemSubmissionIdent p}
                                     <td title="#{displayProblemData $ problemSubmissionData p}">
                                         <div.problem-display> #{displayProblemData $ problemSubmissionData p}
                                     <td>#{dateDisplay (problemSubmissionTime p) course}
-                                    <td.score-column>#{show $ score}
+                                    <td.score-column>#{score}
                                     <td>#{show $ problemSubmissionType p}|]
 
+              isReleased _ Book = True
+              isReleased time (Assignment s) = 
+                case readMaybe s 
+                        >>= (\k -> headMay $ filter (\md -> entityKey md == k) asmd)
+                        >>= assignmentMetadataGradeRelease . entityVal
+                        of Nothing -> True
+                           Just d -> d `laterThan` time
+
               printSource Book = [hamlet|Textbook|]
-              printSource (Assignment s) =
+              printSource (Assignment s) = 
                 case (readMaybe s) of
                     Nothing -> [hamlet|Unknown|]
                     Just k -> case elemIndex k (map entityKey asmd) of
