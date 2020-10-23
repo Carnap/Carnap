@@ -52,7 +52,7 @@ putInstructorR _ = do
                                           mtimeUpdate mfrom mfromtime AssignmentMetadataVisibleFrom
                                           mtimeUpdate muntil muntiltime AssignmentMetadataVisibleTill
                                           mtimeUpdate mrelease mreleasetime AssignmentMetadataGradeRelease
-                                          maybeDo maccess (\access -> update k [ AssignmentMetadataAvailability =. Just access ])
+                                          update k [ AssignmentMetadataAvailability =. maccess ]
                                           update k [ AssignmentMetadataDescription =. unTextarea <$> mdesc]
                                returnJson ("updated!"::Text)
             (_,FormSuccess (idstring,mdesc,mstart,mend,mpoints,mopen),_,_) -> do
@@ -493,7 +493,7 @@ uploadAssignmentForm classes docs extra = do
                             ^{fvInput hiddView}
                     <div.form-group.col-md-4>
                         ^{fvInput limitView}
-                <p style="color:gray"> Note: all access control options require that you set a password
+                <p style="color:gray"> Note: all access control options require that you set a password.
                 |]
             return (theRes,widget)
     where classnames = map (\theclass -> (courseTitle . entityVal $ theclass, theclass)) classes
@@ -576,7 +576,7 @@ updateAssignmentForm extra = do
                             ^{fvInput hiddView}
                     <div.form-group.col-md-4>
                         ^{fvInput limitView}
-                <p style="color:gray"> Note: all access control options require that you set a password
+                <p style="color:gray"> Note: all access control options require that you set a password. Removing the password will remove all access control settings.
                 |]
             return (theRes,widget)
 
