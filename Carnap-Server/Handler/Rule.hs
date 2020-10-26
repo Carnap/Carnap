@@ -81,8 +81,12 @@ ruleLayout widget = do
         master <- getYesod
         mmsg <- getMessage
         authmaybe <- maybeAuth
-        instructors <- instructorIdentList
-        pc     <- widgetToPageContent $ do
+        isInstructor <- case authmaybe of
+                            Just uid -> do
+                                mud <- runDB $ getBy $ UniqueUserData $ entityKey uid
+                                return $ not $ null (mud >>= userDataInstructorId . entityVal)
+                            Nothing -> return False
+        pc <- widgetToPageContent $ do
             toWidgetHead $(juliusFile =<< pathRelativeToCabalPackage "templates/command.julius")
             addScript $ StaticR ghcjs_rts_js
             addScript $ StaticR ghcjs_allactions_lib_js

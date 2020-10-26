@@ -93,7 +93,11 @@ chapterLayout widget = do
         master <- getYesod
         mmsg <- getMessage
         authmaybe <- maybeAuth
-        instructors <- instructorIdentList
+        isInstructor <- case authmaybe of
+                            Just uid -> do
+                                mud <- runDB $ getBy $ UniqueUserData $ entityKey uid
+                                return $ not $ null (mud >>= userDataInstructorId . entityVal)
+                            Nothing -> return False 
         pc <- widgetToPageContent $ do
             toWidgetHead $(juliusFile =<< pathRelativeToCabalPackage "templates/command.julius")
             toWidgetHead $(juliusFile =<< pathRelativeToCabalPackage "templates/status-warning.julius")

@@ -95,7 +95,11 @@ instance Yesod App where
         -- value passed to hamletToRepHtml cannot be a widget, this allows
         -- you to use normal widget features in default-layout.
         authmaybe <- maybeAuth
-        instructors <- instructorIdentList
+        isInstructor <- case authmaybe of
+                            Just uid -> do
+                                mud <- runDB $ getBy $ UniqueUserData $ entityKey uid
+                                return $ not $ null (mud >>= userDataInstructorId . entityVal)
+                            Nothing -> return False
         pc <- widgetToPageContent $ do
             addStylesheet $ StaticR css_bootstrap_css
             addStylesheet $ StaticR css_font_awesome_css
@@ -128,31 +132,33 @@ instance Yesod App where
                      selectList ([UserDataInstructorId ==. Just (courseInstructor course)]
                                 ||. [UserDataInstructorId <-. map (Just . coInstructorIdent) coInstructors]) []
               userOrInstructorOf ident =
-                do Entity uid user <- requireAuth
-                   Entity uid' _ <- runDB (getBy $ UniqueUser ident) >>= maybe notFound return
+                do Entity uid' user <- requireAuth
+                   Entity uid _ <- runDB (getBy $ UniqueUser ident) >>= maybe notFound return
                    let ident' = userIdent user
-                   mudata <- runDB $ getBy (UniqueUserData uid')
-                   instructors <- case (entityVal <$> mudata) >>= userDataEnrolledIn of
-                                      Nothing -> return []
-                                      Just cid -> do 
-                                            mcourse <- runDB $ get cid
-                                            case mcourse of
-                                                Nothing -> return []
-                                                Just course -> retrieveInstructors cid course
-                   userIsAdmin <- isAdmin uid
-                   return $ if uid `elem` map (userDataUserId . entityVal) instructors
-                               || ident' == ident
-                               || userIsAdmin
-                            then Authorized
-                            else Unauthorized "It appears you're not authorized to access this page"
+                   mudata <- runDB $ getBy (UniqueUserData uid)
+                   if ident == ident' 
+                       then return Authorized
+                       else do mudata' <- runDB $ getBy (UniqueUserData uid')
+                               let mudv = entityVal <$> mudata
+                                   mudv' = entityVal <$> mudata'
+                                   mcid = mudv >>= userDataEnrolledIn
+                                   miid' = mudv' >>= userDataInstructorId
+                               case (mcid, miid') of
+                                    _ | (userDataIsAdmin <$> mudv') == Just True -> return Authorized
+                                    (Just cid, Just iid') -> do
+                                       mcourse <- runDB $ get cid
+                                       case courseInstructor <$> mcourse of
+                                           Just iid | iid' == iid -> return Authorized
+                                           _ -> (runDB $ getBy $ UniqueCoInstructor iid' cid) 
+                                                >>= return . maybe (Unauthorized "It appears you're not authorized to access this page") (const Authorized)
+                                    _ -> return $ Unauthorized "It appears you're not authorized to access this page"
               instructor ident =
                  do Entity uid user <- requireAuth
                     let ident' = userIdent user
-                    instructors <- instructorIdentList
+                    mud <- runDB $ getBy $ UniqueUserData uid
+                    let isInstructor = not $ null (mud >>= userDataInstructorId . entityVal)
                     userIsAdmin <- isAdmin uid
-                    return $ if (ident' `elem` instructors
-                                && ident' == ident)
-                                || userIsAdmin
+                    return $ if (isInstructor && ident' == ident) || userIsAdmin
                              then Authorized
                              else Unauthorized "It appears you're not authorized to access this page"
               enrolledIn coursetitle =

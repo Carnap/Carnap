@@ -61,8 +61,8 @@ getUserR ident = do
     case musr of
         Nothing -> defaultLayout nouserPage
         (Just (Entity uid _))  -> do
-            ud@UserData {
-                  userDataEnrolledIn = maybeCourseId
+            ud@UserData 
+                { userDataEnrolledIn = maybeCourseId
                 , userDataInstructorId = maybeInstructorId
                 , userDataFirstName = firstname
                 , userDataLastName = lastname

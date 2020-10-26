@@ -12,7 +12,7 @@
                     <li.dropdown>
                             <a href=@{UserDispatchR}>#{userIdent user}
                             <ul>
-                                $if elem (userIdent user) instructors
+                                $if isInstructor
                                     <li>
                                         <a href=@{DocumentsR}> Shared Documents
                                     <li>
