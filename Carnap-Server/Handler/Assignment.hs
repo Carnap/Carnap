@@ -31,7 +31,7 @@ putCourseAssignmentStateR :: Text -> Text -> Handler Value
 putCourseAssignmentStateR coursetitle filename = do
         msg <- requireJsonBody :: Handler Value
         uid <- maybeAuthId >>= maybe reject return
-        ((Entity aid _), _) <- getAssignmentByCourse coursetitle filename
+        ((Entity aid _), _) <- getAssignmentByCourse coursetitle filename ---XXX Should pass assignmentId in the JSON
         runDB $ upsert (AssignmentState msg uid aid) [AssignmentStateValue =. msg]
         returnJson msg
 

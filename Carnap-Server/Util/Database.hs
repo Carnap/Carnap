@@ -22,10 +22,7 @@ fromIdent ident = do mident <- runDB (getBy $ UniqueUser ident)
                         Just (Entity k _) -> return k
 
 -- | retrieve an ident from a UserId
-getIdent uid = do muser <- runDB $ get uid
-                  case muser of
-                      Just usr -> return $ Just (userIdent usr)
-                      Nothing -> return Nothing
+getIdent uid = (runDB $ get uid) >>= return . maybe Nothing (Just . userIdent)
 
 -- | given a UserId, return the userdata or redirect to
 -- registration
