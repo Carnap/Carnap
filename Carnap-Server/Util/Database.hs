@@ -103,11 +103,8 @@ checkCourseOwnership coursetitle = do
                unless (course `elem` map entityVal classes) (permissionDenied "this doesn't appear to be your course")
 
 retrieveAssignment (Entity cid course) filename = do
-           coinstructors <- runDB $ map entityVal <$> selectList [CoInstructorCourse ==. cid] []
-           instructorUids <- runDB $ map (userDataUserId . entityVal) 
-                                  <$> selectList  ( [UserDataInstructorId ==. Just (courseInstructor course)] 
-                                                ||. [UserDataInstructorId <-. map (Just . coInstructorIdent) coinstructors]) []
-           docs <- runDB $ selectList [DocumentFilename ==. filename, DocumentCreator <-. instructorUids] []
+           alldocs <- runDB $ selectList [DocumentFilename ==. filename] []
+           docs <- filterM (creatorAccess cid course) alldocs
            case docs of 
                 [] -> setMessage ("can't find document record with filename " ++ toHtml filename) >> notFound
                 docs -> do
@@ -129,6 +126,16 @@ retrieveAssignment (Entity cid course) filename = do
                               Nothing ->
                                  setMessage ("failed to get document creator for " ++ toHtml filename) >> notFound
                       _ -> error "more than one assignment for this course is associated with this filename"
+        where creatorAccess cid course (Entity _ doc) = do 
+                    mud <- runDB $ getBy $ UniqueUserData (documentCreator doc)
+                    case mud >>= userDataInstructorId . entityVal of 
+                        Nothing -> return False
+                        Just iid | iid == courseInstructor course -> return True
+                                 | otherwise -> do mco <- runDB $ getBy (UniqueCoInstructor iid cid)
+                                                   return $ not (null mco)
+
+
+
 
 -- | given a UserId, return Just the user data or Nothing
 getUserMD uid = do mmd <- runDB $ getBy $ UniqueUserData uid

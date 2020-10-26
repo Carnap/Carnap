@@ -20,10 +20,3 @@ import Carnap.GHCJS.SharedTypes(ProblemSource(..),ProblemType(..),ProblemData(..
 
 share [mkPersist sqlSettings, mkDeleteCascade sqlSettings, mkMigrate "migrateAll"]
     $(persistFileWith lowerCaseSettings =<< (pathRelativeToCabalPackage "config/models"))
-
-instructorIdentList
-    :: (PersistQueryRead (YesodPersistBackend site), YesodPersist site, BaseBackend (YesodPersistBackend site) ~ SqlBackend)
-    => HandlerFor site [Text]
-instructorIdentList = do instructorEntityList <- runDB $ selectList [UserDataInstructorId !=. Nothing] []
-                         userEntityList <- runDB $ selectList [UserId <-. map (userDataUserId . entityVal) instructorEntityList ] []
-                         return $ map (userIdent . entityVal) userEntityList
