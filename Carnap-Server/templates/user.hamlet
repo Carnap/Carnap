@@ -48,7 +48,11 @@
                 <tbody#problem-table-body>
                     #{subtable}
     <h3> Your Profile
-    ^{personalInfo ud (Just course)}
+    <div.card>
+        <div.card-header> Personal Information
+        <div.card-block>
+            ^{personalInfo ud (Just course)}
+            ^{dropWidget dropForm encTypeDrop}
     $if (not (null derivedRulesOld) || not (null derivedRulesNew))
         <div.card>
             <div.card-header> Derived Rules

@@ -21,9 +21,9 @@ import System.Directory (removeFile, doesFileExist, createDirectoryIfMissing)
 putInstructorR :: Text -> Handler Value
 putInstructorR _ = do
         ((assignmentrslt,_),_) <- runFormPost (identifyForm "updateAssignment" $ updateAssignmentForm)
-        ((courserslt,_),_)     <- runFormPost (identifyForm "updateCourse" $ updateCourseForm)
-        ((documentrslt,_),_)   <- runFormPost (identifyForm "updateDocument" $ updateDocumentForm)
-        ((accommodationrslt,_),_)   <- runFormPost (identifyForm "updateAccommodation" $ updateAccommodationForm)
+        ((courserslt,_),_) <- runFormPost (identifyForm "updateCourse" $ updateCourseForm)
+        ((documentrslt,_),_) <- runFormPost (identifyForm "updateDocument" $ updateDocumentForm)
+        ((accommodationrslt,_),_) <- runFormPost (identifyForm "updateAccommodation" $ updateAccommodationForm)
         case (assignmentrslt,courserslt,documentrslt,accommodationrslt) of
             (FormSuccess (idstring, mdue, mduetime,mfrom,mfromtime,muntil,muntiltime,mrelease,mreleasetime,mdesc,mpass,mhidden,mlimit),_,_,_) -> do
                  case readMaybe idstring of

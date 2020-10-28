@@ -25,14 +25,15 @@ postUserR ident = do
             ud <- checkUserData uid
             time <- liftIO getCurrentTime
             classes <- runDB $ selectList [CourseStartDate <. time, CourseEndDate >. time] []
-            ((updateRslt,_),_) <- runFormPost (updateUserDataForm ud classes)
+            ((updateRslt,_),_) <- runFormPost (identifyForm "updateInfo" $ updateUserDataForm ud classes)
+            ((dropRslt,_),_) <- runFormPost (identifyForm "dropClass" $ dropClassForm)
             case updateRslt of
-                 (FormFailure s) -> setMessage $ "Something went wrong: " ++ B.toMarkup (show s)
-                 FormMissing -> setMessage "Submission data incomplete"
-                 (FormSuccess (mc, fn , ln)) -> runDB $ do
+                 FormFailure s -> setMessage $ "Something went wrong with updating your information: " ++ B.toMarkup (show s)
+                 FormMissing -> return ()
+                 FormSuccess (mc, fn , ln) -> runDB $ do
                          mudent <- getBy $ UniqueUserData uid
                          case entityKey <$> mudent of
-                               Nothing -> return ()
+                               Nothing -> setMessage "No user data to update."
                                Just udid -> do
                                     case mc of
                                         Nothing -> update udid [ UserDataFirstName =. fn
@@ -41,6 +42,15 @@ postUserR ident = do
                                                               , UserDataLastName =. ln
                                                               , UserDataEnrolledIn =. (Just $ entityKey c)]
                                     return ()
+            case dropRslt of
+                 FormMissing -> return ()
+                 FormFailure s -> setMessage $ "Something went wrong with dropping the class: " ++ B.toMarkup (show s)
+                 FormSuccess () -> runDB $ do
+                         mudent <- getBy $ UniqueUserData uid
+                         case entityKey <$> mudent of
+                               Nothing -> setMessage "No user data to drop class." 
+                               Just udid -> update udid [UserDataEnrolledIn =. Nothing]
+                         return ()
             redirect (UserR ident)--XXX: redirect here to make sure changes are visually reflected
 
 deleteUserR :: Text -> Handler Value
@@ -68,34 +78,36 @@ getUserR ident = do
                 , userDataLastName = lastname
                 } <- checkUserData uid
             time <- liftIO getCurrentTime
-            classes <- runDB $ selectList [CourseStartDate <. time, CourseEndDate >. time] []
-            (updateForm,encTypeUpdate) <- generateFormPost (updateUserDataForm ud classes)
+            (dropForm,encTypeDrop) <- generateFormPost (identifyForm "dropClass" $ dropClassForm)
             let isInstructor = case maybeInstructorId of Just _ -> True; _ -> False
             derivedRulesOld <- getDerivedRules uid
             derivedRulesNew <- getRules uid
-
             maybeCourse <- case maybeCourseId of
                               Just cid -> do runDB $ get cid
                               Nothing  -> return Nothing
             case maybeCourse of
                 Just course -> do
-                       -- safety: `Nothing` case unreachable since `maybeCourse` will be `Nothing` also
-                       let Just cid = maybeCourseId
-                       asmd <- runDB $ selectList [AssignmentMetadataCourse ==. cid] []
-                       asDocs <- mapM (runDB . get) (map (assignmentMetadataDocument . entityVal) asmd)
-                       textbookproblems <- getProblemSets cid
-                       extension <- (runDB $ getBy $ UniqueAccommodation cid uid)
-                                    >>= return . maybe 0 (accommodationDateExtraHours . entityVal)
-                       assignments <- assignmentsOf extension course textbookproblems asmd asDocs
-                       let pq = problemQuery uid (map entityKey asmd) 
-                       subs <- map entityVal <$> runDB (selectList pq [])
-                       subtable <- problemsToTable course extension textbookproblems asmd asDocs subs
-                       defaultLayout $ do
-                           addScript $ StaticR js_bootstrap_bundle_min_js
-                           addScript $ StaticR js_bootstrap_min_js
-                           setTitle "Welcome To Your Homepage!"
-                           $(widgetFile "user")
-                Nothing -> defaultLayout $ do
+                    (updateForm,encTypeUpdate) <- generateFormPost (identifyForm "updateInfo" $ updateUserDataForm ud [])
+                    -- safety: `Nothing` case unreachable since `maybeCourse` will be `Nothing` also
+                    let Just cid = maybeCourseId
+                    asmd <- runDB $ selectList [AssignmentMetadataCourse ==. cid] []
+                    asDocs <- mapM (runDB . get) (map (assignmentMetadataDocument . entityVal) asmd)
+                    textbookproblems <- getProblemSets cid
+                    extension <- (runDB $ getBy $ UniqueAccommodation cid uid)
+                                 >>= return . maybe 0 (accommodationDateExtraHours . entityVal)
+                    assignments <- assignmentsOf extension course textbookproblems asmd asDocs
+                    let pq = problemQuery uid (map entityKey asmd) 
+                    subs <- map entityVal <$> runDB (selectList pq [])
+                    subtable <- problemsToTable course extension textbookproblems asmd asDocs subs
+                    defaultLayout $ do
+                        addScript $ StaticR js_bootstrap_bundle_min_js
+                        addScript $ StaticR js_bootstrap_min_js
+                        setTitle "Welcome To Your Homepage!"
+                        $(widgetFile "user")
+                Nothing -> do
+                    classes <- runDB $ selectList [CourseStartDate <. time, CourseEndDate >. time] []
+                    (updateForm,encTypeUpdate) <- generateFormPost (identifyForm "updateInfo" $ updateUserDataForm ud classes)
+                    defaultLayout $ do
                                 addScript $ StaticR js_bootstrap_bundle_min_js
                                 addScript $ StaticR js_bootstrap_min_js
                                 [whamlet|
@@ -106,7 +118,10 @@ getUserR ident = do
                                         <p> Your instructor page is #
                                             <a href=@{InstructorR ident}>here
 
-                                    ^{personalInfo ud Nothing}
+                                    <div.card>
+                                        <div.card-header> Personal Information
+                                        <div.card-block>
+                                            ^{personalInfo ud Nothing}
                                     <a href=@{AuthR LogoutR}>
                                         Logout
                                |]
@@ -311,24 +326,30 @@ updateWidget form enc = [whamlet|
                                             <input.btn.btn-primary type=submit value="update">
                     |]
 
+dropWidget :: WidgetFor App () -> Enctype -> WidgetFor App ()
+dropWidget form enc = [whamlet|
+                        <form id="drop-class" style="display:inline-block" method=post enctype=#{enc}>
+                            ^{form}
+                            <div.form-group>
+                                <input.btn.btn-primary type=submit value="Unenroll">
+                      |]
+
 personalInfo :: UserData -> Maybe Course -> WidgetFor site ()
 personalInfo (UserData {userDataFirstName = firstname, userDataLastName = lastname}) mcourse =
-        [whamlet| <div.card>
-                        <div.card-header> Personal Information
-                        <div.card-block>
-                            <dl.row>
-                                <dt.col-sm-3>First Name
-                                <dd.col-sm-9>#{firstname}
-                                <dt.col-sm-3>Last Name
-                                <dd.col-sm-9>#{lastname}
-                                $maybe course <- mcourse
-                                    <dt.col-sm-3>Course Enrollment
-                                    <dd.col-sm-9>#{courseTitle course}
-                                    $maybe desc <- courseDescription course
-                                        <dd.col-sm-9.offset-sm-3>#{desc}
-                            <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#updateUserData">
-                                Edit
-                            |]
+        [whamlet|
+                <dl.row>
+                    <dt.col-sm-3>First Name
+                    <dd.col-sm-9>#{firstname}
+                    <dt.col-sm-3>Last Name
+                    <dd.col-sm-9>#{lastname}
+                    $maybe course <- mcourse
+                        <dt.col-sm-3>Course Enrollment
+                        <dd.col-sm-9>#{courseTitle course}
+                        $maybe desc <- courseDescription course
+                            <dd.col-sm-9.offset-sm-3>#{desc}
+                <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#updateUserData">
+                    Edit
+                |]
 
 updateUserDataForm
     :: UserData
@@ -337,11 +358,24 @@ updateUserDataForm
     -> MForm (HandlerFor App) (FormResult (Maybe (Entity Course), Text, Text), WidgetFor App ())
 updateUserDataForm UserData {userDataFirstName=firstname, userDataLastName=lastname} classes =
     renderBootstrap3 BootstrapBasicForm $ (,,)
-            <$> aopt (selectFieldList classnames) (bfs ("Class" :: Text)) Nothing
+            <$> aopt (selectFieldList classnames) classfieldSettings Nothing
             <*> areq textField (bfs ("First Name"::Text)) (Just firstname)
             <*> areq textField (bfs ("Last Name"::Text)) (Just lastname)
     where openClasses = filter (\(Entity _ course) -> courseEnrollmentOpen course) classes
           classnames = map (\theclass -> (courseTitle . entityVal $ theclass, theclass)) openClasses
+          classfieldSettings = case classes of 
+                                    _:_ -> bfs ("Course Enrollment " :: Text ) 
+                                    [] -> FieldSettings 
+                                            { fsLabel = ""
+                                            , fsTooltip = Nothing
+                                            , fsId = Nothing
+                                            , fsName = Nothing
+                                            , fsAttrs = [("style","display:none")]
+                                            }
+ 
+
+dropClassForm :: B.Markup -> MForm (HandlerFor App) (FormResult (), WidgetFor App ())
+dropClassForm = renderBootstrap3 BootstrapBasicForm $ pure () 
 
 nouserPage :: WidgetFor site ()
 nouserPage = [whamlet|
