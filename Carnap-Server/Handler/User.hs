@@ -177,9 +177,9 @@ toScore extension textbookproblems p =
 scoreByIdAndClassTotal :: Key Course -> Key User -> HandlerFor App Int
 scoreByIdAndClassTotal cid uid =
         do perprob <- scoreByIdAndClassPerProblem cid uid
-           return $ foldr (+) 0 (map snd perprob)
+           return $ foldr (+) 0 (map (\(_,y,_) -> y) perprob)
 
-scoreByIdAndClassPerProblem :: Key Course -> Key User -> HandlerFor App [(Either (Key AssignmentMetadata) Text, Int)]
+scoreByIdAndClassPerProblem :: Key Course -> Key User -> HandlerFor App [(Either (Key AssignmentMetadata) Text, Int, Text)]
 scoreByIdAndClassPerProblem cid uid =
         do pq <- getProblemQuery uid cid
            subs <- map entityVal <$> (runDB $ selectList pq [])
@@ -195,9 +195,9 @@ totalScore extension textbookproblems xs =
            return $ foldr (+) 0 xs'
 
 scoreList :: Traversable t => Int -> Maybe BookAssignmentTable -> t ProblemSubmission 
-    -> HandlerFor App (t (Either (Key AssignmentMetadata) Text, Int))
+    -> HandlerFor App (t (Either (Key AssignmentMetadata) Text, Int, Text))
 scoreList extension textbookproblems = mapM (\x -> do score <- toScore extension textbookproblems x
-                                                      return (getLabel x, score))
+                                                      return (getLabel x, score, problemSubmissionIdent x))
    where getLabel x = case problemSubmissionAssignmentId x of
                           --get assignment metadata id
                           Just amid -> Left amid

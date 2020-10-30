@@ -373,6 +373,10 @@ async function exportGrades(cid) {
     columns.push("Total Score")
     columns = columns.map(v => '"' + v.replace(/"/g,'""') + '"')
     rows.unshift(columns)
+    toCSV(rows)
+}
+
+async function toCSV(rows) {
     let csv = rows.map(row => row.reduce((x,y) => x + "," + y))
                   .reduce((x,y) => x + "\n" + y)
     let file = new Blob([csv], {type: "text/csv"})
@@ -390,7 +394,56 @@ async function exportGrades(cid) {
             window.URL.revokeObjectURL(url)
         }, 0); 
     }
+}
 
+async function exportPerProblemGrades(cid) {
+    let box = $("*[data-cid='" + cid + "']")[0]
+    let loaded = new Promise(res => box.loadAll(res))
+    await loaded
+    let sorted = {}
+    for (const k in box.contents) {
+        let row = box.contents[k]
+        row.scores.forEach(s => {
+            let label 
+            if (s[0].Left) {
+                label = assignmentLookup[s[0].Left].title + " - " + s[2]
+            } else {
+                label = "Problem Set " + s[0].Right + " - " + s[2]
+            }
+            sorted[label] = sorted[label] || {} //initialize if not initialized
+            sorted[label][row.email] = s[1]
+        })
+    }
+    function sortCols(x,y) {
+        if (x.length > y.length) { return 1 }
+        else if (x.length < y.length) { return -1 } 
+        else if (x > y) { return 1 }
+        else if (x < y) { return -1 }
+        else { return 0 }
+    }
+    let columns = Object.keys(sorted).sort(sortCols)
+    let rows = []
+    for (const k in box.contents) {
+        let row = box.contents[k]
+        let newRow = columns.map(column => {
+            if (sorted[column][row.email]) {
+                return sorted[column][row.email]
+            } else { 
+                return "-"
+            }})
+            /* quote-enclose and escape contained quotes, CSV specification */
+        function tidy (s) { return s.replace(/"/g,'""').replace(/^ */,"").replace(/ *$/,"") }
+        newRow.unshift('"' + tidy(row.fn) + '"')
+        newRow.unshift('"' + tidy(row.ln) + '"')
+        newRow.unshift('"' + tidy(row.email) + '"')
+        rows.push(newRow)
+    }
+    rows.sort((x,y) => x[0] > y[0])
+    columns.unshift("First Name")
+    columns.unshift("Last Name")
+    columns.unshift("Email Address")
+    rows.unshift(columns)
+    toCSV(rows)
 }
 
 $(".scrollbox").each((_,elt) => elt.contents = {})
