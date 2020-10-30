@@ -70,7 +70,6 @@ postCommandR = do
                                                  let oldRules = catMaybes $ map (packageOldRule . entityVal) savedPropRules
                                                      newRules = map (packageNewRule . entityVal) savedRules
                                                      rules = oldRules ++ newRules
-                                                 liftIO $ print $ "sending" ++ (show $ toJSON rules)
                                                  returnJson $ show $ toJSON $ rules
 
 packageOldRule (SavedDerivedRule dr n _ _) = case decodeRule dr of
