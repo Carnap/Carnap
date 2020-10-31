@@ -362,7 +362,7 @@ getInstructorR ident = do
             (createCourseWidget,enctypeCreateCourse) <- generateFormPost (identifyForm "createCourse" createCourseForm)
             (updateCourseWidget,enctypeUpdateCourse) <- generateFormPost (identifyForm "updateCourse" updateCourseForm)
             defaultLayout $ do
-                 addScript $ StaticR js_bootstrap_bundle_min_js
+                 addScript $ StaticR js_popper_min_js
                  addScript $ StaticR js_tagsinput_js
                  addScript $ StaticR js_bootstrap_min_js
                  addStylesheet $ StaticR css_tagsinput_css
@@ -957,11 +957,15 @@ classWidget _ instructors classent = do
                                 <button.btn.btn-secondary style="width:160px" type="button"
                                     onclick="modalEditCourse('#{show cid}','#{maybe "" sanitizeForJS (unpack <$> courseDescription dbCourse)}','#{dateDisplay (courseStartDate dbCourse) dbCourse}','#{dateDisplay (courseEndDate dbCourse) dbCourse}',#{courseTotalPoints dbCourse},#{toLower (show (courseEnrollmentOpen dbCourse))})">
                                     Edit Information
-                                <button.btn.btn-secondary style="width:160px" type="button"
-                                    onclick="exportGrades('#{jsonSerialize cid}')";">
-                                    Export Grades
-                                <button.btn.btn-danger style="width:160px" type="button"
-                                    onclick="tryDeleteCourse('#{jsonSerialize $ DeleteCourse (courseTitle dbCourse)}')">
+                                <div.btn-group>
+                                    <button.btn.btn-secondary.dropdown-toggle data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" style="width:160px" type="button">
+                                        Export Grades
+                                    <div.dropdown-menu aria-labelledby="export-button">
+                                        <a.dropdown-item onclick="exportGrades('#{jsonSerialize cid}')";">
+                                            Per Assignment
+                                        <a.dropdown-item onclick="exportPerProblemGrades('#{jsonSerialize cid}')";">
+                                            Per Problem
+                                <button.btn.btn-danger style="width:160px" type="button" onclick="tryDeleteCourse('#{jsonSerialize $ DeleteCourse (courseTitle dbCourse)}')">
                                     Delete Course
               |]
 
