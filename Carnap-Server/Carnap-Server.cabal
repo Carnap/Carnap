@@ -53,6 +53,7 @@ library
                      Util.Handler
                      Util.Database
                      Util.Data
+                     Util.Grades
 
     if flag(dev) || flag(library-only)
         cpp-options:   -DDEVELOPMENT

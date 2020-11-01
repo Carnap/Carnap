@@ -4,10 +4,10 @@ module Handler.Instructor where
 import Import
 import Util.Data
 import Util.Database
+import Util.Grades
 import Control.Monad (fail)
 import Yesod.Form.Bootstrap3
 import Yesod.Form.Jquery
-import Handler.User (scoreByIdAndClassTotal, scoreByIdAndClassPerProblem)
 import Text.Blaze.Html (Markup, toMarkup)
 import Text.Read (readMaybe)
 import Data.Time
