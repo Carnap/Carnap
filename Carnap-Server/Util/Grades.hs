@@ -5,25 +5,24 @@ import Import
 import Util.Data
 import Util.Database
 import Data.Time
+import Data.Monoid
 import Data.Time.Zones
 import Data.Time.Zones.DB
 import Data.Time.Zones.All
 import qualified Data.IntMap as IM
 import Text.Read (read, readMaybe)
 
-toScore
-    :: Int
-    -> Maybe BookAssignmentTable
-    -> ProblemSubmission
-    -> HandlerFor App Int
+--This is probably marginally more efficient when you have problems but not
+--a list of assignments
+toScore :: Int -> Maybe BookAssignmentTable -> ProblemSubmission -> HandlerFor App Int
 toScore extension textbookproblems p = 
         case (problemSubmissionAssignmentId p, problemSubmissionCorrect p) of
                (_,False) -> return extra
                (Nothing,True) -> return $
                     case ( utcDueDate textbookproblems (problemSubmissionIdent p)
                          , problemSubmissionCredit p) of
-                          (Just d, Just c) ->  theGrade d c p + extra
-                          (Just d, Nothing) ->  theGrade d 5 p + extra
+                          (Just d, Just c) ->  theGrade d extension c p + extra
+                          (Just d, Nothing) ->  theGrade d extension 5 p + extra
                           (Nothing,_) -> 0
                (Just a,True) -> do
                     mmd <- runDB $ get a
@@ -32,18 +31,52 @@ toScore extension textbookproblems p =
                         Just v -> return $
                             case ( assignmentMetadataDuedate v
                                  , problemSubmissionCredit p) of
-                                    (Just d, Just c) -> theGrade d c p + extra
-                                    (Just d, Nothing) -> theGrade d 5 p + extra
+                                    (Just d, Just c) -> theGrade d extension c p + extra
+                                    (Just d, Nothing) -> theGrade d extension 5 p + extra
                                     (Nothing, Just c) -> c + extra
                                     (Nothing, Nothing) -> 5 + extra
-    where extra = case problemSubmissionExtra p of Nothing -> 0; Just e -> e
-          extensionUTC = fromIntegral (3600 * extension) :: NominalDiffTime
-          theGrade :: UTCTime -> Int -> ProblemSubmission -> Int
-          theGrade due points p' = 
-            case problemSubmissionLateCredit p' of
-                  Nothing | problemSubmissionTime p' `laterThan` (extensionUTC `addUTCTime` due) -> floor ((fromIntegral points :: Rational) / 2)
-                  Just n  | problemSubmissionTime p' `laterThan` (extensionUTC `addUTCTime` due) -> n
-                  _ -> points
+    where extra = maybe 0 id $ problemSubmissionExtra p
+          
+--This is probably marginally more efficient when you have already looked
+--up a list of assignments from the DB.
+toScoreAny :: Maybe BookAssignmentTable -> [Entity AssignmentMetadata] -> Int -> ProblemSubmission 
+    -> Int
+toScoreAny textbookproblems asgns extension p = maybe 0 id (getAlt $ mconcat $ tbscore : asgnscores)
+    where tbscore = Alt $ toScoreBook textbookproblems extension p
+          asgnscores = map (\asgn -> Alt $ toScoreByAssignment asgn extension p) asgns
+
+toScoreBook :: Maybe BookAssignmentTable -> Int -> ProblemSubmission -> Maybe Int
+toScoreBook textbookproblems extension p = 
+        case (problemSubmissionAssignmentId p, problemSubmissionCorrect p) of
+               (_,False) -> Just $ extra
+               (Nothing,True) -> Just $
+                    case ( utcDueDate textbookproblems (problemSubmissionIdent p)
+                         , problemSubmissionCredit p) of
+                          (Just d, Just c) ->  theGrade d extension c p + extra
+                          (Just d, Nothing) ->  theGrade d extension 5 p + extra
+                          (Nothing,_) -> 0
+               _ -> Nothing
+    where extra = maybe 0 id $ problemSubmissionExtra p
+
+toScoreByAssignment :: Entity AssignmentMetadata -> Int -> ProblemSubmission -> Maybe Int
+toScoreByAssignment (Entity asgnk asgn) extension p = 
+        case (problemSubmissionAssignmentId p, problemSubmissionCorrect p) of
+               (_,False) -> Just $ extra
+               (Just a,True) | a == asgnk -> Just $
+                    case ( assignmentMetadataDuedate asgn , problemSubmissionCredit p) of
+                        (Just d, Just c) -> theGrade d extension c p + extra
+                        (Just d, Nothing) -> theGrade d extension 5 p + extra
+                        (Nothing, Just c) -> c + extra
+                        (Nothing, Nothing) -> 5 + extra
+               _ -> Nothing
+    where extra = maybe 0 id $ problemSubmissionExtra p
+
+theGrade :: UTCTime -> Int -> Int -> ProblemSubmission -> Int
+theGrade due extension points p' = case problemSubmissionLateCredit p' of
+      Nothing | problemSubmissionTime p' `laterThan` (extensionUTC `addUTCTime` due) -> floor ((fromIntegral points :: Rational) / 2)
+      Just n  | problemSubmissionTime p' `laterThan` (extensionUTC `addUTCTime` due) -> n
+      _ -> points
+    where extensionUTC = fromIntegral (3600 * extension) :: NominalDiffTime
 
 scoreByIdAndClassTotal :: Key Course -> Key User -> HandlerFor App Int
 scoreByIdAndClassTotal cid uid =

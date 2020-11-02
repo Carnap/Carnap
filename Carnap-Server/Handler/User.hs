@@ -160,9 +160,9 @@ problemsToTable course extension textbookproblems asmd asDocs submissions = do
             withUrlRenderer [hamlet|
                                     $forall row <- rows
                                         ^{row}|]
-        where toRow time p = do score <- if isReleased time (problemSubmissionSource p)
-                                             then show <$> toScore extension textbookproblems p
-                                             else return "-"
+        where toRow time p = do let score = if isReleased time (problemSubmissionSource p)
+                                             then show $ toScoreAny textbookproblems asmd extension p
+                                             else "-"
                                 return [hamlet|
                                   <tr>
                                     <td>^{printSource (problemSubmissionSource p)}
@@ -193,9 +193,7 @@ problemsToTable course extension textbookproblems asmd asDocs submissions = do
 
 tryDelete :: (Semigroup a, IsString a) => a -> a
 tryDelete name = "tryDeleteRule(\"" <> name <> "\")"
-
---properly localized assignments for a given class
---XXX---should this just be in the hamlet?
+--properly localized assignments for a given class XXX---should this just be in the hamlet?
 assignmentsOf :: Int -> Course -> Maybe BookAssignmentTable -> [Entity AssignmentMetadata] -> [Maybe Document] -> HandlerFor App (WidgetFor App ())
 assignmentsOf extension course textbookproblems asmd asDocs = do
              time <- liftIO getCurrentTime
