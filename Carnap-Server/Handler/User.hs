@@ -91,15 +91,18 @@ getUserR ident = do
                     (updateForm,encTypeUpdate) <- generateFormPost (identifyForm "updateInfo" $ updateUserDataForm ud [])
                     -- safety: `Nothing` case unreachable since `maybeCourse` will be `Nothing` also
                     let Just cid = maybeCourseId
-                    asmd <- runDB $ selectList [AssignmentMetadataCourse ==. cid] []
-                    asDocs <- mapM (runDB . get) (map (assignmentMetadataDocument . entityVal) asmd)
                     textbookproblems <- getProblemSets cid
-                    extension <- (runDB $ getBy $ UniqueAccommodation cid uid)
-                                 >>= return . maybe 0 (accommodationDateExtraHours . entityVal)
-                    assignments <- assignmentsOf extension course textbookproblems asmd asDocs
-                    let pq = problemQuery uid (map entityKey asmd) 
-                    subs <- map entityVal <$> runDB (selectList pq [])
-                    subtable <- problemsToTable course extension textbookproblems asmd asDocs subs
+                    (asmd, extensions, asDocs,accommodation,subs) <- runDB $ 
+                            do asmd <-  selectList [AssignmentMetadataCourse ==. cid] []
+                               asDocs <- mapM get (map (assignmentMetadataDocument . entityVal) asmd)
+                               accommodation <- (getBy $ UniqueAccommodation cid uid)
+                                            >>= return . maybe 0 (accommodationDateExtraHours . entityVal)
+                               extensions <- mapM (\asgn -> getBy $ UniqueExtension (entityKey asgn) uid) asmd 
+                               let pq = problemQuery uid (map entityKey asmd) 
+                               subs <- map entityVal <$> selectList pq []
+                               return (asmd, extensions,asDocs,accommodation,subs)
+                    assignments <- assignmentsOf accommodation course textbookproblems asmd asDocs
+                    subtable <- problemsToTable course accommodation textbookproblems (zip asmd extensions) asDocs subs
                     defaultLayout $ do
                         addScript $ StaticR js_bootstrap_bundle_min_js
                         addScript $ StaticR js_bootstrap_min_js
@@ -152,16 +155,17 @@ dateDisplay inUtc course = case tzByName $ courseTimeZone course of
 --------------------------------------------------------
 --reusable components
 problemsToTable :: Course -> Int -> Maybe BookAssignmentTable 
-    -> [Entity AssignmentMetadata] -> [Maybe Document] -> [ProblemSubmission] 
+    -> [(Entity AssignmentMetadata, Maybe (Entity Extension))] -> [Maybe Document] -> [ProblemSubmission] 
     -> HandlerFor App Html
-problemsToTable course extension textbookproblems asmd asDocs submissions = do
+problemsToTable course accommodation textbookproblems asmdex asDocs submissions = do
             time <- liftIO getCurrentTime
             rows <- mapM (toRow time) submissions
             withUrlRenderer [hamlet|
                                     $forall row <- rows
                                         ^{row}|]
-        where toRow time p = do let score = if isReleased time (problemSubmissionSource p)
-                                             then show $ toScoreAny textbookproblems asmd extension p
+        where asmd = map fst asmdex
+              toRow time p = do let score = if isReleased time (problemSubmissionSource p)
+                                             then show $ toScoreAny textbookproblems asmdex accommodation p
                                              else "-"
                                 return [hamlet|
                                   <tr>
@@ -195,7 +199,7 @@ tryDelete :: (Semigroup a, IsString a) => a -> a
 tryDelete name = "tryDeleteRule(\"" <> name <> "\")"
 --properly localized assignments for a given class XXX---should this just be in the hamlet?
 assignmentsOf :: Int -> Course -> Maybe BookAssignmentTable -> [Entity AssignmentMetadata] -> [Maybe Document] -> HandlerFor App (WidgetFor App ())
-assignmentsOf extension course textbookproblems asmd asDocs = do
+assignmentsOf accommodation course textbookproblems asmd asDocs = do
              time <- liftIO getCurrentTime
              return $
                 [whamlet|
@@ -213,7 +217,7 @@ assignmentsOf extension course textbookproblems asmd asDocs = do
                                             <a href=@{ChapterR $ chapterOfProblemSet ! num}>
                                                 Problem Set #{show num}
                                         <td>
-                                            #{dateDisplay (addUTCTime extensionUTC due) course}
+                                            #{dateDisplay (addUTCTime accommodationUTC due) course}
                                         <td>
                             $forall (Entity _ a, Just d) <- zip asmd asDocs
                                 $if visibleAt time a
@@ -222,7 +226,7 @@ assignmentsOf extension course textbookproblems asmd asDocs = do
                                                 <a href=@{CourseAssignmentR (courseTitle course) (documentFilename d)}>
                                                     #{documentFilename d}
                                             $maybe due <- assignmentMetadataDuedate a
-                                                <td>#{dateDisplay (addUTCTime extensionUTC due) course}
+                                                <td>#{dateDisplay (addUTCTime accommodationUTC due) course}
                                             $nothing
                                                 <td>No Due Date
                                             $maybe desc <- assignmentMetadataDescription a
@@ -231,7 +235,7 @@ assignmentsOf extension course textbookproblems asmd asDocs = do
                                             $nothing
                                                 <td>-
                 |]
-    where extensionUTC = fromIntegral (3600 * extension) :: NominalDiffTime
+    where accommodationUTC = fromIntegral (3600 * accommodation) :: NominalDiffTime
           visibleAt t a = case assignmentMetadataAvailability a of
                               Just status | availabilityHidden status -> False
                               _ -> (assignmentMetadataVisibleTill a > Just t || assignmentMetadataVisibleTill a == Nothing)

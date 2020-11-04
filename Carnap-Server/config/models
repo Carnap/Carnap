@@ -22,6 +22,12 @@ Accommodation
     dateExtraHours Int
     UniqueAccommodation forCourse forUser
 
+Extension
+    onAssignment AssignmentMetadataId
+    forUser UserId
+    until UTCTime
+    UniqueExtension onAssignment forUser
+
 AuthJwk
     value ByteString
     deriving Eq
