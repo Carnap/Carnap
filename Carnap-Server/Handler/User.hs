@@ -101,7 +101,7 @@ getUserR ident = do
                                let pq = problemQuery uid (map entityKey asmd) 
                                subs <- map entityVal <$> selectList pq []
                                return (asmd, extensions,asDocs,accommodation,subs)
-                    assignments <- assignmentsOf accommodation course textbookproblems asmd asDocs
+                    assignments <- assignmentsOf accommodation course textbookproblems (zip asmd extensions) asDocs
                     subtable <- problemsToTable course accommodation textbookproblems (zip asmd extensions) asDocs subs
                     defaultLayout $ do
                         addScript $ StaticR js_bootstrap_bundle_min_js
@@ -197,9 +197,11 @@ problemsToTable course accommodation textbookproblems asmdex asDocs submissions 
 
 tryDelete :: (Semigroup a, IsString a) => a -> a
 tryDelete name = "tryDeleteRule(\"" <> name <> "\")"
+
 --properly localized assignments for a given class XXX---should this just be in the hamlet?
-assignmentsOf :: Int -> Course -> Maybe BookAssignmentTable -> [Entity AssignmentMetadata] -> [Maybe Document] -> HandlerFor App (WidgetFor App ())
-assignmentsOf accommodation course textbookproblems asmd asDocs = do
+assignmentsOf :: Int -> Course -> Maybe BookAssignmentTable -> [(Entity AssignmentMetadata, Maybe (Entity Extension))] -> [Maybe Document] 
+    -> HandlerFor App (WidgetFor App ())
+assignmentsOf accommodation course textbookproblems asmdex asDocs = do
              time <- liftIO getCurrentTime
              return $
                 [whamlet|
@@ -219,16 +221,25 @@ assignmentsOf accommodation course textbookproblems asmd asDocs = do
                                         <td>
                                             #{dateDisplay (addUTCTime accommodationUTC due) course}
                                         <td>
-                            $forall (Entity _ a, Just d) <- zip asmd asDocs
+                            $forall ((Entity _ a,mex), Just d) <- zip asmdex asDocs
                                 $if visibleAt time a
                                         <tr>
                                             <td>
                                                 <a href=@{CourseAssignmentR (courseTitle course) (documentFilename d)}>
                                                     #{documentFilename d}
-                                            $maybe due <- assignmentMetadataDuedate a
-                                                <td>#{dateDisplay (addUTCTime accommodationUTC due) course}
+                                            $maybe (Entity _ ex) <- mex
+                                                $maybe due <- assignmentMetadataDuedate a
+                                                    <td>
+                                                        <s>#{dateDisplay (addUTCTime accommodationUTC due) course}
+                                                        <em>#{dateDisplay (extensionUntil ex) course}
+                                                $nothing
+                                                    <td>
+                                                        <em>#{dateDisplay (extensionUntil ex) course}
                                             $nothing
-                                                <td>No Due Date
+                                                $maybe due <- assignmentMetadataDuedate a
+                                                    <td>#{dateDisplay (addUTCTime accommodationUTC due) course}
+                                                $nothing
+                                                    <td>No Due Date
                                             $maybe desc <- assignmentMetadataDescription a
                                                 <td>
                                                     <div.assignment-desc>#{desc}
