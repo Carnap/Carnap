@@ -96,7 +96,8 @@ function modalGrantExtension (course,uid) {
                 $("#update" + course + "Data").modal('hide'); 
                 },
             error: function(data) {
-                window.alert("Error, couldn't update the extension")
+                let response = data.responseJSON || "no response available"
+                window.alert("Error, couldn't update the extension\n\n" + data.responseJSON)
                 },
             });
         e.preventDefault();
@@ -280,7 +281,8 @@ $("#updateAssignment").submit(function(e) {
             location.reload()
             },
         error: function(data) {
-            window.alert("Error, couldn't update the assignment ")
+            let response = data.responseJSON || "no response available"
+            window.alert("Error, couldn't update the assignment:\n\n" + data.responseJSON)
             },
         });
     e.preventDefault();
@@ -298,7 +300,8 @@ $("#updateCourse").submit(function(e) {
             location.reload() /* lazy. Fix eventually. */
             },
         error: function(data) {
-            window.alert("Error, couldn't update the course")
+            let response = data.responseJSON || "no response available"
+            window.alert("Error, couldn't update the course:\n\n" + data.responseJSON)
             },
         });
     e.preventDefault();
@@ -315,7 +318,8 @@ $("#updateAccommodation").submit(function(e) {
             $("#updateAccommodationData").modal('hide'); 
             },
         error: function(data) {
-            window.alert("Error, couldn't update the accomodation")
+            let response = data.responseJSON || "no response available"
+            window.alert("Error, couldn't update the accomodation:\n\n" + data.responseJSON)
             },
         });
     e.preventDefault();
@@ -342,7 +346,8 @@ $("#updateDocument").submit(function(e) {
             location.reload()
             },
         error: function(data) {
-            window.alert("Error, couldn't update the course")
+            let response = data.responseJSON || "no response available"
+            window.alert("Error, couldn't update the document:\n\n" + data.responseJSON)
             },
         });
     e.preventDefault();

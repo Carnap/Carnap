@@ -27,97 +27,80 @@ putInstructorR _ = do
         ((extensionrslt,_),_) <- runFormPost  (identifyForm "updateExtension" $ updateExtensionForm [])
         case (assignmentrslt,courserslt,documentrslt,accommodationrslt,extensionrslt) of
             (FormSuccess (idstring, mdue, mduetime,mfrom,mfromtime,muntil,muntiltime,mrelease,mreleasetime,mdesc,mpass,mhidden,mlimit),_,_,_,_) -> do
-                 case readMaybe idstring of
-                      Nothing -> returnJson ("Could not read assignment key"::Text)
-                      Just k -> do
-                        mval <- runDB (get k)
-                        case mval of
-                          Nothing -> returnJson ("Could not find assignment!"::Text)
-                          Just v ->
-                            do let cid = assignmentMetadataCourse v
-                               runDB $ do course <- get cid >>= maybe (liftIO $ fail "could not get course") pure
-                                          let (Just tz) = tzByName . courseTimeZone $ course
-                                          let maccess = case (mpass,mhidden,mlimit) of
-                                                (Nothing,_,_) -> Nothing
-                                                (Just txt, Just True, Nothing) -> Just (HiddenViaPassword txt)
-                                                (Just txt, Just True, Just mins) -> Just (HiddenViaPasswordExpiring txt mins)
-                                                (Just txt, _, Just mins) -> Just (ViaPasswordExpiring txt mins)
-                                                (Just txt, _, _) -> Just (ViaPassword txt)
-                                          let mtimeUpdate Nothing Nothing field = update k [ field =. Nothing ]
-                                              mtimeUpdate mdate mtime field = maybeDo mdate (\date->
-                                                 do let localtime = case mtime of
-                                                            (Just time) -> LocalTime date time
-                                                            _ -> LocalTime date (TimeOfDay 23 59 59)
-                                                    update k [ field =. (Just $ localTimeToUTCTZ tz localtime) ])
-                                          mtimeUpdate mdue mduetime AssignmentMetadataDuedate
-                                          mtimeUpdate mfrom mfromtime AssignmentMetadataVisibleFrom
-                                          mtimeUpdate muntil muntiltime AssignmentMetadataVisibleTill
-                                          mtimeUpdate mrelease mreleasetime AssignmentMetadataGradeRelease
-                                          update k [ AssignmentMetadataAvailability =. maccess ]
-                                          update k [ AssignmentMetadataDescription =. unTextarea <$> mdesc]
-                               returnJson ("updated!"::Text)
+                 k <- maybe (sendStatusJSON badRequest400 ("Could not read assignment key" :: Text)) return $ readMaybe idstring
+                 runDB $ do val <- get k >>= maybe (sendStatusJSON notFound404 ("Could not find assignment" :: Text)) pure
+                            let cid = assignmentMetadataCourse val
+                            course <- get cid >>= maybe (sendStatusJSON notFound404 ("Could not find course" :: Text)) pure
+                            let (Just tz) = tzByName . courseTimeZone $ course
+                            let maccess = case (mpass,mhidden,mlimit) of
+                                  (Nothing,_,_) -> Nothing
+                                  (Just txt, Just True, Nothing) -> Just (HiddenViaPassword txt)
+                                  (Just txt, Just True, Just mins) -> Just (HiddenViaPasswordExpiring txt mins)
+                                  (Just txt, _, Just mins) -> Just (ViaPasswordExpiring txt mins)
+                                  (Just txt, _, _) -> Just (ViaPassword txt)
+                            let mtimeUpdate Nothing Nothing field = update k [ field =. Nothing ]
+                                mtimeUpdate mdate mtime field = maybeDo mdate (\date->
+                                   do let localtime = case mtime of
+                                              (Just time) -> LocalTime date time
+                                              _ -> LocalTime date (TimeOfDay 23 59 59)
+                                      update k [ field =. (Just $ localTimeToUTCTZ tz localtime) ])
+                            mtimeUpdate mdue mduetime AssignmentMetadataDuedate
+                            mtimeUpdate mfrom mfromtime AssignmentMetadataVisibleFrom
+                            mtimeUpdate muntil muntiltime AssignmentMetadataVisibleTill
+                            mtimeUpdate mrelease mreleasetime AssignmentMetadataGradeRelease
+                            update k [ AssignmentMetadataAvailability =. maccess ]
+                            update k [ AssignmentMetadataDescription =. unTextarea <$> mdesc]
+                 returnJson ("updated!"::Text)
             (_,FormSuccess (idstring,mdesc,mstart,mend,mpoints,mopen),_,_,_) -> do
-                             case readMaybe idstring of
-                                 Just k -> do runDB $ do update k [ CourseDescription =. (unTextarea <$> mdesc) ]
-                                                         maybeDo mstart (\start -> update k
-                                                           [ CourseStartDate =. UTCTime start 0 ])
-                                                         maybeDo mend (\end-> update k
-                                                           [ CourseEndDate =. UTCTime end 0 ])
-                                                         maybeDo mpoints (\points-> update k 
-                                                           [ CourseTotalPoints =. points ])
-                                                         maybeDo mopen (\open -> update k
-                                                           [ CourseEnrollmentOpen =. open])
-                                              returnJson ("updated!"::Text)
-                                 Nothing -> returnJson ("could not find course!"::Text)
+                 k <- maybe (sendStatusJSON badRequest400 ("Could not read course key" :: Text)) return $ readMaybe idstring 
+                 runDB $ do update k [ CourseDescription =. (unTextarea <$> mdesc) ]
+                            maybeDo mstart (\start -> update k
+                              [ CourseStartDate =. UTCTime start 0 ])
+                            maybeDo mend (\end-> update k
+                              [ CourseEndDate =. UTCTime end 0 ])
+                            maybeDo mpoints (\points-> update k 
+                              [ CourseTotalPoints =. points ])
+                            maybeDo mopen (\open -> update k
+                              [ CourseEnrollmentOpen =. open])
+                 returnJson ("updated!"::Text)
             (_,_,FormSuccess (idstring, mscope, mdesc,mfile,mtags),_,_) -> do
-                             case readMaybe idstring of
-                                 Just k -> do
-                                    mdoc <- runDB (get k)
-                                    case mdoc of
-                                        Nothing -> returnJson ("could not find document!"::Text)
-                                        Just doc -> do
-                                           maybeIdent <- getIdent $ documentCreator doc
-                                           --XXX: shouldn't be possible for a document to exist without a creator
-                                           case maybeIdent of
-                                             Just ident -> do
-                                                 runDB $ do update k [ DocumentDescription =. (unTextarea <$> mdesc) ]
-                                                            maybeDo mscope (\scope -> update k [ DocumentScope =. scope ])
-                                                            maybeDo mtags (\tags -> do
-                                                                              oldTags <- selectList [TagBearer ==. k] []
-                                                                              mapM_ (delete . entityKey) oldTags
-                                                                              forM_ tags (\tag -> insert_ $ Tag k tag)
-                                                                              return ())
-                                                 maybeDo mfile (saveTo ("documents" </> unpack ident) (unpack $ documentFilename doc))
-                                                 returnJson ("updated!" :: Text)
-                                             Nothing -> returnJson ("document did not have a creator. This is a bug."::Text)
-                                 Nothing -> returnJson ("could not read document key"::Text)
+                 k <- maybe (sendStatusJSON badRequest400 ("Could not read document key" :: Text)) return $ readMaybe idstring
+                 doc <- runDB (get k) >>= maybe (sendStatusJSON notFound404 ("Could not find document" :: Text)) pure
+                 ident <- getIdent (documentCreator doc) >>= maybe (sendStatusJSON notFound404 ("Could not find document creator" :: Text)) pure
+                 runDB $ do update k [ DocumentDescription =. (unTextarea <$> mdesc) ]
+                            maybeDo mscope (\scope -> update k [ DocumentScope =. scope ])
+                            maybeDo mtags (\tags -> do
+                                              oldTags <- selectList [TagBearer ==. k] []
+                                              mapM_ (delete . entityKey) oldTags
+                                              forM_ tags (\tag -> insert_ $ Tag k tag)
+                                              return ())
+                 maybeDo mfile (saveTo ("documents" </> unpack ident) (unpack $ documentFilename doc))
+                 returnJson ("updated!" :: Text)
             (_,_,_,FormSuccess (cidstring, uidstring, mextramin, mfactor,mextrahours),_) -> do
-                            case (readMaybe cidstring, readMaybe uidstring) of
-                                (Just cid, Just uid) -> do runDB $ upsertBy 
-                                                                (UniqueAccommodation cid uid)
-                                                                (Accommodation cid uid 
-                                                                   (maybe 1 id mfactor) 
-                                                                   (maybe 0 id mextramin) 
-                                                                   (maybe 0 id mextrahours))
-                                                                (maybe [] (\min -> [AccommodationTimeExtraMinutes =. min]) mextramin ++ 
-                                                                 maybe [] (\fac -> [AccommodationTimeFactor =. fac]) mfactor ++ 
-                                                                 maybe [] (\hours-> [AccommodationDateExtraHours =. hours]) mextrahours)
-                                                           returnJson ("updated!" :: Text)
-                                (Nothing,_) -> returnJson ("unreadable courseId" :: Text)
-                                (_,Nothing) -> returnJson ("unreadable userId" :: Text)
+                 cid <- maybe (sendStatusJSON badRequest400 ("Could not read course key" :: Text)) return $ readMaybe cidstring
+                 uid <- maybe (sendStatusJSON badRequest400 ("Could not read user key" :: Text)) return $ readMaybe uidstring
+                 do runDB $ upsertBy (UniqueAccommodation cid uid)
+                                     (Accommodation cid uid 
+                                        (maybe 1 id mfactor) 
+                                        (maybe 0 id mextramin) 
+                                        (maybe 0 id mextrahours))
+                                     (maybe [] (\min -> [AccommodationTimeExtraMinutes =. min]) mextramin ++ 
+                                      maybe [] (\fac -> [AccommodationTimeFactor =. fac]) mfactor ++ 
+                                      maybe [] (\hours-> [AccommodationDateExtraHours =. hours]) mextrahours)
+                 returnJson ("updated!" :: Text)
             (_,_,_,_,FormSuccess (uidstring, aid, day, mtime)) -> do
-                            uid <- maybe (liftIO $ fail "couldn't read uid string") pure $ readMaybe uidstring
-                            let localtime = LocalTime day (maybe (TimeOfDay 23 59 59) id mtime)
-                            runDB $ do asgn <- get aid >>= maybe (liftIO $ fail "could not get assignment") pure
-                                       course <- get (assignmentMetadataCourse asgn) >>= maybe (liftIO $ fail "could not get course assignment") pure
-                                       tz <- maybe (liftIO $ fail "couldn't read timezone") pure $ fromTZName $ courseTimeZone course
-                                       let utctime = localTimeToUTCTZ (tzByLabel tz) localtime
-                                       upsertBy (UniqueExtension aid uid)
-                                                (Extension aid uid utctime)
-                                                [ExtensionUntil =. utctime]
-                            returnJson ("updated!" :: Text)
-            (FormMissing,FormMissing,FormMissing,FormMissing,FormMissing) -> liftIO $ fail "no form"
-            (form1,form2,form3,form4,form5) -> liftIO $ fail $ unpack ("errors: " <> errorsOf form1 <> errorsOf form2 <> errorsOf form3 <> errorsOf form4 <> errorsOf form5)
+                 uid <- maybe (sendStatusJSON badRequest400 ("Couldn't read uid string" :: Text)) pure $ readMaybe uidstring
+                 let localtime = LocalTime day (maybe (TimeOfDay 23 59 59) id mtime)
+                 runDB $ do asgn <- get aid >>= maybe (sendStatusJSON notFound404 ("Couldn't get assignment" :: Text)) pure
+                            course <- get (assignmentMetadataCourse asgn) >>= maybe (liftIO $ fail "could not get course assignment") pure
+                            tz <- maybe (liftIO $ fail "couldn't read timezone") pure $ fromTZName $ courseTimeZone course
+                            let utctime = localTimeToUTCTZ (tzByLabel tz) localtime
+                            upsertBy (UniqueExtension aid uid)
+                                     (Extension aid uid utctime)
+                                     [ExtensionUntil =. utctime]
+                 returnJson ("updated!" :: Text)
+            (FormMissing,FormMissing,FormMissing,FormMissing,FormMissing) -> sendStatusJSON badRequest400 ("Form Missing" :: Text)
+            (form1,form2,form3,form4,form5) -> sendStatusJSON badRequest400 ("errors: " <> errorsOf form1 <> errorsOf form2 <> errorsOf form3 <> errorsOf form4 <> errorsOf form5)
                 where errorsOf (FormFailure s) = concat s <> ", "
                       errorsOf _ = ""
 
