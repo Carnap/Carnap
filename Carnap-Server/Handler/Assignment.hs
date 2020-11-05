@@ -68,9 +68,12 @@ postCourseAssignmentR coursetitle filename = do
 returnAssignment :: Text -> Text -> Entity AssignmentMetadata -> FilePath -> Handler Html
 returnAssignment coursetitle filename (Entity key val) path = do
            uid <- maybeAuthId >>= maybe reject return
-           Entity _ userdata <- runDB (getBy $ UniqueUserData uid) >>= maybe reject return  
-           maccess <- runDB $ getBy $ UniqueAccommodation (assignmentMetadataCourse val) uid
-           mtoken <- runDB $ getBy $ UniqueAssignmentAccessToken uid key
+           (userdata,maccess,mtoken,mextension) <- runDB $ do 
+                  Entity _ userdata <- getBy (UniqueUserData uid) >>= maybe reject return  
+                  maccess <- getBy $ UniqueAccommodation (assignmentMetadataCourse val) uid
+                  mtoken <- getBy $ UniqueAssignmentAccessToken uid key
+                  mextension <- getBy $ UniqueExtension key uid 
+                  return (userdata,maccess,mtoken,mextension)
            time <- liftIO getCurrentTime
            let accommodationFactor = maybe 1 (accommodationTimeFactor . entityVal) maccess
                accommodationMinutes = maybe 0 (accommodationTimeExtraMinutes . entityVal) maccess
@@ -78,10 +81,10 @@ returnAssignment coursetitle filename (Entity key val) path = do
                instructorAccess = userDataInstructorId userdata /= Nothing --instructors who shouldn't access the course are already blocked by yesod-auth
                age (Entity _ tok) = floor (diffUTCTime time (assignmentAccessTokenCreatedAt tok))
                creation (Entity _ tok) = round $ utcTimeToPOSIXSeconds (assignmentAccessTokenCreatedAt tok) * 1000 --milliseconds to match JS
-           if visibleAt time val || instructorAccess
+           if visibleAt time val mextension || instructorAccess
                then do
                    ehtml <- liftIO $ fileToHtml (allFilters (hash (show uid ++ path))) path
-                   unless (visibleAt time val) $ setMessage "Viewing as instructor. Assignment not currently visible to students."
+                   unless (visibleAt time val mextension) $ setMessage "Viewing as instructor. Assignment not currently visible to students."
                    case ehtml of
                        Left err -> defaultLayout $ minimalLayout (show err)
                        Right (Left err,_) -> defaultLayout $ minimalLayout (show err)
@@ -125,8 +128,12 @@ returnAssignment coursetitle filename (Entity key val) path = do
                                     addScript $ StaticR ghcjs_allactions_runmain_js
                                     maybe (pure [()]) (mapM addScriptRemote) mjs >> return ()
                else defaultLayout $ minimalLayout ("Assignment not currently set as visible by instructor" :: Text)
-    where visibleAt t a = (assignmentMetadataVisibleTill a > Just t || assignmentMetadataVisibleTill a == Nothing)
-                          && (assignmentMetadataVisibleFrom a < Just t || assignmentMetadataVisibleFrom a == Nothing)
+    where visibleAt t a mex = not (tooEarly t a) && not (tooLate t a mex)
+          tooEarly t a | null (assignmentMetadataVisibleFrom a) = False
+                       | otherwise = Just t < assignmentMetadataVisibleFrom a
+          tooLate t a _ | null (assignmentMetadataVisibleTill a) = False
+          tooLate t a Nothing = assignmentMetadataVisibleTill a < Just t
+          tooLate t a (Just (Entity _ ex)) = (extensionUntil ex < t) && (assignmentMetadataVisibleTill a < Just t)
 
 allFilters salt = randomizeProblems salt
                   . makeTreeDeduction

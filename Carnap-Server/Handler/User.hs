@@ -222,7 +222,7 @@ assignmentsOf accommodation course textbookproblems asmdex asDocs = do
                                             #{dateDisplay (addUTCTime accommodationUTC due) course}
                                         <td>
                             $forall ((Entity _ a,mex), Just d) <- zip asmdex asDocs
-                                $if visibleAt time a
+                                $if visibleAt time a mex
                                         <tr>
                                             <td>
                                                 <a href=@{CourseAssignmentR (courseTitle course) (documentFilename d)}>
@@ -247,10 +247,12 @@ assignmentsOf accommodation course textbookproblems asmdex asDocs = do
                                                 <td>-
                 |]
     where accommodationUTC = fromIntegral (3600 * accommodation) :: NominalDiffTime
-          visibleAt t a = case assignmentMetadataAvailability a of
-                              Just status | availabilityHidden status -> False
-                              _ -> (assignmentMetadataVisibleTill a > Just t || assignmentMetadataVisibleTill a == Nothing)
-                                   && (assignmentMetadataVisibleFrom a < Just t || assignmentMetadataVisibleFrom a == Nothing)
+          visibleAt t a mex = not (tooEarly t a) && not (tooLate t a mex)
+          tooEarly t a | null (assignmentMetadataVisibleFrom a) = False
+                       | otherwise = Just t < assignmentMetadataVisibleFrom a
+          tooLate t a _ | null (assignmentMetadataVisibleTill a) = False
+          tooLate t a Nothing = assignmentMetadataVisibleTill a < Just t
+          tooLate t a (Just (Entity _ ex)) = (extensionUntil ex < t) && (assignmentMetadataVisibleTill a < Just t)
 
 updateWidget :: WidgetFor App () -> Enctype -> WidgetFor App ()
 updateWidget form enc = [whamlet|
