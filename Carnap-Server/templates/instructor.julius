@@ -81,6 +81,30 @@ function modalEditDocument (id,desc,title,tags) {
     $("#updateDocumentData").modal({show:true});
 }
 
+function modalGrantExtension (course,uid) {
+    jQuery.noConflict()
+    $("#update" + course)[0].reset();
+    $("#update" + course + " input[name=f1]").val(uid);
+    $("#update" + course).submit(function(e) {
+        jQuery.ajax({
+            url: '@{InstructorR ident}',
+            type: 'PUT',
+            data: new FormData(this),
+            processData: false,
+            contentType: false,
+            success: function(data) { 
+                $("#update" + course + "Data").modal('hide'); 
+                },
+            error: function(data) {
+                window.alert("Error, couldn't update the extension")
+                },
+            });
+        e.preventDefault();
+    })
+    $("#update" + course + "Data").modal({show:true})
+}
+
+
 function modalEditCourse (id,desc,start,end,points,isopen) {
     jQuery.noConflict()
     $("#updateCourse")[0].reset();

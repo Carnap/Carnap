@@ -24,8 +24,9 @@ putInstructorR _ = do
         ((courserslt,_),_) <- runFormPost (identifyForm "updateCourse" $ updateCourseForm)
         ((documentrslt,_),_) <- runFormPost (identifyForm "updateDocument" $ updateDocumentForm)
         ((accommodationrslt,_),_) <- runFormPost (identifyForm "updateAccommodation" $ updateAccommodationForm)
-        case (assignmentrslt,courserslt,documentrslt,accommodationrslt) of
-            (FormSuccess (idstring, mdue, mduetime,mfrom,mfromtime,muntil,muntiltime,mrelease,mreleasetime,mdesc,mpass,mhidden,mlimit),_,_,_) -> do
+        ((extensionrslt,_),_) <- runFormPost  (identifyForm "updateExtension" $ updateExtensionForm [])
+        case (assignmentrslt,courserslt,documentrslt,accommodationrslt,extensionrslt) of
+            (FormSuccess (idstring, mdue, mduetime,mfrom,mfromtime,muntil,muntiltime,mrelease,mreleasetime,mdesc,mpass,mhidden,mlimit),_,_,_,_) -> do
                  case readMaybe idstring of
                       Nothing -> returnJson ("Could not read assignment key"::Text)
                       Just k -> do
@@ -55,7 +56,7 @@ putInstructorR _ = do
                                           update k [ AssignmentMetadataAvailability =. maccess ]
                                           update k [ AssignmentMetadataDescription =. unTextarea <$> mdesc]
                                returnJson ("updated!"::Text)
-            (_,FormSuccess (idstring,mdesc,mstart,mend,mpoints,mopen),_,_) -> do
+            (_,FormSuccess (idstring,mdesc,mstart,mend,mpoints,mopen),_,_,_) -> do
                              case readMaybe idstring of
                                  Just k -> do runDB $ do update k [ CourseDescription =. (unTextarea <$> mdesc) ]
                                                          maybeDo mstart (\start -> update k
@@ -68,7 +69,7 @@ putInstructorR _ = do
                                                            [ CourseEnrollmentOpen =. open])
                                               returnJson ("updated!"::Text)
                                  Nothing -> returnJson ("could not find course!"::Text)
-            (_,_,FormSuccess (idstring, mscope, mdesc,mfile,mtags),_) -> do
+            (_,_,FormSuccess (idstring, mscope, mdesc,mfile,mtags),_,_) -> do
                              case readMaybe idstring of
                                  Just k -> do
                                     mdoc <- runDB (get k)
@@ -90,7 +91,7 @@ putInstructorR _ = do
                                                  returnJson ("updated!" :: Text)
                                              Nothing -> returnJson ("document did not have a creator. This is a bug."::Text)
                                  Nothing -> returnJson ("could not read document key"::Text)
-            (_,_,_,FormSuccess (cidstring, uidstring, mextramin, mfactor,mextrahours)) -> do
+            (_,_,_,FormSuccess (cidstring, uidstring, mextramin, mfactor,mextrahours),_) -> do
                             case (readMaybe cidstring, readMaybe uidstring) of
                                 (Just cid, Just uid) -> do runDB $ upsertBy 
                                                                 (UniqueAccommodation cid uid)
@@ -104,8 +105,19 @@ putInstructorR _ = do
                                                            returnJson ("updated!" :: Text)
                                 (Nothing,_) -> returnJson ("unreadable courseId" :: Text)
                                 (_,Nothing) -> returnJson ("unreadable userId" :: Text)
-            (FormMissing,FormMissing,FormMissing,FormMissing) -> returnJson ("no form" :: Text)
-            (form1,form2,form3,form4) -> returnJson ("errors: " <> errorsOf form1 <> errorsOf form2 <> errorsOf form3 <> errorsOf form4)
+            (_,_,_,_,FormSuccess (uidstring, aid, day, mtime)) -> do
+                            uid <- maybe (liftIO $ fail "couldn't read uid string") pure $ readMaybe uidstring
+                            let localtime = LocalTime day (maybe (TimeOfDay 23 59 59) id mtime)
+                            runDB $ do asgn <- get aid >>= maybe (liftIO $ fail "could not get assignment") pure
+                                       course <- get (assignmentMetadataCourse asgn) >>= maybe (liftIO $ fail "could not get course assignment") pure
+                                       tz <- maybe (liftIO $ fail "couldn't read timezone") pure $ fromTZName $ courseTimeZone course
+                                       let utctime = localTimeToUTCTZ (tzByLabel tz) localtime
+                                       upsertBy (UniqueExtension aid uid)
+                                                (Extension aid uid utctime)
+                                                [ExtensionUntil =. utctime]
+                            returnJson ("updated!" :: Text)
+            (FormMissing,FormMissing,FormMissing,FormMissing,FormMissing) -> liftIO $ fail "no form"
+            (form1,form2,form3,form4,form5) -> liftIO $ fail $ unpack ("errors: " <> errorsOf form1 <> errorsOf form2 <> errorsOf form3 <> errorsOf form4 <> errorsOf form5)
                 where errorsOf (FormFailure s) = concat s <> ", "
                       errorsOf _ = ""
 
@@ -333,7 +345,7 @@ getInstructorR ident = do
             docs <- documentsByInstructorIdent ident
             instructors <- runDB $ selectList [UserDataInstructorId !=. Nothing] []
             let labels = map labelOf $ take (length activeClasses) [1::Int ..]
-            classWidgets <- mapM (classWidget ident instructors) activeClasses
+            classWidgets <- mapM (classWidget instructors) activeClasses
             assignmentMetadata <- concat <$> mapM listAssignmentMetadata activeClasses --Get the metadata
             assignmentDocs <- mapM (runDB . get) (map (\(Entity _ v, _) -> assignmentMetadataDocument v) assignmentMetadata)
             documents <- runDB $ selectList [DocumentCreator ==. uid] []
@@ -402,6 +414,23 @@ instance FromJSON InstructorQuery
 ------------------
 --  Components  --
 ------------------
+
+genericModal :: Text -> Text -> WidgetFor App () -> Enctype -> WidgetFor App ()
+genericModal specific caption form enc =
+    [whamlet|
+        <div class="modal fade" id="update#{specific}Data" tabindex="-1" role="dialog" aria-labelledby="update#{specific}DataLabel" aria-hidden="true">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="update#{specific}DataLabel">#{caption}
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                          <span aria-hidden="true">&times;</span>
+                    <div class="modal-body">
+                        <form id="update#{specific}" enctype=#{enc}>
+                            ^{form}
+                            <div.form-group>
+                                <input.btn.btn-primary type=submit value="update">
+    |]
 
 uploadAssignmentForm
     :: [Entity Course]
@@ -584,21 +613,7 @@ updateAssignmentForm extra = do
           assignmentId = hiddenField
 
 updateAssignmentModal :: WidgetFor App () -> Enctype -> WidgetFor App ()
-updateAssignmentModal form enc =
-    [whamlet|
-        <div class="modal fade" id="updateAssignmentData" tabindex="-1" role="dialog" aria-labelledby="updateAssignmentDataLabel" aria-hidden="true">
-            <div class="modal-dialog" role="document">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title" id="updateAssignmentDataLabel">Update Assignment Data</h5>
-                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                          <span aria-hidden="true">&times;</span>
-                    <div class="modal-body">
-                        <form#updateAssignment enctype=#{enc}>
-                            ^{form}
-                            <div.form-group>
-                                <input.btn.btn-primary type=submit value="update">
-    |]
+updateAssignmentModal = genericModal "Assignment" "Update Assignment Data"
 
 uploadDocumentForm
     :: Markup
@@ -651,24 +666,8 @@ tagField = Field
     , fieldEnctype = UrlEncoded
     }
 
-updateDocumentModal
-    :: WidgetFor App ()
-    -> Enctype
-    -> WidgetFor App ()
-updateDocumentModal form enc = [whamlet|
-                    <div class="modal fade" id="updateDocumentData" tabindex="-1" role="dialog" aria-labelledby="updateDocumentLabel" aria-hidden="true">
-                        <div class="modal-dialog" role="document">
-                            <div class="modal-content">
-                                <div class="modal-header">
-                                    <h5 class="modal-title" id="updateDocumentLabel">Update Shared Document</h5>
-                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                                      <span aria-hidden="true">&times;</span>
-                                <div class="modal-body">
-                                    <form#updateDocument enctype=#{enc}>
-                                        ^{form}
-                                        <div.form-group>
-                                            <input.btn.btn-primary type=submit value="update">
-                    |]
+updateDocumentModal :: WidgetFor App () -> Enctype -> WidgetFor App ()
+updateDocumentModal = genericModal "Document" "Update Shared Document"
 
 setBookAssignmentForm
     :: [Entity Course]
@@ -717,24 +716,8 @@ createCourseForm = renderBootstrap3 BootstrapBasicForm $ (,,,,)
             <*> areq (selectFieldList zones)    (bfs ("TimeZone"::Text)) Nothing
     where zones = map (\(x,y,_) -> (decodeUtf8 x,y)) (rights tzDescriptions)
 
-updateCourseModal
-    :: WidgetFor App ()
-    -> Enctype
-    -> WidgetFor App ()
-updateCourseModal form enc = [whamlet|
-                    <div class="modal fade" id="updateCourseData" tabindex="-1" role="dialog" aria-labelledby="updateCourseDataLabel" aria-hidden="true">
-                        <div class="modal-dialog" role="document">
-                            <div class="modal-content">
-                                <div class="modal-header">
-                                    <h5 class="modal-title" id="updateCourseDataLabel">Update Course Data</h5>
-                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                                      <span aria-hidden="true">&times;</span>
-                                <div class="modal-body">
-                                    <form#updateCourse enctype=#{enc}>
-                                        ^{form}
-                                        <div.form-group>
-                                            <input.btn.btn-primary type=submit value="update">
-                    |]
+updateCourseModal :: WidgetFor App () -> Enctype -> WidgetFor App ()
+updateCourseModal = genericModal "Course" "Update Course Data"
 
 updateCourseForm
     :: Markup
@@ -771,25 +754,25 @@ updateAccommodationForm = renderBootstrap3 BootstrapBasicForm $ (,,,,)
     where courseId = hiddenField
           userId = hiddenField
 
---XXX: Lot of repetition to DRY in these modals.
-updateAccommodationModal
-    :: WidgetFor App ()
-    -> Enctype
-    -> WidgetFor App ()
-updateAccommodationModal form enc = [whamlet|
-                    <div class="modal fade" id="updateAccommodationData" tabindex="-1" role="dialog" aria-labelledby="updateAccommodationDataLabel" aria-hidden="true">
-                        <div class="modal-dialog" role="document">
-                            <div class="modal-content">
-                                <div class="modal-header">
-                                    <h5 class="modal-title" id="updateAccommodationDataLabel">Update Course Data</h5>
-                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                                      <span aria-hidden="true">&times;</span>
-                                <div class="modal-body">
-                                    <form#updateAccommodation enctype=#{enc}>
-                                        ^{form}
-                                        <div.form-group>
-                                            <input.btn.btn-primary type=submit value="update">
-                    |]
+updateAccommodationModal :: WidgetFor App () -> Enctype -> WidgetFor App ()
+updateAccommodationModal = genericModal "Accommodation" "Update Accommodation"
+
+updateExtensionForm
+    :: [(Entity AssignmentMetadata, Maybe Document)]
+    -> Markup
+    -> MForm (HandlerFor App) ((FormResult
+                     (String, Key AssignmentMetadata, Day, Maybe TimeOfDay),
+                   WidgetFor App ()))
+updateExtensionForm aplusd = renderBootstrap3 BootstrapBasicForm $ (,,,)
+            <$> areq userId "" Nothing
+            <*> areq (selectField assignmentlist) (bfs ("Assignment" :: Text)) Nothing
+            <*> areq (jqueryDayField def) (withPlaceholder "Due Date" $ bfs ("Due Date"::Text)) Nothing
+            <*> aopt timeFieldTypeTime (withPlaceholder "Time" $ bfs ("Due Time"::Text)) Nothing
+    where userId = hiddenField
+          assignmentlist = pure $ OptionList assignments readKey
+          assignments = map toAssignmentOption aplusd
+          toAssignmentOption (Entity k _, Just doc) = Option (documentFilename doc) k (pack . show $ k)
+          readKey = readMaybe . unpack
 
 addCoInstructorForm
     :: [Entity UserData]
@@ -830,10 +813,11 @@ saveTo thedir fn file = do
                if e then removeFile (path </> fn) else return ()
                fileMove file (path </> fn)
 
-classWidget :: Text -> [Entity UserData] -> Entity Course ->  Handler Widget
-classWidget _ instructors classent = do
+classWidget :: [Entity UserData] -> Entity Course ->  Handler Widget
+classWidget instructors classent = do
        let cid = entityKey classent
            course = entityVal classent
+           chash = pack . show . hash . courseTitle $ course
            mprobs = readAssignmentTable <$> courseTextbookProblems course :: Maybe (IntMap UTCTime)
        coInstructors <- runDB $ selectList [CoInstructorCourse ==. cid] []
        coInstructorUD <- mapM udByInstructorId (map (coInstructorIdent . entityVal) coInstructors)
@@ -842,6 +826,8 @@ classWidget _ instructors classent = do
        (addCoInstructorWidget,enctypeAddCoInstructor) <- generateFormPost (identifyForm "addCoinstructor" $ addCoInstructorForm instructors (show cid))
        asmd <- runDB $ selectList [AssignmentMetadataCourse ==. cid] []
        asDocs <- mapM (runDB . get) (map (assignmentMetadataDocument . entityVal) asmd)
+       (updateExtensionWidget,enctypeUpdateExtension) <- generateFormPost (identifyForm "updateExtension" $ updateExtensionForm (zip asmd asDocs))
+       let updateExtensionModal = genericModal chash "Grant Extension"
        let allUids = map userDataUserId allUserData
        musers <- mapM (\x -> runDB (get x)) allUids
        let users = catMaybes musers
@@ -852,6 +838,7 @@ classWidget _ instructors classent = do
        dbCourse <- runDB $ get cid
                   >>= maybe (setMessage "failed to get course" >> notFound) pure
        return [whamlet|
+                    ^{updateExtensionModal updateExtensionWidget enctypeUpdateExtension}
                     <h2>Assignments
                     <div.scrollbox>
                         <table.table.table-striped>
@@ -907,6 +894,9 @@ classWidget _ instructors classent = do
                                             <button.btn.btn-sm.btn-secondary type="button" title="Adjust Accessibility Settings for #{fn} #{ln}"
                                                 onclick="modalEditAccommodation('#{show cid}','#{show uid}','#{jsonSerialize $ QueryAccommodation uid cid}')">
                                                 <i.fa.fa-clock-o>
+                                            <button.btn.btn-sm.btn-secondary type="button" title="Grant Extension to #{fn} #{ln}"
+                                                onclick="modalGrantExtension('#{chash}','#{show uid}')">
+                                                <i.fa.fa-calendar-plus-o>
                     <h2>Course Data
                     <dl.row>
                         <dt.col-sm-3>Primary Instructor
