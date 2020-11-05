@@ -79,11 +79,13 @@ function modalEditDocument (id,desc,title,tags) {
     $("#updateDocument input[name=f5]").tagsinput("removeAll");
     $("#updateDocument input[name=f5]").tagsinput("add",tags);
     $("#updateDocumentData").modal({show:true});
+
 }
 
 function modalGrantExtension (course,uid) {
     jQuery.noConflict()
     $("#update" + course)[0].reset();
+    $("#update" + course).off("submit")
     $("#update" + course + " input[name=f1]").val(uid);
     $("#update" + course).submit(function(e) {
         jQuery.ajax({
