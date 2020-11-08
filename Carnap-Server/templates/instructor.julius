@@ -97,7 +97,7 @@ function modalGrantExtension (elt,course,uid) {
             success: function(data) { 
                 $("#update" + course + "Data").modal('hide'); 
                 let gradeDisplay = $(elt).closest("tr").children(".async")
-                gradeDisplay.html("-")
+                gradeDisplay.html("—")
                 gradeDisplay[0].gradeLoaded = false
                 setTimeout(_ => { gradeDisplay[0].update() }, 250)
                 },
@@ -111,8 +111,6 @@ function modalGrantExtension (elt,course,uid) {
     $("#update" + course + "Data").modal({show:true})
     let box = $(elt).closest(".scrollbox")[0]
     delete box.contents[uid] 
-    console.log(box.contents)
-    console.log(box.contents[uid])
 }
 
 
