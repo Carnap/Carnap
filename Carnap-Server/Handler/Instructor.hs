@@ -810,7 +810,7 @@ classWidget instructors classent = do
        asmd <- runDB $ selectList [AssignmentMetadataCourse ==. cid] []
        asDocs <- mapM (runDB . get) (map (assignmentMetadataDocument . entityVal) asmd)
        (updateExtensionWidget,enctypeUpdateExtension) <- generateFormPost (identifyForm "updateExtension" $ updateExtensionForm (zip asmd asDocs))
-       let updateExtensionModal = genericModal chash "Grant Extension"
+       let updateExtensionModal = genericModal chash "Set Alternate Due Date"
        let allUids = map userDataUserId allUserData
        musers <- mapM (\x -> runDB (get x)) allUids
        let users = catMaybes musers
