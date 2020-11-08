@@ -89,7 +89,7 @@ putInstructorR _ = do
                                       maybe [] (\hours-> [AccommodationDateExtraHours =. hours]) mextrahours)
                  returnJson ("updated!" :: Text)
             (_,_,_,_,FormSuccess (uidstring, aid, day, mtime)) -> do
-                 uid <- maybe (sendStatusJSON badRequest400 ("Couldn't read uid string" :: Text)) pure $ readMaybe uidstring
+                 uid <- maybe (sendStatusJSON badRequest400 ("Couldn't read uid string" :: Text)) pure $ (jsonDeSerialize uidstring :: Maybe (Key User))
                  let localtime = LocalTime day (maybe (TimeOfDay 23 59 59) id mtime)
                  runDB $ do asgn <- get aid >>= maybe (sendStatusJSON notFound404 ("Couldn't get assignment" :: Text)) pure
                             course <- get (assignmentMetadataCourse asgn) >>= maybe (liftIO $ fail "could not get course assignment") pure
@@ -744,7 +744,7 @@ updateExtensionForm
     :: [(Entity AssignmentMetadata, Maybe Document)]
     -> Markup
     -> MForm (HandlerFor App) ((FormResult
-                     (String, Key AssignmentMetadata, Day, Maybe TimeOfDay),
+                     (Text, Key AssignmentMetadata, Day, Maybe TimeOfDay),
                    WidgetFor App ()))
 updateExtensionForm aplusd = renderBootstrap3 BootstrapBasicForm $ (,,,)
             <$> areq userId "" Nothing
@@ -878,7 +878,7 @@ classWidget instructors classent = do
                                                 onclick="modalEditAccommodation('#{show cid}','#{show uid}','#{jsonSerialize $ QueryAccommodation uid cid}')">
                                                 <i.fa.fa-clock-o>
                                             <button.btn.btn-sm.btn-secondary type="button" title="Grant Extension to #{fn} #{ln}"
-                                                onclick="modalGrantExtension('#{chash}','#{show uid}')">
+                                                onclick="modalGrantExtension(this,'#{chash}','#{jsonSerialize uid}')">
                                                 <i.fa.fa-calendar-plus-o>
                     <h2>Course Data
                     <dl.row>

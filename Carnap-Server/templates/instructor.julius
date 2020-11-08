@@ -82,7 +82,7 @@ function modalEditDocument (id,desc,title,tags) {
 
 }
 
-function modalGrantExtension (course,uid) {
+function modalGrantExtension (elt,course,uid) {
     jQuery.noConflict()
     $("#update" + course)[0].reset();
     $("#update" + course).off("submit")
@@ -96,6 +96,10 @@ function modalGrantExtension (course,uid) {
             contentType: false,
             success: function(data) { 
                 $("#update" + course + "Data").modal('hide'); 
+                let gradeDisplay = $(elt).closest("tr").children(".async")
+                gradeDisplay.html("-")
+                gradeDisplay[0].gradeLoaded = false
+                setTimeout(_ => { gradeDisplay[0].update() }, 250)
                 },
             error: function(data) {
                 let response = data.responseJSON || "no response available"
@@ -105,6 +109,10 @@ function modalGrantExtension (course,uid) {
         e.preventDefault();
     })
     $("#update" + course + "Data").modal({show:true})
+    let box = $(elt).closest(".scrollbox")[0]
+    delete box.contents[uid] 
+    console.log(box.contents)
+    console.log(box.contents[uid])
 }
 
 
@@ -544,24 +552,26 @@ $("a[data-toggle='tab']").click(function(){
 })
 
 $(".async").each((_,elt) => elt.update = function (callback) {
-    let box = $(this).closest(".scrollbox")[0]
-    this.innerHTML = "loading..."
-    if (!box.contents[this.dataset.uid]) {queryGrade(this.dataset.query,(data) => {
-        box.contents[this.dataset.uid] = {
-            scores: data, 
-            fn: this.dataset.fn,
-            ln: this.dataset.ln,
-            email: this.dataset.email,
-        }
-        this.innerHTML = data.map(i=>i[1]).reduce((x,y) => x + y, 0);
-        document.getElementById("loaded-" + box.dataset.cid).innerHTML = Object.keys(box.contents).length
-        if (callback) callback()
-    })} else {
-        let data = box.contents[elt.dataset.uid].scores
-        this.innerHTML = data.map(i=>i[1]).reduce((x,y) => x + y, 0);
-        if (callback) callback()
+    if (!this.gradeLoaded) {
+        let box = $(this).closest(".scrollbox")[0]
+        this.innerHTML = "loading..."
+        if (!box.contents[this.dataset.uid]) {queryGrade(this.dataset.query,(data) => {
+            box.contents[this.dataset.uid] = {
+                scores: data, 
+                fn: this.dataset.fn,
+                ln: this.dataset.ln,
+                email: this.dataset.email,
+            }
+            this.innerHTML = data.map(i=>i[1]).reduce((x,y) => x + y, 0);
+            document.getElementById("loaded-" + box.dataset.cid).innerHTML = Object.keys(box.contents).length
+            this.gradeLoaded = true
+        })} else {
+            let data = box.contents[elt.dataset.uid].scores
+            this.innerHTML = data.map(i=>i[1]).reduce((x,y) => x + y, 0);
+            this.gradeLoaded = true
+        };
     };
-    this.update = (newcallback) => { if (newcallback) { newcallback() } }
+    if (callback) callback()
 });
 
 $("textarea").addClass("form-control")

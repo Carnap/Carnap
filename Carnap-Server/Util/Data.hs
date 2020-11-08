@@ -105,6 +105,8 @@ laterThan t1 t2 = diffUTCTime t1 t2 > 0
 
 jsonSerialize = decodeUtf8 . encode
 
+jsonDeSerialize = decode . encodeUtf8 . fromStrict
+
 rewriteText opts = pack . rewriteWith opts . unpack
 
 displayProblemData (DerivationData t _)  = t
