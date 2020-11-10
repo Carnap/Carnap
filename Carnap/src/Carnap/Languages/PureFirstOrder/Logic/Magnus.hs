@@ -137,14 +137,32 @@ instance Show MagnusQLPlus where
 
 instance Inference MagnusQLPlus PureLexiconFOL (Form Bool) where
 
-         ruleOf (MagnusQL x) = ruleOf x
          ruleOf QN1 = quantifierNegationReplace !! 0
          ruleOf QN2 = quantifierNegationReplace !! 1
          ruleOf QN3 = quantifierNegationReplace !! 2
          ruleOf QN4 = quantifierNegationReplace !! 3
+         ruleOf (Plus AndComm) = andCommutativity !! 0
+         ruleOf (Plus CommAnd) = andCommutativity !! 1
+         ruleOf (Plus OrComm)  = orCommutativity !! 0
+         ruleOf (Plus CommOr)  = orCommutativity !! 1
+         ruleOf (Plus IffComm) = iffCommutativity !! 0 
+         ruleOf (Plus CommIff) = iffCommutativity !! 1
+         ruleOf (Plus DNRep)   = doubleNegation !! 0
+         ruleOf (Plus RepDN)   = doubleNegation !! 1
+         ruleOf (Plus MCRep)   = materialConditional !! 0
+         ruleOf (Plus RepMC)   = materialConditional !! 1
+         ruleOf (Plus MCRep2)  = materialConditional !! 2
+         ruleOf (Plus RepMC2)  = materialConditional !! 3
+         ruleOf (Plus BiExRep) = biconditionalExchange !! 0
+         ruleOf (Plus RepBiEx) = biconditionalExchange !! 1
+         ruleOf (Plus DM1)     = deMorgansLaws !! 0
+         ruleOf (Plus DM2)     = deMorgansLaws !! 1
+         ruleOf (Plus DM3)     = deMorgansLaws !! 2
+         ruleOf (Plus DM4)     = deMorgansLaws !! 3
+         ruleOf (Plus x)       = map liftSequent (premisesOf x) ∴ liftSequent (conclusionOf x)
+         ruleOf (MagnusQL x)   = ruleOf x
 
          premisesOf (MagnusQL (MagnusSL x)) = map liftSequent (premisesOf x)
-         premisesOf (Plus x) = map liftSequent (premisesOf x)
          premisesOf r = upperSequents (ruleOf r)
          
          conclusionOf (MagnusQL (MagnusSL x)) = liftSequent (conclusionOf x)

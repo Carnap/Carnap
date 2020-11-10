@@ -294,7 +294,7 @@ conditionalExistentialDerivation = [ GammaV 1 :|-: SS (lsome "v" (phi 1))
 ------------------------------------
 --  1.2. Rules with Variations  --
 ------------------------------------
-        
+
 type FirstOrderRuleVariants lex b = FirstOrderConstraints lex b => [SequentRule lex (Form b)]
 
 type FirstOrderEqRuleVariants lex b = 
@@ -346,6 +346,7 @@ existentialDerivation = [
                             , GammaV 2 :|-: SS (lsome "v" $ phi 1)
                             ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (phin 1)
                         ]
+        
         
 quantifierNegation ::  FirstOrderRuleVariants lex b
 quantifierNegation = exchange (lneg $ lsome "v" $ phi 1) (lall "v" $ lneg . phi 1) 
