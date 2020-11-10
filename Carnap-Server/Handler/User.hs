@@ -247,7 +247,8 @@ assignmentsOf accommodation course textbookproblems asmdex asDocs = do
                                                 <td>-
                 |]
     where accommodationUTC = fromIntegral (3600 * accommodation) :: NominalDiffTime
-          visibleAt t a mex = not (tooEarly t a) && not (tooLate t a mex)
+          visibleAt t a mex = not (hidden a) && not (tooEarly t a) && not (tooLate t a mex)
+          hidden = maybe False availabilityHidden . assignmentMetadataAvailability
           tooEarly t a | null (assignmentMetadataVisibleFrom a) = False
                        | otherwise = Just t < assignmentMetadataVisibleFrom a
           tooLate t a _ | null (assignmentMetadataVisibleTill a) = False
