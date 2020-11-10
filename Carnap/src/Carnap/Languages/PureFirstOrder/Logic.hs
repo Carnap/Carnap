@@ -46,26 +46,27 @@ import Carnap.Languages.PureFirstOrder.Logic.Rules
 ofFOLSys :: (forall r . (Show r, Inference r PureLexiconFOL (Form Bool)) => 
              NaturalDeductionCalc r PureLexiconFOL (Form Bool) -> a) -> String -> Maybe a
 ofFOLSys f sys | sys == "firstOrder"                      = Just $ f folCalc
-               | sys == "montagueQC"                      = Just $ f montagueQCCalc 
-               | sys == "magnusQL"                        = Just $ f magnusQLCalc 
-               | sys == "thomasBolducAndZachFOL"          = Just $ f thomasBolducAndZachFOLCalc 
-               | sys == "thomasBolducAndZachFOLCore"      = Just $ f thomasBolducAndZachFOLCoreCalc 
-               | sys == "thomasBolducAndZachFOL2019"      = Just $ f thomasBolducAndZachFOL2019Calc 
-               | sys == "thomasBolducAndZachFOLPlus2019"  = Just $ f thomasBolducAndZachFOLPlus2019Calc 
+               | sys == "montagueQC"                      = Just $ f montagueQCCalc
+               | sys == "magnusQL"                        = Just $ f magnusQLCalc
+               | sys == "magnusQLPlus"                    = Just $ f magnusQLPlusCalc
+               | sys == "thomasBolducAndZachFOL"          = Just $ f thomasBolducAndZachFOLCalc
+               | sys == "thomasBolducAndZachFOLCore"      = Just $ f thomasBolducAndZachFOLCoreCalc
+               | sys == "thomasBolducAndZachFOL2019"      = Just $ f thomasBolducAndZachFOL2019Calc
+               | sys == "thomasBolducAndZachFOLPlus2019"  = Just $ f thomasBolducAndZachFOLPlus2019Calc
                | sys == "ebelsDugganFOL"                  = Just $ f ebelsDugganFOLCalc
-               | sys == "LogicBookPD"                     = Just $ f logicBookPDCalc 
-               | sys == "LogicBookPDPlus"                 = Just $ f logicBookPDPlusCalc 
-               | sys == "LogicBookPDE"                    = Just $ f logicBookPDECalc 
-               | sys == "LogicBookPDEPlus"                = Just $ f logicBookPDEPlusCalc 
-               | sys == "hausmanPL"                       = Just $ f hausmanPLCalc 
+               | sys == "LogicBookPD"                     = Just $ f logicBookPDCalc
+               | sys == "LogicBookPDPlus"                 = Just $ f logicBookPDPlusCalc
+               | sys == "LogicBookPDE"                    = Just $ f logicBookPDECalc
+               | sys == "LogicBookPDEPlus"                = Just $ f logicBookPDEPlusCalc
+               | sys == "hausmanPL"                       = Just $ f hausmanPLCalc
                | sys == "gamutND"                         = Just $ f gamutNDCalc
                | sys == "gamutNDPlus"                     = Just $ f gamutNDPlusCalc
                | sys == "gallowPL"                        = Just $ f gallowPLCalc
                | sys == "gallowPLPlus"                    = Just $ f gallowPLPlusCalc
-               | sys == "howardSnyderPL"                  = Just $ f howardSnyderPLCalc 
-               | sys == "hurleyPL"                        = Just $ f hurleyPLCalc 
+               | sys == "howardSnyderPL"                  = Just $ f howardSnyderPLCalc
+               | sys == "hurleyPL"                        = Just $ f hurleyPLCalc
                | sys == "ichikawaJenkinsQL"               = Just $ f ichikawaJenkinsQLCalc
-               | sys == "hardegreePL"                     = Just $ f hardegreePLCalc 
+               | sys == "hardegreePL"                     = Just $ f hardegreePLCalc
                | sys == "bonevacQL"                       = Just $ f bonevacQLCalc
                | sys == "goldfarbND"                      = Just $ f goldfarbNDCalc
                | sys == "goldfarbAltND"                   = Just $ f goldfarbAltNDCalc
@@ -81,7 +82,7 @@ ofFOLTreeSys :: (forall r .
                     , StructuralOverride r (ProofTree r PureLexiconFOL (Form Bool))
                  ) => 
               TableauCalc PureLexiconFOL (Form Bool) r -> a) -> String -> Maybe a
-ofFOLTreeSys f sys | sys == "openLogicFOLNK"             = Just $ f openLogicFONKCalc 
+ofFOLTreeSys f sys | sys == "openLogicFOLNK"             = Just $ f openLogicFONKCalc
                    | otherwise                           = Nothing
 
 ofFOLSeqSys :: (forall r . 

@@ -1,5 +1,5 @@
 {-#LANGUAGE  TypeOperators, FlexibleContexts,  FlexibleInstances, MultiParamTypeClasses #-}
-module Carnap.Languages.PureFirstOrder.Logic.Magnus (magnusQLCalc,parseMagnusQL, MagnusQL(..)) where
+module Carnap.Languages.PureFirstOrder.Logic.Magnus (magnusQLCalc,magnusQLPlusCalc,MagnusQL(..), parseMagnusQL) where
 
 import Data.Map as M (lookup, Map,empty)
 import Text.Parsec
@@ -94,8 +94,7 @@ instance Inference MagnusQL PureLexiconFOL (Form Bool) where
          isPremise _ = False
 
 parseMagnusQL rtc = try quantRule <|> liftProp 
-    where liftProp = do r <- parseMagnusSL (RuntimeNaturalDeductionConfig mempty mempty)
-                        return (map MagnusSL r)
+    where liftProp =  map MagnusSL <$> parseMagnusSL (RuntimeNaturalDeductionConfig mempty mempty)
           quantRule = do r <- choice (map (try . string) ["∀I", "AI", "∀E", "AE", "∃I", "EI", "∃E", "EE", "=I","=E","PR"])
                          case r of 
                             r | r `elem` ["∀I","AI"] -> return [UI]
@@ -112,6 +111,87 @@ parseMagnusQLProof rtc = toDeductionFitch (parseMagnusQL rtc) magnusFOLFormulaPa
 magnusQLCalc = mkNDCalc
     { ndRenderer = FitchStyle StandardFitch
     , ndParseProof = parseMagnusQLProof
+    , ndProcessLine = hoProcessLineFitch
+    , ndProcessLineMemo = Just hoProcessLineFitchMemo
+    , ndParseSeq = parseSeqOver magnusFOLFormulaParser
+    , ndParseForm = magnusFOLFormulaParser
+    , ndNotation = ndNotation magnusSLCalc
+    }
+
+--------------------
+--  3. System QL Plus  --
+--------------------
+-- A system of first-order logic resembling system QL from PD Magnus'
+-- forallx, with derived rules added
+
+data MagnusQLPlus = MagnusQL MagnusQL | Plus MagnusSLPlus | QN1 | QN2 | QN3 | QN4
+      deriving Eq
+
+instance Show MagnusQLPlus where
+        show (MagnusQL x) = show x
+        show (Plus x) = show x
+        show QN1 = "QN"
+        show QN2 = "QN"
+        show QN3 = "QN"
+        show QN4 = "QN"
+
+instance Inference MagnusQLPlus PureLexiconFOL (Form Bool) where
+
+         ruleOf (MagnusQL x) = ruleOf x
+         ruleOf QN1 = quantifierNegationReplace !! 0
+         ruleOf QN2 = quantifierNegationReplace !! 1
+         ruleOf QN3 = quantifierNegationReplace !! 2
+         ruleOf QN4 = quantifierNegationReplace !! 3
+
+         premisesOf (MagnusQL (MagnusSL x)) = map liftSequent (premisesOf x)
+         premisesOf (Plus x) = map liftSequent (premisesOf x)
+         premisesOf r = upperSequents (ruleOf r)
+         
+         conclusionOf (MagnusQL (MagnusSL x)) = liftSequent (conclusionOf x)
+         conclusionOf (Plus x) = liftSequent (conclusionOf x)
+         conclusionOf r = lowerSequent (ruleOf r)
+
+         indirectInference (MagnusQL x) = indirectInference x
+         indirectInference _ = Nothing
+
+         restriction (MagnusQL x) = restriction x
+         restriction _ = Nothing
+
+         globalRestriction (Left ded) n (MagnusQL (MagnusSL CondIntro1)) = Just $ fitchAssumptionCheck n ded [([phin 1], [phin 2])]
+         globalRestriction (Left ded) n (MagnusQL (MagnusSL CondIntro2)) = Just $ fitchAssumptionCheck n ded [([phin 1], [phin 2])]
+         globalRestriction (Left ded) n (MagnusQL (MagnusSL BicoIntro1)) = Just $ fitchAssumptionCheck n ded [([phin 1], [phin 2]), ([phin 2], [phin 1])]
+         globalRestriction (Left ded) n (MagnusQL (MagnusSL BicoIntro2)) = Just $ fitchAssumptionCheck n ded [([phin 1], [phin 2]), ([phin 2], [phin 1])]
+         globalRestriction (Left ded) n (MagnusQL (MagnusSL BicoIntro3)) = Just $ fitchAssumptionCheck n ded [([phin 1], [phin 2]), ([phin 2], [phin 1])]
+         globalRestriction (Left ded) n (MagnusQL (MagnusSL BicoIntro4)) = Just $ fitchAssumptionCheck n ded [([phin 1], [phin 2]), ([phin 2], [phin 1])]
+         globalRestriction (Left ded) n (MagnusQL (MagnusSL NegeIntro1)) = Just $ fitchAssumptionCheck n ded [([phin 1], [phin 2, lneg $ phin 2])]  
+         globalRestriction (Left ded) n (MagnusQL (MagnusSL NegeIntro2)) = Just $ fitchAssumptionCheck n ded [([phin 1], [phin 2, lneg $ phin 2])]  
+         globalRestriction (Left ded) n (MagnusQL (MagnusSL NegeIntro3)) = Just $ fitchAssumptionCheck n ded [([phin 1], [phin 2, lneg $ phin 2])]  
+         globalRestriction (Left ded) n (MagnusQL (MagnusSL NegeIntro4)) = Just $ fitchAssumptionCheck n ded [([phin 1], [phin 2, lneg $ phin 2])]  
+         globalRestriction (Left ded) n (MagnusQL (MagnusSL NegeElim1)) = Just $ fitchAssumptionCheck n ded [([lneg $ phin 1], [phin 2, lneg $ phin 2])] 
+         globalRestriction (Left ded) n (MagnusQL (MagnusSL NegeElim2)) = Just $ fitchAssumptionCheck n ded [([lneg $ phin 1], [phin 2, lneg $ phin 2])] 
+         globalRestriction (Left ded) n (MagnusQL (MagnusSL NegeElim3)) = Just $ fitchAssumptionCheck n ded [([lneg $ phin 1], [phin 2, lneg $ phin 2])] 
+         globalRestriction (Left ded) n (MagnusQL (MagnusSL NegeElim4)) = Just $ fitchAssumptionCheck n ded [([lneg $ phin 1], [phin 2, lneg $ phin 2])] 
+         globalRestriction _ _ _ = Nothing
+
+
+         isAssumption (MagnusQL x) = isAssumption x
+         isAssumption _ = False
+
+         isPremise (MagnusQL x) = True
+         isPremise _ = False
+
+
+parseMagnusQLPlus rtc = try liftQL <|> try liftPlus <|> foPlus
+    where liftQL = map MagnusQL <$> parseMagnusQL rtc
+          liftPlus = map Plus <$> parseMagnusSLPlus (RuntimeNaturalDeductionConfig mempty mempty)
+          foPlus = string "QN" >> return [QN1,QN2,QN3,QN4]
+
+parseMagnusQLPlusProof :: RuntimeNaturalDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine MagnusQLPlus PureLexiconFOL (Form Bool)]
+parseMagnusQLPlusProof rtc = toDeductionFitch (parseMagnusQLPlus rtc) magnusFOLFormulaParser
+
+magnusQLPlusCalc = mkNDCalc
+    { ndRenderer = FitchStyle StandardFitch
+    , ndParseProof = parseMagnusQLPlusProof
     , ndProcessLine = hoProcessLineFitch
     , ndProcessLineMemo = Just hoProcessLineFitchMemo
     , ndParseSeq = parseSeqOver magnusFOLFormulaParser
