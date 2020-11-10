@@ -7,7 +7,13 @@
                 <li>
                     <a href=@{InfoR}>About
                 <li>
-                    <a href=@{BookR}>Book
+                    $maybe doc <- mdoc
+                        $maybe course <- mcourse
+                            <a href=@{CourseAssignmentR (courseTitle course) (documentFilename doc)}>Book
+                        $nothing
+                            <a href=@{BookR}>Book
+                    $nothing
+                        <a href=@{BookR}>Book
                 $maybe (Entity _ user) <- authmaybe
                     <li.dropdown>
                             <a href=@{UserDispatchR}>#{userIdent user}
