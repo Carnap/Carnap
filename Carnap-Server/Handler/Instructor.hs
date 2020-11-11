@@ -355,7 +355,6 @@ getInstructorR ident = do
             (updateAccommodationWidget,enctypeUpdateAccommodation) <- generateFormPost (identifyForm "updateAccommodation" $ updateAccommodationForm)
             (updateDocumentWidget,enctypeUpdateDocument) <- generateFormPost (identifyForm "updateDocument" $ updateDocumentForm)
             (createCourseWidget,enctypeCreateCourse) <- generateFormPost (identifyForm "createCourse" createCourseForm)
-            (updateCourseWidget,enctypeUpdateCourse) <- generateFormPost (identifyForm "updateCourse" updateCourseForm)
             defaultLayout $ do
                  addScript $ StaticR js_popper_min_js
                  addScript $ StaticR js_tagsinput_js
@@ -806,11 +805,13 @@ classWidget instructors classent = do
        coInstructorUD <- mapM udByInstructorId (map (coInstructorIdent . entityVal) coInstructors)
        theInstructorUD <- entityVal <$> udByInstructorId (courseInstructor course)
        allUserData <- map entityVal <$> (runDB $ selectList [UserDataEnrolledIn ==. Just cid] [])
-       (addCoInstructorWidget,enctypeAddCoInstructor) <- generateFormPost (identifyForm "addCoinstructor" $ addCoInstructorForm instructors (show cid))
        asmd <- runDB $ selectList [AssignmentMetadataCourse ==. cid] []
        asDocs <- mapM (runDB . get) (map (assignmentMetadataDocument . entityVal) asmd)
+       (addCoInstructorWidget,enctypeAddCoInstructor) <- generateFormPost (identifyForm "addCoinstructor" $ addCoInstructorForm instructors (show cid))
        (updateExtensionWidget,enctypeUpdateExtension) <- generateFormPost (identifyForm "updateExtension" $ updateExtensionForm (zip asmd asDocs))
-       let updateExtensionModal = genericModal chash "Set Alternate Due Date"
+       (updateCourseWidget,enctypeUpdateCourse) <- generateFormPost (identifyForm "updateCourse" updateCourseForm)
+       let updateExtensionModal = genericModal ("ext" <> chash) "Set Alternate Due Date"
+       let updateCourseModal = genericModal ("course" <> chash) "Update Course Data"
        let allUids = map userDataUserId allUserData
        musers <- mapM (\x -> runDB (get x)) allUids
        let users = catMaybes musers
@@ -822,6 +823,7 @@ classWidget instructors classent = do
                   >>= maybe (setMessage "failed to get course" >> notFound) pure
        return [whamlet|
                     ^{updateExtensionModal updateExtensionWidget enctypeUpdateExtension}
+                    ^{updateCourseModal updateCourseWidget enctypeUpdateCourse}
                     <h2>Assignments
                     <div.scrollbox>
                         <table.table.table-striped>
@@ -878,7 +880,7 @@ classWidget instructors classent = do
                                                 onclick="modalEditAccommodation('#{show cid}','#{show uid}','#{jsonSerialize $ QueryAccommodation uid cid}')">
                                                 <i.fa.fa-clock-o>
                                             <button.btn.btn-sm.btn-secondary type="button" title="Grant Extension to #{fn} #{ln}"
-                                                onclick="modalGrantExtension(this,'#{chash}','#{jsonSerialize uid}')">
+                                                onclick="modalGrantExtension(this,'#{"ext" <> chash}','#{jsonSerialize uid}')">
                                                 <i.fa.fa-calendar-plus-o>
                     <h2>Course Data
                     <dl.row>
@@ -928,7 +930,7 @@ classWidget instructors classent = do
                         <div.col-xl-6.col-lg-12 style="padding:5px">
                             <div.float-xl-right>
                                 <button.btn.btn-secondary style="width:160px" type="button"
-                                    onclick="modalEditCourse('#{show cid}','#{maybe "" sanitizeForJS (unpack <$> courseDescription dbCourse)}','#{dateDisplay (courseStartDate dbCourse) dbCourse}','#{dateDisplay (courseEndDate dbCourse) dbCourse}',#{courseTotalPoints dbCourse},#{toLower (show (courseEnrollmentOpen dbCourse))})">
+                                    onclick="modalEditCourse('#{"course" <> chash}','#{show cid}','#{maybe "" sanitizeForJS (unpack <$> courseDescription dbCourse)}','#{dateDisplay (courseStartDate dbCourse) dbCourse}','#{dateDisplay (courseEndDate dbCourse) dbCourse}',#{courseTotalPoints dbCourse},#{toLower (show (courseEnrollmentOpen dbCourse))})">
                                     Edit Information
                                 <div.btn-group>
                                     <button.btn.btn-secondary.dropdown-toggle data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" style="width:160px" type="button">

@@ -1,7 +1,6 @@
 <div.container>
     ^{updateDocumentModal updateDocumentWidget enctypeUpdateDocument}
     ^{updateAssignmentModal updateAssignmentWidget enctypeUpdateAssignment}
-    ^{updateCourseModal updateCourseWidget enctypeUpdateCourse}
     ^{updateAccommodationModal updateAccommodationWidget enctypeUpdateAccommodation}
     <h1> Instructor Page for #{firstname} #{lastname}
     <p> This is a page where you can manage students, classes and assignments.
