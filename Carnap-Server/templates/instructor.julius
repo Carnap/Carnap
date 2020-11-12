@@ -114,18 +114,10 @@ function modalGrantExtension (elt,course,uid) {
 }
 
 
-function modalEditCourse (ident,id,desc,start,end,points,isopen) {
+function modalEditCourse (ident) {
     jQuery.noConflict()
     $("#update" + ident)[0].reset();
     $("#update" + ident).off("submit")
-    var sparts = start.split(" ")
-    var eparts = end.split(" ")
-    $("#update" + ident + " input[name=f1]").val(id);
-    $("#update" + ident + " textarea[name=f2]").val(desc);
-    if (sparts.length > 0) {$("#update" + ident + " input[name=f3]").val(sparts[0]);}
-    if (eparts.length > 0) {$("#update" + ident + " input[name=f4]").val(eparts[0]);}
-    $("#update" + ident + " input[name=f5]").val(points);
-    $("#update" + ident + " input[name=f6]").prop("checked",isopen);
     $("#update" + ident).submit(function(e) {
         jQuery.ajax({
             url: '@{InstructorR ident}',
@@ -145,6 +137,38 @@ function modalEditCourse (ident,id,desc,start,end,points,isopen) {
         e.preventDefault();
     })
     $("#update" + ident + "Data").modal({show:true});
+}
+
+function modalEditOldCourse (id,desc,start,end,points) {
+    jQuery.noConflict()
+    $("#updateOldCourse" )[0].reset();
+    $("#updateOldCourse").off("submit")
+    var sparts = start.split(" ")
+    var eparts = end.split(" ")
+    $("#updateOldCourse input[name=f1]").val(id);
+    $("#updateOldCourse textarea[name=f2]").val(desc);
+    if (sparts.length > 0) {$("#updateOldCourse input[name=f3]").val(sparts[0]);}
+    if (eparts.length > 0) {$("#updateOldCourse input[name=f4]").val(eparts[0]);}
+    $("#updateOldCourse input[name=f5]").val(points);
+    $("#updateOldCourse").submit(function(e) {
+        jQuery.ajax({
+            url: '@{InstructorR ident}',
+            type: 'PUT',
+            data: new FormData(this),
+            processData: false,
+            contentType: false,
+            success: function(data) {
+                $("#updateOldCourseData").modal('hide');
+                location.reload() /* lazy. Fix eventually. */
+                },
+            error: function(data) {
+                let response = data.responseJSON || "no response available"
+                window.alert("Error, couldn't update the course:\n\n" + data.responseJSON)
+                },
+            });
+        e.preventDefault();
+    })
+    $("#updateOldCourseData").modal({show:true});
 }
 
 function modalEditAccommodation (cid,uid,json) {

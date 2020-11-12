@@ -21,7 +21,7 @@ import System.Directory (removeFile, doesFileExist, createDirectoryIfMissing)
 putInstructorR :: Text -> Handler Value
 putInstructorR _ = do
         ((assignmentrslt,_),_) <- runFormPost (identifyForm "updateAssignment" $ updateAssignmentForm)
-        ((courserslt,_),_) <- runFormPost (identifyForm "updateCourse" $ updateCourseForm)
+        ((courserslt,_),_) <- runFormPost (identifyForm "updateCourse" $ updateCourseForm Nothing)
         ((documentrslt,_),_) <- runFormPost (identifyForm "updateDocument" $ updateDocumentForm)
         ((accommodationrslt,_),_) <- runFormPost (identifyForm "updateAccommodation" $ updateAccommodationForm)
         ((extensionrslt,_),_) <- runFormPost  (identifyForm "updateExtension" $ updateExtensionForm [])
@@ -53,11 +53,14 @@ putInstructorR _ = do
                  returnJson ("updated!"::Text)
             (_,FormSuccess (idstring,mdesc,mstart,mend,mpoints,mopen),_,_,_) -> do
                  k <- maybe (sendStatusJSON badRequest400 ("Could not read course key" :: Text)) return $ readMaybe idstring 
-                 runDB $ do update k [ CourseDescription =. (unTextarea <$> mdesc) ]
+                 runDB $ do course <- get k >>= maybe (sendStatusJSON badRequest400 ("could not find course" :: Text)) pure
+                            let Just tz = tzByName . courseTimeZone $ course
+                                unlocalize day = localTimeToUTCTZ tz (LocalTime day (TimeOfDay 23 59 59))
+                            update k [ CourseDescription =. (unTextarea <$> mdesc) ]
                             maybeDo mstart (\start -> update k
-                              [ CourseStartDate =. UTCTime start 0 ])
+                              [ CourseStartDate =. unlocalize start])
                             maybeDo mend (\end-> update k
-                              [ CourseEndDate =. UTCTime end 0 ])
+                              [ CourseEndDate =. unlocalize end])
                             maybeDo mpoints (\points-> update k 
                               [ CourseTotalPoints =. points ])
                             maybeDo mopen (\open -> update k
@@ -185,7 +188,7 @@ postInstructorR ident = do
                mciid <- if courseInstructor theclass == iid
                             then return Nothing
                             else runDB $ getBy (UniqueCoInstructor iid classkey)
-               let (Just tz) = tzByName . courseTimeZone $ theclass
+               let Just tz = tzByName . courseTimeZone $ theclass
                    localize (mdate,mtime) = case (mdate,mtime) of
                               (Just date, Just time') -> Just $ LocalTime date time'
                               (Just date,_)  -> Just $ LocalTime date (TimeOfDay 23 59 59)
@@ -354,6 +357,7 @@ getInstructorR ident = do
             (updateAssignmentWidget,enctypeUpdateAssignment) <- generateFormPost (identifyForm "updateAssignment" $ updateAssignmentForm)
             (updateAccommodationWidget,enctypeUpdateAccommodation) <- generateFormPost (identifyForm "updateAccommodation" $ updateAccommodationForm)
             (updateDocumentWidget,enctypeUpdateDocument) <- generateFormPost (identifyForm "updateDocument" $ updateDocumentForm)
+            (updateCourseWidget,enctypeUpdateCourse) <- generateFormPost (identifyForm "updateCourse" (updateCourseForm Nothing))
             (createCourseWidget,enctypeCreateCourse) <- generateFormPost (identifyForm "createCourse" createCourseForm)
             defaultLayout $ do
                  addScript $ StaticR js_popper_min_js
@@ -391,6 +395,7 @@ data InstructorQuery = QueryGrade UserId CourseId
     deriving Generic
 
 instance ToJSON InstructorQuery
+
 instance FromJSON InstructorQuery
 
 ------------------
@@ -698,24 +703,36 @@ createCourseForm = renderBootstrap3 BootstrapBasicForm $ (,,,,)
             <*> areq (selectFieldList zones)    (bfs ("TimeZone"::Text)) Nothing
     where zones = map (\(x,y,_) -> (decodeUtf8 x,y)) (rights tzDescriptions)
 
-updateCourseModal :: WidgetFor App () -> Enctype -> WidgetFor App ()
-updateCourseModal = genericModal "Course" "Update Course Data"
+updateOldCourseModal :: WidgetFor App () -> Enctype -> WidgetFor App ()
+updateOldCourseModal = genericModal "OldCourse" "Update Course Data"
 
 updateCourseForm
-    :: Markup
+    :: Maybe (Entity Course) -> Markup
     -> MForm (HandlerFor App) ((FormResult
                      (String, Maybe Textarea, Maybe Day, Maybe Day, Maybe Int, Maybe Bool),
                    WidgetFor App ()))
-updateCourseForm = renderBootstrap3 BootstrapBasicForm $ (,,,,,)
-            <$> areq courseId "" Nothing
-            <*> aopt textareaField (bfs ("Course Description"::Text)) Nothing
-            <*> aopt (jqueryDayField def) (bfs ("Start Date"::Text)) Nothing
-            <*> aopt (jqueryDayField def) (bfs ("End Date"::Text)) Nothing
-            <*> aopt intField (bfs ("Total Points for Course"::Text)) Nothing
-            <*> aopt checkBoxField checkFieldSettings Nothing
+updateCourseForm mcourseent = renderBootstrap3 BootstrapBasicForm $ (,,,,,)
+            <$> areq courseId "" mcid
+            <*> aopt textareaField (bfs ("Course Description"::Text)) (maybe Nothing (Just . Just . Textarea) (mdesc))
+            <*> aopt (jqueryDayField def) (bfs ("Start Date"::Text)) (localize mstart)
+            <*> aopt (jqueryDayField def) (bfs ("End Date"::Text)) (localize mend)
+            <*> aopt intField (bfs ("Total Points for Course"::Text)) (maybe Nothing (Just . Just) mpoints)
+            <*> aopt cbfield checkFieldSettings (maybe Nothing (Just . Just) mopen)
     where courseId = hiddenField
+          cbfield = case mcourse of 
+                        Nothing -> hiddenField
+                        Just _ -> checkBoxField
+          mcourse = entityVal <$> mcourseent
+          mdesc = mcourse >>= courseDescription
+          mstart = courseStartDate <$> mcourse
+          mend = courseEndDate <$> mcourse
+          mzone = tzByLabel <$> (mcourse >>= fromTZName . courseTimeZone)
+          mpoints = courseTotalPoints <$> mcourse
+          mcid = show . entityKey <$> mcourseent
+          mopen = courseEnrollmentOpen <$> mcourse
+          localize t = (Just . localDay) <$> (utcToLocalTimeTZ <$> mzone <*> t)
           checkFieldSettings = FieldSettings 
-            { fsLabel = "Enrollment Open?"
+            { fsLabel = maybe "" (const "Enrollment Open?") mcourse
             , fsTooltip = Nothing
             , fsId = Nothing
             , fsName = Nothing
@@ -809,7 +826,7 @@ classWidget instructors classent = do
        asDocs <- mapM (runDB . get) (map (assignmentMetadataDocument . entityVal) asmd)
        (addCoInstructorWidget,enctypeAddCoInstructor) <- generateFormPost (identifyForm "addCoinstructor" $ addCoInstructorForm instructors (show cid))
        (updateExtensionWidget,enctypeUpdateExtension) <- generateFormPost (identifyForm "updateExtension" $ updateExtensionForm (zip asmd asDocs))
-       (updateCourseWidget,enctypeUpdateCourse) <- generateFormPost (identifyForm "updateCourse" updateCourseForm)
+       (updateCourseWidget,enctypeUpdateCourse) <- generateFormPost (identifyForm "updateCourse" (updateCourseForm (Just classent)))
        let updateExtensionModal = genericModal ("ext" <> chash) "Set Alternate Due Date"
        let updateCourseModal = genericModal ("course" <> chash) "Update Course Data"
        let allUids = map userDataUserId allUserData
@@ -819,8 +836,6 @@ classWidget instructors classent = do
            usersAndData = zip users allUserData
            sortedUsersAndData = let lnOf (_, UserData {userDataLastName = ln}) = ln
                                     in sortBy (\x y -> compare (toLower . lnOf $ x) (toLower . lnOf $ y)) usersAndData
-       dbCourse <- runDB $ get cid
-                  >>= maybe (setMessage "failed to get course" >> notFound) pure
        return [whamlet|
                     ^{updateExtensionModal updateExtensionWidget enctypeUpdateExtension}
                     ^{updateCourseModal updateCourseWidget enctypeUpdateCourse}
@@ -835,14 +850,14 @@ classWidget instructors classent = do
                                     $forall (set,due) <- Data.IntMap.toList probs
                                         <tr>
                                             <td>Problem Set #{show set}
-                                            <td>#{dateDisplay due dbCourse}
+                                            <td>#{dateDisplay due course}
                                 $forall (Entity _ a, Just d) <- zip asmd asDocs
                                     <tr>
                                         <td>
-                                            <a href=@{CourseAssignmentR (courseTitle dbCourse) (documentFilename d)}>
+                                            <a href=@{CourseAssignmentR (courseTitle course) (documentFilename d)}>
                                                 #{documentFilename d}
                                         $maybe due <- assignmentMetadataDuedate a
-                                            <td>#{dateDisplay due dbCourse}
+                                            <td>#{dateDisplay due course}
                                         $nothing
                                             <td>No Due Date
                     <h2>Students
@@ -887,30 +902,30 @@ classWidget instructors classent = do
                         <dt.col-sm-3>Primary Instructor
                         <dd.col-sm-9>#{userDataLastName theInstructorUD}, #{userDataFirstName theInstructorUD}
                         <dt.col-sm-3>Course Title
-                        <dd.col-sm-9>#{courseTitle dbCourse}
-                        $maybe desc <- courseDescription dbCourse
+                        <dd.col-sm-9>#{courseTitle course}
+                        $maybe desc <- courseDescription course
                             <dd.col-sm-9.offset-sm-3>#{desc}
                         <dt.col-sm-3>Points Available
-                        <dd.col-sm-9>#{courseTotalPoints dbCourse}
+                        <dd.col-sm-9>#{courseTotalPoints course}
                         <dt.col-sm-3>Number of Students
                         <dd.col-sm-9>#{numberOfUsers} (Loaded:
                             <span id="loaded-#{jsonSerialize cid}"> 0#
                             )
                         <dt.col-sm-3>Start Date
-                        <dd.col-sm-9>#{dateDisplay (courseStartDate dbCourse) dbCourse}
+                        <dd.col-sm-9>#{dateDisplay (courseStartDate course) course}
                         <dt.col-sm-3>End Date
-                        <dd.col-sm-9>#{dateDisplay (courseEndDate dbCourse) dbCourse}
+                        <dd.col-sm-9>#{dateDisplay (courseEndDate course) course}
                         <dt.col-sm-3>Time Zone
-                        <dd.col-sm-9>#{decodeUtf8 $ courseTimeZone dbCourse}
+                        <dd.col-sm-9>#{decodeUtf8 (courseTimeZone course)}
                         <dt.col-sm-3>Enrollment Status
                         <dd.col-sm-9>
-                            $if courseEnrollmentOpen dbCourse
+                            $if courseEnrollmentOpen course
                                 Open
                             $else
                                 Closed
                         <dt.col-sm-3>Enrollment Link
                         <dd.col-sm-9>
-                            <a href="@{EnrollR (courseTitle dbCourse)}">@{EnrollR (courseTitle dbCourse)}
+                            <a href="@{EnrollR (courseTitle course)}">@{EnrollR (courseTitle course)}
                         $if null coInstructors
                         $else
                             <dt.col-sm-3>Co-Instructors
@@ -929,8 +944,7 @@ classWidget instructors classent = do
                                 ^{addCoInstructorWidget}
                         <div.col-xl-6.col-lg-12 style="padding:5px">
                             <div.float-xl-right>
-                                <button.btn.btn-secondary style="width:160px" type="button"
-                                    onclick="modalEditCourse('#{"course" <> chash}','#{show cid}','#{maybe "" sanitizeForJS (unpack <$> courseDescription dbCourse)}','#{dateDisplay (courseStartDate dbCourse) dbCourse}','#{dateDisplay (courseEndDate dbCourse) dbCourse}',#{courseTotalPoints dbCourse},#{toLower (show (courseEnrollmentOpen dbCourse))})">
+                                <button.btn.btn-secondary style="width:160px" type="button" onclick="modalEditCourse('#{"course" <> chash}')">
                                     Edit Information
                                 <div.btn-group>
                                     <button.btn.btn-secondary.dropdown-toggle data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" style="width:160px" type="button">
@@ -940,7 +954,7 @@ classWidget instructors classent = do
                                             Per Assignment
                                         <a.dropdown-item onclick="exportPerProblemGrades('#{jsonSerialize cid}')";">
                                             Per Problem
-                                <button.btn.btn-danger style="width:160px" type="button" onclick="tryDeleteCourse('#{jsonSerialize $ DeleteCourse (courseTitle dbCourse)}')">
+                                <button.btn.btn-danger style="width:160px" type="button" onclick="tryDeleteCourse('#{jsonSerialize $ DeleteCourse (courseTitle course)}')">
                                     Delete Course
               |]
 

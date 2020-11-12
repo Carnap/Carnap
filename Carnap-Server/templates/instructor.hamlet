@@ -2,6 +2,7 @@
     ^{updateDocumentModal updateDocumentWidget enctypeUpdateDocument}
     ^{updateAssignmentModal updateAssignmentWidget enctypeUpdateAssignment}
     ^{updateAccommodationModal updateAccommodationWidget enctypeUpdateAccommodation}
+    ^{updateOldCourseModal updateCourseWidget enctypeUpdateCourse}
     <h1> Instructor Page for #{firstname} #{lastname}
     <p> This is a page where you can manage students, classes and assignments.
     $if (not $ null activeClasses)
@@ -170,7 +171,7 @@
                                             <td>
                                                 <button.btn.btn-sm.btn-secondary type="button" alt="delete" title="permanantly delete this course" onclick="tryDeleteCourse('#{jsonSerialize $ DeleteCourse (courseTitle c)}')">
                                                     <i.fa.fa-trash-o>
-                                                <button.btn.btn-sm.btn-secondary type="button" alt="edit" title="edit this course" onclick="modalEditCourse('#{show cid}','#{maybe "" sanitizeForJS (unpack <$> courseDescription c)}','#{dateDisplay (courseStartDate c) c}','#{dateDisplay (courseEndDate c) c}',#{courseTotalPoints c})">
+                                                <button.btn.btn-sm.btn-secondary type="button" alt="edit" title="edit this course" onclick="modalEditOldCourse('#{show cid}','#{maybe "" sanitizeForJS (unpack <$> courseDescription c)}','#{dateDisplay (courseStartDate c) c}','#{dateDisplay (courseEndDate c) c}',#{courseTotalPoints c})">
                                                     <i.fa.fa-cog>
                                                 <!-- <button.btn.btn-sm.btn-secondary alt="download" title="download grades from this course" type="button" onclick=exportGrades('#{jsonSerialize cid}')"> -->
                                                 <!--     <i.fa.fa-cloud-download> FIXME-->
