@@ -7,36 +7,38 @@ function submitAddInstructor(elt,cid) {
 function tryDeleteAssignment (json,fn,ct) {
     if (confirm("Are you sure you want to delete the assignment " + fn + ", and all submitted problems from this assignment?")) {
         deleteAssignment(json,fn,ct);
-        }
     }
+}
 
 function tryDeleteDocument (json) {
     var fn = JSON.parse(json).contents;
-    if (confirm("Are you sure you want to permanently delete the document" + fn + "?")) {
+    if (confirm("Are you sure you want to permanently delete the document" + fn + 
+                "? This will also permanently delete all assingments based on this document and all problems submitted for those assignments.")) {
         deleteDocument(json,fn);
-        }
     }
+}
 
 function tryDeleteCoInstructor (json, ln, fn) {
-    if (confirm("Are you sure you want to remove Co-Instructor " + fn + " " + ln + "? This will permanently delete all assignments for this course created by this co-instructor, and all student work submitted for those assignments")) {
+    if (confirm("Are you sure you want to remove Co-Instructor " + fn + " " + ln 
+                 + "? This will permanently delete all assignments for this course created by this co-instructor, and all student work submitted for those assignments")) {
         deleteCoInstructor(json, ln, fn);
-        }
     }
+}
 
 function tryDeleteCourse (json) {
     var cn = JSON.parse(json).contents;
     if (confirm("Are you sure you want to permanently delete the course " + cn 
         + "? This will unenroll all students, and delete all associated data, including assignments attached to the course.")) {
         deleteCourse(json,cn);
-        }
     }
+}
 
 function tryDropStudent (json) {
     var cn = JSON.parse(json).contents;
     if (confirm("Are you sure you want to drop this student?")) {
         dropStudent(json,cn);
-        }
     }
+}
 
 function modalEditAssignment (id,due,visfrom,vistill,release,desc,pass,hide,min) {
     jQuery.noConflict()
@@ -49,19 +51,19 @@ function modalEditAssignment (id,due,visfrom,vistill,release,desc,pass,hide,min)
     if (dparts.length > 1) {
         $("#updateAssignment input[name=f2]").val(dparts[0]);
         $("#updateAssignment input[name=f3]").val(dparts[1]);
-        };
+    };
     if (fparts.length > 1) {
         $("#updateAssignment input[name=f4]").val(fparts[0]);
         $("#updateAssignment input[name=f5]").val(fparts[1]);
-        };
+    };
     if (tparts.length > 1) {
         $("#updateAssignment input[name=f6]").val(tparts[0]);
         $("#updateAssignment input[name=f7]").val(tparts[1]);
-        };
+    };
     if (rparts.length > 1) {
         $("#updateAssignment input[name=f8]").val(rparts[0]);
         $("#updateAssignment input[name=f9]").val(rparts[1]);
-        };
+    };
     $("#updateAssignment textarea[name=f10]").val(desc);
     $("#updateAssignment input[name=f11]").val(pass);
     $("#updateAssignment input[name=f12]").prop("checked", hide == "True");
@@ -100,12 +102,12 @@ function modalGrantExtension (elt,course,uid) {
                 gradeDisplay.html("—")
                 gradeDisplay[0].gradeLoaded = false
                 setTimeout(_ => { gradeDisplay[0].update() }, 250)
-                },
+            },
             error: function(data) {
                 let response = data.responseJSON || "no response available"
                 window.alert("Error, couldn't update the extension\n\n" + data.responseJSON)
-                },
-            });
+            },
+        });
         e.preventDefault();
     })
     $("#update" + course + "Data").modal({show:true})
@@ -128,12 +130,12 @@ function modalEditCourse (ident) {
             success: function(data) {
                 $("#update" + ident + "Data").modal('hide');
                 location.reload() /* lazy. Fix eventually. */
-                },
+            },
             error: function(data) {
                 let response = data.responseJSON || "no response available"
                 window.alert("Error, couldn't update the course:\n\n" + data.responseJSON)
-                },
-            });
+            },
+        });
         e.preventDefault();
     })
     $("#update" + ident + "Data").modal({show:true});
@@ -160,12 +162,12 @@ function modalEditOldCourse (id,desc,start,end,points) {
             success: function(data) {
                 $("#updateOldCourseData").modal('hide');
                 location.reload() /* lazy. Fix eventually. */
-                },
+            },
             error: function(data) {
                 let response = data.responseJSON || "no response available"
                 window.alert("Error, couldn't update the course:\n\n" + data.responseJSON)
-                },
-            });
+            },
+        });
         e.preventDefault();
     })
     $("#updateOldCourseData").modal({show:true});
@@ -191,11 +193,11 @@ function modalEditAccommodation (cid,uid,json) {
             $("#updateAccommodation input[name=f3]").prop('disabled',false);
             $("#updateAccommodation input[name=f4]").prop('disabled',false);
             $("#updateAccommodation input[name=f5]").prop('disabled',false);
-            },
+        },
         error: function(data) {
             console.log("error, couldn't retrieve accessibility data")
-            },
-        });
+        },
+    });
     $("#updateAccommodationData").modal({show:true});
 }
 
@@ -240,7 +242,7 @@ function deleteAssignment (json,fn,ct) {
             var el = $("#assignment-" + $.escapeSelector(ct) + "-" + $.escapeSelector(fn));
             el.remove();
             window.alert("Deleted the assignment " + fn);
-            },
+        },
         error: function(data) {
             let response = data.responseJSON || "no response available"
             window.alert("Error, couldn't delete the assignment " + fn +"\n\n" + data.responseJSON)
@@ -258,7 +260,7 @@ function deleteDocument (json,fn) {
             var el = $("#document-" + $.escapeSelector(fn));
             el.remove();
             window.alert("Deleted the assignment " + fn);
-            },
+        },
         error: function(data) {
             let response = data.responseJSON || "no response available"
             window.alert("Error, couldn't delete the document " + fn + "\n\n" + data.responseJSON)
@@ -383,12 +385,12 @@ $("#updateDocument").submit(function(e) {
         success: function(data) {
             $("#updateDocumentData").modal('hide');
             location.reload()
-            },
+        },
         error: function(data) {
             let response = data.responseJSON || "no response available"
             window.alert("Error, couldn't update the document:\n\n" + data.responseJSON)
-            },
-        });
+        },
+    });
     e.preventDefault();
 })
 
@@ -396,11 +398,8 @@ function consolidateScores (scores) {
     let consolidated = {}
     for (const score of scores) {
         let label
-        if (score[0].Left) {
-            label = assignmentLookup[score[0].Left].title
-        } else {
-            label = "Problem Set " + score[0].Right
-        }
+        if (score[0].Left) label = assignmentLookup[score[0].Left].title
+        else label = "Problem Set " + score[0].Right
         consolidated[label] = (consolidated[label] + score[1]) || score[1]
     }
     return consolidated
