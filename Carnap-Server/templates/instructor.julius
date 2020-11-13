@@ -209,12 +209,13 @@ function deleteCoInstructor (json,ln,fn) {
             var el = $("#Co-Instructor-" + $.escapeSelector(ln) + "-" + $.escapeSelector(fn));
             el.remove();
             window.alert("Removed Co-Instructor " + fn + " " + ln);
-            },
+        },
         error: function(data) {
-            window.alert("Error, couldn't remove co-instructor " + fn + " " + ln)
-            },
-        });
-    };
+            let response = data.responseJSON || "no response available"
+            window.alert("Error, couldn't remove the co-instructor\n\n" + data.responseJSON)
+        },
+    });
+};
 
 function queryGrade (json, callback) {
     jQuery.ajax({
@@ -225,9 +226,9 @@ function queryGrade (json, callback) {
         success: callback,
         error: function(data) {
             console.log("error, couldn't retrieve grade")
-            },
-        });
-    };
+        },
+    });
+};
 
 function deleteAssignment (json,fn,ct) {
     jQuery.ajax({
@@ -241,10 +242,11 @@ function deleteAssignment (json,fn,ct) {
             window.alert("Deleted the assignment " + fn);
             },
         error: function(data) {
-            window.alert("Error, couldn't delete the assignment " + fn)
-            },
-        });
-    };
+            let response = data.responseJSON || "no response available"
+            window.alert("Error, couldn't delete the assignment " + fn +"\n\n" + data.responseJSON)
+        },
+    });
+};
 
 function deleteDocument (json,fn) {
     jQuery.ajax({
@@ -258,10 +260,11 @@ function deleteDocument (json,fn) {
             window.alert("Deleted the assignment " + fn);
             },
         error: function(data) {
-            window.alert("Error, couldn't delete the assignment " + fn)
-            },
-        });
-    };
+            let response = data.responseJSON || "no response available"
+            window.alert("Error, couldn't delete the document " + fn + "\n\n" + data.responseJSON)
+        },
+    });
+};
 
 function dropStudent (json,sident) {
     jQuery.ajax({
@@ -272,12 +275,13 @@ function dropStudent (json,sident) {
         success: function(data) {
             var el = $("#student-" + $.escapeSelector(sident));
             el.remove();
-            },
+        },
         error: function(data) {
-            window.alert("Error, couldn't drop the student " + sident)
-            },
-        });
-    };
+            let response = data.responseJSON || "no response available"
+            window.alert("Error, couldn't drop the student " + sident + "\n\n" + data.responseJSON)
+        },
+    });
+};
 
 function deleteCourse (json,cn) {
     var tag = cn.replace(/ /g,'_')
@@ -292,12 +296,13 @@ function deleteCourse (json,cn) {
             el1.remove();
             el2.remove();
             window.alert("Deleted the course " + cn);
-            },
+        },
         error: function(data) {
-            window.alert("Error, couldn't delete the course " + cn)
-            },
-        });
-    };
+            let response = data.responseJSON || "no response available"
+            window.alert("Error, couldn't delete the course " + cn + "\n\n" + data.responseJSON)
+        },
+    });
+};
 
 
 function deleteProblemSet (json) {
@@ -313,12 +318,13 @@ function deleteProblemSet (json) {
             var el = $("#problem-set-" + $.escapeSelector(course) + "-" + pn.toString());
             el.remove();
             window.alert("Deleted problem set " + pn.toString());
-            },
+        },
         error: function(data) {
-            window.alert("Error, couldn't delete problem set " + pn.toString())
-            },
-        });
-    };
+            let response = data.responseJSON || "no response available"
+            window.alert("Error, couldn't delete problem set " + pn.toString() + "\n\n" + data.responseJSON)
+        },
+    });
+};
 
 $("#updateAssignment").submit(function(e) {
     jQuery.ajax({
@@ -330,12 +336,12 @@ $("#updateAssignment").submit(function(e) {
         success: function(data) {
             $("#updateAssignmentData").modal('hide');
             location.reload()
-            },
+        },
         error: function(data) {
             let response = data.responseJSON || "no response available"
             window.alert("Error, couldn't update the assignment:\n\n" + data.responseJSON)
-            },
-        });
+        },
+    });
     e.preventDefault();
 })
 
@@ -349,12 +355,12 @@ $("#updateAccommodation").submit(function(e) {
         contentType: false,
         success: function(data) { 
             $("#updateAccommodationData").modal('hide'); 
-            },
+        },
         error: function(data) {
             let response = data.responseJSON || "no response available"
             window.alert("Error, couldn't update the accomodation:\n\n" + data.responseJSON)
-            },
-        });
+        },
+    });
     e.preventDefault();
 })
 

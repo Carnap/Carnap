@@ -21,7 +21,7 @@ import System.Directory (removeFile, doesFileExist, createDirectoryIfMissing)
 putInstructorR :: Text -> Handler Value
 putInstructorR _ = do
         ((assignmentrslt,_),_) <- runFormPost (identifyForm "updateAssignment" $ updateAssignmentForm)
-        ((courserslt,_),_) <- runFormPost (identifyForm "updateCourse" $ updateCourseForm Nothing)
+        ((courserslt,_),_) <- runFormPost (identifyForm "updateCourse" $ updateCourseForm Nothing [])
         ((documentrslt,_),_) <- runFormPost (identifyForm "updateDocument" $ updateDocumentForm)
         ((accommodationrslt,_),_) <- runFormPost (identifyForm "updateAccommodation" $ updateAccommodationForm)
         ((extensionrslt,_),_) <- runFormPost  (identifyForm "updateExtension" $ updateExtensionForm [])
@@ -51,12 +51,13 @@ putInstructorR _ = do
                             update k [ AssignmentMetadataAvailability =. maccess ]
                             update k [ AssignmentMetadataDescription =. unTextarea <$> mdesc]
                  returnJson ("updated!"::Text)
-            (_,FormSuccess (idstring,mdesc,mstart,mend,mpoints,mopen),_,_,_) -> do
+            (_,FormSuccess (idstring,mdesc,mstart,mend,mpoints,mopen,mtext),_,_,_) -> do
                  k <- maybe (sendStatusJSON badRequest400 ("Could not read course key" :: Text)) return $ readMaybe idstring 
                  runDB $ do course <- get k >>= maybe (sendStatusJSON badRequest400 ("could not find course" :: Text)) pure
                             let Just tz = tzByName . courseTimeZone $ course
                                 unlocalize day = localTimeToUTCTZ tz (LocalTime day (TimeOfDay 23 59 59))
                             update k [ CourseDescription =. (unTextarea <$> mdesc) ]
+                            update k [ CourseTextBook =. mtext]
                             maybeDo mstart (\start -> update k
                               [ CourseStartDate =. unlocalize start])
                             maybeDo mend (\end-> update k
@@ -111,62 +112,60 @@ deleteInstructorR :: Text -> Handler Value
 deleteInstructorR ident = do
     msg <- requireCheckJsonBody :: Handler InstructorDelete
     case msg of
-      DeleteAssignment aid ->
-        -- XXX: forgot to delete the file?
-        do _ <- appDataRoot <$> (appSettings <$> getYesod)
-           _ <- runDB $ deleteCascade aid
+      DeleteAssignment aid -> do 
+           runDB $ do 
+                asgn <- get aid >>= maybe (sendStatusJSON notFound404 ("Couldn't get assignment" :: Text)) pure
+                let cid = assignmentMetadataCourse asgn
+                course <- get cid >>= maybe (sendStatusJSON notFound404 ("Couldn't get course of assignment" :: Text)) pure
+                if courseTextBook course == Just aid then update cid [CourseTextBook =. Nothing] else return ()
+                deleteCascade aid
            returnJson ("Assignment deleted" :: Text)
-      DeleteProblems coursename setnum ->
-        do checkCourseOwnership coursename
-           mclass <- runDB $ getBy $ UniqueCourse coursename
-           case mclass of
-                Just (Entity classkey theclass)->
-                    do case readAssignmentTable <$> courseTextbookProblems theclass  of
-                           Just assign -> do runDB $ update classkey
-                                                            [CourseTextbookProblems =. (Just $ BookAssignmentTable $ Data.IntMap.delete setnum assign)]
-                                             returnJson ("Deleted Assignment"::Text)
-                           Nothing -> returnJson ("Assignment table Missing, can't delete."::Text)
-                Nothing -> returnJson ("Something went wrong with retriving the course."::Text)
-      DeleteCourse coursename ->
-        do checkCourseOwnership coursename
-           mclass <- runDB $ getBy $ UniqueCourse coursename
-           case mclass of
-                Just (Entity classkey _)->
-                    do runDB $ do studentsOf <- selectList [UserDataEnrolledIn ==. Just classkey] []
-                                  mapM_ (\s -> update (entityKey s) [UserDataEnrolledIn =. Nothing]) studentsOf
-                                  deleteCascade classkey
-                       returnJson ("Class Deleted"::Text)
-                Nothing -> returnJson ("No class to delete, for some reason"::Text)
-      DeleteDocument fn ->
-        do datadir <- appDataRoot <$> (appSettings <$> getYesod)
-           musr <- runDB $ getBy $ UniqueUser ident
-           case musr of
-               Nothing -> returnJson ("Could not get user id."::Text)
-               Just usr -> do
-                   deleted <- runDB $ do mk <- getBy $ UniqueDocument fn (entityKey usr)
-                                         case mk of
-                                             Just (Entity k _) ->
-                                                do deleteCascade k
-                                                   liftIO $ do fe <- doesFileExist (datadir </> "documents" </> unpack ident </> unpack fn)
-                                                               if fe then removeFile (datadir </> "documents" </> unpack ident </> unpack fn)
-                                                                     else return ()
-                                                   return True
-                                             Nothing -> return False
-                   if deleted
-                       then returnJson (fn ++ " deleted")
-                       else returnJson ("unable to retrieve metadata for " ++ fn)
-      DropStudent sident ->
-        do sid <- fromIdent sident
-           dropped <- runDB $ do msd <- getBy (UniqueUserData sid)
-                                 case msd of
-                                     Nothing -> return False
-                                     Just (Entity k _) ->
-                                        do update k [UserDataEnrolledIn =. Nothing]
-                                           return True
-           if dropped then returnJson (sident ++ " dropped")
-                      else returnJson ("couldn't drop " ++ sident)
+      DeleteProblems coursename setnum -> do 
+           checkCourseOwnership coursename
+           runDB $ do
+                Entity classkey theclass <- getBy (UniqueCourse coursename) >>= maybe (sendStatusJSON notFound404 ("Couldn't get course" :: Text)) pure
+                case readAssignmentTable <$> courseTextbookProblems theclass of
+                   Just assign -> update classkey [CourseTextbookProblems =. (Just $ BookAssignmentTable $ Data.IntMap.delete setnum assign)]
+                   Nothing -> sendStatusJSON notFound404 ("Couldn't get assignment table" :: Text)
+           returnJson ("Assignment deleted" :: Text)
+      DeleteCourse coursename -> do 
+           checkCourseOwnership coursename
+           runDB $ do
+               Entity classkey _ <- getBy (UniqueCourse coursename) >>= maybe (sendStatusJSON notFound404 ("No course to delete, for some reason." :: Text)) pure
+               studentsOf <- selectList [UserDataEnrolledIn ==. Just classkey] []
+               mapM_ (\s -> update (entityKey s) [UserDataEnrolledIn =. Nothing]) studentsOf
+               deleteCascade classkey
+           returnJson ("Class Deleted"::Text)
+      DeleteDocument fn -> do 
+          datadir <- appDataRoot <$> (appSettings <$> getYesod)
+          runDB $ do
+               usr <- getBy (UniqueUser ident) >>= maybe (sendStatusJSON notFound404 ("Couldn't get user by ident" :: Text)) pure
+               Entity k _ <- getBy (UniqueDocument fn (entityKey usr)) >>= maybe (sendStatusJSON notFound404 ("Couldn't get document by name" :: Text)) pure
+               asgns <- selectList [AssignmentMetadataDocument ==. k] []
+               forM asgns $ \(Entity aid asgn) -> do
+                    let cid = assignmentMetadataCourse asgn
+                    course <- get cid >>= maybe (sendStatusJSON notFound404 ("Couldn't get course of assignment associated with this document" :: Text)) pure
+                    if courseTextBook course == Just aid then update cid [CourseTextBook =. Nothing] else return ()
+               deleteCascade k
+          liftIO $ do fe <- doesFileExist (datadir </> "documents" </> unpack ident </> unpack fn)
+                      if fe then removeFile (datadir </> "documents" </> unpack ident </> unpack fn)
+                            else return ()
+          returnJson (fn ++ " deleted")
+      DropStudent sident -> do 
+          sid <- fromIdent sident
+          dropped <- runDB $ do
+              Entity k _ <- getBy (UniqueUserData sid) >>= maybe (sendStatusJSON notFound404 ("Couldn't get student to drop" :: Text)) pure
+              update k [UserDataEnrolledIn =. Nothing]
+          returnJson (sident ++ " dropped")
       DeleteCoInstructor ciid -> do
-          runDB (deleteCascade ciid) >> returnJson ("Deleted" :: Text)
+          runDB $ do
+              asgns <- selectList [AssignmentMetadataAssigner ==. Just ciid] []
+              forM asgns $ \(Entity aid asgn) -> do
+                   let cid = assignmentMetadataCourse asgn
+                   course <- get cid >>= maybe (sendStatusJSON notFound404 ("Couldn't get course of assignment associated with this coinstructor" :: Text)) pure
+                   if courseTextBook course == Just aid then update cid [CourseTextBook =. Nothing] else return ()
+              deleteCascade ciid
+          returnJson ("Deleted this coinstructor" :: Text)
 
 postInstructorR :: Text -> Handler Html
 postInstructorR ident = do
@@ -357,7 +356,7 @@ getInstructorR ident = do
             (updateAssignmentWidget,enctypeUpdateAssignment) <- generateFormPost (identifyForm "updateAssignment" $ updateAssignmentForm)
             (updateAccommodationWidget,enctypeUpdateAccommodation) <- generateFormPost (identifyForm "updateAccommodation" $ updateAccommodationForm)
             (updateDocumentWidget,enctypeUpdateDocument) <- generateFormPost (identifyForm "updateDocument" $ updateDocumentForm)
-            (updateCourseWidget,enctypeUpdateCourse) <- generateFormPost (identifyForm "updateCourse" (updateCourseForm Nothing))
+            (updateCourseWidget,enctypeUpdateCourse) <- generateFormPost (identifyForm "updateCourse" (updateCourseForm Nothing []))
             (createCourseWidget,enctypeCreateCourse) <- generateFormPost (identifyForm "createCourse" createCourseForm)
             defaultLayout $ do
                  addScript $ StaticR js_popper_min_js
@@ -707,22 +706,24 @@ updateOldCourseModal :: WidgetFor App () -> Enctype -> WidgetFor App ()
 updateOldCourseModal = genericModal "OldCourse" "Update Course Data"
 
 updateCourseForm
-    :: Maybe (Entity Course) -> Markup
+    :: Maybe (Entity Course) -> [(Entity AssignmentMetadata, Maybe Document)] -> Markup
     -> MForm (HandlerFor App) ((FormResult
-                     (String, Maybe Textarea, Maybe Day, Maybe Day, Maybe Int, Maybe Bool),
+                     (String, Maybe Textarea, Maybe Day, Maybe Day, Maybe Int, Maybe Bool, Maybe (Key AssignmentMetadata)),
                    WidgetFor App ()))
-updateCourseForm mcourseent = renderBootstrap3 BootstrapBasicForm $ (,,,,,)
+updateCourseForm mcourseent aplusd = renderBootstrap3 BootstrapBasicForm $ (,,,,,,)
             <$> areq courseId "" mcid
             <*> aopt textareaField (bfs ("Course Description"::Text)) (maybe Nothing (Just . Just . Textarea) (mdesc))
             <*> aopt (jqueryDayField def) (bfs ("Start Date"::Text)) (localize mstart)
             <*> aopt (jqueryDayField def) (bfs ("End Date"::Text)) (localize mend)
             <*> aopt intField (bfs ("Total Points for Course"::Text)) (maybe Nothing (Just . Just) mpoints)
-            <*> aopt cbfield checkFieldSettings (maybe Nothing (Just . Just) mopen)
+            <*> aopt checkBoxField checkFieldSettings (maybe (Just Nothing) (Just . Just) mopen)
+            <*> aopt (selectField assignmentlist) textbookFieldSettings (maybe Nothing (Just . Just) mtext)
     where courseId = hiddenField
-          cbfield = case mcourse of 
+          textbookfield = case mcourse of 
                         Nothing -> hiddenField
-                        Just _ -> checkBoxField
+                        Just _ -> (selectField assignmentlist)
           mcourse = entityVal <$> mcourseent
+          mtext = mcourse >>= courseTextBook
           mdesc = mcourse >>= courseDescription
           mstart = courseStartDate <$> mcourse
           mend = courseEndDate <$> mcourse
@@ -731,12 +732,24 @@ updateCourseForm mcourseent = renderBootstrap3 BootstrapBasicForm $ (,,,,,)
           mcid = show . entityKey <$> mcourseent
           mopen = courseEnrollmentOpen <$> mcourse
           localize t = (Just . localDay) <$> (utcToLocalTimeTZ <$> mzone <*> t)
+          assignmentlist = pure $ OptionList assignments (readMaybe . unpack)
+          assignments = map toAssignmentOption aplusd
+          toAssignmentOption (Entity k _, Just doc) = Option (documentFilename doc) k (pack . show $ k)
+          textbookFieldSettings = case mcourse of 
+            Just _ -> (bfs ("Textbook for Course" :: Text))
+            Nothing -> FieldSettings 
+                { fsLabel = ""
+                , fsTooltip = Nothing
+                , fsId = Nothing
+                , fsName = Nothing
+                , fsAttrs = [("style","display:none")] 
+                }
           checkFieldSettings = FieldSettings 
             { fsLabel = maybe "" (const "Enrollment Open?") mcourse
             , fsTooltip = Nothing
             , fsId = Nothing
             , fsName = Nothing
-            , fsAttrs = [("style","margin-left:10px")]
+            , fsAttrs = maybe [("style","display:none")] (const [("style","margin-left:10px")]) mcourse 
             }
 
 updateAccommodationForm
@@ -768,10 +781,9 @@ updateExtensionForm aplusd = renderBootstrap3 BootstrapBasicForm $ (,,,)
             <*> areq (jqueryDayField def) (withPlaceholder "Due Date" $ bfs ("Due Date"::Text)) Nothing
             <*> aopt timeFieldTypeTime (withPlaceholder "Time" $ bfs ("Due Time"::Text)) Nothing
     where userId = hiddenField
-          assignmentlist = pure $ OptionList assignments readKey
+          assignmentlist = pure $ OptionList assignments (readMaybe . unpack)
           assignments = map toAssignmentOption aplusd
           toAssignmentOption (Entity k _, Just doc) = Option (documentFilename doc) k (pack . show $ k)
-          readKey = readMaybe . unpack
 
 addCoInstructorForm
     :: [Entity UserData]
@@ -824,18 +836,19 @@ classWidget instructors classent = do
        allUserData <- map entityVal <$> (runDB $ selectList [UserDataEnrolledIn ==. Just cid] [])
        asmd <- runDB $ selectList [AssignmentMetadataCourse ==. cid] []
        asDocs <- mapM (runDB . get) (map (assignmentMetadataDocument . entityVal) asmd)
-       (addCoInstructorWidget,enctypeAddCoInstructor) <- generateFormPost (identifyForm "addCoinstructor" $ addCoInstructorForm instructors (show cid))
-       (updateExtensionWidget,enctypeUpdateExtension) <- generateFormPost (identifyForm "updateExtension" $ updateExtensionForm (zip asmd asDocs))
-       (updateCourseWidget,enctypeUpdateCourse) <- generateFormPost (identifyForm "updateCourse" (updateCourseForm (Just classent)))
-       let updateExtensionModal = genericModal ("ext" <> chash) "Set Alternate Due Date"
-       let updateCourseModal = genericModal ("course" <> chash) "Update Course Data"
        let allUids = map userDataUserId allUserData
        musers <- mapM (\x -> runDB (get x)) allUids
        let users = catMaybes musers
-       let numberOfUsers = length allUids
+           numberOfUsers = length allUids
            usersAndData = zip users allUserData
+           aplusd = zip asmd asDocs
            sortedUsersAndData = let lnOf (_, UserData {userDataLastName = ln}) = ln
                                     in sortBy (\x y -> compare (toLower . lnOf $ x) (toLower . lnOf $ y)) usersAndData
+           updateExtensionModal = genericModal ("ext" <> chash) "Set Alternate Due Date"
+           updateCourseModal = genericModal ("course" <> chash) "Update Course Data"
+       (addCoInstructorWidget,enctypeAddCoInstructor) <- generateFormPost (identifyForm "addCoinstructor" $ addCoInstructorForm instructors (show cid))
+       (updateExtensionWidget,enctypeUpdateExtension) <- generateFormPost (identifyForm "updateExtension" $ updateExtensionForm aplusd)
+       (updateCourseWidget,enctypeUpdateCourse) <- generateFormPost (identifyForm "updateCourse" (updateCourseForm (Just classent) aplusd))
        return [whamlet|
                     ^{updateExtensionModal updateExtensionWidget enctypeUpdateExtension}
                     ^{updateCourseModal updateCourseWidget enctypeUpdateCourse}
@@ -851,7 +864,7 @@ classWidget instructors classent = do
                                         <tr>
                                             <td>Problem Set #{show set}
                                             <td>#{dateDisplay due course}
-                                $forall (Entity _ a, Just d) <- zip asmd asDocs
+                                $forall (Entity _ a, Just d) <- aplusd
                                     <tr>
                                         <td>
                                             <a href=@{CourseAssignmentR (courseTitle course) (documentFilename d)}>
