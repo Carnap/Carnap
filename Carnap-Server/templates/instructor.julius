@@ -593,13 +593,14 @@ $(".async").each((_,elt) => elt.update = function (callback) {
             this.innerHTML = data.map(i=>i[1]).reduce((x,y) => x + y, 0);
             document.getElementById("loaded-" + box.dataset.cid).innerHTML = Object.keys(box.contents).length
             this.gradeLoaded = true
+            if (callback) callback() /* don't move this, it's part of an asynchronous callback in queryGrade*/
         })} else {
             let data = box.contents[elt.dataset.uid].scores
             this.innerHTML = data.map(i=>i[1]).reduce((x,y) => x + y, 0);
             this.gradeLoaded = true
+            if (callback) callback()
         };
     };
-    if (callback) callback()
 });
 
 $("textarea").addClass("form-control")
