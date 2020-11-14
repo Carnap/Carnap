@@ -13,13 +13,11 @@ and learning. If  you'd like to seem some demos and more general information,
 head over to [Carnap.io/about](https://carnap.io/about).
 
 If you'd like to learn more about using the server as an instructor, head over
-to the documentation collection at
-[Carnap.io/shared/Documentation](https://carnap.io/shared/Documentation).
-
-Documentation about administration-focused topics such as deployment and server
-configuration is available on the
+to the [documentation collection.](https://carnap.io/srv/doc). You can also
+find documentation about administration-focused topics such as deployment and
+server configuration there. Documentation is updated nightly from the
 [Carnap-Documentation](https://github.com/Carnap/Carnap-Documentation)
-repository.
+repository, in case you'd like to contribute or suggest an edit.
 
 If you'd like to discuss development and administration of Carnap instances in
 real time, we have a chat room on
