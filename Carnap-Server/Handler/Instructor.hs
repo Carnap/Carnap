@@ -846,6 +846,7 @@ classWidget instructors classent = do
                                     in sortBy (\x y -> compare (toLower . lnOf $ x) (toLower . lnOf $ y)) usersAndData
            updateExtensionModal = genericModal ("ext" <> chash) "Set Alternate Due Date"
            updateCourseModal = genericModal ("course" <> chash) "Update Course Data"
+           maybeTb = courseTextBook course >>= (\tb -> lookup tb (map (\(a,d) -> (entityKey a,d)) aplusd)) >>= id >>= pure . documentFilename 
        (addCoInstructorWidget,enctypeAddCoInstructor) <- generateFormPost (identifyForm "addCoinstructor" $ addCoInstructorForm instructors (show cid))
        (updateExtensionWidget,enctypeUpdateExtension) <- generateFormPost (identifyForm "updateExtension" $ updateExtensionForm aplusd)
        (updateCourseWidget,enctypeUpdateCourse) <- generateFormPost (identifyForm "updateCourse" (updateCourseForm (Just classent) aplusd))
@@ -930,6 +931,9 @@ classWidget instructors classent = do
                         <dd.col-sm-9>#{dateDisplay (courseEndDate course) course}
                         <dt.col-sm-3>Time Zone
                         <dd.col-sm-9>#{decodeUtf8 (courseTimeZone course)}
+                        $maybe tbname <- maybeTb
+                            <dt.col-sm-3>Custom Textbook
+                            <dd.col-sm-9>#{tbname}
                         <dt.col-sm-3>Enrollment Status
                         <dd.col-sm-9>
                             $if courseEnrollmentOpen course
