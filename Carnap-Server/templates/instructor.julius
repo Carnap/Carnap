@@ -201,6 +201,36 @@ function modalEditAccommodation (cid,uid,json) {
     $("#updateAccommodationData").modal({show:true});
 }
 
+function modalResetTimer (ident, json) {
+    jQuery.noConflict()
+    let themodal = $("#deleteModalFor" + ident)
+    themodal.modal({show:true})
+    $("#deleteModalFor" + ident).modal({show:true})
+    $("#deleteModalFor" + ident + " tbody td:nth-child(2)").html("—")
+    $("#deleteModalFor" + ident + " tbody td:nth-child(3)").html("—")
+    jQuery.ajax({
+        url: '@{InstructorQueryR ident}',
+        type: 'POST',
+        contentType: "application/json",
+        data: json,
+        success: function(data) {
+            data.forEach(datum => {
+                let del = document.createElement("button")
+                del.setAttribute("class", "btn btn-sm btn-danger")
+                del.setAttribute("type", "button")
+                del.setAttribute("title", "Reset the test timer for this assignment")
+                del.innerHTML = "Reset"
+                del.onclick = _ => { resetTimer(JSON.stringify(datum[2]),themodal) }
+                $("#token-row-" + datum[0] + " td:nth-child(2)").html(datum[1])
+                $("#token-row-" + datum[0] + " td:nth-child(3)").html(del)
+            })
+        },
+        error: function(data) {
+            console.log("error, couldn't retrieve access token data")
+        },
+    });
+}
+
 function deleteCoInstructor (json,ln,fn) {
     jQuery.ajax({
         url: '@{InstructorR ident}',
@@ -281,6 +311,23 @@ function dropStudent (json,sident) {
         error: function(data) {
             let response = data.responseJSON || "no response available"
             window.alert("Error, couldn't drop the student " + sident + "\n\n" + data.responseJSON)
+        },
+    });
+};
+
+function resetTimer (json, themodal) {
+    jQuery.ajax({
+        url: '@{InstructorR ident}',
+        type: 'DELETE',
+        contentType: "application/json",
+        data: json,
+        success: function(data) {
+            window.alert("The timer has been reset.")
+            themodal.modal("hide")
+        },
+        error: function(data) {
+            let response = data.responseJSON || "no response available"
+            window.alert("Error, couldn't reset the timer" + "\n\n" + data.responseJSON)
         },
     });
 };

@@ -151,12 +151,13 @@ deleteInstructorR ident = do
                       if fe then removeFile (datadir </> "documents" </> unpack ident </> unpack fn)
                             else return ()
           returnJson (fn ++ " deleted")
-      DropStudent sident -> do 
-          sid <- fromIdent sident
-          dropped <- runDB $ do
-              Entity k _ <- getBy (UniqueUserData sid) >>= maybe (sendStatusJSON notFound404 ("Couldn't get student to drop" :: Text)) pure
+      DropStudent uid -> do 
+          name <- runDB $ do
+              Entity k ud <- getBy (UniqueUserData uid) >>= maybe (sendStatusJSON notFound404 ("Couldn't get student to drop" :: Text)) pure
               update k [UserDataEnrolledIn =. Nothing]
-          returnJson (sident ++ " dropped")
+              return (userDataFirstName ud <> " " <> userDataLastName ud)
+          returnJson ("Dropped " <> name)
+      DeleteToken tokid -> runDB (delete tokid) >> returnJson ("Timer reset" :: Text)
       DeleteCoInstructor ciid -> do
           runDB $ do
               asgns <- selectList [AssignmentMetadataAssigner ==. Just ciid] []
@@ -315,6 +316,16 @@ postInstructorQueryR _ = do
                                                   , accommodationTimeFactor acc
                                                   , accommodationDateExtraHours acc
                                                   )
+        QueryTokens uid cid -> do
+            (toks, course) <- runDB $ do 
+                toks <- selectList [AssignmentAccessTokenUser ==. uid] []
+                course <- get cid >>= maybe (sendStatusJSON notFound404 ("Could not find associated course" :: Text)) pure
+                return (toks, course)
+            let deletions = map (\(Entity k tok) -> 
+                                    ( assignmentAccessTokenAssignment tok
+                                    , dateDisplay (assignmentAccessTokenCreatedAt tok) course
+                                    , DeleteToken k)) toks
+            returnJson deletions
 
 getInstructorR :: Text -> Handler Html
 getInstructorR ident = do
@@ -380,7 +391,8 @@ data InstructorDelete = DeleteAssignment AssignmentMetadataId
                       | DeleteProblems Text Int
                       | DeleteCourse Text
                       | DeleteDocument Text
-                      | DropStudent Text
+                      | DropStudent UserId
+                      | DeleteToken AssignmentAccessTokenId 
                       | DeleteCoInstructor CoInstructorId
     deriving Generic
 
@@ -391,6 +403,7 @@ instance FromJSON InstructorDelete
 data InstructorQuery = QueryGrade UserId CourseId
                      | QueryScores UserId CourseId
                      | QueryAccommodation UserId CourseId
+                     | QueryTokens UserId CourseId
     deriving Generic
 
 instance ToJSON InstructorQuery
@@ -417,6 +430,7 @@ genericModal specific caption form enc =
                             <div.form-group>
                                 <input.btn.btn-primary type=submit value="update">
     |]
+
 
 uploadAssignmentForm
     :: [Entity Course]
@@ -824,6 +838,33 @@ saveTo thedir fn file = do
                if e then removeFile (path </> fn) else return ()
                fileMove file (path </> fn)
 
+deleteModal :: Text -> [(Entity AssignmentMetadata, Maybe Document)] -> WidgetFor App ()
+deleteModal id aplusd =
+    [whamlet|
+        <div class="modal fade" id="deleteModalFor#{id}" tabindex="-1" role="dialog" aria-labelledby="deleteModalFor#{id}Label" aria-hidden="true">
+            <div class="modal-dialog modal-lg" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="deleteModalFor#{id}Label">Reset Access Tokens:
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                          <span aria-hidden="true">&times;</span>
+                    <div class="modal-body">
+                        <table.table>
+                            <thead>
+                                <tr>
+                                    <td>For Assignment
+                                    <td>Token Issued
+                                    <td>
+                            <tbody>
+                                $forall (Entity k _, md) <- aplusd
+                                    $maybe d <- md
+                                        <tr id="token-row-#{jsonSerialize k}">
+                                            <td>#{documentFilename d}
+                                            <td>—
+                                            <td>
+                                                <a href="#" onclick="event.preventDefault()" >reset
+    |]
+
 classWidget :: [Entity UserData] -> Entity Course ->  Handler Widget
 classWidget instructors classent = do
        let cid = entityKey classent
@@ -846,6 +887,7 @@ classWidget instructors classent = do
                                     in sortBy (\x y -> compare (toLower . lnOf $ x) (toLower . lnOf $ y)) usersAndData
            updateExtensionModal = genericModal ("ext" <> chash) "Set Alternate Due Date"
            updateCourseModal = genericModal ("course" <> chash) "Update Course Data"
+           deleteTokenModal = deleteModal ("del" <> chash) aplusd
            maybeTb = courseTextBook course >>= (\tb -> lookup tb (map (\(a,d) -> (entityKey a,d)) aplusd)) >>= id >>= pure . documentFilename 
        (addCoInstructorWidget,enctypeAddCoInstructor) <- generateFormPost (identifyForm "addCoinstructor" $ addCoInstructorForm instructors (show cid))
        (updateExtensionWidget,enctypeUpdateExtension) <- generateFormPost (identifyForm "updateExtension" $ updateExtensionForm aplusd)
@@ -853,6 +895,7 @@ classWidget instructors classent = do
        return [whamlet|
                     ^{updateExtensionModal updateExtensionWidget enctypeUpdateExtension}
                     ^{updateCourseModal updateCourseWidget enctypeUpdateCourse}
+                    ^{deleteTokenModal}
                     <h2>Assignments
                     <div.scrollbox>
                         <table.table.table-striped>
@@ -900,7 +943,7 @@ classWidget instructors classent = do
                                             <span.loading>—
                                         <td>
                                             <button.btn.btn-sm.btn-secondary type="button" title="Drop #{fn} #{ln} from class"
-                                                onclick="tryDropStudent('#{jsonSerialize $ DropStudent $ userIdent u}')">
+                                                onclick="tryDropStudent('#{jsonSerialize $ DropStudent uid}')">
                                                 <i.fa.fa-trash-o>
                                             <button.btn.btn-sm.btn-secondary type="button" title="Email #{fn} #{ln}"
                                                 onclick="location.href='mailto:#{userIdent u}'">
@@ -911,6 +954,9 @@ classWidget instructors classent = do
                                             <button.btn.btn-sm.btn-secondary type="button" title="Grant Extension to #{fn} #{ln}"
                                                 onclick="modalGrantExtension(this,'#{"ext" <> chash}','#{jsonSerialize uid}')">
                                                 <i.fa.fa-calendar-plus-o>
+                                            <button.btn.btn-sm.btn-secondary type="button" title="Reset Exam Timer for #{fn} #{ln}"
+                                                onclick="modalResetTimer('#{"del" <> chash}','#{jsonSerialize $ QueryTokens uid cid}')">
+                                                <i.fa.fa-hourglass-start>
                     <h2>Course Data
                     <dl.row>
                         <dt.col-sm-3>Primary Instructor
