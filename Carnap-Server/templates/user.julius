@@ -31,15 +31,14 @@ function sortUsersByCol(num) {
     let sortedRows = rows.sort((a,b) => {
         let val1 = a.children[num].innerHTML.split('.')
         let val2 = b.children[num].innerHTML.split('.')
-        if (val1.length > val2.length) { return 1 * upsort }
-        else if (val2.length > val1.length) { return -1 * upsort }
-        else {for (let idx = 0; idx < val1.length; idx++) {
+        for (let idx = 0; idx < Math.min(val1.length,val2.length); idx++) {
             if (val1[idx].length > val2[idx].length) { return 1 * upsort}
             else if (val2[idx].length > val1[idx].length) { return -1 * upsort}
             else if (val1[idx] > val2[idx]) { return 1 * upsort }
             else if (val2[idx] > val1[idx]) { return -1 * upsort }
-            }
-        } 
+        }
+        if (val1.length > val2.length) { return -1 * upsort }
+        else if (val2.length > val1.length) { return 1 * upsort }
         return 0
     })
     sortedRows.forEach(el => body.appendChild(el))

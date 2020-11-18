@@ -431,7 +431,6 @@ genericModal specific caption form enc =
                                 <input.btn.btn-primary type=submit value="update">
     |]
 
-
 uploadAssignmentForm
     :: [Entity Course]
     -> [Entity Document]
