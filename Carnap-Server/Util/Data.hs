@@ -130,9 +130,10 @@ displayProblemData (TruthTableDataOpts t _ opts') = maybe (rewriteText opts t) p
                                                       ++ intercalate "," (map (rewriteWith opts . show) gs)
           s = unpack t
 displayProblemData (TranslationData t _) = "-"
-displayProblemData (TranslationDataOpts _ _ opts) = maybe "-" fromTagText $ 
-                                                        lookup "problem" opts >>=
-                                                        headMay . parseTags . pack
+displayProblemData (TranslationDataOpts _ _ opts) = maybe "-" id $ 
+                                                        lookup "problem" opts 
+                                                        >>= headMay . parseTags . pack 
+                                                        >>= maybeTagText
 displayProblemData (QualitativeMultipleSelection t _ _) = t
 displayProblemData (QualitativeProblemDataOpts t _ opts) = t
 displayProblemData (QualitativeNumericalData t _ _) = t
