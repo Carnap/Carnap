@@ -124,7 +124,7 @@ totallyFreshConstraint n ded t v sub
           tau' = applySub sub t
 
 notAssumedConstraint n ded t sub 
-    | any (\x -> tau' `occurs` (liftToSequent x)) relevantLines = Just $ show tau' ++ " appears not to be fresh in its occurence on line " ++ show n
+    | any (\x -> tau' `occurs` (liftToSequent x)) relevantLines = Just $ show tau' ++ " appears not to be fresh on line " ++ show n
     | otherwise = Nothing
     where relevantLines = catMaybes . map assertion .  filter isAssumptionLine . scopeFilter . take (n - 1) $ ded
           scopeFilter l = map fst . filter (inScope . snd) $ zip l [1 ..]

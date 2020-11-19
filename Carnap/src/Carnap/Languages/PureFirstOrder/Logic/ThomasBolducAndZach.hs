@@ -7,7 +7,7 @@ module Carnap.Languages.PureFirstOrder.Logic.ThomasBolducAndZach
 
 import Data.Map as M (lookup, Map,empty)
 import Text.Parsec
-import Carnap.Core.Data.Types (Form)
+import Carnap.Core.Data.Types (Form, Term)
 import Carnap.Languages.PureFirstOrder.Syntax
 import Carnap.Languages.PureFirstOrder.Parser
 import qualified Carnap.Languages.PurePropositional.Logic as P
@@ -98,6 +98,19 @@ instance Inference ThomasBolducAndZachFOLCore PureLexiconFOL (Form Bool) where
          globalRestriction (Left ded) n (TFLC TFL.NegeIntro2) = Just $ fitchAssumptionCheck n ded [([phin 1], [lfalsum])]
          globalRestriction (Left ded) n (TFLC TFL.Indirect1) = Just $ fitchAssumptionCheck n ded [([lneg $ phin 1], [lfalsum])]
          globalRestriction (Left ded) n (TFLC TFL.Indirect2) = Just $ fitchAssumptionCheck n ded [([lneg $ phin 1], [lfalsum])]
+         globalRestriction (Left ded) n UI = Just (notAssumedConstraint n ded (taun 1 :: FOLSequentCalc (Term Int)))
+         globalRestriction (Left ded) n EE1 = case dependencies (ded !! (n - 1)) of
+              Just ls -> firstDistinct ls
+              Nothing -> Nothing
+            where firstDistinct [] = Nothing
+                  firstDistinct ((a,b):xs) | a /= b = Just (notAssumedConstraint a ded (taun 1 :: FOLSequentCalc (Term Int)))
+                                           | otherwise = firstDistinct xs
+         globalRestriction (Left ded) n EE2 = case dependencies (ded !! (n - 1)) of
+              Just ls -> firstDistinct ls
+              Nothing -> Nothing
+            where firstDistinct [] = Nothing
+                  firstDistinct ((a,b):xs) | a /= b = Just (notAssumedConstraint a ded (taun 1 :: FOLSequentCalc (Term Int)))
+                                           | otherwise = firstDistinct xs
          globalRestriction _ _ _ = Nothing
 
          isAssumption (TFLC x) = isAssumption x
@@ -142,6 +155,7 @@ instance Inference ThomasBolducAndZachFOL PureLexiconFOL (Form Bool) where
          globalRestriction (Left ded) n (TFL (TFL.Core TFL.NegeIntro2)) = Just $ fitchAssumptionCheck n ded [([phin 1], [lfalsum])]
          globalRestriction (Left ded) n (TFL (TFL.Core TFL.Indirect1))  = Just $ fitchAssumptionCheck n ded [([lneg $ phin 1], [lfalsum])]
          globalRestriction (Left ded) n (TFL (TFL.Core TFL.Indirect2))  = Just $ fitchAssumptionCheck n ded [([lneg $ phin 1], [lfalsum])]
+         globalRestriction (Left ded) n (FOL UI) = Just (notAssumedConstraint n ded (taun 1 :: FOLSequentCalc (Term Int)))
          globalRestriction _ _ _ = Nothing
 
          isAssumption (TFL x) = isAssumption x

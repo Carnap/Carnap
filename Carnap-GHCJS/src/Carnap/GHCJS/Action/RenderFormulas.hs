@@ -16,7 +16,6 @@ import Carnap.Languages.ModalFirstOrder.Logic (hardegreeMPLCalc)
 
 renderFormulasAction = initElements (\w dom -> getListOfElementsByTag dom "code") rewriteFormula
 
-
 rewriteFormula w Nothing = return ()
 rewriteFormula w (Just e) = do datamap <- getCarnapDataMap e
                                case M.lookup "render-system" datamap of
