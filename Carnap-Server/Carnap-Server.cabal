@@ -128,6 +128,7 @@ library
                  , mtl
                  , transformers
                  , blaze-html
+                 , tagsoup
                  , lucid
                  , linear
                  , filepath

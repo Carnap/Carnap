@@ -10,6 +10,7 @@ import Data.Time
 import qualified Data.Map as M
 import Data.Aeson (decode,encode,Value(..))
 import Text.Read (readMaybe)
+import Text.HTML.TagSoup
 import Text.Pandoc (Extension(..), extensionsFromList)
 import Carnap.GHCJS.SharedTypes(ProblemSource(..),ProblemType(..),ProblemData(..), SomeRule(..))
 import Carnap.GHCJS.SharedFunctions(inOpts, rewriteWith)
@@ -129,9 +130,9 @@ displayProblemData (TruthTableDataOpts t _ opts') = maybe (rewriteText opts t) p
                                                       ++ intercalate "," (map (rewriteWith opts . show) gs)
           s = unpack t
 displayProblemData (TranslationData t _) = "-"
-displayProblemData (TranslationDataOpts _ _ opts) = case lookup "problem" opts of
-                                                        Just p -> pack p
-                                                        Nothing -> "-"
+displayProblemData (TranslationDataOpts _ _ opts) = maybe "-" fromTagText $ 
+                                                        lookup "problem" opts >>=
+                                                        headMay . parseTags . pack
 displayProblemData (QualitativeMultipleSelection t _ _) = t
 displayProblemData (QualitativeProblemDataOpts t _ opts) = t
 displayProblemData (QualitativeNumericalData t _ _) = t
