@@ -99,13 +99,8 @@ instance Inference ThomasBolducAndZachFOLCore PureLexiconFOL (Form Bool) where
          globalRestriction (Left ded) n (TFLC TFL.Indirect1) = Just $ fitchAssumptionCheck n ded [([lneg $ phin 1], [lfalsum])]
          globalRestriction (Left ded) n (TFLC TFL.Indirect2) = Just $ fitchAssumptionCheck n ded [([lneg $ phin 1], [lfalsum])]
          globalRestriction (Left ded) n UI = Just (notAssumedConstraint n ded (taun 1 :: FOLSequentCalc (Term Int)))
-         globalRestriction (Left ded) n EE1 = case dependencies (ded !! (n - 1)) of
-              Just ls -> firstDistinct ls
-              Nothing -> Nothing
-            where firstDistinct [] = Nothing
-                  firstDistinct ((a,b):xs) | a /= b = Just (notAssumedConstraint a ded (taun 1 :: FOLSequentCalc (Term Int)))
-                                           | otherwise = firstDistinct xs
-         globalRestriction (Left ded) n EE2 = case dependencies (ded !! (n - 1)) of
+         globalRestriction (Left ded) n r | r `elem` [EE1,EE2] = 
+            case dependencies (ded !! (n - 1)) of
               Just ls -> firstDistinct ls
               Nothing -> Nothing
             where firstDistinct [] = Nothing
