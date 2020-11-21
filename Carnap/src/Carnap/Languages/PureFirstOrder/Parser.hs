@@ -112,7 +112,7 @@ magnusFOLParserOptions = FirstOrderParserOptions
                          , hasBooleanConstants = False
                          , parenRecur = magnusDispatch
                          , opTable = standardOpTable
-                         , finalValidation = const (pure ())
+                         , finalValidation = \x -> if isOpenFormula x then unexpected "unbound variable" else return ()
                          }
     where magnusDispatch opt rw = (wrappedWith '(' ')' (rw opt) <|> wrappedWith '[' ']' (rw opt)) >>= boolean
           boolean a = if isBoolean a then return a else unexpected "atomic or quantified sentence wrapped in parentheses"
