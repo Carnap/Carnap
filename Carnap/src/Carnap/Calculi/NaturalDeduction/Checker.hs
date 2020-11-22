@@ -1,4 +1,4 @@
-{-#LANGUAGE GADTs, KindSignatures, TypeOperators, FlexibleContexts, TypeSynonymInstances, FlexibleInstances, MultiParamTypeClasses #-}
+{-#LANGUAGE GADTs, KindSignatures, TypeOperators, FlexibleContexts, TypeSynonymInstances, FlexibleInstances, RankNTypes, MultiParamTypeClasses #-}
 module Carnap.Calculi.NaturalDeduction.Checker
 (toDisplaySequence,toDisplaySequenceMemo, toDisplaySequenceStructured,
 processLineMontague, processLineFitch, processLineHardegree,processLineLemmon,
@@ -81,6 +81,26 @@ toDisplaySequenceStructured pl ded@(SubProof (1,m) ls) = let feedback = map (pl 
             Right s -> if alright fb then Just s else Nothing
           res = globalRestriction (Right ded)
 
+type ProofTreeProducer r lex sem = 
+     Deduction r lex sem -> Int -> Either (ProofErrorMessage lex) (ProofTree r lex sem)
+
+processLine, hoProcessLine :: 
+    ( Inference r lex sem
+    , ACUI (ClassicalSequentOver lex)
+    , Sequentable lex
+    , Typeable sem
+    , StaticVar (ClassicalSequentOver lex)
+    , MonadVar (ClassicalSequentOver lex) (State Int)
+    ) => ProofTreeProducer r lex sem -> Deduction r lex sem -> Restrictor r lex -> Int -> FeedbackLine lex sem
+processLine ptp ded res n = case ded !! (n - 1) of
+  --special case to catch QedLines not being cited in justifications
+  (QedLine _ _ _) -> Left $ NoResult n
+  _ -> ptp ded n >>= reduceProofTree res
+hoProcessLine ptp ded res n = case ded !! (n - 1) of
+  --special case to catch QedLines not being cited in justifications
+  (QedLine _ _ _) -> Left $ NoResult n
+  _ -> ptp ded n >>= hoReduceProofTree res
+
 processLineHardegree, hoProcessLineHardegree, processLineMontague,
     hoProcessLineMontague, processLineFitch, hoProcessLineFitch,
     processLineLemmon, hoProcessLineLemmon :: 
@@ -91,45 +111,29 @@ processLineHardegree, hoProcessLineHardegree, processLineMontague,
     , StaticVar (ClassicalSequentOver lex)
     , MonadVar (ClassicalSequentOver lex) (State Int)
     ) => Deduction r lex sem -> Restrictor r lex -> Int -> FeedbackLine lex sem
-processLineHardegree ded res n = case ded !! (n - 1) of
-  --special case to catch QedLines not being cited in justifications
-  (QedLine _ _ _) -> Left $ NoResult n
-  _ -> toProofTreeHardegree ded n >>= reduceProofTree res
+processLineHardegree = processLine toProofTreeHardegree
+processLineMontague = processLine toProofTreeMontague
+processLineFitch = processLine toProofTreeFitch
+processLineLemmon = processLine toProofTreeLemmon
+hoProcessLineHardegree = hoProcessLine toProofTreeHardegree
+hoProcessLineMontague = hoProcessLine toProofTreeMontague
+hoProcessLineFitch = hoProcessLine toProofTreeFitch
+hoProcessLineLemmon = hoProcessLine toProofTreeLemmon
 
-hoProcessLineHardegree ded res n = case ded !! (n - 1) of
-  --special case to catch QedLines not being cited in justifications
-  (QedLine _ _ _) -> Left $ NoResult n
-  _ -> toProofTreeHardegree ded n >>= hoReduceProofTree res
-
-processLineMontague ded res n = case ded !! (n - 1) of
-  --special case to catch QedLines not being cited in justifications
-  (QedLine _ _ _) -> Left $ NoResult n
-  _ -> toProofTreeMontague ded n >>= reduceProofTree res
-  
-hoProcessLineMontague ded res n = case ded !! (n - 1) of
-  --special case to catch QedLines not being cited in justifications
-  (QedLine _ _ _) -> Left $ NoResult n
-  _ -> toProofTreeMontague ded n >>= hoReduceProofTree res
-
-processLineFitch ded res n = case ded !! (n - 1) of
-  --special case to catch QedLines not being cited in justifications
-  (QedLine _ _ _) -> Left $ NoResult n
-  _ -> toProofTreeFitch ded n >>= reduceProofTree res
-
-hoProcessLineFitch ded res n = case ded !! (n - 1) of
-  --special case to catch QedLines not being cited in justifications
-  (QedLine _ _ _) -> Left $ NoResult n
-  _ -> toProofTreeFitch ded n >>= hoReduceProofTree res
-
-processLineLemmon ded res n = case ded !! (n - 1) of
-  --special case to catch QedLines not being cited in justifications
-  (QedLine _ _ _) -> Left $ NoResult n
-  _ -> toProofTreeLemmon ded n >>= reduceProofTree res
-
-hoProcessLineLemmon ded res n = case ded !! (n - 1) of
-  --special case to catch QedLines not being cited in justifications
-  (QedLine _ _ _) -> Left $ NoResult n
-  _ -> toProofTreeLemmon ded n >>= hoReduceProofTree res
+hoProcessLineMemo ::
+    ( StaticVar (ClassicalSequentOver lex)
+    , ACUI (ClassicalSequentOver lex)
+    , Sequentable lex
+    , Inference r lex sem
+    , Typeable sem
+    , MonadVar (ClassicalSequentOver lex) (State Int)
+    , Show (ClassicalSequentOver lex (Succedent sem)), Show r
+    ) => ProofTreeProducer r lex sem -> ProofMemoRef lex sem r -> Deduction r lex sem -> Restrictor r lex -> Int -> IO (FeedbackLine lex sem)
+hoProcessLineMemo ptp ref ded res n = case ded !! (n - 1) of
+  (QedLine _ _ _) -> return $ Left $ NoResult n
+  _ -> case ptp ded n of
+        Right t -> hoReduceProofTreeMemo ref res t 
+        Left e -> return $ Left e
 
 hoProcessLineHardegreeMemo, hoProcessLineMontagueMemo,
     hoProcessLineFitchMemo, hoProcessLineLemmonMemo  :: 
@@ -141,31 +145,10 @@ hoProcessLineHardegreeMemo, hoProcessLineMontagueMemo,
     , MonadVar (ClassicalSequentOver lex) (State Int)
     , Show (ClassicalSequentOver lex (Succedent sem)), Show r
     ) => ProofMemoRef lex sem r -> Deduction r lex sem -> Restrictor r lex -> Int -> IO (FeedbackLine lex sem)
-hoProcessLineHardegreeMemo ref ded res n = case ded !! (n - 1) of
-  --special case to catch QedLines not being cited in justifications
-  (QedLine _ _ _) -> return $ Left $ NoResult n
-  _ -> case toProofTreeHardegree ded n of
-        Right t -> hoReduceProofTreeMemo ref res t 
-        Left e -> return $ Left e
-
-hoProcessLineMontagueMemo ref ded res n = case ded !! (n - 1) of
-  --special case to catch QedLines not being cited in justifications
-  (QedLine _ _ _) -> return $ Left $ NoResult n
-  _ -> case toProofTreeMontague ded n of
-        Right t -> hoReduceProofTreeMemo ref res t
-        Left e -> return $ Left e
-
-hoProcessLineFitchMemo ref ded res n = case ded !! (n - 1) of
-  (QedLine _ _ _) -> return $ Left $ NoResult n
-  _ -> case toProofTreeFitch ded n of
-        Right t -> hoReduceProofTreeMemo ref res t
-        Left e -> return $ Left e
-
-hoProcessLineLemmonMemo ref ded res n = case ded !! (n - 1) of
-  (QedLine _ _ _) -> return $ Left $ NoResult n
-  _ -> case toProofTreeLemmon ded n of
-        Right t -> hoReduceProofTreeMemo ref res t
-        Left e -> return $ Left e
+hoProcessLineHardegreeMemo = hoProcessLineMemo toProofTreeHardegree
+hoProcessLineMontagueMemo = hoProcessLineMemo toProofTreeMontague
+hoProcessLineFitchMemo = hoProcessLineMemo toProofTreeFitch
+hoProcessLineLemmonMemo = hoProcessLineMemo toProofTreeLemmon
 
 processLineStructuredFitch, processLineStructuredFitchHO :: 
   ( Sequentable lex
