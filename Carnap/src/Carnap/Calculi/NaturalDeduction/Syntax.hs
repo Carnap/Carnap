@@ -21,7 +21,7 @@ import Carnap.Languages.ClassicalSequent.Parser
 import Carnap.Languages.PurePropositional.Parser
 import Carnap.Languages.Util.LanguageClasses
 import Control.Monad.State
-import Text.Parsec (parse, Parsec, ParseError, choice, try, string)
+import Text.Parsec (Parsec, ParseError)
 
 --------------------------------------------------------
 --1. Data For Natural Deduction
