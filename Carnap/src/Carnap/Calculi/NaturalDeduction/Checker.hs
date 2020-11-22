@@ -103,7 +103,9 @@ hoProcessLine ptp ded res n = case ded !! (n - 1) of
 
 processLineHardegree, hoProcessLineHardegree, processLineMontague,
     hoProcessLineMontague, processLineFitch, hoProcessLineFitch,
-    processLineLemmon, hoProcessLineLemmon :: 
+    processLineLemmon, hoProcessLineLemmon, processLineHilbert,
+    hoProcessLineHilbert, processLineHilbertImplicit,
+    hoProcessLineHilbertImplicit :: 
     ( Inference r lex sem
     , ACUI (ClassicalSequentOver lex)
     , Sequentable lex
@@ -115,10 +117,14 @@ processLineHardegree = processLine toProofTreeHardegree
 processLineMontague = processLine toProofTreeMontague
 processLineFitch = processLine toProofTreeFitch
 processLineLemmon = processLine toProofTreeLemmon
+processLineHilbert = processLine toProofTreeHilbert
+processLineHilbertImplicit = processLine toProofTreeHilbertImplicit
 hoProcessLineHardegree = hoProcessLine toProofTreeHardegree
 hoProcessLineMontague = hoProcessLine toProofTreeMontague
 hoProcessLineFitch = hoProcessLine toProofTreeFitch
 hoProcessLineLemmon = hoProcessLine toProofTreeLemmon
+hoProcessLineHilbert = hoProcessLine toProofTreeHilbert
+hoProcessLineHilbertImplicit = hoProcessLine toProofTreeHilbertImplicit
 
 hoProcessLineMemo ::
     ( StaticVar (ClassicalSequentOver lex)
@@ -136,7 +142,8 @@ hoProcessLineMemo ptp ref ded res n = case ded !! (n - 1) of
         Left e -> return $ Left e
 
 hoProcessLineHardegreeMemo, hoProcessLineMontagueMemo,
-    hoProcessLineFitchMemo, hoProcessLineLemmonMemo  :: 
+    hoProcessLineFitchMemo, hoProcessLineLemmonMemo, hoProcessLineHilbertMemo,
+    hoProcessLineHilbertImplicitMemo  :: 
     ( StaticVar (ClassicalSequentOver lex)
     , ACUI (ClassicalSequentOver lex)
     , Sequentable lex
@@ -149,6 +156,8 @@ hoProcessLineHardegreeMemo = hoProcessLineMemo toProofTreeHardegree
 hoProcessLineMontagueMemo = hoProcessLineMemo toProofTreeMontague
 hoProcessLineFitchMemo = hoProcessLineMemo toProofTreeFitch
 hoProcessLineLemmonMemo = hoProcessLineMemo toProofTreeLemmon
+hoProcessLineHilbertMemo = hoProcessLineMemo toProofTreeHilbert
+hoProcessLineHilbertImplicitMemo = hoProcessLineMemo toProofTreeHilbertImplicit
 
 processLineStructuredFitch, processLineStructuredFitchHO :: 
   ( Sequentable lex
