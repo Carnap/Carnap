@@ -653,8 +653,14 @@ contraposition = replace (phin 1 .=>. phin 2) (lneg (phin 2) .=>. lneg (phin 1))
 exportation :: ReplacementBooleanVariants lex b
 exportation = replace (phin 1 .=>. (phin 2 .=>. phin 3)) ((phin 1 ./\. phin 2) .=>. phin 3)
 
+andAbsorption :: ReplacementBooleanVariants lex b
+andAbsorption = replace (phin 1 ./\. (phin 1 .\/. phin 2)) (phin 1) 
+
+orAbsorption :: ReplacementBooleanVariants lex b
+orAbsorption = replace (phin 1 .\/. (phin 1 ./\. phin 2)) (phin 1) 
+
 distribution :: ReplacementBooleanVariants lex b
-distribution = replace (phin 1 ./\. (phin 2 .\/. phin 3)) ((phin 1 ./\. phin 2) .\/. (phin 1 ./\. phin 3)) ++ replace (phin 1 .\/. (phin 2 ./\. phin 3)) ((phin 1 .\/. phin 2) ./\. (phin 1 .\/. phin 3))
+distribution = andDistributivity ++ orDistributivity
 
 biconditionalExchange :: ReplacementBooleanVariants lex b
 biconditionalExchange = replace (phin 1 .<=>. phin 2) ((phin 1 .=>. phin 2) ./\. (phin 2 .=>. phin 1))

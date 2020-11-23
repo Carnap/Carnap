@@ -53,6 +53,7 @@ library
                      , Carnap.Languages.PurePropositional.Logic.Gentzen
                      , Carnap.Languages.PurePropositional.Logic.OpenLogic
                      , Carnap.Languages.PurePropositional.Logic.Allen
+                     , Carnap.Languages.PurePropositional.Logic.Equivalence
                      , Carnap.Languages.ModalPropositional.Syntax
                      , Carnap.Languages.ModalPropositional.Parser
                      , Carnap.Languages.ModalPropositional.Logic
