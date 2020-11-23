@@ -7,3 +7,6 @@
         position:sticky;
         top:0;
         background:white;
+
+.nav-tabs .nav-link
+    height:100%
