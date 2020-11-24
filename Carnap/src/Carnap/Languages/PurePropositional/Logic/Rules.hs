@@ -613,6 +613,7 @@ andIdempotence = replace (phin 1 ./\. phin 1) (phin 1)
 
 andDistributivity :: ReplacementBooleanVariants lex b
 andDistributivity = replace (phin 1 ./\. (phin 2 .\/. phin 3)) ((phin 1 ./\. phin 2) .\/. (phin 1 ./\. phin 3))
+                    ++ replace ((phin 2 .\/. phin 3) ./\. phin 1) ((phin 2 ./\. phin 1) .\/. (phin 3 ./\. phin 1))
 
 orCommutativity :: ReplacementBooleanVariants lex b
 orCommutativity = replace (phin 1 .\/. phin 2) (phin 2 .\/. phin 1)
@@ -625,6 +626,7 @@ orIdempotence = replace (phin 1 .\/. phin 1) (phin 1)
 
 orDistributivity :: ReplacementBooleanVariants lex b
 orDistributivity = replace (phin 1 .\/. (phin 2 ./\. phin 3)) ((phin 1 .\/. phin 2) ./\. (phin 1 .\/. phin 3))
+                   ++ replace ((phin 2 ./\. phin 3) .\/. phin 1) ((phin 2 .\/. phin 1) ./\. (phin 3 .\/. phin 1))
 
 iffCommutativity :: ReplacementBooleanVariants lex b
 iffCommutativity = replace (phin 1 .<=>. phin 2) (phin 2 .<=>. phin 1)
@@ -654,10 +656,16 @@ exportation :: ReplacementBooleanVariants lex b
 exportation = replace (phin 1 .=>. (phin 2 .=>. phin 3)) ((phin 1 ./\. phin 2) .=>. phin 3)
 
 andAbsorption :: ReplacementBooleanVariants lex b
-andAbsorption = replace (phin 1 ./\. (phin 1 .\/. phin 2)) (phin 1) 
+andAbsorption = replace (phin 1 ./\. (phin 1 .\/. phin 2)) (phin 1)
+                ++ replace (phin 1 ./\. (phin 2 .\/. phin 1)) (phin 1)
+                ++ replace ((phin 1 .\/. phin 2) ./\. phin 1) (phin 1)
+                ++ replace ((phin 2 .\/. phin 1) ./\. phin 1) (phin 1)
 
 orAbsorption :: ReplacementBooleanVariants lex b
 orAbsorption = replace (phin 1 .\/. (phin 1 ./\. phin 2)) (phin 1) 
+               ++ replace (phin 1 .\/. (phin 2 ./\. phin 1)) (phin 1)
+               ++ replace ((phin 1 ./\. phin 2) .\/. phin 1) (phin 1)
+               ++ replace ((phin 2 ./\. phin 1) .\/. phin 1) (phin 1)
 
 distribution :: ReplacementBooleanVariants lex b
 distribution = andDistributivity ++ orDistributivity
@@ -667,6 +675,30 @@ biconditionalExchange = replace (phin 1 .<=>. phin 2) ((phin 1 .=>. phin 2) ./\.
 
 biconditionalCases :: ReplacementBooleanVariants lex b
 biconditionalCases = replace (phin 1 .<=>. phin 2) ((phin 1 ./\. phin 2) .\/. (lneg (phin 1) ./\. lneg (phin 2)))
+
+andTautCancellation :: ReplacementBooleanVariants lex b
+andTautCancellation = replace (phin 1 ./\. (phin 2 .\/. lneg (phin 2))) (phin 1)
+                   ++ replace ((phin 2 .\/. lneg (phin 2)) ./\. phin 1) (phin 1)
+                   ++ replace (phin 1 ./\. (lneg (phin 2) .\/. phin 2)) (phin 1)
+                   ++ replace ((lneg (phin 2) .\/. phin 2) ./\. phin 1) (phin 1)
+
+andContCancellation :: ReplacementBooleanVariants lex b
+andContCancellation = replace (phin 1 ./\. (phin 2 ./\. lneg (phin 2))) (phin 2 ./\. lneg (phin 2))
+                   ++ replace ((phin 2 ./\. lneg (phin 2)) ./\. phin 1) (phin 2 ./\. lneg (phin 2))
+                   ++ replace (phin 1 ./\. (lneg (phin 2) ./\. phin 2)) (lneg (phin 2) ./\. phin 2)
+                   ++ replace ((lneg (phin 2) ./\. phin 2) ./\. phin 1) (lneg (phin 2) ./\. phin 2)
+
+orContCancellation :: ReplacementBooleanVariants lex b
+orContCancellation = replace (phin 1 .\/. (phin 2 ./\. lneg (phin 2))) (phin 1)
+                   ++ replace ((phin 2 ./\. lneg (phin 2)) .\/. phin 1) (phin 1)
+                   ++ replace (phin 1 .\/. (lneg (phin 2) ./\. phin 2)) (phin 1)
+                   ++ replace ((lneg (phin 2) ./\. phin 2) .\/. phin 1) (phin 1)
+
+orTautCancellation :: ReplacementBooleanVariants lex b
+orTautCancellation = replace (phin 1 .\/. (phin 2 .\/. lneg (phin 2))) (phin 2 .\/. lneg (phin 2))
+                   ++ replace ((phin 2 .\/. lneg (phin 2)) .\/. phin 1) (phin 2 .\/. lneg (phin 2))
+                   ++ replace (phin 1 .\/. (lneg (phin 2) .\/. phin 2)) (lneg (phin 2) .\/. phin 2)
+                   ++ replace ((lneg (phin 2) .\/. phin 2) .\/. phin 1) (lneg (phin 2) .\/. phin 2)
 
 ----------------------------------------
 --  1.2.3 Infinitary Variation Rules  --

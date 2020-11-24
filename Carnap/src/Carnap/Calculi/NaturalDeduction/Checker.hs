@@ -1,12 +1,13 @@
 {-#LANGUAGE GADTs, KindSignatures, TypeOperators, FlexibleContexts, TypeSynonymInstances, FlexibleInstances, RankNTypes, MultiParamTypeClasses #-}
 module Carnap.Calculi.NaturalDeduction.Checker
 (toDisplaySequence,toDisplaySequenceMemo, toDisplaySequenceStructured,
-processLineMontague, processLineFitch, processLineHardegree,processLineLemmon,
-hoProcessLineHardegree, hoProcessLineHardegreeMemo,
-processLineStructuredFitch,processLineStructuredFitchHO,
+processLineMontague, processLineFitch, processLineHardegree, processLineLemmon,
+processLineHilbert, hoProcessLineHilbertImplicitMemo, hoProcessLineMontagueMemo,
+hoProcessLineHardegreeMemo, hoProcessLineLemmonMemo, hoProcessLineHilbertMemo,
 hoProcessLineFitchMemo, hoProcessLineFitch, hoProcessLineMontague,
-hoProcessLineLemmon,hoProcessLineLemmonMemo,
-hoProcessLineMontagueMemo, hoReduceProofTree, hoReduceProofTreeMemo,
+hoProcessLineLemmon, hoProcessLineHardegree, hoProcessLineHilbert, hoProcessLineHilbertImplicit,
+hoReduceProofTree, hoReduceProofTreeMemo,
+processLineStructuredFitch,processLineStructuredFitchHO,
 hosolve, ProofErrorMessage(..),
 Feedback(..),seqUnify,seqSubsetUnify) where
 
@@ -250,26 +251,26 @@ foseqFromNode, hoseqFromNode  ::
                           , [Equation (ClassicalSequentOver lex)]
                           , r
                           )]]
-foseqFromNode lineno rules prems conc = 
+foseqFromNode lineno rules prems conc =
         do rrule <- rules
-           rprems <- permutations (premisesOf rrule) 
+           rprems <- permutations (premisesOf rrule)
            return $ oneRule rrule rprems
-    where oneRule r rp = do if length rp /= length prems 
+    where oneRule r rp = do if length rp /= length prems
                                 then Left $ GenericError "Dependencies are of the wrong number or form" lineno
                                 else Right ""
                             let rconc = conclusionOf r
-                            fosub <- fosolve 
-                               (zipWith (:=:) 
-                                   (map (view rhs) (rconc:rp)) 
+                            fosub <- fosolve
+                               (zipWith (:=:)
+                                   (map (view rhs) (rconc:rp))
                                    (conc:map (view rhs) prems))
                             let subbedrule = map (applySub fosub) rp
                                 -- XXX: We use the old rhs rather than building
                                 -- a new one by substitution in order to
                                 -- preserve things like variable labelings
                             let subbedconc = applySub fosub (set rhs conc rconc )
-                            acuisubs <- acuisolve 
-                               (zipWith (:=:) 
-                                   (map (view lhs) subbedrule) 
+                            acuisubs <- acuisolve
+                               (zipWith (:=:)
+                                   (map (view lhs) subbedrule)
                                    (map (view lhs) prems))
                             return $ map (\x -> (antecedentNub $ applySub x subbedconc,x,r)) (map (++ fosub) acuisubs)
 
@@ -277,8 +278,8 @@ hoseqFromNode lineno rules prems conc =
         do r <- rules
            --run a non-deterministic computation over all permutations of
            --the supplied premises
-           rps <- permutations (premisesOf r) 
-           if length rps /= length prems 
+           rps <- permutations (premisesOf r)
+           if length rps /= length prems
                 then return $ Left $ GenericError "Dependencies are of the wrong number or form" lineno
                 else do let rconc = conclusionOf r
                         --create and solve a unification problem: 

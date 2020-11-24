@@ -47,6 +47,7 @@ import Carnap.Languages.PurePropositional.Logic.OpenLogic
 import Carnap.Languages.PurePropositional.Logic.Gallow
 import Carnap.Languages.PurePropositional.Logic.Allen
 import Carnap.Languages.PurePropositional.Logic.Hurley
+import Carnap.Languages.PurePropositional.Logic.Equivalence
 
 ofPropSys :: (forall r . (Show r, Inference r PurePropLexicon (Form Bool)) => 
               NaturalDeductionCalc r PurePropLexicon (Form Bool) -> a) -> String -> Maybe a
@@ -77,6 +78,7 @@ ofPropSys f sys | sys == "prop"                          = Just $ f propCalc
                 | sys == "hardegreeSL"                   = Just $ f hardegreeSLCalc 
                 | sys == "bonevacSL"                     = Just $ f bonevacSLCalc 
                 | sys == "hurleySL"                      = Just $ f hurleySLCalc 
+                | sys == "zachPropEq"                    = Just $ f zachPropEqCalc
                 | otherwise                              = Nothing
 
 ofPropTreeSys :: (forall r . 

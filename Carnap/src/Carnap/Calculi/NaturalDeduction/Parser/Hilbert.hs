@@ -30,7 +30,7 @@ toDeductionHilbert r f = toDeduction (parseAssertLineHilbert r f)
 
 toDeductionHilbertImplicit :: Parsec String () [r] -> Parsec String () (FixLang lex a) -> String 
     -> Deduction r lex a
-toDeductionHilbertImplicit r f = toDeduction (parseAssertLineHilbert r f)
+toDeductionHilbertImplicit r f = toDeduction (parseAssertLineHilbertImplicit r f)
 
 toProofTreeHilbert :: 
     ( Inference r lex sem
@@ -38,10 +38,11 @@ toProofTreeHilbert ::
     , Typeable sem
     ) => Deduction r lex sem -> Int -> Either (ProofErrorMessage lex) (ProofTree r lex sem)
 toProofTreeHilbert ded n = case ded !! (n - 1)  of
-      l@(AssertLine f r@(r':_) dpth deps) -> 
+      AssertLine f r@(r':_) dpth deps ->
             do mapM_ checkDep deps
                deps' <- mapM (toProofTreeHilbert ded) (map snd deps)
                return $ Node (ProofLine n (SS $ liftToSequent f) r) deps'
+      PartialLine _ e _ -> Left $ NoParse e n
       where err x = Left $ GenericError x n
             takeRange m' n' | n' <= m' = err "Dependency is later than assertion"
                             | otherwise = Right ()
@@ -54,13 +55,14 @@ toProofTreeHilbertImplicit ::
     , Typeable sem
     ) => Deduction r lex sem -> Int -> Either (ProofErrorMessage lex) (ProofTree r lex sem)
 toProofTreeHilbertImplicit ded n = case ded !! (n - 1)  of
-      l@(AssertLine f r@(r':_) dpth _) -> 
+      AssertLine f r@(r':_) dpth _ -> 
             do dp <- case () of
-                         _ | isAssumption r' || isPremise r' -> return [] 
+                         _ | isAssumption r' || isPremise r' -> return []
                            | n == 1 -> err "proof must begin with a premise or assumption"
                            | otherwise -> return [n - 1]
-               deps' <- mapM (toProofTreeHilbert ded) dp
+               deps' <- mapM (toProofTreeHilbertImplicit ded) dp
                return $ Node (ProofLine n (SS $ liftToSequent f) r) deps'
+      PartialLine _ e _ -> Left $ NoParse e n
       where err x = Left $ GenericError x n
             takeRange m' n' | n' <= m' = err "Dependency is later than assertion"
                             | otherwise = Right $ ()
