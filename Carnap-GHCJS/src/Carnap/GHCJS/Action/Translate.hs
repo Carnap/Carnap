@@ -2,8 +2,8 @@
 module Carnap.GHCJS.Action.Translate (translateAction) where
 
 import Lib
+import Lib.FormulaTests
 import Carnap.Calculi.NaturalDeduction.Syntax (NaturalDeductionCalc(..))
-import Carnap.Core.Data.Optics (genChildren, PrismSubstitutionalVariable)
 import Carnap.Core.Data.Types (FixLang, Form, Term, BoundVars, FirstOrderLex)
 import Carnap.Languages.PurePropositional.Logic (ofPropSys)
 import Carnap.Languages.ModalPropositional.Logic (ofModalPropSys)
@@ -15,9 +15,9 @@ import Carnap.Languages.DefiniteDescription.Logic.Gamut
 import Carnap.Languages.PureFirstOrder.Parser (folFormulaParser)
 import Carnap.Languages.DefiniteDescription.Parser (descFormulaParser)
 import Carnap.Languages.DefiniteDescription.Util (descEquivPNF)
-import Carnap.Languages.PureFirstOrder.Util (toDenex, isPNF, pnfEquiv)
+import Carnap.Languages.PureFirstOrder.Util (toDenex, pnfEquiv)
+import Carnap.Languages.PurePropositional.Util (isEquivTo)
 import Carnap.Languages.PurePropositional.Parser (purePropFormulaParser,standardLetters)
-import Carnap.Languages.PurePropositional.Util (isEquivTo, isDNF, isCNF, HasLiterals(..))
 import Carnap.Languages.Util.LanguageClasses
 import Carnap.GHCJS.SharedTypes
 import Carnap.GHCJS.SharedFunctions
@@ -25,8 +25,6 @@ import Data.IORef
 import qualified Data.Map as M
 import Data.Text (pack,Text)
 import Text.Parsec 
-import Text.Read (readMaybe)
-import Data.Maybe (catMaybes)
 import GHCJS.DOM
 import GHCJS.DOM.Types hiding (Text)
 import GHCJS.DOM.Element hiding (drop)
@@ -37,17 +35,12 @@ import GHCJS.DOM.KeyboardEvent
 import GHCJS.DOM.EventM
 import Control.Monad (mplus)
 import Control.Monad.IO.Class (MonadIO, liftIO)
-import Control.Lens (Prism', toListOf, cosmos, Fold, filtered)
 
 translateAction :: IO ()
 translateAction = initElements getTranslates activateTranslate
 
 getTranslates :: IsElement self => Document -> self -> IO [Maybe (Element, Element, M.Map String String)]
 getTranslates d = genInOutElts d "input" "div" "translate"
-
-type BinaryTest lex sem = FixLang lex sem -> FixLang lex sem -> Bool
-
-type UnaryTest lex sem = FixLang lex sem -> Maybe String
 
 activateTranslate :: Document -> Maybe (Element, Element, M.Map String String) -> IO ()
 activateTranslate w (Just (i,o,opts)) = do
@@ -96,77 +89,6 @@ activateTranslate w (Just (i,o,opts)) = do
                   _ -> print "translation was missing an option"
 activateChecker _ Nothing  = return ()
 
-folTests :: forall lex . 
-     ( HasLiterals lex Bool
-     , PrismGenericQuant lex Term Form Bool Int
-     , PrismBooleanConst lex Bool
-     , PrismSubstitutionalVariable lex
-     , BoundVars lex
-     , FirstOrderLex (lex (FixLang lex))
-     )=> [String] -> UnaryTest lex (Form Bool)
-folTests testlist f = case catMaybes $ map ($ f) theTests of 
-                            [] -> Nothing
-                            s:ss -> Just $ foldl (\x y -> x ++ ", and " ++ y) s ss
-    where theTests = map toTest testlist ++ [propTests testlist]
-          toTest "PNF" submission | isPNF submission = Nothing
-                                  | otherwise = Just "this submission is not in Prenex Normal Form"
-          toTest _ _ = Nothing
-
-propTests :: forall sem lex . 
-    ( PrismBooleanConnLex lex sem
-    , PrismBooleanConst lex sem
-    , HasLiterals lex sem
-    , BoundVars lex
-    ) => [String] -> UnaryTest lex (Form sem)
-propTests testlist f = case catMaybes $ map ($ f) theTests of 
-                            [] -> Nothing
-                            s:ss -> Just $ foldl (\x y -> x ++ ", and " ++ y) s ss
-    where theTests = map toTest testlist
-          toTest "CNF" submission | isCNF submission = Nothing
-                                  | otherwise = Just "this submission is not in Conjunctive Normal Form"
-          toTest "DNF" submission | isDNF submission = Nothing
-                                  | otherwise = Just "this submission is not in Disjunctive Normal Form"
-          toTest max submission   | take 7 max == "maxNeg:"   = maxWith 7 max (retype _not') "negations" submission
-                                  | take 7 max == "maxAnd:"   = maxWith 7 max (retype _and') "conjunctions" submission
-                                  | take 7 max == "maxIff:"   = maxWith 7 max (retype _iff') "biconditionals" submission
-                                  | take 6 max == "maxIf:"    = maxWith 6 max (retype _if') "conditionals" submission
-                                  | take 6 max == "maxOr:"    = maxWith 6 max (retype _or') "disjunctions" submission
-                                  | take 7 max == "maxCon:"   = maxWith 7 max (cosmos . _nonAtom) "connectives" submission
-                                  | take 8 max == "maxAtom:"  = maxWith 8 max (cosmos . _atom) "atomic sentences" submission
-                                  | take 9 max == "maxFalse:" = maxWith 9 max (cosmos . _falsum) "falsity constants" submission
-          toTest _ _ = Nothing
-
-          countFold p = length . toListOf p
-          retype p = genChildren . cosmos . p
-
-          maxWith len tag p label submission = 
-                do n <- readMaybe (drop len tag)
-                   let occurs = countFold p submission
-                   if occurs > n 
-                   then Just $ "you have " ++ show occurs ++ " " ++ label ++ ", but should have "
-                             ++ show n ++ " at most"
-                   else Nothing
-
-          _nonAtom :: Fold (FixLang lex (Form sem)) (FixLang lex (Form sem))
-          _nonAtom = filtered (not . isAtom)
-
-          _not' :: Prism' (FixLang lex (Form sem -> Form sem)) ()
-          _not' = _not
-
-          _atom :: Fold (FixLang lex (Form sem)) (FixLang lex (Form sem))
-          _atom = filtered isAtom
-
-          _if' :: Prism' (FixLang lex (Form sem -> Form sem -> Form sem)) ()
-          _if' = _if
-
-          _or' :: Prism' (FixLang lex (Form sem -> Form sem -> Form sem)) ()
-          _or' = _or
-
-          _iff' :: Prism' (FixLang lex (Form sem -> Form sem -> Form sem)) ()
-          _iff' = _iff 
-
-          _and' :: Prism' (FixLang lex (Form sem -> Form sem -> Form sem)) ()
-          _and' = _and 
 
 tryTrans :: Eq (FixLang lex sem) => 
     Parsec String () (FixLang lex sem) -> BinaryTest lex sem -> UnaryTest lex sem
