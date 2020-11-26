@@ -43,7 +43,8 @@ data CheckerOptions = CheckerOptions { submit :: Maybe Button -- What's the subm
                                      , tabIndent :: Bool -- Should the tab button insert an indent?
                                      , autoResize :: Bool -- Should the checker resize automatically?
                                      , popout :: Bool -- Should the checker be able to be put in a new window?
-                                     , hideNumbering :: Bool -- Should the checker hide the line numbering
+                                     , hideNumbering :: Bool -- Should the checker hide the line numbering?
+                                     , tests :: [String] --Should the checker apply tests to the conclusion?
                                      }
 
 optionsFromMap opts = CheckerOptions { submit = Nothing
@@ -74,6 +75,7 @@ optionsFromMap opts = CheckerOptions { submit = Nothing
                                       , tabIndent = "tabindent" `elem` optlist
                                       , popout = "popout" `elem` optlist
                                       , hideNumbering = "hideNumbering" `elem` optlist
+                                      , tests = case M.lookup "tests" opts of Just s -> words s; Nothing -> []
                                       }
                 where optlist = case M.lookup "options" opts of Just s -> words s; Nothing -> []
 

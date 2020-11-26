@@ -26,6 +26,7 @@ import Data.Maybe (catMaybes)
 import qualified Data.Map as M (lookup,fromList,toList,map) 
 import Control.Lens.Fold (toListOf,(^?))
 import Lib
+import Lib.FormulaTests
 import Carnap.GHCJS.Widget.ProofCheckBox (checkerWith, CheckerOptions(..), CheckerFeedbackUpdate(..), optionsFromMap, Button(..) )
 import Carnap.GHCJS.Widget.RenderDeduction
 import GHCJS.DOM.Element (setInnerHTML, getInnerHTML, setAttribute, mouseOver, mouseOut)
@@ -82,6 +83,7 @@ getCheckers w = generateExerciseElts w "proofchecker"
 
 data Checker r lex sem = Checker 
         { checkerToRule :: Maybe (DerivedRule lex sem -> SomeRule)
+        , checkerTests :: Maybe ([String] -> UnaryTest lex sem)
         , ruleSave' :: Maybe (Checker r lex sem -> IORef [(String, SomeRule)] -> IORef Bool -> Document -> Element -> EventM Element MouseEvent ())
         , rulePost' :: Checker r lex sem -> IO (RuntimeNaturalDeductionConfig lex sem)
         , checkerCalc ::  NaturalDeductionCalc r lex sem 
@@ -154,7 +156,7 @@ activateChecker drs w (Just iog@(IOGoal i o g _ opts)) -- TODO: need to update n
                                return pd
 
               --XXX:DRY this pattern
-              propChecker x = Checker (Just PropRule) x
+              propChecker x = Checker (Just PropRule) (Just propTests) x
                                     $ \self -> do somerules <- readIORef (checkerRules self)
                                                   let seqrules = catMaybes $ map readyRule somerules
                                                       rmap = M.fromList seqrules
@@ -163,7 +165,7 @@ activateChecker drs w (Just iog@(IOGoal i o g _ opts)) -- TODO: need to update n
                     where readyRule (x, PropRule r) = Just (x, derivedRuleToSequent r)
                           readyRule _ = Nothing
 
-              folChecker x = Checker (Just FOLRule) x
+              folChecker x = Checker (Just FOLRule) (Just folTests) x
                                    $ \self -> do somerules <- readIORef (checkerRules self)
                                                  let seqrules = catMaybes $ map readyRule somerules
                                                      rmap = M.fromList seqrules
@@ -177,7 +179,7 @@ activateChecker drs w (Just iog@(IOGoal i o g _ opts)) -- TODO: need to update n
               toPremiseSeqs (Just seq) = Just . map (\x -> SA x :|-: SS x) $ toListOf (lhs . concretes) seq
               toPremiseSeqs Nothing = Nothing
 
-              noRuntimeOptions = Checker Nothing Nothing $ const . pure $ RuntimeNaturalDeductionConfig mempty mempty
+              noRuntimeOptions = Checker Nothing Nothing Nothing $ const . pure $ RuntimeNaturalDeductionConfig mempty mempty
 
 threadedCheck options checker w ref v (g, fd) = 
         do mt <- readIORef (threadRef checker)
@@ -202,9 +204,13 @@ threadedCheck options checker w ref v (g, fd) =
                              setInnerHTML fd (Just "")
                              appendChild fd (Just ul)
                              Just wrapper <- getParentElement g
-                             case sequent checker of
-                                 Just s -> updateGoal s ref g wrapper mseq options ndcalc
-                                 Nothing -> computeRule ref g mseq options ndcalc
+                             --XXX: the check below could be inlined better
+                             case tests options of 
+                                [] -> case sequent checker of
+                                    Just s -> updateGoal s ref g wrapper mseq options
+                                    Nothing -> computeRule ref g mseq ndcalc
+                                t -> case checkerTests checker of
+                                    Just fts -> applyTests (fts t) ref g mseq wrapper options
            writeIORef (threadRef checker) (Just t')
            return ()
 
@@ -214,14 +220,25 @@ threadedCheck options checker w ref v (g, fd) =
                          LemmonStyle _ -> renderDeductionLemmon
                          NoRender -> renderNull
 
-updateGoal s ref g wrapper mseq options _ = 
+updateGoal s ref g wrapper mseq options = 
         case (mseq, feedback options) of
              (Nothing,_) -> setAttribute g "class" "goal" >> setAttribute wrapper "class" "" >> writeIORef ref False
              (Just seq, SyntaxOnly) -> setAttribute g "class" "goal" >> setAttribute wrapper "class" "" >> writeIORef ref (seq `seqSubsetUnify` s)
              (Just seq, _) | seq `seqSubsetUnify` s -> setAttribute g "class" "goal success" >> setAttribute wrapper "class" "success" >> writeIORef ref True
              _ -> setAttribute g "class" "goal" >> setAttribute wrapper "class" "failure" >> writeIORef ref False
 
-computeRule ref g mseq _ calc = 
+applyTests :: Sequentable lex => UnaryTest lex sem -> IORef Bool -> Element 
+                    -> Maybe (ClassicalSequentOver lex (Sequent sem)) -> Element -> CheckerOptions -> IO ()
+applyTests theTests ref g mseq wrapper options =
+        case mseq of 
+            Nothing -> setAttribute g "class" "goal" >> setAttribute wrapper "class" "" >> writeIORef ref False
+            Just (_:|-: (SS f))-> case (theTests (fromSequent f), feedback options) of
+                 (Nothing, SyntaxOnly) -> writeIORef ref True
+                 (Just s, SyntaxOnly) -> writeIORef ref False
+                 (Nothing, _) -> setAttribute g "class" "goal success" >> setAttribute wrapper "class" "success" >> writeIORef ref True
+                 (Just s, _) -> setAttribute g "class" "goal" >> setAttribute wrapper "class" "" >> writeIORef ref False
+
+computeRule ref g mseq calc = 
         case mseq of
            Nothing -> do setInnerHTML g (Just "No Rule Found")
                          writeIORef ref False

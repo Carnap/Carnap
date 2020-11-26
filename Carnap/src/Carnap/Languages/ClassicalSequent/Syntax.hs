@@ -277,8 +277,6 @@ instance (Sequentable lex, PrismSubstitutionalVariable lex) => PrismSubstitution
 instance (Sequentable lex, PrismDefiniteDesc lex b c) => PrismDefiniteDesc (ClassicalSequentLexOver lex) b c where
         link_definDesc = underlyingLex . link_definDesc . relexIso
 
-
-
 --------------------------------------------------------
 --3. Sequent Languages
 --------------------------------------------------------

@@ -225,12 +225,15 @@ instance Inference ZachPropEq PurePropLexicon (Form Bool) where
         ruleOf Simp32 = orContCancellation !! 7
         ruleOf (Pr _) = axiom
 
+        restriction (Pr prems) = Just (premConstraint prems)
+        restriction _ = Nothing
+
         isPremise (Pr _) = True
         isPremise _ = False
 
 parseZachPropEq :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> Parsec String u [ZachPropEq]
 parseZachPropEq rtc = do 
-        r <- choice (map (try . string) ["Comm", "DN", "Cond", "Bicond", "DeM", "Assoc", "Abs", "Id","Dist","Pr", "Simp"])
+        r <- choice (map (try . string) ["Comm", "DN", "Cond", "Bicond", "DeM", "Assoc", "Abs", "Id","Dist","PR", "Simp"])
         return $ case r of
             "Comm"-> [AndComm,CommAnd,OrComm,CommOr,IffComm,CommIff]
             "DN" -> [DNRep,RepDN]
@@ -249,7 +252,7 @@ parseZachPropEq rtc = do
                       , Simp31, Simp32 ]
             "Dist" -> [OrDistR, DistOrR, AndDistR, DistAndR, OrDistL,DistOrL,AndDistL,DistAndL]
             "DeM" -> [DM1,DM2,DM3,DM4]
-            "Pr" -> [Pr (problemPremises rtc)]
+            "PR" -> [Pr (problemPremises rtc)]
 
 parseZachPropEqProof :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> String -> [DeductionLine ZachPropEq PurePropLexicon (Form Bool)]
 parseZachPropEqProof rtc = toDeductionHilbertImplicit (parseZachPropEq rtc) (purePropFormulaParser thomasBolducZachOpts)
