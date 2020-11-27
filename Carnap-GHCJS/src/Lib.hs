@@ -299,14 +299,20 @@ popUpWith fd w elt label msg details =
             Nothing -> return ()
            (Just p) <- getParentNode fd
            (Just gp) <- getParentNode p
-           appender <- newListener $ appendPopper outerpopper gp
+           appender <- newListener $ appendPopper outerpopper innerpopper gp
            remover <- newListener $ removePopper outerpopper gp
            addListener elt mouseOver appender False
            addListener elt mouseOut remover False
-    where appendPopper pop targ = do liftIO $ appendChild targ (Just pop) 
-                                     liftIO $ makePopper elt pop
-          removePopper pop targ = do liftIO $ removeChild targ (Just pop)
-                                     return ()
+    where appendPopper opop ipop targ = liftIO $ do 
+               malt <- getAttribute elt "alt" :: IO (Maybe String)
+               case malt of
+                   Just s -> setInnerHTML ipop (Just s)
+                   Nothing -> return ()
+               appendChild targ (Just opop) 
+               makePopper elt opop
+          removePopper pop targ = do 
+               liftIO $ removeChild targ (Just pop)
+               return ()
 
 --------------------------------------------------------
 --1.3 Encodings

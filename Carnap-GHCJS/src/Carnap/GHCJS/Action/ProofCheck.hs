@@ -236,7 +236,12 @@ applyTests theTests ref g mseq wrapper options =
                  (Nothing, SyntaxOnly) -> writeIORef ref True
                  (Just s, SyntaxOnly) -> writeIORef ref False
                  (Nothing, _) -> setAttribute g "class" "goal success" >> setAttribute wrapper "class" "success" >> writeIORef ref True
-                 (Just s, _) -> setAttribute g "class" "goal" >> setAttribute wrapper "class" "" >> writeIORef ref False
+                 (Just s, _) -> do
+                     alerts <- getListOfElementsByClass g "incompleteAlert"
+                     case alerts of
+                         (Just alert):_ -> setAttribute alert "alt" s --XXX popper displays alt test if any is given
+                         _ -> return ()
+                     setAttribute g "class" "goal" >> setAttribute wrapper "class" "failure" >> writeIORef ref False
 
 computeRule ref g mseq calc = 
         case mseq of
