@@ -114,7 +114,7 @@ renderProblem due uidanduser (Entity key val) = do
             score | correct && not late = credit
                   | correct = latescore
                   | otherwise = 0
-            awarded = case extra of Just n -> show n; _ -> "0" :: String
+            awarded = maybe "0" show extra
             mailto theuser = sanitizeHtml (userIdent theuser) ++ "?subject=[Carnap-" ++ sanitizeHtml ident ++ "]"
             template display = 
                 [whamlet|
@@ -161,15 +161,17 @@ renderProblem due uidanduser (Entity key val) = do
                          data-carnap-system="#{sys}"
                          data-carnap-options="#{reviewOptions}"
                          data-carnap-guides="#{guides}"
+                         data-carnap-tests="#{tests}"
                          data-carnap-goal="#{formatContent (unpack goal)}"
                          data-carnap-submission="none">
                          #{der}
                 |]
-                where reviewOptions :: String
+                where tests = maybe "" id $ lookup "tests" (M.fromList opts)
+                      reviewOptions :: String
                       reviewOptions = "resize" ++ if "render" `inOpts` M.fromList opts then " render" else ""
                                                ++ if "guides" `inOpts` M.fromList opts then " guides" else ""
-                      sys = case lookup "system" (M.fromList opts) of Just s -> s; Nothing -> "prop"
-                      guides = case lookup "guides" (M.fromList opts) of Just s -> s; Nothing -> "none"
+                      sys = maybe "prop" id $ lookup "system" (M.fromList opts)
+                      guides = maybe "none" id $ lookup "guides" (M.fromList opts)
                       formatContent c = maybe c id $ (ndNotation `ofPropSys` sys) 
                                              `mplus` (ndNotation `ofFOLSys` sys)
                                              `mplus` (ndNotation `ofSecondOrderSys` sys)
