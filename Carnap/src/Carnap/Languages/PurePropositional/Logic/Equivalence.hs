@@ -2,6 +2,7 @@
 module Carnap.Languages.PurePropositional.Logic.Equivalence (zachPropEqCalc) where
 
 import Data.Map as M (lookup, Map)
+import Data.Char (toLower,toUpper)
 import Text.Parsec
 import Carnap.Core.Data.Types (Form)
 import Carnap.Languages.PurePropositional.Syntax
@@ -233,26 +234,28 @@ instance Inference ZachPropEq PurePropLexicon (Form Bool) where
 
 parseZachPropEq :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> Parsec String u [ZachPropEq]
 parseZachPropEq rtc = do 
-        r <- choice (map (try . string) ["Comm", "DN", "Cond", "Bicond", "DeM", "Assoc", "Abs", "Id","Dist","PR", "Simp"])
-        return $ case r of
-            "Comm"-> [AndComm,CommAnd,OrComm,CommOr,IffComm,CommIff]
-            "DN" -> [DNRep,RepDN]
-            "Cond" -> [MCRep,MCRep2,RepMC,RepMC2, NCRep, RepNC]
-            "Bicond" -> [BiExRep,RepBiEx]
-            "Assoc" -> [AndAssoc, AssocAnd, OrAssoc, AssocOr]
-            "Id" -> [AndIdem,IdemAnd,OrIdem,IdemOr]
-            "Abs" -> [AndAbsorb1,AbsorbAnd1,OrAbsorb1,AbsorbOr1
+        r <- choice (map (try . caseInsensitiveString) ["Comm", "DN", "Cond", "Bicond", "DeM", "Assoc", "Abs", "Id","Dist","PR", "Simp"])
+        return $ case map toLower r of
+            "comm"-> [AndComm,CommAnd,OrComm,CommOr,IffComm,CommIff]
+            "dn" -> [DNRep,RepDN]
+            "cond" -> [MCRep,MCRep2,RepMC,RepMC2, NCRep, RepNC]
+            "bicond" -> [BiExRep,RepBiEx]
+            "assoc" -> [AndAssoc, AssocAnd, OrAssoc, AssocOr]
+            "id" -> [AndIdem,IdemAnd,OrIdem,IdemOr]
+            "abs" -> [AndAbsorb1,AbsorbAnd1,OrAbsorb1,AbsorbOr1
                      ,AndAbsorb2,AbsorbAnd2,OrAbsorb2,AbsorbOr2
                      ,AndAbsorb3,AbsorbAnd3,OrAbsorb3,AbsorbOr3
                      ,AndAbsorb4,AbsorbAnd4,OrAbsorb4,AbsorbOr4
                      ]
-            "Simp" -> [Simp1, Simp2, Simp3, Simp4, Simp5, Simp6, Simp7, Simp8, Simp9, Simp10
+            "simp" -> [Simp1, Simp2, Simp3, Simp4, Simp5, Simp6, Simp7, Simp8, Simp9, Simp10
                       , Simp11, Simp12, Simp13, Simp14, Simp15, Simp16, Simp17, Simp18, Simp19, Simp20
                       , Simp21, Simp22, Simp23, Simp24, Simp25, Simp26, Simp27, Simp28, Simp29, Simp30
                       , Simp31, Simp32 ]
-            "Dist" -> [OrDistR, DistOrR, AndDistR, DistAndR, OrDistL,DistOrL,AndDistL,DistAndL]
-            "DeM" -> [DM1,DM2,DM3,DM4]
-            "PR" -> [Pr (problemPremises rtc)]
+            "dist" -> [OrDistR, DistOrR, AndDistR, DistAndR, OrDistL,DistOrL,AndDistL,DistAndL]
+            "dem" -> [DM1,DM2,DM3,DM4]
+            "pr" -> [Pr (problemPremises rtc)]
+    where caseInsensitiveChar c = char (toLower c) <|> char (toUpper c)
+          caseInsensitiveString s = try (mapM caseInsensitiveChar s) <?> "\"" ++ s ++ "\""
 
 parseZachPropEqProof :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> String -> [DeductionLine ZachPropEq PurePropLexicon (Form Bool)]
 parseZachPropEqProof rtc = toDeductionHilbertImplicit (parseZachPropEq rtc) (purePropFormulaParser thomasBolducZachOpts)
