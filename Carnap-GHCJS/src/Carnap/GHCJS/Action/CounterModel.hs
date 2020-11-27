@@ -93,7 +93,7 @@ activateCounterModeler w (Just (i,o,opts)) = do
           checkerWith parserof cmbuilder calc = 
             case M.lookup "goal" opts of
                 Just g ->
-                  case parse (parserof calc <* eof) "" g of
+                  case parse (spaces *> parserof calc <* eof) "" g of
                       Left e -> setInnerHTML o (Just $ show e) 
                       Right f -> do
                           bw <- createButtonWrapper w o
