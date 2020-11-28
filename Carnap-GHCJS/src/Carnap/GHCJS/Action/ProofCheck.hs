@@ -239,7 +239,7 @@ applyTests theTests ref g mseq wrapper options =
                  (Just s, _) -> do
                      alerts <- getListOfElementsByClass g "incompleteAlert"
                      case alerts of
-                         (Just alert):_ -> setAttribute alert "alt" s --XXX popper displays alt test if any is given
+                         (Just alert):_ -> setAttribute alert "title" s --XXX popper displays title attribute if any is given
                          _ -> return ()
                      setAttribute g "class" "goal" >> setAttribute wrapper "class" "failure" >> writeIORef ref False
 

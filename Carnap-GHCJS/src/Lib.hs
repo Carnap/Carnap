@@ -304,9 +304,11 @@ popUpWith fd w elt label msg details =
            addListener elt mouseOver appender False
            addListener elt mouseOut remover False
     where appendPopper opop ipop targ = liftIO $ do 
-               malt <- getAttribute elt "alt" :: IO (Maybe String)
-               case malt of
-                   Just s -> setInnerHTML ipop (Just s)
+               mtitle <- getAttribute elt "title" :: IO (Maybe String)
+               case mtitle of
+                   Just s -> do
+                       removeAttribute elt "title" 
+                       setInnerHTML ipop (Just s)
                    Nothing -> return ()
                appendChild targ (Just opop) 
                makePopper elt opop
