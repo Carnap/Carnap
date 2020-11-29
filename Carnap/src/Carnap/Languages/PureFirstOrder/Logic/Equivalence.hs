@@ -1,5 +1,5 @@
 {-#LANGUAGE FlexibleContexts, FlexibleInstances, MultiParamTypeClasses #-}
-module Carnap.Languages.PureFirstOrder.Logic.Equivalence () where
+module Carnap.Languages.PureFirstOrder.Logic.Equivalence (zachFOLEqCalc) where
 
 import Text.Parsec
 import Carnap.Core.Data.Types (Form)
