@@ -387,7 +387,8 @@ andIdempotence = firstOrderReplace (lbind $ \x y z -> phi3 1 x y z ./\. phi3 1 x
 andDistributivity :: QuantContextLang (ClassicalSequentOver lex) b Int => FirstOrderRuleVariants lex b
 andDistributivity = firstOrderReplace (lbind $ \x y z -> phi3 1 x y z ./\. (phi3 2 x y z .\/. phi3 3 x y z)) 
                                       (lbind $ \x y z -> (phi3 1 x y z ./\. phi3 2 x y z) .\/. (phi3 1 x y z ./\. phi3 3 x y z))
-
+                    ++ firstOrderReplace (lbind $ \x y z -> (phi3 2 x y z .\/. phi3 3 x y z) ./\. phi3 1 x y z) 
+                                      (lbind $ \x y z -> (phi3 2 x y z ./\. phi3 1 x y z ) .\/. (phi3 3 x y z ./\. phi3 1 x y z ))
 orCommutativity :: QuantContextLang (ClassicalSequentOver lex) b Int => FirstOrderRuleVariants lex b
 orCommutativity = firstOrderReplace (lbind $ \x y z -> phi3 1 x y z .\/. phi3 2 x y z) 
                                     (lbind $ \x y z -> phi3 2 x y z .\/. phi3 1 x y z)
@@ -403,7 +404,8 @@ orIdempotence = firstOrderReplace (lbind $ \x y z -> phi3 1 x y z .\/. phi3 1 x 
 orDistributivity :: QuantContextLang (ClassicalSequentOver lex) b Int => FirstOrderRuleVariants lex b
 orDistributivity = firstOrderReplace (lbind $ \x y z -> phi3 1 x y z .\/. (phi3 2 x y z ./\. phi3 3 x y z)) 
                                      (lbind $ \x y z -> (phi3 1 x y z .\/. phi3 2 x y z) ./\. (phi3 1 x y z .\/. phi3 3 x y z))
-
+                   ++ firstOrderReplace (lbind $ \x y z -> (phi3 2 x y z ./\. phi3 3 x y z) .\/. phi3 1 x y z  ) 
+                                     (lbind $ \x y z -> (phi3 2 x y z .\/. phi3 1 x y z ) ./\. (phi3 3 x y z .\/. phi3 1 x y z ))
 iffCommutativity :: QuantContextLang (ClassicalSequentOver lex) b Int => FirstOrderRuleVariants lex b
 iffCommutativity = firstOrderReplace (lbind $ \x y z -> phi3 1 x y z .<=>. phi3 2 x y z) 
                                      (lbind $ \x y z -> phi3 2 x y z .<=>. phi3 1 x y z)
@@ -449,6 +451,42 @@ biconditionalExchange = firstOrderReplace (lbind $ \x y z -> phi3 1 x y z .<=>. 
 biconditionalCases :: QuantContextLang (ClassicalSequentOver lex) b Int => FirstOrderRuleVariants lex b
 biconditionalCases = firstOrderReplace (lbind $ \x y z -> phi3 1 x y z .<=>. phi3 2 x y z) 
                                        (lbind $ \x y z -> (phi3 1 x y z ./\. phi3 2 x y z) .\/. (lneg (phi3 1 x y z) ./\. lneg (phi3 2 x y z)))
+
+andTautCancellation :: QuantContextLang (ClassicalSequentOver lex) b Int => FirstOrderRuleVariants lex b
+andTautCancellation = firstOrderReplace (lbind $ \x y z -> phi3 1 x y z ./\. (phi3 2 x y z .\/. lneg (phi3 2 x y z))) (lbind $ \x y z -> phi3 1 x y z)
+                   ++ firstOrderReplace (lbind $ \x y z -> (phi3 2 x y z .\/. lneg (phi3 2 x y z)) ./\. phi3 1 x y z) (lbind $ \x y z -> phi3 1 x y z)
+                   ++ firstOrderReplace (lbind $ \x y z -> phi3 1 x y z ./\. (lneg (phi3 2 x y z) .\/. phi3 2 x y z)) (lbind $ \x y z -> phi3 1 x y z)
+                   ++ firstOrderReplace (lbind $ \x y z -> (lneg (phi3 2 x y z) .\/. phi3 2 x y z) ./\. phi3 1 x y z) (lbind $ \x y z -> phi3 1 x y z)
+
+andContCancellation :: QuantContextLang (ClassicalSequentOver lex) b Int => FirstOrderRuleVariants lex b
+andContCancellation = firstOrderReplace (lbind $ \x y z -> phi3 1 x y z ./\. (phi3 2 x y z ./\. lneg (phi3 2 x y z))) (lbind $ \x y z -> phi3 2 x y z ./\. lneg (phi3 2 x y z))
+                   ++ firstOrderReplace (lbind $ \x y z -> (phi3 2 x y z ./\. lneg (phi3 2 x y z)) ./\. phi3 1 x y z) (lbind $ \x y z -> phi3 2 x y z ./\. lneg (phi3 2 x y z))
+                   ++ firstOrderReplace (lbind $ \x y z -> phi3 1 x y z ./\. (lneg (phi3 2 x y z) ./\. phi3 2 x y z)) (lbind $ \x y z -> lneg (phi3 2 x y z) ./\. phi3 2 x y z)
+                   ++ firstOrderReplace (lbind $ \x y z -> (lneg (phi3 2 x y z) ./\. phi3 2 x y z) ./\. phi3 1 x y z) (lbind $ \x y z -> lneg (phi3 2 x y z) ./\. phi3 2 x y z)
+
+orContCancellation :: QuantContextLang (ClassicalSequentOver lex) b Int => FirstOrderRuleVariants lex b
+orContCancellation = firstOrderReplace (lbind $ \x y z -> phi3 1 x y z .\/. (phi3 2 x y z ./\. lneg (phi3 2 x y z))) (lbind $ \x y z -> phi3 1 x y z)
+                  ++ firstOrderReplace (lbind $ \x y z -> (phi3 2 x y z ./\. lneg (phi3 2 x y z)) .\/. phi3 1 x y z) (lbind $ \x y z -> phi3 1 x y z)
+                  ++ firstOrderReplace (lbind $ \x y z -> phi3 1 x y z .\/. (lneg (phi3 2 x y z) ./\. phi3 2 x y z)) (lbind $ \x y z -> phi3 1 x y z)
+                  ++ firstOrderReplace (lbind $ \x y z -> (lneg (phi3 2 x y z) ./\. phi3 2 x y z) .\/. phi3 1 x y z) (lbind $ \x y z -> phi3 1 x y z)
+
+orTautCancellation :: QuantContextLang (ClassicalSequentOver lex) b Int => FirstOrderRuleVariants lex b
+orTautCancellation = firstOrderReplace (lbind $ \x y z -> phi3 1 x y z .\/. (phi3 2 x y z .\/. lneg (phi3 2 x y z))) (lbind $ \x y z -> phi3 2 x y z .\/. lneg (phi3 2 x y z))
+                  ++ firstOrderReplace (lbind $ \x y z -> (phi3 2 x y z .\/. lneg (phi3 2 x y z)) .\/. phi3 1 x y z) (lbind $ \x y z -> phi3 2 x y z .\/. lneg (phi3 2 x y z))
+                  ++ firstOrderReplace (lbind $ \x y z -> phi3 1 x y z .\/. (lneg (phi3 2 x y z) .\/. phi3 2 x y z)) (lbind $ \x y z -> lneg (phi3 2 x y z) .\/. phi3 2 x y z)
+                  ++ firstOrderReplace (lbind $ \x y z -> (lneg (phi3 2 x y z) .\/. phi3 2 x y z) .\/. phi3 1 x y z) (lbind $ \x y z -> lneg (phi3 2 x y z) .\/. phi3 2 x y z)
+
+andAbsorption :: QuantContextLang (ClassicalSequentOver lex) b Int => FirstOrderRuleVariants lex b
+andAbsorption = firstOrderReplace (lbind $ \x y z -> phi3 1 x y z ./\. (phi3 1 x y z .\/. phi3 2 x y z)) (lbind $ \x y z -> phi3 1 x y z)
+             ++ firstOrderReplace (lbind $ \x y z -> phi3 1 x y z ./\. (phi3 2 x y z .\/. phi3 1 x y z)) (lbind $ \x y z -> phi3 1 x y z)
+             ++ firstOrderReplace (lbind $ \x y z -> (phi3 1 x y z .\/. phi3 2 x y z) ./\. phi3 1 x y z) (lbind $ \x y z -> phi3 1 x y z)
+             ++ firstOrderReplace (lbind $ \x y z -> (phi3 2 x y z .\/. phi3 1 x y z) ./\. phi3 1 x y z) (lbind $ \x y z -> phi3 1 x y z)
+
+orAbsorption :: QuantContextLang (ClassicalSequentOver lex) b Int => FirstOrderRuleVariants lex b
+orAbsorption = firstOrderReplace (lbind $ \x y z -> phi3 1 x y z .\/. (phi3 1 x y z ./\. phi3 2 x y z)) (lbind $ \x y z -> phi3 1 x y z) 
+            ++ firstOrderReplace (lbind $ \x y z -> phi3 1 x y z .\/. (phi3 2 x y z ./\. phi3 1 x y z)) (lbind $ \x y z -> phi3 1 x y z)
+            ++ firstOrderReplace (lbind $ \x y z -> (phi3 1 x y z ./\. phi3 2 x y z) .\/. phi3 1 x y z) (lbind $ \x y z -> phi3 1 x y z)
+            ++ firstOrderReplace (lbind $ \x y z -> (phi3 2 x y z ./\. phi3 1 x y z) .\/. phi3 1 x y z) (lbind $ \x y z -> phi3 1 x y z)
 
 rulesOfPassage :: QuantContextLang (ClassicalSequentOver lex) b Int => FirstOrderRuleVariants lex b
 rulesOfPassage = firstOrderReplace (lbind $ \x y z -> lsome "v" $ \w -> phi4 1 x y z w .\/. phi3 2 x y z) 

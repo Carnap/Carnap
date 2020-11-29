@@ -1,7 +1,6 @@
 {-#LANGUAGE FlexibleContexts, FlexibleInstances, MultiParamTypeClasses #-}
-module Carnap.Languages.PurePropositional.Logic.Equivalence (zachPropEqCalc) where
+module Carnap.Languages.PurePropositional.Logic.Equivalence (zachPropEqCalc, parseZachPropEq, ZachPropEq(..)) where
 
-import Data.Map as M (lookup, Map)
 import Data.Char (toLower,toUpper)
 import Text.Parsec
 import Carnap.Core.Data.Types (Form)
