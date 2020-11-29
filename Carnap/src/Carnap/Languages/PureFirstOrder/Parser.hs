@@ -2,7 +2,7 @@
 module Carnap.Languages.PureFirstOrder.Parser 
 ( folFormulaParser, folFormulaParserRelaxed, mfolFormulaParser
 , magnusFOLFormulaParser, gallowPLFormulaParser, thomasBolducAndZachFOLFormulaParser
-, gamutNDFormulaParser, thomasBolducAndZachFOL2019FormulaParser
+, gamutNDFormulaParser, thomasBolducAndZachFOL2019FormulaParser, thomasBolducAndZachFOLFormulaParserStrict
 , hardegreePLFormulaParser, bergmannMoorAndNelsonPDFormulaParser, bergmannMoorAndNelsonPDEFormulaParser
 , goldfarbNDFormulaParser, tomassiQLFormulaParser, hurleyPLFormulaParser, hausmanPLFormulaParser
 , FirstOrderParserOptions(..), parserFromOptions, parseFreeVar, howardSnyderPLFormulaParser) where
@@ -128,6 +128,9 @@ thomasBolducAndZachFOLParserOptions = magnusFOLParserOptions { hasBooleanConstan
                                                              , opTable = calgaryOpTable
                                                              , finalValidation = \x -> if isOpenFormula x then unexpected "unbound variable" else return ()
                                                              }
+
+thomasBolducAndZachFOLParserOptionsStrict :: FirstOrderParserOptions PureLexiconFOL u Identity
+thomasBolducAndZachFOLParserOptionsStrict = thomasBolducAndZachFOLParserOptions { opTable = calgary2019OpTable}
 
 gallowPLParserOptions :: FirstOrderParserOptions PureLexiconFOL u Identity
 gallowPLParserOptions = magnusFOLParserOptions { freeVarParser = parseFreeVar "wxyz"
@@ -317,6 +320,9 @@ gallowPLFormulaParser = parserFromOptions gallowPLParserOptions
 
 thomasBolducAndZachFOLFormulaParser :: Parsec String u PureFOLForm
 thomasBolducAndZachFOLFormulaParser = parserFromOptions thomasBolducAndZachFOLParserOptions
+
+thomasBolducAndZachFOLFormulaParserStrict :: Parsec String u PureFOLForm
+thomasBolducAndZachFOLFormulaParserStrict = parserFromOptions thomasBolducAndZachFOLParserOptionsStrict
 
 gamutNDFormulaParser :: Parsec String u PureFOLForm
 gamutNDFormulaParser = parserFromOptions gamutNDParserOptions

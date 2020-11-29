@@ -110,7 +110,6 @@ instance Inference ZachFOLEq PureLexiconFOL (Form Bool) where
         ruleOf (Prop Simp30) = orContCancellation !! 5
         ruleOf (Prop Simp31) = orContCancellation !! 6
         ruleOf (Prop Simp32) = orContCancellation !! 7
-        ruleOf r@(Prop _) = premisesOf r ∴ conclusionOf r
         ruleOf QN1 = quantifierNegationReplace !! 0
         ruleOf QN2 = quantifierNegationReplace !! 1
         ruleOf QN3 = quantifierNegationReplace !! 2
@@ -128,13 +127,13 @@ parseZachFOLEq rtc = try quantRule <|> try (map Prop <$> parseProp)
           quantRule = string "QN" >> return [QN1,QN2,QN3,QN4]
 
 parseZachFOLEqProof :: RuntimeNaturalDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine ZachFOLEq PureLexiconFOL (Form Bool)]
-parseZachFOLEqProof ders = toDeductionHilbertImplicit (parseZachFOLEq ders) thomasBolducAndZachFOLFormulaParser
+parseZachFOLEqProof ders = toDeductionHilbertImplicit (parseZachFOLEq ders) thomasBolducAndZachFOLFormulaParserStrict
 
 zachFOLEqCalc = mkNDCalc 
     { ndRenderer = NoRender
     , ndParseProof = parseZachFOLEqProof
     , ndProcessLine = hoProcessLineHilbertImplicit
     , ndProcessLineMemo = Just hoProcessLineHilbertImplicitMemo
-    , ndParseSeq = parseSeqOver thomasBolducAndZachFOLFormulaParser
-    , ndParseForm = thomasBolducAndZachFOLFormulaParser
+    , ndParseSeq = parseSeqOver thomasBolducAndZachFOLFormulaParserStrict
+    , ndParseForm = thomasBolducAndZachFOLFormulaParserStrict
     }
