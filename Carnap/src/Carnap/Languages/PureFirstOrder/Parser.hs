@@ -2,7 +2,7 @@
 module Carnap.Languages.PureFirstOrder.Parser 
 ( folFormulaParser, folFormulaParserRelaxed, mfolFormulaParser
 , magnusFOLFormulaParser, gallowPLFormulaParser, thomasBolducAndZachFOLFormulaParser
-, gamutNDFormulaParser, thomasBolducAndZachFOL2019FormulaParser, thomasBolducAndZachFOLFormulaParserStrict
+, gamutNDFormulaParser, thomasBolducAndZachFOL2019FormulaParser, thomasBolducAndZachFOL2019FormulaParserStrict
 , hardegreePLFormulaParser, bergmannMoorAndNelsonPDFormulaParser, bergmannMoorAndNelsonPDEFormulaParser
 , goldfarbNDFormulaParser, tomassiQLFormulaParser, hurleyPLFormulaParser, hausmanPLFormulaParser
 , FirstOrderParserOptions(..), parserFromOptions, parseFreeVar, howardSnyderPLFormulaParser) where
@@ -129,8 +129,8 @@ thomasBolducAndZachFOLParserOptions = magnusFOLParserOptions { hasBooleanConstan
                                                              , finalValidation = \x -> if isOpenFormula x then unexpected "unbound variable" else return ()
                                                              }
 
-thomasBolducAndZachFOLParserOptionsStrict :: FirstOrderParserOptions PureLexiconFOL u Identity
-thomasBolducAndZachFOLParserOptionsStrict = thomasBolducAndZachFOLParserOptions { opTable = calgary2019OpTable}
+thomasBolducAndZachFOL2019ParserOptionsStrict :: FirstOrderParserOptions PureLexiconFOL u Identity
+thomasBolducAndZachFOL2019ParserOptionsStrict = thomasBolducAndZachFOL2019ParserOptions { opTable = calgaryOpTable}
 
 gallowPLParserOptions :: FirstOrderParserOptions PureLexiconFOL u Identity
 gallowPLParserOptions = magnusFOLParserOptions { freeVarParser = parseFreeVar "wxyz"
@@ -321,8 +321,8 @@ gallowPLFormulaParser = parserFromOptions gallowPLParserOptions
 thomasBolducAndZachFOLFormulaParser :: Parsec String u PureFOLForm
 thomasBolducAndZachFOLFormulaParser = parserFromOptions thomasBolducAndZachFOLParserOptions
 
-thomasBolducAndZachFOLFormulaParserStrict :: Parsec String u PureFOLForm
-thomasBolducAndZachFOLFormulaParserStrict = parserFromOptions thomasBolducAndZachFOLParserOptionsStrict
+thomasBolducAndZachFOL2019FormulaParserStrict :: Parsec String u PureFOLForm
+thomasBolducAndZachFOL2019FormulaParserStrict = parserFromOptions thomasBolducAndZachFOL2019ParserOptionsStrict
 
 gamutNDFormulaParser :: Parsec String u PureFOLForm
 gamutNDFormulaParser = parserFromOptions gamutNDParserOptions
