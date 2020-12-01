@@ -8,7 +8,7 @@ module Carnap.Languages.PurePropositional.Parser
 import Carnap.Core.Data.Types
 import Carnap.Languages.PurePropositional.Syntax
 import Carnap.Languages.ClassicalSequent.Parser
-import Carnap.Languages.PurePropositional.Util (isAtom)
+import Carnap.Languages.PurePropositional.Util (isAtom, isBooleanBinary)
 import Carnap.Languages.Util.LanguageClasses (BooleanLanguage, IndexedPropLanguage)
 import Carnap.Languages.Util.GenericParsers
 import Text.Parsec
@@ -61,7 +61,10 @@ magnusOpts = extendedLetters { parenRecur = magnusDispatch }
 thomasBolducZachOpts :: Monad m => PurePropositionalParserOptions u m
 thomasBolducZachOpts = magnusOpts { hasBooleanConstants = True 
                                   , opTable = calgaryOpTable
+                                  , parenRecur = zachDispatch
                                   }
+    where noatoms a = if isBooleanBinary a then return a else unexpected "parentheses around an atom or negation"
+          zachDispatch opt rw = (wrappedWith '(' ')' (rw opt) <|> wrappedWith '[' ']' (rw opt)) >>= noatoms
 
 thomasBolducZach2019Opts :: Monad m => PurePropositionalParserOptions u m
 thomasBolducZach2019Opts = thomasBolducZachOpts { opTable = calgary2019OpTable }
