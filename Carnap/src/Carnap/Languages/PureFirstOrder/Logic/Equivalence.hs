@@ -62,6 +62,7 @@ instance Show ZachFOLEq where
         show QSE10 = "QSE"
         show QSE11 = "QSE"
         show QSE12 = "QSE"
+        show VR    = "VR"
         show (Pr _) = "Pr"
 
 instance Inference ZachFOLEq PureLexiconFOL (Form Bool) where
