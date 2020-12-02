@@ -304,8 +304,8 @@ boundVarOf v f = case preview  _varLabel v >>= subBinder f of
 isPNF :: (PrismGenericQuant lex Term Form Bool Int, PrismSubstitutionalVariable lex, BoundVars lex, FirstOrderLex (lex (FixLang lex))) 
     => FixLang lex (Form Bool) -> Bool
 isPNF = quantFree
-          & outside (unaryOpPrismOn _all') .~ const True
-          & outside (unaryOpPrismOn _some') .~ \(_,LLam f) -> isPNF $ f (static 0)
+          & outside (unaryOpPrismOn _all') .~ (\(_,LLam f) -> isPNF $ f (static 0))
+          & outside (unaryOpPrismOn _some') .~ (\(_,LLam f) -> isPNF $ f (static 0))
     where _all' :: PrismGenericQuant lex Term Form Bool Int => Prism' (FixLang lex ((Term Int -> Form Bool) -> Form Bool)) String
           _all' = _all
           _some' :: PrismGenericQuant lex Term Form Bool Int => Prism' (FixLang lex ((Term Int -> Form Bool) -> Form Bool)) String
