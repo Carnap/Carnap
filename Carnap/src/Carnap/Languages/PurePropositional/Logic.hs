@@ -1,7 +1,7 @@
 {-# LANGUAGE RankNTypes, FlexibleContexts #-}
 module Carnap.Languages.PurePropositional.Logic 
     ( PropSequentCalc
-    , parsePropLogic, PropLogic, propCalc
+    , parsePropLogic, PropLogic, propCalc, propCalcStrict
     , parseMontagueSC, MontagueSC, montagueSCCalc
     , parseLogicBookSD, LogicBookSD, logicBookSDCalc
     , parseLogicBookSDPlus,  LogicBookSDPlus, logicBookSDPlusCalc
@@ -52,6 +52,7 @@ import Carnap.Languages.PurePropositional.Logic.Equivalence
 ofPropSys :: (forall r . (Show r, Inference r PurePropLexicon (Form Bool)) => 
               NaturalDeductionCalc r PurePropLexicon (Form Bool) -> a) -> String -> Maybe a
 ofPropSys f sys | sys == "prop"                          = Just $ f propCalc 
+                | sys == "propStrict"                    = Just $ f propCalcStrict
                 | sys == "montagueSC"                    = Just $ f montagueSCCalc 
                 | sys == "LogicBookSD"                   = Just $ f logicBookSDCalc 
                 | sys == "LogicBookSDPlus"               = Just $ f logicBookSDPlusCalc 

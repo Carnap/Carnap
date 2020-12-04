@@ -1,6 +1,6 @@
 {-# LANGUAGE FlexibleContexts, FlexibleInstances, MultiParamTypeClasses #-}
 module Carnap.Languages.PurePropositional.Parser 
-    ( purePropFormulaParser, standardLetters, extendedLetters, hausmanOpts, thomasBolducZachOpts, thomasBolducZach2019Opts
+    ( purePropFormulaParser, standardLetters, standardLettersStrict, extendedLetters, hausmanOpts, thomasBolducZachOpts, thomasBolducZach2019Opts
     , hardegreeOpts, standardOpTable, calgaryOpTable, calgary2019OpTable, hausmanOpTable, howardSnyderOpTable, gamutOpTable
     , gamutOpts, bonevacOpts, howardSnyderOpts, hurleyOpts, magnusOpts, extendedPropSeqParser
     ) where
@@ -52,6 +52,9 @@ hardegreeOpts = extendedLetters { hasBooleanConstants = True }
 
 extendedLetters :: Monad m => PurePropositionalParserOptions u m
 extendedLetters = standardLetters { atomicSentenceParser = sentenceLetterParser ['A' .. 'Z'] }
+
+standardLettersStrict :: Monad m => PurePropositionalParserOptions u m
+standardLettersStrict = standardLetters { opTable = standardOpTableStrict }
 
 magnusOpts :: Monad m => PurePropositionalParserOptions u m
 magnusOpts = extendedLetters { parenRecur = magnusDispatch }
@@ -119,6 +122,13 @@ standardOpTable :: (BooleanLanguage (FixLang lex (Form Bool)), Monad m)
 standardOpTable = [ [ Prefix (try parseNeg)]
                   , [Infix (try parseOr) AssocLeft, Infix (try parseAnd) AssocLeft]
                   , [Infix (try parseIf) AssocNone, Infix (try parseIff) AssocNone]
+                  ]
+
+standardOpTableStrict :: (BooleanLanguage (FixLang lex (Form Bool)), Monad m)
+    => [[Operator String u m (FixLang lex (Form Bool))]]
+standardOpTableStrict = [ [ Prefix (try parseNeg)]
+                  , [ Infix (try parseOr) AssocNone, Infix (try parseAnd) AssocNone
+                    , Infix (try parseIf) AssocNone, Infix (try parseIff) AssocNone]
                   ]
 
 calgaryOpTable :: (BooleanLanguage (FixLang lex (Form Bool)), Monad m)

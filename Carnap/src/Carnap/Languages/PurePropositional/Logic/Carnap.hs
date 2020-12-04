@@ -1,6 +1,6 @@
 {-#LANGUAGE FlexibleContexts, FlexibleInstances, MultiParamTypeClasses #-}
 module Carnap.Languages.PurePropositional.Logic.Carnap
-    (parsePropLogic,  parsePropLogicProof, PropLogic, propCalc, propTreeCalc) where
+    (parsePropLogic,  parsePropLogicProof, PropLogic, propCalc, propCalcStrict, propTreeCalc) where
 import Data.Map as M (lookup, Map)
 import Text.Parsec
 import Carnap.Core.Data.Types (Form)
@@ -114,12 +114,26 @@ parsePropLogicProof :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool)
                      -> String -> [DeductionLine PropLogic PurePropLexicon (Form Bool)]
 parsePropLogicProof rtc = toDeductionMontague (parsePropLogic rtc) (purePropFormulaParser standardLetters)
 
+parsePropLogicProofStrict :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) 
+                     -> String -> [DeductionLine PropLogic PurePropLexicon (Form Bool)]
+parsePropLogicProofStrict rtc = toDeductionMontague (parsePropLogic rtc) (purePropFormulaParser standardLettersStrict)
+
 propCalc = mkNDCalc 
     { ndRenderer = MontagueStyle
     , ndParseProof = parsePropLogicProof
     , ndProcessLine = processLineMontague
     , ndProcessLineMemo = Nothing
     }
+
+propCalcStrict = mkNDCalc 
+    { ndRenderer = MontagueStyle
+    , ndParseProof = parsePropLogicProofStrict
+    , ndProcessLine = processLineMontague
+    , ndProcessLineMemo = Nothing
+    , ndParseForm = purePropFormulaParser standardLettersStrict
+    , ndParseSeq = parseSeqOver (purePropFormulaParser standardLettersStrict)
+    }
+
 
 propTreeCalc :: TableauCalc PurePropLexicon (Form Bool) PropLogic
 propTreeCalc = mkTBCalc
