@@ -32,10 +32,6 @@ simplify eqs =
 
 massDecompose l = return $ concat $ map (\(x:=:y) -> decompose x y) l
 
--- | returns true on rigid-rigid equations between terms in βη long normal form
---(since these are guaranteed to have heads that are either constants or
---variables).
-
 -- | ensures that a list of equations is oriented, by dropping flex-flex
 -- equations, and reversing equations that have a rigid term on the left
 orient [] = return []
@@ -46,6 +42,9 @@ orient ((x:=:y):eqs) =  do chx <- constHead x []
                                           if chy then return $ (x:=:y):oeqs
                                                  else return oeqs
 
+-- | returns true on rigid-rigid equations between terms in βη long normal form
+--(since these are guaranteed to have heads that are either constants or
+--variables).
 rigidRigid :: (HigherOrder f, MonadVar f (State Int))  => Equation f -> (State Int) Bool
 rigidRigid (x:=:y) = (&&) <$> constHead x [] <*> constHead y []
 
