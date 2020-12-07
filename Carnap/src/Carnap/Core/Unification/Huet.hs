@@ -14,46 +14,53 @@ import Control.Monad.Logic
 import Control.Monad.State
 import Control.Monad.Trans.Class as M
 
--- | simplfies a set of equations, returning a set of equations with the same
+-- | simplifies a set of equations, returning a set of equations with the same
 --set of solutions, but no rigid-rigid equations---or Nothing, in the case
 --where the set of equations has no solutions.
 simplify ::(HigherOrder f, MonadVar f (State Int)) => [Equation f] -> LogicT (State Int) [Equation f]
 simplify eqs = 
-        do filtered <- M.lift $ filterM rigidRigid eqs
-           case filtered of
-               [] -> return eqs
-               rr -> do failCheck rr 
-                        >>= massDecompose 
-                        >>= simplify
-                        >>= (\x -> return $ (filter (not . \x -> elem x rr) eqs) ++ x)
+        do (rigid,flex) <- partitionM compareHeads eqs
+           if null rigid 
+               then return eqs
+               else massDecompose rigid
+                      >>= simplify
+                      >>= (\x -> return $ flex ++ x)
     where failCheck l = if and (map (\(x:=:y) -> sameHead x y) l) 
                            then return l
                            else mzero
 
-massDecompose l = return $ concat $ map (\(x:=:y) -> decompose x y) l
+partitionM :: Monad m => (a -> m Bool) -> [a] -> m ([a], [a])
+partitionM f [] = return ([], [])
+partitionM f (x:xs) = do
+    res <- f x
+    (as,bs) <- partitionM f xs
+    return $ if res then (x : as,     bs)
+                    else (    as, x : bs)
 
--- | ensures that a list of equations is oriented, by dropping flex-flex
--- equations, and reversing equations that have a rigid term on the left
-orient [] = return []
-orient ((x:=:y):eqs) =  do chx <- constHead x []
-                           oeqs <- orient eqs
-                           if chx then return $ (y:=:x):oeqs
-                                  else do chy <- constHead y []
-                                          if chy then return $ (x:=:y):oeqs
-                                                 else return oeqs
+massDecompose l = return $ concat $ map (\(x:=:y) -> decompose x y) l
 
 -- | returns true on rigid-rigid equations between terms in βη long normal form
 --(since these are guaranteed to have heads that are either constants or
---variables).
-rigidRigid :: (HigherOrder f, MonadVar f (State Int))  => Equation f -> (State Int) Bool
-rigidRigid (x:=:y) = (&&) <$> constHead x [] <*> constHead y []
+--variables), but also causes the computational branch to fail of there's
+--a mismatch of (constant) heads
+compareHeads :: (HigherOrder f, MonadVar f (State Int)) => Equation f -> LogicT (State Int) Bool
+compareHeads (x:=:y) = do mh <- M.lift (constHead x [])
+                          case mh of
+                              Nothing -> return False --head is not a constant.
+                              Just h -> do mh' <- M.lift (constHead y [])
+                                           if mh' == mh then return True
+                                                        else mzero
 
-constHead ::  (HigherOrder f, MonadVar f (State Int), Typeable a, EtaExpand f a) => f a -> [AnyPig f] -> State Int Bool
+-- | Extract the heads from terms in βη long normal form
+--(since these are guaranteed to have heads that are either constants or
+--variables).
+constHead ::  (HigherOrder f, MonadVar f (State Int), Typeable a, EtaExpand f a) => f a -> [AnyPig f] -> State Int (Maybe (AnyPig f))
 constHead x bv = case castLam x of
  (Just (ExtLam l _)) -> do lv <- fresh
                            constHead (l lv) ((AnyPig lv):bv)
  _ ->  do (h, _) <- guillotine x
-          return $ not (freeVar h)
+          if freeVar h then return Nothing
+                       else return (Just h)
  where freeVar p@(AnyPig x) = isVar x && not (p `elem` bv)
 
 abstractEq :: (MonadPlus m, HigherOrder f, MonadVar f (State Int)) => AnyPig f -> AnyPig f -> Equation f -> m (Equation f)

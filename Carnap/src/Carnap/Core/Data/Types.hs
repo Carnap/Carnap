@@ -504,13 +504,17 @@ instance (UniformlyEq (FixLang lex), FirstOrderLex (FixLang lex), StaticVar (Fix
 instance {-# OVERLAPPABLE #-} (UniformlyEq ((Copula :|: f) (FixLang f))
          , StaticVar (FixLang f))
          => UniformlyEq (FixLang f) where
-             (x :!$: y) =* (x' :!$: y') = x =* x' && y =* y'
-             x@(LLam (f :: FixLang f t1 -> FixLang f t1')) =* y@(LLam (g :: FixLang f t2 -> FixLang f t2')) = 
-                    case (eqT :: Maybe (t1 :~: t2)) of
-                            Just Refl -> (f $ static $ height x) =* (g $ static $ height y)
-                            _ -> False
-             Fx x =* Fx y = x =* y
-             _ =* _ = False
+             x =* y = S.evalState (statefulEq x y) (0 :: Int)
+                where statefulEq :: FixLang f a -> FixLang f b -> State Int Bool
+                      statefulEq (x :!$: y) (x' :!$: y') =  (&&) <$> statefulEq x x' <*> statefulEq y y'
+                      statefulEq x@(LLam (f :: FixLang f t1 -> FixLang f t1')) y@(LLam (g :: FixLang f t2 -> FixLang f t2')) = 
+                            case (eqT :: Maybe (t1 :~: t2)) of
+                                    Just Refl -> do n <- get
+                                                    put (n+1)
+                                                    statefulEq (f $ static n) (g $ static n)
+                                    _ -> return False
+                      statefulEq (Fx x) (Fx y) = return (x =* y)
+                      statefulEq _ _ = return False
 
 instance (StaticVar (FixLang f), FirstOrderLex ((Copula :|: f) (FixLang f))) => FirstOrderLex (FixLang f) where
 
@@ -538,9 +542,7 @@ instance {-# OVERLAPPABLE #-}
 
                   sv' = static (height (LLam f'))
 
-        decompose a b
-            | sameHead a b = recur a b []
-            | otherwise = []
+        decompose a b = recur a b [] --check for same head needs to be done separately
             where recur :: FixLang f a -> FixLang f b -> [Equation (FixLang f)]
                     ->[Equation (FixLang f)]
                   recur (x :!$: (y :: FixLang f t))
