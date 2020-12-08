@@ -4,7 +4,7 @@ module Carnap.Core.Unification.Unification (
    Equation((:=:)), UError(..), FirstOrder(..), HigherOrder(..),
       applySub, mapAll, freeVars, emap, sameTypeEq, ExtApp(..), ExtLam(..), 
       EveryPig(..),AnyPig(..), EtaExpand(..), MonadVar(..), betaReduce, 
-      betaNormalize, toBNF, pureBNF, toLNF, etaMaximize, etaMaximize'
+      betaNormalize, toBNF, pureBNF, toLNF
 ) where
 
 import Data.Type.Equality
@@ -69,6 +69,9 @@ class (Typeable a) => EtaExpand f a where
         etaExpand :: f a -> f a
         etaExpand = id
 
+        etaMaximize :: f a -> f a
+        etaMaximize = id
+
 data ExtApp f a where
     ExtApp :: (Typeable b, EtaExpand f b) => f (b -> a) -> f b -> ExtApp f a
 
@@ -90,6 +93,10 @@ instance (Typeable b, EtaExpand f b, EtaExpand f a, HigherOrder f)
         etaExpand l  = case castLam l of 
                         Just (ExtLam f Refl) -> lam $ etaExpand . f 
                         Nothing -> lam $ \x -> l .$. x
+
+        etaMaximize l  = case castLam l of 
+                        Just (ExtLam f Refl) -> lam $ etaMaximize . f 
+                        Nothing -> lam $ \x -> etaMaximize l .$. x
 
 data UError f where
     SubError :: f a -> f a -> UError f -> UError f
@@ -177,7 +184,7 @@ pureBNF x = evalState (toBNF x) (0 :: Int)
 
 toLNF :: (HigherOrder f, MonadVar f (State Int), Typeable a, EtaExpand f a) => f a -> State Int (f a)
 toLNF x = do bnf <- toBNF x
-             bnfeta <- etaMaximize bnf
+             let  bnfeta = etaMaximize bnf
              rec bnfeta
     where rec :: (HigherOrder f, MonadVar f (State Int), Typeable a, EtaExpand f a) => f a -> State Int (f a)
           rec bnfeta = case matchApp bnfeta of 
@@ -192,10 +199,3 @@ toLNF x = do bnf <- toBNF x
                                          inf <- rec (f v)
                                          return $ (lam $ \y -> subst v y inf)
                                    Nothing -> return bnfeta
-
-etaMaximize :: (HigherOrder f, Typeable a, EtaExpand f a) => f a -> (State Int) (f a)
-etaMaximize = return . etaMaximize'
-
-etaMaximize' :: (HigherOrder f, Typeable a, EtaExpand f a) => f a -> f a
-etaMaximize' x = if y =* x then x else etaMaximize' y
-    where y = etaExpand x
