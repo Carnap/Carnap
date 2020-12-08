@@ -19,15 +19,12 @@ import Control.Monad.Trans.Class as M
 --where the set of equations has no solutions.
 simplify ::(HigherOrder f, MonadVar f (State Int)) => [Equation f] -> LogicT (State Int) [Equation f]
 simplify eqs = 
-        do (rigid,flex) <- partitionM compareHeads eqs
+        do (rigid,flex) <- partitionM (\eq -> compareHeads eq []) eqs
            if null rigid 
                then return eqs
                else massDecompose rigid
                       >>= simplify
                       >>= (\x -> return $ flex ++ x)
-    where failCheck l = if and (map (\(x:=:y) -> sameHead x y) l) 
-                           then return l
-                           else mzero
 
 partitionM :: Monad m => (a -> m Bool) -> [a] -> m ([a], [a])
 partitionM f [] = return ([], [])
@@ -43,25 +40,20 @@ massDecompose l = return $ concat $ map (\(x:=:y) -> decompose x y) l
 --(since these are guaranteed to have heads that are either constants or
 --variables), but also causes the computational branch to fail of there's
 --a mismatch of (constant) heads
-compareHeads :: (HigherOrder f, MonadVar f (State Int)) => Equation f -> LogicT (State Int) Bool
-compareHeads (x:=:y) = do mh <- M.lift (constHead x [])
-                          case mh of
-                              Nothing -> return False --head is not a constant.
-                              Just h -> do mh' <- M.lift (constHead y [])
-                                           if mh' == mh then return True
+compareHeads :: (HigherOrder f, MonadVar f (State Int)) => Equation f -> [AnyPig f] -> LogicT (State Int) Bool
+compareHeads (x:=:y) bv = case (castLam x, castLam y) of
+                         (Just (ExtLam (l :: f t1 -> f t1') Refl),Just (ExtLam (l' :: f t2 -> f t2') Refl)) -> do 
+                              case (eqT :: Maybe (t1 :~: t2)) of
+                                  Just Refl -> do lv <- M.lift $ fresh
+                                                  compareHeads (l lv :=: l' lv) (AnyPig lv:bv)
+                                  Nothing -> mzero
+                         _ -> do (p1,_) <- guillotine x
+                                 if freeVar p1 
+                                    then return False
+                                    else do (p2,_) <- guillotine y
+                                            if p1 == p2 then return True
                                                         else mzero
-
--- | Extract the heads from terms in βη long normal form
---(since these are guaranteed to have heads that are either constants or
---variables).
-constHead ::  (HigherOrder f, MonadVar f (State Int), Typeable a, EtaExpand f a) => f a -> [AnyPig f] -> State Int (Maybe (AnyPig f))
-constHead x bv = case castLam x of
- (Just (ExtLam l _)) -> do lv <- fresh
-                           constHead (l lv) ((AnyPig lv):bv)
- _ ->  do (h, _) <- guillotine x
-          if freeVar h then return Nothing
-                       else return (Just h)
- where freeVar p@(AnyPig x) = isVar x && not (p `elem` bv)
+    where freeVar ap@(AnyPig x) = isVar x && not (ap `elem` bv)
 
 abstractEq :: (MonadPlus m, HigherOrder f, MonadVar f (State Int)) => AnyPig f -> AnyPig f -> Equation f -> m (Equation f)
 abstractEq (AnyPig (v :: f a)) (AnyPig (v' :: f b)) (t :=:t') = 
