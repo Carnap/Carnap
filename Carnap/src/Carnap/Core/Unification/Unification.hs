@@ -96,7 +96,7 @@ instance (Typeable b, EtaExpand f b, EtaExpand f a, HigherOrder f)
 
         etaMaximize l  = case castLam l of 
                         Just (ExtLam f Refl) -> lam $ etaMaximize . f 
-                        Nothing -> lam $ \x -> etaMaximize l .$. x
+                        Nothing -> lam $ \x -> etaMaximize (l .$. x)
 
 data UError f where
     SubError :: f a -> f a -> UError f -> UError f
@@ -144,20 +144,20 @@ freeVars t | isVar t   = [AnyPig t]
 
 --return "Nothing" in the do nothing case
 betaReduce :: (HigherOrder f) => f a -> Maybe (f a)
-betaReduce x = do (ExtApp h t) <- (matchApp x)
-                  (ExtLam l Refl) <- (castLam h)
+betaReduce x = do ExtApp h t <- matchApp x
+                  ExtLam l Refl <- castLam h
                   return (l t)
 
---return "Nothing" in the do nothing case
+--a call-by-value strategy: returns "Nothing" in the do nothing case
 betaNormalize :: (HigherOrder f, MonadVar f m, Typeable a) => f a -> m (Maybe (f a))
-betaNormalize x = case (castLam x) of
+betaNormalize x = case castLam x of
                      Just (ExtLam f Refl) -> 
                         do v <- fresh
                            inf <- betaNormalize (f v)
                            case inf of
                                Nothing -> return Nothing
                                Just inf' -> return $ Just (lam $ \x -> subst v x inf')
-                     Nothing -> case (matchApp x) of
+                     Nothing -> case matchApp x of
                         Just (ExtApp h t) -> do
                             mh <- betaNormalize h
                             mt <- betaNormalize t
@@ -173,6 +173,32 @@ betaNormalize x = case (castLam x) of
         where mbetaNF x = do y <- toBNF x
                              return (Just y)
 
+--a call-by-name strategy: doesn't signal the do-nothing case
+betaNormalizeByName :: (HigherOrder f, Typeable a) => f a -> f a
+betaNormalizeByName x = case castLam x of
+                            Just (ExtLam f Refl) -> lam (betaNormalizeByName . f)
+                            Nothing -> let fa = fullyApply x in case matchApp fa of
+                               Just (ExtApp h t) -> argRecur h .$. betaNormalizeByName t
+                               Nothing -> case castLam fa of
+                                    Just (ExtLam f Refl) -> lam (betaNormalizeByName . f)
+                                    Nothing -> fa
+
+    where applyHead :: (HigherOrder f, Typeable a) => f a -> Maybe (f a)
+          applyHead x = do ExtApp h t <- matchApp x
+                           case applyHead h of
+                               Nothing -> do ExtLam l Refl <- castLam h
+                                             Just (l t)
+                               Just h' -> Just (h' .$. t)
+          fullyApply x = case applyHead x of
+                             Nothing -> x
+                             Just y -> fullyApply y
+          argRecur :: (HigherOrder f, Typeable a) => f a -> f a
+          argRecur x = case matchApp x of
+                             Just (ExtApp h t) -> argRecur h .$. betaNormalizeByName t
+                             Nothing -> x
+
+
+
 toBNF :: (HigherOrder f, MonadVar f m, Typeable a) => f a -> m (f a)
 toBNF x = do nf <- betaNormalize x
              case nf of
@@ -182,19 +208,33 @@ toBNF x = do nf <- betaNormalize x
 pureBNF :: (HigherOrder f, MonadVar f (State Int), Typeable a) => f a -> f a
 pureBNF x = evalState (toBNF x) (0 :: Int)
 
+toLNF' :: (HigherOrder f, Typeable a, EtaExpand f a) => f a -> State Int (f a)
+toLNF' x = do let bnf = betaNormalizeByName x
+              let bnfeta = etaMaximize bnf
+              return $ rec bnfeta
+    where rec :: (HigherOrder f, Typeable a, EtaExpand f a) => f a -> f a
+          rec bnfeta = case matchApp bnfeta of
+                          Just (ExtApp h t) -> let h' = case matchApp h of
+                                                              Just (ExtApp _ _) -> rec h
+                                                              _ -> h
+                                               in h' .$. rec (etaMaximize t)
+                          Nothing -> case castLam bnfeta of
+                                   Just (ExtLam f Refl) -> lam $ rec . f
+                                   Nothing -> bnfeta
+
 toLNF :: (HigherOrder f, MonadVar f (State Int), Typeable a, EtaExpand f a) => f a -> State Int (f a)
-toLNF x = do bnf <- toBNF x
-             let  bnfeta = etaMaximize bnf
+toLNF x = do let bnf = betaNormalizeByName x
+             let bnfeta = etaMaximize bnf
              rec bnfeta
     where rec :: (HigherOrder f, MonadVar f (State Int), Typeable a, EtaExpand f a) => f a -> State Int (f a)
-          rec bnfeta = case matchApp bnfeta of 
-                          Just (ExtApp h t) -> do t' <- toLNF t
+          rec bnfeta = case matchApp bnfeta of
+                          Just (ExtApp h t) -> do t' <- rec (etaMaximize t)
                                                   h' <- case matchApp h of
                                                               Just (ExtApp _ _) -> rec h
                                                               _ -> return h
                                                   return (h' .$. t')
                           Nothing -> case (castLam bnfeta) of
-                                   Just (ExtLam f Refl) -> 
+                                   Just (ExtLam f Refl) ->
                                       do v <- fresh
                                          inf <- rec (f v)
                                          return $ (lam $ \y -> subst v y inf)

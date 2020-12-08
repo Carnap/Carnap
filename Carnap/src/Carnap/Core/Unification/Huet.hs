@@ -233,9 +233,5 @@ eqLNF ((x :: f a):=:y) =  do x' <- toLNF x
                              y' <- toLNF y
                              return (x':=:y')
 
-eqBNF (x:=:y) = do x' <- toBNF x
-                   y' <- toBNF y
-                   return (x':=:y')
-
 huetUnifySys :: (MonadVar f (State Int), HigherOrder f) => (forall a. f a -> Bool) -> [Equation f] -> (State Int) [[Equation f]]
 huetUnifySys varConst eqs = observeAllT (huetunify varConst eqs [])
