@@ -41,7 +41,7 @@ premConstraint Nothing _ = Nothing
 premConstraint (Just prems) sub | theinstance `elem` prems = Nothing
                                 | otherwise = Just (show (project theinstance) ++ " is not one of the premises " 
                                                                                ++ intercalate ", " (map (show . project) prems))
-    where theinstance = pureBNF . applySub sub $ (SA (phin 1) :|-: SS (phin 1))
+    where theinstance = betaNormalizeByName $ applySub sub $ (SA (phin 1) :|-: SS (phin 1))
           project = view rhs
 
 dischargeConstraint n ded lhs sub | and (map (`elem` forms) lhs') = Nothing

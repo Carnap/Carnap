@@ -4,7 +4,7 @@ module Carnap.Core.Unification.Unification (
    Equation((:=:)), UError(..), FirstOrder(..), HigherOrder(..),
       applySub, mapAll, freeVars, emap, sameTypeEq, ExtApp(..), ExtLam(..), 
       EveryPig(..),AnyPig(..), EtaExpand(..), MonadVar(..), betaReduce, 
-      betaNormalize, toBNF, pureBNF, toLNF
+      betaNormalize, betaNormalizeByName, toBNF, pureBNF, toLNF, 
 ) where
 
 import Data.Type.Equality
