@@ -208,20 +208,6 @@ toBNF x = do nf <- betaNormalize x
 pureBNF :: (HigherOrder f, MonadVar f (State Int), Typeable a) => f a -> f a
 pureBNF x = evalState (toBNF x) (0 :: Int)
 
-toLNF' :: (HigherOrder f, Typeable a, EtaExpand f a) => f a -> State Int (f a)
-toLNF' x = do let bnf = betaNormalizeByName x
-              let bnfeta = etaMaximize bnf
-              return $ rec bnfeta
-    where rec :: (HigherOrder f, Typeable a, EtaExpand f a) => f a -> f a
-          rec bnfeta = case matchApp bnfeta of
-                          Just (ExtApp h t) -> let h' = case matchApp h of
-                                                              Just (ExtApp _ _) -> rec h
-                                                              _ -> h
-                                               in h' .$. rec (etaMaximize t)
-                          Nothing -> case castLam bnfeta of
-                                   Just (ExtLam f Refl) -> lam $ rec . f
-                                   Nothing -> bnfeta
-
 toLNF :: (HigherOrder f, MonadVar f (State Int), Typeable a, EtaExpand f a) => f a -> State Int (f a)
 toLNF x = do let bnf = betaNormalizeByName x
              let bnfeta = etaMaximize bnf
