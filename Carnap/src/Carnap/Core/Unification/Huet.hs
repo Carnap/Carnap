@@ -55,12 +55,6 @@ compareHeads (x:=:y) bv = case (castLam x, castLam y) of
                                                         else mzero
     where freeVar ap@(AnyPig x) = isVar x && not (ap `elem` bv)
 
-abstractEq :: (MonadPlus m, HigherOrder f, MonadVar f (State Int)) => AnyPig f -> AnyPig f -> Equation f -> m (Equation f)
-abstractEq (AnyPig (v :: f a)) (AnyPig (v' :: f b)) (t :=:t') = 
-        case eqT :: Maybe (a :~: b) of
-            Just Refl -> return $ (lam $ \x -> subst v x t) :=: (lam $ \x -> subst v' x t')
-            Nothing -> mzero
- 
 -- XXX : This needs to take place in a fresh variable monad. Should use
 --a new type of fresh variable for fresh unification variables, in order to
 --avoid issues with substitution.
@@ -71,20 +65,17 @@ abstractEq (AnyPig (v :: f a)) (AnyPig (v' :: f b)) (t :=:t') =
 -- XXX : excessive eqT use could probably be cleand up.
 --
 -- | given a an oriented flexible/rigid equation (with the flexible side on
--- the left), this indeterministically returns a simplified equation
--- resulting from the generate rule (not doing the βη-reduction), and the
--- associated substituitional equation. 
+-- the left), this indeterministically returns the associated
+-- substituitional equation. 
 --
 --bad behavior can be expected when given a rigid/rigid, flexible/flexible,
 --or rigid/flexible equation.
-generate :: (MonadVar f (State Int), HigherOrder f) => Equation f -> LogicT (State Int) (Equation f,Equation f)
+generate :: (MonadVar f (State Int), HigherOrder f) => Equation f -> LogicT (State Int) (Equation f)
 generate ((x :: f a) :=: y) = --accumulator for projection terms
          do case (castLam x, castLam y) of
                 (Just (ExtLam l Refl),Just (ExtLam l' Refl)) -> 
                     do fv <- M.lift fresh
-                       (eq, sub) <- generate $ (l fv) :=:  (l' fv)
-                       eq' <-  abstractEq (AnyPig fv) (AnyPig fv) eq
-                       return (eq', sub)
+                       generate $ (l fv) :=: (l' fv)
                 (Nothing, Nothing) -> 
                     do (AnyPig (headX :: f t1), projterms) <- guillotine x
                        projvars <- M.lift $ toVars projterms
@@ -95,9 +86,8 @@ generate ((x :: f a) :=: y) = --accumulator for projection terms
                        let vbranches = map (project projvars) $ zip projvars projterms
                        let hbranch = imitate projvars (AnyPig y)
                        (AnyPig (newTerm :: f t5)) <- hbranch `mplus` foldr mplus mzero vbranches 
-                       gappyX <- M.lift $ safesubst headX x
                        case eqT :: Maybe (t5 :~: t1) of
-                           Just Refl -> return (gappyX newTerm :=:y,headX:=:newTerm)
+                           Just Refl -> return (headX:=:newTerm)
                            Nothing -> mzero
 
 guillotine :: (HigherOrder f, Monad m,Typeable a, MonadVar f (State Int), EtaExpand f a) => f a -> m (AnyPig f, [AnyPig f])
@@ -182,28 +172,10 @@ huetunify varConst es ss =
            case nub seqs of 
                 []     -> return (reverse ss)
                 (x:xs) -> do lnfx <- (M.lift . eqLMatch) x
-                             (genEq, genSub@(a:=:b)) <- generate lnfx
-                             let subbed = mapAll (subst a b) (genEq:xs)
+                             genSub@(a:=:b) <- generate lnfx
+                             let subbed = mapAll (subst a b) (x:xs)
                              lnfeqs <- mapM (M.lift . eqLNF) subbed
                              huetunify varConst (filter (not . trivial) lnfeqs) (genSub:ss)
-    where trivial (x:=:y) = x =* y
-
-huetunify' :: (HigherOrder f, MonadVar f (State Int))
-        => (forall a. f a -> Bool) --treat certain variables as constants
-        -> [Equation f] --equations to be solved
-        -> [Equation f] --accumulator for the substitution
-        -> Int
-        -> LogicT (State Int) ([Equation f],[Equation f])
-huetunify' varConst es ss 0 = return (es,reverse ss)
-huetunify' varConst es ss n = 
-        do seqs <- simplify es
-           case nub seqs of 
-                []     -> return (es,reverse ss)
-                (x:xs) -> do lnfx <- (M.lift . eqLMatch) x
-                             (genEq, genSub@(a:=:b)) <- generate lnfx
-                             let subbed = mapAll (subst a b) (genEq:xs)
-                             lnfeqs <- mapM (M.lift . eqLNF) subbed
-                             huetunify' varConst (filter (not . trivial) lnfeqs) (genSub:ss) (n-1)
     where trivial (x:=:y) = x =* y
 
 eqLMatch :: (MonadVar f (State Int), HigherOrder f) => Equation f -> (State Int) (Equation f)
