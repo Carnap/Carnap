@@ -174,8 +174,8 @@ huetunify varConst es ss =
                 (x:xs) -> do lnfx <- (M.lift . eqLMatch) x
                              genSub@(a:=:b) <- generate lnfx
                              let subbed = mapAll (subst a b) (x:xs)
-                             lnfeqs <- mapM (M.lift . eqLNF) subbed
-                             huetunify varConst (filter (not . trivial) lnfeqs) (genSub:ss)
+                             fresheqs <- mapM (M.lift . eqFreshen) subbed
+                             huetunify varConst (filter (not . trivial) fresheqs) (genSub:ss)
     where trivial (x:=:y) = x =* y
 
 eqLMatch :: (MonadVar f (State Int), HigherOrder f) => Equation f -> (State Int) (Equation f)
@@ -200,10 +200,9 @@ eqLMatch (x :=: y) =
                         (lam $ \z -> subst v z x') :=:
                         (lam $ \z -> subst v z y') 
                    
-eqLNF :: (HigherOrder f, MonadVar f (State Int)) => Equation f -> (State Int) (Equation f)
-eqLNF ((x :: f a):=:y) =  do x' <- toLNF x
-                             --y' <- toLNF y 
-                             return (x':=:y)
+eqFreshen :: (HigherOrder f, MonadVar f (State Int)) => Equation f -> (State Int) (Equation f)
+eqFreshen ((x :: f a):=:y) =  do x' <- refreshBindings x
+                                 return (x':=:y)
 
 huetUnifySys :: (MonadVar f (State Int), HigherOrder f) => (forall a. f a -> Bool) -> [Equation f] -> (State Int) [[Equation f]]
 huetUnifySys varConst eqs = observeAllT (huetunify varConst eqs [])
