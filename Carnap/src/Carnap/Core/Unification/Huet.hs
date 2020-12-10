@@ -173,7 +173,7 @@ huetunify varConst es ss =
                 []     -> return (reverse ss)
                 (x:xs) -> do lnfx <- (M.lift . eqLMatch) x
                              genSub@(a:=:b) <- generate lnfx
-                             let subbed = mapAll (subst a b) (x:xs)
+                             let subbed = map (emapL (subst a b)) (x:xs)
                              fresheqs <- mapM (M.lift . eqFreshen) subbed
                              huetunify varConst (filter (not . trivial) fresheqs) (genSub:ss)
     where trivial (x:=:y) = x =* y

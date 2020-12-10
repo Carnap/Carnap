@@ -2,7 +2,7 @@
 
 module Carnap.Core.Unification.Unification (
    Equation((:=:)), UError(..), FirstOrder(..), HigherOrder(..),
-      applySub, mapAll, freeVars, emap, sameTypeEq, ExtApp(..), ExtLam(..), 
+      applySub, mapAll, freeVars, emap, emapL, sameTypeEq, ExtApp(..), ExtLam(..), 
       EveryPig(..),AnyPig(..), EtaExpand(..), MonadVar(..), betaReduce, 
       betaNormalize, betaNormalizeByName, toBNF, pureBNF, refreshBindings, 
 ) where
@@ -122,6 +122,9 @@ sameTypeEq ((a :: f a) :=: _) ((b :: f b) :=: _) =
 
 emap :: (forall a. f a -> f a) -> Equation f -> Equation f
 emap f (x :=: y) = f x :=: f y
+
+emapL :: (forall a. f a -> f a) -> Equation f -> Equation f
+emapL f (x :=: y) = f x :=: y
 
 mapAll :: (forall a. f a -> f a) -> [Equation f] -> [Equation f]
 mapAll f = map (emap f)
