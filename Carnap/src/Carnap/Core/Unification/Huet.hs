@@ -34,7 +34,7 @@ partitionM f (x:xs) = do
     return $ if res then (x : as,     bs)
                     else (    as, x : bs)
 
-massDecompose l = return $ concat $ map (\(x:=:y) -> decompose x y) l
+massDecompose l = M.lift $ concat <$> mapM (\(x:=:y) -> statefulDecompose x y) l
 
 -- | returns true on rigid-rigid equations between terms in βη long normal form
 --(since these are guaranteed to have heads that are either constants or
@@ -96,13 +96,36 @@ guillotine x = basket (AnyPig x) []
                       Just (ExtApp h t) -> basket (AnyPig h) ((AnyPig t):pigs)
                       Nothing -> return (AnyPig x,pigs)
 
+--Decompose using fresh variables, avoiding the binding-freshening step later
+--
+--XXX: this inserts some vacuous lambdas. This could be avoided by using
+--`occurs sv` as a guard in reabstract, but it seems more efficient to just
+--leave them in (though there's no perceptible difference either way)
+statefulDecompose :: (HigherOrder f, Monad m,Typeable a, MonadVar f m, EtaExpand f a) => f a -> f a -> m [Equation f]
+statefulDecompose a b = case (castLam a, castLam b) of
+            (Just (ExtLam (f ::  f a -> f b) Refl), Just (ExtLam (f' :: f a' -> f b') Refl)) -> 
+                case (eqT :: Maybe (a:~:a'), eqT :: Maybe (b:~:b')) of
+                    (Just Refl, Just Refl) -> do sv <- fresh
+                                                 decd <- statefulDecompose (f sv) (f' sv)
+                                                 return (map (reabstract sv) decd)
+                    _ -> return []
+            (Nothing, Nothing) -> return $ recur a b []
+    where recur :: (HigherOrder f, Typeable a, Typeable b) => f a -> f b -> [Equation f] -> [Equation f]
+          recur a b terms = case (matchApp a, matchApp b) of
+            (Just (ExtApp h (t :: f a)), Just (ExtApp h' (t' :: f a'))) -> 
+                case eqT :: Maybe (a :~: a') of
+                    Just Refl -> recur h h' ((t:=:t'):terms)
+                    _ -> []
+            _ -> terms
+          reabstract sv (t:=:t') = lam (\x -> subst sv x t) :=: lam (\x -> subst sv x t')
+
 --recursively performs a surgery on a term (either a projection term or the
 --body of the rhs), eventually replacing every part of the term with an
 --appropriate chunk of variables.
 --
 --Note that the projection term will not be of the same type as the return
 --value. Hence, we need an AnyPig here.
-project :: (MonadVar f (State Int), HigherOrder f) => [AnyPig f] -> (AnyPig f,AnyPig f) ->  LogicT (State Int) (AnyPig f)
+project :: (MonadVar f (State Int), HigherOrder f) => [AnyPig f] -> (AnyPig f,AnyPig f) -> LogicT (State Int) (AnyPig f)
 project pvs (AnyPig (var :: f vt), AnyPig (term :: f tt)) = 
         case eqT :: Maybe (vt :~: tt) of
             Just Refl -> do pigbodies <- M.lift $ handleBodyAbs pvs var term []
@@ -110,7 +133,7 @@ project pvs (AnyPig (var :: f vt), AnyPig (term :: f tt)) =
                             foldr mplus mzero (map return projections)
             Nothing -> error "var/term mismatch"
 
-imitate :: (MonadVar f (State Int), HigherOrder f) => [AnyPig f] -> AnyPig f ->  LogicT (State Int) (AnyPig f)
+imitate :: (MonadVar f (State Int), HigherOrder f) => [AnyPig f] -> AnyPig f -> LogicT (State Int) (AnyPig f)
 imitate pvs (AnyPig term) 
     | isVar term = mzero
     | otherwise = 
@@ -118,7 +141,7 @@ imitate pvs (AnyPig term)
            imitation <- M.lift $ bindAll (reverse pvs) (AnyPig body)
            return imitation 
 
-handleBodyApp :: (MonadVar f (State Int), HigherOrder f, Typeable a) => [AnyPig f] -> f a ->  State Int (f a)
+handleBodyApp :: (MonadVar f (State Int), HigherOrder f, Typeable a) => [AnyPig f] -> f a -> State Int (f a)
 handleBodyApp projvars term = case matchApp term of
    Nothing -> return term
    (Just (ExtApp h t)) -> do newInit <- handleBodyApp projvars h
@@ -201,8 +224,7 @@ eqLMatch (x :=: y) =
                         (lam $ \z -> subst v z y') 
                    
 eqFreshen :: (HigherOrder f, MonadVar f (State Int)) => Equation f -> (State Int) (Equation f)
-eqFreshen ((x :: f a):=:y) =  do x' <- refreshBindings x
-                                 return (x':=:y)
+eqFreshen ((x :: f a):=:y) =  do return (betaNormalizeByName x :=: y)
 
 huetUnifySys :: (MonadVar f (State Int), HigherOrder f) => (forall a. f a -> Bool) -> [Equation f] -> (State Int) [[Equation f]]
 huetUnifySys varConst eqs = observeAllT (huetunify varConst eqs [])
