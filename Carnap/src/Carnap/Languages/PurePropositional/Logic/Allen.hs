@@ -182,7 +182,10 @@ allenNotation x = case runParser altparser 0 "" x of
     where altparser = do s <- handlecon <|> try handleatom <|> handleLParen <|> handleRParen <|> fallback
                          rest <- (eof >> return "") <|> altparser
                          return $ s ++ rest
-          handlecon = try (char '∧' >> return "&") <|> (char '¬' >> return "~")
+          handlecon = try (char '∧' >> return "&") 
+                      <|> (char '¬' >> return "~")
+                      <|> (char '⊤' >> return " ")
+                      <|> (char '∅' >> return " ")
           handleatom = do c <- oneOf "ABCDEFGHIJKLMNOPQRSTUVWXYZ" <* char '('
                           args <- oneOf "abcdefghijklmnopqrstuvwxyz" `sepBy` char ','
                           char ')'
