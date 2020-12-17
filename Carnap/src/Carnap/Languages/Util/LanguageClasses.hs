@@ -528,6 +528,64 @@ instance {-#OVERLAPPABLE#-} PrismElementarySetsLex lex b => ElementarySetsLangua
         setUnion = curry $ review (binaryOpPrism _setUnion)
         setComplement = curry $ review (binaryOpPrism _setComplement)
 
+class ElementaryArithmeticLangauge l where
+            arithSucc :: l -> l
+            arithPlus :: l -> l -> l
+            arithTimes :: l -> l -> l
+            arithZero :: l
+
+class (Typeable b, PrismLink (FixLang lex) (Function (ElementaryArithmeticOperations b) (FixLang lex))) 
+        => PrismElementaryArithmeticLex lex b where
+
+        _arithSucc :: Prism' (FixLang lex (Term b -> Term b)) ()
+        _arithSucc = unarylink_ArithmeticLex . arithSuccPris 
+
+        _arithPlus :: Prism' (FixLang lex (Term b -> Term b -> Term b)) ()
+        _arithPlus = binarylink_ArithmeticLex . arithPlusPris
+
+        _arithTimes :: Prism' (FixLang lex (Term b -> Term b -> Term b)) ()
+        _arithTimes = binarylink_ArithmeticLex . arithTimesPris
+
+        _arithZero :: Prism' (FixLang lex (Term b)) ()
+        _arithZero = zeroarylink_ElementarySetsLex . arithZeroPris 
+
+        binarylink_ArithmeticLex :: 
+            Prism' (FixLang lex (Term b -> Term b -> Term b)) 
+                   (Function (ElementaryArithmeticOperations b) (FixLang lex) (Term b -> Term b -> Term b))
+        binarylink_ArithmeticLex = link 
+
+        unarylink_ArithmeticLex :: 
+            Prism' (FixLang lex (Term b -> Term b)) 
+                   (Function (ElementaryArithmeticOperations b) (FixLang lex) (Term b -> Term b))
+        unarylink_ArithmeticLex = link 
+
+        zeroarylink_ElementarySetsLex :: 
+            Prism' (FixLang lex (Term b)) 
+                   (Function (ElementaryArithmeticOperations b) (FixLang lex) (Term b))
+        zeroarylink_ElementarySetsLex = link 
+
+        arithSuccPris :: Prism' (Function (ElementaryArithmeticOperations b) (FixLang lex) (Term b -> Term b)) ()
+        arithSuccPris = prism' (\_ -> Function ArithSuccessor AOne) 
+                          (\x -> case x of Function ArithSuccessor AOne -> Just (); _ -> Nothing)
+
+        arithPlusPris :: Prism' (Function (ElementaryArithmeticOperations b) (FixLang lex) (Term b -> Term b -> Term b)) ()
+        arithPlusPris = prism' (\_ -> Function ArithAddition ATwo) 
+                         (\x -> case x of Function ArithAddition ATwo -> Just (); _ -> Nothing)
+
+        arithTimesPris :: Prism' (Function (ElementaryArithmeticOperations b) (FixLang lex) (Term b -> Term b -> Term b)) ()
+        arithTimesPris = prism' (\_ -> Function ArithMultiplication ATwo) 
+                         (\x -> case x of Function ArithMultiplication ATwo -> Just (); _ -> Nothing)
+
+        arithZeroPris :: Prism' (Function (ElementaryArithmeticOperations b) (FixLang lex) (Term b)) ()
+        arithZeroPris = prism' (\_ -> Function ArithZero AZero) 
+                          (\x -> case x of Function ArithZero AZero -> Just (); _ -> Nothing)
+
+instance {-#OVERLAPPABLE#-} PrismElementaryArithmeticLex lex b => ElementaryArithmeticLangauge (FixLang lex (Term b)) where
+        arithSucc = review (unaryOpPrism _arithSucc)
+        arithPlus = curry $ review (binaryOpPrism _arithPlus)
+        arithTimes = curry $ review (binaryOpPrism _arithTimes)
+        arithZero = review _arithZero ()
+
 --------------------------------------------------------
 --1.4. Variable Binding Operators
 --------------------------------------------------------
