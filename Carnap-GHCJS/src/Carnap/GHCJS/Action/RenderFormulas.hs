@@ -11,7 +11,7 @@ import Carnap.Languages.PurePropositional.Logic (ofPropSys)
 import Carnap.Languages.PureFirstOrder.Logic (ofFOLSys)
 import Carnap.Languages.ModalPropositional.Logic (ofModalPropSys)
 import Carnap.Languages.PureSecondOrder.Logic (ofSecondOrderSys) 
-import Carnap.Languages.SetTheory.Logic.Carnap (ofSetTheorySys)
+import Carnap.Languages.SetTheory.Logic (ofSetTheorySys)
 import Carnap.Languages.ModalFirstOrder.Logic (hardegreeMPLCalc)
 
 renderFormulasAction = initElements (\w dom -> getListOfElementsByTag dom "code") rewriteFormula

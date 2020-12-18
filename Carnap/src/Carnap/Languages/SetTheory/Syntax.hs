@@ -16,7 +16,6 @@ import Carnap.Languages.ClassicalSequent.Syntax
 import Carnap.Languages.Util.GenericConstructors
 import Data.List (intercalate)
 
-
 -------------------------------------
 --  1. Data for Set Theory Syntax  --
 -------------------------------------

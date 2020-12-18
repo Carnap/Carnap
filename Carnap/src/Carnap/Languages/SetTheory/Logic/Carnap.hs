@@ -1,5 +1,5 @@
 {-#LANGUAGE RankNTypes, FlexibleContexts,  FlexibleInstances, MultiParamTypeClasses #-}
-module Carnap.Languages.SetTheory.Logic.Carnap (estCalc, sstCalc, ofSetTheorySys) where
+module Carnap.Languages.SetTheory.Logic.Carnap (estCalc, sstCalc) where
 
 import Carnap.Core.Data.Types
 import Carnap.Languages.PureFirstOrder.Syntax (fogamma)
