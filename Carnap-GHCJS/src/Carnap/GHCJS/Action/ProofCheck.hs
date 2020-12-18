@@ -14,7 +14,7 @@ import Carnap.Languages.PurePropositional.Logic
 import Carnap.Languages.PureFirstOrder.Logic 
 import Carnap.Languages.ModalPropositional.Logic (ofModalPropSys)
 import Carnap.Languages.PureSecondOrder.Logic (ofSecondOrderSys) 
-import Carnap.Languages.SetTheory.Logic.Carnap (ofSetTheorySys)
+import Carnap.Languages.SetTheory.Logic (ofSetTheorySys)
 import Carnap.Languages.DefiniteDescription.Logic.Gamut (ofDefiniteDescSys)
 import Carnap.Languages.ModalFirstOrder.Logic (hardegreeMPLCalc)
 import Carnap.GHCJS.SharedTypes

@@ -29,6 +29,9 @@ strictSetTheoryOptions = FirstOrderParserOptions
 
 strictSetTheoryParser = parserFromOptions strictSetTheoryOptions
 
+instance ParsableLex (Form Bool) StrictSetTheoryLex where
+        langParser = strictSetTheoryParser
+
 elementarySetTheoryOptions :: FirstOrderParserOptions ElementarySetTheoryLex u Identity
 elementarySetTheoryOptions = FirstOrderParserOptions 
                            { atomicSentenceParser = \x -> try (elementParser x)

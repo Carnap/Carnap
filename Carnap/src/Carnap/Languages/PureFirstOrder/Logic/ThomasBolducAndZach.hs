@@ -69,7 +69,7 @@ instance Inference ThomasBolducAndZachFOLCore PureLexiconFOL (Form Bool) where
 
          premisesOf (TFLC x) = map liftSequent (premisesOf x)
          premisesOf r = upperSequents (ruleOf r)
-         
+
          conclusionOf (TFLC x) = liftSequent (conclusionOf x)
          conclusionOf r = lowerSequent (ruleOf r)
 
@@ -83,7 +83,7 @@ instance Inference ThomasBolducAndZachFOLCore PureLexiconFOL (Form Bool) where
          restriction EE2   = Just (eigenConstraint tau ((SS $ lsome "v" $ phi' 1) :-: SS (phin 1)) (fogamma 1 :+: fogamma 2))
          restriction (Pr prems) = Just (premConstraint prems)
          restriction _     = Nothing
-         
+
          globalRestriction (Left ded) n (TFLC TFL.CondIntro1) = Just $ fitchAssumptionCheck n ded [([phin 1], [phin 2])]
          globalRestriction (Left ded) n (TFLC TFL.CondIntro2) = Just $ fitchAssumptionCheck n ded [([phin 1], [phin 2])]
          globalRestriction (Left ded) n (TFLC TFL.BicoIntro1) = Just $ fitchAssumptionCheck n ded [([phin 1], [phin 2]), ([phin 2], [phin 1])]
@@ -125,7 +125,7 @@ instance Inference ThomasBolducAndZachFOL PureLexiconFOL (Form Bool) where
 
          premisesOf (TFL x) = map liftSequent (premisesOf x)
          premisesOf r = upperSequents (ruleOf r)
-         
+
          conclusionOf (TFL x) = liftSequent (conclusionOf x)
          conclusionOf r = lowerSequent (ruleOf r)
 
