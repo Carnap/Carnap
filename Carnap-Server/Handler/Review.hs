@@ -14,7 +14,7 @@ import Carnap.Languages.PurePropositional.Syntax
 import Carnap.Languages.PureFirstOrder.Syntax
 import Carnap.Languages.PurePropositional.Logic (ofPropSys)
 import Carnap.Languages.PureFirstOrder.Logic (ofFOLSys)
-import Carnap.Languages.SetTheory.Logic.Carnap (ofSetTheorySys)
+import Carnap.Languages.SetTheory.Logic (ofSetTheorySys)
 import Carnap.Languages.PureSecondOrder.Logic (ofSecondOrderSys)
 import Carnap.Languages.ModalPropositional.Logic (ofModalPropSys)
 import Carnap.Languages.DefiniteDescription.Logic.Gamut (ofDefiniteDescSys)

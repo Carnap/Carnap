@@ -1,4 +1,4 @@
-{-#LANGUAGE RankNTypes, StandaloneDeriving, ScopedTypeVariables, FlexibleContexts, FlexibleInstances, UndecidableInstances, MultiParamTypeClasses #-}
+{-#LANGUAGE RankNTypes, StandaloneDeriving, ScopedTypeVariables, FlexibleContexts, FlexibleInstances, UndecidableInstances, MultiParamTypeClasses, ConstraintKinds #-}
 module Carnap.Languages.PureFirstOrder.Logic.OpenLogic
 ( parseOpenLogicFONK, openLogicFONKCalc, OpenLogicFONK(..), olpFOLKCalc, olpFOLJCalc) where
 
@@ -63,18 +63,18 @@ parseOpenLogicFONK = (try folParse <|> liftProp) <* spaces <* eof
                     ]
               getLabel = (char '(' *> many1 digit <* char ')') <|> many1 digit
 
-instance Inference (OpenLogicFONK PureLexiconFOL) PureLexiconFOL (Form Bool) where
+instance NKAdequate lex => Inference (OpenLogicFONK lex) lex (Form Bool) where
         ruleOf x = coreRuleOf x
         restriction x = coreRestriction x
 
-instance ( BooleanLanguage (ClassicalSequentOver lex (Form Bool))
-         , BooleanConstLanguage (ClassicalSequentOver lex (Form Bool))
-         , IndexedSchemePropLanguage (ClassicalSequentOver lex (Form Bool))
-         , IndexedSchemeConstantLanguage (ClassicalSequentOver lex (Term Int))
+type NKAdequate lex = 
+         ( BooleanConstLanguage (ClassicalSequentOver lex (Form Bool))
          , QuantLanguage (ClassicalSequentOver lex (Form Bool)) (ClassicalSequentOver lex (Term Int)) 
          , PolyadicSchematicPredicateLanguage (ClassicalSequentOver lex) (Term Int) (Form Bool)
          , PrismPolyadicSchematicFunction (ClassicalSequentLexOver lex) Int Int 
          , PrismIndexedConstant (ClassicalSequentLexOver lex) Int
+         , PrismSchematicProp lex Bool
+         , PrismBooleanConnLex lex Bool
          , PrismSubstitutionalVariable lex
          , PrismTermEquality lex Int Bool
          , PrismStandardVar (ClassicalSequentLexOver lex) Int
@@ -83,8 +83,13 @@ instance ( BooleanLanguage (ClassicalSequentOver lex (Form Bool))
          , FirstOrderLex (lex (ClassicalSequentOver lex))
          , PrismSubstitutionalVariable (ClassicalSequentLexOver lex)
          , Eq (ClassicalSequentOver lex (Form Bool))
+         , Eq (ClassicalSequentOver lex (Succedent (Form Bool)))
+         , Eq (ClassicalSequentOver lex (Term Int))
+         , BoundVars (ClassicalSequentLexOver lex)
          , ReLex lex
-         ) => CoreInference (OpenLogicFONK lex) lex (Form Bool) where
+         )
+
+instance NKAdequate lex => CoreInference (OpenLogicFONK lex) lex (Form Bool) where
          coreRuleOf (PropNK x) = coreRuleOf x
          coreRuleOf AllI = universalGeneralization
          coreRuleOf AllE = universalInstantiation
@@ -102,7 +107,7 @@ instance ( BooleanLanguage (ClassicalSequentOver lex (Form Bool))
          coreRestriction (ExistsEAnnotatedVac _ t) = Just $ eigenConstraint t (SS (lsome "v" (phi' 1)) :-: fodelta 1) (fogamma 1)
          coreRestriction _ = Nothing
 
-instance (Eq r, AssumptionNumbers r) => StructuralInference (OpenLogicFONK PureLexiconFOL) PureLexiconFOL (ProofTree r PureLexiconFOL (Form Bool)) where
+instance (Eq r, AssumptionNumbers r, NKAdequate lex) => StructuralInference (OpenLogicFONK lex) lex (ProofTree r lex (Form Bool)) where
     structuralRestriction pt n (PropNK r) = structuralRestriction pt n r
     --ExistsE always throws an error, since we get it only if the
     --structural override fails
@@ -113,7 +118,7 @@ instance (Eq r, AssumptionNumbers r) => StructuralInference (OpenLogicFONK PureL
     structuralRestriction pt _ (ExistsEAnnotatedVac n t) = Just $ checkAssumptionForm n pt (phi' 1 tau)
     structuralRestriction pt _ r = Nothing
 
-instance AssumptionNumbers r => StructuralOverride (OpenLogicFONK PureLexiconFOL) (ProofTree r PureLexiconFOL (Form Bool)) where
+instance (AssumptionNumbers r, NKAdequate lex) => StructuralOverride (OpenLogicFONK lex) (ProofTree r lex (Form Bool)) where
     structuralOverride pt (ExistsE n) = case freshParametersAt n pt of 
                                             [] -> Nothing
                                             t : _ -> Just [ExistsEAnnotated n t, ExistsEAnnotatedVac n t]

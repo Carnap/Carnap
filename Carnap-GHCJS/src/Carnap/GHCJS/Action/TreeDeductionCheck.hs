@@ -30,6 +30,7 @@ import Carnap.Calculi.NaturalDeduction.Checker
 import Carnap.Calculi.Tableau.Data
 import Carnap.Languages.PurePropositional.Logic (ofPropTreeSys)
 import Carnap.Languages.PureFirstOrder.Logic (ofFOLTreeSys)
+import Carnap.Languages.SetTheory.Logic (ofSetTheoryTreeSys)
 import Carnap.GHCJS.Util.ProofJS
 import Carnap.GHCJS.SharedTypes
 import GHCJS.DOM.Element (setInnerHTML, click, keyDown, setAttribute )
@@ -53,6 +54,7 @@ activateChecker :: Document -> Maybe (Element, Element, Map String String) -> IO
 activateChecker _ Nothing  = return ()
 activateChecker w (Just (i, o, opts)) = case (setupWith `ofPropTreeSys` sys) 
                                               `mplus` (setupWith `ofFOLTreeSys` sys)
+                                              `mplus` (setupWith `ofSetTheoryTreeSys` sys)
                                         of Just io -> io
                                            Nothing -> error $ "couldn't parse tree system: " ++ sys
         where sys = case M.lookup "system" opts of
