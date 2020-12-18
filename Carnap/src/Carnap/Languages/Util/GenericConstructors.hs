@@ -129,6 +129,17 @@ instance UniformlyEq (TermSubset c b) where
 
 instance FirstOrderLex (TermSubset c b)
 
+data TermLessThan c b a where
+        TermLessThan :: TermLessThan c b (Term b -> Term b -> Form c)
+
+instance Schematizable (TermLessThan c b) where
+        schematize TermLessThan = \(t1:t2:_) -> t1 ++ "⊆" ++ t2
+
+instance UniformlyEq (TermLessThan c b) where
+        _ =* _ = True
+
+instance FirstOrderLex (TermLessThan c b)
+
 ---------------------------
 --  3. Function Symbols  --
 ---------------------------

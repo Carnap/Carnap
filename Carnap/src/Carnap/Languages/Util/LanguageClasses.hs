@@ -344,6 +344,27 @@ class (Typeable c, Typeable b, PrismLink (FixLang lex) (Predicate (TermSubset b 
 instance {-#OVERLAPPABLE#-} PrismTermSubset lex c b => SubsetLanguage (FixLang lex) (Term c) (Form b) where
         within = curry $ review (binaryOpPrism _termSubset)
 
+class LessThanLanguage lang arg ret where
+        lessThan :: lang arg -> lang arg -> lang ret 
+
+class (Typeable c, Typeable b, PrismLink (FixLang lex) (Predicate (TermLessThan b c) (FixLang lex))) 
+        => PrismTermLessThan lex c b where
+
+        _termLessThan :: Prism' (FixLang lex (Term c -> Term c -> Form b)) ()
+        _termLessThan = link_TermLessThan . termLessThan
+
+        link_TermLessThan :: Prism' (FixLang lex (Term c -> Term c -> Form b)) 
+                                    (Predicate (TermLessThan b c) (FixLang lex) (Term c -> Term c -> Form b))
+        link_TermLessThan = link 
+
+        termLessThan :: Prism' (Predicate (TermLessThan b c) (FixLang lex) (Term c -> Term c -> Form b)) ()
+        termLessThan = prism' (\n -> Predicate TermLessThan ATwo) 
+                            (\x -> case x of Predicate TermLessThan ATwo -> Just ()
+                                             _ -> Nothing)
+
+instance {-#OVERLAPPABLE#-} PrismTermLessThan lex c b => LessThanLanguage (FixLang lex) (Term c) (Form b) where
+        lessThan = curry $ review (binaryOpPrism _termLessThan)
+
 --------------------------------------------------------
 --1.3. Terms
 --------------------------------------------------------
