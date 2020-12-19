@@ -69,6 +69,15 @@ parseComplement = spaces >> string "/" >> spaces >> return setComplement
 powersetParser :: (ElementarySetsLanguage lang, Monad m) =>  ParsecT String u m lang -> ParsecT String u m lang
 powersetParser parseTerm = (try (string "P(") <|> string "Pow(") *> parseTerm <* string ")" >>= return . powerset
 
+parsePlus :: (ElementaryArithmeticLanguage lang, Monad m) => ParsecT String u m (lang -> lang -> lang)
+parsePlus = spaces >> (string "+") >> spaces >> return arithPlus
+
+parseTimes :: (ElementaryArithmeticLanguage lang, Monad m) => ParsecT String u m (lang -> lang -> lang)
+parseTimes = spaces >> (string "×" <|> string "*") >> spaces >> return arithTimes
+
+parseSucc :: (ElementaryArithmeticLanguage lang, Monad m) => ParsecT String u m (lang -> lang)
+parseSucc = spaces >> (string "'") >> spaces >> return arithSucc
+
 --------------------------------------------------------
 --Predicates and Sentences
 --------------------------------------------------------
@@ -127,6 +136,10 @@ elementParser parseTerm = binaryInfixOpParser ops parseTerm
 subsetParser :: (SubsetLanguage lang arg ret , Monad m) => ParsecT String u m (lang arg) -> ParsecT String u m (lang ret) 
 subsetParser parseTerm = binaryInfixOpParser ops parseTerm
     where ops = map (>> return within) [string "⊆", string "<(", string "<s", string "within"]
+
+lessThanParser :: (LessThanLanguage lang arg ret , Monad m) => ParsecT String u m (lang arg) -> ParsecT String u m (lang ret) 
+lessThanParser parseTerm = binaryInfixOpParser ops parseTerm
+    where ops = map (>> return lessThan) [string "<"]
 
 separationParser :: 
     ( SeparatingLang (FixLang lex f) (FixLang lex t)
@@ -328,6 +341,9 @@ parseSchematicConstant = parse <?> "a constant"
                      let Just n = elemIndex c "τπμ" 
                          m = maybe 0 id midx
                      return $ taun (n  + (m * 3))
+
+parseZero :: (ElementaryArithmeticLanguage lang, Monad m) => ParsecT String u m (lang)
+parseZero = spaces >> (string "0") >> spaces >> return arithZero
 
 --------------------------------------------------------
 --Structural Elements
