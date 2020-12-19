@@ -349,6 +349,10 @@ parseZero = spaces >> (string "0") >> spaces >> return arithZero
 --Structural Elements
 --------------------------------------------------------
 
+iteratedParse :: Monad m => ParsecT String u m (lang -> lang) -> ParsecT String u m (lang -> lang)
+iteratedParse it = do h:its <- many1 it
+                      return $ foldr (.) h its
+
 wrappedWith :: Monad m => Char -> Char -> ParsecT String u m l -> ParsecT String u m l
 wrappedWith l r recur = char l *> spaces *> recur <* spaces <* char r
 

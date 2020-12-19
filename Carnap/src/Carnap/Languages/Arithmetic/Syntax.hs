@@ -21,10 +21,11 @@ type ArithEq = TermEq Bool Int
 
 type ArithSchematicPred = SchematicIntPred Bool Int
 
-type OpenLexiconArith a = CoreLexicon :|: Predicate ArithLessThan :|: Predicate ArithEq :|: Predicate ArithSchematicPred :|:  Function PureSchematicFunction :|: a
---XXX: as an extension of FOL, this falls under all the classes of PureFirstOrderLexWith a = CoreLexicon :|: a
-
 type ArithOps = ElementaryArithmeticOperations Int
+
+type OpenLexiconArith a = CoreLexicon :|: Predicate ArithLessThan :|: Predicate ArithEq 
+                       :|: Predicate ArithSchematicPred :|: Function ArithOps :|: Function PureSchematicFunction :|: a
+--XXX: as an extension of FOL, this falls under all the classes of PureFirstOrderLexWith a = CoreLexicon :|: a
 
 instance PrismPolyadicSchematicPredicate (OpenLexiconArith a) Int Bool
 instance PrismPolyadicSchematicFunction (OpenLexiconArith a) Int Int

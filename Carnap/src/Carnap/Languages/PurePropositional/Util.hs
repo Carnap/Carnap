@@ -57,10 +57,15 @@ dropOutermost s = s
 ---------------------------------------------
 
 dropOuterParensForm :: String -> String
-dropOuterParensForm s@('(':ss) =  " " ++ (reverse . scan . reverse) ss ++ " "
-    where scan (')':xs) = xs
-          scan (x:xs) = x:scan xs
-          scan [] = []
+dropOuterParensForm s@('(':ss) = case fullwrap 1 [] ss of
+                                   Just chunk -> " " ++ chunk ++  " " 
+                                   Nothing -> s
+    where fullwrap 1 acc (')':xs) | all (== ' ') xs = Just $ reverse acc ++ xs
+          fullwrap 0 acc _ = Nothing
+          fullwrap n acc ('(':xs) = fullwrap (n + 1) ('(':acc) xs
+          fullwrap n acc (')':xs) = fullwrap (n - 1) (')':acc) xs
+          fullwrap n acc (x:xs) = fullwrap n (x:acc) xs
+          fullwrap n acc [] = Nothing
 dropOuterParensForm s = s
 
 dropOuterParens :: String -> String

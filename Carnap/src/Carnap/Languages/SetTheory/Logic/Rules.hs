@@ -35,30 +35,7 @@ type ElementarySetTheoryRule lex b = ElementarySetTheoryConstraint lex b => Sequ
 
 type ElementarySetTheoryRuleVariants lex b = ElementarySetTheoryConstraint lex b => [SequentRule lex (Form b)]
 
-instance CopulaSchema (ClassicalSequentOver StrictSetTheoryLex) where 
-
-    appSchema q@(Fx _) (LLam f) e = case ( qtype q >>= preview _all >>= \x -> (,) <$> Just x <*> castTo (seqVar x)
-                                         , qtype q >>= preview _some >>= \x -> (,) <$> Just x <*> castTo (seqVar x)
-                                         ) of
-                                     (Just (x,v), _) -> schematize (All x) (show (f v) : e)
-                                     (_, Just (x,v)) -> schematize (Some x) (show (f v) : e)
-                                     _ -> schematize q (show (LLam f) : e)
-    appSchema x y e = schematize x (show y : e)
-
-    lamSchema = defaultLamSchema
-
-instance CopulaSchema (ClassicalSequentOver ElementarySetTheoryLex) where 
-
-    appSchema q@(Fx _) (LLam f) e = case ( qtype q >>= preview _all >>= \x -> (,) <$> Just x <*> castTo (seqVar x)
-                                         , qtype q >>= preview _some >>= \x -> (,) <$> Just x <*> castTo (seqVar x)
-                                         ) of
-                                     (Just (x,v), _) -> schematize (All x) (show (f v) : e)
-                                     (_, Just (x,v)) -> schematize (Some x) (show (f v) : e)
-                                     _ -> schematize q (show (LLam f) : e)
-    appSchema x y e = schematize x (show y : e)
-
-    lamSchema = defaultLamSchema
-
+--XXX Needed because of variable binding in separators
 instance CopulaSchema (ClassicalSequentOver SeparativeSetTheoryLex) where 
 
     appSchema q@(Fx _) (LLam f) e = 
@@ -77,13 +54,6 @@ instance CopulaSchema (ClassicalSequentOver SeparativeSetTheoryLex) where
     appSchema x y e = schematize x (show y : e)
 
     lamSchema = defaultLamSchema
-
-instance Eq (ClassicalSequentOver StrictSetTheoryLex a) where (==) = (=*)
-
-instance Eq (ClassicalSequentOver ElementarySetTheoryLex a) where (==) = (=*)
-
-instance Eq (ClassicalSequentOver SeparativeSetTheoryLex a) where (==) = (=*)
-
 
 unpackUnion :: IndexedPropContextSchemeLanguage (ClassicalSequentOver lex (Form b)) => ElementarySetTheoryRuleVariants lex b
 unpackUnion = replace ((tau `isIn` tau') .\/. (tau `isIn` tau'')) (tau `isIn` (tau' `setUnion` tau''))
