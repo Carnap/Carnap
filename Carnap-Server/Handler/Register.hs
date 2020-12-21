@@ -135,7 +135,7 @@ registrationForm ident courseEntities userId extra = do
                     <div.form-group.col-md-12>
                         ^{fvInput uniIdView}
                 <p style="color:gray">
-                    Your <i>University Id</i> is the student identifier used by your university.
+                    Your <i>University ID</i> is the student identifier used by your university.
                     \ If your instructor hasn't said what to enter here, you can leave this blank.
                 <h6>Your Enrollment:
                 <div.row>
@@ -180,7 +180,7 @@ enrollmentForm classtitle ident courseEntities userId extra = do
                     <div.form-group.col-md-12>
                         ^{fvInput uniIdView}
                 <p style="color:gray">
-                    This is the student identifier used by your university.
+                    Your <i>University ID</i> is the student identifier used by your university.
                     \ If your instructor hasn't said what to enter here, you can leave this blank.
                 |]
         return (theRes,theWidget)
