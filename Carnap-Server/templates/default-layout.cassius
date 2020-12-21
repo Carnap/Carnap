@@ -45,7 +45,7 @@ nav#navbar
         width:110%
         min-width:190px
         padding:5px
-        margin-top:-.5rem
+        margin-top:-.6rem
         z-index:5
         position:absolute
         background:white
