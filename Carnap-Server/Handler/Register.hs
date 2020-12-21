@@ -135,15 +135,15 @@ registrationForm ident courseEntities userId extra = do
                     <div.form-group.col-md-12>
                         ^{fvInput uniIdView}
                 <p style="color:gray">
-                    This is the student identifier used by your university.
+                    Your <i>University Id</i> is the student identifier used by your university.
                     \ If your instructor hasn't said what to enter here, you can leave this blank.
                 <h6>Your Enrollment:
                 <div.row>
                     <div.form-group.col-md-12>
                         ^{fvInput enrollView}
                 <p style="color:gray">
-                    This is the class you'll be enrolled in.
-                    \ If you don't want to enroll in a class, you can leave this as "No Course".
+                    Your <i>Enrollment</i> is the class you are enrolled in.
+                    \ If you don't want to register as enrolled in a class, you can leave this as "No Course".
                 |]
         return (theRes,theWidget)
     where openCourseEntities = filter (\(Entity k v) -> courseEnrollmentOpen v) courseEntities
