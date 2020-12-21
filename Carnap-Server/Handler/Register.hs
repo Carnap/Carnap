@@ -118,8 +118,9 @@ registrationForm :: Text -> [Entity Course] -> UserId -> Html -> MForm Handler (
 registrationForm ident courseEntities userId extra = do
         (fnameRes, fnameView) <- mreq textField (withPlaceholder "First Name" $ bfs ("First Name " :: Text)) Nothing
         (lnameRes, lnameView) <- mreq textField (withPlaceholder "Last Name" $ bfs ("Last Name " :: Text)) Nothing
+        (uniIdRes, uniIdView) <- mreq textField (withPlaceholder "University Id" $ bfs ("University Id " :: Text)) Nothing
         (enrollRes, enrollView) <- mreq (selectFieldList courses) (bfs ("Enrolled In " :: Text)) Nothing
-        let theRes = fixedId userId ident <$> fnameRes <*> lnameRes <*> enrollRes
+        let theRes = fixedId userId ident <$> fnameRes <*> lnameRes <*> uniIdRes <*> enrollRes
             theWidget = do
                 [whamlet|
                 #{extra}
@@ -129,21 +130,31 @@ registrationForm ident courseEntities userId extra = do
                         ^{fvInput fnameView}
                     <div.form-group.col-md-6>
                         ^{fvInput lnameView}
+                <h6>Your University ID:
+                <div.row>
+                    <div.form-group.col-md-12>
+                        ^{fvInput uniIdView}
+                <p style="color:gray">
+                    This is the student identifier used by your university.
+                    \ If your instructor hasn't said what to enter here, you can leave this blank.
                 <h6>Your Enrollment:
                 <div.row>
                     <div.form-group.col-md-12>
                         ^{fvInput enrollView}
-                <p style="color:gray"> This is the class you'll be enrolled in. If you don't want to enroll in a class, you can leave this as "No Course".
+                <p style="color:gray">
+                    This is the class you'll be enrolled in.
+                    \ If you don't want to enroll in a class, you can leave this as "No Course".
                 |]
         return (theRes,theWidget)
     where openCourseEntities = filter (\(Entity k v) -> courseEnrollmentOpen v) courseEntities
           courses = ("No Course", Nothing) : map (\(Entity k v) -> (courseTitle v, Just k)) openCourseEntities
 
-fixedId :: Key User -> Text -> Text -> Text -> Maybe (Key Course) -> Maybe UserData
-fixedId userId ident fname lname ckey = Just $ UserData 
+fixedId :: Key User -> Text -> Text -> Text -> Text -> Maybe (Key Course) -> Maybe UserData
+fixedId userId ident fname lname uniid ckey = Just $ UserData 
                 { userDataFirstName = fname
                 , userDataEmail = Just ident
                 , userDataLastName = lname
+                , userDataUniversityId = Just uniid
                 , userDataEnrolledIn = ckey
                 , userDataInstructorId = Nothing
                 , userDataIsAdmin = False
@@ -154,7 +165,8 @@ enrollmentForm :: Text -> Text -> [Entity Course] -> UserId ->  Html -> MForm Ha
 enrollmentForm classtitle ident courseEntities userId extra = do
         (fnameRes, fnameView) <- mreq textField (withPlaceholder "First Name" $ bfs ("First Name " :: Text)) Nothing
         (lnameRes, lnameView) <- mreq textField (withPlaceholder "Last Name" $ bfs ("Last Name " :: Text)) Nothing
-        let theRes = fixedId' <$> fnameRes <*> lnameRes
+        (uniIdRes, uniIdView) <- mreq textField (withPlaceholder "University Id" $ bfs ("University Id " :: Text)) Nothing
+        let theRes = fixedId' <$> fnameRes <*> lnameRes <*> uniIdRes
             theWidget = do
                 [whamlet|
                 #{extra}
@@ -164,10 +176,15 @@ enrollmentForm classtitle ident courseEntities userId extra = do
                         ^{fvInput fnameView}
                     <div.form-group.col-md-6>
                         ^{fvInput lnameView}
-                <h6>Your Enrollment:
+                <div.row>
+                    <div.form-group.col-md-12>
+                        ^{fvInput uniIdView}
+                <p style="color:gray">
+                    This is the student identifier used by your university.
+                    \ If your instructor hasn't said what to enter here, you can leave this blank.
                 |]
         return (theRes,theWidget)
-    where fixedId' fname lname = fixedId userId ident fname lname course
+    where fixedId' fname lname uniid = fixedId userId ident fname lname uniid course
           course = case filter (\e -> classtitle == courseTitle (entityVal e)) courseEntities of
                      [] -> Nothing
                      e:_ -> Just $ entityKey e

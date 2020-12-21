@@ -8,6 +8,7 @@ UserData
     firstName Text
     lastName Text
     email Text Maybe
+    universityId Text Maybe
     enrolledIn CourseId Maybe
     instructorId InstructorMetadataId Maybe
     isAdmin Bool default=false
