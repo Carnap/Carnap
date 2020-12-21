@@ -115,11 +115,27 @@ postRegisterEnrollR :: Text -> Text -> Handler Html
 postRegisterEnrollR theclass ident = postRegister (enrollmentForm theclass ident) ident
 
 registrationForm :: Text -> [Entity Course] -> UserId -> Html -> MForm Handler (FormResult (Maybe UserData), Widget)
-registrationForm ident courseEntities userId = do
-        renderBootstrap3 BootstrapBasicForm $ fixedId userId ident
-            <$> areq textField "First name " Nothing
-            <*> areq textField "Last name " Nothing
-            <*> areq (selectFieldList courses) "enrolled in " Nothing
+registrationForm ident courseEntities userId extra = do
+        (fnameRes, fnameView) <- mreq textField (withPlaceholder "First Name" $ bfs ("First Name " :: Text)) Nothing
+        (lnameRes, lnameView) <- mreq textField (withPlaceholder "Last Name" $ bfs ("Last Name " :: Text)) Nothing
+        (enrollRes, enrollView) <- mreq (selectFieldList courses) (bfs ("Enrolled In " :: Text)) Nothing
+        let theRes = fixedId userId ident <$> fnameRes <*> lnameRes <*> enrollRes
+            theWidget = do
+                [whamlet|
+                #{extra}
+                <h6>Your Name:
+                <div.row>
+                    <div.form-group.col-md-6>
+                        ^{fvInput fnameView}
+                    <div.form-group.col-md-6>
+                        ^{fvInput lnameView}
+                <h6>Your Enrollment:
+                <div.row>
+                    <div.form-group.col-md-12>
+                        ^{fvInput enrollView}
+                <p style="color:gray"> This is the class you'll be enrolled in. If you don't want to enroll in a class, you can leave this as "No Course".
+                |]
+        return (theRes,theWidget)
     where openCourseEntities = filter (\(Entity k v) -> courseEnrollmentOpen v) courseEntities
           courses = ("No Course", Nothing) : map (\(Entity k v) -> (courseTitle v, Just k)) openCourseEntities
 
@@ -135,10 +151,22 @@ fixedId userId ident fname lname ckey = Just $ UserData
                 }
 
 enrollmentForm :: Text -> Text -> [Entity Course] -> UserId ->  Html -> MForm Handler (FormResult (Maybe UserData), Widget)
-enrollmentForm classtitle ident courseEntities userId = do
-        renderBootstrap3 BootstrapBasicForm $ fixedId'
-            <$> areq textField "First name " Nothing
-            <*> areq textField "Last name " Nothing
+enrollmentForm classtitle ident courseEntities userId extra = do
+        (fnameRes, fnameView) <- mreq textField (withPlaceholder "First Name" $ bfs ("First Name " :: Text)) Nothing
+        (lnameRes, lnameView) <- mreq textField (withPlaceholder "Last Name" $ bfs ("Last Name " :: Text)) Nothing
+        let theRes = fixedId' <$> fnameRes <*> lnameRes
+            theWidget = do
+                [whamlet|
+                #{extra}
+                <h6>Your Name:
+                <div.row>
+                    <div.form-group.col-md-6>
+                        ^{fvInput fnameView}
+                    <div.form-group.col-md-6>
+                        ^{fvInput lnameView}
+                <h6>Your Enrollment:
+                |]
+        return (theRes,theWidget)
     where fixedId' fname lname = fixedId userId ident fname lname course
           course = case filter (\e -> classtitle == courseTitle (entityVal e)) courseEntities of
                      [] -> Nothing

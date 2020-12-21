@@ -2,7 +2,8 @@
     <div.container>
         <h1> Looks Like You Need to Register
 
-        Please enter the following information
+        Please enter the following information:
+        <hr>
         <div>
             <form method=post action=@{theaction} enctype=#{enctype}>
                 ^{widget}
