@@ -9,7 +9,7 @@ import GHCJS.DOM.HTMLInputElement as I (getValue, setValue, getChecked)
 import GHCJS.DOM.Types
 import GHCJS.DOM.Element
 import GHCJS.DOM.Window (confirm)
-import GHCJS.DOM.Node (appendChild, getParentNode)
+import GHCJS.DOM.Node (appendChild, getParentNode, getParentElement)
 import GHCJS.DOM.Document (createElement)
 import GHCJS.DOM.EventM (newListener, addListener, EventM)
 import Control.Monad.IO.Class (liftIO)
@@ -36,35 +36,41 @@ activateQualitativeProblem w (Just (i,o,opts)) = do
             Just "numerical" -> createNumerical w i o opts
             _  -> return ()
 
-submitQualitative :: IsEvent e => Document -> M.Map String String -> IORef (Bool, String) -> String -> String -> EventM Element e ()
-submitQualitative w opts ref g l = do (isDone,val) <- liftIO $ readIORef ref
-                                      let submission = (QualitativeProblemDataOpts (pack g) (pack val) (toList opts))
-                                      if isDone || ("exam" `inOpts` opts)
-                                          then trySubmit w Qualitative opts l submission isDone
-                                          else message "Not quite right. Try again?"
+submitQualitative :: IsEvent e => Document -> M.Map String String -> Element -> IORef (Bool, String) -> String -> String -> EventM Element e ()
+submitQualitative w opts wrap ref g l = do 
+       (isDone,val) <- liftIO $ readIORef ref
+       let submission = (QualitativeProblemDataOpts (pack g) (pack val) (toList opts))
+           isExam = "exam" `inOpts` opts
+       if isExam then trySubmit w Qualitative opts l submission isDone 
+                 else if isDone then trySubmit w Qualitative opts l submission isDone >> setSuccess w wrap
+                                else message "Not quite right. Try again?" >> setFailure w wrap
 
-submitQualitativeSelection :: IsEvent e => Document -> M.Map String String -> IORef (Bool, Map String Bool) -> String -> String -> EventM Element e ()
-submitQualitativeSelection w opts ref g l = do (isDone,val) <- liftIO $ readIORef ref
-                                               let submission = (QualitativeMultipleSelection (pack g) (toList val) (toList opts))
-                                               if isDone || ("exam" `inOpts` opts)
-                                                   then trySubmit w Qualitative opts l submission isDone
-                                                   else message "Not quite right. Try again?"
+submitQualitativeSelection :: IsEvent e => Document -> M.Map String String -> Element -> IORef (Bool, Map String Bool) -> String -> String -> EventM Element e ()
+submitQualitativeSelection w opts wrap ref g l = do 
+       (isDone,val) <- liftIO $ readIORef ref
+       let submission = (QualitativeMultipleSelection (pack g) (toList val) (toList opts))
+           isExam = "exam" `inOpts` opts
+       if isExam then trySubmit w Qualitative opts l submission isDone 
+                 else if isDone then trySubmit w Qualitative opts l submission isDone >> setSuccess w wrap
+                                else message "Not quite right. Try again?" >> setFailure w wrap
 
-submitNumerical :: IsEvent e => Document -> M.Map String String -> Element -> Double -> String -> String -> EventM Element e ()
-submitNumerical w opts input g p l = do Just ival <- liftIO $ I.getValue . castToHTMLInputElement $ input
-                                        case readNumeric ival of
-                                          Nothing -> message "Couldn't read the input. Try again?"
-                                          Just val | val == g -> trySubmit w Qualitative opts l (QualitativeNumericalData (pack p) val (toList opts)) True
-                                          Just val | "exam" `inOpts` opts -> trySubmit w Qualitative opts l (QualitativeNumericalData (pack p) val (toList opts)) False
-                                          _ -> message "Not quite right. Try again?"
+submitNumerical :: IsEvent e => Document -> M.Map String String -> Element -> Element -> Double -> String -> String -> EventM Element e ()
+submitNumerical w opts wrap input g p l = do 
+       Just ival <- liftIO $ I.getValue . castToHTMLInputElement $ input
+       case readNumeric ival of
+         Nothing -> message "Couldn't read the input. Try again?"
+         Just val | "exam" `inOpts` opts -> trySubmit w Qualitative opts l (QualitativeNumericalData (pack p) val (toList opts)) (val == g)
+         Just val | val == g -> trySubmit w Qualitative opts l (QualitativeNumericalData (pack p) val (toList opts)) True >> setSuccess w wrap
+         _ -> message "Not quite right. Try again?" >> setFailure w wrap
 
-submitEssay :: IsEvent e => Document -> M.Map String String -> Element -> String -> String -> EventM HTMLTextAreaElement e ()
-submitEssay w opts text g l = do manswer <- T.getValue . castToHTMLTextAreaElement $ text
-                                 let credit = M.lookup "give-credit" opts
-                                 case (manswer,credit) of 
-                                      (Just answer,Just "onSubmission") -> trySubmit w Qualitative opts l (QualitativeProblemDataOpts (pack g) (pack answer) (toList opts)) True
-                                      (Just answer,_) -> trySubmit w Qualitative opts l (QualitativeProblemDataOpts (pack g) (pack answer) (toList opts)) False
-                                      (Nothing,_) -> message "It doesn't look like an answer has been written"
+submitEssay :: IsEvent e => Document -> M.Map String String -> Element -> Element -> String -> String -> EventM HTMLTextAreaElement e ()
+submitEssay w opts wrap text g l = do 
+       manswer <- T.getValue . castToHTMLTextAreaElement $ text
+       let credit = M.lookup "give-credit" opts
+       case (manswer,credit) of 
+            (Just answer,Just "onSubmission") -> trySubmit w Qualitative opts l (QualitativeProblemDataOpts (pack g) (pack answer) (toList opts)) True >> setSuccess w wrap
+            (Just answer,_) -> trySubmit w Qualitative opts l (QualitativeProblemDataOpts (pack g) (pack answer) (toList opts)) False >> setSuccess w wrap
+            (Nothing,_) -> message "It doesn't look like an answer has been written"
 
 createMultipleSelection :: Document -> Element -> Element -> M.Map String String -> IO ()
 createMultipleSelection w i o opts = case M.lookup "goal" opts of
@@ -72,19 +78,11 @@ createMultipleSelection w i o opts = case M.lookup "goal" opts of
     Just g -> do
         ref <- newIORef (False,mempty)
         setInnerHTML i (Just g)
+        Just wrap <- getParentElement i
         bw <- createButtonWrapper w o
-        let submit = submitQualitativeSelection w opts ref g
+        let submit = submitQualitativeSelection w opts wrap ref g
         btStatus <- createSubmitButton w bw submit opts
-        if "check" `inOpts` opts then do
-              bt2 <- questionButton w "Check"
-              appendChild bw (Just bt2)
-              checkIt <- newListener $ do 
-                              (isDone,_) <- liftIO $ readIORef ref
-                              if isDone 
-                                  then message "Correct!" 
-                                  else message "Not quite right. Try again?"
-              addListener bt2 click checkIt False                
-        else return ()
+        if "check" `inOpts` opts then addChecker w bw wrap ref else return ()
         let choices = maybe [] lines $ M.lookup "content" opts
             labeledChoices = zip3 (Prelude.map (getLabel opts) choices) 
                                   (Prelude.map (isGood opts) choices) 
@@ -129,19 +127,11 @@ createMultipleChoice w i o opts = case M.lookup "goal" opts of
     Just g -> do
         ref <- newIORef (False,"")
         setInnerHTML i (Just g)
+        Just wrap <- getParentElement i
         bw <- createButtonWrapper w o
-        let submit = submitQualitative w opts ref g
+        let submit = submitQualitative w opts wrap ref g
         btStatus <- createSubmitButton w bw submit opts
-        if "check" `inOpts` opts then do
-              bt2 <- questionButton w "Check"
-              appendChild bw (Just bt2)
-              checkIt <- newListener $ do 
-                              (isDone,_) <- liftIO $ readIORef ref
-                              if isDone 
-                                  then message "Correct!" 
-                                  else message "Not quite right. Try again?"
-              addListener bt2 click checkIt False                
-        else return ()
+        if "check" `inOpts` opts then addChecker w bw wrap ref else return ()
         let choices = maybe [] lines $ M.lookup "content" opts
             labeledChoices = zip3 (Prelude.map (getLabel opts) choices) 
                                   (Prelude.map (isGood opts) choices) 
@@ -181,6 +171,7 @@ createNumerical w i o opts = case (M.lookup "goal" opts >>= getGoal, M.lookup "p
         setInnerHTML i (Just p)
         bw <- createButtonWrapper w o
         Just input <- createElement w (Just "input")
+        Just wrap <- getParentElement i
         appendChild o (Just input)
         case M.lookup "content" opts of
             Just t -> I.setValue (castToHTMLInputElement input) (Just t)
@@ -188,12 +179,12 @@ createNumerical w i o opts = case (M.lookup "goal" opts >>= getGoal, M.lookup "p
         if "check" `inOpts` opts then do
               bt2 <- questionButton w "Check"
               appendChild bw (Just bt2)
-              checkIt <- newListener $ do 
-                              Just ival <- liftIO $ I.getValue . castToHTMLInputElement $ input
+              checkIt <- newListener $ liftIO $ do 
+                              Just ival <- I.getValue . castToHTMLInputElement $ input
                               case readNumeric ival of
-                                  Nothing -> message "Couldn't read the input. Try again?"
-                                  Just v | v == g -> message "Correct!"
-                                  _ -> message "Not quite right. Try again?"
+                                  Nothing -> message "Couldn't read the input. Try again?" >> setFailure w wrap
+                                  Just v | v == g -> message "Correct!" >> setSuccess w wrap
+                                  _ -> message "Not quite right. Try again?" >> setFailure w wrap
               addListener bt2 click checkIt False                
         else return ()
         case M.lookup "submission" opts of
@@ -201,7 +192,7 @@ createNumerical w i o opts = case (M.lookup "goal" opts >>= getGoal, M.lookup "p
                 let l = Prelude.drop 7 s
                 bt1 <- doneButton w "Submit"
                 appendChild bw (Just bt1)
-                submit <- newListener $ submitNumerical w opts input g p l
+                submit <- newListener $ submitNumerical w opts wrap input g p l
                 addListener bt1 click submit False                
             _ -> return ()
     _ -> print "numerical answer was missing an option"
@@ -213,6 +204,7 @@ createShortAnswer w i o opts = case M.lookup "goal" opts of
     Nothing -> return ()
     Just g -> do
         setInnerHTML i (Just g)
+        Just wrap <- getParentElement i
         bw <- createButtonWrapper w o
         Just text <- createElement w (Just "textarea")
         case M.lookup "content" opts of
@@ -224,7 +216,7 @@ createShortAnswer w i o opts = case M.lookup "goal" opts of
                 let l = Prelude.drop 7 s
                 bt1 <- doneButton w "Submit"
                 appendChild bw (Just bt1)
-                submit <- newListener $ submitEssay w opts text g l
+                submit <- newListener $ submitEssay w opts wrap text g l
                 addListener bt1 click submit False                
             _ -> return ()
         return ()
@@ -260,3 +252,14 @@ isChecked opts s = if "nocipher" `inOpts` opts
                      else case readMaybe s :: Maybe (Int, String) of
                             Just (h,s') -> h `elem` [simpleHash ('-':s'), simpleHash ('+':s')]
                             Nothing -> False
+
+addChecker :: Document -> Element -> Element -> IORef (Bool,a) -> IO ()
+addChecker w bw wrap ref = do 
+      bt2 <- questionButton w "Check"
+      appendChild bw (Just bt2)
+      checkIt <- newListener $ liftIO $ do 
+                      (isDone,_) <- readIORef ref
+                      if isDone 
+                          then message "Correct!" >> setSuccess w wrap
+                          else message "Not quite right. Try again?" >> setFailure w wrap
+      addListener bt2 click checkIt False

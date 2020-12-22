@@ -78,21 +78,21 @@ activateChecker w (Just (i, o, opts)) = case (setupWith `ofPropTreeSys` sys)
                   let submit = submitTree w memo opts calc root mgoal
                   btStatus <- createSubmitButton w bw submit opts
                   if "displayJSON" `inOpts` opts then attachDisplay w o root else return ()
-                  initialCheck <- newListener $ liftIO $  do 
+                  initialCheck <- newListener $ liftIO $ do 
                                     forkIO $ do
                                         threadDelay 500000
                                         mr <- toCleanVal root
                                         case mr of
                                             Just r -> do (info,mseq) <- checkProofTree calc (Just memo) r 
                                                          decorate root info
-                                                         updateInfo calc mgoal mseq i
+                                                         updateInfo w calc mgoal mseq i
                                             Nothing -> return ()
                                     return ()
                   addListener i initialize initialCheck False --initial check in case we preload a tableau
                   doOnce i mutate False $ liftIO $ btStatus Edited
                   case M.lookup "init" opts of Just "now" -> dispatchCustom w i "initialize"; _ -> return ()
                   root `onChange` (\_ -> dispatchCustom w i "mutate")
-                  root `onChange` (\_ -> checkOnChange memo threadRef calc mgoal i root)
+                  root `onChange` (\_ -> checkOnChange w memo threadRef calc mgoal i root)
 
               parseGoal calc = do 
                   let seqParse = parseSeqOver $ tbParseForm calc
@@ -105,14 +105,15 @@ activateChecker w (Just (i, o, opts)) = case (setupWith `ofPropTreeSys` sys)
                       Nothing -> do setInnerHTML i (Just "Awaiting a proof")
                                     return Nothing
 
-updateInfo _ (Just goal) (Just seq) i = 
-        do wrap <- getParentElement i
-           maybe (return ()) (\w -> setAttribute w "class" rslt) wrap
-    where rslt = if seq `seqSubsetUnify` goal then "success" else "failure"
-updateInfo calc Nothing (Just seq) i = setInnerHTML i (Just . tbNotation calc . show $ seq)
-updateInfo _ Nothing Nothing i = setInnerHTML i (Just "Awaiting a proof")
-updateInfo _ _ _ i = do wrap <- getParentElement i
-                        maybe (return ()) (\w -> setAttribute w "class" "") wrap
+updateInfo w _ (Just goal) (Just seq) i = 
+        do Just wrap <- getParentElement i
+           if seq `seqSubsetUnify` goal 
+               then setSuccess w wrap 
+               else setFailure w wrap
+updateInfo _ calc Nothing (Just seq) i = setInnerHTML i (Just . tbNotation calc . show $ seq)
+updateInfo _ _ Nothing Nothing i = setInnerHTML i (Just "Awaiting a proof")
+updateInfo w _ _ _ i = do wrap <- getParentElement i
+                          maybe (return ()) (\w -> setAttribute w "class" "") wrap
 
 submitTree w memo opts calc root (Just seq) l = 
         do Just val <- liftIO $ toCleanVal root
@@ -143,9 +144,9 @@ checkOnChange :: ( ReLex lex
                  , FirstOrderLex (lex (ClassicalSequentOver lex))
                  , StructuralOverride rule (ProofTree rule lex sem)
                  , StructuralInference rule lex (ProofTree rule lex sem)
-                 ) => ProofMemoRef lex sem rule -> IORef (Maybe ThreadId) -> TableauCalc lex sem rule 
+                 ) => Document -> ProofMemoRef lex sem rule -> IORef (Maybe ThreadId) -> TableauCalc lex sem rule 
                                                 -> Maybe (ClassicalSequentOver lex (Sequent sem)) -> Element -> JSVal -> IO ()
-checkOnChange memo threadRef calc mgoal i root = do
+checkOnChange w memo threadRef calc mgoal i root = do
         mt <- readIORef threadRef
         case mt of Just t -> killThread t
                    Nothing -> return ()
@@ -154,7 +155,7 @@ checkOnChange memo threadRef calc mgoal i root = do
             Just changedVal <- toCleanVal root
             (theInfo, mseq) <- checkProofTree calc (Just memo) changedVal 
             decorate root theInfo
-            updateInfo calc mgoal mseq i
+            updateInfo w calc mgoal mseq i
         writeIORef threadRef (Just t')
 
 toProofTree :: ( Typeable sem
