@@ -1,32 +1,34 @@
-var AssignmentState
+var AssignmentState = {}
 
-function putAssignmentState (val) {
-    jQuery.ajax({
+async function putAssignmentState (ns, val) {
+    AssignmentState[ns] = val
+    await new Promise((resolve,reject) => jQuery.ajax({
         url: '@{CourseAssignmentStateR coursetitle filename}',
         type: 'PUT',
         contentType: "application/json",
-        data: JSON.stringify(val),
-        success: function(data) {
-            console.log("assignment state updated to: " + JSON.stringify(data));
-            AssignmentState = data;
-        },
+        data: JSON.stringify(AssignmentState),
+        success: function(data) { resolve(data) },
         error: function(data) {
             window.alert("Possible network error: couldn't save assignment state")
+            reject("Possible network error: couldn't save assignment state")
         },
-    });
+    }));
 };
 
-function getAssignmentState () {
-    jQuery.ajax({
+async function getAssignmentState () {
+    var data = await new Promise((resolve,reject) => jQuery.ajax({
         url: '@{CourseAssignmentStateR coursetitle filename}',
         type: 'GET',
         contentType: "application/json",
         success: function(data) { 
             console.log("received assignment state: " + JSON.stringify(data))
             AssignmentState = data 
+            resolve(data)
         },
         error: function(data) {
             window.alert("Possible network error: couldn't retrieve assignment state")
+            reject("Possible network error: couldn't retrieve assignment state")
         },
-    });
+    }));
+    return data
 };
