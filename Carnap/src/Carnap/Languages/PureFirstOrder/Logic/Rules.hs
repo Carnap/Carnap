@@ -1,4 +1,4 @@
-{-#LANGUAGE GADTs, ConstraintKinds, RankNTypes, FlexibleContexts, PatternSynonyms, TypeSynonymInstances, FlexibleInstances, MultiParamTypeClasses #-}
+{-#LANGUAGE GADTs, UndecidableInstances, ConstraintKinds, RankNTypes, FlexibleContexts, PatternSynonyms, TypeSynonymInstances, FlexibleInstances, MultiParamTypeClasses #-}
 module Carnap.Languages.PureFirstOrder.Logic.Rules where
 
 import Data.List (intercalate)
@@ -30,9 +30,12 @@ type FOLSequentCalc = ClassicalSequentOver PureLexiconFOL
 
 type OpenFOLSequentCalc a = ClassicalSequentOver (PureFirstOrderLexWith a)
 
---we write the Copula schema at this level since we may want other schemata
---for sequent languages that contain things like quantifiers
-instance CopulaSchema FOLSequentCalc where 
+--Overlappable since we may want other schemata for sequent languages that contain things like novel quantifiers
+instance {-# OVERLAPPABLE #-} 
+        ( StaticVar (OpenFOLSequentCalc a)
+        , Schematizable (a (OpenFOLSequentCalc a))
+        , ReLex a
+        ) => CopulaSchema (OpenFOLSequentCalc a) where 
 
     appSchema q@(Fx _) (LLam f) e = case ( qtype q >>= preview _all >>= \x -> (,) <$> Just x <*> castTo (seqVar x)
                                          , qtype q >>= preview _some >>= \x -> (,) <$> Just x <*> castTo (seqVar x)
@@ -44,7 +47,7 @@ instance CopulaSchema FOLSequentCalc where
 
     lamSchema = defaultLamSchema
 
-instance Eq (FOLSequentCalc a) where
+instance UniformlyEq (OpenFOLSequentCalc a) => Eq (OpenFOLSequentCalc a b) where
         (==) = (=*)
 
 seqVar :: StandardVarLanguage (FixLang lex (Term Int)) => String -> FixLang lex (Term Int)
@@ -148,35 +151,35 @@ flaggedVariableConstraint n ded suc getFlag sub =
                                         | otherwise -> Nothing
                             _ -> Just "the line cited has no justification"
 
-globalOldConstraint cs (Left ded) lineno sub = 
+globalOldConstraint cs (Left ded) lineno sub =
           if all (\c -> any (\x -> c `occurs`x) relevantLines) cs'
               then Nothing
               else Just $ "a constant in " ++ show cs' ++ " appears not to be old, but this rule needs old constants"
     where cs' = map (applySub sub) cs
 
-          relevantLines = catMaybes . map (fmap liftLang . assertion) $ 
+          relevantLines = catMaybes . map (fmap liftLang . assertion) $
                             ((oldRelevant [] $ take (lineno - 1) ded) ++ fromsp)
 
           --some extra lines that we need to add if we're putting this
           --constraint on a subproof-closing rule
           fromsp = case ded !! (lineno - 1) of
-                       ShowWithLine _ d _ _ -> 
+                       ShowWithLine _ d _ _ ->
                             case takeWhile (\x -> depth x > d) . drop lineno $ ded of
                                sp@(h:t) -> filter (witnessAt (depth h)) sp
                                [] -> []
                        _ -> []
 
           oldRelevant accum [] = accum
-          oldRelevant [] (d:ded)  = oldRelevant [d] ded 
-          oldRelevant (a:accum) (d:ded) = if depth d < depth a 
+          oldRelevant [] (d:ded)  = oldRelevant [d] ded
+          oldRelevant (a:accum) (d:ded) = if depth d < depth a
                                               then let accum' = filter (witnessAt (depth d)) accum in
-                                                  oldRelevant (d:accum') ded 
-                                              else oldRelevant (d:a:accum) ded 
+                                                  oldRelevant (d:accum') ded
+                                              else oldRelevant (d:a:accum) ded
 
           witnessAt ldepth (ShowWithLine _ sdepth _ _) = sdepth < ldepth
           witnessAt ldepth l = depth l <= ldepth 
 
-globalNewConstraint cs ded lineno sub = 
+globalNewConstraint cs ded lineno sub =
         case checkNew of
             Nothing -> Just $ "a constant in " ++ show cs' ++ " appears not to be new, but this rule needs new constants"
             Just s -> Nothing

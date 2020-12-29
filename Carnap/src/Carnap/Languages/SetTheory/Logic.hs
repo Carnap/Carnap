@@ -11,8 +11,8 @@ import Carnap.Languages.SetTheory.Logic.OpenLogic
 import Carnap.Languages.SetTheory.Logic.Carnap
 
 ofSetTheorySys :: (forall r sem lex . 
-    SupportsND r (OpenLexicon lex) sem => 
-    NaturalDeductionCalc r (OpenLexicon lex) sem -> a) -> String 
+    SupportsND r (OpenLexiconST lex) sem => 
+    NaturalDeductionCalc r (OpenLexiconST lex) sem -> a) -> String 
       -> Maybe a
 ofSetTheorySys f sys 
         | sys == "elementarySetTheory"       = Just $ f estCalc 
@@ -21,10 +21,10 @@ ofSetTheorySys f sys
 
 ofSetTheoryTreeSys :: (forall r lex . 
                     ( Show r
-                    , SupportsND r (OpenLexicon lex) (Form Bool)
-                    , StructuralInference r (OpenLexicon lex) (ProofTree r (OpenLexicon lex) (Form Bool))
-                    , StructuralOverride r (ProofTree r (OpenLexicon lex) (Form Bool))
+                    , SupportsND r (OpenLexiconST lex) (Form Bool)
+                    , StructuralInference r (OpenLexiconST lex) (ProofTree r (OpenLexiconST lex) (Form Bool))
+                    , StructuralOverride r (ProofTree r (OpenLexiconST lex) (Form Bool))
                  ) => 
-              TableauCalc (OpenLexicon lex) (Form Bool) r -> a) -> String -> Maybe a
+              TableauCalc (OpenLexiconST lex) (Form Bool) r -> a) -> String -> Maybe a
 ofSetTheoryTreeSys f sys | sys == "openLogicSTNK"              = Just $ f openLogicSTNKCalc
                          | otherwise                           = Nothing

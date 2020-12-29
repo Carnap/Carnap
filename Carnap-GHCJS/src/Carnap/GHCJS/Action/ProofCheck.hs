@@ -207,7 +207,7 @@ threadedCheck options checker w ref v (g, fd) =
                              --XXX: the check below could be inlined better
                              case tests options of 
                                 [] -> case sequent checker of
-                                    Just s -> updateGoal s ref g wrapper mseq options
+                                    Just s -> updateGoal w s ref g wrapper mseq options
                                     Nothing -> computeRule ref g mseq ndcalc
                                 t -> case checkerTests checker of
                                     Just fts -> applyTests (fts t) ref g mseq wrapper options
@@ -220,12 +220,12 @@ threadedCheck options checker w ref v (g, fd) =
                          LemmonStyle _ -> renderDeductionLemmon
                          NoRender -> renderNull
 
-updateGoal s ref g wrapper mseq options = 
+updateGoal w s ref g wrapper mseq options = 
         case (mseq, feedback options) of
              (Nothing,_) -> setAttribute g "class" "goal" >> setAttribute wrapper "class" "" >> writeIORef ref False
              (Just seq, SyntaxOnly) -> setAttribute g "class" "goal" >> setAttribute wrapper "class" "" >> writeIORef ref (seq `seqSubsetUnify` s)
-             (Just seq, _) | seq `seqSubsetUnify` s -> setAttribute g "class" "goal success" >> setAttribute wrapper "class" "success" >> writeIORef ref True
-             _ -> setAttribute g "class" "goal" >> setAttribute wrapper "class" "failure" >> writeIORef ref False
+             (Just seq, _) | seq `seqSubsetUnify` s -> setAttribute g "class" "goal success" >> setSuccess w wrapper >> writeIORef ref True
+             _ -> setAttribute g "class" "goal" >> setFailure w wrapper >> writeIORef ref False
 
 applyTests :: Sequentable lex => UnaryTest lex sem -> IORef Bool -> Element 
                     -> Maybe (ClassicalSequentOver lex (Sequent sem)) -> Element -> CheckerOptions -> IO ()
@@ -252,7 +252,8 @@ computeRule ref g mseq calc =
 
 submitDer w opts checker l g seq ref _ i = do 
         isFinished <- liftIO $ readIORef ref
-        (Just v) <- liftIO $ getValue (castToHTMLTextAreaElement i)
+        Just v <- liftIO $ getValue (castToHTMLTextAreaElement i)
+        Just wrap <- getParentElement i
         if isFinished 
             then trySubmit w Derivation opts l (DerivationDataOpts (pack $ show seq) (pack v) (M.toList opts)) True
             else do liftIO $ setAttribute g "class" "goal working"
@@ -265,13 +266,12 @@ submitDer w opts checker l g seq ref _ i = do
                     case sequent checker of
                          Nothing -> message "No goal sequent to submit"
                          Just s -> case mseq of 
-                             (Just s') 
-                               | "exam" `elem` optlist -> trySubmit w Derivation opts l submission (s' `seqSubsetUnify` s)
-                               | (s' `seqSubsetUnify` s) -> trySubmit w Derivation opts l submission True 
-                               | otherwise -> message "not yet finished"
-                             _ | "exam" `elem` optlist -> trySubmit w Derivation opts l submission False
-                               | otherwise -> message "not yet finished"
-    where optlist = case M.lookup "options" opts of Just s -> words s; Nothing -> []
+                             (Just s') --we allow feedback in syntax-only mode here, since in non-exam mode, you can figure out whether you were right anyway.
+                               | "exam" `inOpts` opts -> trySubmit w Derivation opts l submission (s' `seqSubsetUnify` s)
+                               | (s' `seqSubsetUnify` s) -> trySubmit w Derivation opts l submission True  >> setSuccess w wrap
+                               | otherwise -> message "not yet finished" >> setFailure w wrap 
+                             _ | "exam" `inOpts` opts -> trySubmit w Derivation opts l submission False
+                               | otherwise -> message "not yet finished" >> setFailure w wrap
 
 trySave :: ( Sequentable lex
            , Inference r lex sem

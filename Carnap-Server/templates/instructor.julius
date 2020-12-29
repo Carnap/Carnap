@@ -477,6 +477,7 @@ async function exportGrades(cid) {
         newRow.unshift('"' + tidy(row.fn) + '"')
         newRow.unshift('"' + tidy(row.ln) + '"')
         newRow.unshift('"' + tidy(row.email) + '"')
+        newRow.unshift('"' + tidy(row.uniid) + '"')
         newRow.push(Object.values(scores).reduce((x,y) => x + y, 0))
         rows.push(newRow)
     }
@@ -484,6 +485,7 @@ async function exportGrades(cid) {
     columns.unshift("First Name")
     columns.unshift("Last Name")
     columns.unshift("Email Address")
+    columns.unshift("University Id")
     columns.push("Total Score")
     columns = columns.map(v => '"' + v.replace(/"/g,'""') + '"')
     rows.unshift(columns)
@@ -558,12 +560,14 @@ async function exportPerProblemGrades(cid) {
         newRow.unshift('"' + tidy(row.fn) + '"')
         newRow.unshift('"' + tidy(row.ln) + '"')
         newRow.unshift('"' + tidy(row.email) + '"')
+        newRow.unshift('"' + tidy(row.uniid) + '"')
         rows.push(newRow)
     }
     rows.sort((x,y) => x[0] > y[0])
     columns.unshift("First Name")
     columns.unshift("Last Name")
     columns.unshift("Email Address")
+    columns.unshift("University Id")
     rows.unshift(columns.map(s => s.replace("\t","-")))
     toCSV(rows)
 }
@@ -636,6 +640,7 @@ $(".async").each((_,elt) => elt.update = function (callback) {
                 fn: this.dataset.fn,
                 ln: this.dataset.ln,
                 email: this.dataset.email,
+                uniid: this.dataset.uniid,
             }
             this.innerHTML = data.map(i=>i[1]).reduce((x,y) => x + y, 0);
             document.getElementById("loaded-" + box.dataset.cid).innerHTML = Object.keys(box.contents).length

@@ -52,10 +52,10 @@ tryMatch o ref w sf opts = onEnter $
            (f, forms, ft, stage) <- liftIO $ readIORef ref
            setValue t (Just "")
            case forms of
-               [] -> do Just wrap1<- getParentElement o
-                        Just wrap2 <- getParentElement wrap1
-                        liftIO $ redraw Nothing ft
-                        setAttribute wrap2 "class" "success"
+               [] -> liftIO $ do Just wrap1<- getParentElement o
+                                 Just wrap2 <- getParentElement wrap1
+                                 redraw Nothing ft
+                                 setSuccess w wrap2
                x:xs -> case matchMC ival (fst x) of
                    Right b -> if b 
                        then case children (fst x) of 

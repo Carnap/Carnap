@@ -97,10 +97,16 @@ returnAssignment coursetitle filename (Entity key val) path = do
                            (Just (HiddenViaPasswordExpiring _ min), Just tok) | age tok > 60 * testTime min && not instructorAccess ->
                                 defaultLayout $ minimalLayout ("Assignment time limit exceeded" :: String)
                            (mavail,_) -> do
+                                mbcss <- retrievePandocVal (lookupMeta "base-css" meta)
                                 mcss <- retrievePandocVal (lookupMeta "css" meta)
                                 mjs <- retrievePandocVal (lookupMeta "js" meta)
                                 let source = "assignment:" ++ show key
-                                defaultLayout $ do
+                                    theLayout = \widget -> case mbcss of 
+                                       Nothing -> defaultLayout $ do mapM addStylesheet [StaticR css_bootstrapextra_css] 
+                                                                     widget
+                                       Just bcss -> cleanLayout $ do mapM addStylesheetRemote bcss 
+                                                                     widget
+                                theLayout $ do
                                     toWidgetHead $(juliusFile =<< pathRelativeToCabalPackage "templates/command.julius")
                                     toWidgetHead $(juliusFile =<< pathRelativeToCabalPackage "templates/status-warning.julius")
                                     toWidgetHead $(juliusFile =<< pathRelativeToCabalPackage "templates/assignment-state.julius")
@@ -120,9 +126,7 @@ returnAssignment coursetitle filename (Entity key val) path = do
                                     addStylesheet $ StaticR css_proof_css
                                     addStylesheet $ StaticR css_tree_css
                                     addStylesheet $ StaticR css_exercises_css
-                                    case mcss of
-                                        Nothing -> mapM addStylesheet [StaticR css_bootstrapextra_css]
-                                        Just ss -> mapM addStylesheetRemote ss
+                                    maybe (pure [()]) (mapM addStylesheetRemote) mcss
                                     $(widgetFile "document")
                                     toWidgetBody [julius|getAssignmentState();|]
                                     addScript $ StaticR ghcjs_allactions_runmain_js
