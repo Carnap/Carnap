@@ -139,9 +139,7 @@ instance Inference HardegreePL2006 PureLexiconFOL (Form Bool) where
          restriction (PLCore2006 x) = restriction x
          restriction _ = Nothing
 
-         globalRestriction (Left ded) n (PLCore2006 UE) = Just (globalOldConstraint [tau] (Left ded) n )
          globalRestriction (Left ded) n (PLCore2006 EE) = Just (globalNewConstraint [tau] (Left ded) n )
-         globalRestriction (Left ded) n (PLCore2006 EI) = Just (globalOldConstraint [tau] (Left ded) n )
          globalRestriction (Left ded) n (PLCore2006 UI) = Just (globalNewConstraint [tau] (Left ded) n )
          globalRestriction _ _ _ = Nothing
 
