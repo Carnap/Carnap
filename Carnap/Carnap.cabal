@@ -94,6 +94,10 @@ library
                      , Carnap.Languages.PureSecondOrder.Logic
                      , Carnap.Languages.PureSecondOrder.Logic.Rules
                      , Carnap.Languages.PureSecondOrder.Logic.Carnap
+                     , Carnap.Languages.Arithmetic.Syntax
+                     , Carnap.Languages.Arithmetic.Parser
+                     , Carnap.Languages.Arithmetic.Logic
+                     , Carnap.Languages.Arithmetic.Logic.OpenLogic
                      , Carnap.Languages.SetTheory.Syntax
                      , Carnap.Languages.SetTheory.Parser
                      , Carnap.Languages.SetTheory.Logic

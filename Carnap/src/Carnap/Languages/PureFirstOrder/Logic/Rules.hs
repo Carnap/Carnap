@@ -1,4 +1,4 @@
-{-#LANGUAGE GADTs, ConstraintKinds, RankNTypes, FlexibleContexts, PatternSynonyms, TypeSynonymInstances, FlexibleInstances, MultiParamTypeClasses #-}
+{-#LANGUAGE GADTs, UndecidableInstances, ConstraintKinds, RankNTypes, FlexibleContexts, PatternSynonyms, TypeSynonymInstances, FlexibleInstances, MultiParamTypeClasses #-}
 module Carnap.Languages.PureFirstOrder.Logic.Rules where
 
 import Data.List (intercalate)
@@ -30,9 +30,12 @@ type FOLSequentCalc = ClassicalSequentOver PureLexiconFOL
 
 type OpenFOLSequentCalc a = ClassicalSequentOver (PureFirstOrderLexWith a)
 
---we write the Copula schema at this level since we may want other schemata
---for sequent languages that contain things like quantifiers
-instance CopulaSchema FOLSequentCalc where 
+--Overlappable since we may want other schemata for sequent languages that contain things like novel quantifiers
+instance {-# OVERLAPPABLE #-} 
+        ( StaticVar (OpenFOLSequentCalc a)
+        , Schematizable (a (OpenFOLSequentCalc a))
+        , ReLex a
+        ) => CopulaSchema (OpenFOLSequentCalc a) where 
 
     appSchema q@(Fx _) (LLam f) e = case ( qtype q >>= preview _all >>= \x -> (,) <$> Just x <*> castTo (seqVar x)
                                          , qtype q >>= preview _some >>= \x -> (,) <$> Just x <*> castTo (seqVar x)
@@ -44,7 +47,7 @@ instance CopulaSchema FOLSequentCalc where
 
     lamSchema = defaultLamSchema
 
-instance Eq (FOLSequentCalc a) where
+instance UniformlyEq (OpenFOLSequentCalc a) => Eq (OpenFOLSequentCalc a b) where
         (==) = (=*)
 
 seqVar :: StandardVarLanguage (FixLang lex (Term Int)) => String -> FixLang lex (Term Int)

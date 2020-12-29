@@ -84,14 +84,14 @@ activateChecker w (Just (i, o, opts))= maybe noSystem id ((setupWith `ofPropSeqS
                                     t <- forkIO $ do
                                             threadDelay 500000
                                             renewRoot root calc
-                                            if hasGoal then updateGoal calc root initialLabel i --TODO: should check against seq rather than initialValue
+                                            if hasGoal then updateGoal w calc root initialLabel i --TODO: should check against seq rather than initialValue
                                                        else calculateResult calc root i
                                     writeIORef threadRef (Just t)
                   addListener i initialize initialCheck False --initial check in case we preload a tableau
                   case M.lookup "init" opts of Just "now" -> dispatchCustom w i "initialize"; _ -> return ()
                   doOnce i mutate False $ liftIO $ btStatus Edited
                   root `onChange` (\_ -> dispatchCustom w i "mutate")
-                  root `onChange` checkOnChange calc root hasGoal initialLabel i threadRef 
+                  root `onChange` checkOnChange w calc root hasGoal initialLabel i threadRef 
 
               parseGoal calc = do 
                   let seqParse = parseSeqOver $ tbParseForm calc
@@ -118,8 +118,8 @@ submitSeq w opts calc root initialLabel l =
 
 checkOnChange :: ( ReLex lex
                  , SupportsTableau rule lex sem 
-                 ) => TableauCalc lex sem rule -> JSVal -> Bool -> String -> Element -> IORef (Maybe ThreadId) ->  JSVal -> IO ()
-checkOnChange calc root hasGoal initialLabel i threadRef changed = do
+                 ) => Document -> TableauCalc lex sem rule -> JSVal -> Bool -> String -> Element -> IORef (Maybe ThreadId) ->  JSVal -> IO ()
+checkOnChange w calc root hasGoal initialLabel i threadRef changed = do
         mt <- readIORef threadRef
         case mt of Just t -> killThread t
                    Nothing -> return ()
@@ -136,28 +136,28 @@ checkOnChange calc root hasGoal initialLabel i threadRef changed = do
             decorate changedParent theParentInfo
             if isEmptyLeaf changedVal then decorate changed blankInfo --blank out the info of empty leaves
                                       else decorate changed theInfo
-            if hasGoal then updateGoal calc root initialLabel i 
+            if hasGoal then updateGoal w calc root initialLabel i 
                        else calculateResult calc root i
         writeIORef threadRef (Just t')
 
 updateGoal :: (ReLex lex
               , SupportsTableau rule lex sem
-              ) => TableauCalc lex sem rule -> JSVal -> String -> Element -> IO ()
-updateGoal calc root initialLabel i = 
+              ) => Document -> TableauCalc lex sem rule -> JSVal -> String -> Element -> IO ()
+updateGoal w calc root initialLabel i = 
         do Just wrap <- liftIO $ getParentElement i
            Just info <- valToInfo root >>= fromJSVal 
            currentLabel <- getRootLabel root
            case parse fromInfo info of
-               Success (Just True) | currentLabel == initialLabel -> setAttribute wrap "class" "success" 
+               Success (Just True) | currentLabel == initialLabel -> setSuccess w wrap
                --the equality check here is a precation against cheating by DOM manipulation
                Success Nothing -> do print "detected global edit"
                                      renewRoot root calc
                                      Just newinfo <- valToInfo root >>= fromJSVal 
                                      case parse fromInfo newinfo of
-                                         Success (Just True) -> setAttribute wrap "class" "success"
+                                         Success (Just True) -> setSuccess w wrap 
                                          Success Nothing -> setInnerHTML i $ Just "Error: didn't handle global edit"
-                                         _ -> setAttribute wrap "class" "failure" 
-               _ -> setAttribute wrap "class" "failure"
+                                         _ -> setFailure w wrap
+               _ -> setFailure w wrap
 
 calculateResult :: (ReLex lex
                    , SupportsTableau rule lex sem

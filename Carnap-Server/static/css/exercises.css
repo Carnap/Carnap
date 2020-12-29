@@ -8,6 +8,8 @@
     border: solid 1pt #dddddd;
 }
 
+.exercise * { box-sizing: border-box; }
+
 .exercise > span:nth-child(1), .exercise > span:nth-child(2) {
     position: absolute;
     color: #aaaaaa;

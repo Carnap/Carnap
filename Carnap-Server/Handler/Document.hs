@@ -118,22 +118,26 @@ getDocumentR ident title = do (Entity key doc, path, creatorid) <- retrieveDoc i
                   Left err -> defaultLayout $ minimalLayout (show err)
                   Right (Left err,_) -> defaultLayout $ minimalLayout (show err)
                   Right (Right html, meta) -> do
+                      mbcss <- retrievePandocVal (lookupMeta "base-css" meta)
                       mcss <- retrievePandocVal (lookupMeta "css" meta)
                       mjs <- retrievePandocVal (lookupMeta "js" meta)
-                      defaultLayout $ do
+                      let theLayout = \widget -> case mbcss of 
+                                       Nothing -> defaultLayout $ do mapM addStylesheet [StaticR css_bootstrapextra_css] 
+                                                                     widget
+                                       Just bcss -> cleanLayout $ do mapM addStylesheetRemote bcss 
+                                                                     widget
+                      theLayout $ do
                           toWidgetHead $(juliusFile =<< pathRelativeToCabalPackage "templates/command.julius")
                           addScript $ StaticR js_proof_js
                           addScript $ StaticR js_popper_min_js
                           addScript $ StaticR ghcjs_rts_js
                           addScript $ StaticR ghcjs_allactions_lib_js
                           addScript $ StaticR ghcjs_allactions_out_js
-                          maybe (pure [()]) (mapM (addScriptRemote))  mjs
+                          maybe (pure [()]) (mapM addScriptRemote) mjs
                           addStylesheet $ StaticR css_tree_css
                           addStylesheet $ StaticR css_proof_css
                           addStylesheet $ StaticR css_exercises_css
-                          case mcss of
-                              Nothing -> mapM addStylesheet [StaticR css_bootstrapextra_css]
-                              Just ss -> mapM addStylesheetRemote ss
+                          maybe (pure [()]) (mapM addStylesheetRemote) mcss
                           $(widgetFile "document")
                           addScript $ StaticR ghcjs_allactions_runmain_js
 

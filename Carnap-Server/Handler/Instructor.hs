@@ -927,7 +927,7 @@ classWidget instructors classent = do
                                 <th> Total Score
                                 <th> Action
                             <tbody>
-                                $forall (u, UserData {userDataFirstName = fn, userDataLastName = ln, userDataUserId = uid}) <- sortedUsersAndData
+                                $forall (u, UserData {userDataUniversityId = uniid, userDataFirstName = fn, userDataLastName = ln, userDataUserId = uid}) <- sortedUsersAndData
                                     <tr#student-#{userIdent u}>
                                         <td>
                                             <a href=@{UserR (userIdent u)}>#{userIdent u}
@@ -938,6 +938,7 @@ classWidget instructors classent = do
                                             data-email="#{userIdent u}"
                                             data-fn="#{fn}"
                                             data-ln="#{ln}"
+                                            data-uniid="#{maybe "?" id uniid}"
                                             data-uid="#{jsonSerialize uid}" >
                                             <span.loading>—
                                         <td>

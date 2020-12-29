@@ -31,16 +31,18 @@ postUserR ident = do
             case updateRslt of
                  FormFailure s -> setMessage $ "Something went wrong with updating your information: " ++ B.toMarkup (show s)
                  FormMissing -> return ()
-                 FormSuccess (mc, fn , ln) -> runDB $ do
+                 FormSuccess (mc, fn , ln, uniid) -> runDB $ do
                          mudent <- getBy $ UniqueUserData uid
                          case entityKey <$> mudent of
                                Nothing -> setMessage "No user data to update."
                                Just udid -> do
                                     case mc of
                                         Nothing -> update udid [ UserDataFirstName =. fn
-                                                              , UserDataLastName =. ln]
+                                                              , UserDataLastName =. ln
+                                                              , UserDataUniversityId =. uniid]
                                         Just c -> update udid [ UserDataFirstName =. fn
                                                               , UserDataLastName =. ln
+                                                              , UserDataUniversityId =. uniid
                                                               , UserDataEnrolledIn =. (Just $ entityKey c)]
                                     return ()
             case dropRslt of
@@ -117,7 +119,7 @@ getUserR ident = do
                                 [whamlet|
                                 <div.container>
                                     ^{updateWidget updateForm encTypeUpdate}
-                                    <p> This user is not enrolled
+                                    <p> You are not currently enrolled in any class. You can enroll in a class by editing your personal information, below.
                                     $if isInstructor
                                         <p> Your instructor page is #
                                             <a href=@{InstructorR ident}>here
@@ -148,7 +150,6 @@ dateDisplay :: UTCTime -> Course -> String
 dateDisplay inUtc course = case tzByName $ courseTimeZone course of
                              Just tz  -> formatTime defaultTimeLocale "%F %R %Z" $ utcToZonedTime (timeZoneForUTCTime tz inUtc) inUtc
                              Nothing -> formatTime defaultTimeLocale "%F %R UTC" $ utc
-
 
 --------------------------------------------------------
 --Components
@@ -280,7 +281,7 @@ dropWidget form enc = [whamlet|
                       |]
 
 personalInfo :: UserData -> Maybe Course -> WidgetFor site ()
-personalInfo (UserData {userDataFirstName = firstname, userDataLastName = lastname}) mcourse =
+personalInfo (UserData {userDataUniversityId = muniversityid, userDataFirstName = firstname, userDataLastName = lastname}) mcourse =
         [whamlet|
                 <dl.row>
                     <dt.col-sm-3>First Name
@@ -292,6 +293,9 @@ personalInfo (UserData {userDataFirstName = firstname, userDataLastName = lastna
                         <dd.col-sm-9>#{courseTitle course}
                         $maybe desc <- courseDescription course
                             <dd.col-sm-9.offset-sm-3>#{desc}
+                    $maybe universityid <- muniversityid
+                        <dt.col-sm-3>University Id
+                        <dd.col-sm-9>#{universityid}
                 <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#updateUserData">
                     Edit
                 |]
@@ -300,12 +304,13 @@ updateUserDataForm
     :: UserData
     -> [Entity Course]
     -> B.Markup
-    -> MForm (HandlerFor App) (FormResult (Maybe (Entity Course), Text, Text), WidgetFor App ())
-updateUserDataForm UserData {userDataFirstName=firstname, userDataLastName=lastname} classes =
-    renderBootstrap3 BootstrapBasicForm $ (,,)
+    -> MForm (HandlerFor App) (FormResult (Maybe (Entity Course), Text, Text, Maybe Text), WidgetFor App ())
+updateUserDataForm UserData {userDataUniversityId = muniversityid, userDataFirstName = firstname, userDataLastName = lastname} classes =
+    renderBootstrap3 BootstrapBasicForm $ (,,,)
             <$> aopt (selectFieldList classnames) classfieldSettings Nothing
             <*> areq textField (bfs ("First Name"::Text)) (Just firstname)
             <*> areq textField (bfs ("Last Name"::Text)) (Just lastname)
+            <*> aopt textField (bfs ("University Id"::Text)) (Just muniversityid)
     where openClasses = filter (\(Entity _ course) -> courseEnrollmentOpen course) classes
           classnames = map (\theclass -> (courseTitle . entityVal $ theclass, theclass)) openClasses
           classfieldSettings = case classes of 
@@ -317,7 +322,6 @@ updateUserDataForm UserData {userDataFirstName=firstname, userDataLastName=lastn
                                             , fsName = Nothing
                                             , fsAttrs = [("style","display:none")]
                                             }
- 
 
 dropClassForm :: B.Markup -> MForm (HandlerFor App) (FormResult (), WidgetFor App ())
 dropClassForm = renderBootstrap3 BootstrapBasicForm $ pure () 

@@ -2,19 +2,14 @@
 module Carnap.Languages.SetTheory.Syntax 
 where
 
-import Carnap.Core.Util 
 import Control.Lens
 import Carnap.Core.Data.Types
 import Carnap.Core.Data.Optics
 import Carnap.Core.Data.Util
 import Carnap.Core.Data.Classes
-import Carnap.Core.Data.Util (scopeHeight)
-import Carnap.Core.Unification.Unification
 import Carnap.Languages.Util.LanguageClasses
 import Carnap.Languages.PureFirstOrder.Syntax
-import Carnap.Languages.ClassicalSequent.Syntax
 import Carnap.Languages.Util.GenericConstructors
-import Data.List (intercalate)
 
 -------------------------------------
 --  1. Data for Set Theory Syntax  --
@@ -28,19 +23,19 @@ type SetTheorySubset = TermSubset Bool Int
 
 type SetTheorySchematicPred = SchematicIntPred Bool Int
 
-type OpenLexicon a = CoreLexicon :|: Predicate SetTheoryElem :|: Predicate SetTheoryEq :|: Predicate PureSchematicPred :|:  Function PureSchematicFunction :|: a
+type OpenLexiconST a = CoreLexicon :|: Predicate SetTheoryElem :|: Predicate SetTheoryEq :|: Predicate PureSchematicPred :|:  Function PureSchematicFunction :|: a
 --XXX: as an extension of FOL, this falls under all the classes of PureFirstOrderLexWith a = CoreLexicon :|: a
 
-instance PrismPolyadicSchematicPredicate (OpenLexicon a) Int Bool
-instance PrismPolyadicSchematicFunction (OpenLexicon a) Int Int
-instance PrismTermElements (OpenLexicon a) Int Bool
-instance PrismTermEquality (OpenLexicon a) Int Bool
+instance PrismPolyadicSchematicPredicate (OpenLexiconST a) Int Bool
+instance PrismPolyadicSchematicFunction (OpenLexiconST a) Int Int
+instance PrismTermElements (OpenLexiconST a) Int Bool
+instance PrismTermEquality (OpenLexiconST a) Int Bool
 
 -------------------------------------
 --  2. Strict First-Order Lexicon  --
 -------------------------------------
 
-type StrictSetTheoryLex = OpenLexicon EndLang
+type StrictSetTheoryLex = OpenLexiconST EndLang
 
 type StrictSetTheoryLang = FixLang StrictSetTheoryLex
 
@@ -50,7 +45,7 @@ type StrictSetTheoryLang = FixLang StrictSetTheoryLex
 
 type ElementaryOps = ElementarySetOperations Int
 
-type ElementarySetTheoryLexOpen a = OpenLexicon (Function ElementaryOps :|: Predicate SetTheorySubset :|: a )
+type ElementarySetTheoryLexOpen a = OpenLexiconST (Function ElementaryOps :|: Predicate SetTheorySubset :|: a )
 
 type ElementarySetTheoryLex = ElementarySetTheoryLexOpen EndLang
 

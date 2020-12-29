@@ -8,6 +8,7 @@ import Text.Pandoc (MetaValue(..),Inline(..), writerExtensions,writerWrapText, W
 import Text.Pandoc.Walk (walkM, walk)
 import Text.Julius (juliusFile,rawJS)
 import Text.Hamlet (hamletFile)
+import TH.RelativePaths (pathRelativeToCabalPackage)
 import Util.Data
 import Util.Database
 
@@ -16,6 +17,21 @@ minimalLayout c = [whamlet|
                       <article>
                           #{c}
                   |]
+
+cleanLayout widget = do
+        master <- getYesod
+        mmsg <- getMessage
+        authmaybe <- maybeAuth
+        (isInstructor, mdoc, mcourse) <- case authmaybe of
+            Nothing -> return (False, Nothing, Nothing)
+            Just uid -> runDB $ do
+                mud <- getBy $ UniqueUserData $ entityKey uid
+                mcour <- maybe (return Nothing) get (mud >>= userDataEnrolledIn . entityVal)
+                masgn <- maybe (return Nothing) get (mcour >>= courseTextBook)
+                mdoc <- maybe (return Nothing) get (assignmentMetadataDocument <$> masgn)
+                return (not $ null (mud >>= userDataInstructorId . entityVal), mdoc, mcour)
+        pc <- widgetToPageContent $(widgetFile "default-layout")
+        withUrlRenderer $(hamletFile =<< pathRelativeToCabalPackage "templates/default-layout-wrapper.hamlet")
 
 retrievePandocVal metaval = case metaval of 
                         Just (MetaInlines ils) -> return $ Just (catMaybes (map fromStr ils))
