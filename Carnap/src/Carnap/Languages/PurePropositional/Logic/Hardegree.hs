@@ -205,7 +205,7 @@ parseHardegreeSL2006 rtc = try new <|> (map HardegreeSL2006 <$> core)
                        r | r `elem` ["∨D", "vD", "\\/D"] -> [OrD1, OrD2]
                          | r `elem` ["~\\/O", "~∨O", "~vO"] -> [HardegreeSL2006 OrNO, OrNO2]
           core = do r <- choice (map (try . string) ["&I","&O","~&O", "&D"
-                                                    ,"->I","→I" ,"->O","→O","~->O","~→O", "CD"
+                                                    ,"->O","→O","~->O","~→O", "CD"
                                                     ,"∨I","vI","\\/I","∨O","vO","\\/O"
                                                     ,"<->I","↔I","<->O","↔O","~<->O","~↔O", "<->D", "↔D"
                                                     ,"!?I" ,"!?O", "ID", "~D","SC","DN","DD","REP","AS","PR"
@@ -217,7 +217,6 @@ parseHardegreeSL2006 rtc = try new <|> (map HardegreeSL2006 <$> core)
                            | r `elem` ["&I"] -> [AndI]
                            | r `elem` ["&O"]  -> [AndO1,AndO2]
                            | r `elem` ["~&O"] -> [AndNO]
-                           | r `elem` ["->I","→I"] -> [IfI1,IfI2]
                            | r `elem` ["->O","→O"] -> [IfO1,IfO2]
                            | r `elem` ["~->O","~→O"] -> [IfNO]
                            | r == "!?I" -> [FalI]

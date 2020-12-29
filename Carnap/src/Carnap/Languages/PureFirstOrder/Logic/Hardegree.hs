@@ -163,11 +163,11 @@ parseHardegreePL rtc = try quantRule <|> liftProp
 
 parseHardegreePL2006 rtc = try quantRule <|> liftProp
     where liftProp = map HardegreeSL2006 <$> P.parseHardegreeSL2006 (RuntimeNaturalDeductionConfig mempty mempty)
-          quantRule = do r <- choice (map (try . string) ["∀I", "AI","UD", "∀O", "AO", "∃I", "EI","ED"
+          quantRule = do r <- choice (map (try . string) ["UD", "∀O", "AO", "∃I", "EI","ED"
                                                          ,"∃D", "∃O", "EO", "~∃O","-∃O" ,"-EO"
                                                          , "~EO","~∀O","~AO","-∀O","-AO", "PR"])
                          return $ case r of 
-                            r | r `elem` ["∀I","AI","UD"] -> [PLCore2006 UI]
+                            r | r `elem` ["UD"] -> [PLCore2006 UI]
                               | r `elem` ["∀O","AO"] -> [PLCore2006 UE]
                               | r `elem` ["∃I","EI"] -> [PLCore2006 EI]
                               | r `elem` ["∃O","EO"] -> [PLCore2006 EE]
