@@ -585,10 +585,6 @@ instance {-# OVERLAPPABLE #-} FirstOrder (FixLang f) => HigherOrder (FixLang f) 
     
     lam = LLam
 
-instance Typeable a => EtaExpand (FixLang f) (Form a)
-
-instance Typeable a => EtaExpand (FixLang f) (Term a)
-
 --------------------------------------------------------
 --6 Utility Functions
 --------------------------------------------------------

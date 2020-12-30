@@ -87,7 +87,7 @@ generate ((x :: f a) :=: y) = --accumulator for projection terms
                            Just Refl -> return (headX:=:newTerm)
                            Nothing -> mzero
 
-guillotine :: (HigherOrder f, Typeable a, Monad m, EtaExpand f a) => f a -> m (AnyPig f, [AnyPig f])
+guillotine :: (HigherOrder f, Typeable a, Monad m) => f a -> m (AnyPig f, [AnyPig f])
 guillotine x = basket (AnyPig x) []
             where basket (AnyPig x) pigs = case matchApp x of
                       Just (ExtApp h t) -> basket (AnyPig h) ((AnyPig t):pigs)
@@ -96,7 +96,7 @@ guillotine x = basket (AnyPig x) []
 --XXX: this inserts some vacuous lambdas. This could be avoided by using
 --`occurs sv` as a guard in reabstract, but it seems more efficient to just
 --leave them in (though there's no perceptible difference either way)
-statefulDecompose :: (HigherOrder f, Typeable a, MonadVar f m, EtaExpand f a) => f a -> f a -> m [Equation f]
+statefulDecompose :: (HigherOrder f, Typeable a, MonadVar f m) => f a -> f a -> m [Equation f]
 statefulDecompose a b = case (castLam a, castLam b) of
             (Just (ExtLam (f ::  f a -> f b) Refl), Just (ExtLam (f' :: f a' -> f b') Refl)) -> 
                 case (eqT :: Maybe (a:~:a'), eqT :: Maybe (b:~:b')) of
@@ -143,7 +143,7 @@ handleBodyApp projvars term = case matchApp term of
                              freshArg <- genFreshArg projvars newInit
                              return $ newInit .$. freshArg
 
-handleBodyAbs :: (MonadVar f m, HigherOrder f, EtaExpand f a, Typeable a) 
+handleBodyAbs :: (MonadVar f m, HigherOrder f, Typeable a) 
     => [AnyPig f] -> f a -> f a -> [AnyPig f] ->  m [AnyPig f]
 handleBodyAbs projvars var term acc = case castLam term of
    Nothing -> return (AnyPig var:acc)
@@ -166,13 +166,13 @@ bindAll [] body = return body
 safesubst :: (HigherOrder f, MonadVar f m, Typeable a, Typeable b) => f a -> f b -> m (f a -> f b)
 safesubst (x :: f a) (y :: f b) = return $ \z -> subst x z y
 
-genFreshArg :: (MonadVar f m, EtaExpand f a, HigherOrder f, Typeable a) => 
+genFreshArg :: (MonadVar f m, HigherOrder f, Typeable a) => 
     [AnyPig f] -> f (a -> b) -> m (f a)
 genFreshArg projvars term =
         do (EveryPig head) <- freshPig 
            return $ attach head projvars
-    where attach ::  (HigherOrder f, Typeable d, EtaExpand f d) 
-            => (forall c . (Typeable c, EtaExpand f c) => f c) -> [AnyPig f] -> f d
+    where attach ::  (HigherOrder f, Typeable d) 
+            => (forall c . Typeable c => f c) -> [AnyPig f] -> f d
           attach h  ((AnyPig v):vs) = attach (h .$. v) vs
           attach h [] = h
 

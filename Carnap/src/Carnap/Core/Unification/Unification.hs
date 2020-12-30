@@ -3,7 +3,7 @@
 module Carnap.Core.Unification.Unification (
    Equation((:=:)), UError(..), FirstOrder(..), HigherOrder(..),
       applySub, mapAll, freeVars, emap, emapL, sameTypeEq, ExtApp(..), ExtLam(..), 
-      EveryPig(..),AnyPig(..), EtaExpand(..), MonadVar(..), betaReduce, 
+      EveryPig(..),AnyPig(..), MonadVar(..), betaReduce, 
       betaNormalize, betaNormalizeByName, toBNF, pureBNF, refreshBindings, 
 ) where
 
@@ -14,13 +14,13 @@ import Carnap.Core.Util
 import Control.Monad.State 
 
 data Equation f where
-    (:=:) :: (Typeable a, EtaExpand f a) => f a -> f a -> Equation f
+    (:=:) :: Typeable a => f a -> f a -> Equation f
 
 newtype EveryPig f = EveryPig {unEveryPig :: forall a. (Typeable a) => f a}
                      --
 --the typeable constraint lets us unpack this in a safe way
 data AnyPig f where
-    AnyPig :: (EtaExpand f a, Typeable a) => f a -> AnyPig f
+    AnyPig :: Typeable a => f a -> AnyPig f
 
 instance (UniformlyEq f, UniformlyOrd f) => Ord (AnyPig f) where
     (AnyPig x) <= (AnyPig y) = x <=* y
@@ -65,18 +65,11 @@ class Monad m => MonadVar f m where
     fresh :: (Typeable a) => m (f a)
     freshPig :: m (EveryPig f)
 
-class (Typeable a) => EtaExpand f a where
-        etaExpand :: f a -> f a
-        etaExpand = id
-
-        etaMaximize :: f a -> f a
-        etaMaximize = id
-
 data ExtApp f a where
-    ExtApp :: (Typeable b, EtaExpand f b) => f (b -> a) -> f b -> ExtApp f a
+    ExtApp :: Typeable b => f (b -> a) -> f b -> ExtApp f a
 
 data ExtLam f a where
-    ExtLam :: (Typeable b, Typeable c, EtaExpand f c, EtaExpand f b) => 
+    ExtLam :: (Typeable b, Typeable c) => 
         (f b -> f c) -> (a :~: (b -> c)) -> ExtLam f a
 
 class FirstOrder f => HigherOrder f where
@@ -85,18 +78,6 @@ class FirstOrder f => HigherOrder f where
     --getLamVar :: f (a -> b) -> f a
     (.$.) :: (Typeable a, Typeable b) => f (a -> b) -> f a -> f b
     lam :: (Typeable a, Typeable b) => (f a -> f b) -> f (a -> b) 
-
-instance {-# OVERLAPPABLE #-} (Typeable a, HigherOrder f) => EtaExpand f a
-
-instance (Typeable b, EtaExpand f b, EtaExpand f a, HigherOrder f) 
-        => EtaExpand f (b -> a) where
-        etaExpand l  = case castLam l of 
-                        Just (ExtLam f Refl) -> lam $ etaExpand . f 
-                        Nothing -> lam $ \x -> l .$. x
-
-        etaMaximize l  = case castLam l of 
-                        Just (ExtLam f Refl) -> lam $ etaMaximize . f 
-                        Nothing -> lam $ \x -> etaMaximize (l .$. x)
 
 data UError f where
     SubError :: f a -> f a -> UError f -> UError f
@@ -136,7 +117,7 @@ applySub :: FirstOrder f => [Equation f] -> f a -> f a
 applySub []             y = y
 applySub ((v :=: x):ss) y = applySub ss (subst v x y)
 
-freeVars :: (Typeable a, FirstOrder f, EtaExpand f a) => f a -> [AnyPig f]
+freeVars :: (Typeable a, FirstOrder f) => f a -> [AnyPig f]
 freeVars t | isVar t   = [AnyPig t]
            | otherwise = concatMap rec (decompose t t)
     where rec (a :=: _) = freeVars a
@@ -211,10 +192,10 @@ toBNF x = do nf <- betaNormalize x
 pureBNF :: (HigherOrder f, MonadVar f (State Int), Typeable a) => f a -> f a
 pureBNF x = evalState (toBNF x) (0 :: Int)
 
-refreshBindings :: (HigherOrder f, MonadVar f (State Int), Typeable a, EtaExpand f a) => f a -> State Int (f a)
+refreshBindings :: (HigherOrder f, MonadVar f (State Int), Typeable a) => f a -> State Int (f a)
 refreshBindings x = do let bnf = betaNormalizeByName x
                        rec bnf
-    where rec :: (HigherOrder f, MonadVar f (State Int), Typeable a, EtaExpand f a) => f a -> State Int (f a)
+    where rec :: (HigherOrder f, MonadVar f (State Int), Typeable a) => f a -> State Int (f a)
           rec bnfeta = case matchApp bnfeta of
                           Just (ExtApp h t) -> do t' <- rec t
                                                   h' <- case matchApp h of

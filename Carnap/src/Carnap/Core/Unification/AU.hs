@@ -23,7 +23,7 @@ class FirstOrder f => AU f where
 asVar varConst x = isVar x && not (varConst x)
 
 --runs the matching after conversion to lists, with an accumulator
-matchAccum :: (MonadVar f m, AU f, Typeable a, EtaExpand f a, UniformlyEq f) => (forall a. f a -> Bool) -> [f a] -> [f a] -> [Equation f] -> LogicT m [Equation f]
+matchAccum :: (MonadVar f m, AU f, Typeable a, UniformlyEq f) => (forall a. f a -> Bool) -> [f a] -> [f a] -> [Equation f] -> LogicT m [Equation f]
 matchAccum varConst [] [] acc = return acc
 matchAccum varConst (lh:lt) []  acc | asVar varConst lh = matchAccum varConst (filter (\t -> not $ t =* lh) lt) [] ((lh :=: auId Proxy):acc) --if LHS head is a variable, send it to the unit
 matchAccum varConst (lh:lt) (rh:rt) acc | asVar varConst lh = freshBranch `mplus` unitBranch
@@ -36,7 +36,7 @@ matchAccum varConst [] (rh:rt) acc = mzero -- if LHS is longer than RHS, termina
 matchAccum varConst (lh:lt) [] acc = mzero  -- if RHS head is nonvariable, terminate branch
 matchAccum varConst (lh:ht) (rh:rt) acc = mzero -- if LHS and RHS heads are distinct nonvariable, terminate
 
-auMatch :: (MonadVar f m, AU f, Typeable a, EtaExpand f a, UniformlyEq f) => (forall a. f a -> Bool) -> f a -> f a -> LogicT m [Equation f]
+auMatch :: (MonadVar f m, AU f, Typeable a, UniformlyEq f) => (forall a. f a -> Bool) -> f a -> f a -> LogicT m [Equation f]
 auMatch varConst a b = reverse <$> matchAccum varConst (auUnfold a) (auUnfold b) []
 
 auMatchSys :: (MonadVar f m, AU f, UniformlyEq f) => (forall a. f a -> Bool) -> [Equation f] -> m [[Equation f]]

@@ -143,13 +143,13 @@ subadd a b = like ++ unlike
           unlike = filter (not . leftMatches) (a ++ b)
           leftMatches (v :=: _) = any (\(v' :=: _) -> v =* v') like
 
-popVar :: (MonadVar f m, Typeable a, EtaExpand f a) => m (f a)
+popVar :: (MonadVar f m, Typeable a) => m (f a)
 popVar = do
     v <- freshPig
     return $ unEveryPig v
 
 --solves a homogenous equation
-solveHomoEq :: forall f m a. (MonadVar f m, ACUI f, Typeable a, EtaExpand f a)
+solveHomoEq :: forall f m a. (MonadVar f m, ACUI f, Typeable a)
             => (forall a. f a -> Bool)
             -> SimpleEquation [f a]
             -> m [Equation f]
@@ -160,7 +160,7 @@ solveHomoEq varConst eq = do
     return homosol
 
 --solves an inhomogenous equation for a specific constant
-solveInHomoEq :: (MonadVar f m, ACUI f, Typeable a, EtaExpand f a)
+solveInHomoEq :: (MonadVar f m, ACUI f, Typeable a)
               => (forall a. f a -> Bool)
               -> f a
               -> SimpleEquation [f a]
@@ -171,7 +171,7 @@ solveInHomoEq varConst c eq = do
   return minSols
 
 --finds all solutions to a = b
-acuiUnify :: (MonadVar f m, ACUI f, Typeable a, EtaExpand f a) => (forall a. f a -> Bool) -> f a -> f a -> m [[Equation f]]
+acuiUnify :: (MonadVar f m, ACUI f, Typeable a) => (forall a. f a -> Bool) -> f a -> f a -> m [[Equation f]]
 acuiUnify varConst a b = do
         let l = acuiUnfold a
         let r = acuiUnfold b

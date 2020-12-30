@@ -31,7 +31,6 @@ type SupportsTableau rule lex sem =
     , Sequentable lex
     , CoreInference rule lex sem
     , PrismSubstitutionalVariable lex
-    , EtaExpand (ClassicalSequentOver lex) sem
     )
 
 --This function should swap out the contents of each node in a tableau for
