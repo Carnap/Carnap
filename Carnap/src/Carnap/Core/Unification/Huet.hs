@@ -35,8 +35,9 @@ massDecompose l = M.lift $ concat <$> mapM (\(x:=:y) -> statefulDecompose x y) l
 
 -- | returns true on rigid-rigid equations between terms in βη long normal form
 --(since these are guaranteed to have heads that are either constants or
---variables), but also causes the computational branch to fail of there's
---a mismatch of (constant) heads
+--variables), and false on flex-whatever equations (so you should orient
+--before using) but also causes the computational branch to fail of there's
+--a mismatch of rigid-rigid heads
 compareHeads :: (HigherOrder f, MonadVar f m) => Equation f -> [AnyPig f] -> LogicT m Bool
 compareHeads (x:=:y) bv = case (castLam x, castLam y) of
                          (Just (ExtLam (l :: f t1 -> f t1') Refl),Just (ExtLam (l' :: f t2 -> f t2') Refl)) -> do 
@@ -176,9 +177,6 @@ genFreshArg projvars term =
           attach h  ((AnyPig v):vs) = attach (h .$. v) vs
           attach h [] = h
 
---- | given x, y with no leading variables, this applies the generate rule
---to replace the old head of x with the new head
-
 -- | solve a pattern-matching unification problem (specialized to matching
 -- for efficiency)
 huetmatch :: (HigherOrder f, MonadVar f m)
@@ -193,7 +191,8 @@ huetmatch varConst es ss =
                 []     -> return (reverse ss)
                 (x:xs) -> do lnfx <- (M.lift . eqLMatch) x
                              genSub@(a:=:b) <- generate lnfx
-                             let subbed = map (emapL (subst a b)) (x:xs)
+                             let subbed = map (emapL (subst a b)) (x:xs) 
+                                 --XXX: we only sub on LHS since we're matching
                              fresheqs <- mapM (M.lift . eqFreshen) subbed
                              huetmatch varConst (filter (not . trivial) fresheqs) (genSub:ss)
     where trivial (x:=:y) = x =* y
