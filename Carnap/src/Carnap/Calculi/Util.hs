@@ -69,11 +69,11 @@ fosolve eqs = case evalState (foUnifySys (const False) eqs) (0 :: Int) of
                 [] -> Left $ NoUnify [eqs] 0
                 [s] -> Right s
 
-hosolve :: 
+homatch :: 
     ( HigherOrder (ClassicalSequentOver lex)
     , MonadVar (ClassicalSequentOver lex) (State Int)
     ) => [Equation (ClassicalSequentOver lex)] -> Either (ProofErrorMessage lex) [[Equation (ClassicalSequentOver lex)]]
-hosolve eqs = case evalState (huetUnifySys (const False) eqs) (0 :: Int) of
+homatch eqs = case evalState (huetMatchSys (const False) eqs) (0 :: Int) of
                     [] -> Left $ NoUnify [eqs] 0
                     subs -> Right subs
 

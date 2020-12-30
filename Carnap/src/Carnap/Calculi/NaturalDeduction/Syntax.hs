@@ -394,7 +394,7 @@ checkAssumptionForm n pt assump sub =
                 Left e -> Just $ "The asssumption cited, namely " ++ show (content x) ++ ", does not have the right form, namely " ++ show assump'
                 Right (sub':_) | any (differentContent x) rest -> Just "the cited assumptions don't all have the same form"
                                | otherwise -> Nothing
-    where subsfrom form = hosolve [assump' :=: form]
+    where subsfrom form = homatch [assump' :=: form]
           assump' = pureBNF $ applySub sub (SS assump)
           differentContent x (Node y _) = content x /= content y
 

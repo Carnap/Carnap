@@ -1,7 +1,6 @@
 {-#LANGUAGE ImpredicativeTypes, ScopedTypeVariables, FunctionalDependencies, TypeFamilies, UndecidableInstances, FlexibleInstances, MultiParamTypeClasses, AllowAmbiguousTypes, GADTs, TypeOperators, ViewPatterns, PatternSynonyms, RankNTypes, FlexibleContexts #-}
 
-module Carnap.Core.Unification.Huet
-where
+module Carnap.Core.Unification.Huet (huetMatchSys) where
 
 import Carnap.Core.Util
 import Carnap.Core.Data.Classes
@@ -180,13 +179,15 @@ genFreshArg projvars term =
 --- | given x, y with no leading variables, this applies the generate rule
 --to replace the old head of x with the new head
 
-huetunify :: (HigherOrder f, MonadVar f m)
+-- | solve a pattern-matching unification problem (specialized to matching
+-- for efficiency)
+huetmatch :: (HigherOrder f, MonadVar f m)
         => (forall a. f a -> Bool) --treat certain variables as constants
         -> [Equation f] --equations to be solved
         -> [Equation f] --accumulator for the substitution
         -> LogicT m [Equation f]
-huetunify varConst [] ss = return (reverse ss)
-huetunify varConst es ss = 
+huetmatch varConst [] ss = return (reverse ss)
+huetmatch varConst es ss = 
         do seqs <- simplify es
            case nub seqs of 
                 []     -> return (reverse ss)
@@ -194,7 +195,7 @@ huetunify varConst es ss =
                              genSub@(a:=:b) <- generate lnfx
                              let subbed = map (emapL (subst a b)) (x:xs)
                              fresheqs <- mapM (M.lift . eqFreshen) subbed
-                             huetunify varConst (filter (not . trivial) fresheqs) (genSub:ss)
+                             huetmatch varConst (filter (not . trivial) fresheqs) (genSub:ss)
     where trivial (x:=:y) = x =* y
 
 eqLMatch :: (MonadVar f m, HigherOrder f) => Equation f -> m (Equation f)
@@ -222,5 +223,5 @@ eqLMatch (x :=: y) =
 eqFreshen :: (HigherOrder f, MonadVar f m) => Equation f -> m (Equation f)
 eqFreshen ((x :: f a):=:y) =  do return (betaNormalizeByName x :=: y)
 
-huetUnifySys :: (MonadVar f m, HigherOrder f) => (forall a. f a -> Bool) -> [Equation f] -> m [[Equation f]]
-huetUnifySys varConst eqs = observeAllT (huetunify varConst eqs [])
+huetMatchSys :: (MonadVar f m, HigherOrder f) => (forall a. f a -> Bool) -> [Equation f] -> m [[Equation f]]
+huetMatchSys varConst eqs = observeAllT (huetmatch varConst eqs [])

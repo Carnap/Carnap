@@ -63,7 +63,7 @@ validateNode n ns = case tableauNodeRule n of
                                        then return $ treeErrMsg $ "Missing target for rule"
                                        else do 
                                            let mainProb = concat . map (uncurry toEqs) $ targetedPairs
-                                           case hosolve mainProb of
+                                           case homatch mainProb of
                                               Left e -> return $ ProofError e
                                               Right hosubs -> do
                                                   hosub <- hosubs

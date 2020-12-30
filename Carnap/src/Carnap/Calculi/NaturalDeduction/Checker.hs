@@ -8,7 +8,7 @@ hoProcessLineFitchMemo, hoProcessLineFitch, hoProcessLineMontague,
 hoProcessLineLemmon, hoProcessLineHardegree, hoProcessLineHilbert, hoProcessLineHilbertImplicit,
 hoReduceProofTree, hoReduceProofTreeMemo,
 processLineStructuredFitch,processLineStructuredFitchHO,
-hosolve, ProofErrorMessage(..),
+homatch, ProofErrorMessage(..),
 Feedback(..),seqUnify,seqSubsetUnify) where
 
 import Carnap.Calculi.NaturalDeduction.Syntax
@@ -286,7 +286,7 @@ hoseqFromNode lineno rules prems conc =
                         --To unify the right-hand-sides of each sequent in
                         --the rule with the right-hand-side of each sequent
                         --in the inference.
-                        case hosolve (zipWith (:=:) 
+                        case homatch (zipWith (:=:) 
                                         (map (view rhs) (rconc:rps)) 
                                         (conc:map (view rhs) prems)) of 
                             Left e -> return $ Left $ renumber lineno e 
@@ -302,7 +302,6 @@ hoseqFromNode lineno rules prems conc =
                                    case evalState (acuiUnifySys (const False) prob) (0 :: Int) of
                                        [] -> return $ Left $ renumber lineno $ NoUnify [prob] 0
                                        subs -> return $ Right $ map (\x -> (antecedentNub $ applySub x subbedconc,x,r)) (map (++ hosub) subs)
-
 
 reduceProofTree, hoReduceProofTree :: 
     ( Inference r lex sem

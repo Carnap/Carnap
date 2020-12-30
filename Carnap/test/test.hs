@@ -79,7 +79,7 @@ firstOrderMethod eqs = case evalTerm $ foUnifySys (const False) succs of
               succs = map succPair eqs
 
 --A simple method of higher-order unification
-higherOrderMethod eqs = case evalTerm $ huetUnifySys (const False) succs of
+higherOrderMethod eqs = case evalTerm $ huetMatchSys (const False) succs of
                      [x] -> evalTerm $ acuiUnifySys (const False) (mapAll (applySub x) ants)
                      [] -> []
             where
