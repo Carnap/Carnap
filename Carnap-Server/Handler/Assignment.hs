@@ -128,7 +128,7 @@ returnAssignment coursetitle filename (Entity key val) path = do
                                     addStylesheet $ StaticR css_exercises_css
                                     maybe (pure [()]) (mapM addStylesheetRemote) mcss
                                     $(widgetFile "document")
-                                    toWidgetBody [julius|getAssignmentState();|]
+                                    toWidgetBody [julius|CarnapServerAPI.getAssignmentState();|]
                                     addScript $ StaticR ghcjs_allactions_runmain_js
                                     maybe (pure [()]) (mapM addScriptRemote) mjs >> return ()
                else defaultLayout $ minimalLayout ("Assignment not currently set as visible by instructor" :: Text)
