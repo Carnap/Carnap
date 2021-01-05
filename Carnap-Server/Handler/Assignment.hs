@@ -8,6 +8,7 @@ import Text.Blaze.Html (toMarkup)
 import Text.Pandoc (lookupMeta)
 import System.Directory (doesFileExist,getDirectoryContents)
 import Data.Time
+import Data.Aeson.Types
 import Data.Time.Clock.POSIX
 import Text.Julius (juliusFile,rawJS)
 import TH.RelativePaths (pathRelativeToCabalPackage)
@@ -31,7 +32,8 @@ putCourseAssignmentStateR :: Text -> Text -> Handler Value
 putCourseAssignmentStateR coursetitle filename = do
         msg <- requireJsonBody :: Handler Value
         uid <- maybeAuthId >>= maybe reject return
-        ((Entity aid _), _) <- getAssignmentByCourse coursetitle filename ---XXX Should pass assignmentId in the JSON
+        let maid = parseMaybe (withObject "assignment key" (.: "assignmentKey")) msg :: Maybe Text
+        aid <- maybe (sendStatusJSON badRequest400 ("Ill-formed assignment key" :: Text)) return (maid >>= readMay :: Maybe (Key AssignmentMetadata))
         runDB $ upsert (AssignmentState msg uid aid) [AssignmentStateValue =. msg]
         returnJson msg
 
