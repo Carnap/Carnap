@@ -2,7 +2,7 @@ var CarnapServerAPI = {
     submissionSource: #{source},
     assignmentKey: #{show key},
     initialized: false,
-    state: {},
+    _state: {},
     user: {
         firstName: #{userDataFirstName userdata},
         lastName: #{userDataLastName userdata}
@@ -19,12 +19,12 @@ var CarnapServerAPI = {
 CarnapServerAPI.putAssignmentState = async function (ns, val) {
     if (ns == "assignmentKey") reject("don't overwrite assignmentKey")
     await CarnapServerAPI.getAssignmentState() /* don't accidentally clobber unretrieved old state */
-    CarnapServerAPI.state[ns] = val
+    CarnapServerAPI._state[ns] = val
     await new Promise((resolve,reject) => jQuery.ajax({
         url: '@{CourseAssignmentStateR coursetitle filename}',
         type: 'PUT',
         contentType: "application/json",
-        data: JSON.stringify(CarnapServerAPI.state),
+        data: JSON.stringify(CarnapServerAPI._state),
         success: function(data) { resolve(data) },
         error: function(data) {
             window.alert("Possible network error: couldn't save assignment state")
@@ -35,7 +35,7 @@ CarnapServerAPI.putAssignmentState = async function (ns, val) {
 
 CarnapServerAPI.getAssignmentState = async function () {
     if (CarnapServerAPI.initialized) {
-        return CarnapServerAPI.state
+        return CarnapServerAPI._state
     } else {
         return await new Promise((resolve,reject) => jQuery.ajax({
             url: '@{CourseAssignmentStateR coursetitle filename}',
@@ -44,7 +44,7 @@ CarnapServerAPI.getAssignmentState = async function () {
             success: function(data) { 
                 console.log("received assignment state: " + JSON.stringify(data))
                 CarnapServerAPI.initialized = true
-                CarnapServerAPI.state = data
+                CarnapServerAPI._state = data
                 data.assignmentKey = #{show key}
                 resolve(data)
             },
