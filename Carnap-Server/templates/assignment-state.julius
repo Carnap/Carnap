@@ -16,6 +16,7 @@ var CarnapServerAPI = {
 }
 
 CarnapServerAPI.putAssignmentState = async function (ns, val) {
+    await CarnapServerAPI.getAssignmentState() /* don't accidentally clobber unretrieved old state */
     CarnapServerAPI.state[ns] = val
     await new Promise((resolve,reject) => jQuery.ajax({
         url: '@{CourseAssignmentStateR coursetitle filename}',
