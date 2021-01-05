@@ -1,11 +1,19 @@
-var CarnapServerAPI = {}
-CarnapServerAPI.submissionSource = #{source}
-CarnapServerAPI.assignmentKey = #{show key}
-CarnapServerAPI.user = {}
-CarnapServerAPI.user.firstName = #{userDataFirstName userdata}
-CarnapServerAPI.user.lastName = #{userDataLastName userdata}
-CarnapServerAPI.initialized = false
-CarnapServerAPI.state = {}
+var CarnapServerAPI = {
+    submissionSource: #{source},
+    initialized: false,
+    state: {},
+    user: {
+        firstName: #{userDataFirstName userdata},
+        lastName: #{userDataLastName userdata}
+    },
+    assignment: {
+        /* toMS to get milliseconds for JS */
+        dueDate: #{jsMaybe (show . (toMS . (round . utcTimeToPOSIXSeconds))) (assignmentMetadataDuedate val)},
+        pointValue: #{jsMaybe show (assignmentMetadataPointValue val)},
+        totalProblems: #{jsMaybe show (assignmentMetadataTotalProblems val)},
+        description: #{jsMaybe show (assignmentMetadataDescription val)},
+    },
+}
 
 CarnapServerAPI.putAssignmentState = async function (ns, val) {
     CarnapServerAPI.state[ns] = val

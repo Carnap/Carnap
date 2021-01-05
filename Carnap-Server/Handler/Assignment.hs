@@ -81,6 +81,8 @@ returnAssignment coursetitle filename (Entity key val) path = do
                instructorAccess = userDataInstructorId userdata /= Nothing --instructors who shouldn't access the course are already blocked by yesod-auth
                age (Entity _ tok) = floor (diffUTCTime time (assignmentAccessTokenCreatedAt tok))
                creation (Entity _ tok) = round $ utcTimeToPOSIXSeconds (assignmentAccessTokenCreatedAt tok) * 1000 --milliseconds to match JS
+               jsMaybe f v = maybe (rawJS ("null" :: Text)) (rawJS . f) v
+               toMS x = x * 1000
            if visibleAt time val mextension || instructorAccess
                then do
                    ehtml <- liftIO $ fileToHtml (allFilters (hash (show uid ++ path))) path
