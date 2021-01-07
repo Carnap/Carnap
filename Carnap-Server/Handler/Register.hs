@@ -118,7 +118,7 @@ registrationForm :: Text -> [Entity Course] -> UserId -> Html -> MForm Handler (
 registrationForm ident courseEntities userId extra = do
         (fnameRes, fnameView) <- mreq textField (withPlaceholder "First Name" $ bfs ("First Name " :: Text)) Nothing
         (lnameRes, lnameView) <- mreq textField (withPlaceholder "Last Name" $ bfs ("Last Name " :: Text)) Nothing
-        (uniIdRes, uniIdView) <- mreq textField (withPlaceholder "University Id" $ bfs ("University Id " :: Text)) Nothing
+        (uniIdRes, uniIdView) <- mopt textField (withPlaceholder "University Id" $ bfs ("University Id " :: Text)) Nothing
         (enrollRes, enrollView) <- mreq (selectFieldList courses) (bfs ("Enrolled In " :: Text)) Nothing
         let theRes = fixedId userId ident <$> fnameRes <*> lnameRes <*> uniIdRes <*> enrollRes
             theWidget = do
@@ -149,12 +149,12 @@ registrationForm ident courseEntities userId extra = do
     where openCourseEntities = filter (\(Entity k v) -> courseEnrollmentOpen v) courseEntities
           courses = ("No Course", Nothing) : map (\(Entity k v) -> (courseTitle v, Just k)) openCourseEntities
 
-fixedId :: Key User -> Text -> Text -> Text -> Text -> Maybe (Key Course) -> Maybe UserData
+fixedId :: Key User -> Text -> Text -> Text -> Maybe Text -> Maybe (Key Course) -> Maybe UserData
 fixedId userId ident fname lname uniid ckey = Just $ UserData 
                 { userDataFirstName = fname
                 , userDataEmail = Just ident
                 , userDataLastName = lname
-                , userDataUniversityId = Just uniid
+                , userDataUniversityId = uniid
                 , userDataEnrolledIn = ckey
                 , userDataInstructorId = Nothing
                 , userDataIsAdmin = False
@@ -165,7 +165,7 @@ enrollmentForm :: Text -> Text -> [Entity Course] -> UserId ->  Html -> MForm Ha
 enrollmentForm classtitle ident courseEntities userId extra = do
         (fnameRes, fnameView) <- mreq textField (withPlaceholder "First Name" $ bfs ("First Name " :: Text)) Nothing
         (lnameRes, lnameView) <- mreq textField (withPlaceholder "Last Name" $ bfs ("Last Name " :: Text)) Nothing
-        (uniIdRes, uniIdView) <- mreq textField (withPlaceholder "University Id" $ bfs ("University Id " :: Text)) Nothing
+        (uniIdRes, uniIdView) <- mopt textField (withPlaceholder "University Id" $ bfs ("University Id " :: Text)) Nothing
         let theRes = fixedId' <$> fnameRes <*> lnameRes <*> uniIdRes
             theWidget = do
                 [whamlet|

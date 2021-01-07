@@ -12,8 +12,8 @@ function tryDeleteAssignment (json,fn,ct) {
 
 function tryDeleteDocument (json) {
     var fn = JSON.parse(json).contents;
-    if (confirm("Are you sure you want to permanently delete the document" + fn + 
-                "? This will also permanently delete all assingments based on this document and all problems submitted for those assignments.")) {
+    if (confirm("Are you sure you want to permanently delete the document " + fn + 
+                "? This will also permanently delete all assignments based on this document and all problems submitted for those assignments.")) {
         deleteDocument(json,fn);
     }
 }

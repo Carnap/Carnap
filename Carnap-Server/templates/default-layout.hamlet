@@ -18,13 +18,15 @@
                     <li.dropdown>
                             <a href=@{UserDispatchR}>#{userIdent user}
                             <ul>
+                                <li>
+                                    <a href=@{UserR (userIdent user)}> User Home
                                 $if isInstructor
+                                    <li>
+                                        <a href=@{InstructorR (userIdent user)}> Instructor Home
                                     <li>
                                         <a href=@{DocumentsR}> Shared Documents
                                     <li>
-                                        <a href=@{InstructorR (userIdent user)}> Instructor Home
-                                <li>
-                                    <a href=@{UserR (userIdent user)}> User Home
+                                        <a href="@{ServeR "doc" ["index.md"]}"> Documentation
                                 <li>
                                     <a href=@{AuthR LogoutR}> Logout
                 $nothing

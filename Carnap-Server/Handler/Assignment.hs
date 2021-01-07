@@ -8,6 +8,7 @@ import Text.Blaze.Html (toMarkup)
 import Text.Pandoc (lookupMeta)
 import System.Directory (doesFileExist,getDirectoryContents)
 import Data.Time
+import Data.Aeson.Types
 import Data.Time.Clock.POSIX
 import Text.Julius (juliusFile,rawJS)
 import TH.RelativePaths (pathRelativeToCabalPackage)
@@ -31,7 +32,8 @@ putCourseAssignmentStateR :: Text -> Text -> Handler Value
 putCourseAssignmentStateR coursetitle filename = do
         msg <- requireJsonBody :: Handler Value
         uid <- maybeAuthId >>= maybe reject return
-        ((Entity aid _), _) <- getAssignmentByCourse coursetitle filename ---XXX Should pass assignmentId in the JSON
+        let maid = parseMaybe (withObject "assignment key" (.: "assignmentKey")) msg :: Maybe Text
+        aid <- maybe (sendStatusJSON badRequest400 ("Ill-formed assignment key" :: Text)) return (maid >>= readMay :: Maybe (Key AssignmentMetadata))
         runDB $ upsert (AssignmentState msg uid aid) [AssignmentStateValue =. msg]
         returnJson msg
 
@@ -81,6 +83,8 @@ returnAssignment coursetitle filename (Entity key val) path = do
                instructorAccess = userDataInstructorId userdata /= Nothing --instructors who shouldn't access the course are already blocked by yesod-auth
                age (Entity _ tok) = floor (diffUTCTime time (assignmentAccessTokenCreatedAt tok))
                creation (Entity _ tok) = round $ utcTimeToPOSIXSeconds (assignmentAccessTokenCreatedAt tok) * 1000 --milliseconds to match JS
+               jsMaybe f v = maybe (rawJS ("null" :: Text)) (rawJS . f) v
+               toMS x = x * 1000
            if visibleAt time val mextension || instructorAccess
                then do
                    ehtml <- liftIO $ fileToHtml (allFilters (hash (show uid ++ path))) path
@@ -128,7 +132,7 @@ returnAssignment coursetitle filename (Entity key val) path = do
                                     addStylesheet $ StaticR css_exercises_css
                                     maybe (pure [()]) (mapM addStylesheetRemote) mcss
                                     $(widgetFile "document")
-                                    toWidgetBody [julius|getAssignmentState();|]
+                                    toWidgetBody [julius|CarnapServerAPI.getAssignmentState();|]
                                     addScript $ StaticR ghcjs_allactions_runmain_js
                                     maybe (pure [()]) (mapM addScriptRemote) mjs >> return ()
                else defaultLayout $ minimalLayout ("Assignment not currently set as visible by instructor" :: Text)

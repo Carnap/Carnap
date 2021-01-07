@@ -1,34 +1,57 @@
-var AssignmentState = {}
+var CarnapServerAPI = {
+    submissionSource: #{source},
+    assignmentKey: #{show key},
+    initialized: false,
+    _state: {},
+    user: {
+        firstName: #{userDataFirstName userdata},
+        lastName: #{userDataLastName userdata}
+    },
+    assignment: {
+        /* toMS to get milliseconds for JS */
+        dueDate: #{jsMaybe (show . (toMS . (round . utcTimeToPOSIXSeconds))) (assignmentMetadataDuedate val)},
+        pointValue: #{jsMaybe show (assignmentMetadataPointValue val)},
+        totalProblems: #{jsMaybe show (assignmentMetadataTotalProblems val)},
+        description: #{jsMaybe show (assignmentMetadataDescription val)},
+    },
+}
 
-async function putAssignmentState (ns, val) {
-    AssignmentState[ns] = val
+CarnapServerAPI.putAssignmentState = async function (ns, val) {
+    if (ns == "assignmentKey") reject("don't overwrite assignmentKey")
+    await CarnapServerAPI.getAssignmentState() /* don't accidentally clobber unretrieved old state */
+    CarnapServerAPI._state[ns] = val
     await new Promise((resolve,reject) => jQuery.ajax({
         url: '@{CourseAssignmentStateR coursetitle filename}',
         type: 'PUT',
         contentType: "application/json",
-        data: JSON.stringify(AssignmentState),
+        data: JSON.stringify(CarnapServerAPI._state),
         success: function(data) { resolve(data) },
         error: function(data) {
             window.alert("Possible network error: couldn't save assignment state")
-            reject("Possible network error: couldn't save assignment state")
+            reject("Possible network error: " + JSON.stringify(data))
         },
     }));
 };
 
-async function getAssignmentState () {
-    var data = await new Promise((resolve,reject) => jQuery.ajax({
-        url: '@{CourseAssignmentStateR coursetitle filename}',
-        type: 'GET',
-        contentType: "application/json",
-        success: function(data) { 
-            console.log("received assignment state: " + JSON.stringify(data))
-            AssignmentState = data 
-            resolve(data)
-        },
-        error: function(data) {
-            window.alert("Possible network error: couldn't retrieve assignment state")
-            reject("Possible network error: couldn't retrieve assignment state")
-        },
-    }));
-    return data
+CarnapServerAPI.getAssignmentState = async function () {
+    if (CarnapServerAPI.initialized) {
+        return CarnapServerAPI._state
+    } else {
+        return await new Promise((resolve,reject) => jQuery.ajax({
+            url: '@{CourseAssignmentStateR coursetitle filename}',
+            type: 'GET',
+            contentType: "application/json",
+            success: function(data) { 
+                console.log("received assignment state: " + JSON.stringify(data))
+                CarnapServerAPI.initialized = true
+                CarnapServerAPI._state = data
+                data.assignmentKey = #{show key}
+                resolve(data)
+            },
+            error: function(data) {
+                window.alert("Possible network error: couldn't retrieve assignment state")
+                reject("Possible network error: couldn't retrieve assignment state")
+            },
+        }));
+    }
 };

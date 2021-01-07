@@ -142,7 +142,7 @@
                                                 $forall tag <- tags
                                                     <a.badge.badge-primary href="@{DocumentsByTagR tag}">#{tag}
                                         <td>
-                                            <button.btn.btn-sm.btn-secondary type="button" alt="delete" title="permanantly delete this document" onclick="tryDeleteDocument('#{jsonSerialize $ DeleteDocument (documentFilename a)}')">
+                                            <button.btn.btn-sm.btn-secondary type="button" alt="delete" title="permanently delete this document" onclick="tryDeleteDocument('#{jsonSerialize $ DeleteDocument (documentFilename a)}')">
                                                 <i.fa.fa-trash-o>
                                             <button.btn.btn-sm.btn-secondary type="button" alt="edit" title="edit this document" onclick="modalEditDocument('#{show k}','#{maybe "" sanitizeForJS (unpack <$> documentDescription a)}','#{documentFilename a}', '#{tagString k}')">
                                                 <i.fa.fa-cog>
@@ -169,7 +169,7 @@
                                             <td>#{courseTitle c}
                                             <td>#{dateDisplay (courseEndDate c) c}
                                             <td>
-                                                <button.btn.btn-sm.btn-secondary type="button" alt="delete" title="permanantly delete this course" onclick="tryDeleteCourse('#{jsonSerialize $ DeleteCourse (courseTitle c)}')">
+                                                <button.btn.btn-sm.btn-secondary type="button" alt="delete" title="permanently delete this course" onclick="tryDeleteCourse('#{jsonSerialize $ DeleteCourse (courseTitle c)}')">
                                                     <i.fa.fa-trash-o>
                                                 <button.btn.btn-sm.btn-secondary type="button" alt="edit" title="edit this course" onclick="modalEditOldCourse('#{show cid}','#{maybe "" sanitizeForJS (unpack <$> courseDescription c)}','#{dateDisplay (courseStartDate c) c}','#{dateDisplay (courseEndDate c) c}',#{courseTotalPoints c})">
                                                     <i.fa.fa-cog>
