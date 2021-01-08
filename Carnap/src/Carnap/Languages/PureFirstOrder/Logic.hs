@@ -68,6 +68,7 @@ ofFOLSys f sys | sys == "firstOrder"                      = Just $ f folCalc
                | sys == "hurleyPL"                        = Just $ f hurleyPLCalc
                | sys == "ichikawaJenkinsQL"               = Just $ f ichikawaJenkinsQLCalc
                | sys == "hardegreePL"                     = Just $ f hardegreePLCalc
+               | sys == "hardegreePL2006"                 = Just $ f hardegreePL2006Calc
                | sys == "bonevacQL"                       = Just $ f bonevacQLCalc
                | sys == "goldfarbND"                      = Just $ f goldfarbNDCalc
                | sys == "goldfarbAltND"                   = Just $ f goldfarbAltNDCalc
