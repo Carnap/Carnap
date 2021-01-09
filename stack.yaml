@@ -18,8 +18,8 @@ extra-deps:
           - persistent-postgresql
           - persistent-template
           - persistent-qq
-    - lti13-0.1.2.1
-    - yesod-auth-lti13-0.1.2.1
+    - lti13-0.2.0.0
+    - yesod-auth-lti13-0.2.0.0
     - oidc-client-0.5.1.0
 
 # :( persistent bug fix requires a git version, which means we have to turn off

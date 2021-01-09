@@ -4,6 +4,7 @@ let
   inherit (nixpkgs.lib) gitignoreSource;
   inherit (nixpkgs.haskell.lib)
     disableSharedExecutables
+    disableLibraryProfiling
     doJailbreak
     dontCheck
     justStaticExecutables
@@ -11,13 +12,8 @@ let
     overrideCabal;
 in
 newpkgs: oldpkgs: {
-  # multiple issues: grumpy about haskell-src-exts versions
-  # also, cabal-jailbreak does not erase bounds for feature-gated dependencies ;-;
-  # I want to kill it 😭
-  diagrams-builder = doJailbreak oldpkgs.diagrams-builder;
-  # fix build of diagrams-builder by downgrading to 1.4.x
-  diagrams-postscript = doJailbreak (oldpkgs.callHackage "diagrams-postscript" "1.4.1" { });
-
+  # TODO: This has actually been fixed as of 2021-01-09 but it probably hasn't
+  # got into our nixpkgs. Need to update that.
   # downgrade to 1.8.x because yesod-auth-oauth2 has not fixed support for
   # newer versions in any *released* version yet
   hoauth2 = oldpkgs.callHackage "hoauth2" "1.8.9" { };
@@ -51,20 +47,24 @@ newpkgs: oldpkgs: {
   oidc-client = dontCheck oldpkgs.oidc-client;
 
   # lti13 and yesod-auth-lti13 are not in nixpkgs yet
+  # lti13 = oldpkgs.callCabal2nix "lti13" ../lti13/lti13 { };
+  # yesod-auth-lti13 = oldpkgs.callCabal2nix "yesod-auth-lti13" ../lti13/yesod-auth-lti13 { };
   lti13 = oldpkgs.callHackageDirect {
     pkg = "lti13";
-    ver = "0.1.2.1";
-    sha256 = "14fxdjv8s9l2j1kxhryqjjcsyqb0ccb5f2ccq553d34xgi8qlzvr";
+    ver = "0.2.0.0";
+    sha256 = "0j6pjrmpps36ppg750wnmksvpgv2i14pfzpwg3zxhzpniigpxd4x";
   } { };
   yesod-auth-lti13 = oldpkgs.callHackageDirect {
     pkg = "yesod-auth-lti13";
-    ver = "0.1.2.1";
-    sha256 = "0xm5cgccxb96rdyyqz5cjhi318f8nl3zxz7bg4k2p80mksg3ph10";
+    ver = "0.2.0.0";
+    sha256 = "130ylr7prhw9j5lx5wni70nb2v72jcc9l7l6zk30camg1q96r2mg";
   } { };
 
   # dontCheck: https://github.com/gleachkr/Carnap/issues/123
-  Carnap        = dontCheck (oldpkgs.callCabal2nix "Carnap" (gitignoreSource ./Carnap) { });
-  Carnap-Client = oldpkgs.callCabal2nix "Carnap-Client" (gitignoreSource ./Carnap-Client) { };
+  Carnap        = disableLibraryProfiling
+                    (dontCheck (oldpkgs.callCabal2nix "Carnap" (gitignoreSource ./Carnap) { }));
+  Carnap-Client = disableLibraryProfiling
+                    (oldpkgs.callCabal2nix "Carnap-Client" (gitignoreSource ./Carnap-Client) { });
 
   Carnap-Server = justStaticExecutables ((overrideCabal
     (oldpkgs.callCabal2nix "Carnap-Server" (gitignoreSource ./Carnap-Server) { })
@@ -89,7 +89,6 @@ newpkgs: oldpkgs: {
       enableExecutableProfiling = profiling;
       enableLibraryProfiling = profiling;
       buildDepends = [ book client ];
-      executableSystemDepends = [ nixpkgs.diagrams-builder ];
 
       isExecutable = true;
       # Carnap-Server has no tests/they are broken

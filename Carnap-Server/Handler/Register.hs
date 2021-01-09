@@ -150,7 +150,7 @@ registrationForm ident courseEntities userId extra = do
           courses = ("No Course", Nothing) : map (\(Entity k v) -> (courseTitle v, Just k)) openCourseEntities
 
 fixedId :: Key User -> Text -> Text -> Text -> Maybe Text -> Maybe (Key Course) -> Maybe UserData
-fixedId userId ident fname lname uniid ckey = Just $ UserData 
+fixedId userId ident fname lname uniid ckey = Just $ UserData
                 { userDataFirstName = fname
                 , userDataEmail = Just ident
                 , userDataLastName = lname
@@ -158,6 +158,7 @@ fixedId userId ident fname lname uniid ckey = Just $ UserData
                 , userDataEnrolledIn = ckey
                 , userDataInstructorId = Nothing
                 , userDataIsAdmin = False
+                , userDataIsLti = False
                 , userDataUserId = userId
                 }
 

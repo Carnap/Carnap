@@ -52,6 +52,7 @@ library
                      Filter.Util
                      Util.Handler
                      Util.Database
+                     Util.LTI
                      Util.Data
                      Util.Grades
 

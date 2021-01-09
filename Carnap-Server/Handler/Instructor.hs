@@ -4,24 +4,27 @@ module Handler.Instructor where
 import Import
 import Util.Data
 import Util.Database
+import Util.LTI
 import Util.Grades
 import Control.Monad (fail)
 import Yesod.Form.Bootstrap3
 import Yesod.Form.Jquery
 import Text.Blaze.Html (Markup, toMarkup)
 import Text.Read (readMaybe)
+import qualified Data.Aeson as A
 import Data.Time
 import Data.Time.Zones
 import Data.Time.Zones.DB
 import Data.Time.Zones.All
 import qualified Data.IntMap (insert,fromList,toList,delete)
+import qualified Data.Map as M
 import qualified Data.Text as T
 import System.Directory (removeFile, doesFileExist, createDirectoryIfMissing)
 
 putInstructorR :: Text -> Handler Value
 putInstructorR _ = do
         ((assignmentrslt,_),_) <- runFormPost (identifyForm "updateAssignment" $ updateAssignmentForm)
-        ((courserslt,_),_) <- runFormPost (identifyForm "updateCourse" $ updateCourseForm Nothing [])
+        ((courserslt,_),_) <- runFormPost (identifyForm "updateCourse" $ updateCourseForm Nothing Nothing [])
         ((documentrslt,_),_) <- runFormPost (identifyForm "updateDocument" $ updateDocumentForm)
         ((accommodationrslt,_),_) <- runFormPost (identifyForm "updateAccommodation" $ updateAccommodationForm)
         ((extensionrslt,_),_) <- runFormPost  (identifyForm "updateExtension" $ updateExtensionForm [])
@@ -51,8 +54,9 @@ putInstructorR _ = do
                             update k [ AssignmentMetadataAvailability =. maccess ]
                             update k [ AssignmentMetadataDescription =. unTextarea <$> mdesc]
                  returnJson ("updated!"::Text)
-            (_,FormSuccess (idstring,mdesc,mstart,mend,mpoints,mopen,mtext),_,_,_) -> do
-                 k <- maybe (sendStatusJSON badRequest400 ("Could not read course key" :: Text)) return $ readMaybe idstring 
+            (_,FormSuccess (UpdateCourse idstring mdesc mstart mend mpoints mopen mtext mLtiId),_,_,_) -> do
+                 k <- maybe (sendStatusJSON badRequest400 ("Could not read course key" :: Text))
+                      return . readMaybe . T.unpack $ idstring
                  runDB $ do course <- get k >>= maybe (sendStatusJSON badRequest400 ("could not find course" :: Text)) pure
                             let Just tz = tzByName . courseTimeZone $ course
                                 unlocalize day = localTimeToUTCTZ tz (LocalTime day (TimeOfDay 23 59 59))
@@ -66,6 +70,17 @@ putInstructorR _ = do
                               [ CourseTotalPoints =. points ])
                             maybeDo mopen (\open -> update k
                               [ CourseEnrollmentOpen =. open])
+
+                            let mnewLtiId = A.decode =<< (fromStrict . encodeUtf8 <$> mLtiId)
+                                autoregKey = CourseAutoregKey k
+                            -- if the autoreg form field is
+                            -- cleared/invalidated, we delete the course's auto
+                            -- registration record. otherwise update/add it
+                            maybe (delete autoregKey)
+                                (\(AutoregTriple lab iss did cid) ->
+                                    repsert autoregKey $ CourseAutoreg lab iss did cid k)
+                                mnewLtiId
+
                  returnJson ("updated!"::Text)
             (_,_,FormSuccess (idstring, mscope, mdesc,mfile,mtags),_,_) -> do
                  k <- maybe (sendStatusJSON badRequest400 ("Could not read document key" :: Text)) return $ readMaybe idstring
@@ -338,10 +353,19 @@ getInstructorR ident = do
             time <- liftIO getCurrentTime
             let activeClasses = filter (\c -> courseEndDate (entityVal c) > time) classes
             let inactiveClasses = filter (\c -> courseEndDate (entityVal c) < time) classes
+
+            autoregRecords <- runDB $ getMany (map (CourseAutoregKey . entityKey) activeClasses)
+
+            -- TODO: the following line below is a duplicate of the documents <- runDB ... line
             docs <- documentsByInstructorIdent ident
             instructors <- runDB $ selectList [UserDataInstructorId !=. Nothing] []
             let labels = map labelOf $ take (length activeClasses) [1::Int ..]
-            classWidgets <- mapM (classWidget instructors) activeClasses
+
+            let autoregForCourse = \course -> (M.lookup (CourseAutoregKey . entityKey $ course) autoregRecords)
+            classWidgets <-
+                mapM (\c -> classWidget instructors c (autoregForCourse c))
+                     activeClasses
+
             assignmentMetadata <- concat <$> mapM listAssignmentMetadata activeClasses --Get the metadata
             assignmentDocs <- mapM (runDB . get) (map (\(Entity _ v, _) -> assignmentMetadataDocument v) assignmentMetadata)
             documents <- runDB $ selectList [DocumentCreator ==. uid] []
@@ -367,7 +391,7 @@ getInstructorR ident = do
             (updateAssignmentWidget,enctypeUpdateAssignment) <- generateFormPost (identifyForm "updateAssignment" $ updateAssignmentForm)
             (updateAccommodationWidget,enctypeUpdateAccommodation) <- generateFormPost (identifyForm "updateAccommodation" $ updateAccommodationForm)
             (updateDocumentWidget,enctypeUpdateDocument) <- generateFormPost (identifyForm "updateDocument" $ updateDocumentForm)
-            (updateCourseWidget,enctypeUpdateCourse) <- generateFormPost (identifyForm "updateCourse" (updateCourseForm Nothing []))
+            (updateCourseWidget,enctypeUpdateCourse) <- generateFormPost (identifyForm "updateCourse" (updateCourseForm Nothing Nothing []))
             (createCourseWidget,enctypeCreateCourse) <- generateFormPost (identifyForm "createCourse" createCourseForm)
             defaultLayout $ do
                  addScript $ StaticR js_popper_min_js
@@ -718,12 +742,22 @@ createCourseForm = renderBootstrap3 BootstrapBasicForm $ (,,,,)
 updateOldCourseModal :: WidgetFor App () -> Enctype -> WidgetFor App ()
 updateOldCourseModal = genericModal "OldCourse" "Update Course Data"
 
+data UpdateCourse
+    = UpdateCourse
+      { ucCourseId :: Text
+      , ucDesc :: Maybe Textarea
+      , ucStartDay :: Maybe Day
+      , ucEndDay :: Maybe Day
+      , ucPoints :: Maybe Int
+      , ucEnrolOpen :: Maybe Bool
+      , ucTextbook :: Maybe (Key AssignmentMetadata)
+      , ucLtiId :: Maybe Text
+      }
+
 updateCourseForm
-    :: Maybe (Entity Course) -> [(Entity AssignmentMetadata, Maybe Document)] -> Markup
-    -> MForm (HandlerFor App) ((FormResult
-                     (String, Maybe Textarea, Maybe Day, Maybe Day, Maybe Int, Maybe Bool, Maybe (Key AssignmentMetadata)),
-                   WidgetFor App ()))
-updateCourseForm mcourseent aplusd = renderBootstrap3 BootstrapBasicForm $ (,,,,,,)
+    :: Maybe (Entity Course) -> Maybe (CourseAutoreg) -> [(Entity AssignmentMetadata, Maybe Document)] -> Markup
+    -> MForm (HandlerFor App) ((FormResult UpdateCourse, WidgetFor App ()))
+updateCourseForm mcourseent mautoreg aplusd = renderBootstrap3 BootstrapBasicForm $ UpdateCourse
             <$> areq courseId "" mcid
             <*> aopt textareaField (bfs ("Course Description"::Text)) (maybe Nothing (Just . Just . Textarea) (mdesc))
             <*> aopt (jqueryDayField def) (bfs ("Start Date"::Text)) (localize mstart)
@@ -731,6 +765,7 @@ updateCourseForm mcourseent aplusd = renderBootstrap3 BootstrapBasicForm $ (,,,,
             <*> aopt intField (bfs ("Total Points for Course"::Text)) (maybe Nothing (Just . Just) mpoints)
             <*> aopt checkBoxField checkFieldSettings (maybe (Just Nothing) (Just . Just) mopen)
             <*> aopt (selectField assignmentlist) textbookFieldSettings (maybe Nothing (Just . Just) mtext)
+            <*> aopt textField (bfs ("LTI Autoregistration ID" :: Text)) (Just mautoregId)
     where courseId = hiddenField
           textbookfield = case mcourse of 
                         Nothing -> hiddenField
@@ -742,8 +777,9 @@ updateCourseForm mcourseent aplusd = renderBootstrap3 BootstrapBasicForm $ (,,,,
           mend = courseEndDate <$> mcourse
           mzone = tzByLabel <$> (mcourse >>= fromTZName . courseTimeZone)
           mpoints = courseTotalPoints <$> mcourse
-          mcid = show . entityKey <$> mcourseent
+          mcid = T.pack . show . entityKey <$> mcourseent
           mopen = courseEnrollmentOpen <$> mcourse
+          mautoregId = toStrict . decodeUtf8 . A.encode <$> (tripleFromDB <$> mautoreg)
           localize t = (Just . localDay) <$> (utcToLocalTimeTZ <$> mzone <*> t)
           assignmentlist = pure $ OptionList assignments (readMaybe . unpack)
           assignments = map toAssignmentOption aplusd
@@ -864,8 +900,8 @@ deleteModal id aplusd =
                                                 <a href="#" onclick="event.preventDefault()" >reset
     |]
 
-classWidget :: [Entity UserData] -> Entity Course ->  Handler Widget
-classWidget instructors classent = do
+classWidget :: [Entity UserData] -> Entity Course -> Maybe (CourseAutoreg) -> Handler Widget
+classWidget instructors classent autoreg = do
        let cid = entityKey classent
            course = entityVal classent
            chash = pack . show . hash . courseTitle $ course
@@ -890,7 +926,8 @@ classWidget instructors classent = do
            maybeTb = courseTextBook course >>= (\tb -> lookup tb (map (\(a,d) -> (entityKey a,d)) aplusd)) >>= id >>= pure . documentFilename 
        (addCoInstructorWidget,enctypeAddCoInstructor) <- generateFormPost (identifyForm "addCoinstructor" $ addCoInstructorForm instructors (show cid))
        (updateExtensionWidget,enctypeUpdateExtension) <- generateFormPost (identifyForm "updateExtension" $ updateExtensionForm aplusd)
-       (updateCourseWidget,enctypeUpdateCourse) <- generateFormPost (identifyForm "updateCourse" (updateCourseForm (Just classent) aplusd))
+       (updateCourseWidget,enctypeUpdateCourse)
+           <- generateFormPost (identifyForm "updateCourse" (updateCourseForm (Just classent) autoreg aplusd))
        return [whamlet|
                     ^{updateExtensionModal updateExtensionWidget enctypeUpdateExtension}
                     ^{updateCourseModal updateCourseWidget enctypeUpdateCourse}
