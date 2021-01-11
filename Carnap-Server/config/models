@@ -15,8 +15,6 @@ UserData
     -- used to determine whether a user can drop classes and edit their profile
     isLti Bool default=false
     userId UserId
-    Primary userId
-    -- TODO: delete this unique constraint now that there's a primary key
     UniqueUserData userId
     deriving Show
 

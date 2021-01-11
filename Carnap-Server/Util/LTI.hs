@@ -19,7 +19,7 @@ import qualified Data.Text as T
 --   since they are imported by Foundation where it is defined)
 type PersistentSite site =
     (PersistUniqueRead (YesodPersistBackend site),
-     PersistStoreWrite (YesodPersistBackend site),
+     PersistUniqueWrite (YesodPersistBackend site),
      YesodPersist site,
      BaseBackend (YesodPersistBackend site) ~ SqlBackend)
 
@@ -91,7 +91,7 @@ tryLTIAutoRegistration uid = do
     sd <- (E.except $ ld)
         >>= maybe (E.throwE NoLtiInfo) pure
 
-    let LTIUserData { firstName, lastName, ltiTriple, email } = sd
+    let LTIUserData { firstName, lastName, ltiTriple, email, universityId } = sd
         AutoregTriple { ltiContextId, ltiDeploymentId, ltiIssuer } = ltiTriple
     courseId <- (lift $ getLTICourseData ltiIssuer ltiContextId ltiDeploymentId)
             >>= maybe (E.throwE $ LtiNotRegistered ltiTriple) pure
@@ -101,7 +101,7 @@ tryLTIAutoRegistration uid = do
         , userDataLastName = lastName
         , userDataEmail = email
         , userDataEnrolledIn = Just courseId
-        , userDataUniversityId = Nothing
+        , userDataUniversityId = universityId
         , userDataInstructorId = Nothing
         , userDataIsAdmin = False
         , userDataIsLti = True
@@ -109,8 +109,16 @@ tryLTIAutoRegistration uid = do
         }
     -- LTI users cannot update their own profile, so we will update it every
     -- time on launch.
-    lift . runDB $ repsert (UserDataKey uid) udata
-    lift . return $ udata
+    entityVal <$> (lift . runDB $ upsertBy
+        (UniqueUserData uid)
+        udata
+        [ UserDataFirstName    =. firstName
+        , UserDataLastName     =. lastName
+        , UserDataEmail        =. email
+        , UserDataEnrolledIn   =. Just courseId
+        , UserDataUniversityId =. universityId
+        , UserDataIsLti        =. True
+        ])
 
 require :: a -> Maybe b -> Either a b
 require err name = maybe (Left err) Right name
