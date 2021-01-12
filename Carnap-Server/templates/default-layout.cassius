@@ -66,6 +66,11 @@ div#message
     border: 1px solid transparent
     border-radius: .25rem
 
+div#message code
+    /* do line wrapping on code in messages */
+    white-space: pre-wrap
+    word-break: break-all
+
 a#opentower
     font-family:street;
     color:gray;
