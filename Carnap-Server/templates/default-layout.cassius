@@ -59,13 +59,12 @@ footer
     padding-bottom:20px
 
 div#message
-    position: absolute
-    top: 20px
-    left: 20px
-    border: 1px solid
-    background: white
-    padding:20px
-    z-index: 2
+    background-color: #eee
+    color: #222
+    padding: .75rem 1.25rem
+    margin-bottom: 1rem
+    border: 1px solid transparent
+    border-radius: .25rem
 
 a#opentower
     font-family:street;

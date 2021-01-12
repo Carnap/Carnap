@@ -14,7 +14,9 @@
 
 <div id="main" role="main">
     $maybe msg <- mmsg
-      <div #message>#{msg}
+      <div .container>
+          <strong>Message:
+          <div #message>#{msg}
 
 <div.container>
     ^{widget}

@@ -16,5 +16,13 @@ nav#navbar
     ul > li:last-child
        border-right: none
 
+div#message
+    background-color: #eee
+    color: #222
+    padding: .75rem 1.25rem
+    margin-bottom: 1rem
+    border: 1px solid transparent
+    border-radius: .25rem
+
 footer
     color:#999

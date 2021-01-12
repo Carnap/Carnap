@@ -58,9 +58,9 @@ library
 
     if flag(dev) || flag(library-only)
         cpp-options:   -DDEVELOPMENT
-        ghc-options:   -Wall -fwarn-tabs -O0 -dth-dec-file
+        ghc-options:   -Wall -fwarn-tabs -O0 -dth-dec-file -Wno-name-shadowing
     else
-        ghc-options:   -Wall -fwarn-tabs -O2 -dth-dec-file
+        ghc-options:   -Wall -fwarn-tabs -O2 -dth-dec-file -Wno-name-shadowing
 
     extensions: TemplateHaskell
                 QuasiQuotes

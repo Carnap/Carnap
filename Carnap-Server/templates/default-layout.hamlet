@@ -35,8 +35,11 @@
                             Login
 
 <div id="main" role="main">
-    $maybe msg <- mmsg
-      <div #message>#{msg}
+    <div.container>
+        $maybe msg <- mmsg
+          <div #message>
+              <strong>Message:
+              #{msg}
 
     ^{widget}
 <div.container>
