@@ -1,9 +1,8 @@
-{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE LambdaCase, NamedFieldPuns #-}
 module Handler.User where
 
 import Import
-import Control.Monad (fail)
-import Text.Read (read, readMaybe)
+import Text.Read (readMaybe)
 import qualified Text.Blaze.Html5 as B
 import Carnap.GHCJS.SharedTypes
 import Yesod.Form.Bootstrap3
@@ -24,6 +23,7 @@ postUserR ident = do
         Nothing -> defaultLayout nouserPage
         (Just (Entity uid _))  -> do
             ud <- checkUserData uid
+            when (userDataIsLti ud) $ invalidArgs ["LTI users cannot update their data"]
             time <- liftIO getCurrentTime
             classes <- runDB $ selectList [CourseStartDate <. time, CourseEndDate >. time] []
             ((updateRslt,_),_) <- runFormPost (identifyForm "updateInfo" $ updateUserDataForm ud classes)
@@ -79,6 +79,7 @@ getUserR ident = do
                 , userDataInstructorId = maybeInstructorId
                 , userDataFirstName = firstname
                 , userDataLastName = lastname
+                , userDataIsLti
                 } <- checkUserData uid
             time <- liftIO getCurrentTime
             (dropForm,encTypeDrop) <- generateFormPost (identifyForm "dropClass" $ dropClassForm)
@@ -281,24 +282,27 @@ dropWidget form enc = [whamlet|
                       |]
 
 personalInfo :: UserData -> Maybe Course -> WidgetFor site ()
-personalInfo (UserData {userDataUniversityId = muniversityid, userDataFirstName = firstname, userDataLastName = lastname}) mcourse =
-        [whamlet|
-                <dl.row>
-                    <dt.col-sm-3>First Name
-                    <dd.col-sm-9>#{firstname}
-                    <dt.col-sm-3>Last Name
-                    <dd.col-sm-9>#{lastname}
-                    $maybe course <- mcourse
-                        <dt.col-sm-3>Course Enrollment
-                        <dd.col-sm-9>#{courseTitle course}
-                        $maybe desc <- courseDescription course
-                            <dd.col-sm-9.offset-sm-3>#{desc}
-                    $maybe universityid <- muniversityid
-                        <dt.col-sm-3>University Id
-                        <dd.col-sm-9>#{universityid}
-                <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#updateUserData">
-                    Edit
-                |]
+personalInfo (UserData {userDataUniversityId = muniversityid,
+                        userDataFirstName = firstname, userDataLastName = lastname,
+                        userDataIsLti = isLti }) mcourse
+    = [whamlet|
+        <dl.row>
+            <dt.col-sm-3>First Name
+            <dd.col-sm-9>#{firstname}
+            <dt.col-sm-3>Last Name
+            <dd.col-sm-9>#{lastname}
+            $maybe course <- mcourse
+                <dt.col-sm-3>Course Enrollment
+                <dd.col-sm-9>#{courseTitle course}
+                $maybe desc <- courseDescription course
+                    <dd.col-sm-9.offset-sm-3>#{desc}
+            $maybe universityid <- muniversityid
+                <dt.col-sm-3>University Id
+                <dd.col-sm-9>#{universityid}
+        $if not isLti
+            <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#updateUserData">
+                Edit
+    |]
 
 updateUserDataForm
     :: UserData

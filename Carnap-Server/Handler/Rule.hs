@@ -100,7 +100,7 @@ ruleLayout widget = do
             addStylesheet $ StaticR css_exercises_css
             $(widgetFile "default-layout")
             addScript $ StaticR ghcjs_allactions_runmain_js
-        withUrlRenderer $(hamletFile "templates/default-layout-wrapper.hamlet")
+        withUrlRenderer $(hamletFile =<< pathRelativeToCabalPackage "templates/default-layout-wrapper.hamlet")
 
 getPropDrList = do maybeCurrentUserId <- maybeAuthId
                    case maybeCurrentUserId of

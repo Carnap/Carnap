@@ -5,7 +5,9 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        # TODO: reinstate Ubuntu once we figure out how to make it stop hitting
+        # OOM. macOS seems to crash a lot less, if ever.
+        os: [macos-latest]
     steps:
     - uses: actions/checkout@v2
     - uses: cachix/install-nix-action@v12
@@ -23,7 +25,8 @@ jobs:
 
   docker-build:
     # only build deployable images on master branch
-    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    # TODO: reinstate once Ubuntu stops OOM'ing the client build
+    if: false && (github.event_name == 'push' && github.ref == 'refs/heads/master')
     runs-on: ubuntu-latest
     env:
       IMG_REF: "docker.pkg.github.com/${GITHUB_REPOSITORY}/carnap:latest"

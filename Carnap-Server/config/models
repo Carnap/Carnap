@@ -12,8 +12,11 @@ UserData
     enrolledIn CourseId Maybe
     instructorId InstructorMetadataId Maybe
     isAdmin Bool default=false
+    -- used to determine whether a user can drop classes and edit their profile
+    isLti Bool default=false
     userId UserId
     UniqueUserData userId
+    deriving Show
 
 Accommodation
     forCourse CourseId
@@ -45,6 +48,21 @@ LtiPlatformInfo
     jwksUrl String
     Primary issuer clientId
     deriving Eq Show
+
+-- This is a unique triple of (issuer, deployment_id, context_id) identifying a
+-- course on a LTI platform and associating it with one of our courses
+-- We make this as a separate table to ensure all the fields are atomically
+-- either there or not.
+CourseAutoreg
+    label Text Maybe
+    issuer Text
+    deploymentId Text
+    contextId Text
+    course CourseId
+    -- There is only one autoreg record per course
+    Primary course
+    UniqueAutoregTriple issuer deploymentId contextId
+    deriving Show
 
 SyntaxCheckSubmission
     problem Text

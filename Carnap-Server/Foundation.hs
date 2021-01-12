@@ -14,6 +14,7 @@ import TH.RelativePaths            (pathRelativeToCabalPackage)
 --import Util.Database
 import qualified Data.CaseInsensitive as CI
 import qualified Data.Text as T
+import qualified Control.Monad.Trans.Except as E
 import qualified Data.Text.Encoding as TE
 import qualified Data.HashMap.Strict as HM
 import qualified Data.Text.Encoding.Error as TEE
@@ -22,6 +23,8 @@ import Yesod.Auth.LTI13 (authLTI13WithWidget, PlatformInfo(..), YesodAuthLTI13(.
 import Data.Time (NominalDiffTime)
 import Data.Time.Clock (addUTCTime)
 import Web.Cookie (sameSiteNone, SetCookie(setCookieSameSite))
+
+import Util.LTI
 
 -- | The foundation datatype for your application. This can be a good place to
 -- keep settings and values requiring initialization before your application
@@ -363,6 +366,14 @@ instance YesodAuth App where
     redirectToReferer _ = False
 
     authenticate creds0 = liftHandler $ runDB $ do
+        -- set a session variable ltiToken with the lti token if we have one
+        when (credsPlugin creds == "lti13") $ do
+            let fields = ["ltiToken", "ltiIss"]
+            let maybeVals = forM fields ((flip lookup) $ credsExtra creds)
+            maybe (return ())
+                  (\vals -> forM_ (zip fields vals) (uncurry setSession))
+                  maybeVals
+
         x <- getBy $ UniqueUser $ credsIdent creds
         case x of
             Just (Entity uid _) -> return $ Authenticated uid
@@ -386,22 +397,8 @@ instance YesodAuth App where
 
     onLogin = liftHandler $ do
           mid <- maybeAuthId
-          case mid of
-             Nothing -> return ()
-             Just uid ->
-                 --check to see if data for this user exists
-                 do maybeData <- runDB $ getBy $ UniqueUserData uid
-                    case maybeData of
-                        --if not, redirect to registration
-                        Nothing ->
-                             do musr <- runDB $ get uid
-                                menroll <- lookupSession "enrolling-in"
-                                case (musr, menroll) of
-                                   (Just (User ident _), Just theclass) ->  redirect (RegisterEnrollR theclass ident)
-                                   (Just (User ident _), Nothing) ->  redirect (RegisterR ident)
-                                   (Nothing,_) -> return ()
-                        --if so, go ahead
-                        Just _ -> setMessage "Now logged in"
+          -- if there is an auth id, go to registration, otherwise do nothing
+          traverse_ checkUserData mid
 
     -- appDevel is a custom method added to the settings, which is true
     -- when yesod is running in the development environment and false
@@ -438,4 +435,32 @@ instance HasHttpManager App where
 unsafeHandler :: App -> Handler a -> IO a
 unsafeHandler = Unsafe.fakeHandlerGetLogger appLogger
 
-
+-- | given a UserId, return the userdata or redirect to
+-- registration
+checkUserData :: Key User -> HandlerFor App UserData
+checkUserData uid = do maybeData <- runDB $ getBy $ UniqueUserData uid
+                       muser <- runDB $ get uid
+                       case muser of
+                           Nothing -> do setMessage "no user found"
+                                         redirect HomeR
+                           Just u -> case maybeData of
+                              -- LTI users will hit autoregistration every time
+                              -- to make sure their data gets immmediately
+                              -- propagated from LMS in case of e.g. name change
+                              Just (Entity _ userdata) | not . userDataIsLti $ userdata
+                                -> return userdata
+                              _ -> doRegister u
+    where
+        doRegister u = do
+            result <- E.runExceptT $ tryLTIAutoRegistration uid
+            case result of
+                Left err ->
+                    do  -- show the message about auto reg if any
+                        traverse_ setMessage (regErrorToString err)
+                        -- if they followed a reg link, apply that
+                        menroll <- lookupSession "enrolling-in"
+                        redirect $ maybe
+                            (RegisterR $ userIdent u)
+                            ((flip RegisterEnrollR) $ userIdent u)
+                            menroll
+                Right ud -> return ud
