@@ -56,8 +56,9 @@ postAdminR = do allUserData <- runDB $ selectList [] []
                      FormMissing -> return ()
                 case ltirslt of
                     FormSuccess (iss, cid, oidcEndp, jwksUrl) -> do
-                        runDB $ insert_ $ LtiPlatformInfo iss cid oidcEndp $ T.unpack jwksUrl
-                        setMessage "Successful"
+                        --we strip leading and terminal whitespace from URLS before insert
+                        runDB $ insert_ $ LtiPlatformInfo iss cid (T.strip oidcEndp) $ T.unpack (T.strip jwksUrl)
+                        setMessage $  "Successfully added LTI platform with CID " ++ toMarkup cid
                     FormFailure s -> showFailure s
                     FormMissing -> return ()
                 redirect AdminR --XXX: redirect here to make sure changes are visually reflected
