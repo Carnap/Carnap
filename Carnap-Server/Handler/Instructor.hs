@@ -1017,6 +1017,12 @@ classWidget instructors classent autoreg = do
                         $maybe tbname <- maybeTb
                             <dt.col-sm-3>Custom Textbook
                             <dd.col-sm-9>#{tbname}
+                        $maybe CourseAutoreg { courseAutoregLabel = mlab } <- autoreg
+                            <dt.col-sm-3>Autoregistation From:
+                            $maybe lab <- mlab
+                                <dd.col-sm-9>#{lab}
+                            $nothing
+                                <dd.col-sm-9>Unlabled Course
                         <dt.col-sm-3>Enrollment Status
                         <dd.col-sm-9>
                             $if courseEnrollmentOpen course

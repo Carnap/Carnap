@@ -57,7 +57,7 @@ postAdminR = do allUserData <- runDB $ selectList [] []
                 case ltirslt of
                     FormSuccess (iss, cid, oidcEndp, jwksUrl) -> do
                         --we strip leading and terminal whitespace from URLS before insert
-                        runDB $ insert_ $ LtiPlatformInfo iss cid (T.strip oidcEndp) $ T.unpack (T.strip jwksUrl)
+                        runDB $ insert_ $ LtiPlatformInfo (T.strip iss) (T.strip cid) (T.strip oidcEndp) (T.unpack (T.strip jwksUrl))
                         setMessage $  "Successfully added LTI platform with CID " ++ toMarkup cid
                     FormFailure s -> showFailure s
                     FormMissing -> return ()
