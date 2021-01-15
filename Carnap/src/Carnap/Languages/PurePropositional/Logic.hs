@@ -40,6 +40,7 @@ import Carnap.Languages.PurePropositional.Logic.KalishAndMontague
 import Carnap.Languages.PurePropositional.Logic.Magnus
 import Carnap.Languages.PurePropositional.Logic.ThomasBolducAndZach
 import Carnap.Languages.PurePropositional.Logic.EbelsDuggan
+import Carnap.Languages.PurePropositional.Logic.Winkler
 import Carnap.Languages.PurePropositional.Logic.Tomassi
 import Carnap.Languages.PurePropositional.Logic.IchikawaJenkins
 import Carnap.Languages.PurePropositional.Logic.Gentzen
@@ -74,7 +75,8 @@ ofPropSys f sys | sys == "prop"                          = Just $ f propCalc
                 | sys == "thomasBolducAndZachTFLCore"    = Just $ f thomasBolducAndZachTFLCoreCalc
                 | sys == "thomasBolducAndZachTFL"        = Just $ f thomasBolducAndZachTFLCalc
                 | sys == "thomasBolducAndZachTFL2019"    = Just $ f thomasBolducAndZachTFL2019Calc
-                | sys == "ebelsDugganTFL"                = Just $ f ebelsDugganTFLCalc
+                | sys == "ebelsDugganTFL"                = Just $ f ebelsDugganTFLCalc 
+                | sys == "winklerTFL"                    = Just $ f winklerTFLCalc 
                 | sys == "tomassiPL"                     = Just $ f tomassiPLCalc
                 | sys == "hardegreeSL"                   = Just $ f hardegreeSLCalc
                 | sys == "hardegreeSL2006"               = Just $ f hardegreeSL2006Calc
