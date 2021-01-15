@@ -137,14 +137,14 @@ instance Inference WinklerTFL PurePropLexicon (Form Bool) where
         ruleOf NegeIntro2 = constructiveReductioVariations !! 1
         ruleOf NegeIntro3 = constructiveReductioVariations !! 2
         ruleOf NegeIntro4 = constructiveReductioVariations !! 3
-        ruleOf NegeIntro5 = constructiveFalsumReductioVariations !! 0
-        ruleOf NegeIntro6 = constructiveFalsumReductioVariations !! 1
+        ruleOf NegeIntro5 = constructiveFalsumReductioVariationsWithJunk !! 0
+        ruleOf NegeIntro6 = constructiveFalsumReductioVariationsWithJunk !! 1
         ruleOf NegeElim1  = nonConstructiveReductioVariations !! 0
         ruleOf NegeElim2  = nonConstructiveReductioVariations !! 1
         ruleOf NegeElim3  = nonConstructiveReductioVariations !! 2
         ruleOf NegeElim4  = nonConstructiveReductioVariations !! 3
-        ruleOf NegeElim3  = nonConstructiveFalsumReductioVariations !! 0
-        ruleOf NegeElim4  = nonConstructiveFalsumReductioVariations !! 1
+        ruleOf NegeElim5  = nonConstructiveFalsumReductioVariationsWithJunk !! 0
+        ruleOf NegeElim6  = nonConstructiveFalsumReductioVariationsWithJunk !! 1
         ruleOf ContIntro  = falsumIntroduction
         ruleOf ContElim   = falsumElimination
         ruleOf CondIntro1 = conditionalProofVariations !! 0
@@ -212,10 +212,12 @@ instance Inference WinklerTFL PurePropLexicon (Form Bool) where
 
         indirectInference x
             | x `elem` [Tertium1,Tertium2,Tertium3,Tertium4] = Just (PolyTypedProof 2 (ProofType 1 1))
+            | x `elem` [ NegeIntro1, NegeIntro2 , NegeIntro3, NegeIntro4, NegeIntro5, NegeIntro6
+                       , NegeElim1, NegeElim2, NegeElim3 , NegeElim4, NegeElim5, NegeElim6
+                       ] = Just (TypedProof (ProofType 0 2))
             | x `elem` [ DisjElim1, DisjElim2, DisjElim3, DisjElim4
-                       , CondIntro1, CondIntro2 , BicoIntro1, BicoIntro2 , BicoIntro3, BicoIntro4
-                       , NegeIntro1, NegeIntro2 , NegeIntro3, NegeIntro4, NegeIntro5, NegeIntro6
-                       , NegeElim1, NegeElim2 , NegeElim3, NegeElim4, NegeElim5, NegeElim6
+                       , CondIntro1, CondIntro2 
+                       , BicoIntro1, BicoIntro2 , BicoIntro3, BicoIntro4
                        ] = Just PolyProof
             | otherwise = Nothing
 
@@ -236,14 +238,14 @@ instance Inference WinklerTFL PurePropLexicon (Form Bool) where
         globalRestriction (Left ded) n NegeIntro2 = Just $ fitchAssumptionCheck n ded [([phin 1], [phin 2, lneg $ phin 2])]  
         globalRestriction (Left ded) n NegeIntro3 = Just $ fitchAssumptionCheck n ded [([phin 1], [phin 2, lneg $ phin 2])]  
         globalRestriction (Left ded) n NegeIntro4 = Just $ fitchAssumptionCheck n ded [([phin 1], [phin 2, lneg $ phin 2])]  
-        globalRestriction (Left ded) n NegeIntro5 = Just $ fitchAssumptionCheck n ded [([phin 1], [lfalsum])]
-        globalRestriction (Left ded) n NegeIntro6 = Just $ fitchAssumptionCheck n ded [([phin 1], [lfalsum])]
+        globalRestriction (Left ded) n NegeIntro5 = Just $ fitchAssumptionCheck n ded [([phin 1], [phin 2, lfalsum])]
+        globalRestriction (Left ded) n NegeIntro6 = Just $ fitchAssumptionCheck n ded [([phin 1], [phin 2, lfalsum])]
         globalRestriction (Left ded) n NegeElim1  = Just $ fitchAssumptionCheck n ded [([lneg $ phin 1], [phin 2, lneg $ phin 2])] 
         globalRestriction (Left ded) n NegeElim2  = Just $ fitchAssumptionCheck n ded [([lneg $ phin 1], [phin 2, lneg $ phin 2])] 
         globalRestriction (Left ded) n NegeElim3  = Just $ fitchAssumptionCheck n ded [([lneg $ phin 1], [phin 2, lneg $ phin 2])] 
         globalRestriction (Left ded) n NegeElim4  = Just $ fitchAssumptionCheck n ded [([lneg $ phin 1], [phin 2, lneg $ phin 2])] 
-        globalRestriction (Left ded) n NegeElim5 = Just $ fitchAssumptionCheck n ded [([lneg $ phin 1], [lfalsum])]
-        globalRestriction (Left ded) n NegeElim6 = Just $ fitchAssumptionCheck n ded [([lneg $ phin 1], [lfalsum])]
+        globalRestriction (Left ded) n NegeElim5 = Just $ fitchAssumptionCheck n ded [([lneg $ phin 1], [phin 2, lfalsum])]
+        globalRestriction (Left ded) n NegeElim6 = Just $ fitchAssumptionCheck n ded [([lneg $ phin 1], [phin 2, lfalsum])]
         globalRestriction (Left ded) n Tertium1 = Just $ fitchAssumptionCheck n ded [([phin 1], [phin 2]), ([lneg $ phin 1], [phin 2])]
         globalRestriction (Left ded) n Tertium2 = Just $ fitchAssumptionCheck n ded [([phin 1], [phin 2]), ([lneg $ phin 1], [phin 2])]
         globalRestriction (Left ded) n Tertium3 = Just $ fitchAssumptionCheck n ded [([phin 1], [phin 2]), ([lneg $ phin 1], [phin 2])]
@@ -302,14 +304,14 @@ winklerNotation x = case runParser altParser 0 "" x of
                         return [c]
 
 parseWinklerTFLProof :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> String -> [DeductionLine WinklerTFL PurePropLexicon (Form Bool)]
-parseWinklerTFLProof rtc = toDeductionFitch (parseWinklerTFL rtc) (purePropFormulaParser extendedLetters)
+parseWinklerTFLProof rtc = toDeductionFitch (parseWinklerTFL rtc) langParser
 
 winklerTFLCalc = mkNDCalc 
     { ndRenderer = FitchStyle StandardFitch
     , ndParseProof = parseWinklerTFLProof
     , ndProcessLine = hoProcessLineFitch
     , ndProcessLineMemo = Just hoProcessLineFitchMemo
-    , ndParseSeq = extendedPropSeqParser
-    , ndParseForm = purePropFormulaParser extendedLetters
+    , ndParseSeq = parseSeqOver langParser
+    , ndParseForm = langParser
     , ndNotation = winklerNotation
     }

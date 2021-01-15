@@ -311,6 +311,19 @@ constructiveFalsumReductioVariations = [
                 ] ∴ GammaV 1 :|-: SS (lneg $ phin 1)
             ]
 
+--A small hack. Add some junk premises, so that you can combine the falsum
+--reductio with a standard reduction under one proof arity.
+constructiveFalsumReductioVariationsWithJunk :: BooleanRuleVariants lex b
+constructiveFalsumReductioVariationsWithJunk = [
+                [ GammaV 1 :+: SA (phin 1) :|-: SS lfalsum
+                , GammaV 2 :|-: SS (phin 2)
+                ] ∴ GammaV 1 :|-: SS (lneg $ phin 1)
+            ,
+                [ GammaV 1 :|-: SS lfalsum
+                , GammaV 2 :|-: SS (phin 2)
+                ] ∴ GammaV 1 :|-: SS (lneg $ phin 1)
+            ]
+
 constructiveConjunctionReductioVariations :: BooleanRuleVariants lex b
 constructiveConjunctionReductioVariations = [
                 [ GammaV 1 :+: SA (phin 1) :|-: SS (phin 2 .∧. (lneg $ phin 2))
@@ -332,6 +345,19 @@ nonConstructiveFalsumReductioVariations = [
                 ] ∴ GammaV 1 :|-: SS (phin 1)
             ,
                 [ GammaV 1 :|-: SS lfalsum
+                ] ∴ GammaV 1 :|-: SS (phin 1)
+            ]
+
+--A small hack. Add some junk premises, so that you can combine the falsum
+--reductio with a standard reduction under one proof arity.
+nonConstructiveFalsumReductioVariationsWithJunk :: BooleanRuleVariants lex b
+nonConstructiveFalsumReductioVariationsWithJunk = [
+                [ GammaV 1 :+: SA (lneg $ phin 1) :|-: SS lfalsum
+                , GammaV 2 :|-: SS (phin 2)
+                ] ∴ GammaV 1 :|-: SS (phin 1)
+            ,
+                [ GammaV 1 :|-: SS lfalsum
+                , GammaV 2 :|-: SS (phin 2)
                 ] ∴ GammaV 1 :|-: SS (phin 1)
             ]
 
