@@ -2,7 +2,7 @@ module Handler.Assignment (postCourseAssignmentR, getCourseAssignmentR, getCours
 
 import Import
 import Util.Data
-import Util.Database
+import Util.Assignment
 import Yesod.Form.Bootstrap3
 import Text.Blaze.Html (toMarkup)
 import Text.Pandoc (lookupMeta)

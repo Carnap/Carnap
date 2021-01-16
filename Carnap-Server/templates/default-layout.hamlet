@@ -16,7 +16,10 @@
                         <a href=@{BookR}>Book
                 $maybe (Entity _ user) <- authmaybe
                     <li.dropdown>
-                            <a href=@{UserDispatchR}>#{userIdent user}
+                            $maybe Entity _ userdata <- mud
+                                <a href=@{UserDispatchR}>#{userDataFirstName userdata} #{userDataLastName userdata}
+                            $nothing
+                                <a href=@{UserDispatchR}>#{userIdent user}
                             <ul>
                                 <li>
                                     <a href=@{UserR (userIdent user)}> User Home

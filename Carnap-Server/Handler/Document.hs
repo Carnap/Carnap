@@ -40,27 +40,19 @@ documentsList title documents = do
                        allTags = nub . concat . map snd $ tagMap
                    pubidents <- mapM (getIdent . documentCreator . entityVal) publicDocuments
                    pubmd <- mapM (getUserMD . documentCreator . entityVal) publicDocuments
-                   muid <- maybeAuthId
-                   case muid of
-                       Just uid -> do
-                            maybeData <- runDB $ getBy $ UniqueUserData uid
-                            case userDataInstructorId <$> entityVal <$> maybeData of
-                               Just id -> do
-                                    let docs = filter ((==) InstructorsOnly . documentScope . entityVal) documents
-                                        privateDocuments = if docs == [] then Nothing else Just docs
-                                    privmd <- mapM (getUserMD . documentCreator . entityVal) docs
-                                    prividents <- mapM (getIdent . documentCreator . entityVal) docs
+                   maybeData <- maybeUserData
+                   case userDataInstructorId <$> entityVal <$> maybeData of
+                      Just id -> do
+                           let docs = filter ((==) InstructorsOnly . documentScope . entityVal) documents
+                               privateDocuments = if docs == [] then Nothing else Just docs
+                           privmd <- mapM (getUserMD . documentCreator . entityVal) docs
+                           prividents <- mapM (getIdent . documentCreator . entityVal) docs
+                           defaultLayout $ do
+                               setTitle title
+                               $(widgetFile "documentIndex")
+                      Nothing -> do let privateDocuments = Nothing
+                                        (privmd, prividents) = ([],[])
                                     defaultLayout $ do
-                                        setTitle title
-                                        $(widgetFile "documentIndex")
-                               Nothing -> do let privateDocuments = Nothing
-                                                 (privmd, prividents) = ([],[])
-                                             defaultLayout $ do
-                                                 setTitle $ title
-                                                 $(widgetFile "documentIndex")
-                       Nothing -> do let privateDocuments = Nothing
-                                         (privmd, prividents) = ([],[])
-                                     defaultLayout $ do
                                         setTitle $ title
                                         $(widgetFile "documentIndex")
     where documentCards docs idents mds tagsOf = [whamlet|

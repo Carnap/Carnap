@@ -51,6 +51,7 @@ library
                      Filter.Qualitative
                      Filter.Util
                      Util.Handler
+                     Util.Assignment
                      Util.Database
                      Util.LTI
                      Util.Data
