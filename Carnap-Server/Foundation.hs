@@ -177,7 +177,7 @@ instance Yesod App where
                      mudata <- maybeUserData
                      mcourse <- runDB $ getBy (UniqueCourse coursetitle)
                      Entity cid course <- case mcourse of Just c -> return c; _ -> setMessage "no course with that title" >> notFound
-                     let userIsAdmin = maybe False (userDataIsAdmin . entityVal) mudata
+                     userIsAdmin <- isAdmin
                      instructors <- retrieveInstructors cid course
                      return $ if uid `elem` map (userDataUserId . entityVal) instructors
                                  || maybe False
