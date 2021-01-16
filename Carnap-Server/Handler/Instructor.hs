@@ -356,8 +356,6 @@ getInstructorR ident = do
 
             autoregRecords <- runDB $ getMany (map (CourseAutoregKey . entityKey) activeClasses)
 
-            -- TODO: the following line below is a duplicate of the documents <- runDB ... line
-            docs <- documentsByInstructorIdent ident
             instructors <- runDB $ selectList [UserDataInstructorId !=. Nothing] []
             let labels = map labelOf $ take (length activeClasses) [1::Int ..]
 
@@ -385,7 +383,7 @@ getInstructorR ident = do
                                      return (entityKey doc, map (tagName . entityVal) tags)
             let tagsOf d = lookup d tagMap
                 tagString d = case lookup d tagMap of Just tags -> intercalate "," tags; _ -> ""
-            (createAssignmentWidget,enctypeCreateAssignment) <- generateFormPost (identifyForm "uploadAssignment" $ uploadAssignmentForm activeClasses docs)
+            (createAssignmentWidget,enctypeCreateAssignment) <- generateFormPost (identifyForm "uploadAssignment" $ uploadAssignmentForm activeClasses documents)
             (uploadDocumentWidget,enctypeShareDocument) <- generateFormPost (identifyForm "uploadDocument" $ uploadDocumentForm)
             (setBookAssignmentWidget,enctypeSetBookAssignment) <- generateFormPost (identifyForm "setBookAssignment" $ setBookAssignmentForm activeClasses)
             (updateAssignmentWidget,enctypeUpdateAssignment) <- generateFormPost (identifyForm "updateAssignment" $ updateAssignmentForm)
