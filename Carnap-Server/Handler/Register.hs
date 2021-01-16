@@ -54,7 +54,7 @@ getEnrollR :: Text -> Handler Html
 getEnrollR classname = do setSession "enrolling-in" classname
                           Entity uid user <- requireAuth
                           mclass <- runDB $ getBy (UniqueCourse classname)
-                          mud <- runDB $ getBy $ UniqueUserData uid
+                          mud <- maybeUserData
                           case mud of
                               Nothing -> redirect (RegisterEnrollR classname (userIdent user))
                               Just (Entity _ ud) -> case (mclass, userDataEnrolledIn ud) of

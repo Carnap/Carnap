@@ -84,7 +84,7 @@ ruleLayout widget = do
         (mud, mdoc, mcourse) <- case entityKey <$> authmaybe of
             Nothing -> return (Nothing, Nothing, Nothing)
             Just uid -> do
-                mud <- maybeUserData uid
+                mud <- maybeUserData
                 runDB $ do
                     mcour <- maybe (return Nothing) get (mud >>= userDataEnrolledIn . entityVal)
                     masgn <- maybe (return Nothing) get (mcour >>= courseTextBook)

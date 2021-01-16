@@ -8,7 +8,10 @@ import Carnap.GHCJS.SharedTypes(ProblemSource(..))
 newtype CachedMaybeUserData = CachedMaybeUserData { unCacheMaybeUserData :: Maybe (Entity UserData) }
 
 --retrieve userdata using a per-request cache to avoid multiple DB lookups.
-maybeUserData uid = unCacheMaybeUserData <$> cached (CachedMaybeUserData <$> runDB (getBy $ UniqueUserData uid))
+maybeUserData = do authmaybe <- maybeAuth 
+                   case authmaybe of
+                       Nothing -> return Nothing
+                       Just (Entity uid _) -> unCacheMaybeUserData <$> cached (CachedMaybeUserData <$> runDB (getBy $ UniqueUserData uid))
 
 -- | Try to insert a piece of data into the database, returning False in
 -- case of a clash

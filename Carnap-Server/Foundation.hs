@@ -102,7 +102,7 @@ instance Yesod App where
         (mud, mdoc, mcourse) <- case entityKey <$> authmaybe of
             Nothing -> return (Nothing, Nothing, Nothing)
             Just uid -> do
-                mud <- maybeUserData uid
+                mud <- maybeUserData
                 runDB $ do
                     mcour <- maybe (return Nothing) get (mud >>= userDataEnrolledIn . entityVal)
                     masgn <- maybe (return Nothing) get (mcour >>= courseTextBook)
@@ -141,13 +141,13 @@ instance Yesod App where
                      selectList ([UserDataInstructorId ==. Just (courseInstructor course)]
                                 ||. [UserDataInstructorId <-. map (Just . coInstructorIdent) coInstructors]) []
               userOrInstructorOf ident =
-                do Entity uid' user <- requireAuth
+                do Entity _ user <- requireAuth
                    Entity uid _ <- runDB (getBy $ UniqueUser ident) >>= maybe notFound return
                    let ident' = userIdent user
                    mudata <- runDB $ getBy (UniqueUserData uid)
                    if ident == ident' 
                        then return Authorized
-                       else do mudata' <- runDB $ getBy (UniqueUserData uid')
+                       else do mudata' <- maybeUserData
                                let mudv = entityVal <$> mudata
                                    mudv' = entityVal <$> mudata'
                                    mcid = mudv >>= userDataEnrolledIn
@@ -162,21 +162,21 @@ instance Yesod App where
                                                 >>= return . maybe (Unauthorized "It appears you're not authorized to access this page") (const Authorized)
                                     _ -> return $ Unauthorized "It appears you're not authorized to access this page"
               instructor ident =
-                 do Entity uid user <- requireAuth
+                 do Entity _ user <- requireAuth
                     let ident' = userIdent user
-                    mud <- runDB $ getBy $ UniqueUserData uid
+                    mud <- maybeUserData
                     let isInstructor = not $ null (mud >>= userDataInstructorId . entityVal)
-                    userIsAdmin <- isAdmin uid
+                    userIsAdmin <- isAdmin
                     return $ if (isInstructor && ident' == ident) || userIsAdmin
                              then Authorized
                              else Unauthorized "It appears you're not authorized to access this page"
               enrolledIn coursetitle =
                   --this is the route to assignments accessible by students
                   --for a given course and to instructors
-                  do uid  <- requireAuthId
+                  do uid <- requireAuthId
+                     mudata <- maybeUserData
                      mcourse <- runDB $ getBy (UniqueCourse coursetitle)
                      Entity cid course <- case mcourse of Just c -> return c; _ -> setMessage "no course with that title" >> notFound
-                     mudata <- runDB $ getBy (UniqueUserData uid)
                      let userIsAdmin = maybe False (userDataIsAdmin . entityVal) mudata
                      instructors <- retrieveInstructors cid course
                      return $ if uid `elem` map (userDataUserId . entityVal) instructors
@@ -195,13 +195,12 @@ instance Yesod App where
                      mcourse <- runDB $ getBy (UniqueCourse coursetitle)
                      Entity cid course <- case mcourse of Just c -> return c; _ -> setMessage "no course with that title" >> notFound
                      instructors <- retrieveInstructors cid course
-                     userIsAdmin <- isAdmin uid
+                     userIsAdmin <- isAdmin
                      return $ if uid `elem` map (userDataUserId . entityVal) instructors
                                  || userIsAdmin
                               then Authorized
                               else Unauthorized "It appears you're not authorized to access this page"
-              admin = do Entity uid _ <- requireAuth
-                         userIsAdmin <- isAdmin uid
+              admin = do userIsAdmin <- isAdmin
                          return $ if userIsAdmin
                                   then Authorized
                                   else Unauthorized "Only site administrators may access this page"
@@ -213,9 +212,7 @@ instance Yesod App where
                      return $ if adminCount == 0
                               then Authorized
                               else Unauthorized "There are already site administrators on this site"
-              isAdmin uid = runDB $ do
-                  res <- getBy $ UniqueUserData uid
-                  return $ maybe False (userDataIsAdmin . entityVal) res
+              isAdmin = maybe False (userDataIsAdmin . entityVal) <$> maybeUserData
 
     -- This function creates static content files in the static folder
     -- and names them based on a hash of their content. This allows
@@ -438,8 +435,7 @@ instance HasHttpManager App where
 unsafeHandler :: App -> Handler a -> IO a
 unsafeHandler = Unsafe.fakeHandlerGetLogger appLogger
 
--- | given a UserId, return the userdata or redirect to
--- registration
+-- | return userdata or redirect to registration
 checkUserData :: Key User -> HandlerFor App UserData
 checkUserData uid = do maybeData <- runDB $ getBy $ UniqueUserData uid
                        muser <- runDB $ get uid
