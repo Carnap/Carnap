@@ -24,6 +24,7 @@ import Data.Time (NominalDiffTime)
 import Data.Time.Clock (addUTCTime)
 import Web.Cookie (sameSiteNone, SetCookie(setCookieSameSite))
 
+import Util.Database
 import Util.LTI
 
 -- | The foundation datatype for your application. This can be a good place to
@@ -98,14 +99,16 @@ instance Yesod App where
         -- value passed to hamletToRepHtml cannot be a widget, this allows
         -- you to use normal widget features in default-layout.
         authmaybe <- maybeAuth
-        (isInstructor, mdoc, mcourse) <- case authmaybe of
-            Nothing -> return (False, Nothing, Nothing)
-            Just uid -> runDB $ do
-                mud <- getBy $ UniqueUserData $ entityKey uid
-                mcour <- maybe (return Nothing) get (mud >>= userDataEnrolledIn . entityVal)
-                masgn <- maybe (return Nothing) get (mcour >>= courseTextBook)
-                mdoc <- maybe (return Nothing) get (assignmentMetadataDocument <$> masgn)
-                return (not $ null (mud >>= userDataInstructorId . entityVal), mdoc, mcour)
+        (mud, mdoc, mcourse) <- case entityKey <$> authmaybe of
+            Nothing -> return (Nothing, Nothing, Nothing)
+            Just uid -> do
+                mud <- maybeUserData uid
+                runDB $ do
+                    mcour <- maybe (return Nothing) get (mud >>= userDataEnrolledIn . entityVal)
+                    masgn <- maybe (return Nothing) get (mcour >>= courseTextBook)
+                    mdoc <- maybe (return Nothing) get (assignmentMetadataDocument <$> masgn)
+                    return (mud, mdoc, mcour)
+        let isInstructor = not $ null (mud >>= userDataInstructorId . entityVal)
         pc <- widgetToPageContent $ do
             addStylesheet $ StaticR css_bootstrap_css
             addStylesheet $ StaticR css_font_awesome_css

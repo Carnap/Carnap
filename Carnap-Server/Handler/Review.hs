@@ -3,7 +3,7 @@ module Handler.Review (getReviewR, putReviewR, deleteReviewR) where
 
 import Import
 import Util.Data
-import Util.Database
+import Util.Assignment
 import Data.Map as M (fromList)
 import Data.Tree
 import Data.List (nub)
