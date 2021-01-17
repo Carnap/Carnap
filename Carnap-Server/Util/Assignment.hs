@@ -4,47 +4,10 @@ import Import
 import Util.Database
 import System.Directory (doesFileExist)
 
--- | given a filename, retrieve the associated assignment for the course
--- you're currently enrolled in and the path to the file.
-getAssignment filename =
-        do muid <- maybeAuthId
-           ud <- case muid of
-                   Nothing -> setMessage "you need to be logged in to access assignments" >> redirect HomeR
-                   Just uid -> checkUserData uid
-           coursent <- case userDataEnrolledIn ud of
-                            Just cid -> do
-                               maybeCourse <- runDB $ get cid
-                               case maybeCourse of
-                                  Just course -> return (Entity cid course)
-                                  Nothing     -> setMessage "failed to retrieve course" >> notFound
-                            Nothing -> do setMessage "you need to be enrolled in a course to access assignments"
-                                          redirect HomeR
-           retrieveAssignment coursent filename
-
 getAssignmentByCourse coursetitle filename =
-        do Entity uid _ <- requireAuth
-           mcourse <- runDB $ getBy $ UniqueCourse coursetitle
+        do mcourse <- runDB $ getBy $ UniqueCourse coursetitle
            case mcourse of
-             Nothing -> setMessage "no class with this title" >> notFound
-             Just c -> retrieveAssignment c filename
-
-getAssignmentByOwner ident filename =
-        do Entity uid _ <- requireAuth
-           ud <- checkUserData uid
-           uid <- fromIdent ident
-           case userDataEnrolledIn ud of
-             Nothing -> do setMessage "you need to be enrolled in a course to access assignments" >> redirect HomeR
-             Just cid -> do
-               mcourse <- runDB $ get cid
-               case mcourse of
-                   Nothing -> error ("no course found with cid " ++ show cid)
-                   Just course -> retrieveAssignment (Entity cid course) filename
-
-getAssignmentByCourseAndOwner coursetitle ident filename =
-        do uid <- fromIdent ident
-           mcourse <- runDB $ getBy $ UniqueCourse coursetitle
-           case mcourse of
-             Nothing -> do setMessage "no class with this title" >> notFound
+             Nothing -> setMessage ("can't find a class with the title " ++ toHtml coursetitle) >> notFound
              Just c -> retrieveAssignment c filename
 
 -- | given an ident get the director in which assignments are stored for
