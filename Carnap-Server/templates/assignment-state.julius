@@ -41,6 +41,7 @@ CarnapServerAPI.getAssignmentState = async function () {
             url: '@{CourseAssignmentStateR coursetitle filename}',
             type: 'GET',
             contentType: "application/json",
+            data: jQuery.param({aid: #{show key}}),
             success: function(data) { 
                 console.log("received assignment state: " + JSON.stringify(data))
                 CarnapServerAPI.initialized = true
@@ -50,7 +51,7 @@ CarnapServerAPI.getAssignmentState = async function () {
             },
             error: function(data) {
                 window.alert("Possible network error: couldn't retrieve assignment state")
-                reject("Possible network error: couldn't retrieve assignment state")
+                reject("Possible network error: " + JSON.stringify(data))
             },
         }));
     }
