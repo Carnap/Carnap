@@ -22,6 +22,7 @@ activate cls extra chunk
     | "openLogicNK" `elem` cls = template (opts [("system","openLogicNK")])
     | "openLogicSTNK" `elem` cls = template (opts [("system","openLogicSTNK")])
     | "openLogicArithNK" `elem` cls = template (opts [("system","openLogicArithNK")])
+    | "openLogicExtendedArithNK" `elem` cls = template (opts [("system","openLogicExtendedArithNK")])
     | otherwise = template (opts [])
     where numof = T.takeWhile (/= ' ')
           (h:t) = formatChunk chunk
@@ -40,7 +41,7 @@ toPlayground cls extra contents
     | "propNJ" `elem` cls = template (opts [("system","propNJ")])
     | "openLogicNK" `elem` cls = template (opts [("system","openLogicNK")])
     | "openLogicSTNK" `elem` cls = template (opts [("system","openLogicSTNK")])
-    | "openLogicArithNK" `elem` cls = template (opts [("system","openLogicArithNK")])
+    | "openLogicExtendedArithNK" `elem` cls = template (opts [("system","openLogicExtendedArithNK")])
     | otherwise = template (opts [])
     where opts adhoc = unions [fromList extra, fromList fixed, fromList adhoc]
           fixed = [ ("type", "treedeductionchecker") ]

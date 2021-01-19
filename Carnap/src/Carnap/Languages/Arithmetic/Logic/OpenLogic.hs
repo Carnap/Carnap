@@ -1,4 +1,4 @@
-module Carnap.Languages.Arithmetic.Logic.OpenLogic (openLogicArithNKCalc)
+module Carnap.Languages.Arithmetic.Logic.OpenLogic (openLogicArithNKCalc, openLogicExtendedArithNKCalc)
 where
 
 import Carnap.Core.Data.Types
@@ -11,6 +11,13 @@ import Carnap.Calculi.Tableau.Data
 openLogicArithNKCalc :: TableauCalc ArithLex (Form Bool) (OpenLogicFONK ArithLex) 
 openLogicArithNKCalc = mkTBCalc
     { tbParseForm = arithmeticParser
+    , tbParseRule = parseOpenLogicFONK
+    , tbNotation = dropOuterParens
+    }
+
+openLogicExtendedArithNKCalc :: TableauCalc ExtendedArithLex (Form Bool) (OpenLogicFONK ExtendedArithLex) 
+openLogicExtendedArithNKCalc = mkTBCalc
+    { tbParseForm = arithmeticExtendedParser
     , tbParseRule = parseOpenLogicFONK
     , tbNotation = dropOuterParens
     }
