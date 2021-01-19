@@ -172,6 +172,18 @@ parsePredicateSymbol s parseTerm = parse <?> "a predicate symbol"
                          m = maybe 0 id midx
                      char '(' *> spaces *> argParser parseTerm (ppn (n + (m * 26)) AOne)
 
+parsePredicateString :: 
+    ( PolyadicStringPredicateLanguage (FixLang lex) arg ret
+    , Incrementable lex arg
+    , Monad m
+    , Typeable ret
+    , Typeable arg
+    ) => ParsecT String u m (FixLang lex arg) -> ParsecT String u m (FixLang lex ret)
+parsePredicateString parseTerm = parse <?> "a predicate string"
+    where parse = do c <- upper
+                     s <- many (alphaNum <|> char '_')
+                     char '(' *> spaces *> argParser parseTerm (stringPred (c:s) AOne)
+
 parseSchematicPredicateSymbol :: 
     ( PolyadicSchematicPredicateLanguage (FixLang lex) arg ret
     , Incrementable lex arg
@@ -302,6 +314,18 @@ parseFunctionSymbol s parseTerm = parse <?> "a function symbol"
                      -- we need to compensate for offset, since
                      -- lcIndex begins at 1
                      char '(' *> spaces *> argParser parseTerm (pfn (n + (m * 26)) AOne)
+
+parseFunctionString ::     
+    ( PolyadicStringFunctionLanguage (FixLang lex) arg ret
+    , Incrementable lex arg
+    , Monad m
+    , Typeable ret
+    , Typeable arg
+    ) => ParsecT String u m (FixLang lex arg) -> ParsecT String u m (FixLang lex ret)
+parseFunctionString parseTerm = parse <?> "a function string"
+    where parse = do c <- lower
+                     s <- many1 (alphaNum <|> char '_')
+                     char '(' *> spaces *> argParser parseTerm (stringFunc (c:s) AOne)
 
 parseSchematicFunctionSymbol ::     
     ( SchematicPolyadicFunctionLanguage (FixLang lex) arg ret

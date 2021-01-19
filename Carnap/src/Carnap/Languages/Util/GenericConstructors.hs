@@ -54,7 +54,7 @@ data IntPred b c a where
 
 instance Schematizable (IntPred b c) where
         schematize (Pred a n) xs = pred ++ tail 
-            where arity = read $ show a
+            where arity = arityInt a
                   args = take arity $ xs ++ repeat "_"
                   pred 
                     | n >= 26 = (['A' .. 'Z'] !! (n `mod` 26)) : '_' : show (n `div` 26)
@@ -68,6 +68,22 @@ instance UniformlyEq (IntPred b c) where
         (Pred a n) =* (Pred a' m) = show a == show a' && n == m
 
 instance FirstOrderLex (IntPred b c)
+
+data StringPred b c a where
+        StringPred ::  Arity (Term c) (Form b) ret -> String -> StringPred b c ret
+
+instance Schematizable (StringPred b c) where
+        schematize (StringPred a pred) xs = pred ++ tail 
+            where arity = arityInt a
+                  args = take arity $ xs ++ repeat "_"
+                  tail
+                    | arity == 0    = ""
+                    | otherwise     = "(" ++ intercalate "," args ++ ")"
+
+instance UniformlyEq (StringPred b c) where
+        (StringPred a s) =* (StringPred a' s') = show a == show a' && s == s'
+
+instance FirstOrderLex (StringPred b c)
 
 data SchematicIntPred b c a where
         SPred :: Arity (Term c) (Form b) ret -> Int -> SchematicIntPred b c ret
@@ -149,7 +165,7 @@ data IntFunc c b a where
 
 instance Schematizable (IntFunc b c) where
         schematize (Func a n) xs = pred ++ tail 
-            where arity = read $ show a
+            where arity = arityInt a
                   args = take arity $ xs ++ repeat "_"
                   pred 
                     | n >= 26 = (['a' .. 'z'] !! (n `mod` 26)) : '_' : show (n `div` 26)
@@ -163,6 +179,22 @@ instance UniformlyEq (IntFunc b c) where
         (Func a n) =* (Func a' m) = show a == show a' && n == m
 
 instance FirstOrderLex (IntFunc b c)
+
+data StringFunc c b a where
+        StringFunc ::  Arity (Term c) (Term b) ret -> String -> StringFunc b c ret
+
+instance Schematizable (StringFunc b c) where
+        schematize (StringFunc a pred) xs = pred ++ tail 
+            where arity = arityInt a
+                  args = take arity $ xs ++ repeat "_"
+                  tail
+                    | arity == 0    = ""
+                    | otherwise     = "(" ++ intercalate "," args ++ ")"
+
+instance UniformlyEq (StringFunc b c) where
+        (StringFunc a s) =* (StringFunc a' s') = show a == show a' && s == s'
+
+instance FirstOrderLex (StringFunc b c)
 
 data SchematicIntFunc c b a where
         SFunc ::  Arity (Term c) (Term b) ret -> Int -> SchematicIntFunc b c ret

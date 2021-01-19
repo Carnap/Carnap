@@ -261,6 +261,26 @@ class (Typeable c, Typeable b, PrismLink (FixLang lex) (Predicate (IntPred b c) 
 instance {-#OVERLAPPABLE#-} PrismPolyadicPredicate lex c b => PolyadicPredicateLanguage (FixLang lex) (Term c) (Form b) where
         ppn = curry $ review _predIdx
 
+class PolyadicStringPredicateLanguage lang arg ret where
+        stringPred :: Typeable ret' => String -> Arity arg ret ret' -> lang ret'
+
+class (Typeable c, Typeable b, PrismLink (FixLang lex) (Predicate (StringPred b c) (FixLang lex))) 
+        => PrismPolyadicStringPredicate lex c b where
+
+        _stringPred :: Typeable ret => Prism' (FixLang lex ret) (String, Arity (Term c) (Form b) ret)
+        _stringPred = link_PrismPolyadicStringPredicate . stringPredPris
+
+        link_PrismPolyadicStringPredicate :: Typeable ret => Prism' (FixLang lex ret) (Predicate (StringPred b c) (FixLang lex) ret)
+        link_PrismPolyadicStringPredicate = link 
+
+        stringPredPris :: Typeable ret => Prism' (Predicate (StringPred b c) (FixLang lex) ret) (String, Arity (Term c) (Form b) ret)
+        stringPredPris = prism' (\(s,a) -> Predicate (StringPred a s) a) 
+                                (\x -> case x of (Predicate (StringPred a s) _) -> (,) <$> pure s <*> cast a
+                                                 _ -> Nothing)
+
+instance {-#OVERLAPPABLE#-} PrismPolyadicStringPredicate lex c b => PolyadicStringPredicateLanguage (FixLang lex) (Term c) (Form b) where
+        stringPred = curry $ review _stringPred
+
 class PolyadicSchematicPredicateLanguage lang arg ret where
         pphin :: Typeable ret' => Int -> Arity arg ret ret' -> lang ret'
 
@@ -469,6 +489,26 @@ class (Typeable c, Typeable b, PrismLink (FixLang lex) (Function (IntFunc b c) (
 
 instance {-#OVERLAPPABLE#-} PrismPolyadicFunction lex c b => PolyadicFunctionLanguage (FixLang lex) (Term c) (Term b) where
         pfn = curry $ review _funcIdx
+
+class PolyadicStringFunctionLanguage lang arg ret where
+        stringFunc :: Typeable ret' => String -> Arity arg ret ret' -> lang ret'
+
+class (Typeable c, Typeable b, PrismLink (FixLang lex) (Function (StringFunc b c) (FixLang lex))) 
+        => PrismPolyadicStringFunction lex c b where
+
+        _stringFunc :: Typeable ret =>  Prism' (FixLang lex ret) (String, Arity (Term c) (Term b) ret)
+        _stringFunc = link_PrismPolyadicStringFunction . stringFuncPris
+
+        link_PrismPolyadicStringFunction :: Typeable ret => Prism' (FixLang lex ret) (Function (StringFunc b c) (FixLang lex) ret)
+        link_PrismPolyadicStringFunction = link 
+
+        stringFuncPris :: Typeable ret => Prism' (Function (StringFunc b c) (FixLang lex) ret) (String, Arity (Term c) (Term b) ret)
+        stringFuncPris = prism' (\(s,a) -> Function (StringFunc a s) a) 
+                                (\x -> case x of (Function (StringFunc a s) _) -> (,) <$> pure s <*> cast a
+                                                 _ -> Nothing)
+
+instance {-#OVERLAPPABLE#-} PrismPolyadicStringFunction lex c b => PolyadicStringFunctionLanguage (FixLang lex) (Term c) (Term b) where
+        stringFunc = curry $ review _stringFunc
 
 class IndexedSchemeConstantLanguage l where
         taun :: Int -> l

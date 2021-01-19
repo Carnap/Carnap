@@ -1,6 +1,6 @@
 {-#LANGUAGE TypeOperators, FlexibleContexts, FlexibleInstances, MultiParamTypeClasses #-}
-module Carnap.Languages.Arithmetic.Parser 
-( arithmeticParser ) where
+module Carnap.Languages.Arithmetic.Parser ( arithmeticParser, arithmeticExtendedParser ) 
+where
 
 import Carnap.Core.Data.Types
 import Carnap.Languages.Arithmetic.Syntax
@@ -32,10 +32,37 @@ arithmeticOptions = FirstOrderParserOptions
                          , finalValidation = const (pure ())
                          }
 
-arithmeticParser = parserFromOptions arithmeticOptions
+arithmeticExtendedOptions :: FirstOrderParserOptions ExtendedArithLex u Identity
+arithmeticExtendedOptions = FirstOrderParserOptions 
+                         { atomicSentenceParser = \x -> try (lessThanParser x)
+                                                        <|> equalsParser x 
+                                                        <|> parsePredicateString x
+                         , quantifiedSentenceParser' = lplQuantifiedSentenceParser
+                         , freeVarParser = parseFreeVar "stuvwxyz"
+                         , constantParser = Just (parseZero <|> parseConstant "abcdefghijklmnopqr")
+                         , functionParser = Just (\x -> arithmeticOpParser 
+                                                            (parenParser x
+                                                            <|> parseZero 
+                                                            <|> try (parseFunctionString x)
+                                                            <|> parseFreeVar "stuvwxyz"
+                                                            <|> parseConstant "abcdefghijklmnopqr"
+                                                            ))
+                         , hasBooleanConstants = True
+                         , parenRecur = \opt recurWith  -> parenParser (recurWith opt)
+                         , opTable = standardOpTable
+                         , finalValidation = const (pure ())
+                         }
+ 
+
+arithmeticParser = parserFromOptions arithmeticOptions <* eof
+
+arithmeticExtendedParser = parserFromOptions arithmeticExtendedOptions <* eof
 
 instance ParsableLex (Form Bool) ArithLex where
         langParser = arithmeticParser
+
+instance ParsableLex (Form Bool) ExtendedArithLex where
+        langParser = arithmeticExtendedParser
 
 arithmeticOpParser subTerm = buildExpressionParser opTable subTerm
     where opTable = [ [Postfix (try (iteratedParse parseSucc))]
