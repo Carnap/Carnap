@@ -96,7 +96,7 @@ getUserR ident = do
                     let Just cid = maybeCourseId
                     textbookproblems <- getProblemSets cid
                     (asmd, extensions, asDocs,accommodation,subs) <- runDB $ 
-                            do asmd <-  selectList [AssignmentMetadataCourse ==. cid] []
+                            do asmd <- selectList [AssignmentMetadataCourse ==. cid] []
                                asDocs <- mapM get (map (assignmentMetadataDocument . entityVal) asmd)
                                accommodation <- (getBy $ UniqueAccommodation cid uid)
                                             >>= return . maybe 0 (accommodationDateExtraHours . entityVal)
@@ -209,11 +209,11 @@ assignmentsOf accommodation course textbookproblems asmdex asDocs = do
                 [whamlet|
                 <div.table-responsive>
                     <table.table.table-striped>
-                        <thead>
+                        <thead#assignment-table-head>
                             <th> Assignment
                             <th> Due Date
                             <th> Description
-                        <tbody>
+                        <tbody#assignment-table-body>
                             $maybe dd <- textbookproblems
                                 $forall (num,due) <- IM.toList (readAssignmentTable dd)
                                     <tr>

@@ -44,6 +44,19 @@ function sortUsersByCol(num) {
     sortedRows.forEach(el => body.appendChild(el))
 }
 
+function sortAssignments() {
+    let body = document.getElementById("assignment-table-body")
+    let rows = Array.from(body.children)
+    let sortedRows = rows.sort((a,b) => {
+        let val1 = a.children[1].innerHTML
+        let val2 = b.children[1].innerHTML
+        if ( val1 > val2 ) return 1
+        else return -1
+        })
+    sortedRows.forEach(el => body.appendChild(el))
+}
+    
+
 function calcTotalScore() {
     let rows = Array.from(document.getElementsByClassName("score-column"))
     let values = rows.map(x => parseInt(x.innerHTML)).filter(x => x == x) /* this last bit filters out NaN */
@@ -54,3 +67,4 @@ function calcTotalScore() {
 $("#drop-class").submit(_ => { return confirm("Are you sure you want to unenroll?\n\n If enrollment is closed, you may not be able to reenter the class.") })
 
 $(document).ready(_ => calcTotalScore())
+$(document).ready(_ => sortAssignments())
