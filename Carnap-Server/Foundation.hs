@@ -71,12 +71,11 @@ instance Yesod App where
     approot = ApprootMaster $ appRoot . appSettings
 
     -- Store session data on the client in encrypted cookies,
-    -- default session idle timeout is 120 minutes
     --
     -- Set crossSiteSessions, allowing LTI in iframes, only if our approot is secure.
     makeSessionBackend app = (onlyIfHttps crossSiteSessions)
         $ Just <$> defaultClientSessionBackend
-            120    -- timeout in minutes
+            10080  -- timeout in minutes, currently 7 days
             ((appDataRoot $ appSettings app) </> "client_session_key.aes")
         where isHttps = "https" `T.isPrefixOf` (appRoot $ appSettings app)
               onlyIfHttps f = if isHttps then f else id
