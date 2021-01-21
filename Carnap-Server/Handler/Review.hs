@@ -50,11 +50,9 @@ getReviewR :: Text -> Text -> Handler Html
 getReviewR coursetitle filename = 
         do (Entity key val, _) <- getAssignmentByCourse coursetitle filename
            unsortedProblems <- runDB $ selectList [ProblemSubmissionAssignmentId ==. Just key] []
-           (uidAndData, uidAndUser) <- runDB $ do 
-                                            let uids = nub $ map (problemSubmissionUserId . entityVal) unsortedProblems
-                                            muserdata <- mapM (getBy . UniqueUserData) uids
-                                            musers <- mapM get uids
-                                            return (sortBy maybeLnSort $ zip muserdata uids, zip uids musers)
+           uidAndData <- runDB $ do let uids = nub $ map (problemSubmissionUserId . entityVal) unsortedProblems
+                                    muserdata <- mapM (getBy . UniqueUserData) uids
+                                    return (sortBy maybeLnSort $ zip uids muserdata )
            let problems = sortBy theSorting unsortedProblems
                due = assignmentMetadataDuedate val
            defaultLayout $ do
@@ -67,10 +65,10 @@ getReviewR coursetitle filename =
                addStylesheet $ StaticR css_exercises_css
                $(widgetFile "review")
                addScript $ StaticR ghcjs_allactions_runmain_js
-    where maybeLnSort (Nothing,_) (Nothing,_) = EQ
-          maybeLnSort (Nothing,_) _ = LT
-          maybeLnSort _ (Nothing,_) = GT
-          maybeLnSort (Just ud,_) (Just ud',_) = compare (userDataLastName $ entityVal ud) 
+    where maybeLnSort (_,Nothing) (_,Nothing) = EQ
+          maybeLnSort (_,Nothing) _ = LT
+          maybeLnSort _ (_,Nothing) = GT
+          maybeLnSort (_,Just ud) (_,Just ud') = compare (userDataLastName $ entityVal ud) 
                                                          (userDataLastName $ entityVal ud')
           theSorting p p' = scompare s s'
               where s = unpack . problemSubmissionIdent . entityVal $ p
@@ -88,20 +86,20 @@ selectUser list =
             <select#selectStudent class="form-control">
                 <option value="all">All Students
                 $forall (k,v) <- list
-                    $maybe k' <- k
+                    $maybe v' <- v
                         <option value="#{show v}">
-                            #{userDataLastName (entityVal k')}, #
-                            #{userDataFirstName (entityVal k')}
+                            #{userDataLastName (entityVal v')}, #
+                            #{userDataFirstName (entityVal v')}
                     $nothing
                         <option value="#{show v}">unknown
         |]
 
-renderProblem due uidanduser (Entity key val) = do
+renderProblem due uidAndData (Entity key val) = do
         let ident = problemSubmissionIdent val
             uid = problemSubmissionUserId val
             extra = problemSubmissionExtra val
             correct = problemSubmissionCorrect val
-            Just user = lookup uid uidanduser
+            Just userdata = lookup uid uidAndData
             late = maybe False (problemSubmissionTime val `laterThan`) due
         (updateSubmissionWidget,enctypeUpdateSubmission) <- generateFormPost (identifyForm "updateSubmission" $ updateSubmissionForm extra ident (show uid))
         let isGraded = if correct then "graded"
@@ -115,7 +113,7 @@ renderProblem due uidanduser (Entity key val) = do
                   | correct = latescore
                   | otherwise = 0
             awarded = maybe "0" show extra
-            mailto theuser = sanitizeHtml (userIdent theuser) ++ "?subject=[Carnap-" ++ sanitizeHtml ident ++ "]"
+            mailto email = sanitizeHtml email ++ "?subject=[Carnap-" ++ sanitizeHtml ident ++ "]"
             template display = 
                 [whamlet|
                     <div.card.mb-3.#{isGraded} data-submission-uid="#{show uid}">
@@ -136,10 +134,15 @@ renderProblem due uidanduser (Entity key val) = do
                                         <div.form-group>
                                             <input.btn.btn-primary type=submit value="update" disabled>
                                     <hr>
-                                    $maybe user' <- user
-                                        <a href="mailto:#{mailto user'}">
-                                            <i.fa.fa-envelope-o>
-                                            email student
+                                    $maybe userdata' <- entityVal <$> userdata
+                                        $maybe email <- userDataEmail userdata'
+                                            <a href="mailto:#{mailto email}">
+                                                <i.fa.fa-envelope-o>
+                                                email student
+                                        $nothing
+                                            <span>
+                                                <i.fa.fa-envelope-o>
+                                                email address unavailable
                                         <br>
                                         <a href="#" onclick="tryDeleteProblem(event,'#{jsonSerialize $ DeleteProblem key}')">
                                             <i.fa.fa-trash-o>
