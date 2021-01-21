@@ -962,7 +962,7 @@ classWidget instructors classent autoreg = do
                                 <th> Total Score
                                 <th> Action
                             <tbody>
-                                $forall (u, UserData {userDataUniversityId = uniid, userDataFirstName = fn, userDataLastName = ln, userDataUserId = uid}) <- sortedUsersAndData
+                                $forall (u, UserData {userDataUniversityId = uniid, userDataEmail = memail, userDataFirstName = fn, userDataLastName = ln, userDataUserId = uid}) <- sortedUsersAndData
                                     <tr#student-#{userIdent u}>
                                         <td>
                                             <a href=@{UserR (userIdent u)}>#{userIdent u}
@@ -980,9 +980,13 @@ classWidget instructors classent autoreg = do
                                             <button.btn.btn-sm.btn-secondary type="button" title="Drop #{fn} #{ln} from class"
                                                 onclick="tryDropStudent('#{jsonSerialize $ DropStudent uid}')">
                                                 <i.fa.fa-trash-o>
-                                            <button.btn.btn-sm.btn-secondary type="button" title="Email #{fn} #{ln}"
-                                                onclick="location.href='mailto:#{userIdent u}'">
-                                                <i.fa.fa-envelope-o>
+                                            $maybe email <- memail
+                                                <button.btn.btn-sm.btn-secondary type="button" title="Email #{fn} #{ln}"
+                                                    onclick="location.href='mailto:#{email}'">
+                                                    <i.fa.fa-envelope-o>
+                                            $nothing
+                                                <button.btn.btn-sm.btn-secondary type="button" disabled title="No email address available for #{fn} #{ln}">
+                                                    <i.fa.fa-envelope-o>
                                             <button.btn.btn-sm.btn-secondary type="button" title="Adjust Accessibility Settings for #{fn} #{ln}"
                                                 onclick="modalEditAccommodation('#{show cid}','#{show uid}','#{jsonSerialize $ QueryAccommodation uid cid}')">
                                                 <i.fa.fa-clock-o>
