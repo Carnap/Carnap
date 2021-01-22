@@ -87,7 +87,7 @@ selectUser list =
                 <option value="all">All Students
                 $forall (k,v) <- list
                     $maybe v' <- v
-                        <option value="#{show v}">
+                        <option value="#{show k}">
                             #{userDataLastName (entityVal v')}, #
                             #{userDataFirstName (entityVal v')}
                     $nothing
