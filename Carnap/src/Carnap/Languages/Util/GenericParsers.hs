@@ -58,13 +58,13 @@ parsePos :: (ModalLanguage l, Monad m) => ParsecT String u m (l -> l)
 parsePos = spaces >> (string "<>" <|> string "◇") >> return pos
 
 parseIntersect :: (ElementarySetsLanguage lang, Monad m) => ParsecT String u m (lang -> lang -> lang)
-parseIntersect = spaces >> (string "I" <|> string "∩") >> spaces >> return setIntersect
+parseIntersect = spaces >> (string "I" <|> string "∩" <|> string "cap") >> spaces >> return setIntersect
 
 parseUnion :: (ElementarySetsLanguage lang, Monad m) => ParsecT String u m (lang -> lang -> lang)
-parseUnion = spaces >> (string "U" <|> string "∪") >> spaces >> return setUnion
+parseUnion = spaces >> (string "U" <|> string "∪" <|> string "cup") >> spaces >> return setUnion
 
 parseComplement :: (ElementarySetsLanguage lang, Monad m) => ParsecT String u m (lang -> lang -> lang)
-parseComplement = spaces >> string "/" >> spaces >> return setComplement
+parseComplement = spaces >> (string "/" <|> string "\\") >> spaces >> return setComplement
 
 powersetParser :: (ElementarySetsLanguage lang, Monad m) =>  ParsecT String u m lang -> ParsecT String u m lang
 powersetParser parseTerm = (try (string "P(") <|> string "Pow(") *> parseTerm <* string ")" >>= return . powerset
@@ -135,7 +135,7 @@ elementParser parseTerm = binaryInfixOpParser ops parseTerm
 
 subsetParser :: (SubsetLanguage lang arg ret , Monad m) => ParsecT String u m (lang arg) -> ParsecT String u m (lang ret) 
 subsetParser parseTerm = binaryInfixOpParser ops parseTerm
-    where ops = map (>> return within) [string "⊆", string "<(", string "<s", string "within"]
+    where ops = map (>> return within) [string "⊆", string "<(", string "<s", string "sub", string "within"]
 
 lessThanParser :: (LessThanLanguage lang arg ret , Monad m) => ParsecT String u m (lang arg) -> ParsecT String u m (lang ret) 
 lessThanParser parseTerm = binaryInfixOpParser ops parseTerm
