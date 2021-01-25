@@ -1,6 +1,6 @@
 {-#LANGUAGE FlexibleContexts, FlexibleInstances, MultiParamTypeClasses #-}
 module Carnap.Languages.PurePropositional.Logic.Winkler
-    ( parseWinklerTFL, winklerTFLCalc , winklerNotation) where
+    ( parseWinklerTFL, winklerTFLCalc , winklerNotation, WinklerTFL(..)) where
 
 import Data.Map as M (lookup, Map)
 import Text.Parsec
@@ -41,7 +41,7 @@ data WinklerTFL = ConjIntro  | As
                 | Tertium3   | Tertium4
                 | DisSyllo1  | DisSyllo2
                 | ModTollens | DoubleNeg  
-                | Com1 | Com2 | Com3 | Com4
+                | Com1 | Com2 
                 | Assoc1 | Assoc2 | Assoc3 | Assoc4
                 | Impl1 | Impl2
                 | DN1  | DN2
@@ -171,32 +171,32 @@ instance Inference WinklerTFL PurePropLexicon (Form Bool) where
         ruleOf Tertium3   = tertiumNonDaturVariations !! 2
         ruleOf Tertium4   = tertiumNonDaturVariations !! 3
         ruleOf Reiterate  = identityRule
-        ruleOf Com1 = andCommutativity !! 0
-        ruleOf Com2 = orCommutativity !! 0
+        ruleOf Com1   = andCommutativity !! 0
+        ruleOf Com2   = orCommutativity !! 0
         ruleOf Assoc1 = andAssociativity !! 0
-        ruleOf Assoc2 = andAssociativity !! 1 
-        ruleOf Assoc3 = orAssociativity !! 0  
-        ruleOf Assoc4 = orAssociativity !! 1  
-        ruleOf Impl1 = materialConditional !! 0
-        ruleOf Impl2 = materialConditional !! 1
-        ruleOf DN1 = doubleNegation !! 0
-        ruleOf DN2 = doubleNegation !! 1
-        ruleOf DeM1 = deMorgansLaws !! 0 
-        ruleOf DeM2 = deMorgansLaws !! 1
-        ruleOf DeM3 = deMorgansLaws !! 2
-        ruleOf DeM4 = deMorgansLaws !! 3
-        ruleOf Idem1 = andIdempotence !! 0
-        ruleOf Idem2 = andIdempotence !! 1
-        ruleOf Idem3 = orIdempotence !! 0
-        ruleOf Idem4 = orIdempotence !! 1
+        ruleOf Assoc2 = andAssociativity !! 1
+        ruleOf Assoc3 = orAssociativity !! 0
+        ruleOf Assoc4 = orAssociativity !! 1
+        ruleOf Impl1  = materialConditional !! 0
+        ruleOf Impl2  = materialConditional !! 1
+        ruleOf DN1    = doubleNegation !! 0
+        ruleOf DN2    = doubleNegation !! 1
+        ruleOf DeM1   = deMorgansLaws !! 0
+        ruleOf DeM2   = deMorgansLaws !! 1
+        ruleOf DeM3   = deMorgansLaws !! 2
+        ruleOf DeM4   = deMorgansLaws !! 3
+        ruleOf Idem1  = andIdempotence !! 0
+        ruleOf Idem2  = andIdempotence !! 1
+        ruleOf Idem3  = orIdempotence !! 0
+        ruleOf Idem4  = orIdempotence !! 1
         ruleOf Trans1 = contraposition !! 0
         ruleOf Trans2 = contraposition !! 1
-        ruleOf Exp1 = exportation !! 0
-        ruleOf Exp2 = exportation !! 1
-        ruleOf Dist1 = distribution !! 0
-        ruleOf Dist2 = distribution !! 1
-        ruleOf Dist3 = distribution !! 2
-        ruleOf Dist4 = distribution !! 3
+        ruleOf Exp1   = exportation !! 0
+        ruleOf Exp2   = exportation !! 1
+        ruleOf Dist1  = distribution !! 0
+        ruleOf Dist2  = distribution !! 1
+        ruleOf Dist3  = distribution !! 2
+        ruleOf Dist4  = distribution !! 3
         ruleOf Equiv1 = biconditionalExchange !! 0
         ruleOf Equiv2 = biconditionalExchange !! 1
         ruleOf Equiv3 = biconditionalCases !! 0
@@ -274,7 +274,7 @@ parseWinklerTFL rtc = do r <- choice (map (try . string) [ "&I", "&E", "-I", "~I
                              | r == "MT" -> [ModTollens]
                              | r == "DNE" -> [DoubleNeg]
                              | r == "TND" -> [Tertium1,Tertium2,Tertium3,Tertium4] 
-                             | r == "Com" -> [Com1,Com2,Com3,Com4]
+                             | r == "Com" -> [Com1,Com2]
                              | r == "Assoc" -> [Assoc1,Assoc2,Assoc3,Assoc4]
                              | r == "Impl" -> [Impl1,Impl2]
                              | r == "DN" -> [DN1,DN2]
