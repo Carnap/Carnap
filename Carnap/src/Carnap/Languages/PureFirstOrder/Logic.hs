@@ -42,6 +42,7 @@ import Carnap.Languages.PureFirstOrder.Logic.IchikawaJenkins
 import Carnap.Languages.PureFirstOrder.Logic.Gentzen
 import Carnap.Languages.PureFirstOrder.Logic.OpenLogic
 import Carnap.Languages.PureFirstOrder.Logic.Equivalence
+import Carnap.Languages.PureFirstOrder.Logic.Winkler 
 import Carnap.Languages.PureFirstOrder.Logic.Rules
 
 ofFOLSys :: (forall r . (Show r, Inference r PureLexiconFOL (Form Bool)) => 
@@ -75,6 +76,7 @@ ofFOLSys f sys | sys == "firstOrder"                      = Just $ f folCalc
                | sys == "goldfarbAltNDPlus"               = Just $ f goldfarbAltNDPlusCalc
                | sys == "tomassiQL"                       = Just $ f tomassiQLCalc
                | sys == "zachFOLEq"                       = Just $ f zachFOLEqCalc
+               | sys == "winklerFOL"                      = Just $ f winklerFOLCalc
                | otherwise                                = Nothing
 
 ofFOLTreeSys :: (forall r . 
