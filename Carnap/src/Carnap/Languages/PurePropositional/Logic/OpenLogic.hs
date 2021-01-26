@@ -26,6 +26,7 @@ data OLPPropNK = AndI     | AndEL       | AndER
                | OrIL     | OrIR        | OrE Int | OrELVac Int 
                | OrERVac Int | OrEVac (Maybe Int) 
                | IfI Int  | IfIVac (Maybe Int)  | IfE
+               | IffI Int | IffIRVac Int | IffILVac Int | IffIVac (Maybe Int) | IffE1 | IffE2
                | NegI Int | NegIVac (Maybe Int) | NegE  | FalsumE
                | As Int   | IP Int | IPVac (Maybe Int)
                | Pr 
@@ -45,6 +46,11 @@ instance Show OLPPropNK where
     show (IfI n) = "⊃I (" ++ show n ++ ")"
     show (IfIVac (Just n)) = "⊃I (" ++ show n ++ ")"
     show (IfIVac Nothing) = "⊃I"
+    show (IffI n) = "↔I (" ++ show n ++ ")"
+    show (IffILVac n)  = "↔I (" ++ show n ++ ")"
+    show (IffIRVac n) = "↔I (" ++ show n ++ ")"
+    show (IffIVac (Just n)) = "↔I (" ++ show n ++ ")"
+    show (IffIVac Nothing) = "↔I"
     show IfE = "⊃E"
     show (NegI n) = "¬I (" ++ show n ++ ")" 
     show (NegIVac (Just n)) = "¬I (" ++ show n ++ ")" 
@@ -80,10 +86,15 @@ parseOLPPropNK = parseProp <* spaces <* eof
                         , (stringOpts ["∨Elim","\\/Elim", "∨E","\\/E"] *> spaces *> getLabel) 
                             >>= \s -> return (let val = read s :: Int in [OrE val, OrELVac val, OrERVac val , OrEVac (Just val)])
                         , stringOpts ["∨Elim","\\/Elim", "∨E","\\/E"] >> return [OrEVac Nothing]
+                        , (stringOpts ["<->Intro ","<->I", "↔Intro", "↔I"] *> spaces *> getLabel) 
+                            >>= \s -> return (let val = read s :: Int in [IffI val, IffILVac val , IffIRVac val, IffIVac (Just val)])
+                        , stringOpts ["<->Intro ","<->I", "↔Intro", "↔I"] >> return [IffIVac Nothing]
+                        , stringOpts ["<->Elim","<->E", "↔Elim", "↔E"] >> return [IffE1, IffE2]
                         , eof >> return [Pr]
                         ]
           stringOpts = (choice . map (try . string))
           getLabel = (char '(' *> many1 digit <* char ')') <|> many1 digit
+
 instance ( BooleanLanguage (ClassicalSequentOver lex (Form Bool))
          , BooleanConstLanguage (ClassicalSequentOver lex (Form Bool))
          , IndexedSchemePropLanguage (ClassicalSequentOver lex (Form Bool))
@@ -104,6 +115,10 @@ instance ( BooleanLanguage (ClassicalSequentOver lex (Form Bool))
          coreRuleOf (IfI _) = conditionalProofVariations !! 0
          coreRuleOf (IfIVac _) = conditionalProofVariations !! 1
          coreRuleOf IfE = modusPonens
+         coreRuleOf (IffI _) = biconditionalProofVariations !! 0
+         coreRuleOf (IffILVac _) = biconditionalProofVariations !! 1
+         coreRuleOf (IffIRVac _) = biconditionalProofVariations !! 2
+         coreRuleOf (IffIVac _) = biconditionalProofVariations !! 3
          coreRuleOf (NegI _) = constructiveFalsumReductioVariations !! 0
          coreRuleOf (NegIVac _) = constructiveFalsumReductioVariations !! 1
          coreRuleOf NegE = falsumIntroduction
@@ -151,6 +166,18 @@ instance ( BooleanLanguage (ClassicalSequentOver lex (Form Bool))
         where assump n = SS . liftToSequent $ phin n
     structuralRestriction pt _ (OrEVac (Just n)) = Just $ usesAssumptions n pt [assump 1, assump 2] 
         where assump n = SS . liftToSequent $ phin n
+    structuralRestriction pt _ (IffI n) = Just $ usesAssumptions n pt [assump 1, assump 2]
+                                     `andFurtherRestriction` exhaustsAssumptions n pt (assump 1) 
+                                     `andFurtherRestriction` exhaustsAssumptions n pt (assump 2)
+        where assump n = SS . liftToSequent $ phin n
+    structuralRestriction pt _ (IffIRVac n) = Just $ usesAssumptions n pt [assump 1, assump 2] 
+                                                `andFurtherRestriction` exhaustsAssumptions n pt (assump 1)
+        where assump n = SS . liftToSequent $ phin n
+    structuralRestriction pt _ (IffILVac n) = Just $ usesAssumptions n pt [assump 1, assump 2]
+                                                    `andFurtherRestriction` exhaustsAssumptions n pt (assump 2)
+        where assump n = SS . liftToSequent $ phin n
+    structuralRestriction pt _ (IffIVac (Just n)) = Just $ usesAssumptions n pt [assump 1, assump 2] 
+        where assump n = SS . liftToSequent $ phin n
     structuralRestriction pt _ r = Nothing
 
 instance StructuralOverride OLPPropNK (ProofTree r PurePropLexicon (Form Bool))
@@ -171,6 +198,10 @@ instance AssumptionNumbers OLPPropNK where
         dischargesAssumptions (OrELVac m) = [m]
         dischargesAssumptions (OrERVac n ) = [n]
         dischargesAssumptions (OrEVac (Just n)) = [n]
+        dischargesAssumptions (IffI n) = [n]
+        dischargesAssumptions (IffILVac m) = [m]
+        dischargesAssumptions (IffIRVac n ) = [n]
+        dischargesAssumptions (IffIVac (Just n)) = [n]
         dischargesAssumptions _ = []
 
 olpPropNKCalc :: TableauCalc PurePropLexicon (Form Bool) OLPPropNK

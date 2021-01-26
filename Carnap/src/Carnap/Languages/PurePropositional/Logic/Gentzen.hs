@@ -289,6 +289,10 @@ instance (Eq r, AssumptionNumbers r) => StructuralInference GentzenPropNJ PurePr
         where assump = SS . liftToSequent $ phin 1
     structuralRestriction pt _ (NegIVac (Just n)) = Just (usesAssumption n pt (SS . liftToSequent $ phin 1))
     structuralRestriction pt _ (OrE n m) = Just $ \sub -> doubleAssumption 1 2 sub >> doubleAssumption 2 1 sub
+        --the point of the doubleAssumption here is to allow either that
+        --n points to phi_1 or to phi_2; because of the way the maybe monad
+        --works, if we get a Nothing ("OK") from either test, we say the
+        --restriction is respected.
         where doubleAssumption j k = usesAssumption n pt (assump j)      `andFurtherRestriction` 
                                      usesAssumption m pt (assump k)      `andFurtherRestriction` 
                                      exhaustsAssumptions n pt (assump j) `andFurtherRestriction` 
