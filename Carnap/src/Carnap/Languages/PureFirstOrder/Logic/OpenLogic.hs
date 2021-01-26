@@ -1,4 +1,4 @@
-{-#LANGUAGE RankNTypes, StandaloneDeriving, ScopedTypeVariables, FlexibleContexts, FlexibleInstances, UndecidableInstances, MultiParamTypeClasses, ConstraintKinds #-}
+{-#LANGUAGE ConstraintKinds, StandaloneDeriving, RankNTypes, ScopedTypeVariables, FlexibleContexts, FlexibleInstances, UndecidableInstances, MultiParamTypeClasses #-}
 module Carnap.Languages.PureFirstOrder.Logic.OpenLogic
 ( parseOpenLogicFONK, openLogicFONKCalc, OpenLogicFONK(..), olpFOLKCalc, olpFOLJCalc) where
 
@@ -16,7 +16,6 @@ import Carnap.Core.Data.Optics
 import Carnap.Languages.PureFirstOrder.Syntax
 import Carnap.Languages.PureFirstOrder.Parser
 import Carnap.Languages.PureFirstOrder.Logic.Rules
-import Carnap.Languages.PureFirstOrder.Logic.Gentzen
 import Carnap.Languages.PurePropositional.Logic.OpenLogic
 import Carnap.Languages.PurePropositional.Util (dropOuterParens)
 import Carnap.Languages.Util.GenericConstructors
@@ -25,7 +24,7 @@ import Carnap.Calculi.Tableau.Data
 import Carnap.Calculi.Util
 import Carnap.Languages.Util.LanguageClasses
 
-data OpenLogicFONK lex = PropNK OLPPropNK
+data OpenLogicFONK lex = PropNK OpenLogicPropNK
                 | AllI | AllE
                 | ExistsI | ExistsE Int | ExistsEVac
                 | EqI     | EqE1 | EqE2
@@ -33,6 +32,12 @@ data OpenLogicFONK lex = PropNK OLPPropNK
                 | ExistsEAnnotatedVac Int (ClassicalSequentOver lex (Term Int))
 
 deriving instance Eq (ClassicalSequentOver lex (Term Int)) => Eq (OpenLogicFONK lex)
+
+data OpenLogicFOLK = LK OpenLogicPropLK 
+             | AllL   | AllR
+             | ExistL | ExistR
+
+newtype OpenLogicFOLJ = LJ OpenLogicFOLK
 
 instance Show (OpenLogicFONK lex) where
     show (PropNK x)                 = show x
@@ -47,9 +52,32 @@ instance Show (OpenLogicFONK lex) where
     show (ExistsEAnnotatedVac n t)  = "∃Elim (" ++ show n ++ ")"
     show (ExistsEVac)               = "∃Elim"
 
+instance Show OpenLogicFOLK where 
+    show (LK x) = show x
+    show AllL   = "∀L"
+    show AllR   = "∀R"
+    show ExistL = "∃L"
+    show ExistR = "∃R"
+
+instance Show OpenLogicFOLJ where
+    show (LJ x) = show x
+    
+parseOpenLogicFOLK :: Parsec String u [OpenLogicFOLK]
+parseOpenLogicFOLK = try folParse <|> liftProp
+        where liftProp = map LK <$> parseOpenLogicPropLK
+              folParse = do r <- choice (map (try . string) [ "AL", "∀L", "AR","∀R", "EL","∃L", "ER", "∃R" ])
+                            return $ (\x -> [x]) $ case r of
+                               r | r `elem` ["AL","∀L"] -> AllL
+                                 | r `elem` ["AR","∀R"] -> AllR
+                                 | r `elem` ["EL","∃L"] -> ExistL
+                                 | r `elem` ["ER","∃R"] -> ExistR
+
+parseOpenLogicFOLJ :: Parsec String u [OpenLogicFOLJ]
+parseOpenLogicFOLJ = map LJ <$> parseOpenLogicFOLK
+
 parseOpenLogicFONK :: Parsec String u [OpenLogicFONK lex]
 parseOpenLogicFONK = (try folParse <|> liftProp) <* spaces <* eof
-        where liftProp = map PropNK <$> parseOLPPropNK
+        where liftProp = map PropNK <$> parseOpenLogicPropNK
               stringOpts = choice . map (try . string)
               folParse = choice . map try $
                     [ stringOpts ["AIntro", "∀Intro", "AI", "∀I"] >> return [AllI]
@@ -138,6 +166,58 @@ instance AssumptionNumbers (OpenLogicFONK lex) where
         dischargesAssumptions (ExistsEAnnotatedVac n t) = [n]
         dischargesAssumptions _ = []
 
+type LKAdequate lex = ( BooleanLanguage (ClassicalSequentOver lex (Form Bool))
+         , BooleanConstLanguage (ClassicalSequentOver lex (Form Bool))
+         , IndexedSchemePropLanguage (ClassicalSequentOver lex (Form Bool))
+         , IndexedSchemeConstantLanguage (ClassicalSequentOver lex (Term Int))
+         , QuantLanguage (ClassicalSequentOver lex (Form Bool)) (ClassicalSequentOver lex (Term Int)) 
+         , PolyadicSchematicPredicateLanguage (ClassicalSequentOver lex) (Term Int) (Form Bool)
+         , PrismPolyadicSchematicFunction (ClassicalSequentLexOver lex) Int Int 
+         , PrismIndexedConstant (ClassicalSequentLexOver lex) Int
+         , PrismStandardVar (ClassicalSequentLexOver lex) Int
+         , CopulaSchema (ClassicalSequentOver lex)
+         , Eq (ClassicalSequentOver lex (Form Bool))
+         , Schematizable (lex (ClassicalSequentOver lex))
+         , FirstOrderLex (lex (ClassicalSequentOver lex))
+         , PrismSubstitutionalVariable (ClassicalSequentLexOver lex)
+         , PrismSubstitutionalVariable lex
+         , ReLex lex
+         )
+
+instance LKAdequate lex => CoreInference OpenLogicFOLK lex (Form Bool) where
+         corePremisesOf (LK x) = corePremisesOf x
+         corePremisesOf AllL = [SA (phi 1 (taun 1)) :+: GammaV 1 :|-: DeltaV 1]
+         corePremisesOf AllR = [ GammaV 1 :|-: DeltaV 1 :-: SS (phi 1 (taun 1))]
+         corePremisesOf ExistL = [SA (phi 1 (taun 1)) :+: GammaV 1 :|-: DeltaV 1]
+         corePremisesOf ExistR = [ GammaV 1 :|-: DeltaV 1 :-: SS (phi 1 (taun 1))]
+
+         coreConclusionOf (LK x) = coreConclusionOf x
+         coreConclusionOf AllL = SA (lall "v" (phi 1)) :+: GammaV 1 :|-: DeltaV 1
+         coreConclusionOf AllR =  GammaV 1 :|-: DeltaV 1 :-: SS (lall "v" (phi 1))
+         coreConclusionOf ExistL = SA (lsome "v" (phi 1)) :+: GammaV 1 :|-: DeltaV 1
+         coreConclusionOf ExistR =  GammaV 1 :|-: DeltaV 1 :-: SS (lsome "v" (phi 1))
+
+         coreRestriction AllR = Just $ eigenConstraint (taun 1) (SS (lall "v" (phi' 1)) :-: fodelta 1) (fogamma 1)
+         coreRestriction ExistL = Just $ eigenConstraint (taun 1) (fodelta 1) (SA (lsome "v" (phi' 1)) :+: fogamma 1)
+         coreRestriction _ = Nothing
+
+instance SpecifiedUnificationType OpenLogicFOLK
+
+instance LKAdequate lex => CoreInference OpenLogicFOLJ lex (Form Bool) where
+         corePremisesOf (LJ x) = corePremisesOf x
+
+         coreConclusionOf (LJ x) = coreConclusionOf x
+
+         coreRestriction (LJ x) = case coreRestriction x of
+                                      Nothing -> Just $ \sub -> monoConsequent (applySub sub $ coreConclusionOf x)
+                                      Just f -> Just $ \sub -> f sub `mplus` monoConsequent (applySub sub $ coreConclusionOf x)
+             where monoConsequent :: forall lex . Eq (ClassicalSequentOver lex (Form Bool)) => ClassicalSequentOver lex (Sequent (Form Bool)) -> Maybe String
+                   monoConsequent (_:|-:x)= case nub (toListOf concretes x :: [ClassicalSequentOver lex (Form Bool)]) of
+                                              _:_:xs -> Just "LJ requires that the right hand side of each sequent contain at most one formula"
+                                              _ -> Nothing
+
+instance SpecifiedUnificationType OpenLogicFOLJ
+
 openLogicFONKCalc :: TableauCalc PureLexiconFOL (Form Bool) (OpenLogicFONK PureLexiconFOL) 
 openLogicFONKCalc = mkTBCalc
     { tbParseForm = thomasBolducAndZachFOL2019FormulaParser
@@ -145,14 +225,16 @@ openLogicFONKCalc = mkTBCalc
     , tbNotation = dropOuterParens
     }
 
-olpFOLKCalc :: TableauCalc PureLexiconFOL (Form Bool) GentzenFOLK
-olpFOLKCalc = gentzenFOLKCalc 
+olpFOLKCalc :: TableauCalc PureLexiconFOL (Form Bool) OpenLogicFOLK
+olpFOLKCalc = mkTBCalc
     { tbParseForm = thomasBolducAndZachFOL2019FormulaParser 
+    , tbParseRule = parseOpenLogicFOLK
     , tbNotation = dropOuterParens
     }
 
-olpFOLJCalc :: TableauCalc PureLexiconFOL (Form Bool) GentzenFOLJ
-olpFOLJCalc = gentzenFOLJCalc 
+olpFOLJCalc :: TableauCalc PureLexiconFOL (Form Bool) OpenLogicFOLJ
+olpFOLJCalc = mkTBCalc
     { tbParseForm = thomasBolducAndZachFOL2019FormulaParser 
+    , tbParseRule = parseOpenLogicFOLJ
     , tbNotation = dropOuterParens
     }
