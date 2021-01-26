@@ -51,6 +51,8 @@ instance Show OLPPropNK where
     show (IffIRVac n) = "↔I (" ++ show n ++ ")"
     show (IffIVac (Just n)) = "↔I (" ++ show n ++ ")"
     show (IffIVac Nothing) = "↔I"
+    show IffE1 = "↔E"
+    show IffE2 = "↔E"
     show IfE = "⊃E"
     show (NegI n) = "¬I (" ++ show n ++ ")" 
     show (NegIVac (Just n)) = "¬I (" ++ show n ++ ")" 
@@ -119,6 +121,8 @@ instance ( BooleanLanguage (ClassicalSequentOver lex (Form Bool))
          coreRuleOf (IffILVac _) = biconditionalProofVariations !! 1
          coreRuleOf (IffIRVac _) = biconditionalProofVariations !! 2
          coreRuleOf (IffIVac _) = biconditionalProofVariations !! 3
+         coreRuleOf IffE1 = biconditionalPonensVariations !! 0
+         coreRuleOf IffE2 = biconditionalPonensVariations !! 1
          coreRuleOf (NegI _) = constructiveFalsumReductioVariations !! 0
          coreRuleOf (NegIVac _) = constructiveFalsumReductioVariations !! 1
          coreRuleOf NegE = falsumIntroduction
