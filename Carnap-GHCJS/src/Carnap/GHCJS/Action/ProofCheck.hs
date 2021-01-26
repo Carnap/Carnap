@@ -253,7 +253,7 @@ computeRule ref g mseq calc =
 submitDer w opts checker l g seq ref _ i = do 
         isFinished <- liftIO $ readIORef ref
         Just v <- liftIO $ getValue (castToHTMLTextAreaElement i)
-        Just wrap <- getParentElement i
+        Just wrap <- getParentElement g
         if isFinished 
             then trySubmit w Derivation opts l (DerivationDataOpts (pack $ show seq) (pack v) (M.toList opts)) True
             else do liftIO $ setAttribute g "class" "goal working"
