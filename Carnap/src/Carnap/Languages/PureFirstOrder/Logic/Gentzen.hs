@@ -1,4 +1,4 @@
-{-#LANGUAGE RankNTypes, ScopedTypeVariables, FlexibleContexts, FlexibleInstances, UndecidableInstances, MultiParamTypeClasses #-}
+{-#LANGUAGE ConstraintKinds, RankNTypes, ScopedTypeVariables, FlexibleContexts, FlexibleInstances, UndecidableInstances, MultiParamTypeClasses #-}
 module Carnap.Languages.PureFirstOrder.Logic.Gentzen
 ( parseGentzenFOLK, gentzenFOLKCalc, GentzenFOLK(..)
 , parseGentzenFOLJ, gentzenFOLJCalc, GentzenFOLJ(..)
@@ -52,7 +52,7 @@ parseGentzenFOLK = try folParse <|> liftProp
 parseGentzenFOLJ :: Parsec String u [GentzenFOLJ]
 parseGentzenFOLJ = map LJ <$> parseGentzenFOLK
 
-instance ( BooleanLanguage (ClassicalSequentOver lex (Form Bool))
+type LKAdequate lex = ( BooleanLanguage (ClassicalSequentOver lex (Form Bool))
          , BooleanConstLanguage (ClassicalSequentOver lex (Form Bool))
          , IndexedSchemePropLanguage (ClassicalSequentOver lex (Form Bool))
          , IndexedSchemeConstantLanguage (ClassicalSequentOver lex (Term Int))
@@ -62,10 +62,13 @@ instance ( BooleanLanguage (ClassicalSequentOver lex (Form Bool))
          , PrismIndexedConstant (ClassicalSequentLexOver lex) Int
          , PrismStandardVar (ClassicalSequentLexOver lex) Int
          , CopulaSchema (ClassicalSequentOver lex)
+         , Eq (ClassicalSequentOver lex (Form Bool))
          , Schematizable (lex (ClassicalSequentOver lex))
          , FirstOrderLex (lex (ClassicalSequentOver lex))
          , PrismSubstitutionalVariable (ClassicalSequentLexOver lex)
-         ) => CoreInference GentzenFOLK lex (Form Bool) where
+         )
+
+instance LKAdequate lex => CoreInference GentzenFOLK lex (Form Bool) where
          corePremisesOf (LK x) = corePremisesOf x
          corePremisesOf AllL = [SA (phi 1 (taun 1)) :+: GammaV 1 :|-: DeltaV 1]
          corePremisesOf AllR = [ GammaV 1 :|-: DeltaV 1 :-: SS (phi 1 (taun 1))]
@@ -84,21 +87,7 @@ instance ( BooleanLanguage (ClassicalSequentOver lex (Form Bool))
 
 instance SpecifiedUnificationType GentzenFOLK
 
-instance ( BooleanLanguage (ClassicalSequentOver lex (Form Bool))
-         , BooleanConstLanguage (ClassicalSequentOver lex (Form Bool))
-         , IndexedSchemePropLanguage (ClassicalSequentOver lex (Form Bool))
-         , IndexedSchemeConstantLanguage (ClassicalSequentOver lex (Term Int))
-         , QuantLanguage (ClassicalSequentOver lex (Form Bool)) (ClassicalSequentOver lex (Term Int)) 
-         , PolyadicSchematicPredicateLanguage (ClassicalSequentOver lex) (Term Int) (Form Bool)
-         , PrismPolyadicSchematicFunction (ClassicalSequentLexOver lex) Int Int 
-         , PrismIndexedConstant (ClassicalSequentLexOver lex) Int
-         , PrismStandardVar (ClassicalSequentLexOver lex) Int
-         , CopulaSchema (ClassicalSequentOver lex)
-         , Eq (ClassicalSequentOver lex (Form Bool))
-         , Schematizable (lex (ClassicalSequentOver lex))
-         , FirstOrderLex (lex (ClassicalSequentOver lex))
-         , PrismSubstitutionalVariable (ClassicalSequentLexOver lex)
-         ) => CoreInference GentzenFOLJ lex (Form Bool) where
+instance LKAdequate lex => CoreInference GentzenFOLJ lex (Form Bool) where
          corePremisesOf (LJ x) = corePremisesOf x
 
          coreConclusionOf (LJ x) = coreConclusionOf x

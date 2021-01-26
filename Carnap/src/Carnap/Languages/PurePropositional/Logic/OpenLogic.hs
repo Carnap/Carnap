@@ -1,7 +1,7 @@
 {-#LANGUAGE RankNTypes, ScopedTypeVariables, FlexibleContexts, FlexibleInstances, UndecidableInstances, MultiParamTypeClasses #-}
 module Carnap.Languages.PurePropositional.Logic.OpenLogic
-    ( parseOLPPropNK, olpPropLKCalc, olpPropLJCalc, olpPropNKCalc, OLPPropNK()
-    ) where
+    ( parseOpenLogicPropLK, parseOpenLogicPropNK, olpPropLKCalc, olpPropLJCalc, olpPropNKCalc
+    , OpenLogicPropNK(), OpenLogicPropLJ(), OpenLogicPropLK()) where
 
 import Text.Parsec
 import Data.List
@@ -22,7 +22,7 @@ import Carnap.Calculi.Util
 import Control.Lens
 import Carnap.Languages.Util.LanguageClasses
 
-data OLPPropNK = AndI     | AndEL       | AndER
+data OpenLogicPropNK = AndI     | AndEL       | AndER
                | OrIL     | OrIR        | OrE Int | OrELVac Int 
                | OrERVac Int | OrEVac (Maybe Int) 
                | IfI Int  | IfIVac (Maybe Int)  | IfE
@@ -32,7 +32,13 @@ data OLPPropNK = AndI     | AndEL       | AndER
                | Pr 
     deriving Eq
 
-instance Show OLPPropNK where
+data OpenLogicPropLK = GentzenPropLK GentzenPropLK | IffR | IffL1 | IffL2 
+    deriving Eq
+
+newtype OpenLogicPropLJ = LJ OpenLogicPropLK
+    deriving Eq
+
+instance Show OpenLogicPropNK where
     show AndI = "&I"
     show AndEL = "&E"
     show AndER = "&E"
@@ -65,8 +71,17 @@ instance Show OLPPropNK where
     show (As n) = "(" ++ show n ++ ")"
     show Pr = "Pr"
 
-parseOLPPropNK :: Parsec String u [OLPPropNK]
-parseOLPPropNK = parseProp <* spaces <* eof
+instance Show OpenLogicPropLJ where
+    show (LJ x) = show x
+
+instance Show OpenLogicPropLK where
+        show (GentzenPropLK x) = show x
+        show IffR = "↔R"
+        show IffL1 = "↔L"
+        show IffL2 = "↔L"
+
+parseOpenLogicPropNK :: Parsec String u [OpenLogicPropNK]
+parseOpenLogicPropNK = parseProp <* spaces <* eof
     where parseProp = choice . map try $
                         [ stringOpts ["&Intro","/\\Intro", "&I","/\\I"] >> return [AndI]
                         , stringOpts ["&Elim","/\\Elim", "&E","/\\E"] >> return [AndER, AndEL]
@@ -97,6 +112,17 @@ parseOLPPropNK = parseProp <* spaces <* eof
           stringOpts = (choice . map (try . string))
           getLabel = (char '(' *> many1 digit <* char ')') <|> many1 digit
 
+parseOpenLogicPropLK :: Parsec String u [OpenLogicPropLK]
+parseOpenLogicPropLK = try parseGentzen <|> parseIff
+    where parseGentzen = map GentzenPropLK <$> parseGentzenPropLK
+          parseIff = choice . map try $ [ stringOpts ["<->L", "↔L", "<>L"] >> return [IffL1, IffL2]
+                                        , stringOpts ["<->R", "↔R", "<>R"] >> return [IffR]
+                                        ]
+          stringOpts = (choice . map (try . string))
+
+parseOpenLogicPropLJ :: Parsec String u [OpenLogicPropLJ]
+parseOpenLogicPropLJ = map LJ <$> parseOpenLogicPropLK
+
 instance ( BooleanLanguage (ClassicalSequentOver lex (Form Bool))
          , BooleanConstLanguage (ClassicalSequentOver lex (Form Bool))
          , IndexedSchemePropLanguage (ClassicalSequentOver lex (Form Bool))
@@ -104,7 +130,7 @@ instance ( BooleanLanguage (ClassicalSequentOver lex (Form Bool))
          , FirstOrderLex (lex (ClassicalSequentOver lex))
          , Eq (ClassicalSequentOver lex (Form Bool))
          , ReLex lex
-         ) => CoreInference OLPPropNK lex (Form Bool) where
+         ) => CoreInference OpenLogicPropNK lex (Form Bool) where
          coreRuleOf AndI = adjunction
          coreRuleOf AndEL = simplificationVariations !! 0
          coreRuleOf AndER = simplificationVariations !! 1
@@ -132,7 +158,7 @@ instance ( BooleanLanguage (ClassicalSequentOver lex (Form Bool))
          coreRuleOf (IP _) = nonConstructiveFalsumReductioVariations !! 0 
          coreRuleOf (IPVac _) = nonConstructiveFalsumReductioVariations !! 1
 
-instance Inference OLPPropNK PurePropLexicon (Form Bool) where
+instance Inference OpenLogicPropNK PurePropLexicon (Form Bool) where
         ruleOf x = coreRuleOf x
 
 instance ( BooleanLanguage (ClassicalSequentOver lex (Form Bool))
@@ -147,7 +173,7 @@ instance ( BooleanLanguage (ClassicalSequentOver lex (Form Bool))
          , Eq r
          , ReLex lex
          , AssumptionNumbers r
-         ) => StructuralInference OLPPropNK lex (ProofTree r lex (Form Bool)) where
+         ) => StructuralInference OpenLogicPropNK lex (ProofTree r lex (Form Bool)) where
     structuralRestriction pt _ (IfI n) = Just (usesAssumption n pt assump `andFurtherRestriction` exhaustsAssumptions n pt assump)
         where assump = SS . liftToSequent $ phin 1
     structuralRestriction pt _ (IfIVac (Just n)) = Just (usesAssumption n pt (SS . liftToSequent $ phin 1))
@@ -184,9 +210,9 @@ instance ( BooleanLanguage (ClassicalSequentOver lex (Form Bool))
         where assump n = SS . liftToSequent $ phin n
     structuralRestriction pt _ r = Nothing
 
-instance StructuralOverride OLPPropNK (ProofTree r PurePropLexicon (Form Bool))
+instance StructuralOverride OpenLogicPropNK (ProofTree r PurePropLexicon (Form Bool))
 
-instance AssumptionNumbers OLPPropNK where
+instance AssumptionNumbers OpenLogicPropNK where
         introducesAssumptions (As n) = [n]
         introducesAssumptions Pr = [-1] 
         --XXX: premises introduce assumptions that can't be discharged.
@@ -208,21 +234,69 @@ instance AssumptionNumbers OLPPropNK where
         dischargesAssumptions (IffIVac (Just n)) = [n]
         dischargesAssumptions _ = []
 
-olpPropNKCalc :: TableauCalc PurePropLexicon (Form Bool) OLPPropNK
+instance ( BooleanLanguage (ClassicalSequentOver lex (Form Bool))
+         , BooleanConstLanguage (ClassicalSequentOver lex (Form Bool))
+         , IndexedSchemePropLanguage (ClassicalSequentOver lex (Form Bool))
+         , PrismSubstitutionalVariable lex
+         , FirstOrderLex (lex (ClassicalSequentOver lex))
+         , Eq (ClassicalSequentOver lex (Form Bool))
+         , ReLex lex
+         ) => CoreInference OpenLogicPropLK lex (Form Bool) where
+         corePremisesOf (GentzenPropLK x) = corePremisesOf x
+         corePremisesOf IffR = [ SA (phin 1) :+: GammaV 1 :|-: DeltaV 1 :-: SS (phin 2)
+                               , SA (phin 2) :+: GammaV 1 :|-: DeltaV 1 :-: SS (phin 1)
+                               ]
+         corePremisesOf IffL1 = [ SA (phin 1) :+: SA (phin 2) :+: GammaV 1 :|-: DeltaV 1 
+                                , GammaV 1 :|-: DeltaV 1 :-: SS (phin 1) 
+                                ]
+         corePremisesOf IffL2 = [ SA (phin 1) :+: SA (phin 2) :+: GammaV 1 :|-: DeltaV 1 
+                                , GammaV 1 :|-: DeltaV 1 :-: SS (phin 2) 
+                                ]
+
+         coreConclusionOf (GentzenPropLK x) = coreConclusionOf x
+         coreConclusionOf IffR = GammaV 1 :|-: DeltaV 1 :-: SS (phin 1 .<=>. phin 2)
+         coreConclusionOf IffL1 = SA (phin 1 .<=>. phin 2) :+: GammaV 1 :|-: DeltaV 1 
+         coreConclusionOf IffL2 = SA (phin 1 .<=>. phin 2) :+: GammaV 1 :|-: DeltaV 1 
+
+instance ( BooleanLanguage (ClassicalSequentOver lex (Form Bool))
+         , BooleanConstLanguage (ClassicalSequentOver lex (Form Bool))
+         , IndexedSchemePropLanguage (ClassicalSequentOver lex (Form Bool))
+         , PrismSubstitutionalVariable lex
+         , FirstOrderLex (lex (ClassicalSequentOver lex))
+         , Eq (ClassicalSequentOver lex (Form Bool))
+         , ReLex lex
+         ) => CoreInference OpenLogicPropLJ lex (Form Bool) where
+         corePremisesOf (LJ x) = corePremisesOf x
+
+         coreConclusionOf (LJ x) = coreConclusionOf x
+
+         coreRestriction x = Just $ \sub -> monoConsequent (applySub sub $ coreConclusionOf x)
+             where monoConsequent :: forall lex . Eq (ClassicalSequentOver lex (Form Bool)) => ClassicalSequentOver lex (Sequent (Form Bool)) -> Maybe String
+                   monoConsequent (_:|-:x)= case nub (toListOf concretes x :: [ClassicalSequentOver lex (Form Bool)]) of
+                                              _:_:xs -> Just "LJ requires that the right hand side of each sequent contain at most one formula"
+                                              _ -> Nothing
+
+instance SpecifiedUnificationType OpenLogicPropLJ
+
+instance SpecifiedUnificationType OpenLogicPropLK
+
+olpPropNKCalc :: TableauCalc PurePropLexicon (Form Bool) OpenLogicPropNK
 olpPropNKCalc = mkTBCalc
     { tbParseForm = purePropFormulaParser thomasBolducZach2019Opts
-    , tbParseRule = parseOLPPropNK
+    , tbParseRule = parseOpenLogicPropNK
     , tbNotation = dropOuterParens
     }
 
-olpPropLKCalc :: TableauCalc PurePropLexicon (Form Bool) GentzenPropLK
+olpPropLKCalc :: TableauCalc PurePropLexicon (Form Bool) OpenLogicPropLK
 olpPropLKCalc = gentzenPropLKCalc 
     { tbParseForm = purePropFormulaParser thomasBolducZach2019Opts 
+    , tbParseRule = parseOpenLogicPropLK
     , tbNotation = filter (/= '⊤') . dropOuterParens
     }
 
-olpPropLJCalc :: TableauCalc PurePropLexicon (Form Bool) GentzenPropLJ
+olpPropLJCalc :: TableauCalc PurePropLexicon (Form Bool) OpenLogicPropLJ
 olpPropLJCalc = gentzenPropLJCalc 
     { tbParseForm = purePropFormulaParser thomasBolducZach2019Opts 
+    , tbParseRule = parseOpenLogicPropLJ
     , tbNotation = filter (/= '⊤') . dropOuterParens
     }
