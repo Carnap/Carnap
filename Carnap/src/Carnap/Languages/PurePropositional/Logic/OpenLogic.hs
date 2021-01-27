@@ -246,10 +246,10 @@ instance ( BooleanLanguage (ClassicalSequentOver lex (Form Bool))
          corePremisesOf IffR = [ SA (phin 1) :+: GammaV 1 :|-: DeltaV 1 :-: SS (phin 2)
                                , SA (phin 2) :+: GammaV 1 :|-: DeltaV 1 :-: SS (phin 1)
                                ]
-         corePremisesOf IffL1 = [ SA (phin 1) :+: SA (phin 2) :+: GammaV 1 :|-: DeltaV 1 
+         corePremisesOf IffL1 = [ SA (phin 2) :+: GammaV 1 :|-: DeltaV 1 
                                 , GammaV 1 :|-: DeltaV 1 :-: SS (phin 1) 
                                 ]
-         corePremisesOf IffL2 = [ SA (phin 1) :+: SA (phin 2) :+: GammaV 1 :|-: DeltaV 1 
+         corePremisesOf IffL2 = [ SA (phin 1) :+: GammaV 1 :|-: DeltaV 1 
                                 , GammaV 1 :|-: DeltaV 1 :-: SS (phin 2) 
                                 ]
 
