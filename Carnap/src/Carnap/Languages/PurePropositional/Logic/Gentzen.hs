@@ -108,7 +108,7 @@ parseGentzenPropLK =  do r <- choice (map (try . string) [ "Ax", "Cut"
                                                          ,"∨R","vR","\\/R"
                                                          , "→L","->L"
                                                          , "→R","->R"
-                                                         , "¬R","~L","-L"
+                                                         , "¬L","~L","-L"
                                                          , "¬R","~R","-R"
                                                          ])
                          return $ case r of
