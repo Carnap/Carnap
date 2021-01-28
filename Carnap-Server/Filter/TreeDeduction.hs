@@ -33,7 +33,9 @@ activate cls extra chunk
                   ]
           template myOpts = exerciseWrapper (toList myOpts) (numof h) $ Div
                                 ("",[], map toDataCarnap $ toList myOpts)
-                                [Plain [Str (unlines' t)]]
+                                [Plain [RawInline "html" (unlines' t)]]
+                                --XXX: need raw inline rather than Str
+                                --because of pandoc issue 5469
 
 toPlayground :: [Text] -> [(Text, Text)] -> Text -> Block
 toPlayground cls extra contents
@@ -51,5 +53,5 @@ toPlayground cls extra contents
                                     [Str "Playground"]
                                 ]
                             , Div ("",[], map toDataCarnap $ toList myOpts)
-                                            [Plain [Str (unlines' $ formatChunk contents)]]
+                                            [Plain [RawInline "html" (unlines' $ formatChunk contents)]]
                             ]
