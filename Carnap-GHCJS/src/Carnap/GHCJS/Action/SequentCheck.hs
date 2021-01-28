@@ -37,6 +37,7 @@ import Carnap.Languages.PurePropositional.Logic.Gentzen
 import Carnap.Languages.PurePropositional.Logic
 import Carnap.Languages.PureFirstOrder.Logic
 import Carnap.Languages.PureFirstOrder.Logic.Gentzen
+import Carnap.Languages.PureFirstOrder.Logic.IchikawaJenkins
 import Carnap.GHCJS.SharedTypes
 import Carnap.GHCJS.Util.ProofJS
 
@@ -46,6 +47,7 @@ sequentCheckAction = do
                initializeCallback "checkPropSequent" (checkSequent gentzenPropLKCalc Nothing)
                initializeCallback "checkFOLSequent" (checkSequent gentzenFOLKCalc Nothing)
                initializeCallback "checkIchikawaJenkinsSLTableau" (checkSequent ichikawaJenkinsSLTableauCalc Nothing)
+               initializeCallback "checkIchikawaJenkinsQLTableau" (checkSequent ichikawaJenkinsQLTableauCalc Nothing)
                initializeCallback "checkSequentInfo" checkFullInfo
                initElements getCheckers activateChecker
                return ()

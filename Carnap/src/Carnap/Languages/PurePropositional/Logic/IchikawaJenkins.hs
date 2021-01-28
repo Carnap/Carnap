@@ -1,10 +1,12 @@
-{-#LANGUAGE RankNTypes, ScopedTypeVariables, FlexibleContexts, FlexibleInstances, MultiParamTypeClasses #-}
+{-#LANGUAGE RankNTypes, ScopedTypeVariables, FlexibleContexts, UndecidableInstances, FlexibleInstances, MultiParamTypeClasses #-}
 module Carnap.Languages.PurePropositional.Logic.IchikawaJenkins
-    ( parseIchikawaJenkinsSL, IchikawaJenkinsSL,  ichikawaJenkinsSLCalc, ichikawaJenkinsSLTableauCalc, IchikawaJenkinsSLTableaux(..), IchikawaJenkinsSL(..)) where
+    ( parseIchikawaJenkinsSL, parseIchikawaJenkinsSLTableaux , IchikawaJenkinsSL
+    ,  ichikawaJenkinsSLCalc, ichikawaJenkinsSLTableauCalc, IchikawaJenkinsSLTableaux(..), IchikawaJenkinsSL(..)) where
 
 import Data.Map as M (lookup, Map)
 import Text.Parsec
-import Carnap.Core.Data.Types (Form)
+import Carnap.Core.Data.Types (Form, FirstOrderLex)
+import Carnap.Core.Data.Optics
 import Carnap.Core.Unification.Unification
 import Carnap.Languages.PurePropositional.Syntax
 import Carnap.Languages.PurePropositional.Parser
@@ -182,7 +184,15 @@ parseIchikawaJenkinsSLTableaux = do r <- choice (map (try . string) ["&","¬&","
                                          | r `elem` [ "St" ] -> [Struct]
                                          | r `elem` [ "Lit" ] -> [Lit]
 
-instance CoreInference IchikawaJenkinsSLTableaux PurePropLexicon (Form Bool) where
+instance ( BooleanConstLanguage (ClassicalSequentOver lex (Form Bool))
+         , PrismBooleanConnLex (ClassicalSequentLexOver lex) Bool
+         , IndexedSchemePropLanguage (ClassicalSequentOver lex (Form Bool))
+         , PrismSubstitutionalVariable lex
+         , FirstOrderLex (lex (ClassicalSequentOver lex))
+         , Eq (ClassicalSequentOver lex (Form Bool))
+         , HasLiterals (ClassicalSequentLexOver lex) Bool
+         , ReLex lex
+         ) => CoreInference IchikawaJenkinsSLTableaux lex (Form Bool) where
         corePremisesOf Conj = [ GammaV 1 :+: SA (phin 1) :+: SA (phin 2) :|-: Bot]
         corePremisesOf NConj = [ GammaV 1 :+: SA (lneg $ phin 1)  :|-: Bot
                                , GammaV 1 :+:  SA (lneg $ phin 2)  :|-: Bot
