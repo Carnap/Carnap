@@ -118,6 +118,8 @@ instance CoreInference IchikawaJenkinsQLTableaux PureLexiconFOL (Form Bool) wher
         coreConclusionOf NExist = GammaV 1 :+: SA (lneg $ lsome "v" $ \x -> phi 1 x) :|-: Bot
 
         coreRestriction (SL x) = coreRestriction x
+        coreRestriction Exist = Just (eigenConstraint tau (SS (lsome "v" $ \x -> phi 1 x)) (fogamma 1))
+        coreRestriction NForall = Just (eigenConstraint tau (SS (lneg $ lall "v" $ \x -> phi 1 x)) (fogamma 1))
         coreRestriction _ = Nothing
 
 instance SpecifiedUnificationType IchikawaJenkinsQLTableaux where
