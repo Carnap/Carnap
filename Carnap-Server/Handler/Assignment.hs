@@ -46,7 +46,7 @@ getCourseAssignmentStateR coursetitle filename = do
         mstate <- runDB $ getBy (UniqueAssignmentState uid aid)
         case mstate of
             Just (Entity _ state) -> returnJson (assignmentStateValue state)
-            Nothing -> returnJson ("" :: Text)
+            Nothing -> returnJson (mempty :: Object)
 
 postCourseAssignmentR :: Text -> Text -> Handler Html
 postCourseAssignmentR coursetitle filename = do

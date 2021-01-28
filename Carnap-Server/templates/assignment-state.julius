@@ -17,9 +17,10 @@ var CarnapServerAPI = {
 }
 
 CarnapServerAPI.putAssignmentState = async function (ns, val) {
-    if (ns == "assignmentKey") reject("don't overwrite assignmentKey")
+    if (ns == "assignmentKey") reject("assignmentKey is a reserved field")
     await CarnapServerAPI.getAssignmentState() /* don't accidentally clobber unretrieved old state */
     CarnapServerAPI._state[ns] = val
+    CarnapServerAPI._state.assignmentKey = #{show key}
     await new Promise((resolve,reject) => jQuery.ajax({
         url: '@{CourseAssignmentStateR coursetitle filename}',
         type: 'PUT',
@@ -46,7 +47,6 @@ CarnapServerAPI.getAssignmentState = async function () {
                 console.log("received assignment state: " + JSON.stringify(data))
                 CarnapServerAPI.initialized = true
                 CarnapServerAPI._state = data
-                data.assignmentKey = #{show key}
                 resolve(data)
             },
             error: function(data) {
