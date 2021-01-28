@@ -9,6 +9,7 @@ import Carnap.Core.Unification.Unification
 import Carnap.Core.Data.Types
 import Carnap.Core.Data.Optics
 import Carnap.Core.Data.Util
+import Carnap.Languages.ClassicalSequent.Syntax
 import Carnap.Languages.PurePropositional.Syntax
 import Carnap.Languages.PurePropositional.Util
 import Carnap.Languages.PureFirstOrder.Syntax
@@ -347,18 +348,33 @@ instance ( FirstOrderLex (b (FixLang (OpenLexiconPFOL b)))
               terms = genChildren
 
 instance HasLiterals (OpenLexiconPFOL a) Bool where
-    isAtom a | (a ^? _propIndex) /= Nothing = True
+    isAtom a | not (null (a ^? _propIndex)) = True
              | otherwise = withHead (\h -> not . null $ h ^? _predIdx') a
         where _predIdx' :: Typeable ret => Prism' (OpenLanguagePFOL b ret) (Int, Arity (Term Int) (Form Bool) ret) 
               _predIdx' = _predIdx
 
+instance ReLex a => HasLiterals (ClassicalSequentLexOver (OpenLexiconPFOL a)) Bool where
+    isAtom a | not (null (a ^? _propIndex)) = True
+             | otherwise = withHead (\h -> not . null $ h ^? _predIdx') a
+        where _predIdx' :: (ReLex b, Typeable ret) => Prism' (ClassicalSequentOver (OpenLexiconPFOL b) ret) (Int, Arity (Term Int) (Form Bool) ret) 
+              _predIdx' = _predIdx
+
 instance {-# OVERLAPS #-} HasLiterals PureLexiconFOL Bool where
-    isAtom a | (a ^? _propIndex) /= Nothing = True
-             | (a ^? binaryOpPrism _termEq') /= Nothing = True
+    isAtom a | not (null (a ^? _propIndex)) = True
+             | not (null (a ^? binaryOpPrism _termEq')) = True
              | otherwise = withHead (\h -> not . null $ h ^? _predIdx') a
         where _predIdx' :: Typeable ret => Prism' (PureLanguageFOL ret) (Int, Arity (Term Int) (Form Bool) ret) 
               _predIdx' = _predIdx
               _termEq' :: Prism' (PureLanguageFOL (Term Int -> Term Int -> Form Bool)) ()
+              _termEq' = _termEq
+
+instance {-# OVERLAPS #-} HasLiterals (ClassicalSequentLexOver PureLexiconFOL) Bool where
+    isAtom a | not (null (a ^? _propIndex)) = True
+             | not (null (a ^? binaryOpPrism _termEq')) = True
+             | otherwise = withHead (\h -> not . null $ h ^? _predIdx') a
+        where _predIdx' :: Typeable ret => Prism' (ClassicalSequentOver PureLexiconFOL ret) (Int, Arity (Term Int) (Form Bool) ret) 
+              _predIdx' = _predIdx
+              _termEq' :: Prism' (ClassicalSequentOver PureLexiconFOL (Term Int -> Term Int -> Form Bool)) ()
               _termEq' = _termEq
 
 instance FirstOrderLex (b (FixLang (OpenLexiconPFOL b))) => ToSchema (OpenLexiconPFOL b) (Term Int) where

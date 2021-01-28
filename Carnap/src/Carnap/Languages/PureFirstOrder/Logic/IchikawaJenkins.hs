@@ -1,5 +1,5 @@
 {-#LANGUAGE  TypeOperators, FlexibleContexts,  FlexibleInstances, MultiParamTypeClasses #-}
-module Carnap.Languages.PureFirstOrder.Logic.IchikawaJenkins (ichikawaJenkinsQLCalc, parseIchikawaJenkinsQL) where
+module Carnap.Languages.PureFirstOrder.Logic.IchikawaJenkins (ichikawaJenkinsQLTableauCalc,ichikawaJenkinsQLCalc, parseIchikawaJenkinsQL) where
 
 import Data.Map as M (lookup, Map,empty)
 import Text.Parsec
@@ -8,6 +8,8 @@ import Carnap.Languages.PureFirstOrder.Syntax
 import Carnap.Languages.PureFirstOrder.Parser
 import Carnap.Languages.PureFirstOrder.Logic.Magnus
 import Carnap.Languages.PurePropositional.Logic.IchikawaJenkins
+import Carnap.Calculi.Util
+import Carnap.Calculi.Tableau.Data
 import Carnap.Calculi.NaturalDeduction.Syntax
 import Carnap.Calculi.NaturalDeduction.Parser
 import Carnap.Calculi.NaturalDeduction.Checker (hoProcessLineFitchMemo, hoProcessLineFitch)
@@ -47,7 +49,6 @@ instance Inference IchikawaJenkinsQL PureLexiconFOL (Form Bool) where
 
     isPremise (IJSL x) = isPremise x
     isPremise (QL x) = isPremise x
-    isPremise _ = False
 
 parseIchikawaJenkinsQL rtc = try quantRule <|> liftProp
     where liftProp = do r <- parseIchikawaJenkinsSL (RuntimeNaturalDeductionConfig mempty mempty)
@@ -76,4 +77,54 @@ ichikawaJenkinsQLCalc = mkNDCalc
     , ndParseSeq = parseSeqOver magnusFOLFormulaParser
     , ndParseForm = magnusFOLFormulaParser
     , ndNotation = ndNotation ichikawaJenkinsSLCalc
+    }
+
+-------------------------
+--  Semantic Tableaux  --
+-------------------------
+
+data IchikawaJenkinsQLTableaux = SL IchikawaJenkinsSLTableaux | Exist | NExist | Forall |  NForall
+    deriving Eq
+
+instance Show IchikawaJenkinsQLTableaux where
+    show (SL x) = show x
+    show Exist = "∃"
+    show NExist = "¬∃"
+    show Forall = "∀"
+    show NForall = "¬∀"
+
+parseIchikawaJenkinsQLTableaux :: Parsec String u [IchikawaJenkinsQLTableaux]
+parseIchikawaJenkinsQLTableaux = propRule <|> quantRule
+    where propRule = map SL <$> parseIchikawaJenkinsSLTableaux
+          quantRule = choice . map try $
+                        [ stringOpts ["∀","A"] >> return [Forall]
+                        , stringOpts ["-∀", "~∀", "¬∀", "-A", "~A", "¬A"] >> return [NForall]
+                        , stringOpts ["∃","E"] >> return [Exist]
+                        , stringOpts ["-E","~E","¬E","-∃","~∃","¬∃"] >> return [NExist]
+                        ]
+          stringOpts = choice . map (try . string)
+
+instance CoreInference IchikawaJenkinsQLTableaux PureLexiconFOL (Form Bool) where
+        corePremisesOf (SL x) = corePremisesOf x
+        corePremisesOf Forall = [ GammaV 1 :+: SA (lall "v" $ \x -> phi 1 x) :+: SA (phi 1 tau) :|-: Bot]
+        corePremisesOf NForall = [ GammaV 1 :+: SA (lneg $ phi 1 tau) :|-: Bot]
+        corePremisesOf Exist = [ GammaV 1 :+: SA (phi 1 tau) :|-: Bot]
+        corePremisesOf NExist = [ GammaV 1 :+: SA (lneg $ lsome "v" $ \x -> phi 1 x) :+: SA (lneg $ phi 1 tau) :|-: Bot]
+
+        coreConclusionOf (SL x) = coreConclusionOf x
+        coreConclusionOf Forall = GammaV 1 :+: SA (lall "v" $ \x -> phi 1 x) :|-: Bot
+        coreConclusionOf NForall = GammaV 1 :+: SA (lneg $ lall "v" $ \x -> phi 1 x) :|-: Bot
+        coreConclusionOf Exist = GammaV 1 :+: SA (lsome "v" $ \x -> phi 1 x) :|-: Bot
+        coreConclusionOf NExist = GammaV 1 :+: SA (lneg $ lsome "v" $ \x -> phi 1 x) :|-: Bot
+
+        coreRestriction (SL x) = coreRestriction x
+        coreRestriction _ = Nothing
+
+instance SpecifiedUnificationType IchikawaJenkinsQLTableaux where
+    unificationType (SL Struct) = ACUIUnification
+    unificationType _ = AssociativeUnification
+
+ichikawaJenkinsQLTableauCalc = mkTBCalc
+    { tbParseForm = magnusFOLFormulaParser
+    , tbParseRule = parseIchikawaJenkinsQLTableaux
     }
