@@ -54,7 +54,7 @@ toDataCarnap :: (Text, Text) -> (Text, Text)
 toDataCarnap (x, y) = (T.concat ["data-carnap-", x], y)
 
 exerciseWrapper :: [(Text, Text)] -> Text -> Block -> Block
-exerciseWrapper opts label content = Div (T.concat ["exercise-", label], ["exercise"],[]) (spans:[content])
+exerciseWrapper opts label content = Div (T.concat ["exercise-", label], ["exercise"],[("data-carnap-label",label)]) (spans:[content])
     where spans = case lookup "points" opts of
                       Nothing -> Plain [Span ("",[],[]) [Str label]]
                       Just pts -> Plain [Span ("",[],[]) [Str label], Span ("",[],[]) [Str $ T.concat [pts, " pts"]] ]
