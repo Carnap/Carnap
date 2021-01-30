@@ -17,8 +17,9 @@
                 <div.card-block.text-center>
                     <span style="font-size:64pt; color:gray">
                         <span#score-numerator>-#
-                        <span>/#
-                        <span#score-denominator>#{courseTotalPoints course}
+                        $if courseTotalPoints course > 0
+                            <span>/#
+                            <span#score-denominator>#{courseTotalPoints course}
     <div>
     <h3 style="padding-top:10pt"> Completed Problems
     <div.card>
