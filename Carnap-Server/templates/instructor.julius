@@ -1,3 +1,29 @@
+function sortByCol(elt,num) {
+    let table = elt.closest("table")
+    let body = table.querySelector("tbody")
+    let head = table.querySelector("thead")
+    let rows = Array.from(body.children)
+    let headers = head.getElementsByTagName("th")
+    headers[num].upsorted = (headers[num].upsorted * -1) || 1
+    let upsort = headers[num].upsorted
+    let sortedRows = rows.sort((a,b) => {
+        let val1 = a.children[num].innerHTML.split('.')
+        let val2 = b.children[num].innerHTML.split('.')
+        if (val1 == "No Due Date") return 1 * upsort
+        if (val2 == "No Due Date") return -1 * upsort
+        for (let idx = 0; idx < Math.min(val1.length,val2.length); idx++) {
+            if (val1[idx].length > val2[idx].length) { return 1 * upsort}
+            else if (val2[idx].length > val1[idx].length) { return -1 * upsort}
+            else if (val1[idx] > val2[idx]) { return 1 * upsort }
+            else if (val2[idx] > val1[idx]) { return -1 * upsort }
+        }
+        if (val1.length > val2.length) { return -1 * upsort }
+        else if (val2.length > val1.length) { return 1 * upsort }
+        return 0
+    })
+    sortedRows.forEach(el => body.appendChild(el))
+}
+
 function submitAddInstructor(elt,cid) {
     var form = elt.form
     $(form).children("input[name=f1]").val(cid);
@@ -655,8 +681,15 @@ $(".async").each((_,elt) => elt.update = function (callback) {
     };
 });
 
+
 $("textarea").addClass("form-control")
 
 $(".scrollbox").scroll(scrollHandler);
 
 $(".scrollbox").trigger("scroll")
+
+$(document).ready(_ => {
+    Array.from(document.getElementsByClassName("assignment")).forEach(table => {
+        sortByCol(table,1)
+    })
+})

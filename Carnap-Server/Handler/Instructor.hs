@@ -932,10 +932,14 @@ classWidget instructors classent autoreg = do
                     ^{deleteTokenModal}
                     <h2>Assignments
                     <div.scrollbox>
-                        <table.table.table-striped>
+                        <table.assignment.table.table-striped>
                             <thead>
-                                <th> Assignment
-                                <th> Due Date
+                                <th style="cursor:pointer" onclick="sortByCol(this,0)">
+                                    Assignment
+                                    <i class="fa fa-sort" aria-hidden="true"></i>
+                                <th style="cursor:pointer" onclick="sortByCol(this,1)">
+                                    Due Date
+                                    <i class="fa fa-sort" aria-hidden="true"></i>
                             <tbody>
                                 $maybe probs <- mprobs
                                     $forall (set,due) <- Data.IntMap.toList probs

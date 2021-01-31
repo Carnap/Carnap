@@ -12,14 +12,14 @@ function deleteRule (name) {
         error: function(data) {
             window.alert("Error, couldn't delete the rule" + name)
             },
-        });
-    };
+    });
+};
 
 function tryDeleteRule (name) {
     if (confirm("Permanently delete the rule " + name + "?")) {
         deleteRule(name);
-        }
     }
+}
 
 function sortUsersByCol(num) {
     let body = document.getElementById("problem-table-body")
