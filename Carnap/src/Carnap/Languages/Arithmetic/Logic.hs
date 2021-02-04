@@ -8,10 +8,12 @@ import Carnap.Calculi.NaturalDeduction.Syntax
 import Carnap.Languages.ClassicalSequent.Syntax
 import Carnap.Languages.Arithmetic.Syntax
 import Carnap.Languages.Arithmetic.Logic.OpenLogic
+import Carnap.Languages.Util.LanguageClasses
 
 ofArithmeticTreeSys :: (forall r lex . 
                     ( Show r
                     , SupportsND r (OpenLexiconArith lex) (Form Bool)
+                    , Incrementable (OpenLexiconArith lex) (Term Int)
                     , StructuralInference r (OpenLexiconArith lex) (ProofTree r (OpenLexiconArith lex) (Form Bool))
                     , StructuralOverride r (ProofTree r (OpenLexiconArith lex) (Form Bool))
                  ) => 
