@@ -86,22 +86,21 @@ documentsList title documents = do
 -- XXX DRY up the boilplate that is shared by getDocumentDownload
 getDocumentR :: Text -> Text -> Handler Html
 getDocumentR ident title = do (Entity key doc, path, creatorid) <- retrieveDoc ident title
+                              muid <- maybeAuthId
+                              mud <- maybeUserData
+                              let isNotInstructor = null (mud >>= userDataInstructorId . entityVal)
                               case documentScope doc of
-                                 Private -> do
-                                   muid <- maybeAuthId
-                                   case muid of
-                                       Nothing -> setMessage "shared file for this document not found" >> notFound
-                                       Just uid' | creatorid /= uid' -> setMessage "shared file for this document not found" >> notFound
-                                                 | takeExtension path == ".css" -> serveDoc asCss doc path creatorid >> notFound
-                                                 | takeExtension path == ".js" -> serveDoc asCss doc path creatorid >> notFound
-                                                 | otherwise -> returnFile path
-                                                --serveDoc bypasses the
-                                                --remaining handlers, so the
-                                                --not-found here is
-                                                --a placeholder that is never
-                                                --reached
-                                 _ | takeExtension path == ".css" -> serveDoc asCss doc path creatorid >> notFound
-                                   | takeExtension path == ".js" -> serveDoc asJs doc path creatorid >> notFound
+                                --serveDoc bypasses the remaining handlers, so the not-found here is a placeholder that is never reached
+                                 Private | Just creatorid /= muid -> setMessage "shared file for this document not found" >> notFound
+                                 InstructorsOnly | isNotInstructor -> setMessage "shared file for this document not found" >> notFound
+                                 _ | takeExtension path == ".css"  -> serveDoc asCss doc path creatorid >> notFound
+                                   | takeExtension path == ".js"   -> serveDoc asCss doc path creatorid >> notFound
+                                   | takeExtension path == ".png"  -> sendFile typePng path >> notFound
+                                   | takeExtension path == ".jpg"  -> sendFile typeJpeg path >> notFound
+                                   | takeExtension path == ".jpeg" -> sendFile typeJpeg path >> notFound
+                                   | takeExtension path == ".gif"  -> sendFile typeGif path >> notFound
+                                   | takeExtension path == ".svg"  -> sendFile typeSvg path >> notFound
+                                   | takeExtension path == ".pdf"  -> asFile doc path >> notFound
                                    | otherwise -> returnFile path
 
     where returnFile path = do

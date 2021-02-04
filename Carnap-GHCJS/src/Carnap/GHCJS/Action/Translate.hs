@@ -3,12 +3,13 @@ module Carnap.GHCJS.Action.Translate (translateAction) where
 
 import Lib
 import Lib.FormulaTests
+import Carnap.Calculi.Tableau.Data
 import Carnap.Calculi.NaturalDeduction.Syntax (NaturalDeductionCalc(..))
 import Carnap.Core.Data.Types (FixLang, Form, Term, BoundVars, FirstOrderLex)
 import Carnap.Languages.PurePropositional.Logic (ofPropSys)
 import Carnap.Languages.ModalPropositional.Logic (ofModalPropSys)
 import Carnap.Languages.PureSecondOrder.Logic (ofSecondOrderSys) 
-import Carnap.Languages.SetTheory.Logic (ofSetTheorySys)
+import Carnap.Languages.SetTheory.Logic (ofSetTheorySys, ofSetTheoryTreeSys)
 import Carnap.Languages.PureFirstOrder.Syntax (PureFirstOrderLexWith)
 import Carnap.Languages.PureFirstOrder.Logic (ofFOLSys)
 import Carnap.Languages.DefiniteDescription.Logic.Gamut
@@ -47,16 +48,18 @@ activateTranslate w (Just (i,o,opts)) = do
         case (M.lookup "transtype" opts, M.lookup "system" opts) of
             (Just "prop", mparser) -> activateWith formParser propChecker (propTests testlist)
                 where formParser = maybe (purePropFormulaParser standardLetters) id (mparser >>= ofPropSys ndParseForm)
-            (Just "first-order", mparser) -> activateWith formParser folChecker (folTests testlist)
-                where formParser =  maybe folFormulaParser id (mparser >>= ofFOLSys ndParseForm)
+            (Just "first-order", mparser) -> maybe noSystem id $ ((\it -> activateWith (ndParseForm it) folChecker noTests) `ofSetTheorySys` sys)
+                                                         `mplus` ((\it -> activateWith (tbParseForm it) folChecker noTests) `ofSetTheoryTreeSys` sys)
+                                                         `mplus` Just (activateWith formParser folChecker (folTests testlist))
+                where formParser = maybe folFormulaParser id (mparser >>= ofFOLSys ndParseForm)
             (Just "description", mparser) -> activateWith formParser descChecker (folTests testlist)
                 where formParser = maybe descFormulaParser id (mparser >>= ofDefiniteDescSys ndParseForm)
-            (Just "exact", mparser) -> maybe noSystem id $  ((\it -> activateWith (ndParseForm it) exactChecker (propTests testlist)) `ofPropSys` sys)
-                                                    `mplus` ((\it -> activateWith (ndParseForm it) exactChecker (folTests testlist)) `ofFOLSys` sys)
-                                                    `mplus` ((\it -> activateWith (ndParseForm it) exactChecker (folTests testlist)) `ofDefiniteDescSys` sys)
-                                                    `mplus` ((\it -> activateWith (ndParseForm it) exactChecker noTests) `ofSecondOrderSys` sys)
-                                                    `mplus` ((\it -> activateWith (ndParseForm it) exactChecker noTests) `ofSetTheorySys` sys)
-                                                    `mplus` ((\it -> activateWith (ndParseForm it) exactChecker noTests) `ofModalPropSys` sys)
+            (Just "exact", mparser) -> maybe noSystem id $ ((\it -> activateWith (ndParseForm it) exactChecker (propTests testlist)) `ofPropSys` sys)
+                                                   `mplus` ((\it -> activateWith (ndParseForm it) exactChecker (folTests testlist)) `ofFOLSys` sys)
+                                                   `mplus` ((\it -> activateWith (ndParseForm it) exactChecker (folTests testlist)) `ofDefiniteDescSys` sys)
+                                                   `mplus` ((\it -> activateWith (ndParseForm it) exactChecker noTests) `ofSecondOrderSys` sys)
+                                                   `mplus` ((\it -> activateWith (ndParseForm it) exactChecker noTests) `ofSetTheorySys` sys)
+                                                   `mplus` ((\it -> activateWith (ndParseForm it) exactChecker noTests) `ofModalPropSys` sys)
             _ -> return ()
     where testlist = case M.lookup "tests" opts of Just s -> words s; Nothing -> []
           noTests _ = Nothing

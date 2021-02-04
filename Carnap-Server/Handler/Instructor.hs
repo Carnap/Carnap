@@ -19,6 +19,7 @@ import Data.Time.Zones.All
 import qualified Data.IntMap (insert,fromList,toList,delete)
 import qualified Data.Map as M
 import qualified Data.Text as T
+import System.FilePath (takeExtension)
 import System.Directory (removeFile, doesFileExist, createDirectoryIfMissing)
 
 putInstructorR :: Text -> Handler Value
@@ -547,7 +548,10 @@ uploadAssignmentForm classes docs extra = do
                 |]
             return (theRes,widget)
     where classnames = map (\theclass -> (courseTitle . entityVal $ theclass, theclass)) classes
-          docnames = map (\thedoc -> (documentFilename . entityVal $ thedoc, thedoc)) docs
+          assignableDocs = filter isAssignable docs
+          isAssignable thedoc = let extension =  takeExtension . unpack . documentFilename . entityVal $ thedoc 
+                                    in not (extension `elem` [".css",".js",".png",".jpg",".jpeg",".gif",".svg",".pdf"])
+          docnames = map (\thedoc -> (documentFilename . entityVal $ thedoc, thedoc)) assignableDocs
 
 updateAssignmentForm
     :: Markup

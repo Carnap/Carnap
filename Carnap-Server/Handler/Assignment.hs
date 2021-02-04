@@ -61,7 +61,6 @@ postCourseAssignmentR coursetitle filename = do
                                             Nothing -> $logWarn "couldn't insert access token. Double POST?"
                                             _ -> return ()
                                      setMessage $ "Access Granted"
-                                     return ()
                 in case assignmentMetadataAvailability val of
                         Just restrict | password == availabilityPassword restrict -> insertToken
                         _ -> setMessage $ "Incorrect Access Key"
