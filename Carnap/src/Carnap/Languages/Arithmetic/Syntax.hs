@@ -25,15 +25,31 @@ type ArithSchematicPred = SchematicIntPred Bool Int
 
 type ArithOps = ElementaryArithmeticOperations Int
 
-type OpenLexiconArith a = CoreLexicon :|: Predicate ArithLessThan :|: Predicate ArithEq 
+type OpenLexiconArith a = CoreLexicon :|: Predicate ArithLessThan :|: Predicate ArithEq :|: Function PureFunction
                        :|: Predicate ArithSchematicPred :|: Function ArithOps :|: Function PureSchematicFunction :|: a
 --XXX: as an extension of FOL, this falls under all the classes of PureFirstOrderLexWith a = CoreLexicon :|: a
+--The function symbols are not necessarily exposed by the parser, but are necessary for things like skolemization
+
+type OpenLanguageArith a = FixLang (OpenLexiconArith a)
 
 instance PrismPolyadicSchematicPredicate (OpenLexiconArith a) Int Bool
 instance PrismPolyadicSchematicFunction (OpenLexiconArith a) Int Int
+instance PrismPolyadicFunction (OpenLexiconArith a) Int Int
 instance PrismTermLessThan (OpenLexiconArith a) Int Bool
 instance PrismTermEquality (OpenLexiconArith a) Int Bool
 instance PrismElementaryArithmeticLex (OpenLexiconArith a) Int
+
+instance {-#OVERLAPPABLE#-} Incrementable (OpenLexiconArith a) (Term Int) where
+    incHead = const Nothing
+        & outside (_spredIdx') .~ (\(n,a) -> Just $ pphin n (ASucc a))
+        & outside (_funcIdx')  .~ (\(n,a) -> Just $ pfn n (ASucc a))
+        & outside (_sfuncIdx') .~ (\(n,a) -> Just $ spfn n (ASucc a))
+        where _spredIdx' :: Typeable ret => Prism' (OpenLanguageArith a ret) (Int, Arity (Term Int) (Form Bool) ret) 
+              _spredIdx' = _spredIdx
+              _funcIdx' :: Typeable ret => Prism' (OpenLanguageArith a ret) (Int, Arity (Term Int) (Term Int) ret) 
+              _funcIdx' = _funcIdx
+              _sfuncIdx' :: Typeable ret => Prism' (OpenLanguageArith a ret) (Int, Arity (Term Int) (Term Int) ret) 
+              _sfuncIdx' = _sfuncIdx
 
 -------------------------------------
 --  2. Strict First-Order Lexicon  --
@@ -64,10 +80,13 @@ instance Incrementable ExtendedArithLex (Term Int) where
         & outside (_spredIdx') .~ (\(n,a) -> Just $ pphin n (ASucc a))
         & outside (_stringFunc') .~ (\(s,a) -> Just $ stringFunc s (ASucc a))
         & outside (_sfuncIdx') .~ (\(n,a) -> Just $ spfn n (ASucc a))
+        & outside (_funcIdx')  .~ (\(n,a) -> Just $ pfn n (ASucc a))
         where _stringPred' :: Typeable ret => Prism' (FixLang ExtendedArithLex ret) (String, Arity (Term Int) (Form Bool) ret) 
               _stringPred' = _stringPred
               _spredIdx' :: Typeable ret => Prism' (FixLang ExtendedArithLex ret) (Int, Arity (Term Int) (Form Bool) ret) 
               _spredIdx' = _spredIdx
+              _funcIdx' :: Typeable ret => Prism' (OpenLanguageArith a ret) (Int, Arity (Term Int) (Term Int) ret) 
+              _funcIdx' = _funcIdx
               _sfuncIdx' :: Typeable ret => Prism' (FixLang ExtendedArithLex ret) (Int, Arity (Term Int) (Term Int) ret) 
               _sfuncIdx' = _sfuncIdx
               _stringFunc' :: Typeable ret => Prism' (FixLang ExtendedArithLex ret) (String, Arity (Term Int) (Term Int) ret) 
