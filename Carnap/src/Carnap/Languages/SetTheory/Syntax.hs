@@ -2,6 +2,7 @@
 module Carnap.Languages.SetTheory.Syntax 
 where
 
+import Data.Typeable
 import Control.Lens
 import Carnap.Core.Data.Types
 import Carnap.Core.Data.Optics
@@ -23,13 +24,29 @@ type SetTheorySubset = TermSubset Bool Int
 
 type SetTheorySchematicPred = SchematicIntPred Bool Int
 
-type OpenLexiconST a = CoreLexicon :|: Predicate SetTheoryElem :|: Predicate SetTheoryEq :|: Predicate PureSchematicPred :|:  Function PureSchematicFunction :|: a
+type OpenLexiconST a = CoreLexicon :|: Predicate SetTheoryElem :|: Predicate SetTheoryEq :|: Predicate PureSchematicPred :|:  Function PureSchematicFunction :|: Function PureFunction :|: a
 --XXX: as an extension of FOL, this falls under all the classes of PureFirstOrderLexWith a = CoreLexicon :|: a
+--The function symbols are not necessarily exposed by the parser, but are necessary for things like skolemization
+
+type OpenLanguageST a = FixLang (OpenLexiconST a)
 
 instance PrismPolyadicSchematicPredicate (OpenLexiconST a) Int Bool
+instance PrismPolyadicFunction (OpenLexiconST a) Int Int
 instance PrismPolyadicSchematicFunction (OpenLexiconST a) Int Int
 instance PrismTermElements (OpenLexiconST a) Int Bool
 instance PrismTermEquality (OpenLexiconST a) Int Bool
+        
+instance {-#OVERLAPPABLE#-} Incrementable (OpenLexiconST a) (Term Int) where
+    incHead = const Nothing
+        & outside (_spredIdx') .~ (\(n,a) -> Just $ pphin n (ASucc a))
+        & outside (_funcIdx')  .~ (\(n,a) -> Just $ pfn n (ASucc a))
+        & outside (_sfuncIdx') .~ (\(n,a) -> Just $ spfn n (ASucc a))
+        where _spredIdx' :: Typeable ret => Prism' (OpenLanguageST a ret) (Int, Arity (Term Int) (Form Bool) ret) 
+              _spredIdx' = _spredIdx
+              _funcIdx' :: Typeable ret => Prism' (OpenLanguageST a ret) (Int, Arity (Term Int) (Term Int) ret) 
+              _funcIdx' = _funcIdx
+              _sfuncIdx' :: Typeable ret => Prism' (OpenLanguageST a ret) (Int, Arity (Term Int) (Term Int) ret) 
+              _sfuncIdx' = _sfuncIdx
 
 -------------------------------------
 --  2. Strict First-Order Lexicon  --

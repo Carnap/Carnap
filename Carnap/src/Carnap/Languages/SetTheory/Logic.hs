@@ -10,9 +10,9 @@ import Carnap.Languages.SetTheory.Syntax
 import Carnap.Languages.SetTheory.Logic.OpenLogic
 import Carnap.Languages.SetTheory.Logic.Carnap
 
-ofSetTheorySys :: (forall r sem lex . 
-    SupportsND r (OpenLexiconST lex) sem => 
-    NaturalDeductionCalc r (OpenLexiconST lex) sem -> a) -> String 
+ofSetTheorySys :: (forall r lex . 
+    ( SupportsND r (OpenLexiconST lex) (Form Bool)
+    ) => NaturalDeductionCalc r (OpenLexiconST lex) (Form Bool)-> a) -> String 
       -> Maybe a
 ofSetTheorySys f sys 
         | sys == "elementarySetTheory"       = Just $ f estCalc 
