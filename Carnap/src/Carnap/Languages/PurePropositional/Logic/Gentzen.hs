@@ -124,8 +124,8 @@ parseGentzenPropLK =  do r <- choice (map (try . string) [ "Ax", "Cut"
                               | r `elem` ["&L","∧L","/\\L"] -> [AndL1, AndL2]
                               | r `elem` ["∨L","vL","\\/L"] -> [OrL]
                               | r `elem` ["∨R","vR","\\/R"] -> [OrR1, OrR2]
-                              | r `elem` ["→L","->L"] -> [CondL]
-                              | r `elem` ["→R","->R"] -> [CondR]
+                              | r `elem` ["→L","->L", ">L"] -> [CondL]
+                              | r `elem` ["→R","->R", ">R"] -> [CondR]
                               | r `elem` ["¬L","~L","-L"] -> [NegL]
                               | r `elem` ["¬R","~R","-R"] -> [NegR]
 
