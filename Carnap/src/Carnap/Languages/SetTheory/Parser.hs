@@ -16,7 +16,8 @@ import Text.Parsec.Expr
 strictSetTheoryOptions :: FirstOrderParserOptions StrictSetTheoryLex u Identity
 strictSetTheoryOptions = FirstOrderParserOptions 
                          { atomicSentenceParser = \x -> try (elementParser x)
-                                                        <|> equalsParser x 
+                                                        <|> try (equalsParser x)
+                                                        <|> inequalityParser x
                          , quantifiedSentenceParser' = quantifiedSentenceParser
                          , freeVarParser = parseFreeVar "vwxyz"
                          , constantParser = Just (parseConstant "abcde")
@@ -36,6 +37,7 @@ elementarySetTheoryOptions :: FirstOrderParserOptions ElementarySetTheoryLex u I
 elementarySetTheoryOptions = FirstOrderParserOptions 
                            { atomicSentenceParser = \x -> try (elementParser x)
                                                           <|> try (equalsParser x)
+                                                          <|> try (inequalityParser x)
                                                           <|> subsetParser x
                            , quantifiedSentenceParser' = quantifiedSentenceParser
                            , freeVarParser = parseFreeVar "vwxyz"
@@ -61,6 +63,7 @@ separativeSetTheoryOptions :: FirstOrderParserOptions SeparativeSetTheoryLex u I
 separativeSetTheoryOptions = FirstOrderParserOptions
                            { atomicSentenceParser = \x -> try (elementParser x)
                                                           <|> try (equalsParser x)
+                                                          <|> try (inequalityParser x)
                                                           <|> subsetParser x
                            , quantifiedSentenceParser' = quantifiedSentenceParser
                            , freeVarParser = parseFreeVar "vwxyz"
