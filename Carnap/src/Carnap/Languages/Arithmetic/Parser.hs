@@ -17,6 +17,7 @@ arithmeticOptions :: FirstOrderParserOptions ArithLex u Identity
 arithmeticOptions = FirstOrderParserOptions 
                          { atomicSentenceParser = \x -> try (lessThanParser x)
                                                         <|> equalsParser x 
+                                                        <|> inequalityParser x
                          , quantifiedSentenceParser' = lplQuantifiedSentenceParser
                          , freeVarParser = parseFreeVar "stuvwxyz"
                          , constantParser = Just (parseZero <|> parseConstant "abcdefghijklmnopqr")
@@ -36,6 +37,7 @@ arithmeticExtendedOptions :: FirstOrderParserOptions ExtendedArithLex u Identity
 arithmeticExtendedOptions = FirstOrderParserOptions 
                          { atomicSentenceParser = \x -> try (lessThanParser x)
                                                         <|> equalsParser x 
+                                                        <|> inequalityParser x
                                                         <|> parsePredicateString x
                          , quantifiedSentenceParser' = lplQuantifiedSentenceParser
                          , freeVarParser = parseFreeVar "stuvwxyz"
