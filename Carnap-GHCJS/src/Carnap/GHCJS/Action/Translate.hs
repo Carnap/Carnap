@@ -6,13 +6,13 @@ import Lib.FormulaTests
 import Carnap.Calculi.Tableau.Data
 import Carnap.Calculi.NaturalDeduction.Syntax (NaturalDeductionCalc(..))
 import Carnap.Core.Data.Types (FixLang, Form, Term, BoundVars, FirstOrderLex)
-import Carnap.Languages.PurePropositional.Logic (ofPropSys)
+import Carnap.Languages.PurePropositional.Logic (ofPropSys, ofPropTreeSys)
 import Carnap.Languages.ModalPropositional.Logic (ofModalPropSys)
 import Carnap.Languages.PureSecondOrder.Logic (ofSecondOrderSys) 
 import Carnap.Languages.SetTheory.Logic (ofSetTheorySys, ofSetTheoryTreeSys)
 import Carnap.Languages.Arithmetic.Logic (ofArithmeticTreeSys)
 import Carnap.Languages.PureFirstOrder.Syntax (PureFirstOrderLexWith)
-import Carnap.Languages.PureFirstOrder.Logic (ofFOLSys)
+import Carnap.Languages.PureFirstOrder.Logic (ofFOLSys, ofFOLTreeSys)
 import Carnap.Languages.DefiniteDescription.Logic.Gamut
 import Carnap.Languages.PureFirstOrder.Parser (folFormulaParser)
 import Carnap.Languages.DefiniteDescription.Parser (descFormulaParser)
@@ -47,11 +47,13 @@ getTranslates d = genInOutElts d "input" "div" "translate"
 activateTranslate :: Document -> Maybe (Element, Element, M.Map String String) -> IO ()
 activateTranslate w (Just (i,o,opts)) = do
         case (M.lookup "transtype" opts, M.lookup "system" opts) of
-            (Just "prop", mparser) -> activateWith formParser propChecker (propTests testlist)
+            (Just "prop", mparser) -> maybe noSystem id $ ((\it -> activateWith (tbParseForm it) propChecker (propTests testlist)) `ofPropTreeSys` sys)
+                                                  `mplus` Just (activateWith formParser propChecker (propTests testlist))
                 where formParser = maybe (purePropFormulaParser standardLetters) id (mparser >>= ofPropSys ndParseForm)
             (Just "first-order", mparser) -> maybe noSystem id $ ((\it -> activateWith (ndParseForm it) folChecker noTests) `ofSetTheorySys` sys)
                                                          `mplus` ((\it -> activateWith (tbParseForm it) folChecker noTests) `ofSetTheoryTreeSys` sys)
                                                          `mplus` ((\it -> activateWith (tbParseForm it) folChecker noTests) `ofArithmeticTreeSys` sys)
+                                                         `mplus` ((\it -> activateWith (tbParseForm it) folChecker (folTests testlist)) `ofFOLTreeSys` sys)
                                                          `mplus` Just (activateWith formParser folChecker (folTests testlist))
                 where formParser = maybe folFormulaParser id (mparser >>= ofFOLSys ndParseForm)
             (Just "description", mparser) -> activateWith formParser descChecker (folTests testlist)
@@ -63,6 +65,7 @@ activateTranslate w (Just (i,o,opts)) = do
                                                    `mplus` ((\it -> activateWith (ndParseForm it) exactChecker noTests) `ofSetTheorySys` sys)
                                                    `mplus` ((\it -> activateWith (tbParseForm it) exactChecker noTests) `ofSetTheoryTreeSys` sys)
                                                    `mplus` ((\it -> activateWith (tbParseForm it) exactChecker noTests) `ofArithmeticTreeSys` sys)
+                                                   `mplus` ((\it -> activateWith (tbParseForm it) exactChecker noTests) `ofFOLTreeSys` sys)
                                                    `mplus` ((\it -> activateWith (ndParseForm it) exactChecker noTests) `ofModalPropSys` sys)
             _ -> return ()
     where testlist = case M.lookup "tests" opts of Just s -> words s; Nothing -> []
