@@ -16,7 +16,7 @@ import Text.Parsec.Expr
 arithmeticOptions :: FirstOrderParserOptions ArithLex u Identity
 arithmeticOptions = FirstOrderParserOptions 
                          { atomicSentenceParser = \x -> try (lessThanParser x)
-                                                        <|> equalsParser x 
+                                                        <|> try (equalsParser x)
                                                         <|> inequalityParser x
                          , quantifiedSentenceParser' = lplQuantifiedSentenceParser
                          , freeVarParser = parseFreeVar "stuvwxyz"
@@ -36,8 +36,8 @@ arithmeticOptions = FirstOrderParserOptions
 arithmeticExtendedOptions :: FirstOrderParserOptions ExtendedArithLex u Identity
 arithmeticExtendedOptions = FirstOrderParserOptions 
                          { atomicSentenceParser = \x -> try (lessThanParser x)
-                                                        <|> equalsParser x 
-                                                        <|> inequalityParser x
+                                                        <|> try (equalsParser x)
+                                                        <|> try (inequalityParser x)
                                                         <|> parsePredicateString x
                          , quantifiedSentenceParser' = lplQuantifiedSentenceParser
                          , freeVarParser = parseFreeVar "stuvwxyz"
