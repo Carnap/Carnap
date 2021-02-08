@@ -1,4 +1,4 @@
-module Carnap.Languages.SetTheory.Logic.OpenLogic (openLogicSTNKCalc)
+module Carnap.Languages.SetTheory.Logic.OpenLogic (openLogicESTNKCalc, openLogicSTNKCalc)
 where
 
 import Carnap.Core.Data.Types
@@ -11,6 +11,13 @@ import Carnap.Calculi.Tableau.Data
 openLogicSTNKCalc :: TableauCalc StrictSetTheoryLex (Form Bool) (OpenLogicFONK StrictSetTheoryLex) 
 openLogicSTNKCalc = mkTBCalc
     { tbParseForm = strictSetTheoryParser
+    , tbParseRule = parseOpenLogicFONK
+    , tbNotation = dropOuterParens
+    }
+
+openLogicESTNKCalc :: TableauCalc ElementarySetTheoryLex (Form Bool) (OpenLogicFONK ElementarySetTheoryLex) 
+openLogicESTNKCalc = mkTBCalc
+    { tbParseForm = elementarySetTheoryParser
     , tbParseRule = parseOpenLogicFONK
     , tbNotation = dropOuterParens
     }

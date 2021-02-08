@@ -27,4 +27,5 @@ ofSetTheoryTreeSys :: (forall r lex .
                  ) => 
               TableauCalc (OpenLexiconST lex) (Form Bool) r -> a) -> String -> Maybe a
 ofSetTheoryTreeSys f sys | sys == "openLogicSTNK"              = Just $ f openLogicSTNKCalc
+                         | sys == "openLogicESTNK"             = Just $ f openLogicESTNKCalc
                          | otherwise                           = Nothing
