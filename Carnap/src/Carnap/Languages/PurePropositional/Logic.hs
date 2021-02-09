@@ -70,6 +70,8 @@ ofPropSys f sys | sys == "prop"                          = Just $ f propCalc
                 | sys == "magnusSLPlus"                  = Just $ f magnusSLPlusCalc
                 | sys == "allenSL"                       = Just $ f allenSLCalc
                 | sys == "allenSLPlus"                   = Just $ f allenSLPlusCalc
+                | sys == "johnsonSL"                     = Just $ f allenSLCalc
+                | sys == "johnsonSLPlus"                 = Just $ f allenSLPlusCalc
                 | sys == "gallowSL"                      = Just $ f gallowSLCalc
                 | sys == "gallowSLPlus"                  = Just $ f gallowSLPlusCalc
                 | sys == "thomasBolducAndZachTFLCore"    = Just $ f thomasBolducAndZachTFLCoreCalc

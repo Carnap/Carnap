@@ -44,6 +44,8 @@ activate cls extra chunk
     | "HowardSnyderPL"   `elem` cls = exTemplate [("system", "howardSnyderPL"), ("guides","howardSnyder"), ("options", "resize fonts") ]
     | "AllenSL"          `elem` cls = exTemplate [("system", "allenSL")]
     | "AllenSLPlus"      `elem` cls = exTemplate [("system", "allenSLPlus")]
+    | "JohnsonSL"        `elem` cls = exTemplate [("system", "johnsonSL")]
+    | "JohnsonSLPlus"    `elem` cls = exTemplate [("system", "johnsonSLPlus")]
     | "HurleySL"         `elem` cls = exTemplate [("system", "hurleySL"), ("guides", "hurley"), ("options", "resize")]
     | "HurleyPL"         `elem` cls = exTemplate [("system", "hurleyPL"), ("guides", "hurley"), ("options", "resize")]
     | "ForallxSL"        `elem` cls = exTemplate [("system", "magnusSL"), ("options","render")]
