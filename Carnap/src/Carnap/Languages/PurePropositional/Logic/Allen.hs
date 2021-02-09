@@ -183,7 +183,6 @@ allenNotation x = case runParser altparser 0 "" x of
                          rest <- (eof >> return "") <|> altparser
                          return $ s ++ rest
           handlecon = try (char '∧' >> return "&") 
-                      <|> (char '¬' >> return "~")
                       <|> (char '⊤' >> return " ")
                       <|> (char '∅' >> return " ")
           handleatom = do c <- oneOf "ABCDEFGHIJKLMNOPQRSTUVWXYZ" <* char '('
