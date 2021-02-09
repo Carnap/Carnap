@@ -99,7 +99,9 @@ getUserR ident = do
                     let Just cid = maybeCourseId
                     textbookproblems <- getProblemSets cid
                     (asmd, extensions, asDocs,accommodation,subs) <- runDB $ 
-                            do asmd <- selectList [AssignmentMetadataCourse ==. cid] []
+                            do asmd <- case courseTextBook course of
+                                           Nothing -> selectList [AssignmentMetadataCourse ==. cid] []
+                                           Just tb -> selectList [AssignmentMetadataCourse ==. cid, AssignmentMetadataId !=. tb] []
                                asDocs <- mapM get (map (assignmentMetadataDocument . entityVal) asmd)
                                accommodation <- (getBy $ UniqueAccommodation cid uid)
                                             >>= return . maybe 0 (accommodationDateExtraHours . entityVal)
