@@ -7,8 +7,8 @@
                 <li>
                     <a href=@{InfoR}>About
                 <li>
-                    $maybe doc <- mdoc
-                        $maybe course <- mcourse
+                    $maybe doc <- entityVal <$> mdoc
+                        $maybe course <- entityVal <$> mcourse
                             <a href=@{CourseAssignmentR (courseTitle course) (documentFilename doc)}>Book
                         $nothing
                             <a href=@{BookR}>Book

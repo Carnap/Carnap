@@ -6,13 +6,35 @@ import Import.NoFoundation
 import Carnap.GHCJS.SharedTypes(ProblemSource(..))
 
 newtype CachedMaybeUserData = CachedMaybeUserData { unCacheMaybeUserData :: Maybe (Entity UserData) }
+newtype CachedMaybeUserCourse = CachedMaybeUserCourse { unCacheMaybeUserCourse :: Maybe (Entity Course) }
+newtype CachedMaybeTextbook = CachedMaybeUserTextbook { unCacheMaybeUserTextbook :: Maybe (Entity AssignmentMetadata) }
+newtype CachedMaybeTextbookDoc = CachedMaybeUserTextbookDoc { unCacheMaybeUserTextbookDoc :: Maybe (Entity Document) }
 
 --retrieve userdata using a per-request cache to avoid multiple DB lookups.
-maybeUserData = do authmaybe <- maybeAuth 
-                   case authmaybe of
-                       Nothing -> return Nothing
-                       Just (Entity uid _) -> unCacheMaybeUserData <$> cached (CachedMaybeUserData <$> runDB (getBy $ UniqueUserData uid))
+maybeUserData = unCacheMaybeUserData <$> cached (CachedMaybeUserData <$> getData)
+    where getData = do authmaybe <- maybeAuth
+                       case authmaybe of
+                           Nothing -> return Nothing
+                           Just (Entity uid _) -> runDB (getBy $ UniqueUserData uid)
 
+maybeUserCourse = unCacheMaybeUserCourse <$> cached (CachedMaybeUserCourse <$> getData)
+    where getData = do mud <- maybeUserData
+                       case mud of
+                           Nothing -> return Nothing
+                           Just (Entity _ ud) -> maybe (return Nothing) (runDB . getEntity) (userDataEnrolledIn ud)
+
+maybeUserTextbook = unCacheMaybeUserTextbook <$> cached (CachedMaybeUserTextbook <$> getData)
+    where getData = do muc <- maybeUserCourse
+                       case muc of
+                           Nothing -> return Nothing
+                           Just (Entity _ uc) -> maybe (return Nothing) (runDB . getEntity) (courseTextBook uc)
+
+maybeUserTextbookDoc = unCacheMaybeUserTextbookDoc <$> cached (CachedMaybeUserTextbookDoc <$> getData)
+    where getData = do mut <- maybeUserTextbook
+                       case mut of
+                           Nothing -> return Nothing
+                           Just (Entity _ ut) -> runDB . getEntity $ assignmentMetadataDocument ut
+                           
 -- | Try to insert a piece of data into the database, returning False in
 -- case of a clash
 tryInsert s = runDB $ do munique <- checkUnique s

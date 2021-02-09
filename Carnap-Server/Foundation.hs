@@ -98,15 +98,9 @@ instance Yesod App where
         -- value passed to hamletToRepHtml cannot be a widget, this allows
         -- you to use normal widget features in default-layout.
         authmaybe <- maybeAuth
-        (mud, mdoc, mcourse) <- case entityKey <$> authmaybe of
-            Nothing -> return (Nothing, Nothing, Nothing)
-            Just uid -> do
-                mud <- maybeUserData
-                runDB $ do
-                    mcour <- maybe (return Nothing) get (mud >>= userDataEnrolledIn . entityVal)
-                    masgn <- maybe (return Nothing) get (mcour >>= courseTextBook)
-                    mdoc <- maybe (return Nothing) get (assignmentMetadataDocument <$> masgn)
-                    return (mud, mdoc, mcour)
+        mud <- maybeUserData
+        mcourse <- maybeUserCourse
+        mdoc <- maybeUserTextbookDoc
         let isInstructor = not $ null (mud >>= userDataInstructorId . entityVal)
         pc <- widgetToPageContent $ do
             addStylesheet $ StaticR css_bootstrap_css
