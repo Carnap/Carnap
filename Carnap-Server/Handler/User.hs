@@ -72,17 +72,16 @@ getUserR :: Text -> Handler Html
 getUserR ident = do
     isMe <- isThisMe -- if it is, we can use cached data to bypass some lookups.
     musr <- if isMe then maybeAuth else runDB $ getBy $ UniqueUser ident
-    mydata <- maybeUserData
     case musr of
         Nothing -> defaultLayout nouserPage
-        (Just (Entity uid _))  -> do
+        (Just (Entity uid _)) -> do
             ud@UserData 
                  { userDataEnrolledIn = maybeCourseId
                  , userDataInstructorId = maybeInstructorId
                  , userDataFirstName = firstname
                  , userDataLastName = lastname
                  , userDataIsLti
-                 } <- if isMe then maybe (redirect HomeR) (return . entityVal) mydata else checkUserData uid
+                 } <- if isMe then maybeUserData >>= maybe (redirect HomeR) (return . entityVal) else checkUserData uid
             time <- liftIO getCurrentTime
             (dropForm,encTypeDrop) <- generateFormPost (identifyForm "dropClass" $ dropClassForm)
             let isInstructor = case maybeInstructorId of Just _ -> True; _ -> False
@@ -103,7 +102,7 @@ getUserR ident = do
                                            Nothing -> selectList [AssignmentMetadataCourse ==. cid] []
                                            Just tb -> selectList [AssignmentMetadataCourse ==. cid, AssignmentMetadataId !=. tb] []
                                asDocs <- mapM get (map (assignmentMetadataDocument . entityVal) asmd)
-                               accommodation <- (getBy $ UniqueAccommodation cid uid)
+                               accommodation <- getBy (UniqueAccommodation cid uid)
                                             >>= return . maybe 0 (accommodationDateExtraHours . entityVal)
                                extensions <- mapM (\asgn -> getBy $ UniqueExtension (entityKey asgn) uid) asmd 
                                let pq = problemQuery uid (map entityKey asmd) 
@@ -129,7 +128,6 @@ getUserR ident = do
                                     $if isInstructor
                                         <p> Your instructor page is #
                                             <a href=@{InstructorR ident}>here
-
                                     <div.card>
                                         <div.card-header> Personal Information
                                         <div.card-block>
