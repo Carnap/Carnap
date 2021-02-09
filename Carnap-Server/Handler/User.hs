@@ -70,25 +70,28 @@ deleteUserR _ = do
 
 getUserR :: Text -> Handler Html
 getUserR ident = do
-    musr <- runDB $ getBy $ UniqueUser ident
+    isMe <- isThisMe -- if it is, we can use cached data to bypass some lookups.
+    musr <- if isMe then maybeAuth else runDB $ getBy $ UniqueUser ident
+    mydata <- maybeUserData
     case musr of
         Nothing -> defaultLayout nouserPage
         (Just (Entity uid _))  -> do
             ud@UserData 
-                { userDataEnrolledIn = maybeCourseId
-                , userDataInstructorId = maybeInstructorId
-                , userDataFirstName = firstname
-                , userDataLastName = lastname
-                , userDataIsLti
-                } <- checkUserData uid
+                 { userDataEnrolledIn = maybeCourseId
+                 , userDataInstructorId = maybeInstructorId
+                 , userDataFirstName = firstname
+                 , userDataLastName = lastname
+                 , userDataIsLti
+                 } <- if isMe then maybe (redirect HomeR) (return . entityVal) mydata else checkUserData uid
             time <- liftIO getCurrentTime
             (dropForm,encTypeDrop) <- generateFormPost (identifyForm "dropClass" $ dropClassForm)
             let isInstructor = case maybeInstructorId of Just _ -> True; _ -> False
             derivedRulesOld <- getDerivedRules uid
             derivedRulesNew <- getRules uid
             maybeCourse <- case maybeCourseId of
-                              Just cid -> do runDB $ get cid
                               Nothing  -> return Nothing
+                              Just _ | isMe -> maybeUserCourse >>= maybe (return Nothing) (return . Just . entityVal)
+                              Just cid -> runDB $ get cid
             case maybeCourse of
                 Just course -> do
                     (updateForm,encTypeUpdate) <- generateFormPost (identifyForm "updateInfo" $ updateUserDataForm ud [])
@@ -132,6 +135,7 @@ getUserR ident = do
                                     <a href=@{AuthR LogoutR}>
                                         Logout
                                |]
+    where isThisMe = maybe False (\x -> userIdent (entityVal x) == ident) <$> maybeAuth
 
 getUserDispatchR :: Handler Html
 getUserDispatchR = maybeAuthId
