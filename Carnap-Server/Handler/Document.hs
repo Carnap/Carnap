@@ -32,19 +32,19 @@ getDocumentsByTagR tag = do documents <- runDB $ do tags <- selectList [TagName 
 
 documentsList :: Html -> [Entity Document] -> Handler Html
 documentsList title documents = do
-                   tagMap <- forM documents $ \doc -> do
-                                            tags <- runDB $ selectList [TagBearer ==. entityKey doc] []
-                                            return (entityKey doc, map (tagName . entityVal) tags)
-                   let tagsOf d = lookup d tagMap
-                       publicDocuments = filter ((==) Public . documentScope . entityVal) documents
-                       allTags = nub . concat . map snd $ tagMap
+                   let publicDocuments = filter ((==) Public . documentScope . entityVal) documents
                    pubidents <- mapM (getIdent . documentCreator . entityVal) publicDocuments
                    pubmd <- mapM (getUserMD . documentCreator . entityVal) publicDocuments
                    maybeData <- maybeUserData
                    case userDataInstructorId <$> entityVal <$> maybeData of
                       Just id -> do
                            let docs = filter ((==) InstructorsOnly . documentScope . entityVal) documents
-                               privateDocuments = if docs == [] then Nothing else Just docs
+                               privateDocuments = if null docs then Nothing else Just docs
+                               allDocuments = publicDocuments ++ docs
+                           tagMap <- forM allDocuments $ \doc -> do
+                                            tags <- runDB $ selectList [TagBearer ==. entityKey doc] []
+                                            return (entityKey doc, map (tagName . entityVal) tags)
+                           let allTags = nub . concat . map snd $ tagMap
                            privmd <- mapM (getUserMD . documentCreator . entityVal) docs
                            prividents <- mapM (getIdent . documentCreator . entityVal) docs
                            defaultLayout $ do
@@ -52,10 +52,14 @@ documentsList title documents = do
                                $(widgetFile "documentIndex")
                       Nothing -> do let privateDocuments = Nothing
                                         (privmd, prividents) = ([],[])
+                                    tagMap <- forM publicDocuments $ \doc -> do
+                                                    tags <- runDB $ selectList [TagBearer ==. entityKey doc] []
+                                                    return (entityKey doc, map (tagName . entityVal) tags)
+                                    let allTags = nub . concat . map snd $ tagMap
                                     defaultLayout $ do
                                         setTitle $ title
                                         $(widgetFile "documentIndex")
-    where documentCards docs idents mds tagsOf = [whamlet|
+    where documentCards docs idents mds tagMap = [whamlet|
     $forall (Entity k doc,mident, mmd) <- zip3 docs idents mds
         $maybe ident <- mident
             $maybe md <- mmd
@@ -74,7 +78,7 @@ documentsList title documents = do
                             <dd.col-sm-9> #{userDataFirstName md} #{userDataLastName md}
                             <dt.col-sm-3> Created on
                             <dd.col-sm-9> #{formatTime defaultTimeLocale "%F %R UTC" $ documentDate doc}
-                            $maybe tags <- tagsOf k
+                            $maybe tags <- lookup k tagMap
                                 <dt.col-sm-3> Tags
                                 <dd.col-sm-9>
                                         $forall tag <- tags

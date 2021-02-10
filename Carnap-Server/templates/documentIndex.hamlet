@@ -6,7 +6,7 @@
                 $forall tag <- allTags
                     <a.badge.badge-primary href="@{DocumentsByTagR tag}">#{tag}
     <h2>Publicly Shared
-    ^{documentCards publicDocuments pubidents pubmd tagsOf}
+    ^{documentCards publicDocuments pubidents pubmd tagMap}
     $maybe privdocs <- privateDocuments
         <h2>Instructors Only
-        ^{documentCards privdocs prividents privmd tagsOf}
+        ^{documentCards privdocs prividents privmd tagMap}
