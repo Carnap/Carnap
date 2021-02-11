@@ -395,7 +395,8 @@ checkAssumptionForm n pt assump sub =
                 Right (sub':_) | any (differentContent x) rest -> Just "the cited assumptions don't all have the same form"
                                | otherwise -> Nothing
     where subsfrom form = homatch [assump' :=: form]
-          assump' = pureBNF $ applySub sub (SS assump)
+          assump' = betaNormalizeByName $ applySub sub (SS assump)
+
           differentContent x (Node y _) = content x /= content y
 
 type SupportsND r lex sem = 
