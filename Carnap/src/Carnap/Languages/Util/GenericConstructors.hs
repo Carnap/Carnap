@@ -232,7 +232,7 @@ instance Schematizable (ElementarySetOperations b) where
         schematize Union (x:y:_)  = "(" ++ x ++ "∪" ++ y ++ ")"
         schematize Union _       = "∪"
         schematize RelComplement (x:y:_)  = "(" ++ x ++ "/" ++ y ++ ")"
-        schematize RelComplement _       = "/"
+        schematize RelComplement _       = "\\"
         schematize Powerset (x:_)  = "Pow(" ++ x ++ ")"
         schematize Powerset _  = "Pow"
 
