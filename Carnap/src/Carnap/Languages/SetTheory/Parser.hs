@@ -19,8 +19,8 @@ strictSetTheoryOptions = FirstOrderParserOptions
                                                         <|> try (equalsParser x)
                                                         <|> inequalityParser x
                          , quantifiedSentenceParser' = quantifiedSentenceParser
-                         , freeVarParser = parseFreeVar "vwxyz"
-                         , constantParser = Just (parseConstant "abcde")
+                         , freeVarParser = parseFreeVar "stuvwxyz"
+                         , constantParser = Just (parseConstant "abcdefghijklmnopqr")
                          , functionParser = Nothing
                          , hasBooleanConstants = False
                          , parenRecur = \opt recurWith  -> parenParser (recurWith opt)
@@ -40,13 +40,13 @@ elementarySetTheoryOptions = FirstOrderParserOptions
                                                           <|> try (inequalityParser x)
                                                           <|> subsetParser x
                            , quantifiedSentenceParser' = quantifiedSentenceParser
-                           , freeVarParser = parseFreeVar "vwxyz"
-                           , constantParser = Just (parseConstant "abcde")
+                           , freeVarParser = parseFreeVar "stuvwxyz"
+                           , constantParser = Just (parseConstant "abcdefghijklmnopqr")
                            , functionParser = Just (\x -> setTheoryOpParser 
                                                                 (parenParser x
                                                                  <|> powersetParser x
-                                                                 <|> parseFreeVar "vwxyz" 
-                                                                 <|> parseConstant "abcde" 
+                                                                 <|> parseFreeVar "stuvwxyz" 
+                                                                 <|> parseConstant "abcdefghijklmnopqr" 
                                                                  ))
                            , hasBooleanConstants = False
                            , parenRecur = \opt recurWith  -> parenParser (recurWith opt)
@@ -66,8 +66,8 @@ separativeSetTheoryOptions = FirstOrderParserOptions
                                                           <|> try (inequalityParser x)
                                                           <|> subsetParser x
                            , quantifiedSentenceParser' = quantifiedSentenceParser
-                           , freeVarParser = parseFreeVar "vwxyz"
-                           , constantParser = Just (parseConstant "abcde" <|>
+                           , freeVarParser = parseFreeVar "stuvwxyz"
+                           , constantParser = Just (parseConstant "abcdefghijklmnopqr" <|>
                                                    separationParser vparser tparser
                                                         (parserFromOptions separativeSetTheoryOptions))
                            , functionParser = Just (\x -> setTheoryOpParser 
