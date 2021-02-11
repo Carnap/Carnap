@@ -83,8 +83,8 @@ instance Show OpenLogicPropLK where
 parseOpenLogicPropNK :: Parsec String u [OpenLogicPropNK]
 parseOpenLogicPropNK = parseProp <* spaces <* eof
     where parseProp = choice . map try $
-                        [ stringOpts ["&Intro","/\\Intro", "&I","/\\I"] >> return [AndI]
-                        , stringOpts ["&Elim","/\\Elim", "&E","/\\E"] >> return [AndER, AndEL]
+                        [ stringOpts ["&Intro","/\\Intro", "∧Intro", "&I","/\\I", "∧I"] >> return [AndI]
+                        , stringOpts ["&Elim","/\\Elim", "∧Elim", "&E","/\\E", "∧E"] >> return [AndER, AndEL]
                         , stringOpts ["∨Intro","\\/Intro","∨I","\\/I"] >> return [OrIL, OrIR]
                         , stringOpts ["⊃Elim",">Elim", "->Elim", "->Elim","⊃E", ">E", "->E",  "→E"] >> return [IfE]
                         , stringOpts ["¬Elim","-Elim", "~Elim", "¬E","-E", "~E"] >> return [NegE]
