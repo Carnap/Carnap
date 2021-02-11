@@ -4,6 +4,7 @@ module Carnap.GHCJS.Action.RenderFormulas (renderFormulasAction) where
 import Lib
 import Data.Map as M
 import GHCJS.DOM.Element
+import GHCJS.DOM.HTMLElement (setInnerText, castToHTMLElement)
 import Control.Monad (mplus)
 import Text.Parsec
 import Carnap.Calculi.Tableau.Data
@@ -25,7 +26,7 @@ rewriteFormula w (Just e) = do datamap <- getCarnapDataMap e
                                case M.lookup "render-system" datamap of
                                    Nothing -> return ()
                                    Just system -> do Just text <- getInnerHTML e :: IO (Maybe String)
-                                                     setInnerHTML e (Just $ parseWith system (decodeHtml text))
+                                                     setInnerText (castToHTMLElement e) (Just $ parseWith system (decodeHtml text))
     where parseWith sys text = maybe "Error - No Such System" id $ ((\it -> tryParse it text) `ofPropSys` sys)
                                      `mplus` ((\it -> tryParse it text) `ofFOLSys` sys)
                                      `mplus` ((\it -> tryParse it text) `ofSecondOrderSys` sys)
