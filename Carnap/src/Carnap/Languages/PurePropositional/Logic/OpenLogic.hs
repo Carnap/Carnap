@@ -67,7 +67,7 @@ instance Show OpenLogicPropNK where
     show (IPVac (Just n)) = "IP (" ++ show n ++ ")" 
     show (IPVac Nothing) = "IP"
     show NegE = "¬E"
-    show FalsumE = "¬E"
+    show FalsumE = "X"
     show (As n) = "(" ++ show n ++ ")"
     show Pr = "Pr"
 
@@ -85,15 +85,15 @@ parseOpenLogicPropNK = parseProp <* spaces <* eof
     where parseProp = choice . map try $
                         [ stringOpts ["&Intro","/\\Intro", "&I","/\\I"] >> return [AndI]
                         , stringOpts ["&Elim","/\\Elim", "&E","/\\E"] >> return [AndER, AndEL]
-                        , stringOpts  ["∨Intro","\\/Intro","∨I","\\/I"] >> return [OrIL, OrIR]
+                        , stringOpts ["∨Intro","\\/Intro","∨I","\\/I"] >> return [OrIL, OrIR]
                         , stringOpts ["⊃Elim",">Elim", "->Elim", "->Elim","⊃E", ">E", "->E",  "→E"] >> return [IfE]
                         , stringOpts ["¬Elim","-Elim", "~Elim", "¬E","-E", "~E"] >> return [NegE]
                         , stringOpts ["X"] >> return [FalsumE]
                         , getLabel
                             >>= \s -> return [As (read s :: Int)]
-                        , (stringOpts ["->Intro", ">Intro","⊃Intro", "->I", ">I","⊃I"] *> spaces *> getLabel) 
+                        , (stringOpts ["->Intro", ">Intro", "⊃Intro", "→Intro", "->I", ">I","⊃I","→I"] *> spaces *> getLabel) 
                             >>= \s -> return (let val = read s :: Int in [IfI val, IfIVac (Just val)])
-                        , stringOpts ["⊃Intro",">Intro","->Intro", "→Intro", "⊃I",">I","->I", "→I"] >> return [IfIVac Nothing]
+                        , stringOpts ["⊃Intro", ">Intro", "->Intro", "→Intro", "⊃I", ">I", "->I", "→I"] >> return [IfIVac Nothing]
                         , (stringOpts ["¬Intro", "-Intro", "~Intro", "¬I", "-I", "~I"] *> spaces *> getLabel) 
                             >>= \s -> return (let val = read s :: Int in [NegI val, NegIVac (Just val)])
                         , stringOpts ["¬Intro", "-Intro", "~Intro", "¬I", "-I", "~I"] >> return [NegIVac Nothing]
