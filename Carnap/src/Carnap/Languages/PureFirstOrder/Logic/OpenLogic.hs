@@ -39,7 +39,7 @@ data OpenLogicFOLK = LK OpenLogicPropLK
 
 newtype OpenLogicFOLJ = LJ OpenLogicFOLK
 
-instance Show (OpenLogicFONK lex) where
+instance Show (ClassicalSequentOver lex (Term Int)) => Show (OpenLogicFONK lex) where
     show (PropNK x)                 = show x
     show AllI                       = "∀Intro"
     show AllE                       = "∀Elim"
@@ -48,8 +48,9 @@ instance Show (OpenLogicFONK lex) where
     show EqE2                       = "=Elim"
     show ExistsI                    = "∃Intro"
     show (ExistsE n)                = "∃Elim (" ++ show n ++ ")"
-    show (ExistsEAnnotated n t)     = "∃Elim (" ++ show n ++ ")"
-    show (ExistsEAnnotatedVac n t)  = "∃Elim (" ++ show n ++ ")"
+    show (ExistsEAnnotated n t)     = "∃Elim " ++ show t ++ " (" ++ show n ++ ")"
+    show (ExistsEAnnotatedVac n t)  = "∃Elim " ++ show t ++ " (" ++ show n ++ ")"
+    --We need to show the term in order to get the proof hashed correctly when memoizing
     show (ExistsEVac)               = "∃Elim"
 
 instance Show OpenLogicFOLK where 
@@ -103,6 +104,7 @@ type NKAdequate lex =
          , PrismIndexedConstant (ClassicalSequentLexOver lex) Int
          , PrismSchematicProp lex Bool
          , PrismBooleanConnLex lex Bool
+         , PrismIndexedConstant lex Int
          , PrismSubstitutionalVariable lex
          , PrismTermEquality lex Int Bool
          , PrismStandardVar (ClassicalSequentLexOver lex) Int
@@ -127,8 +129,8 @@ instance NKAdequate lex => CoreInference (OpenLogicFONK lex) lex (Form Bool) whe
          coreRuleOf ExistsI = existentialGeneralization
          coreRuleOf (ExistsE _) = weakExistentialDerivation
          coreRuleOf (ExistsEVac) = weakExistentialDerivation
-         coreRuleOf (ExistsEAnnotatedVac _ t) = weakExistentialDerivation
          coreRuleOf (ExistsEAnnotated _ t) = parameterExistentialDerivation t
+         coreRuleOf (ExistsEAnnotatedVac _ t) = weakExistentialDerivation
 
          coreRestriction AllI = Just $ eigenConstraint (taun 1) (SS (lall "v" (phi' 1)) :-: fodelta 1) (fogamma 1)
          coreRestriction (ExistsEAnnotated _ t) = Just $ eigenConstraint t (SS (lsome "v" (phi' 1)) :-: fodelta 1) (fogamma 1)
@@ -144,6 +146,7 @@ instance (Eq r, AssumptionNumbers r, NKAdequate lex) => StructuralInference (Ope
     structuralRestriction pt _ (ExistsEAnnotated n t) = Just $ checkAssumptionForm n pt (phi' 1 tau)
                             `andFurtherRestriction` exhaustsAssumptions n pt (SS $ phi' 1 t)
     structuralRestriction pt _ (ExistsEAnnotatedVac n t) = Just $ checkAssumptionForm n pt (phi' 1 tau)
+                            `andFurtherRestriction` const (Just "Cannot find any assumption with a term available for this rule")
     structuralRestriction pt _ r = Nothing
 
 instance (AssumptionNumbers r, NKAdequate lex) => StructuralOverride (OpenLogicFONK lex) (ProofTree r lex (Form Bool)) where
@@ -152,9 +155,13 @@ instance (AssumptionNumbers r, NKAdequate lex) => StructuralOverride (OpenLogicF
                                             t : _ -> Just [ExistsEAnnotated n t, ExistsEAnnotatedVac n t]
     structuralOverride _ _ = Nothing
 
-freshParametersAt n pt@(Node root _) = case leavesLabeled n pt of
+freshParametersAt n pt@(Node _ [Node p1 _, Node p2 _]) = case leavesLabeled n pt of
         [] -> []
-        (Node pl _ : _) -> toListOf termsOf (content pl) \\ toListOf termsOf (content root)
+        (Node pl _ : _) -> filter isConst (toListOf termsOf (content pl)) \\ (toListOf termsOf (content p1) ++ toListOf termsOf (content p1)) 
+        --we're looking for a constant that's in the assumption but isn't
+        --in either premise to the EE inference
+    where isConst t = maybe False (const True) (t ^? _constIdx)
+freshParametersAt _ _ = []
 
 instance AssumptionNumbers (OpenLogicFONK lex) where
         introducesAssumptions (PropNK r) = introducesAssumptions r

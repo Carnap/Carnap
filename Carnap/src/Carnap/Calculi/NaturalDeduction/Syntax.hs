@@ -380,7 +380,7 @@ exhaustsAssumptions n pt assump sub = if all (`elem` dischargedList pt) assumpIn
                                           then Nothing
                                           else Just "There's an assumption above that needs to be cited before this rule can discharge it."
     where dischargedList (Node r f) = dischargesAssumptions (head (rule r)) ++ concatMap dischargedList f
-          theAssump = pureBNF (applySub sub assump)
+          theAssump = betaNormalizeByName $ applySub sub assump
           assumpInstances = concatMap (\(Node pl _) -> case rule pl of [r] -> introducesAssumptions r; _ -> [])
                           . filter (\(Node pl _) -> content pl == theAssump) 
                           $ toListOf leaves pt
