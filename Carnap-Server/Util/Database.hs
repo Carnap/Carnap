@@ -37,6 +37,8 @@ maybeUserTextbookDoc = unCacheMaybeUserTextbookDoc <$> cached (CachedMaybeUserTe
                            
 -- | Try to insert a piece of data into the database, returning False in
 -- case of a clash
+-- XXX: this duplicates the functionality of insertUnique and should be
+-- removed
 tryInsert s = runDB $ do munique <- checkUnique s
                          case munique of
                               (Just _) -> return Nothing

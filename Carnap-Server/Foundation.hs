@@ -26,6 +26,7 @@ import Web.Cookie (sameSiteNone, SetCookie(setCookieSameSite))
 
 import Util.Database
 import Util.LTI
+import Util.API
 
 -- | The foundation datatype for your application. This can be a good place to
 -- keep settings and values requiring initialization before your application
@@ -126,10 +127,14 @@ instance Yesod App where
          (InstructorQueryR ident) -> instructor ident
          (ReviewR coursetitle _) -> coinstructorOrInstructor coursetitle
          (CourseAssignmentR coursetitle _) -> enrolledIn coursetitle
+         APIR -> requireAPIKey
          AdminR -> admin
          AdminPromoteR -> noAdmins
          _ -> return Authorized
-        where retrieveInstructors cid course = runDB $ do
+        where requireAPIKey = do key <- requireApiKeyFromHeader 
+                                 mauth <- runDB $ getBy $ UniqueAuthAPI key
+                                 maybe (sendStatusJSON forbidden403 ("Valid API Key Required" :: Text)) (return . const Authorized) mauth
+              retrieveInstructors cid course = runDB $ do
                      coInstructors <- map entityVal <$> selectList [CoInstructorCourse ==. cid] []
                      selectList ([UserDataInstructorId ==. Just (courseInstructor course)]
                                 ||. [UserDataInstructorId <-. map (Just . coInstructorIdent) coInstructors]) []

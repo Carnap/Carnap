@@ -38,6 +38,7 @@ library
                      Handler.Assignment
                      Handler.Document
                      Handler.Serve
+                     Handler.API.API
                      Filter.RenderFormulas
                      Filter.Randomize
                      Filter.Sidenotes
@@ -54,6 +55,7 @@ library
                      Util.Assignment
                      Util.Database
                      Util.LTI
+                     Util.API
                      Util.Data
                      Util.Grades
 
@@ -139,9 +141,11 @@ library
                  , split
                  , tz
                  , tzdata
+                 , random
+                 , cryptonite >= 0.26 && < 0.27
+                 , base64-bytestring >= 1.0.0 && < 1.1
                  , Carnap-Client
                  , Carnap
-                 , random
 
 executable         Carnap-Server
     if impl(ghcjs)

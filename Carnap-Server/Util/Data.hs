@@ -34,6 +34,11 @@ data SharingScope = Public | InstructorsOnly | LinkOnly | Private
     deriving (Show, Read, Eq)
 derivePersistField "SharingScope"
 
+--for access scoping in the future, if necessary
+data APIKeyScope = APIKeyScopeRoot
+    deriving (Show, Read, Eq)
+derivePersistField "APIKeyScope"
+
 data AvailabilityStatus = ViaPassword Text 
                         | HiddenViaPassword Text
                         | ViaPasswordExpiring Text Int 

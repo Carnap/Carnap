@@ -18,6 +18,15 @@ UserData
     UniqueUserData userId
     deriving Show
 
+AuthAPI
+    key ByteString
+    user UserId
+    instructorId InstructorMetadataId 
+    scope APIKeyScope
+    UniqueAuthAPI key
+    --We can drop this unique constraint later if need be
+    UniqueAuthAPIUser user
+
 Accommodation
     forCourse CourseId
     forUser UserId

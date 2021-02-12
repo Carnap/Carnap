@@ -6,6 +6,7 @@ import Util.Data
 import Util.Database
 import Util.LTI
 import Util.Grades
+import Util.API
 import Control.Monad (fail)
 import Yesod.Form.Bootstrap3
 import Yesod.Form.Jquery
@@ -196,7 +197,8 @@ postInstructorR ident = do
     ((newclassrslt,_),_)   <- runFormPost (identifyForm "createCourse" createCourseForm)
     ((frombookrslt,_),_)   <- runFormPost (identifyForm "setBookAssignment" $ setBookAssignmentForm activeClasses)
     ((instructorrslt,_),_) <- runFormPost (identifyForm "addCoinstructor" $ addCoInstructorForm instructors ("" :: String))
-    case assignmentrslt of --XXX Should be passing a sensible data structure here, not a tuple
+    ((newapikeyrslt,_),_)  <- runFormPost (identifyForm "createAPIKey" createAPIKeyForm)
+    case assignmentrslt of --XXX Should be passing a sensible data structure here, not a giant tuple
         FormSuccess (doc, Entity classkey theclass, mdue, mduetime, mfrom, mfromtime, mtill, mtilltime, mrelease, mreleasetime, massignmentdesc, mpass, mhidden, mlimit, subtime) ->
             do Entity _ user <- requireAuth
                iid <- instructorIdByIdent (userIdent user)
@@ -293,9 +295,7 @@ postInstructorR ident = do
     case frombookrslt of
         FormSuccess (Entity classkey theclass, theassignment, duedate, mduetime) -> runDB $ do
             let Just tz = tzByName . courseTimeZone $ theclass
-                localdue = case mduetime of
-                              Just time' -> LocalTime duedate time'
-                              _ -> LocalTime duedate (TimeOfDay 23 59 59)
+                localdue = maybe (LocalTime duedate $ TimeOfDay 23 59 59) (LocalTime duedate) mduetime
                 due = localTimeToUTCTZ tz localdue
             case readAssignmentTable <$> courseTextbookProblems theclass of
                 Just assign -> update classkey [CourseTextbookProblems =. (Just $ BookAssignmentTable $ Data.IntMap.insert theassignment due assign)]
@@ -310,6 +310,22 @@ postInstructorR ident = do
                                                Nothing -> setMessage "Co-Instructor seems to already be added"
                 Nothing -> setMessage "Couldn't read cid string"
         FormSuccess (_, Nothing) -> setMessage "iid missing"
+        FormFailure s -> setMessage $ "Something went wrong: " ++ toMarkup (show s)
+        FormMissing -> return ()
+    case newapikeyrslt of
+        FormSuccess () -> do Entity _ ud <- maybeUserData >>= maybe (permissionDenied "Couldn't find user data") return
+                             let UserData { userDataUserId = uid, userDataInstructorId = miid } = ud
+                             iid <- maybe (permissionDenied "Only instructors can get API keys") return miid
+                             newKey <- generateAPIKey
+                             success <- runDB $ do deleteBy (UniqueAuthAPIUser uid) --clear existing key
+                                                   insertUnique $ AuthAPI { authAPIKey = newKey
+                                                                , authAPIUser = uid
+                                                                , authAPIInstructorId = iid
+                                                                , authAPIScope = APIKeyScopeRoot
+                                                                }
+                             case success of
+                                 Just _ -> setMessage "API Key Created"
+                                 _ -> setMessage "Couldn't delete old API Key"
         FormFailure s -> setMessage $ "Something went wrong: " ++ toMarkup (show s)
         FormMissing -> return ()
     redirect $ InstructorR ident
@@ -356,7 +372,7 @@ getInstructorR ident = do
             let inactiveClasses = filter (\c -> courseEndDate (entityVal c) < time) classes
 
             autoregRecords <- runDB $ getMany (map (CourseAutoregKey . entityKey) activeClasses)
-
+            mapiAuth <- runDB $ getBy (UniqueAuthAPIUser uid)
             instructors <- runDB $ selectList [UserDataInstructorId !=. Nothing] []
             let labels = map labelOf $ take (length activeClasses) [1::Int ..]
 
@@ -392,6 +408,7 @@ getInstructorR ident = do
             (updateDocumentWidget,enctypeUpdateDocument) <- generateFormPost (identifyForm "updateDocument" $ updateDocumentForm)
             (updateCourseWidget,enctypeUpdateCourse) <- generateFormPost (identifyForm "updateCourse" (updateCourseForm Nothing Nothing []))
             (createCourseWidget,enctypeCreateCourse) <- generateFormPost (identifyForm "createCourse" createCourseForm)
+            (createAPIKeyWidget,enctypeCreateAPIKey) <- generateFormPost (identifyForm "createAPIKey" createAPIKeyForm)
             defaultLayout $ do
                  addScript $ StaticR js_popper_min_js
                  addScript $ StaticR js_tagsinput_js
@@ -758,7 +775,7 @@ data UpdateCourse
 
 updateCourseForm
     :: Maybe (Entity Course) -> Maybe (CourseAutoreg) -> [(Entity AssignmentMetadata, Maybe Document)] -> Markup
-    -> MForm (HandlerFor App) ((FormResult UpdateCourse, WidgetFor App ()))
+    -> MForm (HandlerFor App) (FormResult UpdateCourse, WidgetFor App ())
 updateCourseForm mcourseent mautoreg aplusd = renderBootstrap3 BootstrapBasicForm $ UpdateCourse
             <$> areq courseId "" mcid
             <*> aopt textareaField (bfs ("Course Description"::Text)) (maybe Nothing (Just . Just . Textarea) (mdesc))
@@ -802,6 +819,9 @@ updateCourseForm mcourseent mautoreg aplusd = renderBootstrap3 BootstrapBasicFor
             , fsName = Nothing
             , fsAttrs = maybe [("style","display:none")] (const [("style","margin-left:10px")]) mcourse 
             }
+
+createAPIKeyForm :: Markup -> MForm (HandlerFor App) (FormResult (), WidgetFor App ())
+createAPIKeyForm = renderBootstrap3 BootstrapBasicForm $ pure ()
 
 updateAccommodationForm
     :: Markup
