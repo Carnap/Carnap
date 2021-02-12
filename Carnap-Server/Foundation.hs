@@ -127,13 +127,19 @@ instance Yesod App where
          (InstructorQueryR ident) -> instructor ident
          (ReviewR coursetitle _) -> coinstructorOrInstructor coursetitle
          (CourseAssignmentR coursetitle _) -> enrolledIn coursetitle
-         APIR -> requireAPIKey
+         APIR -> requireAPIKey >> return Authorized
+         APIInstructorDocumentsR ident -> requireAPIKeyFor ident
          AdminR -> admin
          AdminPromoteR -> noAdmins
          _ -> return Authorized
         where requireAPIKey = do key <- requireApiKeyFromHeader 
                                  mauth <- runDB $ getBy $ UniqueAuthAPI key
-                                 maybe (sendStatusJSON forbidden403 ("Valid API Key Required" :: Text)) (return . const Authorized) mauth
+                                 maybe (sendStatusJSON forbidden403 ("Valid API Key Required" :: Text)) (return) mauth
+              requireAPIKeyFor ident = do Entity _ auth <- requireAPIKey
+                                          Entity uid _ <- runDB (getBy $ UniqueUser ident)
+                                                        >>= maybe (sendStatusJSON notFound404 ("No such user" :: Text)) pure
+                                          if uid == authAPIUser auth then return Authorized
+                                                                     else (sendStatusJSON forbidden403 ("Valid API Key Required" :: Text))
               retrieveInstructors cid course = runDB $ do
                      coInstructors <- map entityVal <$> selectList [CoInstructorCourse ==. cid] []
                      selectList ([UserDataInstructorId ==. Just (courseInstructor course)]

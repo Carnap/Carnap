@@ -161,7 +161,7 @@ AssignmentAccessToken
     user UserId
     UniqueAssignmentAccessToken user assignment
 
-Document
+Document json
     filename Text
     date UTCTime
     creator UserId
