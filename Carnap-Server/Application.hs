@@ -17,13 +17,15 @@ import Control.Monad.Logger                 (liftLoc, runLoggingT)
 import Database.Persist.Postgresql          (createPostgresqlPool, pgConnStr, pgPoolSize, runSqlPool)
 import Database.Persist.Sqlite              (createSqlitePool)
 import Import
+import System.Clock
 import Language.Haskell.TH.Syntax           (qLocation)
-import Network.Wai (Middleware)
+import Network.Wai (Middleware, pathInfo)
 import Network.Wai.Middleware.Autohead
 import Network.Wai.Middleware.AcceptOverride
 import Network.Wai.Middleware.RequestLogger
 import Network.Wai.Middleware.Gzip
 import Network.Wai.Middleware.Cors
+import Network.Wai.Middleware.Throttle
 import Network.Wai.Middleware.MethodOverride
 import Network.Wai.Handler.Warp             (Settings, defaultSettings,
                                              defaultShouldDisplayException,
@@ -105,14 +107,28 @@ makeFoundation appSettings = do
 -- applying some additional middlewares.
 makeApplication :: App -> IO Application
 makeApplication foundation = do
-    logWare <- makeLogWare foundation
-    let datadir = appDataRoot (appSettings foundation)
+    let expirationSpec = TimeSpec 5 0
+        datadir = appDataRoot (appSettings foundation)
         zipsettings = if appDevel (appSettings foundation) 
                         then GzipIgnore
                         else GzipPreCompressed GzipCompress
+        throttleSettings = (defaultThrottleSettings expirationSpec) {
+                                throttleSettingsIsThrottled = \req -> 
+                                    case pathInfo req of
+                                        "api":_ -> True
+                                        _ -> False
+                                }
     -- Create the WAI application and apply middlewares
+    logWare <- makeLogWare foundation
+    throttler <- initThrottler throttleSettings
     appPlain <- toWaiAppPlain foundation
-    return $ logWare . acceptOverride . autohead . gzip (def {gzipFiles = zipsettings }) . methodOverride . simpleCors $ appPlain
+    return $ logWare 
+           . throttle throttler
+           . acceptOverride 
+           . autohead 
+           . gzip (def {gzipFiles = zipsettings }) 
+           . methodOverride 
+           . simpleCors $ appPlain
 
 makeLogWare :: App -> IO Middleware
 makeLogWare foundation =
