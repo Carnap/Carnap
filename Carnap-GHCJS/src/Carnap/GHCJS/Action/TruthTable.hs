@@ -122,8 +122,14 @@ createValidityTruthTable w (antced :|-: succed) (i,o) ref bw opts =
                                Just "inconsistency" -> do 
                                     addCounterexample w opts bw i ref atomIndicies isInconCE "Consistent"
                                     return $ map (Just . not . isInconCE) valuations
+                               Just "contradiction" -> do 
+                                    addCounterexample w opts bw i ref atomIndicies isInconCE "Non-Contradiction"
+                                    return $ map (Just . not . isInconCE) valuations
                                Just "validity" -> do 
                                     addCounterexample w opts bw i ref atomIndicies isValCE "Invalid"
+                                    return $ map (Just . not . isValCE) valuations
+                               Just "tautology" -> do 
+                                    addCounterexample w opts bw i ref atomIndicies isValCE "Non-Tautology"
                                     return $ map (Just . not . isValCE) valuations
                                _ -> do 
                                     addCounterexample w opts bw i ref atomIndicies isValCE "Counterexample"
@@ -154,6 +160,7 @@ createSimpleTruthTable w fs (i,o) ref bw opts =
            case M.lookup "counterexample-to" opts of
                 Just "equivalence" -> addCounterexample w opts bw i ref atomIndicies isEquivCE "Inequivalent"
                 Just "inconsistency" -> addCounterexample w opts bw i ref atomIndicies isInconCE "Consistent"
+                Just "contradiction" -> addCounterexample w opts bw i ref atomIndicies isInconCE "Non-Contradiction"
                 Just "tautology" -> addCounterexample w opts bw i ref atomIndicies isTautCE "Non-Tautology"
                 Just "validity" -> addCounterexample w opts bw i ref atomIndicies isTautCE "Invalid"
                 _ -> do addCounterexample w opts bw i ref atomIndicies isTautCE "Counterexample"
