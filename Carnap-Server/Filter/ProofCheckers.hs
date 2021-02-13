@@ -128,6 +128,8 @@ toPlayground cls extra content
     | "HowardSnyderPL"   `elem` cls = playTemplate [("system", "howardSnyderPL"), ("guides","howardSnyder"), ("options","fonts resize")]
     | "AllenSL"          `elem` cls = playTemplate [("system", "allenSL")]
     | "AllenSLPlus"      `elem` cls = playTemplate [("system", "allenSLPlus")]
+    | "JohnsonSL"        `elem` cls = playTemplate [("system", "johnsonSL")]
+    | "JohnsonSLPlus"    `elem` cls = playTemplate [("system", "johnsonSLPlus")]
     | "HurleySL"         `elem` cls = playTemplate [("system", "hurleySL"), ("guides", "hurley"), ("options", "resize")]
     | "HurleyPL"         `elem` cls = playTemplate [("system", "hurleyPL"), ("guides", "hurley"), ("options", "resize")]
     | "ForallxSL"        `elem` cls = playTemplate [("system", "magnusSL"), ("options","render")]
