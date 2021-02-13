@@ -1,32 +1,33 @@
-/static                             StaticR                  Static  appStatic
-/auth                               AuthR                    Auth    getAuth
+/static                                         StaticR                  Static  appStatic
+/auth                                           AuthR                    Auth    getAuth
 
-/command                            CommandR                 POST
+/command                                        CommandR                 POST
 
-/favicon.ico                        FaviconR                 GET
-/robots.txt                         RobotsR                  GET
+/favicon.ico                                    FaviconR                 GET
+/robots.txt                                     RobotsR                  GET
 
-/                                   HomeR                    GET
-/about                              InfoR                    GET
-/enroll/#Text                       EnrollR                  GET POST
-/register/#Text                     RegisterR                GET POST
-/register/#Text/#Text               RegisterEnrollR          GET POST
-/book                               BookR                    GET
-/book/#Int                          ChapterR                 GET
-/user                               UserDispatchR            GET
-/user/#Text                         UserR                    GET POST DELETE
-/instructor/#Text                   InstructorR              GET PUT POST DELETE
-/instructor/#Text/query             InstructorQueryR         POST
-/master_admin                       AdminR                   GET POST DELETE
-/admin_promote                      AdminPromoteR            GET POST
-/assignments/#Text/#Text            CourseAssignmentR        GET POST
-/assignments/#Text/#Text/state      CourseAssignmentStateR   GET PUT
-/review/#Text/#Text                 ReviewR                  GET PUT DELETE
-/rules                              RuleR                    GET
-/shared                             DocumentsR               GET
-/shared/#Text                       DocumentsByTagR          GET
-/shared/#Text/#Text                 DocumentR                GET
-/shared/#Text/#Text/download        DocumentDownloadR        GET
-/srv/#Text/*[Text]                  ServeR                   GET
-/api/v1                             APIR                     GET
-/api/v1/instructor/#Text/documents  APIInstructorDocumentsR  GET POST
+/                                               HomeR                    GET
+/about                                          InfoR                    GET
+/enroll/#Text                                   EnrollR                  GET POST
+/register/#Text                                 RegisterR                GET POST
+/register/#Text/#Text                           RegisterEnrollR          GET POST
+/book                                           BookR                    GET
+/book/#Int                                      ChapterR                 GET
+/user                                           UserDispatchR            GET
+/user/#Text                                     UserR                    GET POST DELETE
+/instructor/#Text                               InstructorR              GET PUT POST DELETE
+/instructor/#Text/query                         InstructorQueryR         POST
+/master_admin                                   AdminR                   GET POST DELETE
+/admin_promote                                  AdminPromoteR            GET POST
+/assignments/#Text/#Text                        CourseAssignmentR        GET POST
+/assignments/#Text/#Text/state                  CourseAssignmentStateR   GET PUT
+/review/#Text/#Text                             ReviewR                  GET PUT DELETE
+/rules                                          RuleR                    GET
+/shared                                         DocumentsR               GET
+/shared/#Text                                   DocumentsByTagR          GET
+/shared/#Text/#Text                             DocumentR                GET
+/shared/#Text/#Text/download                    DocumentDownloadR        GET
+/srv/#Text/*[Text]                              ServeR                   GET
+/api/v1                                         APIR                     GET
+/api/v1/instructor/#Text/documents              APIInstructorDocumentsR  GET POST
+/api/v1/instructor/#Text/documents/#DocumentId  APIInstructorDocumentR   GET 

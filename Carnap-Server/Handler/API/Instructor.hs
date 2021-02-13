@@ -33,3 +33,11 @@ postAPIInstructorDocumentsR ident = do Entity uid _ <- runDB (getBy $ UniqueUser
                                                            maybe (sendStatusJSON conflict409 ("A document with that name already exists" :: Text)) return
                                                writeFile (datadir </> "documents" </> unpack ident </> unpack (documentFilename doc)) " " --XXX clobbers existing file
                                                returnJson inserted --should also set location header
+
+getAPIInstructorDocumentR :: Text -> DocumentId -> Handler Value
+getAPIInstructorDocumentR ident docid = do Entity uid _ <- runDB (getBy $ UniqueUser ident) 
+                                                      >>= maybe (sendStatusJSON notFound404 ("No such instructor" :: Text)) pure
+                                           doc <- runDB (get docid) >>= maybe (sendStatusJSON notFound404 ("No such document" :: Text)) pure
+                                           if documentCreator doc == uid
+                                               then returnJson doc
+                                               else (sendStatusJSON forbidden403 ("Document not owned by this instructor" :: Text))
