@@ -7,6 +7,7 @@ import Util.Database
 import Util.LTI
 import Util.Grades
 import Util.API
+import Util.Handler
 import Control.Monad (fail)
 import Yesod.Form.Bootstrap3
 import Yesod.Form.Jquery
@@ -880,20 +881,6 @@ addCoInstructorForm instructors cid extra = do
           courseId = hiddenField
 
           toItem (Entity _ i) = (userDataLastName i ++ ", " ++ userDataFirstName i, userDataInstructorId i)
-
-saveTo
-    :: FilePath
-    -> FilePath
-    -> FileInfo
-    -> HandlerFor App ()
-saveTo thedir fn file = do
-        datadir <- appDataRoot <$> (appSettings <$> getYesod)
-        let path = datadir </> thedir
-        liftIO $
-            do createDirectoryIfMissing True path
-               e <- doesFileExist (path </> fn)
-               if e then removeFile (path </> fn) else return ()
-               fileMove file (path </> fn)
 
 deleteModal :: Text -> [(Entity AssignmentMetadata, Maybe Document)] -> WidgetFor App ()
 deleteModal id aplusd =

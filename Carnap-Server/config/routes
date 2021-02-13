@@ -29,4 +29,4 @@
 /shared/#Text/#Text/download        DocumentDownloadR        GET
 /srv/#Text/*[Text]                  ServeR                   GET
 /api/v1                             APIR                     GET
-/api/v1/instructor/#Text/documents  APIInstructorDocumentsR  GET
+/api/v1/instructor/#Text/documents  APIInstructorDocumentsR  GET POST

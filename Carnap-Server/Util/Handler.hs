@@ -9,6 +9,7 @@ import Text.Pandoc.Walk (walkM, walk)
 import Text.Julius (juliusFile,rawJS)
 import Text.Hamlet (hamletFile)
 import TH.RelativePaths (pathRelativeToCabalPackage)
+import System.Directory (removeFile, doesFileExist, createDirectoryIfMissing)
 import Util.Data
 import Util.Database
 
@@ -45,6 +46,20 @@ fileToHtml filters path = do Markdown md <- markdownFromFile path
                                                 return $ Right $ (write pd', meta)
                                  Left e -> return $ Left e
     where write = writePandocTrusted yesodDefaultWriterOptions { writerExtensions = carnapPandocExtensions, writerWrapText = WrapPreserve }
+
+saveTo
+    :: FilePath
+    -> FilePath
+    -> FileInfo
+    -> HandlerFor App ()
+saveTo thedir fn file = do
+        datadir <- appDataRoot <$> (appSettings <$> getYesod)
+        let path = datadir </> thedir
+        liftIO $
+            do createDirectoryIfMissing True path
+               e <- doesFileExist (path </> fn)
+               if e then removeFile (path </> fn) else return ()
+               fileMove file (path </> fn)
 
 serveDoc :: (Document -> FilePath -> Handler a) -> Document -> FilePath -> UserId -> Handler a
 serveDoc sendIt doc path creatoruid = case documentScope doc of 
