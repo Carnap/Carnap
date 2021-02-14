@@ -30,5 +30,5 @@
 /srv/#Text/*[Text]                                   ServeR                       GET
 /api/v1                                              APIR                         GET
 /api/v1/instructor/#Text/documents                   APIInstructorDocumentsR      GET POST
-/api/v1/instructor/#Text/documents/#DocumentId       APIInstructorDocumentR       GET 
+/api/v1/instructor/#Text/documents/#DocumentId       APIInstructorDocumentR       GET PATCH
 /api/v1/instructor/#Text/documents/#DocumentId/data  APIInstructorDocumentDataR   GET PUT
