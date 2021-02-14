@@ -129,6 +129,8 @@ instance Yesod App where
          (CourseAssignmentR coursetitle _) -> enrolledIn coursetitle
          APIR -> requireAPIKey >> return Authorized
          APIInstructorDocumentsR ident -> requireAPIKeyFor ident
+         APIInstructorDocumentR ident _ -> requireAPIKeyFor ident
+         APIInstructorDocumentDataR ident _ -> requireAPIKeyFor ident
          AdminR -> admin
          AdminPromoteR -> noAdmins
          _ -> return Authorized

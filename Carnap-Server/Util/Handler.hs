@@ -69,15 +69,15 @@ serveDoc sendIt doc path creatoruid = case documentScope doc of
                                                _ -> notFound
                                 _ -> sendIt doc path
 
-asFile :: Document -> FilePath -> Handler TypedContent
+asFile :: Document -> FilePath -> Handler a
 asFile doc path = do addHeader "Content-Disposition" $ concat
                         [ "attachment;"
                         , "filename=\"", documentFilename doc, "\""
                         ]
                      sendFile typeOctet path
 
-asCss :: Document -> FilePath -> Handler TypedContent
+asCss :: Document -> FilePath -> Handler a
 asCss _ path = sendFile typeCss path
 
-asJs :: Document -> FilePath -> Handler TypedContent
+asJs :: Document -> FilePath -> Handler a
 asJs _ path = sendFile typeJavascript path
