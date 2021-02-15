@@ -31,7 +31,9 @@ postAPIInstructorDocumentsR ident = do Entity uid _ <- userFromIdent ident
                                                inserted <- runDB (insertUnique doc) >>= 
                                                            maybe (sendStatusJSON conflict409 ("A document with that name already exists" :: Text)) return
                                                writeFile path " " --XXX clobbers existing file
-                                               returnJson inserted --should also set location header
+                                               render <- getUrlRender
+                                               addHeader "Location" (render $ APIInstructorDocumentR ident inserted)
+                                               sendStatusJSON created201 inserted
 
 getAPIInstructorDocumentR :: Text -> DocumentId -> Handler Value
 getAPIInstructorDocumentR ident docid = do Entity uid _ <- userFromIdent ident 
