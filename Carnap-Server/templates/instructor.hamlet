@@ -152,7 +152,8 @@
                     <dl.row>
                         <dt.col-sm-3>API Key
                         $maybe Entity _ (AuthAPI {authAPIKey = theKey}) <- mapiAuth
-                            <dd.col-sm-9>#{show theKey}
+                            <dd.col-sm-9>
+                                <code.wrapped>#{decodeUtf8 theKey}
                         $nothing
                             <dd.col-sm-9>None
                     <form method=post enctype=#{enctypeCreateAPIKey}>
