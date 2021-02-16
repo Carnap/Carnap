@@ -14,7 +14,7 @@ import Yesod.Auth.LTI13 (UncheckedLtiTokenClaims(..))
 import Data.Aeson (encode, decodeStrict)
 import qualified Data.Text as T
 
--- | A type class to shorten the mess required to have generic functions using
+-- | A type alias to shorten the mess required to have generic functions using
 --   the database (used for modules when we cannot name the @App@ instance
 --   since they are imported by Foundation where it is defined)
 type PersistentSite site =

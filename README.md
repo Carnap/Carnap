@@ -232,6 +232,18 @@ picks up the dependencies for Carnap-Server from Nix since it is run in a
 NOTE: `Carnap-Server/config/settings.yml` needs to be present for Carnap-Server to
 work in HLS (just copy it from the example settings file).
 
+### Working on documentation locally
+
+The documentation is available using the `/srv/` route, which can also be used
+locally. If you want to do this, you can make a symbolic link like the following:
+
+```
+carnap$ ln -s /path/to/your/clone/of/Carnap-Documentation ./dataroot/srv
+```
+
+You can then browse to `http://localhost:3000/srv` to have an immediate preview
+of the documentation as you work on it.
+
 ## Maintainer information
 
 ### CI requirements
