@@ -1,4 +1,4 @@
-p 
+p, ol, dl, ul
     max-width:650pt
 
 .exercise
