@@ -113,11 +113,13 @@ makeApplication foundation = do
         zipsettings = if appDevel (appSettings foundation) 
                         then GzipIgnore
                         else GzipPreCompressed GzipCompress
-        throttleSettings = (defaultThrottleSettings expirationSpec) {
-                                throttleSettingsIsThrottled = \req -> 
+        throttleSettings = (defaultThrottleSettings expirationSpec) 
+                                { throttleSettingsIsThrottled = \req -> 
                                     case pathInfo req of
                                         "api":_ -> True
                                         _ -> False
+                                , throttleSettingsRate = 2 --two requests per IP per second
+                                , throttleSettingsBurst = 4 --four total requests per second
                                 }
     -- Create the WAI application and apply middlewares
     logWare <- makeLogWare foundation
