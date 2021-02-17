@@ -75,7 +75,7 @@ putAPIInstructorDocumentDataR ident docid = do Entity uid _ <- userFromIdent ide
                                                checkUID doc uid
                                                path <- docFilePath ident doc 
                                                connect rawRequestBody (sinkFile path)
-                                               sendStatusJSON created201 ("contents updated" :: Text)
+                                               returnJson ("contents updated" :: Text)
 
 userFromIdent :: Text -> Handler (Entity User)
 userFromIdent ident = runDB (getBy $ UniqueUser ident) >>= maybe (sendStatusJSON notFound404 ("No such instructor" :: Text)) pure
