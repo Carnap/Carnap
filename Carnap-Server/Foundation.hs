@@ -26,7 +26,6 @@ import Web.Cookie (sameSiteNone, SetCookie(setCookieSameSite))
 
 import Util.Database
 import Util.LTI
-import Util.API
 
 -- | The foundation datatype for your application. This can be a good place to
 -- keep settings and values requiring initialization before your application
@@ -134,14 +133,14 @@ instance Yesod App where
          AdminR -> admin
          AdminPromoteR -> noAdmins
          _ -> return Authorized
-        where requireAPIKey = do key <- requireApiKeyFromHeader 
-                                 mauth <- runDB $ getBy $ UniqueAuthAPI key
-                                 maybe (sendStatusJSON forbidden403 ("Valid API Key Required" :: Text)) (return) mauth
-              requireAPIKeyFor ident = do Entity _ auth <- requireAPIKey
-                                          Entity uid _ <- runDB (getBy $ UniqueUser ident)
-                                                        >>= maybe (sendStatusJSON notFound404 ("No such user" :: Text)) pure
-                                          if uid == authAPIUser auth then return Authorized
-                                                                     else (sendStatusJSON forbidden403 ("Valid API Key Required" :: Text))
+        where requireAPIKey = maybeAPIKey >>= maybe (sendStatusJSON forbidden403 ("Valid API Key Required" :: Text)) (return)
+              requireAPIKeyFor ident = do musr <- runDB (getBy $ UniqueUser ident)
+                                          usr <- maybe (sendStatusJSON notFound404 ("No such user" :: Text)) return musr
+                                          mauth <- maybeAPIKey
+                                          case mauth of
+                                              Nothing -> sendStatusJSON forbidden403 ("Valid API Key Required" :: Text)
+                                              Just (Entity _ auth) | entityKey usr == authAPIUser auth -> return Authorized
+                                              Just _ -> isAdminKey >>= bool (sendStatusJSON forbidden403 ("Valid API Key Required" :: Text)) (return Authorized)
               retrieveInstructors cid course = runDB $ do
                      coInstructors <- map entityVal <$> selectList [CoInstructorCourse ==. cid] []
                      selectList ([UserDataInstructorId ==. Just (courseInstructor course)]
@@ -219,6 +218,7 @@ instance Yesod App where
                               then Authorized
                               else Unauthorized "There are already site administrators on this site"
               isAdmin = maybe False (userDataIsAdmin . entityVal) <$> maybeUserData
+              isAdminKey = maybe False (userDataIsAdmin . entityVal) <$> maybeAPIKeyUserData
 
     -- This function creates static content files in the static folder
     -- and names them based on a hash of their content. This allows

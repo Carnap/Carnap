@@ -3,12 +3,14 @@
 module Util.Database where
 
 import Import.NoFoundation
+import Util.API
 import Carnap.GHCJS.SharedTypes(ProblemSource(..))
 
 newtype CachedMaybeUserData = CachedMaybeUserData { unCacheMaybeUserData :: Maybe (Entity UserData) }
 newtype CachedMaybeUserCourse = CachedMaybeUserCourse { unCacheMaybeUserCourse :: Maybe (Entity Course) }
 newtype CachedMaybeTextbook = CachedMaybeUserTextbook { unCacheMaybeUserTextbook :: Maybe (Entity AssignmentMetadata) }
 newtype CachedMaybeTextbookDoc = CachedMaybeUserTextbookDoc { unCacheMaybeUserTextbookDoc :: Maybe (Entity Document) }
+newtype CachedMaybeAuthAPI = CachedMaybeAuthAPI { unCacheMaybeAuthAPI :: Maybe (Entity AuthAPI) }
 
 --retrieve userdata using a per-request cache to avoid multiple DB lookups.
 maybeUserData = unCacheMaybeUserData <$> cached (CachedMaybeUserData <$> getData)
@@ -34,6 +36,19 @@ maybeUserTextbookDoc = unCacheMaybeUserTextbookDoc <$> cached (CachedMaybeUserTe
                        case mut of
                            Nothing -> return Nothing
                            Just (Entity _ ut) -> runDB . getEntity $ assignmentMetadataDocument ut
+
+maybeAPIKey = unCacheMaybeAuthAPI <$> cached (CachedMaybeAuthAPI <$> getData)
+    where getData = do mkey <- getAPIKeyFromHeader
+                       case mkey of
+                           Nothing -> return Nothing
+                           Just key -> runDB $ getBy $ UniqueAuthAPI key
+
+maybeAPIKeyUserData = unCacheMaybeUserData <$> cached (CachedMaybeUserData <$> getData)
+    where getData = do mauth <- maybeAPIKey
+                       case mauth of
+                          Nothing -> return Nothing
+                          Just (Entity _ auth) -> runDB (getBy $ UniqueUserData $ authAPIUser auth)
+
                            
 -- | Try to insert a piece of data into the database, returning False in
 -- case of a clash
@@ -69,7 +84,6 @@ checkCourseOwnership coursetitle = do
                user <- runDB (get uid) >>= maybe (permissionDenied "failed to get user") pure
                classes <- classesByInstructorIdent (userIdent user)
                unless (course `elem` map entityVal classes) (permissionDenied "this doesn't appear to be your course")
-
 
 -- | given a UserId, return Just the user data or Nothing
 getUserMD uid = do mmd <- runDB $ getBy $ UniqueUserData uid
