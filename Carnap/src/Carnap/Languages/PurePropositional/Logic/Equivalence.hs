@@ -266,5 +266,9 @@ zachPropEqCalc = mkNDCalc
     , ndProcessLineMemo = Just hoProcessLineHilbertImplicitMemo
     , ndParseSeq = parseSeqOver (purePropFormulaParser thomasBolducZachOpts)
     , ndParseForm = (purePropFormulaParser thomasBolducZachOpts)
+    , ndNotation = dropBotRight . dropOuterParens 
     }
 
+dropBotRight s = case (break (== '⊢') s) of
+      (a,"⊢ ⊥") -> a ++ "⊢ ?"
+      _ -> s

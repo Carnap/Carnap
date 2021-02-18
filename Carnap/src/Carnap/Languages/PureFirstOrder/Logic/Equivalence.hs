@@ -214,5 +214,5 @@ zachFOLEqCalc = mkNDCalc
     , ndProcessLineMemo = Just hoProcessLineHilbertImplicitMemo
     , ndParseSeq = parseSeqOver thomasBolducAndZachFOL2019FormulaParserStrict
     , ndParseForm = thomasBolducAndZachFOL2019FormulaParserStrict
-    , ndNotation = dropOuterParens
+    , ndNotation = ndNotation zachPropEqCalc
     }
