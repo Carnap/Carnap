@@ -314,7 +314,8 @@ postInstructorR ident = do
         FormFailure s -> setMessage $ "Something went wrong: " ++ toMarkup (show s)
         FormMissing -> return ()
     case newapikeyrslt of
-        FormSuccess () -> do Entity _ ud <- maybeUserData >>= maybe (permissionDenied "Couldn't find user data") return
+        FormSuccess () -> do Entity uid _ <- runDB (getBy $ UniqueUser ident) >>= maybe (permissionDenied "Couldn't find user data") return
+                             Entity _ ud <- runDB (getBy $ UniqueUserData uid) >>= maybe (permissionDenied "Couldn't find user data") return
                              let UserData { userDataUserId = uid, userDataInstructorId = miid } = ud
                              iid <- maybe (permissionDenied "Only instructors can get API keys") return miid
                              newKey <- generateAPIKey
