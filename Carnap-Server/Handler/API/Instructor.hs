@@ -35,7 +35,7 @@ postAPIInstructorDocumentsR ident = do Entity uid _ <- userFromIdent ident
                                                liftIO (doesFileExist path) >>= --don't clobber and annex
                                                    bool (return ()) (sendStatusJSON conflict409 ("A document with that name already exists." :: Text)) 
                                                inserted <- runDB (insertUnique doc) >>=
-                                                           maybe (sendStatusJSON conflict409 ("A document with that name already exists" :: Text)) return
+                                                           maybe (sendStatusJSON conflict409 ("A document with that name already exists." :: Text)) return
                                                writeFile path " " 
                                                render <- getUrlRender
                                                addHeader "Location" (render $ APIInstructorDocumentR ident inserted)
