@@ -5,6 +5,8 @@ import           Data.HashMap.Strict as HM
 import           Import
 import           Util.Data           (SharingScope (..))
 import           Util.Handler
+import           System.Directory
+import           System.FilePath
 
 getAPIInstructorDocumentsR :: Text -> Handler Value
 getAPIInstructorDocumentsR ident = do Entity uid _ <- userFromIdent ident
@@ -23,17 +25,22 @@ postAPIInstructorDocumentsR ident = do Entity uid _ <- userFromIdent ident
                                                                 . HM.insertWith (\_ y -> y) "scope" (toJSON Private)
                                                                 $ hm
                                                         in return $ Object hm'
-                                                   _ -> sendStatusJSON badRequest400 ("improper JSON" :: Text)
+                                                   _ -> sendStatusJSON badRequest400 ("Improper JSON" :: Text)
                                        case fromJSON val' :: Result Document of
                                            Error e -> (sendStatusJSON badRequest400 e)
+                                           Success doc | badFileName (documentFilename doc) -> 
+                                               sendStatusJSON badRequest400 ("Improper filename" :: Text)
                                            Success doc -> do
                                                path <- docFilePath ident doc
+                                               liftIO (doesFileExist path) >>= --don't clobber and annex
+                                                   bool (sendStatusJSON conflict409 ("A document with that name already exists" :: Text)) (return ())
                                                inserted <- runDB (insertUnique doc) >>=
                                                            maybe (sendStatusJSON conflict409 ("A document with that name already exists" :: Text)) return
-                                               writeFile path " " --XXX clobbers existing file
+                                               writeFile path " " 
                                                render <- getUrlRender
                                                addHeader "Location" (render $ APIInstructorDocumentR ident inserted)
                                                sendStatusJSON created201 inserted
+    where badFileName s = not (takeFileName (unpack s) == (unpack s))
 
 getAPIInstructorDocumentR :: Text -> DocumentId -> Handler Value
 getAPIInstructorDocumentR ident docid = do Entity uid _ <- userFromIdent ident
