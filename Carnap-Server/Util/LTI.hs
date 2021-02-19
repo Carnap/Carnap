@@ -1,6 +1,5 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE NamedFieldPuns #-}
-{-# LANGUAGE ConstraintKinds #-}
 module Util.LTI (
     tryLTIAutoRegistration
   , regErrorToString
@@ -13,15 +12,6 @@ import qualified Yesod.Auth.LTI13 as LTI
 import Yesod.Auth.LTI13 (UncheckedLtiTokenClaims(..))
 import Data.Aeson (encode, decodeStrict)
 import qualified Data.Text as T
-
--- | A type alias to shorten the mess required to have generic functions using
---   the database (used for modules when we cannot name the @App@ instance
---   since they are imported by Foundation where it is defined)
-type PersistentSite site =
-    (PersistUniqueRead (YesodPersistBackend site),
-     PersistUniqueWrite (YesodPersistBackend site),
-     YesodPersist site,
-     BaseBackend (YesodPersistBackend site) ~ SqlBackend)
 
 
 data LTIUserData
