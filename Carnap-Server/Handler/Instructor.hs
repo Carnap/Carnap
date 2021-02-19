@@ -659,6 +659,13 @@ updateAssignmentForm extra = do
 updateAssignmentModal :: WidgetFor App () -> Enctype -> WidgetFor App ()
 updateAssignmentModal = genericModal "Assignment" "Update Assignment Data"
 
+scopes :: [(Text, SharingScope)]
+scopes = [ ("Everyone (Visible to everyone)", Public)
+         , ("Instructors (Visible to all instructors)", InstructorsOnly)
+         , ("Link Only (Available via the link, but unlisted)", LinkOnly)
+         , ("Private (Not shared with other instructors, available to classes if assigned)", Private)
+         ]
+
 uploadDocumentForm
     :: Markup
     -> MForm (HandlerFor App) ((FormResult
@@ -670,12 +677,6 @@ uploadDocumentForm = renderBootstrap3 BootstrapBasicForm $ (,,,,)
             <*> aopt textareaField (bfs ("Description"::Text)) Nothing
             <*> lift (liftIO getCurrentTime)
             <*> aopt tagField "Tags" Nothing
-    where scopes :: [(Text,SharingScope)]
-          scopes = [("Everyone (Visible to everyone)", Public)
-                   ,("Instructors (Visible to all instructors)", InstructorsOnly)
-                   ,("Link Only (Available, but visible to no one)", LinkOnly)
-                   ,("Private (Unavailable)", Private)
-                   ]
 
 updateDocumentForm
     :: Markup
@@ -692,12 +693,6 @@ updateDocumentForm = renderBootstrap3 BootstrapBasicForm $ (,,,,)
     where docId :: (Monad m, RenderMessage (HandlerSite m) FormMessage) => Field m String
           docId = hiddenField
 
-          scopes :: [(Text,SharingScope)]
-          scopes = [("Everyone (Visible to everyone)", Public)
-                   ,("Instructors (Visible to all instructors)", InstructorsOnly)
-                   ,("Link Only (Available, but visible to no one)", LinkOnly)
-                   ,("Private (Unavailable)", Private)
-                   ]
 
 tagField :: Field Handler [Text]
 tagField = Field
