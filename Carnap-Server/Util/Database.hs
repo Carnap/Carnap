@@ -7,6 +7,7 @@ import           Import.NoFoundation
 import           Util.API
 import           Util.Data                (BookAssignmentTable)
 
+newtype CachedMaybeUser = CachedMaybeUser { unCacheMaybeUser :: Maybe (Entity User) }
 newtype CachedMaybeUserData = CachedMaybeUserData { unCacheMaybeUserData :: Maybe (Entity UserData) }
 newtype CachedMaybeUserCourse = CachedMaybeUserCourse { unCacheMaybeUserCourse :: Maybe (Entity Course) }
 newtype CachedMaybeTextbook = CachedMaybeUserTextbook { unCacheMaybeUserTextbook :: Maybe (Entity AssignmentMetadata) }
@@ -58,6 +59,23 @@ maybeAPIKey = unCacheMaybeAuthAPI <$> cached (CachedMaybeAuthAPI <$> getData)
                        case mkey of
                            Nothing  -> return Nothing
                            Just key -> runDB $ getBy $ UniqueAuthAPI key
+
+maybeAPIIdent
+    :: (PersistentSite site)
+    => HandlerFor site (Maybe Text)
+maybeAPIIdent = do
+    muser <- unCacheMaybeUser <$> cached (CachedMaybeUser <$> getUser)
+    return $ (userIdent . entityVal) <$> muser
+    where
+    getUser :: PersistentSite site => HandlerFor site (Maybe (Entity User))
+    getUser = do
+        ak <- maybeAPIKey
+        let muid = (authAPIUser . entityVal) <$> ak
+        case muid of
+            Nothing -> return Nothing
+            Just uid -> do
+                user <- (runDB $ get uid)
+                return $ (Entity uid) <$> user
 
 maybeAPIKeyUserData
     :: PersistentSite site
