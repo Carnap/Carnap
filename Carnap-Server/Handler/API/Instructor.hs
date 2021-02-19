@@ -13,7 +13,7 @@ getAPIInstructorDocumentsR ident = do Entity uid _ <- userFromIdent ident
 
 postAPIInstructorDocumentsR :: Text -> Handler Value
 postAPIInstructorDocumentsR ident = do Entity uid _ <- userFromIdent ident
-                                       val <- requireJsonBody :: Handler Value
+                                       val <- requireCheckJsonBody :: Handler Value
                                        time <- liftIO $ getCurrentTime
                                        val' <- case val of
                                                    Object hm ->
@@ -55,13 +55,13 @@ patchAPIInstructorDocumentR :: Text -> DocumentId -> Handler Value
 patchAPIInstructorDocumentR ident docid = do Entity uid _ <- userFromIdent ident
                                              doc <- runDB (get docid) >>= maybe (sendStatusJSON notFound404 ("No such document" :: Text)) pure
                                              checkUID doc uid
-                                             patch <- requireJsonBody :: Handler DocumentPatch
+                                             patch <- requireCheckJsonBody :: Handler DocumentPatch
                                              doc' <- runDB $ updateGet docid
                                                            $ maybeUpdate DocumentScope (patchScope patch)
                                                           ++ maybeUpdate DocumentDescription (patchDescription patch)
                                              returnJson doc'
     where maybeUpdate field (Just val) = [field =. val]
-          maybeUpdate field Nothing    = []
+          maybeUpdate _     Nothing    = []
 
 getAPIInstructorDocumentDataR :: Text -> DocumentId -> Handler Value
 getAPIInstructorDocumentDataR ident docid = do Entity uid _ <- userFromIdent ident
@@ -85,5 +85,6 @@ docFilePath :: Text -> Document -> Handler FilePath
 docFilePath ident doc = do datadir <- appDataRoot <$> (appSettings <$> getYesod)
                            return (datadir </> "documents" </> unpack ident </> unpack (documentFilename doc))
 
+checkUID :: MonadHandler m => Document -> Key User -> m ()
 checkUID doc uid | documentCreator doc == uid = return ()
                  | otherwise = sendStatusJSON forbidden403 ("Document not owned by this instructor" :: Text)
