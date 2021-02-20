@@ -9,8 +9,10 @@ import Text.Pandoc.Walk (walkM, walk)
 import Text.Julius (juliusFile,rawJS)
 import Text.Hamlet (hamletFile)
 import TH.RelativePaths (pathRelativeToCabalPackage)
+import System.Directory (removeFile, doesFileExist, createDirectoryIfMissing)
 import Util.Data
 import Util.Database
+import System.FilePath
 
 minimalLayout c = [whamlet|
                   <div.container>
@@ -46,6 +48,36 @@ fileToHtml filters path = do Markdown md <- markdownFromFile path
                                  Left e -> return $ Left e
     where write = writePandocTrusted yesodDefaultWriterOptions { writerExtensions = carnapPandocExtensions, writerWrapText = WrapPreserve }
 
+saveTo
+    :: FilePath
+    -> FilePath
+    -> FileInfo
+    -> HandlerFor App ()
+saveTo thedir fn file = do
+        datadir <- appDataRoot <$> (appSettings <$> getYesod)
+        let path = datadir </> thedir
+        liftIO $
+            do createDirectoryIfMissing True path
+               e <- doesFileExist (path </> fn)
+               if e then removeFile (path </> fn) else return ()
+               fileMove file (path </> fn)
+
+safeSaveTo
+    :: FilePath
+    -> FilePath
+    -> FileInfo
+    -> HandlerFor App ()
+safeSaveTo thedir fn file = do
+        datadir <- appDataRoot <$> (appSettings <$> getYesod)
+        let path = datadir </> thedir
+        e <- liftIO $ doesFileExist (path </> fn)
+        if e then setMessage "Refusing to overwrite existing file"
+             else liftIO $ do createDirectoryIfMissing True path
+                              fileMove file (path </> fn)
+
+isInvalidFilename :: Text -> Bool
+isInvalidFilename s = not (takeFileName (unpack s) == (unpack s))
+
 serveDoc :: (Document -> FilePath -> Handler a) -> Document -> FilePath -> UserId -> Handler a
 serveDoc sendIt doc path creatoruid = case documentScope doc of 
                                 Private -> do
@@ -54,15 +86,15 @@ serveDoc sendIt doc path creatoruid = case documentScope doc of
                                                _ -> notFound
                                 _ -> sendIt doc path
 
-asFile :: Document -> FilePath -> Handler TypedContent
+asFile :: Document -> FilePath -> Handler a
 asFile doc path = do addHeader "Content-Disposition" $ concat
                         [ "attachment;"
                         , "filename=\"", documentFilename doc, "\""
                         ]
                      sendFile typeOctet path
 
-asCss :: Document -> FilePath -> Handler TypedContent
+asCss :: Document -> FilePath -> Handler a
 asCss _ path = sendFile typeCss path
 
-asJs :: Document -> FilePath -> Handler TypedContent
+asJs :: Document -> FilePath -> Handler a
 asJs _ path = sendFile typeJavascript path

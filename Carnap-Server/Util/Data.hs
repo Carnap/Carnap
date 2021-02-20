@@ -1,3 +1,4 @@
+{-#LANGUAGE DeriveGeneric #-}
 module Util.Data where
 
 import ClassyPrelude.Yesod
@@ -31,8 +32,15 @@ newtype BookAssignmentTable = BookAssignmentTable {readAssignmentTable :: IntMap
 derivePersistField "BookAssignmentTable"
 
 data SharingScope = Public | InstructorsOnly | LinkOnly | Private
-    deriving (Show, Read, Eq)
+    deriving (Show, Read, Eq, Generic)
+instance ToJSON SharingScope
+instance FromJSON SharingScope
 derivePersistField "SharingScope"
+
+--for access scoping in the future, if necessary
+data APIKeyScope = APIKeyScopeRoot
+    deriving (Show, Read, Eq)
+derivePersistField "APIKeyScope"
 
 data AvailabilityStatus = ViaPassword Text 
                         | HiddenViaPassword Text

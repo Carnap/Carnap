@@ -148,6 +148,17 @@
                                                 <i.fa.fa-cog>
                                             <button.btn.btn-sm.btn-secondary alt="download" title="download this document" type="button" onclick="window.open('@{DocumentDownloadR ident (documentFilename a)}')">
                                                 <i.fa.fa-cloud-download>
+                    <hr>
+                    <dl.row>
+                        <dt.col-sm-3>API Key
+                        $maybe Entity _ (AuthAPI {authAPIKey = theKey}) <- mapiAuth
+                            <dd.col-sm-9>
+                                <code.wrapped>#{decodeUtf8 theKey}
+                        $nothing
+                            <dd.col-sm-9>None
+                    <form method=post enctype=#{enctypeCreateAPIKey}>
+                        ^{createAPIKeyWidget}
+                        <input.btn.btn-primary  type=submit value="Create New Key">
                 <div.tab-pane id="manageCourse" role="tabpanel">
                     <h2>Create Course
                     <form method=post enctype=#{enctypeCreateCourse}>

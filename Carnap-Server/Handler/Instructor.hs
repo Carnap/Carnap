@@ -6,6 +6,8 @@ import Util.Data
 import Util.Database
 import Util.LTI
 import Util.Grades
+import Util.API
+import Util.Handler
 import Control.Monad (fail)
 import Yesod.Form.Bootstrap3
 import Yesod.Form.Jquery
@@ -23,7 +25,7 @@ import System.FilePath (takeExtension)
 import System.Directory (removeFile, doesFileExist, createDirectoryIfMissing)
 
 putInstructorR :: Text -> Handler Value
-putInstructorR _ = do
+putInstructorR ident = do
         ((assignmentrslt,_),_) <- runFormPost (identifyForm "updateAssignment" $ updateAssignmentForm)
         ((courserslt,_),_) <- runFormPost (identifyForm "updateCourse" $ updateCourseForm Nothing Nothing [])
         ((documentrslt,_),_) <- runFormPost (identifyForm "updateDocument" $ updateDocumentForm)
@@ -32,9 +34,10 @@ putInstructorR _ = do
         case (assignmentrslt,courserslt,documentrslt,accommodationrslt,extensionrslt) of
             (FormSuccess (idstring, mdue, mduetime,mfrom,mfromtime,muntil,muntiltime,mrelease,mreleasetime,mdesc,mpass,mhidden,mlimit),_,_,_,_) -> do
                  k <- maybe (sendStatusJSON badRequest400 ("Could not read assignment key" :: Text)) return $ readMaybe idstring
-                 runDB $ do val <- get k >>= maybe (sendStatusJSON notFound404 ("Could not find assignment" :: Text)) pure
-                            let cid = assignmentMetadataCourse val
-                            course <- get cid >>= maybe (sendStatusJSON notFound404 ("Could not find course" :: Text)) pure
+                 val <- runDB (get k) >>= maybe (sendStatusJSON notFound404 ("Could not find assignment" :: Text)) pure
+                 let cid = assignmentMetadataCourse val
+                 checkCourseOwnership ident cid
+                 runDB $ do course <- get cid >>= maybe (sendStatusJSON notFound404 ("Could not find course" :: Text)) pure
                             let (Just tz) = tzByName . courseTimeZone $ course
                             let maccess = case (mpass,mhidden,mlimit) of
                                   (Nothing,_,_) -> Nothing
@@ -56,37 +59,39 @@ putInstructorR _ = do
                             update k [ AssignmentMetadataDescription =. unTextarea <$> mdesc]
                  returnJson ("updated!"::Text)
             (_,FormSuccess (UpdateCourse idstring mdesc mstart mend mpoints mopen mtext mLtiId),_,_,_) -> do
-                 k <- maybe (sendStatusJSON badRequest400 ("Could not read course key" :: Text))
-                      return . readMaybe . T.unpack $ idstring
-                 runDB $ do course <- get k >>= maybe (sendStatusJSON badRequest400 ("could not find course" :: Text)) pure
+                 cid <- maybe (sendStatusJSON badRequest400 ("Could not read course key" :: Text))
+                        return . readMaybe . T.unpack $ idstring
+                 checkCourseOwnership ident cid
+                 runDB $ do course <- get cid >>= maybe (sendStatusJSON badRequest400 ("could not find course" :: Text)) pure
                             let Just tz = tzByName . courseTimeZone $ course
                                 unlocalize day = localTimeToUTCTZ tz (LocalTime day (TimeOfDay 23 59 59))
-                            update k [ CourseDescription =. (unTextarea <$> mdesc) ]
-                            update k [ CourseTextBook =. mtext]
-                            maybeDo mstart (\start -> update k
+                            update cid [ CourseDescription =. (unTextarea <$> mdesc) ]
+                            update cid [ CourseTextBook =. mtext]
+                            maybeDo mstart (\start -> update cid
                               [ CourseStartDate =. unlocalize start])
-                            maybeDo mend (\end-> update k
+                            maybeDo mend (\end-> update cid
                               [ CourseEndDate =. unlocalize end])
-                            maybeDo mpoints (\points-> update k 
+                            maybeDo mpoints (\points-> update cid
                               [ CourseTotalPoints =. points ])
-                            maybeDo mopen (\open -> update k
+                            maybeDo mopen (\open -> update cid
                               [ CourseEnrollmentOpen =. open])
 
                             let mnewLtiId = A.decode =<< (fromStrict . encodeUtf8 <$> mLtiId)
-                                autoregKey = CourseAutoregKey k
+                                autoregKey = CourseAutoregKey cid
                             -- if the autoreg form field is
                             -- cleared/invalidated, we delete the course's auto
                             -- registration record. otherwise update/add it
                             maybe (delete autoregKey)
-                                (\(AutoregTriple lab iss did cid) ->
-                                    repsert autoregKey $ CourseAutoreg lab iss did cid k)
+                                (\(AutoregTriple lab iss did k) ->
+                                    repsert autoregKey $ CourseAutoreg lab iss did k cid)
                                 mnewLtiId
 
                  returnJson ("updated!"::Text)
             (_,_,FormSuccess (idstring, mscope, mdesc,mfile,mtags),_,_) -> do
                  k <- maybe (sendStatusJSON badRequest400 ("Could not read document key" :: Text)) return $ readMaybe idstring
                  doc <- runDB (get k) >>= maybe (sendStatusJSON notFound404 ("Could not find document" :: Text)) pure
-                 ident <- getIdent (documentCreator doc) >>= maybe (sendStatusJSON notFound404 ("Could not find document creator" :: Text)) pure
+                 ident' <- getIdent (documentCreator doc) >>= maybe (sendStatusJSON notFound404 ("Could not find document creator" :: Text)) pure
+                 if ident == ident' then return () else sendStatusJSON forbidden403 ("You don't seem to own this document" :: Text)
                  runDB $ do update k [ DocumentDescription =. (unTextarea <$> mdesc) ]
                             maybeDo mscope (\scope -> update k [ DocumentScope =. scope ])
                             maybeDo mtags (\tags -> do
@@ -98,6 +103,7 @@ putInstructorR _ = do
                  returnJson ("updated!" :: Text)
             (_,_,_,FormSuccess (cidstring, uidstring, mextramin, mfactor,mextrahours),_) -> do
                  cid <- maybe (sendStatusJSON badRequest400 ("Could not read course key" :: Text)) return $ readMaybe cidstring
+                 checkCourseOwnership ident cid
                  uid <- maybe (sendStatusJSON badRequest400 ("Could not read user key" :: Text)) return $ readMaybe uidstring
                  do runDB $ upsertBy (UniqueAccommodation cid uid)
                                      (Accommodation cid uid 
@@ -129,28 +135,28 @@ deleteInstructorR ident = do
     msg <- requireCheckJsonBody :: Handler InstructorDelete
     case msg of
       DeleteAssignment aid -> do 
-           runDB $ do 
-                asgn <- get aid >>= maybe (sendStatusJSON notFound404 ("Couldn't get assignment" :: Text)) pure
-                let cid = assignmentMetadataCourse asgn
-                course <- get cid >>= maybe (sendStatusJSON notFound404 ("Couldn't get course of assignment" :: Text)) pure
-                if courseTextBook course == Just aid then update cid [CourseTextBook =. Nothing] else return ()
-                deleteCascade aid
+           asgn <- runDB (get aid) >>= maybe (sendStatusJSON notFound404 ("Couldn't get assignment" :: Text)) pure
+           let cid = assignmentMetadataCourse asgn
+           checkCourseOwnership ident cid
+           runDB $ do
+               course <- get cid >>= maybe (sendStatusJSON notFound404 ("Couldn't get course of assignment" :: Text)) pure
+               if courseTextBook course == Just aid then update cid [CourseTextBook =. Nothing] else return ()
+               deleteCascade aid
            returnJson ("Assignment deleted" :: Text)
       DeleteProblems coursename setnum -> do 
-           checkCourseOwnership coursename
-           runDB $ do
-                Entity classkey theclass <- getBy (UniqueCourse coursename) >>= maybe (sendStatusJSON notFound404 ("Couldn't get course" :: Text)) pure
-                case readAssignmentTable <$> courseTextbookProblems theclass of
-                   Just assign -> update classkey [CourseTextbookProblems =. (Just $ BookAssignmentTable $ Data.IntMap.delete setnum assign)]
-                   Nothing -> sendStatusJSON notFound404 ("Couldn't get assignment table" :: Text)
+           Entity cid theclass <- runDB (getBy $ UniqueCourse coursename) >>= maybe (sendStatusJSON notFound404 ("Couldn't get course" :: Text)) pure
+           checkCourseOwnership ident cid
+           runDB $ case readAssignmentTable <$> courseTextbookProblems theclass of
+               Just assign -> update cid [CourseTextbookProblems =. (Just $ BookAssignmentTable $ Data.IntMap.delete setnum assign)]
+               Nothing -> sendStatusJSON notFound404 ("Couldn't get assignment table" :: Text)
            returnJson ("Assignment deleted" :: Text)
       DeleteCourse coursename -> do 
-           checkCourseOwnership coursename
+           Entity cid _ <- runDB (getBy $ UniqueCourse coursename) >>= maybe (sendStatusJSON notFound404 ("No course to delete, for some reason." :: Text)) pure
+           checkCourseOwnership ident cid
            runDB $ do
-               Entity classkey _ <- getBy (UniqueCourse coursename) >>= maybe (sendStatusJSON notFound404 ("No course to delete, for some reason." :: Text)) pure
-               studentsOf <- selectList [UserDataEnrolledIn ==. Just classkey] []
+               studentsOf <- selectList [UserDataEnrolledIn ==. Just cid] []
                mapM_ (\s -> update (entityKey s) [UserDataEnrolledIn =. Nothing]) studentsOf
-               deleteCascade classkey
+               deleteCascade cid
            returnJson ("Class Deleted"::Text)
       DeleteDocument fn -> do 
           datadir <- appDataRoot <$> (appSettings <$> getYesod)
@@ -168,12 +174,20 @@ deleteInstructorR ident = do
                             else return ()
           returnJson (fn ++ " deleted")
       DropStudent uid -> do 
+          Entity udid ud <- (runDB $ getBy $ UniqueUserData uid) >>= maybe (sendStatusJSON notFound404 ("Couldn't get student to drop" :: Text)) pure
+          maybe (return ()) (checkCourseOwnership ident) $ userDataEnrolledIn ud 
           name <- runDB $ do
-              Entity k ud <- getBy (UniqueUserData uid) >>= maybe (sendStatusJSON notFound404 ("Couldn't get student to drop" :: Text)) pure
-              update k [UserDataEnrolledIn =. Nothing]
+              update udid [UserDataEnrolledIn =. Nothing]
               return (userDataFirstName ud <> " " <> userDataLastName ud)
           returnJson ("Dropped " <> name)
-      DeleteToken tokid -> runDB (delete tokid) >> returnJson ("Timer reset" :: Text)
+      DeleteToken tokid -> do
+          cid <- runDB $ do 
+              tok <- get tokid >>= maybe (sendStatusJSON notFound404 ("Couldn't find token" :: Text)) pure
+              asgn <- get (assignmentAccessTokenAssignment tok) >>= maybe (sendStatusJSON notFound404 ("Couldn't find token" :: Text)) pure
+              return $ assignmentMetadataCourse asgn
+          checkCourseOwnership ident cid
+          runDB (delete tokid)
+          returnJson ("Timer reset" :: Text)
       DeleteCoInstructor ciid -> do
           runDB $ do
               asgns <- selectList [AssignmentMetadataAssigner ==. Just ciid] []
@@ -196,14 +210,16 @@ postInstructorR ident = do
     ((newclassrslt,_),_)   <- runFormPost (identifyForm "createCourse" createCourseForm)
     ((frombookrslt,_),_)   <- runFormPost (identifyForm "setBookAssignment" $ setBookAssignmentForm activeClasses)
     ((instructorrslt,_),_) <- runFormPost (identifyForm "addCoinstructor" $ addCoInstructorForm instructors ("" :: String))
-    case assignmentrslt of --XXX Should be passing a sensible data structure here, not a tuple
-        FormSuccess (doc, Entity classkey theclass, mdue, mduetime, mfrom, mfromtime, mtill, mtilltime, mrelease, mreleasetime, massignmentdesc, mpass, mhidden, mlimit, subtime) ->
-            do Entity _ user <- requireAuth
+    ((newapikeyrslt,_),_)  <- runFormPost (identifyForm "createAPIKey" createAPIKeyForm)
+    case assignmentrslt of --XXX Should be passing a sensible data structure here, not a giant tuple
+        FormSuccess (doc, Entity cid theclass, mdue, mduetime, mfrom, mfromtime, mtill, mtilltime, mrelease, mreleasetime, massignmentdesc, mpass, mhidden, mlimit, subtime) ->
+            do checkCourseOwnershipHTML ident cid
+               Entity _ user <- requireAuth
                iid <- instructorIdByIdent (userIdent user)
                         >>= maybe (setMessage "failed to retrieve instructor" >> notFound) pure
                mciid <- if courseInstructor theclass == iid
                             then return Nothing
-                            else runDB $ getBy (UniqueCoInstructor iid classkey)
+                            else runDB $ getBy (UniqueCoInstructor iid cid)
                let Just tz = tzByName . courseTimeZone $ theclass
                    localize (mdate,mtime) = case (mdate,mtime) of
                               (Just date, Just time') -> Just $ LocalTime date time'
@@ -216,7 +232,7 @@ postInstructorR ident = do
                    info = unTextarea <$> massignmentdesc
                    theassigner = mciid
                    thename = documentFilename (entityVal doc)
-               asgned <- runDB $ selectList [AssignmentMetadataCourse ==. classkey] []
+               asgned <- runDB $ selectList [AssignmentMetadataCourse ==. cid] []
                dupes <- runDB $ filter (\x -> documentFilename (entityVal x) == thename)
                                 <$> selectList [DocumentId <-. map (assignmentMetadataDocument . entityVal) asgned] []
                case mpass of
@@ -233,7 +249,7 @@ postInstructorR ident = do
                                                 , assignmentMetadataPointValue = Nothing
                                                 , assignmentMetadataTotalProblems = Nothing
                                                 , assignmentMetadataDate = subtime
-                                                , assignmentMetadataCourse = classkey
+                                                , assignmentMetadataCourse = cid
                                                 , assignmentMetadataAvailability =
                                                     case (mpass,mhidden,mlimit) of
                                                             (Nothing,_,_) -> Nothing
@@ -252,6 +268,7 @@ postInstructorR ident = do
                let fn = fileName file
                    info = unTextarea <$> docdesc
                    Just uid = musr -- FIXME: catch Nothing here
+               if isInvalidFilename fn then invalidArgs ["Invalid filename:" ++ fn] else return ()
                success <- tryInsert $ Document
                                         { documentFilename = fn
                                         , documentDate = subtime
@@ -260,7 +277,7 @@ postInstructorR ident = do
                                         , documentScope = sharescope
                                         }
                case success of
-                    Just k -> do saveTo ("documents" </> unpack ident) (unpack fn) file
+                    Just k -> do safeSaveTo ("documents" </> unpack ident) (unpack fn) file
                                  runDB $ maybeDo mtags (\tags -> do
                                             forM_ tags (\tag -> insert_ $ Tag k tag)
                                             return ())
@@ -291,40 +308,61 @@ postInstructorR ident = do
         FormFailure s -> setMessage $ "Something went wrong: " ++ toMarkup (show s)
         FormMissing -> return ()
     case frombookrslt of
-        FormSuccess (Entity classkey theclass, theassignment, duedate, mduetime) -> runDB $ do
-            let Just tz = tzByName . courseTimeZone $ theclass
-                localdue = case mduetime of
-                              Just time' -> LocalTime duedate time'
-                              _ -> LocalTime duedate (TimeOfDay 23 59 59)
-                due = localTimeToUTCTZ tz localdue
-            case readAssignmentTable <$> courseTextbookProblems theclass of
-                Just assign -> update classkey [CourseTextbookProblems =. (Just $ BookAssignmentTable $ Data.IntMap.insert theassignment due assign)]
-                Nothing -> update classkey [CourseTextbookProblems =. (Just $ BookAssignmentTable $ Data.IntMap.fromList [(theassignment, due)])]
+        FormSuccess (Entity cid theclass, theassignment, duedate, mduetime) -> do
+            checkCourseOwnershipHTML ident cid
+            runDB $ do
+                let Just tz = tzByName . courseTimeZone $ theclass
+                    localdue = maybe (LocalTime duedate $ TimeOfDay 23 59 59) (LocalTime duedate) mduetime
+                    due = localTimeToUTCTZ tz localdue
+                case readAssignmentTable <$> courseTextbookProblems theclass of
+                    Just assign -> update cid [CourseTextbookProblems =. (Just $ BookAssignmentTable $ Data.IntMap.insert theassignment due assign)]
+                    Nothing -> update cid [CourseTextbookProblems =. (Just $ BookAssignmentTable $ Data.IntMap.fromList [(theassignment, due)])]
         FormFailure s -> setMessage $ "Something went wrong: " ++ toMarkup (show s)
         FormMissing -> return ()
     case instructorrslt of
         (FormSuccess (cidstring , Just iid)) ->
             case readMaybe cidstring of
-                Just cid -> do success <- tryInsert $ CoInstructor iid cid
+                Just cid -> do checkCourseOwnershipHTML ident cid
+                               success <- tryInsert $ CoInstructor iid cid
                                case success of Just _ -> setMessage "Added Co-Instructor!"
                                                Nothing -> setMessage "Co-Instructor seems to already be added"
                 Nothing -> setMessage "Couldn't read cid string"
         FormSuccess (_, Nothing) -> setMessage "iid missing"
         FormFailure s -> setMessage $ "Something went wrong: " ++ toMarkup (show s)
         FormMissing -> return ()
+    case newapikeyrslt of
+        FormSuccess () -> do Entity uid _ <- runDB (getBy $ UniqueUser ident) >>= maybe (permissionDenied "Couldn't find user data") return
+                             Entity _ ud <- runDB (getBy $ UniqueUserData uid) >>= maybe (permissionDenied "Couldn't find user data") return
+                             let UserData { userDataUserId = uid, userDataInstructorId = miid } = ud
+                             iid <- maybe (permissionDenied "Only instructors can get API keys") return miid
+                             newKey <- generateAPIKey
+                             success <- runDB $ do deleteBy (UniqueAuthAPIUser uid) --clear existing key
+                                                   insertUnique $ AuthAPI { authAPIKey = newKey
+                                                                , authAPIUser = uid
+                                                                , authAPIInstructorId = iid
+                                                                , authAPIScope = APIKeyScopeRoot
+                                                                }
+                             case success of
+                                 Just _ -> setMessage "API Key Created"
+                                 _ -> setMessage "Couldn't delete old API Key"
+        FormFailure s -> setMessage $ "Something went wrong: " ++ toMarkup (show s)
+        FormMissing -> return ()
     redirect $ InstructorR ident
 
 postInstructorQueryR :: Text -> Handler Value
-postInstructorQueryR _ = do
+postInstructorQueryR ident = do
     msg <- requireCheckJsonBody :: Handler InstructorQuery
     case msg of
         QueryGrade uid cid -> do
+            checkCourseOwnership ident cid
             score <- scoreByIdAndClassTotal cid uid
             returnJson score
         QueryScores uid cid -> do
+            checkCourseOwnership ident cid
             score <- scoreByIdAndClassPerProblem cid uid
             returnJson score
         QueryAccommodation uid cid -> do
+            checkCourseOwnership ident cid
             maccommodation <- runDB $ getBy $ UniqueAccommodation cid uid
             case maccommodation of
                 Nothing -> returnJson (0 :: Int, 1 :: Double, 0 :: Int)
@@ -333,6 +371,7 @@ postInstructorQueryR _ = do
                                                   , accommodationDateExtraHours acc
                                                   )
         QueryTokens uid cid -> do
+            checkCourseOwnership ident cid
             (toks, course) <- runDB $ do 
                 toks <- selectList [AssignmentAccessTokenUser ==. uid] []
                 course <- get cid >>= maybe (sendStatusJSON notFound404 ("Could not find associated course" :: Text)) pure
@@ -356,7 +395,7 @@ getInstructorR ident = do
             let inactiveClasses = filter (\c -> courseEndDate (entityVal c) < time) classes
 
             autoregRecords <- runDB $ getMany (map (CourseAutoregKey . entityKey) activeClasses)
-
+            mapiAuth <- runDB $ getBy (UniqueAuthAPIUser uid)
             instructors <- runDB $ selectList [UserDataInstructorId !=. Nothing] []
             let labels = map labelOf $ take (length activeClasses) [1::Int ..]
 
@@ -392,6 +431,7 @@ getInstructorR ident = do
             (updateDocumentWidget,enctypeUpdateDocument) <- generateFormPost (identifyForm "updateDocument" $ updateDocumentForm)
             (updateCourseWidget,enctypeUpdateCourse) <- generateFormPost (identifyForm "updateCourse" (updateCourseForm Nothing Nothing []))
             (createCourseWidget,enctypeCreateCourse) <- generateFormPost (identifyForm "createCourse" createCourseForm)
+            (createAPIKeyWidget,enctypeCreateAPIKey) <- generateFormPost (identifyForm "createAPIKey" createAPIKeyForm)
             defaultLayout $ do
                  addScript $ StaticR js_popper_min_js
                  addScript $ StaticR js_tagsinput_js
@@ -640,6 +680,13 @@ updateAssignmentForm extra = do
 updateAssignmentModal :: WidgetFor App () -> Enctype -> WidgetFor App ()
 updateAssignmentModal = genericModal "Assignment" "Update Assignment Data"
 
+scopes :: [(Text, SharingScope)]
+scopes = [ ("Everyone (Visible to everyone)", Public)
+         , ("Instructors (Visible to all instructors)", InstructorsOnly)
+         , ("Link Only (Available via the link, but unlisted)", LinkOnly)
+         , ("Private (Not shared with other instructors, available to classes if assigned)", Private)
+         ]
+
 uploadDocumentForm
     :: Markup
     -> MForm (HandlerFor App) ((FormResult
@@ -651,12 +698,6 @@ uploadDocumentForm = renderBootstrap3 BootstrapBasicForm $ (,,,,)
             <*> aopt textareaField (bfs ("Description"::Text)) Nothing
             <*> lift (liftIO getCurrentTime)
             <*> aopt tagField "Tags" Nothing
-    where scopes :: [(Text,SharingScope)]
-          scopes = [("Everyone (Visible to everyone)", Public)
-                   ,("Instructors (Visible to all instructors)", InstructorsOnly)
-                   ,("Link Only (Available, but visible to no one)", LinkOnly)
-                   ,("Private (Unavailable)", Private)
-                   ]
 
 updateDocumentForm
     :: Markup
@@ -673,12 +714,6 @@ updateDocumentForm = renderBootstrap3 BootstrapBasicForm $ (,,,,)
     where docId :: (Monad m, RenderMessage (HandlerSite m) FormMessage) => Field m String
           docId = hiddenField
 
-          scopes :: [(Text,SharingScope)]
-          scopes = [("Everyone (Visible to everyone)", Public)
-                   ,("Instructors (Visible to all instructors)", InstructorsOnly)
-                   ,("Link Only (Available, but visible to no one)", LinkOnly)
-                   ,("Private (Unavailable)", Private)
-                   ]
 
 tagField :: Field Handler [Text]
 tagField = Field
@@ -758,7 +793,7 @@ data UpdateCourse
 
 updateCourseForm
     :: Maybe (Entity Course) -> Maybe (CourseAutoreg) -> [(Entity AssignmentMetadata, Maybe Document)] -> Markup
-    -> MForm (HandlerFor App) ((FormResult UpdateCourse, WidgetFor App ()))
+    -> MForm (HandlerFor App) (FormResult UpdateCourse, WidgetFor App ())
 updateCourseForm mcourseent mautoreg aplusd = renderBootstrap3 BootstrapBasicForm $ UpdateCourse
             <$> areq courseId "" mcid
             <*> aopt textareaField (bfs ("Course Description"::Text)) (maybe Nothing (Just . Just . Textarea) (mdesc))
@@ -802,6 +837,9 @@ updateCourseForm mcourseent mautoreg aplusd = renderBootstrap3 BootstrapBasicFor
             , fsName = Nothing
             , fsAttrs = maybe [("style","display:none")] (const [("style","margin-left:10px")]) mcourse 
             }
+
+createAPIKeyForm :: Markup -> MForm (HandlerFor App) (FormResult (), WidgetFor App ())
+createAPIKeyForm = renderBootstrap3 BootstrapBasicForm $ pure ()
 
 updateAccommodationForm
     :: Markup
@@ -860,20 +898,6 @@ addCoInstructorForm instructors cid extra = do
           courseId = hiddenField
 
           toItem (Entity _ i) = (userDataLastName i ++ ", " ++ userDataFirstName i, userDataInstructorId i)
-
-saveTo
-    :: FilePath
-    -> FilePath
-    -> FileInfo
-    -> HandlerFor App ()
-saveTo thedir fn file = do
-        datadir <- appDataRoot <$> (appSettings <$> getYesod)
-        let path = datadir </> thedir
-        liftIO $
-            do createDirectoryIfMissing True path
-               e <- doesFileExist (path </> fn)
-               if e then removeFile (path </> fn) else return ()
-               fileMove file (path </> fn)
 
 deleteModal :: Text -> [(Entity AssignmentMetadata, Maybe Document)] -> WidgetFor App ()
 deleteModal id aplusd =

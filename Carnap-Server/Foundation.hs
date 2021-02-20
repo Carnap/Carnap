@@ -126,10 +126,22 @@ instance Yesod App where
          (InstructorQueryR ident) -> instructor ident
          (ReviewR coursetitle _) -> coinstructorOrInstructor coursetitle
          (CourseAssignmentR coursetitle _) -> enrolledIn coursetitle
+         APIR -> requireAPIKey >> return Authorized
+         APIInstructorDocumentsR ident -> requireAPIKeyFor ident
+         APIInstructorDocumentR ident _ -> requireAPIKeyFor ident
+         APIInstructorDocumentDataR ident _ -> requireAPIKeyFor ident
          AdminR -> admin
          AdminPromoteR -> noAdmins
          _ -> return Authorized
-        where retrieveInstructors cid course = runDB $ do
+        where requireAPIKey = maybeAPIKey >>= maybe (sendStatusJSON forbidden403 ("Valid API Key Required" :: Text)) (return)
+              requireAPIKeyFor ident = do musr <- runDB (getBy $ UniqueUser ident)
+                                          usr <- maybe (sendStatusJSON notFound404 ("No such user" :: Text)) return musr
+                                          mauth <- maybeAPIKey
+                                          case mauth of
+                                              Nothing -> sendStatusJSON forbidden403 ("Valid API Key Required" :: Text)
+                                              Just (Entity _ auth) | entityKey usr == authAPIUser auth -> return Authorized
+                                              Just _ -> isAdminKey >>= bool (sendStatusJSON forbidden403 ("Valid API Key Required" :: Text)) (return Authorized)
+              retrieveInstructors cid course = runDB $ do
                      coInstructors <- map entityVal <$> selectList [CoInstructorCourse ==. cid] []
                      selectList ([UserDataInstructorId ==. Just (courseInstructor course)]
                                 ||. [UserDataInstructorId <-. map (Just . coInstructorIdent) coInstructors]) []
@@ -206,6 +218,7 @@ instance Yesod App where
                               then Authorized
                               else Unauthorized "There are already site administrators on this site"
               isAdmin = maybe False (userDataIsAdmin . entityVal) <$> maybeUserData
+              isAdminKey = maybe False (userDataIsAdmin . entityVal) <$> maybeAPIKeyUserData
 
     -- This function creates static content files in the static folder
     -- and names them based on a hash of their content. This allows
