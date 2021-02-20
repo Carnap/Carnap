@@ -12,6 +12,7 @@ import TH.RelativePaths (pathRelativeToCabalPackage)
 import System.Directory (removeFile, doesFileExist, createDirectoryIfMissing)
 import Util.Data
 import Util.Database
+import System.FilePath
 
 minimalLayout c = [whamlet|
                   <div.container>
@@ -60,6 +61,22 @@ saveTo thedir fn file = do
                e <- doesFileExist (path </> fn)
                if e then removeFile (path </> fn) else return ()
                fileMove file (path </> fn)
+
+safeSaveTo
+    :: FilePath
+    -> FilePath
+    -> FileInfo
+    -> HandlerFor App ()
+safeSaveTo thedir fn file = do
+        datadir <- appDataRoot <$> (appSettings <$> getYesod)
+        let path = datadir </> thedir
+        e <- liftIO $ doesFileExist (path </> fn)
+        if e then setMessage "Refusing to overwrite existing file"
+             else liftIO $ do createDirectoryIfMissing True path
+                              fileMove file (path </> fn)
+
+isInvalidFilename :: Text -> Bool
+isInvalidFilename s = not (takeFileName (unpack s) == (unpack s))
 
 serveDoc :: (Document -> FilePath -> Handler a) -> Document -> FilePath -> UserId -> Handler a
 serveDoc sendIt doc path creatoruid = case documentScope doc of 

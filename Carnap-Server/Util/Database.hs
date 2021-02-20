@@ -119,16 +119,24 @@ getIdent uid = (runDB $ get uid) >>= return . maybe Nothing (Just . userIdent)
 checkCourseOwnership
     :: PersistentSite site
     => Text
+    -> Key Course
     -> HandlerFor site ()
-checkCourseOwnership coursetitle = do
-           mcourse <- runDB $ getBy $ UniqueCourse coursetitle
-           Entity uid _ <- requireAuth
-           case mcourse of
-             Nothing -> setMessage "course not found" >> notFound
-             Just (Entity _cid course) -> do
-               user <- runDB (get uid) >>= maybe (permissionDenied "failed to get user") pure
-               classes <- classesByInstructorIdent (userIdent user)
-               unless (course `elem` map entityVal classes) (permissionDenied "this doesn't appear to be your course")
+checkCourseOwnership ident cid = do
+           classes <- classesByInstructorIdent ident
+           if cid `elem` map entityKey classes
+               then return () 
+               else sendStatusJSON forbidden403 ("You don't have instructor access to this course" :: Text)
+
+checkCourseOwnershipHTML
+    :: PersistentSite site
+    => Text
+    -> Key Course
+    -> HandlerFor site ()
+checkCourseOwnershipHTML ident cid = do
+           classes <- classesByInstructorIdent ident
+           if cid `elem` map entityKey classes
+               then return () 
+               else permissionDenied ("You don't have instructor access to this course" :: Text)
 
 -- | given a UserId, return Just the user data or Nothing
 getUserMD
