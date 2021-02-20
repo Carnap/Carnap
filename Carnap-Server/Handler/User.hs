@@ -81,7 +81,7 @@ getUserR ident = do
                  , userDataFirstName = firstname
                  , userDataLastName = lastname
                  , userDataIsLti
-                 } <- if isMe then maybeUserData >>= maybe (redirect HomeR) (return . entityVal) else checkUserData uid
+                 } <- if isMe then maybeUserData >>= maybe (checkUserData uid) (return . entityVal) else checkUserData uid
             time <- liftIO getCurrentTime
             (dropForm,encTypeDrop) <- generateFormPost (identifyForm "dropClass" $ dropClassForm)
             let isInstructor = case maybeInstructorId of Just _ -> True; _ -> False
