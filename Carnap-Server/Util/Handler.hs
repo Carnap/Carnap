@@ -78,6 +78,14 @@ safeSaveTo thedir fn file = do
 isInvalidFilename :: Text -> Bool
 isInvalidFilename s = not (takeFileName (unpack s) == (unpack s))
 
+requireReferral :: Route App -> Handler ()
+requireReferral route = do referer <- lookupHeader "Referer" --This is actually how it is spelled in the relevant standard
+                                        >>= maybe (sendStatusJSON badRequest400 ("Bad Referer" :: Text)) pure
+                           render <- getUrlRender
+                           if render route == decodeUtf8 referer
+                               then return ()
+                               else sendStatusJSON badRequest400 ("Bad Referer" :: Text)
+
 serveDoc :: (Document -> FilePath -> Handler a) -> Document -> FilePath -> UserId -> Handler a
 serveDoc sendIt doc path creatoruid = case documentScope doc of 
                                 Private -> do

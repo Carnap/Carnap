@@ -288,6 +288,21 @@ function queryGrade (json, callback) {
     });
 };
 
+function queryAPIKey () {
+    jQuery.ajax({
+        url: '@{InstructorQueryR ident}',
+        type: 'POST',
+        contentType: "application/json",
+        data: #{jsonSerialize $ QueryAPIKey uid},
+        success: function (data) {
+            $("#apikeywrapper").html(data)
+        },
+        error: function(data) {
+            console.log("error, couldn't retrieve API key")
+        },
+    });
+}
+
 function deleteAssignment (json,fn,ct) {
     jQuery.ajax({
         url: '@{InstructorR ident}',
@@ -692,4 +707,5 @@ $(document).ready(_ => {
     Array.from(document.getElementsByClassName("assignment")).forEach(table => {
         sortByCol(table,1)
     })
+    queryAPIKey()
 })

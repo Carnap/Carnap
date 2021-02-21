@@ -26,6 +26,7 @@ import System.Directory (removeFile, doesFileExist, createDirectoryIfMissing)
 
 putInstructorR :: Text -> Handler Value
 putInstructorR ident = do
+        requireReferral (InstructorR ident)
         ((assignmentrslt,_),_) <- runFormPost (identifyForm "updateAssignment" $ updateAssignmentForm)
         ((courserslt,_),_) <- runFormPost (identifyForm "updateCourse" $ updateCourseForm Nothing Nothing [])
         ((documentrslt,_),_) <- runFormPost (identifyForm "updateDocument" $ updateDocumentForm)
@@ -132,6 +133,7 @@ putInstructorR ident = do
 
 deleteInstructorR :: Text -> Handler Value
 deleteInstructorR ident = do
+    requireReferral (InstructorR ident)
     msg <- requireCheckJsonBody :: Handler InstructorDelete
     case msg of
       DeleteAssignment aid -> do 
@@ -200,6 +202,7 @@ deleteInstructorR ident = do
 
 postInstructorR :: Text -> Handler Html
 postInstructorR ident = do
+    --CSRF protections for forms means we don't need to insepct referer here.
     time <- liftIO getCurrentTime
     classes <- classesByInstructorIdent ident
     let activeClasses = filter (\c -> courseEndDate (entityVal c) > time) classes
@@ -351,8 +354,14 @@ postInstructorR ident = do
 
 postInstructorQueryR :: Text -> Handler Value
 postInstructorQueryR ident = do
+    requireReferral (InstructorR ident)
     msg <- requireCheckJsonBody :: Handler InstructorQuery
     case msg of
+        QueryAPIKey uid -> do
+            mapiAuth <- runDB $ getBy (UniqueAuthAPIUser uid)
+            case mapiAuth of
+                Nothing -> returnJson ("None Issued." :: Text)
+                Just (Entity _ (AuthAPI {authAPIKey = theKey})) -> returnJson (decodeUtf8 theKey)
         QueryGrade uid cid -> do
             checkCourseOwnership ident cid
             score <- scoreByIdAndClassTotal cid uid
@@ -395,7 +404,6 @@ getInstructorR ident = do
             let inactiveClasses = filter (\c -> courseEndDate (entityVal c) < time) classes
 
             autoregRecords <- runDB $ getMany (map (CourseAutoregKey . entityKey) activeClasses)
-            mapiAuth <- runDB $ getBy (UniqueAuthAPIUser uid)
             instructors <- runDB $ selectList [UserDataInstructorId !=. Nothing] []
             let labels = map labelOf $ take (length activeClasses) [1::Int ..]
 
@@ -467,6 +475,7 @@ data InstructorQuery = QueryGrade UserId CourseId
                      | QueryScores UserId CourseId
                      | QueryAccommodation UserId CourseId
                      | QueryTokens UserId CourseId
+                     | QueryAPIKey UserId
     deriving Generic
 
 instance ToJSON InstructorQuery
