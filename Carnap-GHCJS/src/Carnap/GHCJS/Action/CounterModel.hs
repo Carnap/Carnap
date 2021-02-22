@@ -21,7 +21,7 @@ import GHCJS.DOM.Element
 import GHCJS.DOM.Event (initEvent)
 import GHCJS.DOM.EventTarget (dispatchEvent)
 import GHCJS.DOM.Document (createElement, createEvent)
-import GHCJS.DOM.Node (appendChild, getParentNode, getParentElement, insertBefore)
+import GHCJS.DOM.Node (appendChild, getParentElement)
 import GHCJS.DOM.EventM (newListener, addListener, EventM, target)
 import GHCJS.DOM.HTMLTextAreaElement (castToHTMLTextAreaElement, setValue, getValue)
 import qualified GHCJS.DOM.HTMLSelectElement as S (getValue, setValue) 
@@ -34,7 +34,7 @@ import Data.Map as M (Map, lookup, foldr, insert, fromList, toList)
 import Data.IORef (newIORef, IORef, readIORef,writeIORef, modifyIORef)
 import Data.List (intercalate)
 import Data.Text (pack)
-import Control.Monad (filterM, mplus)
+import Control.Monad (mplus)
 import Control.Monad.IO.Class (liftIO)
 import Control.Lens
 
@@ -67,7 +67,7 @@ counterModelAction = initElements getCounterModelers activateCounterModeler
 
 getCounterModelers :: Document -> HTMLElement -> IO [Maybe (Element, Element, Map String String)]
 getCounterModelers d = genInOutElts d "div" "div" "countermodeler"
-
+ 
 activateCounterModeler :: Document -> Maybe (Element, Element, Map String String) -> IO ()
 activateCounterModeler w (Just (i,o,opts)) = do
         case M.lookup "countermodelertype" opts of
@@ -99,37 +99,42 @@ activateCounterModeler w (Just (i,o,opts)) = do
                           bw <- createButtonWrapper w o
                           check <- cmbuilder w f (i,o) bw opts
                           fields <- catMaybes <$> getListOfElementsByTag o "label"
-                          mapM (setField w fields) (makeGivens opts)
-                          let submit = submitCounterModel w opts i check fields (show f)
+                          let strictGivens 
+                                  | "strictGivens" `inOpts` opts = M.fromList (makeGivens opts)
+                                  | otherwise = mempty
+                          mapM (setField w opts fields) (makeGivens opts)
+                          let submit = submitCounterModel w opts i check fields strictGivens (show f)
                           btStatus <- createSubmitButton w bw submit opts
                           doOnce o input False $ liftIO $ btStatus Edited
                           if "nocheck" `inOpts` opts then return () 
                           else do
                               bt2 <- questionButton w "Check"
                               appendChild bw (Just bt2)
-                              checkIt <- newListener $ checkCounterModeler fields check
+                              checkIt <- newListener $ checkCounterModeler fields strictGivens check
                               addListener bt2 click checkIt False                
                           return ()
                 _ -> print "countermodeler lacks a goal"
 
-          checkCounterModeler fields check = do validated <- liftIO $ validateModel fields
-                                                correct <- liftIO check
-                                                Just wrap <- liftIO $ getParentElement i
-                                                case (correct, validated) of 
-                                                   (_,Left err) -> do
-                                                       message err
-                                                       setAttribute wrap "class" "failure"
-                                                   (Left err,_) -> do
-                                                       message err
-                                                       setAttribute wrap "class" "failure"
-                                                   _ -> do
-                                                       message "Success!"
-                                                       setAttribute wrap "class" "success"
+          checkCounterModeler fields strictGivens check = do 
+                     validated <- liftIO $ validateModel strictGivens fields
+                     correct <- liftIO check
+                     Just wrap <- liftIO $ getParentElement i
+                     case (correct, validated) of 
+                        (_,Left err) -> do
+                            message err
+                            setAttribute wrap "class" "failure"
+                        (Left err,_) -> do
+                            message err
+                            setAttribute wrap "class" "failure"
+                        _ -> do
+                            message "Success!"
+                            setAttribute wrap "class" "success"
 
-submitCounterModel:: IsEvent e => Document -> Map String String -> Element -> IO (Either String ())-> [Element] -> String -> String -> EventM HTMLTextAreaElement e ()
-submitCounterModel w opts i check fields s l = 
+submitCounterModel:: IsEvent e => Document -> Map String String -> Element -> IO (Either String ())
+    -> [Element] -> Map String String -> String -> String -> EventM HTMLTextAreaElement e ()
+submitCounterModel w opts i check fields strictGivens s l = 
         do correct <- liftIO check
-           validated <- liftIO $ validateModel fields
+           validated <- liftIO $ validateModel strictGivens fields
            extracted <- liftIO $ mapM extractField fields
            Just wrap <- liftIO $ getParentElement i
            case (correct, validated) of
@@ -321,10 +326,10 @@ getPropInput w f mdl = case addProposition f mdl False of
                                  addListener propSelect change whenChange False
                                  appendChild propLabel (Just propSelect)
                                  return $ Just propLabel
-    where propUpdater :: EventM HTMLInputElement Event ()
+    where propUpdater :: EventM HTMLSelectElement Event ()
           propUpdater = do 
              Just t <- target
-             sval <- getValue t 
+             sval <- S.getValue t 
              case addProposition f mdl (if sval == Just "True" then True else False) of 
                 Just io -> liftIO io
                 Nothing -> return ()
@@ -448,55 +453,77 @@ parsingInput w parser event = do Just theInput <- createElement w (Just "textare
                  Right x -> (liftIO $ setInnerHTML warn (Just "")) >> event x
 
 extractField :: Element -> IO (String, String)
-extractField field = do inputs <- getListOfElementsByTag field "textarea"
-                        selects <- getListOfElementsByTag field "select"
-                        case (inputs,selects) of
-                            ([Just input],_) -> do 
-                              Just fieldName <- getAttribute input "name"
-                              Just ival <- getValue (castToHTMLTextAreaElement input)
-                              return (fieldName, ival) 
-                            (_,[Just select]) -> do 
-                              Just fieldName <- getAttribute select "name"
-                              Just sval <- S.getValue (castToHTMLSelectElement select)
-                              return (fieldName, sval)
+extractField field = do 
+       inputs <- getListOfElementsByTag field "textarea"
+       selects <- getListOfElementsByTag field "select"
+       case (inputs,selects) of
+            ([Just input],_) -> do 
+              Just fieldName <- getAttribute input "name"
+              Just ival <- getValue (castToHTMLTextAreaElement input)
+              return (fieldName, ival) 
+            (_,[Just select]) -> do 
+              Just fieldName <- getAttribute select "name"
+              Just sval <- S.getValue (castToHTMLSelectElement select)
+              return (fieldName, sval)
 
 makeGivens :: Map String String -> [(String,String)]
 makeGivens opts = case M.lookup "content" opts of
                       Nothing -> []
                       Just t -> map (clean . break (== ':')) . lines $ t
-    where clean (x,y) = (x, tail y)
+    where clean (x,y) = (filter nonSpace x, filter nonSpace $ tail y)
+          nonSpace ' ' = False
+          nonSpace '\t' = False
+          nonSpace _ = True
 
 --XXX: a lot of unsafe pattern matching and catMaybe here...
-validateModel :: [Element] -> IO (Either String ())
-validateModel fields = do inputs <- catMaybes . concat <$> mapM (\f -> getListOfElementsByTag f "textarea") fields
-                          names <- mapM (\i -> getAttribute i "name") inputs
-                          let namedInputs = zip inputs names
-                              [domain] = map fst . filter (\(x,y) -> y == Just "Domain") $ namedInputs
-                              namedSymbols = filter (\(x,y) -> y /= Just "Domain") $ namedInputs
-                          Just domainString <- getValue (castToHTMLTextAreaElement domain)
-                          case parse (parseInt `sepEndBy1` (spaces *> char ',' <* spaces) <* eof) "" domainString of
-                              Left e -> return $ Left $ "Couldn't read domain specification: " ++ show e
-                              Right things -> do
-                                  if null things 
-                                      then return $ Left "The domain cannot be empty"
-                                      else do
-                                          namedClassedSymbols <- mapM (\(e,n) -> (,,) <$> pure e <*> pure n <*> getAttribute e "class") namedSymbols
-                                          let funcInputs = filter (\(e,n,c) -> c == Just "functionInput") $ namedClassedSymbols
-                                              relInputs = filter (\(e,n,c) -> c == Just "relationInput") $ namedClassedSymbols
-                                              getText = getValue . castToHTMLTextAreaElement
-                                          funcStrings <- mapM (\(e,n,_) -> (,,) <$> getText e <*> getBlanks n <*> pure n) funcInputs
-                                          relStrings  <- mapM (\(e,n,_) -> (,,) <$> getText e <*> getBlanks n <*> pure n) relInputs
-                                          allStrings <- mapM getText inputs
-                                          let allAllegedThings = zip (map (parse extractor "" . clean) (catMaybes allStrings)) names
-                                              funcChecks = map (validateFunc things) funcStrings
-                                              relChecks = map (validateRel things) relStrings
-                                              checks = filter isLeft $ funcChecks ++ relChecks
-                                          case filter (isLeft . fst) allAllegedThings of
-                                              (Left err,Just n):_ -> return $ Left $ "Couldn't read specification for " ++ n ++ ": " ++ show err
-                                              [] -> case filter (\(Right ext,_) -> not (ext `subset` things)) allAllegedThings of
-                                                   (_,Just n):_ -> return $ Left $ "The extension of " ++ n ++ " is not contained in the domain."
-                                                   [] -> if null checks then return $ Right () 
-                                                                        else return . head . filter isLeft $ checks
+validateModel :: Map String String -> [Element] -> IO (Either String ())
+validateModel strictGivens fields = do 
+      inputs <- catMaybes . concat <$> mapM (\f -> getListOfElementsByTag f "textarea") fields
+      selects <- catMaybes . concat <$> mapM (\f -> getListOfElementsByTag f "select") fields
+      inputNames <- mapM (\i -> getAttribute i "name") inputs
+      selectNames <- mapM (\i -> getAttribute i "name") selects
+      let namedInputs = zip inputs inputNames
+          namedSelects = zip selects selectNames
+          [domain] = map fst . filter (\(x,y) -> y == Just "Domain") $ namedInputs
+          namedSymbols = filter (\(x,y) -> y /= Just "Domain") $ namedInputs
+      Just domainString <- getValue (castToHTMLTextAreaElement domain)
+      case parse (parseInt `sepEndBy1` (spaces *> char ',' <* spaces) <* eof) "" domainString of
+          Left e -> return $ Left $ "Couldn't read domain specification: " ++ show e
+          Right things -> do
+              if null things 
+                  then return $ Left "The domain cannot be empty"
+                  else do
+                      namedClassedSymbols <- mapM (\(e,n) -> (,,) <$> pure e <*> pure n <*> getAttribute e "class") namedSymbols
+                      let funcInputs = filter (\(e,n,c) -> c == Just "functionInput") $ namedClassedSymbols
+                          relInputs = filter (\(e,n,c) -> c == Just "relationInput") $ namedClassedSymbols
+                          getText e Nothing = getValue (castToHTMLTextAreaElement e)
+                          getText e (Just n) = do
+                                    val <- getValue (castToHTMLTextAreaElement e)
+                                    case M.lookup n strictGivens of
+                                        Nothing -> return val
+                                        Just s | val == Just s -> return val
+                                        _ -> Prelude.error "input not equal to given" --tampering prevention
+                          checkSel e Nothing = return ()
+                          checkSel e (Just n) = do
+                                    val <- S.getValue (castToHTMLSelectElement e)
+                                    case M.lookup n strictGivens of
+                                        Nothing -> return ()
+                                        Just s | val == Just s -> return ()
+                                        _ -> Prelude.error "input not equal to given" --tampering prevention
+                      mapM_ (uncurry checkSel) namedSelects
+                      funcStrings <- mapM (\(e,n,_) -> (,,) <$> getText e n <*> getBlanks n <*> pure n) funcInputs
+                      relStrings  <- mapM (\(e,n,_) -> (,,) <$> getText e n <*> getBlanks n <*> pure n) relInputs
+                      allStrings <- mapM (\(e,n) -> getText e n) namedInputs
+                      let allAllegedThings = zip (map (parse extractor "" . clean) (catMaybes allStrings)) inputNames
+                          funcChecks = map (validateFunc things) funcStrings
+                          relChecks = map (validateRel things) relStrings
+                          checks = filter isLeft $ funcChecks ++ relChecks
+                      case filter (isLeft . fst) allAllegedThings of
+                          (Left err,Just n):_ -> return $ Left $ "Couldn't read specification for " ++ n ++ ": " ++ show err
+                          [] -> case filter (\(Right ext,_) -> not (ext `subset` things)) allAllegedThings of
+                               (_,Just n):_ -> return $ Left $ "The extension of " ++ n ++ " is not contained in the domain."
+                               [] -> if null checks then return $ Right () 
+                                                    else return . head . filter isLeft $ checks
 
                        
     where clean (',':xs) = ' ':clean xs
@@ -535,21 +562,29 @@ validateModel fields = do inputs <- catMaybes . concat <$> mapM (\f -> getListOf
                               tup <- tuplesOn (n - 1) dom
                               return $ x:tup
 
-setField :: Document -> [Element] -> (String,String) -> IO ()
-setField w fields (name,val) = do inputs <- concat <$> mapM (\f -> getListOfElementsByTag f "textarea") fields
-                                  selects <- concat <$> mapM (\f -> getListOfElementsByTag f "select") fields
-                                  names <- mapM (\(Just i) -> getAttribute i "name") (inputs ++ selects)
-                                  let fs = map fst . filter (\f -> snd f == Just name) $ zip (inputs ++ selects) names
-                                  case fs of
-                                   [Just f] -> do tn <- getTagName f
-                                                  case tn of 
-                                                    Just "TEXTAREA" -> setValue (castToHTMLTextAreaElement f) (Just val)
-                                                    Just "SELECT" -> S.setValue (castToHTMLSelectElement f) (Just val)
-                                                    Just s -> print $ "unrecognized tag:" ++ s
-                                                    Nothing -> print "no tagname"
-                                                  dispatchCustom w f "initialize"
-                                                  return ()
-                                   _ -> print $ "missing or duplicated field " ++ name ++ "in countermodel spec"
+setField :: Document -> Map String String -> [Element] -> (String,String) -> IO ()
+setField w opts fields (name,val) = do 
+          inputs <- concat <$> mapM (\f -> getListOfElementsByTag f "textarea") fields
+          selects <- concat <$> mapM (\f -> getListOfElementsByTag f "select") fields
+          names <- mapM (\(Just i) -> getAttribute i "name") (inputs ++ selects)
+          let fs = map fst . filter (\f -> snd f == Just name) $ zip (inputs ++ selects) names
+          case fs of
+           [Just f] -> do tn <- getTagName f
+                          case tn of 
+                            Just "TEXTAREA" | strict -> do
+                                setAttribute f "readonly" "true"
+                                setValue (castToHTMLTextAreaElement f) (Just val)
+                            Just "TEXTAREA" -> setValue (castToHTMLTextAreaElement f) (Just val)
+                            Just "SELECT" | strict -> do
+                                setAttribute f "disabled" "true"
+                                S.setValue (castToHTMLSelectElement f) (Just val)
+                            Just "SELECT" -> S.setValue (castToHTMLSelectElement f) (Just val)
+                            Just s -> print $ "unrecognized tag:" ++ s
+                            Nothing -> print "no tagname"
+                          dispatchCustom w f "initialize"
+                          return ()
+           _ -> print $ "missing or duplicated field " ++ name ++ "in countermodel spec"
+    where strict = "strictGivens" `inOpts` opts
 
 blankTerms :: ModelingLanguage lex => FixLang lex (Form Bool) -> FixLang lex (Form Bool)
 blankTerms f = set termsOf (foVar "_") f
