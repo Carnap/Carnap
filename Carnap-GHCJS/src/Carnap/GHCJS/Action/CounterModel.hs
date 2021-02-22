@@ -299,6 +299,7 @@ getConstInput w t mdl = case addConstant t mdl (Term 0) of
                                  (constInput,parseWarn) <- parsingInput w parseInt constUpdater
                                  setAttribute constInput "name" (show t)
                                  setAttribute constInput "rows" "1"
+                                 setAttribute constInput "class" "constantInput"
                                  setValue (castToHTMLTextAreaElement constInput) (Just "0")
                                  appendChild constLabel (Just constInput)
                                  appendChild constLabel (Just parseWarn)
@@ -496,6 +497,7 @@ validateModel strictGivens fields = do
                       namedClassedSymbols <- mapM (\(e,n) -> (,,) <$> pure e <*> pure n <*> getAttribute e "class") namedSymbols
                       let funcInputs = filter (\(e,n,c) -> c == Just "functionInput") $ namedClassedSymbols
                           relInputs = filter (\(e,n,c) -> c == Just "relationInput") $ namedClassedSymbols
+                          constInputs = filter (\(e,n,c) -> c == Just "constantInput") $ namedClassedSymbols
                           getText e Nothing = getValue (castToHTMLTextAreaElement e)
                           getText e (Just n) = do
                                     val <- getValue (castToHTMLTextAreaElement e)
@@ -513,17 +515,19 @@ validateModel strictGivens fields = do
                       mapM_ (uncurry checkSel) namedSelects
                       funcStrings <- mapM (\(e,n,_) -> (,,) <$> getText e n <*> getBlanks n <*> pure n) funcInputs
                       relStrings  <- mapM (\(e,n,_) -> (,,) <$> getText e n <*> getBlanks n <*> pure n) relInputs
+                      constStrings  <- mapM (\(e,n,_) -> (,) <$> getText e n <*> pure n) constInputs
                       allStrings <- mapM (\(e,n) -> getText e n) namedInputs
                       let allAllegedThings = zip (map (parse extractor "" . clean) (catMaybes allStrings)) inputNames
                           funcChecks = map (validateFunc things) funcStrings
                           relChecks = map (validateRel things) relStrings
-                          checks = filter isLeft $ funcChecks ++ relChecks
+                          constChecks = map (validateConst things) constStrings
+                          checks = filter isLeft $ funcChecks ++ relChecks ++ constChecks
                       case filter (isLeft . fst) allAllegedThings of
                           (Left err,Just n):_ -> return $ Left $ "Couldn't read specification for " ++ n ++ ": " ++ show err
                           [] -> case filter (\(Right ext,_) -> not (ext `subset` things)) allAllegedThings of
                                (_,Just n):_ -> return $ Left $ "The extension of " ++ n ++ " is not contained in the domain."
                                [] -> if null checks then return $ Right () 
-                                                    else return . head . filter isLeft $ checks
+                                                    else return $ head checks
 
                        
     where clean (',':xs) = ' ':clean xs
@@ -541,12 +545,12 @@ validateModel strictGivens fields = do
           extractor = spaces *> (parseInt `sepEndBy` spaces) <* spaces
           subset (x:xs) y = x `elem` y && xs `subset` y
           subset [] y = True
-          validateRel domain (_,_,Nothing) = Left $ "Couldn't get one of the relation specifications."
+          validateRel domain (_,_,Nothing) = Left "Couldn't get one of the relation specifications."
           validateRel domain (Nothing,_,Just n) = Left $ "Couldn't get the relation specification for " ++ n ++ "."
           validateRel domain (Just relstring,arity,Just n) = case parse (ntuples arity) "" relstring of
                 Left e -> Left $ "Couldn't read the relation specification for " ++ n ++ ": " ++ show e
                 Right _ -> Right ()
-          validateFunc domain (_,_,Nothing) = Left $ "Couldn't get one of the function specifications."
+          validateFunc domain (_,_,Nothing) = Left "Couldn't get one of the function specifications."
           validateFunc domain (Nothing,_,Just n) = Left $ "Couldn't get the function specification for " ++ n ++" ."
           validateFunc domain (Just funcstring,arity, Just n) = case parse (nfunctuples (arity + 1)) "" funcstring of
                 Left e -> Left $ "Couldn't read the function specification for " ++ n ++ ": " ++ show e
@@ -554,6 +558,11 @@ validateModel strictGivens fields = do
                            | not . properList . map init $ tups -> Left $ "the function " ++ n ++ " has more than one value specified for some input"
                            | let fdom = map init tups in sort fdom == sort (length (head fdom) `tuplesOn` domain) -> Right ()
                            | otherwise -> Left $ "the function " ++ n ++ " does not have a value specified for some input"
+          validateConst domain (_,Nothing) = Left "Couldn't get one of the constant specifications"
+          validateConst domain (Nothing,Just n) = Left $ "Couldn't get the constant specification for " ++ n ++ "."
+          validateConst domain (Just conststring,Just n) = case parse (parseInt <* eof) "" conststring of
+                Left e -> Left $ "Couldn't read the constant specification for " ++ n ++ ": " ++ show e
+                Right n -> Right ()
           properList [] = True
           properList (x:xs) = not (x `elem` xs) && properList xs
           tuplesOn 0 dom = []
