@@ -290,7 +290,7 @@ getConstInput w t mdl = case addConstant t mdl (Term 0) of
                             Just _ -> do
                                  Just constLabel <- createElement w (Just "label")
                                  setInnerHTML constLabel (Just $ show t ++ ": ")
-                                 (constInput,parseWarn) <- parsingInput w parseInt constUpdater
+                                 (constInput,parseWarn) <- parsingInput w (spaces *> parseInt <* spaces <* eof) constUpdater
                                  setAttribute constInput "name" (show t)
                                  setAttribute constInput "rows" "1"
                                  setAttribute constInput "class" "constantInput"
@@ -554,7 +554,7 @@ validateModel strictGivens fields = do
                            | otherwise -> Left $ "the function " ++ n ++ " does not have a value specified for some input"
           validateConst domain (_,Nothing) = Left "Couldn't get one of the constant specifications"
           validateConst domain (Nothing,Just n) = Left $ "Couldn't get the constant specification for " ++ n ++ "."
-          validateConst domain (Just conststring,Just n) = case parse (parseInt <* eof) "" conststring of
+          validateConst domain (Just conststring,Just n) = case parse (spaces *> parseInt <* spaces <* eof) "" conststring of
                 Left e -> Left $ "Couldn't read the constant specification for " ++ n ++ ": " ++ show e
                 Right n -> Right ()
           properList [] = True
