@@ -21,13 +21,13 @@ import GHCJS.DOM.Element
 import GHCJS.DOM.Event (initEvent)
 import GHCJS.DOM.EventTarget (dispatchEvent)
 import GHCJS.DOM.Document (createElement, createEvent)
-import GHCJS.DOM.Node (appendChild, getParentElement)
+import GHCJS.DOM.Node (appendChild, getParentElement, getTextContent)
 import GHCJS.DOM.EventM (newListener, addListener, EventM, target)
 import GHCJS.DOM.HTMLTextAreaElement (castToHTMLTextAreaElement, setValue, getValue)
 import qualified GHCJS.DOM.HTMLSelectElement as S (getValue, setValue) 
 import Text.Parsec
 import Data.Typeable (Typeable)
-import Data.List (nub, sort)
+import Data.List (nub, sort, sortOn)
 import Data.Maybe (catMaybes)
 import Data.Either (isLeft,isRight)
 import Data.Map as M (Map, lookup, foldr, insert, fromList, toList)
@@ -258,39 +258,33 @@ prepareModelUI w fs (i,o) mdl bw opts = do
     where domainUpdater ts = liftIO $ modifyIORef mdl (\m -> m { monadicPart = (monadicPart m) {domain = ts}})
           things = parseInt `sepEndBy1` (spaces *> char ',' <* spaces)
 
+type InputGetter lex sem = Document -> FixLang lex sem -> IORef PolyadicModel -> IO (Maybe Element)
+
+appendInputs :: ModelingLanguage lex => InputGetter lex sem 
+    -> Document -> Element -> [FixLang lex sem] -> IORef PolyadicModel -> IO ()
+appendInputs getter w o sfs mdl = do namedInputs <- mapM inputWithName sfs
+                                     let sortedInputs = (sortOn snd) namedInputs
+                                     mapM_ (appendIt . fst) sortedInputs
+    where inputWithName f = do minput <- getter w f mdl
+                               mcontent <- maybe (return Nothing) getTextContent minput
+                               return (minput, mcontent :: Maybe String)
+          appendIt = maybe (return Nothing) (appendChild o . Just)
+
 appendRelationInputs :: ModelingLanguage lex => Document -> Element -> [FixLang lex (Form Bool)] -> IORef PolyadicModel -> IO ()
-appendRelationInputs w o fs mdl = do let sfs = nub . concatMap (map blankTerms . universe) $ fs
-                                     mapM_ appendRelationInput sfs
-    where appendRelationInput f = do minput <- getRelationInput w f mdl
-                                     case minput of 
-                                        Nothing -> return Nothing
-                                        Just input -> appendChild o (Just input)
+appendRelationInputs w o fs = appendInputs getRelationInput w o (nub . concatMap (map blankTerms . universe) $ fs)
 
 appendFunctionInputs :: ModelingLanguage lex => Document -> Element -> [FixLang lex (Term Int)] -> IORef PolyadicModel -> IO ()
-appendFunctionInputs w o fs mdl = do let sfs = nub . concatMap (map blankFuncTerms . universe) $ fs
-                                     mapM_ appendFunctionInput sfs
-    where appendFunctionInput f = do minput <- getFunctionInput w f mdl
-                                     case minput of 
-                                        Nothing -> return Nothing
-                                        Just input -> appendChild o (Just input)
+appendFunctionInputs w o fs = appendInputs getFunctionInput w o (nub . concatMap (map blankFuncTerms . universe) $ fs)
 
 appendConstantInputs :: ModelingLanguage lex => Document -> Element -> [FixLang lex (Term Int)] -> IORef PolyadicModel -> IO ()
-appendConstantInputs w o ts mdl = do let sts = nub . concatMap universe $ ts
-                                     mapM_ appendConstantInput sts
-    where appendConstantInput t = do minput <- getConstInput w t mdl
-                                     case minput of 
-                                        Nothing -> return Nothing
-                                        Just input -> appendChild o (Just input)
+appendConstantInputs w o ts = appendInputs getConstInput w o (nub . concatMap universe $ ts) 
 
 appendPropInputs :: ModelingLanguage lex => Document -> Element -> [FixLang lex (Form Bool)] -> IORef PolyadicModel -> IO ()
-appendPropInputs w o fs mdl = do let sfs = nub . concatMap universe $ fs
-                                 mapM_ appendPropInput sfs
-    where appendPropInput t = do minput <- getPropInput w t mdl
-                                 case minput of 
-                                    Nothing -> return Nothing
-                                    Just input -> appendChild o (Just input)
+appendPropInputs w o fs = appendInputs getPropInput w o (nub . concatMap universe $ fs)
 
-getConstInput :: ModelingLanguage lex => Document -> FixLang lex (Term Int) -> IORef PolyadicModel -> IO (Maybe Element)
+--TODO: DRY the below
+
+getConstInput :: ModelingLanguage lex => InputGetter lex (Term Int) 
 getConstInput w t mdl = case addConstant t mdl (Term 0) of
                             Nothing -> return Nothing
                             Just _ -> do
@@ -308,7 +302,7 @@ getConstInput w t mdl = case addConstant t mdl (Term 0) of
                                  Just io -> liftIO io
                                  Nothing -> return ()
 
-getPropInput :: ModelingLanguage lex => Document -> FixLang lex (Form Bool) -> IORef PolyadicModel -> IO (Maybe Element)
+getPropInput :: ModelingLanguage lex => InputGetter lex (Form Bool)
 getPropInput w f mdl = case addProposition f mdl False of
                             Nothing -> return Nothing
                             Just _ -> do
@@ -335,7 +329,7 @@ getPropInput w f mdl = case addProposition f mdl False of
                 Just io -> liftIO io
                 Nothing -> return ()
 
-getRelationInput :: ModelingLanguage lex => Document -> FixLang lex (Form Bool) -> IORef PolyadicModel -> IO (Maybe Element)
+getRelationInput :: ModelingLanguage lex => InputGetter lex (Form Bool)
 getRelationInput w f mdl = case addRelation f mdl [] of
                              Nothing -> return Nothing
                              Just io -> do 
@@ -356,7 +350,7 @@ getRelationInput w f mdl = case addRelation f mdl [] of
                                      Just io -> liftIO io >> return ()
                                      Nothing -> return ()
 
-getFunctionInput :: ModelingLanguage lex => Document -> FixLang lex (Term Int)-> IORef PolyadicModel -> IO (Maybe Element)
+getFunctionInput :: ModelingLanguage lex => InputGetter lex (Term Int)
 getFunctionInput w f mdl = case addFunction f mdl [] of
                              Nothing -> return Nothing
                              Just io -> do 
