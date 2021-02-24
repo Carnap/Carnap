@@ -1,5 +1,6 @@
-p, ol, dl, ul
-    max-width:650pt
+#main 
+    p, ol, dl, ul, blockquote
+        max-width:650pt
 
 .exercise
     margin-bottom:20px
