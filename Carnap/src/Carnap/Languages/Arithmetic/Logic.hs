@@ -19,5 +19,5 @@ ofArithmeticTreeSys :: (forall r lex .
                  ) => 
               TableauCalc (OpenLexiconArith lex) (Form Bool) r -> a) -> String -> Maybe a
 ofArithmeticTreeSys f sys | sys == "openLogicArithNK"              = Just $ f openLogicArithNKCalc
-                          | sys == "openLogicExtendedArithNK"      = Just $ f openLogicExtendedArithNKCalc
+                          | sys == "openLogicExArithNK"            = Just $ f openLogicExtendedArithNKCalc
                           | otherwise                              = Nothing
