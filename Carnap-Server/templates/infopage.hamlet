@@ -15,6 +15,8 @@
             <li>
                 <a href=#name>Why “Carnap”?
             <li>
+                <a href=#who>Who uses Carnap?
+            <li>
                 <a href=#how>How does Carnap Work?
             <li>
                 <a href=#contributing>How can I get involved?
@@ -278,6 +280,45 @@
             \ well. Carnap (the program) is written in Haskell, a statically-typed
             \ pure functional programming language that uses a theory of logical
             \ types to ensure code correctness.
+
+    <section#who>
+        <h2>Who Uses Carnap?
+
+        <p> Carnap was initially developed at Kansas State University, but is
+            \ now used at dozens of colleges and universities around the world.
+            \ Here's an (incomplete) list:
+        <ul#universities>
+            <li> Arizona State University
+            <li> Bard College at Simon's Rock
+            <li> Boise State
+            <li> Brigham Young University
+            <li> California State University, Chico
+            <li> California State University, Northridge
+            <li> Institute of Philosophy, University of Zielona Gora, Poland
+            <li> Kansas State University
+            <li> McGill University
+            <li> Mississippi State University
+            <li> Northwestern University
+            <li> Old Dominion University
+            <li> Pacific University
+            <li> Pepperdine University
+            <li> Pontifícia Universidade Católica do Rio de Janeiro (PUC-Rio), Brazil
+            <li> Tarleton State University
+            <li> The American University in Cairo
+            <li> The University of Alabama at Birmingham
+            <li> University at Albany, State University of New York
+            <li> University of Calgary
+            <li> University of California, Davis
+            <li> University of California, San Diego
+            <li> University of California, Santa Cruz
+            <li> University of Cincinnati
+            <li> University of Illinois at Chicago
+            <li> University of Illinois, Urbana Champaign
+            <li> University of Michigan, Ann Arbor
+            <li> University of Puget Sound
+            <li> University of Victoria
+            <li> University of Wisconsin, Madison
+
 
     <section#how>
         <h2>How does Carnap work?

@@ -51,3 +51,7 @@ section p
     to 
         margin-left: 0%;
         opacity:1;
+
+@media (min-width:576px)
+    #universities 
+        column-count:2;

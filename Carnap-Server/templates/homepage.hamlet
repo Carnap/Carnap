@@ -11,13 +11,9 @@
 
     <p> Carnap is a free and open software framework written in #
         <a href="https://haskell.org">Haskell
-        \ for teaching and studying formal logic.
-
-    <p> Carnap powers the interactive online component of Kansas State University's #
-        <i>PHILO110: Introduction to Formal Logic
-        \ and #
-        <i>PHILO320: Introduction to Symbolic Logic I
-        \ and also supports logic teaching at the University of Birmingham.
+        \ for teaching and studying formal logic. Carnap powers logic courses at
+        <a href="@{InfoR}#who"> dozens of colleges and universities
+        \ around the world.
 
     <p> If you're a student in a course that uses Carnap, please follow the
         \ links at the top of the page to log in and to access course
