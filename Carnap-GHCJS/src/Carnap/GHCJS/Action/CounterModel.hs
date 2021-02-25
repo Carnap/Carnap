@@ -226,17 +226,36 @@ createValidityCounterModeler w seq@(antced :|-: succed) (i,o) bw opts =
                   ctvs = map (unform . satisfies m . universalClosure) sucs
               if not (and ptvs) then do 
                  let falses = intercalate ", " $ map (rewriteWith opts . show . snd) . filter (not . fst) $ (zip ptvs ants)
-                 return $ Left $ "not all premises are true in this model. Take another look at: " ++ falses ++ "."
-              else return $ check ctvs
-          truthful tvs | and tvs = Right ()
-                       | otherwise = do let falses = intercalate ", " $ map (rewriteWith opts . show . snd) . filter (not . fst) $ (zip tvs sucs)
-                                        Left $ "Not all conclusions are true in this model. Take another look at: " ++  falses ++ "."
-          falsey tvs | and (map not tvs) = Right ()
-                     | otherwise = do let trues = intercalate ", " $ map (rewriteWith opts . show . snd) . filter fst $ (zip tvs sucs)
-                                      Left $ "Not all conclusions are false in this model. Take another look at: " ++  trues ++ "."
-          equiv tvs | and tvs = Left "Not a counterexample to equivalence - all conclusions are true in this model."
-                    | and (map not tvs) = Left "Not a counterexample to equivalence - all conclusions are false in this model."
-                    | otherwise = Right ()
+                 return $ check ctvs (Just falses)
+              else return $ check ctvs Nothing
+          truthful tvs Nothing
+                | and tvs = Right ()
+                | otherwise = do let falses = intercalate ", " $ map (rewriteWith opts . show . snd) . filter (not . fst) $ (zip tvs sucs)
+                                 Left $ "Not all conclusions are true in this model. Take another look at: " ++  falses ++ "."
+          truthful tvs (Just falseprems)
+                | and tvs = Left $ "Not all premises are true in this model. Take another look at: " ++ falseprems ++ "."
+                | otherwise = do let falses = intercalate ", " $ map (rewriteWith opts . show . snd) . filter (not . fst) $ (zip tvs sucs)
+                                 Left $ "Not all conclusions are true in this model, and not all premises are true. "
+                                     ++ "Take another look at the conclusions " ++  falses ++ " and the premises " ++ falseprems ++ "."
+          falsey tvs Nothing
+                | and (map not tvs) = Right ()
+                | otherwise = do let trues = intercalate ", " $ map (rewriteWith opts . show . snd) . filter fst $ (zip tvs sucs)
+                                 Left $ "Not all conclusions are false in this model. Take another look at: " ++  trues ++ "."
+          falsey tvs (Just falseprems)
+                | and (map not tvs) = Left $ "Not all premises are true in this model, Take another look at: " ++ falseprems ++ "."
+                | otherwise = do let trues = intercalate ", " $ map (rewriteWith opts . show . snd) . filter fst $ (zip tvs sucs)
+                                 Left $ "Not all conclusions are false in this model, and not all premises are true. "
+                                     ++ "Take another look at the conclusions  " ++  trues ++ " and the premises " ++ falseprems ++ "."
+          equiv tvs Nothing 
+                | and tvs = Left "Not a counterexample to equivalence - all conclusions are true in this model."
+                | and (map not tvs) = Left "Not a counterexample to equivalence - all conclusions are false in this model."
+                | otherwise = Right ()
+          equiv tvs (Just falseprems)
+                | and tvs = Left $ "Not all premises are true in this model, Take another look at: " ++ falseprems ++ ". " 
+                                ++ "Furthermore, this is not a counterexample to equivalence - all conclusions are true in this model."
+                | and (map not tvs) = Left $ "Not all premises are true in this model, Take another look at: " ++ falseprems ++ ". "
+                                          ++ "Furthermore, this is not a counterexample to equivalence - all conclusions are false in this model."
+                | otherwise = Right ()
 
 prepareModelUI :: ModelingLanguage lex => Document -> [FixLang lex (Form Bool)] -> (Element,Element) -> IORef PolyadicModel
     -> Element -> Map String String 
