@@ -1,4 +1,4 @@
-{-#LANGUAGE TypeSynonymInstances, UndecidableInstances, FlexibleInstances, MultiParamTypeClasses, GADTs, DataKinds, PolyKinds, TypeOperators, ViewPatterns, PatternSynonyms, RankNTypes, FlexibleContexts #-}
+{-#LANGUAGE UndecidableInstances, FlexibleInstances, MultiParamTypeClasses, TypeOperators, ScopedTypeVariables, PatternSynonyms, RankNTypes, FlexibleContexts #-}
 module Carnap.Languages.SetTheory.Syntax 
 where
 
@@ -23,6 +23,10 @@ type SetTheoryEq = TermEq Bool Int
 type SetTheorySubset = TermSubset Bool Int
 
 type SetTheorySchematicPred = SchematicIntPred Bool Int
+
+type SetTheoryStringPred = StringPred Bool Int
+
+type SetTheoryStringFunc = StringFunc Int Int
 
 type OpenLexiconST a = CoreLexicon :|: Predicate SetTheoryElem :|: Predicate SetTheoryEq :|: Predicate PureSchematicPred :|:  Function PureSchematicFunction :|: Function PureFunction :|: a
 --XXX: as an extension of FOL, this falls under all the classes of PureFirstOrderLexWith a = CoreLexicon :|: a
@@ -56,6 +60,17 @@ type StrictSetTheoryLex = OpenLexiconST EndLang
 
 type StrictSetTheoryLang = FixLang StrictSetTheoryLex
 
+-----------------------------------------------
+--  2.1 Extended Strict First-Order Lexicon  --
+-----------------------------------------------
+
+type ExtendedStrictSetTheoryLex = OpenLexiconST (Predicate SetTheoryStringPred :|: Function SetTheoryStringFunc)
+
+type ExtendedStrictSetTheoryLang = FixLang ExtendedStrictSetTheoryLex
+
+instance PrismPolyadicStringPredicate ExtendedStrictSetTheoryLex Int Bool
+instance PrismPolyadicStringFunction ExtendedStrictSetTheoryLex Int Int
+
 -----------------------------------------
 --  3. Elementary First-Order Lexicon  --
 -----------------------------------------
@@ -71,22 +86,36 @@ type ElementarySetTheoryLang = FixLang ElementarySetTheoryLex
 instance PrismElementarySetsLex (ElementarySetTheoryLexOpen a) Int
 instance PrismTermSubset (ElementarySetTheoryLexOpen a) Int Bool
 
+---------------------------------------------------
+--  3.1 Extended Elementary First-Order Lexicon  --
+---------------------------------------------------
+
+type ExtendedElementarySetTheoryLex = ElementarySetTheoryLexOpen (Predicate SetTheoryStringPred :|: Function SetTheoryStringFunc)
+
+type ExtendedElementarySetTheoryLang = FixLang ExtendedElementarySetTheoryLex
+
+instance PrismPolyadicStringPredicate ExtendedElementarySetTheoryLex Int Bool
+instance PrismPolyadicStringFunction ExtendedElementarySetTheoryLex Int Int
+
 -----------------------------------------
---  3. Separative First-Order Lexicon  --
+--  4. Separative First-Order Lexicon  --
 -----------------------------------------
 
 type SetTheorySep = Separation Int Bool
 
-type SeparativeSetTheoryLexOpen a = ElementarySetTheoryLexOpen SetTheorySep
+type SeparativeSetTheoryLexOpen a = ElementarySetTheoryLexOpen (SetTheorySep :|: a)
 
 type SeparativeSetTheoryLex = SeparativeSetTheoryLexOpen EndLang
 
+type SeparativeSetTheoryLangOpen a = FixLang (SeparativeSetTheoryLexOpen a)
+
 type SeparativeSetTheoryLang = FixLang SeparativeSetTheoryLex
 
-instance CopulaSchema SeparativeSetTheoryLang where 
+instance Schematizable (a (SeparativeSetTheoryLangOpen a))
+        => CopulaSchema (SeparativeSetTheoryLangOpen a) where 
 
-    appSchema t@(x :!$: y) (LLam f) e = case ( castTo x :: Maybe (SeparativeSetTheoryLang (Term Int -> (Term Int -> Form Bool) -> Term Int))
-                                             , castTo (LLam f) :: Maybe (SeparativeSetTheoryLang (Term Int -> Form Bool))) of
+    appSchema t@(x :!$: y) (LLam f) e = case ( castTo x :: Maybe (SeparativeSetTheoryLangOpen a (Term Int -> (Term Int -> Form Bool) -> Term Int))
+                                             , castTo (LLam f) :: Maybe (SeparativeSetTheoryLangOpen a (Term Int -> Form Bool))) of
                                             (Just x, Just (LLam f)) -> case x ^? _separator :: Maybe String of
                                               Just s -> schematize t (show (f $ foVar s) : e)
                                               Nothing -> schematize t (show (LLam f) : e)
@@ -99,4 +128,15 @@ instance CopulaSchema SeparativeSetTheoryLang where
 
     lamSchema = defaultLamSchema
 
-instance PrismSeparating SeparativeSetTheoryLex Int Bool
+instance PrismSeparating (SeparativeSetTheoryLexOpen a) Int Bool
+
+---------------------------------------------------
+--  4.1 Extended Separative First-Order Lexicon  --
+---------------------------------------------------
+
+type ExtendedSeparativeSetTheoryLex = SeparativeSetTheoryLexOpen (Predicate SetTheoryStringPred :|: Function SetTheoryStringFunc)
+
+type ExtendedSeparativeSetTheoryLang = FixLang ExtendedSeparativeSetTheoryLex
+
+instance PrismPolyadicStringPredicate ExtendedSeparativeSetTheoryLex Int Bool
+instance PrismPolyadicStringFunction ExtendedSeparativeSetTheoryLex Int Int

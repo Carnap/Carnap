@@ -1,4 +1,4 @@
-{-#LANGUAGE GADTs, ScopedTypeVariables, ConstraintKinds, FlexibleContexts, RankNTypes, PatternSynonyms,  FlexibleInstances, MultiParamTypeClasses #-}
+{-#LANGUAGE GADTs, UndecidableInstances, ScopedTypeVariables, ConstraintKinds, FlexibleContexts, RankNTypes, PatternSynonyms,  FlexibleInstances, MultiParamTypeClasses #-}
 module Carnap.Languages.SetTheory.Logic.Rules where
 
 import Control.Lens
@@ -9,6 +9,7 @@ import Carnap.Core.Unification.FirstOrder
 import Carnap.Core.Unification.ACUI
 import Carnap.Core.Data.Util
 import Carnap.Core.Data.Classes
+import Carnap.Core.Data.Optics
 import Carnap.Core.Data.Types
 import Carnap.Languages.SetTheory.Syntax
 import Carnap.Languages.SetTheory.Parser
@@ -36,14 +37,16 @@ type ElementarySetTheoryRule lex b = ElementarySetTheoryConstraint lex b => Sequ
 type ElementarySetTheoryRuleVariants lex b = ElementarySetTheoryConstraint lex b => [SequentRule lex (Form b)]
 
 --XXX Needed because of variable binding in separators
-instance CopulaSchema (ClassicalSequentOver SeparativeSetTheoryLex) where 
+instance ( ReLex a
+         , Schematizable (a (ClassicalSequentOver (SeparativeSetTheoryLexOpen a)))
+         ) => CopulaSchema (ClassicalSequentOver (SeparativeSetTheoryLexOpen a)) where 
 
     appSchema q@(Fx _) (LLam f) e = 
         case ( q 
              , qtype q >>= preview _all >>= \x -> (,) <$> Just x <*> castTo (seqVar x)
              , qtype q >>= preview _some >>= \x -> (,) <$> Just x <*> castTo (seqVar x)
-             ) of (x :!$: y, _, _) -> case ( castTo x :: Maybe (ClassicalSequentOver SeparativeSetTheoryLex (Term Int -> (Term Int -> Form Bool) -> Term Int))
-                         , castTo (LLam f) :: Maybe (ClassicalSequentOver SeparativeSetTheoryLex (Term Int -> Form Bool))) of
+             ) of (x :!$: y, _, _) -> case ( castTo x :: Maybe (ClassicalSequentOver (SeparativeSetTheoryLexOpen a) (Term Int -> (Term Int -> Form Bool) -> Term Int))
+                         , castTo (LLam f) :: Maybe (ClassicalSequentOver (SeparativeSetTheoryLexOpen a) (Term Int -> Form Bool))) of
                         (Just x, Just (LLam f)) -> case x ^? _separator :: Maybe String of
                           Just s -> schematize q (show (f $ seqVar s) : e)
                           Nothing -> schematize q (show (LLam f) : e)

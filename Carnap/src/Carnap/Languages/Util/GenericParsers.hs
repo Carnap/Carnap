@@ -324,7 +324,7 @@ parseFunctionString ::
     ) => ParsecT String u m (FixLang lex arg) -> ParsecT String u m (FixLang lex ret)
 parseFunctionString parseTerm = parse <?> "a function string"
     where parse = do c <- lower
-                     s <- many1 (alphaNum <|> char '_')
+                     s <- many (alphaNum <|> char '_')
                      char '(' *> spaces *> argParser parseTerm (stringFunc (c:s) AOne)
 
 parseSchematicFunctionSymbol ::     
