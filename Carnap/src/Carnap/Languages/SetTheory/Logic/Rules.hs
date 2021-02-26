@@ -70,7 +70,11 @@ unpackComplement = replace ((tau `isIn` tau')./\. lneg (tau `isIn` tau''))  (tau
 
 unpackEquality :: IndexedPropContextSchemeLanguage (ClassicalSequentOver lex (Form b)) => ElementarySetTheoryRuleVariants lex b
 unpackEquality = replace (tau `equals` tau') (lall "v" $ \x -> (x `isIn` tau) .<=>. (x `isIn` tau')) ++
-                replace (tau `equals` tau') (lall "v" $ \x -> (x `isIn` tau') .<=>. (x `isIn` tau))
+                 replace (tau `equals` tau') (lall "v" $ \x -> (x `isIn` tau') .<=>. (x `isIn` tau))
+
+unpackEmptySet :: IndexedPropContextSchemeLanguage (ClassicalSequentOver lex (Form b)) => ElementarySetTheoryRuleVariants lex b
+unpackEmptySet = replace (tau `equals` emptySet) (lall "v" $ \x -> lneg (x `isIn` tau)) ++
+                 replace (emptySet `equals` tau') (lall "v" $ \x -> lneg (x `isIn` tau))
 
 unpackSubset :: IndexedPropContextSchemeLanguage (ClassicalSequentOver lex (Form b)) => ElementarySetTheoryRuleVariants lex b
 unpackSubset = replace (tau `within` tau') (lall "v" $ \x -> (x `isIn` tau) .=>. (x `isIn` tau'))

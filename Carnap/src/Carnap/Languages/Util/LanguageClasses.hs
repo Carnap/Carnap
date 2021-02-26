@@ -541,6 +541,7 @@ class ElementarySetsLanguage l where
             setIntersect :: l -> l -> l
             setUnion :: l -> l -> l
             setComplement :: l -> l -> l
+            emptySet :: l
 
 class (Typeable b, PrismLink (FixLang lex) (Function (ElementarySetOperations b) (FixLang lex))) 
         => PrismElementarySetsLex lex b where
@@ -557,6 +558,9 @@ class (Typeable b, PrismLink (FixLang lex) (Function (ElementarySetOperations b)
         _setComplement :: Prism' (FixLang lex (Term b -> Term b -> Term b)) ()
         _setComplement = binarylink_ElementarySetsLex . setComplementPris 
 
+        _emptySet :: Prism' (FixLang lex (Term b)) ()
+        _emptySet = zeroarylink_ElementarySetsLex . emptySetPris
+
         binarylink_ElementarySetsLex :: 
             Prism' (FixLang lex (Term b -> Term b -> Term b)) 
                    (Function (ElementarySetOperations b) (FixLang lex) (Term b -> Term b -> Term b))
@@ -566,6 +570,11 @@ class (Typeable b, PrismLink (FixLang lex) (Function (ElementarySetOperations b)
             Prism' (FixLang lex (Term b -> Term b)) 
                    (Function (ElementarySetOperations b) (FixLang lex) (Term b -> Term b))
         unarylink_ElementarySetsLex = link 
+
+        zeroarylink_ElementarySetsLex :: 
+            Prism' (FixLang lex (Term b)) 
+                   (Function (ElementarySetOperations b) (FixLang lex) (Term b))
+        zeroarylink_ElementarySetsLex = link 
 
         setIntersectPris :: Prism' (Function (ElementarySetOperations b) (FixLang lex) (Term b -> Term b -> Term b)) ()
         setIntersectPris = prism' (\_ -> Function Intersection ATwo) 
@@ -583,11 +592,16 @@ class (Typeable b, PrismLink (FixLang lex) (Function (ElementarySetOperations b)
         powersetPris = prism' (\_ -> Function Powerset AOne) 
                           (\x -> case x of Function Powerset AOne -> Just (); _ -> Nothing)
 
+        emptySetPris:: Prism' (Function (ElementarySetOperations b) (FixLang lex) (Term b)) ()
+        emptySetPris = prism' (\_ -> Function EmptySet AZero) 
+                          (\x -> case x of Function EmptySet AZero -> Just (); _ -> Nothing)
+
 instance {-#OVERLAPPABLE#-} PrismElementarySetsLex lex b => ElementarySetsLanguage (FixLang lex (Term b)) where
         powerset = review (unaryOpPrism _powerset)
         setIntersect = curry $ review (binaryOpPrism _setIntersect)
         setUnion = curry $ review (binaryOpPrism _setUnion)
         setComplement = curry $ review (binaryOpPrism _setComplement)
+        emptySet = review _emptySet ()
 
 class ElementaryArithmeticLanguage l where
             arithSucc :: l -> l
@@ -608,7 +622,7 @@ class (Typeable b, PrismLink (FixLang lex) (Function (ElementaryArithmeticOperat
         _arithTimes = binarylink_ArithmeticLex . arithTimesPris
 
         _arithZero :: Prism' (FixLang lex (Term b)) ()
-        _arithZero = zeroarylink_ElementarySetsLex . arithZeroPris 
+        _arithZero = zeroarylink_ArithmeticLex . arithZeroPris 
 
         binarylink_ArithmeticLex :: 
             Prism' (FixLang lex (Term b -> Term b -> Term b)) 
@@ -620,10 +634,10 @@ class (Typeable b, PrismLink (FixLang lex) (Function (ElementaryArithmeticOperat
                    (Function (ElementaryArithmeticOperations b) (FixLang lex) (Term b -> Term b))
         unarylink_ArithmeticLex = link 
 
-        zeroarylink_ElementarySetsLex :: 
+        zeroarylink_ArithmeticLex :: 
             Prism' (FixLang lex (Term b)) 
                    (Function (ElementaryArithmeticOperations b) (FixLang lex) (Term b))
-        zeroarylink_ElementarySetsLex = link 
+        zeroarylink_ArithmeticLex = link 
 
         arithSuccPris :: Prism' (Function (ElementaryArithmeticOperations b) (FixLang lex) (Term b -> Term b)) ()
         arithSuccPris = prism' (\_ -> Function ArithSuccessor AOne) 

@@ -9,7 +9,7 @@ import Data.IORef (IORef, readIORef, newIORef, writeIORef)
 import Data.Typeable (Typeable)
 import Data.Aeson.Types
 import Data.Text (pack)
-import qualified Text.Parsec as P (parse) 
+import qualified Text.Parsec as P (parse, eof) 
 import Control.Monad.State (modify,get,execState,State)
 import Control.Lens
 import Control.Concurrent
@@ -95,9 +95,9 @@ activateChecker w (Just (i, o, opts)) = case (setupWith `ofPropTreeSys` sys)
                   root `onChange` (\_ -> checkOnChange w memo threadRef calc mgoal i root)
 
               parseGoal calc = do 
-                  let seqParse = parseSeqOver $ tbParseForm calc
+                  let seqParse = parseSeqOver (tbParseForm calc)
                   case M.lookup "goal" opts of
-                      Just s -> case P.parse seqParse "" s of
+                      Just s -> case P.parse (seqParse <* P.eof) "" s of
                           Left e -> do setInnerHTML i (Just $ "Couldn't Parse This Goal:" ++ s)
                                        error "couldn't parse goal"
                           Right seq -> do setInnerHTML i (Just . tbNotation calc . show $ seq)
@@ -168,7 +168,7 @@ toProofTree calc (Node (l,r) f)
     | all isRight parsedForest && isRight newNode = handleOverride <$> (Node <$> newNode <*> sequence parsedForest)
     | isRight newNode = Left $ Node Waiting (map cleanTree parsedForest)
     | Left n <- newNode = Left n
-    where parsedLabel = (SS . liftToSequent) <$> P.parse (tbParseForm calc) "" l
+    where parsedLabel = (SS . liftToSequent) <$> P.parse (tbParseForm calc <* P.eof) "" l
           parsedRules = P.parse (tbParseRule calc) "" r
           parsedForest = map (toProofTree calc) f
           cleanTree (Left fs) = fs

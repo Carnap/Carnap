@@ -23,6 +23,7 @@ import Carnap.Languages.PureFirstOrder.Logic.Rules (phi, phi',eigenConstraint, t
 
 data ESTLogic = DefU1   | DefI1 | DefP1 | DefC1 | DefC3 | DefID1 | DefID3 | DefSub1
               | DefU2   | DefI2 | DefP2 | DefC2 | DefC4 | DefID2 | DefID4 | DefSub2
+              | DefES1  | DefES2 | DefES3 | DefES4
               | FO FOLogic | PR (Maybe [(ClassicalSequentOver ElementarySetTheoryLex (Sequent (Form Bool)))])
               | Eq
               deriving (Eq)
@@ -42,6 +43,10 @@ instance Show ESTLogic where
         show DefID2  = "Def-="
         show DefID3  = "Def-="
         show DefID4  = "Def-="
+        show DefES1  = "Def-∅"
+        show DefES2  = "Def-∅"
+        show DefES3  = "Def-∅"
+        show DefES4  = "Def-∅"
         show DefP1   = "Def-P"
         show DefP2   = "Def-P"
         show DefSub1 = "Def-S"
@@ -61,6 +66,10 @@ instance Inference ESTLogic ElementarySetTheoryLex (Form Bool) where
      ruleOf DefID2    = unpackEquality !! 1
      ruleOf DefID3    = unpackEquality !! 2
      ruleOf DefID4    = unpackEquality !! 3
+     ruleOf DefES1    = unpackEmptySet !! 0
+     ruleOf DefES2    = unpackEmptySet !! 1
+     ruleOf DefES3    = unpackEmptySet !! 2
+     ruleOf DefES4    = unpackEmptySet !! 3
      ruleOf DefSub1   = unpackSubset !! 0
      ruleOf DefSub2   = unpackSubset !! 1
      ruleOf DefP1     = unpackPowerset !! 0
@@ -106,7 +115,7 @@ parseESTLogic :: RuntimeNaturalDeductionConfig ElementarySetTheoryLex (Form Bool
 parseESTLogic rtc = try estRule <|> liftFO
     where liftFO = do r <- parseFOLogic (RuntimeNaturalDeductionConfig mempty mempty)
                       return (map FO r)
-          estRule = do r <- choice (map (try . string) ["PR", "Def-U", "Def-I", "Def-C", "Def-P", "Def-S", "Def-="])
+          estRule = do r <- choice (map (try . string) ["PR", "Def-U", "Def-I", "Def-C", "Def-P", "Def-S", "Def-=", "Def-0"])
                        case r of 
                             r | r == "PR"    -> return [PR $ problemPremises rtc]
                               | r == "Def-U" -> return [DefU1, DefU2]
@@ -115,6 +124,7 @@ parseESTLogic rtc = try estRule <|> liftFO
                               | r == "Def-S" -> return [DefSub1, DefSub2]
                               | r == "Def-P" -> return [DefP1, DefP2]
                               | r == "Def-=" -> return [DefID1, DefID2,DefID3,DefID4]
+                              | r == "Def-0" -> return [DefES1, DefES2,DefES3,DefES4]
 
 parseESTProof:: RuntimeNaturalDeductionConfig ElementarySetTheoryLex (Form Bool) 
                     -> String -> [DeductionLine ESTLogic ElementarySetTheoryLex (Form Bool)]
@@ -156,6 +166,10 @@ instance Inference SSTLogic SeparativeSetTheoryLex (Form Bool) where
      ruleOf (EST DefID2  )   = unpackEquality !! 1
      ruleOf (EST DefID3  )   = unpackEquality !! 2
      ruleOf (EST DefID4  )   = unpackEquality !! 3
+     ruleOf (EST DefES1  )   = unpackEmptySet !! 0
+     ruleOf (EST DefES2  )   = unpackEmptySet !! 1
+     ruleOf (EST DefES3  )   = unpackEmptySet !! 2
+     ruleOf (EST DefES4  )   = unpackEmptySet !! 3
      ruleOf (EST DefP1   )   = unpackPowerset !! 0
      ruleOf (EST DefP2   )   = unpackPowerset !! 1
      ruleOf (EST DefSub1 )   = unpackSubset !! 0

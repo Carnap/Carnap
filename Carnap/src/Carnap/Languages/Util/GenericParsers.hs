@@ -366,8 +366,11 @@ parseSchematicConstant = parse <?> "a constant"
                          m = maybe 0 id midx
                      return $ taun (n  + (m * 3))
 
-parseZero :: (ElementaryArithmeticLanguage lang, Monad m) => ParsecT String u m (lang)
+parseZero :: (ElementaryArithmeticLanguage lang, Monad m) => ParsecT String u m lang
 parseZero = spaces >> (string "0") >> spaces >> return arithZero
+
+parseEmptySet :: (ElementarySetsLanguage lang, Monad m) => ParsecT String u m lang
+parseEmptySet = spaces >> (string "∅" <|> string "{}" <|> string "empty") >> spaces >> return emptySet
 
 --------------------------------------------------------
 --Structural Elements

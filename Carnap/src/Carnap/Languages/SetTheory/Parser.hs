@@ -41,10 +41,11 @@ elementarySetTheoryOptions = FirstOrderParserOptions
                                                           <|> subsetParser x
                            , quantifiedSentenceParser' = quantifiedSentenceParser
                            , freeVarParser = parseFreeVar "stuvwxyz"
-                           , constantParser = Just (parseConstant "abcdefghijklmnopqr")
+                           , constantParser = Just (try parseEmptySet <|> parseConstant "abcdefghijklmnopqr" )
                            , functionParser = Just (\x -> setTheoryOpParser 
                                                                 (parenParser x
                                                                  <|> powersetParser x
+                                                                 <|> try parseEmptySet
                                                                  <|> parseFreeVar "stuvwxyz" 
                                                                  <|> parseConstant "abcdefghijklmnopqr" 
                                                                  ))

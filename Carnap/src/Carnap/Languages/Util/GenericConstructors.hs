@@ -225,6 +225,7 @@ data ElementarySetOperations b a where
         Union :: ElementarySetOperations b (Term b -> Term b -> Term b)
         RelComplement :: ElementarySetOperations b (Term b -> Term b -> Term b)
         Powerset :: ElementarySetOperations b (Term b -> Term b)
+        EmptySet :: ElementarySetOperations b (Term b)
 
 instance Schematizable (ElementarySetOperations b) where
         schematize Intersection (x:y:_)  = "(" ++ x ++ "∩" ++ y ++ ")"
@@ -235,12 +236,14 @@ instance Schematizable (ElementarySetOperations b) where
         schematize RelComplement _       = "\\"
         schematize Powerset (x:_)  = "Pow(" ++ x ++ ")"
         schematize Powerset _  = "Pow"
+        schematize EmptySet _  = "∅"
 
 instance UniformlyEq (ElementarySetOperations b) where
         Intersection =* Intersection = True 
         Union =* Union = True 
         RelComplement =* RelComplement = True
         Powerset =* Powerset = True
+        EmptySet =* EmptySet = True
         _ =* _ = False
 
 instance FirstOrderLex (ElementarySetOperations b)
