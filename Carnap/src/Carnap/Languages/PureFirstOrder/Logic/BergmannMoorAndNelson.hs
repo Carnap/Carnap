@@ -11,7 +11,7 @@ import Carnap.Core.Data.Types (Form, Term)
 import Carnap.Core.Unification.Unification
 import Carnap.Languages.PureFirstOrder.Syntax
 import Carnap.Languages.PureFirstOrder.Parser
-import Carnap.Languages.PurePropositional.Logic.BergmannMoorAndNelson
+import Carnap.Languages.PurePropositional.Logic.BergmannMoorAndNelson hiding (SD)
 import Carnap.Calculi.NaturalDeduction.Syntax
 import Carnap.Calculi.NaturalDeduction.Parser
 import Carnap.Calculi.NaturalDeduction.Checker (hoProcessLineFitchMemo, hoProcessLineFitch)
@@ -111,12 +111,54 @@ instance Inference LogicBookPDPlus PureLexiconFOL (Form Bool) where
          ruleOf QN2 = quantifierNegationReplace !! 1
          ruleOf QN3 = quantifierNegationReplace !! 2
          ruleOf QN4 = quantifierNegationReplace !! 3
+         ruleOf (SDPlus Com1) = andCommutativity !! 0
+         ruleOf (SDPlus Com2) = orCommutativity !! 0
+         ruleOf (SDPlus Assoc1) = andAssociativity !! 0
+         ruleOf (SDPlus Assoc2) = andAssociativity !! 1 
+         ruleOf (SDPlus Assoc3) = orAssociativity !! 0  
+         ruleOf (SDPlus Assoc4) = orAssociativity !! 1  
+         ruleOf (SDPlus Impl1) = materialConditional !! 0
+         ruleOf (SDPlus Impl2) = materialConditional !! 1
+         ruleOf (SDPlus DN1) = doubleNegation !! 0
+         ruleOf (SDPlus DN2) = doubleNegation !! 1
+         ruleOf (SDPlus DeM1) = deMorgansLaws !! 0 
+         ruleOf (SDPlus DeM2) = deMorgansLaws !! 1
+         ruleOf (SDPlus DeM3) = deMorgansLaws !! 2
+         ruleOf (SDPlus DeM4) = deMorgansLaws !! 3
+         ruleOf (SDPlus Idem1) = andIdempotence !! 0
+         ruleOf (SDPlus Idem2) = andIdempotence !! 1
+         ruleOf (SDPlus Idem3) = orIdempotence !! 0
+         ruleOf (SDPlus Idem4) = orIdempotence !! 1
+         ruleOf (SDPlus Trans1) = contraposition !! 0
+         ruleOf (SDPlus Trans2) = contraposition !! 1
+         ruleOf (SDPlus Exp1) = exportation !! 0
+         ruleOf (SDPlus Exp2) = exportation !! 1
+         ruleOf (SDPlus Dist1) = distribution !! 0
+         ruleOf (SDPlus Dist2) = distribution !! 1
+         ruleOf (SDPlus Dist3) = distribution !! 4
+         ruleOf (SDPlus Dist4) = distribution !! 5
+         ruleOf (SDPlus Equiv1) = biconditionalExchange !! 0
+         ruleOf (SDPlus Equiv2) = biconditionalExchange !! 1
+         ruleOf (SDPlus Equiv3) = biconditionalCases !! 0
+         ruleOf (SDPlus Equiv4) = biconditionalCases !! 1
          ruleOf (PDtoPDP x) = ruleOf x
          ruleOf r@(SDPlus x) = premisesOf r ∴ conclusionOf r
 
+         premisesOf r@(SDPlus x) | x `elem` replacements = upperSequents (ruleOf r)
+            where replacements = [Com1, Com2, Com3, Com4 , Assoc1, Assoc2, Assoc3, Assoc4 
+                                 , Impl1, Impl2 , DN1 , DN2 , DeM1, DeM2, DeM3, DeM4 
+                                 , Idem1, Idem2, Idem3, Idem4 , Trans1, Trans2 
+                                 , Exp1, Exp2 , Dist1, Dist2, Dist3, Dist4 
+                                 , Equiv1, Equiv2, Equiv3, Equiv4]
          premisesOf (SDPlus x) = map liftSequent (premisesOf x)
          premisesOf r = upperSequents (ruleOf r)
          
+         conclusionOf r@(SDPlus x) | x `elem` replacements = lowerSequent (ruleOf r)
+            where replacements = [Com1, Com2, Com3, Com4 , Assoc1, Assoc2, Assoc3, Assoc4 
+                                 , Impl1, Impl2 , DN1 , DN2 , DeM1, DeM2, DeM3, DeM4 
+                                 , Idem1, Idem2, Idem3, Idem4 , Trans1, Trans2 
+                                 , Exp1, Exp2 , Dist1, Dist2, Dist3, Dist4 
+                                 , Equiv1, Equiv2, Equiv3, Equiv4]
          conclusionOf (SDPlus x) = liftSequent (conclusionOf x)
          conclusionOf r = lowerSequent (ruleOf r)
 

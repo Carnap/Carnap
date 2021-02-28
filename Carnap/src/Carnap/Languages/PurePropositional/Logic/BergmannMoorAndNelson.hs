@@ -1,7 +1,7 @@
 {-#LANGUAGE FlexibleContexts, FlexibleInstances, MultiParamTypeClasses #-}
 module Carnap.Languages.PurePropositional.Logic.BergmannMoorAndNelson
     (parseLogicBookSD, parseLogicBookSDProof, LogicBookSD(AS),
-     logicBookSDCalc, parseLogicBookSDPlus, parseLogicBookSDPlusProof, LogicBookSDPlus,
+     logicBookSDCalc, parseLogicBookSDPlus, parseLogicBookSDPlusProof, LogicBookSDPlus(..),
      logicBookSDPlusCalc) where
 
 import Data.Map as M (lookup, Map)
@@ -195,6 +195,7 @@ data LogicBookSDPlus = SD LogicBookSD | MT | HS
                      | Exp1 | Exp2
                      | Dist1 | Dist2 | Dist3 | Dist4
                      | Equiv1 | Equiv2 | Equiv3 | Equiv4
+    deriving Eq
 
 instance Show LogicBookSDPlus where
         show (SD x) = show x
