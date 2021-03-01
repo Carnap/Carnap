@@ -21,12 +21,11 @@ type ArithLessThan = TermLessThan Bool Int
 
 type ArithEq = TermEq Bool Int
 
-type ArithSchematicPred = SchematicIntPred Bool Int
-
 type ArithOps = ElementaryArithmeticOperations Int
 
-type OpenLexiconArith a = CoreLexicon :|: Predicate ArithLessThan :|: Predicate ArithEq :|: Function PureFunction
-                       :|: Predicate ArithSchematicPred :|: Function ArithOps :|: Function PureSchematicFunction :|: a
+type OpenLexiconArith a = CoreLexicon :|: Predicate ArithLessThan :|: Predicate ArithEq :|: Function ArithOps
+                                      :|: Function PureFunction :|: Predicate PureSchematicPred :|: Function PureSchematicFunction 
+                                      :|: a
 --XXX: as an extension of FOL, this falls under all the classes of PureFirstOrderLexWith a = CoreLexicon :|: a
 --The function symbols are not necessarily exposed by the parser, but are necessary for things like skolemization
 

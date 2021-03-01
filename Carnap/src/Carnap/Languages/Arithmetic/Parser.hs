@@ -54,7 +54,6 @@ arithmeticExtendedOptions = FirstOrderParserOptions
                          , opTable = standardOpTable
                          , finalValidation = const (pure ())
                          }
- 
 
 arithmeticParser = parserFromOptions arithmeticOptions <* eof
 

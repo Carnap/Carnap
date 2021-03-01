@@ -106,6 +106,10 @@ library
                      , Carnap.Languages.SetTheory.Logic.Rules
                      , Carnap.Languages.SetTheory.Logic.Carnap
                      , Carnap.Languages.SetTheory.Logic.OpenLogic
+                     , Carnap.Languages.HigherOrderArithmetic.Syntax
+                     , Carnap.Languages.HigherOrderArithmetic.Parser
+                     , Carnap.Languages.HigherOrderArithmetic.Logic
+                     , Carnap.Languages.HigherOrderArithmetic.Logic.OpenLogic
                      , Carnap.Languages.DefiniteDescription.Syntax
                      , Carnap.Languages.DefiniteDescription.Semantics
                      , Carnap.Languages.DefiniteDescription.Util

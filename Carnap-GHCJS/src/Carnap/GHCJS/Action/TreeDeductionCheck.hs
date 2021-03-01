@@ -32,6 +32,7 @@ import Carnap.Languages.PurePropositional.Logic (ofPropTreeSys)
 import Carnap.Languages.PureFirstOrder.Logic (ofFOLTreeSys)
 import Carnap.Languages.SetTheory.Logic (ofSetTheoryTreeSys)
 import Carnap.Languages.Arithmetic.Logic (ofArithmeticTreeSys)
+import Carnap.Languages.HigherOrderArithmetic.Logic (ofHigherOrderArithmeticTreeSys)
 import Carnap.GHCJS.Util.ProofJS
 import Carnap.GHCJS.SharedTypes
 import GHCJS.DOM.Element (setInnerHTML, click, keyDown, setAttribute )
@@ -57,6 +58,7 @@ activateChecker w (Just (i, o, opts)) = case (setupWith `ofPropTreeSys` sys)
                                               `mplus` (setupWith `ofFOLTreeSys` sys)
                                               `mplus` (setupWith `ofSetTheoryTreeSys` sys)
                                               `mplus` (setupWith `ofArithmeticTreeSys` sys)
+                                              `mplus` (setupWith `ofHigherOrderArithmeticTreeSys` sys)
                                         of Just io -> io
                                            Nothing -> error $ "couldn't parse tree system: " ++ sys
         where sys = case M.lookup "system" opts of

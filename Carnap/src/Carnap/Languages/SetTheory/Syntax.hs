@@ -28,15 +28,17 @@ type SetTheoryStringPred = StringPred Bool Int
 
 type SetTheoryStringFunc = StringFunc Int Int
 
-type OpenLexiconST a = CoreLexicon :|: Predicate SetTheoryElem :|: Predicate SetTheoryEq :|: Predicate PureSchematicPred :|:  Function PureSchematicFunction :|: Function PureFunction :|: a
+type OpenLexiconST a = CoreLexicon :|: Predicate SetTheoryElem :|: Predicate SetTheoryEq 
+                                   :|: Predicate PureSchematicPred :|: Function PureSchematicFunction :|: Function PureFunction 
+                                   :|: a
 --XXX: as an extension of FOL, this falls under all the classes of PureFirstOrderLexWith a = CoreLexicon :|: a
 --The function symbols are not necessarily exposed by the parser, but are necessary for things like skolemization
 
 type OpenLanguageST a = FixLang (OpenLexiconST a)
 
 instance PrismPolyadicSchematicPredicate (OpenLexiconST a) Int Bool
-instance PrismPolyadicFunction (OpenLexiconST a) Int Int
 instance PrismPolyadicSchematicFunction (OpenLexiconST a) Int Int
+instance PrismPolyadicFunction (OpenLexiconST a) Int Int
 instance PrismTermElements (OpenLexiconST a) Int Bool
 instance PrismTermEquality (OpenLexiconST a) Int Bool
         
