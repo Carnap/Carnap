@@ -12,13 +12,9 @@ import Carnap.Languages.Util.GenericConstructors
 import Carnap.Languages.SetTheory.Syntax
 import Carnap.Languages.Arithmetic.Syntax
 
-type UntypedHigherOrderArithLex = SeparativeSetTheoryLexOpen (  Predicate SetTheoryStringPred :|: Function SetTheoryStringFunc
-                                                            :|: Predicate ArithLessThan       :|: Function ArithOps
-                                                             )
+type UntypedHigherOrderArithLex = ExtendedSeparativeSetTheoryLexOpen ( Predicate ArithLessThan :|: Function ArithOps)
 
 type UntypedHigherOrderArithLang = FixLang UntypedHigherOrderArithLex
 
 instance PrismTermLessThan UntypedHigherOrderArithLex Int Bool
 instance PrismElementaryArithmeticLex UntypedHigherOrderArithLex Int
-instance PrismPolyadicStringPredicate UntypedHigherOrderArithLex Int Bool
-instance PrismPolyadicStringFunction UntypedHigherOrderArithLex Int Int

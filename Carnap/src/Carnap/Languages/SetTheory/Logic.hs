@@ -2,7 +2,9 @@
 module Carnap.Languages.SetTheory.Logic where
 
 import Carnap.Core.Data.Types
+import Carnap.Core.Data.Util
 import Carnap.Core.Data.Optics (ReLex)
+import Carnap.Languages.Util.LanguageClasses
 import Carnap.Calculi.Tableau.Data
 import Carnap.Calculi.NaturalDeduction.Syntax
 import Carnap.Languages.ClassicalSequent.Syntax
@@ -12,6 +14,7 @@ import Carnap.Languages.SetTheory.Logic.Carnap
 
 ofSetTheorySys :: (forall r lex . 
     ( SupportsND r (OpenLexiconST lex) (Form Bool)
+    , Incrementable (OpenLexiconST lex) (Term Int)
     ) => NaturalDeductionCalc r (OpenLexiconST lex) (Form Bool)-> a) -> String 
       -> Maybe a
 ofSetTheorySys f sys 
@@ -22,6 +25,7 @@ ofSetTheorySys f sys
 ofSetTheoryTreeSys :: (forall r lex . 
                     ( Show r
                     , SupportsND r (OpenLexiconST lex) (Form Bool)
+                    , Incrementable (OpenLexiconST lex) (Term Int)
                     , StructuralInference r (OpenLexiconST lex) (ProofTree r (OpenLexiconST lex) (Form Bool))
                     , StructuralOverride r (ProofTree r (OpenLexiconST lex) (Form Bool))
                  ) => 
