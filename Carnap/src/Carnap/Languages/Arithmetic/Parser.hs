@@ -55,9 +55,9 @@ arithmeticExtendedOptions = FirstOrderParserOptions
                          , finalValidation = const (pure ())
                          }
 
-arithmeticParser = parserFromOptions arithmeticOptions <* eof
+arithmeticParser = parserFromOptions arithmeticOptions
 
-arithmeticExtendedParser = parserFromOptions arithmeticExtendedOptions <* eof
+arithmeticExtendedParser = parserFromOptions arithmeticExtendedOptions
 
 instance ParsableLex (Form Bool) ArithLex where
         langParser = arithmeticParser
