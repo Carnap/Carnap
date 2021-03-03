@@ -128,13 +128,15 @@ parseESTLogic rtc = try estRule <|> liftFO
 
 parseESTProof:: RuntimeNaturalDeductionConfig ElementarySetTheoryLex (Form Bool) 
                     -> String -> [DeductionLine ESTLogic ElementarySetTheoryLex (Form Bool)]
-parseESTProof rtc = toDeductionMontague (parseESTLogic rtc) elementarySetTheoryParser
+parseESTProof rtc = toDeductionMontague (parseESTLogic rtc) elementarySetTheoryMontagueParser
 
 estCalc = mkNDCalc 
     { ndRenderer = MontagueStyle
     , ndParseProof = parseESTProof
     , ndProcessLine = hoProcessLineMontague
     , ndProcessLineMemo = Just hoProcessLineMontagueMemo
+    , ndParseForm = elementarySetTheoryMontagueParser
+    , ndParseSeq = parseSeqOver elementarySetTheoryMontagueParser
     }
 
 data SSTLogic = EST ESTLogic | DefSep1 | DefSep2 | DefSep3 | DefSep4
@@ -221,11 +223,13 @@ parseSSTLogic rtc = try sepRule <|> liftEST
 
 parseSSTProof:: RuntimeNaturalDeductionConfig SeparativeSetTheoryLex (Form Bool) 
                     -> String -> [DeductionLine SSTLogic SeparativeSetTheoryLex (Form Bool)]
-parseSSTProof rtc = toDeductionMontague (parseSSTLogic rtc) separativeSetTheoryParser
+parseSSTProof rtc = toDeductionMontague (parseSSTLogic rtc) separativeSetTheoryMontagueParser
 
 sstCalc = mkNDCalc 
     { ndRenderer = MontagueStyle
     , ndParseProof = parseSSTProof
     , ndProcessLine = hoProcessLineMontague
     , ndProcessLineMemo = Just hoProcessLineMontagueMemo
+    , ndParseForm = separativeSetTheoryMontagueParser
+    , ndParseSeq = parseSeqOver separativeSetTheoryMontagueParser
     }

@@ -1,8 +1,12 @@
 {-#LANGUAGE TypeOperators, FlexibleContexts, FlexibleInstances, MultiParamTypeClasses #-}
 module Carnap.Languages.SetTheory.Parser 
-( strictSetTheoryParser, extendedStrictSetTheoryParser
-, elementarySetTheoryParser, extendedElementarySetTheoryParser
-, separativeSetTheoryParser, extendedSeparativeSetTheoryParser) where
+( strictSetTheoryParser, strictSetTheoryMontagueParser
+, extendedStrictSetTheoryParser, extendedStrictSetTheoryMontagueParser
+, elementarySetTheoryParser, elementarySetTheoryMontagueParser
+, extendedElementarySetTheoryParser, extendedElementarySetTheoryMontagueParser
+, separativeSetTheoryParser, separativeSetTheoryMontagueParser
+, extendedSeparativeSetTheoryParser, extendedSeparativeSetTheoryMontagueParser
+) where
 
 import Carnap.Core.Data.Types
 import Carnap.Languages.SetTheory.Syntax
@@ -32,6 +36,8 @@ strictSetTheoryOptions = FirstOrderParserOptions
 
 strictSetTheoryParser = parserFromOptions strictSetTheoryOptions
 
+strictSetTheoryMontagueParser = parserFromOptions strictSetTheoryOptions {hasBooleanConstants = False}
+
 instance ParsableLex (Form Bool) StrictSetTheoryLex where
         langParser = strictSetTheoryParser
 
@@ -53,6 +59,8 @@ extendedStrictSetTheoryOptions = FirstOrderParserOptions
 
 extendedStrictSetTheoryParser = parserFromOptions extendedStrictSetTheoryOptions
 
+extendedStrictSetTheoryMontagueParser = parserFromOptions extendedStrictSetTheoryOptions {hasBooleanConstants = False}
+
 instance ParsableLex (Form Bool) ExtendedStrictSetTheoryLex where
         langParser = extendedStrictSetTheoryParser
 
@@ -72,13 +80,15 @@ elementarySetTheoryOptions = FirstOrderParserOptions
                                                                  <|> parseFreeVar "stuvwxyz" 
                                                                  <|> parseConstant "abcdefghijklmnopqr" 
                                                                  ))
-                           , hasBooleanConstants = False
+                           , hasBooleanConstants = True
                            , parenRecur = \opt recurWith  -> parenParser (recurWith opt)
                            , opTable = standardOpTable
                            , finalValidation = const (pure ())
                            }
 
 elementarySetTheoryParser = parserFromOptions elementarySetTheoryOptions
+
+elementarySetTheoryMontagueParser = parserFromOptions elementarySetTheoryOptions {hasBooleanConstants = False}
 
 instance ParsableLex (Form Bool) ElementarySetTheoryLex where
         langParser = elementarySetTheoryParser
@@ -109,6 +119,8 @@ extendedElementarySetTheoryOptions = FirstOrderParserOptions
 
 extendedElementarySetTheoryParser = parserFromOptions extendedElementarySetTheoryOptions
 
+extendedElementarySetTheoryMontagueParser = parserFromOptions extendedElementarySetTheoryOptions {hasBooleanConstants = False}
+
 instance ParsableLex (Form Bool) ExtendedElementarySetTheoryLex where
         langParser = extendedElementarySetTheoryParser
 
@@ -129,7 +141,7 @@ separativeSetTheoryOptions = FirstOrderParserOptions
                                                                  <|> vparser
                                                                  <|> cparser
                                                                  ))
-                           , hasBooleanConstants = False
+                           , hasBooleanConstants = True
                            , parenRecur = \opt recurWith  -> parenParser (recurWith opt)
                            , opTable = standardOpTable
                            , finalValidation = const (pure ())
@@ -140,6 +152,8 @@ separativeSetTheoryOptions = FirstOrderParserOptions
           tparser = try (fparser tparser) <|> try cparser <|> vparser 
 
 separativeSetTheoryParser = parserFromOptions separativeSetTheoryOptions
+
+separativeSetTheoryMontagueParser = parserFromOptions separativeSetTheoryOptions {hasBooleanConstants = False}
 
 instance ParsableLex (Form Bool) SeparativeSetTheoryLex where
         langParser = separativeSetTheoryParser
@@ -164,7 +178,7 @@ extendedSeparativeSetTheoryOptions = FirstOrderParserOptions
                                                                  <|> vparser
                                                                  <|> cparser
                                                                  ))
-                           , hasBooleanConstants = False
+                           , hasBooleanConstants = True
                            , parenRecur = \opt recurWith  -> parenParser (recurWith opt)
                            , opTable = standardOpTable
                            , finalValidation = const (pure ())
@@ -175,6 +189,8 @@ extendedSeparativeSetTheoryOptions = FirstOrderParserOptions
           tparser = try (fparser tparser) <|> try cparser <|> vparser 
 
 extendedSeparativeSetTheoryParser = parserFromOptions extendedSeparativeSetTheoryOptions
+
+extendedSeparativeSetTheoryMontagueParser = parserFromOptions extendedSeparativeSetTheoryOptions {hasBooleanConstants = False}
 
 instance ParsableLex (Form Bool) ExtendedSeparativeSetTheoryLex where
         langParser = extendedSeparativeSetTheoryParser

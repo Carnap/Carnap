@@ -38,4 +38,5 @@ data TableauCalc lex sem rule = TableauCalc
            , tbNotation :: String -> String
            }
 
+--TODO use langParser as default for tbParseForm
 mkTBCalc = TableauCalc { tbNotation = id }

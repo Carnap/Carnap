@@ -34,7 +34,7 @@ untypedHigherOrderArithmeticOptions = FirstOrderParserOptions
                                                                  <|> vparser
                                                                  <|> cparser
                                                                  ))
-                           , hasBooleanConstants = False
+                           , hasBooleanConstants = True
                            , parenRecur = \opt recurWith  -> parenParser (recurWith opt)
                            , opTable = standardOpTable
                            , finalValidation = const (pure ())
