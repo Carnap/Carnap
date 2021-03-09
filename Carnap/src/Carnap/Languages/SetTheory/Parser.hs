@@ -28,7 +28,7 @@ strictSetTheoryOptions = FirstOrderParserOptions
                          , freeVarParser = parseFreeVar "stuvwxyz"
                          , constantParser = Just (parseConstant "abcdefghijklmnopqr")
                          , functionParser = Nothing
-                         , hasBooleanConstants = False
+                         , hasBooleanConstants = True
                          , parenRecur = \opt recurWith  -> parenParser (recurWith opt)
                          , opTable = standardOpTable
                          , finalValidation = const (pure ())
@@ -51,7 +51,7 @@ extendedStrictSetTheoryOptions = FirstOrderParserOptions
                          , freeVarParser = parseFreeVar "stuvwxyz"
                          , constantParser = Just (parseConstant "abcdefghijklmnopqr")
                          , functionParser = Just parseFunctionString
-                         , hasBooleanConstants = False
+                         , hasBooleanConstants = True
                          , parenRecur = \opt recurWith  -> parenParser (recurWith opt)
                          , opTable = standardOpTable
                          , finalValidation = const (pure ())
@@ -111,7 +111,7 @@ extendedElementarySetTheoryOptions = FirstOrderParserOptions
                                                                  <|> parseFreeVar "stuvwxyz" 
                                                                  <|> parseConstant "abcdefghijklmnopqr" 
                                                                  ))
-                           , hasBooleanConstants = False
+                           , hasBooleanConstants = True
                            , parenRecur = \opt recurWith  -> parenParser (recurWith opt)
                            , opTable = standardOpTable
                            , finalValidation = const (pure ())
