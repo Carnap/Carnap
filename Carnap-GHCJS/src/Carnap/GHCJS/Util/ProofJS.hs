@@ -90,9 +90,10 @@ attachDisplay w elt root = do
           toggleDisplay <- newListener $ do
               kbe <- event
               isCtrl <- getCtrlKey kbe
+              isShift <- getShiftKey kbe
               code <- liftIO $ keyString kbe
               liftIO $ print code
-              if isCtrl && code == "?" 
+              if (isCtrl && code == "?") || (isCtrl && isShift && code == "/")
                   then do
                       preventDefault
                       mparent <- getParentNode displayDiv
