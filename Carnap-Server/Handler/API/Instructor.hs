@@ -31,6 +31,8 @@ postAPIInstructorDocumentsR ident = do Entity uid _ <- userFromIdent ident
                                            Success doc | badFileName (documentFilename doc) -> 
                                                sendStatusJSON badRequest400 ("Improper filename" :: Text)
                                            Success doc -> do
+                                               dir <- docDir ident  
+                                               liftIO $ createDirectoryIfMissing True dir
                                                path <- docFilePath ident doc
                                                liftIO (doesFileExist path) >>= --don't clobber and annex
                                                    bool (return ()) (sendStatusJSON conflict409 ("A document with that name already exists." :: Text)) 
@@ -88,9 +90,14 @@ putAPIInstructorDocumentDataR ident docid = do Entity uid _ <- userFromIdent ide
 userFromIdent :: Text -> Handler (Entity User)
 userFromIdent ident = runDB (getBy $ UniqueUser ident) >>= maybe (sendStatusJSON notFound404 ("No such instructor" :: Text)) pure
 
+
+docDir :: Text -> Handler FilePath
+docDir ident = do datadir <- appDataRoot <$> (appSettings <$> getYesod)
+                  return (datadir </> "documents" </> unpack ident)
+
 docFilePath :: Text -> Document -> Handler FilePath
-docFilePath ident doc = do datadir <- appDataRoot <$> (appSettings <$> getYesod)
-                           return (datadir </> "documents" </> unpack ident </> unpack (documentFilename doc))
+docFilePath ident doc = do docdir <- docDir ident
+                           return (docdir </> unpack (documentFilename doc))
 
 checkUID :: MonadHandler m => Document -> Key User -> m ()
 checkUID doc uid | documentCreator doc == uid = return ()
