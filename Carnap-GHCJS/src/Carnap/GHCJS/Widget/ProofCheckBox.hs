@@ -28,7 +28,7 @@ data Button = Button { label  :: String
                             EventM Element MouseEvent ()
                      }
 
-data CheckerFeedbackUpdate = Keypress | Click | Never | SyntaxOnly
+data CheckerFeedbackUpdate = Full | Click | Never | SyntaxOnly
     deriving Eq
 
 data CheckerGuide = MontagueGuide | FitchGuide | HausmanGuide | HowardSnyderGuide | HurleyGuide | IndentGuide | NoGuide
@@ -52,7 +52,7 @@ optionsFromMap opts = CheckerOptions { submit = Nothing
                                                        Just "manual" -> Click
                                                        Just "none" -> Never
                                                        Just "syntaxonly" -> SyntaxOnly
-                                                       _ -> Keypress
+                                                       _ -> Full
                                       , directed = case M.lookup "goal" opts of
                                                        Just _ -> True
                                                        Nothing -> False
@@ -79,7 +79,7 @@ optionsFromMap opts = CheckerOptions { submit = Nothing
                                       }
                 where optlist = case M.lookup "options" opts of Just s -> words s; Nothing -> []
 
-checkerWith :: CheckerOptions -> (Document -> IORef Bool -> String -> (Element, Element) -> IO ()) -> IOGoal -> Document -> IO ()
+checkerWith :: CheckerOptions -> (CheckerOptions -> Document -> IORef Bool -> String -> (Element, Element) -> IO ()) -> IOGoal -> Document -> IO ()
 checkerWith options updateres iog@(IOGoal i o g content _) w = do
            ref <- newIORef False
            elts <- mapM (createElement w . Just) ["div","div","div","div","div","div"]
@@ -109,7 +109,7 @@ checkerWith options updateres iog@(IOGoal i o g content _) w = do
            mapM_ (appendChild par . Just) [aligner,bw]
            syncScroll i o
            --respond to custom initialize events
-           initlistener <- newListener $ updateWithValue (\s -> updateres w ref s (g,fd))
+           initlistener <- newListener $ updateWithValue (\s -> updateres options w ref s (g,fd))
            addListener i initialize initlistener False                
            when (autoIndent options) $ do
                    indentlistener <- newListener (onEnter reindent)
@@ -132,18 +132,17 @@ checkerWith options updateres iog@(IOGoal i o g content _) w = do
                    addListener bt' click buttonAct False                
                Nothing -> return ()
            case feedback options of
-               Never -> return ()
                Click -> do 
                    bt <- questionButton w "Check"
                    appendChild bw (Just bt)
                    btlistener <- newListener $ liftIO $
                                     do miv <-  getValue (castToHTMLTextAreaElement i)
-                                       case miv of Just iv -> updateres w ref iv (g, fd)
+                                       case miv of Just iv -> updateres options {feedback = Full} w ref iv (g, fd)
                                                    Nothing -> return ()
                    addListener bt click btlistener True
-               _ -> do
-                   kblistener <- newListener $ updateWithValue (\s -> updateres w ref s (g,fd))
-                   addListener i keyUp kblistener False
+               _ -> return ()
+           kblistener <- newListener $ updateWithValue (\s -> updateres options w ref s (g,fd))
+           addListener i keyUp kblistener False
            when (popout options) $ do
                btpop <- expandButton w "Expand"
                appendChild bw (Just btpop)
@@ -157,9 +156,9 @@ checkerWith options updateres iog@(IOGoal i o g content _) w = do
            case mv of
                Nothing -> setLinesTo w nd options [" "]
                (Just iv) -> do setLinesTo w nd options (altlines iv)
-                               if initialUpdate options then updateres w ref iv (g, fd) else return ()
+                               if initialUpdate options then updateres options w ref iv (g, fd) else return ()
 
-popoutWith :: CheckerOptions -> (Document -> IORef Bool -> String -> (Element, Element) -> IO ()) -> IOGoal -> Document -> IO ()
+popoutWith :: CheckerOptions -> (CheckerOptions -> Document -> IORef Bool -> String -> (Element, Element) -> IO ()) -> IOGoal -> Document -> IO ()
 popoutWith options updateres iog@(IOGoal i o g content opts) dom = do
             (Just win) <- getDefaultView dom
             (Just popwin) <- open win "" "" ""

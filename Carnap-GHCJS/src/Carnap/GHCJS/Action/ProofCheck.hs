@@ -125,7 +125,7 @@ activateChecker drs w (Just iog@(IOGoal i o g _ opts)) -- TODO: need to update n
                   mpd <- if render options then Just <$> makeDisplay else return Nothing
                   mseq <- if directed options then parseGoal calc else return Nothing
                   let theChecker = checker calc drs mseq mtref mpd memo
-                      checkSeq = threadedCheck options theChecker
+                      checkSeq = threadedCheck theChecker
                       saveProblem l s = Button {label = "Submit" , action = submitDer w opts theChecker l g s}
                       saveRule = Button {label = "Save" , action = ruleSave theChecker drs}
                       options' = options { submit = case (M.lookup "submission" opts, M.lookup "goal" opts) of
@@ -181,7 +181,7 @@ activateChecker drs w (Just iog@(IOGoal i o g _ opts)) -- TODO: need to update n
 
               noRuntimeOptions = Checker Nothing Nothing Nothing $ const . pure $ RuntimeNaturalDeductionConfig mempty mempty
 
-threadedCheck options checker w ref v (g, fd) = 
+threadedCheck checker options w ref v (g, fd) = 
         do mt <- readIORef (threadRef checker)
            case mt of
                Just t -> killThread t
@@ -197,12 +197,11 @@ threadedCheck options checker w ref v (g, fd) =
                                       setInnerHTML pd (Just "")
                                       appendChild pd (Just renderedProof)
                                Nothing -> return Nothing
-                             Feedback mseq ds <- getFeedback checker ded
-                             ul <- case feedback options of
-                                       SyntaxOnly -> genericListToUl (syntaxwrap fd w) w ds
-                                       _ -> genericListToUl (wrap fd w ndcalc) w ds
-                             setInnerHTML fd (Just "")
-                             appendChild fd (Just ul)
+                             mseq <- case feedback options of
+                                 Never -> return Nothing
+                                 Click -> return Nothing
+                                 SyntaxOnly -> update ded syntaxwrap
+                                 _ -> do update ded (wrap ndcalc)
                              Just wrapper <- getParentElement g
                              --XXX: the check below could be inlined better
                              case tests options of 
@@ -219,6 +218,13 @@ threadedCheck options checker w ref v (g, fd) =
                          FitchStyle _ -> renderDeductionFitch 
                          LemmonStyle _ -> renderDeductionLemmon
                          NoRender -> renderNull
+          
+          update ded thewrapper = do 
+             Feedback mseq ds <- getFeedback checker ded
+             ul <- genericListToUl (thewrapper fd w) w ds
+             setInnerHTML fd (Just "")
+             appendChild fd (Just ul)
+             return mseq
 
 updateGoal w s ref g wrapper mseq options = 
         case (mseq, feedback options) of
@@ -333,9 +339,9 @@ getFeedback checker ded = case ndProcessLineMemo calc of
 
 configFrom rules prems = RuntimeNaturalDeductionConfig (M.fromList . map (\(x,y) -> (x,derivedRuleToSequent y)) $ rules) prems
 
-wrap fd w calc elt (Right s) = popUpWith fd w elt "+" (ndNotation calc $ show s) Nothing
-wrap fd w _ elt (Left (GenericError s n)) = popUpWith fd w elt "?" ("Error on line " ++ show n ++ ": " ++ s) Nothing
-wrap fd w _ elt (Left (NoParse e n)) = popUpWith fd w elt "⚠" ("Can't read line " ++ show n ++ ". There may be a typo.") (Just . cleanIt . show $ e)
+wrap calc fd w elt (Right s) = popUpWith fd w elt "+" (ndNotation calc $ show s) Nothing
+wrap _ fd w elt (Left (GenericError s n)) = popUpWith fd w elt "?" ("Error on line " ++ show n ++ ": " ++ s) Nothing
+wrap _ fd w elt (Left (NoParse e n)) = popUpWith fd w elt "⚠" ("Can't read line " ++ show n ++ ". There may be a typo.") (Just . cleanIt . show $ e)
     where chunks s = case break (== '\"') s of 
                             (l,[]) -> l:[]
                             (l,_:s') -> l:chunks s'
@@ -347,10 +353,10 @@ wrap fd w _ elt (Left (NoParse e n)) = popUpWith fd w elt "⚠" ("Can't read lin
           readMaybe s = case reads s of
                           [(x, "")] -> Just x
                           _ -> Nothing
-wrap fd w calc elt (Left (NoUnify eqs n)) = 
+wrap calc fd w elt (Left (NoUnify eqs n)) = 
         popUpWith fd w elt "✗" ("Error on line " ++ show n ++ ". Can't match these premises with this conclusion, using this rule.") 
                                (Just $ ndNotation calc $ toUniErr eqs)
-wrap fd w _ elt (Left (NoResult _)) = setInnerHTML elt (Just "&nbsp;")
+wrap _ fd w elt (Left (NoResult _)) = setInnerHTML elt (Just "&nbsp;")
 
 syntaxwrap fd w elt (Left (NoParse e n)) = popUpWith fd w elt "⚠" ("Can't read line " ++ show n ++ ". There may be a typo.") (Just . cleanString . show $ e)
 syntaxwrap fd w elt (Left (NoResult _))  = setInnerHTML elt (Just "&nbsp;")
