@@ -42,12 +42,31 @@ import GHCJS.DOM.EventM
 import GHCJS.DOM
 import GHCJS.Types
 
+data CheckerParameters rule lex sem = CheckerParameters 
+            { tableauCalc :: TableauCalc lex sem rule
+            , threadRef :: IORef (Maybe ThreadId)
+            , proofMemo :: ProofMemoRef lex sem rule
+            }
+
 treeDeductionCheckAction ::  IO ()
 treeDeductionCheckAction = 
-            do initializeCallback "checkProofTreeInfo" njCheck
+            do njCheck <- mkNJCheck
+               initializeCallback "checkProofTreeInfo" njCheck
                initElements getCheckers activateChecker
                return ()
-    where njCheck = maybe (error "can't find PropNJ") id $ (\calc -> checkProofTree calc Nothing >=> return . fst) `ofPropTreeSys` "PropNJ" 
+    where mkNJCheck = do 
+           case (\calc -> newCheckerBuilder calc ) `ofPropTreeSys` "PropNJ" of
+               Nothing -> return $ error "can't find PropNJ"
+               Just checkerBuilder -> do checker <- checkerBuilder
+                                         return (checker >=> return . fst)
+          newCheckerBuilder calc = do
+              memo <- newIORef mempty
+              ref <- newIORef (Nothing :: Maybe ThreadId)
+              return (checkProofTree (CheckerParameters 
+                             { threadRef = ref
+                             , proofMemo = memo
+                             , tableauCalc = calc
+                             }))
 
 getCheckers :: IsElement self => Document -> self -> IO [Maybe (Element, Element, Map String String)]
 getCheckers w = genInOutElts w "div" "div" "treedeductionchecker"
@@ -75,9 +94,14 @@ activateChecker w (Just (i, o, opts)) = case (setupWith `ofPropTreeSys` sys)
                                                           ++ "\", \"rule\":\"\", \"forest\": []}") o
                               _ -> initMutRoot "{\"label\": \"\", \"rule\":\"\", \"forest\": []}" o
                   memo <- newIORef mempty
-                  threadRef <- newIORef (Nothing :: Maybe ThreadId)
+                  theThreadRef <- newIORef (Nothing :: Maybe ThreadId)
                   bw <- createButtonWrapper w o
-                  let submit = submitTree w memo opts calc root mgoal
+                  let checkerParams = CheckerParameters 
+                        { tableauCalc = calc
+                        , threadRef = theThreadRef
+                        , proofMemo = memo
+                        }
+                  let submit = submitTree w checkerParams opts root mgoal
                   btStatus <- createSubmitButton w bw submit opts
                   if "displayJSON" `inOpts` opts then attachDisplay w o root else return ()
                   initialCheck <- newListener $ liftIO $ do 
@@ -85,7 +109,7 @@ activateChecker w (Just (i, o, opts)) = case (setupWith `ofPropTreeSys` sys)
                                         threadDelay 500000
                                         mr <- toCleanVal root
                                         case mr of
-                                            Just r -> do (info,mseq) <- checkProofTree calc (Just memo) r 
+                                            Just r -> do (info,mseq) <- checkProofTree checkerParams r 
                                                          decorate root info
                                                          updateInfo w calc mgoal mseq i
                                             Nothing -> return ()
@@ -94,7 +118,7 @@ activateChecker w (Just (i, o, opts)) = case (setupWith `ofPropTreeSys` sys)
                   doOnce i mutate False $ liftIO $ btStatus Edited
                   case M.lookup "init" opts of Just "now" -> dispatchCustom w i "initialize"; _ -> return ()
                   root `onChange` (\_ -> dispatchCustom w i "mutate")
-                  root `onChange` (\_ -> checkOnChange w memo threadRef calc mgoal i root)
+                  root `onChange` (\_ -> checkOnChange w checkerParams mgoal i root)
 
               parseGoal calc = do 
                   let seqParse = parseSeqOver (tbParseForm calc)
@@ -117,15 +141,15 @@ updateInfo _ _ Nothing Nothing i = setInnerHTML i (Just "Awaiting a proof")
 updateInfo w _ _ _ i = do wrap <- getParentElement i
                           maybe (return ()) (\w -> setAttribute w "class" "") wrap
 
-submitTree w memo opts calc root (Just seq) l = 
+submitTree w checkerParams opts root (Just seq) l = 
         do Just val <- liftIO $ toCleanVal root
            case parse parseTreeJSON val of
                Error s -> message $ "Something has gone wrong. Here's the error:" ++ s
-               Success tree -> case toProofTree calc tree of
+               Success tree -> case toProofTree checkerParams tree of
                      Left _ | "exam" `inOpts` opts -> trySubmit w DeductionTree opts l (DeductionTreeData (pack (show seq)) tree (toList opts)) False
                      Left _ -> message "Something is wrong with the proof... Try again?"
                      Right prooftree -> do 
-                          validation <- liftIO $ hoReduceProofTreeMemo memo (structuralRestriction prooftree) prooftree 
+                          validation <- liftIO $ hoReduceProofTreeMemo (proofMemo checkerParams) (structuralRestriction prooftree) prooftree 
                           case validation of
                               Right seq' | "exam" `inOpts` opts || (seq' `seqSubsetUnify` seq) 
                                 -> trySubmit w DeductionTree opts l (DeductionTreeData (pack (show seq)) tree (toList opts)) (seq' `seqSubsetUnify` seq)
@@ -146,33 +170,32 @@ checkOnChange :: ( ReLex lex
                  , FirstOrderLex (lex (ClassicalSequentOver lex))
                  , StructuralOverride rule (ProofTree rule lex sem)
                  , StructuralInference rule lex (ProofTree rule lex sem)
-                 ) => Document -> ProofMemoRef lex sem rule -> IORef (Maybe ThreadId) -> TableauCalc lex sem rule 
-                                                -> Maybe (ClassicalSequentOver lex (Sequent sem)) -> Element -> JSVal -> IO ()
-checkOnChange w memo threadRef calc mgoal i root = do
-        mt <- readIORef threadRef
+                 ) => Document -> CheckerParameters rule lex sem -> Maybe (ClassicalSequentOver lex (Sequent sem)) -> Element -> JSVal -> IO ()
+checkOnChange w checkerParameters mgoal i root = do
+        mt <- readIORef (threadRef checkerParameters)
         case mt of Just t -> killThread t
                    Nothing -> return ()
         t' <- forkIO $ do
             threadDelay 500000
             Just changedVal <- toCleanVal root
-            (theInfo, mseq) <- checkProofTree calc (Just memo) changedVal 
+            (theInfo, mseq) <- checkProofTree checkerParameters changedVal 
             decorate root theInfo
-            updateInfo w calc mgoal mseq i
-        writeIORef threadRef (Just t')
+            updateInfo w (tableauCalc checkerParameters) mgoal mseq i
+        writeIORef (threadRef checkerParameters) (Just t')
 
 toProofTree :: ( Typeable sem
                , ReLex lex
                , Sequentable lex
                , StructuralOverride rule (ProofTree rule lex sem)
                , Inference rule lex sem
-               ) => TableauCalc lex sem rule -> Tree (String,String) -> Either (TreeFeedback lex) (ProofTree rule lex sem)
-toProofTree calc (Node (l,r) f) 
+               ) => CheckerParameters rule lex sem -> Tree (String,String) -> Either (TreeFeedback lex) (ProofTree rule lex sem)
+toProofTree checkerParams (Node (l,r) f) 
     | all isRight parsedForest && isRight newNode = handleOverride <$> (Node <$> newNode <*> sequence parsedForest)
     | isRight newNode = Left $ Node Waiting (map cleanTree parsedForest)
     | Left n <- newNode = Left n
-    where parsedLabel = (SS . liftToSequent) <$> P.parse (tbParseForm calc <* P.eof) "" l
-          parsedRules = P.parse (tbParseRule calc) "" r
-          parsedForest = map (toProofTree calc) f
+    where parsedLabel = (SS . liftToSequent) <$> P.parse (tbParseForm (tableauCalc checkerParams) <* P.eof) "" l
+          parsedRules = P.parse (tbParseRule (tableauCalc checkerParams)) "" r
+          parsedForest = map (toProofTree checkerParams) f
           cleanTree (Left fs) = fs
           cleanTree (Right fs) = fmap (const Waiting) fs
           newNode = case ProofLine 0 <$> parsedLabel <*> parsedRules of
@@ -195,11 +218,11 @@ checkProofTree :: ( ReLex lex
                   , Show rule
                   , StructuralOverride rule (ProofTree rule lex sem)
                   , StructuralInference rule lex (ProofTree rule lex sem)
-                  ) => TableauCalc lex sem rule -> Maybe (ProofMemoRef lex sem rule) -> Value -> IO (Value, Maybe (ClassicalSequentOver lex (Sequent sem)))
-checkProofTree calc mmemo v = case parse parseTreeJSON v of
-                           Success t -> case toProofTree calc t of 
+                  ) => CheckerParameters rule lex sem -> Value -> IO (Value, Maybe (ClassicalSequentOver lex (Sequent sem)))
+checkProofTree checkerParams v = case parse parseTreeJSON v of
+                           Success t -> case toProofTree checkerParams t of 
                                   Left feedback -> return (toInfo feedback, Nothing)
-                                  Right tree -> do (val,mseq) <- validateProofTree calc mmemo tree
+                                  Right tree -> do (val,mseq) <- validateProofTree checkerParams tree
                                                    return (toInfo val, mseq)
                            Error s -> do print (show v)
                                          error s
@@ -216,13 +239,10 @@ validateProofTree :: ( ReLex lex
                      , Typeable sem
                      , Show rule
                      , StructuralInference rule lex (ProofTree rule lex sem)
-                     ) => TableauCalc lex sem rule -> Maybe (ProofMemoRef lex sem rule) 
-                       -> ProofTree rule lex sem -> IO (TreeFeedback lex, Maybe (ClassicalSequentOver lex (Sequent sem)))
-validateProofTree calc mmemo t@(Node _ fs) = do rslt <- case mmemo of 
-                                                     Nothing -> return $ hoReduceProofTree (structuralRestriction t) t
-                                                     Just memo -> hoReduceProofTreeMemo memo (structuralRestriction t) t
-                                                case rslt of
-                                                     Left msg -> (,) <$> (Node <$> pure (ProofError msg) <*> mapM (validateProofTree calc mmemo >=> return . fst) fs) 
+                     ) => CheckerParameters rule lex sem -> ProofTree rule lex sem -> IO (TreeFeedback lex, Maybe (ClassicalSequentOver lex (Sequent sem)))
+validateProofTree checkerParams t@(Node _ fs) = do rslt <- hoReduceProofTreeMemo (proofMemo checkerParams) (structuralRestriction t) t
+                                                   case rslt of
+                                                     Left msg -> (,) <$> (Node <$> pure (ProofError msg) <*> mapM (validateProofTree checkerParams >=> return . fst) fs) 
                                                                      <*> pure Nothing
-                                                     Right seq ->  (,) <$> (Node <$> pure (ProofData (tbNotation calc . show $ seq)) <*> mapM (validateProofTree calc mmemo >=> return . fst) fs) 
+                                                     Right seq ->  (,) <$> (Node <$> pure (ProofData (tbNotation (tableauCalc checkerParams) . show $ seq)) <*> mapM (validateProofTree checkerParams >=> return . fst) fs) 
                                                                     <*> pure (Just seq)
