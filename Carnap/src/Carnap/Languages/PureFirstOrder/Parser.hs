@@ -132,6 +132,18 @@ thomasBolducAndZachFOLParserOptions = magnusFOLParserOptions { hasBooleanConstan
     where zachDispatch opt rw = (wrappedWith '(' ')' (rw opt) <|> wrappedWith '[' ']' (rw opt)) >>= boolean
           boolean a = if isBooleanBinary a then return a else unexpected "atomic, negated, or quantified sentence wrapped in parentheses"
 
+thomasBolducAndZachFOL2019ParserOptions :: FirstOrderParserOptions PureLexiconFOL u Identity
+thomasBolducAndZachFOL2019ParserOptions = thomasBolducAndZachFOLParserOptions 
+                         { quantifiedSentenceParser' = lplQuantifiedSentenceParser
+                         , functionParser = Just (\x -> parseFunctionSymbol "abcdefghijklmnopqrst" x)
+                         , atomicSentenceParser = 
+                                \x -> try (parsePredicateSymbol "ABCDEFGHIJKLMNOPQRSTUVWXYZ" x) 
+                                      <|> try (sentenceLetterParser "ABCDEFGHIJKLMNOPQRSTUVWXYZ")
+                                      <|> try (equalsParser x)
+                                      <|> inequalityParser x
+                         , opTable = calgary2019OpTable
+                         }
+
 thomasBolducAndZachFOL2019ParserOptionsStrict :: FirstOrderParserOptions PureLexiconFOL u Identity
 thomasBolducAndZachFOL2019ParserOptionsStrict = thomasBolducAndZachFOL2019ParserOptions { opTable = calgaryOpTable}
 
@@ -152,20 +164,8 @@ gamutNDParserOptions = thomasBolducAndZachFOLParserOptions { atomicSentenceParse
                                                            , opTable = gamutOpTable
                                                            }
 
-thomasBolducAndZachFOL2019ParserOptions :: FirstOrderParserOptions PureLexiconFOL u Identity
-thomasBolducAndZachFOL2019ParserOptions = thomasBolducAndZachFOLParserOptions 
-                         { quantifiedSentenceParser' = lplQuantifiedSentenceParser
-                         , functionParser = Just (\x -> parseFunctionSymbol "abcdefghijklmnopqrst" x)
-                         , atomicSentenceParser = 
-                                \x -> try (parsePredicateSymbol "ABCDEFGHIJKLMNOPQRSTUVWXYZ" x) 
-                                      <|> try (sentenceLetterParser "ABCDEFGHIJKLMNOPQRSTUVWXYZ")
-                                      <|> try (equalsParser x)
-                                      <|> inequalityParser x
-                         , opTable = calgary2019OpTable
-                         }
-
-bergmannMoorAndNelsonFOLParserOptions :: FirstOrderParserOptions PureLexiconFOL u Identity
-bergmannMoorAndNelsonFOLParserOptions = FirstOrderParserOptions 
+bergmanMoorAndNelsonPDParserOptions :: FirstOrderParserOptions PureLexiconFOL u Identity
+bergmanMoorAndNelsonPDParserOptions = FirstOrderParserOptions 
                          { atomicSentenceParser = \x -> try (parsePredicateSymbolNoParen "ABCDEFGHIJKLMNOPQRSTUVWXYZ" x)
                                                         <|> sentenceLetterParser "ABCDEFGHIJKLMNOPQRSTUVWXYZ" 
                          , quantifiedSentenceParser' = altAltQuantifiedSentenceParser
@@ -175,12 +175,12 @@ bergmannMoorAndNelsonFOLParserOptions = FirstOrderParserOptions
                          , hasBooleanConstants = False
                          , parenRecur = \opt recurWith -> parenParser (recurWith opt) >>= boolean
                          , opTable = standardOpTable
-                         , finalValidation = const (pure ())
+                         , finalValidation = \x -> if isOpenFormula x then unexpected "unbound variable" else return ()
                          }
           where boolean a = if isBoolean a then return a else unexpected "atomic or quantified sentence wrapped in parentheses"
 
-bergmannMoorAndNelsonPLEParserOptions :: FirstOrderParserOptions PureLexiconFOL u Identity
-bergmannMoorAndNelsonPLEParserOptions = bergmannMoorAndNelsonFOLParserOptions 
+bergmannMoorAndNelsonPDEParserOptions :: FirstOrderParserOptions PureLexiconFOL u Identity
+bergmannMoorAndNelsonPDEParserOptions = bergmanMoorAndNelsonPDParserOptions 
                         { functionParser = Just (\x -> parseFunctionSymbol "abcdefghijklmnopqrst" x)
                         , atomicSentenceParser = \x -> try (parsePredicateSymbolNoParen "ABCDEFGHIJKLMNOPQRSTUVWXYZ" x)
                                                         <|> try (sentenceLetterParser "ABCDEFGHIJKLMNOPQRSTUVWXYZ")
@@ -337,10 +337,10 @@ goldfarbNDFormulaParser:: Parsec String u PureFOLForm
 goldfarbNDFormulaParser = parserFromOptions goldfarbNDParserOptions
 
 bergmannMoorAndNelsonPDFormulaParser :: Parsec String u PureFOLForm
-bergmannMoorAndNelsonPDFormulaParser = parserFromOptions bergmannMoorAndNelsonFOLParserOptions
+bergmannMoorAndNelsonPDFormulaParser = parserFromOptions bergmanMoorAndNelsonPDParserOptions
 
 bergmannMoorAndNelsonPDEFormulaParser :: Parsec String u PureFOLForm
-bergmannMoorAndNelsonPDEFormulaParser = parserFromOptions bergmannMoorAndNelsonPLEParserOptions
+bergmannMoorAndNelsonPDEFormulaParser = parserFromOptions bergmannMoorAndNelsonPDEParserOptions
 
 hausmanPLFormulaParser :: Parsec String u PureFOLForm
 hausmanPLFormulaParser = parserFromOptions hausmanPLOptions
