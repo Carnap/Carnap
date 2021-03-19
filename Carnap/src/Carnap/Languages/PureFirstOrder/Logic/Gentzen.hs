@@ -40,7 +40,7 @@ instance Show GentzenFOLK where
 instance Show GentzenFOLJ where
     show (LJ x) = show x
 
-parseGentzenFOLK :: RuntimeNaturalDeductionConfig lex (Form Bool) -> Parsec String u [GentzenFOLK]
+parseGentzenFOLK :: RuntimeDeductionConfig lex (Form Bool) -> Parsec String u [GentzenFOLK]
 parseGentzenFOLK rtc = try folParse <|> liftProp
         where liftProp = map LK <$> parseGentzenPropLK rtc
               folParse = do r <- choice (map (try . string) [ "AL", "∀L", "AR","∀R", "EL","∃L", "ER", "∃R" ])
@@ -50,7 +50,7 @@ parseGentzenFOLK rtc = try folParse <|> liftProp
                                  | r `elem` ["EL","∃L"] -> ExistL
                                  | r `elem` ["ER","∃R"] -> ExistR
 
-parseGentzenFOLJ :: RuntimeNaturalDeductionConfig lex (Form Bool) -> Parsec String u [GentzenFOLJ]
+parseGentzenFOLJ :: RuntimeDeductionConfig lex (Form Bool) -> Parsec String u [GentzenFOLJ]
 parseGentzenFOLJ rtc = map LJ <$> parseGentzenFOLK rtc
 
 type LKAdequate lex = ( BooleanLanguage (ClassicalSequentOver lex (Form Bool))

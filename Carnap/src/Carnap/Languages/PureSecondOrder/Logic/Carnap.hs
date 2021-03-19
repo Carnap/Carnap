@@ -10,6 +10,7 @@ import Carnap.Languages.PurePropositional.Logic.Rules (axiom, premConstraint)
 import Carnap.Languages.PureFirstOrder.Logic (FOLogic(ED1,ED2,UD,UI,EG),parseFOLogic)
 import Carnap.Languages.PureSecondOrder.Parser
 import Carnap.Languages.ClassicalSequent.Parser
+import Carnap.Calculi.Util
 import Carnap.Calculi.NaturalDeduction.Syntax
 import Carnap.Calculi.NaturalDeduction.Parser
 import Carnap.Calculi.NaturalDeduction.Checker (hoProcessLineMontague, hoProcessLineMontagueMemo)
@@ -72,10 +73,10 @@ instance Inference MSOLogic MonadicallySOLLex (Form Bool) where
             | x `elem` [SOED1, SOED2, SOUD] = Just PolyProof
             | otherwise = Nothing
 
-parseMSOLogic :: RuntimeNaturalDeductionConfig MonadicallySOLLex (Form Bool) 
+parseMSOLogic :: RuntimeDeductionConfig MonadicallySOLLex (Form Bool) 
                     -> Parsec String u [MSOLogic]
 parseMSOLogic rtc = try soRule <|> liftFO
-    where liftFO = do r <- parseFOLogic (RuntimeNaturalDeductionConfig mempty mempty)
+    where liftFO = do r <- parseFOLogic (defaultRuntimeDeductionConfig)
                       return (map FO r)
           soRule = do r <- choice (map (try . string) ["PR", "UI", "UD", "EG", "ED", "ABS","APP"])
                       case r of 
@@ -87,7 +88,7 @@ parseMSOLogic rtc = try soRule <|> liftFO
                               | r == "ABS"  -> return [ABS]
                               | r == "APP"  -> return [APP]
 
-parseMSOLProof :: RuntimeNaturalDeductionConfig MonadicallySOLLex (Form Bool) 
+parseMSOLProof :: RuntimeDeductionConfig MonadicallySOLLex (Form Bool) 
                     -> String -> [DeductionLine MSOLogic MonadicallySOLLex (Form Bool)]
 parseMSOLProof rtc = toDeductionMontague (parseMSOLogic rtc) msolFormulaParser
 
@@ -164,10 +165,10 @@ instance Inference PSOLogic PolyadicallySOLLex (Form Bool) where
         indirectInference (SOUD_PSOL _)  = Just PolyProof
         indirectInference _  = Nothing
 
-parsePSOLogic :: RuntimeNaturalDeductionConfig PolyadicallySOLLex (Form Bool)
+parsePSOLogic :: RuntimeDeductionConfig PolyadicallySOLLex (Form Bool)
                     -> Parsec String u [PSOLogic]
 parsePSOLogic rtc = try soRule <|> liftFO
-    where liftFO = do r <- parseFOLogic (RuntimeNaturalDeductionConfig mempty mempty)
+    where liftFO = do r <- parseFOLogic (defaultRuntimeDeductionConfig)
                       return (map FO_PSOL r)
           soRule = do r <- choice (map (try . string) ["PR", "UI", "UD", "EG", "ED", "ABS","APP"])
                       if r == "PR" 
@@ -182,7 +183,7 @@ parsePSOLogic rtc = try soRule <|> liftFO
                                           | r == "ABS"  -> return [ABS_PSOL n]
                                           | r == "APP"  -> return [APP_PSOL n]
 
-parsePSOLProof :: RuntimeNaturalDeductionConfig PolyadicallySOLLex (Form Bool) 
+parsePSOLProof :: RuntimeDeductionConfig PolyadicallySOLLex (Form Bool) 
                     -> String -> [DeductionLine PSOLogic PolyadicallySOLLex (Form Bool)]
 parsePSOLProof rtc = toDeductionMontague (parsePSOLogic rtc) psolFormulaParser
 

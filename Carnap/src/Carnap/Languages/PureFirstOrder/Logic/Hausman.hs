@@ -10,6 +10,7 @@ import Carnap.Core.Unification.Unification (applySub,subst,FirstOrder)
 import Carnap.Languages.PureFirstOrder.Syntax
 import Carnap.Languages.PureFirstOrder.Parser
 import qualified Carnap.Languages.PurePropositional.Logic as P
+import Carnap.Calculi.Util
 import Carnap.Calculi.NaturalDeduction.Syntax
 import Carnap.Calculi.NaturalDeduction.Parser
 import Carnap.Calculi.NaturalDeduction.Checker (hoProcessLineFitchMemo, hoProcessLineFitch)
@@ -98,7 +99,7 @@ hausmanUniversalConstraint cs ded lineno sub
           occursIn x y = not (subst x (static 0) y =* y)
 
 parseHausmanPL rtc = try quantRule <|> liftProp 
-    where liftProp = do r <- P.parseHausmanSL (RuntimeNaturalDeductionConfig mempty mempty)
+    where liftProp = do r <- P.parseHausmanSL (defaultRuntimeDeductionConfig)
                         return (map SL r)
           quantRule = do r <- choice (map (try . string) ["UG", "UI", "EG", "EI", "QN", "ID", "IR", "p"])
                          case r of 
@@ -111,7 +112,7 @@ parseHausmanPL rtc = try quantRule <|> liftProp
                             "IR" -> return [IR]
                             "p"  -> return [Pr (problemPremises rtc)]
 
-parseHausmanPLProof :: RuntimeNaturalDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine HausmanPL PureLexiconFOL (Form Bool)]
+parseHausmanPLProof :: RuntimeDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine HausmanPL PureLexiconFOL (Form Bool)]
 parseHausmanPLProof rtc = toCommentedDeductionFitch (parseHausmanPL rtc) hausmanPLFormulaParser --XXX Check parser
 
 hausmanPLCalc = mkNDCalc

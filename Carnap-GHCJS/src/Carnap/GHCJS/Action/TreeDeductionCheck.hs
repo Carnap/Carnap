@@ -46,7 +46,7 @@ data CheckerParameters rule lex sem = CheckerParameters
             { tableauCalc :: TableauCalc lex sem rule
             , threadRef :: IORef (Maybe ThreadId)
             , proofMemo :: ProofMemoRef lex sem rule
-            , runtimeConfig' :: CheckerParameters rule lex sem -> IO (RuntimeNaturalDeductionConfig lex sem)
+            , runtimeConfig' :: CheckerParameters rule lex sem -> IO (RuntimeDeductionConfig lex sem)
             }
 
 runtimeConfig x = runtimeConfig' x x 
@@ -69,7 +69,7 @@ treeDeductionCheckAction =
                              { threadRef = ref
                              , proofMemo = memo
                              , tableauCalc = calc
-                             , runtimeConfig' = \_ -> return (RuntimeNaturalDeductionConfig mempty mempty)
+                             , runtimeConfig' = \_ -> return (defaultRuntimeDeductionConfig)
                              }))
 
 getCheckers :: IsElement self => Document -> self -> IO [Maybe (Element, Element, Map String String)]
@@ -104,7 +104,7 @@ activateChecker w (Just (i, o, opts)) = case (setupWith `ofPropTreeSys` sys)
                         { tableauCalc = calc
                         , threadRef = theThreadRef
                         , proofMemo = memo
-                        , runtimeConfig' = \_ -> return (RuntimeNaturalDeductionConfig mempty mempty)
+                        , runtimeConfig' = \_ -> return (defaultRuntimeDeductionConfig)
                         }
                   let submit = submitTree w checkerParams opts root mgoal
                   btStatus <- createSubmitButton w bw submit opts
@@ -194,7 +194,7 @@ toProofTree :: ( Typeable sem
                , Sequentable lex
                , StructuralOverride rule (ProofTree rule lex sem)
                , Inference rule lex sem
-               ) => RuntimeNaturalDeductionConfig lex sem -> CheckerParameters rule lex sem -> Tree (String,String) -> Either (TreeFeedback lex) (ProofTree rule lex sem)
+               ) => RuntimeDeductionConfig lex sem -> CheckerParameters rule lex sem -> Tree (String,String) -> Either (TreeFeedback lex) (ProofTree rule lex sem)
 toProofTree rtc checkerParams (Node (l,r) f) 
     | all isRight parsedForest && isRight newNode = handleOverride <$> (Node <$> newNode <*> sequence parsedForest)
     | isRight newNode = Left $ Node Waiting (map cleanTree parsedForest)

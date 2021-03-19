@@ -10,6 +10,7 @@ import Carnap.Core.Data.Types (Form)
 import Carnap.Core.Data.Classes (lhs)
 import Carnap.Languages.PurePropositional.Syntax
 import Carnap.Languages.PurePropositional.Parser
+import Carnap.Calculi.Util
 import Carnap.Calculi.NaturalDeduction.Syntax
 import Carnap.Calculi.NaturalDeduction.Parser
 import Carnap.Calculi.NaturalDeduction.Checker
@@ -105,7 +106,7 @@ parseTomassiPL rtc n _ = do r <- choice (map (try . string) [ "&I", "&E", "MP", 
                                     | r == "RAA" -> [RAA1, RAA2]
                                     | r == "CP" -> [CP]
 
-parseTomassiPLProof :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) 
+parseTomassiPLProof :: RuntimeDeductionConfig PurePropLexicon (Form Bool) 
                      -> String -> [DeductionLine TomassiPL PurePropLexicon (Form Bool)]
 parseTomassiPLProof rtc = toDeductionLemmonTomassi (parseTomassiPL rtc) (purePropFormulaParser standardLetters)
 

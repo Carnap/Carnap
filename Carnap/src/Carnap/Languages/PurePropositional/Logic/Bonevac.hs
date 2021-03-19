@@ -8,6 +8,7 @@ import Text.Parsec
 import Carnap.Core.Data.Types (Form)
 import Carnap.Languages.PurePropositional.Syntax
 import Carnap.Languages.PurePropositional.Parser
+import Carnap.Calculi.Util
 import Carnap.Calculi.NaturalDeduction.Syntax
 import Carnap.Calculi.NaturalDeduction.Parser
 import Carnap.Calculi.NaturalDeduction.Checker
@@ -162,7 +163,7 @@ instance Inference BonevacSL PurePropLexicon (Form Bool) where
 
           restriction _ = Nothing
 
-parseBonevacSL :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> Parsec String u [BonevacSL]
+parseBonevacSL :: RuntimeDeductionConfig PurePropLexicon (Form Bool) -> Parsec String u [BonevacSL]
 parseBonevacSL rtc = do ms <- optionMaybe (spaces >> eof)
                         case ms of 
                            Just _ -> return [DP, ID1,ID2,ID3,ID4,ID5,ID6,ID7,ID8,IfI1,IfI2]
@@ -203,7 +204,7 @@ parseBonevacSL rtc = do ms <- optionMaybe (spaces >> eof)
                                        | r `elem` ["vC","\\/C", "∨C"] -> [CommOr]
                                        | r `elem` ["vA","\\/A", "∨A"] -> [AssOr1,AssOr2]
 
-parseBonevacSLProof :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> String -> [DeductionLine BonevacSL PurePropLexicon (Form Bool)]
+parseBonevacSLProof :: RuntimeDeductionConfig PurePropLexicon (Form Bool) -> String -> [DeductionLine BonevacSL PurePropLexicon (Form Bool)]
 parseBonevacSLProof rtc = toDeductionHardegree (parseBonevacSL rtc) (purePropFormulaParser bonevacOpts)
 
 bonevacNotation :: String -> String

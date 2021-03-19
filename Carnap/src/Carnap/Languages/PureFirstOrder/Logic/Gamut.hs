@@ -9,6 +9,7 @@ import Carnap.Core.Unification.Unification (applySub,subst,FirstOrder)
 import Carnap.Languages.PureFirstOrder.Syntax
 import Carnap.Languages.PureFirstOrder.Parser
 import Carnap.Languages.PurePropositional.Logic.Gamut
+import Carnap.Calculi.Util
 import Carnap.Calculi.NaturalDeduction.Syntax
 import Carnap.Calculi.NaturalDeduction.Parser
 import Carnap.Calculi.NaturalDeduction.Checker (hoProcessLineFitchMemo, hoProcessLineFitch)
@@ -284,10 +285,10 @@ parseGamutNDPlus rtc = try propRule <|> try quantRule <|> plusRule
                              "DMALL" -> [DMAll1, DMAll2]
                              "DMSOME" -> [DMSome1, DMSome2]
 
-parseGamutNDProof :: RuntimeNaturalDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine GamutND PureLexiconFOL (Form Bool)]
+parseGamutNDProof :: RuntimeDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine GamutND PureLexiconFOL (Form Bool)]
 parseGamutNDProof rtc = toDeductionFitch (parseGamutND rtc) (gamutNDFormulaParser)
 
-parseGamutNDPlusProof :: RuntimeNaturalDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine GamutNDPlus PureLexiconFOL (Form Bool)]
+parseGamutNDPlusProof :: RuntimeDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine GamutNDPlus PureLexiconFOL (Form Bool)]
 parseGamutNDPlusProof rtc = toDeductionFitch (parseGamutNDPlus rtc) (gamutNDFormulaParser)
 
 gamutNotation :: String -> String

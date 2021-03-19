@@ -62,7 +62,7 @@ instance Inference IchikawaJenkinsSL PurePropLexicon (Form Bool) where
 
         restriction (IJ x) = restriction x
 
-parseIchikawaJenkinsSL :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> Parsec String u [IchikawaJenkinsSL]
+parseIchikawaJenkinsSL :: RuntimeDeductionConfig PurePropLexicon (Form Bool) -> Parsec String u [IchikawaJenkinsSL]
 parseIchikawaJenkinsSL rtc = do r <- choice (map (try . string) ["AS","PR","&I","/\\I", "∧I","&E","/\\E","∧E","CI",">I","->I","⊃I","CE",">E", "->E", "⊃E"
                                                          ,"~I","-I", "¬I","~E","-E","¬E" ,"vI","\\/I","∨I", "vE","\\/E", "∨E","BI","<>I","<->I", "≡I" 
                                                          , "BE", "<>E","<->E", "≡E", "R", "HYP","DIL","MT", "Comm", "DN", "MC", "≡ex", "<>ex", "<->ex", "DeM"])
@@ -92,7 +92,7 @@ parseIchikawaJenkinsSL rtc = do r <- choice (map (try . string) ["AS","PR","&I",
     where fromMSL = return . map (IJ . MSL)
           fromMSLPlus = return . map IJ
 
-parseIchikawaJenkinsProof :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> String -> [DeductionLine IchikawaJenkinsSL PurePropLexicon (Form Bool)]
+parseIchikawaJenkinsProof :: RuntimeDeductionConfig PurePropLexicon (Form Bool) -> String -> [DeductionLine IchikawaJenkinsSL PurePropLexicon (Form Bool)]
 parseIchikawaJenkinsProof rtc = toDeductionFitch (parseIchikawaJenkinsSL rtc) (purePropFormulaParser magnusOpts)
 
 ichikawaJenkinsNotation :: String -> String 
@@ -152,7 +152,7 @@ instance Show IchikawaJenkinsSLTableaux where
     show NBicond = "¬≡"
     show DoubleNeg = "¬¬"
 
-parseIchikawaJenkinsSLTableaux :: RuntimeNaturalDeductionConfig lex (Form Bool) ->  Parsec String u [IchikawaJenkinsSLTableaux]
+parseIchikawaJenkinsSLTableaux :: RuntimeDeductionConfig lex (Form Bool) ->  Parsec String u [IchikawaJenkinsSLTableaux]
 parseIchikawaJenkinsSLTableaux rtc = do 
     r <- choice (map (try . string) ["&","¬&","~&","-&"
                                 ,"/\\","¬/\\","~/\\","-/\\"

@@ -22,6 +22,7 @@ import Carnap.Languages.PurePropositional.Logic.Hardegree (hardegreeNotation)
 import Carnap.Languages.ModalPropositional.Logic.Rules
 import Carnap.Languages.Util.GenericConstructors (StandardQuant(..))
 import Carnap.Languages.Util.LanguageClasses
+import Carnap.Calculi.Util
 import Carnap.Calculi.NaturalDeduction.Syntax
 import Carnap.Calculi.NaturalDeduction.Parser
 import Carnap.Calculi.NaturalDeduction.Checker
@@ -320,7 +321,7 @@ parseHardegreeWTL = (map MoP <$> parseHardegreeModalProp)
                         , ("QN"      , return [QN1, QN2, QN3, QN4])
                         ])
 
-parseHardegreeWTLProof ::  RuntimeNaturalDeductionConfig WorldTheoryPropLexicon (Form (World -> Bool)) -> String -> [DeductionLine HardegreeWTL WorldTheoryPropLexicon (Form (World -> Bool))]
+parseHardegreeWTLProof ::  RuntimeDeductionConfig WorldTheoryPropLexicon (Form (World -> Bool)) -> String -> [DeductionLine HardegreeWTL WorldTheoryPropLexicon (Form (World -> Bool))]
 parseHardegreeWTLProof ders = toDeductionHardegree parseHardegreeWTL worldTheoryPropFormulaParser
 
 hardegreeWTLCalc = mkNDCalc
@@ -415,7 +416,7 @@ parseHardegreeL = (map MoPL <$> parseHardegreeModalProp)
                         , ("MN"      , return [MN1,MN2,MN3,MN4])
                         ])
 
-parseHardegreeLProof ::  RuntimeNaturalDeductionConfig AbsoluteModalPropLexicon (Form Bool) -> String -> [DeductionLine HardegreeL AbsoluteModalPropLexicon (Form Bool)]
+parseHardegreeLProof ::  RuntimeDeductionConfig AbsoluteModalPropLexicon (Form Bool) -> String -> [DeductionLine HardegreeL AbsoluteModalPropLexicon (Form Bool)]
 parseHardegreeLProof ders = toDeductionHardegree parseHardegreeL absoluteModalPropFormulaParser
 
 hardegreeLCalc = mkNDCalc 
@@ -444,7 +445,7 @@ instance Show HardegreeK where
 parseHardegreeK :: Parsec String u [HardegreeK]
 parseHardegreeK = map RelK <$> parseHardegreeL
 
-parseHardegreeKProof ::  RuntimeNaturalDeductionConfig AbsoluteModalPropLexicon (Form Bool) -> String -> [DeductionLine HardegreeK AbsoluteModalPropLexicon (Form Bool)]
+parseHardegreeKProof ::  RuntimeDeductionConfig AbsoluteModalPropLexicon (Form Bool) -> String -> [DeductionLine HardegreeK AbsoluteModalPropLexicon (Form Bool)]
 parseHardegreeKProof ders = toDeductionHardegree parseHardegreeK relativeModalPropFormulaParser
 
 instance Inference HardegreeK AbsoluteModalPropLexicon (Form Bool) where
@@ -513,7 +514,7 @@ parseHardegreeD = parseRuleTable (fromList
                     , ("<>I(d)"      , return [DDiaIn])
                     ]) <|> map RelD <$> parseHardegreeL
 
-parseHardegreeDProof ::  RuntimeNaturalDeductionConfig AbsoluteModalPropLexicon (Form Bool) -> String -> [DeductionLine HardegreeD AbsoluteModalPropLexicon (Form Bool)]
+parseHardegreeDProof ::  RuntimeDeductionConfig AbsoluteModalPropLexicon (Form Bool) -> String -> [DeductionLine HardegreeD AbsoluteModalPropLexicon (Form Bool)]
 parseHardegreeDProof ders = toDeductionHardegree parseHardegreeD relativeModalPropFormulaParser
 
 instance Inference HardegreeD AbsoluteModalPropLexicon (Form Bool) where
@@ -575,7 +576,7 @@ parseHardegreeT = parseRuleTable (fromList
                     , ("<>I(t)"      , return [TDiaIn])
                     ]) <|> map RelT <$> parseHardegreeL
 
-parseHardegreeTProof ::  RuntimeNaturalDeductionConfig AbsoluteModalPropLexicon (Form Bool) -> String -> [DeductionLine HardegreeT AbsoluteModalPropLexicon (Form Bool)]
+parseHardegreeTProof ::  RuntimeDeductionConfig AbsoluteModalPropLexicon (Form Bool) -> String -> [DeductionLine HardegreeT AbsoluteModalPropLexicon (Form Bool)]
 parseHardegreeTProof ders = toDeductionHardegree parseHardegreeT relativeModalPropFormulaParser
 
 instance Inference HardegreeT AbsoluteModalPropLexicon (Form Bool) where
@@ -639,7 +640,7 @@ parseHardegreeB = parseRuleTable (fromList
                     , ("<>I(t)"      , return [BTDiaIn])
                     ]) <|> map RelB <$> parseHardegreeL
 
-parseHardegreeBProof ::  RuntimeNaturalDeductionConfig AbsoluteModalPropLexicon (Form Bool) -> String -> [DeductionLine HardegreeB AbsoluteModalPropLexicon (Form Bool)]
+parseHardegreeBProof ::  RuntimeDeductionConfig AbsoluteModalPropLexicon (Form Bool) -> String -> [DeductionLine HardegreeB AbsoluteModalPropLexicon (Form Bool)]
 parseHardegreeBProof ders = toDeductionHardegree parseHardegreeB relativeModalPropFormulaParser
 
 instance Inference HardegreeB AbsoluteModalPropLexicon (Form Bool) where
@@ -704,7 +705,7 @@ parseHardegreeFour = map RelFour <$> parseHardegreeL
                         , ("<>I(4)"      , return [FourDiaIn])
                         ])
 
-parseHardegreeFourProof ::  RuntimeNaturalDeductionConfig AbsoluteModalPropLexicon (Form Bool) -> String -> [DeductionLine HardegreeFour AbsoluteModalPropLexicon (Form Bool)]
+parseHardegreeFourProof ::  RuntimeDeductionConfig AbsoluteModalPropLexicon (Form Bool) -> String -> [DeductionLine HardegreeFour AbsoluteModalPropLexicon (Form Bool)]
 parseHardegreeFourProof ders = toDeductionHardegree parseHardegreeFour relativeModalPropFormulaParser
 
 instance Inference HardegreeFour AbsoluteModalPropLexicon (Form Bool) where
@@ -766,7 +767,7 @@ parseHardegreeFive = parseRuleTable (fromList
                         , ("<>I(5)"      , return [FiveDiaIn])
                         ]) <|> map RelFive <$> parseHardegreeL
 
-parseHardegreeFiveProof ::  RuntimeNaturalDeductionConfig AbsoluteModalPropLexicon (Form Bool) -> String -> [DeductionLine HardegreeFive AbsoluteModalPropLexicon (Form Bool)]
+parseHardegreeFiveProof ::  RuntimeDeductionConfig AbsoluteModalPropLexicon (Form Bool) -> String -> [DeductionLine HardegreeFive AbsoluteModalPropLexicon (Form Bool)]
 parseHardegreeFiveProof ders = toDeductionHardegree parseHardegreeFive relativeModalPropFormulaParser
 
 instance Inference HardegreeFive AbsoluteModalPropLexicon (Form Bool) where
@@ -844,7 +845,7 @@ parseHardegreeS5 = parseRuleTable (fromList
                         , ("<>I(4)"      , return [S54DiaIn])
                         ]) <|> map RelS5 <$> parseHardegreeL
 
-parseHardegreeS5Proof ::  RuntimeNaturalDeductionConfig AbsoluteModalPropLexicon (Form Bool) -> String -> [DeductionLine HardegreeS5 AbsoluteModalPropLexicon (Form Bool)]
+parseHardegreeS5Proof ::  RuntimeDeductionConfig AbsoluteModalPropLexicon (Form Bool) -> String -> [DeductionLine HardegreeS5 AbsoluteModalPropLexicon (Form Bool)]
 parseHardegreeS5Proof ders = toDeductionHardegree parseHardegreeS5 relativeModalPropFormulaParser
 
 instance Inference HardegreeS5 AbsoluteModalPropLexicon (Form Bool) where
@@ -920,7 +921,7 @@ parseHardegreeS4 = map RelS4 <$> parseHardegreeL
                         , ("<>I(t)"      , return [S4TDiaIn])
                         ])
 
-parseHardegreeS4Proof ::  RuntimeNaturalDeductionConfig AbsoluteModalPropLexicon (Form Bool) -> String -> [DeductionLine HardegreeS4 AbsoluteModalPropLexicon (Form Bool)]
+parseHardegreeS4Proof ::  RuntimeDeductionConfig AbsoluteModalPropLexicon (Form Bool) -> String -> [DeductionLine HardegreeS4 AbsoluteModalPropLexicon (Form Bool)]
 parseHardegreeS4Proof ders = toDeductionHardegree parseHardegreeS4 relativeModalPropFormulaParser
 
 instance Inference HardegreeS4 AbsoluteModalPropLexicon (Form Bool) where

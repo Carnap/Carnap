@@ -63,7 +63,7 @@ instance Show OpenLogicFOLK where
 instance Show OpenLogicFOLJ where
     show (LJ x) = show x
     
-parseOpenLogicFOLK :: RuntimeNaturalDeductionConfig lex (Form Bool) -> Parsec String u [OpenLogicFOLK]
+parseOpenLogicFOLK :: RuntimeDeductionConfig lex (Form Bool) -> Parsec String u [OpenLogicFOLK]
 parseOpenLogicFOLK rtc = try folParse <|> liftProp
         where liftProp = map LK <$> parseOpenLogicPropLK rtc
               folParse = do r <- choice (map (try . string) [ "AL", "∀L", "AR","∀R", "EL","∃L", "ER", "∃R" ])
@@ -73,10 +73,10 @@ parseOpenLogicFOLK rtc = try folParse <|> liftProp
                                  | r `elem` ["EL","∃L"] -> ExistL
                                  | r `elem` ["ER","∃R"] -> ExistR
 
-parseOpenLogicFOLJ :: RuntimeNaturalDeductionConfig lex (Form Bool) -> Parsec String u [OpenLogicFOLJ]
+parseOpenLogicFOLJ :: RuntimeDeductionConfig lex (Form Bool) -> Parsec String u [OpenLogicFOLJ]
 parseOpenLogicFOLJ rtc = map LJ <$> parseOpenLogicFOLK rtc
 
-parseOpenLogicFONK :: RuntimeNaturalDeductionConfig lex (Form Bool) -> Parsec String u [OpenLogicFONK lex]
+parseOpenLogicFONK :: RuntimeDeductionConfig lex (Form Bool) -> Parsec String u [OpenLogicFONK lex]
 parseOpenLogicFONK rtc = (try folParse <|> liftProp) <* spaces <* eof
         where liftProp = map PropNK <$> parseOpenLogicPropNK rtc
               stringOpts = choice . map (try . string)

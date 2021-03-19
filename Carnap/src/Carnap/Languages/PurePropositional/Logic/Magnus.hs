@@ -7,6 +7,7 @@ import Text.Parsec
 import Carnap.Core.Data.Types (Form)
 import Carnap.Languages.PurePropositional.Syntax
 import Carnap.Languages.PurePropositional.Parser
+import Carnap.Calculi.Util
 import Carnap.Calculi.NaturalDeduction.Syntax
 import Carnap.Calculi.NaturalDeduction.Parser
 import Carnap.Calculi.NaturalDeduction.Checker
@@ -129,7 +130,7 @@ instance Inference MagnusSL PurePropLexicon (Form Bool) where
         globalRestriction (Left ded) n NegeElim4  = Just $ fitchAssumptionCheck n ded [([lneg $ phin 1], [phin 2, lneg $ phin 2])] 
         globalRestriction _ _ _ = Nothing
 
-parseMagnusSL :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> Parsec String u [MagnusSL]
+parseMagnusSL :: RuntimeDeductionConfig PurePropLexicon (Form Bool) -> Parsec String u [MagnusSL]
 parseMagnusSL rtc = do r <- choice (map (try . string) ["AS","PR","&I","/\\I", "∧I","&E","/\\E","∧E","CI","->I","→I","→E","CE","->E", "→E"
                                                          ,"~I","-I", "¬I","~E","-E","¬E" ,"vI","\\/I","∨I", "vE","\\/E", "∨E","BI","<->I", "↔I" 
                                                          , "BE", "<->E", "↔E", "R"]) <|> ((++) <$> string "A/" <*> many anyChar)
@@ -149,7 +150,7 @@ parseMagnusSL rtc = do r <- choice (map (try . string) ["AS","PR","&I","/\\I", "
                               | r `elem` ["BE","<->E","↔E"] -> return [BicoElim1, BicoElim2]
                             'A':'/':rest -> return [As (rest)]
 
-parseMagnusSLProof :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> String -> [DeductionLine MagnusSL PurePropLexicon (Form Bool)]
+parseMagnusSLProof :: RuntimeDeductionConfig PurePropLexicon (Form Bool) -> String -> [DeductionLine MagnusSL PurePropLexicon (Form Bool)]
 parseMagnusSLProof rtc = toDeductionFitch (parseMagnusSL rtc) (purePropFormulaParser magnusOpts)
 
 magnusNotation :: String -> String 
@@ -281,7 +282,7 @@ instance Inference MagnusSLPlus PurePropLexicon (Form Bool) where
         restriction (MSL x) = restriction x
         restriction _ = Nothing
 
-parseMagnusSLPlus :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> Parsec String u [MagnusSLPlus]
+parseMagnusSLPlus :: RuntimeDeductionConfig PurePropLexicon (Form Bool) -> Parsec String u [MagnusSLPlus]
 parseMagnusSLPlus rtc = try plus <|> basic 
     where basic = map MSL <$> parseMagnusSL rtc
           plus = do r <- choice (map (try . string) ["HS","DIL","MT", "Comm", "DN", "MC", "↔ex", "<->ex", "DeM"])
@@ -296,7 +297,7 @@ parseMagnusSLPlus rtc = try plus <|> basic
                         "<->ex" -> return [BiExRep,RepBiEx]
                         "DeM"   -> return [DM1,DM2,DM3,DM4]
 
-parseMagnusSLPlusProof :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> String -> [DeductionLine MagnusSLPlus PurePropLexicon (Form Bool)]
+parseMagnusSLPlusProof :: RuntimeDeductionConfig PurePropLexicon (Form Bool) -> String -> [DeductionLine MagnusSLPlus PurePropLexicon (Form Bool)]
 parseMagnusSLPlusProof rtc = toDeductionFitch (parseMagnusSLPlus rtc) (purePropFormulaParser magnusOpts)
 
 magnusSLPlusCalc = mkNDCalc 

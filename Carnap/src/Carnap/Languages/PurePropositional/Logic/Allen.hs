@@ -7,6 +7,7 @@ import Text.Parsec
 import Carnap.Core.Data.Types (Form)
 import Carnap.Languages.PurePropositional.Syntax
 import Carnap.Languages.PurePropositional.Parser
+import Carnap.Calculi.Util
 import Carnap.Calculi.NaturalDeduction.Syntax
 import Carnap.Calculi.NaturalDeduction.Parser
 import Carnap.Calculi.NaturalDeduction.Checker
@@ -150,7 +151,7 @@ instance Inference AllenSL PurePropLexicon (Form Bool) where
         globalRestriction (Left ded) n Reductio8  = Just $ fitchAssumptionCheck n ded [([lneg $ phin 1], [phin 2, lneg $ phin 2])] 
         globalRestriction _ _ _ = Nothing
 
-parseAllenSL :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> Parsec String u [AllenSL]
+parseAllenSL :: RuntimeDeductionConfig PurePropLexicon (Form Bool) -> Parsec String u [AllenSL]
 parseAllenSL rtc = do r <- choice (map (try . string) ["AS","PR","&I","/\\I", "∧I","&E","/\\E","∧E","CI","->I","→I","→E","CE","->E", "→E"
                                                          ,"~I","-I", "¬I","~E","-E","¬E" ,"vI","\\/I","∨I", "vE","\\/E", "∨E","BI","<->I", "↔I" 
                                                          , "BE", "<->E", "↔E", "RAA", "R", "DN"]) <|> ((++) <$> string "A/" <*> many anyChar)
@@ -172,7 +173,7 @@ parseAllenSL rtc = do r <- choice (map (try . string) ["AS","PR","&I","/\\I", "�
                               | r `elem` ["BE","<->E","↔E"] -> return [BicoElim1, BicoElim2]
                             'A':'/':rest -> return [As (rest)]
 
-parseAllenSLProof :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> String -> [DeductionLine AllenSL PurePropLexicon (Form Bool)]
+parseAllenSLProof :: RuntimeDeductionConfig PurePropLexicon (Form Bool) -> String -> [DeductionLine AllenSL PurePropLexicon (Form Bool)]
 parseAllenSLProof rtc = toDeductionFitch (parseAllenSL rtc) (purePropFormulaParser magnusOpts)
 
 allenNotation :: String -> String 
@@ -284,7 +285,7 @@ instance Inference AllenSLPlus PurePropLexicon (Form Bool) where
         restriction (ASL x) = restriction x
         restriction _ = Nothing
 
-parseAllenSLPlus :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> Parsec String u [AllenSLPlus]
+parseAllenSLPlus :: RuntimeDeductionConfig PurePropLexicon (Form Bool) -> Parsec String u [AllenSLPlus]
 parseAllenSLPlus rtc = try plus <|> basic
     where basic = map ASL <$> parseAllenSL rtc
           plus = do r <- choice (map (try . string) ["HYP","DIL","MT", "MC", "DeM"])
@@ -295,7 +296,7 @@ parseAllenSLPlus rtc = try plus <|> basic
                         "MC"    -> return [MCRep,MCRep2,RepMC,RepMC2]
                         "DeM"   -> return [DM1,DM2,DM3,DM4]
 
-parseAllenSLPlusProof :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> String -> [DeductionLine AllenSLPlus PurePropLexicon (Form Bool)]
+parseAllenSLPlusProof :: RuntimeDeductionConfig PurePropLexicon (Form Bool) -> String -> [DeductionLine AllenSLPlus PurePropLexicon (Form Bool)]
 parseAllenSLPlusProof rtc = toDeductionFitch (parseAllenSLPlus rtc) (purePropFormulaParser magnusOpts)
 
 allenSLPlusCalc = mkNDCalc

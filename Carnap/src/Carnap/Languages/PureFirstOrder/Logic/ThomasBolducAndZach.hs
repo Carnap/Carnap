@@ -11,6 +11,7 @@ import Carnap.Core.Data.Types (Form, Term)
 import Carnap.Languages.PureFirstOrder.Syntax
 import Carnap.Languages.PureFirstOrder.Parser
 import qualified Carnap.Languages.PurePropositional.Logic as P
+import Carnap.Calculi.Util
 import Carnap.Calculi.NaturalDeduction.Syntax
 import Carnap.Calculi.NaturalDeduction.Parser
 import Carnap.Calculi.NaturalDeduction.Checker (hoProcessLineFitchMemo, hoProcessLineFitch)
@@ -161,7 +162,7 @@ instance Inference ThomasBolducAndZachFOL PureLexiconFOL (Form Bool) where
          isPremise _ = False
 
 parseThomasBolducAndZachFOLCore rtc = try quantRule <|> (map TFLC <$> parseProp)
-    where parseProp = P.parseThomasBolducAndZachTFLCore (RuntimeNaturalDeductionConfig mempty mempty)
+    where parseProp = P.parseThomasBolducAndZachTFLCore (defaultRuntimeDeductionConfig)
           quantRule = do r <- choice (map (try . string) ["∀I", "AI", "∀E", "AE", "∃I", "EI", "∃E", "EE", "=I","=E","PR"])
                          case r of 
                             r | r `elem` ["∀I","AI"] -> return [UI]
@@ -173,20 +174,20 @@ parseThomasBolducAndZachFOLCore rtc = try quantRule <|> (map TFLC <$> parseProp)
                               | r == "PR" -> return [Pr (problemPremises rtc)]
 
 parseThomasBolducAndZachFOL rtc = try (map FOL <$> quantRule) <|> try (map TFL <$> parseProp) <|> try cqRule
-    where parseProp = P.parseThomasBolducAndZachTFL (RuntimeNaturalDeductionConfig mempty mempty)
+    where parseProp = P.parseThomasBolducAndZachTFL (defaultRuntimeDeductionConfig)
           quantRule = parseThomasBolducAndZachFOLCore rtc
           cqRule = string "CQ" >> return [QN1,QN2,QN3,QN4]
 
-parseThomasBolducAndZachFOL2019Proof :: RuntimeNaturalDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine ThomasBolducAndZachFOLCore PureLexiconFOL (Form Bool)]
+parseThomasBolducAndZachFOL2019Proof :: RuntimeDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine ThomasBolducAndZachFOLCore PureLexiconFOL (Form Bool)]
 parseThomasBolducAndZachFOL2019Proof ders = toDeductionFitch (parseThomasBolducAndZachFOLCore ders) thomasBolducAndZachFOL2019FormulaParser
 
-parseThomasBolducAndZachFOLPlus2019Proof :: RuntimeNaturalDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine ThomasBolducAndZachFOL PureLexiconFOL (Form Bool)]
+parseThomasBolducAndZachFOLPlus2019Proof :: RuntimeDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine ThomasBolducAndZachFOL PureLexiconFOL (Form Bool)]
 parseThomasBolducAndZachFOLPlus2019Proof ders = toDeductionFitch (parseThomasBolducAndZachFOL ders) thomasBolducAndZachFOL2019FormulaParser
 
-parseThomasBolducAndZachFOLProof :: RuntimeNaturalDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine ThomasBolducAndZachFOL PureLexiconFOL (Form Bool)]
+parseThomasBolducAndZachFOLProof :: RuntimeDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine ThomasBolducAndZachFOL PureLexiconFOL (Form Bool)]
 parseThomasBolducAndZachFOLProof ders = toDeductionFitch (parseThomasBolducAndZachFOL ders) thomasBolducAndZachFOLFormulaParser
 
-parseThomasBolducAndZachFOLCoreProof :: RuntimeNaturalDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine ThomasBolducAndZachFOLCore PureLexiconFOL (Form Bool)]
+parseThomasBolducAndZachFOLCoreProof :: RuntimeDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine ThomasBolducAndZachFOLCore PureLexiconFOL (Form Bool)]
 parseThomasBolducAndZachFOLCoreProof ders = toDeductionFitch (parseThomasBolducAndZachFOLCore ders) thomasBolducAndZachFOLFormulaParser
 
 thomasBolducAndZachFOLCalc = mkNDCalc

@@ -7,6 +7,7 @@ import Carnap.Core.Data.Types (Form)
 import Carnap.Languages.PureFirstOrder.Syntax
 import Carnap.Languages.PureFirstOrder.Parser
 import Carnap.Languages.PurePropositional.Logic.Magnus hiding (Pr)
+import Carnap.Calculi.Util
 import Carnap.Calculi.NaturalDeduction.Syntax
 import Carnap.Calculi.NaturalDeduction.Parser
 import Carnap.Calculi.NaturalDeduction.Checker (hoProcessLineFitchMemo, hoProcessLineFitch)
@@ -94,7 +95,7 @@ instance Inference MagnusQL PureLexiconFOL (Form Bool) where
          isPremise _ = False
 
 parseMagnusQL rtc = try quantRule <|> liftProp 
-    where liftProp =  map MagnusSL <$> parseMagnusSL (RuntimeNaturalDeductionConfig mempty mempty)
+    where liftProp =  map MagnusSL <$> parseMagnusSL (defaultRuntimeDeductionConfig)
           quantRule = do r <- choice (map (try . string) ["∀I", "AI", "∀E", "AE", "∃I", "EI", "∃E", "EE", "=I","=E","PR"])
                          case r of 
                             r | r `elem` ["∀I","AI"] -> return [UI]
@@ -105,7 +106,7 @@ parseMagnusQL rtc = try quantRule <|> liftProp
                               | r == "=I" -> return [IDI]
                               | r == "=E" -> return [IDE1,IDE2]
 
-parseMagnusQLProof :: RuntimeNaturalDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine MagnusQL PureLexiconFOL (Form Bool)]
+parseMagnusQLProof :: RuntimeDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine MagnusQL PureLexiconFOL (Form Bool)]
 parseMagnusQLProof rtc = toDeductionFitch (parseMagnusQL rtc) magnusFOLFormulaParser
 
 magnusQLCalc = mkNDCalc
@@ -201,10 +202,10 @@ instance Inference MagnusQLPlus PureLexiconFOL (Form Bool) where
 
 parseMagnusQLPlus rtc = try liftQL <|> try liftPlus <|> foPlus
     where liftQL = map MagnusQL <$> parseMagnusQL rtc
-          liftPlus = map Plus <$> parseMagnusSLPlus (RuntimeNaturalDeductionConfig mempty mempty)
+          liftPlus = map Plus <$> parseMagnusSLPlus (defaultRuntimeDeductionConfig)
           foPlus = string "QN" >> return [QN1,QN2,QN3,QN4]
 
-parseMagnusQLPlusProof :: RuntimeNaturalDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine MagnusQLPlus PureLexiconFOL (Form Bool)]
+parseMagnusQLPlusProof :: RuntimeDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine MagnusQLPlus PureLexiconFOL (Form Bool)]
 parseMagnusQLPlusProof rtc = toDeductionFitch (parseMagnusQLPlus rtc) magnusFOLFormulaParser
 
 magnusQLPlusCalc = mkNDCalc

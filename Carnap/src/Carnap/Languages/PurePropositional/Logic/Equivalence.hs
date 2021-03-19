@@ -7,6 +7,7 @@ import Carnap.Core.Data.Types (Form)
 import Carnap.Languages.PurePropositional.Syntax
 import Carnap.Languages.PurePropositional.Parser
 import Carnap.Languages.PurePropositional.Util (dropOuterParens)
+import Carnap.Calculi.Util
 import Carnap.Calculi.NaturalDeduction.Syntax
 import Carnap.Calculi.NaturalDeduction.Parser
 import Carnap.Calculi.NaturalDeduction.Checker
@@ -231,7 +232,7 @@ instance Inference ZachPropEq PurePropLexicon (Form Bool) where
         isPremise (Pr _) = True
         isPremise _ = False
 
-parseZachPropEq :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> Parsec String u [ZachPropEq]
+parseZachPropEq :: RuntimeDeductionConfig PurePropLexicon (Form Bool) -> Parsec String u [ZachPropEq]
 parseZachPropEq rtc = do 
         r <- choice (map (try . caseInsensitiveString) ["Comm", "DN", "Cond", "Bicond", "DeM", "Assoc", "Abs", "Id","Dist","PR", "Simp"])
         return $ case map toLower r of
@@ -256,7 +257,7 @@ parseZachPropEq rtc = do
     where caseInsensitiveChar c = char (toLower c) <|> char (toUpper c)
           caseInsensitiveString s = try (mapM caseInsensitiveChar s) <?> "\"" ++ s ++ "\""
 
-parseZachPropEqProof :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> String -> [DeductionLine ZachPropEq PurePropLexicon (Form Bool)]
+parseZachPropEqProof :: RuntimeDeductionConfig PurePropLexicon (Form Bool) -> String -> [DeductionLine ZachPropEq PurePropLexicon (Form Bool)]
 parseZachPropEqProof rtc = toDeductionHilbertImplicit (parseZachPropEq rtc) (purePropFormulaParser thomasBolducZachOpts)
 
 zachPropEqCalc = mkNDCalc 

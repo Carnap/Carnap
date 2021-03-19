@@ -8,6 +8,7 @@ import Carnap.Core.Data.Types (Form)
 import Carnap.Languages.PureFirstOrder.Syntax
 import Carnap.Languages.PureFirstOrder.Parser
 import qualified Carnap.Languages.PurePropositional.Logic as P
+import Carnap.Calculi.Util
 import Carnap.Calculi.NaturalDeduction.Syntax
 import Carnap.Calculi.NaturalDeduction.Parser
 import Carnap.Calculi.NaturalDeduction.Checker (hoProcessLineFitchMemo, hoProcessLineFitch)
@@ -146,7 +147,7 @@ instance Inference GallowPL PureLexiconFOL (Form Bool) where
          isPremise _ = False
 
 parseGallowPLCore rtc = try quantRule <|> (map SLCore <$> parseProp)
-    where parseProp = parseGallowSLCore (RuntimeNaturalDeductionConfig mempty mempty)
+    where parseProp = parseGallowSLCore (defaultRuntimeDeductionConfig)
           quantRule = do r <- choice (map (try . string) ["∀I", "AI", "∀E", "AE", "∃I", "EI", "∃E", "EE", "PR"])
                          case r of 
                             r | r `elem` ["∀I","AI"] -> return [UI]
@@ -156,14 +157,14 @@ parseGallowPLCore rtc = try quantRule <|> (map SLCore <$> parseProp)
                               | r == "PR" -> return [Pr (problemPremises rtc)]
 
 parseGallowPL rtc = try (map PL <$> quantRule) <|> try (map SL <$> parseProp) <|> try cqRule
-    where parseProp = parseGallowSL (RuntimeNaturalDeductionConfig mempty mempty)
+    where parseProp = parseGallowSL (defaultRuntimeDeductionConfig)
           quantRule = parseGallowPLCore rtc
           cqRule = string "CQ" >> return [QN1,QN2,QN3,QN4]
 
-parseGallowPLProof :: RuntimeNaturalDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine GallowPLCore PureLexiconFOL (Form Bool)]
+parseGallowPLProof :: RuntimeDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine GallowPLCore PureLexiconFOL (Form Bool)]
 parseGallowPLProof ders = toDeductionFitch (parseGallowPLCore ders) gallowPLFormulaParser
 
-parseGallowPLPlusProof :: RuntimeNaturalDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine GallowPL PureLexiconFOL (Form Bool)]
+parseGallowPLPlusProof :: RuntimeDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine GallowPL PureLexiconFOL (Form Bool)]
 parseGallowPLPlusProof ders = toDeductionFitch (parseGallowPL ders) gallowPLFormulaParser
 
 gallowPLCalc = mkNDCalc

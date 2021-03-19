@@ -214,7 +214,7 @@ toTableau calc (Node (l,r) f)
           newNode = case TableauNode <$> parsedLabel <*> (pure Nothing) <*> parsedRules of
                         Right n -> Right n
                         Left e -> Left (Node (ProofError $ NoParse e 0) (map cleanTree parsedForest))
-          rtc = RuntimeNaturalDeductionConfig mempty mempty --XXX: stub for future use
+          rtc = defaultRuntimeDeductionConfig --XXX: stub for future use
 
 renewRoot root calc = do
     mr <- toCleanVal root

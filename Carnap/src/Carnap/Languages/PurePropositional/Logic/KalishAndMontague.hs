@@ -8,6 +8,7 @@ import Carnap.Core.Data.Types (Form)
 import Carnap.Core.Data.Classes
 import Carnap.Languages.PurePropositional.Syntax
 import Carnap.Languages.PurePropositional.Parser
+import Carnap.Calculi.Util
 import Carnap.Calculi.NaturalDeduction.Syntax
 import Carnap.Calculi.NaturalDeduction.Parser
 import Carnap.Calculi.NaturalDeduction.Checker
@@ -97,7 +98,7 @@ instance Inference MontagueSC PurePropLexicon (Form Bool) where
         | x `elem` [DD,CP1,CP2,ID1,ID2,ID3,ID4] = Just PolyProof
         | otherwise = Nothing
 
-parseMontagueSC :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> Parsec String u [MontagueSC]
+parseMontagueSC :: RuntimeDeductionConfig PurePropLexicon (Form Bool) -> Parsec String u [MontagueSC]
 parseMontagueSC rtc = do r <- choice (map (try . string) ["AS","PR","MP","MTP","MT","DD","DNE","DNI", "DN", "S", "ADJ",  "ADD" , "BC", "CB",  "CD", "ID", "D-"])
                          case r of
                              "AS"   -> return [AS]
@@ -121,7 +122,7 @@ parseMontagueSC rtc = do r <- choice (map (try . string) ["AS","PR","MP","MTP","
                                             Just r  -> return [DER r]
                                             Nothing -> parserFail "Looks like you're citing a derived rule that doesn't exist"
 
-parseMontagueSCProof :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) 
+parseMontagueSCProof :: RuntimeDeductionConfig PurePropLexicon (Form Bool) 
                      -> String -> [DeductionLine MontagueSC PurePropLexicon (Form Bool)]
 parseMontagueSCProof rtc = toDeductionMontague (parseMontagueSC rtc) (purePropFormulaParser standardLetters)
 

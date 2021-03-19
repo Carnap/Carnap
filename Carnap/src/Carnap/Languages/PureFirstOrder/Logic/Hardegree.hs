@@ -9,6 +9,7 @@ import Carnap.Languages.PureFirstOrder.Syntax
 import Carnap.Languages.PureFirstOrder.Parser
 import qualified Carnap.Languages.PurePropositional.Logic as P
 import Carnap.Languages.PurePropositional.Logic.Hardegree (hardegreeNotation)
+import Carnap.Calculi.Util
 import Carnap.Calculi.NaturalDeduction.Syntax
 import Carnap.Calculi.NaturalDeduction.Parser
 import Carnap.Calculi.NaturalDeduction.Checker (hoProcessLineHardegreeMemo, hoProcessLineHardegree)
@@ -147,7 +148,7 @@ instance Inference HardegreePL2006 PureLexiconFOL (Form Bool) where
          isAssumption _ = False
 
 parseHardegreePL rtc = try quantRule <|> liftProp
-    where liftProp = map HardegreeSL <$> P.parseHardegreeSL (RuntimeNaturalDeductionConfig mempty mempty)
+    where liftProp = map HardegreeSL <$> P.parseHardegreeSL (defaultRuntimeDeductionConfig)
           quantRule = do r <- choice (map (try . string) ["∀I", "AI","UD", "∀O", "AO", "∃I", "EI"
                                                          , "∃O", "EO", "~∃O","-∃O" ,"-EO"
                                                          , "~EO","~∀O","~AO","-∀O","-AO","QN", "PR"])
@@ -162,7 +163,7 @@ parseHardegreePL rtc = try quantRule <|> liftProp
                               | r == "PR" -> [PLCore (PR (problemPremises rtc))]
 
 parseHardegreePL2006 rtc = try quantRule <|> liftProp
-    where liftProp = map HardegreeSL2006 <$> P.parseHardegreeSL2006 (RuntimeNaturalDeductionConfig mempty mempty)
+    where liftProp = map HardegreeSL2006 <$> P.parseHardegreeSL2006 (defaultRuntimeDeductionConfig)
           quantRule = do r <- choice (map (try . string) ["UD", "∀O", "AO", "∃I", "EI","ED"
                                                          ,"∃D", "∃O", "EO", "~∃O","-∃O" ,"-EO"
                                                          , "~EO","~∀O","~AO","-∀O","-AO", "PR"])
@@ -176,10 +177,10 @@ parseHardegreePL2006 rtc = try quantRule <|> liftProp
                               | r `elem` ["ED", "∃D"] -> [ED1,ED2]
                               | r == "PR" -> [PLCore2006 (PR (problemPremises rtc))]
 
-parseHardegreePLProof ::  RuntimeNaturalDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine HardegreePL PureLexiconFOL (Form Bool)]
+parseHardegreePLProof ::  RuntimeDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine HardegreePL PureLexiconFOL (Form Bool)]
 parseHardegreePLProof ders = toDeductionHardegree (parseHardegreePL ders) hardegreePLFormulaParser
 
-parseHardegreePL2006Proof ::  RuntimeNaturalDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine HardegreePL2006 PureLexiconFOL (Form Bool)]
+parseHardegreePL2006Proof ::  RuntimeDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine HardegreePL2006 PureLexiconFOL (Form Bool)]
 parseHardegreePL2006Proof ders = toDeductionHardegree (parseHardegreePL2006 ders) hardegreePLFormulaParser
 
 hardegreePLNotation :: String -> String 

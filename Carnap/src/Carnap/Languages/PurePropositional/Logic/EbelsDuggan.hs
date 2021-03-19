@@ -7,6 +7,7 @@ import Text.Parsec
 import Carnap.Core.Data.Types (Form)
 import Carnap.Languages.PurePropositional.Syntax
 import Carnap.Languages.PurePropositional.Parser
+import Carnap.Calculi.Util
 import Carnap.Calculi.NaturalDeduction.Syntax
 import Carnap.Calculi.NaturalDeduction.Parser
 import Carnap.Calculi.NaturalDeduction.Checker
@@ -94,7 +95,7 @@ instance Inference EbelsDugganTFL PurePropLexicon (Form Bool) where
         restriction (TBZ x) = restriction x
         restriction _ = Nothing
 
-parseEbelsDugganTFL :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> Parsec String u [EbelsDugganTFL]
+parseEbelsDugganTFL :: RuntimeDeductionConfig PurePropLexicon (Form Bool) -> Parsec String u [EbelsDugganTFL]
 parseEbelsDugganTFL rtc = try ebelsDugganAddition <|>  (map TBZ <$> parseThomasBolducAndZachTFL rtc)
     where ebelsDugganAddition = do r <- choice (map (try . string) ["RAA", "EFQ", "DIL", "HS", "DNI", "Comm", "MC", "↔ex", "<>E", "<->E", "BCE", "NC", "BCT", "TC", "FA"])
                                    return $ case r of
@@ -111,7 +112,7 @@ parseEbelsDugganTFL rtc = try ebelsDugganAddition <|>  (map TBZ <$> parseThomasB
                                           "FA" -> [FA]
                                           r | r `elem` ["↔ex", "<>E", "<->E", "BCE"] -> [BCE1, BCE2]
 
-parseEbelsDugganTFLProof :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> String -> [DeductionLine EbelsDugganTFL PurePropLexicon (Form Bool)]
+parseEbelsDugganTFLProof :: RuntimeDeductionConfig PurePropLexicon (Form Bool) -> String -> [DeductionLine EbelsDugganTFL PurePropLexicon (Form Bool)]
 parseEbelsDugganTFLProof rtc = toDeductionFitch (parseEbelsDugganTFL rtc) (purePropFormulaParser thomasBolducZachOpts)
 
 ebelsDugganTFLCalc = mkNDCalc 

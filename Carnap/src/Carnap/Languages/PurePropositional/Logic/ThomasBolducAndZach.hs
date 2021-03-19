@@ -11,6 +11,7 @@ import Carnap.Core.Data.Types (Form)
 import Carnap.Languages.PurePropositional.Syntax
 import Carnap.Languages.PurePropositional.Parser
 import Carnap.Languages.PurePropositional.Util (dropOuterParens)
+import Carnap.Calculi.Util
 import Carnap.Calculi.NaturalDeduction.Syntax
 import Carnap.Calculi.NaturalDeduction.Parser
 import Carnap.Calculi.NaturalDeduction.Checker
@@ -200,7 +201,7 @@ instance Inference ThomasBolducAndZachTFL PurePropLexicon (Form Bool) where
         restriction (Core x) = restriction x
         restriction _ = Nothing
 
-parseThomasBolducAndZachTFLCore :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> Parsec String u [ThomasBolducAndZachTFLCore]
+parseThomasBolducAndZachTFLCore :: RuntimeDeductionConfig PurePropLexicon (Form Bool) -> Parsec String u [ThomasBolducAndZachTFLCore]
 parseThomasBolducAndZachTFLCore rtc = do r <- choice (map (try . string) [ "AS","PR","&I","/\\I", "∧I","&E","/\\E","∧E", "~I","-I", "¬I"
                                                                       , "~E","-E", "¬E","IP","->I", ">I", "=>I", "→I","->E", "=>E", ">E", "→E", "X"
                                                                       , "vI","\\/I", "|I", "∨I", "vE","\\/E", "|E", "∨E","<->I", "↔I","<->E"
@@ -222,7 +223,7 @@ parseThomasBolducAndZachTFLCore rtc = do r <- choice (map (try . string) [ "AS",
                                               | r `elem` ["<->E","↔E"]   -> return [BicoElim1, BicoElim2]
                                               | r == "R" -> return [Reiterate]
 
-parseThomasBolducAndZachTFL :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> Parsec String u [ThomasBolducAndZachTFL]
+parseThomasBolducAndZachTFL :: RuntimeDeductionConfig PurePropLexicon (Form Bool) -> Parsec String u [ThomasBolducAndZachTFL]
 parseThomasBolducAndZachTFL rtc = try parseExt <|> (map Core <$> parseThomasBolducAndZachTFLCore rtc)
         where parseExt = do r <- choice (map (try . string) ["DS","MT","DNE","LEM","DeM"])
                             case r of
@@ -232,13 +233,13 @@ parseThomasBolducAndZachTFL rtc = try parseExt <|> (map Core <$> parseThomasBold
                                  | r == "LEM"  -> return [Lem1,Lem2,Lem3,Lem4]
                                  | r == "DeM"   -> return [DeMorgan1,DeMorgan2,DeMorgan3,DeMorgan4]
 
-parseThomasBolducAndZachTFLCoreProof :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> String -> [DeductionLine ThomasBolducAndZachTFLCore PurePropLexicon (Form Bool)]
+parseThomasBolducAndZachTFLCoreProof :: RuntimeDeductionConfig PurePropLexicon (Form Bool) -> String -> [DeductionLine ThomasBolducAndZachTFLCore PurePropLexicon (Form Bool)]
 parseThomasBolducAndZachTFLCoreProof rtc = toDeductionFitch (parseThomasBolducAndZachTFLCore rtc) (purePropFormulaParser thomasBolducZachOpts) 
 
-parseThomasBolducAndZachTFLProof :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> String -> [DeductionLine ThomasBolducAndZachTFL PurePropLexicon (Form Bool)]
+parseThomasBolducAndZachTFLProof :: RuntimeDeductionConfig PurePropLexicon (Form Bool) -> String -> [DeductionLine ThomasBolducAndZachTFL PurePropLexicon (Form Bool)]
 parseThomasBolducAndZachTFLProof rtc = toDeductionFitch (parseThomasBolducAndZachTFL rtc) (purePropFormulaParser thomasBolducZachOpts)
 
-parseThomasBolducAndZachTFL2019Proof :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> String -> [DeductionLine ThomasBolducAndZachTFLCore PurePropLexicon (Form Bool)]
+parseThomasBolducAndZachTFL2019Proof :: RuntimeDeductionConfig PurePropLexicon (Form Bool) -> String -> [DeductionLine ThomasBolducAndZachTFLCore PurePropLexicon (Form Bool)]
 parseThomasBolducAndZachTFL2019Proof rtc = toDeductionFitch (parseThomasBolducAndZachTFLCore rtc) (purePropFormulaParser thomasBolducZach2019Opts)
 
 thomasBolducAndZachNotation :: String -> String 

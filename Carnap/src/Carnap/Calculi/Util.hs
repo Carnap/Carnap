@@ -2,6 +2,7 @@
 module Carnap.Calculi.Util where
 
 import Data.Tree
+import Data.Map (Map)
 import Carnap.Core.Data.Types
 import Carnap.Core.Data.Classes
 import Carnap.Core.Unification.Unification
@@ -44,6 +45,13 @@ data ProofErrorMessage :: ((* -> *) -> * -> *) -> * where
         NoUnify :: [[Equation (ClassicalSequentOver lex)]]  -> Int -> ProofErrorMessage lex
         GenericError :: String -> Int -> ProofErrorMessage lex
         NoResult :: Int -> ProofErrorMessage lex --meant for blanks
+
+data RuntimeDeductionConfig lex sem = RuntimeDeductionConfig
+        { derivedRules :: Map String (ClassicalSequentOver lex (Sequent sem))
+        , problemPremises :: Maybe [ClassicalSequentOver lex (Sequent sem)]
+        }
+
+defaultRuntimeDeductionConfig = defaultRuntimeDeductionConfig
 
 data TreeFeedbackNode lex = Correct | Waiting | ProofData String | ProofError (ProofErrorMessage lex)
 

@@ -7,6 +7,7 @@ import Text.Parsec
 import Carnap.Core.Data.Types (Form)
 import Carnap.Languages.PurePropositional.Syntax
 import Carnap.Languages.PurePropositional.Parser
+import Carnap.Calculi.Util
 import Carnap.Calculi.NaturalDeduction.Syntax
 import Carnap.Calculi.NaturalDeduction.Parser
 import Carnap.Calculi.NaturalDeduction.Checker
@@ -140,7 +141,7 @@ instance Inference HowardSnyderSL PurePropLexicon (Form Bool) where
     restriction (Pr prems) = Just (premConstraint prems)
     restriction _ = Nothing
 
-parseHowardSnyderSL :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> Parsec String u [HowardSnyderSL]
+parseHowardSnyderSL :: RuntimeDeductionConfig PurePropLexicon (Form Bool) -> Parsec String u [HowardSnyderSL]
 parseHowardSnyderSL rtc = do r <- try (string "Assume" <* char '(' <* (string "CP" <|> string "RAA") <* char ')')
                                   <|> choice (map (try . string) ["Assume", "MP", "Conj", "MT", "HS", "DS", "Add", "CD", "Simp"
                                                              , "DN", "Cont", "DeM", "MI", "Ex", "Com", "Re", "As"
@@ -170,7 +171,7 @@ parseHowardSnyderSL rtc = do r <- try (string "Assume" <* char '(' <* (string "C
                                 "Assume" -> return [AP]
                                 "p" -> return [Pr (problemPremises rtc)]
 
-parseHowardSnyderSLProof :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> String -> [DeductionLine HowardSnyderSL PurePropLexicon (Form Bool)]
+parseHowardSnyderSLProof :: RuntimeDeductionConfig PurePropLexicon (Form Bool) -> String -> [DeductionLine HowardSnyderSL PurePropLexicon (Form Bool)]
 parseHowardSnyderSLProof rtc = toCommentedDeductionFitch (parseHowardSnyderSL rtc) (purePropFormulaParser howardSnyderOpts)
 
 howardSnyderSLNotation :: String -> String

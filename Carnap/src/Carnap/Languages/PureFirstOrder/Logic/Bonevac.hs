@@ -8,6 +8,7 @@ import Carnap.Languages.PureFirstOrder.Syntax
 import Carnap.Languages.PureFirstOrder.Parser
 import Carnap.Languages.PurePropositional.Logic
 import Carnap.Languages.PurePropositional.Logic.Bonevac (BonevacSL(..))
+import Carnap.Calculi.Util
 import Carnap.Calculi.NaturalDeduction.Syntax
 import Carnap.Calculi.NaturalDeduction.Parser
 import Carnap.Calculi.NaturalDeduction.Checker (hoProcessLineHardegreeMemo, hoProcessLineHardegree, processLineHardegree)
@@ -71,12 +72,12 @@ instance Inference BonevacQL PureLexiconFOL (Form Bool) where
     isAssumption (SL x) = isAssumption x
     isAssumption _ = False
 
-parseBonevacQL :: RuntimeNaturalDeductionConfig PureLexiconFOL (Form Bool) -> Parsec String u [BonevacQL]
+parseBonevacQL :: RuntimeDeductionConfig PureLexiconFOL (Form Bool) -> Parsec String u [BonevacQL]
 parseBonevacQL rtc = do ms <- optionMaybe (spaces >> eof)
                         case ms of
                             Just _ -> return (map SL [DP, ID1,ID2,ID3,ID4,ID5,ID6,ID7,ID8,IfI1,IfI2] ++ [UP])
                             Nothing -> try parseQL <|> parseSL
-    where parseSL = map SL <$> parseBonevacSL (RuntimeNaturalDeductionConfig mempty mempty)
+    where parseSL = map SL <$> parseBonevacSL (defaultRuntimeDeductionConfig)
           parseQL = do r <- choice (map (try . string) ["∀E", "AE", "∃I", "EI", "∃E", "EE", "=I","=E","PR"])
                        return $ case r of 
                             r | r `elem` ["∀E","AE"] -> [AE]
@@ -99,7 +100,7 @@ bonevacQLNotation (x:xs) = if x `elem` ['A' .. 'Z'] then x : trimParens 0 xs els
           trimParens n [] = []
 bonevacQLNotation x = x
 
-parseBonevacQLProof :: RuntimeNaturalDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine BonevacQL PureLexiconFOL (Form Bool)]
+parseBonevacQLProof :: RuntimeDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine BonevacQL PureLexiconFOL (Form Bool)]
 parseBonevacQLProof rtc = toDeductionHardegree (parseBonevacQL rtc) magnusFOLFormulaParser
 
 bonevacQLCalc = mkNDCalc 

@@ -12,6 +12,7 @@ import Carnap.Core.Unification.Unification
 import Carnap.Languages.PureFirstOrder.Syntax
 import Carnap.Languages.PureFirstOrder.Parser
 import Carnap.Languages.PurePropositional.Logic.BergmannMoorAndNelson hiding (SD)
+import Carnap.Calculi.Util
 import Carnap.Calculi.NaturalDeduction.Syntax
 import Carnap.Calculi.NaturalDeduction.Parser
 import Carnap.Calculi.NaturalDeduction.Checker (hoProcessLineFitchMemo, hoProcessLineFitch)
@@ -71,7 +72,7 @@ instance Inference LogicBookPD PureLexiconFOL (Form Bool) where
          isPremise _ = False
 
 parseLogicBookPD rtc = try quantRule <|> liftProp 
-    where liftProp = do r <- parseLogicBookSD (RuntimeNaturalDeductionConfig mempty mempty)
+    where liftProp = do r <- parseLogicBookSD (defaultRuntimeDeductionConfig)
                         return (map SD r)
           quantRule = do r <- choice (map (try . string) ["∀I", "AI", "∀E", "AE", "∃I", "EI", "∃E", "EE", "PR", "A/EE", "Assumption"])
                          case r of 
@@ -82,7 +83,7 @@ parseLogicBookPD rtc = try quantRule <|> liftProp
                               | r `elem` ["A/EE"] -> return [SD (AS "/∃E")]
                               | r `elem` [ "PR","Assumption"] -> return [Pr (problemPremises rtc)]
 
-parseLogicBookPDProof :: RuntimeNaturalDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine LogicBookPD PureLexiconFOL (Form Bool)]
+parseLogicBookPDProof :: RuntimeDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine LogicBookPD PureLexiconFOL (Form Bool)]
 parseLogicBookPDProof rtc = toDeductionFitchAlt (parseLogicBookPD rtc) bergmannMoorAndNelsonPDFormulaParser --XXX Check parser
 
 logicBookPDCalc = mkNDCalc
@@ -178,10 +179,10 @@ instance Inference LogicBookPDPlus PureLexiconFOL (Form Bool) where
 
 parseLogicBookPDPlus rtc = try liftPD <|> try liftProp <|> qn
     where liftPD = map PDtoPDP <$> parseLogicBookPD rtc
-          liftProp =  map SDPlus <$> parseLogicBookSDPlus (RuntimeNaturalDeductionConfig mempty mempty)
+          liftProp =  map SDPlus <$> parseLogicBookSDPlus (defaultRuntimeDeductionConfig)
           qn = string "QN" >> return [QN1, QN2, QN3, QN4]
 
-parseLogicBookPDPlusProof :: RuntimeNaturalDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine LogicBookPDPlus PureLexiconFOL (Form Bool)]
+parseLogicBookPDPlusProof :: RuntimeDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine LogicBookPDPlus PureLexiconFOL (Form Bool)]
 parseLogicBookPDPlusProof rtc = toDeductionFitchAlt (parseLogicBookPDPlus rtc) bergmannMoorAndNelsonPDFormulaParser --XXX Check parser
 
 logicBookPDPlusCalc = mkNDCalc
@@ -241,7 +242,7 @@ parseLogicBookPDE rtc = try liftPD <|> parseEq
     where liftPD = map PDtoPDE <$> parseLogicBookPD rtc
           parseEq = try (string "=E" >> return [IE1,IE2]) <|> (string "=I" >> return [II])
 
-parseLogicBookPDEProof :: RuntimeNaturalDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine LogicBookPDE PureLexiconFOL (Form Bool)]
+parseLogicBookPDEProof :: RuntimeDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine LogicBookPDE PureLexiconFOL (Form Bool)]
 parseLogicBookPDEProof rtc = toDeductionFitchAlt (parseLogicBookPDE rtc) bergmannMoorAndNelsonPDEFormulaParser
 
 logicBookPDECalc = mkNDCalc
@@ -288,7 +289,7 @@ parseLogicBookPDEPlus rtc = try liftPDE <|> liftPDP
     where liftPDP = map PDPtoPDEP <$> parseLogicBookPDPlus rtc
           liftPDE = map PDEtoPDEP <$> parseLogicBookPDE rtc
 
-parseLogicBookPDEPlusProof :: RuntimeNaturalDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine LogicBookPDEPlus PureLexiconFOL (Form Bool)]
+parseLogicBookPDEPlusProof :: RuntimeDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine LogicBookPDEPlus PureLexiconFOL (Form Bool)]
 parseLogicBookPDEPlusProof rtc = toDeductionFitchAlt (parseLogicBookPDEPlus rtc) bergmannMoorAndNelsonPDEFormulaParser
 
 logicBookPDEPlusCalc = mkNDCalc

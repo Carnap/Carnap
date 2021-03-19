@@ -12,6 +12,7 @@ import Carnap.Languages.PureFirstOrder.Parser
 import qualified Carnap.Languages.PurePropositional.Logic.Rules as P
 import Carnap.Languages.ClassicalSequent.Syntax
 import Carnap.Languages.ClassicalSequent.Parser
+import Carnap.Calculi.Util
 import Carnap.Calculi.NaturalDeduction.Syntax
 import Carnap.Calculi.NaturalDeduction.Parser (toDeductionLemmon,toDeductionLemmonAlt)
 import Carnap.Calculi.NaturalDeduction.Checker (hoProcessLineLemmonMemo, hoProcessLineLemmon)
@@ -80,10 +81,10 @@ parseGoldfarbND rtc n _ = do r <- choice (map (try . string) ["P","D","CQ","UI",
                                     | r == "UG" -> return [UG]
                                     | r == "TF" -> return [TF n]
 
-parseGoldfarbNDProof ::  RuntimeNaturalDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine GoldfarbND PureLexiconFOL (Form Bool)]
+parseGoldfarbNDProof ::  RuntimeDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine GoldfarbND PureLexiconFOL (Form Bool)]
 parseGoldfarbNDProof ders = toDeductionLemmon (parseGoldfarbND ders) goldfarbNDFormulaParser
 
-parseGoldfarbAltNDProof ::  RuntimeNaturalDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine GoldfarbND PureLexiconFOL (Form Bool)]
+parseGoldfarbAltNDProof ::  RuntimeDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine GoldfarbND PureLexiconFOL (Form Bool)]
 parseGoldfarbAltNDProof ders = toDeductionLemmonAlt (parseGoldfarbND ders) goldfarbNDFormulaParser
 
 goldfarbNDNotation :: String -> String 
@@ -172,10 +173,10 @@ parseGoldfarbNDPlus rtc n annote = plusRules <|> (map ND <$> parseGoldfarbND rtc
                                           | r == "EII" -> return [EII annote]
                                           | r == "EIE" -> return [EIE]
 
-parseGoldfarbNDPlusProof ::  RuntimeNaturalDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine GoldfarbNDPlus PureLexiconFOL (Form Bool)]
+parseGoldfarbNDPlusProof ::  RuntimeDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine GoldfarbNDPlus PureLexiconFOL (Form Bool)]
 parseGoldfarbNDPlusProof rtc = toDeductionLemmon (parseGoldfarbNDPlus rtc) goldfarbNDFormulaParser
 
-parseGoldfarbAltNDPlusProof ::  RuntimeNaturalDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine GoldfarbNDPlus PureLexiconFOL (Form Bool)]
+parseGoldfarbAltNDPlusProof ::  RuntimeDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine GoldfarbNDPlus PureLexiconFOL (Form Bool)]
 parseGoldfarbAltNDPlusProof rtc = toDeductionLemmonAlt (parseGoldfarbNDPlus rtc) goldfarbNDFormulaParser
 
 goldfarbNDPlusCalc = mkNDCalc

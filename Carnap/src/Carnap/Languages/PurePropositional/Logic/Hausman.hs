@@ -7,6 +7,7 @@ import Text.Parsec
 import Carnap.Core.Data.Types (Form)
 import Carnap.Languages.PurePropositional.Syntax
 import Carnap.Languages.PurePropositional.Parser
+import Carnap.Calculi.Util
 import Carnap.Calculi.NaturalDeduction.Syntax
 import Carnap.Calculi.NaturalDeduction.Parser
 import Carnap.Calculi.NaturalDeduction.Checker
@@ -134,7 +135,7 @@ instance Inference HausmanSL PurePropLexicon (Form Bool) where
     restriction (Pr prems) = Just (premConstraint prems)
     restriction _ = Nothing
 
-parseHausmanSL :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> Parsec String u [HausmanSL]
+parseHausmanSL :: RuntimeDeductionConfig PurePropLexicon (Form Bool) -> Parsec String u [HausmanSL]
 parseHausmanSL rtc = do r <- choice (map (try . string) [ "MP", "Conj", "MT", "HS", "DS", "Add", "CD", "Simp"
                                                         , "DN", "Contra", "DeM", "Impl", "Exp", "Comm", "Taut", "Assoc"
                                                         , "Equiv", "Dist", "CP", "IP", "AP","p"
@@ -163,7 +164,7 @@ parseHausmanSL rtc = do r <- choice (map (try . string) [ "MP", "Conj", "MT", "H
                            "AP" -> return [AP]
                            "p" -> return [Pr (problemPremises rtc)]
 
-parseHausmanSLProof :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> String -> [DeductionLine HausmanSL PurePropLexicon (Form Bool)]
+parseHausmanSLProof :: RuntimeDeductionConfig PurePropLexicon (Form Bool) -> String -> [DeductionLine HausmanSL PurePropLexicon (Form Bool)]
 parseHausmanSLProof rtc = toCommentedDeductionFitch (parseHausmanSL rtc) (purePropFormulaParser hausmanOpts)
 
 hausmanSLNotation :: String -> String 

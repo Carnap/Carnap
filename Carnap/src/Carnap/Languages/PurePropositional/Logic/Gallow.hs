@@ -5,6 +5,7 @@ module Carnap.Languages.PurePropositional.Logic.Gallow
 import Text.Parsec
 import Carnap.Core.Data.Types (Form)
 import Carnap.Languages.PurePropositional.Syntax
+import Carnap.Calculi.Util
 import Carnap.Calculi.NaturalDeduction.Parser
 import Carnap.Calculi.NaturalDeduction.Syntax
 import Carnap.Calculi.NaturalDeduction.Checker
@@ -90,20 +91,20 @@ instance Inference GallowSL PurePropLexicon (Form Bool) where
 
         restriction (GallowSL x) = restriction x
 
-parseGallowSLCoreProof :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> String -> [DeductionLine GallowSLCore PurePropLexicon (Form Bool)]
+parseGallowSLCoreProof :: RuntimeDeductionConfig PurePropLexicon (Form Bool) -> String -> [DeductionLine GallowSLCore PurePropLexicon (Form Bool)]
 parseGallowSLCoreProof rtc = toDeductionFitch (parseGallowSLCore rtc) (purePropFormulaParser thomasBolducZach2019Opts)
 
-parseGallowSLProof :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> String -> [DeductionLine GallowSL PurePropLexicon (Form Bool)]
+parseGallowSLProof :: RuntimeDeductionConfig PurePropLexicon (Form Bool) -> String -> [DeductionLine GallowSL PurePropLexicon (Form Bool)]
 parseGallowSLProof rtc = toDeductionFitch (parseGallowSL rtc) (purePropFormulaParser thomasBolducZach2019Opts)
 
-parseGallowSLCore :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> Parsec String u [GallowSLCore]
+parseGallowSLCore :: RuntimeDeductionConfig PurePropLexicon (Form Bool) -> Parsec String u [GallowSLCore]
 parseGallowSLCore rtc = do r <- choice (map (try . string) [ "AS","PR","&I","/\\I", "∧I","&E","/\\E","∧E", "~I","-I", "¬I"
                                                        , "~E","-E", "¬E","->I", ">I", "=>I", "→I","->E", "=>E", ">E", "→E"
                                                        , "vI","\\/I", "|I", "∨I", "vE","\\/E", "|E", "∨E","<->I", "↔I","<->E"
                                                        , "↔E", "R", "⊥I", "!?I", "_|_I", "⊥E", "!?E", "_|_E"])
                            return $ map GallowSLCore $ coreSort r rtc
 
-parseGallowSL :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> Parsec String u [GallowSL]
+parseGallowSL :: RuntimeDeductionConfig PurePropLexicon (Form Bool) -> Parsec String u [GallowSL]
 parseGallowSL rtc = try parseCore <|> parseRest
         where recore (GallowSLCore r) = GallowSL (Core r)
               parseCore = map recore <$> parseGallowSLCore rtc

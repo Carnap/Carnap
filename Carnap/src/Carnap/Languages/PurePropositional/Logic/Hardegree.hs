@@ -8,6 +8,7 @@ import Carnap.Core.Data.Types (Form)
 import Carnap.Languages.PurePropositional.Syntax
 import Carnap.Languages.PurePropositional.Parser
 import Carnap.Languages.PurePropositional.Util (dropOuterParens)
+import Carnap.Calculi.Util
 import Carnap.Calculi.NaturalDeduction.Syntax
 import Carnap.Calculi.NaturalDeduction.Parser
 import Carnap.Calculi.NaturalDeduction.Checker
@@ -157,7 +158,7 @@ instance Inference HardegreeSL2006 PurePropLexicon (Form Bool) where
 
          restriction (HardegreeSL2006 x) = restriction x
 
-parseHardegreeSL :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> Parsec String u [HardegreeSL]
+parseHardegreeSL :: RuntimeDeductionConfig PurePropLexicon (Form Bool) -> Parsec String u [HardegreeSL]
 parseHardegreeSL rtc = do r <- choice (map (try . string) ["&I","&O","~&I","~&O", "&D"
                                                           ,"->I","→I" ,"->O","→O","~->I","~→I","~->O","~→O", "CD"
                                                           ,"∨I","vI","\\/I","∨O","vO","\\/O","~∨I", "~vI","~\\/I","~∨O","~vO","~\\/O", "∨D", "vD","\\/D"
@@ -198,7 +199,7 @@ parseHardegreeSL rtc = do r <- choice (map (try . string) ["&I","&O","~&I","~&O"
                                  | r `elem` ["\\/D","vD"] -> do ds <- many1 digit
                                                                 return [OrID (read ds)]
 
-parseHardegreeSL2006 :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> Parsec String u [HardegreeSL2006]
+parseHardegreeSL2006 :: RuntimeDeductionConfig PurePropLexicon (Form Bool) -> Parsec String u [HardegreeSL2006]
 parseHardegreeSL2006 rtc = try new <|> (map HardegreeSL2006 <$> core) 
     where new = do r <- choice (map (try . string) ["∨D", "vD", "\\/D", "~\\/O", "~∨O", "~vO"])
                    return $ case r of
@@ -235,10 +236,10 @@ parseHardegreeSL2006 rtc = try new <|> (map HardegreeSL2006 <$> core)
                            | r == "DD" -> [DD]
                            | r == "CD" -> [CD1,CD2]
 
-parseHardegreeSLProof :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> String -> [DeductionLine HardegreeSL PurePropLexicon (Form Bool)]
+parseHardegreeSLProof :: RuntimeDeductionConfig PurePropLexicon (Form Bool) -> String -> [DeductionLine HardegreeSL PurePropLexicon (Form Bool)]
 parseHardegreeSLProof rtc = toDeductionHardegree (parseHardegreeSL rtc) (purePropFormulaParser hardegreeOpts)
 
-parseHardegreeSL2006Proof :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> String -> [DeductionLine HardegreeSL2006 PurePropLexicon (Form Bool)]
+parseHardegreeSL2006Proof :: RuntimeDeductionConfig PurePropLexicon (Form Bool) -> String -> [DeductionLine HardegreeSL2006 PurePropLexicon (Form Bool)]
 parseHardegreeSL2006Proof rtc = toDeductionHardegree (parseHardegreeSL2006 rtc) (purePropFormulaParser hardegreeOpts)
 
 hardegreeNotation = map fixSym . dropOuterParens

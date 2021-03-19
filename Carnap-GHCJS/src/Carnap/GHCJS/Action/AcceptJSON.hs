@@ -23,6 +23,7 @@ import GHCJS.DOM
 import GHCJS.DOM.Types
 import Carnap.Core.Data.Types (Form, FixLang,)
 import Carnap.Core.Data.Classes (Schematizable,UniformlyEq(..))
+import Carnap.Calculi.Util
 import Carnap.Calculi.NaturalDeduction.Syntax
 import Carnap.Calculi.NaturalDeduction.Parser
 import Carnap.Calculi.NaturalDeduction.Checker
@@ -110,14 +111,14 @@ parseProofData parsePair valList = evalStateT (process valList) 1
                      return (wff,jst')
 
 parsePairProp (wff,jstr) = AssertLine <$> P.parse (purePropFormulaParser extendedLetters) "" wff
-                                      <*> (fst <$> P.parse (parseJstr $ parseMagnusSL (RuntimeNaturalDeductionConfig mempty mempty)) "" jstr)
+                                      <*> (fst <$> P.parse (parseJstr $ parseMagnusSL (defaultRuntimeDeductionConfig)) "" jstr)
                                       <*> return 0
-                                      <*> (snd <$> P.parse (parseJstr $ parseMagnusSL (RuntimeNaturalDeductionConfig mempty mempty)) "" jstr)
+                                      <*> (snd <$> P.parse (parseJstr $ parseMagnusSL (defaultRuntimeDeductionConfig)) "" jstr)
 
 parsePairFOL  (wff,jstr) = AssertLine <$> P.parse magnusFOLFormulaParser "" wff
-                                      <*> (fst <$> P.parse (parseJstr $ parseMagnusQL (RuntimeNaturalDeductionConfig mempty mempty)) "" jstr)
+                                      <*> (fst <$> P.parse (parseJstr $ parseMagnusQL (defaultRuntimeDeductionConfig)) "" jstr)
                                       <*> return 0
-                                      <*> (snd <$> P.parse (parseJstr $ parseMagnusQL (RuntimeNaturalDeductionConfig mempty mempty)) "" jstr)
+                                      <*> (snd <$> P.parse (parseJstr $ parseMagnusQL (defaultRuntimeDeductionConfig)) "" jstr)
 
 parseJstr r = do rule <- spaces *> r
                  deps <- spaces *> many (try parseIntPair <|> parseInt)

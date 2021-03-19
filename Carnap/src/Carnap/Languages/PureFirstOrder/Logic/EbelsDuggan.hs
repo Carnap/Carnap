@@ -7,6 +7,7 @@ import Carnap.Core.Data.Types (Form)
 import Carnap.Languages.PureFirstOrder.Syntax
 import Carnap.Languages.PureFirstOrder.Parser
 import qualified Carnap.Languages.PurePropositional.Logic as P
+import Carnap.Calculi.Util
 import Carnap.Calculi.NaturalDeduction.Syntax
 import Carnap.Calculi.NaturalDeduction.Parser
 import Carnap.Calculi.NaturalDeduction.Checker (hoProcessLineFitchMemo, hoProcessLineFitch)
@@ -56,12 +57,12 @@ instance Inference EbelsDugganFOL PureLexiconFOL (Form Bool) where
          isPremise _ = False
 
 parseEbelsDugganFOL rtc = try (map TBZFOL <$> parseThomasBolducAndZachFOL rtc) 
-                      <|> try (map EDTFL <$> parseEbelsDugganTFL (RuntimeNaturalDeductionConfig mempty mempty))
+                      <|> try (map EDTFL <$> parseEbelsDugganTFL (defaultRuntimeDeductionConfig))
                       <|> do r <- choice (map (try . string) ["=S", "=T"])
                              return $ case r of "=S" -> [EQS]
                                                 "=T" -> [EQT]
 
-parseEbelsDugganFOLProof :: RuntimeNaturalDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine EbelsDugganFOL PureLexiconFOL (Form Bool)]
+parseEbelsDugganFOLProof :: RuntimeDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine EbelsDugganFOL PureLexiconFOL (Form Bool)]
 parseEbelsDugganFOLProof ders = toDeductionFitch (parseEbelsDugganFOL ders) thomasBolducAndZachFOLFormulaParser
 
 ebelsDugganFOLCalc = mkNDCalc

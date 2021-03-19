@@ -1,8 +1,9 @@
 {-#LANGUAGE FlexibleContexts, RankNTypes #-}
 module Carnap.GHCJS.Action.ProofCheck (proofCheckAction) where
 
+import Carnap.Calculi.Util (RuntimeDeductionConfig(..), defaultRuntimeDeductionConfig)
 import Carnap.Calculi.NaturalDeduction.Syntax 
-    (ProofMemoRef, NaturalDeductionCalc(..),RenderStyle(..), Inference(..), RuntimeNaturalDeductionConfig(..), Deduction)
+    (ProofMemoRef, NaturalDeductionCalc(..),RenderStyle(..), Inference(..), Deduction)
 import Carnap.Calculi.NaturalDeduction.Checker 
     (ProofErrorMessage(..), Feedback(..), seqSubsetUnify, toDisplaySequenceMemo, toDisplaySequence)
 import Carnap.Core.Data.Optics (liftLang, PrismSubstitutionalVariable, PrismLink)
@@ -85,7 +86,7 @@ data CheckerParameters r lex sem = CheckerParameters
         { checkerToRule :: Maybe (DerivedRule lex sem -> SomeRule)
         , checkerTests :: Maybe ([String] -> UnaryTest lex sem)
         , ruleSave' :: Maybe (CheckerParameters r lex sem -> IORef [(String, SomeRule)] -> IORef Bool -> Document -> Element -> EventM Element MouseEvent ())
-        , runtimeConfig' :: CheckerParameters r lex sem -> IO (RuntimeNaturalDeductionConfig lex sem)
+        , runtimeConfig' :: CheckerParameters r lex sem -> IO (RuntimeDeductionConfig lex sem)
         , checkerCalc ::  NaturalDeductionCalc r lex sem 
         , checkerRules :: IORef [(String,SomeRule)]
         , sequent :: Maybe (ClassicalSequentOver lex (Sequent sem))
@@ -161,7 +162,7 @@ activateChecker drs w (Just iog@(IOGoal i o g _ opts)) -- TODO: need to update n
                                                   let seqrules = catMaybes $ map readyRule somerules
                                                       rmap = M.fromList seqrules
                                                       premseqs = toPremiseSeqs . sequent $ self
-                                                  return $ RuntimeNaturalDeductionConfig rmap premseqs
+                                                  return $ RuntimeDeductionConfig rmap premseqs
                     where readyRule (x, PropRule r) = Just (x, derivedRuleToSequent r)
                           readyRule _ = Nothing
 
@@ -170,7 +171,7 @@ activateChecker drs w (Just iog@(IOGoal i o g _ opts)) -- TODO: need to update n
                                                  let seqrules = catMaybes $ map readyRule somerules
                                                      rmap = M.fromList seqrules
                                                      premseqs = toPremiseSeqs . sequent $ self
-                                                 return $ RuntimeNaturalDeductionConfig rmap premseqs
+                                                 return $ RuntimeDeductionConfig rmap premseqs
                     where readyRule (x, PropRule r) = Just (x, liftSequent . derivedRuleToSequent $ r)
                           readyRule (x, FOLRule r) = Just (x, derivedRuleToSequent r)
                           readyRule _ = Nothing
@@ -179,7 +180,7 @@ activateChecker drs w (Just iog@(IOGoal i o g _ opts)) -- TODO: need to update n
               toPremiseSeqs (Just seq) = Just . map (\x -> SA x :|-: SS x) $ toListOf (lhs . concretes) seq
               toPremiseSeqs Nothing = Nothing
 
-              noRuntimeOptions = CheckerParameters Nothing Nothing Nothing $ const . pure $ RuntimeNaturalDeductionConfig mempty mempty
+              noRuntimeOptions = CheckerParameters Nothing Nothing Nothing $ const . pure $ defaultRuntimeDeductionConfig
 
 threadedCheck checker options w ref v (g, fd) = 
         do mt <- readIORef (threadRef checker)
@@ -336,7 +337,7 @@ getFeedback checker ded = case ndProcessLineMemo calc of
                                      Nothing -> return $ toDisplaySequence (ndProcessLine calc) ded
     where calc = checkerCalc checker
 
-configFrom rules prems = RuntimeNaturalDeductionConfig (M.fromList . map (\(x,y) -> (x,derivedRuleToSequent y)) $ rules) prems
+configFrom rules prems = RuntimeDeductionConfig (M.fromList . map (\(x,y) -> (x,derivedRuleToSequent y)) $ rules) prems
 
 wrap calc fd w elt (Right s) = popUpWith fd w elt "+" (ndNotation calc $ show s) Nothing
 wrap _ fd w elt (Left (GenericError s n)) = popUpWith fd w elt "?" ("Error on line " ++ show n ++ ": " ++ s) Nothing

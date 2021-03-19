@@ -10,6 +10,7 @@ import Data.List (intercalate)
 import Carnap.Core.Data.Types (Form)
 import Carnap.Languages.PurePropositional.Syntax
 import Carnap.Languages.PurePropositional.Parser
+import Carnap.Calculi.Util
 import Carnap.Calculi.NaturalDeduction.Syntax
 import Carnap.Calculi.NaturalDeduction.Parser
 import Carnap.Calculi.NaturalDeduction.Checker
@@ -118,7 +119,7 @@ instance Inference LogicBookSD PurePropLexicon (Form Bool) where
     restriction (Pr prems) = Just (premConstraint prems)
     restriction _ = Nothing
 
-parseLogicBookSD :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> Parsec String u [LogicBookSD]
+parseLogicBookSD :: RuntimeDeductionConfig PurePropLexicon (Form Bool) -> Parsec String u [LogicBookSD]
 parseLogicBookSD rtc = do r <- choice (map (try . string) ["AS","PR", "Assumption" ,"&I","/\\I", "∧I","&E","/\\E","∧E","CI","->I","→I", ">I", "⊃I","→E", "⊃E","CE","->E"
                                                           , "→E" , ">E" ,"~I","-I", "¬I","~E","-E","¬E" ,"vI","\\/I","∨I", "vE","\\/E", "∨E","BI","<->I", "↔I"
                                                           , "≡I" , "BE", "<->E", "↔E", "≡E", "R"]) <|> ((++) <$> string "A/" <*> many anyChar)
@@ -140,7 +141,7 @@ parseLogicBookSD rtc = do r <- choice (map (try . string) ["AS","PR", "Assumptio
                             'A':'/':rest -> return [AS (" / " ++ rest)]
                             "R" -> return [Reiterate]
 
-parseLogicBookSDProof :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> String -> [DeductionLine LogicBookSD PurePropLexicon (Form Bool)]
+parseLogicBookSDProof :: RuntimeDeductionConfig PurePropLexicon (Form Bool) -> String -> [DeductionLine LogicBookSD PurePropLexicon (Form Bool)]
 parseLogicBookSDProof ders = toDeductionFitchAlt (parseLogicBookSD ders) (purePropFormulaParser extendedLetters)
 
 --TODO: split this up, genericize ingredients
@@ -283,7 +284,7 @@ instance Inference LogicBookSDPlus PurePropLexicon (Form Bool) where
     restriction (SD x ) = restriction x
     restriction _ = Nothing
 
-parseLogicBookSDPlus :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> Parsec String u [LogicBookSDPlus]
+parseLogicBookSDPlus :: RuntimeDeductionConfig PurePropLexicon (Form Bool) -> Parsec String u [LogicBookSDPlus]
 parseLogicBookSDPlus rtc = try (map SD <$> parseLogicBookSD rtc) <|> parsePlus
     where parsePlus = do r <- choice (map (try . string) ["MT","HS","DS","Com","Assoc","Impl", "DN", "DeM", "Idem", "Trans", "Exp", "Dist", "Equiv"])
                          return $ case r of
@@ -301,7 +302,7 @@ parseLogicBookSDPlus rtc = try (map SD <$> parseLogicBookSD rtc) <|> parsePlus
                                       | r == "Dist" -> [Dist1, Dist2, Dist3, Dist4]
                                       | r == "Equiv" -> [Equiv1, Equiv2, Equiv3, Equiv4]
 
-parseLogicBookSDPlusProof :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> String -> [DeductionLine LogicBookSDPlus PurePropLexicon (Form Bool)]
+parseLogicBookSDPlusProof :: RuntimeDeductionConfig PurePropLexicon (Form Bool) -> String -> [DeductionLine LogicBookSDPlus PurePropLexicon (Form Bool)]
 parseLogicBookSDPlusProof ders = toDeductionFitchAlt (parseLogicBookSDPlus ders) (purePropFormulaParser extendedLetters)
 
 logicBookSDPlusCalc = mkNDCalc 

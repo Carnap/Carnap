@@ -10,6 +10,7 @@ import Carnap.Core.Data.Types (Form)
 import Carnap.Languages.PureFirstOrder.Syntax
 import Carnap.Languages.PureFirstOrder.Parser
 import qualified Carnap.Languages.PurePropositional.Logic as P
+import Carnap.Calculi.Util
 import Carnap.Calculi.NaturalDeduction.Syntax
 import Carnap.Calculi.NaturalDeduction.Parser
 import Carnap.Calculi.NaturalDeduction.Checker (hoProcessLineMontague, hoProcessLineMontagueMemo)
@@ -90,9 +91,9 @@ instance Inference MontagueQCCalc PureLexiconFOL (Form Bool) where
      indirectInference UD  = Just PolyProof
      indirectInference _ = Nothing
 
-parseMontagueQCCalc :: RuntimeNaturalDeductionConfig PureLexiconFOL (Form Bool) -> Parsec String u [MontagueQCCalc]
+parseMontagueQCCalc :: RuntimeDeductionConfig PureLexiconFOL (Form Bool) -> Parsec String u [MontagueQCCalc]
 parseMontagueQCCalc rtc = try quantRule <|> liftProp
-    where liftProp = do r <- P.parseMontagueSC (RuntimeNaturalDeductionConfig mempty mempty)
+    where liftProp = do r <- P.parseMontagueSC (defaultRuntimeDeductionConfig)
                         return (map SL r)
           quantRule = do r <- choice (map (try . string) ["PR", "UI", "UD", "EG", "EI", "QN","LL","EL","Id","Sm","D-"])
                          case r of 
@@ -111,7 +112,7 @@ parseMontagueQCCalc rtc = try quantRule <|> liftProp
                                                     Just r  -> return [DER r]
                                                     Nothing -> parserFail "Looks like you're citing a derived rule that doesn't exist"
 
-parseMontagueQCProof ::  RuntimeNaturalDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine MontagueQCCalc PureLexiconFOL (Form Bool)]
+parseMontagueQCProof ::  RuntimeDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine MontagueQCCalc PureLexiconFOL (Form Bool)]
 parseMontagueQCProof ders = toDeductionMontague (parseMontagueQCCalc ders) folFormulaParser
 
 montagueQCCalc = mkNDCalc

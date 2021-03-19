@@ -9,6 +9,7 @@ import Carnap.Core.Data.Classes
 import Carnap.Core.Unification.Unification (applySub,occurs)
 import Carnap.Languages.PureFirstOrder.Syntax
 import Carnap.Languages.PureFirstOrder.Parser
+import Carnap.Calculi.Util
 import Carnap.Calculi.NaturalDeduction.Syntax
 import Carnap.Calculi.NaturalDeduction.Parser
 import Carnap.Calculi.NaturalDeduction.Checker
@@ -96,7 +97,7 @@ onlyNewConstraint m ded term form sub =
     
 
 parseTomassiQL rtc n annote = try parseProp <|> parseQuant
-    where parseProp = map PL <$> parseTomassiPL (RuntimeNaturalDeductionConfig mempty mempty) n annote
+    where parseProp = map PL <$> parseTomassiPL (defaultRuntimeDeductionConfig) n annote
           parseQuant = do r <- choice (map (try . string) [ "UI", "UE", "EE", "EI", "=I", "=E" ])
                           return $ case r of
                                       "UI" -> [UI]
@@ -106,7 +107,7 @@ parseTomassiQL rtc n annote = try parseProp <|> parseQuant
                                       "=I" -> [EqI]
                                       "=E" -> [EqE]
 
-parseTomassiQLProof :: RuntimeNaturalDeductionConfig PureLexiconFOL (Form Bool) 
+parseTomassiQLProof :: RuntimeDeductionConfig PureLexiconFOL (Form Bool) 
                      -> String -> [DeductionLine TomassiQL PureLexiconFOL (Form Bool)]
 parseTomassiQLProof rtc = toDeductionLemmonTomassi (parseTomassiQL rtc) tomassiQLFormulaParser
 

@@ -11,6 +11,7 @@ import Carnap.Core.Unification.Unification
 import Carnap.Languages.PureFirstOrder.Syntax
 import Carnap.Languages.PureFirstOrder.Parser
 import qualified Carnap.Languages.PurePropositional.Logic.Hurley as P
+import Carnap.Calculi.Util
 import Carnap.Calculi.NaturalDeduction.Syntax
 import Carnap.Calculi.NaturalDeduction.Parser
 import Carnap.Calculi.NaturalDeduction.Checker (hoProcessLineFitchMemo, hoProcessLineFitch)
@@ -136,7 +137,7 @@ parseHurleyPL rtc = do ms <- optionMaybe ((spaces >> eof >> return ()) <|>  (str
                        case ms of 
                             Just _ -> return [Pr (problemPremises rtc)]
                             Nothing -> try quantRule <|> liftProp 
-    where liftProp = do r <- P.parseHurleySL (RuntimeNaturalDeductionConfig mempty mempty)
+    where liftProp = do r <- P.parseHurleySL (defaultRuntimeDeductionConfig)
                         return (map SL r)
           quantRule = do r <- choice (map (try . string) ["UI","UG","EG","EI","Id"])
                          case r of 
@@ -147,7 +148,7 @@ parseHurleyPL rtc = do ms <- optionMaybe ((spaces >> eof >> return ()) <|>  (str
                               | r `elem` ["QN"] -> return [QN1,QN2,QN3,QN4,QN5,QN6,QN7,QN8]
                               | r `elem` ["ID"] -> return [Id1,Id2,Id3,Id4]
 
-parseHurleyPLProof :: RuntimeNaturalDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine HurleyPL PureLexiconFOL (Form Bool)]
+parseHurleyPLProof :: RuntimeDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine HurleyPL PureLexiconFOL (Form Bool)]
 parseHurleyPLProof rtc = toDeductionFitchAlt (parseHurleyPL rtc) hurleyPLFormulaParser --XXX Check parser
 
 hurleyPLCalc = mkNDCalc

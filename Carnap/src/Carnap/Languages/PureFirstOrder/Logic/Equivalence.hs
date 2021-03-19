@@ -7,6 +7,7 @@ import Carnap.Core.Data.Types (Form)
 import Carnap.Languages.PurePropositional.Util (dropOuterParens)
 import Carnap.Languages.PureFirstOrder.Syntax
 import Carnap.Languages.PureFirstOrder.Parser
+import Carnap.Calculi.Util
 import Carnap.Calculi.NaturalDeduction.Syntax
 import Carnap.Calculi.NaturalDeduction.Parser
 import Carnap.Calculi.NaturalDeduction.Checker
@@ -192,7 +193,7 @@ instance Inference ZachFOLEq PureLexiconFOL (Form Bool) where
         isPremise _ = False
 
 parseZachFOLEq rtc = try quantRule <|> try (map Prop <$> parseProp)
-    where parseProp = parseZachPropEq (RuntimeNaturalDeductionConfig mempty mempty)
+    where parseProp = parseZachPropEq (defaultRuntimeDeductionConfig)
           quantRule = do r <- choice (map (try . caseInsensitiveString) ["QN","QD","QSA","QSE","VR","PR"])
                          return $ case map toLower r of 
                             "qn" -> [QN1,QN2,QN3,QN4]
@@ -204,7 +205,7 @@ parseZachFOLEq rtc = try quantRule <|> try (map Prop <$> parseProp)
           caseInsensitiveChar c = char (toLower c) <|> char (toUpper c)
           caseInsensitiveString s = try (mapM caseInsensitiveChar s) <?> "\"" ++ s ++ "\""
 
-parseZachFOLEqProof :: RuntimeNaturalDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine ZachFOLEq PureLexiconFOL (Form Bool)]
+parseZachFOLEqProof :: RuntimeDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine ZachFOLEq PureLexiconFOL (Form Bool)]
 parseZachFOLEqProof ders = toDeductionHilbertImplicit (parseZachFOLEq ders) thomasBolducAndZachFOL2019FormulaParserStrict
 
 zachFOLEqCalc = mkNDCalc 

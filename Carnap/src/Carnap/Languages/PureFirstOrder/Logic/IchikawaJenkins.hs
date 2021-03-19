@@ -51,7 +51,7 @@ instance Inference IchikawaJenkinsQL PureLexiconFOL (Form Bool) where
     isPremise (QL x) = isPremise x
 
 parseIchikawaJenkinsQL rtc = try quantRule <|> liftProp
-    where liftProp = do r <- parseIchikawaJenkinsSL (RuntimeNaturalDeductionConfig mempty mempty)
+    where liftProp = do r <- parseIchikawaJenkinsSL (defaultRuntimeDeductionConfig)
                         return (map IJSL r)
           
           quantRule = do r <- choice (map (try . string) ["∀I", "AI", "∀E", "AE", "∃I", "EI", "∃E", "EE", "=I","=E","PR"])
@@ -66,7 +66,7 @@ parseIchikawaJenkinsQL rtc = try quantRule <|> liftProp
 
           returnQL = return . map QL
 
-parseIchikawaJenkinsQLProof :: RuntimeNaturalDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine IchikawaJenkinsQL PureLexiconFOL (Form Bool)]
+parseIchikawaJenkinsQLProof :: RuntimeDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine IchikawaJenkinsQL PureLexiconFOL (Form Bool)]
 parseIchikawaJenkinsQLProof rtc = toDeductionFitch (parseIchikawaJenkinsQL rtc) magnusFOLFormulaParser
 
 ichikawaJenkinsQLCalc = mkNDCalc
@@ -93,7 +93,7 @@ instance Show IchikawaJenkinsQLTableaux where
     show Forall = "∀"
     show NForall = "¬∀"
 
-parseIchikawaJenkinsQLTableaux :: RuntimeNaturalDeductionConfig PureLexiconFOL (Form Bool) -> Parsec String u [IchikawaJenkinsQLTableaux]
+parseIchikawaJenkinsQLTableaux :: RuntimeDeductionConfig PureLexiconFOL (Form Bool) -> Parsec String u [IchikawaJenkinsQLTableaux]
 parseIchikawaJenkinsQLTableaux rtc = propRule <|> quantRule
     where propRule = map SL <$> parseIchikawaJenkinsSLTableaux rtc
           quantRule = choice . map try $

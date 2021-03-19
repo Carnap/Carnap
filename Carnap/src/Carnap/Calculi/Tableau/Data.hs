@@ -2,7 +2,7 @@ module Carnap.Calculi.Tableau.Data where
 
 import Carnap.Core.Data.Types
 import Carnap.Languages.ClassicalSequent.Syntax
-import Carnap.Calculi.NaturalDeduction.Syntax (RuntimeNaturalDeductionConfig)
+import Carnap.Calculi.Util (RuntimeDeductionConfig)
 import Data.Tree
 import Text.Parsec
 
@@ -35,7 +35,7 @@ type Tableau lex sem rule = Tree (TableauNode lex sem rule)
 
 data TableauCalc lex sem rule = TableauCalc 
            { tbParseForm :: Parsec String () (FixLang lex sem)
-           , tbParseRule :: RuntimeNaturalDeductionConfig lex sem -> Parsec String () [rule]
+           , tbParseRule :: RuntimeDeductionConfig lex sem -> Parsec String () [rule]
            , tbNotation :: String -> String
            }
 

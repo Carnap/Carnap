@@ -80,7 +80,7 @@ instance Show OpenLogicPropLK where
         show IffL1 = "↔L"
         show IffL2 = "↔L"
 
-parseOpenLogicPropNK :: RuntimeNaturalDeductionConfig lex (Form Bool) -> Parsec String u [OpenLogicPropNK]
+parseOpenLogicPropNK :: RuntimeDeductionConfig lex (Form Bool) -> Parsec String u [OpenLogicPropNK]
 parseOpenLogicPropNK rtc = parseProp <* spaces <* eof
     where parseProp = choice . map try $
                         [ stringOpts ["&Intro","/\\Intro", "∧Intro", "&I","/\\I", "∧I"] >> return [AndI]
@@ -112,7 +112,7 @@ parseOpenLogicPropNK rtc = parseProp <* spaces <* eof
           stringOpts = (choice . map (try . string))
           getLabel = (char '(' *> many1 digit <* char ')') <|> many1 digit
 
-parseOpenLogicPropLK :: RuntimeNaturalDeductionConfig lex (Form Bool) -> Parsec String u [OpenLogicPropLK]
+parseOpenLogicPropLK :: RuntimeDeductionConfig lex (Form Bool) -> Parsec String u [OpenLogicPropLK]
 parseOpenLogicPropLK rtc = try parseGentzen <|> parseIff
     where parseGentzen = map GentzenPropLK <$> parseGentzenPropLK rtc
           parseIff = choice . map try $ [ stringOpts ["<->L", "↔L", "<>L"] >> return [IffL1, IffL2]
@@ -120,7 +120,7 @@ parseOpenLogicPropLK rtc = try parseGentzen <|> parseIff
                                         ]
           stringOpts = (choice . map (try . string))
 
-parseOpenLogicPropLJ :: RuntimeNaturalDeductionConfig lex (Form Bool) -> Parsec String u [OpenLogicPropLJ]
+parseOpenLogicPropLJ :: RuntimeDeductionConfig lex (Form Bool) -> Parsec String u [OpenLogicPropLJ]
 parseOpenLogicPropLJ rtc = map LJ <$> parseOpenLogicPropLK rtc
 
 instance ( BooleanLanguage (ClassicalSequentOver lex (Form Bool))

@@ -11,6 +11,7 @@ import Carnap.Core.Unification.Unification (applySub,subst,FirstOrder)
 import Carnap.Languages.PureFirstOrder.Syntax
 import Carnap.Languages.PureFirstOrder.Parser
 import qualified Carnap.Languages.PurePropositional.Logic as P
+import Carnap.Calculi.Util
 import Carnap.Calculi.NaturalDeduction.Syntax
 import Carnap.Calculi.NaturalDeduction.Parser
 import Carnap.Calculi.NaturalDeduction.Checker (hoProcessLineFitchMemo, hoProcessLineFitch)
@@ -101,7 +102,7 @@ howardSnyderUniversalConstraint cs ded lineno sub
           occursIn x y = not (subst x (static 0) y =* y)
 
 parseHowardSnyderPL rtc = try quantRule <|> liftProp 
-    where liftProp = do r <- P.parseHowardSnyderSL (RuntimeNaturalDeductionConfig mempty mempty)
+    where liftProp = do r <- P.parseHowardSnyderSL (defaultRuntimeDeductionConfig)
                         return (map SL r)
           quantRule = do r <- choice (map (try . string) ["UG", "UI", "EG", "EI", "QN", "LL", "Sm", "Id", "p"])
                          case r of 
@@ -115,7 +116,7 @@ parseHowardSnyderPL rtc = try quantRule <|> liftProp
                             "Sm" -> return [SM1, SM2]
                             "p"  -> return [Pr (problemPremises rtc)]
 
-parseHowardSnyderPLProof :: RuntimeNaturalDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine HowardSnyderPL PureLexiconFOL (Form Bool)]
+parseHowardSnyderPLProof :: RuntimeDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine HowardSnyderPL PureLexiconFOL (Form Bool)]
 parseHowardSnyderPLProof rtc = toCommentedDeductionFitch (parseHowardSnyderPL rtc) howardSnyderPLFormulaParser
 
 howardSnyderPLCalc = mkNDCalc

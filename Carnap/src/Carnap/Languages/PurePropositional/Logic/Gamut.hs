@@ -13,6 +13,7 @@ import Carnap.Core.Data.Classes
 import Carnap.Core.Unification.Unification (applySub,subst,FirstOrder)
 import Carnap.Languages.PurePropositional.Syntax
 import Carnap.Languages.PurePropositional.Parser
+import Carnap.Calculi.Util
 import Carnap.Calculi.NaturalDeduction.Syntax
 import Carnap.Calculi.NaturalDeduction.Parser
 import Carnap.Calculi.NaturalDeduction.Checker (hoProcessLineFitchMemo, hoProcessLineFitch)
@@ -233,16 +234,16 @@ parseGamutPNDPlus rtc = (map PND <$> parseGamutPND rtc)
                              | r == "PDS"   -> [MTP]
                              | r == "NDS"   -> [NMTP]
 
-parseGamutMPNDProof :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> String -> [DeductionLine GamutMPND PurePropLexicon (Form Bool)]
+parseGamutMPNDProof :: RuntimeDeductionConfig PurePropLexicon (Form Bool) -> String -> [DeductionLine GamutMPND PurePropLexicon (Form Bool)]
 parseGamutMPNDProof rtc = toDeductionFitch (parseGamutMPND rtc) (purePropFormulaParser gamutOpts)
 
-parseGamutIPNDProof :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> String -> [DeductionLine GamutIPND PurePropLexicon (Form Bool)]
+parseGamutIPNDProof :: RuntimeDeductionConfig PurePropLexicon (Form Bool) -> String -> [DeductionLine GamutIPND PurePropLexicon (Form Bool)]
 parseGamutIPNDProof rtc = toDeductionFitch (parseGamutIPND rtc) (purePropFormulaParser gamutOpts)
 
-parseGamutPNDProof :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> String -> [DeductionLine GamutPND PurePropLexicon (Form Bool)]
+parseGamutPNDProof :: RuntimeDeductionConfig PurePropLexicon (Form Bool) -> String -> [DeductionLine GamutPND PurePropLexicon (Form Bool)]
 parseGamutPNDProof rtc = toDeductionFitch (parseGamutPND rtc) (purePropFormulaParser gamutOpts)
 
-parseGamutPNDPlusProof :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> String -> [DeductionLine GamutPNDPlus PurePropLexicon (Form Bool)]
+parseGamutPNDPlusProof :: RuntimeDeductionConfig PurePropLexicon (Form Bool) -> String -> [DeductionLine GamutPNDPlus PurePropLexicon (Form Bool)]
 parseGamutPNDPlusProof rtc = toDeductionFitch (parseGamutPNDPlus rtc) (purePropFormulaParser gamutOpts)
 
 gamutNotation :: String -> String

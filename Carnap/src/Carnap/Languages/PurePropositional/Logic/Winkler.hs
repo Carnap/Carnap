@@ -8,6 +8,7 @@ import Carnap.Core.Data.Types (Form)
 import Carnap.Languages.PurePropositional.Syntax
 import Carnap.Languages.PurePropositional.Parser
 import Carnap.Languages.PurePropositional.Util (dropOuterParens)
+import Carnap.Calculi.Util
 import Carnap.Calculi.NaturalDeduction.Syntax
 import Carnap.Calculi.NaturalDeduction.Parser
 import Carnap.Calculi.NaturalDeduction.Checker
@@ -252,7 +253,7 @@ instance Inference WinklerTFL PurePropLexicon (Form Bool) where
         globalRestriction (Left ded) n Tertium4 = Just $ fitchAssumptionCheck n ded [([phin 1], [phin 2]), ([lneg $ phin 1], [phin 2])]
         globalRestriction _ _ _ = Nothing
 
-parseWinklerTFL :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> Parsec String u [WinklerTFL]
+parseWinklerTFL :: RuntimeDeductionConfig PurePropLexicon (Form Bool) -> Parsec String u [WinklerTFL]
 parseWinklerTFL rtc = do r <- choice (map (try . string) [ "&I", "&E", "-I", "~I", "-E", "~E", ">I", ">E", "⊃I", "⊃E", "!?I", "⊥I", "X"
                                                       , "\\/E", "\\/I", "vE", "vI", "∨E", "∨I", "<>I", "<>E","≡I", "≡E"
                                                       , "DS", "MT", "DNE", "TND", "Com", "Assoc", "Impl", "DN", "DeM"
@@ -303,7 +304,7 @@ winklerNotation x = case runParser altParser 0 "" x of
           fallback = do c <- anyChar 
                         return [c]
 
-parseWinklerTFLProof :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> String -> [DeductionLine WinklerTFL PurePropLexicon (Form Bool)]
+parseWinklerTFLProof :: RuntimeDeductionConfig PurePropLexicon (Form Bool) -> String -> [DeductionLine WinklerTFL PurePropLexicon (Form Bool)]
 parseWinklerTFLProof rtc = toDeductionFitch (parseWinklerTFL rtc) langParser
 
 winklerTFLCalc = mkNDCalc 

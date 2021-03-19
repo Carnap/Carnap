@@ -9,6 +9,7 @@ import Carnap.Core.Data.Types (Form)
 import Carnap.Languages.PurePropositional.Syntax
 import Carnap.Languages.ModalFirstOrder.Syntax
 import Carnap.Languages.ModalFirstOrder.Parser
+import Carnap.Calculi.Util
 import Carnap.Calculi.NaturalDeduction.Syntax
 import Carnap.Calculi.NaturalDeduction.Parser
 import Carnap.Calculi.NaturalDeduction.Checker (hoProcessLineHardegreeMemo, hoProcessLineHardegree)
@@ -99,7 +100,7 @@ parseHardegreeMPL ders = try liftK <|> quantRule
                               | r `elem` ["~∃O","-∃O" ,"-EO", "~EO"] -> return [NEO]
                               | r `elem` ["~∀O","~AO","-∀O","-AO"]   -> return [NUO]
 
-parseHardegreeMPLProof ::  RuntimeNaturalDeductionConfig IndexedModalFirstOrderLex (Form Bool) -> String 
+parseHardegreeMPLProof ::  RuntimeDeductionConfig IndexedModalFirstOrderLex (Form Bool) -> String 
                             -> [DeductionLine HardegreeMPL IndexedModalFirstOrderLex (Form Bool)]
 parseHardegreeMPLProof ders = toDeductionHardegree (parseHardegreeMPL ders) (hardegreeMPLFormulaParser)
 

@@ -99,7 +99,7 @@ instance Show GentzenPropNK where
     show (NJ x) = show x
     show LEM = "LEM"
 
-parseGentzenPropLK :: RuntimeNaturalDeductionConfig lex (Form Bool) -> Parsec String u [GentzenPropLK]
+parseGentzenPropLK :: RuntimeDeductionConfig lex (Form Bool) -> Parsec String u [GentzenPropLK]
 parseGentzenPropLK rtc =  do 
      r <- choice (map (try . string) [ "Ax", "Cut"
                  , "WL","WR","XL","XR","CL","CR"
@@ -132,7 +132,7 @@ parseGentzenPropLK rtc =  do
 
 parseGentzenPropLJ rtc = map LJ <$> parseGentzenPropLK rtc
 
-parseGentzenPropNJ :: RuntimeNaturalDeductionConfig lex (Form Bool) -> Parsec String u [GentzenPropNJ]
+parseGentzenPropNJ :: RuntimeDeductionConfig lex (Form Bool) -> Parsec String u [GentzenPropNJ]
 parseGentzenPropNJ rtc = choice . map try $
                         [ stringOpts ["&I","/\\I"] >> return [AndI]
                         , stringOpts ["&E","/\\E"] >> return [AndER, AndEL]
@@ -159,7 +159,7 @@ parseGentzenPropNJ rtc = choice . map try $
                         ]
     where stringOpts = choice . map (try . string)
 
-parseGentzenPropNK :: RuntimeNaturalDeductionConfig lex (Form Bool) -> Parsec String u [GentzenPropNK]
+parseGentzenPropNK :: RuntimeDeductionConfig lex (Form Bool) -> Parsec String u [GentzenPropNK]
 parseGentzenPropNK rtc = (map NJ <$> parseGentzenPropNJ rtc) <|> (string "LEM" >> return [LEM])
 
 instance ( BooleanLanguage (ClassicalSequentOver lex (Form Bool))

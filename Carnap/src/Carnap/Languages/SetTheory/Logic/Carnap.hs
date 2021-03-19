@@ -11,6 +11,7 @@ import Carnap.Languages.PureFirstOrder.Logic (FOLogic(ED1,ED2,UD, UI, EG, UD, ED
 import Carnap.Languages.PureFirstOrder.Parser
 import Carnap.Languages.SetTheory.Parser
 import Carnap.Languages.ClassicalSequent.Parser
+import Carnap.Calculi.Util
 import Carnap.Calculi.NaturalDeduction.Syntax
 import Carnap.Calculi.NaturalDeduction.Parser
 import Carnap.Calculi.NaturalDeduction.Checker (hoProcessLineMontague, hoProcessLineMontagueMemo)
@@ -111,9 +112,9 @@ instance Inference ESTLogic ElementarySetTheoryLex (Form Bool) where
      indirectInference (FO x) = indirectInference x
      indirectInference _ = Nothing
 
-parseESTLogic :: RuntimeNaturalDeductionConfig ElementarySetTheoryLex (Form Bool) -> Parsec String u [ESTLogic]
+parseESTLogic :: RuntimeDeductionConfig ElementarySetTheoryLex (Form Bool) -> Parsec String u [ESTLogic]
 parseESTLogic rtc = try estRule <|> liftFO
-    where liftFO = do r <- parseFOLogic (RuntimeNaturalDeductionConfig mempty mempty)
+    where liftFO = do r <- parseFOLogic (defaultRuntimeDeductionConfig)
                       return (map FO r)
           estRule = do r <- choice (map (try . string) ["PR", "Def-U", "Def-I", "Def-C", "Def-P", "Def-S", "Def-=", "Def-0"])
                        case r of 
@@ -126,7 +127,7 @@ parseESTLogic rtc = try estRule <|> liftFO
                               | r == "Def-=" -> return [DefID1, DefID2,DefID3,DefID4]
                               | r == "Def-0" -> return [DefES1, DefES2,DefES3,DefES4]
 
-parseESTProof:: RuntimeNaturalDeductionConfig ElementarySetTheoryLex (Form Bool) 
+parseESTProof:: RuntimeDeductionConfig ElementarySetTheoryLex (Form Bool) 
                     -> String -> [DeductionLine ESTLogic ElementarySetTheoryLex (Form Bool)]
 parseESTProof rtc = toDeductionMontague (parseESTLogic rtc) elementarySetTheoryMontagueParser
 
@@ -212,16 +213,16 @@ instance Inference SSTLogic SeparativeSetTheoryLex (Form Bool) where
      indirectInference (EST (FO x)) = indirectInference x
      indirectInference _ = Nothing
 
-parseSSTLogic :: RuntimeNaturalDeductionConfig SeparativeSetTheoryLex (Form Bool) -> Parsec String u [SSTLogic]
+parseSSTLogic :: RuntimeDeductionConfig SeparativeSetTheoryLex (Form Bool) -> Parsec String u [SSTLogic]
 parseSSTLogic rtc = try sepRule <|> liftEST
-    where liftEST = do r <- parseESTLogic (RuntimeNaturalDeductionConfig mempty mempty)
+    where liftEST = do r <- parseESTLogic defaultRuntimeDeductionConfig
                        return (map EST r)
           sepRule = do r <- choice (map (try . string) ["PR", "Def-{}"])
                        case r of 
                             r | r == "PR"    -> return [PRS $ problemPremises rtc]
                               | r == "Def-{}" -> return [DefSep1, DefSep2, DefSep3, DefSep4]
 
-parseSSTProof:: RuntimeNaturalDeductionConfig SeparativeSetTheoryLex (Form Bool) 
+parseSSTProof:: RuntimeDeductionConfig SeparativeSetTheoryLex (Form Bool) 
                     -> String -> [DeductionLine SSTLogic SeparativeSetTheoryLex (Form Bool)]
 parseSSTProof rtc = toDeductionMontague (parseSSTLogic rtc) separativeSetTheoryMontagueParser
 

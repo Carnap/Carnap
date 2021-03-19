@@ -14,6 +14,7 @@ import Carnap.Languages.PureFirstOrder.Logic.Rules
 import Carnap.Languages.PurePropositional.Logic.Rules (fitchAssumptionCheck)
 import Carnap.Languages.ClassicalSequent.Syntax
 import Carnap.Languages.ClassicalSequent.Parser
+import Carnap.Calculi.Util
 import Carnap.Calculi.NaturalDeduction.Syntax
 import Carnap.Calculi.NaturalDeduction.Parser
 import Carnap.Calculi.NaturalDeduction.Checker (hoProcessLineFitchMemo, hoProcessLineFitch)
@@ -71,14 +72,14 @@ instance Inference GamutNDDesc FregeanDescLex (Form Bool) where
         isAssumption _ = False
 
 parseGamutNDDesc rtc = try ndRule <|> descRule
-    where ndRule = map GNDP <$> parseGamutNDPlus (RuntimeNaturalDeductionConfig mempty mempty)
+    where ndRule = map GNDP <$> parseGamutNDPlus (defaultRuntimeDeductionConfig)
           descRule = do r <- choice (map (try . string) ["Ii","Ei", "S="])
                         return $ case r of
                             "Ii" -> [InDD1, InDD2]
                             "Ei" -> [ElimDD1, ElimDD2]
                             "S=" -> [EqS]
 
-parseGamutNDDescProof :: RuntimeNaturalDeductionConfig FregeanDescLex (Form Bool) -> String -> [DeductionLine GamutNDDesc FregeanDescLex (Form Bool)]
+parseGamutNDDescProof :: RuntimeDeductionConfig FregeanDescLex (Form Bool) -> String -> [DeductionLine GamutNDDesc FregeanDescLex (Form Bool)]
 parseGamutNDDescProof rtc = toDeductionFitch (parseGamutNDDesc rtc) (gamutNDDescFormulaParser)
 
 gamutNDDescCalc = mkNDCalc

@@ -7,6 +7,7 @@ import Carnap.Core.Data.Types (Form, Term)
 import Carnap.Languages.PureFirstOrder.Syntax
 import Carnap.Languages.PureFirstOrder.Parser
 import qualified Carnap.Languages.PurePropositional.Logic as P
+import Carnap.Calculi.Util
 import Carnap.Calculi.NaturalDeduction.Syntax
 import Carnap.Calculi.NaturalDeduction.Parser
 import Carnap.Calculi.NaturalDeduction.Checker (hoProcessLineFitchMemo, hoProcessLineFitch)
@@ -151,9 +152,9 @@ instance Inference WinklerFOL PureLexiconFOL (Form Bool) where
          isPremise (Pr _) = True
          isPremise _ = False
 
-parseWinklerFOL :: RuntimeNaturalDeductionConfig PureLexiconFOL (Form Bool) -> Parsec String u [WinklerFOL]
+parseWinklerFOL :: RuntimeDeductionConfig PureLexiconFOL (Form Bool) -> Parsec String u [WinklerFOL]
 parseWinklerFOL rtc = try quantRule <|> (map WinklerTFL <$> parseProp)
-    where parseProp = TFL.parseWinklerTFL (RuntimeNaturalDeductionConfig mempty mempty)
+    where parseProp = TFL.parseWinklerTFL (defaultRuntimeDeductionConfig)
           quantRule = do r <- choice (map (try . string) ["∀I", "AI", "∀E", "AE", "∃I", "EI", "∃E", "EE", "=I","=E","CQ", "PR"])
                          return $ case r of 
                             r | r `elem` ["∀I","AI"] -> [UnivIntro]
@@ -165,7 +166,7 @@ parseWinklerFOL rtc = try quantRule <|> (map WinklerTFL <$> parseProp)
                               | r == "PR" -> [Pr (problemPremises rtc)]
                               | r == "CQ" -> [QN1,QN2,QN3,QN4]
 
-parseWinklerFOLProof :: RuntimeNaturalDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine WinklerFOL PureLexiconFOL (Form Bool)]
+parseWinklerFOLProof :: RuntimeDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine WinklerFOL PureLexiconFOL (Form Bool)]
 parseWinklerFOLProof rtc = toDeductionFitch (parseWinklerFOL rtc) thomasBolducAndZachFOLFormulaParser
 
 winklerFOLNotation :: String -> String 

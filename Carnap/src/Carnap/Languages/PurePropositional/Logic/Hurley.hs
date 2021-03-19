@@ -8,6 +8,7 @@ import Text.Parsec
 import Carnap.Core.Data.Types (Form)
 import Carnap.Languages.PurePropositional.Syntax
 import Carnap.Languages.PurePropositional.Parser
+import Carnap.Calculi.Util
 import Carnap.Calculi.NaturalDeduction.Syntax
 import Carnap.Calculi.NaturalDeduction.Parser
 import Carnap.Calculi.NaturalDeduction.Checker
@@ -153,7 +154,7 @@ instance Inference HurleySL PurePropLexicon (Form Bool) where
         restriction (Pr prems) = Just (premConstraint prems)
         restriction _ = Nothing
 
-parseHurleySL :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> Parsec String u [HurleySL]
+parseHurleySL :: RuntimeDeductionConfig PurePropLexicon (Form Bool) -> Parsec String u [HurleySL]
 parseHurleySL rtc = do ms <- optionMaybe ((spaces >> eof >> return ()) <|>  (string "/" >> many anyChar >> return ()))
                        case ms of 
                             Just _ -> return [Pr (problemPremises rtc)]
@@ -185,7 +186,7 @@ parseHurleySL rtc = do ms <- optionMaybe ((spaces >> eof >> return ()) <|>  (str
                                          "IP"  -> [IP1,IP2]
                                          "AIP" -> [AIP]
 
-parseHurleySLProof :: RuntimeNaturalDeductionConfig PurePropLexicon (Form Bool) -> String -> [DeductionLine HurleySL PurePropLexicon (Form Bool)]
+parseHurleySLProof :: RuntimeDeductionConfig PurePropLexicon (Form Bool) -> String -> [DeductionLine HurleySL PurePropLexicon (Form Bool)]
 parseHurleySLProof rtc = toDeductionFitchAlt (parseHurleySL rtc) (purePropFormulaParser hurleyOpts)
 
 --XXX: similar to hausman, but with ≡ for iff
