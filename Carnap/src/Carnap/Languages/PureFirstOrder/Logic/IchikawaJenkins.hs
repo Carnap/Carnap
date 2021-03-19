@@ -93,9 +93,9 @@ instance Show IchikawaJenkinsQLTableaux where
     show Forall = "∀"
     show NForall = "¬∀"
 
-parseIchikawaJenkinsQLTableaux :: Parsec String u [IchikawaJenkinsQLTableaux]
-parseIchikawaJenkinsQLTableaux = propRule <|> quantRule
-    where propRule = map SL <$> parseIchikawaJenkinsSLTableaux
+parseIchikawaJenkinsQLTableaux :: RuntimeNaturalDeductionConfig PureLexiconFOL (Form Bool) -> Parsec String u [IchikawaJenkinsQLTableaux]
+parseIchikawaJenkinsQLTableaux rtc = propRule <|> quantRule
+    where propRule = map SL <$> parseIchikawaJenkinsSLTableaux rtc
           quantRule = choice . map try $
                         [ stringOpts ["∀","A"] >> return [Forall]
                         , stringOpts ["-∀", "~∀", "¬∀", "-A", "~A", "¬A"] >> return [NForall]

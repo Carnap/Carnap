@@ -152,37 +152,38 @@ instance Show IchikawaJenkinsSLTableaux where
     show NBicond = "¬≡"
     show DoubleNeg = "¬¬"
 
-parseIchikawaJenkinsSLTableaux :: Parsec String u [IchikawaJenkinsSLTableaux]
-parseIchikawaJenkinsSLTableaux = do r <- choice (map (try . string) ["&","¬&","~&","-&"
-                                                                ,"/\\","¬/\\","~/\\","-/\\"
-                                                                ,"∨","¬∨","~∨","-∨"
-                                                                , "v", "¬v","~v","-v"
-                                                                , "\\/", "¬\\/","~\\/","-\\/"
-                                                                , "⊃", "¬⊃","~⊃","-⊃"
-                                                                , "->", "¬->","~->","-->"
-                                                                , "->", "¬->","~->","-->"
-                                                                , ">", "¬>","~>","->"
-                                                                , "C", "¬C","~C","-C"
-                                                                , "≡", "¬≡","~≡","-≡"
-                                                                , "<->", "¬<->","~<->","-<->"
-                                                                , "<>", "¬<>","~<>","-<>"
-                                                                , "B", "¬B","~B","-B"
-                                                                , "¬¬","~~","--"
-                                                                , "Ax", "St", "Lit"
-                                                                ])
-                                    return $ case r of
-                                       r | r `elem` ["&", "/\\"] -> [Conj]
-                                         | r == "Ax" -> [Ax1,Ax2]
-                                         | r `elem` ["¬&","~&","-&","¬/\\","~/\\","-/\\"] -> [NConj]
-                                         | r `elem` ["∨","v","\\/"] -> [Disj]
-                                         | r `elem` [ "¬∨","~∨","-∨", "¬\\/","~\\/","-\\/", "¬v","~v","-v"] -> [NDisj]
-                                         | r `elem` ["⊃","->",">","C"] -> [Cond]
-                                         | r `elem` [ "¬⊃","~⊃","-⊃", "¬>","~>","->", "¬->","~->","-->", "¬C","~C","-C"] -> [NCond]
-                                         | r `elem` ["≡","<->","<>","B"] -> [Bicond]
-                                         | r `elem` [ "¬≡","~≡","-≡", "¬<->","~<->","-<->", "¬<>","~<>","-<>", "¬B","~B","-B"] -> [NBicond]
-                                         | r `elem` [ "¬¬","~~","--"] -> [DoubleNeg]
-                                         | r `elem` [ "St" ] -> [Struct]
-                                         | r `elem` [ "Lit" ] -> [Lit]
+parseIchikawaJenkinsSLTableaux :: RuntimeNaturalDeductionConfig lex (Form Bool) ->  Parsec String u [IchikawaJenkinsSLTableaux]
+parseIchikawaJenkinsSLTableaux rtc = do 
+    r <- choice (map (try . string) ["&","¬&","~&","-&"
+                                ,"/\\","¬/\\","~/\\","-/\\"
+                                ,"∨","¬∨","~∨","-∨"
+                                , "v", "¬v","~v","-v"
+                                , "\\/", "¬\\/","~\\/","-\\/"
+                                , "⊃", "¬⊃","~⊃","-⊃"
+                                , "->", "¬->","~->","-->"
+                                , "->", "¬->","~->","-->"
+                                , ">", "¬>","~>","->"
+                                , "C", "¬C","~C","-C"
+                                , "≡", "¬≡","~≡","-≡"
+                                , "<->", "¬<->","~<->","-<->"
+                                , "<>", "¬<>","~<>","-<>"
+                                , "B", "¬B","~B","-B"
+                                , "¬¬","~~","--"
+                                , "Ax", "St", "Lit"
+                                ])
+    return $ case r of
+       r | r `elem` ["&", "/\\"] -> [Conj]
+         | r == "Ax" -> [Ax1,Ax2]
+         | r `elem` ["¬&","~&","-&","¬/\\","~/\\","-/\\"] -> [NConj]
+         | r `elem` ["∨","v","\\/"] -> [Disj]
+         | r `elem` [ "¬∨","~∨","-∨", "¬\\/","~\\/","-\\/", "¬v","~v","-v"] -> [NDisj]
+         | r `elem` ["⊃","->",">","C"] -> [Cond]
+         | r `elem` [ "¬⊃","~⊃","-⊃", "¬>","~>","->", "¬->","~->","-->", "¬C","~C","-C"] -> [NCond]
+         | r `elem` ["≡","<->","<>","B"] -> [Bicond]
+         | r `elem` [ "¬≡","~≡","-≡", "¬<->","~<->","-<->", "¬<>","~<>","-<>", "¬B","~B","-B"] -> [NBicond]
+         | r `elem` [ "¬¬","~~","--"] -> [DoubleNeg]
+         | r `elem` [ "St" ] -> [Struct]
+         | r `elem` [ "Lit" ] -> [Lit]
 
 instance ( BooleanConstLanguage (ClassicalSequentOver lex (Form Bool))
          , PrismBooleanConnLex (ClassicalSequentLexOver lex) Bool

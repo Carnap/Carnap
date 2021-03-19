@@ -46,7 +46,10 @@ data CheckerParameters rule lex sem = CheckerParameters
             { tableauCalc :: TableauCalc lex sem rule
             , threadRef :: IORef (Maybe ThreadId)
             , proofMemo :: ProofMemoRef lex sem rule
+            , runtimeConfig' :: CheckerParameters rule lex sem -> IO (RuntimeNaturalDeductionConfig lex sem)
             }
+
+runtimeConfig x = runtimeConfig' x x 
 
 treeDeductionCheckAction ::  IO ()
 treeDeductionCheckAction = 
@@ -66,6 +69,7 @@ treeDeductionCheckAction =
                              { threadRef = ref
                              , proofMemo = memo
                              , tableauCalc = calc
+                             , runtimeConfig' = \_ -> return (RuntimeNaturalDeductionConfig mempty mempty)
                              }))
 
 getCheckers :: IsElement self => Document -> self -> IO [Maybe (Element, Element, Map String String)]
@@ -100,6 +104,7 @@ activateChecker w (Just (i, o, opts)) = case (setupWith `ofPropTreeSys` sys)
                         { tableauCalc = calc
                         , threadRef = theThreadRef
                         , proofMemo = memo
+                        , runtimeConfig' = \_ -> return (RuntimeNaturalDeductionConfig mempty mempty)
                         }
                   let submit = submitTree w checkerParams opts root mgoal
                   btStatus <- createSubmitButton w bw submit opts
@@ -143,9 +148,10 @@ updateInfo w _ _ _ i = do wrap <- getParentElement i
 
 submitTree w checkerParams opts root (Just seq) l = 
         do Just val <- liftIO $ toCleanVal root
+           rtc <- liftIO $ runtimeConfig checkerParams
            case parse parseTreeJSON val of
                Error s -> message $ "Something has gone wrong. Here's the error:" ++ s
-               Success tree -> case toProofTree checkerParams tree of
+               Success tree -> case toProofTree rtc checkerParams tree of
                      Left _ | "exam" `inOpts` opts -> trySubmit w DeductionTree opts l (DeductionTreeData (pack (show seq)) tree (toList opts)) False
                      Left _ -> message "Something is wrong with the proof... Try again?"
                      Right prooftree -> do 
@@ -188,14 +194,14 @@ toProofTree :: ( Typeable sem
                , Sequentable lex
                , StructuralOverride rule (ProofTree rule lex sem)
                , Inference rule lex sem
-               ) => CheckerParameters rule lex sem -> Tree (String,String) -> Either (TreeFeedback lex) (ProofTree rule lex sem)
-toProofTree checkerParams (Node (l,r) f) 
+               ) => RuntimeNaturalDeductionConfig lex sem -> CheckerParameters rule lex sem -> Tree (String,String) -> Either (TreeFeedback lex) (ProofTree rule lex sem)
+toProofTree rtc checkerParams (Node (l,r) f) 
     | all isRight parsedForest && isRight newNode = handleOverride <$> (Node <$> newNode <*> sequence parsedForest)
     | isRight newNode = Left $ Node Waiting (map cleanTree parsedForest)
     | Left n <- newNode = Left n
     where parsedLabel = (SS . liftToSequent) <$> P.parse (tbParseForm (tableauCalc checkerParams) <* P.eof) "" l
-          parsedRules = P.parse (tbParseRule (tableauCalc checkerParams)) "" r
-          parsedForest = map (toProofTree checkerParams) f
+          parsedRules = P.parse (tbParseRule (tableauCalc checkerParams) rtc) "" r
+          parsedForest = map (toProofTree rtc checkerParams) f
           cleanTree (Left fs) = fs
           cleanTree (Right fs) = fmap (const Waiting) fs
           newNode = case ProofLine 0 <$> parsedLabel <*> parsedRules of
@@ -219,13 +225,15 @@ checkProofTree :: ( ReLex lex
                   , StructuralOverride rule (ProofTree rule lex sem)
                   , StructuralInference rule lex (ProofTree rule lex sem)
                   ) => CheckerParameters rule lex sem -> Value -> IO (Value, Maybe (ClassicalSequentOver lex (Sequent sem)))
-checkProofTree checkerParams v = case parse parseTreeJSON v of
-                           Success t -> case toProofTree checkerParams t of 
-                                  Left feedback -> return (toInfo feedback, Nothing)
-                                  Right tree -> do (val,mseq) <- validateProofTree checkerParams tree
-                                                   return (toInfo val, mseq)
-                           Error s -> do print (show v)
-                                         error s
+checkProofTree checkerParams v = do
+        rtc <- runtimeConfig checkerParams
+        case parse parseTreeJSON v of
+           Success t -> case toProofTree rtc checkerParams t of 
+                  Left feedback -> return (toInfo feedback, Nothing)
+                  Right tree -> do (val,mseq) <- validateProofTree checkerParams tree
+                                   return (toInfo val, mseq)
+           Error s -> do print (show v)
+                         error s
 
 validateProofTree :: ( ReLex lex
                      , Sequentable lex

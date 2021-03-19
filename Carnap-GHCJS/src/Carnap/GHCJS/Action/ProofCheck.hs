@@ -81,11 +81,11 @@ addRules avd v =  case fromJSON v :: Result String of
 getCheckers :: IsElement self => Document -> self -> IO [Maybe IOGoal]
 getCheckers w = generateExerciseElts w "proofchecker"
 
-data Checker r lex sem = Checker 
+data CheckerParameters r lex sem = CheckerParameters 
         { checkerToRule :: Maybe (DerivedRule lex sem -> SomeRule)
         , checkerTests :: Maybe ([String] -> UnaryTest lex sem)
-        , ruleSave' :: Maybe (Checker r lex sem -> IORef [(String, SomeRule)] -> IORef Bool -> Document -> Element -> EventM Element MouseEvent ())
-        , rulePost' :: Checker r lex sem -> IO (RuntimeNaturalDeductionConfig lex sem)
+        , ruleSave' :: Maybe (CheckerParameters r lex sem -> IORef [(String, SomeRule)] -> IORef Bool -> Document -> Element -> EventM Element MouseEvent ())
+        , runtimeConfig' :: CheckerParameters r lex sem -> IO (RuntimeNaturalDeductionConfig lex sem)
         , checkerCalc ::  NaturalDeductionCalc r lex sem 
         , checkerRules :: IORef [(String,SomeRule)]
         , sequent :: Maybe (ClassicalSequentOver lex (Sequent sem))
@@ -94,7 +94,7 @@ data Checker r lex sem = Checker
         , proofMemo :: ProofMemoRef lex sem r
         }
 
-rulePost x = rulePost' x x 
+runtimeConfig x = runtimeConfig' x x 
 
 ruleSave x = case ruleSave' x of 
     Just f -> f x
@@ -156,7 +156,7 @@ activateChecker drs w (Just iog@(IOGoal i o g _ opts)) -- TODO: need to update n
                                return pd
 
               --XXX:DRY this pattern
-              propChecker x = Checker (Just PropRule) (Just propTests) x
+              propChecker x = CheckerParameters (Just PropRule) (Just propTests) x
                                     $ \self -> do somerules <- readIORef (checkerRules self)
                                                   let seqrules = catMaybes $ map readyRule somerules
                                                       rmap = M.fromList seqrules
@@ -165,7 +165,7 @@ activateChecker drs w (Just iog@(IOGoal i o g _ opts)) -- TODO: need to update n
                     where readyRule (x, PropRule r) = Just (x, derivedRuleToSequent r)
                           readyRule _ = Nothing
 
-              folChecker x = Checker (Just FOLRule) (Just folTests) x
+              folChecker x = CheckerParameters (Just FOLRule) (Just folTests) x
                                    $ \self -> do somerules <- readIORef (checkerRules self)
                                                  let seqrules = catMaybes $ map readyRule somerules
                                                      rmap = M.fromList seqrules
@@ -179,7 +179,7 @@ activateChecker drs w (Just iog@(IOGoal i o g _ opts)) -- TODO: need to update n
               toPremiseSeqs (Just seq) = Just . map (\x -> SA x :|-: SS x) $ toListOf (lhs . concretes) seq
               toPremiseSeqs Nothing = Nothing
 
-              noRuntimeOptions = Checker Nothing Nothing Nothing $ const . pure $ RuntimeNaturalDeductionConfig mempty mempty
+              noRuntimeOptions = CheckerParameters Nothing Nothing Nothing $ const . pure $ RuntimeNaturalDeductionConfig mempty mempty
 
 threadedCheck checker options w ref v (g, fd) = 
         do mt <- readIORef (threadRef checker)
@@ -188,7 +188,7 @@ threadedCheck checker options w ref v (g, fd) =
                Nothing -> return ()
            t' <- forkIO $ do setAttribute g "class" "goal working"
                              threadDelay 500000
-                             rtconfig <- liftIO $ rulePost checker
+                             rtconfig <- liftIO $ runtimeConfig checker
                              let ndcalc = checkerCalc checker
                                  ded = ndParseProof ndcalc rtconfig v
                              case proofDisplay checker of 
@@ -263,7 +263,7 @@ submitDer w opts checker l g seq ref _ i = do
         if isFinished 
             then trySubmit w Derivation opts l (DerivationDataOpts (pack $ show seq) (pack v) (M.toList opts)) True
             else do liftIO $ setAttribute g "class" "goal working"
-                    rtconfig <- liftIO $ rulePost checker
+                    rtconfig <- liftIO $ runtimeConfig checker
                     let ndcalc = checkerCalc checker
                         ded = ndParseProof ndcalc rtconfig v
                         submission = DerivationDataOpts (pack $ show seq) (pack v) (M.toList opts)
@@ -285,12 +285,11 @@ trySave :: ( Sequentable lex
            , PrismSubstitutionalVariable lex
            , MonadVar (ClassicalSequentOver lex) (State Int)
            , Concretes lex sem
-           ) => Checker r lex sem -> IORef [(String, SomeRule)] -> IORef Bool -> Document
+           ) => CheckerParameters r lex sem -> IORef [(String, SomeRule)] -> IORef Bool -> Document
                 -> Element -> EventM e MouseEvent ()
 trySave checker drs ref w i = 
         do isFinished <- liftIO $ readIORef ref
-           somerules <- liftIO $ readIORef drs
-           rtconfig <- liftIO $ rulePost checker
+           rtconfig <- liftIO $ runtimeConfig checker
            Just view <- getDefaultView w
            if isFinished
              then do (Just v) <- getValue (castToHTMLTextAreaElement i)
@@ -331,7 +330,7 @@ getFeedback :: ( PrismSubstitutionalVariable lex
                , MonadVar (ClassicalSequentOver lex) (State Int)
                , Inference r lex sem
                , Sequentable lex
-               ) => Checker r lex sem -> Deduction r lex sem -> IO (Feedback lex sem)
+               ) => CheckerParameters r lex sem -> Deduction r lex sem -> IO (Feedback lex sem)
 getFeedback checker ded = case ndProcessLineMemo calc of
                                      Just memoline -> toDisplaySequenceMemo (memoline $ proofMemo checker) ded
                                      Nothing -> return $ toDisplaySequence (ndProcessLine calc) ded

@@ -99,40 +99,41 @@ instance Show GentzenPropNK where
     show (NJ x) = show x
     show LEM = "LEM"
 
-parseGentzenPropLK :: Parsec String u [GentzenPropLK]
-parseGentzenPropLK =  do r <- choice (map (try . string) [ "Ax", "Cut"
-                                                         , "WL","WR","XL","XR","CL","CR"
-                                                         , "&R","∧R","/\\R"
-                                                         , "&L","∧L","/\\L"
-                                                         , "∨L","vL","\\/L"
-                                                         , "∨R","vR","\\/R"
-                                                         , "→L","->L", ">L"
-                                                         , "→R","->R", ">R"
-                                                         , "¬L","~L","-L"
-                                                         , "¬R","~R","-R"
-                                                         ])
-                         return $ case r of
-                            r | r == "Ax" -> [Ax]
-                              | r == "XL" -> [XL]
-                              | r == "WL" -> [WL]
-                              | r == "CL" -> [CL]
-                              | r == "XR" -> [XR]
-                              | r == "WR" -> [WR]
-                              | r == "CR" -> [CR]
-                              | r == "Cut" -> [Cut]
-                              | r `elem` ["&R","∧R","/\\R"] -> [AndR]
-                              | r `elem` ["&L","∧L","/\\L"] -> [AndL1, AndL2]
-                              | r `elem` ["∨L","vL","\\/L"] -> [OrL]
-                              | r `elem` ["∨R","vR","\\/R"] -> [OrR1, OrR2]
-                              | r `elem` ["→L","->L", ">L"] -> [CondL]
-                              | r `elem` ["→R","->R", ">R"] -> [CondR]
-                              | r `elem` ["¬L","~L","-L"] -> [NegL]
-                              | r `elem` ["¬R","~R","-R"] -> [NegR]
+parseGentzenPropLK :: RuntimeNaturalDeductionConfig lex (Form Bool) -> Parsec String u [GentzenPropLK]
+parseGentzenPropLK rtc =  do 
+     r <- choice (map (try . string) [ "Ax", "Cut"
+                 , "WL","WR","XL","XR","CL","CR"
+                 , "&R","∧R","/\\R"
+                 , "&L","∧L","/\\L"
+                 , "∨L","vL","\\/L"
+                 , "∨R","vR","\\/R"
+                 , "→L","->L", ">L"
+                 , "→R","->R", ">R"
+                 , "¬L","~L","-L"
+                 , "¬R","~R","-R"
+                 ])
+     return $ case r of
+        r | r == "Ax" -> [Ax]
+          | r == "XL" -> [XL]
+          | r == "WL" -> [WL]
+          | r == "CL" -> [CL]
+          | r == "XR" -> [XR]
+          | r == "WR" -> [WR]
+          | r == "CR" -> [CR]
+          | r == "Cut" -> [Cut]
+          | r `elem` ["&R","∧R","/\\R"] -> [AndR]
+          | r `elem` ["&L","∧L","/\\L"] -> [AndL1, AndL2]
+          | r `elem` ["∨L","vL","\\/L"] -> [OrL]
+          | r `elem` ["∨R","vR","\\/R"] -> [OrR1, OrR2]
+          | r `elem` ["→L","->L", ">L"] -> [CondL]
+          | r `elem` ["→R","->R", ">R"] -> [CondR]
+          | r `elem` ["¬L","~L","-L"] -> [NegL]
+          | r `elem` ["¬R","~R","-R"] -> [NegR]
 
-parseGentzenPropLJ = map LJ <$> parseGentzenPropLK
+parseGentzenPropLJ rtc = map LJ <$> parseGentzenPropLK rtc
 
-parseGentzenPropNJ :: Parsec String u [GentzenPropNJ]
-parseGentzenPropNJ = choice . map try $
+parseGentzenPropNJ :: RuntimeNaturalDeductionConfig lex (Form Bool) -> Parsec String u [GentzenPropNJ]
+parseGentzenPropNJ rtc = choice . map try $
                         [ stringOpts ["&I","/\\I"] >> return [AndI]
                         , stringOpts ["&E","/\\E"] >> return [AndER, AndEL]
                         , stringOpts  ["∨I","\\/I"] >> return [OrIL, OrIR]
@@ -158,8 +159,8 @@ parseGentzenPropNJ = choice . map try $
                         ]
     where stringOpts = choice . map (try . string)
 
-parseGentzenPropNK :: Parsec String u [GentzenPropNK]
-parseGentzenPropNK = (map NJ <$> parseGentzenPropNJ) <|> (string "LEM" >> return [LEM])
+parseGentzenPropNK :: RuntimeNaturalDeductionConfig lex (Form Bool) -> Parsec String u [GentzenPropNK]
+parseGentzenPropNK rtc = (map NJ <$> parseGentzenPropNJ rtc) <|> (string "LEM" >> return [LEM])
 
 instance ( BooleanLanguage (ClassicalSequentOver lex (Form Bool))
          , BooleanConstLanguage (ClassicalSequentOver lex (Form Bool))

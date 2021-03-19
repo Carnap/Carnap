@@ -134,9 +134,8 @@ propCalcStrict = mkNDCalc
     , ndParseSeq = parseSeqOver (purePropFormulaParser standardLettersStrict)
     }
 
-
 propTreeCalc :: TableauCalc PurePropLexicon (Form Bool) PropLogic
 propTreeCalc = mkTBCalc
     { tbParseForm = langParser
-    , tbParseRule = parsePropLogic (RuntimeNaturalDeductionConfig mempty mempty)
+    , tbParseRule = parsePropLogic
     }

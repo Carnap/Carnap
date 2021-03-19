@@ -30,6 +30,7 @@ import Carnap.Core.Data.Optics
 import Carnap.Calculi.Util
 import Carnap.Calculi.Tableau.Data
 import Carnap.Calculi.Tableau.Checker
+import Carnap.Calculi.NaturalDeduction.Syntax
 import Carnap.Languages.ClassicalSequent.Syntax
 import Carnap.Languages.ClassicalSequent.Parser
 import Carnap.Languages.PurePropositional.Logic.IchikawaJenkins
@@ -206,13 +207,14 @@ toTableau calc (Node (l,r) f)
     | isRight newNode = Left $ Node Waiting (map cleanTree parsedForest)
     | Left n <- newNode = Left n
     where parsedLabel = P.parse (parseSeqOver (tbParseForm calc)) "" l
-          parsedRules = if r == "" then pure Nothing else P.parse (Just <$> tbParseRule calc) "" r
+          parsedRules = if r == "" then pure Nothing else P.parse (Just <$> tbParseRule calc rtc) "" r
           parsedForest = map (toTableau calc) f
           cleanTree (Left fs) = fs
           cleanTree (Right fs) = fmap (const Waiting) fs
           newNode = case TableauNode <$> parsedLabel <*> (pure Nothing) <*> parsedRules of
                         Right n -> Right n
                         Left e -> Left (Node (ProofError $ NoParse e 0) (map cleanTree parsedForest))
+          rtc = RuntimeNaturalDeductionConfig mempty mempty --XXX: stub for future use
 
 renewRoot root calc = do
     mr <- toCleanVal root

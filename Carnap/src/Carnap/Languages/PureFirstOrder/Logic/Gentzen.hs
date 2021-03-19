@@ -19,6 +19,7 @@ import Carnap.Languages.PureFirstOrder.Parser
 import Carnap.Languages.PureFirstOrder.Logic.Rules
 import Carnap.Languages.PurePropositional.Logic.Gentzen
 import Carnap.Languages.Util.GenericConstructors
+import Carnap.Calculi.NaturalDeduction.Syntax
 import Carnap.Calculi.Tableau.Data
 import Carnap.Calculi.Util
 import Carnap.Languages.Util.LanguageClasses
@@ -39,9 +40,9 @@ instance Show GentzenFOLK where
 instance Show GentzenFOLJ where
     show (LJ x) = show x
 
-parseGentzenFOLK :: Parsec String u [GentzenFOLK]
-parseGentzenFOLK = try folParse <|> liftProp
-        where liftProp = map LK <$> parseGentzenPropLK
+parseGentzenFOLK :: RuntimeNaturalDeductionConfig lex (Form Bool) -> Parsec String u [GentzenFOLK]
+parseGentzenFOLK rtc = try folParse <|> liftProp
+        where liftProp = map LK <$> parseGentzenPropLK rtc
               folParse = do r <- choice (map (try . string) [ "AL", "∀L", "AR","∀R", "EL","∃L", "ER", "∃R" ])
                             return $ (\x -> [x]) $ case r of
                                r | r `elem` ["AL","∀L"] -> AllL
@@ -49,8 +50,8 @@ parseGentzenFOLK = try folParse <|> liftProp
                                  | r `elem` ["EL","∃L"] -> ExistL
                                  | r `elem` ["ER","∃R"] -> ExistR
 
-parseGentzenFOLJ :: Parsec String u [GentzenFOLJ]
-parseGentzenFOLJ = map LJ <$> parseGentzenFOLK
+parseGentzenFOLJ :: RuntimeNaturalDeductionConfig lex (Form Bool) -> Parsec String u [GentzenFOLJ]
+parseGentzenFOLJ rtc = map LJ <$> parseGentzenFOLK rtc
 
 type LKAdequate lex = ( BooleanLanguage (ClassicalSequentOver lex (Form Bool))
          , BooleanConstLanguage (ClassicalSequentOver lex (Form Bool))
