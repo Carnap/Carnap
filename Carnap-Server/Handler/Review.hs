@@ -350,8 +350,18 @@ renderProblem due uidAndData (Entity key val) = do
           checkvalidity ct = if '⊢' `elem` ct then "validity" :: String else "simple" :: String
           renderCMPair (l,v) = l ++ ":" ++ v
           renderCM cm = unlines . map renderCMPair $ cm
-          treeJSON (Node (l,r) f) = "{\"label\":\"" ++ l 
-                                  ++ "\",\"rule\":\"" ++ r
+          escapeForJSON s = concatMap escape s
+            where escape '\b' = "\\b"
+                  escape '\n' = "\\n"
+                  escape '\t' = "\\t"
+                  escape '\r' = "\\r"
+                  escape '\f' = "\\f"
+                  escape '\\' = "\\\\"
+                  escape '"' = "\\\""
+                  escape c = [c]
+
+          treeJSON (Node (l,r) f) = "{\"label\":\"" ++ escapeForJSON l 
+                                  ++ "\",\"rule\":\"" ++ escapeForJSON r
                                   ++ "\",\"forest\":[" 
                                   ++ intercalate "," (map treeJSON f)
                                   ++ "]}"
