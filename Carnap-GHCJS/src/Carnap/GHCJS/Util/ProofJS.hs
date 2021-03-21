@@ -13,7 +13,7 @@ import GHCJS.Foreign.Callback
 import GHCJS.Marshal
 #endif
 import GHCJS.Types
-import GHCJS.DOM.HTMLElement (getInnerText, castToHTMLElement)
+import GHCJS.DOM.HTMLElement (setInnerText, getInnerText, castToHTMLElement)
 import GHCJS.DOM.Element (setInnerHTML, setAttribute, keyDown, input)
 import GHCJS.DOM.Node (appendChild, removeChild, getParentNode, insertBefore, getParentElement)
 import GHCJS.DOM.Document (createElement, getActiveElement)
@@ -86,7 +86,7 @@ attachDisplay w elt root = do
           setAttribute displayDiv ("class" :: String) ("jsonDisplay" :: String)
           setAttribute displayDiv ("contenteditable" :: String) ("true" :: String)
           val <- toCleanVal root
-          setInnerHTML displayDiv . Just $ toJSONString val
+          setInnerText (castToHTMLElement displayDiv) . Just $ toJSONString val
           toggleDisplay <- newListener $ do
               kbe <- event
               isCtrl <- getCtrlKey kbe
@@ -113,7 +113,7 @@ attachDisplay w elt root = do
                    --focussed, to avoid cursor jumping
                    if Just displayDiv /= mfocus then do
                        val <- toCleanVal root
-                       setInnerHTML displayDiv . Just $ toJSONString val
+                       setInnerText (castToHTMLElement displayDiv) . Just $ toJSONString val
                    else return ())
           return ()
 
