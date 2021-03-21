@@ -20,6 +20,6 @@ import Yesod.Static     (staticFiles)
 pathRelativeToCabalPackage (appStaticDir compileTimeAppSettings)
   >>= staticFiles
 
--- XXX:for whatever reason, recompiling with the below seems to get it to reload
+--- XXX:for whatever reason, recompiling with the below seems to get it to reload
 -- the static file cache. You an then switch back to compileTimeAppSettings
 -- staticFiles "static/

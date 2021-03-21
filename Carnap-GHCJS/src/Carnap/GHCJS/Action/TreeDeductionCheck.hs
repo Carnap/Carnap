@@ -35,7 +35,8 @@ import Carnap.Languages.Arithmetic.Logic (ofArithmeticTreeSys)
 import Carnap.Languages.HigherOrderArithmetic.Logic (ofHigherOrderArithmeticTreeSys)
 import Carnap.GHCJS.Util.ProofJS
 import Carnap.GHCJS.SharedTypes
-import GHCJS.DOM.Element (setInnerHTML, click, keyDown, setAttribute )
+import GHCJS.DOM.HTMLElement (setInnerText, castToHTMLElement)
+import GHCJS.DOM.Element (click, keyDown, setAttribute )
 import GHCJS.DOM.Node (getParentElement)
 import GHCJS.DOM.Types (Element, Document, IsElement)
 import GHCJS.DOM.EventM
@@ -129,11 +130,11 @@ activateChecker w (Just (i, o, opts)) = case (setupWith `ofPropTreeSys` sys)
                   let seqParse = parseSeqOver (tbParseForm calc)
                   case M.lookup "goal" opts of
                       Just s -> case P.parse (seqParse <* P.eof) "" s of
-                          Left e -> do setInnerHTML i (Just $ "Couldn't Parse This Goal:" ++ s)
+                          Left e -> do setInnerText (castToHTMLElement i) (Just $ "Couldn't Parse This Goal:" ++ s)
                                        error "couldn't parse goal"
-                          Right seq -> do setInnerHTML i (Just . tbNotation calc . show $ seq)
+                          Right seq -> do setInnerText (castToHTMLElement i) (Just . tbNotation calc . show $ seq)
                                           return $ Just seq
-                      Nothing -> do setInnerHTML i (Just "Awaiting a proof")
+                      Nothing -> do setInnerText (castToHTMLElement i) (Just "Awaiting a proof")
                                     return Nothing
 
 updateInfo w _ (Just goal) (Just seq) i = 
@@ -141,8 +142,8 @@ updateInfo w _ (Just goal) (Just seq) i =
            if seq `seqSubsetUnify` goal 
                then setSuccess w wrap 
                else setFailure w wrap
-updateInfo _ calc Nothing (Just seq) i = setInnerHTML i (Just . tbNotation calc . show $ seq)
-updateInfo _ _ Nothing Nothing i = setInnerHTML i (Just "Awaiting a proof")
+updateInfo _ calc Nothing (Just seq) i = setInnerText (castToHTMLElement i) (Just . tbNotation calc . show $ seq)
+updateInfo _ _ Nothing Nothing i = setInnerText (castToHTMLElement i) (Just "Awaiting a proof")
 updateInfo w _ _ _ i = do wrap <- getParentElement i
                           maybe (return ()) (\w -> setAttribute w "class" "") wrap
 

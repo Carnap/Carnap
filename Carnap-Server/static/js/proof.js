@@ -98,7 +98,7 @@ class DeductionNode {
         this.on("infoChanged", (i,c) => {
             var msg = document.createElement("div");
             var wrapper = document.createElement("div");
-            msg.innerHTML = i;
+            msg.innerText = i;
             wrapper.setAttribute("class","proofJSPopper")
             wrapper.appendChild(msg);
             let inputContainer = elt.input.parentNode;
@@ -253,7 +253,7 @@ class DeductionNode {
             this.parentNode.forest.splice(this.parentNode.forest.indexOf(this),1);
             this.parentNode.forest.map(n => n.trigger("siblingsChanged"))
             if (this.parentNode.forest.length == 0) this.parentNode.rule = ""
-        } else { alert("can't remove a node without parents") }
+        } else { alert("Can't remove a node without parents") }
     };
 
     toJSON() {
