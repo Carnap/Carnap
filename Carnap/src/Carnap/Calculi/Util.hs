@@ -51,7 +51,7 @@ data RuntimeDeductionConfig lex sem = RuntimeDeductionConfig
         , problemPremises :: Maybe [ClassicalSequentOver lex (Sequent sem)]
         }
 
-defaultRuntimeDeductionConfig = defaultRuntimeDeductionConfig
+defaultRuntimeDeductionConfig = RuntimeDeductionConfig mempty mempty
 
 data TreeFeedbackNode lex = Correct | Waiting | ProofData String | ProofError (ProofErrorMessage lex)
 
