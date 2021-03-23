@@ -155,8 +155,10 @@ instance Inference HardegreeSL2006 PurePropLexicon (Form Bool) where
          indirectInference _ = Nothing
 
          isAssumption (HardegreeSL2006 x) = isAssumption x
+         isAssumption _ = False
 
          restriction (HardegreeSL2006 x) = restriction x
+         restriction _ = Nothing
 
 parseHardegreeSL :: RuntimeDeductionConfig PurePropLexicon (Form Bool) -> Parsec String u [HardegreeSL]
 parseHardegreeSL rtc = do r <- choice (map (try . string) ["&I","&O","~&I","~&O", "&D"
@@ -179,10 +181,10 @@ parseHardegreeSL rtc = do r <- choice (map (try . string) ["&I","&O","~&I","~&O"
                                  | r `elem` ["~->O","~→O"] -> return [IfNO]
                                  | r == "!?I" -> return [FalI]
                                  | r == "!?O" -> return [FalO]
-                                 | r `elem` ["vI","\\/I"] -> return [OrI1, OrI2]
-                                 | r `elem` ["vO","\\/O"] -> return [OrO1, OrO2]
-                                 | r `elem` ["~vI","~\\/I"] -> return [OrNI]
-                                 | r `elem` ["~vO","~\\/O"] -> return [OrNO]
+                                 | r `elem` ["∨I","vI","\\/I"] -> return [OrI1, OrI2]
+                                 | r `elem` ["∨O","vO","\\/O"] -> return [OrO1, OrO2]
+                                 | r `elem` ["~∨I", "~vI","~\\/I"] -> return [OrNI]
+                                 | r `elem` ["~∨O", "~vO","~\\/O"] -> return [OrNO]
                                  | r `elem` ["<->I","↔I"] -> return [IffI]
                                  | r `elem` ["<->O","↔O"] -> return [IffO1,IffO2]
                                  | r `elem` ["~<->I","~↔I"] -> return [IffNI]
@@ -196,8 +198,8 @@ parseHardegreeSL rtc = do r <- choice (map (try . string) ["&I","&O","~&I","~&O"
                                  | r == "CD" -> return [CD1,CD2]
                                  | r == "SC" -> do ds <- many1 digit
                                                    return [SepCases (read ds)]
-                                 | r `elem` ["\\/D","vD"] -> do ds <- many1 digit
-                                                                return [OrID (read ds)]
+                                 | r `elem` ["∨D","\\/D","vD"] -> do ds <- many1 digit
+                                                                     return [OrID (read ds)]
 
 parseHardegreeSL2006 :: RuntimeDeductionConfig PurePropLexicon (Form Bool) -> Parsec String u [HardegreeSL2006]
 parseHardegreeSL2006 rtc = try new <|> (map HardegreeSL2006 <$> core) 
@@ -222,9 +224,9 @@ parseHardegreeSL2006 rtc = try new <|> (map HardegreeSL2006 <$> core)
                            | r `elem` ["~->O","~→O"] -> [IfNO]
                            | r == "!?I" -> [FalI]
                            | r == "!?O" -> [FalO]
-                           | r `elem` ["∨I, vI","\\/I"] -> [OrI1, OrI2]
-                           | r `elem` ["∨O, vO","\\/O"] -> [OrO1, OrO2]
-                           | r `elem` ["~∨O, ~vO","~\\/O"] -> [OrNO]
+                           | r `elem` ["∨I", "vI","\\/I"] -> [OrI1, OrI2]
+                           | r `elem` ["∨O", "vO","\\/O"] -> [OrO1, OrO2]
+                           | r `elem` ["~∨O", "~vO","~\\/O"] -> [OrNO]
                            | r `elem` ["<->I","↔I"] -> [IffI]
                            | r `elem` ["<->O","↔O"] -> [IffO1,IffO2]
                            | r `elem` ["~<->O","~↔O"] -> [IffNO]
