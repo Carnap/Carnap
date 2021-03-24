@@ -231,7 +231,11 @@ parseHardegreeSL2006 rtc = try new <|> (map HardegreeSL2006 <$> core)
                            | r `elem` ["<->O","↔O"] -> [IffO1,IffO2]
                            | r `elem` ["~<->O","~↔O"] -> [IffNO]
                            | r `elem` ["<->D","↔D"] -> [IffD]
-                           | r == "ID" -> [ID1,ID2]
+                           | r == "ID" -> [ID1,ID2,TD1,TD2] 
+                           --TD1,TD2 aren't actually forms of ID according
+                           --to 2006 rule sheet, but are used as such in
+                           --the book. Accomodating that seems the option
+                           --least likely to confuse.
                            | r == "~D" -> [TD1,TD2]
                            | r == "DN" -> [DN1,DN2]
                            | r == "&D" -> [AndD]
