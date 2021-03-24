@@ -9,7 +9,7 @@ import Data.IORef (IORef, readIORef, newIORef, writeIORef)
 import Data.Typeable (Typeable)
 import Data.Aeson.Types
 import Data.Text (pack)
-import qualified Text.Parsec as P (parse, eof) 
+import qualified Text.Parsec as P (parse, eof, spaces) 
 import Control.Monad.State (modify,get,execState,State)
 import Control.Lens
 import Control.Concurrent
@@ -200,7 +200,7 @@ toProofTree rtc checkerParams (Node (l,r) f)
     | all isRight parsedForest && isRight newNode = handleOverride <$> (Node <$> newNode <*> sequence parsedForest)
     | isRight newNode = Left $ Node Waiting (map cleanTree parsedForest)
     | Left n <- newNode = Left n
-    where parsedLabel = (SS . liftToSequent) <$> P.parse (tbParseForm (tableauCalc checkerParams) <* P.eof) "" l
+    where parsedLabel = (SS . liftToSequent) <$> P.parse (P.spaces *> tbParseForm (tableauCalc checkerParams) <* P.eof) "" l
           parsedRules = P.parse (tbParseRule (tableauCalc checkerParams) rtc) "" r
           parsedForest = map (toProofTree rtc checkerParams) f
           cleanTree (Left fs) = fs
