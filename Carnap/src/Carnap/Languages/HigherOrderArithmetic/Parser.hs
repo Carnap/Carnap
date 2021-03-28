@@ -35,7 +35,7 @@ untypedHigherOrderArithmeticOptions = FirstOrderParserOptions
                                                                  <|> cparser
                                                                  ))
                            , hasBooleanConstants = True
-                           , parenRecur = \opt recurWith  -> parenParser (recurWith opt)
+                           , parenRecur = parenOrBracket
                            , opTable = standardOpTable
                            , finalValidation = const (pure ())
                            }
@@ -43,6 +43,7 @@ untypedHigherOrderArithmeticOptions = FirstOrderParserOptions
           fparser = case functionParser untypedHigherOrderArithmeticOptions of Just f -> f
           vparser = freeVarParser untypedHigherOrderArithmeticOptions 
           tparser = try (fparser tparser) <|> try cparser <|> vparser 
+          parenOrBracket opt rw = (wrappedWith '(' ')' (rw opt) <|> wrappedWith '[' ']' (rw opt))
 
 untypedHigherOrderArithmeticParser = parserFromOptions untypedHigherOrderArithmeticOptions
 

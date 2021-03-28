@@ -28,10 +28,11 @@ arithmeticOptions = FirstOrderParserOptions
                                                             <|> parseConstant "abcdefghijklmnopqr"
                                                             ))
                          , hasBooleanConstants = True
-                         , parenRecur = \opt recurWith  -> parenParser (recurWith opt)
+                         , parenRecur = parenOrBracket
                          , opTable = standardOpTable
                          , finalValidation = const (pure ())
                          }
+    where parenOrBracket opt rw = (wrappedWith '(' ')' (rw opt) <|> wrappedWith '[' ']' (rw opt))
 
 arithmeticExtendedOptions :: FirstOrderParserOptions ExtendedArithLex u Identity
 arithmeticExtendedOptions = FirstOrderParserOptions 
@@ -50,10 +51,11 @@ arithmeticExtendedOptions = FirstOrderParserOptions
                                                             <|> parseConstant "abcdefghijklmnopqr"
                                                             ))
                          , hasBooleanConstants = True
-                         , parenRecur = \opt recurWith  -> parenParser (recurWith opt)
+                         , parenRecur = parenOrBracket
                          , opTable = standardOpTable
                          , finalValidation = const (pure ())
                          }
+    where parenOrBracket opt rw = (wrappedWith '(' ')' (rw opt) <|> wrappedWith '[' ']' (rw opt))
 
 arithmeticParser = parserFromOptions arithmeticOptions
 

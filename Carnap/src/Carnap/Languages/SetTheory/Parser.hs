@@ -29,10 +29,11 @@ strictSetTheoryOptions = FirstOrderParserOptions
                          , constantParser = Just (parseConstant "abcdefghijklmnopqr")
                          , functionParser = Nothing
                          , hasBooleanConstants = True
-                         , parenRecur = \opt recurWith  -> parenParser (recurWith opt)
+                         , parenRecur = parenOrBracket
                          , opTable = standardOpTable
                          , finalValidation = const (pure ())
                          }
+    where parenOrBracket opt rw = (wrappedWith '(' ')' (rw opt) <|> wrappedWith '[' ']' (rw opt))
 
 strictSetTheoryParser = parserFromOptions strictSetTheoryOptions
 
@@ -52,10 +53,11 @@ extendedStrictSetTheoryOptions = FirstOrderParserOptions
                          , constantParser = Just (parseConstant "abcdefghijklmnopqr")
                          , functionParser = Just parseFunctionString
                          , hasBooleanConstants = True
-                         , parenRecur = \opt recurWith  -> parenParser (recurWith opt)
+                         , parenRecur = parenOrBracket
                          , opTable = standardOpTable
                          , finalValidation = const (pure ())
                          }
+    where parenOrBracket opt rw = (wrappedWith '(' ')' (rw opt) <|> wrappedWith '[' ']' (rw opt))
 
 extendedStrictSetTheoryParser = parserFromOptions extendedStrictSetTheoryOptions
 
@@ -81,10 +83,11 @@ elementarySetTheoryOptions = FirstOrderParserOptions
                                                                  <|> parseConstant "abcdefghijklmnopqr" 
                                                                  ))
                            , hasBooleanConstants = True
-                           , parenRecur = \opt recurWith  -> parenParser (recurWith opt)
+                           , parenRecur = parenOrBracket
                            , opTable = standardOpTable
                            , finalValidation = const (pure ())
                            }
+    where parenOrBracket opt rw = (wrappedWith '(' ')' (rw opt) <|> wrappedWith '[' ']' (rw opt))
 
 elementarySetTheoryParser = parserFromOptions elementarySetTheoryOptions
 
@@ -112,10 +115,11 @@ extendedElementarySetTheoryOptions = FirstOrderParserOptions
                                                                  <|> parseConstant "abcdefghijklmnopqr" 
                                                                  ))
                            , hasBooleanConstants = True
-                           , parenRecur = \opt recurWith  -> parenParser (recurWith opt)
+                           , parenRecur = parenOrBracket
                            , opTable = standardOpTable
                            , finalValidation = const (pure ())
                            }
+    where parenOrBracket opt rw = (wrappedWith '(' ')' (rw opt) <|> wrappedWith '[' ']' (rw opt))
 
 extendedElementarySetTheoryParser = parserFromOptions extendedElementarySetTheoryOptions
 
@@ -142,7 +146,7 @@ separativeSetTheoryOptions = FirstOrderParserOptions
                                                                  <|> cparser
                                                                  ))
                            , hasBooleanConstants = True
-                           , parenRecur = \opt recurWith  -> parenParser (recurWith opt)
+                           , parenRecur = parenOrBracket
                            , opTable = standardOpTable
                            , finalValidation = const (pure ())
                            }
@@ -150,6 +154,7 @@ separativeSetTheoryOptions = FirstOrderParserOptions
           fparser = case functionParser separativeSetTheoryOptions of Just f -> f
           vparser = freeVarParser  separativeSetTheoryOptions 
           tparser = try (fparser tparser) <|> try cparser <|> vparser 
+          parenOrBracket opt rw = (wrappedWith '(' ')' (rw opt) <|> wrappedWith '[' ']' (rw opt))
 
 separativeSetTheoryParser = parserFromOptions separativeSetTheoryOptions
 
@@ -179,7 +184,7 @@ extendedSeparativeSetTheoryOptions = FirstOrderParserOptions
                                                                  <|> cparser
                                                                  ))
                            , hasBooleanConstants = True
-                           , parenRecur = \opt recurWith  -> parenParser (recurWith opt)
+                           , parenRecur = parenOrBracket
                            , opTable = standardOpTable
                            , finalValidation = const (pure ())
                            }
@@ -187,6 +192,7 @@ extendedSeparativeSetTheoryOptions = FirstOrderParserOptions
           fparser = case functionParser extendedSeparativeSetTheoryOptions of Just f -> f
           vparser = freeVarParser  extendedSeparativeSetTheoryOptions 
           tparser = try (fparser tparser) <|> try cparser <|> vparser 
+          parenOrBracket opt rw = (wrappedWith '(' ')' (rw opt) <|> wrappedWith '[' ']' (rw opt))
 
 extendedSeparativeSetTheoryParser = parserFromOptions extendedSeparativeSetTheoryOptions
 
