@@ -1,4 +1,5 @@
-function sortByCol(elt,num) {
+//This sorts first by comparing length, then lexicographically, so that "Problem 10" > "Problem 2", but "Problem 20" > "Problem 10"
+function subtleSortByCol(elt,num) {
     let table = elt.closest("table")
     let body = table.querySelector("tbody")
     let head = table.querySelector("thead")
@@ -7,19 +8,34 @@ function sortByCol(elt,num) {
     headers[num].upsorted = (headers[num].upsorted * -1) || 1
     let upsort = headers[num].upsorted
     let sortedRows = rows.sort((a,b) => {
-        let val1 = a.children[num].innerHTML.split('.')
-        let val2 = b.children[num].innerHTML.split('.')
+        let val1 = a.children[num].innerHTML
+        let val2 = b.children[num].innerHTML
         if (val1 == "No Due Date") return 1 * upsort
         if (val2 == "No Due Date") return -1 * upsort
-        for (let idx = 0; idx < Math.min(val1.length,val2.length); idx++) {
-            if (val1[idx].length > val2[idx].length) { return 1 * upsort}
-            else if (val2[idx].length > val1[idx].length) { return -1 * upsort}
-            else if (val1[idx] > val2[idx]) { return 1 * upsort }
-            else if (val2[idx] > val1[idx]) { return -1 * upsort }
-        }
-        if (val1.length > val2.length) { return -1 * upsort }
-        else if (val2.length > val1.length) { return 1 * upsort }
+        if (val1.length > val2.length) { return 1 * upsort}
+        else if (val2.length > val1.length) { return -1 * upsort}
+        else if (val1 > val2) { return 1 * upsort }
+        else if (val2 > val1) { return -1 * upsort }
         return 0
+    })
+    sortedRows.forEach(el => body.appendChild(el))
+}
+
+//This sorts only lexicographically
+function simpleSortByCol(elt,num) {
+    let table = elt.closest("table")
+    let body = table.querySelector("tbody")
+    let head = table.querySelector("thead")
+    let rows = Array.from(body.children)
+    let headers = head.getElementsByTagName("th")
+    headers[num].upsorted = (headers[num].upsorted * -1) || 1
+    let upsort = headers[num].upsorted
+    let sortedRows = rows.sort((a,b) => {
+        let val1 = a.children[num].innerHTML.toLowerCase()
+        let val2 = b.children[num].innerHTML.toLowerCase()
+        if (val1 > val2) return 1 * upsort
+        else if (val2 > val1) return -1 * upsort
+        else return 0
     })
     sortedRows.forEach(el => body.appendChild(el))
 }
@@ -705,7 +721,7 @@ $(".scrollbox").trigger("scroll")
 
 $(document).ready(_ => {
     Array.from(document.getElementsByClassName("assignment")).forEach(table => {
-        sortByCol(table,1)
+        subtleSortByCol(table,1)
     })
     queryAPIKey()
 })

@@ -71,10 +71,16 @@
                     <div.table-responsive>
                         <table.table>
                             <thead>
-                                <th> Filename
-                                <th> Due Date
+                                <th style="cursor:pointer" onclick="simpleSortByCol(this,0)">
+                                    Filename
+                                    <i class="fa fa-sort" aria-hidden="true"></i>
+                                <th style="cursor:pointer" onclick="subtleSortByCol(this,1)">
+                                     Due Date
+                                    <i class="fa fa-sort" aria-hidden="true"></i>
                                 <th> Availability
-                                <th> Course
+                                <th style="cursor:pointer" onclick="simpleSortByCol(this,3)">
+                                    Course
+                                    <i class="fa fa-sort" aria-hidden="true"></i>
                                 <th> Actions
                             <tbody>
                                 $forall ((Entity k a, Entity _ c), Just d) <- zip assignmentMetadata assignmentDocs
@@ -124,9 +130,15 @@
                     <div.table-responsive>
                         <table.table>
                             <thead>
-                                <th> Filename
-                                <th> Saved on
-                                <th> Sharing Scope
+                                <th style="cursor:pointer" onclick="simpleSortByCol(this,0)">
+                                    Filename
+                                    <i class="fa fa-sort" aria-hidden="true"></i>
+                                <th style="cursor:pointer" onclick="subtleSortByCol(this,1)">
+                                    Saved on
+                                    <i class="fa fa-sort" aria-hidden="true"></i>
+                                <th style="cursor:pointer" onclick="simpleSortByCol(this,2)">
+                                    Sharing Scope
+                                    <i class="fa fa-sort" aria-hidden="true"></i>
                                 <th> Tags
                                 <th> Actions
                             <tbody>
