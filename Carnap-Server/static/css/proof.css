@@ -87,7 +87,7 @@ input {
     max-width:none;
 }
 
-.rule input:not(:valid) { background:#eeeeee; }
+.rule input:invalid, .root input:invalid { background:#eeeeee; }
 
 .proofJSPopper {
     position:absolute;
