@@ -130,7 +130,7 @@
                     <div.table-responsive>
                         <table.table>
                             <thead>
-                                <th style="cursor:pointer" onclick="simpleSortByCol(this,0)">
+                                <th style="cursor:pointer" onclick="subtleSortByCol(this,0)">
                                     Filename
                                     <i class="fa fa-sort" aria-hidden="true"></i>
                                 <th style="cursor:pointer" onclick="subtleSortByCol(this,1)">
