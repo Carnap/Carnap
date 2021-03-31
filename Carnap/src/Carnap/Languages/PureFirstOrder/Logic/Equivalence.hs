@@ -26,6 +26,7 @@ data ZachFOLEq = Prop ZachPropEq
                | QSE1 | QSE2 | QSE3 | QSE4
                | QSE5 | QSE6 | QSE7 | QSE8
                | QSE9 | QSE10 | QSE11 |QSE12
+               | QXE  | QXA
                | VR   | Pr (Maybe [(ClassicalSequentOver PureLexiconFOL (Sequent (Form Bool)))])
     deriving (Eq)
 
@@ -63,6 +64,8 @@ instance Show ZachFOLEq where
         show QSE10 = "QSE"
         show QSE11 = "QSE"
         show QSE12 = "QSE"
+        show QXE   = "QX"
+        show QXA   = "QX"
         show VR    = "VR"
         show (Pr _) = "Pr"
 
@@ -183,6 +186,8 @@ instance Inference ZachFOLEq PureLexiconFOL (Form Bool) where
         ruleOf QSE10 = conditionalRulesOfPassage !! 3
         ruleOf QSE11 = conditionalRulesOfPassage !! 6
         ruleOf QSE12 = conditionalRulesOfPassage !! 7
+        ruleOf QXE = quantifierExchange !! 0
+        ruleOf QXA = quantifierExchange !! 2
         ruleOf VR = identityRule
         ruleOf (Pr _) = axiom
 
@@ -194,12 +199,13 @@ instance Inference ZachFOLEq PureLexiconFOL (Form Bool) where
 
 parseZachFOLEq rtc = try quantRule <|> try (map Prop <$> parseProp)
     where parseProp = parseZachPropEq (defaultRuntimeDeductionConfig)
-          quantRule = do r <- choice (map (try . caseInsensitiveString) ["QN","QD","QSA","QSE","VR","PR"])
+          quantRule = do r <- choice (map (try . caseInsensitiveString) ["QN","QD","QSA","QSE","QX","VR","PR"])
                          return $ case map toLower r of 
                             "qn" -> [QN1,QN2,QN3,QN4]
                             "qd" -> [QD1,QD2,QD3,QD4]
                             "qsa" -> [QSA1,QSA2, QSA3, QSA4, QSA5, QSA6, QSA7, QSA8, QSA9, QSA10, QSA11, QSA12]
                             "qse" -> [QSE1,QSE2, QSE3, QSE4, QSE5, QSE6, QSE7, QSE8, QSE9, QSE10, QSE11, QSE12]
+                            "qx" -> [QXA, QXE]
                             "vr" -> [VR]
                             "pr" -> [Pr (problemPremises rtc)]
           caseInsensitiveChar c = char (toLower c) <|> char (toUpper c)

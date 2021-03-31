@@ -7,12 +7,12 @@ module Carnap.Core.Data.Types(
   Term(..), Form(..),
   Copula(..), CopulaSchema(..), defaultLamSchema,
   StaticVar(..), FirstOrderLex(..), (:|:)(..), Fix(Fx), FixLang, EndLang,
-  pattern AOne, pattern ATwo, pattern AThree, pattern AFour, pattern LLam, pattern (:!$:),
-  pattern Fx1, pattern Fx2, pattern Fx3, pattern Fx4, pattern Fx5, pattern
-  Fx6, pattern Fx7, pattern Fx8, pattern Fx9, pattern Fx10, pattern Fx11,
-  pattern Lx1, pattern Lx2, pattern Lx3, pattern Lx4, pattern Lx5, pattern
-  Lx6, pattern Lx7, pattern Lx8, pattern Lx9, pattern Lx10, pattern Lx11,
-  pattern FX,
+  pattern AOne, pattern ATwo, pattern AThree, pattern AFour, pattern AFive,
+  pattern LLam, pattern (:!$:), pattern Fx1, pattern Fx2, pattern Fx3,
+  pattern Fx4, pattern Fx5, pattern Fx6, pattern Fx7, pattern Fx8, pattern
+  Fx9, pattern Fx10, pattern Fx11, pattern Lx1, pattern Lx2, pattern Lx3,
+  pattern Lx4, pattern Lx5, pattern Lx6, pattern Lx7, pattern Lx8, pattern
+  Lx9, pattern Lx10, pattern Lx11, pattern FX,
   -- ** Abstract Term Types
   -- *** Variable Binding Operators
   Binders(Bind),Abstractors(Abstract),Applicators(Apply), BoundVars(..),
@@ -194,6 +194,7 @@ pattern AOne = ASucc AZero
 pattern ATwo = ASucc AOne
 pattern AThree = ASucc ATwo
 pattern AFour = ASucc AThree
+pattern AFive = ASucc AFour
 
 arityInt :: Arity arg ret ret' -> Int
 arityInt AZero = 0

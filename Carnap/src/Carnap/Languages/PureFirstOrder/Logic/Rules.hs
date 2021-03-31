@@ -74,6 +74,10 @@ phi4 :: (Typeable b, PolyadicSchematicPredicateLanguage (FixLang lex) (Term Int)
     => Int -> (FixLang lex) (Term Int) -> (FixLang lex) (Term Int) -> (FixLang lex) (Term Int) -> (FixLang lex) (Term Int) -> (FixLang lex) (Form b)
 phi4 n x y z w = pphin n AFour :!$: x :!$: y :!$: z :!$: w
 
+phi5 :: (Typeable b, PolyadicSchematicPredicateLanguage (FixLang lex) (Term Int) (Form b))
+    => Int -> (FixLang lex) (Term Int) -> (FixLang lex) (Term Int) ->(FixLang lex) (Term Int) -> (FixLang lex) (Term Int) -> (FixLang lex) (Term Int) -> (FixLang lex) (Form b)
+phi5 n x y z w v = pphin n AFive :!$: x :!$: y :!$: z :!$: w :!$: v
+
 lbind f = LLam $ \x -> LLam $ \y -> LLam $ \z -> f x y z
 
 phi' :: PolyadicSchematicPredicateLanguage (FixLang lex) (Term Int) (Form Bool)
@@ -518,6 +522,12 @@ conditionalRulesOfPassage = firstOrderReplace (lbind $ \x y z -> lall "v" $ \w -
                                    (lbind $ \x y z -> lsome "v" (\w -> phi4 1 x y z w) .=>. phi3 2 x y z)
                          ++ firstOrderReplace (lbind $ \x y z -> lsome "v" $ \w -> phi4 1 x y z w .=>. phi3 2 x y z) 
                                    (lbind $ \x y z -> lall "v" (\w -> phi4 1 x y z w) .=>. phi3 2 x y z)
+
+quantifierExchange :: QuantContextLang (ClassicalSequentOver lex) b Int => FirstOrderRuleVariants lex b
+quantifierExchange = firstOrderReplace (lbind $ \x y z -> lsome "v" $ \v -> lsome "w" $ \w -> phi5 1 x y z w v) 
+                                      (lbind $ \x y z -> lsome "w" $ \w -> lsome "v" $ \v -> phi5 1 x y z w v) 
+                    ++ firstOrderReplace (lbind $ \x y z -> lall "v" $ \v -> lall "w" $ \w -> phi5 1 x y z w v) 
+                                      (lbind $ \x y z -> lall "w" $ \w -> lall "v" $ \v -> phi5 1 x y z w v)
 
 quantifierDistribution :: QuantContextLang (ClassicalSequentOver lex) b Int => FirstOrderRuleVariants lex b
 quantifierDistribution = firstOrderReplace (lbind $ \x y z -> lsome "v" $ \w -> phi4 1 x y z w .\/. phi4 2 x y z w)
