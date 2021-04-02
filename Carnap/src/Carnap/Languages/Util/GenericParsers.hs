@@ -178,10 +178,10 @@ parsePredicateString ::
     , Monad m
     , Typeable ret
     , Typeable arg
-    ) => ParsecT String u m (FixLang lex arg) -> ParsecT String u m (FixLang lex ret)
-parsePredicateString parseTerm = parse <?> "a predicate string"
+    ) => [Char] -> ParsecT String u m (FixLang lex arg) -> ParsecT String u m (FixLang lex ret)
+parsePredicateString extraChars parseTerm = parse <?> "a predicate string"
     where parse = do c <- upper
-                     s <- many (alphaNum <|> char '_')
+                     s <- many (alphaNum <|> oneOf extraChars)
                      char '(' *> spaces *> argParser parseTerm (stringPred (c:s) AOne)
 
 parseSchematicPredicateSymbol :: 
@@ -321,10 +321,10 @@ parseFunctionString ::
     , Monad m
     , Typeable ret
     , Typeable arg
-    ) => ParsecT String u m (FixLang lex arg) -> ParsecT String u m (FixLang lex ret)
-parseFunctionString parseTerm = parse <?> "a function string"
+    ) => [Char] -> ParsecT String u m (FixLang lex arg) -> ParsecT String u m (FixLang lex ret)
+parseFunctionString extraChars parseTerm = parse <?> "a function string"
     where parse = do c <- lower
-                     s <- many (alphaNum <|> char '_')
+                     s <- many (alphaNum <|> oneOf extraChars)
                      char '(' *> spaces *> argParser parseTerm (stringFunc (c:s) AOne)
 
 parseSchematicFunctionSymbol ::     

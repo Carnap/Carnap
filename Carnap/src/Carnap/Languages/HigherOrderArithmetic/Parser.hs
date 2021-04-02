@@ -12,6 +12,8 @@ import Carnap.Languages.PurePropositional.Parser (standardOpTable)
 import Text.Parsec
 import Text.Parsec.Expr
 
+extendedSymbols = ['_','>','#']
+
 untypedHigherOrderArithmeticOptions :: FirstOrderParserOptions UntypedHigherOrderArithLex u Identity
 untypedHigherOrderArithmeticOptions = FirstOrderParserOptions
                            { atomicSentenceParser = \x -> try (elementParser x)
@@ -19,7 +21,7 @@ untypedHigherOrderArithmeticOptions = FirstOrderParserOptions
                                                           <|> try (lessThanParser x)
                                                           <|> try (inequalityParser x)
                                                           <|> subsetParser x
-                                                          <|> parsePredicateString x
+                                                          <|> parsePredicateString extendedSymbols x
                            , quantifiedSentenceParser' = quantifiedSentenceParser
                            , freeVarParser = parseFreeVar "stuvwxyz"
                            , constantParser = Just (parseConstant "abcdefghijklmnopqr" <|> try parseEmptySet 
@@ -30,7 +32,7 @@ untypedHigherOrderArithmeticOptions = FirstOrderParserOptions
                                                                  <|> powersetParser x
                                                                  <|> parseZero 
                                                                  <|> try parseEmptySet
-                                                                 <|> try (parseFunctionString x)
+                                                                 <|> try (parseFunctionString extendedSymbols x)
                                                                  <|> vparser
                                                                  <|> cparser
                                                                  ))

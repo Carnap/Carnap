@@ -19,6 +19,8 @@ import Carnap.Languages.PurePropositional.Parser (standardOpTable)
 import Text.Parsec
 import Text.Parsec.Expr
 
+extendedSymbols = ['_','>','#']
+
 strictSetTheoryOptions :: FirstOrderParserOptions StrictSetTheoryLex u Identity
 strictSetTheoryOptions = FirstOrderParserOptions 
                          { atomicSentenceParser = \x -> try (elementParser x)
@@ -47,11 +49,11 @@ extendedStrictSetTheoryOptions = FirstOrderParserOptions
                          { atomicSentenceParser = \x -> try (elementParser x)
                                                         <|> try (equalsParser x)
                                                         <|> inequalityParser x
-                                                        <|> parsePredicateString x
+                                                        <|> parsePredicateString extendedSymbols x
                          , quantifiedSentenceParser' = quantifiedSentenceParser
                          , freeVarParser = parseFreeVar "stuvwxyz"
                          , constantParser = Just (parseConstant "abcdefghijklmnopqr")
-                         , functionParser = Just parseFunctionString
+                         , functionParser = Just (parseFunctionString extendedSymbols)
                          , hasBooleanConstants = True
                          , parenRecur = parenOrBracket
                          , opTable = standardOpTable
@@ -102,7 +104,7 @@ extendedElementarySetTheoryOptions = FirstOrderParserOptions
                                                           <|> try (equalsParser x)
                                                           <|> try (inequalityParser x)
                                                           <|> subsetParser x
-                                                          <|> parsePredicateString x
+                                                          <|> parsePredicateString extendedSymbols x
                            , quantifiedSentenceParser' = quantifiedSentenceParser
                            , freeVarParser = parseFreeVar "stuvwxyz"
                            , constantParser = Just (try parseEmptySet <|> parseConstant "abcdefghijklmnopqr" )
@@ -110,7 +112,7 @@ extendedElementarySetTheoryOptions = FirstOrderParserOptions
                                                                 (parenParser x
                                                                  <|> powersetParser x
                                                                  <|> try parseEmptySet
-                                                                 <|> try (parseFunctionString x)
+                                                                 <|> try (parseFunctionString extendedSymbols x)
                                                                  <|> parseFreeVar "stuvwxyz" 
                                                                  <|> parseConstant "abcdefghijklmnopqr" 
                                                                  ))
@@ -169,7 +171,7 @@ extendedSeparativeSetTheoryOptions = FirstOrderParserOptions
                                                           <|> try (equalsParser x)
                                                           <|> try (inequalityParser x)
                                                           <|> subsetParser x
-                                                          <|> parsePredicateString x
+                                                          <|> parsePredicateString extendedSymbols x
                            , quantifiedSentenceParser' = quantifiedSentenceParser
                            , freeVarParser = parseFreeVar "stuvwxyz"
                            , constantParser = Just (parseConstant "abcdefghijklmnopqr" <|> try parseEmptySet 
@@ -179,7 +181,7 @@ extendedSeparativeSetTheoryOptions = FirstOrderParserOptions
                                                                 (parenParser x
                                                                  <|> powersetParser x
                                                                  <|> try parseEmptySet
-                                                                 <|> try (parseFunctionString x)
+                                                                 <|> try (parseFunctionString extendedSymbols x)
                                                                  <|> vparser
                                                                  <|> cparser
                                                                  ))
