@@ -117,22 +117,22 @@ createValidityTruthTable w (antced :|-: succed) (i,o) ref bw opts =
         do setInnerHTML i (Just . rewriteWith opts . show $ (antced :|-: succed))
            admissibleRows <- case M.lookup "counterexample-to" opts of
                                Just "equivalence" -> do 
-                                    addCounterexample w opts bw i ref atomIndicies isEquivCE "Inequivalent"
+                                    addCounterexample w opts bw i ref atomIndicies (CounterexampleData isEquivCE Inequivalent isPlural True)
                                     return $ map (Just . not . isEquivCE) valuations
                                Just "inconsistency" -> do 
-                                    addCounterexample w opts bw i ref atomIndicies isInconCE "Consistent"
+                                    addCounterexample w opts bw i ref atomIndicies (CounterexampleData isInconCE Consistent isPlural True)
                                     return $ map (Just . not . isInconCE) valuations
                                Just "contradiction" -> do 
-                                    addCounterexample w opts bw i ref atomIndicies isInconCE "Non-Contradiction"
+                                    addCounterexample w opts bw i ref atomIndicies (CounterexampleData isInconCE NonContradiction isPlural True)
                                     return $ map (Just . not . isInconCE) valuations
                                Just "validity" -> do 
-                                    addCounterexample w opts bw i ref atomIndicies isValCE "Invalid"
+                                    addCounterexample w opts bw i ref atomIndicies (CounterexampleData isValCE Invalid isPlural True)
                                     return $ map (Just . not . isValCE) valuations
                                Just "tautology" -> do 
-                                    addCounterexample w opts bw i ref atomIndicies isValCE "Non-Tautology"
+                                    addCounterexample w opts bw i ref atomIndicies (CounterexampleData isValCE NonTautology isPlural True)
                                     return $ map (Just . not . isValCE) valuations
                                _ -> do 
-                                    addCounterexample w opts bw i ref atomIndicies isValCE "Counterexample"
+                                    addCounterexample w opts bw i ref atomIndicies (CounterexampleData isValCE GeneralCounterexample isPlural True)
                                     return $ map (Just . not . isValCE) valuations
            assembleTable w opts o orderedChildren valuations atomIndicies admissibleRows
 
@@ -151,6 +151,7 @@ createValidityTruthTable w (antced :|-: succed) (i,o) ref bw opts =
           orderedChildren = concat $ intersperse [Left ','] (map (toOrderedChildren . fromSequent) (toListOf concretes antced))
                                   ++ (if "double-turnstile" `inOpts` opts then [[Left '⊨']] else [[Left '⊢']])
                                   ++ intersperse [Left ','] (map (toOrderedChildren. fromSequent) (toListOf concretes succed))
+          isPlural = length succedList > 1
 
 createSimpleTruthTable :: Document -> [PureForm] -> (Element,Element) -> IORef Bool 
     -> Element -> Map String String 
@@ -158,12 +159,12 @@ createSimpleTruthTable :: Document -> [PureForm] -> (Element,Element) -> IORef B
 createSimpleTruthTable w fs (i,o) ref bw opts = 
         do setInnerHTML i (Just . intercalate ", " . map (rewriteWith opts . show) $ fs)
            case M.lookup "counterexample-to" opts of
-                Just "equivalence" -> addCounterexample w opts bw i ref atomIndicies isEquivCE "Inequivalent"
-                Just "inconsistency" -> addCounterexample w opts bw i ref atomIndicies isInconCE "Consistent"
-                Just "contradiction" -> addCounterexample w opts bw i ref atomIndicies isInconCE "Non-Contradiction"
-                Just "tautology" -> addCounterexample w opts bw i ref atomIndicies isTautCE "Non-Tautology"
-                Just "validity" -> addCounterexample w opts bw i ref atomIndicies isTautCE "Invalid"
-                _ -> do addCounterexample w opts bw i ref atomIndicies isTautCE "Counterexample"
+                Just "equivalence" -> addCounterexample w opts bw i ref atomIndicies (CounterexampleData isEquivCE Inequivalent isPlural False)
+                Just "inconsistency" -> addCounterexample w opts bw i ref atomIndicies (CounterexampleData isInconCE Consistent isPlural False)
+                Just "contradiction" -> addCounterexample w opts bw i ref atomIndicies (CounterexampleData isInconCE NonContradiction isPlural False)
+                Just "tautology" -> addCounterexample w opts bw i ref atomIndicies (CounterexampleData isTautCE NonTautology isPlural False)
+                Just "validity" -> addCounterexample w opts bw i ref atomIndicies (CounterexampleData isTautCE Invalid isPlural False)
+                _ -> do addCounterexample w opts bw i ref atomIndicies (CounterexampleData isTautCE GeneralCounterexample isPlural False)
            assembleTable w opts o orderedChildren valuations atomIndicies (repeat Nothing)
 
     where isTautCE v = and (map (not . unform . satisfies v) fs)
@@ -173,6 +174,7 @@ createSimpleTruthTable w fs (i,o) ref bw opts =
           atomIndicies = nub . sortIdx . concatMap getIndicies $ fs
           valuations = map toValuation . subsequences $ reverse atomIndicies
           orderedChildren = concat . intersperse [Left ','] . map toOrderedChildren $ fs
+          isPlural = length fs > 1
 
 assembleTable :: Document -> Map String String -> Element -> [Either Char PureForm] 
     -> [Int -> Bool] -> [Int] -> [Maybe Bool]
@@ -190,30 +192,37 @@ assembleTable w opts o orderedChildren valuations atomIndicies admissibleRows =
     where toRow' = toRow w opts atomIndicies orderedChildren
           givens = makeGivens opts (Just $ length valuations) orderedChildren
 
+
 addCounterexample :: Document -> Map String String ->  Element -> Element 
-    -> IORef Bool -> [Int] -> ((Int -> Bool) -> Bool) -> String
+    -> IORef Bool -> [Int] -> CounterexampleData
     -> IO ()
-addCounterexample w opts bw i ref atomIndicies isCounterexample title
+addCounterexample w opts bw i ref atomIndicies counterexampleData
     | "nocounterexample" `inOpts` opts = return ()
-    | otherwise = do bt <- exclaimButton w title
-                     counterexample <- newListener $ liftIO $ tryCounterexample w opts ref i atomIndicies isCounterexample
+    | otherwise = do bt <- exclaimButton w (buttonText (counterexampleProperty counterexampleData ))
+                     counterexample <- newListener $ liftIO $ tryCounterexample w opts ref i atomIndicies counterexampleData
                      addListener bt click counterexample False
                      appendChild bw (Just bt)
                      return ()
+    where buttonText Inequivalent = "Inequivalent"
+          buttonText Consistent = "Consistent"
+          buttonText NonContradiction = "Non-Contradiction"
+          buttonText Invalid = "Invalid"
+          buttonText NonTautology = "Non-Tautology"
+          buttonText GeneralCounterexample = "Counterexample"
+
 
 tryCounterexample :: Document -> Map String String -> IORef Bool -> Element 
-    -> [Int] -> ((Int -> Bool) -> Bool) 
-    -> IO ()
-tryCounterexample w opts ref i indicies isCounterexample = 
+    -> [Int] -> CounterexampleData -> IO ()
+tryCounterexample w opts ref i indicies counterexampleData = 
         do Just w' <- getDefaultView w
-           mrow <- prompt w' "enter the truth values for your counterexample row" (Just "")
+           mrow <- prompt w' ("Give the truth values for a row that shows " ++ promptText counterexampleData) (Just "")
            case mrow of 
                Nothing -> return ()
                Just s -> 
                    case checkLength =<< (clean $ map charToTruthValue s) of
                      Nothing -> alert w' "not a readable row"
                      Just l -> do let v = listToVal l
-                                  let s = isCounterexample v
+                                  let s = counterexampleTest counterexampleData v
                                   Just wrap <- getParentElement i
                                   if "exam" `inOpts` opts 
                                       then do alert w' "Counterexample received - If you're confident that it is correct, press Submit to submit it."
@@ -233,6 +242,16 @@ tryCounterexample w opts ref i indicies isCounterexample =
               mask (x:xs) (y:ys) = if x then y:(mask xs ys) else mask xs ys
               mask [] _ = []
               checkLength l = if length l == length indicies then Just l else Nothing
+              promptText (CounterexampleData _ Inequivalent _ arg) = "these sentences are inequivalent" ++ if arg then " under the given premises." else "."
+              promptText (CounterexampleData _ Consistent plur arg ) = (if plur then "these sentences are " else "this sentence is ")
+                                                                       ++ "consistent" ++ if arg then " under the given premises." else "."
+              promptText (CounterexampleData _ NonContradiction False arg) = "this sentence is not self-contradictory" 
+                                                                           ++ if arg then " under the given premises." else "."
+              promptText (CounterexampleData _ NonContradiction True arg) = "these sentences are not mutually contradictory" 
+                                                                          ++ if arg then " under the given premises." else "."
+              promptText (CounterexampleData _ Invalid plur False) = (if plur then "these sentences are all " else "this sentence is ") ++ "invalid."
+              promptText (CounterexampleData _ Invalid _ True) = "this argument is invalid."
+              promptText (CounterexampleData _ _ _ _) = "you have a counterexample."
 
 toRow :: Document -> Map String String -> [Int] 
     -> [Either Char PureForm] -> GridRef
@@ -492,6 +511,24 @@ traverseBPT (MonNode f a) = [Right f] ++ traverseBPT a
 traverseBPT (BiNode f a b) = [Left '('] ++ traverseBPT a ++ [Right f] ++ traverseBPT b ++ [Left ')']
 
 toOrderedChildren = traverseBPT . toBPT
+
+---------------------------------
+--  Counterexample Properties  --
+---------------------------------
+
+--these are properties of sentences or sets of sentences that can be to
+--obtain by citing a counterexample row
+data CounterexampleProperty = Inequivalent | Consistent | NonContradiction | Invalid | NonTautology | GeneralCounterexample
+
+--takes a valuation and returns a truth value
+type CounterexampleTest = (Int -> Bool) -> Bool
+
+data CounterexampleData = CounterexampleData 
+                            { counterexampleTest :: CounterexampleTest
+                            , counterexampleProperty :: CounterexampleProperty
+                            , pluralize :: Bool
+                            , forArgument :: Bool
+                            }
 
 -------------------------
 --  Utility Functions  --
