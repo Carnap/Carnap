@@ -173,7 +173,10 @@ parseThomasBolducAndZachFOLCore rtc = try quantRule <|> (map TFLC <$> parseProp)
                               | r == "=E" -> return [IDE1,IDE2]
                               | r == "PR" -> return [Pr (problemPremises rtc)]
 
-parseThomasBolducAndZachFOL rtc = try (map FOL <$> quantRule) <|> try (map TFL <$> parseProp) <|> try cqRule
+--ordering of the parsing clauses is important here: TFLCore is included
+--in FOLCore, and in TFL, we want to get the version that is including in
+--TFL, so that our global restrictions will apply properly
+parseThomasBolducAndZachFOL rtc = try (map TFL <$> parseProp) <|> try (map FOL <$> quantRule) <|>  try cqRule
     where parseProp = P.parseThomasBolducAndZachTFL (defaultRuntimeDeductionConfig)
           quantRule = parseThomasBolducAndZachFOLCore rtc
           cqRule = string "CQ" >> return [QN1,QN2,QN3,QN4]

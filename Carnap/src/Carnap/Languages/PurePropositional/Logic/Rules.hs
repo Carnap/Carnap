@@ -55,7 +55,7 @@ fitchAssumptionCheck n ded pairs sub = checkWithProofType n ded pairs sub thePro
           checkWithProofType n ded pairs sub pt | not (all (`among` pairs') allBoundaryAssertions) = Just $ "Some of the assumptions in the cited subproofs are not of the right form for this rule."
                                                 | not (all (`among` allBoundaryAssertions) pairs') = Just $ "Some of the assumptions this rule requires you to make are missing from the boundary conditions."
                                                 | otherwise = Nothing
-                where subproofBoundries = case pt of 
+                where subproofBoundries = case pt of
                          --pending further refinement to the ProofType
                          --system, we ignore t, since this indicates how
                          --many assumptions are actually used in generating
