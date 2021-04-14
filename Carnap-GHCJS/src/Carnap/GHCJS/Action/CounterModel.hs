@@ -262,84 +262,88 @@ prepareModelUI :: ModelingLanguage lex => Document -> [FixLang lex (Form Bool)] 
     -> IO ()
 prepareModelUI w fs (i,o) mdl bw opts = do
            Just domainLabel <- createElement w (Just "label")
-           setInnerHTML domainLabel (Just "Domain: ")
+           setInnerHTML domainLabel $ Just (if "forallxStyle" `inOpts` opts then "UD = " else "Domain: ")
            (domainInput,domainWarn) <- parsingInput w things domainUpdater
            setAttribute domainInput "name" "Domain"
            setAttribute domainInput "rows" "1"
            setValue (castToHTMLTextAreaElement domainInput) (Just "0")
            mapM (appendChild domainLabel . Just) [domainInput, domainWarn]
            appendChild o (Just domainLabel)
-           appendRelationInputs w o fs mdl
-           appendPropInputs w o fs mdl
+           appendRelationInputs w o opts fs mdl
+           appendPropInputs w o opts fs mdl
            let ts = concatMap (toListOf termsOf) fs
-           appendConstantInputs w o ts mdl
-           appendFunctionInputs w o ts mdl
+           appendConstantInputs w o opts ts mdl
+           appendFunctionInputs w o opts ts mdl
     where domainUpdater ts = liftIO $ modifyIORef mdl (\m -> m { monadicPart = (monadicPart m) {domain = ts}})
           things = parseInt `sepEndBy1` (spaces *> char ',' <* spaces)
 
-type InputGetter lex sem = Document -> FixLang lex sem -> IORef PolyadicModel -> IO (Maybe Element)
+type InputGetter lex sem = Document -> Map String String -> FixLang lex sem -> IORef PolyadicModel -> IO (Maybe Element)
 
-appendInputs :: ModelingLanguage lex => InputGetter lex sem 
+appendInputs :: ModelingLanguage lex => Map String String -> InputGetter lex sem 
     -> Document -> Element -> [FixLang lex sem] -> IORef PolyadicModel -> IO ()
-appendInputs getter w o sfs mdl = do namedInputs <- mapM inputWithName sfs
-                                     let sortedInputs = (sortOn snd) namedInputs
-                                     mapM_ (appendIt . fst) sortedInputs
-    where inputWithName f = do minput <- getter w f mdl
+appendInputs opts getter w o sfs mdl = do namedInputs <- mapM inputWithName sfs
+                                          let sortedInputs = (sortOn snd) namedInputs
+                                          mapM_ (appendIt . fst) sortedInputs
+    where inputWithName f = do minput <- getter w opts f mdl
                                mcontent <- maybe (return Nothing) getTextContent minput
                                return (minput, mcontent :: Maybe String)
           appendIt = maybe (return Nothing) (appendChild o . Just)
 
-appendRelationInputs :: ModelingLanguage lex => Document -> Element -> [FixLang lex (Form Bool)] -> IORef PolyadicModel -> IO ()
-appendRelationInputs w o fs = appendInputs getRelationInput w o (nub . concatMap (map blankTerms . universe) $ fs)
+appendRelationInputs :: ModelingLanguage lex => Document -> Element -> Map String String -> [FixLang lex (Form Bool)] -> IORef PolyadicModel -> IO ()
+appendRelationInputs w o opts fs = appendInputs opts getRelationInput w o (nub . concatMap (map blankTerms . universe) $ fs)
 
-appendFunctionInputs :: ModelingLanguage lex => Document -> Element -> [FixLang lex (Term Int)] -> IORef PolyadicModel -> IO ()
-appendFunctionInputs w o fs = appendInputs getFunctionInput w o (nub . concatMap (map blankFuncTerms . universe) $ fs)
+appendFunctionInputs :: ModelingLanguage lex => Document -> Element -> Map String String -> [FixLang lex (Term Int)] -> IORef PolyadicModel -> IO ()
+appendFunctionInputs w o opts fs = appendInputs opts getFunctionInput w o (nub . concatMap (map blankFuncTerms . universe) $ fs)
 
-appendConstantInputs :: ModelingLanguage lex => Document -> Element -> [FixLang lex (Term Int)] -> IORef PolyadicModel -> IO ()
-appendConstantInputs w o ts = appendInputs getConstInput w o (nub . concatMap universe $ ts) 
+appendConstantInputs :: ModelingLanguage lex => Document -> Element -> Map String String -> [FixLang lex (Term Int)] -> IORef PolyadicModel -> IO ()
+appendConstantInputs w o opts ts = appendInputs opts getConstInput w o (nub . concatMap universe $ ts) 
 
-appendPropInputs :: ModelingLanguage lex => Document -> Element -> [FixLang lex (Form Bool)] -> IORef PolyadicModel -> IO ()
-appendPropInputs w o fs = appendInputs getPropInput w o (nub . concatMap universe $ fs)
+appendPropInputs :: ModelingLanguage lex => Document -> Element -> Map String String -> [FixLang lex (Form Bool)] -> IORef PolyadicModel -> IO ()
+appendPropInputs w o opts fs = appendInputs opts getPropInput w o (nub . concatMap universe $ fs)
 
 --TODO: DRY the below
 
 getConstInput :: ModelingLanguage lex => InputGetter lex (Term Int) 
-getConstInput w t mdl = case addConstant t mdl (Term 0) of
-                            Nothing -> return Nothing
-                            Just _ -> do
-                                 Just constLabel <- createElement w (Just "label")
-                                 setInnerHTML constLabel (Just $ show t ++ ": ")
-                                 (constInput,parseWarn) <- parsingInput w (spaces *> parseInt <* spaces <* eof) constUpdater
-                                 setAttribute constInput "name" (show t)
-                                 setAttribute constInput "rows" "1"
-                                 setAttribute constInput "class" "constantInput"
-                                 setValue (castToHTMLTextAreaElement constInput) (Just "0")
-                                 appendChild constLabel (Just constInput)
-                                 appendChild constLabel (Just parseWarn)
-                                 return $ Just constLabel
+getConstInput w opts t mdl = case addConstant t mdl (Term 0) of
+                                Nothing -> return Nothing
+                                Just _ -> do
+                                     Just constLabel <- createElement w (Just "label")
+                                     setInnerHTML constLabel $ Just $ if "forallxStyle" `inOpts` opts 
+                                                                          then "referent(" ++ show t ++ ") = " 
+                                                                          else show t ++ ": "
+                                     (constInput,parseWarn) <- parsingInput w (spaces *> parseInt <* spaces <* eof) constUpdater
+                                     setAttribute constInput "name" (show t)
+                                     setAttribute constInput "rows" "1"
+                                     setAttribute constInput "class" "constantInput"
+                                     setValue (castToHTMLTextAreaElement constInput) (Just "0")
+                                     appendChild constLabel (Just constInput)
+                                     appendChild constLabel (Just parseWarn)
+                                     return $ Just constLabel
     where constUpdater ext = case addConstant t mdl ext of
                                  Just io -> liftIO io
                                  Nothing -> return ()
 
 getPropInput :: ModelingLanguage lex => InputGetter lex (Form Bool)
-getPropInput w f mdl = case addProposition f mdl False of
-                            Nothing -> return Nothing
-                            Just _ -> do
-                                 Just propLabel <- createElement w (Just "label")
-                                 setInnerHTML propLabel (Just $ show f ++ ": ")
-                                 [Just propSelect, Just pt ,Just pf] <- mapM (createElement w . Just) ["select","option","option"]
-                                 setInnerHTML pt (Just "True")
-                                 setInnerHTML pf (Just "False")
-                                 setAttribute pf "selected" "selected"
-                                 mapM (appendChild propSelect) [Just pt,Just pf]
-                                 setAttribute propSelect "name" (show f)
-                                 setAttribute propSelect "rows" "1"
-                                 whenChange <- newListener propUpdater
-                                 whenInit <- newListener propUpdater
-                                 addListener propSelect initialize whenInit False
-                                 addListener propSelect change whenChange False
-                                 appendChild propLabel (Just propSelect)
-                                 return $ Just propLabel
+getPropInput w opts f mdl = case addProposition f mdl False of
+                                Nothing -> return Nothing
+                                Just _ -> do
+                                     Just propLabel <- createElement w (Just "label")
+                                     setInnerHTML propLabel $ Just $ if "forallxStyle" `inOpts` opts 
+                                                                        then "truth-value(" ++ show f ++ ") = " 
+                                                                        else show f ++ ": "
+                                     [Just propSelect, Just pt ,Just pf] <- mapM (createElement w . Just) ["select","option","option"]
+                                     setInnerHTML pt (Just "True")
+                                     setInnerHTML pf (Just "False")
+                                     setAttribute pf "selected" "selected"
+                                     mapM (appendChild propSelect) [Just pt,Just pf]
+                                     setAttribute propSelect "name" (show f)
+                                     setAttribute propSelect "rows" "1"
+                                     whenChange <- newListener propUpdater
+                                     whenInit <- newListener propUpdater
+                                     addListener propSelect initialize whenInit False
+                                     addListener propSelect change whenChange False
+                                     appendChild propLabel (Just propSelect)
+                                     return $ Just propLabel
     where propUpdater :: EventM HTMLSelectElement Event ()
           propUpdater = do 
              Just t <- target
@@ -349,43 +353,47 @@ getPropInput w f mdl = case addProposition f mdl False of
                 Nothing -> return ()
 
 getRelationInput :: ModelingLanguage lex => InputGetter lex (Form Bool)
-getRelationInput w f mdl = case addRelation f mdl [] of
-                             Nothing -> return Nothing
-                             Just io -> do 
-                                 mlen <- io
-                                 case mlen of 
-                                      Nothing -> return Nothing
-                                      Just n -> do
-                                         Just relationLabel <- createElement w (Just "label")
-                                         setInnerHTML relationLabel (Just $ show (blankTerms f) ++ ": ")
-                                         (relationInput,parseWarn) <- parsingInput w (ntuples n) relationUpdater
-                                         setAttribute relationInput "name" (show (blankTerms f))
-                                         setAttribute relationInput "rows" "1"
-                                         setAttribute relationInput "class" "relationInput"
-                                         appendChild relationLabel (Just relationInput)
-                                         appendChild relationLabel (Just parseWarn)
-                                         return $ Just relationLabel
+getRelationInput w opts f mdl = case addRelation f mdl [] of
+                                 Nothing -> return Nothing
+                                 Just io -> do 
+                                     mlen <- io
+                                     case mlen of 
+                                          Nothing -> return Nothing
+                                          Just n -> do
+                                             Just relationLabel <- createElement w (Just "label")
+                                             setInnerHTML relationLabel $ Just $ if "forallxStyle" `inOpts` opts 
+                                                                            then "extension(" ++ [head (show $ blankTerms f)] ++ ") = "
+                                                                            else show (blankTerms f) ++ ": "
+                                             (relationInput,parseWarn) <- parsingInput w (ntuples n) relationUpdater
+                                             setAttribute relationInput "name" (show (blankTerms f))
+                                             setAttribute relationInput "rows" "1"
+                                             setAttribute relationInput "class" "relationInput"
+                                             appendChild relationLabel (Just relationInput)
+                                             appendChild relationLabel (Just parseWarn)
+                                             return $ Just relationLabel
     where relationUpdater ext = case addRelation f mdl ext of
                                      Just io -> liftIO io >> return ()
                                      Nothing -> return ()
 
 getFunctionInput :: ModelingLanguage lex => InputGetter lex (Term Int)
-getFunctionInput w f mdl = case addFunction f mdl [] of
-                             Nothing -> return Nothing
-                             Just io -> do 
-                                 mlen <- io
-                                 case mlen of 
-                                      Nothing -> return Nothing
-                                      Just n -> do
-                                         Just functionLabel <- createElement w (Just "label")
-                                         setInnerHTML functionLabel (Just $ show (blankFuncTerms f) ++ ": ")
-                                         (functionInput,parseWarn) <- parsingInput w (nfunctuples (n + 1)) functionUpdater
-                                         setAttribute functionInput "name" (show (blankFuncTerms f))
-                                         setAttribute functionInput "rows" "1"
-                                         setAttribute functionInput "class" "functionInput"
-                                         appendChild functionLabel (Just functionInput)
-                                         appendChild functionLabel (Just parseWarn)
-                                         return $ Just functionLabel
+getFunctionInput w opts f mdl = case addFunction f mdl [] of
+                                    Nothing -> return Nothing
+                                    Just io -> do 
+                                        mlen <- io
+                                        case mlen of 
+                                             Nothing -> return Nothing
+                                             Just n -> do
+                                                Just functionLabel <- createElement w (Just "label")
+                                                setInnerHTML functionLabel $ Just $ if "forallxStyle" `inOpts` opts
+                                                                                        then "extension(" ++ [head (show $ blankFuncTerms f)] ++ ") = "
+                                                                                        else show (blankFuncTerms f) ++ ": "
+                                                (functionInput,parseWarn) <- parsingInput w (nfunctuples (n + 1)) functionUpdater
+                                                setAttribute functionInput "name" (show (blankFuncTerms f))
+                                                setAttribute functionInput "rows" "1"
+                                                setAttribute functionInput "class" "functionInput"
+                                                appendChild functionLabel (Just functionInput)
+                                                appendChild functionLabel (Just parseWarn)
+                                                return $ Just functionLabel
     where functionUpdater ext = case addFunction f mdl ext of
                                      Just io -> liftIO io >> return ()
                                      Nothing -> return ()
@@ -607,6 +615,8 @@ setField w opts fields (name,val) = do
                           return ()
            _ -> print $ "missing or duplicated field " ++ name ++ "in countermodel spec"
     where strict = "strictGivens" `inOpts` opts
+
+data FieldType = Domain | RelationSymbol | PropositionSymbol | ConstantSymbol | FunctionSymbol
 
 blankTerms :: ModelingLanguage lex => FixLang lex (Form Bool) -> FixLang lex (Form Bool)
 blankTerms f = set termsOf (foVar "_") f
