@@ -1,6 +1,6 @@
 {-#LANGUAGE FlexibleContexts, FlexibleInstances, MultiParamTypeClasses #-}
 module Carnap.Languages.PurePropositional.Logic.BergmannMoorAndNelson
-    (parseLogicBookSD, parseLogicBookSDProof, LogicBookSD(AS),
+    (parseLogicBookSD, parseLogicBookSDProof, LogicBookSD(..),
      logicBookSDCalc, parseLogicBookSDPlus, parseLogicBookSDPlusProof, LogicBookSDPlus(..),
      logicBookSDPlusCalc) where
 
@@ -134,8 +134,8 @@ parseLogicBookSD rtc = do r <- choice (map (try . string) ["AS","PR", "Assumptio
                               | r `elem` ["CE","->E","→E",">E", "⊃E"] -> return [CondElim]
                               | r `elem` ["~I","¬I","-I"]  -> return [NegeIntro1, NegeIntro2, NegeIntro3, NegeIntro4]
                               | r `elem` ["~E","¬E","-E"]  -> return [NegeElim1, NegeElim2, NegeElim3, NegeElim4]
-                              | r `elem` ["vI","\\/I"] -> return [DisjIntro1, DisjIntro2]
-                              | r `elem` ["vE","\\/E"] -> return [DisjElim1, DisjElim2,DisjElim3, DisjElim4]
+                              | r `elem` ["vI","\\/I","∨I"] -> return [DisjIntro1, DisjIntro2]
+                              | r `elem` ["vE","\\/E","∨E"] -> return [DisjElim1, DisjElim2,DisjElim3, DisjElim4]
                               | r `elem` ["BI","<->I","↔I","≡I"] -> return [BicoIntro1, BicoIntro2, BicoIntro3, BicoIntro4]
                               | r `elem` ["BE","<->E","↔E","≡E"] -> return [BicoElim1, BicoElim2]
                             'A':'/':rest -> return [AS (" / " ++ rest)]

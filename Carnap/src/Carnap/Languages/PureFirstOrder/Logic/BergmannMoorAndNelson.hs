@@ -11,7 +11,7 @@ import Carnap.Core.Data.Types (Form, Term)
 import Carnap.Core.Unification.Unification
 import Carnap.Languages.PureFirstOrder.Syntax
 import Carnap.Languages.PureFirstOrder.Parser
-import Carnap.Languages.PurePropositional.Logic.BergmannMoorAndNelson hiding (SD)
+import Carnap.Languages.PurePropositional.Logic.BergmannMoorAndNelson hiding (SD,Pr)
 import Carnap.Calculi.Util
 import Carnap.Calculi.NaturalDeduction.Syntax
 import Carnap.Calculi.NaturalDeduction.Parser
