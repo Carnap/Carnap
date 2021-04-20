@@ -22,7 +22,6 @@ import Language.Haskell.TH.Syntax           (qLocation)
 import Network.Wai (Middleware, pathInfo)
 import Network.Wai.Middleware.Autohead
 import Network.Wai.Middleware.AcceptOverride
-import Network.Wai.Middleware.RequestLogger
 import Network.Wai.Middleware.Gzip
 import Network.Wai.Middleware.Cors
 import Network.Wai.Middleware.Throttle
@@ -109,7 +108,6 @@ makeFoundation appSettings = do
 makeApplication :: App -> IO Application
 makeApplication foundation = do
     let expirationSpec = TimeSpec 5 0
-        datadir = appDataRoot (appSettings foundation)
         zipsettings = if appDevel (appSettings foundation) 
                         then GzipIgnore
                         else GzipPreCompressed GzipCompress
@@ -223,5 +221,5 @@ handler :: Handler a -> IO a
 handler h = getAppSettings >>= makeFoundation >>= flip unsafeHandler h
 
 -- | Run DB queries
-db :: ReaderT SqlBackend (HandlerT App IO) a -> IO a
+db :: ReaderT SqlBackend (HandlerFor App) a -> IO a
 db = handler . runDB
