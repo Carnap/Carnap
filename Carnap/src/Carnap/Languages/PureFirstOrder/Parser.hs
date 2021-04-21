@@ -4,7 +4,7 @@ module Carnap.Languages.PureFirstOrder.Parser
 , magnusFOLFormulaParser, gallowPLFormulaParser, thomasBolducAndZachFOLFormulaParser
 , gamutNDFormulaParser, thomasBolducAndZachFOL2019FormulaParser, thomasBolducAndZachFOL2019FormulaParserStrict
 , hardegreePLFormulaParser, bergmannMoorAndNelsonPDFormulaParser, bergmannMoorAndNelsonPDEFormulaParser
-, goldfarbNDFormulaParser, tomassiQLFormulaParser, hurleyPLFormulaParser, hausmanPLFormulaParser
+, paulPDFormulaParser, goldfarbNDFormulaParser, tomassiQLFormulaParser, hurleyPLFormulaParser, hausmanPLFormulaParser
 , FirstOrderParserOptions(..), parserFromOptions, parseFreeVar, howardSnyderPLFormulaParser) where
 
 import Carnap.Core.Data.Types
@@ -179,6 +179,20 @@ bergmanMoorAndNelsonPDParserOptions = FirstOrderParserOptions
                          }
           where boolean a = if isBoolean a then return a else unexpected "atomic or quantified sentence wrapped in parentheses"
 
+paulPDParserOptions :: FirstOrderParserOptions PureLexiconFOL u Identity
+paulPDParserOptions = bergmanMoorAndNelsonPDParserOptions 
+                         { freeVarParser = parseFreeVar "vwxyz"
+                         , atomicSentenceParser = \x -> try (parsePredicateSymbolNoParen "ABCDEFGHIJKLMNOPQRSTUVWXYZ" x)
+                                                        <|> try (sentenceLetterParser "ABCDEFGHIJKLMNOPQRSTUVWXYZ")
+                                                        <|> try (equalsParser x)
+                                                        <|> inequalityParser x
+                         , constantParser = Just (parseConstant "abcdefghijklmnopqrstu")
+                         , parenRecur = paulDispatch
+                         , opTable = standardOpTableStrict
+                         }
+          where paulDispatch opt rw = (wrappedWith '(' ')' (rw opt) <|> wrappedWith '[' ']' (rw opt)) >>= boolean
+                boolean a = if isBoolean a then return a else unexpected "atomic or quantified sentence wrapped in parentheses"
+
 bergmannMoorAndNelsonPDEParserOptions :: FirstOrderParserOptions PureLexiconFOL u Identity
 bergmannMoorAndNelsonPDEParserOptions = bergmanMoorAndNelsonPDParserOptions 
                         { functionParser = Just (\x -> parseFunctionSymbol "abcdefghijklmnopqrst" x)
@@ -341,6 +355,9 @@ bergmannMoorAndNelsonPDFormulaParser = parserFromOptions bergmanMoorAndNelsonPDP
 
 bergmannMoorAndNelsonPDEFormulaParser :: Parsec String u PureFOLForm
 bergmannMoorAndNelsonPDEFormulaParser = parserFromOptions bergmannMoorAndNelsonPDEParserOptions
+
+paulPDFormulaParser :: Parsec String u PureFOLForm
+paulPDFormulaParser = parserFromOptions paulPDParserOptions
 
 hausmanPLFormulaParser :: Parsec String u PureFOLForm
 hausmanPLFormulaParser = parserFromOptions hausmanPLOptions

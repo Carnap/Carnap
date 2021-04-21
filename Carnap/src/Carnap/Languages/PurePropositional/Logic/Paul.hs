@@ -2,9 +2,7 @@
 module Carnap.Languages.PurePropositional.Logic.Paul
     (parsePaulSD, parsePaulSDE, paulSDCalc, paulSDECalc) where
 
-import Data.Map as M (lookup, Map)
 import Text.Parsec
-import Data.List (intercalate)
 import Carnap.Core.Data.Types (Form)
 import Carnap.Languages.PurePropositional.Syntax
 import Carnap.Languages.PurePropositional.Parser
@@ -13,20 +11,17 @@ import Carnap.Calculi.Util
 import Carnap.Calculi.NaturalDeduction.Syntax
 import Carnap.Calculi.NaturalDeduction.Parser
 import Carnap.Calculi.NaturalDeduction.Checker
-import Carnap.Languages.ClassicalSequent.Syntax
-import Carnap.Languages.ClassicalSequent.Parser
-import Carnap.Languages.PurePropositional.Logic.Rules
 import Carnap.Languages.PurePropositional.Logic.BergmannMoorAndNelson
 
 parsePaulSD :: RuntimeDeductionConfig PurePropLexicon (Form Bool) -> Parsec String u [LogicBookSD]
-parsePaulSD rtc = do r <- choice (map (try . string) ["AS","PR", "Assumption" ,"&I","/\\I", "∧I","&E","/\\E","∧E","CI","=>I", "->I","→I", ">I", "⊃I","→E", "⊃E","CE","->E"
+parsePaulSD rtc = do r <- choice (map (try . string) ["Assumption" ,"&I","/\\I", "∧I","&E","/\\E","∧E","CI","=>I", "->I","→I", ">I", "⊃I","→E", "⊃E","CE","->E"
                                                           , "→E", ">E" ,"~I","-I", "¬I","~E","-E","¬E" ,"vI","\\/I","|I","∨I", "vE","\\/E", "|E", "∨E","BI","<=>I","<>I","<->I"
-                                                          , "↔I", "BE", "<->E","<>E", "<=>E", "↔E",  "R"]) <|> ((++) <$> string "A/" <*> many anyChar)
+                                                          , "↔I", "BE", "<->E","<>E", "<=>E", "↔E", "A","P", "R"]) <|> ((++) <$> string "A/" <*> many anyChar)
                      case r of
-                            r | r `elem` ["AS"] -> return [AS ""]
+                            r | r `elem` ["A"] -> return [AS ""]
                               | r `elem` ["A/>I", "A/->I"] -> return [AS "/⊃I"]
                               | r `elem` ["A/=I"] -> return [AS "/≡I"]
-                              | r `elem` ["PR", "Assumption"] -> return [Pr (problemPremises rtc)]
+                              | r `elem` ["P", "Assumption"] -> return [Pr (problemPremises rtc)]
                               | r `elem` ["&I","/\\I","∧I"] -> return [ConjIntro]
                               | r `elem` ["&E","/\\E","∧E"] -> return [ConjElim1, ConjElim2]
                               | r `elem` ["CI","->I", "=>I","→I",">I", "⊃I"] -> return [CondIntro1,CondIntro2]

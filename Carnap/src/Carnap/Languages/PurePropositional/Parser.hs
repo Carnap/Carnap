@@ -1,7 +1,7 @@
 {-# LANGUAGE FlexibleContexts, FlexibleInstances, MultiParamTypeClasses #-}
 module Carnap.Languages.PurePropositional.Parser 
     ( purePropFormulaParser, standardLetters, standardLettersStrict, extendedLetters, hausmanOpts, thomasBolducZachOpts, thomasBolducZach2019Opts
-    , hardegreeOpts, standardOpTable, calgaryOpTable, calgary2019OpTable, hausmanOpTable, howardSnyderOpTable, gamutOpTable
+    , hardegreeOpts, standardOpTable, standardOpTableStrict, calgaryOpTable, calgary2019OpTable, hausmanOpTable, howardSnyderOpTable, gamutOpTable
     , gamutOpts, bonevacOpts, howardSnyderOpts, hurleyOpts, paulOpts, magnusOpts, extendedPropSeqParser
     ) where
 

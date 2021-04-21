@@ -3,7 +3,8 @@ module Carnap.Languages.PureFirstOrder.Logic.BergmannMoorAndNelson
     ( logicBookPDCalc, parseLogicBookPD
     , logicBookPDPlusCalc, parseLogicBookPDPlus
     , logicBookPDECalc,parseLogicBookPDE
-    , logicBookPDEPlusCalc, parseLogicBookPDEPlus) where
+    , logicBookPDEPlusCalc, parseLogicBookPDEPlus
+    , LogicBookPD(..), LogicBookPDPlus(..), LogicBookPDE(..), LogicBookPDEPlus(..)) where
 
 import Data.Map as M (lookup, Map,empty)
 import Text.Parsec
@@ -255,7 +256,7 @@ logicBookPDECalc = mkNDCalc
     , ndNotation = ndNotation logicBookSDPlusCalc
     }
 
-data LogicBookPDEPlus = PDPtoPDEP  LogicBookPDPlus | PDEtoPDEP LogicBookPDE
+data LogicBookPDEPlus = PDPtoPDEP LogicBookPDPlus | PDEtoPDEP LogicBookPDE
 
 instance Show LogicBookPDEPlus where
         show (PDPtoPDEP x) = show x
