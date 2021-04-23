@@ -35,6 +35,16 @@ parsePaulPD rtc = try (map PDtoPDE <$> quantRule)
 parsePaulPDProof :: RuntimeDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine LogicBookPDE PureLexiconFOL (Form Bool)]
 parsePaulPDProof ders = toDeductionFitchAlt (parsePaulPD ders) paulPDFormulaParser
 
+parsePaulPDE rtc = try liftPD <|> liftPDP
+    where liftPDP = map PDPtoPDEP <$> parseLogicBookPDPlus rtc
+          liftPD = map PDEtoPDEP <$> parsePaulPD rtc
+          --XXX the confusing names here are because what Bergman calls
+          --PDE, Paul calls PD, and what Bergman calls PDEPlus, paul calls
+          --PDE
+
+parsePaulPDEProof :: RuntimeDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine LogicBookPDEPlus PureLexiconFOL (Form Bool)]
+parsePaulPDEProof ders = toDeductionFitchAlt (parsePaulPDE ders) paulPDFormulaParser
+
 paulNotation :: String -> String 
 paulNotation x = case runParser altParser 0 "" x of
                         Left e -> show e
@@ -59,9 +69,19 @@ paulNotation x = case runParser altParser 0 "" x of
           fallback = do c <- anyChar 
                         return [c]
 
-logicBookPDECalc = mkNDCalc
+paulPDCalc = mkNDCalc
     { ndRenderer = FitchStyle BergmanMooreAndNelsonStyle
     , ndParseProof = parsePaulPDProof
+    , ndProcessLine = hoProcessLineFitch
+    , ndProcessLineMemo = Just hoProcessLineFitchMemo
+    , ndParseSeq = parseSeqOver paulPDFormulaParser
+    , ndParseForm = paulPDFormulaParser
+    , ndNotation = paulNotation
+    }
+
+paulPDECalc = mkNDCalc
+    { ndRenderer = FitchStyle BergmanMooreAndNelsonStyle
+    , ndParseProof = parsePaulPDEProof
     , ndProcessLine = hoProcessLineFitch
     , ndProcessLineMemo = Just hoProcessLineFitchMemo
     , ndParseSeq = parseSeqOver paulPDFormulaParser

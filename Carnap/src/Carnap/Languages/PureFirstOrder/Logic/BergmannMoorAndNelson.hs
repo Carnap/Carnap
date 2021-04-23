@@ -4,7 +4,8 @@ module Carnap.Languages.PureFirstOrder.Logic.BergmannMoorAndNelson
     , logicBookPDPlusCalc, parseLogicBookPDPlus
     , logicBookPDECalc,parseLogicBookPDE
     , logicBookPDEPlusCalc, parseLogicBookPDEPlus
-    , LogicBookPD(..), LogicBookPDPlus(..), LogicBookPDE(..), LogicBookPDEPlus(..)) where
+    , LogicBookPD(..), LogicBookPDPlus(..)
+    , LogicBookPDE(..), LogicBookPDEPlus(..)) where
 
 import Data.Map as M (lookup, Map,empty)
 import Text.Parsec
