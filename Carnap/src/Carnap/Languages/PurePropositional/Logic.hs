@@ -46,7 +46,7 @@ import Carnap.Languages.PurePropositional.Logic.IchikawaJenkins
 import Carnap.Languages.PurePropositional.Logic.KalishAndMontague
 import Carnap.Languages.PurePropositional.Logic.Magnus
 import Carnap.Languages.PurePropositional.Logic.OpenLogic
-import Carnap.Languages.PurePropositional.Logic.Paul
+import Carnap.Languages.PurePropositional.Logic.Gregory
 import Carnap.Languages.PurePropositional.Logic.ThomasBolducAndZach
 import Carnap.Languages.PurePropositional.Logic.Tomassi
 import Carnap.Languages.PurePropositional.Logic.Winkler
@@ -78,8 +78,8 @@ ofPropSys f sys | sys == "LogicBookSD"                   = Just $ f logicBookSDC
                 | sys == "magnusSL"                      = Just $ f magnusSLCalc
                 | sys == "magnusSLPlus"                  = Just $ f magnusSLPlusCalc
                 | sys == "montagueSC"                    = Just $ f montagueSCCalc
-                | sys == "paulSD"                        = Just $ f paulSDCalc
-                | sys == "paulSDE"                       = Just $ f paulSDECalc
+                | sys == "gregorySD"                        = Just $ f gregorySDCalc
+                | sys == "gregorySDE"                       = Just $ f gregorySDECalc
                 | sys == "prop"                          = Just $ f propCalc
                 | sys == "propStrict"                    = Just $ f propCalcStrict
                 | sys == "thomasBolducAndZachTFL"        = Just $ f thomasBolducAndZachTFLCalc

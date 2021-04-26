@@ -4,7 +4,7 @@ module Carnap.Languages.PureFirstOrder.Parser
 , magnusFOLFormulaParser, gallowPLFormulaParser, thomasBolducAndZachFOLFormulaParser
 , gamutNDFormulaParser, thomasBolducAndZachFOL2019FormulaParser, thomasBolducAndZachFOL2019FormulaParserStrict
 , hardegreePLFormulaParser, bergmannMoorAndNelsonPDFormulaParser, bergmannMoorAndNelsonPDEFormulaParser
-, paulPDFormulaParser, goldfarbNDFormulaParser, tomassiQLFormulaParser, hurleyPLFormulaParser, hausmanPLFormulaParser
+, gregoryPDFormulaParser, goldfarbNDFormulaParser, tomassiQLFormulaParser, hurleyPLFormulaParser, hausmanPLFormulaParser
 , FirstOrderParserOptions(..), parserFromOptions, parseFreeVar, howardSnyderPLFormulaParser) where
 
 import Carnap.Core.Data.Types
@@ -179,18 +179,18 @@ bergmanMoorAndNelsonPDParserOptions = FirstOrderParserOptions
                          }
           where boolean a = if isBoolean a then return a else unexpected "atomic or quantified sentence wrapped in parentheses"
 
-paulPDParserOptions :: FirstOrderParserOptions PureLexiconFOL u Identity
-paulPDParserOptions = bergmanMoorAndNelsonPDParserOptions 
+gregoryPDParserOptions :: FirstOrderParserOptions PureLexiconFOL u Identity
+gregoryPDParserOptions = bergmanMoorAndNelsonPDParserOptions 
                          { freeVarParser = parseFreeVar "vwxyz"
                          , atomicSentenceParser = \x -> try (parsePredicateSymbolNoParen "ABCDEFGHIJKLMNOPQRSTUVWXYZ" x)
                                                         <|> try (sentenceLetterParser "ABCDEFGHIJKLMNOPQRSTUVWXYZ")
                                                         <|> try (equalsParser x)
                                                         <|> inequalityParser x
                          , constantParser = Just (parseConstant "abcdefghijklmnopqrstu")
-                         , parenRecur = paulDispatch
+                         , parenRecur = gregoryDispatch
                          , opTable = standardOpTableStrict
                          }
-          where paulDispatch opt rw = (wrappedWith '(' ')' (rw opt) <|> wrappedWith '[' ']' (rw opt)) >>= boolean
+          where gregoryDispatch opt rw = (wrappedWith '(' ')' (rw opt) <|> wrappedWith '[' ']' (rw opt)) >>= boolean
                 boolean a = if isBoolean a then return a else unexpected "atomic or quantified sentence wrapped in parentheses"
 
 bergmannMoorAndNelsonPDEParserOptions :: FirstOrderParserOptions PureLexiconFOL u Identity
@@ -356,8 +356,8 @@ bergmannMoorAndNelsonPDFormulaParser = parserFromOptions bergmanMoorAndNelsonPDP
 bergmannMoorAndNelsonPDEFormulaParser :: Parsec String u PureFOLForm
 bergmannMoorAndNelsonPDEFormulaParser = parserFromOptions bergmannMoorAndNelsonPDEParserOptions
 
-paulPDFormulaParser :: Parsec String u PureFOLForm
-paulPDFormulaParser = parserFromOptions paulPDParserOptions
+gregoryPDFormulaParser :: Parsec String u PureFOLForm
+gregoryPDFormulaParser = parserFromOptions gregoryPDParserOptions
 
 hausmanPLFormulaParser :: Parsec String u PureFOLForm
 hausmanPLFormulaParser = parserFromOptions hausmanPLOptions

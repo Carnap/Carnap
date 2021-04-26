@@ -2,7 +2,7 @@
 module Carnap.Languages.PurePropositional.Parser 
     ( purePropFormulaParser, standardLetters, standardLettersStrict, extendedLetters, hausmanOpts, thomasBolducZachOpts, thomasBolducZach2019Opts
     , hardegreeOpts, standardOpTable, standardOpTableStrict, calgaryOpTable, calgary2019OpTable, hausmanOpTable, howardSnyderOpTable, gamutOpTable
-    , gamutOpts, bonevacOpts, howardSnyderOpts, hurleyOpts, paulOpts, magnusOpts, extendedPropSeqParser
+    , gamutOpts, bonevacOpts, howardSnyderOpts, hurleyOpts, gregoryOpts, magnusOpts, extendedPropSeqParser
     ) where
 
 import Carnap.Core.Data.Types
@@ -56,12 +56,12 @@ extendedLetters = standardLetters { atomicSentenceParser = sentenceLetterParser 
 standardLettersStrict :: Monad m => PurePropositionalParserOptions u m
 standardLettersStrict = standardLetters { opTable = standardOpTableStrict }
 
-paulOpts :: Monad m => PurePropositionalParserOptions u m
-paulOpts = extendedLetters { parenRecur = paulDispatch
+gregoryOpts :: Monad m => PurePropositionalParserOptions u m
+gregoryOpts = extendedLetters { parenRecur = gregoryDispatch
                            , opTable = standardOpTableStrict
                            }
     where noatoms a = if isAtom a then unexpected "atomic sentence wrapped in parentheses" else return a
-          paulDispatch opt rw = (wrappedWith '(' ')' (rw opt) <|> wrappedWith '[' ']' (rw opt)) >>= noatoms
+          gregoryDispatch opt rw = (wrappedWith '(' ')' (rw opt) <|> wrappedWith '[' ']' (rw opt)) >>= noatoms
 
 magnusOpts :: Monad m => PurePropositionalParserOptions u m
 magnusOpts = extendedLetters { parenRecur = magnusDispatch }

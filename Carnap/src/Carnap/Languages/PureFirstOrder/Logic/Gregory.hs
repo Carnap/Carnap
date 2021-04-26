@@ -1,12 +1,12 @@
 {-#LANGUAGE  TypeOperators, FlexibleContexts,  FlexibleInstances, MultiParamTypeClasses #-}
-module Carnap.Languages.PureFirstOrder.Logic.Paul where
+module Carnap.Languages.PureFirstOrder.Logic.Gregory where
 
 import Text.Parsec
 import Data.List (intercalate)
 import Carnap.Core.Data.Types (Form, Term)
 import Carnap.Languages.PureFirstOrder.Syntax
 import Carnap.Languages.PureFirstOrder.Parser
-import Carnap.Languages.PurePropositional.Logic.Paul
+import Carnap.Languages.PurePropositional.Logic.Gregory
 import Carnap.Languages.PurePropositional.Logic.BergmannMoorAndNelson hiding (SD,Pr)
 import Carnap.Languages.PureFirstOrder.Logic.BergmannMoorAndNelson
 import Carnap.Calculi.Util
@@ -17,11 +17,45 @@ import Carnap.Languages.ClassicalSequent.Syntax
 import Carnap.Languages.ClassicalSequent.Parser
 import Carnap.Languages.PureFirstOrder.Util
 
-parsePaulPD rtc = try (map PDtoPDE <$> quantRule) 
-              <|> try (parseEq) 
-              <|> liftProp 
-    where liftProp = do r <- parsePaulSD (defaultRuntimeDeductionConfig)
-                        return (map (PDtoPDE . SD) r)
+newtype GregoryPD = GregoryPD { getGregoryPD :: LogicBookPDE }
+
+newtype GregoryPDE = GregoryPDE { getGregoryPDE :: LogicBookPDEPlus }
+
+instance Show GregoryPD where
+    show (GregoryPD (PDtoPDE (SD x))) = show (GregorySD x)
+    show (GregoryPD (PDtoPDE (Pr _))) = "P"
+    show (GregoryPD x) = show x
+
+instance Show GregoryPDE where
+    show (GregoryPDE (PDPtoPDEP (SDPlus x))) = show (GregorySDE x)
+    show (GregoryPDE (PDPtoPDEP (PDtoPDP x))) = show (GregoryPD (PDtoPDE x))
+    show (GregoryPDE x) = show x
+
+instance Inference GregoryPD PureLexiconFOL (Form Bool) where
+    ruleOf (GregoryPD x) = ruleOf x
+
+    indirectInference (GregoryPD x) = indirectInference x 
+
+    isAssumption (GregoryPD x) = isAssumption x
+
+    isPremise (GregoryPD x) = isPremise x
+
+    restriction (GregoryPD x) = restriction x
+
+instance Inference GregoryPDE PureLexiconFOL (Form Bool) where
+    ruleOf (GregoryPDE x) = ruleOf x
+
+    indirectInference (GregoryPDE x) = indirectInference x 
+
+    isAssumption (GregoryPDE x) = isAssumption x
+
+    isPremise (GregoryPDE x) = isPremise x
+
+    restriction (GregoryPDE x) = restriction x
+
+parseGregoryPD rtc = map GregoryPD <$> (try (map PDtoPDE <$> quantRule) <|> try (parseEq) <|> liftProp)
+    where liftProp = do r <- parseGregorySD (defaultRuntimeDeductionConfig)
+                        return (map (PDtoPDE . SD . getGregorySD) r)
           quantRule = do r <- choice (map (try . string) ["∀I", "AI", "∀E", "AE", "∃I", "EI", "∃E", "EE", "P", "A/EE", "Assumption"])
                          case r of 
                             r | r `elem` ["∀I","AI"] -> return [UI]
@@ -32,21 +66,21 @@ parsePaulPD rtc = try (map PDtoPDE <$> quantRule)
                               | r `elem` [ "P","Assumption"] -> return [Pr (problemPremises rtc)]
           parseEq = try (string "=E" >> return [IE1,IE2]) <|> (string "=I" >> return [II])
 
-parsePaulPDProof :: RuntimeDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine LogicBookPDE PureLexiconFOL (Form Bool)]
-parsePaulPDProof ders = toDeductionFitchAlt (parsePaulPD ders) paulPDFormulaParser
+parseGregoryPDProof :: RuntimeDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine GregoryPD PureLexiconFOL (Form Bool)]
+parseGregoryPDProof ders = toDeductionFitchAlt (parseGregoryPD ders) gregoryPDFormulaParser
 
-parsePaulPDE rtc = try liftPD <|> liftPDP
+parseGregoryPDE rtc = map GregoryPDE <$> (try liftPD <|> liftPDP)
     where liftPDP = map PDPtoPDEP <$> parseLogicBookPDPlus rtc
-          liftPD = map PDEtoPDEP <$> parsePaulPD rtc
+          liftPD = map (PDEtoPDEP . getGregoryPD) <$> parseGregoryPD rtc
           --XXX the confusing names here are because what Bergman calls
-          --PDE, Paul calls PD, and what Bergman calls PDEPlus, paul calls
+          --PDE, Gregory calls PD, and what Bergman calls PDEPlus, gregory calls
           --PDE
 
-parsePaulPDEProof :: RuntimeDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine LogicBookPDEPlus PureLexiconFOL (Form Bool)]
-parsePaulPDEProof ders = toDeductionFitchAlt (parsePaulPDE ders) paulPDFormulaParser
+parseGregoryPDEProof :: RuntimeDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine GregoryPDE PureLexiconFOL (Form Bool)]
+parseGregoryPDEProof ders = toDeductionFitchAlt (parseGregoryPDE ders) gregoryPDFormulaParser
 
-paulNotation :: String -> String 
-paulNotation x = case runParser altParser 0 "" x of
+gregoryNotation :: String -> String 
+gregoryNotation x = case runParser altParser 0 "" x of
                         Left e -> show e
                         Right s -> s
     where altParser = do s <- try handleQuant <|> try handleAtom <|> fallback
@@ -69,22 +103,22 @@ paulNotation x = case runParser altParser 0 "" x of
           fallback = do c <- anyChar 
                         return [c]
 
-paulPDCalc = mkNDCalc
+gregoryPDCalc = mkNDCalc
     { ndRenderer = FitchStyle BergmanMooreAndNelsonStyle
-    , ndParseProof = parsePaulPDProof
+    , ndParseProof = parseGregoryPDProof
     , ndProcessLine = hoProcessLineFitch
     , ndProcessLineMemo = Just hoProcessLineFitchMemo
-    , ndParseSeq = parseSeqOver paulPDFormulaParser
-    , ndParseForm = paulPDFormulaParser
-    , ndNotation = paulNotation
+    , ndParseSeq = parseSeqOver gregoryPDFormulaParser
+    , ndParseForm = gregoryPDFormulaParser
+    , ndNotation = gregoryNotation
     }
 
-paulPDECalc = mkNDCalc
+gregoryPDECalc = mkNDCalc
     { ndRenderer = FitchStyle BergmanMooreAndNelsonStyle
-    , ndParseProof = parsePaulPDEProof
+    , ndParseProof = parseGregoryPDEProof
     , ndProcessLine = hoProcessLineFitch
     , ndProcessLineMemo = Just hoProcessLineFitchMemo
-    , ndParseSeq = parseSeqOver paulPDFormulaParser
-    , ndParseForm = paulPDFormulaParser
-    , ndNotation = paulNotation
+    , ndParseSeq = parseSeqOver gregoryPDFormulaParser
+    , ndParseForm = gregoryPDFormulaParser
+    , ndNotation = gregoryNotation
     }

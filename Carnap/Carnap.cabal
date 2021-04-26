@@ -53,7 +53,7 @@ library
                      , Carnap.Languages.PurePropositional.Logic.Gentzen
                      , Carnap.Languages.PurePropositional.Logic.OpenLogic
                      , Carnap.Languages.PurePropositional.Logic.Allen
-                     , Carnap.Languages.PurePropositional.Logic.Paul
+                     , Carnap.Languages.PurePropositional.Logic.Gregory
                      , Carnap.Languages.PurePropositional.Logic.Equivalence
                      , Carnap.Languages.PurePropositional.Logic.Winkler
                      , Carnap.Languages.ModalPropositional.Syntax
@@ -89,7 +89,7 @@ library
                      , Carnap.Languages.PureFirstOrder.Logic.KalishAndMontague
                      , Carnap.Languages.PureFirstOrder.Logic.Magnus
                      , Carnap.Languages.PureFirstOrder.Logic.OpenLogic
-                     , Carnap.Languages.PureFirstOrder.Logic.Paul
+                     , Carnap.Languages.PureFirstOrder.Logic.Gregory
                      , Carnap.Languages.PureFirstOrder.Logic.ThomasBolducAndZach
                      , Carnap.Languages.PureFirstOrder.Logic.Tomassi
                      , Carnap.Languages.PureFirstOrder.Logic.Winkler
