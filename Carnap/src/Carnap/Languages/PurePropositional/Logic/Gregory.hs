@@ -12,11 +12,20 @@ import Carnap.Calculi.Util
 import Carnap.Calculi.NaturalDeduction.Syntax
 import Carnap.Calculi.NaturalDeduction.Parser
 import Carnap.Calculi.NaturalDeduction.Checker
+import Carnap.Languages.PurePropositional.Logic.Rules
 import Carnap.Languages.PurePropositional.Logic.BergmannMoorAndNelson
 
 newtype GregorySD = GregorySD { getGregorySD :: LogicBookSD }
 
-newtype GregorySDE = GregorySDE { getGregorySDE :: LogicBookSDPlus }
+data GregorySDE = GregorySDE { getGregorySDE :: LogicBookSDPlus }
+                | GregoryMT
+                | GregoryDS1
+                | GregoryDS2
+                | GregoryDeM
+                | GregoryTrans1
+                | GregoryTrans2
+                | GregoryTrans3
+                | GregoryTrans4
 
 instance Show GregorySD where
     show (GregorySD ConjIntro)  = "∧I"
@@ -44,6 +53,14 @@ instance Show GregorySD where
     show (GregorySD x) = show x
 
 instance Show GregorySDE where
+    show GregoryMT = "MT"
+    show GregoryDS1 = "DS"
+    show GregoryDS2 = "DS"
+    show GregoryDeM = "DeM"
+    show GregoryTrans1 = "Trans"
+    show GregoryTrans2 = "Trans"
+    show GregoryTrans3 = "Trans"
+    show GregoryTrans4 = "Trans"
     show (GregorySDE (SD x)) = show (GregorySD x)
     show (GregorySDE x) = show x
 
@@ -59,15 +76,27 @@ instance Inference GregorySD PurePropLexicon (Form Bool) where
     restriction (GregorySD x) = restriction x
 
 instance Inference GregorySDE PurePropLexicon (Form Bool) where
+
+    ruleOf GregoryMT = doubleNegatingModusTollens
+    ruleOf GregoryDS1 = doubleNegatingModusTollendoPonensVariations !! 0
+    ruleOf GregoryDS2 = doubleNegatingModusTollendoPonensVariations !! 1
+    ruleOf GregoryTrans1 = doubleNegatingContraposition !! 0
+    ruleOf GregoryTrans2 = doubleNegatingContraposition !! 1
+    ruleOf GregoryTrans3 = doubleNegatingContraposition !! 2
+    ruleOf GregoryTrans4 = doubleNegatingContraposition !! 3
     ruleOf (GregorySDE x) = ruleOf x
 
     indirectInference (GregorySDE x) = indirectInference x 
+    indirectInference _ = Nothing
 
     isAssumption (GregorySDE x) = isAssumption x
+    isAssumption _ = False
 
     isPremise (GregorySDE x) = isPremise x
+    isPremise _ = False
 
     restriction (GregorySDE x) = restriction x
+    restriction _ = Nothing
 
 parseGregorySD :: RuntimeDeductionConfig PurePropLexicon (Form Bool) -> Parsec String u [GregorySD]
 parseGregorySD rtc = do r <- choice (map (try . string) ["Assumption" ,"&I","/\\I", "∧I","&E","/\\E","∧E","CI","=>I", "->I","→I", ">I", "⊃I","→E", "⊃E","CE","->E"
@@ -95,21 +124,22 @@ parseGregorySD rtc = do r <- choice (map (try . string) ["Assumption" ,"&I","/\\
 parseGregorySDE :: RuntimeDeductionConfig PurePropLexicon (Form Bool) -> Parsec String u [GregorySDE]
 parseGregorySDE rtc = try (map (GregorySDE . SD . getGregorySD) <$> parseGregorySD rtc) <|> parsePlus
     where parsePlus = do r <- choice (map (try . string) ["MT","HS","DS","Com","Assoc","Impl", "DN", "DeM", "Idem", "Trans", "Exp", "Dist", "Equiv"])
-                         let theRule = case r of
-                                    r | r == "MT" -> [MT]
-                                      | r == "HS" -> [HS]
-                                      | r == "DS" -> [DS1,DS2]
+                         return $ case r of
+                            r | r == "MT" -> [GregorySDE MT, GregoryMT]
+                              | r == "DS" -> [GregorySDE DS1, GregorySDE DS2, GregoryDS1, GregoryDS2]
+                              | r == "Trans" -> [GregorySDE Trans1, GregorySDE Trans2, GregoryTrans1, GregoryTrans2, GregoryTrans3, GregoryTrans4]
+                              | otherwise -> handleRegular r
+          handleRegular r = map GregorySDE $ case r of
+                                    r | r == "HS" -> [HS]
                                       | r == "Com" -> [Com1,Com2]
                                       | r == "Assoc" -> [Assoc1,Assoc2,Assoc3,Assoc4]
                                       | r == "Impl" -> [Impl1,Impl2]
                                       | r == "DN" -> [DN1, DN2]
                                       | r == "DeM" -> [DeM1,DeM2, DeM3, DeM4]
                                       | r == "Idem" -> [Idem1, Idem2, Idem3, Idem4]
-                                      | r == "Trans" -> [Trans1, Trans2]
                                       | r == "Exp" -> [Exp1, Exp2]
                                       | r == "Dist" -> [Dist1, Dist2, Dist3, Dist4]
                                       | r == "Equiv" -> [Equiv1, Equiv2, Equiv3, Equiv4]
-                         return $ map GregorySDE theRule
 
 parseGregorySDProof :: RuntimeDeductionConfig PurePropLexicon (Form Bool) -> String -> [DeductionLine GregorySD PurePropLexicon (Form Bool)]
 parseGregorySDProof ders = toDeductionFitchAlt (parseGregorySD ders) (purePropFormulaParser gregoryOpts)

@@ -111,6 +111,12 @@ modusTollens = [ GammaV 1 :|-: SS (phin 1 .→. phin 2)
                , GammaV 2 :|-: SS (lneg $ phin 2)
                ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (lneg $ phin 1)
 
+doubleNegatingModusTollens :: BooleanRule lex b
+doubleNegatingModusTollens = 
+        [ GammaV 1 :|-: SS (lneg (phin 1) .→. lneg (phin 2))
+        , GammaV 2 :|-: SS (phin 2)
+        ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (phin 1)
+
 axiom :: BooleanRule lex b
 axiom = [] ∴ SA (phin 1) :|-: SS (phin 1)
 
@@ -209,6 +215,17 @@ modusTollendoPonensVariations = [
             , 
                 [ GammaV 1  :|-: SS (lneg $ phin 1) 
                 , GammaV 2  :|-: SS (phin 2 .∨. phin 1)
+                ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (phin 2)
+            ]
+
+doubleNegatingModusTollendoPonensVariations :: BooleanRuleVariants lex b
+doubleNegatingModusTollendoPonensVariations = [
+                [ GammaV 1  :|-: SS (phin 1) 
+                , GammaV 2  :|-: SS ((lneg $ phin 1) .∨. phin 2)
+                ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (phin 2)
+            , 
+                [ GammaV 1  :|-: SS (phin 1) 
+                , GammaV 2  :|-: SS (phin 2 .∨. (lneg $ phin 1))
                 ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (phin 2)
             ]
 
@@ -677,6 +694,10 @@ negatedBiconditional = replace (lneg $ phin 1 .<=>. phin 2) (phin 1 .<=>. (lneg 
 
 contraposition :: ReplacementBooleanVariants lex b
 contraposition = replace (phin 1 .=>. phin 2) (lneg (phin 2) .=>. lneg (phin 1))
+
+doubleNegatingContraposition :: ReplacementBooleanVariants lex b
+doubleNegatingContraposition = replace (lneg (phin 1) .=>. phin 2) (lneg (phin 2) .=>. phin 1)
+                            ++ replace (phin 1 .=>. lneg (phin 2)) (phin 2 .=>. lneg (phin 1))
 
 exportation :: ReplacementBooleanVariants lex b
 exportation = replace (phin 1 .=>. (phin 2 .=>. phin 3)) ((phin 1 ./\. phin 2) .=>. phin 3)
