@@ -9,7 +9,7 @@ import Carnap.Languages.PureFirstOrder.Parser
 import Carnap.Languages.PurePropositional.Logic.Gregory hiding (GregorySDE(..))
 import Carnap.Languages.PurePropositional.Logic.Gregory (GregorySDE(GregorySDE))
 import Carnap.Languages.PurePropositional.Logic.BergmannMoorAndNelson hiding (SD,Pr)
-import Carnap.Languages.PurePropositional.Logic.Rules (doubleNegatingModusTollens, doubleNegatingModusTollendoPonensVariations)
+import Carnap.Languages.PurePropositional.Logic.Rules (doubleNegatingModusTollensVariations, doubleNegatingModusTollendoPonensVariations)
 import Carnap.Languages.PureFirstOrder.Logic.Rules
 import Carnap.Languages.PureFirstOrder.Logic.BergmannMoorAndNelson
 import Carnap.Languages.PurePropositional.Util (dropOuterParens)
@@ -24,10 +24,23 @@ import Carnap.Languages.PureFirstOrder.Util
 newtype GregoryPD = GregoryPD { getGregoryPD :: LogicBookPDE }
 
 data GregoryPDE = GregoryPDE { getGregoryPDE :: LogicBookPDEPlus }
-                | GregoryMT
+                | GregoryMT1
+                | GregoryMT2
+                | GregoryMT3
                 | GregoryDS1
                 | GregoryDS2
-                | GregoryDeM
+                | GregoryDeM1
+                | GregoryDeM2
+                | GregoryDeM3
+                | GregoryDeM4
+                | GregoryDeM5
+                | GregoryDeM6
+                | GregoryDeM7
+                | GregoryDeM8
+                | GregoryDeM9
+                | GregoryDeM10
+                | GregoryDeM11
+                | GregoryDeM12
                 | GregoryTrans1
                 | GregoryTrans2
                 | GregoryTrans3
@@ -50,10 +63,23 @@ instance Show GregoryPDE where
     show GregoryQN2 = "QN"
     show GregoryQN3 = "QN"
     show GregoryQN4 = "QN"
-    show GregoryMT = "MT"
+    show GregoryMT1 = "MT"
+    show GregoryMT2 = "MT"
+    show GregoryMT3 = "MT"
     show GregoryDS1 = "DS"
     show GregoryDS2 = "DS"
-    show GregoryDeM = "DeM"
+    show GregoryDeM1 = "DeM"
+    show GregoryDeM2 = "DeM"
+    show GregoryDeM3 = "DeM"
+    show GregoryDeM4 = "DeM"
+    show GregoryDeM5 = "DeM"
+    show GregoryDeM6 = "DeM"
+    show GregoryDeM7 = "DeM"
+    show GregoryDeM8 = "DeM"
+    show GregoryDeM9 = "DeM"
+    show GregoryDeM10 = "DeM"
+    show GregoryDeM11 = "DeM"
+    show GregoryDeM12 = "DeM"
     show GregoryTrans1 = "Trans"
     show GregoryTrans2 = "Trans"
     show GregoryTrans3 = "Trans"
@@ -73,8 +99,23 @@ instance Inference GregoryPD PureLexiconFOL (Form Bool) where
 
 instance Inference GregoryPDE PureLexiconFOL (Form Bool) where
 
+    ruleOf GregoryMT1 = doubleNegatingModusTollensVariations !! 0
+    ruleOf GregoryMT2 = doubleNegatingModusTollensVariations !! 1
+    ruleOf GregoryMT3 = doubleNegatingModusTollensVariations !! 2
     ruleOf GregoryDS1 = doubleNegatingModusTollendoPonensVariations !! 0
     ruleOf GregoryDS2 = doubleNegatingModusTollendoPonensVariations !! 1
+    ruleOf GregoryDeM1 = doubleNegatingDeMorgansLaws !! 0
+    ruleOf GregoryDeM2 = doubleNegatingDeMorgansLaws !! 1
+    ruleOf GregoryDeM3 = doubleNegatingDeMorgansLaws !! 2
+    ruleOf GregoryDeM4 = doubleNegatingDeMorgansLaws !! 3
+    ruleOf GregoryDeM5 = doubleNegatingDeMorgansLaws !! 4
+    ruleOf GregoryDeM6 = doubleNegatingDeMorgansLaws !! 5
+    ruleOf GregoryDeM7 = doubleNegatingDeMorgansLaws !! 6
+    ruleOf GregoryDeM8 = doubleNegatingDeMorgansLaws !! 7
+    ruleOf GregoryDeM9 = doubleNegatingDeMorgansLaws !! 8
+    ruleOf GregoryDeM10 = doubleNegatingDeMorgansLaws !! 9
+    ruleOf GregoryDeM11 = doubleNegatingDeMorgansLaws !! 10
+    ruleOf GregoryDeM12 = doubleNegatingDeMorgansLaws !! 11
     ruleOf GregoryTrans1 = doubleNegatingContraposition !! 0
     ruleOf GregoryTrans2 = doubleNegatingContraposition !! 1
     ruleOf GregoryTrans3 = doubleNegatingContraposition !! 2
@@ -117,9 +158,14 @@ parseGregoryPDE rtc = handleQN <|> parsePlus <|> map GregoryPDE <$> (try liftPD 
     where liftPDP = map PDPtoPDEP <$> parseLogicBookPDPlus rtc
           liftPD = map (PDEtoPDEP . getGregoryPD) <$> parseGregoryPD rtc
           handleQN = string "QN" >> return (map (GregoryPDE . PDPtoPDEP) [QN1, QN2, QN3, QN4] ++ [GregoryQN1, GregoryQN2, GregoryQN3, GregoryQN4])
-          parsePlus = do r <- choice (map (try . string) ["MT", "DS", "Trans"])
+          parsePlus = do r <- choice (map (try . string) ["MT", "DS", "Trans", "DeM"])
                          return $ case r of
-                            r | r == "MT" -> [constructPlus MT, GregoryMT]
+                            r | r == "MT" -> [constructPlus MT, GregoryMT1, GregoryMT2, GregoryMT3]
+                              | r == "DeM" -> [ constructPlus DeM1, constructPlus DeM2, constructPlus DeM3, constructPlus DeM4
+                                              , GregoryDeM1, GregoryDeM2, GregoryDeM3, GregoryDeM4
+                                              , GregoryDeM5, GregoryDeM6, GregoryDeM7, GregoryDeM8
+                                              , GregoryDeM9, GregoryDeM10 , GregoryDeM11, GregoryDeM12
+                                              ]
                               | r == "DS" -> [constructPlus DS1, constructPlus DS2, GregoryDS1, GregoryDS2]
                               | r == "Trans" -> [constructPlus Trans1, constructPlus Trans2, GregoryTrans1, GregoryTrans2, GregoryTrans3, GregoryTrans4]
           constructPlus = GregoryPDE . PDPtoPDEP . SDPlus

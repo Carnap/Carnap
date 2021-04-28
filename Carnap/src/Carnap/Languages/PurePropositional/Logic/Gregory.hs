@@ -18,10 +18,23 @@ import Carnap.Languages.PurePropositional.Logic.BergmannMoorAndNelson
 newtype GregorySD = GregorySD { getGregorySD :: LogicBookSD }
 
 data GregorySDE = GregorySDE { getGregorySDE :: LogicBookSDPlus }
-                | GregoryMT
+                | GregoryMT1
+                | GregoryMT2
+                | GregoryMT3
                 | GregoryDS1
                 | GregoryDS2
-                | GregoryDeM
+                | GregoryDeM1
+                | GregoryDeM2
+                | GregoryDeM3
+                | GregoryDeM4
+                | GregoryDeM5
+                | GregoryDeM6
+                | GregoryDeM7
+                | GregoryDeM8
+                | GregoryDeM9
+                | GregoryDeM10
+                | GregoryDeM11
+                | GregoryDeM12
                 | GregoryTrans1
                 | GregoryTrans2
                 | GregoryTrans3
@@ -53,10 +66,25 @@ instance Show GregorySD where
     show (GregorySD x) = show x
 
 instance Show GregorySDE where
-    show GregoryMT = "MT"
+    show GregoryMT1 = "MT"
+    show GregoryMT2 = "MT"
+    show GregoryMT3 = "MT"
     show GregoryDS1 = "DS"
     show GregoryDS2 = "DS"
-    show GregoryDeM = "DeM"
+    show GregoryDS1 = "DeM"
+    show GregoryDS2 = "DeM"
+    show GregoryDeM1 = "DeM"
+    show GregoryDeM2 = "DeM"
+    show GregoryDeM3 = "DeM"
+    show GregoryDeM4 = "DeM"
+    show GregoryDeM5 = "DeM"
+    show GregoryDeM6 = "DeM"
+    show GregoryDeM7 = "DeM"
+    show GregoryDeM8 = "DeM"
+    show GregoryDeM9 = "DeM"
+    show GregoryDeM10 = "DeM"
+    show GregoryDeM11 = "DeM"
+    show GregoryDeM12 = "DeM"
     show GregoryTrans1 = "Trans"
     show GregoryTrans2 = "Trans"
     show GregoryTrans3 = "Trans"
@@ -77,9 +105,23 @@ instance Inference GregorySD PurePropLexicon (Form Bool) where
 
 instance Inference GregorySDE PurePropLexicon (Form Bool) where
 
-    ruleOf GregoryMT = doubleNegatingModusTollens
+    ruleOf GregoryMT1 = doubleNegatingModusTollensVariations !! 0
+    ruleOf GregoryMT2 = doubleNegatingModusTollensVariations !! 1
+    ruleOf GregoryMT3 = doubleNegatingModusTollensVariations !! 2
     ruleOf GregoryDS1 = doubleNegatingModusTollendoPonensVariations !! 0
     ruleOf GregoryDS2 = doubleNegatingModusTollendoPonensVariations !! 1
+    ruleOf GregoryDeM1 = doubleNegatingDeMorgansLaws !! 0
+    ruleOf GregoryDeM2 = doubleNegatingDeMorgansLaws !! 1
+    ruleOf GregoryDeM3 = doubleNegatingDeMorgansLaws !! 2
+    ruleOf GregoryDeM4 = doubleNegatingDeMorgansLaws !! 3
+    ruleOf GregoryDeM5 = doubleNegatingDeMorgansLaws !! 4
+    ruleOf GregoryDeM6 = doubleNegatingDeMorgansLaws !! 5
+    ruleOf GregoryDeM7 = doubleNegatingDeMorgansLaws !! 6
+    ruleOf GregoryDeM8 = doubleNegatingDeMorgansLaws !! 7
+    ruleOf GregoryDeM9 = doubleNegatingDeMorgansLaws !! 8
+    ruleOf GregoryDeM10 = doubleNegatingDeMorgansLaws !! 9
+    ruleOf GregoryDeM11 = doubleNegatingDeMorgansLaws !! 10
+    ruleOf GregoryDeM12 = doubleNegatingDeMorgansLaws !! 11
     ruleOf GregoryTrans1 = doubleNegatingContraposition !! 0
     ruleOf GregoryTrans2 = doubleNegatingContraposition !! 1
     ruleOf GregoryTrans3 = doubleNegatingContraposition !! 2
@@ -125,8 +167,13 @@ parseGregorySDE :: RuntimeDeductionConfig PurePropLexicon (Form Bool) -> Parsec 
 parseGregorySDE rtc = try (map (GregorySDE . SD . getGregorySD) <$> parseGregorySD rtc) <|> parsePlus
     where parsePlus = do r <- choice (map (try . string) ["MT","HS","DS","Com","Assoc","Impl", "DN", "DeM", "Idem", "Trans", "Exp", "Dist", "Equiv"])
                          return $ case r of
-                            r | r == "MT" -> [GregorySDE MT, GregoryMT]
+                            r | r == "MT" -> [GregorySDE MT, GregoryMT1, GregoryMT2, GregoryMT3]
                               | r == "DS" -> [GregorySDE DS1, GregorySDE DS2, GregoryDS1, GregoryDS2]
+                              | r == "DeM" -> [ GregorySDE DeM1,GregorySDE DeM2,GregorySDE DeM3,GregorySDE DeM4
+                                              , GregoryDeM1, GregoryDeM2, GregoryDeM3, GregoryDeM4
+                                              , GregoryDeM5, GregoryDeM6, GregoryDeM7, GregoryDeM8
+                                              , GregoryDeM9, GregoryDeM10 , GregoryDeM11, GregoryDeM12
+                                              ]
                               | r == "Trans" -> [GregorySDE Trans1, GregorySDE Trans2, GregoryTrans1, GregoryTrans2, GregoryTrans3, GregoryTrans4]
                               | otherwise -> handleRegular r
           handleRegular r = map GregorySDE $ case r of
@@ -135,7 +182,6 @@ parseGregorySDE rtc = try (map (GregorySDE . SD . getGregorySD) <$> parseGregory
                                       | r == "Assoc" -> [Assoc1,Assoc2,Assoc3,Assoc4]
                                       | r == "Impl" -> [Impl1,Impl2]
                                       | r == "DN" -> [DN1, DN2]
-                                      | r == "DeM" -> [DeM1,DeM2, DeM3, DeM4]
                                       | r == "Idem" -> [Idem1, Idem2, Idem3, Idem4]
                                       | r == "Exp" -> [Exp1, Exp2]
                                       | r == "Dist" -> [Dist1, Dist2, Dist3, Dist4]

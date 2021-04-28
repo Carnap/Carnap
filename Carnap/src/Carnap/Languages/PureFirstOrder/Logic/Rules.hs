@@ -423,6 +423,21 @@ deMorgansLaws = firstOrderReplace (lbind $ \x y z -> lneg $ phi3 1 x y z ./\. ph
              ++ firstOrderReplace (lbind $ \x y z -> lneg $ phi3 1 x y z .\/. phi3 2 x y z) 
                                   (lbind $ \x y z -> lneg (phi3 1 x y z) ./\. lneg (phi3 2 x y z))
 
+doubleNegatingDeMorgansLaws :: QuantContextLang (ClassicalSequentOver lex) b Int => FirstOrderRuleVariants lex b
+doubleNegatingDeMorgansLaws = firstOrderReplace (lbind $ \x y z -> lneg ((lneg $ phi3 1 x y z) ./\. phi3 2 x y z)) 
+                                                (lbind $ \x y z -> phi3 1 x y z .\/. lneg (phi3 2 x y z))
+                           ++ firstOrderReplace (lbind $ \x y z -> lneg ((lneg $ phi3 1 x y z) .\/. phi3 2 x y z)) 
+                                                (lbind $ \x y z -> phi3 1 x y z ./\. lneg (phi3 2 x y z))
+                           ++ firstOrderReplace (lbind $ \x y z -> lneg (phi3 1 x y z ./\. (lneg $ phi3 2 x y z))) 
+                                                (lbind $ \x y z -> lneg (phi3 1 x y z) .\/. phi3 2 x y z)
+                           ++ firstOrderReplace (lbind $ \x y z -> lneg (phi3 1 x y z .\/. (lneg $ phi3 2 x y z))) 
+                                                (lbind $ \x y z -> lneg (phi3 1 x y z) ./\. phi3 2 x y z)
+                           ++ firstOrderReplace (lbind $ \x y z -> lneg ((lneg $ phi3 1 x y z) ./\. (lneg $ phi3 2 x y z))) 
+                                                (lbind $ \x y z -> phi3 1 x y z .\/. phi3 2 x y z)
+                           ++ firstOrderReplace (lbind $ \x y z -> lneg ((lneg $ phi3 1 x y z) .\/. (lneg $ phi3 2 x y z))) 
+                                                (lbind $ \x y z -> phi3 1 x y z ./\. phi3 2 x y z)
+
+
 doubleNegation :: QuantContextLang (ClassicalSequentOver lex) b Int => FirstOrderRuleVariants lex b
 doubleNegation = firstOrderReplace (lbind $ \x y z -> lneg $ lneg $ phi3 1 x y z) 
                                    (lbind $ \x y z -> phi3 1 x y z)

@@ -111,12 +111,6 @@ modusTollens = [ GammaV 1 :|-: SS (phin 1 .→. phin 2)
                , GammaV 2 :|-: SS (lneg $ phin 2)
                ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (lneg $ phin 1)
 
-doubleNegatingModusTollens :: BooleanRule lex b
-doubleNegatingModusTollens = 
-        [ GammaV 1 :|-: SS (lneg (phin 1) .→. lneg (phin 2))
-        , GammaV 2 :|-: SS (phin 2)
-        ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (phin 1)
-
 axiom :: BooleanRule lex b
 axiom = [] ∴ SA (phin 1) :|-: SS (phin 1)
 
@@ -206,6 +200,22 @@ type BooleanRuleVariants lex b =
 ------------------------------
 --  1.2.1 Simple Variation  --
 ------------------------------
+
+doubleNegatingModusTollensVariations :: BooleanRuleVariants lex b
+doubleNegatingModusTollensVariations = [
+        [ GammaV 1 :|-: SS (lneg (phin 1) .→. lneg (phin 2))
+        , GammaV 2 :|-: SS (phin 2)
+        ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (phin 1)
+    ,
+        [ GammaV 1 :|-: SS (phin 1 .→. lneg (phin 2))
+        , GammaV 2 :|-: SS (phin 2)
+        ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (lneg $ phin 1)
+    ,
+        [ GammaV 1 :|-: SS (lneg (phin 1) .→. phin 2)
+        , GammaV 2 :|-: SS (lneg $ phin 2)
+        ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (phin 1)
+    ]
+
 
 modusTollendoPonensVariations :: BooleanRuleVariants lex b
 modusTollendoPonensVariations = [
@@ -677,6 +687,14 @@ iffCommutativity = replace (phin 1 .<=>. phin 2) (phin 2 .<=>. phin 1)
 deMorgansLaws :: ReplacementBooleanVariants lex b
 deMorgansLaws = replace (lneg $ phin 1 ./\. phin 2) (lneg (phin 1) .\/. lneg (phin 2))
              ++ replace (lneg $ phin 1 .\/. phin 2) (lneg (phin 1) ./\. lneg (phin 2))
+
+doubleNegatingDeMorgansLaws :: ReplacementBooleanVariants lex b
+doubleNegatingDeMorgansLaws = replace (lneg ((lneg $ phin 1) ./\. phin 2)) (phin 1 .\/. lneg (phin 2))
+                           ++ replace (lneg ((lneg $ phin 1) .\/. phin 2)) (phin 1 ./\. lneg (phin 2))
+                           ++ replace (lneg (phin 1 ./\. (lneg $ phin 2))) (lneg (phin 1) .\/. phin 2)
+                           ++ replace (lneg (phin 1 .\/. (lneg $ phin 2))) (lneg (phin 1) ./\. phin 2)
+                           ++ replace (lneg ((lneg $ phin 1) ./\. (lneg $ phin 2))) (phin 1 .\/. phin 2)
+                           ++ replace (lneg ((lneg $ phin 1) .\/. (lneg $ phin 2))) (phin 1 ./\. phin 2)
 
 doubleNegation :: ReplacementBooleanVariants lex b
 doubleNegation = replace (lneg $ lneg $ phin 1) (phin 1)
