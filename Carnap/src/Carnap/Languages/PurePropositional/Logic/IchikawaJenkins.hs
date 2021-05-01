@@ -44,15 +44,15 @@ instance Show IchikawaJenkinsSL where
         show (IJ x) = show x
 
 instance Inference IchikawaJenkinsSL PurePropLexicon (Form Bool) where
-        ruleOf (IJ (MSL BicoIntro1)) = biconditionalProofVariations !! 0
-        ruleOf (IJ (MSL BicoIntro2)) = biconditionalProofVariations !! 1
-        ruleOf (IJ (MSL BicoIntro3)) = biconditionalProofVariations !! 2
-        ruleOf (IJ (MSL BicoIntro4)) = biconditionalProofVariations !! 3
+        ruleOf (IJ (MSL BicoIntro1)) = conditionalToBiconditional 
+        ruleOf (IJ (MSL BicoIntro2)) = conditionalToBiconditional
+        ruleOf (IJ (MSL BicoIntro3)) = conditionalToBiconditional
+        ruleOf (IJ (MSL BicoIntro4)) = conditionalToBiconditional
         ruleOf (IJ x) = ruleOf x
 
         indirectInference (IJ (MSL x)) 
             | x `elem` [ BicoIntro1, BicoIntro2
-                       , BicoIntro3, BicoIntro4] = Just PolyProof
+                       , BicoIntro3, BicoIntro4] = Nothing
         indirectInference (IJ (MSL x)) = indirectInference x
         indirectInference _ = Nothing
 
@@ -79,7 +79,7 @@ parseIchikawaJenkinsSL rtc = do r <- choice (map (try . string) ["AS","PR","&I",
                                    | r `elem` ["~E","¬E","-E"]   -> fromMSL [NegeElim1, NegeElim2, NegeElim3, NegeElim4]
                                    | r `elem` ["vI","\\/I"]   -> fromMSL [DisjIntro1, DisjIntro2]
                                    | r `elem` ["vE","\\/E"]   -> fromMSL [DisjElim1, DisjElim2]
-                                   | r `elem` ["BI","<>I","<->I","≡I"]   -> fromMSL [BicoIntro1, BicoIntro2, BicoIntro3, BicoIntro4]
+                                   | r `elem` ["BI","<>I","<->I","≡I"]   -> fromMSL [BicoIntro1]
                                    | r `elem` ["BE","<>E","<->E","≡E"] -> fromMSL [BicoElim1, BicoElim2]
                                    | r == "HYP"  -> fromMSLPlus [Hyp]
                                    | r == "DIL"   -> fromMSLPlus [Dilemma]
