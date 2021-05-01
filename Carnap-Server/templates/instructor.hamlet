@@ -128,7 +128,7 @@
                     <hr style="margin-left:-20px;margin-right:-20px">
                     <h2> Edit Uploaded Documents
                     <div.table-responsive>
-                        <table.table>
+                        <table.uploaded-documents.table>
                             <thead>
                                 <th style="cursor:pointer" onclick="simpleSortByCol(this,0)">
                                     Filename

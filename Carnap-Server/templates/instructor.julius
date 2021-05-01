@@ -723,5 +723,8 @@ $(document).ready(_ => {
     Array.from(document.getElementsByClassName("assignment")).forEach(table => {
         subtleSortByCol(table,1)
     })
+    Array.from(document.getElementsByClassName("uploaded-documents")).forEach(table => {
+        simpleSortByCol(table,0)
+    })
     queryAPIKey()
 })
