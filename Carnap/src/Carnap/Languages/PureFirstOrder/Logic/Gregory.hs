@@ -45,6 +45,8 @@ data GregoryPDE = GregoryPDE { getGregoryPDE :: LogicBookPDEPlus }
                 | GregoryTrans2
                 | GregoryTrans3
                 | GregoryTrans4
+                | GregoryImpl1
+                | GregoryImpl2
                 | GregoryQN1
                 | GregoryQN2
                 | GregoryQN3
@@ -84,6 +86,8 @@ instance Show GregoryPDE where
     show GregoryTrans2 = "Trans"
     show GregoryTrans3 = "Trans"
     show GregoryTrans4 = "Trans"
+    show GregoryImpl1 = "Impl"
+    show GregoryImpl2 = "Impl"
     show (GregoryPDE x) = show x
 
 instance Inference GregoryPD PureLexiconFOL (Form Bool) where
@@ -120,6 +124,8 @@ instance Inference GregoryPDE PureLexiconFOL (Form Bool) where
     ruleOf GregoryTrans2 = doubleNegatingContraposition !! 1
     ruleOf GregoryTrans3 = doubleNegatingContraposition !! 2
     ruleOf GregoryTrans4 = doubleNegatingContraposition !! 3
+    ruleOf GregoryImpl1 = materialConditional !! 2
+    ruleOf GregoryImpl2 = materialConditional !! 3
     ruleOf (GregoryQN1) = quantifierDoubleNegationReplace !! 0
     ruleOf (GregoryQN2) = quantifierDoubleNegationReplace !! 1
     ruleOf (GregoryQN3) = quantifierDoubleNegationReplace !! 2
@@ -158,7 +164,7 @@ parseGregoryPDE rtc = handleQN <|> parsePlus <|> map GregoryPDE <$> (try liftPD 
     where liftPDP = map PDPtoPDEP <$> parseLogicBookPDPlus rtc
           liftPD = map (PDEtoPDEP . getGregoryPD) <$> parseGregoryPD rtc
           handleQN = string "QN" >> return (map (GregoryPDE . PDPtoPDEP) [QN1, QN2, QN3, QN4] ++ [GregoryQN1, GregoryQN2, GregoryQN3, GregoryQN4])
-          parsePlus = do r <- choice (map (try . string) ["MT", "DS", "Trans", "DeM"])
+          parsePlus = do r <- choice (map (try . string) ["MT", "DS", "Trans", "Impl", "DeM"])
                          return $ case r of
                             r | r == "MT" -> [constructPlus MT, GregoryMT1, GregoryMT2, GregoryMT3]
                               | r == "DeM" -> [ constructPlus DeM1, constructPlus DeM2, constructPlus DeM3, constructPlus DeM4
@@ -168,6 +174,7 @@ parseGregoryPDE rtc = handleQN <|> parsePlus <|> map GregoryPDE <$> (try liftPD 
                                               ]
                               | r == "DS" -> [constructPlus DS1, constructPlus DS2, GregoryDS1, GregoryDS2]
                               | r == "Trans" -> [constructPlus Trans1, constructPlus Trans2, GregoryTrans1, GregoryTrans2, GregoryTrans3, GregoryTrans4]
+                              | r == "Impl" -> [constructPlus Impl1, constructPlus Impl2, GregoryImpl1, GregoryImpl2]
           constructPlus = GregoryPDE . PDPtoPDEP . SDPlus
           --XXX the confusing names here are because what Bergman calls
           --PDE, Gregory calls PD, and what Bergman calls PDEPlus, gregory calls

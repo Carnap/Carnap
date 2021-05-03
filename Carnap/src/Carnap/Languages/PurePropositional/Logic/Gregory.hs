@@ -39,6 +39,8 @@ data GregorySDE = GregorySDE { getGregorySDE :: LogicBookSDPlus }
                 | GregoryTrans2
                 | GregoryTrans3
                 | GregoryTrans4
+                | GregoryImpl1
+                | GregoryImpl2
 
 instance Show GregorySD where
     show (GregorySD ConjIntro)  = "∧I"
@@ -89,6 +91,8 @@ instance Show GregorySDE where
     show GregoryTrans2 = "Trans"
     show GregoryTrans3 = "Trans"
     show GregoryTrans4 = "Trans"
+    show GregoryImpl1 = "Impl"
+    show GregoryImpl2 = "Impl"
     show (GregorySDE (SD x)) = show (GregorySD x)
     show (GregorySDE x) = show x
 
@@ -126,6 +130,8 @@ instance Inference GregorySDE PurePropLexicon (Form Bool) where
     ruleOf GregoryTrans2 = doubleNegatingContraposition !! 1
     ruleOf GregoryTrans3 = doubleNegatingContraposition !! 2
     ruleOf GregoryTrans4 = doubleNegatingContraposition !! 3
+    ruleOf GregoryImpl1 = materialConditional !! 2
+    ruleOf GregoryImpl2 = materialConditional !! 3
     ruleOf (GregorySDE x) = ruleOf x
 
     indirectInference (GregorySDE x) = indirectInference x 
@@ -174,13 +180,13 @@ parseGregorySDE rtc = try (map (GregorySDE . SD . getGregorySD) <$> parseGregory
                                               , GregoryDeM5, GregoryDeM6, GregoryDeM7, GregoryDeM8
                                               , GregoryDeM9, GregoryDeM10 , GregoryDeM11, GregoryDeM12
                                               ]
+                              | r == "Impl" -> [GregorySDE Impl1, GregorySDE Impl2, GregoryImpl1, GregoryImpl2]
                               | r == "Trans" -> [GregorySDE Trans1, GregorySDE Trans2, GregoryTrans1, GregoryTrans2, GregoryTrans3, GregoryTrans4]
                               | otherwise -> handleRegular r
           handleRegular r = map GregorySDE $ case r of
                                     r | r == "HS" -> [HS]
                                       | r == "Com" -> [Com1,Com2]
                                       | r == "Assoc" -> [Assoc1,Assoc2,Assoc3,Assoc4]
-                                      | r == "Impl" -> [Impl1,Impl2]
                                       | r == "DN" -> [DN1, DN2]
                                       | r == "Idem" -> [Idem1, Idem2, Idem3, Idem4]
                                       | r == "Exp" -> [Exp1, Exp2]
