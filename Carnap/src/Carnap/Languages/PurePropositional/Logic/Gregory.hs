@@ -199,6 +199,18 @@ parseGregorySDProof ders = toDeductionFitchAlt (parseGregorySD ders) (purePropFo
 parseGregorySDEProof :: RuntimeDeductionConfig PurePropLexicon (Form Bool) -> String -> [DeductionLine GregorySDE PurePropLexicon (Form Bool)]
 parseGregorySDEProof ders = toDeductionFitchAlt (parseGregorySDE ders) (purePropFormulaParser gregoryOpts)
 
+gregoryNotation :: String -> String 
+gregoryNotation x = case runParser altParser 0 "" x of
+                        Left e -> show e
+                        Right s -> s
+    where altParser = do s <- handleCon <|> fallback
+                         rest <- (eof >> return []) <|> altParser
+                         return $ s : rest
+          handleCon = (char '⊤' >> return ' ')
+                  <|> (char '∅' >> return ' ')
+          fallback = do c <- anyChar 
+                        return c
+
 gregorySDCalc = mkNDCalc 
     { ndRenderer = FitchStyle BergmanMooreAndNelsonStyle
     , ndParseProof = parseGregorySDProof
@@ -206,7 +218,7 @@ gregorySDCalc = mkNDCalc
     , ndProcessLineMemo = Just hoProcessLineFitchMemo
     , ndParseSeq = extendedPropSeqParser
     , ndParseForm = purePropFormulaParser extendedLetters
-    , ndNotation = dropOuterParens
+    , ndNotation = dropOuterParens . gregoryNotation
     }
 
 gregorySDECalc = mkNDCalc 
@@ -216,5 +228,5 @@ gregorySDECalc = mkNDCalc
     , ndProcessLineMemo = Just hoProcessLineFitchMemo
     , ndParseSeq = extendedPropSeqParser
     , ndParseForm = purePropFormulaParser extendedLetters
-    , ndNotation = dropOuterParens
+    , ndNotation = dropOuterParens . gregoryNotation
     }
