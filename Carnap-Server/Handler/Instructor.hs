@@ -971,10 +971,10 @@ classWidget instructors classent autoreg = do
                     <div.scrollbox>
                         <table.assignment.table.table-striped>
                             <thead>
-                                <th style="cursor:pointer" onclick="subtleSortByCol(this,0)">
+                                <th style="cursor:pointer" onclick="sortByCol(this,0)">
                                     Assignment
                                     <i class="fa fa-sort" aria-hidden="true"></i>
-                                <th style="cursor:pointer" onclick="subtleSortByCol(this,1)">
+                                <th style="cursor:pointer" onclick="sortByCol(this,1)">
                                     Due Date
                                     <i class="fa fa-sort" aria-hidden="true"></i>
                             <tbody>
@@ -998,13 +998,13 @@ classWidget instructors classent autoreg = do
                         data-cid="#{jsonSerialize cid}">
                         <table.table.table-striped >
                             <thead>
-                                <th style="cursor:pointer" onclick="simpleSortByCol(this,0)">
+                                <th style="cursor:pointer" onclick="sortByCol(this,0)">
                                     Registered Student
                                     <i class="fa fa-sort" aria-hidden="true"></i>
-                                <th style="cursor:pointer" onclick="simpleSortByCol(this,1)">
+                                <th style="cursor:pointer" onclick="sortByCol(this,1)">
                                     Student Name
                                     <i class="fa fa-sort" aria-hidden="true"></i>
-                                <th style="cursor:pointer" onclick="simpleSortByCol(this,2)">
+                                <th style="cursor:pointer" onclick="sortByCol(this,2)">
                                     Total Score
                                     <i class="fa fa-sort" aria-hidden="true"></i>
                                 <th> Action

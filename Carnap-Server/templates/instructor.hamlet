@@ -71,14 +71,14 @@
                     <div.table-responsive>
                         <table.table>
                             <thead>
-                                <th style="cursor:pointer" onclick="simpleSortByCol(this,0)">
+                                <th style="cursor:pointer" onclick="sortByCol(this,0)">
                                     Filename
                                     <i class="fa fa-sort" aria-hidden="true"></i>
-                                <th style="cursor:pointer" onclick="subtleSortByCol(this,1)">
+                                <th style="cursor:pointer" onclick="sortByCol(this,1)">
                                      Due Date
                                     <i class="fa fa-sort" aria-hidden="true"></i>
                                 <th> Availability
-                                <th style="cursor:pointer" onclick="simpleSortByCol(this,3)">
+                                <th style="cursor:pointer" onclick="sortByCol(this,3)">
                                     Course
                                     <i class="fa fa-sort" aria-hidden="true"></i>
                                 <th> Actions
@@ -130,13 +130,13 @@
                     <div.table-responsive>
                         <table.uploaded-documents.table>
                             <thead>
-                                <th style="cursor:pointer" onclick="simpleSortByCol(this,0)">
+                                <th style="cursor:pointer" onclick="sortByCol(this,0)">
                                     Filename
                                     <i class="fa fa-sort" aria-hidden="true"></i>
-                                <th style="cursor:pointer" onclick="subtleSortByCol(this,1)">
+                                <th style="cursor:pointer" onclick="sortByCol(this,1)">
                                     Saved on
                                     <i class="fa fa-sort" aria-hidden="true"></i>
-                                <th style="cursor:pointer" onclick="simpleSortByCol(this,2)">
+                                <th style="cursor:pointer" onclick="sortByCol(this,2)">
                                     Sharing Scope
                                     <i class="fa fa-sort" aria-hidden="true"></i>
                                 <th> Tags
