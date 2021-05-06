@@ -98,7 +98,8 @@ getDocumentR ident title = do (Entity key doc, path, creatorid) <- retrieveDoc i
                                  Private | Just creatorid /= muid -> setMessage "shared file for this document not found" >> notFound
                                  InstructorsOnly | isNotInstructor -> setMessage "shared file for this document not found" >> notFound
                                  _ | takeExtension path == ".css"  -> serveDoc asCss doc path creatorid >> notFound
-                                   | takeExtension path == ".js"   -> serveDoc asCss doc path creatorid >> notFound
+                                   | takeExtension path == ".js"   -> serveDoc asJs doc path creatorid >> notFound
+                                   | takeExtension path == ".yaml" -> serveDoc asYaml doc path creatorid >> notFound
                                    | takeExtension path == ".png"  -> sendFile typePng path >> notFound
                                    | takeExtension path == ".jpg"  -> sendFile typeJpeg path >> notFound
                                    | takeExtension path == ".jpeg" -> sendFile typeJpeg path >> notFound
@@ -106,7 +107,6 @@ getDocumentR ident title = do (Entity key doc, path, creatorid) <- retrieveDoc i
                                    | takeExtension path == ".svg"  -> sendFile typeSvg path >> notFound
                                    | takeExtension path == ".pdf"  -> asFile doc path >> notFound
                                    | otherwise -> returnFile path
-
     where returnFile path = do
               ehtml <- liftIO $ fileToHtml allFilters path
               case ehtml of

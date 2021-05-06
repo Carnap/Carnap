@@ -599,7 +599,7 @@ uploadAssignmentForm classes docs extra = do
     where classnames = map (\theclass -> (courseTitle . entityVal $ theclass, theclass)) classes
           assignableDocs = filter isAssignable docs
           isAssignable thedoc = let extension =  takeExtension . unpack . documentFilename . entityVal $ thedoc 
-                                    in not (extension `elem` [".css",".js",".png",".jpg",".jpeg",".gif",".svg",".pdf"])
+                                    in not (extension `elem` [".css",".js",".yaml",".png",".jpg",".jpeg",".gif",".svg",".pdf"])
           docnames = map (\thedoc -> (documentFilename . entityVal $ thedoc, thedoc)) assignableDocs
 
 updateAssignmentForm

@@ -106,3 +106,8 @@ asCss _ path = sendFile typeCss path
 
 asJs :: Document -> FilePath -> Handler a
 asJs _ path = sendFile typeJavascript path
+
+--XXX YAML has no IANA mimetype, so this seems appropriate
+--https://stackoverflow.com/questions/332129/yaml-media-type
+asYaml :: Document -> FilePath -> Handler a
+asYaml _ path = sendFile "text/x-yaml; charset=utf-8" path

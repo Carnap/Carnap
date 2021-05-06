@@ -33,6 +33,7 @@ getServeR base components = do app <- getYesod
                                case () of
                                    () | takeExtension path == ".css" -> sendFile typeCss path >> notFound
                                       | takeExtension path == ".js" -> sendFile typeJavascript path >> notFound
+                                      | takeExtension path == ".yaml" -> sendFile "text/x-yaml; charset=utf-8" path >> notFound
                                       | takeExtension path == ".png" -> sendFile typePng path >> notFound
                                       | takeExtension path == ".html" -> sendFile typeHtml path >> notFound
                                       | takeExtension path == ".jpg" -> sendFile typeJpeg path >> notFound
