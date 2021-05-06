@@ -78,7 +78,6 @@ import Carnap.Languages.PurePropositional.Parser (purePropFormulaParser, standar
 --  1.0 Simple Patterns  --
 ---------------------------
 
-
 --------------------------------------------------------
 --1.1 Events
 --------------------------------------------------------
@@ -232,12 +231,14 @@ genInOutElts w input output ty target =
            mapM initialize els
     where initialize Nothing = return Nothing
           initialize (Just el) = do
-              Just content <- getTextContent el :: IO (Maybe String)
+              opts <- getCarnapDataMap el
+              Just content <- case M.lookup "content-format" opts of
+                                  Just "html" -> getInnerHTML el :: IO (Maybe String)
+                                  Nothing -> getTextContent el :: IO (Maybe String)
               [Just o, Just i] <- mapM (createElement w . Just) [output,input]
               setAttribute i "class" "input"
               setAttribute o "class" "output"
               setInnerHTML el (Just "")
-              opts <- getCarnapDataMap el
               mapM_ (appendChild el . Just) [i,o]
               return $ Just (i, o, M.insert "content" content opts )
 
@@ -246,13 +247,15 @@ generateExerciseElts w ty target = do els <- getListOfElementsByCarnapType targe
                                       mapM initialize els
         where initialize Nothing = return Nothing
               initialize (Just el) = do
-                  Just content <- getTextContent el
+                  opts <- getCarnapDataMap el
+                  Just content <- case M.lookup "content-format" opts of
+                                      Just "html" -> getInnerHTML el :: IO (Maybe String)
+                                      Nothing -> getTextContent el :: IO (Maybe String)
                   setInnerHTML el (Just "")
                   [Just g, Just o, Just i] <- mapM (createElement w . Just) ["div","div","textarea"]
                   setAttribute g "class" "goal"
                   setAttribute i "class" "input"
                   setAttribute o "class" "output"
-                  opts <- getCarnapDataMap el
                   mapM_ (appendChild el . Just) [g,i,o]
                   return $ Just (IOGoal i o g content opts)
 
