@@ -531,6 +531,18 @@ body[data-carnap-type="proofchecker"] .buttonWrapper {
     max-width: 100%;
 }
 
+[data-carnap-qualitativetype="multiplechoice"] form > div,
+[data-carnap-qualitativetype="multipleselection"] form > div { 
+    display:grid;
+    grid-template-columns: 25px auto;
+}
+
+[data-carnap-qualitativetype="multiplechoice"] input,
+[data-carnap-qualitativetype="multipleselection"] input { 
+    height:2em;
+}
+
+
 [data-carnap-options~="fonts"] textarea,[data-carnap-options~="fonts"] .output, [data-carnap-options~="fonts"] input, [data-carnap-options~="fonts"] .goal {
     text-rendering: optimizeLegibility;
     font-variant-ligatures: historical-ligatures discretionary-ligatures common-ligatures contextual; 
