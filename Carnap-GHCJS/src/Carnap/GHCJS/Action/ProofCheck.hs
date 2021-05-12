@@ -162,7 +162,10 @@ activateChecker drs w (Just iog@(IOGoal i o g _ opts)) -- TODO: need to update n
                                                   let seqrules = catMaybes $ map readyRule somerules
                                                       rmap = M.fromList seqrules
                                                       premseqs = toPremiseSeqs . sequent $ self
-                                                  return $ RuntimeDeductionConfig rmap premseqs
+                                                  return $ defaultRuntimeDeductionConfig
+                                                         { derivedRules = rmap
+                                                         , problemPremises = premseqs
+                                                         }
                     where readyRule (x, PropRule r) = Just (x, derivedRuleToSequent r)
                           readyRule _ = Nothing
 
@@ -171,7 +174,10 @@ activateChecker drs w (Just iog@(IOGoal i o g _ opts)) -- TODO: need to update n
                                                  let seqrules = catMaybes $ map readyRule somerules
                                                      rmap = M.fromList seqrules
                                                      premseqs = toPremiseSeqs . sequent $ self
-                                                 return $ RuntimeDeductionConfig rmap premseqs
+                                                 return $ defaultRuntimeDeductionConfig
+                                                        { derivedRules = rmap
+                                                        , problemPremises = premseqs
+                                                        }
                     where readyRule (x, PropRule r) = Just (x, liftSequent . derivedRuleToSequent $ r)
                           readyRule (x, FOLRule r) = Just (x, derivedRuleToSequent r)
                           readyRule _ = Nothing

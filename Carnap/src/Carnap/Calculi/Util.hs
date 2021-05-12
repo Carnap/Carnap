@@ -48,10 +48,11 @@ data ProofErrorMessage :: ((* -> *) -> * -> *) -> * where
 
 data RuntimeDeductionConfig lex sem = RuntimeDeductionConfig
         { derivedRules :: Map String (ClassicalSequentOver lex (Sequent sem))
+        , runtimeAxioms :: Map String (ClassicalSequentOver lex (Sequent sem))
         , problemPremises :: Maybe [ClassicalSequentOver lex (Sequent sem)]
         }
 
-defaultRuntimeDeductionConfig = RuntimeDeductionConfig mempty mempty
+defaultRuntimeDeductionConfig = RuntimeDeductionConfig mempty mempty mempty
 
 data TreeFeedbackNode lex = Correct | Waiting | ProofData String | ProofError (ProofErrorMessage lex)
 
