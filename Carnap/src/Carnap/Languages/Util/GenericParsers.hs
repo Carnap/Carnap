@@ -202,6 +202,23 @@ parseSchematicPredicateSymbol parseTerm = parse <?> "a schematic predicate symbo
                          m = maybe 0 id midx
                      char '(' *> spaces *> argParser parseTerm (pphin (n + (m * 8)) AOne)
 
+--This is intended for easy keyboard input of schematic predicate symbols
+parseFriendlySchematicPredicateSymbol :: 
+    ( PolyadicSchematicPredicateLanguage (FixLang lex) arg ret
+    , Incrementable lex arg
+    , Monad m
+    , Typeable ret
+    , Typeable arg
+    ) => ParsecT String u m (FixLang lex arg) -> ParsecT String u m (FixLang lex ret)
+parseFriendlySchematicPredicateSymbol parseTerm = parse <?> "a schematic predicate symbol abbreviation"
+    where parse = do char '\''
+                     c <- oneOf ['A' .. 'Z']
+                     _ <- optionMaybe (char '^' >> posnumber)
+                     midx <- optionMaybe (char '_' >> posnumber)
+                     let Just n = ucIndex c
+                         m = maybe 0 id midx
+                     char '(' *> spaces *> argParser parseTerm (pphin (n + (m * 26)) AOne)
+
 parsePredicateSymbolNoParen :: 
     ( PolyadicPredicateLanguage (FixLang lex) arg ret
     , Incrementable lex arg
@@ -334,13 +351,30 @@ parseSchematicFunctionSymbol ::
     , Typeable ret
     , Typeable arg
     ) => ParsecT String u m (FixLang lex arg) -> ParsecT String u m (FixLang lex ret)
-parseSchematicFunctionSymbol parseTerm = parse <?> "a function symbol"
+parseSchematicFunctionSymbol parseTerm = parse <?> "a schematic function symbol"
     where parse = do c <- oneOf "τνυρκ"
                      _ <- optionMaybe (char '^' >> posnumber)
                      midx <- optionMaybe (char '_' >> posnumber)
                      let Just n = elemIndex c "τνυρκ"
                          m = maybe 1 id midx
                      char '(' *> spaces *> argParser parseTerm (spfn (n + (m * 5)) AOne)
+
+--This is intended for easy keyboard input of schematic function symbols
+parseFriendlySchematicFunctionSymbol ::     
+    ( SchematicPolyadicFunctionLanguage (FixLang lex) arg ret
+    , Incrementable lex arg
+    , Monad m
+    , Typeable ret
+    , Typeable arg
+    ) => ParsecT String u m (FixLang lex arg) -> ParsecT String u m (FixLang lex ret)
+parseFriendlySchematicFunctionSymbol parseTerm = parse <?> "a schematic function symbol abbreviation"
+    where parse = do char '\''
+                     c <- oneOf ['a' .. 'z']
+                     _ <- optionMaybe (char '^' >> posnumber)
+                     midx <- optionMaybe (char '_' >> posnumber)
+                     let Just n = lcIndex c
+                         m = maybe 1 id midx
+                     char '(' *> spaces *> argParser parseTerm (spfn (n + (m * 26)) AOne)
 
 parseConstant :: 
     ( IndexedConstantLanguage (FixLang lex ret)
