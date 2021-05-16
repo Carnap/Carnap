@@ -4,7 +4,7 @@ module Carnap.GHCJS.Action.TreeDeductionCheck (treeDeductionCheckAction) where
 import Lib hiding (content)
 import Data.Tree
 import Data.Either
-import Data.Map as M (lookup,Map, toList)
+import Data.Map as M (lookup, Map, toList, fromList, filterWithKey)
 import Data.IORef (IORef, readIORef, newIORef, writeIORef)
 import Data.Typeable (Typeable)
 import Data.Aeson.Types
@@ -31,6 +31,7 @@ import Carnap.Calculi.Tableau.Data
 import Carnap.Languages.PurePropositional.Logic (ofPropTreeSys)
 import Carnap.Languages.PureFirstOrder.Logic (ofFOLTreeSys)
 import Carnap.Languages.SetTheory.Logic (ofSetTheoryTreeSys)
+import Carnap.Languages.Arithmetic.Parser (arithmeticExtendedSchemaParser)
 import Carnap.Languages.Arithmetic.Logic (ofArithmeticTreeSys)
 import Carnap.Languages.HigherOrderArithmetic.Logic (ofHigherOrderArithmeticTreeSys)
 import Carnap.GHCJS.Util.ProofJS
@@ -47,6 +48,9 @@ data CheckerParameters rule lex sem = CheckerParameters
             { tableauCalc :: TableauCalc lex sem rule
             , threadRef :: IORef (Maybe ThreadId)
             , proofMemo :: ProofMemoRef lex sem rule
+            --We include an argument here in case we want to pack some
+            --IORefs into the CheckerParameters, and want the RuntimeConfig
+            --to have access to those
             , runtimeConfig' :: CheckerParameters rule lex sem -> IO (RuntimeDeductionConfig lex sem)
             }
 
@@ -78,18 +82,33 @@ getCheckers w = genInOutElts w "div" "div" "treedeductionchecker"
 
 activateChecker :: Document -> Maybe (Element, Element, Map String String) -> IO ()
 activateChecker _ Nothing  = return ()
-activateChecker w (Just (i, o, opts)) = case (setupWith `ofPropTreeSys` sys) 
-                                              `mplus` (setupWith `ofFOLTreeSys` sys)
-                                              `mplus` (setupWith `ofSetTheoryTreeSys` sys)
-                                              `mplus` (setupWith `ofArithmeticTreeSys` sys)
-                                              `mplus` (setupWith `ofHigherOrderArithmeticTreeSys` sys)
+activateChecker w (Just (i, o, opts)) = case (setupWith defaultRTC `ofPropTreeSys` sys) 
+                                              `mplus` (setupWith defaultRTC `ofFOLTreeSys` sys)
+                                              `mplus` (setupWith defaultRTC `ofSetTheoryTreeSys` sys)
+                                              `mplus` (setupWith axiomsRTC `ofArithmeticTreeSys` sys)
+                                              `mplus` (setupWith defaultRTC `ofHigherOrderArithmeticTreeSys` sys)
                                         of Just io -> io
                                            Nothing -> error $ "couldn't parse tree system: " ++ sys
         where sys = case M.lookup "system" opts of
                         Just s -> s
                         Nothing -> "propNK"
 
-              setupWith calc = do
+              defaultRTC calc _ = return (defaultRuntimeDeductionConfig)
+              axiomsRTC calc _ = case tbParseAxiomScheme calc of
+                                        Nothing -> do
+                                            print "no parser"
+                                            return defaultRuntimeDeductionConfig
+                                        Just axParse -> do
+                                           print "found parser"
+                                           let axOpts = M.toList $ M.filterWithKey (\k _ -> take 6 k == "axiom-") opts
+                                               axPairs = map (\(k,v) -> (drop 6 k, v) ) axOpts
+                                               axRslts = mapM (\(k,v) -> (,) <$> return k <*> P.parse (parseSeqOver axParse) "" v) axPairs
+                                           case axRslts of
+                                               Right rslts -> return $ defaultRuntimeDeductionConfig { runtimeAxioms = M.fromList rslts }
+                                               Left e -> do errorPopup "couldn't parse axioms"
+                                                            return defaultRuntimeDeductionConfig
+
+              setupWith rtc calc = do
                   mgoal <- parseGoal calc
                   let content = M.lookup "content" opts
                   root <- case (content >>= decodeJSON, mgoal) of
@@ -105,7 +124,7 @@ activateChecker w (Just (i, o, opts)) = case (setupWith `ofPropTreeSys` sys)
                         { tableauCalc = calc
                         , threadRef = theThreadRef
                         , proofMemo = memo
-                        , runtimeConfig' = \_ -> return (defaultRuntimeDeductionConfig)
+                        , runtimeConfig' = rtc calc
                         }
                   let submit = submitTree w checkerParams opts root mgoal
                   btStatus <- createSubmitButton w bw submit opts

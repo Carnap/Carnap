@@ -8,16 +8,17 @@ import Carnap.Languages.Arithmetic.Syntax
 import Carnap.Languages.PurePropositional.Util (dropOuterParens)
 import Carnap.Calculi.Tableau.Data
 
-openLogicArithNKCalc :: TableauCalc ArithLex (Form Bool) (OpenLogicFONK ArithLex) 
+openLogicArithNKCalc :: TableauCalc ArithLex (Form Bool) (OpenLogicAxFONK ArithLex) 
 openLogicArithNKCalc = mkTBCalc
     { tbParseForm = arithmeticParser
-    , tbParseRule = parseOpenLogicFONK
+    , tbParseRule = parseOpenLogicAxFONK
     , tbNotation = dropOuterParens
     }
 
-openLogicExtendedArithNKCalc :: TableauCalc ExtendedArithLex (Form Bool) (OpenLogicFONK ExtendedArithLex) 
+openLogicExtendedArithNKCalc :: TableauCalc ExtendedArithLex (Form Bool) (OpenLogicAxFONK ExtendedArithLex) 
 openLogicExtendedArithNKCalc = mkTBCalc
     { tbParseForm = arithmeticExtendedParser
-    , tbParseRule = parseOpenLogicFONK
+    , tbParseRule = parseOpenLogicAxFONK
     , tbNotation = dropOuterParens
+    , tbParseAxiomScheme = Just arithmeticExtendedSchemaParser
     }

@@ -35,9 +35,13 @@ type Tableau lex sem rule = Tree (TableauNode lex sem rule)
 
 data TableauCalc lex sem rule = TableauCalc 
            { tbParseForm :: Parsec String () (FixLang lex sem)
+           , tbParseAxiomScheme :: Maybe (Parsec String () (FixLang lex sem))
            , tbParseRule :: RuntimeDeductionConfig lex sem -> Parsec String () [rule]
            , tbNotation :: String -> String
            }
 
 --TODO use langParser as default for tbParseForm
-mkTBCalc = TableauCalc { tbNotation = id }
+mkTBCalc = TableauCalc 
+            { tbNotation = id
+            , tbParseAxiomScheme = Nothing
+            }

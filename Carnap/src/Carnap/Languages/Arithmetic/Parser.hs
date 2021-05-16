@@ -1,5 +1,5 @@
 {-#LANGUAGE TypeOperators, FlexibleContexts, FlexibleInstances, MultiParamTypeClasses #-}
-module Carnap.Languages.Arithmetic.Parser ( arithmeticParser, arithmeticExtendedParser ) 
+module Carnap.Languages.Arithmetic.Parser ( arithmeticParser, arithmeticExtendedParser, arithmeticExtendedSchemaParser) 
 where
 
 import Carnap.Core.Data.Types
@@ -59,9 +59,37 @@ arithmeticExtendedOptions = FirstOrderParserOptions
                          }
     where parenOrBracket opt rw = (wrappedWith '(' ')' (rw opt) <|> wrappedWith '[' ']' (rw opt))
 
+arithmeticExtendedSchemaOptions :: FirstOrderParserOptions ExtendedArithLex u Identity
+arithmeticExtendedSchemaOptions = FirstOrderParserOptions 
+                         { atomicSentenceParser = \x -> try (lessThanParser x)
+                                                        <|> try (equalsParser x)
+                                                        <|> try (inequalityParser x)
+                                                        <|> try (parseFriendlySchematicPredicateSymbol x)
+                                                        <|> parsePredicateString extendedSymbols x
+                         , quantifiedSentenceParser' = lplQuantifiedSentenceParser
+                         , freeVarParser = parseFreeVar "stuvwxyz"
+                         , constantParser = Just (parseZero <|> parseConstant "abcdefghijklmnopqr")
+                         , functionParser = Just (\x -> arithmeticOpParser 
+                                                            (parenParser x
+                                                            <|> parseZero 
+                                                            <|> try (parseFriendlySchematicFunctionSymbol x)
+                                                            <|> try (parseFriendlySchematicConstant)
+                                                            <|> try (parseFunctionString extendedSymbols x)
+                                                            <|> parseFreeVar "stuvwxyz"
+                                                            <|> parseConstant "abcdefghijklmnopqr"
+                                                            ))
+                         , hasBooleanConstants = True
+                         , parenRecur = parenOrBracket
+                         , opTable = standardOpTable
+                         , finalValidation = const (pure ())
+                         }
+    where parenOrBracket opt rw = (wrappedWith '(' ')' (rw opt) <|> wrappedWith '[' ']' (rw opt))
+
 arithmeticParser = parserFromOptions arithmeticOptions
 
 arithmeticExtendedParser = parserFromOptions arithmeticExtendedOptions
+
+arithmeticExtendedSchemaParser = parserFromOptions arithmeticExtendedSchemaOptions
 
 instance ParsableLex (Form Bool) ArithLex where
         langParser = arithmeticParser

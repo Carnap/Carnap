@@ -400,6 +400,19 @@ parseSchematicConstant = parse <?> "a constant"
                          m = maybe 0 id midx
                      return $ taun (n  + (m * 3))
 
+parseFriendlySchematicConstant :: 
+    ( IndexedSchemeConstantLanguage (FixLang lex ret)
+    , Typeable ret
+    , Monad m
+    ) => ParsecT String u m (FixLang lex ret)
+parseFriendlySchematicConstant = parse <?> "a schematic constant symbol abbreviation"
+    where parse = do char '\''
+                     c <- oneOf ['a' .. 'z']
+                     midx <- optionMaybe (char '_' >> posnumber)
+                     let Just n = lcIndex c 
+                         m = maybe 0 id midx
+                     return $ taun (n  + (m * 26))
+
 parseZero :: (ElementaryArithmeticLanguage lang, Monad m) => ParsecT String u m lang
 parseZero = spaces >> (string "0") >> spaces >> return arithZero
 

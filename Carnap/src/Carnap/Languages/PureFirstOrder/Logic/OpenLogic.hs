@@ -1,10 +1,11 @@
 {-#LANGUAGE ConstraintKinds, StandaloneDeriving, RankNTypes, ScopedTypeVariables, FlexibleContexts, FlexibleInstances, UndecidableInstances, MultiParamTypeClasses #-}
 module Carnap.Languages.PureFirstOrder.Logic.OpenLogic
-( parseOpenLogicFONK, openLogicFONKCalc, OpenLogicFONK(..), olpFOLKCalc, olpFOLJCalc) where
+( parseOpenLogicAxFONK, parseOpenLogicFONK, openLogicFONKCalc, OpenLogicAxFONK(..), OpenLogicFONK(..), olpFOLKCalc, olpFOLJCalc) where
 
 import Text.Parsec
 import Data.List
 import Data.Tree
+import Data.Map as M (lookup)
 import Data.Typeable
 import Control.Lens
 import Control.Monad
@@ -33,6 +34,10 @@ data OpenLogicFONK lex = PropNK OpenLogicPropNK
 
 deriving instance Eq (ClassicalSequentOver lex (Term Int)) => Eq (OpenLogicFONK lex)
 
+data OpenLogicAxFONK lex = FONK (OpenLogicFONK lex) | RuntimeAxiom String (ClassicalSequentOver lex (Sequent (Form Bool)))
+
+deriving instance (Eq (ClassicalSequentOver lex (Term Int)), Eq (ClassicalSequentOver lex (Sequent (Form Bool)))) => Eq (OpenLogicAxFONK lex)
+
 data OpenLogicFOLK = LK OpenLogicPropLK 
              | AllL   | AllR
              | ExistL | ExistR
@@ -52,6 +57,10 @@ instance Show (ClassicalSequentOver lex (Term Int)) => Show (OpenLogicFONK lex) 
     show (ExistsEAnnotatedVac n t)  = "∃Elim " ++ show t ++ " (" ++ show n ++ ")"
     --We need to show the term in order to get the proof hashed correctly when memoizing
     show (ExistsEVac)               = "∃Elim"
+
+instance Show (ClassicalSequentOver lex (Term Int)) => Show (OpenLogicAxFONK lex) where
+    show (FONK x)                 = show x
+    show (RuntimeAxiom s _)              = "Axiom: " ++ s
 
 instance Show OpenLogicFOLK where 
     show (LK x) = show x
@@ -92,9 +101,14 @@ parseOpenLogicFONK rtc = (try folParse <|> liftProp) <* spaces <* eof
                     ]
               getLabel = (char '(' *> many1 digit <* char ')') <|> many1 digit
 
-instance NKAdequate lex => Inference (OpenLogicFONK lex) lex (Form Bool) where
-        ruleOf x = coreRuleOf x
-        restriction x = coreRestriction x
+parseOpenLogicAxFONK :: RuntimeDeductionConfig lex (Form Bool) -> Parsec String u [OpenLogicAxFONK lex]
+parseOpenLogicAxFONK rtc = try liftNK <|> parseAxiom
+        where liftNK = map FONK <$> parseOpenLogicFONK rtc
+              parseAxiom = do string "Ax-"
+                              an <- many1 alphaNum
+                              case M.lookup an (runtimeAxioms rtc) of
+                                  Just r -> return [RuntimeAxiom an r]
+                                  Nothing -> parserFail "Looks like you're citing an axiom that doesn't exist"
 
 type NKAdequate lex = 
          ( BooleanConstLanguage (ClassicalSequentOver lex (Form Bool))
@@ -137,6 +151,22 @@ instance NKAdequate lex => CoreInference (OpenLogicFONK lex) lex (Form Bool) whe
          coreRestriction (ExistsEAnnotatedVac _ t) = Just $ eigenConstraint t (SS (lsome "v" (phi' 1)) :-: fodelta 1) (fogamma 1)
          coreRestriction _ = Nothing
 
+instance NKAdequate lex => Inference (OpenLogicFONK lex) lex (Form Bool) where
+        ruleOf x = coreRuleOf x
+        restriction x = coreRestriction x
+
+instance NKAdequate lex => CoreInference (OpenLogicAxFONK lex) lex (Form Bool) where
+         coreRuleOf (FONK x) = coreRuleOf x
+         coreRuleOf (RuntimeAxiom _ r) = multiCutLeft r ∴ multiCutRight r
+
+         coreRestriction (FONK x) = coreRestriction x
+         coreRestriction _ = Nothing
+
+instance NKAdequate lex => Inference (OpenLogicAxFONK lex) lex (Form Bool) where
+        ruleOf x = coreRuleOf x
+        restriction x = coreRestriction x
+
+
 instance (Eq r, AssumptionNumbers r, NKAdequate lex) => StructuralInference (OpenLogicFONK lex) lex (ProofTree r lex (Form Bool)) where
     structuralRestriction pt n (PropNK r) = structuralRestriction pt n r
     --ExistsE always throws an error, since we get it only if the
@@ -149,10 +179,18 @@ instance (Eq r, AssumptionNumbers r, NKAdequate lex) => StructuralInference (Ope
                             `andFurtherRestriction` const (Just "Cannot find any assumption with a term available for this rule")
     structuralRestriction pt _ r = Nothing
 
+instance (Eq r, AssumptionNumbers r, NKAdequate lex) => StructuralInference (OpenLogicAxFONK lex) lex (ProofTree r lex (Form Bool)) where
+    structuralRestriction pt n (FONK r) = structuralRestriction pt n r
+    structuralRestriction pt _ r = Nothing
+
 instance (AssumptionNumbers r, NKAdequate lex) => StructuralOverride (OpenLogicFONK lex) (ProofTree r lex (Form Bool)) where
     structuralOverride pt (ExistsE n) = case freshParametersAt n pt of 
                                             [] -> Nothing
                                             t : _ -> Just [ExistsEAnnotated n t, ExistsEAnnotatedVac n t]
+    structuralOverride _ _ = Nothing
+
+instance (AssumptionNumbers r, NKAdequate lex) => StructuralOverride (OpenLogicAxFONK lex) (ProofTree r lex (Form Bool)) where
+    structuralOverride pt (FONK r) = map FONK <$> structuralOverride pt r 
     structuralOverride _ _ = Nothing
 
 freshParametersAt n pt@(Node _ [Node p1 _, Node p2 _]) = case leavesLabeled n pt of
@@ -171,6 +209,13 @@ instance AssumptionNumbers (OpenLogicFONK lex) where
         dischargesAssumptions (ExistsE n) = [n]
         dischargesAssumptions (ExistsEAnnotated n t) = [n]
         dischargesAssumptions (ExistsEAnnotatedVac n t) = [n]
+        dischargesAssumptions _ = []
+
+instance AssumptionNumbers (OpenLogicAxFONK lex) where
+        introducesAssumptions (FONK r) = introducesAssumptions r
+        introducesAssumptions _ = []
+
+        dischargesAssumptions (FONK r)= dischargesAssumptions r
         dischargesAssumptions _ = []
 
 type LKAdequate lex = ( BooleanLanguage (ClassicalSequentOver lex (Form Bool))
