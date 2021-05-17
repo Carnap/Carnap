@@ -9,7 +9,7 @@ import Data.IORef (IORef, readIORef, newIORef, writeIORef)
 import Data.Typeable (Typeable)
 import Data.Aeson.Types
 import Data.Text (pack)
-import qualified Text.Parsec as P (parse, eof, spaces) 
+import qualified Text.Parsec as P
 import Control.Monad.State (modify,get,execState,State)
 import Control.Lens
 import Control.Concurrent
@@ -95,17 +95,15 @@ activateChecker w (Just (i, o, opts)) = case (setupWith defaultRTC `ofPropTreeSy
 
               defaultRTC calc _ = return (defaultRuntimeDeductionConfig)
               axiomsRTC calc _ = case tbParseAxiomScheme calc of
-                                        Nothing -> do
-                                            print "no parser"
-                                            return defaultRuntimeDeductionConfig
+                                        Nothing -> return defaultRuntimeDeductionConfig
                                         Just axParse -> do
-                                           print "found parser"
                                            let axOpts = M.toList $ M.filterWithKey (\k _ -> take 6 k == "axiom-") opts
                                                axPairs = map (\(k,v) -> (drop 6 k, v) ) axOpts
-                                               axRslts = mapM (\(k,v) -> (,) <$> return k <*> P.parse (parseSeqOver axParse) "" v) axPairs
+                                               parseAxioms = P.sepBy1 (parseSeqOver axParse) (P.char ';')
+                                               axRslts = mapM (\(k,v) -> (,) <$> return k <*> P.parse parseAxioms "" v) axPairs
                                            case axRslts of
                                                Right rslts -> return $ defaultRuntimeDeductionConfig { runtimeAxioms = M.fromList rslts }
-                                               Left e -> do errorPopup "couldn't parse axioms"
+                                               Left e -> do errorPopup $ "couldn't parse axioms: " ++ show e
                                                             return defaultRuntimeDeductionConfig
 
               setupWith rtc calc = do

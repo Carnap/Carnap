@@ -4,9 +4,7 @@ module Lib ( genericSendJSON, sendJSON, onEnter, onKey, doOnce, dispatchCustom, 
            , treeToElement, genericTreeToUl, treeToUl, genericListToUl
            , listToUl, formToTree, leaves, adjustFirstMatching, decodeHtml
            , decodeJSON,toJSONString, cleanString, syncScroll, reloadPage, initElements
-           , errorPopup, genInOutElts
-           , getInOutElts,generateExerciseElts, withLabel
-           , formAndLabel,seqAndLabel, folSeqAndLabel, folFormAndLabel
+           , errorPopup, genInOutElts, getInOutElts,generateExerciseElts
            , message, IOGoal(..), updateWithValue, submissionSource
            , assignmentKey, initialize, mutate, initializeCallback, initCallbackObj
            , toCleanVal, popUpWith, spinnerSVG, doneButton, questionButton
@@ -434,21 +432,6 @@ createButtonWrapper w o = do (Just bw) <- createElement w (Just "div")
 --------------------------------------------------------
 --1.7 Parsing
 --------------------------------------------------------
- 
-formAndLabel :: Monad m => ParsecT String u m (String, PureForm)
-formAndLabel = withLabel (purePropFormulaParser standardLetters <* eof)
-
-seqAndLabel = withLabel (ndParseSeq montagueSCCalc)
-
-folSeqAndLabel =  withLabel (ndParseSeq folCalc)
-
-folFormAndLabel =  withLabel folFormulaParser
-
-withLabel :: Monad m => ParsecT String u m b -> ParsecT String u m (String, b)
-withLabel parser = do label <- many (digit <|> char '.')
-                      spaces
-                      s <- parser
-                      return (label,s)
 
 trySubmit w problemType opts ident problemData correct = 
              do msource <- liftIO submissionSource

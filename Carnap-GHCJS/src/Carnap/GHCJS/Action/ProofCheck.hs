@@ -19,7 +19,7 @@ import Carnap.Languages.SetTheory.Logic (ofSetTheorySys)
 import Carnap.Languages.DefiniteDescription.Logic.Gamut (ofDefiniteDescSys)
 import Carnap.Languages.ModalFirstOrder.Logic (hardegreeMPLCalc)
 import Carnap.GHCJS.SharedTypes
-import Text.Parsec (parse)
+import Text.Parsec (parse, eof)
 import Data.IORef (IORef, newIORef,writeIORef, readIORef, modifyIORef)
 import Data.Aeson as A
 import Data.Text (pack)
@@ -137,11 +137,11 @@ activateChecker drs w (Just iog@(IOGoal i o g _ opts)) -- TODO: need to update n
                   checkerWith options' checkSeq iog w
                   
                   where options = optionsFromMap opts
-                        theSeq g = case parse (ndParseSeq calc) "" g of
+                        theSeq g = case parse (ndParseSeq calc <* eof) "" g of
                                        Left e -> error "couldn't parse goal"
                                        Right seq -> seq
 
-              parseGoal calc = do let seqParse = ndParseSeq calc
+              parseGoal calc = do let seqParse = (ndParseSeq calc <* eof)
                                       Just seqstring = M.lookup "goal" opts 
                                       --XXX: the directed option is set by the existence of a goal, so this match can't fail.
                                   case parse seqParse "" seqstring of

@@ -60,7 +60,7 @@ instance Show (ClassicalSequentOver lex (Term Int)) => Show (OpenLogicFONK lex) 
 
 instance Show (ClassicalSequentOver lex (Term Int)) => Show (OpenLogicAxFONK lex) where
     show (FONK x)                 = show x
-    show (RuntimeAxiom s _)              = "Axiom: " ++ s
+    show (RuntimeAxiom s _)       = "Axiom: " ++ s
 
 instance Show OpenLogicFOLK where 
     show (LK x) = show x
@@ -107,7 +107,7 @@ parseOpenLogicAxFONK rtc = try liftNK <|> parseAxiom
               parseAxiom = do string "Ax-"
                               an <- many1 alphaNum
                               case M.lookup an (runtimeAxioms rtc) of
-                                  Just r -> return [RuntimeAxiom an r]
+                                  Just rs -> return $ map (\r -> RuntimeAxiom an r) rs
                                   Nothing -> parserFail "Looks like you're citing an axiom that doesn't exist"
 
 type NKAdequate lex = 

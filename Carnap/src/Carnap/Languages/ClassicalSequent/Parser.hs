@@ -40,7 +40,6 @@ splitSequent :: Parsec String u (FixLang f sem) ->
 splitSequent parser = do lhs <- formlist parser
                          string ":|-:" <|> string "⊢"
                          rhs <- formlist parser
-                         eof
                          return (lhs,rhs)
 
 formlist :: Parsec String u (FixLang f sem) -> 

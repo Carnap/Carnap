@@ -41,7 +41,7 @@ activateTruthTables :: Document -> Maybe (Element, Element, Map String String) -
 activateTruthTables w (Just (i,o,opts)) = do
         case M.lookup "tabletype" opts of
             Just "simple" -> checkerWith (formListParser <* eof) createSimpleTruthTable
-            Just "validity" -> checkerWith seqParser createValidityTruthTable
+            Just "validity" -> checkerWith (seqParser <* eof) createValidityTruthTable
             Just "partial" -> checkerWith (formListPairParser <* eof) createPartialTruthTable
             _  -> return ()
 

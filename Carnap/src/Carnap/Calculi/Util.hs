@@ -48,7 +48,7 @@ data ProofErrorMessage :: ((* -> *) -> * -> *) -> * where
 
 data RuntimeDeductionConfig lex sem = RuntimeDeductionConfig
         { derivedRules :: Map String (ClassicalSequentOver lex (Sequent sem))
-        , runtimeAxioms :: Map String (ClassicalSequentOver lex (Sequent sem))
+        , runtimeAxioms :: Map String [ClassicalSequentOver lex (Sequent sem)]
         , problemPremises :: Maybe [ClassicalSequentOver lex (Sequent sem)]
         }
 
