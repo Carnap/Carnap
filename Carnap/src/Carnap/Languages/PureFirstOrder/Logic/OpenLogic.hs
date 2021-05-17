@@ -34,7 +34,8 @@ data OpenLogicFONK lex = PropNK OpenLogicPropNK
 
 deriving instance Eq (ClassicalSequentOver lex (Term Int)) => Eq (OpenLogicFONK lex)
 
-data OpenLogicAxFONK lex = FONK (OpenLogicFONK lex) | RuntimeAxiom String (ClassicalSequentOver lex (Sequent (Form Bool)))
+data OpenLogicAxFONK lex = FONK (OpenLogicFONK lex) 
+                         | RuntimeAxiom String (ClassicalSequentOver lex (Sequent (Form Bool)))
 
 deriving instance (Eq (ClassicalSequentOver lex (Term Int)), Eq (ClassicalSequentOver lex (Sequent (Form Bool)))) => Eq (OpenLogicAxFONK lex)
 

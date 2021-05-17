@@ -84,7 +84,7 @@ activateChecker :: Document -> Maybe (Element, Element, Map String String) -> IO
 activateChecker _ Nothing  = return ()
 activateChecker w (Just (i, o, opts)) = case (setupWith defaultRTC `ofPropTreeSys` sys) 
                                               `mplus` (setupWith defaultRTC `ofFOLTreeSys` sys)
-                                              `mplus` (setupWith defaultRTC `ofSetTheoryTreeSys` sys)
+                                              `mplus` (setupWith axiomsRTC `ofSetTheoryTreeSys` sys)
                                               `mplus` (setupWith axiomsRTC `ofArithmeticTreeSys` sys)
                                               `mplus` (setupWith defaultRTC `ofHigherOrderArithmeticTreeSys` sys)
                                         of Just io -> io

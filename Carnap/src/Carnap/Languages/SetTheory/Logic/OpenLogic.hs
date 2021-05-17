@@ -18,11 +18,12 @@ openLogicSTNKCalc = mkTBCalc
     , tbNotation = dropOuterParens
     }
 
-openLogicExSTNKCalc :: TableauCalc ExtendedStrictSetTheoryLex (Form Bool) (OpenLogicFONK ExtendedStrictSetTheoryLex) 
+openLogicExSTNKCalc :: TableauCalc ExtendedStrictSetTheoryLex (Form Bool) (OpenLogicAxFONK ExtendedStrictSetTheoryLex) 
 openLogicExSTNKCalc = mkTBCalc
     { tbParseForm = extendedStrictSetTheoryParser
-    , tbParseRule = parseOpenLogicFONK
+    , tbParseRule = parseOpenLogicAxFONK
     , tbNotation = dropOuterParens
+    , tbParseAxiomScheme = Just extendedStrictSetTheorySchemaParser
     }
 
 openLogicESTNKCalc :: TableauCalc ElementarySetTheoryLex (Form Bool) (OpenLogicFONK ElementarySetTheoryLex) 
@@ -32,11 +33,12 @@ openLogicESTNKCalc = mkTBCalc
     , tbNotation = dropOuterParens
     }
 
-openLogicExESTNKCalc :: TableauCalc ExtendedElementarySetTheoryLex (Form Bool) (OpenLogicFONK ExtendedElementarySetTheoryLex) 
+openLogicExESTNKCalc :: TableauCalc ExtendedElementarySetTheoryLex (Form Bool) (OpenLogicAxFONK ExtendedElementarySetTheoryLex) 
 openLogicExESTNKCalc = mkTBCalc
     { tbParseForm = extendedElementarySetTheoryParser
-    , tbParseRule = parseOpenLogicFONK
+    , tbParseRule = parseOpenLogicAxFONK
     , tbNotation = dropOuterParens
+    , tbParseAxiomScheme = Just extendedElementarySetTheorySchemaParser
     }
 
 openLogicSSTNKCalc :: TableauCalc SeparativeSetTheoryLex (Form Bool) (OpenLogicFONK SeparativeSetTheoryLex) 
@@ -46,9 +48,10 @@ openLogicSSTNKCalc = mkTBCalc
     , tbNotation = dropOuterParens
     }
 
-openLogicExSSTNKCalc :: TableauCalc ExtendedSeparativeSetTheoryLex (Form Bool) (OpenLogicFONK ExtendedSeparativeSetTheoryLex) 
+openLogicExSSTNKCalc :: TableauCalc ExtendedSeparativeSetTheoryLex (Form Bool) (OpenLogicAxFONK ExtendedSeparativeSetTheoryLex) 
 openLogicExSSTNKCalc = mkTBCalc
     { tbParseForm = extendedSeparativeSetTheoryParser
-    , tbParseRule = parseOpenLogicFONK
+    , tbParseRule = parseOpenLogicAxFONK
     , tbNotation = dropOuterParens
+    , tbParseAxiomScheme = Just extendedSeparativeSetTheorySchemaParser
     }
