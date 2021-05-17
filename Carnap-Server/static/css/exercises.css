@@ -121,12 +121,20 @@
     bottom:0px;
 }
 
-[data-carnap-type="synchecker"] > input,
 [data-carnap-type="truthtable"] > .input,
 [data-carnap-type="countermodeler"] > .input,
 [data-carnap-type="qualitative"] > .input,
 [data-carnap-type="sequentchecker"] > .input,
-[data-carnap-type="treedeductionchecker"] > .input,
+[data-carnap-type="treedeductionchecker"] > .input {
+    font-size:14pt;
+    padding:5px;
+    background:white;
+    border:1px solid #A9B7C0;
+    outline:none;
+    margin:0px;
+}
+
+[data-carnap-type="synchecker"] > input,
 [data-carnap-type="translate"] > input {
     font-size:14px;
     min-height:2em;
