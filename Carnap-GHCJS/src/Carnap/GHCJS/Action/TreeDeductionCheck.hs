@@ -99,7 +99,7 @@ activateChecker w (Just (i, o, opts)) = case (setupWith defaultRTC `ofPropTreeSy
                                         Just axParse -> do
                                            let axOpts = M.toList $ M.filterWithKey (\k _ -> take 6 k == "axiom-") opts
                                                axPairs = map (\(k,v) -> (drop 6 k, v) ) axOpts
-                                               parseAxioms = P.sepBy1 (parseSeqOver axParse) (P.char ';')
+                                               parseAxioms = P.sepBy1 (parseSeqOver axParse) (P.char ';') <* P.eof
                                                axRslts = mapM (\(k,v) -> (,) <$> return k <*> P.parse parseAxioms "" v) axPairs
                                            case axRslts of
                                                Right rslts -> return $ defaultRuntimeDeductionConfig { runtimeAxioms = M.fromList rslts }

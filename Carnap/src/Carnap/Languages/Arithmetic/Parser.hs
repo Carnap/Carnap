@@ -68,9 +68,9 @@ arithmeticExtendedSchemaOptions = FirstOrderParserOptions
                                                         <|> parsePredicateString extendedSymbols x
                          , quantifiedSentenceParser' = lplQuantifiedSentenceParser
                          , freeVarParser = parseFreeVar "stuvwxyz"
-                         , constantParser = Just (parseZero 
-                                              <|> try (parseFriendlySchematicConstant)
-                                              <|> parseConstant "abcdefghijklmnopqr")
+                         , constantParser = Just $ parseZero 
+                                               <|> try (parseFriendlySchematicConstant)
+                                               <|> parseConstant "abcdefghijklmnopqr"
                          , functionParser = Just (\x -> arithmeticOpParser 
                                                             (parenParser x
                                                             <|> parseZero 
