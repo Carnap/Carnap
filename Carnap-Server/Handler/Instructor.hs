@@ -243,6 +243,7 @@ postInstructorR ident = do
                    Nothing | mhidden == Just True || mlimit /= Nothing -> setMessage "Hidden and time-limited assignments must be password protected"
                    _ -> do success <- tryInsert $ AssignmentMetadata
                                                 { assignmentMetadataDocument = entityKey doc
+                                                , assignmentMetadataTitle = thename
                                                 , assignmentMetadataDescription = info
                                                 , assignmentMetadataAssigner = entityKey <$> theassigner
                                                 , assignmentMetadataDuedate = localTimeToUTCTZ tz <$> localdue

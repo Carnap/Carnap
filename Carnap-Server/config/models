@@ -142,6 +142,7 @@ SavedRule
 
 AssignmentMetadata
     document DocumentId
+    title Text
     description Text Maybe
     assigner CoInstructorId Maybe
     duedate UTCTime Maybe
@@ -154,6 +155,7 @@ AssignmentMetadata
     pointValue Int Maybe
     totalProblems Int Maybe
     UniqueAssignment document course
+    UniqueAssignmentName title course
 
 AssignmentAccessToken
     createdAt UTCTime
