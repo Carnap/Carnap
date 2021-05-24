@@ -55,7 +55,8 @@ import Handler.Assignment
 import Handler.Document
 import Handler.Review
 import Handler.API.API
-import Handler.API.Instructor
+import Handler.API.Instructor.Documents
+import Handler.API.Instructor.Students
 
 
 -- This line actually creates our YesodDispatch instance. It is the second half

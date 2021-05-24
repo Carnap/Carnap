@@ -4,7 +4,7 @@ User
     UniqueUser ident
     deriving Typeable
 
-UserData
+UserData json
     firstName Text
     lastName Text
     email Text Maybe
@@ -27,7 +27,7 @@ AuthAPI
     --We can drop this unique constraint later if need be
     UniqueAuthAPIUser user
 
-Accommodation
+Accommodation json
     forCourse CourseId
     forUser UserId
     timeFactor Double
@@ -35,7 +35,7 @@ Accommodation
     dateExtraHours Int
     UniqueAccommodation forCourse forUser
 
-Extension
+Extension json
     onAssignment AssignmentMetadataId
     forUser UserId
     until UTCTime
@@ -157,7 +157,7 @@ AssignmentMetadata
     UniqueAssignment document course
     UniqueAssignmentName title course
 
-AssignmentAccessToken
+AssignmentAccessToken json
     createdAt UTCTime
     assignment AssignmentMetadataId
     user UserId

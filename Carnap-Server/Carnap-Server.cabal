@@ -39,7 +39,8 @@ library
                      Handler.Document
                      Handler.Serve
                      Handler.API.API
-                     Handler.API.Instructor
+                     Handler.API.Instructor.Documents
+                     Handler.API.Instructor.Students
                      Filter.RenderFormulas
                      Filter.Randomize
                      Filter.Sidenotes

@@ -130,6 +130,12 @@ instance Yesod App where
          APIInstructorDocumentsR ident -> requireAPIKeyFor ident
          APIInstructorDocumentR ident _ -> requireAPIKeyFor ident
          APIInstructorDocumentDataR ident _ -> requireAPIKeyFor ident
+         APIInstructorStudentsR ident _ -> requireAPIKeyFor ident
+         APIInstructorStudentR ident _ _ -> requireAPIKeyFor ident
+         APIInstructorStudentExtensionsR ident _ _ -> requireAPIKeyFor ident
+         APIInstructorStudentAccommodationsR ident _ _ -> requireAPIKeyFor ident
+         APIInstructorStudentSubmissionsR ident _ _ -> requireAPIKeyFor ident
+         APIInstructorStudentAssignmentTokensR ident _ _ -> requireAPIKeyFor ident
          AdminR -> admin
          AdminPromoteR -> noAdmins
          _ -> return Authorized

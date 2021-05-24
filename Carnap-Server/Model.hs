@@ -20,3 +20,12 @@ import Carnap.GHCJS.SharedTypes(ProblemSource(..),ProblemType(..),ProblemData(..
 
 share [mkPersist sqlSettings, mkDeleteCascade sqlSettings, mkMigrate "migrateAll"]
     $(persistFileWith lowerCaseSettings =<< (pathRelativeToCabalPackage "config/models"))
+
+--we put these in because the template haskell chokes on the keyword "data"
+--as the name of a field
+deriving instance Generic ProblemSubmission
+deriving instance Generic (Key ProblemSubmission)
+instance ToJSON ProblemSubmission
+instance ToJSON (Entity ProblemSubmission)
+instance FromJSON ProblemSubmission
+instance FromJSON (Entity ProblemSubmission)

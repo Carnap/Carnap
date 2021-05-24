@@ -1,4 +1,4 @@
-module Handler.API.Instructor where
+module Handler.API.Instructor.Documents where
 
 import           Data.Aeson
 import           Data.HashMap.Strict as HM
@@ -85,11 +85,6 @@ putAPIInstructorDocumentDataR ident docid = do Entity uid _ <- userFromIdent ide
                                                path <- docFilePath ident doc
                                                connect rawRequestBody (sinkFile path)
                                                returnJson ("contents updated" :: Text)
-
---TODO This adds some extra DB noise, since we also lookup from ident at the `isAuthorized` level. Should cache results
-userFromIdent :: Text -> Handler (Entity User)
-userFromIdent ident = runDB (getBy $ UniqueUser ident) >>= maybe (sendStatusJSON notFound404 ("No such instructor" :: Text)) pure
-
 
 docDir :: Text -> Handler FilePath
 docDir ident = do datadir <- appDataRoot <$> (appSettings <$> getYesod)
