@@ -140,7 +140,7 @@ SavedRule
     userId UserId
     UniqueRule name userId
 
-AssignmentMetadata
+AssignmentMetadata json
     document DocumentId
     title Text
     description Text Maybe

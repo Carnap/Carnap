@@ -50,17 +50,8 @@ getAPIInstructorStudentAssignmentTokensR ident coursetitle udid = do
                                   selectList [AssignmentAccessTokenUser ==. userDataUserId ud] []
              returnJson tokens
 
-canAccessClass :: Text -> Text -> Handler (Entity Course)
-canAccessClass ident coursetitle = do
-    courseEnt@(Entity cid course) <- courseFromTitle coursetitle
-    Entity uid _ <- userFromIdent ident
-    Entity udid ud <- runDB (getBy $ UniqueUserData uid) >>= maybe (sendStatusJSON notFound404 ("No userdata for this ident" :: Text)) pure
-    case userDataInstructorId ud of
-        Nothing -> sendStatusJSON forbidden403 ("Not an instructor" :: Text)
-        Just iid | courseInstructor course == iid -> return courseEnt
-        Just iid -> do runDB (getBy $ UniqueCoInstructor iid cid) >>= maybe (sendStatusJSON forbidden403 ("Not an instructor for this course" :: Text)) pure
-                       return courseEnt
 
+studentEnrolled :: (YesodPersist site, YesodPersistBackend site ~ SqlBackend) => UserDataId -> CourseId -> YesodDB site UserData
 studentEnrolled udid cid = do 
         ud <- get udid >>= maybe (sendStatusJSON notFound404 ("No userdata for this ident" :: Text)) pure
         if userDataEnrolledIn ud == Just cid then return () else sendStatusJSON notFound404 ("No userdata for this ident" :: Text)

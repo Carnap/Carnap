@@ -46,7 +46,9 @@ data AvailabilityStatus = ViaPassword Text
                         | HiddenViaPassword Text
                         | ViaPasswordExpiring Text Int 
                         | HiddenViaPasswordExpiring Text Int
-    deriving (Show, Read, Eq)
+    deriving (Show, Read, Eq, Generic)
+instance ToJSON AvailabilityStatus
+instance FromJSON AvailabilityStatus
 derivePersistField "AvailabilityStatus"
 
 availabilityPassword (ViaPassword pass) = pass
