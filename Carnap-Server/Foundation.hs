@@ -144,7 +144,7 @@ instance Yesod App where
          AdminPromoteR -> noAdmins
          _ -> return Authorized
         where requireAPIKey = maybeAPIKey >>= maybe (sendStatusJSON forbidden403 ("Valid API Key Required" :: Text)) (return)
-              requireAPIKeyFor ident = do musr <- runDB (getBy $ UniqueUser ident)
+              requireAPIKeyFor ident = do musr <- maybeUserByIdent ident
                                           usr <- maybe (sendStatusJSON notFound404 ("No such user" :: Text)) return musr
                                           mauth <- maybeAPIKey
                                           case mauth of

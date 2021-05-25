@@ -116,9 +116,8 @@ asYaml _ path = sendFile "text/x-yaml; charset=utf-8" path
 --  API UTILITIES  --
 ---------------------
 
---TODO This adds some extra DB noise, since we also lookup from ident at the `isAuthorized` level. Should cache results
 userFromIdent :: Text -> Handler (Entity User)
-userFromIdent ident = runDB (getBy $ UniqueUser ident) >>= maybe (sendStatusJSON notFound404 ("No such instructor" :: Text)) pure
+userFromIdent ident = maybeUserByIdent ident >>= maybe (sendStatusJSON notFound404 ("No such instructor" :: Text)) pure
 
 courseFromTitle :: Text -> Handler (Entity Course)
 courseFromTitle coursetitle = runDB (getBy $ UniqueCourse coursetitle) >>= maybe (sendStatusJSON notFound404 ("No such course" :: Text)) pure

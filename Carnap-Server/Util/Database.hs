@@ -23,6 +23,13 @@ maybeUserData = unCacheMaybeUserData <$> cached (CachedMaybeUserData <$> getData
                        case authmaybe of
                            Nothing -> return Nothing
                            Just (Entity uid _) -> runDB (getBy $ UniqueUserData uid)
+                          
+--retrieve user by ident, caching to avoid multiple DB lookups
+maybeUserByIdent
+    :: PersistentSite site
+    => Text -> HandlerFor site (Maybe (Entity User))
+maybeUserByIdent ident = unCacheMaybeUser <$> cachedBy (encodeUtf8 ident) (CachedMaybeUser <$> getData)
+    where getData = runDB (getBy $ UniqueUser ident)
 
 maybeUserCourse
     :: PersistentSite site
