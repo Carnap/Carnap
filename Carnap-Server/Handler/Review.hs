@@ -23,7 +23,7 @@ import Carnap.GHCJS.SharedTypes
 import Carnap.GHCJS.SharedFunctions (simpleCipher,simpleHash,inOpts)
 
 deleteReviewR :: Text -> Text -> Handler Value
-deleteReviewR coursetitle filename = do
+deleteReviewR coursetitle asgntitle = do
         msg <- requireJsonBody :: Handler ReviewDelete
         case msg of
             DeleteProblem key -> do
@@ -31,8 +31,8 @@ deleteReviewR coursetitle filename = do
                 returnJson ("Problem deleted." :: Text)
 
 putReviewR :: Text -> Text -> Handler Value
-putReviewR coursetitle filename =
-        do (Entity key val, _) <- getAssignmentByCourse coursetitle filename
+putReviewR coursetitle asgntitle =
+        do Entity key val <- getAssignmentByCourse coursetitle asgntitle
            ((theUpdate,_),_) <- runFormPost (identifyForm "updateSubmission" $ updateSubmissionForm Nothing "" "")
            case theUpdate of
                FormSuccess (ident, serializeduid, extra) -> do
@@ -47,8 +47,8 @@ putReviewR coursetitle filename =
                (FormFailure s) -> returnJson ("error:" <> concat s :: Text)
 
 getReviewR :: Text -> Text -> Handler Html
-getReviewR coursetitle filename = 
-        do (Entity key val, _) <- getAssignmentByCourse coursetitle filename
+getReviewR coursetitle asgntitle = 
+        do Entity key val <- getAssignmentByCourse coursetitle asgntitle
            unsortedProblems <- runDB $ selectList [ProblemSubmissionAssignmentId ==. Just key] []
            uidAndData <- runDB $ do let uids = nub $ map (problemSubmissionUserId . entityVal) unsortedProblems
                                     muserdata <- mapM (getBy . UniqueUserData) uids

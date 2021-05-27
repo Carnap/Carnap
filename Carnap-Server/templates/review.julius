@@ -9,7 +9,7 @@ function tryDeleteProblem (e, json) {
 
 function deleteProblem (e, json) {
     jQuery.ajax({
-        url: '@{ReviewR coursetitle filename}',
+        url: '@{ReviewR coursetitle asgntitle}',
         type: 'DELETE',
         contentType: "application/json",
         data: json,
@@ -23,7 +23,7 @@ function deleteProblem (e, json) {
 
 $(".updateSubmission").submit(function(e) {
     jQuery.ajax({
-        url: '@{ReviewR coursetitle filename}',
+        url: '@{ReviewR coursetitle asgntitle}',
         type: 'PUT',
         data: new FormData(this),
         processData: false,

@@ -26,7 +26,7 @@ import Filter.RenderFormulas
 import Util.Handler
 
 getCourseAssignmentR :: Text -> Text -> Handler Html
-getCourseAssignmentR coursetitle filename = getAssignmentByCourse coursetitle filename
+getCourseAssignmentR coursetitle filename = getAssignmentAndPathByCourse coursetitle filename
                                             >>= uncurry (returnAssignment coursetitle filename)
 
 putCourseAssignmentStateR :: Text -> Text -> Handler Value
@@ -50,7 +50,7 @@ getCourseAssignmentStateR coursetitle filename = do
 
 postCourseAssignmentR :: Text -> Text -> Handler Html
 postCourseAssignmentR coursetitle filename = do
-        ((Entity key val), _) <- getAssignmentByCourse coursetitle filename
+        Entity key val <- getAssignmentByCourse coursetitle filename
         uid <- maybeAuthId >>= maybe reject return 
         ((passrslt,_),_) <- runFormPost (identifyForm "enterPassword" $ enterPasswordForm)
         case passrslt of
