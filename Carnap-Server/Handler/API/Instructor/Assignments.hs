@@ -20,6 +20,14 @@ getAPIInstructorAssignmentR ident coursetitle asid = do
              assignment <- runDB $ assignmentPartOf asid cid
              returnJson assignment
 
+getAPIInstructorSubmissionsR :: Text -> Text -> Handler Value
+getAPIInstructorSubmissionsR ident coursetitle = do 
+             Entity cid _ <- canAccessClass ident coursetitle
+             students <- runDB $ selectList [UserDataEnrolledIn ==. Just cid] []
+             subs <- runDB $ forM students $ \(Entity _ ud) -> do 
+                        selectList [ProblemSubmissionUserId ==. userDataUserId ud] []
+             returnJson (concat subs)
+
 getAPIInstructorAssignmentSubmissionsR :: Text -> Text -> AssignmentMetadataId -> Handler Value
 getAPIInstructorAssignmentSubmissionsR ident coursetitle asid = do 
              Entity cid _ <- canAccessClass ident coursetitle
