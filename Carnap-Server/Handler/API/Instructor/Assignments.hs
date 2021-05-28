@@ -42,9 +42,3 @@ getAPIInstructorAssignmentSubmissionsByStudentR ident coursetitle asid udid = do
                                 ud <- get udid >>= maybe (sendStatusJSON notFound404 ("No userdata for this ident" :: Text)) pure
                                 selectList [ProblemSubmissionAssignmentId ==. Just asid, ProblemSubmissionUserId ==. userDataUserId ud] []
              returnJson subs
-
-assignmentPartOf :: (YesodPersist site, YesodPersistBackend site ~ SqlBackend) => AssignmentMetadataId -> CourseId -> YesodDB site AssignmentMetadata
-assignmentPartOf asid cid = do 
-        as <- get asid >>= maybe (sendStatusJSON notFound404 ("No such assignment" :: Text)) pure
-        if assignmentMetadataCourse as == cid then return () else sendStatusJSON notFound404 ("No such assignment" :: Text)
-        return as

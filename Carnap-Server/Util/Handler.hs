@@ -116,6 +116,12 @@ asYaml _ path = sendFile "text/x-yaml; charset=utf-8" path
 --  API UTILITIES  --
 ---------------------
 
+assignmentPartOf :: (YesodPersist site, YesodPersistBackend site ~ SqlBackend) => AssignmentMetadataId -> CourseId -> YesodDB site AssignmentMetadata
+assignmentPartOf asid cid = do 
+        as <- get asid >>= maybe (sendStatusJSON notFound404 ("No such assignment" :: Text)) pure
+        if assignmentMetadataCourse as == cid then return () else sendStatusJSON notFound404 ("No such assignment" :: Text)
+        return as
+
 userFromIdent :: Text -> Handler (Entity User)
 userFromIdent ident = maybeUserByIdent ident >>= maybe (sendStatusJSON notFound404 ("No such instructor" :: Text)) pure
 
