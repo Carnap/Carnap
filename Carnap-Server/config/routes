@@ -34,7 +34,7 @@
 /api/v1/instructors/#Text/documents/#DocumentId/data                                                    APIInstructorDocumentDataR                      GET PUT
 /api/v1/instructors/#Text/courses/#Text/students                                                        APIInstructorStudentsR                          GET
 /api/v1/instructors/#Text/courses/#Text/students/#UserDataId                                            APIInstructorStudentR                           GET
-/api/v1/instructors/#Text/courses/#Text/students/#UserDataId/accommodations                             APIInstructorStudentAccommodationsR             GET
+/api/v1/instructors/#Text/courses/#Text/students/#UserDataId/accommodations                             APIInstructorStudentAccommodationsR             GET PATCH
 /api/v1/instructors/#Text/courses/#Text/students/#UserDataId/assignmentTokens                           APIInstructorStudentAssignmentTokensR           GET
 /api/v1/instructors/#Text/courses/#Text/students/#UserDataId/assignmentTokens/#AssignmentAccessTokenId  APIInstructorStudentAssignmentTokenR            DELETE
 /api/v1/instructors/#Text/courses/#Text/students/#UserDataId/extensions                                 APIInstructorStudentExtensionsR                 GET POST

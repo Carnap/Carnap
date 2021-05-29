@@ -78,6 +78,38 @@ getAPIInstructorStudentAccommodationsR ident coursetitle udid = do
                                            getBy (UniqueAccommodation cid (userDataUserId ud))
              returnJson maccommodations
 
+data AccommodationPatch = AccommodationPatch
+                       { patchTimeFactor :: Maybe Double
+                       , patchTimeExtraMinutes :: Maybe Int
+                       , patchDateExtraHours :: Maybe Int
+                       }
+
+instance FromJSON AccommodationPatch where
+        parseJSON = withObject "accomodationPatch" $ \o ->
+            AccommodationPatch <$> (o .:? "timeFactor")
+                              <*> (o .:? "timeExtraMinutes")
+                              <*> (o .:? "dateExtraHours")
+
+patchAPIInstructorStudentAccommodationsR :: Text -> Text -> UserDataId -> Handler Value
+patchAPIInstructorStudentAccommodationsR ident coursetitle udid = do 
+             courseEnt@(Entity cid course) <- canAccessClass ident coursetitle
+             patch <- requireCheckJsonBody :: Handler AccommodationPatch
+             newaccommodation <- runDB $ do ud <- studentEnrolled udid cid
+                                            upsertBy 
+                                                (UniqueAccommodation cid (userDataUserId ud))
+                                                (Accommodation { accommodationForCourse = cid
+                                                               , accommodationForUser = userDataUserId ud
+                                                               , accommodationTimeFactor = maybe 0 id (patchTimeFactor patch)
+                                                               , accommodationTimeExtraMinutes = maybe 0 id (patchTimeExtraMinutes patch)
+                                                               , accommodationDateExtraHours = maybe 0 id (patchDateExtraHours patch)
+                                                               })
+                                                (maybeUpdate AccommodationTimeFactor (patchTimeFactor patch)
+                                                 ++ maybeUpdate AccommodationTimeExtraMinutes (patchTimeExtraMinutes patch)
+                                                 ++ maybeUpdate AccommodationDateExtraHours (patchDateExtraHours patch))
+             returnJson newaccommodation
+    where maybeUpdate field (Just val) = [field =. val]
+          maybeUpdate _     Nothing    = []
+
 getAPIInstructorStudentAssignmentTokensR :: Text -> Text -> UserDataId -> Handler Value
 getAPIInstructorStudentAssignmentTokensR ident coursetitle udid = do 
              courseEnt@(Entity cid course) <- canAccessClass ident coursetitle
