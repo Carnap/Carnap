@@ -135,7 +135,9 @@ instance Yesod App where
          APIInstructorStudentExtensionsR ident _ _ -> requireAPIKeyFor ident
          APIInstructorStudentAccommodationsR ident _ _ -> requireAPIKeyFor ident
          APIInstructorStudentSubmissionsR ident _ _ -> requireAPIKeyFor ident
+         APIInstructorSubmissionsR ident _ -> requireAPIKeyFor ident
          APIInstructorStudentAssignmentTokensR ident _ _ -> requireAPIKeyFor ident
+         APIInstructorStudentAssignmentTokenR ident _ _ _ -> requireAPIKeyFor ident
          APIInstructorAssignmentsR ident _ -> requireAPIKeyFor ident
          APIInstructorAssignmentR ident _ _ -> requireAPIKeyFor ident
          APIInstructorAssignmentSubmissionsR ident _ _ -> requireAPIKeyFor ident
