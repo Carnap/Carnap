@@ -128,13 +128,16 @@ userFromIdent ident = maybeUserByIdent ident >>= maybe (sendStatusJSON notFound4
 courseFromTitle :: Text -> Handler (Entity Course)
 courseFromTitle coursetitle = runDB (getBy $ UniqueCourse coursetitle) >>= maybe (sendStatusJSON notFound404 ("No such course" :: Text)) pure
 
-canAccessClass :: Text -> Text -> Handler (Entity Course)
-canAccessClass ident coursetitle = do
+roleInClass :: Text -> Text -> Handler (Entity Course, Maybe (Entity CoInstructor))
+roleInClass ident coursetitle = do
     courseEnt@(Entity cid course) <- courseFromTitle coursetitle
     Entity uid _ <- userFromIdent ident
     Entity udid ud <- runDB (getBy $ UniqueUserData uid) >>= maybe (sendStatusJSON notFound404 ("No userdata for this ident" :: Text)) pure
     case userDataInstructorId ud of
         Nothing -> sendStatusJSON forbidden403 ("Not an instructor" :: Text)
-        Just iid | courseInstructor course == iid -> return courseEnt
-        Just iid -> do runDB (getBy $ UniqueCoInstructor iid cid) >>= maybe (sendStatusJSON forbidden403 ("Not an instructor for this course" :: Text)) pure
-                       return courseEnt
+        Just iid | courseInstructor course == iid -> return (courseEnt, Nothing)
+        Just iid -> do coInstruct <- runDB (getBy $ UniqueCoInstructor iid cid) >>= maybe (sendStatusJSON forbidden403 ("Not an instructor for this course" :: Text)) pure
+                       return (courseEnt, Just coInstruct)
+
+canAccessClass :: Text -> Text -> Handler (Entity Course)
+canAccessClass ident coursetitle = fst <$> roleInClass ident coursetitle

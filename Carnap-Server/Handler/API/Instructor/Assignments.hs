@@ -1,6 +1,7 @@
 module Handler.API.Instructor.Assignments where
 
 import           Data.Aeson
+import           Data.HashMap.Strict as HM
 import           Import
 import           Util.Data           (SharingScope (..))
 import           Util.Handler
@@ -13,6 +14,32 @@ getAPIInstructorAssignmentsR ident coursetitle = do
              Entity cid _ <- canAccessClass ident coursetitle
              assignments <- runDB $ selectList [AssignmentMetadataCourse ==. cid] []
              returnJson assignments
+
+postAPIInstructorAssignmentsR :: Text -> Text -> Handler Value
+postAPIInstructorAssignmentsR ident coursetitle = do 
+             (Entity cid _, mcoInst) <- roleInClass ident coursetitle
+             time <- liftIO $ getCurrentTime
+             val <- requireCheckJsonBody :: Handler Value
+             val' <- case val of
+                         Object hm ->
+                             let hm' = HM.insert "date" (toJSON time) 
+                                     . HM.insert "assigner" (toJSON $ maybe Nothing (Just . entityKey) mcoInst)
+                                     . HM.insert "course" (toJSON cid) $ hm
+                             in return $ Object hm'
+                         _ -> sendStatusJSON badRequest400 ("Improper JSON" :: Text)
+             case fromJSON val' :: Result AssignmentMetadata of
+                   Error e -> (sendStatusJSON badRequest400 e)
+                   Success asgn -> do
+                       Entity uid _ <- userFromIdent ident
+                       inserted <- runDB $ do
+                                   let bailout = sendStatusJSON badRequest400 ("You don't have access to that document" :: Text)
+                                   doc <- get (assignmentMetadataDocument asgn) >>= maybe bailout pure
+                                   if documentCreator doc == uid then return () else bailout
+                                   insertUnique asgn >>=
+                                       maybe (sendStatusJSON conflict409 ("An assignment with that title or document already exists." :: Text)) return
+                       render <- getUrlRender
+                       addHeader "Location" (render $ APIInstructorAssignmentR ident coursetitle inserted)
+                       sendStatusJSON created201 inserted
 
 getAPIInstructorAssignmentR :: Text -> Text -> AssignmentMetadataId -> Handler Value
 getAPIInstructorAssignmentR ident coursetitle asid = do 
