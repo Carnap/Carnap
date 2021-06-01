@@ -1,6 +1,10 @@
 module Handler.API.Instructor.Assignments where
 
 import           Data.Aeson
+import           Data.Time
+import           Data.Time.Zones
+import           Data.Time.Zones.DB
+import           Data.Time.Zones.All
 import           Data.HashMap.Strict as HM
 import           Import
 import           Util.Data           (SharingScope (..))
@@ -17,14 +21,19 @@ getAPIInstructorAssignmentsR ident coursetitle = do
 
 postAPIInstructorAssignmentsR :: Text -> Text -> Handler Value
 postAPIInstructorAssignmentsR ident coursetitle = do 
-             (Entity cid _, mcoInst) <- roleInClass ident coursetitle
+             (Entity cid course, mcoInst) <- roleInClass ident coursetitle
              time <- liftIO $ getCurrentTime
              val <- requireCheckJsonBody :: Handler Value
              val' <- case val of
                          Object hm ->
-                             let hm' = HM.insert "date" (toJSON time) 
+                             let Just tz = tzByName . courseTimeZone $ course
+                                 hm' = HM.insert "date" (toJSON time) 
                                      . HM.insert "assigner" (toJSON $ maybe Nothing (Just . entityKey) mcoInst)
-                                     . HM.insert "course" (toJSON cid) $ hm
+                                     . HM.insert "course" (toJSON cid)
+                                     . HM.adjust (handleDate tz) "duedate"
+                                     . HM.adjust (handleDate tz) "visibleTill"
+                                     . HM.adjust (handleDate tz) "visibleFrom"
+                                     . HM.adjust (handleDate tz) "gradeRelease" $ hm
                              in return $ Object hm'
                          _ -> sendStatusJSON badRequest400 ("Improper JSON" :: Text)
              case fromJSON val' :: Result AssignmentMetadata of
@@ -40,6 +49,13 @@ postAPIInstructorAssignmentsR ident coursetitle = do
                        render <- getUrlRender
                        addHeader "Location" (render $ APIInstructorAssignmentR ident coursetitle inserted)
                        sendStatusJSON created201 inserted
+    where handleDate tz (String t) = 
+              case parseTimeM True defaultTimeLocale "%Y-%m-%d %R" (unpack t) of
+                   Just localTime -> toJSON $ localTimeToUTCTZ tz localTime
+                   Nothing -> case parseTimeM True defaultTimeLocale "%Y-%m-%d" (unpack t) of
+                        Just day -> toJSON $ localTimeToUTCTZ tz (LocalTime day (TimeOfDay 23 59 59))
+                        Nothing -> String t
+          handleDate _ o = o
 
 getAPIInstructorAssignmentR :: Text -> Text -> AssignmentMetadataId -> Handler Value
 getAPIInstructorAssignmentR ident coursetitle asid = do 
