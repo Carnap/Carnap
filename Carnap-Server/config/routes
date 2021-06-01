@@ -41,6 +41,6 @@
 /api/v1/instructors/#Text/courses/#Text/students/#UserDataId/submissions                                APIInstructorStudentSubmissionsR                GET
 /api/v1/instructors/#Text/courses/#Text/submissions                                                     APIInstructorSubmissionsR                       GET
 /api/v1/instructors/#Text/courses/#Text/assignments                                                     APIInstructorAssignmentsR                       GET POST
-/api/v1/instructors/#Text/courses/#Text/assignments/#AssignmentMetadataId                               APIInstructorAssignmentR                        GET
+/api/v1/instructors/#Text/courses/#Text/assignments/#AssignmentMetadataId                               APIInstructorAssignmentR                        GET PATCH
 /api/v1/instructors/#Text/courses/#Text/assignments/#AssignmentMetadataId/submissions                   APIInstructorAssignmentSubmissionsR             GET
 /api/v1/instructors/#Text/courses/#Text/assignments/#AssignmentMetadataId/submissions/#UserDataId       APIInstructorAssignmentSubmissionsByStudentR    GET

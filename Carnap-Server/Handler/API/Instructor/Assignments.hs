@@ -7,7 +7,7 @@ import           Data.Time.Zones.DB
 import           Data.Time.Zones.All
 import           Data.HashMap.Strict as HM
 import           Import
-import           Util.Data           (SharingScope (..))
+import           Util.Data           (SharingScope (..), AvailabilityStatus (..))
 import           Util.Handler
 import           Util.Database (problemQuery)
 import           System.Directory
@@ -63,6 +63,51 @@ getAPIInstructorAssignmentR ident coursetitle asid = do
              assignment <- runDB $ assignmentPartOf asid cid
              returnJson assignment
 
+data AssignmentPatch = AssignmentPatch
+                       { patchGradeRelease :: Maybe (Maybe UTCTime)
+                       , patchTotalProblems :: Maybe (Maybe Int)
+                       , patchVisibleFrom :: Maybe (Maybe UTCTime)
+                       , patchVisibleTill :: Maybe (Maybe UTCTime)
+                       , patchDuedate :: Maybe (Maybe UTCTime)
+                       , patchDescription :: Maybe (Maybe Text)
+                       , patchAvailability :: Maybe (Maybe AvailabilityStatus)
+                       , patchPointValue :: Maybe (Maybe Int)
+                       , patchTitle :: Maybe Text
+                       }
+
+instance FromJSON AssignmentPatch where
+    parseJSON = withObject "assignmentPatch" $ \o -> do
+            patchGradeRelease <- o .:! "gradeRelease"
+            patchTotalProblems <- o .:! "totalProblems"
+            patchVisibleFrom <- o .:! "visibleFrom"
+            patchVisibleTill <- o .:! "visibleTill"
+            patchDuedate <- o .:! "dueDate"
+            patchDescription <- o .:! "description"
+            patchAvailability <- o .:! "availability"
+            patchPointValue <- o .:! "pointValue"
+            patchTitle <- o .:? "title"
+            return $ AssignmentPatch {..}
+
+patchAPIInstructorAssignmentR :: Text -> Text -> AssignmentMetadataId -> Handler Value
+patchAPIInstructorAssignmentR ident coursetitle asid = do 
+             Entity cid _ <- canAccessClass ident coursetitle
+             patch <- requireCheckJsonBody :: Handler AssignmentPatch
+             asgn' <- runDB $ do assignmentPartOf asid cid
+                                 updateGet asid $ concat
+                                    [ maybeUpdate AssignmentMetadataGradeRelease (patchGradeRelease patch)
+                                    , maybeUpdate AssignmentMetadataTotalProblems (patchTotalProblems patch)
+                                    , maybeUpdate AssignmentMetadataVisibleFrom (patchVisibleFrom patch)
+                                    , maybeUpdate AssignmentMetadataVisibleTill (patchVisibleTill patch)
+                                    , maybeUpdate AssignmentMetadataDuedate (patchDuedate patch)
+                                    , maybeUpdate AssignmentMetadataDescription (patchDescription patch)
+                                    , maybeUpdate AssignmentMetadataAvailability (patchAvailability patch)
+                                    , maybeUpdate AssignmentMetadataPointValue (patchPointValue patch)
+                                    , maybeUpdate AssignmentMetadataTitle (patchTitle patch)
+                                    ]
+             returnJson asgn'
+    where maybeUpdate field (Just val) = [field =. val]
+          maybeUpdate _     Nothing    = []
+          
 getAPIInstructorSubmissionsR :: Text -> Text -> Handler Value
 getAPIInstructorSubmissionsR ident coursetitle = do 
              Entity cid _ <- canAccessClass ident coursetitle
