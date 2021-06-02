@@ -64,11 +64,11 @@ getAPIInstructorAssignmentR ident coursetitle asid = do
              returnJson assignment
 
 data AssignmentPatch = AssignmentPatch
-                       { patchGradeRelease :: Maybe (Maybe UTCTime)
+                       { patchGradeRelease :: Maybe (Maybe String)
                        , patchTotalProblems :: Maybe (Maybe Int)
-                       , patchVisibleFrom :: Maybe (Maybe UTCTime)
-                       , patchVisibleTill :: Maybe (Maybe UTCTime)
-                       , patchDuedate :: Maybe (Maybe UTCTime)
+                       , patchVisibleFrom :: Maybe (Maybe String)
+                       , patchVisibleTill :: Maybe (Maybe String)
+                       , patchDuedate :: Maybe (Maybe String)
                        , patchDescription :: Maybe (Maybe Text)
                        , patchAvailability :: Maybe (Maybe AvailabilityStatus)
                        , patchPointValue :: Maybe (Maybe Int)
@@ -76,12 +76,12 @@ data AssignmentPatch = AssignmentPatch
                        }
 
 instance FromJSON AssignmentPatch where
-    parseJSON = withObject "assignmentPatch" $ \o -> do
+    parseJSON = withObject "assignmentPatch" $ \o-> do
             patchGradeRelease <- o .:! "gradeRelease"
             patchTotalProblems <- o .:! "totalProblems"
             patchVisibleFrom <- o .:! "visibleFrom"
             patchVisibleTill <- o .:! "visibleTill"
-            patchDuedate <- o .:! "dueDate"
+            patchDuedate <- o .:! "duedate"
             patchDescription <- o .:! "description"
             patchAvailability <- o .:! "availability"
             patchPointValue <- o .:! "pointValue"
@@ -90,15 +90,16 @@ instance FromJSON AssignmentPatch where
 
 patchAPIInstructorAssignmentR :: Text -> Text -> AssignmentMetadataId -> Handler Value
 patchAPIInstructorAssignmentR ident coursetitle asid = do 
-             Entity cid _ <- canAccessClass ident coursetitle
+             Entity cid course <- canAccessClass ident coursetitle
              patch <- requireCheckJsonBody :: Handler AssignmentPatch
+             let Just tz = tzByName . courseTimeZone $ course
              asgn' <- runDB $ do assignmentPartOf asid cid
                                  updateGet asid $ concat
-                                    [ maybeUpdate AssignmentMetadataGradeRelease (patchGradeRelease patch)
+                                    [ maybeUpdateTime tz AssignmentMetadataGradeRelease (patchGradeRelease patch)
+                                    , maybeUpdateTime tz AssignmentMetadataVisibleFrom (patchVisibleFrom patch)
+                                    , maybeUpdateTime tz AssignmentMetadataVisibleTill (patchVisibleTill patch)
+                                    , maybeUpdateTime tz AssignmentMetadataDuedate (patchDuedate patch)
                                     , maybeUpdate AssignmentMetadataTotalProblems (patchTotalProblems patch)
-                                    , maybeUpdate AssignmentMetadataVisibleFrom (patchVisibleFrom patch)
-                                    , maybeUpdate AssignmentMetadataVisibleTill (patchVisibleTill patch)
-                                    , maybeUpdate AssignmentMetadataDuedate (patchDuedate patch)
                                     , maybeUpdate AssignmentMetadataDescription (patchDescription patch)
                                     , maybeUpdate AssignmentMetadataAvailability (patchAvailability patch)
                                     , maybeUpdate AssignmentMetadataPointValue (patchPointValue patch)
@@ -106,7 +107,23 @@ patchAPIInstructorAssignmentR ident coursetitle asid = do
                                     ]
              returnJson asgn'
     where maybeUpdate field (Just val) = [field =. val]
-          maybeUpdate _     Nothing    = []
+          maybeUpdate _ Nothing = []
+
+          maybeUpdateTime tz field (Just (Just s)) = 
+            case handleDate tz s of
+                Nothing -> []
+                date -> [field =. date]
+          maybeUpdateTime _ field (Just Nothing) = [field =. Nothing]
+          maybeUpdateTime _ _ Nothing = []
+
+          handleDate tz s = 
+            case parseTimeM True defaultTimeLocale "%Y-%m-%d %R" s of
+                   Just localTime -> Just $ localTimeToUTCTZ tz localTime
+                   Nothing -> case parseTimeM True defaultTimeLocale "%Y-%m-%d" s of
+                        Just day -> Just $ localTimeToUTCTZ tz (LocalTime day (TimeOfDay 23 59 59))
+                        Nothing -> case parseTimeM True defaultTimeLocale "%Y-%m-%dT%T%Q%Z" s of
+                               Just utc -> Just utc
+                               Nothing -> Nothing
           
 getAPIInstructorSubmissionsR :: Text -> Text -> Handler Value
 getAPIInstructorSubmissionsR ident coursetitle = do 
