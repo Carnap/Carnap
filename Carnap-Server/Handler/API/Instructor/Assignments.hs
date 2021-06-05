@@ -128,10 +128,9 @@ patchAPIInstructorAssignmentR ident coursetitle asid = do
 getAPIInstructorSubmissionsR :: Text -> Text -> Handler Value
 getAPIInstructorSubmissionsR ident coursetitle = do 
              Entity cid _ <- canAccessClass ident coursetitle
-             students <- runDB $ selectList [UserDataEnrolledIn ==. Just cid] []
-             subs <- runDB $ forM students $ \(Entity _ ud) -> do 
-                        selectList [ProblemSubmissionUserId ==. userDataUserId ud] []
-             returnJson (concat subs)
+             studentUserIds <- runDB $ Import.map (Just . entityKey) <$> selectList [AssignmentMetadataCourse ==. cid] []
+             subs <- runDB $ selectList [ProblemSubmissionAssignmentId <-. studentUserIds] []
+             returnJson subs
 
 getAPIInstructorAssignmentSubmissionsR :: Text -> Text -> AssignmentMetadataId -> Handler Value
 getAPIInstructorAssignmentSubmissionsR ident coursetitle asid = do 
