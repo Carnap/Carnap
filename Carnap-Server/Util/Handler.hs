@@ -125,6 +125,9 @@ assignmentPartOf asid cid = do
 userFromIdent :: Text -> Handler (Entity User)
 userFromIdent ident = maybeUserByIdent ident >>= maybe (sendStatusJSON notFound404 ("No such instructor" :: Text)) pure
 
+userDataFromIdent :: Text -> Handler (Entity UserData)
+userDataFromIdent ident = maybeUserDataByIdent ident >>= maybe (sendStatusJSON notFound404 ("No such instructor" :: Text)) pure
+
 courseFromTitle :: Text -> Handler (Entity Course)
 courseFromTitle coursetitle = runDB (getBy $ UniqueCourse coursetitle) >>= maybe (sendStatusJSON notFound404 ("No such course" :: Text)) pure
 

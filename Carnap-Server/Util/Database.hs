@@ -30,6 +30,16 @@ maybeUserByIdent
     => Text -> HandlerFor site (Maybe (Entity User))
 maybeUserByIdent ident = unCacheMaybeUser <$> cachedBy (encodeUtf8 ident) (CachedMaybeUser <$> getData)
     where getData = runDB (getBy $ UniqueUser ident)
+          
+--retrieve userdata by ident, caching to avoid multiple DB lookups
+maybeUserDataByIdent
+    :: PersistentSite site
+    => Text -> HandlerFor site (Maybe (Entity UserData))
+maybeUserDataByIdent ident = unCacheMaybeUserData <$> cachedBy (encodeUtf8 ident) (CachedMaybeUserData <$> getData)
+    where getData = do ment <- maybeUserByIdent ident
+                       case ment of
+                           Just (Entity uid _) -> runDB (getBy $ UniqueUserData uid)
+                           Nothing -> pure Nothing
 
 maybeUserCourse
     :: PersistentSite site

@@ -129,6 +129,7 @@ instance Yesod App where
          APIR -> requireAPIKey >> return Authorized
          APIInstructorDocumentsR ident -> requireAPIKeyFor ident
          APIInstructorDocumentR ident _ -> requireAPIKeyFor ident
+         APIInstructorCoursesR ident -> requireAPIKeyFor ident
          APIInstructorDocumentDataR ident _ -> requireAPIKeyFor ident
          APIInstructorStudentsR ident _ -> requireAPIKeyFor ident
          APIInstructorStudentR ident _ _ -> requireAPIKeyFor ident

@@ -28,7 +28,9 @@ derivePersistField "ProblemData"
 derivePersistField "SomeRule"
 
 newtype BookAssignmentTable = BookAssignmentTable {readAssignmentTable :: IntMap UTCTime}
-    deriving (Show, Read, Eq)
+    deriving (Show, Read, Eq, Generic)
+instance ToJSON BookAssignmentTable
+instance FromJSON BookAssignmentTable
 derivePersistField "BookAssignmentTable"
 
 data SharingScope = Public | InstructorsOnly | LinkOnly | Private

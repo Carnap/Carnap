@@ -32,6 +32,7 @@
 /api/v1/instructors/#Text/documents                                                                     APIInstructorDocumentsR                         GET POST
 /api/v1/instructors/#Text/documents/#DocumentId                                                         APIInstructorDocumentR                          GET PATCH
 /api/v1/instructors/#Text/documents/#DocumentId/data                                                    APIInstructorDocumentDataR                      GET PUT
+/api/v1/instructors/#Text/courses                                                                       APIInstructorCoursesR                           GET
 /api/v1/instructors/#Text/courses/#Text/students                                                        APIInstructorStudentsR                          GET
 /api/v1/instructors/#Text/courses/#Text/students/#UserDataId                                            APIInstructorStudentR                           GET
 /api/v1/instructors/#Text/courses/#Text/students/#UserDataId/accommodations                             APIInstructorStudentAccommodationsR             GET PATCH

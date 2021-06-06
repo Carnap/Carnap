@@ -29,3 +29,17 @@ instance ToJSON ProblemSubmission
 instance ToJSON (Entity ProblemSubmission)
 instance FromJSON ProblemSubmission
 instance FromJSON (Entity ProblemSubmission)
+
+--And this one because ByteStrings (tzlabels) don't have a ToJSON
+instance ToJSON Course where
+        toJSON c = object [ "title" .= courseTitle c
+                          , "description" .= courseDescription c
+                          , "instructor" .= courseInstructor c
+                          , "textbookProblems" .= courseTextbookProblems c
+                          , "startDate" .= courseStartDate c
+                          , "endDate" .= courseEndDate c
+                          , "totalPoints" .= courseTotalPoints c
+                          , "textBook" .= courseTextBook c
+                          , "enrollmentOpen" .= courseEnrollmentOpen c
+                          , "timeZone" .= (decodeUtf8 $ courseTimeZone c :: Text)
+                          ]
