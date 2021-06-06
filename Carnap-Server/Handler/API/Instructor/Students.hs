@@ -32,7 +32,7 @@ getAPIInstructorStudentSubmissionsR ident coursetitle udid = do
                                 ud <- studentEnrolled udid cid
                                 let pq = problemQuery (userDataUserId ud) (map entityKey asmd) 
                                 selectList pq []
-             returnJson subs
+             returnJson (map entityVal subs)
 
 getAPIInstructorStudentExtensionsR :: Text -> Text -> UserDataId -> Handler Value
 getAPIInstructorStudentExtensionsR ident coursetitle udid = do 

@@ -5,7 +5,7 @@ import           Data.Time
 import           Data.Time.Zones
 import           Data.Time.Zones.DB
 import           Data.Time.Zones.All
-import           Data.HashMap.Strict as HM
+import qualified Data.HashMap.Strict as HM
 import           Import
 import           Util.Data           (SharingScope (..), AvailabilityStatus (..))
 import           Util.Handler
@@ -128,16 +128,16 @@ patchAPIInstructorAssignmentR ident coursetitle asid = do
 getAPIInstructorSubmissionsR :: Text -> Text -> Handler Value
 getAPIInstructorSubmissionsR ident coursetitle = do 
              Entity cid _ <- canAccessClass ident coursetitle
-             studentUserIds <- runDB $ Import.map (Just . entityKey) <$> selectList [AssignmentMetadataCourse ==. cid] []
+             studentUserIds <- runDB $ map (Just . entityKey) <$> selectList [AssignmentMetadataCourse ==. cid] []
              subs <- runDB $ selectList [ProblemSubmissionAssignmentId <-. studentUserIds] []
-             returnJson subs
+             returnJson (map entityVal subs)
 
 getAPIInstructorAssignmentSubmissionsR :: Text -> Text -> AssignmentMetadataId -> Handler Value
 getAPIInstructorAssignmentSubmissionsR ident coursetitle asid = do 
              Entity cid _ <- canAccessClass ident coursetitle
              subs <- runDB $ do assignmentPartOf asid cid
                                 selectList [ProblemSubmissionAssignmentId ==. Just asid] []
-             returnJson subs
+             returnJson (map entityVal subs)
 
 getAPIInstructorAssignmentSubmissionsByStudentR :: Text -> Text -> AssignmentMetadataId -> UserDataId -> Handler Value
 getAPIInstructorAssignmentSubmissionsByStudentR ident coursetitle asid udid = do 
@@ -145,4 +145,4 @@ getAPIInstructorAssignmentSubmissionsByStudentR ident coursetitle asid udid = do
              subs <- runDB $ do assignmentPartOf asid cid
                                 ud <- get udid >>= maybe (sendStatusJSON notFound404 ("No userdata for this ident" :: Text)) pure
                                 selectList [ProblemSubmissionAssignmentId ==. Just asid, ProblemSubmissionUserId ==. userDataUserId ud] []
-             returnJson subs
+             returnJson (map entityVal subs)
