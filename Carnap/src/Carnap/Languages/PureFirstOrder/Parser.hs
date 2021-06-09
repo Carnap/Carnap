@@ -3,7 +3,8 @@ module Carnap.Languages.PureFirstOrder.Parser
 ( folFormulaParser, folFormulaParserRelaxed, mfolFormulaParser
 , magnusFOLFormulaParser, gallowPLFormulaParser, thomasBolducAndZachFOLFormulaParser
 , gamutNDFormulaParser, thomasBolducAndZachFOL2019FormulaParser, thomasBolducAndZachFOL2019FormulaParserStrict
-, hardegreePLFormulaParser, bergmannMoorAndNelsonPDFormulaParser, bergmannMoorAndNelsonPDEFormulaParser
+, hardegreePLFormulaParser, belotPDFormulaParser, belotPDEFormulaParser
+, bergmannMoorAndNelsonPDFormulaParser, bergmannMoorAndNelsonPDEFormulaParser
 , gregoryPDFormulaParser, goldfarbNDFormulaParser, tomassiQLFormulaParser, hurleyPLFormulaParser, hausmanPLFormulaParser
 , FirstOrderParserOptions(..), parserFromOptions, parseFreeVar, howardSnyderPLFormulaParser) where
 
@@ -179,6 +180,14 @@ bergmanMoorAndNelsonPDParserOptions = FirstOrderParserOptions
                          }
           where boolean a = if isBoolean a then return a else unexpected "atomic or quantified sentence wrapped in parentheses"
 
+belotPDParserOptions :: FirstOrderParserOptions PureLexiconFOL u Identity
+belotPDParserOptions = bergmanMoorAndNelsonPDParserOptions 
+                         { atomicSentenceParser = \x -> try (parsePredicateSymbolNoParen ['A' .. 'Z'] x)
+                                                        <|> lowerCaseSentenceLetterParser "pqr"
+                         , freeVarParser = parseFreeVar "xyz"
+                         , constantParser = Just (parseConstant "abcdefghijklmnopqrstuvo")
+                         }
+
 gregoryPDParserOptions :: FirstOrderParserOptions PureLexiconFOL u Identity
 gregoryPDParserOptions = bergmanMoorAndNelsonPDParserOptions 
                          { freeVarParser = parseFreeVar "vwxyz"
@@ -200,6 +209,16 @@ bergmannMoorAndNelsonPDEParserOptions = bergmanMoorAndNelsonPDParserOptions
                                                         <|> try (sentenceLetterParser "ABCDEFGHIJKLMNOPQRSTUVWXYZ")
                                                         <|> equalsParser x
                         }
+
+belotPDEParserOptions :: FirstOrderParserOptions PureLexiconFOL u Identity
+belotPDEParserOptions = bergmanMoorAndNelsonPDParserOptions 
+                        { atomicSentenceParser = \x -> try (parsePredicateSymbolNoParen ['A' .. 'Z'] x)
+                                                       <|> try (equalsParser x)
+                                                       <|> lowerCaseSentenceLetterParser "pqr"
+                        , freeVarParser = parseFreeVar "xyz"
+                        , constantParser = Just (parseConstant "abcdefghijklmnopqrstuvo")
+                        }
+                        
 
 hardegreePLParserOptions :: FirstOrderParserOptions PureLexiconFOL u Identity
 hardegreePLParserOptions = FirstOrderParserOptions 
@@ -355,6 +374,12 @@ bergmannMoorAndNelsonPDFormulaParser = parserFromOptions bergmanMoorAndNelsonPDP
 
 bergmannMoorAndNelsonPDEFormulaParser :: Parsec String u PureFOLForm
 bergmannMoorAndNelsonPDEFormulaParser = parserFromOptions bergmannMoorAndNelsonPDEParserOptions
+
+belotPDFormulaParser :: Parsec String u PureFOLForm
+belotPDFormulaParser = parserFromOptions belotPDParserOptions
+
+belotPDEFormulaParser :: Parsec String u PureFOLForm
+belotPDEFormulaParser = parserFromOptions belotPDEParserOptions
 
 gregoryPDFormulaParser :: Parsec String u PureFOLForm
 gregoryPDFormulaParser = parserFromOptions gregoryPDParserOptions

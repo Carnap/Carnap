@@ -29,6 +29,7 @@ import Carnap.Core.Data.Types
 import Carnap.Languages.PurePropositional.Syntax
 import Carnap.Languages.PurePropositional.Logic.Rules (PropSequentCalc)
 import Carnap.Languages.PurePropositional.Logic.Allen
+import Carnap.Languages.PurePropositional.Logic.Belot
 import Carnap.Languages.PurePropositional.Logic.BergmannMoorAndNelson
 import Carnap.Languages.PurePropositional.Logic.Bonevac
 import Carnap.Languages.PurePropositional.Logic.Carnap
@@ -58,6 +59,8 @@ ofPropSys f sys | sys == "LogicBookSD"                   = Just $ f logicBookSDC
                 | sys == "allenSL"                       = Just $ f allenSLCalc
                 | sys == "allenSLPlus"                   = Just $ f allenSLPlusCalc
                 | sys == "bonevacSL"                     = Just $ f bonevacSLCalc
+                | sys == "belotSD"                       = Just $ f belotSDCalc
+                | sys == "belotSDPlus"                   = Just $ f belotSDPlusCalc
                 | sys == "ebelsDugganTFL"                = Just $ f ebelsDugganTFLCalc 
                 | sys == "gallowSL"                      = Just $ f gallowSLCalc
                 | sys == "gallowSLPlus"                  = Just $ f gallowSLPlusCalc
@@ -78,8 +81,8 @@ ofPropSys f sys | sys == "LogicBookSD"                   = Just $ f logicBookSDC
                 | sys == "magnusSL"                      = Just $ f magnusSLCalc
                 | sys == "magnusSLPlus"                  = Just $ f magnusSLPlusCalc
                 | sys == "montagueSC"                    = Just $ f montagueSCCalc
-                | sys == "gregorySD"                        = Just $ f gregorySDCalc
-                | sys == "gregorySDE"                       = Just $ f gregorySDECalc
+                | sys == "gregorySD"                     = Just $ f gregorySDCalc
+                | sys == "gregorySDE"                    = Just $ f gregorySDECalc
                 | sys == "prop"                          = Just $ f propCalc
                 | sys == "propStrict"                    = Just $ f propCalcStrict
                 | sys == "thomasBolducAndZachTFL"        = Just $ f thomasBolducAndZachTFLCalc

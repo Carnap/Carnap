@@ -23,6 +23,7 @@ import Carnap.Calculi.Util
 import Carnap.Languages.PureFirstOrder.Syntax
 import Carnap.Calculi.NaturalDeduction.Syntax
 import Carnap.Calculi.Tableau.Data
+import Carnap.Languages.PureFirstOrder.Logic.Belot
 import Carnap.Languages.PureFirstOrder.Logic.BergmannMoorAndNelson
 import Carnap.Languages.PureFirstOrder.Logic.Bonevac
 import Carnap.Languages.PureFirstOrder.Logic.Carnap
@@ -52,6 +53,10 @@ ofFOLSys f sys | sys == "LogicBookPD"                     = Just $ f logicBookPD
                | sys == "LogicBookPDE"                    = Just $ f logicBookPDECalc
                | sys == "LogicBookPDEPlus"                = Just $ f logicBookPDEPlusCalc
                | sys == "LogicBookPDPlus"                 = Just $ f logicBookPDPlusCalc
+               | sys == "belotPD"                         = Just $ f belotPDCalc       
+               | sys == "belotPDE"                        = Just $ f belotPDECalc      
+               | sys == "belotPDEPlus"                    = Just $ f belotPDEPlusCalc  
+               | sys == "belotPDPlus"                     = Just $ f belotPDPlusCalc   
                | sys == "bonevacQL"                       = Just $ f bonevacQLCalc
                | sys == "ebelsDugganFOL"                  = Just $ f ebelsDugganFOLCalc
                | sys == "firstOrder"                      = Just $ f folCalc

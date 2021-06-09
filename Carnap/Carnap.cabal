@@ -34,27 +34,28 @@ library
                      , Carnap.Languages.PurePropositional.Util
                      , Carnap.Languages.PurePropositional.Logic
                      , Carnap.Languages.PurePropositional.Logic.Rules
-                     , Carnap.Languages.PurePropositional.Logic.Carnap
-                     , Carnap.Languages.PurePropositional.Logic.KalishAndMontague
-                     , Carnap.Languages.PurePropositional.Logic.BergmannMoorAndNelson
-                     , Carnap.Languages.PurePropositional.Logic.IchikawaJenkins
-                     , Carnap.Languages.PurePropositional.Logic.Magnus
-                     , Carnap.Languages.PurePropositional.Logic.Hausman
-                     , Carnap.Languages.PurePropositional.Logic.Gamut
-                     , Carnap.Languages.PurePropositional.Logic.Gallow
-                     , Carnap.Languages.PurePropositional.Logic.Goldfarb
-                     , Carnap.Languages.PurePropositional.Logic.HowardSnyder
-                     , Carnap.Languages.PurePropositional.Logic.Hardegree
-                     , Carnap.Languages.PurePropositional.Logic.Hurley
-                     , Carnap.Languages.PurePropositional.Logic.Bonevac
-                     , Carnap.Languages.PurePropositional.Logic.ThomasBolducAndZach
-                     , Carnap.Languages.PurePropositional.Logic.EbelsDuggan
-                     , Carnap.Languages.PurePropositional.Logic.Tomassi
-                     , Carnap.Languages.PurePropositional.Logic.Gentzen
-                     , Carnap.Languages.PurePropositional.Logic.OpenLogic
                      , Carnap.Languages.PurePropositional.Logic.Allen
-                     , Carnap.Languages.PurePropositional.Logic.Gregory
+                     , Carnap.Languages.PurePropositional.Logic.Belot
+                     , Carnap.Languages.PurePropositional.Logic.BergmannMoorAndNelson
+                     , Carnap.Languages.PurePropositional.Logic.Bonevac
+                     , Carnap.Languages.PurePropositional.Logic.Carnap
+                     , Carnap.Languages.PurePropositional.Logic.EbelsDuggan
                      , Carnap.Languages.PurePropositional.Logic.Equivalence
+                     , Carnap.Languages.PurePropositional.Logic.Gallow
+                     , Carnap.Languages.PurePropositional.Logic.Gamut
+                     , Carnap.Languages.PurePropositional.Logic.Gentzen
+                     , Carnap.Languages.PurePropositional.Logic.Goldfarb
+                     , Carnap.Languages.PurePropositional.Logic.Gregory
+                     , Carnap.Languages.PurePropositional.Logic.Hardegree
+                     , Carnap.Languages.PurePropositional.Logic.Hausman
+                     , Carnap.Languages.PurePropositional.Logic.HowardSnyder
+                     , Carnap.Languages.PurePropositional.Logic.Hurley
+                     , Carnap.Languages.PurePropositional.Logic.IchikawaJenkins
+                     , Carnap.Languages.PurePropositional.Logic.KalishAndMontague
+                     , Carnap.Languages.PurePropositional.Logic.Magnus
+                     , Carnap.Languages.PurePropositional.Logic.OpenLogic
+                     , Carnap.Languages.PurePropositional.Logic.ThomasBolducAndZach
+                     , Carnap.Languages.PurePropositional.Logic.Tomassi
                      , Carnap.Languages.PurePropositional.Logic.Winkler
                      , Carnap.Languages.ModalPropositional.Syntax
                      , Carnap.Languages.ModalPropositional.Parser
@@ -72,6 +73,7 @@ library
                      , Carnap.Languages.PureFirstOrder.Util
                      , Carnap.Languages.PureFirstOrder.Logic
                      , Carnap.Languages.PureFirstOrder.Logic.Rules
+                     , Carnap.Languages.PureFirstOrder.Logic.Belot
                      , Carnap.Languages.PureFirstOrder.Logic.BergmannMoorAndNelson
                      , Carnap.Languages.PureFirstOrder.Logic.Bonevac
                      , Carnap.Languages.PureFirstOrder.Logic.Carnap
