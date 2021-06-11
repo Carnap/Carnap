@@ -174,7 +174,7 @@ hausmanSLNotation x = case runParser altParser 0 "" x of
     where altParser = do s <- handleCon <|> try handleQuant <|> try handleAtom <|> handleLParen <|> handleRParen <|> fallback
                          rest <- (eof >> return "") <|> altParser
                          return $ s ++ rest
-          handleCon = (char '∧' >> return "∙") <|> (char '¬' >> return "~") <|> (char '→' >> return "⊃")
+          handleCon = (char '∧' >> return "∙") <|> (char '¬' >> return "~") <|> (char '→' >> return "⊃") <|> (char '↔' >> return "≡")
           handleQuant = do q <- oneOf "∀∃"
                            v <- anyChar
                            return $ "(" ++ (if q == '∃' then "∃" else "") ++ [v] ++ ")"
