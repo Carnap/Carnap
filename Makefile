@@ -56,7 +56,7 @@ build-ghc:
 ifeq ($(origin NIX_STORE),undefined)
 	nix-shell --run 'make build-ghc'
 else
-	cp -n config/settings-example.yml config/settings.yml && \
+	cp -n Carnap-Server/config/settings-example.yml Carnap-Server/config/settings.yml && \
 	cabal new-build -f dev $(TARGET)
 endif
 
