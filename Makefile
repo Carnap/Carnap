@@ -1,4 +1,4 @@
-.PHONY: help shell-ghc build-ghc shell-ghcjs build-ghcjs tags build-production
+.PHONY: help devel run shell-ghc build-ghc shell-ghcjs build-ghcjs tags build-production
 TARGET := all
 
 help:
@@ -11,7 +11,7 @@ help:
 	@echo "    build-ghc 			Build a development server with GHC"
 	@echo "    shell-ghcjs		    Enter a nix shell for GHCJS client development"
 	@echo "    shell-ghc		    Enter a nix shell for GHC server development"
-	@echo "    run				    Run the server locally, with data saved in this directory"
+	@echo "    devel				Build and run a development server locally, with data saved in this directory"
 	@echo "    tags				    Generate source code tags for development"
 	@echo ""
 	@echo "For more usage instructions, see README."
@@ -36,6 +36,8 @@ build-production:
 build-docker:
 	nix-build release.nix -A docker -o docker-out
 
+devel: build-ghcjs run
+
 run:
 ifeq ($(origin NIX_STORE),undefined)
 	nix-shell --run 'make run'
@@ -43,7 +45,6 @@ else
 	cd Carnap-Server && \
 	cp -n config/settings-example.yml config/settings.yml && \
 	mkdir -p ../dataroot && \
-	mkdir -p ../Carnap-Book/cache && \
 	APPROOT="http://localhost:3000" DATAROOT="../dataroot" \
 		BOOKROOT="../Carnap-Book/" \
 		cabal run -f dev Carnap-Server
@@ -66,7 +67,7 @@ shell-ghcjs:
 # I don't think I can easily enter a shell for the user if they forget unfortunately :(
 build-ghcjs:
 ifeq ($(origin NIX_STORE),undefined)
-	nix-shell --run 'make build-ghcjs'
+	nix-shell --arg ghcjs true --run 'make build-ghcjs'
 else
 	cabal --project-file=cabal-ghcjs.project --builddir=dist-ghcjs new-build $(TARGET)
 	# make a fake nix output directory so we don't have to change the symlinks from a nix-built
