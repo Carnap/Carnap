@@ -4,7 +4,7 @@ import Import
 import qualified Data.CaseInsensitive as CI
 import qualified Data.Text.Encoding as TE
 import Yesod.Markdown
-import Text.Pandoc (MetaValue(..),Inline(..), writerExtensions,writerWrapText, WrapOption(..), readerExtensions, Pandoc(..))
+import Text.Pandoc (MetaValue(..),Inline(..), WriterOptions(..), WrapOption(..), readerExtensions,   Pandoc(..), getTemplate, compileTemplate, lookupMeta, runIO)
 import Text.Pandoc.Walk (walkM, walk)
 import Text.Julius (juliusFile,rawJS)
 import Text.Hamlet (hamletFile)
@@ -33,10 +33,19 @@ cleanLayout widget = do
 
 retrievePandocVal metaval = case metaval of 
                         Just (MetaInlines ils) -> return $ Just (catMaybes (map fromStr ils))
-                        Just (MetaList list) -> do mcsses <- mapM retrievePandocVal (map Just list) 
-                                                   return . Just . concat . catMaybes $ mcsses
+                        Just (MetaList list) -> do mvals <- mapM retrievePandocVal (map Just list) 
+                                                   return . Just . concat . catMaybes $ mvals
                         Nothing -> return Nothing
                         x -> setMessage (toHtml ("bad yaml metadata: " ++ show x)) >> return Nothing
+    where fromStr (Str x) = Just x
+          fromStr _ = Nothing
+
+retrievePandocValPure metaval = case metaval of 
+                        Just (MetaInlines ils) -> return $ Just (catMaybes (map fromStr ils))
+                        Just (MetaList list) -> do mvals <- mapM retrievePandocValPure (map Just list) 
+                                                   return . Just . concat . catMaybes $ mvals
+                        Nothing -> return Nothing
+                        x -> return Nothing
     where fromStr (Str x) = Just x
           fromStr _ = Nothing
 
@@ -44,9 +53,30 @@ fileToHtml filters path = do Markdown md <- markdownFromFile path
                              let md' = Markdown (filter ((/=) '\r') md) --remove carrage returns from dos files
                              case parseMarkdown yesodDefaultReaderOptions { readerExtensions = carnapPandocExtensions } md' of
                                  Right pd -> do let pd'@(Pandoc meta _)= walk filters pd
-                                                return $ Right $ (write pd', meta)
-                                 Left e -> return $ Left e
-    where write = writePandocTrusted yesodDefaultWriterOptions { writerExtensions = carnapPandocExtensions, writerWrapText = WrapPreserve }
+                                                templateOrErr <- templateFrom meta
+                                                case templateOrErr of
+                                                    Right template -> return $ Right $ (write template pd', meta)
+                                                    Left err -> return $ Left err
+                                 Left err -> return $ Left (show err)
+    where write template = writePandocTrusted yesodDefaultWriterOptions { writerExtensions = carnapPandocExtensions
+                                                                        , writerWrapText = WrapPreserve 
+                                                                        , writerTemplate = template
+                                                                        , writerTableOfContents = template /= Nothing
+                                                                        }
+          templateFrom meta = do mtemplate <- retrievePandocValPure (lookupMeta "template" meta)
+                                 case mtemplate of
+                                     Just [templatename] | takeExtension (unpack templatename) == ".template" -> do 
+                                           let templatepath = takeDirectory path </> unpack templatename
+                                           templateOrErr <- runIO $ getTemplate templatepath
+                                           case templateOrErr of
+                                               Left err -> return $ Left (show err)
+                                               Right template -> do
+                                                   compiled <- compileTemplate templatepath template
+                                                   return $ case compiled of
+                                                       Left err -> Left $ "template error: " ++ err
+                                                       Right t -> Right $ Just t
+                                     Just _ -> do return (Left "template error: Only one template file is allowd, and it must have the extension .template")
+                                     _ -> return (Right Nothing)
 
 saveTo
     :: FilePath
