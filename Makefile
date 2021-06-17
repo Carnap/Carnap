@@ -1,8 +1,40 @@
-.PHONY: help shell-ghc build-ghc shell-ghcjs build-ghcjs tags
+.PHONY: help shell-ghc build-ghc shell-ghcjs build-ghcjs tags build-production
 TARGET := all
 
 help:
-	@echo "Supported actions: run, shell-ghc, build-ghc, shell-ghcjs, build-ghcjs, tags"
+	@echo "Usage: make [options] [target]"
+	@echo ""
+	@echo "Supported targets:"
+	@echo "    build-production 	Build and bundle everything needed to run the server in production"
+	@echo "    build-docker 		Build a production docker container"
+	@echo "    build-ghcjs 	 		Build a development client JavaScript with GHCJS"
+	@echo "    build-ghc 			Build a development server with GHC"
+	@echo "    shell-ghcjs		    Enter a nix shell for GHCJS client development"
+	@echo "    shell-ghc		    Enter a nix shell for GHC server development"
+	@echo "    run				    Run the server locally, with data saved in this directory"
+	@echo "    tags				    Generate source code tags for development"
+	@echo ""
+	@echo "For more usage instructions, see README."
+
+
+build-production:
+	@echo "building client..."
+	nix-build -j4 -A client -o client-out
+	@echo "building server..."
+	nix-build -j4 -A server -o server-out
+	@echo "creating bundle directory..."
+	mkdir bundle
+	@echo "copying files..."
+	cp -r server-out/share/* bundle
+	cp server-out/bin/Carnap-Server bundle
+	chmod -R +w bundle
+	@echo "compressing..."
+	tar -hczf carnap.tar.gz bundle
+	@echo "cleaning up..."
+	rm -r bundle
+
+build-docker:
+	nix-build release.nix -A docker -o docker-out
 
 run:
 ifeq ($(origin NIX_STORE),undefined)
@@ -24,6 +56,7 @@ build-ghc:
 ifeq ($(origin NIX_STORE),undefined)
 	nix-shell --run 'make build-ghc'
 else
+	cp -n Carnap-Server/config/settings-example.yml Carnap-Server/config/settings.yml && \
 	cabal new-build -f dev $(TARGET)
 endif
 
