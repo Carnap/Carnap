@@ -127,19 +127,30 @@ renderTreeLemmon w calc = treeToElement asLine asSubproof
                                case mnum of
                                    Nothing -> setInnerHTML lineNum (Just $ show n ++ ".")
                                    Just m -> setInnerHTML lineNum (Just $ show m ++ ".")
-                       _ -> do setInnerHTML theScope (Just $ show scope)
+                       LemmonStyle GoldfarbStyle -> 
+                            do setInnerHTML theScope (Just $ show scope)
+                               case mnum of
+                                   Nothing -> setInnerHTML lineNum (Just $ "(" ++ show n ++ ")")
+                                   Just m -> setInnerHTML lineNum (Just $ "(" ++ show m ++ ")")
+                       LemmonStyle StandardLemmon -> 
+                            do setInnerHTML theScope (Just $ hideBrackets $ show scope)
                                case mnum of
                                    Nothing -> setInnerHTML lineNum (Just $ "(" ++ show n ++ ")")
                                    Just m -> setInnerHTML lineNum (Just $ "(" ++ show m ++ ")")
                    setAttribute theRule "class" "rule"
                    setAttribute theForm "class" "form"
-                   setInnerHTML theRule (Just $ show (head r) ++ showdischarged ++ showdeps)
+                   setInnerHTML theRule (Just $ showRule r )
                    mapM (appendChild theWrapper. Just) [theScope,lineNum,theForm,theRule]
                    return theWrapper
                    
                 where showdischarged = if discharged l /= [] then show (discharged l) else ""
-
-                      showdeps = if deps /= [] then "(" ++ intercalate "," (map renderDep deps) ++ ")" else "" 
+                      showdeps = case ndRenderer calc of
+                                     LemmonStyle StandardLemmon -> if deps /= [] then intercalate "," (map renderDep deps) else "" 
+                                     _ -> if deps /= [] then "(" ++ intercalate "," (map renderDep deps) ++ ")" else "" 
+                      showRule r = case ndRenderer calc of 
+                                     LemmonStyle StandardLemmon -> showdeps ++ " " ++ show (head r)
+                                     _ -> show (head r) ++ showdischarged ++ showdeps
+                      hideBrackets = filter (\x -> not (x `elem` "[]"))
 
           asLine (n,PartialLine esf _ _) = 
                 do [theWrapper,lineNum,theForm,theRule,theScope] <- catMaybes <$> mapM (createElement w . Just) ["div","span","span","span","span"]
@@ -181,12 +192,11 @@ renderNull :: Document -> NaturalDeductionCalc r lex sem -> [DeductionLine t t1 
 renderNull w _ _ = do Just e <- createElement w (Just "div")
                       return e
 
-renderDep (n,m) = if n==m then show n else show n ++ "-" ++ show m
+renderDep (n,m) = if n == m then show n else show n ++ "-" ++ show m
 
 whileJust :: Monad m => Maybe a -> (a -> m b) -> m ()
 whileJust (Just m) f = f m >> return ()
 whileJust Nothing _ = return ()
-
 
 noform :: Maybe String
 noform = Nothing

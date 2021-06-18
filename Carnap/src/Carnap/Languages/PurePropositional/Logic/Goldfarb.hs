@@ -15,7 +15,7 @@ import Carnap.Languages.ClassicalSequent.Syntax
 import Carnap.Languages.ClassicalSequent.Parser
 import Carnap.Calculi.Util
 import Carnap.Calculi.NaturalDeduction.Syntax
-import Carnap.Calculi.NaturalDeduction.Parser (toDeductionLemmon,toDeductionLemmonAlt)
+import Carnap.Calculi.NaturalDeduction.Parser (toDeductionLemmonGoldfarb, toDeductionLemmonBrown)
 import Carnap.Calculi.NaturalDeduction.Checker (hoProcessLineLemmonMemo, hoProcessLineLemmon)
 import Carnap.Languages.PureFirstOrder.Logic.Rules
 
@@ -111,7 +111,7 @@ parseGoldfarbPropND rtc n _ = do r <- choice (map (try . string) [ "NDE", "MP", 
                                         | r == "NDE" -> [NDE1, NDE2]
                                    
 parseGoldfarbPropNDProof ::  RuntimeDeductionConfig PurePropLexicon (Form Bool) -> String -> [DeductionLine GoldfarbPropND PurePropLexicon (Form Bool)]
-parseGoldfarbPropNDProof ders = toDeductionLemmon (parseGoldfarbPropND ders) (purePropFormulaParser gamutOpts)
+parseGoldfarbPropNDProof ders = toDeductionLemmonGoldfarb (parseGoldfarbPropND ders) (purePropFormulaParser gamutOpts)
 
 goldfarbPropNDNotation :: String -> String 
 goldfarbPropNDNotation x = case runParser altParser 0 "" x of
@@ -125,7 +125,7 @@ goldfarbPropNDNotation x = case runParser altParser 0 "" x of
                         return [toLower c]
 
 goldfarbPropNDCalc = mkNDCalc
-    { ndRenderer = LemmonStyle StandardLemmon
+    { ndRenderer = LemmonStyle GoldfarbStyle
     , ndParseProof = parseGoldfarbPropNDProof
     , ndProcessLine = hoProcessLineLemmon
     , ndProcessLineMemo = Just hoProcessLineLemmonMemo

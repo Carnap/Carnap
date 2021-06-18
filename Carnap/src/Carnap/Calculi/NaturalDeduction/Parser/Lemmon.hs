@@ -13,47 +13,46 @@ import Carnap.Calculi.NaturalDeduction.Parser.Util
 import Carnap.Languages.ClassicalSequent.Syntax
 import Carnap.Languages.ClassicalSequent.Parser
 
-parseDependentAssertLine withNum r f j  = do mscope <- optionMaybe scope
-                                             let thescope = case mscope of Nothing -> []; Just l -> l
-                                             spaces
-                                             mnum <- if withNum 
-                                                        then (char '(' *> (Just . read <$> many1 digit) <* char ')') 
-                                                             <|> ((Just . read <$> many1 digit) <* char '.')
-                                                             <?> "line number"
-                                                        else return Nothing
-                                             spaces
-                                             phi <- f
-                                             (dis, deps, rule) <- j r
-                                             return $ DependentAssertLine phi rule (map (\x->(x,x)) deps) dis thescope mnum
-
-parseDependentAssertLineWithNum = parseDependentAssertLine True
-
-parseDependentAssertLinePlain = parseDependentAssertLine False
+--TODO: the arguments here should be wrapped up on a single record type
+parseDependentAssertLine withNum scopeParser r f j  = 
+        do mscope <- optionMaybe scopeParser
+           let thescope = case mscope of Nothing -> []; Just l -> l
+           spaces
+           mnum <- if withNum 
+                      then (char '(' *> (Just . read <$> many1 digit) <* char ')') 
+                           <|> ((Just . read <$> many1 digit) <* char '.')
+                           <?> "line number"
+                      else return Nothing
+           spaces
+           phi <- f
+           (dis, deps, rule) <- j r
+           return $ DependentAssertLine phi rule (map (\x->(x,x)) deps) dis thescope mnum
 
 --lemmon justifications as given in Goldfarb
-lemline r = do mdis <- optionMaybe scope
-               let dis = case mdis of Nothing -> Just []; l -> l
-               spaces
-               deps <- citation `sepEndBy` spaces
-               annote <- annotation
-               spaces
-               rule <- r (length deps) annote
-               return (dis,deps,rule)
+lemlineGoldfarb r = do mdis <- optionMaybe scope
+                       let dis = case mdis of Nothing -> Just []; l -> l
+                       spaces
+                       deps <- citation `sepEndBy` spaces
+                       annote <- annotation
+                       spaces
+                       rule <- r (length deps) annote
+                       return (dis,deps,rule)
 
 --lemmon justifications as used at Brown
-lemlineAlt r = do (dis,deps,annote) <- lookAhead $ 
-                    do many (oneOf ['A' .. 'Z'])
-                       (mdis,mdeps,annote) <- try cite1 <|> try cite2 <|> cite3
-                       let deps = case mdeps of Nothing -> []; Just l -> l
-                       let dis = case mdis of Nothing -> Just []; l -> l
-                       return (dis,deps,annote)
-                  rule <- r (length deps) annote
-                  return (dis,deps,rule)
+lemlineBrown r = do (dis,deps,annote) <- lookAhead $ 
+                      do many (oneOf ['A' .. 'Z'])
+                         (mdis,mdeps,annote) <- try cite1 <|> try cite2 <|> cite3
+                         let deps = case mdeps of Nothing -> []; Just l -> l
+                         let dis = case mdis of Nothing -> Just []; l -> l
+                         return (dis,deps,annote)
+                    rule <- r (length deps) annote
+                    return (dis,deps,rule)
     where cite1 = (,,) <$> (Just <$> scope) <*> (Just <$> bothCitations) <*> annotation
           cite2 = (\x y z -> (y,x,z)) <$> (Just <$> bothCitations) <*> (Just <$> scope) <*> annotation
           cite3 = (,,) <$> optionMaybe scope <*> optionMaybe bothCitations <*> annotation
           bothCitations = try (citation `sepEndBy` spaces) <|> citations
 
+--justifications with discharge kept implicit, as in Tomassi and Lemmon
 lemlineImplicit r = do indicated <- parseInts
                        spaces
                        rule <- r 0 ""
@@ -73,21 +72,21 @@ annotation = many (oneOf ['a' .. 'z'])
 
 scope = (char '[' *> parseInts <* char ']') <|> (char '{' *> parseInts <* char '}')
 
-toDeductionLemmon :: (Int -> String -> Parsec String () [r]) -> Parsec String () (FixLang lex a) -> String 
+toDeductionLemmonGoldfarb :: (Int -> String -> Parsec String () [r]) -> Parsec String () (FixLang lex a) -> String 
     -> Deduction r lex a
-toDeductionLemmon r f = toDeduction (parseDependentAssertLinePlain r f lemline)
+toDeductionLemmonGoldfarb r f = toDeduction (parseDependentAssertLine False scope r f lemlineGoldfarb)
 
-toDeductionLemmonAlt :: (Int -> String -> Parsec String () [r]) -> Parsec String () (FixLang lex a) -> String 
+toDeductionLemmonBrown :: (Int -> String -> Parsec String () [r]) -> Parsec String () (FixLang lex a) -> String 
     -> Deduction r lex a
-toDeductionLemmonAlt r f = toDeduction (parseDependentAssertLinePlain r f lemlineAlt)
+toDeductionLemmonBrown r f = toDeduction (parseDependentAssertLine False scope r f lemlineBrown)
 
 toDeductionLemmonTomassi :: Inference r lex (Form Bool) => (Int -> String -> Parsec String () [r]) -> Parsec String () (FixLang lex a) -> String 
     -> Deduction r lex a
-toDeductionLemmonTomassi r f = toDeduction (parseDependentAssertLineWithNum r f lemlineImplicit)
+toDeductionLemmonTomassi r f = toDeduction (parseDependentAssertLine True scope r f lemlineImplicit)
 
-toDeductionLemmonImplicit :: Inference r lex (Form Bool) => (Int -> String -> Parsec String () [r]) -> Parsec String () (FixLang lex a) -> String 
+toDeductionLemmon :: Inference r lex (Form Bool) => (Int -> String -> Parsec String () [r]) -> Parsec String () (FixLang lex a) -> String 
     -> Deduction r lex a
-toDeductionLemmonImplicit r f = toDeduction (parseDependentAssertLinePlain r f lemlineImplicit)
+toDeductionLemmon r f = toDeduction (parseDependentAssertLine True parseInts r f lemlineImplicit)
 
 toProofTreeLemmon :: 
     ( Inference r lex sem

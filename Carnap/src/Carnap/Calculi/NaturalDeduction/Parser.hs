@@ -2,8 +2,9 @@ module Carnap.Calculi.NaturalDeduction.Parser
     ( toProofTreeStructuredFitch, toProofTreeHardegree, toProofTreeMontague, toProofTreeLemmon
     , toProofTreeFitch, toProofTreeHilbert, toProofTreeHilbertImplicit
     , toDeductionMontague, toCommentedDeductionFitch , toDeductionFitch
-    , toDeductionFitchAlt, toDeductionHardegree, toDeductionLemmon
-    , toDeductionLemmonAlt, toDeductionLemmonTomassi 
+    , toDeductionFitchAlt, toDeductionHardegree
+    , toDeductionLemmon, toDeductionLemmonGoldfarb
+    , toDeductionLemmonBrown, toDeductionLemmonTomassi 
     , toDeductionHilbert, toDeductionHilbertImplicit
     ) where
 

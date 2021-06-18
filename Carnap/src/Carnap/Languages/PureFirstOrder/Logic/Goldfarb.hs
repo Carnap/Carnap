@@ -14,7 +14,7 @@ import Carnap.Languages.ClassicalSequent.Syntax
 import Carnap.Languages.ClassicalSequent.Parser
 import Carnap.Calculi.Util
 import Carnap.Calculi.NaturalDeduction.Syntax
-import Carnap.Calculi.NaturalDeduction.Parser (toDeductionLemmon,toDeductionLemmonAlt)
+import Carnap.Calculi.NaturalDeduction.Parser (toDeductionLemmonGoldfarb, toDeductionLemmonBrown)
 import Carnap.Calculi.NaturalDeduction.Checker (hoProcessLineLemmonMemo, hoProcessLineLemmon)
 import Carnap.Languages.PureFirstOrder.Logic.Rules
 
@@ -82,10 +82,10 @@ parseGoldfarbND rtc n _ = do r <- choice (map (try . string) ["P","D","CQ","UI",
                                     | r == "TF" -> return [TF n]
 
 parseGoldfarbNDProof ::  RuntimeDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine GoldfarbND PureLexiconFOL (Form Bool)]
-parseGoldfarbNDProof ders = toDeductionLemmon (parseGoldfarbND ders) goldfarbNDFormulaParser
+parseGoldfarbNDProof ders = toDeductionLemmonGoldfarb (parseGoldfarbND ders) goldfarbNDFormulaParser
 
-parseGoldfarbAltNDProof ::  RuntimeDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine GoldfarbND PureLexiconFOL (Form Bool)]
-parseGoldfarbAltNDProof ders = toDeductionLemmonAlt (parseGoldfarbND ders) goldfarbNDFormulaParser
+parseGoldfarbBrownNDProof ::  RuntimeDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine GoldfarbND PureLexiconFOL (Form Bool)]
+parseGoldfarbBrownNDProof ders = toDeductionLemmonBrown (parseGoldfarbND ders) goldfarbNDFormulaParser
 
 goldfarbNDNotation :: String -> String 
 goldfarbNDNotation x = case runParser altParser 0 "" x of
@@ -108,7 +108,7 @@ goldfarbNDNotation x = case runParser altParser 0 "" x of
                         return [c]
 
 goldfarbNDCalc = mkNDCalc
-    { ndRenderer = LemmonStyle StandardLemmon
+    { ndRenderer = LemmonStyle GoldfarbStyle
     , ndParseProof = parseGoldfarbNDProof
     , ndProcessLine = hoProcessLineLemmon
     , ndProcessLineMemo = Just hoProcessLineLemmonMemo
@@ -117,7 +117,7 @@ goldfarbNDCalc = mkNDCalc
     , ndNotation = goldfarbNDNotation 
     }
 
-goldfarbAltNDCalc = goldfarbNDCalc { ndParseProof = parseGoldfarbAltNDProof }
+goldfarbBrownNDCalc = goldfarbNDCalc { ndParseProof = parseGoldfarbBrownNDProof }
 
 ------------------------------------------------------------------------
 --  2. The system with convenience rules for existential quantifiers  --
@@ -174,13 +174,13 @@ parseGoldfarbNDPlus rtc n annote = plusRules <|> (map ND <$> parseGoldfarbND rtc
                                           | r == "EIE" -> return [EIE]
 
 parseGoldfarbNDPlusProof ::  RuntimeDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine GoldfarbNDPlus PureLexiconFOL (Form Bool)]
-parseGoldfarbNDPlusProof rtc = toDeductionLemmon (parseGoldfarbNDPlus rtc) goldfarbNDFormulaParser
+parseGoldfarbNDPlusProof rtc = toDeductionLemmonGoldfarb (parseGoldfarbNDPlus rtc) goldfarbNDFormulaParser
 
-parseGoldfarbAltNDPlusProof ::  RuntimeDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine GoldfarbNDPlus PureLexiconFOL (Form Bool)]
-parseGoldfarbAltNDPlusProof rtc = toDeductionLemmonAlt (parseGoldfarbNDPlus rtc) goldfarbNDFormulaParser
+parseGoldfarbBrownNDPlusProof ::  RuntimeDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine GoldfarbNDPlus PureLexiconFOL (Form Bool)]
+parseGoldfarbBrownNDPlusProof rtc = toDeductionLemmonBrown (parseGoldfarbNDPlus rtc) goldfarbNDFormulaParser
 
 goldfarbNDPlusCalc = mkNDCalc
-    { ndRenderer = LemmonStyle StandardLemmon
+    { ndRenderer = LemmonStyle GoldfarbStyle
     , ndParseProof = parseGoldfarbNDPlusProof
     , ndProcessLine = hoProcessLineLemmon
     , ndParseForm = goldfarbNDFormulaParser
@@ -189,4 +189,4 @@ goldfarbNDPlusCalc = mkNDCalc
     , ndNotation = goldfarbNDNotation 
     }
 
-goldfarbAltNDPlusCalc = goldfarbNDPlusCalc { ndParseProof = parseGoldfarbAltNDPlusProof }
+goldfarbBrownNDPlusCalc = goldfarbNDPlusCalc { ndParseProof = parseGoldfarbBrownNDPlusProof }
