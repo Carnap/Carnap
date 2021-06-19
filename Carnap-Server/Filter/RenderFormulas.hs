@@ -8,7 +8,7 @@ renderFormulas :: Block -> Block
 renderFormulas = walk renderFormula
 
 renderFormula :: Inline -> Inline
-renderFormula x@(Code (id,classes,attrs) txt) = Code (id,classes,map rewrite attrs) txt 
+renderFormula (Code (id,classes,attrs) txt) = Code (id,classes,map rewrite attrs) txt 
     where rewrite ("system",y) = ("data-carnap-render-system",y)
           rewrite x = x
 renderFormula x = x
