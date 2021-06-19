@@ -6,10 +6,11 @@ host:           "_env:HOST:*4" # any IPv4 host
 port:           "_env:PORT:3000" # NB: The port `yesod devel` uses is distinct from this value. Set the `yesod devel` port from the command line.
 ip-from-header: "_env:IP_FROM_HEADER:false"
 
-# App root, including protocol.
-approot:        "_env:APPROOT:https://carnap.io"
+# App root, including protocol. Set this to the domain and protocol of your site, for example "https://carnap.io".
+# You *must* set this when running your server in production, in order for links on the site to be constructed properly among other things.
+approot:        "_env:APPROOT:http://localhost:3000"
 
-#Optional value for serving static files from a separate subdomain
+#Optional value for serving static files from a separate subdomain; useful for serving static files from a CDN.
 #static-root:    "_env:STATICROOT:https://static.carnap.io/static"
 
 # Optional values with the following production defaults.
@@ -33,13 +34,14 @@ database:
   database: "_env:PGDATABASE:carnapdb"
   poolsize: "_env:PGPOOLSIZE:10"
 
-copyright: Copyright 2015-2020 G. Leach-Krouse <gleachkr@ksu.edu> and J. Ehrlich
+copyright: Copyright 2015-2021 G. Leach-Krouse <gleachkr@ksu.edu> and J. Ehrlich
 
 #set to true if you want to run without a postgres installation
 sqlite: "_env:SQLITE:true"
 
-data-root: "_env:DATAROOT:/var/lib/carnap"
-book-root: "_env:BOOKROOT:/var/lib/carnap/book/"
+#set these to the directories where you're storing carnap's data, and the associated carnap book.
+data-root: "_env:DATAROOT:dataroot"
+book-root: "_env:BOOKROOT:book"
 
 # Google API keys for Google based login
 google-api-key: "_env:GOOGLEKEY"
