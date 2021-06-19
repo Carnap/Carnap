@@ -23,15 +23,16 @@ build-production:
 	@echo "building server..."
 	nix-build -j4 -A server -o server-out
 	@echo "creating bundle directory..."
-	mkdir bundle
+	mkdir carnap-bundle
 	@echo "copying files..."
-	cp -r server-out/share/* bundle
-	cp server-out/bin/Carnap-Server bundle
-	chmod -R +w bundle
+	cp -r server-out/share/static carnap-bundle
+	mkdir carnap-bundle/dataroot
+	cp server-out/bin/Carnap-Server carnap-bundle
+	chmod -R +w carnap-bundle
 	@echo "compressing..."
-	tar -hczf carnap.tar.gz bundle
+	tar -hczf carnap-bundle.tar.gz carnap-bundle
 	@echo "cleaning up..."
-	rm -r bundle
+	rm -r carnap-bundle
 
 build-docker:
 	nix-build release.nix -A docker -o docker-out
