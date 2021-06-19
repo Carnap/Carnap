@@ -45,6 +45,7 @@ import Carnap.Languages.PurePropositional.Logic.HowardSnyder
 import Carnap.Languages.PurePropositional.Logic.Hurley
 import Carnap.Languages.PurePropositional.Logic.IchikawaJenkins
 import Carnap.Languages.PurePropositional.Logic.KalishAndMontague
+import Carnap.Languages.PurePropositional.Logic.Lemmon
 import Carnap.Languages.PurePropositional.Logic.Magnus
 import Carnap.Languages.PurePropositional.Logic.OpenLogic
 import Carnap.Languages.PurePropositional.Logic.Gregory
@@ -58,9 +59,9 @@ ofPropSys f sys | sys == "LogicBookSD"                   = Just $ f logicBookSDC
                 | sys == "LogicBookSDPlus"               = Just $ f logicBookSDPlusCalc
                 | sys == "allenSL"                       = Just $ f allenSLCalc
                 | sys == "allenSLPlus"                   = Just $ f allenSLPlusCalc
-                | sys == "bonevacSL"                     = Just $ f bonevacSLCalc
                 | sys == "belotSD"                       = Just $ f belotSDCalc
                 | sys == "belotSDPlus"                   = Just $ f belotSDPlusCalc
+                | sys == "bonevacSL"                     = Just $ f bonevacSLCalc
                 | sys == "ebelsDugganTFL"                = Just $ f ebelsDugganTFLCalc 
                 | sys == "gallowSL"                      = Just $ f gallowSLCalc
                 | sys == "gallowSLPlus"                  = Just $ f gallowSLPlusCalc
@@ -69,6 +70,8 @@ ofPropSys f sys | sys == "LogicBookSD"                   = Just $ f logicBookSDC
                 | sys == "gamutPND"                      = Just $ f gamutPNDCalc
                 | sys == "gamutPNDPlus"                  = Just $ f gamutPNDPlusCalc
                 | sys == "goldfarbPropND"                = Just $ f goldfarbPropNDCalc
+                | sys == "gregorySD"                     = Just $ f gregorySDCalc
+                | sys == "gregorySDE"                    = Just $ f gregorySDECalc
                 | sys == "hardegreeSL"                   = Just $ f hardegreeSLCalc
                 | sys == "hardegreeSL2006"               = Just $ f hardegreeSL2006Calc
                 | sys == "hausmanSL"                     = Just $ f hausmanSLCalc
@@ -78,11 +81,10 @@ ofPropSys f sys | sys == "LogicBookSD"                   = Just $ f logicBookSDC
                 | sys == "ichikawaJenkinsSL"             = Just $ f ichikawaJenkinsSLCalc
                 | sys == "johnsonSL"                     = Just $ f allenSLCalc
                 | sys == "johnsonSLPlus"                 = Just $ f allenSLPlusCalc
+                | sys == "lemmonProp"                    = Just $ f lemmonPropCalc
                 | sys == "magnusSL"                      = Just $ f magnusSLCalc
                 | sys == "magnusSLPlus"                  = Just $ f magnusSLPlusCalc
                 | sys == "montagueSC"                    = Just $ f montagueSCCalc
-                | sys == "gregorySD"                     = Just $ f gregorySDCalc
-                | sys == "gregorySDE"                    = Just $ f gregorySDECalc
                 | sys == "prop"                          = Just $ f propCalc
                 | sys == "propStrict"                    = Just $ f propCalcStrict
                 | sys == "thomasBolducAndZachTFL"        = Just $ f thomasBolducAndZachTFLCalc

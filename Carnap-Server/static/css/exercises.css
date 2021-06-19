@@ -329,7 +329,7 @@
 
 .montagueDisplay span.rule, .fitchDisplay span.rule, .lemmonDisplay span.rule{
     float:right;
-    padding-left:10px;
+    padding-left:30px;
 }
 
 .montagueDisplay span.form, .fitchDisplay span.form, .lemmonDisplay span.form{

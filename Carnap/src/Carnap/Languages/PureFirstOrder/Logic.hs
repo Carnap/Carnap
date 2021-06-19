@@ -13,7 +13,7 @@ module Carnap.Languages.PureFirstOrder.Logic
         , parseHardegreePL, hardegreePLCalc
         , parseTomassiQL, tomassiQLCalc
         , gallowPLCalc, gallowPLPlusCalc
-        , goldfarbNDCalc, goldfarbAltNDCalc, goldfarbNDPlusCalc, goldfarbAltNDPlusCalc
+        , goldfarbNDCalc, goldfarbBrownNDCalc, goldfarbNDPlusCalc, goldfarbBrownNDPlusCalc
         , ofFOLSys, ofFOLTreeSys, ofFOLSeqSys
         )
     where
@@ -64,8 +64,8 @@ ofFOLSys f sys | sys == "LogicBookPD"                     = Just $ f logicBookPD
                | sys == "gallowPLPlus"                    = Just $ f gallowPLPlusCalc
                | sys == "gamutND"                         = Just $ f gamutNDCalc
                | sys == "gamutNDPlus"                     = Just $ f gamutNDPlusCalc
-               | sys == "goldfarbAltND"                   = Just $ f goldfarbAltNDCalc
-               | sys == "goldfarbAltNDPlus"               = Just $ f goldfarbAltNDPlusCalc
+               | sys == "goldfarbAltND"                   = Just $ f goldfarbBrownNDCalc
+               | sys == "goldfarbAltNDPlus"               = Just $ f goldfarbBrownNDPlusCalc
                | sys == "goldfarbND"                      = Just $ f goldfarbNDCalc
                | sys == "goldfarbNDPlus"                  = Just $ f goldfarbNDPlusCalc
                | sys == "hardegreePL"                     = Just $ f hardegreePLCalc

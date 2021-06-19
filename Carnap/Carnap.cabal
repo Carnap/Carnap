@@ -52,6 +52,7 @@ library
                      , Carnap.Languages.PurePropositional.Logic.Hurley
                      , Carnap.Languages.PurePropositional.Logic.IchikawaJenkins
                      , Carnap.Languages.PurePropositional.Logic.KalishAndMontague
+                     , Carnap.Languages.PurePropositional.Logic.Lemmon
                      , Carnap.Languages.PurePropositional.Logic.Magnus
                      , Carnap.Languages.PurePropositional.Logic.OpenLogic
                      , Carnap.Languages.PurePropositional.Logic.ThomasBolducAndZach

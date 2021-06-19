@@ -256,7 +256,7 @@ type SequentTree lex sem = Tree (Int, ClassicalSequentOver lex (Sequent sem))
 
 data RenderStyle = MontagueStyle | FitchStyle FitchVariant | LemmonStyle LemmonVariant | NoRender
 
-data LemmonVariant = StandardLemmon | TomassiStyle
+data LemmonVariant = StandardLemmon | GoldfarbStyle | TomassiStyle
 
 data FitchVariant = StandardFitch | BergmanMooreAndNelsonStyle
 
