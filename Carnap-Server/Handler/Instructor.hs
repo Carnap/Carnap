@@ -215,8 +215,11 @@ postInstructorR ident = do
     ((instructorrslt,_),_) <- runFormPost (identifyForm "addCoinstructor" $ addCoInstructorForm instructors ("" :: String))
     ((newapikeyrslt,_),_)  <- runFormPost (identifyForm "createAPIKey" createAPIKeyForm)
     case assignmentrslt of --XXX Should be passing a sensible data structure here, not a giant tuple
-        FormSuccess (doc, Entity cid theclass, mdue, mduetime, mfrom, mfromtime, mtill, mtilltime, mrelease, mreleasetime, massignmentdesc, mpass, mhidden, mlimit, subtime) ->
-            do checkCourseOwnershipHTML ident cid
+        -- FormSuccess (doc, Entity cid theclass, mdue, mduetime, mfrom, mfromtime, mtill, mtilltime, mrelease, mreleasetime, massignmentdesc, mpass, mhidden, mlimit, subtime) ->
+        FormSuccess postedAssignment ->
+            do let Entity cid theclass = instructorAssignCourse postedAssignment
+                   Entity docId theDoc = instructorAssignFile postedAssignment
+               checkCourseOwnershipHTML ident cid
                Entity _ user <- requireAuth
                iid <- instructorIdByIdent (userIdent user)
                         >>= maybe (setMessage "failed to retrieve instructor" >> notFound) pure
@@ -228,21 +231,23 @@ postInstructorR ident = do
                               (Just date, Just time') -> Just $ LocalTime date time'
                               (Just date,_)  -> Just $ LocalTime date (TimeOfDay 23 59 59)
                               _ -> Nothing
-                   localdue = localize (mdue,mduetime)
-                   localfrom = localize (mfrom,mfromtime)
-                   localtill = localize (mtill,mtilltime)
-                   localrelease = localize (mrelease,mreleasetime)
-                   info = unTextarea <$> massignmentdesc
+                   localdue = localize (instructorAssignDueDay postedAssignment, instructorAssignDueTime postedAssignment)
+                   localfrom = localize (instructorAssignVisibleFromDay postedAssignment, instructorAssignVisibleFromTime postedAssignment)
+                   localtill = localize (instructorAssignVisibleTillDay postedAssignment, instructorAssignVisibleTillTime postedAssignment)
+                   localrelease = localize (instructorAssignReleaseGradesDay postedAssignment, instructorAssignReleaseGradesTime postedAssignment)
+                   info = unTextarea <$> instructorAssignDescription postedAssignment
                    theassigner = mciid
-                   thename = documentFilename (entityVal doc)
+                   thename = documentFilename theDoc
+               currentTime <- liftIO getCurrentTime
                asgned <- runDB $ selectList [AssignmentMetadataCourse ==. cid] []
                dupes <- runDB $ filter (\x -> documentFilename (entityVal x) == thename)
                                 <$> selectList [DocumentId <-. map (assignmentMetadataDocument . entityVal) asgned] []
-               case mpass of
+               case instructorAssignPassword postedAssignment of
                    _ | not (null dupes) -> setMessage "Names for assignments must be unique within a course, and it looks like you already have an assignment with this name"
-                   Nothing | mhidden == Just True || mlimit /= Nothing -> setMessage "Hidden and time-limited assignments must be password protected"
+                   Nothing | instructorAssignHidden postedAssignment == Just True || instructorAssignTimeLimit postedAssignment /= Nothing 
+                           -> setMessage "Hidden and time-limited assignments must be password protected"
                    _ -> do success <- tryInsert $ AssignmentMetadata
-                                                { assignmentMetadataDocument = entityKey doc
+                                                { assignmentMetadataDocument = docId
                                                 , assignmentMetadataTitle = thename
                                                 , assignmentMetadataDescription = info
                                                 , assignmentMetadataAssigner = entityKey <$> theassigner
@@ -252,10 +257,12 @@ postInstructorR ident = do
                                                 , assignmentMetadataGradeRelease = localTimeToUTCTZ tz <$> localrelease
                                                 , assignmentMetadataPointValue = Nothing
                                                 , assignmentMetadataTotalProblems = Nothing
-                                                , assignmentMetadataDate = subtime
+                                                , assignmentMetadataDate = currentTime
                                                 , assignmentMetadataCourse = cid
                                                 , assignmentMetadataAvailability =
-                                                    case (mpass,mhidden,mlimit) of
+                                                    case ( instructorAssignPassword postedAssignment
+                                                         , instructorAssignHidden postedAssignment
+                                                         , instructorAssignTimeLimit postedAssignment) of
                                                             (Nothing,_,_) -> Nothing
                                                             (Just txt, Just True, Nothing) -> Just (HiddenViaPassword txt)
                                                             (Just txt, Just True, Just mins) -> Just (HiddenViaPasswordExpiring txt mins)
@@ -483,6 +490,25 @@ instance ToJSON InstructorQuery
 
 instance FromJSON InstructorQuery
 
+data InstructorAssign = InstructorAssign 
+                      { instructorAssignFile :: Entity Document
+                      , instructorAssignCourse :: Entity Course
+                      , instructorAssignDueDay :: Maybe Day
+                      , instructorAssignDueTime :: Maybe TimeOfDay
+                      , instructorAssignVisibleFromDay :: Maybe Day
+                      , instructorAssignVisibleFromTime :: Maybe TimeOfDay
+                      , instructorAssignVisibleTillDay :: Maybe Day
+                      , instructorAssignVisibleTillTime :: Maybe TimeOfDay
+                      , instructorAssignReleaseGradesDay :: Maybe Day
+                      , instructorAssignReleaseGradesTime :: Maybe TimeOfDay
+                      , instructorAssignPointValue :: Maybe Int
+                      , instructorAssignProblemCount :: Maybe Int
+                      , instructorAssignDescription :: Maybe Textarea
+                      , instructorAssignPassword :: Maybe Text
+                      , instructorAssignHidden :: Maybe Bool
+                      , instructorAssignTimeLimit :: Maybe Int
+                      }
+
 ------------------
 --  Components  --
 ------------------
@@ -508,11 +534,7 @@ uploadAssignmentForm
     :: [Entity Course]
     -> [Entity Document]
     -> Markup
-    -> MForm (HandlerFor App) ((FormResult
-                     (Entity Document, Entity Course, Maybe Day, Maybe TimeOfDay,
-                      Maybe Day, Maybe TimeOfDay, Maybe Day, Maybe TimeOfDay, Maybe Day, Maybe TimeOfDay,
-                      Maybe Textarea, Maybe Text, Maybe Bool, Maybe Int, UTCTime),
-                   WidgetFor App ()))
+    -> MForm (HandlerFor App) (FormResult InstructorAssign, WidgetFor App ())
 uploadAssignmentForm classes docs extra = do
             (fileRes, fileView) <- mreq (selectFieldList docnames) (bfs ("Document" :: Text)) Nothing
             (classRes, classView) <- mreq (selectFieldList classnames) (bfs ("Class" :: Text)) Nothing
@@ -524,19 +546,29 @@ uploadAssignmentForm classes docs extra = do
             (tilltimeRes,tilltimeView) <- mopt timeFieldTypeTime (withPlaceholder "Time" $ bfs ("Visible Until Time"::Text)) Nothing
             (releaseRes,releaseView) <- mopt (jqueryDayField def) (withPlaceholder "Date" $ bfs ("Release Grades After Date"::Text)) Nothing
             (releasetimeRes,releasetimeView) <- mopt timeFieldTypeTime (withPlaceholder "Time" $ bfs ("Release Grades After Time"::Text)) Nothing
+            (pointValueRes,pointValueView) <- mopt intField (withPlaceholder "Points" $ bfs ("Point Value of Assignment"::Text)) Nothing
+            (problemCountRes,problemCountView) <- mopt intField (withPlaceholder "Number of Problems" $ bfs ("Number of Problems for Assignment"::Text)) Nothing
             (descRes,descView) <- mopt textareaField (bfs ("Assignment Description"::Text)) Nothing
             (passRes,passView) <- mopt textField (bfs ("Password"::Text)) Nothing
             (hiddRes,hiddView) <- mopt checkBoxField (bfs ("Hidden"::Text)) Nothing
             (limitRes,limitView) <- mopt intField (bfs ("Limit"::Text)) Nothing
-            currentTime <- lift (liftIO getCurrentTime)
-            let theRes = (,,,,,,,,,,,,,,) <$> fileRes <*> classRes
-                                          <*> dueRes  <*> duetimeRes
-                                          <*> fromRes <*> fromtimeRes
-                                          <*> tillRes <*> tilltimeRes
-                                          <*> releaseRes <*> releasetimeRes
-                                          <*> descRes <*> passRes
-                                          <*> hiddRes <*> limitRes
-                                          <*> pure currentTime
+            let theRes = InstructorAssign 
+                                 <$> fileRes            -- instructorAssignFile :: Entity Document               
+                                 <*> classRes           -- instructorAssignCourse :: Entity Course               
+                                 <*> dueRes             -- instructorAssignDueDay :: Maybe Day                   
+                                 <*> duetimeRes         -- instructorAssignDueTime :: Maybe TimeOfDay            
+                                 <*> fromRes            -- instructorAssignVisibleFromDay :: Maybe Day           
+                                 <*> fromtimeRes        -- instructorAssignVisibleFromTime :: Maybe TimeOfDay    
+                                 <*> tillRes            -- instructorAssignVisibleTillDay :: Maybe Day           
+                                 <*> tilltimeRes        -- instructorAssignVisibleTillTime :: Maybe TimeOfDay    
+                                 <*> releaseRes         -- instructorAssignReleaseGradesDay :: Maybe Day         
+                                 <*> releasetimeRes     -- instructorAssignReleaseGradesTime :: Maybe TimeOfDay  
+                                 <*> pointValueRes      -- instructorAssignPointValue :: Maybe Int               
+                                 <*> problemCountRes    -- instructorAssignProblemCount :: Maybe Int             
+                                 <*> descRes            -- instructorAssignDescription :: Maybe Textarea         
+                                 <*> passRes            -- instructorAssignPassword :: Maybe Text                
+                                 <*> hiddRes            -- instructorAssignHidden :: Maybe Bool                  
+                                 <*> limitRes           -- instructorAssignTimeLimit :: Maybe Int                
             let widget = do
                 [whamlet|
                 #{extra}
@@ -572,6 +604,13 @@ uploadAssignmentForm classes docs extra = do
                         ^{fvInput releaseView}
                     <div.form-group.col-md-6>
                         ^{fvInput releasetimeView}
+                <div.row>
+                    <div.form-group.col-md-6>
+                        <h6> Point Value of Assignment
+                        ^{fvInput pointValueView}
+                    <div.form-group.col-md-6>
+                        <h6> Number of Problems
+                        ^{fvInput problemCountView}
                 <h6> Description
                 <div.row>
                     <div.form-group.col-md-12>
