@@ -432,19 +432,18 @@ getInstructorR ident = do
                      activeClasses
 
             assignmentMetadata <- concat <$> mapM listAssignmentMetadata activeClasses --Get the metadata
-            assignmentDocs <- mapM (runDB . get) (map (\(Entity _ v, _) -> assignmentMetadataDocument v) assignmentMetadata)
             documents <- runDB $ selectList [DocumentCreator ==. uid] []
             problemSetLookup <- mapM (\c -> (,)
                                     <$> pure (entityKey c)
                                     <*> (maybe mempty readAssignmentTable
                                         <$> (getProblemSets . entityKey $ c))
                                 ) classes
-            let assignmentLookup = zipWith (\(Entity k v,_) (Just d) ->
+            let assignmentLookup = map (\(Entity k v,_) ->
                                                 ( k
-                                                , documentFilename d
+                                                , assignmentMetadataTitle v
                                                 , assignmentMetadataDate v
                                                 , assignmentMetadataCourse v
-                                                )) assignmentMetadata assignmentDocs
+                                                )) assignmentMetadata 
             tagMap <- forM documents $ \doc -> do
                                      tags <- runDB $ selectList [TagBearer ==. entityKey doc] []
                                      return (entityKey doc, map (tagName . entityVal) tags)
@@ -891,9 +890,9 @@ data UpdateCourse
       }
 
 updateCourseForm
-    :: Maybe (Entity Course) -> Maybe (CourseAutoreg) -> [(Entity AssignmentMetadata, Maybe Document)] -> Markup
+    :: Maybe (Entity Course) -> Maybe (CourseAutoreg) -> [Entity AssignmentMetadata] -> Markup
     -> MForm (HandlerFor App) (FormResult UpdateCourse, WidgetFor App ())
-updateCourseForm mcourseent mautoreg aplusd = renderBootstrap3 BootstrapBasicForm $ UpdateCourse
+updateCourseForm mcourseent mautoreg asmd = renderBootstrap3 BootstrapBasicForm $ UpdateCourse
             <$> areq courseId "" mcid
             <*> aopt textareaField (bfs ("Course Description"::Text)) (maybe Nothing (Just . Just . Textarea) (mdesc))
             <*> aopt (jqueryDayField def) (bfs ("Start Date"::Text)) (localize mstart)
@@ -918,8 +917,8 @@ updateCourseForm mcourseent mautoreg aplusd = renderBootstrap3 BootstrapBasicFor
           mautoregId = toStrict . decodeUtf8 . A.encode <$> (tripleFromDB <$> mautoreg)
           localize t = (Just . localDay) <$> (utcToLocalTimeTZ <$> mzone <*> t)
           assignmentlist = pure $ OptionList assignments (readMaybe . unpack)
-          assignments = map toAssignmentOption aplusd
-          toAssignmentOption (Entity k _, Just doc) = Option (documentFilename doc) k (pack . show $ k)
+          assignments = map toAssignmentOption asmd
+          toAssignmentOption (Entity k a) = Option (assignmentMetadataTitle a) k (pack . show $ k)
           textbookFieldSettings = case mcourse of 
             Just _ -> (bfs ("Textbook for Course" :: Text))
             Nothing -> FieldSettings 
@@ -958,20 +957,20 @@ updateAccommodationModal :: WidgetFor App () -> Enctype -> WidgetFor App ()
 updateAccommodationModal = genericModal "Accommodation" "Update Accommodation"
 
 updateExtensionForm
-    :: [(Entity AssignmentMetadata, Maybe Document)]
+    :: [Entity AssignmentMetadata]
     -> Markup
     -> MForm (HandlerFor App) ((FormResult
                      (Text, Key AssignmentMetadata, Day, Maybe TimeOfDay),
                    WidgetFor App ()))
-updateExtensionForm aplusd = renderBootstrap3 BootstrapBasicForm $ (,,,)
+updateExtensionForm asmd = renderBootstrap3 BootstrapBasicForm $ (,,,)
             <$> areq userId "" Nothing
             <*> areq (selectField assignmentlist) (bfs ("Assignment" :: Text)) Nothing
             <*> areq (jqueryDayField def) (withPlaceholder "Due Date" $ bfs ("Due Date"::Text)) Nothing
             <*> aopt timeFieldTypeTime (withPlaceholder "Time" $ bfs ("Due Time"::Text)) Nothing
     where userId = hiddenField
           assignmentlist = pure $ OptionList assignments (readMaybe . unpack)
-          assignments = map toAssignmentOption aplusd
-          toAssignmentOption (Entity k _, Just doc) = Option (documentFilename doc) k (pack . show $ k)
+          assignments = map toAssignmentOption asmd
+          toAssignmentOption (Entity k a) = Option (assignmentMetadataTitle a) k (pack . show $ k)
 
 addCoInstructorForm
     :: [Entity UserData]
@@ -998,8 +997,8 @@ addCoInstructorForm instructors cid extra = do
 
           toItem (Entity _ i) = (userDataLastName i ++ ", " ++ userDataFirstName i, userDataInstructorId i)
 
-deleteModal :: Text -> [(Entity AssignmentMetadata, Maybe Document)] -> WidgetFor App ()
-deleteModal id aplusd =
+deleteModal :: Text -> [Entity AssignmentMetadata] -> WidgetFor App ()
+deleteModal id asmd =
     [whamlet|
         <div class="modal fade" id="deleteModalFor#{id}" tabindex="-1" role="dialog" aria-labelledby="deleteModalFor#{id}Label" aria-hidden="true">
             <div class="modal-dialog modal-lg" role="document">
@@ -1016,13 +1015,12 @@ deleteModal id aplusd =
                                     <td>Token Issued
                                     <td>
                             <tbody>
-                                $forall (Entity k _, md) <- aplusd
-                                    $maybe d <- md
-                                        <tr id="token-row-#{jsonSerialize k}">
-                                            <td>#{documentFilename d}
-                                            <td>—
-                                            <td>
-                                                <a href="#" onclick="event.preventDefault()" >reset
+                                $forall Entity k a <- asmd
+                                    <tr id="token-row-#{jsonSerialize k}">
+                                        <td>#{assignmentMetadataTitle a}
+                                        <td>—
+                                        <td>
+                                            <a href="#" onclick="event.preventDefault()" >reset
     |]
 
 classWidget :: [Entity UserData] -> Entity Course -> Maybe (CourseAutoreg) -> Handler Widget
@@ -1036,23 +1034,21 @@ classWidget instructors classent autoreg = do
        theInstructorUD <- entityVal <$> udByInstructorId (courseInstructor course)
        allUserData <- map entityVal <$> (runDB $ selectList [UserDataEnrolledIn ==. Just cid] [])
        asmd <- runDB $ selectList [AssignmentMetadataCourse ==. cid] []
-       asDocs <- mapM (runDB . get) (map (assignmentMetadataDocument . entityVal) asmd)
        let allUids = map userDataUserId allUserData
        musers <- mapM (\x -> runDB (get x)) allUids
        let users = catMaybes musers
            numberOfUsers = length allUids
            usersAndData = zip users allUserData
-           aplusd = zip asmd asDocs
            sortedUsersAndData = let lnOf (_, UserData {userDataLastName = ln}) = ln
                                     in sortBy (\x y -> compare (toLower . lnOf $ x) (toLower . lnOf $ y)) usersAndData
            updateExtensionModal = genericModal ("ext" <> chash) "Set Alternate Due Date"
            updateCourseModal = genericModal ("course" <> chash) "Update Course Data"
-           deleteTokenModal = deleteModal ("del" <> chash) aplusd
-           maybeTb = courseTextBook course >>= (\tb -> lookup tb (map (\(a,d) -> (entityKey a,d)) aplusd)) >>= id >>= pure . documentFilename 
+           deleteTokenModal = deleteModal ("del" <> chash) asmd
+           maybeTb = courseTextBook course >>= (\tb -> lookup tb (map (\a -> (entityKey a, entityVal a)) asmd)) >>= pure . assignmentMetadataTitle
        (addCoInstructorWidget,enctypeAddCoInstructor) <- generateFormPost (identifyForm "addCoinstructor" $ addCoInstructorForm instructors (show cid))
-       (updateExtensionWidget,enctypeUpdateExtension) <- generateFormPost (identifyForm "updateExtension" $ updateExtensionForm aplusd)
+       (updateExtensionWidget,enctypeUpdateExtension) <- generateFormPost (identifyForm "updateExtension" $ updateExtensionForm asmd)
        (updateCourseWidget,enctypeUpdateCourse)
-           <- generateFormPost (identifyForm "updateCourse" (updateCourseForm (Just classent) autoreg aplusd))
+           <- generateFormPost (identifyForm "updateCourse" (updateCourseForm (Just classent) autoreg asmd))
        return [whamlet|
                     ^{updateExtensionModal updateExtensionWidget enctypeUpdateExtension}
                     ^{updateCourseModal updateCourseWidget enctypeUpdateCourse}
@@ -1073,11 +1069,11 @@ classWidget instructors classent autoreg = do
                                         <tr>
                                             <td>Problem Set #{show set}
                                             <td>#{dateDisplay due course}
-                                $forall (Entity _ a, Just d) <- aplusd
+                                $forall Entity _ a <- asmd
                                     <tr>
                                         <td>
-                                            <a href=@{CourseAssignmentR (courseTitle course) (documentFilename d)}>
-                                                #{documentFilename d}
+                                            <a href=@{CourseAssignmentR (courseTitle course) (assignmentMetadataTitle a)}>
+                                                #{assignmentMetadataTitle a}
                                         $maybe due <- assignmentMetadataDuedate a
                                             <td>#{dateDisplay due course}
                                         $nothing
