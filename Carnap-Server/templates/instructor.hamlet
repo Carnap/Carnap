@@ -83,11 +83,11 @@
                                     <i class="fa fa-sort" aria-hidden="true"></i>
                                 <th> Actions
                             <tbody>
-                                $forall ((Entity k a, Entity _ c), Just d) <- zip assignmentMetadata assignmentDocs
-                                    <tr id="assignment-#{courseTitle c}-#{documentFilename d}">
+                                $forall (Entity k a, Entity _ c) <- assignmentMetadata 
+                                    <tr id="assignment-#{courseTitle c}-#{assignmentMetadataTitle a}">
                                         <td>
-                                            <a href=@{CourseAssignmentR (courseTitle c) (documentFilename d)}>
-                                                #{documentFilename d}
+                                            <a href=@{CourseAssignmentR (courseTitle c) (assignmentMetadataTitle a)}>
+                                                #{assignmentMetadataTitle a}
                                         <td>#{maybe "No Due Date" (flip dateDisplay c) (assignmentMetadataDuedate a)}
                                         <td>
                                             $maybe from <- assignmentMetadataVisibleFrom a
@@ -111,11 +111,11 @@
 
                                         <td>#{courseTitle c}
                                         <td>
-                                            <button.btn.btn-sm.btn-secondary alt="delete" title="delete this assignment" type="button" onclick="tryDeleteAssignment('#{jsonSerialize $ DeleteAssignment k}','#{documentFilename d}','#{courseTitle c}')">
+                                            <button.btn.btn-sm.btn-secondary alt="delete" title="delete this assignment" type="button" onclick="tryDeleteAssignment('#{jsonSerialize $ DeleteAssignment k}','#{assignmentMetadataTitle a}','#{courseTitle c}')">
                                                 <i.fa.fa-trash-o>
                                             <button.btn.btn-sm.btn-secondary alt="edit" title="edit this assignment" type="button" onclick="modalEditAssignment('#{show k}','#{maybe "" (flip dateDisplay c) (assignmentMetadataDuedate a)}','#{maybe "" (flip dateDisplay c) (assignmentMetadataVisibleFrom a)}','#{maybe "" (flip dateDisplay c) (assignmentMetadataVisibleTill a)}', '#{maybe "" (flip dateDisplay c) (assignmentMetadataGradeRelease a)}','#{maybe "" sanitizeForJS (unpack <$> assignmentMetadataDescription a)}','#{maybe "" availabilityPassword (assignmentMetadataAvailability a)}', '#{maybe False availabilityHidden (assignmentMetadataAvailability a)}', '#{maybe "" show (assignmentMetadataAvailability a >>= availabilityMinutes)}')">
                                                 <i.fa.fa-cog>
-                                            <a.btn.btn-sm.btn-secondary alt="review" title="review and assign partial credit" href=@{ReviewR (courseTitle c) (documentFilename d)}>
+                                            <a.btn.btn-sm.btn-secondary alt="review" title="review and assign partial credit" href=@{ReviewR (courseTitle c) (assignmentMetadataTitle a)}>
                                                 <i.fa.fa-pencil>
 
                 <div.tab-pane id="uploadDocument" role="tabpanel">

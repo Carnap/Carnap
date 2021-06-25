@@ -214,8 +214,7 @@ postInstructorR ident = do
     ((frombookrslt,_),_)   <- runFormPost (identifyForm "setBookAssignment" $ setBookAssignmentForm activeClasses)
     ((instructorrslt,_),_) <- runFormPost (identifyForm "addCoinstructor" $ addCoInstructorForm instructors ("" :: String))
     ((newapikeyrslt,_),_)  <- runFormPost (identifyForm "createAPIKey" createAPIKeyForm)
-    case assignmentrslt of --XXX Should be passing a sensible data structure here, not a giant tuple
-        -- FormSuccess (doc, Entity cid theclass, mdue, mduetime, mfrom, mfromtime, mtill, mtilltime, mrelease, mreleasetime, massignmentdesc, mpass, mhidden, mlimit, subtime) ->
+    case assignmentrslt of 
         FormSuccess postedAssignment ->
             do let Entity cid theclass = instructorAssignCourse postedAssignment
                    Entity docId theDoc = instructorAssignFile postedAssignment
@@ -240,15 +239,12 @@ postInstructorR ident = do
                    thename = documentFilename theDoc
                currentTime <- liftIO getCurrentTime
                asgned <- runDB $ selectList [AssignmentMetadataCourse ==. cid] []
-               dupes <- runDB $ filter (\x -> documentFilename (entityVal x) == thename)
-                                <$> selectList [DocumentId <-. map (assignmentMetadataDocument . entityVal) asgned] []
                case instructorAssignPassword postedAssignment of
-                   _ | not (null dupes) -> setMessage "Names for assignments must be unique within a course, and it looks like you already have an assignment with this name"
                    Nothing | instructorAssignHidden postedAssignment == Just True || instructorAssignTimeLimit postedAssignment /= Nothing 
                            -> setMessage "Hidden and time-limited assignments must be password protected"
                    _ -> do success <- tryInsert $ AssignmentMetadata
                                                 { assignmentMetadataDocument = docId
-                                                , assignmentMetadataTitle = thename
+                                                , assignmentMetadataTitle = maybe thename id (instructorAssignTitle postedAssignment)
                                                 , assignmentMetadataDescription = info
                                                 , assignmentMetadataAssigner = entityKey <$> theassigner
                                                 , assignmentMetadataDuedate = localTimeToUTCTZ tz <$> localdue
@@ -314,7 +310,8 @@ postInstructorR ident = do
                                                 , courseEnrollmentOpen = True
                                                 }
                        case success of Just _ -> setMessage "Course Created"
-                                       Nothing -> setMessage "Could not save. Course titles must be unique. Consider adding your instutition or the current semester as a suffix."
+                                       Nothing -> setMessage $ "Could not save. Course titles must be unique."
+                                                            ++ "Consider adding your instutition or the current semester as a suffix."
                 Nothing -> setMessage "you're not an instructor!"
         FormFailure s -> setMessage $ "Something went wrong: " ++ toMarkup (show s)
         FormMissing -> return ()
@@ -492,6 +489,7 @@ instance FromJSON InstructorQuery
 
 data InstructorAssign = InstructorAssign 
                       { instructorAssignFile :: Entity Document
+                      , instructorAssignTitle :: Maybe Text
                       , instructorAssignCourse :: Entity Course
                       , instructorAssignDueDay :: Maybe Day
                       , instructorAssignDueTime :: Maybe TimeOfDay
@@ -537,6 +535,7 @@ uploadAssignmentForm
     -> MForm (HandlerFor App) (FormResult InstructorAssign, WidgetFor App ())
 uploadAssignmentForm classes docs extra = do
             (fileRes, fileView) <- mreq (selectFieldList docnames) (bfs ("Document" :: Text)) Nothing
+            (titleRes,titleView) <- mopt textField (withPlaceholder "Title (Defaults to Filename)" $ bfs ("Title "::Text)) Nothing
             (classRes, classView) <- mreq (selectFieldList classnames) (bfs ("Class" :: Text)) Nothing
             (dueRes,dueView) <- mopt (jqueryDayField def) (withPlaceholder "Date" $ bfs ("Due Date"::Text)) Nothing
             (duetimeRes, duetimeView) <- mopt timeFieldTypeTime (withPlaceholder "Time" $ bfs ("Due Time"::Text)) Nothing
@@ -554,6 +553,7 @@ uploadAssignmentForm classes docs extra = do
             (limitRes,limitView) <- mopt intField (bfs ("Limit"::Text)) Nothing
             let theRes = InstructorAssign 
                                  <$> fileRes            -- instructorAssignFile :: Entity Document               
+                                 <*> titleRes           -- instructorAssignTitle :: Maybe Text
                                  <*> classRes           -- instructorAssignCourse :: Entity Course               
                                  <*> dueRes             -- instructorAssignDueDay :: Maybe Day                   
                                  <*> duetimeRes         -- instructorAssignDueTime :: Maybe TimeOfDay            
@@ -576,6 +576,10 @@ uploadAssignmentForm classes docs extra = do
                 <div.row>
                     <div.form-group.col-md-12>
                         ^{fvInput fileView}
+                <h6>Assignment Title
+                <div.row>
+                    <div.form-group.col-md-12>
+                        ^{fvInput titleView}
                 <h6>Assign to
                 <div.row>
                     <div.form-group.col-md-12>

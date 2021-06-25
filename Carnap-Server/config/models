@@ -154,7 +154,6 @@ AssignmentMetadata json
     availability AvailabilityStatus Maybe
     pointValue Int Maybe
     totalProblems Int Maybe
-    UniqueAssignment document course
     UniqueAssignmentName title course
 
 AssignmentAccessToken json
