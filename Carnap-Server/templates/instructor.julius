@@ -25,8 +25,8 @@ function compareByChunks(a,b) {
         //if the first characters are numerals, then the chunk should be entirely numerals
         //and we compare those
         if (isNumeral(chunksA[x][0]) && isNumeral(chunksB[x][0])) {
-            let intA = parseInt(chunksA[x].join(''))
-            let intB = parseInt(chunksB[x].join(''))
+            let intA = parseInt(chunksA[x].join(''),10)
+            let intB = parseInt(chunksB[x].join(''),10)
             if (intA > intB) return 1
             if (intA < intB) return -1
         }
@@ -100,7 +100,7 @@ function tryDropStudent (json) {
     }
 }
 
-function modalEditAssignment (id,due,visfrom,vistill,release,desc,pass,hide,min) {
+function modalEditAssignment (id,due,visfrom,vistill,release, pointval, totalprobs, desc,pass,hide,min) {
     jQuery.noConflict()
     $("#updateAssignment")[0].reset();
     $("#updateAssignment input[name=f1]").val(id);
@@ -124,10 +124,12 @@ function modalEditAssignment (id,due,visfrom,vistill,release,desc,pass,hide,min)
         $("#updateAssignment input[name=f8]").val(rparts[0]);
         $("#updateAssignment input[name=f9]").val(rparts[1]);
     };
-    $("#updateAssignment textarea[name=f10]").val(desc);
-    $("#updateAssignment input[name=f11]").val(pass);
-    $("#updateAssignment input[name=f12]").prop("checked", hide == "True");
-    $("#updateAssignment input[name=f13]").val(min)
+    $("#updateAssignment input[name=f10]").val(parseInt(pointval,10));
+    $("#updateAssignment input[name=f11]").val(parseInt(totalprobs,10));
+    $("#updateAssignment textarea[name=f12]").val(desc);
+    $("#updateAssignment input[name=f13]").val(pass);
+    $("#updateAssignment input[name=f14]").prop("checked", hide == "True");
+    $("#updateAssignment input[name=f15]").val(min)
     $("#updateAssignmentData").modal({show:true});
 }
 

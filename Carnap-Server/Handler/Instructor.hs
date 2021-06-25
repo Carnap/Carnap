@@ -33,14 +33,17 @@ putInstructorR ident = do
         ((accommodationrslt,_),_) <- runFormPost (identifyForm "updateAccommodation" $ updateAccommodationForm)
         ((extensionrslt,_),_) <- runFormPost  (identifyForm "updateExtension" $ updateExtensionForm [])
         case (assignmentrslt,courserslt,documentrslt,accommodationrslt,extensionrslt) of
-            (FormSuccess (idstring, mdue, mduetime,mfrom,mfromtime,muntil,muntiltime,mrelease,mreleasetime,mdesc,mpass,mhidden,mlimit),_,_,_,_) -> do
-                 k <- maybe (sendStatusJSON badRequest400 ("Could not read assignment key" :: Text)) return $ readMaybe idstring
+            (FormSuccess theUpdate,_,_,_,_) -> do
+                 k <- maybe (sendStatusJSON badRequest400 ("Could not read assignment key" :: Text)) return $ readMaybe (instructorAssignUpdateIdString theUpdate)
                  val <- runDB (get k) >>= maybe (sendStatusJSON notFound404 ("Could not find assignment" :: Text)) pure
                  let cid = assignmentMetadataCourse val
                  checkCourseOwnership ident cid
                  runDB $ do course <- get cid >>= maybe (sendStatusJSON notFound404 ("Could not find course" :: Text)) pure
                             let (Just tz) = tzByName . courseTimeZone $ course
-                            let maccess = case (mpass,mhidden,mlimit) of
+                            let maccess = case ( instructorAssignUpdatePassword theUpdate
+                                               , instructorAssignUpdateHidden theUpdate
+                                               , instructorAssignUpdateTimeLimit theUpdate
+                                               ) of
                                   (Nothing,_,_) -> Nothing
                                   (Just txt, Just True, Nothing) -> Just (HiddenViaPassword txt)
                                   (Just txt, Just True, Just mins) -> Just (HiddenViaPasswordExpiring txt mins)
@@ -52,12 +55,23 @@ putInstructorR ident = do
                                               (Just time) -> LocalTime date time
                                               _ -> LocalTime date (TimeOfDay 23 59 59)
                                       update k [ field =. (Just $ localTimeToUTCTZ tz localtime) ])
-                            mtimeUpdate mdue mduetime AssignmentMetadataDuedate
-                            mtimeUpdate mfrom mfromtime AssignmentMetadataVisibleFrom
-                            mtimeUpdate muntil muntiltime AssignmentMetadataVisibleTill
-                            mtimeUpdate mrelease mreleasetime AssignmentMetadataGradeRelease
+                            mtimeUpdate (instructorAssignUpdateDueDay theUpdate) 
+                                        (instructorAssignUpdateDueTime theUpdate) 
+                                        AssignmentMetadataDuedate
+                            mtimeUpdate (instructorAssignUpdateVisibleFromDay theUpdate) 
+                                        (instructorAssignUpdateVisibleFromTime theUpdate) 
+                                        AssignmentMetadataVisibleFrom
+                            mtimeUpdate (instructorAssignUpdateVisibleTillDay theUpdate) 
+                                        (instructorAssignUpdateVisibleTillTime theUpdate) 
+                                        AssignmentMetadataVisibleTill
+                            mtimeUpdate (instructorAssignUpdateReleaseGradesDay theUpdate) 
+                                        (instructorAssignUpdateReleaseGradesTime theUpdate) 
+                                        AssignmentMetadataGradeRelease
+                            update k [ AssignmentMetadataPointValue =. instructorAssignUpdatePointValue theUpdate ]
+                            update k [ AssignmentMetadataTotalProblems =. instructorAssignUpdateProblemCount theUpdate ]
                             update k [ AssignmentMetadataAvailability =. maccess ]
-                            update k [ AssignmentMetadataDescription =. unTextarea <$> mdesc]
+                            update k [ AssignmentMetadataAvailability =. maccess ]
+                            update k [ AssignmentMetadataDescription =. unTextarea <$> instructorAssignUpdateDescription theUpdate ]
                  returnJson ("updated!"::Text)
             (_,FormSuccess (UpdateCourse idstring mdesc mstart mend mpoints mopen mtext mLtiId),_,_,_) -> do
                  cid <- maybe (sendStatusJSON badRequest400 ("Could not read course key" :: Text))
@@ -242,7 +256,7 @@ postInstructorR ident = do
                case instructorAssignPassword postedAssignment of
                    Nothing | instructorAssignHidden postedAssignment == Just True || instructorAssignTimeLimit postedAssignment /= Nothing 
                            -> setMessage "Hidden and time-limited assignments must be password protected"
-                   _ -> do success <- tryInsert $ AssignmentMetadata
+                   _ -> do success <- runDB $ insertUnique $ AssignmentMetadata
                                                 { assignmentMetadataDocument = docId
                                                 , assignmentMetadataTitle = maybe thename id (instructorAssignTitle postedAssignment)
                                                 , assignmentMetadataDescription = info
@@ -251,8 +265,8 @@ postInstructorR ident = do
                                                 , assignmentMetadataVisibleFrom = localTimeToUTCTZ tz <$> localfrom
                                                 , assignmentMetadataVisibleTill = localTimeToUTCTZ tz <$> localtill
                                                 , assignmentMetadataGradeRelease = localTimeToUTCTZ tz <$> localrelease
-                                                , assignmentMetadataPointValue = Nothing
-                                                , assignmentMetadataTotalProblems = Nothing
+                                                , assignmentMetadataPointValue = instructorAssignPointValue postedAssignment
+                                                , assignmentMetadataTotalProblems = instructorAssignProblemCount postedAssignment
                                                 , assignmentMetadataDate = currentTime
                                                 , assignmentMetadataCourse = cid
                                                 , assignmentMetadataAvailability =
@@ -276,7 +290,7 @@ postInstructorR ident = do
                    info = unTextarea <$> docdesc
                    Just uid = musr -- FIXME: catch Nothing here
                if isInvalidFilename fn then invalidArgs ["Invalid filename:" ++ fn] else return ()
-               success <- tryInsert $ Document
+               success <- runDB $ insertUnique $ Document
                                         { documentFilename = fn
                                         , documentDate = subtime
                                         , documentCreator = entityKey uid
@@ -297,18 +311,18 @@ postInstructorR ident = do
             case miid of
                 Just iid ->
                     do let localize x = localTimeToUTCTZ (tzByLabel tzlabel) (LocalTime x midnight)
-                       success <- tryInsert $ Course
-                                                { courseTitle = title
-                                                , courseDescription = unTextarea <$> coursedesc
-                                                , courseInstructor = iid
-                                                , courseTextbookProblems = Nothing
-                                                , courseStartDate = localize startdate
-                                                , courseEndDate = localize enddate
-                                                , courseTotalPoints = 0
-                                                , courseTimeZone = toTZName tzlabel
-                                                , courseTextBook = Nothing
-                                                , courseEnrollmentOpen = True
-                                                }
+                       success <- runDB $ insertUnique $ Course
+                                               { courseTitle = title
+                                               , courseDescription = unTextarea <$> coursedesc
+                                               , courseInstructor = iid
+                                               , courseTextbookProblems = Nothing
+                                               , courseStartDate = localize startdate
+                                               , courseEndDate = localize enddate
+                                               , courseTotalPoints = 0
+                                               , courseTimeZone = toTZName tzlabel
+                                               , courseTextBook = Nothing
+                                               , courseEnrollmentOpen = True
+                                               }
                        case success of Just _ -> setMessage "Course Created"
                                        Nothing -> setMessage $ "Could not save. Course titles must be unique."
                                                             ++ "Consider adding your instutition or the current semester as a suffix."
@@ -331,7 +345,7 @@ postInstructorR ident = do
         (FormSuccess (cidstring , Just iid)) ->
             case readMaybe cidstring of
                 Just cid -> do checkCourseOwnershipHTML ident cid
-                               success <- tryInsert $ CoInstructor iid cid
+                               success <- runDB $ insertUnique $ CoInstructor iid cid
                                case success of Just _ -> setMessage "Added Co-Instructor!"
                                                Nothing -> setMessage "Co-Instructor seems to already be added"
                 Nothing -> setMessage "Couldn't read cid string"
@@ -507,6 +521,24 @@ data InstructorAssign = InstructorAssign
                       , instructorAssignTimeLimit :: Maybe Int
                       }
 
+data InstructorAssignUpdate = InstructorAssignUpdate
+                      { instructorAssignUpdateIdString :: String
+                      , instructorAssignUpdateDueDay :: Maybe Day
+                      , instructorAssignUpdateDueTime :: Maybe TimeOfDay
+                      , instructorAssignUpdateVisibleFromDay :: Maybe Day
+                      , instructorAssignUpdateVisibleFromTime :: Maybe TimeOfDay
+                      , instructorAssignUpdateVisibleTillDay :: Maybe Day
+                      , instructorAssignUpdateVisibleTillTime :: Maybe TimeOfDay
+                      , instructorAssignUpdateReleaseGradesDay :: Maybe Day
+                      , instructorAssignUpdateReleaseGradesTime :: Maybe TimeOfDay
+                      , instructorAssignUpdatePointValue :: Maybe Int
+                      , instructorAssignUpdateProblemCount :: Maybe Int
+                      , instructorAssignUpdateDescription :: Maybe Textarea
+                      , instructorAssignUpdatePassword :: Maybe Text
+                      , instructorAssignUpdateHidden :: Maybe Bool
+                      , instructorAssignUpdateTimeLimit :: Maybe Int
+                      }
+
 ------------------
 --  Components  --
 ------------------
@@ -648,11 +680,7 @@ uploadAssignmentForm classes docs extra = do
 
 updateAssignmentForm
     :: Markup
-    -> MForm (HandlerFor App) ((FormResult
-                     ( String, Maybe Day, Maybe TimeOfDay, Maybe Day, Maybe TimeOfDay
-                     , Maybe Day, Maybe TimeOfDay, Maybe Day, Maybe TimeOfDay, Maybe Textarea
-                     , Maybe Text, Maybe Bool, Maybe Int),
-                   WidgetFor App ()))
+    -> MForm (HandlerFor App) ((FormResult InstructorAssignUpdate, WidgetFor App ()))
 updateAssignmentForm extra = do
             (assignmentRes,assignmentView) <- mreq assignmentId "" Nothing
             (dueRes,dueView) <- mopt (jqueryDayField def) (withPlaceholder "Date" $ bfs ("Due Date"::Text)) Nothing
@@ -663,17 +691,28 @@ updateAssignmentForm extra = do
             (tilltimeRes,tilltimeView) <- mopt timeFieldTypeTime (withPlaceholder "Time" $ bfs ("Visible Until Time"::Text)) Nothing
             (releaseRes,releaseView) <- mopt (jqueryDayField def) (withPlaceholder "Date" $ bfs ("Release Grades After Date"::Text)) Nothing
             (releasetimeRes,releasetimeView) <- mopt timeFieldTypeTime (withPlaceholder "Time" $ bfs ("Release Grades After Time"::Text)) Nothing
+            (pointValueRes,pointValueView) <- mopt intField (withPlaceholder "Points" $ bfs ("Point Value of Assignment"::Text)) Nothing
+            (problemCountRes,problemCountView) <- mopt intField (withPlaceholder "Number of Problems" $ bfs ("Number of Problems for Assignment"::Text)) Nothing
             (descRes,descView) <- mopt textareaField (bfs ("Assignment Description"::Text)) Nothing
             (passRes,passView) <- mopt textField (bfs ("Password"::Text)) Nothing
             (hiddRes,hiddView) <- mopt checkBoxField (bfs ("Hidden"::Text)) Nothing
             (limitRes,limitView) <- mopt intField (bfs ("Limit"::Text)) Nothing
-            let theRes = (,,,,,,,,,,,,) <$> assignmentRes
-                                   <*> dueRes <*> duetimeRes
-                                   <*> fromRes <*> fromtimeRes
-                                   <*> tillRes <*> tilltimeRes
-                                   <*> releaseRes <*> releasetimeRes
-                                   <*> descRes <*> passRes
-                                   <*> hiddRes <*> limitRes
+            let theRes = InstructorAssignUpdate 
+                            <$> assignmentRes       --instructorAssignUpdateIdString :: String                      
+                            <*> dueRes              --instructorAssignUpdateDueDay :: Maybe Day                     
+                            <*> duetimeRes          --instructorAssignUpdateDueTime :: Maybe TimeOfDay              
+                            <*> fromRes             --instructorAssignUpdateVisibleFromDay :: Maybe Day             
+                            <*> fromtimeRes         --instructorAssignUpdateVisibleFromTime :: Maybe TimeOfDay      
+                            <*> tillRes             --instructorAssignUpdateVisibleTillDay :: Maybe Day             
+                            <*> tilltimeRes         --instructorAssignUpdateVisibleTillTime :: Maybe TimeOfDay      
+                            <*> releaseRes          --instructorAssignUpdateReleaseGradesDay :: Maybe Day           
+                            <*> releasetimeRes      --instructorAssignUpdateReleaseGradesTime :: Maybe TimeOfDay    
+                            <*> pointValueRes       --instructorAssignUpdatePointValue :: Maybe Int                 
+                            <*> problemCountRes     --instructorAssignUpdateProblemCount :: Maybe Int               
+                            <*> descRes             --instructorAssignUpdateDescription :: Maybe Textarea           
+                            <*> passRes             --instructorAssignUpdatePassword :: Maybe Text                  
+                            <*> hiddRes             --instructorAssignUpdateHidden :: Maybe Bool                    
+                            <*> limitRes            --instructorAssignUpdateTimeLimit :: Maybe Int                  
             let widget = do
                 [whamlet|
                 #{extra}
@@ -702,6 +741,13 @@ updateAssignmentForm extra = do
                         ^{fvInput releaseView}
                     <div.form-group.col-md-6>
                         ^{fvInput releasetimeView}
+                <div.row>
+                    <div.form-group.col-md-6>
+                       <h6> Point Value
+                       ^{fvInput pointValueView}
+                    <div.form-group.col-md-6>
+                       <h6> Problem Count
+                       ^{fvInput problemCountView}
                 <h6> Description
                 <div.row>
                     <div.form-group.col-md-12>
