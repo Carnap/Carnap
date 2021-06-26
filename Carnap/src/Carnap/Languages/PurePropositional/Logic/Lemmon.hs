@@ -32,8 +32,8 @@ instance Show LemmonProp where
         show MT = "MTT"
         show DNI = "DN"
         show DNE = "DN"
-        show BCI = "↔def"
-        show BCE = "↔def"
+        show BCI = "Df.↔"
+        show BCE = "Df.↔"
         show ORI1 = "∨I"
         show ORI2 = "∨I"
         show ORE = "∨E"
@@ -75,7 +75,7 @@ instance Inference LemmonProp PurePropLexicon (Form Bool) where
         isAssumption As = True
         isAssumption _ = False
 
-parseLemmonProp _ n _ = do r <- choice (map (try . string) [ "&I", "&E", "MP", "MT", "DN", "↔def", "<->def"
+parseLemmonProp _ n _ = do r <- choice (map (try . string) [ "&I", "&E", "MP", "MT", "DN", "Df.↔", "Df.<->"
                                                            , "∨I", "vI", "\\/I", "∨E", "vE", "\\/E", "A", "CP", "RAA", "Pr"])
                            return $ case r of 
                                   r | r == "A" -> [As]
@@ -84,7 +84,7 @@ parseLemmonProp _ n _ = do r <- choice (map (try . string) [ "&I", "&E", "MP", "
                                     | r == "MP" -> [MP]
                                     | r == "MT" -> [MT]
                                     | r `elem` ["DN"] -> [DNI, DNE]
-                                    | r `elem` ["↔def","<->def"] -> [BCI, BCE]
+                                    | r `elem` ["Df.↔","Df.<->"] -> [BCI, BCE]
                                     | r `elem` ["∨I", "vI", "\\/I"] -> [ORI1, ORI2]
                                     | r `elem` ["∨E", "vE", "\\/E"] -> [ORE]
                                     | r == "RAA" -> [RAA1, RAA2]
