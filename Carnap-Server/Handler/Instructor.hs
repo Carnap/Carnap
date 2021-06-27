@@ -49,29 +49,16 @@ putInstructorR ident = do
                                   (Just txt, Just True, Just mins) -> Just (HiddenViaPasswordExpiring txt mins)
                                   (Just txt, _, Just mins) -> Just (ViaPasswordExpiring txt mins)
                                   (Just txt, _, _) -> Just (ViaPassword txt)
-                            let mtimeUpdate Nothing Nothing field = update k [ field =. Nothing ]
-                                mtimeUpdate mdate mtime field = maybeDo mdate (\date->
-                                   do let localtime = case mtime of
-                                              (Just time) -> LocalTime date time
-                                              _ -> LocalTime date (TimeOfDay 23 59 59)
-                                      update k [ field =. (Just $ localTimeToUTCTZ tz localtime) ])
-                            mtimeUpdate (instructorAssignUpdateDueDay theUpdate) 
-                                        (instructorAssignUpdateDueTime theUpdate) 
-                                        AssignmentMetadataDuedate
-                            mtimeUpdate (instructorAssignUpdateVisibleFromDay theUpdate) 
-                                        (instructorAssignUpdateVisibleFromTime theUpdate) 
-                                        AssignmentMetadataVisibleFrom
-                            mtimeUpdate (instructorAssignUpdateVisibleTillDay theUpdate) 
-                                        (instructorAssignUpdateVisibleTillTime theUpdate) 
-                                        AssignmentMetadataVisibleTill
-                            mtimeUpdate (instructorAssignUpdateReleaseGradesDay theUpdate) 
-                                        (instructorAssignUpdateReleaseGradesTime theUpdate) 
-                                        AssignmentMetadataGradeRelease
-                            update k [ AssignmentMetadataPointValue =. instructorAssignUpdatePointValue theUpdate ]
-                            update k [ AssignmentMetadataTotalProblems =. instructorAssignUpdateProblemCount theUpdate ]
-                            update k [ AssignmentMetadataAvailability =. maccess ]
-                            update k [ AssignmentMetadataAvailability =. maccess ]
-                            update k [ AssignmentMetadataDescription =. unTextarea <$> instructorAssignUpdateDescription theUpdate ]
+                            update k [ AssignmentMetadataDuedate =. localTimeToUTCTZ tz <$> instructorAssignUpdateDue theUpdate
+                                     , AssignmentMetadataVisibleFrom =. localTimeToUTCTZ tz <$> instructorAssignUpdateFrom theUpdate
+                                     , AssignmentMetadataVisibleTill =. localTimeToUTCTZ tz <$> instructorAssignUpdateTill theUpdate
+                                     , AssignmentMetadataGradeRelease =. localTimeToUTCTZ tz <$> instructorAssignUpdateRelease theUpdate
+                                     , AssignmentMetadataPointValue =. instructorAssignUpdatePointValue theUpdate
+                                     , AssignmentMetadataTotalProblems =. instructorAssignUpdateProblemCount theUpdate
+                                     , AssignmentMetadataAvailability =. maccess
+                                     , AssignmentMetadataAvailability =. maccess
+                                     , AssignmentMetadataDescription =. unTextarea <$> instructorAssignUpdateDescription theUpdate
+                                     ]
                  returnJson ("updated!"::Text)
             (_,FormSuccess (UpdateCourse idstring mdesc mstart mend mpoints mopen mtext mLtiId),_,_,_) -> do
                  cid <- maybe (sendStatusJSON badRequest400 ("Could not read course key" :: Text))
@@ -240,14 +227,6 @@ postInstructorR ident = do
                             then return Nothing
                             else runDB $ getBy (UniqueCoInstructor iid cid)
                let Just tz = tzByName . courseTimeZone $ theclass
-                   localize (mdate,mtime) = case (mdate,mtime) of
-                              (Just date, Just time') -> Just $ LocalTime date time'
-                              (Just date,_)  -> Just $ LocalTime date (TimeOfDay 23 59 59)
-                              _ -> Nothing
-                   localdue = localize (instructorAssignDueDay postedAssignment, instructorAssignDueTime postedAssignment)
-                   localfrom = localize (instructorAssignVisibleFromDay postedAssignment, instructorAssignVisibleFromTime postedAssignment)
-                   localtill = localize (instructorAssignVisibleTillDay postedAssignment, instructorAssignVisibleTillTime postedAssignment)
-                   localrelease = localize (instructorAssignReleaseGradesDay postedAssignment, instructorAssignReleaseGradesTime postedAssignment)
                    info = unTextarea <$> instructorAssignDescription postedAssignment
                    theassigner = mciid
                    thename = documentFilename theDoc
@@ -261,10 +240,10 @@ postInstructorR ident = do
                                                 , assignmentMetadataTitle = maybe thename id (instructorAssignTitle postedAssignment)
                                                 , assignmentMetadataDescription = info
                                                 , assignmentMetadataAssigner = entityKey <$> theassigner
-                                                , assignmentMetadataDuedate = localTimeToUTCTZ tz <$> localdue
-                                                , assignmentMetadataVisibleFrom = localTimeToUTCTZ tz <$> localfrom
-                                                , assignmentMetadataVisibleTill = localTimeToUTCTZ tz <$> localtill
-                                                , assignmentMetadataGradeRelease = localTimeToUTCTZ tz <$> localrelease
+                                                , assignmentMetadataDuedate = localTimeToUTCTZ tz <$> instructorAssignDue postedAssignment
+                                                , assignmentMetadataVisibleFrom = localTimeToUTCTZ tz <$> instructorAssignFrom postedAssignment
+                                                , assignmentMetadataVisibleTill = localTimeToUTCTZ tz <$> instructorAssignTill postedAssignment
+                                                , assignmentMetadataGradeRelease = localTimeToUTCTZ tz <$> instructorAssignRelease postedAssignment
                                                 , assignmentMetadataPointValue = instructorAssignPointValue postedAssignment
                                                 , assignmentMetadataTotalProblems = instructorAssignProblemCount postedAssignment
                                                 , assignmentMetadataDate = currentTime
@@ -504,14 +483,10 @@ data InstructorAssign = InstructorAssign
                       { instructorAssignFile :: Entity Document
                       , instructorAssignTitle :: Maybe Text
                       , instructorAssignCourse :: Entity Course
-                      , instructorAssignDueDay :: Maybe Day
-                      , instructorAssignDueTime :: Maybe TimeOfDay
-                      , instructorAssignVisibleFromDay :: Maybe Day
-                      , instructorAssignVisibleFromTime :: Maybe TimeOfDay
-                      , instructorAssignVisibleTillDay :: Maybe Day
-                      , instructorAssignVisibleTillTime :: Maybe TimeOfDay
-                      , instructorAssignReleaseGradesDay :: Maybe Day
-                      , instructorAssignReleaseGradesTime :: Maybe TimeOfDay
+                      , instructorAssignDue :: Maybe LocalTime
+                      , instructorAssignFrom :: Maybe LocalTime
+                      , instructorAssignTill :: Maybe LocalTime
+                      , instructorAssignRelease :: Maybe LocalTime
                       , instructorAssignPointValue :: Maybe Int
                       , instructorAssignProblemCount :: Maybe Int
                       , instructorAssignDescription :: Maybe Textarea
@@ -522,14 +497,10 @@ data InstructorAssign = InstructorAssign
 
 data InstructorAssignUpdate = InstructorAssignUpdate
                       { instructorAssignUpdateIdString :: String
-                      , instructorAssignUpdateDueDay :: Maybe Day
-                      , instructorAssignUpdateDueTime :: Maybe TimeOfDay
-                      , instructorAssignUpdateVisibleFromDay :: Maybe Day
-                      , instructorAssignUpdateVisibleFromTime :: Maybe TimeOfDay
-                      , instructorAssignUpdateVisibleTillDay :: Maybe Day
-                      , instructorAssignUpdateVisibleTillTime :: Maybe TimeOfDay
-                      , instructorAssignUpdateReleaseGradesDay :: Maybe Day
-                      , instructorAssignUpdateReleaseGradesTime :: Maybe TimeOfDay
+                      , instructorAssignUpdateDue :: Maybe LocalTime
+                      , instructorAssignUpdateFrom :: Maybe LocalTime
+                      , instructorAssignUpdateTill :: Maybe LocalTime
+                      , instructorAssignUpdateRelease :: Maybe LocalTime
                       , instructorAssignUpdatePointValue :: Maybe Int
                       , instructorAssignUpdateProblemCount :: Maybe Int
                       , instructorAssignUpdateDescription :: Maybe Textarea
@@ -582,24 +553,23 @@ uploadAssignmentForm classes docs extra = do
             (passRes,passView) <- mopt textField (bfs ("Password"::Text)) Nothing
             (hiddRes,hiddView) <- mopt checkBoxField (bfs ("Hidden"::Text)) Nothing
             (limitRes,limitView) <- mopt intField (bfs ("Limit"::Text)) Nothing
+            let packTime Nothing _ = Nothing
+                packTime (Just d) Nothing = Just $ LocalTime d (TimeOfDay 23 59 59) 
+                packTime (Just d) (Just t) = Just $ LocalTime d t
             let theRes = InstructorAssign 
-                                 <$> fileRes            -- instructorAssignFile :: Entity Document               
-                                 <*> titleRes           -- instructorAssignTitle :: Maybe Text
-                                 <*> classRes           -- instructorAssignCourse :: Entity Course               
-                                 <*> dueRes             -- instructorAssignDueDay :: Maybe Day                   
-                                 <*> duetimeRes         -- instructorAssignDueTime :: Maybe TimeOfDay            
-                                 <*> fromRes            -- instructorAssignVisibleFromDay :: Maybe Day           
-                                 <*> fromtimeRes        -- instructorAssignVisibleFromTime :: Maybe TimeOfDay    
-                                 <*> tillRes            -- instructorAssignVisibleTillDay :: Maybe Day           
-                                 <*> tilltimeRes        -- instructorAssignVisibleTillTime :: Maybe TimeOfDay    
-                                 <*> releaseRes         -- instructorAssignReleaseGradesDay :: Maybe Day         
-                                 <*> releasetimeRes     -- instructorAssignReleaseGradesTime :: Maybe TimeOfDay  
-                                 <*> pointValueRes      -- instructorAssignPointValue :: Maybe Int               
-                                 <*> problemCountRes    -- instructorAssignProblemCount :: Maybe Int             
-                                 <*> descRes            -- instructorAssignDescription :: Maybe Textarea         
-                                 <*> passRes            -- instructorAssignPassword :: Maybe Text                
-                                 <*> hiddRes            -- instructorAssignHidden :: Maybe Bool                  
-                                 <*> limitRes           -- instructorAssignTimeLimit :: Maybe Int                
+                                 <$> fileRes                                        -- instructorAssignFile :: Entity Document               
+                                 <*> titleRes                                       -- instructorAssignTitle :: Maybe Text
+                                 <*> classRes                                       -- instructorAssignCourse :: Entity Course               
+                                 <*> (packTime <$> dueRes <*> duetimeRes)           -- instructorAssignDue :: Maybe LocalTime
+                                 <*> (packTime <$> fromRes <*> fromtimeRes)         -- instructorAssignFrom :: Maybe LocalTime
+                                 <*> (packTime <$> tillRes <*> tilltimeRes)         -- instructorAssignTill :: Maybe LocalTime
+                                 <*> (packTime <$> releaseRes <*> releasetimeRes)   -- instructorAssignRelease :: Maybe LocalTime
+                                 <*> pointValueRes                                  -- instructorAssignPointValue :: Maybe Int               
+                                 <*> problemCountRes                                -- instructorAssignProblemCount :: Maybe Int             
+                                 <*> descRes                                        -- instructorAssignDescription :: Maybe Textarea         
+                                 <*> passRes                                        -- instructorAssignPassword :: Maybe Text                
+                                 <*> hiddRes                                        -- instructorAssignHidden :: Maybe Bool                  
+                                 <*> limitRes                                       -- instructorAssignTimeLimit :: Maybe Int                
             let widget = do
                 [whamlet|
                 #{extra}
@@ -696,22 +666,21 @@ updateAssignmentForm extra = do
             (passRes,passView) <- mopt textField (bfs ("Password"::Text)) Nothing
             (hiddRes,hiddView) <- mopt checkBoxField (bfs ("Hidden"::Text)) Nothing
             (limitRes,limitView) <- mopt intField (bfs ("Limit"::Text)) Nothing
+            let packTime Nothing _ = Nothing
+                packTime (Just d) Nothing = Just $ LocalTime d (TimeOfDay 23 59 59) 
+                packTime (Just d) (Just t) = Just $ LocalTime d t
             let theRes = InstructorAssignUpdate 
-                            <$> assignmentRes       --instructorAssignUpdateIdString :: String                      
-                            <*> dueRes              --instructorAssignUpdateDueDay :: Maybe Day                     
-                            <*> duetimeRes          --instructorAssignUpdateDueTime :: Maybe TimeOfDay              
-                            <*> fromRes             --instructorAssignUpdateVisibleFromDay :: Maybe Day             
-                            <*> fromtimeRes         --instructorAssignUpdateVisibleFromTime :: Maybe TimeOfDay      
-                            <*> tillRes             --instructorAssignUpdateVisibleTillDay :: Maybe Day             
-                            <*> tilltimeRes         --instructorAssignUpdateVisibleTillTime :: Maybe TimeOfDay      
-                            <*> releaseRes          --instructorAssignUpdateReleaseGradesDay :: Maybe Day           
-                            <*> releasetimeRes      --instructorAssignUpdateReleaseGradesTime :: Maybe TimeOfDay    
-                            <*> pointValueRes       --instructorAssignUpdatePointValue :: Maybe Int                 
-                            <*> problemCountRes     --instructorAssignUpdateProblemCount :: Maybe Int               
-                            <*> descRes             --instructorAssignUpdateDescription :: Maybe Textarea           
-                            <*> passRes             --instructorAssignUpdatePassword :: Maybe Text                  
-                            <*> hiddRes             --instructorAssignUpdateHidden :: Maybe Bool                    
-                            <*> limitRes            --instructorAssignUpdateTimeLimit :: Maybe Int                  
+                             <$> assignmentRes                                  --instructorAssignUpdateIdString :: String                      
+                             <*> (packTime <$> dueRes <*> duetimeRes)           --instructorAssignUpdateDue :: Maybe LocalTime
+                             <*> (packTime <$> fromRes <*> fromtimeRes)         --instructorAssignUpdateFrom :: Maybe LocalTime
+                             <*> (packTime <$> tillRes <*> tilltimeRes)         --instructorAssignUpdateTill :: Maybe LocalTime
+                             <*> (packTime <$> releaseRes <*> releasetimeRes)   --instructorAssignUpdateRelease :: Maybe LocalTime
+                             <*> pointValueRes                                  --instructorAssignUpdatePointValue :: Maybe Int                 
+                             <*> problemCountRes                                --instructorAssignUpdateProblemCount :: Maybe Int               
+                             <*> descRes                                        --instructorAssignUpdateDescription :: Maybe Textarea           
+                             <*> passRes                                        --instructorAssignUpdatePassword :: Maybe Text                  
+                             <*> hiddRes                                        --instructorAssignUpdateHidden :: Maybe Bool                    
+                             <*> limitRes                                       --instructorAssignUpdateTimeLimit :: Maybe Int                  
             let widget = do
                 [whamlet|
                 #{extra}
