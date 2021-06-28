@@ -10,6 +10,7 @@ module Model where
 import ClassyPrelude.Yesod
 import Database.Persist.Quasi
 import Util.Data
+import Settings.RuntimeDefs
 import TH.RelativePaths (pathRelativeToCabalPackage)
 import Carnap.GHCJS.SharedTypes(ProblemSource(..),ProblemType(..),ProblemData(..), SomeRule(..))
 

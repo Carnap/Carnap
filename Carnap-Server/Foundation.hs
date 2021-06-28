@@ -1,42 +1,47 @@
 module Foundation where
 
-import Database.Persist.Sql        (ConnectionPool, runSqlPool)
-import Import.NoFoundation
-import Text.Hamlet                 (hamletFile)
-import Yesod.Auth.OAuth2.Google
-import Yesod.Auth.OAuth2 (getUserResponseJSON)
-import Yesod.Auth.Dummy            (authDummy)
-import qualified Yesod.Core.Unsafe as Unsafe
-import Yesod.Core.Types            (Logger)
-import Yesod.Form.Jquery
-import Yesod.Default.Util          (addStaticContentExternal)
-import TH.RelativePaths            (pathRelativeToCabalPackage)
+import           Control.Monad.Trans.Maybe  (MaybeT (..))
+import           Database.Persist.Sql       (ConnectionPool, runSqlPool)
+import           Text.Hamlet                (hamletFile)
+import           TH.RelativePaths           (pathRelativeToCabalPackage)
+import           Yesod.Auth.Dummy           (authDummy)
+import           Yesod.Auth.OAuth2          (getUserResponseJSON)
+import           Yesod.Auth.OAuth2.Google
+import           Yesod.Core.Types           (Logger)
+import qualified Yesod.Core.Unsafe          as Unsafe
+import           Yesod.Default.Util         (addStaticContentExternal)
+import           Yesod.Form.Jquery
 --import Util.Database
-import qualified Data.CaseInsensitive as CI
-import qualified Data.Text as T
 import qualified Control.Monad.Trans.Except as E
-import qualified Data.Text.Encoding as TE
-import qualified Data.HashMap.Strict as HM
-import qualified Data.Text.Encoding.Error as TEE
-import qualified Network.Wai as W
-import Yesod.Auth.LTI13 (authLTI13WithWidget, PlatformInfo(..), YesodAuthLTI13(..))
-import Data.Time (NominalDiffTime)
-import Data.Time.Clock (addUTCTime)
-import Web.Cookie (sameSiteNone, SetCookie(setCookieSameSite))
+import qualified Data.CaseInsensitive       as CI
+import qualified Data.HashMap.Strict        as HM
+import qualified Data.Text                  as T
+import qualified Data.Text.Encoding         as TE
+import qualified Data.Text.Encoding.Error   as TEE
+import           Data.Time                  (NominalDiffTime)
+import           Data.Time.Clock            (addUTCTime)
+import qualified Network.Wai                as W
+import           Web.Cookie                 (SetCookie (setCookieSameSite),
+                                             sameSiteNone)
+import           Yesod.Auth.LTI13           (PlatformInfo (..),
+                                             YesodAuthLTI13 (..),
+                                             authLTI13WithWidget)
 
-import Util.Database
-import Util.LTI
+import           Import.NoFoundation
+import           Settings.Runtime
+import           Util.Database
+import           Util.LTI
 
 -- | The foundation datatype for your application. This can be a good place to
 -- keep settings and values requiring initialization before your application
 -- starts running, such as database connections. Every handler will have
 -- access to the data present here.
 data App = App
-    { appSettings          :: AppSettings
-    , appStatic            :: Static -- ^ Settings for static file serving.
-    , appConnPool          :: ConnectionPool -- ^ Database connection pool.
-    , appHttpManager       :: Manager
-    , appLogger            :: Logger
+    { appSettings    :: AppSettings
+    , appStatic      :: Static -- ^ Settings for static file serving.
+    , appConnPool    :: ConnectionPool -- ^ Database connection pool.
+    , appHttpManager :: Manager
+    , appLogger      :: Logger
     }
 
 -- This is where we define all of the routes in our application. For a full
@@ -114,7 +119,7 @@ instance Yesod App where
 
     urlParamRenderOverride app (StaticR s) _ = case appStaticRoot $ appSettings app of
         Nothing -> Nothing
-        Just r -> Just $ uncurry (joinPath app r) $ renderRoute s
+        Just r  -> Just $ uncurry (joinPath app r) $ renderRoute s
     urlParamRenderOverride _ _ _ = Nothing
 
     -- Routes requiring authentication.
@@ -163,7 +168,7 @@ instance Yesod App where
                    Entity uid _ <- runDB (getBy $ UniqueUser ident) >>= maybe notFound return
                    let ident' = userIdent user
                    mudata <- runDB $ getBy (UniqueUserData uid)
-                   if ident == ident' 
+                   if ident == ident'
                        then return Authorized
                        else do mudata' <- maybeUserData
                                let mudv = entityVal <$> mudata
@@ -176,7 +181,7 @@ instance Yesod App where
                                        mcourse <- runDB $ get cid
                                        case courseInstructor <$> mcourse of
                                            Just iid | iid' == iid -> return Authorized
-                                           _ -> (runDB $ getBy $ UniqueCoInstructor iid' cid) 
+                                           _ -> (runDB $ getBy $ UniqueCoInstructor iid' cid)
                                                 >>= return . maybe (Unauthorized "It appears you're not authorized to access this page") (const Authorized)
                                     _ -> return $ Unauthorized "It appears you're not authorized to access this page"
               instructor ident =
@@ -396,10 +401,7 @@ instance YesodAuth App where
         x <- getBy $ UniqueUser $ credsIdent creds
         case x of
             Just (Entity uid _) -> return $ Authenticated uid
-            Nothing -> Authenticated <$> insert User
-                { userIdent = credsIdent creds
-                , userPassword = Nothing
-                }
+            Nothing             -> tryCreateUser (credsIdent creds)
         -- translate identifier into email for display for Google users
         -- TODO: make a prettier display for LTI users
         where creds = fromMaybe creds0 $ do
@@ -407,6 +409,25 @@ instance YesodAuth App where
                           Object o <- either (const Nothing) Just (getUserResponseJSON creds0)
                           String email <- HM.lookup "email" o
                           Just creds0 { credsIdent = email }
+
+              noGoogleMessage = "Creating new Google accounts is disabled on \
+                               \ this Carnap instance. Log in via your \
+                               \ learning management system instead."
+
+              tryCreateUser :: Text -> (YesodDB App (AuthenticationResult App))
+              tryCreateUser un = maybe (ServerError noGoogleMessage) Authenticated
+                                 <$> (runMaybeT $ do
+                     guard =<< lift userCreationIsAllowed
+                     lift . insert $ User
+                         { userIdent = un
+                         , userPassword = Nothing
+                         }
+                 )
+
+              userCreationIsAllowed :: PersistentSite site0 => (YesodDB site0 Bool)
+              userCreationIsAllowed = do
+                  disableGoogle <- getDisableGoogleReg
+                  return $ credsPlugin creds /= "google" || (not disableGoogle)
 
     --can't do a straight redirect, since this takes place before logout is
     --completed. Instead, we delete the credentials and the ultDestKey
