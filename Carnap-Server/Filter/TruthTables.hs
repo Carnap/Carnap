@@ -1,4 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-}
 module Filter.TruthTables (makeTruthTables) where
 
 import Text.Pandoc

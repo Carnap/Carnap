@@ -1,5 +1,4 @@
 {-#LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE OverloadedStrings #-}
 module Handler.Admin where
 
 import Import

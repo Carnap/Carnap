@@ -1,4 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-}
 module Filter.Translate (makeTranslate) where
 
 import Carnap.GHCJS.SharedFunctions (simpleCipher)

@@ -1,4 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-}
 module Filter.ProofCheckers (makeProofChecker) where
 
 import Text.Pandoc

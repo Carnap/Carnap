@@ -1,4 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-}
 module Filter.Sidenotes (makeSideNotes
 ) where
 

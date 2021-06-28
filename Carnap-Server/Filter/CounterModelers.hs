@@ -1,4 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-}
 module Filter.CounterModelers (makeCounterModelers) where
 
 import Text.Pandoc
