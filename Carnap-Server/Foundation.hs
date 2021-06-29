@@ -5,6 +5,7 @@ import           Database.Persist.Sql       (ConnectionPool, runSqlPool)
 import           Text.Hamlet                (hamletFile)
 import           TH.RelativePaths           (pathRelativeToCabalPackage)
 import           Yesod.Auth.Dummy           (authDummy)
+import           Yesod.Auth.Message         (AuthMessage (..))
 import           Yesod.Auth.OAuth2          (getUserResponseJSON)
 import           Yesod.Auth.OAuth2.Google
 import           Yesod.Core.Types           (Logger)
@@ -416,7 +417,7 @@ instance YesodAuth App where
                                 , "learning management system instead."]
 
               tryCreateUser :: Text -> (YesodDB App (AuthenticationResult App))
-              tryCreateUser un = maybe (ServerError noGoogleMessage) Authenticated
+              tryCreateUser un = maybe (UserError $ IdentifierNotFound noGoogleMessage) Authenticated
                                  <$> (runMaybeT $ do
                      guard =<< lift userCreationIsAllowed
                      lift . insert $ User
