@@ -1,6 +1,11 @@
 .PHONY: help devel run shell-ghc build-ghc shell-ghcjs build-ghcjs tags build-production hoogle
 TARGET := all
 
+CABALFLAGS := -f dev
+APPROOT := "http://localhost:3000"
+DATAROOT := "../dataroot"
+BOOKROOT := "../books/Carnap-Book/"
+
 help:
 	@echo "Usage: make [options] [target]"
 	@echo ""
@@ -47,9 +52,9 @@ else
 	cd Carnap-Server && \
 	cp -n config/settings-example.yml config/settings.yml && \
 	mkdir -p ../dataroot && \
-	APPROOT="http://localhost:3000" DATAROOT="../dataroot" \
-		BOOKROOT="../Carnap-Book/" \
-		cabal run -f dev Carnap-Server
+	APPROOT=$(APPROOT) DATAROOT=$(DATAROOT) \
+		BOOKROOT=$(BOOKROOT) \
+		cabal run $(CABALFLAGS) Carnap-Server $(CONFIGFILE)
 endif
 
 shell-ghc:
