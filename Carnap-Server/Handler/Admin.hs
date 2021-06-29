@@ -207,10 +207,12 @@ unenrolledWidget students courses = do
             |]
 
 emailWidget :: [User] -> HandlerFor App Widget
-emailWidget insts = do let emails = intercalate "," (map userIdent insts)
-                       return [whamlet|
-                          <a href="mailto:gleachkr@gmail.com?bcc=#{emails}">Email Instructors
-                       |]
+emailWidget insts = do
+    let emails = intercalate "," (map userIdent insts)
+    instanceAdmin <- runDB getInstanceAdminEmail
+    return [whamlet|
+       <a href="mailto:#{instanceAdmin}?bcc=#{emails}">Email Instructors
+    |]
 
 instructorWidget :: [(User,Entity UserData,[(Entity Course,[Entity UserData])])] -> HandlerFor App Widget
 instructorWidget instructorPlus =

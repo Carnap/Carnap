@@ -1,6 +1,7 @@
 module Settings.Runtime (
     module Settings.RuntimeDefs,
     getDisableGoogleReg,
+    getInstanceAdminEmail,
     setRtSetting,
     getRtSettings
 ) where
@@ -27,7 +28,10 @@ setRtSetting set = do
 
 getRtSettings :: PersistentSite site => YesodDB site [RTSetting]
 getRtSettings = do
-    sequence [DisableGoogleReg <$> getDisableGoogleReg]
+    sequence
+        [ DisableGoogleReg <$> getDisableGoogleReg
+        , InstanceAdminEmail <$> getInstanceAdminEmail
+        ]
 
 withDefault :: Functor f => a -> MaybeT f a -> f a
 withDefault def comp = maybe def id <$> (runMaybeT comp)
@@ -37,3 +41,7 @@ getDisableGoogleReg = withDefault False $ do
     DisableGoogleReg v <- getSetting TyDisableGoogleReg
     return v
 
+getInstanceAdminEmail :: PersistentSite site => YesodDB site Text
+getInstanceAdminEmail = withDefault "gleachkr@gmail.com" $ do
+    InstanceAdminEmail v <- getSetting TyInstanceAdminEmail
+    return v

@@ -242,7 +242,7 @@
         <p>You can use Carnap to teach your own logic class!
 
         <p> All you need to do is <a href="@{AuthR LoginR}">create an account</a>,
-            \ and then <a href="mailto:gleachkr@ksu.edu">get in touch</a> to
+            \ and then <a href="mailto:#{instanceAdmin}">get in touch</a> to
             \ register as an instructor.
 
         <p> Once you're an instructor, you can use this site—the one you're on
