@@ -9,7 +9,7 @@ import qualified Data.Aeson as A
 data RTSetType =
     TyDisableGoogleReg
     -- ^ disable new registrations of accounts with the Google login back end
-    deriving (Show, Read, Eq)
+    deriving (Show, Read, Eq, Enum)
 
 data RTSetting =
     DisableGoogleReg Bool

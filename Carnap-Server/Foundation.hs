@@ -410,9 +410,10 @@ instance YesodAuth App where
                           String email <- HM.lookup "email" o
                           Just creds0 { credsIdent = email }
 
-              noGoogleMessage = "Creating new Google accounts is disabled on \
-                               \ this Carnap instance. Log in via your \
-                               \ learning management system instead."
+            -- I want to make this multiline reasonably but ghci does not like it?!
+              noGoogleMessage = unwords ["Creating new Google accounts is disabled on "
+                                , "this Carnap instance. Log in via your "
+                                , "learning management system instead."]
 
               tryCreateUser :: Text -> (YesodDB App (AuthenticationResult App))
               tryCreateUser un = maybe (ServerError noGoogleMessage) Authenticated

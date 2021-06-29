@@ -1,7 +1,8 @@
 module Settings.Runtime (
     module Settings.RuntimeDefs,
     getDisableGoogleReg,
-    setDisableGoogleReg
+    setRtSetting,
+    getRtSettings
 ) where
 
 import           Control.Monad.Trans.Maybe (MaybeT (..))
@@ -18,11 +19,15 @@ getSetting ty = do
     set <- getSettingRaw $ ty
     MaybeT . return $ parseRtSetting ty set
 
-setSetting :: PersistentSite site => RTSetting -> YesodDB site ()
-setSetting set = do
+setRtSetting :: PersistentSite site => RTSetting -> YesodDB site ()
+setRtSetting set = do
     let ser = serializeRtSetting set
     _ <- upsert (RuntimeSetting (rtSettingType set) ser) [RuntimeSettingValue =. ser]
     return ()
+
+getRtSettings :: PersistentSite site => YesodDB site [RTSetting]
+getRtSettings = do
+    sequence [DisableGoogleReg <$> getDisableGoogleReg]
 
 withDefault :: Functor f => a -> MaybeT f a -> f a
 withDefault def comp = maybe def id <$> (runMaybeT comp)
@@ -32,5 +37,3 @@ getDisableGoogleReg = withDefault False $ do
     DisableGoogleReg v <- getSetting TyDisableGoogleReg
     return v
 
-setDisableGoogleReg :: PersistentSite site => Bool -> YesodDB site ()
-setDisableGoogleReg val = setSetting (DisableGoogleReg val)
