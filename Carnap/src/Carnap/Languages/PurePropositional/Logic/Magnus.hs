@@ -131,24 +131,24 @@ instance Inference MagnusSL PurePropLexicon (Form Bool) where
         globalRestriction _ _ _ = Nothing
 
 parseMagnusSL :: RuntimeDeductionConfig PurePropLexicon (Form Bool) -> Parsec String u [MagnusSL]
-parseMagnusSL rtc = do r <- choice (map (try . string) ["AS","PR","&I","/\\I", "∧I","&E","/\\E","∧E","CI","->I","→I","→E","CE","->E", "→E"
+parseMagnusSL rtc = do r <- choice (map (try . string) ["AS","PR","&I","/\\I", "∧I","&E","/\\E","∧E","CI","->I","→I","CE","->E", "→E"
                                                          ,"~I","-I", "¬I","~E","-E","¬E" ,"vI","\\/I","∨I", "vE","\\/E", "∨E","BI","<->I", "↔I" 
                                                          , "BE", "<->E", "↔E", "R"]) <|> ((++) <$> string "A/" <*> many anyChar)
-                       case r of
-                            r | r == "AS" -> return [As ""]
-                              | r == "PR" -> return [Pr (problemPremises rtc)]
-                              | r == "R"  -> return [Reiterate]
-                              | r `elem` ["&I","/\\I","∧I"] -> return [ConjIntro]
-                              | r `elem` ["&E","/\\E","∧E"] -> return [ConjElim1, ConjElim2]
-                              | r `elem` ["CI","->I","→I"]  -> return [CondIntro1,CondIntro2]
-                              | r `elem` ["CE","->E", "→E"] -> return [CondElim]
-                              | r `elem` ["~I","¬I","-I"]   -> return [NegeIntro1, NegeIntro2, NegeIntro3, NegeIntro4]
-                              | r `elem` ["~E","¬E","-E"]   -> return [NegeElim1, NegeElim2, NegeElim3, NegeElim4]
-                              | r `elem` ["vI","\\/I"]   -> return [DisjIntro1, DisjIntro2]
-                              | r `elem` ["vE","\\/E"]   -> return [DisjElim1, DisjElim2]
-                              | r `elem` ["BI","<->I","↔I"]   -> return [BicoIntro1, BicoIntro2, BicoIntro3, BicoIntro4]
-                              | r `elem` ["BE","<->E","↔E"] -> return [BicoElim1, BicoElim2]
-                            'A':'/':rest -> return [As (rest)]
+                       return $ case r of
+                            r | r == "AS" -> [As ""]
+                              | r == "PR" -> [Pr (problemPremises rtc)]
+                              | r == "R"  -> [Reiterate]
+                              | r `elem` ["&I","/\\I","∧I"] -> [ConjIntro]
+                              | r `elem` ["&E","/\\E","∧E"] -> [ConjElim1, ConjElim2]
+                              | r `elem` ["CI","->I","→I"]  -> [CondIntro1,CondIntro2]
+                              | r `elem` ["CE","->E", "→E"] -> [CondElim]
+                              | r `elem` ["~I","¬I","-I"]   -> [NegeIntro1, NegeIntro2, NegeIntro3, NegeIntro4]
+                              | r `elem` ["~E","¬E","-E"]   -> [NegeElim1, NegeElim2, NegeElim3, NegeElim4]
+                              | r `elem` ["vI","\\/I"]   -> [DisjIntro1, DisjIntro2]
+                              | r `elem` ["vE","\\/E"]   -> [DisjElim1, DisjElim2]
+                              | r `elem` ["BI","<->I","↔I"]   -> [BicoIntro1, BicoIntro2, BicoIntro3, BicoIntro4]
+                              | r `elem` ["BE","<->E","↔E"] -> [BicoElim1, BicoElim2]
+                            'A':'/':rest -> [As (rest)]
 
 parseMagnusSLProof :: RuntimeDeductionConfig PurePropLexicon (Form Bool) -> String -> [DeductionLine MagnusSL PurePropLexicon (Form Bool)]
 parseMagnusSLProof rtc = toDeductionFitch (parseMagnusSL rtc) (purePropFormulaParser magnusOpts)

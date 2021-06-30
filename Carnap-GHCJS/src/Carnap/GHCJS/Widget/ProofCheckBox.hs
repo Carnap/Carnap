@@ -31,7 +31,7 @@ data Button = Button { label  :: String
 data CheckerFeedbackUpdate = Full | Click | Never | SyntaxOnly
     deriving Eq
 
-data CheckerGuide = MontagueGuide | FitchGuide | HausmanGuide | HowardSnyderGuide | HurleyGuide | IndentGuide | NoGuide
+data CheckerGuide = MontagueGuide | FitchGuide | HausmanGuide | HowardSnyderGuide | HurleyGuide | IndentGuide | CortensGuide | NoGuide
 
 data CheckerOptions = CheckerOptions { submit :: Maybe Button -- What's the submission button, if there is one?
                                      , render :: Bool -- Should the checker render the proof?
@@ -64,6 +64,7 @@ optionsFromMap opts = CheckerOptions { submit = Nothing
                                                        Just "fitch"        -> FitchGuide
                                                        Just "indent"       -> IndentGuide
                                                        Just "hurley"       -> HurleyGuide
+                                                       Just "cortens"      -> CortensGuide
                                                        Just "hausman"      -> HausmanGuide
                                                        Just "howardSnyder" -> HowardSnyderGuide
                                                        _ -> if "guides" `elem` optlist 
@@ -258,6 +259,8 @@ setLinesTo w nd options lines = do setInnerHTML nd (Just "")
                                | no < 99  = "  " ++ show (no + 1)
                                | no < 999  = " " ++ show (no + 1)
                                | otherwise  = "" ++ show (no + 1)
+                 let wrappednumstring | no < 9  = " (" ++ show (no + 1) ++ ")"
+                                      | otherwise  = "(" ++ show (no + 1) ++ ")"
                  let guidestring = case indentGuides options of
                                        NoGuide -> numstring ++ "."
                                        MontagueGuide -> 
@@ -285,6 +288,8 @@ setLinesTo w nd options lines = do setInnerHTML nd (Just "")
                                        HowardSnyderGuide  -> 
                                            bars (differences guidelevels'') 
                                            ++ (numstring ++ ".") 
+                                       CortensGuide -> 
+                                           replicate indent ' ' ++ wrappednumstring 
                                        FitchGuide | indent > oldindent -> 
                                            numstring ++ "│" ++ bars (differences guidelevels'')
                                            ++ replicate (length rest + indent - head guidelevels'') '_'
