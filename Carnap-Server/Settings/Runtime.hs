@@ -34,7 +34,7 @@ getRtSettings = do
         ]
 
 withDefault :: Functor f => a -> MaybeT f a -> f a
-withDefault def comp = maybe def id <$> (runMaybeT comp)
+withDefault def comp = fromMaybe def <$> (runMaybeT comp)
 
 getDisableGoogleReg :: PersistentSite site => YesodDB site Bool
 getDisableGoogleReg = withDefault False $ do
