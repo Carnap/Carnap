@@ -82,6 +82,7 @@ library
                 FlexibleContexts
                 FlexibleInstances
                 EmptyDataDecls
+                LambdaCase
                 NoMonomorphismRestriction
                 RankNTypes
                 DeriveDataTypeable

@@ -1,6 +1,5 @@
 module Foundation where
 
-import           Control.Monad.Trans.Maybe  (MaybeT (..))
 import           Database.Persist.Sql       (ConnectionPool, runSqlPool)
 import           Text.Hamlet                (hamletFile)
 import           TH.RelativePaths           (pathRelativeToCabalPackage)
@@ -417,14 +416,10 @@ instance YesodAuth App where
                                 , "learning management system instead."]
 
               tryCreateUser :: Text -> (YesodDB App (AuthenticationResult App))
-              tryCreateUser un = maybe (UserError $ IdentifierNotFound noGoogleMessage) Authenticated
-                                 <$> (runMaybeT $ do
-                     guard =<< lift userCreationIsAllowed
-                     lift . insert $ User
-                         { userIdent = un
-                         , userPassword = Nothing
-                         }
-                 )
+              tryCreateUser un =
+                userCreationIsAllowed >>= \case
+                    True -> Authenticated <$> (insert $ User { userIdent = un , userPassword = Nothing })
+                    False -> return . UserError $ IdentifierNotFound noGoogleMessage
 
               userCreationIsAllowed :: PersistentSite site0 => (YesodDB site0 Bool)
               userCreationIsAllowed = do
