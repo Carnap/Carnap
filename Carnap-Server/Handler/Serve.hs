@@ -64,13 +64,3 @@ getServeR base components = do app <- getYesod
                               Just ss -> mapM addStylesheetRemote ss
                           $(widgetFile "document")
                           addScript $ StaticR ghcjs_allactions_runmain_js
-
-allFilters = makeTreeDeduction
-             . makeSequent
-             . makeSynCheckers
-             . makeProofChecker
-             . makeTranslate
-             . makeTruthTables
-             . makeCounterModelers
-             . makeQualitativeProblems
-             . renderFormulas

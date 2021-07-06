@@ -1176,15 +1176,6 @@ dateDisplay inUtc course = case tzByName $ courseTimeZone course of
 maybeDo :: Monad m => Maybe t -> (t -> m ()) -> m ()
 maybeDo mv f = case mv of Just v -> f v; _ -> return ()
 
-sanitizeForJS :: String -> String
-sanitizeForJS ('\n':xs) = '\\' : 'n' : sanitizeForJS xs
-sanitizeForJS ('\\':xs) = '\\' : '\\' : sanitizeForJS xs
-sanitizeForJS ('\'':xs) = '\\' : '\'' : sanitizeForJS xs
-sanitizeForJS ('"':xs)  = '\\' : '"' : sanitizeForJS xs
-sanitizeForJS ('\r':xs) = sanitizeForJS xs
-sanitizeForJS (x:xs) = x : sanitizeForJS xs
-sanitizeForJS [] = []
-
 -- TODO compare directory contents with database results
 listAssignmentMetadata
     :: Entity Course

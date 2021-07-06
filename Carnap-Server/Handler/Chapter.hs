@@ -18,7 +18,7 @@ import Text.Hamlet (hamletFile)
 import TH.RelativePaths (pathRelativeToCabalPackage)
 import qualified Data.CaseInsensitive as CI
 import qualified Data.Text.Encoding as TE
-import Control.Monad.State (evalState, evalStateT)
+import Control.Monad.State (evalState)
 import Util.Database
 
 -- XXX Fair amount of code-duplication between this and Handler/Book.hs. Perhaps merge those modules.
@@ -26,8 +26,8 @@ import Util.Database
 getChapterR :: Int -> Handler Html
 getChapterR n = do bookdir <- appBookRoot <$> (appSettings <$> getYesod)
                    cdir <- liftIO $ getDirectoryContents bookdir
-                   content <- liftIO $ content n cdir bookdir
-                   case content of
+                   content' <- liftIO $ content n cdir bookdir
+                   case content' of
                        Right (Right html) -> chapterLayout
                             [whamlet|
                                 <div.container>
@@ -58,12 +58,14 @@ getChapterR n = do bookdir <- appBookRoot <$> (appSettings <$> getYesod)
                                                 #{show err}
                                        |]
 
+content :: Int -> [FilePath] -> FilePath -> IO (Either PandocError (Either PandocError Html))
 content n cdir cdirp = do let matches = filter (\x -> (show n ++ ".pandoc") == dropWhile (not . isDigit) x) cdir
                           case matches of
-                              [] -> do print "no matches"
+                              [] -> do print ("no matches"::Text)
                                        fileToHtml cdirp ""
-                              (m:ms)  -> fileToHtml cdirp m
+                              (m:_)  -> fileToHtml cdirp m
 
+fileToHtml :: FilePath -> FilePath -> IO (Either PandocError (Either PandocError Html))
 fileToHtml path m = do md <- markdownFromFile (path </> m)
                        case parseMarkdown yesodDefaultReaderOptions { readerExtensions = exts } md of
                            Right pd -> do let pd' = applyFilters pd
@@ -90,6 +92,7 @@ applyFilters= let walkNotes y = evalState (walkM makeSideNotes y) 0
                   walkProblems y = walk (makeSynCheckers . makeProofChecker . makeTranslate . makeTruthTables . makeCounterModelers . makeQualitativeProblems) y
                   in walkNotes . walkProblems
 
+chapterLayout :: ToWidget App a => a -> Handler Html
 chapterLayout widget = do
         master <- getYesod
         mmsg <- getMessage
@@ -110,6 +113,9 @@ chapterLayout widget = do
             addStylesheet $ StaticR css_tufte_css
             addStylesheet $ StaticR css_tuftextra_css
             addStylesheet $ StaticR css_exercises_css
+            addStylesheet $ StaticR truth_tree_lib_css
             $(widgetFile "default-layout")
             addScript $ StaticR ghcjs_allactions_runmain_js
+            toWidgetHead $(juliusFile =<< pathRelativeToCabalPackage "templates/createTrees.julius")
+
         withUrlRenderer $(hamletFile =<< pathRelativeToCabalPackage "templates/default-layout-wrapper.hamlet")

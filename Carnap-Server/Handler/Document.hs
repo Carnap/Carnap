@@ -11,15 +11,6 @@ import System.FilePath
 import Util.Data
 import Util.Database
 import Util.Handler
-import Filter.SynCheckers
-import Filter.ProofCheckers
-import Filter.Translate
-import Filter.TruthTables
-import Filter.CounterModelers
-import Filter.Qualitative
-import Filter.Sequent
-import Filter.TreeDeduction
-import Filter.RenderFormulas
 
 getDocumentsR :: Handler Html
 getDocumentsR =  runDB (selectList [] []) >>= documentsList "Index of All Documents"
@@ -156,13 +147,3 @@ retrieveDoc ident title = do userdir <- getUserDir ident
 
 getUserDir ident = do master <- getYesod
                       return $ (appDataRoot $ appSettings master) </> "documents" </> unpack ident
-
-allFilters = makeTreeDeduction
-             . makeSequent
-             . makeSynCheckers
-             . makeProofChecker
-             . makeTranslate
-             . makeTruthTables
-             . makeCounterModelers
-             . makeQualitativeProblems
-             . renderFormulas
