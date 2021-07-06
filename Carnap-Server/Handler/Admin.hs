@@ -1,7 +1,7 @@
 {-# LANGUAGE DeriveGeneric #-}
 module Handler.Admin where
 
-import           Data.Aeson            (encode)
+import           Data.Aeson            (encode, decode)
 import qualified Data.Text             as T
 import           Handler.Instructor    (dateDisplay)
 import           Import
@@ -260,9 +260,12 @@ rtSettingsWidget = do
         <table.table.table-striped>
             <thead>
                 <th> Setting
+                <th> Value
             <tbody>
                 $forall set <- settings
-                    <tr><td> #{show set}
+                    <tr>
+                        <td> #{displayRTSetType (rtSettingType set)}
+                        <td> #{decodeUtf8 (encode (serializeRTSetting set))}
     |]
 
 -- | a text field with no default value
@@ -274,8 +277,8 @@ fieldName = bfs
 
 rtSettingsSetForm :: Html -> MForm (HandlerFor App) (FormResult RTSetting, WidgetFor App ())
 rtSettingsSetForm = renderBootstrap3 BootstrapBasicForm $ wFormToAForm $ do
-    let settingsList = tshow <$> enumFrom TyDisableGoogleReg
-        settingsList' = zip (removePrefix "Ty" <$> settingsList) settingsList
+    let settingsList = enumFrom TyDisableGoogleReg
+        settingsList' = zip (displayRTSetType <$> settingsList) settingsList
 
     which <- wreq (selectFieldList settingsList') (fieldName "Setting") Nothing
     wreq (settingsField which) (fieldName "Value (JSON)") Nothing
@@ -294,13 +297,8 @@ rtSettingsSetForm = renderBootstrap3 BootstrapBasicForm $ wFormToAForm $ do
         parseSettingsField (FormSuccess ty) t = maybe (Left $ MsgInvalidEntry "Parse failure") Right $ toSetting ty t
         parseSettingsField _ _ = Left . MsgInvalidEntry $ "Selected setting missing or bad"
 
-        toSetting :: Text -> Text -> Maybe RTSetting
-        toSetting name val =
-            ((parseRtSetting `flip` (encodeUtf8 val)) =<< readMay name)
-
-        -- | remove prefix, returning the existing string if it's not present
-        removePrefix prefix s = fromMaybe s $ stripPrefix prefix s
-
+        toSetting :: RTSetType-> Text -> Maybe RTSetting
+        toSetting name val = (decode . encodeUtf8 . fromStrict $ val) >>= parseRTSetting name 
 
 getCoursesWithEnrollment :: UserData -> HandlerFor App [(Entity Course, [Entity UserData])]
 getCoursesWithEnrollment ud =

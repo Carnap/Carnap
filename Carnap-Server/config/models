@@ -75,7 +75,7 @@ CourseAutoreg
 
 RuntimeSetting
     which RTSetType
-    value ByteString
+    value Value
     UniqueSetting which
 
 SyntaxCheckSubmission

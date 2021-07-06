@@ -4,7 +4,7 @@ module Settings.RuntimeDefs where
 
 import           ClassyPrelude
 import           Database.Persist.TH
-import qualified Data.Aeson as A
+import           Data.Aeson
 
 data RTSetType =
       TyDisableGoogleReg
@@ -22,14 +22,22 @@ rtSettingType :: RTSetting -> RTSetType
 rtSettingType (DisableGoogleReg _) = TyDisableGoogleReg
 rtSettingType (InstanceAdminEmail _) = TyInstanceAdminEmail
 
-parseRtSetting :: RTSetType -> ByteString -> Maybe RTSetting
-parseRtSetting TyDisableGoogleReg val =
-    DisableGoogleReg <$> A.decodeStrict val
-parseRtSetting TyInstanceAdminEmail val =
-    InstanceAdminEmail <$> A.decodeStrict val
+handleResult :: Result a -> Maybe a
+handleResult (Error _) = Nothing
+handleResult (Success a) = Just a
 
-serializeRtSetting :: RTSetting -> ByteString
-serializeRtSetting (DisableGoogleReg b) = toStrict . A.encode $ b
-serializeRtSetting (InstanceAdminEmail b) = toStrict . A.encode $ b
+parseRTSetting :: RTSetType -> Value -> Maybe RTSetting
+parseRTSetting TyDisableGoogleReg val =
+    DisableGoogleReg <$> handleResult (fromJSON val)
+parseRTSetting TyInstanceAdminEmail val =
+    InstanceAdminEmail <$> handleResult (fromJSON val)
+
+serializeRTSetting :: RTSetting -> Value
+serializeRTSetting (DisableGoogleReg b) = toJSON b
+serializeRTSetting (InstanceAdminEmail b) = toJSON b
+
+displayRTSetType :: RTSetType -> Text
+displayRTSetType TyDisableGoogleReg = "Disable Google Registration"
+displayRTSetType TyInstanceAdminEmail = "Administrator Email"
 
 derivePersistField "RTSetType"

@@ -10,7 +10,7 @@ import           Control.Monad.Trans.Maybe (MaybeT (..))
 import           Import.NoFoundation
 import           Settings.RuntimeDefs
 
-getSettingRaw :: PersistentSite site => RTSetType -> MaybeT (YesodDB site) ByteString
+getSettingRaw :: PersistentSite site => RTSetType -> MaybeT (YesodDB site) Value
 getSettingRaw ty =
     runtimeSettingValue . entityVal
         <$> (MaybeT $ getBy (UniqueSetting ty))
@@ -18,11 +18,11 @@ getSettingRaw ty =
 getSetting :: PersistentSite site => RTSetType -> MaybeT (YesodDB site) RTSetting
 getSetting ty = do
     set <- getSettingRaw $ ty
-    MaybeT . return $ parseRtSetting ty set
+    MaybeT . return $ parseRTSetting ty set
 
 setRtSetting :: PersistentSite site => RTSetting -> YesodDB site ()
 setRtSetting set = do
-    let ser = serializeRtSetting set
+    let ser = serializeRTSetting set
     _ <- upsert (RuntimeSetting (rtSettingType set) ser) [RuntimeSettingValue =. ser]
     return ()
 
