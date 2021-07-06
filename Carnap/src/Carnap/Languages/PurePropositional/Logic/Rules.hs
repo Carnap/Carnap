@@ -216,7 +216,6 @@ doubleNegatingModusTollensVariations = [
         ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (phin 1)
     ]
 
-
 modusTollendoPonensVariations :: BooleanRuleVariants lex b
 modusTollendoPonensVariations = [
                 [ GammaV 1  :|-: SS (lneg $ phin 1) 

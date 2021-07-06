@@ -39,6 +39,7 @@ library
                      , Carnap.Languages.PurePropositional.Logic.BergmannMoorAndNelson
                      , Carnap.Languages.PurePropositional.Logic.Bonevac
                      , Carnap.Languages.PurePropositional.Logic.Carnap
+                     , Carnap.Languages.PurePropositional.Logic.Cortens
                      , Carnap.Languages.PurePropositional.Logic.EbelsDuggan
                      , Carnap.Languages.PurePropositional.Logic.Equivalence
                      , Carnap.Languages.PurePropositional.Logic.Gallow
