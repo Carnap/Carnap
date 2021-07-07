@@ -60,14 +60,12 @@ arithmeticExtendedOptions = FirstOrderParserOptions
     where parenOrBracket opt rw = (wrappedWith '(' ')' (rw opt) <|> wrappedWith '[' ']' (rw opt))
 
 arithmeticExtendedSchemaOptions :: FirstOrderParserOptions ExtendedArithLex u Identity
-arithmeticExtendedSchemaOptions = FirstOrderParserOptions 
+arithmeticExtendedSchemaOptions = arithmeticExtendedOptions 
                          { atomicSentenceParser = \x -> try (lessThanParser x)
                                                         <|> try (equalsParser x)
                                                         <|> try (inequalityParser x)
                                                         <|> try (parseFriendlySchematicPredicateSymbol x)
                                                         <|> parsePredicateString extendedSymbols x
-                         , quantifiedSentenceParser' = lplQuantifiedSentenceParser
-                         , freeVarParser = parseFreeVar "stuvwxyz"
                          , constantParser = Just $ parseZero 
                                                <|> try (parseFriendlySchematicConstant)
                                                <|> parseConstant "abcdefghijklmnopqr"
@@ -80,12 +78,7 @@ arithmeticExtendedSchemaOptions = FirstOrderParserOptions
                                                             <|> parseFreeVar "stuvwxyz"
                                                             <|> parseConstant "abcdefghijklmnopqr"
                                                             ))
-                         , hasBooleanConstants = True
-                         , parenRecur = parenOrBracket
-                         , opTable = standardOpTable
-                         , finalValidation = const (pure ())
                          }
-    where parenOrBracket opt rw = (wrappedWith '(' ')' (rw opt) <|> wrappedWith '[' ']' (rw opt))
 
 arithmeticParser = parserFromOptions arithmeticOptions
 

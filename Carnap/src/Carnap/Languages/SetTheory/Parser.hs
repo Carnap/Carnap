@@ -61,34 +61,27 @@ extendedStrictSetTheoryOptions = FirstOrderParserOptions
                          }
     where parenOrBracket opt rw = (wrappedWith '(' ')' (rw opt) <|> wrappedWith '[' ']' (rw opt))
 
-extendedStrictSetTheoryParser = parserFromOptions extendedStrictSetTheoryOptions
-
-extendedStrictSetTheoryMontagueParser = parserFromOptions extendedStrictSetTheoryOptions {hasBooleanConstants = False}
-
-instance ParsableLex (Form Bool) ExtendedStrictSetTheoryLex where
-        langParser = extendedStrictSetTheoryParser
-
 extendedStrictSetTheorySchemaOptions :: FirstOrderParserOptions ExtendedStrictSetTheoryLex u Identity
-extendedStrictSetTheorySchemaOptions = FirstOrderParserOptions 
+extendedStrictSetTheorySchemaOptions = extendedStrictSetTheoryOptions 
                          { atomicSentenceParser = \x -> try (elementParser x)
                                                     <|> try (equalsParser x)
                                                     <|> inequalityParser x
                                                     <|> try (parseFriendlySchematicPredicateSymbol x)
                                                     <|> parsePredicateString extendedSymbols x
-                         , quantifiedSentenceParser' = quantifiedSentenceParser
-                         , freeVarParser = parseFreeVar "stuvwxyz"
                          , constantParser = Just ( try (parseFriendlySchematicConstant)
                                                <|> parseConstant "abcdefghijklmnopqr")
                          , functionParser = Just $ \x -> try (parseFunctionString extendedSymbols x) 
                                                      <|> parseFriendlySchematicFunctionSymbol x
-                         , hasBooleanConstants = True
-                         , parenRecur = parenOrBracket
-                         , opTable = standardOpTable
-                         , finalValidation = const (pure ())
                          }
-    where parenOrBracket opt rw = (wrappedWith '(' ')' (rw opt) <|> wrappedWith '[' ']' (rw opt))
+
+extendedStrictSetTheoryParser = parserFromOptions extendedStrictSetTheoryOptions
+
+extendedStrictSetTheoryMontagueParser = parserFromOptions extendedStrictSetTheoryOptions {hasBooleanConstants = False}
 
 extendedStrictSetTheorySchemaParser = parserFromOptions extendedStrictSetTheorySchemaOptions
+
+instance ParsableLex (Form Bool) ExtendedStrictSetTheoryLex where
+        langParser = extendedStrictSetTheoryParser
 
 elementarySetTheoryOptions :: FirstOrderParserOptions ElementarySetTheoryLex u Identity
 elementarySetTheoryOptions = FirstOrderParserOptions 
@@ -145,23 +138,14 @@ extendedElementarySetTheoryOptions = FirstOrderParserOptions
                            }
     where parenOrBracket opt rw = (wrappedWith '(' ')' (rw opt) <|> wrappedWith '[' ']' (rw opt))
 
-extendedElementarySetTheoryParser = parserFromOptions extendedElementarySetTheoryOptions
-
-extendedElementarySetTheoryMontagueParser = parserFromOptions extendedElementarySetTheoryOptions {hasBooleanConstants = False}
-
-instance ParsableLex (Form Bool) ExtendedElementarySetTheoryLex where
-        langParser = extendedElementarySetTheoryParser
-
 extendedElementarySetTheorySchemaOptions :: FirstOrderParserOptions ExtendedElementarySetTheoryLex u Identity
-extendedElementarySetTheorySchemaOptions = FirstOrderParserOptions 
+extendedElementarySetTheorySchemaOptions = extendedElementarySetTheoryOptions 
                            { atomicSentenceParser = \x -> try (elementParser x)
                                                           <|> try (equalsParser x)
                                                           <|> try (inequalityParser x)
                                                           <|> try (parseFriendlySchematicPredicateSymbol x)
                                                           <|> subsetParser x
                                                           <|> parsePredicateString extendedSymbols x
-                           , quantifiedSentenceParser' = quantifiedSentenceParser
-                           , freeVarParser = parseFreeVar "stuvwxyz"
                            , constantParser = Just $ try parseEmptySet 
                                                  <|> try (parseFriendlySchematicConstant)
                                                  <|> parseConstant "abcdefghijklmnopqr"
@@ -175,14 +159,16 @@ extendedElementarySetTheorySchemaOptions = FirstOrderParserOptions
                                                                  <|> parseFreeVar "stuvwxyz" 
                                                                  <|> parseConstant "abcdefghijklmnopqr" 
                                                                  ))
-                           , hasBooleanConstants = True
-                           , parenRecur = parenOrBracket
-                           , opTable = standardOpTable
-                           , finalValidation = const (pure ())
                            }
-    where parenOrBracket opt rw = (wrappedWith '(' ')' (rw opt) <|> wrappedWith '[' ']' (rw opt))
-          
+
+extendedElementarySetTheoryParser = parserFromOptions extendedElementarySetTheoryOptions
+
+extendedElementarySetTheoryMontagueParser = parserFromOptions extendedElementarySetTheoryOptions {hasBooleanConstants = False}
+
 extendedElementarySetTheorySchemaParser = parserFromOptions extendedElementarySetTheorySchemaOptions
+
+instance ParsableLex (Form Bool) ExtendedElementarySetTheoryLex where
+        langParser = extendedElementarySetTheoryParser
 
 separativeSetTheoryOptions :: FirstOrderParserOptions SeparativeSetTheoryLex u Identity
 separativeSetTheoryOptions = FirstOrderParserOptions
@@ -250,23 +236,14 @@ extendedSeparativeSetTheoryOptions = FirstOrderParserOptions
           tparser = try (fparser tparser) <|> try cparser <|> vparser 
           parenOrBracket opt rw = (wrappedWith '(' ')' (rw opt) <|> wrappedWith '[' ']' (rw opt))
 
-extendedSeparativeSetTheoryParser = parserFromOptions extendedSeparativeSetTheoryOptions
-
-extendedSeparativeSetTheoryMontagueParser = parserFromOptions extendedSeparativeSetTheoryOptions {hasBooleanConstants = False}
-
-instance ParsableLex (Form Bool) ExtendedSeparativeSetTheoryLex where
-        langParser = extendedSeparativeSetTheoryParser
-
 extendedSeparativeSetTheorySchemaOptions :: FirstOrderParserOptions ExtendedSeparativeSetTheoryLex u Identity
-extendedSeparativeSetTheorySchemaOptions = FirstOrderParserOptions
+extendedSeparativeSetTheorySchemaOptions = extendedSeparativeSetTheoryOptions
                            { atomicSentenceParser = \x -> try (elementParser x)
                                                           <|> try (equalsParser x)
                                                           <|> try (inequalityParser x)
                                                           <|> subsetParser x
                                                           <|> try (parseFriendlySchematicPredicateSymbol x)
                                                           <|> parsePredicateString extendedSymbols x
-                           , quantifiedSentenceParser' = quantifiedSentenceParser
-                           , freeVarParser = parseFreeVar "stuvwxyz"
                            , constantParser = Just $ parseConstant "abcdefghijklmnopqr" 
                                                  <|> try parseEmptySet 
                                                  <|> try (parseFriendlySchematicConstant)
@@ -281,18 +258,20 @@ extendedSeparativeSetTheorySchemaOptions = FirstOrderParserOptions
                                                                  <|> vparser
                                                                  <|> cparser
                                                                  ))
-                           , hasBooleanConstants = True
-                           , parenRecur = parenOrBracket
-                           , opTable = standardOpTable
-                           , finalValidation = const (pure ())
                            }
-    where cparser = case constantParser extendedSeparativeSetTheoryOptions of Just c -> c
-          fparser = case functionParser extendedSeparativeSetTheoryOptions of Just f -> f
-          vparser = freeVarParser  extendedSeparativeSetTheoryOptions 
+    where cparser = case constantParser extendedSeparativeSetTheorySchemaOptions of Just c -> c
+          fparser = case functionParser extendedSeparativeSetTheorySchemaOptions of Just f -> f
+          vparser = freeVarParser extendedSeparativeSetTheorySchemaOptions 
           tparser = try (fparser tparser) <|> try cparser <|> vparser 
-          parenOrBracket opt rw = (wrappedWith '(' ')' (rw opt) <|> wrappedWith '[' ']' (rw opt))
+
+extendedSeparativeSetTheoryParser = parserFromOptions extendedSeparativeSetTheoryOptions
+
+extendedSeparativeSetTheoryMontagueParser = parserFromOptions extendedSeparativeSetTheoryOptions {hasBooleanConstants = False}
 
 extendedSeparativeSetTheorySchemaParser = parserFromOptions extendedSeparativeSetTheorySchemaOptions
+
+instance ParsableLex (Form Bool) ExtendedSeparativeSetTheoryLex where
+        langParser = extendedSeparativeSetTheoryParser
 
 setTheoryOpParser subTerm = buildExpressionParser opTable subTerm
     where opTable = [ [Infix (try parseIntersect) AssocLeft, Infix (try parseUnion) AssocLeft]
