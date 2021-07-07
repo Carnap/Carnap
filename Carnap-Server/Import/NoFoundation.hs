@@ -25,5 +25,6 @@ type PersistentSite site =
      YesodAuthPersist site,
      AuthId site ~ Key User,
      AuthEntity site ~ User,
-     BaseBackend (YesodPersistBackend site) ~ SqlBackend)
+     BaseBackend (YesodPersistBackend site) ~ SqlBackend
+     )
 

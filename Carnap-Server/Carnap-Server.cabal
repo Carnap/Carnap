@@ -23,6 +23,8 @@ library
                      Model
                      Settings
                      Settings.StaticFiles
+                     Settings.RuntimeDefs
+                     Settings.Runtime
                      Handler.Common
                      Handler.Home
                      Handler.Info
@@ -80,6 +82,7 @@ library
                 FlexibleContexts
                 FlexibleInstances
                 EmptyDataDecls
+                LambdaCase
                 NoMonomorphismRestriction
                 RankNTypes
                 DeriveDataTypeable

@@ -1,11 +1,14 @@
 module Handler.Info where
 
-import Import
-import Text.Shakespeare.Text
+import           Import
+import           Settings.Runtime
+import           Text.Shakespeare.Text
 --import Text.Hamlet
 
 getInfoR :: Handler Html
 getInfoR = do
+    instanceAdmin <- runDB getInstanceAdminEmail
+
     defaultLayout $ do
         addScript $ StaticR js_proof_js
         addScript $ StaticR js_popper_min_js
@@ -19,13 +22,14 @@ getInfoR = do
         addStylesheet $ StaticR css_proof_css
         addStylesheet $ StaticR css_exercises_css
         addStylesheet $ StaticR klement_proofs_css
+
         $(widgetFile "infopage")
         -- TODO : split out the stuff specifically relating to exercises
         addScript $ StaticR ghcjs_allactions_runmain_js
 
 -- TODO remove submit option on these.
 checker :: Int -> Text -> Text -> Text -> Text -> Text -> HtmlUrl url
-checker n thetype sys opts goal proof = 
+checker n thetype sys opts goal proof =
         [hamlet|
         <div class="exercise">
             <span>example #{show n}
@@ -60,10 +64,10 @@ pierceTheorem = [st|
           P     :3 R
           -P    :2 R
         Q       :4-6 -E
-     P->Q       :3-7 CI 
-     P          :8 1 CE 
+     P->Q       :3-7 CI
+     P          :8 1 CE
      -P         :2 R
-  P             :2-10 -E 
+  P             :2-10 -E
 ((P->Q)->P)->P  :1-11 CI |]
 
 lemmonTheorem = [st|

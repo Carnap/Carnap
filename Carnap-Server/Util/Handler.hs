@@ -4,22 +4,24 @@ import Import
 import qualified Data.CaseInsensitive as CI
 import qualified Data.Text.Encoding as TE
 import Yesod.Markdown
-import Text.Pandoc (MetaValue(..),Inline(..), WriterOptions(..), WrapOption(..), readerExtensions,   Pandoc(..), getTemplate, compileTemplate, lookupMeta, runIO)
-import Text.Pandoc.Walk (walkM, walk)
-import Text.Julius (juliusFile,rawJS)
+import Text.Pandoc (Meta, PandocError, MetaValue(..),Inline(..), WriterOptions(..), WrapOption(..), readerExtensions,   Pandoc(..), getTemplate, compileTemplate, lookupMeta, runIO)
+import Text.Pandoc.Walk (Walkable, walk)
 import Text.Hamlet (hamletFile)
 import TH.RelativePaths (pathRelativeToCabalPackage)
 import System.Directory (removeFile, doesFileExist, createDirectoryIfMissing)
 import Util.Data
 import Util.Database
 import System.FilePath
+import Text.Blaze.XHtml5 (ToMarkup, Markup)
 
+minimalLayout :: ToMarkup a => a -> WidgetFor site ()
 minimalLayout c = [whamlet|
                   <div.container>
                       <article>
                           #{c}
                   |]
 
+cleanLayout :: ToWidget App a => a -> HandlerFor App Markup
 cleanLayout widget = do
         master <- getYesod
         mmsg <- getMessage
@@ -31,24 +33,27 @@ cleanLayout widget = do
         pc <- widgetToPageContent $(widgetFile "default-layout")
         withUrlRenderer $(hamletFile =<< pathRelativeToCabalPackage "templates/default-layout-wrapper.hamlet")
 
-retrievePandocVal metaval = case metaval of 
+retrievePandocVal :: MonadHandler m => Maybe MetaValue -> m (Maybe [Text])
+retrievePandocVal metaval = case metaval of
                         Just (MetaInlines ils) -> return $ Just (catMaybes (map fromStr ils))
-                        Just (MetaList list) -> do mvals <- mapM retrievePandocVal (map Just list) 
+                        Just (MetaList list) -> do mvals <- mapM retrievePandocVal (map Just list)
                                                    return . Just . concat . catMaybes $ mvals
                         Nothing -> return Nothing
                         x -> setMessage (toHtml ("bad yaml metadata: " ++ show x)) >> return Nothing
     where fromStr (Str x) = Just x
           fromStr _ = Nothing
 
-retrievePandocValPure metaval = case metaval of 
+retrievePandocValPure :: Monad m => Maybe MetaValue -> m (Maybe [Text])
+retrievePandocValPure metaval = case metaval of
                         Just (MetaInlines ils) -> return $ Just (catMaybes (map fromStr ils))
-                        Just (MetaList list) -> do mvals <- mapM retrievePandocValPure (map Just list) 
+                        Just (MetaList list) -> do mvals <- mapM retrievePandocValPure (map Just list)
                                                    return . Just . concat . catMaybes $ mvals
                         Nothing -> return Nothing
-                        x -> return Nothing
+                        _ -> return Nothing
     where fromStr (Str x) = Just x
           fromStr _ = Nothing
 
+fileToHtml :: Walkable a Pandoc => (a -> a) -> FilePath -> IO (Either String (Either PandocError Html, Meta))
 fileToHtml filters path = do Markdown md <- markdownFromFile path
                              let md' = Markdown (filter ((/=) '\r') md) --remove carrage returns from dos files
                              case parseMarkdown yesodDefaultReaderOptions { readerExtensions = carnapPandocExtensions } md' of
@@ -59,13 +64,13 @@ fileToHtml filters path = do Markdown md <- markdownFromFile path
                                                     Left err -> return $ Left err
                                  Left err -> return $ Left (show err)
     where write template = writePandocTrusted yesodDefaultWriterOptions { writerExtensions = carnapPandocExtensions
-                                                                        , writerWrapText = WrapPreserve 
+                                                                        , writerWrapText = WrapPreserve
                                                                         , writerTemplate = template
                                                                         , writerTableOfContents = template /= Nothing
                                                                         }
           templateFrom meta = do mtemplate <- retrievePandocValPure (lookupMeta "template" meta)
                                  case mtemplate of
-                                     Just [templatename] | takeExtension (unpack templatename) == ".template" -> do 
+                                     Just [templatename] | takeExtension (unpack templatename) == ".template" -> do
                                            let templatepath = takeDirectory path </> unpack templatename
                                            templateOrErr <- runIO $ getTemplate templatepath
                                            case templateOrErr of
@@ -117,7 +122,7 @@ requireReferral route = do referer <- lookupHeader "Referer" --This is actually 
                                else sendStatusJSON badRequest400 ("Bad Referer" :: Text)
 
 serveDoc :: (Document -> FilePath -> Handler a) -> Document -> FilePath -> UserId -> Handler a
-serveDoc sendIt doc path creatoruid = case documentScope doc of 
+serveDoc sendIt doc path creatoruid = case documentScope doc of
                                 Private -> do
                                   muid <- maybeAuthId
                                   case muid of Just uid' | uid' == creatoruid -> sendIt doc path
@@ -147,7 +152,7 @@ asYaml _ path = sendFile "text/x-yaml; charset=utf-8" path
 ---------------------
 
 assignmentPartOf :: (YesodPersist site, YesodPersistBackend site ~ SqlBackend) => AssignmentMetadataId -> CourseId -> YesodDB site AssignmentMetadata
-assignmentPartOf asid cid = do 
+assignmentPartOf asid cid = do
         as <- get asid >>= maybe (sendStatusJSON notFound404 ("No such assignment" :: Text)) pure
         if assignmentMetadataCourse as == cid then return () else sendStatusJSON notFound404 ("No such assignment" :: Text)
         return as
@@ -165,7 +170,7 @@ roleInClass :: Text -> Text -> Handler (Entity Course, Maybe (Entity CoInstructo
 roleInClass ident coursetitle = do
     courseEnt@(Entity cid course) <- courseFromTitle coursetitle
     Entity uid _ <- userFromIdent ident
-    Entity udid ud <- runDB (getBy $ UniqueUserData uid) >>= maybe (sendStatusJSON notFound404 ("No userdata for this ident" :: Text)) pure
+    Entity _udid ud <- runDB (getBy $ UniqueUserData uid) >>= maybe (sendStatusJSON notFound404 ("No userdata for this ident" :: Text)) pure
     case userDataInstructorId ud of
         Nothing -> sendStatusJSON forbidden403 ("Not an instructor" :: Text)
         Just iid | courseInstructor course == iid -> return (courseEnt, Nothing)

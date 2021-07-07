@@ -73,6 +73,11 @@ CourseAutoreg
     UniqueAutoregTriple issuer deploymentId contextId
     deriving Show
 
+RuntimeSetting
+    which RTSetType
+    value Value
+    UniqueSetting which
+
 SyntaxCheckSubmission
     problem Text
     time UTCTime

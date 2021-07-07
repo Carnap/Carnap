@@ -1,18 +1,24 @@
-.PHONY: help devel run shell-ghc build-ghc shell-ghcjs build-ghcjs tags build-production
+.PHONY: help devel run shell-ghc build-ghc shell-ghcjs build-ghcjs tags build-production hoogle
 TARGET := all
+
+CABALFLAGS := -f dev
+APPROOT := "http://localhost:3000"
+DATAROOT := "../dataroot"
+BOOKROOT := "../books/Carnap-Book/"
 
 help:
 	@echo "Usage: make [options] [target]"
 	@echo ""
 	@echo "Supported targets:"
-	@echo "    build-production 	Build and bundle everything needed to run the server in production"
-	@echo "    build-docker 		Build a production docker container"
-	@echo "    build-ghcjs 	 		Build a development client JavaScript with GHCJS"
-	@echo "    build-ghc 			Build a development server with GHC"
-	@echo "    shell-ghcjs		    Enter a nix shell for GHCJS client development"
-	@echo "    shell-ghc		    Enter a nix shell for GHC server development"
-	@echo "    devel				Build and run a development server locally, with data saved in this directory"
-	@echo "    tags				    Generate source code tags for development"
+	@echo "    build-production    Build and bundle everything needed to run the server in production"
+	@echo "    build-docker        Build a production docker container"
+	@echo "    build-ghcjs         Build a development client JavaScript with GHCJS"
+	@echo "    build-ghc           Build a development server with GHC"
+	@echo "    shell-ghcjs         Enter a nix shell for GHCJS client development"
+	@echo "    shell-ghc           Enter a nix shell for GHC server development"
+	@echo "    devel               Build and run a development server locally, with data saved in this directory"
+	@echo "    tags                Generate source code tags for development"
+	@echo "    hoogle              Starts a hoogle server with Carnap-Server's dependencies"
 	@echo ""
 	@echo "For more usage instructions, see README."
 
@@ -46,9 +52,9 @@ else
 	cd Carnap-Server && \
 	cp -n config/settings-example.yml config/settings.yml && \
 	mkdir -p ../dataroot && \
-	APPROOT="http://localhost:3000" DATAROOT="../dataroot" \
-		BOOKROOT="../Carnap-Book/" \
-		cabal run -f dev Carnap-Server
+	APPROOT=$(APPROOT) DATAROOT=$(DATAROOT) \
+		BOOKROOT=$(BOOKROOT) \
+		cabal run $(CABALFLAGS) Carnap-Server $(CONFIGFILE)
 endif
 
 shell-ghc:
@@ -79,4 +85,7 @@ else
 endif
 
 tags:
-	hasktags -R .
+	nix-shell --run "hasktags -R ."
+
+hoogle:
+	nix-shell --run "hoogle server --local"

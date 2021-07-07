@@ -1,4 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-}
 module Filter.Qualitative (makeQualitativeProblems) where
 
 import Carnap.GHCJS.SharedFunctions (simpleHash, simpleCipher)

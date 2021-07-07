@@ -1,4 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-}
 module Filter.Util (splitIt, intoChunks, formatChunk, unlines',sanitizeHtml,
                     exerciseWrapper, contentOf, numof, toDataCarnap) where
 

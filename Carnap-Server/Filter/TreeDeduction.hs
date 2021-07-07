@@ -1,4 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-}
 module Filter.TreeDeduction (makeTreeDeduction) where
 
 import Text.Pandoc

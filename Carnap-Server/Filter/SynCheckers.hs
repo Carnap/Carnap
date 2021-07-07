@@ -1,4 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-}
 module Filter.SynCheckers (makeSynCheckers) where
 
 import Text.Pandoc

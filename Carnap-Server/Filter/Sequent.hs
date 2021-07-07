@@ -1,4 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-}
 module Filter.Sequent (makeSequent) where
 
 import Text.Pandoc
