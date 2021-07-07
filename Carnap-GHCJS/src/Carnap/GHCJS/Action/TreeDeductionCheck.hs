@@ -8,6 +8,7 @@ import Data.Map as M (lookup, Map, toList, fromList, filterWithKey)
 import Data.IORef (IORef, readIORef, newIORef, writeIORef)
 import Data.Typeable (Typeable)
 import Data.Aeson.Types
+import Data.Char (toLower)
 import Data.Text (pack)
 import qualified Text.Parsec as P
 import Control.Monad.State (modify,get,execState,State)
@@ -98,7 +99,7 @@ activateChecker w (Just (i, o, opts)) = case (setupWith defaultRTC `ofPropTreeSy
                                         Nothing -> return defaultRuntimeDeductionConfig
                                         Just axParse -> do
                                            let axOpts = M.toList $ M.filterWithKey (\k _ -> take 6 k == "axiom-") opts
-                                               axPairs = map (\(k,v) -> (drop 6 k, v) ) axOpts
+                                               axPairs = map (\(k,v) -> (map toLower . drop 6 $ k, v) ) axOpts
                                                parseAxioms = P.sepBy1 (parseSeqOver axParse) (P.char ';') <* P.eof
                                                axRslts = mapM (\(k,v) -> (,) <$> return k <*> P.parse parseAxioms "" v) axPairs
                                            case axRslts of

@@ -4,6 +4,7 @@ module Carnap.Languages.PureFirstOrder.Logic.OpenLogic
 
 import Text.Parsec
 import Data.List
+import Data.Char
 import Data.Tree
 import Data.Map as M (lookup)
 import Data.Typeable
@@ -107,7 +108,7 @@ parseOpenLogicAxFONK rtc = try liftNK <|> parseAxiom
         where liftNK = map FONK <$> parseOpenLogicFONK rtc
               parseAxiom = do string "Ax-"
                               an <- many1 alphaNum
-                              case M.lookup an (runtimeAxioms rtc) of
+                              case M.lookup (map toLower an) (runtimeAxioms rtc) of
                                   Just rs -> return $ map (\r -> RuntimeAxiom an r) rs
                                   Nothing -> parserFail "Looks like you're citing an axiom that doesn't exist"
 
