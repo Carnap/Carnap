@@ -103,19 +103,6 @@ maybeAPIKeyUserData = unCacheMaybeUserData <$> cached (CachedMaybeUserData <$> g
                           Nothing -> return Nothing
                           Just (Entity _ auth) -> runDB (getBy $ UniqueUserData $ authAPIUser auth)
 
-
--- | Try to insert a piece of data into the database, returning False in
--- case of a clash
-{-# DEPRECATED tryInsert "this duplicates the functionality of insertUnique and should be removed" #-}
-tryInsert
-    :: (PersistentSite site, PersistEntity record, PersistEntityBackend record ~ SqlBackend)
-    => (record -> HandlerFor site (Maybe (Key record)))
-tryInsert s = runDB $ do munique <- checkUnique s
-                         case munique of
-                              (Just _) -> return Nothing
-                              Nothing  -> do k <- insert s
-                                             return (Just k)
-
 -- | retrieve a UserId = Key User, from the user's ident.
 fromIdent
     :: PersistentSite site
