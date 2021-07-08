@@ -1,26 +1,32 @@
-{-#LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DeriveGeneric #-}
 module Handler.Review (getReviewR, putReviewR, deleteReviewR) where
 
-import Import
-import Util.Data
-import Util.Assignment
-import Data.Map as M (fromList)
-import Data.Tree
-import Data.List (nub)
-import Filter.Util (sanitizeHtml)
-import Text.Read (readMaybe)
-import Yesod.Form.Bootstrap3
-import Carnap.Languages.PurePropositional.Syntax
-import Carnap.Languages.PureFirstOrder.Syntax
-import Carnap.Languages.PurePropositional.Logic (ofPropSys)
-import Carnap.Languages.PureFirstOrder.Logic (ofFOLSys)
-import Carnap.Languages.SetTheory.Logic (ofSetTheorySys)
-import Carnap.Languages.PureSecondOrder.Logic (ofSecondOrderSys)
-import Carnap.Languages.ModalPropositional.Logic (ofModalPropSys)
-import Carnap.Languages.DefiniteDescription.Logic.Gamut (ofDefiniteDescSys)
-import Carnap.Calculi.NaturalDeduction.Syntax (NaturalDeductionCalc(..))
-import Carnap.GHCJS.SharedTypes
-import Carnap.GHCJS.SharedFunctions (simpleCipher,simpleHash,inOpts)
+import           Import
+
+import           Data.List                                        (nub)
+import           Data.Map                                         as M (fromList)
+import           Data.Tree
+import           Filter.Util                                      (sanitizeHtml)
+import           Text.Blaze.Html5                                 (Markup)
+import           Text.Read                                        (readMaybe)
+import           Yesod.Form.Bootstrap3
+
+import           Carnap.Calculi.NaturalDeduction.Syntax           (NaturalDeductionCalc (..))
+import           Carnap.GHCJS.SharedFunctions                     (inOpts,
+                                                                   simpleCipher,
+                                                                   simpleHash)
+import           Carnap.GHCJS.SharedTypes
+import           Carnap.Languages.DefiniteDescription.Logic.Gamut (ofDefiniteDescSys)
+import           Carnap.Languages.ModalPropositional.Logic        (ofModalPropSys)
+import           Carnap.Languages.PureFirstOrder.Logic            (ofFOLSys)
+import           Carnap.Languages.PureFirstOrder.Syntax
+import           Carnap.Languages.PurePropositional.Logic         (ofPropSys)
+import           Carnap.Languages.PurePropositional.Syntax
+import           Carnap.Languages.PureSecondOrder.Logic           (ofSecondOrderSys)
+import           Carnap.Languages.SetTheory.Logic                 (ofSetTheorySys)
+import           Util.Assignment
+import           Util.Data
+import           Util.Handler                                     (addDocScripts)
 
 deleteReviewR :: Text -> Text -> Handler Value
 deleteReviewR coursetitle asgntitle = do
@@ -56,13 +62,7 @@ getReviewR coursetitle asgntitle =
            let problems = sortBy theSorting unsortedProblems
                due = assignmentMetadataDuedate val
            defaultLayout $ do
-               addScript $ StaticR js_popper_min_js
-               addScript $ StaticR js_proof_js
-               addScript $ StaticR ghcjs_rts_js
-               addScript $ StaticR ghcjs_allactions_lib_js
-               addScript $ StaticR ghcjs_allactions_out_js
-               addStylesheet $ StaticR css_proof_css
-               addStylesheet $ StaticR css_exercises_css
+               addDocScripts
                $(widgetFile "review")
                addScript $ StaticR ghcjs_allactions_runmain_js
     where maybeLnSort (_,Nothing) (_,Nothing) = EQ

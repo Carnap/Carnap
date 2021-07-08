@@ -105,17 +105,9 @@ chapterLayout widget = do
             toWidgetHead $(juliusFile =<< pathRelativeToCabalPackage "templates/command.julius")
             toWidgetHead $(juliusFile =<< pathRelativeToCabalPackage "templates/status-warning.julius")
             toWidgetHead [julius|var submission_source="book";|]
-            addScript $ StaticR js_popper_min_js
-            addScript $ StaticR ghcjs_rts_js
-            addScript $ StaticR ghcjs_allactions_lib_js
-            addScript $ StaticR ghcjs_allactions_out_js
-            addStylesheet $ StaticR css_tree_css
             addStylesheet $ StaticR css_tufte_css
             addStylesheet $ StaticR css_tuftextra_css
-            addStylesheet $ StaticR css_exercises_css
-            addStylesheet $ StaticR truth_tree_lib_css
             $(widgetFile "default-layout")
-            addScript $ StaticR ghcjs_allactions_runmain_js
-            toWidgetHead $(juliusFile =<< pathRelativeToCabalPackage "templates/createTrees.julius")
+            addDocScripts
 
         withUrlRenderer $(hamletFile =<< pathRelativeToCabalPackage "templates/default-layout-wrapper.hamlet")

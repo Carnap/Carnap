@@ -8,6 +8,7 @@ import           System.Directory       (createDirectoryIfMissing,
 import           System.FilePath
 import           Text.Blaze.XHtml5      (Markup, ToMarkup)
 import           Text.Hamlet            (hamletFile)
+import           Text.Julius            (juliusFile)
 import           Text.Pandoc            (Inline (..), Meta, MetaValue (..),
                                          Pandoc (..), PandocError,
                                          WrapOption (..), WriterOptions (..),
@@ -18,6 +19,7 @@ import           Text.Pandoc.Walk       (Walkable, walk)
 import           TH.RelativePaths       (pathRelativeToCabalPackage)
 import           Util.Data
 import           Util.Database
+import           Yesod.Core.Types       (GWData (..), tellWidget)
 import           Yesod.Markdown
 
 import           Filter.CounterModelers
@@ -49,6 +51,30 @@ cleanLayout widget = do
         let isInstructor = not $ null (mud >>= userDataInstructorId . entityVal)
         pc <- widgetToPageContent $(widgetFile "default-layout")
         withUrlRenderer $(hamletFile =<< pathRelativeToCabalPackage "templates/default-layout-wrapper.hamlet")
+
+addDocScripts :: (MonadWidget m, HandlerSite m ~ App) => m ()
+addDocScripts = do
+    addScript $ StaticR js_proof_js
+    addScript $ StaticR js_popper_min_js
+    addScript $ StaticR ghcjs_rts_js
+    addScript $ StaticR ghcjs_allactions_lib_js
+    addScript $ StaticR ghcjs_allactions_out_js
+    addScript $ StaticR klement_proofs_js
+    addScript $ StaticR klement_syntax_js
+
+    addStylesheet $ StaticR css_tree_css
+    addStylesheet $ StaticR css_proof_css
+    addStylesheet $ StaticR css_exercises_css
+    addStylesheet $ StaticR klement_proofs_css
+    addStylesheet $ StaticR truth_tree_lib_css
+
+    addScript $ StaticR ghcjs_allactions_runmain_js
+    addInlineScript $(juliusFile =<< pathRelativeToCabalPackage "templates/createTrees.julius")
+
+    where
+    -- stuffs a script into the bottom of the page body like 'addScript'
+    addInlineScript s =
+        liftWidget . tellWidget $ GWData mempty mempty mempty mempty mempty (Just s) mempty
 
 -- * Pandoc
 allFilters :: Block -> Block

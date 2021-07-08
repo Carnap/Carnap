@@ -1,15 +1,18 @@
 module Handler.Rule where
 
-import Import
-import Text.Julius (juliusFile)
-import Text.Hamlet (hamletFile)
-import TH.RelativePaths (pathRelativeToCabalPackage)
-import Carnap.GHCJS.SharedTypes
-import Util.Database
-import qualified Data.CaseInsensitive as CI
-import qualified Data.Text.Encoding as TE
-import qualified Text.Blaze.Html5 as B
-import Text.Blaze.Html5.Attributes
+import           Import
+
+import           Carnap.GHCJS.SharedTypes
+import qualified Data.CaseInsensitive        as CI
+import qualified Data.Text.Encoding          as TE
+import qualified Text.Blaze.Html5            as B
+import           Text.Blaze.Html5.Attributes
+import           Text.Hamlet                 (hamletFile)
+import           Text.Julius                 (juliusFile)
+import           TH.RelativePaths            (pathRelativeToCabalPackage)
+
+import           Util.Database
+import           Util.Handler                (addDocScripts)
 
 getRuleR :: Handler Html
 getRuleR = do derivedPropRules <- getPropDrList
@@ -87,15 +90,11 @@ ruleLayout widget = do
         let isInstructor = not $ null (mud >>= userDataInstructorId . entityVal)
         pc <- widgetToPageContent $ do
             toWidgetHead $(juliusFile =<< pathRelativeToCabalPackage "templates/command.julius")
-            addScript $ StaticR ghcjs_rts_js
-            addScript $ StaticR ghcjs_allactions_lib_js
-            addScript $ StaticR ghcjs_allactions_out_js
-            addStylesheet $ StaticR css_tree_css
+
+            addDocScripts
             addStylesheet $ StaticR css_tufte_css
             addStylesheet $ StaticR css_tuftextra_css
-            addStylesheet $ StaticR css_exercises_css
             $(widgetFile "default-layout")
-            addScript $ StaticR ghcjs_allactions_runmain_js
         withUrlRenderer $(hamletFile =<< pathRelativeToCabalPackage "templates/default-layout-wrapper.hamlet")
 
 getPropDrList = do maybeCurrentUserId <- maybeAuthId

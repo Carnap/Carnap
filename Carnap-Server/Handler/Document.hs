@@ -114,18 +114,10 @@ getDocumentR ident title = do (Entity key doc, path, creatorid) <- retrieveDoc i
                                                                      widget
                       theLayout $ do
                           toWidgetHead $(juliusFile =<< pathRelativeToCabalPackage "templates/command.julius")
-                          addScript $ StaticR js_proof_js
-                          addScript $ StaticR js_popper_min_js
-                          addScript $ StaticR ghcjs_rts_js
-                          addScript $ StaticR ghcjs_allactions_lib_js
-                          addScript $ StaticR ghcjs_allactions_out_js
+                          addDocScripts
                           maybe (pure [()]) (mapM addScriptRemote) mjs
-                          addStylesheet $ StaticR css_tree_css
-                          addStylesheet $ StaticR css_proof_css
-                          addStylesheet $ StaticR css_exercises_css
                           maybe (pure [()]) (mapM addStylesheetRemote) mcss
                           $(widgetFile "document")
-                          addScript $ StaticR ghcjs_allactions_runmain_js
 
 getDocumentDownloadR :: Text -> Text -> Handler TypedContent
 getDocumentDownloadR ident title = do (Entity key doc, path, creatoruid) <- retrieveDoc ident title

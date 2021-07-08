@@ -120,18 +120,12 @@ returnAssignment coursetitle filename (Entity key val) path = do
                                                                              var token_time = #{rawJS $ show $ creation tok};
                                                                            |]
                                      (_,_) -> return ()
-                                 addScript $ StaticR js_proof_js
-                                 addScript $ StaticR js_popper_min_js
-                                 addScript $ StaticR ghcjs_rts_js
-                                 addScript $ StaticR ghcjs_allactions_lib_js
-                                 addScript $ StaticR ghcjs_allactions_out_js
-                                 addStylesheet $ StaticR css_proof_css
-                                 addStylesheet $ StaticR css_tree_css
-                                 addStylesheet $ StaticR css_exercises_css
+
+                                 addDocScripts
+
                                  maybe (pure [()]) (mapM addStylesheetRemote) mcss
                                  $(widgetFile "document")
                                  toWidgetBody [julius|CarnapServerAPI.getAssignmentState();|]
-                                 addScript $ StaticR ghcjs_allactions_runmain_js
                                  maybe (pure [()]) (mapM addScriptRemote) mjs >> return ()
             else defaultLayout $ minimalLayout ("Assignment not currently set as visible by instructor" :: Text)
     where visibleAt t a mex = not (tooEarly t a) && not (tooLate t a mex)

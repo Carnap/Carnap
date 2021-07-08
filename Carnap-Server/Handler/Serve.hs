@@ -50,15 +50,8 @@ getServeR base components = do app <- getYesod
                       mcss <- retrievePandocVal (lookupMeta "css" meta)
                       mjs <- retrievePandocVal (lookupMeta "js" meta)
                       defaultLayout $ do
-                          addScript $ StaticR js_proof_js
-                          addScript $ StaticR js_popper_min_js
-                          addScript $ StaticR ghcjs_rts_js
-                          addScript $ StaticR ghcjs_allactions_lib_js
-                          addScript $ StaticR ghcjs_allactions_out_js
+                          addDocScripts
                           maybe (pure [()]) (mapM (addScriptRemote))  mjs
-                          addStylesheet $ StaticR css_tree_css
-                          addStylesheet $ StaticR css_proof_css
-                          addStylesheet $ StaticR css_exercises_css
                           case mcss of
                               Nothing -> mapM addStylesheet [StaticR css_bootstrapextra_css]
                               Just ss -> mapM addStylesheetRemote ss
