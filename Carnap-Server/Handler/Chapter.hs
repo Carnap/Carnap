@@ -1,25 +1,28 @@
 module Handler.Chapter where
 
-import Import
-import Yesod.Markdown
-import Data.Char (isDigit)
-import Filter.Sidenotes
-import Filter.SynCheckers
-import Filter.ProofCheckers
-import Filter.Translate
-import Filter.TruthTables
-import Filter.CounterModelers
-import Filter.Qualitative
-import Text.Pandoc
-import Text.Pandoc.Walk (walkM, walk)
-import System.Directory (getDirectoryContents)
-import Text.Julius (juliusFile)
-import Text.Hamlet (hamletFile)
-import TH.RelativePaths (pathRelativeToCabalPackage)
-import qualified Data.CaseInsensitive as CI
-import qualified Data.Text.Encoding as TE
-import Control.Monad.State (evalState)
-import Util.Database
+import           Import
+
+import           Control.Monad.State    (evalState)
+import qualified Data.CaseInsensitive   as CI
+import           Data.Char              (isDigit)
+import qualified Data.Text.Encoding     as TE
+import           System.Directory       (getDirectoryContents)
+import           Text.Hamlet            (hamletFile)
+import           Text.Julius            (juliusFile)
+import           Text.Pandoc
+import           Text.Pandoc.Walk       (walk, walkM)
+import           TH.RelativePaths       (pathRelativeToCabalPackage)
+import           Yesod.Markdown
+
+import           Filter.CounterModelers
+import           Filter.ProofCheckers
+import           Filter.Qualitative
+import           Filter.Sidenotes
+import           Filter.SynCheckers
+import           Filter.Translate
+import           Filter.TruthTables
+import           Util.Database
+import           Util.Handler           (addDocScripts)
 
 -- XXX Fair amount of code-duplication between this and Handler/Book.hs. Perhaps merge those modules.
 

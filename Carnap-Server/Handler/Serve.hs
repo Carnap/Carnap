@@ -1,32 +1,17 @@
 module Handler.Serve where
 
-import Import
-import System.Directory (doesFileExist)
-import Yesod.Markdown
-import Data.List (nub)
-import Text.Pandoc (writerExtensions,writerWrapText, WrapOption(..), readerExtensions, Pandoc(..), lookupMeta)
-import Text.Pandoc.Walk (walkM, walk)
-import Text.Julius (juliusFile,rawJS)
-import TH.RelativePaths (pathRelativeToCabalPackage)
-import System.FilePath as FP (takeExtension,joinPath)
-import Util.Data
-import Util.Database
-import Util.Handler
-import Filter.SynCheckers
-import Filter.ProofCheckers
-import Filter.Translate
-import Filter.TruthTables
-import Filter.CounterModelers
-import Filter.Qualitative
-import Filter.Sequent
-import Filter.TreeDeduction
-import Filter.RenderFormulas
+import           Import
+import           System.Directory (doesFileExist)
+import           System.FilePath  as FP (joinPath, takeExtension)
+import           Text.Pandoc      (lookupMeta)
+import           Util.Handler
+
 
 -- XXX DRY up the boilplate that is shared by getDocumentDownload
 getServeR :: Text -> [Text] -> Handler Html
 getServeR base components = do app <- getYesod
                                let root = appDataRoot $ appSettings app
-                               path <- case components of 
+                               path <- case components of
                                          [] -> redirect $ ServeR base [pack "index.md"]
                                          _ -> return $ FP.joinPath (unpack root:"srv":unpack base:map unpack components)
                                liftIO (doesFileExist path) >>= \exists -> if exists then return () else notFound

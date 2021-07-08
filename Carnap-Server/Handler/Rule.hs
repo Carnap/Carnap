@@ -80,6 +80,7 @@ getRuleR = do derivedPropRules <- getPropDrList
                                          data-carnap-submission="saveRule">
                             |]
 
+ruleLayout :: ToWidget App a => a -> HandlerFor App Html
 ruleLayout widget = do
         master <- getYesod
         mmsg <- getMessage
@@ -97,6 +98,7 @@ ruleLayout widget = do
             $(widgetFile "default-layout")
         withUrlRenderer $(hamletFile =<< pathRelativeToCabalPackage "templates/default-layout-wrapper.hamlet")
 
+getPropDrList :: HandlerFor App (Maybe [Html])
 getPropDrList = do maybeCurrentUserId <- maybeAuthId
                    case maybeCurrentUserId of
                        Nothing -> return Nothing
@@ -104,25 +106,28 @@ getPropDrList = do maybeCurrentUserId <- maybeAuthId
                                       savedRules <- getRules uid
                                       return $ Just $ formatOldPropRules savedRulesOld ++ formatPropRules savedRules
 
+getFOLDrList :: HandlerFor App (Maybe Html)
 getFOLDrList = do maybeCurrentUserId <- maybeAuthId
                   case maybeCurrentUserId of
-                       Nothing -> return Nothing
+                       Nothing  -> return Nothing
                        Just uid -> Just . formatFOLRules <$> getRules uid
 
 
+formatOldPropRules :: Functor f => f SavedDerivedRule -> f Html
 formatOldPropRules rules = map toRow rules
     where toRow (SavedDerivedRule dr n _ _) = let (Just dr') = decodeRule dr in
                                               B.tr $ do B.td $ B.toHtml $ "D-" ++ n
                                                         B.td $ B.toHtml $ intercalate "," $ map show $ premises dr'
                                                         B.td $ B.toHtml $ show $ conclusion dr'
-          toRuow _ = return ()
 
+formatPropRules :: Functor f => f SavedRule -> f Html
 formatPropRules rules = map toRow rules
     where toRow (SavedRule (PropRule dr) n _ _) = B.tr $ do B.td $ B.toHtml $ "D-" ++ n
                                                             B.td $ B.toHtml $ intercalate "," $ map show $ premises dr
                                                             B.td $ B.toHtml $ show $ conclusion dr
           toRow _ = return ()
 
+formatFOLRules :: (MonoFoldable mono, Element mono ~ SavedRule) => mono -> Html
 formatFOLRules rules = B.table B.! class_ "rules" $ do
         B.thead $ do
             B.th "Name"

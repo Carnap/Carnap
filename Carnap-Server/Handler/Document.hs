@@ -1,16 +1,17 @@
 module Handler.Document where
 
-import Import
-import System.Directory (doesFileExist,getDirectoryContents)
-import Yesod.Markdown
-import Data.List (nub)
-import Text.Pandoc (lookupMeta)
-import Text.Julius (juliusFile,rawJS)
-import TH.RelativePaths (pathRelativeToCabalPackage)
-import System.FilePath
-import Util.Data
-import Util.Database
-import Util.Handler
+import           Import
+
+import           Data.List        (nub)
+import           System.Directory (doesFileExist)
+import           System.FilePath
+import           Text.Julius      (juliusFile)
+import           Text.Pandoc      (lookupMeta)
+import           TH.RelativePaths (pathRelativeToCabalPackage)
+
+import           Util.Data
+import           Util.Database
+import           Util.Handler
 
 getDocumentsR :: Handler Html
 getDocumentsR =  runDB (selectList [] []) >>= documentsList "Index of All Documents"
@@ -28,7 +29,7 @@ documentsList title documents = do
                    pubmd <- mapM (getUserMD . documentCreator . entityVal) publicDocuments
                    maybeData <- maybeUserData
                    case userDataInstructorId <$> entityVal <$> maybeData of
-                      Just id -> do
+                      Just _id -> do
                            let docs = filter ((==) InstructorsOnly . documentScope . entityVal) documents
                                privateDocuments = if null docs then Nothing else Just docs
                                allDocuments = publicDocuments ++ docs
@@ -80,7 +81,7 @@ documentsList title documents = do
 
 -- XXX DRY up the boilplate that is shared by getDocumentDownload
 getDocumentR :: Text -> Text -> Handler Html
-getDocumentR ident title = do (Entity key doc, path, creatorid) <- retrieveDoc ident title
+getDocumentR ident title = do (Entity _key doc, path, creatorid) <- retrieveDoc ident title
                               muid <- maybeAuthId
                               mud <- maybeUserData
                               let isNotInstructor = null (mud >>= userDataInstructorId . entityVal)
@@ -107,10 +108,10 @@ getDocumentR ident title = do (Entity key doc, path, creatorid) <- retrieveDoc i
                       mbcss <- retrievePandocVal (lookupMeta "base-css" meta)
                       mcss <- retrievePandocVal (lookupMeta "css" meta)
                       mjs <- retrievePandocVal (lookupMeta "js" meta)
-                      let theLayout = \widget -> case mbcss of 
-                                       Nothing -> defaultLayout $ do mapM addStylesheet [StaticR css_bootstrapextra_css] 
+                      let theLayout = \widget -> case mbcss of
+                                       Nothing -> defaultLayout $ do mapM addStylesheet [StaticR css_bootstrapextra_css]
                                                                      widget
-                                       Just bcss -> cleanLayout $ do mapM addStylesheetRemote bcss 
+                                       Just bcss -> cleanLayout $ do mapM addStylesheetRemote bcss
                                                                      widget
                       theLayout $ do
                           toWidgetHead $(juliusFile =<< pathRelativeToCabalPackage "templates/command.julius")
@@ -120,7 +121,7 @@ getDocumentR ident title = do (Entity key doc, path, creatorid) <- retrieveDoc i
                           $(widgetFile "document")
 
 getDocumentDownloadR :: Text -> Text -> Handler TypedContent
-getDocumentDownloadR ident title = do (Entity key doc, path, creatoruid) <- retrieveDoc ident title
+getDocumentDownloadR ident title = do (Entity _key doc, path, creatoruid) <- retrieveDoc ident title
                                       serveDoc asFile doc path creatoruid
 
 retrieveDoc :: Text -> Text -> Handler (Entity Document, FilePath, UserId)
@@ -137,5 +138,6 @@ retrieveDoc ident title = do userdir <- getUserDir ident
                                          Nothing -> setMessage "metadata for this document not found" >> notFound
                                          Just doc -> return (doc, path, creatoruid)
 
+getUserDir :: (MonadHandler m, MonoFoldable mono, HandlerSite m ~ App, Element mono ~ Char) => mono -> m FilePath
 getUserDir ident = do master <- getYesod
                       return $ (appDataRoot $ appSettings master) </> "documents" </> unpack ident
