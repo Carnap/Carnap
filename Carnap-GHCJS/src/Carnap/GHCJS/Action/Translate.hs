@@ -115,13 +115,13 @@ tryTrans w parser equiv tests wrapper ref fs = onEnter $
                                                   Just msg -> writeIORef ref False >> message ("Looks like " ++ msg ++ ".")
                          Left e -> message "Sorry, try again---that formula isn't gramatical."
    where checkForm f' 
-            | f' `elem` fs = do message "perfect match!"
+            | f' `elem` fs = do message "Perfect match!"
                                 writeIORef ref True
                                 setSuccess w wrapper
-            | any (\f -> f' `equiv` f) fs = do message "Logically equivalent to a standard translation"
+            | any (\f -> f' `equiv` f) fs = do message "Correct!"
                                                writeIORef ref True
                                                setSuccess w wrapper
-            | otherwise = do message "Not quite. Try again!"
+            | otherwise = do message "Not quite. Try again?"
                              writeIORef ref False 
                              setFailure w wrapper
 
@@ -139,8 +139,8 @@ submitTrans w opts i ref fs parser checker tests l =
                             message "Can't read this. Please double check syntax before submitting."
                         _ | "exam" `inOpts` opts -> 
                             trySubmit w Translation opts l (TranslationDataOpts (serialize fs) (pack v) (M.toList opts)) False
-                        _ -> message "something is wrong... try again?"
-                else message "not yet finished (remember to press return to check your work before submitting!)"
+                        _ -> message "Something is wrong... try again?"
+                else message "Not yet finished (remember to press return to check your work before submitting!)"
     where serialize :: Show a => [a] -> Text
           serialize = pack . tail . init . show --we drop the list brackets
 
