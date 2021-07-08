@@ -47,7 +47,7 @@ devel: build-ghcjs run
 
 APPROOT := "http://localhost:3000"
 DATAROOT := "../dataroot"
-BOOKROOT := "../books/Carnap-Book/"
+BOOKROOT := "../Carnap-Book/"
 
 run:
 ifeq ($(origin NIX_STORE),undefined)
