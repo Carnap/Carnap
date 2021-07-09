@@ -35,6 +35,7 @@ library
                      , Carnap.Languages.PurePropositional.Logic
                      , Carnap.Languages.PurePropositional.Logic.Rules
                      , Carnap.Languages.PurePropositional.Logic.Allen
+                     , Carnap.Languages.PurePropositional.Logic.Arthur
                      , Carnap.Languages.PurePropositional.Logic.Belot
                      , Carnap.Languages.PurePropositional.Logic.BergmannMoorAndNelson
                      , Carnap.Languages.PurePropositional.Logic.Bonevac
