@@ -7,6 +7,7 @@ import Text.Parsec
 import Carnap.Core.Data.Types (Form)
 import Carnap.Languages.PurePropositional.Syntax
 import Carnap.Languages.PurePropositional.Parser
+import Carnap.Languages.PurePropositional.Util (dropOuterParens)
 import Carnap.Calculi.Util
 import Carnap.Calculi.NaturalDeduction.Syntax
 import Carnap.Calculi.NaturalDeduction.Parser
@@ -154,7 +155,7 @@ parseArthurSLProof :: RuntimeDeductionConfig PurePropLexicon (Form Bool) -> Stri
 parseArthurSLProof rtc = toDeductionFitch (parseArthurSL rtc) (purePropFormulaParser arthurOpts)
 
 arthurNotation :: String -> String 
-arthurNotation = id
+arthurNotation = dropOuterParens
 
 arthurSLCalc = mkNDCalc 
     { ndRenderer = NoRender
