@@ -21,7 +21,7 @@ from Arthur's Introduction to Logic book
 -}
 
 data ArthurSL = MP | MT 
-              | Simp1 | Simp2 | Conj
+              | Simp1 | Simp2 | Conj1 | Conj2
               | CS1   | CS2   | Disj1 | Disj2
               | DS1   | DS2   | HS
               | DL    | R
@@ -42,7 +42,8 @@ instance Show ArthurSL where
         show MT     = "MT"
         show Simp1  = "Simp"
         show Simp2  = "Simp"
-        show Conj   = "Conj"
+        show Conj1  = "Conj"
+        show Conj2  = "Conj"
         show CS1    = "CS"
         show CS2    = "CS"
         show Disj1  = "Disj"
@@ -76,7 +77,8 @@ instance Inference ArthurSL PurePropLexicon (Form Bool) where
         ruleOf MT     = modusTollens
         ruleOf Simp1  = simplificationVariations !! 0
         ruleOf Simp2  = simplificationVariations !! 1
-        ruleOf Conj   = adjunction
+        ruleOf Conj1  = adjunction
+        ruleOf Conj2  = falsumIntroduction
         ruleOf CS1    = conjunctiveSyllogismVariations !! 0
         ruleOf CS2    = conjunctiveSyllogismVariations !! 1
         ruleOf Disj1  = additionVariations !! 0
@@ -120,18 +122,18 @@ instance Inference ArthurSL PurePropLexicon (Form Bool) where
 
         globalRestriction (Left ded) n CP1 = Just $ fitchAssumptionCheck n ded [([phin 1], [phin 2])]
         globalRestriction (Left ded) n CP2 = Just $ fitchAssumptionCheck n ded [([phin 1], [phin 2])]
-        globalRestriction (Left ded) n RA1 = Just $ fitchAssumptionCheck n ded [([phin 1], [lfalsum])]  
-        globalRestriction (Left ded) n RA2 = Just $ fitchAssumptionCheck n ded [([phin 1], [lfalsum])]  
+        -- globalRestriction (Left ded) n RA1 = Just $ fitchAssumptionCheck n ded [([phin 1], [lfalsum])]  
+        -- globalRestriction (Left ded) n RA2 = Just $ fitchAssumptionCheck n ded [([phin 1], [lfalsum])]  
         globalRestriction _ _ _ = Nothing
 
 parseArthurSL :: RuntimeDeductionConfig PurePropLexicon (Form Bool) -> Parsec String u [ArthurSL]
-parseArthurSL rtc = do r <- choice (map (try . string) [ "MP", "MT", "Simp", "Conj", "CS", "Disj", "DS", "HS", "DL", "R"
-                                                       , "CP", "RA", "DN", "DM", "BE", "TR", "MI", "AS", "PR"])
+parseArthurSL rtc = do r <- choice (map (try . string) [ "MP", "MT", "Simp", "Conj", "CS", "Disj", "DS", "HS", "DL"
+                                                       , "CP", "RA", "DN", "DM", "BE", "TR", "MI", "AS", "PR", "R"])
                        return $ case r of
                         "MP"   -> [MP]
                         "MT"   -> [MT]
                         "Simp" -> [Simp1, Simp2]
-                        "Conj" -> [Conj]
+                        "Conj" -> [Conj1, Conj2]
                         "CS"   -> [CS1,CS2]
                         "Disj" -> [Disj1, Disj2]
                         "DS"   -> [DS1, DS2]
@@ -149,16 +151,16 @@ parseArthurSL rtc = do r <- choice (map (try . string) [ "MP", "MT", "Simp", "Co
                         "PR"   -> [Pr (problemPremises rtc)]
 
 parseArthurSLProof :: RuntimeDeductionConfig PurePropLexicon (Form Bool) -> String -> [DeductionLine ArthurSL PurePropLexicon (Form Bool)]
-parseArthurSLProof rtc = toDeductionFitch (parseArthurSL rtc) (purePropFormulaParser magnusOpts)
+parseArthurSLProof rtc = toDeductionFitch (parseArthurSL rtc) (purePropFormulaParser arthurOpts)
 
 arthurNotation :: String -> String 
 arthurNotation = id
 
 arthurSLCalc = mkNDCalc 
-    { ndRenderer = FitchStyle StandardFitch
+    { ndRenderer = NoRender
     , ndParseProof = parseArthurSLProof
-    , ndProcessLine = processLineFitch
-    , ndProcessLineMemo = Nothing
+    , ndProcessLine = hoProcessLineFitch
+    , ndProcessLineMemo = Just hoProcessLineFitchMemo
     , ndParseSeq = parseSeqOver (purePropFormulaParser magnusOpts)
     , ndParseForm = purePropFormulaParser magnusOpts
     , ndNotation = arthurNotation

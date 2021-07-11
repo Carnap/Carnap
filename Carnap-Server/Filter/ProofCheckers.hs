@@ -18,6 +18,7 @@ activate :: [Text] -> [(Text, Text)] -> Text -> Block
 activate cls extra chunk
     | "AllenSL"          `elem` cls = exTemplate [("system", "allenSL")]
     | "AllenSLPlus"      `elem` cls = exTemplate [("system", "allenSLPlus")]
+    | "ArthurSL"         `elem` cls = exTemplate [("system", "arthurSL"), ("guides", "indent"), ("options", "fonts resize")]
     | "BelotPD"          `elem` cls = exTemplate [("system", "belotPD")]
     | "BelotPDE"         `elem` cls = exTemplate [("system", "belotPDE")]
     | "BelotPDEPlus"     `elem` cls = exTemplate [("system", "belotPDEPlus")]
@@ -113,6 +114,7 @@ toPlayground :: [Text] -> [(Text, Text)] -> Text -> Block
 toPlayground cls extra content
     | "AllenSL"          `elem` cls = playTemplate [("system", "allenSL")]
     | "AllenSLPlus"      `elem` cls = playTemplate [("system", "allenSLPlus")]
+    | "ArthurSL"         `elem` cls = playTemplate [("system", "arthurSL"), ("guides", "indent"), ("options", "fonts resize")]
     | "BelotPD"          `elem` cls = playTemplate [("system", "belotPD")]
     | "BelotPDE"         `elem` cls = playTemplate [("system", "belotPDE")]
     | "BelotPDEPlus"     `elem` cls = playTemplate [("system", "belotPDEPlus")]

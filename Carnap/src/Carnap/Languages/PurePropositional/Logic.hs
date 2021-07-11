@@ -29,6 +29,7 @@ import Carnap.Core.Data.Types
 import Carnap.Languages.PurePropositional.Syntax
 import Carnap.Languages.PurePropositional.Logic.Rules (PropSequentCalc)
 import Carnap.Languages.PurePropositional.Logic.Allen
+import Carnap.Languages.PurePropositional.Logic.Arthur
 import Carnap.Languages.PurePropositional.Logic.Belot
 import Carnap.Languages.PurePropositional.Logic.BergmannMoorAndNelson
 import Carnap.Languages.PurePropositional.Logic.Bonevac
@@ -60,6 +61,7 @@ ofPropSys f sys | sys == "LogicBookSD"                   = Just $ f logicBookSDC
                 | sys == "LogicBookSDPlus"               = Just $ f logicBookSDPlusCalc
                 | sys == "allenSL"                       = Just $ f allenSLCalc
                 | sys == "allenSLPlus"                   = Just $ f allenSLPlusCalc
+                | sys == "arthurSL"                      = Just $ f arthurSLCalc
                 | sys == "belotSD"                       = Just $ f belotSDCalc
                 | sys == "belotSDPlus"                   = Just $ f belotSDPlusCalc
                 | sys == "bonevacSL"                     = Just $ f bonevacSLCalc
