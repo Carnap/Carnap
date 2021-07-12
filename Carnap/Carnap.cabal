@@ -92,6 +92,7 @@ library
                      , Carnap.Languages.PureFirstOrder.Logic.Hurley
                      , Carnap.Languages.PureFirstOrder.Logic.IchikawaJenkins
                      , Carnap.Languages.PureFirstOrder.Logic.KalishAndMontague
+                     , Carnap.Languages.PureFirstOrder.Logic.Lemmon
                      , Carnap.Languages.PureFirstOrder.Logic.Magnus
                      , Carnap.Languages.PureFirstOrder.Logic.OpenLogic
                      , Carnap.Languages.PureFirstOrder.Logic.Gregory

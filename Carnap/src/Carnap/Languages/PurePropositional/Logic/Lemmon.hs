@@ -1,6 +1,6 @@
 {-#LANGUAGE FlexibleContexts, FlexibleInstances, MultiParamTypeClasses #-}
 module Carnap.Languages.PurePropositional.Logic.Lemmon
-    ( parseLemmonProp, LemmonProp,  lemmonPropCalc) where
+    ( parseLemmonProp, LemmonProp(..),  lemmonPropCalc) where
 
 import Text.Parsec
 import Control.Lens (view)
