@@ -33,7 +33,7 @@ data ArthurSL = MP | MT
               | BE1   | BE2 
               | TR1   | TR2
               | MI1   | MI2
-              | As
+              | Sup
               | Pr (Maybe [(ClassicalSequentOver PurePropLexicon (Sequent (Form Bool)))])
               deriving (Eq)
               --skipping derived rules for now
@@ -70,7 +70,7 @@ instance Show ArthurSL where
         show TR2    = "TR"
         show MI1    = "MI"
         show MI2    = "MI"
-        show As = "AS"
+        show Sup    = "SUP"
         show (Pr _) = "PR"
 
 instance Inference ArthurSL PurePropLexicon (Form Bool) where
@@ -105,14 +105,14 @@ instance Inference ArthurSL PurePropLexicon (Form Bool) where
         ruleOf TR2    = contraposition !! 1
         ruleOf MI1    = materialConditional !! 0
         ruleOf MI2    = materialConditional !! 1
-        ruleOf As = axiom
+        ruleOf Sup = axiom
         ruleOf (Pr _) = axiom
 
         indirectInference x
             | x `elem` [CP1, CP2, RA1, RA2] = Just PolyProof
             | otherwise = Nothing
 
-        isAssumption As = True
+        isAssumption Sup = True
         isAssumption _ = False
 
         isPremise (Pr _) = True
@@ -123,13 +123,13 @@ instance Inference ArthurSL PurePropLexicon (Form Bool) where
 
         globalRestriction (Left ded) n CP1 = Just $ fitchAssumptionCheck n ded [([phin 1], [phin 2])]
         globalRestriction (Left ded) n CP2 = Just $ fitchAssumptionCheck n ded [([phin 1], [phin 2])]
-        -- globalRestriction (Left ded) n RA1 = Just $ fitchAssumptionCheck n ded [([phin 1], [lfalsum])]  
-        -- globalRestriction (Left ded) n RA2 = Just $ fitchAssumptionCheck n ded [([phin 1], [lfalsum])]  
+        globalRestriction (Left ded) n RA1 = Just $ fitchAssumptionCheck n ded [([phin 1], [lfalsum])]  
+        globalRestriction (Left ded) n RA2 = Just $ fitchAssumptionCheck n ded [([phin 1], [lfalsum])]  
         globalRestriction _ _ _ = Nothing
 
 parseArthurSL :: RuntimeDeductionConfig PurePropLexicon (Form Bool) -> Parsec String u [ArthurSL]
 parseArthurSL rtc = do r <- choice (map (try . string) [ "MP", "MT", "Simp", "Conj", "CS", "Disj", "DS", "HS", "DL"
-                                                       , "CP", "RA", "DN", "DM", "BE", "TR", "MI", "AS", "PR", "R"])
+                                                       , "CP", "RA", "DN", "DM", "BE", "TR", "MI", "SUP", "PR", "R"])
                        return $ case r of
                         "MP"   -> [MP]
                         "MT"   -> [MT]
@@ -148,7 +148,7 @@ parseArthurSL rtc = do r <- choice (map (try . string) [ "MP", "MT", "Simp", "Co
                         "BE"   -> [BE1, BE2]
                         "TR"   -> [TR1, TR2]
                         "MI"   -> [MI1, MI2]
-                        "AS"   -> [As]
+                        "SUP"   -> [Sup]
                         "PR"   -> [Pr (problemPremises rtc)]
 
 parseArthurSLProof :: RuntimeDeductionConfig PurePropLexicon (Form Bool) -> String -> [DeductionLine ArthurSL PurePropLexicon (Form Bool)]
