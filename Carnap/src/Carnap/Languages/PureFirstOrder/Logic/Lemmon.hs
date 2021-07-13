@@ -7,6 +7,7 @@ import Control.Lens (view)
 import Carnap.Core.Data.Types 
 import Carnap.Core.Data.Classes
 import Carnap.Core.Unification.Unification (applySub,occurs)
+import Carnap.Languages.PurePropositional.Util (dropOuterParens)
 import Carnap.Languages.PureFirstOrder.Syntax
 import Carnap.Languages.PureFirstOrder.Parser
 import Carnap.Calculi.Util
@@ -93,9 +94,12 @@ lemmonQuantNotation :: String -> String
 lemmonQuantNotation x = case runParser altparser 0 "" x of
                             Left e -> show e
                             Right s -> s
-    where altparser = do s <- handlecon <|> try handleatom <|> fallback
+    where altparser = do s <- try handleQuant <|> handlecon <|> try handleatom <|> fallback
                          rest <- (eof >> return "") <|> altparser
                          return $ s ++ rest
+          handleQuant = do q <- oneOf "∀∃"
+                           v <- anyChar
+                           return $ "(" ++ (if q == '∃' then "∃" else "") ++ [v] ++ ")"
           handlecon = (char '∧' >> return "&")
                   <|> (char '¬' >> return "-")
           handleatom = do c <- oneOf "ABCDEFGHIJKLMNOPQRSTUVWXYZ" <* char '('
@@ -112,5 +116,5 @@ lemmonQuantCalc = mkNDCalc
     , ndProcessLineMemo = Just hoProcessLineLemmonMemo
     , ndParseForm = lemmonQuantFormulaParser
     , ndParseSeq = parseSeqOver lemmonQuantFormulaParser
-    , ndNotation = lemmonQuantNotation
+    , ndNotation = lemmonQuantNotation . dropOuterParens
     }
