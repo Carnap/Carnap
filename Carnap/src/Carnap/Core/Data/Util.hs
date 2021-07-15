@@ -136,7 +136,7 @@ rebuild (LLam f) = LLam (\x -> subst sv x $ rebuild (f sv))
     where sv = static $ scopeHeight (LLam f)
 rebuild t = t
 
-stateRebuild :: ( FirstOrder (FixLang f) , StaticVar (FixLang f)) => FixLang f a -> State Int (FixLang f a)
+stateRebuild :: (Monad m, FirstOrder (FixLang f) , StaticVar (FixLang f)) => FixLang f a -> StateT Int m (FixLang f a)
 stateRebuild (x :!$: y) = do modify (+ 1)
                              x' <- stateRebuild x
                              modify (+ 1)
