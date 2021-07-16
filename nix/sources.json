@@ -36,15 +36,15 @@
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "truth-tree": {
-        "branch": "nix-building",
+        "branch": "master",
         "description": "Truth Tree Widget for Carnap",
         "homepage": "",
         "owner": "ubc-carnap-team",
         "repo": "Rudolf",
-        "rev": "08bdb487ad403e8a94820fe6e32aa83509f0a6c1",
-        "sha256": "1pv4fb18mg4870wn4a4lvg9hdbrgyc7ah3931x579zajnkx53y9h",
+        "rev": "cd015948701a8181c5e6c908988aae58ee5325c8",
+        "sha256": "1i3vp2qy00j8n18wbgqwa4lgwndl7019zmyw3zx3qigpw8hhsrw4",
         "type": "tarball",
-        "url": "https://github.com/ubc-carnap-team/Rudolf/archive/08bdb487ad403e8a94820fe6e32aa83509f0a6c1.tar.gz",
+        "url": "https://github.com/ubc-carnap-team/Rudolf/archive/cd015948701a8181c5e6c908988aae58ee5325c8.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     }
 }
