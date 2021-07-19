@@ -5,7 +5,8 @@ module Carnap.Languages.PureFirstOrder.Parser
 , gamutNDFormulaParser, thomasBolducAndZachFOL2019FormulaParser, thomasBolducAndZachFOL2019FormulaParserStrict
 , hardegreePLFormulaParser, belotPDFormulaParser, belotPDEFormulaParser
 , bergmannMoorAndNelsonPDFormulaParser, bergmannMoorAndNelsonPDEFormulaParser
-, gregoryPDFormulaParser, goldfarbNDFormulaParser, tomassiQLFormulaParser, hurleyPLFormulaParser, hausmanPLFormulaParser
+, gregoryPDFormulaParser, goldfarbNDFormulaParser, tomassiQLFormulaParser, hurleyPLFormulaParser
+, hausmanPLFormulaParser, lemmonQuantFormulaParser
 , FirstOrderParserOptions(..), parserFromOptions, parseFreeVar, howardSnyderPLFormulaParser) where
 
 import Carnap.Core.Data.Types
@@ -219,7 +220,6 @@ belotPDEParserOptions = bergmanMoorAndNelsonPDParserOptions
                         , constantParser = Just (parseConstant "abcdefghijklmnopqrstuvo")
                         }
                         
-
 hardegreePLParserOptions :: FirstOrderParserOptions PureLexiconFOL u Identity
 hardegreePLParserOptions = FirstOrderParserOptions 
                          { atomicSentenceParser = parsePredicateSymbolNoParen ['A' .. 'Z']
@@ -300,6 +300,23 @@ tomassiQLOptions = FirstOrderParserOptions
                     , finalValidation = const (pure ())
                     }
     where tomassiDispatch opt rw = (wrappedWith '(' ')' (rw opt) <|> wrappedWith '[' ']' (rw opt))
+
+lemmonQuantOptions :: FirstOrderParserOptions PureLexiconFOL u Identity
+lemmonQuantOptions = FirstOrderParserOptions
+                         { atomicSentenceParser = \x -> try (parsePredicateSymbolNoParen "ABCDEFGHIJKLMNOPQRSTUVWXYZ" x)
+                                                        <|> sentenceLetterParser "ABCDEFGHIJKLMNOPQRSTUVWXYZ" 
+                                                        <|> equalsParser x 
+                         , quantifiedSentenceParser' = altQuantifiedSentenceParser
+                         , freeVarParser = parseFreeVar "xyz"
+                         , constantParser = Just (parseConstant "abcdefghijklmnopqrstuvw")
+                         , functionParser = Nothing
+                         , hasBooleanConstants = False
+                         , parenRecur = \opt recurWith  -> parenParser (recurWith opt) >>= boolean
+                         , opTable = standardOpTable
+                         , finalValidation = \x -> if isOpenFormula x then unexpected "unbound variable" else return ()
+                         }
+    where boolean a = if isBoolean a then return a else unexpected "atomic or quantified sentence wrapped in parentheses"
+
 
 howardSnyderPLOptions :: FirstOrderParserOptions PureLexiconFOL u Identity
 howardSnyderPLOptions = FirstOrderParserOptions 
@@ -395,6 +412,9 @@ howardSnyderPLFormulaParser = parserFromOptions howardSnyderPLOptions
 
 tomassiQLFormulaParser :: Parsec String u PureFOLForm
 tomassiQLFormulaParser = parserFromOptions tomassiQLOptions
+
+lemmonQuantFormulaParser :: Parsec String u PureFOLForm
+lemmonQuantFormulaParser = parserFromOptions lemmonQuantOptions
 
 folFormulaParser :: Parsec String u PureFOLForm
 folFormulaParser = parserFromOptions standardFOLParserOptions

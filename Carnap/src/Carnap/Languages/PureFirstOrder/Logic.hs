@@ -38,6 +38,7 @@ import Carnap.Languages.PureFirstOrder.Logic.Hausman
 import Carnap.Languages.PureFirstOrder.Logic.HowardSnyder
 import Carnap.Languages.PureFirstOrder.Logic.Hurley
 import Carnap.Languages.PureFirstOrder.Logic.IchikawaJenkins
+import Carnap.Languages.PureFirstOrder.Logic.Lemmon
 import Carnap.Languages.PureFirstOrder.Logic.KalishAndMontague
 import Carnap.Languages.PureFirstOrder.Logic.Magnus
 import Carnap.Languages.PureFirstOrder.Logic.OpenLogic
@@ -68,17 +69,18 @@ ofFOLSys f sys | sys == "LogicBookPD"                     = Just $ f logicBookPD
                | sys == "goldfarbAltNDPlus"               = Just $ f goldfarbBrownNDPlusCalc
                | sys == "goldfarbND"                      = Just $ f goldfarbNDCalc
                | sys == "goldfarbNDPlus"                  = Just $ f goldfarbNDPlusCalc
+               | sys == "gregoryPD"                       = Just $ f gregoryPDCalc
+               | sys == "gregoryPDE"                      = Just $ f gregoryPDECalc
                | sys == "hardegreePL"                     = Just $ f hardegreePLCalc
                | sys == "hardegreePL2006"                 = Just $ f hardegreePL2006Calc
                | sys == "hausmanPL"                       = Just $ f hausmanPLCalc
                | sys == "howardSnyderPL"                  = Just $ f howardSnyderPLCalc
                | sys == "hurleyPL"                        = Just $ f hurleyPLCalc
                | sys == "ichikawaJenkinsQL"               = Just $ f ichikawaJenkinsQLCalc
+               | sys == "lemmonQuant"                     = Just $ f lemmonQuantCalc
                | sys == "magnusQL"                        = Just $ f magnusQLCalc
                | sys == "magnusQLPlus"                    = Just $ f magnusQLPlusCalc
                | sys == "montagueQC"                      = Just $ f montagueQCCalc
-               | sys == "gregoryPD"                          = Just $ f gregoryPDCalc
-               | sys == "gregoryPDE"                         = Just $ f gregoryPDECalc
                | sys == "thomasBolducAndZachFOL"          = Just $ f thomasBolducAndZachFOLCalc
                | sys == "thomasBolducAndZachFOL2019"      = Just $ f thomasBolducAndZachFOL2019Calc
                | sys == "thomasBolducAndZachFOLCore"      = Just $ f thomasBolducAndZachFOLCoreCalc

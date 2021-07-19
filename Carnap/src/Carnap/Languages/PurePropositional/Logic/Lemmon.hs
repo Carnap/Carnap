@@ -1,6 +1,6 @@
 {-#LANGUAGE FlexibleContexts, FlexibleInstances, MultiParamTypeClasses #-}
 module Carnap.Languages.PurePropositional.Logic.Lemmon
-    ( parseLemmonProp, LemmonProp,  lemmonPropCalc) where
+    ( parseLemmonProp, LemmonProp(..),  lemmonPropCalc) where
 
 import Text.Parsec
 import Control.Lens (view)
@@ -8,6 +8,7 @@ import Carnap.Core.Data.Types (Form)
 import Carnap.Core.Data.Classes (lhs)
 import Carnap.Languages.PurePropositional.Syntax
 import Carnap.Languages.PurePropositional.Parser
+import Carnap.Languages.PurePropositional.Util (dropOuterParens)
 import Carnap.Calculi.Util
 import Carnap.Calculi.NaturalDeduction.Syntax
 import Carnap.Calculi.NaturalDeduction.Parser
@@ -95,7 +96,7 @@ parseLemmonPropProof :: RuntimeDeductionConfig PurePropLexicon (Form Bool)
 parseLemmonPropProof rtc = toDeductionLemmon (parseLemmonProp rtc) (purePropFormulaParser extendedLetters)
 
 lemmonPropNotation :: String -> String
-lemmonPropNotation = map replace
+lemmonPropNotation = dropOuterParens . map replace
     where replace '∧' = '&'
           replace '¬' = '-'
           replace c = c

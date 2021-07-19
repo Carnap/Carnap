@@ -1,7 +1,7 @@
 {-# LANGUAGE FlexibleContexts, FlexibleInstances, MultiParamTypeClasses #-}
 module Carnap.Languages.PurePropositional.Parser 
     ( purePropFormulaParser, standardLetters, standardLettersStrict, extendedLetters, belotOpts, hausmanOpts, thomasBolducZachOpts, thomasBolducZach2019Opts
-    , hardegreeOpts, standardOpTable, standardOpTableStrict, calgaryOpTable, calgary2019OpTable, hausmanOpTable, howardSnyderOpTable, gamutOpTable
+    , hardegreeOpts, arthurOpts, standardOpTable, standardOpTableStrict, calgaryOpTable, calgary2019OpTable, hausmanOpTable, howardSnyderOpTable, gamutOpTable
     , gamutOpts, bonevacOpts, howardSnyderOpts, hurleyOpts, gregoryOpts, magnusOpts, extendedPropSeqParser
     ) where
 
@@ -49,6 +49,11 @@ bonevacOpts = PurePropositionalParserOptions
 
 hardegreeOpts :: Monad m => PurePropositionalParserOptions u m
 hardegreeOpts = extendedLetters { hasBooleanConstants = True }
+
+arthurOpts :: Monad m => PurePropositionalParserOptions u m
+arthurOpts = extendedLetters { hasBooleanConstants = True 
+                             , opTable = standardOpTableStrict
+                             }
 
 extendedLetters :: Monad m => PurePropositionalParserOptions u m
 extendedLetters = standardLetters { atomicSentenceParser = sentenceLetterParser ['A' .. 'Z'] }

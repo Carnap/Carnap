@@ -623,6 +623,16 @@ deMorgansNegatedOr = [
                 ] ∴ GammaV 1 :|-: SS (lneg $ phin 1 .∨. phin 2)
             ]
 
+conjunctiveSyllogismVariations :: BooleanRuleVariants lex b
+conjunctiveSyllogismVariations = [
+                [ GammaV 1 :|-: SS (lneg $ phin 1 .∧. phin 2)
+                , GammaV 2 :|-: SS (phin 1)
+                ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (lneg $ phin 2)
+            ,
+                [ GammaV 1 :|-: SS (lneg $ phin 1 .∧. phin 2)
+                , GammaV 2 :|-: SS (phin 2)
+                ] ∴ GammaV 1 :+: GammaV 2 :|-: SS (lneg $ phin 1)
+            ]
 -------------------------------
 --  1.2.2 Replacement Rules  --
 -------------------------------

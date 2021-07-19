@@ -18,6 +18,7 @@ activate :: [Text] -> [(Text, Text)] -> Text -> Block
 activate cls extra chunk
     | "AllenSL"          `elem` cls = exTemplate [("system", "allenSL")]
     | "AllenSLPlus"      `elem` cls = exTemplate [("system", "allenSLPlus")]
+    | "ArthurSL"         `elem` cls = exTemplate [("system", "arthurSL"), ("guides", "indent"), ("options", "fonts resize")]
     | "BelotPD"          `elem` cls = exTemplate [("system", "belotPD")]
     | "BelotPDE"         `elem` cls = exTemplate [("system", "belotPDE")]
     | "BelotPDEPlus"     `elem` cls = exTemplate [("system", "belotPDEPlus")]
@@ -74,6 +75,8 @@ activate cls extra chunk
     | "IchikawaJenkinsSL"`elem` cls = exTemplate [("system", "ichikawaJenkinsSL"), ("options","render")]
     | "JohnsonSL"        `elem` cls = exTemplate [("system", "johnsonSL")]
     | "JohnsonSLPlus"    `elem` cls = exTemplate [("system", "johnsonSLPlus")]
+    | "LemmonProp"       `elem` cls = exTemplate [("system", "lemmonProp"), ("options","hideNumbering render resize")] 
+    | "LemmonQuant"      `elem` cls = exTemplate [("system", "lemmonQuant"), ("options","hideNumbering render resize")] 
     | "LogicBookPD"      `elem` cls = exTemplate [("system", "LogicBookPD")]
     | "LogicBookPDE"     `elem` cls = exTemplate [("system", "LogicBookPDE")]
     | "LogicBookPDEPlus" `elem` cls = exTemplate [("system", "LogicBookPDEPlus")]
@@ -113,6 +116,7 @@ toPlayground :: [Text] -> [(Text, Text)] -> Text -> Block
 toPlayground cls extra content
     | "AllenSL"          `elem` cls = playTemplate [("system", "allenSL")]
     | "AllenSLPlus"      `elem` cls = playTemplate [("system", "allenSLPlus")]
+    | "ArthurSL"         `elem` cls = playTemplate [("system", "arthurSL"), ("guides", "indent"), ("options", "fonts resize")]
     | "BelotPD"          `elem` cls = playTemplate [("system", "belotPD")]
     | "BelotPDE"         `elem` cls = playTemplate [("system", "belotPDE")]
     | "BelotPDEPlus"     `elem` cls = playTemplate [("system", "belotPDEPlus")]
@@ -169,6 +173,8 @@ toPlayground cls extra content
     | "IchikawaJenkinsSL"`elem` cls = playTemplate [("system", "ichikawaJenkinsSL"), ("options","render")]
     | "JohnsonSL"        `elem` cls = playTemplate [("system", "johnsonSL")]
     | "JohnsonSLPlus"    `elem` cls = playTemplate [("system", "johnsonSLPlus")]
+    | "LemmonProp"       `elem` cls = playTemplate [("system", "lemmonProp"), ("options","hideNumbering render resize")] 
+    | "LemmonQuant"      `elem` cls = playTemplate [("system", "lemmonQuant"), ("options","hideNumbering render resize")] 
     | "LogicBookPD"      `elem` cls = playTemplate [("system", "LogicBookPD")]
     | "LogicBookPDE"     `elem` cls = playTemplate [("system", "LogicBookPDE")]
     | "LogicBookPDEPlus" `elem` cls = playTemplate [("system", "LogicBookPDEPlus")]

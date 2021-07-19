@@ -21,8 +21,8 @@ repository, in case you'd like to contribute or suggest an edit.
 
 If you'd like to discuss development and administration of Carnap instances in
 real time, we have a chat room on
-[Matrix](https://matrix.to/#/!AqFOGENiPssQgsjxfE:matrix.org?via=matrix.org) or
-[freenode (#carnap)](irc://irc.freenode.net/carnap).
+[Matrix](https://matrix.to/#/!AqFOGENiPssQgsjxfE:matrix.org?via=matrix.org),
+bridged to [libera.chat in #carnap](ircs://irc.libera.chat:6697/carnap).
 
 There is also a mailing list, primarily focused on instructor support, on
 [Google Groups](https://groups.google.com/g/carnap-users).

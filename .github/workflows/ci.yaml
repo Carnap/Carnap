@@ -1,13 +1,31 @@
 name: Automatically build Carnap and Carnap-GHCJS
 on: [push, pull_request]
 jobs:
+  # conditionally sets the matrix based on which repo this is, avoiding needing
+  # the self hosted runner on forks
+  # h/t https://stackoverflow.com/a/65434401/2350164 and
+  # https://docs.github.com/en/actions/reference/context-and-expression-syntax-for-github-actions#example-returning-a-json-object
+  matrix_prep:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+    - id: set-matrix
+      run: |
+        if [[ $GITHUB_REPOSITORY = 'Carnap/Carnap' ]]; then
+          echo '::set-output name=matrix::["self-hosted", "macos-latest"]'
+        else
+          echo '::set-output name=matrix::["macos-latest"]'
+        fi
+
   build:
+    needs: matrix_prep
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         # TODO: reinstate Ubuntu once we figure out how to make it stop hitting
         # OOM. macOS seems to crash a lot less, if ever.
-        os: [self-hosted, macos-latest]
+        os: ${{ fromJSON(needs.matrix_prep.outputs.matrix) }}
     steps:
       - uses: actions/checkout@v2
       - uses: cachix/install-nix-action@v12

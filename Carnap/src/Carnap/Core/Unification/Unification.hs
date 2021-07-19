@@ -181,8 +181,6 @@ betaNormalizeByName x = case castLam x of
                              Just (ExtApp h t) -> argRecur h .$. betaNormalizeByName t
                              Nothing -> x
 
-
-
 toBNF :: (HigherOrder f, MonadVar f m, Typeable a) => f a -> m (f a)
 toBNF x = do nf <- betaNormalize x
              case nf of

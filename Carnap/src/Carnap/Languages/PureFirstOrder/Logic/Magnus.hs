@@ -199,7 +199,6 @@ instance Inference MagnusQLPlus PureLexiconFOL (Form Bool) where
          isPremise (MagnusQL x) = True
          isPremise _ = False
 
-
 parseMagnusQLPlus rtc = try liftQL <|> try liftPlus <|> foPlus
     where liftQL = map MagnusQL <$> parseMagnusQL rtc
           liftPlus = map Plus <$> parseMagnusSLPlus (defaultRuntimeDeductionConfig)

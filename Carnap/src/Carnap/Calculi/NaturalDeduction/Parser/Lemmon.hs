@@ -1,6 +1,5 @@
 {-#LANGUAGE FlexibleContexts #-}
-module Carnap.Calculi.NaturalDeduction.Parser.Lemmon 
-where
+module Carnap.Calculi.NaturalDeduction.Parser.Lemmon where
 
 import Data.Tree
 import Data.Typeable

@@ -44,7 +44,7 @@ postCommandR = do
                                     }
                        case (mkey,masgn) of 
                             (Nothing,Nothing) -> 
-                                do success <- tryInsert sub
+                                do success <- runDB (insertUnique sub)
                                    afterInsert success
                             (Just ak, Just asgn) -> do
                                 (mtoken,maccess,mex) <- runDB $ (,,) 
@@ -60,14 +60,14 @@ postCommandR = do
                                             -> returnJson ("Assignment time limit exceeded" :: String)
                                      (Just tok, Just (HiddenViaPasswordExpiring _ min)) | age tok > 60 * testTime min 
                                             -> returnJson ("Assignment time limit exceeded" :: String)
-                                     _ | assignmentMetadataVisibleTill asgn > Just time -> tryInsert sub >>= afterInsert
-                                       | null (assignmentMetadataVisibleTill asgn) -> tryInsert sub >>= afterInsert
-                                       | (extensionUntil . entityVal <$> mex) > Just time -> tryInsert sub >>= afterInsert
+                                     _ | assignmentMetadataVisibleTill asgn > Just time -> runDB (insertUnique sub) >>= afterInsert
+                                       | null (assignmentMetadataVisibleTill asgn) -> runDB (insertUnique sub) >>= afterInsert
+                                       | (extensionUntil . entityVal <$> mex) > Just time -> runDB (insertUnique sub) >>= afterInsert
                                        | otherwise -> returnJson ("Assignment not available" :: String)
                 SaveRule n r | null n -> returnJson ("The rule needs a nonempty name." :: String)
                 SaveRule n r -> do time <- liftIO getCurrentTime
                                    let save = SavedRule r (pack n) time uid
-                                   tryInsert save >>= afterInsert
+                                   runDB (insertUnique save) >>= afterInsert
                 RequestDerivedRulesForUser -> do savedPropRules <- runDB $ selectList [SavedDerivedRuleUserId ==. uid] []
                                                  savedRules <- runDB $ selectList [SavedRuleUserId ==. uid] []
                                                  let oldRules = catMaybes $ map (packageOldRule . entityVal) savedPropRules

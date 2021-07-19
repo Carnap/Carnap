@@ -234,7 +234,7 @@ parsePredicateSymbolNoParen s parseTerm = parse <?> "a predicate symbol"
                          m = maybe 0 id midx
                      argParserNoParen parseTerm (ppn (n + (m * 26)) AOne)
 
-quantifiedSentenceParser :: 
+quantifiedSentenceParser, lplQuantifiedSentenceParser, altAltQuantifiedSentenceParser, altQuantifiedSentenceParser :: 
     ( QuantLanguage (FixLang lex f) (FixLang lex t)
     , BoundVars lex
     , Show (FixLang lex t)
@@ -252,13 +252,6 @@ quantifiedSentenceParser parseFreeVar formulaParser =
            return $ if s `elem` "A∀" then lall (show v) bf else lsome (show v) bf
                --which we bind
 
-lplQuantifiedSentenceParser :: 
-    ( QuantLanguage (FixLang lex f) (FixLang lex t)
-    , BoundVars lex
-    , Show (FixLang lex t)
-    , Monad m
-    ) => ParsecT String u m (FixLang lex t) -> ParsecT String u m (FixLang lex f) 
-            -> ParsecT String u m (FixLang lex f)
 lplQuantifiedSentenceParser parseFreeVar formulaParser =
         do s <- oneOf "AE∀∃@3" <?> "a quantifer symbol"
            spaces
@@ -270,13 +263,6 @@ lplQuantifiedSentenceParser parseFreeVar formulaParser =
            return $ if s `elem` "A∀@" then lall (show v) bf else lsome (show v) bf
                --which we bind
 
-altQuantifiedSentenceParser :: 
-    ( QuantLanguage (FixLang lex f) (FixLang lex t)
-    , BoundVars lex
-    , Show (FixLang lex t)
-    , Monad m
-    ) => ParsecT String u m (FixLang lex t) -> ParsecT String u m (FixLang lex f) 
-            -> ParsecT String u m (FixLang lex f)
 altQuantifiedSentenceParser parseFreeVar formulaParser =
         do char '('
            s <- optionMaybe (oneOf "E∃" <?> "a quantifer symbol")
@@ -289,14 +275,6 @@ altQuantifiedSentenceParser parseFreeVar formulaParser =
            return $ case s of Just _ -> lsome (show v) bf; Nothing -> lall (show v) bf
                --which we bind
 
----XXX:DRY
-altAltQuantifiedSentenceParser :: 
-    ( QuantLanguage (FixLang lex f) (FixLang lex t)
-    , BoundVars lex
-    , Show (FixLang lex t)
-    , Monad m
-    ) => ParsecT String u m (FixLang lex t) -> ParsecT String u m (FixLang lex f) 
-            -> ParsecT String u m (FixLang lex f)
 altAltQuantifiedSentenceParser parseFreeVar formulaParser =
         do char '('
            s <- oneOf "AE∀∃" <?> "a quantifer symbol"

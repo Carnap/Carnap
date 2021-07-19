@@ -95,7 +95,6 @@ onlyNewConstraint m ded term form sub =
           checkTermIn l = maybe False (\phi -> theTerm `occurs` liftToSequent phi) $ assertion l
           checkRuleIn l = maybe True (not . isAssumption . head) $ ruleOfLine l
     
-
 parseTomassiQL rtc n annote = try parseProp <|> parseQuant
     where parseProp = map PL <$> parseTomassiPL (defaultRuntimeDeductionConfig) n annote
           parseQuant = do r <- choice (map (try . string) [ "UI", "UE", "EE", "EI", "=I", "=E" ])

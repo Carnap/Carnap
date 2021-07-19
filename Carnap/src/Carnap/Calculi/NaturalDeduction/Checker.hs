@@ -195,7 +195,15 @@ seqSubsetUnify s1 s2 = case check of
                        Right _ -> True
             where check = do fosub <- fosolve [view rhs (rebuild s1) :=: view rhs (rebuild s2)]
                              acuisolve [(view lhs (rebuild $ applySub fosub s1) :+: GammaV (0 - 1)) :=: view lhs (rebuild $ applySub fosub s2) ]
-                  rebuild x = evalState (stateRebuild x >>= toBNF >>= stateRebuild) (0 :: Int)
+                  rebuild x = evalState (statefulRebuild x) (0 :: Int)
+
+statefulRebuild :: 
+    ( MonadVar (ClassicalSequentOver lex) (State Int)
+    , FirstOrder (ClassicalSequentOver lex)
+    , ACUI (ClassicalSequentOver lex)
+    , StaticVar (ClassicalSequentOver lex)
+    , Typeable sem) => ClassicalSequentOver lex sem -> State Int (ClassicalSequentOver lex sem)
+statefulRebuild x = stateRebuild x >>= return . betaNormalizeByName >>= stateRebuild
 
 --------------------------------------------------------
 --Utility Functions
@@ -297,7 +305,7 @@ hoseqFromNode lineno rules prems conc =
                                         -- a new one by substitution in order to
                                         -- preserve things like variable labelings
                                    let subbedconc = applySub hosub (set rhs conc rconc)
-                                   let prob = (zipWith (:=:) (evalState (mapM (\x -> stateRebuild (view lhs x) >>= toBNF) subbedrule) (0 :: Int))
+                                   let prob = (zipWith (:=:) (evalState (mapM (statefulRebuild . view lhs) subbedrule) (0 :: Int))
                                                              (map (view lhs) prems))
                                    case evalState (acuiUnifySys (const False) prob) (0 :: Int) of
                                        [] -> return $ Left $ renumber lineno $ NoUnify [prob] 0
@@ -321,7 +329,7 @@ hoReduceProofTree res (Node (ProofLine no cont rules) ts) =
            -- XXX: we need to rebuild the term here to make sure that there
            -- are no unevaluated substitutions lurking inside under
            -- lambdas, with stale variables in trapped in closures.
-           return $ evalState (stateRebuild rslt >>= toBNF >>= stateRebuild) (0 :: Int)
+           return $ evalState (statefulRebuild rslt) (0 :: Int)
 
 hoReduceProofTreeMemo :: 
     ( Inference r lex sem
@@ -343,7 +351,7 @@ hoReduceProofTreeMemo ref res pt@(Node (ProofLine no cont rules) ts) =
                              Left olderror -> return (Left olderror)
                              Right prems -> 
                                 do let y = do errOrRslts <- hoseqFromNode no rules prems cont
-                                              return $ errOrRslts >>= Right . map (\(r,z,w) -> (evalState (stateRebuild r >>= toBNF >>= stateRebuild) (0 :: Int),z,w))
+                                              return $ errOrRslts >>= Right . map (\(r,z,w) -> (evalState (statefulRebuild r) (0 :: Int),z,w))
                                    writeIORef ref (M.insert thehash y thememo)
                                    return $ reduceResult no $ parallelCheckResult res no $ y
 

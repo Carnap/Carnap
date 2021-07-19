@@ -25,7 +25,7 @@ postRegister theform ident = do
         ((result, _), _) <- runFormPost (theform courseEntities userId)
         case result of
             FormSuccess (Just userdata) ->
-                do msuccess <- tryInsert userdata
+                do msuccess <- runDB (insertUnique userdata)
                    case msuccess of
                         Just _ -> deleteSession "enrolling-in" >> redirect (UserR ident)
                         Nothing -> defaultLayout clashPage
