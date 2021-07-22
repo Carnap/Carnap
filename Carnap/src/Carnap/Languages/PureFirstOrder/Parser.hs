@@ -1,7 +1,7 @@
 {-#LANGUAGE TypeOperators, FlexibleContexts, FlexibleInstances, MultiParamTypeClasses#-}
 module Carnap.Languages.PureFirstOrder.Parser 
 ( folFormulaParser, folFormulaParserRelaxed, mfolFormulaParser
-, magnusFOLFormulaParser, gallowPLFormulaParser, thomasBolducAndZachFOLFormulaParser
+, arthurFOLFormulaParser, magnusFOLFormulaParser, gallowPLFormulaParser, thomasBolducAndZachFOLFormulaParser
 , gamutNDFormulaParser, thomasBolducAndZachFOL2019FormulaParser, thomasBolducAndZachFOL2019FormulaParserStrict
 , hardegreePLFormulaParser, belotPDFormulaParser, belotPDEFormulaParser
 , bergmannMoorAndNelsonPDFormulaParser, bergmannMoorAndNelsonPDEFormulaParser
@@ -118,6 +118,20 @@ magnusFOLParserOptions = FirstOrderParserOptions
                          }
     where magnusDispatch opt rw = (wrappedWith '(' ')' (rw opt) <|> wrappedWith '[' ']' (rw opt)) >>= boolean
           boolean a = if isBoolean a then return a else unexpected "atomic or quantified sentence wrapped in parentheses"
+
+arthurFOLParserOptions :: FirstOrderParserOptions PureLexiconFOL u Identity
+arthurFOLParserOptions = FirstOrderParserOptions 
+                         { atomicSentenceParser = \x -> parsePredicateSymbolNoParen "ABCDEFGHIJKLMNOPQRSTUVWXYZ" x
+                                                        <|> equalsParser x 
+                         , quantifiedSentenceParser' = quantifiedSentenceParser
+                         , freeVarParser = parseFreeVar "xyz"
+                         , constantParser = Just (parseConstant "abcdefghijklmnopqrstuvw")
+                         , functionParser = Nothing
+                         , hasBooleanConstants = True
+                         , parenRecur = \opt recurWith  -> parenParser (recurWith opt)
+                         , opTable = standardOpTableStrict
+                         , finalValidation = const (pure ())
+                         }
 
 thomasBolducAndZachFOLParserOptions :: FirstOrderParserOptions PureLexiconFOL u Identity
 thomasBolducAndZachFOLParserOptions = magnusFOLParserOptions { hasBooleanConstants = True
@@ -364,6 +378,9 @@ parserFromOptions opts = do f <- buildExpressionParser (opTable opts) subformula
 
 magnusFOLFormulaParser :: Parsec String u PureFOLForm
 magnusFOLFormulaParser = parserFromOptions magnusFOLParserOptions
+
+arthurFOLFormulaParser :: Parsec String u PureFOLForm
+arthurFOLFormulaParser = parserFromOptions arthurFOLParserOptions
 
 gallowPLFormulaParser :: Parsec String u PureFOLForm
 gallowPLFormulaParser = parserFromOptions gallowPLParserOptions

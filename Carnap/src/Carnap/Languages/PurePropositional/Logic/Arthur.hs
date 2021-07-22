@@ -162,7 +162,7 @@ arthurSLCalc = mkNDCalc
     , ndParseProof = parseArthurSLProof
     , ndProcessLine = hoProcessLineFitch
     , ndProcessLineMemo = Just hoProcessLineFitchMemo
-    , ndParseSeq = parseSeqOver (purePropFormulaParser magnusOpts)
-    , ndParseForm = purePropFormulaParser magnusOpts
+    , ndParseSeq = parseSeqOver (purePropFormulaParser arthurOpts)
+    , ndParseForm = purePropFormulaParser arthurOpts
     , ndNotation = arthurNotation
     }

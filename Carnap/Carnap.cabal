@@ -76,6 +76,7 @@ library
                      , Carnap.Languages.PureFirstOrder.Util
                      , Carnap.Languages.PureFirstOrder.Logic
                      , Carnap.Languages.PureFirstOrder.Logic.Rules
+                     , Carnap.Languages.PureFirstOrder.Logic.Arthur
                      , Carnap.Languages.PureFirstOrder.Logic.Belot
                      , Carnap.Languages.PureFirstOrder.Logic.BergmannMoorAndNelson
                      , Carnap.Languages.PureFirstOrder.Logic.Bonevac
