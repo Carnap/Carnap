@@ -943,7 +943,7 @@ addCoInstructorForm
                    WidgetFor App ()))
 addCoInstructorForm instructors cid extra = do
     (courseRes,courseView) <- mreq courseId "" Nothing
-    (instRes, instView) <- mreq (selectFieldList $ map toItem instructors) (bfs ("Instructor" :: Text)) Nothing
+    (instRes, instView) <- mreq (selectFieldList sortedInstructors) (bfs ("Instructor" :: Text)) Nothing
     let theRes = (,) <$> courseRes <*> instRes
         widget = do
             [whamlet|
@@ -959,6 +959,10 @@ addCoInstructorForm instructors cid extra = do
           courseId = hiddenField
 
           toItem (Entity _ i) = (userDataLastName i ++ ", " ++ userDataFirstName i, userDataInstructorId i)
+
+          sortedInstructors = sortBy (\(x,_) (y,_) -> compare (toLower x) (toLower y)) 
+                            . map toItem 
+                            $ instructors
 
 deleteModal :: Text -> [Entity AssignmentMetadata] -> WidgetFor App ()
 deleteModal id asmd =
