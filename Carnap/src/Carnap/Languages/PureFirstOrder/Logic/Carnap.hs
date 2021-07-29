@@ -28,7 +28,7 @@ import Carnap.Languages.PureFirstOrder.Logic.Rules
 data FOLogic =  SL PropLogic
                 | UD  | UI  | EG  | ED1 | ED2 | QN1 | QN2  | QN3  | QN4  
                 | LL1 | LL2 | EL1 | EL2 | ID  | SM  | ALL1 | ALL2
-                | DER (ClassicalSequentOver PureLexiconFOL (Sequent (Form Bool)))
+                | DER String (ClassicalSequentOver PureLexiconFOL (Sequent (Form Bool)))
                 | PR (Maybe [(ClassicalSequentOver PureLexiconFOL (Sequent (Form Bool)))])
                deriving (Eq)
 
@@ -39,7 +39,7 @@ instance Show FOLogic where
         show EG      = "EG"
         show ED1     = "ED"
         show ED2     = "ED"
-        show (DER _) = "Derived"
+        show (DER s _) = "D-" ++ s
         show QN1     = "QN"
         show QN2     = "QN"
         show QN3     = "QN"
@@ -75,11 +75,11 @@ instance Inference FOLogic PureLexiconFOL (Form Bool) where
      ruleOf SM        = eqSymmetry
 
      premisesOf (SL x) = map liftSequent (premisesOf x)
-     premisesOf (DER r) = multiCutLeft r
+     premisesOf (DER _ r) = multiCutLeft r
      premisesOf x     = upperSequents (ruleOf x)
 
      conclusionOf (SL x) = liftSequent (conclusionOf x)
-     conclusionOf (DER r) = multiCutRight r
+     conclusionOf (DER _ r) = multiCutRight r
      conclusionOf x   = lowerSequent (ruleOf x)
 
      restriction UD         = Just (eigenConstraint tau (SS (lall "v" $ phi' 1)) (fogamma 1))
@@ -110,7 +110,7 @@ parseFOLogic rtc = try quantRule <|> liftProp
                               | r == "Id" -> return [ID]
                               | r == "D-" ->  do rn <- many1 upper
                                                  case M.lookup rn (derivedRules rtc) of
-                                                    Just r  -> return [DER r]
+                                                    Just r  -> return [DER rn r]
                                                     Nothing -> parserFail "Looks like you're citing a derived rule that doesn't exist"
 
 parseFOLProof ::  RuntimeDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine FOLogic PureLexiconFOL (Form Bool)]

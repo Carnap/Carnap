@@ -20,7 +20,7 @@ data PropLogic = PR (Maybe [(ClassicalSequentOver PurePropLexicon (Sequent (Form
                | MP  | MT  | DNE | DNI  | DD   | AS   
                | CP1 | CP2 | ID1 | ID2  | ID3  | ID4 
                | ADJ | S1  | S2  | ADD1 | ADD2 | MTP1 | MTP2 | BC1 | BC2 | CB  
-               | DER (ClassicalSequentOver PurePropLexicon (Sequent (Form Bool)))
+               | DER String (ClassicalSequentOver PurePropLexicon (Sequent (Form Bool)))
                deriving (Eq)
 
 instance Show PropLogic where
@@ -47,7 +47,7 @@ instance Show PropLogic where
         show BC2     = "BC"
         show CB      = "CB"
         show (PR _)  = "PR"
-        show (DER _) = "Derived"
+        show (DER s _) = "D-" ++ s
 
 instance Inference PropLogic PurePropLexicon (Form Bool) where
     ruleOf MP        = modusPonens
@@ -74,10 +74,10 @@ instance Inference PropLogic PurePropLexicon (Form Bool) where
     ruleOf BC2       = biconditionalToConditionalVariations !! 1
     ruleOf CB        = conditionalToBiconditional
 
-    premisesOf (DER r) = multiCutLeft r
+    premisesOf (DER _ r) = multiCutLeft r
     premisesOf r = upperSequents (ruleOf r)
 
-    conclusionOf (DER r) = multiCutRight r
+    conclusionOf (DER _ r) = multiCutRight r
     conclusionOf r = lowerSequent (ruleOf r)
 
     restriction (PR prems) = Just (premConstraint prems)
@@ -108,7 +108,7 @@ parsePropLogic rtc = do r <- choice (map (try . string) ["AS","PR","MP","MTP","M
                              "CB"   -> return [CB]
                              "D-" -> do rn <- many1 upper
                                         case M.lookup rn (derivedRules rtc) of
-                                            Just r  -> return [DER r]
+                                            Just r  -> return [DER rn r]
                                             Nothing -> parserFail "Looks like you're citing a derived rule that doesn't exist"
 
 parsePropLogicProof :: RuntimeDeductionConfig PurePropLexicon (Form Bool) 
