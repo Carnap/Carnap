@@ -75,8 +75,7 @@ tryLTIAutoRegistration uid = do
 
     -- leave early if either we had no LTI data in the user token or
     -- the data is bad
-    let ld = getLTIData sess
-    $logDebug ("got lti data of " <> (T.pack . show $ ld))
+    ld <- getLTIData sess
 
     sd <- (E.except $ ld)
         >>= maybe (E.throwE NoLtiInfo) pure
@@ -113,28 +112,31 @@ tryLTIAutoRegistration uid = do
 require :: a -> Maybe b -> Either a b
 require err name = maybe (Left err) Right name
 
-getLTIData :: SessionMap -> Either AutoregError (Maybe LTIUserData)
+getLTIData :: MonadLogger m => SessionMap -> m (Either AutoregError (Maybe LTIUserData))
 getLTIData sess = do
     let maybeLtiTok = decodeStrict =<< lookup "ltiToken" sess
     let maybeLtiIss = decodeUtf8 <$> lookup "ltiIss" sess
 
     case (,) <$> maybeLtiTok <*> maybeLtiIss of
-        Nothing -> Right Nothing
+        Nothing -> pure $ Right Nothing
         Just (tok, iss) -> do
             -- this has already passed checking on login
             let UncheckedLtiTokenClaims { context, firstName, lastName, deploymentId, email, lis } = tok
+            $logInfo ("lti autoreg got token: " <> (T.pack . show $ (LTI.anonymizeLtiTokenForLogging tok)))
+
             let triple = AutoregTriple
                         <$> Right (LTI.contextLabel =<< context)
                         <*> Right iss
                         <*> Right deploymentId
                         <*> (require MissingContextClaim $ LTI.contextId <$> context)
 
-            pure . Just =<< LTIUserData
-                <$> require MissingNameField firstName
-                <*> require MissingNameField lastName
-                <*> Right email
-                <*> Right (LTI.personSourcedId =<< lis)
-                <*> triple
+            pure $ Just
+                <$> (LTIUserData
+                    <$> require MissingNameField firstName
+                    <*> require MissingNameField lastName
+                    <*> Right email
+                    <*> Right (LTI.personSourcedId =<< lis)
+                    <*> triple)
 
 getLTICourseData
     :: PersistentSite site

@@ -51,13 +51,13 @@ newpkgs: oldpkgs: {
   # yesod-auth-lti13 = oldpkgs.callCabal2nix "yesod-auth-lti13" ../lti13/yesod-auth-lti13 { };
   lti13 = oldpkgs.callHackageDirect {
     pkg = "lti13";
-    ver = "0.2.0.0";
-    sha256 = "0j6pjrmpps36ppg750wnmksvpgv2i14pfzpwg3zxhzpniigpxd4x";
+    ver = "0.2.0.2";
+    sha256 = "014pmhl28z242pmmkn63sh7ijdjlh2f7fbq8l5bc0q6llcd6if7y";
   } { };
   yesod-auth-lti13 = oldpkgs.callHackageDirect {
     pkg = "yesod-auth-lti13";
-    ver = "0.2.0.0";
-    sha256 = "130ylr7prhw9j5lx5wni70nb2v72jcc9l7l6zk30camg1q96r2mg";
+    ver = "0.2.0.2";
+    sha256 = "0q2vy7zdv5sm09wh2cqslgz0yh8l4h2gd7w1024i2mgblxa8v4xw";
   } { };
 
   # dontCheck: https://github.com/gleachkr/Carnap/issues/123
