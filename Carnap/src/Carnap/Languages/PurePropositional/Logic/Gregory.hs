@@ -73,8 +73,6 @@ instance Show GregorySDE where
     show GregoryMT3 = "MT"
     show GregoryDS1 = "DS"
     show GregoryDS2 = "DS"
-    show GregoryDS1 = "DeM"
-    show GregoryDS2 = "DeM"
     show GregoryDeM1 = "DeM"
     show GregoryDeM2 = "DeM"
     show GregoryDeM3 = "DeM"
