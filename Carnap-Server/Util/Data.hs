@@ -1,21 +1,25 @@
-{-#LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DeriveGeneric #-}
+{-# OPTIONS_GHC -Wno-orphans #-}
 module Util.Data where
 
-import ClassyPrelude.Yesod
-import Carnap.Languages.PurePropositional.Syntax (PureForm)
-import Carnap.Languages.PureFirstOrder.Syntax (PureFOLForm)
-import Carnap.Languages.PureFirstOrder.Logic
-import Carnap.Languages.PurePropositional.Logic
-import Data.List ((!!), elemIndex)
-import Data.Time
-import qualified Data.Map as M
-import Data.Aeson (decode,encode,Value(..))
-import Text.Read (readMaybe)
-import Text.HTML.TagSoup
-import Text.Pandoc (Extension(..), extensionsFromList)
-import Carnap.GHCJS.SharedTypes(ProblemSource(..),ProblemType(..),ProblemData(..), SomeRule(..))
-import Carnap.GHCJS.SharedFunctions(inOpts, rewriteWith)
-import qualified Data.IntMap as IM (fromList)
+import           Carnap.GHCJS.SharedFunctions              (rewriteWith)
+import           Carnap.GHCJS.SharedTypes                  (ProblemData (..),
+                                                            ProblemSource (..),
+                                                            ProblemType (..),
+                                                            SomeRule (..))
+import           Carnap.Languages.PureFirstOrder.Syntax    (PureFOLForm)
+import           Carnap.Languages.PurePropositional.Syntax (PureForm)
+import           ClassyPrelude.Yesod
+import           Data.Aeson                                (decode, encode)
+import qualified Data.IntMap                               as IM (fromList)
+import qualified Data.Map                                  as M
+import qualified Data.Text.Lazy                            as LT
+import           Data.Time
+import           Text.HTML.TagSoup
+import           Text.Pandoc                               (Extension (..),
+                                                            Extensions,
+                                                            extensionsFromList)
+import           Text.Read                                 (readMaybe)
 
 derivePersistField "Value"
 
@@ -53,18 +57,21 @@ instance ToJSON AvailabilityStatus
 instance FromJSON AvailabilityStatus
 derivePersistField "AvailabilityStatus"
 
-availabilityPassword (ViaPassword pass) = pass
-availabilityPassword (HiddenViaPassword pass) = pass
-availabilityPassword (ViaPasswordExpiring pass _) = pass
+availabilityPassword :: AvailabilityStatus -> Text
+availabilityPassword (ViaPassword pass)                 = pass
+availabilityPassword (HiddenViaPassword pass)           = pass
+availabilityPassword (ViaPasswordExpiring pass _)       = pass
 availabilityPassword (HiddenViaPasswordExpiring pass _) = pass
 
-availabilityHidden (HiddenViaPassword _) = True
+availabilityHidden :: AvailabilityStatus -> Bool
+availabilityHidden (HiddenViaPassword _)           = True
 availabilityHidden (HiddenViaPasswordExpiring _ _) = True
-availabilityHidden _ = False
+availabilityHidden _                               = False
 
-availabilityMinutes (ViaPasswordExpiring _ min) = Just min
+availabilityMinutes :: AvailabilityStatus -> Maybe Int
+availabilityMinutes (ViaPasswordExpiring _ min)       = Just min
 availabilityMinutes (HiddenViaPasswordExpiring _ min) = Just min
-availabilityMinutes _ = Nothing
+availabilityMinutes _                                 = Nothing
 
 sanitizeForJS :: String -> String
 sanitizeForJS ('\n':xs) = '\\' : 'n' : sanitizeForJS xs
@@ -72,8 +79,8 @@ sanitizeForJS ('\\':xs) = '\\' : '\\' : sanitizeForJS xs
 sanitizeForJS ('\'':xs) = '\\' : '\'' : sanitizeForJS xs
 sanitizeForJS ('"':xs)  = '\\' : '"' : sanitizeForJS xs
 sanitizeForJS ('\r':xs) = sanitizeForJS xs
-sanitizeForJS (x:xs) = x : sanitizeForJS xs
-sanitizeForJS [] = []
+sanitizeForJS (x:xs)    = x : sanitizeForJS xs
+sanitizeForJS []        = []
 
 chapterOfProblemSet :: IntMap Int
 chapterOfProblemSet = IM.fromList
@@ -96,6 +103,7 @@ chapterOfProblemSet = IM.fromList
     , (17,12)
     ]
 
+carnapPandocExtensions :: Extensions
 carnapPandocExtensions = extensionsFromList
         [ Ext_raw_html
         , Ext_markdown_in_html_blocks
@@ -127,12 +135,16 @@ toTime = parseTimeOrError True defaultTimeLocale "%l:%M %P %Z, %b %e, %Y"
 laterThan :: UTCTime -> UTCTime -> Bool
 laterThan t1 t2 = diffUTCTime t1 t2 > 0
 
+jsonSerialize :: ToJSON a => a -> LT.Text
 jsonSerialize = decodeUtf8 . encode
 
+jsonDeSerialize :: FromJSON a => Text -> Maybe a
 jsonDeSerialize = decode . encodeUtf8 . fromStrict
 
+rewriteText :: Map String String -> Text -> Text
 rewriteText opts = pack . rewriteWith opts . unpack
 
+displayProblemData :: ProblemData -> Text
 displayProblemData (DerivationData t _)  = t
 displayProblemData (DerivationDataOpts t _ opts') = rewriteText opts t
     where opts = M.fromList opts'
@@ -152,16 +164,16 @@ displayProblemData (TruthTableDataOpts t _ opts') = maybe (rewriteText opts t) p
                                                       ++ " || "
                                                       ++ intercalate "," (map (rewriteWith opts . show) gs)
           s = unpack t
-displayProblemData (TranslationData t _) = "-"
-displayProblemData (TranslationDataOpts _ _ opts) = maybe "-" id $ 
-                                                        lookup "problem" opts 
-                                                        >>= headMay . parseTags . pack 
+displayProblemData (TranslationData _ _) = "-"
+displayProblemData (TranslationDataOpts _ _ opts) = maybe "-" id $
+                                                        lookup "problem" opts
+                                                        >>= headMay . parseTags . pack
                                                         >>= maybeTagText
 displayProblemData (QualitativeMultipleSelection t _ _) = t
-displayProblemData (QualitativeProblemDataOpts t _ opts) = t
+displayProblemData (QualitativeProblemDataOpts t _ _opts) = t
 displayProblemData (QualitativeNumericalData t _ _) = t
-displayProblemData (SequentCalcData t _ opts) = t
-displayProblemData (DeductionTreeData t _ opts) = t
+displayProblemData (SequentCalcData t _ _opts) = t
+displayProblemData (DeductionTreeData t _ _opts) = t
 displayProblemData (ProblemContent t) = maybe t pack ms
     where ms = (show <$> (readMaybe s :: Maybe PureForm))
                `mplus` (intercalate "," . map show <$> (readMaybe s :: Maybe [PureForm]))
