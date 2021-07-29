@@ -41,10 +41,10 @@
         "homepage": "",
         "owner": "ubc-carnap-team",
         "repo": "Rudolf",
-        "rev": "cd015948701a8181c5e6c908988aae58ee5325c8",
-        "sha256": "1i3vp2qy00j8n18wbgqwa4lgwndl7019zmyw3zx3qigpw8hhsrw4",
+        "rev": "d23a4e43b5d22efb174630bc013e05322296a859",
+        "sha256": "0zfr4ldzx1kd8ds02g0b8l9qi5qc9i2c3s870sqhaxlmxqx7jg49",
         "type": "tarball",
-        "url": "https://github.com/ubc-carnap-team/Rudolf/archive/cd015948701a8181c5e6c908988aae58ee5325c8.tar.gz",
+        "url": "https://github.com/ubc-carnap-team/Rudolf/archive/d23a4e43b5d22efb174630bc013e05322296a859.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     }
 }
