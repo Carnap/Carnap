@@ -1,19 +1,28 @@
 ol.example > li {
-    list-style:none;
-    position:relative;
-    counter-increment:example;
+    list-style: none;
+    position: relative;
+    counter-increment: example;
 }
 
 ol.example {
-    counter-increment:example 0;
-    padding-left:10px;
-    padding-right:25px;
+    counter-increment: example 0;
+    padding-left: 10px;
+    padding-right: 25px;
 }
 
 ol.example > li:before {
-    content:counter(example) ". ";
+    content: counter(example) ". ";
 }
 
-blockquote { padding-left:10px }
+blockquote {
+    padding-left: 10px;
+}
 
-.line-block { margin-bottom:1em }
+.line-block {
+    margin-bottom: 1em;
+}
+
+img {
+    /* Don't let images overflow their container */
+    max-width: 100%;
+}

@@ -84,6 +84,8 @@ newpkgs: oldpkgs: {
         find static/truth-tree -type l -delete
         cp ${truth-tree.out}/dist/lib.css static/truth-tree/
         cp ${truth-tree.out}/dist/lib.js  static/truth-tree/
+        # delete the symlinks to the source maps
+        rm -f static/truth-tree/lib.{css,js}.map
 
         echo ":: Adding a universal settings file"
         cp config/settings-example.yml config/settings.yml
