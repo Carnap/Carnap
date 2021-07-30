@@ -124,7 +124,7 @@ foreign import javascript unsafe "(function(){root = new ProofRoot(JSON.parse($1
 
 foreign import javascript unsafe "(function(){root = new DeductionRoot(JSON.parse($1)); return root})()" newMutRootJS :: JSString-> IO JSVal
 
-foreign import javascript unsafe "$2.renderOn($1)" renderOnJS :: Element -> JSVal -> IO ()
+foreign import javascript unsafe "(function(){$2.renderOn($1); $1.proofRoot = $2})()" renderOnJS :: Element -> JSVal -> IO ()
 
 foreign import javascript unsafe "$1.decorate($2)" decorateJS :: JSVal -> JSVal -> IO ()
 
