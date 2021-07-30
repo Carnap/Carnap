@@ -45,3 +45,4 @@
 /api/v1/instructors/#Text/courses/#Text/assignments/#AssignmentMetadataId                               APIInstructorAssignmentR                        GET PATCH
 /api/v1/instructors/#Text/courses/#Text/assignments/#AssignmentMetadataId/submissions                   APIInstructorAssignmentSubmissionsR             GET
 /api/v1/instructors/#Text/courses/#Text/assignments/#AssignmentMetadataId/submissions/#UserDataId       APIInstructorAssignmentSubmissionsByStudentR    GET
+/api/v1/instructors/#Text/courses/#Text/assignments/#AssignmentMetadataId/extensions                    APIInstructorAssignmentExtensionsR              GET

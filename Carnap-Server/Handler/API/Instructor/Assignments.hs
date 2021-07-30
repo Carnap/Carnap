@@ -146,3 +146,10 @@ getAPIInstructorAssignmentSubmissionsByStudentR ident coursetitle asid udid = do
                                 ud <- get udid >>= maybe (sendStatusJSON notFound404 ("No userdata for this ident" :: Text)) pure
                                 selectList [ProblemSubmissionAssignmentId ==. Just asid, ProblemSubmissionUserId ==. userDataUserId ud] []
              returnJson (map entityVal subs)
+
+getAPIInstructorAssignmentExtensionsR :: Text -> Text -> AssignmentMetadataId -> Handler Value
+getAPIInstructorAssignmentExtensionsR ident coursetitle asid = do 
+             courseEnt@(Entity cid course) <- canAccessClass ident coursetitle
+             extensions <- runDB $ do assignmentPartOf asid cid
+                                      selectList [ExtensionOnAssignment ==. asid] []
+             returnJson extensions
