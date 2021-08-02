@@ -97,19 +97,18 @@ getUserR ident = do
                     -- safety: `Nothing` case unreachable since `maybeCourse` will be `Nothing` also
                     let Just cid = maybeCourseId
                     textbookproblems <- getProblemSets cid
-                    (asmd, extensions, asDocs,accommodation,subs) <- runDB $ 
+                    (asmd, extensions, accommodation,subs) <- runDB $ 
                             do asmd <- case courseTextBook course of
                                            Nothing -> selectList [AssignmentMetadataCourse ==. cid] []
                                            Just tb -> selectList [AssignmentMetadataCourse ==. cid, AssignmentMetadataId !=. tb] []
-                               asDocs <- mapM get (map (assignmentMetadataDocument . entityVal) asmd)
                                accommodation <- getBy (UniqueAccommodation cid uid)
                                             >>= return . maybe 0 (accommodationDateExtraHours . entityVal)
                                extensions <- mapM (\asgn -> getBy $ UniqueExtension (entityKey asgn) uid) asmd 
                                let pq = problemQuery uid (map entityKey asmd) 
                                subs <- map entityVal <$> selectList pq []
-                               return (asmd, extensions,asDocs,accommodation,subs)
-                    assignments <- assignmentsOf accommodation course textbookproblems (zip asmd extensions) asDocs
-                    subtable <- problemsToTable course accommodation textbookproblems (zip asmd extensions) asDocs subs
+                               return (asmd, extensions, accommodation, subs)
+                    assignments <- assignmentsOf accommodation course textbookproblems (zip asmd extensions)
+                    subtable <- problemsToTable course accommodation textbookproblems (zip asmd extensions) subs
                     defaultLayout $ do
                         addScript $ StaticR js_bootstrap_bundle_min_js
                         addScript $ StaticR js_bootstrap_min_js
@@ -161,9 +160,9 @@ dateDisplay inUtc course = case tzByName $ courseTimeZone course of
 --------------------------------------------------------
 --reusable components
 problemsToTable :: Course -> Int -> Maybe BookAssignmentTable 
-    -> [(Entity AssignmentMetadata, Maybe (Entity Extension))] -> [Maybe Document] -> [ProblemSubmission] 
+    -> [(Entity AssignmentMetadata, Maybe (Entity Extension))] -> [ProblemSubmission] 
     -> HandlerFor App Html
-problemsToTable course accommodation textbookproblems asmdex asDocs submissions = do
+problemsToTable course accommodation textbookproblems asmdex submissions = do
             time <- liftIO getCurrentTime
             rows <- mapM (toRow time) submissions
             withUrlRenderer [hamlet|
@@ -197,17 +196,16 @@ problemsToTable course accommodation textbookproblems asmdex asDocs submissions 
                     Nothing -> [hamlet|Unknown|]
                     Just k -> case elemIndex k (map entityKey asmd) of
                             Nothing -> [hamlet|No existing assignment|]
-                            Just n -> case asDocs !! n of
-                                Nothing -> [hamlet|No document|]
-                                Just d -> [hamlet| <a href=@{CourseAssignmentR (courseTitle course) (documentFilename d)}>#{documentFilename d}|]
+                            Just n -> let Entity _ a = asmd !! n in
+                                [hamlet| <a href=@{CourseAssignmentR (courseTitle course) (assignmentMetadataTitle a)}>#{assignmentMetadataTitle a}|]
 
 tryDelete :: (Semigroup a, IsString a) => a -> a
 tryDelete name = "tryDeleteRule(\"" <> name <> "\")"
 
 --properly localized assignments for a given class XXX---should this just be in the hamlet?
-assignmentsOf :: Int -> Course -> Maybe BookAssignmentTable -> [(Entity AssignmentMetadata, Maybe (Entity Extension))] -> [Maybe Document] 
+assignmentsOf :: Int -> Course -> Maybe BookAssignmentTable -> [(Entity AssignmentMetadata, Maybe (Entity Extension))]
     -> HandlerFor App (WidgetFor App ())
-assignmentsOf accommodation course textbookproblems asmdex asDocs = do
+assignmentsOf accommodation course textbookproblems asmdex = do
              time <- liftIO getCurrentTime
              return $
                 [whamlet|
@@ -227,12 +225,12 @@ assignmentsOf accommodation course textbookproblems asmdex asDocs = do
                                         <td>
                                             #{dateDisplay (addUTCTime accommodationUTC due) course}
                                         <td>
-                            $forall ((Entity _ a,mex), Just d) <- zip asmdex asDocs
+                            $forall (Entity _ a,mex) <- asmdex
                                 $if visibleAt time a mex
                                         <tr>
                                             <td>
-                                                <a href=@{CourseAssignmentR (courseTitle course) (documentFilename d)}>
-                                                    #{documentFilename d}
+                                                <a href=@{CourseAssignmentR (courseTitle course) (assignmentMetadataTitle a)}>
+                                                    #{assignmentMetadataTitle a}
                                             $maybe (Entity _ ex) <- mex
                                                 $maybe due <- assignmentMetadataDuedate a
                                                     <td>
@@ -250,7 +248,7 @@ assignmentsOf accommodation course textbookproblems asmdex asDocs = do
                                                 <td>
                                                     <div.assignment-desc>#{desc}
                                             $nothing
-                                                <td>-
+                                                <td>
                 |]
     where accommodationUTC = fromIntegral (3600 * accommodation) :: NominalDiffTime
           visibleAt t a mex = not (hidden a) && not (tooEarly t a) && not (tooLate t a mex)
