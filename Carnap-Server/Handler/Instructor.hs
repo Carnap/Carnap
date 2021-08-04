@@ -1065,12 +1065,13 @@ classWidget instructors classent autoreg = do
                                 $forall (u, UserData {userDataUniversityId = uniid, userDataEmail = memail, userDataFirstName = fn, userDataLastName = ln, userDataUserId = uid}) <- sortedUsersAndData
                                     <tr#student-#{userIdent u}>
                                         <td>
-                                            <a href=@{UserR (userIdent u)}>#{userIdent u}
+                                            <a href=@{UserR (userIdent u)}>
+                                                #{maybe (userIdent u) id memail}
                                         <td>
                                             #{ln}, #{fn}
                                         <td.async
                                             data-query="#{jsonSerialize $ QueryScores uid cid}"
-                                            data-email="#{userIdent u}"
+                                            data-email="#{maybe (userIdent u) id memail}"
                                             data-fn="#{fn}"
                                             data-ln="#{ln}"
                                             data-uniid="#{maybe "?" id uniid}"
