@@ -107,25 +107,26 @@ putInstructorR ident = do
                  cid <- maybe (sendStatusJSON badRequest400 ("Could not read course key" :: Text)) return $ readMaybe cidstring
                  checkCourseOwnership ident cid
                  uid <- maybe (sendStatusJSON badRequest400 ("Could not read user key" :: Text)) return $ readMaybe uidstring
-                 do runDB $ upsertBy (UniqueAccommodation cid uid)
-                                     (Accommodation cid uid
-                                        (maybe 1 id mfactor)
-                                        (maybe 0 id mextramin)
-                                        (maybe 0 id mextrahours))
-                                     (maybe [] (\min -> [AccommodationTimeExtraMinutes =. min]) mextramin ++
-                                      maybe [] (\fac -> [AccommodationTimeFactor =. fac]) mfactor ++
-                                      maybe [] (\hours-> [AccommodationDateExtraHours =. hours]) mextrahours)
+                 _ <- runDB $ upsertBy (UniqueAccommodation cid uid)
+                                       (Accommodation cid uid
+                                          (maybe 1 id mfactor)
+                                          (maybe 0 id mextramin)
+                                          (maybe 0 id mextrahours))
+                                       (maybe [] (\min -> [AccommodationTimeExtraMinutes =. min]) mextramin ++
+                                        maybe [] (\fac -> [AccommodationTimeFactor =. fac]) mfactor ++
+                                        maybe [] (\hours-> [AccommodationDateExtraHours =. hours]) mextrahours)
                  returnJson ("updated!" :: Text)
             (_,_,_,_,FormSuccess (uidstring, aid, day, mtime)) -> do
                  uid <- maybe (sendStatusJSON badRequest400 ("Couldn't read uid string" :: Text)) pure $ (jsonDeSerialize uidstring :: Maybe (Key User))
                  let localtime = LocalTime day (maybe (TimeOfDay 23 59 59) id mtime)
-                 runDB $ do asgn <- get aid >>= maybe (sendStatusJSON notFound404 ("Couldn't get assignment" :: Text)) pure
-                            course <- get (assignmentMetadataCourse asgn) >>= maybe (liftIO $ fail "could not get course assignment") pure
-                            tz <- maybe (liftIO $ fail "couldn't read timezone") pure $ fromTZName $ courseTimeZone course
-                            let utctime = localTimeToUTCTZ (tzByLabel tz) localtime
-                            upsertBy (UniqueExtension aid uid)
-                                     (Extension aid uid utctime)
-                                     [ExtensionUntil =. utctime]
+                 _ <- runDB $ do
+                     asgn <- get aid >>= maybe (sendStatusJSON notFound404 ("Couldn't get assignment" :: Text)) pure
+                     course <- get (assignmentMetadataCourse asgn) >>= maybe (liftIO $ fail "could not get course assignment") pure
+                     tz <- maybe (liftIO $ fail "couldn't read timezone") pure $ fromTZName $ courseTimeZone course
+                     let utctime = localTimeToUTCTZ (tzByLabel tz) localtime
+                     upsertBy (UniqueExtension aid uid)
+                              (Extension aid uid utctime)
+                              [ExtensionUntil =. utctime]
                  returnJson ("updated!" :: Text)
             (FormMissing,FormMissing,FormMissing,FormMissing,FormMissing) -> sendStatusJSON badRequest400 ("Form Missing" :: Text)
             (form1,form2,form3,form4,form5) -> sendStatusJSON badRequest400 ("errors: " <> errorsOf form1 <> errorsOf form2 <> errorsOf form3 <> errorsOf form4 <> errorsOf form5)
@@ -167,7 +168,7 @@ deleteInstructorR ident = do
                usr <- getBy (UniqueUser ident) >>= maybe (sendStatusJSON notFound404 ("Couldn't get user by ident" :: Text)) pure
                Entity k _ <- getBy (UniqueDocument fn (entityKey usr)) >>= maybe (sendStatusJSON notFound404 ("Couldn't get document by name" :: Text)) pure
                asgns <- selectList [AssignmentMetadataDocument ==. k] []
-               forM asgns $ \(Entity aid asgn) -> do
+               forM_ asgns $ \(Entity aid asgn) -> do
                     let cid = assignmentMetadataCourse asgn
                     course <- get cid >>= maybe (sendStatusJSON notFound404 ("Couldn't get course of assignment associated with this document" :: Text)) pure
                     if courseTextBook course == Just aid then update cid [CourseTextBook =. Nothing] else return ()
@@ -194,7 +195,7 @@ deleteInstructorR ident = do
       DeleteCoInstructor ciid -> do
           runDB $ do
               asgns <- selectList [AssignmentMetadataAssigner ==. Just ciid] []
-              forM asgns $ \(Entity aid asgn) -> do
+              forM_ asgns $ \(Entity aid asgn) -> do
                    let cid = assignmentMetadataCourse asgn
                    course <- get cid >>= maybe (sendStatusJSON notFound404 ("Couldn't get course of assignment associated with this coinstructor" :: Text)) pure
                    if courseTextBook course == Just aid then update cid [CourseTextBook =. Nothing] else return ()
@@ -960,8 +961,8 @@ addCoInstructorForm instructors cid extra = do
 
           toItem (Entity _ i) = (userDataLastName i ++ ", " ++ userDataFirstName i, userDataInstructorId i)
 
-          sortedInstructors = sortBy (\(x,_) (y,_) -> compare (toLower x) (toLower y)) 
-                            . map toItem 
+          sortedInstructors = sortBy (\(x,_) (y,_) -> compare (toLower x) (toLower y))
+                            . map toItem
                             $ instructors
 
 deleteModal :: Text -> [Entity AssignmentMetadata] -> WidgetFor App ()

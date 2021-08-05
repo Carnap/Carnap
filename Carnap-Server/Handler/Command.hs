@@ -1,35 +1,33 @@
 module Handler.Command where
 
-import Import
-import Carnap.GHCJS.SharedTypes
+import           Carnap.GHCJS.SharedTypes
+import           Import
 -- XXX: It would be nice for this to be more generic
-import Data.Aeson (encode, decodeStrict)
-import Data.Time
-import Util.Database
-import Util.Data
-import Text.Read (readMaybe)
+import           Data.Time
+import           Text.Read                (readMaybe)
+import           Util.Data
 
 postCommandR :: Handler Value
 postCommandR = do
-    cmd  <- requireJsonBody :: Handler GHCJSCommand
+    cmd  <- requireCheckJsonBody :: Handler GHCJSCommand
 
     maybeCurrentUserId <- maybeAuthId
 
-    case maybeCurrentUserId of 
+    case maybeCurrentUserId of
            Nothing -> returnJson ("You need to be logged in to submit work." :: String)
            Just uid  -> case cmd of
-                Submit typ ident dat source correct credit late key ->  
+                Submit typ ident dat source correct credit late key ->
                     do time <- liftIO getCurrentTime
-                       (mkey, masgn) <- case key of 
-                                        "" -> return (Nothing,Nothing)
+                       keyAssign <- case key of
+                                        "" -> return Nothing
                                         s -> case readMaybe s of
-                                                 Just akey -> 
+                                                 Just akey ->
                                                     do masgn <- runDB (get akey)
-                                                       case masgn of 
+                                                       case masgn of
                                                             Nothing -> invalidArgs ["Cannot look up assignment key"]
-                                                            Just asgn -> return (Just akey, Just asgn)
+                                                            Just asgn -> return $ Just (akey, asgn)
                                                  Nothing -> invalidArgs ["Unparsable assignment key"]
-                       let sub = ProblemSubmission 
+                       let sub = ProblemSubmission
                                     { problemSubmissionIdent = (pack ident)
                                     , problemSubmissionData = dat
                                     , problemSubmissionType = typ
@@ -40,14 +38,14 @@ postCommandR = do
                                     , problemSubmissionLateCredit = late
                                     , problemSubmissionExtra = Nothing
                                     , problemSubmissionSource = source
-                                    , problemSubmissionAssignmentId = mkey
+                                    , problemSubmissionAssignmentId = fst <$> keyAssign
                                     }
-                       case (mkey,masgn) of 
-                            (Nothing,Nothing) -> 
+                       case keyAssign of
+                            Nothing ->
                                 do success <- runDB (insertUnique sub)
                                    afterInsert success
-                            (Just ak, Just asgn) -> do
-                                (mtoken,maccess,mex) <- runDB $ (,,) 
+                            Just (ak, asgn) -> do
+                                (mtoken,maccess,mex) <- runDB $ (,,)
                                     <$> (getBy $ UniqueAssignmentAccessToken uid ak)
                                     <*> (getBy $ UniqueAccommodation (assignmentMetadataCourse asgn) uid)
                                     <*> (getBy $ UniqueExtension ak uid)
@@ -56,15 +54,15 @@ postCommandR = do
                                     accommodationMinutes = maybe 0 (accommodationTimeExtraMinutes . entityVal) maccess
                                     testTime min = floor ((fromIntegral min) * accommodationFactor) + accommodationMinutes
                                 case (mtoken, assignmentMetadataAvailability asgn) of
-                                     (Just tok, Just (ViaPasswordExpiring _ min)) | age tok > 60 * testTime min 
+                                     (Just tok, Just (ViaPasswordExpiring _ min)) | age tok > 60 * testTime min
                                             -> returnJson ("Assignment time limit exceeded" :: String)
-                                     (Just tok, Just (HiddenViaPasswordExpiring _ min)) | age tok > 60 * testTime min 
+                                     (Just tok, Just (HiddenViaPasswordExpiring _ min)) | age tok > 60 * testTime min
                                             -> returnJson ("Assignment time limit exceeded" :: String)
                                      _ | assignmentMetadataVisibleTill asgn > Just time -> runDB (insertUnique sub) >>= afterInsert
                                        | null (assignmentMetadataVisibleTill asgn) -> runDB (insertUnique sub) >>= afterInsert
                                        | (extensionUntil . entityVal <$> mex) > Just time -> runDB (insertUnique sub) >>= afterInsert
                                        | otherwise -> returnJson ("Assignment not available" :: String)
-                SaveRule n r | null n -> returnJson ("The rule needs a nonempty name." :: String)
+                SaveRule n _r | null n -> returnJson ("The rule needs a nonempty name." :: String)
                 SaveRule n r -> do time <- liftIO getCurrentTime
                                    let save = SavedRule r (pack n) time uid
                                    runDB (insertUnique save) >>= afterInsert
@@ -75,11 +73,14 @@ postCommandR = do
                                                      rules = oldRules ++ newRules
                                                  returnJson $ show $ toJSON $ rules
 
+packageOldRule :: SavedDerivedRule -> Maybe ([Char], SomeRule)
 packageOldRule (SavedDerivedRule dr n _ _) = case decodeRule dr of
                                                 Just r -> Just (unpack n, PropRule r)
                                                 _ -> Nothing
 
+packageNewRule :: SavedRule -> ([Char], SomeRule)
 packageNewRule (SavedRule dr n _ _) = (unpack n, dr)
 
-afterInsert (Just _) = returnJson ("submitted!" :: String) 
+afterInsert :: Monad m => Maybe a -> m Value
+afterInsert (Just _) = returnJson ("submitted!" :: String)
 afterInsert Nothing = returnJson ("It appears you've already successfully submitted this problem." :: String)

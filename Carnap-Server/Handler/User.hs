@@ -255,7 +255,7 @@ assignmentsOf accommodation course textbookproblems asmdex = do
           hidden = maybe False availabilityHidden . assignmentMetadataAvailability
           tooEarly t a | null (assignmentMetadataVisibleFrom a) = False
                        | otherwise = Just t < assignmentMetadataVisibleFrom a
-          tooLate t a _ | null (assignmentMetadataVisibleTill a) = False
+          tooLate _ a _ | null (assignmentMetadataVisibleTill a) = False
           tooLate t a Nothing = assignmentMetadataVisibleTill a < Just t
           tooLate t a (Just (Entity _ ex)) = (extensionUntil ex < t) && (assignmentMetadataVisibleTill a < Just t)
 

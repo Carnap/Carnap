@@ -259,10 +259,13 @@ renderProblem due uidAndData (Entity key val) = do
                 |]
                 where transtype = case lookup "transtype" (M.fromList opts) of Just s -> s; Nothing -> "prop"
                       formatContent c = case transtype of
-                                            "prop" -> maybe c id $ ndNotation `ofPropSys` sys <*> Just c
-                                            "first-order" -> maybe c id $ ndNotation `ofFOLSys` sys <*> Just c
-                                            "description" -> maybe c id $ ndNotation `ofDefiniteDescSys` sys <*> Just c
-                      problem = case lookup "problem" (M.fromList opts) of Just s -> s ++ " : " ++ (formatContent $ unpack goal)
+                                            "prop" -> fromMaybe c $ ndNotation `ofPropSys` sys <*> Just c
+                                            "first-order" -> fromMaybe c $ ndNotation `ofFOLSys` sys <*> Just c
+                                            "description" -> fromMaybe c $ ndNotation `ofDefiniteDescSys` sys <*> Just c
+                                            _ -> ""
+                      problem = case lookup "problem" (M.fromList opts) of
+                          Just s -> s ++ " : " ++ (formatContent $ unpack goal)
+                          Nothing -> ""
                       sys = case lookup "system" (M.fromList opts) of
                                 Just s -> s;
                                 Nothing -> if transtype == "prop" then "prop" else "firstOrder"
@@ -298,6 +301,7 @@ renderProblem due uidAndData (Entity key val) = do
                       content = case qualtype of
                                     "shortanswer"    -> unpack answer
                                     "multiplechoice" -> withChecked
+                                    _ -> ""
                       withChecked = case lookup "content" (M.fromList opts) of
                                         Nothing -> "Error no content"
                                         Just cnt -> unlines . map processEntry . lines . unpack $ cnt

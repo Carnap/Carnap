@@ -1,33 +1,29 @@
 module Handler.API.Instructor.Assignments where
 
 import           Data.Aeson
+import qualified Data.HashMap.Strict as HM
 import           Data.Time
 import           Data.Time.Zones
-import           Data.Time.Zones.DB
 import           Data.Time.Zones.All
-import qualified Data.HashMap.Strict as HM
 import           Import
-import           Util.Data           (SharingScope (..), AvailabilityStatus (..))
+import           Util.Data           (AvailabilityStatus (..))
 import           Util.Handler
-import           Util.Database (problemQuery)
-import           System.Directory
-import           System.FilePath
 
 getAPIInstructorAssignmentsR :: Text -> Text -> Handler Value
-getAPIInstructorAssignmentsR ident coursetitle = do 
+getAPIInstructorAssignmentsR ident coursetitle = do
              Entity cid _ <- canAccessClass ident coursetitle
              assignments <- runDB $ selectList [AssignmentMetadataCourse ==. cid] []
              returnJson assignments
 
 postAPIInstructorAssignmentsR :: Text -> Text -> Handler Value
-postAPIInstructorAssignmentsR ident coursetitle = do 
+postAPIInstructorAssignmentsR ident coursetitle = do
              (Entity cid course, mcoInst) <- roleInClass ident coursetitle
              time <- liftIO $ getCurrentTime
              val <- requireCheckJsonBody :: Handler Value
              val' <- case val of
                          Object hm ->
                              let Just tz = tzByName . courseTimeZone $ course
-                                 hm' = HM.insert "date" (toJSON time) 
+                                 hm' = HM.insert "date" (toJSON time)
                                      . HM.insert "assigner" (toJSON $ maybe Nothing (Just . entityKey) mcoInst)
                                      . HM.insert "course" (toJSON cid)
                                      . HM.adjust (handleDate tz) "duedate"
@@ -49,7 +45,7 @@ postAPIInstructorAssignmentsR ident coursetitle = do
                        render <- getUrlRender
                        addHeader "Location" (render $ APIInstructorAssignmentR ident coursetitle inserted)
                        sendStatusJSON created201 inserted
-    where handleDate tz (String t) = 
+    where handleDate tz (String t) =
               case parseTimeM True defaultTimeLocale "%Y-%m-%d %R" (unpack t) of
                    Just localTime -> toJSON $ localTimeToUTCTZ tz localTime
                    Nothing -> case parseTimeM True defaultTimeLocale "%Y-%m-%d" (unpack t) of
@@ -58,21 +54,21 @@ postAPIInstructorAssignmentsR ident coursetitle = do
           handleDate _ o = o
 
 getAPIInstructorAssignmentR :: Text -> Text -> AssignmentMetadataId -> Handler Value
-getAPIInstructorAssignmentR ident coursetitle asid = do 
+getAPIInstructorAssignmentR ident coursetitle asid = do
              Entity cid _ <- canAccessClass ident coursetitle
              assignment <- runDB $ assignmentPartOf asid cid
              returnJson assignment
 
 data AssignmentPatch = AssignmentPatch
-                       { patchGradeRelease :: Maybe (Maybe String)
+                       { patchGradeRelease  :: Maybe (Maybe String)
                        , patchTotalProblems :: Maybe (Maybe Int)
-                       , patchVisibleFrom :: Maybe (Maybe String)
-                       , patchVisibleTill :: Maybe (Maybe String)
-                       , patchDuedate :: Maybe (Maybe String)
-                       , patchDescription :: Maybe (Maybe Text)
-                       , patchAvailability :: Maybe (Maybe AvailabilityStatus)
-                       , patchPointValue :: Maybe (Maybe Int)
-                       , patchTitle :: Maybe Text
+                       , patchVisibleFrom   :: Maybe (Maybe String)
+                       , patchVisibleTill   :: Maybe (Maybe String)
+                       , patchDuedate       :: Maybe (Maybe String)
+                       , patchDescription   :: Maybe (Maybe Text)
+                       , patchAvailability  :: Maybe (Maybe AvailabilityStatus)
+                       , patchPointValue    :: Maybe (Maybe Int)
+                       , patchTitle         :: Maybe Text
                        }
 
 instance FromJSON AssignmentPatch where
@@ -89,11 +85,11 @@ instance FromJSON AssignmentPatch where
             return $ AssignmentPatch {..}
 
 patchAPIInstructorAssignmentR :: Text -> Text -> AssignmentMetadataId -> Handler Value
-patchAPIInstructorAssignmentR ident coursetitle asid = do 
+patchAPIInstructorAssignmentR ident coursetitle asid = do
              Entity cid course <- canAccessClass ident coursetitle
              patch <- requireCheckJsonBody :: Handler AssignmentPatch
              let Just tz = tzByName . courseTimeZone $ course
-             asgn' <- runDB $ do assignmentPartOf asid cid
+             asgn' <- runDB $ do _ <- assignmentPartOf asid cid
                                  updateGet asid $ concat
                                     [ maybeUpdateTime tz AssignmentMetadataGradeRelease (patchGradeRelease patch)
                                     , maybeUpdateTime tz AssignmentMetadataVisibleFrom (patchVisibleFrom patch)
@@ -107,49 +103,49 @@ patchAPIInstructorAssignmentR ident coursetitle asid = do
                                     ]
              returnJson asgn'
     where maybeUpdate field (Just val) = [field =. val]
-          maybeUpdate _ Nothing = []
+          maybeUpdate _ Nothing        = []
 
-          maybeUpdateTime tz field (Just (Just s)) = 
+          maybeUpdateTime tz field (Just (Just s)) =
             case handleDate tz s of
                 Nothing -> []
-                date -> [field =. date]
+                date    -> [field =. date]
           maybeUpdateTime _ field (Just Nothing) = [field =. Nothing]
           maybeUpdateTime _ _ Nothing = []
 
-          handleDate tz s = 
+          handleDate tz s =
             case parseTimeM True defaultTimeLocale "%Y-%m-%d %R" s of
                    Just localTime -> Just $ localTimeToUTCTZ tz localTime
                    Nothing -> case parseTimeM True defaultTimeLocale "%Y-%m-%d" s of
                         Just day -> Just $ localTimeToUTCTZ tz (LocalTime day (TimeOfDay 23 59 59))
                         Nothing -> case parseTimeM True defaultTimeLocale "%Y-%m-%dT%T%Q%Z" s of
                                Just utc -> Just utc
-                               Nothing -> Nothing
-          
+                               Nothing  -> Nothing
+
 getAPIInstructorSubmissionsR :: Text -> Text -> Handler Value
-getAPIInstructorSubmissionsR ident coursetitle = do 
+getAPIInstructorSubmissionsR ident coursetitle = do
              Entity cid _ <- canAccessClass ident coursetitle
              studentUserIds <- runDB $ map (Just . entityKey) <$> selectList [AssignmentMetadataCourse ==. cid] []
              subs <- runDB $ selectList [ProblemSubmissionAssignmentId <-. studentUserIds] []
              returnJson (map entityVal subs)
 
 getAPIInstructorAssignmentSubmissionsR :: Text -> Text -> AssignmentMetadataId -> Handler Value
-getAPIInstructorAssignmentSubmissionsR ident coursetitle asid = do 
+getAPIInstructorAssignmentSubmissionsR ident coursetitle asid = do
              Entity cid _ <- canAccessClass ident coursetitle
-             subs <- runDB $ do assignmentPartOf asid cid
+             subs <- runDB $ do _ <- assignmentPartOf asid cid
                                 selectList [ProblemSubmissionAssignmentId ==. Just asid] []
              returnJson (map entityVal subs)
 
 getAPIInstructorAssignmentSubmissionsByStudentR :: Text -> Text -> AssignmentMetadataId -> UserDataId -> Handler Value
-getAPIInstructorAssignmentSubmissionsByStudentR ident coursetitle asid udid = do 
+getAPIInstructorAssignmentSubmissionsByStudentR ident coursetitle asid udid = do
              Entity cid _ <- canAccessClass ident coursetitle
-             subs <- runDB $ do assignmentPartOf asid cid
+             subs <- runDB $ do _ <- assignmentPartOf asid cid
                                 ud <- get udid >>= maybe (sendStatusJSON notFound404 ("No userdata for this ident" :: Text)) pure
                                 selectList [ProblemSubmissionAssignmentId ==. Just asid, ProblemSubmissionUserId ==. userDataUserId ud] []
              returnJson (map entityVal subs)
 
 getAPIInstructorAssignmentExtensionsR :: Text -> Text -> AssignmentMetadataId -> Handler Value
-getAPIInstructorAssignmentExtensionsR ident coursetitle asid = do 
-             courseEnt@(Entity cid course) <- canAccessClass ident coursetitle
-             extensions <- runDB $ do assignmentPartOf asid cid
+getAPIInstructorAssignmentExtensionsR ident coursetitle asid = do
+             Entity cid _course <- canAccessClass ident coursetitle
+             extensions <- runDB $ do _ <- assignmentPartOf asid cid
                                       selectList [ExtensionOnAssignment ==. asid] []
              returnJson extensions
