@@ -1,9 +1,9 @@
 module Handler.Register (getRegisterR, getRegisterEnrollR, getEnrollR, postEnrollR, postRegisterR, postRegisterEnrollR) where
 
-import Import
-import Yesod.Form.Bootstrap3
-import Text.Blaze.Html (toMarkup)
-import Util.Database
+import           Import
+import           Text.Blaze.Html       (toMarkup)
+import           Util.Database
+import           Yesod.Form.Bootstrap3
 
 getRegister :: ([Entity Course] -> UserId -> Html -> MForm Handler (FormResult (Maybe UserData), Widget)) -> Route App
     -> Text -> Handler Html
@@ -52,15 +52,15 @@ getRegisterR ident = getRegister (registrationForm ident) (RegisterR ident) iden
 
 getEnrollR :: Text -> Handler Html
 getEnrollR classname = do setSession "enrolling-in" classname
-                          Entity uid user <- requireAuth
+                          Entity _uid user <- requireAuth
                           mclass <- runDB $ getBy (UniqueCourse classname)
                           mud <- maybeUserData
                           case mud of
                               Nothing -> redirect (RegisterEnrollR classname (userIdent user))
                               Just (Entity _ ud) -> case (mclass, userDataEnrolledIn ud) of
                                   (Just (Entity cid _), Just ecid) | cid == ecid -> redirect HomeR --redirect those who try to reenroll in a closed course that they belong to
-                                  (Just (Entity cid course ), _) | not (courseEnrollmentOpen course) -> permissionDenied $ "Enrollment is closed for " <> courseTitle course <> "."
-                                  (Just (Entity cid course), Just _) -> defaultLayout (reenrollPage course user)
+                                  (Just (Entity _ course ), _) | not (courseEnrollmentOpen course) -> permissionDenied $ "Enrollment is closed for " <> courseTitle course <> "."
+                                  (Just (Entity _ course), Just _) -> defaultLayout (reenrollPage course user)
                                   (Just (Entity _ course), Nothing) -> defaultLayout (confirm course)
                                   (Nothing,_) -> setMessage "no course with that title" >> notFound
     where reenrollPage course user = [whamlet|
@@ -91,7 +91,7 @@ postEnrollR classname = do (Entity uid _) <- requireAuth
                            case (mclass, mudent) of
                                (Nothing,_) -> setMessage "no course with that title" >> notFound
                                (_,Nothing) -> setMessage "no user data (do you need to register?)" >> notFound
-                               (Just (Entity _ course), _) 
+                               (Just (Entity _ course), _)
                                     | not (courseEnrollmentOpen course) -> permissionDenied $ "Enrollment is closed for " <> courseTitle course <> "."
                                (Just (Entity cid _), Just (Entity udid _)) -> do
                                     runDB $ update udid [UserDataEnrolledIn =. Just cid]
@@ -104,7 +104,7 @@ getRegisterEnrollR classname ident = do
         mclass <- runDB $ getBy (UniqueCourse classname)
         case mclass of
             Nothing -> setMessage "no course with that title" >> notFound
-            Just (Entity _ course) 
+            Just (Entity _ course)
                 | not (courseEnrollmentOpen course) -> setMessage ("Enrollment for " <> toMarkup (courseTitle course) <> "is closed.") >> redirect (RegisterR ident)
             _ -> getRegister (enrollmentForm classname ident) (RegisterEnrollR classname ident) ident
 
@@ -146,7 +146,7 @@ registrationForm ident courseEntities userId extra = do
                     \ If you don't want to register as enrolled in a class, you can leave this as "No Course".
                 |]
         return (theRes,theWidget)
-    where openCourseEntities = filter (\(Entity k v) -> courseEnrollmentOpen v) courseEntities
+    where openCourseEntities = filter (\(Entity _k v) -> courseEnrollmentOpen v) courseEntities
           courses = ("No Course", Nothing) : map (\(Entity k v) -> (courseTitle v, Just k)) openCourseEntities
 
 fixedId :: Key User -> Text -> Text -> Text -> Maybe Text -> Maybe (Key Course) -> Maybe UserData
@@ -187,5 +187,5 @@ enrollmentForm classtitle ident courseEntities userId extra = do
         return (theRes,theWidget)
     where fixedId' fname lname uniid = fixedId userId ident fname lname uniid course
           course = case filter (\e -> classtitle == courseTitle (entityVal e)) courseEntities of
-                     [] -> Nothing
+                     []  -> Nothing
                      e:_ -> Just $ entityKey e

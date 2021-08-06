@@ -26,7 +26,7 @@ putCourseAssignmentStateR _coursetitle _filename = do
         uid <- maybeAuthId >>= maybe reject return
         let maid = parseMaybe (withObject "assignment key" (.: "assignmentKey")) msg :: Maybe Text
         aid <- maybe (sendStatusJSON badRequest400 ("Ill-formed assignment key" :: Text)) return (maid >>= readMay :: Maybe (Key AssignmentMetadata))
-        runDB $ upsert (AssignmentState msg uid aid) [AssignmentStateValue =. msg]
+        _ <- runDB $ upsert (AssignmentState msg uid aid) [AssignmentStateValue =. msg]
         returnJson msg
 
 getCourseAssignmentStateR :: Text -> Text -> Handler Value
@@ -104,9 +104,9 @@ returnAssignment coursetitle filename (Entity key val) path = do
                              mjs <- retrievePandocVal (lookupMeta "js" meta)
                              let source = "assignment:" ++ show key
                                  theLayout = \widget -> case mbcss of
-                                    Nothing -> defaultLayout $ do mapM addStylesheet [StaticR css_bootstrapextra_css]
+                                    Nothing -> defaultLayout $ do mapM_ addStylesheet [StaticR css_bootstrapextra_css]
                                                                   widget
-                                    Just bcss -> cleanLayout $ do mapM addStylesheetRemote bcss
+                                    Just bcss -> cleanLayout $ do mapM_ addStylesheetRemote bcss
                                                                   widget
                              theLayout $ do
                                  toWidgetHead $(juliusFile =<< pathRelativeToCabalPackage "templates/command.julius")
@@ -123,7 +123,7 @@ returnAssignment coursetitle filename (Entity key val) path = do
 
                                  addDocScripts
 
-                                 maybe (pure [()]) (mapM addStylesheetRemote) mcss
+                                 mapM_ addStylesheetRemote $ concat mcss
                                  $(widgetFile "document")
                                  toWidgetBody [julius|CarnapServerAPI.getAssignmentState();|]
                                  maybe (pure [()]) (mapM addScriptRemote) mjs >> return ()

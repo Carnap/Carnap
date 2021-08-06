@@ -1,16 +1,21 @@
 module Util.Assignment where
 
-import Import
-import Util.Database
-import System.Directory (doesFileExist)
+import           Import
+import           System.Directory (doesFileExist)
+import           Util.Database
 
-getAssignmentByCourse coursetitle title = do 
+getAssignmentByCourse
+    :: Text
+    -> Text
+    -> Handler (Entity AssignmentMetadata)
+getAssignmentByCourse coursetitle title = do
         mcourse <- runDB $ getBy $ UniqueCourse coursetitle
-        Entity cid course <- maybe (setMessage ("can't find a class with the title " ++ toHtml coursetitle) >> notFound) return mcourse 
+        Entity cid _course <- maybe (setMessage ("can't find a class with the title " ++ toHtml coursetitle) >> notFound) return mcourse
         masgn <- runDB (getBy $ UniqueAssignmentName title cid)
         aent <- maybe (setMessage ("can't find assignment with title  " ++ toHtml title) >> notFound) return masgn
         return aent
 
+getAssignmentAndPathByCourse :: Text -> Text -> Handler (Entity AssignmentMetadata, FilePath)
 getAssignmentAndPathByCourse coursetitle title = do
         aent@(Entity _ asgn) <- getAssignmentByCourse coursetitle title
         mdoc <- runDB (get $ assignmentMetadataDocument asgn)
@@ -25,5 +30,6 @@ getAssignmentAndPathByCourse coursetitle title = do
 
 -- | given an ident get the director in which assignments are stored for
 -- the instructor with that ident
+assignmentDir :: Text -> Handler FilePath
 assignmentDir ident = do master <- getYesod
                          return $ (appDataRoot $ appSettings master) </> "documents" </> unpack ident

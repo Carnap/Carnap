@@ -109,15 +109,15 @@ getDocumentR ident title = do (Entity _key doc, path, creatorid) <- retrieveDoc 
                       mcss <- retrievePandocVal (lookupMeta "css" meta)
                       mjs <- retrievePandocVal (lookupMeta "js" meta)
                       let theLayout = \widget -> case mbcss of
-                                       Nothing -> defaultLayout $ do mapM addStylesheet [StaticR css_bootstrapextra_css]
+                                       Nothing -> defaultLayout $ do addStylesheet $ StaticR css_bootstrapextra_css
                                                                      widget
-                                       Just bcss -> cleanLayout $ do mapM addStylesheetRemote bcss
+                                       Just bcss -> cleanLayout $ do mapM_ addStylesheetRemote bcss
                                                                      widget
                       theLayout $ do
                           toWidgetHead $(juliusFile =<< pathRelativeToCabalPackage "templates/command.julius")
                           addDocScripts
-                          maybe (pure [()]) (mapM addScriptRemote) mjs
-                          maybe (pure [()]) (mapM addStylesheetRemote) mcss
+                          mapM_ addScriptRemote $ concat mjs
+                          mapM_ addStylesheetRemote $ concat mcss
                           $(widgetFile "document")
 
 getDocumentDownloadR :: Text -> Text -> Handler TypedContent

@@ -27,11 +27,14 @@ checker n thetype sys opts goal proof =
         |]
     where strip = dropWhile (== '\n')
 
+proofcheck :: Int -> Text -> Text -> Text -> Text -> HtmlUrl url
 proofcheck n = checker n "proofchecker"
 
+sequentcheck :: Int -> Text -> Text -> Text -> Text -> HtmlUrl url
 sequentcheck n = checker n "sequentchecker"
 
 -- XXX function that strips text of indentation and line-numbers.
+aristotleTheorem :: Text
 aristotleTheorem = [st|
 Show: P\/-P
     Show: --(P\/-P)
@@ -45,6 +48,7 @@ Show: P\/-P
     P\/-P:DNE 2
 :DD 10|]
 
+pierceTheorem :: Text
 pierceTheorem = [st|
   (P->Q)->P     :A/CI
      -P         :A/~E
@@ -59,6 +63,7 @@ pierceTheorem = [st|
   P             :2-10 -E
 ((P->Q)->P)->P  :1-11 CI |]
 
+lemmonTheorem :: Text
 lemmonTheorem = [st|
 [1]       ExAy(Kxy -> Fxy) P
 [2]       AxEy(Kxy)        P
@@ -72,6 +77,7 @@ lemmonTheorem = [st|
 [1,2,3]   ExEyFxy          [5](9) EIE
 [1,2]     ExEyFxy          [3](10) EIE|]
 
+comprehensionTheorem :: Text
 comprehensionTheorem = [st|
 Show EXAx(F(x)/\G(x)<->X(x))
    Show Ax(F(x)/\G(x)<->\y[F(y)/\G(y)](x))
@@ -88,6 +94,7 @@ Show EXAx(F(x)/\G(x)<->X(x))
    EXAx(F(x)/\G(x)<->X(x)):EG 2
 :DD 13|]
 
+russellTheorem :: Text
 russellTheorem = [st|
 Show -ExAy(-F(y,y) <-> F(x,y))
     ExAy(-F(y,y)<->F(x,y))          :AS
@@ -106,6 +113,7 @@ Show -ExAy(-F(y,y) <-> F(x,y))
     :ED 13 2 4
 :ID 2 3|]
 
+russellTheoremForallx :: Text
 russellTheoremForallx = [st|
     ExAy(-Fyy <-> Fxy):AS
        Ay(-Fyy<->Fry):AS
@@ -123,6 +131,7 @@ russellTheoremForallx = [st|
     ExAy(-Fyy <-> Fxy):R 1
 -ExAy(-Fyy <-> Fxy):-I 1-14|]
 
+russellTheoremCalgary :: Text
 russellTheoremCalgary = [st|
     ExAy(-Fyy <-> Fxy):AS
         Ay(-Fyy<->Fry):AS
@@ -138,6 +147,7 @@ russellTheoremCalgary = [st|
     !?:EE 1 2-11
 -ExAy(-Fyy <-> Fxy):-I 1-12|]
 
+inverseTheorem :: Text
 inverseTheorem = [st|
 Show: AX2EY2∀x∀y(X2(x,y) ↔ Y2(y,x))
   Show: ∀x∀y(X2(x,y) ↔ \w\v[X2(v,w)](y,x))
@@ -156,6 +166,7 @@ Show: AX2EY2∀x∀y(X2(x,y) ↔ Y2(y,x))
   EY2∀x∀y(X2(x,y) ↔ Y2(y,x)):EG2 2
 :UD2 15|]
 
+adjunctionTheorem :: Text
 adjunctionTheorem = [st|
 Show P->(Q->R):CD
     P:AS
@@ -165,6 +176,7 @@ Show P->(Q->R):CD
       P/\Q:&I 2 4
       R:->O 5 6|]
 
+axiomFiveTheorem :: Text
 axiomFiveTheorem = [st|
 Show <>[]P->[]P  /0   :CD
   <>[]P          /0   :AS
@@ -173,12 +185,14 @@ Show <>[]P->[]P  /0   :CD
       []P        /0-2 :<>O 2
       P          /0-1 :[]O(5) 5|]
 
+axiomBTheorem :: Text
 axiomBTheorem = [st|
 Show <>[]P->P /0   :CD
   <>[]P       /0   :AS
   []P         /0-1 :<>O 2
   P           /0   :[]O(b) 3|]
 
+barcanTheorem :: Text
 barcanTheorem = [st|
 Show Ax[]Fx->[]AxFx  /0   :CD
   Ax[]Fx             /0   :AS
@@ -188,6 +202,7 @@ Show Ax[]Fx->[]AxFx  /0   :CD
         []Fa         /0   :AO 2
         Fa           /0-1 :[]O 6|]
 
+bisectorTheorem :: Text
 bisectorTheorem = [st|
 AxAyAz(F(x,g(y,z)) ↔ h(x,y) = h(x,z)) :PR
 Show AwAxAyAz(F(w,g(x,y))∧F(w,g(x,z)) → F(w,g(y,z)))
@@ -217,6 +232,7 @@ Show AwAxAyAz(F(w,g(x,y))∧F(w,g(x,z)) → F(w,g(y,z)))
  :UD 4
 :UD 3|]
 
+transitiveTheorem :: Text
 transitiveTheorem = [st|
 Show P(a) within P(P(a))
  a within P(a):PR
@@ -244,6 +260,7 @@ Show P(a) within P(P(a))
  P(a) within P(P(a)):Def-S 4
 :DD 24|]
 
+sequentDemo :: Text
 sequentDemo = [st|
 {"ident":0,"label":"AxEy(F(x)/\\G(y)):|-:EyAx(F(x)/\\G(y))","rule":"ER","forest":[{"ident":1,"label":"AxEy(F(x)/\\G(y)) :|-: EyAx(F(x)/\\G(y)), Ax(F(x)/\\G(b))","rule":"AL","forest":[{"ident":2,"label":"Ey(F(a)/\\G(y)), AxEy(F(x)/\\G(y)) :|-: Ax(F(x)/\\G(b)), EyAx(F(x)/\\G(y))","rule":"EL","forest":[{"ident":3,"label":"F(a)/\\G(c), AxEy(F(x)/\\G(y)) :|-: Ax(F(x)/\\G(b)), EyAx(F(x)/\\G(y))","rule":"&L","forest":[{"ident":4,"label":"G(c), AxEy(F(x)/\\G(y)) :|-: EyAx(F(x)/\\G(y)), Ax(F(x)/\\G(b))","rule":"AR","forest":[{"ident":5,"label":"G(c), AxEy(F(x)/\\G(y)) :|-: EyAx(F(x)/\\G(y)), F(d)/\\G(b)","rule":"&R","forest":[{"ident":6,"label":"AxEy(F(x)/\\G(y)), G(c) :|-: EyAx(F(x)/\\G(y)),F(d)","rule":"AL","forest":[{"ident":7,"label":"Ey(F(d)/\\G(y)), G(c) :|-: F(d), EyAx(F(x)/\\G(y))","rule":"EL","forest":[{"ident":8,"label":"F(d)/\\G(e), G(c) :|-: F(d), EyAx(F(x)/\\G(y))","rule":"&L","forest":[{"ident":9,"label":"F(d), G(c) :|-: EyAx(F(x)/\\G(y)), F(d)","rule":"WR","forest":[{"ident":10,"label":"F(d), G(c) :|-: F(d)","rule":"WL","forest":[{"ident":28,"label":"F(d) :|-: F(d)","rule":"Ax","forest":[{"ident":29,"label":"","rule":"","forest":[]}]}]}]}]}]}]},{"ident":11,"label":"AxEy(F(x)/\\G(y)), G(c):|-:EyAx(F(x)/\\G(y)),G(b)","rule":"XR","forest":[{"ident":11,"label":"AxEy(F(x)/\\G(y)), G(c):|-:G(b),EyAx(F(x)/\\G(y))","rule":"ER","forest":[{"ident":12,"label":"AxEy(F(x)/\\G(y)), G(c):|-:G(b),Ax(F(x)/\\G(c))","rule":"AR","forest":[{"ident":13,"label":"AxEy(F(x)/\\G(y)),G(c) :|-: G(b), F(a)/\\G(c)","rule":"AL","forest":[{"ident":14,"label":"Ey(F(a)/\\G(y)),G(c) :|-:G(b), F(a)/\\G(c)","rule":"EL","forest":[{"ident":15,"label":"F(a)/\\G(d),G(c) :|-:F(a)/\\G(c), G(b)","rule":"&L","forest":[{"ident":16,"label":"F(a), G(c) :|-:G(b), F(a)/\\G(c)","rule":"&R","forest":[{"ident":17,"label":"G(c),F(a) :|-: G(b), G(c)","rule":"WL","forest":[{"ident":18,"label":"G(c):|-:G(b),G(c)","rule":"WR","forest":[{"ident":26,"label":"G(c):|-:G(c)","rule":"Ax","forest":[{"ident":27,"label":"","rule":"","forest":[]}]}]}]},{"ident":19,"label":"F(a), G(c):|-: G(b), F(a)","rule":"WL","forest":[{"ident":20,"label":"F(a):|-:G(b), F(a)","rule":"WR","forest":[{"ident":22,"label":"F(a):|-:F(a)","rule":"Ax","forest":[{"ident":25,"label":"","rule":"","forest":[]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}]}
 |]

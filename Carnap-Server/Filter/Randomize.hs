@@ -1,10 +1,11 @@
+{-# LANGUAGE PatternGuards #-}
 module Filter.Randomize (randomizeProblems) where
 
-import Data.List
-import Data.Hashable
-import Text.Pandoc
-import System.Random
-import Prelude
+import           Data.Hashable
+import           Data.List
+import           Prelude
+import           System.Random
+import           Text.Pandoc
 
 randomizeProblems :: Int -> Block -> Block
 randomizeProblems salt (Div ("",[],[]) contents) = Div ("",[],[]) (randomize salt contents)

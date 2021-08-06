@@ -36,9 +36,9 @@ getServeR base components = do app <- getYesod
                       mjs <- retrievePandocVal (lookupMeta "js" meta)
                       defaultLayout $ do
                           addDocScripts
-                          maybe (pure [()]) (mapM (addScriptRemote))  mjs
+                          mapM_ addScriptRemote $ concat mjs
                           case mcss of
-                              Nothing -> mapM addStylesheet [StaticR css_bootstrapextra_css]
-                              Just ss -> mapM addStylesheetRemote ss
+                              Nothing -> addStylesheet $ StaticR css_bootstrapextra_css
+                              Just ss -> mapM_ addStylesheetRemote ss
                           $(widgetFile "document")
                           addScript $ StaticR ghcjs_allactions_runmain_js
