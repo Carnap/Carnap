@@ -119,8 +119,8 @@ makeApplication foundation = do
                                     case pathInfo req of
                                         "api":_ -> True
                                         _ -> False
-                                , throttleSettingsRate = 2 --two requests per IP per second
-                                , throttleSettingsBurst = 4 --four total requests per second
+                                , throttleSettingsRate = 10 --requests per IP per second
+                                , throttleSettingsBurst = 20 --total requests per second
                                 }
     -- Create the WAI application and apply middlewares
     logWare <- makeLogWare foundation
