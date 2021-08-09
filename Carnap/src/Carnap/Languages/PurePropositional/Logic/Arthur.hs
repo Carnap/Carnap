@@ -70,7 +70,7 @@ instance Show ArthurSL where
         show TR2    = "TR"
         show MI1    = "MI"
         show MI2    = "MI"
-        show Sup    = "SUP"
+        show Sup    = "Supp"
         show (Pr _) = "P"
 
 instance Inference ArthurSL PurePropLexicon (Form Bool) where
@@ -148,8 +148,8 @@ parseArthurSL rtc = do r <- choice (map (try . string) [ "MP", "MT", "Simp", "Co
                         "BE"   -> [BE1, BE2]
                         "TR"   -> [TR1, TR2]
                         "MI"   -> [MI1, MI2]
-                        "SUP"   -> [Sup]
-                        "P"   -> [Pr (problemPremises rtc)]
+                        "Supp" -> [Sup]
+                        "P"    -> [Pr (problemPremises rtc)]
 
 parseArthurSLProof :: RuntimeDeductionConfig PurePropLexicon (Form Bool) -> String -> [DeductionLine ArthurSL PurePropLexicon (Form Bool)]
 parseArthurSLProof rtc = toDeductionFitch (parseArthurSL rtc) (purePropFormulaParser arthurOpts)
