@@ -33,7 +33,7 @@ data ArthurQL = UI  | UG  | EI (Maybe [ClassicalSequentOver PureLexiconFOL (Sequ
               deriving Eq
 
 instance Show ArthurQL where
-        show (Pr _) = "PR"
+        show (Pr _) = "P"
         show (SL x) = show x
         show UI = "UI"
         show UG = "UG"
@@ -121,7 +121,7 @@ arthurUniversalConstraint n ded t f sub
 
 parseArthurQL rtc = try quantRule <|> liftProp 
     where liftProp =  map SL <$> parseArthurSL defaultRuntimeDeductionConfig
-          quantRule = do r <- choice (map (try . string) ["UI", "EI", "UG", "EG", "QN", "SI", "RI"])
+          quantRule = do r <- choice (map (try . string) ["UI", "EI", "UG", "EG", "QN", "SI", "RI", "P"])
                          return $ case r of 
                             "UI" -> [UI]
                             "EI" -> [EI (problemPremises rtc)]
@@ -130,7 +130,7 @@ parseArthurQL rtc = try quantRule <|> liftProp
                             "QN" -> [QN1, QN2, QN3, QN4]
                             "SI" -> [SI]
                             "RI" -> [RI]
-                            "PR" -> [Pr (problemPremises rtc)]
+                            "P"  -> [Pr (problemPremises rtc)]
 
 parseArthurQLProof :: RuntimeDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine ArthurQL PureLexiconFOL (Form Bool)]
 parseArthurQLProof rtc = toDeductionFitch (parseArthurQL rtc) arthurFOLFormulaParser
