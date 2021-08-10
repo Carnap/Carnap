@@ -47,6 +47,7 @@ import Carnap.Languages.PurePropositional.Logic.HowardSnyder
 import Carnap.Languages.PurePropositional.Logic.Hurley
 import Carnap.Languages.PurePropositional.Logic.IchikawaJenkins
 import Carnap.Languages.PurePropositional.Logic.KalishAndMontague
+import Carnap.Languages.PurePropositional.Logic.Lande
 import Carnap.Languages.PurePropositional.Logic.Lemmon
 import Carnap.Languages.PurePropositional.Logic.Magnus
 import Carnap.Languages.PurePropositional.Logic.OpenLogic
@@ -85,6 +86,7 @@ ofPropSys f sys | sys == "LogicBookSD"                   = Just $ f logicBookSDC
                 | sys == "ichikawaJenkinsSL"             = Just $ f ichikawaJenkinsSLCalc
                 | sys == "johnsonSL"                     = Just $ f allenSLCalc
                 | sys == "johnsonSLPlus"                 = Just $ f allenSLPlusCalc
+                | sys == "landeProp"                     = Just $ f landePropCalc
                 | sys == "lemmonProp"                    = Just $ f lemmonPropCalc
                 | sys == "magnusSL"                      = Just $ f magnusSLCalc
                 | sys == "magnusSLPlus"                  = Just $ f magnusSLPlusCalc
