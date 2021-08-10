@@ -129,7 +129,7 @@ instance Inference ArthurSL PurePropLexicon (Form Bool) where
 
 parseArthurSL :: RuntimeDeductionConfig PurePropLexicon (Form Bool) -> Parsec String u [ArthurSL]
 parseArthurSL rtc = do r <- choice (map (try . string) [ "MP", "MT", "Simp", "Conj", "CS", "Disj", "DS", "HS", "DL"
-                                                       , "CP", "RA", "DN", "DM", "BE", "TR", "MI", "SUP", "P", "R"])
+                                                       , "CP", "RA", "DN", "DM", "BE", "TR", "MI", "Supp", "P", "R"])
                        return $ case r of
                         "MP"   -> [MP]
                         "MT"   -> [MT]

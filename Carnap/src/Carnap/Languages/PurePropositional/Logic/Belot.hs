@@ -273,7 +273,7 @@ belotNotation x = case runParser altParser 0 "" x of
                       <|> (char '¬' >> return "~") 
                       <|> (char '→' >> return "⊃")
                       <|> (char '↔' >> return "≡")
-                      <|> (char '⊤' >> return "")
+                      <|> (char '⊤' >> return " ")
           handleAtom = do c <- oneOf "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
                           return $ [toLower c]
           fallback = do c <- anyChar 

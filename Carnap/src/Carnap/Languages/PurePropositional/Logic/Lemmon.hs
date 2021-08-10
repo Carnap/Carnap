@@ -76,14 +76,14 @@ instance Inference LemmonProp PurePropLexicon (Form Bool) where
         isAssumption As = True
         isAssumption _ = False
 
-parseLemmonProp _ n _ = do r <- choice (map (try . string) [ "&I", "&E", "MP", "MT", "DN", "Df.↔", "Df.<->"
+parseLemmonProp _ n _ = do r <- choice (map (try . string) [ "&I", "&E", "MPP", "MTT", "DN", "Df.↔", "Df.<->"
                                                            , "∨I", "vI", "\\/I", "∨E", "vE", "\\/E", "A", "CP", "RAA", "Pr"])
                            return $ case r of 
                                   r | r == "A" -> [As]
                                     | r == "&I" -> [AndI]
                                     | r == "&E" -> [AndE1, AndE2]
                                     | r == "MP" -> [MP]
-                                    | r == "MT" -> [MT]
+                                    | r == "MTT" -> [MT]
                                     | r `elem` ["DN"] -> [DNI, DNE]
                                     | r `elem` ["Df.↔","Df.<->"] -> [BCI, BCE]
                                     | r `elem` ["∨I", "vI", "\\/I"] -> [ORI1, ORI2]

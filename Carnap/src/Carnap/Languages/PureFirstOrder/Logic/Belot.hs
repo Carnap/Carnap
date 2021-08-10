@@ -103,7 +103,7 @@ belotNotation x = case runParser altParser 0 "" x of
                       <|> (char '¬' >> return "~") 
                       <|> (char '→' >> return "⊃")
                       <|> (char '↔' >> return "≡")
-                      <|> (char '⊤' >> return "")
+                      <|> (char '⊤' >> return " ")
           handleQuant = do q <- oneOf "∀∃"
                            v <- anyChar
                            return $ "(" ++ [q] ++ [v] ++ ")"
