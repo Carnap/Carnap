@@ -1,5 +1,5 @@
 { ghcjsVer ? "ghcjs",
-  ghcVer ? "ghc884",
+  ghcVer ? "ghc8106",
   profiling ? false,
   hls ? false,
 }:
