@@ -107,6 +107,23 @@ parseCortensQLProof :: RuntimeDeductionConfig PureLexiconFOL (Form Bool)
                      -> String -> [DeductionLine CortensQL PureLexiconFOL (Form Bool)]
 parseCortensQLProof rtc = toDeductionFitchAlt (parseCortensQL rtc) cortensQLFormulaParser
 
+cortensQLNotation :: String -> String 
+cortensQLNotation x = case runParser altparser 0 "" x of
+                            Left e -> show e
+                            Right s -> s
+    where altparser = do s <- try handleatom <|> handleschema <|> fallback
+                         rest <- (eof >> return "") <|> altparser
+                         return $ s ++ rest
+          handleatom = do c <- oneOf "ABCDEFGHIJKLMNOPQRSTUVWXYZ" <* char '('
+                          args <- oneOf "abcdefghijklmnopqrstuvwxyz" `sepBy` char ','
+                          char ')'
+                          return $ c:args
+          handleschema = (char 'φ' >> return "◯")
+                  <|> (char 'ψ' >> return "□")
+                  <|> (char 'χ' >> return "△")
+          fallback = do c <- anyChar 
+                        return [c]
+
 cortensQLCalc = mkNDCalc
     { ndRenderer = NoRender
     , ndParseProof = parseCortensQLProof
@@ -114,5 +131,5 @@ cortensQLCalc = mkNDCalc
     , ndProcessLineMemo = Just hoProcessLineFitchMemo
     , ndParseSeq = parseSeqOver cortensQLFormulaParser
     , ndParseForm = cortensQLFormulaParser
-    , ndNotation = ndNotation cortensSLCalc
+    , ndNotation = cortensQLNotation
     }
