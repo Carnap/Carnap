@@ -18,7 +18,7 @@ import Carnap.Languages.ClassicalSequent.Parser
 import Carnap.Languages.PurePropositional.Logic.Rules
 
 data LandeProp =  AndI | AndE1 | AndE2
-                | MP    | DNI   | DNE
+                | MP    | DNE
                 | BCI   | BCE
                 | ORI1  | ORI2 | ORE
                 | As    | CP   | RAA1 | RAA2
@@ -29,7 +29,6 @@ instance Show LandeProp where
         show AndE1 = "∧E"
         show AndE2 = "∧E"
         show MP = "→E"
-        show DNI = "--I"
         show DNE = "--E"
         show BCI = "↔I"
         show BCE = "↔E"
@@ -46,10 +45,9 @@ instance Inference LandeProp PurePropLexicon (Form Bool) where
         ruleOf AndE1 = simplificationVariations !! 0
         ruleOf AndE2 = simplificationVariations !! 1
         ruleOf MP = modusPonens
-        ruleOf DNI = doubleNegationIntroduction
         ruleOf DNE = doubleNegationElimination
-        ruleOf BCI = biconditionalExchange !! 0
-        ruleOf BCE = biconditionalExchange !! 1
+        ruleOf BCE = biconditionalExchange !! 0
+        ruleOf BCI = biconditionalExchange !! 1
         ruleOf ORI1 = additionVariations !! 0
         ruleOf ORI2 = additionVariations !! 1
         ruleOf ORE = dilemma
@@ -71,14 +69,15 @@ instance Inference LandeProp PurePropLexicon (Form Bool) where
         isAssumption As = True
         isAssumption _ = False
 
-parseLandeProp _ n _ = do r <- choice (map (try . string) [ "∧E", "^E", "/\\E", "→E", "->E", "¬¬I", "~~I", "--I", "↔I", "<->I", "↔E","<->E"
-                                                          , "∨I", "vI", "\\/I", "∨E", "vE", "\\/E",  "→I", "->I", "¬I", "~I", "-I", "A"])
+parseLandeProp _ n _ = do r <- choice (map (try . string) [ "∧I", "^I", "/\\I","∧E", "^E", "/\\E", "→E", "->E"
+                                                          , "¬¬E","~~E","--E", "↔I", "<->I", "↔E","<->E" , "∨I"
+                                                          , "vI", "\\/I", "∨E", "vE", "\\/E",  "→I", "->I", "¬I"
+                                                          , "~I" , "-I", "A"])
                           return $ case r of 
                                   r | r == "A" -> [As]
                                     | r `elem` ["∧I", "^I", "/\\I"] -> [AndI]
                                     | r `elem` ["∧E", "^E", "/\\E"] -> [AndE1, AndE2]
                                     | r `elem` ["→E", "->E"] -> [MP]
-                                    | r `elem` ["¬¬I","~~I","--I"] -> [DNI]
                                     | r `elem` ["¬¬E","~~E","--E"] -> [DNE]
                                     | r `elem` ["↔I","<->I"] -> [BCI]
                                     | r `elem` ["↔E","<->E"] -> [BCE]
@@ -89,7 +88,7 @@ parseLandeProp _ n _ = do r <- choice (map (try . string) [ "∧E", "^E", "/\\E"
 
 parseLandePropProof :: RuntimeDeductionConfig PurePropLexicon (Form Bool) 
             -> String -> [DeductionLine LandeProp PurePropLexicon (Form Bool)]
-parseLandePropProof rtc = toDeductionLemmon (parseLandeProp rtc) (purePropFormulaParser extendedLetters)
+parseLandePropProof rtc = toDeductionLemmon (parseLandeProp rtc) (purePropFormulaParser landeOpts)
 
 landePropNotation :: String -> String 
 landePropNotation x = case runParser altparser 0 "" x of
@@ -101,7 +100,7 @@ landePropNotation x = case runParser altparser 0 "" x of
           handleschema = (char 'φ' >> return "◯")
                   <|> (char 'ψ' >> return "□")
                   <|> (char 'χ' >> return "△")
-          handleCon = (char '¬' >> return "~")
+          handleCon = (char '¬' >> return "-")
                   <|> (char '⊤' >> return " ")
                   <|> (char '∅' >> return " ")
           fallback = do c <- anyChar 
@@ -113,4 +112,6 @@ landePropCalc = mkNDCalc
     , ndProcessLine = hoProcessLineLemmon
     , ndProcessLineMemo = Just hoProcessLineLemmonMemo
     , ndNotation = landePropNotation
+    , ndParseForm = purePropFormulaParser landeOpts
+    , ndParseSeq = parseSeqOver (purePropFormulaParser landeOpts)
     }
