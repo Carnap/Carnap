@@ -37,8 +37,8 @@ instance Show LandeProp where
         show ORE = "∨E"
         show As  = "A"
         show CP = "→I"
-        show RAA1  = "¬I"
-        show RAA2  = "¬I"
+        show RAA1  = "-I"
+        show RAA2  = "-I"
 
 instance Inference LandeProp PurePropLexicon (Form Bool) where
         ruleOf AndI = adjunction
