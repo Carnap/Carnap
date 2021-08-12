@@ -1,7 +1,8 @@
 {-# LANGUAGE FlexibleContexts, FlexibleInstances, MultiParamTypeClasses #-}
 module Carnap.Languages.PurePropositional.Parser 
-    ( purePropFormulaParser, standardLetters, standardLettersStrict, extendedLetters, belotOpts, hausmanOpts, thomasBolducZachOpts, thomasBolducZach2019Opts
-    , hardegreeOpts, arthurOpts, standardOpTable, standardOpTableStrict, calgaryOpTable, calgary2019OpTable, hausmanOpTable, howardSnyderOpTable, gamutOpTable
+    ( purePropFormulaParser, standardLetters, standardLettersStrict, extendedLetters, landeOpts, belotOpts, hausmanOpts
+    , thomasBolducZachOpts, thomasBolducZach2019Opts, hardegreeOpts, arthurOpts, standardOpTable, standardOpTableStrict
+    , calgaryOpTable, calgary2019OpTable, hausmanOpTable, howardSnyderOpTable, gamutOpTable
     , gamutOpts, bonevacOpts, howardSnyderOpts, hurleyOpts, gregoryOpts, magnusOpts, extendedPropSeqParser
     ) where
 
@@ -57,6 +58,11 @@ arthurOpts = extendedLetters { hasBooleanConstants = True
 
 extendedLetters :: Monad m => PurePropositionalParserOptions u m
 extendedLetters = standardLetters { atomicSentenceParser = sentenceLetterParser ['A' .. 'Z'] }
+
+landeOpts :: Monad m => PurePropositionalParserOptions u m
+landeOpts = extendedLetters { parenRecur = landeDispatch }
+    where noatoms a = if isAtom a then unexpected "atomic sentence wrapped in parentheses" else return a
+          landeDispatch opt rw = (wrappedWith '(' ')' (rw opt) <|> wrappedWith '[' ']' (rw opt) <|> wrappedWith '{' '}' (rw opt)) >>= noatoms
 
 belotOpts :: Monad m => PurePropositionalParserOptions u m
 belotOpts = standardLetters { atomicSentenceParser = lowerCaseSentenceLetterParser ['a' .. 'z'] }

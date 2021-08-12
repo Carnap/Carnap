@@ -7,7 +7,6 @@ import Carnap.Core.Data.Types (Form)
 import Carnap.Core.Data.Classes
 import Carnap.Languages.PurePropositional.Syntax
 import Carnap.Languages.PurePropositional.Parser
-import Carnap.Calculi.Tableau.Data
 import Carnap.Calculi.Util
 import Carnap.Calculi.NaturalDeduction.Syntax
 import Carnap.Calculi.NaturalDeduction.Parser

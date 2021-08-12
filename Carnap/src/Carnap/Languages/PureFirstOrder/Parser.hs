@@ -6,7 +6,7 @@ module Carnap.Languages.PureFirstOrder.Parser
 , hardegreePLFormulaParser, belotPDFormulaParser, belotPDEFormulaParser
 , bergmannMoorAndNelsonPDFormulaParser, bergmannMoorAndNelsonPDEFormulaParser
 , gregoryPDFormulaParser, goldfarbNDFormulaParser, tomassiQLFormulaParser, hurleyPLFormulaParser
-, hausmanPLFormulaParser, lemmonQuantFormulaParser
+, hausmanPLFormulaParser, cortensQLFormulaParser, lemmonQuantFormulaParser
 , FirstOrderParserOptions(..), parserFromOptions, parseFreeVar, howardSnyderPLFormulaParser) where
 
 import Carnap.Core.Data.Types
@@ -299,6 +299,21 @@ hausmanPLOptions = FirstOrderParserOptions
           hausmanBracket opt recurWith = wrappedWith '[' ']' (recurWith opt {parenRecur = hausmanParen}) >>= boolean
           boolean a = if isBoolean a then return a else unexpected "atomic or quantified sentence wrapped in parentheses"
 
+cortensQLOptions :: FirstOrderParserOptions PureLexiconFOL u Identity
+cortensQLOptions = FirstOrderParserOptions 
+                         { atomicSentenceParser = \x -> parsePredicateSymbolNoParen "ABCDEFGHIJKLMNOPQRSTUVWXYZ" x
+                         , quantifiedSentenceParser' = quantifiedSentenceParser
+                         , freeVarParser = parseFreeVar "uvwxyz"
+                         , constantParser = Just (parseConstant "abcdefghijklmnopqrst")
+                         , functionParser = Nothing
+                         , hasBooleanConstants = False
+                         , parenRecur = cortensParens
+                         , opTable = standardOpTable
+                         , finalValidation = const (pure ())
+                         }
+    where cortensParens opt recurWith = wrappedWith '(' ')' (recurWith opt) >>= boolean
+          boolean a = if isBoolean a then return a else unexpected "atomic or quantified sentence wrapped in parentheses"
+
 tomassiQLOptions :: FirstOrderParserOptions PureLexiconFOL u Identity
 tomassiQLOptions = FirstOrderParserOptions
                     { atomicSentenceParser = \x -> try (parsePredicateSymbolNoParen "ABCDEFGHIJKLMNOPQRSTUVWXYZ" x)
@@ -426,6 +441,9 @@ hurleyPLFormulaParser = parserFromOptions hurleyPLOptions
 
 howardSnyderPLFormulaParser :: Parsec String u PureFOLForm
 howardSnyderPLFormulaParser = parserFromOptions howardSnyderPLOptions
+
+cortensQLFormulaParser :: Parsec String u PureFOLForm
+cortensQLFormulaParser = parserFromOptions cortensQLOptions
 
 tomassiQLFormulaParser :: Parsec String u PureFOLForm
 tomassiQLFormulaParser = parserFromOptions tomassiQLOptions

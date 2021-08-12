@@ -82,6 +82,7 @@ library
                      , Carnap.Languages.PureFirstOrder.Logic.BergmannMoorAndNelson
                      , Carnap.Languages.PureFirstOrder.Logic.Bonevac
                      , Carnap.Languages.PureFirstOrder.Logic.Carnap
+                     , Carnap.Languages.PureFirstOrder.Logic.Cortens
                      , Carnap.Languages.PureFirstOrder.Logic.EbelsDuggan
                      , Carnap.Languages.PureFirstOrder.Logic.Equivalence
                      , Carnap.Languages.PureFirstOrder.Logic.Gallow
