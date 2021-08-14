@@ -71,7 +71,6 @@ putInstructorR ident = do
                                              Nothing -> pure Nothing
                                              Just id -> maybe (sendStatusJSON badRequest400 ("could not read LTI key" :: Text)) pure 
                                                         $ A.decode (fromStrict . encodeUtf8 $ id)
-                                                        $ maybe 
                             update cid [ CourseDescription =. (unTextarea <$> mdesc) ]
                             update cid [ CourseTextBook =. mtext]
                             maybeDo mstart (\start -> update cid
