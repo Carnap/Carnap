@@ -67,6 +67,11 @@ putInstructorR ident = do
                  runDB $ do course <- get cid >>= maybe (sendStatusJSON badRequest400 ("could not find course" :: Text)) pure
                             let Just tz = tzByName . courseTimeZone $ course
                                 unlocalize day = localTimeToUTCTZ tz (LocalTime day (TimeOfDay 23 59 59))
+                            mnewLtiId <- case mLtiId of
+                                             Nothing -> pure Nothing
+                                             Just id -> maybe (sendStatusJSON badRequest400 ("could not read LTI key" :: Text)) pure 
+                                                        $ A.decode (fromStrict . encodeUtf8 $ id)
+                                                        $ maybe 
                             update cid [ CourseDescription =. (unTextarea <$> mdesc) ]
                             update cid [ CourseTextBook =. mtext]
                             maybeDo mstart (\start -> update cid
@@ -77,11 +82,8 @@ putInstructorR ident = do
                               [ CourseTotalPoints =. points ])
                             maybeDo mopen (\open -> update cid
                               [ CourseEnrollmentOpen =. open])
-
-                            let mnewLtiId = A.decode =<< (fromStrict . encodeUtf8 <$> mLtiId)
-                                autoregKey = CourseAutoregKey cid
-                            -- if the autoreg form field is
-                            -- cleared/invalidated, we delete the course's auto
+                            let autoregKey = CourseAutoregKey cid
+                            -- if the autoreg form field is cleared, we delete the course's auto
                             -- registration record. otherwise update/add it
                             maybe (delete autoregKey)
                                 (\(AutoregTriple lab iss did k) ->
