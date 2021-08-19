@@ -22,6 +22,7 @@ import           Util.Database
 import           Yesod.Core.Types       (GWData (..), tellWidget)
 import           Yesod.Markdown
 
+import           Filter.Anchors
 import           Filter.CounterModelers
 import           Filter.ProofCheckers
 import           Filter.Qualitative
@@ -88,6 +89,7 @@ allFilters = makeTreeDeduction
              . makeTreeDeduction
              . makeTruthTables
              . makeTruthTrees
+             . makeAnchors
              . renderFormulas
 
 retrievePandocVal :: MonadHandler m => Maybe MetaValue -> m (Maybe [Text])

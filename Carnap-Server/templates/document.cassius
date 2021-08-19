@@ -1,6 +1,5 @@
-#main 
-    p, ol, dl, ul, blockquote
-        max-width:650pt
+.container
+    max-width: 650pt
 
 .exercise
     margin-bottom:20px
