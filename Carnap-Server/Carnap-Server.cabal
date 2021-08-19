@@ -45,18 +45,19 @@ library
                      Handler.API.Instructor.Students
                      Handler.API.Instructor.Assignments
                      Handler.API.Instructor.Courses
-                     Filter.RenderFormulas
-                     Filter.Randomize
-                     Filter.Sidenotes
-                     Filter.TreeDeduction
-                     Filter.Sequent
-                     Filter.SynCheckers
+                     Filter.Anchors
+                     Filter.CounterModelers
                      Filter.ProofCheckers
+                     Filter.Qualitative
+                     Filter.Randomize
+                     Filter.RenderFormulas
+                     Filter.Sequent
+                     Filter.Sidenotes
+                     Filter.SynCheckers
                      Filter.Translate
+                     Filter.TreeDeduction
                      Filter.TruthTables
                      Filter.TruthTrees
-                     Filter.CounterModelers
-                     Filter.Qualitative
                      Filter.Util
                      Util.Handler
                      Util.Assignment
