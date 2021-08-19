@@ -108,6 +108,11 @@ instance Yesod App where
         mdoc <- maybeUserTextbookDoc
         let isInstructor = not $ null (mud >>= userDataInstructorId . entityVal)
         pc <- widgetToPageContent $ do
+            -- HACK: This is here to force the encoding declaration to be at
+            -- the very top of the Cassius generated stylesheets, hopefully no
+            -- matter what the other pages look like.
+            toWidget $ CssBuilder "@charset \"UTF-8\";\n"
+
             addStylesheet $ StaticR css_bootstrap_css
             addStylesheet $ StaticR css_font_awesome_css
             $(widgetFile "default-layout")
