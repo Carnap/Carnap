@@ -26,3 +26,16 @@ img {
     /* Don't let images overflow their container */
     max-width: 100%;
 }
+
+/* nice box around the details dropdowns, bold text */
+details summary {
+    font-weight: bold;
+    font-size: 1.2em;
+}
+
+details {
+    border: 1px solid #aaa;
+    border-radius: 4px;
+    padding: .75em 1em .75em;
+    margin-bottom: 1.5em;
+}
