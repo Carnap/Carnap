@@ -11,8 +11,10 @@ import           Carnap.Languages.PureFirstOrder.Syntax    (PureFOLForm)
 import           Carnap.Languages.PurePropositional.Syntax (PureForm)
 import           ClassyPrelude.Yesod
 import           Data.Aeson                                (decode, encode)
+import qualified Data.Char                                 as C
 import qualified Data.IntMap                               as IM (fromList)
 import qualified Data.Map                                  as M
+import qualified Data.Text                                 as T
 import qualified Data.Text.Lazy                            as LT
 import           Data.Time
 import           Text.HTML.TagSoup
@@ -47,6 +49,16 @@ derivePersistField "SharingScope"
 data APIKeyScope = APIKeyScopeRoot
     deriving (Show, Read, Eq)
 derivePersistField "APIKeyScope"
+
+-- FIXME: it's sad that this is not a newtype; I couldn't figure out how to
+-- derive the appropriate things to use it as a primary key.
+makeDocumentUserAlias :: Text -> Maybe Text
+makeDocumentUserAlias alias | aliasIsOk alias = Just alias
+    where
+    aliasIsOk = T.foldl' aliasCharIsOk True
+    aliasCharIsOk True c = C.isAscii c && (C.isAlphaNum c || c `elem` ("-_" :: String))
+    aliasCharIsOk False _ = False
+makeDocumentUserAlias _ = Nothing
 
 data AvailabilityStatus = ViaPassword Text
                         | HiddenViaPassword Text

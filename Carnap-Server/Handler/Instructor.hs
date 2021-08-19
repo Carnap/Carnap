@@ -24,6 +24,10 @@ import           Util.LTI
 import           Yesod.Form.Bootstrap3
 import           Yesod.Form.Jquery
 
+-- Form IDs
+setUserAlias :: Text
+setUserAlias = "setAlias"
+
 putInstructorR :: Text -> Handler Value
 putInstructorR ident = do
         requireReferral (InstructorR ident)
@@ -202,6 +206,18 @@ deleteInstructorR ident = do
               deleteCascade ciid
           returnJson ("Deleted this coinstructor" :: Text)
 
+handleForm :: FormResult result -> (result -> Handler ()) -> Handler ()
+handleForm (FormSuccess s) action = action s
+handleForm (FormFailure f) _ = setMessage $ "Something went wrong: " ++ toMarkup (show f)
+handleForm FormMissing _ = return ()
+
+getInstructorUserData :: Handler (UserData, InstructorMetadataId)
+getInstructorUserData = do
+    Entity _ ud <- maybeUserData >>= maybe (permissionDenied "Couldn't find user data") return
+    let UserData { userDataInstructorId = miid } = ud
+    iid <- maybe (permissionDenied "Only instructors can get API keys") return miid
+    return (ud, iid)
+
 postInstructorR :: Text -> Handler Html
 postInstructorR ident = do
     --CSRF protections for forms means we don't need to insepct referer here.
@@ -216,6 +232,7 @@ postInstructorR ident = do
     ((frombookrslt,_),_)   <- runFormPost (identifyForm "setBookAssignment" $ setBookAssignmentForm activeClasses)
     ((instructorrslt,_),_) <- runFormPost (identifyForm "addCoinstructor" $ addCoInstructorForm instructors ("" :: String))
     ((newapikeyrslt,_),_)  <- runFormPost (identifyForm "createAPIKey" createAPIKeyForm)
+    ((aliasrslt,_),_)      <- runFormPost (identifyForm setUserAlias $ setUserAliasForm Nothing)
     case assignmentrslt of
         FormSuccess postedAssignment ->
             do let Entity cid theclass = instructorAssignCourse postedAssignment
@@ -349,6 +366,24 @@ postInstructorR ident = do
                                  _ -> setMessage "Couldn't delete old API Key"
         FormFailure s -> setMessage $ "Something went wrong: " ++ toMarkup (show s)
         FormMissing -> return ()
+
+    handleForm aliasrslt $ \uncheckedAlias -> do
+        (UserData {..}, _iid) <- getInstructorUserData
+        let alias = makeDocumentUserAlias =<< uncheckedAlias
+
+        val <- runDB $ do
+            deleteBy . UniqueAliasTarget $ TargetInstructor userDataUserId
+            case alias of
+                Just a -> insertUnique $ Alias (TargetInstructor userDataUserId) a
+                _ -> return Nothing
+        setMessage $ case (alias, val) of
+            -- parsed and succeeded
+            (Just alias, Just _) -> "Alias set to " <> toMarkup alias
+            -- parsed but failed query
+            (Just _, Nothing) -> "Alias already exists."
+            -- empty field or failed parse
+            _ -> "Alias cleared. Aliases may only contain ASCII alphanumeric characters and '-_'."
+
     redirect $ InstructorR ident
 
 postInstructorQueryR :: Text -> Handler Value
@@ -429,6 +464,11 @@ getInstructorR ident = do
                                      return (entityKey doc, map (tagName . entityVal) tags)
             let tagsOf d = lookup d tagMap
                 tagString d = case lookup d tagMap of Just tags -> intercalate "," tags; _ -> ""
+
+            currentAlias <- runDB $ getBy $ UniqueAliasTarget (TargetInstructor uid)
+            let currentAlias' = aliasName . entityVal <$> currentAlias
+                identForDocumentsRLinks = fromMaybe ident currentAlias'
+
             (createAssignmentWidget,enctypeCreateAssignment) <- generateFormPost (identifyForm "uploadAssignment" $ uploadAssignmentForm activeClasses documents)
             (uploadDocumentWidget,enctypeShareDocument) <- generateFormPost (identifyForm "uploadDocument" $ uploadDocumentForm)
             (setBookAssignmentWidget,enctypeSetBookAssignment) <- generateFormPost (identifyForm "setBookAssignment" $ setBookAssignmentForm activeClasses)
@@ -438,6 +478,9 @@ getInstructorR ident = do
             (updateCourseWidget,enctypeUpdateCourse) <- generateFormPost (identifyForm "updateCourse" (updateCourseForm Nothing Nothing []))
             (createCourseWidget,enctypeCreateCourse) <- generateFormPost (identifyForm "createCourse" createCourseForm)
             (createAPIKeyWidget,enctypeCreateAPIKey) <- generateFormPost (identifyForm "createAPIKey" createAPIKeyForm)
+            (setUserAliasWidget, enctypeSetUserAlias) <- generateFormPost
+                (identifyForm setUserAlias $ setUserAliasForm currentAlias')
+
             defaultLayout $ do
                  addScript $ StaticR js_columnSort_js
                  addScript $ StaticR js_popper_min_js
@@ -901,6 +944,11 @@ updateCourseForm mcourseent mautoreg asmd = renderBootstrap3 BootstrapBasicForm 
             , fsName = Nothing
             , fsAttrs = maybe [("style","display:none")] (const [("style","margin-left:10px")]) mcourse
             }
+
+setUserAliasForm :: Maybe Text -> Markup -> MForm (HandlerFor App) (FormResult (Maybe Text), WidgetFor App ())
+setUserAliasForm currentAlias =
+    renderBootstrap3 BootstrapBasicForm
+        $ aopt textField (bfs ("User Alias" :: Text)) (Just currentAlias)
 
 createAPIKeyForm :: Markup -> MForm (HandlerFor App) (FormResult (), WidgetFor App ())
 createAPIKeyForm = renderBootstrap3 BootstrapBasicForm $ pure ()

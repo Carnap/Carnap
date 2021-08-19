@@ -145,7 +145,7 @@
                                 $forall Entity k a <- documents
                                     <tr id="document-#{documentFilename a}">
                                         <td>
-                                            <a href="@{DocumentR ident (documentFilename a)}">
+                                            <a href="@{DocumentR identForDocumentsRLinks (documentFilename a)}">
                                                 #{documentFilename a}
                                         <td> #{formatTime defaultTimeLocale "%F" $ documentDate a}
                                         <td> #{show $ documentScope a}
@@ -168,6 +168,12 @@
                     <form method=post enctype=#{enctypeCreateAPIKey}>
                         ^{createAPIKeyWidget}
                         <input.btn.btn-primary  type=submit value="Create New Key">
+                    <hr>
+                    <h3>User Alias
+                    <p>Set an alias that can be used in place of your email in document links.
+                    <form method=post enctype=#{enctypeSetUserAlias}>
+                        ^{setUserAliasWidget}
+                        <input.btn.btn-primary type=submit value="Set Alias">
                 <div.tab-pane id="manageCourse" role="tabpanel">
                     <h2>Create Course
                     <form method=post enctype=#{enctypeCreateCourse}>

@@ -74,24 +74,26 @@ library
     else
         ghc-options:   -Wall -fwarn-tabs -O2 -dth-dec-file -Wno-name-shadowing
 
-    extensions: TemplateHaskell
-                QuasiQuotes
-                OverloadedStrings
-                NoImplicitPrelude
-                MultiParamTypeClasses
-                TypeFamilies
-                GADTs
-                GeneralizedNewtypeDeriving
+    extensions: DeriveDataTypeable
+                EmptyDataDecls
                 FlexibleContexts
                 FlexibleInstances
-                EmptyDataDecls
+                GADTs
+                GeneralizedNewtypeDeriving
                 LambdaCase
+                MultiParamTypeClasses
+                NamedFieldPuns
+                NoImplicitPrelude
                 NoMonomorphismRestriction
+                OverloadedStrings
+                PatternGuards
+                QuasiQuotes
                 RankNTypes
-                DeriveDataTypeable
-                ViewPatterns
-                TupleSections
                 RecordWildCards
+                TemplateHaskell
+                TupleSections
+                TypeFamilies
+                ViewPatterns
 
     build-depends: base >=4.8.2.0 && <4.9 || >=4.9.1.0 && <5
                  , yesod                         >=1.6 && <1.7

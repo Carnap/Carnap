@@ -182,6 +182,17 @@ Tag
     UniqueTag bearer name
     deriving Eq
 
+-- Alias for the /shared/:identifier route
+Alias
+    target AliasTargetTy
+    -- | Validate this with @makeDocumentUserAlias@ in @Util.Data@.
+    name Text
+    -- Each entity can have one alias at most
+    UniqueAliasTarget target
+    -- Each alias must be unique. Aliases are of a format that prevents their
+    -- overlap with regular idents
+    Primary name
+
 -- the below `deriving Show` is load-bearing: it mitigates
 -- https://github.com/yesodweb/persistent/issues/1047
 InstructorMetadata

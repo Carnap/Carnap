@@ -5,13 +5,14 @@ import           Import
 import           Data.List        (nub)
 import           System.Directory (doesFileExist)
 import           System.FilePath
+import           TH.RelativePaths (pathRelativeToCabalPackage)
 import           Text.Julius      (juliusFile)
 import           Text.Pandoc      (lookupMeta)
-import           TH.RelativePaths (pathRelativeToCabalPackage)
 
 import           Util.Data
 import           Util.Database
 import           Util.Handler
+import Control.Monad.Trans.Maybe (MaybeT(..))
 
 getDocumentsR :: Handler Html
 getDocumentsR =  runDB (selectList [] []) >>= documentsList "Index of All Documents"
@@ -122,23 +123,42 @@ getDocumentR ident title = do (Entity _key doc, path, creatorid) <- retrieveDoc 
                           $(widgetFile "document")
 
 getDocumentDownloadR :: Text -> Text -> Handler TypedContent
-getDocumentDownloadR ident title = do (Entity _key doc, path, creatoruid) <- retrieveDoc ident title
-                                      serveDoc asFile doc path creatoruid
+getDocumentDownloadR ident title = do
+    (Entity _key doc, path, creatoruid) <- retrieveDoc ident title
+    serveDoc asFile doc path creatoruid
 
 retrieveDoc :: Text -> Text -> Handler (Entity Document, FilePath, UserId)
-retrieveDoc ident title = do userdir <- getUserDir ident
-                             let path = userdir </> unpack title
-                             exists <- liftIO $ doesFileExist path
-                             mcreator <- runDB $ getBy $ UniqueUser ident
-                             case mcreator of
-                                 _ | not exists -> setMessage "shared file for this document not found" >> notFound
-                                 Nothing -> setMessage "document creator not found" >> notFound
-                                 Just (Entity creatoruid _) -> do
-                                     mdoc <- runDB $ getBy (UniqueDocument title creatoruid)
-                                     case mdoc of
-                                         Nothing -> setMessage "metadata for this document not found" >> notFound
-                                         Just doc -> return (doc, path, creatoruid)
+retrieveDoc userRef title = do
+    mref <- getUserAndDocPathWithPresence userRef
+    case mref of
+        Nothing -> setMessage "document creator not found" >> notFound
+        Just (_, _, False) -> setMessage "shared file for this document not found" >> notFound
+        Just (creatoruid, path, True) -> do
+            mdoc <- runDB $ getBy (UniqueDocument title creatoruid)
+            case mdoc of
+                Nothing -> setMessage "metadata for this document not found" >> notFound
+                Just doc -> return (doc, path, creatoruid)
+    where
+    getUserAndDocPathWithPresence userRef = runMaybeT $ do
+        Entity userid User {userIdent} <- MaybeT $ idFor userRef
+        userdir <- lift $ getUserDir userIdent
 
-getUserDir :: (MonadHandler m, MonoFoldable mono, HandlerSite m ~ App, Element mono ~ Char) => mono -> m FilePath
-getUserDir ident = do master <- getYesod
-                      return $ (appDataRoot $ appSettings master) </> "documents" </> unpack ident
+        let path = userdir </> unpack title
+        exists <- liftIO $ doesFileExist path
+
+        return (userid, path, exists)
+
+    idFor val | Just _ <- makeDocumentUserAlias val = runMaybeT $ do
+        alias <- MaybeT $ runDB $ get (AliasKey val)
+        let tgt = aliasTarget' alias
+        user <- MaybeT . runDB $ get tgt
+        return $ Entity tgt user
+    idFor val =
+        runDB . getBy $ UniqueUser val
+
+    aliasTarget' Alias { aliasTarget = (TargetInstructor ins) } = ins
+
+getUserDir :: Text -> Handler FilePath
+getUserDir ident = do
+    master <- getYesod
+    return $ appDataRoot (appSettings master) </> "documents" </> unpack ident

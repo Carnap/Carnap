@@ -21,7 +21,13 @@ import Carnap.GHCJS.SharedTypes(ProblemSource(..),ProblemType(..),ProblemData(..
 -- http://www.yesodweb.com/book/persistent/
 
 share [mkPersist sqlSettings, mkDeleteCascade sqlSettings, mkMigrate "migrateAll"]
-    $(persistFileWith lowerCaseSettings =<< (pathRelativeToCabalPackage "config/models"))
+    $(persistFileWith lowerCaseSettings =<< pathRelativeToCabalPackage "config/models")
+
+-- This is written like this to allow for support for targeting groups, if
+-- these are added as a feature in the future
+data AliasTargetTy = TargetInstructor UserId
+    deriving (Show, Read, Eq)
+derivePersistField "AliasTargetTy"
 
 --we put these in because the template haskell chokes on the keyword "data"
 --as the name of a field
