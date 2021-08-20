@@ -5,7 +5,7 @@ jobs:
   # the self hosted runner on forks
   # h/t https://stackoverflow.com/a/65434401/2350164 and
   # https://docs.github.com/en/actions/reference/context-and-expression-syntax-for-github-actions#example-returning-a-json-object
-  matrix_prep:
+  matrix-prep:
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
@@ -21,11 +21,11 @@ jobs:
         fi
 
   build:
-    needs: matrix_prep
+    needs: matrix-prep
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: ${{ fromJSON(needs.matrix_prep.outputs.matrix) }}
+        os: ${{ fromJSON(needs.matrix-prep.outputs.matrix) }}
     steps:
       - uses: actions/checkout@v2
       - uses: cachix/install-nix-action@v12
@@ -48,7 +48,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: ${{ fromJSON(needs.matrix_prep.outputs.docker_matrix) }}
+        os: ${{ fromJSON(needs.matrix-prep.outputs.docker_matrix) }}
     env:
       IMG_REF: "docker.pkg.github.com/${GITHUB_REPOSITORY}/carnap:latest"
       # GitHub Actions has a broken default for this
