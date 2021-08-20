@@ -40,7 +40,7 @@ instance Show BelotPD where
         show EI          = "(∃I)"
         show EE1         = "(∃E)"
         show EE2         = "(∃E)"
-        show (Pr _)      = "(A)"
+        show (Pr _)      = "A"
 
 instance Inference BelotPD PureLexiconFOL (Form Bool) where
 
@@ -78,9 +78,8 @@ instance Inference BelotPD PureLexiconFOL (Form Bool) where
 parseBelotPD rtc = try quantRule <|> liftProp 
     where liftProp = do r <- parseBelotSD (defaultRuntimeDeductionConfig)
                         return (map SD r)
-          quantRule = do _ <- char '('
-                         r <- choice (map (try . string) ["∀I", "AI", "∀E", "AE", "∃I", "EI", "∃E", "EE", "PR", "A/EE", "PR", "A"]) 
-                         _ <- char ')'
+          quantRule = do r <- (char '(' *> choice (map (try . string) ["∀I", "AI", "∀E", "AE", "∃I", "EI", "∃E", "EE"]) <* char ')')
+                              <|> choice (map (try . string) ["PR", "A/EE", "PR", "A"])
                          case r of 
                             r | r `elem` ["∀I","AI"] -> return [UI]
                               | r `elem` ["∀E","AE"] -> return [UE]

@@ -60,9 +60,9 @@ instance Show BelotSD where
         show BicoIntro4 = "(≡I)"
         show BicoElim1  = "(≡E)"
         show BicoElim2  = "(≡E)"
-        show Reiterate  = "(R)"
-        show (Pr _)     = "(A)"
-        show (AS s)     = "(A " ++ s ++ ")"
+        show Reiterate  = "R"
+        show (Pr _)     = "A"
+        show (AS s)     = "A " ++ s ++ ""
 
 instance Inference BelotSD PurePropLexicon (Form Bool) where
     ruleOf Reiterate  = identityRule
@@ -114,11 +114,10 @@ instance Inference BelotSD PurePropLexicon (Form Bool) where
     restriction _ = Nothing
 
 parseBelotSD :: RuntimeDeductionConfig PurePropLexicon (Form Bool) -> Parsec String u [BelotSD]
-parseBelotSD rtc = do _ <- char '('
-                      r <- choice (map (try . string) [ "&I","/\\I", "∧I","&E","/\\E","∧E","CI","->I","→I", ">I", "⊃I","→E", "⊃E","CE","->E"
+parseBelotSD rtc = do let mainInferences = choice (map (try . string) [ "&I","/\\I", "∧I","&E","/\\E","∧E","CI","->I","→I", ">I", "⊃I","→E", "⊃E","CE","->E"
                                                       , "→E" , ">E" ,"~I","-I", "¬I","~E","-E","¬E" ,"vI","\\/I","∨I", "vE","\\/E", "∨E","BI","<->I", "↔I"
-                                                      , "≡I" , "BE", "<->E", "↔E", "≡E", "R"]) <|> try ((++) <$> string "A/" <*> many (noneOf ")")) <|> choice (map (try . string) ["A","PR"])
-                      _ <- char ')'
+                                                      , "≡I" , "BE", "<->E", "↔E", "≡E"])
+                      r <- (char '(' *> mainInferences <* char ')') <|> try ((++) <$> string "A/" <*> many (noneOf ")")) <|> choice (map (try . string) ["R", "A","PR"])
                       case r of
                         r | r `elem` ["A/>I", "A/->I"] -> return [AS "/⊃I"]
                           | r `elem` ["A/=I"] -> return [AS "/≡I"]
