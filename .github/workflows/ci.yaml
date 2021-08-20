@@ -69,4 +69,4 @@ jobs:
           skipPush: true
           signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
       - run: nix-build -A client
-      - run: nix-shell -p skopeo envsubst --run "skopeo --insecure-policy copy docker-archive:$(nix-build release.nix --arg hasKvm false -A docker --no-out-link) docker://$(echo ${IMG_REF} | envsubst | tr 'A-Z' 'a-z')"
+      - run: nix-shell -p skopeo --run "skopeo --insecure-policy copy docker-archive:$(nix-build release.nix --arg hasKvm false -A docker --no-out-link) docker://$(echo ${IMG_REF} | envsubst | tr 'A-Z' 'a-z')"
