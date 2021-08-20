@@ -1,7 +1,7 @@
 { client, truth-tree, persistent, withHoogle ? true, profiling ? false }:
 { nixpkgs }:
 let
-  inherit (nixpkgs.lib) gitignoreSource;
+  inherit (nixpkgs.lib) gitignoreSource concatMapStrings;
   inherit (nixpkgs.haskell.lib)
     disableSharedExecutables
     disableLibraryProfiling
@@ -76,7 +76,8 @@ newpkgs: oldpkgs: {
 
         echo ":: Copying js in $(pwd)"
         find static/ghcjs/allactions/ -type l -delete
-        cp ${client.out}/bin/AllActions.jsexe/all.js static/ghcjs/allactions/
+        # all.js seems to not be referenced so let's save 58MB
+        # cp ${client.out}/bin/AllActions.jsexe/all.js static/ghcjs/allactions/
         cp ${client.out}/bin/AllActions.jsexe/out.js static/ghcjs/allactions/
         cp ${client.out}/bin/AllActions.jsexe/lib.js static/ghcjs/allactions/
         cp ${client.out}/bin/AllActions.jsexe/runmain.js static/ghcjs/allactions/
@@ -104,7 +105,7 @@ newpkgs: oldpkgs: {
       # https://github.com/haskell/haddock/issues/979 (additionally disabled by
       # justStaticExecutables)
       doHaddock = false;
-    })).overrideAttrs (drv: {
+    })).overrideAttrs (drv: rec {
       # inspired by
       # https://github.com/NixOS/nixpkgs/blob/91340ae/pkgs/development/tools/pandoc/default.nix
       # reduce closure size by deleting references to the pandoc binary. pandoc
@@ -118,26 +119,12 @@ newpkgs: oldpkgs: {
         HTTP
         tzdata
       ];
+
       postInstall = with newpkgs; ''
         echo 'deleting reference to stuff with bins'
         remove-references-to \
-          -t ${warp} \
+          ${concatMapStrings (t: "-t ${t} ") disallowedReferences} \
           $out/bin/Carnap-Server
-        remove-references-to \
-          -t ${yesod-core} \
-          $out/bin/Carnap-Server
-        remove-references-to \
-          -t ${pandoc} \
-          $out/bin/Carnap-Server
-        remove-references-to \
-          -t ${pandoc-types} \
-          $out/bin/Carnap-Server
-        remove-references-to \
-          -t ${HTTP} \
-          $out/bin/Carnap-Server
-        remove-references-to \
-          -t ${tzdata} \
-          $out/bin/Carnap-Server
-      '';
+        '';
     }));
 }
