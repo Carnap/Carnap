@@ -405,6 +405,11 @@ instance YesodAuth App where
                   (\vals -> forM_ (zip fields vals) (uncurry setSession))
                   maybeVals
 
+        -- clear stale LTI session data on Google login.
+        when (credsPlugin creds == "google") $ do
+            deleteSession "ltiToken"
+            deleteSession "ltiIss"
+
         x <- getBy $ UniqueUser $ credsIdent creds
         case x of
             Just (Entity uid _) -> return $ Authenticated uid
