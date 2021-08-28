@@ -101,22 +101,23 @@ columns: 80
 newline: native
 
 language_extensions:
-  - TemplateHaskell
-  - QuasiQuotes
-  - OverloadedStrings
-  - NoImplicitPrelude
-  - MultiParamTypeClasses
-  - TypeFamilies
-  - GADTs
-  - GeneralizedNewtypeDeriving
+  - DeriveDataTypeable
+  - EmptyDataDecls
   - FlexibleContexts
   - FlexibleInstances
-  - EmptyDataDecls
+  - GADTs
+  - GeneralizedNewtypeDeriving
+  - LambdaCase
+  - MultiParamTypeClasses
+  - NoImplicitPrelude
   - NoMonomorphismRestriction
+  - OverloadedStrings
+  - QuasiQuotes
   - RankNTypes
-  - DeriveDataTypeable
-  - ViewPatterns
-  - TupleSections
   - RecordWildCards
+  - TemplateHaskell
+  - TupleSections
+  - TypeFamilies
+  - ViewPatterns
 
 cabal: true

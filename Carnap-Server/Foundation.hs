@@ -1,9 +1,24 @@
 module Foundation where
 
+import qualified Control.Monad.Trans.Except as E
+import qualified Data.CaseInsensitive       as CI
+import qualified Data.HashMap.Strict        as HM
+import qualified Data.Map                   as Map
+import qualified Data.Text                  as T
+import qualified Data.Text.Encoding         as TE
+import qualified Data.Text.Encoding.Error   as TEE
+import           Data.Time                  (NominalDiffTime)
+import           Data.Time.Clock            (addUTCTime)
 import           Database.Persist.Sql       (ConnectionPool, runSqlPool)
+import qualified Network.Wai                as W
 import           Text.Hamlet                (hamletFile)
 import           TH.RelativePaths           (pathRelativeToCabalPackage)
+import           Web.Cookie                 (SetCookie (setCookieSameSite),
+                                             sameSiteNone)
 import           Yesod.Auth.Dummy           (authDummy)
+import           Yesod.Auth.LTI13           (PlatformInfo (..),
+                                             YesodAuthLTI13 (..),
+                                             authLTI13WithWidget)
 import           Yesod.Auth.Message         (AuthMessage (..))
 import           Yesod.Auth.OAuth2          (getUserResponseJSON)
 import           Yesod.Auth.OAuth2.Google
@@ -11,21 +26,6 @@ import           Yesod.Core.Types           (Logger)
 import qualified Yesod.Core.Unsafe          as Unsafe
 import           Yesod.Default.Util         (addStaticContentExternal)
 import           Yesod.Form.Jquery
---import Util.Database
-import qualified Control.Monad.Trans.Except as E
-import qualified Data.CaseInsensitive       as CI
-import qualified Data.HashMap.Strict        as HM
-import qualified Data.Text                  as T
-import qualified Data.Text.Encoding         as TE
-import qualified Data.Text.Encoding.Error   as TEE
-import           Data.Time                  (NominalDiffTime)
-import           Data.Time.Clock            (addUTCTime)
-import qualified Network.Wai                as W
-import           Web.Cookie                 (SetCookie (setCookieSameSite),
-                                             sameSiteNone)
-import           Yesod.Auth.LTI13           (PlatformInfo (..),
-                                             YesodAuthLTI13 (..),
-                                             authLTI13WithWidget)
 
 import           Import.NoFoundation
 import           Settings.Runtime
@@ -397,6 +397,9 @@ instance YesodAuth App where
     redirectToReferer _ = False
 
     authenticate creds0 = liftHandler $ runDB $ do
+        -- make sure the session is clean: login does not always imply logout first
+        onLogout
+
         -- set a session variable ltiToken with the lti token if we have one
         when (credsPlugin creds == "lti13") $ do
             let fields = ["ltiToken", "ltiIss"]
@@ -404,11 +407,6 @@ instance YesodAuth App where
             maybe (return ())
                   (\vals -> forM_ (zip fields vals) (uncurry setSession))
                   maybeVals
-
-        -- clear stale LTI session data on Google login.
-        when (credsPlugin creds == "google") $ do
-            deleteSession "ltiToken"
-            deleteSession "ltiIss"
 
         x <- getBy $ UniqueUser $ credsIdent creds
         case x of
@@ -438,11 +436,17 @@ instance YesodAuth App where
                   disableGoogle <- getDisableGoogleReg
                   return $ credsPlugin creds /= "google" || (not disableGoogle)
 
-    --can't do a straight redirect, since this takes place before logout is
-    --completed. Instead, we delete the credentials and the ultDestKey
-    --(which is generated when we get sent to Auth, I think) and then
-    --redirect manually.
-    onLogout = deleteSession credsKey >> deleteSession "_ULT" >> redirect HomeR
+    -- Wipes the session completely, excepting the ultimate destination.
+    -- Although we don't use it at the time I'm writing this, our caller,
+    -- @clearCreds@ in yesod-auth, will use the ultimate destination if present
+    -- to redirect the user after we return from this hook.
+    onLogout = do
+        ultDest <- lookupSession ultDestKey
+        clearSession
+        maybe (return ()) (setSession ultDestKey) ultDest
+        where
+            -- lifted from yesod-auth sources
+            ultDestKey = "_ULT"
 
     onLogin = liftHandler $ do
           mid <- maybeAuthId
