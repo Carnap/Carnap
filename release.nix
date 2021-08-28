@@ -10,9 +10,17 @@ let inherit (import ./default.nix { }) client server nixpkgs;
     mkdir -p /data/data
     exec ${server.out}/bin/Carnap-Server
   '';
+
+  inherit (nixpkgs.lib) pathIsGitRepo commitIdFromGitRepo;
+
+  maybeGitRevision = let
+    gitdir = "${toString ./.}/.git";
+  in if pathIsGitRepo gitdir
+    then commitIdFromGitRepo gitdir
+    else "UNKNOWN";
 in
 {
-  inherit server nixpkgs;
+  inherit server nixpkgs maybeGitRevision;
 
   docker = nixpkgs.dockerTools.buildImage {
     name = "Carnap";
@@ -27,6 +35,7 @@ in
       dockerEntrypoint
       nixpkgs.coreutils
       nixpkgs.runtimeShellPackage
+      nixpkgs.cacert # for connecting out to google dot com for oauth
     ];
 
     # run unprivileged with the current directory as the root of the image
@@ -47,6 +56,9 @@ in
       };
       Volumes = {
         "/data" = { };
+      };
+      Labels = {
+        "io.carnap.git.revision" = maybeGitRevision;
       };
     };
   };
