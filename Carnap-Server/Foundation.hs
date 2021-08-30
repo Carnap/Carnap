@@ -3,7 +3,6 @@ module Foundation where
 import qualified Control.Monad.Trans.Except as E
 import qualified Data.CaseInsensitive       as CI
 import qualified Data.HashMap.Strict        as HM
-import qualified Data.Map                   as Map
 import qualified Data.Text                  as T
 import qualified Data.Text.Encoding         as TE
 import qualified Data.Text.Encoding.Error   as TEE
@@ -110,6 +109,7 @@ instance Yesod App where
         mud <- maybeUserData
         mcourse <- maybeUserCourse
         mdoc <- maybeUserTextbookDoc
+        bookRoute <- runDB getBookLink
         let isInstructor = not $ null (mud >>= userDataInstructorId . entityVal)
         pc <- widgetToPageContent $ do
             -- HACK: This is here to force the encoding declaration to be at
@@ -339,6 +339,9 @@ instance Yesod App where
 
     errorHandler other = defaultErrorHandler other
 
+instance BookyYesod App where
+    bookRoute = BookR
+
 instance YesodJquery App where
         urlJqueryJs _ = Right "https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"
         urlJqueryUiJs _ = Right "https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"
@@ -489,6 +492,7 @@ instance YesodAuth App where
     authLayout widget = liftHandler $ do
         master <- getYesod
         mmsg <- getMessage
+        bookRoute <- runDB getBookLink
         pc <- widgetToPageContent $ do
             addStylesheet $ StaticR css_bootstrap_css
             $(widgetFile "auth-layout")

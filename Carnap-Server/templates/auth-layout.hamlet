@@ -9,7 +9,7 @@
                     <a href=@{InfoR}>
                         _{MsgLayoutAbout}
                 <li>
-                    <a href=@{BookR}>
+                    <a href=@{bookRoute}>
                         _{MsgLayoutBook}
 
 <div id="main" role="main">

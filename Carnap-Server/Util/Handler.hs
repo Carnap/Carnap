@@ -6,17 +6,17 @@ import           Import
 import           System.Directory       (createDirectoryIfMissing,
                                          doesFileExist, removeFile)
 import           System.FilePath
+import           TH.RelativePaths       (pathRelativeToCabalPackage)
 import           Text.Blaze.XHtml5      (Markup, ToMarkup)
 import           Text.Hamlet            (hamletFile)
 import           Text.Julius            (juliusFile)
-import           Text.Pandoc            (Inline (..), Meta, MetaValue (..),
-                                         Pandoc (..), PandocError,
-                                         WrapOption (..), WriterOptions (..),
-                                         compileTemplate, getTemplate,
-                                         lookupMeta, readerExtensions, runIO)
-import           Text.Pandoc            (Block)
+import           Text.Pandoc            (Block, Inline (..), Meta,
+                                         MetaValue (..), Pandoc (..),
+                                         PandocError, WrapOption (..),
+                                         WriterOptions (..), compileTemplate,
+                                         getTemplate, lookupMeta,
+                                         readerExtensions, runIO)
 import           Text.Pandoc.Walk       (Walkable, walk)
-import           TH.RelativePaths       (pathRelativeToCabalPackage)
 import           Util.Data
 import           Util.Database
 import           Yesod.Core.Types       (GWData (..), tellWidget)
@@ -33,6 +33,7 @@ import           Filter.Translate
 import           Filter.TreeDeduction
 import           Filter.TruthTables
 import           Filter.TruthTrees
+import           Settings.Runtime       (getBookLink)
 
 minimalLayout :: ToMarkup a => a -> WidgetFor site ()
 minimalLayout c = [whamlet|
@@ -43,15 +44,16 @@ minimalLayout c = [whamlet|
 
 cleanLayout :: ToWidget App a => a -> HandlerFor App Markup
 cleanLayout widget = do
-        master <- getYesod
-        mmsg <- getMessage
-        authmaybe <- maybeAuth
-        mud <- maybeUserData
-        mcourse <- maybeUserCourse
-        mdoc <- maybeUserTextbookDoc
-        let isInstructor = not $ null (mud >>= userDataInstructorId . entityVal)
-        pc <- widgetToPageContent $(widgetFile "default-layout")
-        withUrlRenderer $(hamletFile =<< pathRelativeToCabalPackage "templates/default-layout-wrapper.hamlet")
+    master <- getYesod
+    mmsg <- getMessage
+    authmaybe <- maybeAuth
+    mud <- maybeUserData
+    mcourse <- maybeUserCourse
+    mdoc <- maybeUserTextbookDoc
+    bookRoute <- runDB getBookLink
+    let isInstructor = not $ null (mud >>= userDataInstructorId . entityVal)
+    pc <- widgetToPageContent $(widgetFile "default-layout")
+    withUrlRenderer $(hamletFile =<< pathRelativeToCabalPackage "templates/default-layout-wrapper.hamlet")
 
 addDocScripts :: (MonadWidget m, HandlerSite m ~ App) => m ()
 addDocScripts = do
