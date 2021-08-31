@@ -170,7 +170,7 @@ instance Yesod App where
                      selectList ([UserDataInstructorId ==. Just (courseInstructor course)]
                                 ||. [UserDataInstructorId <-. map (Just . coInstructorIdent) coInstructors]) []
               userOrInstructorOf ident =
-                do Entity _ user <- requireAuth
+                do Entity _ user <- maybeAuth >>= maybe notAuthenticated return
                    Entity uid _ <- runDB (getBy $ UniqueUser ident) >>= maybe notFound return
                    let ident' = userIdent user
                    mudata <- runDB $ getBy (UniqueUserData uid)
@@ -202,7 +202,7 @@ instance Yesod App where
               enrolledIn coursetitle =
                   --this is the route to assignments accessible by students
                   --for a given course and to instructors
-                  do uid <- requireAuthId
+                  do Entity uid _ <- maybeAuth >>= maybe notAuthenticated return
                      mudata <- maybeUserData
                      mcourse <- runDB $ getBy (UniqueCourse coursetitle)
                      Entity cid course <- case mcourse of Just c -> return c; _ -> setMessage "no course with that title" >> notFound
@@ -314,6 +314,24 @@ instance Yesod App where
              |]
         provideRep $
             return $ object $ ["message" .= ("Permission Denied. " <> msg)]
+
+    errorHandler NotAuthenticated = selectRep $ do
+        provideRep $ defaultLayout $ do
+            setTitle "Not Authenticated"
+            toWidget [hamlet|
+                <div.container>
+                    <h1>Authentication Required
+                    <p> The page you requested requires that you log in to Carnap first.
+                    <ol>
+                        <li>If you are a student who logs in via your course website
+                            \ (in Canvas, Moodle, Brightspace, or some other learning management system),
+                            \ use the Carnap login link provided by your instructor on your course website.
+                        <li>If your instructor has asked you to log in using Google, click #
+                            <a href=@{AuthR LoginR}>here
+                            \ to authenticate with Google.
+             |]
+        provideRep $
+            return $ object $ ["message" .= ("Not Authenticated." :: Text)]
 
     errorHandler other = defaultErrorHandler other
 
