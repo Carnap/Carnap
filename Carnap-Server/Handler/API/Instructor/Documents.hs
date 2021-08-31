@@ -3,10 +3,10 @@ module Handler.API.Instructor.Documents where
 import           Data.Aeson
 import           Data.HashMap.Strict as HM
 import           Import
-import           Util.Data           (SharingScope (..))
-import           Util.Handler
 import           System.Directory
 import           System.FilePath
+import           Util.Data           (SharingScope (..))
+import           Util.Handler
 
 getAPIInstructorDocumentsR :: Text -> Handler Value
 getAPIInstructorDocumentsR ident = do Entity uid _ <- userFromIdent ident
@@ -27,22 +27,22 @@ postAPIInstructorDocumentsR ident = do Entity uid _ <- userFromIdent ident
                                                         in return $ Object hm'
                                                    _ -> sendStatusJSON badRequest400 ("Improper JSON" :: Text)
                                        case fromJSON val' :: Result Document of
-                                           Error e -> (sendStatusJSON badRequest400 e)
-                                           Success doc | badFileName (documentFilename doc) -> 
+                                           Error e -> sendStatusJSON badRequest400 e
+                                           Success doc | badFileName (documentFilename doc) ->
                                                sendStatusJSON badRequest400 ("Improper filename" :: Text)
                                            Success doc -> do
-                                               dir <- docDir ident  
+                                               dir <- docDir ident
                                                liftIO $ createDirectoryIfMissing True dir
                                                path <- docFilePath ident doc
                                                liftIO (doesFileExist path) >>= --don't clobber and annex
-                                                   bool (return ()) (sendStatusJSON conflict409 ("A document with that name already exists." :: Text)) 
+                                                   bool (return ()) (sendStatusJSON conflict409 ("A document with that name already exists." :: Text))
                                                inserted <- runDB (insertUnique doc) >>=
                                                            maybe (sendStatusJSON conflict409 ("A document with that name already exists." :: Text)) return
-                                               writeFile path " " 
+                                               writeFile path " "
                                                render <- getUrlRender
                                                addHeader "Location" (render $ APIInstructorDocumentR ident inserted)
                                                sendStatusJSON created201 inserted
-    where badFileName s = not (takeFileName (unpack s) == (unpack s))
+    where badFileName s = takeFileName (unpack s) /= unpack s
 
 getAPIInstructorDocumentR :: Text -> DocumentId -> Handler Value
 getAPIInstructorDocumentR ident docid = do Entity uid _ <- userFromIdent ident
