@@ -3,7 +3,6 @@ module Foundation where
 import qualified Control.Monad.Trans.Except as E
 import qualified Data.CaseInsensitive       as CI
 import qualified Data.HashMap.Strict        as HM
-import qualified Data.Map                   as Map
 import qualified Data.Text                  as T
 import qualified Data.Text.Encoding         as TE
 import qualified Data.Text.Encoding.Error   as TEE
