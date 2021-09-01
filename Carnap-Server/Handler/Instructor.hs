@@ -220,7 +220,7 @@ postInstructorR ident = do
     case assignmentrslt of
         FormSuccess postedAssignment ->
             do let Entity cid theclass = instructorAssignCourse postedAssignment
-                   Entity docId theDoc = instructorAssignFile postedAssignment
+                   DocumentGet {docGetId, docGetFilename} = instructorAssignFile postedAssignment
                checkCourseOwnershipHTML ident cid
                Entity _ user <- requireAuth
                iid <- instructorIdByIdent (userIdent user)
@@ -231,15 +231,14 @@ postInstructorR ident = do
                let Just tz = tzByName . courseTimeZone $ theclass
                    info = unTextarea <$> instructorAssignDescription postedAssignment
                    theassigner = mciid
-                   thename = documentFilename theDoc
                currentTime <- liftIO getCurrentTime
 
                case instructorAssignPassword postedAssignment of
                    Nothing | instructorAssignHidden postedAssignment == Just True || instructorAssignTimeLimit postedAssignment /= Nothing
                            -> setMessage "Hidden and time-limited assignments must be password protected"
                    _ -> do success <- runDB $ insertUnique $ AssignmentMetadata
-                                                { assignmentMetadataDocument = docId
-                                                , assignmentMetadataTitle = maybe thename id (instructorAssignTitle postedAssignment)
+                                                { assignmentMetadataDocument = docGetId
+                                                , assignmentMetadataTitle = fromMaybe docGetFilename (instructorAssignTitle postedAssignment)
                                                 , assignmentMetadataDescription = info
                                                 , assignmentMetadataAssigner = entityKey <$> theassigner
                                                 , assignmentMetadataDuedate = localTimeToUTCTZ tz <$> instructorAssignDue postedAssignment
@@ -413,7 +412,7 @@ getInstructorR ident = do
                      activeClasses
 
             assignmentMetadata <- concat <$> mapM listAssignmentMetadata activeClasses --Get the metadata
-            documents <- runDB $ selectList [DocumentCreator ==. uid] []
+            documents <- runDB $ documentsWithTags uid
             problemSetLookup <- mapM (\c -> (,)
                                     <$> pure (entityKey c)
                                     <*> (maybe mempty readAssignmentTable
@@ -425,11 +424,7 @@ getInstructorR ident = do
                                                 , assignmentMetadataDate v
                                                 , assignmentMetadataCourse v
                                                 )) assignmentMetadata
-            tagMap <- forM documents $ \doc -> do
-                                     tags <- runDB $ selectList [TagBearer ==. entityKey doc] []
-                                     return (entityKey doc, map (tagName . entityVal) tags)
-            let tagsOf d = lookup d tagMap
-                tagString d = case lookup d tagMap of Just tags -> intercalate "," tags; _ -> ""
+            let tagString d = intercalate "," (docGetTags d)
             (createAssignmentWidget,enctypeCreateAssignment) <- generateFormPost (identifyForm "uploadAssignment" $ uploadAssignmentForm activeClasses documents)
             (uploadDocumentWidget,enctypeShareDocument) <- generateFormPost (identifyForm "uploadDocument" $ uploadDocumentForm)
             (setBookAssignmentWidget,enctypeSetBookAssignment) <- generateFormPost (identifyForm "setBookAssignment" $ setBookAssignmentForm activeClasses)
@@ -482,7 +477,7 @@ instance ToJSON InstructorQuery
 instance FromJSON InstructorQuery
 
 data InstructorAssign = InstructorAssign
-                      { instructorAssignFile         :: Entity Document
+                      { instructorAssignFile         :: DocumentGet
                       , instructorAssignTitle        :: Maybe Text
                       , instructorAssignCourse       :: Entity Course
                       , instructorAssignDue          :: Maybe LocalTime
@@ -534,7 +529,7 @@ genericModal specific caption form enc =
 
 uploadAssignmentForm
     :: [Entity Course]
-    -> [Entity Document]
+    -> [DocumentGet]
     -> Markup
     -> MForm (HandlerFor App) (FormResult InstructorAssign, WidgetFor App ())
 uploadAssignmentForm classes docs extra = do
@@ -644,9 +639,9 @@ uploadAssignmentForm classes docs extra = do
             return (theRes,widget)
     where classnames = map (\theclass -> (courseTitle . entityVal $ theclass, theclass)) classes
           assignableDocs = filter isAssignable docs
-          isAssignable thedoc = let extension =  takeExtension . unpack . documentFilename . entityVal $ thedoc
+          isAssignable thedoc = let extension = takeExtension . unpack . docGetFilename $ thedoc
                                     in not (extension `elem` [".css",".js",".yaml",".png",".jpg",".jpeg",".gif",".svg",".pdf"])
-          docnames = map (\thedoc -> (documentFilename . entityVal $ thedoc, thedoc)) assignableDocs
+          docnames = map (\thedoc -> (docGetFilename thedoc, thedoc)) assignableDocs
 
 updateAssignmentForm
     :: Markup

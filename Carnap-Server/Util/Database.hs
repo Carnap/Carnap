@@ -186,15 +186,6 @@ classesByInstructorIdent ident = runDB $ do
                    return (owned ++ coOwned)
                Nothing -> return []
 
-documentsByInstructorIdent
-    :: PersistentSite site
-    => Text
-    -> HandlerFor site [Entity Document]
-documentsByInstructorIdent ident = runDB $ do muent <- getBy $ UniqueUser ident
-                                              case entityKey <$> muent of
-                                                  Just uid -> selectList [DocumentCreator ==. uid] []
-                                                  Nothing -> return []
-
 -- | old derived rules by userId XXX: legacy, deprecate eventually
 getDerivedRules
     :: PersistentSite site
@@ -302,4 +293,15 @@ documentsWithTags uid = do
         docs = foldl' concatIdentical HM.empty (toDocumentGet <$> docsWithTags)
     -- and finally return the stuck together ones
     return $ HM.elems docs
+
+documentsByInstructorIdent
+    :: PersistentSite site
+    => Text
+    -> HandlerFor site [DocumentGet]
+documentsByInstructorIdent ident =
+    runDB $ do
+        muent <- getBy $ UniqueUser ident
+        case entityKey <$> muent of
+            Just uid -> documentsWithTags uid
+            Nothing -> return []
 
