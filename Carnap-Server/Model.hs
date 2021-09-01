@@ -45,3 +45,8 @@ instance ToJSON Course where
                           , "enrollmentOpen" .= courseEnrollmentOpen c
                           , "timeZone" .= (decodeUtf8 $ courseTimeZone c :: Text)
                           ]
+
+-- no instance Hashable for DocumentId and I want a hashmap...
+instance Hashable DocumentId where
+    hash = fromIntegral . toBackendKey
+    hashWithSalt salt v = hashWithSalt salt (hash v)

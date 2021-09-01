@@ -2,10 +2,18 @@
 {-# LANGUAGE NamedFieldPuns #-}
 module Util.Database where
 
-import           Carnap.GHCJS.SharedTypes (ProblemSource (..))
+import           Carnap.GHCJS.SharedTypes        (ProblemSource (..))
+import           Data.Aeson.TH                   (defaultOptions,
+                                                  deriveFromJSON, deriveToJSON,
+                                                  fieldLabelModifier)
+import qualified Data.HashMap.Strict             as HM
+import           Database.Esqueleto.Experimental ((:&) (..), (?.), (^.))
+import qualified Database.Esqueleto.Experimental as E
+import           Handler.API.AesonHelper
 import           Import.NoFoundation
 import           Util.API
-import           Util.Data                (BookAssignmentTable)
+import           Util.Data                       (BookAssignmentTable,
+                                                  SharingScope)
 
 newtype CachedMaybeUser = CachedMaybeUser { unCacheMaybeUser :: Maybe (Entity User) }
 newtype CachedMaybeUserData = CachedMaybeUserData { unCacheMaybeUserData :: Maybe (Entity UserData) }
@@ -23,14 +31,14 @@ maybeUserData = unCacheMaybeUserData <$> cached (CachedMaybeUserData <$> getData
                        case authmaybe of
                            Nothing -> return Nothing
                            Just (Entity uid _) -> runDB (getBy $ UniqueUserData uid)
-                          
+
 --retrieve user by ident, caching to avoid multiple DB lookups
 maybeUserByIdent
     :: PersistentSite site
     => Text -> HandlerFor site (Maybe (Entity User))
 maybeUserByIdent ident = unCacheMaybeUser <$> cachedBy (encodeUtf8 ident) (CachedMaybeUser <$> getData)
     where getData = runDB (getBy $ UniqueUser ident)
-          
+
 --retrieve userdata by ident, caching to avoid multiple DB lookups
 maybeUserDataByIdent
     :: PersistentSite site
@@ -128,7 +136,7 @@ checkCourseOwnership
 checkCourseOwnership ident cid = do
            classes <- classesByInstructorIdent ident
            if cid `elem` map entityKey classes
-               then return () 
+               then return ()
                else sendStatusJSON forbidden403 ("You don't have instructor access to this course" :: Text)
 
 checkCourseOwnershipHTML
@@ -139,7 +147,7 @@ checkCourseOwnershipHTML
 checkCourseOwnershipHTML ident cid = do
            classes <- classesByInstructorIdent ident
            if cid `elem` map entityKey classes
-               then return () 
+               then return ()
                else permissionDenied ("You don't have instructor access to this course" :: Text)
 
 -- | given a UserId, return Just the user data or Nothing
@@ -238,3 +246,60 @@ problemQuery
 problemQuery uid asl = [ProblemSubmissionUserId ==. uid]
                     ++ ([ProblemSubmissionSource ==. Book] ||. [ProblemSubmissionAssignmentId <-. assignmentList])
         where assignmentList = map Just asl
+
+
+data DocumentGet = DocumentGet
+    { docGetId          :: DocumentId
+    , docGetFilename    :: Text
+    , docGetDescription :: Maybe Text
+    , docGetScope       :: SharingScope
+    , docGetTags        :: [Text]
+    , docGetDate        :: UTCTime
+    } deriving (Eq)
+
+$(deriveToJSON
+    defaultOptions
+        {
+            fieldLabelModifier = unPrefix "docGet"
+        }
+    ''DocumentGet
+    )
+
+documentsWithTags
+    :: (PersistentSite site)
+    => UserId
+    -- ^ Creator
+    -> YesodDB site [DocumentGet]
+documentsWithTags uid = do
+    -- this query gets (document, Maybe tag) pairs for each document with each
+    -- of its tags
+    docsWithTags <-
+        E.select $ do
+            (docs :& tags) <- E.from $ E.table @Document
+                `E.leftJoin` E.table @Tag
+                `E.on` (\(docs :& tags) -> E.just (docs ^. DocumentId) E.==. tags ?. TagBearer)
+            E.where_ (docs ^. DocumentCreator E.==. E.val uid)
+            return (docs, tags)
+    let
+        -- we then stick the tags from each pair together for each document
+        concatIdentical
+            :: HM.HashMap DocumentId DocumentGet
+            -> DocumentGet
+            -> HM.HashMap DocumentId DocumentGet
+        concatIdentical hm el =
+            HM.insertWith (\old DocumentGet { docGetTags = t:_ } -> old { docGetTags = t : docGetTags old })
+                (docGetId el)
+                el
+                hm
+        toDocumentGet (Entity docId Document {..}, tag) = DocumentGet
+            { docGetId = docId
+            , docGetFilename = documentFilename
+            , docGetDescription = documentDescription
+            , docGetScope = documentScope
+            , docGetTags = tagName . entityVal <$> maybeToList tag
+            , docGetDate = documentDate
+            }
+        docs = foldl' concatIdentical HM.empty (toDocumentGet <$> docsWithTags)
+    -- and finally return the stuck together ones
+    return $ HM.elems docs
+

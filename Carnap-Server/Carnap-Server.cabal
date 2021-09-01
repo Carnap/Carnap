@@ -41,6 +41,8 @@ library
                      Handler.Document
                      Handler.Serve
                      Handler.API.API
+                     Handler.API.AesonHelper
+                     Handler.API.Instructor.Types
                      Handler.API.Instructor.Documents
                      Handler.API.Instructor.Students
                      Handler.API.Instructor.Assignments
@@ -85,11 +87,13 @@ library
                 FlexibleInstances
                 EmptyDataDecls
                 LambdaCase
+                NamedFieldPuns
                 NoMonomorphismRestriction
                 RankNTypes
                 DeriveDataTypeable
                 ViewPatterns
                 TupleSections
+                TypeApplications
                 RecordWildCards
 
     build-depends: base >=4.8.2.0 && <4.9 || >=4.9.1.0 && <5
@@ -110,6 +114,7 @@ library
                  , persistent                    >=2.8 && <2.14
                  , persistent-postgresql         >=2.8 && <2.14
                  , persistent-sqlite
+                 , esqueleto
                  , template-haskell
                  , th-utilities
                  , shakespeare                   >= 2.0        && < 2.1
