@@ -6,8 +6,9 @@ import           Handler.API.Instructor.Types (DocumentPatch (..),
 import           Import
 import           System.Directory
 import           System.FilePath
+import qualified Data.HashSet as HS
 import           Util.Data                    (SharingScope (..))
-import           Util.Database                (documentsWithTags)
+import           Util.Database                (documentsWithTags, DocumentGet(..))
 import           Util.Handler
 
 getAPIInstructorDocumentsR :: Text -> Handler Value
@@ -50,11 +51,11 @@ postAPIInstructorDocumentsR ident = do
     where badFileName s = takeFileName (unpack s) /= unpack s
 
 getAPIInstructorDocumentR :: Text -> DocumentId -> Handler Value
-getAPIInstructorDocumentR ident docid = do Entity uid _ <- userFromIdent ident
-                                           doc <- runDB (get docid) >>= maybe (sendStatusJSON notFound404 ("No such document" :: Text)) pure
-                                           checkUID doc uid
-                                           returnJson doc
-
+getAPIInstructorDocumentR ident docid = do
+    Entity uid _ <- userFromIdent ident
+     >>= maybe (sendStatusJSON notFound404 ("No such document" :: Text)) pure
+    checkUID doc uid
+    returnJson
 patchAPIInstructorDocumentR :: Text -> DocumentId -> Handler Value
 patchAPIInstructorDocumentR ident docid = do
     Entity uid _ <- userFromIdent ident
@@ -99,3 +100,8 @@ docFilePath ident doc = do docdir <- docDir ident
 checkUID :: MonadHandler m => Document -> Key User -> m ()
 checkUID doc uid | documentCreator doc == uid = return ()
                  | otherwise = sendStatusJSON forbidden403 ("Document not owned by this instructor" :: Text)
+
+checkUID' :: MonadHandler m => DocumentGet -> Key User -> m ()
+checkUID' doc uid | docGetCreator doc == uid = return ()
+                  | otherwise = sendStatusJSON forbidden403 ("Document not owned by this instructor" :: Text)
+

@@ -14,6 +14,7 @@ import           Import.NoFoundation
 import           Util.API
 import           Util.Data                       (BookAssignmentTable,
                                                   SharingScope)
+import Control.Monad.Trans.Maybe
 
 newtype CachedMaybeUser = CachedMaybeUser { unCacheMaybeUser :: Maybe (Entity User) }
 newtype CachedMaybeUserData = CachedMaybeUserData { unCacheMaybeUserData :: Maybe (Entity UserData) }
@@ -241,6 +242,7 @@ problemQuery uid asl = [ProblemSubmissionUserId ==. uid]
 
 data DocumentGet = DocumentGet
     { docGetId          :: DocumentId
+    , docGetCreator     :: Key User
     , docGetFilename    :: Text
     , docGetDescription :: Maybe Text
     , docGetScope       :: SharingScope
@@ -293,6 +295,24 @@ documentsWithTags uid = do
         docs = foldl' concatIdentical HM.empty (toDocumentGet <$> docsWithTags)
     -- and finally return the stuck together ones
     return $ HM.elems docs
+
+documentWithTags
+    :: (PersistentSite site)
+    => DocumentId
+    -> YesodDB site (Maybe DocumentGet)
+documentWithTags docid = runMaybeT $ do
+    Document{..} <- MaybeT $ get docid
+    tags <- lift $ selectList [TagBearer ==. docid] []
+    return $ DocumentGet
+        { docGetId = docid
+        , docGetCreator = documentCreator
+        , docGetTags = tagName . entityVal <$> tags
+        , docGetFilename = documentFilename
+        , docGetDate = documentDate
+        , docGetScope = documentScope
+        , docGetDescription = documentDescription
+        }
+
 
 documentsByInstructorIdent
     :: PersistentSite site
