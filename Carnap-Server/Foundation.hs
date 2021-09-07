@@ -58,6 +58,10 @@ data App = App
 -- type Widget = WidgetT App IO ()
 mkYesodData "App" $(parseRoutesFile =<< pathRelativeToCabalPackage "config/routes")
 
+-- This configures "messages" as a source of internationalization data. See
+-- www.yesodweb.com/book/internationalization
+mkMessage "App" "messages" "en"
+
 -- | A convenient synonym for creating forms.
 type Form x = Html -> MForm (HandlerFor App) (FormResult x, Widget)
 

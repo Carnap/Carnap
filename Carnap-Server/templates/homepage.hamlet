@@ -1,6 +1,6 @@
 <div.jumbotron.jumbotron-fluid>
     <div.container>
-        <h1.display-3> Welcome to Carnap.io
+        <h1.display-3>_{MsgWelcomeToCarnap}
         <p.lead> A formal logic framework for Haskell
 
 
