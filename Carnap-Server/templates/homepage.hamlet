@@ -1,28 +1,23 @@
 <div.jumbotron.jumbotron-fluid>
     <div.container>
-        <h1.display-3>_{MsgWelcomeToCarnap}
-        <p.lead> A formal logic framework for Haskell
+        <h1.display-3>_{MsgHomepageWelcome}
+        <p.lead>_{MsgHomepageSubtitle}
 
 
 <div#main.container>
     <img.float-right.hidden-sm-down width=350px src=@{StaticR img_russell2_png}>
 
-    <h2> Background
+    <h2>_{MsgHomepageHeader}
 
-    <p> Carnap is a free and open software framework written in #
+    <p> _{MsgHomepageText1} #
         <a href="https://haskell.org">Haskell
-        \ for teaching and studying formal logic. Carnap powers logic courses at
-        <a href="@{InfoR}#who"> dozens of colleges and universities
-        \ around the world.
+        \ _{MsgHomepageText2}
+        <a href="@{InfoR}#who"> _{MsgHomepageText3}
+        \ _{MsgHomepageText4}
 
-    <p> If you're a student in a course that uses Carnap, please follow the
-        \ links at the top of the page to log in and to access course
-        \ materials.
+    <p> _{MsgHomepageText5}
 
-    <p> If you're just curious about Carnap, you can find some general
-        \ information on our #
-        <a href=@{InfoR}>about
-        \ page. If you're interested in the project, and would like to use
-        \ Carnap in a class you're teaching, or get involved in some other way,
-        \ please feel free to #
-        <a href="mailto:gleachkr@ksu.edu">get in touch!
+    <p> _{MsgHomepageText6}
+        <a href=@{InfoR}>_{MsgHomepageText7}
+        \ _{MsgHomepageText8}
+        <a href="mailto:gleachkr@ksu.edu">_{MsgHomepageText9}
