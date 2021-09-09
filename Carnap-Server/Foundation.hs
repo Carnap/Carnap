@@ -514,6 +514,8 @@ unsafeHandler = Unsafe.fakeHandlerGetLogger appLogger
 checkUserData :: Key User -> HandlerFor App UserData
 checkUserData uid = do maybeData <- runDB $ getBy $ UniqueUserData uid
                        muser <- runDB $ get uid
+                       mauth <- maybeAuth
+                       let isMe = Just uid == (entityKey <$> mauth)
                        case muser of
                            Nothing -> do setMessage "no user found"
                                          redirect HomeR
@@ -523,6 +525,10 @@ checkUserData uid = do maybeData <- runDB $ getBy $ UniqueUserData uid
                               -- propagated from LMS in case of e.g. name change
                               Just (Entity _ userdata) | not . userDataIsLti $ userdata
                                 -> return userdata
+                              -- If someone other than given UID is the
+                              -- current user (i.e. an instructor accessing
+                              -- a user page) don't autoregister
+                              Just (Entity _ userdata) | not isMe -> return userdata
                               _ -> doRegister u
     where
         doRegister u = do
