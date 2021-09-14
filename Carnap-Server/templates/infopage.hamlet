@@ -7,215 +7,110 @@
     <nav#toc.hidden-sm-down>
         <ul.list-unstyled>
             <li>
-                <a href=#what> What is Carnap?
+                <a href=#what>_{MsgInfopageWhatIs}
             <li>
-                <a href=#why> What's Carnap for?
+                <a href=#why>_{MsgInfopageWhatFor}
             <li>
-                <a href=#usage>How can I use Carnap?
+                <a href=#usage>_{MsgInfopageHowToUse}
             <li>
-                <a href=#name>Why “Carnap”?
+                <a href=#name>_{MsgInfopageWhyName}
             <li>
-                <a href=#who>Who uses Carnap?
+                <a href=#who>_{MsgInfopageWhoUses}
             <li>
-                <a href=#how>How does Carnap Work?
+                <a href=#how>_{MsgInfopageHowWorks}
             <li>
-                <a href=#contributing>How can I get involved?
+                <a href=#contributing>_{MsgInfopageHowHelp}
 
     <blockquote.blockquote>
-        <p> “The acceptance or rejection of abstract linguistic forms, just as
-            \ the acceptance or rejection of any other linguistic forms in any branch
-            \ of science, will finally be decided by their efficiency as instruments,
-            \ the ratio of the results achieved to the amount and complexity of the
-            \ efforts required. To decree dogmatic prohibitions of certain linguistic
-            \ forms instead of testing them by their success or failure in practical
-            \ use, is worse than futile; it is positively harmful because it may
-            \ obstruct scientific progress.
-
-        <p> Let us grant to those who work in any special field of
-            \ investigation the freedom to use any form of expression which seems
-            \ useful to them; the work in the field will sooner or later lead to the
-            \ elimination of those forms which have no useful function. Let us be
-            \ cautious in making assertions and critical in examining them, but
-            \ tolerant in permitting linguistic forms.”
-
+        <p> _{MsgInfopageCarnapQuote1}
+        <p> _{MsgInfopageCarnapQuote2}
         <footer.blockquote-footer>Rudolf Carnap,
             <cite title="Empiricism Semantics and Ontology"> Empiricism Semantics and Ontology
 
-
     <section#what>
-        <p> Carnap is a free and open-source Haskell framework for creating and
-            \ exploring formal languages, logics, and semantics. It lets you quickly
-            \ and straightforwardly define languages, construct logics for those
-            \ languages, and stipulate their semantics. Carnap then uses your
-            \ specifications to figure out how to check proofs in a variety of formal
-            \ systems using your logic, how to find the meanings of compound
-            \ expressions, and a whole lot more.
-
+        <p> _{MsgInfopageWhatIsText}
         <div#demos.hidden>
-
-            <h2> Demos
-
-            <p> Here are some quick examples of what Carnap can do.
-
+            <h2> _{MsgInfopageDemos}
+            <p> _{MsgInfopageDemosHere}
             <div#demo-slider>
-
                 <div.demo>
-                    <p>This is a proofbox with a Kalish and Montague System
-                       \ for Propositional Logic. You can directly manipulate the
-                       \ proof by typing in the proofbox, and see the effects of
-                       \ your changes by mousing over the line-decorations on the
-                       \ right hand side.
-
+                    <p>_{MsgInfopageDemosText1}
                     ^{proofcheck 1 "prop" "resize" ":|-:P\\/-P" aristotleTheorem}
-
                 <div.demo>
-                    <p>This is a rendering proofbox with a Kalish and Montague
-                       \ System for Propositional Logic, which also visually
-                       \ displays the structure of the proof being developed.
-
+                    <p>_{MsgInfopageDemosText2}
                     ^{proofcheck 2 "prop" "render resize" ":|-:P\\/-P" aristotleTheorem}
-
-
                 <div.demo>
-
-                    <p> This is a rendering proofbox with Hardegree's variation
-                        \ on a Montague system.
-
+                    <p>_{MsgInfopageDemosText3}
                     ^{proofcheck 3 "hardegreeSL" "render resize" "P/\\Q->R:|-: P->(Q->R)" adjunctionTheorem}
-
                 <div.demo>
-
-                    <p>This is a proofbox with a Fitch system, using rules from #
-                       <i>the Logic Book
-                       \ and visually rendering the proof structure in the Fitch style.
-
+                    <p>_{MsgInfopageDemosText4} #
+                       <i>The Logic Book
+                       _{MsgInfopageDemosText5}
                     ^{proofcheck 4 "LogicBookSD" "render resize" ":|-:(((P->Q)->P)->P)" pierceTheorem}
-
-
                 <div.demo>
-                    <p>This is a proofbox with a Kalish and Montague System
-                       \ for First-Order Logic, displaying a proof of Russell's
-                       \ Theorem.
-
+                    <p>_{MsgInfopageDemosText6}
                     ^{proofcheck 5 "firstOrder" "render resize" ":|-:-ExAy(-F(y,y) <-> F(x,y))" russellTheorem}
-
                 <div.demo>
-                    <p>This is a proof with Goldfarb's Lemmon-style system of
-                       \ natural deduction, from the textbook <em>Deductive Logic</em>.
-
+                    <p>_{MsgInfopageDemosText7} #
+                       <em>Deductive Logic
+                       .
                     ^{proofcheck 6 "goldfarbNDPlus" "render resize" "ExAy(Kxy -> Fxy), AxEyKxy :|-: ExEyFxy" lemmonTheorem}
-
                 <div.demo>
-                    <p> Here’s a proof of the fact that the bisectors of the
-                        \ sides of a triangle always meet at a point (from the
-                        \ assumption that a point is on the bisector of a segment if
-                        \ and only if it’s equidistant from the endpoints of that
-                        \ segment). ‟F(x,y)” abbreviates that ‟x is on y“, ‟g(y,z)”
-                        \ abbreviates ‟the bisector of the segment given by y and z”,
-                        \ and ‟h(x,z)” abbreviates ‟the distance from x to z”.
-                    <p> (Because of the number of variables, this one may take
-                        \ a moment to load initially. Once loaded, it should
-                        \ respond quickly to changes.)
+                    <p>_{MsgInfopageDemosText8}
+                    <p>_{MsgInfopageDemosText9}
                     ^{proofcheck 7 "firstOrder" "render resize" "AxAyAz(F(x,g(y,z)) ↔ h(x,y) = h(x,z)) :|-: AwAxAyAz(F(w,g(x,y))^F(w,g(x,z))→F(w,g(y,z)))" bisectorTheorem}
-
                 <div.demo>
-
-                    <p> Here are two more proofs of Russell's theorem, this
-                        \ time using a version of system QL,
-                        \ from P.D. Magnus' free and open textbook #
-                        <a href="https://www.fecundity.com/logic/">Forall x#
-                        , and the system FOL from the #
-                        <a href="https://github.com/rzach/forallx-yyc">Calgary remix
-                        \ of #
-                        <i>Forall x.
-                        \ Note that we've
-                        \ changed how formulas are parsed (dropping the parentheses around
-                        \ the arguments to predicates), to match the display
-                        \ style of #
-                        <i>Forall x.
-
+                    <p>_{MsgInfopageDemosText10} #
+                       <a href="https://www.fecundity.com/logic/">Forall x#
+                       _{MsgInfopageDemosText11} #
+                       <a href="https://github.com/rzach/forallx-yyc">Calgary remix
+                       \ _{MsgInfopageDemosText12}
+                       <i>Forall x.
+                       _{MsgInfopageDemosText13}
+                       <i>Forall x.
                     ^{proofcheck 8 "magnusQL" "render resize" ":|-:-ExAy(-Fyy <-> Fxy)" russellTheoremForallx}
-
                     ^{proofcheck 9 "thomasBolducAndZachFOL" "render resize" ":|-:-ExAy(-Fyy <-> Fxy)" russellTheoremCalgary}
                 <div.demo>
-
-                    <p> This is a proofbox with a Kalish and Montague System
-                        \ for Monadic Second-Order Logic, showing how to prove
-                        \ an instance of the comprehension scheme, using
-                        \ a predicate abstraction rule.
-
+                    <p>_{MsgInfopageDemosText14}
                     ^{proofcheck 10 "secondOrder" "render resize" ":|-: EXAx(F(x) /\\ G(x) <-> X(x))" comprehensionTheorem}
-
                 <div.demo>
-
-                    <p> This is a proof that every relation has an inverse, in
-                        \ a system of arbitrarily (finitely) Polyadic
-                        \ Second-Order Logic, again making use of a predicate
-                        \ abstraction rule.
-
+                    <p>_{MsgInfopageDemosText15}
                     ^{proofcheck 11 "polyadicSecondOrder" "render resize" ":|-: AX2EY2AxAy(X2(x,y)<->Y2(y,x))" inverseTheorem}
-
                 <div.demo>
-
-                    <p> This is a proof that the powerset of a transitive set
-                        \ is transitive (exercise 3, chapter 3.3 from Velleman's #
-                        <em>How to Prove It#
-                        ), in a system of elementary set theory.
-
+                    <p>_{MsgInfopageDemosText16} #
+                       <em>How to Prove It#
+                       _{MsgInfopageDemosText17}
                     ^{proofcheck 12 "elementarySetTheory" "render resize" "a within P(a) :|-: P(a) within P(P(a)) " transitiveTheorem}
-
                 <div.demo>
-
-                    <p> Here are proofs of axioms 5 and B within natural
-                        \ deduction systems for propositional modal logics K5
-                        \ and KTB, in the style of Hardegree's #
-                        <a href="http://courses.umass.edu/phil511-gmh/MAIN/IHome-1.htm">Modal Logic#
-                        .
-                    <p> These use #
-                        <a href="https://github.com/gleachkr/FiraLogic">Fira Logic
-                        \ for nicer-looking logical symbols and use guards to
-                        \ help visually indicate the scope of each subproof.
-
+                    <p>_{MsgInfopageDemosText18} #
+                       <a href="http://courses.umass.edu/phil511-gmh/MAIN/IHome-1.htm">Modal Logic#
+                       .
+                    <p>_{MsgInfopageDemosText19} #
+                       <a href="https://github.com/gleachkr/FiraLogic">Fira Logic
+                       _{MsgInfopageDemosText20}
                     ^{proofcheck 13 "hardegree5" "fonts guides resize" ":|-:<>[]P->[]P" axiomFiveTheorem}
-
                     ^{proofcheck 14 "hardegreeB" "fonts guides resize" ":|-: <>[]P->P" axiomBTheorem}
-
                 <div.demo>
-
-                    <p> Here's a proof of the Barcan Formula within a naïvely
-                        \ quantified system of modal logic, based on the system
-                        \ MPL of Hardegree's #
-                        <a href="http://courses.umass.edu/phil511-gmh/MAIN/IHome-1.htm">Modal Logic#
-                        .
-
+                    <p>_{MsgInfopageDemosText21} #
+                       <a href="http://courses.umass.edu/phil511-gmh/MAIN/IHome-1.htm">Modal Logic#
+                       .
                     ^{proofcheck 15 "hardegreeMPL" "fonts guides resize" ":|-: Ax[]Fx->[]AxFx" barcanTheorem}
-
                 <div.demo>
-
-                    <p> Carnap supports proofs written in the sequent calculus, via #
-                        <a href="https://github.com/gleachkr/ProofJS">ProofJS#
-                        . Among the systems supported are propositional and first
-                        \ order variants of Gentzen's original LK and LJ.
-
+                    <p>_{MsgInfopageDemosText22} #
+                       <a href="https://github.com/gleachkr/ProofJS">ProofJS#
+                       . _{MsgInfopageDemosText23}
                     ^{sequentcheck 16 "foLK" "" "AxEy(F(x)/\\G(y)):|-:EyAx(F(x)/\\G(y))" sequentDemo}
-
                 <div.demo>
-
-                    <p> Carnap also includes a JSON API, making it possible to
-                        \ create pure JavaScript GUIs that use Carnap under
-                        \ the hood for in-browser proof checking. Here's an example
-                        \ of such a GUI, adapted from #
-                        <a href="https://the21stcenturymonads.net/forallx/">
-                            Kevin Klement's forallx proofchecker
-                        \ using P.D. Magnus' #
-                        <i>Forall x
-                        \ system SL.
-
+                    <p>_{MsgInfopageDemosText24} #
+                       <a href="https://the21stcenturymonads.net/forallx/">
+                           Kevin Klement's forallx proofchecker
+                       _{MsgInfopageDemosText25} #
+                       <i>Forall x
+                       \ _{MsgInfopageDemosText26}
                     <div.exercise>
-                        <span> example 17
+                        <span>_{MsgInfopageDemosText27}
                         <div#klementProof>
                             (W ∨ X), (Y ∨ Z), X → Y, ¬Z ∴ W ∨ Y
-
             <div#demo-selector>
                 <span#demo-left>〈
                 <span#demo-num>1
