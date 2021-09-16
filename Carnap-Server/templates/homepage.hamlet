@@ -11,13 +11,13 @@
 
     <p> _{MsgHomepageText1} #
         <a href="https://haskell.org">Haskell
-        \ _{MsgHomepageText2}
-        <a href="@{InfoR}#who"> _{MsgHomepageText3}
+        \ _{MsgHomepageText2} #
+        <a href="@{InfoR}#who">_{MsgHomepageText3}
         \ _{MsgHomepageText4}
 
     <p> _{MsgHomepageText5}
 
-    <p> _{MsgHomepageText6}
+    <p> _{MsgHomepageText6} #
         <a href=@{InfoR}>_{MsgHomepageText7}
-        \ _{MsgHomepageText8}
+        \ _{MsgHomepageText8} #
         <a href="mailto:gleachkr@ksu.edu">_{MsgHomepageText9}
