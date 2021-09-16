@@ -6,7 +6,7 @@ module Carnap.Languages.PureFirstOrder.Parser
 , hardegreePLFormulaParser, belotPDFormulaParser, belotPDEFormulaParser
 , bergmannMoorAndNelsonPDFormulaParser, bergmannMoorAndNelsonPDEFormulaParser
 , gregoryPDFormulaParser, goldfarbNDFormulaParser, tomassiQLFormulaParser, hurleyPLFormulaParser
-, hausmanPLFormulaParser, cortensQLFormulaParser, lemmonQuantFormulaParser
+, hausmanPLFormulaParser, cortensQLFormulaParser, lemmonQuantFormulaParser, landeQuantFormulaParser
 , FirstOrderParserOptions(..), parserFromOptions, parseFreeVar, howardSnyderPLFormulaParser) where
 
 import Carnap.Core.Data.Types
@@ -346,6 +346,16 @@ lemmonQuantOptions = FirstOrderParserOptions
                          }
     where boolean a = if isBoolean a then return a else unexpected "atomic or quantified sentence wrapped in parentheses"
 
+landeQuantOptions :: FirstOrderParserOptions PureLexiconFOL u Identity
+landeQuantOptions = lemmonQuantOptions
+                         { atomicSentenceParser = \x -> try (parsePredicateSymbolNoParen "ABCDEFGHIJKLMNOPQRSTUVWXYZ" x)
+                                                        <|> try (sentenceLetterParser "ABCDEFGHIJKLMNOPQRSTUVWXYZ" )
+                                                        <|> try (equalsParser x)
+                                                        <|> inequalityParser x
+                         , quantifiedSentenceParser' = altAltQuantifiedSentenceParser
+                         , finalValidation = const (return ())
+                         }
+
 
 howardSnyderPLOptions :: FirstOrderParserOptions PureLexiconFOL u Identity
 howardSnyderPLOptions = FirstOrderParserOptions 
@@ -450,6 +460,9 @@ tomassiQLFormulaParser = parserFromOptions tomassiQLOptions
 
 lemmonQuantFormulaParser :: Parsec String u PureFOLForm
 lemmonQuantFormulaParser = parserFromOptions lemmonQuantOptions
+
+landeQuantFormulaParser :: Parsec String u PureFOLForm
+landeQuantFormulaParser = parserFromOptions landeQuantOptions
 
 folFormulaParser :: Parsec String u PureFOLForm
 folFormulaParser = parserFromOptions standardFOLParserOptions

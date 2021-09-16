@@ -41,6 +41,7 @@ import Carnap.Languages.PureFirstOrder.Logic.HowardSnyder
 import Carnap.Languages.PureFirstOrder.Logic.Hurley
 import Carnap.Languages.PureFirstOrder.Logic.IchikawaJenkins
 import Carnap.Languages.PureFirstOrder.Logic.Lemmon
+import Carnap.Languages.PureFirstOrder.Logic.Lande
 import Carnap.Languages.PureFirstOrder.Logic.KalishAndMontague
 import Carnap.Languages.PureFirstOrder.Logic.Magnus
 import Carnap.Languages.PureFirstOrder.Logic.OpenLogic
@@ -82,6 +83,7 @@ ofFOLSys f sys | sys == "LogicBookPD"                     = Just $ f logicBookPD
                | sys == "hurleyPL"                        = Just $ f hurleyPLCalc
                | sys == "ichikawaJenkinsQL"               = Just $ f ichikawaJenkinsQLCalc
                | sys == "lemmonQuant"                     = Just $ f lemmonQuantCalc
+               | sys == "landeQuant"                      = Just $ f landeQuantCalc
                | sys == "magnusQL"                        = Just $ f magnusQLCalc
                | sys == "magnusQLPlus"                    = Just $ f magnusQLPlusCalc
                | sys == "montagueQC"                      = Just $ f montagueQCCalc
