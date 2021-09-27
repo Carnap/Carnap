@@ -3,7 +3,7 @@ module Carnap.Languages.PureFirstOrder.Logic.Lande where
 
 import Data.Map as M (lookup, Map)
 import Text.Parsec
-import Control.Lens (view)
+import Control.Lens (view, (^?))
 import Carnap.Core.Data.Types 
 import Carnap.Core.Data.Classes
 import Carnap.Core.Unification.Unification (applySub,occurs)
@@ -54,8 +54,10 @@ instance Inference LandeQuant PureLexiconFOL (Form Bool) where
         conclusionOf (Prop x) = liftSequent (conclusionOf x)
         conclusionOf x = lowerSequent (ruleOf x)
 
-        restriction UI = Just (eigenConstraint tau (SS (lall "v" $ phi' 1)) (fogamma 1))
-        restriction EE = Just (eigenConstraint tau (SS (lsome "v" $ phi' 1) :-: SS (phin 1)) (fogamma 1 :+: fogamma 2))
+        restriction UI = Just (eigenConstraint tau (SS (lall "v" $ phi' 1)) (fogamma 1) 
+                              `andFurtherRestriction` variableOnlyConstraint)
+        restriction EE = Just (eigenConstraint tau (SS (lsome "v" $ phi' 1) :-: SS (phin 1)) (fogamma 1 :+: fogamma 2)
+                              `andFurtherRestriction` variableOnlyConstraint)
         restriction (Pr prems) = Just (premConstraint prems)
         restriction _ = Nothing
 
@@ -70,6 +72,14 @@ instance Inference LandeQuant PureLexiconFOL (Form Bool) where
         isAssumption (Pr _) = True
         isAssumption (Prop x) = isAssumption x
         isAssumption _ = False
+
+variableOnlyConstraint  sub | isVar t = Nothing
+                            | otherwise = Just "You appear to be using a constant when you should be using a variable"
+    where isVar x = case x ^? _varLabel of
+                  Nothing -> False
+                  Just _ -> True
+          t = applySub sub tau
+
 
 parseLandeQuant rtc n annote = try parseQuant <|> parseProp 
     where parseProp = map Prop <$> parseLandeProp defaultRuntimeDeductionConfig n annote
