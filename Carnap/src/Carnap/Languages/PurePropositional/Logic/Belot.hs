@@ -115,8 +115,8 @@ instance Inference BelotSD PurePropLexicon (Form Bool) where
 
 parseBelotSD :: RuntimeDeductionConfig PurePropLexicon (Form Bool) -> Parsec String u [BelotSD]
 parseBelotSD rtc = do let mainInferences = choice (map (try . string) [ "&I","/\\I", "∧I","&E","/\\E","∧E","CI","->I","→I", ">I", "⊃I","→E", "⊃E","CE","->E"
-                                                      , "→E" , ">E" ,"~I","-I", "¬I","~E","-E","¬E" ,"vI","\\/I","∨I", "vE","\\/E", "∨E","BI","<->I", "↔I"
-                                                      , "≡I" , "BE", "<->E", "↔E", "≡E"])
+                                                      , "→E" , ">E" ,"~I","-I", "¬I","~E","-E","¬E" ,"vI","\\/I","∨I", "vE","\\/E", "∨E","BI","<->I", "<>I", "↔I"
+                                                      , "≡I" , "BE", "<->E", "<>E", "↔E", "≡E"])
                       r <- (char '(' *> mainInferences <* char ')') <|> try ((++) <$> string "A/" <*> many (noneOf ")")) <|> choice (map (try . string) ["R", "A","PR"])
                       case r of
                         r | r `elem` ["A/>I", "A/->I"] -> return [AS "/⊃I"]
@@ -130,8 +130,8 @@ parseBelotSD rtc = do let mainInferences = choice (map (try . string) [ "&I","/\
                           | r `elem` ["~E","¬E","-E"]  -> return [NegeElim1, NegeElim2, NegeElim3, NegeElim4]
                           | r `elem` ["vI","\\/I","∨I"] -> return [DisjIntro1, DisjIntro2]
                           | r `elem` ["vE","\\/E","∨E"] -> return [DisjElim1, DisjElim2,DisjElim3, DisjElim4]
-                          | r `elem` ["BI","<->I","↔I","≡I"] -> return [BicoIntro1, BicoIntro2, BicoIntro3, BicoIntro4]
-                          | r `elem` ["BE","<->E","↔E","≡E"] -> return [BicoElim1, BicoElim2]
+                          | r `elem` ["BI","<->I", "<>I" ,"↔I","≡I"] -> return [BicoIntro1, BicoIntro2, BicoIntro3, BicoIntro4]
+                          | r `elem` ["BE","<->E", "<>E", "↔E","≡E"] -> return [BicoElim1, BicoElim2]
                         'A':'/':rest -> return [AS (" / " ++ rest)]
                         "R" -> return [Reiterate]
 
