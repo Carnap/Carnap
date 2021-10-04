@@ -39,22 +39,25 @@ getTruthTables d = genInOutElts d "div" "div" "truthtable"
 
 activateTruthTables :: Document -> Maybe (Element, Element, Map String String) -> IO ()
 activateTruthTables w (Just (i,o,opts)) = do
-        case M.lookup "tabletype" opts of
-            Just "simple" -> checkerWith (formListParser <* eof) createSimpleTruthTable
-            Just "validity" -> checkerWith (seqParser <* eof) createValidityTruthTable
-            Just "partial" -> checkerWith (formListPairParser <* eof) createPartialTruthTable
-            _  -> return ()
+        let mpair  = case M.lookup "system" opts of
+                            Nothing -> Just (purePropFormulaParser standardLetters, ndParseSeq montagueSCCalc)
+                            Just sys -> (,) <$> ndParseForm `ofPropSys` sys <*> ndParseSeq `ofPropSys` sys
+        case mpair of
+            Nothing -> setInnerHTML o (Just "the system specified doesn't support truth tables")
+            Just (formParser,seqParser) -> case M.lookup "tabletype" opts of
+                Just "simple" -> checkerWith (formListParser formParser <* eof) createSimpleTruthTable
+                Just "validity" -> checkerWith (seqParser <* eof) createValidityTruthTable
+                Just "partial" -> checkerWith (formListPairParser (formListParser formParser) <* eof) createPartialTruthTable
+                _  -> return ()
 
-    where (formParser,seqParser) = case M.lookup "system" opts >>= \sys -> (,) <$> ndParseForm `ofPropSys` sys <*> ndParseSeq `ofPropSys` sys of
-                                         Just pair -> pair
-                                         Nothing -> (purePropFormulaParser standardLetters, ndParseSeq montagueSCCalc)
-          formListParser = formParser `sepEndBy1` (spaces *> char ',' <* spaces)
-          formListPairParser = do gs <- try (formListParser <* char ':') <|> return []
-                                  optional (char ':')
-                                  spaces
-                                  fs <- formListParser
-                                  return (gs,fs)
-          
+    where 
+          formListParser formParser = formParser `sepEndBy1` (spaces *> char ',' <* spaces)
+          formListPairParser formListParser = do 
+                 gs <- try (formListParser <* char ':') <|> return []
+                 optional (char ':')
+                 spaces
+                 fs <- formListParser
+                 return (gs,fs)
           checkerWith parser ttbuilder = 
             case M.lookup "goal" opts of
                 Just g ->
