@@ -84,8 +84,8 @@ instance Inference WinklerFOL PureLexiconFOL (Form Bool) where
          ruleOf (WinklerTFL TFL.Exp2)   = exportation !! 1           
          ruleOf (WinklerTFL TFL.Dist1)  = distribution !! 0          
          ruleOf (WinklerTFL TFL.Dist2)  = distribution !! 1          
-         ruleOf (WinklerTFL TFL.Dist3)  = distribution !! 2          
-         ruleOf (WinklerTFL TFL.Dist4)  = distribution !! 3          
+         ruleOf (WinklerTFL TFL.Dist3)  = distribution !! 4          
+         ruleOf (WinklerTFL TFL.Dist4)  = distribution !! 5          
          ruleOf (WinklerTFL TFL.Equiv1) = biconditionalExchange !! 0 
          ruleOf (WinklerTFL TFL.Equiv2) = biconditionalExchange !! 1 
          ruleOf (WinklerTFL TFL.Equiv3) = biconditionalCases !! 0    

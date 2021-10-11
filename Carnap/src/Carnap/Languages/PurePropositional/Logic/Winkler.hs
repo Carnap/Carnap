@@ -196,8 +196,8 @@ instance Inference WinklerTFL PurePropLexicon (Form Bool) where
         ruleOf Exp2   = exportation !! 1
         ruleOf Dist1  = distribution !! 0
         ruleOf Dist2  = distribution !! 1
-        ruleOf Dist3  = distribution !! 2
-        ruleOf Dist4  = distribution !! 3
+        ruleOf Dist3  = distribution !! 4
+        ruleOf Dist4  = distribution !! 5
         ruleOf Equiv1 = biconditionalExchange !! 0
         ruleOf Equiv2 = biconditionalExchange !! 1
         ruleOf Equiv3 = biconditionalCases !! 0

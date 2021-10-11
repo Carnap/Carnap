@@ -119,8 +119,8 @@ instance Inference HowardSnyderSL PurePropLexicon (Form Bool) where
     ruleOf Equiv4 = biconditionalCases !! 1
     ruleOf Dist1 = distribution !! 0
     ruleOf Dist2 = distribution !! 1
-    ruleOf Dist3 = distribution !! 2
-    ruleOf Dist4 = distribution !! 3
+    ruleOf Dist3 = distribution !! 4
+    ruleOf Dist4 = distribution !! 5
     ruleOf CP1 = conditionalProofVariations !! 0
     ruleOf CP2 = conditionalProofVariations !! 1
     ruleOf IP1 = explictNonConstructiveConjunctionReductioVariations !! 0
