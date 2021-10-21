@@ -13,6 +13,7 @@ import Carnap.Calculi.NaturalDeduction.Syntax
 import Carnap.Calculi.NaturalDeduction.Parser
 import Carnap.Calculi.NaturalDeduction.Checker
 import Carnap.Languages.PurePropositional.Logic.Rules
+import Carnap.Languages.ClassicalSequent.Parser (parseSeqOver)
 import Carnap.Languages.PurePropositional.Logic.BergmannMoorAndNelson
 
 newtype GregorySD = GregorySD { getGregorySD :: LogicBookSD }
@@ -214,8 +215,8 @@ gregorySDCalc = mkNDCalc
     , ndParseProof = parseGregorySDProof
     , ndProcessLine = hoProcessLineFitch
     , ndProcessLineMemo = Just hoProcessLineFitchMemo
-    , ndParseSeq = extendedPropSeqParser
-    , ndParseForm = purePropFormulaParser extendedLetters
+    , ndParseSeq = parseSeqOver (purePropFormulaParser gregoryOpts)
+    , ndParseForm = purePropFormulaParser gregoryOpts
     , ndNotation = dropOuterParens . gregoryNotation
     }
 
@@ -224,7 +225,7 @@ gregorySDECalc = mkNDCalc
     , ndParseProof = parseGregorySDEProof
     , ndProcessLine = hoProcessLineFitch
     , ndProcessLineMemo = Just hoProcessLineFitchMemo
-    , ndParseSeq = extendedPropSeqParser
-    , ndParseForm = purePropFormulaParser extendedLetters
+    , ndParseSeq = parseSeqOver (purePropFormulaParser gregoryOpts)
+    , ndParseForm = purePropFormulaParser gregoryOpts
     , ndNotation = dropOuterParens . gregoryNotation
     }

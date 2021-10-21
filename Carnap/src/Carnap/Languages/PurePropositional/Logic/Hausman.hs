@@ -84,7 +84,7 @@ instance Inference HausmanSL PurePropLexicon (Form Bool) where
     ruleOf DS1  = modusTollendoPonensVariations !! 0 
     ruleOf DS2  = modusTollendoPonensVariations !! 1
     ruleOf Add  = additionVariations !! 1 --book only uses this form
-    ruleOf CD   = dilemma
+    ruleOf CD   = constructiveDilemma
     ruleOf Simp1 = simplificationVariations !! 0
     ruleOf Simp2 = simplificationVariations !! 1
     ruleOf DN1 = doubleNegation !! 0
