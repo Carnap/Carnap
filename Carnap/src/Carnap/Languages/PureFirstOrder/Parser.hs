@@ -291,12 +291,7 @@ hausmanPLOptions = FirstOrderParserOptions
                          , opTable = hausmanOpTable
                          , finalValidation = const (pure ())
                          }
-    where hausmanDispatch opt recurWith = hausmanBrace opt recurWith
-                                      <|> hausmanParen opt recurWith
-                                      <|> hausmanBracket opt recurWith
-          hausmanBrace opt recurWith = wrappedWith '{' '}' (recurWith opt {parenRecur = hausmanBracket}) >>= boolean
-          hausmanParen opt recurWith = wrappedWith '(' ')' (recurWith opt {parenRecur = hausmanBrace}) >>= boolean
-          hausmanBracket opt recurWith = wrappedWith '[' ']' (recurWith opt {parenRecur = hausmanParen}) >>= boolean
+    where hausmanDispatch opt rw = (wrappedWith '{' '}' (rw opt) <|> wrappedWith '(' ')' (rw opt) <|> wrappedWith '[' ']' (rw opt)) >>= boolean
           boolean a = if isBoolean a then return a else unexpected "atomic or quantified sentence wrapped in parentheses"
 
 cortensQLOptions :: FirstOrderParserOptions PureLexiconFOL u Identity
