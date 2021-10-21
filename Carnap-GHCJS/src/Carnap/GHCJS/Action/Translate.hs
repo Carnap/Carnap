@@ -113,7 +113,7 @@ tryTrans w parser equiv tests wrapper ref fs = onEnter $
                          Right f -> liftIO $ case tests f of
                                                   Nothing -> checkForm f
                                                   Just msg -> writeIORef ref False >> message ("Looks like " ++ msg ++ ".")
-                         Left e -> message "Sorry, try again---that formula isn't gramatical."
+                         Left e -> message "Sorry, try again---that formula isn't grammatical."
    where checkForm f' 
             | f' `elem` fs = do message "Perfect match!"
                                 writeIORef ref True
