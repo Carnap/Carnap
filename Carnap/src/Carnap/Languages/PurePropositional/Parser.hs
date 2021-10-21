@@ -10,7 +10,7 @@ import Carnap.Core.Data.Types
 import Carnap.Languages.PurePropositional.Syntax
 import Carnap.Languages.ClassicalSequent.Parser
 import Carnap.Languages.PurePropositional.Util (isAtom, isBooleanBinary)
-import Carnap.Languages.Util.LanguageClasses (BooleanLanguage, IndexedPropLanguage)
+import Carnap.Languages.Util.LanguageClasses (BooleanLanguage(..), IndexedPropLanguage)
 import Carnap.Languages.Util.GenericParsers
 import Text.Parsec
 import Text.Parsec.Expr
@@ -72,8 +72,8 @@ standardLettersStrict = standardLetters { opTable = standardOpTableStrict }
 
 gregoryOpts :: Monad m => PurePropositionalParserOptions u m
 gregoryOpts = extendedLetters { parenRecur = gregoryDispatch
-                           , opTable = standardOpTableStrict
-                           }
+                              , opTable = standardOpTableStrict
+                              }
     where noatoms a = if isAtom a then unexpected "atomic sentence wrapped in parentheses" else return a
           gregoryDispatch opt rw = (wrappedWith '(' ')' (rw opt) <|> wrappedWith '[' ']' (rw opt)) >>= noatoms
 
@@ -94,24 +94,14 @@ thomasBolducZach2019Opts :: Monad m => PurePropositionalParserOptions u m
 thomasBolducZach2019Opts = thomasBolducZachOpts { opTable = calgary2019OpTable }
 
 hurleyOpts ::  Monad m => PurePropositionalParserOptions u m
-hurleyOpts = extendedLetters 
-                { opTable = hausmanOpTable 
-                , parenRecur = hurleyDispatch
-                }
-    where hurleyDispatch opt rw = (wrappedWith '{' '}' (rw opt) <|> wrappedWith '(' ')' (rw opt) <|> wrappedWith '[' ']' (rw opt)) >>= noatoms
-          noatoms a = if isAtom a then unexpected "atomic sentence wrapped in parentheses" else return a
+hurleyOpts = hausmanOpts
 
 hausmanOpts ::  Monad m => PurePropositionalParserOptions u m
 hausmanOpts = extendedLetters 
                 { opTable = hausmanOpTable 
                 , parenRecur = hausmanDispatch
                 }
-    where hausmanDispatch opt recurWith = hausmanBrace opt recurWith
-                                      <|> hausmanParen opt recurWith
-                                      <|> hausmanBracket opt recurWith
-          hausmanBrace opt recurWith = wrappedWith '{' '}' (recurWith opt {parenRecur = hausmanBracket}) >>= noatoms
-          hausmanParen opt recurWith = wrappedWith '(' ')' (recurWith opt {parenRecur = hausmanBrace}) >>= noatoms
-          hausmanBracket opt recurWith = wrappedWith '[' ']' (recurWith opt {parenRecur = hausmanParen}) >>= noatoms
+    where hausmanDispatch opt rw = (wrappedWith '{' '}' (rw opt) <|> wrappedWith '(' ')' (rw opt) <|> wrappedWith '[' ']' (rw opt)) >>= noatoms
           noatoms a = if isAtom a then unexpected "atomic sentence wrapped in parentheses" else return a
 
 howardSnyderOpts ::  Monad m => PurePropositionalParserOptions u m
@@ -190,3 +180,26 @@ howardSnyderOpTable = [[ Prefix (try parseNeg)
                        , Infix (try parseIf) AssocNone
                        , Infix (try parseIff) AssocNone
                        ]]
+
+-----------------------
+--  Special Parsers  --
+-----------------------
+
+englishPropFormulaParser :: Monad m => ParsecT String u m PureForm
+englishPropFormulaParser = buildExpressionParser englishOps subFormulaParser
+    --subformulas are either
+    where subFormulaParser = (parenParser englishPropFormulaParser <* spaces) --formulas wrapped in parentheses
+                          <|> unaryOpParser [englishNeg] subFormulaParser 
+                          <|> (spaces >> string "if " >> (lif <$> subFormulaParser <* string " then " *> subFormulaParser))
+                          <|> (spaces >> string "both " >> (lif <$> subFormulaParser <* string " and " *> subFormulaParser))
+                          <|> (spaces >> string "either " >> (lif <$> subFormulaParser <* string " or " *> subFormulaParser))
+                          <|> try (sentenceLetterParser ['A'..'Z'] <* spaces)--or atoms
+
+          englishOps = [ [Prefix (try englishNeg) ]
+                       , [Infix (try englishOr) AssocLeft, Infix (try englishAnd) AssocLeft]
+                       , [Infix (try englishIff) AssocNone]
+                       ]
+          englishNeg = spaces >> string "not" >> spaces >> return lneg
+          englishOr = spaces >> string "or" >> spaces >> return lor
+          englishAnd = spaces >> string "and" >> spaces >> return land
+          englishIff = spaces >> string "if and only if" >> spaces >> return liff
