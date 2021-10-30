@@ -328,6 +328,7 @@ tomassiQLOptions = FirstOrderParserOptions
 lemmonQuantOptions :: FirstOrderParserOptions PureLexiconFOL u Identity
 lemmonQuantOptions = FirstOrderParserOptions
                          { atomicSentenceParser = \x -> try (parsePredicateSymbolNoParen "ABCDEFGHIJKLMNOPQRSTUVWXYZ" x)
+                                                        <|> try (parenParser (equalsParser x ))
                                                         <|> sentenceLetterParser "ABCDEFGHIJKLMNOPQRSTUVWXYZ" 
                                                         <|> equalsParser x 
                          , quantifiedSentenceParser' = altQuantifiedSentenceParser
@@ -345,6 +346,8 @@ landeQuantOptions :: FirstOrderParserOptions PureLexiconFOL u Identity
 landeQuantOptions = lemmonQuantOptions
                          { atomicSentenceParser = \x -> try (parsePredicateSymbolNoParen "ABCDEFGHIJKLMNOPQRSTUVWXYZ" x)
                                                         <|> try (sentenceLetterParser "ABCDEFGHIJKLMNOPQRSTUVWXYZ" )
+                                                        <|> try (parenParser (equalsParser x))
+                                                        <|> try (parenParser (inequalityParser x))
                                                         <|> try (equalsParser x)
                                                         <|> inequalityParser x
                          , quantifiedSentenceParser' = altAltQuantifiedSentenceParser
