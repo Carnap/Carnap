@@ -64,7 +64,7 @@ instance Show GregorySD where
     show (GregorySD BicoIntro4) = "↔I"
     show (GregorySD BicoElim1)  = "↔E"
     show (GregorySD BicoElim2)  = "↔E"
-    show (GregorySD Reiterate)  = "↔R"
+    show (GregorySD Reiterate)  = "R"
     show (GregorySD (Pr _))     = "P"
     show (GregorySD x) = show x
 
@@ -169,7 +169,7 @@ parseGregorySD rtc = do r <- choice (map (try . string) ["Assumption" ,"&I","/\\
                         return $ map GregorySD theRule
 
 parseGregorySDE :: RuntimeDeductionConfig PurePropLexicon (Form Bool) -> Parsec String u [GregorySDE]
-parseGregorySDE rtc = try (map (GregorySDE . SD . getGregorySD) <$> parseGregorySD rtc) <|> parsePlus
+parseGregorySDE rtc = try parsePlus <|> (map (GregorySDE . SD . getGregorySD) <$> parseGregorySD rtc)
     where parsePlus = do r <- choice (map (try . string) ["MT","HS","DS","Com","Assoc","Impl", "DN", "DeM", "Idem", "Trans", "Exp", "Dist", "Equiv"])
                          return $ case r of
                             r | r == "MT" -> [GregorySDE MT, GregoryMT1, GregoryMT2, GregoryMT3]
