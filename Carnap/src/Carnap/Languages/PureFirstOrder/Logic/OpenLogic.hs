@@ -197,7 +197,7 @@ instance (AssumptionNumbers r, NKAdequate lex) => StructuralOverride (OpenLogicA
 
 freshParametersAt n pt@(Node _ [Node p1 _, Node p2 _]) = case leavesLabeled n pt of
         [] -> []
-        (Node pl _ : _) -> filter isConst (toListOf termsOf (content pl)) \\ (toListOf termsOf (content p1) ++ toListOf termsOf (content p1)) 
+        (Node pl _ : _) -> filter isConst (toListOf termsOf (content pl)) \\ (toListOf termsOf (content p1) ++ toListOf termsOf (content p2)) 
         --we're looking for a constant that's in the assumption but isn't
         --in either premise to the EE inference
     where isConst t = maybe False (const True) (t ^? _constIdx)
