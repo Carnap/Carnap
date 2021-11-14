@@ -61,7 +61,7 @@ activateTruthTables w (Just (i,o,opts)) = do
           checkerWith parser ttbuilder = 
             case M.lookup "goal" opts of
                 Just g ->
-                  case parse parser "" g of
+                  case parse (spaces *> parser <* eof) "" g of
                       Left e -> setInnerHTML o (Just $ show e) 
                       Right f -> do
                           Just wrap <- getParentElement i
