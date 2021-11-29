@@ -117,23 +117,25 @@ parseBelotSD :: RuntimeDeductionConfig PurePropLexicon (Form Bool) -> Parsec Str
 parseBelotSD rtc = do let mainInferences = choice (map (try . string) [ "&I","/\\I", "∧I","&E","/\\E","∧E","CI","->I","→I", ">I", "⊃I","→E", "⊃E","CE","->E"
                                                       , "→E" , ">E" ,"~I","-I", "¬I","~E","-E","¬E" ,"vI","\\/I","∨I", "vE","\\/E", "∨E","BI","<->I", "<>I", "↔I"
                                                       , "≡I" , "BE", "<->E", "<>E", "↔E", "≡E"])
-                      r <- (char '(' *> mainInferences <* char ')') <|> try ((++) <$> string "A/" <*> many (noneOf ")")) <|> choice (map (try . string) ["R", "A","PR"])
-                      case r of
-                        r | r `elem` ["A/>I", "A/->I"] -> return [AS "/⊃I"]
-                          | r `elem` ["A/=I"] -> return [AS "/≡I"]
-                          | r `elem` ["A","PR", "Assumption"] -> return [Pr (problemPremises rtc)]
-                          | r `elem` ["&I","/\\I","∧I"] -> return [ConjIntro]
-                          | r `elem` ["&E","/\\E","∧E"] -> return [ConjElim1, ConjElim2]
-                          | r `elem` ["CI","->I","→I",">I", "⊃I"] -> return [CondIntro1,CondIntro2]
-                          | r `elem` ["CE","->E","→E",">E", "⊃E"] -> return [CondElim]
-                          | r `elem` ["~I","¬I","-I"]  -> return [NegeIntro1, NegeIntro2, NegeIntro3, NegeIntro4]
-                          | r `elem` ["~E","¬E","-E"]  -> return [NegeElim1, NegeElim2, NegeElim3, NegeElim4]
-                          | r `elem` ["vI","\\/I","∨I"] -> return [DisjIntro1, DisjIntro2]
-                          | r `elem` ["vE","\\/E","∨E"] -> return [DisjElim1, DisjElim2,DisjElim3, DisjElim4]
-                          | r `elem` ["BI","<->I", "<>I" ,"↔I","≡I"] -> return [BicoIntro1, BicoIntro2, BicoIntro3, BicoIntro4]
-                          | r `elem` ["BE","<->E", "<>E", "↔E","≡E"] -> return [BicoElim1, BicoElim2]
-                        'A':'/':rest -> return [AS (" / " ++ rest)]
-                        "R" -> return [Reiterate]
+                      r <- (char '(' *> mainInferences <* char ')') 
+                            <|> try ((++) <$> string "A/" <*> many (noneOf ")")) 
+                            <|> choice (map (try . string) ["R", "A","PR"])
+                      return $ case r of
+                        r | r `elem` ["A/>I", "A/->I"] -> [AS "/⊃I"]
+                          | r `elem` ["A/=I"] -> [AS "/≡I"]
+                          | r `elem` ["A","PR"] -> [Pr (problemPremises rtc)]
+                          | r `elem` ["&I","/\\I","∧I"] -> [ConjIntro]
+                          | r `elem` ["&E","/\\E","∧E"] -> [ConjElim1, ConjElim2]
+                          | r `elem` ["CI","->I","→I",">I", "⊃I"] -> [CondIntro1,CondIntro2]
+                          | r `elem` ["CE","->E","→E",">E", "⊃E"] -> [CondElim]
+                          | r `elem` ["~I","¬I","-I"]  -> [NegeIntro1, NegeIntro2, NegeIntro3, NegeIntro4]
+                          | r `elem` ["~E","¬E","-E"]  -> [NegeElim1, NegeElim2, NegeElim3, NegeElim4]
+                          | r `elem` ["vI","\\/I","∨I"] -> [DisjIntro1, DisjIntro2]
+                          | r `elem` ["vE","\\/E","∨E"] -> [DisjElim1, DisjElim2,DisjElim3, DisjElim4]
+                          | r `elem` ["BI","<->I", "<>I" ,"↔I","≡I"] -> [BicoIntro1, BicoIntro2, BicoIntro3, BicoIntro4]
+                          | r `elem` ["BE","<->E", "<>E", "↔E","≡E"] -> [BicoElim1, BicoElim2]
+                        'A':'/':rest -> [AS (" / " ++ rest)]
+                        "R" -> [Reiterate]
 
 parseBelotSDProof :: RuntimeDeductionConfig PurePropLexicon (Form Bool) -> String -> [DeductionLine BelotSD PurePropLexicon (Form Bool)]
 parseBelotSDProof ders = toDeductionFitch (parseBelotSD ders) (purePropFormulaParser belotOpts)

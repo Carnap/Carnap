@@ -79,17 +79,21 @@ parseBelotPD rtc = try quantRule <|> liftProp
     where liftProp = do r <- parseBelotSD (defaultRuntimeDeductionConfig)
                         return (map SD r)
           quantRule = do r <- (char '(' *> choice (map (try . string) ["∀I", "AI", "∀E", "AE", "∃I", "EI", "∃E", "EE"]) <* char ')')
-                              <|> choice (map (try . string) ["PR", "A/EE", "PR", "A"])
-                         case r of 
-                            r | r `elem` ["∀I","AI"] -> return [UI]
-                              | r `elem` ["∀E","AE"] -> return [UE]
-                              | r `elem` ["∃I","EI"] -> return [EI]
-                              | r `elem` ["∃E","EE"] -> return [EE1, EE2]
-                              | r `elem` ["A/EE"] -> return [SD (AS "/∃E")]
-                              | r `elem` [ "A", "PR"] -> return [Pr (problemPremises rtc)]
+                              <|> try ((++) <$> string "A/" <*> many (noneOf ")"))
+                              <|> choice (map (try . string) ["PR", "A"])
+                         return $ case r of 
+                            r | r `elem` ["∀I","AI"] -> [UI]
+                              | r `elem` ["∀E","AE"] -> [UE]
+                              | r `elem` ["∃I","EI"] -> [EI]
+                              | r `elem` ["∃E","EE"] -> [EE1, EE2]
+                              | r `elem` [ "A", "PR", "Assumption"] -> [Pr (problemPremises rtc)]
+                              | r `elem` ["A/EE"] -> [SD $ AS "/∃E"]
+                              | r `elem` ["A/>I", "A/->I"] -> [SD $ AS "/⊃I"]
+                              | r `elem` ["A/=I"] -> [SD $ AS "/≡I"]
+                            'A':'/':rest -> [SD $ AS (" / " ++ rest)]
 
 parseBelotPDProof :: RuntimeDeductionConfig PureLexiconFOL (Form Bool) -> String -> [DeductionLine BelotPD PureLexiconFOL (Form Bool)]
-parseBelotPDProof rtc = toDeductionFitchAlt (parseBelotPD rtc) belotPDFormulaParser --XXX Check parser
+parseBelotPDProof rtc = toDeductionFitch (parseBelotPD rtc) belotPDFormulaParser --XXX Check parser
 
 belotNotation :: String -> String 
 belotNotation x = case runParser altParser 0 "" x of

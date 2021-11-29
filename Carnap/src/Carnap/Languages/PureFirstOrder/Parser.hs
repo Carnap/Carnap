@@ -351,9 +351,10 @@ landeQuantOptions = lemmonQuantOptions
                                                         <|> try (equalsParser x)
                                                         <|> inequalityParser x
                          , quantifiedSentenceParser' = altAltQuantifiedSentenceParser
+                         , freeVarParser = parseFreeVar "uvwxyz"
+                         , constantParser = Just (parseConstant "abcdefghijklmnopqrst")
                          , finalValidation = const (return ())
                          }
-
 
 howardSnyderPLOptions :: FirstOrderParserOptions PureLexiconFOL u Identity
 howardSnyderPLOptions = FirstOrderParserOptions 
