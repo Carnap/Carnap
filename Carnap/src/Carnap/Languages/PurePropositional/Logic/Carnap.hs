@@ -1,6 +1,6 @@
 {-#LANGUAGE FlexibleContexts, FlexibleInstances, MultiParamTypeClasses #-}
 module Carnap.Languages.PurePropositional.Logic.Carnap
-    (parsePropLogic,  parsePropLogicProof, PropLogic, propCalc, propCalcStrict, propTreeCalc) where
+    (parsePropLogic,  parsePropLogicProof, PropLogic, propCalc, propCalcStrict, propCalcNL, propCalcNLStrict, propTreeCalc) where
 import Data.Map as M (lookup, Map)
 import Text.Parsec
 import Carnap.Core.Data.Types (Form)
@@ -119,6 +119,12 @@ parsePropLogicProofStrict :: RuntimeDeductionConfig PurePropLexicon (Form Bool)
                      -> String -> [DeductionLine PropLogic PurePropLexicon (Form Bool)]
 parsePropLogicProofStrict rtc = toDeductionMontague (parsePropLogic rtc) (purePropFormulaParser standardLettersStrict)
 
+parsePropLogicProofNL :: RuntimeDeductionConfig PurePropLexicon (Form Bool) 
+                     -> String -> [DeductionLine PropLogic PurePropLexicon (Form Bool)]
+parsePropLogicProofNL rtc = toDeductionMontague (parsePropLogic rtc) englishPropFormulaParser
+
+parsePropLogicProofNLStrict rtc = toDeductionMontague (parsePropLogic rtc) englishPropFormulaParserStrict
+
 propCalc = mkNDCalc 
     { ndRenderer = MontagueStyle
     , ndParseProof = parsePropLogicProof
@@ -133,6 +139,24 @@ propCalcStrict = mkNDCalc
     , ndProcessLineMemo = Nothing
     , ndParseForm = purePropFormulaParser standardLettersStrict
     , ndParseSeq = parseSeqOver (purePropFormulaParser standardLettersStrict)
+    }
+
+propCalcNL = mkNDCalc
+    { ndRenderer = MontagueStyle
+    , ndParseProof = parsePropLogicProofNL
+    , ndProcessLine = processLineMontague
+    , ndProcessLineMemo = Nothing
+    , ndParseForm = englishPropFormulaParser
+    , ndParseSeq = parseSeqOver englishPropFormulaParser
+    }
+
+propCalcNLStrict = mkNDCalc
+    { ndRenderer = MontagueStyle
+    , ndParseProof = parsePropLogicProofNLStrict
+    , ndProcessLine = processLineMontague
+    , ndProcessLineMemo = Nothing
+    , ndParseForm = englishPropFormulaParserStrict
+    , ndParseSeq = parseSeqOver englishPropFormulaParserStrict
     }
 
 propTreeCalc :: TableauCalc PurePropLexicon (Form Bool) PropLogic

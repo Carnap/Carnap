@@ -4,6 +4,7 @@ module Carnap.Languages.PurePropositional.Parser
     , thomasBolducZachOpts, thomasBolducZach2019Opts, hardegreeOpts, arthurOpts, standardOpTable, standardOpTableStrict
     , calgaryOpTable, calgary2019OpTable, hausmanOpTable, howardSnyderOpTable, gamutOpTable
     , gamutOpts, bonevacOpts, howardSnyderOpts, hurleyOpts, gregoryOpts, magnusOpts, extendedPropSeqParser
+    , englishPropFormulaParser, englishPropFormulaParserStrict
     ) where
 
 import Carnap.Core.Data.Types
@@ -185,21 +186,68 @@ howardSnyderOpTable = [[ Prefix (try parseNeg)
 --  Special Parsers  --
 -----------------------
 
-englishPropFormulaParser :: Monad m => ParsecT String u m PureForm
-englishPropFormulaParser = buildExpressionParser englishOps subFormulaParser
-    --subformulas are either
-    where subFormulaParser = (parenParser englishPropFormulaParser <* spaces) --formulas wrapped in parentheses
+englishPropFormulaParserStrict :: Monad m => ParsecT String u m PureForm
+englishPropFormulaParserStrict = (spaces >> string "if " >> (lif <$> subFormulaParser <*> (string "then " *> subFormulaParser)))
+                          <|> (spaces >> string "both " >> (land <$> subFormulaParser <*> (string "and " *> subFormulaParser)))
+                          <|> (spaces >> string "either " >> (lor <$> subFormulaParser <*> (string "or " *> subFormulaParser)))
+                          <|> buildExpressionParser englishOps subFormulaParser
+    where subFormulaParser = (parenParser englishPropFormulaParserStrict <* spaces) --formulas wrapped in parentheses
                           <|> unaryOpParser [englishNeg] subFormulaParser 
-                          <|> (spaces >> string "if " >> (lif <$> subFormulaParser <* string " then " *> subFormulaParser))
-                          <|> (spaces >> string "both " >> (lif <$> subFormulaParser <* string " and " *> subFormulaParser))
-                          <|> (spaces >> string "either " >> (lif <$> subFormulaParser <* string " or " *> subFormulaParser))
-                          <|> try (sentenceLetterParser ['A'..'Z'] <* spaces)--or atoms
+                          <|> (sentenceLetterParser ['A'..'Z'] <* spaces) --or atoms
 
           englishOps = [ [Prefix (try englishNeg) ]
-                       , [Infix (try englishOr) AssocLeft, Infix (try englishAnd) AssocLeft]
-                       , [Infix (try englishIff) AssocNone]
+                       , [Infix (try englishAnd) AssocNone, Infix (try englishOr) AssocNone, Infix (try englishIff) AssocNone]
                        ]
           englishNeg = spaces >> string "not" >> spaces >> return lneg
           englishOr = spaces >> string "or" >> spaces >> return lor
           englishAnd = spaces >> string "and" >> spaces >> return land
           englishIff = spaces >> string "if and only if" >> spaces >> return liff
+
+englishPropFormulaParser :: Monad m => ParsecT String u m PureForm
+englishPropFormulaParser = buildExpressionParser englishOps subFormulaParser
+    --subformulas are either
+    where subFormulaParser = (parenParser englishPropFormulaParser <* spaces) --formulas wrapped in parentheses
+                          <|> unaryOpParser [englishNeg] subFormulaParser 
+                          <|> try (spaces >> string "if " >> (lif <$> englishPropFormulaParser <*> (string "then " *> englishPropFormulaParser)))
+                          <|> (spaces >> string "if " >> (lif <$> englishPropFormulaParser <*> (string ", then " *> englishPropFormulaParser)))
+                          <|> try (spaces >> string "both " >> (land <$> englishPropFormulaParserSansComma <*> (string ", and " *> englishPropFormulaParser)))
+                          <|> (spaces >> string "both " >> (land <$> englishPropFormulaParserSansAnd <*> (string "and " *> englishPropFormulaParser)))
+                          <|> try (spaces >> string "either " >> (lor <$> englishPropFormulaParserSansComma <*> (string ", or " *> englishPropFormulaParser)))
+                          <|> (spaces >> string "either " >> (lor <$> englishPropFormulaParserSansOr <*> (string "or " *> englishPropFormulaParser)))
+                          <|> (sentenceLetterParser ['A'..'Z'] <* spaces) --or atoms
+
+          englishPropFormulaParserSansAnd = buildExpressionParser sansAnd subFormulaParser
+
+          englishPropFormulaParserSansOr = buildExpressionParser sansOr subFormulaParser
+
+          englishPropFormulaParserSansComma = buildExpressionParser sansComma subFormulaParser
+
+          sansOr = [ [Prefix (try englishNeg) ]
+                       , [Infix (try englishAnd) AssocLeft]
+                       , [Infix (try englishIff) AssocNone, Infix (try englishIf) AssocNone]
+                       , [Infix (try oxfordAnd) AssocLeft]
+                       ]
+          sansAnd = [ [Prefix (try englishNeg) ]
+                       , [Infix (try englishOr) AssocLeft]
+                       , [Infix (try englishIff) AssocNone, Infix (try englishIf) AssocNone]
+                       , [Infix (try oxfordOr) AssocLeft]
+                       ]
+
+          sansComma = [ [Prefix (try englishNeg) ]
+                       , [Infix (try englishAnd) AssocLeft, Infix (try englishOr) AssocLeft]
+                       , [Infix (try englishIff) AssocNone, Infix (try englishIf) AssocNone]
+                       ]
+
+          englishOps = [ [Prefix (try englishNeg) ]
+                       , [Infix (try englishAnd) AssocLeft, Infix (try englishOr) AssocLeft]
+                       , [Infix (try englishIff) AssocNone, Infix (try englishIf) AssocNone]
+                       , [Infix (try oxfordAnd) AssocLeft, Infix (try oxfordOr) AssocLeft]
+                       ]
+          englishNeg = spaces >> string "not" >> spaces >> return lneg
+          englishOr = spaces >> string "or" >> spaces >> return lor
+          englishAnd = spaces >> string "and" >> spaces >> return land
+          englishIff = spaces >> string "if and only if" >> spaces >> return liff
+          englishIf = spaces >> string "only if" >> spaces >> return liff
+
+          oxfordOr = string "," >> englishOr 
+          oxfordAnd = string "," >> englishAnd
