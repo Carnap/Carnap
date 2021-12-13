@@ -196,12 +196,13 @@ englishPropFormulaParserStrict = (spaces >> string "if " >> (lif <$> subFormulaP
                           <|> (sentenceLetterParser ['A'..'Z'] <* spaces) --or atoms
 
           englishOps = [ [Prefix (try englishNeg) ]
-                       , [Infix (try englishAnd) AssocNone, Infix (try englishOr) AssocNone, Infix (try englishIff) AssocNone]
+                       , [Infix (try englishAnd) AssocNone, Infix (try englishOr) AssocNone, Infix (try englishIff) AssocNone, Infix (try englishIf) AssocNone]
                        ]
           englishNeg = spaces >> string "not" >> spaces >> return lneg
           englishOr = spaces >> string "or" >> spaces >> return lor
           englishAnd = spaces >> string "and" >> spaces >> return land
           englishIff = spaces >> string "if and only if" >> spaces >> return liff
+          englishIf = spaces >> string "only if" >> spaces >> return lif
 
 englishPropFormulaParser :: Monad m => ParsecT String u m PureForm
 englishPropFormulaParser = buildExpressionParser englishOps subFormulaParser
@@ -247,7 +248,7 @@ englishPropFormulaParser = buildExpressionParser englishOps subFormulaParser
           englishOr = spaces >> string "or" >> spaces >> return lor
           englishAnd = spaces >> string "and" >> spaces >> return land
           englishIff = spaces >> string "if and only if" >> spaces >> return liff
-          englishIf = spaces >> string "only if" >> spaces >> return liff
+          englishIf = spaces >> string "only if" >> spaces >> return lif
 
           oxfordOr = string "," >> englishOr 
           oxfordAnd = string "," >> englishAnd
