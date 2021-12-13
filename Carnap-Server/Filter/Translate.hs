@@ -20,7 +20,7 @@ activate cls extra chunk
     | "FOL"   `elem` cls = template (opts [("transtype","first-order")])
     | "Desc"  `elem` cls = template (opts [("transtype","description")])
     | "Exact" `elem` cls = template (opts [("transtype","exact")])
-    | otherwise = RawBlock "html" "<div>No Matching Translation</div></div>"
+    | otherwise = RawBlock "html" "<div><div>No Matching Translation</div></div>"
     where (h:t) = formatChunk chunk
           fixed = case T.splitOn ":" (contentOf h) of
                     [x,y] -> [ ("type","translate")
@@ -34,4 +34,4 @@ activate cls extra chunk
                                 case T.splitOn ":" (contentOf h) of
                                   [_,y] -> Div ("",[], map toDataCarnap $ toList myOpts)
                                             [Plain [Str (case t of [] -> y; _ -> unlines' t)]]
-                                  _ -> Div ("",[],[]) [Plain [Str "No matching Translation"]]
+                                  _ -> Div ("",[],[]) [Plain [Str "No Matching Translation"]]
