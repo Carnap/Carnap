@@ -141,6 +141,21 @@ propCalcStrict = mkNDCalc
     , ndParseSeq = parseSeqOver (purePropFormulaParser standardLettersStrict)
     }
 
+nlNotation :: String -> String 
+nlNotation x = case runParser altparser 0 "" x of
+                   Left e -> show e
+                   Right s -> s
+    where altparser = do s <- try handlecon <|> fallback
+                         rest <- (eof >> return "") <|> altparser
+                         return $ s ++ rest
+          handlecon = (char '∧' >> return " and ")
+                  <|> (char '¬' >> return " not ")
+                  <|> (char '∨' >> return " or ")
+                  <|> (char '→' >> return " only if ")
+                  <|> (char '↔' >> return " if and only if ")
+          fallback = do c <- anyChar 
+                        return [c]
+
 propCalcNL = mkNDCalc
     { ndRenderer = MontagueStyle
     , ndParseProof = parsePropLogicProofNL
@@ -148,6 +163,7 @@ propCalcNL = mkNDCalc
     , ndProcessLineMemo = Nothing
     , ndParseForm = englishPropFormulaParser
     , ndParseSeq = parseSeqOver englishPropFormulaParser
+    , ndNotation = nlNotation
     }
 
 propCalcNLStrict = mkNDCalc
@@ -157,6 +173,7 @@ propCalcNLStrict = mkNDCalc
     , ndProcessLineMemo = Nothing
     , ndParseForm = englishPropFormulaParserStrict
     , ndParseSeq = parseSeqOver englishPropFormulaParserStrict
+    , ndNotation = nlNotation
     }
 
 propTreeCalc :: TableauCalc PurePropLexicon (Form Bool) PropLogic
