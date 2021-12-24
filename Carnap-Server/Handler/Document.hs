@@ -97,6 +97,7 @@ getDocumentR ident title = do (Entity _key doc, path, creatorid) <- retrieveDoc 
                                    | takeExtension path == ".jpeg" -> sendFile typeJpeg path >> notFound
                                    | takeExtension path == ".gif"  -> sendFile typeGif path >> notFound
                                    | takeExtension path == ".svg"  -> sendFile typeSvg path >> notFound
+                                   | takeExtension path == ".map"  -> sendFile typeJson path >> notFound
                                    | takeExtension path == ".pdf"  -> asFile doc path >> notFound
                                    | otherwise -> returnFile path
     where returnFile path = do

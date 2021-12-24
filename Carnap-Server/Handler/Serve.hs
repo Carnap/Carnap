@@ -25,6 +25,7 @@ getServeR base components = do app <- getYesod
                                       | takeExtension path == ".jpeg" -> sendFile typeJpeg path >> notFound
                                       | takeExtension path == ".gif" -> sendFile typeGif path >> notFound
                                       | takeExtension path == ".svg" -> sendFile typeSvg path >> notFound
+                                      | takeExtension path == ".map"  -> sendFile typeJson path >> notFound
                                       | otherwise -> returnFile path
     where returnFile path = do
               ehtml <- liftIO $ fileToHtml allFilters path
