@@ -110,6 +110,7 @@ getUserR ident = do
                     assignments <- assignmentsOf accommodation course textbookproblems (zip asmd extensions)
                     subtable <- problemsToTable course accommodation textbookproblems (zip asmd extensions) subs
                     defaultLayout $ do
+                        addScript $ StaticR js_columnSort_js
                         addScript $ StaticR js_bootstrap_bundle_min_js
                         addScript $ StaticR js_bootstrap_min_js
                         setTitle "Welcome To Your Homepage!"
@@ -212,8 +213,12 @@ assignmentsOf accommodation course textbookproblems asmdex = do
                 <div.table-responsive>
                     <table.table.table-striped>
                         <thead#assignment-table-head>
-                            <th> Assignment
-                            <th> Due Date
+                            <th style="cursor:pointer" onclick="sortByCol(this,0)">
+                                Assignment
+                                <i class="fa fa-sort" aria-hidden="true"></i>
+                            <th style="cursor:pointer" onclick="sortByCol(this,1)">
+                                Due Date
+                                <i class="fa fa-sort" aria-hidden="true"></i>
                             <th> Description
                         <tbody#assignment-table-body>
                             $maybe dd <- textbookproblems

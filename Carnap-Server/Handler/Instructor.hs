@@ -440,6 +440,7 @@ getInstructorR ident = do
             (createCourseWidget,enctypeCreateCourse) <- generateFormPost (identifyForm "createCourse" createCourseForm)
             (createAPIKeyWidget,enctypeCreateAPIKey) <- generateFormPost (identifyForm "createAPIKey" createAPIKeyForm)
             defaultLayout $ do
+                 addScript $ StaticR js_columnSort_js
                  addScript $ StaticR js_popper_min_js
                  addScript $ StaticR js_tagsinput_js
                  addScript $ StaticR js_bootstrap_min_js
