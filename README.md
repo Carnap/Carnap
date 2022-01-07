@@ -9,7 +9,7 @@ find the meanings of compound expressions, and a whole lot more.
 
 Carnap's primary application at the moment is powering
 [Carnap.io](https://carnap.io), a website supporting online logic instruction
-and learning. If  you'd like to seem some demos and more general information,
+and learning. If  you'd like to see some demos and more general information,
 head over to [Carnap.io/about](https://carnap.io/about).
 
 If you'd like to learn more about using the server as an instructor, head over
