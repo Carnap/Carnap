@@ -56,7 +56,6 @@ putInstructorR ident = do
                                      , AssignmentMetadataPointValue =. instructorAssignUpdatePointValue theUpdate
                                      , AssignmentMetadataTotalProblems =. instructorAssignUpdateProblemCount theUpdate
                                      , AssignmentMetadataAvailability =. maccess
-                                     , AssignmentMetadataAvailability =. maccess
                                      , AssignmentMetadataDescription =. unTextarea <$> instructorAssignUpdateDescription theUpdate
                                      ]
                  returnJson ("updated!"::Text)
